@@ -2,6 +2,16 @@
 
 ## Version 3.2
 
+### Added
+
+- Pädagogische Produktvision dokumentiert
+- Fachliche Leitlinien ergänzt
+- Produktentscheidungen erweitert
+- Roadmap um langfristige Produktziele ergänzt
+- VISION.md ergänzt
+
+### Changed
+
 - Ersten Excel-Generator implementiert
 - WorkbookBuilder für Arbeitsmappenerzeugung erstellt
 - Blattmodule für Dashboard, Schüler, Kompetenzen, Bewertungen, Einstellungen und Changelog umgesetzt

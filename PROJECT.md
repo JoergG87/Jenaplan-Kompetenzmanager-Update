@@ -20,6 +20,29 @@ Die Entwicklung folgt diesen Grundsätzen:
 - Änderungen werden dokumentiert und versioniert.
 - Apple Numbers Kompatibilität ist ein verbindliches Architekturziel.
 
+## Pädagogische Produktvision
+
+### Zielgruppe
+
+Der Kompetenzmanager richtet sich an Lehrkräfte an Jenaplan-Grundschulen und unterstützt die Kompetenzbeobachtung nach dem Thüringer Lehrplan.
+
+Das Projekt verfolgt das Ziel, den Dokumentationsaufwand zu reduzieren und gleichzeitig eine qualitativ hochwertige Kompetenzdokumentation zu ermöglichen.
+
+### Pädagogische Leitlinien
+
+- Beobachtung vor Bewertung.
+- Bewertungen entstehen aus dokumentierten Beobachtungen.
+- Entwicklung ist wichtiger als Momentaufnahmen.
+- Dokumentation soll den Unterricht unterstützen und nicht behindern.
+- Kompetenzen werden lehrplanorientiert organisiert.
+- Mehrfache Dateneingaben sollen vermieden werden.
+
+### Arbeitsweise der Lehrkraft
+
+Die tägliche Arbeit erfolgt überwiegend über eine Klassenmatrix.
+
+Weitere Ansichten wie Schülerprofil, Berichte und Kompetenzbögen entstehen automatisch aus denselben Daten.
+
 ## Architektur
 
 Das Projekt ist modular aufgebaut.
