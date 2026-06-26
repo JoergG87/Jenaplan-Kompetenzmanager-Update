@@ -148,6 +148,6 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 ## Aktueller Sprint
 
-Aktueller Sprint: Version 3.1 - Fundament.
+Aktueller Sprint: Sprint 1 - Excel-Generator.
 
-Ziel des aktuellen Sprints ist der Aufbau einer professionellen Projektstruktur mit sauberer Dokumentation, klaren Projektregeln und vorbereiteten Modulen ohne fachliche Implementierung.
+Ziel des aktuellen Sprints ist die technische Grundlage für die Excel-Erzeugung über Python. Die Grundversion erzeugt `output/Jenaplan_v3.2.xlsx` mit den vorbereiteten Arbeitsblättern Dashboard, Schüler, Kompetenzen, Bewertungen, Einstellungen und Changelog.
