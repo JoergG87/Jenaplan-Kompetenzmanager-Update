@@ -1,0 +1,1 @@
+"""Jenaplan Kompetenzmanager source package."""
