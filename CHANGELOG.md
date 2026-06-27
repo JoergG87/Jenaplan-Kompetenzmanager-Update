@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Sprint 1.2
+
+### Added
+
+- Fachliches Domänenmodell dokumentiert.
+- Lernentwicklungsmanager als Produktvision definiert.
+- Beobachtungen als Source of Truth festgelegt.
+- Historisierung der Kompetenzentwicklung dokumentiert.
+- Discovery-Erkenntnisse aus erster Lehreranalyse übernommen.
+
 ## Version 3.2
 
 ### Added

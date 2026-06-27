@@ -25,3 +25,15 @@ Thüringer Lehrplan
 
 Version 4.0
 Produktive Version
+
+Zukünftige Produktziele ohne Sprintzuordnung
+
+- Beobachtungsverwaltung
+- Historisierung von Kompetenzständen
+- Schülerprofile auf Basis von Beobachtungen
+- Lernentwicklungsberichte
+- Dashboard auf Basis historischer Daten
+
+Diese Punkte stellen zukünftige Produktziele dar.
+
+Sie gehören aktuell noch keinem Sprint an.

@@ -43,6 +43,34 @@ Die tägliche Arbeit erfolgt überwiegend über eine Klassenmatrix.
 
 Weitere Ansichten wie Schülerprofil, Berichte und Kompetenzbögen entstehen automatisch aus denselben Daten.
 
+## Fachliches Domänenmodell
+
+### Der Kompetenzmanager ist ein Lernentwicklungsmanager.
+
+Nicht einzelne Bewertungen stehen im Mittelpunkt.
+
+Im Mittelpunkt steht die Lernentwicklung der Schülerinnen und Schüler.
+
+Bewertungen sind lediglich ein Ergebnis dokumentierter Beobachtungen.
+
+### Beobachtungen sind die fachliche Quelle aller Informationen.
+
+Beobachtungen bilden die Grundlage für
+
+- Kompetenzstände
+- Schülerprofile
+- Lernentwicklungsberichte
+- Dashboards
+- Auswertungen
+
+### Kompetenzentwicklung
+
+Kompetenzen entwickeln sich über einen längeren Zeitraum.
+
+Das System muss deshalb Kompetenzverläufe speichern können.
+
+Nicht nur den aktuellen Stand.
+
 ## Architektur
 
 Das Projekt ist modular aufgebaut.
@@ -124,6 +152,7 @@ Die Architekturentscheidung für das Bewertungssystem ist bereits festgelegt:
 - `++`
 - `+`
 - `-`
+- `--`
 
 Die visuelle Darstellung erfolgt später über Ampelfarben. Die Bewertungssymbole sind fachliche Datenwerte und dürfen nicht durch reine Farbwerte ersetzt werden.
 

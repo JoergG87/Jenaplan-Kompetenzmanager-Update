@@ -25,6 +25,7 @@ Das Bewertungssystem besteht aus:
 - `++`
 - `+`
 - `-`
+- `--`
 
 Die Darstellung erfolgt später über Ampelfarben.
 
@@ -80,3 +81,56 @@ Produktentscheidung.
 Die Software soll pädagogische Prozesse unterstützen.
 
 Neue Funktionen werden danach bewertet, ob sie den Arbeitsalltag einer Lehrkraft vereinfachen.
+
+## ADR-012
+
+Produktentscheidung.
+
+Beobachtungen sind die fachliche Source of Truth.
+
+Alle weiteren Informationen werden daraus abgeleitet.
+
+## ADR-013
+
+Produktentscheidung.
+
+Eine Beobachtung kann mehreren Kompetenzen zugeordnet werden.
+
+Begründung:
+
+Eine Präsentation, Gruppenarbeit oder Lernzielkontrolle zeigt häufig mehrere Kompetenzen gleichzeitig.
+
+Das Datenmodell muss diese Beziehung unterstützen.
+
+## ADR-014
+
+Produktentscheidung.
+
+Kompetenzstände werden historisiert.
+
+Frühere Entwicklungsstände werden nicht überschrieben.
+
+Lernentwicklung soll nachvollziehbar bleiben.
+
+## ADR-015
+
+Produktentscheidung.
+
+Die Benutzeroberfläche orientiert sich an den Arbeitsabläufen einer Lehrkraft.
+
+Nicht an der internen Datenstruktur.
+
+## ADR-016
+
+Produktentscheidung.
+
+Die Bewertungslogik bleibt zunächst:
+
+- `++`
+- `+`
+- `-`
+- `--`
+
+Sie unterstützt den Alltag der Lehrkräfte.
+
+Die eigentliche Lernentwicklung ergibt sich jedoch aus mehreren Beobachtungen über einen längeren Zeitraum.

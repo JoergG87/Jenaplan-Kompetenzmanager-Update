@@ -7,3 +7,9 @@ Er löst das Problem, dass Beobachtungen, Bewertungen und Auswertungen häufig m
 Im Mittelpunkt stehen pädagogische Klarheit, einfache Bedienbarkeit, verlässliche Daten und eine Dokumentation, die Entwicklung sichtbar macht.
 
 Langfristig soll der Kompetenzmanager eine benutzerfreundliche Klassenmatrix, automatische Schülerprofile, Kompetenzübersichten, Beobachtungsnotizen und pädagogische Auswertungen bereitstellen. Alle Ansichten entstehen aus denselben strukturierten Daten.
+
+Das Ziel des Projektes ist die Unterstützung der Lernentwicklung.
+
+Nicht die Digitalisierung eines Bewertungsbogens.
+
+Der Kompetenzmanager soll Lehrkräfte bei der kontinuierlichen Beobachtung von Lernprozessen unterstützen.
