@@ -2,10 +2,10 @@
 
 ## Projektregeln
 
-- Niemals Makros verwenden.
-- Niemals VBA verwenden.
-- Immer Apple Numbers kompatibel bleiben.
-- Excel wird ausschließlich über Python erzeugt.
+- Python erzeugt Workbook, Datenstruktur, Styles und Build-Artefakte.
+- VBA ausschließlich für Navigation, Dialoge, Benutzerinteraktion und UserForms verwenden.
+- Keine fachliche Logik in VBA.
+- Zielplattform ist Microsoft Excel für macOS.
 - openpyxl verwenden.
 - Keine festen Zellreferenzen.
 - Strukturierte Tabellen bevorzugen.

@@ -8,11 +8,13 @@ Keine manuellen Änderungen.
 
 ## ADR-002
 
-Es werden keine Makros und kein VBA verwendet.
+VBA ist ausschließlich für UI-Aufgaben freigegeben.
+
+Keine fachliche Logik in VBA.
 
 ## ADR-003
 
-Apple Numbers wird vollständig unterstützt.
+Microsoft Excel für macOS ist die verbindliche Zielplattform.
 
 ## ADR-004
 
@@ -210,3 +212,38 @@ Die Benutzeroberfläche unterscheidet zwischen
 
 - geplanten Beobachtungen
 - spontanen Beobachtungen
+
+## ADR-021 - UI-Technologie für UX-Prototypen ab v0.2
+
+### Kontext
+
+Der erste UX-Prototyp hat gezeigt, dass rein hyperlinkbasierte Arbeitsmappen für die nächste UX-Generation nicht ausreichen.
+
+Die zweite Generation des UX-Prototyps wird auf Microsoft Excel für macOS ausgerichtet.
+
+### Entscheidung
+
+Python bleibt verantwortlich für:
+
+- Workbook-Erzeugung
+- Datenstruktur
+- Styles
+- Generierung
+- Build-Artefakte
+
+VBA übernimmt zukünftig ausschließlich:
+
+- Navigation
+- Dialoge
+- Benutzerinteraktion
+- UserForms
+
+Fachliche Logik verbleibt vollständig im Python- und Datenmodell.
+
+### Konsequenzen
+
+VBA-Code darf keine fachlichen Regeln, Berechnungen, Kompetenzlogik oder Datenmodellentscheidungen enthalten.
+
+Die Trennung zwischen Python-Generator, fachlichem Kern, UI-Screens und späteren VBA-Bausteinen wird vorbereitet, aber in Sprint 3.0 noch nicht groß refaktoriert.
+
+Der bestehende Prototyp v0.1 bleibt als Referenz erhalten. Neue Arbeiten erfolgen ab v0.2.

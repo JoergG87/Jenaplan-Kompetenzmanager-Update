@@ -1,11 +1,61 @@
 # CHANGELOG
 
+## Sprint 3.1a
+
+### Added
+
+- UX-Review der Klassenübersicht dokumentiert und in Layoutentscheidungen übertragen.
+- `src/ui/theme.py` und `src/ui/components.py` als wiederverwendbare UI-Basis für Excel-Screens ergänzt.
+- Dynamische UI-Anker für 28 Schülerkarten vorbereitet.
+
+### Changed
+
+- Klassenübersicht auf bis zu 28 Schüler optimiert.
+- Schülerkarten deutlich kompakter gestaltet.
+- Der separate Button `Schülerprofil` wurde entfernt; die gesamte Karte ist als spätere Klickfläche vorbereitet.
+- Suchfeld auf eine kompakte, einzeilige Fläche reduziert.
+- Raster auf eine 4-spaltige, unterrichtstaugliche Übersicht umgestellt.
+- Screen-Code aus `src/ui/screens/klassenuebersicht.py` in Theme, Komponenten und Screen-Verantwortung getrennt.
+
+### Deferred
+
+- Sichtbarkeit und Platzierung von `Neue Beobachtung` bleiben als Produktentscheidung für Sprint 3.2 offen.
+- Echte Navigation, VBA-Code und UserForms bleiben zurückgestellt.
+- Schülerprofil, Beobachtungsdialog, Kompetenzansicht und fachliche Auswertungen bleiben unverändert außerhalb dieses Sprints.
+
+## Sprint 3.1
+
+### Added
+
+- Klassenübersicht für `Jenaplan_UX_Prototype_v0.2.xlsx` als einzige v0.2-Ansicht umgesetzt.
+- Hochwertiges Excel/macOS-Layout mit ausgeblendeten Gitternetzlinien, ausgeblendeten Zeilen- und Spaltenköpfen sowie ausgeblendeten Blattregistern erstellt.
+- Stabile benannte UI-Anker für spätere VBA-Interaktion ergänzt.
+
+### Changed
+
+- v0.2-Build erzeugt keine Schülerprofil-, Beobachtungs-, Kompetenz- oder Dashboard-Blätter mehr.
+- Projektstatus und Sprintplanung auf Sprint 3.1 aktualisiert.
+
+## Sprint 3.0
+
+### Added
+
+- ADR-021 zur UI-Technologie ab UX-Prototyp v0.2 ergänzt.
+- Vorbereitende Projektstruktur für `src/core/`, `src/ui/`, `src/ui/screens/` und `vba/` angelegt.
+- Build-Ziele für `Jenaplan_UX_Prototype_v0.1_FirstAttempt.xlsx` und `Jenaplan_UX_Prototype_v0.2.xlsx` vorbereitet.
+
+### Changed
+
+- Zielplattform auf Microsoft Excel für macOS umgestellt.
+- Projektregeln und Dokumentation auf Python-Generator plus UI-VBA ohne fachliche Logik aktualisiert.
+- Bestehender UX-Prototyp v0.1 wird beim Build als First Attempt erhalten.
+
 ## Sprint 2c
 
 ### Added
 
 - Erster klickbarer UX-Prototyp auf Basis des UX Blueprint v1.0 erstellt.
-- Prototyp-Versionierung auf `UX Prototype v0.1` und neues Build-Ziel `output/Jenaplan_UX_Prototype_v0.1.xlsx` umgestellt.
+- Prototyp-Versionierung auf `UX Prototype v0.1` umgestellt.
 - Klassenübersicht, Schülerprofil, Neue Beobachtung und Kompetenzansicht als prototypische Excel-Bildschirme umgesetzt.
 
 ## Sprint 2b

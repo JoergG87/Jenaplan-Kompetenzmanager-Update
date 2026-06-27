@@ -53,7 +53,6 @@ Excel-Generator
 - [x] python3 build.py läuft fehlerfrei
 - [x] output/Jenaplan_v3.2.xlsx wird erzeugt
 - [ ] Datei lässt sich in Excel öffnen
-- [ ] Datei lässt sich in Apple Numbers öffnen
 
 ## Sprint 2
 
@@ -61,7 +60,17 @@ Dashboard & Design
 
 ## Sprint 3
 
-Bewertungssystem
+Architekturwechsel UX-Prototyp
+
+- [x] Bestehender UX-Prototyp bleibt als First Attempt erhalten
+- [x] Neue UX-Prototyp-Version v0.2 vorbereitet
+- [x] Zielplattform Microsoft Excel für macOS dokumentiert
+- [x] UI-Technologie-ADR ergänzt
+- [x] Projektstruktur für spätere Trennung vorbereitet
+- [x] Sprint 3.1: Klassenübersicht bauen
+- [x] v0.2 enthält keine weiteren Bildschirme
+- [x] UI-Anker für spätere VBA-Interaktion vorbereitet
+- [ ] Review durch Laura
 
 ## Sprint 4
 

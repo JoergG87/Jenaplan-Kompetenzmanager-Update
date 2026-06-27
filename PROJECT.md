@@ -4,7 +4,7 @@
 
 Der Jenaplan-Kompetenzmanager ist ein professionelles Python-Projekt zur strukturierten Verwaltung, Auswertung und späteren Ausgabe von Kompetenzdaten im Jenaplan-Kontext.
 
-Das Projekt stellt die Grundlage für eine Excel-basierte Arbeitsmappe bereit, die vollständig durch Python erzeugt wird. Es werden keine Makros, kein VBA und keine manuellen Änderungen an generierten Excel-Dateien verwendet.
+Das Projekt stellt die Grundlage für eine Excel-basierte Arbeitsmappe für Microsoft Excel auf macOS bereit. Python erzeugt Workbook, Datenstruktur, Styles und spätere Build-Artefakte. VBA ist ausschließlich für Navigation, Dialoge, Benutzerinteraktion und UserForms vorgesehen.
 
 Sprint 0 dient ausschließlich dem Aufbau des technischen und dokumentarischen Fundaments. Es wird noch keine produktive Excel-Datei erzeugt.
 
@@ -18,7 +18,7 @@ Die Entwicklung folgt diesen Grundsätzen:
 - Daten werden strukturiert, nachvollziehbar und konsistent verarbeitet.
 - Jede Version bleibt lauffähig.
 - Änderungen werden dokumentiert und versioniert.
-- Apple Numbers Kompatibilität ist ein verbindliches Architekturziel.
+- Microsoft Excel für macOS ist die verbindliche Zielplattform.
 
 ## Pädagogische Produktvision
 
@@ -77,6 +77,9 @@ Das Projekt ist modular aufgebaut.
 
 - `build.py` ist der zentrale Einstiegspunkt für spätere Build-Prozesse.
 - `src/workbook.py` ist für die spätere Arbeitsmappen-Erzeugung vorgesehen.
+- `src/core/` ist für die spätere Trennung fachlicher Python-Logik vorgesehen.
+- `src/ui/` ist für die spätere Trennung UI-naher Python-Generatoren vorgesehen.
+- `src/ui/screens/` ist für künftige Bildschirm-Generatoren vorgesehen.
 - `src/dashboard.py` ist für das spätere Dashboard vorgesehen.
 - `src/students.py` ist für Schülerdaten vorgesehen.
 - `src/competencies.py` ist für Kompetenzdaten vorgesehen.
@@ -87,6 +90,7 @@ Das Projekt ist modular aufgebaut.
 - `data/` enthält Eingabedaten und Konfigurationen.
 - `docs/` enthält fachliche Begleitdokumentation.
 - `UX_BLUEPRINT.md` beschreibt die verbindliche UX-Grundlage für den ersten Prototyp.
+- `vba/` ist als späterer Ablageort für exportierte UI-VBA-Bausteine vorbereitet.
 - `output/` ist für später generierte Dateien vorgesehen.
 - `tests/` ist für automatisierte Tests vorgesehen.
 - `assets/` ist für statische Ressourcen vorgesehen.
@@ -119,7 +123,9 @@ Die Architektur vermeidet feste Zellreferenzen. Stattdessen sollen strukturierte
 - Jede Version muss lauffähig bleiben.
 - Funktionen werden sprintbasiert geplant und umgesetzt.
 - Generierte Excel-Dateien werden nicht manuell verändert.
-- Die spätere Darstellung muss in Excel und Apple Numbers funktionieren.
+- Die spätere Darstellung wird für Microsoft Excel auf macOS ausgelegt.
+- Fachliche Logik verbleibt vollständig im Python- und Datenmodell.
+- VBA darf ausschließlich UI-Aufgaben wie Navigation, Dialoge, Benutzerinteraktion und UserForms übernehmen.
 - Strukturierte Tabellen und eindeutige IDs haben Vorrang vor festen Zellpositionen.
 
 ## Versionierung
@@ -132,7 +138,9 @@ Das Projekt verwendet eine produktorientierte Versionsfolge.
 
 UX-Prototypen besitzen eine eigene Versionierung.
 
-Der aktuelle Prototyp ist `UX Prototype v0.1`.
+Der erste Prototyp bleibt als `Jenaplan_UX_Prototype_v0.1_FirstAttempt.xlsx` erhalten.
+
+Die zweite Generation des UX-Prototyps wird als `Jenaplan_UX_Prototype_v0.2.xlsx` erzeugt.
 
 Die v3.x-Linie beschreibt weiterhin den technischen Generator und den bisherigen Entwicklungsstand.
 
@@ -183,10 +191,10 @@ Die dauerhaften Projektregeln sind in `AGENTS.md` festgelegt.
 
 Zusammenfassung:
 
-- Niemals Makros verwenden.
-- Niemals VBA verwenden.
-- Immer Apple Numbers kompatibel bleiben.
-- Excel wird ausschließlich über Python erzeugt.
+- Python erzeugt Workbook, Datenstruktur, Styles und Build-Artefakte.
+- VBA ist nur für UI-Aufgaben freigegeben.
+- Keine fachliche Logik in VBA.
+- Zielplattform ist Microsoft Excel für macOS.
 - `openpyxl` verwenden.
 - Keine festen Zellreferenzen.
 - Strukturierte Tabellen bevorzugen.
@@ -209,6 +217,6 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 ## Aktueller Sprint
 
-Aktueller Sprint: Sprint 2c - UX Prototype v1.0.
+Aktueller Sprint: Sprint 3.1 - UX Prototype v0.2 Klassenübersicht.
 
-Ziel des aktuellen Sprints ist der erste klickbare UX-Prototyp. Die Prototyp-Version erzeugt `output/Jenaplan_UX_Prototype_v0.1.xlsx` mit den vier UX-Bildschirmen Klassenübersicht, Schülerprofil, Neue Beobachtung und Kompetenzansicht.
+Ziel des aktuellen Sprints ist eine hochwertige Klassenübersicht für `output/Jenaplan_UX_Prototype_v0.2.xlsx`. Die Ansicht dient ausschließlich dazu, einen Schüler auszuwählen. Schülerprofil, Kompetenzansicht, Beobachtungsdialog und Dashboard werden nicht umgesetzt. Spätere VBA-Interaktion wird über stabile UI-Anker vorbereitet, bleibt aber ohne VBA-Code und ohne fachliche Logik.

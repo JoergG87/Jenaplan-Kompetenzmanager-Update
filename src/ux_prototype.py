@@ -8,6 +8,8 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
+from .ui.screens.klassenuebersicht import ClassOverviewV02WorkbookBuilder
+
 
 @dataclass(frozen=True)
 class Theme:
@@ -883,11 +885,15 @@ class KompetenzansichtSheet(PrototypeSheet):
 class UXPrototypeWorkbookBuilder:
     """Build the first clickable UX prototype workbook."""
 
-    def __init__(self, output_path: Path) -> None:
+    def __init__(self, output_path: Path, prototype_version: str = "v0.2") -> None:
         self.output_path = output_path
-        self.theme = Theme()
+        self.prototype_version = prototype_version
+        self.theme = Theme(app_name=f"Jenaplan UX Prototype {prototype_version}")
 
     def build(self) -> Path:
+        if self.prototype_version == "v0.2":
+            return ClassOverviewV02WorkbookBuilder(self.output_path).build()
+
         workbook = Workbook()
         workbook.remove(workbook.active)
 

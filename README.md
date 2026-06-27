@@ -8,7 +8,7 @@ Die vollständige Projektdokumentation befindet sich in `PROJECT.md`. Dauerhafte
 
 ## Projektziel
 
-Ziel des Projekts ist der Aufbau eines wartbaren Generators fuer kompetenzorientierte Arbeitsmappen, Auswertungen und Berichte. Die kuenftige Excel-Erzeugung erfolgt ausschliesslich ueber Python und bleibt mit Apple Numbers kompatibel.
+Ziel des Projekts ist der Aufbau eines wartbaren Generators fuer kompetenzorientierte Arbeitsmappen, Auswertungen und Berichte fuer Microsoft Excel auf macOS. Python erzeugt Workbook, Datenstruktur und Styles; VBA ist fuer spaetere UI-Interaktion vorgesehen.
 
 ## Architektur
 
@@ -16,13 +16,15 @@ Das Projekt ist modular aufgebaut:
 
 - `build.py` dient als Einstiegspunkt fuer den Build-Prozess.
 - `src/` enthaelt die Python-Module fuer Workbook-Aufbau, Dashboard, Schuelerdaten, Kompetenzen, Bewertungen, Berichte, Einstellungen und Styles.
+- `src/core/`, `src/ui/` und `src/ui/screens/` bereiten die spaetere Trennung von Fachkern und UI-Generatoren vor.
+- `vba/` ist fuer spaetere exportierte UI-VBA-Bausteine vorbereitet.
 - `data/` enthaelt strukturierte Eingabedaten und Konfigurationen.
 - `docs/` enthaelt fachliche und technische Dokumentation.
 - `tests/` ist fuer automatisierte Tests vorgesehen.
 - `output/` ist fuer kuenftig erzeugte Dateien vorgesehen.
 - `assets/` ist fuer statische Ressourcen vorgesehen.
 
-Die spätere Excel-Erzeugung erfolgt ausschließlich über Python mit `openpyxl`. Das Projekt verwendet eindeutige IDs im Datenmodell und vermeidet feste Zellreferenzen.
+Die Excel-Erzeugung erfolgt über Python mit `openpyxl`. Fachliche Logik verbleibt im Python- und Datenmodell. VBA darf spaeter nur Navigation, Dialoge, Benutzerinteraktion und UserForms uebernehmen.
 
 ## Dokumentation
 
@@ -43,14 +45,15 @@ pip install -r requirements.txt
 
 ## Build ausfuehren
 
-Der aktuelle Sprint-0-Build erzeugt keine Excel-Datei. Er prueft lediglich den Einstiegspunkt.
+Der aktuelle Build erzeugt die UX-Prototypen im Ordner `output/`.
 
 ```bash
 python3 build.py
 ```
 
-Ausgabe:
+Ausgaben:
 
 ```text
-Jenaplan Kompetenzmanager Build
+output/Jenaplan_UX_Prototype_v0.1_FirstAttempt.xlsx
+output/Jenaplan_UX_Prototype_v0.2.xlsx
 ```

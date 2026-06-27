@@ -8,12 +8,14 @@ from .ux_prototype import UXPrototypeWorkbookBuilder
 class WorkbookBuilder:
     """Build and save the UX prototype workbook."""
 
-    def __init__(self, output_path: Path) -> None:
+    def __init__(self, output_path: Path, prototype_version: str = "v0.2") -> None:
         """Initialize the workbook builder."""
         self.output_path = output_path
+        self.prototype_version = prototype_version
 
     def build(self) -> Path:
         """Create the workbook, add sheets, and save the file."""
-        # Sprint 2c routes the build through the UX prototype on purpose.
-        # The earlier technical generator is no longer the UX reference.
-        return UXPrototypeWorkbookBuilder(self.output_path).build()
+        return UXPrototypeWorkbookBuilder(
+            self.output_path,
+            prototype_version=self.prototype_version,
+        ).build()
