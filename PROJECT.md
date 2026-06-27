@@ -229,6 +229,6 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 ## Aktueller Sprint
 
-Aktueller Sprint: Sprint 3.1b - Dokumentation der Produktentscheidungen.
+Aktueller Sprint: Sprint 3.1d - Datenmodell-Schutz für Klassenübersicht und Live-Suche.
 
-Ziel des aktuellen Sprints ist die dauerhafte Dokumentation der Produktentscheidungen aus Sprint 3.1 und Sprint 3.1a. Es werden keine Code-, Excel- oder VBA-Dateien verändert.
+Ziel des aktuellen Sprints ist sicherzustellen, dass Klassenübersicht und Live-Suche ausschließlich als abgeleitete UI-Projektion der Schülerdaten arbeiten. Die technische Identität bleibt `student_id`; Namen dienen nur Anzeige und Suche. Das v0.2-Referenzdesign bleibt unverändert.

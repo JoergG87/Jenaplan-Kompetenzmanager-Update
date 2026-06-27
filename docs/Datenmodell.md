@@ -38,6 +38,14 @@ Nicht die Bewertung.
 
 Aus Beobachtungen werden Kompetenzstände, Schülerprofile, Lernentwicklungsberichte, Dashboards und Auswertungen abgeleitet.
 
+## Schüleridentität
+
+Die technische Identität eines Schülers ist immer `student_id`.
+
+Namen dienen ausschließlich der Anzeige und Suche.
+
+Vorname, Nachname oder Anzeigename dürfen nicht als technische Identität verwendet werden.
+
 ## Beziehungen
 
 ```text
@@ -103,3 +111,27 @@ Kompetenzentwicklung entsteht aus vielen Beobachtungen über einen längeren Zei
 Die Software darf Kompetenzstände fachlich vorbereiten oder vorschlagen.
 
 Die endgültige Feststellung verbleibt bei der Lehrkraft.
+
+## Abgeleitete UI-Projektionen
+
+UI-Tabellen, Hilfstabellen, Schattentabellen, Formeln und Karten sind ausschließlich abgeleitete Sichten auf das Datenmodell.
+
+Sie dürfen niemals Source of Truth werden.
+
+Die Klassenübersicht ist eine abgeleitete UI-Projektion der Schülerdaten.
+
+Sie darf keine eigene Schülerdaten-Quelle werden.
+
+Die Projektion für die Klassenübersicht enthält mindestens:
+
+- `student_id`
+- `first_name`
+- `last_name`
+- `display_name`
+- `class_id`
+- `status`
+- `search_key`
+
+Die sichtbaren Schülerkarten werden aus dieser Projektion abgeleitet.
+
+Die Live-Suche arbeitet nur auf dieser abgeleiteten Projektion.

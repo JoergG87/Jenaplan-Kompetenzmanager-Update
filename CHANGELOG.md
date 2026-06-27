@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## Sprint 3.1d
+
+### Added
+
+- Datenmodell-Schutz für die Klassenübersicht dokumentiert.
+- Verborgene UI-Projektion der Klassenübersicht um `student_id`, `first_name`, `last_name`, `display_name`, `class_id`, `status` und `search_key` abgesichert.
+- ID-basierte UI-Anker für Schülerkarten ergänzt.
+
+### Changed
+
+- Schülernamen werden nicht mehr als technische Identität verwendet.
+- Sichtbare Karten und Live-Suche leiten sich ausschließlich aus der verborgenen UI-Projektion ab.
+
+## Sprint 3.1c
+
+### Added
+
+- Live-Suche in der Klassenübersicht ergänzt.
+- Suchfeld filtert die Schülerkarten automatisch ohne Suchbutton.
+- Sortierung nach Vorname technisch über die alphabetisch sortierte Schülerdatenquelle der Klassenübersicht umgesetzt.
+
+### Changed
+
+- Klassenübersicht bleibt optisch im v0.2-Referenzdesign; ergänzt wurde ausschließlich die Suchfunktion.
+
 ## Sprint 3.1b
 
 ### Added

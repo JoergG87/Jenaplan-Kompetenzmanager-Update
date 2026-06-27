@@ -38,7 +38,7 @@ Elemente:
 
 - Klasse
 - Schülerliste
-- Such- oder Filtermöglichkeit
+- Suchmöglichkeit ohne Suchbutton
 
 Aktionen:
 
@@ -58,9 +58,12 @@ Produktentscheidungen:
 - Die Klassenübersicht ist keine Verwaltungsansicht.
 - Die Klassenübersicht ist keine Analyse- oder Auswertungsseite.
 - Die Standardreihenfolge der Schüler erfolgt alphabetisch nach Vorname.
+- Die Suche filtert die Schülerliste automatisch während der Eingabe.
 - Die gesamte Schülerkarte bildet die spätere Klickfläche zum Schülerprofil.
 - Das Referenzdesign nutzt ein kompaktes 4-spaltiges Raster für Klassen bis mindestens 28 Schüler.
 - Schülerdaten werden nicht in der Klassenübersicht verwaltet.
+- Die Klassenübersicht ist eine abgeleitete UI-Projektion der Schülerdaten.
+- Die technische Identität eines Schülers ist `student_id`; Namen dienen nur Anzeige und Suche.
 - Schüler hinzufügen, bearbeiten und archivieren erfolgt künftig in der Klassenverwaltung.
 
 ## 6. Schülerprofil

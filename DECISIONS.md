@@ -302,6 +302,10 @@ Die Standardreihenfolge der Schüler in der Klassenübersicht erfolgt alphabetis
 
 Die Klassenübersicht wird vollständig aus den vorhandenen Schülerdaten generiert.
 
+Die technische Identität eines Schülers ist immer `student_id`.
+
+Namen dienen nur Anzeige und Suche.
+
 ### Konsequenzen
 
 Schülerkarten werden nicht manuell gepflegt.
@@ -309,6 +313,8 @@ Schülerkarten werden nicht manuell gepflegt.
 Wenn Schüler in der Klassenverwaltung hinzugefügt, bearbeitet, archiviert oder gelöscht werden, aktualisiert sich die Klassenübersicht automatisch aus diesen Daten.
 
 Die Klassenübersicht besitzt keine eigene Geschäftslogik.
+
+Die verborgene Datenquelle der Klassenübersicht ist eine abgeleitete UI-Projektion und darf keine eigene Schülerdaten-Quelle werden.
 
 Alle Änderungen an Schülerdaten erfolgen über die Klassenverwaltung.
 

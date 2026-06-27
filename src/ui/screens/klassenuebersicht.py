@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from openpyxl import Workbook
+from openpyxl.styles import Protection
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -19,6 +20,20 @@ GRID_COLUMNS = 4
 CARD_ROW_HEIGHT = 25
 CARD_START_ROW = 8
 CARD_ROW_STEP = 3
+SEARCH_CELL = "L6"
+SEARCH_REFERENCE = "$L$6"
+SEARCH_PLACEHOLDER = "Name eingeben"
+DATA_START_ROW = 2
+DATA_COLUMNS = {
+    "student_id": "X",
+    "first_name": "Y",
+    "last_name": "Z",
+    "display_name": "AA",
+    "class_id": "AB",
+    "status": "AC",
+    "search_key": "AD",
+    "initials": "AE",
+}
 
 
 @dataclass(frozen=True)
@@ -26,39 +41,53 @@ class StudentCard:
     """Static prototype data for one student card."""
 
     student_id: str
-    initials: str
-    name: str
+    first_name: str
+    last_name: str
+    class_id: str = "class_2a"
+    status: str = "active"
+
+    @property
+    def display_name(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def initials(self) -> str:
+        return f"{self.first_name[0]}{self.last_name[0]}"
+
+    @property
+    def search_key(self) -> str:
+        return f"{self.first_name} {self.last_name}".casefold()
 
 
 STUDENTS = (
-    StudentCard("student_mia_becker", "MB", "Mia Becker"),
-    StudentCard("student_emma_mueller", "EM", "Emma Müller"),
-    StudentCard("student_leon_schmidt", "LS", "Leon Schmidt"),
-    StudentCard("student_paul_wagner", "PW", "Paul Wagner"),
-    StudentCard("student_anna_fischer", "AF", "Anna Fischer"),
-    StudentCard("student_ben_schneider", "BS", "Ben Schneider"),
-    StudentCard("student_lina_hoffmann", "LH", "Lina Hoffmann"),
-    StudentCard("student_noah_weber", "NW", "Noah Weber"),
-    StudentCard("student_sophia_koch", "SK", "Sophia Koch"),
-    StudentCard("student_finn_bauer", "FB", "Finn Bauer"),
-    StudentCard("student_leni_richter", "LR", "Leni Richter"),
-    StudentCard("student_jonas_klein", "JK", "Jonas Klein"),
-    StudentCard("student_clara_wolf", "CW", "Clara Wolf"),
-    StudentCard("student_luis_schroeder", "LS", "Luis Schröder"),
-    StudentCard("student_marie_neumann", "MN", "Marie Neumann"),
-    StudentCard("student_ole_schwarz", "OS", "Ole Schwarz"),
-    StudentCard("student_ella_braun", "EB", "Ella Braun"),
-    StudentCard("student_tom_hartmann", "TH", "Tom Hartmann"),
-    StudentCard("student_frida_krueger", "FK", "Frida Krüger"),
-    StudentCard("student_henri_lang", "HL", "Henri Lang"),
-    StudentCard("student_mila_schmitt", "MS", "Mila Schmitt"),
-    StudentCard("student_mats_werner", "MW", "Mats Werner"),
-    StudentCard("student_lea_scholz", "LS", "Lea Scholz"),
-    StudentCard("student_theo_jung", "TJ", "Theo Jung"),
-    StudentCard("student_amelie_vogel", "AV", "Amelie Vogel"),
-    StudentCard("student_anton_krause", "AK", "Anton Krause"),
-    StudentCard("student_ida_mayer", "IM", "Ida Mayer"),
-    StudentCard("student_oskar_lehmann", "OL", "Oskar Lehmann"),
+    StudentCard("s001", "Mia", "Becker"),
+    StudentCard("s002", "Emma", "Müller"),
+    StudentCard("s003", "Leon", "Schmidt"),
+    StudentCard("s004", "Paul", "Wagner"),
+    StudentCard("s005", "Anna", "Fischer"),
+    StudentCard("s006", "Ben", "Schneider"),
+    StudentCard("s007", "Lina", "Hoffmann"),
+    StudentCard("s008", "Noah", "Weber"),
+    StudentCard("s009", "Sophia", "Koch"),
+    StudentCard("s010", "Finn", "Bauer"),
+    StudentCard("s011", "Leni", "Richter"),
+    StudentCard("s012", "Jonas", "Klein"),
+    StudentCard("s013", "Clara", "Wolf"),
+    StudentCard("s014", "Luis", "Schröder"),
+    StudentCard("s015", "Marie", "Neumann"),
+    StudentCard("s016", "Ole", "Schwarz"),
+    StudentCard("s017", "Ella", "Braun"),
+    StudentCard("s018", "Tom", "Hartmann"),
+    StudentCard("s019", "Frida", "Krüger"),
+    StudentCard("s020", "Henri", "Lang"),
+    StudentCard("s021", "Mila", "Schmitt"),
+    StudentCard("s022", "Mats", "Werner"),
+    StudentCard("s023", "Lea", "Scholz"),
+    StudentCard("s024", "Theo", "Jung"),
+    StudentCard("s025", "Amelie", "Vogel"),
+    StudentCard("s026", "Anton", "Krause"),
+    StudentCard("s027", "Ida", "Mayer"),
+    StudentCard("s028", "Oskar", "Lehmann"),
 )
 
 
@@ -87,6 +116,9 @@ class ClassOverviewV02WorkbookBuilder:
         workbook.properties.title = "Jenaplan UX Prototype v0.2"
         workbook.properties.subject = "Klassenübersicht"
         workbook.properties.creator = "Jenaplan-Kompetenzmanager"
+        workbook.calculation.calcMode = "auto"
+        workbook.calculation.fullCalcOnLoad = True
+        workbook.calculation.forceFullCalc = True
         if workbook.views:
             workbook.views[0].showSheetTabs = False
 
@@ -98,6 +130,8 @@ class ClassOverviewV02WorkbookBuilder:
 
         for column, width in self._column_widths().items():
             worksheet.column_dimensions[column].width = width
+        for column in DATA_COLUMNS.values():
+            worksheet.column_dimensions[column].hidden = True
 
         for row in range(1, 34):
             worksheet.row_dimensions[row].height = 18
@@ -111,10 +145,35 @@ class ClassOverviewV02WorkbookBuilder:
         self.canvas.paint_block(worksheet, 1, 1, 33, 22, self.theme.canvas)
 
     def _render(self, worksheet: Worksheet) -> None:
+        self._render_student_data_source(worksheet)
         self._render_app_bar(worksheet)
         self._render_header(worksheet)
         self._render_student_cards(worksheet)
         self._render_footer(worksheet)
+
+    def _render_student_data_source(self, worksheet: Worksheet) -> None:
+        headers = {
+            "student_id": "StudentId",
+            "first_name": "Vorname",
+            "last_name": "Nachname",
+            "display_name": "Anzeigename",
+            "class_id": "ClassId",
+            "status": "Status",
+            "search_key": "Suchtext",
+            "initials": "Initialen",
+        }
+        for key, header in headers.items():
+            worksheet[f"{DATA_COLUMNS[key]}1"] = header
+
+        for offset, card in enumerate(self._sorted_students(), start=DATA_START_ROW):
+            worksheet[f"{DATA_COLUMNS['student_id']}{offset}"] = card.student_id
+            worksheet[f"{DATA_COLUMNS['first_name']}{offset}"] = card.first_name
+            worksheet[f"{DATA_COLUMNS['last_name']}{offset}"] = card.last_name
+            worksheet[f"{DATA_COLUMNS['display_name']}{offset}"] = card.display_name
+            worksheet[f"{DATA_COLUMNS['class_id']}{offset}"] = card.class_id
+            worksheet[f"{DATA_COLUMNS['status']}{offset}"] = card.status
+            worksheet[f"{DATA_COLUMNS['search_key']}{offset}"] = card.search_key
+            worksheet[f"{DATA_COLUMNS['initials']}{offset}"] = card.initials
 
     def _render_app_bar(self, worksheet: Worksheet) -> None:
         self.canvas.panel(worksheet, 2, 2, 3, 21, self.theme.app_bar, self.theme.app_bar)
@@ -170,12 +229,23 @@ class ClassOverviewV02WorkbookBuilder:
             worksheet,
             5,
             12,
+            5,
+            17,
+            "Suchen",
+            font=self.canvas.font(9, bold=True, color=self.theme.muted),
+            fill=self.theme.surface,
+        )
+        self.canvas.write_range(
+            worksheet,
+            6,
+            12,
             6,
             17,
-            "Suche: Name eingeben",
+            SEARCH_PLACEHOLDER,
             font=self.canvas.font(10, color=self.theme.disabled_text),
             fill=self.theme.surface,
         )
+        worksheet[SEARCH_CELL].protection = Protection(locked=False)
 
         self.canvas.panel(worksheet, 5, 18, 6, 21, self.theme.disabled_fill, self.theme.border)
         self.canvas.write_range(
@@ -191,7 +261,7 @@ class ClassOverviewV02WorkbookBuilder:
         )
 
     def _render_student_cards(self, worksheet: Worksheet) -> None:
-        for index, card in enumerate(STUDENTS[:MAX_STUDENTS]):
+        for index, card in enumerate(self._sorted_students()[:MAX_STUDENTS]):
             self._render_student_card(worksheet, card, self._card_bounds(index), index)
 
     def _render_student_card(
@@ -227,7 +297,7 @@ class ClassOverviewV02WorkbookBuilder:
             col_start,
             row_end,
             col_start,
-            card.initials,
+            self._visible_student_formula(index, "initials"),
             font=self.canvas.font(9, bold=True, color=self.theme.primary),
             fill=avatar_fill,
             alignment=self.canvas.alignment("center"),
@@ -238,7 +308,7 @@ class ClassOverviewV02WorkbookBuilder:
             col_start + 1,
             row_start,
             col_end - 1,
-            card.name,
+            self._visible_student_formula(index, "display_name"),
             font=self.canvas.font(11, bold=True),
             fill=self.theme.surface,
         )
@@ -248,7 +318,7 @@ class ClassOverviewV02WorkbookBuilder:
             col_start + 1,
             row_end,
             col_end - 1,
-            CLASS_NAME,
+            self._visible_class_formula(index),
             font=self.canvas.font(8, color=self.theme.muted),
             fill=self.theme.surface,
         )
@@ -258,7 +328,7 @@ class ClassOverviewV02WorkbookBuilder:
             col_end,
             row_end,
             col_end,
-            ">",
+            self._visible_arrow_formula(index),
             font=self.canvas.font(10, bold=True, color=self.theme.border_strong),
             fill=self.theme.surface,
             alignment=self.canvas.alignment("center"),
@@ -292,13 +362,16 @@ class ClassOverviewV02WorkbookBuilder:
             "ui_class_search": (5, 12, 6, 17),
             "ui_action_new_observation": (5, 18, 6, 21),
         }
-        for index, card in enumerate(STUDENTS[:MAX_STUDENTS]):
-            anchors[f"ui_{card.student_id}"] = self._card_bounds(index)
+        for index, card in enumerate(self._sorted_students()[:MAX_STUDENTS]):
+            anchors[f"ui_student_{card.student_id}"] = self._card_bounds(index)
 
         for name, coordinates in anchors.items():
             workbook.defined_names.add(
                 DefinedName(name=name, attr_text=self._sheet_range(*coordinates))
             )
+        workbook.defined_names.add(
+            DefinedName(name="ui_class_search_input", attr_text=f"'{SHEET_TITLE}'!{SEARCH_REFERENCE}")
+        )
 
     def _card_bounds(self, index: int) -> tuple[int, int, int, int]:
         grid_row = index // GRID_COLUMNS
@@ -311,6 +384,55 @@ class ClassOverviewV02WorkbookBuilder:
         start = self.canvas.absolute_cell(row_start, col_start)
         end = self.canvas.absolute_cell(row_end, col_end)
         return f"'{SHEET_TITLE}'!{start}:{end}"
+
+    def _visible_student_formula(self, index: int, field: str) -> str:
+        result_index = index + 1
+        column = DATA_COLUMNS[field]
+        position_formula = self._filtered_position_formula(result_index)
+        return (
+            f'=IFERROR(INDEX(${column}${DATA_START_ROW}:'
+            f'${column}${DATA_START_ROW + MAX_STUDENTS - 1},{position_formula}),"")'
+        )
+
+    def _visible_class_formula(self, index: int) -> str:
+        result_index = index + 1
+        class_column = DATA_COLUMNS["class_id"]
+        position_formula = self._filtered_position_formula(result_index)
+        return (
+            f'=IFERROR(IF(INDEX(${class_column}${DATA_START_ROW}:'
+            f'${class_column}${DATA_START_ROW + MAX_STUDENTS - 1},{position_formula})'
+            f'="class_2a","{CLASS_NAME}",""),"")'
+        )
+
+    def _visible_arrow_formula(self, index: int) -> str:
+        result_index = index + 1
+        name_column = DATA_COLUMNS["display_name"]
+        position_formula = self._filtered_position_formula(result_index)
+        return (
+            f'=IFERROR(IF(INDEX(${name_column}${DATA_START_ROW}:'
+            f'${name_column}${DATA_START_ROW + MAX_STUDENTS - 1},{position_formula})<>"",">",""),"")'
+        )
+
+    def _filtered_position_formula(self, result_index: int) -> str:
+        display_name_range = (
+            f'${DATA_COLUMNS["display_name"]}${DATA_START_ROW}:'
+            f'${DATA_COLUMNS["display_name"]}${DATA_START_ROW + MAX_STUDENTS - 1}'
+        )
+        status_range = (
+            f'${DATA_COLUMNS["status"]}${DATA_START_ROW}:'
+            f'${DATA_COLUMNS["status"]}${DATA_START_ROW + MAX_STUDENTS - 1}'
+        )
+        search_range = (
+            f'${DATA_COLUMNS["search_key"]}${DATA_START_ROW}:'
+            f'${DATA_COLUMNS["search_key"]}${DATA_START_ROW + MAX_STUDENTS - 1}'
+        )
+        return (
+            f'AGGREGATE(15,6,(ROW({display_name_range})-ROW(${DATA_COLUMNS["display_name"]}${DATA_START_ROW})+1)/'
+            f'(({status_range}="active")*'
+            f'IF(OR({SEARCH_REFERENCE}="",{SEARCH_REFERENCE}="{SEARCH_PLACEHOLDER}"),'
+            f'{display_name_range}<>"",ISNUMBER(SEARCH(LOWER({SEARCH_REFERENCE}),{search_range})))),'
+            f'{result_index})'
+        )
 
     def _column_widths(self) -> dict[str, float]:
         widths = {"A": 2.6, "V": 2.6}
@@ -355,3 +477,6 @@ class ClassOverviewV02WorkbookBuilder:
             "E9E4F0",
         )
         return fills[index % len(fills)]
+
+    def _sorted_students(self) -> tuple[StudentCard, ...]:
+        return tuple(sorted(STUDENTS, key=lambda card: card.first_name.casefold()))
