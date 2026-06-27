@@ -82,7 +82,58 @@ Die Software soll pädagogische Prozesse unterstützen.
 
 Neue Funktionen werden danach bewertet, ob sie den Arbeitsalltag einer Lehrkraft vereinfachen.
 
-## ADR-012
+## ADR-012 - Single Purpose Views
+
+### Kontext
+
+Während der Discovery-Phase und des UX-Entwurfs wurde festgestellt, dass Lehrkräfte je nach Situation unterschiedliche Ziele verfolgen:
+
+- Im Unterricht soll möglichst schnell eine Beobachtung dokumentiert werden.
+- Nach dem Unterricht soll die Kompetenzentwicklung analysiert werden.
+- In der Klassenübersicht soll lediglich ein Schüler ausgewählt werden.
+
+Frühere Entwürfe versuchten, mehrere Aufgaben gleichzeitig auf einer Ansicht abzubilden.
+
+Dadurch entstand unnötige Komplexität.
+
+### Entscheidung
+
+Jede Ansicht des Kompetenzmanagers verfolgt genau einen primären Zweck.
+
+Jede zusätzliche Information oder Funktion wird daran gemessen, ob sie diesen Zweck unmittelbar unterstützt.
+
+### Konsequenzen
+
+Klassenübersicht
+
+- Primärer Zweck: Schüler auswählen.
+- Keine Kompetenzbewertungen oder Analysen.
+- Fokus auf schnelle Navigation.
+
+Schülerprofil
+
+- Primärer Zweck: Beobachtungen erfassen und Kompetenzentwicklung eines einzelnen Kindes verstehen.
+- Einstieg über "Neue Beobachtung".
+
+Kompetenzansicht
+
+- Primärer Zweck: Entwicklung einer einzelnen Kompetenz nachvollziehen.
+
+Berichte
+
+- Primärer Zweck: Vorbereitung pädagogischer Gespräche und Dokumentationen.
+
+Dashboard
+
+- Primärer Zweck: Handlungsbedarf sichtbar machen.
+
+### Begründung
+
+Dieses Prinzip reduziert die kognitive Belastung der Lehrkraft und sorgt dafür, dass jede Ansicht klar verständlich bleibt.
+
+Neue Funktionen dürfen einer Ansicht nur hinzugefügt werden, wenn sie den primären Zweck dieser Ansicht unterstützen.
+
+## ADR-013
 
 Produktentscheidung.
 
@@ -90,7 +141,7 @@ Beobachtungen sind die fachliche Source of Truth.
 
 Alle weiteren Informationen werden daraus abgeleitet.
 
-## ADR-013
+## ADR-014
 
 Produktentscheidung.
 
@@ -102,7 +153,7 @@ Eine Präsentation, Gruppenarbeit oder Lernzielkontrolle zeigt häufig mehrere K
 
 Das Datenmodell muss diese Beziehung unterstützen.
 
-## ADR-014
+## ADR-015
 
 Produktentscheidung.
 
@@ -112,7 +163,7 @@ Frühere Entwicklungsstände werden nicht überschrieben.
 
 Lernentwicklung soll nachvollziehbar bleiben.
 
-## ADR-015
+## ADR-016
 
 Produktentscheidung.
 
@@ -120,7 +171,7 @@ Die Benutzeroberfläche orientiert sich an den Arbeitsabläufen einer Lehrkraft.
 
 Nicht an der internen Datenstruktur.
 
-## ADR-016
+## ADR-017
 
 Produktentscheidung.
 
@@ -135,7 +186,7 @@ Sie unterstützt den Alltag der Lehrkräfte.
 
 Die eigentliche Lernentwicklung ergibt sich jedoch aus mehreren Beobachtungen über einen längeren Zeitraum.
 
-## ADR-017
+## ADR-018
 
 Produktentscheidung.
 
@@ -143,7 +194,7 @@ Die Software schlägt Kompetenzstände vor.
 
 Die endgültige Festlegung erfolgt durch die Lehrkraft.
 
-## ADR-018
+## ADR-019
 
 Produktentscheidung.
 
@@ -151,7 +202,7 @@ Das Schülerprofil bildet den primären Arbeitsplatz.
 
 Nicht Dashboard oder Klassenmatrix.
 
-## ADR-019
+## ADR-020
 
 Produktentscheidung.
 

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Sprint 2b
+
+### Added
+
+- ADR-012 als UX- und Architekturentscheidung zu Single Purpose Views dokumentiert.
+- UX_BLUEPRINT.md v1.0 als Grundlage für den ersten Excel-Prototyp erstellt.
+
 ## Sprint 2a
 
 ### Added

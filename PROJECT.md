@@ -86,6 +86,7 @@ Das Projekt ist modular aufgebaut.
 - `src/styles.py` ist für visuelle Formatierungen vorgesehen.
 - `data/` enthält Eingabedaten und Konfigurationen.
 - `docs/` enthält fachliche Begleitdokumentation.
+- `UX_BLUEPRINT.md` beschreibt die verbindliche UX-Grundlage für den ersten Prototyp.
 - `output/` ist für später generierte Dateien vorgesehen.
 - `tests/` ist für automatisierte Tests vorgesehen.
 - `assets/` ist für statische Ressourcen vorgesehen.

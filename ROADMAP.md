@@ -42,3 +42,7 @@ Zukünftige Produktziele ohne Sprintzuordnung
 Diese Punkte stellen zukünftige Produktziele dar.
 
 Sie gehören aktuell noch keinem Sprint an.
+
+Sprint 2c
+
+- Auf Basis des UX Blueprint wird der erste klickbare Excel-Prototyp umgesetzt.
