@@ -89,6 +89,8 @@ Das Projekt ist modular aufgebaut.
 - `output/` ist für später generierte Dateien vorgesehen.
 - `tests/` ist für automatisierte Tests vorgesehen.
 - `assets/` ist für statische Ressourcen vorgesehen.
+- `BACKLOG.md` sammelt zukünftige Produktideen und Erweiterungen.
+- `DISCOVERY.md` dokumentiert fachliche Erkenntnisse aus Anwenderinterviews und Discovery-Workshops.
 
 Die Architektur vermeidet feste Zellreferenzen. Stattdessen sollen strukturierte Daten, eindeutige IDs und wiederverwendbare Builder-Komponenten verwendet werden.
 

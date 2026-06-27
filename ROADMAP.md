@@ -33,6 +33,11 @@ Zukünftige Produktziele ohne Sprintzuordnung
 - Schülerprofile auf Basis von Beobachtungen
 - Lernentwicklungsberichte
 - Dashboard auf Basis historischer Daten
+- Vorschläge für Kompetenzstände
+- Beobachtungsverläufe
+- Geplante Beobachtungen
+- Spontane Beobachtungen
+- Gruppenbeobachtungen
 
 Diese Punkte stellen zukünftige Produktziele dar.
 

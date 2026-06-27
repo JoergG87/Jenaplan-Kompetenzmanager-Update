@@ -13,3 +13,11 @@ Das Ziel des Projektes ist die Unterstützung der Lernentwicklung.
 Nicht die Digitalisierung eines Bewertungsbogens.
 
 Der Kompetenzmanager soll Lehrkräfte bei der kontinuierlichen Beobachtung von Lernprozessen unterstützen.
+
+Der Kompetenzmanager versteht sich als digitales Beobachtungsbuch.
+
+Kompetenzstände entstehen aus dokumentierten Beobachtungen.
+
+Die Software unterstützt pädagogische Entscheidungen.
+
+Sie ersetzt diese nicht.

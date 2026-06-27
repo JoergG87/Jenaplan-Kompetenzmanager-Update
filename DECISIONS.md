@@ -134,3 +134,28 @@ Die Bewertungslogik bleibt zunächst:
 Sie unterstützt den Alltag der Lehrkräfte.
 
 Die eigentliche Lernentwicklung ergibt sich jedoch aus mehreren Beobachtungen über einen längeren Zeitraum.
+
+## ADR-017
+
+Produktentscheidung.
+
+Die Software schlägt Kompetenzstände vor.
+
+Die endgültige Festlegung erfolgt durch die Lehrkraft.
+
+## ADR-018
+
+Produktentscheidung.
+
+Das Schülerprofil bildet den primären Arbeitsplatz.
+
+Nicht Dashboard oder Klassenmatrix.
+
+## ADR-019
+
+Produktentscheidung.
+
+Die Benutzeroberfläche unterscheidet zwischen
+
+- geplanten Beobachtungen
+- spontanen Beobachtungen

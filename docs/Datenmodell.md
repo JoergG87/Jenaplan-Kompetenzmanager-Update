@@ -77,3 +77,29 @@ Der aktuelle Stand reicht fachlich nicht aus.
 Das Datenmodell muss deshalb historisierte Kompetenzstände unterstützen.
 
 Frühere Entwicklungsstände werden nicht überschrieben, sondern bleiben als Verlauf nachvollziehbar.
+
+## Erweitertes fachliches Modell
+
+Die Discovery Phase 1 erweitert das fachliche Modell um den Unterrichtskontext:
+
+```text
+Unterricht
+  ↓
+Situation
+  ↓
+Beobachtung
+  ↓
+Kompetenzentwicklung
+  ↓
+Festgestellter Kompetenzstand
+```
+
+Der Kompetenzstand ist eine pädagogische Feststellung.
+
+Nicht das unmittelbare Ergebnis einer einzelnen Beobachtung.
+
+Kompetenzentwicklung entsteht aus vielen Beobachtungen über einen längeren Zeitraum.
+
+Die Software darf Kompetenzstände fachlich vorbereiten oder vorschlagen.
+
+Die endgültige Feststellung verbleibt bei der Lehrkraft.

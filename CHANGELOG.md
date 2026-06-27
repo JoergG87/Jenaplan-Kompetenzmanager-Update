@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Sprint 2a
+
+### Added
+
+- Discovery Phase 1 dokumentiert.
+- DISCOVERY.md eingeführt.
+- Fachliche Erkenntnisse aus Anwenderinterviews dokumentiert.
+- Unterrichtskontexte beschrieben.
+- Kompetenzentwicklung präzisiert.
+
+## Projektinfrastruktur
+
+### Added
+
+- Product Backlog eingeführt.
+- BACKLOG.md als Bestandteil der Projektstruktur ergänzt.
+
 ## Sprint 1.2
 
 ### Added
