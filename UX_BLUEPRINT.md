@@ -31,7 +31,8 @@ Der Fokus liegt auf der täglichen Arbeit im Unterricht und auf der direkten Erf
 
 Primärer Zweck:
 
-- Schüler auswählen.
+- Schüler schnell finden und auswählen.
+- Anschließend in das Schülerprofil wechseln.
 
 Elemente:
 
@@ -42,13 +43,25 @@ Elemente:
 Aktionen:
 
 - Schülerprofil öffnen
-- Neue Beobachtung starten
 
 Nicht enthalten:
 
 - Kompetenzbewertungen
 - Detailanalysen
 - Berichte
+- Statistiken
+- Verwaltungsfunktionen
+
+Produktentscheidungen:
+
+- Die Klassenübersicht ist kein Dashboard.
+- Die Klassenübersicht ist keine Verwaltungsansicht.
+- Die Klassenübersicht ist keine Analyse- oder Auswertungsseite.
+- Die Standardreihenfolge der Schüler erfolgt alphabetisch nach Vorname.
+- Die gesamte Schülerkarte bildet die spätere Klickfläche zum Schülerprofil.
+- Das Referenzdesign nutzt ein kompaktes 4-spaltiges Raster für Klassen bis mindestens 28 Schüler.
+- Schülerdaten werden nicht in der Klassenübersicht verwaltet.
+- Schüler hinzufügen, bearbeiten und archivieren erfolgt künftig in der Klassenverwaltung.
 
 ## 6. Schülerprofil
 

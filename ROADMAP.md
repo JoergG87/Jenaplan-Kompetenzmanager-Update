@@ -64,3 +64,17 @@ Sprint 3.1
 - Abschluss mit Review durch Laura.
 - Die v0.2-Arbeitsmappe enthält nur die Klassenübersicht.
 - Schülerprofil, Beobachtungsdialog und Kompetenzansicht folgen in späteren Sprints.
+
+Sprint 3.1a
+
+- UX-Review der Klassenübersicht.
+- Optimierung auf Klassen bis mindestens 28 Schüler.
+- Kompaktes 4-spaltiges Referenzdesign.
+- Keine Dashboard-, Analyse- oder Verwaltungsfunktionen in der Klassenübersicht.
+
+Sprint 3.1b
+
+- Dokumentation der Produktentscheidungen aus Sprint 3.1 und Sprint 3.1a.
+- Klassenübersicht als Einstieg in den Arbeitsablauf festgeschrieben.
+- Klassenverwaltung als separater Bereich für Schülerverwaltung festgelegt.
+- Design Freeze für die Klassenübersicht dokumentiert.

@@ -104,11 +104,13 @@ Jede Ansicht des Kompetenzmanagers verfolgt genau einen primären Zweck.
 
 Jede zusätzliche Information oder Funktion wird daran gemessen, ob sie diesen Zweck unmittelbar unterstützt.
 
+Neue Funktionen dürfen die Hauptaufgabe einer Ansicht nicht verwässern.
+
 ### Konsequenzen
 
 Klassenübersicht
 
-- Primärer Zweck: Schüler auswählen.
+- Primärer Zweck: Schüler schnell finden und auswählen.
 - Keine Kompetenzbewertungen oder Analysen.
 - Fokus auf schnelle Navigation.
 
@@ -120,6 +122,11 @@ Schülerprofil
 Kompetenzansicht
 
 - Primärer Zweck: Entwicklung einer einzelnen Kompetenz nachvollziehen.
+
+Klassenverwaltung
+
+- Primärer Zweck: Schüler verwalten.
+- Schüler hinzufügen, bearbeiten und archivieren.
 
 Berichte
 
@@ -247,3 +254,113 @@ VBA-Code darf keine fachlichen Regeln, Berechnungen, Kompetenzlogik oder Datenmo
 Die Trennung zwischen Python-Generator, fachlichem Kern, UI-Screens und späteren VBA-Bausteinen wird vorbereitet, aber in Sprint 3.0 noch nicht groß refaktoriert.
 
 Der bestehende Prototyp v0.1 bleibt als Referenz erhalten. Neue Arbeiten erfolgen ab v0.2.
+
+## ADR-022 - Klassenübersicht als Einstieg
+
+### Kontext
+
+Sprint 3.1 und Sprint 3.1a haben die Klassenübersicht als erste Ansicht der zweiten UX-Prototyp-Generation konkretisiert.
+
+Das Review mit Product Owner und Jenaplan-Lehrkraft hat bestätigt, dass die Klassenübersicht im Unterricht nur dann hilfreich ist, wenn sie schnell erfassbar bleibt und nicht zur Analyse- oder Verwaltungsansicht wird.
+
+### Entscheidung
+
+Die Klassenübersicht ist ausschließlich der Einstieg in den Arbeitsablauf.
+
+Ihre Aufgabe besteht darin:
+
+- Schüler schnell zu finden
+- Schüler auszuwählen
+- anschließend in das Schülerprofil zu wechseln
+
+Die Klassenübersicht ist ausdrücklich:
+
+- kein Dashboard
+- keine Verwaltungsansicht
+- keine Analyseansicht
+- keine Auswertungsseite
+
+### Konsequenzen
+
+Die Klassenübersicht enthält keine Kompetenzstände, Bewertungen, Analysen, Berichte, Statistiken oder Verwaltungsfunktionen.
+
+Die gesamte Schülerkarte ist die spätere Klickfläche für den Wechsel ins Schülerprofil.
+
+Ein separater Button innerhalb der Karte wird nicht verwendet.
+
+## ADR-023 - Sortierung und Datenquelle der Klassenübersicht
+
+### Kontext
+
+Lehrkräfte suchen Kinder im Unterricht überwiegend über den Vornamen.
+
+Die Klassenübersicht soll aus vorhandenen Schülerdaten entstehen und nicht manuell gepflegt werden.
+
+### Entscheidung
+
+Die Standardreihenfolge der Schüler in der Klassenübersicht erfolgt alphabetisch nach Vorname.
+
+Die Klassenübersicht wird vollständig aus den vorhandenen Schülerdaten generiert.
+
+### Konsequenzen
+
+Schülerkarten werden nicht manuell gepflegt.
+
+Wenn Schüler in der Klassenverwaltung hinzugefügt, bearbeitet, archiviert oder gelöscht werden, aktualisiert sich die Klassenübersicht automatisch aus diesen Daten.
+
+Die Klassenübersicht besitzt keine eigene Geschäftslogik.
+
+Alle Änderungen an Schülerdaten erfolgen über die Klassenverwaltung.
+
+## ADR-024 - Klassenverwaltung als separater Bereich
+
+### Kontext
+
+Die Klassenübersicht soll im Unterricht schnelles Finden und Auswählen ermöglichen.
+
+Verwaltungsfunktionen würden diesen Zweck verwässern.
+
+### Entscheidung
+
+Die Verwaltung von Schülern erfolgt künftig in einem separaten Bereich `Klassenverwaltung`.
+
+Dort können Lehrkräfte:
+
+- Schüler hinzufügen
+- Schüler bearbeiten
+- Schüler archivieren
+
+### Konsequenzen
+
+Die Klassenübersicht enthält bewusst keine Verwaltungsfunktionen.
+
+Die Klassenverwaltung ist der einzige UI-Ort für Änderungen an Schülerdaten.
+
+## ADR-025 - Design Freeze Klassenübersicht v0.2
+
+### Kontext
+
+Die Klassenübersicht wurde in Sprint 3.1 erstellt und in Sprint 3.1a auf Grundlage eines UX-Reviews für den Unterricht optimiert.
+
+Das aktuelle Layout gilt als Referenzdesign.
+
+### Entscheidung
+
+Bis zu einer ausdrücklichen Product-Owner-Entscheidung dürfen folgende Eigenschaften der Klassenübersicht nicht verändert werden:
+
+- Desktop-Anmutung
+- Kartenlayout
+- Kartenhöhe
+- Informationshierarchie
+- Farbkonzept
+- Typografie
+- 4-spaltiges Raster
+- kompakte Darstellung für Klassen bis mindestens 28 Schüler
+
+### Konsequenzen
+
+Designänderungen erfolgen ausschließlich nach:
+
+- UX-Review
+- Product-Owner-Freigabe
+- anschließender Implementierung

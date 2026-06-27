@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## Sprint 3.1b
+
+### Added
+
+- Produktentscheidung dokumentiert: Die Klassenübersicht ist ausschließlich Einstieg, Such- und Auswahlansicht.
+- Produktentscheidung dokumentiert: Jede Ansicht besitzt genau eine Hauptaufgabe.
+- Projektstandard dokumentiert: Schüler werden in der Klassenübersicht alphabetisch nach Vorname sortiert.
+- Produktentscheidung dokumentiert: Schülerverwaltung erfolgt künftig in einer separaten Klassenverwaltung.
+- Architekturprinzip dokumentiert: Die Klassenübersicht besitzt keine eigene Geschäftslogik und wird aus vorhandenen Schülerdaten generiert.
+- Design Freeze für das aktuelle Referenzdesign der Klassenübersicht dokumentiert.
+
+### Changed
+
+- UX Blueprint zur Klassenübersicht an die Sprint-3.1/3.1a-Entscheidungen angepasst.
+
 ## Sprint 3.1a
 
 ### Added

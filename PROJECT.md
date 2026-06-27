@@ -43,6 +43,10 @@ Die tägliche Arbeit erfolgt überwiegend über eine Klassenmatrix.
 
 Weitere Ansichten wie Schülerprofil, Berichte und Kompetenzbögen entstehen automatisch aus denselben Daten.
 
+Die Klassenübersicht dient als Einstieg in den Arbeitsablauf. Sie hilft dabei, einen Schüler schnell zu finden, auszuwählen und anschließend in das Schülerprofil zu wechseln.
+
+Die Klassenübersicht ist kein Dashboard, keine Verwaltungsansicht, keine Analyseansicht und keine Auswertungsseite.
+
 ## Fachliches Domänenmodell
 
 ### Der Kompetenzmanager ist ein Lernentwicklungsmanager.
@@ -99,6 +103,8 @@ Das Projekt ist modular aufgebaut.
 
 Die Architektur vermeidet feste Zellreferenzen. Stattdessen sollen strukturierte Daten, eindeutige IDs und wiederverwendbare Builder-Komponenten verwendet werden.
 
+Die Klassenübersicht besitzt keine eigene Geschäftslogik. Sie stellt vorhandene Schülerdaten dar und wird aus diesen Daten generiert. Änderungen an Schülerdaten erfolgen künftig ausschließlich über die Klassenverwaltung.
+
 ## Technischer Stack
 
 - Python 3.11 oder neuer
@@ -127,6 +133,8 @@ Die Architektur vermeidet feste Zellreferenzen. Stattdessen sollen strukturierte
 - Fachliche Logik verbleibt vollständig im Python- und Datenmodell.
 - VBA darf ausschließlich UI-Aufgaben wie Navigation, Dialoge, Benutzerinteraktion und UserForms übernehmen.
 - Strukturierte Tabellen und eindeutige IDs haben Vorrang vor festen Zellpositionen.
+- Jede Ansicht besitzt genau eine Hauptaufgabe.
+- Neue Funktionen dürfen die Hauptaufgabe einer Ansicht nicht verwässern.
 
 ## Versionierung
 
@@ -185,6 +193,10 @@ Aktuelle Dateien:
 
 Alle Beziehungen im Datenmodell erfolgen über eindeutige IDs. Das Datenmodell darf nicht ohne Rücksprache mit dem Product Owner geändert werden.
 
+Die Standardreihenfolge der Schüler in der Klassenübersicht erfolgt alphabetisch nach Vorname. Diese Sortierung gilt als Projektstandard, weil Lehrkräfte Kinder im Unterricht überwiegend mit dem Vornamen suchen und ansprechen.
+
+Schülerkarten werden nicht manuell gepflegt. Wenn Schüler in der Klassenverwaltung hinzugefügt, bearbeitet, archiviert oder gelöscht werden, aktualisiert sich die Klassenübersicht automatisch aus den vorhandenen Schülerdaten.
+
 ## Projektregeln
 
 Die dauerhaften Projektregeln sind in `AGENTS.md` festgelegt.
@@ -217,6 +229,6 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 ## Aktueller Sprint
 
-Aktueller Sprint: Sprint 3.1 - UX Prototype v0.2 Klassenübersicht.
+Aktueller Sprint: Sprint 3.1b - Dokumentation der Produktentscheidungen.
 
-Ziel des aktuellen Sprints ist eine hochwertige Klassenübersicht für `output/Jenaplan_UX_Prototype_v0.2.xlsx`. Die Ansicht dient ausschließlich dazu, einen Schüler auszuwählen. Schülerprofil, Kompetenzansicht, Beobachtungsdialog und Dashboard werden nicht umgesetzt. Spätere VBA-Interaktion wird über stabile UI-Anker vorbereitet, bleibt aber ohne VBA-Code und ohne fachliche Logik.
+Ziel des aktuellen Sprints ist die dauerhafte Dokumentation der Produktentscheidungen aus Sprint 3.1 und Sprint 3.1a. Es werden keine Code-, Excel- oder VBA-Dateien verändert.
