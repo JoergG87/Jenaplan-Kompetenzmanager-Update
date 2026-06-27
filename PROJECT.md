@@ -130,6 +130,12 @@ Das Projekt verwendet eine produktorientierte Versionsfolge.
 - Versionen 3.2 bis 3.6 erweitern das Projekt schrittweise um fachliche und technische Funktionen.
 - Version 4.0 ist als produktive Version vorgesehen.
 
+UX-Prototypen besitzen eine eigene Versionierung.
+
+Der aktuelle Prototyp ist `UX Prototype v0.1`.
+
+Die v3.x-Linie beschreibt weiterhin den technischen Generator und den bisherigen Entwicklungsstand.
+
 Änderungen werden in `CHANGELOG.md` dokumentiert. Grundsätzliche Architekturentscheidungen werden in `DECISIONS.md` festgehalten.
 
 ## Roadmap
@@ -203,6 +209,6 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 ## Aktueller Sprint
 
-Aktueller Sprint: Sprint 1 - Excel-Generator.
+Aktueller Sprint: Sprint 2c - UX Prototype v1.0.
 
-Ziel des aktuellen Sprints ist die technische Grundlage für die Excel-Erzeugung über Python. Die Grundversion erzeugt `output/Jenaplan_v3.2.xlsx` mit den vorbereiteten Arbeitsblättern Dashboard, Schüler, Kompetenzen, Bewertungen, Einstellungen und Changelog.
+Ziel des aktuellen Sprints ist der erste klickbare UX-Prototyp. Die Prototyp-Version erzeugt `output/Jenaplan_UX_Prototype_v0.1.xlsx` mit den vier UX-Bildschirmen Klassenübersicht, Schülerprofil, Neue Beobachtung und Kompetenzansicht.

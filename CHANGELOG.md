@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Sprint 2c
+
+### Added
+
+- Erster klickbarer UX-Prototyp auf Basis des UX Blueprint v1.0 erstellt.
+- Prototyp-Versionierung auf `UX Prototype v0.1` und neues Build-Ziel `output/Jenaplan_UX_Prototype_v0.1.xlsx` umgestellt.
+- Klassenübersicht, Schülerprofil, Neue Beobachtung und Kompetenzansicht als prototypische Excel-Bildschirme umgesetzt.
+
 ## Sprint 2b
 
 ### Added

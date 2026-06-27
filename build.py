@@ -7,7 +7,7 @@ from src.workbook import WorkbookBuilder
 
 def main() -> None:
     """Start the workbook build and report the result."""
-    output_path = Path("output") / "Jenaplan_v3.2.xlsx"
+    output_path = Path("output") / "Jenaplan_UX_Prototype_v0.1.xlsx"
 
     try:
         WorkbookBuilder(output_path=output_path).build()

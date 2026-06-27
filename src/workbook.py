@@ -2,49 +2,18 @@
 
 from pathlib import Path
 
-from openpyxl import Workbook
-
-from .assessments import AssessmentSheet
-from .competencies import CompetencySheet
-from .dashboard import DashboardSheet
-from .reports import ChangelogSheet
-from .settings import SettingsSheet
-from .students import StudentSheet
-from .styles import StyleManager
+from .ux_prototype import UXPrototypeWorkbookBuilder
 
 
 class WorkbookBuilder:
-    """Build and save the Sprint 1 workbook foundation."""
+    """Build and save the UX prototype workbook."""
 
     def __init__(self, output_path: Path) -> None:
         """Initialize the workbook builder."""
         self.output_path = output_path
-        self.styles = StyleManager()
 
     def build(self) -> Path:
         """Create the workbook, add sheets, and save the file."""
-        workbook = self._create_workbook()
-        self._create_sheets(workbook)
-        self._save(workbook)
-        return self.output_path
-
-    def _create_workbook(self) -> Workbook:
-        workbook = Workbook()
-        default_sheet = workbook.active
-        workbook.remove(default_sheet)
-        return workbook
-
-    def _create_sheets(self, workbook: Workbook) -> None:
-        for sheet in (
-            DashboardSheet(self.styles),
-            StudentSheet(self.styles),
-            CompetencySheet(self.styles),
-            AssessmentSheet(self.styles),
-            SettingsSheet(self.styles),
-            ChangelogSheet(self.styles),
-        ):
-            sheet.create(workbook)
-
-    def _save(self, workbook: Workbook) -> None:
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-        workbook.save(self.output_path)
+        # Sprint 2c routes the build through the UX prototype on purpose.
+        # The earlier technical generator is no longer the UX reference.
+        return UXPrototypeWorkbookBuilder(self.output_path).build()

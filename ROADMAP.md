@@ -45,4 +45,6 @@ Sie gehören aktuell noch keinem Sprint an.
 
 Sprint 2c
 
+- Sprint 2c erzeugt `Jenaplan_UX_Prototype_v0.1.xlsx`.
+- Der Prototyp dient dem Anwenderfeedback und ist nicht die produktive Version.
 - Auf Basis des UX Blueprint wird der erste klickbare Excel-Prototyp umgesetzt.
