@@ -19,6 +19,7 @@ from ...core.constants import (
     LAST_NAME,
     STUDENT_ID,
 )
+from ...core.student_projection import StudentProjectionBuilder
 from ...core.workbook_data import (
     TABLE_COURSES,
     TABLE_GROUPS,
@@ -26,6 +27,7 @@ from ...core.workbook_data import (
     WorkbookData,
     WorkbookDataBuilder,
     seed_workbook_data,
+    StudentRecord,
 )
 from ..components import ExcelCanvas
 from ..theme import UiTheme
@@ -71,7 +73,17 @@ class ClassOverviewV02WorkbookBuilder:
         self.output_path = output_path
         self.theme = UiTheme()
         self.canvas = ExcelCanvas(self.theme)
-        self.data = data or seed_workbook_data()
+        self.data = data or self._build_seed_projection()
+
+    def _build_seed_projection(self) -> WorkbookData:
+        seed_data = seed_workbook_data()
+        return StudentProjectionBuilder(
+            seed_data.groups,
+            seed_data.courses,
+            seed_data.default_group_id,
+            seed_data.default_student_id,
+            seed_data.school_year,
+        ).build(seed_data.students)
 
     def build(self) -> Path:
         workbook = Workbook()
@@ -153,43 +165,21 @@ class ClassOverviewV02WorkbookBuilder:
 
         for index in range(MAX_STUDENTS):
             row = DATA_START_ROW + index
-            source_index = index + 1
-            worksheet[f"{DATA_COLUMNS[STUDENT_ID]}{row}"] = self._table_index_formula(
-                TABLE_STUDENTS,
-                STUDENT_ID,
-                source_index,
+            projected_student = self._student_card_projection_record(index)
+            worksheet[f"{DATA_COLUMNS[STUDENT_ID]}{row}"] = (
+                projected_student.student_id if projected_student else ""
             )
-            worksheet[f"{DATA_COLUMNS[FIRST_NAME]}{row}"] = self._table_index_formula(
-                TABLE_STUDENTS,
-                FIRST_NAME,
-                source_index,
-            )
-            worksheet[f"{DATA_COLUMNS[LAST_NAME]}{row}"] = self._table_index_formula(
-                TABLE_STUDENTS,
-                LAST_NAME,
-                source_index,
-            )
+            worksheet[f"{DATA_COLUMNS[FIRST_NAME]}{row}"] = self._student_lookup_formula(row, FIRST_NAME)
+            worksheet[f"{DATA_COLUMNS[LAST_NAME]}{row}"] = self._student_lookup_formula(row, LAST_NAME)
             worksheet[f"{DATA_COLUMNS['display_name']}{row}"] = (
                 f'=IF(${DATA_COLUMNS[STUDENT_ID]}{row}="","",'
                 f'${DATA_COLUMNS[FIRST_NAME]}{row}&" "&${DATA_COLUMNS[LAST_NAME]}{row})'
             )
-            worksheet[f"{DATA_COLUMNS[GROUP_ID]}{row}"] = self._table_index_formula(
-                TABLE_STUDENTS,
-                GROUP_ID,
-                source_index,
-            )
-            worksheet[f"{DATA_COLUMNS[COURSE_ID]}{row}"] = self._table_index_formula(
-                TABLE_STUDENTS,
-                COURSE_ID,
-                source_index,
-            )
+            worksheet[f"{DATA_COLUMNS[GROUP_ID]}{row}"] = self._student_lookup_formula(row, GROUP_ID)
+            worksheet[f"{DATA_COLUMNS[COURSE_ID]}{row}"] = self._student_lookup_formula(row, COURSE_ID)
             worksheet[f"{DATA_COLUMNS[COURSE_NAME]}{row}"] = self._course_lookup_formula(row, COURSE_NAME)
             worksheet[f"{DATA_COLUMNS[COLOR_KEY]}{row}"] = self._course_lookup_formula(row, COLOR_KEY)
-            worksheet[f"{DATA_COLUMNS[ACTIVE]}{row}"] = self._table_index_formula(
-                TABLE_STUDENTS,
-                ACTIVE,
-                source_index,
-            )
+            worksheet[f"{DATA_COLUMNS[ACTIVE]}{row}"] = self._student_lookup_formula(row, ACTIVE)
             worksheet[f"{DATA_COLUMNS['search_key']}{row}"] = (
                 f'=LOWER(${DATA_COLUMNS["display_name"]}{row})'
             )
@@ -442,8 +432,18 @@ class ClassOverviewV02WorkbookBuilder:
         end = self.canvas.absolute_cell(row_end, col_end)
         return f"{start}:{end}"
 
-    def _table_index_formula(self, table_name: str, field_name: str, index: int) -> str:
-        return f'=IFERROR(INDEX({table_name}[{field_name}],{index}),"")'
+    def _student_card_projection_record(self, index: int) -> StudentRecord | None:
+        student_projection = self.data.student_card_projection or self.data.students
+        if index >= len(student_projection):
+            return None
+        return student_projection[index]
+
+    def _student_lookup_formula(self, row: int, field_name: str) -> str:
+        student_id_cell = f'${DATA_COLUMNS[STUDENT_ID]}{row}'
+        return (
+            f'=IFERROR(INDEX({TABLE_STUDENTS}[{field_name}],'
+            f'MATCH({student_id_cell},{TABLE_STUDENTS}[{STUDENT_ID}],0)),"")'
+        )
 
     def _course_lookup_formula(self, row: int, field_name: str) -> str:
         course_cell = f'${DATA_COLUMNS[COURSE_ID]}{row}'

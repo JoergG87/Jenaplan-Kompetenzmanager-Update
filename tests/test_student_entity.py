@@ -186,7 +186,8 @@ class StudentEntityTest(unittest.TestCase):
 
         overview_sheet = workbook["Stammgruppenübersicht"]
         profile_sheet = workbook["Schülerprofil"]
-        self.assertIn(TABLE_STUDENTS, overview_sheet["X2"].value)
+        self.assertTrue(str(overview_sheet["X2"].value).startswith(STUDENT_ID_PREFIX))
+        self.assertIn(TABLE_STUDENTS, overview_sheet["Y2"].value)
         self.assertIn(TABLE_STUDENTS, overview_sheet["B6"].value)
         self.assertEqual(profile_sheet["X2"].value, student.student_id)
         self.assertIn(TABLE_STUDENTS, profile_sheet["Y2"].value)
@@ -217,12 +218,16 @@ class StudentEntityTest(unittest.TestCase):
         students_sheet = workbook["data_students"]
         headers = [cell.value for cell in students_sheet[1]]
         student_id_column = headers.index(STUDENT_ID) + 1
+        first_name_column = headers.index(FIRST_NAME) + 1
         active_column = headers.index(ACTIVE) + 1
         archived_at_column = headers.index(ARCHIVED_AT) + 1
 
         archived_row = None
         for row in range(2, students_sheet.max_row + 1):
-            if students_sheet.cell(row, student_id_column).value == archived_student.student_id:
+            if (
+                students_sheet.cell(row, student_id_column).value == archived_student.student_id
+                and students_sheet.cell(row, first_name_column).value == archived_student.first_name
+            ):
                 archived_row = row
                 break
 
@@ -233,6 +238,76 @@ class StudentEntityTest(unittest.TestCase):
             "2026-06-28T11:00:00+00:00",
         )
         self.assertIn(f"[{ACTIVE}]", workbook["Stammgruppenübersicht"]["B6"].value)
+
+    def test_overview_projection_sorts_cards_without_changing_students_table(self) -> None:
+        unsorted_students = (
+            StudentRecord(
+                f"{STUDENT_ID_PREFIX}-000010",
+                "Zoe",
+                "Zimmer",
+                self.seed_data.default_group_id,
+                self.seed_data.courses[1].course_id,
+                "",
+                True,
+                "2026-06-28",
+                "2026-06-28",
+                None,
+            ),
+            StudentRecord(
+                f"{STUDENT_ID_PREFIX}-000011",
+                "Anna",
+                "Albrecht",
+                self.seed_data.default_group_id,
+                self.seed_data.courses[0].course_id,
+                "",
+                True,
+                "2026-06-28",
+                "2026-06-28",
+                None,
+            ),
+        )
+        projection_data = StudentProjectionBuilder(
+            self.seed_data.groups,
+            self.seed_data.courses,
+            self.seed_data.default_group_id,
+            self.seed_data.default_student_id,
+            self.seed_data.school_year,
+        ).build(unsorted_students)
+
+        self.assertEqual(
+            projection_data.student_card_projection[0].student_id,
+            f"{STUDENT_ID_PREFIX}-000011",
+        )
+        self.assertEqual(
+            projection_data.student_card_projection[1].student_id,
+            f"{STUDENT_ID_PREFIX}-000010",
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workbook_path = Path(temp_dir) / "student_projection.xlsx"
+            ClassOverviewV02WorkbookBuilder(workbook_path, projection_data).build()
+            workbook = load_workbook(workbook_path, data_only=False)
+
+        students_sheet = workbook["data_students"]
+        headers = [cell.value for cell in students_sheet[1]]
+        student_id_column = headers.index(STUDENT_ID) + 1
+
+        self.assertEqual(
+            students_sheet.cell(2, student_id_column).value,
+            f"{STUDENT_ID_PREFIX}-000010",
+        )
+        self.assertEqual(
+            students_sheet.cell(3, student_id_column).value,
+            f"{STUDENT_ID_PREFIX}-000011",
+        )
+
+        overview_sheet = workbook["Stammgruppenübersicht"]
+        self.assertEqual(overview_sheet["X2"].value, f"{STUDENT_ID_PREFIX}-000011")
+        self.assertEqual(overview_sheet["X3"].value, f"{STUDENT_ID_PREFIX}-000010")
+        self.assertNotIn("SORTBY", str(overview_sheet["Y2"].value))
+        self.assertNotIn("FILTER", str(overview_sheet["Y2"].value))
+        self.assertIn(f"{TABLE_STUDENTS}[{FIRST_NAME}]", overview_sheet["Y2"].value)
+        self.assertIn(f"{TABLE_STUDENTS}[{STUDENT_ID}]", overview_sheet["Y2"].value)
 
 
 if __name__ == "__main__":

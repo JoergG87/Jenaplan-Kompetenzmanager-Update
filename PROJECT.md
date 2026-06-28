@@ -123,6 +123,18 @@ Die Architektur vermeidet feste Zellreferenzen. Stattdessen sollen strukturierte
 
 Die Stammgruppenübersicht und die Kursübersicht besitzen keine eigene Geschäftslogik. Sie stellen vorhandene Schülerdaten dar und werden aus diesen Daten generiert. Änderungen an Schülerdaten erfolgen künftig ausschließlich über die Schülerverwaltung.
 
+## Engineering Lessons Learned
+
+Aenderungen an UI-Projektionen koennen indirekt Hidden-Spalten, Named Ranges, VBA-Navigation, Suchfunktion und weitere UI-Projektionen beeinflussen.
+
+Kuenftige Aenderungen an Projection Buildern muessen deshalb immer eine Regression dieser Bereiche enthalten:
+
+- Hidden-Spalten
+- Named Ranges
+- VBA-Navigation
+- Suchfunktion
+- UI-Projektionen
+
 ## Entity Blueprint: Student
 
 Der Student-Blueprint ist die Referenzarchitektur fuer die erste fachliche Verwaltungs-Entity.

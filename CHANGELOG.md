@@ -87,6 +87,16 @@
 - Build-Ausgabe auf `output/Jenaplan_Kompetenzmanager_v0.4.xlsm` vereinheitlicht.
 - VBA-Navigation bleibt weiterhin funktionsfähig.
 
+### Fixed
+
+- Die Sortierung der Stammgruppenuebersicht erfolgt wieder vollstaendig im Python Projection Builder.
+- Excel-SORTBY wurde entfernt, um eine stabile Zuordnung zwischen Schuelerkarte, `student_id` und VBA-Navigation sicherzustellen.
+
+### Improved
+
+- Stammgruppenuebersicht sortiert Schueler nach Kurs und anschliessend alphabetisch.
+- Sortierung erfolgt ausschliesslich innerhalb der UI-Projektion.
+
 ### Known Open Points
 
 - Seed enthält aktuell 28 Testschueler; Demo-Seed und Minimal-Seed werden spaeter getrennt.

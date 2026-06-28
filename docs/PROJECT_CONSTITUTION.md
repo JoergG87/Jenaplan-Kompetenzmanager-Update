@@ -38,6 +38,18 @@ UI darf anzeigen, filtern, sortieren und navigieren.
 
 UI darf fachliche Daten nur ueber definierte Schreibprozesse veraendern.
 
+Darstellungsregeln wie Sortierung, Gruppierung und Filterung gehoeren ausschliesslich zur UI-Projektion.
+
+Sie veraendern niemals die zugrunde liegenden fachlichen Entitaeten.
+
+Die Datenhaltung bleibt unabhaengig von der Darstellung.
+
+Die vollstaendige fachliche Projektion wird ausschliesslich im Python Projection Builder erzeugt.
+
+Excel darf diese Projektion anzeigen und technische Zellbezuege aufloesen.
+
+Excel darf die fachliche Reihenfolge der Projektion nicht durch dynamische Sortier- oder Filtermechanismen veraendern.
+
 Hilfstabellen, Formeln, Named Ranges, Shapes und sichtbare Zellen duerfen das Datenmodell nicht umgehen.
 
 Auswertungen duerfen keine eigenen Schatteninformationen erzeugen.

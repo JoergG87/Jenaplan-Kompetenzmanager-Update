@@ -82,6 +82,7 @@ class WorkbookData:
     students: tuple[StudentRecord, ...]
     groups: tuple[GroupRecord, ...]
     courses: tuple[CourseRecord, ...]
+    student_card_projection: tuple[StudentRecord, ...] = ()
     default_group_id: str = DEFAULT_GROUP_ID
     default_student_id: str = DEFAULT_STUDENT_ID
     school_year: str = SCHOOL_YEAR

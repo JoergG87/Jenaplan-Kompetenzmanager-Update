@@ -45,6 +45,24 @@ Beim erneuten Oeffnen einer View startet diese in ihrem definierten Standardzust
 
 Fachliche Daten duerfen durch das Zuruecksetzen von temporaerem UI-State nicht veraendert werden.
 
+## UI-Projektionssortierung
+
+UI-Projektionen duerfen eigene Sortierregeln verwenden.
+
+Diese Sortierung dient ausschliesslich der Darstellung.
+
+Die Reihenfolge der Darstellung wird ausschliesslich durch den Projection Builder vorbereitet.
+
+Sie veraendert niemals:
+
+- `tbl_students`
+- `tbl_groups`
+- `tbl_courses`
+
+Die Sortierung erfolgt ausschliesslich innerhalb der Projektion.
+
+Die Datenhaltung, insbesondere `tbl_students`, bleibt unveraendert.
+
 ## Stammgruppenuebersicht
 
 Liest:
