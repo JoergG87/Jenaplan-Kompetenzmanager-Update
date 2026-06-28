@@ -42,12 +42,54 @@ Die Excel-Objekte des Seeds gehören zur Seed-Arbeitsmappe. Die fachlich relevan
 Das Packaging-Skript setzt dort, soweit technisch möglich:
 
 - Workbook-CodeName: `DieseArbeitsmappe`
-- Klassenübersicht-CodeName: `wsClassOverview`
+- Stammgruppenübersicht-CodeName: `wsClassOverview`
 - Schülerprofil-CodeName: `wsStudentProfile`
 
 Workbook- und Worksheet-CodeNames sind Teil des Excel-/VBA-Projekts und lassen sich nur begrenzt durch Python kontrollieren. Sie müssen bei Bedarf manuell im VBA-Editor geprüft werden.
 
 Das Packaging-Skript prüft den Seed vor dem Erzeugen des PoC. Wenn die Module `Globals`, `Navigation` und `UI` fehlen oder `Modul1` noch registriert ist, wird keine neue `.xlsm` erzeugt.
+
+## Navigationsstandard
+
+Spaetere Absprungpunkte folgen immer demselben Muster:
+
+```text
+Shape
+-> Named Range / Slot-ID
+-> technische ID
+-> zentrale VBA-Funktion
+-> Zielansicht
+```
+
+VBA darf dabei nur Interaktion und Navigation umsetzen. Die fachliche Bedeutung der ID kommt aus dem Datenmodell und der UI-Projektion.
+
+### Student
+
+- Shape: `ui_nav_student_card_XX`
+- Slot-ID: `ui_student_slot_id_XX`
+- technische ID: `student_id`
+- zentrale Funktion: `OpenStudentProfileById(student_id)`
+
+### Competency
+
+- Shape: `ui_nav_competency_card_XX`
+- Slot-ID: `ui_competency_slot_id_XX`
+- technische ID: `competency_id`
+- zentrale Funktion: `OpenCompetencyById(competency_id)`
+
+### Report
+
+- Shape: `ui_nav_report_card_XX`
+- Slot-ID: `ui_report_slot_id_XX`
+- technische ID: `report_id`
+- zentrale Funktion: `OpenReportById(report_id)`
+
+### Subject
+
+- Shape: `ui_nav_subject_card_XX`
+- Slot-ID: `ui_subject_slot_id_XX`
+- technische ID: `subject_id`
+- zentrale Funktion: `OpenSubjectById(subject_id)`
 
 ## Build-Hygiene
 

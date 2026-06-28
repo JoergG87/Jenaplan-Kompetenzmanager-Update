@@ -730,3 +730,128 @@ Die Kursverwaltung umfasst:
 - Kurs archivieren
 
 Spätere Erweiterungen wie Farben und Jahrgänge bleiben möglich.
+
+## ADR-031 - Dokumentation geht Implementierung voraus
+
+### Kontext
+
+Sprint 4 legt die Core Data Architecture als verbindliche Grundlage fuer spaetere Produktfunktionen fest.
+
+Ohne dokumentierte Datenquellen, technische Namen, View Ownership und Data Lifecycles wuerden spaetere Sprints erneut lokale technische Entscheidungen treffen.
+
+### Entscheidung
+
+Dokumentation geht Implementierung voraus.
+
+Neue Funktionen werden kuenftig erst nach der Architekturpruefung und Registry-Erweiterung umgesetzt.
+
+Die verbindliche Reihenfolge lautet:
+
+1. `PROJECT_CONSTITUTION.md` pruefen
+2. `TECHNICAL_NAMES.md` pruefen
+3. `DATA_REGISTRY.md` erweitern
+4. `DATA_LIFECYCLE.md` ergaenzen
+5. `VIEW_DATA_OWNERSHIP.md` ergaenzen
+6. `UI_DATA_MAPPING.md` ergaenzen
+7. erst danach Implementierung
+
+### Begruendung
+
+Die Architektur soll zukuenftige Implementierungen vereinfachen und Inkonsistenzen verhindern.
+
+Funktionen sollen datengetrieben entstehen und keine eigenen Schattenmodelle, lokalen Zwischendaten oder kreativen technischen Namen einfuehren.
+
+### Konsequenzen
+
+Keine neue Datenquelle ohne `DATA_REGISTRY.md`.
+
+Keine neue technische Bezeichnung ohne `TECHNICAL_NAMES.md`.
+
+Keine neue Ansicht ohne `VIEW_DATA_OWNERSHIP.md`.
+
+Keine neue UI-Komponente ohne `UI_DATA_MAPPING.md`.
+
+Kein Schreibprozess ohne `DATA_LIFECYCLE.md`.
+
+Feature-Sprints duerfen bestehende Legacy-Namen nicht spontan umbenennen.
+
+## ADR-032 - Entity-first-Architektur
+
+### Kontext
+
+Ab Sprint 4 soll die erste produktnahe Umsetzung auf einer stabilen Datenarchitektur aufsetzen.
+
+Wenn neue Funktionen zuerst als Masken gedacht werden, entstehen leicht lokale Datenhaltung, Schattenlogik und technische Namen ausserhalb der Registry.
+
+### Entscheidung
+
+Funktionen werden von Entitaeten und Datenfluessen aus gedacht, nicht von Masken.
+
+Die verbindliche Reihenfolge lautet:
+
+```text
+Entity
+-> Storage
+-> Builder
+-> UI-Projektion
+-> VBA-Navigation
+```
+
+### Konsequenzen
+
+Neue Verwaltungsfunktionen beginnen mit der Frage, welche Entitaet entsteht oder erweitert wird.
+
+UI wird erst nach Entity, Storage und Builder-Projektion entworfen.
+
+## ADR-033 - Builder als eigene Architekturschicht
+
+### Kontext
+
+Python erzeugt Workbook, Datenquellen, Styles und UI-Projektionen.
+
+Diese Verantwortung muss als eigene Schicht sichtbar bleiben, damit Datenmodell und Excel-UI nicht vermischt werden.
+
+### Entscheidung
+
+Der Builder ist die verbindliche Schicht zwischen Daten und Workbook/UI.
+
+```text
+Data
+-> Builder
+-> Workbook/UI
+-> VBA-Interaktion
+```
+
+Der Builder erzeugt Hidden Data Sheets, Excel-Tabellen, Named Ranges, UI-Projektionen und vorbereitete Navigationspunkte.
+
+### Konsequenzen
+
+Der Builder enthaelt keine spontane Fachlogik ausserhalb der Data Registry.
+
+VBA greift nicht direkt auf fachliche Tabellen zu.
+
+UI-Projektionen werden aus registrierten Datenquellen erzeugt.
+
+## ADR-034 - Historisierung von Bezeichnern bleibt offene Entscheidung
+
+### Kontext
+
+Kurse, Stammgruppen und Kompetenzen koennen spaeter umbenannt werden.
+
+Beobachtungen und Berichte koennen historische Kontexte anzeigen.
+
+### Entscheidung
+
+Noch nicht final entschieden ist, ob historische Beobachtungen bei geaenderten Kompetenznamen, Kursnamen oder Stammgruppennamen den aktuellen Namen oder den damals gueltigen Namen anzeigen.
+
+Diese Entscheidung muss vor produktiver Beobachtungserfassung getroffen werden.
+
+### Offene Frage
+
+Wenn Kompetenznamen, Kursnamen oder Stammgruppennamen spaeter geaendert werden, zeigen historische Beobachtungen dann den aktuellen Namen oder den damals gueltigen Namen?
+
+### Konsequenzen
+
+Sprint 4.1 darf keine produktive Beobachtungserfassung einfuehren, ohne diese Frage vorher zu klaeren.
+
+Schueler-, Kurs- und Stammgruppenverwaltung muessen stabile IDs erhalten, unabhaengig von sichtbaren Namen.

@@ -1,0 +1,276 @@
+# Project Constitution
+
+Dieses Dokument legt die verbindlichen Architekturregeln fuer den Jenaplan-Kompetenzmanager ab Sprint 4 fest.
+
+## Source-of-Truth-Regeln
+
+Das Datenmodell ist die einzige fachliche Wahrheit.
+
+Das Design-System ist Source of Truth fuer alle Benutzeroberflaechen.
+
+Die Technical Naming Registry in `docs/TECHNICAL_NAMES.md` ist Source of Truth fuer technische Namen.
+
+Die Workbook Data Registry in `docs/DATA_REGISTRY.md` ist Source of Truth fuer Workbook-Datenquellen.
+
+Das UI Data Mapping in `docs/UI_DATA_MAPPING.md` ist Source of Truth fuer die Herkunft sichtbarer UI-Felder.
+
+Die View Data Ownership in `docs/VIEW_DATA_OWNERSHIP.md` ist Source of Truth fuer Datenverantwortung je Ansicht.
+
+Der Data Lifecycle in `docs/DATA_LIFECYCLE.md` ist Source of Truth fuer freigegebene Schreibprozesse.
+
+## Architekturprinzipien
+
+Python erzeugt Workbook, Datenquellen, Datenmodell, UI-Projektionen, Styles, Berichte, Fachlogik und Build-Artefakte.
+
+VBA implementiert ausschliesslich Interaktion:
+
+- Navigation
+- Buttons
+- Dialoge
+- UserForms
+- Benutzerinteraktion
+
+VBA enthaelt keine fachliche Logik und keine Datenmodellentscheidungen.
+
+UI ist immer Projektion und niemals fachliche Datenquelle.
+
+UI darf anzeigen, filtern, sortieren und navigieren.
+
+UI darf fachliche Daten nur ueber definierte Schreibprozesse veraendern.
+
+Hilfstabellen, Formeln, Named Ranges, Shapes und sichtbare Zellen duerfen das Datenmodell nicht umgehen.
+
+Auswertungen duerfen keine eigenen Schatteninformationen erzeugen.
+
+Neue Funktionen entstehen nach dem Standardablauf:
+
+1. vorhandene Daten ergaenzen
+2. Registry kennt die Datenquelle
+3. Builder-Projektion aktualisieren
+4. UI zeigt die Projektion
+5. VBA navigiert ueber technische IDs
+
+Neue Funktionen duerfen nur entstehen durch:
+
+- bestehende Daten erweitern
+- registrierte neue Datenquelle ergaenzen
+- Builder erweitern
+- UI-Projektion ergaenzen
+- VBA-Navigation ergaenzen
+
+Nicht erlaubt sind:
+
+- eigene Schattenlogik
+- lokale Zwischendatenhaltung
+- doppelte Speicherung derselben Information
+
+## Entity first
+
+Neue Funktionen werden kuenftig nicht zuerst als Maske gedacht, sondern als fachliche Entitaet.
+
+Nicht:
+
+```text
+Wir brauchen eine Kompetenzverwaltung.
+```
+
+Sondern:
+
+```text
+Welche Entitaet entsteht oder wird erweitert? Competency.
+```
+
+Die verbindliche Reihenfolge lautet:
+
+```text
+Entity
+-> Storage
+-> Builder
+-> UI-Projektion
+-> VBA-Navigation
+```
+
+## Entity / Storage / Projection
+
+Entity ist das fachliche Objekt, zum Beispiel Student, Group, Course, Competency oder Observation.
+
+Storage ist die physische Ablage im Workbook, zum Beispiel `data_students` mit `tbl_students`.
+
+Projection ist die sichtbare oder auswertbare Darstellung, zum Beispiel Schuelerkarte, Schuelerprofil, Dashboard oder Bericht.
+
+Regeln:
+
+- Entities bleiben stabil.
+- Storage kann sich technisch kontrolliert aendern.
+- Projections koennen sich gestalterisch aendern.
+- Projektionen duerfen keine fachliche Wahrheit speichern.
+
+## Builder-Schicht
+
+Der Builder ist eine eigene Architekturschicht zwischen Daten und Workbook/UI.
+
+```text
+Data
+-> Builder
+-> Workbook/UI
+-> VBA-Interaktion
+```
+
+Der Builder erzeugt:
+
+- Hidden Data Sheets
+- Excel-Tabellen
+- Named Ranges
+- UI-Projektionen
+- vorbereitete Navigationspunkte
+
+Der Builder enthaelt keine spontane Fachlogik ausserhalb der Data Registry.
+
+Fachliche Ableitungen muessen aus registrierten Datenquellen und dokumentierten Regeln entstehen.
+
+## Backlog-relevante Architekturanforderungen
+
+Die Architektur muss folgende spaetere Anforderungen tragen, ohne erneut grundsaetzlich umgebaut zu werden:
+
+- Schuelerverwaltung: anlegen, aendern, archivieren; keine Loeschung; `student_id` bleibt stabil.
+- Stammgruppenverwaltung: anlegen, aendern, archivieren; `group_id` bleibt stabil.
+- Kursverwaltung: Kurs 1/2/3, Farbe aus `data_courses`; `course_id` bleibt stabil.
+- Kursuebersicht: liest Schueler aus mehreren Stammgruppen und zeigt Stammgruppe auf Schuelerkarten.
+- Beobachtungserfassung: `observation_id`, Bezug zu `student_id`, Mehrfachbezug zu Kompetenzen.
+- Kompetenz-/Lehrplanpflege: `competency_id`, Faecherbezug, Hierarchie, Historisierung offen.
+- Medienanhaenge: Medien werden referenziert und nicht unkontrolliert in UI gespeichert.
+- Lernentwicklungsgespraeche und Elternvorbereitung: reine Auswertungsprojektionen, schreiben keine fachlichen Daten.
+- Dashboards und Berichte: reine Lese-/Auswertungsschicht, niemals fachliche Datenquelle.
+- Historisierung: offene Entscheidung vor produktiver Beobachtungserfassung.
+
+## Identitaet
+
+Sichtbare Namen sind niemals technische Identitaeten.
+
+Technische Identitaet erfolgt ausschliesslich ueber IDs.
+
+Namen, Ueberschriften, Zellpositionen, Blattpositionen und sichtbare Texte duerfen nicht als technische Identitaet verwendet werden.
+
+Navigation erfolgt immer ueber technische IDs:
+
+- `student_id`
+- `group_id`
+- `course_id`
+- `competency_id`
+- `observation_id`
+- weitere registrierte IDs
+
+## Datenhaltung
+
+Es gibt keine doppelte Datenhaltung.
+
+Workbook-Datenquellen werden ausschliesslich in der Workbook Data Registry definiert.
+
+Neue Datenquellen duerfen nicht ohne Erweiterung von `docs/DATA_REGISTRY.md` eingefuehrt werden.
+
+UI-Projektionen duerfen nur aus registrierten Datenquellen entstehen.
+
+Neue Funktionen erweitern vorhandene Daten, statt eigene Dateninseln zu erzeugen.
+
+Keine Funktion erzeugt Schattenlogik.
+
+Erweiterbarkeit ist wichtiger als kurzfristige Implementierung.
+
+Sichtbare Begriffe duerfen sich aendern. Technische Namen bleiben stabil.
+
+## View Ownership
+
+Jede Ansicht besitzt genau definierte Datenquellen.
+
+Eine Ansicht darf nur Datenquellen lesen und schreiben, die in `docs/VIEW_DATA_OWNERSHIP.md` fuer diese Ansicht freigegeben sind.
+
+Neue Ansichten duerfen nicht ohne View Data Ownership umgesetzt werden.
+
+Neue Datenquellen duerfen in einer Ansicht erst verwendet werden, nachdem `docs/VIEW_DATA_OWNERSHIP.md` entsprechend erweitert wurde.
+
+Dashboards und Berichte lesen Daten, schreiben aber niemals fachliche Daten.
+
+## Verbindliche Implementierungsreihenfolge
+
+Eine neue Funktion wird kuenftig in dieser Reihenfolge entwickelt:
+
+1. `docs/PROJECT_CONSTITUTION.md` pruefen
+2. `docs/TECHNICAL_NAMES.md` pruefen
+3. `docs/DATA_REGISTRY.md` erweitern
+4. `docs/DATA_LIFECYCLE.md` ergaenzen
+5. `docs/VIEW_DATA_OWNERSHIP.md` ergaenzen
+6. `docs/UI_DATA_MAPPING.md` ergaenzen
+7. erst danach implementieren
+
+Diese Reihenfolge ist verbindlich.
+
+## Schreibprozesse
+
+Fachliche Daten duerfen nur ueber freigegebene Schreibprozesse veraendert werden.
+
+Kein Schreibprozess darf ohne Eintrag in `docs/DATA_LIFECYCLE.md` umgesetzt werden.
+
+Archivieren ist der Standard fuer fachliche Deaktivierung. Physische Loeschung ist nicht vorgesehen, solange kein eigener fachlicher Entscheid vorliegt.
+
+Schreibprozesse muessen transaktional gedacht werden: Sie erfolgen vollstaendig oder gar nicht.
+
+Keine halben Datensaetze sind erlaubt.
+
+Beispiel Schueler anlegen:
+
+1. `student_id` erzeugt
+2. `data_students` geschrieben
+3. `group_id` und `course_id` gueltig
+4. Projektionen koennen daraus gelesen werden
+
+Wenn ein Schritt fehlschlaegt, darf kein inkonsistenter Zwischenzustand entstehen.
+
+## Navigation
+
+Navigation erfolgt immer ueber technische IDs.
+
+Nicht erlaubt ist Navigation ueber:
+
+- Namen
+- Zellpositionen
+- Blattpositionen
+- sichtbare Texte
+
+Ein oeffentlicher VBA-Einstiegspunkt darf keinen impliziten Zustand voraussetzen. Er muss benoetigte Objekte selbst sicher ermitteln oder eine verstaendliche Fehlermeldung ausgeben.
+
+## Technische Namen
+
+Technische Namen muessen in `docs/TECHNICAL_NAMES.md` registriert sein.
+
+Neue technische Namen duerfen nicht kreativ lokal erfunden werden.
+
+Technische Namen sind ASCII-kompatibel, ohne Umlaute und ohne Leerzeichen.
+
+Sichtbare deutsche UI-Begriffe duerfen nicht als technische Schluessel verwendet werden.
+
+Bestehende technische Namen werden nicht ohne eigenen Migrationssprint umbenannt.
+
+## UI
+
+Alle UI-Elemente folgen `docs/DESIGN_SYSTEM.md`.
+
+Neue UI-Felder duerfen erst umgesetzt werden, wenn ihre Datenherkunft in `docs/UI_DATA_MAPPING.md` dokumentiert ist.
+
+Normale Entwicklungssprints veraendern das freigegebene Design nicht.
+
+## Verbotene Umgehungen
+
+Nicht erlaubt sind:
+
+- UI-Tabellen als fachliche Datenquelle
+- UI-Zellen als technische Identitaet
+- VBA als Ort fuer Fachlogik
+- Auswertungen mit eigener Schattenlogik
+- neue Datenquellen ohne `DATA_REGISTRY.md`
+- neue technische Namen ohne `TECHNICAL_NAMES.md`
+- neue Ansichten ohne `VIEW_DATA_OWNERSHIP.md`
+- neue UI-Felder ohne `UI_DATA_MAPPING.md`
+- Schreibprozesse ohne `DATA_LIFECYCLE.md`
+- Navigation ueber Namen statt IDs
+- doppelte Datenhaltung fuer dieselbe fachliche Information
+- Designaenderungen ohne eigenen UX-Sprint

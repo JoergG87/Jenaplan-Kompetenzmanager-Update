@@ -1,5 +1,79 @@
 # CHANGELOG
 
+## Sprint 4.0c
+
+### Added
+
+- Entity-first-Prinzip, Entity/Storage/Projection-Trennung und Builder-Schicht als verbindliche Architekturprinzipien ergänzt.
+- Transaktionales Denken fuer Schreibprozesse dokumentiert.
+- Owner je zentraler Datenquelle in der Workbook Data Registry ergänzt.
+- Änderungs-Lifecycles fuer Schueler, Stammgruppe, Kurs und Kompetenz ergänzt.
+- ADR-032 Entity-first-Architektur, ADR-033 Builder-Schicht und ADR-034 offene Historisierung von Bezeichnern ergänzt.
+- Backlog-relevante Architekturanforderungen ohne Feature-Spezifikation aufgenommen.
+
+### Changed
+
+- View Ownership fachlich begrenzt: Ansichten duerfen nur fachlich begruendete Datenquellen lesen.
+- Codex-Regeln um Dokumentationsbegrenzung ab Sprint 4.1 erweitert.
+
+### Not Changed
+
+- Keine Python-Dateien, keine VBA-Quellen, keine Excel-Datei, kein Build und keine Produktfunktion geaendert.
+
+## Sprint 4.0b
+
+### Added
+
+- ADR-031 `Dokumentation geht Implementierung voraus` ergänzt.
+- Verbindliche Implementierungsreihenfolge fuer neue Funktionen dokumentiert.
+
+### Changed
+
+- Technische Namenskonvention finalisiert: technische Namen sind englisch, ASCII-kompatibel und stabil; sichtbare Begriffe duerfen sich aendern.
+- Physische Workbook-Datenbank finalisiert: `data_*`-Quellen werden als versteckte Tabellenblaetter mit `tbl_*`-Tabellen angelegt.
+- Legacy-Regeln fuer bestehende technische Namen wie `wsClassOverview` und `ui_class_search` dokumentiert.
+- View Ownership um die Regel erweitert, dass Ansichten nur dokumentierte Datenquellen verwenden duerfen.
+
+### Not Changed
+
+- Keine Python-Dateien, keine VBA-Quellen, keine Workbook-Artefakte, kein Build und keine Produktfunktion geaendert.
+
+## Sprint 4.0a
+
+### Added
+
+- View Data Ownership fuer Ansichten, erlaubte Datenquellen, Schreibrechte, IDs und UI-Projektionen erstellt.
+- Data Lifecycle fuer zentrale Schreibprozesse wie Schueleranlage, Archivierung, Beobachtungserfassung, Kompetenzergänzung und Medienanlage erstellt.
+
+### Changed
+
+- Project Constitution um Identitaets-, Projektions-, Erweiterbarkeits- und Schattenlogik-Regeln vertieft.
+- Workbook Data Registry um Foreign Keys, Schreib-/Leseprozesse, erlaubte UI-Projektionen und Erweiterungsregeln je Datenquelle vertieft.
+- UI Data Mapping um Projektionstyp, Schreibregel und verantwortliche Datenquelle erweitert.
+- Codex-Arbeitsregeln in `AGENTS.md` um View Ownership und Data Lifecycle erweitert.
+
+### Not Changed
+
+- Keine Python-Dateien, keine VBA-Quellen, keine Excel-Datei, kein Build und keine Produktfunktion geaendert.
+
+## Sprint 4.0
+
+### Added
+
+- Projektverfassung fuer Source-of-Truth-Regeln und Architekturprinzipien erstellt.
+- Technical Naming Registry fuer technische Namen, Praefixe, IDs, Named Ranges und Shape-Muster erstellt.
+- Workbook Data Registry fuer zentrale Datenquellen erstellt.
+- UI Data Mapping fuer die Herkunft sichtbarer UI-Informationen erstellt.
+
+### Changed
+
+- VBA-Dokumentation um den Standard fuer spaetere Absprungpunkte ergaenzt.
+- Codex-Arbeitsregeln in `AGENTS.md` um Registry-Pruefungen vor Codeaenderungen ergaenzt.
+
+### Not Changed
+
+- Keine Python-Dateien, keine VBA-Quellen, keine Excel-Datei und keine Produktfunktion geaendert.
+
 ## Sprint 3.5g
 
 ### Changed
