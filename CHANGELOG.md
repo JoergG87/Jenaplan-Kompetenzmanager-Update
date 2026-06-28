@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Sprint 3.1f
+
+### Added
+
+- Produktentscheidung dokumentiert: `Neue Beobachtung` darf als Schnellzugriff aus der Klassenübersicht und als Aktion im Schülerprofil erreichbar sein.
+- Architekturentscheidung dokumentiert: Beide Einstiege öffnen denselben zentralen Beobachtungsdialog.
+- Dokumentiert, dass die Klassenübersicht ausschließlich `student_id` an den Beobachtungsdialog übergibt und keine eigene Beobachtungslogik enthält.
+
 ## Sprint 3.1e
 
 ### Changed
@@ -69,7 +77,7 @@
 
 ### Deferred
 
-- Sichtbarkeit und Platzierung von `Neue Beobachtung` bleiben als Produktentscheidung für Sprint 3.2 offen.
+- Sichtbarkeit und Platzierung von `Neue Beobachtung` blieben bis zur Produktentscheidung in Sprint 3.1f offen.
 - Echte Navigation, VBA-Code und UserForms bleiben zurückgestellt.
 - Schülerprofil, Beobachtungsdialog, Kompetenzansicht und fachliche Auswertungen bleiben unverändert außerhalb dieses Sprints.
 

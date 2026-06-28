@@ -370,3 +370,39 @@ Designänderungen erfolgen ausschließlich nach:
 - UX-Review
 - Product-Owner-Freigabe
 - anschließender Implementierung
+
+## ADR-026 - Schnellzugriff Neue Beobachtung
+
+### Kontext
+
+Im Unterricht soll eine Beobachtung schnell dokumentiert werden können.
+
+Die Klassenübersicht bleibt der Einstieg zum Finden und Auswählen eines Schülers.
+
+Das Schülerprofil bleibt der vollständige Arbeitsbereich.
+
+### Entscheidung
+
+Eine Funktion besitzt genau eine Implementierung.
+
+Eine Funktion darf jedoch mehrere Einstiegspunkte besitzen.
+
+Die Funktion `Neue Beobachtung` kann künftig über die Klassenübersicht und über das Schülerprofil gestartet werden.
+
+Beide Einstiege öffnen denselben zentralen Beobachtungsdialog.
+
+### Konsequenzen
+
+Die Klassenübersicht darf eine Kontextaktion `Neue Beobachtung` besitzen.
+
+Diese Aktion arbeitet immer auf dem ausgewählten Schüler.
+
+Die Klassenübersicht startet keinen eigenen Beobachtungsprozess und enthält keine eigene Beobachtungslogik.
+
+Sie übergibt ausschließlich `student_id` an den zentralen Beobachtungsdialog.
+
+Der Beobachtungsdialog existiert projektweit nur einmal.
+
+Das Datenmodell ändert sich dadurch nicht.
+
+Alle Beobachtungen bleiben ausschließlich über `student_id` mit dem jeweiligen Schüler verknüpft.

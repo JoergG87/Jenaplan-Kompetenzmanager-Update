@@ -43,6 +43,7 @@ Elemente:
 Aktionen:
 
 - Schülerprofil öffnen
+- Neue Beobachtung als Kontextaktion für den ausgewählten Schüler öffnen
 
 Nicht enthalten:
 
@@ -65,6 +66,8 @@ Produktentscheidungen:
 - Die Klassenübersicht ist eine abgeleitete UI-Projektion der Schülerdaten.
 - Die technische Identität eines Schülers ist `student_id`; Namen dienen nur Anzeige und Suche.
 - Schüler hinzufügen, bearbeiten und archivieren erfolgt künftig in der Klassenverwaltung.
+- Die Kontextaktion `Neue Beobachtung` übergibt nur `student_id` an den zentralen Beobachtungsdialog.
+- Der Beobachtungsdialog existiert projektweit nur einmal und wird auch aus dem Schülerprofil verwendet.
 
 ## 6. Schülerprofil
 
@@ -83,6 +86,10 @@ Aktionen:
 
 - Neue Beobachtung
 - Kompetenzansicht öffnen
+
+Produktentscheidungen:
+
+- `Neue Beobachtung` öffnet denselben zentralen Beobachtungsdialog wie der Schnellzugriff aus der Klassenübersicht.
 
 ## 7. Neue Beobachtung
 

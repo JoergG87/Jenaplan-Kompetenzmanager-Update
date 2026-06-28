@@ -47,6 +47,8 @@ Die Klassenübersicht dient als Einstieg in den Arbeitsablauf. Sie hilft dabei, 
 
 Die Klassenübersicht ist kein Dashboard, keine Verwaltungsansicht, keine Analyseansicht und keine Auswertungsseite.
 
+Für den Unterricht darf die Klassenübersicht zusätzlich einen Schnellzugriff `Neue Beobachtung` anbieten. Dieser arbeitet immer im Kontext des ausgewählten Schülers und öffnet denselben zentralen Beobachtungsdialog wie das Schülerprofil.
+
 ## Fachliches Domänenmodell
 
 ### Der Kompetenzmanager ist ein Lernentwicklungsmanager.
@@ -135,6 +137,7 @@ Die Klassenübersicht besitzt keine eigene Geschäftslogik. Sie stellt vorhanden
 - Strukturierte Tabellen und eindeutige IDs haben Vorrang vor festen Zellpositionen.
 - Jede Ansicht besitzt genau eine Hauptaufgabe.
 - Neue Funktionen dürfen die Hauptaufgabe einer Ansicht nicht verwässern.
+- Eine Funktion besitzt genau eine Implementierung, darf aber mehrere Einstiegspunkte besitzen.
 
 ## Versionierung
 
@@ -229,6 +232,6 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 ## Aktueller Sprint
 
-Aktueller Sprint: Sprint 3.1d - Datenmodell-Schutz für Klassenübersicht und Live-Suche.
+Aktueller Sprint: Sprint 3.1f - Produktentscheidung Schnellzugriff Neue Beobachtung.
 
-Ziel des aktuellen Sprints ist sicherzustellen, dass Klassenübersicht und Live-Suche ausschließlich als abgeleitete UI-Projektion der Schülerdaten arbeiten. Die technische Identität bleibt `student_id`; Namen dienen nur Anzeige und Suche. Das v0.2-Referenzdesign bleibt unverändert.
+Ziel des aktuellen Sprints ist die Dokumentation der Produktentscheidung, dass `Neue Beobachtung` mehrere Einstiegspunkte besitzen darf, aber nur einen zentralen Beobachtungsdialog und keine doppelte Fachlogik.
