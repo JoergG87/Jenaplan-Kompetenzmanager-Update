@@ -4,6 +4,8 @@ Das Datenmodell wird in Version 3.1 als fachliche Grundlage vorbereitet.
 
 Weitere Aenderungen am Datenmodell erfolgen nur nach Ruecksprache.
 
+Das Datenmodell ist Source of Truth für fachliche Daten.
+
 ## Erkenntnisse aus dem Discovery-Workshop
 
 Der erste Discovery-Workshop mit einer erfahrenen Jenaplan-Grundschullehrkraft hat das fachliche Verständnis des Kompetenzmanagers geschärft.
@@ -46,10 +48,66 @@ Namen dienen ausschließlich der Anzeige und Suche.
 
 Vorname, Nachname oder Anzeigename dürfen nicht als technische Identität verwendet werden.
 
+## Schüler, Stammgruppe und Kurs
+
+Die bisher verwendete Bezeichnung `Klasse` wird in der Domänensprache vollständig durch `Stammgruppe` ersetzt.
+
+Jeder Schüler gehört genau einer Stammgruppe an.
+
+Jeder Schüler gehört genau einem Kurs an.
+
+Der Kurs beschreibt den Jahrgang.
+
+Die Stammgruppe beschreibt die organisatorische Zugehörigkeit.
+
+Beides sind eigenständige fachliche Entitäten.
+
+Beispiele für Stammgruppen:
+
+- Grashüpfer
+- Eulen
+- Käfer
+- Igel
+
+Beispiele für Kurse:
+
+- Kurs 1
+- Kurs 2
+- Kurs 3
+
+### Student
+
+Ein Student enthält mindestens:
+
+- `student_id`
+- Vorname
+- Nachname
+- `stammgruppe_id`
+- `kurs_id`
+
+Die `student_id` bleibt die technische Identität.
+
+### Stammgruppe
+
+Eine Stammgruppe enthält mindestens:
+
+- `stammgruppe_id`
+- Name
+
+### Kurs
+
+Ein Kurs enthält mindestens:
+
+- `kurs_id`
+- Name
+- optionale Farbe für spätere UI
+
 ## Beziehungen
 
 ```text
 Schüler 1:n Beobachtungen
+Stammgruppe 1:n Schüler
+Kurs 1:n Schüler
 Beobachtung 1:n Kompetenzen
 Kompetenz 1:n Kompetenzstände
 Kompetenzstände 1:n Historie
@@ -118,20 +176,29 @@ UI-Tabellen, Hilfstabellen, Schattentabellen, Formeln und Karten sind ausschlie�
 
 Sie dürfen niemals Source of Truth werden.
 
-Die Klassenübersicht ist eine abgeleitete UI-Projektion der Schülerdaten.
+Die Stammgruppenübersicht ist eine abgeleitete UI-Projektion der Schülerdaten.
 
 Sie darf keine eigene Schülerdaten-Quelle werden.
 
-Die Projektion für die Klassenübersicht enthält mindestens:
+Die Projektion für die Stammgruppenübersicht enthält mindestens:
 
 - `student_id`
 - `first_name`
 - `last_name`
 - `display_name`
-- `class_id`
+- `stammgruppe_id`
+- `kurs_id`
 - `status`
 - `search_key`
 
 Die sichtbaren Schülerkarten werden aus dieser Projektion abgeleitet.
 
 Die Live-Suche arbeitet nur auf dieser abgeleiteten Projektion.
+
+Die Kursübersicht ist ebenfalls eine abgeleitete UI-Projektion derselben Schülerdaten.
+
+Sie zeigt alle Schüler eines Kurses unabhängig von der Stammgruppe.
+
+Auf jeder Schülerkarte wird die Stammgruppe angezeigt.
+
+Es existieren keine doppelten Schülerdaten für Stammgruppenübersicht und Kursübersicht.

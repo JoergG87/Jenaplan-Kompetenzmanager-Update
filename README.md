@@ -12,7 +12,7 @@ Ziel des Projekts ist der Aufbau eines wartbaren Generators fuer kompetenzorient
 
 Python erzeugt Workbook, Datenmodell, UI-Projektionen, Styles, Berichte und Build-Artefakte. Der VBA-Seed wurde technisch validiert; `.xlsm` wird als Zielartefakt vorbereitet und `.xlsx` bleibt bis zur Stabilisierung des VBA-Frameworks Fallback. VBA uebernimmt ausschliesslich Navigation, Buttons, Dialoge, UserForms und Benutzerinteraktion. Fachliche Logik verbleibt vollstaendig im Python- und Datenmodell.
 
-Die Klassenübersicht ist der Einstieg in den Arbeitsablauf. Sie dient ausschließlich dazu, Schüler schnell zu finden, auszuwählen und anschließend in das Schülerprofil zu wechseln. Verwaltung, Analyse und Auswertung erfolgen nicht in dieser Ansicht.
+Die Stammgruppenübersicht ist der Einstieg in den Arbeitsablauf. Sie dient ausschließlich dazu, Schüler schnell zu finden, auszuwählen und anschließend in das Schülerprofil zu wechseln. Verwaltung, Analyse und Auswertung erfolgen nicht in dieser Ansicht.
 
 ## Architektur
 
@@ -34,6 +34,8 @@ Die Excel-Erzeugung erfolgt über Python mit `openpyxl`. Fachliche Logik verblei
 Jede Ansicht besitzt genau eine Hauptaufgabe. Neue Funktionen dürfen diese Hauptaufgabe nicht verwässern.
 
 Das Datenmodell ist die fachliche Grundlage des Projekts. Neue UI-Elemente duerfen das Datenmodell niemals umgehen; alle Ansichten sind Projektionen des Datenmodells.
+
+Das freigegebene Design-System ist die visuelle Grundlage des Projekts. Neue Ansichten orientieren sich am Design der Stammgruppenübersicht.
 
 ## Entwicklungsprozess
 
@@ -58,6 +60,7 @@ Jede Implementierung folgt kuenftig dieser Reihenfolge:
 - `DECISIONS.md` enthält endgültige Architekturentscheidungen.
 - `ROADMAP.md` enthält die Versionsplanung.
 - `CHANGELOG.md` dokumentiert Änderungen pro Version.
+- `docs/DESIGN_SYSTEM.md` dokumentiert die verbindliche Designreferenz.
 
 ## Voraussetzungen
 

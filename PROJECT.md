@@ -45,15 +45,15 @@ Das Projekt verfolgt das Ziel, den Dokumentationsaufwand zu reduzieren und gleic
 
 ### Arbeitsweise der Lehrkraft
 
-Die tägliche Arbeit erfolgt überwiegend über eine Klassenmatrix.
+Die tägliche Arbeit erfolgt überwiegend über Stammgruppen- und Schüleransichten.
 
-Weitere Ansichten wie Schülerprofil, Berichte und Kompetenzbögen entstehen automatisch aus denselben Daten.
+Weitere Ansichten wie Schülerprofil, Stammgruppenübersicht, Kursübersicht, Berichte und Kompetenzbögen entstehen automatisch aus denselben Daten.
 
-Die Klassenübersicht dient als Einstieg in den Arbeitsablauf. Sie hilft dabei, einen Schüler schnell zu finden, auszuwählen und anschließend in das Schülerprofil zu wechseln.
+Die Stammgruppenübersicht dient als Einstieg in den Arbeitsablauf. Sie hilft dabei, einen Schüler innerhalb einer Stammgruppe schnell zu finden, auszuwählen und anschließend in das Schülerprofil zu wechseln.
 
-Die Klassenübersicht ist kein Dashboard, keine Verwaltungsansicht, keine Analyseansicht und keine Auswertungsseite.
+Die Stammgruppenübersicht ist kein Dashboard, keine Verwaltungsansicht, keine Analyseansicht und keine Auswertungsseite.
 
-Für den Unterricht darf die Klassenübersicht zusätzlich einen Schnellzugriff `Neue Beobachtung` anbieten. Dieser arbeitet immer im Kontext des ausgewählten Schülers und öffnet denselben zentralen Beobachtungsdialog wie das Schülerprofil.
+Für den Unterricht darf die Stammgruppenübersicht zusätzlich einen Schnellzugriff `Neue Beobachtung` anbieten. Dieser arbeitet immer im Kontext des ausgewählten Schülers und öffnet denselben zentralen Beobachtungsdialog wie das Schülerprofil.
 
 ## Fachliches Domänenmodell
 
@@ -102,6 +102,7 @@ Das Projekt ist modular aufgebaut.
 - `data/` enthält Eingabedaten und Konfigurationen.
 - `docs/` enthält fachliche Begleitdokumentation.
 - `UX_BLUEPRINT.md` beschreibt die verbindliche UX-Grundlage für den ersten Prototyp.
+- `docs/DESIGN_SYSTEM.md` beschreibt das freigegebene Design-System als verbindliche Referenz für zukünftige Ansichten.
 - `vba/` enthält versionierbare VBA-Quellen für die spätere Interaktionsschicht.
 - `seeds/` enthält validierte Seed-Arbeitsmappen für das spätere `.xlsm`-Packaging.
 - `output/` ist für später generierte Dateien vorgesehen.
@@ -112,7 +113,7 @@ Das Projekt ist modular aufgebaut.
 
 Die Architektur vermeidet feste Zellreferenzen. Stattdessen sollen strukturierte Daten, eindeutige IDs und wiederverwendbare Builder-Komponenten verwendet werden.
 
-Die Klassenübersicht besitzt keine eigene Geschäftslogik. Sie stellt vorhandene Schülerdaten dar und wird aus diesen Daten generiert. Änderungen an Schülerdaten erfolgen künftig ausschließlich über die Klassenverwaltung.
+Die Stammgruppenübersicht und die Kursübersicht besitzen keine eigene Geschäftslogik. Sie stellen vorhandene Schülerdaten dar und werden aus diesen Daten generiert. Änderungen an Schülerdaten erfolgen künftig ausschließlich über die Schülerverwaltung.
 
 ## Technischer Stack
 
@@ -141,6 +142,8 @@ Die Klassenübersicht besitzt keine eigene Geschäftslogik. Sie stellt vorhanden
 - Die spätere Darstellung wird für Microsoft Excel auf macOS ausgelegt.
 - Fachliche Logik verbleibt vollständig im Python- und Datenmodell.
 - VBA darf ausschließlich UI-Aufgaben wie Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms übernehmen.
+- Das Datenmodell ist Source of Truth für fachliche Daten.
+- Das Design-System ist Source of Truth für sämtliche Benutzeroberflächen.
 - Strukturierte Tabellen und eindeutige IDs haben Vorrang vor festen Zellpositionen.
 - Jede Ansicht besitzt genau eine Hauptaufgabe.
 - Neue Funktionen dürfen die Hauptaufgabe einer Ansicht nicht verwässern.
@@ -185,7 +188,7 @@ Die verbindliche Roadmap befindet sich in `ROADMAP.md`.
 Aktuelle Planung:
 
 - Sprint 3.0: Architekturwechsel auf Microsoft Excel für macOS
-- Sprint 3.1: Klassenübersicht
+- Sprint 3.1: Klassenübersicht als frühere Bezeichnung der heutigen Stammgruppenübersicht
 - Sprint 3.2: Schülerprofil
 - Sprint 3.3a: Architektur konsolidieren
 - Weitere Produktbereiche erst nach fachlicher Freigabe und Review
@@ -219,9 +222,27 @@ Alle Beziehungen im Datenmodell erfolgen über eindeutige IDs. Das Datenmodell d
 
 Neue UI-Elemente, Hilfstabellen, Formeln, VBA-Routinen und Screens dürfen das Datenmodell niemals umgehen. Alle Ansichten sind Projektionen des Datenmodells.
 
-Die Standardreihenfolge der Schüler in der Klassenübersicht erfolgt alphabetisch nach Vorname. Diese Sortierung gilt als Projektstandard, weil Lehrkräfte Kinder im Unterricht überwiegend mit dem Vornamen suchen und ansprechen.
+Die Domänensprache ersetzt `Klasse` durch `Stammgruppe`. Jeder Schüler gehört genau einer Stammgruppe und genau einem Kurs an. Der Kurs beschreibt den Jahrgang, die Stammgruppe beschreibt die organisatorische Zugehörigkeit.
 
-Schülerkarten werden nicht manuell gepflegt. Wenn Schüler in der Klassenverwaltung hinzugefügt, bearbeitet, archiviert oder gelöscht werden, aktualisiert sich die Klassenübersicht automatisch aus den vorhandenen Schülerdaten.
+Die zentralen Entitäten für Schülerzuordnung sind:
+
+- Student mit `student_id`, Vorname, Nachname, `stammgruppe_id`, `kurs_id`
+- Stammgruppe mit `stammgruppe_id`, Name
+- Kurs mit `kurs_id`, Name und optionaler Farbe für spätere UI
+
+Die Standardreihenfolge der Schüler in der Stammgruppenübersicht erfolgt alphabetisch nach Vorname. Diese Sortierung gilt als Projektstandard, weil Lehrkräfte Kinder im Unterricht überwiegend mit dem Vornamen suchen und ansprechen.
+
+Schülerkarten werden nicht manuell gepflegt. Wenn Schüler in der Schülerverwaltung hinzugefügt, bearbeitet oder archiviert werden, aktualisieren sich Stammgruppenübersicht und Kursübersicht automatisch aus den vorhandenen Schülerdaten. Eine physische Löschung von Schülern ist nicht vorgesehen.
+
+Stammgruppen und Kurse sind eigenständige fachliche Entitäten. Neue Stammgruppen werden über die Stammgruppenverwaltung angelegt, nicht automatisch beim Anlegen eines Schülers. Kurse werden über die Kursverwaltung gepflegt.
+
+## Design-System
+
+Das aktuelle Design der Stammgruppenübersicht wurde durch Laura freigegeben und ist die verbindliche Referenz für alle zukünftigen Ansichten.
+
+Das Design-System ist Source of Truth für sämtliche Benutzeroberflächen. Es umfasst Farbwelt, Typografie, Kartenlayout, Kartenabstände, Desktop-App-Anmutung, 140-%-Zoom der Stammgruppenübersicht, Suchfeld, Weißraum und visuelle Hierarchie.
+
+Neue Ansichten müssen sich an diesem Design-System orientieren. Designänderungen erfolgen ausschließlich in einem eigenen UX-Sprint.
 
 ## Projektregeln
 
@@ -237,6 +258,7 @@ Zusammenfassung:
 - Keine festen Zellreferenzen.
 - Strukturierte Tabellen bevorzugen.
 - Datenmodell niemals ohne Rücksprache ändern.
+- Design-System nicht ohne eigenen UX-Sprint ändern.
 - Jede Änderung muss im Changelog dokumentiert werden.
 - Jede Version muss lauffähig bleiben.
 - Neue Funktionen nur nach Freigabe durch den Product Owner.
@@ -255,6 +277,6 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 ## Aktueller Sprint
 
-Aktueller Sprint: Sprint 3.3a - Architektur konsolidieren.
+Aktueller Sprint: Sprint 3.4 - Design Freeze und Domänenmodell aktualisieren.
 
-Ziel des aktuellen Sprints ist die dauerhafte Dokumentation der konsolidierten Zielplattform, Architektur, Entwicklungsreihenfolge und Datenmodell-Regeln. Es werden keine funktionalen Änderungen umgesetzt.
+Ziel des aktuellen Sprints ist die dauerhafte Dokumentation des freigegebenen Design-Systems und der präzisierten Domänensprache mit Stammgruppe und Kurs. Es werden keine Codeänderungen, keine VBA-Änderungen und kein Build umgesetzt.

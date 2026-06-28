@@ -12,11 +12,13 @@ Der VBA-Seed wurde praktisch validiert. `.xlsm` wird als Zielartefakt vorbereite
 
 Das Datenmodell ist die fachliche Grundlage des Projekts. Alle Ansichten sind Projektionen dieses Datenmodells.
 
+Das Design-System ist die visuelle Grundlage des Projekts. Alle zukünftigen Ansichten orientieren sich am freigegebenen Design der Stammgruppenübersicht.
+
 ## Aktueller UX-Prototyp-Pfad
 
 Sprint 3.0: Architekturwechsel auf Microsoft Excel für macOS und Vorbereitung der v0.2-Prototyp-Generation.
 
-Sprint 3.1: Klassenübersicht als erster UX-Screen.
+Sprint 3.1: Klassenübersicht als erster UX-Screen unter der früheren Bezeichnung.
 
 Sprint 3.2: Schülerprofil als zweiter UX-Screen.
 
@@ -25,6 +27,8 @@ Sprint 3.3a: Architektur konsolidieren und Dokumentation bereinigen.
 Sprint 3.3b: VBA-Seed praktisch validieren.
 
 Sprint 3.3c: VBA-Framework als versionierbare Quelle anlegen und ersten `.xlsm`-Interaktionstest vorbereiten.
+
+Sprint 3.4: Design Freeze als dauerhaftes Design-System dokumentieren und Domänenmodell auf Stammgruppe und Kurs präzisieren.
 
 Weitere Sprints folgen erst nach fachlicher Freigabe und Review.
 
@@ -40,6 +44,10 @@ Zukünftige Produktziele ohne Sprintzuordnung
 - Geplante Beobachtungen
 - Spontane Beobachtungen
 - Gruppenbeobachtungen
+- Schülerverwaltung
+- Stammgruppenverwaltung
+- Kursverwaltung
+- Kursübersicht
 
 Diese Punkte stellen zukünftige Produktziele dar.
 
@@ -61,36 +69,36 @@ Sprint 3.0
 
 Sprint 3.1
 
-- Einziger Auftrag: Klassenübersicht bauen.
+- Einziger Auftrag: Klassenübersicht bauen; ab Sprint 3.4 lautet die fachliche Bezeichnung Stammgruppenübersicht.
 - Keine weiteren Bildschirme.
 - Abschluss mit Review durch Laura.
-- Die v0.2-Arbeitsmappe enthält nur die Klassenübersicht.
+- Die v0.2-Arbeitsmappe enthält nur die damalige Klassenübersicht.
 - Schülerprofil, Beobachtungsdialog und Kompetenzansicht folgen in späteren Sprints.
 
 Sprint 3.1a
 
-- UX-Review der Klassenübersicht.
-- Optimierung auf Klassen bis mindestens 28 Schüler.
+- UX-Review der heutigen Stammgruppenübersicht.
+- Optimierung auf Stammgruppen bis mindestens 28 Schüler.
 - Kompaktes 4-spaltiges Referenzdesign.
-- Keine Dashboard-, Analyse- oder Verwaltungsfunktionen in der Klassenübersicht.
+- Keine Dashboard-, Analyse- oder Verwaltungsfunktionen in der Stammgruppenübersicht.
 
 Sprint 3.1b
 
 - Dokumentation der Produktentscheidungen aus Sprint 3.1 und Sprint 3.1a.
-- Klassenübersicht als Einstieg in den Arbeitsablauf festgeschrieben.
-- Klassenverwaltung als separater Bereich für Schülerverwaltung festgelegt.
-- Design Freeze für die Klassenübersicht dokumentiert.
+- Stammgruppenübersicht als Einstieg in den Arbeitsablauf festgeschrieben.
+- Schülerverwaltung als separater Bereich für Schülerdaten festgelegt.
+- Design Freeze für die Stammgruppenübersicht dokumentiert.
 
 Sprint 3.1c bis 3.1f
 
-- Live-Suche in der Klassenübersicht ergänzt und abgesichert.
-- Datenmodell-Schutz für Klassenübersicht und Suche festgeschrieben.
+- Live-Suche in der Stammgruppenübersicht ergänzt und abgesichert.
+- Datenmodell-Schutz für Stammgruppenübersicht und Suche festgeschrieben.
 - Schnellzugriff `Neue Beobachtung` als Produktentscheidung dokumentiert.
 
 Sprint 3.2
 
 - Schülerprofil als zweiter UX-Screen ergänzt.
-- Testpfad Klassenübersicht -> Schülerprofil -> Klassenübersicht über `student_id` vorbereitet.
+- Testpfad Stammgruppenübersicht -> Schülerprofil -> Stammgruppenübersicht über `student_id` vorbereitet.
 - Beobachtungsdialog bleibt zurückgestellt.
 
 Sprint 3.3a
@@ -108,3 +116,12 @@ Sprint 3.3c
 - Versionierbare VBA-Quellstruktur unter `vba/` vorbereitet.
 - `.xlsm`-PoC auf Basis der bestehenden UX-Arbeitsmappe und des validierten Seeds vorbereitet.
 - Keine Fachlogik in VBA.
+
+Sprint 3.4
+
+- Laura hat das aktuelle Design der Stammgruppenübersicht freigegeben.
+- Das freigegebene Design wird als Design-System und Source of Truth für zukünftige Benutzeroberflächen dokumentiert.
+- Die Domänensprache ersetzt `Klasse` durch `Stammgruppe`.
+- `Stammgruppe` und `Kurs` werden als eigenständige fachliche Entitäten dokumentiert.
+- `Kursübersicht`, Schülerverwaltung, Stammgruppenverwaltung und Kursverwaltung werden als zukünftige Produktbereiche aufgenommen.
+- Keine Codeänderungen und kein Build.

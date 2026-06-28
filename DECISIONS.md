@@ -49,7 +49,7 @@ Die sichtbaren Arbeitsblätter orientieren sich ausschließlich an den Arbeitsab
 
 Produktentscheidung.
 
-Die Klassenmatrix bildet zukünftig die zentrale Arbeitsansicht.
+Die Stammgruppenübersicht bildet zukünftig eine zentrale Einstiegsansicht.
 
 Bewertungen werden möglichst nur einmal erfasst.
 
@@ -92,7 +92,7 @@ Während der Discovery-Phase und des UX-Entwurfs wurde festgestellt, dass Lehrkr
 
 - Im Unterricht soll möglichst schnell eine Beobachtung dokumentiert werden.
 - Nach dem Unterricht soll die Kompetenzentwicklung analysiert werden.
-- In der Klassenübersicht soll lediglich ein Schüler ausgewählt werden.
+- In der Stammgruppenübersicht soll lediglich ein Schüler ausgewählt werden.
 
 Frühere Entwürfe versuchten, mehrere Aufgaben gleichzeitig auf einer Ansicht abzubilden.
 
@@ -108,7 +108,7 @@ Neue Funktionen dürfen die Hauptaufgabe einer Ansicht nicht verwässern.
 
 ### Konsequenzen
 
-Klassenübersicht
+Stammgruppenübersicht
 
 - Primärer Zweck: Schüler schnell finden und auswählen.
 - Keine Kompetenzbewertungen oder Analysen.
@@ -123,7 +123,7 @@ Kompetenzansicht
 
 - Primärer Zweck: Entwicklung einer einzelnen Kompetenz nachvollziehen.
 
-Klassenverwaltung
+Schülerverwaltung
 
 - Primärer Zweck: Schüler verwalten.
 - Schüler hinzufügen, bearbeiten und archivieren.
@@ -209,7 +209,7 @@ Produktentscheidung.
 
 Das Schülerprofil bildet den primären Arbeitsplatz.
 
-Nicht Dashboard oder Klassenmatrix.
+Nicht Dashboard oder Stammgruppenmatrix.
 
 ## ADR-020
 
@@ -255,17 +255,17 @@ Die Trennung zwischen Python-Generator, fachlichem Kern, UI-Screens und spätere
 
 Der bestehende Prototyp v0.1 bleibt als Referenz erhalten. Neue Arbeiten erfolgen ab v0.2.
 
-## ADR-022 - Klassenübersicht als Einstieg
+## ADR-022 - Stammgruppenübersicht als Einstieg
 
 ### Kontext
 
-Sprint 3.1 und Sprint 3.1a haben die Klassenübersicht als erste Ansicht der zweiten UX-Prototyp-Generation konkretisiert.
+Sprint 3.1 und Sprint 3.1a haben die damalige Klassenübersicht als erste Ansicht der zweiten UX-Prototyp-Generation konkretisiert. Ab Sprint 3.4 lautet die fachliche Bezeichnung `Stammgruppenübersicht`.
 
-Das Review mit Product Owner und Jenaplan-Lehrkraft hat bestätigt, dass die Klassenübersicht im Unterricht nur dann hilfreich ist, wenn sie schnell erfassbar bleibt und nicht zur Analyse- oder Verwaltungsansicht wird.
+Das Review mit Product Owner und Jenaplan-Lehrkraft hat bestätigt, dass die Stammgruppenübersicht im Unterricht nur dann hilfreich ist, wenn sie schnell erfassbar bleibt und nicht zur Analyse- oder Verwaltungsansicht wird.
 
 ### Entscheidung
 
-Die Klassenübersicht ist ausschließlich der Einstieg in den Arbeitsablauf.
+Die Stammgruppenübersicht ist ausschließlich der Einstieg in den Arbeitsablauf.
 
 Ihre Aufgabe besteht darin:
 
@@ -273,7 +273,7 @@ Ihre Aufgabe besteht darin:
 - Schüler auszuwählen
 - anschließend in das Schülerprofil zu wechseln
 
-Die Klassenübersicht ist ausdrücklich:
+Die Stammgruppenübersicht ist ausdrücklich:
 
 - kein Dashboard
 - keine Verwaltungsansicht
@@ -282,25 +282,25 @@ Die Klassenübersicht ist ausdrücklich:
 
 ### Konsequenzen
 
-Die Klassenübersicht enthält keine Kompetenzstände, Bewertungen, Analysen, Berichte, Statistiken oder Verwaltungsfunktionen.
+Die Stammgruppenübersicht enthält keine Kompetenzstände, Bewertungen, Analysen, Berichte, Statistiken oder Verwaltungsfunktionen.
 
 Die gesamte Schülerkarte ist die spätere Klickfläche für den Wechsel ins Schülerprofil.
 
 Ein separater Button innerhalb der Karte wird nicht verwendet.
 
-## ADR-023 - Sortierung und Datenquelle der Klassenübersicht
+## ADR-023 - Sortierung und Datenquelle der Stammgruppenübersicht
 
 ### Kontext
 
 Lehrkräfte suchen Kinder im Unterricht überwiegend über den Vornamen.
 
-Die Klassenübersicht soll aus vorhandenen Schülerdaten entstehen und nicht manuell gepflegt werden.
+Die Stammgruppenübersicht soll aus vorhandenen Schülerdaten entstehen und nicht manuell gepflegt werden.
 
 ### Entscheidung
 
-Die Standardreihenfolge der Schüler in der Klassenübersicht erfolgt alphabetisch nach Vorname.
+Die Standardreihenfolge der Schüler in der Stammgruppenübersicht erfolgt alphabetisch nach Vorname.
 
-Die Klassenübersicht wird vollständig aus den vorhandenen Schülerdaten generiert.
+Die Stammgruppenübersicht wird vollständig aus den vorhandenen Schülerdaten generiert.
 
 Die technische Identität eines Schülers ist immer `student_id`.
 
@@ -310,66 +310,69 @@ Namen dienen nur Anzeige und Suche.
 
 Schülerkarten werden nicht manuell gepflegt.
 
-Wenn Schüler in der Klassenverwaltung hinzugefügt, bearbeitet, archiviert oder gelöscht werden, aktualisiert sich die Klassenübersicht automatisch aus diesen Daten.
+Wenn Schüler in der Schülerverwaltung hinzugefügt, bearbeitet oder archiviert werden, aktualisiert sich die Stammgruppenübersicht automatisch aus diesen Daten.
 
-Die Klassenübersicht besitzt keine eigene Geschäftslogik.
+Die Stammgruppenübersicht besitzt keine eigene Geschäftslogik.
 
-Die verborgene Datenquelle der Klassenübersicht ist eine abgeleitete UI-Projektion und darf keine eigene Schülerdaten-Quelle werden.
+Die verborgene Datenquelle der Stammgruppenübersicht ist eine abgeleitete UI-Projektion und darf keine eigene Schülerdaten-Quelle werden.
 
-Alle Änderungen an Schülerdaten erfolgen über die Klassenverwaltung.
+Alle Änderungen an Schülerdaten erfolgen über die Schülerverwaltung. Eine physische Löschung ist nicht vorgesehen.
 
-## ADR-024 - Klassenverwaltung als separater Bereich
+## ADR-024 - Schülerverwaltung als separater Bereich
 
 ### Kontext
 
-Die Klassenübersicht soll im Unterricht schnelles Finden und Auswählen ermöglichen.
+Die Stammgruppenübersicht soll im Unterricht schnelles Finden und Auswählen ermöglichen.
 
 Verwaltungsfunktionen würden diesen Zweck verwässern.
 
 ### Entscheidung
 
-Die Verwaltung von Schülern erfolgt künftig in einem separaten Bereich `Klassenverwaltung`.
+Die Verwaltung von Schülern erfolgt künftig in einem separaten Bereich `Schülerverwaltung`.
 
 Dort können Lehrkräfte:
 
-- Schüler hinzufügen
+- Schüler anlegen
 - Schüler bearbeiten
 - Schüler archivieren
 
 ### Konsequenzen
 
-Die Klassenübersicht enthält bewusst keine Verwaltungsfunktionen.
+Die Stammgruppenübersicht enthält bewusst keine Verwaltungsfunktionen.
 
-Die Klassenverwaltung ist der einzige UI-Ort für Änderungen an Schülerdaten.
+Die Schülerverwaltung ist der einzige UI-Ort für Änderungen an Schülerdaten. Schüler werden nicht physisch gelöscht, sondern archiviert.
 
-## ADR-025 - Design Freeze Klassenübersicht v0.2
+## ADR-025 - Design Freeze Stammgruppenübersicht
 
 ### Kontext
 
-Die Klassenübersicht wurde in Sprint 3.1 erstellt und in Sprint 3.1a auf Grundlage eines UX-Reviews für den Unterricht optimiert.
+Die Stammgruppenübersicht wurde unter der früheren Bezeichnung Klassenübersicht in Sprint 3.1 erstellt und in Sprint 3.1a auf Grundlage eines UX-Reviews für den Unterricht optimiert.
 
-Das aktuelle Layout gilt als Referenzdesign.
+Laura hat das aktuelle Layout in Sprint 3.4 ausdrücklich freigegeben. Es gilt als Referenzdesign.
 
 ### Entscheidung
 
-Bis zu einer ausdrücklichen Product-Owner-Entscheidung dürfen folgende Eigenschaften der Klassenübersicht nicht verändert werden:
+Die folgenden Eigenschaften der Stammgruppenübersicht dürfen in normalen Entwicklungssprints nicht verändert werden:
 
 - Desktop-Anmutung
+- Farbwelt
 - Kartenlayout
+- Kartenabstände
 - Kartenhöhe
 - Informationshierarchie
 - Farbkonzept
 - Typografie
 - 4-spaltiges Raster
-- kompakte Darstellung für Klassen bis mindestens 28 Schüler
+- Suchfeld
+- Weißraum
+- 140-%-Zoom der Stammgruppenübersicht
+- kompakte Darstellung für Stammgruppen bis mindestens 28 Schüler
 
 ### Konsequenzen
 
-Designänderungen erfolgen ausschließlich nach:
+Neue Ansichten orientieren sich am freigegebenen Referenzdesign.
 
-- UX-Review
-- Product-Owner-Freigabe
-- anschließender Implementierung
+Designänderungen erfolgen ausschließlich in einem eigenen UX-Sprint mit UX-Review und Product-Owner-Freigabe.
 
 ## ADR-026 - Schnellzugriff Neue Beobachtung
 
@@ -377,7 +380,7 @@ Designänderungen erfolgen ausschließlich nach:
 
 Im Unterricht soll eine Beobachtung schnell dokumentiert werden können.
 
-Die Klassenübersicht bleibt der Einstieg zum Finden und Auswählen eines Schülers.
+Die Stammgruppenübersicht bleibt der Einstieg zum Finden und Auswählen eines Schülers.
 
 Das Schülerprofil bleibt der vollständige Arbeitsbereich.
 
@@ -387,17 +390,17 @@ Eine Funktion besitzt genau eine Implementierung.
 
 Eine Funktion darf jedoch mehrere Einstiegspunkte besitzen.
 
-Die Funktion `Neue Beobachtung` kann künftig über die Klassenübersicht und über das Schülerprofil gestartet werden.
+Die Funktion `Neue Beobachtung` kann künftig über die Stammgruppenübersicht und über das Schülerprofil gestartet werden.
 
 Beide Einstiege öffnen denselben zentralen Beobachtungsdialog.
 
 ### Konsequenzen
 
-Die Klassenübersicht darf eine Kontextaktion `Neue Beobachtung` besitzen.
+Die Stammgruppenübersicht darf eine Kontextaktion `Neue Beobachtung` besitzen.
 
 Diese Aktion arbeitet immer auf dem ausgewählten Schüler.
 
-Die Klassenübersicht startet keinen eigenen Beobachtungsprozess und enthält keine eigene Beobachtungslogik.
+Die Stammgruppenübersicht startet keinen eigenen Beobachtungsprozess und enthält keine eigene Beobachtungslogik.
 
 Sie übergibt ausschließlich `student_id` an den zentralen Beobachtungsdialog.
 
@@ -490,7 +493,7 @@ Die bestehende `.xlsx`-Datei bleibt als Referenz- und Fallback-Artefakt erhalten
 Ein VBA-Proof-of-Concept muss vor einer breiten Umstellung zeigen:
 
 - bestehendes Design bleibt unverändert,
-- Zoom der Klassenübersicht kann auf 140 % gesetzt werden,
+- Zoom der Stammgruppenübersicht kann auf 140 % gesetzt werden,
 - Klick auf eine sichtbare Schülerkarte funktioniert unabhängig von ihrer Position nach der Suche,
 - `student_id` wird als einziger technischer Schlüssel übergeben,
 - Schülerprofil öffnet sich,
@@ -604,3 +607,126 @@ Sprint 3.3c bereitet die `.xlsm`-Linie als Zielartefakt vor. `.xlsx` bleibt Fall
 Die lesbaren VBA-Quellen liegen unter `vba/modules/`. Sie ersetzen nicht das binäre `vbaProject.bin`; für ausführbaren VBA-Code muss der Seed nach Import der Module in Excel aktualisiert werden.
 
 Die Bereinigung von VBA-Projektobjekten wie Workbook- und Worksheet-CodeNames erfolgt im Zweifel manuell im VBA-Editor. Python darf das binäre `vbaProject.bin` erhalten und strukturell prüfen, aber nicht durch nicht validierte Binärmanipulationen verändern.
+
+## ADR-029 - Design-System als Source of Truth
+
+### Kontext
+
+Laura hat den aktuellen UX-Prototypen begutachtet und das Design der Stammgruppenübersicht ausdrücklich freigegeben.
+
+Das freigegebene Design soll künftig nicht in normalen Entwicklungssprints verändert werden.
+
+### Entscheidung
+
+Das Design-System ist Source of Truth für sämtliche Benutzeroberflächen.
+
+Das freigegebene Referenzdesign umfasst insbesondere:
+
+- Farbwelt
+- Typografie
+- Kartenlayout
+- Kartenabstände
+- Desktop-App-Anmutung
+- 140-%-Zoom der Stammgruppenübersicht
+- Suchfeld
+- Weißraum
+- visuelle Hierarchie
+
+Neue Ansichten müssen sich daran orientieren.
+
+Designänderungen dürfen künftig ausschließlich über einen eigenen UX-Sprint erfolgen.
+
+### Konsequenzen
+
+Normale Entwicklungssprints verändern das Design nicht.
+
+Die Dokumentation des Design-Systems liegt in `docs/DESIGN_SYSTEM.md`.
+
+Python erzeugt weiterhin die Benutzeroberflächen aus dem freigegebenen Design-System.
+
+## ADR-030 - Stammgruppe und Kurs als eigenständige Domänenentitäten
+
+### Kontext
+
+Laura hat das fachliche Modell präzisiert.
+
+Die bisher verwendete Bezeichnung `Klasse` ist fachlich nicht genau genug.
+
+### Entscheidung
+
+Die Domänensprache ersetzt `Klasse` vollständig durch `Stammgruppe`.
+
+Jeder Schüler gehört genau einer Stammgruppe an.
+
+Jeder Schüler gehört zusätzlich genau einem Kurs an.
+
+Der Kurs beschreibt den Jahrgang.
+
+Die Stammgruppe beschreibt die organisatorische Zugehörigkeit.
+
+Stammgruppe und Kurs sind eigenständige fachliche Entitäten.
+
+### Datenmodell-Konsequenzen
+
+Student enthält:
+
+- `student_id`
+- Vorname
+- Nachname
+- `stammgruppe_id`
+- `kurs_id`
+
+Stammgruppe enthält:
+
+- `stammgruppe_id`
+- Name
+
+Kurs enthält:
+
+- `kurs_id`
+- Name
+- optionale Farbe für spätere UI
+
+Die `student_id` bleibt technische Identität.
+
+Das Datenmodell bleibt Source of Truth.
+
+### UI-Konsequenzen
+
+Die bisherige Klassenübersicht heißt künftig `Stammgruppenübersicht`.
+
+Die Stammgruppenübersicht zeigt Schüler einer Stammgruppe. Die Kartenfarbe orientiert sich künftig am Kurs. Die Suche bleibt unverändert.
+
+Zusätzlich wird eine neue Hauptansicht `Kursübersicht` aufgenommen.
+
+Die Kursübersicht zeigt alle Schüler eines Kurses unabhängig von der Stammgruppe. Auf jeder Schülerkarte wird die Stammgruppe angezeigt.
+
+Beide Ansichten greifen auf dieselben Schülerdaten zu. Es existieren keine doppelten Daten.
+
+Die Ansichten sind ausschließlich Projektionen des Datenmodells.
+
+### Verwaltungsfunktionen
+
+Die Schülerverwaltung umfasst:
+
+- Schüler anlegen
+- Schüler bearbeiten
+- Schüler archivieren
+
+Schüler werden nicht physisch gelöscht.
+
+Die Stammgruppenverwaltung umfasst:
+
+- Stammgruppe anlegen
+- Stammgruppe bearbeiten
+- Stammgruppe archivieren
+
+Neue Stammgruppen werden über die Stammgruppenverwaltung angelegt, nicht automatisch beim Anlegen eines Schülers.
+
+Die Kursverwaltung umfasst:
+
+- Kurs anlegen
+- Kurs bearbeiten
+- Kurs archivieren
+
+Spätere Erweiterungen wie Farben und Jahrgänge bleiben möglich.

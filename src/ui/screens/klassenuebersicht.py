@@ -133,7 +133,7 @@ class ClassOverviewV02WorkbookBuilder:
     def _configure_sheet(self, worksheet: Worksheet) -> None:
         worksheet.sheet_view.showGridLines = False
         worksheet.sheet_view.showRowColHeaders = False
-        worksheet.sheet_view.zoomScale = 90
+        worksheet.sheet_view.zoomScale = 140
         worksheet.sheet_properties.tabColor = self.theme.primary
 
         for column, width in self._column_widths().items():

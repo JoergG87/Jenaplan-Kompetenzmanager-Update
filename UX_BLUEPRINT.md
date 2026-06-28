@@ -13,6 +13,7 @@ Zielplattform ist Microsoft Excel für macOS.
 - Single Purpose Views, siehe `ADR-012` in `DECISIONS.md`.
 - Beobachtung ist die fachliche Source of Truth.
 - Das Datenmodell ist die fachliche Grundlage; alle Ansichten sind Projektionen des Datenmodells.
+- Das freigegebene Design-System ist die visuelle Source of Truth für sämtliche Benutzeroberflächen.
 - Schnellste Aktion ist `Neue Beobachtung`.
 - Fach -> Kompetenzbereich -> Kompetenz.
 - Unterricht vor Analyse.
@@ -20,17 +21,19 @@ Zielplattform ist Microsoft Excel für macOS.
 
 ## 3. Primäre User Journeys
 
-- Klassenübersicht -> Schülerprofil -> Neue Beobachtung -> Speichern -> Schülerprofil
-- Klassenübersicht -> Schülerprofil -> Kompetenz -> Verlauf
+- Stammgruppenübersicht -> Schülerprofil -> Neue Beobachtung -> Speichern -> Schülerprofil
+- Stammgruppenübersicht -> Schülerprofil -> Kompetenz -> Verlauf
+- Kursübersicht -> Schülerprofil
 
 ## 4. Bildschirmübersicht
 
-- Klassenübersicht
+- Stammgruppenübersicht
+- Kursübersicht
 - Schülerprofil
 - Neue Beobachtung
 - Kompetenzansicht
 
-## 5. Klassenübersicht
+## 5. Stammgruppenübersicht
 
 Primärer Zweck:
 
@@ -39,7 +42,7 @@ Primärer Zweck:
 
 Elemente:
 
-- Klasse
+- Stammgruppe
 - Schülerliste
 - Suchmöglichkeit ohne Suchbutton
 
@@ -58,21 +61,45 @@ Nicht enthalten:
 
 Produktentscheidungen:
 
-- Die Klassenübersicht ist kein Dashboard.
-- Die Klassenübersicht ist keine Verwaltungsansicht.
-- Die Klassenübersicht ist keine Analyse- oder Auswertungsseite.
+- Die Stammgruppenübersicht ist kein Dashboard.
+- Die Stammgruppenübersicht ist keine Verwaltungsansicht.
+- Die Stammgruppenübersicht ist keine Analyse- oder Auswertungsseite.
 - Die Standardreihenfolge der Schüler erfolgt alphabetisch nach Vorname.
 - Die Suche filtert die Schülerliste automatisch während der Eingabe.
 - Die gesamte Schülerkarte bildet die spätere Klickfläche zum Schülerprofil.
-- Das Referenzdesign nutzt ein kompaktes 4-spaltiges Raster für Klassen bis mindestens 28 Schüler.
-- Schülerdaten werden nicht in der Klassenübersicht verwaltet.
-- Die Klassenübersicht ist eine abgeleitete UI-Projektion der Schülerdaten.
+- Das Referenzdesign nutzt ein kompaktes 4-spaltiges Raster für Stammgruppen bis mindestens 28 Schüler.
+- Die Stammgruppenübersicht öffnet standardmäßig mit 140 % Zoom.
+- Die Kartenfarbe orientiert sich künftig am Kurs.
+- Schülerdaten werden nicht in der Stammgruppenübersicht verwaltet.
+- Die Stammgruppenübersicht ist eine abgeleitete UI-Projektion der Schülerdaten.
 - Die technische Identität eines Schülers ist `student_id`; Namen dienen nur Anzeige und Suche.
-- Schüler hinzufügen, bearbeiten und archivieren erfolgt künftig in der Klassenverwaltung.
+- Schüler anlegen, bearbeiten und archivieren erfolgt künftig in der Schülerverwaltung.
 - Die Kontextaktion `Neue Beobachtung` übergibt nur `student_id` an den zentralen Beobachtungsdialog.
 - Der Beobachtungsdialog existiert projektweit nur einmal und wird auch aus dem Schülerprofil verwendet.
 
-## 6. Schülerprofil
+## 6. Kursübersicht
+
+Primärer Zweck:
+
+- Schüler eines Kurses unabhängig von ihrer Stammgruppe schnell finden und auswählen.
+- Anschließend in das Schülerprofil wechseln.
+
+Elemente:
+
+- Kurs
+- Schülerliste
+- Stammgruppe je Schülerkarte
+- Suchmöglichkeit ohne Suchbutton
+
+Produktentscheidungen:
+
+- Die Kursübersicht ist eine eigene Hauptansicht.
+- Die Kursübersicht greift auf dieselben Schülerdaten zu wie die Stammgruppenübersicht.
+- Es existieren keine doppelten Daten.
+- Die Kursübersicht ist ausschließlich eine Projektion des Datenmodells.
+- Die visuelle Gestaltung orientiert sich am freigegebenen Design-System.
+
+## 7. Schülerprofil
 
 Primärer Zweck:
 
@@ -81,10 +108,11 @@ Primärer Zweck:
 Elemente:
 
 - Name
-- Klasse
+- Stammgruppe
+- Kurs
 - Beobachtungsliste
 - Kompetenzkarten
-- Zurück zur Klassenübersicht
+- Zurück zur vorherigen Übersicht
 
 Aktionen:
 
@@ -93,10 +121,10 @@ Aktionen:
 
 Produktentscheidungen:
 
-- `Neue Beobachtung` öffnet denselben zentralen Beobachtungsdialog wie der Schnellzugriff aus der Klassenübersicht.
+- `Neue Beobachtung` öffnet denselben zentralen Beobachtungsdialog wie der Schnellzugriff aus der Stammgruppenübersicht.
 - Das Schülerprofil wird technisch über `student_id` geöffnet. Namen dienen nur der Anzeige.
 
-## 7. Neue Beobachtung
+## 8. Neue Beobachtung
 
 Ablauf:
 
@@ -107,7 +135,7 @@ Ablauf:
 
 Die Erfassung soll schnell und klar geführt werden.
 
-## 8. Kompetenzansicht
+## 9. Kompetenzansicht
 
 Elemente:
 
@@ -118,31 +146,34 @@ Elemente:
 
 Die Ansicht dient dazu, die Entwicklung einer einzelnen Kompetenz nachzuvollziehen.
 
-## 9. Navigation
+## 10. Navigation
 
 ```text
-Klassenübersicht
+Stammgruppenübersicht
   -> Schülerprofil
   -> Neue Beobachtung
   -> Speichern
   -> Schülerprofil
   -> Kompetenzansicht
   -> Verlauf
+
+Kursübersicht
+  -> Schülerprofil
 ```
 
-## 10. UX-Hypothesen
+## 11. UX-Hypothesen
 
-- Klassenübersicht als Startseite.
+- Stammgruppenübersicht als Startseite.
 - Dialog für `Neue Beobachtung`.
 - Darstellung der Kompetenzkarten.
 - Validierung im Pilotbetrieb.
 
-## 11. Nicht Bestandteil des ersten Prototyps
+## 12. Nicht Bestandteil des ersten Prototyps
 
 - Dashboard
 - Berichte
 - Gruppenbeobachtung
 - KI-Unterstützung
 - Analysefunktionen
-- Mehrklassenverwaltung
+- Mehrstammgruppenverwaltung
 - Rollenverwaltung

@@ -74,6 +74,110 @@ Idee
 
 Platzhalter für zukünftige Einträge.
 
+## Epic: Schülerverwaltung
+
+### Schüler anlegen
+
+Priorität: Offen
+
+Status:
+
+Idee
+
+### Schüler bearbeiten
+
+Priorität: Offen
+
+Status:
+
+Idee
+
+### Schüler archivieren
+
+Priorität: Offen
+
+Beschreibung:
+
+Schüler werden nicht physisch gelöscht.
+
+Status:
+
+Idee
+
+## Epic: Stammgruppenverwaltung
+
+### Stammgruppe anlegen
+
+Priorität: Offen
+
+Beschreibung:
+
+Neue Stammgruppen werden über die Stammgruppenverwaltung angelegt, nicht automatisch beim Anlegen eines Schülers.
+
+Status:
+
+Idee
+
+### Stammgruppe bearbeiten
+
+Priorität: Offen
+
+Status:
+
+Idee
+
+### Stammgruppe archivieren
+
+Priorität: Offen
+
+Status:
+
+Idee
+
+## Epic: Kursverwaltung
+
+### Kurs anlegen
+
+Priorität: Offen
+
+Status:
+
+Idee
+
+### Kurs bearbeiten
+
+Priorität: Offen
+
+Status:
+
+Idee
+
+### Kurs archivieren
+
+Priorität: Offen
+
+Beschreibung:
+
+Spätere Erweiterungen wie Farben und Jahrgänge bleiben möglich.
+
+Status:
+
+Idee
+
+## Epic: Kursübersicht
+
+### Schüler eines Kurses anzeigen
+
+Priorität: Offen
+
+Beschreibung:
+
+Die Kursübersicht zeigt alle Schüler eines Kurses unabhängig von der Stammgruppe. Auf jeder Schülerkarte wird die Stammgruppe angezeigt.
+
+Status:
+
+Idee
+
 ## Epic: Dashboard
 
 Platzhalter für zukünftige Einträge.

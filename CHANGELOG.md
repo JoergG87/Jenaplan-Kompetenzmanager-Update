@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## Sprint 3.4
+
+### Added
+
+- Design-System als verbindliche Referenz für alle zukünftigen Ansichten dokumentiert.
+- Stammgruppe und Kurs als eigenständige fachliche Entitäten dokumentiert.
+- Kursübersicht als zukünftige Hauptansicht aufgenommen.
+- Backlog um Schülerverwaltung, Stammgruppenverwaltung, Kursverwaltung und Kursübersicht erweitert.
+
+### Changed
+
+- Domänensprache von Klasse auf Stammgruppe präzisiert.
+- Bisherige Klassenübersicht künftig als Stammgruppenübersicht dokumentiert.
+- Datenmodell-Dokumentation um `stammgruppe_id` und `kurs_id` für Schüler erweitert.
+
+### Not Changed
+
+- Kein Code, keine VBA-Dateien, kein Seed und kein Build wurden in Sprint 3.4 geändert.
+
+## Sprint 3.3f
+
+### Changed
+
+- Klassenübersicht öffnet im UX-Prototyp wieder mit 140 % Zoom gemäß freigegebener Design-Referenz.
+
 ## Sprint 3.3d
 
 ### Changed
