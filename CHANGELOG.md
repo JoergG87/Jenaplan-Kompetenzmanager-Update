@@ -1,5 +1,55 @@
 # CHANGELOG
 
+## Sprint 3.3a
+
+### Changed
+
+- Zielplattform dauerhaft auf Microsoft Excel für macOS festgelegt.
+- Konsolidierte Zielarchitektur dokumentiert: Python für Build-System, Workbook-Erzeugung, Datenmodell, UI-Projektionen, Styles, Berichte und Fachlogik; VBA nach erfolgreichem Packaging ausschließlich für Interaktion.
+- Standard-Reihenfolge jeder Implementierung dokumentiert.
+- Datenmodell als zentrale fachliche Grundlage hervorgehoben.
+- Projektdokumentation bereinigt und Roadmap auf den aktuellen UX-Prototyp-Pfad ausgerichtet.
+
+### Not Changed
+
+- Keine funktionalen Änderungen.
+- Kein Python, keine Excel-Dateien und keine VBA-Implementierung geändert.
+
+## Technischer Spike VBA-Packaging
+
+### Added
+
+- ADR-027 um das Packaging-Ergebnis ergänzt: Ein `.xlsm`-PoC ist ohne echtes `vbaProject.bin` oder validierte `.xlsm`-Seed-Datei nicht aussagekräftig.
+- Dokumentiert, dass `openpyxl` vorhandene VBA-Projekte mit `keep_vba=True` erhalten kann, aber kein neues VBA-Projekt erzeugt.
+- Künftigen Build-Prozess dokumentiert: Python erzeugt Workbook, Datenmodell, UI-Projektionen und Styles; der Packaging-Schritt übernimmt ein validiertes VBA-Projekt ausschließlich als Interaktionsschicht.
+
+### Not Created
+
+- Kein `.xlsm`-PoC erzeugt, da im Repository aktuell kein `vbaProject.bin`, keine `.xlsm`-Vorlage und kein exportiertes VBA-Projekt vorhanden ist.
+
+## ADR-Spike VBA
+
+### Added
+
+- ADR-027 zur Einführung von VBA als Interaktionsschicht ergänzt.
+- Variantenbewertung `.xlsx` mit Formeln gegenüber `.xlsm` mit VBA dokumentiert.
+- Empfehlung dokumentiert: Python bleibt für Workbook, Datenmodell, UI-Projektionen, Styles und Build-Artefakte verantwortlich; VBA übernimmt ausschließlich Interaktion.
+- Technisches Spike-Ergebnis dokumentiert: lokales Excel ist erreichbar, automatisierte `.xlsm`-Erzeugung mit eingebettetem VBA ist ohne `vbaProject.bin` oder freigegebene VBA-Projekt-Injektion noch nicht validiert.
+
+## Sprint 3.2
+
+### Added
+
+- Schülerprofil als zweiter UX-Screen in `Jenaplan_UX_Prototype_v0.2.xlsx` ergänzt.
+- Klickbarer Testpfad von der Klassenübersicht zum Schülerprofil für `student_id s001` umgesetzt.
+- Beispielhafte Beobachtungskarten im Schülerprofil ergänzt.
+- Zurück-Link vom Schülerprofil zur Klassenübersicht ergänzt.
+
+### Deferred
+
+- Zentraler Beobachtungsdialog bleibt zurückgestellt.
+- Dynamische Navigation für alle Schüler bleibt zurückgestellt; Sprint 3.2 bindet den Testpfad bewusst über `student_id s001` an.
+
 ## Sprint 3.1f
 
 ### Added

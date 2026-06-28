@@ -4,7 +4,11 @@
 
 Der Jenaplan-Kompetenzmanager ist ein professionelles Python-Projekt zur strukturierten Verwaltung, Auswertung und späteren Ausgabe von Kompetenzdaten im Jenaplan-Kontext.
 
-Das Projekt stellt die Grundlage für eine Excel-basierte Arbeitsmappe für Microsoft Excel auf macOS bereit. Python erzeugt Workbook, Datenstruktur, Styles und spätere Build-Artefakte. VBA ist ausschließlich für Navigation, Dialoge, Benutzerinteraktion und UserForms vorgesehen.
+Das Projekt stellt die Grundlage für eine Excel-basierte Arbeitsmappe für Microsoft Excel auf macOS bereit. Microsoft Excel für macOS ist die verbindliche Zielplattform.
+
+Python erzeugt Workbook, Datenmodell, UI-Projektionen, Styles, Berichte, Fachlogik und Build-Artefakte. Nach erfolgreichem VBA-Packaging übernimmt VBA ausschließlich Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms.
+
+Fachliche Logik wandert nicht nach VBA. Das Datenmodell bleibt vollständig unabhängig von VBA.
 
 Sprint 0 dient ausschließlich dem Aufbau des technischen und dokumentarischen Fundaments. Es wird noch keine produktive Excel-Datei erzeugt.
 
@@ -133,11 +137,25 @@ Die Klassenübersicht besitzt keine eigene Geschäftslogik. Sie stellt vorhanden
 - Generierte Excel-Dateien werden nicht manuell verändert.
 - Die spätere Darstellung wird für Microsoft Excel auf macOS ausgelegt.
 - Fachliche Logik verbleibt vollständig im Python- und Datenmodell.
-- VBA darf ausschließlich UI-Aufgaben wie Navigation, Dialoge, Benutzerinteraktion und UserForms übernehmen.
+- VBA darf nach erfolgreichem Packaging ausschließlich UI-Aufgaben wie Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms übernehmen.
 - Strukturierte Tabellen und eindeutige IDs haben Vorrang vor festen Zellpositionen.
 - Jede Ansicht besitzt genau eine Hauptaufgabe.
 - Neue Funktionen dürfen die Hauptaufgabe einer Ansicht nicht verwässern.
 - Eine Funktion besitzt genau eine Implementierung, darf aber mehrere Einstiegspunkte besitzen.
+
+### Standard-Reihenfolge jeder Implementierung
+
+1. Vision
+2. Product Discovery
+3. Produktentscheidung
+4. Datenmodell-Review
+5. Architektur-Review
+6. UX-Review
+7. Prompt-Review
+8. Implementierung
+9. Technical Review
+10. Test
+11. Commit
 
 ## Versionierung
 
@@ -163,17 +181,15 @@ Die verbindliche Roadmap befindet sich in `ROADMAP.md`.
 
 Aktuelle Planung:
 
-- Version 3.1: Fundament
-- Version 3.2: Dashboard
-- Version 3.3: Bewertungssystem
-- Version 3.4: Klassenmatrix
-- Version 3.5: Schülerprofil
-- Version 3.6: Thüringer Lehrplan
-- Version 4.0: Produktive Version
+- Sprint 3.0: Architekturwechsel auf Microsoft Excel für macOS
+- Sprint 3.1: Klassenübersicht
+- Sprint 3.2: Schülerprofil
+- Sprint 3.3a: Architektur konsolidieren
+- Weitere Produktbereiche erst nach fachlicher Freigabe und Review
 
 ## Bewertungssystem
 
-Das Bewertungssystem wird in Version 3.3 fachlich ausgearbeitet.
+Das Bewertungssystem wird in einem später freigegebenen Sprint fachlich ausgearbeitet.
 
 Die Architekturentscheidung für das Bewertungssystem ist bereits festgelegt:
 
@@ -194,7 +210,11 @@ Aktuelle Dateien:
 - `data/colors.json` für Farbdefinitionen
 - `data/config.json` für Projektkonfiguration
 
+Das Datenmodell ist die fachliche Grundlage des Projekts.
+
 Alle Beziehungen im Datenmodell erfolgen über eindeutige IDs. Das Datenmodell darf nicht ohne Rücksprache mit dem Product Owner geändert werden.
+
+Neue UI-Elemente, Hilfstabellen, Formeln, VBA-Routinen und Screens dürfen das Datenmodell niemals umgehen. Alle Ansichten sind Projektionen des Datenmodells.
 
 Die Standardreihenfolge der Schüler in der Klassenübersicht erfolgt alphabetisch nach Vorname. Diese Sortierung gilt als Projektstandard, weil Lehrkräfte Kinder im Unterricht überwiegend mit dem Vornamen suchen und ansprechen.
 
@@ -207,7 +227,7 @@ Die dauerhaften Projektregeln sind in `AGENTS.md` festgelegt.
 Zusammenfassung:
 
 - Python erzeugt Workbook, Datenstruktur, Styles und Build-Artefakte.
-- VBA ist nur für UI-Aufgaben freigegeben.
+- VBA ist nach erfolgreichem Packaging nur für UI-Aufgaben freigegeben.
 - Keine fachliche Logik in VBA.
 - Zielplattform ist Microsoft Excel für macOS.
 - `openpyxl` verwenden.
@@ -232,6 +252,6 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 ## Aktueller Sprint
 
-Aktueller Sprint: Sprint 3.1f - Produktentscheidung Schnellzugriff Neue Beobachtung.
+Aktueller Sprint: Sprint 3.3a - Architektur konsolidieren.
 
-Ziel des aktuellen Sprints ist die Dokumentation der Produktentscheidung, dass `Neue Beobachtung` mehrere Einstiegspunkte besitzen darf, aber nur einen zentralen Beobachtungsdialog und keine doppelte Fachlogik.
+Ziel des aktuellen Sprints ist die dauerhafte Dokumentation der konsolidierten Zielplattform, Architektur, Entwicklungsreihenfolge und Datenmodell-Regeln. Es werden keine funktionalen Änderungen umgesetzt.

@@ -406,3 +406,186 @@ Der Beobachtungsdialog existiert projektweit nur einmal.
 Das Datenmodell ändert sich dadurch nicht.
 
 Alle Beobachtungen bleiben ausschließlich über `student_id` mit dem jeweiligen Schüler verknüpft.
+
+## ADR-027 - Einführung von VBA als Interaktionsschicht
+
+### Kontext
+
+Die aktuelle UX-Prototyp-Generation wird als `.xlsx` durch Python erzeugt.
+
+Diese Lösung funktioniert für statische Layouts, abgeleitete UI-Projektionen und einfache Formellogik.
+
+Mit wachsender Interaktion entstehen jedoch technische Einschränkungen:
+
+- Navigation ist an Zellpositionen gebunden.
+- Hyperlinks können keine dynamische `student_id` übergeben.
+- Dynamische Karten erschweren robuste Navigation.
+- Der zentrale Dialog `Neue Beobachtung` ist ohne Interaktionsschicht nur mit Workarounds umsetzbar.
+- Formeln und Hilfsspalten übernehmen zunehmend Aufgaben, die eigentlich UI-Interaktion sind.
+
+### Variantenbewertung
+
+#### Variante A: Python + `.xlsx` + Formeln
+
+Stärken:
+
+- Makrofrei.
+- Einfach zu erzeugen.
+- Geringere Sicherheitsbarrieren beim Öffnen.
+- Gut geeignet für statische UI-Projektionen, Layouts und lesende Ansichten.
+
+Schwächen:
+
+- Navigation bleibt positionsgebunden.
+- Keine robuste dynamische Übergabe von `student_id`.
+- Dialoge und echte Benutzerinteraktion sind nur eingeschränkt möglich.
+- Formeln werden schnell schwer wartbar.
+- UX-Interaktion wandert in Hilfszellen und Schattentabellen.
+
+#### Variante B: Python + `.xlsm` + VBA
+
+Stärken:
+
+- VBA kann `student_id` gezielt aus der UI-Projektion lesen und weitergeben.
+- Navigation kann unabhängig von sichtbarer Kartenposition erfolgen.
+- Ein zentraler Beobachtungsdialog kann projektweit einmal implementiert werden.
+- UserForms und Ereignisse passen fachlich zur geplanten Excel/macOS-Desktop-Anwendung.
+- Python kann weiterhin Workbook, Datenmodell, UI-Projektionen, Styles und Build-Artefakte erzeugen.
+
+Schwächen und Risiken:
+
+- `.xlsm` bringt Makro-Sicherheitsdialoge und organisatorische Freigaben mit sich.
+- VBA-Entwicklung und Test auf macOS müssen explizit geprüft werden.
+- Automatisches Erzeugen einer `.xlsm` mit VBA benötigt ein gültiges `vbaProject.bin` oder eine freigegebene Excel/VBA-Projekt-Injektion.
+- Fachlogik darf nicht in VBA abwandern.
+
+### Entscheidung
+
+Für den Jenaplan-Kompetenzmanager wird VBA als Interaktionsschicht empfohlen.
+
+Python bleibt verantwortlich für:
+
+- Workbook-Erzeugung
+- Datenmodell
+- UI-Projektionen
+- Styles
+- Build-Artefakte
+
+VBA übernimmt ausschließlich:
+
+- Navigation
+- Übergabe von `student_id`
+- Dialogstart
+- UserForms
+- Benutzerinteraktion
+
+Fachlogik, Datenmodellentscheidungen, Kompetenzlogik und Beobachtungsableitungen verbleiben vollständig im Python-/Datenmodell.
+
+### Konsequenzen
+
+Die Produktlinie sollte von `.xlsx` auf `.xlsm` erweitert werden, sobald der VBA-Spike technisch validiert ist.
+
+Die bestehende `.xlsx`-Datei bleibt als Referenz- und Fallback-Artefakt erhalten.
+
+Ein VBA-Proof-of-Concept muss vor einer breiten Umstellung zeigen:
+
+- bestehendes Design bleibt unverändert,
+- Zoom der Klassenübersicht kann auf 140 % gesetzt werden,
+- Klick auf eine sichtbare Schülerkarte funktioniert unabhängig von ihrer Position nach der Suche,
+- `student_id` wird als einziger technischer Schlüssel übergeben,
+- Schülerprofil öffnet sich,
+- Zurück-Link funktioniert,
+- keine Fachlogik entsteht in VBA.
+
+### Spike-Ergebnis in dieser Umgebung
+
+Microsoft Excel für macOS ist lokal installiert und per AppleScript erreichbar.
+
+Ein vollständig automatisierter `.xlsm`-PoC konnte in dieser Umgebung noch nicht erzeugt werden, weil kein bestehendes `vbaProject.bin` vorhanden ist und die programmgesteuerte VBA-Projekt-Injektion nicht erfolgreich validiert werden konnte.
+
+Der technische Packaging-Spike bestätigt die Hürde:
+
+- Im Repository existiert aktuell kein `vbaProject.bin`, keine `.xlsm`-Vorlage und kein exportiertes VBA-Projekt.
+- Die bestehende `Jenaplan_UX_Prototype_v0.2.xlsx` enthält kein `xl/vbaProject.bin`, keine VBA-Relationship und keinen macro-enabled Content-Type.
+- `openpyxl` kann ein vorhandenes VBA-Projekt beim Laden mit `keep_vba=True` erhalten und beim Speichern wieder in eine `.xlsm` übernehmen.
+- `openpyxl` kann kein neues VBA-Projekt erzeugen und keine `.bas`-, `.cls`- oder UserForm-Quellen zu einem gültigen `vbaProject.bin` kompilieren.
+- Eine bloß umbenannte oder leere `.xlsm` ohne eingebettetes VBA-Projekt gilt nicht als valider PoC.
+
+Für einen reproduzierbaren `.xlsm`-Build ist daher ein einmalig erzeugter und validierter VBA-Seed erforderlich.
+
+Der bevorzugte Build-Prozess ist:
+
+1. VBA-Quellen zusätzlich lesbar im Repository pflegen, zum Beispiel unter `vba/`.
+2. Das VBA-Projekt einmalig in Microsoft Excel für macOS in einer Macro-enabled-Arbeitsmappe erstellen und testen.
+3. Das daraus entstehende `vbaProject.bin` oder eine minimale `.xlsm`-Seed-Datei als Build-Artefakt versionieren.
+4. Python erzeugt weiterhin Workbook, Datenmodell, UI-Projektionen und Styles.
+5. Der Packaging-Schritt lädt den Seed mit `keep_vba=True` oder übernimmt das vorhandene `vbaProject.bin` in die generierte Arbeitsmappe.
+6. Die erzeugte `.xlsm` wird technisch geprüft: `xl/vbaProject.bin`, macro-enabled Content-Type, VBA-Relationship und Smoke-Test in Excel für macOS.
+
+Bis dieser Seed existiert, bleibt die `.xlsx`-Datei das verlässliche Build-Artefakt. Die `.xlsm`-Linie wird erst eingeführt, wenn der Packaging-Prozess mit echtem VBA-Projekt validiert ist.
+
+## ADR-028 - Konsolidierte Zielarchitektur und Entwicklungsreihenfolge
+
+### Kontext
+
+Die UX-Prototyp-Generation ab v0.2 richtet sich vollständig auf Microsoft Excel für macOS aus.
+
+Die Architekturarbeit zu VBA hat bestätigt, dass Interaktion, Dialoge und UserForms langfristig nicht sauber über reine `.xlsx`-Formeln abgebildet werden können.
+
+Gleichzeitig bleibt das Datenmodell die fachliche Grundlage des Produkts.
+
+### Entscheidung
+
+Microsoft Excel für macOS ist die verbindliche Zielplattform.
+
+Python bleibt verantwortlich für:
+
+- Build-System
+- Workbook-Erzeugung
+- Datenmodell
+- UI-Projektionen
+- Styles
+- Berichte
+- Fachlogik
+
+VBA übernimmt nach erfolgreichem Packaging ausschließlich:
+
+- Navigation
+- Buttons
+- Dialoge
+- UserForms
+- Benutzerinteraktion
+
+Keine Fachlogik wird in VBA implementiert.
+
+Das Datenmodell bleibt vollständig unabhängig von VBA.
+
+### Datenmodell-Prinzip
+
+Das Datenmodell ist die fachliche Grundlage des Projekts.
+
+Neue UI-Elemente, Formeln, Hilfstabellen, VBA-Routinen und Screens dürfen das Datenmodell niemals umgehen.
+
+Alle Ansichten sind Projektionen des Datenmodells.
+
+### Entwicklungsreihenfolge
+
+Jede Implementierung folgt künftig dieser Reihenfolge:
+
+1. Vision
+2. Product Discovery
+3. Produktentscheidung
+4. Datenmodell-Review
+5. Architektur-Review
+6. UX-Review
+7. Prompt-Review
+8. Implementierung
+9. Technical Review
+10. Test
+11. Commit
+
+### Konsequenzen
+
+Bis ein validierter VBA-Seed existiert, bleibt `.xlsx` das produktive Build-Artefakt.
+
+Nach erfolgreichem Packaging kann die `.xlsm`-Linie als Interaktionsschicht eingeführt werden, ohne Python, Datenmodell oder Fachlogik zu ersetzen.

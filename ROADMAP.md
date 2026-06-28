@@ -1,30 +1,28 @@
-Version 3.1
-Fundament
+# Roadmap
 
-Version 3.2
-Dashboard
-Gestaltung einer benutzerfreundlichen Klassenmatrix
-Dashboard für pädagogische Auswertungen
-Kompetenzübersichten
+## Zielplattform und Architektur
 
-Version 3.3
-Bewertungssystem
-Schülerprofil als automatische Auswertung
-Beobachtungsnotizen
-Entwicklungsverläufe
-Hierarchische Lehrplanstruktur
+Microsoft Excel für macOS ist die verbindliche Zielplattform.
 
-Version 3.4
-Klassenmatrix
+Python bleibt verantwortlich für Build-System, Workbook-Erzeugung, Datenmodell, UI-Projektionen, Styles, Berichte und Fachlogik.
 
-Version 3.5
-Schülerprofil
+VBA übernimmt nach erfolgreichem Packaging ausschließlich Navigation, Buttons, Dialoge, UserForms und Benutzerinteraktion.
 
-Version 3.6
-Thüringer Lehrplan
+Bis ein validierter VBA-Seed existiert, bleibt `.xlsx` das produktive Build-Artefakt.
 
-Version 4.0
-Produktive Version
+Das Datenmodell ist die fachliche Grundlage des Projekts. Alle Ansichten sind Projektionen dieses Datenmodells.
+
+## Aktueller UX-Prototyp-Pfad
+
+Sprint 3.0: Architekturwechsel auf Microsoft Excel für macOS und Vorbereitung der v0.2-Prototyp-Generation.
+
+Sprint 3.1: Klassenübersicht als erster UX-Screen.
+
+Sprint 3.2: Schülerprofil als zweiter UX-Screen.
+
+Sprint 3.3a: Architektur konsolidieren und Dokumentation bereinigen.
+
+Weitere Sprints folgen erst nach fachlicher Freigabe und Review.
 
 Zukünftige Produktziele ohne Sprintzuordnung
 
@@ -78,3 +76,20 @@ Sprint 3.1b
 - Klassenübersicht als Einstieg in den Arbeitsablauf festgeschrieben.
 - Klassenverwaltung als separater Bereich für Schülerverwaltung festgelegt.
 - Design Freeze für die Klassenübersicht dokumentiert.
+
+Sprint 3.1c bis 3.1f
+
+- Live-Suche in der Klassenübersicht ergänzt und abgesichert.
+- Datenmodell-Schutz für Klassenübersicht und Suche festgeschrieben.
+- Schnellzugriff `Neue Beobachtung` als Produktentscheidung dokumentiert.
+
+Sprint 3.2
+
+- Schülerprofil als zweiter UX-Screen ergänzt.
+- Testpfad Klassenübersicht -> Schülerprofil -> Klassenübersicht über `student_id` vorbereitet.
+- Beobachtungsdialog bleibt zurückgestellt.
+
+Sprint 3.3a
+
+- Zielplattform, Architektur, Entwicklungsprozess und Datenmodell-Prinzipien konsolidiert.
+- Keine funktionalen Änderungen.

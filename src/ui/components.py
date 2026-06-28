@@ -2,6 +2,7 @@
 
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.cell.cell import MergedCell
 from openpyxl.worksheet.worksheet import Worksheet
 
 from .theme import UiTheme
@@ -65,6 +66,22 @@ class ExcelCanvas:
         for row in range(row_start, row_end + 1):
             for column in range(col_start, col_end + 1):
                 worksheet.cell(row=row, column=column).fill = fill
+
+    def link_range(
+        self,
+        worksheet: Worksheet,
+        row_start: int,
+        col_start: int,
+        row_end: int,
+        col_end: int,
+        target: str,
+    ) -> None:
+        for row in range(row_start, row_end + 1):
+            for column in range(col_start, col_end + 1):
+                cell = worksheet.cell(row=row, column=column)
+                if isinstance(cell, MergedCell):
+                    continue
+                cell.hyperlink = target
 
     def outline(
         self,

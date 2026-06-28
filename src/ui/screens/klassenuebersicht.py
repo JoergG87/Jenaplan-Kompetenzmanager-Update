@@ -11,6 +11,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from ..components import ExcelCanvas
 from ..theme import UiTheme
+from .schuelerprofil import SchuelerprofilScreenBuilder
 
 
 SHEET_TITLE = "Klassenübersicht"
@@ -111,7 +112,9 @@ class ClassOverviewV02WorkbookBuilder:
         self._configure_workbook(workbook)
         self._configure_sheet(worksheet)
         self._render(worksheet)
+        SchuelerprofilScreenBuilder(self.theme).create(workbook)
         self._define_vba_anchor_names(workbook)
+        workbook.active = 0
 
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
         workbook.save(self.output_path)
@@ -279,6 +282,7 @@ class ClassOverviewV02WorkbookBuilder:
             bounds = self._card_bounds(index)
             self._render_student_card(worksheet, card, bounds, index)
             self._hide_empty_card(worksheet, bounds, index)
+            self._link_student_card(worksheet, bounds, card.student_id)
 
     def _render_student_card(
         self,
@@ -483,6 +487,17 @@ class ClassOverviewV02WorkbookBuilder:
                 font=Font(color=self.theme.canvas),
             ),
         )
+
+    def _link_student_card(
+        self,
+        worksheet: Worksheet,
+        bounds: tuple[int, int, int, int],
+        student_id: str,
+    ) -> None:
+        if student_id != "s001":
+            return
+
+        self.canvas.link_range(worksheet, *bounds, "#'Schülerprofil'!A1")
 
     def _column_widths(self) -> dict[str, float]:
         widths = {"A": 2.6, "V": 2.6}

@@ -6,10 +6,13 @@ Der erste Prototyp dient dazu, die zentralen Arbeitsabläufe der Lehrkraft als k
 
 Der Fokus liegt auf der täglichen Arbeit im Unterricht und auf der direkten Erfassung von Beobachtungen.
 
+Zielplattform ist Microsoft Excel für macOS.
+
 ## 2. UX-Leitlinien
 
 - Single Purpose Views, siehe `ADR-012` in `DECISIONS.md`.
 - Beobachtung ist die fachliche Source of Truth.
+- Das Datenmodell ist die fachliche Grundlage; alle Ansichten sind Projektionen des Datenmodells.
 - Schnellste Aktion ist `Neue Beobachtung`.
 - Fach -> Kompetenzbereich -> Kompetenz.
 - Unterricht vor Analyse.
@@ -81,6 +84,7 @@ Elemente:
 - Klasse
 - Beobachtungsliste
 - Kompetenzkarten
+- Zurück zur Klassenübersicht
 
 Aktionen:
 
@@ -90,6 +94,7 @@ Aktionen:
 Produktentscheidungen:
 
 - `Neue Beobachtung` öffnet denselben zentralen Beobachtungsdialog wie der Schnellzugriff aus der Klassenübersicht.
+- Das Schülerprofil wird technisch über `student_id` geöffnet. Namen dienen nur der Anzeige.
 
 ## 7. Neue Beobachtung
 
