@@ -13,7 +13,7 @@ OUTPUT_PATH = ROOT / "output" / "Jenaplan_UX_Prototype_v0.3_VBA_Framework.xlsm"
 VBA_PROJECT_PATH = "xl/vbaProject.bin"
 WORKBOOK_CODE_NAME = "DieseArbeitsmappe"
 SHEET_CODE_NAMES = {
-    "Klassenübersicht": "wsClassOverview",
+    "Stammgruppenübersicht": "wsClassOverview",
     "Schülerprofil": "wsStudentProfile",
 }
 REQUIRED_VBA_MARKERS = (

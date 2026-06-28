@@ -49,3 +49,11 @@ Das Design-System ist Source of Truth für sämtliche Benutzeroberflächen.
 Python erzeugt Benutzeroberflächen aus dem freigegebenen Design-System.
 
 VBA implementiert ausschließlich Interaktion und verändert keine fachliche Logik.
+
+## Stammgruppenübersicht
+
+Die sichtbare Startansicht heißt `Stammgruppenübersicht`.
+
+Die Schülerkarten der Stammgruppenübersicht zeigen den Kurs des Schülers. Die Stammgruppe wird dort nicht erneut auf jeder Karte angezeigt, weil die Ansicht bereits genau eine Stammgruppe darstellt.
+
+Die Kartenfarbe wird aus der Kurszuordnung abgeleitet. Die konkrete Farbwelt bleibt Teil des freigegebenen Grunddesigns.

@@ -16,6 +16,14 @@ Die Dateien unter `vba/modules/` sind die lesbaren Quellen. Damit sie in einer `
 
 Der aktuelle technische PoC beweist, dass Python ein vorhandenes `vbaProject.bin` aus `seeds/JenaplanSeed.xlsm` erhalten und in eine generierte Arbeitsmappe übernehmen kann.
 
+## Sprint 3.5 Seed-Hinweis
+
+Sprint 3.5 erweitert die versionierten VBA-Quellen um die Navigation von Schülerkarten zum Schülerprofil.
+
+Damit diese Änderungen in `output/Jenaplan_UX_Prototype_v0.3_VBA_Framework.xlsm` ausführbar sind, müssen die Module aus `vba/modules/` in Microsoft Excel in `seeds/JenaplanSeed.xlsm` importiert und der Seed anschließend gespeichert werden.
+
+In dieser Umgebung steht per AppleScript nur das Ausführen vorhandener Makros zur Verfügung. Ein automatischer Import geänderter `.bas`-Quellen in das VBA-Projekt konnte deshalb nicht validiert werden.
+
 ## Seed-Bereinigung
 
 Der bereinigte Seed dient als Modulbasis. Er muss im VBA-Projekt diese Module enthalten:

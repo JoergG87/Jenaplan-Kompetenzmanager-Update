@@ -11,9 +11,12 @@ from ..theme import UiTheme
 
 
 SHEET_TITLE = "Schülerprofil"
-CLASS_OVERVIEW_SHEET = "Klassenübersicht"
-CLASS_NAME = "Klasse 2a"
+CLASS_OVERVIEW_SHEET = "Stammgruppenübersicht"
+STAMMGRUPPE_NAME = "Stammgruppe Grashüpfer"
+COURSE_NAME = "Kurs 1"
 STUDENT_ID = "s001"
+SELECTED_STUDENT_ID_CELL = "X2"
+SELECTED_STUDENT_ID_REFERENCE = "$X$2"
 
 
 @dataclass(frozen=True)
@@ -23,7 +26,8 @@ class StudentProfile:
     student_id: str
     first_name: str
     last_name: str
-    class_name: str
+    stammgruppe_name: str
+    course_name: str
 
     @property
     def display_name(self) -> str:
@@ -44,7 +48,7 @@ class ObservationCard:
     competencies: tuple[str, ...]
 
 
-PROFILE_STUDENT = StudentProfile(STUDENT_ID, "Mia", "Becker", CLASS_NAME)
+PROFILE_STUDENT = StudentProfile(STUDENT_ID, "Mia", "Becker", STAMMGRUPPE_NAME, COURSE_NAME)
 
 OBSERVATIONS = (
     ObservationCard(
@@ -90,6 +94,7 @@ class SchuelerprofilScreenBuilder:
 
         for column, width in self._column_widths().items():
             worksheet.column_dimensions[column].width = width
+        worksheet.column_dimensions["X"].hidden = True
 
         for row in range(1, 34):
             worksheet.row_dimensions[row].height = 20
@@ -105,6 +110,7 @@ class SchuelerprofilScreenBuilder:
         self.canvas.paint_block(worksheet, 1, 1, 33, 22, self.theme.canvas)
 
     def _render(self, worksheet: Worksheet) -> None:
+        worksheet[SELECTED_STUDENT_ID_CELL] = STUDENT_ID
         self._render_app_bar(worksheet)
         self._render_header(worksheet)
         self._render_primary_action(worksheet)
@@ -131,7 +137,7 @@ class SchuelerprofilScreenBuilder:
             15,
             3,
             20,
-            f"{PROFILE_STUDENT.class_name}  ·  Schülerprofil",
+            f"{PROFILE_STUDENT.stammgruppe_name}  ·  Schülerprofil",
             font=self.canvas.font(10, bold=True, color="E9F1ED"),
             fill=self.theme.app_bar,
             alignment=self.canvas.alignment("right"),
@@ -167,7 +173,7 @@ class SchuelerprofilScreenBuilder:
             4,
             7,
             11,
-            f"{PROFILE_STUDENT.class_name} · student_id {PROFILE_STUDENT.student_id}",
+            f'=IF({SELECTED_STUDENT_ID_REFERENCE}="","{PROFILE_STUDENT.stammgruppe_name} · {PROFILE_STUDENT.course_name} · student_id {PROFILE_STUDENT.student_id}","Aktueller Schüler: "&{SELECTED_STUDENT_ID_REFERENCE})',
             font=self.canvas.font(9, color=self.theme.muted),
             fill=self.theme.surface,
         )
@@ -178,7 +184,7 @@ class SchuelerprofilScreenBuilder:
             16,
             7,
             21,
-            "< Zurück zur Klassenübersicht",
+            "< Zurück zur Stammgruppenübersicht",
             font=self.canvas.font(10, bold=True, color=self.theme.primary),
             fill=self.theme.surface,
             alignment=self.canvas.alignment("center"),
@@ -318,7 +324,7 @@ class SchuelerprofilScreenBuilder:
             16,
             21,
             20,
-            "Der Button öffnet später denselben zentralen Beobachtungsdialog wie der Schnellzugriff der Klassenübersicht.",
+            "Der Button öffnet später denselben zentralen Beobachtungsdialog wie der Schnellzugriff der Stammgruppenübersicht.",
             font=self.canvas.font(9, color=self.theme.muted),
             fill=self.theme.surface,
         )
@@ -336,6 +342,12 @@ class SchuelerprofilScreenBuilder:
         )
 
     def _define_names(self, workbook: Workbook) -> None:
+        workbook.defined_names.add(
+            DefinedName(
+                name="ui_profile_selected_student_id",
+                attr_text=f"'{SHEET_TITLE}'!{SELECTED_STUDENT_ID_REFERENCE}",
+            )
+        )
         workbook.defined_names.add(
             DefinedName(name="ui_profile_student_s001", attr_text=f"'{SHEET_TITLE}'!$B$5:$N$7")
         )

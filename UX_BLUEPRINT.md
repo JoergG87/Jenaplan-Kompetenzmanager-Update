@@ -44,6 +44,7 @@ Elemente:
 
 - Stammgruppe
 - Schülerliste
+- Kurs je Schülerkarte
 - Suchmöglichkeit ohne Suchbutton
 
 Aktionen:
@@ -66,10 +67,11 @@ Produktentscheidungen:
 - Die Stammgruppenübersicht ist keine Analyse- oder Auswertungsseite.
 - Die Standardreihenfolge der Schüler erfolgt alphabetisch nach Vorname.
 - Die Suche filtert die Schülerliste automatisch während der Eingabe.
-- Die gesamte Schülerkarte bildet die spätere Klickfläche zum Schülerprofil.
+- Der Pfeil auf der Schülerkarte bildet die klickbare Fläche zum Schülerprofil.
 - Das Referenzdesign nutzt ein kompaktes 4-spaltiges Raster für Stammgruppen bis mindestens 28 Schüler.
 - Die Stammgruppenübersicht öffnet standardmäßig mit 140 % Zoom.
-- Die Kartenfarbe orientiert sich künftig am Kurs.
+- Die Schülerkarten zeigen in dieser Ansicht den Kurs, nicht erneut die Stammgruppe.
+- Die Kartenfarbe orientiert sich am Kurs und wird aus der Kurszuordnung abgeleitet.
 - Schülerdaten werden nicht in der Stammgruppenübersicht verwaltet.
 - Die Stammgruppenübersicht ist eine abgeleitete UI-Projektion der Schülerdaten.
 - Die technische Identität eines Schülers ist `student_id`; Namen dienen nur Anzeige und Suche.
