@@ -885,13 +885,13 @@ class KompetenzansichtSheet(PrototypeSheet):
 class UXPrototypeWorkbookBuilder:
     """Build the first clickable UX prototype workbook."""
 
-    def __init__(self, output_path: Path, prototype_version: str = "v0.2") -> None:
+    def __init__(self, output_path: Path, prototype_version: str = "v0.4") -> None:
         self.output_path = output_path
         self.prototype_version = prototype_version
         self.theme = Theme(app_name=f"Jenaplan UX Prototype {prototype_version}")
 
     def build(self) -> Path:
-        if self.prototype_version == "v0.2":
+        if self.prototype_version in ("v0.2", "v0.4"):
             return ClassOverviewV02WorkbookBuilder(self.output_path).build()
 
         workbook = Workbook()

@@ -1,82 +1,35 @@
-"""Schülerprofil screen for UX prototype v0.2."""
-
-from dataclasses import dataclass
+"""Schülerprofil screen for product version v0.4."""
 
 from openpyxl.workbook import Workbook
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.worksheet import Worksheet
 
+from ...core.workbook_data import TABLE_COURSES, TABLE_GROUPS, TABLE_STUDENTS, WorkbookData
 from ..components import ExcelCanvas
 from ..theme import UiTheme
 
 
 SHEET_TITLE = "Schülerprofil"
+PRODUCT_VERSION = "v0.4"
 CLASS_OVERVIEW_SHEET = "Stammgruppenübersicht"
-STAMMGRUPPE_NAME = "Stammgruppe Grashüpfer"
-COURSE_NAME = "Kurs 1"
-STUDENT_ID = "s001"
 SELECTED_STUDENT_ID_CELL = "X2"
 SELECTED_STUDENT_ID_REFERENCE = "$X$2"
-
-
-@dataclass(frozen=True)
-class StudentProfile:
-    """Profile data projected from the student model for the UX prototype."""
-
-    student_id: str
-    first_name: str
-    last_name: str
-    stammgruppe_name: str
-    course_name: str
-
-    @property
-    def display_name(self) -> str:
-        return f"{self.first_name} {self.last_name}"
-
-    @property
-    def initials(self) -> str:
-        return f"{self.first_name[0]}{self.last_name[0]}"
-
-
-@dataclass(frozen=True)
-class ObservationCard:
-    """Static observation projection for the profile prototype."""
-
-    date: str
-    context: str
-    note: str
-    competencies: tuple[str, ...]
-
-
-PROFILE_STUDENT = StudentProfile(STUDENT_ID, "Mia", "Becker", STAMMGRUPPE_NAME, COURSE_NAME)
-
-OBSERVATIONS = (
-    ObservationCard(
-        "18.06.2026",
-        "Deutsch · Leseübung",
-        "Mia liest den kurzen Sachtext flüssig und markiert die wichtigsten Informationen selbstständig.",
-        ("Informationen aus Texten entnehmen", "Lesestrategien anwenden"),
-    ),
-    ObservationCard(
-        "12.06.2026",
-        "Stammgruppe · Partnerarbeit",
-        "Sie erklärt ihrem Partner ihren Lösungsweg ruhig und nutzt passende Fachbegriffe.",
-        ("Beiträge strukturiert formulieren",),
-    ),
-    ObservationCard(
-        "05.06.2026",
-        "Mathematik · Lernzeit",
-        "Bei Additionsaufgaben im Zahlenraum 100 kontrolliert Mia ihre Ergebnisse mit Material.",
-        ("Rechenwege darstellen", "Ergebnisse prüfen"),
-    ),
-)
+PROFILE_FIRST_NAME_CELL = "Y2"
+PROFILE_LAST_NAME_CELL = "Z2"
+PROFILE_DISPLAY_NAME_CELL = "AA2"
+PROFILE_GROUP_ID_CELL = "AB2"
+PROFILE_COURSE_ID_CELL = "AC2"
+PROFILE_GROUP_NAME_CELL = "AD2"
+PROFILE_COURSE_NAME_CELL = "AE2"
+PROFILE_INITIALS_CELL = "AF2"
 
 
 class SchuelerprofilScreenBuilder:
     """Render the student profile as the second v0.2 UX screen."""
 
-    def __init__(self, theme: UiTheme) -> None:
+    def __init__(self, theme: UiTheme, data: WorkbookData) -> None:
         self.theme = theme
+        self.data = data
         self.canvas = ExcelCanvas(theme)
 
     def create(self, workbook: Workbook) -> Worksheet:
@@ -94,7 +47,8 @@ class SchuelerprofilScreenBuilder:
 
         for column, width in self._column_widths().items():
             worksheet.column_dimensions[column].width = width
-        worksheet.column_dimensions["X"].hidden = True
+        for column in ("X", "Y", "Z", "AA", "AB", "AC", "AD", "AE", "AF"):
+            worksheet.column_dimensions[column].hidden = True
 
         for row in range(1, 34):
             worksheet.row_dimensions[row].height = 20
@@ -110,13 +64,35 @@ class SchuelerprofilScreenBuilder:
         self.canvas.paint_block(worksheet, 1, 1, 33, 22, self.theme.canvas)
 
     def _render(self, worksheet: Worksheet) -> None:
-        worksheet[SELECTED_STUDENT_ID_CELL] = STUDENT_ID
+        self._render_profile_projection(worksheet)
         self._render_app_bar(worksheet)
         self._render_header(worksheet)
         self._render_primary_action(worksheet)
         self._render_observations(worksheet)
         self._render_side_panel(worksheet)
         self._render_footer(worksheet)
+
+    def _render_profile_projection(self, worksheet: Worksheet) -> None:
+        worksheet[SELECTED_STUDENT_ID_CELL] = self.data.default_student_id
+        worksheet[PROFILE_FIRST_NAME_CELL] = self._student_lookup_formula("first_name")
+        worksheet[PROFILE_LAST_NAME_CELL] = self._student_lookup_formula("last_name")
+        worksheet[PROFILE_DISPLAY_NAME_CELL] = (
+            f'=IF({SELECTED_STUDENT_ID_REFERENCE}="","",{PROFILE_FIRST_NAME_CELL}&" "&{PROFILE_LAST_NAME_CELL})'
+        )
+        worksheet[PROFILE_GROUP_ID_CELL] = self._student_lookup_formula("group_id")
+        worksheet[PROFILE_COURSE_ID_CELL] = self._student_lookup_formula("course_id")
+        worksheet[PROFILE_GROUP_NAME_CELL] = (
+            f'=IFERROR("Stammgruppe "&INDEX({TABLE_GROUPS}[group_name],'
+            f'MATCH({PROFILE_GROUP_ID_CELL},{TABLE_GROUPS}[group_id],0)),"")'
+        )
+        worksheet[PROFILE_COURSE_NAME_CELL] = (
+            f'=IFERROR(INDEX({TABLE_COURSES}[course_name],'
+            f'MATCH({PROFILE_COURSE_ID_CELL},{TABLE_COURSES}[course_id],0)),"")'
+        )
+        worksheet[PROFILE_INITIALS_CELL] = (
+            f'=IF({SELECTED_STUDENT_ID_REFERENCE}="","",'
+            f'LEFT({PROFILE_FIRST_NAME_CELL},1)&LEFT({PROFILE_LAST_NAME_CELL},1))'
+        )
 
     def _render_app_bar(self, worksheet: Worksheet) -> None:
         self.canvas.panel(worksheet, 2, 2, 3, 21, self.theme.app_bar, self.theme.app_bar)
@@ -137,7 +113,7 @@ class SchuelerprofilScreenBuilder:
             15,
             3,
             20,
-            f"{PROFILE_STUDENT.stammgruppe_name}  ·  Schülerprofil",
+            f'={PROFILE_GROUP_NAME_CELL}&"  ·  Schülerprofil"',
             font=self.canvas.font(10, bold=True, color="E9F1ED"),
             fill=self.theme.app_bar,
             alignment=self.canvas.alignment("right"),
@@ -152,7 +128,7 @@ class SchuelerprofilScreenBuilder:
             2,
             7,
             3,
-            PROFILE_STUDENT.initials,
+            f"={PROFILE_INITIALS_CELL}",
             font=self.canvas.font(14, bold=True, color=self.theme.primary),
             fill=self.theme.primary_soft,
             alignment=self.canvas.alignment("center"),
@@ -163,7 +139,7 @@ class SchuelerprofilScreenBuilder:
             4,
             5,
             11,
-            PROFILE_STUDENT.display_name,
+            f"={PROFILE_DISPLAY_NAME_CELL}",
             font=self.canvas.font(21, bold=True),
             fill=self.theme.surface,
         )
@@ -173,7 +149,11 @@ class SchuelerprofilScreenBuilder:
             4,
             7,
             11,
-            f'=IF({SELECTED_STUDENT_ID_REFERENCE}="","{PROFILE_STUDENT.stammgruppe_name} · {PROFILE_STUDENT.course_name} · student_id {PROFILE_STUDENT.student_id}","Aktueller Schüler: "&{SELECTED_STUDENT_ID_REFERENCE})',
+            (
+                f'=IF({SELECTED_STUDENT_ID_REFERENCE}="","",'
+                f'{PROFILE_GROUP_NAME_CELL}&" · "&{PROFILE_COURSE_NAME_CELL}'
+                f'&" · student_id "&{SELECTED_STUDENT_ID_REFERENCE})'
+            ),
             font=self.canvas.font(9, color=self.theme.muted),
             fill=self.theme.surface,
         )
@@ -233,57 +213,17 @@ class SchuelerprofilScreenBuilder:
             font=self.canvas.font(14, bold=True),
             fill=self.theme.canvas,
         )
-
-        for index, observation in enumerate(OBSERVATIONS):
-            row_start = 15 + index * 6
-            self._render_observation_card(worksheet, row_start, observation)
-
-    def _render_observation_card(
-        self,
-        worksheet: Worksheet,
-        row_start: int,
-        observation: ObservationCard,
-    ) -> None:
-        self.canvas.panel(worksheet, row_start, 2, row_start + 4, 14, self.theme.surface, self.theme.border)
+        self.canvas.panel(worksheet, 15, 2, 18, 14, self.theme.surface, self.theme.border)
         self.canvas.write_range(
             worksheet,
-            row_start,
+            15,
             2,
-            row_start,
-            4,
-            observation.date,
-            font=self.canvas.font(9, bold=True, color=self.theme.primary),
+            18,
+            14,
+            "Noch keine Beobachtungen erfasst.",
+            font=self.canvas.font(10, color=self.theme.muted),
             fill=self.theme.surface,
-        )
-        self.canvas.write_range(
-            worksheet,
-            row_start,
-            5,
-            row_start,
-            13,
-            observation.context,
-            font=self.canvas.font(9, bold=True, color=self.theme.muted),
-            fill=self.theme.surface,
-        )
-        self.canvas.write_range(
-            worksheet,
-            row_start + 1,
-            2,
-            row_start + 2,
-            13,
-            observation.note,
-            font=self.canvas.font(10),
-            fill=self.theme.surface,
-        )
-        self.canvas.write_range(
-            worksheet,
-            row_start + 3,
-            2,
-            row_start + 4,
-            13,
-            " · ".join(observation.competencies),
-            font=self.canvas.font(8, color=self.theme.primary),
-            fill=self.theme.primary_soft,
+            alignment=self.canvas.alignment("center"),
         )
 
     def _render_side_panel(self, worksheet: Worksheet) -> None:
@@ -336,7 +276,7 @@ class SchuelerprofilScreenBuilder:
             2,
             32,
             8,
-            "UX Prototype v0.2 · student_id s001",
+            f'="Jenaplan Kompetenzmanager {PRODUCT_VERSION} · student_id "&{SELECTED_STUDENT_ID_REFERENCE}',
             font=self.canvas.font(8, color=self.theme.muted),
             fill=self.theme.canvas,
         )
@@ -353,6 +293,12 @@ class SchuelerprofilScreenBuilder:
         )
         workbook.defined_names.add(
             DefinedName(name="ui_profile_new_observation", attr_text=f"'{SHEET_TITLE}'!$B$9:$H$11")
+        )
+
+    def _student_lookup_formula(self, field_name: str) -> str:
+        return (
+            f'=IFERROR(INDEX({TABLE_STUDENTS}[{field_name}],'
+            f'MATCH({SELECTED_STUDENT_ID_REFERENCE},{TABLE_STUDENTS}[student_id],0)),"")'
         )
 
     def _column_widths(self) -> dict[str, float]:

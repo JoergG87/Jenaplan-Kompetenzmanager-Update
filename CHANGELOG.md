@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## v0.4 - Core Data Architecture + datengetriebene Workbook-Projektion
+
+### Added
+
+- Core Data Architecture abgeschlossen und erstmals vollständig durch den Build validiert.
+- Workbook Data Builder erzeugt `data_students`, `data_groups` und `data_courses` als versteckte Tabellenblaetter mit `tbl_students`, `tbl_groups` und `tbl_courses`.
+- Workbook Data Registry in der physischen Workbook-Struktur umgesetzt.
+
+### Changed
+
+- Stammgruppenuebersicht und Schuelerprofil lesen die Beispieldaten aus den Workbook-Datenquellen statt aus direkt im UI definierten Schuelerdaten.
+- Builder erzeugt UI-Projektionen aus den registrierten Datenquellen.
+- Stammgruppenuebersicht liest Schueler aus `tbl_students`.
+- Schuelerprofil liest den Profilkopf ueber `student_id` aus `tbl_students`.
+- Workbook Data Registry und UI Data Mapping auf die Phase-1-Felder `active`, `group_name`, `course_name` und `color_key` geschärft.
+- Build-Ausgabe auf `output/Jenaplan_Kompetenzmanager_v0.4.xlsm` vereinheitlicht.
+- VBA-Navigation bleibt weiterhin funktionsfähig.
+
+### Known Open Points
+
+- Seed enthält aktuell 28 Testschueler; Demo-Seed und Minimal-Seed werden spaeter getrennt.
+- Kursfarben werden noch nicht dynamisch aus `tbl_courses[color_key]` im Workbook projiziert.
+- Header `Stammgruppenübersicht` wird in der aktuellen Darstellung noch abgeschnitten.
+
+### Not Changed
+
+- Keine Verwaltungsfunktion, keine Dialoge, keine VBA-Erweiterung, keine Kursuebersicht und keine Beobachtungserfassung implementiert.
+
 ## Sprint 4.0c
 
 ### Added

@@ -72,20 +72,53 @@ Architekturwechsel UX-Prototyp
 - [x] UI-Anker für spätere VBA-Interaktion vorbereitet
 - [ ] Review durch Laura
 
-## Sprint 4
+## Sprint 4.0 ✅
 
-Klassenmatrix
+- [x] Status: Abgeschlossen
 
-## Sprint 5
+### Titel
 
-Schülerprofil
+Core Data Architecture
 
-## Sprint 6
+### Ergebnis
 
-Thüringer Lehrplan
+- [x] Projektverfassung dokumentiert
+- [x] Technical Naming Registry dokumentiert
+- [x] Workbook Data Registry dokumentiert
+- [x] UI Data Mapping dokumentiert
+- [x] View Data Ownership dokumentiert
+- [x] Data Lifecycle dokumentiert
 
-## Sprint 7
+## Sprint 4.1 ✅
 
-Version 4.0
+- [x] Status: Abgeschlossen
 
-Produktive Version
+### Titel
+
+Schülerverwaltung Phase 1: Architektur validieren
+
+### Ergebnis
+
+- [x] Architektur erfolgreich validiert
+- [x] Hidden Data Sheets erzeugt
+- [x] `tbl_students`, `tbl_groups`, `tbl_courses` erzeugt
+- [x] Stammgruppenübersicht aus Daten projiziert
+- [x] Schülerprofil aus Daten projiziert
+- [x] VBA-Navigation über `student_id` bleibt funktionsfähig
+- [x] Release `v0.4` vorbereitet
+
+## Sprint 4.2 🔜
+
+- [ ] Status: Vorbereitet
+
+### Titel
+
+Schülerverwaltung: erster transaktionaler Schreibprozess
+
+### Ziele
+
+- [ ] Schüler anlegen
+- [ ] Schüler ändern
+- [ ] Schüler archivieren
+- [ ] Keine physische Löschung
+- [ ] Schreibprozess vollständig oder gar nicht ausführen

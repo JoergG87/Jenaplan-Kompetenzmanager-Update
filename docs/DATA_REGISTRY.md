@@ -70,12 +70,11 @@ Wichtige Felder:
 - `student_id`
 - `first_name`
 - `last_name`
-- `display_name`
 - `group_id`
 - `course_id`
-- `status`
+- `active`
 - `created_at`
-- `archived_at`
+- `updated_at`
 
 Beziehungen:
 
@@ -110,7 +109,8 @@ Erlaubte UI-Projektionen:
 Erweiterungsregeln:
 
 - keine fachlichen Schuelerdaten in UI-Projektionen speichern
-- neue Statuswerte nur nach fachlicher Freigabe
+- `display_name` ist eine UI-Projektion, kein gespeichertes Feld
+- Archivierungsfelder werden erst mit dem freigegebenen Archivierungsprozess ergänzt
 - keine physische Loeschung ohne eigenen Architekturentscheid
 
 ## data_groups
@@ -134,10 +134,8 @@ Foreign Keys:
 Wichtige Felder:
 
 - `group_id`
-- `name`
-- `status`
-- `created_at`
-- `archived_at`
+- `group_name`
+- `active`
 
 Beziehungen:
 
@@ -190,11 +188,9 @@ Foreign Keys:
 Wichtige Felder:
 
 - `course_id`
-- `name`
-- `color`
-- `status`
-- `created_at`
-- `archived_at`
+- `course_name`
+- `color_key`
+- `active`
 
 Beziehungen:
 

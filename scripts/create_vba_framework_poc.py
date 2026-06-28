@@ -1,6 +1,7 @@
 """Create a macro-enabled VBA framework PoC from the current UX prototype."""
 
 from pathlib import Path
+from shutil import copyfile
 from zipfile import ZipFile
 
 from openpyxl import load_workbook
@@ -8,8 +9,9 @@ from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parents[1]
 SEED_PATH = ROOT / "seeds" / "JenaplanSeed.xlsm"
-SOURCE_WORKBOOK_PATH = ROOT / "output" / "Jenaplan_UX_Prototype_v0.2.xlsx"
-OUTPUT_PATH = ROOT / "output" / "Jenaplan_UX_Prototype_v0.3_VBA_Framework.xlsm"
+SOURCE_WORKBOOK_PATH = ROOT / "output" / "Jenaplan_Kompetenzmanager_v0.4.xlsx"
+OUTPUT_PATH = ROOT / "output" / "Jenaplan_Kompetenzmanager_v0.4.xlsm"
+LATEST_PATH = ROOT / "output" / "latest.xlsm"
 VBA_PROJECT_PATH = "xl/vbaProject.bin"
 WORKBOOK_CODE_NAME = "DieseArbeitsmappe"
 SHEET_CODE_NAMES = {
@@ -81,7 +83,10 @@ def main() -> None:
     if not _contains_vba_project(OUTPUT_PATH):
         raise RuntimeError(f"VBA-Projekt fehlt in {OUTPUT_PATH}: {VBA_PROJECT_PATH}")
 
+    copyfile(OUTPUT_PATH, LATEST_PATH)
+
     print(f"VBA-Framework-PoC erstellt: {OUTPUT_PATH}")
+    print(f"Latest-Kopie erstellt: {LATEST_PATH}")
     print(f"VBA-Projekt erhalten: {VBA_PROJECT_PATH}")
 
 

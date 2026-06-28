@@ -8,7 +8,7 @@ Python bleibt verantwortlich für Build-System, Workbook-Erzeugung, Datenmodell,
 
 VBA übernimmt ausschließlich Navigation, Buttons, Dialoge, UserForms und Benutzerinteraktion.
 
-Der VBA-Seed wurde praktisch validiert. `.xlsm` wird als Zielartefakt vorbereitet; `.xlsx` bleibt Fallback, bis das VBA-Framework stabil ist.
+Der VBA-Seed wurde praktisch validiert. `.xlsm` ist ab Version `v0.4` das Hauptartefakt.
 
 Das Datenmodell ist die fachliche Grundlage des Projekts. Alle Ansichten sind Projektionen dieses Datenmodells.
 
@@ -30,7 +30,11 @@ Sprint 3.3c: VBA-Framework als versionierbare Quelle anlegen und ersten `.xlsm`-
 
 Sprint 3.4: Design Freeze als dauerhaftes Design-System dokumentieren und Domänenmodell auf Stammgruppe und Kurs präzisieren.
 
-Weitere Sprints folgen erst nach fachlicher Freigabe und Review.
+Sprint 4.0: Core Data Architecture, technische Namen, Data Registry, View Ownership und Data Lifecycle dokumentieren.
+
+Sprint 4.1: Core Data Architecture durch Hidden Data Sheets, strukturierte Tabellen und datengetriebene UI-Projektionen validieren. Abgeschlossen mit Release `v0.4`.
+
+Sprint 4.2: Schülerverwaltung vorbereiten und ersten transaktionalen Schreibprozess umsetzen: Schüler anlegen, ändern und archivieren.
 
 Zukünftige Produktziele ohne Sprintzuordnung
 
@@ -44,7 +48,6 @@ Zukünftige Produktziele ohne Sprintzuordnung
 - Geplante Beobachtungen
 - Spontane Beobachtungen
 - Gruppenbeobachtungen
-- Schülerverwaltung
 - Stammgruppenverwaltung
 - Kursverwaltung
 - Kursübersicht
@@ -125,3 +128,19 @@ Sprint 3.4
 - `Stammgruppe` und `Kurs` werden als eigenständige fachliche Entitäten dokumentiert.
 - `Kursübersicht`, Schülerverwaltung, Stammgruppenverwaltung und Kursverwaltung werden als zukünftige Produktbereiche aufgenommen.
 - Keine Codeänderungen und kein Build.
+
+Sprint 4.1
+
+- Core Data Architecture erstmals technisch validiert.
+- Builder erzeugt Hidden Data Sheets `data_students`, `data_groups` und `data_courses`.
+- Builder erzeugt strukturierte Tabellen `tbl_students`, `tbl_groups` und `tbl_courses`.
+- Stammgruppenübersicht und Schülerprofil lesen aus den Workbook-Datenquellen.
+- VBA-Navigation über `student_id` bleibt funktionsfähig.
+- Release-Artefakt: `output/Jenaplan_Kompetenzmanager_v0.4.xlsm`.
+
+Sprint 4.2
+
+- Schülerverwaltung als nächste Funktion vorbereitet.
+- Fokus: erster transaktionaler Schreibprozess.
+- Umfang: Schüler anlegen, Schüler ändern, Schüler archivieren.
+- Keine physische Löschung.

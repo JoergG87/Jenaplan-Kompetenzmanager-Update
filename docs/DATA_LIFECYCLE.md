@@ -169,7 +169,7 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Berichte
 
-Regel: `course_id` bleibt erhalten. Schuelerkartenfarbe aktualisiert sich aus `course_id` und `data_courses.color`.
+Regel: `course_id` bleibt erhalten. Schuelerkartenfarbe aktualisiert sich aus `course_id` und `data_courses.color_key`.
 
 ## Beobachtung erfassen
 

@@ -1,12 +1,20 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Aktueller Produktstand
+
+Aktuelle Produktversion: `v0.4`.
+
+Kurzbeschreibung: Erste datengetriebene Version des Jenaplan-Kompetenzmanagers.
+
+Version `v0.4` repräsentiert die abgeschlossene Core Data Architecture mit datengetriebener Workbook-Projektion.
+
 ## Projektziel
 
 Der Jenaplan-Kompetenzmanager ist ein professionelles Python-Projekt zur strukturierten Verwaltung, Auswertung und späteren Ausgabe von Kompetenzdaten im Jenaplan-Kontext.
 
 Das Projekt stellt die Grundlage für eine Excel-basierte Arbeitsmappe für Microsoft Excel auf macOS bereit. Microsoft Excel für macOS ist die verbindliche Zielplattform.
 
-Python erzeugt Workbook, Datenmodell, UI-Projektionen, Styles, Berichte, Fachlogik und Build-Artefakte. Der VBA-Seed wurde technisch validiert; nach Stabilisierung des VBA-Frameworks wird `.xlsm` als Zielartefakt vorbereitet. Bis dahin bleibt `.xlsx` der Fallback.
+Python erzeugt Workbook, Datenmodell, UI-Projektionen, Styles, Berichte, Fachlogik und Build-Artefakte. Der VBA-Seed wurde technisch validiert; `.xlsm` ist ab Version `v0.4` das Hauptartefakt.
 
 VBA übernimmt ausschließlich Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms.
 
@@ -165,19 +173,17 @@ Die Stammgruppenübersicht und die Kursübersicht besitzen keine eigene Geschäf
 
 ## Versionierung
 
-Das Projekt verwendet eine produktorientierte Versionsfolge.
+Das Projekt verwendet ab Version `v0.4` eine produktorientierte Versionsfolge.
 
-- Version 3.1 bildet das Fundament.
-- Versionen 3.2 bis 3.6 erweitern das Projekt schrittweise um fachliche und technische Funktionen.
-- Version 4.0 ist als produktive Version vorgesehen.
+Aktuelles Hauptartefakt:
 
-UX-Prototypen besitzen eine eigene Versionierung.
+- `output/Jenaplan_Kompetenzmanager_v0.4.xlsm`
 
-Der erste Prototyp bleibt als `Jenaplan_UX_Prototype_v0.1_FirstAttempt.xlsx` erhalten.
+Optionale aktuelle Kopie:
 
-Die zweite Generation des UX-Prototyps wird als `Jenaplan_UX_Prototype_v0.2.xlsx` erzeugt.
+- `output/latest.xlsm`
 
-Die v3.x-Linie beschreibt weiterhin den technischen Generator und den bisherigen Entwicklungsstand.
+Historische UX-Prototyp-Namen bleiben im Git-Verlauf erhalten, werden aber künftig nicht weitergeführt.
 
 Änderungen werden in `CHANGELOG.md` dokumentiert. Grundsätzliche Architekturentscheidungen werden in `DECISIONS.md` festgehalten.
 
@@ -192,6 +198,12 @@ Aktuelle Planung:
 - Sprint 3.2: Schülerprofil
 - Sprint 3.3a: Architektur konsolidieren
 - Weitere Produktbereiche erst nach fachlicher Freigabe und Review
+
+## Bekannte offene Punkte v0.4
+
+- Seed enthält aktuell 28 Testschüler; Demo-Seed und Minimal-Seed werden später getrennt.
+- Kursfarben werden noch nicht dynamisch aus `tbl_courses[color_key]` im Workbook projiziert.
+- Header `Stammgruppenübersicht` wird in der aktuellen Darstellung noch abgeschnitten.
 
 ## Bewertungssystem
 
@@ -277,6 +289,6 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 ## Aktueller Sprint
 
-Aktueller Sprint: Sprint 3.4 - Design Freeze und Domänenmodell aktualisieren.
+Sprint 4.1 ist abgeschlossen.
 
-Ziel des aktuellen Sprints ist die dauerhafte Dokumentation des freigegebenen Design-Systems und der präzisierten Domänensprache mit Stammgruppe und Kurs. Es werden keine Codeänderungen, keine VBA-Änderungen und kein Build umgesetzt.
+Nächster vorbereiteter Sprint: Sprint 4.2 - Schülerverwaltung mit erstem transaktionalem Schreibprozess.
