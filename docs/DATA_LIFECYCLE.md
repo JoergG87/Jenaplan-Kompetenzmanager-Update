@@ -51,7 +51,7 @@ Automatisch profitierende Ansichten:
 - Berichte
 - Dashboards
 
-Regel: Archivierung setzt Status/Archivdatum. Beobachtungen bleiben erhalten.
+Regel: Archivierung setzt `active = FALSE` und `archived_at` auf einen Zeitstempel. Historische Daten bleiben vollständig erhalten. Beobachtungen bleiben über `student_id` gültig.
 
 ## Schueler aendern
 

@@ -22,13 +22,19 @@ Alle Foreign Keys muessen in diesem Dokument explizit dokumentiert sein.
 
 ## Physische Workbook-Datenbank
 
-Die `data_*`-Quellen werden spaeter als versteckte Tabellenblaetter im Workbook angelegt.
+Die `data_*`-Quellen werden als versteckte Tabellenblaetter im Workbook angelegt.
 
 Jedes `data_*`-Blatt enthaelt genau eine strukturierte Tabelle mit `tbl_*`-Namen.
 
 Der Builder erzeugt diese Tabellen automatisch.
 
-UI-Builder lesen ausschliesslich aus diesen Tabellen und erzeugen daraus UI-Projektionen.
+UI-Builder lesen ausschliesslich aus registrierten Tabellen und erzeugen daraus UI-Projektionen.
+
+Eine Projektion darf mehrere registrierte Tabellen lesen, wenn die fachliche Herkunft in `docs/UI_DATA_MAPPING.md` dokumentiert und die View Ownership freigegeben ist.
+
+Fuer Schuelerprojektionen sind mindestens `tbl_students`, `tbl_groups` und `tbl_courses` als lesende Quellen zulaessig.
+
+Der Builder veraendert keine fachlichen Entitaeten und erzeugt keine doppelte Datenhaltung.
 
 VBA nutzt IDs und benannte Bereiche, aber keine direkten Zugriffe auf fachliche Tabellen.
 
@@ -72,9 +78,23 @@ Wichtige Felder:
 - `last_name`
 - `group_id`
 - `course_id`
+- `student_notes`
 - `active`
 - `created_at`
 - `updated_at`
+- `archived_at`
+
+Pflichtfelder:
+
+- `first_name`
+- `last_name`
+- `group_id`
+- `course_id`
+
+Optionale Felder:
+
+- `student_notes`
+- `archived_at`
 
 Beziehungen:
 
@@ -110,7 +130,7 @@ Erweiterungsregeln:
 
 - keine fachlichen Schuelerdaten in UI-Projektionen speichern
 - `display_name` ist eine UI-Projektion, kein gespeichertes Feld
-- Archivierungsfelder werden erst mit dem freigegebenen Archivierungsprozess ergänzt
+- Archivierung setzt `active = FALSE` und `archived_at`
 - keine physische Loeschung ohne eigenen Architekturentscheid
 
 ## data_groups

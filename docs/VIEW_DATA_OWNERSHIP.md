@@ -26,6 +26,25 @@ nur lesen, was fuer diese Ansicht fachlich begruendet ist
 
 Dashboards duerfen mehrere Quellen lesen, muessen aber jede Quelle fachlich begruenden.
 
+## Temporaerer UI-State
+
+Temporaere UI-Zustaende gehoeren nicht zum fachlichen Datenmodell.
+
+Sie werden beim Verlassen einer View verworfen.
+
+Dazu gehoeren mindestens:
+
+- Suchtext
+- Suchergebnis
+- Hervorhebungen
+- temporaere Auswahl
+
+Diese Informationen werden weder gespeichert noch zwischen Views uebernommen.
+
+Beim erneuten Oeffnen einer View startet diese in ihrem definierten Standardzustand.
+
+Fachliche Daten duerfen durch das Zuruecksetzen von temporaerem UI-State nicht veraendert werden.
+
 ## Stammgruppenuebersicht
 
 Liest:

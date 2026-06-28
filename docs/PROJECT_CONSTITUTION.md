@@ -84,11 +84,29 @@ Die verbindliche Reihenfolge lautet:
 
 ```text
 Entity
--> Storage
+-> Validator
+-> Repository
+-> Service
 -> Builder
--> UI-Projektion
--> VBA-Navigation
+-> UI
+-> Navigation
 ```
+
+Das Schema selbst wird nicht als Python-Klasse implementiert.
+
+Die fachliche Definition einer Entity erfolgt ausschliesslich ueber die Architektur-Dokumentation und die Workbook Data Registry.
+
+Validator pruefen fachliche Eingaben.
+
+Repositories lesen und schreiben Datenquellen.
+
+Services koordinieren fachliche Prozesse.
+
+Builder erzeugen Projektionen.
+
+UI zeigt Projektionen und ruft keine Repositories direkt auf.
+
+Navigation erfolgt ausschliesslich ueber technische IDs.
 
 ## Entity / Storage / Projection
 
@@ -123,6 +141,22 @@ Der Builder erzeugt:
 - Named Ranges
 - UI-Projektionen
 - vorbereitete Navigationspunkte
+
+Der Builder veraendert keine fachlichen Entitaeten.
+
+Der Builder erzeugt ausschliesslich Workbook-Struktur und Projektionen.
+
+Builder duerfen Projektionen aus mehreren registrierten Datenquellen erzeugen, sofern diese Datenquellen in `docs/DATA_REGISTRY.md`, `docs/VIEW_DATA_OWNERSHIP.md` und `docs/UI_DATA_MAPPING.md` fuer die jeweilige Projektion freigegeben sind.
+
+Fuer Schuelerprojektionen duerfen mindestens gelesen werden:
+
+- `tbl_students`
+- `tbl_groups`
+- `tbl_courses`
+
+Diese Tabellen werden dabei ausschliesslich gelesen.
+
+Gruppen- oder Kursinformationen duerfen nicht redundant in `tbl_students` uebernommen werden.
 
 Der Builder enthaelt keine spontane Fachlogik ausserhalb der Data Registry.
 

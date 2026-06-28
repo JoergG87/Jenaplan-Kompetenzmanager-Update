@@ -4,6 +4,7 @@ from openpyxl.workbook import Workbook
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.worksheet import Worksheet
 
+from ...core.constants import COURSE_ID, COURSE_NAME, FIRST_NAME, GROUP_ID, GROUP_NAME, LAST_NAME, STUDENT_ID
 from ...core.workbook_data import TABLE_COURSES, TABLE_GROUPS, TABLE_STUDENTS, WorkbookData
 from ..components import ExcelCanvas
 from ..theme import UiTheme
@@ -74,20 +75,20 @@ class SchuelerprofilScreenBuilder:
 
     def _render_profile_projection(self, worksheet: Worksheet) -> None:
         worksheet[SELECTED_STUDENT_ID_CELL] = self.data.default_student_id
-        worksheet[PROFILE_FIRST_NAME_CELL] = self._student_lookup_formula("first_name")
-        worksheet[PROFILE_LAST_NAME_CELL] = self._student_lookup_formula("last_name")
+        worksheet[PROFILE_FIRST_NAME_CELL] = self._student_lookup_formula(FIRST_NAME)
+        worksheet[PROFILE_LAST_NAME_CELL] = self._student_lookup_formula(LAST_NAME)
         worksheet[PROFILE_DISPLAY_NAME_CELL] = (
             f'=IF({SELECTED_STUDENT_ID_REFERENCE}="","",{PROFILE_FIRST_NAME_CELL}&" "&{PROFILE_LAST_NAME_CELL})'
         )
-        worksheet[PROFILE_GROUP_ID_CELL] = self._student_lookup_formula("group_id")
-        worksheet[PROFILE_COURSE_ID_CELL] = self._student_lookup_formula("course_id")
+        worksheet[PROFILE_GROUP_ID_CELL] = self._student_lookup_formula(GROUP_ID)
+        worksheet[PROFILE_COURSE_ID_CELL] = self._student_lookup_formula(COURSE_ID)
         worksheet[PROFILE_GROUP_NAME_CELL] = (
-            f'=IFERROR("Stammgruppe "&INDEX({TABLE_GROUPS}[group_name],'
-            f'MATCH({PROFILE_GROUP_ID_CELL},{TABLE_GROUPS}[group_id],0)),"")'
+            f'=IFERROR("Stammgruppe "&INDEX({TABLE_GROUPS}[{GROUP_NAME}],'
+            f'MATCH({PROFILE_GROUP_ID_CELL},{TABLE_GROUPS}[{GROUP_ID}],0)),"")'
         )
         worksheet[PROFILE_COURSE_NAME_CELL] = (
-            f'=IFERROR(INDEX({TABLE_COURSES}[course_name],'
-            f'MATCH({PROFILE_COURSE_ID_CELL},{TABLE_COURSES}[course_id],0)),"")'
+            f'=IFERROR(INDEX({TABLE_COURSES}[{COURSE_NAME}],'
+            f'MATCH({PROFILE_COURSE_ID_CELL},{TABLE_COURSES}[{COURSE_ID}],0)),"")'
         )
         worksheet[PROFILE_INITIALS_CELL] = (
             f'=IF({SELECTED_STUDENT_ID_REFERENCE}="","",'
@@ -289,16 +290,16 @@ class SchuelerprofilScreenBuilder:
             )
         )
         workbook.defined_names.add(
-            DefinedName(name="ui_profile_student_s001", attr_text=f"'{SHEET_TITLE}'!$B$5:$N$7")
+            DefinedName(name="ui_profile_new_observation", attr_text=f"'{SHEET_TITLE}'!$B$9:$H$11")
         )
         workbook.defined_names.add(
-            DefinedName(name="ui_profile_new_observation", attr_text=f"'{SHEET_TITLE}'!$B$9:$H$11")
+            DefinedName(name="ui_profile_back_to_class_overview", attr_text=f"'{SHEET_TITLE}'!$P$5:$U$7")
         )
 
     def _student_lookup_formula(self, field_name: str) -> str:
         return (
             f'=IFERROR(INDEX({TABLE_STUDENTS}[{field_name}],'
-            f'MATCH({SELECTED_STUDENT_ID_REFERENCE},{TABLE_STUDENTS}[student_id],0)),"")'
+            f'MATCH({SELECTED_STUDENT_ID_REFERENCE},{TABLE_STUDENTS}[{STUDENT_ID}],0)),"")'
         )
 
     def _column_widths(self) -> dict[str, float]:

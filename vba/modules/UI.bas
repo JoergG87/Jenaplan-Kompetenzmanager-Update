@@ -38,6 +38,8 @@ Public Sub ConfigureStudentCardNavigation()
             .ZOrder VBA_Z_ORDER_BRING_TO_FRONT
         End With
     Next slotIndex
+
+    ConfigureProfileBackNavigation
 End Sub
 
 Public Sub TestJenaplanVBA()
@@ -52,6 +54,46 @@ Private Sub RemoveStudentCardNavigationShapes(ByVal overviewSheet As Object)
         shapeName = overviewSheet.Shapes(slotIndex).Name
         If Left$(shapeName, Len(SHAPE_STUDENT_CARD_PREFIX)) = SHAPE_STUDENT_CARD_PREFIX Then
             overviewSheet.Shapes(slotIndex).Delete
+        End If
+    Next slotIndex
+End Sub
+
+Private Sub ConfigureProfileBackNavigation()
+    Dim anchorRange As Object
+    Dim profileSheet As Object
+    Dim navShape As Object
+
+    Set anchorRange = GetWorkbookNameRange(NAME_PROFILE_BACK_TO_CLASS_OVERVIEW)
+    If anchorRange Is Nothing Then
+        MsgBox "Technischer Anker fehlt: " & NAME_PROFILE_BACK_TO_CLASS_OVERVIEW, vbExclamation, "Navigation"
+        Exit Sub
+    End If
+
+    Set profileSheet = anchorRange.Worksheet
+    RemoveProfileBackNavigationShape profileSheet
+
+    Set navShape = profileSheet.Shapes.AddShape(VBA_SHAPE_TYPE_RECTANGLE, anchorRange.Left, anchorRange.Top, anchorRange.Width, anchorRange.Height)
+    With navShape
+        .Name = SHAPE_PROFILE_BACK_PREFIX
+        .AlternativeText = "Profile back navigation"
+        .OnAction = "OpenClassOverview"
+        .Placement = VBA_PLACEMENT_MOVE_AND_SIZE
+        .Fill.Visible = VBA_OFFICE_TRUE
+        .Fill.ForeColor.RGB = RGB(255, 255, 255)
+        .Fill.Transparency = 0.99
+        .Line.Visible = VBA_OFFICE_FALSE
+        .ZOrder VBA_Z_ORDER_BRING_TO_FRONT
+    End With
+End Sub
+
+Private Sub RemoveProfileBackNavigationShape(ByVal profileSheet As Object)
+    Dim slotIndex As Long
+    Dim shapeName As String
+
+    For slotIndex = profileSheet.Shapes.Count To 1 Step -1
+        shapeName = profileSheet.Shapes(slotIndex).Name
+        If shapeName = SHAPE_PROFILE_BACK_PREFIX Then
+            profileSheet.Shapes(slotIndex).Delete
         End If
     Next slotIndex
 End Sub

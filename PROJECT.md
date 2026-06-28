@@ -123,6 +123,96 @@ Die Architektur vermeidet feste Zellreferenzen. Stattdessen sollen strukturierte
 
 Die Stammgruppenübersicht und die Kursübersicht besitzen keine eigene Geschäftslogik. Sie stellen vorhandene Schülerdaten dar und werden aus diesen Daten generiert. Änderungen an Schülerdaten erfolgen künftig ausschließlich über die Schülerverwaltung.
 
+## Entity Blueprint: Student
+
+Der Student-Blueprint ist die Referenzarchitektur fuer die erste fachliche Verwaltungs-Entity.
+
+| Architekturteil | Festlegung |
+| --- | --- |
+| Entity | Student |
+| Technische ID | `student_id` |
+| ID-Format | `STU-000001` |
+| Storage | `data_students` |
+| Tabelle | `tbl_students` |
+| Owner | Schuelerverwaltung |
+| Validator | `StudentValidator` |
+| Repository | `StudentRepository` |
+| Service | `StudentService` |
+| Builder | `StudentProjectionBuilder` |
+| Navigation | `student_id` |
+
+UI-Projektionen:
+
+- Stammgruppenübersicht
+- Schülerprofil
+- Kursübersicht
+
+Schreibprozesse:
+
+- create
+- update
+- archive
+
+Regel: Das Schema wird nicht als Python-Klasse implementiert. Die fachliche Definition erfolgt ueber `docs/DATA_REGISTRY.md`; technische Bezeichner werden in `src/core/constants.py` zentral gefuehrt.
+
+Validator-Kontext:
+
+- `StudentValidator` prueft `group_id` und `course_id` gegen Referenzdaten, die vom `StudentService` bereitgestellt werden.
+- In Sprint 4.2 werden keine eigenen `GroupRepository`- oder `CourseRepository`-Klassen eingefuehrt.
+- Der Validator validiert nur gegen bereitgestellte Referenzdaten und liest selbst keine Workbook-Tabellen.
+
+UI-Regel fuer Sprint 4.2:
+
+- Es wird keine neue Excel-Verwaltungsansicht erstellt.
+- Es wird keine Testmaske erstellt.
+- Der erste Architekturtest erfolgt ausschliesslich ueber `StudentValidator`, `StudentRepository` und `StudentService`.
+- Eine Benutzeroberflaeche folgt erst nach Erweiterung von `docs/VIEW_DATA_OWNERSHIP.md` und `docs/UI_DATA_MAPPING.md`.
+
+## ID-Migrationsplan Student
+
+Die bisherigen Seed-IDs wie `s001` wurden in Sprint 4.2c kontrolliert migriert.
+
+Die Migration auf `STU-000001` erfolgte gemeinsam mit der Implementierung des `StudentService`.
+
+Betroffene Dateien und Komponenten:
+
+- `src/core/workbook_data.py`: Seed-Daten auf neue `student_id`-Strategie umstellen.
+- `src/core/constants.py`: technische Feldnamen und ID-Praefixe verwenden.
+- `src/ui/screens/klassenuebersicht.py`: Projektion liest weiterhin `student_id`, darf aber kein konkretes ID-Format voraussetzen.
+- `src/ui/screens/schuelerprofil.py`: Profilprojektion liest weiterhin `student_id`, darf aber kein konkretes ID-Format voraussetzen.
+- `scripts/create_vba_framework_poc.py`: Packaging bleibt unveraendert, solange Named Ranges und CodeNames stabil bleiben.
+- `vba/modules/Navigation.bas`: VBA verwendet weiterhin ausschliesslich `student_id`; keine Navigation ueber Namen oder Zellpositionen.
+- `vba/modules/UI.bas`: Slot-ID-Mechanismus bleibt unveraendert und liest die sichtbare `student_id`-Projektion.
+
+Migrationsregel: Die Umstellung erfolgt kontrolliert in einem Schritt, damit Seed, Workbook-Tabellen, UI-Projektionen, Named Ranges und VBA-Navigation dasselbe ID-Format verwenden.
+
+## Legacy-Analyse Student-ID
+
+| Legacy-Name / Referenz | Fundstelle | Status | Entscheidung |
+| --- | --- | --- | --- |
+| `ui_profile_student_s001` | frueher `src/ui/screens/schuelerprofil.py` | entfernt | wurde entfernt, da kein zentraler Navigationsanker |
+| `s001` als `DEFAULT_STUDENT_ID` | frueher `src/core/workbook_data.py` | migriert | `STU-000001` |
+| `s001` in Seed-Daten | frueher `src/core/workbook_data.py` | migriert | `STU-000001`-Strategie |
+| `ui_student_slot_id_XX` | `src/ui/screens/klassenuebersicht.py`, `vba/modules/Globals.bas` | formatneutraler Slot-ID-Mechanismus | bleibt als Legacy-Namensmuster bestehen |
+| `ui_profile_selected_student_id` | `src/ui/screens/schuelerprofil.py`, `vba/modules/Globals.bas` | formatneutraler Zielbereich fuer `student_id` | bleibt bestehen |
+| VBA-Meldungstexte mit `student_id` | `vba/modules/Navigation.bas` | technische Diagnose-/Fehlermeldung | bleibt bestehen |
+
+Die Legacy-Migration fuer Student-Seed-IDs ist mit Sprint 4.2c umgesetzt.
+
+Architecture Gate fuer Sprint 4.2c:
+
+- Builder-Regel ist geklaert.
+- Keine Verwaltungsoberflaeche in Sprint 4.2.
+- Validator-Kontext ist geklaert.
+- Legacy-Migration ist vorbereitet, aber nicht ausgefuehrt.
+- Student ist ohne weitere Architekturentscheidung implementierbar.
+
+Ergebnis: PASS.
+
+Offener Implementierungspunkt:
+
+- Die Stammgruppenübersicht besitzt weiterhin 28 sichtbare Karten-Slots. Ein zusaetzlich per Service erzeugter 29. aktiver Seed-Schueler ist in `tbl_students` vorhanden, benoetigt fuer sichtbare Karten-Navigation aber eine spaetere Slot-/Seed-Entscheidung.
+
 ## Technischer Stack
 
 - Python 3.11 oder neuer

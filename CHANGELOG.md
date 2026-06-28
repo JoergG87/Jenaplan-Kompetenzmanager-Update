@@ -1,5 +1,74 @@
 # CHANGELOG
 
+## UX-Verbesserung - temporaeren UI-State zuruecksetzen
+
+### Added
+
+- Architekturregel fuer temporaeren UI-State in `VIEW_DATA_OWNERSHIP.md` ergänzt.
+- VBA-Navigation `OpenClassOverview` ergänzt, die den Suchzustand der Stammgruppenuebersicht vor dem Ruecksprung leert.
+- Technischer Anker `ui_profile_back_to_class_overview` fuer den Ruecksprung aus dem Schuelerprofil ergänzt.
+
+### Changed
+
+- `ConfigureStudentCardNavigation` konfiguriert zusaetzlich die klickbare Ruecksprungflaeche im Schuelerprofil.
+- `OpenClassOverview` leert das Suchfeld merge-sicher ueber den gesamten Eingabebereich.
+
+### Not Changed
+
+- Keine fachlichen Daten, keine Student-Entity-Schichten und keine Datenquellen geaendert.
+
+## Sprint 4.2c
+
+### Added
+
+- `StudentValidator`, `StudentRepository`, `StudentService` und `StudentProjectionBuilder` als Referenzimplementierung fuer die Entity Student ergänzt.
+- Unit-Tests fuer create, update, archive, ID-Kollision und Workbook-Projektion ergänzt.
+
+### Changed
+
+- Seed-IDs kontrolliert von `s001` auf `STU-000001`-Format migriert.
+- Gruppen- und Kurs-Seed-IDs auf `GRP-000001` und `CRS-000001`-Format umgestellt.
+- `tbl_students` um `student_notes` und `archived_at` erweitert.
+- Student-Projektionen verwenden technische Feldnamen aus `src/core/constants.py`.
+- Legacy-Named-Range `ui_profile_student_s001` entfernt, da sie nicht als zentraler Navigationsanker verwendet wird.
+
+### Not Changed
+
+- Keine Excel-Verwaltungsansicht, keine Testmaske, keine VBA-Architekturänderung, kein `GroupRepository` und kein `CourseRepository` eingefuehrt.
+
+## Sprint 4.2b Architecture Gate
+
+### Changed
+
+- Builder-Regel praezisiert: Builder veraendert keine fachlichen Entitaeten und erzeugt ausschliesslich Workbook-Struktur und Projektionen.
+- Fuer Schuelerprojektionen `tbl_students`, `tbl_groups` und `tbl_courses` als lesende Quellen bestaetigt.
+- Festgelegt, dass Sprint 4.2 keine neue Verwaltungsansicht und keine Testmaske erstellt.
+- Validator-Kontext fuer `StudentValidator` dokumentiert: gueltige `group_id` und `course_id` kommen aus dem `StudentService`-Kontext.
+- Legacy-Analyse fuer Student-ID-Referenzen dokumentiert.
+
+### Not Changed
+
+- Keine Implementierung, keine Tests, kein Build, keine VBA-Aenderung und keine Migration umgesetzt.
+
+## Sprint 4.2a
+
+### Added
+
+- Student-Blueprint als Referenzarchitektur fuer die erste fachliche Verwaltungs-Entity dokumentiert.
+- Verbindliche projektweite ID-Strategie mit `STU-000001`, `GRP-000001`, `CRS-000001`, `CMP-000001`, `OBS-000001` und `MED-000001` ergänzt.
+- Zentrale technische Konstantendatei `src/core/constants.py` angelegt.
+- ID-Migrationsplan fuer die spaetere Umstellung der Seed-IDs auf `STU-000001` dokumentiert.
+
+### Changed
+
+- Student-Felder in der Workbook Data Registry um `student_notes` und `archived_at` erweitert.
+- Archivierung im Data Lifecycle konkretisiert: `active = FALSE`, `archived_at` als Zeitstempel, historische Daten bleiben erhalten.
+- Project Constitution um den Entity-Aufbau `Entity -> Validator -> Repository -> Service -> Builder -> UI -> Navigation` ergänzt.
+
+### Not Changed
+
+- Keine Benutzerfunktion, kein Validator, kein Repository, kein Service, keine Schreiblogik, keine UI-Anpassung, keine VBA-Aenderung und kein Build umgesetzt.
+
 ## v0.4 - Core Data Architecture + datengetriebene Workbook-Projektion
 
 ### Added

@@ -60,6 +60,41 @@ Public Sub OpenStudentProfileById(ByVal studentId As String)
     profileSheet.Activate
 End Sub
 
+Public Sub OpenClassOverview()
+    Dim searchInputRange As Object
+    Dim overviewAnchorRange As Object
+    Dim overviewSheet As Object
+
+    Set searchInputRange = GetWorkbookNameRange(NAME_CLASS_SEARCH_INPUT)
+    If searchInputRange Is Nothing Then
+        MsgBox "Benannter Bereich fehlt: " & NAME_CLASS_SEARCH_INPUT, vbExclamation, "Navigation"
+        Exit Sub
+    End If
+
+    Set overviewAnchorRange = GetWorkbookNameRange(NAME_STUDENT_CARD_PREFIX & "01")
+    If overviewAnchorRange Is Nothing Then
+        MsgBox "Technischer Anker fehlt: " & NAME_STUDENT_CARD_PREFIX & "01", vbExclamation, "Navigation"
+        Exit Sub
+    End If
+
+    Set overviewSheet = overviewAnchorRange.Worksheet
+    If overviewSheet Is Nothing Then
+        MsgBox "Zielblatt fuer Stammgruppenuebersicht fehlt.", vbExclamation, "Navigation"
+        Exit Sub
+    End If
+
+    ClearUiInputRange searchInputRange
+    overviewSheet.Activate
+End Sub
+
+Private Sub ClearUiInputRange(ByVal inputRange As Object)
+    If inputRange.MergeCells Then
+        inputRange.MergeArea.ClearContents
+    Else
+        inputRange.ClearContents
+    End If
+End Sub
+
 Private Function ReadCallerShapeName() As String
     If TypeName(Application.Caller) = "String" Then
         ReadCallerShapeName = CStr(Application.Caller)

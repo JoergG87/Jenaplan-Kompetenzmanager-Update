@@ -8,10 +8,22 @@ from openpyxl.styles import Font, PatternFill, Protection
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.worksheet import Worksheet
 
+from ...core.constants import (
+    ACTIVE,
+    COLOR_KEY,
+    COURSE_ID,
+    COURSE_NAME,
+    FIRST_NAME,
+    GROUP_ID,
+    GROUP_NAME,
+    LAST_NAME,
+    STUDENT_ID,
+)
 from ...core.workbook_data import (
     TABLE_COURSES,
     TABLE_GROUPS,
     TABLE_STUDENTS,
+    WorkbookData,
     WorkbookDataBuilder,
     seed_workbook_data,
 )
@@ -32,15 +44,15 @@ SEARCH_REFERENCE = "$L$6"
 SEARCH_PLACEHOLDER = "Name eingeben"
 DATA_START_ROW = 2
 DATA_COLUMNS = {
-    "student_id": "X",
-    "first_name": "Y",
-    "last_name": "Z",
+    STUDENT_ID: "X",
+    FIRST_NAME: "Y",
+    LAST_NAME: "Z",
     "display_name": "AA",
-    "group_id": "AB",
-    "course_id": "AC",
-    "course_name": "AD",
-    "color_key": "AE",
-    "active": "AF",
+    GROUP_ID: "AB",
+    COURSE_ID: "AC",
+    COURSE_NAME: "AD",
+    COLOR_KEY: "AE",
+    ACTIVE: "AF",
     "search_key": "AG",
     "initials": "AH",
     "matches_search": "AI",
@@ -55,11 +67,11 @@ VISIBLE_COURSE_ID_COLUMN = "AM"
 class ClassOverviewV02WorkbookBuilder:
     """Build the second-generation UX prototype with the group overview."""
 
-    def __init__(self, output_path: Path) -> None:
+    def __init__(self, output_path: Path, data: WorkbookData | None = None) -> None:
         self.output_path = output_path
         self.theme = UiTheme()
         self.canvas = ExcelCanvas(self.theme)
-        self.data = seed_workbook_data()
+        self.data = data or seed_workbook_data()
 
     def build(self) -> Path:
         workbook = Workbook()
@@ -122,15 +134,15 @@ class ClassOverviewV02WorkbookBuilder:
 
     def _render_student_data_source(self, worksheet: Worksheet) -> None:
         headers = {
-            "student_id": "StudentId",
-            "first_name": "Vorname",
-            "last_name": "Nachname",
+            STUDENT_ID: "StudentId",
+            FIRST_NAME: "Vorname",
+            LAST_NAME: "Nachname",
             "display_name": "Anzeigename",
-            "group_id": "GroupId",
-            "course_id": "CourseId",
-            "course_name": "Kurs",
-            "color_key": "Kursfarbe",
-            "active": "Active",
+            GROUP_ID: "GroupId",
+            COURSE_ID: "CourseId",
+            COURSE_NAME: "Kurs",
+            COLOR_KEY: "Kursfarbe",
+            ACTIVE: "Active",
             "search_key": "Suchtext",
             "initials": "Initialen",
             "matches_search": "Suchtreffer",
@@ -142,48 +154,48 @@ class ClassOverviewV02WorkbookBuilder:
         for index in range(MAX_STUDENTS):
             row = DATA_START_ROW + index
             source_index = index + 1
-            worksheet[f"{DATA_COLUMNS['student_id']}{row}"] = self._table_index_formula(
+            worksheet[f"{DATA_COLUMNS[STUDENT_ID]}{row}"] = self._table_index_formula(
                 TABLE_STUDENTS,
-                "student_id",
+                STUDENT_ID,
                 source_index,
             )
-            worksheet[f"{DATA_COLUMNS['first_name']}{row}"] = self._table_index_formula(
+            worksheet[f"{DATA_COLUMNS[FIRST_NAME]}{row}"] = self._table_index_formula(
                 TABLE_STUDENTS,
-                "first_name",
+                FIRST_NAME,
                 source_index,
             )
-            worksheet[f"{DATA_COLUMNS['last_name']}{row}"] = self._table_index_formula(
+            worksheet[f"{DATA_COLUMNS[LAST_NAME]}{row}"] = self._table_index_formula(
                 TABLE_STUDENTS,
-                "last_name",
+                LAST_NAME,
                 source_index,
             )
             worksheet[f"{DATA_COLUMNS['display_name']}{row}"] = (
-                f'=IF(${DATA_COLUMNS["student_id"]}{row}="","",'
-                f'${DATA_COLUMNS["first_name"]}{row}&" "&${DATA_COLUMNS["last_name"]}{row})'
+                f'=IF(${DATA_COLUMNS[STUDENT_ID]}{row}="","",'
+                f'${DATA_COLUMNS[FIRST_NAME]}{row}&" "&${DATA_COLUMNS[LAST_NAME]}{row})'
             )
-            worksheet[f"{DATA_COLUMNS['group_id']}{row}"] = self._table_index_formula(
+            worksheet[f"{DATA_COLUMNS[GROUP_ID]}{row}"] = self._table_index_formula(
                 TABLE_STUDENTS,
-                "group_id",
+                GROUP_ID,
                 source_index,
             )
-            worksheet[f"{DATA_COLUMNS['course_id']}{row}"] = self._table_index_formula(
+            worksheet[f"{DATA_COLUMNS[COURSE_ID]}{row}"] = self._table_index_formula(
                 TABLE_STUDENTS,
-                "course_id",
+                COURSE_ID,
                 source_index,
             )
-            worksheet[f"{DATA_COLUMNS['course_name']}{row}"] = self._course_lookup_formula(row, "course_name")
-            worksheet[f"{DATA_COLUMNS['color_key']}{row}"] = self._course_lookup_formula(row, "color_key")
-            worksheet[f"{DATA_COLUMNS['active']}{row}"] = self._table_index_formula(
+            worksheet[f"{DATA_COLUMNS[COURSE_NAME]}{row}"] = self._course_lookup_formula(row, COURSE_NAME)
+            worksheet[f"{DATA_COLUMNS[COLOR_KEY]}{row}"] = self._course_lookup_formula(row, COLOR_KEY)
+            worksheet[f"{DATA_COLUMNS[ACTIVE]}{row}"] = self._table_index_formula(
                 TABLE_STUDENTS,
-                "active",
+                ACTIVE,
                 source_index,
             )
             worksheet[f"{DATA_COLUMNS['search_key']}{row}"] = (
                 f'=LOWER(${DATA_COLUMNS["display_name"]}{row})'
             )
             worksheet[f"{DATA_COLUMNS['initials']}{row}"] = (
-                f'=IF(${DATA_COLUMNS["student_id"]}{row}="","",'
-                f'LEFT(${DATA_COLUMNS["first_name"]}{row},1)&LEFT(${DATA_COLUMNS["last_name"]}{row},1))'
+                f'=IF(${DATA_COLUMNS[STUDENT_ID]}{row}="","",'
+                f'LEFT(${DATA_COLUMNS[FIRST_NAME]}{row},1)&LEFT(${DATA_COLUMNS[LAST_NAME]}{row},1))'
             )
             worksheet[f"{DATA_COLUMNS['matches_search']}{row}"] = self._match_formula(row)
             worksheet[f"{DATA_COLUMNS['match_position']}{row}"] = self._match_position_formula(row)
@@ -198,8 +210,8 @@ class ClassOverviewV02WorkbookBuilder:
         worksheet[f"{VISIBLE_COURSE_ID_COLUMN}1"] = "VisibleCourseId"
         for index in range(MAX_STUDENTS):
             row = DATA_START_ROW + index
-            worksheet[f"{VISIBLE_STUDENT_ID_COLUMN}{row}"] = self._visible_student_formula(index, "student_id")
-            worksheet[f"{VISIBLE_COURSE_ID_COLUMN}{row}"] = self._visible_student_formula(index, "course_id")
+            worksheet[f"{VISIBLE_STUDENT_ID_COLUMN}{row}"] = self._visible_student_formula(index, STUDENT_ID)
+            worksheet[f"{VISIBLE_COURSE_ID_COLUMN}{row}"] = self._visible_student_formula(index, COURSE_ID)
 
     def _render_app_bar(self, worksheet: Worksheet) -> None:
         self.canvas.panel(worksheet, 2, 2, 3, 21, self.theme.app_bar, self.theme.app_bar)
@@ -434,10 +446,10 @@ class ClassOverviewV02WorkbookBuilder:
         return f'=IFERROR(INDEX({table_name}[{field_name}],{index}),"")'
 
     def _course_lookup_formula(self, row: int, field_name: str) -> str:
-        course_cell = f'${DATA_COLUMNS["course_id"]}{row}'
+        course_cell = f'${DATA_COLUMNS[COURSE_ID]}{row}'
         return (
             f'=IFERROR(INDEX({TABLE_COURSES}[{field_name}],'
-            f'MATCH({course_cell},{TABLE_COURSES}[course_id],0)),"")'
+            f'MATCH({course_cell},{TABLE_COURSES}[{COURSE_ID}],0)),"")'
         )
 
     def _visible_student_formula(self, index: int, field: str) -> str:
@@ -462,7 +474,7 @@ class ClassOverviewV02WorkbookBuilder:
         return f'=IF({MATCH_COUNT_REFERENCE}=0,"",{self._visible_student_formula(index, "display_name")[1:]})'
 
     def _visible_course_formula(self, index: int) -> str:
-        return self._visible_student_formula(index, "course_name")
+        return self._visible_student_formula(index, COURSE_NAME)
 
     def _visible_arrow_formula(self, index: int) -> str:
         result_index = index + 1
@@ -475,8 +487,8 @@ class ClassOverviewV02WorkbookBuilder:
         )
 
     def _match_formula(self, row: int) -> str:
-        active_cell = f'${DATA_COLUMNS["active"]}{row}'
-        group_cell = f'${DATA_COLUMNS["group_id"]}{row}'
+        active_cell = f'${DATA_COLUMNS[ACTIVE]}{row}'
+        group_cell = f'${DATA_COLUMNS[GROUP_ID]}{row}'
         display_name_cell = f'${DATA_COLUMNS["display_name"]}{row}'
         search_key_cell = f'${DATA_COLUMNS["search_key"]}{row}'
         return (
@@ -495,15 +507,15 @@ class ClassOverviewV02WorkbookBuilder:
 
     def _app_bar_context_formula(self) -> str:
         return (
-            f'="Stammgruppe "&IFERROR(INDEX({TABLE_GROUPS}[group_name],'
-            f'MATCH("{self.data.default_group_id}",{TABLE_GROUPS}[group_id],0)),"")'
+            f'="Stammgruppe "&IFERROR(INDEX({TABLE_GROUPS}[{GROUP_NAME}],'
+            f'MATCH("{self.data.default_group_id}",{TABLE_GROUPS}[{GROUP_ID}],0)),"")'
             f'&"  ·  Schuljahr {self.data.school_year}"'
         )
 
     def _student_count_formula(self) -> str:
         return (
-            f'=COUNTIFS({TABLE_STUDENTS}[group_id],"{self.data.default_group_id}",'
-            f'{TABLE_STUDENTS}[active],TRUE)&" Schüler · Schüler auswählen"'
+            f'=COUNTIFS({TABLE_STUDENTS}[{GROUP_ID}],"{self.data.default_group_id}",'
+            f'{TABLE_STUDENTS}[{ACTIVE}],TRUE)&" Schüler · Schüler auswählen"'
         )
 
     def _hide_empty_card(

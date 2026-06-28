@@ -105,13 +105,37 @@ Verbindliche ID-Felder fuer neue Architekturarbeit:
 - `media_id`
 - `report_id`
 
-Bestehende Prototyp-Bezeichner wie `stammgruppe_id` und `kurs_id` werden in Sprint 4.0 nicht migriert. Vor Sprint 4.1 ist zu entscheiden, ob sie in der Implementierung auf `group_id` und `course_id` ueberfuehrt werden.
+Bestehende historische Seed-IDs und Prototyp-Bezeichner werden nur kontrolliert migriert.
+
+Die fachlichen Zuordnungsfelder fuer neue Architekturarbeit sind `group_id` und `course_id`.
+
+## ID-Strategie
+
+Die folgende ID-Strategie ist projektweit verbindlich fuer neue fachliche Entitaeten:
+
+| Entity | ID-Feld | Format | Beispiel |
+| --- | --- | --- | --- |
+| Student | `student_id` | `STU-######` | `STU-000001` |
+| Group | `group_id` | `GRP-######` | `GRP-000001` |
+| Course | `course_id` | `CRS-######` | `CRS-000001` |
+| Competency | `competency_id` | `CMP-######` | `CMP-000001` |
+| Observation | `observation_id` | `OBS-######` | `OBS-000001` |
+| Media | `media_id` | `MED-######` | `MED-000001` |
+
+Regeln:
+
+- IDs sind technische Identitaeten und bleiben stabil.
+- Sichtbare Namen duerfen sich aendern, IDs nicht.
+- Neue IDs werden fortlaufend je Entity erzeugt.
+- Historische Seed-IDs wurden fuer Student in Sprint 4.2c kontrolliert migriert.
+- VBA-Navigation verwendet weiterhin ausschliesslich das jeweilige ID-Feld, nicht das konkrete Praefix.
 
 ## Named Ranges
 
 Registrierte bestehende Named Ranges:
 
 - `ui_profile_selected_student_id`
+- `ui_profile_back_to_class_overview`
 - `ui_student_slot_XX`
 - `ui_student_slot_id_XX`
 - `ui_class_search`
@@ -134,6 +158,7 @@ Zukuenftige Named-Range-Muster:
 Registrierte bestehende Shape-Praefixe:
 
 - `ui_nav_student_card_`
+- `ui_nav_profile_back`
 
 Zukuenftige Shape-Praefixe:
 
@@ -174,6 +199,7 @@ Nicht erlaubt sind:
 Registriert:
 
 - `OpenStudentProfileById(student_id)`
+- `OpenClassOverview()`
 
 Vorgesehen:
 

@@ -8,17 +8,34 @@ from openpyxl.utils import get_column_letter
 from openpyxl import Workbook
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
+from .constants import (
+    ACTIVE,
+    ARCHIVED_AT,
+    COLOR_KEY,
+    COURSE_ID,
+    COURSE_ID_PREFIX,
+    COURSE_NAME,
+    CREATED_AT,
+    FIRST_NAME,
+    GROUP_ID,
+    GROUP_ID_PREFIX,
+    GROUP_NAME,
+    LAST_NAME,
+    SHEET_DATA_COURSES,
+    SHEET_DATA_GROUPS,
+    SHEET_DATA_STUDENTS,
+    STUDENT_ID,
+    STUDENT_ID_PREFIX,
+    STUDENT_NOTES,
+    TABLE_COURSES,
+    TABLE_GROUPS,
+    TABLE_STUDENTS,
+    UPDATED_AT,
+)
 
-DATA_STUDENTS_SHEET = "data_students"
-DATA_GROUPS_SHEET = "data_groups"
-DATA_COURSES_SHEET = "data_courses"
 
-TABLE_STUDENTS = "tbl_students"
-TABLE_GROUPS = "tbl_groups"
-TABLE_COURSES = "tbl_courses"
-
-DEFAULT_GROUP_ID = "group_grashuepfer"
-DEFAULT_STUDENT_ID = "s001"
+DEFAULT_GROUP_ID = f"{GROUP_ID_PREFIX}-000001"
+DEFAULT_STUDENT_ID = f"{STUDENT_ID_PREFIX}-000001"
 SCHOOL_YEAR = "2025/26"
 SEED_TIMESTAMP = "2026-06-28"
 
@@ -32,9 +49,11 @@ class StudentRecord:
     last_name: str
     group_id: str
     course_id: str
+    student_notes: str
     active: bool
     created_at: str
     updated_at: str
+    archived_at: str | None
 
 
 @dataclass(frozen=True)
@@ -76,9 +95,9 @@ def seed_workbook_data() -> WorkbookData:
             GroupRecord(DEFAULT_GROUP_ID, "Grashüpfer", True),
         ),
         courses=(
-            CourseRecord("course_1", "Kurs 1", "DDEDE6", True),
-            CourseRecord("course_2", "Kurs 2", "E8F0F8", True),
-            CourseRecord("course_3", "Kurs 3", "E9E4F0", True),
+            CourseRecord(f"{COURSE_ID_PREFIX}-000001", "Kurs 1", "DDEDE6", True),
+            CourseRecord(f"{COURSE_ID_PREFIX}-000002", "Kurs 2", "E8F0F8", True),
+            CourseRecord(f"{COURSE_ID_PREFIX}-000003", "Kurs 3", "E9E4F0", True),
         ),
     )
 
@@ -93,17 +112,19 @@ class WorkbookDataBuilder:
     def build(self) -> None:
         """Create all registered Phase 1 workbook data sources."""
         self._create_table(
-            DATA_STUDENTS_SHEET,
+            SHEET_DATA_STUDENTS,
             TABLE_STUDENTS,
             (
-                "student_id",
-                "first_name",
-                "last_name",
-                "group_id",
-                "course_id",
-                "active",
-                "created_at",
-                "updated_at",
+                STUDENT_ID,
+                FIRST_NAME,
+                LAST_NAME,
+                GROUP_ID,
+                COURSE_ID,
+                STUDENT_NOTES,
+                ACTIVE,
+                CREATED_AT,
+                UPDATED_AT,
+                ARCHIVED_AT,
             ),
             (
                 (
@@ -112,26 +133,28 @@ class WorkbookDataBuilder:
                     student.last_name,
                     student.group_id,
                     student.course_id,
+                    student.student_notes,
                     student.active,
                     student.created_at,
                     student.updated_at,
+                    student.archived_at,
                 )
                 for student in self.data.students
             ),
         )
         self._create_table(
-            DATA_GROUPS_SHEET,
+            SHEET_DATA_GROUPS,
             TABLE_GROUPS,
-            ("group_id", "group_name", "active"),
+            (GROUP_ID, GROUP_NAME, ACTIVE),
             (
                 (group.group_id, group.group_name, group.active)
                 for group in self.data.groups
             ),
         )
         self._create_table(
-            DATA_COURSES_SHEET,
+            SHEET_DATA_COURSES,
             TABLE_COURSES,
-            ("course_id", "course_name", "color_key", "active"),
+            (COURSE_ID, COURSE_NAME, COLOR_KEY, ACTIVE),
             (
                 (course.course_id, course.course_name, course.color_key, course.active)
                 for course in self.data.courses
@@ -171,39 +194,39 @@ class WorkbookDataBuilder:
 
 def _student_records() -> tuple[StudentRecord, ...]:
     raw_students = (
-        ("s001", "Mia", "Becker"),
-        ("s002", "Emma", "Müller"),
-        ("s003", "Leon", "Schmidt"),
-        ("s004", "Paul", "Wagner"),
-        ("s005", "Anna", "Fischer"),
-        ("s006", "Ben", "Schneider"),
-        ("s007", "Lina", "Hoffmann"),
-        ("s008", "Noah", "Weber"),
-        ("s009", "Sophia", "Koch"),
-        ("s010", "Finn", "Bauer"),
-        ("s011", "Leni", "Richter"),
-        ("s012", "Jonas", "Klein"),
-        ("s013", "Clara", "Wolf"),
-        ("s014", "Luis", "Schröder"),
-        ("s015", "Marie", "Neumann"),
-        ("s016", "Ole", "Schwarz"),
-        ("s017", "Ella", "Braun"),
-        ("s018", "Tom", "Hartmann"),
-        ("s019", "Frida", "Krüger"),
-        ("s020", "Henri", "Lang"),
-        ("s021", "Mara", "Schmitt"),
-        ("s022", "Mats", "Werner"),
-        ("s023", "Lea", "Scholz"),
-        ("s024", "Theo", "Jung"),
-        ("s025", "Amelie", "Vogel"),
-        ("s026", "Anton", "Krause"),
-        ("s027", "Ida", "Mayer"),
-        ("s028", "Oskar", "Lehmann"),
+        ("Mia", "Becker"),
+        ("Emma", "Müller"),
+        ("Leon", "Schmidt"),
+        ("Paul", "Wagner"),
+        ("Anna", "Fischer"),
+        ("Ben", "Schneider"),
+        ("Lina", "Hoffmann"),
+        ("Noah", "Weber"),
+        ("Sophia", "Koch"),
+        ("Finn", "Bauer"),
+        ("Leni", "Richter"),
+        ("Jonas", "Klein"),
+        ("Clara", "Wolf"),
+        ("Luis", "Schröder"),
+        ("Marie", "Neumann"),
+        ("Ole", "Schwarz"),
+        ("Ella", "Braun"),
+        ("Tom", "Hartmann"),
+        ("Frida", "Krüger"),
+        ("Henri", "Lang"),
+        ("Mara", "Schmitt"),
+        ("Mats", "Werner"),
+        ("Lea", "Scholz"),
+        ("Theo", "Jung"),
+        ("Amelie", "Vogel"),
+        ("Anton", "Krause"),
+        ("Ida", "Mayer"),
+        ("Oskar", "Lehmann"),
     )
     records = []
-    for student_id, first_name, last_name in raw_students:
-        student_number = int(student_id.removeprefix("s"))
-        course_id = f"course_{((student_number - 1) % 3) + 1}"
+    for student_number, (first_name, last_name) in enumerate(raw_students, start=1):
+        student_id = f"{STUDENT_ID_PREFIX}-{student_number:06}"
+        course_id = f"{COURSE_ID_PREFIX}-{((student_number - 1) % 3) + 1:06}"
         records.append(
             StudentRecord(
                 student_id,
@@ -211,9 +234,11 @@ def _student_records() -> tuple[StudentRecord, ...]:
                 last_name,
                 DEFAULT_GROUP_ID,
                 course_id,
+                "",
                 True,
                 SEED_TIMESTAMP,
                 SEED_TIMESTAMP,
+                None,
             )
         )
     return tuple(sorted(records, key=lambda student: student.first_name.casefold()))
