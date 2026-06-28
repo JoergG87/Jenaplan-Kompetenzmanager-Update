@@ -40,3 +40,11 @@ Das Packaging-Skript setzt dort, soweit technisch möglich:
 Workbook- und Worksheet-CodeNames sind Teil des Excel-/VBA-Projekts und lassen sich nur begrenzt durch Python kontrollieren. Sie müssen bei Bedarf manuell im VBA-Editor geprüft werden.
 
 Das Packaging-Skript prüft den Seed vor dem Erzeugen des PoC. Wenn die Module `Globals`, `Navigation` und `UI` fehlen oder `Modul1` noch registriert ist, wird keine neue `.xlsm` erzeugt.
+
+## Build-Hygiene
+
+`seeds/JenaplanSeed.xlsm` ist das dauerhafte Seed-Artefakt für das VBA-Packaging.
+
+`vba/modules/` enthält die versionierten VBA-Quellen.
+
+Dateien unter `output/` sind erzeugte Build-Artefakte und werden nicht als Quellcode versioniert.

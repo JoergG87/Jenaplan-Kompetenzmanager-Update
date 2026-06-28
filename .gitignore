@@ -1,4 +1,6 @@
+output/
 __pycache__/
+*.pyc
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
@@ -7,5 +9,5 @@ __pycache__/
 venv/
 env/
 .DS_Store
-output/*
-!output/.gitkeep
+~$*.xls*
+*.tmp
