@@ -589,3 +589,18 @@ Jede Implementierung folgt künftig dieser Reihenfolge:
 Bis ein validierter VBA-Seed existiert, bleibt `.xlsx` das produktive Build-Artefakt.
 
 Nach erfolgreichem Packaging kann die `.xlsm`-Linie als Interaktionsschicht eingeführt werden, ohne Python, Datenmodell oder Fachlogik zu ersetzen.
+
+### Validierung
+
+Sprint 3.3b hat praktisch bestätigt, dass Microsoft Excel für macOS, Python und VBA technisch zusammenarbeiten:
+
+- Ein manuell in Excel erzeugter `.xlsm`-Seed wurde mit `openpyxl` und `keep_vba=True` geladen.
+- Python konnte die Arbeitsmappe verändern und wieder als `.xlsm` speichern.
+- Das eingebettete `xl/vbaProject.bin` blieb erhalten.
+- Das Makro lief anschließend in Microsoft Excel für macOS.
+
+Sprint 3.3c bereitet die `.xlsm`-Linie als Zielartefakt vor. `.xlsx` bleibt Fallback, bis das VBA-Framework stabil ist.
+
+Die lesbaren VBA-Quellen liegen unter `vba/modules/`. Sie ersetzen nicht das binäre `vbaProject.bin`; für ausführbaren VBA-Code muss der Seed nach Import der Module in Excel aktualisiert werden.
+
+Die Bereinigung von VBA-Projektobjekten wie Workbook- und Worksheet-CodeNames erfolgt im Zweifel manuell im VBA-Editor. Python darf das binäre `vbaProject.bin` erhalten und strukturell prüfen, aber nicht durch nicht validierte Binärmanipulationen verändern.

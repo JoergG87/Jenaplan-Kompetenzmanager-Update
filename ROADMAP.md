@@ -6,9 +6,9 @@ Microsoft Excel für macOS ist die verbindliche Zielplattform.
 
 Python bleibt verantwortlich für Build-System, Workbook-Erzeugung, Datenmodell, UI-Projektionen, Styles, Berichte und Fachlogik.
 
-VBA übernimmt nach erfolgreichem Packaging ausschließlich Navigation, Buttons, Dialoge, UserForms und Benutzerinteraktion.
+VBA übernimmt ausschließlich Navigation, Buttons, Dialoge, UserForms und Benutzerinteraktion.
 
-Bis ein validierter VBA-Seed existiert, bleibt `.xlsx` das produktive Build-Artefakt.
+Der VBA-Seed wurde praktisch validiert. `.xlsm` wird als Zielartefakt vorbereitet; `.xlsx` bleibt Fallback, bis das VBA-Framework stabil ist.
 
 Das Datenmodell ist die fachliche Grundlage des Projekts. Alle Ansichten sind Projektionen dieses Datenmodells.
 
@@ -21,6 +21,10 @@ Sprint 3.1: Klassenübersicht als erster UX-Screen.
 Sprint 3.2: Schülerprofil als zweiter UX-Screen.
 
 Sprint 3.3a: Architektur konsolidieren und Dokumentation bereinigen.
+
+Sprint 3.3b: VBA-Seed praktisch validieren.
+
+Sprint 3.3c: VBA-Framework als versionierbare Quelle anlegen und ersten `.xlsm`-Interaktionstest vorbereiten.
 
 Weitere Sprints folgen erst nach fachlicher Freigabe und Review.
 
@@ -93,3 +97,14 @@ Sprint 3.3a
 
 - Zielplattform, Architektur, Entwicklungsprozess und Datenmodell-Prinzipien konsolidiert.
 - Keine funktionalen Änderungen.
+
+Sprint 3.3b
+
+- Manuell erzeugten VBA-Seed mit Python und `openpyxl keep_vba=True` validiert.
+- Nachgewiesen, dass `xl/vbaProject.bin` beim Laden, Ändern und Speichern erhalten bleibt.
+
+Sprint 3.3c
+
+- Versionierbare VBA-Quellstruktur unter `vba/` vorbereitet.
+- `.xlsm`-PoC auf Basis der bestehenden UX-Arbeitsmappe und des validierten Seeds vorbereitet.
+- Keine Fachlogik in VBA.

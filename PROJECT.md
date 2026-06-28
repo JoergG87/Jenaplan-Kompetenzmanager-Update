@@ -6,7 +6,9 @@ Der Jenaplan-Kompetenzmanager ist ein professionelles Python-Projekt zur struktu
 
 Das Projekt stellt die Grundlage für eine Excel-basierte Arbeitsmappe für Microsoft Excel auf macOS bereit. Microsoft Excel für macOS ist die verbindliche Zielplattform.
 
-Python erzeugt Workbook, Datenmodell, UI-Projektionen, Styles, Berichte, Fachlogik und Build-Artefakte. Nach erfolgreichem VBA-Packaging übernimmt VBA ausschließlich Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms.
+Python erzeugt Workbook, Datenmodell, UI-Projektionen, Styles, Berichte, Fachlogik und Build-Artefakte. Der VBA-Seed wurde technisch validiert; nach Stabilisierung des VBA-Frameworks wird `.xlsm` als Zielartefakt vorbereitet. Bis dahin bleibt `.xlsx` der Fallback.
+
+VBA übernimmt ausschließlich Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms.
 
 Fachliche Logik wandert nicht nach VBA. Das Datenmodell bleibt vollständig unabhängig von VBA.
 
@@ -100,7 +102,8 @@ Das Projekt ist modular aufgebaut.
 - `data/` enthält Eingabedaten und Konfigurationen.
 - `docs/` enthält fachliche Begleitdokumentation.
 - `UX_BLUEPRINT.md` beschreibt die verbindliche UX-Grundlage für den ersten Prototyp.
-- `vba/` ist als späterer Ablageort für exportierte UI-VBA-Bausteine vorbereitet.
+- `vba/` enthält versionierbare VBA-Quellen für die spätere Interaktionsschicht.
+- `seeds/` enthält validierte Seed-Arbeitsmappen für das spätere `.xlsm`-Packaging.
 - `output/` ist für später generierte Dateien vorgesehen.
 - `tests/` ist für automatisierte Tests vorgesehen.
 - `assets/` ist für statische Ressourcen vorgesehen.
@@ -137,7 +140,7 @@ Die Klassenübersicht besitzt keine eigene Geschäftslogik. Sie stellt vorhanden
 - Generierte Excel-Dateien werden nicht manuell verändert.
 - Die spätere Darstellung wird für Microsoft Excel auf macOS ausgelegt.
 - Fachliche Logik verbleibt vollständig im Python- und Datenmodell.
-- VBA darf nach erfolgreichem Packaging ausschließlich UI-Aufgaben wie Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms übernehmen.
+- VBA darf ausschließlich UI-Aufgaben wie Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms übernehmen.
 - Strukturierte Tabellen und eindeutige IDs haben Vorrang vor festen Zellpositionen.
 - Jede Ansicht besitzt genau eine Hauptaufgabe.
 - Neue Funktionen dürfen die Hauptaufgabe einer Ansicht nicht verwässern.

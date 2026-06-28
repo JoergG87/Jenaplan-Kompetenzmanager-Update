@@ -6,6 +6,7 @@
 - Python bleibt verantwortlich für Datenmodell, UI-Projektionen, Berichte und Fachlogik.
 - VBA nach erfolgreichem Packaging ausschließlich für Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms verwenden.
 - Keine fachliche Logik in VBA.
+- VBA-Quellen unter vba/ versionieren; ausführbares VBA bleibt Bestandteil eines validierten .xlsm-Seeds.
 - Zielplattform ist Microsoft Excel für macOS.
 - openpyxl verwenden.
 - Keine festen Zellreferenzen.

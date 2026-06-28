@@ -10,7 +10,7 @@ Die vollständige Projektdokumentation befindet sich in `PROJECT.md`. Dauerhafte
 
 Ziel des Projekts ist der Aufbau eines wartbaren Generators fuer kompetenzorientierte Arbeitsmappen, Auswertungen und Berichte fuer Microsoft Excel auf macOS. Microsoft Excel fuer macOS ist die verbindliche Zielplattform.
 
-Python erzeugt Workbook, Datenmodell, UI-Projektionen, Styles, Berichte und Build-Artefakte. Nach erfolgreichem VBA-Packaging uebernimmt VBA ausschliesslich Navigation, Buttons, Dialoge, UserForms und Benutzerinteraktion. Fachliche Logik verbleibt vollstaendig im Python- und Datenmodell.
+Python erzeugt Workbook, Datenmodell, UI-Projektionen, Styles, Berichte und Build-Artefakte. Der VBA-Seed wurde technisch validiert; `.xlsm` wird als Zielartefakt vorbereitet und `.xlsx` bleibt bis zur Stabilisierung des VBA-Frameworks Fallback. VBA uebernimmt ausschliesslich Navigation, Buttons, Dialoge, UserForms und Benutzerinteraktion. Fachliche Logik verbleibt vollstaendig im Python- und Datenmodell.
 
 Die Klassenübersicht ist der Einstieg in den Arbeitsablauf. Sie dient ausschließlich dazu, Schüler schnell zu finden, auszuwählen und anschließend in das Schülerprofil zu wechseln. Verwaltung, Analyse und Auswertung erfolgen nicht in dieser Ansicht.
 
@@ -21,7 +21,8 @@ Das Projekt ist modular aufgebaut:
 - `build.py` dient als Einstiegspunkt fuer den Build-Prozess.
 - `src/` enthaelt die Python-Module fuer Workbook-Aufbau, Dashboard, Schuelerdaten, Kompetenzen, Bewertungen, Berichte, Einstellungen und Styles.
 - `src/core/`, `src/ui/` und `src/ui/screens/` bereiten die spaetere Trennung von Fachkern und UI-Generatoren vor.
-- `vba/` ist fuer spaetere exportierte UI-VBA-Bausteine vorbereitet.
+- `vba/` enthaelt versionierbare VBA-Quellen fuer die spaetere Interaktionsschicht.
+- `seeds/` enthaelt validierte `.xlsm`-Seeds fuer das VBA-Packaging.
 - `data/` enthaelt strukturierte Eingabedaten und Konfigurationen.
 - `docs/` enthaelt fachliche und technische Dokumentation.
 - `tests/` ist fuer automatisierte Tests vorgesehen.
