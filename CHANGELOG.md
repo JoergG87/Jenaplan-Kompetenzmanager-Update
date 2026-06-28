@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Sprint 3.1e
+
+### Changed
+
+- Verbindung zwischen verborgener UI-Projektion und sichtbaren Schülerkarten repariert.
+- Live-Suche auf einfache Treffer-Hilfsspalten und `INDEX`/`MATCH` umgestellt.
+- Suche auf den Vornamen ausgerichtet, passend zur Standardsortierung der Klassenübersicht.
+- Leerer Suchzustand zeigt wieder alle 28 aktiven Schüler.
+- Kein-Treffer-Zustand zeigt `Kein Schüler gefunden`.
+
 ## Sprint 3.1d
 
 ### Added

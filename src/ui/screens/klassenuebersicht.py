@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from openpyxl import Workbook
-from openpyxl.styles import Protection
+from openpyxl.formatting.rule import FormulaRule
+from openpyxl.styles import Font, PatternFill, Protection
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -33,7 +34,11 @@ DATA_COLUMNS = {
     "status": "AC",
     "search_key": "AD",
     "initials": "AE",
+    "matches_search": "AF",
+    "match_position": "AG",
 }
+MATCH_COUNT_CELL = "AH2"
+MATCH_COUNT_REFERENCE = "$AH$2"
 
 
 @dataclass(frozen=True)
@@ -56,7 +61,7 @@ class StudentCard:
 
     @property
     def search_key(self) -> str:
-        return f"{self.first_name} {self.last_name}".casefold()
+        return self.first_name.casefold()
 
 
 STUDENTS = (
@@ -80,7 +85,7 @@ STUDENTS = (
     StudentCard("s018", "Tom", "Hartmann"),
     StudentCard("s019", "Frida", "Krüger"),
     StudentCard("s020", "Henri", "Lang"),
-    StudentCard("s021", "Mila", "Schmitt"),
+    StudentCard("s021", "Mara", "Schmitt"),
     StudentCard("s022", "Mats", "Werner"),
     StudentCard("s023", "Lea", "Scholz"),
     StudentCard("s024", "Theo", "Jung"),
@@ -132,6 +137,7 @@ class ClassOverviewV02WorkbookBuilder:
             worksheet.column_dimensions[column].width = width
         for column in DATA_COLUMNS.values():
             worksheet.column_dimensions[column].hidden = True
+        worksheet.column_dimensions["AH"].hidden = True
 
         for row in range(1, 34):
             worksheet.row_dimensions[row].height = 18
@@ -161,6 +167,8 @@ class ClassOverviewV02WorkbookBuilder:
             "status": "Status",
             "search_key": "Suchtext",
             "initials": "Initialen",
+            "matches_search": "Suchtreffer",
+            "match_position": "Trefferposition",
         }
         for key, header in headers.items():
             worksheet[f"{DATA_COLUMNS[key]}1"] = header
@@ -174,6 +182,12 @@ class ClassOverviewV02WorkbookBuilder:
             worksheet[f"{DATA_COLUMNS['status']}{offset}"] = card.status
             worksheet[f"{DATA_COLUMNS['search_key']}{offset}"] = card.search_key
             worksheet[f"{DATA_COLUMNS['initials']}{offset}"] = card.initials
+            worksheet[f"{DATA_COLUMNS['matches_search']}{offset}"] = self._match_formula(offset)
+            worksheet[f"{DATA_COLUMNS['match_position']}{offset}"] = self._match_position_formula(offset)
+        worksheet[MATCH_COUNT_CELL] = (
+            f'=COUNTIF(${DATA_COLUMNS["matches_search"]}${DATA_START_ROW}:'
+            f'${DATA_COLUMNS["matches_search"]}${DATA_START_ROW + MAX_STUDENTS - 1},TRUE)'
+        )
 
     def _render_app_bar(self, worksheet: Worksheet) -> None:
         self.canvas.panel(worksheet, 2, 2, 3, 21, self.theme.app_bar, self.theme.app_bar)
@@ -262,7 +276,9 @@ class ClassOverviewV02WorkbookBuilder:
 
     def _render_student_cards(self, worksheet: Worksheet) -> None:
         for index, card in enumerate(self._sorted_students()[:MAX_STUDENTS]):
-            self._render_student_card(worksheet, card, self._card_bounds(index), index)
+            bounds = self._card_bounds(index)
+            self._render_student_card(worksheet, card, bounds, index)
+            self._hide_empty_card(worksheet, bounds, index)
 
     def _render_student_card(
         self,
@@ -297,7 +313,7 @@ class ClassOverviewV02WorkbookBuilder:
             col_start,
             row_end,
             col_start,
-            self._visible_student_formula(index, "initials"),
+            self._visible_initials_formula(index),
             font=self.canvas.font(9, bold=True, color=self.theme.primary),
             fill=avatar_fill,
             alignment=self.canvas.alignment("center"),
@@ -308,7 +324,7 @@ class ClassOverviewV02WorkbookBuilder:
             col_start + 1,
             row_start,
             col_end - 1,
-            self._visible_student_formula(index, "display_name"),
+            self._visible_display_name_formula(index),
             font=self.canvas.font(11, bold=True),
             fill=self.theme.surface,
         )
@@ -385,53 +401,87 @@ class ClassOverviewV02WorkbookBuilder:
         end = self.canvas.absolute_cell(row_end, col_end)
         return f"'{SHEET_TITLE}'!{start}:{end}"
 
+    def _sheet_area(self, row_start: int, col_start: int, row_end: int, col_end: int) -> str:
+        start = self.canvas.absolute_cell(row_start, col_start)
+        end = self.canvas.absolute_cell(row_end, col_end)
+        return f"{start}:{end}"
+
     def _visible_student_formula(self, index: int, field: str) -> str:
         result_index = index + 1
         column = DATA_COLUMNS[field]
-        position_formula = self._filtered_position_formula(result_index)
         return (
             f'=IFERROR(INDEX(${column}${DATA_START_ROW}:'
-            f'${column}${DATA_START_ROW + MAX_STUDENTS - 1},{position_formula}),"")'
+            f'${column}${DATA_START_ROW + MAX_STUDENTS - 1},'
+            f'MATCH({result_index},${DATA_COLUMNS["match_position"]}${DATA_START_ROW}:'
+            f'${DATA_COLUMNS["match_position"]}${DATA_START_ROW + MAX_STUDENTS - 1},0)),"")'
         )
+
+    def _visible_initials_formula(self, index: int) -> str:
+        return f'=IF({MATCH_COUNT_REFERENCE}=0,"",{self._visible_student_formula(index, "initials")[1:]})'
+
+    def _visible_display_name_formula(self, index: int) -> str:
+        if index == 0:
+            return (
+                f'=IF({MATCH_COUNT_REFERENCE}=0,"Kein Schüler gefunden",'
+                f'{self._visible_student_formula(index, "display_name")[1:]})'
+            )
+        return f'=IF({MATCH_COUNT_REFERENCE}=0,"",{self._visible_student_formula(index, "display_name")[1:]})'
 
     def _visible_class_formula(self, index: int) -> str:
         result_index = index + 1
         class_column = DATA_COLUMNS["class_id"]
-        position_formula = self._filtered_position_formula(result_index)
         return (
             f'=IFERROR(IF(INDEX(${class_column}${DATA_START_ROW}:'
-            f'${class_column}${DATA_START_ROW + MAX_STUDENTS - 1},{position_formula})'
+            f'${class_column}${DATA_START_ROW + MAX_STUDENTS - 1},'
+            f'MATCH({result_index},${DATA_COLUMNS["match_position"]}${DATA_START_ROW}:'
+            f'${DATA_COLUMNS["match_position"]}${DATA_START_ROW + MAX_STUDENTS - 1},0))'
             f'="class_2a","{CLASS_NAME}",""),"")'
         )
 
     def _visible_arrow_formula(self, index: int) -> str:
         result_index = index + 1
         name_column = DATA_COLUMNS["display_name"]
-        position_formula = self._filtered_position_formula(result_index)
         return (
             f'=IFERROR(IF(INDEX(${name_column}${DATA_START_ROW}:'
-            f'${name_column}${DATA_START_ROW + MAX_STUDENTS - 1},{position_formula})<>"",">",""),"")'
+            f'${name_column}${DATA_START_ROW + MAX_STUDENTS - 1},'
+            f'MATCH({result_index},${DATA_COLUMNS["match_position"]}${DATA_START_ROW}:'
+            f'${DATA_COLUMNS["match_position"]}${DATA_START_ROW + MAX_STUDENTS - 1},0))<>"",">",""),"")'
         )
 
-    def _filtered_position_formula(self, result_index: int) -> str:
-        display_name_range = (
-            f'${DATA_COLUMNS["display_name"]}${DATA_START_ROW}:'
-            f'${DATA_COLUMNS["display_name"]}${DATA_START_ROW + MAX_STUDENTS - 1}'
-        )
-        status_range = (
-            f'${DATA_COLUMNS["status"]}${DATA_START_ROW}:'
-            f'${DATA_COLUMNS["status"]}${DATA_START_ROW + MAX_STUDENTS - 1}'
-        )
-        search_range = (
-            f'${DATA_COLUMNS["search_key"]}${DATA_START_ROW}:'
-            f'${DATA_COLUMNS["search_key"]}${DATA_START_ROW + MAX_STUDENTS - 1}'
-        )
+    def _match_formula(self, row: int) -> str:
+        status_cell = f'${DATA_COLUMNS["status"]}{row}'
+        display_name_cell = f'${DATA_COLUMNS["display_name"]}{row}'
+        search_key_cell = f'${DATA_COLUMNS["search_key"]}{row}'
         return (
-            f'AGGREGATE(15,6,(ROW({display_name_range})-ROW(${DATA_COLUMNS["display_name"]}${DATA_START_ROW})+1)/'
-            f'(({status_range}="active")*'
+            f'=AND({status_cell}="active",'
             f'IF(OR({SEARCH_REFERENCE}="",{SEARCH_REFERENCE}="{SEARCH_PLACEHOLDER}"),'
-            f'{display_name_range}<>"",ISNUMBER(SEARCH(LOWER({SEARCH_REFERENCE}),{search_range})))),'
-            f'{result_index})'
+            f'{display_name_cell}<>"",ISNUMBER(SEARCH(LOWER({SEARCH_REFERENCE}),{search_key_cell}))))'
+        )
+
+    def _match_position_formula(self, row: int) -> str:
+        match_cell = f'${DATA_COLUMNS["matches_search"]}{row}'
+        match_range_start = f'${DATA_COLUMNS["matches_search"]}${DATA_START_ROW}'
+        match_range_current = f'${DATA_COLUMNS["matches_search"]}{row}'
+        return (
+            f'=IF({match_cell},COUNTIF({match_range_start}:{match_range_current},TRUE),"")'
+        )
+
+    def _hide_empty_card(
+        self,
+        worksheet: Worksheet,
+        bounds: tuple[int, int, int, int],
+        index: int,
+    ) -> None:
+        if index == 0:
+            return
+
+        worksheet.conditional_formatting.add(
+            self._sheet_area(*bounds),
+            FormulaRule(
+                formula=[f"{MATCH_COUNT_REFERENCE}<{index + 1}"],
+                fill=PatternFill("solid", fgColor=self.theme.canvas),
+                font=Font(color=self.theme.canvas),
+            ),
         )
 
     def _column_widths(self) -> dict[str, float]:
