@@ -20,6 +20,66 @@ Jede Datenquelle braucht einen registrierten Primary Key.
 
 Alle Foreign Keys muessen in diesem Dokument explizit dokumentiert sein.
 
+## SQLite Architecture Spike
+
+Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis.
+
+Spike-Pfad:
+
+```text
+data/kompetenzmanager.sqlite
+```
+
+Der Pfad verwendet das bestehende Projektverzeichnis `data/`. Der alternative Vorschlag `Daten/kompetenzmanager.sqlite` wird im Spike nicht eingefuehrt, weil dafuer keine bestehende Projektkonvention vorliegt.
+
+Gepruefte Tabellen:
+
+| SQLite-Tabelle | Entity | Bisherige Workbook-Projektion |
+| --- | --- | --- |
+| `students` | Student | `data_students` / `tbl_students` |
+| `groups` | Group | `data_groups` / `tbl_groups` |
+| `courses` | Course | `data_courses` / `tbl_courses` |
+
+Regel:
+
+SQLite ist in Sprint 5.2a nur Spike-Storage. Wenn SQLite produktiv freigegeben wird, darf es keine parallele fachliche Source of Truth neben Workbook-Tabellen geben. Dann werden `data_*`-Sheets und `tbl_*`-Tabellen zur Excel-Projektion aus SQLite.
+
+VBA schreibt nicht direkt in SQLite.
+
+Python bleibt fachliche Schreibschicht.
+
+UserForms benoetigen spaeter eine freigegebene Python Bridge oder CLI.
+
+Minimales Spike-Schema:
+
+```text
+students(
+  student_id TEXT PRIMARY KEY,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  group_id TEXT NOT NULL,
+  course_id TEXT NOT NULL,
+  student_notes TEXT,
+  active INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived_at TEXT
+)
+
+groups(
+  group_id TEXT PRIMARY KEY,
+  group_name TEXT NOT NULL,
+  active INTEGER NOT NULL
+)
+
+courses(
+  course_id TEXT PRIMARY KEY,
+  course_name TEXT NOT NULL,
+  color_key TEXT,
+  active INTEGER NOT NULL
+)
+```
+
 ## Physische Workbook-Datenbank
 
 Die `data_*`-Quellen werden als versteckte Tabellenblaetter im Workbook angelegt.

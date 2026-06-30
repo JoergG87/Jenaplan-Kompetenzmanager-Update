@@ -211,9 +211,58 @@ Registriert:
 
 Vorgesehen:
 
+- `OpenNewStudentDialog()`
 - `OpenCompetencyById(competency_id)`
 - `OpenReportById(report_id)`
 - `OpenSubjectById(subject_id)`
+
+## SQLite-Spike
+
+Registrierter Spike-Pfad:
+
+- `data/kompetenzmanager.sqlite`
+
+Registrierte SQLite-Tabellen:
+
+- `students`
+- `groups`
+- `courses`
+
+Registrierte Python-Spike-Komponenten:
+
+- `SQLiteDatabase`
+- `SQLiteStudentRepository`
+- `SQLiteGroupRepository`
+- `SQLiteCourseRepository`
+- `create_sqlite_seed_database(path)`
+- `build_workbook_data_from_sqlite(path)`
+
+Registrierte Spike-Skripte:
+
+- `scripts/create_sqlite_spike.py`
+
+## Application Command Layer
+
+Registrierte Python-Module:
+
+- `src/application/dispatcher.py`
+- `src/application/commands/student.py`
+- `src/application/commands/observation.py`
+- `src/application/commands/report.py`
+
+Registrierte Python-Klassen und Funktionen:
+
+- `ApplicationCommandDispatcher`
+- `CommandDispatchError`
+- `CommandHandler`
+- `SuccessResult`
+- `ErrorResult`
+- `CreateStudentCommand`
+- `student_create_handler(service)`
+
+Registrierte Command-Namen:
+
+- `student.create`
 
 ## UserForms
 
@@ -227,11 +276,18 @@ Vorgesehene UserForm-Namen:
 
 Registrierte Control-Namen fuer `frm_student_new`:
 
+- `ctl_first_name_label`
 - `ctl_first_name`
+- `ctl_last_name_label`
 - `ctl_last_name`
+- `ctl_group_id_label`
 - `ctl_group_id`
+- `ctl_course_id_label`
 - `ctl_course_id`
+- `ctl_student_notes_label`
 - `ctl_student_notes`
+- `ctl_document_section_label`
+- `ctl_document_empty_state`
 - `ctl_document_list`
 - `ctl_add_document`
 - `ctl_cancel`

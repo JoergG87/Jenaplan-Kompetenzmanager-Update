@@ -899,3 +899,493 @@ Der Beobachtungsdialog wird nur vorbereitet und nicht in Sprint 5 implementiert.
 Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden.
 
 Schnellbeobachtung und Gruppenbewertung bleiben Backlog-Themen.
+
+## ADR-036 - Sprint 5.1b stoppt an fehlender VBA-zu-Python-Service-Bruecke
+
+### Kontext
+
+Sprint 5.1b sollte `frm_student_new` erstmals produktiv an die Schueleranlage anbinden.
+
+Der vorgesehene Ablauf war:
+
+```text
+UserForm
+-> StudentService.create_student()
+-> StudentRepository
+-> tbl_students
+-> aktualisierte Stammgruppenuebersicht
+```
+
+Die UserForm darf dabei keine Businesslogik enthalten und niemals direkt in `tbl_students` schreiben.
+
+### Befund
+
+`StudentService` ist aktuell eine Python-Laufzeitkomponente.
+
+Die produktive UserForm laeuft in Excel/VBA.
+
+Im Projekt existiert noch kein freigegebener, validierter Mechanismus, mit dem VBA auf macOS den Python-`StudentService` direkt, reproduzierbar und releasefaehig aufrufen kann.
+
+Eine direkte Tabellenlogik in VBA waere ein Architekturbruch, weil dadurch die freigegebene Service-/Repository-Schicht umgangen wuerde.
+
+### Entscheidung
+
+Sprint 5.1b wird an dieser Stelle technisch gestoppt.
+
+`frm_student_new` wird nicht produktiv angebunden, solange keine freigegebene Bruecke zwischen VBA-UserForm und fachlicher Python-Schicht entschieden ist.
+
+Es wird kein Workaround umgesetzt, der in VBA direkt in fachliche Tabellen schreibt.
+
+### Technische Optionen
+
+Python Build/Import Workflow:
+
+- Eingaben werden nicht live aus VBA verarbeitet.
+- Python bleibt alleiniger Schreiber der Workbook-Datenquellen.
+- Vorteil: passt zur bestehenden Architektur.
+- Nachteil: kein echter Live-Dialog in der geoeffneten Excel-Datei.
+
+VBA Repository-Schicht:
+
+- VBA erhaelt eine eigene, eng begrenzte Repository-Schicht fuer freigegebene Schreibprozesse.
+- Vorteil: echter Live-Dialog in Excel moeglich.
+- Nachteil: fachliche Regeln muessen streng aus VBA herausgehalten und gegen Python-Regeln abgesichert werden.
+
+CSV/Hidden-Sheet Command Queue:
+
+- VBA schreibt nur einen technischen Befehl in eine Queue; Python verarbeitet ihn spaeter ueber Services.
+- Vorteil: UserForm bleibt duenn und Service-Logik bleibt in Python.
+- Nachteil: benoetigt einen klaren Synchronisations- und Aktualisierungsprozess.
+
+SQLite/API:
+
+- Excel/VBA spricht mit einer externen Daten- oder Service-Schicht.
+- Vorteil: sauberer Anwendungsschnitt.
+- Nachteil: groesserer Technologiesprung und zusaetzlicher Betrieb.
+
+### Empfehlung
+
+Empfohlen wird als naechster Architekturspike die Command-Queue-Variante.
+
+Sie haelt die UserForm duenn, vermeidet direkte VBA-Tabellenschreiblogik und laesst `StudentService` weiterhin die fachliche Schueleranlage koordinieren.
+
+Vor produktiver Schueleranlage muss entschieden werden:
+
+- wo die Command Queue liegt
+- wann Python sie verarbeitet
+- wie die Stammgruppenuebersicht danach aktualisiert wird
+- wie Fehler aus `StudentValidator` wieder in den Dialog oder an die Nutzerin gemeldet werden
+
+### Konsequenzen
+
+Sprint 5.1b fuehrt keine produktive Schueleranlage ein.
+
+`OpenNewStudentDialog()` und `frm_student_new` bleiben vorbereitet, aber ohne produktiven Schreibpfad.
+
+Der naechste Schritt ist eine Architekturentscheidung zur Laufzeitbruecke zwischen Excel/VBA und Python-Service-Schicht.
+
+## ADR-037 - SQLite als moegliche zentrale Datenbasis geprueft
+
+### Kontext
+
+Sprint 5.2a prueft SQLite als technische Grundlage fuer spaetere UserForm-Schreibprozesse.
+
+Der Zielpfad lautet:
+
+```text
+VBA UserForm
+-> Python Bridge / CLI
+-> SQLite DB
+-> Python Builder
+-> Excel-Projektion
+```
+
+VBA darf dabei nicht direkt in SQLite schreiben.
+
+Python bleibt die fachliche Schreibschicht.
+
+### Entscheidung
+
+SQLite wird als moegliche neue Source of Truth weiterverfolgt.
+
+Der Spike erzeugt eine SQLite-Datenbank unter `data/kompetenzmanager.sqlite`.
+
+Der urspruenglich vorgeschlagene Pfad `Daten/kompetenzmanager.sqlite` wird nicht eingefuehrt, weil das Projekt bereits die Konvention `data/` fuer Datenartefakte verwendet.
+
+Im Spike werden nur die bestehenden Entitaeten Student, Group und Course abgebildet:
+
+- `students`
+- `groups`
+- `courses`
+
+Die bestehenden IDs bleiben unveraendert:
+
+- `STU-000001` usw.
+- `GRP-000001` usw.
+- `CRS-000001` usw.
+
+### Befund
+
+Python kann die SQLite-Datenbank erzeugen.
+
+Python kann Seed-Daten fuer Students, Groups und Courses in SQLite schreiben.
+
+Python kann diese Daten ueber SQLite-Repositories lesen.
+
+Der bestehende Builder kann aus den SQLite-gelesenen Daten die bisherige Excel-Projektion erzeugen.
+
+Die Excel-Projektion bleibt dabei weiterhin eine Projektion und wird nicht zur fachlichen Source of Truth.
+
+### Konsequenzen
+
+SQLite ist noch nicht produktive Source of Truth.
+
+Die Workbook-Tabellen `tbl_students`, `tbl_groups` und `tbl_courses` bleiben im Spike Projektions- und Kompatibilitaetsschicht fuer Excel.
+
+Wenn SQLite produktiv eingefuehrt wird, muss es genau eine fachliche Source of Truth geben:
+
+- entweder SQLite als Storage und Excel als Projektion
+- oder der aktuelle Workbook-Storage
+
+Ein paralleler Schreibbetrieb in SQLite und Workbook-Tabellen ist nicht erlaubt.
+
+### Risiken
+
+- Python Bridge / CLI fuer UserForms ist noch nicht entschieden.
+- Fehler aus Python-Validierung muessen spaeter kontrolliert an Excel/VBA zurueckgemeldet werden.
+- Dateiablage, Backup, Sperren und Mehrfachzugriff der SQLite-Datei sind noch nicht geklaert.
+- Vollstaendige Migration weiterer Entitaeten, insbesondere Beobachtungen, Kompetenzen und Dokumentreferenzen, ist nicht Teil dieses Spikes.
+- Der produktive Buildpfad darf erst umgestellt werden, wenn SQLite als Source of Truth final freigegeben ist.
+
+### Empfehlung
+
+SQLite soll als Zielarchitektur fuer die fachliche Datenhaltung weiter geprueft werden.
+
+Der naechste sinnvolle Sprint ist ein Python-Bridge-/CLI-Spike:
+
+- UserForm erzeugt keinen direkten Datenbankzugriff.
+- VBA startet oder uebergibt spaeter nur einen technischen Auftrag.
+- Python verarbeitet den Auftrag, nutzt Services und Repositories und aktualisiert SQLite.
+- Der Builder erzeugt danach die Excel-Projektion aus SQLite.
+
+## ADR-038 - Application Command Layer zwischen Adaptern und Domain Services
+
+### Kontext
+
+Nach dem SQLite-Spike braucht der Kompetenzmanager eine technische Bruecke zwischen Excel/VBA und der Python-Domaene.
+
+Eine CLI ist dafuer nur ein moeglicher Adapter.
+
+Die fachliche Steuerung darf nicht in CLI, VBA oder Excel-Logik wandern.
+
+### Entscheidung
+
+Zwischen Command-Adaptern und Domain Services wird ein Application Command Layer eingefuehrt.
+
+Zielarchitektur:
+
+```text
+VBA
+-> Command Adapter
+-> Application Command Dispatcher
+-> Domain Services
+-> Repositories
+-> SQLite
+-> Builder
+-> Excel-Projektion
+```
+
+Python bleibt die einzige fachliche Schreibschicht.
+
+VBA enthaelt keine Businesslogik.
+
+SQLite bleibt Zielarchitektur fuer fachliche Datenhaltung.
+
+Excel bleibt Projektions- und UI-Schicht.
+
+### Struktur
+
+Empfohlene Struktur:
+
+```text
+src/application/
+|-- dispatcher.py
+`-- commands/
+    |-- student.py
+    |-- observation.py
+    `-- report.py
+```
+
+`dispatcher.py` enthaelt den Application Command Dispatcher.
+
+`commands/` enthaelt reine Command-DTOs, zum Beispiel `CreateStudentCommand` fuer `student.create`.
+
+### Dispatcher-Design
+
+Der Dispatcher nimmt ein Command mit `command_name` entgegen.
+
+Er kennt keine Fachlogik.
+
+Er leitet das Command an einen registrierten Handler weiter.
+
+Der Handler ist die Verbindung zum passenden Domain Service, zum Beispiel:
+
+```text
+student.create
+-> StudentService.create_student()
+```
+
+Der Dispatcher erzeugt keine IDs selbst, validiert keine Fachregeln und schreibt nicht in SQLite.
+
+### CLI-Design
+
+Eine spaetere CLI, zum Beispiel `python3 km.py student create`, ist nur ein Adapter.
+
+Die CLI darf:
+
+- Argumente entgegennehmen
+- daraus ein Command-DTO bauen
+- das Command an den Dispatcher uebergeben
+- technische Fehlercodes und Meldungen zurueckgeben
+
+Die CLI darf nicht:
+
+- fachliche Regeln enthalten
+- direkt Repositories aufrufen
+- direkt in SQLite schreiben
+- Excel-Projektionen selbst veraendern
+
+### VBA-Anbindung
+
+VBA ruft spaeter keinen Domain Service direkt auf.
+
+VBA sammelt UI-Eingaben und uebergibt sie an einen Command Adapter.
+
+Der Adapter uebergibt ein Command an den Dispatcher.
+
+VBA bleibt Interaktionsschicht und enthaelt keine Businesslogik.
+
+### Konsequenzen
+
+Sprint 5.3 fuehrt keine produktive CLI und keine UserForm-Anbindung ein.
+
+Der Application Layer ist ein Architektur-Skelett und noch keine vollstaendige Command-Menge.
+
+Der naechste sinnvolle Sprint prueft einen konkreten Adapter fuer `student.create`, bevorzugt als CLI-/Python-Bridge-Spike.
+
+## ADR-039 - student.create durchlaeuft den Python-Application-Stack
+
+### Kontext
+
+Sprint 5.4 prueft `student.create` ohne CLI, ohne VBA und ohne Excel.
+
+Nachgewiesen werden soll nur der Python-Stack:
+
+```text
+ApplicationCommandDispatcher
+-> CreateStudentCommand
+-> StudentService.create_student()
+-> SQLiteStudentRepository
+-> SQLite
+```
+
+### Entscheidung
+
+`student.create` wird als erster End-to-End-Command im Python-Stack akzeptiert.
+
+Der Dispatcher enthaelt keine Fachlogik und kein SQL.
+
+Der Dispatcher liefert ein `SuccessResult`, wenn der Handler erfolgreich durchlaeuft.
+
+Der Dispatcher liefert ein `ErrorResult`, wenn Domain- oder Repository-Fehler entstehen.
+
+`StudentService` bleibt fuer fachliche Validierung, ID-Erzeugung und Prozesskoordination verantwortlich.
+
+`SQLiteStudentRepository` ist fuer den Schreibzugriff auf SQLite verantwortlich.
+
+### Konsequenzen
+
+SQLite kann im Python-Stack als Source of Truth fuer `student.create` verwendet werden.
+
+Adapter fehlen weiterhin:
+
+- keine CLI
+- keine VBA-Anbindung
+- kein Prozessstart aus Excel
+- keine Rueckmeldung an eine UserForm
+
+Der naechste Sprint kann den ersten Adapter fuer `student.create` pruefen, ohne die fachliche Logik aus dem Python-Stack herauszuziehen.
+
+Offen bleiben:
+
+- Prozessstart aus Excel/VBA auf macOS
+- Fehler-Rueckmeldung vom Python-Prozess an VBA
+- Transaktionsgrenzen bei SQLite-Schreibprozessen
+- anschliessender Rebuild oder Refresh der Excel-Projektion
+
+## ADR-040 - Architecture Baseline v2.0
+
+Status: Accepted
+
+### Motivation
+
+Die urspruengliche Excel-zentrierte Loesung war als schneller UX- und Workbook-Prototyp richtig.
+
+Mit wachsendem Funktionsumfang reicht eine reine Workbook-Architektur aber nicht mehr aus:
+
+- fachliche Schreibprozesse wie Schueleranlage, Beobachtungserfassung und Dokumentreferenzen brauchen stabile Transaktionen
+- VBA darf keine Businesslogik enthalten
+- Excel darf keine fachlichen Datenentscheidungen treffen
+- fachliche Daten duerfen nicht gleichzeitig in UI-Projektionen und Tabellenlogik entstehen
+- spaetere UserForms brauchen einen sauberen Weg in die Python-Domaene
+
+Die Architektur wurde deshalb kontrolliert erweitert, ohne die bisherigen Erkenntnisse zu verlieren: Excel bleibt Zieloberflaeche und Projektion, Python bleibt fachliche Schicht, SQLite wird als zentrale Datenbasis vorbereitet.
+
+### Architecture v1
+
+Die erste tragfaehige Architektur war:
+
+```text
+Python
+-> Workbook Builder
+-> Excel
+```
+
+Python erzeugte Workbook-Struktur, Datenblaetter, UI-Projektionen und Styles.
+
+Excel war Zielartefakt und sichtbare Arbeitsoberflaeche.
+
+Diese Architektur bleibt historisch wichtig, weil sie die datengetriebene Projektion, strukturierte Tabellen, stabile IDs und reproduzierbare Builds eingefuehrt hat.
+
+### Architecture Baseline v2.0
+
+Die aktuell validierte Baseline lautet:
+
+```text
+                    Adapter Layer
+           (VBA / CLI / zukuenftige Adapter)
+
+                         |
+
+               Application Layer
+              (Dispatcher / Commands)
+
+                         |
+
+                  Domain Layer
+             (Services / Validatoren)
+
+                         |
+
+              Infrastructure Layer
+              (SQLite / Repository)
+
+                         |
+
+               Projection Layer
+               (Workbook Builder)
+
+                         |
+
+                    Excel UI
+```
+
+### Verantwortlichkeiten
+
+Adapter Layer:
+
+- nimmt Benutzerinteraktionen oder technische Aufrufe entgegen
+- baut Commands fuer die Application-Schicht
+- enthaelt keine Fachlogik
+- schreibt nicht direkt in SQLite
+
+Application Layer:
+
+- definiert Commands
+- routet Commands ueber den Dispatcher
+- erzeugt `SuccessResult` oder `ErrorResult`
+- enthaelt keine Businesslogik, kein SQL und keine Excel-Logik
+
+Domain Layer:
+
+- enthaelt die fachliche Logik
+- validiert Eingaben ueber Validatoren
+- koordiniert fachliche Prozesse ueber Services
+- erzeugt fachliche IDs nach freigegebener Strategie
+
+Infrastructure Layer:
+
+- kapselt Persistenz
+- enthaelt Repositories
+- liest und schreibt SQLite
+- ist die einzige Schicht mit direktem Datenbankzugriff
+
+Projection Layer:
+
+- erzeugt Workbook-Datenblaetter, strukturierte Tabellen, Named Ranges und UI-Projektionen
+- liest aus registrierten Datenquellen
+- enthaelt keine Fachlogik
+
+Excel UI:
+
+- zeigt Projektionen
+- ermoeglicht Navigation und Interaktion
+- trifft keine fachlichen Datenentscheidungen
+- ist nicht Source of Truth
+
+### Architekturprinzipien
+
+- SQLite ist die vorbereitete Source of Truth fuer fachliche Daten.
+- Python ist die einzige fachliche Schreibschicht.
+- Excel enthaelt keine fachlichen Datenentscheidungen.
+- VBA enthaelt keine Businesslogik.
+- Repositories kapseln Persistenz.
+- Builder erzeugen ausschliesslich Projektionen.
+- Commands bilden den Einstiegspunkt fachlicher Ablaeufe.
+- Adapter sind austauschbar und duerfen keine Fachlogik enthalten.
+- Es gibt keine parallele fachliche Schreibquelle neben SQLite.
+
+### Standard-Datenfluss
+
+Der Standardablauf fuer zukuenftige Schreibprozesse ist:
+
+```text
+User
+-> UserForm
+-> Adapter
+-> Dispatcher
+-> Command
+-> Service
+-> Repository
+-> SQLite
+-> Builder
+-> Excel-Projektion
+```
+
+### Auswirkungen
+
+Alle zukuenftigen Module folgen dieser Baseline.
+
+Das gilt insbesondere fuer:
+
+- Schueler
+- Beobachtungen
+- Kompetenzen
+- Dokumente
+- Berichte
+
+Sonderarchitekturen sind nicht zulaessig.
+
+Neue Module muessen entweder in diese Schichten eingeordnet werden oder vorab eine explizite Architekturentscheidung erhalten.
+
+### Abgrenzung
+
+Diese Baseline fuehrt keine neue Implementierung ein.
+
+Sie dokumentiert den bereits validierten Stand aus:
+
+- SQLite Architecture Spike
+- Application Command Layer
+- `student.create` End-to-End durch den Python-Stack
+
+Offen bleiben Adapter, produktive CLI, VBA-Prozessstart, UserForm-Anbindung und automatischer Refresh der Excel-Projektion.

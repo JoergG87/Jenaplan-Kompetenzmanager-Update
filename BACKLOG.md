@@ -36,7 +36,39 @@ Laura nutzt aktuell ein Arbeitsblatt mit Schuelern in Spalte 1 und fortlaufenden
 
 Abgrenzung:
 
-Nicht Bestandteil von Sprint 5.0.
+Nicht Bestandteil von Sprint 5.
+
+Status:
+
+Idee
+
+### Beobachtungsdialog
+
+Priorität: Hoch
+
+Beschreibung:
+
+Neue Beobachtungen sollen spaeter ueber einen zentralen Dialog mit Datum, Kontext, Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien erfasst werden.
+
+Abgrenzung:
+
+Nicht Bestandteil von Sprint 5. Kompetenzen muessen vor Umsetzung fachlich geklaert werden.
+
+Status:
+
+Idee
+
+### Kompetenzzuordnung im Beobachtungsdialog
+
+Priorität: Hoch
+
+Beschreibung:
+
+Beobachtungen sollen spaeter einer oder mehreren Kompetenzen zugeordnet werden.
+
+Abgrenzung:
+
+Nicht Bestandteil von Sprint 5.
 
 Status:
 
@@ -98,11 +130,97 @@ Idee
 
 Platzhalter für zukünftige Einträge.
 
+## Epic: Dokumente und Medien
+
+### Dokument-Upload
+
+Priorität: Offen
+
+Beschreibung:
+
+Dokumente sollen spaeter studentenzentriert abgelegt und in Excel nur als Referenz mit Metadaten gefuehrt werden.
+
+Abgrenzung:
+
+Nicht Bestandteil von Sprint 5.
+
+Status:
+
+Idee
+
+### Medienvorschau
+
+Priorität: Offen
+
+Beschreibung:
+
+Medien und Dokumente sollen spaeter aus dem Kompetenzmanager heraus sichtbar oder oeffenbar gemacht werden.
+
+Abgrenzung:
+
+Nicht Bestandteil von Sprint 5.
+
+Status:
+
+Idee
+
 ## Epic: Schülerverwaltung
+
+### CLI-/Python-Bridge-Adapter fuer `student.create`
+
+Priorität: Hoch
+
+Beschreibung:
+
+Ein Adapter soll spaeter UserForm- oder CLI-Eingaben in ein Application Command uebersetzen und an den Dispatcher uebergeben.
+
+Abgrenzung:
+
+Keine Fachlogik im Adapter. Kein direkter Repository- oder SQLite-Zugriff aus CLI oder VBA.
+
+Status:
+
+Idee
+
+### Python Bridge / CLI fuer SQLite-Schreibprozesse
+
+Priorität: Hoch
+
+Beschreibung:
+
+UserForms sollen spaeter einen technischen Auftrag an Python uebergeben. Python validiert und schreibt fachliche Daten in SQLite.
+
+Abgrenzung:
+
+Nicht Bestandteil von Sprint 5.2a.
+
+Status:
+
+Idee
+
+### Command Queue fuer UserForm-Schreibprozesse
+
+Priorität: Hoch
+
+Beschreibung:
+
+VBA-UserForms sollen fachliche Schreibprozesse nicht direkt in Workbook-Tabellen ausfuehren, sondern einen technischen Auftrag fuer die Python-Service-Schicht erzeugen.
+
+Abgrenzung:
+
+Architekturspike vor produktiver Schueleranlage.
+
+Status:
+
+Idee
 
 ### Schüler anlegen
 
 Priorität: Offen
+
+Abgrenzung:
+
+Produktive Schueleranlage ist nicht Bestandteil von Sprint 5.1a.
 
 Status:
 

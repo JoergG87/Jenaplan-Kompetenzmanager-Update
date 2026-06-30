@@ -123,29 +123,93 @@ Schülerverwaltung: erster transaktionaler Schreibprozess
 - [ ] Keine physische Löschung
 - [ ] Schreibprozess vollständig oder gar nicht ausführen
 
-## Sprint 5.0 🔜
+## Sprint 5 🔜
 
-- [ ] Status: Vorbereitet
+- [ ] Status: Scope abgeschlossen; Dialog Framework begonnen
 
 ### Titel
 
-Dialog- und Dokumentenarchitektur vorbereiten
+Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 
 ### Ziele
 
-- [ ] Standard fuer modale VBA-UserForms dokumentieren
-- [ ] Referenzdialog `Neuer Schueler` dokumentieren
-- [ ] Dokumentenstruktur fuer Schuelerdokumente und Beobachtungsanhaenge festlegen
-- [ ] Dokumentbereich in der Schueler-UserForm vorbereiten
-- [ ] Spaeteren Beobachtungsdialog mit Kompetenzbezug vorbereiten
+- [x] Scope Freeze abschliessen
+- [x] Standard fuer modale VBA-UserForms dokumentieren
+- [x] Referenzdialog `Neuer Schueler` als erste Referenzimplementierung einordnen
+- [x] Dokumentenstruktur fuer Schuelerdokumente und Beobachtungsanhaenge festlegen
+- [x] Dokumentbereich in der Schueler-UserForm vorbereiten
+- [x] Spaeteren Beobachtungsdialog mit Kompetenzbezug vorbereiten
+- [ ] Produktive Speicherlogik fuer Schueler freigeben
+
+### Sprint 5.1a - Dialog Framework vorbereiten
+
+- [x] Dialogstandard konkretisieren
+- [x] `frm_student_new` gegen den Dialogstandard pruefen
+- [x] Enter = Speichern und Esc = Abbrechen im Referenzdialog vorbereiten
+- [x] Vorgesehenen Dialogoeffner `OpenNewStudentDialog()` registrieren
+- [x] Keine produktive Schueler-Speicherlogik
+- [x] Kein Seed-Import
+
+### Sprint 5.1b - Schueleranlage ueber UserForm anbinden
+
+- [x] Architekturpfad UserForm -> `StudentService.create_student()` geprueft
+- [x] Fehlende freigegebene VBA-zu-Python-Service-Bruecke dokumentiert
+- [x] Direkte VBA-Schreiblogik in `tbl_students` ausgeschlossen
+- [x] Technische Optionen dokumentiert
+- [x] Empfehlung: Command-Queue-Architekturspike
+- [x] Keine produktive UserForm-Anbindung umgesetzt
+- [x] Kein Seed-Import
+
+### Sprint 5.2a - SQLite Architecture Spike
+
+- [x] SQLite-Verfuegbarkeit geprueft
+- [x] Datenbankpfad `data/kompetenzmanager.sqlite` festgelegt
+- [x] Tabellen `students`, `groups` und `courses` erzeugt
+- [x] Seed-Daten ohne ID-Neuvergabe nach SQLite geschrieben
+- [x] SQLite-Repositories fuer Students, Groups und Courses prototypisiert
+- [x] Bestehende Excel-Projektion testweise aus SQLite-Daten erzeugt
+- [x] Keine produktive Migration
+- [x] Keine VBA-zu-Python-Bridge
+- [x] Kein Seed-Import
+
+### Sprint 5.3 - Application Command Layer
+
+- [x] Application-Layer-Struktur unter `src/application/` angelegt
+- [x] Application Command Dispatcher als Architektur-Skelett eingefuehrt
+- [x] `student.create` als erstes Command-DTO vorbereitet
+- [x] CLI als spaeteren Adapter dokumentiert
+- [x] VBA-Anbindung als spaeteren Command Adapter dokumentiert
+- [x] Keine produktive CLI
+- [x] Keine UserForm-Anbindung
+- [x] Keine Build-Aenderung
+
+### Sprint 5.4 - student.create End-to-End
+
+- [x] `student.create` durch Dispatcher, Command, Service, Repository und SQLite validiert
+- [x] `SuccessResult` und `ErrorResult` eingefuehrt
+- [x] Keine CLI
+- [x] Keine VBA-Anbindung
+- [x] Keine Excel-Automation
+- [x] Kein Build
+
+### Architecture Baseline v2.0
+
+- [x] Validierten Sprint-5-Architekturstand dokumentiert
+- [x] Architecture v1 historisch eingeordnet
+- [x] Adapter, Application, Domain, Infrastructure, Projection und Excel UI als Schichten beschrieben
+- [x] Standard-Datenfluss dokumentiert
+- [x] Keine neue Implementierung
 
 ### Nicht Bestandteil
 
-- [ ] Keine Beobachtungserfassung
-- [ ] Keine Schnellbeobachtung oder Gruppenbewertung
-- [ ] Keine Kompetenzzuordnung in Beobachtungen implementieren
-- [ ] Kein vollstaendiges Dokumentenmanagement
-- [ ] Keine Datei-Vorschau
-- [ ] Keine Berichte
-- [ ] Keine Kursverwaltung
-- [ ] Keine Stammgruppenverwaltung
+- [x] Keine Beobachtungserfassung
+- [x] Keine Schnellbeobachtung oder Gruppenbewertung
+- [x] Keine Kompetenzzuordnung in Beobachtungen implementieren
+- [x] Kein vollstaendiges Dokumentenmanagement
+- [x] Kein Dokument-Upload
+- [x] Keine Medienvorschau
+- [x] Keine produktive Schueleranlage
+- [x] Keine direkte VBA-SQLite-Anbindung
+- [x] Keine Berichte
+- [x] Keine Kursverwaltung
+- [x] Keine Stammgruppenverwaltung

@@ -78,6 +78,51 @@ Hilfstabellen, Formeln, Named Ranges, Shapes und sichtbare Zellen duerfen das Da
 
 Auswertungen duerfen keine eigenen Schatteninformationen erzeugen.
 
+## Architecture Baseline v2.0
+
+Architecture Baseline v2.0 ist die verbindliche Schichtenbaseline nach Sprint 5.
+
+```text
+Adapter Layer
+-> Application Layer
+-> Domain Layer
+-> Infrastructure Layer
+-> Projection Layer
+-> Excel UI
+```
+
+Verantwortlichkeiten:
+
+- Adapter Layer: nimmt Interaktionen entgegen und baut Commands; keine Fachlogik.
+- Application Layer: Commands, Dispatcher und Routing; keine Fachlogik, kein SQL, keine Excel-Logik.
+- Domain Layer: Services, Validatoren und fachliche Regeln.
+- Infrastructure Layer: Repositories, SQLite und Persistenz.
+- Projection Layer: Workbook Builder und Excel-Projektionen.
+- Excel UI: Anzeige, Navigation und Interaktion auf Basis von Projektionen.
+
+Standard-Datenfluss:
+
+```text
+User
+-> UserForm
+-> Adapter
+-> Dispatcher
+-> Command
+-> Service
+-> Repository
+-> SQLite
+-> Builder
+-> Excel-Projektion
+```
+
+SQLite ist die vorbereitete Source of Truth fuer fachliche Daten.
+
+Python ist die einzige fachliche Schreibschicht.
+
+VBA enthaelt keine Businesslogik und schreibt nicht direkt in SQLite.
+
+Excel bleibt Projektion und UI, nicht fachliche Datenquelle.
+
 Neue Funktionen entstehen nach dem Standardablauf:
 
 1. vorhandene Daten ergaenzen
@@ -123,6 +168,7 @@ Entity
 -> Validator
 -> Repository
 -> Service
+-> Application Command Layer
 -> Builder
 -> UI
 -> Navigation
@@ -137,6 +183,10 @@ Validator pruefen fachliche Eingaben.
 Repositories lesen und schreiben Datenquellen.
 
 Services koordinieren fachliche Prozesse.
+
+Der Application Command Layer nimmt technische Commands von Adaptern entgegen und delegiert an Services.
+
+Command Adapter wie CLI oder spaeter VBA duerfen keine Fachlogik enthalten.
 
 Builder erzeugen Projektionen.
 

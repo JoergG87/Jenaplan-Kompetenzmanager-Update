@@ -125,6 +125,48 @@ Die Stammgruppenübersicht und die Kursübersicht besitzen keine eigene Geschäf
 
 VBA-Quelländerungen werden versioniert unter `vba/modules/` gepflegt. Der Seed muss dauerhaft das Bootstrap-Modul `SeedImport` enthalten; damit kann `scripts/import_vba_sources_to_seed.py` die versionierten Module `Globals`, `Navigation` und `UI` automatisch in `seeds/JenaplanSeed.xlsm` aktualisieren. Das Skript bricht ab, wenn dieser Bootstrap im Seed fehlt.
 
+## Architecture Baseline v2.0
+
+Architecture Baseline v2.0 dokumentiert den aktuell validierten Zielzustand nach Sprint 5.
+
+Die Baseline entwickelt keine neue Architektur, sondern fasst die bereits umgesetzten Entscheidungen zusammen:
+
+```text
+Adapter Layer
+(VBA / CLI / zukuenftige Adapter)
+-> Application Layer
+   (Dispatcher / Commands)
+-> Domain Layer
+   (Services / Validatoren)
+-> Infrastructure Layer
+   (SQLite / Repository)
+-> Projection Layer
+   (Workbook Builder)
+-> Excel UI
+```
+
+Verbindliche Prinzipien:
+
+- SQLite ist die vorbereitete Source of Truth fuer fachliche Daten.
+- Python bleibt die einzige fachliche Schreibschicht.
+- Commands sind der Einstiegspunkt fachlicher Ablaeufe.
+- Dispatcher routen Commands und enthalten keine Businesslogik.
+- Services und Validatoren enthalten die fachliche Logik.
+- Repositories kapseln Persistenz und SQLite-Zugriff.
+- Builder erzeugen ausschliesslich Excel-Projektionen.
+- Excel und VBA bleiben UI-, Projektions- und Interaktionsschicht.
+- VBA schreibt weder direkt in SQLite noch in fachliche Workbook-Tabellen.
+
+Historische Architecture v1 bleibt als Grundlage erhalten:
+
+```text
+Python
+-> Workbook Builder
+-> Excel
+```
+
+Architecture v2.0 erweitert diese Linie um Application, Domain und Infrastructure Layer, damit spaetere UserForms, CLI-Adapter und weitere Module ohne Sonderarchitektur denselben fachlichen Ablauf nutzen koennen.
+
 ## Engineering Lessons Learned
 
 Aenderungen an UI-Projektionen koennen indirekt Hidden-Spalten, Named Ranges, VBA-Navigation, Suchfunktion und weitere UI-Projektionen beeinflussen.
@@ -137,9 +179,20 @@ Kuenftige Aenderungen an Projection Buildern muessen deshalb immer eine Regressi
 - Suchfunktion
 - UI-Projektionen
 
-## Sprint 5.0 - Dialog- und Dokumentenarchitektur
+## Sprint 5 - Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 
-Sprint 5.0 bereitet die erste echte Eingabemaske vor, ohne die vollstaendige Schuelerverwaltung zu implementieren.
+Sprint 5 hat den Scope Freeze abgeschlossen und das Dialog Framework begonnen.
+
+Der aktuelle Stand:
+
+- Scope abgeschlossen
+- Dialog Framework begonnen
+- erste UserForm vorbereitet
+- Schuelerverwaltung begonnen, aber noch nicht produktiv freigegeben
+- Sprint 5.1a bereitet den verbindlichen Dialogstandard vor
+- Sprint 5.1b wurde an der fehlenden VBA-zu-Python-Service-Bruecke gestoppt
+- Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis fuer spaetere UserForm-Schreibprozesse
+- Sprint 5.3 fuehrt den Application Command Layer als Bruecke zwischen Command-Adaptern und Domain Services ein
 
 Grundsatz:
 
@@ -151,12 +204,34 @@ UserForms sammeln Eingaben, fuehren nur einfache Oberflaechenvalidierung durch, 
 
 UserForms enthalten keine Businesslogik und schreiben nicht direkt in Workbook-Tabellen.
 
-Erste Referenz-UserForm:
+Erste Referenzimplementierung des Dialog Frameworks:
 
 - Titel: Neuer Schueler
 - Technischer Name: `frm_student_new`
 - Felder: Vorname, Nachname, Stammgruppe, Kurs, Notiz, Dokumente
 - Aktionen: Abbrechen, Speichern, Dokument hinzufuegen
+- Status: vorbereitet, noch nicht produktiv freigegeben
+
+Sprint 5.1a definiert `frm_student_new` als Referenzdialog fuer alle zukuenftigen Eingabemasken. Der Dialog darf UI-nahe Pflichtzustaende vorbereiten, enthaelt aber keine produktive Speicherlogik, keine StudentService-Anbindung und keinen Tabellenzugriff.
+
+Sprint 5.1b pruefte die produktive Anbindung der UserForm an `StudentService.create_student()`. Der produktive Schreibpfad wird nicht umgesetzt, weil aktuell kein freigegebener, validierter Mechanismus existiert, mit dem Excel/VBA den Python-`StudentService` direkt aufrufen kann. Eine direkte VBA-Schreiblogik in `tbl_students` ist ausgeschlossen. Die naechste Architekturentscheidung betrifft die Laufzeitbruecke zwischen UserForm und Python-Service-Schicht; bevorzugt zu pruefen ist eine CSV- oder Hidden-Sheet-Command-Queue.
+
+Sprint 5.2a prueft SQLite als moegliche neue Source of Truth. Der Spike verwendet `data/kompetenzmanager.sqlite`, weil das Projekt bereits `data/` als Datenverzeichnis fuehrt. Python erzeugt die Datenbank, schreibt Seed-Daten fuer Students, Groups und Courses und erzeugt daraus testweise die bestehende Excel-Projektion. VBA schreibt nicht direkt in SQLite; fuer produktive UserForm-Schreibprozesse bleibt eine Python Bridge oder CLI erforderlich.
+
+Sprint 5.3 fuehrt eine Application-Schicht ein:
+
+```text
+VBA
+-> Command Adapter
+-> Application Command Dispatcher
+-> Domain Services
+-> Repositories
+-> SQLite
+-> Builder
+-> Excel-Projektion
+```
+
+Die CLI ist nur ein moeglicher Adapter. Der Dispatcher nimmt Commands entgegen und leitet sie an passende Domain-Service-Handler weiter. Er enthaelt keine Fachlogik, schreibt nicht in SQLite und erzeugt keine Excel-Projektionen. VBA ruft spaeter Commands aus, bleibt aber reine Interaktionsschicht.
 
 Dokumentenstruktur:
 
@@ -166,7 +241,9 @@ Dokumentenstruktur:
 - Hauptdokumente liegen unter `Hauptdokumente/`.
 - Beobachtungsanhaenge liegen unter `Beobachtungsanhaenge/<observation_id>/`.
 
-Der Beobachtungsdialog wird nur vorbereitet. Kompetenzen muessen dort zwingend mitgedacht werden; die Beobachtungserfassung selbst bleibt ausserhalb von Sprint 5.0.
+Die eigentliche Dokumentenverwaltung ist nicht Bestandteil von Sprint 5. Die Architektur und Grundstruktur werden vorbereitet.
+
+Der Beobachtungsdialog wird nur vorbereitet. Kompetenzen muessen dort zwingend mitgedacht werden; die Beobachtungserfassung selbst bleibt ausserhalb von Sprint 5.
 
 ## Entity Blueprint: Student
 
@@ -332,7 +409,7 @@ Aktuelle Planung:
 - Sprint 3.1: Klassenübersicht als frühere Bezeichnung der heutigen Stammgruppenübersicht
 - Sprint 3.2: Schülerprofil
 - Sprint 3.3a: Architektur konsolidieren
-- Sprint 5.0: Dialog- und Dokumentenarchitektur vorbereiten
+- Sprint 5: Scope abgeschlossen, Dialog Framework begonnen, erste UserForm vorbereitet
 - Weitere Produktbereiche erst nach fachlicher Freigabe und Review
 
 ## Bekannte offene Punkte v0.4
@@ -427,4 +504,4 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 Sprint 4.1 ist abgeschlossen.
 
-Aktuell vorbereitet: Sprint 5.0 - Dialog- und Dokumentenarchitektur.
+Aktueller Stand: Sprint 5.3 - Application Command Layer als Architektur-Skelett eingefuehrt; produktive CLI und UserForm-Anbindung bleiben offen.

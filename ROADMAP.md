@@ -36,7 +36,7 @@ Sprint 4.1: Core Data Architecture durch Hidden Data Sheets, strukturierte Tabel
 
 Sprint 4.2: Schülerverwaltung vorbereiten und ersten transaktionalen Schreibprozess umsetzen: Schüler anlegen, ändern und archivieren.
 
-Sprint 5.0: Dialog- und Dokumentenarchitektur vorbereiten. Fokus: modale VBA-UserForms, Referenzdialog `Neuer Schueler`, studentenzentrierte Dokumentenstruktur und Vorbereitung spaeterer Beobachtungsdialoge.
+Sprint 5: Scope Freeze abgeschlossen, Dialog Framework begonnen und erste Referenz-UserForm `Neuer Schueler` vorbereitet. Sprint 5.1a konkretisiert den Dialogstandard fuer zukuenftige Eingabemasken. Sprint 5.1b stoppt die produktive Schueleranlage an der noch offenen Laufzeitbruecke zwischen Excel/VBA und Python-Service-Schicht. Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis. Sprint 5.3 fuehrt den Application Command Layer ein. Sprint 5.4 validiert `student.create` im Python-Stack. Architecture Baseline v2.0 dokumentiert diesen erreichten Stand.
 
 Zukünftige Produktziele ohne Sprintzuordnung
 
@@ -148,11 +148,20 @@ Sprint 4.2
 - Umfang: Schüler anlegen, Schüler ändern, Schüler archivieren.
 - Keine physische Löschung.
 
-Sprint 5.0
+Sprint 5
 
-- Standard fuer modale VBA-UserForms dokumentieren.
-- Erste Referenz-UserForm `Neuer Schueler` vorbereiten.
-- Dokumentenbereich fuer Schuelerdokumente dokumentieren.
-- Studentenzentrierte Dokumenten- und Medienstruktur festlegen.
-- Beobachtungsdialog mit Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien nur vorbereiten.
-- Keine Beobachtungserfassung, Schnellbeobachtung, Kursverwaltung, Stammgruppenverwaltung, Berichte oder Datei-Vorschau umsetzen.
+- Scope Freeze abgeschlossen.
+- Dialog Framework begonnen.
+- Sprint 5.1a konkretisiert Standardgroesse, Titelbereich, Abstaende, Labels, Pflichtfeldkennzeichnung, Button-Reihenfolge, Tab-Reihenfolge, Enter/Esc-Verhalten und modales Oeffnen.
+- Erste Referenz-UserForm `Neuer Schueler` als nicht-produktive Referenzimplementierung vorbereitet.
+- Sprint 5.1b prueft die produktive Anbindung und stoppt ohne Implementierung, weil kein freigegebener direkter VBA-zu-Python-Service-Aufruf existiert.
+- Naechster Architekturspike: Command Queue zwischen UserForm und Python-Service-Schicht pruefen.
+- Sprint 5.2a erzeugt `data/kompetenzmanager.sqlite` mit Students, Groups und Courses und baut daraus eine separate Excel-Projektion.
+- Naechster Architekturspike: Python Bridge / CLI fuer UserForm-Auftraege nach SQLite pruefen.
+- Sprint 5.3 fuehrt den Application Command Dispatcher als Zwischenschicht zwischen Command-Adaptern und Domain Services ein.
+- Naechster Sprint: konkreten `student.create` Adapter pruefen, ohne Fachlogik in CLI oder VBA zu verschieben.
+- Architecture Baseline v2.0 fasst den validierten Zielzustand zusammen: Adapter -> Application -> Domain -> Infrastructure -> Projection -> Excel UI.
+- Dokumentenbereich fuer Schuelerdokumente dokumentiert.
+- Studentenzentrierte Dokumenten- und Medienstruktur festgelegt.
+- Beobachtungsdialog mit Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien nur vorbereitet.
+- Keine Beobachtungserfassung, Schnellbeobachtung, Kompetenzzuordnung im Beobachtungsdialog, Dokument-Upload, Medienvorschau, Kursverwaltung, Stammgruppenverwaltung oder Berichte umsetzen.

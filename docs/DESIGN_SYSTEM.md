@@ -56,16 +56,60 @@ Modale UserForms folgen dem ruhigen, einfachen Desktop-App-Charakter des freigeg
 
 Sie sind Eingabedialoge der Anwendung und keine Tabellenansichten.
 
-Grundregeln:
+Alle zukuenftigen Eingabemasken verwenden denselben Dialogstandard.
+
+Standard-Fenster:
+
+- Standardgroesse fuer einfache Eingabedialoge: ca. 5760 x 6720 Twips
+- modales Oeffnen
+- Titel ueber die Fenster-Caption, kurz und fachlich eindeutig
+- einspaltiger Aufbau von oben nach unten
+- linker und rechter Rand ca. 480 Twips
+- vertikale Abstaende zwischen Label und Feld ca. 300 Twips
+- groessere Abschnittsabstaende zwischen Feldgruppen
+
+Standard-Labels:
 
 - klare Ueberschrift
 - einspaltige, gut lesbare Pflichtfelder
 - Pflichtfelder sichtbar mit `*`
-- ruhige Abstaende
-- keine ueberladene Informationsdichte
+- Labels stehen direkt oberhalb des Eingabefelds
+- sichtbare Labels sind fachliche Begriffe, technische IDs bleiben unsichtbar
+
+Standard-Verhalten:
+
+- Tab-Reihenfolge von oben nach unten
+- Enter = Speichern
+- Esc = Abbrechen
+- keine Tabellenbearbeitung durch Lehrkraefte
+- UserForms sammeln nur Eingaben und rufen spaeter freigegebene Services auf
+- keine Businesslogik in UserForms
+- kein direkter Schreibzugriff auf Workbook-Tabellen
+- nach erfolgreichem Speichern schliesst sich die UserForm
+- danach wird die betroffene Ansicht aktualisiert
+
+Standard-Buttons:
+
+- Standardbuttons: Abbrechen und Speichern
+- Abbrechen links, Speichern rechts
 - primaere Aktion rechts unten
 - Abbrechen links neben Speichern
+
+Layout-Regeln:
+
+- ruhige Abstaende
+- keine ueberladene Informationsdichte
 - Dokumentbereiche als einfache Listen mit klarer Hinzufuegen-Aktion
+
+Referenzdialog `frm_student_new`:
+
+- Zweck: neuen Schueler anlegen
+- Rolle: erste Referenzimplementierung des Dialog Frameworks
+- Status: nicht produktiv freigegeben
+- Felder: Vorname *, Nachname *, Stammgruppe *, Kurs *, Notiz
+- keine Speicherlogik
+- keine StudentService-Anbindung
+- kein Tabellenzugriff
 
 Referenzskizze fuer `frm_student_new`:
 

@@ -1,11 +1,109 @@
 # CHANGELOG
 
-## Sprint 5.0 - Dialog- und Dokumentenarchitektur
+## Architecture Baseline v2.0
+
+### Added
+
+- ADR-040 `Architecture Baseline v2.0` mit Status `Accepted` ergaenzt.
+- Aktuelle Schichtenarchitektur dokumentiert: Adapter Layer, Application Layer, Domain Layer, Infrastructure Layer, Projection Layer und Excel UI.
+- Architecture v1 historisch als `Python -> Workbook Builder -> Excel` eingeordnet.
+- Standard-Datenfluss fuer zukuenftige Schreibprozesse dokumentiert.
+
+### Not Changed
+
+- Keine Implementierung, keine Python-Aenderung, keine VBA-Aenderung, kein Build, keine Tests und keine Excel-Automation umgesetzt.
+
+## Sprint 5.4 - student.create End-to-End ohne Adapter
+
+### Added
+
+- `student.create` End-to-End durch Application Dispatcher, `StudentService`, `SQLiteStudentRepository` und SQLite getestet.
+- `SuccessResult` und `ErrorResult` als Command-Ergebnisse ergaenzt.
+- `SQLiteStudentRepository` um schreibende Student-Operationen erweitert.
+- Unit-Tests fuer erfolgreichen SQLite-Schreibpfad und Fehlerfaelle ergaenzt.
+
+### Not Changed
+
+- Keine CLI, keine VBA-Anbindung, keine UserForm-Anbindung, keine Excel-Automation, kein Build, keine Beobachtungen, keine Dokumente, keine Kompetenzen und keine Berichte umgesetzt.
+
+## Sprint 5.3 - Application Command Layer Architecture Spike
+
+### Added
+
+- Application Command Layer als neue Architekturschicht zwischen Command-Adaptern und Domain Services eingefuehrt.
+- `ApplicationCommandDispatcher` als nicht-produktiven Dispatcher-Prototyp ergaenzt.
+- `CreateStudentCommand` als erstes Command-DTO fuer `student.create` ergaenzt.
+- Reservierte Command-Namespaces fuer `observation` und `report` angelegt.
+- Tests fuer Dispatcher-Registrierung und Delegation an einen Student-Service-Handler ergaenzt.
+- ADR-038 fuer Application Command Layer, CLI als Adapter und spaetere VBA-Anbindung dokumentiert.
+
+### Not Changed
+
+- Keine produktive CLI, keine UserForm-Anbindung, keine VBA-Aenderung, keine Beobachtungs-, Dokument- oder Report-Funktion, keine Build-Aenderung und keine Excel-Automation umgesetzt.
+
+## Sprint 5.2a - SQLite Architecture Spike
+
+### Added
+
+- SQLite-Spike-Datenbank unter `data/kompetenzmanager.sqlite` erzeugt.
+- Initiales SQLite-Schema fuer `students`, `groups` und `courses` prototypisiert.
+- `SQLiteDatabase`, `SQLiteStudentRepository`, `SQLiteGroupRepository` und `SQLiteCourseRepository` als Spike-Komponenten ergaenzt.
+- Spike-Skript `scripts/create_sqlite_spike.py` ergaenzt, das Seed-Daten nach SQLite schreibt und eine separate Excel-Projektion aus SQLite-Daten erzeugt.
+- Unit-Tests fuer Seed-Migration, Repository-Lesen und Builder-Projektion aus SQLite ergaenzt.
+- ADR-037 fuer SQLite als gepruefte Zielarchitektur ergaenzt.
+
+### Changed
+
+- Dokumentation um SQLite als moegliche zentrale Datenbasis erweitert.
+- `data/` als bestehende Projektkonvention fuer die Spike-Datenbank dokumentiert; der vorgeschlagene Pfad `Daten/kompetenzmanager.sqlite` wird deshalb nicht neu eingefuehrt.
+
+### Not Changed
+
+- Keine vollstaendige Migration, keine produktive UserForm-Anbindung, keine VBA-zu-Python-Bridge, keine direkte VBA-SQLite-Anbindung, kein Seed-Import und keine Aenderung am produktiven Buildpfad umgesetzt.
+
+## Sprint 5.1b - Technischer Stopp der produktiven Schueleranlage
+
+### Added
+
+- ADR-036 dokumentiert den fehlenden freigegebenen Laufzeitpfad von VBA-UserForm zu Python-`StudentService`.
+- Technische Optionen fuer die Schueleranlage ueber UserForm dokumentiert: Python Build/Import Workflow, VBA Repository-Schicht, CSV/Hidden-Sheet Command Queue und spaeter SQLite/API.
+- Empfehlung fuer einen naechsten Architekturspike zur Command-Queue-Variante dokumentiert.
+
+### Not Changed
+
+- `frm_student_new` wurde nicht produktiv angebunden.
+- Keine Speicherlogik, keine StudentService-Anbindung, kein direkter Tabellenzugriff, kein Seed-Import, keine Excel-Automation und kein Build umgesetzt.
+
+## Sprint 5.1a - Dialog Framework vorbereiten
+
+### Added
+
+- Dialogstandard fuer modale VBA-UserForms in `docs/DESIGN_SYSTEM.md` konkretisiert.
+- `frm_student_new` als nicht-produktive Referenzimplementierung des Dialog Frameworks beschrieben.
+- Vorgesehenen Dialogoeffner `OpenNewStudentDialog()` in der Technical Naming Registry ergaenzt.
+
+### Changed
+
+- `frm_student_new.frm` minimal an den Dialogstandard angepasst: Enter loest Speichern aus, Esc loest Abbrechen aus.
+
+### Not Changed
+
+- Keine produktive Schueler-Speicherlogik, keine Datenänderung, keine StudentService-Anbindung, kein Tabellenzugriff, kein Build, keine Excel-Automation und kein Import in den Seed umgesetzt.
+
+## Sprint 5 - Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
+
+### Status
+
+- Scope Freeze abgeschlossen.
+- Dialog Framework begonnen.
+- Erste UserForm `frm_student_new` vorbereitet.
+- Schuelerverwaltung begonnen, aber noch nicht produktiv freigegeben.
 
 ### Added
 
 - Standard fuer modale VBA-UserForms dokumentiert.
-- Referenz-UserForm `frm_student_new` fuer den Zielzustand `Neuer Schueler` dokumentiert.
+- `frm_student_new` als erste Referenzimplementierung des Dialog Frameworks fuer den Dialog `Neuer Schueler` eingeordnet.
+- Benannte Label-, Eingabe-, Auswahl-, Dokument- und Button-Controls fuer den Referenzdialog in der Technical Naming Registry ergaenzt.
 - Studentenzentrierte Dokumentenstruktur mit `Dokumente/<student_id>/Hauptdokumente/` und `Dokumente/<student_id>/Beobachtungsanhaenge/<observation_id>/` dokumentiert.
 - Beobachtungsdialog als spaeterer Zielzustand mit Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien vorbereitet.
 - Schnellbeobachtung / Gruppenbewertung als Backlog-Thema ergaenzt.
@@ -13,13 +111,15 @@
 
 ### Changed
 
+- Sprint-Dokumentation auf den freigegebenen Projektstand ausgerichtet: Sprint 5 ist nicht mehr reine Planung, sondern begonnen.
 - `data_media` in der Workbook Data Registry von rein beobachtungsbezogenen Anlagen zu studentenzentrierten Dokument- und Medienreferenzen erweitert.
 - Data Lifecycle, View Data Ownership und UI Data Mapping um Schuelerdokumente, Beobachtungsanhaenge und den Neuer-Schueler-Dialog ergaenzt.
 - Technical Naming Registry um UserForm- und Control-Namen sowie Dokument-/Medienfelder erweitert.
 
 ### Not Changed
 
-- Keine Implementierung, kein Build, keine Beobachtungserfassung, keine Schnellbeobachtung, kein vollstaendiges Dokumentenmanagement und keine Datei-Vorschau umgesetzt.
+- Keine Speicherlogik, keine Tabellenzugriffe, keine Service- oder Repository-Aufrufe, keine Dokumentauswahl, keine VBA-Navigation und keine Build-Anpassung umgesetzt.
+- Keine produktive Freigabe der UserForm, keine Beobachtungserfassung, keine Schnellbeobachtung, kein vollstaendiges Dokumentenmanagement und keine Datei-Vorschau umgesetzt.
 
 ## VBA-Seed-Import-Automation
 

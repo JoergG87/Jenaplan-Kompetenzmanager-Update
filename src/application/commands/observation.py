@@ -1,0 +1,2 @@
+"""Reserved observation command namespace."""
+
