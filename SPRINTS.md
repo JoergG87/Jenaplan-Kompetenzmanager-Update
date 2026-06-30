@@ -122,3 +122,30 @@ Schülerverwaltung: erster transaktionaler Schreibprozess
 - [ ] Schüler archivieren
 - [ ] Keine physische Löschung
 - [ ] Schreibprozess vollständig oder gar nicht ausführen
+
+## Sprint 5.0 🔜
+
+- [ ] Status: Vorbereitet
+
+### Titel
+
+Dialog- und Dokumentenarchitektur vorbereiten
+
+### Ziele
+
+- [ ] Standard fuer modale VBA-UserForms dokumentieren
+- [ ] Referenzdialog `Neuer Schueler` dokumentieren
+- [ ] Dokumentenstruktur fuer Schuelerdokumente und Beobachtungsanhaenge festlegen
+- [ ] Dokumentbereich in der Schueler-UserForm vorbereiten
+- [ ] Spaeteren Beobachtungsdialog mit Kompetenzbezug vorbereiten
+
+### Nicht Bestandteil
+
+- [ ] Keine Beobachtungserfassung
+- [ ] Keine Schnellbeobachtung oder Gruppenbewertung
+- [ ] Keine Kompetenzzuordnung in Beobachtungen implementieren
+- [ ] Kein vollstaendiges Dokumentenmanagement
+- [ ] Keine Datei-Vorschau
+- [ ] Keine Berichte
+- [ ] Keine Kursverwaltung
+- [ ] Keine Stammgruppenverwaltung

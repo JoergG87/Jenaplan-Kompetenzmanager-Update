@@ -26,6 +26,30 @@ Idee
 
 Priorität: Hoch
 
+Beschreibung:
+
+Mehrere Schueler sollen spaeter in einer Maske bewertet oder beobachtet werden koennen.
+
+Hintergrund:
+
+Laura nutzt aktuell ein Arbeitsblatt mit Schuelern in Spalte 1 und fortlaufenden Wertungen.
+
+Abgrenzung:
+
+Nicht Bestandteil von Sprint 5.0.
+
+Status:
+
+Idee
+
+### Gruppenbewertung
+
+Priorität: Hoch
+
+Beschreibung:
+
+Mehrere Schueler erhalten in einem gefuehrten Eingabefluss Wertungen, ohne fuer jedes Kind einzeln einen vollstaendigen Dialog zu oeffnen.
+
 Status:
 
 Idee

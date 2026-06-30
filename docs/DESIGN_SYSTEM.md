@@ -50,6 +50,55 @@ Python erzeugt Benutzeroberflächen aus dem freigegebenen Design-System.
 
 VBA implementiert ausschließlich Interaktion und verändert keine fachliche Logik.
 
+## Modale UserForms
+
+Modale UserForms folgen dem ruhigen, einfachen Desktop-App-Charakter des freigegebenen Designs.
+
+Sie sind Eingabedialoge der Anwendung und keine Tabellenansichten.
+
+Grundregeln:
+
+- klare Ueberschrift
+- einspaltige, gut lesbare Pflichtfelder
+- Pflichtfelder sichtbar mit `*`
+- ruhige Abstaende
+- keine ueberladene Informationsdichte
+- primaere Aktion rechts unten
+- Abbrechen links neben Speichern
+- Dokumentbereiche als einfache Listen mit klarer Hinzufuegen-Aktion
+
+Referenzskizze fuer `frm_student_new`:
+
+```text
++--------------------------------------------+
+|              Neuer Schueler                |
++--------------------------------------------+
+| Vorname *                                  |
+| [__________________________]               |
+|                                            |
+| Nachname *                                 |
+| [__________________________]               |
+|                                            |
+| Stammgruppe *                              |
+| [v Eulen]                                  |
+|                                            |
+| Kurs *                                     |
+| [v Kurs 2]                                 |
+|                                            |
+| Notiz                                      |
+| +--------------------------------------+   |
+| |                                      |   |
+| +--------------------------------------+   |
+|                                            |
+| Dokumente                                  |
+| [Dokument] Foerderplan.pdf                 |
+| [Dokument] Hoergeraetebericht.pdf          |
+| [+ Dokument hinzufuegen]                   |
+|                                            |
+|          [Abbrechen]   [Speichern]         |
++--------------------------------------------+
+```
+
 ## Stammgruppenübersicht
 
 Die sichtbare Startansicht heißt `Stammgruppenübersicht`.

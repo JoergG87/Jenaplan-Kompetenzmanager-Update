@@ -855,3 +855,47 @@ Wenn Kompetenznamen, Kursnamen oder Stammgruppennamen spaeter geaendert werden, 
 Sprint 4.1 darf keine produktive Beobachtungserfassung einfuehren, ohne diese Frage vorher zu klaeren.
 
 Schueler-, Kurs- und Stammgruppenverwaltung muessen stabile IDs erhalten, unabhaengig von sichtbaren Namen.
+
+## ADR-035 - Modale UserForms und studentenzentrierte Dokumentreferenzen
+
+### Kontext
+
+Sprint 5 bereitet die erste echte Eingabemaske des Kompetenzmanagers vor.
+
+Der Kompetenzmanager soll als Anwendung verstanden werden.
+
+Excel ist die Runtime, nicht der Ort fuer direkte fachliche Eingaben in Tabellen.
+
+Gleichzeitig sollen Dokumente und Medien spaeter angebunden werden, ohne Excel-Dateien durch eingebettete Anlagen zu belasten.
+
+### Entscheidung
+
+Fachliche Eingaben erfolgen ueber modale VBA-UserForms.
+
+UserForms sammeln Eingaben, fuehren nur einfache Oberflaechenvalidierung durch und rufen freigegebene Services auf.
+
+UserForms enthalten keine Businesslogik und schreiben nicht direkt in fachliche Workbook-Tabellen.
+
+Die erste Referenz-UserForm ist `frm_student_new` fuer den Zielzustand `Neuer Schueler`.
+
+Dateien werden nicht in Excel eingebettet.
+
+Dokumente und Medien werden studentenzentriert im Dateisystem abgelegt.
+
+Excel speichert nur Referenzen und Metadaten in `data_media`.
+
+Beobachtungsanhaenge liegen ebenfalls unter dem Schueler und tragen zusaetzlich den Bezug zur Beobachtung.
+
+### Konsequenzen
+
+`data_media` wird als bestehende Datenquelle fuer Dokument- und Medienreferenzen vorbereitet.
+
+Der Schuelerbezug `student_id` wird fuer Dokumente und Medien verbindlich.
+
+Ein Beobachtungsanhang besitzt zusaetzlich `observation_id`.
+
+Der Beobachtungsdialog wird nur vorbereitet und nicht in Sprint 5 implementiert.
+
+Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden.
+
+Schnellbeobachtung und Gruppenbewertung bleiben Backlog-Themen.

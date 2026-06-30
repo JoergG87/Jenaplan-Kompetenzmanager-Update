@@ -26,6 +26,11 @@ Beispiele fuer stabile technische IDs:
 - `observation_id`
 - `media_id`
 
+Beispiele fuer technische Feldnamen:
+
+- `file_ref`
+- `media_category`
+
 Beispiele fuer sichtbare Begriffe:
 
 - Stammgruppe
@@ -180,6 +185,8 @@ Beispiele:
 - `data_` fuer Workbook-Datenquellen und Tabellen
 - `ui_` fuer UI-Anker und UI-Projektionen
 - `ui_nav_` fuer navigierende Shapes
+- `frm_` fuer VBA-UserForms
+- `ctl_` fuer technische UserForm-Control-Namen
 - `ws` fuer Worksheet-CodeNames
 - `Open` fuer zentrale VBA-Navigationsprozeduren
 
@@ -207,6 +214,38 @@ Vorgesehen:
 - `OpenCompetencyById(competency_id)`
 - `OpenReportById(report_id)`
 - `OpenSubjectById(subject_id)`
+
+## UserForms
+
+Registrierte UserForm-Namen:
+
+- `frm_student_new`
+
+Vorgesehene UserForm-Namen:
+
+- `frm_observation_new`
+
+Registrierte Control-Namen fuer `frm_student_new`:
+
+- `ctl_first_name`
+- `ctl_last_name`
+- `ctl_group_id`
+- `ctl_course_id`
+- `ctl_student_notes`
+- `ctl_document_list`
+- `ctl_add_document`
+- `ctl_cancel`
+- `ctl_save`
+
+Vorgesehene Control-Namen fuer `frm_observation_new`:
+
+- `ctl_observation_date`
+- `ctl_observation_context`
+- `ctl_competency_selection`
+- `ctl_rating`
+- `ctl_observation_note`
+- `ctl_media_list`
+- `ctl_add_media`
 
 ## VBA-Module
 

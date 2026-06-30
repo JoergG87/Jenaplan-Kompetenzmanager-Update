@@ -63,6 +63,18 @@ Die Sortierung erfolgt ausschliesslich innerhalb der Projektion.
 
 Die Datenhaltung, insbesondere `tbl_students`, bleibt unveraendert.
 
+## Modale UserForms
+
+Modale UserForms sind Eingabedialoge der Anwendung.
+
+Sie sind keine fachlichen Datenquellen.
+
+Sie sammeln Eingaben, fuehren nur einfache Oberflaechenvalidierung durch und rufen freigegebene Services auf.
+
+UserForms schreiben nicht direkt in `data_*`-Tabellen.
+
+Nach erfolgreichem Speichern schliesst sich die UserForm und die betroffene Ansicht wird aus den registrierten Datenquellen aktualisiert.
+
 ## Stammgruppenuebersicht
 
 Liest:
@@ -154,6 +166,35 @@ Regel:
 
 Das Schuelerprofil zeigt Daten eines Schuelers und startet spaeter freigegebene Dialoge. Es schreibt selbst keine fachlichen Daten.
 
+## Schuelerverwaltung / Neuer-Schueler-Dialog
+
+Liest:
+
+- `data_groups`
+- `data_courses`
+
+Schreibt:
+
+- `data_students` ueber freigegebenen Student-Service
+- spaeter optional `data_media` ueber freigegebenen Dokumentenprozess
+
+Navigation:
+
+- neuer `student_id` nach erfolgreichem Speichern
+- bestehende `group_id`
+- bestehende `course_id`
+- optional neue `media_id`
+
+UI-Projektionen:
+
+- Eingabefelder Vorname, Nachname, Stammgruppe, Kurs, Notiz
+- Dokumentliste
+- Dokument-hinzufuegen-Aktion
+
+Regel:
+
+Der Dialog ist die erste Referenz-UserForm fuer fachliche Eingaben. Er schreibt nicht direkt in Workbook-Tabellen und erzeugt keine Stammgruppen oder Kurse.
+
 ## Beobachtungsdialog
 
 Liest:
@@ -163,6 +204,7 @@ Liest:
 - `data_competencies`
 - `data_observations` bei Bearbeitung bestehender Beobachtungen
 - `data_observation_competencies` bei Bearbeitung bestehender Zuordnungen
+- `data_media` fuer Dokumente und Medien
 
 Schreibt:
 
@@ -183,10 +225,15 @@ UI-Projektionen:
 - Beobachtungsnotiz
 - Kontext
 - Bewertung/Zuordnung
+- Dokumente und Medien
 
 Regel:
 
 Der Beobachtungsdialog ist ein freizugebender Schreibprozess. Ohne Data-Lifecycle-Eintrag darf er nicht implementiert werden.
+
+Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden.
+
+Dokumente und Medien sind nur Anhaenge zur Beobachtung und ersetzen keine Beobachtungsdaten.
 
 ## Kompetenzansicht
 

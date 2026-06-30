@@ -13,12 +13,14 @@ Schreibprozess: Schuelerverwaltung, spaeter freizugeben.
 Betroffene Datenquellen:
 
 - `data_students`
+- spaeter optional `data_media` fuer Schuelerdokumente
 
 Erforderliche IDs:
 
 - neuer `student_id`
 - bestehender `group_id`
 - bestehender `course_id`
+- optional neue `media_id` je Dokument
 
 Automatisch profitierende Ansichten:
 
@@ -28,7 +30,7 @@ Automatisch profitierende Ansichten:
 - Beobachtungsdialog
 - Berichte
 
-Regel: Neue Stammgruppen oder Kurse werden dabei nicht automatisch angelegt.
+Regel: Neue Stammgruppen oder Kurse werden dabei nicht automatisch angelegt. Optionale Dokumente werden erst nach erfolgreicher Erzeugung der `student_id` referenziert. Dateien werden nicht in Excel eingebettet.
 
 ## Schueler archivieren
 
@@ -252,7 +254,30 @@ Automatisch profitierende Ansichten:
 
 Regel: `competency_id` bleibt erhalten. Offene Entscheidung: historische Beobachtungen zeigen entweder das aktuelle Kompetenzlabel oder das zum Beobachtungszeitpunkt gueltige Label.
 
-## Medium hinzufuegen
+## Schuelerdokument hinzufuegen
+
+Start: Zu einem Schueler wird ein Hauptdokument referenziert.
+
+Schreibprozess: Schuelerverwaltung / Dokumentenfunktion, spaeter freizugeben.
+
+Betroffene Datenquellen:
+
+- `data_media`
+
+Erforderliche IDs:
+
+- neuer `media_id`
+- bestehender `student_id`
+
+Automatisch profitierende Ansichten:
+
+- Schuelerverwaltung
+- Schuelerprofil
+- Berichte
+
+Regel: Das Dokument liegt im Dateisystem unter `Dokumente/<student_id>/Hauptdokumente/`. Excel speichert nur `file_ref` und Metadaten. Kein Dokument wird in Excel eingebettet.
+
+## Beobachtungsanhang hinzufuegen
 
 Start: Zu einer Beobachtung wird eine Anlage hinzugefuegt.
 
@@ -265,6 +290,7 @@ Betroffene Datenquellen:
 Erforderliche IDs:
 
 - neuer `media_id`
+- bestehender `student_id`
 - bestehender `observation_id`
 
 Automatisch profitierende Ansichten:
@@ -273,4 +299,4 @@ Automatisch profitierende Ansichten:
 - Beobachtungsdetails
 - Berichte
 
-Regel: Medien referenzieren Beobachtungen und speichern keine Beobachtungsinhalte doppelt.
+Regel: Beobachtungsanhaenge liegen im Dateisystem unter `Dokumente/<student_id>/Beobachtungsanhaenge/<observation_id>/`. Excel speichert nur `file_ref` und Metadaten. Medien referenzieren Beobachtungen und speichern keine Beobachtungsinhalte doppelt.

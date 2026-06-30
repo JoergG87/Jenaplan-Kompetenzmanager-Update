@@ -46,6 +46,18 @@ Spalten:
 | Kompetenzchips | `data_observation_competencies.competency_id` -> `data_competencies.name` | Anzeige | Nein | `data_competencies` | abgeleitete Anzeige |
 | Neue Beobachtung | `data_students.student_id` | Navigation | Geplant | `data_students` | startet spaeter zentralen Beobachtungsdialog |
 
+## Schuelerverwaltung / Neuer-Schueler-Dialog
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Vorname | zukuenftig `data_students.first_name` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | Pflichtfeld, keine technische Identitaet |
+| Nachname | zukuenftig `data_students.last_name` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | Pflichtfeld |
+| Stammgruppe | Auswahl aus `data_groups.group_name`, Speichern von `data_students.group_id` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_groups` | Pflichtauswahl, keine automatische Stammgruppenanlage |
+| Kurs | Auswahl aus `data_courses.course_name`, Speichern von `data_students.course_id` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_courses` | Pflichtauswahl, keine automatische Kursanlage |
+| Notiz | zukuenftig `data_students.student_notes` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | optional |
+| Dokumentliste | zukuenftig `data_media.file_ref` nach `student_id` | Anzeige | Nein | `data_media` | zeigt referenzierte Dateien, keine Einbettung |
+| Dokument hinzufuegen | zukuenftig Dateiauswahl -> `data_media` | Eingabe | Geplant | `data_media` | erzeugt spaeter `media_id` und `file_ref` nach freigegebenem Prozess |
+
 ## Kompetenzansicht
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
@@ -65,7 +77,7 @@ Spalten:
 | Beobachtungsnotiz | zukuenftig `data_observations.note` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | Schreiben nur nach freigegebenem Prozess |
 | Beobachtungskontext | zukuenftig `data_observations.context` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | Kontext gehoert zur Beobachtung |
 | Kompetenzzuordnung | zukuenftig `data_observation_competencies` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observation_competencies` | n:m-Zuordnung |
-| Medium | zukuenftig `data_media` | Eingabe | Geplant | `data_media` | nur als Anlage zu Beobachtung |
+| Dokumente und Medien | zukuenftig `data_media.file_ref` nach `student_id` und optional `observation_id` | Eingabe | Geplant | `data_media` | nur als Anlage, keine Einbettung, Beobachtung bleibt Source of Truth |
 
 ## Berichte und Dashboard
 

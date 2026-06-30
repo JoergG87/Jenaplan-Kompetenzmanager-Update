@@ -123,6 +123,8 @@ Die Architektur vermeidet feste Zellreferenzen. Stattdessen sollen strukturierte
 
 Die Stammgruppenübersicht und die Kursübersicht besitzen keine eigene Geschäftslogik. Sie stellen vorhandene Schülerdaten dar und werden aus diesen Daten generiert. Änderungen an Schülerdaten erfolgen künftig ausschließlich über die Schülerverwaltung.
 
+VBA-Quelländerungen werden versioniert unter `vba/modules/` gepflegt. Der Seed muss dauerhaft das Bootstrap-Modul `SeedImport` enthalten; damit kann `scripts/import_vba_sources_to_seed.py` die versionierten Module `Globals`, `Navigation` und `UI` automatisch in `seeds/JenaplanSeed.xlsm` aktualisieren. Das Skript bricht ab, wenn dieser Bootstrap im Seed fehlt.
+
 ## Engineering Lessons Learned
 
 Aenderungen an UI-Projektionen koennen indirekt Hidden-Spalten, Named Ranges, VBA-Navigation, Suchfunktion und weitere UI-Projektionen beeinflussen.
@@ -134,6 +136,37 @@ Kuenftige Aenderungen an Projection Buildern muessen deshalb immer eine Regressi
 - VBA-Navigation
 - Suchfunktion
 - UI-Projektionen
+
+## Sprint 5.0 - Dialog- und Dokumentenarchitektur
+
+Sprint 5.0 bereitet die erste echte Eingabemaske vor, ohne die vollstaendige Schuelerverwaltung zu implementieren.
+
+Grundsatz:
+
+Der Kompetenzmanager ist eine Anwendung. Excel ist nur die Runtime.
+
+Fachliche Eingaben erfolgen ueber modale VBA-UserForms und nicht direkt in Tabellen.
+
+UserForms sammeln Eingaben, fuehren nur einfache Oberflaechenvalidierung durch, rufen freigegebene Services auf und aktualisieren anschliessend die betroffene Ansicht.
+
+UserForms enthalten keine Businesslogik und schreiben nicht direkt in Workbook-Tabellen.
+
+Erste Referenz-UserForm:
+
+- Titel: Neuer Schueler
+- Technischer Name: `frm_student_new`
+- Felder: Vorname, Nachname, Stammgruppe, Kurs, Notiz, Dokumente
+- Aktionen: Abbrechen, Speichern, Dokument hinzufuegen
+
+Dokumentenstruktur:
+
+- Dateien werden nicht in Excel eingebettet.
+- Excel speichert nur Referenzen und Metadaten in `data_media`.
+- Dokumente werden studentenzentriert unter `Dokumente/<student_id>/` abgelegt.
+- Hauptdokumente liegen unter `Hauptdokumente/`.
+- Beobachtungsanhaenge liegen unter `Beobachtungsanhaenge/<observation_id>/`.
+
+Der Beobachtungsdialog wird nur vorbereitet. Kompetenzen muessen dort zwingend mitgedacht werden; die Beobachtungserfassung selbst bleibt ausserhalb von Sprint 5.0.
 
 ## Entity Blueprint: Student
 
@@ -299,6 +332,7 @@ Aktuelle Planung:
 - Sprint 3.1: Klassenübersicht als frühere Bezeichnung der heutigen Stammgruppenübersicht
 - Sprint 3.2: Schülerprofil
 - Sprint 3.3a: Architektur konsolidieren
+- Sprint 5.0: Dialog- und Dokumentenarchitektur vorbereiten
 - Weitere Produktbereiche erst nach fachlicher Freigabe und Review
 
 ## Bekannte offene Punkte v0.4
@@ -393,4 +427,4 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 Sprint 4.1 ist abgeschlossen.
 
-Nächster vorbereiteter Sprint: Sprint 4.2 - Schülerverwaltung mit erstem transaktionalem Schreibprozess.
+Aktuell vorbereitet: Sprint 5.0 - Dialog- und Dokumentenarchitektur.

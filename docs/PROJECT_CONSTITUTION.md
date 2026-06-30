@@ -32,6 +32,30 @@ VBA implementiert ausschliesslich Interaktion:
 
 VBA enthaelt keine fachliche Logik und keine Datenmodellentscheidungen.
 
+Der Kompetenzmanager wird als Anwendung verstanden.
+
+Excel ist die Runtime, nicht der fachliche Arbeitsort.
+
+Fachliche Eingaben erfolgen nicht direkt in Tabellen, sondern ueber modale VBA-UserForms.
+
+UserForms duerfen:
+
+- Eingaben sammeln
+- einfache Pflichtfeld- und Formatpruefungen fuer unmittelbare Benutzerfuehrung durchfuehren
+- technische IDs aus Auswahlfeldern uebergeben
+- freigegebene Services aufrufen
+- nach erfolgreichem Speichern die betroffene Ansicht aktualisieren
+
+UserForms duerfen nicht:
+
+- fachliche Logik enthalten
+- direkt in fachliche Tabellen schreiben
+- Datenmodellentscheidungen treffen
+- eigene Schattenhaltung erzeugen
+- Excel-Zellpositionen als technische Identitaet verwenden
+
+Nach erfolgreichem Speichern schliesst sich die UserForm und die aufrufende oder betroffene Ansicht wird aus dem Datenmodell aktualisiert.
+
 UI ist immer Projektion und niemals fachliche Datenquelle.
 
 UI darf anzeigen, filtern, sortieren und navigieren.
@@ -184,7 +208,7 @@ Die Architektur muss folgende spaetere Anforderungen tragen, ohne erneut grundsa
 - Kursuebersicht: liest Schueler aus mehreren Stammgruppen und zeigt Stammgruppe auf Schuelerkarten.
 - Beobachtungserfassung: `observation_id`, Bezug zu `student_id`, Mehrfachbezug zu Kompetenzen.
 - Kompetenz-/Lehrplanpflege: `competency_id`, Faecherbezug, Hierarchie, Historisierung offen.
-- Medienanhaenge: Medien werden referenziert und nicht unkontrolliert in UI gespeichert.
+- Dokumente und Medienanhaenge: Dateien werden referenziert, studentenzentriert abgelegt und nicht in Excel eingebettet.
 - Lernentwicklungsgespraeche und Elternvorbereitung: reine Auswertungsprojektionen, schreiben keine fachlichen Daten.
 - Dashboards und Berichte: reine Lese-/Auswertungsschicht, niemals fachliche Datenquelle.
 - Historisierung: offene Entscheidung vor produktiver Beobachtungserfassung.
@@ -270,6 +294,18 @@ Beispiel Schueler anlegen:
 4. Projektionen koennen daraus gelesen werden
 
 Wenn ein Schritt fehlschlaegt, darf kein inkonsistenter Zwischenzustand entstehen.
+
+Dateien werden nicht in Excel eingebettet.
+
+Excel speichert fuer Dokumente und Medien ausschliesslich registrierte Referenzen.
+
+Physische Dateien liegen im Dateisystem.
+
+Dokumente gehoeren immer zu einem Schueler.
+
+Beobachtungsanhaenge liegen ebenfalls unter dem Schueler, koennen aber zusaetzlich einen Beobachtungsbezug besitzen.
+
+Beobachtungen duerfen nicht durch eingebettete Dateien oder unkontrollierte Anlagen belastet werden.
 
 ## Navigation
 

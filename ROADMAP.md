@@ -36,6 +36,8 @@ Sprint 4.1: Core Data Architecture durch Hidden Data Sheets, strukturierte Tabel
 
 Sprint 4.2: Schülerverwaltung vorbereiten und ersten transaktionalen Schreibprozess umsetzen: Schüler anlegen, ändern und archivieren.
 
+Sprint 5.0: Dialog- und Dokumentenarchitektur vorbereiten. Fokus: modale VBA-UserForms, Referenzdialog `Neuer Schueler`, studentenzentrierte Dokumentenstruktur und Vorbereitung spaeterer Beobachtungsdialoge.
+
 Zukünftige Produktziele ohne Sprintzuordnung
 
 - Beobachtungsverwaltung
@@ -48,6 +50,7 @@ Zukünftige Produktziele ohne Sprintzuordnung
 - Geplante Beobachtungen
 - Spontane Beobachtungen
 - Gruppenbeobachtungen
+- Schnellbeobachtung / Gruppenbewertung
 - Stammgruppenverwaltung
 - Kursverwaltung
 - Kursübersicht
@@ -144,3 +147,12 @@ Sprint 4.2
 - Fokus: erster transaktionaler Schreibprozess.
 - Umfang: Schüler anlegen, Schüler ändern, Schüler archivieren.
 - Keine physische Löschung.
+
+Sprint 5.0
+
+- Standard fuer modale VBA-UserForms dokumentieren.
+- Erste Referenz-UserForm `Neuer Schueler` vorbereiten.
+- Dokumentenbereich fuer Schuelerdokumente dokumentieren.
+- Studentenzentrierte Dokumenten- und Medienstruktur festlegen.
+- Beobachtungsdialog mit Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien nur vorbereiten.
+- Keine Beobachtungserfassung, Schnellbeobachtung, Kursverwaltung, Stammgruppenverwaltung, Berichte oder Datei-Vorschau umsetzen.

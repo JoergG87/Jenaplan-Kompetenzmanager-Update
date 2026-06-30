@@ -480,57 +480,84 @@ Erweiterungsregeln:
 
 ## data_media
 
-Zweck: Medien oder Anlagen zu Beobachtungen.
+Zweck: Dokumente, Medien oder Anlagen zu Schuelern und Beobachtungen.
 
 Entity: Media.
 
 Storage: `data_media` / `tbl_media`.
 
-Projection: Medienhinweise, Anlagenliste, Beobachtungsdetails.
+Projection: Dokumentliste, Medienhinweise, Anlagenliste, Beobachtungsdetails.
 
-Owner: Medienanhang / Beobachtungserfassung.
+Owner: Dokumentenverwaltung / Medienanhang / Beobachtungserfassung.
 
 Primary Key: `media_id`.
 
 Foreign Keys:
 
-- `observation_id` -> `data_observations.observation_id`
+- `student_id` -> `data_students.student_id`
+- `observation_id` -> `data_observations.observation_id` optional fuer Beobachtungsanhaenge
 
 Wichtige Felder:
 
 - `media_id`
+- `student_id`
 - `observation_id`
 - `file_ref`
 - `media_type`
+- `media_category`
 - `caption`
 - `status`
 
 Beziehungen:
 
-- ein Medium gehoert zu einer Beobachtung
+- ein Dokument oder Medium gehoert immer zu einem Schueler
+- ein Beobachtungsanhang kann zusaetzlich einer Beobachtung zugeordnet sein
+- eine Beobachtung kann viele Anhaenge besitzen
 
 Schreibende Prozesse:
 
-- Medium hinzufuegen
-- Medium bearbeiten
-- Medium archivieren
+- Schuelerdokument hinzufuegen
+- Beobachtungsanhang hinzufuegen
+- Dokument oder Medium bearbeiten
+- Dokument oder Medium archivieren
 
 Lesende Prozesse:
 
+- Schuelerverwaltung
 - Schuelerprofil
 - Beobachtungsdetails
 - Berichte
 
 Erlaubte UI-Projektionen:
 
+- Dokumentbereich in Schueler-UserForms
 - Medienhinweise an Beobachtungen
 - Anlagenliste
 
 Erweiterungsregeln:
 
 - Medien speichern keine Beobachtungsdaten doppelt
-- Medien referenzieren immer eine Beobachtung
-- physische Dateiablage wird separat entschieden
+- Dateien werden nicht in Excel eingebettet
+- Excel speichert nur `file_ref` und Metadaten
+- physische Dateiablage erfolgt studentenzentriert im Dateisystem
+- Beobachtungsanhaenge liegen unter dem Schueler und tragen zusaetzlich den Beobachtungsbezug
+- `media_category` unterscheidet mindestens `student_document` und `observation_attachment`
+
+Vorgesehene physische Dateiablage:
+
+```text
+Jenaplan-Kompetenzmanager/
+|-- Kompetenzmanager.xlsm
+|-- Daten/
+|-- Dokumente/
+|   |-- STU-000001/
+|   |   |-- Hauptdokumente/
+|   |   `-- Beobachtungsanhaenge/
+|   |       `-- OBS-000001/
+|   |-- STU-000002/
+|   `-- ...
+`-- Berichte/
+```
 
 ## data_settings
 

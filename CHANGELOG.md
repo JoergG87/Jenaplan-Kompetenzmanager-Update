@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## Sprint 5.0 - Dialog- und Dokumentenarchitektur
+
+### Added
+
+- Standard fuer modale VBA-UserForms dokumentiert.
+- Referenz-UserForm `frm_student_new` fuer den Zielzustand `Neuer Schueler` dokumentiert.
+- Studentenzentrierte Dokumentenstruktur mit `Dokumente/<student_id>/Hauptdokumente/` und `Dokumente/<student_id>/Beobachtungsanhaenge/<observation_id>/` dokumentiert.
+- Beobachtungsdialog als spaeterer Zielzustand mit Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien vorbereitet.
+- Schnellbeobachtung / Gruppenbewertung als Backlog-Thema ergaenzt.
+- ADR-035 fuer modale UserForms und studentenzentrierte Dokumentreferenzen ergaenzt.
+
+### Changed
+
+- `data_media` in der Workbook Data Registry von rein beobachtungsbezogenen Anlagen zu studentenzentrierten Dokument- und Medienreferenzen erweitert.
+- Data Lifecycle, View Data Ownership und UI Data Mapping um Schuelerdokumente, Beobachtungsanhaenge und den Neuer-Schueler-Dialog ergaenzt.
+- Technical Naming Registry um UserForm- und Control-Namen sowie Dokument-/Medienfelder erweitert.
+
+### Not Changed
+
+- Keine Implementierung, kein Build, keine Beobachtungserfassung, keine Schnellbeobachtung, kein vollstaendiges Dokumentenmanagement und keine Datei-Vorschau umgesetzt.
+
 ## VBA-Seed-Import-Automation
 
 ### Added
