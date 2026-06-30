@@ -16,6 +16,34 @@ Die Dateien unter `vba/modules/` sind die lesbaren Quellen. Damit sie in einer `
 
 Der aktuelle technische PoC beweist, dass Python ein vorhandenes `vbaProject.bin` aus `seeds/JenaplanSeed.xlsm` erhalten und in eine generierte Arbeitsmappe übernehmen kann.
 
+## Automatischer Seed-Import
+
+`vba/modules/SeedImport.bas` ist das dauerhafte Bootstrap-Makro fuer den Seed.
+
+Es gehoert einmalig in `seeds/JenaplanSeed.xlsm` und bleibt dort als Standardmodul erhalten.
+
+Danach kann Codex die versionierten Module automatisch aktualisieren:
+
+```bash
+python3 scripts/import_vba_sources_to_seed.py
+```
+
+Der Import aktualisiert:
+
+- `Globals`
+- `Navigation`
+- `UI`
+
+Das Bootstrap-Modul `SeedImport` importiert sich nicht selbst. Wenn `SeedImport.bas` geaendert wird, muss diese Bootstrap-Aenderung bewusst in den Seed uebernommen werden.
+
+Das Skript bricht ab, wenn `SeedImport` im Seed fehlt. Dadurch wird verhindert, dass Excel einen fehlenden Makroaufruf still ignoriert und der Seed unveraendert bleibt.
+
+Voraussetzung in Excel:
+
+- Der Zugriff auf das VBA-Projektobjektmodell muss vertrauenswuerdig erlaubt sein.
+- Wenn Excel bei `ThisWorkbook.VBProject` den Fehler 1004 meldet, ist diese Sicherheitseinstellung noch blockiert.
+- Ohne diese Freigabe kann Excel keine Module programmgesteuert loeschen oder importieren.
+
 ## Sprint 3.5 Seed-Hinweis
 
 Sprint 3.5 erweitert die versionierten VBA-Quellen um die Navigation von Schülerkarten zum Schülerprofil.
@@ -31,6 +59,7 @@ Der bereinigte Seed dient als Modulbasis. Er muss im VBA-Projekt diese Module en
 - `Globals`
 - `Navigation`
 - `UI`
+- `SeedImport`
 
 Nicht enthalten sein dürfen:
 
@@ -48,6 +77,8 @@ Das Packaging-Skript setzt dort, soweit technisch möglich:
 Workbook- und Worksheet-CodeNames sind Teil des Excel-/VBA-Projekts und lassen sich nur begrenzt durch Python kontrollieren. Sie müssen bei Bedarf manuell im VBA-Editor geprüft werden.
 
 Das Packaging-Skript prüft den Seed vor dem Erzeugen des PoC. Wenn die Module `Globals`, `Navigation` und `UI` fehlen oder `Modul1` noch registriert ist, wird keine neue `.xlsm` erzeugt.
+
+Das Import-Skript prüft zusaetzlich, ob `SeedImport` im Seed vorhanden ist, bevor es die versionierten Module aktualisiert.
 
 ## Navigationsstandard
 

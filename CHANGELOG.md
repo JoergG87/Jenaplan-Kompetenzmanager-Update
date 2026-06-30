@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## VBA-Seed-Import-Automation
+
+### Added
+
+- `vba/modules/SeedImport.bas` als dauerhaftes Bootstrap-Makro fuer den Seed ergänzt.
+- `scripts/import_vba_sources_to_seed.py` und `scripts/import_vba_sources_to_seed.applescript` zum automatischen Aktualisieren der versionierten VBA-Module im Seed ergänzt.
+
+### Changed
+
+- `vba/README.md` um den automatischen Seed-Import-Workflow und die Bootstrap-Grenze erweitert.
+- `SeedImport` meldet blockierten Zugriff auf `ThisWorkbook.VBProject` mit einer expliziten Ursache statt eines rohen Excel-Fehlers 1004.
+
+### Not Changed
+
+- Keine fachliche Logik, keine Workbook-Datenquellen, keine UI-Projektionen und keine Designregeln geaendert.
+
 ## UX-Verbesserung - temporaeren UI-State zuruecksetzen
 
 ### Added

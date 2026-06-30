@@ -200,9 +200,21 @@ Registriert:
 
 - `OpenStudentProfileById(student_id)`
 - `OpenClassOverview()`
+- `ImportVbaSourcesToSeed(globalsPath, navigationPath, uiPath)`
 
 Vorgesehen:
 
 - `OpenCompetencyById(competency_id)`
 - `OpenReportById(report_id)`
 - `OpenSubjectById(subject_id)`
+
+## VBA-Module
+
+Registrierte Standardmodule im Seed:
+
+- `Globals`
+- `Navigation`
+- `UI`
+- `SeedImport`
+
+`SeedImport` ist das Bootstrap-Modul fuer den automatischen Import versionierter `.bas`-Quellen in `seeds/JenaplanSeed.xlsm`.
