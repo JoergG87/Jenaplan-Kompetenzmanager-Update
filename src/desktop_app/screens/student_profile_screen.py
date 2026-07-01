@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -32,9 +31,9 @@ class StudentProfileScreen(QWidget):
         self.name_label = QLabel("Kein Schüler ausgewählt")
         self.meta_label = QLabel("")
         self.student_id_label = QLabel("")
-        self.notes = QTextEdit()
         self.group_value_label = QLabel("")
         self.course_value_label = QLabel("")
+        self.notes_value_label = QLabel("")
         self.action_feedback_label = QLabel("")
         self._build()
 
@@ -111,16 +110,26 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(card)
         title = QLabel("Basisdaten")
         title.setStyleSheet("font-weight: 600;")
-        self.notes.setReadOnly(True)
-        self.notes.setMinimumHeight(110)
+        field_row = QHBoxLayout()
+        field_row.addWidget(self._basis_field_column("Stammgruppe", self.group_value_label), 1)
+        field_row.addWidget(self._basis_field_column("Kurs", self.course_value_label), 1)
+        field_row.addWidget(self._basis_field_column("Notiz", self.notes_value_label), 2)
         layout.addWidget(title)
-        layout.addWidget(QLabel("Stammgruppe"))
-        layout.addWidget(self.group_value_label)
-        layout.addWidget(QLabel("Kurs"))
-        layout.addWidget(self.course_value_label)
-        layout.addWidget(QLabel("Notiz"))
-        layout.addWidget(self.notes)
+        layout.addLayout(field_row)
         return card
+
+    def _basis_field_column(self, label: str, value_label: QLabel) -> QWidget:
+        column = QWidget()
+        layout = QVBoxLayout(column)
+        layout.setContentsMargins(0, 0, 0, 0)
+        field_label = QLabel(label)
+        field_label.setStyleSheet("color: #666; font-size: 12px;")
+        value_label.setStyleSheet("color: #222; font-size: 14px;")
+        value_label.setWordWrap(True)
+        layout.addWidget(field_label)
+        layout.addWidget(value_label)
+        layout.addStretch()
+        return column
 
     def _placeholder_card(self, title: str, placeholder: str, hint: str) -> QFrame:
         card = self._card()
@@ -153,7 +162,7 @@ class StudentProfileScreen(QWidget):
             self.student_id_label.setText("")
             self.group_value_label.setText("")
             self.course_value_label.setText("")
-            self.notes.setPlainText("")
+            self.notes_value_label.setText("")
             self.action_feedback_label.setText("")
             return
         self.name_label.setText(student.display_name)
@@ -161,5 +170,5 @@ class StudentProfileScreen(QWidget):
         self.student_id_label.setText(student.student_id)
         self.group_value_label.setText(student.group_name)
         self.course_value_label.setText(student.course_name)
-        self.notes.setPlainText(student.student_notes or "Keine Notiz vorhanden.")
+        self.notes_value_label.setText(student.student_notes or "Keine Notiz hinterlegt.")
         self.action_feedback_label.setText("")
