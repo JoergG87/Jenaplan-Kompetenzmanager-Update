@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QDate
+from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -19,14 +19,15 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from src.desktop_app.adapters.curriculum_desktop_adapter import (
+    CurriculumDesktopAdapter,
+)
 from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_ATTACHMENT_EMPTY_STATE,
     OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
-    OBSERVATION_COMPETENCY_OPTIONS,
     OBSERVATION_CONTEXT_OPTIONS,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_PLACEHOLDER_MESSAGE,
-    OBSERVATION_SUBJECT_OPTIONS,
     ObservationDraftViewModel,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
@@ -35,9 +36,14 @@ from src.desktop_app.view_models.student_view_model import StudentDetailViewMode
 class NewObservationDialog(QDialog):
     """Collect a non-persistent observation draft for UX validation."""
 
-    def __init__(self, student: StudentDetailViewModel) -> None:
+    def __init__(
+        self,
+        student: StudentDetailViewModel,
+        curriculum_adapter: CurriculumDesktopAdapter | None = None,
+    ) -> None:
         super().__init__()
         self.student = student
+        self.curriculum_adapter = curriculum_adapter or CurriculumDesktopAdapter()
         self.attachment_feedback_label = QLabel("")
         self.setWindowTitle("Neue Beobachtung")
         self.setModal(True)
@@ -64,13 +70,13 @@ class NewObservationDialog(QDialog):
         self.date_input.setDate(QDate.currentDate())
 
         self.subject_select = QComboBox()
-        self.subject_select.addItems(OBSERVATION_SUBJECT_OPTIONS)
+        self._populate_subjects()
+        self.subject_select.currentIndexChanged.connect(self._refresh_competencies)
 
         self.competency_list = QListWidget()
         self.competency_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
-        for competency in OBSERVATION_COMPETENCY_OPTIONS:
-            self.competency_list.addItem(QListWidgetItem(competency))
         self.competency_list.setMinimumHeight(100)
+        self._refresh_competencies()
 
         self.context_select = QComboBox()
         self.context_select.addItems(OBSERVATION_CONTEXT_OPTIONS)
@@ -100,6 +106,22 @@ class NewObservationDialog(QDialog):
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.save_draft)
         layout.addWidget(buttons)
+
+    def _populate_subjects(self) -> None:
+        for subject in self.curriculum_adapter.list_active_subjects():
+            self.subject_select.addItem(subject.display_name, subject.subject_key)
+
+    def _refresh_competencies(self) -> None:
+        self.competency_list.clear()
+        subject_key = str(self.subject_select.currentData() or "")
+        competencies = self.curriculum_adapter.list_competencies_for_subject(subject_key)
+        if not competencies:
+            item = QListWidgetItem("Keine Kompetenzen für dieses Fach hinterlegt.")
+            item.setFlags(Qt.ItemFlag.NoItemFlags)
+            self.competency_list.addItem(item)
+            return
+        for competency in competencies:
+            self.competency_list.addItem(QListWidgetItem(competency.competency_label))
 
     def _attachments_card(self) -> QFrame:
         card = self._card()

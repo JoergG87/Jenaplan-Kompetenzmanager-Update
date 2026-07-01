@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Sprint - Curriculum-Katalog v1
+
+### Added
+
+- Read-only-Katalog `data/curriculum_catalog_v1.csv` fuer den PySide6-Beobachtungsdialog ergaenzt.
+- Curriculum-Adapter `CurriculumDesktopAdapter` zum Laden aktiver Faecher und fachbezogener Kompetenzeintraege ergaenzt.
+- Beobachtungsdialog nutzt Fach- und Kompetenzlisten aus dem Katalog statt lokaler Dummy-Listen.
+- EPU als App-Anzeigename fuer `Epochaler Projektunterricht` modelliert; offizielle Quelle ist `Heimat- und Sachkunde`.
+- Erweiterte Faecher `Ethik`, `Religion`, `Werken` und `Schulgarten` aufgenommen.
+
+### Not Changed
+
+- Keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository, keine Dokumenten-/Medienpersistenz, kein Excel-/VBA-Umbau, kein Packaging, kein Berichtsexport und keine finale Architekturentscheidung umgesetzt.
+
 ## Sprint - PySide6 Beobachtungsdialog UX-Prototyp 1
 
 ### Added

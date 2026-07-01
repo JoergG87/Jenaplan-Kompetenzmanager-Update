@@ -5,24 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-OBSERVATION_SUBJECT_OPTIONS = (
-    "Deutsch",
-    "Mathematik",
-    "Sachunterricht",
-    "Musik",
-    "Kunst",
-    "Sport",
-    "Sozialkompetenz",
-)
-
-OBSERVATION_COMPETENCY_OPTIONS = (
-    "Leseflüssigkeit",
-    "Textverständnis",
-    "Grundrechenarten",
-    "Zusammenarbeit",
-    "Präsentieren",
-)
-
 OBSERVATION_CONTEXT_OPTIONS = (
     "Lernzielkontrolle",
     "Präsentation",

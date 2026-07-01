@@ -128,6 +128,41 @@ Registrierte Zuordnung:
 | `data_media` | `tbl_media` |
 | `data_settings` | `tbl_settings` |
 
+## Curriculum-Katalog v1
+
+Zweck: Read-only-Katalog fuer Fachauswahl und Kompetenzauswahl im PySide6-Beobachtungsdialog-Prototyp.
+
+Datei: `data/curriculum_catalog_v1.csv`
+
+Status: v1-Kataloggrundlage, noch nicht final vollstaendig ausdifferenziert.
+
+Owner: Kompetenzverwaltung / Lehrplanpflege.
+
+Wichtige Felder:
+
+- `subject_key`
+- `subject_display_name`
+- `subject_full_name`
+- `official_subject_name`
+- `school_context_name`
+- `grade_band`
+- `learning_area`
+- `competency_group`
+- `competency_text`
+- `source_reference`
+- `is_core_subject`
+- `is_active`
+
+Regeln:
+
+- Der Katalog wird nur lesend verwendet.
+- Er erzeugt keine Beobachtung, keine Kompetenzzuordnung und keine SQLite-Persistenz.
+- `EPU` ist der App-Anzeigename fuer `Epochaler Projektunterricht`.
+- Die offizielle Lehrplanquelle fuer `EPU` ist `Heimat- und Sachkunde`.
+- `Sachunterricht` wird nicht als App-Fach gefuehrt.
+- `Kunst` wird als App-Fach angezeigt; offizielle Quelle ist `Kunsterziehung`.
+- `Ethik`, `Religion`, `Werken` und `Schulgarten` sind als erweiterte Faecher enthalten.
+
 ## data_students
 
 Zweck: Stammdaten der Schueler.

@@ -327,6 +327,18 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Keine Beobachtungspersistenz, kein Repository, keine SQLite-Aenderung und keine Datenmodelländerung umgesetzt
 - [x] Keine Dokumentenanhaenge, kein Packaging, kein Excel-Export-Umbau und keine finale Architekturentscheidung umgesetzt
 
+### Sprint - Curriculum-Katalog v1
+
+- [x] Read-only-Katalog `data/curriculum_catalog_v1.csv` mit Faecher- und Kompetenzeintraegen angelegt
+- [x] Kernfaecher Deutsch, Mathematik, EPU, Musik, Kunst, Sport und Sozialkompetenz aufgenommen
+- [x] Erweiterte Faecher Ethik, Religion, Werken und Schulgarten aufgenommen
+- [x] `EPU` als App-Anzeigename fuer `Epochaler Projektunterricht` modelliert
+- [x] Offizielle Quelle fuer EPU als `Heimat- und Sachkunde` dokumentiert
+- [x] `Sachunterricht` wird nicht als App-Fach angezeigt
+- [x] PySide6-Beobachtungsdialog liest Fach- und Kompetenzlisten aus dem Katalog
+- [x] Keine Beobachtungspersistenz, keine SQLite-Aenderung und keine Datenmodelländerung fuer Beobachtungen umgesetzt
+- [x] Keine finale Architekturentscheidung getroffen
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

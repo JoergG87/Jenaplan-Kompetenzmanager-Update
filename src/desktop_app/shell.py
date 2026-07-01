@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.core.sqlite_store import SQLITE_SPIKE_PATH
+from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
@@ -34,6 +35,7 @@ class AppShell(QMainWindow):
     def __init__(self, database_path: Path = SQLITE_SPIKE_PATH) -> None:
         super().__init__()
         self.adapter = StudentDesktopAdapter(database_path)
+        self.curriculum_adapter = CurriculumDesktopAdapter()
         self.selected_group_id: str | None = None
         self.setWindowTitle("Jenaplan Kompetenzmanager")
         self.setMinimumSize(1100, 720)
@@ -153,7 +155,7 @@ class AppShell(QMainWindow):
 
     def open_new_observation_dialog(self, student: StudentDetailViewModel) -> None:
         """Open the non-persistent observation UX prototype."""
-        dialog = NewObservationDialog(student)
+        dialog = NewObservationDialog(student, self.curriculum_adapter)
         dialog.exec()
 
     def handle_student_created(self, student_id: str) -> None:

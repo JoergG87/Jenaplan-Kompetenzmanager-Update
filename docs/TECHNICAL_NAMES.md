@@ -303,6 +303,10 @@ Status:
 
 Der Desktop-App-Spike prueft PySide6 als alternativen Adapter. Er ist keine endgueltige Architekturentscheidung.
 
+Registrierte Katalogdateien:
+
+- `data/curriculum_catalog_v1.csv`
+
 Registrierte Python-Module:
 
 - `src/desktop_app/main.py`
@@ -312,6 +316,7 @@ Registrierte Python-Module:
 - `src/desktop_app/student_adapter.py`
 - `src/desktop_app/student_list_view.py`
 - `src/desktop_app/new_student_dialog.py`
+- `src/desktop_app/adapters/curriculum_desktop_adapter.py`
 - `src/desktop_app/adapters/student_desktop_adapter.py`
 - `src/desktop_app/dialogs/new_observation_dialog.py`
 - `src/desktop_app/dialogs/new_student_dialog.py`
@@ -331,6 +336,10 @@ Registrierte Python-Klassen und Funktionen:
 - `NAVIGATION_ITEMS`
 - `resolve_navigation_target(key)`
 - `StudentDesktopAdapter`
+- `CurriculumDesktopAdapter`
+- `CurriculumCatalogEntry`
+- `CurriculumSubjectOption`
+- `CURRICULUM_CATALOG_V1_PATH`
 - `StudentListItem`
 - `StudentDetailViewModel`
 - `GroupSummaryViewModel`
@@ -338,8 +347,6 @@ Registrierte Python-Klassen und Funktionen:
 - `PROFILE_ACTION_MESSAGES`
 - `PROFILE_SECTION_PLACEHOLDERS`
 - `ObservationDraftViewModel`
-- `OBSERVATION_SUBJECT_OPTIONS`
-- `OBSERVATION_COMPETENCY_OPTIONS`
 - `OBSERVATION_CONTEXT_OPTIONS`
 - `OBSERVATION_RATING_OPTIONS`
 - `OBSERVATION_SAVE_PLACEHOLDER_MESSAGE`

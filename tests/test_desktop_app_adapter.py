@@ -12,6 +12,7 @@ from src.application.commands import CreateStudentCommand
 from src.application.dispatcher import SuccessResult
 from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PREFIX
 from src.core.sqlite_store import SQLiteStudentRepository, create_sqlite_seed_database
+from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters import student_desktop_adapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.dialogs import new_observation_dialog
@@ -38,6 +39,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.database_path = Path(self.temp_dir.name) / "kompetenzmanager.sqlite"
         self.database = create_sqlite_seed_database(self.database_path)
         self.adapter = StudentDesktopAdapter(self.database_path)
+        self.curriculum_adapter = CurriculumDesktopAdapter()
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
@@ -165,6 +167,97 @@ class DesktopAppAdapterTest(unittest.TestCase):
             ),
         )
 
+    def test_curriculum_catalog_loads_active_subjects(self) -> None:
+        subjects = self.curriculum_adapter.list_active_subjects()
+
+        self.assertEqual(
+            tuple(subject.display_name for subject in subjects),
+            (
+                "Deutsch",
+                "Mathematik",
+                "EPU",
+                "Musik",
+                "Kunst",
+                "Sport",
+                "Sozialkompetenz",
+                "Ethik",
+                "Religion",
+                "Werken",
+                "Schulgarten",
+            ),
+        )
+
+    def test_curriculum_catalog_uses_epu_instead_of_sachunterricht(self) -> None:
+        entries = self.curriculum_adapter.list_entries()
+        subject_names = {entry.subject_display_name for entry in entries}
+        epu_entries = [entry for entry in entries if entry.subject_key == "epu"]
+
+        self.assertIn("EPU", subject_names)
+        self.assertNotIn("Sachunterricht", subject_names)
+        self.assertTrue(epu_entries)
+        self.assertTrue(all(
+            entry.official_subject_name == "Heimat- und Sachkunde"
+            for entry in epu_entries
+        ))
+        self.assertTrue(all(
+            entry.subject_full_name == "Epochaler Projektunterricht"
+            for entry in epu_entries
+        ))
+
+    def test_curriculum_catalog_maps_kunst_to_kunsterziehung(self) -> None:
+        kunst_entries = [
+            entry
+            for entry in self.curriculum_adapter.list_entries()
+            if entry.subject_key == "kunst"
+        ]
+
+        self.assertTrue(kunst_entries)
+        self.assertTrue(all(
+            entry.subject_display_name == "Kunst"
+            for entry in kunst_entries
+        ))
+        self.assertTrue(all(
+            entry.official_subject_name == "Kunsterziehung"
+            for entry in kunst_entries
+        ))
+
+    def test_curriculum_catalog_contains_extended_subjects(self) -> None:
+        subjects = {
+            subject.display_name
+            for subject in self.curriculum_adapter.list_active_subjects()
+            if not subject.is_core_subject
+        }
+
+        self.assertEqual(subjects, {"Ethik", "Religion", "Werken", "Schulgarten"})
+
+    def test_curriculum_catalog_filters_competencies_by_subject(self) -> None:
+        epu_competencies = self.curriculum_adapter.list_competencies_for_subject("epu")
+        math_competencies = self.curriculum_adapter.list_competencies_for_subject("mathematik")
+
+        self.assertGreaterEqual(len(epu_competencies), 6)
+        self.assertTrue(all(entry.subject_key == "epu" for entry in epu_competencies))
+        self.assertTrue(any(
+            entry.learning_area == "Natur und Umwelt"
+            for entry in epu_competencies
+        ))
+        self.assertTrue(all(
+            entry.subject_key == "mathematik"
+            for entry in math_competencies
+        ))
+
+    def test_observation_dialog_uses_curriculum_catalog_data(self) -> None:
+        source = inspect.getsource(new_observation_dialog)
+        view_model_source = inspect.getsource(importlib.import_module(
+            "src.desktop_app.view_models.observation_view_model"
+        ))
+
+        self.assertIn("CurriculumDesktopAdapter", source)
+        self.assertIn("list_active_subjects", source)
+        self.assertIn("list_competencies_for_subject", source)
+        self.assertNotIn("OBSERVATION_SUBJECT_OPTIONS", source)
+        self.assertNotIn("OBSERVATION_COMPETENCY_OPTIONS", source)
+        self.assertNotIn("Sachunterricht", view_model_source)
+
     def test_observation_context_options_match_prototype_scope(self) -> None:
         self.assertEqual(
             OBSERVATION_CONTEXT_OPTIONS,
@@ -271,6 +364,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_widgets_have_no_direct_sql_write_logic(self) -> None:
         module_names = (
+            "src.desktop_app.adapters.curriculum_desktop_adapter",
             "src.desktop_app.shell",
             "src.desktop_app.dialogs.new_observation_dialog",
             "src.desktop_app.dialogs.new_student_dialog",
@@ -291,6 +385,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_desktop_app_modules_are_importable(self) -> None:
         for module_name in (
+            "src.desktop_app.adapters.curriculum_desktop_adapter",
             "src.desktop_app.adapters.student_desktop_adapter",
             "src.desktop_app.app",
             "src.desktop_app.dialogs.new_observation_dialog",

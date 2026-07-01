@@ -244,6 +244,7 @@ Liest:
 - `data_students`
 - `data_subjects`
 - `data_competencies`
+- `data/curriculum_catalog_v1.csv` im PySide6-UX-Prototyp als read-only Kataloggrundlage
 - `data_observations` bei Bearbeitung bestehender Beobachtungen
 - `data_observation_competencies` bei Bearbeitung bestehender Zuordnungen
 - `data_media` fuer Dokumente und Medien
