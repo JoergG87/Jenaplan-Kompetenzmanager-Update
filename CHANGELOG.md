@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## Sprint - PySide6 MVP Shell und Navigation
+
+### Added
+
+- PySide6-App-Shell mit Hauptfenster, linker Navigation und Screen-Stack ergaenzt.
+- Uebersicht mit Stammgruppen-/Gruppenkarten und Schuelerzaehlern ergaenzt.
+- Schuelerseite mit bestehender SQLite-Schuelerliste und integriertem `+ Schüler`-Dialog ergaenzt.
+- Schuelerprofil light mit Name, Stammgruppe, Kurs, Notiz und Platzhalter fuer spaetere Beobachtungen ergaenzt.
+- Platzhalterseiten fuer Beobachtungen, Kompetenzen, Berichte und Einstellungen ergaenzt.
+- ViewModels und strukturierte Desktop-App-Unterordner fuer Adapter, Dialoge, Screens und ViewModels eingefuehrt.
+
+### Changed
+
+- Bestehender `StudentDesktopAdapter` in die Adapter-Struktur verschoben und um Gruppenuebersicht sowie Profil-ViewModel erweitert.
+- Bestehende Modulnamen bleiben als Kompatibilitaetsimporte erhalten.
+- Tests fuer Adapter, ViewModels, Importierbarkeit und fehlende direkte SQLite-Schreiblogik in Widgets erweitert.
+
+### Not Changed
+
+- Keine finale Architekturentscheidung, kein Packaging, keine Beobachtungsmaske, keine Dokumentenverwaltung, kein Excel-Export-Umbau und keine Excel-/VBA-/Builder-Loeschung umgesetzt.
+
 ## Spike - PySide6 Desktop-App als alternativer Adapter
 
 ### Added

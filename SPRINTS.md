@@ -279,6 +279,18 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Keine finale Architekturentscheidung getroffen
 - [x] Keine Feature-Implementierung umgesetzt
 
+### Sprint - PySide6 MVP Shell und Navigation
+
+- [x] Hauptfenster `Jenaplan Kompetenzmanager` mit Navigation umgesetzt
+- [x] Navigationspunkte `Übersicht`, `Schüler`, `Beobachtungen`, `Kompetenzen`, `Berichte` und `Einstellungen` umgesetzt
+- [x] Uebersicht mit Stammgruppen-/Gruppenkarten und Schuelerzahlen umgesetzt
+- [x] Schuelerseite mit SQLite-Schuelerliste umgesetzt
+- [x] Bestehenden Dialog `+ Schüler` integriert
+- [x] Schuelerprofil light mit Stammdaten und Notiz umgesetzt
+- [x] Platzhalter fuer Beobachtungen, Kompetenzen, Berichte und Einstellungen umgesetzt
+- [x] Keine Beobachtungsmaske, kein Packaging und kein Excel-Export-Umbau umgesetzt
+- [x] Keine finale Architekturentscheidung getroffen
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

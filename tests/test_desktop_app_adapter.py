@@ -12,8 +12,8 @@ from src.application.commands import CreateStudentCommand
 from src.application.dispatcher import SuccessResult
 from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PREFIX
 from src.core.sqlite_store import SQLiteStudentRepository, create_sqlite_seed_database
-from src.desktop_app import student_adapter
-from src.desktop_app.student_adapter import StudentDesktopAdapter
+from src.desktop_app.adapters import student_desktop_adapter
+from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 
 
 class DesktopAppAdapterTest(unittest.TestCase):
@@ -75,23 +75,75 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(len(students), 28)
         self.assertEqual(students[0].student_id, f"{STUDENT_ID_PREFIX}-000001")
+        self.assertEqual(students[0].group_id, f"{GROUP_ID_PREFIX}-000001")
         self.assertEqual(students[0].group_name, "Grashüpfer")
+        self.assertIn(students[0].course_id, {
+            f"{COURSE_ID_PREFIX}-000001",
+            f"{COURSE_ID_PREFIX}-000002",
+            f"{COURSE_ID_PREFIX}-000003",
+        })
         self.assertIn(students[0].course_name, {"Kurs 1", "Kurs 2", "Kurs 3"})
 
+    def test_group_summary_counts_active_students(self) -> None:
+        groups = self.adapter.list_group_summaries()
+
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0].group_id, f"{GROUP_ID_PREFIX}-000001")
+        self.assertEqual(groups[0].group_name, "Grashüpfer")
+        self.assertEqual(groups[0].active_student_count, 28)
+
+    def test_selected_student_creates_profile_view_model(self) -> None:
+        students = self.adapter.list_students()
+        profile = self.adapter.get_student_profile(students[0].student_id)
+
+        self.assertIsNotNone(profile)
+        self.assertEqual(profile.student_id, students[0].student_id)
+        self.assertEqual(profile.display_name, students[0].display_name)
+        self.assertEqual(profile.group_name, "Grashüpfer")
+        self.assertIn(profile.course_name, {"Kurs 1", "Kurs 2", "Kurs 3"})
+
     def test_adapter_has_no_direct_sql_write_logic(self) -> None:
-        source = inspect.getsource(student_adapter)
+        source = inspect.getsource(student_desktop_adapter)
 
         self.assertNotIn("INSERT INTO", source)
         self.assertNotIn("UPDATE ", source)
         self.assertNotIn("DELETE FROM", source)
         self.assertNotIn("sqlite3.connect", source)
 
+    def test_widgets_have_no_direct_sql_write_logic(self) -> None:
+        module_names = (
+            "src.desktop_app.shell",
+            "src.desktop_app.dialogs.new_student_dialog",
+            "src.desktop_app.screens.overview_screen",
+            "src.desktop_app.screens.students_screen",
+            "src.desktop_app.screens.student_profile_screen",
+            "src.desktop_app.screens.placeholder_screen",
+        )
+
+        for module_name in module_names:
+            module = importlib.import_module(module_name)
+            source = inspect.getsource(module)
+            with self.subTest(module_name=module_name):
+                self.assertNotIn("INSERT INTO", source)
+                self.assertNotIn("UPDATE ", source)
+                self.assertNotIn("DELETE FROM", source)
+                self.assertNotIn("sqlite3.connect", source)
+
     def test_desktop_app_modules_are_importable(self) -> None:
         for module_name in (
+            "src.desktop_app.adapters.student_desktop_adapter",
             "src.desktop_app.app",
+            "src.desktop_app.dialogs.new_student_dialog",
             "src.desktop_app.main",
             "src.desktop_app.new_student_dialog",
+            "src.desktop_app.navigation",
+            "src.desktop_app.screens.overview_screen",
+            "src.desktop_app.screens.placeholder_screen",
+            "src.desktop_app.screens.student_profile_screen",
+            "src.desktop_app.screens.students_screen",
+            "src.desktop_app.shell",
             "src.desktop_app.student_list_view",
+            "src.desktop_app.view_models.student_view_model",
         ):
             with self.subTest(module_name=module_name):
                 importlib.import_module(module_name)

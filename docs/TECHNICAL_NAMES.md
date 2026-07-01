@@ -307,16 +307,34 @@ Registrierte Python-Module:
 
 - `src/desktop_app/main.py`
 - `src/desktop_app/app.py`
+- `src/desktop_app/shell.py`
+- `src/desktop_app/navigation.py`
 - `src/desktop_app/student_adapter.py`
 - `src/desktop_app/student_list_view.py`
 - `src/desktop_app/new_student_dialog.py`
+- `src/desktop_app/adapters/student_desktop_adapter.py`
+- `src/desktop_app/dialogs/new_student_dialog.py`
+- `src/desktop_app/screens/overview_screen.py`
+- `src/desktop_app/screens/students_screen.py`
+- `src/desktop_app/screens/student_profile_screen.py`
+- `src/desktop_app/screens/placeholder_screen.py`
+- `src/desktop_app/view_models/student_view_model.py`
 
 Registrierte Python-Klassen und Funktionen:
 
 - `JenaplanDesktopApp`
+- `AppShell`
+- `NavigationItem`
+- `NAVIGATION_ITEMS`
 - `StudentDesktopAdapter`
 - `StudentListItem`
+- `StudentDetailViewModel`
+- `GroupSummaryViewModel`
 - `StudentListView`
+- `OverviewScreen`
+- `StudentsScreen`
+- `StudentProfileScreen`
+- `PlaceholderScreen`
 - `NewStudentDialog`
 - `main()`
 
