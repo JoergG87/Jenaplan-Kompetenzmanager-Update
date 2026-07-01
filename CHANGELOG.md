@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Spike - PySide6 Desktop-App als alternativer Adapter
+
+### Added
+
+- PySide6 als Spike-Dependency ergaenzt.
+- Experimentelle Desktop-App-Struktur unter `src/desktop_app/` angelegt.
+- `StudentDesktopAdapter` verbindet die PySide6-nahe Schicht mit `CreateStudentCommand`, `ApplicationCommandDispatcher`, `StudentService` und SQLite-Repositories.
+- Tests fuer Command-Erzeugung, Speichern ueber die Application-Schicht und Stammgruppe-/Kurs-Mapping ergaenzt.
+
+### Removed
+
+- Uncommitted tkinter-Spike-Dateien wieder entfernt, damit nicht zwei GUI-Frameworks parallel im Projekt verbleiben.
+
+### Not Changed
+
+- Keine endgueltige Architekturentscheidung, keine Excel-/VBA-/Seed-Aenderung, keine Builder-Aenderung, kein Projection Refresh, keine Beobachtungen und kein Commit umgesetzt.
+
 ## Hotfix - Runtime ueber MacScript do shell script starten
 
 ### Fixed

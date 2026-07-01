@@ -297,6 +297,33 @@ Registrierte Command-Namen:
 
 - `student.create`
 
+## Desktop-App-Spike
+
+Status:
+
+Der Desktop-App-Spike prueft PySide6 als alternativen Adapter. Er ist keine endgueltige Architekturentscheidung.
+
+Registrierte Python-Module:
+
+- `src/desktop_app/main.py`
+- `src/desktop_app/app.py`
+- `src/desktop_app/student_adapter.py`
+- `src/desktop_app/student_list_view.py`
+- `src/desktop_app/new_student_dialog.py`
+
+Registrierte Python-Klassen und Funktionen:
+
+- `JenaplanDesktopApp`
+- `StudentDesktopAdapter`
+- `StudentListItem`
+- `StudentListView`
+- `NewStudentDialog`
+- `main()`
+
+Regel:
+
+Der Desktop-App-Spike ist Adapter Layer. Er darf Daten anzeigen, Eingaben sammeln, Commands erzeugen und den `ApplicationCommandDispatcher` aufrufen. Er darf keine Businesslogik enthalten, keine Schueler-IDs erzeugen und nicht direkt in SQLite schreiben.
+
 ## Runtime Adapter und Projection Refresh
 
 Produktiv umgesetzte VBA-Adapter-Prozeduren:
