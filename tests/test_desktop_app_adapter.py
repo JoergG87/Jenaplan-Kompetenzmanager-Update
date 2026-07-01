@@ -15,7 +15,11 @@ from src.core.sqlite_store import SQLiteStudentRepository, create_sqlite_seed_da
 from src.desktop_app.adapters import student_desktop_adapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.navigation import resolve_navigation_target
-from src.desktop_app.view_models.student_view_model import filter_student_list
+from src.desktop_app.view_models.student_view_model import (
+    PROFILE_ACTION_MESSAGES,
+    PROFILE_SECTION_PLACEHOLDERS,
+    filter_student_list,
+)
 
 
 class DesktopAppAdapterTest(unittest.TestCase):
@@ -105,6 +109,39 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn(profile.course_name, {"Kurs 1", "Kurs 2", "Kurs 3"})
         self.assertIsInstance(profile.student_notes, str)
         self.assertTrue(profile.active)
+
+    def test_student_profile_view_model_contains_header_and_basis_data(self) -> None:
+        students = self.adapter.list_students()
+        profile = self.adapter.get_student_profile(students[0].student_id)
+
+        self.assertIsNotNone(profile)
+        self.assertTrue(profile.student_id.startswith(STUDENT_ID_PREFIX))
+        self.assertEqual(profile.display_name, students[0].display_name)
+        self.assertEqual(profile.group_name, students[0].group_name)
+        self.assertEqual(profile.course_name, students[0].course_name)
+        self.assertIsInstance(profile.student_notes, str)
+
+    def test_profile_placeholder_messages_are_registered(self) -> None:
+        self.assertEqual(
+            PROFILE_ACTION_MESSAGES["observation"],
+            "Beobachtungen werden in einem späteren Sprint erfasst.",
+        )
+        self.assertEqual(
+            PROFILE_ACTION_MESSAGES["document"],
+            "Dokumente werden in einem späteren Sprint verwaltet.",
+        )
+        self.assertEqual(
+            PROFILE_ACTION_MESSAGES["edit"],
+            "Bearbeiten wird in einem späteren Sprint umgesetzt.",
+        )
+        self.assertEqual(
+            PROFILE_SECTION_PLACEHOLDERS["observations_title"],
+            "Noch keine Beobachtungen erfasst.",
+        )
+        self.assertEqual(
+            PROFILE_SECTION_PLACEHOLDERS["documents_hint"],
+            "Dokumente werden schülerzentriert verwaltet.",
+        )
 
     def test_sidebar_students_navigation_resets_to_list(self) -> None:
         target = resolve_navigation_target("students")

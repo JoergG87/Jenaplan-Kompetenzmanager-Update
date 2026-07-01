@@ -333,6 +333,8 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDetailViewModel`
 - `GroupSummaryViewModel`
 - `filter_student_list(students, search_text)`
+- `PROFILE_ACTION_MESSAGES`
+- `PROFILE_SECTION_PLACEHOLDERS`
 - `StudentListView`
 - `OverviewScreen`
 - `StudentsScreen`

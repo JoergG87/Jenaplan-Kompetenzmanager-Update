@@ -304,6 +304,17 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Keine Beobachtungsmaske, kein Packaging und kein Excel-Export-Umbau umgesetzt
 - [x] Keine finale Architekturentscheidung getroffen
 
+### Sprint - PySide6 Schuelerprofil UX-Ausbau 1
+
+- [x] Profilkopf mit Zurueck-Button, Name, Stammgruppe, Kurs und dezenter `student_id`-Anzeige umgesetzt
+- [x] Schnellaktionen `+ Beobachtung`, `Dokument hinzufügen` und `Schüler bearbeiten` sichtbar gemacht
+- [x] Schnellaktionen bleiben reine Platzhalter mit Inline-Hinweis und starten keine produktiven Fachprozesse
+- [x] Basisdaten als eigener Profilbereich umgesetzt
+- [x] Beobachtungen, Kompetenzen und Dokumente als Karten mit Platzhaltertexten strukturiert
+- [x] Keine Beobachtungsmaske, keine Beobachtungspersistenz, keine Dokumentenverwaltung und keine Kompetenzberechnung umgesetzt
+- [x] Keine Datenmodelländerung, kein Packaging und kein Excel-Export-Umbau umgesetzt
+- [x] Keine finale Architekturentscheidung getroffen
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

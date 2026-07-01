@@ -61,6 +61,22 @@ class StudentDetailViewModel:
     active: bool
 
 
+PROFILE_ACTION_MESSAGES = {
+    "observation": "Beobachtungen werden in einem späteren Sprint erfasst.",
+    "document": "Dokumente werden in einem späteren Sprint verwaltet.",
+    "edit": "Bearbeiten wird in einem späteren Sprint umgesetzt.",
+}
+
+PROFILE_SECTION_PLACEHOLDERS = {
+    "observations_title": "Noch keine Beobachtungen erfasst.",
+    "observations_hint": "Hier erscheinen später chronologische Beobachtungen.",
+    "competencies_title": "Kompetenzverlauf folgt später.",
+    "competencies_hint": "Hier werden später Fach- und Kompetenzstände sichtbar.",
+    "documents_title": "Noch keine Dokumente hinterlegt.",
+    "documents_hint": "Dokumente werden schülerzentriert verwaltet.",
+}
+
+
 @dataclass(frozen=True)
 class GroupSummaryViewModel:
     """Display model for overview group cards."""

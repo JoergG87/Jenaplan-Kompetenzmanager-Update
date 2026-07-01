@@ -34,7 +34,8 @@ class AppShell(QMainWindow):
         self.adapter = StudentDesktopAdapter(database_path)
         self.selected_group_id: str | None = None
         self.setWindowTitle("Jenaplan Kompetenzmanager")
-        self.resize(1040, 680)
+        self.setMinimumSize(1100, 720)
+        self.resize(1400, 900)
         self._build()
         self.refresh_all()
 

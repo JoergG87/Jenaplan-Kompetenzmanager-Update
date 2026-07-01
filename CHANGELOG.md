@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Sprint - PySide6 Schuelerprofil UX-Ausbau 1
+
+### Added
+
+- Schuelerprofil als erste Arbeitsseite mit Profilkopf, Basisdaten, Schnellaktionen und Karten fuer Beobachtungen, Kompetenzen und Dokumente ausgebaut.
+- Dezente Anzeige der `student_id` im Profilkopf ergaenzt.
+- Inline-Hinweise fuer die spaeteren Aktionen `+ Beobachtung`, `Dokument hinzufügen` und `Schüler bearbeiten` ergaenzt.
+- Zentrale Platzhaltertexte fuer Beobachtungen, Kompetenzen und schuelerzentrierte Dokumente ergaenzt.
+
+### Not Changed
+
+- Keine Beobachtungsmaske, keine Beobachtungspersistenz, keine Dokumentenverwaltung, keine Kompetenzberechnung, keine Datenmodelländerung, kein Packaging, kein Excel-Export-Umbau und keine finale Architekturentscheidung umgesetzt.
+
 ## Sprint - PySide6 UX Stabilisierung 1
 
 ### Added

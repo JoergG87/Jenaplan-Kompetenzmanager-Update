@@ -8,12 +8,17 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QScrollArea,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
-from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
+from src.desktop_app.view_models.student_view_model import (
+    PROFILE_ACTION_MESSAGES,
+    PROFILE_SECTION_PLACEHOLDERS,
+    StudentDetailViewModel,
+)
 
 
 class StudentProfileScreen(QWidget):
@@ -26,56 +31,135 @@ class StudentProfileScreen(QWidget):
         self.back_button = QPushButton("← Zurück zur Schülerliste")
         self.name_label = QLabel("Kein Schüler ausgewählt")
         self.meta_label = QLabel("")
+        self.student_id_label = QLabel("")
         self.notes = QTextEdit()
-        self.observation_placeholder = QLabel("Beobachtungen folgen später.")
+        self.group_value_label = QLabel("")
+        self.course_value_label = QLabel("")
+        self.action_feedback_label = QLabel("")
         self._build()
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
-
         header = QHBoxLayout()
         self.back_button.clicked.connect(self.back_requested.emit)
         header.addWidget(self.back_button)
         header.addStretch()
         layout.addLayout(header)
 
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+
         self.name_label.setStyleSheet("font-size: 22px; font-weight: 600;")
         self.meta_label.setStyleSheet("color: #555;")
+        self.student_id_label.setStyleSheet("color: #777; font-size: 11px;")
+        content_layout.addWidget(self.name_label)
+        content_layout.addWidget(self.meta_label)
+        content_layout.addWidget(self.student_id_label)
+        content_layout.addWidget(self._actions_card())
+        content_layout.addWidget(self._basis_data_card())
+        content_layout.addWidget(self._placeholder_card(
+            "Beobachtungen",
+            PROFILE_SECTION_PLACEHOLDERS["observations_title"],
+            PROFILE_SECTION_PLACEHOLDERS["observations_hint"],
+        ))
+        content_layout.addWidget(self._placeholder_card(
+            "Kompetenzen",
+            PROFILE_SECTION_PLACEHOLDERS["competencies_title"],
+            PROFILE_SECTION_PLACEHOLDERS["competencies_hint"],
+        ))
+        content_layout.addWidget(self._placeholder_card(
+            "Dokumente",
+            PROFILE_SECTION_PLACEHOLDERS["documents_title"],
+            PROFILE_SECTION_PLACEHOLDERS["documents_hint"],
+        ))
+        content_layout.addStretch()
+        scroll_area.setWidget(content)
+        layout.addWidget(scroll_area)
+
+    def _actions_card(self) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        title = QLabel("Schnellaktionen")
+        title.setStyleSheet("font-weight: 600;")
+        button_row = QHBoxLayout()
+        observation_button = QPushButton("+ Beobachtung")
+        document_button = QPushButton("Dokument hinzufügen")
+        edit_button = QPushButton("Schüler bearbeiten")
+        observation_button.clicked.connect(
+            lambda: self._show_placeholder_message(PROFILE_ACTION_MESSAGES["observation"])
+        )
+        document_button.clicked.connect(
+            lambda: self._show_placeholder_message(PROFILE_ACTION_MESSAGES["document"])
+        )
+        edit_button.clicked.connect(
+            lambda: self._show_placeholder_message(PROFILE_ACTION_MESSAGES["edit"])
+        )
+        button_row.addWidget(observation_button)
+        button_row.addWidget(document_button)
+        button_row.addWidget(edit_button)
+        button_row.addStretch()
+        self.action_feedback_label.setStyleSheet("color: #555;")
+        layout.addWidget(title)
+        layout.addLayout(button_row)
+        layout.addWidget(self.action_feedback_label)
+        return card
+
+    def _basis_data_card(self) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        title = QLabel("Basisdaten")
+        title.setStyleSheet("font-weight: 600;")
         self.notes.setReadOnly(True)
         self.notes.setMinimumHeight(110)
+        layout.addWidget(title)
+        layout.addWidget(QLabel("Stammgruppe"))
+        layout.addWidget(self.group_value_label)
+        layout.addWidget(QLabel("Kurs"))
+        layout.addWidget(self.course_value_label)
+        layout.addWidget(QLabel("Notiz"))
+        layout.addWidget(self.notes)
+        return card
 
-        notes_card = QFrame()
-        notes_card.setFrameShape(QFrame.Shape.StyledPanel)
-        notes_card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
-        notes_layout = QVBoxLayout(notes_card)
-        notes_title = QLabel("Notiz")
-        notes_title.setStyleSheet("font-weight: 600;")
-        notes_layout.addWidget(notes_title)
-        notes_layout.addWidget(self.notes)
+    def _placeholder_card(self, title: str, placeholder: str, hint: str) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        title_label = QLabel(title)
+        title_label.setStyleSheet("font-weight: 600;")
+        placeholder_label = QLabel(placeholder)
+        placeholder_label.setStyleSheet("color: #444;")
+        hint_label = QLabel(hint)
+        hint_label.setStyleSheet("color: #666;")
+        layout.addWidget(title_label)
+        layout.addWidget(placeholder_label)
+        layout.addWidget(hint_label)
+        return card
 
-        observation_card = QFrame()
-        observation_card.setFrameShape(QFrame.Shape.StyledPanel)
-        observation_card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
-        observation_layout = QVBoxLayout(observation_card)
-        observation_title = QLabel("Beobachtungen")
-        observation_title.setStyleSheet("font-weight: 600;")
-        self.observation_placeholder.setStyleSheet("color: #666;")
-        observation_layout.addWidget(observation_title)
-        observation_layout.addWidget(self.observation_placeholder)
+    def _card(self) -> QFrame:
+        card = QFrame()
+        card.setFrameShape(QFrame.Shape.StyledPanel)
+        card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
+        return card
 
-        layout.addWidget(self.name_label)
-        layout.addWidget(self.meta_label)
-        layout.addWidget(notes_card)
-        layout.addWidget(observation_card)
-        layout.addStretch()
+    def _show_placeholder_message(self, message: str) -> None:
+        self.action_feedback_label.setText(message)
 
     def set_student(self, student: StudentDetailViewModel | None) -> None:
         """Render selected student or empty state."""
         if student is None:
             self.name_label.setText("Kein Schüler ausgewählt")
             self.meta_label.setText("")
+            self.student_id_label.setText("")
+            self.group_value_label.setText("")
+            self.course_value_label.setText("")
             self.notes.setPlainText("")
+            self.action_feedback_label.setText("")
             return
         self.name_label.setText(student.display_name)
         self.meta_label.setText(f"{student.group_name} · {student.course_name}")
+        self.student_id_label.setText(student.student_id)
+        self.group_value_label.setText(student.group_name)
+        self.course_value_label.setText(student.course_name)
         self.notes.setPlainText(student.student_notes or "Keine Notiz vorhanden.")
+        self.action_feedback_label.setText("")
