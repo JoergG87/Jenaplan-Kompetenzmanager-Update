@@ -339,6 +339,14 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Keine Beobachtungspersistenz, keine SQLite-Aenderung und keine Datenmodelländerung fuer Beobachtungen umgesetzt
 - [x] Keine finale Architekturentscheidung getroffen
 
+### Hotfix - Beobachtungsdialog Kompetenzauswahl lesbarer
+
+- [x] Kompetenzliste zeigt kurze Lernbereich-Labels statt langer Kompetenztexte
+- [x] Lange Kompetenztexte bleiben im Katalog und im nicht-persistenten Draft erhalten
+- [x] Mehrfachauswahl als sichtbare Checkbox-Liste umgesetzt
+- [x] Fachwechsel aktualisiert die Kompetenzliste und setzt die vorherige Auswahl zurueck
+- [x] Keine Beobachtungspersistenz, keine SQLite-Aenderung und keine Datenmodelländerung umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

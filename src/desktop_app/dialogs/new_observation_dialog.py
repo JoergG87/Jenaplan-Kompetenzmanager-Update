@@ -28,6 +28,7 @@ from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_CONTEXT_OPTIONS,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_PLACEHOLDER_MESSAGE,
+    ObservationCompetencyDraft,
     ObservationDraftViewModel,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
@@ -74,8 +75,8 @@ class NewObservationDialog(QDialog):
         self.subject_select.currentIndexChanged.connect(self._refresh_competencies)
 
         self.competency_list = QListWidget()
-        self.competency_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
-        self.competency_list.setMinimumHeight(100)
+        self.competency_list.setSelectionMode(QListWidget.SelectionMode.NoSelection)
+        self.competency_list.setMinimumHeight(120)
         self._refresh_competencies()
 
         self.context_select = QComboBox()
@@ -89,8 +90,7 @@ class NewObservationDialog(QDialog):
 
         form_layout.addLayout(self._field_row("Datum", self.date_input))
         form_layout.addLayout(self._field_row("Fach", self.subject_select))
-        form_layout.addWidget(self._field_label("Kompetenz(en)"))
-        form_layout.addWidget(self.competency_list)
+        form_layout.addWidget(self._competency_card())
         form_layout.addLayout(self._field_row("Kontext", self.context_select))
         form_layout.addLayout(self._field_row("Bewertung", self.rating_select))
         form_layout.addWidget(self._field_label("Notiz"))
@@ -121,7 +121,24 @@ class NewObservationDialog(QDialog):
             self.competency_list.addItem(item)
             return
         for competency in competencies:
-            self.competency_list.addItem(QListWidgetItem(competency.competency_label))
+            item = QListWidgetItem(competency.competency_display_name)
+            item.setData(Qt.ItemDataRole.UserRole, competency)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Unchecked)
+            item.setToolTip(competency.competency_detail_label)
+            self.competency_list.addItem(item)
+
+    def _competency_card(self) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        title = QLabel("Kompetenzen")
+        title.setStyleSheet("font-weight: 600;")
+        hint = QLabel("Mehrfachauswahl möglich")
+        hint.setStyleSheet("color: #555;")
+        layout.addWidget(title)
+        layout.addWidget(hint)
+        layout.addWidget(self.competency_list)
+        return card
 
     def _attachments_card(self) -> QFrame:
         card = self._card()
@@ -170,19 +187,29 @@ class NewObservationDialog(QDialog):
 
     def create_draft(self) -> ObservationDraftViewModel:
         """Return the non-persistent UI draft."""
-        selected_competencies = tuple(
-            item.text() for item in self.competency_list.selectedItems()
-        )
+        selected_competencies = self._selected_competencies()
         return ObservationDraftViewModel(
             student_id=self.student.student_id,
             student_name=self.student.display_name,
             date_text=self.date_input.date().toString("yyyy-MM-dd"),
+            subject_key=str(self.subject_select.currentData() or ""),
             subject=self.subject_select.currentText(),
             competencies=selected_competencies,
             context=self.context_select.currentText(),
             rating=self.rating_select.currentText(),
             note=self.note_input.toPlainText(),
         )
+
+    def _selected_competencies(self) -> tuple[ObservationCompetencyDraft, ...]:
+        selected: list[ObservationCompetencyDraft] = []
+        for row in range(self.competency_list.count()):
+            item = self.competency_list.item(row)
+            if item.checkState() != Qt.CheckState.Checked:
+                continue
+            catalog_entry = item.data(Qt.ItemDataRole.UserRole)
+            if catalog_entry is not None:
+                selected.append(ObservationCompetencyDraft.from_catalog_entry(catalog_entry))
+        return tuple(selected)
 
     def save_draft(self) -> None:
         """Close after showing that persistence is intentionally not implemented."""

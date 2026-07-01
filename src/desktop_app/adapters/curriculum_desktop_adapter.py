@@ -32,6 +32,16 @@ class CurriculumCatalogEntry:
     @property
     def competency_label(self) -> str:
         """Return the user-facing competency selection label."""
+        return self.competency_display_name
+
+    @property
+    def competency_display_name(self) -> str:
+        """Return the short label used in the observation dialog."""
+        return self.learning_area
+
+    @property
+    def competency_detail_label(self) -> str:
+        """Return the full catalog detail text for tooltips or later detail views."""
         return (
             f"{self.learning_area} - {self.competency_group}: "
             f"{self.competency_text}"

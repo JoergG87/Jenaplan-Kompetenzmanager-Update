@@ -23,6 +23,7 @@ from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_CONTEXT_OPTIONS,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_PLACEHOLDER_MESSAGE,
+    ObservationCompetencyDraft,
     ObservationDraftViewModel,
     observation_rating_keys,
 )
@@ -245,6 +246,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
             for entry in math_competencies
         ))
 
+    def test_curriculum_competency_options_have_short_display_labels(self) -> None:
+        epu_competency = self.curriculum_adapter.list_competencies_for_subject("epu")[0]
+
+        self.assertEqual(epu_competency.competency_display_name, epu_competency.learning_area)
+        self.assertEqual(epu_competency.competency_label, epu_competency.learning_area)
+        self.assertNotEqual(epu_competency.competency_display_name, epu_competency.competency_text)
+        self.assertIn(epu_competency.competency_text, epu_competency.competency_detail_label)
+
     def test_observation_dialog_uses_curriculum_catalog_data(self) -> None:
         source = inspect.getsource(new_observation_dialog)
         view_model_source = inspect.getsource(importlib.import_module(
@@ -254,9 +263,21 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("CurriculumDesktopAdapter", source)
         self.assertIn("list_active_subjects", source)
         self.assertIn("list_competencies_for_subject", source)
+        self.assertIn("currentIndexChanged.connect(self._refresh_competencies)", source)
+        self.assertIn("self.competency_list.clear()", source)
         self.assertNotIn("OBSERVATION_SUBJECT_OPTIONS", source)
         self.assertNotIn("OBSERVATION_COMPETENCY_OPTIONS", source)
         self.assertNotIn("Sachunterricht", view_model_source)
+
+    def test_observation_dialog_uses_checkbox_list_for_competencies(self) -> None:
+        source = inspect.getsource(new_observation_dialog)
+
+        self.assertIn("QListWidget.SelectionMode.NoSelection", source)
+        self.assertIn("ItemIsUserCheckable", source)
+        self.assertIn("Qt.CheckState.Unchecked", source)
+        self.assertIn("competency.competency_display_name", source)
+        self.assertIn("Mehrfachauswahl möglich", source)
+        self.assertIn("_selected_competencies", source)
 
     def test_observation_context_options_match_prototype_scope(self) -> None:
         self.assertEqual(
@@ -271,12 +292,19 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
     def test_observation_draft_view_model_keeps_student_context(self) -> None:
+        competency = ObservationCompetencyDraft(
+            subject_key="deutsch",
+            learning_area="Mit Texten und Medien umgehen",
+            competency_group="Lesen und Verstehen",
+            competency_text="Texte lesen und zentrale Informationen entnehmen",
+        )
         draft = ObservationDraftViewModel(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
             student_name="Emma Müller",
             date_text="2026-07-01",
+            subject_key="deutsch",
             subject="Deutsch",
-            competencies=("Leseflüssigkeit",),
+            competencies=(competency,),
             context="Leseübung",
             rating="+ erreicht",
             note="Liest einen bekannten Text flüssig.",
@@ -284,6 +312,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(draft.student_id, f"{STUDENT_ID_PREFIX}-000001")
         self.assertEqual(draft.student_name, "Emma Müller")
+        self.assertEqual(draft.subject_key, "deutsch")
+        self.assertEqual(draft.competencies[0].display_label, "Mit Texten und Medien umgehen")
+        self.assertEqual(draft.competencies[0].competency_text, "Texte lesen und zentrale Informationen entnehmen")
         self.assertEqual(draft.attachment_names, ())
 
     def test_observation_dialog_placeholder_messages_are_non_persistent(self) -> None:

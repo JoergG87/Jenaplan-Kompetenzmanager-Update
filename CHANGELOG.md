@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Hotfix - Beobachtungsdialog Kompetenzauswahl lesbarer
+
+### Changed
+
+- Kompetenzauswahl im PySide6-Beobachtungsdialog auf kurze Lernbereich-Labels umgestellt.
+- Kompetenzliste als sichtbare Checkbox-Liste mit Hinweis `Mehrfachauswahl möglich` dargestellt.
+- Nicht-persistenter Observation-Draft behaelt die stabilen Kompetenzwerte aus dem Katalog intern bei.
+
+### Not Changed
+
+- Lange Kompetenztexte im Katalog bleiben erhalten. Keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository, keine Dokumenten-/Medienpersistenz, kein Excel-/VBA-Umbau und kein Packaging umgesetzt.
+
 ## Sprint - Curriculum-Katalog v1
 
 ### Added

@@ -340,12 +340,15 @@ Registrierte Python-Klassen und Funktionen:
 - `CurriculumCatalogEntry`
 - `CurriculumSubjectOption`
 - `CURRICULUM_CATALOG_V1_PATH`
+- `CurriculumCatalogEntry.competency_display_name`
+- `CurriculumCatalogEntry.competency_detail_label`
 - `StudentListItem`
 - `StudentDetailViewModel`
 - `GroupSummaryViewModel`
 - `filter_student_list(students, search_text)`
 - `PROFILE_ACTION_MESSAGES`
 - `PROFILE_SECTION_PLACEHOLDERS`
+- `ObservationCompetencyDraft`
 - `ObservationDraftViewModel`
 - `OBSERVATION_CONTEXT_OPTIONS`
 - `OBSERVATION_RATING_OPTIONS`

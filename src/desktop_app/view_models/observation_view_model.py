@@ -32,14 +32,40 @@ OBSERVATION_ATTACHMENT_EMPTY_STATE = "Noch keine Anhänge ausgewählt."
 
 
 @dataclass(frozen=True)
+class ObservationCompetencyDraft:
+    """Selected competency data kept in the non-persistent draft."""
+
+    subject_key: str
+    learning_area: str
+    competency_group: str
+    competency_text: str
+
+    @property
+    def display_label(self) -> str:
+        """Return the short UI label for selected competencies."""
+        return self.learning_area
+
+    @classmethod
+    def from_catalog_entry(cls, entry: object) -> "ObservationCompetencyDraft":
+        """Create a draft selection from a curriculum catalog entry."""
+        return cls(
+            subject_key=getattr(entry, "subject_key"),
+            learning_area=getattr(entry, "learning_area"),
+            competency_group=getattr(entry, "competency_group"),
+            competency_text=getattr(entry, "competency_text"),
+        )
+
+
+@dataclass(frozen=True)
 class ObservationDraftViewModel:
     """Non-persistent draft state for the observation UX prototype."""
 
     student_id: str
     student_name: str
     date_text: str
+    subject_key: str
     subject: str
-    competencies: tuple[str, ...]
+    competencies: tuple[ObservationCompetencyDraft, ...]
     context: str
     rating: str
     note: str
