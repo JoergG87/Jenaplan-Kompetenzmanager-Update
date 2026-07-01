@@ -18,12 +18,14 @@ from PySide6.QtWidgets import (
 
 from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens.overview_screen import OverviewScreen
 from src.desktop_app.screens.placeholder_screen import PlaceholderScreen
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
 from src.desktop_app.screens.students_screen import StudentsScreen
+from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
 
 
 class AppShell(QMainWindow):
@@ -101,6 +103,9 @@ class AppShell(QMainWindow):
         self.students_screen.new_student_requested.connect(self.open_new_student_dialog)
         self.students_screen.student_selected.connect(self.show_student_profile)
         self.student_profile_screen.back_requested.connect(self.return_to_students)
+        self.student_profile_screen.observation_requested.connect(
+            self.open_new_observation_dialog
+        )
         self.navigation.setCurrentRow(0)
 
     def refresh_all(self) -> None:
@@ -144,6 +149,11 @@ class AppShell(QMainWindow):
         """Open the existing new-student dialog and refresh after success."""
         dialog = NewStudentDialog(self.adapter)
         dialog.student_created.connect(self.handle_student_created)
+        dialog.exec()
+
+    def open_new_observation_dialog(self, student: StudentDetailViewModel) -> None:
+        """Open the non-persistent observation UX prototype."""
+        dialog = NewObservationDialog(student)
         dialog.exec()
 
     def handle_student_created(self, student_id: str) -> None:

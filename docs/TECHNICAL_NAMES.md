@@ -313,11 +313,13 @@ Registrierte Python-Module:
 - `src/desktop_app/student_list_view.py`
 - `src/desktop_app/new_student_dialog.py`
 - `src/desktop_app/adapters/student_desktop_adapter.py`
+- `src/desktop_app/dialogs/new_observation_dialog.py`
 - `src/desktop_app/dialogs/new_student_dialog.py`
 - `src/desktop_app/screens/overview_screen.py`
 - `src/desktop_app/screens/students_screen.py`
 - `src/desktop_app/screens/student_profile_screen.py`
 - `src/desktop_app/screens/placeholder_screen.py`
+- `src/desktop_app/view_models/observation_view_model.py`
 - `src/desktop_app/view_models/student_view_model.py`
 
 Registrierte Python-Klassen und Funktionen:
@@ -335,11 +337,21 @@ Registrierte Python-Klassen und Funktionen:
 - `filter_student_list(students, search_text)`
 - `PROFILE_ACTION_MESSAGES`
 - `PROFILE_SECTION_PLACEHOLDERS`
+- `ObservationDraftViewModel`
+- `OBSERVATION_SUBJECT_OPTIONS`
+- `OBSERVATION_COMPETENCY_OPTIONS`
+- `OBSERVATION_CONTEXT_OPTIONS`
+- `OBSERVATION_RATING_OPTIONS`
+- `OBSERVATION_SAVE_PLACEHOLDER_MESSAGE`
+- `OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE`
+- `OBSERVATION_ATTACHMENT_EMPTY_STATE`
+- `observation_rating_keys()`
 - `StudentListView`
 - `OverviewScreen`
 - `StudentsScreen`
 - `StudentProfileScreen`
 - `PlaceholderScreen`
+- `NewObservationDialog`
 - `NewStudentDialog`
 - `main()`
 

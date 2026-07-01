@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Sprint - PySide6 Beobachtungsdialog UX-Prototyp 1
+
+### Added
+
+- Nicht-persistenten PySide6-Dialog `Neue Beobachtung` als UX-Prototyp ergaenzt.
+- `+ Beobachtung` im Schuelerprofil oeffnet den Dialog im Kontext des ausgewaehlten Schuelers.
+- Dialogfelder fuer Datum, Fach, Kompetenz(en), Kontext, Bewertung, Notiz sowie `Dokumente & Medien` ergaenzt.
+- Nicht-produktive Hinweise fuer Speichern und `Datei hinzufügen` ergaenzt.
+- Lokale UI-Listen fuer Fach und Kompetenzen als Spike-Einschraenkung verwendet, weil noch keine saubere PySide6-Datenquelle fuer diese Auswahl freigegeben ist.
+
+### Not Changed
+
+- Keine Beobachtungspersistenz, keine SQLite-Aenderung, kein Beobachtungs-Repository, keine Datenmodelländerung, keine Dokumentenanhaenge, kein Excel-/VBA-Umbau, kein Packaging, kein Berichtsexport und keine finale Architekturentscheidung umgesetzt.
+
 ## Sprint - PySide6 Schuelerprofil UX-Ausbau 1
 
 ### Added

@@ -24,9 +24,11 @@ class StudentProfileScreen(QWidget):
     """Lightweight read-only student profile."""
 
     back_requested = Signal()
+    observation_requested = Signal(object)
 
     def __init__(self) -> None:
         super().__init__()
+        self.current_student: StudentDetailViewModel | None = None
         self.back_button = QPushButton("← Zurück zur Schülerliste")
         self.name_label = QLabel("Kein Schüler ausgewählt")
         self.meta_label = QLabel("")
@@ -86,9 +88,7 @@ class StudentProfileScreen(QWidget):
         observation_button = QPushButton("+ Beobachtung")
         document_button = QPushButton("Dokument hinzufügen")
         edit_button = QPushButton("Schüler bearbeiten")
-        observation_button.clicked.connect(
-            lambda: self._show_placeholder_message(PROFILE_ACTION_MESSAGES["observation"])
-        )
+        observation_button.clicked.connect(self._request_new_observation)
         document_button.clicked.connect(
             lambda: self._show_placeholder_message(PROFILE_ACTION_MESSAGES["document"])
         )
@@ -154,8 +154,15 @@ class StudentProfileScreen(QWidget):
     def _show_placeholder_message(self, message: str) -> None:
         self.action_feedback_label.setText(message)
 
+    def _request_new_observation(self) -> None:
+        if self.current_student is None:
+            self._show_placeholder_message(PROFILE_ACTION_MESSAGES["observation"])
+            return
+        self.observation_requested.emit(self.current_student)
+
     def set_student(self, student: StudentDetailViewModel | None) -> None:
         """Render selected student or empty state."""
+        self.current_student = student
         if student is None:
             self.name_label.setText("Kein Schüler ausgewählt")
             self.meta_label.setText("")

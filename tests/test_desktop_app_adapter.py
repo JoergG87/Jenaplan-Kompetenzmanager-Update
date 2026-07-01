@@ -14,7 +14,17 @@ from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PRE
 from src.core.sqlite_store import SQLiteStudentRepository, create_sqlite_seed_database
 from src.desktop_app.adapters import student_desktop_adapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.dialogs import new_observation_dialog
 from src.desktop_app.navigation import resolve_navigation_target
+from src.desktop_app.view_models.observation_view_model import (
+    OBSERVATION_ATTACHMENT_EMPTY_STATE,
+    OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
+    OBSERVATION_CONTEXT_OPTIONS,
+    OBSERVATION_RATING_OPTIONS,
+    OBSERVATION_SAVE_PLACEHOLDER_MESSAGE,
+    ObservationDraftViewModel,
+    observation_rating_keys,
+)
 from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
     PROFILE_SECTION_PLACEHOLDERS,
@@ -143,6 +153,70 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "Dokumente werden schülerzentriert verwaltet.",
         )
 
+    def test_observation_rating_options_use_required_scale(self) -> None:
+        self.assertEqual(observation_rating_keys(), ("++", "+", "-", "--"))
+        self.assertEqual(
+            OBSERVATION_RATING_OPTIONS,
+            (
+                "++ sicher erreicht",
+                "+ erreicht",
+                "- in Entwicklung",
+                "-- Unterstützungsbedarf",
+            ),
+        )
+
+    def test_observation_context_options_match_prototype_scope(self) -> None:
+        self.assertEqual(
+            OBSERVATION_CONTEXT_OPTIONS,
+            (
+                "Lernzielkontrolle",
+                "Präsentation",
+                "Einzelgespräch",
+                "Gruppenarbeit",
+                "Leseübung",
+            ),
+        )
+
+    def test_observation_draft_view_model_keeps_student_context(self) -> None:
+        draft = ObservationDraftViewModel(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            student_name="Emma Müller",
+            date_text="2026-07-01",
+            subject="Deutsch",
+            competencies=("Leseflüssigkeit",),
+            context="Leseübung",
+            rating="+ erreicht",
+            note="Liest einen bekannten Text flüssig.",
+        )
+
+        self.assertEqual(draft.student_id, f"{STUDENT_ID_PREFIX}-000001")
+        self.assertEqual(draft.student_name, "Emma Müller")
+        self.assertEqual(draft.attachment_names, ())
+
+    def test_observation_dialog_placeholder_messages_are_non_persistent(self) -> None:
+        self.assertEqual(
+            OBSERVATION_SAVE_PLACEHOLDER_MESSAGE,
+            "Beobachtungen werden in einem späteren Sprint gespeichert.",
+        )
+        self.assertEqual(
+            OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
+            "Anhänge werden in einem späteren Sprint gespeichert.",
+        )
+        self.assertEqual(
+            OBSERVATION_ATTACHMENT_EMPTY_STATE,
+            "Noch keine Anhänge ausgewählt.",
+        )
+
+    def test_observation_dialog_has_no_productive_write_logic(self) -> None:
+        source = inspect.getsource(new_observation_dialog)
+
+        self.assertNotIn("INSERT INTO", source)
+        self.assertNotIn("UPDATE ", source)
+        self.assertNotIn("DELETE FROM", source)
+        self.assertNotIn("sqlite3.connect", source)
+        self.assertNotIn("ApplicationCommandDispatcher", source)
+        self.assertNotIn("student.create", source)
+
     def test_sidebar_students_navigation_resets_to_list(self) -> None:
         target = resolve_navigation_target("students")
 
@@ -198,6 +272,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_widgets_have_no_direct_sql_write_logic(self) -> None:
         module_names = (
             "src.desktop_app.shell",
+            "src.desktop_app.dialogs.new_observation_dialog",
             "src.desktop_app.dialogs.new_student_dialog",
             "src.desktop_app.screens.overview_screen",
             "src.desktop_app.screens.students_screen",
@@ -218,6 +293,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         for module_name in (
             "src.desktop_app.adapters.student_desktop_adapter",
             "src.desktop_app.app",
+            "src.desktop_app.dialogs.new_observation_dialog",
             "src.desktop_app.dialogs.new_student_dialog",
             "src.desktop_app.main",
             "src.desktop_app.new_student_dialog",
@@ -228,6 +304,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.screens.students_screen",
             "src.desktop_app.shell",
             "src.desktop_app.student_list_view",
+            "src.desktop_app.view_models.observation_view_model",
             "src.desktop_app.view_models.student_view_model",
         ):
             with self.subTest(module_name=module_name):

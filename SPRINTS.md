@@ -315,6 +315,18 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Keine Datenmodelländerung, kein Packaging und kein Excel-Export-Umbau umgesetzt
 - [x] Keine finale Architekturentscheidung getroffen
 
+### Sprint - PySide6 Beobachtungsdialog UX-Prototyp 1
+
+- [x] `+ Beobachtung` im Schuelerprofil oeffnet einen nicht-persistenten Dialog `Neue Beobachtung`
+- [x] Dialog zeigt den ausgewaehlten Schueler sichtbar im Titelbereich
+- [x] Felder fuer Datum, Fach, Kompetenz(en), Kontext, Bewertung und Notiz umgesetzt
+- [x] Bereich `Dokumente & Medien` mit Hinweis, `Datei hinzufügen` und Empty State vorbereitet
+- [x] Speichern zeigt nur den Hinweis, dass Beobachtungen spaeter gespeichert werden
+- [x] `Datei hinzufügen` zeigt nur den Hinweis, dass Anhaenge spaeter gespeichert werden
+- [x] Lokale UI-Listen fuer Fach und Kompetenzen als Spike-Einschraenkung verwendet
+- [x] Keine Beobachtungspersistenz, kein Repository, keine SQLite-Aenderung und keine Datenmodelländerung umgesetzt
+- [x] Keine Dokumentenanhaenge, kein Packaging, kein Excel-Export-Umbau und keine finale Architekturentscheidung umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung
