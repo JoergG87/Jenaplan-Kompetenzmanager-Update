@@ -338,7 +338,9 @@ Dort können Lehrkräfte:
 
 ### Konsequenzen
 
-Die Stammgruppenübersicht enthält bewusst keine Verwaltungsfunktionen.
+Die Stammgruppenübersicht enthält bewusst keine Verwaltungslogik.
+
+Ein freigegebener Navigationsabsprung zu einer separaten Schuelerverwaltungs- oder Dialogseite ist zulaessig, solange die Stammgruppenübersicht selbst keine Schuelerdaten bearbeitet, validiert oder speichert.
 
 Die Schülerverwaltung ist der einzige UI-Ort für Änderungen an Schülerdaten. Schüler werden nicht physisch gelöscht, sondern archiviert.
 
@@ -932,7 +934,9 @@ Eine direkte Tabellenlogik in VBA waere ein Architekturbruch, weil dadurch die f
 
 Sprint 5.1b wird an dieser Stelle technisch gestoppt.
 
-`frm_student_new` wird nicht produktiv angebunden, solange keine freigegebene Bruecke zwischen VBA-UserForm und fachlicher Python-Schicht entschieden ist.
+Historischer Stand: `frm_student_new` wurde nicht produktiv angebunden, solange keine freigegebene Bruecke zwischen VBA-UserForm und fachlicher Python-Schicht entschieden war.
+
+Dieser Stopp bezog sich auf die inzwischen verworfene primaere VBA-UserForm-Strategie. Fuer worksheet-basierte Dialogseiten definiert ADR-043 den Runtime Adapter und den Refresh Contract.
 
 Es wird kein Workaround umgesetzt, der in VBA direkt in fachliche Tabellen schreibt.
 
@@ -1051,7 +1055,7 @@ Ein paralleler Schreibbetrieb in SQLite und Workbook-Tabellen ist nicht erlaubt.
 
 ### Risiken
 
-- Python Bridge / CLI fuer UserForms ist noch nicht entschieden.
+- Historischer Stand: Python Bridge / CLI fuer UserForms war zu diesem Zeitpunkt noch nicht entschieden. Fuer worksheet-basierte Dialogseiten definiert ADR-043 den Runtime Adapter und den Refresh Contract.
 - Fehler aus Python-Validierung muessen spaeter kontrolliert an Excel/VBA zurueckgemeldet werden.
 - Dateiablage, Backup, Sperren und Mehrfachzugriff der SQLite-Datei sind noch nicht geklaert.
 - Vollstaendige Migration weiterer Entitaeten, insbesondere Beobachtungen, Kompetenzen und Dokumentreferenzen, ist nicht Teil dieses Spikes.
@@ -1351,7 +1355,7 @@ Der Standardablauf fuer zukuenftige Schreibprozesse ist:
 
 ```text
 User
--> UserForm
+-> worksheet-basierte Dialogseite oder freigegebener Adapter
 -> Adapter
 -> Dispatcher
 -> Command
@@ -1388,4 +1392,252 @@ Sie dokumentiert den bereits validierten Stand aus:
 - Application Command Layer
 - `student.create` End-to-End durch den Python-Stack
 
-Offen bleiben Adapter, produktive CLI, VBA-Prozessstart, UserForm-Anbindung und automatischer Refresh der Excel-Projektion.
+Historischer Stand bei Annahme der Baseline: Offen blieben Adapter, produktive CLI, VBA-Prozessstart, UserForm-Anbindung und automatischer Refresh der Excel-Projektion. ADR-043 klaert Runtime Adapter und Refresh Contract fuer `student.create`; die konkrete Implementierung bleibt offen.
+
+## ADR-041 - UX-Prototyp als verbindlicher Schritt vor UserForm-Umsetzung
+
+Status: Superseded by ADR-042
+
+### Kontext
+
+Feature 1 `Neuer Schueler` soll als erste produktive UserForm des Kompetenzmanagers entstehen.
+
+Die UserForm ist Teil des Adapter Layers und darf keine Fachlogik, keine direkte Tabellenlogik und keine SQLite-Kommunikation enthalten.
+
+Gleichzeitig muss das visuelle Verhalten vor der technischen Umsetzung mit Laura bzw. dem Product Owner abgestimmt werden.
+
+### Entscheidung
+
+Fuer neue UserForms wird ein UX-Prototyp als verbindlicher Zwischenschritt eingefuehrt.
+
+Der Ablauf lautet:
+
+1. UX-Prototyp erstellen
+2. UX-Review mit Laura bzw. Product Owner durchfuehren
+3. UX-Freigabe dokumentieren
+4. VBA-UserForm moeglichst 1:1 nach dem freigegebenen UX-Prototyp umsetzen
+5. Validierung, Adapter-Anbindung und fachliche Logik erst danach ergaenzen
+
+Der UX-Prototyp ist keine technische Implementierung.
+
+Er ist die visuelle Referenz fuer die spaetere UserForm.
+
+Designentscheidungen fuer UserForms werden im UX-Prototyp getroffen, nicht frei im VBA-Designer.
+
+### Feature-1-Stand
+
+Die Datei `output/Jenaplan_UX_Prototype_v0.1.xlsx` enthaelt das Blatt `Feature 1 – Neuer Schüler`.
+
+Dieses Blatt dient als visuelle Vorlage fuer die spaetere UserForm `frm_student_new`.
+
+Enthalten sind:
+
+- Fenstertitel
+- Pflichtfelder Vorname, Nachname, Stammgruppe und Kurs
+- Notizbereich
+- Dokumentbereich mit Empty State
+- Button `+ Dokument hinzufügen`
+- Buttons Abbrechen und Speichern
+
+### Auswirkungen
+
+Zukuenftige UserForms duerfen nicht mehr frei gestaltet werden.
+
+Die technische VBA-Umsetzung muss sich an der freigegebenen UX-Prototyp-Seite orientieren.
+
+Validierung, Adapter-Anbindung und fachliche Schreibprozesse werden erst nach der UX-Freigabe umgesetzt.
+
+### Abgrenzung
+
+Diese Entscheidung fuehrt keine Implementierung ein.
+
+Es wurden keine Python-Quellen, keine VBA-Quellen, keine UserForms, kein Build und kein Seed geaendert.
+
+## ADR-042 - Worksheet-basierte Dialogseiten als primaeres Eingabe-Pattern
+
+Status: Accepted
+
+### Kontext
+
+Feature 1 `Neuer Schueler` sollte urspruenglich als VBA-UserForm `frm_student_new` umgesetzt werden.
+
+Die praktische Pruefung auf Microsoft Excel fuer macOS hat gezeigt:
+
+- der lokale VBA-Editor bietet den UserForm-Designer nicht verlaesslich an
+- automatisch erzeugte MSForms-Controls werden in der Zielumgebung nicht belastbar als sichtbare Dialogoberflaeche gerendert
+- der UserForm-Testoeffner konnte zwar zuletzt starten, die angezeigte Maske blieb aber leer
+- AppleScript-Tests mit `do Visual Basic` sind in diesem Projekt fuer diesen Pfad nicht belastbar
+
+Der UserForm-Ansatz wird deshalb fuer Feature 1 nicht weiter als primaerer Eingabedialog verfolgt.
+
+### Entscheidung
+
+Primaeres Eingabe-Pattern fuer Excel auf macOS sind ab Feature 1 worksheet-basierte Dialogseiten.
+
+Beispiel:
+
+```text
+dlg_neuer_schueler
+```
+
+Diese Dialogseiten:
+
+- sehen wie modale Dialoge aus
+- liegen als eigene geschuetzte Arbeitsblaetter in der Excel-Datei
+- sammeln Eingaben
+- enthalten keine Businesslogik
+- schreiben nicht direkt in fachliche Tabellen
+- rufen spaeter ueber VBA bzw. einen freigegebenen Adapter den Python Command Layer auf
+- werden nach Speichern oder Abbrechen wieder verlassen
+
+### Architecture Baseline v2.0
+
+Die Baseline bleibt bestehen.
+
+Der Adapter Layer kann in Excel ueber VBA-Navigation, worksheet-basierte Dialogseiten oder zukuenftige Adapter umgesetzt werden.
+
+VBA enthaelt weiterhin keine Businesslogik.
+
+Excel bleibt UI und Projektion, nicht fachliche Source of Truth.
+
+### Status von `frm_student_new`
+
+`frm_student_new.frm` bleibt vorerst als experimenteller Artefaktstand erhalten.
+
+Die UserForm ist deprecated und nicht produktiv freigegeben.
+
+Sie wird nicht geloescht, bis ein eigener Bereinigungs- oder Migrationsschritt freigegeben ist.
+
+### Konsequenzen
+
+Feature 1 verwendet `dlg_neuer_schueler` als neue technische Zieloberflaeche.
+
+Der UX-Prototyp `output/Jenaplan_UX_Prototype_v0.1.xlsx`, Blatt `Feature 1 – Neuer Schüler`, bleibt die visuelle Referenz.
+
+Validierung, Speichern, Python Command, SQLite-Schreibzugriff, Dokument-Upload und Refresh bleiben separate spaetere Features.
+
+## ADR-043 - Runtime Adapter und Refresh Contract fuer `student.create`
+
+Status: Accepted
+
+### Kontext
+
+Feature 1.4 `Schueler speichern` wurde gestoppt, weil zwar der Python-Stack fuer `student.create` bis SQLite validiert ist, aber der produktive Runtime-Pfad aus Excel und der Refresh der geoeffneten Arbeitsmappe noch nicht freigegeben waren.
+
+Offene Fragen waren:
+
+- Wie ruft Excel/VBA den Python Command Layer auf?
+- Wie wird die geoeffnete Excel-Projektion nach erfolgreichem Speichern aktualisiert?
+- Wie bleibt der Projection Builder alleiniger Eigentuemer der Projektion?
+- Wie wird direkte Tabellen-Schreiblogik in VBA verhindert?
+
+### Entscheidung: Runtime Adapter
+
+Der produktive Runtime-Pfad fuer Feature 1 lautet:
+
+```text
+Worksheet-Dialogseite
+-> VBA Adapter
+-> Python CLI/Bridge
+-> ApplicationCommandDispatcher
+-> CreateStudentCommand
+-> StudentService
+-> SQLiteStudentRepository
+-> SQLite
+```
+
+Regeln:
+
+- VBA liest Dialogwerte ausschliesslich ueber registrierte Named Ranges.
+- VBA verwendet keine festen Zelladressen.
+- VBA baut keine fachlichen IDs selbst.
+- VBA validiert keine Fachregeln.
+- VBA schreibt nicht direkt in SQLite.
+- VBA schreibt nicht direkt in fachliche Workbook-Tabellen.
+- Die Python CLI/Bridge ist Adapter zur Application-Schicht und enthaelt keine Fachlogik.
+- Der Dispatcher ruft den registrierten `student.create`-Handler auf.
+- `StudentService` bleibt Ort der fachlichen Regeln.
+- `SQLiteStudentRepository` bleibt Ort des Schreibzugriffs auf SQLite.
+
+### Entscheidung: Refresh Contract
+
+Der primaere Refresh-Vertrag ist Option C:
+
+```text
+Python Command erfolgreich
+-> SQLite aktualisiert
+-> Python Projection Builder erzeugt Projection-Refresh-Paket
+-> VBA importiert ausschliesslich Projection Output in die geoeffnete Arbeitsmappe
+-> Excel zeigt aktualisierte Projektion
+```
+
+Das Projection-Refresh-Paket ist ein von Python erzeugtes technisches Artefakt.
+
+Es enthaelt ausschliesslich Builder-Output fuer registrierte Projektionsziele.
+
+VBA darf daraus nur kopieren:
+
+- registrierte `data_*`-/`tbl_*`-Projektionskopien, soweit sie aus SQLite erzeugt wurden
+- registrierte UI-Projektionsbereiche und Named Ranges
+- temporaeren UI-State wie Suchfeld und Dialogeingaben zuruecksetzen
+
+VBA darf dabei nicht:
+
+- Projektionen selbst sortieren, filtern oder berechnen
+- fachliche IDs erzeugen
+- fachliche Daten pruefen
+- direkt SQLite lesen oder schreiben
+- `tbl_students` als fachliche Source of Truth behandeln
+
+SQLite ist fuer diesen Schreibprozess die fachliche Source of Truth.
+
+Die Excel-Arbeitsmappe enthaelt nach dem Refresh nur eine Projektion aus SQLite.
+
+Der Projection Builder bleibt Eigentuemer der Projektion.
+
+### Bewertete Alternativen
+
+Option A: Python erzeugt eine neue `output/latest.xlsm`, Benutzer oeffnet neu.
+
+- Zulaessig als Fallback.
+- Nicht primaer, weil der geoeffnete Workflow unterbrochen wird und Feature 1.4 nach erfolgreichem Speichern zur Stammgruppenuebersicht zurueckkehren soll.
+
+Option B: VBA liest aktualisierte Daten direkt aus SQLite und baut die Ansicht.
+
+- Abgelehnt.
+- Das wuerde SQLite-Zugriff und Projektionslogik nach VBA verschieben.
+
+Option C: Python erzeugt strukturierte Projektion, VBA aktualisiert nur Projektionsbereiche.
+
+- Akzeptiert.
+- Erhaelt Python als fachliche Schreib- und Projection-Builder-Schicht.
+- Erlaubt Aktualisierung der geoeffneten Arbeitsmappe ohne direkte fachliche Tabellenlogik in VBA.
+
+### Fehlerfall
+
+Wenn der Python Command fehlschlaegt:
+
+- SQLite bleibt konsistent.
+- Es wird kein Projection-Refresh-Paket importiert.
+- Der Dialog bleibt geoeffnet.
+- VBA zeigt nur die Fehlermeldung aus dem Adapter-Ergebnis an.
+- Dialogwerte bleiben erhalten.
+
+Wenn der Command erfolgreich ist, aber der Projection Refresh fehlschlaegt:
+
+- SQLite bleibt erfolgreich aktualisiert.
+- VBA darf keine eigene Projektion erzeugen.
+- VBA zeigt eine technische Refresh-Fehlermeldung.
+- Option A darf als Fallback angeboten werden: neu erzeugte Arbeitsmappe oeffnen.
+
+### Konsequenzen fuer Feature 1.4
+
+Feature 1.4 darf produktiv implementiert werden, wenn es diesen Vertrag einhaelt:
+
+- Dialogwerte nur ueber Named Ranges
+- VBA Adapter ohne Fachlogik
+- Python CLI/Bridge als Adapter zum Dispatcher
+- `student.create` ueber bestehenden Application-/Domain-/Repository-Stack
+- SQLite als Source of Truth
+- Refresh nur ueber Python-generierten Projection Output
+- keine direkte fachliche Tabellenbearbeitung durch VBA

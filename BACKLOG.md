@@ -166,13 +166,61 @@ Idee
 
 ## Epic: Schülerverwaltung
 
+### UX-Review Feature 1 `Neuer Schueler`
+
+Priorität: Hoch
+
+Beschreibung:
+
+Das Blatt `Feature 1 – Neuer Schüler` in `output/Jenaplan_UX_Prototype_v0.1.xlsx` muss vor der technischen Dialogseiten-Umsetzung mit Laura bzw. dem Product Owner reviewed und freigegeben werden.
+
+Abgrenzung:
+
+Der UX-Prototyp ist keine technische Implementierung. Keine Validierung, keine Adapter-Anbindung und keine fachliche Speicherlogik.
+
+Status:
+
+Vor Umsetzung offen
+
+### Worksheet-Dialogseite `dlg_neuer_schueler` nach UX-Freigabe ausbauen
+
+Priorität: Hoch
+
+Beschreibung:
+
+Die worksheet-basierte Dialogseite `dlg_neuer_schueler` soll moeglichst 1:1 nach dem freigegebenen UX-Prototyp-Blatt `Feature 1 – Neuer Schüler` ausgebaut werden.
+
+Abgrenzung:
+
+Designentscheidungen werden im UX-Prototyp getroffen. Validierung, Adapter-Anbindung und fachliche Logik folgen erst nach der UI-Umsetzung.
+
+Status:
+
+Idee
+
+### Deprecated: VBA-UserForm `frm_student_new`
+
+Priorität: Keine aktive Umsetzung
+
+Beschreibung:
+
+`frm_student_new` bleibt als experimenteller Artefaktstand erhalten, wird aber wegen macOS-Kompatibilitaetsproblemen nicht mehr als primaerer Feature-1-Eingabedialog verfolgt.
+
+Abgrenzung:
+
+Keine weiteren AppleScript-Tests mit `do Visual Basic`. Keine produktive UserForm-Anbindung.
+
+Status:
+
+Deprecated
+
 ### CLI-/Python-Bridge-Adapter fuer `student.create`
 
 Priorität: Hoch
 
 Beschreibung:
 
-Ein Adapter soll spaeter UserForm- oder CLI-Eingaben in ein Application Command uebersetzen und an den Dispatcher uebergeben.
+Der umgesetzte Adapter uebersetzt Dialogseiten- oder CLI-Eingaben fuer `student.create` in ein Application Command und uebergibt es an den Dispatcher.
 
 Abgrenzung:
 
@@ -180,7 +228,7 @@ Keine Fachlogik im Adapter. Kein direkter Repository- oder SQLite-Zugriff aus CL
 
 Status:
 
-Idee
+Bis SQLite umgesetzt fuer `student.create`; Projection Refresh offen
 
 ### Python Bridge / CLI fuer SQLite-Schreibprozesse
 
@@ -188,7 +236,7 @@ Priorität: Hoch
 
 Beschreibung:
 
-UserForms sollen spaeter einen technischen Auftrag an Python uebergeben. Python validiert und schreibt fachliche Daten in SQLite.
+Worksheet-basierte Dialogseiten uebergeben fuer `student.create` einen technischen Auftrag an Python. Python validiert und schreibt fachliche Daten in SQLite.
 
 Abgrenzung:
 
@@ -196,15 +244,15 @@ Nicht Bestandteil von Sprint 5.2a.
 
 Status:
 
-Idee
+Bis SQLite umgesetzt fuer `student.create`; weitere Schreibprozesse offen
 
-### Command Queue fuer UserForm-Schreibprozesse
+### Command Queue fuer Dialogseiten-Schreibprozesse
 
 Priorität: Hoch
 
 Beschreibung:
 
-VBA-UserForms sollen fachliche Schreibprozesse nicht direkt in Workbook-Tabellen ausfuehren, sondern einen technischen Auftrag fuer die Python-Service-Schicht erzeugen.
+Worksheet-basierte Dialogseiten sollen fachliche Schreibprozesse nicht direkt in Workbook-Tabellen ausfuehren, sondern einen technischen Auftrag fuer die Python-Service-Schicht erzeugen.
 
 Abgrenzung:
 
@@ -212,7 +260,23 @@ Architekturspike vor produktiver Schueleranlage.
 
 Status:
 
-Idee
+Durch Runtime Adapter und Projection Refresh Contract ersetzt
+
+### Projection Refresh fuer geoeffnete Arbeitsmappe
+
+Priorität: Hoch
+
+Beschreibung:
+
+Nach erfolgreichem Python Command erzeugt Python ein Projection-Refresh-Paket. VBA importiert ausschliesslich diesen Projection Output in registrierte Projektionsbereiche der geoeffneten Arbeitsmappe.
+
+Abgrenzung:
+
+Keine fachliche Logik in VBA. Kein direkter SQLite-Zugriff aus VBA. Keine durch VBA berechnete Projektion.
+
+Status:
+
+Architekturvertrag definiert; Implementierung offen
 
 ### Schüler anlegen
 
@@ -224,7 +288,7 @@ Produktive Schueleranlage ist nicht Bestandteil von Sprint 5.1a.
 
 Status:
 
-Idee
+Implementierbar nach Runtime-Adapter-Vertrag
 
 ### Schüler bearbeiten
 

@@ -17,11 +17,13 @@ WORKBOOK_CODE_NAME = "DieseArbeitsmappe"
 SHEET_CODE_NAMES = {
     "Stammgruppenübersicht": "wsClassOverview",
     "Schülerprofil": "wsStudentProfile",
+    "dlg_neuer_schueler": "wsDialogNewStudent",
 }
 REQUIRED_VBA_MARKERS = (
     b"Module=Globals",
     b"Module=Navigation",
     b"Module=UI",
+    b"BaseClass=frm_student_new",
 )
 REMOVED_VBA_MARKERS = (
     b"Module=Modul1",
@@ -41,7 +43,7 @@ def _validate_framework_seed(vba_archive: ZipFile) -> None:
     if missing or stale:
         details = []
         if missing:
-            details.append(f"fehlende Module: {', '.join(missing)}")
+            details.append(f"fehlende Komponenten: {', '.join(missing)}")
         if stale:
             details.append(f"alte Module: {', '.join(stale)}")
         raise RuntimeError(

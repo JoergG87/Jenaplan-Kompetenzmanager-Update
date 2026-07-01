@@ -28,7 +28,7 @@ Das gilt insbesondere für:
 - Kursübersicht
 - Schülerprofil
 - zukünftige Verwaltungsansichten
-- zukünftige Dialoge und UserForms
+- zukünftige Dialoge, Dialogseiten und experimentelle UserForms
 
 ## Änderungsregel
 
@@ -42,6 +42,28 @@ Ein UX-Sprint benötigt:
 - Product-Owner-Freigabe
 - anschließende dokumentierte Umsetzung
 
+## UX-Prototypen fuer Eingabedialoge
+
+Neue Eingabedialoge werden nicht frei im VBA-Designer oder direkt im Workbook gestaltet.
+
+Vor der technischen Umsetzung muss ein UX-Prototyp als verbindliche visuelle Referenz entstehen.
+
+Der Ablauf lautet:
+
+1. UX-Prototyp erstellen
+2. UX-Review mit Laura bzw. Product Owner durchfuehren
+3. UX-Freigabe dokumentieren
+4. worksheet-basierte Dialogseite moeglichst 1:1 nach dem freigegebenen UX-Prototyp umsetzen
+5. Validierung, Adapter-Anbindung und fachliche Logik erst danach ergaenzen
+
+Der UX-Prototyp ist keine technische Implementierung. Er enthaelt keine VBA-Events, keine Validierung, keine Adapter-Anbindung, keine SQLite-Kommunikation und keine fachliche Logik.
+
+Feature 1 `Neuer Schueler`:
+
+- Die Datei `output/Jenaplan_UX_Prototype_v0.1.xlsx` enthaelt das Blatt `Feature 1 – Neuer Schüler`.
+- Dieses Blatt ist die visuelle Vorlage fuer die worksheet-basierte Dialogseite `dlg_neuer_schueler`.
+- Enthalten sind Fenstertitel, Pflichtfelder Vorname, Nachname, Stammgruppe und Kurs, Notizbereich, Dokumentbereich mit Empty State, Button `+ Dokument hinzufügen` sowie die Buttons Abbrechen und Speichern.
+
 ## Architekturregel
 
 Das Design-System ist Source of Truth für sämtliche Benutzeroberflächen.
@@ -50,13 +72,41 @@ Python erzeugt Benutzeroberflächen aus dem freigegebenen Design-System.
 
 VBA implementiert ausschließlich Interaktion und verändert keine fachliche Logik.
 
-## Modale UserForms
+## Worksheet-basierte Dialogseiten
+
+Worksheet-basierte Dialogseiten sind ab Feature 1 das primaere Eingabe-Pattern fuer Excel auf macOS.
+
+Sie folgen dem ruhigen, einfachen Desktop-App-Charakter des freigegebenen Designs.
+
+Sie sind eigene geschuetzte Arbeitsblaetter, die wie Dialoge gestaltet sind.
+
+Sie sammeln Eingaben, enthalten keine Businesslogik, schreiben nicht direkt in fachliche Tabellen und rufen spaeter ausschliesslich freigegebene Adapter auf.
+
+Standard fuer `dlg_neuer_schueler`:
+
+- sichtbarer Fenstertitel `Neuer Schüler`
+- eigene Dialogseite `dlg_neuer_schueler`
+- geschuetztes Arbeitsblatt mit freigegebenen Eingabebereichen
+- einspaltiger Aufbau von oben nach unten
+- Pflichtfelder sichtbar mit `*`
+- Dokumentbereich als einfache Liste mit Empty State
+- Buttons unten rechts: Abbrechen links, Speichern rechts
+- Abbrechen navigiert spaeter zur aufrufenden Ansicht zurueck
+- Speichern wird erst mit Validierung und Adapter-Anbindung produktiv
+
+## Deprecated: Modale VBA-UserForms
 
 Modale UserForms folgen dem ruhigen, einfachen Desktop-App-Charakter des freigegebenen Designs.
 
 Sie sind Eingabedialoge der Anwendung und keine Tabellenansichten.
 
-Alle zukuenftigen Eingabemasken verwenden denselben Dialogstandard.
+VBA-UserForms sind auf Excel fuer macOS nicht mehr das primaere Eingabe-Pattern.
+
+`frm_student_new` bleibt als experimenteller Artefaktstand erhalten, ist aber nicht produktiv freigegeben.
+
+Keine weiteren AppleScript-Tests mit `do Visual Basic` werden fuer UserForms verwendet.
+
+Historischer Dialogstandard:
 
 Standard-Fenster:
 
@@ -101,17 +151,17 @@ Layout-Regeln:
 - keine ueberladene Informationsdichte
 - Dokumentbereiche als einfache Listen mit klarer Hinzufuegen-Aktion
 
-Referenzdialog `frm_student_new`:
+Experimenteller Referenzdialog `frm_student_new`:
 
 - Zweck: neuen Schueler anlegen
-- Rolle: erste Referenzimplementierung des Dialog Frameworks
-- Status: nicht produktiv freigegeben
+- Rolle: verworfener UserForm-Versuch fuer Feature 1
+- Status: deprecated, nicht produktiv freigegeben
 - Felder: Vorname *, Nachname *, Stammgruppe *, Kurs *, Notiz
 - keine Speicherlogik
 - keine StudentService-Anbindung
 - kein Tabellenzugriff
 
-Referenzskizze fuer `frm_student_new`:
+Referenzskizze fuer `dlg_neuer_schueler`:
 
 ```text
 +--------------------------------------------+

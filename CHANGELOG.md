@@ -1,5 +1,183 @@
 # CHANGELOG
 
+## Hotfix - Runtime ueber MacScript do shell script starten
+
+### Fixed
+
+- VBA-Prozessstart von `Shell(...)` auf `MacScript("do shell script ...")` umgestellt.
+- Die separate Skriptdatei `runtime_python_command.zsh` bleibt der eigentliche Runtime-Command.
+- Diagnose protokolliert MacScript-Aufruf sowie Vorhandensein von `runtime_result.json`, stdout, stderr und Exitcode nach dem Start.
+
+### Not Changed
+
+- Keine Aenderungen an Python, `km.py`, SQLite, Dispatcher, StudentService, Repository, Dialoglayout, Named Ranges, Businesslogik oder Projection Refresh umgesetzt.
+
+## Hotfix - Runtime ueber zsh-Skriptdatei starten
+
+### Fixed
+
+- VBA-Runtime-Start auf separate Skriptdatei `runtime_python_command.zsh` umgestellt.
+- Verschachtelte `/bin/zsh -lc`-Kette entfernt.
+- Diagnose um Skriptpfad und erzeugte Runtime-Artefakte fuer stdout, stderr, Exitcode und Ergebnis erweitert.
+
+### Not Changed
+
+- Keine Aenderungen an Python Command Layer, `km.py`, SQLite, Dispatcher, StudentService, Repository, Dialoglayout, Named Ranges, Projection Refresh oder Businesslogik umgesetzt.
+
+## Hotfix - macOS Python Runtime Start
+
+### Fixed
+
+- VBA-Runtime-Start auf `/bin/zsh -lc` umgestellt, damit Excel fuer macOS Python robuster starten kann.
+- Working Directory, stdout-Log, stderr-Log und Exitcode-Datei fuer den Runtime-Aufruf dokumentierbar gemacht.
+- Fallback-`runtime_result.json` fuer technische Startfehler im VBA-Startpfad ergaenzt.
+
+### Not Changed
+
+- Keine Aenderungen an Python, SQLite, Dispatcher, StudentService, Repository, Dialoglayout, Named Ranges, Projection Refresh oder Businesslogik umgesetzt.
+
+## Feature 1.4b - Produktiver Speichervorgang bis SQLite
+
+### Added
+
+- `km.py` als produktiven Python Runtime Adapter fuer `student create` ergaenzt.
+- `SaveNewStudentDialog()` als VBA Adapter fuer `dlg_neuer_schueler` umgesetzt.
+- Runtime-Artefakte `runtime_command.json` und `runtime_result.json` fuer Command- und Ergebnisuebergabe verwendet.
+- Unit-Tests fuer den produktiven Runtime-Einstieg bis SQLite ergaenzt.
+
+### Changed
+
+- `ConfigureStudentCardNavigation()` richtet zusaetzlich die Speichern-Aktion der Dialogseite ein.
+- Technische Namen, Data Lifecycle, UI Data Mapping, Roadmap, Sprints und Backlog auf den Feature-1.4b-Stand angepasst.
+
+### Not Changed
+
+- Kein Projection Refresh, keine Workbook-Aktualisierung, keine Ruecknavigation zur Stammgruppenuebersicht, keine Dokumente, keine Beobachtungen, keine Kompetenzen und kein Commit umgesetzt.
+
+## Feature 1.4a - Runtime Adapter und Refresh Contract
+
+### Added
+
+- ADR-043 fuer Runtime Adapter und Projection Refresh Contract ergaenzt.
+- Produktiven Pfad fuer `student.create` dokumentiert: Dialogseite, VBA Adapter, Python CLI/Bridge, Dispatcher, StudentService, Repository, SQLite.
+- Refresh Contract festgelegt: Python erzeugt Projection-Refresh-Paket, VBA importiert ausschliesslich Projection Output.
+- Technische Namen fuer vorgesehene Adapter-Prozeduren, CLI/Bridge und Runtime-Artefakte registriert.
+
+### Changed
+
+- Data Lifecycle, Project Constitution, Data Registry, View Ownership, UI Data Mapping, Roadmap, Sprints und Backlog auf den freigegebenen Adapter-/Refresh-Vertrag angepasst.
+
+### Not Changed
+
+- Keine Speicherung, keine Validierung, kein Speichern-Button, kein Python-Aufruf aus VBA, kein SQLite-Schreibprozess aus Excel, kein Workbook-Refresh, keine AppleScript-Tests und kein Commit umgesetzt.
+
+## Hotfix - Dialogseite Eingabeflaechen verbinden
+
+### Fixed
+
+- Eingabefelder auf `dlg_neuer_schueler` als verbundene Eingabeflaechen umgesetzt: `E9:L9`, `E12:L12`, `E15:L15`, `E18:L18` und `E21:L23`.
+- Bei verbundenen Eingabefeldern wird die linke obere Zelle entsperrt; die Named Ranges bleiben auf den vollstaendigen Formularbereich ausgerichtet.
+
+### Not Changed
+
+- Keine Speicherung, keine Validierung, kein VBA, kein Python-Command, keine SQLite-Kommunikation, keine AppleScript-Tests und kein Commit umgesetzt.
+
+## Hotfix - Dialogseite editierbar machen
+
+### Fixed
+
+- Blattschutz fuer `dlg_neuer_schueler` korrigiert, damit entsperrte Eingabezellen bei aktivem Schutz ausgewaehlt und beschrieben werden koennen.
+- Eingabefelder optisch als weisse Eingabeflaechen mit staerkerem Rahmen hervorgehoben.
+
+### Not Changed
+
+- Keine Speicherung, keine Validierung, kein VBA, kein Python-Command, keine SQLite-Kommunikation, keine AppleScript-Tests und kein Commit umgesetzt.
+
+## Feature 1.3 - Dialogseite fuer Eingabe vorbereiten
+
+### Changed
+
+- Eingabebereiche von `dlg_neuer_schueler` als zentrale registrierte Ranges im Dialogseiten-Builder gefuehrt.
+- Nur die Eingabebereiche fuer Vorname, Nachname, Stammgruppe, Kurs und Notiz werden entsperrt; das uebrige Dialogblatt bleibt geschuetzt.
+- Abbrechen bleibt als Navigation zur Stammgruppenuebersicht vorbereitet.
+- Speichern und `+ Dokument hinzufügen` bleiben optisch vorhanden und weiterhin ohne Funktion.
+
+### Not Changed
+
+- Keine Speicherung, keine Validierung, kein VBA, kein Python-Command, keine SQLite-Kommunikation, keine Dateiauswahl und kein Commit umgesetzt.
+
+## Feature 1 - Architekturwechsel zu worksheet-basierter Dialogseite
+
+### Added
+
+- ADR-042 dokumentiert worksheet-basierte Dialogseiten als primaeres Eingabe-Pattern fuer Excel auf macOS.
+- Dialogseite `dlg_neuer_schueler` als geschuetztes Arbeitsblatt mit Feldern, Dokumentbereich sowie Abbrechen-/Speichern-Buttons ergaenzt.
+- Absprungpunkt `+ Schüler` auf der Stammgruppenuebersicht zur Dialogseite vorbereitet.
+- Technische Namen fuer `dlg_neuer_schueler`, `wsDialogNewStudent` und die Dialog-Anker ergaenzt.
+
+### Changed
+
+- `frm_student_new` als experimenteller/deprecated Artefaktstand eingeordnet.
+- Dokumentation von UserForm-zentriertem Feature-1-Pfad auf worksheet-basierte Dialogseiten umgestellt.
+
+### Not Changed
+
+- Keine Speicherlogik, keine Validierung, kein Python-Command, keine SQLite-Kommunikation, kein Dokument-Upload, keine Datei-Auswahl und kein Commit umgesetzt.
+
+## Feature 1.2b - frm_student_new fuer testbare XLSM vorbereiten
+
+### Changed
+
+- Seed-Importprozess erweitert, damit `frm_student_new.frm` zusammen mit den versionierten VBA-Quellen in den Seed importiert werden kann.
+- Import- und Packaging-Pruefungen um den von Excel bei echten MSForms-UserForms erzeugten Marker `BaseClass=frm_student_new` erweitert.
+- `vba/README.md` um den Form-Import im Seed-Prozess ergaenzt.
+- Direkten `.frm`-Import fuer `frm_student_new` ersetzt: Der Seed-Bootstrap erzeugt die Form als echte MSForms-Komponente, damit Designertext nicht als VBA-Code kompiliert wird.
+- Programmgesteuerte Form-Erzeugung auf MSForms-Points umgestellt; `.frm`-Twips-Werte werden nun umgerechnet, damit Controls im Designer sichtbar liegen.
+- `OpenNewStudentDialog()` als reinen manuellen Anzeigeoeffner ergaenzt, damit `frm_student_new` aus Excel per Makroliste sichtbar geprueft werden kann.
+- Anzeigeoeffner fuer die Layoutpruefung vorlaeufig modeless geschaltet, damit Excel bei macOS-Fokusproblemen nicht blockiert.
+- Anzeigeoeffner deaktiviert vor dem Anzeigen fehlertolerant Fokusziele der Controls und faengt Anzeige-Fehler ab, damit Excel bei macOS-Fokusproblemen bedienbar bleibt.
+- Anzeigeoeffner setzt die UserForm fuer den letzten macOS-Kompatibilitaetstest vor dem Anzeigen explizit auf `500 x 600`.
+
+### Not Changed
+
+- Keine Businesslogik, keine Validierung, keine Adapter-Anbindung, keine Python-Anbindung, keine SQLite-Kommunikation, keine Speicherlogik und keine Event-Prozeduren in der UserForm umgesetzt.
+
+## Feature 1.2 - VBA UserForm nach UX-Prototyp umsetzen
+
+### Changed
+
+- `frm_student_new` rein visuell an das freigegebene UX-Prototyp-Blatt `Feature 1 – Neuer Schüler` angepasst.
+- Fensterbreite, Abstaende, Feldgroessen, Notizbereich, Dokumentbereich und Buttonzeile auf das breite Prototyp-Layout ausgerichtet.
+- Bestehende registrierte Control-Namen beibehalten.
+
+### Not Changed
+
+- Keine Businesslogik, keine Validierung, keine Pflichtfeldpruefung, keine Events, keine Adapter-Anbindung, keine Python-Aenderung, keine SQLite-Kommunikation, kein Build und kein Commit umgesetzt.
+
+## Dokumentation - UX-Prototyp vor UserForm-Umsetzung
+
+### Added
+
+- UX-Prototyp als verbindlichen Zwischenschritt vor kuenftiger UserForm-Umsetzung dokumentiert.
+- Ablauf festgelegt: UX-Prototyp erstellen, UX-Review mit Laura bzw. Product Owner, UX-Freigabe, danach VBA-UserForm moeglichst 1:1 umsetzen, Validierung/Adapter/Logik erst danach.
+- ADR-041 fuer den UX-Prototyp als verbindliche UserForm-Referenz ergaenzt.
+- Feature-1-Prototyp `output/Jenaplan_UX_Prototype_v0.1.xlsx` mit Blatt `Feature 1 – Neuer Schüler` als visuelle Vorlage fuer `frm_student_new` dokumentiert.
+
+### Not Changed
+
+- Keine Implementierung, keine Python-Aenderung, keine VBA-Aenderung, keine UserForm-Aenderung, kein Build und kein Commit umgesetzt.
+
+## Feature 1.1 - UserForm Neuer Schueler fertigstellen
+
+### Changed
+
+- Dokumentbereich der UserForm `frm_student_new` als sichtbaren Bestandteil des Referenzdialogs bestaetigt.
+- Empty-State-Text des Dokumentbereichs auf `Noch keine Dokumente vorhanden.` vereinheitlicht.
+
+### Not Changed
+
+- Keine Speicherlogik, keine Validierung, keine Pflichtfeldpruefung, keine Python-Anbindung, keine Dispatcher-Anbindung, keine SQLite-Kommunikation, keine Excel-Automation, kein Datei-Upload, keine Dateiauswahl und kein Build umgesetzt.
+
 ## Architecture Baseline v2.0
 
 ### Added

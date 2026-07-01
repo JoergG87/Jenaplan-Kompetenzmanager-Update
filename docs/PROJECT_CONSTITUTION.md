@@ -27,7 +27,8 @@ VBA implementiert ausschliesslich Interaktion:
 - Navigation
 - Buttons
 - Dialoge
-- UserForms
+- worksheet-basierte Dialogseiten
+- experimentelle UserForms, solange sie nicht als produktiver macOS-Standard freigegeben sind
 - Benutzerinteraktion
 
 VBA enthaelt keine fachliche Logik und keine Datenmodellentscheidungen.
@@ -36,9 +37,27 @@ Der Kompetenzmanager wird als Anwendung verstanden.
 
 Excel ist die Runtime, nicht der fachliche Arbeitsort.
 
-Fachliche Eingaben erfolgen nicht direkt in Tabellen, sondern ueber modale VBA-UserForms.
+Fachliche Eingaben erfolgen nicht direkt in fachlichen Tabellen.
 
-UserForms duerfen:
+Primaeres Eingabe-Pattern sind ab Feature 1 worksheet-basierte Dialogseiten.
+
+VBA-UserForms werden auf Excel fuer macOS nicht mehr als primaeres Eingabe-Pattern verfolgt, weil automatische UserForm-Erzeugung und UserForm-Designer in der lokalen macOS-Zielumgebung nicht belastbar genug waren.
+
+Vor der technischen Umsetzung eines neuen Eingabedialogs muss ein UX-Prototyp als verbindliche visuelle Referenz erstellt, mit Laura bzw. dem Product Owner reviewed und freigegeben werden.
+
+Der verbindliche Ablauf fuer neue Eingabedialoge lautet:
+
+1. UX-Prototyp erstellen
+2. UX-Review mit Laura bzw. Product Owner durchfuehren
+3. UX-Freigabe dokumentieren
+4. worksheet-basierte Dialogseite moeglichst 1:1 nach dem freigegebenen UX-Prototyp umsetzen
+5. Validierung, Adapter-Anbindung und fachliche Logik erst danach ergaenzen
+
+Der UX-Prototyp ist keine technische Implementierung. Er ist die visuelle Referenz fuer die spaetere Dialogseite.
+
+Designentscheidungen fuer Eingabedialoge werden im UX-Prototyp getroffen, nicht frei im VBA-Designer.
+
+Worksheet-basierte Dialogseiten duerfen:
 
 - Eingaben sammeln
 - einfache Pflichtfeld- und Formatpruefungen fuer unmittelbare Benutzerfuehrung durchfuehren
@@ -46,7 +65,7 @@ UserForms duerfen:
 - freigegebene Services aufrufen
 - nach erfolgreichem Speichern die betroffene Ansicht aktualisieren
 
-UserForms duerfen nicht:
+Worksheet-basierte Dialogseiten duerfen nicht:
 
 - fachliche Logik enthalten
 - direkt in fachliche Tabellen schreiben
@@ -54,7 +73,38 @@ UserForms duerfen nicht:
 - eigene Schattenhaltung erzeugen
 - Excel-Zellpositionen als technische Identitaet verwenden
 
-Nach erfolgreichem Speichern schliesst sich die UserForm und die aufrufende oder betroffene Ansicht wird aus dem Datenmodell aktualisiert.
+Nach erfolgreichem Speichern wird die Dialogseite verlassen und die aufrufende oder betroffene Ansicht wird aus dem Datenmodell aktualisiert.
+
+## Runtime Adapter und Refresh
+
+Produktive Schreibprozesse aus Excel laufen ueber einen Runtime Adapter.
+
+Der freigegebene Pfad lautet:
+
+```text
+Worksheet-Dialogseite
+-> VBA Adapter
+-> Python CLI/Bridge
+-> ApplicationCommandDispatcher
+-> Command
+-> Service
+-> Repository
+-> SQLite
+```
+
+VBA liest Eingaben ausschliesslich ueber registrierte Named Ranges.
+
+VBA enthaelt keine Fachlogik, erzeugt keine fachlichen IDs, validiert keine Fachregeln und schreibt nicht direkt in SQLite.
+
+Nach erfolgreichem Python Command erzeugt Python ein Projection-Refresh-Paket.
+
+VBA darf ausschliesslich diesen Projection Output in registrierte Projektionsbereiche der geoeffneten Arbeitsmappe kopieren.
+
+VBA darf die Projektion nicht selbst berechnen, sortieren oder fachlich interpretieren.
+
+SQLite bleibt fachliche Source of Truth.
+
+Der Projection Builder bleibt Eigentuemer der Projektion.
 
 UI ist immer Projektion und niemals fachliche Datenquelle.
 
@@ -104,7 +154,7 @@ Standard-Datenfluss:
 
 ```text
 User
--> UserForm
+-> worksheet-basierte Dialogseite oder freigegebener Adapter
 -> Adapter
 -> Dispatcher
 -> Command

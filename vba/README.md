@@ -22,7 +22,7 @@ Der aktuelle technische PoC beweist, dass Python ein vorhandenes `vbaProject.bin
 
 Es gehoert einmalig in `seeds/JenaplanSeed.xlsm` und bleibt dort als Standardmodul erhalten.
 
-Danach kann Codex die versionierten Module automatisch aktualisieren:
+Danach kann Codex die versionierten VBA-Quellen automatisch aktualisieren:
 
 ```bash
 python3 scripts/import_vba_sources_to_seed.py
@@ -33,10 +33,15 @@ Der Import aktualisiert:
 - `Globals`
 - `Navigation`
 - `UI`
+- `frm_student_new`
 
 Das Bootstrap-Modul `SeedImport` importiert sich nicht selbst. Wenn `SeedImport.bas` geaendert wird, muss diese Bootstrap-Aenderung bewusst in den Seed uebernommen werden.
 
 Das Skript bricht ab, wenn `SeedImport` im Seed fehlt. Dadurch wird verhindert, dass Excel einen fehlenden Makroaufruf still ignoriert und der Seed unveraendert bleibt.
+
+Seit Feature 1.2b bricht das Skript auch ab, wenn der Seed-Bootstrap noch keine UserForms korrekt erzeugen kann. Dann muss die aktuelle Datei `vba/modules/SeedImport.bas` einmalig im Seed aktualisiert und gespeichert werden; danach erzeugt das Skript `frm_student_new` automatisch als echte MSForms-UserForm.
+
+Wichtig: Microsoft Excel fuer macOS hat den direkten Import von `vba/forms/frm_student_new.frm` als kompilierbaren Code-Stream abgelegt. Deshalb erzeugt `SeedImport` diese UserForm im Seed programmgesteuert aus der versionierten Layoutdefinition, statt die `.frm` roh in das VBA-Projekt zu importieren.
 
 Voraussetzung in Excel:
 

@@ -21,6 +21,7 @@ Spalten:
 | Kartenfarbe | `data_students.course_id` -> `data_courses.color_key` | Anzeige | Nein | `data_courses` | farbliche Projektion der Kurszuordnung |
 | Suche | `data_students.first_name`, `data_students.last_name`, `display_name` | Filter | Nein | `data_students` | Namen dienen nur Suche und Anzeige |
 | Navigations-ID | `data_students.student_id` | Navigation | Nein | `data_students` | einzige technische Identitaet fuer Schueler |
+| Neuer Schueler | keine fachliche Datenquelle | Navigation | Nein | keine | oeffnet `dlg_neuer_schueler`; Speichern spaeter ueber Runtime Adapter |
 | Neue Beobachtung | `data_students.student_id` | Navigation | Geplant | `data_students` | startet spaeter zentralen Beobachtungsdialog |
 
 ## Kursuebersicht
@@ -46,7 +47,7 @@ Spalten:
 | Kompetenzchips | `data_observation_competencies.competency_id` -> `data_competencies.name` | Anzeige | Nein | `data_competencies` | abgeleitete Anzeige |
 | Neue Beobachtung | `data_students.student_id` | Navigation | Geplant | `data_students` | startet spaeter zentralen Beobachtungsdialog |
 
-## Schuelerverwaltung / Neuer-Schueler-Dialog
+## Schuelerverwaltung / `dlg_neuer_schueler`
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
@@ -57,6 +58,16 @@ Spalten:
 | Notiz | zukuenftig `data_students.student_notes` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | optional |
 | Dokumentliste | zukuenftig `data_media.file_ref` nach `student_id` | Anzeige | Nein | `data_media` | zeigt referenzierte Dateien, keine Einbettung |
 | Dokument hinzufuegen | zukuenftig Dateiauswahl -> `data_media` | Eingabe | Geplant | `data_media` | erzeugt spaeter `media_id` und `file_ref` nach freigegebenem Prozess |
+
+Regel:
+
+`dlg_neuer_schueler` ist eine worksheet-basierte Dialogseite. Die sichtbaren Eingabezellen sind temporaerer UI-State. Der freigegebene Runtime Adapter liest diesen UI-State und startet den Python-Schreibprozess bis SQLite.
+
+Der VBA Adapter liest diese Werte ausschliesslich ueber die registrierten Named Ranges.
+
+Der Adapter darf keine festen Zelladressen verwenden.
+
+Nach erfolgreichem Python Command gibt Feature 1.4b nur ein Runtime-Ergebnis an Excel zurueck. Sichtbare Schuelerinformationen werden erst in einem spaeteren Schritt ueber ein Python-erzeugtes Projection-Refresh-Paket aktualisiert.
 
 ## Kompetenzansicht
 

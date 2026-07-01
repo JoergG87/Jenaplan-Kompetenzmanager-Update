@@ -46,6 +46,7 @@ Beispiele fuer sichtbare Begriffe:
 | Workbook | Arbeitsmappe | `DieseArbeitsmappe` | bestehend |
 | Stammgruppenuebersicht | `Stammgruppenübersicht` | `wsClassOverview` | bestehend, nicht umbenennen |
 | Schuelerprofil | `Schülerprofil` | `wsStudentProfile` | bestehend |
+| Neuer-Schueler-Dialogseite | `dlg_neuer_schueler` | `wsDialogNewStudent` | Feature 1, worksheet-basierter Dialog |
 
 Hinweis: `wsClassOverview` bleibt trotz sichtbarer Umbenennung auf `Stammgruppenübersicht` bestehen. Eine technische Umbenennung ist kein Bestandteil von Sprint 4.0.
 
@@ -63,6 +64,7 @@ Keine spontane Umbenennung bestehender technischer Namen waehrend Feature-Sprint
 | --- | --- |
 | `Stammgruppenübersicht` | Einstieg in eine Stammgruppe |
 | `Schülerprofil` | Profil eines Schuelers |
+| `dlg_neuer_schueler` | worksheet-basierte Dialogseite fuer neuen Schueler |
 | `Kursübersicht` | zukuenftige Ansicht fuer einen Kurs |
 
 ## Hidden-Data-Sheets
@@ -145,7 +147,17 @@ Registrierte bestehende Named Ranges:
 - `ui_student_slot_id_XX`
 - `ui_class_search`
 - `ui_class_search_input`
+- `ui_action_new_student`
 - `ui_action_new_observation`
+- `ui_dialog_new_student_first_name`
+- `ui_dialog_new_student_last_name`
+- `ui_dialog_new_student_group`
+- `ui_dialog_new_student_course`
+- `ui_dialog_new_student_notes`
+- `ui_dialog_new_student_document_list`
+- `ui_dialog_new_student_add_document`
+- `ui_dialog_new_student_cancel`
+- `ui_dialog_new_student_save`
 
 `XX` steht fuer zweistellige Slotnummern wie `01`, `02`, `03`.
 
@@ -185,6 +197,7 @@ Beispiele:
 - `data_` fuer Workbook-Datenquellen und Tabellen
 - `ui_` fuer UI-Anker und UI-Projektionen
 - `ui_nav_` fuer navigierende Shapes
+- `ui_dialog_` fuer worksheet-basierte Dialogseiten-Anker
 - `frm_` fuer VBA-UserForms
 - `ctl_` fuer technische UserForm-Control-Namen
 - `ws` fuer Worksheet-CodeNames
@@ -208,13 +221,33 @@ Registriert:
 - `OpenStudentProfileById(student_id)`
 - `OpenClassOverview()`
 - `ImportVbaSourcesToSeed(globalsPath, navigationPath, uiPath)`
+- `ImportUserForm(formName, sourcePath)`
 
 Vorgesehen:
 
-- `OpenNewStudentDialog()`
+- `OpenNewStudentDialog()` - deprecated UserForm-Testoeffner, nicht produktiver Feature-1-Einstieg
 - `OpenCompetencyById(competency_id)`
 - `OpenReportById(report_id)`
 - `OpenSubjectById(subject_id)`
+
+## Worksheet-basierte Dialogseiten
+
+Registrierte Dialogseiten:
+
+- `dlg_neuer_schueler`
+
+Registrierte Anker fuer `dlg_neuer_schueler`:
+
+- `ui_action_new_student`
+- `ui_dialog_new_student_first_name`
+- `ui_dialog_new_student_last_name`
+- `ui_dialog_new_student_group`
+- `ui_dialog_new_student_course`
+- `ui_dialog_new_student_notes`
+- `ui_dialog_new_student_document_list`
+- `ui_dialog_new_student_add_document`
+- `ui_dialog_new_student_cancel`
+- `ui_dialog_new_student_save`
 
 ## SQLite-Spike
 
@@ -264,7 +297,59 @@ Registrierte Command-Namen:
 
 - `student.create`
 
+## Runtime Adapter und Projection Refresh
+
+Produktiv umgesetzte VBA-Adapter-Prozeduren:
+
+- `SaveNewStudentDialog()`
+
+Vorgesehene VBA-Adapter-Prozeduren:
+
+- `CancelNewStudentDialog()`
+- `ImportProjectionRefresh()`
+
+Produktiv umgesetzte Python-CLI/Bridge:
+
+- `km.py`
+- `student create`
+
+Produktiv umgesetzte Runtime-Artefakte:
+
+- `runtime_command.json`
+- `runtime_result.json`
+
+Vorgesehene Runtime-Artefakte:
+
+- `runtime_projection_refresh.json`
+
+Registrierte VBA-Konstanten fuer `dlg_neuer_schueler`:
+
+- `NAME_DIALOG_NEW_STUDENT_FIRST_NAME`
+- `NAME_DIALOG_NEW_STUDENT_LAST_NAME`
+- `NAME_DIALOG_NEW_STUDENT_GROUP`
+- `NAME_DIALOG_NEW_STUDENT_COURSE`
+- `NAME_DIALOG_NEW_STUDENT_NOTES`
+- `NAME_DIALOG_NEW_STUDENT_SAVE`
+- `SHAPE_DIALOG_NEW_STUDENT_SAVE`
+- `RUNTIME_COMMAND_FILE_NAME`
+- `RUNTIME_RESULT_FILE_NAME`
+- `RUNTIME_DATABASE_RELATIVE_PATH`
+
+Regel:
+
+Runtime-Artefakte enthalten keine neue fachliche Source of Truth.
+
+Sie transportieren Commands, Ergebnisse oder Python-generierten Projection Output.
+
+VBA darf Projection-Refresh-Artefakte nur in registrierte Projektionsbereiche kopieren.
+
 ## UserForms
+
+Status:
+
+VBA-UserForms sind ab Feature 1 fuer Excel auf macOS deprecated und nicht mehr das primaere Eingabe-Pattern.
+
+`frm_student_new` bleibt als experimenteller Artefaktstand erhalten, bis ein eigener Bereinigungssprint das Artefakt entfernt oder migriert.
 
 Registrierte UserForm-Namen:
 

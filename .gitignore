@@ -1,3 +1,7 @@
+# Runtime database
+data/*.sqlite
+data/*.db
+
 output/
 __pycache__/
 *.pyc

@@ -138,6 +138,10 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Referenzdialog `Neuer Schueler` als erste Referenzimplementierung einordnen
 - [x] Dokumentenstruktur fuer Schuelerdokumente und Beobachtungsanhaenge festlegen
 - [x] Dokumentbereich in der Schueler-UserForm vorbereiten
+- [x] UX-Prototyp fuer Feature 1 `Neuer Schueler` als verbindliche visuelle Vorlage vorbereiten
+- [x] UX-Prototyp als Pflichtschritt vor kuenftiger Dialogumsetzung dokumentieren
+- [x] VBA-UserForm-Ansatz fuer Excel auf macOS als nicht belastbar bewertet
+- [x] Worksheet-basierte Dialogseite `dlg_neuer_schueler` als neuen Feature-1-Pfad vorbereitet
 - [x] Spaeteren Beobachtungsdialog mit Kompetenzbezug vorbereiten
 - [ ] Produktive Speicherlogik fuer Schueler freigeben
 
@@ -199,6 +203,53 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Adapter, Application, Domain, Infrastructure, Projection und Excel UI als Schichten beschrieben
 - [x] Standard-Datenfluss dokumentiert
 - [x] Keine neue Implementierung
+
+### Feature 1 - UX-Prototyp `Neuer Schueler`
+
+- [x] `output/Jenaplan_UX_Prototype_v0.1.xlsx` um das Blatt `Feature 1 – Neuer Schüler` ergaenzt
+- [x] Fenstertitel, Pflichtfelder, Notizbereich, Dokumentbereich, Dokument-Hinzufuegen-Button sowie Abbrechen/Speichern visuell dargestellt
+- [x] Blatt als visuelle Vorlage fuer den spaeteren Eingabedialog dokumentiert
+- [x] Keine VBA-UserForm, keine Python-Aenderung, keine Validierung, keine Adapter-Anbindung und kein Build umgesetzt
+- [ ] UX-Review mit Laura bzw. Product Owner durchfuehren
+- [ ] UX-Freigabe vor technischer Dialogumsetzung dokumentieren
+
+### Feature 1 - Architekturwechsel zu `dlg_neuer_schueler`
+
+- [x] VBA-UserForms auf Excel fuer macOS als instabil bewertet
+- [x] `frm_student_new` als experimentell/deprecated eingeordnet
+- [x] Worksheet-basierte Dialogseiten als primaeres Eingabe-Pattern dokumentiert
+- [x] `dlg_neuer_schueler` als Dialogseite fuer `Neuer Schueler` vorbereitet
+- [x] Absprungpunkt `+ Schüler` von der Stammgruppenuebersicht zur Dialogseite vorbereitet
+- [x] Keine Speicherlogik, keine Validierung, kein Python-Command und kein SQLite-Schreibzugriff umgesetzt
+
+### Feature 1.3 - Dialogseite vorbereiten
+
+- [x] Dialogseite `dlg_neuer_schueler` bleibt geschuetzt
+- [x] Nur Eingabebereiche fuer Vorname, Nachname, Stammgruppe, Kurs und Notiz entsperrt
+- [x] Eingabebereiche ueber registrierte Named Ranges vorbereitet
+- [x] Abbrechen als Navigation zur Stammgruppenuebersicht vorbereitet
+- [x] Speichern optisch vorbereitet, aber ohne Aktion
+- [x] Dokumentbereich sichtbar, `+ Dokument hinzufügen` ohne Funktion
+- [x] Keine Speicherung, keine Validierung, kein Python-Command und kein SQLite-Schreibzugriff umgesetzt
+
+### Feature 1.4a - Runtime Adapter und Refresh Contract
+
+- [x] Runtime-Pfad `Dialogseite -> VBA Adapter -> Python CLI/Bridge -> Dispatcher -> StudentService -> Repository -> SQLite` freigegeben
+- [x] Refresh Contract ueber Python-generiertes Projection-Refresh-Paket freigegeben
+- [x] VBA darf nur Projection Output importieren und keine fachliche Tabellenlogik ausfuehren
+- [x] SQLite als Source of Truth fuer `student.create` im Feature-1-Schreibprozess festgelegt
+- [x] Feature 1.4 darf implementiert werden, wenn dieser Vertrag eingehalten wird
+- [x] Keine Speicherung, keine Validierung, kein Python-Aufruf aus VBA und kein Workbook-Refresh umgesetzt
+
+### Feature 1.4b - Produktiver Speichervorgang bis SQLite
+
+- [x] `SaveNewStudentDialog()` als VBA Adapter fuer die Dialogseite umgesetzt
+- [x] Adapter liest ausschliesslich registrierte Named Ranges von `dlg_neuer_schueler`
+- [x] Adapter schreibt `runtime_command.json` und startet `km.py student create`
+- [x] `km.py` verwendet `ApplicationCommandDispatcher`, `CreateStudentCommand`, `StudentService` und `SQLiteStudentRepository`
+- [x] `student.create` schreibt produktiv in `data/kompetenzmanager.sqlite`
+- [x] Erfolg und Fehler werden ueber `runtime_result.json` an Excel zurueckgegeben
+- [x] Noch kein Projection Refresh, keine Workbook-Aktualisierung und keine Navigation nach dem Speichern umgesetzt
 
 ### Nicht Bestandteil
 

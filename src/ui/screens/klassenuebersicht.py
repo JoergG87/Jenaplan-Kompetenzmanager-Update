@@ -31,10 +31,12 @@ from ...core.workbook_data import (
 )
 from ..components import ExcelCanvas
 from ..theme import UiTheme
+from .neuer_schueler_dialog import NeuerSchuelerDialogScreenBuilder
 from .schuelerprofil import SchuelerprofilScreenBuilder
 
 
 SHEET_TITLE = "Stammgruppenübersicht"
+NEW_STUDENT_DIALOG_SHEET = "dlg_neuer_schueler"
 PRODUCT_VERSION = "v0.4"
 MAX_STUDENTS = 28
 GRID_COLUMNS = 4
@@ -94,6 +96,7 @@ class ClassOverviewV02WorkbookBuilder:
         self._configure_sheet(worksheet)
         self._render(worksheet)
         SchuelerprofilScreenBuilder(self.theme, self.data).create(workbook)
+        NeuerSchuelerDialogScreenBuilder(self.theme).create(workbook)
         self._define_vba_anchor_names(workbook)
         workbook.active = 0
 
@@ -275,6 +278,20 @@ class ClassOverviewV02WorkbookBuilder:
         )
         worksheet[SEARCH_CELL].protection = Protection(locked=False)
 
+        self.canvas.panel(worksheet, 5, 9, 6, 11, self.theme.surface, self.theme.border)
+        self.canvas.write_range(
+            worksheet,
+            5,
+            9,
+            6,
+            11,
+            "+ Schüler",
+            font=self.canvas.font(9, bold=True, color=self.theme.primary),
+            fill=self.theme.surface,
+            alignment=self.canvas.alignment("center"),
+        )
+        self.canvas.link_range(worksheet, 5, 9, 6, 11, f"#'{NEW_STUDENT_DIALOG_SHEET}'!A1")
+
         self.canvas.panel(worksheet, 5, 18, 6, 21, self.theme.disabled_fill, self.theme.border)
         self.canvas.write_range(
             worksheet,
@@ -390,6 +407,7 @@ class ClassOverviewV02WorkbookBuilder:
     def _define_vba_anchor_names(self, workbook: Workbook) -> None:
         anchors = {
             "ui_class_search": (5, 12, 6, 17),
+            "ui_action_new_student": (5, 9, 6, 11),
             "ui_action_new_observation": (5, 18, 6, 21),
         }
         for index in range(MAX_STUDENTS):

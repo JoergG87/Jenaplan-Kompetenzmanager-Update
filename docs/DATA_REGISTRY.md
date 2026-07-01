@@ -48,7 +48,15 @@ VBA schreibt nicht direkt in SQLite.
 
 Python bleibt fachliche Schreibschicht.
 
-UserForms benoetigen spaeter eine freigegebene Python Bridge oder CLI.
+Worksheet-basierte Dialogseiten verwenden fuer produktive Schreibprozesse eine freigegebene Python CLI/Bridge.
+
+VBA-UserForms sind ab Feature 1 fuer Excel auf macOS nicht mehr das primaere Eingabe-Pattern.
+
+Feature 1.4a gibt fuer `student.create` den Runtime Adapter und den Projection Refresh Contract frei.
+
+Fuer diesen Schreibprozess ist SQLite die fachliche Source of Truth.
+
+`data_*`-Sheets und `tbl_*`-Tabellen in der geoeffneten Arbeitsmappe sind danach Projection Output aus SQLite und duerfen nur ueber Python-erzeugte Projection-Refresh-Pakete aktualisiert werden.
 
 Minimales Spike-Schema:
 
@@ -97,6 +105,14 @@ Fuer Schuelerprojektionen sind mindestens `tbl_students`, `tbl_groups` und `tbl_
 Der Builder veraendert keine fachlichen Entitaeten und erzeugt keine doppelte Datenhaltung.
 
 VBA nutzt IDs und benannte Bereiche, aber keine direkten Zugriffe auf fachliche Tabellen.
+
+Worksheet-basierte Dialogseiten sind UI-Projektionen und temporaere Eingabeflaechen.
+
+Sie sind keine fachlichen Datenquellen, erzeugen keine Schattenhaltung und duerfen fachliche Daten erst ueber freigegebene Schreibprozesse veraendern.
+
+VBA darf keine fachlichen Daten in `data_*`-Tabellen schreiben.
+
+VBA darf nur Projection Output importieren, der zuvor durch Python aus SQLite erzeugt wurde.
 
 Registrierte Zuordnung:
 

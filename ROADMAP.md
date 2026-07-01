@@ -6,7 +6,11 @@ Microsoft Excel für macOS ist die verbindliche Zielplattform.
 
 Python bleibt verantwortlich für Build-System, Workbook-Erzeugung, Datenmodell, UI-Projektionen, Styles, Berichte und Fachlogik.
 
-VBA übernimmt ausschließlich Navigation, Buttons, Dialoge, UserForms und Benutzerinteraktion.
+VBA übernimmt ausschließlich Navigation, Buttons, Dialogaufrufe und Benutzerinteraktion.
+
+Worksheet-basierte Dialogseiten sind ab Feature 1 das primaere Eingabe-Pattern fuer Excel auf macOS.
+
+VBA-UserForms bleiben experimentell/deprecated, bis ein eigener Migrations- oder Bereinigungsschritt freigegeben ist.
 
 Der VBA-Seed wurde praktisch validiert. `.xlsm` ist ab Version `v0.4` das Hauptartefakt.
 
@@ -36,7 +40,7 @@ Sprint 4.1: Core Data Architecture durch Hidden Data Sheets, strukturierte Tabel
 
 Sprint 4.2: Schülerverwaltung vorbereiten und ersten transaktionalen Schreibprozess umsetzen: Schüler anlegen, ändern und archivieren.
 
-Sprint 5: Scope Freeze abgeschlossen, Dialog Framework begonnen und erste Referenz-UserForm `Neuer Schueler` vorbereitet. Sprint 5.1a konkretisiert den Dialogstandard fuer zukuenftige Eingabemasken. Sprint 5.1b stoppt die produktive Schueleranlage an der noch offenen Laufzeitbruecke zwischen Excel/VBA und Python-Service-Schicht. Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis. Sprint 5.3 fuehrt den Application Command Layer ein. Sprint 5.4 validiert `student.create` im Python-Stack. Architecture Baseline v2.0 dokumentiert diesen erreichten Stand.
+Sprint 5: Scope Freeze abgeschlossen, Dialog Framework begonnen und erste Referenz-UserForm `Neuer Schueler` vorbereitet. Sprint 5.1a konkretisiert den Dialogstandard fuer zukuenftige Eingabemasken. Sprint 5.1b stoppt die produktive Schueleranlage an der noch offenen Laufzeitbruecke zwischen Excel/VBA und Python-Service-Schicht. Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis. Sprint 5.3 fuehrt den Application Command Layer ein. Sprint 5.4 validiert `student.create` im Python-Stack. Architecture Baseline v2.0 dokumentiert diesen erreichten Stand. Feature 1 fuehrt den UX-Prototyp als verbindlichen Zwischenschritt vor Dialogumsetzungen ein und wechselt wegen macOS-UserForm-Problemen auf die worksheet-basierte Dialogseite `dlg_neuer_schueler`. Feature 1.4a definiert den Runtime Adapter und den Refresh Contract fuer `student.create`. Feature 1.4b implementiert den produktiven Schreibpfad bis SQLite ohne Projection Refresh.
 
 Zukünftige Produktziele ohne Sprintzuordnung
 
@@ -159,8 +163,12 @@ Sprint 5
 - Sprint 5.2a erzeugt `data/kompetenzmanager.sqlite` mit Students, Groups und Courses und baut daraus eine separate Excel-Projektion.
 - Naechster Architekturspike: Python Bridge / CLI fuer UserForm-Auftraege nach SQLite pruefen.
 - Sprint 5.3 fuehrt den Application Command Dispatcher als Zwischenschicht zwischen Command-Adaptern und Domain Services ein.
-- Naechster Sprint: konkreten `student.create` Adapter pruefen, ohne Fachlogik in CLI oder VBA zu verschieben.
+- `student.create` Adapter bis SQLite umgesetzt, ohne Fachlogik in CLI oder VBA zu verschieben.
 - Architecture Baseline v2.0 fasst den validierten Zielzustand zusammen: Adapter -> Application -> Domain -> Infrastructure -> Projection -> Excel UI.
+- UX-Prototypen sind fuer neue Eingabedialoge kuenftig verbindlicher Zwischenschritt vor der technischen Umsetzung.
+- `output/Jenaplan_UX_Prototype_v0.1.xlsx` enthaelt das Blatt `Feature 1 – Neuer Schüler` als visuelle Vorlage fuer `dlg_neuer_schueler`.
+- VBA-UserForms sind fuer Feature 1 auf macOS als instabil bewertet und nicht mehr primaeres Eingabe-Pattern.
+- Worksheet-basierte Dialogseite `dlg_neuer_schueler` wird als neuer UI-Pfad vorbereitet.
 - Dokumentenbereich fuer Schuelerdokumente dokumentiert.
 - Studentenzentrierte Dokumenten- und Medienstruktur festgelegt.
 - Beobachtungsdialog mit Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien nur vorbereitet.

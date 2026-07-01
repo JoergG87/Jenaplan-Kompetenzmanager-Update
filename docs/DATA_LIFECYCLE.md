@@ -10,9 +10,37 @@ Start: Lehrkraft oder Verwaltung legt einen neuen Schueler an.
 
 Schreibprozess: Schuelerverwaltung, spaeter freizugeben.
 
+UI-Einstieg: worksheet-basierte Dialogseite `dlg_neuer_schueler`.
+
+Status Feature 1.4b: Produktiver Schreibpfad bis SQLite umgesetzt. Projection Refresh und automatische Aktualisierung der geoeffneten Arbeitsmappe folgen separat.
+
+Freigegebener Runtime-Pfad fuer Feature 1.4:
+
+```text
+dlg_neuer_schueler
+-> VBA Adapter
+-> Python CLI/Bridge
+-> ApplicationCommandDispatcher
+-> CreateStudentCommand
+-> StudentService
+-> SQLiteStudentRepository
+-> SQLite
+```
+
+Refresh-Vertrag:
+
+Nach erfolgreichem `student.create` erzeugt Python ein Projection-Refresh-Paket aus SQLite.
+
+VBA importiert ausschliesslich diesen Projection Output in registrierte Projektionsbereiche der geoeffneten Arbeitsmappe.
+
+VBA schreibt dabei keine fachlichen Daten und erzeugt keine Projektion selbst.
+
+Feature 1.4b setzt nur den Schreibpfad bis SQLite um. Es erzeugt noch kein Projection-Refresh-Paket und aktualisiert die geoeffnete Arbeitsmappe noch nicht automatisch.
+
 Betroffene Datenquellen:
 
-- `data_students`
+- `students` in SQLite als fachliche Source of Truth
+- `data_students` als Excel-Projektion aus SQLite
 - spaeter optional `data_media` fuer Schuelerdokumente
 
 Erforderliche IDs:
@@ -30,7 +58,7 @@ Automatisch profitierende Ansichten:
 - Beobachtungsdialog
 - Berichte
 
-Regel: Neue Stammgruppen oder Kurse werden dabei nicht automatisch angelegt. Optionale Dokumente werden erst nach erfolgreicher Erzeugung der `student_id` referenziert. Dateien werden nicht in Excel eingebettet.
+Regel: Neue Stammgruppen oder Kurse werden dabei nicht automatisch angelegt. Optionale Dokumente werden erst nach erfolgreicher Erzeugung der `student_id` referenziert. Dateien werden nicht in Excel eingebettet. Bei Fehlern wird kein Projection Refresh importiert und der Dialog bleibt geoeffnet.
 
 ## Schueler archivieren
 

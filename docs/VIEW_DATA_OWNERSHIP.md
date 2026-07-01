@@ -63,17 +63,35 @@ Die Sortierung erfolgt ausschliesslich innerhalb der Projektion.
 
 Die Datenhaltung, insbesondere `tbl_students`, bleibt unveraendert.
 
-## Modale UserForms
+## Worksheet-basierte Dialogseiten
 
-Modale UserForms sind Eingabedialoge der Anwendung.
+Worksheet-basierte Dialogseiten sind ab Feature 1 die primaeren Eingabedialoge der Anwendung auf Excel fuer macOS.
 
-Sie sind keine fachlichen Datenquellen.
+Sie sind eigene geschuetzte Arbeitsblaetter und keine fachlichen Datenquellen.
 
-Sie sammeln Eingaben, fuehren nur einfache Oberflaechenvalidierung durch und rufen freigegebene Services auf.
+Sie sammeln Eingaben, fuehren spaeter nur einfache Oberflaechenvalidierung durch und rufen freigegebene Adapter auf.
 
-UserForms schreiben nicht direkt in `data_*`-Tabellen.
+Dialogseiten schreiben nicht direkt in `data_*`-Tabellen.
 
-Nach erfolgreichem Speichern schliesst sich die UserForm und die betroffene Ansicht wird aus den registrierten Datenquellen aktualisiert.
+Nach erfolgreichem Speichern wird die Dialogseite verlassen und die betroffene Ansicht wird aus den registrierten Datenquellen aktualisiert.
+
+VBA-UserForms sind fuer Feature 1 deprecated und bleiben nur als experimenteller Artefaktstand erhalten.
+
+## Projection Refresh durch VBA
+
+VBA darf registrierte Projektionsbereiche der geoeffneten Arbeitsmappe aktualisieren, wenn alle folgenden Bedingungen erfuellt sind:
+
+- Python hat den fachlichen Command erfolgreich verarbeitet.
+- SQLite ist aktualisiert.
+- Python hat ein Projection-Refresh-Paket erzeugt.
+- VBA kopiert ausschliesslich diesen Projection Output.
+- VBA berechnet, sortiert, filtert oder validiert die Projektion nicht selbst.
+
+Diese Aktualisierung ist keine fachliche Tabellenbearbeitung.
+
+Die fachliche Source of Truth bleibt SQLite.
+
+Der Projection Builder bleibt Eigentuemer der Projektion.
 
 ## Stammgruppenuebersicht
 
@@ -166,7 +184,7 @@ Regel:
 
 Das Schuelerprofil zeigt Daten eines Schuelers und startet spaeter freigegebene Dialoge. Es schreibt selbst keine fachlichen Daten.
 
-## Schuelerverwaltung / Neuer-Schueler-Dialog
+## Schuelerverwaltung / `dlg_neuer_schueler`
 
 Liest:
 
@@ -175,7 +193,8 @@ Liest:
 
 Schreibt:
 
-- `data_students` ueber freigegebenen Student-Service
+- `students` in SQLite ueber Python CLI/Bridge, Dispatcher, Student-Service und Repository
+- `data_students` nur als Python-erzeugten Projection Output beim Refresh
 - spaeter optional `data_media` ueber freigegebenen Dokumentenprozess
 
 Navigation:
@@ -193,7 +212,7 @@ UI-Projektionen:
 
 Regel:
 
-Der Dialog ist die erste Referenz-UserForm fuer fachliche Eingaben. Er schreibt nicht direkt in Workbook-Tabellen und erzeugt keine Stammgruppen oder Kurse.
+`dlg_neuer_schueler` ist die erste worksheet-basierte Dialogseite fuer fachliche Eingaben. Sie schreibt nicht direkt in Workbook-Tabellen und erzeugt keine Stammgruppen oder Kurse. Eingaben werden nur ueber registrierte Named Ranges gelesen.
 
 ## Beobachtungsdialog
 
