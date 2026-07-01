@@ -15,6 +15,7 @@ from src.core.sqlite_store import SQLiteStudentRepository, create_sqlite_seed_da
 from src.desktop_app.adapters import student_desktop_adapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.navigation import resolve_navigation_target
+from src.desktop_app.view_models.student_view_model import filter_student_list
 
 
 class DesktopAppAdapterTest(unittest.TestCase):
@@ -116,6 +117,38 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(target.screen_key, "reports")
         self.assertFalse(target.reset_group_filter)
+
+    def test_student_search_finds_first_name(self) -> None:
+        students = self.adapter.list_students()
+        result = filter_student_list(students, students[0].first_name)
+
+        self.assertIn(students[0].student_id, {student.student_id for student in result})
+
+    def test_student_search_finds_last_name(self) -> None:
+        students = self.adapter.list_students()
+        result = filter_student_list(students, students[0].last_name)
+
+        self.assertIn(students[0].student_id, {student.student_id for student in result})
+
+    def test_student_search_is_case_insensitive_and_trims_query(self) -> None:
+        students = self.adapter.list_students()
+        query = f"  {students[0].display_name.upper()}  "
+        result = filter_student_list(students, query)
+
+        self.assertIn(students[0].student_id, {student.student_id for student in result})
+
+    def test_empty_student_search_returns_current_group_filter(self) -> None:
+        students = self.adapter.list_students(group_id=f"{GROUP_ID_PREFIX}-000001")
+        result = filter_student_list(students, "   ")
+
+        self.assertEqual(result, students)
+
+    def test_student_search_combines_with_group_filter(self) -> None:
+        students = self.adapter.list_students(group_id=f"{GROUP_ID_PREFIX}-000001")
+        result = filter_student_list(students, students[0].course_name)
+
+        self.assertGreater(len(result), 0)
+        self.assertTrue(all(student.group_id == f"{GROUP_ID_PREFIX}-000001" for student in result))
 
     def test_adapter_has_no_direct_sql_write_logic(self) -> None:
         source = inspect.getsource(student_desktop_adapter)

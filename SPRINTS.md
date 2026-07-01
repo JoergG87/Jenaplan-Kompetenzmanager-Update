@@ -298,6 +298,9 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Klick auf `Schüler` in der linken Navigation fuehrt aus dem Profil zur Liste
 - [x] Schuelerprofil in Titel, Stammgruppe/Kurs, Notiz und Beobachtungsplatzhalter gegliedert
 - [x] Nicht-modale Statusmeldung `Schüler wurde gespeichert.` nach erfolgreichem Speichern ergaenzt
+- [x] Suche in der Schueleruebersicht ergaenzt
+- [x] Suche filtert nach Vorname, Nachname, Vollname, Stammgruppe und Kurs
+- [x] Suche bleibt mit Gruppenfilter kombinierbar
 - [x] Keine Beobachtungsmaske, kein Packaging und kein Excel-Export-Umbau umgesetzt
 - [x] Keine finale Architekturentscheidung getroffen
 

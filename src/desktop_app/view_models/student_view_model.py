@@ -22,6 +22,33 @@ class StudentListItem:
         return f"{self.first_name} {self.last_name}"
 
 
+def filter_student_list(
+    students: tuple[StudentListItem, ...],
+    search_text: str,
+) -> tuple[StudentListItem, ...]:
+    """Filter loaded students for the desktop list."""
+    query = search_text.strip().casefold()
+    if not query:
+        return students
+
+    return tuple(
+        student
+        for student in students
+        if _student_matches_query(student, query)
+    )
+
+
+def _student_matches_query(student: StudentListItem, query: str) -> bool:
+    searchable_values = (
+        student.first_name,
+        student.last_name,
+        student.display_name,
+        student.group_name,
+        student.course_name,
+    )
+    return any(query in value.casefold() for value in searchable_values)
+
+
 @dataclass(frozen=True)
 class StudentDetailViewModel:
     """Display model for the light student profile."""

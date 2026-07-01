@@ -5,7 +5,9 @@
 ### Added
 
 - Zurueck-Button `← Zurück zur Schülerliste` im Schuelerprofil light ergaenzt.
+- Suchfeld `Schüler suchen...` in der Schueleruebersicht ergaenzt.
 - Testbare Navigationsziel-Aufloesung fuer die Seitenleiste ergaenzt.
+- Testbare Schuelerlisten-Filterlogik fuer Vorname, Nachname, Vollname, Stammgruppe und Kurs ergaenzt.
 - Nicht-modale Statusmeldung nach erfolgreichem Speichern eines neuen Schuelers ergaenzt.
 
 ### Changed
@@ -13,6 +15,7 @@
 - Schuelerprofil light optisch in Kopfbereich, Notizkarte und Beobachtungsplatzhalter gegliedert.
 - Klick auf `Schüler` in der linken Navigation fuehrt auch aus dem Profil wieder sauber zur Schuelerliste.
 - Ruecksprung aus dem Profil erhaelt den aktuellen Gruppenfilter.
+- Suchtext bleibt beim Ruecksprung aus dem Profil erhalten und filtert innerhalb des aktuellen Gruppenfilters.
 
 ### Not Changed
 

@@ -115,7 +115,11 @@ class AppShell(QMainWindow):
             group_name = groups.get(self.selected_group_id, self.selected_group_id)
         students = self.adapter.list_students(group_id=self.selected_group_id)
         self.students_screen.set_students(students, group_filter_name=group_name)
-        self.status_label.setText(f"{len(students)} Schüler angezeigt")
+        shown_count = len(self.students_screen.filtered_students)
+        if self.students_screen.search_text().strip():
+            self.status_label.setText(f"{shown_count} von {len(students)} Schülern angezeigt")
+        else:
+            self.status_label.setText(f"{len(students)} Schüler angezeigt")
 
     def return_to_students(self) -> None:
         """Return from profile to student list and keep current filter."""
