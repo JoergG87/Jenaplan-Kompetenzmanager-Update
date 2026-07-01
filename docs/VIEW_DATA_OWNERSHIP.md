@@ -77,6 +77,29 @@ Nach erfolgreichem Speichern wird die Dialogseite verlassen und die betroffene A
 
 VBA-UserForms sind fuer Feature 1 deprecated und bleiben nur als experimenteller Artefaktstand erhalten.
 
+## PySide6 Desktop-App-Spike
+
+PySide6 ist als alternativer UI-Adapter validiert.
+
+Die Desktop-App ist keine fachliche Datenquelle.
+
+Sie darf Daten anzeigen, Eingaben sammeln, Commands erzeugen und den `ApplicationCommandDispatcher` aufrufen.
+
+Sie darf keine Businesslogik enthalten, keine fachlichen IDs erzeugen und nicht direkt aus Qt Widgets in SQLite schreiben.
+
+Der validierte Schreibpfad lautet:
+
+```text
+PySide6 GUI
+-> Desktop Adapter
+-> ApplicationCommandDispatcher
+-> StudentService
+-> SQLiteStudentRepository
+-> SQLite
+```
+
+Excel bleibt bestehende Projektion und moeglicher Export-/Berichtspfad. Die Entscheidung fuer Python-GUI als Hauptanwendung, xlwings als Excel-Bruecke oder Excel nur als Export-/Berichtsschicht bleibt offen.
+
 ## Projection Refresh durch VBA
 
 VBA darf registrierte Projektionsbereiche der geoeffneten Arbeitsmappe aktualisieren, wenn alle folgenden Bedingungen erfuellt sind:

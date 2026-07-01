@@ -9,13 +9,21 @@
 - `StudentDesktopAdapter` verbindet die PySide6-nahe Schicht mit `CreateStudentCommand`, `ApplicationCommandDispatcher`, `StudentService` und SQLite-Repositories.
 - Tests fuer Command-Erzeugung, Speichern ueber die Application-Schicht und Stammgruppe-/Kurs-Mapping ergaenzt.
 
+### Validated
+
+- PySide6 Desktop-App-Spike manuell validiert: App startet, Maske `Neuer Schüler` funktioniert und ein Schuelerdatensatz wurde in SQLite geschrieben.
+- Validierter Pfad: PySide6 GUI -> Desktop Adapter -> ApplicationCommandDispatcher -> StudentService -> SQLiteStudentRepository -> SQLite.
+- Tests erfolgreich: `python3 -m pytest` mit 26 bestandenen Tests.
+- Build erfolgreich: `python3 build.py`.
+- Commit `5363e18` und Tag `spike-pyside6-student-create` sichern den validierten Spike-Stand.
+
 ### Removed
 
 - Uncommitted tkinter-Spike-Dateien wieder entfernt, damit nicht zwei GUI-Frameworks parallel im Projekt verbleiben.
 
 ### Not Changed
 
-- Keine endgueltige Architekturentscheidung, keine Excel-/VBA-/Seed-Aenderung, keine Builder-Aenderung, kein Projection Refresh, keine Beobachtungen und kein Commit umgesetzt.
+- Keine endgueltige Architekturentscheidung, keine Excel-/VBA-/Seed-Aenderung, keine Builder-Aenderung, kein Projection Refresh, keine Beobachtungen und keine Python-GUI-Zielarchitektur festgelegt.
 
 ## Hotfix - Runtime ueber MacScript do shell script starten
 

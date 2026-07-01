@@ -37,6 +37,22 @@ VBA schreibt dabei keine fachlichen Daten und erzeugt keine Projektion selbst.
 
 Feature 1.4b setzt nur den Schreibpfad bis SQLite um. Es erzeugt noch kein Projection-Refresh-Paket und aktualisiert die geoeffnete Arbeitsmappe noch nicht automatisch.
 
+Validierter alternativer Adapterpfad:
+
+```text
+PySide6 GUI
+-> Desktop Adapter
+-> ApplicationCommandDispatcher
+-> CreateStudentCommand
+-> StudentService
+-> SQLiteStudentRepository
+-> SQLite
+```
+
+Der PySide6-Spike nutzt denselben fachlichen Schreibprozess bis SQLite. Die GUI sammelt Eingaben und erzeugt Commands, enthaelt aber keine Businesslogik und schreibt nicht direkt aus Widgets in SQLite.
+
+Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Excel bleibt als bestehende Projektion und moeglicher Export-/Berichtspfad erhalten.
+
 Betroffene Datenquellen:
 
 - `students` in SQLite als fachliche Source of Truth

@@ -1641,3 +1641,93 @@ Feature 1.4 darf produktiv implementiert werden, wenn es diesen Vertrag einhaelt
 - SQLite als Source of Truth
 - Refresh nur ueber Python-generierten Projection Output
 - keine direkte fachliche Tabellenbearbeitung durch VBA
+
+## ADR-044 - PySide6 Desktop-App-Spike als alternativer UI-Adapter validiert
+
+Status: Validated Spike
+
+### Kontext
+
+Der Excel/VBA-Runtime-Adapter fuer `student.create` wurde bis SQLite umgesetzt, zeigte aber auf macOS eine hohe technische Reibung beim Prozessstart und bei stabilen Dialogoberflaechen.
+
+Vor einer weiteren Vertiefung des Excel/VBA-Runtime-Pfads wurde auf Branch `spike/python-gui` ein alternativer Desktop-Adapter geprueft.
+
+Ruecksprungpunkt fuer den Excel-/xlwings-Pfad:
+
+- `checkpoint-excel-adapter-before-python-gui`
+
+### Validierter Pfad
+
+Der PySide6-Spike wurde manuell validiert.
+
+```text
+PySide6 GUI
+-> Desktop Adapter
+-> ApplicationCommandDispatcher
+-> CreateStudentCommand
+-> StudentService
+-> SQLiteStudentRepository
+-> SQLite
+```
+
+Nachgewiesener Stand:
+
+- App startet.
+- Maske `Neuer Schüler` funktioniert.
+- Ein Schuelerdatensatz wurde in SQLite geschrieben.
+- Speichern nutzt den bestehenden Application-/Service-/Repository-Stack.
+- Tests sind gruen: `python3 -m pytest` mit 26 bestandenen Tests.
+- Build ist gruen.
+- Commit `5363e18` und Tag `spike-pyside6-student-create` sichern den Spike-Stand.
+
+### Regeln
+
+PySide6 ist ein validierter alternativer UI-Adapter.
+
+Die GUI darf:
+
+- Daten anzeigen
+- Eingaben sammeln
+- Commands erzeugen
+- den `ApplicationCommandDispatcher` aufrufen
+- Fehler sichtbar anzeigen
+
+Die GUI darf nicht:
+
+- Businesslogik enthalten
+- fachliche IDs erzeugen
+- direkt aus Widgets in SQLite schreiben
+- Services, Validatoren oder Repositories umgehen
+- Excel/VBA/Builder/Seed-Dateien loeschen oder ersetzen
+
+### Auswirkungen
+
+Excel/VBA bleibt im Repository erhalten.
+
+Excel bleibt bestehende Projektion und moeglicher Export-/Berichtspfad.
+
+Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut.
+
+Die Architecture Baseline v2.0 bleibt gueltig: Adapter sind austauschbar, Python bleibt fachliche Schreibschicht, SQLite bleibt Source of Truth, der Projection Builder bleibt Eigentuemer der Excel-Projektion.
+
+### Offen
+
+Es ist noch nicht entschieden:
+
+- ob Python-GUI die Hauptanwendung wird
+- ob xlwings als Excel-Bruecke genutzt wird
+- ob Excel nur Export-/Berichtsschicht wird
+- welcher produktive Datenbankpfad gilt
+- wie Backup und Restore umgesetzt werden
+- wie Packaging als macOS-App erfolgt
+- wie Excel-Export und Berichte aus SQLite erzeugt werden
+
+Naechste Pruefpunkte:
+
+- UX Hauptfenster
+- Schuelerprofil
+- Beobachtungsmaske
+- Packaging als macOS-App
+- Datenbankpfad produktiv
+- Backup/Restore
+- Excel-Export/Berichte

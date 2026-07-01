@@ -251,6 +251,23 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Erfolg und Fehler werden ueber `runtime_result.json` an Excel zurueckgegeben
 - [x] Noch kein Projection Refresh, keine Workbook-Aktualisierung und keine Navigation nach dem Speichern umgesetzt
 
+### Spike - PySide6 Desktop-App als alternativer Adapter
+
+- [x] Branch `spike/python-gui` genutzt
+- [x] Ruecksprungpunkt `checkpoint-excel-adapter-before-python-gui` bleibt fuer Excel/xlwings erhalten
+- [x] PySide6 statt tkinter als Spike-UI verwendet
+- [x] App `Jenaplan Kompetenzmanager` startet
+- [x] Maske `Neuer Schüler` funktioniert
+- [x] Schueler wird ueber `CreateStudentCommand`, `ApplicationCommandDispatcher`, `StudentService` und `SQLiteStudentRepository` in SQLite geschrieben
+- [x] Keine Businesslogik in der GUI
+- [x] Kein direkter SQLite-Write aus Qt Widgets
+- [x] Tests gruen: 26 passed
+- [x] Build gruen
+- [x] Commit `5363e18` und Tag `spike-pyside6-student-create` gesetzt
+- [ ] Entscheidung ueber Python-GUI als Hauptanwendung offen
+- [ ] Entscheidung ueber xlwings als Excel-Bruecke offen
+- [ ] Entscheidung ueber Excel als Export-/Berichtspfad offen
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

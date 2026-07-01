@@ -12,6 +12,12 @@ Worksheet-basierte Dialogseiten sind ab Feature 1 das primaere Eingabe-Pattern f
 
 VBA-UserForms bleiben experimentell/deprecated, bis ein eigener Migrations- oder Bereinigungsschritt freigegeben ist.
 
+Der PySide6 Desktop-App-Spike ist als alternativer UI-Adapter validiert. Er ersetzt die Excel-/VBA-Linie nicht automatisch; Excel bleibt im Repository als bestehende Projektion und moeglicher Export-/Berichtspfad erhalten.
+
+Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Ein Ruecksprungpunkt fuer den Excel/xlwings-Pfad existiert mit dem Tag `checkpoint-excel-adapter-before-python-gui`.
+
+Offen bleibt, ob PySide6 Hauptanwendung wird, ob xlwings als Excel-Bruecke dient oder ob Excel kuenftig primaer Export- und Berichtsschicht ist.
+
 Der VBA-Seed wurde praktisch validiert. `.xlsm` ist ab Version `v0.4` das Hauptartefakt.
 
 Das Datenmodell ist die fachliche Grundlage des Projekts. Alle Ansichten sind Projektionen dieses Datenmodells.
@@ -40,7 +46,7 @@ Sprint 4.1: Core Data Architecture durch Hidden Data Sheets, strukturierte Tabel
 
 Sprint 4.2: Schülerverwaltung vorbereiten und ersten transaktionalen Schreibprozess umsetzen: Schüler anlegen, ändern und archivieren.
 
-Sprint 5: Scope Freeze abgeschlossen, Dialog Framework begonnen und erste Referenz-UserForm `Neuer Schueler` vorbereitet. Sprint 5.1a konkretisiert den Dialogstandard fuer zukuenftige Eingabemasken. Sprint 5.1b stoppt die produktive Schueleranlage an der noch offenen Laufzeitbruecke zwischen Excel/VBA und Python-Service-Schicht. Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis. Sprint 5.3 fuehrt den Application Command Layer ein. Sprint 5.4 validiert `student.create` im Python-Stack. Architecture Baseline v2.0 dokumentiert diesen erreichten Stand. Feature 1 fuehrt den UX-Prototyp als verbindlichen Zwischenschritt vor Dialogumsetzungen ein und wechselt wegen macOS-UserForm-Problemen auf die worksheet-basierte Dialogseite `dlg_neuer_schueler`. Feature 1.4a definiert den Runtime Adapter und den Refresh Contract fuer `student.create`. Feature 1.4b implementiert den produktiven Schreibpfad bis SQLite ohne Projection Refresh.
+Sprint 5: Scope Freeze abgeschlossen, Dialog Framework begonnen und erste Referenz-UserForm `Neuer Schueler` vorbereitet. Sprint 5.1a konkretisiert den Dialogstandard fuer zukuenftige Eingabemasken. Sprint 5.1b stoppt die produktive Schueleranlage an der noch offenen Laufzeitbruecke zwischen Excel/VBA und Python-Service-Schicht. Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis. Sprint 5.3 fuehrt den Application Command Layer ein. Sprint 5.4 validiert `student.create` im Python-Stack. Architecture Baseline v2.0 dokumentiert diesen erreichten Stand. Feature 1 fuehrt den UX-Prototyp als verbindlichen Zwischenschritt vor Dialogumsetzungen ein und wechselt wegen macOS-UserForm-Problemen auf die worksheet-basierte Dialogseite `dlg_neuer_schueler`. Feature 1.4a definiert den Runtime Adapter und den Refresh Contract fuer `student.create`. Feature 1.4b implementiert den produktiven Schreibpfad bis SQLite ohne Projection Refresh. Der PySide6 Desktop-App-Spike validiert anschliessend einen alternativen UI-Adapter ueber denselben Application-/Service-/Repository-Stack, ohne eine finale Umstellung auf Python-GUI festzulegen.
 
 Zukünftige Produktziele ohne Sprintzuordnung
 
@@ -58,6 +64,12 @@ Zukünftige Produktziele ohne Sprintzuordnung
 - Stammgruppenverwaltung
 - Kursverwaltung
 - Kursübersicht
+- UX Hauptfenster fuer einen moeglichen PySide6-Produktpfad
+- Schuelerprofil im PySide6-Spike
+- Beobachtungsmaske im PySide6-Spike
+- Packaging als macOS-App
+- Produktiver Datenbankpfad, Backup und Restore
+- Excel-Export und Berichte auf Basis von SQLite
 
 Diese Punkte stellen zukünftige Produktziele dar.
 
@@ -169,6 +181,8 @@ Sprint 5
 - `output/Jenaplan_UX_Prototype_v0.1.xlsx` enthaelt das Blatt `Feature 1 – Neuer Schüler` als visuelle Vorlage fuer `dlg_neuer_schueler`.
 - VBA-UserForms sind fuer Feature 1 auf macOS als instabil bewertet und nicht mehr primaeres Eingabe-Pattern.
 - Worksheet-basierte Dialogseite `dlg_neuer_schueler` wird als neuer UI-Pfad vorbereitet.
+- PySide6 Desktop-App-Spike erfolgreich validiert: App startet, Maske `Neuer Schüler` funktioniert, Speichern schreibt ueber ApplicationCommandDispatcher, StudentService und SQLiteStudentRepository nach SQLite.
+- PySide6 bleibt ein validierter alternativer UI-Adapter. Eine Entscheidung fuer Python-GUI als Hauptanwendung, xlwings als Excel-Bruecke oder Excel nur als Export-/Berichtsschicht ist offen.
 - Dokumentenbereich fuer Schuelerdokumente dokumentiert.
 - Studentenzentrierte Dokumenten- und Medienstruktur festgelegt.
 - Beobachtungsdialog mit Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien nur vorbereitet.

@@ -128,6 +128,35 @@ Hilfstabellen, Formeln, Named Ranges, Shapes und sichtbare Zellen duerfen das Da
 
 Auswertungen duerfen keine eigenen Schatteninformationen erzeugen.
 
+## Validierte alternative Adapter
+
+PySide6 ist als alternativer UI-Adapter validiert, aber nicht als finale Zielarchitektur festgelegt.
+
+Der validierte Spike-Pfad lautet:
+
+```text
+PySide6 GUI
+-> Desktop Adapter
+-> ApplicationCommandDispatcher
+-> CreateStudentCommand
+-> StudentService
+-> SQLiteStudentRepository
+-> SQLite
+```
+
+Auch fuer PySide6 gilt:
+
+- keine Businesslogik in der GUI
+- keine fachliche ID-Erzeugung in der GUI
+- keine direkten SQLite-Schreibzugriffe aus Widgets
+- keine Umgehung von Dispatcher, Service, Validator oder Repository
+
+Excel/VBA bleibt im Repository erhalten. Excel bleibt bestehende Projektion und moeglicher Export-/Berichtspfad.
+
+Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Der Ruecksprungpunkt fuer den Excel-/xlwings-Pfad ist `checkpoint-excel-adapter-before-python-gui`.
+
+Offen bleibt, ob PySide6 Hauptanwendung wird, ob xlwings als Excel-Bruecke dient oder ob Excel kuenftig nur Export-/Berichtsschicht ist.
+
 ## Architecture Baseline v2.0
 
 Architecture Baseline v2.0 ist die verbindliche Schichtenbaseline nach Sprint 5.
