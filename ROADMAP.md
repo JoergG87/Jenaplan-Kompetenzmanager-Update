@@ -183,6 +183,7 @@ Sprint 5
 - Worksheet-basierte Dialogseite `dlg_neuer_schueler` wird als neuer UI-Pfad vorbereitet.
 - PySide6 Desktop-App-Spike erfolgreich validiert: App startet, Maske `Neuer Schüler` funktioniert, Speichern schreibt ueber ApplicationCommandDispatcher, StudentService und SQLiteStudentRepository nach SQLite.
 - PySide6 bleibt ein validierter alternativer UI-Adapter. Eine Entscheidung fuer Python-GUI als Hauptanwendung, xlwings als Excel-Bruecke oder Excel nur als Export-/Berichtsschicht ist offen.
+- `docs/PYSIDE6_APP_FEASIBILITY.md` dokumentiert die Umsetzungspruefung fuer App-Struktur, MVP-Navigation, Risiken und naechsten moeglichen Sprint, ohne eine finale Architekturentscheidung zu treffen.
 - Dokumentenbereich fuer Schuelerdokumente dokumentiert.
 - Studentenzentrierte Dokumenten- und Medienstruktur festgelegt.
 - Beobachtungsdialog mit Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien nur vorbereitet.

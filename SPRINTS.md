@@ -268,6 +268,17 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [ ] Entscheidung ueber xlwings als Excel-Bruecke offen
 - [ ] Entscheidung ueber Excel als Export-/Berichtspfad offen
 
+### GUI-Umsetzungspruefung 1 - PySide6 App-Struktur und MVP-Navigation
+
+- [x] PySide6 als moegliche Hauptanwendung fachlich und technisch geprueft
+- [x] Ziel-App-Struktur fuer Hauptfenster, Navigation, Schuelerliste, Schuelerprofil light und Platzhalterbereiche skizziert
+- [x] MVP-Schnitt ohne Beobachtungsmaske, Packaging und Excel-Export-Umbau definiert
+- [x] Design-System-Uebertragung auf PySide6 dokumentiert
+- [x] Risiken fuer Packaging, Datenbankpfad, Backup/Restore, Updates, Excel-Export und Testbarkeit bewertet
+- [x] Nutzen-Aufwand-Vergleich fuer PySide6, xlwings und Excel/VBA-Runtime-Adapter dokumentiert
+- [x] Keine finale Architekturentscheidung getroffen
+- [x] Keine Feature-Implementierung umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung
