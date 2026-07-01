@@ -13,6 +13,14 @@ class NavigationItem:
     label: str
 
 
+@dataclass(frozen=True)
+class NavigationTarget:
+    """Resolved navigation target for shell actions."""
+
+    screen_key: str
+    reset_group_filter: bool = False
+
+
 NAVIGATION_ITEMS: tuple[NavigationItem, ...] = (
     NavigationItem("overview", "Übersicht"),
     NavigationItem("students", "Schüler"),
@@ -21,3 +29,10 @@ NAVIGATION_ITEMS: tuple[NavigationItem, ...] = (
     NavigationItem("reports", "Berichte"),
     NavigationItem("settings", "Einstellungen"),
 )
+
+
+def resolve_navigation_target(key: str) -> NavigationTarget:
+    """Resolve sidebar navigation to a shell screen target."""
+    if key == "students":
+        return NavigationTarget("students", reset_group_filter=True)
+    return NavigationTarget(key)

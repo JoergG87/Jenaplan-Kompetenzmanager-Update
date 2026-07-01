@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
-from src.desktop_app.navigation import NAVIGATION_ITEMS
+from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens.overview_screen import OverviewScreen
 from src.desktop_app.screens.placeholder_screen import PlaceholderScreen
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
@@ -49,6 +49,7 @@ class AppShell(QMainWindow):
             nav_item.setData(Qt.ItemDataRole.UserRole, item.key)
             self.navigation.addItem(nav_item)
         self.navigation.currentRowChanged.connect(self._show_navigation_index)
+        self.navigation.itemClicked.connect(self._show_navigation_item)
         layout.addWidget(self.navigation)
 
         content = QVBoxLayout()
@@ -98,6 +99,7 @@ class AppShell(QMainWindow):
         self.overview_screen.group_selected.connect(self.show_students_for_group)
         self.students_screen.new_student_requested.connect(self.open_new_student_dialog)
         self.students_screen.student_selected.connect(self.show_student_profile)
+        self.student_profile_screen.back_requested.connect(self.return_to_students)
         self.navigation.setCurrentRow(0)
 
     def refresh_all(self) -> None:
@@ -115,6 +117,12 @@ class AppShell(QMainWindow):
         self.students_screen.set_students(students, group_filter_name=group_name)
         self.status_label.setText(f"{len(students)} Schüler angezeigt")
 
+    def return_to_students(self) -> None:
+        """Return from profile to student list and keep current filter."""
+        self.refresh_students()
+        self._show_screen("students")
+        self._select_navigation("students")
+
     def show_students_for_group(self, group_id: str) -> None:
         """Open students screen filtered to one group."""
         self.selected_group_id = group_id
@@ -130,18 +138,28 @@ class AppShell(QMainWindow):
     def open_new_student_dialog(self) -> None:
         """Open the existing new-student dialog and refresh after success."""
         dialog = NewStudentDialog(self.adapter)
-        dialog.student_created.connect(self.refresh_all)
+        dialog.student_created.connect(self.handle_student_created)
         dialog.exec()
+
+    def handle_student_created(self, student_id: str) -> None:
+        """Refresh views and show non-modal success feedback."""
+        self.refresh_all()
+        self._show_screen("students")
+        self._select_navigation("students")
+        self.status_label.setText("Schüler wurde gespeichert.")
 
     def _show_navigation_index(self, index: int) -> None:
         if index < 0:
             return
-        item = self.navigation.item(index)
-        key = item.data(Qt.ItemDataRole.UserRole)
-        if key == "students":
+        self._show_navigation_item(self.navigation.item(index))
+
+    def _show_navigation_item(self, item: QListWidgetItem) -> None:
+        key = str(item.data(Qt.ItemDataRole.UserRole))
+        target = resolve_navigation_target(key)
+        if target.reset_group_filter:
             self.selected_group_id = None
             self.refresh_students()
-        self._show_screen(str(key))
+        self._show_screen(target.screen_key)
 
     def _show_screen(self, key: str) -> None:
         screen_index = self.screen_index.get(key)

@@ -14,6 +14,7 @@ from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PRE
 from src.core.sqlite_store import SQLiteStudentRepository, create_sqlite_seed_database
 from src.desktop_app.adapters import student_desktop_adapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.navigation import resolve_navigation_target
 
 
 class DesktopAppAdapterTest(unittest.TestCase):
@@ -101,6 +102,20 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(profile.display_name, students[0].display_name)
         self.assertEqual(profile.group_name, "Grashüpfer")
         self.assertIn(profile.course_name, {"Kurs 1", "Kurs 2", "Kurs 3"})
+        self.assertIsInstance(profile.student_notes, str)
+        self.assertTrue(profile.active)
+
+    def test_sidebar_students_navigation_resets_to_list(self) -> None:
+        target = resolve_navigation_target("students")
+
+        self.assertEqual(target.screen_key, "students")
+        self.assertTrue(target.reset_group_filter)
+
+    def test_placeholder_navigation_keeps_target_key(self) -> None:
+        target = resolve_navigation_target("reports")
+
+        self.assertEqual(target.screen_key, "reports")
+        self.assertFalse(target.reset_group_filter)
 
     def test_adapter_has_no_direct_sql_write_logic(self) -> None:
         source = inspect.getsource(student_desktop_adapter)

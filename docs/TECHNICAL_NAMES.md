@@ -325,7 +325,9 @@ Registrierte Python-Klassen und Funktionen:
 - `JenaplanDesktopApp`
 - `AppShell`
 - `NavigationItem`
+- `NavigationTarget`
 - `NAVIGATION_ITEMS`
+- `resolve_navigation_target(key)`
 - `StudentDesktopAdapter`
 - `StudentListItem`
 - `StudentDetailViewModel`

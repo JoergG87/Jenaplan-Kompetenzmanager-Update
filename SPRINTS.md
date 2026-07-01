@@ -291,6 +291,16 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Keine Beobachtungsmaske, kein Packaging und kein Excel-Export-Umbau umgesetzt
 - [x] Keine finale Architekturentscheidung getroffen
 
+### Sprint - PySide6 UX Stabilisierung 1
+
+- [x] Zurueck-Button im Schuelerprofil light umgesetzt
+- [x] Ruecksprung zur Schuelerliste erhaelt den aktuellen Gruppenfilter
+- [x] Klick auf `Schüler` in der linken Navigation fuehrt aus dem Profil zur Liste
+- [x] Schuelerprofil in Titel, Stammgruppe/Kurs, Notiz und Beobachtungsplatzhalter gegliedert
+- [x] Nicht-modale Statusmeldung `Schüler wurde gespeichert.` nach erfolgreichem Speichern ergaenzt
+- [x] Keine Beobachtungsmaske, kein Packaging und kein Excel-Export-Umbau umgesetzt
+- [x] Keine finale Architekturentscheidung getroffen
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

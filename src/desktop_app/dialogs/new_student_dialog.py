@@ -21,7 +21,7 @@ from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapt
 class NewStudentDialog(QDialog):
     """Collect input and dispatch student.create through the adapter."""
 
-    student_created = Signal()
+    student_created = Signal(str)
 
     def __init__(self, adapter: StudentDesktopAdapter) -> None:
         super().__init__()
@@ -77,7 +77,7 @@ class NewStudentDialog(QDialog):
             student_notes=self.notes_input.toPlainText(),
         )
         if isinstance(result, SuccessResult):
-            self.student_created.emit()
+            self.student_created.emit(getattr(result.value, "student_id", ""))
             self.accept()
             return
         if isinstance(result, ErrorResult):

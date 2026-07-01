@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## Sprint - PySide6 UX Stabilisierung 1
+
+### Added
+
+- Zurueck-Button `← Zurück zur Schülerliste` im Schuelerprofil light ergaenzt.
+- Testbare Navigationsziel-Aufloesung fuer die Seitenleiste ergaenzt.
+- Nicht-modale Statusmeldung nach erfolgreichem Speichern eines neuen Schuelers ergaenzt.
+
+### Changed
+
+- Schuelerprofil light optisch in Kopfbereich, Notizkarte und Beobachtungsplatzhalter gegliedert.
+- Klick auf `Schüler` in der linken Navigation fuehrt auch aus dem Profil wieder sauber zur Schuelerliste.
+- Ruecksprung aus dem Profil erhaelt den aktuellen Gruppenfilter.
+
+### Not Changed
+
+- Keine finale Architekturentscheidung, kein Packaging, keine Beobachtungsmaske, keine Dokumentenverwaltung, kein Excel-Export-Umbau und keine Datenmodelländerung umgesetzt.
+
 ## Sprint - PySide6 MVP Shell und Navigation
 
 ### Added
