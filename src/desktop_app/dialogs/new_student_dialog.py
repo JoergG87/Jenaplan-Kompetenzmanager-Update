@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from src.application.dispatcher import ErrorResult, SuccessResult
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
 from src.desktop_app.view_models.master_data_view_model import MasterDataItemViewModel
 
 
@@ -91,6 +92,7 @@ class NewStudentDialog(QDialog):
             QDialogButtonBox.StandardButton.Cancel
             | QDialogButtonBox.StandardButton.Save
         )
+        configure_save_cancel_buttons(buttons)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.save)
         layout.addWidget(buttons)

@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
 from src.desktop_app.view_models.master_data_view_model import (
     COURSE_COLOR_OPTIONS,
     MASTER_DATA_EMPTY_NAME_MESSAGE,
@@ -53,6 +54,7 @@ class MasterDataNameDialog(QDialog):
             QDialogButtonBox.StandardButton.Cancel
             | QDialogButtonBox.StandardButton.Save
         )
+        configure_save_cancel_buttons(buttons)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.save)
         layout.addWidget(buttons)

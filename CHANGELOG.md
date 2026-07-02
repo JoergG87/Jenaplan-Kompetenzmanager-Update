@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Sprint - PySide6 UI-Polish
+
+### Changed
+
+- Speichern-/Abbrechen-Buttons in PySide6-Dialogen vereinheitlicht.
+- Empty States fuer Schuelerliste und Stammdaten-Seite ergaenzt.
+- App-Info-Dialog mit nicht-technischen Prototyp-Hinweisen ergaenzt.
+- Suchfeld in der Schuelerliste auf `Schüler suchen …` und `Zurücksetzen` verfeinert.
+- Dialoge fuer einfachen Tastaturkomfort mit Default-Speichern und Esc-Abbrechen vorbereitet.
+
+### Not Changed
+
+- Keine Fachlogik, keine neue Persistenz, keine SQLite-Aenderung, keine Beobachtungspersistenz, kein ObservationRepository, keine Dokumenten-/Medienpersistenz, kein Curriculum-Katalog-Umbau, kein Excel-/VBA-Umbau, kein Packaging und keine finale Architekturentscheidung umgesetzt.
+
 ## Hotfix - PySide6 Kursfarben anzeigen
 
 ### Changed

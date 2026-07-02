@@ -22,6 +22,10 @@ from src.desktop_app.view_models.master_data_view_model import (
 )
 
 
+MASTER_DATA_GROUP_EMPTY_STATE = "Noch keine Stammgruppen vorhanden."
+MASTER_DATA_COURSE_EMPTY_STATE = "Noch keine Kurse vorhanden."
+
+
 class MasterDataScreen(QWidget):
     """Show group and course master data without productive persistence."""
 
@@ -34,6 +38,8 @@ class MasterDataScreen(QWidget):
         super().__init__()
         self.group_items: tuple[MasterDataItemViewModel, ...] = ()
         self.course_items: tuple[MasterDataItemViewModel, ...] = ()
+        self.group_empty_state_label = QLabel(MASTER_DATA_GROUP_EMPTY_STATE)
+        self.course_empty_state_label = QLabel(MASTER_DATA_COURSE_EMPTY_STATE)
         self.group_table = QTableWidget(0, 3)
         self.course_table = QTableWidget(0, 4)
         self._build()
@@ -51,6 +57,7 @@ class MasterDataScreen(QWidget):
                 "Stammgruppen",
                 "+ Stammgruppe",
                 self.group_table,
+                self.group_empty_state_label,
                 self.group_add_requested.emit,
             )
         )
@@ -59,6 +66,7 @@ class MasterDataScreen(QWidget):
                 "Kurse",
                 "+ Kurs",
                 self.course_table,
+                self.course_empty_state_label,
                 self.course_add_requested.emit,
             )
         )
@@ -84,6 +92,7 @@ class MasterDataScreen(QWidget):
         title: str,
         add_button_label: str,
         table: QTableWidget,
+        empty_state_label: QLabel,
         add_handler: object,
     ) -> QFrame:
         card = QFrame()
@@ -105,6 +114,8 @@ class MasterDataScreen(QWidget):
         table.setAlternatingRowColors(True)
         table.horizontalHeader().setStretchLastSection(True)
         table.setMinimumHeight(150)
+        empty_state_label.setStyleSheet("color: #666;")
+        layout.addWidget(empty_state_label)
         layout.addWidget(table)
         return card
 
@@ -116,6 +127,7 @@ class MasterDataScreen(QWidget):
     ) -> None:
         table.setHorizontalHeaderLabels(("Name", "Status", "Aktion"))
         table.setRowCount(len(items))
+        self.group_empty_state_label.setVisible(not items)
         for row_index, item in enumerate(items):
             table.setItem(row_index, 0, QTableWidgetItem(item.name))
             table.setItem(row_index, 1, QTableWidgetItem(item.status_label))
@@ -133,6 +145,7 @@ class MasterDataScreen(QWidget):
     ) -> None:
         table.setHorizontalHeaderLabels(("Farbe", "Name", "Status", "Aktion"))
         table.setRowCount(len(items))
+        self.course_empty_state_label.setVisible(not items)
         for row_index, item in enumerate(items):
             color_item = QTableWidgetItem(f"● {item.color_name}")
             color_item.setForeground(QColor(item.color_hex))

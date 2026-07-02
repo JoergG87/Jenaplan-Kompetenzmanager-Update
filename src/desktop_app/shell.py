@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMainWindow,
+    QPushButton,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -20,6 +21,7 @@ from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.dialogs.app_info_dialog import AppInfoDialog
 from src.desktop_app.dialogs.master_data_dialog import MasterDataNameDialog
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
@@ -51,6 +53,7 @@ class AppShell(QMainWindow):
         root = QWidget()
         layout = QHBoxLayout(root)
 
+        sidebar = QVBoxLayout()
         self.navigation = QListWidget()
         self.navigation.setFixedWidth(180)
         for item in NAVIGATION_ITEMS:
@@ -59,7 +62,11 @@ class AppShell(QMainWindow):
             self.navigation.addItem(nav_item)
         self.navigation.currentRowChanged.connect(self._show_navigation_index)
         self.navigation.itemClicked.connect(self._show_navigation_item)
-        layout.addWidget(self.navigation)
+        sidebar.addWidget(self.navigation, 1)
+        self.info_button = QPushButton("Info")
+        self.info_button.clicked.connect(self.open_app_info_dialog)
+        sidebar.addWidget(self.info_button)
+        layout.addLayout(sidebar)
 
         content = QVBoxLayout()
         title = QLabel("Jenaplan Kompetenzmanager")
@@ -175,6 +182,11 @@ class AppShell(QMainWindow):
     def open_new_observation_dialog(self, student: StudentDetailViewModel) -> None:
         """Open the non-persistent observation UX prototype."""
         dialog = NewObservationDialog(student, self.curriculum_adapter)
+        dialog.exec()
+
+    def open_app_info_dialog(self) -> None:
+        """Open the compact app information dialog."""
+        dialog = AppInfoDialog()
         dialog.exec()
 
     def open_new_group_dialog(self) -> None:

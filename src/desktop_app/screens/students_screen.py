@@ -22,6 +22,13 @@ from src.desktop_app.view_models.student_view_model import (
 )
 
 
+STUDENT_SEARCH_PLACEHOLDER = "Schüler suchen …"
+STUDENT_LIST_EMPTY_STATE = (
+    "Noch keine Schüler vorhanden.\nLege über „+ Schüler“ den ersten Schüler an."
+)
+STUDENT_SEARCH_EMPTY_STATE = "Keine Schüler gefunden."
+
+
 class StudentsScreen(QWidget):
     """Student list and new-student action."""
 
@@ -33,6 +40,7 @@ class StudentsScreen(QWidget):
         self.students: tuple[StudentListItem, ...] = ()
         self.filtered_students: tuple[StudentListItem, ...] = ()
         self.group_filter_label = QLabel("")
+        self.empty_state_label = QLabel("")
         self.search_input = QLineEdit()
         self.table = QTableWidget(0, 4)
         self._build()
@@ -51,9 +59,9 @@ class StudentsScreen(QWidget):
         layout.addLayout(header)
 
         search_row = QHBoxLayout()
-        self.search_input.setPlaceholderText("Schüler suchen...")
+        self.search_input.setPlaceholderText(STUDENT_SEARCH_PLACEHOLDER)
         self.search_input.textChanged.connect(self.apply_search)
-        clear_search_button = QPushButton("Suche löschen")
+        clear_search_button = QPushButton("Zurücksetzen")
         clear_search_button.clicked.connect(self.search_input.clear)
         search_row.addWidget(self.search_input)
         search_row.addWidget(clear_search_button)
@@ -61,6 +69,9 @@ class StudentsScreen(QWidget):
 
         self.group_filter_label.setStyleSheet("color: #555;")
         layout.addWidget(self.group_filter_label)
+        self.empty_state_label.setStyleSheet("color: #666;")
+        self.empty_state_label.setWordWrap(True)
+        layout.addWidget(self.empty_state_label)
 
         self.table.setHorizontalHeaderLabels(("ID", "Name", "Stammgruppe", "Kurs"))
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -100,6 +111,7 @@ class StudentsScreen(QWidget):
 
     def _render_students(self, students: tuple[StudentListItem, ...]) -> None:
         self.table.setRowCount(len(students))
+        self._update_empty_state(students)
         for row_index, student in enumerate(students):
             values = (
                 student.student_id,
@@ -112,6 +124,15 @@ class StudentsScreen(QWidget):
             if student.course_color_hex:
                 course_item.setForeground(QColor(student.course_color_hex))
             self.table.setItem(row_index, 3, course_item)
+
+    def _update_empty_state(self, students: tuple[StudentListItem, ...]) -> None:
+        if students:
+            self.empty_state_label.setText("")
+            return
+        if self.search_input.text().strip():
+            self.empty_state_label.setText(STUDENT_SEARCH_EMPTY_STATE)
+            return
+        self.empty_state_label.setText(STUDENT_LIST_EMPTY_STATE)
 
     def _select_student(self) -> None:
         selected_items = self.table.selectedItems()

@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 from src.desktop_app.adapters.curriculum_desktop_adapter import (
     CurriculumDesktopAdapter,
 )
+from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
 from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_ATTACHMENT_EMPTY_STATE,
     OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
@@ -126,6 +127,7 @@ class NewObservationDialog(QDialog):
             QDialogButtonBox.StandardButton.Cancel
             | QDialogButtonBox.StandardButton.Save
         )
+        configure_save_cancel_buttons(buttons)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.save_draft)
         layout.addWidget(buttons)

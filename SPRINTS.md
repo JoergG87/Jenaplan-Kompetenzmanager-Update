@@ -391,6 +391,15 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Kursfarben in der PySide6-Schuelerliste neben dem Kursnamen angezeigt
 - [x] Keine neue Persistenz, keine SQLite-Aenderung, kein ObservationRepository und keine finale Architekturentscheidung umgesetzt
 
+### Sprint - PySide6 UI-Polish
+
+- [x] Dialogbuttons fuer Speichern und Abbrechen vereinheitlicht
+- [x] Empty States fuer Schuelerliste und Stammdaten-Seite ergaenzt
+- [x] App-Info-Dialog mit Prototyp-Hinweis ergaenzt
+- [x] Suchfeld in der Schuelerliste verfeinert
+- [x] Einfachen Tastaturkomfort fuer Dialoge vorbereitet
+- [x] Keine Fachlogik, keine Persistenz, keine SQLite-Aenderung und keine finale Architekturentscheidung umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

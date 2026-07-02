@@ -17,11 +17,14 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDeskto
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters import student_desktop_adapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.dialogs import app_info_dialog
+from src.desktop_app.dialogs import dialog_buttons
 from src.desktop_app.dialogs import master_data_dialog
 from src.desktop_app.dialogs import new_student_dialog
 from src.desktop_app.dialogs import new_observation_dialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens import master_data_screen
+from src.desktop_app.screens import students_screen
 from src.desktop_app import shell
 from src.desktop_app.view_models.master_data_view_model import (
     COURSE_COLOR_OPTIONS,
@@ -221,6 +224,31 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn("UPDATE ", screen_source)
         self.assertNotIn("DELETE FROM", screen_source)
 
+    def test_dialogs_use_consistent_save_cancel_buttons(self) -> None:
+        button_source = inspect.getsource(dialog_buttons)
+
+        self.assertIn('DIALOG_CANCEL_TEXT = "Abbrechen"', button_source)
+        self.assertIn('DIALOG_SAVE_TEXT = "Speichern"', button_source)
+        self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(new_student_dialog))
+        self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(new_observation_dialog))
+        self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(master_data_dialog))
+        self.assertIn("save_button.setDefault(True)", button_source)
+        self.assertIn('cancel_button.setShortcut("Esc")', button_source)
+
+    def test_app_info_dialog_contains_non_technical_app_information(self) -> None:
+        source = inspect.getsource(app_info_dialog)
+        shell_source = inspect.getsource(shell)
+
+        self.assertIn('APP_INFO_APP_NAME = "Jenaplan Kompetenzmanager"', source)
+        self.assertIn('APP_INFO_MODE = "PySide6 Prototyp"', source)
+        self.assertIn(
+            'APP_INFO_STORAGE_HINT = "Einige Funktionen sind noch nicht dauerhaft gespeichert."',
+            source,
+        )
+        self.assertIn("AppInfoDialog", shell_source)
+        self.assertIn('self.info_button = QPushButton("Info")', shell_source)
+        self.assertIn("open_app_info_dialog", shell_source)
+
     def test_master_data_course_screen_shows_course_color_marker(self) -> None:
         source = inspect.getsource(master_data_screen)
         dialog_source = inspect.getsource(master_data_dialog)
@@ -250,6 +278,30 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn('QTableWidgetItem(f"● {student.course_name}")', source)
         self.assertIn("course_item.setForeground(QColor(student.course_color_hex))", source)
+
+    def test_student_list_search_and_empty_states_are_polished(self) -> None:
+        source = inspect.getsource(students_screen)
+
+        self.assertIn('STUDENT_SEARCH_PLACEHOLDER = "Schüler suchen …"', source)
+        self.assertIn("Noch keine Schüler vorhanden.", source)
+        self.assertIn("Lege über „+ Schüler“ den ersten Schüler an.", source)
+        self.assertIn('STUDENT_SEARCH_EMPTY_STATE = "Keine Schüler gefunden."', source)
+        self.assertIn('clear_search_button = QPushButton("Zurücksetzen")', source)
+        self.assertIn("self.search_input.text().strip()", source)
+
+    def test_master_data_empty_states_are_registered(self) -> None:
+        source = inspect.getsource(master_data_screen)
+
+        self.assertIn(
+            'MASTER_DATA_GROUP_EMPTY_STATE = "Noch keine Stammgruppen vorhanden."',
+            source,
+        )
+        self.assertIn(
+            'MASTER_DATA_COURSE_EMPTY_STATE = "Noch keine Kurse vorhanden."',
+            source,
+        )
+        self.assertIn("self.group_empty_state_label.setVisible(not items)", source)
+        self.assertIn("self.course_empty_state_label.setVisible(not items)", source)
 
     def test_new_student_dialog_uses_master_data_for_group_and_course_options(self) -> None:
         source = inspect.getsource(new_student_dialog)
