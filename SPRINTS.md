@@ -6,6 +6,23 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - PySide Icon Branding und Glas-Polish 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Titel
+
+App-Icon sichtbar machen und dezente Glasoptik erweitern
+
+### Ergebnis
+
+- [x] App-Icon als versioniertes Asset `assets/app_icon.png` abgelegt
+- [x] Zentralen Icon-Helfer fuer Pfad, Pixmap und Label ergaenzt
+- [x] Icon oben in der Sidebar sichtbar eingebunden
+- [x] Icon oben zentriert im App-Info-Dialog sichtbar eingebunden
+- [x] Zentrales Theme um dezente Glas-/Polish-Regeln erweitert
+- [x] Keine Fachlogik, keine Persistenz, kein Excel/VBA und kein Packaging geaendert
+
 ## Sprint - PySide Icon Theme ✅
 
 - [x] Status: Abgeschlossen

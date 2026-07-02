@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
@@ -9,6 +10,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from src.desktop_app.assets import create_app_icon_label
 from src.desktop_app.theme import set_label_style
 
 
@@ -31,7 +33,11 @@ class AppInfoDialog(QDialog):
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
+        layout.setSpacing(8)
+        icon_label = create_app_icon_label(112)
+        layout.addWidget(icon_label, 0, Qt.AlignmentFlag.AlignHCenter)
         title = QLabel(APP_INFO_APP_NAME)
+        title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         set_label_style(title, "dialog_title")
         layout.addWidget(title)
         layout.addWidget(QLabel(APP_INFO_MODE))

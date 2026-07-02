@@ -163,6 +163,15 @@ Das Theme buendelt:
 
 Neue PySide-Screens und Dialoge sollen dieses Theme verwenden, statt eigene Farb- oder Kartenstile lokal zu definieren.
 
+Das App-Icon wird als sichtbares Branding in der PySide-Hauptanwendung verwendet:
+
+- klein und ruhig oberhalb der Hauptnavigation in der Seitenleiste
+- groesser und zentriert oben im App-Info-Dialog
+
+Das Icon ist Branding und Bedeutungsanker, keine dekorative Ueberladung. Es darf die Navigation, Dialogtexte oder fachliche Inhalte nicht verdecken.
+
+Die leichte Glasoptik wird technisch ueber helle, weich abgesetzte Flaechen, sanfte Rahmen und dezente Kontraste simuliert. Echte macOS-Transparenz oder schwer wartbare Spezialwidgets sind nicht Bestandteil des Design-Systems.
+
 ## Änderungsregel
 
 Normale Entwicklungssprints verändern das Design nicht.

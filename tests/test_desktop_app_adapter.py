@@ -10,6 +10,10 @@ import unittest
 from dataclasses import fields
 from pathlib import Path
 
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+from PySide6.QtWidgets import QApplication, QLabel
+
 from src.application.commands import CreateStudentCommand
 from src.application.dispatcher import SuccessResult
 from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PREFIX
@@ -27,6 +31,7 @@ from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_targ
 from src.desktop_app.screens import master_data_screen
 from src.desktop_app.screens import overview_screen
 from src.desktop_app.screens import students_screen
+from src.desktop_app import assets
 from src.desktop_app import main
 from src.desktop_app import shell
 from src.desktop_app import theme
@@ -343,16 +348,34 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn('COLOR_GREEN = "#16A34A"', theme_source)
         self.assertIn('COLOR_ORANGE = "#F97316"', theme_source)
         self.assertIn("APP_STYLESHEET", theme_source)
+        self.assertIn("QWidget#AppSidebar", theme.APP_STYLESHEET)
         self.assertIn("QListWidget#AppNavigation", theme.APP_STYLESHEET)
         self.assertIn("QFrame#AppCard", theme.APP_STYLESHEET)
-        self.assertIn("rgba(255, 255, 255, 238)", theme.APP_STYLESHEET)
+        self.assertIn("rgba(255, 255, 255, 246)", theme.APP_STYLESHEET)
+        self.assertIn("COLOR_GLASS", theme_source)
         self.assertIn("def apply_app_theme(", theme_source)
         self.assertIn("def create_card(", theme_source)
         self.assertIn("def set_label_style(", theme_source)
         self.assertIn("apply_app_theme(app)", main_source)
         self.assertIn('root.setObjectName("AppRoot")', shell_source)
+        self.assertIn('sidebar_container.setObjectName("AppSidebar")', shell_source)
         self.assertIn('self.navigation.setObjectName("AppNavigation")', shell_source)
         self.assertIn('set_label_style(title, "screen_title")', screen_source)
+
+    def test_app_icon_asset_and_helpers_are_available(self) -> None:
+        source = inspect.getsource(assets)
+
+        self.assertIn('APP_ICON_RELATIVE_PATH = Path("assets") / "app_icon.png"', source)
+        self.assertNotIn("/Users/", source)
+        self.assertTrue(assets.app_icon_path().exists())
+        self.assertEqual(assets.app_icon_path().name, "app_icon.png")
+        app = QApplication.instance() or QApplication([])
+        pixmap = assets.load_app_icon_pixmap(64)
+        self.assertFalse(pixmap.isNull())
+        label = assets.create_app_icon_label(64)
+        self.assertIsInstance(label, QLabel)
+        self.assertEqual(label.objectName(), "AppIconLabel")
+        self.assertIsNotNone(app)
 
     def test_app_info_dialog_contains_non_technical_app_information(self) -> None:
         source = inspect.getsource(app_info_dialog)
@@ -366,7 +389,19 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertIn("AppInfoDialog", shell_source)
         self.assertIn('self.info_button = QPushButton("Info")', shell_source)
+        self.assertIn("create_app_icon_label(112)", source)
         self.assertIn("open_app_info_dialog", shell_source)
+
+    def test_sidebar_and_info_dialog_include_app_icon_without_click_tests(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        window = shell.AppShell(self.database_path)
+        info_dialog = app_info_dialog.AppInfoDialog()
+
+        self.assertIsNotNone(window.findChild(QLabel, "AppIconLabel"))
+        self.assertIsNotNone(info_dialog.findChild(QLabel, "AppIconLabel"))
+        self.assertIsNotNone(app)
+        window.close()
+        info_dialog.close()
 
     def test_master_data_course_screen_shows_course_color_marker(self) -> None:
         source = inspect.getsource(master_data_screen)
@@ -998,6 +1033,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.adapters.curriculum_desktop_adapter",
             "src.desktop_app.adapters.student_desktop_adapter",
             "src.desktop_app.app",
+            "src.desktop_app.assets",
             "src.desktop_app.dialogs.new_observation_dialog",
             "src.desktop_app.dialogs.new_student_dialog",
             "src.desktop_app.main",
@@ -1009,6 +1045,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.screens.students_screen",
             "src.desktop_app.shell",
             "src.desktop_app.student_list_view",
+            "src.desktop_app.theme",
             "src.desktop_app.view_models.observation_view_model",
             "src.desktop_app.view_models.student_view_model",
         ):

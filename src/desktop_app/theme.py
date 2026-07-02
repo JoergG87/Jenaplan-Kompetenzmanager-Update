@@ -16,7 +16,9 @@ COLOR_ORANGE = "#F97316"
 COLOR_BACKGROUND = "#F4F8FB"
 COLOR_SURFACE = "#FFFFFF"
 COLOR_SURFACE_SOFT = "#F8FBFD"
-COLOR_BORDER = "#D8E3EC"
+COLOR_GLASS = "rgba(255, 255, 255, 246)"
+COLOR_GLASS_SOFT = "rgba(248, 251, 253, 242)"
+COLOR_BORDER = "#C9D8E4"
 COLOR_TEXT = "#1F2937"
 COLOR_TEXT_MUTED = "#556372"
 COLOR_TEXT_SUBTLE = "#6B7280"
@@ -33,16 +35,33 @@ QMainWindow {{
 QWidget#AppRoot {{
     background-color: {COLOR_BACKGROUND};
 }}
+QWidget#AppSidebar {{
+    background-color: {COLOR_NAVY};
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
+}}
 QWidget {{
     color: {COLOR_TEXT};
     font-family: {FONT_FAMILY};
     font-size: 13px;
 }}
+QLabel#AppIconLabel {{
+    background-color: transparent;
+}}
+QLabel#SidebarBrandTitle {{
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 700;
+}}
+QLabel#SidebarBrandSubtitle {{
+    color: #CFE2F0;
+    font-size: 12px;
+}}
 QListWidget#AppNavigation {{
-    background-color: {COLOR_NAVY};
+    background-color: transparent;
     color: #EAF2F8;
     border: none;
-    padding: 10px;
+    padding: 8px 0;
     outline: none;
 }}
 QListWidget#AppNavigation::item {{
@@ -58,20 +77,20 @@ QListWidget#AppNavigation::item:hover {{
     background-color: #174A74;
 }}
 QFrame#AppCard {{
-    background-color: rgba(255, 255, 255, 238);
+    background-color: {COLOR_GLASS};
     border: 1px solid {COLOR_BORDER};
-    border-radius: 8px;
+    border-radius: 10px;
 }}
 QFrame#AppPanel {{
-    background-color: {COLOR_SURFACE_SOFT};
+    background-color: {COLOR_GLASS_SOFT};
     border: 1px solid {COLOR_BORDER};
-    border-radius: 8px;
+    border-radius: 10px;
 }}
 QPushButton {{
     background-color: {COLOR_SURFACE};
     color: {COLOR_NAVY};
-    border: 1px solid {COLOR_BORDER};
-    border-radius: 7px;
+    border: 1px solid #BED0DE;
+    border-radius: 8px;
     padding: 6px 13px;
     font-weight: 500;
 }}
@@ -88,10 +107,10 @@ QPushButton:disabled {{
     border-color: #E3EAF0;
 }}
 QLineEdit, QTextEdit, QComboBox, QDateEdit {{
-    background-color: {COLOR_SURFACE};
+    background-color: rgba(255, 255, 255, 248);
     color: {COLOR_TEXT};
     border: 1px solid #C9D8E4;
-    border-radius: 7px;
+    border-radius: 8px;
     padding: 6px 8px;
     selection-background-color: {COLOR_BLUE};
 }}
@@ -99,10 +118,10 @@ QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QDateEdit:focus {{
     border: 1px solid {COLOR_BLUE};
 }}
 QTableWidget, QListWidget {{
-    background-color: {COLOR_SURFACE};
+    background-color: {COLOR_GLASS};
     alternate-background-color: #F3F8FB;
     border: 1px solid {COLOR_BORDER};
-    border-radius: 7px;
+    border-radius: 8px;
     gridline-color: #E5EDF3;
     selection-background-color: {COLOR_BLUE_SOFT};
     selection-color: {COLOR_TEXT};
@@ -117,10 +136,10 @@ QHeaderView::section {{
 }}
 QGroupBox {{
     border: 1px solid {COLOR_BORDER};
-    border-radius: 8px;
+    border-radius: 10px;
     margin-top: 10px;
     padding: 10px;
-    background-color: {COLOR_SURFACE_SOFT};
+    background-color: {COLOR_GLASS_SOFT};
     font-weight: 600;
     color: {COLOR_NAVY};
 }}
@@ -132,6 +151,9 @@ QGroupBox::title {{
 QScrollArea {{
     border: none;
     background-color: transparent;
+}}
+QDialog {{
+    background-color: {COLOR_BACKGROUND};
 }}
 """
 

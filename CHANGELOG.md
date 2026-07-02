@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Sprint - PySide Icon Branding und Glas-Polish
+
+### Added
+
+- App-Icon als versioniertes Asset `assets/app_icon.png` ergaenzt.
+- Zentralen PySide-Asset-Helfer `src/desktop_app/assets.py` fuer Icon-Pfad, Pixmap-Laden und Icon-Label ergaenzt.
+- App-Icon oben in der Seitenleiste und oben zentriert im App-Info-Dialog sichtbar eingebunden.
+
+### Changed
+
+- Zentrales PySide-Theme um etwas weichere Karten-, Panel-, Eingabe- und Sidebar-Polish-Regeln ergaenzt.
+- Leichte Glasoptik wird weiter nur hell, dezent und lesbar simuliert.
+
+### Not Changed
+
+- Keine Fachlogik, keine Persistenz, keine SQLite-Aenderung, kein Excel-/VBA-Umbau, kein Packaging, kein Installer und kein Commit umgesetzt.
+
 ## Sprint - PySide Icon Theme
 
 ### Changed

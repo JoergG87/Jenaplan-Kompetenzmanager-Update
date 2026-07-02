@@ -317,8 +317,10 @@ Registrierte Katalogdateien:
 
 Registrierte Python-Module:
 
+- `assets/app_icon.png`
 - `src/desktop_app/main.py`
 - `src/desktop_app/app.py`
+- `src/desktop_app/assets.py`
 - `src/desktop_app/shell.py`
 - `src/desktop_app/navigation.py`
 - `src/desktop_app/theme.py`
@@ -348,6 +350,11 @@ Registrierte Python-Klassen und Funktionen:
 - `NavigationTarget`
 - `NAVIGATION_ITEMS`
 - `resolve_navigation_target(key)`
+- `APP_ICON_RELATIVE_PATH`
+- `project_root()`
+- `app_icon_path()`
+- `load_app_icon_pixmap(size)`
+- `create_app_icon_label(size)`
 - `apply_app_theme(app)`
 - `APP_STYLESHEET`
 - `PRIMARY_BUTTON_STYLESHEET`

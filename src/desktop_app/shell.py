@@ -21,6 +21,7 @@ from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.assets import create_app_icon_label
 from src.desktop_app.dialogs.app_info_dialog import AppInfoDialog
 from src.desktop_app.dialogs.master_data_dialog import (
     CourseGroupDialog,
@@ -63,10 +64,24 @@ class AppShell(QMainWindow):
         layout.setContentsMargins(0, 0, 18, 16)
         layout.setSpacing(18)
 
-        sidebar = QVBoxLayout()
+        sidebar_container = QWidget()
+        sidebar_container.setObjectName("AppSidebar")
+        sidebar_container.setFixedWidth(196)
+        sidebar = QVBoxLayout(sidebar_container)
+        sidebar.setContentsMargins(12, 16, 12, 12)
+        sidebar.setSpacing(8)
+        brand_icon = create_app_icon_label(58)
+        sidebar.addWidget(brand_icon, 0, Qt.AlignmentFlag.AlignHCenter)
+        brand_title = QLabel("Jenaplan")
+        brand_title.setObjectName("SidebarBrandTitle")
+        brand_title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        brand_subtitle = QLabel("Kompetenzmanager")
+        brand_subtitle.setObjectName("SidebarBrandSubtitle")
+        brand_subtitle.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        sidebar.addWidget(brand_title)
+        sidebar.addWidget(brand_subtitle)
         self.navigation = QListWidget()
         self.navigation.setObjectName("AppNavigation")
-        self.navigation.setFixedWidth(180)
         for item in NAVIGATION_ITEMS:
             nav_item = QListWidgetItem(item.label)
             nav_item.setData(Qt.ItemDataRole.UserRole, item.key)
@@ -77,7 +92,7 @@ class AppShell(QMainWindow):
         self.info_button = QPushButton("Info")
         self.info_button.clicked.connect(self.open_app_info_dialog)
         sidebar.addWidget(self.info_button)
-        layout.addLayout(sidebar)
+        layout.addWidget(sidebar_container)
 
         content = QVBoxLayout()
         title = QLabel("Jenaplan Kompetenzmanager")
