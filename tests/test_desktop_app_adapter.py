@@ -6,6 +6,7 @@ import inspect
 import importlib
 import tempfile
 import unittest
+from dataclasses import fields
 from pathlib import Path
 
 from src.application.commands import CreateStudentCommand
@@ -23,7 +24,7 @@ from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_CONTEXT_OPTIONS,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_PLACEHOLDER_MESSAGE,
-    ObservationCompetencyDraft,
+    ObservationCompetencyRatingDraft,
     ObservationDraftViewModel,
     observation_rating_keys,
 )
@@ -277,7 +278,42 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Qt.CheckState.Unchecked", source)
         self.assertIn("competency.competency_display_name", source)
         self.assertIn("Mehrfachauswahl möglich", source)
-        self.assertIn("_selected_competencies", source)
+        self.assertIn("_selected_competency_ratings", source)
+
+    def test_observation_dialog_uses_rating_dropdown_per_competency(self) -> None:
+        source = inspect.getsource(new_observation_dialog)
+
+        self.assertNotIn("self.rating_select", source)
+        self.assertNotIn('form_layout.addLayout(self._field_row("Bewertung"', source)
+        self.assertIn("Ausgewählte Kompetenzen bewerten", source)
+        self.assertIn("Jede ausgewählte Kompetenz erhält eine eigene Bewertung.", source)
+        self.assertIn("rating_select.addItem(\"Bewertung auswählen\", \"\")", source)
+        self.assertIn("for rating_option in OBSERVATION_RATING_OPTIONS", source)
+
+    def test_observation_dialog_keeps_buttons_outside_scroll_area(self) -> None:
+        source = inspect.getsource(new_observation_dialog)
+
+        self.assertIn("QScrollArea", source)
+        self.assertIn("scroll_area.setWidgetResizable(True)", source)
+        self.assertIn("layout.addWidget(scroll_area, 1)", source)
+        self.assertIn("layout.addWidget(buttons)", source)
+
+    def test_observation_dialog_uses_compact_competency_layout(self) -> None:
+        source = inspect.getsource(new_observation_dialog)
+
+        self.assertIn("self.competency_list.setMaximumHeight(138)", source)
+        self.assertIn("self.competency_ratings_layout.setSpacing(4)", source)
+        self.assertIn("rating_select.setMinimumWidth(190)", source)
+        self.assertIn("row.addWidget(label, 1)", source)
+
+    def test_observation_dialog_resets_competency_ratings_on_uncheck_or_subject_change(self) -> None:
+        source = inspect.getsource(new_observation_dialog)
+
+        self.assertIn("_remove_competency_rating_row", source)
+        self.assertIn("self.competency_rating_entries.pop", source)
+        self.assertIn("self.competency_rating_widgets.pop", source)
+        self.assertIn("_clear_competency_ratings", source)
+        self.assertIn("self.competency_list.clear()", source)
 
     def test_observation_context_options_match_prototype_scope(self) -> None:
         self.assertEqual(
@@ -292,11 +328,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
     def test_observation_draft_view_model_keeps_student_context(self) -> None:
-        competency = ObservationCompetencyDraft(
+        competency = ObservationCompetencyRatingDraft(
             subject_key="deutsch",
             learning_area="Mit Texten und Medien umgehen",
             competency_group="Lesen und Verstehen",
             competency_text="Texte lesen und zentrale Informationen entnehmen",
+            rating="+ erreicht",
         )
         draft = ObservationDraftViewModel(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
@@ -304,18 +341,60 @@ class DesktopAppAdapterTest(unittest.TestCase):
             date_text="2026-07-01",
             subject_key="deutsch",
             subject="Deutsch",
-            competencies=(competency,),
+            competency_ratings=(competency,),
             context="Leseübung",
-            rating="+ erreicht",
             note="Liest einen bekannten Text flüssig.",
         )
 
         self.assertEqual(draft.student_id, f"{STUDENT_ID_PREFIX}-000001")
         self.assertEqual(draft.student_name, "Emma Müller")
         self.assertEqual(draft.subject_key, "deutsch")
-        self.assertEqual(draft.competencies[0].display_label, "Mit Texten und Medien umgehen")
-        self.assertEqual(draft.competencies[0].competency_text, "Texte lesen und zentrale Informationen entnehmen")
+        self.assertEqual(draft.competency_ratings[0].display_label, "Mit Texten und Medien umgehen")
+        self.assertEqual(draft.competency_ratings[0].competency_text, "Texte lesen und zentrale Informationen entnehmen")
+        self.assertEqual(draft.competency_ratings[0].rating, "+ erreicht")
         self.assertEqual(draft.attachment_names, ())
+
+    def test_observation_draft_has_no_global_rating(self) -> None:
+        field_names = {field.name for field in fields(ObservationDraftViewModel)}
+
+        self.assertNotIn("rating", field_names)
+        self.assertIn("competency_ratings", field_names)
+
+    def test_observation_competency_ratings_can_differ_per_competency(self) -> None:
+        first = ObservationCompetencyRatingDraft(
+            subject_key="deutsch",
+            learning_area="Miteinander sprechen",
+            competency_group="Gesprächsbeiträge",
+            competency_text="Eigene Beiträge verständlich einbringen",
+            rating="++ sicher erreicht",
+        )
+        second = ObservationCompetencyRatingDraft(
+            subject_key="deutsch",
+            learning_area="Texte verfassen",
+            competency_group="Inhalte strukturieren",
+            competency_text="Gedanken in einer sinnvollen Reihenfolge darstellen",
+            rating="- in Entwicklung",
+        )
+
+        draft = ObservationDraftViewModel(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            student_name="Emma Müller",
+            date_text="2026-07-01",
+            subject_key="deutsch",
+            subject="Deutsch",
+            competency_ratings=(first, second),
+            context="Präsentation",
+            note="Präsentiert Arbeitsergebnisse vor der Gruppe.",
+        )
+
+        self.assertEqual(draft.competency_ratings[0].rating, "++ sicher erreicht")
+        self.assertEqual(draft.competency_ratings[1].rating, "- in Entwicklung")
+        self.assertNotEqual(
+            draft.competency_ratings[0].rating,
+            draft.competency_ratings[1].rating,
+        )
+        self.assertEqual(draft.competency_ratings[0].display_label, "Miteinander sprechen")
+        self.assertEqual(draft.competency_ratings[1].display_label, "Texte verfassen")
 
     def test_observation_dialog_placeholder_messages_are_non_persistent(self) -> None:
         self.assertEqual(

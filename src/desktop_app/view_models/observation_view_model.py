@@ -32,13 +32,14 @@ OBSERVATION_ATTACHMENT_EMPTY_STATE = "Noch keine Anhänge ausgewählt."
 
 
 @dataclass(frozen=True)
-class ObservationCompetencyDraft:
-    """Selected competency data kept in the non-persistent draft."""
+class ObservationCompetencyRatingDraft:
+    """Selected competency rating data kept in the non-persistent draft."""
 
     subject_key: str
     learning_area: str
     competency_group: str
     competency_text: str
+    rating: str
 
     @property
     def display_label(self) -> str:
@@ -46,13 +47,18 @@ class ObservationCompetencyDraft:
         return self.learning_area
 
     @classmethod
-    def from_catalog_entry(cls, entry: object) -> "ObservationCompetencyDraft":
-        """Create a draft selection from a curriculum catalog entry."""
+    def from_catalog_entry(
+        cls,
+        entry: object,
+        rating: str,
+    ) -> "ObservationCompetencyRatingDraft":
+        """Create a draft rating from a curriculum catalog entry."""
         return cls(
             subject_key=getattr(entry, "subject_key"),
             learning_area=getattr(entry, "learning_area"),
             competency_group=getattr(entry, "competency_group"),
             competency_text=getattr(entry, "competency_text"),
+            rating=rating,
         )
 
 
@@ -65,9 +71,8 @@ class ObservationDraftViewModel:
     date_text: str
     subject_key: str
     subject: str
-    competencies: tuple[ObservationCompetencyDraft, ...]
+    competency_ratings: tuple[ObservationCompetencyRatingDraft, ...]
     context: str
-    rating: str
     note: str
     attachment_names: tuple[str, ...] = ()
 

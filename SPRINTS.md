@@ -347,6 +347,17 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Fachwechsel aktualisiert die Kompetenzliste und setzt die vorherige Auswahl zurueck
 - [x] Keine Beobachtungspersistenz, keine SQLite-Aenderung und keine Datenmodelländerung umgesetzt
 
+### Sprint - Beobachtungsdialog Bewertung pro Kompetenz
+
+- [x] Globale Bewertung aus dem PySide6-Beobachtungsdialog entfernt
+- [x] Bewertungs-Auswahl pro ausgewaehlter Kompetenz vorbereitet
+- [x] Nicht-persistenter Draft fuehrt Kompetenzbewertungen statt Beobachtungs-Gesamtbewertung
+- [x] Abwaehlen einer Kompetenz entfernt deren Bewertung aus dem Draft
+- [x] Fachwechsel setzt Kompetenzauswahl und Kompetenzbewertungen zurueck
+- [x] Dialoginhalt scrollbar gemacht, damit die Buttonleiste erreichbar bleibt
+- [x] Kompetenzauswahl und Bewertungszeilen kompakter gestaltet
+- [x] Keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository und keine Datenmodelländerung umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

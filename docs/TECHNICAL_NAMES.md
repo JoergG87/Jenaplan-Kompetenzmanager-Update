@@ -348,7 +348,7 @@ Registrierte Python-Klassen und Funktionen:
 - `filter_student_list(students, search_text)`
 - `PROFILE_ACTION_MESSAGES`
 - `PROFILE_SECTION_PLACEHOLDERS`
-- `ObservationCompetencyDraft`
+- `ObservationCompetencyRatingDraft`
 - `ObservationDraftViewModel`
 - `OBSERVATION_CONTEXT_OPTIONS`
 - `OBSERVATION_RATING_OPTIONS`

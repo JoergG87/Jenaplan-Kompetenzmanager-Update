@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## Sprint - Beobachtungsdialog Bewertung pro Kompetenz
+
+### Changed
+
+- Globale Bewertung im PySide6-Beobachtungsdialog entfernt.
+- Nicht-persistenter Observation-Draft fuehrt Bewertungen pro ausgewaehlter Kompetenz.
+- Dialog zeigt fuer jede ausgewaehlte Kompetenz eine eigene Bewertungs-Auswahl.
+- Fachwechsel und Abwaehlen einer Kompetenz setzen die zugehoerigen Draft-Bewertungen zurueck.
+- Dialoginhalt in eine ScrollArea gelegt, damit die Buttonleiste auch bei vielen ausgewaehlten Kompetenzen erreichbar bleibt.
+- Kompetenzauswahl und Bewertungszeilen kompakter gestaltet.
+
+### Not Changed
+
+- Keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository, keine Dokumenten-/Medienpersistenz, kein Excel-/VBA-Umbau, kein Packaging und keine finale Architekturentscheidung umgesetzt.
+
 ## Hotfix - Beobachtungsdialog Kompetenzauswahl lesbarer
 
 ### Changed
