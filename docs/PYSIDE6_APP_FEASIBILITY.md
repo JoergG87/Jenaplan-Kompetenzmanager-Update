@@ -2,7 +2,9 @@
 
 Dieses Dokument prueft, wie aus dem validierten PySide6-Spike eine echte Desktop-Anwendung entstehen koennte.
 
-Status: Umsetzungspruefung, keine finale Architekturentscheidung.
+Status: Historische Umsetzungspruefung.
+
+Hinweis: Die offene Architekturfrage wurde nach Freigabe des App-Icons entschieden. PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers. Excel/VBA bleibt als Export-, Berichts- oder Legacy-Projektion erhalten.
 
 ## 1. Ausgangslage
 

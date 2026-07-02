@@ -14,7 +14,9 @@ Keine fachliche Logik in VBA.
 
 ## ADR-003
 
-Microsoft Excel für macOS ist die verbindliche Zielplattform.
+Historische Entscheidung: Microsoft Excel für macOS war die verbindliche Zielplattform.
+
+Fuer die Hauptanwendung wird diese Entscheidung durch ADR-045 abgeloest. Excel bleibt Export-, Berichts- oder Legacy-Projektion.
 
 ## ADR-004
 
@@ -541,7 +543,9 @@ Gleichzeitig bleibt das Datenmodell die fachliche Grundlage des Produkts.
 
 ### Entscheidung
 
-Microsoft Excel für macOS ist die verbindliche Zielplattform.
+Historische Entscheidung: Microsoft Excel für macOS war die verbindliche Zielplattform fuer die damalige UX-Prototyp-Generation.
+
+Fuer die Hauptanwendung wird diese Entscheidung durch ADR-045 abgeloest.
 
 Python bleibt verantwortlich für:
 
@@ -1731,3 +1735,38 @@ Naechste Pruefpunkte:
 - Datenbankpfad produktiv
 - Backup/Restore
 - Excel-Export/Berichte
+
+## ADR-045 - PySide6 als Hauptanwendung und Icon-basierte visuelle Leitlinie
+
+Status: Accepted
+
+### Kontext
+
+Der PySide6-Spike wurde ueber mehrere Sprints zu einer nutzbaren Desktop-App-Linie erweitert.
+
+Das freigegebene App-Icon gibt eine klare visuelle Richtung vor: Wachstum, Schuelerbezug, Kompetenzentwicklung und Auswertung in einer ruhigen, hochwertigen Desktop-App.
+
+Die Excel-/VBA-Linie bleibt technisch wertvoll, erzeugt aber nicht die gewuenschte moderne Hauptanmutung fuer die Anwendung.
+
+### Entscheidung
+
+PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+
+Neue UI-Entwicklung konzentriert sich auf die PySide-App.
+
+Excel/VBA ist nicht mehr die Zielrichtung fuer die Haupt-App. Excel kann weiterhin als Export-, Berichts- oder Legacy-Projektion bestehen.
+
+Das freigegebene App-Icon ist die zentrale gestalterische Referenz fuer die Anwendung.
+
+Leitregel:
+
+> Der Jenaplan Kompetenzmanager wirkt wie eine moderne paedagogische Entwicklungs-App: ruhig, klar, wachstumsorientiert, datenbewusst und freundlich.
+
+### Konsequenzen
+
+- Neue Screens orientieren sich visuell an der Icon-Farbwelt und Symbolik.
+- Die PySide-App soll nicht wie klassische Verwaltungssoftware oder Excel wirken.
+- Dunkelblau, Blau, Tuerkis, Gruen, Orange und helle neutrale Hintergruende bilden die kuenftige Designrichtung.
+- Karten, Panels, Dialoge, Profile, Beobachtungen und Auswertungen duerfen eine leichte moderne Glasoptik nutzen, solange Lesbarkeit und Kontrast gewahrt bleiben.
+- Fachlogik bleibt ausserhalb der GUI in Application, Domain und Infrastructure Layer.
+- Excel/VBA wird nicht geloescht, aber als Haupt-App-Pfad nicht weiter priorisiert.

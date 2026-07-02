@@ -1,13 +1,22 @@
 # Design-System
 
+Das freigegebene App-Icon ist ab der PySide-Hauptanwendung die zentrale gestalterische Referenz fuer den Jenaplan-Kompetenzmanager.
+
 Das aktuelle Design der Stammgruppenübersicht wurde durch Laura freigegeben.
 
 Dieses Design ist die verbindliche Referenz für alle zukünftigen Ansichten.
+
+Neue Screens sollen visuell an das App-Icon anschliessen.
+
+Leitregel:
+
+> Der Jenaplan Kompetenzmanager wirkt wie eine moderne paedagogische Entwicklungs-App: ruhig, klar, wachstumsorientiert, datenbewusst und freundlich.
 
 ## Verbindliche Eigenschaften
 
 Zum freigegebenen Design gehören:
 
+- Bezug zum freigegebenen App-Icon
 - Farbwelt
 - Typografie
 - Kartenlayout
@@ -24,11 +33,121 @@ Alle zukünftigen Ansichten müssen sich an diesem Design orientieren.
 
 Das gilt insbesondere für:
 
+- PySide-Hauptnavigation
+- Dashboard / Startseite
+- Schuelerliste
 - Stammgruppenübersicht
 - Kursübersicht
 - Schülerprofil
+- Beobachtungsdialoge
+- Stammdaten
+- Kompetenzansichten
+- Auswertungen und Berichte
+- App-Info und Statusbereiche
 - zukünftige Verwaltungsansichten
 - zukünftige Dialoge, Dialogseiten und experimentelle UserForms
+
+## App-Icon als visuelle Leitlinie
+
+Das App-Icon verbindet Baum, Personen, Diagramm und schützenden Bogen zu einem ruhigen, hochwertigen Zeichen fuer paedagogische Entwicklungsarbeit.
+
+Die Anwendung soll daraus folgende Grundidee ableiten:
+
+- modern, ruhig, freundlich und professionell
+- klar strukturiert, aber nicht administrativ schwer
+- wachstumsorientiert und schuelerbezogen
+- datenbewusst, ohne technisch-kuehle Verwaltungsoptik
+- hochwertig wie eine moderne Desktop-App, nicht wie eine klassische Excel- oder Tabellenanwendung
+
+Die Gestaltung soll Wachstum, Schuelerbezug, Kompetenzentwicklung und Auswertung gleichzeitig sichtbar machen.
+
+### Bedeutungsanker
+
+- Baum: Wachstum, Lernentwicklung und langfristige Kompetenzentwicklung
+- Personen: Schuelerbezug, paedagogische Beziehung und konkrete Arbeit mit Kindern
+- Diagramm: Auswertungen, Kompetenzverlaeufe und Berichte
+- Kreis/Bogen: Ganzheitlichkeit, Ueberblick, Schutzraum und strukturierter Rahmen
+- farbige Blaetter: individuelle Lernwege und unterschiedliche Entwicklungsfelder
+
+Diese Bedeutungsanker sollen bei spaeteren UI-Entscheidungen beruecksichtigt werden.
+
+### Farbwelt aus dem Icon
+
+Die Icon-Palette ist die Grundlage fuer die kuenftige PySide-Oberflaeche.
+
+- Dunkelblau: Struktur, Professionalitaet, Navigation, Auswertung
+- Blau: Klarheit, Kompetenzentwicklung, Berichte
+- Tuerkis: Entwicklung, Uebergaenge, Lernverlaeufe
+- Gruen: Wachstum, Lernen, Foerderung
+- Orange: Aktivitaet, Beobachtung, paedagogischer Impuls
+- helle neutrale Hintergruende: Ruhe, Lesbarkeit, Konzentration
+
+Die Farben werden nicht grell oder verspielt eingesetzt. Sie sollen modern, ausgewogen und hochwertig wirken.
+
+Kursfarben, Diagrammfarben, Statusmarker und Aktionsfarben sollen sich aus dieser Icon-Farbwelt ableiten.
+
+### Formensprache
+
+Die App verwendet eine weiche, leichte Formensprache:
+
+- abgerundete Formen
+- Kartenoptik statt Tabellenoptik, wo sinnvoll
+- grosszuegige Abstaende und Weissraum
+- klare visuelle Hierarchie
+- freundliche Icons und Marker
+- ruhige, moderne Oberflaechen
+- keine ueberladene Verwaltungsoptik
+- keine harte Tabellen- oder Excel-Anmutung als Hauptstil
+
+Schuelerprofile sollen als ruhige Karten mit klaren Bereichen erscheinen.
+
+Beobachtungen sollen bevorzugt als leichte Cards oder geordnete Listen mit klarer Hierarchie gestaltet werden, nicht als reine Tabellenlisten.
+
+Auswertungen und Berichte sollen Diagrammfarben aus der Icon-Palette verwenden.
+
+Wichtige Aktionen duerfen farblich klar hervorgehoben werden, bleiben aber zurueckhaltend und serioes.
+
+### Moderne leichte Glasoptik
+
+Wenn technisch und gestalterisch sinnvoll umsetzbar, darf die PySide-App eine leichte moderne Glasoptik aufgreifen.
+
+Gemeint ist:
+
+- helle, leicht transparente oder weich abgesetzte Flaechen
+- dezente Schatten
+- sanfte Rahmen
+- leicht schwebende Karten und Panels
+- ruhige, helle Hintergruende
+- moderne Tiefe ohne starke Effekte
+
+Glasoptik ist ein Stilmittel, kein Selbstzweck.
+
+Verbindliche Grenzen:
+
+- Lesbarkeit hat Vorrang.
+- Kontraste muessen barrierearm bleiben.
+- Transparenzen duerfen Texte nicht schwer lesbar machen.
+- Keine uebertriebene Glassmorphism-Optik.
+- Die App bleibt serioes und paedagogisch professionell.
+
+### Zu vermeiden
+
+- keine Excel- oder Tabellenoptik als Hauptanmutung
+- keine ueberladene Admin-Oberflaeche
+- keine grellen Primaerfarben
+- keine unruhigen Verlaeufe
+- keine uebertriebene Glasoptik
+- keine verspielte Kinder-App-Optik
+- keine schlechte Lesbarkeit durch Transparenzen
+- keine Designaenderungen ohne Bezug zur Icon-Farbwelt
+
+## PySide-Hauptanwendung
+
+PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+
+Neue UI-Entwicklung konzentriert sich auf die PySide-App.
+
+Excel/VBA ist nicht mehr die Zielrichtung fuer die Haupt-App. Excel kann weiterhin als Export-, Berichts- oder Legacy-Projektion bestehen.
 
 ## Änderungsregel
 

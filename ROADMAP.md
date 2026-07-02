@@ -2,27 +2,29 @@
 
 ## Zielplattform und Architektur
 
-Microsoft Excel für macOS ist die verbindliche Zielplattform.
+PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
-Python bleibt verantwortlich für Build-System, Workbook-Erzeugung, Datenmodell, UI-Projektionen, Styles, Berichte und Fachlogik.
+Python bleibt verantwortlich für Build-System, Datenmodell, UI-Projektionen, PySide-Oberflaeche, Workbook-/Export-Erzeugung, Styles, Berichte und Fachlogik.
 
-VBA übernimmt ausschließlich Navigation, Buttons, Dialogaufrufe und Benutzerinteraktion.
+Excel/VBA bleibt im Repository als Export-, Berichts- oder Legacy-Projektion erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
+
+VBA übernimmt in der Excel-Linie weiterhin ausschließlich Navigation, Buttons, Dialogaufrufe und Benutzerinteraktion.
 
 Worksheet-basierte Dialogseiten sind ab Feature 1 das primaere Eingabe-Pattern fuer Excel auf macOS.
 
 VBA-UserForms bleiben experimentell/deprecated, bis ein eigener Migrations- oder Bereinigungsschritt freigegeben ist.
 
-Der PySide6 Desktop-App-Spike ist als alternativer UI-Adapter validiert. Er ersetzt die Excel-/VBA-Linie nicht automatisch; Excel bleibt im Repository als bestehende Projektion und moeglicher Export-/Berichtspfad erhalten.
+Der PySide6 Desktop-App-Spike ist zur Hauptanwendungslinie geworden. Excel bleibt im Repository als bestehende Projektion und moeglicher Export-/Berichtspfad erhalten.
 
 Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Ein Ruecksprungpunkt fuer den Excel/xlwings-Pfad existiert mit dem Tag `checkpoint-excel-adapter-before-python-gui`.
 
-Offen bleibt, ob PySide6 Hauptanwendung wird, ob xlwings als Excel-Bruecke dient oder ob Excel kuenftig primaer Export- und Berichtsschicht ist.
+Offen bleiben produktiver Datenbankpfad, Backup/Restore, Packaging als macOS-App und der genaue Umfang kuenftiger Excel-Exporte.
 
 Der VBA-Seed wurde praktisch validiert. `.xlsm` ist ab Version `v0.4` das Hauptartefakt.
 
 Das Datenmodell ist die fachliche Grundlage des Projekts. Alle Ansichten sind Projektionen dieses Datenmodells.
 
-Das Design-System ist die visuelle Grundlage des Projekts. Alle zukünftigen Ansichten orientieren sich am freigegebenen Design der Stammgruppenübersicht.
+Das Design-System ist die visuelle Grundlage des Projekts. Alle zukünftigen Ansichten orientieren sich am freigegebenen App-Icon und an der daraus abgeleiteten ruhigen, modernen PySide-Desktop-App-Anmutung.
 
 ## Aktueller UX-Prototyp-Pfad
 
@@ -46,7 +48,7 @@ Sprint 4.1: Core Data Architecture durch Hidden Data Sheets, strukturierte Tabel
 
 Sprint 4.2: Schülerverwaltung vorbereiten und ersten transaktionalen Schreibprozess umsetzen: Schüler anlegen, ändern und archivieren.
 
-Sprint 5: Scope Freeze abgeschlossen, Dialog Framework begonnen und erste Referenz-UserForm `Neuer Schueler` vorbereitet. Sprint 5.1a konkretisiert den Dialogstandard fuer zukuenftige Eingabemasken. Sprint 5.1b stoppt die produktive Schueleranlage an der noch offenen Laufzeitbruecke zwischen Excel/VBA und Python-Service-Schicht. Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis. Sprint 5.3 fuehrt den Application Command Layer ein. Sprint 5.4 validiert `student.create` im Python-Stack. Architecture Baseline v2.0 dokumentiert diesen erreichten Stand. Feature 1 fuehrt den UX-Prototyp als verbindlichen Zwischenschritt vor Dialogumsetzungen ein und wechselt wegen macOS-UserForm-Problemen auf die worksheet-basierte Dialogseite `dlg_neuer_schueler`. Feature 1.4a definiert den Runtime Adapter und den Refresh Contract fuer `student.create`. Feature 1.4b implementiert den produktiven Schreibpfad bis SQLite ohne Projection Refresh. Der PySide6 Desktop-App-Spike validiert anschliessend einen alternativen UI-Adapter ueber denselben Application-/Service-/Repository-Stack, ohne eine finale Umstellung auf Python-GUI festzulegen.
+Sprint 5: Scope Freeze abgeschlossen, Dialog Framework begonnen und erste Referenz-UserForm `Neuer Schueler` vorbereitet. Sprint 5.1a konkretisiert den Dialogstandard fuer zukuenftige Eingabemasken. Sprint 5.1b stoppt die produktive Schueleranlage an der noch offenen Laufzeitbruecke zwischen Excel/VBA und Python-Service-Schicht. Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis. Sprint 5.3 fuehrt den Application Command Layer ein. Sprint 5.4 validiert `student.create` im Python-Stack. Architecture Baseline v2.0 dokumentiert diesen erreichten Stand. Feature 1 fuehrt den UX-Prototyp als verbindlichen Zwischenschritt vor Dialogumsetzungen ein und wechselt wegen macOS-UserForm-Problemen auf die worksheet-basierte Dialogseite `dlg_neuer_schueler`. Feature 1.4a definiert den Runtime Adapter und den Refresh Contract fuer `student.create`. Feature 1.4b implementiert den produktiven Schreibpfad bis SQLite ohne Projection Refresh. Der PySide6 Desktop-App-Spike validiert anschliessend einen UI-Adapter ueber denselben Application-/Service-/Repository-Stack. Nach dem freigegebenen App-Icon wird PySide zur Hauptanwendungslinie.
 
 Zukünftige Produktziele ohne Sprintzuordnung
 
@@ -64,9 +66,9 @@ Zukünftige Produktziele ohne Sprintzuordnung
 - Stammgruppenverwaltung
 - Kursverwaltung
 - Kursübersicht
-- UX Hauptfenster fuer einen moeglichen PySide6-Produktpfad
-- Schuelerprofil im PySide6-Spike
-- Beobachtungsmaske im PySide6-Spike
+- UX Hauptfenster fuer die PySide-Hauptanwendung
+- Schuelerprofil in der PySide-Hauptanwendung
+- Beobachtungsmaske in der PySide-Hauptanwendung
 - Packaging als macOS-App
 - Produktiver Datenbankpfad, Backup und Restore
 - Excel-Export und Berichte auf Basis von SQLite

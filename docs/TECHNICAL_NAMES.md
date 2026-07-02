@@ -327,6 +327,10 @@ Registrierte Python-Module:
 - `src/desktop_app/view_models/observation_view_model.py`
 - `src/desktop_app/view_models/student_view_model.py`
 
+Registrierte Launcher:
+
+- `launcher/Jenaplan_Kompetenzmanager.command`
+
 Registrierte Python-Klassen und Funktionen:
 
 - `JenaplanDesktopApp`

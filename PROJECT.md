@@ -12,13 +12,13 @@ Version `v0.4` repräsentiert die abgeschlossene Core Data Architecture mit date
 
 Der Jenaplan-Kompetenzmanager ist ein professionelles Python-Projekt zur strukturierten Verwaltung, Auswertung und späteren Ausgabe von Kompetenzdaten im Jenaplan-Kontext.
 
-Das Projekt stellt die Grundlage für eine Excel-basierte Arbeitsmappe für Microsoft Excel auf macOS bereit. Microsoft Excel für macOS ist die verbindliche Zielplattform.
+PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
-Python erzeugt Workbook, Datenmodell, UI-Projektionen, Styles, Berichte, Fachlogik und Build-Artefakte. Der VBA-Seed wurde technisch validiert; `.xlsm` ist ab Version `v0.4` das Hauptartefakt.
+Das Projekt entwickelt sich damit von einer Excel-zentrierten Arbeitsmappe zu einer modernen Desktop-App fuer macOS. Excel/VBA bleibt im Repository als Export-, Berichts- oder Legacy-Projektion erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
 
-VBA übernimmt ausschließlich Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms.
+Python bleibt verantwortlich fuer Datenmodell, Application Layer, Domain Layer, Persistenz, UI-nahe Adapter, PySide-Oberflaeche, Workbook-/Export-Projektionen, Berichte und Build-Artefakte.
 
-Fachliche Logik wandert nicht nach VBA. Das Datenmodell bleibt vollständig unabhängig von VBA.
+Fachliche Logik wandert weder in PySide-Widgets noch nach VBA. Das Datenmodell bleibt unabhaengig von der Oberflaeche.
 
 Sprint 0 dient ausschließlich dem Aufbau des technischen und dokumentarischen Fundaments. Es wird noch keine produktive Excel-Datei erzeugt.
 
@@ -32,7 +32,8 @@ Die Entwicklung folgt diesen Grundsätzen:
 - Daten werden strukturiert, nachvollziehbar und konsistent verarbeitet.
 - Jede Version bleibt lauffähig.
 - Änderungen werden dokumentiert und versioniert.
-- Microsoft Excel für macOS ist die verbindliche Zielplattform.
+- PySide ist die Zielrichtung fuer die Hauptanwendung.
+- Excel kann weiterhin als Export-, Berichts- oder Legacy-Projektion dienen.
 
 ## Pädagogische Produktvision
 
@@ -107,6 +108,7 @@ Das Projekt ist modular aufgebaut.
 - `src/reports.py` ist für Berichte vorgesehen.
 - `src/settings.py` ist für zentrale Einstellungen vorgesehen.
 - `src/styles.py` ist für visuelle Formatierungen vorgesehen.
+- `src/desktop_app/` enthaelt die PySide-Hauptanwendung mit Shell, Screens, Dialogen, Adaptern und ViewModels.
 - `data/` enthält Eingabedaten und Konfigurationen.
 - `docs/` enthält fachliche Begleitdokumentation.
 - `UX_BLUEPRINT.md` beschreibt die verbindliche UX-Grundlage für den ersten Prototyp.
@@ -124,6 +126,22 @@ Die Architektur vermeidet feste Zellreferenzen. Stattdessen sollen strukturierte
 Die Stammgruppenübersicht und die Kursübersicht besitzen keine eigene Geschäftslogik. Sie stellen vorhandene Schülerdaten dar und werden aus diesen Daten generiert. Änderungen an Schülerdaten erfolgen künftig ausschließlich über die Schülerverwaltung.
 
 VBA-Quelländerungen werden versioniert unter `vba/modules/` gepflegt. Der Seed muss dauerhaft das Bootstrap-Modul `SeedImport` enthalten; damit kann `scripts/import_vba_sources_to_seed.py` die versionierten Module `Globals`, `Navigation` und `UI` automatisch in `seeds/JenaplanSeed.xlsm` aktualisieren. Das Skript bricht ab, wenn dieser Bootstrap im Seed fehlt.
+
+## Visuelle Produktlinie
+
+Das freigegebene App-Icon ist die zentrale gestalterische Referenz fuer die PySide-Hauptanwendung.
+
+Der Jenaplan Kompetenzmanager soll wie eine moderne paedagogische Entwicklungs-App wirken: ruhig, klar, wachstumsorientiert, datenbewusst und freundlich.
+
+Die Gestaltung nimmt die Icon-Symbolik auf:
+
+- Baum fuer Wachstum und Lernentwicklung
+- Personen fuer Schuelerbezug und paedagogische Arbeit
+- Diagramm fuer Auswertungen, Kompetenzverlaeufe und Berichte
+- Kreis/Bogen fuer Ganzheitlichkeit, Ueberblick und Schutzraum
+- farbige Blaetter fuer individuelle Lernwege und Entwicklungsfelder
+
+Die Icon-Farbwelt aus Dunkelblau, Blau, Tuerkis, Gruen, Orange und hellen neutralen Hintergruenden bildet die visuelle Grundlage fuer Navigation, Karten, Kursfarben, Beobachtungen, Auswertungen und Statusbereiche.
 
 ## Architecture Baseline v2.0
 

@@ -400,6 +400,25 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Einfachen Tastaturkomfort fuer Dialoge vorbereitet
 - [x] Keine Fachlogik, keine Persistenz, keine SQLite-Aenderung und keine finale Architekturentscheidung umgesetzt
 
+### Hotfix - macOS-Launcher fuer PySide6-Prototyp
+
+- [x] Doppelklick-faehige Launcher-Datei `launcher/Jenaplan_Kompetenzmanager.command` ergaenzt
+- [x] Launcher wechselt robust ins Projektverzeichnis
+- [x] Launcher nutzt `.venv/bin/python`, falls vorhanden, sonst `python3`
+- [x] README um Terminalstart und Doppelklick-Start ergaenzt
+- [x] Kein PyInstaller, kein Installer, kein `.app`-Bundle und keine Packaging-Toolchain umgesetzt
+- [x] Keine Fachlogik, keine Persistenz, keine SQLite-Aenderung und keine finale Architekturentscheidung umgesetzt
+
+### Dokumentation - Icon-basierte visuelle Leitlinie
+
+- [x] App-Icon als zentrale gestalterische Referenz dokumentiert
+- [x] Farbwelt aus Dunkelblau, Blau, Tuerkis, Gruen, Orange und hellen neutralen Hintergruenden festgehalten
+- [x] Weiche Formensprache, Kartenoptik, Weissraum und klare visuelle Hierarchie als UI-Leitlinie ergaenzt
+- [x] Leichte moderne Glasoptik als optionales, zurueckhaltendes Stilmittel beschrieben
+- [x] Bedeutungsanker Baum, Personen, Diagramm, Kreis/Bogen und farbige Blaetter dokumentiert
+- [x] PySide als kuenftige Hauptanwendung dokumentiert
+- [x] Keine Codeaenderung, kein Build und kein Commit umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

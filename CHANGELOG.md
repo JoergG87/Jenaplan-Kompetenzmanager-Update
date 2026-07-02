@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## Dokumentation - Icon-basierte visuelle Leitlinie
+
+### Changed
+
+- App-Icon als zentrale gestalterische Referenz fuer die PySide-Hauptanwendung dokumentiert.
+- Farbwelt, Formensprache, Bedeutungsanker und leichte moderne Glasoptik fuer kuenftige Screens festgehalten.
+- PySide als kuenftige Hauptanwendung dokumentiert; Excel/VBA bleibt Export-, Berichts- oder Legacy-Projektion.
+
+### Not Changed
+
+- Keine Codeaenderung, kein Build, kein Commit, keine neue Persistenz, keine SQLite-Aenderung, kein Excel-/VBA-Umbau und keine Fachlogik umgesetzt.
+
+## Hotfix - macOS-Launcher fuer PySide6-Prototyp
+
+### Added
+
+- Doppelklick-faehigen macOS-Launcher `launcher/Jenaplan_Kompetenzmanager.command` fuer den PySide6-Prototyp ergaenzt.
+- Startanleitung fuer Terminalstart und Launcherstart in `README.md` ergaenzt.
+- Kleinen Smoke-Test fuer Existenz, Ausfuehrbarkeit und Startmodul des Launchers ergaenzt.
+
+### Not Changed
+
+- Kein PyInstaller, keine `.app`-Bundle-Erzeugung, kein Installer, keine neue Persistenz, keine SQLite-Aenderung, keine Fachlogik, kein Excel-/VBA-Umbau und keine Curriculum-Aenderung umgesetzt.
+
 ## Sprint - PySide6 UI-Polish
 
 ### Changed

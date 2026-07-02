@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import importlib
+import os
 import tempfile
 import unittest
 from dataclasses import fields
@@ -139,6 +140,16 @@ class DesktopAppAdapterTest(unittest.TestCase):
             resolve_navigation_target("master_data").screen_key,
             "master_data",
         )
+
+    def test_macos_launcher_exists_and_starts_desktop_app_module(self) -> None:
+        launcher_path = Path("launcher/Jenaplan_Kompetenzmanager.command")
+        launcher_source = launcher_path.read_text(encoding="utf-8")
+
+        self.assertTrue(launcher_path.exists())
+        self.assertTrue(os.access(launcher_path, os.X_OK))
+        self.assertIn(".venv/bin/python", launcher_source)
+        self.assertIn("python3", launcher_source)
+        self.assertIn("-m src.desktop_app.main", launcher_source)
 
     def test_master_data_view_model_displays_groups_and_courses(self) -> None:
         view_model = self.master_data_adapter.view_model()

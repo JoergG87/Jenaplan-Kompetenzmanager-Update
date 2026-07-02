@@ -128,9 +128,11 @@ Hilfstabellen, Formeln, Named Ranges, Shapes und sichtbare Zellen duerfen das Da
 
 Auswertungen duerfen keine eigenen Schatteninformationen erzeugen.
 
-## Validierte alternative Adapter
+## PySide-Hauptanwendung und Excel-Projektion
 
-PySide6 ist als alternativer UI-Adapter validiert, aber nicht als finale Zielarchitektur festgelegt.
+PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+
+Excel/VBA bleibt im Repository als bestehende Projektion und moeglicher Export-, Berichts- oder Legacy-Pfad erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
 
 Der validierte Spike-Pfad lautet:
 
@@ -155,7 +157,7 @@ Excel/VBA bleibt im Repository erhalten. Excel bleibt bestehende Projektion und 
 
 Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Der Ruecksprungpunkt fuer den Excel-/xlwings-Pfad ist `checkpoint-excel-adapter-before-python-gui`.
 
-Offen bleibt, ob PySide6 Hauptanwendung wird, ob xlwings als Excel-Bruecke dient oder ob Excel kuenftig nur Export-/Berichtsschicht ist.
+Offen bleiben der produktive Datenbankpfad, Backup/Restore, Packaging als macOS-App und der genaue Umfang kuenftiger Excel-Exporte.
 
 ## Architecture Baseline v2.0
 
@@ -167,7 +169,7 @@ Adapter Layer
 -> Domain Layer
 -> Infrastructure Layer
 -> Projection Layer
--> Excel UI
+-> PySide UI / Excel-Exportprojektion
 ```
 
 Verantwortlichkeiten:
@@ -176,14 +178,15 @@ Verantwortlichkeiten:
 - Application Layer: Commands, Dispatcher und Routing; keine Fachlogik, kein SQL, keine Excel-Logik.
 - Domain Layer: Services, Validatoren und fachliche Regeln.
 - Infrastructure Layer: Repositories, SQLite und Persistenz.
-- Projection Layer: Workbook Builder und Excel-Projektionen.
-- Excel UI: Anzeige, Navigation und Interaktion auf Basis von Projektionen.
+- Projection Layer: Workbook Builder, Excel-Projektionen und UI-nahe Anzeigeprojektionen.
+- PySide UI: Hauptanwendung fuer Anzeige, Navigation, Dialoge und Benutzerinteraktion.
+- Excel UI: Export-, Berichts- oder Legacy-Projektion.
 
 Standard-Datenfluss:
 
 ```text
 User
--> worksheet-basierte Dialogseite oder freigegebener Adapter
+-> PySide-Dialog oder freigegebener Adapter
 -> Adapter
 -> Dispatcher
 -> Command
@@ -191,7 +194,7 @@ User
 -> Repository
 -> SQLite
 -> Builder
--> Excel-Projektion
+-> PySide-Ansicht oder Excel-Projektion
 ```
 
 SQLite ist die vorbereitete Source of Truth fuer fachliche Daten.
@@ -200,7 +203,9 @@ Python ist die einzige fachliche Schreibschicht.
 
 VBA enthaelt keine Businesslogik und schreibt nicht direkt in SQLite.
 
-Excel bleibt Projektion und UI, nicht fachliche Datenquelle.
+PySide ist Haupt-UI, aber nicht fachliche Datenquelle.
+
+Excel bleibt Projektion, nicht fachliche Datenquelle.
 
 Neue Funktionen entstehen nach dem Standardablauf:
 

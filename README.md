@@ -85,3 +85,24 @@ Ausgaben:
 output/Jenaplan_UX_Prototype_v0.1_FirstAttempt.xlsx
 output/Jenaplan_UX_Prototype_v0.2.xlsx
 ```
+
+## PySide6-Prototyp starten
+
+Start per Terminal:
+
+```bash
+python3 -m src.desktop_app.main
+```
+
+Start per Doppelklick auf macOS:
+
+```text
+launcher/Jenaplan_Kompetenzmanager.command
+```
+
+Der Launcher nutzt `.venv/bin/python`, wenn eine virtuelle Umgebung vorhanden ist,
+und faellt sonst auf `python3` zurueck.
+
+Hinweis: Das ist ein Entwickler-/Prototyp-Launcher. Es ist noch kein Installer
+und kein fertiges App-Paket. Python und die Abhaengigkeiten muessen weiterhin
+eingerichtet sein.
