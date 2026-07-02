@@ -16,6 +16,8 @@ class StudentListItem:
     group_name: str
     course_id: str
     course_name: str
+    course_color_name: str = ""
+    course_color_hex: str = ""
 
     @property
     def display_name(self) -> str:

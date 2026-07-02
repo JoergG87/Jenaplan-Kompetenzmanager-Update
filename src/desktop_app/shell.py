@@ -189,9 +189,9 @@ class AppShell(QMainWindow):
 
     def open_new_course_dialog(self) -> None:
         """Open the non-persistent new-course dialog."""
-        dialog = MasterDataNameDialog("Neuer Kurs")
+        dialog = MasterDataNameDialog("Neuer Kurs", include_color=True)
         if dialog.exec():
-            self.master_data_adapter.add_course(dialog.name())
+            self.master_data_adapter.add_course(dialog.name(), dialog.color_hex())
             self.refresh_master_data()
             self.status_label.setText(
                 "Kurs wurde vorgemerkt. Dauerhaftes Speichern folgt später."
@@ -211,9 +211,18 @@ class AppShell(QMainWindow):
     def open_rename_course_dialog(self, course_id: str) -> None:
         """Open the non-persistent rename dialog for a course."""
         item = self.master_data_adapter.courses[course_id]
-        dialog = MasterDataNameDialog("Kurs umbenennen", item.name)
+        dialog = MasterDataNameDialog(
+            "Kurs umbenennen",
+            item.name,
+            include_color=True,
+            initial_color_hex=item.color_hex,
+        )
         if dialog.exec():
-            self.master_data_adapter.rename_course(course_id, dialog.name())
+            self.master_data_adapter.rename_course(
+                course_id,
+                dialog.name(),
+                dialog.color_hex(),
+            )
             self.refresh_master_data()
             self.status_label.setText(
                 "Kurs wurde umbenannt. Dauerhaftes Speichern folgt später."

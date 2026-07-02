@@ -349,6 +349,9 @@ Registrierte Python-Klassen und Funktionen:
 - `MasterDataItemViewModel`
 - `MasterDataViewModel`
 - `normalize_master_data_name(name)`
+- `course_color_from_key(color_key, fallback_index)`
+- `course_color_name(color_hex)`
+- `COURSE_COLOR_OPTIONS`
 - `MASTER_DATA_EMPTY_NAME_MESSAGE`
 - `MASTER_DATA_SAVE_PLACEHOLDER_MESSAGE`
 - `filter_student_list(students, search_text)`

@@ -24,9 +24,11 @@ from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_targ
 from src.desktop_app.screens import master_data_screen
 from src.desktop_app import shell
 from src.desktop_app.view_models.master_data_view_model import (
+    COURSE_COLOR_OPTIONS,
     MASTER_DATA_EMPTY_NAME_MESSAGE,
     MasterDataItemViewModel,
     MasterDataViewModel,
+    course_color_from_key,
     normalize_master_data_name,
 )
 from src.desktop_app.view_models.observation_view_model import (
@@ -147,10 +149,28 @@ class DesktopAppAdapterTest(unittest.TestCase):
             {course.name for course in view_model.courses},
             {"Kurs 1", "Kurs 2", "Kurs 3"},
         )
+        self.assertEqual(view_model.courses[0].color_name, "Blau")
+        self.assertEqual(view_model.courses[0].color_hex, "#2563EB")
+        self.assertTrue(view_model.courses[0].has_color)
+
+    def test_course_color_options_are_registered_for_master_data_light(self) -> None:
+        self.assertEqual(
+            COURSE_COLOR_OPTIONS,
+            (
+                ("Blau", "#2563EB"),
+                ("Grün", "#16A34A"),
+                ("Orange", "#F97316"),
+                ("Lila", "#9333EA"),
+                ("Rot", "#DC2626"),
+                ("Grau", "#6B7280"),
+            ),
+        )
+        self.assertEqual(course_color_from_key("", 0), ("Blau", "#2563EB"))
+        self.assertEqual(course_color_from_key("", 1), ("Grün", "#16A34A"))
 
     def test_master_data_adapter_adds_non_persistent_groups_and_courses(self) -> None:
         group = self.master_data_adapter.add_group("Eulen")
-        course = self.master_data_adapter.add_course("Kurs 4")
+        course = self.master_data_adapter.add_course("Kurs 4", "#9333EA")
         view_model = self.master_data_adapter.view_model()
 
         self.assertIsInstance(group, MasterDataItemViewModel)
@@ -158,6 +178,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertFalse(group.is_persistent)
         self.assertEqual(group.status_label, "Nur vorgemerkt")
         self.assertEqual(course.name, "Kurs 4")
+        self.assertEqual(course.color_name, "Lila")
+        self.assertEqual(course.color_hex, "#9333EA")
         self.assertFalse(course.is_persistent)
         self.assertIn("Eulen", {item.name for item in view_model.groups})
         self.assertIn("Kurs 4", {item.name for item in view_model.courses})
@@ -170,11 +192,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
         course = self.master_data_adapter.rename_course(
             f"{COURSE_ID_PREFIX}-000001",
             "Kurs 1A",
+            "#DC2626",
         )
         view_model = self.master_data_adapter.view_model()
 
         self.assertEqual(group.name, "Grashüpfer A")
         self.assertEqual(course.name, "Kurs 1A")
+        self.assertEqual(course.color_name, "Rot")
+        self.assertEqual(course.color_hex, "#DC2626")
         self.assertIn("Grashüpfer A", {item.name for item in view_model.groups})
         self.assertIn("Kurs 1A", {item.name for item in view_model.courses})
 
@@ -195,6 +220,36 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn("INSERT INTO", screen_source)
         self.assertNotIn("UPDATE ", screen_source)
         self.assertNotIn("DELETE FROM", screen_source)
+
+    def test_master_data_course_screen_shows_course_color_marker(self) -> None:
+        source = inspect.getsource(master_data_screen)
+        dialog_source = inspect.getsource(master_data_dialog)
+        shell_source = inspect.getsource(shell.AppShell.open_new_course_dialog)
+
+        self.assertIn('("Farbe", "Name", "Status", "Aktion")', source)
+        self.assertIn('QTableWidgetItem(f"● {item.color_name}")', source)
+        self.assertIn("setForeground(QColor(item.color_hex))", source)
+        self.assertIn("COURSE_COLOR_OPTIONS", dialog_source)
+        self.assertIn('form.addRow("Farbe", self.color_select)', dialog_source)
+        self.assertIn("include_color=True", shell_source)
+        self.assertIn("dialog.color_hex()", shell_source)
+
+    def test_student_list_items_include_course_color(self) -> None:
+        students = self.adapter.list_students()
+
+        self.assertIn(students[0].course_color_name, {"Blau", "Grün", "Orange"})
+        self.assertIn(
+            students[0].course_color_hex,
+            {"#2563EB", "#16A34A", "#F97316"},
+        )
+
+    def test_students_screen_shows_course_color_marker(self) -> None:
+        source = inspect.getsource(importlib.import_module(
+            "src.desktop_app.screens.students_screen"
+        ))
+
+        self.assertIn('QTableWidgetItem(f"● {student.course_name}")', source)
+        self.assertIn("course_item.setForeground(QColor(student.course_color_hex))", source)
 
     def test_new_student_dialog_uses_master_data_for_group_and_course_options(self) -> None:
         source = inspect.getsource(new_student_dialog)

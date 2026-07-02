@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Signal
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFrame,
@@ -34,7 +35,7 @@ class MasterDataScreen(QWidget):
         self.group_items: tuple[MasterDataItemViewModel, ...] = ()
         self.course_items: tuple[MasterDataItemViewModel, ...] = ()
         self.group_table = QTableWidget(0, 3)
-        self.course_table = QTableWidget(0, 3)
+        self.course_table = QTableWidget(0, 4)
         self._build()
 
     def _build(self) -> None:
@@ -67,12 +68,12 @@ class MasterDataScreen(QWidget):
         """Replace all displayed master-data rows."""
         self.group_items = view_model.groups
         self.course_items = view_model.courses
-        self._render_table(
+        self._render_group_table(
             self.group_table,
             self.group_items,
             self.group_rename_requested.emit,
         )
-        self._render_table(
+        self._render_course_table(
             self.course_table,
             self.course_items,
             self.course_rename_requested.emit,
@@ -99,7 +100,6 @@ class MasterDataScreen(QWidget):
         header.addWidget(add_button)
         layout.addLayout(header)
 
-        table.setHorizontalHeaderLabels(("Name", "Status", "Aktion"))
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         table.setAlternatingRowColors(True)
@@ -108,12 +108,13 @@ class MasterDataScreen(QWidget):
         layout.addWidget(table)
         return card
 
-    def _render_table(
+    def _render_group_table(
         self,
         table: QTableWidget,
         items: tuple[MasterDataItemViewModel, ...],
         rename_handler: object,
     ) -> None:
+        table.setHorizontalHeaderLabels(("Name", "Status", "Aktion"))
         table.setRowCount(len(items))
         for row_index, item in enumerate(items):
             table.setItem(row_index, 0, QTableWidgetItem(item.name))
@@ -123,3 +124,23 @@ class MasterDataScreen(QWidget):
                 lambda _checked=False, item_id=item.item_id: rename_handler(item_id)
             )
             table.setCellWidget(row_index, 2, rename_button)
+
+    def _render_course_table(
+        self,
+        table: QTableWidget,
+        items: tuple[MasterDataItemViewModel, ...],
+        rename_handler: object,
+    ) -> None:
+        table.setHorizontalHeaderLabels(("Farbe", "Name", "Status", "Aktion"))
+        table.setRowCount(len(items))
+        for row_index, item in enumerate(items):
+            color_item = QTableWidgetItem(f"● {item.color_name}")
+            color_item.setForeground(QColor(item.color_hex))
+            table.setItem(row_index, 0, color_item)
+            table.setItem(row_index, 1, QTableWidgetItem(item.name))
+            table.setItem(row_index, 2, QTableWidgetItem(item.status_label))
+            rename_button = QPushButton("Umbenennen")
+            rename_button.clicked.connect(
+                lambda _checked=False, item_id=item.item_id: rename_handler(item_id)
+            )
+            table.setCellWidget(row_index, 3, rename_button)

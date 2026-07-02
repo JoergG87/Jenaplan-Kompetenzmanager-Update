@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Signal
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
@@ -104,10 +105,13 @@ class StudentsScreen(QWidget):
                 student.student_id,
                 student.display_name,
                 student.group_name,
-                student.course_name,
             )
             for column_index, value in enumerate(values):
                 self.table.setItem(row_index, column_index, QTableWidgetItem(value))
+            course_item = QTableWidgetItem(f"● {student.course_name}")
+            if student.course_color_hex:
+                course_item.setForeground(QColor(student.course_color_hex))
+            self.table.setItem(row_index, 3, course_item)
 
     def _select_student(self) -> None:
         selected_items = self.table.selectedItems()

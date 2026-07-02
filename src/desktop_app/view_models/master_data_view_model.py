@@ -9,6 +9,14 @@ MASTER_DATA_EMPTY_NAME_MESSAGE = "Bitte einen Namen eingeben."
 MASTER_DATA_SAVE_PLACEHOLDER_MESSAGE = (
     "Stammdaten werden in einem späteren Sprint dauerhaft gespeichert."
 )
+COURSE_COLOR_OPTIONS = (
+    ("Blau", "#2563EB"),
+    ("Grün", "#16A34A"),
+    ("Orange", "#F97316"),
+    ("Lila", "#9333EA"),
+    ("Rot", "#DC2626"),
+    ("Grau", "#6B7280"),
+)
 
 
 @dataclass(frozen=True)
@@ -18,6 +26,8 @@ class MasterDataItemViewModel:
     item_id: str
     name: str
     is_persistent: bool
+    color_name: str = ""
+    color_hex: str = ""
 
     @property
     def status_label(self) -> str:
@@ -25,6 +35,11 @@ class MasterDataItemViewModel:
         if self.is_persistent:
             return "Vorhanden"
         return "Nur vorgemerkt"
+
+    @property
+    def has_color(self) -> bool:
+        """Return whether this item carries a course color."""
+        return bool(self.color_hex)
 
 
 @dataclass(frozen=True)
@@ -41,3 +56,22 @@ def normalize_master_data_name(name: str) -> str:
     if not normalized_name:
         raise ValueError(MASTER_DATA_EMPTY_NAME_MESSAGE)
     return normalized_name
+
+
+def course_color_from_key(color_key: str, fallback_index: int = 0) -> tuple[str, str]:
+    """Return a stable UI course color from a stored key or fallback index."""
+    normalized_color_key = color_key.strip()
+    if normalized_color_key and not normalized_color_key.startswith("#"):
+        normalized_color_key = f"#{normalized_color_key}"
+    for color_name, color_hex in COURSE_COLOR_OPTIONS:
+        if normalized_color_key.upper() == color_hex.upper():
+            return color_name, color_hex
+    return COURSE_COLOR_OPTIONS[fallback_index % len(COURSE_COLOR_OPTIONS)]
+
+
+def course_color_name(color_hex: str) -> str:
+    """Return the visible color name for a course color."""
+    for option_name, option_hex in COURSE_COLOR_OPTIONS:
+        if color_hex.upper() == option_hex.upper():
+            return option_name
+    return "Grau"

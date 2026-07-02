@@ -18,7 +18,7 @@ Spalten:
 | Schuelername auf Karte | `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | Anzeige, keine technische Identitaet |
 | Initialen auf Karte | `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | abgeleitete Anzeige |
 | Kurs auf Schuelerkarte | `data_students.course_id` -> `data_courses.course_name` | Anzeige | Nein | `data_courses` | Stammgruppe wird auf Karten nicht erneut angezeigt |
-| Kartenfarbe | `data_students.course_id` -> `data_courses.color_key` | Anzeige | Nein | `data_courses` | farbliche Projektion der Kurszuordnung |
+| Kartenfarbe | `data_students.course_id` -> `data_courses.color_key` / UI-Defaultfarbe im PySide6-Scope | Anzeige | Nein | `data_courses` | farbliche Projektion der Kurszuordnung, keine Schuelerfarbe |
 | Suche | `data_students.first_name`, `data_students.last_name`, `display_name` | Filter | Nein | `data_students` | Namen dienen nur Suche und Anzeige |
 | Navigations-ID | `data_students.student_id` | Navigation | Nein | `data_students` | einzige technische Identitaet fuer Schueler |
 | Neuer Schueler | keine fachliche Datenquelle | Navigation | Nein | keine | oeffnet `dlg_neuer_schueler`; Speichern spaeter ueber Runtime Adapter |
@@ -85,8 +85,9 @@ Nach erfolgreichem Python Command gibt Feature 1.4b nur ein Runtime-Ergebnis an 
 | --- | --- | --- | --- | --- | --- |
 | Stammgruppenliste | `data_groups.group_name` ueber bestehenden PySide6-Adapter | Anzeige | Nein | `data_groups` | Stammgruppen sind eigenstaendige Stammdaten |
 | Kursliste | `data_courses.course_name` ueber bestehenden PySide6-Adapter | Anzeige | Nein | `data_courses` | Kurse sind eigenstaendige Stammdaten |
+| Kursfarbe | `data_courses.color_key` / UI-Defaultfarbe im PySide6-Scope | Anzeige / Eingabe | Geplant | `data_courses` | nicht-persistenter Farbwert fuer Stammdaten-light; Persistenz folgt spaeter |
 | Neue Stammgruppe | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_groups` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
-| Neuer Kurs | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_courses` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
+| Neuer Kurs | temporaerer UI-/Adapter-State im PySide6-Sprint inklusive Kursfarbe | Eingabe | Geplant | `data_courses` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
 | Umbenennen | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_groups` / `data_courses` | `group_id` und `course_id` bleiben fachlich massgeblich; Schueler-Umbuchung folgt separat |
 
 ## Kompetenzansicht

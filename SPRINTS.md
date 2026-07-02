@@ -383,6 +383,14 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Session-lokale Stammdaten sind im Dialog sichtbar, aber nur dauerhaft vorhandene Eintraege koennen fuer `student.create` gespeichert werden
 - [x] Keine neue Persistenz, keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository und keine finale Architekturentscheidung umgesetzt
 
+### Hotfix - PySide6 Kursfarben anzeigen
+
+- [x] Kurse im Stammdaten-light-ViewModel um UI-Farbe als Name und Hex-Wert erweitert
+- [x] Kursdialoge um feste Farbauswahl fuer Blau, Gruen, Orange, Lila, Rot und Grau erweitert
+- [x] Kursfarben in der Stammdaten-Seite als kleiner Farbmarker angezeigt
+- [x] Kursfarben in der PySide6-Schuelerliste neben dem Kursnamen angezeigt
+- [x] Keine neue Persistenz, keine SQLite-Aenderung, kein ObservationRepository und keine finale Architekturentscheidung umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

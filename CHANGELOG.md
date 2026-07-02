@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Hotfix - PySide6 Kursfarben anzeigen
+
+### Changed
+
+- Kurse im Stammdaten-light-ViewModel fuehren eine UI-Farbe als Name und Hex-Wert.
+- Kursdialoge bieten eine feste Farbauswahl fuer Blau, Gruen, Orange, Lila, Rot und Grau.
+- Stammdaten-Seite zeigt Kursfarben als kleinen Farbmarker in der Kursliste.
+- PySide6-Schuelerliste zeigt die Kursfarbe als kleinen Marker neben dem Kursnamen.
+
+### Not Changed
+
+- Keine neue Persistenz fuer Kursfarben, keine SQLite-Aenderung, keine Beobachtungspersistenz, kein ObservationRepository, keine Dokumenten-/Medienpersistenz, kein Curriculum-Katalog-Umbau, kein Excel-/VBA-Umbau, kein Packaging und keine finale Architekturentscheidung umgesetzt.
+
 ## Sprint - PySide6 Schuelerdialog an Stammdaten anbinden
 
 ### Changed

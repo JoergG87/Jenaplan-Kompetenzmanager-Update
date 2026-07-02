@@ -19,6 +19,7 @@ from src.core.sqlite_store import (
 )
 from src.core.student import StudentService, StudentValidator
 from src.core.workbook_data import CourseRecord, GroupRecord, StudentRecord
+from src.desktop_app.view_models.master_data_view_model import course_color_from_key
 from src.desktop_app.view_models.student_view_model import (
     GroupSummaryViewModel,
     StudentDetailViewModel,
@@ -41,7 +42,10 @@ class StudentDesktopAdapter:
     ) -> tuple[StudentListItem, ...]:
         """Return students with readable group and course names."""
         groups = {group.group_id: group.group_name for group in self.list_groups()}
-        courses = {course.course_id: course.course_name for course in self.list_courses()}
+        courses = {
+            course.course_id: course
+            for course in self.list_courses()
+        }
         students = SQLiteStudentRepository(self.database).list_students()
         return tuple(
             self._student_list_item(student, groups, courses)
@@ -171,8 +175,19 @@ class StudentDesktopAdapter:
         self,
         student: StudentRecord,
         groups: dict[str, str],
-        courses: dict[str, str],
+        courses: dict[str, CourseRecord],
     ) -> StudentListItem:
+        course = courses.get(student.course_id)
+        course_name = student.course_id
+        course_color_name = ""
+        course_color_hex = ""
+        if course is not None:
+            course_name = course.course_name
+            course_index = tuple(courses).index(course.course_id)
+            course_color_name, course_color_hex = course_color_from_key(
+                course.color_key,
+                course_index,
+            )
         return StudentListItem(
             student.student_id,
             student.first_name,
@@ -180,7 +195,9 @@ class StudentDesktopAdapter:
             student.group_id,
             groups.get(student.group_id, student.group_id),
             student.course_id,
-            courses.get(student.course_id, student.course_id),
+            course_name,
+            course_color_name,
+            course_color_hex,
         )
 
     def _matches_filter(
