@@ -1,0 +1,188 @@
+"""Central visual theme for the PySide desktop app."""
+
+from __future__ import annotations
+
+from PySide6.QtWidgets import QApplication, QFrame, QLabel
+
+
+COLOR_NAVY = "#0B3A63"
+COLOR_BLUE = "#2563EB"
+COLOR_BLUE_DARK = "#1D4ED8"
+COLOR_BLUE_PRESSED = "#1E40AF"
+COLOR_BLUE_SOFT = "#DBEAFE"
+COLOR_TURQUOISE = "#0EA5A7"
+COLOR_GREEN = "#16A34A"
+COLOR_ORANGE = "#F97316"
+COLOR_BACKGROUND = "#F4F8FB"
+COLOR_SURFACE = "#FFFFFF"
+COLOR_SURFACE_SOFT = "#F8FBFD"
+COLOR_BORDER = "#D8E3EC"
+COLOR_TEXT = "#1F2937"
+COLOR_TEXT_MUTED = "#556372"
+COLOR_TEXT_SUBTLE = "#6B7280"
+COLOR_ERROR = "#B00020"
+
+FONT_FAMILY = "Arial"
+
+APP_STYLESHEET = f"""
+QMainWindow {{
+    background-color: {COLOR_BACKGROUND};
+    color: {COLOR_TEXT};
+    font-family: {FONT_FAMILY};
+}}
+QWidget#AppRoot {{
+    background-color: {COLOR_BACKGROUND};
+}}
+QWidget {{
+    color: {COLOR_TEXT};
+    font-family: {FONT_FAMILY};
+    font-size: 13px;
+}}
+QListWidget#AppNavigation {{
+    background-color: {COLOR_NAVY};
+    color: #EAF2F8;
+    border: none;
+    padding: 10px;
+    outline: none;
+}}
+QListWidget#AppNavigation::item {{
+    border-radius: 8px;
+    padding: 9px 10px;
+    margin: 2px 0;
+}}
+QListWidget#AppNavigation::item:selected {{
+    background-color: {COLOR_BLUE};
+    color: #FFFFFF;
+}}
+QListWidget#AppNavigation::item:hover {{
+    background-color: #174A74;
+}}
+QFrame#AppCard {{
+    background-color: rgba(255, 255, 255, 238);
+    border: 1px solid {COLOR_BORDER};
+    border-radius: 8px;
+}}
+QFrame#AppPanel {{
+    background-color: {COLOR_SURFACE_SOFT};
+    border: 1px solid {COLOR_BORDER};
+    border-radius: 8px;
+}}
+QPushButton {{
+    background-color: {COLOR_SURFACE};
+    color: {COLOR_NAVY};
+    border: 1px solid {COLOR_BORDER};
+    border-radius: 7px;
+    padding: 6px 13px;
+    font-weight: 500;
+}}
+QPushButton:hover {{
+    background-color: {COLOR_BLUE_SOFT};
+    border-color: #B7CEE2;
+}}
+QPushButton:pressed {{
+    background-color: #C7DDF3;
+}}
+QPushButton:disabled {{
+    color: #94A3B8;
+    background-color: #EEF3F7;
+    border-color: #E3EAF0;
+}}
+QLineEdit, QTextEdit, QComboBox, QDateEdit {{
+    background-color: {COLOR_SURFACE};
+    color: {COLOR_TEXT};
+    border: 1px solid #C9D8E4;
+    border-radius: 7px;
+    padding: 6px 8px;
+    selection-background-color: {COLOR_BLUE};
+}}
+QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QDateEdit:focus {{
+    border: 1px solid {COLOR_BLUE};
+}}
+QTableWidget, QListWidget {{
+    background-color: {COLOR_SURFACE};
+    alternate-background-color: #F3F8FB;
+    border: 1px solid {COLOR_BORDER};
+    border-radius: 7px;
+    gridline-color: #E5EDF3;
+    selection-background-color: {COLOR_BLUE_SOFT};
+    selection-color: {COLOR_TEXT};
+}}
+QHeaderView::section {{
+    background-color: #EAF2F8;
+    color: {COLOR_NAVY};
+    border: none;
+    border-bottom: 1px solid {COLOR_BORDER};
+    padding: 7px 8px;
+    font-weight: 600;
+}}
+QGroupBox {{
+    border: 1px solid {COLOR_BORDER};
+    border-radius: 8px;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: {COLOR_SURFACE_SOFT};
+    font-weight: 600;
+    color: {COLOR_NAVY};
+}}
+QGroupBox::title {{
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 4px;
+}}
+QScrollArea {{
+    border: none;
+    background-color: transparent;
+}}
+"""
+
+PRIMARY_BUTTON_STYLESHEET = f"""
+QPushButton {{
+    background-color: {COLOR_BLUE};
+    color: #FFFFFF;
+    border: 1px solid {COLOR_BLUE_DARK};
+    border-radius: 7px;
+    padding: 6px 16px;
+    font-weight: 600;
+}}
+QPushButton:hover {{
+    background-color: {COLOR_BLUE_DARK};
+}}
+QPushButton:pressed {{
+    background-color: {COLOR_BLUE_PRESSED};
+}}
+QPushButton:disabled {{
+    background-color: #93C5FD;
+    border-color: #93C5FD;
+}}
+"""
+
+
+def apply_app_theme(app: QApplication) -> None:
+    """Apply the app-wide PySide stylesheet."""
+    app.setStyleSheet(APP_STYLESHEET)
+
+
+def create_card() -> QFrame:
+    """Return a consistently styled content card."""
+    card = QFrame()
+    card.setFrameShape(QFrame.Shape.StyledPanel)
+    card.setObjectName("AppCard")
+    return card
+
+
+def set_label_style(label: QLabel, role: str) -> None:
+    """Apply a semantic text style to a label."""
+    styles = {
+        "app_title": f"font-size: 24px; font-weight: 700; color: {COLOR_NAVY};",
+        "screen_title": f"font-size: 22px; font-weight: 700; color: {COLOR_NAVY};",
+        "dialog_title": f"font-size: 20px; font-weight: 700; color: {COLOR_NAVY};",
+        "section_title": f"font-size: 16px; font-weight: 600; color: {COLOR_NAVY};",
+        "card_title": f"font-weight: 600; color: {COLOR_NAVY};",
+        "muted": f"color: {COLOR_TEXT_MUTED};",
+        "subtle": f"color: {COLOR_TEXT_SUBTLE};",
+        "body": f"color: {COLOR_TEXT};",
+        "error": f"color: {COLOR_ERROR};",
+        "small": f"color: {COLOR_TEXT_SUBTLE}; font-size: 11px;",
+        "field_label": f"color: {COLOR_TEXT_MUTED}; font-size: 12px;",
+    }
+    label.setStyleSheet(styles[role])

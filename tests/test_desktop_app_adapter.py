@@ -27,7 +27,9 @@ from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_targ
 from src.desktop_app.screens import master_data_screen
 from src.desktop_app.screens import overview_screen
 from src.desktop_app.screens import students_screen
+from src.desktop_app import main
 from src.desktop_app import shell
+from src.desktop_app import theme
 from src.desktop_app.view_models.master_data_view_model import (
     COURSE_GROUP_EMPTY_COURSES_MESSAGE,
     COURSE_GROUP_EMPTY_GROUPS_MESSAGE,
@@ -322,11 +324,35 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(new_observation_dialog))
         self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(master_data_dialog))
         self.assertIn("DIALOG_PRIMARY_BUTTON_STYLE", button_source)
-        self.assertIn("background-color: #2563EB", button_source)
-        self.assertIn("color: #FFFFFF", button_source)
+        self.assertIn("PRIMARY_BUTTON_STYLESHEET", button_source)
+        self.assertIn("background-color: #2563EB", theme.PRIMARY_BUTTON_STYLESHEET)
+        self.assertIn("color: #FFFFFF", theme.PRIMARY_BUTTON_STYLESHEET)
         self.assertIn("save_button.setStyleSheet(DIALOG_PRIMARY_BUTTON_STYLE)", button_source)
         self.assertIn("save_button.setDefault(True)", button_source)
         self.assertIn('cancel_button.setShortcut("Esc")', button_source)
+
+    def test_pyside_app_uses_icon_based_visual_theme(self) -> None:
+        theme_source = inspect.getsource(theme)
+        main_source = inspect.getsource(main)
+        shell_source = inspect.getsource(shell)
+        screen_source = inspect.getsource(students_screen)
+
+        self.assertIn('COLOR_NAVY = "#0B3A63"', theme_source)
+        self.assertIn('COLOR_BLUE = "#2563EB"', theme_source)
+        self.assertIn('COLOR_TURQUOISE = "#0EA5A7"', theme_source)
+        self.assertIn('COLOR_GREEN = "#16A34A"', theme_source)
+        self.assertIn('COLOR_ORANGE = "#F97316"', theme_source)
+        self.assertIn("APP_STYLESHEET", theme_source)
+        self.assertIn("QListWidget#AppNavigation", theme.APP_STYLESHEET)
+        self.assertIn("QFrame#AppCard", theme.APP_STYLESHEET)
+        self.assertIn("rgba(255, 255, 255, 238)", theme.APP_STYLESHEET)
+        self.assertIn("def apply_app_theme(", theme_source)
+        self.assertIn("def create_card(", theme_source)
+        self.assertIn("def set_label_style(", theme_source)
+        self.assertIn("apply_app_theme(app)", main_source)
+        self.assertIn('root.setObjectName("AppRoot")', shell_source)
+        self.assertIn('self.navigation.setObjectName("AppNavigation")', shell_source)
+        self.assertIn('set_label_style(title, "screen_title")', screen_source)
 
     def test_app_info_dialog_contains_non_technical_app_information(self) -> None:
         source = inspect.getsource(app_info_dialog)
@@ -378,7 +404,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertIn('marker = QLabel("●")', source)
         self.assertIn("student.course_color_hex or '#6B7280'", source)
-        self.assertIn('course_label.setStyleSheet("color: #1F2937;")', source)
+        self.assertIn('set_label_style(course_label, "body")', source)
         self.assertIn("QHeaderView.ResizeMode.ResizeToContents", source)
         self.assertNotIn('"Stammgruppe", "Kurs"', source)
         self.assertNotIn("self.table.setItem(row_index, 1", source)

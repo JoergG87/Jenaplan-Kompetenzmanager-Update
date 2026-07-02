@@ -20,6 +20,7 @@ from src.desktop_app.view_models.student_view_model import (
     StudentListItem,
     filter_student_list,
 )
+from src.desktop_app.theme import set_label_style
 
 
 STUDENT_SEARCH_PLACEHOLDER = "Schüler suchen …"
@@ -50,7 +51,7 @@ class StudentsScreen(QWidget):
 
         header = QHBoxLayout()
         title = QLabel("Schüler")
-        title.setStyleSheet("font-size: 22px; font-weight: 600;")
+        set_label_style(title, "screen_title")
         new_student_button = QPushButton("+ Schüler")
         new_student_button.clicked.connect(self.new_student_requested.emit)
         header.addWidget(title)
@@ -67,9 +68,9 @@ class StudentsScreen(QWidget):
         search_row.addWidget(clear_search_button)
         layout.addLayout(search_row)
 
-        self.group_filter_label.setStyleSheet("color: #555;")
+        set_label_style(self.group_filter_label, "muted")
         layout.addWidget(self.group_filter_label)
-        self.empty_state_label.setStyleSheet("color: #666;")
+        set_label_style(self.empty_state_label, "subtle")
         self.empty_state_label.setWordWrap(True)
         layout.addWidget(self.empty_state_label)
 
@@ -134,7 +135,7 @@ class StudentsScreen(QWidget):
         marker.setStyleSheet(f"color: {student.course_color_hex or '#6B7280'};")
 
         course_label = QLabel(student.course_name)
-        course_label.setStyleSheet("color: #1F2937;")
+        set_label_style(course_label, "body")
 
         layout.addWidget(marker)
         layout.addWidget(course_label)

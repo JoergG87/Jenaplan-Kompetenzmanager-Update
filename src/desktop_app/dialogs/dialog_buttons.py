@@ -4,29 +4,12 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QDialogButtonBox
 
+from src.desktop_app.theme import PRIMARY_BUTTON_STYLESHEET
+
 
 DIALOG_CANCEL_TEXT = "Abbrechen"
 DIALOG_SAVE_TEXT = "Speichern"
-DIALOG_PRIMARY_BUTTON_STYLE = """
-QPushButton {
-    background-color: #2563EB;
-    color: #FFFFFF;
-    border: 1px solid #1D4ED8;
-    border-radius: 6px;
-    padding: 6px 16px;
-    font-weight: 600;
-}
-QPushButton:hover {
-    background-color: #1D4ED8;
-}
-QPushButton:pressed {
-    background-color: #1E40AF;
-}
-QPushButton:disabled {
-    background-color: #93C5FD;
-    border-color: #93C5FD;
-}
-"""
+DIALOG_PRIMARY_BUTTON_STYLE = PRIMARY_BUTTON_STYLESHEET
 
 
 def configure_save_cancel_buttons(buttons: QDialogButtonBox) -> None:

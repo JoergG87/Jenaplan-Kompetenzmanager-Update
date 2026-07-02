@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from src.desktop_app.theme import set_label_style
+
 
 APP_INFO_TITLE = "Über Jenaplan Kompetenzmanager"
 APP_INFO_APP_NAME = "Jenaplan Kompetenzmanager"
@@ -30,7 +32,7 @@ class AppInfoDialog(QDialog):
     def _build(self) -> None:
         layout = QVBoxLayout(self)
         title = QLabel(APP_INFO_APP_NAME)
-        title.setStyleSheet("font-size: 18px; font-weight: 600;")
+        set_label_style(title, "dialog_title")
         layout.addWidget(title)
         layout.addWidget(QLabel(APP_INFO_MODE))
         layout.addWidget(QLabel(f"Version: {APP_INFO_VERSION}"))

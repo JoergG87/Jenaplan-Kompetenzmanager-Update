@@ -19,6 +19,7 @@ from src.desktop_app.view_models.master_data_view_model import (
     MasterDataViewModel,
 )
 from src.desktop_app.view_models.student_view_model import GroupSummaryViewModel
+from src.desktop_app.theme import create_card, set_label_style
 
 
 OVERVIEW_GROUP_EMPTY_STATE = "Noch keine Stammgruppen vorhanden."
@@ -40,9 +41,9 @@ class OverviewScreen(QWidget):
     def _build(self) -> None:
         layout = QVBoxLayout(self)
         title = QLabel("Übersicht")
-        title.setStyleSheet("font-size: 22px; font-weight: 600;")
+        set_label_style(title, "screen_title")
         subtitle = QLabel("Stammgruppen und Schülerbestand")
-        subtitle.setStyleSheet("color: #555;")
+        set_label_style(subtitle, "muted")
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(self._section_card("Stammgruppen", self.groups_layout))
@@ -91,12 +92,10 @@ class OverviewScreen(QWidget):
             )
 
     def _section_card(self, title: str, content_layout: object) -> QFrame:
-        card = QFrame()
-        card.setFrameShape(QFrame.Shape.StyledPanel)
-        card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
+        card = create_card()
         layout = QVBoxLayout(card)
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
+        set_label_style(title_label, "section_title")
         layout.addWidget(title_label)
         layout.addLayout(content_layout)
         return card
@@ -106,12 +105,10 @@ class OverviewScreen(QWidget):
         group: MasterDataItemViewModel,
         active_student_count: int | None = None,
     ) -> QFrame:
-        card = QFrame()
-        card.setFrameShape(QFrame.Shape.StyledPanel)
-        card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
+        card = create_card()
         layout = QVBoxLayout(card)
         name = QLabel(group.name)
-        name.setStyleSheet("font-size: 16px; font-weight: 600;")
+        set_label_style(name, "section_title")
         count_text = (
             f"{active_student_count} Schüler"
             if active_student_count is not None
@@ -132,19 +129,17 @@ class OverviewScreen(QWidget):
         groups_by_id: dict[str, MasterDataItemViewModel],
         courses_by_id: dict[str, MasterDataItemViewModel],
     ) -> QFrame:
-        card = QFrame()
-        card.setFrameShape(QFrame.Shape.StyledPanel)
-        card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
+        card = create_card()
         layout = QVBoxLayout(card)
         title = QLabel(course_group.name)
-        title.setStyleSheet("font-size: 16px; font-weight: 600;")
+        set_label_style(title, "section_title")
         group_names = tuple(
             groups_by_id[group_id].name
             for group_id in course_group.selected_group_ids
             if group_id in groups_by_id
         )
         groups_label = QLabel(f"Stammgruppen: {', '.join(group_names)}")
-        groups_label.setStyleSheet("color: #555;")
+        set_label_style(groups_label, "muted")
         layout.addWidget(title)
         layout.addWidget(groups_label)
         for course_id in course_group.selected_course_ids:
@@ -172,7 +167,7 @@ class OverviewScreen(QWidget):
             )
         )
         status = QLabel(course.status_label)
-        status.setStyleSheet("color: #666;")
+        set_label_style(status, "subtle")
         layout.addWidget(marker)
         layout.addWidget(open_button)
         layout.addStretch(1)

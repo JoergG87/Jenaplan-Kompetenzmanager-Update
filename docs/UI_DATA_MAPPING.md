@@ -15,6 +15,7 @@ Spalten:
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | App-Info | statische PySide6-Prototyp-Texte | Anzeige | Nein | keine fachliche Datenquelle | nicht-technische Orientierung, keine Fachlogik |
+| Visuelles Theme | freigegebene Icon-Leitlinie aus `docs/DESIGN_SYSTEM.md` | Anzeige | Nein | keine fachliche Datenquelle | app-weites PySide-Theme fuer Farben, Karten, Navigation, Tabellen, Eingaben und Dialoge; keine Fachlogik |
 
 ## Stammgruppenuebersicht
 

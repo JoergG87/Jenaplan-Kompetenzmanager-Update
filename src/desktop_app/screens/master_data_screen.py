@@ -21,6 +21,7 @@ from src.desktop_app.view_models.master_data_view_model import (
     MasterDataItemViewModel,
     MasterDataViewModel,
 )
+from src.desktop_app.theme import create_card, set_label_style
 
 
 MASTER_DATA_GROUP_EMPTY_STATE = "Noch keine Stammgruppen vorhanden."
@@ -53,9 +54,9 @@ class MasterDataScreen(QWidget):
     def _build(self) -> None:
         layout = QVBoxLayout(self)
         title = QLabel("Stammdaten")
-        title.setStyleSheet("font-size: 22px; font-weight: 600;")
+        set_label_style(title, "screen_title")
         subtitle = QLabel("Stammgruppen und Kurse verwalten")
-        subtitle.setStyleSheet("color: #555;")
+        set_label_style(subtitle, "muted")
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(
@@ -116,13 +117,11 @@ class MasterDataScreen(QWidget):
         empty_state_label: QLabel,
         add_handler: object,
     ) -> QFrame:
-        card = QFrame()
-        card.setFrameShape(QFrame.Shape.StyledPanel)
-        card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
+        card = create_card()
         layout = QVBoxLayout(card)
         header = QHBoxLayout()
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
+        set_label_style(title_label, "section_title")
         add_button = QPushButton(add_button_label)
         add_button.clicked.connect(add_handler)
         header.addWidget(title_label)
@@ -135,7 +134,7 @@ class MasterDataScreen(QWidget):
         table.setAlternatingRowColors(True)
         table.horizontalHeader().setStretchLastSection(True)
         table.setMinimumHeight(150)
-        empty_state_label.setStyleSheet("color: #666;")
+        set_label_style(empty_state_label, "subtle")
         layout.addWidget(empty_state_label)
         layout.addWidget(table)
         return card
@@ -146,19 +145,17 @@ class MasterDataScreen(QWidget):
         table: QTableWidget,
         empty_state_label: QLabel,
     ) -> QFrame:
-        card = QFrame()
-        card.setFrameShape(QFrame.Shape.StyledPanel)
-        card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
+        card = create_card()
         layout = QVBoxLayout(card)
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
+        set_label_style(title_label, "section_title")
         layout.addWidget(title_label)
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         table.setAlternatingRowColors(True)
         table.horizontalHeader().setStretchLastSection(True)
         table.setMinimumHeight(120)
-        empty_state_label.setStyleSheet("color: #666;")
+        set_label_style(empty_state_label, "subtle")
         layout.addWidget(empty_state_label)
         layout.addWidget(table)
         return card

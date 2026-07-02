@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Sprint - PySide Icon Theme
+
+### Changed
+
+- Zentrales PySide-Theme `src/desktop_app/theme.py` aus der freigegebenen Icon-Farbwelt ergaenzt.
+- App-weites Stylesheet fuer Navigation, Karten, Tabellen, Eingaben, Buttons und Dialogflaechen angebunden.
+- Bestehende PySide-Screens und Dialoge auf semantische Theme-Helfer fuer Titel, Karten, Hinweise und Fehlermeldungen umgestellt.
+- Primäre Dialogbuttons nutzen weiterhin die freigegebene blaue Aktionsfarbe, jetzt aus dem zentralen Theme.
+
+### Not Changed
+
+- Keine Fachlogik, keine neue Persistenz, keine SQLite-Aenderung, keine Beobachtungspersistenz, kein ObservationRepository, kein Excel-/VBA-Umbau, kein Packaging und kein Curriculum-Umbau umgesetzt.
+
 ## Sprint - PySide Kursverbund bearbeiten
 
 ### Changed

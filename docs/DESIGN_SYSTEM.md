@@ -149,6 +149,20 @@ Neue UI-Entwicklung konzentriert sich auf die PySide-App.
 
 Excel/VBA ist nicht mehr die Zielrichtung fuer die Haupt-App. Excel kann weiterhin als Export-, Berichts- oder Legacy-Projektion bestehen.
 
+### PySide Theme Umsetzung
+
+Die freigegebene Icon-Leitlinie wird in der PySide-App ueber ein zentrales Theme-Modul umgesetzt.
+
+Das Theme buendelt:
+
+- die Icon-Farbwelt fuer Navigation, Primäraktionen, Statusmarker und ruhige Flaechen
+- helle neutrale App-Hintergruende
+- weiche Karten- und Panel-Flaechen mit sanften Rahmen
+- einheitliche Tabellen-, Eingabe- und Button-Stile
+- semantische Textrollen fuer App-Titel, Screen-Titel, Dialogtitel, Kartenueberschriften, Hinweise und Fehlermeldungen
+
+Neue PySide-Screens und Dialoge sollen dieses Theme verwenden, statt eigene Farb- oder Kartenstile lokal zu definieren.
+
 ## Änderungsregel
 
 Normale Entwicklungssprints verändern das Design nicht.

@@ -34,6 +34,7 @@ from src.desktop_app.screens.overview_screen import OverviewScreen
 from src.desktop_app.screens.placeholder_screen import PlaceholderScreen
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
 from src.desktop_app.screens.students_screen import StudentsScreen
+from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
 from src.desktop_app.view_models.master_data_view_model import CourseGroupViewModel
 
@@ -57,10 +58,14 @@ class AppShell(QMainWindow):
 
     def _build(self) -> None:
         root = QWidget()
+        root.setObjectName("AppRoot")
         layout = QHBoxLayout(root)
+        layout.setContentsMargins(0, 0, 18, 16)
+        layout.setSpacing(18)
 
         sidebar = QVBoxLayout()
         self.navigation = QListWidget()
+        self.navigation.setObjectName("AppNavigation")
         self.navigation.setFixedWidth(180)
         for item in NAVIGATION_ITEMS:
             nav_item = QListWidgetItem(item.label)
@@ -76,7 +81,7 @@ class AppShell(QMainWindow):
 
         content = QVBoxLayout()
         title = QLabel("Jenaplan Kompetenzmanager")
-        title.setStyleSheet("font-size: 24px; font-weight: 700;")
+        set_label_style(title, "app_title")
         content.addWidget(title)
 
         self.stack = QStackedWidget()
@@ -114,7 +119,7 @@ class AppShell(QMainWindow):
 
         content.addWidget(self.stack)
         self.status_label = QLabel("")
-        self.status_label.setStyleSheet("color: #555;")
+        set_label_style(self.status_label, "muted")
         content.addWidget(self.status_label)
         layout.addLayout(content)
 

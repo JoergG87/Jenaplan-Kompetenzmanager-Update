@@ -321,6 +321,7 @@ Registrierte Python-Module:
 - `src/desktop_app/app.py`
 - `src/desktop_app/shell.py`
 - `src/desktop_app/navigation.py`
+- `src/desktop_app/theme.py`
 - `src/desktop_app/student_adapter.py`
 - `src/desktop_app/student_list_view.py`
 - `src/desktop_app/new_student_dialog.py`
@@ -347,6 +348,16 @@ Registrierte Python-Klassen und Funktionen:
 - `NavigationTarget`
 - `NAVIGATION_ITEMS`
 - `resolve_navigation_target(key)`
+- `apply_app_theme(app)`
+- `APP_STYLESHEET`
+- `PRIMARY_BUTTON_STYLESHEET`
+- `create_card()`
+- `set_label_style(label, role)`
+- `COLOR_NAVY`
+- `COLOR_BLUE`
+- `COLOR_TURQUOISE`
+- `COLOR_GREEN`
+- `COLOR_ORANGE`
 - `StudentDesktopAdapter`
 - `MasterDataDesktopAdapter`
 - `CurriculumDesktopAdapter`

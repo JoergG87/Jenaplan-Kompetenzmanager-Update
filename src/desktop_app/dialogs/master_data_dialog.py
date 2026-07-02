@@ -26,6 +26,7 @@ from src.desktop_app.view_models.master_data_view_model import (
     MasterDataItemViewModel,
     normalize_master_data_name,
 )
+from src.desktop_app.theme import set_label_style
 
 
 class MasterDataNameDialog(QDialog):
@@ -47,7 +48,7 @@ class MasterDataNameDialog(QDialog):
         self.color_select = QComboBox()
         self._populate_colors(initial_color_hex)
         self.error_label = QLabel("")
-        self.error_label.setStyleSheet("color: #B00020;")
+        set_label_style(self.error_label, "error")
         self._build()
 
     def _build(self) -> None:
@@ -112,7 +113,7 @@ class CourseGroupDialog(QDialog):
         self.group_checkboxes: dict[str, QCheckBox] = {}
         self.course_checkboxes: dict[str, QCheckBox] = {}
         self.error_label = QLabel("")
-        self.error_label.setStyleSheet("color: #B00020;")
+        set_label_style(self.error_label, "error")
         self._build()
 
     def _build(self) -> None:

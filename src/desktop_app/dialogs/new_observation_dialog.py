@@ -36,6 +36,7 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationDraftViewModel,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
+from src.desktop_app.theme import create_card, set_label_style
 
 
 class NewObservationDialog(QDialog):
@@ -65,11 +66,11 @@ class NewObservationDialog(QDialog):
         layout.setSpacing(10)
 
         title = QLabel(f"Neue Beobachtung für {self.student.display_name}")
-        title.setStyleSheet("font-size: 20px; font-weight: 600;")
+        set_label_style(title, "dialog_title")
         student_context = QLabel(
             f"{self.student.group_name} · {self.student.course_name}"
         )
-        student_context.setStyleSheet("color: #555;")
+        set_label_style(student_context, "muted")
         layout.addWidget(title)
         layout.addWidget(student_context)
 
@@ -170,9 +171,9 @@ class NewObservationDialog(QDialog):
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(4)
         title = QLabel("Kompetenzen")
-        title.setStyleSheet("font-weight: 600;")
+        set_label_style(title, "card_title")
         hint = QLabel("Mehrfachauswahl möglich")
-        hint.setStyleSheet("color: #555;")
+        set_label_style(hint, "muted")
         layout.addWidget(title)
         layout.addWidget(hint)
         layout.addWidget(self.competency_list)
@@ -184,9 +185,9 @@ class NewObservationDialog(QDialog):
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(4)
         title = QLabel("Ausgewählte Kompetenzen bewerten")
-        title.setStyleSheet("font-weight: 600;")
+        set_label_style(title, "card_title")
         hint = QLabel("Jede ausgewählte Kompetenz erhält eine eigene Bewertung.")
-        hint.setStyleSheet("color: #555;")
+        set_label_style(hint, "muted")
         self.competency_ratings_container = QWidget()
         self.competency_ratings_layout = QVBoxLayout(self.competency_ratings_container)
         self.competency_ratings_layout.setContentsMargins(0, 2, 0, 0)
@@ -194,7 +195,7 @@ class NewObservationDialog(QDialog):
         self.competency_ratings_empty_state = QLabel(
             "Noch keine Kompetenz ausgewählt."
         )
-        self.competency_ratings_empty_state.setStyleSheet("color: #666;")
+        set_label_style(self.competency_ratings_empty_state, "subtle")
         self.competency_ratings_layout.addWidget(self.competency_ratings_empty_state)
         layout.addWidget(title)
         layout.addWidget(hint)
@@ -207,18 +208,18 @@ class NewObservationDialog(QDialog):
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(6)
         title = QLabel("Dokumente & Medien")
-        title.setStyleSheet("font-weight: 600;")
+        set_label_style(title, "card_title")
         hint = QLabel(
             "Fotos, Dateien oder andere Nachweise können später an Beobachtungen "
             "angehängt werden."
         )
         hint.setWordWrap(True)
-        hint.setStyleSheet("color: #555;")
+        set_label_style(hint, "muted")
         add_file_button = QPushButton("Datei hinzufügen")
         add_file_button.clicked.connect(self.show_attachment_placeholder)
         empty_state = QLabel(OBSERVATION_ATTACHMENT_EMPTY_STATE)
-        empty_state.setStyleSheet("color: #666;")
-        self.attachment_feedback_label.setStyleSheet("color: #555;")
+        set_label_style(empty_state, "subtle")
+        set_label_style(self.attachment_feedback_label, "muted")
 
         layout.addWidget(title)
         layout.addWidget(hint)
@@ -235,14 +236,11 @@ class NewObservationDialog(QDialog):
 
     def _field_label(self, label: str) -> QLabel:
         field_label = QLabel(label)
-        field_label.setStyleSheet("color: #555;")
+        set_label_style(field_label, "field_label")
         return field_label
 
     def _card(self) -> QFrame:
-        card = QFrame()
-        card.setFrameShape(QFrame.Shape.StyledPanel)
-        card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
-        return card
+        return create_card()
 
     def show_attachment_placeholder(self) -> None:
         """Show a non-persistent attachment message."""
@@ -389,7 +387,7 @@ class NewObservationDialog(QDialog):
         self.competency_ratings_empty_state = QLabel(
             "Noch keine Kompetenz ausgewählt."
         )
-        self.competency_ratings_empty_state.setStyleSheet("color: #666;")
+        set_label_style(self.competency_ratings_empty_state, "subtle")
         self.competency_ratings_layout.addWidget(self.competency_ratings_empty_state)
 
     def _competency_key(self, catalog_entry: object) -> str:

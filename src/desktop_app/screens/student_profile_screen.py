@@ -18,6 +18,7 @@ from src.desktop_app.view_models.student_view_model import (
     PROFILE_SECTION_PLACEHOLDERS,
     StudentDetailViewModel,
 )
+from src.desktop_app.theme import create_card, set_label_style
 
 
 class StudentProfileScreen(QWidget):
@@ -52,9 +53,9 @@ class StudentProfileScreen(QWidget):
         content = QWidget()
         content_layout = QVBoxLayout(content)
 
-        self.name_label.setStyleSheet("font-size: 22px; font-weight: 600;")
-        self.meta_label.setStyleSheet("color: #555;")
-        self.student_id_label.setStyleSheet("color: #777; font-size: 11px;")
+        set_label_style(self.name_label, "screen_title")
+        set_label_style(self.meta_label, "muted")
+        set_label_style(self.student_id_label, "small")
         content_layout.addWidget(self.name_label)
         content_layout.addWidget(self.meta_label)
         content_layout.addWidget(self.student_id_label)
@@ -83,7 +84,7 @@ class StudentProfileScreen(QWidget):
         card = self._card()
         layout = QVBoxLayout(card)
         title = QLabel("Schnellaktionen")
-        title.setStyleSheet("font-weight: 600;")
+        set_label_style(title, "card_title")
         button_row = QHBoxLayout()
         observation_button = QPushButton("+ Beobachtung")
         document_button = QPushButton("Dokument hinzufügen")
@@ -99,7 +100,7 @@ class StudentProfileScreen(QWidget):
         button_row.addWidget(document_button)
         button_row.addWidget(edit_button)
         button_row.addStretch()
-        self.action_feedback_label.setStyleSheet("color: #555;")
+        set_label_style(self.action_feedback_label, "muted")
         layout.addWidget(title)
         layout.addLayout(button_row)
         layout.addWidget(self.action_feedback_label)
@@ -109,7 +110,7 @@ class StudentProfileScreen(QWidget):
         card = self._card()
         layout = QVBoxLayout(card)
         title = QLabel("Basisdaten")
-        title.setStyleSheet("font-weight: 600;")
+        set_label_style(title, "card_title")
         field_row = QHBoxLayout()
         field_row.addWidget(self._basis_field_column("Stammgruppe", self.group_value_label), 1)
         field_row.addWidget(self._basis_field_column("Kurs", self.course_value_label), 1)
@@ -123,8 +124,8 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(column)
         layout.setContentsMargins(0, 0, 0, 0)
         field_label = QLabel(label)
-        field_label.setStyleSheet("color: #666; font-size: 12px;")
-        value_label.setStyleSheet("color: #222; font-size: 14px;")
+        set_label_style(field_label, "field_label")
+        set_label_style(value_label, "body")
         value_label.setWordWrap(True)
         layout.addWidget(field_label)
         layout.addWidget(value_label)
@@ -135,21 +136,18 @@ class StudentProfileScreen(QWidget):
         card = self._card()
         layout = QVBoxLayout(card)
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-weight: 600;")
+        set_label_style(title_label, "card_title")
         placeholder_label = QLabel(placeholder)
-        placeholder_label.setStyleSheet("color: #444;")
+        set_label_style(placeholder_label, "body")
         hint_label = QLabel(hint)
-        hint_label.setStyleSheet("color: #666;")
+        set_label_style(hint_label, "subtle")
         layout.addWidget(title_label)
         layout.addWidget(placeholder_label)
         layout.addWidget(hint_label)
         return card
 
     def _card(self) -> QFrame:
-        card = QFrame()
-        card.setFrameShape(QFrame.Shape.StyledPanel)
-        card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
-        return card
+        return create_card()
 
     def _show_placeholder_message(self, message: str) -> None:
         self.action_feedback_label.setText(message)

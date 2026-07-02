@@ -19,6 +19,7 @@ from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDeskt
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
 from src.desktop_app.view_models.master_data_view_model import MasterDataItemViewModel
+from src.desktop_app.theme import set_label_style
 
 
 STUDENT_DIALOG_SELECT_PLACEHOLDER = "Bitte auswählen"
@@ -85,7 +86,7 @@ class NewStudentDialog(QDialog):
         layout.addLayout(form)
 
         self.error_label = QLabel("")
-        self.error_label.setStyleSheet("color: #B00020;")
+        set_label_style(self.error_label, "error")
         layout.addWidget(self.error_label)
 
         buttons = QDialogButtonBox(

@@ -6,6 +6,22 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - PySide Icon Theme ✅
+
+- [x] Status: Abgeschlossen
+
+### Titel
+
+Icon-basierte visuelle Anpassung der PySide-Hauptanwendung
+
+### Ergebnis
+
+- [x] Zentrales PySide-Theme aus der freigegebenen Icon-Farbwelt erstellt
+- [x] App-weites Stylesheet fuer Navigation, Karten, Tabellen, Eingaben und Dialoge angebunden
+- [x] Bestehende PySide-Screens und Dialoge auf semantische Text- und Card-Helfer umgestellt
+- [x] Kursfarbmarker als fachliche Marker erhalten
+- [x] Keine Fachlogik, keine Persistenz und kein Excel-/VBA-Pfad geaendert
+
 ## Sprint 0 ✅
 
 - [x] Status: Abgeschlossen
