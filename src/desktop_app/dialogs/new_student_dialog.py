@@ -27,10 +27,10 @@ STUDENT_DIALOG_EMPTY_NAME_MESSAGE = "Bitte einen Namen eingeben."
 STUDENT_DIALOG_GROUP_REQUIRED_MESSAGE = "Bitte eine Stammgruppe auswählen."
 STUDENT_DIALOG_COURSE_REQUIRED_MESSAGE = "Bitte einen Kurs auswählen."
 STUDENT_DIALOG_DRAFT_GROUP_MESSAGE = (
-    "Diese Stammgruppe ist nur vorgemerkt. Dauerhaftes Speichern folgt später."
+    "Diese Stammgruppe kann noch nicht für neue Schüler verwendet werden."
 )
 STUDENT_DIALOG_DRAFT_COURSE_MESSAGE = (
-    "Dieser Kurs ist nur vorgemerkt. Dauerhaftes Speichern folgt später."
+    "Dieser Kurs kann noch nicht für neue Schüler verwendet werden."
 )
 
 

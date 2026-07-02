@@ -21,9 +21,11 @@ from src.core.constants import (
     TABLE_STUDENTS,
 )
 from src.core.sqlite_store import (
+    DEFAULT_COURSE_GROUP_ID,
     SQLiteCourseRepository,
     SQLiteDatabase,
     SQLiteGroupRepository,
+    SQLiteMasterDataRepository,
     SQLiteStudentRepository,
     build_workbook_data_from_sqlite,
     create_sqlite_seed_database,
@@ -33,6 +35,36 @@ from src.ui.screens.klassenuebersicht import ClassOverviewV02WorkbookBuilder
 
 
 class SQLiteSpikeTest(unittest.TestCase):
+    def test_master_data_schema_contains_course_group_tables_and_relations(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            database = SQLiteDatabase(database_path)
+            database.initialize_schema()
+
+            with closing(sqlite3.connect(database_path)) as connection:
+                tables = {
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT name FROM sqlite_master WHERE type = 'table'"
+                    ).fetchall()
+                }
+                course_columns = {
+                    row[1]
+                    for row in connection.execute("PRAGMA table_info(courses)").fetchall()
+                }
+                group_columns = {
+                    row[1]
+                    for row in connection.execute("PRAGMA table_info(groups)").fetchall()
+                }
+
+        self.assertIn("course_groups", tables)
+        self.assertIn("course_group_student_groups", tables)
+        self.assertIn("course_group_courses", tables)
+        self.assertIn("sort_order", group_columns)
+        self.assertIn("color_name", course_columns)
+        self.assertIn("color_hex", course_columns)
+        self.assertIn("sort_order", course_columns)
+
     def test_seed_data_is_written_to_sqlite_without_id_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
@@ -75,6 +107,86 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertTrue(all(student.student_id.startswith(STUDENT_ID_PREFIX) for student in students))
         self.assertTrue(all(group.active for group in groups))
         self.assertTrue(all(course.active for course in courses))
+
+    def test_master_data_seed_creates_default_course_group(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = create_sqlite_seed_database(Path(temp_dir) / "kompetenzmanager.sqlite")
+            repository = SQLiteMasterDataRepository(database)
+            course_groups = repository.list_course_groups()
+
+        self.assertEqual(len(course_groups), 1)
+        self.assertEqual(course_groups[0].course_group_id, DEFAULT_COURSE_GROUP_ID)
+        self.assertEqual(course_groups[0].name, "Mathe/Deutsch Kursverbund A")
+        self.assertEqual(course_groups[0].selected_group_ids, (f"{GROUP_ID_PREFIX}-000001",))
+        self.assertEqual(
+            course_groups[0].selected_course_ids,
+            (
+                f"{COURSE_ID_PREFIX}-000001",
+                f"{COURSE_ID_PREFIX}-000002",
+                f"{COURSE_ID_PREFIX}-000003",
+            ),
+        )
+
+    def test_master_data_defaults_do_not_overwrite_existing_data(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            database = SQLiteDatabase(database_path)
+            database.initialize_schema()
+            with closing(database.connect()) as connection:
+                with connection:
+                    connection.execute(
+                        """
+                        INSERT INTO groups (group_id, group_name, sort_order, active)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        (f"{GROUP_ID_PREFIX}-999999", "Eigene Gruppe", 0, 1),
+                    )
+                    connection.execute(
+                        """
+                        INSERT INTO courses (
+                            course_id,
+                            course_name,
+                            color_key,
+                            color_name,
+                            color_hex,
+                            sort_order,
+                            active
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            f"{COURSE_ID_PREFIX}-999999",
+                            "Eigener Kurs",
+                            "#EAB308",
+                            "Gelb",
+                            "#EAB308",
+                            0,
+                            1,
+                        ),
+                    )
+
+            database.ensure_master_data_defaults()
+            repository = SQLiteMasterDataRepository(database)
+            group_names = [group.group_name for group in repository.list_student_groups()]
+            course_names = [course.course_name for course in repository.list_courses()]
+            course_groups = repository.list_course_groups()
+
+        self.assertEqual(
+            group_names,
+            ["Eigene Gruppe"],
+        )
+        self.assertEqual(
+            course_names,
+            ["Eigener Kurs"],
+        )
+        self.assertEqual(
+            course_groups[0].selected_group_ids,
+            (f"{GROUP_ID_PREFIX}-999999",),
+        )
+        self.assertEqual(
+            course_groups[0].selected_course_ids,
+            (f"{COURSE_ID_PREFIX}-999999",),
+        )
 
     def test_existing_projection_can_be_built_from_sqlite_data(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

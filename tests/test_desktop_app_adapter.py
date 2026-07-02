@@ -207,14 +207,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn(f"{GROUP_ID_PREFIX}-000001", course_group.selected_group_ids)
         self.assertIn(f"{COURSE_ID_PREFIX}-000001", course_group.selected_course_ids)
 
-    def test_master_data_adapter_updates_course_group_session_locally(self) -> None:
+    def test_master_data_adapter_updates_course_group_persistently(self) -> None:
         updated_course_group = self.master_data_adapter.update_course_group(
             "course-group-default",
             "Mathe/Deutsch Kursverbund B",
             (f"{GROUP_ID_PREFIX}-000001",),
             (f"{COURSE_ID_PREFIX}-000001", f"{COURSE_ID_PREFIX}-000002"),
         )
-        view_model = self.master_data_adapter.view_model()
+        reloaded_adapter = MasterDataDesktopAdapter(StudentDesktopAdapter(self.database_path))
+        view_model = reloaded_adapter.view_model()
 
         self.assertEqual(updated_course_group.name, "Mathe/Deutsch Kursverbund B")
         self.assertEqual(
@@ -226,6 +227,22 @@ class DesktopAppAdapterTest(unittest.TestCase):
             (f"{COURSE_ID_PREFIX}-000001", f"{COURSE_ID_PREFIX}-000002"),
         )
         self.assertEqual(view_model.course_groups[0], updated_course_group)
+
+    def test_course_group_update_replaces_old_relations_persistently(self) -> None:
+        second_group = self.master_data_adapter.add_group("Eulen")
+        self.master_data_adapter.update_course_group(
+            "course-group-default",
+            "Mathe/Deutsch Kursverbund B",
+            (second_group.item_id,),
+            (f"{COURSE_ID_PREFIX}-000003",),
+        )
+        reloaded_adapter = MasterDataDesktopAdapter(StudentDesktopAdapter(self.database_path))
+        course_group = reloaded_adapter.view_model().course_groups[0]
+
+        self.assertEqual(course_group.selected_group_ids, (second_group.item_id,))
+        self.assertEqual(course_group.selected_course_ids, (f"{COURSE_ID_PREFIX}-000003",))
+        self.assertNotIn(f"{GROUP_ID_PREFIX}-000001", course_group.selected_group_ids)
+        self.assertNotIn(f"{COURSE_ID_PREFIX}-000001", course_group.selected_course_ids)
 
     def test_course_group_update_validation_rejects_empty_values(self) -> None:
         with self.assertRaisesRegex(ValueError, MASTER_DATA_EMPTY_NAME_MESSAGE):
@@ -267,23 +284,40 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(course_color_from_key("", 1), ("Grün", "#16A34A"))
         self.assertEqual(course_color_from_key("#EAB308"), ("Gelb", "#EAB308"))
 
-    def test_master_data_adapter_adds_non_persistent_groups_and_courses(self) -> None:
+    def test_master_data_adapter_persists_new_groups_and_courses(self) -> None:
         group = self.master_data_adapter.add_group("Eulen")
         course = self.master_data_adapter.add_course("Kurs 4", "#9333EA")
-        view_model = self.master_data_adapter.view_model()
+        reloaded_adapter = MasterDataDesktopAdapter(StudentDesktopAdapter(self.database_path))
+        view_model = reloaded_adapter.view_model()
 
         self.assertIsInstance(group, MasterDataItemViewModel)
         self.assertEqual(group.name, "Eulen")
-        self.assertFalse(group.is_persistent)
-        self.assertEqual(group.status_label, "Nur vorgemerkt")
+        self.assertTrue(group.is_persistent)
+        self.assertEqual(group.status_label, "Vorhanden")
         self.assertEqual(course.name, "Kurs 4")
         self.assertEqual(course.color_name, "Lila")
         self.assertEqual(course.color_hex, "#9333EA")
-        self.assertFalse(course.is_persistent)
+        self.assertTrue(course.is_persistent)
         self.assertIn("Eulen", {item.name for item in view_model.groups})
         self.assertIn("Kurs 4", {item.name for item in view_model.courses})
+        self.assertIn(
+            group.item_id,
+            view_model.course_groups[0].selected_group_ids,
+        )
+        self.assertIn(
+            course.item_id,
+            view_model.course_groups[0].selected_course_ids,
+        )
 
-    def test_master_data_adapter_renames_non_persistent_state(self) -> None:
+    def test_master_data_adapter_persists_yellow_course_color(self) -> None:
+        course = self.master_data_adapter.add_course("Kurs Gelb", "#EAB308")
+        reloaded_adapter = MasterDataDesktopAdapter(StudentDesktopAdapter(self.database_path))
+        reloaded_course = reloaded_adapter.courses[course.item_id]
+
+        self.assertEqual(reloaded_course.color_name, "Gelb")
+        self.assertEqual(reloaded_course.color_hex, "#EAB308")
+
+    def test_master_data_adapter_persists_renames(self) -> None:
         group = self.master_data_adapter.rename_group(
             f"{GROUP_ID_PREFIX}-000001",
             "Grashüpfer A",
@@ -293,7 +327,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "Kurs 1A",
             "#DC2626",
         )
-        view_model = self.master_data_adapter.view_model()
+        reloaded_adapter = MasterDataDesktopAdapter(StudentDesktopAdapter(self.database_path))
+        view_model = reloaded_adapter.view_model()
 
         self.assertEqual(group.name, "Grashüpfer A")
         self.assertEqual(course.name, "Kurs 1A")

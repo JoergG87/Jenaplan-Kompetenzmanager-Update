@@ -77,8 +77,8 @@ Regel:
 | --- | --- | --- | --- | --- | --- |
 | Vorname | `QLineEdit` -> `student.create.first_name` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | Pflichtfeld, keine technische Identitaet |
 | Nachname | `QLineEdit` -> `student.create.last_name` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | Pflichtfeld |
-| Stammgruppe | `MasterDataViewModel.groups` aus `data_groups` / session-lokalem Stammdaten-light-State | Eingabe | Ja (ueber freigegebenen Prozess) | `data_groups` | Dropdown, kein Freitext; nur dauerhaft vorhandene Eintraege koennen fuer `student.create` gespeichert werden |
-| Kurs | `MasterDataViewModel.courses` aus `data_courses` / session-lokalem Stammdaten-light-State | Eingabe | Ja (ueber freigegebenen Prozess) | `data_courses` | Dropdown, kein Freitext; nur dauerhaft vorhandene Eintraege koennen fuer `student.create` gespeichert werden |
+| Stammgruppe | `MasterDataViewModel.groups` aus SQLite `groups` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_groups` / SQLite `groups` | Dropdown, kein Freitext; nur persistente Stammgruppen koennen fuer `student.create` gespeichert werden |
+| Kurs | `MasterDataViewModel.courses` aus SQLite `courses` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_courses` / SQLite `courses` | Dropdown, kein Freitext; nur persistente Kurse koennen fuer `student.create` gespeichert werden |
 | Notiz | `QTextEdit` -> `student.create.student_notes` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | optional |
 
 Regel:
@@ -91,32 +91,32 @@ Der PySide-Schuelerdialog ist der aktive Eingabepfad fuer `student.create`. Er s
 | --- | --- | --- | --- | --- | --- |
 | Name | `StudentListItem.display_name` aus `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | Anzeige, keine technische Identitaet |
 | Kurs | `StudentListItem.course_name` aus `data_courses.course_name` | Anzeige | Nein | `data_courses` | neutrale Textanzeige in eigener Kurs-Spalte, keine Zeilenfaerbung |
-| Kursmarker | `StudentListItem.course_color_hex` aus Stammdaten-Light-Kursfarbe | Anzeige | Nein | `data_courses` | kleiner farbiger Marker vor dem Kursnamen; Farbe markiert den Kurs, nicht die ganze Zeile |
+| Kursmarker | `StudentListItem.course_color_hex` aus SQLite-Kursfarbe | Anzeige | Nein | `data_courses` / SQLite `courses` | kleiner farbiger Marker vor dem Kursnamen; Farbe markiert den Kurs, nicht die ganze Zeile |
 | aktiver Filterhinweis | Shell-Filterstate aus Stammgruppe oder Kursverbund/Kurs | Anzeige | Nein | keine fachliche Datenquelle | zeigt `Alle Schüler`, `Stammgruppe: ...` oder `Kursverbund · Kurs`; keine Speicherung |
 
 ## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| Stammgruppenliste | `MasterDataViewModel.groups` aus `data_groups` / session-lokalem Stammdaten-light-State | Anzeige | Nein | `data_groups` | zeigt alle im aktuellen UI-Scope bekannten Stammgruppen |
-| Schueleranzahl je Stammgruppe | `GroupSummaryViewModel.active_student_count` aus bestehendem Adapter | Anzeige | Nein | `data_students` | nur wenn fuer die Stammgruppe sauber verfuegbar; session-lokale Gruppen zeigen ihren Status |
-| Kursverbund | `MasterDataViewModel.course_groups` aus session-lokalem Stammdaten-light-State | Anzeige / Filter | Nein | `data_groups` + `data_courses` | definiert, welche Stammgruppen gemeinsam Mathe-/Deutsch-Kurse bilden |
+| Stammgruppenliste | `MasterDataViewModel.groups` aus SQLite `groups` | Anzeige | Nein | `data_groups` / SQLite `groups` | zeigt alle persistent aktiven Stammgruppen |
+| Schueleranzahl je Stammgruppe | `GroupSummaryViewModel.active_student_count` aus bestehendem Adapter | Anzeige | Nein | `data_students` | nur wenn fuer die Stammgruppe sauber verfuegbar |
+| Kursverbund | `MasterDataViewModel.course_groups` aus SQLite `course_groups` + Relationen | Anzeige / Filter | Nein | SQLite `course_groups`, `course_group_student_groups`, `course_group_courses` | definiert, welche Stammgruppen gemeinsam Mathe-/Deutsch-Kurse bilden |
 | Kursliste im Kursverbund | `CourseGroupViewModel.selected_course_ids` -> `MasterDataViewModel.courses` | Anzeige / Filter | Nein | `data_courses` | Kursuebersicht ist kursverbundbezogen, nicht global ueber alle Stammgruppen |
 | Kursmarker | `MasterDataItemViewModel.color_hex` | Anzeige | Nein | `data_courses` | nur kleiner Marker, keine Zeilenfaerbung |
 | Kursverbund-Kursfilter | `course_id` + `CourseGroupViewModel.selected_group_ids` | Filter | Nein | `data_students` | zeigt nur Schueler mit Kurs und Stammgruppe im ausgewaehlten Kursverbund |
 
-## Stammdaten light
+## PySide6 Stammdaten
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| Stammgruppenliste | `data_groups.group_name` ueber bestehenden PySide6-Adapter | Anzeige | Nein | `data_groups` | Stammgruppen sind eigenstaendige Stammdaten |
-| Kursliste | `data_courses.course_name` ueber bestehenden PySide6-Adapter | Anzeige | Nein | `data_courses` | Kurse sind eigenstaendige Stammdaten |
-| Kursfarbe | `data_courses.color_key` / UI-Defaultfarbe im PySide6-Scope | Anzeige / Eingabe | Geplant | `data_courses` | nicht-persistenter Farbwert fuer Stammdaten-light; Persistenz folgt spaeter |
-| Kursverbund | `MasterDataViewModel.course_groups` aus session-lokalem `MasterDataDesktopAdapter` | Anzeige / Eingabe | Geplant | keine neue Persistenz | definiert Name, ausgewaehlte Stammgruppen und ausgewaehlte Kurse; Persistenz folgt spaeter |
-| Kursverbund bearbeiten | `CourseGroupDialog` -> `MasterDataDesktopAdapter.update_course_group()` | Eingabe | Geplant | keine neue Persistenz | Checkbox-Auswahl fuer Stammgruppen und Kurse; Kursfilter bleibt Kurs plus Stammgruppen des Kursverbunds |
-| Neue Stammgruppe | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_groups` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
-| Neuer Kurs | temporaerer UI-/Adapter-State im PySide6-Sprint inklusive Kursfarbe | Eingabe | Geplant | `data_courses` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
-| Umbenennen | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_groups` / `data_courses` | `group_id` und `course_id` bleiben fachlich massgeblich; Schueler-Umbuchung folgt separat |
+| Stammgruppenliste | SQLite `groups.group_name` ueber `MasterDataDesktopAdapter` | Anzeige | Nein | SQLite `groups` / `data_groups` | Stammgruppen sind eigenstaendige Stammdaten |
+| Kursliste | SQLite `courses.course_name` ueber `MasterDataDesktopAdapter` | Anzeige | Nein | SQLite `courses` / `data_courses` | Kurse sind eigenstaendige Stammdaten |
+| Kursfarbe | SQLite `courses.color_name` + `courses.color_hex` | Anzeige / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `courses` / `data_courses` | persistenter Farbwert am Kurs; Schuelerfarbe wird daraus abgeleitet |
+| Kursverbund | `MasterDataViewModel.course_groups` aus SQLite `course_groups` | Anzeige / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `course_groups` | definiert Name, ausgewaehlte Stammgruppen und ausgewaehlte Kurse |
+| Kursverbund bearbeiten | `CourseGroupDialog` -> `MasterDataDesktopAdapter.update_course_group()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `course_groups` + Relationen | Checkbox-Auswahl fuer Stammgruppen und Kurse; Kursfilter bleibt Kurs plus Stammgruppen des Kursverbunds |
+| Neue Stammgruppe | `MasterDataDesktopAdapter.add_group()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `groups` / `data_groups` | erzeugt persistente Stammgruppe, keine automatische Schuelerzuordnung |
+| Neuer Kurs | `MasterDataDesktopAdapter.add_course()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `courses` / `data_courses` | erzeugt persistenten Kurs inklusive Kursfarbe |
+| Umbenennen | `MasterDataDesktopAdapter.rename_*()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `groups` / `courses` | `group_id` und `course_id` bleiben fachlich massgeblich; Schueler-Umbuchung folgt separat |
 
 ## Kompetenzansicht
 

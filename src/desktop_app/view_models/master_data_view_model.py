@@ -1,30 +1,21 @@
-"""Master-data light view models for the PySide6 desktop app."""
+"""Master-data view models for the PySide6 desktop app."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from src.core.constants import COURSE_COLOR_OPTIONS
+
 
 MASTER_DATA_EMPTY_NAME_MESSAGE = "Bitte einen Namen eingeben."
-MASTER_DATA_SAVE_PLACEHOLDER_MESSAGE = (
-    "Stammdaten werden in einem späteren Sprint dauerhaft gespeichert."
-)
+MASTER_DATA_SAVE_PLACEHOLDER_MESSAGE = "Stammdaten wurden gespeichert."
 COURSE_GROUP_EMPTY_GROUPS_MESSAGE = "Bitte mindestens eine Stammgruppe auswählen."
 COURSE_GROUP_EMPTY_COURSES_MESSAGE = "Bitte mindestens einen Kurs auswählen."
-COURSE_COLOR_OPTIONS = (
-    ("Blau", "#2563EB"),
-    ("Grün", "#16A34A"),
-    ("Orange", "#F97316"),
-    ("Gelb", "#EAB308"),
-    ("Lila", "#9333EA"),
-    ("Rot", "#DC2626"),
-    ("Grau", "#6B7280"),
-)
 
 
 @dataclass(frozen=True)
 class MasterDataItemViewModel:
-    """Display-ready group or course row for the master-data light screen."""
+    """Display-ready group or course row for the master-data screen."""
 
     item_id: str
     name: str
@@ -37,7 +28,7 @@ class MasterDataItemViewModel:
         """Return whether the item comes from the current data source."""
         if self.is_persistent:
             return "Vorhanden"
-        return "Nur vorgemerkt"
+        return "Nicht gespeichert"
 
     @property
     def has_color(self) -> bool:
@@ -56,7 +47,7 @@ class MasterDataViewModel:
 
 @dataclass(frozen=True)
 class CourseGroupViewModel:
-    """Session-local course-group configuration for Mathe/Deutsch courses."""
+    """Persisted course-group configuration for Mathe/Deutsch courses."""
 
     course_group_id: str
     name: str
@@ -65,7 +56,7 @@ class CourseGroupViewModel:
 
 
 def normalize_master_data_name(name: str) -> str:
-    """Return a validated master-data name for non-persistent UI edits."""
+    """Return a validated master-data name for UI edits."""
     normalized_name = name.strip()
     if not normalized_name:
         raise ValueError(MASTER_DATA_EMPTY_NAME_MESSAGE)

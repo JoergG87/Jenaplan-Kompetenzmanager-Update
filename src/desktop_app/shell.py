@@ -252,38 +252,32 @@ class AppShell(QMainWindow):
         dialog.exec()
 
     def open_new_group_dialog(self) -> None:
-        """Open the non-persistent new-group dialog."""
+        """Open the persistent new-group dialog."""
         dialog = MasterDataNameDialog("Neue Stammgruppe")
         if dialog.exec():
             self.master_data_adapter.add_group(dialog.name())
             self.refresh_master_data()
-            self.status_label.setText(
-                "Stammgruppe wurde vorgemerkt. Dauerhaftes Speichern folgt später."
-            )
+            self.status_label.setText("Stammgruppe wurde gespeichert.")
 
     def open_new_course_dialog(self) -> None:
-        """Open the non-persistent new-course dialog."""
+        """Open the persistent new-course dialog."""
         dialog = MasterDataNameDialog("Neuer Kurs", include_color=True)
         if dialog.exec():
             self.master_data_adapter.add_course(dialog.name(), dialog.color_hex())
             self.refresh_master_data()
-            self.status_label.setText(
-                "Kurs wurde vorgemerkt. Dauerhaftes Speichern folgt später."
-            )
+            self.status_label.setText("Kurs wurde gespeichert.")
 
     def open_rename_group_dialog(self, group_id: str) -> None:
-        """Open the non-persistent rename dialog for a group."""
+        """Open the persistent rename dialog for a group."""
         item = self.master_data_adapter.groups[group_id]
         dialog = MasterDataNameDialog("Stammgruppe umbenennen", item.name)
         if dialog.exec():
             self.master_data_adapter.rename_group(group_id, dialog.name())
             self.refresh_master_data()
-            self.status_label.setText(
-                "Stammgruppe wurde umbenannt. Dauerhaftes Speichern folgt später."
-            )
+            self.status_label.setText("Stammgruppe wurde umbenannt.")
 
     def open_rename_course_dialog(self, course_id: str) -> None:
-        """Open the non-persistent rename dialog for a course."""
+        """Open the persistent rename dialog for a course."""
         item = self.master_data_adapter.courses[course_id]
         dialog = MasterDataNameDialog(
             "Kurs umbenennen",
@@ -298,12 +292,10 @@ class AppShell(QMainWindow):
                 dialog.color_hex(),
             )
             self.refresh_master_data()
-            self.status_label.setText(
-                "Kurs wurde umbenannt. Dauerhaftes Speichern folgt später."
-            )
+            self.status_label.setText("Kurs wurde umbenannt.")
 
     def open_edit_course_group_dialog(self, course_group_id: str) -> None:
-        """Open the non-persistent edit dialog for one course group."""
+        """Open the persistent edit dialog for one course group."""
         view_model = self.master_data_adapter.view_model()
         course_group = self.master_data_adapter.course_groups[course_group_id]
         dialog = CourseGroupDialog(course_group, view_model.groups, view_model.courses)
@@ -317,9 +309,7 @@ class AppShell(QMainWindow):
             self._clear_invalid_course_group_filter(updated_course_group)
             self.refresh_master_data()
             self.refresh_students()
-            self.status_label.setText(
-                "Kursverbund wurde aktualisiert. Dauerhaftes Speichern folgt später."
-            )
+            self.status_label.setText("Kursverbund wurde gespeichert.")
 
     def handle_student_created(self, student_id: str) -> None:
         """Refresh views and show non-modal success feedback."""

@@ -109,7 +109,9 @@ Liest:
 - `data_groups`
 - `data_courses`
 - `data_students` fuer vorhandene Schuelerzahlen je Stammgruppe
-- session-lokaler Stammdaten-light-State aus `MasterDataDesktopAdapter`
+- `course_groups`
+- `course_group_student_groups`
+- `course_group_courses`
 
 Schreibt:
 
@@ -120,7 +122,7 @@ UI-Projektionen:
 - Stammgruppenliste
 - optionale Schueleranzahl fuer persistent bekannte Stammgruppen
 - Kursverbundliste
-- Kursliste innerhalb eines session-lokal bearbeitbaren Kursverbunds
+- Kursliste innerhalb eines persistenten Kursverbunds
 - Kursmarker aus Kursfarbe
 - Kursfilter aus `course_id` und den Stammgruppen des Kursverbunds
 
@@ -130,17 +132,23 @@ Die Uebersicht zeigt den aktuellen Stammdaten-Scope der PySide-App. Sie verwalte
 
 Eine Kursuebersicht ist kursverbundbezogen. Sie zeigt nicht automatisch alle Schueler mit demselben Kurslabel in der ganzen App, sondern filtert nach `course_id` und den Stammgruppen des ausgewaehlten Kursverbunds.
 
-## PySide6 Stammdaten light
+## PySide6 Stammdaten
 
 Liest:
 
 - `data_groups`
 - `data_courses`
-- session-lokaler Stammdaten-light-State aus `MasterDataDesktopAdapter`
+- `course_groups`
+- `course_group_student_groups`
+- `course_group_courses`
 
 Schreibt:
 
-- session-lokalen Stammdaten-light-State im `MasterDataDesktopAdapter`
+- `groups` ueber `MasterDataDesktopAdapter` und `SQLiteMasterDataRepository`
+- `courses` ueber `MasterDataDesktopAdapter` und `SQLiteMasterDataRepository`
+- `course_groups` ueber `MasterDataDesktopAdapter` und `SQLiteMasterDataRepository`
+- `course_group_student_groups` ueber `MasterDataDesktopAdapter` und `SQLiteMasterDataRepository`
+- `course_group_courses` ueber `MasterDataDesktopAdapter` und `SQLiteMasterDataRepository`
 
 UI-Projektionen:
 
@@ -152,7 +160,7 @@ UI-Projektionen:
 
 Regel:
 
-Kursverbuende sind aktuell session-lokal bearbeitbar. Die Bearbeitung schreibt nicht in SQLite und erzeugt keine neue Persistenz. Ein Kursverbund definiert, welche Stammgruppen und Kurse in der kursverbundbezogenen Kursuebersicht erscheinen.
+Kursverbuende werden persistent in SQLite bearbeitet. Ein Kursverbund definiert, welche Stammgruppen und Kurse in der kursverbundbezogenen Kursuebersicht erscheinen. Die Bearbeitung bucht keine Schueler um und veraendert keine Beobachtungsdaten.
 
 ## Legacy: Projection Refresh durch VBA
 

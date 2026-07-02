@@ -170,6 +170,7 @@ class StudentDesktopAdapter:
             return create_sqlite_seed_database(self.database_path)
         database = SQLiteDatabase(self.database_path)
         database.initialize_schema()
+        database.ensure_master_data_defaults()
         return database
 
     def _student_list_item(

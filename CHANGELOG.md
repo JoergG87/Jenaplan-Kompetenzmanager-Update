@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## Sprint - Stammdaten und Kursverbuende persistent speichern
+
+### Added
+
+- SQLite-Schema um Kursverbund-Tabellen und Relationen zu Stammgruppen und Kursen erweitert.
+- Persistenten `SQLiteMasterDataRepository` fuer Stammgruppen, Kurse, Kursfarben und Kursverbuende ergaenzt.
+- Defaults fuer Stammgruppen, Kurs 1/2/3 und `Mathe/Deutsch Kursverbund A` werden nur bei leerem Stammdaten-Scope erzeugt.
+
+### Changed
+
+- `MasterDataDesktopAdapter` speichert neue und umbenannte Stammgruppen, Kurse und Kursverbund-Aenderungen dauerhaft in SQLite.
+- Kursfarben werden mit Name und Hex-Wert in SQLite gehalten.
+- Stammdaten-UI bleibt optisch unveraendert; nur Speichern/Laden ist persistent.
+
+### Not Changed
+
+- Keine Beobachtungspersistenz, keine Medien, keine Berichte, kein Packaging, kein Installer, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
 ## Sprint - PySide Icon Branding und Glas-Polish
 
 ### Added

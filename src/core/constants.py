@@ -8,6 +8,8 @@ GROUP_NAME = "group_name"
 COURSE_ID = "course_id"
 COURSE_NAME = "course_name"
 COLOR_KEY = "color_key"
+COLOR_NAME = "color_name"
+COLOR_HEX = "color_hex"
 STUDENT_NOTES = "student_notes"
 ACTIVE = "active"
 CREATED_AT = "created_at"
@@ -25,8 +27,19 @@ TABLE_COURSES = "tbl_courses"
 STUDENT_ID_PREFIX = "STU"
 GROUP_ID_PREFIX = "GRP"
 COURSE_ID_PREFIX = "CRS"
+COURSE_GROUP_ID_PREFIX = "CRG"
 COMPETENCY_ID_PREFIX = "CMP"
 OBSERVATION_ID_PREFIX = "OBS"
 MEDIA_ID_PREFIX = "MED"
 
 ID_SEQUENCE_WIDTH = 6
+
+COURSE_COLOR_OPTIONS = (
+    ("Blau", "#2563EB"),
+    ("Grün", "#16A34A"),
+    ("Orange", "#F97316"),
+    ("Gelb", "#EAB308"),
+    ("Lila", "#9333EA"),
+    ("Rot", "#DC2626"),
+    ("Grau", "#6B7280"),
+)

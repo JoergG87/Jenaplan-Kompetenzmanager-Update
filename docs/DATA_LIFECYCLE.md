@@ -112,11 +112,21 @@ Regel: `student_id` bleibt erhalten. Historische Beobachtungen bleiben ueber `st
 
 Start: Neue organisatorische Stammgruppe wird benoetigt.
 
-Schreibprozess: Stammgruppenverwaltung, spaeter freizugeben.
+Schreibprozess: Stammgruppenverwaltung ueber PySide-Stammdaten.
+
+Freigegebener PySide-Pfad:
+
+```text
+PySide6 GUI
+-> MasterDataDesktopAdapter
+-> SQLiteMasterDataRepository
+-> SQLite groups
+```
 
 Betroffene Datenquellen:
 
-- `data_groups`
+- `groups` in SQLite als fachliche Source of Truth
+- `data_groups` als optionale Excel-/Exportprojektion aus SQLite
 
 Erforderliche IDs:
 
@@ -129,17 +139,18 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Schuelerverwaltung
 
-Regel: Schueler werden erst durch `data_students.group_id` einer Stammgruppe zugeordnet.
+Regel: Schueler werden erst durch `students.group_id` einer Stammgruppe zugeordnet. Neue Stammgruppen werden dem Default-Kursverbund hinzugefuegt, damit sie in der kursverbundbezogenen Uebersicht sichtbar bleiben.
 
 ## Stammgruppe aendern
 
 Start: Name oder Status einer bestehenden Stammgruppe wird angepasst.
 
-Schreibprozess: Stammgruppenverwaltung, spaeter freizugeben.
+Schreibprozess: Stammgruppenverwaltung ueber PySide-Stammdaten.
 
 Betroffene Datenquellen:
 
-- `data_groups`
+- `groups` in SQLite als fachliche Source of Truth
+- `data_groups` als optionale Excel-/Exportprojektion aus SQLite
 
 Erforderliche IDs:
 
@@ -152,17 +163,27 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Berichte
 
-Regel: `group_id` bleibt erhalten. Schuelerreferenzen bleiben gueltig.
+Regel: `group_id` bleibt erhalten. Schuelerreferenzen bleiben gueltig. Umbenennen schreibt nur den Namen und loest keine Schueler-Umbuchung aus.
 
 ## Kurs anlegen
 
 Start: Neuer Kurs/Jahrgang wird benoetigt.
 
-Schreibprozess: Kursverwaltung, spaeter freizugeben.
+Schreibprozess: Kursverwaltung ueber PySide-Stammdaten.
+
+Freigegebener PySide-Pfad:
+
+```text
+PySide6 GUI
+-> MasterDataDesktopAdapter
+-> SQLiteMasterDataRepository
+-> SQLite courses
+```
 
 Betroffene Datenquellen:
 
-- `data_courses`
+- `courses` in SQLite als fachliche Source of Truth
+- `data_courses` als optionale Excel-/Exportprojektion aus SQLite
 
 Erforderliche IDs:
 
@@ -175,17 +196,18 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Berichte
 
-Regel: Kursfarbe wird am Kurs gespeichert und nicht an einzelnen Schuelern.
+Regel: Kursfarbe wird mit Name und Hex-Wert am Kurs gespeichert und nicht an einzelnen Schuelern. Neue Kurse werden dem Default-Kursverbund hinzugefuegt, damit sie in der kursverbundbezogenen Uebersicht sichtbar bleiben.
 
 ## Kurs aendern
 
 Start: Name, Farbe oder Status eines bestehenden Kurses wird angepasst.
 
-Schreibprozess: Kursverwaltung, spaeter freizugeben.
+Schreibprozess: Kursverwaltung ueber PySide-Stammdaten.
 
 Betroffene Datenquellen:
 
-- `data_courses`
+- `courses` in SQLite als fachliche Source of Truth
+- `data_courses` als optionale Excel-/Exportprojektion aus SQLite
 
 Erforderliche IDs:
 
@@ -198,7 +220,60 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Berichte
 
-Regel: `course_id` bleibt erhalten. Schuelerkartenfarbe aktualisiert sich aus `course_id` und `data_courses.color_key`.
+Regel: `course_id` bleibt erhalten. Schuelerkartenfarbe aktualisiert sich aus `course_id` und `courses.color_hex`.
+
+## Kursverbund aendern
+
+Start: Ein kursverbundbezogener Mathe-/Deutsch-Scope wird bearbeitet.
+
+Schreibprozess: Kursverbundverwaltung ueber PySide-Stammdaten.
+
+Freigegebener PySide-Pfad:
+
+```text
+PySide6 GUI
+-> MasterDataDesktopAdapter
+-> SQLiteMasterDataRepository
+-> SQLite course_groups
+-> SQLite course_group_student_groups
+-> SQLite course_group_courses
+```
+
+Betroffene Datenquellen:
+
+- `course_groups`
+- `course_group_student_groups`
+- `course_group_courses`
+
+Erforderliche IDs:
+
+- bestehender oder neuer `course_group_id`
+- mindestens ein bestehender `group_id`
+- mindestens ein bestehender `course_id`
+
+Automatisch profitierende Ansichten:
+
+- PySide-Uebersicht `Stammgruppen und Schülerbestand`
+- Schuelerliste mit Kursverbund-/Kursfilter
+- Stammdaten-Seite
+
+Regel: Name, Stammgruppen- und Kurszuordnung werden atomar gespeichert. Die Relationstabellen werden beim Speichern vollstaendig fuer den Kursverbund ersetzt. Es werden keine Schueler umgebucht und keine Beobachtungsdaten veraendert.
+
+## Stammdaten-Defaults initialisieren
+
+Start: SQLite-Datenbank wird ohne vorhandene Stammgruppen oder Kurse geoeffnet.
+
+Schreibprozess: Initialisierung ueber `SQLiteDatabase.ensure_master_data_defaults()`.
+
+Betroffene Datenquellen:
+
+- `groups`
+- `courses`
+- `course_groups`
+- `course_group_student_groups`
+- `course_group_courses`
+
+Regel: Defaults fuer Stammgruppen, Kurse und `Mathe/Deutsch Kursverbund A` werden nur erzeugt, wenn der jeweilige Stammdaten-Scope leer ist. Bestehende produktive Stammdaten werden nicht ueberschrieben.
 
 ## Beobachtung erfassen
 

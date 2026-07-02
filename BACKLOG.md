@@ -388,17 +388,17 @@ Status:
 
 Idee
 
-### Kursverbünde dauerhaft speichern
+### Kursverbünde löschen und Schüler-Umbuchung klären
 
 Priorität: Offen
 
 Beschreibung:
 
-Kursverbuende werden aktuell nur session-lokal bearbeitet. Spaeter braucht es einen freigegebenen Persistenzpfad fuer Name, ausgewaehlte Stammgruppen und ausgewaehlte Kurse.
+Kursverbuende werden persistent gespeichert. Offen bleiben Loeschen/Archivieren von Kursverbuenden und die fachliche Frage, ob beim Aendern von Stammgruppen oder Kursen spaeter Schueler-Umbuchungen angeboten werden sollen.
 
 Status:
 
-Idee
+Folgethema
 
 ## Epic: Dashboard
 

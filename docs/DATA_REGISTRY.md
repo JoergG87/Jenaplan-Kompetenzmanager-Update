@@ -41,6 +41,9 @@ Gepruefte Tabellen:
 | `students` | Student | `data_students` / `tbl_students` |
 | `groups` | Group | `data_groups` / `tbl_groups` |
 | `courses` | Course | `data_courses` / `tbl_courses` |
+| `course_groups` | CourseGroup | keine Workbook-Projektion |
+| `course_group_student_groups` | CourseGroupStudentGroup | keine Workbook-Projektion |
+| `course_group_courses` | CourseGroupCourse | keine Workbook-Projektion |
 
 Regel:
 
@@ -79,6 +82,7 @@ students(
 groups(
   group_id TEXT PRIMARY KEY,
   group_name TEXT NOT NULL,
+  sort_order INTEGER NOT NULL,
   active INTEGER NOT NULL
 )
 
@@ -86,7 +90,33 @@ courses(
   course_id TEXT PRIMARY KEY,
   course_name TEXT NOT NULL,
   color_key TEXT,
+  color_name TEXT NOT NULL,
+  color_hex TEXT NOT NULL,
+  sort_order INTEGER NOT NULL,
   active INTEGER NOT NULL
+)
+
+course_groups(
+  course_group_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  sort_order INTEGER NOT NULL,
+  active INTEGER NOT NULL
+)
+
+course_group_student_groups(
+  course_group_id TEXT NOT NULL,
+  student_group_id TEXT NOT NULL,
+  PRIMARY KEY(course_group_id, student_group_id),
+  FOREIGN KEY(course_group_id) REFERENCES course_groups(course_group_id),
+  FOREIGN KEY(student_group_id) REFERENCES groups(group_id)
+)
+
+course_group_courses(
+  course_group_id TEXT NOT NULL,
+  course_id TEXT NOT NULL,
+  PRIMARY KEY(course_group_id, course_id),
+  FOREIGN KEY(course_group_id) REFERENCES course_groups(course_group_id),
+  FOREIGN KEY(course_id) REFERENCES courses(course_id)
 )
 ```
 
@@ -268,11 +298,13 @@ Wichtige Felder:
 
 - `group_id`
 - `group_name`
+- `sort_order`
 - `active`
 
 Beziehungen:
 
 - eine Stammgruppe besitzt viele Schueler
+- eine Stammgruppe kann in mehreren Kursverbuenden enthalten sein
 
 Schreibende Prozesse:
 
@@ -323,11 +355,15 @@ Wichtige Felder:
 - `course_id`
 - `course_name`
 - `color_key`
+- `color_name`
+- `color_hex`
+- `sort_order`
 - `active`
 
 Beziehungen:
 
 - ein Kurs besitzt viele Schueler
+- ein Kurs kann in mehreren Kursverbuenden enthalten sein
 
 Schreibende Prozesse:
 
@@ -355,6 +391,97 @@ Erweiterungsregeln:
 - Farben sind fachliche UI-Metadaten des Kurses
 - Kartenfarben duerfen nicht manuell pro Schueler vergeben werden
 - Archivierung statt physischer Loeschung
+
+## course_groups
+
+Zweck: Fachlicher Scope fuer kursverbundbezogene Mathe-/Deutsch-Kurse.
+
+Entity: CourseGroup.
+
+Storage: SQLite `course_groups`.
+
+Projection: PySide-Uebersicht `Stammgruppen und Schülerbestand`, Stammdaten-Seite.
+
+Owner: Stammdatenverwaltung.
+
+Primary Key: `course_group_id`.
+
+Foreign Keys:
+
+- keine direkt in `course_groups`
+
+Wichtige Felder:
+
+- `course_group_id`
+- `name`
+- `sort_order`
+- `active`
+
+Beziehungen:
+
+- ein Kursverbund enthaelt viele Stammgruppen ueber `course_group_student_groups`
+- ein Kursverbund enthaelt viele Kurse ueber `course_group_courses`
+
+Schreibende Prozesse:
+
+- Kursverbund bearbeiten
+- Stammdaten-Defaults initialisieren
+
+Lesende Prozesse:
+
+- PySide-Uebersicht `Stammgruppen und Schülerbestand`
+- Stammdaten-Seite
+- Schuelerliste mit Kursverbund-/Kursfilter
+
+Erweiterungsregeln:
+
+- Kursverbund definiert einen Filter-Scope, keine Schueler-Umbuchung
+- Name, Stammgruppen- und Kurszuordnung werden atomar gespeichert
+- Loeschen bleibt einem spaeteren Sprint vorbehalten
+
+## course_group_student_groups
+
+Zweck: Relation zwischen Kursverbund und Stammgruppen.
+
+Entity: CourseGroupStudentGroup.
+
+Storage: SQLite `course_group_student_groups`.
+
+Owner: Stammdatenverwaltung.
+
+Primary Key:
+
+- `course_group_id`
+- `student_group_id`
+
+Foreign Keys:
+
+- `course_group_id` -> `course_groups.course_group_id`
+- `student_group_id` -> `groups.group_id`
+
+Regel: Diese Relation filtert, welche Stammgruppen in einem Kursverbund ausgewertet werden. Sie erzeugt keine neue Stammgruppe und bucht keine Schueler um.
+
+## course_group_courses
+
+Zweck: Relation zwischen Kursverbund und Kursen.
+
+Entity: CourseGroupCourse.
+
+Storage: SQLite `course_group_courses`.
+
+Owner: Stammdatenverwaltung.
+
+Primary Key:
+
+- `course_group_id`
+- `course_id`
+
+Foreign Keys:
+
+- `course_group_id` -> `course_groups.course_group_id`
+- `course_id` -> `courses.course_id`
+
+Regel: Diese Relation filtert, welche Kurse innerhalb eines Kursverbunds angezeigt werden. Kursfarben bleiben Metadaten des Kurses.
 
 ## data_subjects
 

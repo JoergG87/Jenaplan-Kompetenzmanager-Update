@@ -95,7 +95,7 @@ class MasterDataNameDialog(QDialog):
 
 
 class CourseGroupDialog(QDialog):
-    """Edit one session-local course-group configuration."""
+    """Edit one persisted course-group configuration."""
 
     def __init__(
         self,

@@ -127,6 +127,7 @@ Die folgende ID-Strategie ist projektweit verbindlich fuer neue fachliche Entita
 | Student | `student_id` | `STU-######` | `STU-000001` |
 | Group | `group_id` | `GRP-######` | `GRP-000001` |
 | Course | `course_id` | `CRS-######` | `CRS-000001` |
+| CourseGroup | `course_group_id` | stabiler technischer Key | `course-group-default` |
 | Competency | `competency_id` | `CMP-######` | `CMP-000001` |
 | Observation | `observation_id` | `OBS-######` | `OBS-000001` |
 | Media | `media_id` | `MED-######` | `MED-000001` |
@@ -268,6 +269,9 @@ Registrierte SQLite-Tabellen:
 - `students`
 - `groups`
 - `courses`
+- `course_groups`
+- `course_group_student_groups`
+- `course_group_courses`
 
 Registrierte Python-Spike-Komponenten:
 
@@ -275,8 +279,36 @@ Registrierte Python-Spike-Komponenten:
 - `SQLiteStudentRepository`
 - `SQLiteGroupRepository`
 - `SQLiteCourseRepository`
+- `SQLiteMasterDataRepository`
+- `MasterDataGroupRecord`
+- `MasterDataCourseRecord`
+- `MasterDataCourseGroupRecord`
 - `create_sqlite_seed_database(path)`
 - `build_workbook_data_from_sqlite(path)`
+
+Registrierte SQLite-/Stammdaten-Konstanten:
+
+- `COLOR_NAME`
+- `COLOR_HEX`
+- `COURSE_GROUP_ID_PREFIX`
+- `COURSE_COLOR_OPTIONS`
+- `DEFAULT_COURSE_GROUP_ID`
+- `DEFAULT_COURSE_GROUP_NAME`
+
+Registrierte Stammdaten-Repository-Methoden:
+
+- `SQLiteDatabase.ensure_master_data_defaults()`
+- `SQLiteMasterDataRepository.list_student_groups()`
+- `SQLiteMasterDataRepository.upsert_student_group(group)`
+- `SQLiteMasterDataRepository.list_courses()`
+- `SQLiteMasterDataRepository.upsert_course(course)`
+- `SQLiteMasterDataRepository.list_course_groups()`
+- `SQLiteMasterDataRepository.update_course_group(course_group)`
+- `SQLiteMasterDataRepository.get_course_group_relations(course_group_id)`
+- `SQLiteMasterDataRepository.replace_course_group_student_groups(course_group_id, group_ids)`
+- `SQLiteMasterDataRepository.replace_course_group_courses(course_group_id, course_ids)`
+- `SQLiteMasterDataRepository.next_student_group_id()`
+- `SQLiteMasterDataRepository.next_course_id()`
 
 Registrierte Spike-Skripte:
 
@@ -305,11 +337,11 @@ Registrierte Command-Namen:
 
 - `student.create`
 
-## Desktop-App-Spike
+## Desktop-App
 
 Status:
 
-Der Desktop-App-Spike prueft PySide6 als alternativen Adapter. Er ist keine endgueltige Architekturentscheidung.
+PySide ist die Hauptanwendung. Der Desktop-App-Layer bleibt Adapter/UI-Schicht und greift nicht direkt aus Widgets auf SQLite zu.
 
 Registrierte Katalogdateien:
 
@@ -328,13 +360,19 @@ Registrierte Python-Module:
 - `src/desktop_app/student_list_view.py`
 - `src/desktop_app/new_student_dialog.py`
 - `src/desktop_app/adapters/curriculum_desktop_adapter.py`
+- `src/desktop_app/adapters/master_data_desktop_adapter.py`
 - `src/desktop_app/adapters/student_desktop_adapter.py`
+- `src/desktop_app/dialogs/app_info_dialog.py`
+- `src/desktop_app/dialogs/dialog_buttons.py`
+- `src/desktop_app/dialogs/master_data_dialog.py`
 - `src/desktop_app/dialogs/new_observation_dialog.py`
 - `src/desktop_app/dialogs/new_student_dialog.py`
+- `src/desktop_app/screens/master_data_screen.py`
 - `src/desktop_app/screens/overview_screen.py`
 - `src/desktop_app/screens/students_screen.py`
 - `src/desktop_app/screens/student_profile_screen.py`
 - `src/desktop_app/screens/placeholder_screen.py`
+- `src/desktop_app/view_models/master_data_view_model.py`
 - `src/desktop_app/view_models/observation_view_model.py`
 - `src/desktop_app/view_models/student_view_model.py`
 
@@ -442,7 +480,7 @@ Registrierte Python-Klassen und Funktionen:
 
 Regel:
 
-Der Desktop-App-Spike ist Adapter Layer. Er darf Daten anzeigen, Eingaben sammeln, Commands erzeugen und den `ApplicationCommandDispatcher` aufrufen. Er darf keine Businesslogik enthalten, keine Schueler-IDs erzeugen und nicht direkt in SQLite schreiben.
+Der Desktop-App-Layer ist Adapter/UI-Schicht. Er darf Daten anzeigen, Eingaben sammeln, Commands oder Repository-Aufrufe ueber freigegebene Adapter ausloesen. Er darf keine Businesslogik enthalten, keine Schueler-IDs erzeugen und nicht direkt aus Qt-Widgets in SQLite schreiben.
 
 ## Runtime Adapter und Projection Refresh
 

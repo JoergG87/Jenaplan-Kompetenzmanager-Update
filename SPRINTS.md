@@ -6,9 +6,27 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
-## Sprint - PySide Icon Branding und Glas-Polish 🔄
+## Sprint - Stammdaten und Kursverbuende SQLite-Persistenz 🔄
 
 - [x] Status: Umgesetzt, nicht committed
+
+### Titel
+
+Stammdaten und Kursverbuende in SQLite speichern
+
+### Ergebnis
+
+- [x] SQLite-Schema fuer Kursverbuende und Relationstabellen ergaenzt
+- [x] Gruppen und Kurse um Sortierung sowie Kursfarben-Metadaten erweitert
+- [x] Persistentes Repository fuer Stammdaten und Kursverbuende umgesetzt
+- [x] Default-Stammdaten werden nur bei leerem Stammdaten-Scope erzeugt
+- [x] `MasterDataDesktopAdapter` laedt und speichert Stammdaten ueber SQLite
+- [x] Kursverbund-Updates speichern Name, Stammgruppen- und Kurszuordnung atomar
+- [x] Keine Beobachtungspersistenz, keine Medien, keine Berichte, kein Excel/VBA und kein Packaging geaendert
+
+## Sprint - PySide Icon Branding und Glas-Polish ✅
+
+- [x] Status: Abgeschlossen
 
 ### Titel
 
