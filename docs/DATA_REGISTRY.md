@@ -1,28 +1,30 @@
-# Workbook Data Registry
+# Data Registry
 
-Dieses Dokument definiert die verbindlichen Workbook-Datenquellen ab Sprint 4.
+Dieses Dokument definiert die verbindlichen Datenquellen des Jenaplan-Kompetenzmanagers.
+
+SQLite ist die produktive lokale Source of Truth. Workbook-Tabellen sind nur noch Export-, Berichts-, Referenz- oder Legacy-Projektionen.
 
 UI-Ansichten sind Projektionen dieser Datenquellen. Sie duerfen selbst keine fachliche Datenquelle werden.
 
 ## Schreib- und Leseprinzip
 
-Python schreibt und aktualisiert Workbook-Datenquellen.
+Python schreibt fachliche Daten ausschliesslich ueber Application, Domain, Repository und SQLite.
 
-Python-Builder lesen Workbook-Datenquellen und erzeugen daraus UI-Projektionen.
+PySide-Adapter und ViewModels lesen fachliche Daten ueber freigegebene Adapter, Repositories oder Query-Schichten.
 
-VBA liest technische IDs aus UI-Projektionen fuer Navigation und Interaktion.
+Python-Builder duerfen aus SQLite Export- oder Legacy-Workbook-Projektionen erzeugen.
 
-VBA greift niemals direkt auf fachliche Tabellen zu.
+VBA greift niemals direkt auf fachliche Tabellen oder SQLite zu.
 
-VBA schreibt keine fachlichen Daten, solange kein eigener fachlich freigegebener Schreibprozess dokumentiert ist.
+VBA schreibt keine fachlichen Daten. Neue VBA-Schreibprozesse werden nicht mehr verfolgt.
 
 Jede Datenquelle braucht einen registrierten Primary Key.
 
 Alle Foreign Keys muessen in diesem Dokument explizit dokumentiert sein.
 
-## SQLite Architecture Spike
+## SQLite Datenbasis
 
-Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis.
+SQLite ist die produktive lokale Datenbasis.
 
 Spike-Pfad:
 
@@ -42,15 +44,15 @@ Gepruefte Tabellen:
 
 Regel:
 
-SQLite ist in Sprint 5.2a nur Spike-Storage. Wenn SQLite produktiv freigegeben wird, darf es keine parallele fachliche Source of Truth neben Workbook-Tabellen geben. Dann werden `data_*`-Sheets und `tbl_*`-Tabellen zur Excel-Projektion aus SQLite.
+SQLite ist die fachliche Source of Truth. Es darf keine parallele fachliche Source of Truth neben SQLite geben. `data_*`-Sheets und `tbl_*`-Tabellen sind Excel-/Workbook-Projektionen aus SQLite oder historische Legacy-Artefakte.
 
 VBA schreibt nicht direkt in SQLite.
 
 Python bleibt fachliche Schreibschicht.
 
-Worksheet-basierte Dialogseiten verwenden fuer produktive Schreibprozesse eine freigegebene Python CLI/Bridge.
+PySide-Dialoge verwenden fuer produktive Schreibprozesse freigegebene Adapter, Commands, Services und Repositories.
 
-VBA-UserForms sind ab Feature 1 fuer Excel auf macOS nicht mehr das primaere Eingabe-Pattern.
+VBA-UserForms und worksheet-basierte Dialogseiten sind historische Artefakte der Excel-Linie und kein Zielpfad fuer neue Features.
 
 Feature 1.4a gibt fuer `student.create` den Runtime Adapter und den Projection Refresh Contract frei.
 
@@ -88,9 +90,9 @@ courses(
 )
 ```
 
-## Physische Workbook-Datenbank
+## Physische Workbook-/Export-Projektion
 
-Die `data_*`-Quellen werden als versteckte Tabellenblaetter im Workbook angelegt.
+Die `data_*`-Quellen koennen als versteckte Tabellenblaetter in Export-/Legacy-Workbooks angelegt werden.
 
 Jedes `data_*`-Blatt enthaelt genau eine strukturierte Tabelle mit `tbl_*`-Namen.
 
@@ -106,7 +108,7 @@ Der Builder veraendert keine fachlichen Entitaeten und erzeugt keine doppelte Da
 
 VBA nutzt IDs und benannte Bereiche, aber keine direkten Zugriffe auf fachliche Tabellen.
 
-Worksheet-basierte Dialogseiten sind UI-Projektionen und temporaere Eingabeflaechen.
+Worksheet-basierte Dialogseiten sind historische UI-Projektionen und temporaere Eingabeflaechen aus der Excel-Linie.
 
 Sie sind keine fachlichen Datenquellen, erzeugen keine Schattenhaltung und duerfen fachliche Daten erst ueber freigegebene Schreibprozesse veraendern.
 

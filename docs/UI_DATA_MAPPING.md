@@ -27,7 +27,7 @@ Spalten:
 | Kartenfarbe | `data_students.course_id` -> `data_courses.color_key` / UI-Defaultfarbe im PySide6-Scope | Anzeige | Nein | `data_courses` | farbliche Projektion der Kurszuordnung, keine Schuelerfarbe |
 | Suche | `data_students.first_name`, `data_students.last_name`, `display_name` | Filter | Nein | `data_students` | Namen dienen nur Suche und Anzeige |
 | Navigations-ID | `data_students.student_id` | Navigation | Nein | `data_students` | einzige technische Identitaet fuer Schueler |
-| Neuer Schueler | keine fachliche Datenquelle | Navigation | Nein | keine | oeffnet `dlg_neuer_schueler`; Speichern spaeter ueber Runtime Adapter |
+| Neuer Schueler | keine fachliche Datenquelle | Navigation | Nein | keine | oeffnet in der Hauptanwendung den PySide-Dialog `Neuer Schüler`; historischer `dlg_neuer_schueler`-Pfad bleibt Legacy |
 | Neue Beobachtung | `data_students.student_id` | Navigation | Geplant | `data_students` | startet spaeter zentralen Beobachtungsdialog |
 
 ## Kursuebersicht
@@ -53,7 +53,7 @@ Spalten:
 | Kompetenzchips | `data_observation_competencies.competency_id` -> `data_competencies.name` | Anzeige | Nein | `data_competencies` | abgeleitete Anzeige |
 | Neue Beobachtung | `data_students.student_id` | Navigation | Geplant | `data_students` | startet spaeter zentralen Beobachtungsdialog |
 
-## Schuelerverwaltung / `dlg_neuer_schueler`
+## Legacy: Schuelerverwaltung / `dlg_neuer_schueler`
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
@@ -67,13 +67,7 @@ Spalten:
 
 Regel:
 
-`dlg_neuer_schueler` ist eine worksheet-basierte Dialogseite. Die sichtbaren Eingabezellen sind temporaerer UI-State. Der freigegebene Runtime Adapter liest diesen UI-State und startet den Python-Schreibprozess bis SQLite.
-
-Der VBA Adapter liest diese Werte ausschliesslich ueber die registrierten Named Ranges.
-
-Der Adapter darf keine festen Zelladressen verwenden.
-
-Nach erfolgreichem Python Command gibt Feature 1.4b nur ein Runtime-Ergebnis an Excel zurueck. Sichtbare Schuelerinformationen werden erst in einem spaeteren Schritt ueber ein Python-erzeugtes Projection-Refresh-Paket aktualisiert.
+`dlg_neuer_schueler` ist ein historischer worksheet-basierter Dialogseiten-Stand der Excel-Linie. Er ist kein Zielpfad fuer neue UI-Entwicklung, Smoke-Tests oder produktive Workflows. Der aktive Hauptpfad ist der PySide-Schuelerdialog.
 
 ## PySide6 Schuelerdialog
 
@@ -84,6 +78,10 @@ Nach erfolgreichem Python Command gibt Feature 1.4b nur ein Runtime-Ergebnis an 
 | Stammgruppe | `MasterDataViewModel.groups` aus `data_groups` / session-lokalem Stammdaten-light-State | Eingabe | Ja (ueber freigegebenen Prozess) | `data_groups` | Dropdown, kein Freitext; nur dauerhaft vorhandene Eintraege koennen fuer `student.create` gespeichert werden |
 | Kurs | `MasterDataViewModel.courses` aus `data_courses` / session-lokalem Stammdaten-light-State | Eingabe | Ja (ueber freigegebenen Prozess) | `data_courses` | Dropdown, kein Freitext; nur dauerhaft vorhandene Eintraege koennen fuer `student.create` gespeichert werden |
 | Notiz | `QTextEdit` -> `student.create.student_notes` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | optional |
+
+Regel:
+
+Der PySide-Schuelerdialog ist der aktive Eingabepfad fuer `student.create`. Er sammelt Eingaben, validiert UI-nah und nutzt den Desktop Adapter sowie Application-/Domain-/Repository-Schichten. Qt Widgets schreiben nicht direkt in SQLite.
 
 ## PySide6 Schueleruebersicht
 

@@ -20,28 +20,23 @@ Der Data Lifecycle in `docs/DATA_LIFECYCLE.md` ist Source of Truth fuer freigege
 
 ## Architekturprinzipien
 
-Python erzeugt Workbook, Datenquellen, Datenmodell, UI-Projektionen, Styles, Berichte, Fachlogik und Build-Artefakte.
+PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
-VBA implementiert ausschliesslich Interaktion:
+SQLite ist die produktive lokale Datenbasis.
 
-- Navigation
-- Buttons
-- Dialoge
-- worksheet-basierte Dialogseiten
-- experimentelle UserForms, solange sie nicht als produktiver macOS-Standard freigegeben sind
-- Benutzerinteraktion
+Python verantwortet Datenmodell, Application Layer, Domain Layer, Persistenz, UI-nahe Adapter, ViewModels, PySide-Oberflaeche, UI-Projektionen, Berichte, Exporte und Fachlogik.
 
-VBA enthaelt keine fachliche Logik und keine Datenmodellentscheidungen.
+Excel/openpyxl bleibt nur fuer Export-, Berichts-, Referenz- oder Legacy-Projektionen zulaessig.
 
-Der Kompetenzmanager wird als Anwendung verstanden.
+VBA ist kein Zielpfad fuer neue Features, UI, Smoke-Tests, Automatisierung oder produktive Workflows.
 
-Excel ist die Runtime, nicht der fachliche Arbeitsort.
+Alte VBA-Quellen, Seeds und Workbook-Generatoren bleiben als Legacy-Altstand versioniert, werden aber nicht zur Hauptanwendung ausgebaut.
 
 Fachliche Eingaben erfolgen nicht direkt in fachlichen Tabellen.
 
-Primaeres Eingabe-Pattern sind ab Feature 1 worksheet-basierte Dialogseiten.
+Primaeres Eingabe-Pattern sind PySide-Dialoge und PySide-Screens, die freigegebene Adapter, Commands, Services und Repositories nutzen.
 
-VBA-UserForms werden auf Excel fuer macOS nicht mehr als primaeres Eingabe-Pattern verfolgt, weil automatische UserForm-Erzeugung und UserForm-Designer in der lokalen macOS-Zielumgebung nicht belastbar genug waren.
+VBA-UserForms und worksheet-basierte Dialogseiten sind historische Artefakte der Excel-Linie und werden fuer neue Entwicklung nicht weiterverfolgt.
 
 Vor der technischen Umsetzung eines neuen Eingabedialogs muss ein UX-Prototyp als verbindliche visuelle Referenz erstellt, mit Laura bzw. dem Product Owner reviewed und freigegeben werden.
 
@@ -50,14 +45,14 @@ Der verbindliche Ablauf fuer neue Eingabedialoge lautet:
 1. UX-Prototyp erstellen
 2. UX-Review mit Laura bzw. Product Owner durchfuehren
 3. UX-Freigabe dokumentieren
-4. worksheet-basierte Dialogseite moeglichst 1:1 nach dem freigegebenen UX-Prototyp umsetzen
+4. PySide-Dialog oder PySide-Screen moeglichst 1:1 nach dem freigegebenen UX-Prototyp umsetzen
 5. Validierung, Adapter-Anbindung und fachliche Logik erst danach ergaenzen
 
-Der UX-Prototyp ist keine technische Implementierung. Er ist die visuelle Referenz fuer die spaetere Dialogseite.
+Der UX-Prototyp ist keine technische Implementierung. Er ist die visuelle Referenz fuer den spaeteren PySide-Dialog oder Screen.
 
-Designentscheidungen fuer Eingabedialoge werden im UX-Prototyp getroffen, nicht frei im VBA-Designer.
+Designentscheidungen fuer Eingabedialoge werden im UX-Prototyp getroffen, nicht frei in Legacy-Excel-/VBA-Artefakten.
 
-Worksheet-basierte Dialogseiten duerfen:
+PySide-Dialoge duerfen:
 
 - Eingaben sammeln
 - einfache Pflichtfeld- und Formatpruefungen fuer unmittelbare Benutzerfuehrung durchfuehren
@@ -65,21 +60,21 @@ Worksheet-basierte Dialogseiten duerfen:
 - freigegebene Services aufrufen
 - nach erfolgreichem Speichern die betroffene Ansicht aktualisieren
 
-Worksheet-basierte Dialogseiten duerfen nicht:
+PySide-Dialoge duerfen nicht:
 
 - fachliche Logik enthalten
-- direkt in fachliche Tabellen schreiben
+- direkt in fachliche Tabellen oder SQLite schreiben
 - Datenmodellentscheidungen treffen
 - eigene Schattenhaltung erzeugen
-- Excel-Zellpositionen als technische Identitaet verwenden
+- UI-Positionen als technische Identitaet verwenden
 
 Nach erfolgreichem Speichern wird die Dialogseite verlassen und die aufrufende oder betroffene Ansicht wird aus dem Datenmodell aktualisiert.
 
-## Runtime Adapter und Refresh
+## Legacy Runtime Adapter und Export Refresh
 
-Produktive Schreibprozesse aus Excel laufen ueber einen Runtime Adapter.
+Der folgende Excel/VBA-Runtime-Adapter ist ein historischer, nicht weiter verfolgter Pfad der Excel-Linie.
 
-Der freigegebene Pfad lautet:
+Der damalige freigegebene Pfad lautete:
 
 ```text
 Worksheet-Dialogseite
@@ -92,7 +87,7 @@ Worksheet-Dialogseite
 -> SQLite
 ```
 
-VBA liest Eingaben ausschliesslich ueber registrierte Named Ranges.
+VBA las in diesem Legacy-Pfad Eingaben ausschliesslich ueber registrierte Named Ranges.
 
 VBA enthaelt keine Fachlogik, erzeugt keine fachlichen IDs, validiert keine Fachregeln und schreibt nicht direkt in SQLite.
 
@@ -118,9 +113,9 @@ Sie veraendern niemals die zugrunde liegenden fachlichen Entitaeten.
 
 Die Datenhaltung bleibt unabhaengig von der Darstellung.
 
-Die vollstaendige fachliche Projektion wird ausschliesslich im Python Projection Builder erzeugt.
+Excel-/Workbook-Projektionen werden ausschliesslich im Python Projection Builder oder Export Builder erzeugt.
 
-Excel darf diese Projektion anzeigen und technische Zellbezuege aufloesen.
+Excel darf diese Projektion anzeigen und technische Zellbezuege aufloesen, ist aber keine Haupt-UI.
 
 Excel darf die fachliche Reihenfolge der Projektion nicht durch dynamische Sortier- oder Filtermechanismen veraendern.
 
@@ -130,9 +125,9 @@ Auswertungen duerfen keine eigenen Schatteninformationen erzeugen.
 
 ## PySide-Hauptanwendung und Excel-Projektion
 
-PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
-Excel/VBA bleibt im Repository als bestehende Projektion und moeglicher Export-, Berichts- oder Legacy-Pfad erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
+Excel/VBA bleibt im Repository als bestehende Projektion und moeglicher Export-, Berichts-, Referenz- oder Legacy-Pfad erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
 
 Der validierte Spike-Pfad lautet:
 
@@ -157,11 +152,11 @@ Excel/VBA bleibt im Repository erhalten. Excel bleibt bestehende Projektion und 
 
 Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Der Ruecksprungpunkt fuer den Excel-/xlwings-Pfad ist `checkpoint-excel-adapter-before-python-gui`.
 
-Offen bleiben der produktive Datenbankpfad, Backup/Restore, Packaging als macOS-App und der genaue Umfang kuenftiger Excel-Exporte.
+Offen bleiben produktiver Nutzer-Datenbankpfad, Backup/Restore, Packaging als macOS-App, Updates/Migrationen und der genaue Umfang kuenftiger Excel-Exporte.
 
-## Architecture Baseline v2.0
+## Architecture Baseline v3.0
 
-Architecture Baseline v2.0 ist die verbindliche Schichtenbaseline nach Sprint 5.
+Architecture Baseline v3.0 ist die verbindliche Schichtenbaseline nach der PySide-Architekturentscheidung.
 
 ```text
 Adapter Layer
@@ -178,9 +173,9 @@ Verantwortlichkeiten:
 - Application Layer: Commands, Dispatcher und Routing; keine Fachlogik, kein SQL, keine Excel-Logik.
 - Domain Layer: Services, Validatoren und fachliche Regeln.
 - Infrastructure Layer: Repositories, SQLite und Persistenz.
-- Projection Layer: Workbook Builder, Excel-Projektionen und UI-nahe Anzeigeprojektionen.
+- Projection Layer: PySide ViewModels, UI-nahe Anzeigeprojektionen, Export Builder und Legacy-Workbook-Projektionen.
 - PySide UI: Hauptanwendung fuer Anzeige, Navigation, Dialoge und Benutzerinteraktion.
-- Excel UI: Export-, Berichts- oder Legacy-Projektion.
+- Excel UI: Export-, Berichts-, Referenz- oder Legacy-Projektion.
 
 Standard-Datenfluss:
 
@@ -197,7 +192,7 @@ User
 -> PySide-Ansicht oder Excel-Projektion
 ```
 
-SQLite ist die vorbereitete Source of Truth fuer fachliche Daten.
+SQLite ist die produktive lokale Source of Truth fuer fachliche Daten.
 
 Python ist die einzige fachliche Schreibschicht.
 
@@ -213,7 +208,7 @@ Neue Funktionen entstehen nach dem Standardablauf:
 2. Registry kennt die Datenquelle
 3. Builder-Projektion aktualisieren
 4. UI zeigt die Projektion
-5. VBA navigiert ueber technische IDs
+5. PySide navigiert ueber technische IDs; Export-/Legacy-Projektionen duerfen technische IDs abbilden
 
 Neue Funktionen duerfen nur entstehen durch:
 
@@ -221,7 +216,7 @@ Neue Funktionen duerfen nur entstehen durch:
 - registrierte neue Datenquelle ergaenzen
 - Builder erweitern
 - UI-Projektion ergaenzen
-- VBA-Navigation ergaenzen
+- PySide-Navigation ergaenzen; Legacy-/Export-Navigation nur bei ausdruecklichem Auftrag
 
 Nicht erlaubt sind:
 

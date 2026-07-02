@@ -2,25 +2,25 @@
 
 ## Zielplattform und Architektur
 
-PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
-Python bleibt verantwortlich für Build-System, Datenmodell, UI-Projektionen, PySide-Oberflaeche, Workbook-/Export-Erzeugung, Styles, Berichte und Fachlogik.
+SQLite ist die produktive lokale Datenbasis.
 
-Excel/VBA bleibt im Repository als Export-, Berichts- oder Legacy-Projektion erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
+Python bleibt verantwortlich für Datenmodell, Application Layer, Domain Layer, Persistenz, PySide-Oberflaeche, UI-Projektionen, Export-Erzeugung, Berichte und Fachlogik.
 
-VBA übernimmt in der Excel-Linie weiterhin ausschließlich Navigation, Buttons, Dialogaufrufe und Benutzerinteraktion.
+Excel/VBA bleibt im Repository als Export-, Berichts-, Referenz- oder Legacy-Projektion erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
 
-Worksheet-basierte Dialogseiten sind ab Feature 1 das primaere Eingabe-Pattern fuer Excel auf macOS.
+VBA wird nicht weiter als Zielpfad fuer neue Features, UI, Smoke-Tests, Automatisierung oder produktive Workflows verfolgt.
 
-VBA-UserForms bleiben experimentell/deprecated, bis ein eigener Migrations- oder Bereinigungsschritt freigegeben ist.
+Worksheet-basierte Dialogseiten, VBA-UserForms und VBA-Runtime-Adapter sind historische Artefakte der Excel-Linie.
 
 Der PySide6 Desktop-App-Spike ist zur Hauptanwendungslinie geworden. Excel bleibt im Repository als bestehende Projektion und moeglicher Export-/Berichtspfad erhalten.
 
 Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Ein Ruecksprungpunkt fuer den Excel/xlwings-Pfad existiert mit dem Tag `checkpoint-excel-adapter-before-python-gui`.
 
-Offen bleiben produktiver Datenbankpfad, Backup/Restore, Packaging als macOS-App und der genaue Umfang kuenftiger Excel-Exporte.
+Offen bleiben produktiver Nutzer-Datenbankpfad, Backup/Restore, Packaging als macOS-App, Updates/Migrationen und der genaue Umfang kuenftiger Excel-Exporte.
 
-Der VBA-Seed wurde praktisch validiert. `.xlsm` ist ab Version `v0.4` das Hauptartefakt.
+Der VBA-Seed wurde historisch validiert. `.xlsm` ist kein Hauptartefakt der aktiven Produktlinie mehr.
 
 Das Datenmodell ist die fachliche Grundlage des Projekts. Alle Ansichten sind Projektionen dieses Datenmodells.
 
@@ -50,6 +50,28 @@ Sprint 4.2: Schülerverwaltung vorbereiten und ersten transaktionalen Schreibpro
 
 Sprint 5: Scope Freeze abgeschlossen, Dialog Framework begonnen und erste Referenz-UserForm `Neuer Schueler` vorbereitet. Sprint 5.1a konkretisiert den Dialogstandard fuer zukuenftige Eingabemasken. Sprint 5.1b stoppt die produktive Schueleranlage an der noch offenen Laufzeitbruecke zwischen Excel/VBA und Python-Service-Schicht. Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis. Sprint 5.3 fuehrt den Application Command Layer ein. Sprint 5.4 validiert `student.create` im Python-Stack. Architecture Baseline v2.0 dokumentiert diesen erreichten Stand. Feature 1 fuehrt den UX-Prototyp als verbindlichen Zwischenschritt vor Dialogumsetzungen ein und wechselt wegen macOS-UserForm-Problemen auf die worksheet-basierte Dialogseite `dlg_neuer_schueler`. Feature 1.4a definiert den Runtime Adapter und den Refresh Contract fuer `student.create`. Feature 1.4b implementiert den produktiven Schreibpfad bis SQLite ohne Projection Refresh. Der PySide6 Desktop-App-Spike validiert anschliessend einen UI-Adapter ueber denselben Application-/Service-/Repository-Stack. Nach dem freigegebenen App-Icon wird PySide zur Hauptanwendungslinie.
 
+Kurzfristige Produktziele
+
+- PySide-App stabilisieren
+- Stammdaten und Kursverbuende weiter klaeren
+- Beobachtungspersistenz
+- Schuelerprofile ausbauen
+- lokale SQLite-Datenhaltung produktionsnaeher machen
+- Exportstrategie spaeter definieren
+
+Mittelfristige Produktziele
+
+- Berichte und Auswertungen in PySide
+- Excel-/Datei-Exportfunktion
+- Packaging/Installer fuer macOS
+- Datenschutz, Backup/Restore und Freischaltcode spaeter klaeren
+
+Excel/VBA Legacy/Export
+
+- keine aktive Feature-Roadmap
+- alte Workbook-/VBA-Pfade pruefen und bei Bedarf archivieren
+- Excel nur als Export, Berichtsausgabe, Referenz oder Legacy-Projektion
+
 Zukünftige Produktziele ohne Sprintzuordnung
 
 - Beobachtungsverwaltung
@@ -70,7 +92,7 @@ Zukünftige Produktziele ohne Sprintzuordnung
 - Schuelerprofil in der PySide-Hauptanwendung
 - Beobachtungsmaske in der PySide-Hauptanwendung
 - Packaging als macOS-App
-- Produktiver Datenbankpfad, Backup und Restore
+- Produktiver Nutzer-Datenbankpfad, Backup und Restore
 - Excel-Export und Berichte auf Basis von SQLite
 
 Diese Punkte stellen zukünftige Produktziele dar.
@@ -184,7 +206,7 @@ Sprint 5
 - VBA-UserForms sind fuer Feature 1 auf macOS als instabil bewertet und nicht mehr primaeres Eingabe-Pattern.
 - Worksheet-basierte Dialogseite `dlg_neuer_schueler` wird als neuer UI-Pfad vorbereitet.
 - PySide6 Desktop-App-Spike erfolgreich validiert: App startet, Maske `Neuer Schüler` funktioniert, Speichern schreibt ueber ApplicationCommandDispatcher, StudentService und SQLiteStudentRepository nach SQLite.
-- PySide6 bleibt ein validierter alternativer UI-Adapter. Eine Entscheidung fuer Python-GUI als Hauptanwendung, xlwings als Excel-Bruecke oder Excel nur als Export-/Berichtsschicht ist offen.
+- PySide6 wurde durch ADR-046 zur Hauptanwendung. Excel/VBA bleibt Export-, Berichts-, Referenz- oder Legacy-Projektion.
 - `docs/PYSIDE6_APP_FEASIBILITY.md` dokumentiert die Umsetzungspruefung fuer App-Struktur, MVP-Navigation, Risiken und naechsten moeglichen Sprint, ohne eine finale Architekturentscheidung zu treffen.
 - Dokumentenbereich fuer Schuelerdokumente dokumentiert.
 - Studentenzentrierte Dokumenten- und Medienstruktur festgelegt.

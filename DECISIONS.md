@@ -1716,15 +1716,9 @@ Die Architecture Baseline v2.0 bleibt gueltig: Adapter sind austauschbar, Python
 
 ### Offen
 
-Es ist noch nicht entschieden:
+Historischer Stand: Diese offenen Punkte wurden durch ADR-046 fuer die Hauptanwendung entschieden.
 
-- ob Python-GUI die Hauptanwendung wird
-- ob xlwings als Excel-Bruecke genutzt wird
-- ob Excel nur Export-/Berichtsschicht wird
-- welcher produktive Datenbankpfad gilt
-- wie Backup und Restore umgesetzt werden
-- wie Packaging als macOS-App erfolgt
-- wie Excel-Export und Berichte aus SQLite erzeugt werden
+Weiterhin offen bleiben produktiver Nutzer-Datenbankpfad, Backup/Restore, Packaging als macOS-App, Updates, Migrationen und der genaue Umfang kuenftiger Excel-Exporte.
 
 Naechste Pruefpunkte:
 
@@ -1750,7 +1744,7 @@ Die Excel-/VBA-Linie bleibt technisch wertvoll, erzeugt aber nicht die gewuensch
 
 ### Entscheidung
 
-PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
 Neue UI-Entwicklung konzentriert sich auf die PySide-App.
 
@@ -1770,3 +1764,61 @@ Leitregel:
 - Karten, Panels, Dialoge, Profile, Beobachtungen und Auswertungen duerfen eine leichte moderne Glasoptik nutzen, solange Lesbarkeit und Kontrast gewahrt bleiben.
 - Fachlogik bleibt ausserhalb der GUI in Application, Domain und Infrastructure Layer.
 - Excel/VBA wird nicht geloescht, aber als Haupt-App-Pfad nicht weiter priorisiert.
+
+## ADR-046 - PySide wird Hauptanwendung; Excel/VBA wird Legacy/Export
+
+Status: Accepted
+
+### Kontext
+
+Das Projekt startete mit Excel, openpyxl und spaeter einem validierten VBA-Seed als schneller Prototyp- und Projektionspfad.
+
+Der PySide-Prototyp hat sich ueber mehrere Sprints als deutlich geeigneter fuer eine ruhige, hochwertige und moderne paedagogische Desktop-App erwiesen.
+
+Excel/VBA verursacht auf macOS relevante Plattform-, Automatisierungs- und Stabilitaetsrisiken, insbesondere bei UserForms, VBA-Automation und Smoke-Test-Pfaden.
+
+Der Product Owner hat entschieden, dass PySide die Hauptanwendung des Jenaplan-Kompetenzmanagers wird.
+
+### Entscheidung
+
+PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+
+SQLite ist die produktive lokale Datenbasis.
+
+Excel ist nicht mehr Hauptanwendung.
+
+Excel bleibt nur:
+
+- Legacy-Artefakt
+- Referenz aus der fruehen Projektphase
+- Exportformat
+- spaetere Berichtsausgabe, falls fachlich sinnvoll
+
+Excel ist nicht mehr:
+
+- primaere UI
+- produktive Datenquelle
+- Entwicklungsziel fuer neue Features
+- Testziel fuer UI-Funktionalitaet
+
+VBA wird nicht weiterverfolgt.
+
+VBA wird nicht mehr verwendet fuer:
+
+- neue Features
+- UI
+- Smoke-Tests
+- Automatisierung
+- produktive Workflows
+
+### Konsequenzen
+
+- Neue Features werden in PySide umgesetzt.
+- Neue fachliche Daten laufen ueber Application, Domain, Repository und SQLite.
+- Keine neuen VBA-/Excel-UI-Features.
+- Keine VBA-Smoke-Tests als Zielpfad.
+- Roadmap und Dokumentation werden auf PySide ausgerichtet.
+- Excel-Generatoren, Workbook-Code, Seeds und VBA-Quellen werden nicht sofort geloescht, aber als Legacy-/Export-Pfad behandelt.
+- `openpyxl` bleibt erlaubt, wenn ausdruecklich Export, Bericht oder Legacy-Altstand betroffen ist.
+- Spaeter kann eine gezielte Bereinigung, Archivierung oder Entfernung alter Excel-/VBA-Pfade erfolgen.
+- Packaging, Installer, Backup/Restore, Datenbankpfad und SQLite-Migrationen bleiben eigene spaetere Entscheidungen.

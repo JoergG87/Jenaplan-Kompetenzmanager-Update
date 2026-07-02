@@ -41,6 +41,8 @@ Beispiele fuer sichtbare Begriffe:
 
 ## Workbook-CodeNames
 
+Status: Legacy-/Export-Pfad. Bestehende Workbook-CodeNames bleiben fuer historische Arbeitsmappen, Exportprojektionen und reproduzierbare Altstaende stabil. Neue Hauptanwendungsfeatures erzeugen keine neuen Workbook-CodeNames.
+
 | Objekt | Sichtbar | Technisch | Status |
 | --- | --- | --- | --- |
 | Workbook | Arbeitsmappe | `DieseArbeitsmappe` | bestehend |
@@ -139,6 +141,8 @@ Regeln:
 
 ## Named Ranges
 
+Status: Legacy-/Export-Pfad. Bestehende Named Ranges bleiben stabil, solange alte Workbook-Projektionen reproduzierbar sein muessen. Neue PySide-Features nutzen keine neuen Named Ranges als primaeren Integrationspfad.
+
 Registrierte bestehende Named Ranges:
 
 - `ui_profile_selected_student_id`
@@ -216,6 +220,8 @@ Nicht erlaubt sind:
 
 ## Navigationsprozeduren
 
+Status: Legacy-/Export-Pfad. Bestehende VBA-Navigationsprozeduren bleiben dokumentiert, werden aber nicht fuer neue Features, UI, Smoke-Tests oder produktive Workflows erweitert.
+
 Registriert:
 
 - `OpenStudentProfileById(student_id)`
@@ -231,6 +237,8 @@ Vorgesehen:
 - `OpenSubjectById(subject_id)`
 
 ## Worksheet-basierte Dialogseiten
+
+Status: Legacy. Worksheet-basierte Dialogseiten sind historische Artefakte der Excel-Linie. Neue Eingabedialoge werden fuer die PySide-Hauptanwendung dokumentiert und umgesetzt.
 
 Registrierte Dialogseiten:
 

@@ -63,9 +63,9 @@ Die Sortierung erfolgt ausschliesslich innerhalb der Projektion.
 
 Die Datenhaltung, insbesondere `tbl_students`, bleibt unveraendert.
 
-## Worksheet-basierte Dialogseiten
+## Legacy: Worksheet-basierte Dialogseiten
 
-Worksheet-basierte Dialogseiten sind ab Feature 1 die primaeren Eingabedialoge der Anwendung auf Excel fuer macOS.
+Worksheet-basierte Dialogseiten waren in der Excel-Linie primaere Eingabedialoge. Sie sind nach ADR-046 Legacy und kein Zielpfad fuer neue UI-Entwicklung.
 
 Sie sind eigene geschuetzte Arbeitsblaetter und keine fachlichen Datenquellen.
 
@@ -75,11 +75,13 @@ Dialogseiten schreiben nicht direkt in `data_*`-Tabellen.
 
 Nach erfolgreichem Speichern wird die Dialogseite verlassen und die betroffene Ansicht wird aus den registrierten Datenquellen aktualisiert.
 
-VBA-UserForms sind fuer Feature 1 deprecated und bleiben nur als experimenteller Artefaktstand erhalten.
+VBA-UserForms sind deprecated und bleiben nur als experimenteller Artefaktstand erhalten.
 
 ## PySide6 Desktop-App
 
 PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+
+SQLite ist die produktive lokale Datenbasis.
 
 Die Desktop-App ist keine fachliche Datenquelle.
 
@@ -98,7 +100,7 @@ PySide6 GUI
 -> SQLite
 ```
 
-Excel bleibt bestehende Export-, Berichts- oder Legacy-Projektion.
+Excel bleibt bestehende Export-, Berichts-, Referenz- oder Legacy-Projektion.
 
 ## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
 
@@ -128,9 +130,9 @@ Die Uebersicht zeigt den aktuellen Stammdaten-Scope der PySide-App. Sie verwalte
 
 Eine Kursuebersicht ist kursverbundbezogen. Sie zeigt nicht automatisch alle Schueler mit demselben Kurslabel in der ganzen App, sondern filtert nach `course_id` und den Stammgruppen des ausgewaehlten Kursverbunds.
 
-## Projection Refresh durch VBA
+## Legacy: Projection Refresh durch VBA
 
-VBA darf registrierte Projektionsbereiche der geoeffneten Arbeitsmappe aktualisieren, wenn alle folgenden Bedingungen erfuellt sind:
+VBA-Projection-Refresh ist ein historischer Excel-Runtime-Pfad und kein Zielpfad fuer neue Features oder UI-Tests. Falls er in einem ausdruecklichen Legacy-/Export-Auftrag genutzt wird, gelten weiterhin alle folgenden Bedingungen:
 
 - Python hat den fachlichen Command erfolgreich verarbeitet.
 - SQLite ist aktualisiert.
@@ -235,7 +237,7 @@ Regel:
 
 Das Schuelerprofil zeigt Daten eines Schuelers und startet spaeter freigegebene Dialoge. Es schreibt selbst keine fachlichen Daten.
 
-## Schuelerverwaltung / `dlg_neuer_schueler`
+## Schuelerverwaltung / PySide-Dialog `Neuer Schüler`
 
 Liest:
 
@@ -244,8 +246,8 @@ Liest:
 
 Schreibt:
 
-- `students` in SQLite ueber Python CLI/Bridge, Dispatcher, Student-Service und Repository
-- `data_students` nur als Python-erzeugten Projection Output beim Refresh
+- `students` in SQLite ueber Desktop Adapter, Dispatcher, Student-Service und Repository
+- `data_students` nur als Python-erzeugten Export-/Legacy-Projection Output
 - spaeter optional `data_media` ueber freigegebenen Dokumentenprozess
 
 Navigation:
@@ -263,7 +265,7 @@ UI-Projektionen:
 
 Regel:
 
-`dlg_neuer_schueler` ist die erste worksheet-basierte Dialogseite fuer fachliche Eingaben. Sie schreibt nicht direkt in Workbook-Tabellen und erzeugt keine Stammgruppen oder Kurse. Eingaben werden nur ueber registrierte Named Ranges gelesen.
+Der PySide-Dialog `Neuer Schüler` ist der aktive Eingabepfad fuer fachliche Schueleranlage. Er schreibt nicht direkt in SQLite, sondern nutzt den Desktop Adapter und den freigegebenen Command-/Service-/Repository-Pfad. Der historische `dlg_neuer_schueler`-Pfad bleibt Legacy.
 
 ## Beobachtungsdialog
 

@@ -143,7 +143,7 @@ Verbindliche Grenzen:
 
 ## PySide-Hauptanwendung
 
-PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
 Neue UI-Entwicklung konzentriert sich auf die PySide-App.
 

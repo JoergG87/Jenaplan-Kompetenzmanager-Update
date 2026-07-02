@@ -1,16 +1,18 @@
 # Jenaplan-Kompetenzmanager
 
-Der Jenaplan-Kompetenzmanager ist ein Python-Projekt zur strukturierten Verwaltung, Auswertung und zukuenftigen Ausgabe von Kompetenzdaten im Jenaplan-Kontext.
+Der Jenaplan-Kompetenzmanager ist eine PySide-Desktop-App zur strukturierten Verwaltung, Auswertung und zukuenftigen Ausgabe von Kompetenzdaten im Jenaplan-Kontext.
 
-In Sprint 0 wird ausschliesslich das technische Fundament erstellt. Es wird keine Excel-Datei erzeugt.
+SQLite ist die lokale produktive Datenbasis. Excel-Artefakte aus der fruehen Projektphase bleiben als Legacy-/Export- und Referenzpfad im Repository erhalten.
 
 Die vollständige Projektdokumentation befindet sich in `PROJECT.md`. Dauerhafte Architekturentscheidungen befinden sich in `DECISIONS.md`.
 
 ## Projektziel
 
-Ziel des Projekts ist der Aufbau eines wartbaren Generators fuer kompetenzorientierte Arbeitsmappen, Auswertungen und Berichte fuer Microsoft Excel auf macOS. Microsoft Excel fuer macOS ist die verbindliche Zielplattform.
+Ziel des Projekts ist der Aufbau einer modernen, ruhigen und wartbaren Desktop-App fuer paedagogische Kompetenzdokumentation.
 
-Python erzeugt Workbook, Datenmodell, UI-Projektionen, Styles, Berichte und Build-Artefakte. Der VBA-Seed wurde technisch validiert; `.xlsm` wird als Zielartefakt vorbereitet und `.xlsx` bleibt bis zur Stabilisierung des VBA-Frameworks Fallback. VBA uebernimmt ausschliesslich Navigation, Buttons, Dialoge, UserForms und Benutzerinteraktion. Fachliche Logik verbleibt vollstaendig im Python- und Datenmodell.
+PySide ist die Hauptanwendung. Python verantwortet Datenmodell, Application Layer, Domain Layer, Persistenz, ViewModels, Adapter, PySide-Oberflaeche, Berichte und Exporte. Fachliche Logik verbleibt vollstaendig ausserhalb von UI-Widgets.
+
+Excel ist nicht mehr Hauptanwendung und kein Zielpfad fuer neue Features. Bestehende Workbook-/openpyxl-/VBA-Artefakte bleiben vorerst als Legacy, Referenz und moegliche spaetere Exportprojektion erhalten.
 
 Die Stammgruppenübersicht ist der Einstieg in den Arbeitsablauf. Sie dient ausschließlich dazu, Schüler schnell zu finden, auszuwählen und anschließend in das Schülerprofil zu wechseln. Verwaltung, Analyse und Auswertung erfolgen nicht in dieser Ansicht.
 
@@ -18,18 +20,17 @@ Die Stammgruppenübersicht ist der Einstieg in den Arbeitsablauf. Sie dient auss
 
 Das Projekt ist modular aufgebaut:
 
-- `build.py` dient als Einstiegspunkt fuer den Build-Prozess.
-- `src/` enthaelt die Python-Module fuer Workbook-Aufbau, Dashboard, Schuelerdaten, Kompetenzen, Bewertungen, Berichte, Einstellungen und Styles.
-- `src/core/`, `src/ui/` und `src/ui/screens/` bereiten die spaetere Trennung von Fachkern und UI-Generatoren vor.
-- `vba/` enthaelt versionierbare VBA-Quellen fuer die spaetere Interaktionsschicht.
-- `seeds/` enthaelt validierte `.xlsm`-Seeds fuer das VBA-Packaging.
+- `src/desktop_app/` enthaelt die PySide-Hauptanwendung.
+- `src/core/` enthaelt fachliche Modelle, Application-/Domain-/Infrastructure-Bausteine und SQLite-Zugriff ueber Repositories.
+- `build.py`, `src/workbook.py`, `src/ui/` und `src/ui/screens/` gehoeren zum bestehenden Workbook-/Export-/Legacy-Pfad.
+- `vba/` und `seeds/` enthalten historische VBA-/Seed-Artefakte. Sie werden nicht fuer neue Features ausgebaut.
 - `data/` enthaelt strukturierte Eingabedaten und Konfigurationen.
 - `docs/` enthaelt fachliche und technische Dokumentation.
 - `tests/` ist fuer automatisierte Tests vorgesehen.
 - `output/` ist fuer kuenftig erzeugte Dateien vorgesehen.
 - `assets/` ist fuer statische Ressourcen vorgesehen.
 
-Die Excel-Erzeugung erfolgt über Python mit `openpyxl`. Fachliche Logik verbleibt im Python- und Datenmodell. VBA darf nach erfolgreichem Packaging nur Navigation, Dialoge, Benutzerinteraktion und UserForms uebernehmen.
+Die Hauptanwendung laeuft ueber PySide und SQLite. Excel-Erzeugung erfolgt nur noch im Legacy-/Export-Kontext ueber Python mit `openpyxl`.
 
 Jede Ansicht besitzt genau eine Hauptaufgabe. Neue Funktionen dürfen diese Hauptaufgabe nicht verwässern.
 
@@ -71,22 +72,13 @@ Jede Implementierung folgt kuenftig dieser Reihenfolge:
 pip install -r requirements.txt
 ```
 
-## Build ausfuehren
+## PySide-App starten
 
-Der aktuelle Build erzeugt die UX-Prototypen im Ordner `output/`.
-
-```bash
-python3 build.py
-```
-
-Ausgaben:
+Primaerer Start per Doppelklick auf macOS:
 
 ```text
-output/Jenaplan_UX_Prototype_v0.1_FirstAttempt.xlsx
-output/Jenaplan_UX_Prototype_v0.2.xlsx
+launcher/Jenaplan_Kompetenzmanager.command
 ```
-
-## PySide6-Prototyp starten
 
 Start per Terminal:
 
@@ -94,15 +86,15 @@ Start per Terminal:
 python3 -m src.desktop_app.main
 ```
 
-Start per Doppelklick auf macOS:
-
-```text
-launcher/Jenaplan_Kompetenzmanager.command
-```
-
 Der Launcher nutzt `.venv/bin/python`, wenn eine virtuelle Umgebung vorhanden ist,
 und faellt sonst auf `python3` zurueck.
 
-Hinweis: Das ist ein Entwickler-/Prototyp-Launcher. Es ist noch kein Installer
-und kein fertiges App-Paket. Python und die Abhaengigkeiten muessen weiterhin
-eingerichtet sein.
+Hinweis: Das ist ein Entwickler-/Prototyp-Launcher. Es ist noch kein Installer und kein fertiges App-Paket. Python und die Abhaengigkeiten muessen weiterhin eingerichtet sein.
+
+## Legacy-/Export-Build
+
+Der Workbook-Build bleibt als Altstand und moegliche Exportbasis erhalten. Er ist nicht mehr der Startweg der Hauptanwendung.
+
+```bash
+python3 build.py
+```

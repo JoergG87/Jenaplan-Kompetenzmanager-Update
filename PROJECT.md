@@ -4,17 +4,19 @@
 
 Aktuelle Produktversion: `v0.4`.
 
-Kurzbeschreibung: Erste datengetriebene Version des Jenaplan-Kompetenzmanagers.
+Kurzbeschreibung: PySide-Hauptanwendung mit lokaler SQLite-Datenbasis und bestehendem Excel-/Workbook-Legacy-Pfad.
 
-Version `v0.4` repräsentiert die abgeschlossene Core Data Architecture mit datengetriebener Workbook-Projektion.
+Version `v0.4` repräsentiert die abgeschlossene Core Data Architecture mit datengetriebener Workbook-Projektion. Die aktive Produktlinie ist inzwischen die PySide-Desktop-App.
 
 ## Projektziel
 
 Der Jenaplan-Kompetenzmanager ist ein professionelles Python-Projekt zur strukturierten Verwaltung, Auswertung und späteren Ausgabe von Kompetenzdaten im Jenaplan-Kontext.
 
-PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
-Das Projekt entwickelt sich damit von einer Excel-zentrierten Arbeitsmappe zu einer modernen Desktop-App fuer macOS. Excel/VBA bleibt im Repository als Export-, Berichts- oder Legacy-Projektion erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
+SQLite ist die produktive lokale Datenbasis.
+
+Das Projekt hat sich damit von einer Excel-zentrierten Arbeitsmappe zu einer modernen Desktop-App fuer macOS entwickelt. Excel/VBA bleibt im Repository als Export-, Berichts-, Referenz- oder Legacy-Projektion erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
 
 Python bleibt verantwortlich fuer Datenmodell, Application Layer, Domain Layer, Persistenz, UI-nahe Adapter, PySide-Oberflaeche, Workbook-/Export-Projektionen, Berichte und Build-Artefakte.
 
@@ -100,11 +102,9 @@ Nicht nur den aktuellen Stand.
 
 Das Projekt ist modular aufgebaut.
 
-- `build.py` ist der zentrale Einstiegspunkt für spätere Build-Prozesse.
-- `src/workbook.py` ist für die spätere Arbeitsmappen-Erzeugung vorgesehen.
-- `src/core/` ist für die spätere Trennung fachlicher Python-Logik vorgesehen.
-- `src/ui/` ist für die spätere Trennung UI-naher Python-Generatoren vorgesehen.
-- `src/ui/screens/` ist für künftige Bildschirm-Generatoren vorgesehen.
+- `src/desktop_app/` enthaelt die PySide-Hauptanwendung mit Shell, Screens, Dialogen, Adaptern und ViewModels.
+- `src/core/` enthaelt fachliche Python-Logik, Application-/Domain-/Infrastructure-Bausteine und SQLite-Repositories.
+- `build.py`, `src/workbook.py`, `src/ui/` und `src/ui/screens/` gehoeren zum bestehenden Workbook-/Export-/Legacy-Pfad.
 - `src/dashboard.py` ist für das spätere Dashboard vorgesehen.
 - `src/students.py` ist für Schülerdaten vorgesehen.
 - `src/competencies.py` ist für Kompetenzdaten vorgesehen.
@@ -112,24 +112,23 @@ Das Projekt ist modular aufgebaut.
 - `src/reports.py` ist für Berichte vorgesehen.
 - `src/settings.py` ist für zentrale Einstellungen vorgesehen.
 - `src/styles.py` ist für visuelle Formatierungen vorgesehen.
-- `src/desktop_app/` enthaelt die PySide-Hauptanwendung mit Shell, Screens, Dialogen, Adaptern und ViewModels.
 - `data/` enthält Eingabedaten und Konfigurationen.
 - `docs/` enthält fachliche Begleitdokumentation.
 - `UX_BLUEPRINT.md` beschreibt die verbindliche UX-Grundlage für den ersten Prototyp.
 - `docs/DESIGN_SYSTEM.md` beschreibt das freigegebene Design-System als verbindliche Referenz für zukünftige Ansichten.
-- `vba/` enthält versionierbare VBA-Quellen für die spätere Interaktionsschicht.
-- `seeds/` enthält validierte Seed-Arbeitsmappen für das spätere `.xlsm`-Packaging.
+- `vba/` enthält historische versionierbare VBA-Quellen aus der Excel-Linie.
+- `seeds/` enthält validierte Seed-Arbeitsmappen aus der Excel-/VBA-Legacy-Linie.
 - `output/` ist für später generierte Dateien vorgesehen.
 - `tests/` ist für automatisierte Tests vorgesehen.
 - `assets/` ist für statische Ressourcen vorgesehen.
 - `BACKLOG.md` sammelt zukünftige Produktideen und Erweiterungen.
 - `DISCOVERY.md` dokumentiert fachliche Erkenntnisse aus Anwenderinterviews und Discovery-Workshops.
 
-Die Architektur vermeidet feste Zellreferenzen. Stattdessen sollen strukturierte Daten, eindeutige IDs und wiederverwendbare Builder-Komponenten verwendet werden.
+Die Architektur vermeidet feste Zellreferenzen und UI-nahe Schattenlogik. Stattdessen sollen strukturierte Daten, eindeutige IDs, Repositories, ViewModels und wiederverwendbare Builder-/Export-Komponenten verwendet werden.
 
 Die Stammgruppenübersicht und die Kursübersicht besitzen keine eigene Geschäftslogik. Sie stellen vorhandene Schülerdaten dar und werden aus diesen Daten generiert. Änderungen an Schülerdaten erfolgen künftig ausschließlich über die Schülerverwaltung.
 
-VBA-Quelländerungen werden versioniert unter `vba/modules/` gepflegt. Der Seed muss dauerhaft das Bootstrap-Modul `SeedImport` enthalten; damit kann `scripts/import_vba_sources_to_seed.py` die versionierten Module `Globals`, `Navigation` und `UI` automatisch in `seeds/JenaplanSeed.xlsm` aktualisieren. Das Skript bricht ab, wenn dieser Bootstrap im Seed fehlt.
+VBA-Quelländerungen bleiben als Legacy-Altstand versioniert unter `vba/modules/` nachvollziehbar. Neue Features werden nicht mehr in VBA umgesetzt. Der Seed-Import-Pfad bleibt nur fuer ausdrueckliche Legacy-/Export-Aufgaben erhalten.
 
 ## Visuelle Produktlinie
 
@@ -147,15 +146,15 @@ Die Gestaltung nimmt die Icon-Symbolik auf:
 
 Die Icon-Farbwelt aus Dunkelblau, Blau, Tuerkis, Gruen, Orange und hellen neutralen Hintergruenden bildet die visuelle Grundlage fuer Navigation, Karten, Kursfarben, Beobachtungen, Auswertungen und Statusbereiche.
 
-## Architecture Baseline v2.0
+## Architecture Baseline v3.0
 
-Architecture Baseline v2.0 dokumentiert den aktuell validierten Zielzustand nach Sprint 5.
+Architecture Baseline v3.0 dokumentiert den aktuell freigegebenen Zielzustand nach der PySide-Architekturentscheidung.
 
 Die Baseline entwickelt keine neue Architektur, sondern fasst die bereits umgesetzten Entscheidungen zusammen:
 
 ```text
 Adapter Layer
-(VBA / CLI / zukuenftige Adapter)
+(PySide Desktop Adapter / CLI / Export Adapter)
 -> Application Layer
    (Dispatcher / Commands)
 -> Domain Layer
@@ -163,21 +162,22 @@ Adapter Layer
 -> Infrastructure Layer
    (SQLite / Repository)
 -> Projection Layer
-   (Workbook Builder)
--> Excel UI
+   (PySide ViewModels / Export Builder)
+-> PySide UI / Exportprojektion
 ```
 
 Verbindliche Prinzipien:
 
-- SQLite ist die vorbereitete Source of Truth fuer fachliche Daten.
+- SQLite ist die produktive lokale Source of Truth fuer fachliche Daten.
 - Python bleibt die einzige fachliche Schreibschicht.
 - Commands sind der Einstiegspunkt fachlicher Ablaeufe.
 - Dispatcher routen Commands und enthalten keine Businesslogik.
 - Services und Validatoren enthalten die fachliche Logik.
 - Repositories kapseln Persistenz und SQLite-Zugriff.
-- Builder erzeugen ausschliesslich Excel-Projektionen.
-- Excel und VBA bleiben UI-, Projektions- und Interaktionsschicht.
-- VBA schreibt weder direkt in SQLite noch in fachliche Workbook-Tabellen.
+- PySide ViewModels und Screens zeigen fachliche Daten, sind aber keine fachliche Datenquelle.
+- Builder erzeugen ausschliesslich Export- oder Legacy-Projektionen.
+- Excel bleibt Export-, Berichts-, Referenz- oder Legacy-Projektion.
+- VBA ist kein Zielpfad fuer neue Features, UI, Smoke-Tests oder produktive Workflows.
 
 Historische Architecture v1 bleibt als Grundlage erhalten:
 
@@ -187,7 +187,7 @@ Python
 -> Excel
 ```
 
-Architecture v2.0 erweitert diese Linie um Application, Domain und Infrastructure Layer, damit spaetere UserForms, CLI-Adapter und weitere Module ohne Sonderarchitektur denselben fachlichen Ablauf nutzen koennen.
+Architecture v2.0 bleibt als historischer Zwischenschritt dokumentiert. Architecture v3.0 richtet dieselben Application-, Domain- und Infrastructure-Layer auf PySide als Hauptanwendung und Excel als Export-/Legacy-Projektion aus.
 
 ## Engineering Lessons Learned
 
@@ -203,6 +203,8 @@ Kuenftige Aenderungen an Projection Buildern muessen deshalb immer eine Regressi
 
 ## Sprint 5 - Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 
+Historischer Stand der Excel-/VBA-Linie. Dieser Abschnitt beschreibt den damaligen Sprint-5-Kontext und ist nicht mehr Zielbild fuer neue UI-Entwicklung.
+
 Sprint 5 hat den Scope Freeze abgeschlossen und das Dialog Framework begonnen.
 
 Der aktuelle Stand:
@@ -216,11 +218,11 @@ Der aktuelle Stand:
 - Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis fuer spaetere UserForm-Schreibprozesse
 - Sprint 5.3 fuehrt den Application Command Layer als Bruecke zwischen Command-Adaptern und Domain Services ein
 
-Grundsatz:
+Damals geltender Grundsatz:
 
-Der Kompetenzmanager ist eine Anwendung. Excel ist nur die Runtime.
+Der Kompetenzmanager ist eine Anwendung. Excel war in dieser Linie nur die Runtime.
 
-Fachliche Eingaben erfolgen ueber modale VBA-UserForms und nicht direkt in Tabellen.
+Fachliche Eingaben sollten in dieser historischen Linie ueber modale VBA-UserForms und nicht direkt in Tabellen erfolgen.
 
 UserForms sammeln Eingaben, fuehren nur einfache Oberflaechenvalidierung durch, rufen freigegebene Services auf und aktualisieren anschliessend die betroffene Ansicht.
 
@@ -497,11 +499,13 @@ Die dauerhaften Projektregeln sind in `AGENTS.md` festgelegt.
 
 Zusammenfassung:
 
-- Python erzeugt Workbook, Datenstruktur, Styles und Build-Artefakte.
-- VBA ist nach erfolgreichem Packaging nur für UI-Aufgaben freigegeben.
-- Keine fachliche Logik in VBA.
-- Zielplattform ist Microsoft Excel für macOS.
-- `openpyxl` verwenden.
+- PySide ist die Hauptanwendung.
+- SQLite ist die produktive lokale Datenbasis.
+- Python verantwortet Datenmodell, Application Layer, Domain Layer, Persistenz, ViewModels, Adapter, UI-Projektionen, Berichte, Exporte und Fachlogik.
+- Keine Businesslogik in PySide-Widgets.
+- Keine direkte SQLite-Logik in Qt-Widgets.
+- Excel/openpyxl nur fuer ausdrueckliche Export-, Berichts-, Referenz- oder Legacy-Aufgaben verwenden.
+- Keine neuen Excel-/VBA-Features und keine VBA-Smoke-Tests als Zielpfad.
 - Keine festen Zellreferenzen.
 - Strukturierte Tabellen bevorzugen.
 - Datenmodell niemals ohne Rücksprache ändern.

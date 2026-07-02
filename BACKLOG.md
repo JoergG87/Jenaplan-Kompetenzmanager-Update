@@ -396,6 +396,82 @@ Platzhalter für zukünftige Einträge.
 
 Platzhalter für zukünftige Einträge.
 
+## Epic: PySide Produktisierung
+
+### Packaging / Installer fuer macOS
+
+Priorität: Offen
+
+Beschreibung:
+
+Die PySide-Hauptanwendung braucht spaeter Packaging, Startpfad, Update-Strategie und macOS-taugliche Auslieferung.
+
+Status:
+
+Idee
+
+### Produktiver SQLite-Datenbankpfad, Backup und Restore
+
+Priorität: Offen
+
+Beschreibung:
+
+Der lokale SQLite-Pfad muss fuer echte Nutzung, Sicherung, Wiederherstellung und Updates definiert werden.
+
+Status:
+
+Idee
+
+### SQLite-Persistenz ausbauen
+
+Priorität: Offen
+
+Beschreibung:
+
+Beobachtungen, Kompetenzbewertungen, Medienreferenzen, Stammdaten und Kursverbuende muessen schrittweise ueber freigegebene Prozesse persistiert werden.
+
+Status:
+
+Idee
+
+## Epic: Legacy und Export
+
+### Legacy-Excel-Code pruefen und archivieren
+
+Priorität: Offen
+
+Beschreibung:
+
+Workbook-Builder, Seeds und VBA-Quellen sollen spaeter gezielt geprueft, als Legacy markiert, archiviert oder entfernt werden, sobald sie fuer Export/Referenz nicht mehr gebraucht werden.
+
+Status:
+
+Idee
+
+### Exportstrategie definieren
+
+Priorität: Offen
+
+Beschreibung:
+
+Definieren, welche Excel-, PDF- oder Berichtsexporte aus SQLite erzeugt werden sollen und welche alten Workbook-Pfade dafuer erhalten bleiben.
+
+Status:
+
+Idee
+
+### Alte Excel-/VBA-Build-Pfade entfernen
+
+Priorität: Offen
+
+Beschreibung:
+
+Sobald Exportstrategie und Archivierung geklaert sind, koennen nicht mehr benoetigte Excel-/VBA-Pfade kontrolliert entfernt werden.
+
+Status:
+
+Idee
+
 ## Ideenparkplatz
 
 Hier werden neue Ideen gesammelt, solange sie noch keinem Epic eindeutig zugeordnet werden können.

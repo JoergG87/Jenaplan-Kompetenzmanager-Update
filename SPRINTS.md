@@ -264,9 +264,9 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Tests gruen: 26 passed
 - [x] Build gruen
 - [x] Commit `5363e18` und Tag `spike-pyside6-student-create` gesetzt
-- [ ] Entscheidung ueber Python-GUI als Hauptanwendung offen
-- [ ] Entscheidung ueber xlwings als Excel-Bruecke offen
-- [ ] Entscheidung ueber Excel als Export-/Berichtspfad offen
+- [x] Durch ADR-046 entschieden: PySide ist Hauptanwendung
+- [x] Durch ADR-046 entschieden: Excel/VBA ist Export-, Berichts-, Referenz- oder Legacy-Pfad
+- [x] Durch ADR-046 entschieden: xlwings/Excel-Bruecke ist kein Zielpfad fuer neue Haupt-App-Features
 
 ### GUI-Umsetzungspruefung 1 - PySide6 App-Struktur und MVP-Navigation
 
@@ -431,6 +431,18 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Kursfilter beruecksichtigt Kurs und Stammgruppen des Kursverbunds
 - [x] Offenen UX-Punkt dokumentiert: Kompetenznamen in der Bewertungsliste spaeter eventuell fett darstellen
 - [x] Keine neue Persistenz, keine SQLite-Aenderung, kein ObservationRepository, kein Excel-/VBA-Umbau und keine Packaging-Toolchain umgesetzt
+
+### Architektur-Sprint - PySide Hauptanwendung, Excel/VBA Legacy/Export
+
+- [x] Arbeitsbaum vor Sprintbeginn sauber vorgefunden
+- [x] ADR-046 ergaenzt: PySide ist Hauptanwendung
+- [x] SQLite als produktive lokale Datenbasis dokumentiert
+- [x] Excel/VBA auf Export-, Berichts-, Referenz- und Legacy-Kontext zurueckgestuft
+- [x] Keine neuen Excel-/VBA-Features, keine VBA-Smoke-Tests und keine VBA-Automation als Zielpfad dokumentiert
+- [x] README, PROJECT, ROADMAP, AGENTS und Governance-Dokumente bereinigt
+- [x] PySide6-Feasibility als abgeschlossene Machbarkeitsphase markiert
+- [x] Backlog um Legacy-Bereinigung, Exportstrategie, Packaging/Installer und SQLite-Ausbau ergaenzt
+- [x] Keine Code-Loeschung, keine Produktlogik, keine SQLite-Migration, kein Packaging und kein Commit umgesetzt
 
 ### Nicht Bestandteil
 

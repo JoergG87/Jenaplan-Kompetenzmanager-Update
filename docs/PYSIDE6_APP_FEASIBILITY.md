@@ -1,10 +1,10 @@
 # PySide6 App Feasibility
 
-Dieses Dokument prueft, wie aus dem validierten PySide6-Spike eine echte Desktop-Anwendung entstehen koennte.
+Dieses Dokument dokumentiert die abgeschlossene Machbarkeitspruefung, aus der die PySide-Hauptanwendung hervorgegangen ist.
 
-Status: Historische Umsetzungspruefung.
+Status: Historische Umsetzungspruefung, erfolgreich abgeschlossen.
 
-Hinweis: Die offene Architekturfrage wurde nach Freigabe des App-Icons entschieden. PySide ist kuenftig die Hauptanwendung des Jenaplan-Kompetenzmanagers. Excel/VBA bleibt als Export-, Berichts- oder Legacy-Projektion erhalten.
+Hinweis: Die offene Architekturfrage wurde nach Freigabe des App-Icons und weiteren PySide-Sprints entschieden. PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers. SQLite ist die produktive lokale Datenbasis. Excel/VBA bleibt als Export-, Berichts-, Referenz- oder Legacy-Projektion erhalten.
 
 ## 1. Ausgangslage
 
@@ -31,11 +31,12 @@ Excel/VBA bleibt im Repository erhalten. Excel bleibt bestehende Projektion und 
 
 Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Der Ruecksprungpunkt fuer den Excel-/xlwings-Pfad ist `checkpoint-excel-adapter-before-python-gui`.
 
-Offen bleibt:
+Entschieden ist:
 
-- PySide6 als Hauptanwendung
-- xlwings als Excel-Bruecke
-- Excel nur als Export- und Berichtsschicht
+- PySide6 ist Hauptanwendung
+- SQLite ist produktive lokale Datenbasis
+- Excel ist nur Export-, Berichts-, Referenz- oder Legacy-Projektion
+- VBA wird nicht fuer neue Features, UI, Smoke-Tests oder produktive Workflows weiterverfolgt
 
 ## 2. Validierter Spike
 
@@ -69,7 +70,7 @@ Bewertung:
 
 Der Spike beweist, dass PySide6 als Adapter technisch in die bestehende Architektur passt.
 
-Er beweist noch nicht, dass PySide6 die Hauptanwendung werden soll.
+Diese Machbarkeitsphase ist durch ADR-046 abgeschlossen. PySide ist die Hauptanwendung.
 
 ## 3. Moegliche Zielarchitektur
 
@@ -312,7 +313,7 @@ Kurzbewertung:
 
 PySide6 wirkt technisch als naechster Pruefpfad sinnvoller als eine weitere Vertiefung des Excel/VBA-Runtime-Adapters.
 
-Eine finale Umstellung waere erst vertretbar, wenn MVP-UX, Packaging, produktiver Datenpfad, Backup/Restore und Excel-Export geklaert sind.
+Die finale Umstellung auf PySide als Hauptanwendung ist durch ADR-046 erfolgt. Packaging, produktiver Nutzer-Datenbankpfad, Backup/Restore und Excel-Export bleiben offene Folgearbeiten.
 
 ## 10. Empfehlung fuer naechsten Sprint
 
@@ -349,11 +350,8 @@ Akzeptanzkriterien:
 - Keine Businesslogik in Widgets.
 - Tests fuer Adapter/ViewModels sind gruen.
 
-## 11. Offene Entscheidungen
+## 11. Offene Folgeentscheidungen
 
-- Wird PySide6 Hauptanwendung?
-- Wird xlwings als Excel-Bruecke geprueft?
-- Bleibt Excel nur Export-/Berichtsschicht?
 - Wo liegt die produktive SQLite-Datei?
 - Wie funktionieren Backup und Restore?
 - Wie werden Schema-Migrationen versioniert?

@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Architektur-Sprint - PySide Hauptanwendung, Excel/VBA Legacy/Export
+
+### Changed
+
+- ADR-046 ergaenzt: PySide ist Hauptanwendung, SQLite ist produktive lokale Datenbasis, Excel/VBA ist Legacy-/Export-/Referenzpfad.
+- README, PROJECT, ROADMAP, AGENTS und Governance-Dokumente auf PySide-/SQLite-Zielbild bereinigt.
+- Excel/openpyxl als Export-/Legacy-Kontext eingeordnet, nicht mehr als Haupt-App-Startweg.
+- VBA als Zielpfad fuer neue Features, UI, Smoke-Tests, Automatisierung und produktive Workflows ausgeschlossen.
+- PySide6-App-Feasibility als erfolgreich abgeschlossene Machbarkeitsphase markiert.
+
+### Not Changed
+
+- Keine Produktlogik, keine UI-Aenderung, keine SQLite-Migration, kein Packaging, kein Installer, kein PyInstaller, keine Excel-/VBA-Code-Loeschung und kein Commit umgesetzt.
+
 ## Korrektur-Hotfix - PySide Kursverbuende und Schuelerliste
 
 ### Changed
