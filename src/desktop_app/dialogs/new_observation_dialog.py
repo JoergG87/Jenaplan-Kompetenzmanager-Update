@@ -51,6 +51,7 @@ class NewObservationDialog(QDialog):
         self.attachment_feedback_label = QLabel("")
         self.competency_rating_entries: dict[str, object] = {}
         self.competency_rating_widgets: dict[str, QComboBox] = {}
+        self.competency_rating_rows: dict[str, QWidget] = {}
         self.setWindowTitle("Neue Beobachtung")
         self.setModal(True)
         self.setMinimumSize(700, 560)
@@ -106,7 +107,9 @@ class NewObservationDialog(QDialog):
         self.note_input.setMinimumHeight(86)
 
         form_layout.addLayout(self._field_row("Datum", self.date_input))
-        form_layout.addLayout(self._field_row("Fach", self.subject_select))
+        form_layout.addLayout(
+            self._field_row("Fach für Kompetenzauswahl", self.subject_select)
+        )
         form_layout.addWidget(self._competency_card())
         form_layout.addWidget(self._competency_ratings_card())
         form_layout.addLayout(self._field_row("Kontext", self.context_select))
@@ -132,22 +135,32 @@ class NewObservationDialog(QDialog):
             self.subject_select.addItem(subject.display_name, subject.subject_key)
 
     def _refresh_competencies(self) -> None:
-        self.competency_list.clear()
-        self._clear_competency_ratings()
-        subject_key = str(self.subject_select.currentData() or "")
-        competencies = self.curriculum_adapter.list_competencies_for_subject(subject_key)
-        if not competencies:
-            item = QListWidgetItem("Keine Kompetenzen für dieses Fach hinterlegt.")
-            item.setFlags(Qt.ItemFlag.NoItemFlags)
-            self.competency_list.addItem(item)
-            return
-        for competency in competencies:
-            item = QListWidgetItem(competency.competency_display_name)
-            item.setData(Qt.ItemDataRole.UserRole, competency)
-            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            item.setCheckState(Qt.CheckState.Unchecked)
-            item.setToolTip(competency.competency_detail_label)
-            self.competency_list.addItem(item)
+        self.competency_list.blockSignals(True)
+        try:
+            self.competency_list.clear()
+            subject_key = str(self.subject_select.currentData() or "")
+            competencies = self.curriculum_adapter.list_competencies_for_subject(
+                subject_key
+            )
+            if not competencies:
+                item = QListWidgetItem("Keine Kompetenzen für dieses Fach hinterlegt.")
+                item.setFlags(Qt.ItemFlag.NoItemFlags)
+                self.competency_list.addItem(item)
+                return
+            for competency in competencies:
+                competency_key = self._competency_key(competency)
+                item = QListWidgetItem(competency.competency_display_name)
+                item.setData(Qt.ItemDataRole.UserRole, competency)
+                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                item.setCheckState(
+                    Qt.CheckState.Checked
+                    if competency_key in self.competency_rating_entries
+                    else Qt.CheckState.Unchecked
+                )
+                item.setToolTip(competency.competency_detail_label)
+                self.competency_list.addItem(item)
+        finally:
+            self.competency_list.blockSignals(False)
 
     def _competency_card(self) -> QFrame:
         card = self._card()
@@ -240,8 +253,6 @@ class NewObservationDialog(QDialog):
             student_id=self.student.student_id,
             student_name=self.student.display_name,
             date_text=self.date_input.date().toString("yyyy-MM-dd"),
-            subject_key=str(self.subject_select.currentData() or ""),
-            subject=self.subject_select.currentText(),
             competency_ratings=selected_competency_ratings,
             context=self.context_select.currentText(),
             note=self.note_input.toPlainText(),
@@ -259,31 +270,27 @@ class NewObservationDialog(QDialog):
             )
         return tuple(selected)
 
-    def _sync_competency_ratings(self) -> None:
+    def _sync_competency_ratings(
+        self,
+        _changed_item: QListWidgetItem | None = None,
+    ) -> None:
         if not hasattr(self, "competency_ratings_layout"):
             return
-        selected_keys: set[str] = set()
-        selected_entries: dict[str, object] = {}
         for row in range(self.competency_list.count()):
             item = self.competency_list.item(row)
-            if item.checkState() != Qt.CheckState.Checked:
-                continue
             catalog_entry = item.data(Qt.ItemDataRole.UserRole)
             if catalog_entry is None:
                 continue
             competency_key = self._competency_key(catalog_entry)
-            selected_keys.add(str(competency_key))
-            selected_entries[str(competency_key)] = catalog_entry
-
-        for competency_key in tuple(self.competency_rating_widgets):
-            if competency_key not in selected_keys:
+            if item.checkState() == Qt.CheckState.Checked:
+                if competency_key not in self.competency_rating_widgets:
+                    self._add_competency_rating_row(competency_key, catalog_entry)
+            elif competency_key in self.competency_rating_widgets:
                 self._remove_competency_rating_row(competency_key)
 
-        for competency_key, catalog_entry in selected_entries.items():
-            if competency_key not in self.competency_rating_widgets:
-                self._add_competency_rating_row(competency_key, catalog_entry)
-
-        self.competency_ratings_empty_state.setVisible(not selected_keys)
+        self.competency_ratings_empty_state.setVisible(
+            not self.competency_rating_widgets
+        )
 
     def _add_competency_rating_row(
         self,
@@ -293,7 +300,9 @@ class NewObservationDialog(QDialog):
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(8)
-        label = QLabel(getattr(catalog_entry, "competency_display_name"))
+        subject_display_name = getattr(catalog_entry, "subject_display_name")
+        competency_display_name = getattr(catalog_entry, "competency_display_name")
+        label = QLabel(f"{subject_display_name} · {competency_display_name}")
         label.setToolTip(getattr(catalog_entry, "competency_detail_label"))
         label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         rating_select = QComboBox()
@@ -301,20 +310,36 @@ class NewObservationDialog(QDialog):
         rating_select.addItem("Bewertung auswählen", "")
         for rating_option in OBSERVATION_RATING_OPTIONS:
             rating_select.addItem(rating_option, rating_option)
+        remove_button = QPushButton("Entfernen")
+        remove_button.clicked.connect(
+            lambda _checked=False, key=competency_key: self._remove_competency_rating(
+                key
+            )
+        )
         row.addWidget(label, 1)
         row.addWidget(rating_select, 0)
+        row.addWidget(remove_button, 0)
 
         row_widget = QWidget()
         row_widget.setLayout(row)
         row_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.competency_rating_entries[competency_key] = catalog_entry
         self.competency_rating_widgets[competency_key] = rating_select
+        self.competency_rating_rows[competency_key] = row_widget
         row_widget.setProperty("competency_key", competency_key)
         self.competency_ratings_layout.addWidget(row_widget)
+
+    def _remove_competency_rating(self, competency_key: str) -> None:
+        self._remove_competency_rating_row(competency_key)
+        self._sync_visible_competency_checkbox(
+            competency_key,
+            Qt.CheckState.Unchecked,
+        )
 
     def _remove_competency_rating_row(self, competency_key: str) -> None:
         self.competency_rating_entries.pop(competency_key, None)
         self.competency_rating_widgets.pop(competency_key, None)
+        self.competency_rating_rows.pop(competency_key, None)
         for index in range(self.competency_ratings_layout.count()):
             layout_item = self.competency_ratings_layout.itemAt(index)
             widget = layout_item.widget()
@@ -326,10 +351,32 @@ class NewObservationDialog(QDialog):
                 if removed_widget is not None:
                     removed_widget.deleteLater()
                 break
+        self.competency_ratings_empty_state.setVisible(
+            not self.competency_rating_widgets
+        )
+
+    def _sync_visible_competency_checkbox(
+        self,
+        competency_key: str,
+        check_state: Qt.CheckState,
+    ) -> None:
+        self.competency_list.blockSignals(True)
+        try:
+            for row in range(self.competency_list.count()):
+                item = self.competency_list.item(row)
+                catalog_entry = item.data(Qt.ItemDataRole.UserRole)
+                if catalog_entry is None:
+                    continue
+                if self._competency_key(catalog_entry) == competency_key:
+                    item.setCheckState(check_state)
+                    break
+        finally:
+            self.competency_list.blockSignals(False)
 
     def _clear_competency_ratings(self) -> None:
         self.competency_rating_entries.clear()
         self.competency_rating_widgets.clear()
+        self.competency_rating_rows.clear()
         if not hasattr(self, "competency_ratings_layout"):
             return
         while self.competency_ratings_layout.count():

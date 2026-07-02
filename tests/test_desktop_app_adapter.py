@@ -306,14 +306,26 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("rating_select.setMinimumWidth(190)", source)
         self.assertIn("row.addWidget(label, 1)", source)
 
-    def test_observation_dialog_resets_competency_ratings_on_uncheck_or_subject_change(self) -> None:
+    def test_observation_dialog_keeps_cross_subject_competency_ratings(self) -> None:
         source = inspect.getsource(new_observation_dialog)
+        refresh_source = inspect.getsource(
+            new_observation_dialog.NewObservationDialog._refresh_competencies
+        )
+        sync_source = inspect.getsource(
+            new_observation_dialog.NewObservationDialog._sync_competency_ratings
+        )
 
         self.assertIn("_remove_competency_rating_row", source)
+        self.assertIn("_remove_competency_rating", source)
+        self.assertIn('QPushButton("Entfernen")', source)
         self.assertIn("self.competency_rating_entries.pop", source)
         self.assertIn("self.competency_rating_widgets.pop", source)
-        self.assertIn("_clear_competency_ratings", source)
         self.assertIn("self.competency_list.clear()", source)
+        self.assertNotIn("_clear_competency_ratings", refresh_source)
+        self.assertIn("competency_key in self.competency_rating_entries", refresh_source)
+        self.assertIn("Qt.CheckState.Checked", refresh_source)
+        self.assertIn("if competency_key not in self.competency_rating_widgets", sync_source)
+        self.assertIn("elif competency_key in self.competency_rating_widgets", sync_source)
 
     def test_observation_context_options_match_prototype_scope(self) -> None:
         self.assertEqual(
@@ -330,6 +342,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_observation_draft_view_model_keeps_student_context(self) -> None:
         competency = ObservationCompetencyRatingDraft(
             subject_key="deutsch",
+            subject_display_name="Deutsch",
             learning_area="Mit Texten und Medien umgehen",
             competency_group="Lesen und Verstehen",
             competency_text="Texte lesen und zentrale Informationen entnehmen",
@@ -339,8 +352,6 @@ class DesktopAppAdapterTest(unittest.TestCase):
             student_id=f"{STUDENT_ID_PREFIX}-000001",
             student_name="Emma Müller",
             date_text="2026-07-01",
-            subject_key="deutsch",
-            subject="Deutsch",
             competency_ratings=(competency,),
             context="Leseübung",
             note="Liest einen bekannten Text flüssig.",
@@ -348,7 +359,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(draft.student_id, f"{STUDENT_ID_PREFIX}-000001")
         self.assertEqual(draft.student_name, "Emma Müller")
-        self.assertEqual(draft.subject_key, "deutsch")
+        self.assertEqual(draft.competency_ratings[0].subject_key, "deutsch")
+        self.assertEqual(draft.competency_ratings[0].subject_display_name, "Deutsch")
         self.assertEqual(draft.competency_ratings[0].display_label, "Mit Texten und Medien umgehen")
         self.assertEqual(draft.competency_ratings[0].competency_text, "Texte lesen und zentrale Informationen entnehmen")
         self.assertEqual(draft.competency_ratings[0].rating, "+ erreicht")
@@ -358,43 +370,62 @@ class DesktopAppAdapterTest(unittest.TestCase):
         field_names = {field.name for field in fields(ObservationDraftViewModel)}
 
         self.assertNotIn("rating", field_names)
+        self.assertNotIn("subject_key", field_names)
+        self.assertNotIn("subject", field_names)
         self.assertIn("competency_ratings", field_names)
 
-    def test_observation_competency_ratings_can_differ_per_competency(self) -> None:
+    def test_observation_competency_ratings_can_span_subjects(self) -> None:
         first = ObservationCompetencyRatingDraft(
-            subject_key="deutsch",
-            learning_area="Miteinander sprechen",
-            competency_group="Gesprächsbeiträge",
-            competency_text="Eigene Beiträge verständlich einbringen",
+            subject_key="epu",
+            subject_display_name="EPU",
+            learning_area="Natur und Umwelt",
+            competency_group="Erkunden und beschreiben",
+            competency_text="Naturphänomene beobachten und beschreiben",
             rating="++ sicher erreicht",
         )
         second = ObservationCompetencyRatingDraft(
             subject_key="deutsch",
-            learning_area="Texte verfassen",
-            competency_group="Inhalte strukturieren",
-            competency_text="Gedanken in einer sinnvollen Reihenfolge darstellen",
+            subject_display_name="Deutsch",
+            learning_area="Miteinander sprechen",
+            competency_group="Gesprächsbeiträge",
+            competency_text="Eigene Beiträge verständlich einbringen",
             rating="- in Entwicklung",
+        )
+        third = ObservationCompetencyRatingDraft(
+            subject_key="sozialkompetenz",
+            subject_display_name="Sozialkompetenz",
+            learning_area="Verantwortung",
+            competency_group="Auftreten",
+            competency_text="Verantwortung in der Gruppe übernehmen",
+            rating="+ erreicht",
         )
 
         draft = ObservationDraftViewModel(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
             student_name="Emma Müller",
             date_text="2026-07-01",
-            subject_key="deutsch",
-            subject="Deutsch",
-            competency_ratings=(first, second),
+            competency_ratings=(first, second, third),
             context="Präsentation",
             note="Präsentiert Arbeitsergebnisse vor der Gruppe.",
         )
 
         self.assertEqual(draft.competency_ratings[0].rating, "++ sicher erreicht")
         self.assertEqual(draft.competency_ratings[1].rating, "- in Entwicklung")
+        self.assertEqual(draft.competency_ratings[2].rating, "+ erreicht")
         self.assertNotEqual(
             draft.competency_ratings[0].rating,
             draft.competency_ratings[1].rating,
         )
-        self.assertEqual(draft.competency_ratings[0].display_label, "Miteinander sprechen")
-        self.assertEqual(draft.competency_ratings[1].display_label, "Texte verfassen")
+        self.assertEqual(
+            [rating.subject_key for rating in draft.competency_ratings],
+            ["epu", "deutsch", "sozialkompetenz"],
+        )
+        self.assertEqual(
+            [rating.subject_display_name for rating in draft.competency_ratings],
+            ["EPU", "Deutsch", "Sozialkompetenz"],
+        )
+        self.assertEqual(draft.competency_ratings[0].display_label, "Natur und Umwelt")
+        self.assertEqual(draft.competency_ratings[1].display_label, "Miteinander sprechen")
 
     def test_observation_dialog_placeholder_messages_are_non_persistent(self) -> None:
         self.assertEqual(

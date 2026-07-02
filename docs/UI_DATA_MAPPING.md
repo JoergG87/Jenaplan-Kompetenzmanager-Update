@@ -84,11 +84,11 @@ Nach erfolgreichem Python Command gibt Feature 1.4b nur ein Runtime-Ergebnis an 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | ausgewaehlter Schueler | `student_id` aus Navigation -> `data_students` | Anzeige | Nein | `data_students` | Namen werden nicht als technische Identitaet verwendet |
-| Fachauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Prototyp, spaeter `data_subjects` | Eingabe | Nein | Kompetenzverwaltung / Lehrplanpflege | App-Anzeigename `EPU`, kein App-Fach `Sachunterricht` |
-| Kompetenzauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Prototyp, spaeter `data_competencies` + `data_subjects` | Eingabe | Nein | `data_competencies` | fachliche Auswahl, v1-Katalog noch nicht final ausdifferenziert |
+| Fachauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Prototyp, spaeter `data_subjects` | Eingabe | Nein | Kompetenzverwaltung / Lehrplanpflege | filtert die sichtbare Kompetenzauswahl; App-Anzeigename `EPU`, kein App-Fach `Sachunterricht` |
+| Kompetenzauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Prototyp, spaeter `data_competencies` + `data_subjects` | Eingabe | Nein | `data_competencies` | ausgewaehlte Kompetenzbewertungen koennen aus mehreren Faechern stammen; v1-Katalog noch nicht final ausdifferenziert |
 | Beobachtungsnotiz | zukuenftig `data_observations.note` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | Schreiben nur nach freigegebenem Prozess |
 | Beobachtungskontext | zukuenftig `data_observations.context` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | Kontext gehoert zur Beobachtung |
-| Kompetenzzuordnung | zukuenftig `data_observation_competencies` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observation_competencies` | n:m-Zuordnung |
+| Kompetenzzuordnung | zukuenftig `data_observation_competencies` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observation_competencies` | n:m-Zuordnung; Bewertung liegt pro ausgewaehlter Kompetenz, Persistenz folgt spaeter |
 | Dokumente und Medien | zukuenftig `data_media.file_ref` nach `student_id` und optional `observation_id` | Eingabe | Geplant | `data_media` | nur als Anlage, keine Einbettung, Beobachtung bleibt Source of Truth |
 
 ## Berichte und Dashboard

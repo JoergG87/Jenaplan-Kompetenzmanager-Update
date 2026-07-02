@@ -358,6 +358,14 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Kompetenzauswahl und Bewertungszeilen kompakter gestaltet
 - [x] Keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository und keine Datenmodelländerung umgesetzt
 
+### Hotfix - Beobachtungsdialog faecheruebergreifende Kompetenzbewertungen
+
+- [x] Fachwechsel erhaelt bereits ausgewaehlte Kompetenzbewertungen
+- [x] Fach-Dropdown als Filter fuer die sichtbare Kompetenzauswahl praezisiert
+- [x] Kompetenzen aus mehreren Faechern koennen gleichzeitig im nicht-persistenten Draft stehen
+- [x] Kompetenzbewertungszeilen zeigen den Fach-Anzeigenamen und bieten `Entfernen`
+- [x] Keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository und keine finale Architekturentscheidung umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

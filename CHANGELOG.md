@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Hotfix - Beobachtungsdialog faecheruebergreifende Kompetenzbewertungen
+
+### Changed
+
+- Fachwechsel im PySide6-Beobachtungsdialog erhaelt bereits ausgewaehlte Kompetenzbewertungen.
+- Das Fach-Dropdown filtert nur noch die sichtbare Kompetenzauswahl und ist keine globale Fachbindung der Beobachtung.
+- Kompetenzbewertungszeilen zeigen den Fach-Anzeigenamen und koennen direkt entfernt werden.
+- Nicht-persistenter Observation-Draft fuehrt `subject_key` und `subject_display_name` pro Kompetenzbewertung.
+
+### Not Changed
+
+- Keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository, keine Dokumenten-/Medienpersistenz, kein Excel-/VBA-Umbau, kein Packaging und keine finale Architekturentscheidung umgesetzt.
+
 ## Sprint - Beobachtungsdialog Bewertung pro Kompetenz
 
 ### Changed

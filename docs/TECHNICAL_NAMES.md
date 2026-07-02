@@ -349,6 +349,7 @@ Registrierte Python-Klassen und Funktionen:
 - `PROFILE_ACTION_MESSAGES`
 - `PROFILE_SECTION_PLACEHOLDERS`
 - `ObservationCompetencyRatingDraft`
+- `ObservationCompetencyRatingDraft.subject_display_name`
 - `ObservationDraftViewModel`
 - `OBSERVATION_CONTEXT_OPTIONS`
 - `OBSERVATION_RATING_OPTIONS`

@@ -36,6 +36,7 @@ class ObservationCompetencyRatingDraft:
     """Selected competency rating data kept in the non-persistent draft."""
 
     subject_key: str
+    subject_display_name: str
     learning_area: str
     competency_group: str
     competency_text: str
@@ -55,6 +56,7 @@ class ObservationCompetencyRatingDraft:
         """Create a draft rating from a curriculum catalog entry."""
         return cls(
             subject_key=getattr(entry, "subject_key"),
+            subject_display_name=getattr(entry, "subject_display_name"),
             learning_area=getattr(entry, "learning_area"),
             competency_group=getattr(entry, "competency_group"),
             competency_text=getattr(entry, "competency_text"),
@@ -69,8 +71,6 @@ class ObservationDraftViewModel:
     student_id: str
     student_name: str
     date_text: str
-    subject_key: str
-    subject: str
     competency_ratings: tuple[ObservationCompetencyRatingDraft, ...]
     context: str
     note: str
