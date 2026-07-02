@@ -444,6 +444,19 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Backlog um Legacy-Bereinigung, Exportstrategie, Packaging/Installer und SQLite-Ausbau ergaenzt
 - [x] Keine Code-Loeschung, keine Produktlogik, keine SQLite-Migration, kein Packaging und kein Commit umgesetzt
 
+### Sprint - PySide Kursverbund bearbeiten
+
+- [x] Arbeitsbaum vor Sprintbeginn sauber vorgefunden
+- [x] Kursverbund-Bearbeiten-Dialog fuer Name, Stammgruppen und Kurse ergaenzt
+- [x] Stammgruppen und Kurse im Kursverbund per Checkbox auswaehlbar gemacht
+- [x] Leerer Name, fehlende Stammgruppe und fehlender Kurs werden verstaendlich abgelehnt
+- [x] Kursverbund wird session-lokal im `MasterDataDesktopAdapter` gespeichert
+- [x] Stammdaten-Seite zeigt aktualisierte Kursverbund-Auswahl
+- [x] Uebersicht nutzt aktualisierte Kurse des Kursverbunds
+- [x] Kursfilter bleibt `course_id` plus ausgewaehlte `group_ids`
+- [x] Schueleruebersicht mit Kurs-Spalte und farbigem Marker erhalten
+- [x] Keine SQLite-Persistenz, keine Migration, kein Repository, kein Excel-/VBA-Umbau und kein Commit umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

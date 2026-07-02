@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Sprint - PySide Kursverbund bearbeiten
+
+### Changed
+
+- Kursverbuende koennen in den Stammdaten session-lokal bearbeitet werden.
+- Dialog `Kursverbund bearbeiten` mit Name, Stammgruppen-Checkboxen und Kurs-Checkboxen ergaenzt.
+- Kursverbund-Filter bleibt kursverbundbezogen: Kurs plus ausgewaehlte Stammgruppen.
+- Stammdaten- und Uebersichtsseite nutzen die aktualisierte session-lokale Kursverbund-Auswahl.
+- Schueleruebersicht bleibt mit Kurs-Spalte, farbigem Marker und neutralem Kursnamen erhalten.
+
+### Not Changed
+
+- Keine SQLite-Persistenz fuer Kursverbuende, keine Migration, kein Repository, keine Beobachtungspersistenz, kein Excel-/VBA-Umbau, kein Packaging und kein Commit umgesetzt.
+
 ## Architektur-Sprint - PySide Hauptanwendung, Excel/VBA Legacy/Export
 
 ### Changed

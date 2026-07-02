@@ -388,6 +388,18 @@ Status:
 
 Idee
 
+### Kursverbünde dauerhaft speichern
+
+Priorität: Offen
+
+Beschreibung:
+
+Kursverbuende werden aktuell nur session-lokal bearbeitet. Spaeter braucht es einen freigegebenen Persistenzpfad fuer Name, ausgewaehlte Stammgruppen und ausgewaehlte Kurse.
+
+Status:
+
+Idee
+
 ## Epic: Dashboard
 
 Platzhalter für zukünftige Einträge.

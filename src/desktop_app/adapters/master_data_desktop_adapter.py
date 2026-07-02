@@ -6,6 +6,8 @@ from dataclasses import replace
 
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.view_models.master_data_view_model import (
+    COURSE_GROUP_EMPTY_COURSES_MESSAGE,
+    COURSE_GROUP_EMPTY_GROUPS_MESSAGE,
     CourseGroupViewModel,
     MasterDataItemViewModel,
     MasterDataViewModel,
@@ -38,6 +40,14 @@ class MasterDataDesktopAdapter:
                 color_name,
                 color_hex,
             )
+        self.course_groups: dict[str, CourseGroupViewModel] = {
+            "course-group-default": CourseGroupViewModel(
+                "course-group-default",
+                "Mathe/Deutsch Kursverbund A",
+                tuple(self.groups),
+                tuple(self.courses),
+            )
+        }
         self._draft_group_counter = 0
         self._draft_course_counter = 0
 
@@ -46,14 +56,7 @@ class MasterDataDesktopAdapter:
         return MasterDataViewModel(
             groups=tuple(self.groups.values()),
             courses=tuple(self.courses.values()),
-            course_groups=(
-                CourseGroupViewModel(
-                    "course-group-default",
-                    "Mathe/Deutsch Kursverbund A",
-                    tuple(self.groups),
-                    tuple(self.courses),
-                ),
-            ),
+            course_groups=tuple(self.course_groups.values()),
         )
 
     def add_group(self, name: str) -> MasterDataItemViewModel:
@@ -65,6 +68,7 @@ class MasterDataDesktopAdapter:
             False,
         )
         self.groups[item.item_id] = item
+        self._append_group_to_default_course_group(item.item_id)
         return item
 
     def add_course(
@@ -86,6 +90,7 @@ class MasterDataDesktopAdapter:
             selected_color_hex,
         )
         self.courses[item.item_id] = item
+        self._append_course_to_default_course_group(item.item_id)
         return item
 
     def rename_group(self, group_id: str, name: str) -> MasterDataItemViewModel:
@@ -110,6 +115,27 @@ class MasterDataDesktopAdapter:
         self.courses[course_id] = renamed_item
         return renamed_item
 
+    def update_course_group(
+        self,
+        course_group_id: str,
+        name: str,
+        selected_group_ids: tuple[str, ...],
+        selected_course_ids: tuple[str, ...],
+    ) -> CourseGroupViewModel:
+        """Update a session-local course-group configuration."""
+        updated_course_group = CourseGroupViewModel(
+            course_group_id,
+            normalize_master_data_name(name),
+            tuple(group_id for group_id in selected_group_ids if group_id in self.groups),
+            tuple(course_id for course_id in selected_course_ids if course_id in self.courses),
+        )
+        if not updated_course_group.selected_group_ids:
+            raise ValueError(COURSE_GROUP_EMPTY_GROUPS_MESSAGE)
+        if not updated_course_group.selected_course_ids:
+            raise ValueError(COURSE_GROUP_EMPTY_COURSES_MESSAGE)
+        self.course_groups[course_group_id] = updated_course_group
+        return updated_course_group
+
     def _rename_item(
         self,
         items: dict[str, MasterDataItemViewModel],
@@ -119,3 +145,21 @@ class MasterDataDesktopAdapter:
         item = replace(items[item_id], name=normalize_master_data_name(name))
         items[item_id] = item
         return item
+
+    def _append_group_to_default_course_group(self, group_id: str) -> None:
+        course_group = self.course_groups.get("course-group-default")
+        if course_group is None or group_id in course_group.selected_group_ids:
+            return
+        self.course_groups[course_group.course_group_id] = replace(
+            course_group,
+            selected_group_ids=(*course_group.selected_group_ids, group_id),
+        )
+
+    def _append_course_to_default_course_group(self, course_id: str) -> None:
+        course_group = self.course_groups.get("course-group-default")
+        if course_group is None or course_id in course_group.selected_course_ids:
+            return
+        self.course_groups[course_group.course_group_id] = replace(
+            course_group,
+            selected_course_ids=(*course_group.selected_course_ids, course_id),
+        )

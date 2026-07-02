@@ -29,6 +29,8 @@ from src.desktop_app.screens import overview_screen
 from src.desktop_app.screens import students_screen
 from src.desktop_app import shell
 from src.desktop_app.view_models.master_data_view_model import (
+    COURSE_GROUP_EMPTY_COURSES_MESSAGE,
+    COURSE_GROUP_EMPTY_GROUPS_MESSAGE,
     COURSE_COLOR_OPTIONS,
     MASTER_DATA_EMPTY_NAME_MESSAGE,
     CourseGroupViewModel,
@@ -198,6 +200,49 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn(f"{GROUP_ID_PREFIX}-000001", course_group.selected_group_ids)
         self.assertIn(f"{COURSE_ID_PREFIX}-000001", course_group.selected_course_ids)
 
+    def test_master_data_adapter_updates_course_group_session_locally(self) -> None:
+        updated_course_group = self.master_data_adapter.update_course_group(
+            "course-group-default",
+            "Mathe/Deutsch Kursverbund B",
+            (f"{GROUP_ID_PREFIX}-000001",),
+            (f"{COURSE_ID_PREFIX}-000001", f"{COURSE_ID_PREFIX}-000002"),
+        )
+        view_model = self.master_data_adapter.view_model()
+
+        self.assertEqual(updated_course_group.name, "Mathe/Deutsch Kursverbund B")
+        self.assertEqual(
+            updated_course_group.selected_group_ids,
+            (f"{GROUP_ID_PREFIX}-000001",),
+        )
+        self.assertEqual(
+            updated_course_group.selected_course_ids,
+            (f"{COURSE_ID_PREFIX}-000001", f"{COURSE_ID_PREFIX}-000002"),
+        )
+        self.assertEqual(view_model.course_groups[0], updated_course_group)
+
+    def test_course_group_update_validation_rejects_empty_values(self) -> None:
+        with self.assertRaisesRegex(ValueError, MASTER_DATA_EMPTY_NAME_MESSAGE):
+            self.master_data_adapter.update_course_group(
+                "course-group-default",
+                "",
+                (f"{GROUP_ID_PREFIX}-000001",),
+                (f"{COURSE_ID_PREFIX}-000001",),
+            )
+        with self.assertRaisesRegex(ValueError, COURSE_GROUP_EMPTY_GROUPS_MESSAGE):
+            self.master_data_adapter.update_course_group(
+                "course-group-default",
+                "Mathe/Deutsch Kursverbund A",
+                (),
+                (f"{COURSE_ID_PREFIX}-000001",),
+            )
+        with self.assertRaisesRegex(ValueError, COURSE_GROUP_EMPTY_COURSES_MESSAGE):
+            self.master_data_adapter.update_course_group(
+                "course-group-default",
+                "Mathe/Deutsch Kursverbund A",
+                (f"{GROUP_ID_PREFIX}-000001",),
+                (),
+            )
+
     def test_course_color_options_are_registered_for_master_data_light(self) -> None:
         self.assertEqual(
             COURSE_COLOR_OPTIONS,
@@ -358,13 +403,27 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_master_data_screen_shows_course_groups(self) -> None:
         source = inspect.getsource(master_data_screen)
+        dialog_source = inspect.getsource(master_data_dialog)
+        shell_source = inspect.getsource(shell.AppShell.open_edit_course_group_dialog)
 
         self.assertIn('MASTER_DATA_COURSE_GROUP_EMPTY_STATE = "Noch keine Kursverbünde vorhanden."', source)
         self.assertIn('"Kursverbünde"', source)
-        self.assertIn("self.course_group_table = QTableWidget(0, 3)", source)
-        self.assertIn('table.setHorizontalHeaderLabels(("Name", "Stammgruppen", "Kurse"))', source)
+        self.assertIn("course_group_edit_requested = Signal(str)", source)
+        self.assertIn("self.course_group_table = QTableWidget(0, 4)", source)
+        self.assertIn(
+            'table.setHorizontalHeaderLabels(("Name", "Stammgruppen", "Kurse", "Aktion"))',
+            source,
+        )
         self.assertIn("item.selected_group_ids", source)
         self.assertIn("item.selected_course_ids", source)
+        self.assertIn('edit_button = QPushButton("Bearbeiten")', source)
+        self.assertIn("CourseGroupDialog", dialog_source)
+        self.assertIn("QCheckBox", dialog_source)
+        self.assertIn("COURSE_GROUP_EMPTY_GROUPS_MESSAGE", dialog_source)
+        self.assertIn("COURSE_GROUP_EMPTY_COURSES_MESSAGE", dialog_source)
+        self.assertIn("configure_save_cancel_buttons(buttons)", dialog_source)
+        self.assertIn("update_course_group(", shell_source)
+        self.assertIn("_clear_invalid_course_group_filter", shell_source)
 
     def test_course_group_filter_limits_course_to_selected_groups(self) -> None:
         with self.database.connect() as connection:

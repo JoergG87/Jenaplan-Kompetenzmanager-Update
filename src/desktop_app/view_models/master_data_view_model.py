@@ -9,6 +9,8 @@ MASTER_DATA_EMPTY_NAME_MESSAGE = "Bitte einen Namen eingeben."
 MASTER_DATA_SAVE_PLACEHOLDER_MESSAGE = (
     "Stammdaten werden in einem späteren Sprint dauerhaft gespeichert."
 )
+COURSE_GROUP_EMPTY_GROUPS_MESSAGE = "Bitte mindestens eine Stammgruppe auswählen."
+COURSE_GROUP_EMPTY_COURSES_MESSAGE = "Bitte mindestens einen Kurs auswählen."
 COURSE_COLOR_OPTIONS = (
     ("Blau", "#2563EB"),
     ("Grün", "#16A34A"),

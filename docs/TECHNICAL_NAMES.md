@@ -365,6 +365,8 @@ Registrierte Python-Klassen und Funktionen:
 - `course_color_from_key(color_key, fallback_index)`
 - `course_color_name(color_hex)`
 - `COURSE_COLOR_OPTIONS`
+- `COURSE_GROUP_EMPTY_GROUPS_MESSAGE`
+- `COURSE_GROUP_EMPTY_COURSES_MESSAGE`
 - `MASTER_DATA_EMPTY_NAME_MESSAGE`
 - `MASTER_DATA_SAVE_PLACEHOLDER_MESSAGE`
 - `filter_student_list(students, search_text)`
@@ -385,6 +387,7 @@ Registrierte Python-Klassen und Funktionen:
 - `configure_save_cancel_buttons(buttons)`
 - `AppShell.refresh_overview()`
 - `AppShell.show_students_for_course_group(course_group_id, course_id)`
+- `AppShell.open_edit_course_group_dialog(course_group_id)`
 - `OverviewScreen.set_master_data(view_model, group_summaries)`
 - `OVERVIEW_GROUP_EMPTY_STATE`
 - `OVERVIEW_COURSE_EMPTY_STATE`
@@ -413,6 +416,7 @@ Registrierte Python-Klassen und Funktionen:
 - `MasterDataScreen`
 - `PlaceholderScreen`
 - `AppInfoDialog`
+- `CourseGroupDialog`
 - `MasterDataNameDialog`
 - `NewObservationDialog`
 - `NewStudentDialog`

@@ -120,7 +120,7 @@ UI-Projektionen:
 - Stammgruppenliste
 - optionale Schueleranzahl fuer persistent bekannte Stammgruppen
 - Kursverbundliste
-- Kursliste innerhalb eines Kursverbunds
+- Kursliste innerhalb eines session-lokal bearbeitbaren Kursverbunds
 - Kursmarker aus Kursfarbe
 - Kursfilter aus `course_id` und den Stammgruppen des Kursverbunds
 
@@ -129,6 +129,30 @@ Regel:
 Die Uebersicht zeigt den aktuellen Stammdaten-Scope der PySide-App. Sie verwaltet keine Stammdaten und schreibt nicht direkt in SQLite.
 
 Eine Kursuebersicht ist kursverbundbezogen. Sie zeigt nicht automatisch alle Schueler mit demselben Kurslabel in der ganzen App, sondern filtert nach `course_id` und den Stammgruppen des ausgewaehlten Kursverbunds.
+
+## PySide6 Stammdaten light
+
+Liest:
+
+- `data_groups`
+- `data_courses`
+- session-lokaler Stammdaten-light-State aus `MasterDataDesktopAdapter`
+
+Schreibt:
+
+- session-lokalen Stammdaten-light-State im `MasterDataDesktopAdapter`
+
+UI-Projektionen:
+
+- Stammgruppenliste
+- Kursliste
+- Kursfarben
+- Kursverbundliste
+- Bearbeiten-Dialog fuer Kursverbund-Name, Stammgruppen-Auswahl und Kurs-Auswahl
+
+Regel:
+
+Kursverbuende sind aktuell session-lokal bearbeitbar. Die Bearbeitung schreibt nicht in SQLite und erzeugt keine neue Persistenz. Ein Kursverbund definiert, welche Stammgruppen und Kurse in der kursverbundbezogenen Kursuebersicht erscheinen.
 
 ## Legacy: Projection Refresh durch VBA
 

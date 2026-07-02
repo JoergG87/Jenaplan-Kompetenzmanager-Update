@@ -35,6 +35,7 @@ class MasterDataScreen(QWidget):
     group_rename_requested = Signal(str)
     course_add_requested = Signal()
     course_rename_requested = Signal(str)
+    course_group_edit_requested = Signal(str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -46,7 +47,7 @@ class MasterDataScreen(QWidget):
         self.course_group_empty_state_label = QLabel(MASTER_DATA_COURSE_GROUP_EMPTY_STATE)
         self.group_table = QTableWidget(0, 3)
         self.course_table = QTableWidget(0, 4)
-        self.course_group_table = QTableWidget(0, 3)
+        self.course_group_table = QTableWidget(0, 4)
         self._build()
 
     def _build(self) -> None:
@@ -104,6 +105,7 @@ class MasterDataScreen(QWidget):
             self.course_group_items,
             self.group_items,
             self.course_items,
+            self.course_group_edit_requested.emit,
         )
 
     def _section_card(
@@ -206,8 +208,9 @@ class MasterDataScreen(QWidget):
         items: tuple[CourseGroupViewModel, ...],
         groups: tuple[MasterDataItemViewModel, ...],
         courses: tuple[MasterDataItemViewModel, ...],
+        edit_handler: object,
     ) -> None:
-        table.setHorizontalHeaderLabels(("Name", "Stammgruppen", "Kurse"))
+        table.setHorizontalHeaderLabels(("Name", "Stammgruppen", "Kurse", "Aktion"))
         table.setRowCount(len(items))
         self.course_group_empty_state_label.setVisible(not items)
         groups_by_id = {group.item_id: group.name for group in groups}
@@ -226,3 +229,8 @@ class MasterDataScreen(QWidget):
             table.setItem(row_index, 0, QTableWidgetItem(item.name))
             table.setItem(row_index, 1, QTableWidgetItem(group_names))
             table.setItem(row_index, 2, QTableWidgetItem(course_names))
+            edit_button = QPushButton("Bearbeiten")
+            edit_button.clicked.connect(
+                lambda _checked=False, item_id=item.course_group_id: edit_handler(item_id)
+            )
+            table.setCellWidget(row_index, 3, edit_button)

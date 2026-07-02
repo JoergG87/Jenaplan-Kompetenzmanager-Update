@@ -22,7 +22,10 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDeskto
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.dialogs.app_info_dialog import AppInfoDialog
-from src.desktop_app.dialogs.master_data_dialog import MasterDataNameDialog
+from src.desktop_app.dialogs.master_data_dialog import (
+    CourseGroupDialog,
+    MasterDataNameDialog,
+)
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
@@ -132,6 +135,9 @@ class AppShell(QMainWindow):
         self.master_data_screen.course_add_requested.connect(self.open_new_course_dialog)
         self.master_data_screen.course_rename_requested.connect(
             self.open_rename_course_dialog
+        )
+        self.master_data_screen.course_group_edit_requested.connect(
+            self.open_edit_course_group_dialog
         )
         self.navigation.setCurrentRow(0)
 
@@ -276,6 +282,25 @@ class AppShell(QMainWindow):
                 "Kurs wurde umbenannt. Dauerhaftes Speichern folgt später."
             )
 
+    def open_edit_course_group_dialog(self, course_group_id: str) -> None:
+        """Open the non-persistent edit dialog for one course group."""
+        view_model = self.master_data_adapter.view_model()
+        course_group = self.master_data_adapter.course_groups[course_group_id]
+        dialog = CourseGroupDialog(course_group, view_model.groups, view_model.courses)
+        if dialog.exec():
+            updated_course_group = self.master_data_adapter.update_course_group(
+                course_group_id,
+                dialog.name(),
+                dialog.selected_group_ids(),
+                dialog.selected_course_ids(),
+            )
+            self._clear_invalid_course_group_filter(updated_course_group)
+            self.refresh_master_data()
+            self.refresh_students()
+            self.status_label.setText(
+                "Kursverbund wurde aktualisiert. Dauerhaftes Speichern folgt später."
+            )
+
     def handle_student_created(self, student_id: str) -> None:
         """Refresh views and show non-modal success feedback."""
         self.refresh_all()
@@ -309,6 +334,17 @@ class AppShell(QMainWindow):
             if course.item_id == course_id:
                 return course.name
         return course_id
+
+    def _clear_invalid_course_group_filter(
+        self,
+        course_group: CourseGroupViewModel,
+    ) -> None:
+        if self.selected_course_group_id != course_group.course_group_id:
+            return
+        if self.selected_course_id in course_group.selected_course_ids:
+            return
+        self.selected_course_group_id = None
+        self.selected_course_id = None
 
     def _show_screen(self, key: str) -> None:
         screen_index = self.screen_index.get(key)

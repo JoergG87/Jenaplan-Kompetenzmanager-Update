@@ -110,7 +110,8 @@ Der PySide-Schuelerdialog ist der aktive Eingabepfad fuer `student.create`. Er s
 | Stammgruppenliste | `data_groups.group_name` ueber bestehenden PySide6-Adapter | Anzeige | Nein | `data_groups` | Stammgruppen sind eigenstaendige Stammdaten |
 | Kursliste | `data_courses.course_name` ueber bestehenden PySide6-Adapter | Anzeige | Nein | `data_courses` | Kurse sind eigenstaendige Stammdaten |
 | Kursfarbe | `data_courses.color_key` / UI-Defaultfarbe im PySide6-Scope | Anzeige / Eingabe | Geplant | `data_courses` | nicht-persistenter Farbwert fuer Stammdaten-light; Persistenz folgt spaeter |
-| Kursverbund | session-lokaler Default in `MasterDataViewModel.course_groups` | Anzeige | Nein | keine neue Persistenz | Mathe-/Deutsch-Kursverbund aus aktuellen Stammgruppen und Kursen; Bearbeiten folgt spaeter |
+| Kursverbund | `MasterDataViewModel.course_groups` aus session-lokalem `MasterDataDesktopAdapter` | Anzeige / Eingabe | Geplant | keine neue Persistenz | definiert Name, ausgewaehlte Stammgruppen und ausgewaehlte Kurse; Persistenz folgt spaeter |
+| Kursverbund bearbeiten | `CourseGroupDialog` -> `MasterDataDesktopAdapter.update_course_group()` | Eingabe | Geplant | keine neue Persistenz | Checkbox-Auswahl fuer Stammgruppen und Kurse; Kursfilter bleibt Kurs plus Stammgruppen des Kursverbunds |
 | Neue Stammgruppe | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_groups` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
 | Neuer Kurs | temporaerer UI-/Adapter-State im PySide6-Sprint inklusive Kursfarbe | Eingabe | Geplant | `data_courses` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
 | Umbenennen | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_groups` / `data_courses` | `group_id` und `course_id` bleiben fachlich massgeblich; Schueler-Umbuchung folgt separat |
