@@ -32,6 +32,7 @@ from src.desktop_app.screens.placeholder_screen import PlaceholderScreen
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
 from src.desktop_app.screens.students_screen import StudentsScreen
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
+from src.desktop_app.view_models.master_data_view_model import CourseGroupViewModel
 
 
 class AppShell(QMainWindow):
@@ -43,6 +44,8 @@ class AppShell(QMainWindow):
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
         self.curriculum_adapter = CurriculumDesktopAdapter()
         self.selected_group_id: str | None = None
+        self.selected_course_group_id: str | None = None
+        self.selected_course_id: str | None = None
         self.setWindowTitle("Jenaplan Kompetenzmanager")
         self.setMinimumSize(1100, 720)
         self.resize(1400, 900)
@@ -115,6 +118,7 @@ class AppShell(QMainWindow):
         self.setCentralWidget(root)
 
         self.overview_screen.group_selected.connect(self.show_students_for_group)
+        self.overview_screen.course_selected.connect(self.show_students_for_course_group)
         self.students_screen.new_student_requested.connect(self.open_new_student_dialog)
         self.students_screen.student_selected.connect(self.show_student_profile)
         self.student_profile_screen.back_requested.connect(self.return_to_students)
@@ -133,18 +137,38 @@ class AppShell(QMainWindow):
 
     def refresh_all(self) -> None:
         """Refresh overview and student list from SQLite."""
-        self.overview_screen.set_groups(self.adapter.list_group_summaries())
+        self.refresh_overview()
         self.refresh_students()
         self.refresh_master_data()
 
+    def refresh_overview(self) -> None:
+        """Refresh the overview from the current master-data scope."""
+        self.overview_screen.set_master_data(
+            self.master_data_adapter.view_model(),
+            self.adapter.list_group_summaries(),
+        )
+
     def refresh_students(self) -> None:
         """Refresh student rows for the current filter."""
-        group_name = ""
+        filter_label = "Alle Schüler"
+        group_ids: tuple[str, ...] = ()
         if self.selected_group_id:
             groups = {group.group_id: group.group_name for group in self.adapter.list_groups()}
-            group_name = groups.get(self.selected_group_id, self.selected_group_id)
-        students = self.adapter.list_students(group_id=self.selected_group_id)
-        self.students_screen.set_students(students, group_filter_name=group_name)
+            filter_label = f"Stammgruppe: {groups.get(self.selected_group_id, self.selected_group_id)}"
+        elif self.selected_course_group_id and self.selected_course_id:
+            course_group = self._selected_course_group()
+            course_name = self._course_name(self.selected_course_id)
+            if course_group is not None:
+                group_ids = course_group.selected_group_ids
+                filter_label = f"{course_group.name} · {course_name}"
+            else:
+                filter_label = f"Kurs: {course_name}"
+        students = self.adapter.list_students(
+            group_id=self.selected_group_id,
+            group_ids=group_ids,
+            course_id=self.selected_course_id,
+        )
+        self.students_screen.set_students(students, group_filter_name=filter_label)
         shown_count = len(self.students_screen.filtered_students)
         if self.students_screen.search_text().strip():
             self.status_label.setText(f"{shown_count} von {len(students)} Schülern angezeigt")
@@ -154,6 +178,7 @@ class AppShell(QMainWindow):
     def refresh_master_data(self) -> None:
         """Refresh the master-data light screen from the adapter draft."""
         self.master_data_screen.set_master_data(self.master_data_adapter.view_model())
+        self.refresh_overview()
 
     def return_to_students(self) -> None:
         """Return from profile to student list and keep current filter."""
@@ -164,6 +189,17 @@ class AppShell(QMainWindow):
     def show_students_for_group(self, group_id: str) -> None:
         """Open students screen filtered to one group."""
         self.selected_group_id = group_id
+        self.selected_course_group_id = None
+        self.selected_course_id = None
+        self.refresh_students()
+        self._show_screen("students")
+        self._select_navigation("students")
+
+    def show_students_for_course_group(self, course_group_id: str, course_id: str) -> None:
+        """Open students screen filtered to one course inside one course group."""
+        self.selected_group_id = None
+        self.selected_course_group_id = course_group_id
+        self.selected_course_id = course_id
         self.refresh_students()
         self._show_screen("students")
         self._select_navigation("students")
@@ -257,8 +293,22 @@ class AppShell(QMainWindow):
         target = resolve_navigation_target(key)
         if target.reset_group_filter:
             self.selected_group_id = None
+            self.selected_course_group_id = None
+            self.selected_course_id = None
             self.refresh_students()
         self._show_screen(target.screen_key)
+
+    def _selected_course_group(self) -> CourseGroupViewModel | None:
+        for course_group in self.master_data_adapter.view_model().course_groups:
+            if course_group.course_group_id == self.selected_course_group_id:
+                return course_group
+        return None
+
+    def _course_name(self, course_id: str) -> str:
+        for course in self.master_data_adapter.view_model().courses:
+            if course.item_id == course_id:
+                return course.name
+        return course_id
 
     def _show_screen(self, key: str) -> None:
         screen_index = self.screen_index.get(key)

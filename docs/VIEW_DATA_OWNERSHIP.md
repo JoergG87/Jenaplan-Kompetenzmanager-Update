@@ -77,9 +77,9 @@ Nach erfolgreichem Speichern wird die Dialogseite verlassen und die betroffene A
 
 VBA-UserForms sind fuer Feature 1 deprecated und bleiben nur als experimenteller Artefaktstand erhalten.
 
-## PySide6 Desktop-App-Spike
+## PySide6 Desktop-App
 
-PySide6 ist als alternativer UI-Adapter validiert.
+PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
 Die Desktop-App ist keine fachliche Datenquelle.
 
@@ -98,7 +98,35 @@ PySide6 GUI
 -> SQLite
 ```
 
-Excel bleibt bestehende Projektion und moeglicher Export-/Berichtspfad. Die Entscheidung fuer Python-GUI als Hauptanwendung, xlwings als Excel-Bruecke oder Excel nur als Export-/Berichtsschicht bleibt offen.
+Excel bleibt bestehende Export-, Berichts- oder Legacy-Projektion.
+
+## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
+
+Liest:
+
+- `data_groups`
+- `data_courses`
+- `data_students` fuer vorhandene Schuelerzahlen je Stammgruppe
+- session-lokaler Stammdaten-light-State aus `MasterDataDesktopAdapter`
+
+Schreibt:
+
+- nichts
+
+UI-Projektionen:
+
+- Stammgruppenliste
+- optionale Schueleranzahl fuer persistent bekannte Stammgruppen
+- Kursverbundliste
+- Kursliste innerhalb eines Kursverbunds
+- Kursmarker aus Kursfarbe
+- Kursfilter aus `course_id` und den Stammgruppen des Kursverbunds
+
+Regel:
+
+Die Uebersicht zeigt den aktuellen Stammdaten-Scope der PySide-App. Sie verwaltet keine Stammdaten und schreibt nicht direkt in SQLite.
+
+Eine Kursuebersicht ist kursverbundbezogen. Sie zeigt nicht automatisch alle Schueler mit demselben Kurslabel in der ganzen App, sondern filtert nach `course_id` und den Stammgruppen des ausgewaehlten Kursverbunds.
 
 ## Projection Refresh durch VBA
 

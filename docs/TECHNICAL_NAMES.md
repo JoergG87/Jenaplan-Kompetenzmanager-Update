@@ -352,6 +352,7 @@ Registrierte Python-Klassen und Funktionen:
 - `GroupSummaryViewModel`
 - `MasterDataItemViewModel`
 - `MasterDataViewModel`
+- `CourseGroupViewModel`
 - `normalize_master_data_name(name)`
 - `course_color_from_key(color_key, fallback_index)`
 - `course_color_name(color_hex)`
@@ -372,7 +373,14 @@ Registrierte Python-Klassen und Funktionen:
 - `observation_rating_keys()`
 - `DIALOG_CANCEL_TEXT`
 - `DIALOG_SAVE_TEXT`
+- `DIALOG_PRIMARY_BUTTON_STYLE`
 - `configure_save_cancel_buttons(buttons)`
+- `AppShell.refresh_overview()`
+- `AppShell.show_students_for_course_group(course_group_id, course_id)`
+- `OverviewScreen.set_master_data(view_model, group_summaries)`
+- `OVERVIEW_GROUP_EMPTY_STATE`
+- `OVERVIEW_COURSE_EMPTY_STATE`
+- `MASTER_DATA_COURSE_GROUP_EMPTY_STATE`
 - `APP_INFO_TITLE`
 - `APP_INFO_APP_NAME`
 - `APP_INFO_MODE`

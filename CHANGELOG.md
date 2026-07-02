@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Korrektur-Hotfix - PySide Kursverbuende und Schuelerliste
+
+### Changed
+
+- Speichern-Buttons in PySide-Dialogen nutzen zentral einen blauen Primary-Stil.
+- Kursfarben-Palette um Gelb `#EAB308` erweitert.
+- PySide-Schuelerliste zeigt wieder eine saubere Kurs-Spalte mit farbigem Marker und neutralem Kursnamen.
+- Kaputte Kursmarker-/Text-Ueberlagerung in der Schuelerliste repariert, ohne Kursverbund-Filterlogik zurueckzubauen.
+- Session-lokalen Kursverbund `Mathe/Deutsch Kursverbund A` im Stammdaten-/Uebersichts-Scope ergaenzt.
+- PySide-Uebersicht `Stammgruppen und Schülerbestand` zeigt Stammgruppen sowie Kurse innerhalb des Kursverbunds.
+- Kursfilter aus der Uebersicht filtert nach Kurs und den Stammgruppen des ausgewaehlten Kursverbunds.
+- UX-Backlogpunkt ergaenzt: Kompetenznamen in der Beobachtungs-Bewertungsliste spaeter auf moegliche Fettung pruefen.
+
+### Not Changed
+
+- Keine neue Persistenz, keine SQLite-Aenderung, keine Beobachtungspersistenz, kein ObservationRepository, kein Excel-/VBA-Umbau, keine Packaging-Toolchain, keine produktive Kursverbund-Bearbeitung und keine Fettung der Kompetenznamen umgesetzt.
+
 ## Dokumentation - Icon-basierte visuelle Leitlinie
 
 ### Changed

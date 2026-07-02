@@ -85,6 +85,26 @@ Nach erfolgreichem Python Command gibt Feature 1.4b nur ein Runtime-Ergebnis an 
 | Kurs | `MasterDataViewModel.courses` aus `data_courses` / session-lokalem Stammdaten-light-State | Eingabe | Ja (ueber freigegebenen Prozess) | `data_courses` | Dropdown, kein Freitext; nur dauerhaft vorhandene Eintraege koennen fuer `student.create` gespeichert werden |
 | Notiz | `QTextEdit` -> `student.create.student_notes` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | optional |
 
+## PySide6 Schueleruebersicht
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Name | `StudentListItem.display_name` aus `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | Anzeige, keine technische Identitaet |
+| Kurs | `StudentListItem.course_name` aus `data_courses.course_name` | Anzeige | Nein | `data_courses` | neutrale Textanzeige in eigener Kurs-Spalte, keine Zeilenfaerbung |
+| Kursmarker | `StudentListItem.course_color_hex` aus Stammdaten-Light-Kursfarbe | Anzeige | Nein | `data_courses` | kleiner farbiger Marker vor dem Kursnamen; Farbe markiert den Kurs, nicht die ganze Zeile |
+| aktiver Filterhinweis | Shell-Filterstate aus Stammgruppe oder Kursverbund/Kurs | Anzeige | Nein | keine fachliche Datenquelle | zeigt `Alle Schüler`, `Stammgruppe: ...` oder `Kursverbund · Kurs`; keine Speicherung |
+
+## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Stammgruppenliste | `MasterDataViewModel.groups` aus `data_groups` / session-lokalem Stammdaten-light-State | Anzeige | Nein | `data_groups` | zeigt alle im aktuellen UI-Scope bekannten Stammgruppen |
+| Schueleranzahl je Stammgruppe | `GroupSummaryViewModel.active_student_count` aus bestehendem Adapter | Anzeige | Nein | `data_students` | nur wenn fuer die Stammgruppe sauber verfuegbar; session-lokale Gruppen zeigen ihren Status |
+| Kursverbund | `MasterDataViewModel.course_groups` aus session-lokalem Stammdaten-light-State | Anzeige / Filter | Nein | `data_groups` + `data_courses` | definiert, welche Stammgruppen gemeinsam Mathe-/Deutsch-Kurse bilden |
+| Kursliste im Kursverbund | `CourseGroupViewModel.selected_course_ids` -> `MasterDataViewModel.courses` | Anzeige / Filter | Nein | `data_courses` | Kursuebersicht ist kursverbundbezogen, nicht global ueber alle Stammgruppen |
+| Kursmarker | `MasterDataItemViewModel.color_hex` | Anzeige | Nein | `data_courses` | nur kleiner Marker, keine Zeilenfaerbung |
+| Kursverbund-Kursfilter | `course_id` + `CourseGroupViewModel.selected_group_ids` | Filter | Nein | `data_students` | zeigt nur Schueler mit Kurs und Stammgruppe im ausgewaehlten Kursverbund |
+
 ## Stammdaten light
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
@@ -92,6 +112,7 @@ Nach erfolgreichem Python Command gibt Feature 1.4b nur ein Runtime-Ergebnis an 
 | Stammgruppenliste | `data_groups.group_name` ueber bestehenden PySide6-Adapter | Anzeige | Nein | `data_groups` | Stammgruppen sind eigenstaendige Stammdaten |
 | Kursliste | `data_courses.course_name` ueber bestehenden PySide6-Adapter | Anzeige | Nein | `data_courses` | Kurse sind eigenstaendige Stammdaten |
 | Kursfarbe | `data_courses.color_key` / UI-Defaultfarbe im PySide6-Scope | Anzeige / Eingabe | Geplant | `data_courses` | nicht-persistenter Farbwert fuer Stammdaten-light; Persistenz folgt spaeter |
+| Kursverbund | session-lokaler Default in `MasterDataViewModel.course_groups` | Anzeige | Nein | keine neue Persistenz | Mathe-/Deutsch-Kursverbund aus aktuellen Stammgruppen und Kursen; Bearbeiten folgt spaeter |
 | Neue Stammgruppe | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_groups` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
 | Neuer Kurs | temporaerer UI-/Adapter-State im PySide6-Sprint inklusive Kursfarbe | Eingabe | Geplant | `data_courses` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
 | Umbenennen | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_groups` / `data_courses` | `group_id` und `course_id` bleiben fachlich massgeblich; Schueler-Umbuchung folgt separat |

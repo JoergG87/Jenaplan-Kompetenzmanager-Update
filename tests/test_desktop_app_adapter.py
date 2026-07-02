@@ -25,11 +25,13 @@ from src.desktop_app.dialogs import new_student_dialog
 from src.desktop_app.dialogs import new_observation_dialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens import master_data_screen
+from src.desktop_app.screens import overview_screen
 from src.desktop_app.screens import students_screen
 from src.desktop_app import shell
 from src.desktop_app.view_models.master_data_view_model import (
     COURSE_COLOR_OPTIONS,
     MASTER_DATA_EMPTY_NAME_MESSAGE,
+    CourseGroupViewModel,
     MasterDataItemViewModel,
     MasterDataViewModel,
     course_color_from_key,
@@ -166,6 +168,35 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(view_model.courses[0].color_name, "Blau")
         self.assertEqual(view_model.courses[0].color_hex, "#2563EB")
         self.assertTrue(view_model.courses[0].has_color)
+        self.assertEqual(len(view_model.course_groups), 1)
+        self.assertEqual(
+            view_model.course_groups[0].name,
+            "Mathe/Deutsch Kursverbund A",
+        )
+        self.assertEqual(
+            view_model.course_groups[0].selected_group_ids,
+            (f"{GROUP_ID_PREFIX}-000001",),
+        )
+        self.assertEqual(
+            view_model.course_groups[0].selected_course_ids,
+            (
+                f"{COURSE_ID_PREFIX}-000001",
+                f"{COURSE_ID_PREFIX}-000002",
+                f"{COURSE_ID_PREFIX}-000003",
+            ),
+        )
+
+    def test_course_group_view_model_contains_groups_and_courses(self) -> None:
+        course_group = CourseGroupViewModel(
+            "course-group-a",
+            "Mathe/Deutsch Kursverbund A",
+            (f"{GROUP_ID_PREFIX}-000001", f"{GROUP_ID_PREFIX}-000002"),
+            (f"{COURSE_ID_PREFIX}-000001", f"{COURSE_ID_PREFIX}-000002"),
+        )
+
+        self.assertEqual(course_group.course_group_id, "course-group-a")
+        self.assertIn(f"{GROUP_ID_PREFIX}-000001", course_group.selected_group_ids)
+        self.assertIn(f"{COURSE_ID_PREFIX}-000001", course_group.selected_course_ids)
 
     def test_course_color_options_are_registered_for_master_data_light(self) -> None:
         self.assertEqual(
@@ -174,6 +205,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 ("Blau", "#2563EB"),
                 ("Grün", "#16A34A"),
                 ("Orange", "#F97316"),
+                ("Gelb", "#EAB308"),
                 ("Lila", "#9333EA"),
                 ("Rot", "#DC2626"),
                 ("Grau", "#6B7280"),
@@ -181,6 +213,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertEqual(course_color_from_key("", 0), ("Blau", "#2563EB"))
         self.assertEqual(course_color_from_key("", 1), ("Grün", "#16A34A"))
+        self.assertEqual(course_color_from_key("#EAB308"), ("Gelb", "#EAB308"))
 
     def test_master_data_adapter_adds_non_persistent_groups_and_courses(self) -> None:
         group = self.master_data_adapter.add_group("Eulen")
@@ -243,6 +276,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(new_student_dialog))
         self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(new_observation_dialog))
         self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(master_data_dialog))
+        self.assertIn("DIALOG_PRIMARY_BUTTON_STYLE", button_source)
+        self.assertIn("background-color: #2563EB", button_source)
+        self.assertIn("color: #FFFFFF", button_source)
+        self.assertIn("save_button.setStyleSheet(DIALOG_PRIMARY_BUTTON_STYLE)", button_source)
         self.assertIn("save_button.setDefault(True)", button_source)
         self.assertIn('cancel_button.setShortcut("Esc")', button_source)
 
@@ -276,6 +313,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_student_list_items_include_course_color(self) -> None:
         students = self.adapter.list_students()
 
+        self.assertEqual(students[0].group_name, "Grashüpfer")
+        self.assertIn(students[0].course_name, {"Kurs 1", "Kurs 2", "Kurs 3"})
         self.assertIn(students[0].course_color_name, {"Blau", "Grün", "Orange"})
         self.assertIn(
             students[0].course_color_hex,
@@ -287,8 +326,104 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.screens.students_screen"
         ))
 
-        self.assertIn('QTableWidgetItem(f"● {student.course_name}")', source)
-        self.assertIn("course_item.setForeground(QColor(student.course_color_hex))", source)
+        self.assertIn('self.table.setHorizontalHeaderLabels(("Name", "Kurs"))', source)
+        self.assertIn(
+            "self.table.setCellWidget(row_index, 1, self._course_cell(student))",
+            source,
+        )
+        self.assertIn('marker = QLabel("●")', source)
+        self.assertIn("student.course_color_hex or '#6B7280'", source)
+        self.assertIn('course_label.setStyleSheet("color: #1F2937;")', source)
+        self.assertIn("QHeaderView.ResizeMode.ResizeToContents", source)
+        self.assertNotIn('"Stammgruppe", "Kurs"', source)
+        self.assertNotIn("self.table.setItem(row_index, 1", source)
+
+    def test_overview_screen_shows_master_data_groups_and_courses(self) -> None:
+        source = inspect.getsource(overview_screen)
+        shell_source = inspect.getsource(shell.AppShell.refresh_overview)
+
+        self.assertIn("MasterDataViewModel", source)
+        self.assertIn("MasterDataItemViewModel", source)
+        self.assertIn("CourseGroupViewModel", source)
+        self.assertIn("def set_master_data(", source)
+        self.assertIn("view_model.groups", source)
+        self.assertIn("view_model.course_groups", source)
+        self.assertIn("course_group.selected_group_ids", source)
+        self.assertIn("course_group.selected_course_ids", source)
+        self.assertIn("course_selected = Signal(str, str)", source)
+        self.assertIn('QLabel("●")', source)
+        self.assertIn("course.color_hex or '#6B7280'", source)
+        self.assertIn("self.master_data_adapter.view_model()", shell_source)
+        self.assertIn("self.adapter.list_group_summaries()", shell_source)
+
+    def test_master_data_screen_shows_course_groups(self) -> None:
+        source = inspect.getsource(master_data_screen)
+
+        self.assertIn('MASTER_DATA_COURSE_GROUP_EMPTY_STATE = "Noch keine Kursverbünde vorhanden."', source)
+        self.assertIn('"Kursverbünde"', source)
+        self.assertIn("self.course_group_table = QTableWidget(0, 3)", source)
+        self.assertIn('table.setHorizontalHeaderLabels(("Name", "Stammgruppen", "Kurse"))', source)
+        self.assertIn("item.selected_group_ids", source)
+        self.assertIn("item.selected_course_ids", source)
+
+    def test_course_group_filter_limits_course_to_selected_groups(self) -> None:
+        with self.database.connect() as connection:
+            with connection:
+                connection.execute(
+                    "INSERT INTO groups (group_id, group_name, active) VALUES (?, ?, ?)",
+                    (f"{GROUP_ID_PREFIX}-000002", "Füchse", 1),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO students (
+                        student_id,
+                        first_name,
+                        last_name,
+                        group_id,
+                        course_id,
+                        student_notes,
+                        active,
+                        created_at,
+                        updated_at,
+                        archived_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        f"{STUDENT_ID_PREFIX}-999999",
+                        "Test",
+                        "Fuchs",
+                        f"{GROUP_ID_PREFIX}-000002",
+                        f"{COURSE_ID_PREFIX}-000001",
+                        "",
+                        1,
+                        "2026-07-02",
+                        "2026-07-02",
+                        None,
+                    ),
+                )
+
+        adapter = StudentDesktopAdapter(self.database_path)
+        global_course_students = adapter.list_students(
+            course_id=f"{COURSE_ID_PREFIX}-000001",
+        )
+        course_group_students = adapter.list_students(
+            course_id=f"{COURSE_ID_PREFIX}-000001",
+            group_ids=(f"{GROUP_ID_PREFIX}-000001",),
+        )
+
+        self.assertIn(
+            f"{STUDENT_ID_PREFIX}-999999",
+            {student.student_id for student in global_course_students},
+        )
+        self.assertNotIn(
+            f"{STUDENT_ID_PREFIX}-999999",
+            {student.student_id for student in course_group_students},
+        )
+        self.assertTrue(all(
+            student.group_id == f"{GROUP_ID_PREFIX}-000001"
+            for student in course_group_students
+        ))
 
     def test_student_list_search_and_empty_states_are_polished(self) -> None:
         source = inspect.getsource(students_screen)

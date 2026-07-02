@@ -38,6 +38,7 @@ class StudentDesktopAdapter:
         self,
         *,
         group_id: str | None = None,
+        group_ids: tuple[str, ...] = (),
         course_id: str | None = None,
     ) -> tuple[StudentListItem, ...]:
         """Return students with readable group and course names."""
@@ -50,7 +51,7 @@ class StudentDesktopAdapter:
         return tuple(
             self._student_list_item(student, groups, courses)
             for student in students
-            if self._matches_filter(student, group_id, course_id)
+            if self._matches_filter(student, group_id, group_ids, course_id)
         )
 
     def get_student_profile(self, student_id: str) -> StudentDetailViewModel | None:
@@ -204,9 +205,12 @@ class StudentDesktopAdapter:
         self,
         student: StudentRecord,
         group_id: str | None,
+        group_ids: tuple[str, ...],
         course_id: str | None,
     ) -> bool:
         if group_id and student.group_id != group_id:
+            return False
+        if group_ids and student.group_id not in group_ids:
             return False
         if course_id and student.course_id != course_id:
             return False

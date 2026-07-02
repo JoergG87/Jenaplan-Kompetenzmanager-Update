@@ -13,6 +13,7 @@ COURSE_COLOR_OPTIONS = (
     ("Blau", "#2563EB"),
     ("Grün", "#16A34A"),
     ("Orange", "#F97316"),
+    ("Gelb", "#EAB308"),
     ("Lila", "#9333EA"),
     ("Rot", "#DC2626"),
     ("Grau", "#6B7280"),
@@ -48,6 +49,17 @@ class MasterDataViewModel:
 
     groups: tuple[MasterDataItemViewModel, ...]
     courses: tuple[MasterDataItemViewModel, ...]
+    course_groups: tuple["CourseGroupViewModel", ...] = ()
+
+
+@dataclass(frozen=True)
+class CourseGroupViewModel:
+    """Session-local course-group configuration for Mathe/Deutsch courses."""
+
+    course_group_id: str
+    name: str
+    selected_group_ids: tuple[str, ...]
+    selected_course_ids: tuple[str, ...]
 
 
 def normalize_master_data_name(name: str) -> str:

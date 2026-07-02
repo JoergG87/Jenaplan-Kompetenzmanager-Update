@@ -50,6 +50,10 @@ Beschreibung:
 
 Neue Beobachtungen sollen spaeter ueber einen zentralen Dialog mit Datum, Kontext, Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien erfasst werden.
 
+Offener UX-Punkt:
+
+In der Bewertungsliste des Beobachtungsdialogs spaeter pruefen, ob Kompetenznamen fett dargestellt werden sollen. Aktuell wird keine Fettung umgesetzt, weil die Bedienung nach manuellem Test funktioniert.
+
 Abgrenzung:
 
 Nicht Bestandteil von Sprint 5. Kompetenzen muessen vor Umsetzung fachlich geklaert werden.

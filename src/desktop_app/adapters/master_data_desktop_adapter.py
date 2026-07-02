@@ -6,6 +6,7 @@ from dataclasses import replace
 
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.view_models.master_data_view_model import (
+    CourseGroupViewModel,
     MasterDataItemViewModel,
     MasterDataViewModel,
     course_color_from_key,
@@ -45,6 +46,14 @@ class MasterDataDesktopAdapter:
         return MasterDataViewModel(
             groups=tuple(self.groups.values()),
             courses=tuple(self.courses.values()),
+            course_groups=(
+                CourseGroupViewModel(
+                    "course-group-default",
+                    "Mathe/Deutsch Kursverbund A",
+                    tuple(self.groups),
+                    tuple(self.courses),
+                ),
+            ),
         )
 
     def add_group(self, name: str) -> MasterDataItemViewModel:

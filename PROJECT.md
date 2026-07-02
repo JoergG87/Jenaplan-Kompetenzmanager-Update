@@ -64,6 +64,10 @@ Die Stammgruppenübersicht ist kein Dashboard, keine Verwaltungsansicht, keine A
 
 Für den Unterricht darf die Stammgruppenübersicht zusätzlich einen Schnellzugriff `Neue Beobachtung` anbieten. Dieser arbeitet immer im Kontext des ausgewählten Schülers und öffnet denselben zentralen Beobachtungsdialog wie das Schülerprofil.
 
+Kurse bezeichnen fachlich Mathe-/Deutsch-Unterrichtsgruppen innerhalb eines Kursverbunds.
+
+Ein Kursverbund definiert, aus welchen Stammgruppen die Kurse gebildet werden. Eine Kursuebersicht zeigt deshalb nicht global alle Schueler mit demselben Kurslabel, sondern nur Schueler mit passendem Kurs aus den Stammgruppen des ausgewaehlten Kursverbunds.
+
 ## Fachliches Domänenmodell
 
 ### Der Kompetenzmanager ist ein Lernentwicklungsmanager.

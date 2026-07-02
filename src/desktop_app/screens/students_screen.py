@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Signal
-from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -42,7 +42,7 @@ class StudentsScreen(QWidget):
         self.group_filter_label = QLabel("")
         self.empty_state_label = QLabel("")
         self.search_input = QLineEdit()
-        self.table = QTableWidget(0, 4)
+        self.table = QTableWidget(0, 2)
         self._build()
 
     def _build(self) -> None:
@@ -73,11 +73,18 @@ class StudentsScreen(QWidget):
         self.empty_state_label.setWordWrap(True)
         layout.addWidget(self.empty_state_label)
 
-        self.table.setHorizontalHeaderLabels(("ID", "Name", "Stammgruppe", "Kurs"))
+        self.table.setHorizontalHeaderLabels(("Name", "Kurs"))
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setAlternatingRowColors(True)
-        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.horizontalHeader().setSectionResizeMode(
+            0,
+            QHeaderView.ResizeMode.Stretch,
+        )
+        self.table.horizontalHeader().setSectionResizeMode(
+            1,
+            QHeaderView.ResizeMode.ResizeToContents,
+        )
         self.table.cellDoubleClicked.connect(self._open_student)
         self.table.itemSelectionChanged.connect(self._select_student)
         layout.addWidget(self.table)
@@ -113,17 +120,26 @@ class StudentsScreen(QWidget):
         self.table.setRowCount(len(students))
         self._update_empty_state(students)
         for row_index, student in enumerate(students):
-            values = (
-                student.student_id,
-                student.display_name,
-                student.group_name,
-            )
-            for column_index, value in enumerate(values):
-                self.table.setItem(row_index, column_index, QTableWidgetItem(value))
-            course_item = QTableWidgetItem(f"● {student.course_name}")
-            if student.course_color_hex:
-                course_item.setForeground(QColor(student.course_color_hex))
-            self.table.setItem(row_index, 3, course_item)
+            self.table.setItem(row_index, 0, QTableWidgetItem(student.display_name))
+            self.table.setCellWidget(row_index, 1, self._course_cell(student))
+
+    def _course_cell(self, student: StudentListItem) -> QWidget:
+        cell = QWidget()
+        layout = QHBoxLayout(cell)
+        layout.setContentsMargins(4, 0, 4, 0)
+        layout.setSpacing(6)
+
+        marker = QLabel("●")
+        marker.setFixedWidth(14)
+        marker.setStyleSheet(f"color: {student.course_color_hex or '#6B7280'};")
+
+        course_label = QLabel(student.course_name)
+        course_label.setStyleSheet("color: #1F2937;")
+
+        layout.addWidget(marker)
+        layout.addWidget(course_label)
+        layout.addStretch(1)
+        return cell
 
     def _update_empty_state(self, students: tuple[StudentListItem, ...]) -> None:
         if students:

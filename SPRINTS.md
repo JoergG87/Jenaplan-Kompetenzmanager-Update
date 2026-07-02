@@ -419,6 +419,19 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] PySide als kuenftige Hauptanwendung dokumentiert
 - [x] Keine Codeaenderung, kein Build und kein Commit umgesetzt
 
+### Korrektur-Hotfix - PySide Kursverbuende und Schuelerliste
+
+- [x] Speichern-Buttons in PySide-Dialogen zentral im blauen Primary-Stil dargestellt
+- [x] Kursfarben-Palette um Gelb `#EAB308` erweitert
+- [x] Schuelerliste wieder mit sauber getrennter Kurs-Spalte hergestellt
+- [x] Kursmarker und Kursname in getrenntem Kurs-Zelllayout ohne Ueberlagerung dargestellt
+- [x] Session-lokalen Default-Kursverbund `Mathe/Deutsch Kursverbund A` ergaenzt
+- [x] Uebersicht `Stammgruppen und Schülerbestand` zeigt Stammgruppen aus dem aktuellen Stammdaten-Scope
+- [x] Uebersicht `Stammgruppen und Schülerbestand` zeigt Kurse mit farbigem Marker innerhalb des Kursverbunds
+- [x] Kursfilter beruecksichtigt Kurs und Stammgruppen des Kursverbunds
+- [x] Offenen UX-Punkt dokumentiert: Kompetenznamen in der Bewertungsliste spaeter eventuell fett darstellen
+- [x] Keine neue Persistenz, keine SQLite-Aenderung, kein ObservationRepository, kein Excel-/VBA-Umbau und keine Packaging-Toolchain umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung
