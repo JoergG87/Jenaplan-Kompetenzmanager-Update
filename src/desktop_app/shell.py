@@ -168,7 +168,7 @@ class AppShell(QMainWindow):
 
     def open_new_student_dialog(self) -> None:
         """Open the existing new-student dialog and refresh after success."""
-        dialog = NewStudentDialog(self.adapter)
+        dialog = NewStudentDialog(self.adapter, self.master_data_adapter)
         dialog.student_created.connect(self.handle_student_created)
         dialog.exec()
 

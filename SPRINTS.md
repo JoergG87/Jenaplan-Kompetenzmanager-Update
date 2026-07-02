@@ -375,6 +375,14 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Loeschen, Schueler-Umbuchung und produktive Stammgruppen-/Kurspersistenz bewusst nicht umgesetzt
 - [x] Keine Beobachtungspersistenz, keine SQLite-Aenderung fuer Beobachtungen, kein ObservationRepository und keine finale Architekturentscheidung umgesetzt
 
+### Sprint - PySide6 Schuelerdialog an Stammdaten anbinden
+
+- [x] PySide6-Dialog `Neuer Schüler` nutzt Stammdaten-light fuer Stammgruppen- und Kursauswahl
+- [x] Stammgruppen- und Kursfelder verwenden Dropdowns mit `Bitte auswählen`
+- [x] Leerer Name, fehlende Stammgruppe und fehlender Kurs werden vor dem Speichern abgefangen
+- [x] Session-lokale Stammdaten sind im Dialog sichtbar, aber nur dauerhaft vorhandene Eintraege koennen fuer `student.create` gespeichert werden
+- [x] Keine neue Persistenz, keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository und keine finale Architekturentscheidung umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

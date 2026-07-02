@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Sprint - PySide6 Schuelerdialog an Stammdaten anbinden
+
+### Changed
+
+- PySide6-Dialog `Neuer Schüler` nutzt die Stammdaten-light-Quelle fuer Stammgruppen- und Kursauswahl.
+- Stammgruppen- und Kursauswahl zeigen `Bitte auswählen` als Platzhalter und vermeiden Freitext.
+- Leerer Name, fehlende Stammgruppe und fehlender Kurs werden vor dem Speichern mit verstaendlichen Meldungen abgefangen.
+- Session-lokale Stammdaten aus `MasterDataDesktopAdapter` sind im Dialog sichtbar; nur dauerhaft vorhandene Stammgruppen/Kurse koennen fuer `student.create` verwendet werden.
+
+### Not Changed
+
+- Keine neue Persistenz, keine produktive Stammgruppen-/Kurspersistenz, keine Schueler-Umbuchung, keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository, keine Dokumenten-/Medienpersistenz, kein Curriculum-Katalog-Umbau, kein Excel-/VBA-Umbau, kein Packaging und keine finale Architekturentscheidung umgesetzt.
+
 ## Sprint - PySide6 Stammdaten light
 
 ### Added

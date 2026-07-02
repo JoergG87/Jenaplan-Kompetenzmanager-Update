@@ -69,6 +69,16 @@ Der Adapter darf keine festen Zelladressen verwenden.
 
 Nach erfolgreichem Python Command gibt Feature 1.4b nur ein Runtime-Ergebnis an Excel zurueck. Sichtbare Schuelerinformationen werden erst in einem spaeteren Schritt ueber ein Python-erzeugtes Projection-Refresh-Paket aktualisiert.
 
+## PySide6 Schuelerdialog
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Vorname | `QLineEdit` -> `student.create.first_name` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | Pflichtfeld, keine technische Identitaet |
+| Nachname | `QLineEdit` -> `student.create.last_name` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | Pflichtfeld |
+| Stammgruppe | `MasterDataViewModel.groups` aus `data_groups` / session-lokalem Stammdaten-light-State | Eingabe | Ja (ueber freigegebenen Prozess) | `data_groups` | Dropdown, kein Freitext; nur dauerhaft vorhandene Eintraege koennen fuer `student.create` gespeichert werden |
+| Kurs | `MasterDataViewModel.courses` aus `data_courses` / session-lokalem Stammdaten-light-State | Eingabe | Ja (ueber freigegebenen Prozess) | `data_courses` | Dropdown, kein Freitext; nur dauerhaft vorhandene Eintraege koennen fuer `student.create` gespeichert werden |
+| Notiz | `QTextEdit` -> `student.create.student_notes` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | optional |
+
 ## Stammdaten light
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |

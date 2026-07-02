@@ -18,9 +18,11 @@ from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDeskt
 from src.desktop_app.adapters import student_desktop_adapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.dialogs import master_data_dialog
+from src.desktop_app.dialogs import new_student_dialog
 from src.desktop_app.dialogs import new_observation_dialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens import master_data_screen
+from src.desktop_app import shell
 from src.desktop_app.view_models.master_data_view_model import (
     MASTER_DATA_EMPTY_NAME_MESSAGE,
     MasterDataItemViewModel,
@@ -193,6 +195,53 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn("INSERT INTO", screen_source)
         self.assertNotIn("UPDATE ", screen_source)
         self.assertNotIn("DELETE FROM", screen_source)
+
+    def test_new_student_dialog_uses_master_data_for_group_and_course_options(self) -> None:
+        source = inspect.getsource(new_student_dialog)
+        shell_source = inspect.getsource(shell.AppShell.open_new_student_dialog)
+
+        self.assertIn("MasterDataDesktopAdapter", source)
+        self.assertIn("self.master_data_adapter.view_model()", source)
+        self.assertIn("self.group_items = {group.item_id: group", source)
+        self.assertIn("self.course_items = {course.item_id: course", source)
+        self.assertIn("self._populate_master_data_select(", source)
+        self.assertIn("select.addItem(item.name, item.item_id)", source)
+        self.assertIn("NewStudentDialog(self.adapter, self.master_data_adapter)", shell_source)
+
+    def test_new_student_dialog_uses_required_dropdown_placeholders(self) -> None:
+        source = inspect.getsource(new_student_dialog)
+
+        self.assertIn('STUDENT_DIALOG_SELECT_PLACEHOLDER = "Bitte auswählen"', source)
+        self.assertIn('"Keine Stammgruppen vorhanden"', source)
+        self.assertIn('"Keine Kurse vorhanden"', source)
+        self.assertIn("select.addItem(STUDENT_DIALOG_SELECT_PLACEHOLDER, \"\")", source)
+
+    def test_new_student_dialog_validates_name_group_and_course(self) -> None:
+        source = inspect.getsource(new_student_dialog)
+
+        self.assertIn('STUDENT_DIALOG_EMPTY_NAME_MESSAGE = "Bitte einen Namen eingeben."', source)
+        self.assertIn(
+            'STUDENT_DIALOG_GROUP_REQUIRED_MESSAGE = "Bitte eine Stammgruppe auswählen."',
+            source,
+        )
+        self.assertIn(
+            'STUDENT_DIALOG_COURSE_REQUIRED_MESSAGE = "Bitte einen Kurs auswählen."',
+            source,
+        )
+        self.assertIn("if not self.first_name_input.text().strip()", source)
+        self.assertIn("if not self.last_name_input.text().strip()", source)
+        self.assertIn("if group is None", source)
+        self.assertIn("if course is None", source)
+        self.assertIn("if not group.is_persistent", source)
+        self.assertIn("if not course.is_persistent", source)
+
+    def test_new_student_dialog_widgets_do_not_access_sqlite_directly(self) -> None:
+        source = inspect.getsource(new_student_dialog)
+
+        self.assertNotIn("sqlite", source.casefold())
+        self.assertNotIn("INSERT INTO", source)
+        self.assertNotIn("UPDATE ", source)
+        self.assertNotIn("DELETE FROM", source)
 
     def test_selected_student_creates_profile_view_model(self) -> None:
         students = self.adapter.list_students()
