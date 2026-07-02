@@ -1,0 +1,125 @@
+"""Master-data light screen for the PySide6 desktop app."""
+
+from __future__ import annotations
+
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+from src.desktop_app.view_models.master_data_view_model import (
+    MasterDataItemViewModel,
+    MasterDataViewModel,
+)
+
+
+class MasterDataScreen(QWidget):
+    """Show group and course master data without productive persistence."""
+
+    group_add_requested = Signal()
+    group_rename_requested = Signal(str)
+    course_add_requested = Signal()
+    course_rename_requested = Signal(str)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.group_items: tuple[MasterDataItemViewModel, ...] = ()
+        self.course_items: tuple[MasterDataItemViewModel, ...] = ()
+        self.group_table = QTableWidget(0, 3)
+        self.course_table = QTableWidget(0, 3)
+        self._build()
+
+    def _build(self) -> None:
+        layout = QVBoxLayout(self)
+        title = QLabel("Stammdaten")
+        title.setStyleSheet("font-size: 22px; font-weight: 600;")
+        subtitle = QLabel("Stammgruppen und Kurse verwalten")
+        subtitle.setStyleSheet("color: #555;")
+        layout.addWidget(title)
+        layout.addWidget(subtitle)
+        layout.addWidget(
+            self._section_card(
+                "Stammgruppen",
+                "+ Stammgruppe",
+                self.group_table,
+                self.group_add_requested.emit,
+            )
+        )
+        layout.addWidget(
+            self._section_card(
+                "Kurse",
+                "+ Kurs",
+                self.course_table,
+                self.course_add_requested.emit,
+            )
+        )
+        layout.addStretch(1)
+
+    def set_master_data(self, view_model: MasterDataViewModel) -> None:
+        """Replace all displayed master-data rows."""
+        self.group_items = view_model.groups
+        self.course_items = view_model.courses
+        self._render_table(
+            self.group_table,
+            self.group_items,
+            self.group_rename_requested.emit,
+        )
+        self._render_table(
+            self.course_table,
+            self.course_items,
+            self.course_rename_requested.emit,
+        )
+
+    def _section_card(
+        self,
+        title: str,
+        add_button_label: str,
+        table: QTableWidget,
+        add_handler: object,
+    ) -> QFrame:
+        card = QFrame()
+        card.setFrameShape(QFrame.Shape.StyledPanel)
+        card.setStyleSheet("QFrame { background: #ffffff; border-radius: 6px; }")
+        layout = QVBoxLayout(card)
+        header = QHBoxLayout()
+        title_label = QLabel(title)
+        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
+        add_button = QPushButton(add_button_label)
+        add_button.clicked.connect(add_handler)
+        header.addWidget(title_label)
+        header.addStretch(1)
+        header.addWidget(add_button)
+        layout.addLayout(header)
+
+        table.setHorizontalHeaderLabels(("Name", "Status", "Aktion"))
+        table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        table.setAlternatingRowColors(True)
+        table.horizontalHeader().setStretchLastSection(True)
+        table.setMinimumHeight(150)
+        layout.addWidget(table)
+        return card
+
+    def _render_table(
+        self,
+        table: QTableWidget,
+        items: tuple[MasterDataItemViewModel, ...],
+        rename_handler: object,
+    ) -> None:
+        table.setRowCount(len(items))
+        for row_index, item in enumerate(items):
+            table.setItem(row_index, 0, QTableWidgetItem(item.name))
+            table.setItem(row_index, 1, QTableWidgetItem(item.status_label))
+            rename_button = QPushButton("Umbenennen")
+            rename_button.clicked.connect(
+                lambda _checked=False, item_id=item.item_id: rename_handler(item_id)
+            )
+            table.setCellWidget(row_index, 2, rename_button)

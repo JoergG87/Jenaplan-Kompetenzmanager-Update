@@ -14,10 +14,19 @@ from src.application.dispatcher import SuccessResult
 from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PREFIX
 from src.core.sqlite_store import SQLiteStudentRepository, create_sqlite_seed_database
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
+from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters import student_desktop_adapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.dialogs import master_data_dialog
 from src.desktop_app.dialogs import new_observation_dialog
-from src.desktop_app.navigation import resolve_navigation_target
+from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
+from src.desktop_app.screens import master_data_screen
+from src.desktop_app.view_models.master_data_view_model import (
+    MASTER_DATA_EMPTY_NAME_MESSAGE,
+    MasterDataItemViewModel,
+    MasterDataViewModel,
+    normalize_master_data_name,
+)
 from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_ATTACHMENT_EMPTY_STATE,
     OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
@@ -41,6 +50,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.database_path = Path(self.temp_dir.name) / "kompetenzmanager.sqlite"
         self.database = create_sqlite_seed_database(self.database_path)
         self.adapter = StudentDesktopAdapter(self.database_path)
+        self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
         self.curriculum_adapter = CurriculumDesktopAdapter()
 
     def tearDown(self) -> None:
@@ -111,6 +121,78 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(groups[0].group_id, f"{GROUP_ID_PREFIX}-000001")
         self.assertEqual(groups[0].group_name, "Grashüpfer")
         self.assertEqual(groups[0].active_student_count, 28)
+
+    def test_navigation_contains_master_data_screen(self) -> None:
+        navigation_labels = tuple(item.label for item in NAVIGATION_ITEMS)
+        navigation_keys = tuple(item.key for item in NAVIGATION_ITEMS)
+
+        self.assertIn("Stammdaten", navigation_labels)
+        self.assertIn("master_data", navigation_keys)
+        self.assertEqual(
+            resolve_navigation_target("master_data").screen_key,
+            "master_data",
+        )
+
+    def test_master_data_view_model_displays_groups_and_courses(self) -> None:
+        view_model = self.master_data_adapter.view_model()
+
+        self.assertIsInstance(view_model, MasterDataViewModel)
+        self.assertEqual(view_model.groups[0].item_id, f"{GROUP_ID_PREFIX}-000001")
+        self.assertEqual(view_model.groups[0].name, "Grashüpfer")
+        self.assertTrue(view_model.groups[0].is_persistent)
+        self.assertEqual(view_model.groups[0].status_label, "Vorhanden")
+        self.assertEqual(
+            {course.name for course in view_model.courses},
+            {"Kurs 1", "Kurs 2", "Kurs 3"},
+        )
+
+    def test_master_data_adapter_adds_non_persistent_groups_and_courses(self) -> None:
+        group = self.master_data_adapter.add_group("Eulen")
+        course = self.master_data_adapter.add_course("Kurs 4")
+        view_model = self.master_data_adapter.view_model()
+
+        self.assertIsInstance(group, MasterDataItemViewModel)
+        self.assertEqual(group.name, "Eulen")
+        self.assertFalse(group.is_persistent)
+        self.assertEqual(group.status_label, "Nur vorgemerkt")
+        self.assertEqual(course.name, "Kurs 4")
+        self.assertFalse(course.is_persistent)
+        self.assertIn("Eulen", {item.name for item in view_model.groups})
+        self.assertIn("Kurs 4", {item.name for item in view_model.courses})
+
+    def test_master_data_adapter_renames_non_persistent_state(self) -> None:
+        group = self.master_data_adapter.rename_group(
+            f"{GROUP_ID_PREFIX}-000001",
+            "Grashüpfer A",
+        )
+        course = self.master_data_adapter.rename_course(
+            f"{COURSE_ID_PREFIX}-000001",
+            "Kurs 1A",
+        )
+        view_model = self.master_data_adapter.view_model()
+
+        self.assertEqual(group.name, "Grashüpfer A")
+        self.assertEqual(course.name, "Kurs 1A")
+        self.assertIn("Grashüpfer A", {item.name for item in view_model.groups})
+        self.assertIn("Kurs 1A", {item.name for item in view_model.courses})
+
+    def test_master_data_empty_names_are_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, MASTER_DATA_EMPTY_NAME_MESSAGE):
+            normalize_master_data_name("   ")
+        with self.assertRaisesRegex(ValueError, MASTER_DATA_EMPTY_NAME_MESSAGE):
+            self.master_data_adapter.add_group("")
+        with self.assertRaisesRegex(ValueError, MASTER_DATA_EMPTY_NAME_MESSAGE):
+            self.master_data_adapter.add_course("")
+
+    def test_master_data_widgets_do_not_access_sqlite_directly(self) -> None:
+        screen_source = inspect.getsource(master_data_screen)
+        dialog_source = inspect.getsource(master_data_dialog)
+
+        self.assertNotIn("sqlite", screen_source.casefold())
+        self.assertNotIn("sqlite", dialog_source.casefold())
+        self.assertNotIn("INSERT INTO", screen_source)
+        self.assertNotIn("UPDATE ", screen_source)
+        self.assertNotIn("DELETE FROM", screen_source)
 
     def test_selected_student_creates_profile_view_model(self) -> None:
         students = self.adapter.list_students()

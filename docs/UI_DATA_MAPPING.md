@@ -69,6 +69,16 @@ Der Adapter darf keine festen Zelladressen verwenden.
 
 Nach erfolgreichem Python Command gibt Feature 1.4b nur ein Runtime-Ergebnis an Excel zurueck. Sichtbare Schuelerinformationen werden erst in einem spaeteren Schritt ueber ein Python-erzeugtes Projection-Refresh-Paket aktualisiert.
 
+## Stammdaten light
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Stammgruppenliste | `data_groups.group_name` ueber bestehenden PySide6-Adapter | Anzeige | Nein | `data_groups` | Stammgruppen sind eigenstaendige Stammdaten |
+| Kursliste | `data_courses.course_name` ueber bestehenden PySide6-Adapter | Anzeige | Nein | `data_courses` | Kurse sind eigenstaendige Stammdaten |
+| Neue Stammgruppe | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_groups` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
+| Neuer Kurs | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_courses` | keine produktive Persistenz, keine automatische Schuelerzuordnung |
+| Umbenennen | temporaerer UI-/Adapter-State im PySide6-Sprint | Eingabe | Geplant | `data_groups` / `data_courses` | `group_id` und `course_id` bleiben fachlich massgeblich; Schueler-Umbuchung folgt separat |
+
 ## Kompetenzansicht
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |

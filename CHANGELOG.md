@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Sprint - PySide6 Stammdaten light
+
+### Added
+
+- PySide6-Navigation um `Stammdaten` erweitert.
+- Nicht-persistente Stammdaten-light-Seite fuer Stammgruppen und Kurse ergaenzt.
+- Dialoge fuer neue Stammgruppen, neue Kurse und Umbenennen mit einfacher Leerfeld-Validierung ergaenzt.
+- GUI-naher Stammdaten-Adapter liest bestehende Gruppen/Kurse aus der vorhandenen Datenquelle und verwaltet Aenderungen nur session-lokal.
+
+### Not Changed
+
+- Keine produktive Stammgruppen-/Kurspersistenz, keine Schueler-Umbuchung, kein Loeschen, keine Beobachtungspersistenz, keine SQLite-Aenderung fuer Beobachtungen, kein ObservationRepository, keine Dokumenten-/Medienpersistenz, kein Curriculum-Katalog-Umbau, kein Excel-/VBA-Umbau, kein Packaging und keine finale Architekturentscheidung umgesetzt.
+
 ## Hotfix - Beobachtungsdialog faecheruebergreifende Kompetenzbewertungen
 
 ### Changed

@@ -366,6 +366,15 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Kompetenzbewertungszeilen zeigen den Fach-Anzeigenamen und bieten `Entfernen`
 - [x] Keine Beobachtungspersistenz, keine SQLite-Aenderung, kein ObservationRepository und keine finale Architekturentscheidung umgesetzt
 
+### Sprint - PySide6 Stammdaten light
+
+- [x] Navigationseintrag `Stammdaten` ergaenzt
+- [x] Stammdaten-light-Seite mit Bereichen fuer Stammgruppen und Kurse ergaenzt
+- [x] Hinzufuegen und Umbenennen fuer Stammgruppen und Kurse als nicht-persistenter UI-/Adapter-Draft vorbereitet
+- [x] Leere Namen werden mit verstaendlicher Meldung abgelehnt
+- [x] Loeschen, Schueler-Umbuchung und produktive Stammgruppen-/Kurspersistenz bewusst nicht umgesetzt
+- [x] Keine Beobachtungspersistenz, keine SQLite-Aenderung fuer Beobachtungen, kein ObservationRepository und keine finale Architekturentscheidung umgesetzt
+
 ### Nicht Bestandteil
 
 - [x] Keine Beobachtungserfassung

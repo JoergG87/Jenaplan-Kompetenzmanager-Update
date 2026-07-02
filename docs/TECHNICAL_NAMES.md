@@ -336,6 +336,7 @@ Registrierte Python-Klassen und Funktionen:
 - `NAVIGATION_ITEMS`
 - `resolve_navigation_target(key)`
 - `StudentDesktopAdapter`
+- `MasterDataDesktopAdapter`
 - `CurriculumDesktopAdapter`
 - `CurriculumCatalogEntry`
 - `CurriculumSubjectOption`
@@ -345,6 +346,11 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentListItem`
 - `StudentDetailViewModel`
 - `GroupSummaryViewModel`
+- `MasterDataItemViewModel`
+- `MasterDataViewModel`
+- `normalize_master_data_name(name)`
+- `MASTER_DATA_EMPTY_NAME_MESSAGE`
+- `MASTER_DATA_SAVE_PLACEHOLDER_MESSAGE`
 - `filter_student_list(students, search_text)`
 - `PROFILE_ACTION_MESSAGES`
 - `PROFILE_SECTION_PLACEHOLDERS`
@@ -361,7 +367,9 @@ Registrierte Python-Klassen und Funktionen:
 - `OverviewScreen`
 - `StudentsScreen`
 - `StudentProfileScreen`
+- `MasterDataScreen`
 - `PlaceholderScreen`
+- `MasterDataNameDialog`
 - `NewObservationDialog`
 - `NewStudentDialog`
 - `main()`

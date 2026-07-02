@@ -27,6 +27,7 @@ NAVIGATION_ITEMS: tuple[NavigationItem, ...] = (
     NavigationItem("observations", "Beobachtungen"),
     NavigationItem("competencies", "Kompetenzen"),
     NavigationItem("reports", "Berichte"),
+    NavigationItem("master_data", "Stammdaten"),
     NavigationItem("settings", "Einstellungen"),
 )
 
