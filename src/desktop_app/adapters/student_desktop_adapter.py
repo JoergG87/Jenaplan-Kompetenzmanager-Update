@@ -27,6 +27,7 @@ from src.core.student import StudentService, StudentValidator
 from src.core.workbook_data import CourseRecord, GroupRecord, StudentRecord
 from src.desktop_app.view_models.master_data_view_model import course_color_from_key
 from src.desktop_app.view_models.observation_view_model import (
+    OBSERVATION_CROSS_SUBJECT_LABEL,
     ObservationDraftViewModel,
     ObservationListItem,
     ObservationRatingViewModel,
@@ -170,7 +171,7 @@ class StudentDesktopAdapter:
         return CreateObservationCommand(
             student_id=draft.student_id,
             date=draft.date_text,
-            subject_id=draft.subject_id,
+            subject_id=self._subject_id_for_draft(draft),
             context=draft.context,
             note=draft.note,
             competency_ratings=tuple(
@@ -298,9 +299,51 @@ class StudentDesktopAdapter:
         return True
 
     def _subject_display_name(self, observation: object) -> str:
-        for rating in getattr(observation, "competency_ratings", ()):
-            if rating.subject_id == getattr(observation, "subject_id", ""):
-                return rating.subject_display_name
-        for rating in getattr(observation, "competency_ratings", ()):
-            return rating.subject_display_name
+        subjects = self._subjects_from_ratings(
+            getattr(observation, "competency_ratings", ())
+        )
+        if len(subjects) > 1:
+            return OBSERVATION_CROSS_SUBJECT_LABEL
+        if len(subjects) == 1:
+            return next(iter(subjects.values()))
         return getattr(observation, "subject_id", "")
+
+    def _subject_id_for_draft(self, draft: ObservationDraftViewModel) -> str:
+        subjects = self._subjects_from_draft(draft.competency_ratings)
+        if len(subjects) > 1:
+            return "cross_subject"
+        if len(subjects) == 1:
+            return next(iter(subjects))
+        return draft.subject_id
+
+    def _subjects_from_draft(
+        self,
+        ratings: tuple[object, ...],
+    ) -> dict[str, str]:
+        subjects: dict[str, str] = {}
+        for rating in ratings:
+            subject_key = str(getattr(rating, "subject_key", "")).strip()
+            if not subject_key:
+                continue
+            subjects.setdefault(
+                subject_key,
+                str(getattr(rating, "subject_display_name", subject_key)).strip()
+                or subject_key,
+            )
+        return subjects
+
+    def _subjects_from_ratings(
+        self,
+        ratings: tuple[object, ...],
+    ) -> dict[str, str]:
+        subjects: dict[str, str] = {}
+        for rating in ratings:
+            subject_id = str(getattr(rating, "subject_id", "")).strip()
+            subject_label = str(
+                getattr(rating, "subject_display_name", subject_id)
+            ).strip()
+            subject_key = subject_id or subject_label
+            if not subject_key:
+                continue
+            subjects.setdefault(subject_key, subject_label or subject_key)
+        return subjects

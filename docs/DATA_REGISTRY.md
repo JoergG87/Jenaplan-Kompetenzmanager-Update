@@ -202,9 +202,9 @@ Owner: Kompetenzverwaltung / Lehrplanpflege.
 
 Wichtige Felder:
 
+- `competency_id`
 - `subject_key`
 - `subject_display_name`
-- abgeleitete `competency_id` im Adapterformat `CMP-######`
 - `subject_full_name`
 - `official_subject_name`
 - `school_context_name`
@@ -219,7 +219,8 @@ Wichtige Felder:
 Regeln:
 
 - Der Katalog wird nur lesend verwendet.
-- Er erzeugt selbst keine Beobachtung; der PySide-Adapter leitet daraus stabile `competency_id`s fuer `observation_competency_ratings` ab.
+- `competency_id` ist eine stabile Katalog-ID im Format `CMP-######`.
+- Er erzeugt selbst keine Beobachtung; der PySide-Adapter uebergibt die Katalog-IDs an `observation_competency_ratings`.
 - `EPU` ist der App-Anzeigename fuer `Epochaler Projektunterricht`.
 - Die offizielle Lehrplanquelle fuer `EPU` ist `Heimat- und Sachkunde`.
 - `Sachunterricht` wird nicht als App-Fach gefuehrt.

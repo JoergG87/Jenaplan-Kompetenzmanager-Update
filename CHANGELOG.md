@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## Sprint - Kompetenzkatalog fachlich stabilisieren
+
+### Changed
+
+- `data/curriculum_catalog_v1.csv` fuehrt `competency_id` jetzt explizit als stabile Katalog-ID.
+- Curriculum-Adapter validiert Pflichtfelder und doppelte Kompetenz-IDs und bietet eine Fach-Gruppierung fuer Kompetenzen.
+- EPU bleibt sichtbarer Fachname; Sozialkompetenz bleibt eigener Katalogbereich.
+
+### Not Changed
+
+- Keine freie Kompetenzbearbeitung, keine Schema-Migration, kein Excel-/VBA-Umbau, keine UI-Grossbaustelle und kein Commit umgesetzt.
+
+## Korrektur - Multi-Fach-Beobachtungen im Schuelerprofil
+
+### Changed
+
+- Fachanzeige im Schuelerprofil wird aus den Faechern der gespeicherten Kompetenzbewertungen abgeleitet.
+- Beobachtungen mit Kompetenzen aus mehreren Faechern zeigen `Fächerübergreifend`; einzelne Kompetenzen behalten ihr eigenes Fachlabel.
+
+### Not Changed
+
+- Keine Schema-Migration, keine Aenderung gespeicherter Kompetenzbewertungen, keine SQLite-Zugriffe im Screen/Dialog und kein Excel-/VBA-Umbau umgesetzt.
+
 ## UI-Polish - Schuelerprofil Beobachtungsliste
 
 ### Changed

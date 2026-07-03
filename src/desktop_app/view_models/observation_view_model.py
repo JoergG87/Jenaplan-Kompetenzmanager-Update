@@ -32,6 +32,8 @@ OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE = (
 
 OBSERVATION_ATTACHMENT_EMPTY_STATE = "Noch keine Anhänge ausgewählt."
 
+OBSERVATION_CROSS_SUBJECT_LABEL = "Fächerübergreifend"
+
 
 @dataclass(frozen=True)
 class ObservationCompetencyRatingDraft:

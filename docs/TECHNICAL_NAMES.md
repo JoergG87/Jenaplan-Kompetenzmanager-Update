@@ -425,9 +425,12 @@ Registrierte Python-Klassen und Funktionen:
 - `MasterDataDesktopAdapter`
 - `CurriculumDesktopAdapter`
 - `CurriculumCatalogEntry`
+- `CurriculumCompetencyGroup`
 - `CurriculumSubjectOption`
+- `CATALOG_REQUIRED_FIELDS`
 - `CURRICULUM_CATALOG_V1_PATH`
 - `CurriculumCatalogEntry.competency_id`
+- `CurriculumCatalogEntry.subject_id`
 - `CurriculumCatalogEntry.competency_display_name`
 - `CurriculumCatalogEntry.competency_detail_label`
 - `StudentListItem`
@@ -456,6 +459,7 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationListItem`
 - `ObservationRatingViewModel`
 - `OBSERVATION_CONTEXT_OPTIONS`
+- `OBSERVATION_CROSS_SUBJECT_LABEL`
 - `OBSERVATION_RATING_OPTIONS`
 - `OBSERVATION_SAVE_SUCCESS_MESSAGE`
 - `OBSERVATION_SAVE_VALIDATION_MESSAGE`

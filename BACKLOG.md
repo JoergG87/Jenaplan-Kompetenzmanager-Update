@@ -104,15 +104,16 @@ Priorität: Offen
 
 Beschreibung:
 
-Fachlich klaeren, wie Beobachtungen dargestellt werden sollen, wenn die ausgewaehlten Kompetenzbewertungen aus mehreren Faechern stammen.
+Entschieden: Beobachtungen mit Kompetenzbewertungen aus mehreren Faechern zeigen im Schuelerprofil `Fächerübergreifend`.
+Die einzelnen Kompetenzbewertungen behalten ihr jeweiliges Fachlabel.
 
 Abgrenzung:
 
-Keine Loesung im Profil-UI-Sprint; der aktuelle Profilverlauf zeigt die gespeicherten Daten nur kompakt an.
+Keine Schema-Migration und keine Veraenderung gespeicherter Kompetenzbewertungen.
 
 Status:
 
-Fachklaerung
+Entschieden
 
 ### Vorbereitung geplanter Beobachtungen
 

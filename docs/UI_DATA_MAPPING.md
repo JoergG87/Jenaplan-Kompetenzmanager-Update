@@ -51,7 +51,7 @@ Spalten:
 | Schuelername | `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | Anzeige |
 | Stammgruppe | `data_students.group_id` -> `data_groups.group_name` | Anzeige | Nein | `data_groups` | organisatorische Zugehoerigkeit |
 | Kurs | `data_students.course_id` -> `data_courses.course_name` | Anzeige | Nein | `data_courses` | Jahrgang |
-| Beobachtungsverlauf | `data_observations` + `data_observation_competencies` | Anzeige | Nein | `data_observations` | kompakte Karten, neueste Beobachtungen oben |
+| Beobachtungsverlauf | `data_observations` + `data_observation_competencies` | Anzeige | Nein | `data_observations` | kompakte Karten, neueste Beobachtungen oben; Fachlabel aus Kompetenzfaechern, bei mehreren Faechern `Fächerübergreifend` |
 | Kompetenzchips | `data_observation_competencies.competency_id` -> `data_competencies.name` | Anzeige | Nein | `data_competencies` | Bewertung wird pro Kompetenz angezeigt |
 | Neue Beobachtung | `data_students.student_id` | Navigation | Geplant | `data_students` | startet spaeter zentralen Beobachtungsdialog |
 
@@ -135,8 +135,8 @@ Regel: Die Schueleruebersicht liest persistente Schueler ueber `StudentDesktopAd
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | ausgewaehlter Schueler | `student_id` aus Navigation -> `data_students` | Anzeige | Nein | `data_students` | Namen werden nicht als technische Identitaet verwendet |
-| Fachauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Prototyp, spaeter `data_subjects` | Eingabe | Nein | Kompetenzverwaltung / Lehrplanpflege | filtert die sichtbare Kompetenzauswahl; App-Anzeigename `EPU`, kein App-Fach `Sachunterricht` |
-| Kompetenzauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Prototyp, spaeter `data_competencies` + `data_subjects` | Eingabe | Nein | `data_competencies` | ausgewaehlte Kompetenzbewertungen koennen aus mehreren Faechern stammen; v1-Katalog noch nicht final ausdifferenziert |
+| Fachauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Dialog, spaeter `data_subjects` | Eingabe | Nein | Kompetenzverwaltung / Lehrplanpflege | filtert die sichtbare Kompetenzauswahl; App-Anzeigename `EPU`, kein App-Fach `Sachunterricht` |
+| Kompetenzauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Dialog, spaeter `data_competencies` + `data_subjects` | Eingabe | Nein | `data_competencies` | jede Kompetenz hat `competency_id`, `subject_key` und lesbares Label; ausgewaehlte Kompetenzbewertungen koennen aus mehreren Faechern stammen |
 | Beobachtungsdatum | SQLite `observations.date` | Eingabe | Ja | `observations` | Datum gehoert zur Beobachtung |
 | Beobachtungsnotiz | SQLite `observations.note` | Eingabe | Ja | `observations` | Schreiben ueber Adapter, Command, Service und Repository |
 | Beobachtungskontext | SQLite `observations.context` | Eingabe | Ja | `observations` | Kontext gehoert zur Beobachtung |

@@ -55,6 +55,7 @@ from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_ATTACHMENT_EMPTY_STATE,
     OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
     OBSERVATION_CONTEXT_OPTIONS,
+    OBSERVATION_CROSS_SUBJECT_LABEL,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_SUCCESS_MESSAGE,
     ObservationCompetencyRatingDraft,
@@ -161,6 +162,66 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(observations[0].note, "Liest einen bekannten Text.")
         self.assertEqual(observations[0].competency_ratings[0].rating, "+")
         self.assertIn("Deutsch", observations[0].competency_ratings[0].display_label)
+
+    def test_observation_subject_label_uses_single_competency_subject(self) -> None:
+        draft = self._sample_observation_draft(
+            subject_id="epu",
+            subject_display_name="EPU",
+        )
+
+        command = self.adapter.create_observation_command(draft)
+        self.adapter.save_observation(draft)
+        observations = self.adapter.list_observations_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(command.subject_id, "deutsch")
+        self.assertEqual(observations[0].subject_display_name, "Deutsch")
+        self.assertNotEqual(observations[0].subject_display_name, "EPU")
+
+    def test_observation_subject_label_marks_cross_subject_ratings(self) -> None:
+        draft = self._sample_observation_draft(
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+                self._sample_observation_rating(
+                    "CMP-000003",
+                    "epu",
+                    "EPU",
+                    "Natur und Umwelt",
+                    "Erkunden und beschreiben",
+                    "Naturphänomene beobachten und beschreiben",
+                    "-",
+                ),
+            ),
+        )
+
+        command = self.adapter.create_observation_command(draft)
+        self.adapter.save_observation(draft)
+        observations = self.adapter.list_observations_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(command.subject_id, "cross_subject")
+        self.assertEqual(
+            observations[0].subject_display_name,
+            OBSERVATION_CROSS_SUBJECT_LABEL,
+        )
+        self.assertEqual(
+            tuple(rating.subject_display_name for rating in observations[0].competency_ratings),
+            ("Deutsch", "EPU"),
+        )
+        self.assertEqual(
+            tuple(rating.rating for rating in observations[0].competency_ratings),
+            ("+", "-"),
+        )
 
     def test_observation_list_keeps_newest_observations_first(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
@@ -904,6 +965,19 @@ class DesktopAppAdapterTest(unittest.TestCase):
             for entry in epu_entries
         ))
 
+    def test_curriculum_catalog_entries_have_stable_id_subject_and_label(self) -> None:
+        entries = self.curriculum_adapter.list_entries()
+        competency_ids = [entry.competency_id for entry in entries]
+
+        self.assertEqual(len(competency_ids), len(set(competency_ids)))
+        self.assertTrue(all(entry.competency_id.startswith("CMP-") for entry in entries))
+        self.assertTrue(all(entry.subject_id for entry in entries))
+        self.assertTrue(all(entry.subject_display_name for entry in entries))
+        self.assertTrue(all(entry.competency_label for entry in entries))
+        self.assertTrue(all(entry.competency_detail_label for entry in entries))
+        self.assertEqual(entries[0].competency_id, "CMP-000001")
+        self.assertEqual(entries[0].subject_id, "deutsch")
+
     def test_curriculum_catalog_maps_kunst_to_kunsterziehung(self) -> None:
         kunst_entries = [
             entry
@@ -930,6 +1004,25 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(subjects, {"Ethik", "Religion", "Werken", "Schulgarten"})
 
+    def test_curriculum_catalog_keeps_social_competence_as_own_subject(self) -> None:
+        subjects = self.curriculum_adapter.list_active_subjects()
+        social_subjects = [
+            subject
+            for subject in subjects
+            if subject.subject_key == "sozialkompetenz"
+        ]
+        social_competencies = self.curriculum_adapter.list_competencies_for_subject(
+            "sozialkompetenz"
+        )
+
+        self.assertEqual(len(social_subjects), 1)
+        self.assertEqual(social_subjects[0].display_name, "Sozialkompetenz")
+        self.assertGreaterEqual(len(social_competencies), 1)
+        self.assertTrue(all(
+            entry.subject_display_name == "Sozialkompetenz"
+            for entry in social_competencies
+        ))
+
     def test_curriculum_catalog_filters_competencies_by_subject(self) -> None:
         epu_competencies = self.curriculum_adapter.list_competencies_for_subject("epu")
         math_competencies = self.curriculum_adapter.list_competencies_for_subject("mathematik")
@@ -943,6 +1036,26 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(all(
             entry.subject_key == "mathematik"
             for entry in math_competencies
+        ))
+
+    def test_curriculum_catalog_groups_competencies_by_subject(self) -> None:
+        groups = self.curriculum_adapter.list_competencies_grouped_by_subject()
+        group_by_subject = {group.subject.subject_key: group for group in groups}
+
+        self.assertIn("deutsch", group_by_subject)
+        self.assertIn("epu", group_by_subject)
+        self.assertIn("sozialkompetenz", group_by_subject)
+        self.assertEqual(group_by_subject["epu"].subject.display_name, "EPU")
+        self.assertEqual(
+            {
+                entry.subject_id
+                for entry in group_by_subject["epu"].competencies
+            },
+            {"epu"},
+        )
+        self.assertTrue(all(
+            group.competencies
+            for group in groups
         ))
 
     def test_curriculum_competency_options_have_short_display_labels(self) -> None:
@@ -1222,6 +1335,48 @@ class DesktopAppAdapterTest(unittest.TestCase):
         ))
         self.assertIsNotNone(app)
 
+    def test_student_profile_cross_subject_card_keeps_rating_subjects(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (
+                ObservationListItem(
+                    "OBS-000001",
+                    f"{STUDENT_ID_PREFIX}-000001",
+                    "2026-07-03",
+                    OBSERVATION_CROSS_SUBJECT_LABEL,
+                    "Präsentation",
+                    "Verbindet Inhalte aus EPU und Deutsch.",
+                    (
+                        ObservationRatingViewModel(
+                            "CMP-000001",
+                            "Deutsch",
+                            "Mit Texten und Medien umgehen",
+                            "Lesen und Verstehen",
+                            "Texte lesen und zentrale Informationen entnehmen",
+                            "+",
+                        ),
+                        ObservationRatingViewModel(
+                            "CMP-000003",
+                            "EPU",
+                            "Natur und Umwelt",
+                            "Erkunden und beschreiben",
+                            "Naturphänomene beobachten und beschreiben",
+                            "-",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn(OBSERVATION_CROSS_SUBJECT_LABEL, label_texts)
+        self.assertTrue(any("Deutsch" in text for text in label_texts))
+        self.assertTrue(any("EPU" in text for text in label_texts))
+        self.assertIsNotNone(app)
+
     def test_student_profile_observation_empty_state_is_visible(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
@@ -1345,35 +1500,58 @@ class DesktopAppAdapterTest(unittest.TestCase):
         *,
         date_text: str = "2026-07-03",
         note: str = "Liest einen bekannten Text.",
+        subject_id: str = "deutsch",
+        subject_display_name: str = "Deutsch",
+        competency_ratings: tuple[ObservationCompetencyRatingDraft, ...] | None = None,
     ) -> ObservationDraftViewModel:
         return ObservationDraftViewModel(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
             student_name="Emma Müller",
             date_text=date_text,
-            subject_id="deutsch",
-            subject_display_name="Deutsch",
+            subject_id=subject_id,
+            subject_display_name=subject_display_name,
             context="Leseübung",
             note=note,
-            competency_ratings=(
-                ObservationCompetencyRatingDraft(
-                    competency_id="CMP-000001",
-                    subject_key="deutsch",
-                    subject_display_name="Deutsch",
-                    learning_area="Mit Texten und Medien umgehen",
-                    competency_group="Lesen und Verstehen",
-                    competency_text="Texte lesen und zentrale Informationen entnehmen",
-                    rating="+",
+            competency_ratings=competency_ratings or (
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
                 ),
-                ObservationCompetencyRatingDraft(
-                    competency_id="CMP-000002",
-                    subject_key="deutsch",
-                    subject_display_name="Deutsch",
-                    learning_area="Sprache untersuchen",
-                    competency_group="Wörter und Sätze",
-                    competency_text="Wörter nach Merkmalen ordnen",
-                    rating="--",
+                self._sample_observation_rating(
+                    "CMP-000002",
+                    "deutsch",
+                    "Deutsch",
+                    "Sprache untersuchen",
+                    "Wörter und Sätze",
+                    "Wörter nach Merkmalen ordnen",
+                    "--",
                 ),
             ),
+        )
+
+    def _sample_observation_rating(
+        self,
+        competency_id: str,
+        subject_key: str,
+        subject_display_name: str,
+        learning_area: str,
+        competency_group: str,
+        competency_text: str,
+        rating: str,
+    ) -> ObservationCompetencyRatingDraft:
+        return ObservationCompetencyRatingDraft(
+            competency_id=competency_id,
+            subject_key=subject_key,
+            subject_display_name=subject_display_name,
+            learning_area=learning_area,
+            competency_group=competency_group,
+            competency_text=competency_text,
+            rating=rating,
         )
 
 

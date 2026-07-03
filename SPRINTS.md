@@ -6,6 +6,30 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - Kompetenzkatalog fachlich stabilisieren 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] `competency_id` als explizites Katalogfeld ergaenzt
+- [x] Katalogeintraege validieren stabile ID, Fach und lesbare Labels
+- [x] Kompetenzen koennen nach Fach gruppiert gelesen werden
+- [x] EPU bleibt UI-Name, Sozialkompetenz bleibt eigener Bereich
+- [x] Keine freie Kompetenzbearbeitung, keine Schema-Migration, kein Excel/VBA und kein Commit umgesetzt
+
+## Korrektur - Fachanzeige bei Multi-Fach-Beobachtungen 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Schuelerprofil-Fachanzeige aus Kompetenzbewertungen abgeleitet
+- [x] Ein-Fach-Beobachtungen zeigen das gemeinsame Fach
+- [x] Multi-Fach-Beobachtungen zeigen `Fächerübergreifend`
+- [x] Einzelne Kompetenzbewertungen behalten ihr Fachlabel
+- [x] Keine Schema-Migration, kein Excel/VBA und kein Commit umgesetzt
+
 ## Sprint - Beobachtungen SQLite-Persistenz 🔄
 
 - [x] Status: Umgesetzt, nicht committed

@@ -6,11 +6,18 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.core.constants import COMPETENCY_ID_PREFIX, ID_SEQUENCE_WIDTH
-
 
 CURRICULUM_CATALOG_V1_PATH = (
     Path(__file__).resolve().parents[3] / "data" / "curriculum_catalog_v1.csv"
+)
+
+CATALOG_REQUIRED_FIELDS = (
+    "competency_id",
+    "subject_key",
+    "subject_display_name",
+    "learning_area",
+    "competency_group",
+    "competency_text",
 )
 
 
@@ -31,6 +38,11 @@ class CurriculumCatalogEntry:
     source_reference: str
     is_core_subject: bool
     is_active: bool
+
+    @property
+    def subject_id(self) -> str:
+        """Return the stable subject key used by observation persistence."""
+        return self.subject_key
 
     @property
     def competency_label(self) -> str:
@@ -60,6 +72,14 @@ class CurriculumSubjectOption:
     is_core_subject: bool
 
 
+@dataclass(frozen=True)
+class CurriculumCompetencyGroup:
+    """Active competencies grouped by one subject."""
+
+    subject: CurriculumSubjectOption
+    competencies: tuple[CurriculumCatalogEntry, ...]
+
+
 class CurriculumDesktopAdapter:
     """Load curriculum catalog data for desktop UI selection controls."""
 
@@ -69,13 +89,12 @@ class CurriculumDesktopAdapter:
     def list_entries(self) -> tuple[CurriculumCatalogEntry, ...]:
         """Return all catalog entries."""
         with self.catalog_path.open(newline="", encoding="utf-8") as csv_file:
-            return tuple(
-                self._entry_from_row(row, index)
-                for index, row in enumerate(
-                    csv.DictReader(csv_file, delimiter=";"),
-                    start=1,
-                )
+            entries = tuple(
+                self._entry_from_row(row)
+                for row in csv.DictReader(csv_file, delimiter=";")
             )
+        self._validate_unique_competency_ids(entries)
+        return entries
 
     def list_active_subjects(self) -> tuple[CurriculumSubjectOption, ...]:
         """Return active subject options, core subjects first."""
@@ -109,13 +128,23 @@ class CurriculumDesktopAdapter:
             if entry.is_active and entry.subject_key == subject_key
         )
 
+    def list_competencies_grouped_by_subject(self) -> tuple[CurriculumCompetencyGroup, ...]:
+        """Return active competencies grouped by their visible subject."""
+        return tuple(
+            CurriculumCompetencyGroup(
+                subject,
+                self.list_competencies_for_subject(subject.subject_key),
+            )
+            for subject in self.list_active_subjects()
+        )
+
     def _entry_from_row(
         self,
         row: dict[str, str],
-        index: int,
     ) -> CurriculumCatalogEntry:
+        self._validate_required_fields(row)
         return CurriculumCatalogEntry(
-            competency_id=f"{COMPETENCY_ID_PREFIX}-{index:0{ID_SEQUENCE_WIDTH}}",
+            competency_id=row["competency_id"].strip(),
             subject_key=row["subject_key"],
             subject_display_name=row["subject_display_name"],
             subject_full_name=row["subject_full_name"],
@@ -129,6 +158,23 @@ class CurriculumDesktopAdapter:
             is_core_subject=self._parse_bool(row["is_core_subject"]),
             is_active=self._parse_bool(row["is_active"]),
         )
+
+    def _validate_required_fields(self, row: dict[str, str]) -> None:
+        for field_name in CATALOG_REQUIRED_FIELDS:
+            if not row.get(field_name, "").strip():
+                raise ValueError(f"Curriculum catalog field is required: {field_name}")
+
+    def _validate_unique_competency_ids(
+        self,
+        entries: tuple[CurriculumCatalogEntry, ...],
+    ) -> None:
+        seen_ids: set[str] = set()
+        for entry in entries:
+            if entry.competency_id in seen_ids:
+                raise ValueError(
+                    f"Duplicate curriculum competency_id: {entry.competency_id}"
+                )
+            seen_ids.add(entry.competency_id)
 
     def _parse_bool(self, value: str) -> bool:
         return value.strip().casefold() == "true"
