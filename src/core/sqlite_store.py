@@ -709,6 +709,108 @@ class SQLiteObservationRepository:
                 )
         return observation
 
+    def update_observation(self, observation: ObservationRecord) -> ObservationRecord:
+        if self.get_observation(observation.observation_id) is None:
+            raise ObservationRepositoryError(
+                f"observation_id nicht gefunden: {observation.observation_id}"
+            )
+        with closing(self.database.connect()) as connection:
+            with connection:
+                connection.execute(
+                    """
+                    UPDATE observations
+                    SET
+                        student_id = ?,
+                        date = ?,
+                        subject_id = ?,
+                        context = ?,
+                        note = ?,
+                        active = ?,
+                        updated_at = ?
+                    WHERE observation_id = ?
+                    """,
+                    (
+                        observation.student_id,
+                        observation.date,
+                        observation.subject_id,
+                        observation.context,
+                        observation.note,
+                        int(observation.active),
+                        observation.updated_at,
+                        observation.observation_id,
+                    ),
+                )
+                connection.execute(
+                    """
+                    DELETE FROM observation_competency_ratings
+                    WHERE observation_id = ?
+                    """,
+                    (observation.observation_id,),
+                )
+                connection.executemany(
+                    """
+                    INSERT INTO observation_competency_ratings (
+                        observation_id,
+                        competency_id,
+                        subject_id,
+                        subject_display_name,
+                        learning_area,
+                        competency_group,
+                        competency_text,
+                        rating
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        (
+                            observation.observation_id,
+                            rating.competency_id,
+                            rating.subject_id,
+                            rating.subject_display_name,
+                            rating.learning_area,
+                            rating.competency_group,
+                            rating.competency_text,
+                            rating.rating,
+                        )
+                        for rating in observation.competency_ratings
+                    ),
+                )
+        return observation
+
+    def deactivate_observation(
+        self,
+        observation_id: str,
+        updated_at: str,
+    ) -> ObservationRecord:
+        observation = self.get_observation(observation_id)
+        if observation is None:
+            raise ObservationRepositoryError(
+                f"observation_id nicht gefunden: {observation_id}"
+            )
+        inactive_observation = ObservationRecord(
+            observation.observation_id,
+            observation.student_id,
+            observation.date,
+            observation.subject_id,
+            observation.context,
+            observation.note,
+            False,
+            observation.created_at,
+            updated_at,
+            observation.competency_ratings,
+        )
+        with closing(self.database.connect()) as connection:
+            with connection:
+                connection.execute(
+                    """
+                    UPDATE observations
+                    SET active = 0, updated_at = ?
+                    WHERE observation_id = ?
+                    """,
+                    (updated_at, observation_id),
+                )
+        return inactive_observation
+
     def _ratings_for(
         self,
         connection: sqlite3.Connection,

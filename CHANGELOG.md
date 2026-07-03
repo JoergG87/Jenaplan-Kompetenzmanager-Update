@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Sprint - Beobachtungen bearbeiten und löschen
+
+### Added
+
+- Schuelerprofil bietet pro Beobachtung Aktionen zum Bearbeiten und Loeschen.
+- Beobachtungen koennen mit Datum, Kontext, Notiz, Kompetenzen und Bewertungen aktualisiert werden.
+- Loeschen ist als Soft Delete ueber `observations.active = 0` umgesetzt.
+
+### Changed
+
+- Kompetenzuebersicht wird nach Bearbeiten oder Loeschen aus den aktiven Beobachtungen neu abgeleitet.
+- Multi-Fach-Beobachtungen berechnen das Profil-Fachlabel nach dem Bearbeiten erneut aus den Kompetenzfaechern.
+
+### Not Changed
+
+- Keine Medien, keine Berichte, kein UI-Redesign, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
 ## Sprint - Kompetenzen SQLite-persistent machen
 
 ### Added

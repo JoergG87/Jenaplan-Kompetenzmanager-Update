@@ -30,6 +30,8 @@ class StudentProfileScreen(QWidget):
 
     back_requested = Signal()
     observation_requested = Signal(object)
+    observation_edit_requested = Signal(str)
+    observation_delete_requested = Signal(str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -275,8 +277,22 @@ class StudentProfileScreen(QWidget):
         set_label_style(date_label, "card_title")
         subject_label = QLabel(observation.subject_display_name or "-")
         set_label_style(subject_label, "muted")
+        edit_button = QPushButton("Bearbeiten")
+        delete_button = QPushButton("Löschen")
+        edit_button.clicked.connect(
+            lambda _checked=False, observation_id=observation.observation_id: (
+                self.observation_edit_requested.emit(observation_id)
+            )
+        )
+        delete_button.clicked.connect(
+            lambda _checked=False, observation_id=observation.observation_id: (
+                self.observation_delete_requested.emit(observation_id)
+            )
+        )
         header.addWidget(date_label, 0)
         header.addWidget(subject_label, 1)
+        header.addWidget(edit_button, 0)
+        header.addWidget(delete_button, 0)
         return header
 
     def _observation_field(self, label: str, value: str) -> QLabel:

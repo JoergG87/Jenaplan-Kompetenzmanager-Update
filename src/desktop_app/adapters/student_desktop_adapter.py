@@ -4,10 +4,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.commands import CreateObservationCommand, CreateStudentCommand
+from src.application.commands import (
+    CreateObservationCommand,
+    CreateStudentCommand,
+    DeleteObservationCommand,
+    UpdateObservationCommand,
+)
 from src.application.dispatcher import (
     ApplicationCommandDispatcher,
     observation_create_handler,
+    observation_delete_handler,
+    observation_update_handler,
     student_create_handler,
 )
 from src.core.observation import (
@@ -31,6 +38,7 @@ from src.desktop_app.view_models.master_data_view_model import course_color_from
 from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_CROSS_SUBJECT_LABEL,
     ObservationDraftViewModel,
+    ObservationCompetencyRatingDraft,
     ObservationListItem,
     ObservationRatingViewModel,
     StudentCompetencyStatusViewModel,
@@ -179,24 +187,72 @@ class StudentDesktopAdapter:
             subject_id=self._subject_id_for_draft(draft),
             context=draft.context,
             note=draft.note,
-            competency_ratings=tuple(
-                ObservationCompetencyRatingRecord(
-                    rating.competency_id,
-                    rating.subject_key,
-                    rating.subject_display_name,
-                    rating.learning_area,
-                    rating.competency_group,
-                    rating.competency_text,
-                    rating.rating,
-                )
-                for rating in draft.competency_ratings
-            ),
+            competency_ratings=self._rating_records_from_draft(draft),
         )
 
     def save_observation(self, draft: ObservationDraftViewModel) -> object:
         """Persist an observation through the application stack."""
         command = self.create_observation_command(draft)
         return self._dispatcher().dispatch(command)
+
+    def create_update_observation_command(
+        self,
+        draft: ObservationDraftViewModel,
+    ) -> UpdateObservationCommand:
+        """Create an update command from GUI draft state."""
+        return UpdateObservationCommand(
+            observation_id=draft.observation_id,
+            student_id=draft.student_id,
+            date=draft.date_text,
+            subject_id=self._subject_id_for_draft(draft),
+            context=draft.context,
+            note=draft.note,
+            competency_ratings=self._rating_records_from_draft(draft),
+        )
+
+    def update_observation(self, draft: ObservationDraftViewModel) -> object:
+        """Update an existing observation through the application stack."""
+        command = self.create_update_observation_command(draft)
+        return self._dispatcher().dispatch(command)
+
+    def delete_observation(self, observation_id: str) -> object:
+        """Soft-delete an observation through the application stack."""
+        command = DeleteObservationCommand(observation_id=observation_id)
+        return self._dispatcher().dispatch(command)
+
+    def observation_draft_for_edit(
+        self,
+        observation_id: str,
+    ) -> ObservationDraftViewModel | None:
+        """Return an editable draft for one persisted observation."""
+        observation = SQLiteObservationRepository(self.database).get_observation(
+            observation_id
+        )
+        if observation is None or not observation.active:
+            return None
+        student = self.get_student_profile(observation.student_id)
+        return ObservationDraftViewModel(
+            student_id=observation.student_id,
+            student_name=student.display_name if student else observation.student_id,
+            date_text=observation.date,
+            subject_id=observation.subject_id,
+            subject_display_name=self._subject_display_name(observation),
+            context=observation.context,
+            note=observation.note,
+            competency_ratings=tuple(
+                ObservationCompetencyRatingDraft(
+                    rating.subject_id,
+                    rating.subject_display_name,
+                    rating.learning_area,
+                    rating.competency_group,
+                    rating.competency_text,
+                    rating.rating,
+                    rating.competency_id,
+                )
+                for rating in observation.competency_ratings
+            ),
+            observation_id=observation.observation_id,
+        )
 
     def list_observations_for_student(
         self,
@@ -280,6 +336,14 @@ class StudentDesktopAdapter:
             "observation.create",
             observation_create_handler(observation_service),
         )
+        dispatcher.register(
+            "observation.update",
+            observation_update_handler(observation_service),
+        )
+        dispatcher.register(
+            "observation.delete",
+            observation_delete_handler(observation_service),
+        )
         return dispatcher
 
     def _open_database(self) -> SQLiteDatabase:
@@ -352,6 +416,23 @@ class StudentDesktopAdapter:
         if len(subjects) == 1:
             return next(iter(subjects))
         return draft.subject_id
+
+    def _rating_records_from_draft(
+        self,
+        draft: ObservationDraftViewModel,
+    ) -> tuple[ObservationCompetencyRatingRecord, ...]:
+        return tuple(
+            ObservationCompetencyRatingRecord(
+                rating.competency_id,
+                rating.subject_key,
+                rating.subject_display_name,
+                rating.learning_area,
+                rating.competency_group,
+                rating.competency_text,
+                rating.rating,
+            )
+            for rating in draft.competency_ratings
+        )
 
     def _subjects_from_draft(
         self,

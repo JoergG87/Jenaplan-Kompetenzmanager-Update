@@ -324,6 +324,8 @@ Registrierte Stammdaten-Repository-Methoden:
 - `SQLiteMasterDataRepository.next_student_group_id()`
 - `SQLiteMasterDataRepository.next_course_id()`
 - `SQLiteObservationRepository.create_observation(observation)`
+- `SQLiteObservationRepository.update_observation(observation)`
+- `SQLiteObservationRepository.deactivate_observation(observation_id, updated_at)`
 - `SQLiteObservationRepository.list_observations()`
 - `SQLiteObservationRepository.list_observations_for_student(student_id)`
 - `SQLiteObservationRepository.get_observation(observation_id)`
@@ -353,13 +355,19 @@ Registrierte Python-Klassen und Funktionen:
 - `ErrorResult`
 - `CreateStudentCommand`
 - `CreateObservationCommand`
+- `UpdateObservationCommand`
+- `DeleteObservationCommand`
 - `student_create_handler(service)`
 - `observation_create_handler(service)`
+- `observation_update_handler(service)`
+- `observation_delete_handler(service)`
 
 Registrierte Command-Namen:
 
 - `student.create`
 - `observation.create`
+- `observation.update`
+- `observation.delete`
 
 ## Desktop-App
 
@@ -428,6 +436,10 @@ Registrierte Python-Klassen und Funktionen:
 - `COLOR_GREEN`
 - `COLOR_ORANGE`
 - `StudentDesktopAdapter`
+- `StudentDesktopAdapter.create_update_observation_command(draft)`
+- `StudentDesktopAdapter.update_observation(draft)`
+- `StudentDesktopAdapter.delete_observation(observation_id)`
+- `StudentDesktopAdapter.observation_draft_for_edit(observation_id)`
 - `StudentDesktopAdapter.list_competency_overview_for_student(student_id)`
 - `MasterDataDesktopAdapter`
 - `CurriculumDesktopAdapter`
@@ -461,6 +473,7 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationCompetencyRatingDraft.competency_id`
 - `ObservationCompetencyRatingDraft.subject_display_name`
 - `ObservationDraftViewModel`
+- `ObservationDraftViewModel.observation_id`
 - `ObservationDraftViewModel.subject_id`
 - `ObservationDraftViewModel.subject_display_name`
 - `ObservationListItem`
@@ -471,6 +484,7 @@ Registrierte Python-Klassen und Funktionen:
 - `OBSERVATION_CROSS_SUBJECT_LABEL`
 - `OBSERVATION_RATING_OPTIONS`
 - `OBSERVATION_SAVE_SUCCESS_MESSAGE`
+- `OBSERVATION_UPDATE_SUCCESS_MESSAGE`
 - `OBSERVATION_SAVE_VALIDATION_MESSAGE`
 - `OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE`
 - `OBSERVATION_ATTACHMENT_EMPTY_STATE`

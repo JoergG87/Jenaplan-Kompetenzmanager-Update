@@ -6,6 +6,20 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - Beobachtungen bearbeiten und löschen 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Beobachtungen koennen aus dem Schuelerprofil heraus zum Bearbeiten geoeffnet werden
+- [x] Datum, Kontext, Notiz, Kompetenzen und Bewertungen werden aktualisiert
+- [x] Kompetenzbewertungen werden beim Speichern atomar ersetzt
+- [x] Loeschen setzt `observations.active = 0`
+- [x] Beobachtungsliste und Kompetenzuebersicht laden danach aktive Beobachtungen neu
+- [x] Multi-Fach-Fachanzeige wird aus den Kompetenzfaechern neu berechnet
+- [x] Keine Medien, keine Berichte, kein UI-Redesign, kein Excel/VBA und kein Commit umgesetzt
+
 ## Sprint - Kompetenzen SQLite-persistent machen 🔄
 
 - [x] Status: Umgesetzt, nicht committed

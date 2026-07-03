@@ -22,6 +22,8 @@ OBSERVATION_RATING_OPTIONS = (
 
 OBSERVATION_SAVE_SUCCESS_MESSAGE = "Beobachtung wurde gespeichert."
 
+OBSERVATION_UPDATE_SUCCESS_MESSAGE = "Beobachtung wurde aktualisiert."
+
 OBSERVATION_SAVE_VALIDATION_MESSAGE = (
     "Bitte mindestens eine Kompetenz mit Bewertung auswählen."
 )
@@ -83,6 +85,7 @@ class ObservationDraftViewModel:
     subject_id: str = ""
     subject_display_name: str = ""
     attachment_names: tuple[str, ...] = ()
+    observation_id: str = ""
 
 
 @dataclass(frozen=True)

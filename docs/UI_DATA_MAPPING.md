@@ -53,7 +53,9 @@ Spalten:
 | Kurs | `data_students.course_id` -> `data_courses.course_name` | Anzeige | Nein | `data_courses` | Jahrgang |
 | Beobachtungsverlauf | `data_observations` + `data_observation_competencies` | Anzeige | Nein | `data_observations` | kompakte Karten, neueste Beobachtungen oben; Fachlabel aus Kompetenzfaechern, bei mehreren Faechern `Fächerübergreifend` |
 | Kompetenzuebersicht | `data_observation_competencies.competency_id` -> SQLite `competencies` + `data_observations.date` | Anzeige | Nein | `data_observation_competencies` | nur beobachtete Kompetenzen; gruppiert nach Fach; letzte Bewertung je Kompetenz wird aus Beobachtungen abgeleitet |
-| Neue Beobachtung | `data_students.student_id` | Navigation | Geplant | `data_students` | startet spaeter zentralen Beobachtungsdialog |
+| Neue Beobachtung | `data_students.student_id` | Navigation | Ja (ueber freigegebenen Prozess) | `data_observations` | startet zentralen Beobachtungsdialog und speichert ueber Adapter/Service/Repository |
+| Beobachtung bearbeiten | `data_observations.observation_id` | Navigation / Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | oeffnet bestehenden Beobachtungsdatensatz im Dialog; Speichern ersetzt die Kompetenzbewertungen atomar |
+| Beobachtung loeschen | `data_observations.observation_id` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | Soft Delete ueber `observations.active = 0`; aktive Profil- und Kompetenzuebersichten blenden die Beobachtung aus |
 
 ## Legacy: Schuelerverwaltung / `dlg_neuer_schueler`
 
@@ -135,8 +137,8 @@ Regel: Die Schueleruebersicht liest persistente Schueler ueber `StudentDesktopAd
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | ausgewaehlter Schueler | `student_id` aus Navigation -> `data_students` | Anzeige | Nein | `data_students` | Namen werden nicht als technische Identitaet verwendet |
-| Fachauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Dialog, spaeter `data_subjects` | Eingabe | Nein | Kompetenzverwaltung / Lehrplanpflege | filtert die sichtbare Kompetenzauswahl; App-Anzeigename `EPU`, kein App-Fach `Sachunterricht` |
-| Kompetenzauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Dialog, spaeter `data_competencies` + `data_subjects` | Eingabe | Nein | `data_competencies` | jede Kompetenz hat `competency_id`, `subject_key` und lesbares Label; ausgewaehlte Kompetenzbewertungen koennen aus mehreren Faechern stammen |
+| Fachauswahl | SQLite `competencies.subject_id` und `competencies.subject_name` | Eingabe | Nein | Kompetenzverwaltung / Lehrplanpflege | filtert die sichtbare Kompetenzauswahl; App-Anzeigename `EPU`, kein App-Fach `Sachunterricht`; bei Bearbeitung aus bestehenden Kompetenzbewertungen vorbelegt |
+| Kompetenzauswahl | SQLite `competencies` | Eingabe | Ja | `data_observation_competencies` | jede Kompetenz hat `competency_id`, Fach und lesbares Label; ausgewaehlte Kompetenzbewertungen koennen aus mehreren Faechern stammen |
 | Beobachtungsdatum | SQLite `observations.date` | Eingabe | Ja | `observations` | Datum gehoert zur Beobachtung |
 | Beobachtungsnotiz | SQLite `observations.note` | Eingabe | Ja | `observations` | Schreiben ueber Adapter, Command, Service und Repository |
 | Beobachtungskontext | SQLite `observations.context` | Eingabe | Ja | `observations` | Kontext gehoert zur Beobachtung |

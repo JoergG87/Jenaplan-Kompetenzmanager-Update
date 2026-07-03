@@ -370,6 +370,61 @@ class SQLiteSpikeTest(unittest.TestCase):
 
         self.assertEqual(observations, ())
 
+    def test_update_observation_replaces_competency_ratings(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = create_sqlite_seed_database(Path(temp_dir) / "kompetenzmanager.sqlite")
+            repository = SQLiteObservationRepository(database)
+            repository.create_observation(self._sample_observation())
+            updated_observation = ObservationRecord(
+                f"{OBSERVATION_ID_PREFIX}-000001",
+                f"{STUDENT_ID_PREFIX}-000001",
+                "2026-07-04",
+                "deutsch",
+                "Präsentation",
+                "Aktualisierte Beobachtung.",
+                True,
+                "2026-07-03T10:00:00+00:00",
+                "2026-07-04T10:00:00+00:00",
+                (self._sample_rating("CMP-000002", "-"),),
+            )
+
+            repository.update_observation(updated_observation)
+            stored_observation = repository.get_observation(
+                f"{OBSERVATION_ID_PREFIX}-000001"
+            )
+
+        self.assertIsNotNone(stored_observation)
+        self.assertEqual(stored_observation.date, "2026-07-04")
+        self.assertEqual(stored_observation.context, "Präsentation")
+        self.assertEqual(stored_observation.note, "Aktualisierte Beobachtung.")
+        self.assertEqual(
+            tuple(rating.competency_id for rating in stored_observation.competency_ratings),
+            ("CMP-000002",),
+        )
+        self.assertEqual(stored_observation.competency_ratings[0].rating, "-")
+
+    def test_deactivate_observation_hides_it_from_student_observations(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = create_sqlite_seed_database(Path(temp_dir) / "kompetenzmanager.sqlite")
+            repository = SQLiteObservationRepository(database)
+            repository.create_observation(self._sample_observation())
+
+            repository.deactivate_observation(
+                f"{OBSERVATION_ID_PREFIX}-000001",
+                "2026-07-04T10:00:00+00:00",
+            )
+            hidden_observations = repository.list_observations_for_student(
+                f"{STUDENT_ID_PREFIX}-000001"
+            )
+            stored_observation = repository.get_observation(
+                f"{OBSERVATION_ID_PREFIX}-000001"
+            )
+
+        self.assertEqual(hidden_observations, ())
+        self.assertIsNotNone(stored_observation)
+        self.assertFalse(stored_observation.active)
+        self.assertEqual(stored_observation.updated_at, "2026-07-04T10:00:00+00:00")
+
     def test_existing_projection_can_be_built_from_sqlite_data(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"

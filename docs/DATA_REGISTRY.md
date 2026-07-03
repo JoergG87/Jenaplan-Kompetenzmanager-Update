@@ -60,6 +60,8 @@ Python bleibt fachliche Schreibschicht.
 
 PySide-Dialoge verwenden fuer produktive Schreibprozesse freigegebene Adapter, Commands, Services und Repositories.
 
+Beobachtungen werden nicht hart geloescht. `observations.active = 0` blendet eine Beobachtung aus aktiven Profil- und Kompetenzuebersichten aus; die zugehoerigen `observation_competency_ratings` bleiben historisch erhalten.
+
 VBA-UserForms und worksheet-basierte Dialogseiten sind historische Artefakte der Excel-Linie und kein Zielpfad fuer neue Features.
 
 Feature 1.4a gibt fuer `student.create` den Runtime Adapter und den Projection Refresh Contract frei.

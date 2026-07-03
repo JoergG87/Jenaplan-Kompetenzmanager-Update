@@ -155,6 +155,58 @@ class ObservationService:
         )
         return self.repository.create_observation(observation)
 
+    def update_observation(
+        self,
+        *,
+        observation_id: str,
+        student_id: str,
+        date: str,
+        subject_id: str,
+        context: str,
+        note: str,
+        competency_ratings: tuple[ObservationCompetencyRatingRecord, ...],
+    ) -> ObservationRecord:
+        observation_id = self._require_observation_id(observation_id)
+        existing_observation = self.repository.get_observation(observation_id)
+        if existing_observation is None:
+            raise ObservationRepositoryError(
+                f"observation_id nicht gefunden: {observation_id}"
+            )
+        observation_data = {
+            "student_id": student_id,
+            "date": date,
+            "subject_id": subject_id,
+            "context": context,
+            "note": note,
+            "competency_ratings": competency_ratings,
+        }
+        self.validator.validate(observation_data, self.valid_student_ids)
+        observation = ObservationRecord(
+            observation_id,
+            student_id.strip(),
+            date.strip(),
+            subject_id.strip(),
+            context.strip(),
+            note,
+            True,
+            existing_observation.created_at,
+            self._timestamp(),
+            competency_ratings,
+        )
+        return self.repository.update_observation(observation)
+
+    def delete_observation(self, *, observation_id: str) -> ObservationRecord:
+        observation_id = self._require_observation_id(observation_id)
+        existing_observation = self.repository.get_observation(observation_id)
+        if existing_observation is None:
+            raise ObservationRepositoryError(
+                f"observation_id nicht gefunden: {observation_id}"
+            )
+        return self.repository.deactivate_observation(
+            observation_id,
+            self._timestamp(),
+        )
+
     def _generate_observation_id(self) -> str:
         used_ids = {
             observation.observation_id
@@ -169,3 +221,8 @@ class ObservationService:
 
     def _timestamp(self) -> str:
         return self.now_provider().replace(microsecond=0).isoformat()
+
+    def _require_observation_id(self, observation_id: str) -> str:
+        if not isinstance(observation_id, str) or not observation_id.strip():
+            raise ObservationValidationError("observation_id darf nicht leer sein.")
+        return observation_id.strip()

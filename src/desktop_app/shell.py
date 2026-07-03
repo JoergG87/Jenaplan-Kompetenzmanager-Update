@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QStackedWidget,
     QVBoxLayout,
@@ -148,6 +149,12 @@ class AppShell(QMainWindow):
         self.student_profile_screen.observation_requested.connect(
             self.open_new_observation_dialog
         )
+        self.student_profile_screen.observation_edit_requested.connect(
+            self.open_edit_observation_dialog
+        )
+        self.student_profile_screen.observation_delete_requested.connect(
+            self.delete_observation
+        )
         self.master_data_screen.group_add_requested.connect(self.open_new_group_dialog)
         self.master_data_screen.group_rename_requested.connect(
             self.open_rename_group_dialog
@@ -250,6 +257,52 @@ class AppShell(QMainWindow):
         if dialog.exec():
             self.show_student_profile(student.student_id)
             self.status_label.setText("Beobachtung wurde gespeichert.")
+
+    def open_edit_observation_dialog(self, observation_id: str) -> None:
+        """Open the observation dialog with persisted observation data."""
+        draft = self.adapter.observation_draft_for_edit(observation_id)
+        if draft is None:
+            self.status_label.setText("Beobachtung wurde nicht gefunden.")
+            return
+        student = self.adapter.get_student_profile(draft.student_id)
+        if student is None:
+            self.status_label.setText("Schülerprofil wurde nicht gefunden.")
+            return
+        dialog = NewObservationDialog(
+            student,
+            self.curriculum_adapter,
+            self.adapter,
+            initial_draft=draft,
+        )
+        if dialog.exec():
+            self.show_student_profile(student.student_id)
+            self.status_label.setText("Beobachtung wurde aktualisiert.")
+
+    def delete_observation(self, observation_id: str) -> None:
+        """Soft-delete an observation and refresh the current profile."""
+        draft = self.adapter.observation_draft_for_edit(observation_id)
+        if draft is None:
+            self.status_label.setText("Beobachtung wurde nicht gefunden.")
+            return
+        response = QMessageBox.question(
+            self,
+            "Beobachtung löschen",
+            "Diese Beobachtung aus dem Profil ausblenden?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if response != QMessageBox.StandardButton.Yes:
+            return
+        result = self.adapter.delete_observation(observation_id)
+        if not getattr(result, "success", False):
+            QMessageBox.warning(
+                self,
+                "Löschen fehlgeschlagen",
+                str(getattr(result, "message", "Beobachtung konnte nicht gelöscht werden.")),
+            )
+            return
+        self.show_student_profile(draft.student_id)
+        self.status_label.setText("Beobachtung wurde gelöscht.")
 
     def open_app_info_dialog(self) -> None:
         """Open the compact app information dialog."""

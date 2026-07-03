@@ -115,7 +115,8 @@ Liest:
 
 Schreibt:
 
-- nichts
+- nichts direkt
+- startet `Beobachtung erfassen`, `Beobachtung aendern` und `Beobachtung loeschen` ueber freigegebene Adapter-/Service-/Repository-Prozesse
 
 UI-Projektionen:
 
@@ -253,7 +254,7 @@ Schreibt:
 Navigation:
 
 - `student_id`
-- spaeter `observation_id`
+- `observation_id`
 - spaeter `competency_id`
 
 UI-Projektionen:
@@ -263,11 +264,12 @@ UI-Projektionen:
 - Kurs
 - Beobachtungsverlauf
 - Kompetenzuebersicht aus beobachteten Kompetenzen
+- Aktionen zum Bearbeiten und Loeschen einzelner Beobachtungen
 - Medienhinweise
 
 Regel:
 
-Das Schuelerprofil zeigt Daten eines Schuelers und startet spaeter freigegebene Dialoge. Es schreibt selbst keine fachlichen Daten. Kompetenzstaende werden aus Beobachtungen und SQLite `competencies` abgeleitet.
+Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Dialoge. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Kompetenzstaende werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet.
 
 ## Schuelerverwaltung / PySide-Dialog `Neuer Schüler`
 
@@ -335,9 +337,7 @@ UI-Projektionen:
 
 Regel:
 
-Der Beobachtungsdialog ist ein freizugebender Schreibprozess. Ohne Data-Lifecycle-Eintrag darf er nicht implementiert werden.
-
-Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden.
+Der Beobachtungsdialog ist der freigegebene Schreibprozess fuer Erfassung und Bearbeitung von Beobachtungen. Bei Bearbeitung wird eine bestehende `observation_id` geladen; Speichern ersetzt die Kompetenzbewertungen atomar. Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden.
 
 Dokumente und Medien sind nur Anhaenge zur Beobachtung und ersetzen keine Beobachtungsdaten.
 Der PySide-Dialog schreibt nicht direkt in SQLite, sondern ueber Adapter, Command, Service und Repository. Jede ausgewaehlte Kompetenz speichert ihre eigene Bewertung.

@@ -304,6 +304,57 @@ Automatisch profitierende Ansichten:
 Regel: Beobachtung ist Source of Truth. Auswertungen leiten sich daraus ab.
 Beobachtung und Kompetenzbewertungen werden atomar gespeichert; eine Bewertung gehoert zur Kompetenz, nicht global zur Beobachtung. Medien/Anhaenge und Berichte bleiben separate spaetere Prozesse.
 
+## Beobachtung aendern
+
+Start: Lehrkraft korrigiert eine bestehende Beobachtung im Schuelerprofil.
+
+Schreibprozess: PySide-Schuelerprofil oeffnet den Beobachtungsdialog mit `observation_id`; Speichern laeuft ueber `StudentDesktopAdapter`, `observation.update`, `ObservationService`, `SQLiteObservationRepository` und SQLite.
+
+Betroffene Datenquellen:
+
+- SQLite `observations`
+- SQLite `observation_competency_ratings`
+- Export-/Legacy-Projektionen `data_observations` und `data_observation_competencies`
+
+Erforderliche IDs:
+
+- bestehender `observation_id`
+- bestehender `student_id`
+- bestehende `competency_id` je Bewertung
+
+Automatisch profitierende Ansichten:
+
+- Schuelerprofil
+- Kompetenzuebersicht
+- Kompetenzansicht
+- Berichte
+
+Regel: `observation_id` bleibt erhalten. Beobachtungsfelder werden aktualisiert; Kompetenzbewertungen werden fuer die Beobachtung atomar ersetzt. Die Fachanzeige wird weiter aus den Kompetenzfaechern abgeleitet.
+
+## Beobachtung loeschen
+
+Start: Lehrkraft blendet eine fehlerhafte Beobachtung aus dem Schuelerprofil aus.
+
+Schreibprozess: PySide-Schuelerprofil sendet `observation_id`; Loeschen laeuft ueber `StudentDesktopAdapter`, `observation.delete`, `ObservationService`, `SQLiteObservationRepository` und SQLite.
+
+Betroffene Datenquellen:
+
+- SQLite `observations`
+- SQLite `observation_competency_ratings`
+
+Erforderliche IDs:
+
+- bestehender `observation_id`
+
+Automatisch profitierende Ansichten:
+
+- Schuelerprofil
+- Kompetenzuebersicht
+- Kompetenzansicht
+- Berichte
+
+Regel: Loeschen ist ein Soft Delete und setzt `observations.active = 0`. Rating-Zuordnungen bleiben historisch erhalten, aktive Profil- und Kompetenzuebersichten lesen nur aktive Beobachtungen.
+
 ## Kompetenz ergaenzen
 
 Start: Fachliche Kompetenzstruktur wird erweitert.

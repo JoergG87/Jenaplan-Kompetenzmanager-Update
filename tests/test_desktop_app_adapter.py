@@ -12,9 +12,13 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton
 
-from src.application.commands import CreateObservationCommand, CreateStudentCommand
+from src.application.commands import (
+    CreateObservationCommand,
+    CreateStudentCommand,
+    UpdateObservationCommand,
+)
 from src.application.dispatcher import SuccessResult
 from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PREFIX
 from src.core.sqlite_store import (
@@ -59,6 +63,7 @@ from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_CROSS_SUBJECT_LABEL,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_SUCCESS_MESSAGE,
+    OBSERVATION_UPDATE_SUCCESS_MESSAGE,
     ObservationCompetencyRatingDraft,
     ObservationDraftViewModel,
     ObservationListItem,
@@ -148,6 +153,121 @@ class DesktopAppAdapterTest(unittest.TestCase):
         ).list_observations_for_student(f"{STUDENT_ID_PREFIX}-000001")
         self.assertEqual(len(stored_observations), 1)
         self.assertEqual(stored_observations[0].competency_ratings[0].rating, "+")
+
+    def test_adapter_creates_update_observation_command(self) -> None:
+        draft = self._sample_observation_draft(observation_id="OBS-000001")
+
+        command = self.adapter.create_update_observation_command(draft)
+
+        self.assertIsInstance(command, UpdateObservationCommand)
+        self.assertEqual(command.command_name, "observation.update")
+        self.assertEqual(command.observation_id, "OBS-000001")
+        self.assertEqual(command.subject_id, "deutsch")
+
+    def test_update_observation_updates_saved_data_and_replaces_ratings(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft())
+        edit_draft = self._sample_observation_draft(
+            observation_id="OBS-000001",
+            date_text="2026-07-04",
+            context="Präsentation",
+            note="Aktualisierte Beobachtung.",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000003",
+                    "epu",
+                    "EPU",
+                    "Natur und Umwelt",
+                    "Erkunden und beschreiben",
+                    "Naturphänomene beobachten und beschreiben",
+                    "--",
+                ),
+            ),
+        )
+
+        result = self.adapter.update_observation(edit_draft)
+        stored_observation = SQLiteObservationRepository(
+            self.database
+        ).get_observation("OBS-000001")
+
+        self.assertIsInstance(result, SuccessResult)
+        self.assertIsNotNone(stored_observation)
+        self.assertEqual(stored_observation.date, "2026-07-04")
+        self.assertEqual(stored_observation.subject_id, "epu")
+        self.assertEqual(stored_observation.context, "Präsentation")
+        self.assertEqual(stored_observation.note, "Aktualisierte Beobachtung.")
+        self.assertEqual(
+            tuple(rating.competency_id for rating in stored_observation.competency_ratings),
+            ("CMP-000003",),
+        )
+        self.assertEqual(stored_observation.competency_ratings[0].rating, "--")
+
+    def test_delete_observation_uses_soft_delete_and_hides_profile_item(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft())
+
+        result = self.adapter.delete_observation("OBS-000001")
+        stored_observation = SQLiteObservationRepository(
+            self.database
+        ).get_observation("OBS-000001")
+        visible_observations = self.adapter.list_observations_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertIsInstance(result, SuccessResult)
+        self.assertFalse(result.value.active)
+        self.assertIsNotNone(stored_observation)
+        self.assertFalse(stored_observation.active)
+        self.assertEqual(visible_observations, ())
+
+    def test_deleted_observation_does_not_affect_competency_overview(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft())
+        self.assertTrue(self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        ))
+
+        self.adapter.delete_observation("OBS-000001")
+        groups = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(groups, ())
+
+    def test_update_multisubject_observation_recalculates_subject_label(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft())
+        edit_draft = self._sample_observation_draft(
+            observation_id="OBS-000001",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+                self._sample_observation_rating(
+                    "CMP-000003",
+                    "epu",
+                    "EPU",
+                    "Natur und Umwelt",
+                    "Erkunden und beschreiben",
+                    "Naturphänomene beobachten und beschreiben",
+                    "-",
+                ),
+            ),
+        )
+
+        result = self.adapter.update_observation(edit_draft)
+        observations = self.adapter.list_observations_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(result.value.subject_id, "cross_subject")
+        self.assertEqual(observations[0].subject_display_name, OBSERVATION_CROSS_SUBJECT_LABEL)
+        self.assertEqual(
+            tuple(rating.subject_display_name for rating in observations[0].competency_ratings),
+            ("Deutsch", "EPU"),
+        )
 
     def test_observation_is_loaded_after_adapter_reinitialization(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft())
@@ -1427,6 +1547,52 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("list_competency_overview_for_student(student_id)", profile_source)
         self.assertIn("set_student(profile, observations, competency_groups)", profile_source)
 
+    def test_shell_opens_observation_for_edit_and_refreshes_profile(self) -> None:
+        source = inspect.getsource(shell.AppShell.open_edit_observation_dialog)
+
+        self.assertIn("observation_draft_for_edit(observation_id)", source)
+        self.assertIn("initial_draft=draft", source)
+        self.assertIn("self.show_student_profile(student.student_id)", source)
+        self.assertIn("Beobachtung wurde aktualisiert.", source)
+
+    def test_shell_soft_deletes_observation_and_refreshes_profile(self) -> None:
+        source = inspect.getsource(shell.AppShell.delete_observation)
+
+        self.assertIn("self.adapter.delete_observation(observation_id)", source)
+        self.assertIn("self.show_student_profile(draft.student_id)", source)
+        self.assertIn("Beobachtung wurde gelöscht.", source)
+
+    def test_observation_dialog_updates_existing_observation(self) -> None:
+        source = inspect.getsource(new_observation_dialog.NewObservationDialog.save_draft)
+
+        self.assertIn("draft.observation_id", source)
+        self.assertIn("self.observation_adapter.update_observation(draft)", source)
+        self.assertIn("OBSERVATION_UPDATE_SUCCESS_MESSAGE", source)
+
+    def test_student_profile_observation_cards_offer_edit_and_delete(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (
+                ObservationListItem(
+                    "OBS-000001",
+                    f"{STUDENT_ID_PREFIX}-000001",
+                    "2026-07-03",
+                    "Deutsch",
+                    "Leseübung",
+                    "Liest einen bekannten Text.",
+                    (),
+                ),
+            ),
+        )
+
+        button_texts = [button.text() for button in screen.findChildren(QPushButton)]
+
+        self.assertIn("Bearbeiten", button_texts)
+        self.assertIn("Löschen", button_texts)
+        self.assertIsNotNone(app)
+
     def test_student_profile_renders_persisted_observations(self) -> None:
         source = inspect.getsource(importlib.import_module(
             "src.desktop_app.screens.student_profile_screen"
@@ -1679,7 +1845,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def _sample_observation_draft(
         self,
         *,
+        observation_id: str = "",
         date_text: str = "2026-07-03",
+        context: str = "Leseübung",
         note: str = "Liest einen bekannten Text.",
         subject_id: str = "deutsch",
         subject_display_name: str = "Deutsch",
@@ -1691,7 +1859,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             date_text=date_text,
             subject_id=subject_id,
             subject_display_name=subject_display_name,
-            context="Leseübung",
+            context=context,
             note=note,
             competency_ratings=competency_ratings or (
                 self._sample_observation_rating(
@@ -1713,6 +1881,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     "--",
                 ),
             ),
+            observation_id=observation_id,
         )
 
     def _sample_observation_rating(

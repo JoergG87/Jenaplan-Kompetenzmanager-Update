@@ -106,3 +106,31 @@ def observation_create_handler(service: Any) -> Callable[[object], object]:
         )
 
     return handle
+
+
+def observation_update_handler(service: Any) -> Callable[[object], object]:
+    """Create a handler that delegates `observation.update` to ObservationService."""
+
+    def handle(command: object) -> object:
+        return service.update_observation(
+            observation_id=getattr(command, "observation_id"),
+            student_id=getattr(command, "student_id"),
+            date=getattr(command, "date"),
+            subject_id=getattr(command, "subject_id"),
+            context=getattr(command, "context"),
+            note=getattr(command, "note"),
+            competency_ratings=getattr(command, "competency_ratings"),
+        )
+
+    return handle
+
+
+def observation_delete_handler(service: Any) -> Callable[[object], object]:
+    """Create a handler that delegates `observation.delete` to ObservationService."""
+
+    def handle(command: object) -> object:
+        return service.delete_observation(
+            observation_id=getattr(command, "observation_id"),
+        )
+
+    return handle

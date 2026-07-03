@@ -33,6 +33,7 @@ from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_SUCCESS_MESSAGE,
     OBSERVATION_SAVE_VALIDATION_MESSAGE,
+    OBSERVATION_UPDATE_SUCCESS_MESSAGE,
     ObservationCompetencyRatingDraft,
     ObservationDraftViewModel,
 )
@@ -48,16 +49,20 @@ class NewObservationDialog(QDialog):
         student: StudentDetailViewModel,
         curriculum_adapter: CurriculumDesktopAdapter | None = None,
         observation_adapter: object | None = None,
+        initial_draft: ObservationDraftViewModel | None = None,
     ) -> None:
         super().__init__()
         self.student = student
         self.curriculum_adapter = curriculum_adapter or CurriculumDesktopAdapter()
         self.observation_adapter = observation_adapter
+        self.initial_draft = initial_draft
         self.attachment_feedback_label = QLabel("")
         self.competency_rating_entries: dict[str, object] = {}
         self.competency_rating_widgets: dict[str, QComboBox] = {}
         self.competency_rating_rows: dict[str, QWidget] = {}
-        self.setWindowTitle("Neue Beobachtung")
+        self.setWindowTitle(
+            "Beobachtung bearbeiten" if self.initial_draft else "Neue Beobachtung"
+        )
         self.setModal(True)
         self.setMinimumSize(700, 560)
         self.resize(760, 640)
@@ -68,7 +73,12 @@ class NewObservationDialog(QDialog):
         layout.setContentsMargins(18, 18, 18, 14)
         layout.setSpacing(10)
 
-        title = QLabel(f"Neue Beobachtung für {self.student.display_name}")
+        title_text = (
+            "Beobachtung bearbeiten"
+            if self.initial_draft
+            else f"Neue Beobachtung für {self.student.display_name}"
+        )
+        title = QLabel(title_text)
         set_label_style(title, "dialog_title")
         student_context = QLabel(
             f"{self.student.group_name} · {self.student.course_name}"
@@ -135,6 +145,7 @@ class NewObservationDialog(QDialog):
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.save_draft)
         layout.addWidget(buttons)
+        self._apply_initial_draft()
 
     def _populate_subjects(self) -> None:
         for subject in self.curriculum_adapter.list_active_subjects():
@@ -261,6 +272,7 @@ class NewObservationDialog(QDialog):
             note=self.note_input.toPlainText(),
             subject_id=str(self.subject_select.currentData() or ""),
             subject_display_name=self.subject_select.currentText(),
+            observation_id=self.initial_draft.observation_id if self.initial_draft else "",
         )
 
     def _selected_competency_ratings(self) -> tuple[ObservationCompetencyRatingDraft, ...]:
@@ -301,20 +313,35 @@ class NewObservationDialog(QDialog):
         self,
         competency_key: str,
         catalog_entry: object,
+        initial_rating: str = "",
     ) -> None:
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(8)
         subject_display_name = getattr(catalog_entry, "subject_display_name")
-        competency_display_name = getattr(catalog_entry, "competency_display_name")
+        competency_display_name = getattr(
+            catalog_entry,
+            "competency_display_name",
+            getattr(catalog_entry, "learning_area"),
+        )
         label = QLabel(f"{subject_display_name} · {competency_display_name}")
-        label.setToolTip(getattr(catalog_entry, "competency_detail_label"))
+        label.setToolTip(
+            getattr(
+                catalog_entry,
+                "competency_detail_label",
+                getattr(catalog_entry, "competency_text", ""),
+            )
+        )
         label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         rating_select = QComboBox()
         rating_select.setMinimumWidth(190)
         rating_select.addItem("Bewertung auswählen", "")
         for rating_option in OBSERVATION_RATING_OPTIONS:
             rating_select.addItem(rating_option, rating_option.split(" ", 1)[0])
+        if initial_rating:
+            rating_index = rating_select.findData(initial_rating)
+            if rating_index >= 0:
+                rating_select.setCurrentIndex(rating_index)
         remove_button = QPushButton("Entfernen")
         remove_button.clicked.connect(
             lambda _checked=False, key=competency_key: self._remove_competency_rating(
@@ -396,12 +423,52 @@ class NewObservationDialog(QDialog):
         self.competency_ratings_layout.addWidget(self.competency_ratings_empty_state)
 
     def _competency_key(self, catalog_entry: object) -> str:
+        competency_id = str(getattr(catalog_entry, "competency_id", "")).strip()
+        if competency_id:
+            return competency_id
         return "|".join((
             getattr(catalog_entry, "subject_key"),
             getattr(catalog_entry, "learning_area"),
             getattr(catalog_entry, "competency_group"),
             getattr(catalog_entry, "competency_text"),
         ))
+
+    def _apply_initial_draft(self) -> None:
+        if self.initial_draft is None:
+            return
+        date = QDate.fromString(self.initial_draft.date_text, "yyyy-MM-dd")
+        if date.isValid():
+            self.date_input.setDate(date)
+        self.note_input.setPlainText(self.initial_draft.note)
+        context_index = self.context_select.findText(self.initial_draft.context)
+        if context_index >= 0:
+            self.context_select.setCurrentIndex(context_index)
+        visible_subject = self._initial_visible_subject()
+        if visible_subject:
+            subject_index = self.subject_select.findData(visible_subject)
+            if subject_index >= 0:
+                self.subject_select.setCurrentIndex(subject_index)
+        for rating in self.initial_draft.competency_ratings:
+            competency_key = self._competency_key(rating)
+            self._add_competency_rating_row(
+                competency_key,
+                rating,
+                rating.rating,
+            )
+            self._sync_visible_competency_checkbox(
+                competency_key,
+                Qt.CheckState.Checked,
+            )
+        self.competency_ratings_empty_state.setVisible(
+            not self.competency_rating_widgets
+        )
+
+    def _initial_visible_subject(self) -> str:
+        if self.initial_draft is None:
+            return ""
+        if self.initial_draft.competency_ratings:
+            return self.initial_draft.competency_ratings[0].subject_key
+        return self.initial_draft.subject_id
 
     def save_draft(self) -> None:
         """Persist the observation draft through the adapter and close on success."""
@@ -422,7 +489,12 @@ class NewObservationDialog(QDialog):
                 "Beobachtungen können ohne Adapter nicht gespeichert werden.",
             )
             return
-        result = self.observation_adapter.save_observation(draft)
+        if draft.observation_id:
+            result = self.observation_adapter.update_observation(draft)
+            success_message = OBSERVATION_UPDATE_SUCCESS_MESSAGE
+        else:
+            result = self.observation_adapter.save_observation(draft)
+            success_message = OBSERVATION_SAVE_SUCCESS_MESSAGE
         if not getattr(result, "success", False):
             QMessageBox.warning(
                 self,
@@ -433,6 +505,6 @@ class NewObservationDialog(QDialog):
         QMessageBox.information(
             self,
             "Hinweis",
-            OBSERVATION_SAVE_SUCCESS_MESSAGE,
+            success_message,
         )
         self.accept()
