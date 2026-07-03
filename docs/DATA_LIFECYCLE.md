@@ -12,7 +12,7 @@ Schreibprozess: Schuelerverwaltung, spaeter freizugeben.
 
 Primaerer UI-Einstieg: PySide-Dialog `Neuer Schüler`.
 
-Status: Produktiver Schreibpfad bis SQLite ist ueber den PySide-Adapter umgesetzt. Excel-Projection-Refresh ist Legacy/Export und kein Zielpfad fuer neue UI-Funktionalitaet.
+Status: Produktiver Schreibpfad bis SQLite ist ueber den PySide-Adapter umgesetzt. Beim produktiven App-Start werden Schema, Stammdaten und Kursverbund-Defaults initialisiert, aber keine Demo-Schueler erzeugt. Excel-Projection-Refresh ist Legacy/Export und kein Zielpfad fuer neue UI-Funktionalitaet.
 
 Freigegebener PySide-Pfad:
 
@@ -57,7 +57,7 @@ Automatisch profitierende Ansichten:
 - Beobachtungsdialog
 - Berichte
 
-Regel: Neue Stammgruppen oder Kurse werden dabei nicht automatisch angelegt. Optionale Dokumente werden erst nach erfolgreicher Erzeugung der `student_id` referenziert. Dateien werden nicht in Excel eingebettet. Bei Fehlern bleibt der PySide-Dialog geoeffnet und SQLite unveraendert.
+Regel: Neue Stammgruppen oder Kurse werden dabei nicht automatisch angelegt. `student_id`, `group_id` und `course_id` bleiben die technische Zuordnung; sichtbare Namen werden aus den persistenten Stammdaten aufgeloest. Optionale Dokumente werden erst nach erfolgreicher Erzeugung der `student_id` referenziert. Dateien werden nicht in Excel eingebettet. Bei Fehlern bleibt der PySide-Dialog geoeffnet und SQLite unveraendert. Demo-/Seed-Schueler duerfen nur ueber explizite Test- oder Legacy-Seed-Pfade erzeugt werden und ueberschreiben keine produktiven Nutzerdaten.
 
 ## Schueler archivieren
 

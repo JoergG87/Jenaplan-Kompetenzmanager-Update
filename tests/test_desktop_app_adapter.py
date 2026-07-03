@@ -110,6 +110,90 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(stored_student.first_name, "Jule")
         self.assertEqual(len(SQLiteStudentRepository(self.database).list_students()), 29)
 
+    def test_new_app_database_starts_without_demo_students(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            adapter = StudentDesktopAdapter(database_path)
+
+            self.assertTrue(database_path.exists())
+            self.assertEqual(adapter.list_students(), ())
+            self.assertEqual(
+                adapter.group_id_by_name()["Grashüpfer"],
+                f"{GROUP_ID_PREFIX}-000001",
+            )
+            self.assertEqual(
+                adapter.course_id_by_name()["Kurs 1"],
+                f"{COURSE_ID_PREFIX}-000001",
+            )
+
+    def test_new_student_persists_after_adapter_reinitialization(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            adapter = StudentDesktopAdapter(database_path)
+
+            result = adapter.save_new_student(
+                first_name="Mila",
+                last_name="Neumann",
+                group_id=f"{GROUP_ID_PREFIX}-000001",
+                course_id=f"{COURSE_ID_PREFIX}-000001",
+                student_notes="Mag Zahlen.",
+            )
+            self.assertIsInstance(result, SuccessResult)
+
+            reloaded_adapter = StudentDesktopAdapter(database_path)
+            students = reloaded_adapter.list_students()
+            profile = reloaded_adapter.get_student_profile(result.value.student_id)
+            search_result = filter_student_list(students, "neumann")
+            group_students = reloaded_adapter.list_students(
+                group_id=f"{GROUP_ID_PREFIX}-000001",
+            )
+            course_students = reloaded_adapter.list_students(
+                course_id=f"{COURSE_ID_PREFIX}-000001",
+            )
+            course_group_students = reloaded_adapter.list_students(
+                group_ids=(f"{GROUP_ID_PREFIX}-000001",),
+                course_id=f"{COURSE_ID_PREFIX}-000001",
+            )
+
+        self.assertEqual(result.value.student_id, f"{STUDENT_ID_PREFIX}-000001")
+        self.assertEqual(len(students), 1)
+        self.assertEqual(students[0].first_name, "Mila")
+        self.assertEqual(students[0].last_name, "Neumann")
+        self.assertEqual(students[0].group_id, f"{GROUP_ID_PREFIX}-000001")
+        self.assertEqual(students[0].group_name, "Grashüpfer")
+        self.assertEqual(students[0].course_id, f"{COURSE_ID_PREFIX}-000001")
+        self.assertEqual(students[0].course_name, "Kurs 1")
+        self.assertEqual(students[0].course_color_name, "Blau")
+        self.assertEqual(students[0].course_color_hex, "#2563EB")
+        self.assertIsNotNone(profile)
+        self.assertEqual(profile.display_name, "Mila Neumann")
+        self.assertEqual(profile.group_name, "Grashüpfer")
+        self.assertEqual(profile.course_name, "Kurs 1")
+        self.assertEqual(profile.student_notes, "Mag Zahlen.")
+        self.assertEqual(search_result, students)
+        self.assertEqual(group_students, students)
+        self.assertEqual(course_students, students)
+        self.assertEqual(course_group_students, students)
+
+    def test_reopening_existing_database_does_not_add_demo_students(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            adapter = StudentDesktopAdapter(database_path)
+            result = adapter.save_new_student(
+                first_name="Oskar",
+                last_name="Klein",
+                group_id=f"{GROUP_ID_PREFIX}-000001",
+                course_id=f"{COURSE_ID_PREFIX}-000002",
+            )
+            self.assertIsInstance(result, SuccessResult)
+
+            reloaded_adapter = StudentDesktopAdapter(database_path)
+            students = reloaded_adapter.list_students()
+
+        self.assertEqual(len(students), 1)
+        self.assertEqual(students[0].display_name, "Oskar Klein")
+        self.assertEqual(students[0].course_id, f"{COURSE_ID_PREFIX}-000002")
+
     def test_group_and_course_name_mapping_uses_ids(self) -> None:
         group_ids = self.adapter.group_id_by_name()
         course_ids = self.adapter.course_id_by_name()

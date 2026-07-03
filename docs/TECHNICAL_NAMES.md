@@ -286,6 +286,8 @@ Registrierte Python-Spike-Komponenten:
 - `create_sqlite_seed_database(path)`
 - `build_workbook_data_from_sqlite(path)`
 
+Regel: `create_sqlite_seed_database(path)` ist ein expliziter Seed-/Test-/Legacy-Projektionspfad. Der produktive PySide-App-Start nutzt diesen Pfad nicht, damit keine Demo-Schueler erzeugt oder Nutzerdaten ueberschrieben werden.
+
 Registrierte SQLite-/Stammdaten-Konstanten:
 
 - `COLOR_NAME`

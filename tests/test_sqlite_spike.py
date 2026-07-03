@@ -35,7 +35,7 @@ from src.ui.screens.klassenuebersicht import ClassOverviewV02WorkbookBuilder
 
 
 class SQLiteSpikeTest(unittest.TestCase):
-    def test_master_data_schema_contains_course_group_tables_and_relations(self) -> None:
+    def test_schema_contains_students_and_course_group_tables(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
             database = SQLiteDatabase(database_path)
@@ -56,14 +56,30 @@ class SQLiteSpikeTest(unittest.TestCase):
                     row[1]
                     for row in connection.execute("PRAGMA table_info(groups)").fetchall()
                 }
+                student_columns = {
+                    row[1]
+                    for row in connection.execute("PRAGMA table_info(students)").fetchall()
+                }
+                student_foreign_keys = {
+                    (row[3], row[2], row[4])
+                    for row in connection.execute("PRAGMA foreign_key_list(students)").fetchall()
+                }
 
+        self.assertIn("students", tables)
         self.assertIn("course_groups", tables)
         self.assertIn("course_group_student_groups", tables)
         self.assertIn("course_group_courses", tables)
+        self.assertIn("student_id", student_columns)
+        self.assertIn("first_name", student_columns)
+        self.assertIn("last_name", student_columns)
+        self.assertIn("group_id", student_columns)
+        self.assertIn("course_id", student_columns)
         self.assertIn("sort_order", group_columns)
         self.assertIn("color_name", course_columns)
         self.assertIn("color_hex", course_columns)
         self.assertIn("sort_order", course_columns)
+        self.assertIn(("group_id", "groups", "group_id"), student_foreign_keys)
+        self.assertIn(("course_id", "courses", "course_id"), student_foreign_keys)
 
     def test_seed_data_is_written_to_sqlite_without_id_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -187,6 +203,20 @@ class SQLiteSpikeTest(unittest.TestCase):
             course_groups[0].selected_course_ids,
             (f"{COURSE_ID_PREFIX}-999999",),
         )
+
+    def test_master_data_defaults_do_not_seed_students(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            database = SQLiteDatabase(database_path)
+            database.ensure_master_data_defaults()
+
+            students = SQLiteStudentRepository(database).list_students()
+            groups = SQLiteGroupRepository(database).list_groups()
+            courses = SQLiteCourseRepository(database).list_courses()
+
+        self.assertEqual(students, ())
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(len(courses), 3)
 
     def test_existing_projection_can_be_built_from_sqlite_data(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

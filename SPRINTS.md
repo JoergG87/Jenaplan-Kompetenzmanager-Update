@@ -6,6 +6,23 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - Schuelerdaten SQLite-Persistenz 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Titel
+
+Schuelerdaten persistent speichern und nach Neustart laden
+
+### Ergebnis
+
+- [x] Bestehende `students`-Tabelle und `SQLiteStudentRepository` geprueft
+- [x] Produktiver App-Start erzeugt keine Demo-Schueler mehr
+- [x] Neue Schueler werden ueber `student.create` in SQLite gespeichert
+- [x] Reload ueber neuen `StudentDesktopAdapter` laedt gespeicherte Schueler
+- [x] Schuelerliste, Suche, Profil, Stammgruppenfilter und Kursverbundfilter mit persistenten Schuelern getestet
+- [x] Keine Beobachtungspersistenz, Medien, Berichte, Packaging, Excel/VBA oder UI-Redesign geaendert
+
 ## Sprint - Stammdaten und Kursverbuende SQLite-Persistenz 🔄
 
 - [x] Status: Umgesetzt, nicht committed

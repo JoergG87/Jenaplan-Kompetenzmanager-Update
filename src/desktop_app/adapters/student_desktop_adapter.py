@@ -15,7 +15,6 @@ from src.core.sqlite_store import (
     SQLiteDatabase,
     SQLiteGroupRepository,
     SQLiteStudentRepository,
-    create_sqlite_seed_database,
 )
 from src.core.student import StudentService, StudentValidator
 from src.core.workbook_data import CourseRecord, GroupRecord, StudentRecord
@@ -166,8 +165,6 @@ class StudentDesktopAdapter:
         return dispatcher
 
     def _open_database(self) -> SQLiteDatabase:
-        if not self.database_path.exists():
-            return create_sqlite_seed_database(self.database_path)
         database = SQLiteDatabase(self.database_path)
         database.initialize_schema()
         database.ensure_master_data_defaults()

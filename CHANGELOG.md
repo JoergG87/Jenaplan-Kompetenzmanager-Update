@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Sprint - Schuelerdaten persistent speichern und laden
+
+### Changed
+
+- Produktiver PySide-App-Start initialisiert eine fehlende SQLite-Datenbank mit Schema, Stammdaten und Kursverbund-Defaults, aber ohne Demo-Schueler.
+- Neu angelegte Schueler werden ueber den bestehenden `student.create`-Pfad in SQLite gespeichert und nach Adapter-/App-Neustart wieder geladen.
+- Schuelerliste, Suche, Schuelerprofil, Stammgruppenfilter und Kursverbundfilter nutzen weiterhin persistente `student_id`, `group_id` und `course_id`.
+
+### Not Changed
+
+- Keine Beobachtungspersistenz, keine Bewertungen, keine Medien, keine Berichte, kein Packaging, kein UI-Redesign und kein Excel-/VBA-Umbau umgesetzt.
+
 ## Sprint - Stammdaten und Kursverbuende persistent speichern
 
 ### Added

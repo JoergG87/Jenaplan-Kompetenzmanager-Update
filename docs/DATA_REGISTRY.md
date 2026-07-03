@@ -49,6 +49,8 @@ Regel:
 
 SQLite ist die fachliche Source of Truth. Es darf keine parallele fachliche Source of Truth neben SQLite geben. `data_*`-Sheets und `tbl_*`-Tabellen sind Excel-/Workbook-Projektionen aus SQLite oder historische Legacy-Artefakte.
 
+Produktive PySide-Datenbanken initialisieren `students` leer. Stammdaten-Defaults fuer `groups`, `courses` und Kursverbuende duerfen angelegt werden, Demo-Schueler jedoch nur ueber explizite Seed-/Testpfade.
+
 VBA schreibt nicht direkt in SQLite.
 
 Python bleibt fachliche Schreibschicht.
@@ -275,6 +277,7 @@ Erweiterungsregeln:
 - `display_name` ist eine UI-Projektion, kein gespeichertes Feld
 - Archivierung setzt `active = FALSE` und `archived_at`
 - keine physische Loeschung ohne eigenen Architekturentscheid
+- produktiver App-Start erzeugt keine Demo-Schueler; explizite Seed-Daten dienen Tests, Legacy-Projektionen oder Demo-Szenarien
 
 ## data_groups
 
