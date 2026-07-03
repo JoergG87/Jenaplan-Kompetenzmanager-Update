@@ -51,8 +51,8 @@ Spalten:
 | Schuelername | `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | Anzeige |
 | Stammgruppe | `data_students.group_id` -> `data_groups.group_name` | Anzeige | Nein | `data_groups` | organisatorische Zugehoerigkeit |
 | Kurs | `data_students.course_id` -> `data_courses.course_name` | Anzeige | Nein | `data_courses` | Jahrgang |
-| Beobachtungsverlauf | `data_observations` + `data_observation_competencies` | Anzeige | Nein | `data_observations` | Beobachtungen sind fachliche Quelle |
-| Kompetenzchips | `data_observation_competencies.competency_id` -> `data_competencies.name` | Anzeige | Nein | `data_competencies` | abgeleitete Anzeige |
+| Beobachtungsverlauf | `data_observations` + `data_observation_competencies` | Anzeige | Nein | `data_observations` | kompakte Karten, neueste Beobachtungen oben |
+| Kompetenzchips | `data_observation_competencies.competency_id` -> `data_competencies.name` | Anzeige | Nein | `data_competencies` | Bewertung wird pro Kompetenz angezeigt |
 | Neue Beobachtung | `data_students.student_id` | Navigation | Geplant | `data_students` | startet spaeter zentralen Beobachtungsdialog |
 
 ## Legacy: Schuelerverwaltung / `dlg_neuer_schueler`

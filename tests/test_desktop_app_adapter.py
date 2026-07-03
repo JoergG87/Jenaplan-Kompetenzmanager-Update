@@ -34,6 +34,7 @@ from src.desktop_app.dialogs import new_observation_dialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens import master_data_screen
 from src.desktop_app.screens import overview_screen
+from src.desktop_app.screens import student_profile_screen
 from src.desktop_app.screens import students_screen
 from src.desktop_app import assets
 from src.desktop_app import main
@@ -58,11 +59,14 @@ from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_SAVE_SUCCESS_MESSAGE,
     ObservationCompetencyRatingDraft,
     ObservationDraftViewModel,
+    ObservationListItem,
+    ObservationRatingViewModel,
     observation_rating_keys,
 )
 from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
     PROFILE_SECTION_PLACEHOLDERS,
+    StudentDetailViewModel,
     filter_student_list,
 )
 
@@ -157,6 +161,25 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(observations[0].note, "Liest einen bekannten Text.")
         self.assertEqual(observations[0].competency_ratings[0].rating, "+")
         self.assertIn("Deutsch", observations[0].competency_ratings[0].display_label)
+
+    def test_observation_list_keeps_newest_observations_first(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-02",
+            note="Aeltere Beobachtung.",
+        ))
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            note="Neuere Beobachtung.",
+        ))
+
+        observations = self.adapter.list_observations_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(
+            tuple(observation.date_text for observation in observations),
+            ("2026-07-03", "2026-07-02"),
+        )
 
     def test_new_app_database_starts_without_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -809,7 +832,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_profile_placeholder_messages_are_registered(self) -> None:
         self.assertEqual(
             PROFILE_ACTION_MESSAGES["observation"],
-            "Beobachtungen werden in einem späteren Sprint erfasst.",
+            "Bitte zuerst einen Schüler auswählen.",
         )
         self.assertEqual(
             PROFILE_ACTION_MESSAGES["document"],
@@ -821,7 +844,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertEqual(
             PROFILE_SECTION_PLACEHOLDERS["observations_title"],
-            "Noch keine Beobachtungen erfasst.",
+            "Noch keine Beobachtungen vorhanden.",
+        )
+        self.assertEqual(
+            PROFILE_SECTION_PLACEHOLDERS["observations_hint"],
+            "Gespeicherte Beobachtungen erscheinen hier chronologisch.",
         )
         self.assertEqual(
             PROFILE_SECTION_PLACEHOLDERS["documents_hint"],
@@ -1149,8 +1176,62 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn("set_observations", source)
         self.assertIn("ObservationListItem", source)
-        self.assertIn("observation.summary", source)
-        self.assertIn("rating.display_label", source)
+        self.assertIn("_observation_card", source)
+        self.assertIn("_empty_observations_card", source)
+        self.assertIn('"Kontext"', source)
+        self.assertIn('"Notiz"', source)
+        self.assertIn('"Kompetenzen"', source)
+
+    def test_student_profile_observation_cards_show_required_fields(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (
+                ObservationListItem(
+                    "OBS-000001",
+                    f"{STUDENT_ID_PREFIX}-000001",
+                    "2026-07-03",
+                    "Deutsch",
+                    "Leseübung",
+                    "Liest einen bekannten Text.",
+                    (
+                        ObservationRatingViewModel(
+                            "CMP-000001",
+                            "Deutsch",
+                            "Mit Texten und Medien umgehen",
+                            "Lesen und Verstehen",
+                            "Texte lesen und zentrale Informationen entnehmen",
+                            "+",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("2026-07-03", label_texts)
+        self.assertIn("Deutsch", label_texts)
+        self.assertIn("Kontext: Leseübung", label_texts)
+        self.assertIn("Notiz: Liest einen bekannten Text.", label_texts)
+        self.assertIn("Kompetenzen", label_texts)
+        self.assertTrue(any(
+            text.startswith("+  Mit Texten und Medien umgehen")
+            for text in label_texts
+        ))
+        self.assertIsNotNone(app)
+
+    def test_student_profile_observation_empty_state_is_visible(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(self._sample_student_detail(), ())
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn(PROFILE_SECTION_PLACEHOLDERS["observations_title"], label_texts)
+        self.assertIn(PROFILE_SECTION_PLACEHOLDERS["observations_hint"], label_texts)
+        self.assertIsNotNone(app)
 
     def test_sidebar_students_navigation_resets_to_list(self) -> None:
         target = resolve_navigation_target("students")
@@ -1249,15 +1330,30 @@ class DesktopAppAdapterTest(unittest.TestCase):
             with self.subTest(module_name=module_name):
                 importlib.import_module(module_name)
 
-    def _sample_observation_draft(self) -> ObservationDraftViewModel:
+    def _sample_student_detail(self) -> StudentDetailViewModel:
+        return StudentDetailViewModel(
+            f"{STUDENT_ID_PREFIX}-000001",
+            "Emma Müller",
+            "Grashüpfer",
+            "Kurs 1",
+            "",
+            True,
+        )
+
+    def _sample_observation_draft(
+        self,
+        *,
+        date_text: str = "2026-07-03",
+        note: str = "Liest einen bekannten Text.",
+    ) -> ObservationDraftViewModel:
         return ObservationDraftViewModel(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
             student_name="Emma Müller",
-            date_text="2026-07-03",
+            date_text=date_text,
             subject_id="deutsch",
             subject_display_name="Deutsch",
             context="Leseübung",
-            note="Liest einen bekannten Text.",
+            note=note,
             competency_ratings=(
                 ObservationCompetencyRatingDraft(
                     competency_id="CMP-000001",

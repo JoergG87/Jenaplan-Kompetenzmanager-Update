@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## UI-Polish - Schuelerprofil Beobachtungsliste
+
+### Changed
+
+- Persistente Beobachtungen im Schuelerprofil werden als kompakte Karten mit Datum, Fach, Kontext, Notiz und Kompetenzbewertungen angezeigt.
+- Empty State der Beobachtungsliste auf den persistenten Stand aktualisiert.
+
+### Not Changed
+
+- Keine Persistenz-, Schema-, SQLite-, Excel-/VBA- oder Packaging-Aenderung umgesetzt.
+
 ## Sprint - Beobachtungen persistent speichern
 
 ### Added

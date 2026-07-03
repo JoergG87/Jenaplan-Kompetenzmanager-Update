@@ -98,6 +98,22 @@ Status:
 
 Idee
 
+### Fachanzeige bei fachuebergreifenden Beobachtungen
+
+Priorität: Offen
+
+Beschreibung:
+
+Fachlich klaeren, wie Beobachtungen dargestellt werden sollen, wenn die ausgewaehlten Kompetenzbewertungen aus mehreren Faechern stammen.
+
+Abgrenzung:
+
+Keine Loesung im Profil-UI-Sprint; der aktuelle Profilverlauf zeigt die gespeicherten Daten nur kompakt an.
+
+Status:
+
+Fachklaerung
+
 ### Vorbereitung geplanter Beobachtungen
 
 Priorität: Hoch
