@@ -86,6 +86,11 @@ QFrame#AppPanel {{
     border: 1px solid {COLOR_BORDER};
     border-radius: 10px;
 }}
+QFrame#ObservationFilterBar {{
+    background-color: rgba(248, 251, 253, 210);
+    border: 1px solid #DCE7EF;
+    border-radius: 8px;
+}}
 QPushButton {{
     background-color: {COLOR_SURFACE};
     color: {COLOR_NAVY};
@@ -106,7 +111,30 @@ QPushButton:disabled {{
     background-color: #EEF3F7;
     border-color: #E3EAF0;
 }}
-QLineEdit, QTextEdit, QComboBox, QDateEdit {{
+QPushButton#ObservationTextActionButton {{
+    background-color: transparent;
+    border: none;
+    color: {COLOR_TEXT_MUTED};
+    padding: 3px 6px;
+    font-weight: 500;
+}}
+QPushButton#ObservationTextActionButton:hover {{
+    background-color: #EEF6FB;
+    color: {COLOR_NAVY};
+}}
+QPushButton#ObservationResetButton {{
+    background-color: transparent;
+    color: {COLOR_TEXT_MUTED};
+    border: 1px solid #D7E3EC;
+    border-radius: 7px;
+    padding: 4px 9px;
+    font-weight: 500;
+}}
+QPushButton#ObservationResetButton:hover {{
+    background-color: #EEF6FB;
+    color: {COLOR_NAVY};
+}}
+QLineEdit, QTextEdit, QComboBox, QDateEdit, QDateTimeEdit, QTimeEdit {{
     background-color: rgba(255, 255, 255, 248);
     color: {COLOR_TEXT};
     border: 1px solid #C9D8E4;
@@ -114,8 +142,68 @@ QLineEdit, QTextEdit, QComboBox, QDateEdit {{
     padding: 6px 8px;
     selection-background-color: {COLOR_BLUE};
 }}
-QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QDateEdit:focus {{
+QLineEdit:focus, QTextEdit:focus, QComboBox:focus,
+QDateEdit:focus, QDateTimeEdit:focus, QTimeEdit:focus {{
     border: 1px solid {COLOR_BLUE};
+}}
+QComboBox, QDateEdit, QDateTimeEdit, QTimeEdit {{
+    padding-right: 26px;
+    min-height: 24px;
+}}
+QComboBox::drop-down {{
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 24px;
+    border-left: 1px solid #E2EAF1;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    background-color: rgba(238, 246, 251, 150);
+}}
+QComboBox::down-arrow {{
+    image: none;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid {COLOR_TEXT_MUTED};
+    margin-right: 8px;
+}}
+QComboBox QAbstractItemView {{
+    background-color: {COLOR_SURFACE};
+    color: {COLOR_TEXT};
+    border: 1px solid #C9D8E4;
+    selection-background-color: {COLOR_BLUE_SOFT};
+    selection-color: {COLOR_TEXT};
+    padding: 4px;
+    outline: none;
+}}
+QDateEdit::drop-down, QDateTimeEdit::drop-down, QTimeEdit::drop-down {{
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 24px;
+    border-left: 1px solid #E2EAF1;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    background-color: rgba(238, 246, 251, 150);
+}}
+QDateEdit::down-arrow, QDateTimeEdit::down-arrow, QTimeEdit::down-arrow {{
+    image: none;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid {COLOR_TEXT_MUTED};
+    margin-right: 8px;
+}}
+QLineEdit#ObservationFilterInput {{
+    background-color: rgba(255, 255, 255, 232);
+    border: 1px solid #D7E3EC;
+    border-radius: 7px;
+    padding: 4px 9px;
+    min-height: 22px;
+}}
+QLineEdit#ObservationFilterInput:focus {{
+    border: 1px solid #A8C5DD;
 }}
 QTableWidget, QListWidget {{
     background-color: {COLOR_GLASS};

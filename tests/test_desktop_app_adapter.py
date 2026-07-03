@@ -1714,6 +1714,244 @@ class DesktopAppAdapterTest(unittest.TestCase):
         ))
         self.assertIsNotNone(app)
 
+    def test_student_profile_subject_filter_limits_observation_cards(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_filter_observations(),
+        )
+
+        screen.observation_subject_filter.setCurrentIndex(
+            screen.observation_subject_filter.findText("EPU")
+        )
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("EPU", label_texts)
+        self.assertIn("Präsentation · Beschreibt Naturphänomene. · 1 Kompetenz", label_texts)
+        self.assertNotIn("Leseübung · Liest einen bekannten Text. · 1 Kompetenz", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_limits_unfiltered_observations_to_three_newest(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_many_observations(),
+        )
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+        button_texts = [button.text() for button in screen.findChildren(QPushButton)]
+
+        self.assertIn("Projektarbeit · Neueste Beobachtung. · 1 Kompetenz", label_texts)
+        self.assertIn("Gruppenarbeit · Verbindet Deutsch und EPU. · 2 Kompetenzen", label_texts)
+        self.assertIn("Präsentation · Beschreibt Naturphänomene. · 1 Kompetenz", label_texts)
+        self.assertNotIn("Leseübung · Liest einen bekannten Text. · 1 Kompetenz", label_texts)
+        self.assertIn("Alle Beobachtungen anzeigen (4)", button_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_show_all_and_show_less_toggle_observations(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_many_observations(),
+        )
+
+        show_all_button = next(
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.text() == "Alle Beobachtungen anzeigen (4)"
+        )
+        show_all_button.click()
+        expanded_labels = [label.text() for label in screen.findChildren(QLabel)]
+        show_all_button.click()
+        collapsed_labels = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertEqual(show_all_button.text(), "Alle Beobachtungen anzeigen (4)")
+        self.assertIn("Leseübung · Liest einen bekannten Text. · 1 Kompetenz", expanded_labels)
+        self.assertNotIn("Leseübung · Liest einen bekannten Text. · 1 Kompetenz", collapsed_labels)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_show_all_button_switches_to_show_less(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_many_observations(),
+        )
+
+        show_all_button = next(
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.text() == "Alle Beobachtungen anzeigen (4)"
+        )
+        show_all_button.click()
+
+        self.assertEqual(show_all_button.text(), "Weniger anzeigen")
+        self.assertIsNotNone(app)
+
+    def test_student_profile_cross_subject_filter_is_available(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_filter_observations(),
+        )
+
+        screen.observation_subject_filter.setCurrentIndex(
+            screen.observation_subject_filter.findText(OBSERVATION_CROSS_SUBJECT_LABEL)
+        )
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn(OBSERVATION_CROSS_SUBJECT_LABEL, label_texts)
+        self.assertIn("Gruppenarbeit · Verbindet Deutsch und EPU. · 2 Kompetenzen", label_texts)
+        self.assertNotIn("Präsentation · Beschreibt Naturphänomene. · 1 Kompetenz", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_rating_filter_matches_competency_rating(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_filter_observations(),
+        )
+
+        screen.observation_rating_filter.setCurrentIndex(
+            screen.observation_rating_filter.findText("--")
+        )
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Leseübung · Liest einen bekannten Text. · 1 Kompetenz", label_texts)
+        self.assertNotIn("Präsentation · Beschreibt Naturphänomene. · 1 Kompetenz", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_rating_filter_has_readable_width(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+
+        rating_values = [
+            screen.observation_rating_filter.itemText(index)
+            for index in range(screen.observation_rating_filter.count())
+        ]
+
+        self.assertEqual(rating_values, ["Alle", "++", "+", "-", "--"])
+        self.assertGreaterEqual(screen.observation_rating_filter.minimumWidth(), 118)
+        self.assertLessEqual(screen.observation_search_input.maximumWidth(), 320)
+        self.assertIsNotNone(app)
+
+    def test_combobox_dropdown_style_is_global(self) -> None:
+        self.assertIn("QComboBox::drop-down", theme.APP_STYLESHEET)
+        self.assertIn("QComboBox::down-arrow", theme.APP_STYLESHEET)
+        self.assertIn("QComboBox QAbstractItemView", theme.APP_STYLESHEET)
+        self.assertNotIn("QComboBox#ObservationFilterInput", theme.APP_STYLESHEET)
+
+    def test_date_time_edit_dropdown_style_is_global(self) -> None:
+        self.assertIn("QDateEdit::drop-down", theme.APP_STYLESHEET)
+        self.assertIn("QDateTimeEdit::drop-down", theme.APP_STYLESHEET)
+        self.assertIn("QTimeEdit::drop-down", theme.APP_STYLESHEET)
+        self.assertIn("QDateEdit::down-arrow", theme.APP_STYLESHEET)
+        self.assertIn("QDateTimeEdit::down-arrow", theme.APP_STYLESHEET)
+        self.assertIn("QTimeEdit::down-arrow", theme.APP_STYLESHEET)
+
+    def test_student_profile_search_filter_matches_context_note_or_competency(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_filter_observations(),
+        )
+
+        screen.observation_search_input.setText("gruppenarbeit")
+        context_labels = [label.text() for label in screen.findChildren(QLabel)]
+        screen.observation_search_input.setText("naturphänomene")
+        note_labels = [label.text() for label in screen.findChildren(QLabel)]
+        screen.observation_search_input.setText("medien umgehen")
+        competency_labels = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Gruppenarbeit · Verbindet Deutsch und EPU. · 2 Kompetenzen", context_labels)
+        self.assertIn("Präsentation · Beschreibt Naturphänomene. · 1 Kompetenz", note_labels)
+        self.assertIn("Leseübung · Liest einen bekannten Text. · 1 Kompetenz", competency_labels)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_active_filter_uses_all_observations(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_many_observations(),
+        )
+
+        screen.observation_search_input.setText("bekannten text")
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+        button_texts = [button.text() for button in screen.findChildren(QPushButton)]
+
+        self.assertIn("Leseübung · Liest einen bekannten Text. · 1 Kompetenz", label_texts)
+        self.assertNotIn("Alle Beobachtungen anzeigen (4)", button_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_observation_filter_reset_shows_all_observations(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_filter_observations(),
+        )
+
+        screen.observation_subject_filter.setCurrentIndex(
+            screen.observation_subject_filter.findText("EPU")
+        )
+        screen.observation_rating_filter.setCurrentIndex(
+            screen.observation_rating_filter.findText("+")
+        )
+        screen.observation_search_input.setText("natur")
+        screen.observation_reset_button.click()
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Leseübung · Liest einen bekannten Text. · 1 Kompetenz", label_texts)
+        self.assertIn("Präsentation · Beschreibt Naturphänomene. · 1 Kompetenz", label_texts)
+        self.assertIn("Gruppenarbeit · Verbindet Deutsch und EPU. · 2 Kompetenzen", label_texts)
+        self.assertEqual(screen.observation_subject_filter.currentText(), "Alle")
+        self.assertEqual(screen.observation_rating_filter.currentText(), "Alle")
+        self.assertEqual(screen.observation_search_input.text(), "")
+        self.assertIsNotNone(app)
+
+    def test_student_profile_observation_filters_do_not_affect_competency_overview(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_filter_observations(),
+            (
+                StudentCompetencySubjectGroup(
+                    "deutsch",
+                    "Deutsch",
+                    (
+                        StudentCompetencyStatusViewModel(
+                            "CMP-000001",
+                            "Mit Texten und Medien umgehen",
+                            "deutsch",
+                            "Deutsch",
+                            "+",
+                            "+ erreicht",
+                            "2026-07-03",
+                            0,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        screen.observation_search_input.setText("nicht vorhanden")
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Keine passenden Beobachtungen.", label_texts)
+        self.assertIn(
+            "Mit Texten und Medien umgehen: + erreicht · 2026-07-03",
+            label_texts,
+        )
+        self.assertIsNotNone(app)
+
     def test_student_profile_cross_subject_card_keeps_rating_subjects(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
@@ -1908,6 +2146,95 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "Kurs 1",
             "",
             True,
+        )
+
+    def _sample_filter_observations(self) -> tuple[ObservationListItem, ...]:
+        return (
+            ObservationListItem(
+                "OBS-000003",
+                f"{STUDENT_ID_PREFIX}-000001",
+                "2026-07-05",
+                OBSERVATION_CROSS_SUBJECT_LABEL,
+                "Gruppenarbeit",
+                "Verbindet Deutsch und EPU.",
+                (
+                    ObservationRatingViewModel(
+                        "CMP-000001",
+                        "Deutsch",
+                        "Mit Texten und Medien umgehen",
+                        "Lesen und Verstehen",
+                        "Texte lesen und zentrale Informationen entnehmen",
+                        "+",
+                    ),
+                    ObservationRatingViewModel(
+                        "CMP-000003",
+                        "EPU",
+                        "Natur und Umwelt",
+                        "Erkunden und beschreiben",
+                        "Naturphänomene beobachten und beschreiben",
+                        "-",
+                    ),
+                ),
+            ),
+            ObservationListItem(
+                "OBS-000002",
+                f"{STUDENT_ID_PREFIX}-000001",
+                "2026-07-04",
+                "EPU",
+                "Präsentation",
+                "Beschreibt Naturphänomene.",
+                (
+                    ObservationRatingViewModel(
+                        "CMP-000003",
+                        "EPU",
+                        "Natur und Umwelt",
+                        "Erkunden und beschreiben",
+                        "Naturphänomene beobachten und beschreiben",
+                        "++",
+                    ),
+                ),
+            ),
+            ObservationListItem(
+                "OBS-000001",
+                f"{STUDENT_ID_PREFIX}-000001",
+                "2026-07-03",
+                "Deutsch",
+                "Leseübung",
+                "Liest einen bekannten Text.",
+                (
+                    ObservationRatingViewModel(
+                        "CMP-000001",
+                        "Deutsch",
+                        "Mit Texten und Medien umgehen",
+                        "Lesen und Verstehen",
+                        "Texte lesen und zentrale Informationen entnehmen",
+                        "--",
+                    ),
+                ),
+            ),
+        )
+
+    def _sample_many_observations(self) -> tuple[ObservationListItem, ...]:
+        return (
+            ObservationListItem(
+                "OBS-000004",
+                f"{STUDENT_ID_PREFIX}-000001",
+                "2026-07-06",
+                "Mathematik",
+                "Projektarbeit",
+                "Neueste Beobachtung.",
+                (
+                    ObservationRatingViewModel(
+                        "CMP-000004",
+                        "Mathematik",
+                        "Zahlen und Operationen",
+                        "Rechnen",
+                        "Rechenwege darstellen und vergleichen",
+                        "+",
+                    ),
+                ),
+            ),
+            *self._sample_filter_observations(),
         )
 
     def _sample_observation_draft(

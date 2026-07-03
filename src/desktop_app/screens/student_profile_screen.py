@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
+    QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -28,6 +30,8 @@ from src.desktop_app.theme import create_card, set_label_style
 class StudentProfileScreen(QWidget):
     """Lightweight read-only student profile."""
 
+    DEFAULT_OBSERVATION_LIMIT = 3
+
     back_requested = Signal()
     observation_requested = Signal(object)
     observation_edit_requested = Signal(str)
@@ -46,6 +50,8 @@ class StudentProfileScreen(QWidget):
         self.action_feedback_label = QLabel("")
         self.observation_empty_label = QLabel("")
         self.competency_empty_label = QLabel("")
+        self.current_observations: tuple[ObservationListItem, ...] = ()
+        self.show_all_observations = False
         self._build()
 
     def _build(self) -> None:
@@ -153,14 +159,62 @@ class StudentProfileScreen(QWidget):
         layout.setSpacing(8)
         title_label = QLabel("Beobachtungen")
         set_label_style(title_label, "section_title")
+        self.observation_subject_filter = QComboBox()
+        self.observation_rating_filter = QComboBox()
+        self.observation_search_input = QLineEdit()
+        self.observation_reset_button = QPushButton("Zurücksetzen")
+        self.observation_show_all_button = QPushButton("")
+        self.observation_show_all_button.setObjectName("ObservationTextActionButton")
+        self.observation_show_all_button.clicked.connect(self.toggle_observation_limit)
         self.observations_container = QWidget()
         self.observations_layout = QVBoxLayout(self.observations_container)
         self.observations_layout.setContentsMargins(0, 0, 0, 0)
         self.observations_layout.setSpacing(8)
         set_label_style(self.observation_empty_label, "body")
         layout.addWidget(title_label)
+        layout.addWidget(self._observation_filter_card())
         layout.addWidget(self.observations_container)
+        layout.addWidget(self.observation_show_all_button)
         return section
+
+    def _observation_filter_card(self) -> QFrame:
+        card = QFrame()
+        card.setObjectName("ObservationFilterBar")
+        layout = QHBoxLayout(card)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(6)
+        self.observation_subject_filter.currentIndexChanged.connect(
+            lambda _index: self.apply_observation_filters()
+        )
+        self.observation_rating_filter.addItems(("Alle", "++", "+", "-", "--"))
+        self.observation_rating_filter.currentIndexChanged.connect(
+            lambda _index: self.apply_observation_filters()
+        )
+        self.observation_search_input.setPlaceholderText(
+            "Kontext, Notiz oder Kompetenz suchen"
+        )
+        self.observation_search_input.textChanged.connect(
+            lambda _text: self.apply_observation_filters()
+        )
+        self.observation_search_input.setObjectName("ObservationFilterInput")
+        self.observation_reset_button.setObjectName("ObservationResetButton")
+        self.observation_subject_filter.setMinimumWidth(150)
+        self.observation_rating_filter.setMinimumWidth(118)
+        self.observation_search_input.setMinimumWidth(190)
+        self.observation_search_input.setMaximumWidth(320)
+        self.observation_reset_button.clicked.connect(self.reset_observation_filters)
+        layout.addWidget(self._filter_label("Fach"))
+        layout.addWidget(self.observation_subject_filter, 2)
+        layout.addWidget(self._filter_label("Bewertung"))
+        layout.addWidget(self.observation_rating_filter, 0)
+        layout.addWidget(self.observation_search_input, 1)
+        layout.addWidget(self.observation_reset_button, 0)
+        return card
+
+    def _filter_label(self, label: str) -> QLabel:
+        filter_label = QLabel(label)
+        set_label_style(filter_label, "field_label")
+        return filter_label
 
     def _competencies_card(self) -> QWidget:
         section = QWidget()
@@ -224,30 +278,177 @@ class StudentProfileScreen(QWidget):
         observations: tuple[ObservationListItem, ...],
     ) -> None:
         """Render persisted observations for the current profile."""
+        self.current_observations = observations
+        self.show_all_observations = False
+        self._populate_observation_subject_filter(observations)
+        self.apply_observation_filters()
+
+    def apply_observation_filters(self) -> None:
+        """Render observations matching the profile-local filter state."""
         self._clear_observations()
-        if not observations:
+        if not self.current_observations:
+            self.observation_show_all_button.setVisible(False)
             self.observations_layout.addWidget(
                 self._empty_observations_card()
             )
             return
-        for observation in observations:
+        filtered_observations = self._filtered_observations()
+        if not filtered_observations:
+            self.observation_show_all_button.setVisible(False)
+            self.observations_layout.addWidget(
+                self._empty_observations_card(
+                    "Keine passenden Beobachtungen.",
+                    "Filter ändern oder zurücksetzen.",
+                )
+            )
+            return
+        visible_observations = self._visible_observations(filtered_observations)
+        for observation in visible_observations:
             self.observations_layout.addWidget(
                 self._observation_card(observation)
             )
+        self._update_observation_limit_action(filtered_observations)
 
-    def _empty_observations_card(self) -> QFrame:
+    def _empty_observations_card(
+        self,
+        title: str | None = None,
+        hint: str | None = None,
+    ) -> QFrame:
         card = self._card()
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(3)
         self.observation_empty_label.setText(
-            PROFILE_SECTION_PLACEHOLDERS["observations_title"]
+            title or PROFILE_SECTION_PLACEHOLDERS["observations_title"]
         )
-        hint_label = QLabel(PROFILE_SECTION_PLACEHOLDERS["observations_hint"])
+        hint_label = QLabel(hint or PROFILE_SECTION_PLACEHOLDERS["observations_hint"])
         set_label_style(hint_label, "subtle")
         layout.addWidget(self.observation_empty_label)
         layout.addWidget(hint_label)
         return card
+
+    def _populate_observation_subject_filter(
+        self,
+        observations: tuple[ObservationListItem, ...],
+    ) -> None:
+        current_subject = str(self.observation_subject_filter.currentData() or "")
+        subjects: dict[str, str] = {}
+        for observation in observations:
+            subject_label = observation.subject_display_name or "-"
+            subjects.setdefault(subject_label, subject_label)
+        self.observation_subject_filter.blockSignals(True)
+        try:
+            self.observation_subject_filter.clear()
+            self.observation_subject_filter.addItem("Alle", "")
+            for subject_label in subjects:
+                self.observation_subject_filter.addItem(subject_label, subject_label)
+            subject_index = self.observation_subject_filter.findData(current_subject)
+            if subject_index >= 0:
+                self.observation_subject_filter.setCurrentIndex(subject_index)
+        finally:
+            self.observation_subject_filter.blockSignals(False)
+        self._set_observation_filters_enabled(bool(observations))
+
+    def _set_observation_filters_enabled(self, enabled: bool) -> None:
+        self.observation_subject_filter.setEnabled(enabled)
+        self.observation_rating_filter.setEnabled(enabled)
+        self.observation_search_input.setEnabled(enabled)
+        self.observation_reset_button.setEnabled(enabled)
+
+    def reset_observation_filters(self) -> None:
+        """Reset all profile-local observation filters."""
+        self.show_all_observations = False
+        self.observation_subject_filter.setCurrentIndex(0)
+        self.observation_rating_filter.setCurrentIndex(0)
+        self.observation_search_input.clear()
+        self.apply_observation_filters()
+
+    def toggle_observation_limit(self) -> None:
+        """Toggle between the compact observation limit and all observations."""
+        self.show_all_observations = not self.show_all_observations
+        self.apply_observation_filters()
+
+    def _filtered_observations(self) -> tuple[ObservationListItem, ...]:
+        subject_filter = str(self.observation_subject_filter.currentData() or "")
+        rating_filter = self.observation_rating_filter.currentText()
+        search_text = self.observation_search_input.text().strip().casefold()
+        return tuple(
+            observation
+            for observation in self.current_observations
+            if self._matches_observation_filters(
+                observation,
+                subject_filter,
+                rating_filter,
+                search_text,
+            )
+        )
+
+    def _visible_observations(
+        self,
+        observations: tuple[ObservationListItem, ...],
+    ) -> tuple[ObservationListItem, ...]:
+        if self._observation_filter_is_active() or self.show_all_observations:
+            return observations
+        return observations[: self.DEFAULT_OBSERVATION_LIMIT]
+
+    def _update_observation_limit_action(
+        self,
+        observations: tuple[ObservationListItem, ...],
+    ) -> None:
+        should_show = (
+            not self._observation_filter_is_active()
+            and len(observations) > self.DEFAULT_OBSERVATION_LIMIT
+        )
+        self.observation_show_all_button.setVisible(should_show)
+        if not should_show:
+            self.observation_show_all_button.setText("")
+            return
+        if self.show_all_observations:
+            self.observation_show_all_button.setText("Weniger anzeigen")
+        else:
+            self.observation_show_all_button.setText(
+                f"Alle Beobachtungen anzeigen ({len(observations)})"
+            )
+
+    def _observation_filter_is_active(self) -> bool:
+        return any((
+            bool(str(self.observation_subject_filter.currentData() or "")),
+            self.observation_rating_filter.currentText() != "Alle",
+            bool(self.observation_search_input.text().strip()),
+        ))
+
+    def _matches_observation_filters(
+        self,
+        observation: ObservationListItem,
+        subject_filter: str,
+        rating_filter: str,
+        search_text: str,
+    ) -> bool:
+        if subject_filter and observation.subject_display_name != subject_filter:
+            return False
+        if rating_filter != "Alle" and not any(
+            rating.rating == rating_filter for rating in observation.competency_ratings
+        ):
+            return False
+        if search_text and search_text not in self._observation_search_text(observation):
+            return False
+        return True
+
+    def _observation_search_text(self, observation: ObservationListItem) -> str:
+        search_parts = [
+            observation.context,
+            observation.note,
+            *(
+                " ".join((
+                    rating.learning_area,
+                    rating.competency_group,
+                    rating.competency_text,
+                    rating.subject_display_name,
+                ))
+                for rating in observation.competency_ratings
+            ),
+        ]
+        return " ".join(search_parts).casefold()
 
     def _observation_card(self, observation: ObservationListItem) -> QFrame:
         card = self._card()
@@ -257,6 +458,7 @@ class StudentProfileScreen(QWidget):
         details_widget = QWidget()
         details_widget.setVisible(False)
         details_button = QPushButton("Details anzeigen")
+        details_button.setObjectName("ObservationTextActionButton")
         details_button.clicked.connect(
             lambda _checked=False: self._toggle_observation_details(
                 details_widget,
@@ -342,6 +544,8 @@ class StudentProfileScreen(QWidget):
         actions.setSpacing(8)
         edit_button = QPushButton("Bearbeiten")
         delete_button = QPushButton("Löschen")
+        edit_button.setObjectName("ObservationTextActionButton")
+        delete_button.setObjectName("ObservationTextActionButton")
         edit_button.clicked.connect(
             lambda _checked=False, observation_id=observation.observation_id: (
                 self.observation_edit_requested.emit(observation_id)

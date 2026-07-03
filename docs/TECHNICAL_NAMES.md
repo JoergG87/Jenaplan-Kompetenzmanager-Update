@@ -430,6 +430,13 @@ Registrierte Python-Klassen und Funktionen:
 - `PRIMARY_BUTTON_STYLESHEET`
 - `create_card()`
 - `set_label_style(label, role)`
+- `ObservationFilterBar`
+- `ObservationFilterInput`
+- `ObservationTextActionButton`
+- `ObservationResetButton`
+- `QDateEdit`
+- `QDateTimeEdit`
+- `QTimeEdit`
 - `COLOR_NAVY`
 - `COLOR_BLUE`
 - `COLOR_TURQUOISE`
@@ -441,6 +448,17 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.delete_observation(observation_id)`
 - `StudentDesktopAdapter.observation_draft_for_edit(observation_id)`
 - `StudentDesktopAdapter.list_competency_overview_for_student(student_id)`
+- `StudentProfileScreen.DEFAULT_OBSERVATION_LIMIT`
+- `StudentProfileScreen.apply_observation_filters()`
+- `StudentProfileScreen.reset_observation_filters()`
+- `StudentProfileScreen.toggle_observation_limit()`
+- `StudentProfileScreen._populate_observation_subject_filter(observations)`
+- `StudentProfileScreen._filtered_observations()`
+- `StudentProfileScreen._visible_observations(observations)`
+- `StudentProfileScreen._update_observation_limit_action(observations)`
+- `StudentProfileScreen._observation_filter_is_active()`
+- `StudentProfileScreen._matches_observation_filters(observation, subject_filter, rating_filter, search_text)`
+- `StudentProfileScreen._observation_search_text(observation)`
 - `StudentProfileScreen._observation_summary(observation)`
 - `StudentProfileScreen._toggle_observation_details(details_widget, details_button)`
 - `StudentProfileScreen._observation_actions(observation)`

@@ -263,13 +263,14 @@ UI-Projektionen:
 - Stammgruppe
 - Kurs
 - Beobachtungsverlauf
+- lokale Beobachtungsfilter fuer Fach, Bewertung und Suche
 - Kompetenzuebersicht aus beobachteten Kompetenzen
 - Aktionen zum Bearbeiten und Loeschen einzelner Beobachtungen
 - Medienhinweise
 
 Regel:
 
-Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Dialoge. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Kompetenzstaende werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet.
+Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Dialoge. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Ohne aktive Filter begrenzt die UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den Beobachtungsverlauf und nicht auf die Kompetenzuebersicht. Kompetenzstaende werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet.
 
 ## Schuelerverwaltung / PySide-Dialog `Neuer Schüler`
 

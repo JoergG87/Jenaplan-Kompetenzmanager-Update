@@ -6,6 +6,33 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## UI-Polish - Beobachtungsverlauf im Schuelerprofil beruhigen 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Ohne aktive Filter werden nur die drei neuesten Beobachtungen gezeigt
+- [x] `Alle Beobachtungen anzeigen (X)` erweitert den Verlauf
+- [x] `Weniger anzeigen` reduziert wieder auf drei Beobachtungen
+- [x] Aktive Filter und Suche durchsuchen weiterhin alle Beobachtungen
+- [x] Details-, Reset- und Filteraktionen sind optisch dezenter
+- [x] Bewertungsfilter ist lesbarer; ComboBox-/Dropdown-Stil gilt app-weit ruhiger
+- [x] Datum-, Zeit- und Datum-Zeit-Felder sind an den globalen Dropdown-Stil angeglichen
+- [x] Kompetenzuebersicht, Persistenz, Schema und Excel/VBA unveraendert
+
+## UI-Polish - Beobachtungen im Schuelerprofil filtern 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Beobachtungsverlauf kann nach Fach inklusive `Fächerübergreifend` gefiltert werden
+- [x] Bewertungsfilter zeigt Beobachtungen mit passender Kompetenzbewertung
+- [x] Suche prueft Kontext, Notiz und Kompetenznamen
+- [x] Reset setzt alle Beobachtungsfilter zurueck
+- [x] Kompetenzuebersicht, Persistenz, Schema, Excel/VBA und Bearbeiten/Loeschen unveraendert
+
 ## UI-Polish - Aufklappbare Beobachtungskarten 🔄
 
 - [x] Status: Umgesetzt, nicht committed

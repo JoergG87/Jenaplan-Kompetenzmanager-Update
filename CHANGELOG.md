@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## UI-Polish - Beobachtungsverlauf im Schuelerprofil beruhigen
+
+### Changed
+
+- Schuelerprofil zeigt ohne aktive Filter standardmaessig nur die drei neuesten Beobachtungen.
+- Bei mehr Beobachtungen kann der Verlauf ueber `Alle Beobachtungen anzeigen (X)` erweitert und ueber `Weniger anzeigen` wieder reduziert werden.
+- Details-, Reset- und Filteraktionen sind optisch dezenter an das App-Theme angepasst.
+- Bewertungsfilter, Fachfilter und Suche sind proportional ruhiger gestaltet; der verbesserte ComboBox-/Dropdown-Stil gilt app-weit.
+- Datum-, Zeit- und Datum-Zeit-Felder nutzen app-weit denselben ruhigen Dropdown-/Indicator-Stil.
+
+### Not Changed
+
+- Keine Persistenz- oder Schemaaenderung, keine Aenderung der Kompetenzuebersicht, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
+## UI-Polish - Beobachtungen im Schuelerprofil filtern
+
+### Added
+
+- Schuelerprofil filtert den Beobachtungsverlauf lokal nach Fach, Bewertung und Suchtext.
+- Reset-Button setzt Fach, Bewertung und Suche auf `Alle` beziehungsweise leer zurueck.
+
+### Not Changed
+
+- Keine Persistenz- oder Schemaaenderung, keine Aenderung der Kompetenzuebersicht, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
 ## UI-Polish - Aufklappbare Beobachtungskarten
 
 ### Changed
