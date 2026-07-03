@@ -18,6 +18,7 @@ from src.application.commands import CreateObservationCommand, CreateStudentComm
 from src.application.dispatcher import SuccessResult
 from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PREFIX
 from src.core.sqlite_store import (
+    SQLiteCompetencyRepository,
     SQLiteObservationRepository,
     SQLiteStudentRepository,
     create_sqlite_seed_database,
@@ -62,6 +63,8 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationDraftViewModel,
     ObservationListItem,
     ObservationRatingViewModel,
+    StudentCompetencyStatusViewModel,
+    StudentCompetencySubjectGroup,
     observation_rating_keys,
 )
 from src.desktop_app.view_models.student_view_model import (
@@ -241,6 +244,137 @@ class DesktopAppAdapterTest(unittest.TestCase):
             tuple(observation.date_text for observation in observations),
             ("2026-07-03", "2026-07-02"),
         )
+
+    def test_student_adapter_seeds_competency_catalog_in_sqlite(self) -> None:
+        competencies = SQLiteCompetencyRepository(self.database).list_competencies()
+
+        self.assertGreater(len(competencies), 0)
+        self.assertEqual(competencies[0].competency_id, "CMP-000001")
+        self.assertEqual(competencies[0].subject_id, "deutsch")
+        self.assertEqual(competencies[0].subject_name, "Deutsch")
+        self.assertTrue(competencies[0].label)
+
+    def test_student_adapter_does_not_overwrite_existing_competency_catalog(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            database = create_sqlite_seed_database(database_path)
+            with database.connect() as connection:
+                with connection:
+                    connection.execute(
+                        """
+                        INSERT INTO competencies (
+                            competency_id,
+                            subject_id,
+                            subject_name,
+                            label,
+                            description,
+                            learning_area,
+                            competency_group,
+                            sort_order,
+                            active,
+                            is_core_subject
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            "CMP-999999",
+                            "eigener_bereich",
+                            "Eigener Bereich",
+                            "Eigene Kompetenz",
+                            "Eigene Beschreibung",
+                            "Eigene Kompetenz",
+                            "Eigene Gruppe",
+                            0,
+                            1,
+                            1,
+                        ),
+                    )
+
+            StudentDesktopAdapter(database_path)
+            competencies = SQLiteCompetencyRepository(database).list_competencies()
+
+        self.assertEqual(len(competencies), 1)
+        self.assertEqual(competencies[0].competency_id, "CMP-999999")
+        self.assertEqual(competencies[0].label, "Eigene Kompetenz")
+
+    def test_competency_overview_resolves_labels_from_sqlite(self) -> None:
+        with self.database.connect() as connection:
+            with connection:
+                connection.execute(
+                    """
+                    UPDATE competencies
+                    SET label = ?
+                    WHERE competency_id = ?
+                    """,
+                    ("SQLite-Lesekompetenz", "CMP-000001"),
+                )
+        self.adapter.save_observation(self._sample_observation_draft())
+
+        groups = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        competencies = [
+            competency
+            for group in groups
+            for competency in group.competencies
+        ]
+
+        self.assertIn(
+            "SQLite-Lesekompetenz",
+            {competency.competency_label for competency in competencies},
+        )
+
+    def test_competency_overview_groups_by_subject_and_uses_latest_rating(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-01",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "-",
+                ),
+            ),
+        ))
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+                self._sample_observation_rating(
+                    "CMP-000012",
+                    "epu",
+                    "EPU",
+                    "Raum und Zeit",
+                    "Orientierung in Raum und Zeit",
+                    "Sich in vertrauten Räumen orientieren",
+                    "++",
+                ),
+            ),
+        ))
+
+        groups = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        group_by_subject = {group.subject_display_name: group for group in groups}
+        deutsch_status = group_by_subject["Deutsch"].competencies[0]
+        epu_status = group_by_subject["EPU"].competencies[0]
+
+        self.assertEqual(deutsch_status.rating, "+")
+        self.assertEqual(deutsch_status.rating_label, "+ erreicht")
+        self.assertEqual(deutsch_status.last_observation_date, "2026-07-03")
+        self.assertEqual(epu_status.rating, "++")
+        self.assertEqual(epu_status.last_observation_date, "2026-07-03")
 
     def test_new_app_database_starts_without_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -912,6 +1046,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "Gespeicherte Beobachtungen erscheinen hier chronologisch.",
         )
         self.assertEqual(
+            PROFILE_SECTION_PLACEHOLDERS["competencies_title"],
+            "Noch keine Kompetenzbewertungen vorhanden.",
+        )
+        self.assertEqual(
+            PROFILE_SECTION_PLACEHOLDERS["competencies_hint"],
+            "Kompetenzen erscheinen hier, sobald Beobachtungen bewertet wurden.",
+        )
+        self.assertEqual(
             PROFILE_SECTION_PLACEHOLDERS["documents_hint"],
             "Dokumente werden schülerzentriert verwaltet.",
         )
@@ -1277,10 +1419,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_shell_refreshes_profile_after_observation_save(self) -> None:
         source = inspect.getsource(shell.AppShell.open_new_observation_dialog)
+        profile_source = inspect.getsource(shell.AppShell.show_student_profile)
 
         self.assertIn("NewObservationDialog(student, self.curriculum_adapter, self.adapter)", source)
         self.assertIn("self.show_student_profile(student.student_id)", source)
         self.assertIn("Beobachtung wurde gespeichert.", source)
+        self.assertIn("list_competency_overview_for_student(student_id)", profile_source)
+        self.assertIn("set_student(profile, observations, competency_groups)", profile_source)
 
     def test_student_profile_renders_persisted_observations(self) -> None:
         source = inspect.getsource(importlib.import_module(
@@ -1386,6 +1531,42 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn(PROFILE_SECTION_PLACEHOLDERS["observations_title"], label_texts)
         self.assertIn(PROFILE_SECTION_PLACEHOLDERS["observations_hint"], label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_renders_competency_overview_by_subject(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (
+                StudentCompetencySubjectGroup(
+                    "deutsch",
+                    "Deutsch",
+                    (
+                        StudentCompetencyStatusViewModel(
+                            "CMP-000001",
+                            "Mit Texten und Medien umgehen",
+                            "deutsch",
+                            "Deutsch",
+                            "+",
+                            "+ erreicht",
+                            "2026-07-03",
+                            0,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Kompetenzübersicht", label_texts)
+        self.assertIn("Deutsch", label_texts)
+        self.assertIn(
+            "Mit Texten und Medien umgehen: + erreicht · 2026-07-03",
+            label_texts,
+        )
         self.assertIsNotNone(app)
 
     def test_sidebar_students_navigation_resets_to_list(self) -> None:

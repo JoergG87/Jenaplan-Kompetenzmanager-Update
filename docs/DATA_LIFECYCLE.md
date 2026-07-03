@@ -331,6 +331,31 @@ Automatisch profitierende Ansichten:
 
 Regel: Kompetenzstruktur wird nicht aus Beobachtungstexten abgeleitet.
 
+## Kompetenzkatalog initialisieren
+
+Start: PySide-App oeffnet eine SQLite-Datenbank ohne vorhandene Kompetenzen.
+
+Schreibprozess: Initialisierung ueber `StudentDesktopAdapter`, `CurriculumDesktopAdapter` und `SQLiteCompetencyRepository.ensure_catalog_defaults()`.
+
+Betroffene Datenquellen:
+
+- `data/curriculum_catalog_v1.csv` als Seed-Quelle
+- SQLite `competencies`
+- Export-/Legacy-Projektion `data_competencies`
+
+Erforderliche IDs:
+
+- bestehende `competency_id` aus dem Katalog
+- bestehende `subject_id` / `subject_key` aus dem Katalog
+
+Automatisch profitierende Ansichten:
+
+- Beobachtungsdialog
+- Schuelerprofil
+- Kompetenzansicht
+
+Regel: Der Seed laeuft nur bei leerem SQLite-Kompetenzkatalog. Bestehende Kompetenzen werden nicht ueberschrieben. Kompetenzstaende werden weiterhin aus Beobachtungen abgeleitet und nicht manuell doppelt gespeichert.
+
 ## Kompetenz aendern
 
 Start: Name, Beschreibung, Hierarchie oder Status einer bestehenden Kompetenz wird angepasst.

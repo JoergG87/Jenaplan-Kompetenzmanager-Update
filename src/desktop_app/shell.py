@@ -47,7 +47,7 @@ class AppShell(QMainWindow):
         super().__init__()
         self.adapter = StudentDesktopAdapter(database_path)
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
-        self.curriculum_adapter = CurriculumDesktopAdapter()
+        self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)
         self.selected_group_id: str | None = None
         self.selected_course_group_id: str | None = None
         self.selected_course_id: str | None = None
@@ -234,7 +234,8 @@ class AppShell(QMainWindow):
         """Open light profile for selected student."""
         profile = self.adapter.get_student_profile(student_id)
         observations = self.adapter.list_observations_for_student(student_id)
-        self.student_profile_screen.set_student(profile, observations)
+        competency_groups = self.adapter.list_competency_overview_for_student(student_id)
+        self.student_profile_screen.set_student(profile, observations, competency_groups)
         self._show_screen("profile")
 
     def open_new_student_dialog(self) -> None:

@@ -28,6 +28,7 @@ from src.core.observation import (
 from src.core.sqlite_store import (
     DEFAULT_COURSE_GROUP_ID,
     SQLiteCourseRepository,
+    SQLiteCompetencyRepository,
     SQLiteDatabase,
     SQLiteGroupRepository,
     SQLiteMasterDataRepository,
@@ -66,6 +67,12 @@ class SQLiteSpikeTest(unittest.TestCase):
                     row[1]
                     for row in connection.execute("PRAGMA table_info(students)").fetchall()
                 }
+                competency_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(competencies)"
+                    ).fetchall()
+                }
                 student_foreign_keys = {
                     (row[3], row[2], row[4])
                     for row in connection.execute("PRAGMA foreign_key_list(students)").fetchall()
@@ -76,6 +83,7 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("course_group_student_groups", tables)
         self.assertIn("course_group_courses", tables)
         self.assertIn("observations", tables)
+        self.assertIn("competencies", tables)
         self.assertIn("observation_competency_ratings", tables)
         self.assertIn("student_id", student_columns)
         self.assertIn("first_name", student_columns)
@@ -86,6 +94,11 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("color_name", course_columns)
         self.assertIn("color_hex", course_columns)
         self.assertIn("sort_order", course_columns)
+        self.assertIn("competency_id", competency_columns)
+        self.assertIn("subject_id", competency_columns)
+        self.assertIn("subject_name", competency_columns)
+        self.assertIn("label", competency_columns)
+        self.assertIn("sort_order", competency_columns)
         self.assertIn(("group_id", "groups", "group_id"), student_foreign_keys)
         self.assertIn(("course_id", "courses", "course_id"), student_foreign_keys)
 
@@ -263,6 +276,28 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertEqual(len(groups), 1)
         self.assertEqual(len(courses), 3)
 
+    def test_competency_catalog_seed_only_runs_when_empty(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = SQLiteDatabase(Path(temp_dir) / "kompetenzmanager.sqlite")
+            database.initialize_schema()
+            repository = SQLiteCompetencyRepository(database)
+            repository.ensure_catalog_defaults((
+                self._sample_competency_entry("CMP-000001", "Deutsch", "Lesen"),
+                self._sample_competency_entry("CMP-000002", "EPU", "Natur"),
+            ))
+
+            seeded = repository.list_competencies()
+            repository.ensure_catalog_defaults((
+                self._sample_competency_entry("CMP-999999", "Mathematik", "Zahlen"),
+            ))
+            after_second_seed = repository.list_competencies()
+
+        self.assertEqual(
+            tuple(competency.competency_id for competency in seeded),
+            ("CMP-000001", "CMP-000002"),
+        )
+        self.assertEqual(after_second_seed, seeded)
+
     def test_observation_with_multiple_ratings_is_reloaded(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
@@ -403,6 +438,27 @@ class SQLiteSpikeTest(unittest.TestCase):
             "Texte lesen und zentrale Informationen entnehmen",
             rating,
         )
+
+    def _sample_competency_entry(
+        self,
+        competency_id: str,
+        subject_name: str,
+        label: str,
+    ) -> object:
+        class Entry:
+            pass
+
+        entry = Entry()
+        entry.competency_id = competency_id
+        entry.subject_id = subject_name.casefold()
+        entry.subject_display_name = subject_name
+        entry.competency_label = label
+        entry.competency_text = f"{label} beschreiben"
+        entry.learning_area = label
+        entry.competency_group = "Grundlage"
+        entry.is_active = True
+        entry.is_core_subject = True
+        return entry
 
 
 if __name__ == "__main__":

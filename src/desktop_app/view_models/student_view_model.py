@@ -72,8 +72,8 @@ PROFILE_ACTION_MESSAGES = {
 PROFILE_SECTION_PLACEHOLDERS = {
     "observations_title": "Noch keine Beobachtungen vorhanden.",
     "observations_hint": "Gespeicherte Beobachtungen erscheinen hier chronologisch.",
-    "competencies_title": "Kompetenzverlauf folgt später.",
-    "competencies_hint": "Hier werden später Fach- und Kompetenzstände sichtbar.",
+    "competencies_title": "Noch keine Kompetenzbewertungen vorhanden.",
+    "competencies_hint": "Kompetenzen erscheinen hier, sobald Beobachtungen bewertet wurden.",
     "documents_title": "Noch keine Dokumente hinterlegt.",
     "documents_hint": "Dokumente werden schülerzentriert verwaltet.",
 }

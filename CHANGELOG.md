@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Sprint - Kompetenzen SQLite-persistent machen
+
+### Added
+
+- SQLite-Tabelle `competencies` fuer den seedbaren Kompetenzkatalog ergaenzt.
+- Kompetenzkatalog wird aus `data/curriculum_catalog_v1.csv` nur bei leerer `competencies`-Tabelle geseedet.
+- Schuelerprofil zeigt eine aus Beobachtungen abgeleitete Kompetenzuebersicht je Fach mit letzter Bewertung und letztem Beobachtungsdatum.
+
+### Not Changed
+
+- Keine freie Kompetenzbearbeitung, keine doppelte manuelle Kompetenzstand-Speicherung, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
 ## Sprint - Kompetenzkatalog fachlich stabilisieren
 
 ### Changed

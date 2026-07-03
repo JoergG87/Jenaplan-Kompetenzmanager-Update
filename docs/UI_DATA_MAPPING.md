@@ -52,7 +52,7 @@ Spalten:
 | Stammgruppe | `data_students.group_id` -> `data_groups.group_name` | Anzeige | Nein | `data_groups` | organisatorische Zugehoerigkeit |
 | Kurs | `data_students.course_id` -> `data_courses.course_name` | Anzeige | Nein | `data_courses` | Jahrgang |
 | Beobachtungsverlauf | `data_observations` + `data_observation_competencies` | Anzeige | Nein | `data_observations` | kompakte Karten, neueste Beobachtungen oben; Fachlabel aus Kompetenzfaechern, bei mehreren Faechern `Fächerübergreifend` |
-| Kompetenzchips | `data_observation_competencies.competency_id` -> `data_competencies.name` | Anzeige | Nein | `data_competencies` | Bewertung wird pro Kompetenz angezeigt |
+| Kompetenzuebersicht | `data_observation_competencies.competency_id` -> SQLite `competencies` + `data_observations.date` | Anzeige | Nein | `data_observation_competencies` | nur beobachtete Kompetenzen; gruppiert nach Fach; letzte Bewertung je Kompetenz wird aus Beobachtungen abgeleitet |
 | Neue Beobachtung | `data_students.student_id` | Navigation | Geplant | `data_students` | startet spaeter zentralen Beobachtungsdialog |
 
 ## Legacy: Schuelerverwaltung / `dlg_neuer_schueler`
@@ -124,7 +124,7 @@ Regel: Die Schueleruebersicht liest persistente Schueler ueber `StudentDesktopAd
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| Kompetenzname | `data_competencies.name` | Anzeige | Nein | `data_competencies` | technische Identitaet ist `competency_id` |
+| Kompetenzname | SQLite `competencies.label` | Anzeige | Nein | `data_competencies` | technische Identitaet ist `competency_id` |
 | Fach/Lernbereich | `data_competencies.subject_id` -> `data_subjects.name` | Anzeige | Nein | `data_subjects` | fachliche Struktur |
 | Beobachtungen zur Kompetenz | `data_observation_competencies` -> `data_observations` | Anzeige | Nein | `data_observations` | keine doppelte Beobachtungsdatenhaltung |
 | Kompetenzverlauf | `data_observation_competencies.rating` + `data_observations.date` | Auswertung | Nein | `data_observation_competencies` | historisierte Projektion |

@@ -6,6 +6,12 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.core.sqlite_store import (
+    CompetencyRecord,
+    SQLiteCompetencyRepository,
+    SQLiteDatabase,
+)
+
 
 CURRICULUM_CATALOG_V1_PATH = (
     Path(__file__).resolve().parents[3] / "data" / "curriculum_catalog_v1.csv"
@@ -83,11 +89,23 @@ class CurriculumCompetencyGroup:
 class CurriculumDesktopAdapter:
     """Load curriculum catalog data for desktop UI selection controls."""
 
-    def __init__(self, catalog_path: Path = CURRICULUM_CATALOG_V1_PATH) -> None:
+    def __init__(
+        self,
+        catalog_path: Path = CURRICULUM_CATALOG_V1_PATH,
+        database: SQLiteDatabase | None = None,
+    ) -> None:
         self.catalog_path = catalog_path
+        self.database = database
 
     def list_entries(self) -> tuple[CurriculumCatalogEntry, ...]:
         """Return all catalog entries."""
+        if self.database is not None:
+            return tuple(
+                self._entry_from_competency_record(competency)
+                for competency in SQLiteCompetencyRepository(
+                    self.database
+                ).list_competencies()
+            )
         with self.catalog_path.open(newline="", encoding="utf-8") as csv_file:
             entries = tuple(
                 self._entry_from_row(row)
@@ -157,6 +175,26 @@ class CurriculumDesktopAdapter:
             source_reference=row["source_reference"],
             is_core_subject=self._parse_bool(row["is_core_subject"]),
             is_active=self._parse_bool(row["is_active"]),
+        )
+
+    def _entry_from_competency_record(
+        self,
+        competency: CompetencyRecord,
+    ) -> CurriculumCatalogEntry:
+        return CurriculumCatalogEntry(
+            competency_id=competency.competency_id,
+            subject_key=competency.subject_id,
+            subject_display_name=competency.subject_name,
+            subject_full_name=competency.subject_name,
+            official_subject_name=competency.subject_name,
+            school_context_name="SQLite",
+            grade_band="",
+            learning_area=competency.learning_area,
+            competency_group=competency.competency_group,
+            competency_text=competency.description,
+            source_reference="SQLite competencies",
+            is_core_subject=competency.is_core_subject,
+            is_active=competency.active,
         )
 
     def _validate_required_fields(self, row: dict[str, str]) -> None:

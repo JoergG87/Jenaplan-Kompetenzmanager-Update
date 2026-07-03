@@ -123,6 +123,37 @@ class ObservationListItem:
         return " · ".join(part for part in parts if part)
 
 
+@dataclass(frozen=True)
+class StudentCompetencyStatusViewModel:
+    """Latest observed rating for one student competency."""
+
+    competency_id: str
+    competency_label: str
+    subject_id: str
+    subject_display_name: str
+    rating: str
+    rating_label: str
+    last_observation_date: str
+    sort_order: int
+
+
+@dataclass(frozen=True)
+class StudentCompetencySubjectGroup:
+    """Student competency statuses grouped by subject."""
+
+    subject_id: str
+    subject_display_name: str
+    competencies: tuple[StudentCompetencyStatusViewModel, ...]
+
+
+def observation_rating_label(rating: str) -> str:
+    """Return the visible rating label for a persisted rating token."""
+    for option in OBSERVATION_RATING_OPTIONS:
+        if option.split(" ", 1)[0] == rating:
+            return option
+    return rating
+
+
 def observation_rating_keys() -> tuple[str, ...]:
     """Return the stable rating tokens shown in the prototype labels."""
     return tuple(option.split(" ", 1)[0] for option in OBSERVATION_RATING_OPTIONS)

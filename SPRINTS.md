@@ -6,6 +6,19 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - Kompetenzen SQLite-persistent machen 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] SQLite-Tabelle `competencies` ergaenzt
+- [x] Katalog-Seed aus `data/curriculum_catalog_v1.csv` laeuft nur bei leerem Kompetenzkatalog
+- [x] Beobachtungen referenzieren weiter `competency_id`
+- [x] Schuelerprofil zeigt beobachtete Kompetenzen gruppiert nach Fach
+- [x] Letzte Bewertung je Kompetenz wird aus Beobachtungen abgeleitet
+- [x] Keine freie Kompetenzbearbeitung, kein Excel/VBA und kein Commit umgesetzt
+
 ## Sprint - Kompetenzkatalog fachlich stabilisieren 🔄
 
 - [x] Status: Umgesetzt, nicht committed

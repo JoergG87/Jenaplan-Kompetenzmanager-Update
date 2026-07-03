@@ -18,7 +18,10 @@ from src.desktop_app.view_models.student_view_model import (
     PROFILE_SECTION_PLACEHOLDERS,
     StudentDetailViewModel,
 )
-from src.desktop_app.view_models.observation_view_model import ObservationListItem
+from src.desktop_app.view_models.observation_view_model import (
+    ObservationListItem,
+    StudentCompetencySubjectGroup,
+)
 from src.desktop_app.theme import create_card, set_label_style
 
 
@@ -40,6 +43,7 @@ class StudentProfileScreen(QWidget):
         self.notes_value_label = QLabel("")
         self.action_feedback_label = QLabel("")
         self.observation_empty_label = QLabel("")
+        self.competency_empty_label = QLabel("")
         self._build()
 
     def _build(self) -> None:
@@ -64,11 +68,7 @@ class StudentProfileScreen(QWidget):
         content_layout.addWidget(self._actions_card())
         content_layout.addWidget(self._basis_data_card())
         content_layout.addWidget(self._observations_card())
-        content_layout.addWidget(self._placeholder_card(
-            "Kompetenzen",
-            PROFILE_SECTION_PLACEHOLDERS["competencies_title"],
-            PROFILE_SECTION_PLACEHOLDERS["competencies_hint"],
-        ))
+        content_layout.addWidget(self._competencies_card())
         content_layout.addWidget(self._placeholder_card(
             "Dokumente",
             PROFILE_SECTION_PLACEHOLDERS["documents_title"],
@@ -160,6 +160,22 @@ class StudentProfileScreen(QWidget):
         layout.addWidget(self.observations_container)
         return section
 
+    def _competencies_card(self) -> QWidget:
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        title_label = QLabel("Kompetenzübersicht")
+        set_label_style(title_label, "section_title")
+        self.competencies_container = QWidget()
+        self.competencies_layout = QVBoxLayout(self.competencies_container)
+        self.competencies_layout.setContentsMargins(0, 0, 0, 0)
+        self.competencies_layout.setSpacing(8)
+        set_label_style(self.competency_empty_label, "body")
+        layout.addWidget(title_label)
+        layout.addWidget(self.competencies_container)
+        return section
+
     def _card(self) -> QFrame:
         return create_card()
 
@@ -176,6 +192,7 @@ class StudentProfileScreen(QWidget):
         self,
         student: StudentDetailViewModel | None,
         observations: tuple[ObservationListItem, ...] = (),
+        competency_groups: tuple[StudentCompetencySubjectGroup, ...] = (),
     ) -> None:
         """Render selected student or empty state."""
         self.current_student = student
@@ -188,6 +205,7 @@ class StudentProfileScreen(QWidget):
             self.notes_value_label.setText("")
             self.action_feedback_label.setText("")
             self.set_observations(())
+            self.set_competency_groups(())
             return
         self.name_label.setText(student.display_name)
         self.meta_label.setText(f"{student.group_name} · {student.course_name}")
@@ -197,6 +215,7 @@ class StudentProfileScreen(QWidget):
         self.notes_value_label.setText(student.student_notes or "Keine Notiz hinterlegt.")
         self.action_feedback_label.setText("")
         self.set_observations(observations)
+        self.set_competency_groups(competency_groups)
 
     def set_observations(
         self,
@@ -283,9 +302,59 @@ class StudentProfileScreen(QWidget):
         set_label_style(rating_label, "small")
         return rating_label
 
+    def set_competency_groups(
+        self,
+        competency_groups: tuple[StudentCompetencySubjectGroup, ...],
+    ) -> None:
+        """Render latest observed competency status grouped by subject."""
+        self._clear_layout(self.competencies_layout)
+        if not competency_groups:
+            self.competencies_layout.addWidget(self._empty_competencies_card())
+            return
+        for group in competency_groups:
+            self.competencies_layout.addWidget(self._competency_group_card(group))
+
+    def _empty_competencies_card(self) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(3)
+        self.competency_empty_label.setText(
+            PROFILE_SECTION_PLACEHOLDERS["competencies_title"]
+        )
+        hint_label = QLabel(PROFILE_SECTION_PLACEHOLDERS["competencies_hint"])
+        set_label_style(hint_label, "subtle")
+        layout.addWidget(self.competency_empty_label)
+        layout.addWidget(hint_label)
+        return card
+
+    def _competency_group_card(
+        self,
+        group: StudentCompetencySubjectGroup,
+    ) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(5)
+        title = QLabel(group.subject_display_name)
+        set_label_style(title, "card_title")
+        layout.addWidget(title)
+        for competency in group.competencies:
+            row = QLabel(
+                f"{competency.competency_label}: "
+                f"{competency.rating_label} · {competency.last_observation_date}"
+            )
+            row.setWordWrap(True)
+            set_label_style(row, "body")
+            layout.addWidget(row)
+        return card
+
     def _clear_observations(self) -> None:
-        while self.observations_layout.count():
-            layout_item = self.observations_layout.takeAt(0)
+        self._clear_layout(self.observations_layout)
+
+    def _clear_layout(self, layout: QVBoxLayout) -> None:
+        while layout.count():
+            layout_item = layout.takeAt(0)
             widget = layout_item.widget()
             if widget is not None:
                 widget.setParent(None)

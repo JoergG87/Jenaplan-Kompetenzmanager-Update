@@ -18,6 +18,7 @@ from src.core.observation import (
 from src.core.sqlite_store import (
     SQLITE_SPIKE_PATH,
     SQLiteCourseRepository,
+    SQLiteCompetencyRepository,
     SQLiteDatabase,
     SQLiteGroupRepository,
     SQLiteObservationRepository,
@@ -25,12 +26,16 @@ from src.core.sqlite_store import (
 )
 from src.core.student import StudentService, StudentValidator
 from src.core.workbook_data import CourseRecord, GroupRecord, StudentRecord
+from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.view_models.master_data_view_model import course_color_from_key
 from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_CROSS_SUBJECT_LABEL,
     ObservationDraftViewModel,
     ObservationListItem,
     ObservationRatingViewModel,
+    StudentCompetencyStatusViewModel,
+    StudentCompetencySubjectGroup,
+    observation_rating_label,
 )
 from src.desktop_app.view_models.student_view_model import (
     GroupSummaryViewModel,
@@ -224,6 +229,35 @@ class StudentDesktopAdapter:
             for observation in observations
         )
 
+    def list_competency_overview_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[StudentCompetencySubjectGroup, ...]:
+        """Return latest observed competency statuses grouped by subject."""
+        observations = SQLiteObservationRepository(
+            self.database
+        ).list_observations_for_student(student_id)
+        competencies = {
+            competency.competency_id: competency
+            for competency in SQLiteCompetencyRepository(
+                self.database
+            ).list_competencies()
+        }
+        latest_by_competency: dict[str, StudentCompetencyStatusViewModel] = {}
+        for observation in observations:
+            for rating in observation.competency_ratings:
+                if rating.competency_id in latest_by_competency:
+                    continue
+                competency = competencies.get(rating.competency_id)
+                latest_by_competency[rating.competency_id] = (
+                    self._competency_status_view_model(
+                        rating,
+                        observation.date,
+                        competency,
+                    )
+                )
+        return self._group_competency_statuses(tuple(latest_by_competency.values()))
+
     def _dispatcher(self) -> ApplicationCommandDispatcher:
         student_repository = SQLiteStudentRepository(self.database)
         observation_repository = SQLiteObservationRepository(self.database)
@@ -252,6 +286,9 @@ class StudentDesktopAdapter:
         database = SQLiteDatabase(self.database_path)
         database.initialize_schema()
         database.ensure_master_data_defaults()
+        SQLiteCompetencyRepository(database).ensure_catalog_defaults(
+            CurriculumDesktopAdapter().list_entries()
+        )
         return database
 
     def _student_list_item(
@@ -347,3 +384,51 @@ class StudentDesktopAdapter:
                 continue
             subjects.setdefault(subject_key, subject_label or subject_key)
         return subjects
+
+    def _competency_status_view_model(
+        self,
+        rating: object,
+        observation_date: str,
+        competency: object | None,
+    ) -> StudentCompetencyStatusViewModel:
+        subject_id = getattr(competency, "subject_id", getattr(rating, "subject_id"))
+        subject_display_name = getattr(
+            competency,
+            "subject_name",
+            getattr(rating, "subject_display_name"),
+        )
+        competency_label = getattr(
+            competency,
+            "label",
+            getattr(rating, "learning_area"),
+        )
+        sort_order = int(getattr(competency, "sort_order", 0))
+        rating_value = getattr(rating, "rating")
+        return StudentCompetencyStatusViewModel(
+            getattr(rating, "competency_id"),
+            competency_label,
+            subject_id,
+            subject_display_name,
+            rating_value,
+            observation_rating_label(rating_value),
+            observation_date,
+            sort_order,
+        )
+
+    def _group_competency_statuses(
+        self,
+        statuses: tuple[StudentCompetencyStatusViewModel, ...],
+    ) -> tuple[StudentCompetencySubjectGroup, ...]:
+        groups: dict[str, list[StudentCompetencyStatusViewModel]] = {}
+        subject_names: dict[str, str] = {}
+        for status in sorted(statuses, key=lambda item: (item.sort_order, item.competency_id)):
+            groups.setdefault(status.subject_id, []).append(status)
+            subject_names.setdefault(status.subject_id, status.subject_display_name)
+        return tuple(
+            StudentCompetencySubjectGroup(
+                subject_id,
+                subject_names[subject_id],
+                tuple(groups[subject_id]),
+            )
+            for subject_id in groups
+        )

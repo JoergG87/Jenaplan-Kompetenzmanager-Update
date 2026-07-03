@@ -83,6 +83,22 @@ class MasterDataCourseGroupRecord:
     sort_order: int = 0
 
 
+@dataclass(frozen=True)
+class CompetencyRecord:
+    """Persisted competency catalog record."""
+
+    competency_id: str
+    subject_id: str
+    subject_name: str
+    label: str
+    description: str
+    learning_area: str
+    competency_group: str
+    sort_order: int
+    active: bool
+    is_core_subject: bool
+
+
 class SQLiteDatabase:
     """Manage the Sprint 5.2a SQLite spike database."""
 
@@ -146,6 +162,19 @@ class SQLiteDatabase:
                         FOREIGN KEY (student_id) REFERENCES students(student_id)
                     );
 
+                    CREATE TABLE IF NOT EXISTS competencies (
+                        competency_id TEXT PRIMARY KEY,
+                        subject_id TEXT NOT NULL,
+                        subject_name TEXT NOT NULL,
+                        label TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        learning_area TEXT NOT NULL,
+                        competency_group TEXT,
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        active INTEGER NOT NULL CHECK (active IN (0, 1)),
+                        is_core_subject INTEGER NOT NULL CHECK (is_core_subject IN (0, 1)) DEFAULT 1
+                    );
+
                     CREATE TABLE IF NOT EXISTS observation_competency_ratings (
                         observation_id TEXT NOT NULL,
                         competency_id TEXT NOT NULL,
@@ -190,6 +219,8 @@ class SQLiteDatabase:
                         ON courses(course_name);
                     CREATE INDEX IF NOT EXISTS idx_observations_student_date
                         ON observations(student_id, date);
+                    CREATE INDEX IF NOT EXISTS idx_competencies_subject_sort
+                        ON competencies(subject_id, sort_order);
                     CREATE INDEX IF NOT EXISTS idx_observation_ratings_competency
                         ON observation_competency_ratings(competency_id);
                     CREATE INDEX IF NOT EXISTS idx_course_groups_name
@@ -204,6 +235,7 @@ class SQLiteDatabase:
                 self._ensure_column(connection, "courses", "color_name", "TEXT NOT NULL DEFAULT ''")
                 self._ensure_column(connection, "courses", "color_hex", "TEXT NOT NULL DEFAULT ''")
                 self._ensure_column(connection, "courses", "sort_order", "INTEGER NOT NULL DEFAULT 0")
+                self._ensure_column(connection, "competencies", "is_core_subject", "INTEGER NOT NULL DEFAULT 1")
                 self._backfill_course_colors(connection)
 
     def ensure_master_data_defaults(self) -> None:
@@ -777,6 +809,90 @@ class SQLiteCourseRepository:
         )
 
 
+class SQLiteCompetencyRepository:
+    """Read and seed the persistent competency catalog in SQLite."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def ensure_catalog_defaults(self, entries: tuple[object, ...]) -> None:
+        """Seed competencies only when the catalog table is empty."""
+        self.database.initialize_schema()
+        with closing(self.database.connect()) as connection:
+            with connection:
+                competency_count = connection.execute(
+                    "SELECT COUNT(*) FROM competencies"
+                ).fetchone()[0]
+                if competency_count:
+                    return
+                connection.executemany(
+                    """
+                    INSERT INTO competencies (
+                        competency_id,
+                        subject_id,
+                        subject_name,
+                        label,
+                        description,
+                        learning_area,
+                        competency_group,
+                        sort_order,
+                        active,
+                        is_core_subject
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        _competency_catalog_row(entry, index)
+                        for index, entry in enumerate(entries)
+                    ),
+                )
+
+    def list_competencies(self) -> tuple[CompetencyRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    competency_id,
+                    subject_id,
+                    subject_name,
+                    label,
+                    description,
+                    learning_area,
+                    competency_group,
+                    sort_order,
+                    active,
+                    is_core_subject
+                FROM competencies
+                ORDER BY sort_order, competency_id
+                """
+            ).fetchall()
+        return tuple(_competency_from_row(row) for row in rows)
+
+    def get_competency(self, competency_id: str) -> CompetencyRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    competency_id,
+                    subject_id,
+                    subject_name,
+                    label,
+                    description,
+                    learning_area,
+                    competency_group,
+                    sort_order,
+                    active,
+                    is_core_subject
+                FROM competencies
+                WHERE competency_id = ?
+                """,
+                (competency_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return _competency_from_row(row)
+
+
 class SQLiteMasterDataRepository:
     """Read and write persistent master data in SQLite."""
 
@@ -1120,6 +1236,42 @@ def _course_color_from_key(color_key: str, fallback_index: int = 0) -> tuple[str
         if normalized_color_key.upper() == color_hex.upper():
             return color_name, color_hex
     return COURSE_COLOR_OPTIONS[fallback_index % len(COURSE_COLOR_OPTIONS)]
+
+
+def _competency_catalog_row(entry: object, index: int) -> tuple[object, ...]:
+    label = str(getattr(entry, "competency_label", "")).strip()
+    if not label:
+        label = str(getattr(entry, "learning_area", "")).strip()
+    subject_id = getattr(entry, "subject_id", None)
+    if subject_id is None:
+        subject_id = getattr(entry, "subject_key")
+    return (
+        getattr(entry, "competency_id"),
+        subject_id,
+        getattr(entry, "subject_display_name"),
+        label,
+        getattr(entry, "competency_text"),
+        getattr(entry, "learning_area"),
+        getattr(entry, "competency_group"),
+        index,
+        int(getattr(entry, "is_active")),
+        int(getattr(entry, "is_core_subject")),
+    )
+
+
+def _competency_from_row(row: sqlite3.Row) -> CompetencyRecord:
+    return CompetencyRecord(
+        row["competency_id"],
+        row["subject_id"],
+        row["subject_name"],
+        row["label"],
+        row["description"],
+        row["learning_area"],
+        row["competency_group"] or "",
+        int(row["sort_order"]),
+        bool(row[ACTIVE]),
+        bool(row["is_core_subject"]),
+    )
 
 
 def _student_from_row(row: sqlite3.Row) -> StudentRecord:

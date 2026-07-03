@@ -262,12 +262,12 @@ UI-Projektionen:
 - Stammgruppe
 - Kurs
 - Beobachtungsverlauf
-- Kompetenzchips
+- Kompetenzuebersicht aus beobachteten Kompetenzen
 - Medienhinweise
 
 Regel:
 
-Das Schuelerprofil zeigt Daten eines Schuelers und startet spaeter freigegebene Dialoge. Es schreibt selbst keine fachlichen Daten.
+Das Schuelerprofil zeigt Daten eines Schuelers und startet spaeter freigegebene Dialoge. Es schreibt selbst keine fachlichen Daten. Kompetenzstaende werden aus Beobachtungen und SQLite `competencies` abgeleitet.
 
 ## Schuelerverwaltung / PySide-Dialog `Neuer Schüler`
 

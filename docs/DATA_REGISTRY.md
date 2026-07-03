@@ -44,6 +44,7 @@ Gepruefte Tabellen:
 | `course_groups` | CourseGroup | keine Workbook-Projektion |
 | `course_group_student_groups` | CourseGroupStudentGroup | keine Workbook-Projektion |
 | `course_group_courses` | CourseGroupCourse | keine Workbook-Projektion |
+| `competencies` | Competency | `data_competencies` / `tbl_competencies` |
 | `observations` | Observation | `data_observations` / `tbl_observations` |
 | `observation_competency_ratings` | ObservationCompetencyRating | `data_observation_competencies` / `tbl_observation_competencies` |
 
@@ -121,6 +122,19 @@ course_group_courses(
   PRIMARY KEY(course_group_id, course_id),
   FOREIGN KEY(course_group_id) REFERENCES course_groups(course_group_id),
   FOREIGN KEY(course_id) REFERENCES courses(course_id)
+)
+
+competencies(
+  competency_id TEXT PRIMARY KEY,
+  subject_id TEXT NOT NULL,
+  subject_name TEXT NOT NULL,
+  label TEXT NOT NULL,
+  description TEXT NOT NULL,
+  learning_area TEXT NOT NULL,
+  competency_group TEXT,
+  sort_order INTEGER NOT NULL,
+  active INTEGER NOT NULL,
+  is_core_subject INTEGER NOT NULL
 )
 
 observations(
@@ -576,7 +590,7 @@ Zweck: Kompetenzen und Kompetenzstruktur.
 
 Entity: Competency.
 
-Storage: `data_competencies` / `tbl_competencies`.
+Storage: SQLite `competencies`, Export-/Legacy-Projektion `data_competencies` / `tbl_competencies`.
 
 Projection: Kompetenzkarten, Kompetenzansicht, Kompetenzauswahl, Kompetenzchips.
 
@@ -586,19 +600,22 @@ Primary Key: `competency_id`.
 
 Foreign Keys:
 
-- `subject_id` -> `data_subjects.subject_id`
+- `subject_id` -> `data_subjects.subject_id` spaeter; aktuell mit `subject_name` aus dem Katalog denormalisiert
 - `parent_competency_id` -> `data_competencies.competency_id`
 
 Wichtige Felder:
 
 - `competency_id`
 - `subject_id`
-- `name`
+- `subject_name`
+- `label`
 - `description`
-- `level`
+- `learning_area`
+- `competency_group`
 - `parent_competency_id`
 - `sort_order`
-- `status`
+- `active`
+- `is_core_subject`
 
 Beziehungen:
 
@@ -630,7 +647,7 @@ Erlaubte UI-Projektionen:
 
 Erweiterungsregeln:
 
-- Kompetenzstruktur bleibt hierarchisch
+- Kompetenzstruktur wird aus dem freigegebenen Katalog geseedet und spaeter fachlich weiterentwickelt
 - neue Kompetenzfelder duerfen keine Beobachtungsdaten duplizieren
 - Bewertungen werden nicht als reine Farbwerte gespeichert
 
@@ -713,7 +730,7 @@ Primary Key: zusammengesetzt aus `observation_id` und `competency_id`.
 Foreign Keys:
 
 - `observation_id` -> `data_observations.observation_id`
-- `competency_id` -> `data_competencies.competency_id` spaeter; aktuell aus `data/curriculum_catalog_v1.csv` abgeleitet
+- `competency_id` -> SQLite `competencies.competency_id`
 
 Wichtige Felder:
 

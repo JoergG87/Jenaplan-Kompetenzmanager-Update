@@ -274,6 +274,7 @@ Registrierte SQLite-Tabellen:
 - `course_group_courses`
 - `observations`
 - `observation_competency_ratings`
+- `competencies`
 
 Registrierte Python-Spike-Komponenten:
 
@@ -281,11 +282,13 @@ Registrierte Python-Spike-Komponenten:
 - `SQLiteStudentRepository`
 - `SQLiteGroupRepository`
 - `SQLiteCourseRepository`
+- `SQLiteCompetencyRepository`
 - `SQLiteMasterDataRepository`
 - `SQLiteObservationRepository`
 - `MasterDataGroupRecord`
 - `MasterDataCourseRecord`
 - `MasterDataCourseGroupRecord`
+- `CompetencyRecord`
 - `ObservationCompetencyRatingRecord`
 - `ObservationRecord`
 - `ObservationService`
@@ -324,6 +327,9 @@ Registrierte Stammdaten-Repository-Methoden:
 - `SQLiteObservationRepository.list_observations()`
 - `SQLiteObservationRepository.list_observations_for_student(student_id)`
 - `SQLiteObservationRepository.get_observation(observation_id)`
+- `SQLiteCompetencyRepository.ensure_catalog_defaults(entries)`
+- `SQLiteCompetencyRepository.list_competencies()`
+- `SQLiteCompetencyRepository.get_competency(competency_id)`
 
 Registrierte Spike-Skripte:
 
@@ -422,6 +428,7 @@ Registrierte Python-Klassen und Funktionen:
 - `COLOR_GREEN`
 - `COLOR_ORANGE`
 - `StudentDesktopAdapter`
+- `StudentDesktopAdapter.list_competency_overview_for_student(student_id)`
 - `MasterDataDesktopAdapter`
 - `CurriculumDesktopAdapter`
 - `CurriculumCatalogEntry`
@@ -458,6 +465,8 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationDraftViewModel.subject_display_name`
 - `ObservationListItem`
 - `ObservationRatingViewModel`
+- `StudentCompetencyStatusViewModel`
+- `StudentCompetencySubjectGroup`
 - `OBSERVATION_CONTEXT_OPTIONS`
 - `OBSERVATION_CROSS_SUBJECT_LABEL`
 - `OBSERVATION_RATING_OPTIONS`
@@ -465,6 +474,7 @@ Registrierte Python-Klassen und Funktionen:
 - `OBSERVATION_SAVE_VALIDATION_MESSAGE`
 - `OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE`
 - `OBSERVATION_ATTACHMENT_EMPTY_STATE`
+- `observation_rating_label(rating)`
 - `observation_rating_keys()`
 - `DIALOG_CANCEL_TEXT`
 - `DIALOG_SAVE_TEXT`
