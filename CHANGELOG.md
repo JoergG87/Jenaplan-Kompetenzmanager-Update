@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## UI-Polish - Aufklappbare Beobachtungskarten
+
+### Changed
+
+- Beobachtungen im Schuelerprofil starten kompakt mit Datum, Fach, Kontext, Notizvorschau und Kompetenzanzahl.
+- Detailbereich wird per `Details anzeigen` geoeffnet und zeigt volle Notiz, Kompetenzbewertungen sowie Bearbeiten/Loeschen.
+
+### Not Changed
+
+- Keine Persistenz- oder Schemaaenderung, keine Aenderung der Kompetenzuebersicht, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
 ## Sprint - Beobachtungen bearbeiten und löschen
 
 ### Added

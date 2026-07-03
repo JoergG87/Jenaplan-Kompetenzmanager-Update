@@ -1572,6 +1572,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_student_profile_observation_cards_offer_edit_and_delete(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
+        edited_observation_ids = []
+        deleted_observation_ids = []
+        screen.observation_edit_requested.connect(edited_observation_ids.append)
+        screen.observation_delete_requested.connect(deleted_observation_ids.append)
         screen.set_student(
             self._sample_student_detail(),
             (
@@ -1588,9 +1592,30 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
         button_texts = [button.text() for button in screen.findChildren(QPushButton)]
+        details_button = next(
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.text() == "Details anzeigen"
+        )
+        details_button.click()
+        edit_button = next(
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.text() == "Bearbeiten"
+        )
+        delete_button = next(
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.text() == "Löschen"
+        )
+        edit_button.click()
+        delete_button.click()
 
+        self.assertIn("Details anzeigen", button_texts)
         self.assertIn("Bearbeiten", button_texts)
         self.assertIn("Löschen", button_texts)
+        self.assertEqual(edited_observation_ids, ["OBS-000001"])
+        self.assertEqual(deleted_observation_ids, ["OBS-000001"])
         self.assertIsNotNone(app)
 
     def test_student_profile_renders_persisted_observations(self) -> None:
@@ -1601,12 +1626,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("set_observations", source)
         self.assertIn("ObservationListItem", source)
         self.assertIn("_observation_card", source)
+        self.assertIn("_observation_summary", source)
+        self.assertIn("_toggle_observation_details", source)
         self.assertIn("_empty_observations_card", source)
-        self.assertIn('"Kontext"', source)
         self.assertIn('"Notiz"', source)
         self.assertIn('"Kompetenzen"', source)
 
-    def test_student_profile_observation_cards_show_required_fields(self) -> None:
+    def test_student_profile_observation_cards_render_compact_summary(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
         screen.set_student(
@@ -1634,12 +1660,54 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
+        button_texts = [button.text() for button in screen.findChildren(QPushButton)]
 
         self.assertIn("2026-07-03", label_texts)
         self.assertIn("Deutsch", label_texts)
-        self.assertIn("Kontext: Leseübung", label_texts)
-        self.assertIn("Notiz: Liest einen bekannten Text.", label_texts)
+        self.assertIn("Leseübung · Liest einen bekannten Text. · 1 Kompetenz", label_texts)
+        self.assertIn("Details anzeigen", button_texts)
+        self.assertNotIn("Kontext: Leseübung", label_texts)
         self.assertIn("Kompetenzen", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_observation_details_can_be_expanded(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (
+                ObservationListItem(
+                    "OBS-000001",
+                    f"{STUDENT_ID_PREFIX}-000001",
+                    "2026-07-03",
+                    "Deutsch",
+                    "Leseübung",
+                    "Liest einen bekannten Text.",
+                    (
+                        ObservationRatingViewModel(
+                            "CMP-000001",
+                            "Deutsch",
+                            "Mit Texten und Medien umgehen",
+                            "Lesen und Verstehen",
+                            "Texte lesen und zentrale Informationen entnehmen",
+                            "+",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        details_button = next(
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.text() == "Details anzeigen"
+        )
+        details_button.click()
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertEqual(details_button.text(), "Details ausblenden")
+        self.assertIn("Kompetenzen", label_texts)
+        self.assertIn("Notiz: Liest einen bekannten Text.", label_texts)
         self.assertTrue(any(
             text.startswith("+  Mit Texten und Medien umgehen")
             for text in label_texts

@@ -6,6 +6,17 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## UI-Polish - Aufklappbare Beobachtungskarten 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Beobachtungskarten starten kompakt mit Datum, Fach, Kontext, Notizvorschau und Kompetenzanzahl
+- [x] Details lassen sich pro Karte aufklappen
+- [x] Aufgeklappt bleiben volle Notiz, Kompetenzbewertungen sowie Bearbeiten/Loeschen erreichbar
+- [x] Kompetenzuebersicht, Persistenz, Schema, Excel/VBA und Sortierung unveraendert
+
 ## Sprint - Beobachtungen bearbeiten und löschen 🔄
 
 - [x] Status: Umgesetzt, nicht committed

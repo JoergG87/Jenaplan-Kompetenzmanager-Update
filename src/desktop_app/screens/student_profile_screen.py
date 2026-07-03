@@ -254,22 +254,42 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(5)
-        layout.addLayout(self._observation_header(observation))
-        layout.addWidget(self._observation_field("Kontext", observation.context or "-"))
-        layout.addWidget(self._observation_field("Notiz", observation.note or "-"))
+        details_widget = QWidget()
+        details_widget.setVisible(False)
+        details_button = QPushButton("Details anzeigen")
+        details_button.clicked.connect(
+            lambda _checked=False: self._toggle_observation_details(
+                details_widget,
+                details_button,
+            )
+        )
+        layout.addLayout(self._observation_header(observation, details_button))
+        layout.addWidget(self._observation_summary(observation))
+        details_layout = QVBoxLayout(details_widget)
+        details_layout.setContentsMargins(0, 4, 0, 0)
+        details_layout.setSpacing(5)
+        details_layout.addWidget(self._observation_field("Notiz", observation.note or "-"))
         competencies_title = QLabel("Kompetenzen")
         set_label_style(competencies_title, "field_label")
-        layout.addWidget(competencies_title)
+        details_layout.addWidget(competencies_title)
         if not observation.competency_ratings:
             empty_competencies = QLabel("Keine Kompetenzen hinterlegt.")
             set_label_style(empty_competencies, "subtle")
-            layout.addWidget(empty_competencies)
+            details_layout.addWidget(empty_competencies)
+            details_layout.addLayout(self._observation_actions(observation))
+            layout.addWidget(details_widget)
             return card
         for rating in observation.competency_ratings:
-            layout.addWidget(self._rating_row(rating))
+            details_layout.addWidget(self._rating_row(rating))
+        details_layout.addLayout(self._observation_actions(observation))
+        layout.addWidget(details_widget)
         return card
 
-    def _observation_header(self, observation: ObservationListItem) -> QHBoxLayout:
+    def _observation_header(
+        self,
+        observation: ObservationListItem,
+        details_button: QPushButton,
+    ) -> QHBoxLayout:
         header = QHBoxLayout()
         header.setContentsMargins(0, 0, 0, 0)
         header.setSpacing(8)
@@ -277,6 +297,49 @@ class StudentProfileScreen(QWidget):
         set_label_style(date_label, "card_title")
         subject_label = QLabel(observation.subject_display_name or "-")
         set_label_style(subject_label, "muted")
+        header.addWidget(date_label, 0)
+        header.addWidget(subject_label, 1)
+        header.addWidget(details_button, 0)
+        return header
+
+    def _observation_summary(self, observation: ObservationListItem) -> QLabel:
+        preview = self._note_preview(observation.note)
+        competency_count = len(observation.competency_ratings)
+        competency_label = (
+            "1 Kompetenz"
+            if competency_count == 1
+            else f"{competency_count} Kompetenzen"
+        )
+        parts = [observation.context or "-", preview, competency_label]
+        summary = QLabel(" · ".join(part for part in parts if part))
+        summary.setWordWrap(True)
+        set_label_style(summary, "body")
+        return summary
+
+    def _note_preview(self, note: str, max_length: int = 90) -> str:
+        cleaned_note = " ".join(note.split())
+        if not cleaned_note:
+            return "Keine Notiz"
+        if len(cleaned_note) <= max_length:
+            return cleaned_note
+        return f"{cleaned_note[:max_length].rstrip()}..."
+
+    def _toggle_observation_details(
+        self,
+        details_widget: QWidget,
+        details_button: QPushButton,
+    ) -> None:
+        details_widget.setVisible(details_widget.isHidden())
+        details_button.setText(
+            "Details ausblenden"
+            if not details_widget.isHidden()
+            else "Details anzeigen"
+        )
+
+    def _observation_actions(self, observation: ObservationListItem) -> QHBoxLayout:
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 2, 0, 0)
+        actions.setSpacing(8)
         edit_button = QPushButton("Bearbeiten")
         delete_button = QPushButton("Löschen")
         edit_button.clicked.connect(
@@ -289,11 +352,10 @@ class StudentProfileScreen(QWidget):
                 self.observation_delete_requested.emit(observation_id)
             )
         )
-        header.addWidget(date_label, 0)
-        header.addWidget(subject_label, 1)
-        header.addWidget(edit_button, 0)
-        header.addWidget(delete_button, 0)
-        return header
+        actions.addStretch()
+        actions.addWidget(edit_button)
+        actions.addWidget(delete_button)
+        return actions
 
     def _observation_field(self, label: str, value: str) -> QLabel:
         field = QLabel(f"{label}: {value}")

@@ -441,6 +441,10 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.delete_observation(observation_id)`
 - `StudentDesktopAdapter.observation_draft_for_edit(observation_id)`
 - `StudentDesktopAdapter.list_competency_overview_for_student(student_id)`
+- `StudentProfileScreen._observation_summary(observation)`
+- `StudentProfileScreen._toggle_observation_details(details_widget, details_button)`
+- `StudentProfileScreen._observation_actions(observation)`
+- `StudentProfileScreen._note_preview(note, max_length)`
 - `MasterDataDesktopAdapter`
 - `CurriculumDesktopAdapter`
 - `CurriculumCatalogEntry`
