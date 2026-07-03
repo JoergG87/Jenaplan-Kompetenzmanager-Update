@@ -272,6 +272,8 @@ Registrierte SQLite-Tabellen:
 - `course_groups`
 - `course_group_student_groups`
 - `course_group_courses`
+- `observations`
+- `observation_competency_ratings`
 
 Registrierte Python-Spike-Komponenten:
 
@@ -280,9 +282,16 @@ Registrierte Python-Spike-Komponenten:
 - `SQLiteGroupRepository`
 - `SQLiteCourseRepository`
 - `SQLiteMasterDataRepository`
+- `SQLiteObservationRepository`
 - `MasterDataGroupRecord`
 - `MasterDataCourseRecord`
 - `MasterDataCourseGroupRecord`
+- `ObservationCompetencyRatingRecord`
+- `ObservationRecord`
+- `ObservationService`
+- `ObservationValidator`
+- `ObservationValidationError`
+- `ObservationRepositoryError`
 - `create_sqlite_seed_database(path)`
 - `build_workbook_data_from_sqlite(path)`
 
@@ -311,6 +320,10 @@ Registrierte Stammdaten-Repository-Methoden:
 - `SQLiteMasterDataRepository.replace_course_group_courses(course_group_id, course_ids)`
 - `SQLiteMasterDataRepository.next_student_group_id()`
 - `SQLiteMasterDataRepository.next_course_id()`
+- `SQLiteObservationRepository.create_observation(observation)`
+- `SQLiteObservationRepository.list_observations()`
+- `SQLiteObservationRepository.list_observations_for_student(student_id)`
+- `SQLiteObservationRepository.get_observation(observation_id)`
 
 Registrierte Spike-Skripte:
 
@@ -333,11 +346,14 @@ Registrierte Python-Klassen und Funktionen:
 - `SuccessResult`
 - `ErrorResult`
 - `CreateStudentCommand`
+- `CreateObservationCommand`
 - `student_create_handler(service)`
+- `observation_create_handler(service)`
 
 Registrierte Command-Namen:
 
 - `student.create`
+- `observation.create`
 
 ## Desktop-App
 
@@ -411,6 +427,7 @@ Registrierte Python-Klassen und Funktionen:
 - `CurriculumCatalogEntry`
 - `CurriculumSubjectOption`
 - `CURRICULUM_CATALOG_V1_PATH`
+- `CurriculumCatalogEntry.competency_id`
 - `CurriculumCatalogEntry.competency_display_name`
 - `CurriculumCatalogEntry.competency_detail_label`
 - `StudentListItem`
@@ -431,11 +448,17 @@ Registrierte Python-Klassen und Funktionen:
 - `PROFILE_ACTION_MESSAGES`
 - `PROFILE_SECTION_PLACEHOLDERS`
 - `ObservationCompetencyRatingDraft`
+- `ObservationCompetencyRatingDraft.competency_id`
 - `ObservationCompetencyRatingDraft.subject_display_name`
 - `ObservationDraftViewModel`
+- `ObservationDraftViewModel.subject_id`
+- `ObservationDraftViewModel.subject_display_name`
+- `ObservationListItem`
+- `ObservationRatingViewModel`
 - `OBSERVATION_CONTEXT_OPTIONS`
 - `OBSERVATION_RATING_OPTIONS`
-- `OBSERVATION_SAVE_PLACEHOLDER_MESSAGE`
+- `OBSERVATION_SAVE_SUCCESS_MESSAGE`
+- `OBSERVATION_SAVE_VALIDATION_MESSAGE`
 - `OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE`
 - `OBSERVATION_ATTACHMENT_EMPTY_STATE`
 - `observation_rating_keys()`

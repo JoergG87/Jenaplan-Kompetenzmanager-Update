@@ -1,4 +1,4 @@
-"""Observation UX prototype view models for the PySide6 desktop app."""
+"""Observation view models for the PySide6 desktop app."""
 
 from __future__ import annotations
 
@@ -20,8 +20,10 @@ OBSERVATION_RATING_OPTIONS = (
     "-- Unterstützungsbedarf",
 )
 
-OBSERVATION_SAVE_PLACEHOLDER_MESSAGE = (
-    "Beobachtungen werden in einem späteren Sprint gespeichert."
+OBSERVATION_SAVE_SUCCESS_MESSAGE = "Beobachtung wurde gespeichert."
+
+OBSERVATION_SAVE_VALIDATION_MESSAGE = (
+    "Bitte mindestens eine Kompetenz mit Bewertung auswählen."
 )
 
 OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE = (
@@ -33,7 +35,7 @@ OBSERVATION_ATTACHMENT_EMPTY_STATE = "Noch keine Anhänge ausgewählt."
 
 @dataclass(frozen=True)
 class ObservationCompetencyRatingDraft:
-    """Selected competency rating data kept in the non-persistent draft."""
+    """Selected competency rating data kept in the observation draft."""
 
     subject_key: str
     subject_display_name: str
@@ -41,6 +43,7 @@ class ObservationCompetencyRatingDraft:
     competency_group: str
     competency_text: str
     rating: str
+    competency_id: str = ""
 
     @property
     def display_label(self) -> str:
@@ -55,6 +58,7 @@ class ObservationCompetencyRatingDraft:
     ) -> "ObservationCompetencyRatingDraft":
         """Create a draft rating from a curriculum catalog entry."""
         return cls(
+            competency_id=getattr(entry, "competency_id"),
             subject_key=getattr(entry, "subject_key"),
             subject_display_name=getattr(entry, "subject_display_name"),
             learning_area=getattr(entry, "learning_area"),
@@ -66,7 +70,7 @@ class ObservationCompetencyRatingDraft:
 
 @dataclass(frozen=True)
 class ObservationDraftViewModel:
-    """Non-persistent draft state for the observation UX prototype."""
+    """Draft state for the persisted observation workflow."""
 
     student_id: str
     student_name: str
@@ -74,7 +78,47 @@ class ObservationDraftViewModel:
     competency_ratings: tuple[ObservationCompetencyRatingDraft, ...]
     context: str
     note: str
+    subject_id: str = ""
+    subject_display_name: str = ""
     attachment_names: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ObservationRatingViewModel:
+    """Displayed competency rating for one persisted observation."""
+
+    competency_id: str
+    subject_display_name: str
+    learning_area: str
+    competency_group: str
+    competency_text: str
+    rating: str
+
+    @property
+    def display_label(self) -> str:
+        """Return the compact display label for the profile list."""
+        return f"{self.rating} {self.subject_display_name} · {self.learning_area}"
+
+
+@dataclass(frozen=True)
+class ObservationListItem:
+    """Profile-list item for one persisted observation."""
+
+    observation_id: str
+    student_id: str
+    date_text: str
+    subject_display_name: str
+    context: str
+    note: str
+    competency_ratings: tuple[ObservationRatingViewModel, ...]
+
+    @property
+    def summary(self) -> str:
+        """Return the compact first line for profile rendering."""
+        parts = [self.date_text, self.subject_display_name]
+        if self.context:
+            parts.append(self.context)
+        return " · ".join(part for part in parts if part)
 
 
 def observation_rating_keys() -> tuple[str, ...]:

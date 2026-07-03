@@ -44,6 +44,8 @@ Gepruefte Tabellen:
 | `course_groups` | CourseGroup | keine Workbook-Projektion |
 | `course_group_student_groups` | CourseGroupStudentGroup | keine Workbook-Projektion |
 | `course_group_courses` | CourseGroupCourse | keine Workbook-Projektion |
+| `observations` | Observation | `data_observations` / `tbl_observations` |
+| `observation_competency_ratings` | ObservationCompetencyRating | `data_observation_competencies` / `tbl_observation_competencies` |
 
 Regel:
 
@@ -120,6 +122,32 @@ course_group_courses(
   FOREIGN KEY(course_group_id) REFERENCES course_groups(course_group_id),
   FOREIGN KEY(course_id) REFERENCES courses(course_id)
 )
+
+observations(
+  observation_id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  subject_id TEXT NOT NULL,
+  context TEXT,
+  note TEXT,
+  active INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(student_id) REFERENCES students(student_id)
+)
+
+observation_competency_ratings(
+  observation_id TEXT NOT NULL,
+  competency_id TEXT NOT NULL,
+  subject_id TEXT NOT NULL,
+  subject_display_name TEXT NOT NULL,
+  learning_area TEXT NOT NULL,
+  competency_group TEXT,
+  competency_text TEXT NOT NULL,
+  rating TEXT NOT NULL,
+  PRIMARY KEY(observation_id, competency_id),
+  FOREIGN KEY(observation_id) REFERENCES observations(observation_id)
+)
 ```
 
 ## Physische Workbook-/Export-Projektion
@@ -164,7 +192,7 @@ Registrierte Zuordnung:
 
 ## Curriculum-Katalog v1
 
-Zweck: Read-only-Katalog fuer Fachauswahl und Kompetenzauswahl im PySide6-Beobachtungsdialog-Prototyp.
+Zweck: Read-only-Katalog fuer Fachauswahl und Kompetenzauswahl im PySide6-Beobachtungsdialog.
 
 Datei: `data/curriculum_catalog_v1.csv`
 
@@ -176,6 +204,7 @@ Wichtige Felder:
 
 - `subject_key`
 - `subject_display_name`
+- abgeleitete `competency_id` im Adapterformat `CMP-######`
 - `subject_full_name`
 - `official_subject_name`
 - `school_context_name`
@@ -190,7 +219,7 @@ Wichtige Felder:
 Regeln:
 
 - Der Katalog wird nur lesend verwendet.
-- Er erzeugt keine Beobachtung, keine Kompetenzzuordnung und keine SQLite-Persistenz.
+- Er erzeugt selbst keine Beobachtung; der PySide-Adapter leitet daraus stabile `competency_id`s fuer `observation_competency_ratings` ab.
 - `EPU` ist der App-Anzeigename fuer `Epochaler Projektunterricht`.
 - Die offizielle Lehrplanquelle fuer `EPU` ist `Heimat- und Sachkunde`.
 - `Sachunterricht` wird nicht als App-Fach gefuehrt.
@@ -610,7 +639,7 @@ Zweck: Beobachtungen als fachliche Quelle der Lernentwicklung.
 
 Entity: Observation.
 
-Storage: `data_observations` / `tbl_observations`.
+Storage: SQLite `observations`, Export-/Legacy-Projektion `data_observations` / `tbl_observations`.
 
 Projection: Beobachtungsverlauf, Kompetenzverlauf, Berichtsdaten, Dashboard-Auswertung.
 
@@ -627,11 +656,12 @@ Wichtige Felder:
 - `observation_id`
 - `student_id`
 - `date`
+- `subject_id`
 - `context`
 - `note`
 - `created_at`
 - `updated_at`
-- `status`
+- `active`
 
 Beziehungen:
 
@@ -671,7 +701,7 @@ Zweck: Zuordnung von Beobachtungen zu Kompetenzen.
 
 Entity: ObservationCompetency.
 
-Storage: `data_observation_competencies` / `tbl_observation_competencies`.
+Storage: SQLite `observation_competency_ratings`, Export-/Legacy-Projektion `data_observation_competencies` / `tbl_observation_competencies`.
 
 Projection: Kompetenzchips, Kompetenzverlauf, Bewertungsuebersicht.
 
@@ -682,14 +712,18 @@ Primary Key: zusammengesetzt aus `observation_id` und `competency_id`.
 Foreign Keys:
 
 - `observation_id` -> `data_observations.observation_id`
-- `competency_id` -> `data_competencies.competency_id`
+- `competency_id` -> `data_competencies.competency_id` spaeter; aktuell aus `data/curriculum_catalog_v1.csv` abgeleitet
 
 Wichtige Felder:
 
 - `observation_id`
 - `competency_id`
+- `subject_id`
+- `subject_display_name`
+- `learning_area`
+- `competency_group`
+- `competency_text`
 - `rating`
-- `note`
 
 Beziehungen:
 

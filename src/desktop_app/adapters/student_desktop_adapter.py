@@ -4,21 +4,33 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.application.commands import CreateStudentCommand
+from src.application.commands import CreateObservationCommand, CreateStudentCommand
 from src.application.dispatcher import (
     ApplicationCommandDispatcher,
+    observation_create_handler,
     student_create_handler,
+)
+from src.core.observation import (
+    ObservationCompetencyRatingRecord,
+    ObservationService,
+    ObservationValidator,
 )
 from src.core.sqlite_store import (
     SQLITE_SPIKE_PATH,
     SQLiteCourseRepository,
     SQLiteDatabase,
     SQLiteGroupRepository,
+    SQLiteObservationRepository,
     SQLiteStudentRepository,
 )
 from src.core.student import StudentService, StudentValidator
 from src.core.workbook_data import CourseRecord, GroupRecord, StudentRecord
 from src.desktop_app.view_models.master_data_view_model import course_color_from_key
+from src.desktop_app.view_models.observation_view_model import (
+    ObservationDraftViewModel,
+    ObservationListItem,
+    ObservationRatingViewModel,
+)
 from src.desktop_app.view_models.student_view_model import (
     GroupSummaryViewModel,
     StudentDetailViewModel,
@@ -150,18 +162,89 @@ class StudentDesktopAdapter:
         )
         return self._dispatcher().dispatch(command)
 
+    def create_observation_command(
+        self,
+        draft: ObservationDraftViewModel,
+    ) -> CreateObservationCommand:
+        """Create an observation command from GUI draft state."""
+        return CreateObservationCommand(
+            student_id=draft.student_id,
+            date=draft.date_text,
+            subject_id=draft.subject_id,
+            context=draft.context,
+            note=draft.note,
+            competency_ratings=tuple(
+                ObservationCompetencyRatingRecord(
+                    rating.competency_id,
+                    rating.subject_key,
+                    rating.subject_display_name,
+                    rating.learning_area,
+                    rating.competency_group,
+                    rating.competency_text,
+                    rating.rating,
+                )
+                for rating in draft.competency_ratings
+            ),
+        )
+
+    def save_observation(self, draft: ObservationDraftViewModel) -> object:
+        """Persist an observation through the application stack."""
+        command = self.create_observation_command(draft)
+        return self._dispatcher().dispatch(command)
+
+    def list_observations_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[ObservationListItem, ...]:
+        """Return persisted observations for the profile view."""
+        observations = SQLiteObservationRepository(
+            self.database
+        ).list_observations_for_student(student_id)
+        return tuple(
+            ObservationListItem(
+                observation.observation_id,
+                observation.student_id,
+                observation.date,
+                self._subject_display_name(observation),
+                observation.context,
+                observation.note,
+                tuple(
+                    ObservationRatingViewModel(
+                        rating.competency_id,
+                        rating.subject_display_name,
+                        rating.learning_area,
+                        rating.competency_group,
+                        rating.competency_text,
+                        rating.rating,
+                    )
+                    for rating in observation.competency_ratings
+                ),
+            )
+            for observation in observations
+        )
+
     def _dispatcher(self) -> ApplicationCommandDispatcher:
         student_repository = SQLiteStudentRepository(self.database)
+        observation_repository = SQLiteObservationRepository(self.database)
         group_ids = tuple(group.group_id for group in self.list_groups())
         course_ids = tuple(course.course_id for course in self.list_courses())
-        service = StudentService(
+        student_service = StudentService(
             student_repository,
             StudentValidator(),
             group_ids,
             course_ids,
         )
+        observation_service = ObservationService(
+            observation_repository,
+            ObservationValidator(),
+            tuple(student.student_id for student in student_repository.list_students()),
+        )
         dispatcher = ApplicationCommandDispatcher()
-        dispatcher.register("student.create", student_create_handler(service))
+        dispatcher.register("student.create", student_create_handler(student_service))
+        dispatcher.register(
+            "observation.create",
+            observation_create_handler(observation_service),
+        )
         return dispatcher
 
     def _open_database(self) -> SQLiteDatabase:
@@ -213,3 +296,11 @@ class StudentDesktopAdapter:
         if course_id and student.course_id != course_id:
             return False
         return True
+
+    def _subject_display_name(self, observation: object) -> str:
+        for rating in getattr(observation, "competency_ratings", ()):
+            if rating.subject_id == getattr(observation, "subject_id", ""):
+                return rating.subject_display_name
+        for rating in getattr(observation, "competency_ratings", ()):
+            return rating.subject_display_name
+        return getattr(observation, "subject_id", "")

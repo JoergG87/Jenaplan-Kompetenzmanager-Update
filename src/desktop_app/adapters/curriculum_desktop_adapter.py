@@ -6,6 +6,8 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.core.constants import COMPETENCY_ID_PREFIX, ID_SEQUENCE_WIDTH
+
 
 CURRICULUM_CATALOG_V1_PATH = (
     Path(__file__).resolve().parents[3] / "data" / "curriculum_catalog_v1.csv"
@@ -16,6 +18,7 @@ CURRICULUM_CATALOG_V1_PATH = (
 class CurriculumCatalogEntry:
     """One row in the curriculum catalog v1."""
 
+    competency_id: str
     subject_key: str
     subject_display_name: str
     subject_full_name: str
@@ -67,8 +70,11 @@ class CurriculumDesktopAdapter:
         """Return all catalog entries."""
         with self.catalog_path.open(newline="", encoding="utf-8") as csv_file:
             return tuple(
-                self._entry_from_row(row)
-                for row in csv.DictReader(csv_file, delimiter=";")
+                self._entry_from_row(row, index)
+                for index, row in enumerate(
+                    csv.DictReader(csv_file, delimiter=";"),
+                    start=1,
+                )
             )
 
     def list_active_subjects(self) -> tuple[CurriculumSubjectOption, ...]:
@@ -103,8 +109,13 @@ class CurriculumDesktopAdapter:
             if entry.is_active and entry.subject_key == subject_key
         )
 
-    def _entry_from_row(self, row: dict[str, str]) -> CurriculumCatalogEntry:
+    def _entry_from_row(
+        self,
+        row: dict[str, str],
+        index: int,
+    ) -> CurriculumCatalogEntry:
         return CurriculumCatalogEntry(
+            competency_id=f"{COMPETENCY_ID_PREFIX}-{index:0{ID_SEQUENCE_WIDTH}}",
             subject_key=row["subject_key"],
             subject_display_name=row["subject_display_name"],
             subject_full_name=row["subject_full_name"],

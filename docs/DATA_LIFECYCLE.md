@@ -279,19 +279,20 @@ Regel: Defaults fuer Stammgruppen, Kurse und `Mathe/Deutsch Kursverbund A` werde
 
 Start: Lehrkraft dokumentiert eine Beobachtung zu einem Schueler.
 
-Schreibprozess: Zentraler Beobachtungsdialog, spaeter freizugeben.
+Schreibprozess: PySide-Beobachtungsdialog ueber `StudentDesktopAdapter`, `observation.create`, `ObservationService`, `SQLiteObservationRepository` und SQLite.
 
 Betroffene Datenquellen:
 
-- `data_observations`
-- `data_observation_competencies`
-- optional `data_media`
+- SQLite `observations`
+- SQLite `observation_competency_ratings`
+- Export-/Legacy-Projektionen `data_observations` und `data_observation_competencies`
+- spaeter optional `data_media`
 
 Erforderliche IDs:
 
 - neuer `observation_id`
 - bestehender `student_id`
-- mindestens ein bestehender `competency_id`, sobald Kompetenzzuordnung verpflichtend ist
+- bestehender oder aus dem v1-Katalog abgeleiteter `competency_id`
 
 Automatisch profitierende Ansichten:
 
@@ -301,6 +302,7 @@ Automatisch profitierende Ansichten:
 - Dashboards
 
 Regel: Beobachtung ist Source of Truth. Auswertungen leiten sich daraus ab.
+Beobachtung und Kompetenzbewertungen werden atomar gespeichert; eine Bewertung gehoert zur Kompetenz, nicht global zur Beobachtung. Medien/Anhaenge und Berichte bleiben separate spaetere Prozesse.
 
 ## Kompetenz ergaenzen
 

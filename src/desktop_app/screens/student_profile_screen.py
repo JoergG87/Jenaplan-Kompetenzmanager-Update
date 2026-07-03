@@ -18,6 +18,7 @@ from src.desktop_app.view_models.student_view_model import (
     PROFILE_SECTION_PLACEHOLDERS,
     StudentDetailViewModel,
 )
+from src.desktop_app.view_models.observation_view_model import ObservationListItem
 from src.desktop_app.theme import create_card, set_label_style
 
 
@@ -38,6 +39,7 @@ class StudentProfileScreen(QWidget):
         self.course_value_label = QLabel("")
         self.notes_value_label = QLabel("")
         self.action_feedback_label = QLabel("")
+        self.observation_empty_label = QLabel("")
         self._build()
 
     def _build(self) -> None:
@@ -61,11 +63,7 @@ class StudentProfileScreen(QWidget):
         content_layout.addWidget(self.student_id_label)
         content_layout.addWidget(self._actions_card())
         content_layout.addWidget(self._basis_data_card())
-        content_layout.addWidget(self._placeholder_card(
-            "Beobachtungen",
-            PROFILE_SECTION_PLACEHOLDERS["observations_title"],
-            PROFILE_SECTION_PLACEHOLDERS["observations_hint"],
-        ))
+        content_layout.addWidget(self._observations_card())
         content_layout.addWidget(self._placeholder_card(
             "Kompetenzen",
             PROFILE_SECTION_PLACEHOLDERS["competencies_title"],
@@ -146,6 +144,20 @@ class StudentProfileScreen(QWidget):
         layout.addWidget(hint_label)
         return card
 
+    def _observations_card(self) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        title_label = QLabel("Beobachtungen")
+        set_label_style(title_label, "card_title")
+        self.observations_container = QWidget()
+        self.observations_layout = QVBoxLayout(self.observations_container)
+        self.observations_layout.setContentsMargins(0, 0, 0, 0)
+        self.observations_layout.setSpacing(6)
+        set_label_style(self.observation_empty_label, "body")
+        layout.addWidget(title_label)
+        layout.addWidget(self.observations_container)
+        return card
+
     def _card(self) -> QFrame:
         return create_card()
 
@@ -158,7 +170,11 @@ class StudentProfileScreen(QWidget):
             return
         self.observation_requested.emit(self.current_student)
 
-    def set_student(self, student: StudentDetailViewModel | None) -> None:
+    def set_student(
+        self,
+        student: StudentDetailViewModel | None,
+        observations: tuple[ObservationListItem, ...] = (),
+    ) -> None:
         """Render selected student or empty state."""
         self.current_student = student
         if student is None:
@@ -169,6 +185,7 @@ class StudentProfileScreen(QWidget):
             self.course_value_label.setText("")
             self.notes_value_label.setText("")
             self.action_feedback_label.setText("")
+            self.set_observations(())
             return
         self.name_label.setText(student.display_name)
         self.meta_label.setText(f"{student.group_name} · {student.course_name}")
@@ -177,3 +194,51 @@ class StudentProfileScreen(QWidget):
         self.course_value_label.setText(student.course_name)
         self.notes_value_label.setText(student.student_notes or "Keine Notiz hinterlegt.")
         self.action_feedback_label.setText("")
+        self.set_observations(observations)
+
+    def set_observations(
+        self,
+        observations: tuple[ObservationListItem, ...],
+    ) -> None:
+        """Render persisted observations for the current profile."""
+        self._clear_observations()
+        if not observations:
+            self.observation_empty_label.setText(
+                PROFILE_SECTION_PLACEHOLDERS["observations_title"]
+            )
+            hint_label = QLabel(PROFILE_SECTION_PLACEHOLDERS["observations_hint"])
+            set_label_style(hint_label, "subtle")
+            self.observations_layout.addWidget(self.observation_empty_label)
+            self.observations_layout.addWidget(hint_label)
+            return
+        for observation in observations:
+            self.observations_layout.addWidget(
+                self._observation_item(observation)
+            )
+
+    def _observation_item(self, observation: ObservationListItem) -> QWidget:
+        item = QWidget()
+        layout = QVBoxLayout(item)
+        layout.setContentsMargins(0, 2, 0, 4)
+        layout.setSpacing(2)
+        summary = QLabel(observation.summary)
+        set_label_style(summary, "body")
+        layout.addWidget(summary)
+        if observation.note:
+            note = QLabel(observation.note)
+            note.setWordWrap(True)
+            set_label_style(note, "subtle")
+            layout.addWidget(note)
+        for rating in observation.competency_ratings:
+            rating_label = QLabel(rating.display_label)
+            rating_label.setToolTip(rating.competency_text)
+            set_label_style(rating_label, "small")
+            layout.addWidget(rating_label)
+        return item
+
+    def _clear_observations(self) -> None:
+        while self.observations_layout.count():
+            layout_item = self.observations_layout.takeAt(0)
+            widget = layout_item.widget()
+            if widget is not None:
+                widget.setParent(None)

@@ -137,9 +137,10 @@ Regel: Die Schueleruebersicht liest persistente Schueler ueber `StudentDesktopAd
 | ausgewaehlter Schueler | `student_id` aus Navigation -> `data_students` | Anzeige | Nein | `data_students` | Namen werden nicht als technische Identitaet verwendet |
 | Fachauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Prototyp, spaeter `data_subjects` | Eingabe | Nein | Kompetenzverwaltung / Lehrplanpflege | filtert die sichtbare Kompetenzauswahl; App-Anzeigename `EPU`, kein App-Fach `Sachunterricht` |
 | Kompetenzauswahl | `data/curriculum_catalog_v1.csv` im PySide6-Prototyp, spaeter `data_competencies` + `data_subjects` | Eingabe | Nein | `data_competencies` | ausgewaehlte Kompetenzbewertungen koennen aus mehreren Faechern stammen; v1-Katalog noch nicht final ausdifferenziert |
-| Beobachtungsnotiz | zukuenftig `data_observations.note` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | Schreiben nur nach freigegebenem Prozess |
-| Beobachtungskontext | zukuenftig `data_observations.context` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | Kontext gehoert zur Beobachtung |
-| Kompetenzzuordnung | zukuenftig `data_observation_competencies` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observation_competencies` | n:m-Zuordnung; Bewertung liegt pro ausgewaehlter Kompetenz, Persistenz folgt spaeter |
+| Beobachtungsdatum | SQLite `observations.date` | Eingabe | Ja | `observations` | Datum gehoert zur Beobachtung |
+| Beobachtungsnotiz | SQLite `observations.note` | Eingabe | Ja | `observations` | Schreiben ueber Adapter, Command, Service und Repository |
+| Beobachtungskontext | SQLite `observations.context` | Eingabe | Ja | `observations` | Kontext gehoert zur Beobachtung |
+| Kompetenzzuordnung | SQLite `observation_competency_ratings` | Eingabe | Ja | `observation_competency_ratings` | n:m-Zuordnung; Bewertung liegt pro ausgewaehlter Kompetenz |
 | Dokumente und Medien | zukuenftig `data_media.file_ref` nach `student_id` und optional `observation_id` | Eingabe | Geplant | `data_media` | nur als Anlage, keine Einbettung, Beobachtung bleibt Source of Truth |
 
 ## Berichte und Dashboard

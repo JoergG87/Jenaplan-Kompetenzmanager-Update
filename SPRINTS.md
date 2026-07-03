@@ -6,6 +6,23 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - Beobachtungen SQLite-Persistenz 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Titel
+
+Beobachtungen persistent speichern und nach Neustart laden
+
+### Ergebnis
+
+- [x] SQLite-Tabellen fuer Beobachtungen und Kompetenzbewertungen ergaenzt
+- [x] Beobachtungen werden ueber `observation.create` atomar in SQLite gespeichert
+- [x] Mehrere Kompetenzen mit jeweils eigener Bewertung werden gespeichert und geladen
+- [x] Schuelerprofil zeigt persistente Beobachtungen nach Adapter-/App-Neustart
+- [x] Dialog speichert ueber Adapter, Service, Repository und nicht direkt in Qt-Widgets
+- [x] Keine Medien, Berichte, Export, Packaging, Excel/VBA oder UI-Redesign geaendert
+
 ## Sprint - Schuelerdaten SQLite-Persistenz 🔄
 
 - [x] Status: Umgesetzt, nicht committed

@@ -28,6 +28,11 @@ from .constants import (
     STUDENT_NOTES,
     UPDATED_AT,
 )
+from .observation import (
+    ObservationCompetencyRatingRecord,
+    ObservationRecord,
+    ObservationRepositoryError,
+)
 from .student import StudentRepositoryError
 from .student_projection import StudentProjectionBuilder
 from .workbook_data import (
@@ -128,6 +133,34 @@ class SQLiteDatabase:
                         FOREIGN KEY (course_id) REFERENCES courses(course_id)
                     );
 
+                    CREATE TABLE IF NOT EXISTS observations (
+                        observation_id TEXT PRIMARY KEY,
+                        student_id TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        subject_id TEXT NOT NULL,
+                        context TEXT,
+                        note TEXT,
+                        active INTEGER NOT NULL CHECK (active IN (0, 1)) DEFAULT 1,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        FOREIGN KEY (student_id) REFERENCES students(student_id)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS observation_competency_ratings (
+                        observation_id TEXT NOT NULL,
+                        competency_id TEXT NOT NULL,
+                        subject_id TEXT NOT NULL,
+                        subject_display_name TEXT NOT NULL,
+                        learning_area TEXT NOT NULL,
+                        competency_group TEXT,
+                        competency_text TEXT NOT NULL,
+                        rating TEXT NOT NULL CHECK (rating IN ('++', '+', '-', '--')),
+                        PRIMARY KEY (observation_id, competency_id),
+                        FOREIGN KEY (observation_id)
+                            REFERENCES observations(observation_id)
+                            ON DELETE CASCADE
+                    );
+
                     CREATE TABLE IF NOT EXISTS course_groups (
                         course_group_id TEXT PRIMARY KEY,
                         name TEXT NOT NULL UNIQUE,
@@ -155,6 +188,10 @@ class SQLiteDatabase:
                         ON groups(group_name);
                     CREATE INDEX IF NOT EXISTS idx_courses_name
                         ON courses(course_name);
+                    CREATE INDEX IF NOT EXISTS idx_observations_student_date
+                        ON observations(student_id, date);
+                    CREATE INDEX IF NOT EXISTS idx_observation_ratings_competency
+                        ON observation_competency_ratings(competency_id);
                     CREATE INDEX IF NOT EXISTS idx_course_groups_name
                         ON course_groups(name);
                     CREATE INDEX IF NOT EXISTS idx_course_group_student_groups_group
@@ -218,6 +255,8 @@ class SQLiteDatabase:
         self.initialize_schema()
         with closing(self.connect()) as connection:
             with connection:
+                connection.execute("DELETE FROM observation_competency_ratings")
+                connection.execute("DELETE FROM observations")
                 connection.execute("DELETE FROM course_group_courses")
                 connection.execute("DELETE FROM course_group_student_groups")
                 connection.execute("DELETE FROM course_groups")
@@ -492,6 +531,203 @@ class SQLiteStudentRepository:
 
     def archive_student(self, student: StudentRecord) -> StudentRecord:
         return self.update_student(student)
+
+
+class SQLiteObservationRepository:
+    """Read and write observation records in SQLite."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def list_observations(self) -> tuple[ObservationRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    observation_id,
+                    student_id,
+                    date,
+                    subject_id,
+                    context,
+                    note,
+                    active,
+                    created_at,
+                    updated_at
+                FROM observations
+                ORDER BY date DESC, observation_id DESC
+                """
+            ).fetchall()
+            return tuple(
+                self._observation_from_row(connection, row)
+                for row in rows
+            )
+
+    def list_observations_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[ObservationRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    observation_id,
+                    student_id,
+                    date,
+                    subject_id,
+                    context,
+                    note,
+                    active,
+                    created_at,
+                    updated_at
+                FROM observations
+                WHERE student_id = ? AND active = 1
+                ORDER BY date DESC, observation_id DESC
+                """,
+                (student_id,),
+            ).fetchall()
+            return tuple(
+                self._observation_from_row(connection, row)
+                for row in rows
+            )
+
+    def get_observation(self, observation_id: str) -> ObservationRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    observation_id,
+                    student_id,
+                    date,
+                    subject_id,
+                    context,
+                    note,
+                    active,
+                    created_at,
+                    updated_at
+                FROM observations
+                WHERE observation_id = ?
+                """,
+                (observation_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            return self._observation_from_row(connection, row)
+
+    def create_observation(self, observation: ObservationRecord) -> ObservationRecord:
+        if self.get_observation(observation.observation_id) is not None:
+            raise ObservationRepositoryError(
+                f"observation_id existiert bereits: {observation.observation_id}"
+            )
+        with closing(self.database.connect()) as connection:
+            with connection:
+                connection.execute(
+                    """
+                    INSERT INTO observations (
+                        observation_id,
+                        student_id,
+                        date,
+                        subject_id,
+                        context,
+                        note,
+                        active,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        observation.observation_id,
+                        observation.student_id,
+                        observation.date,
+                        observation.subject_id,
+                        observation.context,
+                        observation.note,
+                        int(observation.active),
+                        observation.created_at,
+                        observation.updated_at,
+                    ),
+                )
+                connection.executemany(
+                    """
+                    INSERT INTO observation_competency_ratings (
+                        observation_id,
+                        competency_id,
+                        subject_id,
+                        subject_display_name,
+                        learning_area,
+                        competency_group,
+                        competency_text,
+                        rating
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        (
+                            observation.observation_id,
+                            rating.competency_id,
+                            rating.subject_id,
+                            rating.subject_display_name,
+                            rating.learning_area,
+                            rating.competency_group,
+                            rating.competency_text,
+                            rating.rating,
+                        )
+                        for rating in observation.competency_ratings
+                    ),
+                )
+        return observation
+
+    def _ratings_for(
+        self,
+        connection: sqlite3.Connection,
+        observation_id: str,
+    ) -> tuple[ObservationCompetencyRatingRecord, ...]:
+        rows = connection.execute(
+            """
+            SELECT
+                competency_id,
+                subject_id,
+                subject_display_name,
+                learning_area,
+                competency_group,
+                competency_text,
+                rating
+            FROM observation_competency_ratings
+            WHERE observation_id = ?
+            ORDER BY competency_id
+            """,
+            (observation_id,),
+        ).fetchall()
+        return tuple(
+            ObservationCompetencyRatingRecord(
+                row["competency_id"],
+                row["subject_id"],
+                row["subject_display_name"],
+                row["learning_area"],
+                row["competency_group"] or "",
+                row["competency_text"],
+                row["rating"],
+            )
+            for row in rows
+        )
+
+    def _observation_from_row(
+        self,
+        connection: sqlite3.Connection,
+        row: sqlite3.Row,
+    ) -> ObservationRecord:
+        return ObservationRecord(
+            row["observation_id"],
+            row[STUDENT_ID],
+            row["date"],
+            row["subject_id"],
+            row["context"] or "",
+            row["note"] or "",
+            bool(row[ACTIVE]),
+            row[CREATED_AT],
+            row[UPDATED_AT],
+            self._ratings_for(connection, row["observation_id"]),
+        )
 
 
 class SQLiteGroupRepository:

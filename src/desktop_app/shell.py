@@ -232,7 +232,9 @@ class AppShell(QMainWindow):
 
     def show_student_profile(self, student_id: str) -> None:
         """Open light profile for selected student."""
-        self.student_profile_screen.set_student(self.adapter.get_student_profile(student_id))
+        profile = self.adapter.get_student_profile(student_id)
+        observations = self.adapter.list_observations_for_student(student_id)
+        self.student_profile_screen.set_student(profile, observations)
         self._show_screen("profile")
 
     def open_new_student_dialog(self) -> None:
@@ -242,9 +244,11 @@ class AppShell(QMainWindow):
         dialog.exec()
 
     def open_new_observation_dialog(self, student: StudentDetailViewModel) -> None:
-        """Open the non-persistent observation UX prototype."""
-        dialog = NewObservationDialog(student, self.curriculum_adapter)
-        dialog.exec()
+        """Open the persistent observation dialog and refresh after success."""
+        dialog = NewObservationDialog(student, self.curriculum_adapter, self.adapter)
+        if dialog.exec():
+            self.show_student_profile(student.student_id)
+            self.status_label.setText("Beobachtung wurde gespeichert.")
 
     def open_app_info_dialog(self) -> None:
         """Open the compact app information dialog."""

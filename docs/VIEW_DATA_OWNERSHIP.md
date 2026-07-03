@@ -306,15 +306,16 @@ Liest:
 - `data_students`
 - `data_subjects`
 - `data_competencies`
-- `data/curriculum_catalog_v1.csv` im PySide6-UX-Prototyp als read-only Kataloggrundlage
+- `data/curriculum_catalog_v1.csv` im PySide6-Dialog als read-only Kataloggrundlage
 - `data_observations` bei Bearbeitung bestehender Beobachtungen
 - `data_observation_competencies` bei Bearbeitung bestehender Zuordnungen
-- `data_media` fuer Dokumente und Medien
+- spaeter `data_media` fuer Dokumente und Medien
 
 Schreibt:
 
-- `data_observations`
-- `data_observation_competencies`
+- SQLite `observations`
+- SQLite `observation_competency_ratings`
+- Export-/Legacy-Projektionen `data_observations` und `data_observation_competencies` nur ueber spaetere Projection Refreshes
 - spaeter `data_media`
 
 Navigation:
@@ -339,6 +340,7 @@ Der Beobachtungsdialog ist ein freizugebender Schreibprozess. Ohne Data-Lifecycl
 Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden.
 
 Dokumente und Medien sind nur Anhaenge zur Beobachtung und ersetzen keine Beobachtungsdaten.
+Der PySide-Dialog schreibt nicht direkt in SQLite, sondern ueber Adapter, Command, Service und Repository. Jede ausgewaehlte Kompetenz speichert ihre eigene Bewertung.
 
 ## Kompetenzansicht
 

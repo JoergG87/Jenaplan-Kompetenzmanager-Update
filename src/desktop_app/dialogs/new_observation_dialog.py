@@ -1,4 +1,4 @@
-"""New-observation UX prototype dialog for the PySide6 desktop app."""
+"""New-observation dialog for the PySide6 desktop app."""
 
 from __future__ import annotations
 
@@ -31,7 +31,8 @@ from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
     OBSERVATION_CONTEXT_OPTIONS,
     OBSERVATION_RATING_OPTIONS,
-    OBSERVATION_SAVE_PLACEHOLDER_MESSAGE,
+    OBSERVATION_SAVE_SUCCESS_MESSAGE,
+    OBSERVATION_SAVE_VALIDATION_MESSAGE,
     ObservationCompetencyRatingDraft,
     ObservationDraftViewModel,
 )
@@ -40,16 +41,18 @@ from src.desktop_app.theme import create_card, set_label_style
 
 
 class NewObservationDialog(QDialog):
-    """Collect a non-persistent observation draft for UX validation."""
+    """Collect and persist an observation draft through the desktop adapter."""
 
     def __init__(
         self,
         student: StudentDetailViewModel,
         curriculum_adapter: CurriculumDesktopAdapter | None = None,
+        observation_adapter: object | None = None,
     ) -> None:
         super().__init__()
         self.student = student
         self.curriculum_adapter = curriculum_adapter or CurriculumDesktopAdapter()
+        self.observation_adapter = observation_adapter
         self.attachment_feedback_label = QLabel("")
         self.competency_rating_entries: dict[str, object] = {}
         self.competency_rating_widgets: dict[str, QComboBox] = {}
@@ -247,7 +250,7 @@ class NewObservationDialog(QDialog):
         self.attachment_feedback_label.setText(OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE)
 
     def create_draft(self) -> ObservationDraftViewModel:
-        """Return the non-persistent UI draft."""
+        """Return the UI draft."""
         selected_competency_ratings = self._selected_competency_ratings()
         return ObservationDraftViewModel(
             student_id=self.student.student_id,
@@ -256,6 +259,8 @@ class NewObservationDialog(QDialog):
             competency_ratings=selected_competency_ratings,
             context=self.context_select.currentText(),
             note=self.note_input.toPlainText(),
+            subject_id=str(self.subject_select.currentData() or ""),
+            subject_display_name=self.subject_select.currentText(),
         )
 
     def _selected_competency_ratings(self) -> tuple[ObservationCompetencyRatingDraft, ...]:
@@ -309,7 +314,7 @@ class NewObservationDialog(QDialog):
         rating_select.setMinimumWidth(190)
         rating_select.addItem("Bewertung auswählen", "")
         for rating_option in OBSERVATION_RATING_OPTIONS:
-            rating_select.addItem(rating_option, rating_option)
+            rating_select.addItem(rating_option, rating_option.split(" ", 1)[0])
         remove_button = QPushButton("Entfernen")
         remove_button.clicked.connect(
             lambda _checked=False, key=competency_key: self._remove_competency_rating(
@@ -399,11 +404,35 @@ class NewObservationDialog(QDialog):
         ))
 
     def save_draft(self) -> None:
-        """Close after showing that persistence is intentionally not implemented."""
-        self.create_draft()
+        """Persist the observation draft through the adapter and close on success."""
+        draft = self.create_draft()
+        if not draft.competency_ratings or any(
+            not rating.rating for rating in draft.competency_ratings
+        ):
+            QMessageBox.warning(
+                self,
+                "Hinweis",
+                OBSERVATION_SAVE_VALIDATION_MESSAGE,
+            )
+            return
+        if self.observation_adapter is None:
+            QMessageBox.warning(
+                self,
+                "Hinweis",
+                "Beobachtungen können ohne Adapter nicht gespeichert werden.",
+            )
+            return
+        result = self.observation_adapter.save_observation(draft)
+        if not getattr(result, "success", False):
+            QMessageBox.warning(
+                self,
+                "Speichern fehlgeschlagen",
+                str(getattr(result, "message", "Beobachtung konnte nicht gespeichert werden.")),
+            )
+            return
         QMessageBox.information(
             self,
             "Hinweis",
-            OBSERVATION_SAVE_PLACEHOLDER_MESSAGE,
+            OBSERVATION_SAVE_SUCCESS_MESSAGE,
         )
         self.accept()

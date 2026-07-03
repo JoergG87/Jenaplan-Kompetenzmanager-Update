@@ -14,10 +14,14 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import QApplication, QLabel
 
-from src.application.commands import CreateStudentCommand
+from src.application.commands import CreateObservationCommand, CreateStudentCommand
 from src.application.dispatcher import SuccessResult
 from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PREFIX
-from src.core.sqlite_store import SQLiteStudentRepository, create_sqlite_seed_database
+from src.core.sqlite_store import (
+    SQLiteObservationRepository,
+    SQLiteStudentRepository,
+    create_sqlite_seed_database,
+)
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters import student_desktop_adapter
@@ -51,7 +55,7 @@ from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
     OBSERVATION_CONTEXT_OPTIONS,
     OBSERVATION_RATING_OPTIONS,
-    OBSERVATION_SAVE_PLACEHOLDER_MESSAGE,
+    OBSERVATION_SAVE_SUCCESS_MESSAGE,
     ObservationCompetencyRatingDraft,
     ObservationDraftViewModel,
     observation_rating_keys,
@@ -109,6 +113,50 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIsNotNone(stored_student)
         self.assertEqual(stored_student.first_name, "Jule")
         self.assertEqual(len(SQLiteStudentRepository(self.database).list_students()), 29)
+
+    def test_adapter_creates_create_observation_command(self) -> None:
+        draft = self._sample_observation_draft()
+
+        command = self.adapter.create_observation_command(draft)
+
+        self.assertIsInstance(command, CreateObservationCommand)
+        self.assertEqual(command.command_name, "observation.create")
+        self.assertEqual(command.student_id, f"{STUDENT_ID_PREFIX}-000001")
+        self.assertEqual(command.date, "2026-07-03")
+        self.assertEqual(command.subject_id, "deutsch")
+        self.assertEqual(command.context, "Leseübung")
+        self.assertEqual(command.note, "Liest einen bekannten Text.")
+        self.assertEqual(command.competency_ratings[0].competency_id, "CMP-000001")
+        self.assertEqual(command.competency_ratings[0].rating, "+")
+
+    def test_save_observation_uses_application_stack_and_sqlite(self) -> None:
+        result = self.adapter.save_observation(self._sample_observation_draft())
+
+        self.assertIsInstance(result, SuccessResult)
+        observation = result.value
+        self.assertEqual(observation.observation_id, "OBS-000001")
+        stored_observations = SQLiteObservationRepository(
+            self.database
+        ).list_observations_for_student(f"{STUDENT_ID_PREFIX}-000001")
+        self.assertEqual(len(stored_observations), 1)
+        self.assertEqual(stored_observations[0].competency_ratings[0].rating, "+")
+
+    def test_observation_is_loaded_after_adapter_reinitialization(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft())
+
+        reloaded_adapter = StudentDesktopAdapter(self.database_path)
+        observations = reloaded_adapter.list_observations_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(len(observations), 1)
+        self.assertEqual(observations[0].student_id, f"{STUDENT_ID_PREFIX}-000001")
+        self.assertEqual(observations[0].date_text, "2026-07-03")
+        self.assertEqual(observations[0].subject_display_name, "Deutsch")
+        self.assertEqual(observations[0].context, "Leseübung")
+        self.assertEqual(observations[0].note, "Liest einen bekannten Text.")
+        self.assertEqual(observations[0].competency_ratings[0].rating, "+")
+        self.assertIn("Deutsch", observations[0].competency_ratings[0].display_label)
 
     def test_new_app_database_starts_without_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -873,6 +921,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_curriculum_competency_options_have_short_display_labels(self) -> None:
         epu_competency = self.curriculum_adapter.list_competencies_for_subject("epu")[0]
 
+        self.assertTrue(epu_competency.competency_id.startswith("CMP-"))
         self.assertEqual(epu_competency.competency_display_name, epu_competency.learning_area)
         self.assertEqual(epu_competency.competency_label, epu_competency.learning_area)
         self.assertNotEqual(epu_competency.competency_display_name, epu_competency.competency_text)
@@ -912,6 +961,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Jede ausgewählte Kompetenz erhält eine eigene Bewertung.", source)
         self.assertIn("rating_select.addItem(\"Bewertung auswählen\", \"\")", source)
         self.assertIn("for rating_option in OBSERVATION_RATING_OPTIONS", source)
+        self.assertIn('rating_option.split(" ", 1)[0]', source)
 
     def test_observation_dialog_keeps_buttons_outside_scroll_area(self) -> None:
         source = inspect.getsource(new_observation_dialog)
@@ -964,12 +1014,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_observation_draft_view_model_keeps_student_context(self) -> None:
         competency = ObservationCompetencyRatingDraft(
+            competency_id="CMP-000001",
             subject_key="deutsch",
             subject_display_name="Deutsch",
             learning_area="Mit Texten und Medien umgehen",
             competency_group="Lesen und Verstehen",
             competency_text="Texte lesen und zentrale Informationen entnehmen",
-            rating="+ erreicht",
+            rating="+",
         )
         draft = ObservationDraftViewModel(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
@@ -978,15 +1029,19 @@ class DesktopAppAdapterTest(unittest.TestCase):
             competency_ratings=(competency,),
             context="Leseübung",
             note="Liest einen bekannten Text flüssig.",
+            subject_id="deutsch",
+            subject_display_name="Deutsch",
         )
 
         self.assertEqual(draft.student_id, f"{STUDENT_ID_PREFIX}-000001")
         self.assertEqual(draft.student_name, "Emma Müller")
+        self.assertEqual(draft.subject_id, "deutsch")
         self.assertEqual(draft.competency_ratings[0].subject_key, "deutsch")
+        self.assertEqual(draft.competency_ratings[0].competency_id, "CMP-000001")
         self.assertEqual(draft.competency_ratings[0].subject_display_name, "Deutsch")
         self.assertEqual(draft.competency_ratings[0].display_label, "Mit Texten und Medien umgehen")
         self.assertEqual(draft.competency_ratings[0].competency_text, "Texte lesen und zentrale Informationen entnehmen")
-        self.assertEqual(draft.competency_ratings[0].rating, "+ erreicht")
+        self.assertEqual(draft.competency_ratings[0].rating, "+")
         self.assertEqual(draft.attachment_names, ())
 
     def test_observation_draft_has_no_global_rating(self) -> None:
@@ -999,28 +1054,31 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_observation_competency_ratings_can_span_subjects(self) -> None:
         first = ObservationCompetencyRatingDraft(
+            competency_id="CMP-000001",
             subject_key="epu",
             subject_display_name="EPU",
             learning_area="Natur und Umwelt",
             competency_group="Erkunden und beschreiben",
             competency_text="Naturphänomene beobachten und beschreiben",
-            rating="++ sicher erreicht",
+            rating="++",
         )
         second = ObservationCompetencyRatingDraft(
+            competency_id="CMP-000002",
             subject_key="deutsch",
             subject_display_name="Deutsch",
             learning_area="Miteinander sprechen",
             competency_group="Gesprächsbeiträge",
             competency_text="Eigene Beiträge verständlich einbringen",
-            rating="- in Entwicklung",
+            rating="-",
         )
         third = ObservationCompetencyRatingDraft(
+            competency_id="CMP-000003",
             subject_key="sozialkompetenz",
             subject_display_name="Sozialkompetenz",
             learning_area="Verantwortung",
             competency_group="Auftreten",
             competency_text="Verantwortung in der Gruppe übernehmen",
-            rating="+ erreicht",
+            rating="+",
         )
 
         draft = ObservationDraftViewModel(
@@ -1030,11 +1088,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
             competency_ratings=(first, second, third),
             context="Präsentation",
             note="Präsentiert Arbeitsergebnisse vor der Gruppe.",
+            subject_id="epu",
+            subject_display_name="EPU",
         )
 
-        self.assertEqual(draft.competency_ratings[0].rating, "++ sicher erreicht")
-        self.assertEqual(draft.competency_ratings[1].rating, "- in Entwicklung")
-        self.assertEqual(draft.competency_ratings[2].rating, "+ erreicht")
+        self.assertEqual(draft.competency_ratings[0].rating, "++")
+        self.assertEqual(draft.competency_ratings[1].rating, "-")
+        self.assertEqual(draft.competency_ratings[2].rating, "+")
         self.assertNotEqual(
             draft.competency_ratings[0].rating,
             draft.competency_ratings[1].rating,
@@ -1050,10 +1110,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(draft.competency_ratings[0].display_label, "Natur und Umwelt")
         self.assertEqual(draft.competency_ratings[1].display_label, "Miteinander sprechen")
 
-    def test_observation_dialog_placeholder_messages_are_non_persistent(self) -> None:
+    def test_observation_dialog_messages_match_persistent_scope(self) -> None:
         self.assertEqual(
-            OBSERVATION_SAVE_PLACEHOLDER_MESSAGE,
-            "Beobachtungen werden in einem späteren Sprint gespeichert.",
+            OBSERVATION_SAVE_SUCCESS_MESSAGE,
+            "Beobachtung wurde gespeichert.",
         )
         self.assertEqual(
             OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
@@ -1064,7 +1124,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "Noch keine Anhänge ausgewählt.",
         )
 
-    def test_observation_dialog_has_no_productive_write_logic(self) -> None:
+    def test_observation_dialog_has_no_direct_sqlite_write_logic(self) -> None:
         source = inspect.getsource(new_observation_dialog)
 
         self.assertNotIn("INSERT INTO", source)
@@ -1073,6 +1133,24 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn("sqlite3.connect", source)
         self.assertNotIn("ApplicationCommandDispatcher", source)
         self.assertNotIn("student.create", source)
+        self.assertIn("self.observation_adapter.save_observation(draft)", source)
+
+    def test_shell_refreshes_profile_after_observation_save(self) -> None:
+        source = inspect.getsource(shell.AppShell.open_new_observation_dialog)
+
+        self.assertIn("NewObservationDialog(student, self.curriculum_adapter, self.adapter)", source)
+        self.assertIn("self.show_student_profile(student.student_id)", source)
+        self.assertIn("Beobachtung wurde gespeichert.", source)
+
+    def test_student_profile_renders_persisted_observations(self) -> None:
+        source = inspect.getsource(importlib.import_module(
+            "src.desktop_app.screens.student_profile_screen"
+        ))
+
+        self.assertIn("set_observations", source)
+        self.assertIn("ObservationListItem", source)
+        self.assertIn("observation.summary", source)
+        self.assertIn("rating.display_label", source)
 
     def test_sidebar_students_navigation_resets_to_list(self) -> None:
         target = resolve_navigation_target("students")
@@ -1170,6 +1248,37 @@ class DesktopAppAdapterTest(unittest.TestCase):
         ):
             with self.subTest(module_name=module_name):
                 importlib.import_module(module_name)
+
+    def _sample_observation_draft(self) -> ObservationDraftViewModel:
+        return ObservationDraftViewModel(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            student_name="Emma Müller",
+            date_text="2026-07-03",
+            subject_id="deutsch",
+            subject_display_name="Deutsch",
+            context="Leseübung",
+            note="Liest einen bekannten Text.",
+            competency_ratings=(
+                ObservationCompetencyRatingDraft(
+                    competency_id="CMP-000001",
+                    subject_key="deutsch",
+                    subject_display_name="Deutsch",
+                    learning_area="Mit Texten und Medien umgehen",
+                    competency_group="Lesen und Verstehen",
+                    competency_text="Texte lesen und zentrale Informationen entnehmen",
+                    rating="+",
+                ),
+                ObservationCompetencyRatingDraft(
+                    competency_id="CMP-000002",
+                    subject_key="deutsch",
+                    subject_display_name="Deutsch",
+                    learning_area="Sprache untersuchen",
+                    competency_group="Wörter und Sätze",
+                    competency_text="Wörter nach Merkmalen ordnen",
+                    rating="--",
+                ),
+            ),
+        )
 
 
 if __name__ == "__main__":

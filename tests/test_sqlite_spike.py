@@ -14,11 +14,16 @@ from src.core.constants import (
     ACTIVE,
     COURSE_ID_PREFIX,
     GROUP_ID_PREFIX,
+    OBSERVATION_ID_PREFIX,
     STUDENT_ID,
     STUDENT_ID_PREFIX,
     TABLE_COURSES,
     TABLE_GROUPS,
     TABLE_STUDENTS,
+)
+from src.core.observation import (
+    ObservationCompetencyRatingRecord,
+    ObservationRecord,
 )
 from src.core.sqlite_store import (
     DEFAULT_COURSE_GROUP_ID,
@@ -26,6 +31,7 @@ from src.core.sqlite_store import (
     SQLiteDatabase,
     SQLiteGroupRepository,
     SQLiteMasterDataRepository,
+    SQLiteObservationRepository,
     SQLiteStudentRepository,
     build_workbook_data_from_sqlite,
     create_sqlite_seed_database,
@@ -69,6 +75,8 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("course_groups", tables)
         self.assertIn("course_group_student_groups", tables)
         self.assertIn("course_group_courses", tables)
+        self.assertIn("observations", tables)
+        self.assertIn("observation_competency_ratings", tables)
         self.assertIn("student_id", student_columns)
         self.assertIn("first_name", student_columns)
         self.assertIn("last_name", student_columns)
@@ -80,6 +88,43 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("sort_order", course_columns)
         self.assertIn(("group_id", "groups", "group_id"), student_foreign_keys)
         self.assertIn(("course_id", "courses", "course_id"), student_foreign_keys)
+
+    def test_observation_schema_contains_rating_table(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            database = SQLiteDatabase(database_path)
+            database.initialize_schema()
+
+            with closing(sqlite3.connect(database_path)) as connection:
+                observation_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(observations)"
+                    ).fetchall()
+                }
+                rating_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(observation_competency_ratings)"
+                    ).fetchall()
+                }
+                observation_foreign_keys = {
+                    (row[3], row[2], row[4])
+                    for row in connection.execute(
+                        "PRAGMA foreign_key_list(observations)"
+                    ).fetchall()
+                }
+
+        self.assertIn("observation_id", observation_columns)
+        self.assertIn("student_id", observation_columns)
+        self.assertIn("date", observation_columns)
+        self.assertIn("subject_id", observation_columns)
+        self.assertIn("context", observation_columns)
+        self.assertIn("note", observation_columns)
+        self.assertIn("observation_id", rating_columns)
+        self.assertIn("competency_id", rating_columns)
+        self.assertIn("rating", rating_columns)
+        self.assertIn(("student_id", "students", "student_id"), observation_foreign_keys)
 
     def test_seed_data_is_written_to_sqlite_without_id_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -218,6 +263,78 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertEqual(len(groups), 1)
         self.assertEqual(len(courses), 3)
 
+    def test_observation_with_multiple_ratings_is_reloaded(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            database = create_sqlite_seed_database(database_path)
+            repository = SQLiteObservationRepository(database)
+            repository.create_observation(self._sample_observation())
+
+            reloaded_repository = SQLiteObservationRepository(SQLiteDatabase(database_path))
+            observations = reloaded_repository.list_observations_for_student(
+                f"{STUDENT_ID_PREFIX}-000001"
+            )
+
+        self.assertEqual(len(observations), 1)
+        observation = observations[0]
+        self.assertEqual(observation.observation_id, f"{OBSERVATION_ID_PREFIX}-000001")
+        self.assertEqual(observation.student_id, f"{STUDENT_ID_PREFIX}-000001")
+        self.assertEqual(observation.date, "2026-07-03")
+        self.assertEqual(observation.subject_id, "deutsch")
+        self.assertEqual(observation.context, "Leseübung")
+        self.assertEqual(observation.note, "Liest einen bekannten Text.")
+        self.assertEqual(
+            tuple(rating.rating for rating in observation.competency_ratings),
+            ("+", "--"),
+        )
+        self.assertEqual(
+            tuple(rating.competency_id for rating in observation.competency_ratings),
+            ("CMP-000001", "CMP-000002"),
+        )
+
+    def test_observations_are_filtered_per_student(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = create_sqlite_seed_database(Path(temp_dir) / "kompetenzmanager.sqlite")
+            repository = SQLiteObservationRepository(database)
+            repository.create_observation(self._sample_observation(
+                observation_id=f"{OBSERVATION_ID_PREFIX}-000001",
+                student_id=f"{STUDENT_ID_PREFIX}-000001",
+            ))
+            repository.create_observation(self._sample_observation(
+                observation_id=f"{OBSERVATION_ID_PREFIX}-000002",
+                student_id=f"{STUDENT_ID_PREFIX}-000002",
+            ))
+
+            first_student_observations = repository.list_observations_for_student(
+                f"{STUDENT_ID_PREFIX}-000001"
+            )
+
+        self.assertEqual(len(first_student_observations), 1)
+        self.assertEqual(
+            first_student_observations[0].student_id,
+            f"{STUDENT_ID_PREFIX}-000001",
+        )
+
+    def test_observation_and_ratings_are_saved_atomically(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = create_sqlite_seed_database(Path(temp_dir) / "kompetenzmanager.sqlite")
+            repository = SQLiteObservationRepository(database)
+            duplicate_rating_observation = self._sample_observation(
+                ratings=(
+                    self._sample_rating("CMP-000001", "+"),
+                    self._sample_rating("CMP-000001", "--"),
+                )
+            )
+
+            with self.assertRaises(sqlite3.IntegrityError):
+                repository.create_observation(duplicate_rating_observation)
+
+            observations = repository.list_observations_for_student(
+                f"{STUDENT_ID_PREFIX}-000001"
+            )
+
+        self.assertEqual(observations, ())
+
     def test_existing_projection_can_be_built_from_sqlite_data(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
@@ -248,6 +365,44 @@ class SQLiteSpikeTest(unittest.TestCase):
             for row in range(2, students_sheet.max_row + 1)
         ]
         self.assertIn(f"{STUDENT_ID_PREFIX}-000001", stored_ids)
+
+    def _sample_observation(
+        self,
+        *,
+        observation_id: str = f"{OBSERVATION_ID_PREFIX}-000001",
+        student_id: str = f"{STUDENT_ID_PREFIX}-000001",
+        ratings: tuple[ObservationCompetencyRatingRecord, ...] | None = None,
+    ) -> ObservationRecord:
+        return ObservationRecord(
+            observation_id,
+            student_id,
+            "2026-07-03",
+            "deutsch",
+            "Leseübung",
+            "Liest einen bekannten Text.",
+            True,
+            "2026-07-03T10:00:00+00:00",
+            "2026-07-03T10:00:00+00:00",
+            ratings or (
+                self._sample_rating("CMP-000001", "+"),
+                self._sample_rating("CMP-000002", "--"),
+            ),
+        )
+
+    def _sample_rating(
+        self,
+        competency_id: str,
+        rating: str,
+    ) -> ObservationCompetencyRatingRecord:
+        return ObservationCompetencyRatingRecord(
+            competency_id,
+            "deutsch",
+            "Deutsch",
+            "Mit Texten und Medien umgehen",
+            "Lesen und Verstehen",
+            "Texte lesen und zentrale Informationen entnehmen",
+            rating,
+        )
 
 
 if __name__ == "__main__":

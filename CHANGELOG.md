@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Sprint - Beobachtungen persistent speichern
+
+### Added
+
+- SQLite-Schema um `observations` und `observation_competency_ratings` erweitert.
+- `SQLiteObservationRepository`, `ObservationService` und `observation.create` fuer persistente Beobachtungen ergaenzt.
+- Schuelerprofil laedt gespeicherte Beobachtungen nach Adapter-/App-Neustart wieder aus SQLite.
+
+### Changed
+
+- Beobachtungsdialog speichert Datum, Fach, Kontext, Notiz und mehrere kompetenzbezogene Bewertungen ueber den Adapter-/Service-/Repository-Pfad.
+- Rating-Werte werden stabil als `++`, `+`, `-` und `--` gespeichert.
+
+### Not Changed
+
+- Keine Medien/Anhaenge, keine Berichte/Auswertungen, kein Export, kein Packaging, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
 ## Sprint - Schuelerdaten persistent speichern und laden
 
 ### Changed
