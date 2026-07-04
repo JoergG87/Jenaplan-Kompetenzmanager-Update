@@ -13,6 +13,7 @@ from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapt
 from src.desktop_app.view_models.master_data_view_model import (
     COURSE_GROUP_EMPTY_COURSES_MESSAGE,
     COURSE_GROUP_EMPTY_GROUPS_MESSAGE,
+    COURSE_GROUP_DUPLICATE_NAME_MESSAGE,
     CourseGroupViewModel,
     MasterDataItemViewModel,
     MasterDataViewModel,
@@ -118,9 +119,11 @@ class MasterDataDesktopAdapter:
         selected_course_ids: tuple[str, ...],
     ) -> CourseGroupViewModel:
         """Persist one course-group configuration atomically."""
+        normalized_name = normalize_master_data_name(name)
+        self._validate_unique_course_group_name(normalized_name, course_group_id)
         updated_course_group = CourseGroupViewModel(
             course_group_id,
-            normalize_master_data_name(name),
+            normalized_name,
             tuple(group_id for group_id in selected_group_ids if group_id in self.groups),
             tuple(course_id for course_id in selected_course_ids if course_id in self.courses),
         )
@@ -140,6 +143,21 @@ class MasterDataDesktopAdapter:
         )
         self._reload()
         return self.course_groups[course_group_id]
+
+    def add_course_group(
+        self,
+        name: str,
+        selected_group_ids: tuple[str, ...],
+        selected_course_ids: tuple[str, ...],
+    ) -> CourseGroupViewModel:
+        """Persist a new course group."""
+        course_group_id = self.repository.next_course_group_id()
+        return self.update_course_group(
+            course_group_id,
+            name,
+            selected_group_ids,
+            selected_course_ids,
+        )
 
     def _reload(self) -> None:
         self.groups = {
@@ -227,3 +245,15 @@ class MasterDataDesktopAdapter:
             if course_group_id in self.course_groups
             else len(self.course_groups)
         )
+
+    def _validate_unique_course_group_name(
+        self,
+        name: str,
+        current_course_group_id: str,
+    ) -> None:
+        normalized_name = name.casefold()
+        for course_group in self.course_groups.values():
+            if course_group.course_group_id == current_course_group_id:
+                continue
+            if course_group.name.casefold() == normalized_name:
+                raise ValueError(COURSE_GROUP_DUPLICATE_NAME_MESSAGE)

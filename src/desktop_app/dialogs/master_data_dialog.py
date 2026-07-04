@@ -102,9 +102,11 @@ class CourseGroupDialog(QDialog):
         course_group: CourseGroupViewModel,
         groups: tuple[MasterDataItemViewModel, ...],
         courses: tuple[MasterDataItemViewModel, ...],
+        *,
+        title: str = "Kursverbund bearbeiten",
     ) -> None:
         super().__init__()
-        self.setWindowTitle("Kursverbund bearbeiten")
+        self.setWindowTitle(title)
         self.setModal(True)
         self.course_group = course_group
         self.groups = groups

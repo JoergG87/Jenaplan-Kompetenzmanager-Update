@@ -11,6 +11,9 @@ MASTER_DATA_EMPTY_NAME_MESSAGE = "Bitte einen Namen eingeben."
 MASTER_DATA_SAVE_PLACEHOLDER_MESSAGE = "Stammdaten wurden gespeichert."
 COURSE_GROUP_EMPTY_GROUPS_MESSAGE = "Bitte mindestens eine Stammgruppe auswählen."
 COURSE_GROUP_EMPTY_COURSES_MESSAGE = "Bitte mindestens einen Kurs auswählen."
+COURSE_GROUP_DUPLICATE_NAME_MESSAGE = (
+    "Ein Kursverbund mit diesem Namen existiert bereits."
+)
 
 
 @dataclass(frozen=True)

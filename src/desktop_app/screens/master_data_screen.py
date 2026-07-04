@@ -36,6 +36,7 @@ class MasterDataScreen(QWidget):
     group_rename_requested = Signal(str)
     course_add_requested = Signal()
     course_rename_requested = Signal(str)
+    course_group_add_requested = Signal()
     course_group_edit_requested = Signal(str)
 
     def __init__(self) -> None:
@@ -78,10 +79,12 @@ class MasterDataScreen(QWidget):
             )
         )
         layout.addWidget(
-            self._readonly_section_card(
+            self._section_card(
                 "Kursverbünde",
+                "+ Kursverbund",
                 self.course_group_table,
                 self.course_group_empty_state_label,
+                self.course_group_add_requested.emit,
             )
         )
         layout.addStretch(1)
@@ -134,27 +137,6 @@ class MasterDataScreen(QWidget):
         table.setAlternatingRowColors(True)
         table.horizontalHeader().setStretchLastSection(True)
         table.setMinimumHeight(150)
-        set_label_style(empty_state_label, "subtle")
-        layout.addWidget(empty_state_label)
-        layout.addWidget(table)
-        return card
-
-    def _readonly_section_card(
-        self,
-        title: str,
-        table: QTableWidget,
-        empty_state_label: QLabel,
-    ) -> QFrame:
-        card = create_card()
-        layout = QVBoxLayout(card)
-        title_label = QLabel(title)
-        set_label_style(title_label, "section_title")
-        layout.addWidget(title_label)
-        table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        table.setAlternatingRowColors(True)
-        table.horizontalHeader().setStretchLastSection(True)
-        table.setMinimumHeight(120)
         set_label_style(empty_state_label, "subtle")
         layout.addWidget(empty_state_label)
         layout.addWidget(table)
