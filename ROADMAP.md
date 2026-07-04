@@ -8,17 +8,17 @@ SQLite ist die produktive lokale Datenbasis.
 
 Python bleibt verantwortlich für Datenmodell, Application Layer, Domain Layer, Persistenz, PySide-Oberflaeche, UI-Projektionen, Export-Erzeugung, Berichte und Fachlogik.
 
-Excel/VBA bleibt im Repository als Export-, Berichts-, Referenz- oder Legacy-Projektion erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
+Excel/VBA liegt nur noch im Archiv `legacy/excel/` und ist nicht mehr die Zielrichtung fuer die Haupt-App.
 
 VBA wird nicht weiter als Zielpfad fuer neue Features, UI, Smoke-Tests, Automatisierung oder produktive Workflows verfolgt.
 
 Worksheet-basierte Dialogseiten, VBA-UserForms und VBA-Runtime-Adapter sind historische Artefakte der Excel-Linie.
 
-Der PySide6 Desktop-App-Spike ist zur Hauptanwendungslinie geworden. Excel bleibt im Repository als bestehende Projektion und moeglicher Export-/Berichtspfad erhalten.
+Der PySide6 Desktop-App-Spike ist zur Hauptanwendungslinie geworden. Excel bleibt nur als historischer Legacy-Altstand erhalten.
 
 Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Ein Ruecksprungpunkt fuer den Excel/xlwings-Pfad existiert mit dem Tag `checkpoint-excel-adapter-before-python-gui`.
 
-Offen bleiben produktiver Nutzer-Datenbankpfad, Backup/Restore, Packaging als macOS-App, Updates/Migrationen und der genaue Umfang kuenftiger Excel-Exporte.
+Offen bleiben produktiver Nutzer-Datenbankpfad, Backup/Restore, Packaging als macOS-App, Updates/Migrationen und spaetere Exportformate.
 
 Der VBA-Seed wurde historisch validiert. `.xlsm` ist kein Hauptartefakt der aktiven Produktlinie mehr.
 
@@ -62,15 +62,15 @@ Kurzfristige Produktziele
 Mittelfristige Produktziele
 
 - Berichte und Auswertungen in PySide
-- Excel-/Datei-Exportfunktion
+- Datei-Exportfunktionen
 - Packaging/Installer fuer macOS
 - Datenschutz, Backup/Restore und Freischaltcode spaeter klaeren
 
-Excel/VBA Legacy/Export
+Excel/VBA Legacy
 
 - keine aktive Feature-Roadmap
-- alte Workbook-/VBA-Pfade pruefen und bei Bedarf archivieren
-- Excel nur als Export, Berichtsausgabe, Referenz oder Legacy-Projektion
+- alte Workbook-/VBA-Pfade sind unter `legacy/excel/` archiviert
+- Excel ist kein aktiver Zielpfad fuer neue Features, UI oder Pflichtchecks
 
 Zukünftige Produktziele ohne Sprintzuordnung
 
@@ -93,7 +93,7 @@ Zukünftige Produktziele ohne Sprintzuordnung
 - Beobachtungsmaske in der PySide-Hauptanwendung
 - Packaging als macOS-App
 - Produktiver Nutzer-Datenbankpfad, Backup und Restore
-- Excel-Export und Berichte auf Basis von SQLite
+- Datei-Export und Berichte auf Basis von SQLite
 
 Diese Punkte stellen zukünftige Produktziele dar.
 

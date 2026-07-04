@@ -2,33 +2,21 @@
 
 from __future__ import annotations
 
-import tempfile
 import unittest
 from datetime import UTC, datetime
-from pathlib import Path
-
-from openpyxl import load_workbook
 
 from src.core.constants import (
-    ACTIVE,
-    ARCHIVED_AT,
     COURSE_ID,
     COURSE_ID_PREFIX,
-    CREATED_AT,
     FIRST_NAME,
     GROUP_ID,
     GROUP_ID_PREFIX,
     LAST_NAME,
-    STUDENT_ID,
     STUDENT_ID_PREFIX,
     STUDENT_NOTES,
-    TABLE_STUDENTS,
-    UPDATED_AT,
 )
+from src.core.records import StudentRecord
 from src.core.student import StudentRepository, StudentService, StudentValidator
-from src.core.student_projection import StudentProjectionBuilder
-from src.core.workbook_data import StudentRecord, seed_workbook_data
-from src.ui.screens.klassenuebersicht import ClassOverviewV02WorkbookBuilder
 
 
 class FixedClock:
@@ -50,7 +38,6 @@ class FixedClock:
 
 class StudentEntityTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.seed_data = seed_workbook_data()
         self.repository = StudentRepository(())
         self.clock = FixedClock()
         self.service = StudentService(
@@ -144,171 +131,6 @@ class StudentEntityTest(unittest.TestCase):
         self.assertFalse(archived_student.active)
         self.assertEqual(archived_student.archived_at, "2026-06-28T11:00:00+00:00")
         self.assertEqual(self.repository.get_student_by_id(student.student_id), archived_student)
-
-    def test_workbook_projection_contains_service_created_student(self) -> None:
-        student = self.service.create_student(
-            "Jule",
-            "Schneider",
-            self.seed_data.default_group_id,
-            self.seed_data.courses[0].course_id,
-        )
-        projection_data = StudentProjectionBuilder(
-            self.seed_data.groups,
-            self.seed_data.courses,
-            self.seed_data.default_group_id,
-            student.student_id,
-            self.seed_data.school_year,
-        ).build((*self.seed_data.students, *self.repository.list_students()))
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            workbook_path = Path(temp_dir) / "student_projection.xlsx"
-            ClassOverviewV02WorkbookBuilder(workbook_path, projection_data).build()
-            workbook = load_workbook(workbook_path, data_only=False)
-
-        students_sheet = workbook["data_students"]
-        headers = [cell.value for cell in students_sheet[1]]
-        student_id_column = headers.index(STUDENT_ID) + 1
-        first_name_column = headers.index(FIRST_NAME) + 1
-        active_column = headers.index(ACTIVE) + 1
-        student_ids = {
-            students_sheet.cell(row, student_id_column).value
-            for row in range(2, students_sheet.max_row + 1)
-        }
-        first_names = {
-            students_sheet.cell(row, first_name_column).value
-            for row in range(2, students_sheet.max_row + 1)
-        }
-
-        self.assertIn(student.student_id, student_ids)
-        self.assertIn("Jule", first_names)
-        self.assertIn(TABLE_STUDENTS, students_sheet.tables)
-        self.assertEqual(students_sheet.cell(1, active_column).value, ACTIVE)
-
-        overview_sheet = workbook["Stammgruppenübersicht"]
-        profile_sheet = workbook["Schülerprofil"]
-        self.assertTrue(str(overview_sheet["X2"].value).startswith(STUDENT_ID_PREFIX))
-        self.assertIn(TABLE_STUDENTS, overview_sheet["Y2"].value)
-        self.assertIn(TABLE_STUDENTS, overview_sheet["B6"].value)
-        self.assertEqual(profile_sheet["X2"].value, student.student_id)
-        self.assertIn(TABLE_STUDENTS, profile_sheet["Y2"].value)
-        self.assertIn("ui_student_slot_id_01", workbook.defined_names)
-        self.assertIn("ui_profile_selected_student_id", workbook.defined_names)
-
-    def test_archived_student_remains_in_table_but_is_filtered_by_projection(self) -> None:
-        student = self.service.create_student(
-            "Jule",
-            "Schneider",
-            self.seed_data.default_group_id,
-            self.seed_data.courses[0].course_id,
-        )
-        archived_student = self.service.archive_student(student.student_id)
-        projection_data = StudentProjectionBuilder(
-            self.seed_data.groups,
-            self.seed_data.courses,
-            self.seed_data.default_group_id,
-            self.seed_data.default_student_id,
-            self.seed_data.school_year,
-        ).build((*self.seed_data.students, *self.repository.list_students()))
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            workbook_path = Path(temp_dir) / "student_projection.xlsx"
-            ClassOverviewV02WorkbookBuilder(workbook_path, projection_data).build()
-            workbook = load_workbook(workbook_path, data_only=False)
-
-        students_sheet = workbook["data_students"]
-        headers = [cell.value for cell in students_sheet[1]]
-        student_id_column = headers.index(STUDENT_ID) + 1
-        first_name_column = headers.index(FIRST_NAME) + 1
-        active_column = headers.index(ACTIVE) + 1
-        archived_at_column = headers.index(ARCHIVED_AT) + 1
-
-        archived_row = None
-        for row in range(2, students_sheet.max_row + 1):
-            if (
-                students_sheet.cell(row, student_id_column).value == archived_student.student_id
-                and students_sheet.cell(row, first_name_column).value == archived_student.first_name
-            ):
-                archived_row = row
-                break
-
-        self.assertIsNotNone(archived_row)
-        self.assertFalse(students_sheet.cell(archived_row, active_column).value)
-        self.assertEqual(
-            students_sheet.cell(archived_row, archived_at_column).value,
-            "2026-06-28T11:00:00+00:00",
-        )
-        self.assertIn(f"[{ACTIVE}]", workbook["Stammgruppenübersicht"]["B6"].value)
-
-    def test_overview_projection_sorts_cards_without_changing_students_table(self) -> None:
-        unsorted_students = (
-            StudentRecord(
-                f"{STUDENT_ID_PREFIX}-000010",
-                "Zoe",
-                "Zimmer",
-                self.seed_data.default_group_id,
-                self.seed_data.courses[1].course_id,
-                "",
-                True,
-                "2026-06-28",
-                "2026-06-28",
-                None,
-            ),
-            StudentRecord(
-                f"{STUDENT_ID_PREFIX}-000011",
-                "Anna",
-                "Albrecht",
-                self.seed_data.default_group_id,
-                self.seed_data.courses[0].course_id,
-                "",
-                True,
-                "2026-06-28",
-                "2026-06-28",
-                None,
-            ),
-        )
-        projection_data = StudentProjectionBuilder(
-            self.seed_data.groups,
-            self.seed_data.courses,
-            self.seed_data.default_group_id,
-            self.seed_data.default_student_id,
-            self.seed_data.school_year,
-        ).build(unsorted_students)
-
-        self.assertEqual(
-            projection_data.student_card_projection[0].student_id,
-            f"{STUDENT_ID_PREFIX}-000011",
-        )
-        self.assertEqual(
-            projection_data.student_card_projection[1].student_id,
-            f"{STUDENT_ID_PREFIX}-000010",
-        )
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            workbook_path = Path(temp_dir) / "student_projection.xlsx"
-            ClassOverviewV02WorkbookBuilder(workbook_path, projection_data).build()
-            workbook = load_workbook(workbook_path, data_only=False)
-
-        students_sheet = workbook["data_students"]
-        headers = [cell.value for cell in students_sheet[1]]
-        student_id_column = headers.index(STUDENT_ID) + 1
-
-        self.assertEqual(
-            students_sheet.cell(2, student_id_column).value,
-            f"{STUDENT_ID_PREFIX}-000010",
-        )
-        self.assertEqual(
-            students_sheet.cell(3, student_id_column).value,
-            f"{STUDENT_ID_PREFIX}-000011",
-        )
-
-        overview_sheet = workbook["Stammgruppenübersicht"]
-        self.assertEqual(overview_sheet["X2"].value, f"{STUDENT_ID_PREFIX}-000011")
-        self.assertEqual(overview_sheet["X3"].value, f"{STUDENT_ID_PREFIX}-000010")
-        self.assertNotIn("SORTBY", str(overview_sheet["Y2"].value))
-        self.assertNotIn("FILTER", str(overview_sheet["Y2"].value))
-        self.assertIn(f"{TABLE_STUDENTS}[{FIRST_NAME}]", overview_sheet["Y2"].value)
-        self.assertIn(f"{TABLE_STUDENTS}[{STUDENT_ID}]", overview_sheet["Y2"].value)
-
 
 if __name__ == "__main__":
     unittest.main()

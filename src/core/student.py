@@ -19,7 +19,7 @@ from .constants import (
     STUDENT_NOTES,
     UPDATED_AT,
 )
-from .workbook_data import StudentRecord
+from .records import StudentRecord
 
 
 class StudentValidationError(ValueError):

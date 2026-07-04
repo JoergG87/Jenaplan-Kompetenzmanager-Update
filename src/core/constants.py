@@ -1,4 +1,4 @@
-"""Central technical constants for workbook data architecture."""
+"""Central technical constants for the PySide/SQLite data architecture."""
 
 STUDENT_ID = "student_id"
 FIRST_NAME = "first_name"
@@ -15,14 +15,6 @@ ACTIVE = "active"
 CREATED_AT = "created_at"
 UPDATED_AT = "updated_at"
 ARCHIVED_AT = "archived_at"
-
-SHEET_DATA_STUDENTS = "data_students"
-SHEET_DATA_GROUPS = "data_groups"
-SHEET_DATA_COURSES = "data_courses"
-
-TABLE_STUDENTS = "tbl_students"
-TABLE_GROUPS = "tbl_groups"
-TABLE_COURSES = "tbl_courses"
 
 STUDENT_ID_PREFIX = "STU"
 GROUP_ID_PREFIX = "GRP"

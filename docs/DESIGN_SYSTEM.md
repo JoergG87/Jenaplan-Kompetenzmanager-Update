@@ -147,7 +147,7 @@ PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
 Neue UI-Entwicklung konzentriert sich auf die PySide-App.
 
-Excel/VBA ist nicht mehr die Zielrichtung fuer die Haupt-App. Excel kann weiterhin als Export-, Berichts- oder Legacy-Projektion bestehen.
+Excel/VBA ist nicht mehr die Zielrichtung fuer die Haupt-App. Der alte Excel-/VBA-Stand liegt nur noch im Legacy-Archiv `legacy/excel/`; neue UI-Entwicklung konzentriert sich auf PySide.
 
 ### PySide Theme Umsetzung
 

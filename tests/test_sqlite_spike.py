@@ -8,19 +8,13 @@ import unittest
 from contextlib import closing
 from pathlib import Path
 
-from openpyxl import load_workbook
-
 from src.core.constants import (
     ACTIVE,
     COURSE_GROUP_ID_PREFIX,
     COURSE_ID_PREFIX,
     GROUP_ID_PREFIX,
     OBSERVATION_ID_PREFIX,
-    STUDENT_ID,
     STUDENT_ID_PREFIX,
-    TABLE_COURSES,
-    TABLE_GROUPS,
-    TABLE_STUDENTS,
 )
 from src.core.observation import (
     ObservationCompetencyRatingRecord,
@@ -39,11 +33,9 @@ from src.core.sqlite_store import (
     SQLiteStudentRepository,
     DocumentRecord,
     StudentCompetencyConfirmationRecord,
-    build_workbook_data_from_sqlite,
     create_sqlite_seed_database,
 )
-from src.core.workbook_data import seed_workbook_data
-from src.ui.screens.klassenuebersicht import ClassOverviewV02WorkbookBuilder
+from src.core.records import seed_reference_data
 from scripts.seed_test_data import SeedDataError, seed_test_data
 
 
@@ -450,7 +442,7 @@ class SQLiteSpikeTest(unittest.TestCase):
                         "SELECT course_id FROM courses ORDER BY course_id LIMIT 1"
                     ).fetchone()[0]
 
-        seed_data = seed_workbook_data()
+        seed_data = seed_reference_data()
         self.assertEqual(student_count, len(seed_data.students))
         self.assertEqual(group_count, len(seed_data.groups))
         self.assertEqual(course_count, len(seed_data.courses))
@@ -723,37 +715,6 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIsNotNone(stored_observation)
         self.assertFalse(stored_observation.active)
         self.assertEqual(stored_observation.updated_at, "2026-07-04T10:00:00+00:00")
-
-    def test_existing_projection_can_be_built_from_sqlite_data(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
-            workbook_path = Path(temp_dir) / "sqlite_projection.xlsx"
-            create_sqlite_seed_database(database_path)
-            projection_data = build_workbook_data_from_sqlite(database_path)
-            ClassOverviewV02WorkbookBuilder(workbook_path, projection_data).build()
-            workbook = load_workbook(workbook_path, data_only=False)
-
-        students_sheet = workbook["data_students"]
-        groups_sheet = workbook["data_groups"]
-        courses_sheet = workbook["data_courses"]
-        overview_sheet = workbook["Stammgruppenübersicht"]
-
-        self.assertIn(TABLE_STUDENTS, students_sheet.tables)
-        self.assertIn(TABLE_GROUPS, groups_sheet.tables)
-        self.assertIn(TABLE_COURSES, courses_sheet.tables)
-        self.assertEqual(students_sheet.max_row, 29)
-        self.assertTrue(str(overview_sheet["X2"].value).startswith(STUDENT_ID_PREFIX))
-        self.assertIn(TABLE_STUDENTS, overview_sheet["Y2"].value)
-        self.assertIn(f"[{ACTIVE}]", overview_sheet["B6"].value)
-        self.assertIn("ui_student_slot_id_01", workbook.defined_names)
-
-        headers = [cell.value for cell in students_sheet[1]]
-        student_id_column = headers.index(STUDENT_ID) + 1
-        stored_ids = [
-            students_sheet.cell(row, student_id_column).value
-            for row in range(2, students_sheet.max_row + 1)
-        ]
-        self.assertIn(f"{STUDENT_ID_PREFIX}-000001", stored_ids)
 
     def _sample_observation(
         self,

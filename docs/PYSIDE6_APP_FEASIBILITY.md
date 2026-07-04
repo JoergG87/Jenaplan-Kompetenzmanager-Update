@@ -27,7 +27,7 @@ Adapter duerfen Interaktionen entgegennehmen, Eingaben sammeln, Commands erzeuge
 
 Adapter duerfen keine Businesslogik enthalten, keine fachlichen IDs erzeugen und nicht direkt in SQLite schreiben.
 
-Excel/VBA bleibt im Repository erhalten. Excel bleibt bestehende Projektion und moeglicher Export-/Berichtspfad.
+Excel/VBA bleibt unter `legacy/excel/` archiviert. Excel ist kein aktiver Standardpfad mehr.
 
 Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Der Ruecksprungpunkt fuer den Excel-/xlwings-Pfad ist `checkpoint-excel-adapter-before-python-gui`.
 
@@ -35,7 +35,7 @@ Entschieden ist:
 
 - PySide6 ist Hauptanwendung
 - SQLite ist produktive lokale Datenbasis
-- Excel ist nur Export-, Berichts-, Referenz- oder Legacy-Projektion
+- Excel ist nur noch archivierter Legacy-Altstand; spaetere Exporte brauchen eigene Freigabe
 - VBA wird nicht fuer neue Features, UI, Smoke-Tests oder produktive Workflows weiterverfolgt
 
 ## 2. Validierter Spike
@@ -62,7 +62,7 @@ Validierter Stand:
 - Speichern laeuft ueber Application, Service und Repository.
 - Qt Widgets schreiben nicht direkt in SQLite.
 - Tests: `python3 -m pytest` mit 26 bestandenen Tests.
-- Build: `python3 build.py` erfolgreich.
+- Historischer Build: `python3 build.py` war im Spike erfolgreich; der Build ist heute archiviert und kein Standardcheck mehr.
 - Commit: `5363e18`
 - Tag: `spike-pyside6-student-create`
 
@@ -277,11 +277,11 @@ Updates:
 - App-Updates duerfen SQLite-Schema und bestehende Daten nicht brechen
 - Migrationsstrategie fehlt noch
 
-Excel-Export/Berichte:
+Datei-Export/Berichte:
 
 - mittleres Risiko
-- Excel bleibt moeglicher Export-/Berichtspfad
-- Builder muss aus SQLite saubere Ausgabeprojektionen erzeugen
+- Exportformate muessen separat freigegeben werden
+- Export-Builder muessen aus SQLite saubere Ausgabeprojektionen erzeugen
 
 Testbarkeit von PySide6:
 
@@ -313,7 +313,7 @@ Kurzbewertung:
 
 PySide6 wirkt technisch als naechster Pruefpfad sinnvoller als eine weitere Vertiefung des Excel/VBA-Runtime-Adapters.
 
-Die finale Umstellung auf PySide als Hauptanwendung ist durch ADR-046 erfolgt. Packaging, produktiver Nutzer-Datenbankpfad, Backup/Restore und Excel-Export bleiben offene Folgearbeiten.
+Die finale Umstellung auf PySide als Hauptanwendung ist durch ADR-046 erfolgt. Packaging, produktiver Nutzer-Datenbankpfad, Backup/Restore und Exportformate bleiben offene Folgearbeiten.
 
 ## 10. Empfehlung fuer naechsten Sprint
 

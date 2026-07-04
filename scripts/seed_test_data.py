@@ -37,7 +37,7 @@ from src.core.sqlite_store import (  # noqa: E402
     SQLiteStudentRepository,
     StudentCompetencyConfirmationRecord,
 )
-from src.core.student import StudentRecord  # noqa: E402
+from src.core.records import StudentRecord  # noqa: E402
 from src.desktop_app.adapters.curriculum_desktop_adapter import (  # noqa: E402
     CurriculumDesktopAdapter,
 )

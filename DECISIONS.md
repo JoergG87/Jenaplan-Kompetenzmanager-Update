@@ -1822,3 +1822,37 @@ VBA wird nicht mehr verwendet fuer:
 - `openpyxl` bleibt erlaubt, wenn ausdruecklich Export, Bericht oder Legacy-Altstand betroffen ist.
 - Spaeter kann eine gezielte Bereinigung, Archivierung oder Entfernung alter Excel-/VBA-Pfade erfolgen.
 - Packaging, Installer, Backup/Restore, Datenbankpfad und SQLite-Migrationen bleiben eigene spaetere Entscheidungen.
+
+## ADR-047 - Excel/VBA wird aus dem aktiven Projektpfad archiviert
+
+Status: Accepted
+
+### Kontext
+
+Nach der PySide-/SQLite-Entscheidung liegen aktive Produktentwicklung, Persistenz, Fachlogik, UI, Berichte und Tests in der PySide-Hauptanwendung.
+
+Die frueheren Excel-/openpyxl-/VBA-Dateien wurden im aktiven Root nicht mehr fuer neue Features benoetigt und erschwerten die Projektstruktur sowie die Standardchecks.
+
+### Entscheidung
+
+Reine Excel-/VBA-Legacy-Dateien werden unter `legacy/excel/` archiviert.
+
+Der alte Workbook-Build `build.py`, openpyxl-Projektionen, VBA-Quellen, Seed-Arbeitsmappen und zugehoerige Hilfsskripte gehoeren nicht mehr zum aktiven App-Pfad.
+
+`python3 build.py` ist kein Pflichtcheck mehr.
+
+Der aktive Standardcheck ist:
+
+```text
+git diff --check
+python3 -m pytest
+QT_QPA_PLATFORM=offscreen python3 -c 'from src.desktop_app.main import main; print("import ok")'
+```
+
+### Konsequenzen
+
+- PySide/SQLite bleibt die Hauptanwendung und Source of Truth.
+- `openpyxl` wird aus den aktiven Runtime-Abhaengigkeiten entfernt, solange kein aktiver Exportpfad es nutzt.
+- Runtime- und Output-Dateien bleiben unversioniert.
+- Excel-/VBA-Artefakte bleiben historisch nachvollziehbar, werden aber nicht fuer neue Features, UI, Smoke-Tests oder Standardbuilds verwendet.
+- Ein spaeterer Exportauftrag muss neu fachlich und technisch freigegeben werden.

@@ -19,7 +19,7 @@ APP_INFO_APP_NAME = "Jenaplan Kompetenzmanager"
 APP_INFO_MODE = "PySide6 Prototyp"
 APP_INFO_VERSION = "Prototyp"
 APP_INFO_STORAGE_HINT = "Einige Funktionen sind noch nicht dauerhaft gespeichert."
-APP_INFO_EXCEL_HINT = "Excel bleibt aktuell Export/Legacy-Projektion."
+APP_INFO_EXCEL_HINT = "Excel/VBA ist nur noch historischer Legacy-Altstand."
 
 
 class AppInfoDialog(QDialog):

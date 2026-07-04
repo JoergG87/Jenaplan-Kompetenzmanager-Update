@@ -117,7 +117,7 @@ class AppShell(QMainWindow):
             ),
             "reports": PlaceholderScreen(
                 "Berichte",
-                "Excel-Export und Berichte folgen separat.",
+                "Text- und Datei-Exporte folgen separat.",
             ),
             "settings": PlaceholderScreen(
                 "Einstellungen",

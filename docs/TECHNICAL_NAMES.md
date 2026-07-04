@@ -41,7 +41,7 @@ Beispiele fuer sichtbare Begriffe:
 
 ## Workbook-CodeNames
 
-Status: Legacy-/Export-Pfad. Bestehende Workbook-CodeNames bleiben fuer historische Arbeitsmappen, Exportprojektionen und reproduzierbare Altstaende stabil. Neue Hauptanwendungsfeatures erzeugen keine neuen Workbook-CodeNames.
+Status: Archivierter Legacy-Pfad unter `legacy/excel/`. Bestehende Workbook-CodeNames bleiben fuer historische Arbeitsmappen und reproduzierbare Altstaende stabil. Neue Hauptanwendungsfeatures erzeugen keine neuen Workbook-CodeNames.
 
 | Objekt | Sichtbar | Technisch | Status |
 | --- | --- | --- | --- |
@@ -71,6 +71,8 @@ Keine spontane Umbenennung bestehender technischer Namen waehrend Feature-Sprint
 
 ## Hidden-Data-Sheets
 
+Status: Legacy-Workbook-Projektion unter `legacy/excel/`. Aktive PySide-Features nutzen SQLite, Adapter und ViewModels statt Hidden Sheets.
+
 Workbook-Datenquellen verwenden das Praefix `data_`.
 
 Registrierte Hidden-Data-Sheets:
@@ -86,6 +88,8 @@ Registrierte Hidden-Data-Sheets:
 - `data_settings`
 
 ## Tabellen
+
+Status: Legacy-Workbook-Projektion unter `legacy/excel/`. Aktive PySide-Features nutzen SQLite-Tabellen und ViewModels.
 
 Tabellennamen verwenden das Praefix `tbl_` und beziehen sich auf das jeweilige Hidden-Data-Sheet.
 
@@ -142,7 +146,7 @@ Regeln:
 
 ## Named Ranges
 
-Status: Legacy-/Export-Pfad. Bestehende Named Ranges bleiben stabil, solange alte Workbook-Projektionen reproduzierbar sein muessen. Neue PySide-Features nutzen keine neuen Named Ranges als primaeren Integrationspfad.
+Status: Archivierter Legacy-Pfad unter `legacy/excel/`. Bestehende Named Ranges bleiben stabil, solange alte Workbook-Projektionen reproduzierbar sein muessen. Neue PySide-Features nutzen keine neuen Named Ranges.
 
 Registrierte bestehende Named Ranges:
 
@@ -207,6 +211,19 @@ Beispiele:
 - `ctl_` fuer technische UserForm-Control-Namen
 - `ws` fuer Worksheet-CodeNames
 - `Open` fuer zentrale VBA-Navigationsprozeduren
+
+## Aktive Core-Referenzdaten
+
+| Name | Zweck | Status |
+| --- | --- | --- |
+| `src/core/records.py` | Aktive leichte Dataclasses und deterministische Referenzdaten ohne Excel-Abhaengigkeit | aktiv |
+| `StudentRecord` | Dataclass fuer Schueler-Referenzdaten und SQLite-Seed-Pfade | aktiv |
+| `GroupRecord` | Dataclass fuer Stammgruppen-Referenzdaten | aktiv |
+| `CourseRecord` | Dataclass fuer Kurs-Referenzdaten | aktiv |
+| `ReferenceData` | Container fuer aktive Referenzdaten ohne Workbook-Bezug | aktiv |
+| `seed_reference_data()` | Erzeugt deterministische Referenz-Stammdaten und Demo-Schueler fuer explizite Seed-/Testpfade | aktiv |
+
+Regel: Aktive Referenzdaten duerfen keine `openpyxl`- oder Workbook-Abhaengigkeit einfuehren.
 
 ## Verbotene technische Namen
 
@@ -301,12 +318,11 @@ Registrierte Python-Spike-Komponenten:
 - `ObservationValidationError`
 - `ObservationRepositoryError`
 - `create_sqlite_seed_database(path)`
-- `build_workbook_data_from_sqlite(path)`
 - `SeedDataError`
 - `SeedResult`
 - `seed_test_data(database_path, reset)`
 
-Regel: `create_sqlite_seed_database(path)` ist ein expliziter Seed-/Test-/Legacy-Projektionspfad. Der produktive PySide-App-Start nutzt diesen Pfad nicht, damit keine Demo-Schueler erzeugt oder Nutzerdaten ueberschrieben werden.
+Regel: `create_sqlite_seed_database(path)` ist ein expliziter Seed-/Testpfad. Der produktive PySide-App-Start nutzt diesen Pfad nicht, damit keine Demo-Schueler erzeugt oder Nutzerdaten ueberschrieben werden.
 
 Registrierte SQLite-/Stammdaten-Konstanten:
 
@@ -663,7 +679,9 @@ Der Desktop-App-Layer ist Adapter/UI-Schicht. Er darf Daten anzeigen, Eingaben s
 
 ## Runtime Adapter und Projection Refresh
 
-Produktiv umgesetzte VBA-Adapter-Prozeduren:
+Status: Historischer Excel/VBA-Bridge-Pfad unter `legacy/excel/`. Nicht Teil aktiver PySide-Standardchecks.
+
+Historisch umgesetzte VBA-Adapter-Prozeduren:
 
 - `SaveNewStudentDialog()`
 
@@ -672,12 +690,12 @@ Vorgesehene VBA-Adapter-Prozeduren:
 - `CancelNewStudentDialog()`
 - `ImportProjectionRefresh()`
 
-Produktiv umgesetzte Python-CLI/Bridge:
+Historisch umgesetzte Python-CLI/Bridge:
 
-- `km.py`
+- `legacy/excel/km.py`
 - `student create`
 
-Produktiv umgesetzte Runtime-Artefakte:
+Historisch umgesetzte Runtime-Artefakte:
 
 - `runtime_command.json`
 - `runtime_result.json`
@@ -754,11 +772,13 @@ Vorgesehene Control-Namen fuer `frm_observation_new`:
 
 ## VBA-Module
 
-Registrierte Standardmodule im Seed:
+Status: Legacy-Archiv unter `legacy/excel/vba/`.
+
+Registrierte Standardmodule im historischen Seed:
 
 - `Globals`
 - `Navigation`
 - `UI`
 - `SeedImport`
 
-`SeedImport` ist das Bootstrap-Modul fuer den automatischen Import versionierter `.bas`-Quellen in `seeds/JenaplanSeed.xlsm`.
+`SeedImport` war das Bootstrap-Modul fuer den automatischen Import versionierter `.bas`-Quellen in die historische Seed-Arbeitsmappe unter `legacy/excel/seeds/`.

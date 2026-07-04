@@ -4,9 +4,9 @@
 
 Aktuelle Produktversion: `v0.4`.
 
-Kurzbeschreibung: PySide-Hauptanwendung mit lokaler SQLite-Datenbasis und bestehendem Excel-/Workbook-Legacy-Pfad.
+Kurzbeschreibung: PySide-Hauptanwendung mit lokaler SQLite-Datenbasis und archiviertem Excel-/Workbook-Legacy-Pfad.
 
-Version `v0.4` repräsentiert die abgeschlossene Core Data Architecture mit datengetriebener Workbook-Projektion. Die aktive Produktlinie ist inzwischen die PySide-Desktop-App.
+Version `v0.4` repräsentiert historisch die abgeschlossene Core Data Architecture mit datengetriebener Workbook-Projektion. Die aktive Produktlinie ist inzwischen die PySide-Desktop-App.
 
 ## Projektziel
 
@@ -16,9 +16,9 @@ PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
 SQLite ist die produktive lokale Datenbasis.
 
-Das Projekt hat sich damit von einer Excel-zentrierten Arbeitsmappe zu einer modernen Desktop-App fuer macOS entwickelt. Excel/VBA bleibt im Repository als Export-, Berichts-, Referenz- oder Legacy-Projektion erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
+Das Projekt hat sich damit von einer Excel-zentrierten Arbeitsmappe zu einer modernen Desktop-App fuer macOS entwickelt. Excel/VBA liegt nur noch im Legacy-Archiv `legacy/excel/` und ist nicht mehr Zielrichtung fuer die Haupt-App.
 
-Python bleibt verantwortlich fuer Datenmodell, Application Layer, Domain Layer, Persistenz, UI-nahe Adapter, PySide-Oberflaeche, Workbook-/Export-Projektionen, Berichte und Build-Artefakte.
+Python bleibt verantwortlich fuer Datenmodell, Application Layer, Domain Layer, Persistenz, UI-nahe Adapter, PySide-Oberflaeche, Berichte, Exporte und Fachlogik.
 
 Fachliche Logik wandert weder in PySide-Widgets noch nach VBA. Das Datenmodell bleibt unabhaengig von der Oberflaeche.
 
@@ -34,8 +34,8 @@ Die Entwicklung folgt diesen Grundsätzen:
 - Daten werden strukturiert, nachvollziehbar und konsistent verarbeitet.
 - Jede Version bleibt lauffähig.
 - Änderungen werden dokumentiert und versioniert.
-- PySide ist die Zielrichtung fuer die Hauptanwendung.
-- Excel kann weiterhin als Export-, Berichts- oder Legacy-Projektion dienen.
+- PySide ist die Hauptanwendung.
+- Excel ist nur noch historischer Legacy-Altstand und kein aktiver Produktpfad.
 
 ## Pädagogische Produktvision
 
@@ -104,21 +104,10 @@ Das Projekt ist modular aufgebaut.
 
 - `src/desktop_app/` enthaelt die PySide-Hauptanwendung mit Shell, Screens, Dialogen, Adaptern und ViewModels.
 - `src/core/` enthaelt fachliche Python-Logik, Application-/Domain-/Infrastructure-Bausteine und SQLite-Repositories.
-- `build.py`, `src/workbook.py`, `src/ui/` und `src/ui/screens/` gehoeren zum bestehenden Workbook-/Export-/Legacy-Pfad.
-- `src/dashboard.py` ist für das spätere Dashboard vorgesehen.
-- `src/students.py` ist für Schülerdaten vorgesehen.
-- `src/competencies.py` ist für Kompetenzdaten vorgesehen.
-- `src/assessments.py` ist für Bewertungen vorgesehen.
-- `src/reports.py` ist für Berichte vorgesehen.
-- `src/settings.py` ist für zentrale Einstellungen vorgesehen.
-- `src/styles.py` ist für visuelle Formatierungen vorgesehen.
+- `legacy/excel/` enthaelt alte Workbook-Builder, openpyxl-Projektionen, VBA-Quellen, Seeds und Hilfsskripte aus der Excel-Linie.
 - `data/` enthält Eingabedaten und Konfigurationen.
 - `docs/` enthält fachliche Begleitdokumentation.
-- `UX_BLUEPRINT.md` beschreibt die verbindliche UX-Grundlage für den ersten Prototyp.
 - `docs/DESIGN_SYSTEM.md` beschreibt das freigegebene Design-System als verbindliche Referenz für zukünftige Ansichten.
-- `vba/` enthält historische versionierbare VBA-Quellen aus der Excel-Linie.
-- `seeds/` enthält validierte Seed-Arbeitsmappen aus der Excel-/VBA-Legacy-Linie.
-- `output/` ist für später generierte Dateien vorgesehen.
 - `tests/` ist für automatisierte Tests vorgesehen.
 - `assets/` ist für statische Ressourcen vorgesehen.
 - `BACKLOG.md` sammelt zukünftige Produktideen und Erweiterungen.
@@ -128,7 +117,7 @@ Die Architektur vermeidet feste Zellreferenzen und UI-nahe Schattenlogik. Stattd
 
 Die Stammgruppenübersicht und die Kursübersicht besitzen keine eigene Geschäftslogik. Sie stellen vorhandene Schülerdaten dar und werden aus diesen Daten generiert. Änderungen an Schülerdaten erfolgen künftig ausschließlich über die Schülerverwaltung.
 
-VBA-Quelländerungen bleiben als Legacy-Altstand versioniert unter `vba/modules/` nachvollziehbar. Neue Features werden nicht mehr in VBA umgesetzt. Der Seed-Import-Pfad bleibt nur fuer ausdrueckliche Legacy-/Export-Aufgaben erhalten.
+VBA-Quellstände bleiben als Legacy-Altstand unter `legacy/excel/vba/` nachvollziehbar. Neue Features werden nicht mehr in VBA umgesetzt. Der Seed-Import-Pfad ist archiviert und kein aktiver Workflow.
 
 ## Visuelle Produktlinie
 
@@ -175,8 +164,8 @@ Verbindliche Prinzipien:
 - Services und Validatoren enthalten die fachliche Logik.
 - Repositories kapseln Persistenz und SQLite-Zugriff.
 - PySide ViewModels und Screens zeigen fachliche Daten, sind aber keine fachliche Datenquelle.
-- Builder erzeugen ausschliesslich Export- oder Legacy-Projektionen.
-- Excel bleibt Export-, Berichts-, Referenz- oder Legacy-Projektion.
+- Builder erzeugen aktive PySide-ViewModels oder explizit beauftragte Exporte.
+- Excel bleibt archivierter Legacy-Altstand.
 - VBA ist kein Zielpfad fuer neue Features, UI, Smoke-Tests oder produktive Workflows.
 
 Historische Architecture v1 bleibt als Grundlage erhalten:
@@ -187,7 +176,7 @@ Python
 -> Excel
 ```
 
-Architecture v2.0 bleibt als historischer Zwischenschritt dokumentiert. Architecture v3.0 richtet dieselben Application-, Domain- und Infrastructure-Layer auf PySide als Hauptanwendung und Excel als Export-/Legacy-Projektion aus.
+Architecture v2.0 bleibt als historischer Zwischenschritt dokumentiert. Architecture v3.0 richtet dieselben Application-, Domain- und Infrastructure-Layer auf PySide als Hauptanwendung aus; Excel ist unter `legacy/excel/` archiviert.
 
 ## Engineering Lessons Learned
 
@@ -322,13 +311,13 @@ Die Migration auf `STU-000001` erfolgte gemeinsam mit der Implementierung des `S
 
 Betroffene Dateien und Komponenten:
 
-- `src/core/workbook_data.py`: Seed-Daten auf neue `student_id`-Strategie umstellen.
+- `legacy/excel/src/core/workbook_data.py`: historischer Seed-Datenstand mit neuer `student_id`-Strategie.
 - `src/core/constants.py`: technische Feldnamen und ID-Praefixe verwenden.
-- `src/ui/screens/klassenuebersicht.py`: Projektion liest weiterhin `student_id`, darf aber kein konkretes ID-Format voraussetzen.
-- `src/ui/screens/schuelerprofil.py`: Profilprojektion liest weiterhin `student_id`, darf aber kein konkretes ID-Format voraussetzen.
-- `scripts/create_vba_framework_poc.py`: Packaging bleibt unveraendert, solange Named Ranges und CodeNames stabil bleiben.
-- `vba/modules/Navigation.bas`: VBA verwendet weiterhin ausschliesslich `student_id`; keine Navigation ueber Namen oder Zellpositionen.
-- `vba/modules/UI.bas`: Slot-ID-Mechanismus bleibt unveraendert und liest die sichtbare `student_id`-Projektion.
+- `legacy/excel/src/ui/screens/klassenuebersicht.py`: historische Projektion liest `student_id`, darf aber kein konkretes ID-Format voraussetzen.
+- `legacy/excel/src/ui/screens/schuelerprofil.py`: historische Profilprojektion liest `student_id`, darf aber kein konkretes ID-Format voraussetzen.
+- `legacy/excel/scripts/create_vba_framework_poc.py`: historisches Packaging bleibt unveraendert, solange Named Ranges und CodeNames stabil bleiben.
+- `legacy/excel/vba/modules/Navigation.bas`: VBA verwendet weiterhin ausschliesslich `student_id`; keine Navigation ueber Namen oder Zellpositionen.
+- `legacy/excel/vba/modules/UI.bas`: Slot-ID-Mechanismus bleibt unveraendert und liest die sichtbare `student_id`-Projektion.
 
 Migrationsregel: Die Umstellung erfolgt kontrolliert in einem Schritt, damit Seed, Workbook-Tabellen, UI-Projektionen, Named Ranges und VBA-Navigation dasselbe ID-Format verwenden.
 
@@ -336,12 +325,12 @@ Migrationsregel: Die Umstellung erfolgt kontrolliert in einem Schritt, damit See
 
 | Legacy-Name / Referenz | Fundstelle | Status | Entscheidung |
 | --- | --- | --- | --- |
-| `ui_profile_student_s001` | frueher `src/ui/screens/schuelerprofil.py` | entfernt | wurde entfernt, da kein zentraler Navigationsanker |
-| `s001` als `DEFAULT_STUDENT_ID` | frueher `src/core/workbook_data.py` | migriert | `STU-000001` |
-| `s001` in Seed-Daten | frueher `src/core/workbook_data.py` | migriert | `STU-000001`-Strategie |
-| `ui_student_slot_id_XX` | `src/ui/screens/klassenuebersicht.py`, `vba/modules/Globals.bas` | formatneutraler Slot-ID-Mechanismus | bleibt als Legacy-Namensmuster bestehen |
-| `ui_profile_selected_student_id` | `src/ui/screens/schuelerprofil.py`, `vba/modules/Globals.bas` | formatneutraler Zielbereich fuer `student_id` | bleibt bestehen |
-| VBA-Meldungstexte mit `student_id` | `vba/modules/Navigation.bas` | technische Diagnose-/Fehlermeldung | bleibt bestehen |
+| `ui_profile_student_s001` | frueher `legacy/excel/src/ui/screens/schuelerprofil.py` | entfernt | wurde entfernt, da kein zentraler Navigationsanker |
+| `s001` als `DEFAULT_STUDENT_ID` | frueher `legacy/excel/src/core/workbook_data.py` | migriert | `STU-000001` |
+| `s001` in Seed-Daten | frueher `legacy/excel/src/core/workbook_data.py` | migriert | `STU-000001`-Strategie |
+| `ui_student_slot_id_XX` | `legacy/excel/src/ui/screens/klassenuebersicht.py`, `legacy/excel/vba/modules/Globals.bas` | formatneutraler Slot-ID-Mechanismus | bleibt als Legacy-Namensmuster bestehen |
+| `ui_profile_selected_student_id` | `legacy/excel/src/ui/screens/schuelerprofil.py`, `legacy/excel/vba/modules/Globals.bas` | formatneutraler Zielbereich fuer `student_id` | bleibt bestehen |
+| VBA-Meldungstexte mit `student_id` | `legacy/excel/vba/modules/Navigation.bas` | technische Diagnose-/Fehlermeldung | bleibt bestehen |
 
 Die Legacy-Migration fuer Student-Seed-IDs ist mit Sprint 4.2c umgesetzt.
 
@@ -362,9 +351,9 @@ Offener Implementierungspunkt:
 ## Technischer Stack
 
 - Python 3.11 oder neuer
-- `openpyxl` für die spätere Excel-Erzeugung
 - `pandas` für strukturierte Datenverarbeitung
 - `pillow` für spätere Bild- oder Asset-Verarbeitung
+- `PySide6` fuer die Desktop-App
 - Markdown für Projektdokumentation
 - CSV und JSON für strukturierte Eingabe- und Konfigurationsdaten
 
@@ -504,7 +493,7 @@ Zusammenfassung:
 - Python verantwortet Datenmodell, Application Layer, Domain Layer, Persistenz, ViewModels, Adapter, UI-Projektionen, Berichte, Exporte und Fachlogik.
 - Keine Businesslogik in PySide-Widgets.
 - Keine direkte SQLite-Logik in Qt-Widgets.
-- Excel/openpyxl nur fuer ausdrueckliche Export-, Berichts-, Referenz- oder Legacy-Aufgaben verwenden.
+- Excel/openpyxl nur im archivierten `legacy/excel/`-Pfad anfassen, wenn ein ausdruecklicher Legacy- oder Exportauftrag vorliegt.
 - Keine neuen Excel-/VBA-Features und keine VBA-Smoke-Tests als Zielpfad.
 - Keine festen Zellreferenzen.
 - Strukturierte Tabellen bevorzugen.

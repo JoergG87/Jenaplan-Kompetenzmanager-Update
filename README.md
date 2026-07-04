@@ -2,7 +2,7 @@
 
 Der Jenaplan-Kompetenzmanager ist eine PySide-Desktop-App zur strukturierten Verwaltung, Auswertung und zukuenftigen Ausgabe von Kompetenzdaten im Jenaplan-Kontext.
 
-SQLite ist die lokale produktive Datenbasis. Excel-Artefakte aus der fruehen Projektphase bleiben als Legacy-/Export- und Referenzpfad im Repository erhalten.
+SQLite ist die lokale produktive Datenbasis. Excel-/VBA-Artefakte aus der fruehen Projektphase liegen nur noch im Legacy-Archiv `legacy/excel/`.
 
 Die vollständige Projektdokumentation befindet sich in `PROJECT.md`. Dauerhafte Architekturentscheidungen befinden sich in `DECISIONS.md`.
 
@@ -12,7 +12,7 @@ Ziel des Projekts ist der Aufbau einer modernen, ruhigen und wartbaren Desktop-A
 
 PySide ist die Hauptanwendung. Python verantwortet Datenmodell, Application Layer, Domain Layer, Persistenz, ViewModels, Adapter, PySide-Oberflaeche, Berichte und Exporte. Fachliche Logik verbleibt vollstaendig ausserhalb von UI-Widgets.
 
-Excel ist nicht mehr Hauptanwendung und kein Zielpfad fuer neue Features. Bestehende Workbook-/openpyxl-/VBA-Artefakte bleiben vorerst als Legacy, Referenz und moegliche spaetere Exportprojektion erhalten.
+Excel ist nicht mehr Hauptanwendung und kein Zielpfad fuer neue Features. Bestehende Workbook-/openpyxl-/VBA-Artefakte sind historisch archiviert und gehoeren nicht mehr zum aktiven App-Pfad.
 
 Die Stammgruppenübersicht ist der Einstieg in den Arbeitsablauf. Sie dient ausschließlich dazu, Schüler schnell zu finden, auszuwählen und anschließend in das Schülerprofil zu wechseln. Verwaltung, Analyse und Auswertung erfolgen nicht in dieser Ansicht.
 
@@ -22,15 +22,13 @@ Das Projekt ist modular aufgebaut:
 
 - `src/desktop_app/` enthaelt die PySide-Hauptanwendung.
 - `src/core/` enthaelt fachliche Modelle, Application-/Domain-/Infrastructure-Bausteine und SQLite-Zugriff ueber Repositories.
-- `build.py`, `src/workbook.py`, `src/ui/` und `src/ui/screens/` gehoeren zum bestehenden Workbook-/Export-/Legacy-Pfad.
-- `vba/` und `seeds/` enthalten historische VBA-/Seed-Artefakte. Sie werden nicht fuer neue Features ausgebaut.
+- `legacy/excel/` enthaelt den archivierten Excel-/openpyxl-/VBA-Altstand.
 - `data/` enthaelt strukturierte Eingabedaten und Konfigurationen.
 - `docs/` enthaelt fachliche und technische Dokumentation.
 - `tests/` ist fuer automatisierte Tests vorgesehen.
-- `output/` ist fuer kuenftig erzeugte Dateien vorgesehen.
 - `assets/` ist fuer statische Ressourcen vorgesehen.
 
-Die Hauptanwendung laeuft ueber PySide und SQLite. Excel-Erzeugung erfolgt nur noch im Legacy-/Export-Kontext ueber Python mit `openpyxl`.
+Die Hauptanwendung laeuft ueber PySide und SQLite. Excel-Erzeugung ist kein aktiver Standardpfad und wird nur bei ausdruecklichem Legacy- oder Exportauftrag betrachtet.
 
 Jede Ansicht besitzt genau eine Hauptaufgabe. Neue Funktionen dürfen diese Hauptaufgabe nicht verwässern.
 
@@ -91,6 +89,18 @@ und faellt sonst auf `python3` zurueck.
 
 Hinweis: Das ist ein Entwickler-/Prototyp-Launcher. Es ist noch kein Installer und kein fertiges App-Paket. Python und die Abhaengigkeiten muessen weiterhin eingerichtet sein.
 
+## Standardchecks
+
+Der aktive Standardcheck prueft die PySide-/SQLite-Linie:
+
+```bash
+git diff --check
+python3 -m pytest
+QT_QPA_PLATFORM=offscreen python3 -c 'from src.desktop_app.main import main; print("import ok")'
+```
+
+Der alte Excel-Workbook-Build ist archiviert und kein Pflichtcheck mehr. `python3 build.py` gehoert nur noch zu ausdruecklichen Legacy-/Exportauftraegen innerhalb von `legacy/excel/`.
+
 ## Testdaten fuer Laura-Pilottest
 
 Die aktuelle lokale SQLite-Datenbank kann fuer den Laura-Pilottest mit kuenstlichen Testdaten befuellt werden:
@@ -121,10 +131,6 @@ Pilottest-Checkliste:
 - Dokumentationsstand und offene Kompetenzen
 - Dokumente & Medien am Schueler und an Beobachtungen
 
-## Legacy-/Export-Build
+## Excel/VBA Legacy
 
-Der Workbook-Build bleibt als Altstand und moegliche Exportbasis erhalten. Er ist nicht mehr der Startweg der Hauptanwendung.
-
-```bash
-python3 build.py
-```
+Der fruehere Workbook-/VBA-Pfad ist unter `legacy/excel/` archiviert. Er dient nur der historischen Nachvollziehbarkeit und ist kein aktiver Entwicklungs-, Test- oder Startpfad der Hauptanwendung.

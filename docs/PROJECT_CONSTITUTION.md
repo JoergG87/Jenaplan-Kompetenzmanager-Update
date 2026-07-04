@@ -10,7 +10,7 @@ Das Design-System ist Source of Truth fuer alle Benutzeroberflaechen.
 
 Die Technical Naming Registry in `docs/TECHNICAL_NAMES.md` ist Source of Truth fuer technische Namen.
 
-Die Workbook Data Registry in `docs/DATA_REGISTRY.md` ist Source of Truth fuer Workbook-Datenquellen.
+Die Data Registry in `docs/DATA_REGISTRY.md` ist Source of Truth fuer SQLite-Datenquellen und historische Workbook-Projektionen.
 
 Das UI Data Mapping in `docs/UI_DATA_MAPPING.md` ist Source of Truth fuer die Herkunft sichtbarer UI-Felder.
 
@@ -26,11 +26,11 @@ SQLite ist die produktive lokale Datenbasis.
 
 Python verantwortet Datenmodell, Application Layer, Domain Layer, Persistenz, UI-nahe Adapter, ViewModels, PySide-Oberflaeche, UI-Projektionen, Berichte, Exporte und Fachlogik.
 
-Excel/openpyxl bleibt nur fuer Export-, Berichts-, Referenz- oder Legacy-Projektionen zulaessig.
+Excel/openpyxl ist aus dem aktiven Projektpfad entfernt und nur noch im archivierten Legacy-Bereich `legacy/excel/` zulaessig, wenn ein ausdruecklicher Legacy- oder Exportauftrag vorliegt.
 
 VBA ist kein Zielpfad fuer neue Features, UI, Smoke-Tests, Automatisierung oder produktive Workflows.
 
-Alte VBA-Quellen, Seeds und Workbook-Generatoren bleiben als Legacy-Altstand versioniert, werden aber nicht zur Hauptanwendung ausgebaut.
+Alte VBA-Quellen, Seeds und Workbook-Generatoren bleiben unter `legacy/excel/` als Legacy-Altstand versioniert, werden aber nicht zur Hauptanwendung ausgebaut.
 
 Fachliche Eingaben erfolgen nicht direkt in fachlichen Tabellen.
 
@@ -113,7 +113,7 @@ Sie veraendern niemals die zugrunde liegenden fachlichen Entitaeten.
 
 Die Datenhaltung bleibt unabhaengig von der Darstellung.
 
-Excel-/Workbook-Projektionen werden ausschliesslich im Python Projection Builder oder Export Builder erzeugt.
+Excel-/Workbook-Projektionen sind historisch archiviert. Neue Exportprojektionen brauchen eine eigene fachliche Freigabe und duerfen die PySide-/SQLite-Schichten nicht umgehen.
 
 Excel darf diese Projektion anzeigen und technische Zellbezuege aufloesen, ist aber keine Haupt-UI.
 
@@ -127,7 +127,7 @@ Auswertungen duerfen keine eigenen Schatteninformationen erzeugen.
 
 PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
 
-Excel/VBA bleibt im Repository als bestehende Projektion und moeglicher Export-, Berichts-, Referenz- oder Legacy-Pfad erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
+Excel/VBA bleibt unter `legacy/excel/` als historischer Altstand erhalten, ist aber nicht mehr die Zielrichtung fuer die Haupt-App.
 
 Der validierte Spike-Pfad lautet:
 
@@ -148,11 +148,11 @@ Auch fuer PySide6 gilt:
 - keine direkten SQLite-Schreibzugriffe aus Widgets
 - keine Umgehung von Dispatcher, Service, Validator oder Repository
 
-Excel/VBA bleibt im Repository erhalten. Excel bleibt bestehende Projektion und moeglicher Export-/Berichtspfad.
+Excel/VBA bleibt im Legacy-Archiv erhalten. Excel ist kein aktiver Standardpfad.
 
 Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Der Ruecksprungpunkt fuer den Excel-/xlwings-Pfad ist `checkpoint-excel-adapter-before-python-gui`.
 
-Offen bleiben produktiver Nutzer-Datenbankpfad, Backup/Restore, Packaging als macOS-App, Updates/Migrationen und der genaue Umfang kuenftiger Excel-Exporte.
+Offen bleiben produktiver Nutzer-Datenbankpfad, Backup/Restore, Packaging als macOS-App, Updates/Migrationen und spaetere Exportformate.
 
 ## Architecture Baseline v3.0
 
@@ -164,7 +164,7 @@ Adapter Layer
 -> Domain Layer
 -> Infrastructure Layer
 -> Projection Layer
--> PySide UI / Excel-Exportprojektion
+-> PySide UI / freigegebene Exportprojektion
 ```
 
 Verantwortlichkeiten:
@@ -173,9 +173,9 @@ Verantwortlichkeiten:
 - Application Layer: Commands, Dispatcher und Routing; keine Fachlogik, kein SQL, keine Excel-Logik.
 - Domain Layer: Services, Validatoren und fachliche Regeln.
 - Infrastructure Layer: Repositories, SQLite und Persistenz.
-- Projection Layer: PySide ViewModels, UI-nahe Anzeigeprojektionen, Export Builder und Legacy-Workbook-Projektionen.
+- Projection Layer: PySide ViewModels, UI-nahe Anzeigeprojektionen und explizit freigegebene Export Builder.
 - PySide UI: Hauptanwendung fuer Anzeige, Navigation, Dialoge und Benutzerinteraktion.
-- Excel UI: Export-, Berichts-, Referenz- oder Legacy-Projektion.
+- Excel UI: historischer Legacy-Altstand unter `legacy/excel/`.
 
 Standard-Datenfluss:
 
@@ -188,8 +188,8 @@ User
 -> Service
 -> Repository
 -> SQLite
--> Builder
--> PySide-Ansicht oder Excel-Projektion
+-> ViewModel / Query-Projektion
+-> PySide-Ansicht oder freigegebene Exportprojektion
 ```
 
 SQLite ist die produktive lokale Source of Truth fuer fachliche Daten.
@@ -200,13 +200,13 @@ VBA enthaelt keine Businesslogik und schreibt nicht direkt in SQLite.
 
 PySide ist Haupt-UI, aber nicht fachliche Datenquelle.
 
-Excel bleibt Projektion, nicht fachliche Datenquelle.
+Excel bleibt historischer Altstand, nicht fachliche Datenquelle.
 
 Neue Funktionen entstehen nach dem Standardablauf:
 
 1. vorhandene Daten ergaenzen
 2. Registry kennt die Datenquelle
-3. Builder-Projektion aktualisieren
+3. PySide ViewModel oder freigegebene Exportprojektion aktualisieren
 4. UI zeigt die Projektion
 5. PySide navigiert ueber technische IDs; Export-/Legacy-Projektionen duerfen technische IDs abbilden
 
@@ -214,7 +214,7 @@ Neue Funktionen duerfen nur entstehen durch:
 
 - bestehende Daten erweitern
 - registrierte neue Datenquelle ergaenzen
-- Builder erweitern
+- ViewModel oder freigegebenen Export Builder erweitern
 - UI-Projektion ergaenzen
 - PySide-Navigation ergaenzen; Legacy-/Export-Navigation nur bei ausdruecklichem Auftrag
 

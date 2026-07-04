@@ -12,7 +12,7 @@ Schreibprozess: Schuelerverwaltung, spaeter freizugeben.
 
 Primaerer UI-Einstieg: PySide-Dialog `Neuer Schüler`.
 
-Status: Produktiver Schreibpfad bis SQLite ist ueber den PySide-Adapter umgesetzt. Beim produktiven App-Start werden Schema, Stammdaten und Kursverbund-Defaults initialisiert, aber keine Demo-Schueler erzeugt. Excel-Projection-Refresh ist Legacy/Export und kein Zielpfad fuer neue UI-Funktionalitaet.
+Status: Produktiver Schreibpfad bis SQLite ist ueber den PySide-Adapter umgesetzt. Beim produktiven App-Start werden Schema, Stammdaten und Kursverbund-Defaults initialisiert, aber keine Demo-Schueler erzeugt. Excel-Projection-Refresh ist archivierter Legacy-Altstand und kein Zielpfad fuer neue UI-Funktionalitaet.
 
 Freigegebener PySide-Pfad:
 
@@ -30,16 +30,16 @@ Legacy-Excel-Pfad:
 
 Der fruehere Feature-1.4-Pfad ueber `dlg_neuer_schueler`, VBA Adapter und Python CLI/Bridge bleibt als historischer Architekturstand dokumentiert. Er wird nicht fuer neue Features, UI oder Smoke-Tests weiterverfolgt.
 
-Nach erfolgreichem `student.create` kann Python fuer Export-/Legacy-Zwecke eine Workbook-Projektion aus SQLite erzeugen.
+Nach erfolgreichem `student.create` wird die PySide-Ansicht aus SQLite aktualisiert. Ein spaeterer Datei- oder Excel-Export braucht einen separaten freigegebenen Exportprozess.
 
 Die GUI sammelt Eingaben und erzeugt Commands, enthaelt aber keine Businesslogik und schreibt nicht direkt aus Widgets in SQLite.
 
-Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Excel bleibt als bestehende Projektion und moeglicher Export-/Berichtspfad erhalten.
+Der Excel/VBA-Runtime-Adapter wird nicht weiter ausgebaut. Excel liegt nur noch als historischer Altstand unter `legacy/excel/`.
 
 Betroffene Datenquellen:
 
 - `students` in SQLite als fachliche Source of Truth
-- `data_students` als optionale Excel-/Exportprojektion aus SQLite
+- `data_students` als historische Excel-/Exportprojektion
 - spaeter optional `data_media` fuer Schuelerdokumente
 
 Erforderliche IDs:
@@ -162,7 +162,7 @@ PySide6 GUI
 Betroffene Datenquellen:
 
 - `groups` in SQLite als fachliche Source of Truth
-- `data_groups` als optionale Excel-/Exportprojektion aus SQLite
+- `data_groups` als historische Excel-/Exportprojektion
 
 Erforderliche IDs:
 
@@ -186,7 +186,7 @@ Schreibprozess: Stammgruppenverwaltung ueber PySide-Stammdaten.
 Betroffene Datenquellen:
 
 - `groups` in SQLite als fachliche Source of Truth
-- `data_groups` als optionale Excel-/Exportprojektion aus SQLite
+- `data_groups` als historische Excel-/Exportprojektion
 
 Erforderliche IDs:
 
@@ -219,7 +219,7 @@ PySide6 GUI
 Betroffene Datenquellen:
 
 - `courses` in SQLite als fachliche Source of Truth
-- `data_courses` als optionale Excel-/Exportprojektion aus SQLite
+- `data_courses` als historische Excel-/Exportprojektion
 
 Erforderliche IDs:
 
@@ -243,7 +243,7 @@ Schreibprozess: Kursverwaltung ueber PySide-Stammdaten.
 Betroffene Datenquellen:
 
 - `courses` in SQLite als fachliche Source of Truth
-- `data_courses` als optionale Excel-/Exportprojektion aus SQLite
+- `data_courses` als historische Excel-/Exportprojektion
 
 Erforderliche IDs:
 

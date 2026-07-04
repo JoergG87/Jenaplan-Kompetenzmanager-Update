@@ -37,13 +37,12 @@ from .observation import (
     OBSERVATION_RATING_KEYS,
 )
 from .student import StudentRepositoryError
-from .student_projection import StudentProjectionBuilder
-from .workbook_data import (
+from .records import (
     CourseRecord,
     GroupRecord,
+    ReferenceData,
     StudentRecord,
-    WorkbookData,
-    seed_workbook_data,
+    seed_reference_data,
 )
 
 
@@ -305,7 +304,7 @@ class SQLiteDatabase:
     def ensure_master_data_defaults(self) -> None:
         """Create default master data only for empty master-data scopes."""
         self.initialize_schema()
-        seed_data = seed_workbook_data()
+        seed_data = seed_reference_data()
         with closing(self.connect()) as connection:
             with connection:
                 group_count = connection.execute("SELECT COUNT(*) FROM groups").fetchone()[0]
@@ -347,7 +346,7 @@ class SQLiteDatabase:
                     )
                 self._ensure_default_course_group(connection)
 
-    def replace_seed_data(self, data: WorkbookData) -> None:
+    def replace_seed_data(self, data: ReferenceData) -> None:
         self.initialize_schema()
         with closing(self.connect()) as connection:
             with connection:
@@ -1577,26 +1576,10 @@ class SQLiteMasterDataRepository:
 
 
 def create_sqlite_seed_database(path: Path = SQLITE_SPIKE_PATH) -> SQLiteDatabase:
-    """Create the SQLite spike database from the current workbook seed data."""
+    """Create a SQLite test database from deterministic reference data."""
     database = SQLiteDatabase(path)
-    database.replace_seed_data(seed_workbook_data())
+    database.replace_seed_data(seed_reference_data())
     return database
-
-
-def build_workbook_data_from_sqlite(path: Path = SQLITE_SPIKE_PATH) -> WorkbookData:
-    """Read SQLite records and return the existing workbook projection model."""
-    database = SQLiteDatabase(path)
-    seed_data = seed_workbook_data()
-    groups = SQLiteGroupRepository(database).list_groups()
-    courses = SQLiteCourseRepository(database).list_courses()
-    students = SQLiteStudentRepository(database).list_students()
-    return StudentProjectionBuilder(
-        groups,
-        courses,
-        seed_data.default_group_id,
-        seed_data.default_student_id,
-        seed_data.school_year,
-    ).build(students)
 
 
 def _course_seed_row(course: CourseRecord, index: int) -> tuple[object, ...]:

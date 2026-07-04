@@ -39,7 +39,7 @@ from src.core.sqlite_store import (
     StudentCompetencyConfirmationRecord,
 )
 from src.core.student import StudentService, StudentValidator
-from src.core.workbook_data import CourseRecord, GroupRecord, StudentRecord
+from src.core.records import CourseRecord, GroupRecord, StudentRecord
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.view_models.master_data_view_model import course_color_from_key
 from src.desktop_app.view_models.observation_view_model import (

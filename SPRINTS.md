@@ -6,6 +6,21 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - Excel/VBA-Legacy bereinigen 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Reine Excel-/openpyxl-/VBA-Dateien nach `legacy/excel/` verschoben
+- [x] Alter Excel/VBA-CLI-Bridge-Adapter `km.py` samt Test nach `legacy/excel/` verschoben
+- [x] Aktive Referenzdaten aus `src/core/workbook_data.py` nach `src/core/records.py` entkoppelt
+- [x] Aktive Tests von Workbook-/openpyxl-Projektionen getrennt
+- [x] `output/.gitkeep` entfernt; Runtime-/Output-Dateien bleiben unversioniert
+- [x] README und Governance-Dokumente beschreiben PySide/SQLite als aktiven Hauptpfad
+- [x] `python3 build.py` ist kein Pflichtcheck mehr; Standardcheck nutzt PySide-/SQLite-Tests und Offscreen-Import
+- [x] Kein Commit umgesetzt
+
 ## Sprint - Berichtsvorschau und Halbjahres-Testdaten 🔄
 
 - [x] Status: Umgesetzt, nicht committed

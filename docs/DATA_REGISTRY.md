@@ -2,7 +2,7 @@
 
 Dieses Dokument definiert die verbindlichen Datenquellen des Jenaplan-Kompetenzmanagers.
 
-SQLite ist die produktive lokale Source of Truth. Workbook-Tabellen sind nur noch Export-, Berichts-, Referenz- oder Legacy-Projektionen.
+SQLite ist die produktive lokale Source of Truth. Workbook-Tabellen sind historische Legacy-Projektionen unter `legacy/excel/`.
 
 UI-Ansichten sind Projektionen dieser Datenquellen. Sie duerfen selbst keine fachliche Datenquelle werden.
 
@@ -12,7 +12,7 @@ Python schreibt fachliche Daten ausschliesslich ueber Application, Domain, Repos
 
 PySide-Adapter und ViewModels lesen fachliche Daten ueber freigegebene Adapter, Repositories oder Query-Schichten.
 
-Python-Builder duerfen aus SQLite Export- oder Legacy-Workbook-Projektionen erzeugen.
+Export-Builder duerfen nur nach ausdruecklicher Freigabe Projektionen aus SQLite erzeugen. Der alte Workbook-Builder ist archiviert.
 
 VBA greift niemals direkt auf fachliche Tabellen oder SQLite zu.
 
@@ -66,7 +66,7 @@ Beobachtungen werden nicht hart geloescht. `observations.active = 0` blendet ein
 
 VBA-UserForms und worksheet-basierte Dialogseiten sind historische Artefakte der Excel-Linie und kein Zielpfad fuer neue Features.
 
-Feature 1.4a gibt fuer `student.create` den Runtime Adapter und den Projection Refresh Contract frei.
+Feature 1.4a gab historisch fuer `student.create` den Runtime Adapter und den Projection Refresh Contract frei. Dieser Pfad liegt inzwischen unter `legacy/excel/` und ist kein aktiver Standardpfad.
 
 Fuer diesen Schreibprozess ist SQLite die fachliche Source of Truth.
 
@@ -179,15 +179,15 @@ student_competency_confirmations(
 )
 ```
 
-## Physische Workbook-/Export-Projektion
+## Legacy: Physische Workbook-/Export-Projektion
 
-Die `data_*`-Quellen koennen als versteckte Tabellenblaetter in Export-/Legacy-Workbooks angelegt werden.
+Die `data_*`-Quellen konnten in der Excel-Linie als versteckte Tabellenblaetter in Workbooks angelegt werden. Der zugehoerige Code liegt unter `legacy/excel/` und ist kein aktiver Standardpfad.
 
 Jedes `data_*`-Blatt enthaelt genau eine strukturierte Tabelle mit `tbl_*`-Namen.
 
-Der Builder erzeugt diese Tabellen automatisch.
+Der archivierte Builder erzeugte diese Tabellen automatisch.
 
-UI-Builder lesen ausschliesslich aus registrierten Tabellen und erzeugen daraus UI-Projektionen.
+Historische UI-Builder lasen ausschliesslich aus registrierten Tabellen und erzeugten daraus UI-Projektionen.
 
 Eine Projektion darf mehrere registrierte Tabellen lesen, wenn die fachliche Herkunft in `docs/UI_DATA_MAPPING.md` dokumentiert und die View Ownership freigegeben ist.
 

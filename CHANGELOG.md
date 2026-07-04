@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## Sprint - Excel/VBA-Legacy bereinigen
+
+### Changed
+
+- Reine Excel-/openpyxl-/VBA-Altstaende in `legacy/excel/` archiviert.
+- Alter Excel/VBA-CLI-Bridge-Adapter `km.py` samt Runtime-Adapter-Test in das Legacy-Archiv verschoben.
+- Aktive PySide-/SQLite-Referenzdaten aus Workbook-Abhaengigkeiten geloest und in `src/core/records.py` gefuehrt.
+- README und Governance-Dokumente auf PySide/SQLite als einzigen aktiven Hauptpfad und neue Standardchecks ohne Excel-Build aktualisiert.
+
+### Removed
+
+- `openpyxl` aus den aktiven Runtime-Abhaengigkeiten entfernt.
+- Versionierter Platzhalter `output/.gitkeep` entfernt, weil `output/` Runtime-/Exportbereich bleibt.
+
+### Not Changed
+
+- Keine PySide-Fachlogik geaendert, keine SQLite-Schemaaenderung, keine Runtime-Dateien versioniert und kein Commit umgesetzt.
+
 ## Sprint - Berichtsvorschau und Halbjahres-Testdaten
 
 ### Changed

@@ -51,7 +51,7 @@ UI-Projektionen duerfen eigene Sortierregeln verwenden.
 
 Diese Sortierung dient ausschliesslich der Darstellung.
 
-Die Reihenfolge der Darstellung wird ausschliesslich durch den Projection Builder vorbereitet.
+Die Reihenfolge der Darstellung wird in der aktiven PySide-App durch Adapter/ViewModel-Projektionen vorbereitet. Historische Workbook-Projektionen nutzten frueher Projection Builder.
 
 Sie veraendert niemals:
 
@@ -100,7 +100,7 @@ PySide6 GUI
 -> SQLite
 ```
 
-Excel bleibt bestehende Export-, Berichts-, Referenz- oder Legacy-Projektion.
+Excel liegt nur noch als archivierter Legacy-Altstand unter `legacy/excel/`.
 
 ## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
 
