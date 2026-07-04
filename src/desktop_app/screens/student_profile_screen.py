@@ -426,12 +426,18 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(3)
-        self.observation_empty_label.setText(
+
+        empty_label = QLabel(
             title or PROFILE_SECTION_PLACEHOLDERS["observations_title"]
         )
+        empty_label.setWordWrap(True)
+        set_label_style(empty_label, "body")
+
         hint_label = QLabel(hint or PROFILE_SECTION_PLACEHOLDERS["observations_hint"])
+        hint_label.setWordWrap(True)
         set_label_style(hint_label, "subtle")
-        layout.addWidget(self.observation_empty_label)
+
+        layout.addWidget(empty_label)
         layout.addWidget(hint_label)
         return card
 
@@ -737,12 +743,16 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(3)
-        self.competency_empty_label.setText(
-            PROFILE_SECTION_PLACEHOLDERS["competencies_title"]
-        )
+
+        empty_label = QLabel(PROFILE_SECTION_PLACEHOLDERS["competencies_title"])
+        empty_label.setWordWrap(True)
+        set_label_style(empty_label, "body")
+
         hint_label = QLabel(PROFILE_SECTION_PLACEHOLDERS["competencies_hint"])
+        hint_label.setWordWrap(True)
         set_label_style(hint_label, "subtle")
-        layout.addWidget(self.competency_empty_label)
+
+        layout.addWidget(empty_label)
         layout.addWidget(hint_label)
         return card
 
@@ -813,12 +823,16 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(3)
-        self.documentation_empty_label.setText(
-            "Noch kein Kompetenzkatalog verfügbar."
-        )
+
+        empty_label = QLabel("Noch kein Kompetenzkatalog verfügbar.")
+        empty_label.setWordWrap(True)
+        set_label_style(empty_label, "body")
+
         hint_label = QLabel("Dokumentationsstand erscheint hier nach Katalogladung.")
+        hint_label.setWordWrap(True)
         set_label_style(hint_label, "subtle")
-        layout.addWidget(self.documentation_empty_label)
+
+        layout.addWidget(empty_label)
         layout.addWidget(hint_label)
         return card
 
@@ -846,12 +860,18 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(3)
-        self.report_empty_label.setText(REPORT_NO_OBSERVATIONS_MESSAGE)
+
+        empty_label = QLabel(REPORT_NO_OBSERVATIONS_MESSAGE)
+        empty_label.setWordWrap(True)
+        set_label_style(empty_label, "body")
+
         hint_label = QLabel(
             "Berichtsvorschau erscheint nach aktiven Beobachtungen."
         )
+        hint_label.setWordWrap(True)
         set_label_style(hint_label, "subtle")
-        layout.addWidget(self.report_empty_label)
+
+        layout.addWidget(empty_label)
         layout.addWidget(hint_label)
         return card
 
@@ -874,12 +894,16 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(3)
-        self.documents_empty_label.setText(
-            PROFILE_SECTION_PLACEHOLDERS["documents_title"]
-        )
+
+        empty_label = QLabel(PROFILE_SECTION_PLACEHOLDERS["documents_title"])
+        empty_label.setWordWrap(True)
+        set_label_style(empty_label, "body")
+
         hint_label = QLabel(PROFILE_SECTION_PLACEHOLDERS["documents_hint"])
+        hint_label.setWordWrap(True)
         set_label_style(hint_label, "subtle")
-        layout.addWidget(self.documents_empty_label)
+
+        layout.addWidget(empty_label)
         layout.addWidget(hint_label)
         return card
 
