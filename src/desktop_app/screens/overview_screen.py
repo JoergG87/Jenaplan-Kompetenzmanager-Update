@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -40,15 +41,30 @@ class OverviewScreen(QWidget):
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
+
         title = QLabel("Übersicht")
         set_label_style(title, "screen_title")
         subtitle = QLabel("Stammgruppen und Schülerbestand")
         set_label_style(subtitle, "muted")
         layout.addWidget(title)
         layout.addWidget(subtitle)
-        layout.addWidget(self._section_card("Stammgruppen", self.groups_layout))
-        layout.addWidget(self._section_card("Kursverbünde", self.course_groups_layout))
-        layout.addStretch()
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(12)
+        content_layout.addWidget(self._section_card("Stammgruppen", self.groups_layout))
+        content_layout.addWidget(
+            self._section_card("Kursverbünde", self.course_groups_layout)
+        )
+        content_layout.addStretch()
+
+        scroll_area.setWidget(content)
+        layout.addWidget(scroll_area, 1)
 
     def set_groups(self, groups: tuple[GroupSummaryViewModel, ...]) -> None:
         """Replace group cards."""
@@ -166,12 +182,9 @@ class OverviewScreen(QWidget):
                 course.item_id,
             )
         )
-        status = QLabel(course.status_label)
-        set_label_style(status, "subtle")
         layout.addWidget(marker)
         layout.addWidget(open_button)
         layout.addStretch(1)
-        layout.addWidget(status)
         return row
 
     def _clear_layout(self, layout: object) -> None:
