@@ -60,6 +60,7 @@ Spalten:
 | Fehlende Kompetenzen | SQLite `competencies` minus aktive Beobachtungsbewertungen und bestaetigte Kompetenzstaende | Auswertung | Nein | `data_competencies` | optional aufklappbare Liste pro Fachgruppe; dient Planung und Dokumentationsueberblick, keine Bewertung |
 | Bestaetigter Kompetenzstand | `student_competency_confirmations.confirmed_rating` nach `student_id` + `competency_id` | Anzeige / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `student_competency_confirmations` | paedagogische Entscheidung der Lehrkraft; ueberschreibt keine Beobachtungen und aendert den Vorschlag nicht automatisch |
 | Berichtsvorschau | bestaetigter Kompetenzstand oder berechneter Vorschlag + aktive `data_observations` | Auswertung | Nein | `data_observation_competencies` / `student_competency_confirmations` / `data_observations` | strukturierte Berichtsvorbereitung nach Fach; kann als Text kopiert oder als einfache Textdatei exportiert werden; keine KI-Textgenerierung, keine finalen Zeugnisformulierungen, keine gespeicherte Berichtsdatenhaltung |
+| Dokumente & Medien | SQLite `documents` nach `student_id` | Anzeige / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `documents` + Dateisystem `data/documents/<student_id>/` | zeigt alle aktiven Schuelerdokumente neueste oben; Dateien werden geoeffnet, wenn `file_path` vorhanden ist; SQLite speichert keine BLOBs |
 | Neue Beobachtung | `data_students.student_id` | Navigation | Ja (ueber freigegebenen Prozess) | `data_observations` | startet zentralen Beobachtungsdialog und speichert ueber Adapter/Service/Repository |
 | Beobachtung bearbeiten | `data_observations.observation_id` | Navigation / Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | oeffnet bestehenden Beobachtungsdatensatz im Dialog; Speichern ersetzt die Kompetenzbewertungen atomar |
 | Beobachtung loeschen | `data_observations.observation_id` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | Soft Delete ueber `observations.active = 0`; aktive Profil- und Kompetenzuebersichten blenden die Beobachtung aus |
@@ -152,7 +153,7 @@ Regel: Die Schueleruebersicht liest persistente Schueler ueber `StudentDesktopAd
 | Beobachtungsnotiz | SQLite `observations.note` | Eingabe | Ja | `observations` | Schreiben ueber Adapter, Command, Service und Repository |
 | Beobachtungskontext | SQLite `observations.context` | Eingabe | Ja | `observations` | Kontext gehoert zur Beobachtung |
 | Kompetenzzuordnung | SQLite `observation_competency_ratings` | Eingabe | Ja | `observation_competency_ratings` | n:m-Zuordnung; Bewertung liegt pro ausgewaehlter Kompetenz |
-| Dokumente und Medien | zukuenftig `data_media.file_ref` nach `student_id` und optional `observation_id` | Eingabe | Geplant | `data_media` | nur als Anlage, keine Einbettung, Beobachtung bleibt Source of Truth |
+| Dokumente und Medien | Dateiauswahl -> `StudentDesktopAdapter` -> SQLite `documents` nach `student_id` und optional `observation_id` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `documents` + Dateisystem `data/documents/<student_id>/` | Datei wird in den App-Datenordner kopiert; Beobachtungsanhaenge tragen zusaetzlich `observation_id`; Entfernen setzt `documents.active = 0`; keine Datei-BLOBs |
 
 ## Berichte und Dashboard
 
@@ -162,4 +163,4 @@ Regel: Die Schueleruebersicht liest persistente Schueler ueber `StudentDesktopAd
 | Beobachtungsbasis | `data_observations` | Auswertung | Nie | `data_observations` | Beobachtung ist Source of Truth |
 | Kompetenzdaten | `data_observation_competencies` + `data_competencies` | Auswertung | Nie | `data_observation_competencies` | abgeleitete Auswertung |
 | Berichtsvorbereitung | `student_competency_confirmations`, berechnete Kompetenzvorschlaege und aktive Beobachtungen | Auswertung | Nie | SQLite / `data_observations` | vorbereitende Struktur, kein gespeicherter Bericht, kein Export und keine KI-Textgenerierung |
-| Medienhinweise | `data_media` | Anzeige | Nie | `data_media` | optionale Anlagen |
+| Medienhinweise | SQLite `documents` | Anzeige | Nie | SQLite `documents` | optionale Anlagen; Berichte nutzen Medien in diesem Sprint nicht produktiv weiter |

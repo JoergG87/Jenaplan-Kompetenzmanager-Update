@@ -31,11 +31,13 @@ from src.core.sqlite_store import (
     SQLiteCourseRepository,
     SQLiteCompetencyRepository,
     SQLiteDatabase,
+    SQLiteDocumentRepository,
     SQLiteGroupRepository,
     SQLiteMasterDataRepository,
     SQLiteObservationRepository,
     SQLiteStudentCompetencyConfirmationRepository,
     SQLiteStudentRepository,
+    DocumentRecord,
     StudentCompetencyConfirmationRecord,
     build_workbook_data_from_sqlite,
     create_sqlite_seed_database,
@@ -82,10 +84,22 @@ class SQLiteSpikeTest(unittest.TestCase):
                         "PRAGMA table_info(student_competency_confirmations)"
                     ).fetchall()
                 }
+                document_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(documents)"
+                    ).fetchall()
+                }
                 confirmation_foreign_keys = {
                     (row[3], row[2], row[4])
                     for row in connection.execute(
                         "PRAGMA foreign_key_list(student_competency_confirmations)"
+                    ).fetchall()
+                }
+                document_foreign_keys = {
+                    (row[3], row[2], row[4])
+                    for row in connection.execute(
+                        "PRAGMA foreign_key_list(documents)"
                     ).fetchall()
                 }
                 student_foreign_keys = {
@@ -101,6 +115,7 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("competencies", tables)
         self.assertIn("observation_competency_ratings", tables)
         self.assertIn("student_competency_confirmations", tables)
+        self.assertIn("documents", tables)
         self.assertIn("student_id", student_columns)
         self.assertIn("first_name", student_columns)
         self.assertIn("last_name", student_columns)
@@ -118,10 +133,19 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("confirmed_rating", confirmation_columns)
         self.assertIn("confirmed_at", confirmation_columns)
         self.assertIn("note", confirmation_columns)
+        self.assertIn("document_id", document_columns)
+        self.assertIn("student_id", document_columns)
+        self.assertIn("observation_id", document_columns)
+        self.assertIn("document_type", document_columns)
+        self.assertIn("file_path", document_columns)
+        self.assertIn("original_filename", document_columns)
+        self.assertIn("active", document_columns)
         self.assertIn(("group_id", "groups", "group_id"), student_foreign_keys)
         self.assertIn(("course_id", "courses", "course_id"), student_foreign_keys)
         self.assertIn(("student_id", "students", "student_id"), confirmation_foreign_keys)
         self.assertIn(("competency_id", "competencies", "competency_id"), confirmation_foreign_keys)
+        self.assertIn(("student_id", "students", "student_id"), document_foreign_keys)
+        self.assertIn(("observation_id", "observations", "observation_id"), document_foreign_keys)
 
     def test_observation_schema_contains_rating_table(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -285,6 +309,38 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertEqual(confirmation.confirmed_at, "2026-07-05T12:00:00+00:00")
         self.assertEqual(confirmation.note, "angepasst")
         self.assertEqual(confirmations, (confirmation,))
+
+    def test_document_repository_persists_metadata_and_soft_deletes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            database = create_sqlite_seed_database(database_path)
+            repository = SQLiteDocumentRepository(database)
+            document = DocumentRecord(
+                "MED-000001",
+                f"{STUDENT_ID_PREFIX}-000001",
+                "",
+                "Foerderplan",
+                "Bericht",
+                str(Path(temp_dir) / "documents" / "Foerderplan.pdf"),
+                "Foerderplan.pdf",
+                "2026-07-04T12:00:00+00:00",
+                "wichtiger Hinweis",
+                True,
+            )
+
+            repository.create_document(document)
+            reloaded = repository.list_documents_for_student(
+                f"{STUDENT_ID_PREFIX}-000001"
+            )
+            repository.deactivate_document("MED-000001")
+            after_delete = repository.list_documents_for_student(
+                f"{STUDENT_ID_PREFIX}-000001"
+            )
+
+        self.assertEqual(len(reloaded), 1)
+        self.assertEqual(reloaded[0].document_type, "Bericht")
+        self.assertEqual(reloaded[0].original_filename, "Foerderplan.pdf")
+        self.assertEqual(after_delete, ())
 
     def test_seed_data_is_written_to_sqlite_without_id_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

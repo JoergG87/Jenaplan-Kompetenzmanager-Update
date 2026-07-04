@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Sprint - Dokumente & Medien MVP
+
+### Added
+
+- SQLite-Metadaten fuer Dokumente und Medien mit studentenzentrierter Dateiablage unter `data/documents/<student_id>/`.
+- Beobachtungsdialog kann Dateien als Beobachtungsanhaenge hinzufuegen und beim Bearbeiten entfernen.
+- Schuelerprofil zeigt aktive Dokumente und Medien des Schuelers sowie Beobachtungsanhaenge in aufgeklappten Beobachtungskarten.
+- Dateien koennen aus dem Schuelerprofil ueber das Betriebssystem geoeffnet werden, wenn ein Dateipfad vorhanden ist.
+
+### Not Changed
+
+- Keine PDF-Erstellung, keine Bild-/Audio-Vorschau, keine Datei-BLOBs in SQLite, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
 ## Sprint - Dokumentationsstand im Schuelerprofil
 
 ### Added

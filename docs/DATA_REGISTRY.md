@@ -48,6 +48,7 @@ Gepruefte Tabellen:
 | `observations` | Observation | `data_observations` / `tbl_observations` |
 | `observation_competency_ratings` | ObservationCompetencyRating | `data_observation_competencies` / `tbl_observation_competencies` |
 | `student_competency_confirmations` | StudentCompetencyConfirmation | keine Workbook-Projektion |
+| `documents` | Document / Media | `data_media` / `tbl_media` |
 
 Regel:
 
@@ -793,29 +794,31 @@ Zweck: Dokumente, Medien oder Anlagen zu Schuelern und Beobachtungen.
 
 Entity: Media.
 
-Storage: `data_media` / `tbl_media`.
+Storage: SQLite `documents`, optionale Export-/Legacy-Projektion `data_media` / `tbl_media`.
 
 Projection: Dokumentliste, Medienhinweise, Anlagenliste, Beobachtungsdetails.
 
 Owner: Dokumentenverwaltung / Medienanhang / Beobachtungserfassung.
 
-Primary Key: `media_id`.
+Primary Key: `document_id`.
 
 Foreign Keys:
 
-- `student_id` -> `data_students.student_id`
-- `observation_id` -> `data_observations.observation_id` optional fuer Beobachtungsanhaenge
+- `student_id` -> SQLite `students.student_id`
+- `observation_id` -> SQLite `observations.observation_id` optional fuer Beobachtungsanhaenge
 
 Wichtige Felder:
 
-- `media_id`
+- `document_id`
 - `student_id`
 - `observation_id`
-- `file_ref`
-- `media_type`
-- `media_category`
-- `caption`
-- `status`
+- `title`
+- `document_type`
+- `file_path`
+- `original_filename`
+- `created_at`
+- `note`
+- `active`
 
 Beziehungen:
 
@@ -846,26 +849,24 @@ Erlaubte UI-Projektionen:
 Erweiterungsregeln:
 
 - Medien speichern keine Beobachtungsdaten doppelt
+- SQLite speichert nur Metadaten, keine Datei-BLOBs
 - Dateien werden nicht in Excel eingebettet
-- Excel speichert nur `file_ref` und Metadaten
-- physische Dateiablage erfolgt studentenzentriert im Dateisystem
+- Excel speichert hoechstens Referenzen und Metadaten
+- physische Dateiablage erfolgt studentenzentriert im Dateisystem unter `data/documents/<student_id>/`
 - Beobachtungsanhaenge liegen unter dem Schueler und tragen zusaetzlich den Beobachtungsbezug
-- `media_category` unterscheidet mindestens `student_document` und `observation_attachment`
+- `document_type` nutzt die freigegebene MVP-Auswahl: Arbeitsprobe, Lernzielkontrolle, Gespraechsnotiz, Bericht, Foto, Audio, Sonstiges
 
 Vorgesehene physische Dateiablage:
 
 ```text
-Jenaplan-Kompetenzmanager/
-|-- Kompetenzmanager.xlsm
-|-- Daten/
-|-- Dokumente/
-|   |-- STU-000001/
-|   |   |-- Hauptdokumente/
-|   |   `-- Beobachtungsanhaenge/
-|   |       `-- OBS-000001/
-|   |-- STU-000002/
-|   `-- ...
-`-- Berichte/
+data/
+|-- kompetenzmanager.sqlite
+`-- documents/
+    |-- STU-000001/
+    |   |-- MED-000001_Foerderplan.pdf
+    |   `-- MED-000002_Arbeitsprobe.txt
+    |-- STU-000002/
+    `-- ...
 ```
 
 ## data_settings

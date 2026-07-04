@@ -81,6 +81,38 @@ class StudentDetailViewModel:
     active: bool
 
 
+@dataclass(frozen=True)
+class StudentDocumentViewModel:
+    """Display-ready document or media metadata for a student."""
+
+    document_id: str
+    student_id: str
+    observation_id: str
+    title: str
+    document_type: str
+    file_path: str
+    original_filename: str
+    created_at: str
+    note: str = ""
+
+    @property
+    def display_title(self) -> str:
+        """Return the primary document title."""
+        return self.title or self.original_filename
+
+    @property
+    def created_date_label(self) -> str:
+        """Return the compact creation date."""
+        return self.created_at[:10]
+
+    @property
+    def observation_link_label(self) -> str:
+        """Return a visible observation-link hint."""
+        if not self.observation_id:
+            return ""
+        return f"mit Beobachtung {self.observation_id} verknüpft"
+
+
 PROFILE_ACTION_MESSAGES = {
     "observation": "Bitte zuerst einen Schüler auswählen.",
     "document": "Dokumente werden in einem späteren Sprint verwaltet.",

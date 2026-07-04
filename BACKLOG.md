@@ -196,6 +196,27 @@ Folgethema
 
 ## Epic: Dokumente und Medien
 
+### Laura-Pilottest Dokumente & Medien MVP
+
+Priorität: Hoch
+
+Beschreibung:
+
+Das MVP fuer Dokumente und Medien soll mit Laura fachlich und ergonomisch validiert werden. Im Fokus stehen der Beobachtungsdialog, die Dokumenttypen, die Profilansicht und der Umfang der Anzeige.
+
+Prueffragen:
+
+- Ist `Dokumente & Medien` im Beobachtungsdialog hilfreich?
+- Sind die Dokumenttypen passend?
+- Reicht `Datei öffnen` oder braucht Laura Vorschau?
+- Wird der Beobachtungsdialog dadurch zu voll?
+- Sollen Medien standardmaessig eingeklappt sein?
+- Ist der Dokumentbereich im Schuelerprofil verstaendlich?
+
+Status:
+
+Folgethema
+
 ### Dokument-Upload
 
 Priorität: Offen

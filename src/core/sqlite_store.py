@@ -25,6 +25,7 @@ from .constants import (
     GROUP_NAME,
     ID_SEQUENCE_WIDTH,
     LAST_NAME,
+    MEDIA_ID_PREFIX,
     STUDENT_ID,
     STUDENT_NOTES,
     UPDATED_AT,
@@ -110,6 +111,22 @@ class StudentCompetencyConfirmationRecord:
     confirmed_rating: str
     confirmed_at: str
     note: str = ""
+
+
+@dataclass(frozen=True)
+class DocumentRecord:
+    """Persisted document or media metadata for one student."""
+
+    document_id: str
+    student_id: str
+    observation_id: str
+    title: str
+    document_type: str
+    file_path: str
+    original_filename: str
+    created_at: str
+    note: str
+    active: bool
 
 
 class SQLiteDatabase:
@@ -214,6 +231,21 @@ class SQLiteDatabase:
                         FOREIGN KEY (competency_id) REFERENCES competencies(competency_id)
                     );
 
+                    CREATE TABLE IF NOT EXISTS documents (
+                        document_id TEXT PRIMARY KEY,
+                        student_id TEXT NOT NULL,
+                        observation_id TEXT,
+                        title TEXT NOT NULL,
+                        document_type TEXT NOT NULL,
+                        file_path TEXT NOT NULL,
+                        original_filename TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        note TEXT,
+                        active INTEGER NOT NULL CHECK (active IN (0, 1)) DEFAULT 1,
+                        FOREIGN KEY (student_id) REFERENCES students(student_id),
+                        FOREIGN KEY (observation_id) REFERENCES observations(observation_id)
+                    );
+
                     CREATE TABLE IF NOT EXISTS course_groups (
                         course_group_id TEXT PRIMARY KEY,
                         name TEXT NOT NULL UNIQUE,
@@ -251,6 +283,10 @@ class SQLiteDatabase:
                         ON student_competency_confirmations(student_id);
                     CREATE INDEX IF NOT EXISTS idx_competency_confirmations_competency
                         ON student_competency_confirmations(competency_id);
+                    CREATE INDEX IF NOT EXISTS idx_documents_student
+                        ON documents(student_id, active, created_at);
+                    CREATE INDEX IF NOT EXISTS idx_documents_observation
+                        ON documents(observation_id, active, created_at);
                     CREATE INDEX IF NOT EXISTS idx_course_groups_name
                         ON course_groups(name);
                     CREATE INDEX IF NOT EXISTS idx_course_group_student_groups_group
@@ -316,6 +352,7 @@ class SQLiteDatabase:
         with closing(self.connect()) as connection:
             with connection:
                 connection.execute("DELETE FROM observation_competency_ratings")
+                connection.execute("DELETE FROM documents")
                 connection.execute("DELETE FROM observations")
                 connection.execute("DELETE FROM student_competency_confirmations")
                 connection.execute("DELETE FROM course_group_courses")
@@ -891,6 +928,116 @@ class SQLiteObservationRepository:
             row[UPDATED_AT],
             self._ratings_for(connection, row["observation_id"]),
         )
+
+
+class SQLiteDocumentRepository:
+    """Read and write document and media metadata in SQLite."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def create_document(self, document: DocumentRecord) -> DocumentRecord:
+        with closing(self.database.connect()) as connection:
+            with connection:
+                connection.execute(
+                    """
+                    INSERT INTO documents (
+                        document_id,
+                        student_id,
+                        observation_id,
+                        title,
+                        document_type,
+                        file_path,
+                        original_filename,
+                        created_at,
+                        note,
+                        active
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    _document_to_row(document),
+                )
+        return document
+
+    def list_documents_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[DocumentRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    document_id,
+                    student_id,
+                    observation_id,
+                    title,
+                    document_type,
+                    file_path,
+                    original_filename,
+                    created_at,
+                    note,
+                    active
+                FROM documents
+                WHERE student_id = ? AND active = 1
+                ORDER BY created_at DESC, document_id DESC
+                """,
+                (student_id,),
+            ).fetchall()
+        return tuple(_document_from_row(row) for row in rows)
+
+    def list_documents_for_observation(
+        self,
+        observation_id: str,
+    ) -> tuple[DocumentRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    document_id,
+                    student_id,
+                    observation_id,
+                    title,
+                    document_type,
+                    file_path,
+                    original_filename,
+                    created_at,
+                    note,
+                    active
+                FROM documents
+                WHERE observation_id = ? AND active = 1
+                ORDER BY created_at DESC, document_id DESC
+                """,
+                (observation_id,),
+            ).fetchall()
+        return tuple(_document_from_row(row) for row in rows)
+
+    def deactivate_document(self, document_id: str) -> None:
+        with closing(self.database.connect()) as connection:
+            with connection:
+                connection.execute(
+                    """
+                    UPDATE documents
+                    SET active = 0
+                    WHERE document_id = ?
+                    """,
+                    (document_id,),
+                )
+
+    def next_document_id(self) -> str:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT document_id
+                FROM documents
+                """
+            ).fetchall()
+        used_ids = {row["document_id"] for row in rows}
+        next_number = 1
+        while True:
+            document_id = f"{MEDIA_ID_PREFIX}-{next_number:0{ID_SEQUENCE_WIDTH}}"
+            if document_id not in used_ids:
+                return document_id
+            next_number += 1
 
 
 class SQLiteGroupRepository:
@@ -1538,4 +1685,34 @@ def _student_to_row(student: StudentRecord) -> tuple[object, ...]:
         student.created_at,
         student.updated_at,
         student.archived_at,
+    )
+
+
+def _document_from_row(row: sqlite3.Row) -> DocumentRecord:
+    return DocumentRecord(
+        row["document_id"],
+        row[STUDENT_ID],
+        row["observation_id"] or "",
+        row["title"],
+        row["document_type"],
+        row["file_path"],
+        row["original_filename"],
+        row[CREATED_AT],
+        row["note"] or "",
+        bool(row[ACTIVE]),
+    )
+
+
+def _document_to_row(document: DocumentRecord) -> tuple[object, ...]:
+    return (
+        document.document_id,
+        document.student_id,
+        document.observation_id or None,
+        document.title,
+        document.document_type,
+        document.file_path,
+        document.original_filename,
+        document.created_at,
+        document.note,
+        int(document.active),
     )

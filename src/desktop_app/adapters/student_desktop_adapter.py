@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -28,10 +30,12 @@ from src.core.sqlite_store import (
     SQLiteCourseRepository,
     SQLiteCompetencyRepository,
     SQLiteDatabase,
+    SQLiteDocumentRepository,
     SQLiteGroupRepository,
     SQLiteObservationRepository,
     SQLiteStudentCompetencyConfirmationRepository,
     SQLiteStudentRepository,
+    DocumentRecord,
     StudentCompetencyConfirmationRecord,
 )
 from src.core.student import StudentService, StudentValidator
@@ -40,7 +44,9 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDeskto
 from src.desktop_app.view_models.master_data_view_model import course_color_from_key
 from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_CROSS_SUBJECT_LABEL,
+    DOCUMENT_TYPE_OPTIONS,
     ObservationDraftViewModel,
+    ObservationAttachmentDraft,
     ObservationCompetencyRatingDraft,
     ObservationListItem,
     ObservationRatingViewModel,
@@ -54,6 +60,7 @@ from src.desktop_app.view_models.observation_view_model import (
 from src.desktop_app.view_models.student_view_model import (
     GroupSummaryViewModel,
     StudentDetailViewModel,
+    StudentDocumentViewModel,
     StudentListItem,
     StudentReportCompetencyViewModel,
     StudentReportEvidenceViewModel,
@@ -207,7 +214,11 @@ class StudentDesktopAdapter:
     def save_observation(self, draft: ObservationDraftViewModel) -> object:
         """Persist an observation through the application stack."""
         command = self.create_observation_command(draft)
-        return self._dispatcher().dispatch(command)
+        result = self._dispatcher().dispatch(command)
+        if getattr(result, "success", False):
+            observation = getattr(result, "value")
+            self._sync_observation_attachments(draft, observation.observation_id)
+        return result
 
     def create_update_observation_command(
         self,
@@ -227,7 +238,10 @@ class StudentDesktopAdapter:
     def update_observation(self, draft: ObservationDraftViewModel) -> object:
         """Update an existing observation through the application stack."""
         command = self.create_update_observation_command(draft)
-        return self._dispatcher().dispatch(command)
+        result = self._dispatcher().dispatch(command)
+        if getattr(result, "success", False):
+            self._sync_observation_attachments(draft, draft.observation_id)
+        return result
 
     def delete_observation(self, observation_id: str) -> object:
         """Soft-delete an observation through the application stack."""
@@ -265,6 +279,18 @@ class StudentDesktopAdapter:
                 )
                 for rating in observation.competency_ratings
             ),
+            attachment_names=tuple(
+                document.original_filename
+                for document in self._document_repository().list_documents_for_observation(
+                    observation.observation_id
+                )
+            ),
+            attachments=tuple(
+                self._attachment_draft_from_record(document)
+                for document in self._document_repository().list_documents_for_observation(
+                    observation.observation_id
+                )
+            ),
             observation_id=observation.observation_id,
         )
 
@@ -295,9 +321,52 @@ class StudentDesktopAdapter:
                     )
                     for rating in observation.competency_ratings
                 ),
+                tuple(
+                    self._document_view_model(document)
+                    for document in self._document_repository().list_documents_for_observation(
+                        observation.observation_id
+                    )
+                ),
             )
             for observation in observations
         )
+
+    def list_documents_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[StudentDocumentViewModel, ...]:
+        """Return active document and media metadata for one student."""
+        return tuple(
+            self._document_view_model(document)
+            for document in self._document_repository().list_documents_for_student(
+                student_id
+            )
+        )
+
+    def add_student_document(
+        self,
+        *,
+        student_id: str,
+        source_path: Path,
+        document_type: str = "Sonstiges",
+        title: str = "",
+        note: str = "",
+        observation_id: str = "",
+    ) -> StudentDocumentViewModel:
+        """Copy a file into the app data folder and persist its metadata."""
+        document = self._create_document_record(
+            student_id=student_id,
+            source_path=source_path,
+            document_type=document_type,
+            title=title,
+            note=note,
+            observation_id=observation_id,
+        )
+        return self._document_view_model(document)
+
+    def remove_document(self, document_id: str) -> None:
+        """Soft-delete one document or media metadata row."""
+        self._document_repository().deactivate_document(document_id)
 
     def list_competency_overview_for_student(
         self,
@@ -398,6 +467,125 @@ class StudentDesktopAdapter:
         return SQLiteStudentCompetencyConfirmationRepository(
             self.database
         ).upsert_confirmation(confirmation)
+
+    def _sync_observation_attachments(
+        self,
+        draft: ObservationDraftViewModel,
+        observation_id: str,
+    ) -> None:
+        repository = self._document_repository()
+        existing_documents = repository.list_documents_for_observation(observation_id)
+        kept_document_ids = {
+            attachment.document_id
+            for attachment in draft.attachments
+            if attachment.document_id
+        }
+        for document in existing_documents:
+            if document.document_id not in kept_document_ids:
+                repository.deactivate_document(document.document_id)
+        for attachment in draft.attachments:
+            if attachment.document_id:
+                continue
+            if not attachment.source_path:
+                continue
+            self._create_document_record(
+                student_id=draft.student_id,
+                source_path=Path(attachment.source_path),
+                document_type=attachment.document_type,
+                title=attachment.title,
+                note=attachment.note,
+                observation_id=observation_id,
+            )
+
+    def _create_document_record(
+        self,
+        *,
+        student_id: str,
+        source_path: Path,
+        document_type: str,
+        title: str,
+        note: str,
+        observation_id: str = "",
+    ) -> DocumentRecord:
+        source_path = Path(source_path).expanduser()
+        if not source_path.is_file():
+            raise FileNotFoundError(f"Datei nicht gefunden: {source_path}")
+        document_type = (
+            document_type if document_type in DOCUMENT_TYPE_OPTIONS else "Sonstiges"
+        )
+        repository = self._document_repository()
+        document_id = repository.next_document_id()
+        original_filename = source_path.name
+        target_path = self._document_target_path(
+            student_id,
+            document_id,
+            original_filename,
+        )
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        if source_path.resolve() != target_path.resolve():
+            shutil.copy2(source_path, target_path)
+        timestamp = datetime.now(UTC).replace(microsecond=0).isoformat()
+        document = DocumentRecord(
+            document_id=document_id,
+            student_id=student_id,
+            observation_id=observation_id,
+            title=title.strip() or source_path.stem,
+            document_type=document_type,
+            file_path=str(target_path),
+            original_filename=original_filename,
+            created_at=timestamp,
+            note=note.strip(),
+            active=True,
+        )
+        return repository.create_document(document)
+
+    def _document_target_path(
+        self,
+        student_id: str,
+        document_id: str,
+        original_filename: str,
+    ) -> Path:
+        safe_filename = self._safe_filename(original_filename)
+        return (
+            self.database_path.parent
+            / "documents"
+            / student_id
+            / f"{document_id}_{safe_filename}"
+        )
+
+    def _safe_filename(self, filename: str) -> str:
+        cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", filename.strip())
+        return cleaned or "datei"
+
+    def _document_repository(self) -> SQLiteDocumentRepository:
+        return SQLiteDocumentRepository(self.database)
+
+    def _document_view_model(self, document: DocumentRecord) -> StudentDocumentViewModel:
+        return StudentDocumentViewModel(
+            document.document_id,
+            document.student_id,
+            document.observation_id,
+            document.title,
+            document.document_type,
+            document.file_path,
+            document.original_filename,
+            document.created_at,
+            document.note,
+        )
+
+    def _attachment_draft_from_record(
+        self,
+        document: DocumentRecord,
+    ) -> ObservationAttachmentDraft:
+        return ObservationAttachmentDraft(
+            source_path="",
+            title=document.title,
+            document_type=document.document_type,
+            note=document.note,
+            document_id=document.document_id,
+            file_path=document.file_path,
+            original_filename=document.original_filename,
+        )
 
     def _dispatcher(self) -> ApplicationCommandDispatcher:
         student_repository = SQLiteStudentRepository(self.database)

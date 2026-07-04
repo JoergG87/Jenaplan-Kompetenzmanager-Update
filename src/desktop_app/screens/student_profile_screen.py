@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QUrl, Signal
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -23,6 +24,7 @@ from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
     PROFILE_SECTION_PLACEHOLDERS,
     StudentDetailViewModel,
+    StudentDocumentViewModel,
     StudentReportPreviewViewModel,
     format_student_report_preview_text,
 )
@@ -44,6 +46,7 @@ class StudentProfileScreen(QWidget):
     observation_requested = Signal(object)
     observation_edit_requested = Signal(str)
     observation_delete_requested = Signal(str)
+    document_add_requested = Signal(str)
     competency_confirmation_requested = Signal(str, str, str, str)
 
     def __init__(self) -> None:
@@ -60,6 +63,8 @@ class StudentProfileScreen(QWidget):
         self.observation_empty_label = QLabel("")
         self.competency_empty_label = QLabel("")
         self.documentation_empty_label = QLabel("")
+        self.documents_empty_label = QLabel("")
+        self.documents_feedback_label = QLabel("")
         self.report_empty_label = QLabel("")
         self.report_feedback_label = QLabel("")
         self.report_copy_button = QPushButton("Bericht kopieren")
@@ -67,6 +72,7 @@ class StudentProfileScreen(QWidget):
         self.report_copy_button.setEnabled(False)
         self.report_export_button.setEnabled(False)
         self.current_observations: tuple[ObservationListItem, ...] = ()
+        self.current_documents: tuple[StudentDocumentViewModel, ...] = ()
         self.current_report_preview: StudentReportPreviewViewModel | None = None
         self.show_all_observations = False
         self._build()
@@ -96,11 +102,7 @@ class StudentProfileScreen(QWidget):
         content_layout.addWidget(self._documentation_status_card())
         content_layout.addWidget(self._competencies_card())
         content_layout.addWidget(self._report_preview_card())
-        content_layout.addWidget(self._placeholder_card(
-            "Dokumente",
-            PROFILE_SECTION_PLACEHOLDERS["documents_title"],
-            PROFILE_SECTION_PLACEHOLDERS["documents_hint"],
-        ))
+        content_layout.addWidget(self._documents_card())
         content_layout.addStretch()
         scroll_area.setWidget(content)
         layout.addWidget(scroll_area)
@@ -112,12 +114,10 @@ class StudentProfileScreen(QWidget):
         set_label_style(title, "card_title")
         button_row = QHBoxLayout()
         observation_button = QPushButton("+ Beobachtung")
-        document_button = QPushButton("Dokument hinzufügen")
+        document_button = QPushButton("+ Datei hinzufügen")
         edit_button = QPushButton("Schüler bearbeiten")
         observation_button.clicked.connect(self._request_new_observation)
-        document_button.clicked.connect(
-            lambda: self._show_placeholder_message(PROFILE_ACTION_MESSAGES["document"])
-        )
+        document_button.clicked.connect(self._request_add_document)
         edit_button.clicked.connect(
             lambda: self._show_placeholder_message(PROFILE_ACTION_MESSAGES["edit"])
         )
@@ -269,6 +269,30 @@ class StudentProfileScreen(QWidget):
         layout.addWidget(self.documentation_status_container)
         return section
 
+    def _documents_card(self) -> QWidget:
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        header = QHBoxLayout()
+        title_label = QLabel("Dokumente & Medien")
+        set_label_style(title_label, "section_title")
+        add_button = QPushButton("+ Datei hinzufügen")
+        add_button.clicked.connect(self._request_add_document)
+        header.addWidget(title_label)
+        header.addStretch(1)
+        header.addWidget(add_button)
+        self.documents_container = QWidget()
+        self.documents_layout = QVBoxLayout(self.documents_container)
+        self.documents_layout.setContentsMargins(0, 0, 0, 0)
+        self.documents_layout.setSpacing(8)
+        set_label_style(self.documents_empty_label, "body")
+        set_label_style(self.documents_feedback_label, "subtle")
+        layout.addLayout(header)
+        layout.addWidget(self.documents_feedback_label)
+        layout.addWidget(self.documents_container)
+        return section
+
     def _report_preview_card(self) -> QWidget:
         section = QWidget()
         layout = QVBoxLayout(section)
@@ -311,6 +335,12 @@ class StudentProfileScreen(QWidget):
             return
         self.observation_requested.emit(self.current_student)
 
+    def _request_add_document(self) -> None:
+        if self.current_student is None:
+            self._show_placeholder_message(PROFILE_ACTION_MESSAGES["document"])
+            return
+        self.document_add_requested.emit(self.current_student.student_id)
+
     def set_student(
         self,
         student: StudentDetailViewModel | None,
@@ -318,6 +348,7 @@ class StudentProfileScreen(QWidget):
         competency_groups: tuple[StudentCompetencySubjectGroup, ...] = (),
         report_preview: StudentReportPreviewViewModel | None = None,
         documentation_statuses: tuple[StudentDocumentationSubjectStatus, ...] = (),
+        documents: tuple[StudentDocumentViewModel, ...] = (),
     ) -> None:
         """Render selected student or empty state."""
         self.current_student = student
@@ -333,6 +364,7 @@ class StudentProfileScreen(QWidget):
             self.set_documentation_statuses(())
             self.set_competency_groups(())
             self.set_report_preview(None)
+            self.set_documents(())
             return
         self.name_label.setText(student.display_name)
         self.meta_label.setText(f"{student.group_name} · {student.course_name}")
@@ -345,6 +377,7 @@ class StudentProfileScreen(QWidget):
         self.set_documentation_statuses(documentation_statuses)
         self.set_competency_groups(competency_groups)
         self.set_report_preview(report_preview)
+        self.set_documents(documents)
 
     def set_observations(
         self,
@@ -551,11 +584,13 @@ class StudentProfileScreen(QWidget):
             empty_competencies = QLabel("Keine Kompetenzen hinterlegt.")
             set_label_style(empty_competencies, "subtle")
             details_layout.addWidget(empty_competencies)
+            details_layout.addWidget(self._observation_attachments_block(observation))
             details_layout.addLayout(self._observation_actions(observation))
             layout.addWidget(details_widget)
             return card
         for rating in observation.competency_ratings:
             details_layout.addWidget(self._rating_row(rating))
+        details_layout.addWidget(self._observation_attachments_block(observation))
         details_layout.addLayout(self._observation_actions(observation))
         layout.addWidget(details_widget)
         return card
@@ -657,6 +692,32 @@ class StudentProfileScreen(QWidget):
         set_label_style(rating_label, "small")
         return rating_label
 
+    def _observation_attachments_block(
+        self,
+        observation: ObservationListItem,
+    ) -> QWidget:
+        block = QWidget()
+        layout = QVBoxLayout(block)
+        layout.setContentsMargins(0, 4, 0, 0)
+        layout.setSpacing(3)
+        title = QLabel("Dokumente & Medien")
+        set_label_style(title, "field_label")
+        layout.addWidget(title)
+        if not observation.attachments:
+            empty = QLabel("Keine Anhänge hinterlegt.")
+            set_label_style(empty, "subtle")
+            layout.addWidget(empty)
+            return block
+        for document in observation.attachments:
+            line = QLabel(
+                f"{getattr(document, 'document_type', '')} · "
+                f"{getattr(document, 'display_title', '')}"
+            )
+            line.setWordWrap(True)
+            set_label_style(line, "small")
+            layout.addWidget(line)
+        return block
+
     def set_competency_groups(
         self,
         competency_groups: tuple[StudentCompetencySubjectGroup, ...],
@@ -751,6 +812,72 @@ class StudentProfileScreen(QWidget):
         layout.addWidget(self.report_empty_label)
         layout.addWidget(hint_label)
         return card
+
+    def set_documents(
+        self,
+        documents: tuple[StudentDocumentViewModel, ...],
+    ) -> None:
+        """Render student documents and media."""
+        self.current_documents = documents
+        self.documents_feedback_label.setText("")
+        self._clear_layout(self.documents_layout)
+        if not documents:
+            self.documents_layout.addWidget(self._empty_documents_card())
+            return
+        for document in documents:
+            self.documents_layout.addWidget(self._document_row(document))
+
+    def _empty_documents_card(self) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(3)
+        self.documents_empty_label.setText(
+            PROFILE_SECTION_PLACEHOLDERS["documents_title"]
+        )
+        hint_label = QLabel(PROFILE_SECTION_PLACEHOLDERS["documents_hint"])
+        set_label_style(hint_label, "subtle")
+        layout.addWidget(self.documents_empty_label)
+        layout.addWidget(hint_label)
+        return card
+
+    def _document_row(self, document: StudentDocumentViewModel) -> QFrame:
+        row = self._card()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(8)
+        text_block = QWidget()
+        text_layout = QVBoxLayout(text_block)
+        text_layout.setContentsMargins(0, 0, 0, 0)
+        text_layout.setSpacing(2)
+        title = QLabel(f"{document.document_type} · {document.display_title}")
+        title.setWordWrap(True)
+        set_label_style(title, "body")
+        meta_parts = [document.created_date_label]
+        if document.observation_link_label:
+            meta_parts.append(document.observation_link_label)
+        meta = QLabel(" · ".join(meta_parts))
+        set_label_style(meta, "subtle")
+        text_layout.addWidget(title)
+        text_layout.addWidget(meta)
+        open_button = QPushButton("Öffnen")
+        open_button.clicked.connect(
+            lambda _checked=False, file_path=document.file_path: (
+                self.open_document_file(file_path)
+            )
+        )
+        layout.addWidget(text_block, 1)
+        layout.addWidget(open_button, 0)
+        return row
+
+    def open_document_file(self, file_path: str) -> None:
+        """Open a document through the operating system if the path exists."""
+        path = Path(file_path)
+        if not path.exists():
+            self.documents_feedback_label.setText("Datei wurde nicht gefunden.")
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
+        self.documents_feedback_label.setText("Datei wird geöffnet.")
 
     def _report_subject_card(self, section: object) -> QFrame:
         card = self._card()

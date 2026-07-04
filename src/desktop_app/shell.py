@@ -7,6 +7,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QFileDialog,
     QLabel,
     QListWidget,
     QListWidgetItem,
@@ -155,6 +156,9 @@ class AppShell(QMainWindow):
         self.student_profile_screen.observation_delete_requested.connect(
             self.delete_observation
         )
+        self.student_profile_screen.document_add_requested.connect(
+            self.open_student_document_dialog
+        )
         self.student_profile_screen.competency_confirmation_requested.connect(
             self.confirm_competency_status
         )
@@ -250,12 +254,14 @@ class AppShell(QMainWindow):
         competency_groups = self.adapter.list_competency_overview_for_student(student_id)
         report_preview = self.adapter.get_report_preview_for_student(student_id)
         documentation_statuses = self.adapter.list_documentation_status_for_student(student_id)
+        documents = self.adapter.list_documents_for_student(student_id)
         self.student_profile_screen.set_student(
             profile,
             observations,
             competency_groups,
             report_preview,
             documentation_statuses,
+            documents,
         )
         self._show_screen("profile")
 
@@ -317,6 +323,28 @@ class AppShell(QMainWindow):
             return
         self.show_student_profile(draft.student_id)
         self.status_label.setText("Beobachtung wurde gelöscht.")
+
+    def open_student_document_dialog(self, student_id: str) -> None:
+        """Attach one or more files directly to a student."""
+        file_paths, _selected_filter = QFileDialog.getOpenFileNames(
+            self,
+            "Dateien hinzufügen",
+            "",
+            "Alle Dateien (*)",
+        )
+        if not file_paths:
+            return
+        for file_path in file_paths:
+            try:
+                self.adapter.add_student_document(
+                    student_id=student_id,
+                    source_path=Path(file_path),
+                )
+            except OSError as error:
+                QMessageBox.warning(self, "Dokumente & Medien", str(error))
+                return
+        self.show_student_profile(student_id)
+        self.status_label.setText("Dokumente & Medien wurden gespeichert.")
 
     def confirm_competency_status(
         self,

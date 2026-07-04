@@ -23,6 +23,7 @@ from src.application.dispatcher import SuccessResult
 from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PREFIX
 from src.core.sqlite_store import (
     SQLiteCompetencyRepository,
+    SQLiteDocumentRepository,
     SQLiteObservationRepository,
     SQLiteStudentRepository,
     create_sqlite_seed_database,
@@ -59,9 +60,10 @@ from src.desktop_app.view_models.master_data_view_model import (
 )
 from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_ATTACHMENT_EMPTY_STATE,
-    OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
     OBSERVATION_CONTEXT_OPTIONS,
     OBSERVATION_CROSS_SUBJECT_LABEL,
+    DOCUMENT_TYPE_OPTIONS,
+    ObservationAttachmentDraft,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_SUCCESS_MESSAGE,
     OBSERVATION_UPDATE_SUCCESS_MESSAGE,
@@ -81,6 +83,7 @@ from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
     PROFILE_SECTION_PLACEHOLDERS,
     StudentDetailViewModel,
+    StudentDocumentViewModel,
     StudentListItem,
     StudentReportCompetencyViewModel,
     StudentReportEvidenceViewModel,
@@ -165,6 +168,125 @@ class DesktopAppAdapterTest(unittest.TestCase):
         ).list_observations_for_student(f"{STUDENT_ID_PREFIX}-000001")
         self.assertEqual(len(stored_observations), 1)
         self.assertEqual(stored_observations[0].competency_ratings[0].rating, "+")
+
+    def test_student_document_is_copied_and_metadata_survives_reload(self) -> None:
+        source_path = Path(self.temp_dir.name) / "Foerderplan.pdf"
+        source_path.write_text("PDF-Platzhalter", encoding="utf-8")
+
+        document = self.adapter.add_student_document(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            source_path=source_path,
+            document_type="Bericht",
+            title="Foerderplan",
+        )
+        reloaded_adapter = StudentDesktopAdapter(self.database_path)
+        reloaded_documents = reloaded_adapter.list_documents_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(document.document_type, "Bericht")
+        self.assertEqual(document.title, "Foerderplan")
+        self.assertTrue(Path(document.file_path).exists())
+        self.assertIn("documents", Path(document.file_path).parts)
+        self.assertEqual(len(reloaded_documents), 1)
+        self.assertEqual(reloaded_documents[0].original_filename, "Foerderplan.pdf")
+
+    def test_observation_can_save_attachment_metadata(self) -> None:
+        source_path = Path(self.temp_dir.name) / "Arbeitsprobe.txt"
+        source_path.write_text("Arbeitsprobe", encoding="utf-8")
+        draft = self._sample_observation_draft(
+            attachments=(
+                ObservationAttachmentDraft(
+                    str(source_path),
+                    "Arbeitsprobe Lesen",
+                    "Arbeitsprobe",
+                    original_filename="Arbeitsprobe.txt",
+                ),
+            )
+        )
+
+        self.adapter.save_observation(draft)
+        documents = self.adapter.list_documents_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        observations = self.adapter.list_observations_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(len(documents), 1)
+        self.assertEqual(documents[0].observation_id, "OBS-000001")
+        self.assertEqual(documents[0].document_type, "Arbeitsprobe")
+        self.assertEqual(len(observations[0].attachments), 1)
+        self.assertEqual(observations[0].attachments[0].title, "Arbeitsprobe Lesen")
+
+    def test_editing_observation_can_add_and_remove_attachments(self) -> None:
+        first_path = Path(self.temp_dir.name) / "alt.txt"
+        second_path = Path(self.temp_dir.name) / "neu.txt"
+        first_path.write_text("alt", encoding="utf-8")
+        second_path.write_text("neu", encoding="utf-8")
+        self.adapter.save_observation(self._sample_observation_draft(
+            attachments=(
+                ObservationAttachmentDraft(
+                    str(first_path),
+                    "Alte Anlage",
+                    "Sonstiges",
+                    original_filename="alt.txt",
+                ),
+            )
+        ))
+        edit_draft = self.adapter.observation_draft_for_edit("OBS-000001")
+        self.assertIsNotNone(edit_draft)
+        updated_draft = self._sample_observation_draft(
+            observation_id="OBS-000001",
+            attachments=(
+                ObservationAttachmentDraft(
+                    str(second_path),
+                    "Neue Anlage",
+                    "Foto",
+                    original_filename="neu.txt",
+                ),
+            ),
+        )
+
+        self.adapter.update_observation(updated_draft)
+        documents = self.adapter.list_documents_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        observation_documents = SQLiteDocumentRepository(
+            self.database
+        ).list_documents_for_observation("OBS-000001")
+
+        self.assertEqual(len(documents), 1)
+        self.assertEqual(documents[0].title, "Neue Anlage")
+        self.assertEqual(documents[0].document_type, "Foto")
+        self.assertEqual(len(observation_documents), 1)
+        self.assertEqual(observation_documents[0].original_filename, "neu.txt")
+
+    def test_soft_deleted_observation_keeps_document_metadata_student_centered(self) -> None:
+        source_path = Path(self.temp_dir.name) / "gespraech.txt"
+        source_path.write_text("Gespräch", encoding="utf-8")
+        self.adapter.save_observation(self._sample_observation_draft(
+            attachments=(
+                ObservationAttachmentDraft(
+                    str(source_path),
+                    "Gesprächsnotiz",
+                    "Gesprächsnotiz",
+                    original_filename="gespraech.txt",
+                ),
+            )
+        ))
+
+        self.adapter.delete_observation("OBS-000001")
+        observations = self.adapter.list_observations_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        documents = self.adapter.list_documents_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(observations, ())
+        self.assertEqual(len(documents), 1)
+        self.assertEqual(documents[0].observation_id, "OBS-000001")
 
     def test_adapter_creates_update_observation_command(self) -> None:
         draft = self._sample_observation_draft(observation_id="OBS-000001")
@@ -1756,6 +1878,20 @@ class DesktopAppAdapterTest(unittest.TestCase):
             ),
         )
 
+    def test_document_type_options_match_mvp_scope(self) -> None:
+        self.assertEqual(
+            DOCUMENT_TYPE_OPTIONS,
+            (
+                "Arbeitsprobe",
+                "Lernzielkontrolle",
+                "Gesprächsnotiz",
+                "Bericht",
+                "Foto",
+                "Audio",
+                "Sonstiges",
+            ),
+        )
+
     def test_curriculum_catalog_loads_active_subjects(self) -> None:
         subjects = self.curriculum_adapter.list_active_subjects()
 
@@ -2084,13 +2220,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "Beobachtung wurde gespeichert.",
         )
         self.assertEqual(
-            OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
-            "Anhänge werden in einem späteren Sprint gespeichert.",
-        )
-        self.assertEqual(
             OBSERVATION_ATTACHMENT_EMPTY_STATE,
             "Noch keine Anhänge ausgewählt.",
         )
+        self.assertIn("Sonstiges", DOCUMENT_TYPE_OPTIONS)
 
     def test_observation_dialog_has_no_direct_sqlite_write_logic(self) -> None:
         source = inspect.getsource(new_observation_dialog)
@@ -2806,6 +2939,75 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Wörter und Sätze", label_texts)
         self.assertIsNotNone(app)
 
+    def test_student_profile_renders_student_documents(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (),
+            None,
+            (),
+            (
+                StudentDocumentViewModel(
+                    "MED-000001",
+                    f"{STUDENT_ID_PREFIX}-000001",
+                    "",
+                    "Foerderplan",
+                    "Bericht",
+                    str(Path(self.temp_dir.name) / "Foerderplan.pdf"),
+                    "Foerderplan.pdf",
+                    "2026-07-04T12:00:00+00:00",
+                ),
+            ),
+        )
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Dokumente & Medien", label_texts)
+        self.assertIn("Bericht · Foerderplan", label_texts)
+        self.assertIn("2026-07-04", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_observation_details_render_linked_attachments(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (
+                ObservationListItem(
+                    "OBS-000001",
+                    f"{STUDENT_ID_PREFIX}-000001",
+                    "2026-07-04",
+                    "Deutsch",
+                    "Leseübung",
+                    "Liest.",
+                    (),
+                    (
+                        StudentDocumentViewModel(
+                            "MED-000001",
+                            f"{STUDENT_ID_PREFIX}-000001",
+                            "OBS-000001",
+                            "Arbeitsprobe Lesen",
+                            "Arbeitsprobe",
+                            str(Path(self.temp_dir.name) / "Arbeitsprobe.txt"),
+                            "Arbeitsprobe.txt",
+                            "2026-07-04T12:00:00+00:00",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        details_button = screen.findChild(QPushButton, "ObservationTextActionButton")
+
+        self.assertIsNotNone(details_button)
+        details_button.click()
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Dokumente & Medien", label_texts)
+        self.assertIn("Arbeitsprobe · Arbeitsprobe Lesen", label_texts)
+        self.assertIsNotNone(app)
+
     def test_student_profile_copies_report_text_to_clipboard(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
@@ -3187,6 +3389,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         subject_id: str = "deutsch",
         subject_display_name: str = "Deutsch",
         competency_ratings: tuple[ObservationCompetencyRatingDraft, ...] | None = None,
+        attachments: tuple[ObservationAttachmentDraft, ...] = (),
     ) -> ObservationDraftViewModel:
         return ObservationDraftViewModel(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
@@ -3216,6 +3419,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     "--",
                 ),
             ),
+            attachment_names=tuple(attachment.original_filename for attachment in attachments),
+            attachments=attachments,
             observation_id=observation_id,
         )
 

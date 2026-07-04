@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -28,8 +31,9 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import (
 from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
 from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_ATTACHMENT_EMPTY_STATE,
-    OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE,
     OBSERVATION_CONTEXT_OPTIONS,
+    DOCUMENT_TYPE_OPTIONS,
+    ObservationAttachmentDraft,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_SUCCESS_MESSAGE,
     OBSERVATION_SAVE_VALIDATION_MESSAGE,
@@ -60,6 +64,7 @@ class NewObservationDialog(QDialog):
         self.competency_rating_entries: dict[str, object] = {}
         self.competency_rating_widgets: dict[str, QComboBox] = {}
         self.competency_rating_rows: dict[str, QWidget] = {}
+        self.attachment_drafts: list[ObservationAttachmentDraft] = []
         self.setWindowTitle(
             "Beobachtung bearbeiten" if self.initial_draft else "Neue Beobachtung"
         )
@@ -223,23 +228,31 @@ class NewObservationDialog(QDialog):
         layout.setSpacing(6)
         title = QLabel("Dokumente & Medien")
         set_label_style(title, "card_title")
-        hint = QLabel(
-            "Fotos, Dateien oder andere Nachweise können später an Beobachtungen "
-            "angehängt werden."
-        )
+        hint = QLabel("Dateien werden schülerzentriert im App-Datenordner abgelegt.")
         hint.setWordWrap(True)
         set_label_style(hint, "muted")
-        add_file_button = QPushButton("Datei hinzufügen")
-        add_file_button.clicked.connect(self.show_attachment_placeholder)
-        empty_state = QLabel(OBSERVATION_ATTACHMENT_EMPTY_STATE)
-        set_label_style(empty_state, "subtle")
+        self.attachment_type_select = QComboBox()
+        self.attachment_type_select.addItems(DOCUMENT_TYPE_OPTIONS)
+        default_type_index = self.attachment_type_select.findText("Sonstiges")
+        if default_type_index >= 0:
+            self.attachment_type_select.setCurrentIndex(default_type_index)
+        add_file_button = QPushButton("+ Datei hinzufügen")
+        add_file_button.clicked.connect(self.add_attachment_from_dialog)
+        self.attachments_container = QWidget()
+        self.attachments_layout = QVBoxLayout(self.attachments_container)
+        self.attachments_layout.setContentsMargins(0, 0, 0, 0)
+        self.attachments_layout.setSpacing(4)
+        self.attachment_empty_state = QLabel(OBSERVATION_ATTACHMENT_EMPTY_STATE)
+        set_label_style(self.attachment_empty_state, "subtle")
         set_label_style(self.attachment_feedback_label, "muted")
 
         layout.addWidget(title)
         layout.addWidget(hint)
+        layout.addLayout(self._field_row("Dokumenttyp", self.attachment_type_select))
         layout.addWidget(add_file_button)
-        layout.addWidget(empty_state)
+        layout.addWidget(self.attachments_container)
         layout.addWidget(self.attachment_feedback_label)
+        self._render_attachments()
         return card
 
     def _field_row(self, label: str, widget: object) -> QHBoxLayout:
@@ -256,9 +269,33 @@ class NewObservationDialog(QDialog):
     def _card(self) -> QFrame:
         return create_card()
 
-    def show_attachment_placeholder(self) -> None:
-        """Show a non-persistent attachment message."""
-        self.attachment_feedback_label.setText(OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE)
+    def add_attachment_from_dialog(self) -> None:
+        """Ask for files and add them to the observation draft."""
+        file_paths, _selected_filter = QFileDialog.getOpenFileNames(
+            self,
+            "Dateien hinzufügen",
+            "",
+            "Alle Dateien (*)",
+        )
+        for file_path in file_paths:
+            self.add_attachment_path(Path(file_path))
+
+    def add_attachment_path(self, file_path: Path) -> None:
+        """Add one local file to the UI draft."""
+        source_path = Path(file_path)
+        if not source_path.is_file():
+            self.attachment_feedback_label.setText("Datei wurde nicht gefunden.")
+            return
+        self.attachment_drafts.append(
+            ObservationAttachmentDraft(
+                source_path=str(source_path),
+                title=source_path.stem,
+                document_type=self.attachment_type_select.currentText() or "Sonstiges",
+                original_filename=source_path.name,
+            )
+        )
+        self.attachment_feedback_label.setText("")
+        self._render_attachments()
 
     def create_draft(self) -> ObservationDraftViewModel:
         """Return the UI draft."""
@@ -272,8 +309,50 @@ class NewObservationDialog(QDialog):
             note=self.note_input.toPlainText(),
             subject_id=str(self.subject_select.currentData() or ""),
             subject_display_name=self.subject_select.currentText(),
+            attachment_names=tuple(
+                attachment.original_filename or Path(attachment.source_path).name
+                for attachment in self.attachment_drafts
+            ),
+            attachments=tuple(self.attachment_drafts),
             observation_id=self.initial_draft.observation_id if self.initial_draft else "",
         )
+
+    def _render_attachments(self) -> None:
+        self._clear_attachments()
+        if not self.attachment_drafts:
+            self.attachments_layout.addWidget(self.attachment_empty_state)
+            return
+        for index, attachment in enumerate(self.attachment_drafts):
+            row = QHBoxLayout()
+            row.setContentsMargins(0, 0, 0, 0)
+            row.setSpacing(6)
+            label = QLabel(attachment.display_label)
+            label.setWordWrap(True)
+            set_label_style(label, "small")
+            remove_button = QPushButton("Entfernen")
+            remove_button.clicked.connect(
+                lambda _checked=False, row_index=index: self._remove_attachment(
+                    row_index
+                )
+            )
+            row.addWidget(label, 1)
+            row.addWidget(remove_button, 0)
+            row_widget = QWidget()
+            row_widget.setLayout(row)
+            self.attachments_layout.addWidget(row_widget)
+
+    def _clear_attachments(self) -> None:
+        while self.attachments_layout.count():
+            layout_item = self.attachments_layout.takeAt(0)
+            widget = layout_item.widget()
+            if widget is not None:
+                widget.setParent(None)
+
+    def _remove_attachment(self, index: int) -> None:
+        if index < 0 or index >= len(self.attachment_drafts):
+            return
+        self.attachment_drafts.pop(index)
+        self._render_attachments()
 
     def _selected_competency_ratings(self) -> tuple[ObservationCompetencyRatingDraft, ...]:
         selected: list[ObservationCompetencyRatingDraft] = []
@@ -462,6 +541,8 @@ class NewObservationDialog(QDialog):
         self.competency_ratings_empty_state.setVisible(
             not self.competency_rating_widgets
         )
+        self.attachment_drafts = list(self.initial_draft.attachments)
+        self._render_attachments()
 
     def _initial_visible_subject(self) -> str:
         if self.initial_draft is None:

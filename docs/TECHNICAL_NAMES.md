@@ -275,6 +275,7 @@ Registrierte SQLite-Tabellen:
 - `observations`
 - `observation_competency_ratings`
 - `competencies`
+- `documents`
 
 Registrierte Python-Spike-Komponenten:
 
@@ -286,11 +287,13 @@ Registrierte Python-Spike-Komponenten:
 - `SQLiteStudentCompetencyConfirmationRepository`
 - `SQLiteMasterDataRepository`
 - `SQLiteObservationRepository`
+- `SQLiteDocumentRepository`
 - `MasterDataGroupRecord`
 - `MasterDataCourseRecord`
 - `MasterDataCourseGroupRecord`
 - `CompetencyRecord`
 - `StudentCompetencyConfirmationRecord`
+- `DocumentRecord`
 - `ObservationCompetencyRatingRecord`
 - `ObservationRecord`
 - `ObservationService`
@@ -338,6 +341,11 @@ Registrierte Stammdaten-Repository-Methoden:
 - `SQLiteStudentCompetencyConfirmationRepository.list_confirmations_for_student(student_id)`
 - `SQLiteStudentCompetencyConfirmationRepository.get_confirmation(student_id, competency_id)`
 - `SQLiteStudentCompetencyConfirmationRepository.upsert_confirmation(confirmation)`
+- `SQLiteDocumentRepository.create_document(document)`
+- `SQLiteDocumentRepository.list_documents_for_student(student_id)`
+- `SQLiteDocumentRepository.list_documents_for_observation(observation_id)`
+- `SQLiteDocumentRepository.deactivate_document(document_id)`
+- `SQLiteDocumentRepository.next_document_id()`
 
 Registrierte Spike-Skripte:
 
@@ -456,6 +464,9 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.observation_draft_for_edit(observation_id)`
 - `StudentDesktopAdapter.list_competency_overview_for_student(student_id)`
 - `StudentDesktopAdapter.list_documentation_status_for_student(student_id)`
+- `StudentDesktopAdapter.list_documents_for_student(student_id)`
+- `StudentDesktopAdapter.add_student_document(student_id, source_path, document_type, title, note, observation_id)`
+- `StudentDesktopAdapter.remove_document(document_id)`
 - `StudentDesktopAdapter.get_report_preview_for_student(student_id)`
 - `StudentDesktopAdapter.save_competency_confirmation(student_id, competency_id, confirmed_rating, note)`
 - `StudentProfileScreen.DEFAULT_OBSERVATION_LIMIT`
@@ -478,6 +489,12 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen._competency_status_row(competency)`
 - `StudentProfileScreen._competency_confirmation_actions(competency)`
 - `StudentProfileScreen._request_competency_confirmation(competency, confirmed_rating)`
+- `StudentProfileScreen.set_documents(documents)`
+- `StudentProfileScreen._documents_card()`
+- `StudentProfileScreen._empty_documents_card()`
+- `StudentProfileScreen._document_row(document)`
+- `StudentProfileScreen.open_document_file(file_path)`
+- `StudentProfileScreen._observation_attachments_block(observation)`
 - `StudentProfileScreen.set_documentation_statuses(statuses)`
 - `StudentProfileScreen._documentation_status_card()`
 - `StudentProfileScreen._empty_documentation_status_card()`
@@ -517,6 +534,10 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentReportEvidenceViewModel`
 - `StudentReportSubjectSectionViewModel`
 - `StudentReportPreviewViewModel`
+- `StudentDocumentViewModel`
+- `StudentDocumentViewModel.display_title`
+- `StudentDocumentViewModel.created_date_label`
+- `StudentDocumentViewModel.observation_link_label`
 - `format_student_report_preview_text(student, report_preview, created_date)`
 - `MasterDataItemViewModel`
 - `MasterDataViewModel`
@@ -537,11 +558,15 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationCompetencyRatingDraft`
 - `ObservationCompetencyRatingDraft.competency_id`
 - `ObservationCompetencyRatingDraft.subject_display_name`
+- `ObservationAttachmentDraft`
+- `ObservationAttachmentDraft.display_label`
 - `ObservationDraftViewModel`
 - `ObservationDraftViewModel.observation_id`
 - `ObservationDraftViewModel.subject_id`
 - `ObservationDraftViewModel.subject_display_name`
+- `ObservationDraftViewModel.attachments`
 - `ObservationListItem`
+- `ObservationListItem.attachments`
 - `ObservationRatingViewModel`
 - `StudentCompetencyStatusViewModel`
 - `StudentCompetencyStatusViewModel.rating_history`
@@ -566,8 +591,8 @@ Registrierte Python-Klassen und Funktionen:
 - `OBSERVATION_SAVE_SUCCESS_MESSAGE`
 - `OBSERVATION_UPDATE_SUCCESS_MESSAGE`
 - `OBSERVATION_SAVE_VALIDATION_MESSAGE`
-- `OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE`
 - `OBSERVATION_ATTACHMENT_EMPTY_STATE`
+- `DOCUMENT_TYPE_OPTIONS`
 - `observation_rating_label(rating)`
 - `calculated_rating_from_history(ratings_newest_first)`
 - `rating_from_weighted_score(score)`

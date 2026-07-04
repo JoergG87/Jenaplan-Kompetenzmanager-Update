@@ -6,6 +6,20 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - Dokumente & Medien MVP 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Dokumente und Medien koennen einem Schueler zugeordnet werden
+- [x] Beobachtungsdialog kann Dateien beim Anlegen/Bearbeiten hinzufuegen und entfernen
+- [x] SQLite speichert nur Metadaten in `documents`, keine Datei-BLOBs
+- [x] Dateien werden studentenzentriert unter `data/documents/<student_id>/` abgelegt
+- [x] Schuelerprofil zeigt alle aktiven Dokumente und Medien neueste oben
+- [x] Aufgeklappte Beobachtungskarten zeigen verknuepfte Anhaenge
+- [x] Keine PDF-Erstellung, keine Vorschau, keine Berichte-Erweiterung, kein Excel/VBA und kein Commit umgesetzt
+
 ## Sprint - Dokumentationsstand im Schuelerprofil 🔄
 
 - [x] Status: Umgesetzt, nicht committed

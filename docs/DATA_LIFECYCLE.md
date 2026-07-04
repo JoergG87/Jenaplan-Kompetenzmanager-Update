@@ -59,6 +59,42 @@ Automatisch profitierende Ansichten:
 
 Regel: Neue Stammgruppen oder Kurse werden dabei nicht automatisch angelegt. `student_id`, `group_id` und `course_id` bleiben die technische Zuordnung; sichtbare Namen werden aus den persistenten Stammdaten aufgeloest. Optionale Dokumente werden erst nach erfolgreicher Erzeugung der `student_id` referenziert. Dateien werden nicht in Excel eingebettet. Bei Fehlern bleibt der PySide-Dialog geoeffnet und SQLite unveraendert. Demo-/Seed-Schueler duerfen nur ueber explizite Test- oder Legacy-Seed-Pfade erzeugt werden und ueberschreiben keine produktiven Nutzerdaten.
 
+## Dokument oder Medium hinzufuegen
+
+Start: Lehrkraft fuegt im Schuelerprofil oder Beobachtungsdialog eine Datei hinzu.
+
+Schreibprozess: Dokumenten- und Medien-MVP ueber PySide.
+
+Freigegebener PySide-Pfad:
+
+```text
+PySide6 GUI
+-> StudentDesktopAdapter
+-> Dateiablage data/documents/<student_id>/
+-> SQLiteDocumentRepository
+-> SQLite documents
+```
+
+Betroffene Datenquellen:
+
+- SQLite `documents` als fachliche Source of Truth fuer Metadaten
+- Dateisystem `data/documents/<student_id>/` fuer physische Dateien
+- optional `observations`, wenn die Datei als Beobachtungsanhang verknuepft wird
+
+Erforderliche IDs:
+
+- bestehender `student_id`
+- optional bestehender `observation_id`
+- neuer `document_id`
+
+Automatisch profitierende Ansichten:
+
+- Schuelerprofil
+- Beobachtungsdetails
+- spaeter Berichte und Exporte
+
+Regel: SQLite speichert nur Metadaten und keine Datei-BLOBs. Die Datei wird in den App-Datenordner kopiert und studentenzentriert abgelegt. Ein Beobachtungsanhang gehoert weiterhin zum Schueler und traegt nur zusaetzlich den optionalen Beobachtungsbezug. Entfernen ist ein Soft Delete ueber `documents.active = 0`; die physische Datei wird in diesem MVP nicht automatisch geloescht.
+
 ## Schueler archivieren
 
 Start: Schueler soll nicht mehr aktiv in Ansichten erscheinen.

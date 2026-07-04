@@ -247,11 +247,12 @@ Liest:
 - `data_competencies`
 - `data_subjects`
 - `student_competency_confirmations`
-- `data_media`
+- SQLite `documents` / `data_media`
 
 Schreibt:
 
-- nichts
+- nichts direkt
+- startet Dokument-/Medienanlage ueber `StudentDesktopAdapter` und `SQLiteDocumentRepository`
 
 Navigation:
 
@@ -269,13 +270,14 @@ UI-Projektionen:
 - Dokumentationsstand aus aktivem Kompetenzkatalog, aktiven Beobachtungen und bestaetigten Kompetenzstaenden
 - Kompetenzuebersicht aus beobachteten Kompetenzen
 - Berichtsvorschau aus Kompetenzstaenden und Beobachtungsbelegen
+- Dokumente und Medien aus aktiven Dokumentmetadaten
 - Aktionen zum Bearbeiten und Loeschen einzelner Beobachtungen
 - Aktion zum Bestaetigen oder manuellen Anpassen eines Kompetenzstand-Vorschlags
 - Medienhinweise
 
 Regel:
 
-Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Schreibprozesse. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Ohne aktive Filter begrenzt die UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den Beobachtungsverlauf und nicht auf die Kompetenzuebersicht. Kompetenzstand-Vorschlaege werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet. Bestaetigte Kompetenzstaende sind paedagogische Entscheidungen und liegen separat in `student_competency_confirmations`. Der Dokumentationsstand ist eine abgeleitete Auswertung aus aktivem Kompetenzkatalog, aktiven Beobachtungen und bestaetigten Kompetenzstaenden; er speichert nichts und ist keine Bewertung. Die Berichtsvorschau ist eine abgeleitete Struktur aus bestaetigten Staenden, Vorschlaegen und aktiven Beobachtungsbelegen; sie speichert keine Berichtsdaten und erzeugt keine finalen Zeugnisformulierungen. Kopieren und einfacher Textdatei-Export sind Ausgabeaktionen, keine fachliche Persistenz.
+Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Schreibprozesse. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Ohne aktive Filter begrenzt die UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den Beobachtungsverlauf und nicht auf die Kompetenzuebersicht. Kompetenzstand-Vorschlaege werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet. Bestaetigte Kompetenzstaende sind paedagogische Entscheidungen und liegen separat in `student_competency_confirmations`. Der Dokumentationsstand ist eine abgeleitete Auswertung aus aktivem Kompetenzkatalog, aktiven Beobachtungen und bestaetigten Kompetenzstaenden; er speichert nichts und ist keine Bewertung. Dokumente und Medien werden aus SQLite `documents` gelesen; Dateien liegen im Dateisystem und werden bei vorhandener `file_path` ueber das Betriebssystem geoeffnet. Die Berichtsvorschau ist eine abgeleitete Struktur aus bestaetigten Staenden, Vorschlaegen und aktiven Beobachtungsbelegen; sie speichert keine Berichtsdaten und erzeugt keine finalen Zeugnisformulierungen. Kopieren und einfacher Textdatei-Export sind Ausgabeaktionen, keine fachliche Persistenz.
 
 ## Schuelerverwaltung / PySide-Dialog `Neuer Schüler`
 
@@ -317,14 +319,15 @@ Liest:
 - `data/curriculum_catalog_v1.csv` im PySide6-Dialog als read-only Kataloggrundlage
 - `data_observations` bei Bearbeitung bestehender Beobachtungen
 - `data_observation_competencies` bei Bearbeitung bestehender Zuordnungen
-- spaeter `data_media` fuer Dokumente und Medien
+- SQLite `documents` / `data_media` fuer Dokumente und Medien
 
 Schreibt:
 
 - SQLite `observations`
 - SQLite `observation_competency_ratings`
+- SQLite `documents` fuer Beobachtungsanhaenge ueber `StudentDesktopAdapter` und `SQLiteDocumentRepository`
 - Export-/Legacy-Projektionen `data_observations` und `data_observation_competencies` nur ueber spaetere Projection Refreshes
-- spaeter `data_media`
+- Export-/Legacy-Projektion `data_media` nur ueber spaetere Projection Refreshes
 
 Navigation:
 
@@ -345,7 +348,7 @@ Regel:
 
 Der Beobachtungsdialog ist der freigegebene Schreibprozess fuer Erfassung und Bearbeitung von Beobachtungen. Bei Bearbeitung wird eine bestehende `observation_id` geladen; Speichern ersetzt die Kompetenzbewertungen atomar. Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden.
 
-Dokumente und Medien sind nur Anhaenge zur Beobachtung und ersetzen keine Beobachtungsdaten.
+Dokumente und Medien sind nur Anhaenge zur Beobachtung und ersetzen keine Beobachtungsdaten. Sie gehoeren immer zum Schueler und tragen optional die `observation_id`.
 Der PySide-Dialog schreibt nicht direkt in SQLite, sondern ueber Adapter, Command, Service und Repository. Jede ausgewaehlte Kompetenz speichert ihre eigene Bewertung.
 
 ## Kompetenzansicht

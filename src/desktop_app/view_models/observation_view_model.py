@@ -37,13 +37,38 @@ OBSERVATION_SAVE_VALIDATION_MESSAGE = (
     "Bitte mindestens eine Kompetenz mit Bewertung auswählen."
 )
 
-OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE = (
-    "Anhänge werden in einem späteren Sprint gespeichert."
-)
-
 OBSERVATION_ATTACHMENT_EMPTY_STATE = "Noch keine Anhänge ausgewählt."
 
 OBSERVATION_CROSS_SUBJECT_LABEL = "Fächerübergreifend"
+
+DOCUMENT_TYPE_OPTIONS = (
+    "Arbeitsprobe",
+    "Lernzielkontrolle",
+    "Gesprächsnotiz",
+    "Bericht",
+    "Foto",
+    "Audio",
+    "Sonstiges",
+)
+
+
+@dataclass(frozen=True)
+class ObservationAttachmentDraft:
+    """Document or media attachment kept in an observation draft."""
+
+    source_path: str
+    title: str
+    document_type: str = "Sonstiges"
+    note: str = ""
+    document_id: str = ""
+    file_path: str = ""
+    original_filename: str = ""
+
+    @property
+    def display_label(self) -> str:
+        """Return a compact attachment label."""
+        title = self.title or self.original_filename or self.source_path
+        return f"{self.document_type} · {title}"
 
 
 @dataclass(frozen=True)
@@ -94,6 +119,7 @@ class ObservationDraftViewModel:
     subject_id: str = ""
     subject_display_name: str = ""
     attachment_names: tuple[str, ...] = ()
+    attachments: tuple[ObservationAttachmentDraft, ...] = ()
     observation_id: str = ""
 
 
@@ -125,6 +151,7 @@ class ObservationListItem:
     context: str
     note: str
     competency_ratings: tuple[ObservationRatingViewModel, ...]
+    attachments: tuple[object, ...] = ()
 
     @property
     def summary(self) -> str:
