@@ -266,6 +266,7 @@ UI-Projektionen:
 - Kurs
 - Beobachtungsverlauf
 - lokale Beobachtungsfilter fuer Fach, Bewertung und Suche
+- Dokumentationsstand aus aktivem Kompetenzkatalog, aktiven Beobachtungen und bestaetigten Kompetenzstaenden
 - Kompetenzuebersicht aus beobachteten Kompetenzen
 - Berichtsvorschau aus Kompetenzstaenden und Beobachtungsbelegen
 - Aktionen zum Bearbeiten und Loeschen einzelner Beobachtungen
@@ -274,7 +275,7 @@ UI-Projektionen:
 
 Regel:
 
-Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Schreibprozesse. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Ohne aktive Filter begrenzt die UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den Beobachtungsverlauf und nicht auf die Kompetenzuebersicht. Kompetenzstand-Vorschlaege werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet. Bestaetigte Kompetenzstaende sind paedagogische Entscheidungen und liegen separat in `student_competency_confirmations`. Die Berichtsvorschau ist eine abgeleitete Struktur aus bestaetigten Staenden, Vorschlaegen und aktiven Beobachtungsbelegen; sie speichert keine Berichtsdaten und erzeugt keine finalen Zeugnisformulierungen.
+Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Schreibprozesse. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Ohne aktive Filter begrenzt die UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den Beobachtungsverlauf und nicht auf die Kompetenzuebersicht. Kompetenzstand-Vorschlaege werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet. Bestaetigte Kompetenzstaende sind paedagogische Entscheidungen und liegen separat in `student_competency_confirmations`. Der Dokumentationsstand ist eine abgeleitete Auswertung aus aktivem Kompetenzkatalog, aktiven Beobachtungen und bestaetigten Kompetenzstaenden; er speichert nichts und ist keine Bewertung. Die Berichtsvorschau ist eine abgeleitete Struktur aus bestaetigten Staenden, Vorschlaegen und aktiven Beobachtungsbelegen; sie speichert keine Berichtsdaten und erzeugt keine finalen Zeugnisformulierungen. Kopieren und einfacher Textdatei-Export sind Ausgabeaktionen, keine fachliche Persistenz.
 
 ## Schuelerverwaltung / PySide-Dialog `Neuer Schüler`
 
@@ -449,4 +450,4 @@ UI-Projektionen:
 
 Regel:
 
-Berichte sind Ausgabeprojektionen. Sie speichern keine fachlichen Ergebnisdaten. Eine Berichtsvorschau darf bestaetigte Kompetenzstaende, berechnete Vorschlaege und aktive Beobachtungen strukturieren, erzeugt aber keine KI-Texte, keine finalen Zeugnisformulierungen und keinen Export.
+Berichte sind Ausgabeprojektionen. Sie speichern keine fachlichen Ergebnisdaten. Eine Berichtsvorschau darf bestaetigte Kompetenzstaende, berechnete Vorschlaege und aktive Beobachtungen strukturieren sowie als einfacher Text kopiert oder exportiert werden. Sie erzeugt keine KI-Texte, keine finalen Zeugnisformulierungen und keinen PDF-/Word-Export.

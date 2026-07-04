@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 
 @dataclass(frozen=True)
@@ -176,3 +177,76 @@ class StudentReportPreviewViewModel:
     def has_content(self) -> bool:
         """Return whether report preview data is available."""
         return bool(self.subject_sections)
+
+
+def format_student_report_preview_text(
+    student: StudentDetailViewModel,
+    report_preview: StudentReportPreviewViewModel | None,
+    created_date: str | None = None,
+) -> str:
+    """Return a reusable plain-text report preparation."""
+    report_date = created_date or date.today().isoformat()
+    lines = [
+        "Berichtsvorbereitung",
+        "",
+        f"Schüler: {student.display_name}",
+    ]
+    if student.group_name:
+        lines.append(f"Stammgruppe: {student.group_name}")
+    if student.course_name:
+        lines.append(f"Kurs: {student.course_name}")
+    lines.extend([
+        f"Erstellt am: {report_date}",
+        "",
+    ])
+    if report_preview is None or not report_preview.has_content:
+        lines.append("Noch keine Berichtsdaten vorhanden.")
+        return "\n".join(lines).rstrip() + "\n"
+    for section in report_preview.subject_sections:
+        lines.extend(_format_report_subject_section(section))
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _format_report_subject_section(
+    section: StudentReportSubjectSectionViewModel,
+) -> list[str]:
+    lines = [
+        f"## {section.subject_display_name}",
+        "",
+        "Stärken",
+        *_format_report_competencies(section.strengths),
+        "",
+        "Entwicklung",
+        *_format_report_competencies(section.development),
+        "",
+        "Unterstützungsbedarf",
+        *_format_report_competencies(section.support_needs),
+        "",
+        "Beispielbeobachtungen",
+        *_format_report_evidence(section.example_observations),
+        "",
+    ]
+    return lines
+
+
+def _format_report_competencies(
+    competencies: tuple[StudentReportCompetencyViewModel, ...],
+) -> list[str]:
+    if not competencies:
+        return ["- Keine Einträge."]
+    return [f"- {competency.display_label}" for competency in competencies]
+
+
+def _format_report_evidence(
+    observations: tuple[StudentReportEvidenceViewModel, ...],
+) -> list[str]:
+    if not observations:
+        return ["- Keine passenden Beobachtungen."]
+    lines: list[str] = []
+    for observation in observations:
+        lines.append(f"- {observation.display_label}")
+        lines.extend(
+            f"  - {competency_label}"
+            for competency_label in observation.competency_labels
+        )
+    return lines

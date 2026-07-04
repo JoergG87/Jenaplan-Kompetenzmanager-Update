@@ -69,8 +69,10 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationDraftViewModel,
     ObservationListItem,
     ObservationRatingViewModel,
+    StudentDocumentationSubjectStatus,
     StudentCompetencyStatusViewModel,
     StudentCompetencySubjectGroup,
+    StudentMissingCompetencyViewModel,
     calculated_rating_from_history,
     observation_rating_keys,
     rating_from_weighted_score,
@@ -85,6 +87,7 @@ from src.desktop_app.view_models.student_view_model import (
     StudentReportPreviewViewModel,
     StudentReportSubjectSectionViewModel,
     filter_student_list,
+    format_student_report_preview_text,
     sort_student_list,
 )
 
@@ -798,6 +801,153 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIsNotNone(preview)
         self.assertEqual(preview.subject_sections, ())
+
+    def test_report_text_contains_student_date_subjects_and_evidence(self) -> None:
+        report_text = format_student_report_preview_text(
+            self._sample_student_detail(),
+            self._sample_report_preview(),
+            created_date="2026-07-04",
+        )
+
+        self.assertIn("Schüler: Emma Müller", report_text)
+        self.assertIn("Stammgruppe: Grashüpfer", report_text)
+        self.assertIn("Kurs: Kurs 1", report_text)
+        self.assertIn("Erstellt am: 2026-07-04", report_text)
+        self.assertIn("## Deutsch", report_text)
+        self.assertIn("- Mit Texten und Medien umgehen · Bestätigt: +", report_text)
+        self.assertIn("- Wörter und Sätze · Vorschlag: -", report_text)
+        self.assertIn("Beispielbeobachtungen", report_text)
+        self.assertIn("- 2026-07-03 · Leseübung · Liest einen bekannten Text.", report_text)
+        self.assertIn("  - + Mit Texten und Medien umgehen", report_text)
+
+    def test_report_text_keeps_soft_deleted_observations_absent(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            note="Diese Beobachtung wird gelöscht.",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+            ),
+        ))
+        self.adapter.delete_observation("OBS-000001")
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        report_text = format_student_report_preview_text(
+            self._sample_student_detail(),
+            preview,
+            created_date="2026-07-04",
+        )
+
+        self.assertNotIn("Diese Beobachtung wird gelöscht.", report_text)
+        self.assertIn("Noch keine Berichtsdaten vorhanden.", report_text)
+
+    def test_documentation_status_starts_with_zero_documented_competencies(self) -> None:
+        statuses = self.adapter.list_documentation_status_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertTrue(statuses)
+        self.assertTrue(all(status.total_count > 0 for status in statuses))
+        self.assertTrue(all(status.documented_count == 0 for status in statuses))
+        self.assertTrue(
+            all(
+                len(status.missing_competencies) == status.total_count
+                for status in statuses
+            )
+        )
+        self.assertTrue(
+            any(status.progress_label.startswith("Deutsch: 0 / ") for status in statuses)
+        )
+
+    def test_documentation_status_counts_active_observation_ratings(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+                self._sample_observation_rating(
+                    "CMP-000002",
+                    "deutsch",
+                    "Deutsch",
+                    "Sprache untersuchen",
+                    "Wörter und Sätze",
+                    "Wörter nach Merkmalen ordnen",
+                    "-",
+                ),
+            ),
+        ))
+
+        statuses = self.adapter.list_documentation_status_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        deutsch_status = next(
+            status for status in statuses if status.subject_display_name == "Deutsch"
+        )
+
+        self.assertEqual(deutsch_status.documented_count, 2)
+        self.assertEqual(
+            len(deutsch_status.missing_competencies),
+            deutsch_status.total_count - 2,
+        )
+
+    def test_documentation_status_ignores_soft_deleted_observations(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+            ),
+        ))
+        self.adapter.delete_observation("OBS-000001")
+
+        statuses = self.adapter.list_documentation_status_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        deutsch_status = next(
+            status for status in statuses if status.subject_display_name == "Deutsch"
+        )
+
+        self.assertEqual(deutsch_status.documented_count, 0)
+
+    def test_documentation_status_counts_confirmed_competency_status(self) -> None:
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="+",
+        )
+
+        statuses = self.adapter.list_documentation_status_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        deutsch_status = next(
+            status for status in statuses if status.subject_display_name == "Deutsch"
+        )
+
+        self.assertEqual(deutsch_status.documented_count, 1)
+        self.assertNotIn(
+            "CMP-000001",
+            {competency.competency_id for competency in deutsch_status.missing_competencies},
+        )
 
     def test_new_app_database_starts_without_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1962,6 +2112,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Beobachtung wurde gespeichert.", source)
         self.assertIn("list_competency_overview_for_student(student_id)", profile_source)
         self.assertIn("get_report_preview_for_student(student_id)", profile_source)
+        self.assertIn("list_documentation_status_for_student(student_id)", profile_source)
         self.assertIn("report_preview", profile_source)
 
     def test_shell_opens_observation_for_edit_and_refreshes_profile(self) -> None:
@@ -2554,6 +2705,150 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("+ Mit Texten und Medien umgehen", label_texts)
         self.assertIsNotNone(app)
 
+    def test_student_profile_renders_compact_documentation_status(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (),
+            None,
+            (
+                StudentDocumentationSubjectStatus(
+                    "deutsch",
+                    "Deutsch",
+                    8,
+                    14,
+                    (),
+                    0,
+                ),
+                StudentDocumentationSubjectStatus(
+                    "epu",
+                    "EPU",
+                    0,
+                    6,
+                    (
+                        StudentMissingCompetencyViewModel(
+                            "CMP-000003",
+                            "Natur und Umwelt",
+                            3,
+                        ),
+                    ),
+                    3,
+                ),
+            ),
+        )
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Dokumentationsstand", label_texts)
+        self.assertIn("Deutsch: 8 / 14 dokumentiert", label_texts)
+        self.assertIn("EPU: 0 / 6 dokumentiert", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_missing_competencies_can_be_expanded(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (
+                StudentCompetencySubjectGroup(
+                    "deutsch",
+                    "Deutsch",
+                    (
+                        StudentCompetencyStatusViewModel(
+                            "CMP-000001",
+                            "Mit Texten und Medien umgehen",
+                            "deutsch",
+                            "Deutsch",
+                            "+",
+                            "+ erreicht",
+                            "2026-07-03",
+                            0,
+                            ("+",),
+                            1,
+                            2.0,
+                        ),
+                    ),
+                    (
+                        StudentMissingCompetencyViewModel(
+                            "CMP-000002",
+                            "Wörter und Sätze",
+                            1,
+                        ),
+                    ),
+                ),
+            ),
+        )
+        details_button = screen.findChild(QPushButton, "CompetencyGroupDetailsButton")
+        missing_button = screen.findChild(QPushButton, "MissingCompetenciesDetailsButton")
+        missing_container = screen.findChild(QWidget, "MissingCompetenciesDetails")
+
+        self.assertIsNotNone(details_button)
+        self.assertIsNotNone(missing_button)
+        self.assertIsNotNone(missing_container)
+        self.assertTrue(missing_container.isHidden())
+        self.assertEqual(
+            missing_button.text(),
+            "Noch nicht dokumentierte Kompetenzen (1) ▾",
+        )
+
+        details_button.click()
+        missing_button.click()
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+        self.assertFalse(missing_container.isHidden())
+        self.assertEqual(
+            missing_button.text(),
+            "Noch nicht dokumentierte Kompetenzen (1) ▴",
+        )
+        self.assertIn("Wörter und Sätze", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_copies_report_text_to_clipboard(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (),
+            self._sample_report_preview(),
+        )
+
+        screen.copy_report_text_to_clipboard()
+        clipboard_text = QApplication.clipboard().text()
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Schüler: Emma Müller", clipboard_text)
+        self.assertIn("Erstellt am:", clipboard_text)
+        self.assertIn("## Deutsch", clipboard_text)
+        self.assertIn("Mit Texten und Medien umgehen · Bestätigt: +", clipboard_text)
+        self.assertIn("Bericht wurde kopiert.", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_exports_report_text_file(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (),
+            self._sample_report_preview(),
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            export_path = Path(temp_dir) / "bericht.md"
+
+            screen.export_report_text_to_path(export_path)
+
+            report_text = export_path.read_text(encoding="utf-8")
+
+        self.assertIn("Schüler: Emma Müller", report_text)
+        self.assertIn("## Deutsch", report_text)
+        self.assertIn("Beispielbeobachtungen", report_text)
+        self.assertTrue(report_text.endswith("\n"))
+        self.assertIsNotNone(app)
+
     def test_student_profile_emits_competency_confirmation_actions(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
@@ -2751,6 +3046,46 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "Kurs 1",
             "",
             True,
+        )
+
+    def _sample_report_preview(self) -> StudentReportPreviewViewModel:
+        return StudentReportPreviewViewModel(
+            f"{STUDENT_ID_PREFIX}-000001",
+            "Emma Müller",
+            (
+                StudentReportSubjectSectionViewModel(
+                    "deutsch",
+                    "Deutsch",
+                    (
+                        StudentReportCompetencyViewModel(
+                            "CMP-000001",
+                            "Mit Texten und Medien umgehen",
+                            "+",
+                            "Bestätigt",
+                            "+ erreicht",
+                        ),
+                    ),
+                    (
+                        StudentReportCompetencyViewModel(
+                            "CMP-000002",
+                            "Wörter und Sätze",
+                            "-",
+                            "Vorschlag",
+                            "- in Entwicklung",
+                        ),
+                    ),
+                    (),
+                    (
+                        StudentReportEvidenceViewModel(
+                            "OBS-000001",
+                            "2026-07-03",
+                            "Leseübung",
+                            "Liest einen bekannten Text.",
+                            ("+ Mit Texten und Medien umgehen",),
+                        ),
+                    ),
+                ),
+            ),
         )
 
     def _sample_filter_observations(self) -> tuple[ObservationListItem, ...]:

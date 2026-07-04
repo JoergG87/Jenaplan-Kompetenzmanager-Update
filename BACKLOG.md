@@ -175,7 +175,24 @@ Idee
 
 ## Epic: Schülerprofil
 
-Platzhalter für zukünftige Einträge.
+### Dokumentationsstand fachlich validieren
+
+Priorität: Offen
+
+Beschreibung:
+
+Der Dokumentationsstand im Schuelerprofil zeigt pro Fach, welche Kompetenzen bereits dokumentiert sind und welche noch fehlen. Die Anzeige soll Laura bei der Planung helfen, aber nicht wie Kontrolle oder Druck wirken.
+
+Laura-Pilottest:
+
+- Versteht Laura den Dokumentationsstand?
+- Hilft ihr `noch nicht dokumentiert` bei der Planung?
+- Ist die Anzeige motivierend oder wirkt sie wie Druck/Kontrolle?
+- Soll die Klassenuebersicht spaeter ebenfalls einen Dokumentationsstatus zeigen?
+
+Status:
+
+Folgethema
 
 ## Epic: Dokumente und Medien
 
@@ -449,7 +466,29 @@ Platzhalter für zukünftige Einträge.
 
 ## Epic: Berichte
 
-Platzhalter für zukünftige Einträge.
+### Laura-Pilottest Berichtsvorschau-Text
+
+Priorität: Offen
+
+Beschreibung:
+
+Die kopierte oder exportierte Berichtsvorbereitung soll mit Laura im Alltag getestet werden.
+
+Prueffragen:
+
+- Ist der kopierte Berichtstext hilfreich?
+- Kann Laura ihn in ihre weitere Dokumentation uebernehmen?
+- Ist die Struktur nach Fach sinnvoll?
+- Sind Belege zu ausfuehrlich oder genau richtig?
+- Fehlt eine Formulierungshilfe oder reicht strukturierter Text?
+
+Abgrenzung:
+
+Keine KI-Textgenerierung, keine finalen Zeugnisformulierungen und kein PDF-/Word-Export.
+
+Status:
+
+Folgethema
 
 ## Epic: PySide Produktisierung
 

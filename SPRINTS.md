@@ -6,6 +6,31 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - Dokumentationsstand im Schuelerprofil 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Dokumentationsstand zeigt pro Fach dokumentierte Kompetenzen im Verhaeltnis zum aktiven Katalog
+- [x] Aktive Beobachtungen und bestaetigte Kompetenzstaende zaehlen als dokumentiert
+- [x] Soft-geloeschte Beobachtungen zaehlen nicht
+- [x] Fehlende Kompetenzen koennen pro Fachgruppe aufgeklappt werden
+- [x] Keine neue Persistenz, keine Schemaaenderung, keine Dokumentenverwaltung, keine Berichtserweiterung, kein Excel/VBA und kein Commit umgesetzt
+
+## Sprint - Berichtsvorschau kopieren und Text exportieren 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Berichtsvorschau kann im Schuelerprofil kopiert werden
+- [x] Berichtsvorschau kann als einfache Text-/Markdown-Datei exportiert werden
+- [x] Text enthaelt Schuelername, Stammgruppe, Kurs, Erstellungsdatum, Fachgruppen, Kompetenzstaende und Beobachtungsbelege
+- [x] Bestaetigte Kompetenzstaende werden vor berechneten Vorschlaegen genutzt
+- [x] Soft-geloeschte Beobachtungen erscheinen nicht
+- [x] Keine PDF-/Word-Erstellung, keine KI-Textgenerierung, keine neue Persistenz, kein Excel/VBA und kein Commit umgesetzt
+
 ## Sprint B - Berichtsvorbereitung aus Kompetenzstaenden und Beobachtungen 🔄
 
 - [x] Status: Umgesetzt, nicht committed

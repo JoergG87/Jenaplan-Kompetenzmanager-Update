@@ -249,11 +249,13 @@ class AppShell(QMainWindow):
         observations = self.adapter.list_observations_for_student(student_id)
         competency_groups = self.adapter.list_competency_overview_for_student(student_id)
         report_preview = self.adapter.get_report_preview_for_student(student_id)
+        documentation_statuses = self.adapter.list_documentation_status_for_student(student_id)
         self.student_profile_screen.set_student(
             profile,
             observations,
             competency_groups,
             report_preview,
+            documentation_statuses,
         )
         self._show_screen("profile")
 

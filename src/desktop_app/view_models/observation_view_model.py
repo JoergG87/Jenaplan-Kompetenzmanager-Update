@@ -185,12 +185,50 @@ class StudentCompetencyStatusViewModel:
 
 
 @dataclass(frozen=True)
+class StudentMissingCompetencyViewModel:
+    """Catalog competency not yet documented for one student."""
+
+    competency_id: str
+    competency_label: str
+    sort_order: int
+
+
+@dataclass(frozen=True)
+class StudentDocumentationSubjectStatus:
+    """Documentation progress for one subject in the student profile."""
+
+    subject_id: str
+    subject_display_name: str
+    documented_count: int
+    total_count: int
+    missing_competencies: tuple[StudentMissingCompetencyViewModel, ...]
+    sort_order: int
+
+    @property
+    def progress_label(self) -> str:
+        """Return compact progress text."""
+        return (
+            f"{self.subject_display_name}: "
+            f"{self.documented_count} / {self.total_count} dokumentiert"
+        )
+
+    @property
+    def missing_count_label(self) -> str:
+        """Return compact missing-competency text."""
+        count = len(self.missing_competencies)
+        if count == 1:
+            return "Noch nicht dokumentierte Kompetenzen (1)"
+        return f"Noch nicht dokumentierte Kompetenzen ({count})"
+
+
+@dataclass(frozen=True)
 class StudentCompetencySubjectGroup:
     """Student competency statuses grouped by subject."""
 
     subject_id: str
     subject_display_name: str
     competencies: tuple[StudentCompetencyStatusViewModel, ...]
+    missing_competencies: tuple[StudentMissingCompetencyViewModel, ...] = ()
 
 
 def observation_rating_label(rating: str) -> str:

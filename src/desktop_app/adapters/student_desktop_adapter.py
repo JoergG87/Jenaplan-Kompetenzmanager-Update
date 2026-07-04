@@ -44,8 +44,10 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationCompetencyRatingDraft,
     ObservationListItem,
     ObservationRatingViewModel,
+    StudentDocumentationSubjectStatus,
     StudentCompetencyStatusViewModel,
     StudentCompetencySubjectGroup,
+    StudentMissingCompetencyViewModel,
     calculated_rating_from_history,
     observation_rating_label,
 )
@@ -305,11 +307,10 @@ class StudentDesktopAdapter:
         observations = SQLiteObservationRepository(
             self.database
         ).list_observations_for_student(student_id)
+        active_competencies = self._active_competencies()
         competencies = {
             competency.competency_id: competency
-            for competency in SQLiteCompetencyRepository(
-                self.database
-            ).list_competencies()
+            for competency in active_competencies
         }
         confirmations = {
             confirmation.competency_id: confirmation
@@ -331,7 +332,36 @@ class StudentDesktopAdapter:
             )
             for competency_id, entries in histories_by_competency.items()
         )
-        return self._group_competency_statuses(statuses)
+        documented_ids = set(histories_by_competency) | set(confirmations)
+        return self._group_competency_statuses(
+            statuses,
+            active_competencies,
+            documented_ids,
+        )
+
+    def list_documentation_status_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[StudentDocumentationSubjectStatus, ...]:
+        """Return catalog coverage by subject for one student."""
+        observations = SQLiteObservationRepository(
+            self.database
+        ).list_observations_for_student(student_id)
+        observed_ids = {
+            rating.competency_id
+            for observation in observations
+            for rating in observation.competency_ratings
+        }
+        confirmed_ids = {
+            confirmation.competency_id
+            for confirmation in SQLiteStudentCompetencyConfirmationRepository(
+                self.database
+            ).list_confirmations_for_student(student_id)
+        }
+        return self._documentation_statuses(
+            self._active_competencies(),
+            observed_ids | confirmed_ids,
+        )
 
     def get_report_preview_for_student(
         self,
@@ -571,6 +601,8 @@ class StudentDesktopAdapter:
     def _group_competency_statuses(
         self,
         statuses: tuple[StudentCompetencyStatusViewModel, ...],
+        active_competencies: tuple[object, ...],
+        documented_ids: set[str],
     ) -> tuple[StudentCompetencySubjectGroup, ...]:
         groups: dict[str, list[StudentCompetencyStatusViewModel]] = {}
         subject_names: dict[str, str] = {}
@@ -582,8 +614,81 @@ class StudentDesktopAdapter:
                 subject_id,
                 subject_names[subject_id],
                 tuple(groups[subject_id]),
+                self._missing_competencies_for_subject(
+                    active_competencies,
+                    documented_ids,
+                    subject_id,
+                ),
             )
             for subject_id in groups
+        )
+
+    def _active_competencies(self) -> tuple[object, ...]:
+        return tuple(
+            competency
+            for competency in SQLiteCompetencyRepository(
+                self.database
+            ).list_competencies()
+            if getattr(competency, "active", False)
+        )
+
+    def _documentation_statuses(
+        self,
+        active_competencies: tuple[object, ...],
+        documented_ids: set[str],
+    ) -> tuple[StudentDocumentationSubjectStatus, ...]:
+        grouped: dict[str, list[object]] = {}
+        subject_names: dict[str, str] = {}
+        subject_sort_orders: dict[str, int] = {}
+        for competency in active_competencies:
+            subject_id = getattr(competency, "subject_id")
+            grouped.setdefault(subject_id, []).append(competency)
+            subject_names.setdefault(
+                subject_id,
+                getattr(competency, "subject_name", subject_id),
+            )
+            subject_sort_orders[subject_id] = min(
+                subject_sort_orders.get(subject_id, getattr(competency, "sort_order", 0)),
+                getattr(competency, "sort_order", 0),
+            )
+        return tuple(
+            StudentDocumentationSubjectStatus(
+                subject_id,
+                subject_names[subject_id],
+                sum(
+                    1
+                    for competency in grouped[subject_id]
+                    if getattr(competency, "competency_id") in documented_ids
+                ),
+                len(grouped[subject_id]),
+                self._missing_competencies_for_subject(
+                    active_competencies,
+                    documented_ids,
+                    subject_id,
+                ),
+                subject_sort_orders[subject_id],
+            )
+            for subject_id in sorted(
+                grouped,
+                key=lambda key: (subject_sort_orders[key], key),
+            )
+        )
+
+    def _missing_competencies_for_subject(
+        self,
+        active_competencies: tuple[object, ...],
+        documented_ids: set[str],
+        subject_id: str,
+    ) -> tuple[StudentMissingCompetencyViewModel, ...]:
+        return tuple(
+            StudentMissingCompetencyViewModel(
+                getattr(competency, "competency_id"),
+                getattr(competency, "label"),
+                getattr(competency, "sort_order", 0),
+            )
+            for competency in active_competencies
+            if getattr(competency, "subject_id") == subject_id
+            and getattr(competency, "competency_id") not in documented_ids
         )
 
     def _report_subject_sections(

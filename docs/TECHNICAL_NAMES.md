@@ -455,6 +455,7 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.delete_observation(observation_id)`
 - `StudentDesktopAdapter.observation_draft_for_edit(observation_id)`
 - `StudentDesktopAdapter.list_competency_overview_for_student(student_id)`
+- `StudentDesktopAdapter.list_documentation_status_for_student(student_id)`
 - `StudentDesktopAdapter.get_report_preview_for_student(student_id)`
 - `StudentDesktopAdapter.save_competency_confirmation(student_id, competency_id, confirmed_rating, note)`
 - `StudentProfileScreen.DEFAULT_OBSERVATION_LIMIT`
@@ -477,13 +478,25 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen._competency_status_row(competency)`
 - `StudentProfileScreen._competency_confirmation_actions(competency)`
 - `StudentProfileScreen._request_competency_confirmation(competency, confirmed_rating)`
+- `StudentProfileScreen.set_documentation_statuses(statuses)`
+- `StudentProfileScreen._documentation_status_card()`
+- `StudentProfileScreen._empty_documentation_status_card()`
+- `StudentProfileScreen._missing_competencies_block(missing_competencies)`
+- `StudentProfileScreen._toggle_missing_competencies(details_container, details_button, count)`
 - `StudentProfileScreen.set_report_preview(report_preview)`
 - `StudentProfileScreen._report_subject_card(section)`
 - `StudentProfileScreen._report_bucket(title, competencies)`
 - `StudentProfileScreen._report_evidence_block(observations)`
+- `StudentProfileScreen.report_text()`
+- `StudentProfileScreen.copy_report_text_to_clipboard()`
+- `StudentProfileScreen.export_report_text()`
+- `StudentProfileScreen.export_report_text_to_path(target_path)`
+- `StudentProfileScreen._default_report_export_filename()`
 - `CompetencyConfirmationRatingSelect`
 - `CompetencyGroupDetailsButton`
 - `CompetencyGroupDetails`
+- `MissingCompetenciesDetailsButton`
+- `MissingCompetenciesDetails`
 - `MasterDataDesktopAdapter`
 - `MasterDataDesktopAdapter.add_course_group(name, selected_group_ids, selected_course_ids)`
 - `MasterDataDesktopAdapter.update_course_group(course_group_id, name, selected_group_ids, selected_course_ids)`
@@ -504,6 +517,7 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentReportEvidenceViewModel`
 - `StudentReportSubjectSectionViewModel`
 - `StudentReportPreviewViewModel`
+- `format_student_report_preview_text(student, report_preview, created_date)`
 - `MasterDataItemViewModel`
 - `MasterDataViewModel`
 - `CourseGroupViewModel`
@@ -541,6 +555,11 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentCompetencyStatusViewModel.confirmation_status_label`
 - `StudentCompetencyStatusViewModel.confirmation_meta_label`
 - `StudentCompetencySubjectGroup`
+- `StudentCompetencySubjectGroup.missing_competencies`
+- `StudentDocumentationSubjectStatus`
+- `StudentDocumentationSubjectStatus.progress_label`
+- `StudentDocumentationSubjectStatus.missing_count_label`
+- `StudentMissingCompetencyViewModel`
 - `OBSERVATION_CONTEXT_OPTIONS`
 - `OBSERVATION_CROSS_SUBJECT_LABEL`
 - `OBSERVATION_RATING_OPTIONS`

@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## Sprint - Dokumentationsstand im Schuelerprofil
+
+### Added
+
+- Schuelerprofil zeigt einen kompakten Dokumentationsstand pro Fach aus Kompetenzkatalog, aktiven Beobachtungen und bestaetigten Kompetenzstaenden.
+- Fach-Kompetenzgruppen koennen noch nicht dokumentierte Kompetenzen optional aufklappen.
+
+### Not Changed
+
+- Keine neue Persistenz, keine Schemaaenderung, keine Dokumentenverwaltung, keine Berichtserweiterung, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
+## Sprint - Berichtsvorschau kopieren und als Text exportieren
+
+### Added
+
+- Berichtsvorschau im Schuelerprofil kann als strukturierter Text in die Zwischenablage kopiert werden.
+- Berichtsvorschau kann als einfache `.md`- oder `.txt`-Datei exportiert werden.
+- Textausgabe enthaelt Schuelername, Stammgruppe, Kurs, Erstellungsdatum, Fachgruppen, Kompetenzstaende und Beobachtungsbelege.
+
+### Not Changed
+
+- Keine PDF-/Word-Erstellung, keine KI-Textgenerierung, keine finalen Zeugnisformulierungen, keine neue Persistenz, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
 ## Sprint B - Berichtsvorbereitung aus Kompetenzstaenden und Beobachtungen
 
 ### Added

@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
+    QApplication,
     QComboBox,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -20,9 +24,11 @@ from src.desktop_app.view_models.student_view_model import (
     PROFILE_SECTION_PLACEHOLDERS,
     StudentDetailViewModel,
     StudentReportPreviewViewModel,
+    format_student_report_preview_text,
 )
 from src.desktop_app.view_models.observation_view_model import (
     ObservationListItem,
+    StudentDocumentationSubjectStatus,
     StudentCompetencySubjectGroup,
     observation_rating_keys,
 )
@@ -53,8 +59,15 @@ class StudentProfileScreen(QWidget):
         self.action_feedback_label = QLabel("")
         self.observation_empty_label = QLabel("")
         self.competency_empty_label = QLabel("")
+        self.documentation_empty_label = QLabel("")
         self.report_empty_label = QLabel("")
+        self.report_feedback_label = QLabel("")
+        self.report_copy_button = QPushButton("Bericht kopieren")
+        self.report_export_button = QPushButton("Als Text exportieren")
+        self.report_copy_button.setEnabled(False)
+        self.report_export_button.setEnabled(False)
         self.current_observations: tuple[ObservationListItem, ...] = ()
+        self.current_report_preview: StudentReportPreviewViewModel | None = None
         self.show_all_observations = False
         self._build()
 
@@ -80,6 +93,7 @@ class StudentProfileScreen(QWidget):
         content_layout.addWidget(self._actions_card())
         content_layout.addWidget(self._basis_data_card())
         content_layout.addWidget(self._observations_card())
+        content_layout.addWidget(self._documentation_status_card())
         content_layout.addWidget(self._competencies_card())
         content_layout.addWidget(self._report_preview_card())
         content_layout.addWidget(self._placeholder_card(
@@ -237,6 +251,24 @@ class StudentProfileScreen(QWidget):
         layout.addWidget(self.competencies_container)
         return section
 
+    def _documentation_status_card(self) -> QWidget:
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        title_label = QLabel("Dokumentationsstand")
+        set_label_style(title_label, "section_title")
+        self.documentation_status_container = QWidget()
+        self.documentation_status_layout = QVBoxLayout(
+            self.documentation_status_container
+        )
+        self.documentation_status_layout.setContentsMargins(0, 0, 0, 0)
+        self.documentation_status_layout.setSpacing(6)
+        set_label_style(self.documentation_empty_label, "body")
+        layout.addWidget(title_label)
+        layout.addWidget(self.documentation_status_container)
+        return section
+
     def _report_preview_card(self) -> QWidget:
         section = QWidget()
         layout = QVBoxLayout(section)
@@ -249,9 +281,23 @@ class StudentProfileScreen(QWidget):
         self.report_preview_layout.setContentsMargins(0, 0, 0, 0)
         self.report_preview_layout.setSpacing(8)
         set_label_style(self.report_empty_label, "body")
+        set_label_style(self.report_feedback_label, "subtle")
+        self.report_copy_button.clicked.connect(self.copy_report_text_to_clipboard)
+        self.report_export_button.clicked.connect(self.export_report_text)
         layout.addWidget(title_label)
+        layout.addLayout(self._report_action_row())
+        layout.addWidget(self.report_feedback_label)
         layout.addWidget(self.report_preview_container)
         return section
+
+    def _report_action_row(self) -> QHBoxLayout:
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 0, 0, 0)
+        actions.setSpacing(8)
+        actions.addWidget(self.report_copy_button)
+        actions.addWidget(self.report_export_button)
+        actions.addStretch(1)
+        return actions
 
     def _card(self) -> QFrame:
         return create_card()
@@ -271,6 +317,7 @@ class StudentProfileScreen(QWidget):
         observations: tuple[ObservationListItem, ...] = (),
         competency_groups: tuple[StudentCompetencySubjectGroup, ...] = (),
         report_preview: StudentReportPreviewViewModel | None = None,
+        documentation_statuses: tuple[StudentDocumentationSubjectStatus, ...] = (),
     ) -> None:
         """Render selected student or empty state."""
         self.current_student = student
@@ -283,6 +330,7 @@ class StudentProfileScreen(QWidget):
             self.notes_value_label.setText("")
             self.action_feedback_label.setText("")
             self.set_observations(())
+            self.set_documentation_statuses(())
             self.set_competency_groups(())
             self.set_report_preview(None)
             return
@@ -294,6 +342,7 @@ class StudentProfileScreen(QWidget):
         self.notes_value_label.setText(student.student_notes or "Keine Notiz hinterlegt.")
         self.action_feedback_label.setText("")
         self.set_observations(observations)
+        self.set_documentation_statuses(documentation_statuses)
         self.set_competency_groups(competency_groups)
         self.set_report_preview(report_preview)
 
@@ -634,11 +683,52 @@ class StudentProfileScreen(QWidget):
         layout.addWidget(hint_label)
         return card
 
+    def set_documentation_statuses(
+        self,
+        statuses: tuple[StudentDocumentationSubjectStatus, ...],
+    ) -> None:
+        """Render compact documentation coverage by subject."""
+        self._clear_layout(self.documentation_status_layout)
+        if not statuses:
+            self.documentation_status_layout.addWidget(
+                self._empty_documentation_status_card()
+            )
+            return
+        card = self._card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(4)
+        for status in statuses:
+            line = QLabel(status.progress_label)
+            line.setWordWrap(True)
+            set_label_style(line, "small")
+            layout.addWidget(line)
+        self.documentation_status_layout.addWidget(card)
+
+    def _empty_documentation_status_card(self) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(3)
+        self.documentation_empty_label.setText(
+            "Noch kein Kompetenzkatalog verfügbar."
+        )
+        hint_label = QLabel("Dokumentationsstand erscheint hier nach Katalogladung.")
+        set_label_style(hint_label, "subtle")
+        layout.addWidget(self.documentation_empty_label)
+        layout.addWidget(hint_label)
+        return card
+
     def set_report_preview(
         self,
         report_preview: StudentReportPreviewViewModel | None,
     ) -> None:
         """Render the derived report preparation for the current profile."""
+        self.current_report_preview = report_preview
+        has_report_text = self.current_student is not None and report_preview is not None
+        self.report_copy_button.setEnabled(has_report_text)
+        self.report_export_button.setEnabled(has_report_text)
+        self.report_feedback_label.setText("")
         self._clear_layout(self.report_preview_layout)
         if report_preview is None or not report_preview.has_content:
             self.report_preview_layout.addWidget(self._empty_report_preview_card())
@@ -736,6 +826,55 @@ class StudentProfileScreen(QWidget):
             layout.addWidget(competencies)
         return block
 
+    def report_text(self) -> str:
+        """Return the current report preparation as plain text."""
+        if self.current_student is None:
+            return ""
+        return format_student_report_preview_text(
+            self.current_student,
+            self.current_report_preview,
+        )
+
+    def copy_report_text_to_clipboard(self) -> None:
+        """Copy the current report preparation into the system clipboard."""
+        text = self.report_text()
+        if not text:
+            self.report_feedback_label.setText("Kein Bericht zum Kopieren vorhanden.")
+            return
+        QApplication.clipboard().setText(text)
+        self.report_feedback_label.setText("Bericht wurde kopiert.")
+
+    def export_report_text(self) -> None:
+        """Ask for a text path and export the current report preparation."""
+        if self.current_student is None:
+            self.report_feedback_label.setText("Kein Bericht zum Exportieren vorhanden.")
+            return
+        target_path, _selected_filter = QFileDialog.getSaveFileName(
+            self,
+            "Bericht als Text exportieren",
+            self._default_report_export_filename(),
+            "Markdown-Datei (*.md);;Textdatei (*.txt)",
+        )
+        if not target_path:
+            return
+        self.export_report_text_to_path(Path(target_path))
+
+    def export_report_text_to_path(self, target_path: Path) -> None:
+        """Write the current report preparation to a text file."""
+        text = self.report_text()
+        if not text:
+            self.report_feedback_label.setText("Kein Bericht zum Exportieren vorhanden.")
+            return
+        target_path.write_text(text, encoding="utf-8")
+        self.report_feedback_label.setText("Bericht wurde exportiert.")
+
+    def _default_report_export_filename(self) -> str:
+        if self.current_student is None:
+            return "Berichtsvorbereitung.md"
+        safe_name = "_".join(self.current_student.display_name.split())
+        safe_id = self.current_student.student_id.replace("/", "-")
+        return f"Berichtsvorbereitung_{safe_name}_{safe_id}.md"
+
     def _competency_group_card(
         self,
         group: StudentCompetencySubjectGroup,
@@ -763,6 +902,10 @@ class StudentProfileScreen(QWidget):
         details_layout.setSpacing(4)
         for competency in group.competencies:
             details_layout.addWidget(self._competency_status_row(competency))
+        if group.missing_competencies:
+            details_layout.addWidget(
+                self._missing_competencies_block(group.missing_competencies)
+            )
         details_container.setVisible(False)
         details_button.clicked.connect(
             lambda _checked=False: self._toggle_competency_group_details(
@@ -813,6 +956,52 @@ class StudentProfileScreen(QWidget):
         layout.addWidget(confirmation_meta)
         layout.addLayout(self._competency_confirmation_actions(competency))
         return row
+
+    def _missing_competencies_block(
+        self,
+        missing_competencies: tuple[object, ...],
+    ) -> QWidget:
+        block = QWidget()
+        layout = QVBoxLayout(block)
+        layout.setContentsMargins(0, 4, 0, 0)
+        layout.setSpacing(4)
+        details_container = QWidget()
+        details_container.setObjectName("MissingCompetenciesDetails")
+        details_layout = QVBoxLayout(details_container)
+        details_layout.setContentsMargins(0, 0, 0, 0)
+        details_layout.setSpacing(3)
+        for competency in missing_competencies:
+            line = QLabel(getattr(competency, "competency_label"))
+            line.setWordWrap(True)
+            set_label_style(line, "subtle")
+            details_layout.addWidget(line)
+        details_container.setVisible(False)
+        details_button = QPushButton(
+            f"Noch nicht dokumentierte Kompetenzen ({len(missing_competencies)}) ▾"
+        )
+        details_button.setObjectName("MissingCompetenciesDetailsButton")
+        details_button.clicked.connect(
+            lambda _checked=False: self._toggle_missing_competencies(
+                details_container,
+                details_button,
+                len(missing_competencies),
+            )
+        )
+        layout.addWidget(details_button)
+        layout.addWidget(details_container)
+        return block
+
+    def _toggle_missing_competencies(
+        self,
+        details_container: QWidget,
+        details_button: QPushButton,
+        count: int,
+    ) -> None:
+        details_container.setVisible(details_container.isHidden())
+        indicator = "▾" if details_container.isHidden() else "▴"
+        details_button.setText(
+            f"Noch nicht dokumentierte Kompetenzen ({count}) {indicator}"
+        )
 
     def _competency_confirmation_actions(self, competency: object) -> QHBoxLayout:
         actions = QHBoxLayout()
