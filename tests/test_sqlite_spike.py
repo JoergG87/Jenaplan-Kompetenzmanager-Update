@@ -44,6 +44,7 @@ from src.core.sqlite_store import (
 )
 from src.core.workbook_data import seed_workbook_data
 from src.ui.screens.klassenuebersicht import ClassOverviewV02WorkbookBuilder
+from scripts.seed_test_data import SeedDataError, seed_test_data
 
 
 class SQLiteSpikeTest(unittest.TestCase):
@@ -341,6 +342,92 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertEqual(reloaded[0].document_type, "Bericht")
         self.assertEqual(reloaded[0].original_filename, "Foerderplan.pdf")
         self.assertEqual(after_delete, ())
+
+    def test_seed_test_data_creates_pilot_database(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            result = seed_test_data(database_path)
+
+            with closing(sqlite3.connect(database_path)) as connection:
+                student_count = connection.execute(
+                    "SELECT COUNT(*) FROM students"
+                ).fetchone()[0]
+                group_count = connection.execute(
+                    "SELECT COUNT(*) FROM groups WHERE active = 1"
+                ).fetchone()[0]
+                course_count = connection.execute(
+                    "SELECT COUNT(*) FROM courses WHERE active = 1"
+                ).fetchone()[0]
+                course_group_count = connection.execute(
+                    "SELECT COUNT(*) FROM course_groups WHERE active = 1"
+                ).fetchone()[0]
+                active_observation_count = connection.execute(
+                    "SELECT COUNT(*) FROM observations WHERE active = 1"
+                ).fetchone()[0]
+                inactive_observation_count = connection.execute(
+                    "SELECT COUNT(*) FROM observations WHERE active = 0"
+                ).fetchone()[0]
+                confirmation_count = connection.execute(
+                    "SELECT COUNT(*) FROM student_competency_confirmations"
+                ).fetchone()[0]
+                document_count = connection.execute(
+                    "SELECT COUNT(*) FROM documents WHERE active = 1"
+                ).fetchone()[0]
+                active_date_range = connection.execute(
+                    "SELECT MIN(date), MAX(date) FROM observations WHERE active = 1"
+                ).fetchone()
+                observed_student_count = connection.execute(
+                    "SELECT COUNT(DISTINCT student_id) FROM observations WHERE active = 1"
+                ).fetchone()[0]
+                longest_rating_history = connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM observation_competency_ratings
+                    WHERE observation_id IN (
+                        SELECT observation_id FROM observations WHERE active = 1
+                    )
+                    GROUP BY competency_id
+                    ORDER BY COUNT(*) DESC
+                    LIMIT 1
+                    """
+                ).fetchone()[0]
+                blob_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(documents)"
+                    ).fetchall()
+                    if "blob" in row[1].lower()
+                }
+
+            document_files = tuple((Path(temp_dir) / "documents").rglob("*.txt"))
+
+        self.assertEqual(result.student_count, 12)
+        self.assertEqual(student_count, 12)
+        self.assertGreaterEqual(group_count, 2)
+        self.assertEqual(course_count, 3)
+        self.assertGreaterEqual(course_group_count, 2)
+        self.assertGreaterEqual(active_observation_count, 30)
+        self.assertEqual(inactive_observation_count, 1)
+        self.assertGreaterEqual(confirmation_count, 4)
+        self.assertGreaterEqual(document_count, 3)
+        self.assertEqual(active_date_range, ("2025-09-09", "2026-01-21"))
+        self.assertGreaterEqual(observed_student_count, 11)
+        self.assertGreaterEqual(longest_rating_history, 3)
+        self.assertEqual(blob_columns, set())
+        self.assertGreaterEqual(len(document_files), 3)
+
+    def test_seed_test_data_requires_reset_for_existing_data(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            first_result = seed_test_data(database_path)
+
+            with self.assertRaises(SeedDataError):
+                seed_test_data(database_path)
+
+            second_result = seed_test_data(database_path, reset=True)
+
+        self.assertEqual(first_result.student_count, second_result.student_count)
+        self.assertEqual(first_result.document_count, second_result.document_count)
 
     def test_seed_data_is_written_to_sqlite_without_id_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

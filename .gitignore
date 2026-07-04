@@ -1,6 +1,7 @@
 # Runtime database
 data/*.sqlite
 data/*.db
+data/documents/
 
 output/
 __pycache__/

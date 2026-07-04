@@ -302,6 +302,9 @@ Registrierte Python-Spike-Komponenten:
 - `ObservationRepositoryError`
 - `create_sqlite_seed_database(path)`
 - `build_workbook_data_from_sqlite(path)`
+- `SeedDataError`
+- `SeedResult`
+- `seed_test_data(database_path, reset)`
 
 Regel: `create_sqlite_seed_database(path)` ist ein expliziter Seed-/Test-/Legacy-Projektionspfad. Der produktive PySide-App-Start nutzt diesen Pfad nicht, damit keine Demo-Schueler erzeugt oder Nutzerdaten ueberschrieben werden.
 
@@ -350,6 +353,7 @@ Registrierte Stammdaten-Repository-Methoden:
 Registrierte Spike-Skripte:
 
 - `scripts/create_sqlite_spike.py`
+- `scripts/seed_test_data.py`
 
 ## Application Command Layer
 
@@ -468,6 +472,9 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.add_student_document(student_id, source_path, document_type, title, note, observation_id)`
 - `StudentDesktopAdapter.remove_document(document_id)`
 - `StudentDesktopAdapter.get_report_preview_for_student(student_id)`
+- `StudentDesktopAdapter._report_development_line(competency)`
+- `StudentDesktopAdapter._report_development_label(rating_history)`
+- `StudentDesktopAdapter._is_monotonic(scores, increasing)`
 - `StudentDesktopAdapter.save_competency_confirmation(student_id, competency_id, confirmed_rating, note)`
 - `StudentProfileScreen.DEFAULT_OBSERVATION_LIMIT`
 - `StudentProfileScreen.apply_observation_filters()`
@@ -497,6 +504,7 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen._observation_attachments_block(observation)`
 - `StudentProfileScreen.set_documentation_statuses(statuses)`
 - `StudentProfileScreen._documentation_status_card()`
+- `StudentProfileScreen._toggle_documentation_status_details(details_container, details_button)`
 - `StudentProfileScreen._empty_documentation_status_card()`
 - `StudentProfileScreen._missing_competencies_block(missing_competencies)`
 - `StudentProfileScreen._toggle_missing_competencies(details_container, details_button, count)`
@@ -528,9 +536,11 @@ Registrierte Python-Klassen und Funktionen:
 - `CurriculumCatalogEntry.competency_display_name`
 - `CurriculumCatalogEntry.competency_detail_label`
 - `StudentListItem`
+- `StudentListItem.documentation_status`
 - `StudentDetailViewModel`
 - `GroupSummaryViewModel`
 - `StudentReportCompetencyViewModel`
+- `StudentReportDevelopmentViewModel`
 - `StudentReportEvidenceViewModel`
 - `StudentReportSubjectSectionViewModel`
 - `StudentReportPreviewViewModel`
@@ -581,6 +591,13 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentCompetencyStatusViewModel.confirmation_meta_label`
 - `StudentCompetencySubjectGroup`
 - `StudentCompetencySubjectGroup.missing_competencies`
+- `StudentDocumentationSummaryViewModel`
+- `StudentDocumentationSummaryViewModel.list_label`
+- `StudentDocumentationSummaryViewModel.profile_summary_label`
+- `StudentDocumentationSummaryViewModel.weak_subjects_label`
+- `documentation_summary_from_subjects(statuses)`
+- `empty_documentation_summary()`
+- `REPORT_NO_OBSERVATIONS_MESSAGE`
 - `StudentDocumentationSubjectStatus`
 - `StudentDocumentationSubjectStatus.progress_label`
 - `StudentDocumentationSubjectStatus.missing_count_label`

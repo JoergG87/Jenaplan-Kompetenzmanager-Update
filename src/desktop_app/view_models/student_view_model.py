@@ -2,8 +2,103 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
+
+
+@dataclass(frozen=True)
+class StudentDocumentationSummaryViewModel:
+    """Compact documentation progress for student lists and profile headers."""
+
+    documented_learning_area_count: int
+    total_learning_area_count: int
+    status_label: str
+    weak_subject_names: tuple[str, ...] = ()
+
+    @property
+    def list_label(self) -> str:
+        """Return a compact label for student list rows."""
+        if self.total_learning_area_count == 0:
+            return "keine Katalogdaten"
+        return (
+            f"{self.documented_learning_area_count}/"
+            f"{self.total_learning_area_count} Bereiche · {self.status_label}"
+        )
+
+    @property
+    def profile_summary_label(self) -> str:
+        """Return the profile summary label."""
+        if self.total_learning_area_count == 0:
+            return "Noch kein Kompetenzkatalog verfügbar."
+        return (
+            f"{self.documented_learning_area_count}/"
+            f"{self.total_learning_area_count} Lernbereiche dokumentiert"
+        )
+
+    @property
+    def weak_subjects_label(self) -> str:
+        """Return up to three subjects that still need documentation."""
+        if not self.weak_subject_names:
+            return ""
+        return "Noch wenig dokumentiert: " + ", ".join(self.weak_subject_names[:3])
+
+
+def empty_documentation_summary() -> StudentDocumentationSummaryViewModel:
+    """Return an empty documentation summary."""
+    return StudentDocumentationSummaryViewModel(0, 0, "keine Dokumentation")
+
+
+def documentation_summary_from_subjects(
+    statuses: tuple[object, ...],
+) -> StudentDocumentationSummaryViewModel:
+    """Derive a compact documentation summary from per-subject statuses."""
+    total = sum(getattr(status, "total_count", 0) for status in statuses)
+    documented = sum(getattr(status, "documented_count", 0) for status in statuses)
+    if total <= 0:
+        return empty_documentation_summary()
+    weak_subjects = tuple(
+        getattr(status, "subject_display_name", "")
+        for status in sorted(
+            (
+                status
+                for status in statuses
+                if getattr(status, "documented_count", 0)
+                < getattr(status, "total_count", 0)
+            ),
+            key=lambda status: (
+                _documentation_ratio(status),
+                getattr(status, "sort_order", 0),
+                getattr(status, "subject_display_name", ""),
+            ),
+        )
+        if getattr(status, "subject_display_name", "")
+    )
+    return StudentDocumentationSummaryViewModel(
+        documented,
+        total,
+        _documentation_status_label(documented, total),
+        weak_subjects[:3],
+    )
+
+
+def _documentation_ratio(status: object) -> float:
+    total = getattr(status, "total_count", 0)
+    if total <= 0:
+        return 0.0
+    return getattr(status, "documented_count", 0) / total
+
+
+def _documentation_status_label(documented: int, total: int) -> str:
+    if total <= 0 or documented <= 0:
+        return "keine Dokumentation"
+    if documented >= total:
+        return "vollständig"
+    ratio = documented / total
+    if ratio < 0.34:
+        return "wenig dokumentiert"
+    if ratio < 0.75:
+        return "teilweise dokumentiert"
+    return "gut dokumentiert"
 
 
 @dataclass(frozen=True)
@@ -19,6 +114,9 @@ class StudentListItem:
     course_name: str
     course_color_name: str = ""
     course_color_hex: str = ""
+    documentation_status: StudentDocumentationSummaryViewModel = field(
+        default_factory=empty_documentation_summary
+    )
 
     @property
     def display_name(self) -> str:
@@ -128,6 +226,8 @@ PROFILE_SECTION_PLACEHOLDERS = {
     "documents_hint": "Dokumente werden schülerzentriert verwaltet.",
 }
 
+REPORT_NO_OBSERVATIONS_MESSAGE = "Noch keine Beobachtungen dokumentiert."
+
 
 @dataclass(frozen=True)
 class GroupSummaryViewModel:
@@ -152,6 +252,21 @@ class StudentReportCompetencyViewModel:
     def display_label(self) -> str:
         """Return a compact report-preview line."""
         return f"{self.competency_label} · {self.rating_source}: {self.rating}"
+
+
+@dataclass(frozen=True)
+class StudentReportDevelopmentViewModel:
+    """Report-preview development line derived from observation history."""
+
+    competency_id: str
+    competency_label: str
+    development_label: str
+    rating_history: tuple[str, ...]
+
+    @property
+    def display_label(self) -> str:
+        """Return a readable development line."""
+        return f"{self.competency_label} · {self.development_label}"
 
 
 @dataclass(frozen=True)
@@ -182,7 +297,7 @@ class StudentReportSubjectSectionViewModel:
     subject_id: str
     subject_display_name: str
     strengths: tuple[StudentReportCompetencyViewModel, ...]
-    development: tuple[StudentReportCompetencyViewModel, ...]
+    development: tuple[StudentReportDevelopmentViewModel, ...]
     support_needs: tuple[StudentReportCompetencyViewModel, ...]
     example_observations: tuple[StudentReportEvidenceViewModel, ...]
 
@@ -232,7 +347,7 @@ def format_student_report_preview_text(
         "",
     ])
     if report_preview is None or not report_preview.has_content:
-        lines.append("Noch keine Berichtsdaten vorhanden.")
+        lines.append(REPORT_NO_OBSERVATIONS_MESSAGE)
         return "\n".join(lines).rstrip() + "\n"
     for section in report_preview.subject_sections:
         lines.extend(_format_report_subject_section(section))
@@ -262,7 +377,7 @@ def _format_report_subject_section(
 
 
 def _format_report_competencies(
-    competencies: tuple[StudentReportCompetencyViewModel, ...],
+    competencies: tuple[object, ...],
 ) -> list[str]:
     if not competencies:
         return ["- Keine Einträge."]

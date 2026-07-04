@@ -465,6 +465,48 @@ Automatisch profitierende Ansichten:
 
 Regel: Der Seed laeuft nur bei leerem SQLite-Kompetenzkatalog. Bestehende Kompetenzen werden nicht ueberschrieben. Kompetenzstaende werden weiterhin aus Beobachtungen abgeleitet und nicht manuell doppelt gespeichert.
 
+## Testdaten fuer Laura-Pilottest erzeugen
+
+Start: Fuer einen Pilottest soll die lokale SQLite-Datenbank mit kuenstlichen Daten befuellt werden.
+
+Schreibprozess: Explizites CLI-Script `scripts/seed_test_data.py`.
+
+Freigegebener Testpfad:
+
+```text
+python3 scripts/seed_test_data.py
+```
+
+Optionaler Reset-Pfad:
+
+```text
+python3 scripts/seed_test_data.py --reset
+```
+
+Betroffene Datenquellen:
+
+- SQLite `data/kompetenzmanager.sqlite`
+- Dateisystem `data/documents/<student_id>/`
+
+Erforderliche IDs:
+
+- kuenstliche `student_id`
+- bestehende oder kuenstliche `group_id`, `course_id`, `course_group_id`
+- kuenstliche `observation_id`
+- kuenstliche `document_id`
+
+Automatisch profitierende Ansichten:
+
+- Stammgruppenuebersicht
+- Kursuebersicht
+- Schuelerprofil
+- Beobachtungsdialog
+- Berichtsvorbereitung
+- Dokumentationsstand
+- Dokumente & Medien
+
+Regel: Der produktive App-Start erzeugt keine Demo-Schueler. Testdaten werden nur durch das explizite Script erzeugt. Ohne `--reset` bricht das Script ab, wenn bereits Schueler, Beobachtungen oder Dokumente vorhanden sind. Mit `--reset` wird bewusst ein frisches lokales Testsystem erzeugt. Der Pilottest-Seed bildet ein Halbjahr von September bis Januar ab und enthaelt unterschiedliche Beobachtungsdichten, Kompetenzverlaeufe, bestaetigte Kompetenzstaende, Abweichungen zwischen Vorschlag und Bestaetigung sowie Demo-Dokumente. Es werden keine echten Kindernamen und keine echten Dokumente verwendet; Demo-Dateien sind harmlose Platzhalter und werden nicht versioniert.
+
 ## Kompetenz aendern
 
 Start: Name, Beschreibung, Hierarchie oder Status einer bestehenden Kompetenz wird angepasst.

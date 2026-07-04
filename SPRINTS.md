@@ -6,6 +6,47 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - Berichtsvorschau und Halbjahres-Testdaten 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Berichtsentwicklung wird aus chronologischen aktiven Beobachtungen abgeleitet
+- [x] Einzelbeobachtung, stabile Entwicklung, positive Entwicklung, Rueckschritt und wechselnde Beobachtungslage werden verstaendlich formuliert
+- [x] Soft-geloeschte Beobachtungen fliessen nicht in Berichtsentwicklung ein
+- [x] Leere Berichtsvorschau zeigt `Noch keine Beobachtungen dokumentiert.`
+- [x] `scripts/seed_test_data.py` erzeugt halbjaehrliche Pilottestdaten von September bis Januar
+- [x] Testdaten enthalten mehrere Verlaufsmuster, bestaetigte Kompetenzstaende, Abweichungen, Dokumente und unterschiedlich dichte Dokumentationsstaende
+- [x] Keine KI-Textgenerierung, keine Schemaaenderung, kein Excel/VBA und kein Commit umgesetzt
+
+## Sprint - Dokumentationsstatus kompakt in Schuelerlisten 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Schuelerlisten zeigen je Schueler eine kompakte Dokumentationssummary
+- [x] Schuelerlisten zeigen keine vollstaendige Fachaufschluesselung
+- [x] Schuelerprofil zeigt den Dokumentationsstand standardmaessig kompakt
+- [x] Fachdetails im Dokumentationsstand sind per `Details anzeigen` aufklappbar
+- [x] Dokumentierte Lernbereiche zaehlen aktive Beobachtungen und bestaetigte Kompetenzstaende
+- [x] Soft-geloeschte Beobachtungen zaehlen nicht
+- [x] Keine neue Persistenz, keine Schemaaenderung, kein Excel/VBA und kein Commit umgesetzt
+
+## Sprint - Laura-Pilottestdaten fuer SQLite 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] `scripts/seed_test_data.py` fuer die aktuelle SQLite-Datenbank ergaenzt
+- [x] Standardlauf bricht bei vorhandenen Schuelern, Beobachtungen oder Dokumenten ab
+- [x] `--reset` erzeugt bewusst ein frisches Testsystem
+- [x] Testdaten decken Stammgruppen, Kurse, Kursverbuende, Schuelerlisten-Sortierung, Beobachtungen, Kompetenzvorschlaege, Bestaetigungen, Berichtsvorbereitung, Dokumentationsstand und Dokumente & Medien ab
+- [x] Demo-Dateien werden als harmlose Platzhalter unter `data/documents/` erzeugt
+- [x] Keine echten Namen, keine echten Dokumente, kein Excel/VBA und kein Commit umgesetzt
+
 ## Sprint - Dokumente & Medien MVP 🔄
 
 - [x] Status: Umgesetzt, nicht committed

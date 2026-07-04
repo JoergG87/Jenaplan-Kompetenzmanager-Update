@@ -82,13 +82,16 @@ from src.desktop_app.view_models.observation_view_model import (
 from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
     PROFILE_SECTION_PLACEHOLDERS,
+    REPORT_NO_OBSERVATIONS_MESSAGE,
     StudentDetailViewModel,
     StudentDocumentViewModel,
+    StudentReportDevelopmentViewModel,
     StudentListItem,
     StudentReportCompetencyViewModel,
     StudentReportEvidenceViewModel,
     StudentReportPreviewViewModel,
     StudentReportSubjectSectionViewModel,
+    documentation_summary_from_subjects,
     filter_student_list,
     format_student_report_preview_text,
     sort_student_list,
@@ -845,7 +848,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(deutsch_section.subject_display_name, "Deutsch")
         self.assertEqual(deutsch_section.strengths[0].rating, "+")
         self.assertEqual(deutsch_section.strengths[0].rating_source, "Bestätigt")
-        self.assertEqual(deutsch_section.development, ())
+        self.assertEqual(
+            deutsch_section.development[0].development_label,
+            "Einzelbeobachtung vorhanden, noch kein Verlauf ableitbar.",
+        )
 
     def test_report_preview_uses_calculated_proposal_without_confirmation(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
@@ -868,9 +874,140 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         deutsch_section = preview.subject_sections[0]
 
-        self.assertEqual(deutsch_section.development[0].rating, "-")
-        self.assertEqual(deutsch_section.development[0].rating_source, "Vorschlag")
+        self.assertEqual(
+            deutsch_section.development[0].development_label,
+            "Einzelbeobachtung vorhanden, noch kein Verlauf ableitbar.",
+        )
         self.assertEqual(deutsch_section.strengths, ())
+
+    def test_report_preview_shows_positive_development_from_history(self) -> None:
+        for date_text, rating in (
+            ("2026-09-12", "--"),
+            ("2026-11-08", "-"),
+            ("2027-01-10", "+"),
+        ):
+            self.adapter.save_observation(self._sample_observation_draft(
+                date_text=date_text,
+                competency_ratings=(
+                    self._sample_observation_rating(
+                        "CMP-000001",
+                        "deutsch",
+                        "Deutsch",
+                        "Mit Texten und Medien umgehen",
+                        "Lesen und Verstehen",
+                        "Texte lesen und zentrale Informationen entnehmen",
+                        rating,
+                    ),
+                ),
+            ))
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        development = preview.subject_sections[0].development[0]
+
+        self.assertEqual(
+            development.development_label,
+            "Entwicklung: -- → + · positive Entwicklung erkennbar",
+        )
+        self.assertEqual(development.rating_history, ("--", "-", "+"))
+
+    def test_report_preview_shows_stable_development_from_history(self) -> None:
+        for date_text in ("2026-09-12", "2027-01-10"):
+            self.adapter.save_observation(self._sample_observation_draft(
+                date_text=date_text,
+                competency_ratings=(
+                    self._sample_observation_rating(
+                        "CMP-000001",
+                        "deutsch",
+                        "Deutsch",
+                        "Mit Texten und Medien umgehen",
+                        "Lesen und Verstehen",
+                        "Texte lesen und zentrale Informationen entnehmen",
+                        "+",
+                    ),
+                ),
+            ))
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(
+            preview.subject_sections[0].development[0].development_label,
+            "Stabil beobachtet: +",
+        )
+
+    def test_report_preview_marks_changing_development_from_history(self) -> None:
+        for date_text, rating in (
+            ("2026-09-12", "+"),
+            ("2026-11-08", "-"),
+            ("2027-01-10", "+"),
+        ):
+            self.adapter.save_observation(self._sample_observation_draft(
+                date_text=date_text,
+                competency_ratings=(
+                    self._sample_observation_rating(
+                        "CMP-000001",
+                        "deutsch",
+                        "Deutsch",
+                        "Mit Texten und Medien umgehen",
+                        "Lesen und Verstehen",
+                        "Texte lesen und zentrale Informationen entnehmen",
+                        rating,
+                    ),
+                ),
+            ))
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(
+            preview.subject_sections[0].development[0].development_label,
+            "Wechselnde Beobachtungslage, weitere Beobachtungen sinnvoll. "
+            "Verlauf: + → - → +",
+        )
+
+    def test_report_preview_development_ignores_soft_deleted_observations(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-09-12",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+            ),
+        ))
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2027-01-10",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "--",
+                ),
+            ),
+        ))
+        self.adapter.delete_observation("OBS-000002")
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(
+            preview.subject_sections[0].development[0].development_label,
+            "Einzelbeobachtung vorhanden, noch kein Verlauf ableitbar.",
+        )
 
     def test_report_preview_shows_active_observations_as_evidence(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
@@ -937,7 +1074,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Erstellt am: 2026-07-04", report_text)
         self.assertIn("## Deutsch", report_text)
         self.assertIn("- Mit Texten und Medien umgehen · Bestätigt: +", report_text)
-        self.assertIn("- Wörter und Sätze · Vorschlag: -", report_text)
+        self.assertIn(
+            "- Wörter und Sätze · Einzelbeobachtung vorhanden, noch kein Verlauf ableitbar.",
+            report_text,
+        )
         self.assertIn("Beispielbeobachtungen", report_text)
         self.assertIn("- 2026-07-03 · Leseübung · Liest einen bekannten Text.", report_text)
         self.assertIn("  - + Mit Texten und Medien umgehen", report_text)
@@ -969,9 +1109,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
         self.assertNotIn("Diese Beobachtung wird gelöscht.", report_text)
-        self.assertIn("Noch keine Berichtsdaten vorhanden.", report_text)
+        self.assertIn(REPORT_NO_OBSERVATIONS_MESSAGE, report_text)
 
-    def test_documentation_status_starts_with_zero_documented_competencies(self) -> None:
+    def test_documentation_status_starts_with_zero_documented_learning_areas(self) -> None:
         statuses = self.adapter.list_documentation_status_for_student(
             f"{STUDENT_ID_PREFIX}-000001"
         )
@@ -981,7 +1121,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(all(status.documented_count == 0 for status in statuses))
         self.assertTrue(
             all(
-                len(status.missing_competencies) == status.total_count
+                len(status.missing_competencies) >= status.total_count
                 for status in statuses
             )
         )
@@ -989,7 +1129,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             any(status.progress_label.startswith("Deutsch: 0 / ") for status in statuses)
         )
 
-    def test_documentation_status_counts_active_observation_ratings(self) -> None:
+    def test_documentation_status_counts_active_observation_learning_areas(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
             competency_ratings=(
                 self._sample_observation_rating(
@@ -1022,7 +1162,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(deutsch_status.documented_count, 2)
         self.assertEqual(
-            len(deutsch_status.missing_competencies),
+            deutsch_status.total_count - deutsch_status.documented_count,
             deutsch_status.total_count - 2,
         )
 
@@ -1070,6 +1210,21 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "CMP-000001",
             {competency.competency_id for competency in deutsch_status.missing_competencies},
         )
+
+    def test_documentation_summary_labels_compact_list_progress(self) -> None:
+        summary = documentation_summary_from_subjects(
+            (
+                StudentDocumentationSubjectStatus("deutsch", "Deutsch", 2, 3, (), 0),
+                StudentDocumentationSubjectStatus("epu", "EPU", 0, 2, (), 2),
+            )
+        )
+
+        self.assertEqual(summary.list_label, "2/5 Bereiche · teilweise dokumentiert")
+        self.assertEqual(
+            summary.profile_summary_label,
+            "2/5 Lernbereiche dokumentiert",
+        )
+        self.assertEqual(summary.weak_subjects_label, "Noch wenig dokumentiert: EPU, Deutsch")
 
     def test_new_app_database_starts_without_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1191,6 +1346,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
             f"{COURSE_ID_PREFIX}-000003",
         })
         self.assertIn(students[0].course_name, {"Kurs 1", "Kurs 2", "Kurs 3"})
+        self.assertIn("Bereiche", students[0].documentation_status.list_label)
+        self.assertNotIn("Deutsch:", students[0].documentation_status.list_label)
 
     def test_student_list_sort_key_uses_course_order_then_name_then_unknown_course(self) -> None:
         students = (
@@ -1621,7 +1778,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.screens.students_screen"
         ))
 
-        self.assertIn('self.table.setHorizontalHeaderLabels(("Name", "Kurs"))', source)
+        self.assertIn(
+            'self.table.setHorizontalHeaderLabels(("Name", "Kurs", "Dokumentation"))',
+            source,
+        )
         self.assertIn(
             "self.table.setCellWidget(row_index, 1, self._course_cell(student))",
             source,
@@ -2809,7 +2969,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
                                 "+ erreicht",
                             ),
                         ),
-                        (),
+                        (
+                            StudentReportDevelopmentViewModel(
+                                "CMP-000001",
+                                "Mit Texten und Medien umgehen",
+                                "Stabil beobachtet: +",
+                                ("+", "+"),
+                            ),
+                        ),
                         (),
                         (
                             StudentReportEvidenceViewModel(
@@ -2834,6 +3001,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Unterstützungsbedarf", label_texts)
         self.assertIn("Beispielbeobachtungen", label_texts)
         self.assertIn("Mit Texten und Medien umgehen · Bestätigt: +", label_texts)
+        self.assertIn("Mit Texten und Medien umgehen · Stabil beobachtet: +", label_texts)
         self.assertIn("2026-07-03 · Leseübung · Liest einen bekannten Text.", label_texts)
         self.assertIn("+ Mit Texten und Medien umgehen", label_texts)
         self.assertIsNotNone(app)
@@ -2873,10 +3041,61 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
+        details_container = screen.findChild(QWidget, "DocumentationStatusDetails")
+        details_button = screen.findChild(
+            QPushButton,
+            "DocumentationStatusDetailsButton",
+        )
 
         self.assertIn("Dokumentationsstand", label_texts)
+        self.assertIn("8/20 Lernbereiche dokumentiert", label_texts)
+        self.assertIn("teilweise dokumentiert", label_texts)
+        self.assertIn("Noch wenig dokumentiert: EPU, Deutsch", label_texts)
+        self.assertIsNotNone(details_container)
+        self.assertTrue(details_container.isHidden())
+        self.assertIsNotNone(details_button)
+        details_button.click()
+        self.assertFalse(details_container.isHidden())
         self.assertIn("Deutsch: 8 / 14 dokumentiert", label_texts)
         self.assertIn("EPU: 0 / 6 dokumentiert", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_students_screen_shows_compact_documentation_column(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = students_screen.StudentsScreen()
+        screen.set_students(
+            (
+                StudentListItem(
+                    "STU-000001",
+                    "Anna",
+                    "Muster",
+                    "GRP-1",
+                    "Gruppe",
+                    "CRS-1",
+                    "Kurs 1",
+                    documentation_status=documentation_summary_from_subjects(
+                        (
+                            StudentDocumentationSubjectStatus(
+                                "deutsch",
+                                "Deutsch",
+                                1,
+                                2,
+                                (),
+                                0,
+                            ),
+                        )
+                    ),
+                ),
+            )
+        )
+
+        self.assertEqual(screen.table.columnCount(), 3)
+        self.assertEqual(screen.table.horizontalHeaderItem(2).text(), "Dokumentation")
+        self.assertEqual(
+            screen.table.item(0, 2).text(),
+            "1/2 Bereiche · teilweise dokumentiert",
+        )
+        self.assertNotIn("Deutsch:", screen.table.item(0, 2).text())
         self.assertIsNotNone(app)
 
     def test_student_profile_missing_competencies_can_be_expanded(self) -> None:
@@ -3268,12 +3487,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
                         ),
                     ),
                     (
-                        StudentReportCompetencyViewModel(
+                        StudentReportDevelopmentViewModel(
                             "CMP-000002",
                             "Wörter und Sätze",
-                            "-",
-                            "Vorschlag",
-                            "- in Entwicklung",
+                            "Einzelbeobachtung vorhanden, noch kein Verlauf ableitbar.",
+                            ("-",),
                         ),
                     ),
                     (),

@@ -91,6 +91,36 @@ und faellt sonst auf `python3` zurueck.
 
 Hinweis: Das ist ein Entwickler-/Prototyp-Launcher. Es ist noch kein Installer und kein fertiges App-Paket. Python und die Abhaengigkeiten muessen weiterhin eingerichtet sein.
 
+## Testdaten fuer Laura-Pilottest
+
+Die aktuelle lokale SQLite-Datenbank kann fuer den Laura-Pilottest mit kuenstlichen Testdaten befuellt werden:
+
+```bash
+python3 scripts/seed_test_data.py
+```
+
+Das Script schreibt standardmaessig nach `data/kompetenzmanager.sqlite`. Wenn dort bereits Schueler, Beobachtungen oder Dokumente liegen, bricht es ohne Aenderung ab.
+
+Ein bewusst frisches Testsystem wird so erzeugt:
+
+```bash
+python3 scripts/seed_test_data.py --reset
+```
+
+`--reset` loescht die lokale Testdatenbank und die Demo-Dateien unter `data/documents/` kontrolliert neu. Es werden nur kuenstliche Namen und harmlose Platzhalterdateien erzeugt.
+
+Die Testdaten bilden ein Halbjahr von September bis Januar ab. Sie enthalten unterschiedlich dichte Beobachtungen, positive und stabile Kompetenzverlaeufe, wechselnde Beobachtungslagen, Unterstuetzungsbedarf, bestaetigte Kompetenzstaende und bewusste Abweichungen zwischen Vorschlag und Lehrkraftentscheidung.
+
+Pilottest-Checkliste:
+
+- Stammgruppen, Kurse und Kursverbuende
+- Schuelerlisten-Sortierung nach Kurs und Name
+- Einzel- und Multi-Fach-Beobachtungen
+- Kompetenzvorschlaege, Verlauf und bestaetigte Staende
+- Berichtsvorbereitung mit Staerken, Entwicklung, Unterstuetzungsbedarf und Belegen
+- Dokumentationsstand und offene Kompetenzen
+- Dokumente & Medien am Schueler und an Beobachtungen
+
 ## Legacy-/Export-Build
 
 Der Workbook-Build bleibt als Altstand und moegliche Exportbasis erhalten. Er ist nicht mehr der Startweg der Hauptanwendung.

@@ -1,0 +1,425 @@
+"""Seed realistic local test data for the PySide pilot database."""
+
+from __future__ import annotations
+
+import argparse
+import shutil
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.core.constants import (  # noqa: E402
+    COURSE_ID_PREFIX,
+    GROUP_ID_PREFIX,
+    STUDENT_ID_PREFIX,
+)
+from src.core.observation import (  # noqa: E402
+    ObservationCompetencyRatingRecord,
+    ObservationService,
+    ObservationValidator,
+)
+from src.core.sqlite_store import (  # noqa: E402
+    SQLITE_SPIKE_PATH,
+    DocumentRecord,
+    MasterDataCourseGroupRecord,
+    MasterDataCourseRecord,
+    MasterDataGroupRecord,
+    SQLiteCompetencyRepository,
+    SQLiteDatabase,
+    SQLiteDocumentRepository,
+    SQLiteMasterDataRepository,
+    SQLiteObservationRepository,
+    SQLiteStudentCompetencyConfirmationRepository,
+    SQLiteStudentRepository,
+    StudentCompetencyConfirmationRecord,
+)
+from src.core.student import StudentRecord  # noqa: E402
+from src.desktop_app.adapters.curriculum_desktop_adapter import (  # noqa: E402
+    CurriculumDesktopAdapter,
+)
+
+
+class SeedDataError(RuntimeError):
+    """Raised when test data cannot be seeded safely."""
+
+
+@dataclass(frozen=True)
+class SeedResult:
+    """Summary of seeded records."""
+
+    database_path: Path
+    student_count: int
+    observation_count: int
+    document_count: int
+
+
+COURSES = (
+    ("Kurs 1", "Blau", "#2563EB"),
+    ("Kurs 2", "Gruen", "#16A34A"),
+    ("Kurs 3", "Orange", "#F97316"),
+)
+
+GROUPS = (
+    ("Grashuepfer", 0),
+    ("Libellen", 1),
+)
+
+STUDENTS = (
+    ("Aster", 0, 0),
+    ("Birk", 0, 1),
+    ("Corda", 0, 2),
+    ("Daru", 0, 0),
+    ("Elinor", 0, 1),
+    ("Feno", 0, 2),
+    ("Gala", 1, 0),
+    ("Haru", 1, 1),
+    ("Ivo", 1, 2),
+    ("Jona", 1, 0),
+    ("Kimo", 1, 1),
+    ("Liora", 1, 2),
+)
+
+
+def seed_test_data(
+    database_path: Path = SQLITE_SPIKE_PATH,
+    *,
+    reset: bool = False,
+) -> SeedResult:
+    """Seed the requested database with deterministic Laura-pilot test data."""
+    database_path = Path(database_path)
+    documents_root = database_path.parent / "documents"
+    if reset:
+        _reset_runtime_data(database_path, documents_root)
+    database = SQLiteDatabase(database_path)
+    _initialize_catalog(database)
+    _guard_existing_data(database, reset=reset)
+    _seed_master_data(database)
+    students = _seed_students(database)
+    observation_ids = _seed_observations(database, students)
+    _seed_confirmations(database)
+    document_count = _seed_documents(database, documents_root, observation_ids)
+    return SeedResult(
+        database_path=database_path,
+        student_count=len(students),
+        observation_count=len(SQLiteObservationRepository(database).list_observations()),
+        document_count=document_count,
+    )
+
+
+def _reset_runtime_data(database_path: Path, documents_root: Path) -> None:
+    database_path.unlink(missing_ok=True)
+    if documents_root.exists():
+        shutil.rmtree(documents_root)
+
+
+def _initialize_catalog(database: SQLiteDatabase) -> None:
+    database.initialize_schema()
+    SQLiteCompetencyRepository(database).ensure_catalog_defaults(
+        CurriculumDesktopAdapter().list_entries()
+    )
+
+
+def _guard_existing_data(database: SQLiteDatabase, *, reset: bool) -> None:
+    if reset:
+        return
+    student_count = len(SQLiteStudentRepository(database).list_students())
+    observation_count = len(SQLiteObservationRepository(database).list_observations())
+    document_count = sum(
+        1
+        for student in SQLiteStudentRepository(database).list_students()
+        for _document in SQLiteDocumentRepository(database).list_documents_for_student(
+            student.student_id
+        )
+    )
+    if any((student_count, observation_count, document_count)):
+        raise SeedDataError(
+            "Die Datenbank enthaelt bereits Schueler, Beobachtungen oder Dokumente. "
+            "Nutze --reset fuer ein bewusstes frisches Testsystem."
+        )
+
+
+def _seed_master_data(database: SQLiteDatabase) -> None:
+    repository = SQLiteMasterDataRepository(database)
+    for index, (group_name, sort_order) in enumerate(GROUPS, start=1):
+        repository.upsert_student_group(
+            MasterDataGroupRecord(
+                f"{GROUP_ID_PREFIX}-{index:06d}",
+                group_name,
+                True,
+                sort_order,
+            )
+        )
+    for index, (course_name, color_name, color_hex) in enumerate(COURSES, start=1):
+        repository.upsert_course(
+            MasterDataCourseRecord(
+                f"{COURSE_ID_PREFIX}-{index:06d}",
+                course_name,
+                color_name,
+                color_hex,
+                True,
+                index - 1,
+            )
+        )
+    repository.update_course_group(
+        MasterDataCourseGroupRecord(
+            "course-group-default",
+            "Kursverbund Grashuepfer",
+            (f"{GROUP_ID_PREFIX}-000001",),
+            tuple(f"{COURSE_ID_PREFIX}-{index:06d}" for index in range(1, 4)),
+            True,
+            0,
+        )
+    )
+    repository.update_course_group(
+        MasterDataCourseGroupRecord(
+            "CRG-000001",
+            "Kursverbund Libellen",
+            (f"{GROUP_ID_PREFIX}-000002",),
+            tuple(f"{COURSE_ID_PREFIX}-{index:06d}" for index in range(1, 4)),
+            True,
+            1,
+        )
+    )
+
+
+def _seed_students(database: SQLiteDatabase) -> tuple[StudentRecord, ...]:
+    repository = SQLiteStudentRepository(database)
+    students: list[StudentRecord] = []
+    timestamp = "2026-07-04T09:00:00+00:00"
+    for index, (last_name, group_index, course_index) in enumerate(STUDENTS, start=1):
+        student = StudentRecord(
+            f"{STUDENT_ID_PREFIX}-{index:06d}",
+            "Testkind",
+            last_name,
+            f"{GROUP_ID_PREFIX}-{group_index + 1:06d}",
+            f"{COURSE_ID_PREFIX}-{course_index + 1:06d}",
+            "Kuenstlicher Datensatz fuer Laura-Pilottest.",
+            True,
+            timestamp,
+            timestamp,
+            None,
+        )
+        repository.create_student(student)
+        students.append(student)
+    return tuple(students)
+
+
+def _seed_observations(
+    database: SQLiteDatabase,
+    students: tuple[StudentRecord, ...],
+) -> tuple[str, ...]:
+    repository = SQLiteObservationRepository(database)
+    service = ObservationService(
+        repository,
+        ObservationValidator(),
+        (student.student_id for student in students),
+    )
+    created_ids: list[str] = []
+    observation_specs = (
+        (0, "2025-09-09", "deutsch", "Leseuebung", "Liest kurze Texte noch stockend und braucht bei unbekannten Woertern Unterstuetzung.", (("CMP-000001", "--"),)),
+        (0, "2025-10-21", "deutsch", "Leseuebung", "Liest zunehmend fluessiger und markiert zentrale Woerter selbststaendig.", (("CMP-000001", "-"),)),
+        (0, "2026-01-15", "deutsch", "Gespraech ueber Text", "Erfasst Kernaussagen und begruendet eigene Leseeindruecke nachvollziehbar.", (("CMP-000001", "+"),)),
+        (0, "2025-11-12", "deutsch", "Schreibprobe", "Plant den eigenen Text und ueberarbeitet nach Rueckmeldung sorgfaeltig.", (("CMP-000003", "+"), ("CMP-000005", "-"))),
+        (0, "2026-01-20", "fachuebergreifend", "EPU-Praesentation", "Praesentiert Naturbeobachtungen frei und bindet die Gruppe aufmerksam ein.", (("CMP-000014", "+"), ("CMP-000002", "+"), ("CMP-000035", "+"))),
+        (1, "2025-09-16", "mathematik", "Kopfrechnen", "Nutzt Zahlzerlegungen sicher und erklaert kurze Rechenwege.", (("CMP-000006", "+"),)),
+        (1, "2025-11-18", "mathematik", "Zahlenraum", "Rechnet im Zahlenraum sicher und kontrolliert Ergebnisse selbststaendig.", (("CMP-000006", "+"),)),
+        (1, "2026-01-12", "mathematik", "Lernzielkontrolle", "Loest Aufgaben sicher und begruendet Rechenwege nachvollziehbar.", (("CMP-000006", "++"), ("CMP-000010", "++"))),
+        (1, "2025-12-03", "deutsch", "Vortrag", "Spricht klar, braucht aber noch Impulse beim Aufgreifen von Rueckfragen.", (("CMP-000002", "+"),)),
+        (2, "2025-09-23", "epu", "Experiment", "Beobachtet genau, benoetigt beim Erklaeren des Naturphaenomens noch Hilfen.", (("CMP-000014", "-"),)),
+        (2, "2025-11-05", "epu", "Forscherfrage", "Formuliert Vermutungen und ordnet Beobachtungen passend.", (("CMP-000014", "+"), ("CMP-000015", "+"))),
+        (2, "2026-01-09", "epu", "Plakatpraesentation", "Stellt Ergebnisse strukturiert dar und nutzt Medien sachbezogen.", (("CMP-000014", "++"), ("CMP-000015", "+"))),
+        (3, "2025-09-18", "sozialkompetenz", "Materialverantwortung", "Uebernimmt Materialdienst, braucht bei der Vollstaendigkeit noch Erinnerung.", (("CMP-000035", "-"), ("CMP-000036", "-"))),
+        (3, "2025-11-20", "sozialkompetenz", "Gruppenarbeit", "Bringt sich konstruktiv ein und klaert Zustaendigkeiten mit der Gruppe.", (("CMP-000033", "+"), ("CMP-000035", "+"))),
+        (3, "2026-01-16", "sozialkompetenz", "Gespraechsregeln", "Wartet Gespraechsregeln noch nicht immer ab, nimmt Rueckmeldungen aber an.", (("CMP-000034", "-"), ("CMP-000035", "+"))),
+        (4, "2025-09-25", "deutsch", "Einzelgespraech", "Erzaehlt strukturiert und hoert Rueckfragen aufmerksam zu.", (("CMP-000002", "+"),)),
+        (4, "2025-12-10", "deutsch", "Vortrag", "Spricht sicher vor der Gruppe und bezieht Zuhoerende ein.", (("CMP-000002", "++"),)),
+        (4, "2026-01-21", "kunst", "Bildbetrachtung", "Waehlt Farben bewusst und beschreibt die eigene Gestaltungsidee.", (("CMP-000022", "+"),)),
+        (5, "2025-09-30", "mathematik", "Sachaufgabe", "Braucht beim Herausloesen der Rechenfrage deutliche Unterstuetzung.", (("CMP-000007", "--"), ("CMP-000009", "--"))),
+        (5, "2025-11-27", "mathematik", "Sachaufgabe", "Findet mit Material einen passenden Ansatz, prueft Ergebnisse aber noch unsicher.", (("CMP-000007", "-"), ("CMP-000009", "-"))),
+        (5, "2026-01-18", "mathematik", "Lernzielkontrolle", "Unterstuetzungsbedarf bei mehrschrittigen Aufgaben bleibt sichtbar.", (("CMP-000007", "-"), ("CMP-000009", "--"))),
+        (6, "2025-10-02", "fachuebergreifend", "Projektarbeit", "Verbindet Messdaten, Notizen und Teamabsprachen in der Gruppe.", (("CMP-000007", "+"), ("CMP-000003", "+"), ("CMP-000033", "+"))),
+        (6, "2025-12-15", "fachuebergreifend", "Praesentation", "Erklaert den Arbeitsprozess nachvollziehbar und nutzt Rueckmeldungen.", (("CMP-000010", "+"), ("CMP-000002", "+"), ("CMP-000038", "+"))),
+        (7, "2025-10-07", "epu", "Praesentation", "Stellt einen Ablauf in eigenen Worten dar.", (("CMP-000012", "+"),)),
+        (8, "2025-10-09", "deutsch", "Schreibzeit", "Plant einen kurzen Text mit Anfang, Mitte und Schluss.", (("CMP-000003", "+"),)),
+        (9, "2025-09-11", "sozialkompetenz", "Gruppenarbeit", "Arbeitet engagiert mit, unterbricht aber mehrfach andere Kinder.", (("CMP-000034", "-"),)),
+        (9, "2025-10-30", "sozialkompetenz", "Konfliktloesung", "Klaert einen Konflikt nach Moderation und benennt eigene Anteile.", (("CMP-000037", "+"), ("CMP-000034", "+"))),
+        (9, "2026-01-14", "sozialkompetenz", "Gruppenarbeit", "Faellt bei hoher Aktivitaet wieder in Unterbrechungen zurueck.", (("CMP-000034", "-"), ("CMP-000037", "+"))),
+        (10, "2025-09-19", "mathematik", "Geometrie", "Beschreibt Formen sicher und nutzt Fachbegriffe zunehmend passend.", (("CMP-000008", "+"),)),
+        (10, "2026-01-13", "mathematik", "Geometrie", "Begruendet Lagebeziehungen sicher und hilft anderen beim Sortieren.", (("CMP-000008", "++"), ("CMP-000010", "+"))),
+        (11, "2025-09-26", "epu", "Forscherrunde", "Ordnet Informationen aus Medien sachbezogen.", (("CMP-000015", "+"), ("CMP-000016", "+"))),
+        (11, "2025-11-21", "musik", "Singen", "Haelt Melodie und Rhythmus zunehmend sicher.", (("CMP-000017", "+"),)),
+        (11, "2026-01-17", "sport", "Bewegungsspiel", "Bewegt sich fair im Spiel und nimmt Regeln an.", (("CMP-000026", "+"),)),
+        (2, "2025-09-05", "deutsch", "Altbeobachtung", "Diese soft-geloeschte Beobachtung darf nicht in Entwicklung oder Bericht einfliessen.", (("CMP-000001", "--"),)),
+    )
+    competencies = {
+        competency.competency_id: competency
+        for competency in SQLiteCompetencyRepository(database).list_competencies()
+    }
+    for spec_index, (student_index, date, subject_id, context, note, ratings) in enumerate(
+        observation_specs
+    ):
+        observation = service.create_observation(
+            student_id=students[student_index].student_id,
+            date=date,
+            subject_id=subject_id,
+            context=context,
+            note=note,
+            competency_ratings=tuple(
+                _rating_record(competencies[competency_id], rating)
+                for competency_id, rating in ratings
+            ),
+        )
+        created_ids.append(observation.observation_id)
+        if spec_index == len(observation_specs) - 1:
+            service.delete_observation(observation_id=observation.observation_id)
+    return tuple(created_ids)
+
+
+def _rating_record(competency: object, rating: str) -> ObservationCompetencyRatingRecord:
+    return ObservationCompetencyRatingRecord(
+        getattr(competency, "competency_id"),
+        getattr(competency, "subject_id"),
+        getattr(competency, "subject_name"),
+        getattr(competency, "learning_area"),
+        getattr(competency, "competency_group"),
+        getattr(competency, "description"),
+        rating,
+    )
+
+
+def _seed_confirmations(database: SQLiteDatabase) -> None:
+    repository = SQLiteStudentCompetencyConfirmationRepository(database)
+    repository.upsert_confirmation(
+        StudentCompetencyConfirmationRecord(
+            f"{STUDENT_ID_PREFIX}-000001",
+            "CMP-000001",
+            "++",
+            "2026-01-24T12:00:00+00:00",
+            "Laura-Test: bewusst hoeher bestaetigt als berechneter Vorschlag.",
+        )
+    )
+    repository.upsert_confirmation(
+        StudentCompetencyConfirmationRecord(
+            f"{STUDENT_ID_PREFIX}-000004",
+            "CMP-000035",
+            "+",
+            "2026-01-24T12:10:00+00:00",
+            "Bestaetigt fuer Pilottest.",
+        )
+    )
+    repository.upsert_confirmation(
+        StudentCompetencyConfirmationRecord(
+            f"{STUDENT_ID_PREFIX}-000006",
+            "CMP-000007",
+            "+",
+            "2026-01-24T12:20:00+00:00",
+            "Lehrkraft sieht im Alltag mehr Sicherheit als die Testbeobachtungen zeigen.",
+        )
+    )
+    repository.upsert_confirmation(
+        StudentCompetencyConfirmationRecord(
+            f"{STUDENT_ID_PREFIX}-000010",
+            "CMP-000034",
+            "-",
+            "2026-01-24T12:30:00+00:00",
+            "Wechselnde Lage bewusst vorsichtig bestaetigt.",
+        )
+    )
+
+
+def _seed_documents(
+    database: SQLiteDatabase,
+    documents_root: Path,
+    observation_ids: tuple[str, ...],
+) -> int:
+    repository = SQLiteDocumentRepository(database)
+    documents_root.mkdir(parents=True, exist_ok=True)
+    documents = (
+        (
+            "MED-000001",
+            f"{STUDENT_ID_PREFIX}-000001",
+            "",
+            "Foerderplan Demo",
+            "Bericht",
+            "Foerderplan_Demo.txt",
+            "Demo-Datei: direkt am Schueler hinterlegtes Dokument.\n",
+        ),
+        (
+            "MED-000002",
+            f"{STUDENT_ID_PREFIX}-000001",
+            observation_ids[2],
+            "Praesentation Naturbeobachtung",
+            "Arbeitsprobe",
+            "Praesentation_Naturbeobachtung.txt",
+            "Demo-Datei: Anhang zur fachuebergreifenden Beobachtung.\n",
+        ),
+        (
+            "MED-000003",
+            f"{STUDENT_ID_PREFIX}-000002",
+            observation_ids[7],
+            "Lernzielkontrolle Mathematik",
+            "Lernzielkontrolle",
+            "Lernzielkontrolle_Mathematik.txt",
+            "Demo-Datei: harmlose Platzhalterdatei zu einer Lernzielkontrolle.\n",
+        ),
+    )
+    for document_id, student_id, observation_id, title, document_type, filename, content in documents:
+        student_folder = documents_root / student_id
+        student_folder.mkdir(parents=True, exist_ok=True)
+        file_path = student_folder / f"{document_id}_{filename}"
+        file_path.write_text(content, encoding="utf-8")
+        repository.create_document(
+            DocumentRecord(
+                document_id,
+                student_id,
+                observation_id,
+                title,
+                document_type,
+                str(file_path),
+                filename,
+                "2026-07-04T10:00:00+00:00",
+                "Kuenstliche Demo-Datei fuer Laura-Pilottest.",
+                True,
+            )
+        )
+    return len(documents)
+
+
+def _parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Seed Laura-Pilottestdaten in eine SQLite-Datenbank."
+    )
+    parser.add_argument(
+        "--database",
+        type=Path,
+        default=SQLITE_SPIKE_PATH,
+        help="Ziel-Datenbankpfad, Standard: data/kompetenzmanager.sqlite",
+    )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Bestehende Testdatenbank und data/documents kontrolliert neu erzeugen.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv or sys.argv[1:])
+    try:
+        result = seed_test_data(args.database, reset=args.reset)
+    except SeedDataError as error:
+        print(f"Testdaten nicht geschrieben: {error}")
+        return 1
+    print(f"Testdaten geschrieben: {result.database_path}")
+    print(f"Schueler: {result.student_count}")
+    print(f"Beobachtungen: {result.observation_count}")
+    print(f"Dokumente/Medien: {result.document_count}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

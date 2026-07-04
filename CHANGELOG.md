@@ -1,5 +1,42 @@
 # CHANGELOG
 
+## Sprint - Berichtsvorschau und Halbjahres-Testdaten
+
+### Changed
+
+- Berichtsvorschau leitet den Bereich `Entwicklung` aus chronologischen aktiven Beobachtungen ab.
+- Entwicklung zeigt verstaendliche Hinweise fuer Einzelbeobachtung, stabile Verlaeufe, positive Entwicklung, Rueckschritt und wechselnde Beobachtungslage.
+- Leere Berichtsvorschau verwendet `Noch keine Beobachtungen dokumentiert.` statt unklarer Berichtsdaten- oder Entwicklungseintraege.
+- `scripts/seed_test_data.py` erzeugt realistischere Halbjahresdaten von September bis Januar mit mehreren Beobachtungen je Testschueler, Verlaufsmustern, Bestaetigungen und Demo-Dokumenten.
+
+### Not Changed
+
+- Keine KI-Textgenerierung, keine finalen Zeugnisformulierungen, keine Schemaaenderung, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
+## Sprint - Dokumentationsstatus kompakt in Schuelerlisten
+
+### Changed
+
+- Schuelerlisten zeigen einen kompakten Dokumentationsstatus je Schueler, ohne vollstaendige Fachaufschluesselung.
+- Schuelerprofil zeigt den Dokumentationsstand zuerst als kompakte Lernbereich-Summary; Fachdetails sind per `Details anzeigen` aufklappbar.
+- Dokumentationsstatus zaehlt dokumentierte Lernbereiche je Fach; aktive Beobachtungen und bestaetigte Kompetenzstaende zaehlen, Soft Deletes nicht.
+
+### Not Changed
+
+- Keine neue Persistenz, keine Schemaaenderung, keine SQLite-Logik in Qt-Screens, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
+## Sprint - Laura-Pilottestdaten fuer SQLite
+
+### Added
+
+- Script `scripts/seed_test_data.py` erzeugt kuenstliche Testdaten fuer `data/kompetenzmanager.sqlite`.
+- Testdaten decken Stammgruppen, Kurse, Kursverbuende, Schueler, Beobachtungen, Kompetenzvorschlaege, bestaetigte Kompetenzstaende, Berichtsvorbereitung, Dokumentationsstand sowie Dokumente & Medien ab.
+- `--reset` erzeugt bewusst ein frisches lokales Testsystem inklusive Demo-Dateien unter `data/documents/`.
+
+### Not Changed
+
+- Kein Excel-/VBA-Umbau, keine echten Namen, keine echten Dokumente und kein Commit umgesetzt.
+
 ## Sprint - Dokumente & Medien MVP
 
 ### Added

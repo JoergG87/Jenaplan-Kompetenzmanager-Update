@@ -23,9 +23,11 @@ from PySide6.QtWidgets import (
 from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
     PROFILE_SECTION_PLACEHOLDERS,
+    REPORT_NO_OBSERVATIONS_MESSAGE,
     StudentDetailViewModel,
     StudentDocumentViewModel,
     StudentReportPreviewViewModel,
+    documentation_summary_from_subjects,
     format_student_report_preview_text,
 )
 from src.desktop_app.view_models.observation_view_model import (
@@ -748,7 +750,7 @@ class StudentProfileScreen(QWidget):
         self,
         statuses: tuple[StudentDocumentationSubjectStatus, ...],
     ) -> None:
-        """Render compact documentation coverage by subject."""
+        """Render compact documentation coverage with optional subject details."""
         self._clear_layout(self.documentation_status_layout)
         if not statuses:
             self.documentation_status_layout.addWidget(
@@ -758,13 +760,53 @@ class StudentProfileScreen(QWidget):
         card = self._card()
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(4)
+        layout.setSpacing(6)
+        summary = documentation_summary_from_subjects(statuses)
+        summary_label = QLabel(summary.profile_summary_label)
+        set_label_style(summary_label, "body")
+        status_label = QLabel(summary.status_label)
+        set_label_style(status_label, "small")
+        weak_subjects_label = QLabel(summary.weak_subjects_label)
+        weak_subjects_label.setWordWrap(True)
+        set_label_style(weak_subjects_label, "subtle")
+        weak_subjects_label.setVisible(bool(summary.weak_subjects_label))
+        details_button = QPushButton("Details anzeigen")
+        details_button.setObjectName("DocumentationStatusDetailsButton")
+        details_container = QWidget()
+        details_container.setObjectName("DocumentationStatusDetails")
+        details_layout = QVBoxLayout(details_container)
+        details_layout.setContentsMargins(0, 0, 0, 0)
+        details_layout.setSpacing(4)
         for status in statuses:
             line = QLabel(status.progress_label)
             line.setWordWrap(True)
             set_label_style(line, "small")
-            layout.addWidget(line)
+            details_layout.addWidget(line)
+        details_container.setVisible(False)
+        details_button.clicked.connect(
+            lambda _checked=False: self._toggle_documentation_status_details(
+                details_container,
+                details_button,
+            )
+        )
+        layout.addWidget(summary_label)
+        layout.addWidget(status_label)
+        layout.addWidget(weak_subjects_label)
+        layout.addWidget(details_button)
+        layout.addWidget(details_container)
         self.documentation_status_layout.addWidget(card)
+
+    def _toggle_documentation_status_details(
+        self,
+        details_container: QWidget,
+        details_button: QPushButton,
+    ) -> None:
+        details_container.setVisible(details_container.isHidden())
+        details_button.setText(
+            "Details anzeigen"
+            if details_container.isHidden()
+            else "Details ausblenden"
+        )
 
     def _empty_documentation_status_card(self) -> QFrame:
         card = self._card()
@@ -804,9 +846,9 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(3)
-        self.report_empty_label.setText("Noch keine Berichtsdaten vorhanden.")
+        self.report_empty_label.setText(REPORT_NO_OBSERVATIONS_MESSAGE)
         hint_label = QLabel(
-            "Bestätigte Kompetenzstände oder Beobachtungen erscheinen hier."
+            "Berichtsvorschau erscheint nach aktiven Beobachtungen."
         )
         set_label_style(hint_label, "subtle")
         layout.addWidget(self.report_empty_label)

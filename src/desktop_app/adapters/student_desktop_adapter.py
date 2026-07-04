@@ -44,6 +44,7 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDeskto
 from src.desktop_app.view_models.master_data_view_model import course_color_from_key
 from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_CROSS_SUBJECT_LABEL,
+    OBSERVATION_RATING_SCORES,
     DOCUMENT_TYPE_OPTIONS,
     ObservationDraftViewModel,
     ObservationAttachmentDraft,
@@ -60,12 +61,15 @@ from src.desktop_app.view_models.observation_view_model import (
 from src.desktop_app.view_models.student_view_model import (
     GroupSummaryViewModel,
     StudentDetailViewModel,
+    StudentDocumentationSummaryViewModel,
     StudentDocumentViewModel,
+    StudentReportDevelopmentViewModel,
     StudentListItem,
     StudentReportCompetencyViewModel,
     StudentReportEvidenceViewModel,
     StudentReportPreviewViewModel,
     StudentReportSubjectSectionViewModel,
+    documentation_summary_from_subjects,
     sort_student_list,
 )
 
@@ -655,6 +659,7 @@ class StudentDesktopAdapter:
             course_name,
             course_color_name,
             course_color_hex,
+            self._documentation_summary_for_student(student.student_id),
         )
 
     def _matches_filter(
@@ -820,6 +825,14 @@ class StudentDesktopAdapter:
             if getattr(competency, "active", False)
         )
 
+    def _documentation_summary_for_student(
+        self,
+        student_id: str,
+    ) -> StudentDocumentationSummaryViewModel:
+        return documentation_summary_from_subjects(
+            self.list_documentation_status_for_student(student_id)
+        )
+
     def _documentation_statuses(
         self,
         active_competencies: tuple[object, ...],
@@ -843,12 +856,8 @@ class StudentDesktopAdapter:
             StudentDocumentationSubjectStatus(
                 subject_id,
                 subject_names[subject_id],
-                sum(
-                    1
-                    for competency in grouped[subject_id]
-                    if getattr(competency, "competency_id") in documented_ids
-                ),
-                len(grouped[subject_id]),
+                len(self._documented_learning_areas(grouped[subject_id], documented_ids)),
+                len(self._learning_areas(grouped[subject_id])),
                 self._missing_competencies_for_subject(
                     active_competencies,
                     documented_ids,
@@ -861,6 +870,25 @@ class StudentDesktopAdapter:
                 key=lambda key: (subject_sort_orders[key], key),
             )
         )
+
+    def _learning_areas(self, competencies: list[object]) -> set[str]:
+        return {
+            getattr(competency, "learning_area", "")
+            for competency in competencies
+            if getattr(competency, "learning_area", "")
+        }
+
+    def _documented_learning_areas(
+        self,
+        competencies: list[object],
+        documented_ids: set[str],
+    ) -> set[str]:
+        return {
+            getattr(competency, "learning_area", "")
+            for competency in competencies
+            if getattr(competency, "competency_id") in documented_ids
+            and getattr(competency, "learning_area", "")
+        }
 
     def _missing_competencies_for_subject(
         self,
@@ -908,9 +936,8 @@ class StudentDesktopAdapter:
                 if competency.rating in ("++", "+")
             ),
             tuple(
-                competency
-                for competency in competency_lines
-                if competency.rating == "-"
+                self._report_development_line(competency)
+                for competency in group.competencies
             ),
             tuple(
                 competency
@@ -933,6 +960,46 @@ class StudentDesktopAdapter:
             source,
             observation_rating_label(rating),
         )
+
+    def _report_development_line(
+        self,
+        competency: StudentCompetencyStatusViewModel,
+    ) -> StudentReportDevelopmentViewModel:
+        history = competency.rating_history
+        return StudentReportDevelopmentViewModel(
+            competency.competency_id,
+            competency.competency_label,
+            self._report_development_label(history),
+            history,
+        )
+
+    def _report_development_label(self, rating_history: tuple[str, ...]) -> str:
+        if not rating_history:
+            return "Noch keine Beobachtungen dokumentiert."
+        if len(rating_history) == 1:
+            return "Einzelbeobachtung vorhanden, noch kein Verlauf ableitbar."
+        if len(set(rating_history)) == 1:
+            return f"Stabil beobachtet: {rating_history[-1]}"
+        scores = tuple(OBSERVATION_RATING_SCORES[rating] for rating in rating_history)
+        if self._is_monotonic(scores, increasing=True) and scores[-1] > scores[0]:
+            return (
+                f"Entwicklung: {rating_history[0]} → {rating_history[-1]} · "
+                "positive Entwicklung erkennbar"
+            )
+        if self._is_monotonic(scores, increasing=False) and scores[-1] < scores[0]:
+            return (
+                f"Entwicklung: {rating_history[0]} → {rating_history[-1]} · "
+                "erneute Beobachtung sinnvoll"
+            )
+        return (
+            "Wechselnde Beobachtungslage, weitere Beobachtungen sinnvoll. "
+            f"Verlauf: {' → '.join(rating_history)}"
+        )
+
+    def _is_monotonic(self, scores: tuple[int, ...], *, increasing: bool) -> bool:
+        if increasing:
+            return all(left <= right for left, right in zip(scores, scores[1:]))
+        return all(left >= right for left, right in zip(scores, scores[1:]))
 
     def _report_evidence_for_subject(
         self,

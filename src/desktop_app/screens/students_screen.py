@@ -43,7 +43,7 @@ class StudentsScreen(QWidget):
         self.group_filter_label = QLabel("")
         self.empty_state_label = QLabel("")
         self.search_input = QLineEdit()
-        self.table = QTableWidget(0, 2)
+        self.table = QTableWidget(0, 3)
         self._build()
 
     def _build(self) -> None:
@@ -74,7 +74,7 @@ class StudentsScreen(QWidget):
         self.empty_state_label.setWordWrap(True)
         layout.addWidget(self.empty_state_label)
 
-        self.table.setHorizontalHeaderLabels(("Name", "Kurs"))
+        self.table.setHorizontalHeaderLabels(("Name", "Kurs", "Dokumentation"))
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setAlternatingRowColors(True)
@@ -84,6 +84,10 @@ class StudentsScreen(QWidget):
         )
         self.table.horizontalHeader().setSectionResizeMode(
             1,
+            QHeaderView.ResizeMode.ResizeToContents,
+        )
+        self.table.horizontalHeader().setSectionResizeMode(
+            2,
             QHeaderView.ResizeMode.ResizeToContents,
         )
         self.table.cellDoubleClicked.connect(self._open_student)
@@ -123,6 +127,11 @@ class StudentsScreen(QWidget):
         for row_index, student in enumerate(students):
             self.table.setItem(row_index, 0, QTableWidgetItem(student.display_name))
             self.table.setCellWidget(row_index, 1, self._course_cell(student))
+            self.table.setItem(
+                row_index,
+                2,
+                QTableWidgetItem(student.documentation_status.list_label),
+            )
 
     def _course_cell(self, student: StudentListItem) -> QWidget:
         cell = QWidget()
