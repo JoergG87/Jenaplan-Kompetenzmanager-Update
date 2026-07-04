@@ -19,10 +19,12 @@ from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
     PROFILE_SECTION_PLACEHOLDERS,
     StudentDetailViewModel,
+    StudentReportPreviewViewModel,
 )
 from src.desktop_app.view_models.observation_view_model import (
     ObservationListItem,
     StudentCompetencySubjectGroup,
+    observation_rating_keys,
 )
 from src.desktop_app.theme import create_card, set_label_style
 
@@ -36,6 +38,7 @@ class StudentProfileScreen(QWidget):
     observation_requested = Signal(object)
     observation_edit_requested = Signal(str)
     observation_delete_requested = Signal(str)
+    competency_confirmation_requested = Signal(str, str, str, str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -50,6 +53,7 @@ class StudentProfileScreen(QWidget):
         self.action_feedback_label = QLabel("")
         self.observation_empty_label = QLabel("")
         self.competency_empty_label = QLabel("")
+        self.report_empty_label = QLabel("")
         self.current_observations: tuple[ObservationListItem, ...] = ()
         self.show_all_observations = False
         self._build()
@@ -77,6 +81,7 @@ class StudentProfileScreen(QWidget):
         content_layout.addWidget(self._basis_data_card())
         content_layout.addWidget(self._observations_card())
         content_layout.addWidget(self._competencies_card())
+        content_layout.addWidget(self._report_preview_card())
         content_layout.addWidget(self._placeholder_card(
             "Dokumente",
             PROFILE_SECTION_PLACEHOLDERS["documents_title"],
@@ -232,6 +237,22 @@ class StudentProfileScreen(QWidget):
         layout.addWidget(self.competencies_container)
         return section
 
+    def _report_preview_card(self) -> QWidget:
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        title_label = QLabel("Berichtsvorschau")
+        set_label_style(title_label, "section_title")
+        self.report_preview_container = QWidget()
+        self.report_preview_layout = QVBoxLayout(self.report_preview_container)
+        self.report_preview_layout.setContentsMargins(0, 0, 0, 0)
+        self.report_preview_layout.setSpacing(8)
+        set_label_style(self.report_empty_label, "body")
+        layout.addWidget(title_label)
+        layout.addWidget(self.report_preview_container)
+        return section
+
     def _card(self) -> QFrame:
         return create_card()
 
@@ -249,6 +270,7 @@ class StudentProfileScreen(QWidget):
         student: StudentDetailViewModel | None,
         observations: tuple[ObservationListItem, ...] = (),
         competency_groups: tuple[StudentCompetencySubjectGroup, ...] = (),
+        report_preview: StudentReportPreviewViewModel | None = None,
     ) -> None:
         """Render selected student or empty state."""
         self.current_student = student
@@ -262,6 +284,7 @@ class StudentProfileScreen(QWidget):
             self.action_feedback_label.setText("")
             self.set_observations(())
             self.set_competency_groups(())
+            self.set_report_preview(None)
             return
         self.name_label.setText(student.display_name)
         self.meta_label.setText(f"{student.group_name} · {student.course_name}")
@@ -272,6 +295,7 @@ class StudentProfileScreen(QWidget):
         self.action_feedback_label.setText("")
         self.set_observations(observations)
         self.set_competency_groups(competency_groups)
+        self.set_report_preview(report_preview)
 
     def set_observations(
         self,
@@ -588,7 +612,7 @@ class StudentProfileScreen(QWidget):
         self,
         competency_groups: tuple[StudentCompetencySubjectGroup, ...],
     ) -> None:
-        """Render latest observed competency status grouped by subject."""
+        """Render calculated competency status grouped by subject."""
         self._clear_layout(self.competencies_layout)
         if not competency_groups:
             self.competencies_layout.addWidget(self._empty_competencies_card())
@@ -610,6 +634,108 @@ class StudentProfileScreen(QWidget):
         layout.addWidget(hint_label)
         return card
 
+    def set_report_preview(
+        self,
+        report_preview: StudentReportPreviewViewModel | None,
+    ) -> None:
+        """Render the derived report preparation for the current profile."""
+        self._clear_layout(self.report_preview_layout)
+        if report_preview is None or not report_preview.has_content:
+            self.report_preview_layout.addWidget(self._empty_report_preview_card())
+            return
+        for section in report_preview.subject_sections:
+            self.report_preview_layout.addWidget(
+                self._report_subject_card(section)
+            )
+
+    def _empty_report_preview_card(self) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(3)
+        self.report_empty_label.setText("Noch keine Berichtsdaten vorhanden.")
+        hint_label = QLabel(
+            "Bestätigte Kompetenzstände oder Beobachtungen erscheinen hier."
+        )
+        set_label_style(hint_label, "subtle")
+        layout.addWidget(self.report_empty_label)
+        layout.addWidget(hint_label)
+        return card
+
+    def _report_subject_card(self, section: object) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(6)
+        title = QLabel(getattr(section, "subject_display_name"))
+        set_label_style(title, "card_title")
+        layout.addWidget(title)
+        layout.addWidget(self._report_bucket(
+            "Stärken",
+            getattr(section, "strengths"),
+        ))
+        layout.addWidget(self._report_bucket(
+            "Entwicklung",
+            getattr(section, "development"),
+        ))
+        layout.addWidget(self._report_bucket(
+            "Unterstützungsbedarf",
+            getattr(section, "support_needs"),
+        ))
+        layout.addWidget(self._report_evidence_block(
+            getattr(section, "example_observations")
+        ))
+        return card
+
+    def _report_bucket(self, title: str, competencies: tuple[object, ...]) -> QWidget:
+        block = QWidget()
+        layout = QVBoxLayout(block)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
+        title_label = QLabel(title)
+        set_label_style(title_label, "field_label")
+        layout.addWidget(title_label)
+        if not competencies:
+            empty_label = QLabel("Keine Einträge.")
+            set_label_style(empty_label, "subtle")
+            layout.addWidget(empty_label)
+            return block
+        for competency in competencies:
+            line = QLabel(getattr(competency, "display_label"))
+            line.setWordWrap(True)
+            set_label_style(line, "small")
+            layout.addWidget(line)
+        return block
+
+    def _report_evidence_block(
+        self,
+        observations: tuple[object, ...],
+    ) -> QWidget:
+        block = QWidget()
+        layout = QVBoxLayout(block)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
+        title_label = QLabel("Beispielbeobachtungen")
+        set_label_style(title_label, "field_label")
+        layout.addWidget(title_label)
+        if not observations:
+            empty_label = QLabel("Keine passenden Beobachtungen.")
+            set_label_style(empty_label, "subtle")
+            layout.addWidget(empty_label)
+            return block
+        for observation in observations:
+            line = QLabel(getattr(observation, "display_label"))
+            line.setWordWrap(True)
+            set_label_style(line, "small")
+            layout.addWidget(line)
+            competencies = QLabel(
+                " · ".join(getattr(observation, "competency_labels"))
+            )
+            competencies.setWordWrap(True)
+            set_label_style(competencies, "subtle")
+            layout.addWidget(competencies)
+        return block
+
     def _competency_group_card(
         self,
         group: StudentCompetencySubjectGroup,
@@ -618,18 +744,123 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(5)
+        header = QHBoxLayout()
         title = QLabel(group.subject_display_name)
         set_label_style(title, "card_title")
-        layout.addWidget(title)
+        summary = QLabel(f"{len(group.competencies)} Kompetenzen")
+        set_label_style(summary, "subtle")
+        details_button = QPushButton("Details ▾")
+        details_button.setObjectName("CompetencyGroupDetailsButton")
+        header.addWidget(title)
+        header.addStretch(1)
+        header.addWidget(summary)
+        header.addWidget(details_button)
+        layout.addLayout(header)
+        details_container = QWidget()
+        details_container.setObjectName("CompetencyGroupDetails")
+        details_layout = QVBoxLayout(details_container)
+        details_layout.setContentsMargins(0, 4, 0, 0)
+        details_layout.setSpacing(4)
         for competency in group.competencies:
-            row = QLabel(
-                f"{competency.competency_label}: "
-                f"{competency.rating_label} · {competency.last_observation_date}"
+            details_layout.addWidget(self._competency_status_row(competency))
+        details_container.setVisible(False)
+        details_button.clicked.connect(
+            lambda _checked=False: self._toggle_competency_group_details(
+                details_container,
+                details_button,
             )
-            row.setWordWrap(True)
-            set_label_style(row, "body")
-            layout.addWidget(row)
+        )
+        layout.addWidget(details_container)
         return card
+
+    def _toggle_competency_group_details(
+        self,
+        details_container: QWidget,
+        details_button: QPushButton,
+    ) -> None:
+        details_container.setVisible(details_container.isHidden())
+        details_button.setText(
+            "Details ▾" if details_container.isHidden() else "Details ▴"
+        )
+
+    def _competency_status_row(self, competency: object) -> QWidget:
+        row = QWidget()
+        layout = QVBoxLayout(row)
+        layout.setContentsMargins(0, 2, 0, 4)
+        layout.setSpacing(2)
+        title = QLabel(getattr(competency, "competency_label"))
+        title.setWordWrap(True)
+        set_label_style(title, "body")
+        status = QLabel(getattr(competency, "confirmation_status_label"))
+        set_label_style(status, "small")
+        history = QLabel(
+            f"Verlauf: {getattr(competency, 'rating_history_label')}"
+        )
+        history.setWordWrap(True)
+        set_label_style(history, "small")
+        meta = QLabel(
+            f"{getattr(competency, 'observation_count_label')} · "
+            f"zuletzt beobachtet: {getattr(competency, 'last_observation_date')}"
+        )
+        set_label_style(meta, "subtle")
+        confirmation_meta = QLabel(getattr(competency, "confirmation_meta_label"))
+        set_label_style(confirmation_meta, "subtle")
+        confirmation_meta.setVisible(bool(confirmation_meta.text()))
+        layout.addWidget(title)
+        layout.addWidget(status)
+        layout.addWidget(history)
+        layout.addWidget(meta)
+        layout.addWidget(confirmation_meta)
+        layout.addLayout(self._competency_confirmation_actions(competency))
+        return row
+
+    def _competency_confirmation_actions(self, competency: object) -> QHBoxLayout:
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 0, 0, 0)
+        actions.setSpacing(6)
+        rating_select = QComboBox()
+        rating_select.setObjectName("CompetencyConfirmationRatingSelect")
+        rating_select.addItems(observation_rating_keys())
+        selected_rating = (
+            getattr(competency, "confirmed_rating")
+            or getattr(competency, "rating")
+        )
+        selected_index = rating_select.findText(selected_rating)
+        if selected_index >= 0:
+            rating_select.setCurrentIndex(selected_index)
+        adopt_button = QPushButton("Vorschlag übernehmen")
+        confirm_button = QPushButton("Bestätigen")
+        adopt_button.clicked.connect(
+            lambda _checked=False: self._request_competency_confirmation(
+                competency,
+                getattr(competency, "rating"),
+            )
+        )
+        confirm_button.clicked.connect(
+            lambda _checked=False: self._request_competency_confirmation(
+                competency,
+                rating_select.currentText(),
+            )
+        )
+        actions.addWidget(rating_select)
+        actions.addWidget(adopt_button)
+        actions.addWidget(confirm_button)
+        actions.addStretch(1)
+        return actions
+
+    def _request_competency_confirmation(
+        self,
+        competency: object,
+        confirmed_rating: str,
+    ) -> None:
+        if self.current_student is None:
+            return
+        self.competency_confirmation_requested.emit(
+            self.current_student.student_id,
+            getattr(competency, "competency_id"),
+            confirmed_rating,
+            "",
+        )
 
     def _clear_observations(self) -> None:
         self._clear_layout(self.observations_layout)

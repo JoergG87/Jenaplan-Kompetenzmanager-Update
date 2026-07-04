@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 from src.application.commands import (
@@ -29,7 +30,9 @@ from src.core.sqlite_store import (
     SQLiteDatabase,
     SQLiteGroupRepository,
     SQLiteObservationRepository,
+    SQLiteStudentCompetencyConfirmationRepository,
     SQLiteStudentRepository,
+    StudentCompetencyConfirmationRecord,
 )
 from src.core.student import StudentService, StudentValidator
 from src.core.workbook_data import CourseRecord, GroupRecord, StudentRecord
@@ -43,12 +46,18 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationRatingViewModel,
     StudentCompetencyStatusViewModel,
     StudentCompetencySubjectGroup,
+    calculated_rating_from_history,
     observation_rating_label,
 )
 from src.desktop_app.view_models.student_view_model import (
     GroupSummaryViewModel,
     StudentDetailViewModel,
     StudentListItem,
+    StudentReportCompetencyViewModel,
+    StudentReportEvidenceViewModel,
+    StudentReportPreviewViewModel,
+    StudentReportSubjectSectionViewModel,
+    sort_student_list,
 )
 
 
@@ -68,16 +77,19 @@ class StudentDesktopAdapter:
     ) -> tuple[StudentListItem, ...]:
         """Return students with readable group and course names."""
         groups = {group.group_id: group.group_name for group in self.list_groups()}
-        courses = {
-            course.course_id: course
-            for course in self.list_courses()
+        course_records = self.list_courses()
+        courses = {course.course_id: course for course in course_records}
+        course_order_by_id = {
+            course.course_id: index
+            for index, course in enumerate(course_records)
         }
         students = SQLiteStudentRepository(self.database).list_students()
-        return tuple(
+        loaded_students = tuple(
             self._student_list_item(student, groups, courses)
             for student in students
             if self._matches_filter(student, group_id, group_ids, course_id)
         )
+        return sort_student_list(loaded_students, course_order_by_id)
 
     def get_student_profile(self, student_id: str) -> StudentDetailViewModel | None:
         """Return a light profile view model for one student."""
@@ -289,7 +301,7 @@ class StudentDesktopAdapter:
         self,
         student_id: str,
     ) -> tuple[StudentCompetencySubjectGroup, ...]:
-        """Return latest observed competency statuses grouped by subject."""
+        """Return calculated competency statuses grouped by subject."""
         observations = SQLiteObservationRepository(
             self.database
         ).list_observations_for_student(student_id)
@@ -299,20 +311,63 @@ class StudentDesktopAdapter:
                 self.database
             ).list_competencies()
         }
-        latest_by_competency: dict[str, StudentCompetencyStatusViewModel] = {}
+        confirmations = {
+            confirmation.competency_id: confirmation
+            for confirmation in SQLiteStudentCompetencyConfirmationRepository(
+                self.database
+            ).list_confirmations_for_student(student_id)
+        }
+        histories_by_competency: dict[str, list[tuple[object, str]]] = {}
         for observation in observations:
             for rating in observation.competency_ratings:
-                if rating.competency_id in latest_by_competency:
-                    continue
-                competency = competencies.get(rating.competency_id)
-                latest_by_competency[rating.competency_id] = (
-                    self._competency_status_view_model(
-                        rating,
-                        observation.date,
-                        competency,
-                    )
+                histories_by_competency.setdefault(rating.competency_id, []).append(
+                    (rating, observation.date)
                 )
-        return self._group_competency_statuses(tuple(latest_by_competency.values()))
+        statuses = tuple(
+            self._competency_status_view_model(
+                tuple(entries),
+                competencies.get(competency_id),
+                confirmations.get(competency_id),
+            )
+            for competency_id, entries in histories_by_competency.items()
+        )
+        return self._group_competency_statuses(statuses)
+
+    def get_report_preview_for_student(
+        self,
+        student_id: str,
+    ) -> StudentReportPreviewViewModel | None:
+        """Return a derived report preparation grouped by subject."""
+        profile = self.get_student_profile(student_id)
+        if profile is None:
+            return None
+        competency_groups = self.list_competency_overview_for_student(student_id)
+        observations = self.list_observations_for_student(student_id)
+        return StudentReportPreviewViewModel(
+            profile.student_id,
+            profile.display_name,
+            self._report_subject_sections(competency_groups, observations),
+        )
+
+    def save_competency_confirmation(
+        self,
+        *,
+        student_id: str,
+        competency_id: str,
+        confirmed_rating: str,
+        note: str = "",
+    ) -> StudentCompetencyConfirmationRecord:
+        """Persist a teacher-confirmed competency status."""
+        confirmation = StudentCompetencyConfirmationRecord(
+            student_id.strip(),
+            competency_id.strip(),
+            confirmed_rating.strip(),
+            datetime.now(UTC).replace(microsecond=0).isoformat(),
+            note.strip(),
+        )
+        return SQLiteStudentCompetencyConfirmationRepository(
+            self.database
+        ).upsert_confirmation(confirmation)
 
     def _dispatcher(self) -> ApplicationCommandDispatcher:
         student_repository = SQLiteStudentRepository(self.database)
@@ -468,32 +523,49 @@ class StudentDesktopAdapter:
 
     def _competency_status_view_model(
         self,
-        rating: object,
-        observation_date: str,
+        entries_newest_first: tuple[tuple[object, str], ...],
         competency: object | None,
+        confirmation: StudentCompetencyConfirmationRecord | None,
     ) -> StudentCompetencyStatusViewModel:
-        subject_id = getattr(competency, "subject_id", getattr(rating, "subject_id"))
+        newest_rating, newest_date = entries_newest_first[0]
+        ratings_newest_first = tuple(
+            getattr(rating, "rating")
+            for rating, _date in entries_newest_first
+        )
+        current_rating, weighted_score = calculated_rating_from_history(
+            ratings_newest_first
+        )
+        subject_id = getattr(
+            competency,
+            "subject_id",
+            getattr(newest_rating, "subject_id"),
+        )
         subject_display_name = getattr(
             competency,
             "subject_name",
-            getattr(rating, "subject_display_name"),
+            getattr(newest_rating, "subject_display_name"),
         )
         competency_label = getattr(
             competency,
             "label",
-            getattr(rating, "learning_area"),
+            getattr(newest_rating, "learning_area"),
         )
         sort_order = int(getattr(competency, "sort_order", 0))
-        rating_value = getattr(rating, "rating")
         return StudentCompetencyStatusViewModel(
-            getattr(rating, "competency_id"),
+            getattr(newest_rating, "competency_id"),
             competency_label,
             subject_id,
             subject_display_name,
-            rating_value,
-            observation_rating_label(rating_value),
-            observation_date,
+            current_rating,
+            observation_rating_label(current_rating),
+            newest_date,
             sort_order,
+            tuple(reversed(ratings_newest_first)),
+            len(entries_newest_first),
+            weighted_score,
+            confirmation.confirmed_rating if confirmation else "",
+            confirmation.confirmed_at if confirmation else "",
+            confirmation.note if confirmation else "",
         )
 
     def _group_competency_statuses(
@@ -513,3 +585,92 @@ class StudentDesktopAdapter:
             )
             for subject_id in groups
         )
+
+    def _report_subject_sections(
+        self,
+        competency_groups: tuple[StudentCompetencySubjectGroup, ...],
+        observations: tuple[ObservationListItem, ...],
+    ) -> tuple[StudentReportSubjectSectionViewModel, ...]:
+        sections = tuple(
+            self._report_subject_section(group, observations)
+            for group in competency_groups
+        )
+        return tuple(section for section in sections if section.has_content)
+
+    def _report_subject_section(
+        self,
+        group: StudentCompetencySubjectGroup,
+        observations: tuple[ObservationListItem, ...],
+    ) -> StudentReportSubjectSectionViewModel:
+        competency_lines = tuple(
+            self._report_competency_line(competency)
+            for competency in group.competencies
+        )
+        return StudentReportSubjectSectionViewModel(
+            group.subject_id,
+            group.subject_display_name,
+            tuple(
+                competency
+                for competency in competency_lines
+                if competency.rating in ("++", "+")
+            ),
+            tuple(
+                competency
+                for competency in competency_lines
+                if competency.rating == "-"
+            ),
+            tuple(
+                competency
+                for competency in competency_lines
+                if competency.rating == "--"
+            ),
+            self._report_evidence_for_subject(group, observations),
+        )
+
+    def _report_competency_line(
+        self,
+        competency: StudentCompetencyStatusViewModel,
+    ) -> StudentReportCompetencyViewModel:
+        rating = competency.confirmed_rating or competency.rating
+        source = "Bestätigt" if competency.confirmed_rating else "Vorschlag"
+        return StudentReportCompetencyViewModel(
+            competency.competency_id,
+            competency.competency_label,
+            rating,
+            source,
+            observation_rating_label(rating),
+        )
+
+    def _report_evidence_for_subject(
+        self,
+        group: StudentCompetencySubjectGroup,
+        observations: tuple[ObservationListItem, ...],
+    ) -> tuple[StudentReportEvidenceViewModel, ...]:
+        evidence: list[StudentReportEvidenceViewModel] = []
+        for observation in observations:
+            matching_ratings = tuple(
+                rating
+                for rating in observation.competency_ratings
+                if rating.subject_display_name == group.subject_display_name
+            )
+            if not matching_ratings:
+                continue
+            evidence.append(
+                StudentReportEvidenceViewModel(
+                    observation.observation_id,
+                    observation.date_text,
+                    observation.context,
+                    self._report_note_preview(observation.note),
+                    tuple(
+                        f"{rating.rating} {rating.learning_area}"
+                        for rating in matching_ratings
+                    ),
+                )
+            )
+        return tuple(evidence[:3])
+
+    def _report_note_preview(self, note: str, max_length: int = 96) -> str:
+        cleaned_note = " ".join(note.split())
+        if len(cleaned_note) <= max_length:
+            return cleaned_note
+        return f"{cleaned_note[:max_length].rstrip()}..."

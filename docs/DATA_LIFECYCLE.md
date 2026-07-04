@@ -222,9 +222,9 @@ Automatisch profitierende Ansichten:
 
 Regel: `course_id` bleibt erhalten. Schuelerkartenfarbe aktualisiert sich aus `course_id` und `courses.color_hex`.
 
-## Kursverbund aendern
+## Kursverbund anlegen oder aendern
 
-Start: Ein kursverbundbezogener Mathe-/Deutsch-Scope wird bearbeitet.
+Start: Ein kursverbundbezogener Mathe-/Deutsch-Scope wird angelegt oder bearbeitet.
 
 Schreibprozess: Kursverbundverwaltung ueber PySide-Stammdaten.
 
@@ -257,7 +257,7 @@ Automatisch profitierende Ansichten:
 - Schuelerliste mit Kursverbund-/Kursfilter
 - Stammdaten-Seite
 
-Regel: Name, Stammgruppen- und Kurszuordnung werden atomar gespeichert. Die Relationstabellen werden beim Speichern vollstaendig fuer den Kursverbund ersetzt. Es werden keine Schueler umgebucht und keine Beobachtungsdaten veraendert.
+Regel: Name, Stammgruppen- und Kurszuordnung werden atomar gespeichert. Neue Kursverbuende erhalten eine stabile `course_group_id`. Doppelte Kursverbundnamen werden vor dem Speichern abgefangen. Die Relationstabellen werden beim Speichern vollstaendig fuer den Kursverbund ersetzt. Es werden keine Schueler umgebucht und keine Beobachtungsdaten veraendert.
 
 ## Stammdaten-Defaults initialisieren
 
@@ -354,6 +354,28 @@ Automatisch profitierende Ansichten:
 - Berichte
 
 Regel: Loeschen ist ein Soft Delete und setzt `observations.active = 0`. Rating-Zuordnungen bleiben historisch erhalten, aktive Profil- und Kompetenzuebersichten lesen nur aktive Beobachtungen.
+
+## Kompetenzstand bestaetigen
+
+Start: Lehrkraft uebernimmt oder aendert im Schuelerprofil den berechneten Kompetenzstand-Vorschlag.
+
+Schreibprozess: PySide-Schuelerprofil sendet `student_id`, `competency_id` und `confirmed_rating`; Speichern laeuft ueber `StudentDesktopAdapter`, `SQLiteStudentCompetencyConfirmationRepository` und SQLite.
+
+Betroffene Datenquellen:
+
+- SQLite `student_competency_confirmations`
+
+Erforderliche IDs:
+
+- bestehender `student_id`
+- bestehender `competency_id`
+
+Automatisch profitierende Ansichten:
+
+- Schuelerprofil
+- Kompetenzuebersicht
+
+Regel: Der bestaetigte Kompetenzstand ist eine paedagogische Entscheidung der Lehrkraft. Er ueberschreibt keine Beobachtungen und veraendert den berechneten Vorschlag nicht. Neue Beobachtungen aktualisieren den Vorschlag, aber nicht automatisch den bestaetigten Stand.
 
 ## Kompetenz ergaenzen
 

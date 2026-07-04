@@ -189,7 +189,8 @@ Liest:
 
 Schreibt:
 
-- nichts
+- nichts direkt
+- startet `Kompetenzstand bestaetigen` ueber `StudentDesktopAdapter` und `SQLiteStudentCompetencyConfirmationRepository`
 
 Navigation:
 
@@ -245,6 +246,7 @@ Liest:
 - `data_observation_competencies`
 - `data_competencies`
 - `data_subjects`
+- `student_competency_confirmations`
 - `data_media`
 
 Schreibt:
@@ -265,12 +267,14 @@ UI-Projektionen:
 - Beobachtungsverlauf
 - lokale Beobachtungsfilter fuer Fach, Bewertung und Suche
 - Kompetenzuebersicht aus beobachteten Kompetenzen
+- Berichtsvorschau aus Kompetenzstaenden und Beobachtungsbelegen
 - Aktionen zum Bearbeiten und Loeschen einzelner Beobachtungen
+- Aktion zum Bestaetigen oder manuellen Anpassen eines Kompetenzstand-Vorschlags
 - Medienhinweise
 
 Regel:
 
-Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Dialoge. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Ohne aktive Filter begrenzt die UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den Beobachtungsverlauf und nicht auf die Kompetenzuebersicht. Kompetenzstaende werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet.
+Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Schreibprozesse. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Ohne aktive Filter begrenzt die UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den Beobachtungsverlauf und nicht auf die Kompetenzuebersicht. Kompetenzstand-Vorschlaege werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet. Bestaetigte Kompetenzstaende sind paedagogische Entscheidungen und liegen separat in `student_competency_confirmations`. Die Berichtsvorschau ist eine abgeleitete Struktur aus bestaetigten Staenden, Vorschlaegen und aktiven Beobachtungsbelegen; sie speichert keine Berichtsdaten und erzeugt keine finalen Zeugnisformulierungen.
 
 ## Schuelerverwaltung / PySide-Dialog `Neuer Schüler`
 
@@ -421,6 +425,7 @@ Liest:
 - `data_competencies`
 - `data_observations`
 - `data_observation_competencies`
+- `student_competency_confirmations`
 - `data_media`
 - `data_settings`
 
@@ -440,7 +445,8 @@ UI-Projektionen:
 - Lernentwicklungsbericht
 - Beobachtungszusammenfassung
 - Kompetenzdarstellung
+- strukturierte Berichtsvorbereitung
 
 Regel:
 
-Berichte sind Ausgabeprojektionen. Sie speichern keine fachlichen Ergebnisdaten.
+Berichte sind Ausgabeprojektionen. Sie speichern keine fachlichen Ergebnisdaten. Eine Berichtsvorschau darf bestaetigte Kompetenzstaende, berechnete Vorschlaege und aktive Beobachtungen strukturieren, erzeugt aber keine KI-Texte, keine finalen Zeugnisformulierungen und keinen Export.

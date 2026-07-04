@@ -6,6 +6,63 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint B - Berichtsvorbereitung aus Kompetenzstaenden und Beobachtungen 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Schuelerprofil zeigt eine abgeleitete Berichtsvorschau nach Fach
+- [x] Bestaetigte Kompetenzstaende werden vor berechneten Vorschlaegen genutzt
+- [x] Ohne Bestaetigung wird der berechnete Vorschlag verwendet
+- [x] Stärken, Entwicklung, Unterstützungsbedarf und Beispielbeobachtungen werden strukturiert angezeigt
+- [x] Soft-geloeschte Beobachtungen fliessen nicht ein
+- [x] Keine KI-Textgenerierung, kein Export, keine neue Persistenz, kein Excel/VBA und kein Commit umgesetzt
+
+## Sprint A - Bestaetigten Kompetenzstand speichern 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Bestaetigter Kompetenzstand wird pro `student_id` und `competency_id` in SQLite gespeichert
+- [x] Vorschlag bleibt berechnet und sichtbar
+- [x] Lehrkraft kann Vorschlag uebernehmen oder manuell `++`, `+`, `-`, `--` bestaetigen
+- [x] Abweichung zwischen Vorschlag und Bestaetigung wird angezeigt
+- [x] Neuerer Vorschlag nach bestehender Bestaetigung wird sichtbar markiert
+- [x] Beobachtungen werden nicht veraendert
+- [x] Keine Berichte, kein Excel/VBA und kein Commit umgesetzt
+
+## Sprint - Kompetenzvorschlag und Fachgruppen im Schuelerprofil 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Kompetenzuebersicht zeigt Faecher kompakt und aufklappbar
+- [x] Kompetenzuebersicht berechnet Vorschlag aus allen aktiven Beobachtungen
+- [x] Soft-geloeschte Beobachtungen fliessen nicht in den Stand ein
+- [x] Bewertungsverlauf wird chronologisch angezeigt
+- [x] Anzahl Beobachtungen und neuestes Beobachtungsdatum werden pro Kompetenz angezeigt
+- [x] Berechnung bleibt abgeleitet und wird nicht gespeichert
+- [x] Folgethema dokumentiert: Lehrkraft kann Vorschlag spaeter bestaetigen oder manuell anpassen
+- [x] Beobachtungsverlauf, Persistenz, Schema, Berichte und Excel/VBA unveraendert
+
+## Sprint - Kursverbund anlegen und Schuelerlisten sortieren 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] `+ Kursverbund` in den PySide-Stammdaten angebunden
+- [x] Neuer Kursverbund nutzt den bestehenden Kursverbund-Dialog mit Name, Stammgruppen und Kursen
+- [x] Speichern persistiert den neuen Kursverbund in SQLite
+- [x] Neuer Kursverbund erscheint nach dem Speichern in Stammdaten und Uebersicht
+- [x] Duplikate mit gleichem Kursverbundnamen werden abgefangen
+- [x] Schuelerlisten werden zentral nach Kursreihenfolge und danach alphabetisch sortiert
+- [x] Schueler ohne bekannten aktiven Kurs stehen am Ende
+- [x] Kursverbund-Filterlogik, Schema, Beobachtungen, Medien und Excel/VBA unveraendert
+
 ## UI-Polish - Beobachtungsverlauf im Schuelerprofil beruhigen 🔄
 
 - [x] Status: Umgesetzt, nicht committed

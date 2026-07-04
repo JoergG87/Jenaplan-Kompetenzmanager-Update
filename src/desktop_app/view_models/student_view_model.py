@@ -40,6 +40,23 @@ def filter_student_list(
     )
 
 
+def sort_student_list(
+    students: tuple[StudentListItem, ...],
+    course_order_by_id: dict[str, int],
+) -> tuple[StudentListItem, ...]:
+    """Sort students by course order and then by visible name."""
+    return tuple(
+        sorted(
+            students,
+            key=lambda student: (
+                course_order_by_id.get(student.course_id, len(course_order_by_id)),
+                student.display_name.casefold(),
+                student.student_id,
+            ),
+        )
+    )
+
+
 def _student_matches_query(student: StudentListItem, query: str) -> bool:
     searchable_values = (
         student.first_name,
@@ -86,3 +103,76 @@ class GroupSummaryViewModel:
     group_id: str
     group_name: str
     active_student_count: int
+
+
+@dataclass(frozen=True)
+class StudentReportCompetencyViewModel:
+    """Report-preview competency line derived from observed status."""
+
+    competency_id: str
+    competency_label: str
+    rating: str
+    rating_source: str
+    rating_label: str
+
+    @property
+    def display_label(self) -> str:
+        """Return a compact report-preview line."""
+        return f"{self.competency_label} · {self.rating_source}: {self.rating}"
+
+
+@dataclass(frozen=True)
+class StudentReportEvidenceViewModel:
+    """Observation snippet used as evidence in the report preview."""
+
+    observation_id: str
+    date_text: str
+    context: str
+    note_preview: str
+    competency_labels: tuple[str, ...]
+
+    @property
+    def display_label(self) -> str:
+        """Return a compact evidence label."""
+        parts = [self.date_text]
+        if self.context:
+            parts.append(self.context)
+        if self.note_preview:
+            parts.append(self.note_preview)
+        return " · ".join(parts)
+
+
+@dataclass(frozen=True)
+class StudentReportSubjectSectionViewModel:
+    """One subject section in the student report preview."""
+
+    subject_id: str
+    subject_display_name: str
+    strengths: tuple[StudentReportCompetencyViewModel, ...]
+    development: tuple[StudentReportCompetencyViewModel, ...]
+    support_needs: tuple[StudentReportCompetencyViewModel, ...]
+    example_observations: tuple[StudentReportEvidenceViewModel, ...]
+
+    @property
+    def has_content(self) -> bool:
+        """Return whether the section contains report-relevant data."""
+        return any((
+            self.strengths,
+            self.development,
+            self.support_needs,
+            self.example_observations,
+        ))
+
+
+@dataclass(frozen=True)
+class StudentReportPreviewViewModel:
+    """Structured, derived report preparation for one student."""
+
+    student_id: str
+    student_name: str
+    subject_sections: tuple[StudentReportSubjectSectionViewModel, ...]
+
+    @property
+    def has_content(self) -> bool:
+        """Return whether report preview data is available."""
+        return bool(self.subject_sections)

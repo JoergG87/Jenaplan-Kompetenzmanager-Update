@@ -14,6 +14,7 @@ from .constants import (
     COLOR_KEY,
     COLOR_NAME,
     COURSE_COLOR_OPTIONS,
+    COURSE_GROUP_ID_PREFIX,
     COURSE_ID,
     COURSE_ID_PREFIX,
     COURSE_NAME,
@@ -32,6 +33,7 @@ from .observation import (
     ObservationCompetencyRatingRecord,
     ObservationRecord,
     ObservationRepositoryError,
+    OBSERVATION_RATING_KEYS,
 )
 from .student import StudentRepositoryError
 from .student_projection import StudentProjectionBuilder
@@ -97,6 +99,17 @@ class CompetencyRecord:
     sort_order: int
     active: bool
     is_core_subject: bool
+
+
+@dataclass(frozen=True)
+class StudentCompetencyConfirmationRecord:
+    """Persisted teacher-confirmed competency status for one student."""
+
+    student_id: str
+    competency_id: str
+    confirmed_rating: str
+    confirmed_at: str
+    note: str = ""
 
 
 class SQLiteDatabase:
@@ -190,6 +203,17 @@ class SQLiteDatabase:
                             ON DELETE CASCADE
                     );
 
+                    CREATE TABLE IF NOT EXISTS student_competency_confirmations (
+                        student_id TEXT NOT NULL,
+                        competency_id TEXT NOT NULL,
+                        confirmed_rating TEXT NOT NULL CHECK (confirmed_rating IN ('++', '+', '-', '--')),
+                        confirmed_at TEXT NOT NULL,
+                        note TEXT,
+                        PRIMARY KEY (student_id, competency_id),
+                        FOREIGN KEY (student_id) REFERENCES students(student_id),
+                        FOREIGN KEY (competency_id) REFERENCES competencies(competency_id)
+                    );
+
                     CREATE TABLE IF NOT EXISTS course_groups (
                         course_group_id TEXT PRIMARY KEY,
                         name TEXT NOT NULL UNIQUE,
@@ -223,6 +247,10 @@ class SQLiteDatabase:
                         ON competencies(subject_id, sort_order);
                     CREATE INDEX IF NOT EXISTS idx_observation_ratings_competency
                         ON observation_competency_ratings(competency_id);
+                    CREATE INDEX IF NOT EXISTS idx_competency_confirmations_student
+                        ON student_competency_confirmations(student_id);
+                    CREATE INDEX IF NOT EXISTS idx_competency_confirmations_competency
+                        ON student_competency_confirmations(competency_id);
                     CREATE INDEX IF NOT EXISTS idx_course_groups_name
                         ON course_groups(name);
                     CREATE INDEX IF NOT EXISTS idx_course_group_student_groups_group
@@ -289,6 +317,7 @@ class SQLiteDatabase:
             with connection:
                 connection.execute("DELETE FROM observation_competency_ratings")
                 connection.execute("DELETE FROM observations")
+                connection.execute("DELETE FROM student_competency_confirmations")
                 connection.execute("DELETE FROM course_group_courses")
                 connection.execute("DELETE FROM course_group_student_groups")
                 connection.execute("DELETE FROM course_groups")
@@ -897,7 +926,7 @@ class SQLiteCourseRepository:
                 """
                 SELECT course_id, course_name, color_key, color_hex, active
                 FROM courses
-                ORDER BY course_id
+                ORDER BY sort_order, course_id
                 """
             ).fetchall()
         return tuple(
@@ -993,6 +1022,105 @@ class SQLiteCompetencyRepository:
         if row is None:
             return None
         return _competency_from_row(row)
+
+
+class SQLiteStudentCompetencyConfirmationRepository:
+    """Read and write teacher-confirmed competency status records."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+        self.database.initialize_schema()
+
+    def list_confirmations_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[StudentCompetencyConfirmationRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT student_id, competency_id, confirmed_rating, confirmed_at, note
+                FROM student_competency_confirmations
+                WHERE student_id = ?
+                ORDER BY competency_id
+                """,
+                (student_id,),
+            ).fetchall()
+        return tuple(self._confirmation_from_row(row) for row in rows)
+
+    def get_confirmation(
+        self,
+        student_id: str,
+        competency_id: str,
+    ) -> StudentCompetencyConfirmationRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT student_id, competency_id, confirmed_rating, confirmed_at, note
+                FROM student_competency_confirmations
+                WHERE student_id = ? AND competency_id = ?
+                """,
+                (student_id, competency_id),
+            ).fetchone()
+        if row is None:
+            return None
+        return self._confirmation_from_row(row)
+
+    def upsert_confirmation(
+        self,
+        confirmation: StudentCompetencyConfirmationRecord,
+    ) -> StudentCompetencyConfirmationRecord:
+        self._validate_confirmation(confirmation)
+        with closing(self.database.connect()) as connection:
+            with connection:
+                connection.execute(
+                    """
+                    INSERT INTO student_competency_confirmations (
+                        student_id,
+                        competency_id,
+                        confirmed_rating,
+                        confirmed_at,
+                        note
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(student_id, competency_id) DO UPDATE SET
+                        confirmed_rating = excluded.confirmed_rating,
+                        confirmed_at = excluded.confirmed_at,
+                        note = excluded.note
+                    """,
+                    (
+                        confirmation.student_id,
+                        confirmation.competency_id,
+                        confirmation.confirmed_rating,
+                        confirmation.confirmed_at,
+                        confirmation.note,
+                    ),
+                )
+        return confirmation
+
+    def _validate_confirmation(
+        self,
+        confirmation: StudentCompetencyConfirmationRecord,
+    ) -> None:
+        if not confirmation.student_id.strip():
+            raise ValueError("student_id darf nicht leer sein.")
+        if not confirmation.competency_id.strip():
+            raise ValueError("competency_id darf nicht leer sein.")
+        if confirmation.confirmed_rating not in OBSERVATION_RATING_KEYS:
+            raise ValueError(f"Ungueltige Bewertung: {confirmation.confirmed_rating}")
+        if not confirmation.confirmed_at.strip():
+            raise ValueError("confirmed_at darf nicht leer sein.")
+
+    def _confirmation_from_row(
+        self,
+        row: sqlite3.Row,
+    ) -> StudentCompetencyConfirmationRecord:
+        return StudentCompetencyConfirmationRecord(
+            row[STUDENT_ID],
+            row["competency_id"],
+            row["confirmed_rating"],
+            row["confirmed_at"],
+            row["note"] or "",
+        )
 
 
 class SQLiteMasterDataRepository:
@@ -1205,6 +1333,13 @@ class SQLiteMasterDataRepository:
 
     def next_course_id(self) -> str:
         return self._next_id("courses", "course_id", COURSE_ID_PREFIX)
+
+    def next_course_group_id(self) -> str:
+        return self._next_id(
+            "course_groups",
+            "course_group_id",
+            COURSE_GROUP_ID_PREFIX,
+        )
 
     def _student_group_ids_for(
         self,

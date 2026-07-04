@@ -155,6 +155,9 @@ class AppShell(QMainWindow):
         self.student_profile_screen.observation_delete_requested.connect(
             self.delete_observation
         )
+        self.student_profile_screen.competency_confirmation_requested.connect(
+            self.confirm_competency_status
+        )
         self.master_data_screen.group_add_requested.connect(self.open_new_group_dialog)
         self.master_data_screen.group_rename_requested.connect(
             self.open_rename_group_dialog
@@ -162,6 +165,9 @@ class AppShell(QMainWindow):
         self.master_data_screen.course_add_requested.connect(self.open_new_course_dialog)
         self.master_data_screen.course_rename_requested.connect(
             self.open_rename_course_dialog
+        )
+        self.master_data_screen.course_group_add_requested.connect(
+            self.open_new_course_group_dialog
         )
         self.master_data_screen.course_group_edit_requested.connect(
             self.open_edit_course_group_dialog
@@ -242,7 +248,13 @@ class AppShell(QMainWindow):
         profile = self.adapter.get_student_profile(student_id)
         observations = self.adapter.list_observations_for_student(student_id)
         competency_groups = self.adapter.list_competency_overview_for_student(student_id)
-        self.student_profile_screen.set_student(profile, observations, competency_groups)
+        report_preview = self.adapter.get_report_preview_for_student(student_id)
+        self.student_profile_screen.set_student(
+            profile,
+            observations,
+            competency_groups,
+            report_preview,
+        )
         self._show_screen("profile")
 
     def open_new_student_dialog(self) -> None:
@@ -304,6 +316,27 @@ class AppShell(QMainWindow):
         self.show_student_profile(draft.student_id)
         self.status_label.setText("Beobachtung wurde gelöscht.")
 
+    def confirm_competency_status(
+        self,
+        student_id: str,
+        competency_id: str,
+        confirmed_rating: str,
+        note: str,
+    ) -> None:
+        """Persist a teacher-confirmed competency status and refresh profile."""
+        try:
+            self.adapter.save_competency_confirmation(
+                student_id=student_id,
+                competency_id=competency_id,
+                confirmed_rating=confirmed_rating,
+                note=note,
+            )
+        except ValueError as error:
+            QMessageBox.warning(self, "Kompetenzstand", str(error))
+            return
+        self.show_student_profile(student_id)
+        self.status_label.setText("Kompetenzstand wurde bestätigt.")
+
     def open_app_info_dialog(self) -> None:
         """Open the compact app information dialog."""
         dialog = AppInfoDialog()
@@ -352,18 +385,44 @@ class AppShell(QMainWindow):
             self.refresh_master_data()
             self.status_label.setText("Kurs wurde umbenannt.")
 
+    def open_new_course_group_dialog(self) -> None:
+        """Open the persistent dialog for a new course group."""
+        view_model = self.master_data_adapter.view_model()
+        dialog = CourseGroupDialog(
+            CourseGroupViewModel("", "", (), ()),
+            view_model.groups,
+            view_model.courses,
+            title="Neuer Kursverbund",
+        )
+        if dialog.exec():
+            try:
+                self.master_data_adapter.add_course_group(
+                    dialog.name(),
+                    dialog.selected_group_ids(),
+                    dialog.selected_course_ids(),
+                )
+            except ValueError as error:
+                QMessageBox.warning(self, "Kursverbund", str(error))
+                return
+            self.refresh_master_data()
+            self.status_label.setText("Kursverbund wurde gespeichert.")
+
     def open_edit_course_group_dialog(self, course_group_id: str) -> None:
         """Open the persistent edit dialog for one course group."""
         view_model = self.master_data_adapter.view_model()
         course_group = self.master_data_adapter.course_groups[course_group_id]
         dialog = CourseGroupDialog(course_group, view_model.groups, view_model.courses)
         if dialog.exec():
-            updated_course_group = self.master_data_adapter.update_course_group(
-                course_group_id,
-                dialog.name(),
-                dialog.selected_group_ids(),
-                dialog.selected_course_ids(),
-            )
+            try:
+                updated_course_group = self.master_data_adapter.update_course_group(
+                    course_group_id,
+                    dialog.name(),
+                    dialog.selected_group_ids(),
+                    dialog.selected_course_ids(),
+                )
+            except ValueError as error:
+                QMessageBox.warning(self, "Kursverbund", str(error))
+                return
             self._clear_invalid_course_group_filter(updated_course_group)
             self.refresh_master_data()
             self.refresh_students()

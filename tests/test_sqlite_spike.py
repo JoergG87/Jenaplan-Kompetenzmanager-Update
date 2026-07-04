@@ -12,6 +12,7 @@ from openpyxl import load_workbook
 
 from src.core.constants import (
     ACTIVE,
+    COURSE_GROUP_ID_PREFIX,
     COURSE_ID_PREFIX,
     GROUP_ID_PREFIX,
     OBSERVATION_ID_PREFIX,
@@ -33,7 +34,9 @@ from src.core.sqlite_store import (
     SQLiteGroupRepository,
     SQLiteMasterDataRepository,
     SQLiteObservationRepository,
+    SQLiteStudentCompetencyConfirmationRepository,
     SQLiteStudentRepository,
+    StudentCompetencyConfirmationRecord,
     build_workbook_data_from_sqlite,
     create_sqlite_seed_database,
 )
@@ -73,6 +76,18 @@ class SQLiteSpikeTest(unittest.TestCase):
                         "PRAGMA table_info(competencies)"
                     ).fetchall()
                 }
+                confirmation_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(student_competency_confirmations)"
+                    ).fetchall()
+                }
+                confirmation_foreign_keys = {
+                    (row[3], row[2], row[4])
+                    for row in connection.execute(
+                        "PRAGMA foreign_key_list(student_competency_confirmations)"
+                    ).fetchall()
+                }
                 student_foreign_keys = {
                     (row[3], row[2], row[4])
                     for row in connection.execute("PRAGMA foreign_key_list(students)").fetchall()
@@ -85,6 +100,7 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("observations", tables)
         self.assertIn("competencies", tables)
         self.assertIn("observation_competency_ratings", tables)
+        self.assertIn("student_competency_confirmations", tables)
         self.assertIn("student_id", student_columns)
         self.assertIn("first_name", student_columns)
         self.assertIn("last_name", student_columns)
@@ -99,8 +115,13 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("subject_name", competency_columns)
         self.assertIn("label", competency_columns)
         self.assertIn("sort_order", competency_columns)
+        self.assertIn("confirmed_rating", confirmation_columns)
+        self.assertIn("confirmed_at", confirmation_columns)
+        self.assertIn("note", confirmation_columns)
         self.assertIn(("group_id", "groups", "group_id"), student_foreign_keys)
         self.assertIn(("course_id", "courses", "course_id"), student_foreign_keys)
+        self.assertIn(("student_id", "students", "student_id"), confirmation_foreign_keys)
+        self.assertIn(("competency_id", "competencies", "competency_id"), confirmation_foreign_keys)
 
     def test_observation_schema_contains_rating_table(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -138,6 +159,132 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("competency_id", rating_columns)
         self.assertIn("rating", rating_columns)
         self.assertIn(("student_id", "students", "student_id"), observation_foreign_keys)
+
+    def test_student_competency_confirmation_repository_upserts_record(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            database = SQLiteDatabase(database_path)
+            database.initialize_schema()
+            with database.connect() as connection:
+                with connection:
+                    connection.execute(
+                        "INSERT INTO groups (group_id, group_name, sort_order, active) VALUES (?, ?, ?, ?)",
+                        (f"{GROUP_ID_PREFIX}-000001", "Grashüpfer", 0, 1),
+                    )
+                    connection.execute(
+                        """
+                        INSERT INTO courses (
+                            course_id,
+                            course_name,
+                            color_key,
+                            color_name,
+                            color_hex,
+                            sort_order,
+                            active
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            f"{COURSE_ID_PREFIX}-000001",
+                            "Kurs 1",
+                            "#2563EB",
+                            "Blau",
+                            "#2563EB",
+                            0,
+                            1,
+                        ),
+                    )
+                    connection.execute(
+                        """
+                        INSERT INTO students (
+                            student_id,
+                            first_name,
+                            last_name,
+                            group_id,
+                            course_id,
+                            student_notes,
+                            active,
+                            created_at,
+                            updated_at,
+                            archived_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            f"{STUDENT_ID_PREFIX}-000001",
+                            "Mila",
+                            "Neumann",
+                            f"{GROUP_ID_PREFIX}-000001",
+                            f"{COURSE_ID_PREFIX}-000001",
+                            "",
+                            1,
+                            "2026-07-04",
+                            "2026-07-04",
+                            None,
+                        ),
+                    )
+                    connection.execute(
+                        """
+                        INSERT INTO competencies (
+                            competency_id,
+                            subject_id,
+                            subject_name,
+                            label,
+                            description,
+                            learning_area,
+                            competency_group,
+                            sort_order,
+                            active,
+                            is_core_subject
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            "CMP-000001",
+                            "deutsch",
+                            "Deutsch",
+                            "Lesen",
+                            "Texte lesen",
+                            "Mit Texten umgehen",
+                            "Lesen",
+                            0,
+                            1,
+                            1,
+                        ),
+                    )
+            repository = SQLiteStudentCompetencyConfirmationRepository(database)
+            repository.upsert_confirmation(
+                StudentCompetencyConfirmationRecord(
+                    f"{STUDENT_ID_PREFIX}-000001",
+                    "CMP-000001",
+                    "+",
+                    "2026-07-04T12:00:00+00:00",
+                    "passt",
+                )
+            )
+            repository.upsert_confirmation(
+                StudentCompetencyConfirmationRecord(
+                    f"{STUDENT_ID_PREFIX}-000001",
+                    "CMP-000001",
+                    "++",
+                    "2026-07-05T12:00:00+00:00",
+                    "angepasst",
+                )
+            )
+
+            confirmation = repository.get_confirmation(
+                f"{STUDENT_ID_PREFIX}-000001",
+                "CMP-000001",
+            )
+            confirmations = repository.list_confirmations_for_student(
+                f"{STUDENT_ID_PREFIX}-000001"
+            )
+
+        self.assertIsNotNone(confirmation)
+        self.assertEqual(confirmation.confirmed_rating, "++")
+        self.assertEqual(confirmation.confirmed_at, "2026-07-05T12:00:00+00:00")
+        self.assertEqual(confirmation.note, "angepasst")
+        self.assertEqual(confirmations, (confirmation,))
 
     def test_seed_data_is_written_to_sqlite_without_id_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -200,6 +347,15 @@ class SQLiteSpikeTest(unittest.TestCase):
                 f"{COURSE_ID_PREFIX}-000003",
             ),
         )
+
+    def test_master_data_repository_creates_next_course_group_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = create_sqlite_seed_database(Path(temp_dir) / "kompetenzmanager.sqlite")
+            repository = SQLiteMasterDataRepository(database)
+
+            next_course_group_id = repository.next_course_group_id()
+
+        self.assertEqual(next_course_group_id, f"{COURSE_GROUP_ID_PREFIX}-000001")
 
     def test_master_data_defaults_do_not_overwrite_existing_data(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -1,5 +1,65 @@
 # CHANGELOG
 
+## Sprint B - Berichtsvorbereitung aus Kompetenzstaenden und Beobachtungen
+
+### Added
+
+- Berichtsvorschau im Schuelerprofil als strukturierte Lernentwicklungsuebersicht nach Fach ergaenzt.
+- Berichtsvorschau nutzt bestaetigte Kompetenzstaende, falls vorhanden, sonst den berechneten Vorschlag.
+- Aktive Beobachtungen werden als Beispielbelege je Fach angezeigt.
+
+### Not Changed
+
+- Keine KI-Textgenerierung, keine finalen Zeugnisformulierungen, kein PDF-/Word-Export, keine neue Persistenz, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
+## Sprint A - Bestaetigten Kompetenzstand speichern
+
+### Added
+
+- SQLite-Tabelle `student_competency_confirmations` fuer bestaetigte Kompetenzstaende der Lehrkraft ergaenzt.
+- Kompetenzuebersicht im Schuelerprofil kann den berechneten Vorschlag uebernehmen oder manuell bestaetigen.
+- Bestaetigter Stand bleibt nach Reload erhalten und wird neben dem Vorschlag angezeigt.
+
+### Changed
+
+- Kompetenzzeilen zeigen `Vorschlag`, `noch nicht bestätigt` oder `Bestätigt` inklusive Abweichung zwischen Vorschlag und bestaetigtem Stand.
+- Bei neuerer Beobachtung nach einer Bestaetigung wird sichtbar, dass ein neuerer Vorschlag vorhanden ist.
+
+### Not Changed
+
+- Beobachtungen bleiben unveraendert, berechnete Vorschlaege werden weiterhin abgeleitet, keine Berichte, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
+## Sprint - Kompetenzvorschlag und aufklappbare Fachgruppen im Schuelerprofil
+
+### Changed
+
+- Kompetenzuebersicht im Schuelerprofil zeigt Faecher als kompakte aufklappbare Zeilen.
+- Pro Kompetenz wird der berechnete Stand als `Vorschlag` angezeigt, nicht als endgueltige Lehrerentscheidung.
+- Vorschlag wird aus aktiven Beobachtungen als gewichteter Mittelwert berechnet; neuere Bewertungen zaehlen staerker, aeltere bleiben beruecksichtigt.
+- Pro Kompetenz werden Verlauf, Anzahl der Beobachtungen und Datum der neuesten aktiven Beobachtung angezeigt.
+- Backlogpunkt fuer spaeteres Bestaetigen oder manuelles Anpassen des Vorschlags durch die Lehrkraft ergaenzt.
+
+### Not Changed
+
+- Kein Speichern berechneter Kompetenzstaende, keine Schemaaenderung, keine Diagramme, keine Berichte, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
+## Sprint - Kursverbund anlegen und Schuelerlisten sortieren
+
+### Added
+
+- Button `+ Kursverbund` in den PySide-Stammdaten angebunden.
+- Neue Kursverbuende koennen mit Name, Stammgruppen und Kursen ueber den bestehenden Kursverbund-Dialog persistent in SQLite angelegt werden.
+- Duplikate mit gleichem Kursverbundnamen werden UI-nah abgefangen.
+
+### Changed
+
+- Schuelerlisten werden zentral nach Kursreihenfolge und danach alphabetisch nach Schuelername sortiert.
+- Kurs-, Stammgruppen- und Kursverbundfilter nutzen dieselbe sortierte Datenquelle.
+
+### Not Changed
+
+- Keine Schemaaenderung, keine Beobachtungspersistenz, keine Medien, kein Excel-/VBA-Umbau und kein Commit umgesetzt.
+
 ## UI-Polish - Beobachtungsverlauf im Schuelerprofil beruhigen
 
 ### Changed

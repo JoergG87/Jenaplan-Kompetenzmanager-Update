@@ -12,7 +12,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication, QLabel, QPushButton
+from PySide6.QtWidgets import QApplication, QComboBox, QLabel, QPushButton, QWidget
 
 from src.application.commands import (
     CreateObservationCommand,
@@ -47,6 +47,7 @@ from src.desktop_app import shell
 from src.desktop_app import theme
 from src.desktop_app.view_models.master_data_view_model import (
     COURSE_GROUP_EMPTY_COURSES_MESSAGE,
+    COURSE_GROUP_DUPLICATE_NAME_MESSAGE,
     COURSE_GROUP_EMPTY_GROUPS_MESSAGE,
     COURSE_COLOR_OPTIONS,
     MASTER_DATA_EMPTY_NAME_MESSAGE,
@@ -70,13 +71,21 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationRatingViewModel,
     StudentCompetencyStatusViewModel,
     StudentCompetencySubjectGroup,
+    calculated_rating_from_history,
     observation_rating_keys,
+    rating_from_weighted_score,
 )
 from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
     PROFILE_SECTION_PLACEHOLDERS,
     StudentDetailViewModel,
+    StudentListItem,
+    StudentReportCompetencyViewModel,
+    StudentReportEvidenceViewModel,
+    StudentReportPreviewViewModel,
+    StudentReportSubjectSectionViewModel,
     filter_student_list,
+    sort_student_list,
 )
 
 
@@ -444,7 +453,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             {competency.competency_label for competency in competencies},
         )
 
-    def test_competency_overview_groups_by_subject_and_uses_latest_rating(self) -> None:
+    def test_competency_overview_groups_by_subject_and_calculates_current_status(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
             date_text="2026-07-01",
             competency_ratings=(
@@ -492,9 +501,303 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(deutsch_status.rating, "+")
         self.assertEqual(deutsch_status.rating_label, "+ erreicht")
+        self.assertEqual(deutsch_status.rating_history, ("-", "+"))
+        self.assertEqual(deutsch_status.rating_history_label, "- → +")
+        self.assertEqual(deutsch_status.observation_count, 2)
+        self.assertEqual(deutsch_status.observation_count_label, "2 Beobachtungen")
         self.assertEqual(deutsch_status.last_observation_date, "2026-07-03")
         self.assertEqual(epu_status.rating, "++")
+        self.assertEqual(epu_status.rating_history, ("++",))
+        self.assertEqual(epu_status.observation_count_label, "1 Beobachtung")
         self.assertEqual(epu_status.last_observation_date, "2026-07-03")
+
+    def test_competency_status_weighting_keeps_older_observations_in_score(self) -> None:
+        rating, score = calculated_rating_from_history(("++", "--"))
+
+        self.assertEqual(rating, "+")
+        self.assertAlmostEqual(score, 1.7647058824)
+
+    def test_competency_status_weighting_prioritizes_newer_observations(self) -> None:
+        newer_positive, newer_positive_score = calculated_rating_from_history(("++", "--"))
+        newer_negative, newer_negative_score = calculated_rating_from_history(("--", "++"))
+
+        self.assertEqual(newer_positive, "+")
+        self.assertEqual(newer_negative, "-")
+        self.assertGreater(newer_positive_score, newer_negative_score)
+
+    def test_competency_status_thresholds_map_to_rating_tokens(self) -> None:
+        self.assertEqual(rating_from_weighted_score(0.74), "--")
+        self.assertEqual(rating_from_weighted_score(0.75), "-")
+        self.assertEqual(rating_from_weighted_score(1.49), "-")
+        self.assertEqual(rating_from_weighted_score(1.50), "+")
+        self.assertEqual(rating_from_weighted_score(2.49), "+")
+        self.assertEqual(rating_from_weighted_score(2.50), "++")
+
+    def test_deleted_observation_is_excluded_from_calculated_competency_status(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-01",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "--",
+                ),
+            ),
+        ))
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "++",
+                ),
+            ),
+        ))
+        self.adapter.delete_observation("OBS-000002")
+
+        groups = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        status = groups[0].competencies[0]
+
+        self.assertEqual(status.rating, "--")
+        self.assertEqual(status.rating_history, ("--",))
+        self.assertEqual(status.observation_count, 1)
+        self.assertEqual(status.last_observation_date, "2026-07-01")
+
+    def test_competency_confirmation_can_adopt_proposal_and_persists_after_reload(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+            ),
+        ))
+        status = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )[0].competencies[0]
+
+        confirmation = self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id=status.competency_id,
+            confirmed_rating=status.rating,
+        )
+        reloaded_adapter = StudentDesktopAdapter(self.database_path)
+        reloaded_status = reloaded_adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )[0].competencies[0]
+        observations = SQLiteObservationRepository(
+            self.database
+        ).list_observations_for_student(f"{STUDENT_ID_PREFIX}-000001")
+
+        self.assertEqual(confirmation.student_id, f"{STUDENT_ID_PREFIX}-000001")
+        self.assertEqual(confirmation.competency_id, "CMP-000001")
+        self.assertEqual(confirmation.confirmed_rating, "+")
+        self.assertTrue(confirmation.confirmed_at)
+        self.assertEqual(reloaded_status.rating, "+")
+        self.assertEqual(reloaded_status.confirmed_rating, "+")
+        self.assertEqual(reloaded_status.confirmation_status_label, "Vorschlag: + · Bestätigt: +")
+        self.assertEqual(len(observations), 1)
+        self.assertEqual(observations[0].competency_ratings[0].rating, "+")
+
+    def test_competency_confirmation_can_manually_override_proposal(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "-",
+                ),
+            ),
+        ))
+
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="+",
+            note="Lehrkraft entscheidet nach Gespräch.",
+        )
+        status = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )[0].competencies[0]
+
+        self.assertEqual(status.rating, "-")
+        self.assertEqual(status.confirmed_rating, "+")
+        self.assertEqual(status.confirmation_note, "Lehrkraft entscheidet nach Gespräch.")
+        self.assertEqual(status.confirmation_status_label, "Vorschlag: - · Bestätigt: +")
+
+    def test_new_observation_updates_proposal_but_not_confirmed_status(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+            ),
+        ))
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="+",
+        )
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-04",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "-",
+                ),
+            ),
+        ))
+
+        status = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )[0].competencies[0]
+
+        self.assertEqual(status.rating, "-")
+        self.assertEqual(status.confirmed_rating, "+")
+        self.assertEqual(status.confirmation_status_label, "Vorschlag: - · Bestätigt: +")
+
+    def test_report_preview_uses_confirmed_competency_status_when_available(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "-",
+                ),
+            ),
+        ))
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="+",
+        )
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        deutsch_section = preview.subject_sections[0]
+
+        self.assertIsNotNone(preview)
+        self.assertEqual(deutsch_section.subject_display_name, "Deutsch")
+        self.assertEqual(deutsch_section.strengths[0].rating, "+")
+        self.assertEqual(deutsch_section.strengths[0].rating_source, "Bestätigt")
+        self.assertEqual(deutsch_section.development, ())
+
+    def test_report_preview_uses_calculated_proposal_without_confirmation(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "-",
+                ),
+            ),
+        ))
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        deutsch_section = preview.subject_sections[0]
+
+        self.assertEqual(deutsch_section.development[0].rating, "-")
+        self.assertEqual(deutsch_section.development[0].rating_source, "Vorschlag")
+        self.assertEqual(deutsch_section.strengths, ())
+
+    def test_report_preview_shows_active_observations_as_evidence(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            context="Leseübung",
+            note="Liest einen bekannten Text und markiert zentrale Aussagen.",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+            ),
+        ))
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        evidence = preview.subject_sections[0].example_observations[0]
+
+        self.assertEqual(evidence.observation_id, "OBS-000001")
+        self.assertIn("2026-07-03", evidence.display_label)
+        self.assertIn("Leseübung", evidence.display_label)
+        self.assertIn("+ Mit Texten und Medien umgehen", evidence.competency_labels)
+
+    def test_report_preview_excludes_soft_deleted_observations(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+            ),
+        ))
+
+        self.adapter.delete_observation("OBS-000001")
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertIsNotNone(preview)
+        self.assertEqual(preview.subject_sections, ())
 
     def test_new_app_database_starts_without_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -593,15 +896,84 @@ class DesktopAppAdapterTest(unittest.TestCase):
         students = self.adapter.list_students()
 
         self.assertEqual(len(students), 28)
-        self.assertEqual(students[0].student_id, f"{STUDENT_ID_PREFIX}-000001")
         self.assertEqual(students[0].group_id, f"{GROUP_ID_PREFIX}-000001")
         self.assertEqual(students[0].group_name, "Grashüpfer")
+        self.assertEqual(students[0].course_id, f"{COURSE_ID_PREFIX}-000001")
+        course_one_students = tuple(
+            student
+            for student in students
+            if student.course_id == f"{COURSE_ID_PREFIX}-000001"
+        )
+        self.assertEqual(
+            tuple(student.display_name for student in course_one_students),
+            tuple(
+                sorted(
+                    (student.display_name for student in course_one_students),
+                    key=str.casefold,
+                )
+            ),
+        )
         self.assertIn(students[0].course_id, {
             f"{COURSE_ID_PREFIX}-000001",
             f"{COURSE_ID_PREFIX}-000002",
             f"{COURSE_ID_PREFIX}-000003",
         })
         self.assertIn(students[0].course_name, {"Kurs 1", "Kurs 2", "Kurs 3"})
+
+    def test_student_list_sort_key_uses_course_order_then_name_then_unknown_course(self) -> None:
+        students = (
+            StudentListItem("STU-000003", "Zara", "Muster", "GRP-1", "Gruppe", "CRS-2", "Kurs 2"),
+            StudentListItem("STU-000002", "Ben", "Muster", "GRP-1", "Gruppe", "CRS-1", "Kurs 1"),
+            StudentListItem("STU-000004", "Ohne", "Kurs", "GRP-1", "Gruppe", "", ""),
+            StudentListItem("STU-000001", "Anna", "Muster", "GRP-1", "Gruppe", "CRS-1", "Kurs 1"),
+        )
+
+        sorted_students = sort_student_list(students, {"CRS-1": 0, "CRS-2": 1})
+
+        self.assertEqual(
+            tuple(student.student_id for student in sorted_students),
+            ("STU-000001", "STU-000002", "STU-000003", "STU-000004"),
+        )
+
+    def test_student_adapter_sorts_all_students_by_course_order_and_name(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            adapter = StudentDesktopAdapter(database_path)
+            adapter.save_new_student(
+                first_name="Zara",
+                last_name="Muster",
+                group_id=f"{GROUP_ID_PREFIX}-000001",
+                course_id=f"{COURSE_ID_PREFIX}-000002",
+            )
+            adapter.save_new_student(
+                first_name="Ben",
+                last_name="Muster",
+                group_id=f"{GROUP_ID_PREFIX}-000001",
+                course_id=f"{COURSE_ID_PREFIX}-000001",
+            )
+            adapter.save_new_student(
+                first_name="Anna",
+                last_name="Muster",
+                group_id=f"{GROUP_ID_PREFIX}-000001",
+                course_id=f"{COURSE_ID_PREFIX}-000001",
+            )
+
+            students = adapter.list_students()
+            group_students = adapter.list_students(group_id=f"{GROUP_ID_PREFIX}-000001")
+            course_students = adapter.list_students(course_id=f"{COURSE_ID_PREFIX}-000001")
+
+        self.assertEqual(
+            tuple(student.display_name for student in students),
+            ("Anna Muster", "Ben Muster", "Zara Muster"),
+        )
+        self.assertEqual(
+            tuple(student.display_name for student in group_students),
+            ("Anna Muster", "Ben Muster", "Zara Muster"),
+        )
+        self.assertEqual(
+            tuple(student.display_name for student in course_students),
+            ("Anna Muster", "Ben Muster"),
+        )
 
     def test_group_summary_counts_active_students(self) -> None:
         groups = self.adapter.list_group_summaries()
@@ -697,6 +1069,46 @@ class DesktopAppAdapterTest(unittest.TestCase):
             (f"{COURSE_ID_PREFIX}-000001", f"{COURSE_ID_PREFIX}-000002"),
         )
         self.assertEqual(view_model.course_groups[0], updated_course_group)
+
+    def test_master_data_adapter_adds_course_group_persistently(self) -> None:
+        second_group = self.master_data_adapter.add_group("Eulen")
+
+        course_group = self.master_data_adapter.add_course_group(
+            "Mathe/Deutsch Kursverbund B",
+            (f"{GROUP_ID_PREFIX}-000001", second_group.item_id),
+            (f"{COURSE_ID_PREFIX}-000001", f"{COURSE_ID_PREFIX}-000002"),
+        )
+        reloaded_adapter = MasterDataDesktopAdapter(StudentDesktopAdapter(self.database_path))
+        reloaded_course_groups = reloaded_adapter.view_model().course_groups
+
+        self.assertTrue(course_group.course_group_id.startswith("CRG-"))
+        self.assertEqual(course_group.name, "Mathe/Deutsch Kursverbund B")
+        self.assertEqual(
+            course_group.selected_group_ids,
+            (f"{GROUP_ID_PREFIX}-000001", second_group.item_id),
+        )
+        self.assertEqual(
+            course_group.selected_course_ids,
+            (f"{COURSE_ID_PREFIX}-000001", f"{COURSE_ID_PREFIX}-000002"),
+        )
+        self.assertIn(
+            course_group,
+            reloaded_course_groups,
+        )
+
+    def test_master_data_adapter_rejects_duplicate_course_group_name(self) -> None:
+        self.master_data_adapter.add_course_group(
+            "Mathe/Deutsch Kursverbund B",
+            (f"{GROUP_ID_PREFIX}-000001",),
+            (f"{COURSE_ID_PREFIX}-000001",),
+        )
+
+        with self.assertRaisesRegex(ValueError, COURSE_GROUP_DUPLICATE_NAME_MESSAGE):
+            self.master_data_adapter.add_course_group(
+                "mathe/deutsch kursverbund b",
+                (f"{GROUP_ID_PREFIX}-000001",),
+                (f"{COURSE_ID_PREFIX}-000002",),
+            )
 
     def test_course_group_update_replaces_old_relations_persistently(self) -> None:
         second_group = self.master_data_adapter.add_group("Eulen")
@@ -974,6 +1386,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn('MASTER_DATA_COURSE_GROUP_EMPTY_STATE = "Noch keine Kursverbünde vorhanden."', source)
         self.assertIn('"Kursverbünde"', source)
+        self.assertIn('"+ Kursverbund"', source)
+        self.assertIn("course_group_add_requested = Signal()", source)
         self.assertIn("course_group_edit_requested = Signal(str)", source)
         self.assertIn("self.course_group_table = QTableWidget(0, 4)", source)
         self.assertIn(
@@ -988,6 +1402,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("COURSE_GROUP_EMPTY_GROUPS_MESSAGE", dialog_source)
         self.assertIn("COURSE_GROUP_EMPTY_COURSES_MESSAGE", dialog_source)
         self.assertIn("configure_save_cancel_buttons(buttons)", dialog_source)
+        self.assertIn("open_new_course_group_dialog", inspect.getsource(shell.AppShell))
+        self.assertIn("add_course_group(", inspect.getsource(shell.AppShell.open_new_course_group_dialog))
         self.assertIn("update_course_group(", shell_source)
         self.assertIn("_clear_invalid_course_group_filter", shell_source)
 
@@ -1545,7 +1961,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("self.show_student_profile(student.student_id)", source)
         self.assertIn("Beobachtung wurde gespeichert.", source)
         self.assertIn("list_competency_overview_for_student(student_id)", profile_source)
-        self.assertIn("set_student(profile, observations, competency_groups)", profile_source)
+        self.assertIn("get_report_preview_for_student(student_id)", profile_source)
+        self.assertIn("report_preview", profile_source)
 
     def test_shell_opens_observation_for_edit_and_refreshes_profile(self) -> None:
         source = inspect.getsource(shell.AppShell.open_edit_observation_dialog)
@@ -1936,6 +2353,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
                             "+ erreicht",
                             "2026-07-03",
                             0,
+                            ("-", "+"),
+                            2,
+                            1.6,
                         ),
                     ),
                 ),
@@ -1946,10 +2366,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
         self.assertIn("Keine passenden Beobachtungen.", label_texts)
-        self.assertIn(
-            "Mit Texten und Medien umgehen: + erreicht · 2026-07-03",
-            label_texts,
-        )
+        self.assertIn("Mit Texten und Medien umgehen", label_texts)
+        self.assertIn("Vorschlag: + · noch nicht bestätigt", label_texts)
+        self.assertIn("Verlauf: - → +", label_texts)
+        self.assertIn("2 Beobachtungen · zuletzt beobachtet: 2026-07-03", label_texts)
         self.assertIsNotNone(app)
 
     def test_student_profile_cross_subject_card_keeps_rating_subjects(self) -> None:
@@ -2025,6 +2445,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
                             "+ erreicht",
                             "2026-07-03",
                             0,
+                            ("+",),
+                            1,
+                            2.0,
                         ),
                     ),
                 ),
@@ -2035,10 +2458,192 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn("Kompetenzübersicht", label_texts)
         self.assertIn("Deutsch", label_texts)
-        self.assertIn(
-            "Mit Texten und Medien umgehen: + erreicht · 2026-07-03",
-            label_texts,
+        self.assertIn("Mit Texten und Medien umgehen", label_texts)
+        self.assertIn("Vorschlag: + · noch nicht bestätigt", label_texts)
+        self.assertIn("Verlauf: +", label_texts)
+        self.assertIn("1 Beobachtung · zuletzt beobachtet: 2026-07-03", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_renders_confirmed_competency_status(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (
+                StudentCompetencySubjectGroup(
+                    "deutsch",
+                    "Deutsch",
+                    (
+                        StudentCompetencyStatusViewModel(
+                            "CMP-000001",
+                            "Mit Texten und Medien umgehen",
+                            "deutsch",
+                            "Deutsch",
+                            "-",
+                            "- in Entwicklung",
+                            "2026-07-04",
+                            0,
+                            ("-",),
+                            1,
+                            1.0,
+                            "+",
+                            "2026-07-03T12:00:00+00:00",
+                            "pädagogisch bestätigt",
+                        ),
+                    ),
+                ),
+            ),
         )
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Vorschlag: - · Bestätigt: +", label_texts)
+        self.assertIn("Bestätigt am 2026-07-03 · neuerer Vorschlag vorhanden", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_renders_report_preview(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (),
+            StudentReportPreviewViewModel(
+                f"{STUDENT_ID_PREFIX}-000001",
+                "Emma Müller",
+                (
+                    StudentReportSubjectSectionViewModel(
+                        "deutsch",
+                        "Deutsch",
+                        (
+                            StudentReportCompetencyViewModel(
+                                "CMP-000001",
+                                "Mit Texten und Medien umgehen",
+                                "+",
+                                "Bestätigt",
+                                "+ erreicht",
+                            ),
+                        ),
+                        (),
+                        (),
+                        (
+                            StudentReportEvidenceViewModel(
+                                "OBS-000001",
+                                "2026-07-03",
+                                "Leseübung",
+                                "Liest einen bekannten Text.",
+                                ("+ Mit Texten und Medien umgehen",),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Berichtsvorschau", label_texts)
+        self.assertIn("Deutsch", label_texts)
+        self.assertIn("Stärken", label_texts)
+        self.assertIn("Entwicklung", label_texts)
+        self.assertIn("Unterstützungsbedarf", label_texts)
+        self.assertIn("Beispielbeobachtungen", label_texts)
+        self.assertIn("Mit Texten und Medien umgehen · Bestätigt: +", label_texts)
+        self.assertIn("2026-07-03 · Leseübung · Liest einen bekannten Text.", label_texts)
+        self.assertIn("+ Mit Texten und Medien umgehen", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_emits_competency_confirmation_actions(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        emitted: list[tuple[str, str, str, str]] = []
+        screen.competency_confirmation_requested.connect(
+            lambda student_id, competency_id, rating, note: emitted.append(
+                (student_id, competency_id, rating, note)
+            )
+        )
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (
+                StudentCompetencySubjectGroup(
+                    "deutsch",
+                    "Deutsch",
+                    (
+                        StudentCompetencyStatusViewModel(
+                            "CMP-000001",
+                            "Mit Texten und Medien umgehen",
+                            "deutsch",
+                            "Deutsch",
+                            "+",
+                            "+ erreicht",
+                            "2026-07-03",
+                            0,
+                            ("+",),
+                            1,
+                            2.0,
+                        ),
+                    ),
+                ),
+            ),
+        )
+        buttons = {button.text(): button for button in screen.findChildren(QPushButton)}
+        rating_select = screen.findChild(QComboBox, "CompetencyConfirmationRatingSelect")
+
+        buttons["Vorschlag übernehmen"].click()
+        rating_select.setCurrentText("++")
+        buttons["Bestätigen"].click()
+
+        self.assertEqual(
+            emitted,
+            [
+                (f"{STUDENT_ID_PREFIX}-000001", "CMP-000001", "+", ""),
+                (f"{STUDENT_ID_PREFIX}-000001", "CMP-000001", "++", ""),
+            ],
+        )
+        self.assertIsNotNone(app)
+
+    def test_student_profile_competency_groups_are_collapsible(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (
+                StudentCompetencySubjectGroup(
+                    "deutsch",
+                    "Deutsch",
+                    (
+                        StudentCompetencyStatusViewModel(
+                            "CMP-000001",
+                            "Mit Texten und Medien umgehen",
+                            "deutsch",
+                            "Deutsch",
+                            "+",
+                            "+ erreicht",
+                            "2026-07-03",
+                            0,
+                            ("-", "+"),
+                            2,
+                            1.6,
+                        ),
+                    ),
+                ),
+            ),
+        )
+        details_button = screen.findChild(QPushButton, "CompetencyGroupDetailsButton")
+        details_container = screen.findChild(QWidget, "CompetencyGroupDetails")
+
+        self.assertIsNotNone(details_button)
+        self.assertIsNotNone(details_container)
+        self.assertEqual(details_button.text(), "Details ▾")
+        self.assertTrue(details_container.isHidden())
+
+        details_button.click()
+
+        self.assertFalse(details_container.isHidden())
+        self.assertEqual(details_button.text(), "Details ▴")
         self.assertIsNotNone(app)
 
     def test_sidebar_students_navigation_resets_to_list(self) -> None:

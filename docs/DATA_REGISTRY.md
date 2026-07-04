@@ -47,6 +47,7 @@ Gepruefte Tabellen:
 | `competencies` | Competency | `data_competencies` / `tbl_competencies` |
 | `observations` | Observation | `data_observations` / `tbl_observations` |
 | `observation_competency_ratings` | ObservationCompetencyRating | `data_observation_competencies` / `tbl_observation_competencies` |
+| `student_competency_confirmations` | StudentCompetencyConfirmation | keine Workbook-Projektion |
 
 Regel:
 
@@ -163,6 +164,17 @@ observation_competency_ratings(
   rating TEXT NOT NULL,
   PRIMARY KEY(observation_id, competency_id),
   FOREIGN KEY(observation_id) REFERENCES observations(observation_id)
+)
+
+student_competency_confirmations(
+  student_id TEXT NOT NULL,
+  competency_id TEXT NOT NULL,
+  confirmed_rating TEXT NOT NULL,
+  confirmed_at TEXT NOT NULL,
+  note TEXT,
+  PRIMARY KEY(student_id, competency_id),
+  FOREIGN KEY(student_id) REFERENCES students(student_id),
+  FOREIGN KEY(competency_id) REFERENCES competencies(competency_id)
 )
 ```
 

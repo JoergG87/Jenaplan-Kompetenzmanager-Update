@@ -283,12 +283,14 @@ Registrierte Python-Spike-Komponenten:
 - `SQLiteGroupRepository`
 - `SQLiteCourseRepository`
 - `SQLiteCompetencyRepository`
+- `SQLiteStudentCompetencyConfirmationRepository`
 - `SQLiteMasterDataRepository`
 - `SQLiteObservationRepository`
 - `MasterDataGroupRecord`
 - `MasterDataCourseRecord`
 - `MasterDataCourseGroupRecord`
 - `CompetencyRecord`
+- `StudentCompetencyConfirmationRecord`
 - `ObservationCompetencyRatingRecord`
 - `ObservationRecord`
 - `ObservationService`
@@ -323,6 +325,7 @@ Registrierte Stammdaten-Repository-Methoden:
 - `SQLiteMasterDataRepository.replace_course_group_courses(course_group_id, course_ids)`
 - `SQLiteMasterDataRepository.next_student_group_id()`
 - `SQLiteMasterDataRepository.next_course_id()`
+- `SQLiteMasterDataRepository.next_course_group_id()`
 - `SQLiteObservationRepository.create_observation(observation)`
 - `SQLiteObservationRepository.update_observation(observation)`
 - `SQLiteObservationRepository.deactivate_observation(observation_id, updated_at)`
@@ -332,6 +335,9 @@ Registrierte Stammdaten-Repository-Methoden:
 - `SQLiteCompetencyRepository.ensure_catalog_defaults(entries)`
 - `SQLiteCompetencyRepository.list_competencies()`
 - `SQLiteCompetencyRepository.get_competency(competency_id)`
+- `SQLiteStudentCompetencyConfirmationRepository.list_confirmations_for_student(student_id)`
+- `SQLiteStudentCompetencyConfirmationRepository.get_confirmation(student_id, competency_id)`
+- `SQLiteStudentCompetencyConfirmationRepository.upsert_confirmation(confirmation)`
 
 Registrierte Spike-Skripte:
 
@@ -443,11 +449,14 @@ Registrierte Python-Klassen und Funktionen:
 - `COLOR_GREEN`
 - `COLOR_ORANGE`
 - `StudentDesktopAdapter`
+- `StudentDesktopAdapter.list_students(group_id, group_ids, course_id)`
 - `StudentDesktopAdapter.create_update_observation_command(draft)`
 - `StudentDesktopAdapter.update_observation(draft)`
 - `StudentDesktopAdapter.delete_observation(observation_id)`
 - `StudentDesktopAdapter.observation_draft_for_edit(observation_id)`
 - `StudentDesktopAdapter.list_competency_overview_for_student(student_id)`
+- `StudentDesktopAdapter.get_report_preview_for_student(student_id)`
+- `StudentDesktopAdapter.save_competency_confirmation(student_id, competency_id, confirmed_rating, note)`
 - `StudentProfileScreen.DEFAULT_OBSERVATION_LIMIT`
 - `StudentProfileScreen.apply_observation_filters()`
 - `StudentProfileScreen.reset_observation_filters()`
@@ -463,7 +472,21 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen._toggle_observation_details(details_widget, details_button)`
 - `StudentProfileScreen._observation_actions(observation)`
 - `StudentProfileScreen._note_preview(note, max_length)`
+- `StudentProfileScreen._competency_group_card(group)`
+- `StudentProfileScreen._toggle_competency_group_details(details_container, details_button)`
+- `StudentProfileScreen._competency_status_row(competency)`
+- `StudentProfileScreen._competency_confirmation_actions(competency)`
+- `StudentProfileScreen._request_competency_confirmation(competency, confirmed_rating)`
+- `StudentProfileScreen.set_report_preview(report_preview)`
+- `StudentProfileScreen._report_subject_card(section)`
+- `StudentProfileScreen._report_bucket(title, competencies)`
+- `StudentProfileScreen._report_evidence_block(observations)`
+- `CompetencyConfirmationRatingSelect`
+- `CompetencyGroupDetailsButton`
+- `CompetencyGroupDetails`
 - `MasterDataDesktopAdapter`
+- `MasterDataDesktopAdapter.add_course_group(name, selected_group_ids, selected_course_ids)`
+- `MasterDataDesktopAdapter.update_course_group(course_group_id, name, selected_group_ids, selected_course_ids)`
 - `CurriculumDesktopAdapter`
 - `CurriculumCatalogEntry`
 - `CurriculumCompetencyGroup`
@@ -477,6 +500,10 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentListItem`
 - `StudentDetailViewModel`
 - `GroupSummaryViewModel`
+- `StudentReportCompetencyViewModel`
+- `StudentReportEvidenceViewModel`
+- `StudentReportSubjectSectionViewModel`
+- `StudentReportPreviewViewModel`
 - `MasterDataItemViewModel`
 - `MasterDataViewModel`
 - `CourseGroupViewModel`
@@ -486,9 +513,11 @@ Registrierte Python-Klassen und Funktionen:
 - `COURSE_COLOR_OPTIONS`
 - `COURSE_GROUP_EMPTY_GROUPS_MESSAGE`
 - `COURSE_GROUP_EMPTY_COURSES_MESSAGE`
+- `COURSE_GROUP_DUPLICATE_NAME_MESSAGE`
 - `MASTER_DATA_EMPTY_NAME_MESSAGE`
 - `MASTER_DATA_SAVE_PLACEHOLDER_MESSAGE`
 - `filter_student_list(students, search_text)`
+- `sort_student_list(students, course_order_by_id)`
 - `PROFILE_ACTION_MESSAGES`
 - `PROFILE_SECTION_PLACEHOLDERS`
 - `ObservationCompetencyRatingDraft`
@@ -501,6 +530,16 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationListItem`
 - `ObservationRatingViewModel`
 - `StudentCompetencyStatusViewModel`
+- `StudentCompetencyStatusViewModel.rating_history`
+- `StudentCompetencyStatusViewModel.observation_count`
+- `StudentCompetencyStatusViewModel.weighted_score`
+- `StudentCompetencyStatusViewModel.confirmed_rating`
+- `StudentCompetencyStatusViewModel.confirmed_at`
+- `StudentCompetencyStatusViewModel.confirmation_note`
+- `StudentCompetencyStatusViewModel.rating_history_label`
+- `StudentCompetencyStatusViewModel.observation_count_label`
+- `StudentCompetencyStatusViewModel.confirmation_status_label`
+- `StudentCompetencyStatusViewModel.confirmation_meta_label`
 - `StudentCompetencySubjectGroup`
 - `OBSERVATION_CONTEXT_OPTIONS`
 - `OBSERVATION_CROSS_SUBJECT_LABEL`
@@ -511,6 +550,8 @@ Registrierte Python-Klassen und Funktionen:
 - `OBSERVATION_ATTACHMENT_PLACEHOLDER_MESSAGE`
 - `OBSERVATION_ATTACHMENT_EMPTY_STATE`
 - `observation_rating_label(rating)`
+- `calculated_rating_from_history(ratings_newest_first)`
+- `rating_from_weighted_score(score)`
 - `observation_rating_keys()`
 - `DIALOG_CANCEL_TEXT`
 - `DIALOG_SAVE_TEXT`
@@ -518,11 +559,13 @@ Registrierte Python-Klassen und Funktionen:
 - `configure_save_cancel_buttons(buttons)`
 - `AppShell.refresh_overview()`
 - `AppShell.show_students_for_course_group(course_group_id, course_id)`
+- `AppShell.open_new_course_group_dialog()`
 - `AppShell.open_edit_course_group_dialog(course_group_id)`
 - `OverviewScreen.set_master_data(view_model, group_summaries)`
 - `OVERVIEW_GROUP_EMPTY_STATE`
 - `OVERVIEW_COURSE_EMPTY_STATE`
 - `MASTER_DATA_COURSE_GROUP_EMPTY_STATE`
+- `MasterDataScreen.course_group_add_requested`
 - `APP_INFO_TITLE`
 - `APP_INFO_APP_NAME`
 - `APP_INFO_MODE`

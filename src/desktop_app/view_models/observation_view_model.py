@@ -20,6 +20,15 @@ OBSERVATION_RATING_OPTIONS = (
     "-- Unterstützungsbedarf",
 )
 
+OBSERVATION_RATING_SCORES = {
+    "--": 0,
+    "-": 1,
+    "+": 2,
+    "++": 3,
+}
+
+OBSERVATION_RATING_WEIGHT_FACTOR = 0.7
+
 OBSERVATION_SAVE_SUCCESS_MESSAGE = "Beobachtung wurde gespeichert."
 
 OBSERVATION_UPDATE_SUCCESS_MESSAGE = "Beobachtung wurde aktualisiert."
@@ -128,7 +137,7 @@ class ObservationListItem:
 
 @dataclass(frozen=True)
 class StudentCompetencyStatusViewModel:
-    """Latest observed rating for one student competency."""
+    """Calculated observed rating status for one student competency."""
 
     competency_id: str
     competency_label: str
@@ -138,6 +147,41 @@ class StudentCompetencyStatusViewModel:
     rating_label: str
     last_observation_date: str
     sort_order: int
+    rating_history: tuple[str, ...] = ()
+    observation_count: int = 1
+    weighted_score: float = 0.0
+    confirmed_rating: str = ""
+    confirmed_at: str = ""
+    confirmation_note: str = ""
+
+    @property
+    def rating_history_label(self) -> str:
+        """Return the chronological rating path."""
+        return " → ".join(self.rating_history)
+
+    @property
+    def observation_count_label(self) -> str:
+        """Return a compact observation count label."""
+        if self.observation_count == 1:
+            return "1 Beobachtung"
+        return f"{self.observation_count} Beobachtungen"
+
+    @property
+    def confirmation_status_label(self) -> str:
+        """Return proposal and teacher confirmation state."""
+        if not self.confirmed_rating:
+            return f"Vorschlag: {self.rating} · noch nicht bestätigt"
+        return f"Vorschlag: {self.rating} · Bestätigt: {self.confirmed_rating}"
+
+    @property
+    def confirmation_meta_label(self) -> str:
+        """Return compact confirmation metadata for profile rendering."""
+        if not self.confirmed_at:
+            return ""
+        confirmed_date = self.confirmed_at[:10]
+        if self.last_observation_date > confirmed_date:
+            return f"Bestätigt am {confirmed_date} · neuerer Vorschlag vorhanden"
+        return f"Bestätigt am {confirmed_date}"
 
 
 @dataclass(frozen=True)
@@ -155,6 +199,33 @@ def observation_rating_label(rating: str) -> str:
         if option.split(" ", 1)[0] == rating:
             return option
     return rating
+
+
+def calculated_rating_from_history(
+    ratings_newest_first: tuple[str, ...],
+) -> tuple[str, float]:
+    """Return weighted current rating token and score from newest-first ratings."""
+    if not ratings_newest_first:
+        return "", 0.0
+    weighted_sum = 0.0
+    weight_sum = 0.0
+    for index, rating in enumerate(ratings_newest_first):
+        weight = OBSERVATION_RATING_WEIGHT_FACTOR ** index
+        weighted_sum += OBSERVATION_RATING_SCORES[rating] * weight
+        weight_sum += weight
+    score = weighted_sum / weight_sum
+    return rating_from_weighted_score(score), score
+
+
+def rating_from_weighted_score(score: float) -> str:
+    """Map a weighted numeric score back to the rating token."""
+    if score < 0.75:
+        return "--"
+    if score < 1.5:
+        return "-"
+    if score < 2.5:
+        return "+"
+    return "++"
 
 
 def observation_rating_keys() -> tuple[str, ...]:

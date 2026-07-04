@@ -78,6 +78,32 @@ Status:
 
 Idee
 
+### Kompetenzstand-Bestaetigung fachlich validieren und ausbauen
+
+Priorität: Hoch
+
+Beschreibung:
+
+Die App berechnet im Schuelerprofil einen Kompetenzstand-Vorschlag aus aktiven Beobachtungen. Die Lehrkraft kann den Vorschlag als bestaetigten Kompetenzstand speichern oder manuell anpassen.
+
+Laura-Pilottest:
+
+- Versteht Laura `Vorschlag` als App-Berechnung?
+- Ist Fach-Aufklappen in der Kompetenzuebersicht verstaendlich?
+- Reicht Verlauf plus Anzahl Beobachtungen zur Nachvollziehbarkeit?
+- Ist die aktuelle Bestaetigen-/Anpassen-Interaktion fuer Laura ausreichend?
+- Welche Formulierung ist besser: `Vorschlag` oder `Berechneter Stand`?
+
+Offene Folgefragen:
+
+- Soll es eine Historie bestaetigter Kompetenzstaende geben?
+- Soll der optionale Kommentar im UI sichtbar bearbeitbar werden?
+- Welche Hinweise braucht Laura, wenn neue Beobachtungen nach einer Bestaetigung vorliegen?
+
+Status:
+
+Basis umgesetzt; fachliche Validierung offen
+
 ### Gruppenbewertung
 
 Priorität: Hoch
