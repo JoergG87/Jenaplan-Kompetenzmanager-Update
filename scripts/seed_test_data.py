@@ -253,6 +253,55 @@ def _seed_observations(
         (11, "2025-09-26", "epu", "Forscherrunde", "Ordnet Informationen aus Medien sachbezogen.", (("CMP-000015", "+"), ("CMP-000016", "+"))),
         (11, "2025-11-21", "musik", "Singen", "Haelt Melodie und Rhythmus zunehmend sicher.", (("CMP-000017", "+"),)),
         (11, "2026-01-17", "sport", "Bewegungsspiel", "Bewegt sich fair im Spiel und nimmt Regeln an.", (("CMP-000026", "+"),)),
+        # Verdichtete Halbjahresdaten fuer Laura-Pilottest:
+        # Fokus-Schueler 1: gut dokumentiertes Kind mit vielen Bereichen und echten Verlaeufen.
+        (0, "2025-09-08", "deutsch", "Leseuebung", "Liest kurze Texte stockend, erkennt bekannte Woerter aber sicher wieder.", (("CMP-000001", "-"), ("CMP-000002", "-"))),
+        (0, "2025-10-06", "deutsch", "Leseuebung", "Liest vertraute Texte fluessiger und fragt bei unbekannten Woertern gezielt nach.", (("CMP-000001", "+"), ("CMP-000002", "+"))),
+        (0, "2025-11-17", "deutsch", "Textgespraech", "Erschliesst den Inhalt zunehmend selbststaendig und belegt Antworten am Text.", (("CMP-000001", "+"), ("CMP-000004", "+"))),
+        (0, "2026-01-15", "deutsch", "Lesevortrag", "Liest betont und sicher vor, kann Rueckfragen zum Inhalt beantworten.", (("CMP-000001", "++"), ("CMP-000004", "+"))),
+        (0, "2025-09-16", "deutsch", "Schreibprobe", "Plant einen kurzen Text mit Hilfefragen, Satzgrenzen sind noch unsicher.", (("CMP-000003", "-"), ("CMP-000005", "-"))),
+        (0, "2025-11-04", "deutsch", "Schreibzeit", "Ueberarbeitet den eigenen Text nach Rueckmeldung sorgfaeltig.", (("CMP-000003", "+"), ("CMP-000005", "+"))),
+        (0, "2026-01-20", "deutsch", "Schreibprobe", "Schreibt einen zusammenhaengenden Text mit nachvollziehbarer Struktur.", (("CMP-000003", "+"), ("CMP-000005", "+"))),
+        (0, "2025-09-22", "mathematik", "Kopfrechnen", "Rechnet einfache Aufgaben sicher, braucht bei Zehneruebergaengen Zeit.", (("CMP-000006", "+"), ("CMP-000010", "-"))),
+        (0, "2025-10-28", "mathematik", "Sachaufgabe", "Markiert wichtige Angaben und findet mit Material einen passenden Rechenweg.", (("CMP-000007", "-"), ("CMP-000009", "-"))),
+        (0, "2025-12-02", "mathematik", "Sachaufgabe", "Erklaert den Rechenweg zunehmend nachvollziehbar und prueft Ergebnisse.", (("CMP-000007", "+"), ("CMP-000009", "+"), ("CMP-000010", "+"))),
+        (0, "2026-01-22", "mathematik", "Lernzielkontrolle", "Loest mehrschrittige Aufgaben sicher und kontrolliert Ergebnisse selbststaendig.", (("CMP-000006", "++"), ("CMP-000007", "+"), ("CMP-000009", "+"), ("CMP-000010", "++"))),
+        (0, "2025-10-01", "epu", "Experiment", "Beobachtet Veraenderungen genau und haelt Ergebnisse mit Symbolen fest.", (("CMP-000012", "+"), ("CMP-000014", "+"))),
+        (0, "2025-11-26", "epu", "Forscherfrage", "Formuliert Vermutungen und vergleicht sie mit den Beobachtungen.", (("CMP-000014", "+"), ("CMP-000015", "+"))),
+        (0, "2026-01-10", "epu", "Praesentation", "Stellt Ergebnisse strukturiert vor und nutzt Fachbegriffe zunehmend sicher.", (("CMP-000012", "++"), ("CMP-000015", "+"), ("CMP-000016", "+"))),
+        (0, "2025-09-29", "sozialkompetenz", "Gruppenarbeit", "Arbeitet freundlich mit, braucht aber Erinnerung an Gespraechsregeln.", (("CMP-000033", "+"), ("CMP-000034", "-"))),
+        (0, "2025-11-12", "sozialkompetenz", "Konfliktloesung", "Hoert anderen zu und findet mit der Gruppe eine faire Loesung.", (("CMP-000034", "+"), ("CMP-000037", "+"))),
+        (0, "2026-01-19", "sozialkompetenz", "Gruppenarbeit", "Uebernimmt Verantwortung in der Gruppe und achtet auf Absprachen.", (("CMP-000033", "++"), ("CMP-000035", "+"), ("CMP-000038", "+"))),
+        (0, "2025-12-08", "kunst", "Gestaltung", "Waehlt Farben bewusst und beschreibt die eigene Gestaltungsidee.", (("CMP-000022", "+"),)),
+        (0, "2025-12-18", "musik", "Rhythmusuebung", "Haelt einen einfachen Rhythmus sicher und setzt Einsaetze passend.", (("CMP-000017", "+"),)),
+        (0, "2026-01-11", "sport", "Bewegungsspiel", "Bewegt sich fair im Spiel und haelt vereinbarte Regeln ein.", (("CMP-000026", "+"),)),
+
+        # Fokus-Schueler 2: teilweise dokumentiert mit positiver, aber noch nicht abgeschlossener Entwicklung.
+        (1, "2025-09-10", "deutsch", "Leseuebung", "Liest kurze Woerter sicher, braucht bei Saetzen noch starke Unterstuetzung.", (("CMP-000001", "--"), ("CMP-000002", "-"))),
+        (1, "2025-10-22", "deutsch", "Leseuebung", "Liest einfache Saetze mit Pausen und nutzt bekannte Lesestrategien.", (("CMP-000001", "-"), ("CMP-000002", "-"))),
+        (1, "2025-12-05", "deutsch", "Textgespraech", "Kann zentrale Inhalte wiedergeben, benoetigt bei Begruendungen Hilfen.", (("CMP-000001", "-"), ("CMP-000004", "-"))),
+        (1, "2026-01-23", "deutsch", "Leseuebung", "Liest vertraute Texte zunehmend fluessig und beantwortet einfache Rueckfragen.", (("CMP-000001", "+"), ("CMP-000004", "-"))),
+        (1, "2025-09-24", "mathematik", "Zahlenraum", "Zaehlt sicher weiter, vertauscht bei groesseren Zahlen noch Stellenwerte.", (("CMP-000006", "-"), ("CMP-000010", "-"))),
+        (1, "2025-11-19", "mathematik", "Kopfrechnen", "Rechnet mit Material sicherer und erklaert einzelne Schritte.", (("CMP-000006", "+"), ("CMP-000010", "-"))),
+        (1, "2026-01-16", "mathematik", "Sachaufgabe", "Findet die Rechenfrage mit Hilfe und prueft Ergebnisse noch unsicher.", (("CMP-000007", "-"), ("CMP-000009", "-"))),
+        (1, "2025-10-15", "sozialkompetenz", "Partnerarbeit", "Arbeitet gern mit Partnern, verliert bei Schwierigkeiten schnell den Fokus.", (("CMP-000033", "-"), ("CMP-000035", "-"))),
+        (1, "2025-12-12", "sozialkompetenz", "Materialverantwortung", "Bereitet Material zuverlaessig vor und fragt bei Unsicherheit nach.", (("CMP-000035", "+"), ("CMP-000038", "+"))),
+
+        # Fokus-Schueler 5: sichtbarer Unterstuetzungsbedarf mit kleinen Fortschritten.
+        (4, "2025-09-12", "deutsch", "Schreibprobe", "Schreibt einzelne Woerter, benoetigt beim Satzbau deutliche Hilfe.", (("CMP-000003", "--"), ("CMP-000005", "--"))),
+        (4, "2025-10-31", "deutsch", "Schreibzeit", "Schreibt mit Satzstarter kurze Saetze und uebernimmt Rueckmeldungen.", (("CMP-000003", "-"), ("CMP-000005", "-"))),
+        (4, "2026-01-09", "deutsch", "Schreibprobe", "Formuliert kurze Saetze, braucht bei Rechtschreibung und Struktur weiter Hilfe.", (("CMP-000003", "-"), ("CMP-000005", "-"))),
+        (4, "2025-09-17", "mathematik", "Kopfrechnen", "Braucht Material und viel Zeit beim Rechnen im Zahlenraum.", (("CMP-000006", "--"), ("CMP-000010", "--"))),
+        (4, "2025-11-07", "mathematik", "Zahlenraum", "Nutzen von Material gelingt besser, Ergebnisse werden noch selten geprueft.", (("CMP-000006", "-"), ("CMP-000010", "-"))),
+        (4, "2026-01-21", "mathematik", "Lernzielkontrolle", "Loest einfache Aufgaben mit Material, mehrschrittige Aufgaben bleiben schwierig.", (("CMP-000006", "-"), ("CMP-000007", "-"), ("CMP-000010", "-"))),
+        (4, "2025-10-10", "sozialkompetenz", "Gespraechsregeln", "Faellt haeufig ins Dazwischenrufen, reagiert aber auf klare Signale.", (("CMP-000034", "--"), ("CMP-000038", "-"))),
+        (4, "2025-12-19", "sozialkompetenz", "Gruppenarbeit", "Kann eine Rolle in der Gruppe uebernehmen, braucht aber enge Begleitung.", (("CMP-000033", "-"), ("CMP-000034", "-"), ("CMP-000035", "-"))),
+
+        # Wechselhafte Entwicklung fuer Berichtsvorschau.
+        (8, "2025-09-15", "deutsch", "Vortrag", "Spricht gern vor der Gruppe, verliert aber bei Rueckfragen den roten Faden.", (("CMP-000002", "+"),)),
+        (8, "2025-11-10", "deutsch", "Textgespraech", "Beteiligt sich wenig und braucht starke Impulse zum Antworten.", (("CMP-000002", "-"), ("CMP-000004", "-"))),
+        (8, "2026-01-18", "deutsch", "Praesentation", "Bereitet sich sichtbar vor und spricht wieder sicherer vor der Gruppe.", (("CMP-000002", "+"), ("CMP-000004", "+"))),
+
         (2, "2025-09-05", "deutsch", "Altbeobachtung", "Diese soft-geloeschte Beobachtung darf nicht in Entwicklung oder Bericht einfliessen.", (("CMP-000001", "--"),)),
     )
     competencies = {

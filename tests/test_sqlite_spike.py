@@ -402,7 +402,7 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertEqual(inactive_observation_count, 1)
         self.assertGreaterEqual(confirmation_count, 4)
         self.assertGreaterEqual(document_count, 3)
-        self.assertEqual(active_date_range, ("2025-09-09", "2026-01-21"))
+        self.assertEqual(active_date_range, ("2025-09-08", "2026-01-23"))
         self.assertGreaterEqual(observed_student_count, 11)
         self.assertGreaterEqual(longest_rating_history, 3)
         self.assertEqual(blob_columns, set())
