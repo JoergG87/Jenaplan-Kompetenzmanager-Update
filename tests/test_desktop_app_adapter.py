@@ -3170,7 +3170,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("✓ Naturphänomene beschreiben", label_texts)
         self.assertIn("Im Blick behalten", label_texts)
         self.assertIn("Entwicklung", label_texts)
-        self.assertIn("Texte sinnentnehmend lesen: - → + → +", label_texts)
+        self.assertNotIn("Texte sinnentnehmend lesen: - → + → +", label_texts)
+        self.assertIn(
+            "Sichtbare Entwicklung erscheint hier nach mehreren Beobachtungen.",
+            label_texts,
+        )
         self.assertIsNotNone(app)
 
     def test_student_profile_overview_does_not_invent_strengths_without_data(self) -> None:

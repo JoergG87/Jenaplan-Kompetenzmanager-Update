@@ -201,7 +201,10 @@ def build_student_profile_overview(
     documentation_summary = documentation_summary_from_subjects(documentation_statuses)
     strengths = _overview_strengths(competency_groups)
     watch_items = _overview_watch_items(documentation_statuses, competency_groups, observations)
-    development_items = _overview_development_items(competency_groups)
+    development_items = _overview_development_items(
+        competency_groups,
+        exclude_labels=strengths,
+    )
     return StudentProfileOverviewViewModel(
         observation_count_label=_observation_count_label(len(observations)),
         documentation_label=documentation_summary.profile_summary_label,
@@ -283,15 +286,19 @@ def _overview_watch_items(
 
 def _overview_development_items(
     competency_groups: tuple[object, ...],
+    *,
+    exclude_labels: tuple[str, ...] = (),
 ) -> tuple[str, ...]:
     items: list[str] = []
+    excluded = set(exclude_labels)
     for competency in _iter_competencies(competency_groups):
         history = tuple(getattr(competency, "rating_history", ()))
         if len(history) < 2 or len(set(history)) <= 1:
             continue
         label = str(getattr(competency, "competency_label", "")).strip()
-        if label:
-            items.append(f"{label}: {' → '.join(history)}")
+        if not label or label in excluded:
+            continue
+        items.append(f"{label}: {' → '.join(history)}")
         if len(items) >= 3:
             break
     return tuple(items)
