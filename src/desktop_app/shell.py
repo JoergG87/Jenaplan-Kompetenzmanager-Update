@@ -146,6 +146,10 @@ class AppShell(QMainWindow):
         self.overview_screen.course_selected.connect(self.show_students_for_course_group)
         self.students_screen.new_student_requested.connect(self.open_new_student_dialog)
         self.students_screen.student_selected.connect(self.show_student_profile)
+        self.students_screen.observation_requested.connect(
+            self.open_quick_observation_dialog
+        )
+        self.students_screen.back_to_overview_requested.connect(self.return_to_overview)
         self.student_profile_screen.back_requested.connect(self.return_to_students)
         self.student_profile_screen.observation_requested.connect(
             self.open_new_observation_dialog
@@ -211,7 +215,11 @@ class AppShell(QMainWindow):
             group_ids=group_ids,
             course_id=self.selected_course_id,
         )
-        self.students_screen.set_students(students, group_filter_name=filter_label)
+        self.students_screen.set_students(
+            students,
+            group_filter_name=filter_label,
+            show_back_button=self._has_active_student_filter(),
+        )
         shown_count = len(self.students_screen.filtered_students)
         if self.students_screen.search_text().strip():
             self.status_label.setText(f"{shown_count} von {len(students)} Schülern angezeigt")
@@ -228,6 +236,15 @@ class AppShell(QMainWindow):
         self.refresh_students()
         self._show_screen("students")
         self._select_navigation("students")
+
+    def return_to_overview(self) -> None:
+        """Return from a filtered student detail list to the overview."""
+        self.selected_group_id = None
+        self.selected_course_group_id = None
+        self.selected_course_id = None
+        self.refresh_all()
+        self._show_screen("overview")
+        self._select_navigation("overview")
 
     def show_students_for_group(self, group_id: str) -> None:
         """Open students screen filtered to one group."""
@@ -276,6 +293,18 @@ class AppShell(QMainWindow):
         dialog = NewObservationDialog(student, self.curriculum_adapter, self.adapter)
         if dialog.exec():
             self.show_student_profile(student.student_id)
+            self.status_label.setText("Beobachtung wurde gespeichert.")
+
+    def open_quick_observation_dialog(self, student_id: str) -> None:
+        """Open the observation dialog from a student list row."""
+        student = self.adapter.get_student_profile(student_id)
+        if student is None:
+            self.status_label.setText("Schülerprofil wurde nicht gefunden.")
+            return
+        dialog = NewObservationDialog(student, self.curriculum_adapter, self.adapter)
+        if dialog.exec():
+            self.refresh_overview()
+            self.refresh_students()
             self.status_label.setText("Beobachtung wurde gespeichert.")
 
     def open_edit_observation_dialog(self, observation_id: str) -> None:
@@ -491,6 +520,12 @@ class AppShell(QMainWindow):
             if course.item_id == course_id:
                 return course.name
         return course_id
+
+    def _has_active_student_filter(self) -> bool:
+        return bool(
+            self.selected_group_id
+            or (self.selected_course_group_id and self.selected_course_id)
+        )
 
     def _clear_invalid_course_group_filter(
         self,

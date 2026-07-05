@@ -35,6 +35,8 @@ class StudentsScreen(QWidget):
 
     new_student_requested = Signal()
     student_selected = Signal(str)
+    observation_requested = Signal(str)
+    back_to_overview_requested = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -43,7 +45,8 @@ class StudentsScreen(QWidget):
         self.group_filter_label = QLabel("")
         self.empty_state_label = QLabel("")
         self.search_input = QLineEdit()
-        self.table = QTableWidget(0, 3)
+        self.back_to_overview_button = QPushButton("← Zur Übersicht")
+        self.table = QTableWidget(0, 4)
         self._build()
 
     def _build(self) -> None:
@@ -54,8 +57,13 @@ class StudentsScreen(QWidget):
         set_label_style(title, "screen_title")
         new_student_button = QPushButton("+ Schüler")
         new_student_button.clicked.connect(self.new_student_requested.emit)
+        self.back_to_overview_button.clicked.connect(
+            self.back_to_overview_requested.emit
+        )
+        self.back_to_overview_button.setVisible(False)
         header.addWidget(title)
         header.addStretch()
+        header.addWidget(self.back_to_overview_button)
         header.addWidget(new_student_button)
         layout.addLayout(header)
 
@@ -74,7 +82,9 @@ class StudentsScreen(QWidget):
         self.empty_state_label.setWordWrap(True)
         layout.addWidget(self.empty_state_label)
 
-        self.table.setHorizontalHeaderLabels(("Name", "Kurs", "Dokumentation"))
+        self.table.setHorizontalHeaderLabels(
+            ("Name", "Kurs", "Dokumentation", "Aktion")
+        )
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setAlternatingRowColors(True)
@@ -90,6 +100,10 @@ class StudentsScreen(QWidget):
             2,
             QHeaderView.ResizeMode.ResizeToContents,
         )
+        self.table.horizontalHeader().setSectionResizeMode(
+            3,
+            QHeaderView.ResizeMode.ResizeToContents,
+        )
         self.table.cellDoubleClicked.connect(self._open_student)
         self.table.itemSelectionChanged.connect(self._select_student)
         layout.addWidget(self.table)
@@ -99,14 +113,12 @@ class StudentsScreen(QWidget):
         students: tuple[StudentListItem, ...],
         *,
         group_filter_name: str = "",
+        show_back_button: bool = False,
     ) -> None:
         """Replace student rows."""
         self.students = students
-        self.group_filter_label.setText(
-            f"Gefiltert nach Stammgruppe: {group_filter_name}"
-            if group_filter_name
-            else "Alle Schüler"
-        )
+        self.group_filter_label.setText(group_filter_name or "Alle Schüler")
+        self.back_to_overview_button.setVisible(show_back_button)
         self.apply_search()
 
     def search_text(self) -> str:
@@ -132,6 +144,7 @@ class StudentsScreen(QWidget):
                 2,
                 QTableWidgetItem(student.documentation_status.list_label),
             )
+            self.table.setCellWidget(row_index, 3, self._observation_action_cell(student))
 
     def _course_cell(self, student: StudentListItem) -> QWidget:
         cell = QWidget()
@@ -149,6 +162,21 @@ class StudentsScreen(QWidget):
         layout.addWidget(marker)
         layout.addWidget(course_label)
         layout.addStretch(1)
+        return cell
+
+    def _observation_action_cell(self, student: StudentListItem) -> QWidget:
+        cell = QWidget()
+        layout = QHBoxLayout(cell)
+        layout.setContentsMargins(4, 0, 4, 0)
+        layout.setSpacing(0)
+        button = QPushButton("Beobachten")
+        button.setToolTip(f"Neue Beobachtung für {student.display_name}")
+        button.clicked.connect(
+            lambda _checked=False, student_id=student.student_id: self.observation_requested.emit(
+                student_id
+            )
+        )
+        layout.addWidget(button)
         return cell
 
     def _update_empty_state(self, students: tuple[StudentListItem, ...]) -> None:
