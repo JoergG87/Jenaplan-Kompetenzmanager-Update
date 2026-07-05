@@ -663,7 +663,12 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentListView`
 - `OverviewScreen`
 - `StudentsScreen`
+- `StudentsScreen.observation_requested`
+- `StudentsScreen.back_to_overview_requested`
 - `StudentProfileScreen`
+- `StudentProfileScreen.profile_tabs`
+- `StudentProfileOverviewViewModel`
+- `build_student_profile_overview(observations, competency_groups, documentation_statuses)`
 - `MasterDataScreen`
 - `PlaceholderScreen`
 - `AppInfoDialog`
@@ -671,6 +676,8 @@ Registrierte Python-Klassen und Funktionen:
 - `MasterDataNameDialog`
 - `NewObservationDialog`
 - `NewStudentDialog`
+- `AppShell.open_quick_observation_dialog(student_id)`
+- `AppShell.return_to_overview()`
 - `main()`
 
 Regel:

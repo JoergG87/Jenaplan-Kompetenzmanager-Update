@@ -180,6 +180,152 @@ class StudentDetailViewModel:
 
 
 @dataclass(frozen=True)
+class StudentProfileOverviewViewModel:
+    """Teacher-facing first-read summary for the student profile."""
+
+    observation_count_label: str
+    documentation_label: str
+    latest_observation_label: str
+    strengths: tuple[str, ...]
+    watch_items: tuple[str, ...]
+    development_items: tuple[str, ...]
+    reliability_hint: str = ""
+
+
+def build_student_profile_overview(
+    observations: tuple[object, ...],
+    competency_groups: tuple[object, ...],
+    documentation_statuses: tuple[object, ...],
+) -> StudentProfileOverviewViewModel:
+    """Derive a compact teacher overview from existing profile data."""
+    documentation_summary = documentation_summary_from_subjects(documentation_statuses)
+    strengths = _overview_strengths(competency_groups)
+    watch_items = _overview_watch_items(documentation_statuses, competency_groups, observations)
+    development_items = _overview_development_items(competency_groups)
+    return StudentProfileOverviewViewModel(
+        observation_count_label=_observation_count_label(len(observations)),
+        documentation_label=documentation_summary.profile_summary_label,
+        latest_observation_label=_latest_observation_label(observations),
+        strengths=strengths,
+        watch_items=watch_items,
+        development_items=development_items,
+        reliability_hint=_overview_reliability_hint(observations, strengths),
+    )
+
+
+def _observation_count_label(observation_count: int) -> str:
+    if observation_count == 1:
+        return "1 Beobachtung"
+    return f"{observation_count} Beobachtungen"
+
+
+def _latest_observation_label(observations: tuple[object, ...]) -> str:
+    if not observations:
+        return "Letzte Beobachtung: noch keine Beobachtung dokumentiert"
+    latest = max(observations, key=lambda observation: getattr(observation, "date_text", ""))
+    parts = [
+        f"Letzte Beobachtung: {getattr(latest, 'date_text', '')}",
+        getattr(latest, "subject_display_name", ""),
+        getattr(latest, "context", ""),
+    ]
+    return " · ".join(part for part in parts if part)
+
+
+def _overview_strengths(competency_groups: tuple[object, ...]) -> tuple[str, ...]:
+    strengths: list[str] = []
+    for competency in _iter_competencies(competency_groups):
+        rating = getattr(competency, "confirmed_rating", "") or getattr(competency, "rating", "")
+        observation_count = getattr(competency, "observation_count", 0)
+        if rating == "++" or (rating == "+" and observation_count >= 2):
+            label = str(getattr(competency, "competency_label", "")).strip()
+            if label and label not in strengths:
+                strengths.append(label)
+        if len(strengths) >= 3:
+            break
+    return tuple(strengths)
+
+
+def _overview_watch_items(
+    documentation_statuses: tuple[object, ...],
+    competency_groups: tuple[object, ...],
+    observations: tuple[object, ...],
+) -> tuple[str, ...]:
+    items: list[str] = []
+    for competency in _iter_competencies(competency_groups):
+        rating = getattr(competency, "rating", "")
+        if rating in ("-", "--"):
+            label = str(getattr(competency, "competency_label", "")).strip()
+            if label:
+                items.append(f"{label} weiter beobachten")
+        if len(items) >= 3:
+            return tuple(items)
+    for status in sorted(
+        documentation_statuses,
+        key=lambda entry: (
+            _documentation_ratio(entry),
+            getattr(entry, "sort_order", 0),
+            getattr(entry, "subject_display_name", ""),
+        ),
+    ):
+        subject_name = str(getattr(status, "subject_display_name", "")).strip()
+        if not subject_name:
+            continue
+        if getattr(status, "documented_count", 0) < getattr(status, "total_count", 0):
+            item = f"{subject_name} weiter beobachten"
+            if item not in items:
+                items.append(item)
+        if len(items) >= 3:
+            return tuple(items)
+    if not observations and not items:
+        return ("Erste Beobachtungen sammeln, um Entwicklung sichtbar zu machen.",)
+    return tuple(items)
+
+
+def _overview_development_items(
+    competency_groups: tuple[object, ...],
+) -> tuple[str, ...]:
+    items: list[str] = []
+    for competency in _iter_competencies(competency_groups):
+        history = tuple(getattr(competency, "rating_history", ()))
+        if len(history) < 2 or len(set(history)) <= 1:
+            continue
+        label = str(getattr(competency, "competency_label", "")).strip()
+        if label:
+            items.append(f"{label}: {' → '.join(history)}")
+        if len(items) >= 3:
+            break
+    return tuple(items)
+
+
+def _overview_reliability_hint(
+    observations: tuple[object, ...],
+    strengths: tuple[str, ...],
+) -> str:
+    if len(observations) == 0:
+        return "Noch keine Beobachtungen für eine verlässliche Einschätzung."
+    if len(observations) < 3 and not strengths:
+        return "Noch zu wenig Beobachtungen für eine verlässliche Einschätzung."
+    return ""
+
+
+def _iter_competencies(competency_groups: tuple[object, ...]) -> tuple[object, ...]:
+    competencies: list[object] = []
+    for group in competency_groups:
+        competencies.extend(getattr(group, "competencies", ()))
+    return tuple(
+        sorted(
+            competencies,
+            key=lambda competency: (
+                -getattr(competency, "observation_count", 0),
+                getattr(competency, "subject_display_name", ""),
+                getattr(competency, "sort_order", 0),
+                getattr(competency, "competency_label", ""),
+            ),
+        )
+    )
+
+
+@dataclass(frozen=True)
 class StudentDocumentViewModel:
     """Display-ready document or media metadata for a student."""
 

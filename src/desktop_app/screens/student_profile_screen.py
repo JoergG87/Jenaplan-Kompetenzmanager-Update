@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QScrollArea,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -27,6 +28,7 @@ from src.desktop_app.view_models.student_view_model import (
     StudentDetailViewModel,
     StudentDocumentViewModel,
     StudentReportPreviewViewModel,
+    build_student_profile_overview,
     documentation_summary_from_subjects,
     format_student_report_preview_text,
 )
@@ -62,6 +64,10 @@ class StudentProfileScreen(QWidget):
         self.course_value_label = QLabel("")
         self.notes_value_label = QLabel("")
         self.action_feedback_label = QLabel("")
+        self.overview_summary_layout = QVBoxLayout()
+        self.overview_recent_layout = QVBoxLayout()
+        self.overview_documentation_layout = QVBoxLayout()
+        self.overview_development_layout = QVBoxLayout()
         self.observation_empty_label = QLabel("")
         self.competency_empty_label = QLabel("")
         self.documentation_empty_label = QLabel("")
@@ -81,33 +87,135 @@ class StudentProfileScreen(QWidget):
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+
         header = QHBoxLayout()
         self.back_button.clicked.connect(self.back_requested.emit)
         header.addWidget(self.back_button)
         header.addStretch()
         layout.addLayout(header)
 
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        content = QWidget()
-        content_layout = QVBoxLayout(content)
-
         set_label_style(self.name_label, "screen_title")
         set_label_style(self.meta_label, "muted")
         set_label_style(self.student_id_label, "small")
-        content_layout.addWidget(self.name_label)
-        content_layout.addWidget(self.meta_label)
-        content_layout.addWidget(self.student_id_label)
-        content_layout.addWidget(self._actions_card())
-        content_layout.addWidget(self._basis_data_card())
-        content_layout.addWidget(self._observations_card())
-        content_layout.addWidget(self._documentation_status_card())
-        content_layout.addWidget(self._competencies_card())
-        content_layout.addWidget(self._report_preview_card())
-        content_layout.addWidget(self._documents_card())
-        content_layout.addStretch()
-        scroll_area.setWidget(content)
-        layout.addWidget(scroll_area)
+        layout.addWidget(self.name_label)
+        layout.addWidget(self.meta_label)
+
+        self.profile_tabs = QTabWidget()
+        self.profile_tabs.addTab(self._scrollable_tab(self._overview_tab()), "Überblick")
+        self.profile_tabs.addTab(
+            self._scrollable_tab(self._observations_card()),
+            "Beobachtungen",
+        )
+
+        competencies_tab = QWidget()
+        competencies_layout = QVBoxLayout(competencies_tab)
+        competencies_layout.setContentsMargins(0, 8, 0, 0)
+        competencies_layout.setSpacing(10)
+        competencies_layout.addWidget(self._documentation_status_card())
+        competencies_layout.addWidget(self._competencies_card())
+        competencies_layout.addStretch(1)
+        self.profile_tabs.addTab(
+            self._scrollable_tab(competencies_tab),
+            "Kompetenzen",
+        )
+
+        self.profile_tabs.addTab(
+            self._scrollable_tab(self._report_preview_card()),
+            "Bericht",
+        )
+        self.profile_tabs.addTab(
+            self._scrollable_tab(self._documents_card()),
+            "Dateien",
+        )
+        layout.addWidget(self.profile_tabs, 1)
+
+    def _scrollable_tab(self, content: QWidget) -> QScrollArea:
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+
+        wrapper = QWidget()
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 8, 0, 0)
+        wrapper_layout.setSpacing(0)
+        wrapper_layout.addWidget(content)
+        wrapper_layout.addStretch(1)
+
+        scroll_area.setWidget(wrapper)
+        return scroll_area
+
+    def _overview_tab(self) -> QWidget:
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(0, 8, 0, 0)
+        layout.setSpacing(10)
+
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(8)
+
+        title = QLabel("Überblick")
+        set_label_style(title, "section_title")
+        header.addWidget(title)
+        header.addStretch(1)
+
+        add_observation_button = QPushButton("+ Beobachtung")
+        add_observation_button.clicked.connect(self._request_new_observation)
+        header.addWidget(add_observation_button)
+
+        add_document_button = QPushButton("+ Datei hinzufügen")
+        add_document_button.clicked.connect(self._request_add_document)
+        header.addWidget(add_document_button)
+
+        edit_student_button = QPushButton("Schüler bearbeiten")
+        edit_student_button.clicked.connect(
+            lambda: self._show_placeholder_message(PROFILE_ACTION_MESSAGES["edit"])
+        )
+        header.addWidget(edit_student_button)
+
+        layout.addLayout(header)
+        layout.addWidget(self._basis_data_card())
+        layout.addWidget(self._overview_summary_card())
+        layout.addWidget(
+            self._overview_list_card("Entwicklung", self.overview_development_layout)
+        )
+        layout.addWidget(
+            self._overview_list_card("Letzte Beobachtungen", self.overview_recent_layout)
+        )
+        layout.addWidget(
+            self._overview_list_card(
+                "Dokumentationsstand",
+                self.overview_documentation_layout,
+            )
+        )
+        layout.addStretch(1)
+        return tab
+
+    def _overview_summary_card(self) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(6)
+        title = QLabel("Halbjahresblick")
+        set_label_style(title, "card_title")
+        layout.addWidget(title)
+        layout.addLayout(self.overview_summary_layout)
+        return card
+
+    def _overview_list_card(self, title: str, content_layout: QVBoxLayout) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(5)
+        title_label = QLabel(title)
+        set_label_style(title_label, "card_title")
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(4)
+        layout.addWidget(title_label)
+        layout.addLayout(content_layout)
+        return card
 
     def _actions_card(self) -> QFrame:
         card = self._card()
@@ -343,6 +451,139 @@ class StudentProfileScreen(QWidget):
             return
         self.document_add_requested.emit(self.current_student.student_id)
 
+    def _render_profile_overview(
+        self,
+        student: StudentDetailViewModel | None,
+        observations: tuple[ObservationListItem, ...],
+        competency_groups: tuple[StudentCompetencySubjectGroup, ...],
+        documentation_statuses: tuple[StudentDocumentationSubjectStatus, ...],
+    ) -> None:
+        self._clear_layout(self.overview_summary_layout)
+        self._clear_layout(self.overview_recent_layout)
+        self._clear_layout(self.overview_documentation_layout)
+        self._clear_layout(self.overview_development_layout)
+        if student is None:
+            self.overview_summary_layout.addWidget(
+                self._overview_text("Kein Schüler ausgewählt.", "body")
+            )
+            return
+        overview = build_student_profile_overview(
+            observations,
+            competency_groups,
+            documentation_statuses,
+        )
+        self.overview_summary_layout.addWidget(
+            self._overview_text(
+                f"{overview.observation_count_label} · {overview.documentation_label}",
+                "body",
+            )
+        )
+        self.overview_summary_layout.addWidget(
+            self._overview_text(overview.latest_observation_label, "small")
+        )
+        if overview.reliability_hint:
+            self.overview_summary_layout.addWidget(
+                self._overview_text(overview.reliability_hint, "subtle")
+            )
+        self.overview_summary_layout.addWidget(
+            self._overview_subsection("Stärken", overview.strengths, "✓")
+        )
+        self.overview_summary_layout.addWidget(
+            self._overview_subsection(
+                "Im Blick behalten",
+                overview.watch_items,
+                "!",
+                empty_text="Aktuell kein besonderer Beobachtungshinweis aus den vorhandenen Daten.",
+            )
+        )
+        self._render_overview_recent_observations(observations)
+        self._render_overview_documentation(documentation_statuses)
+        self._render_overview_development(overview.development_items)
+
+    def _overview_text(self, text: str, style: str) -> QLabel:
+        label = QLabel(text)
+        label.setWordWrap(True)
+        set_label_style(label, style)
+        return label
+
+    def _overview_subsection(
+        self,
+        title: str,
+        items: tuple[str, ...],
+        marker: str,
+        *,
+        empty_text: str = "Noch zu wenig Beobachtungen für eine verlässliche Einschätzung.",
+    ) -> QWidget:
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(0, 2, 0, 0)
+        layout.setSpacing(3)
+        title_label = QLabel(title)
+        set_label_style(title_label, "field_label")
+        layout.addWidget(title_label)
+        if not items:
+            layout.addWidget(self._overview_text(empty_text, "subtle"))
+            return section
+        for item in items:
+            layout.addWidget(self._overview_text(f"{marker} {item}", "small"))
+        return section
+
+    def _render_overview_recent_observations(
+        self,
+        observations: tuple[ObservationListItem, ...],
+    ) -> None:
+        if not observations:
+            self.overview_recent_layout.addWidget(
+                self._overview_text("Noch keine Beobachtungen dokumentiert.", "subtle")
+            )
+            return
+        for observation in sorted(
+            observations,
+            key=lambda item: item.date_text,
+            reverse=True,
+        )[:3]:
+            parts = [
+                observation.date_text,
+                observation.subject_display_name,
+                observation.context,
+                self._note_preview(observation.note, 72),
+            ]
+            self.overview_recent_layout.addWidget(
+                self._overview_text(" · ".join(part for part in parts if part), "small")
+            )
+
+    def _render_overview_documentation(
+        self,
+        statuses: tuple[StudentDocumentationSubjectStatus, ...],
+    ) -> None:
+        if not statuses:
+            self.overview_documentation_layout.addWidget(
+                self._overview_text("Noch kein Kompetenzkatalog verfügbar.", "subtle")
+            )
+            return
+        summary = documentation_summary_from_subjects(statuses)
+        self.overview_documentation_layout.addWidget(
+            self._overview_text(summary.profile_summary_label, "body")
+        )
+        if summary.weak_subjects_label:
+            self.overview_documentation_layout.addWidget(
+                self._overview_text(summary.weak_subjects_label, "subtle")
+            )
+
+    def _render_overview_development(self, development_items: tuple[str, ...]) -> None:
+        if not development_items:
+            self.overview_development_layout.addWidget(
+                self._overview_text(
+                    "Sichtbare Entwicklung erscheint hier nach mehreren Beobachtungen.",
+                    "subtle",
+                )
+            )
+            return
+        for item in development_items:
+            self.overview_development_layout.addWidget(
+                self._overview_text(item, "small")
+            )
+
     def set_student(
         self,
         student: StudentDetailViewModel | None,
@@ -354,6 +595,7 @@ class StudentProfileScreen(QWidget):
     ) -> None:
         """Render selected student or empty state."""
         self.current_student = student
+        self.profile_tabs.setCurrentIndex(0)
         if student is None:
             self.name_label.setText("Kein Schüler ausgewählt")
             self.meta_label.setText("")
@@ -367,14 +609,21 @@ class StudentProfileScreen(QWidget):
             self.set_competency_groups(())
             self.set_report_preview(None)
             self.set_documents(())
+            self._render_profile_overview(None, (), (), ())
             return
         self.name_label.setText(student.display_name)
         self.meta_label.setText(f"{student.group_name} · {student.course_name}")
-        self.student_id_label.setText(student.student_id)
+        self.student_id_label.setText("")
         self.group_value_label.setText(student.group_name)
         self.course_value_label.setText(student.course_name)
         self.notes_value_label.setText(student.student_notes or "Keine Notiz hinterlegt.")
         self.action_feedback_label.setText("")
+        self._render_profile_overview(
+            student,
+            observations,
+            competency_groups,
+            documentation_statuses,
+        )
         self.set_observations(observations)
         self.set_documentation_statuses(documentation_statuses)
         self.set_competency_groups(competency_groups)

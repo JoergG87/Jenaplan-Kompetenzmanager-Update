@@ -1,5 +1,37 @@
 # CHANGELOG
 
+## Sprint - Schuelerprofil-Ueberblick vor Laura-Pilottest
+
+### Added
+
+- Schuelerprofil startet mit dem Reiter `Überblick` und einer kompakten Karte `Halbjahresblick`.
+- Der Überblick zeigt aktive Beobachtungen, Dokumentationsstand, letzte aktive Beobachtung, abgeleitete Stärken, Beobachtungshinweise und sichtbare Entwicklung.
+- Das Profil ist in die Reiter `Überblick`, `Beobachtungen`, `Kompetenzen`, `Bericht` und `Dateien` gegliedert.
+
+### Changed
+
+- Bestehende Beobachtungen, Kompetenzdetails, Berichtsvorschau und Dokumente bleiben erhalten, werden aber aus dem ersten Profilblick herausgenommen.
+- Laura-Pilottestpunkte zum Schuelerprofil wurden auf Orientierung, Halbjahresblick und Reiterstruktur ausgerichtet.
+
+### Not Changed
+
+- Keine neue Persistenz, keine Schemaaenderung, keine SQLite-Logik in Qt-Screens, keine Beobachtungs-/Kompetenzlogik entfernt, kein Excel-/VBA-Bezug und kein Commit umgesetzt.
+
+## Sprint - Schnellbeobachtung und Zurueck-Navigation
+
+### Added
+
+- Schuelerlisten erhalten pro Schueler eine kompakte Zeilenaktion `Beobachten`.
+- Gefilterte Schuelerlisten fuer Stammgruppen, Kurse und Kursverbuende erhalten `← Zur Übersicht`.
+
+### Changed
+
+- Schnellbeobachtung nutzt den bestehenden `NewObservationDialog` und aktualisiert nach dem Speichern Liste, Uebersicht und Dokumentationsstatus.
+
+### Not Changed
+
+- Keine neue Beobachtungslogik, keine Datenmodell- oder Schemaaenderung, keine direkte SQLite-Logik in Qt-Screens, kein Excel-/VBA-Bezug und kein Commit umgesetzt.
+
 ## Sprint - Excel/VBA-Legacy bereinigen
 
 ### Changed

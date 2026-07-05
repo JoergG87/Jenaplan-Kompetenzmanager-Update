@@ -12,7 +12,14 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication, QComboBox, QLabel, QPushButton, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QLabel,
+    QPushButton,
+    QTabWidget,
+    QWidget,
+)
 
 from src.application.commands import (
     CreateObservationCommand,
@@ -91,6 +98,7 @@ from src.desktop_app.view_models.student_view_model import (
     StudentReportEvidenceViewModel,
     StudentReportPreviewViewModel,
     StudentReportSubjectSectionViewModel,
+    build_student_profile_overview,
     documentation_summary_from_subjects,
     filter_student_list,
     format_student_report_preview_text,
@@ -1778,10 +1786,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.screens.students_screen"
         ))
 
-        self.assertIn(
-            'self.table.setHorizontalHeaderLabels(("Name", "Kurs", "Dokumentation"))',
-            source,
-        )
+        self.assertIn('"Name", "Kurs", "Dokumentation", "Aktion"', source)
         self.assertIn(
             "self.table.setCellWidget(row_index, 1, self._course_cell(student))",
             source,
@@ -2407,6 +2412,32 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("get_report_preview_for_student(student_id)", profile_source)
         self.assertIn("list_documentation_status_for_student(student_id)", profile_source)
         self.assertIn("report_preview", profile_source)
+
+    def test_shell_opens_quick_observation_from_student_list(self) -> None:
+        shell_source = inspect.getsource(shell.AppShell)
+        quick_source = inspect.getsource(shell.AppShell.open_quick_observation_dialog)
+
+        self.assertIn("self.students_screen.observation_requested.connect", shell_source)
+        self.assertIn("self.open_quick_observation_dialog", shell_source)
+        self.assertIn("self.adapter.get_student_profile(student_id)", quick_source)
+        self.assertIn("NewObservationDialog(student, self.curriculum_adapter, self.adapter)", quick_source)
+        self.assertIn("self.refresh_overview()", quick_source)
+        self.assertIn("self.refresh_students()", quick_source)
+        self.assertIn("Beobachtung wurde gespeichert.", quick_source)
+
+    def test_shell_returns_from_filtered_student_list_to_overview(self) -> None:
+        shell_source = inspect.getsource(shell.AppShell)
+        return_source = inspect.getsource(shell.AppShell.return_to_overview)
+        refresh_source = inspect.getsource(shell.AppShell.refresh_students)
+
+        self.assertIn("self.students_screen.back_to_overview_requested.connect", shell_source)
+        self.assertIn("self.return_to_overview", shell_source)
+        self.assertIn("self.selected_group_id = None", return_source)
+        self.assertIn("self.selected_course_group_id = None", return_source)
+        self.assertIn("self.selected_course_id = None", return_source)
+        self.assertIn('self._show_screen("overview")', return_source)
+        self.assertIn('self._select_navigation("overview")', return_source)
+        self.assertIn("show_back_button=self._has_active_student_filter()", refresh_source)
 
     def test_shell_opens_observation_for_edit_and_refreshes_profile(self) -> None:
         source = inspect.getsource(shell.AppShell.open_edit_observation_dialog)
@@ -3060,9 +3091,175 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("EPU: 0 / 6 dokumentiert", label_texts)
         self.assertIsNotNone(app)
 
-    def test_students_screen_shows_compact_documentation_column(self) -> None:
+    def test_student_profile_opens_with_overview_tab(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(self._sample_student_detail())
+
+        tab_widget = screen.findChild(QTabWidget)
+        self.assertIsNotNone(tab_widget)
+        self.assertEqual(tab_widget.currentIndex(), 0)
+        self.assertEqual(
+            [tab_widget.tabText(index) for index in range(tab_widget.count())],
+            ["Überblick", "Beobachtungen", "Kompetenzen", "Bericht", "Dateien"],
+        )
+        self.assertIsNotNone(app)
+
+    def test_student_profile_overview_summarizes_documented_student(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_many_observations(),
+            (
+                StudentCompetencySubjectGroup(
+                    "deutsch",
+                    "Deutsch",
+                    (
+                        StudentCompetencyStatusViewModel(
+                            "CMP-000001",
+                            "Texte sinnentnehmend lesen",
+                            "deutsch",
+                            "Deutsch",
+                            "+",
+                            "+ erreicht",
+                            "2026-07-05",
+                            0,
+                            ("-", "+", "+"),
+                            3,
+                            2.1,
+                        ),
+                    ),
+                ),
+                StudentCompetencySubjectGroup(
+                    "epu",
+                    "EPU",
+                    (
+                        StudentCompetencyStatusViewModel(
+                            "CMP-000003",
+                            "Naturphänomene beschreiben",
+                            "epu",
+                            "EPU",
+                            "++",
+                            "++ sicher erreicht",
+                            "2026-07-04",
+                            1,
+                            ("+", "++"),
+                            2,
+                            2.8,
+                        ),
+                    ),
+                ),
+            ),
+            documentation_statuses=(
+                StudentDocumentationSubjectStatus("deutsch", "Deutsch", 2, 3, (), 0),
+                StudentDocumentationSubjectStatus("epu", "EPU", 1, 2, (), 1),
+            ),
+        )
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Halbjahresblick", label_texts)
+        self.assertIn("4 Beobachtungen · 3/5 Lernbereiche dokumentiert", label_texts)
+        self.assertIn(
+            f"Letzte Beobachtung: 2026-07-06 · Mathematik · Projektarbeit",
+            label_texts,
+        )
+        self.assertIn("Stärken", label_texts)
+        self.assertIn("✓ Texte sinnentnehmend lesen", label_texts)
+        self.assertIn("✓ Naturphänomene beschreiben", label_texts)
+        self.assertIn("Im Blick behalten", label_texts)
+        self.assertIn("Entwicklung", label_texts)
+        self.assertIn("Texte sinnentnehmend lesen: - → + → +", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_overview_does_not_invent_strengths_without_data(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (),
+            documentation_statuses=(
+                StudentDocumentationSubjectStatus("deutsch", "Deutsch", 0, 3, (), 0),
+            ),
+        )
+
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+        strength_lines = [text for text in label_texts if text.startswith("✓ ")]
+
+        self.assertIn("0 Beobachtungen · 0/3 Lernbereiche dokumentiert", label_texts)
+        self.assertIn(
+            "Letzte Beobachtung: noch keine Beobachtung dokumentiert",
+            label_texts,
+        )
+        self.assertIn(
+            "Noch keine Beobachtungen für eine verlässliche Einschätzung.",
+            label_texts,
+        )
+        self.assertEqual(strength_lines, [])
+        self.assertIn("! Deutsch weiter beobachten", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_overview_resets_when_switching_students(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_many_observations(),
+        )
+        tab_widget = screen.findChild(QTabWidget)
+        tab_widget.setCurrentIndex(2)
+
+        screen.set_student(
+            StudentDetailViewModel(
+                f"{STUDENT_ID_PREFIX}-000002",
+                "Noah Beispiel",
+                "Grashüpfer",
+                "Kurs 2",
+                "",
+                True,
+            ),
+            (),
+            (),
+            documentation_statuses=(
+                StudentDocumentationSubjectStatus("deutsch", "Deutsch", 0, 2, (), 0),
+            ),
+        )
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertEqual(tab_widget.currentIndex(), 0)
+        self.assertIn("Noah Beispiel", label_texts)
+        self.assertIn("0 Beobachtungen · 0/2 Lernbereiche dokumentiert", label_texts)
+        self.assertNotIn("Neueste Beobachtung.", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_overview_view_model_uses_existing_data_only(self) -> None:
+        overview = build_student_profile_overview(
+            (),
+            (),
+            (
+                StudentDocumentationSubjectStatus("deutsch", "Deutsch", 0, 2, (), 0),
+            ),
+        )
+
+        self.assertEqual(overview.strengths, ())
+        self.assertEqual(
+            overview.watch_items,
+            (
+                "Deutsch weiter beobachten",
+            ),
+        )
+        self.assertEqual(
+            overview.reliability_hint,
+            "Noch keine Beobachtungen für eine verlässliche Einschätzung.",
+        )
+
+    def test_students_screen_shows_compact_documentation_column_and_quick_action(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = students_screen.StudentsScreen()
+        observation_student_ids: list[str] = []
+        screen.observation_requested.connect(observation_student_ids.append)
         screen.set_students(
             (
                 StudentListItem(
@@ -3089,13 +3286,42 @@ class DesktopAppAdapterTest(unittest.TestCase):
             )
         )
 
-        self.assertEqual(screen.table.columnCount(), 3)
+        self.assertEqual(screen.table.columnCount(), 4)
         self.assertEqual(screen.table.horizontalHeaderItem(2).text(), "Dokumentation")
+        self.assertEqual(screen.table.horizontalHeaderItem(3).text(), "Aktion")
         self.assertEqual(
             screen.table.item(0, 2).text(),
             "1/2 Bereiche · teilweise dokumentiert",
         )
         self.assertNotIn("Deutsch:", screen.table.item(0, 2).text())
+        action_widget = screen.table.cellWidget(0, 3)
+        self.assertIsNotNone(action_widget)
+        action_button = action_widget.findChild(QPushButton)
+        self.assertIsNotNone(action_button)
+        self.assertEqual(action_button.text(), "Beobachten")
+        self.assertEqual(action_button.toolTip(), "Neue Beobachtung für Anna Muster")
+        action_button.click()
+        self.assertEqual(observation_student_ids, ["STU-000001"])
+        self.assertIsNotNone(app)
+
+    def test_students_screen_shows_back_button_for_filtered_lists(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = students_screen.StudentsScreen()
+        back_requests: list[bool] = []
+        screen.back_to_overview_requested.connect(lambda: back_requests.append(True))
+
+        screen.set_students((), group_filter_name="Stammgruppe: Grashüpfer")
+        self.assertTrue(screen.back_to_overview_button.isHidden())
+        screen.set_students(
+            (),
+            group_filter_name="Stammgruppe: Grashüpfer",
+            show_back_button=True,
+        )
+
+        self.assertFalse(screen.back_to_overview_button.isHidden())
+        self.assertEqual(screen.back_to_overview_button.text(), "← Zur Übersicht")
+        screen.back_to_overview_button.click()
+        self.assertEqual(back_requests, [True])
         self.assertIsNotNone(app)
 
     def test_student_profile_missing_competencies_can_be_expanded(self) -> None:

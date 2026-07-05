@@ -76,12 +76,16 @@ Rueckmeldung:
 2. Kurs oeffnen.
 3. Pruefen, ob Schueler nach Kurs und Alphabet sinnvoll sortiert sind.
 4. Pruefen, ob der Dokumentationsstatus in der Liste hilfreich ist.
+5. Direkt aus einer Schuelerzeile `Beobachten` oeffnen.
+6. Mit `← Zur Übersicht` aus einer gefilterten Liste zur Uebersicht zurueckgehen.
 
 Rueckmeldung:
 
 - Reicht die Information in der Liste?
 - Fehlt etwas?
 - Ist der Dokumentationsstatus hilfreich oder stressig?
+- Ist die Schnellaktion `Beobachten` gut auffindbar, ohne die Liste zu ueberladen?
+- Ist `← Zur Übersicht` an der erwarteten Stelle?
 
 ## C. Stammdaten / Kursverbuende
 
@@ -107,16 +111,23 @@ Mehrere Testschueler oeffnen:
 Pruefen:
 
 - Name, Stammgruppe, Kurs
-- Beobachtungskarten
-- Kompetenzuebersicht
-- Dokumentationsstand
-- Dokumente & Medien
+- Reiter `Überblick` beim Oeffnen
+- Karte `Halbjahresblick`
+- Beobachtungszahl, Dokumentationsstand und letzte Beobachtung
+- `Stärken` und `Im Blick behalten`
+- letzte Beobachtungen als Kurzliste
+- Reiter `Beobachtungen`, `Kompetenzen`, `Bericht` und `Dateien`
 
 Rueckmeldung:
 
-- Was ist sofort verstaendlich?
-- Was wirkt zu gross oder zu voll?
-- Welche Information braucht Laura wirklich zuerst?
+- Versteht Laura innerhalb weniger Sekunden den Lernentwicklungsstand?
+- Ist die Halbjahresblick-Karte hilfreich?
+- Sind Beobachtungszahl, Dokumentationsstand und letzte Beobachtung verstaendlich?
+- Sind `Stärken` nachvollziehbar aus Beobachtungen und Kompetenzdaten abgeleitet?
+- Ist `Im Blick behalten` hilfreich formuliert oder wirkt es defizitorientiert?
+- Helfen die Reiter gegen den ersten Eindruck von Ueberladung?
+- Findet Laura Beobachtungen, Kompetenzen, Bericht und Dateien weiterhin zuverlaessig?
+- Geht durch die neue Struktur keine vorhandene Funktion verloren?
 
 ## E. Beobachtungen
 
@@ -128,12 +139,14 @@ Rueckmeldung:
 6. Beobachtung speichern.
 7. Beobachtung bearbeiten.
 8. Beobachtung loeschen.
+9. Neue Beobachtung direkt aus einer Schuelerliste anlegen und speichern.
 
 Rueckmeldung:
 
 - Ist der Dialog schnell genug?
 - Sind Kompetenzauswahl und Bewertung verstaendlich?
 - Ist Bearbeiten und Loeschen auffindbar?
+- Ist der schnelle Einstieg aus der Liste alltagstauglich?
 - Fehlt eine wichtige Beobachtungsart?
 
 ## F. Mehrfachkompetenzen / faecheruebergreifend

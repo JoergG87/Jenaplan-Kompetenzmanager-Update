@@ -6,6 +6,34 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint - Schuelerprofil-Ueberblick vor Laura-Pilottest 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Schuelerprofil oeffnet zuerst den Reiter `Überblick`
+- [x] `Halbjahresblick` zeigt Beobachtungszahl, Dokumentationsstand und letzte aktive Beobachtung
+- [x] Staerken werden nur aus klar positiven vorhandenen Kompetenzdaten abgeleitet
+- [x] `Im Blick behalten` nutzt schwaechere Verlaeufe oder wenig dokumentierte Bereiche als Beobachtungshinweis
+- [x] Letzte Beobachtungen, kompakter Dokumentationsstand und sichtbare Entwicklung stehen im Ueberblick
+- [x] Bestehende Details bleiben ueber `Beobachtungen`, `Kompetenzen`, `Bericht` und `Dateien` erreichbar
+- [x] Laura-Pilottestpunkte zum Schuelerprofil wurden aktualisiert statt doppelt ergaenzt
+- [x] Keine neue Persistenz, keine Schemaaenderung, kein Excel/VBA und kein Commit umgesetzt
+
+## Sprint - Schnellbeobachtung und Zurueck-Navigation 🔄
+
+- [x] Status: Umgesetzt, nicht committed
+
+### Ergebnis
+
+- [x] Schuelerlisten zeigen je Schueler eine kompakte Aktion `Beobachten`
+- [x] Schnellaktion oeffnet den bestehenden Beobachtungsdialog fuer genau diesen Schueler
+- [x] Speichern laeuft weiter ueber bestehende Adapter-/Service-/Repository-Struktur
+- [x] Nach Speichern werden Schuelerliste, Uebersicht und Dokumentationsstatus aktualisiert
+- [x] Gefilterte Stammgruppen-/Kurs-/Kursverbund-Listen zeigen `← Zur Übersicht`
+- [x] Keine neue Beobachtungslogik, keine Schemaaenderung, kein Excel/VBA und kein Commit umgesetzt
+
 ## Sprint - Excel/VBA-Legacy bereinigen 🔄
 
 - [x] Status: Umgesetzt, nicht committed
