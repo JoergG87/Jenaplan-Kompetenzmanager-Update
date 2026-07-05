@@ -871,13 +871,27 @@ class StudentProfileScreen(QWidget):
 
     def _observation_summary(self, observation: ObservationListItem) -> QLabel:
         preview = self._note_preview(observation.note)
+
         competency_count = len(observation.competency_ratings)
         competency_label = (
             "1 Kompetenz"
             if competency_count == 1
             else f"{competency_count} Kompetenzen"
         )
-        parts = [observation.context or "-", preview, competency_label]
+
+        attachment_count = len(observation.attachments)
+        attachment_label = ""
+        if attachment_count == 1:
+            attachment_label = "1 Anhang"
+        elif attachment_count > 1:
+            attachment_label = f"{attachment_count} Anhänge"
+
+        parts = [
+            observation.context or "-",
+            preview,
+            competency_label,
+            attachment_label,
+        ]
         summary = QLabel(" · ".join(part for part in parts if part))
         summary.setWordWrap(True)
         set_label_style(summary, "body")
@@ -966,13 +980,28 @@ class StudentProfileScreen(QWidget):
             layout.addWidget(empty)
             return block
         for document in observation.attachments:
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setSpacing(6)
+
             line = QLabel(
                 f"{getattr(document, 'document_type', '')} · "
                 f"{getattr(document, 'display_title', '')}"
             )
             line.setWordWrap(True)
             set_label_style(line, "small")
-            layout.addWidget(line)
+
+            open_button = QPushButton("Öffnen")
+            open_button.clicked.connect(
+                lambda _checked=False, file_path=document.file_path: (
+                    self.open_document_file(file_path)
+                )
+            )
+
+            row_layout.addWidget(line, 1)
+            row_layout.addWidget(open_button, 0)
+            layout.addWidget(row)
         return block
 
     def set_competency_groups(
@@ -1187,12 +1216,24 @@ class StudentProfileScreen(QWidget):
 
     def open_document_file(self, file_path: str) -> None:
         """Open a document through the operating system if the path exists."""
-        path = Path(file_path)
+        path = Path(file_path).expanduser()
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        path = path.resolve()
+
         if not path.exists():
-            self.documents_feedback_label.setText("Datei wurde nicht gefunden.")
+            self.documents_feedback_label.setText(
+                f"Datei wurde nicht gefunden: {path}"
+            )
             return
-        QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
-        self.documents_feedback_label.setText("Datei wird geöffnet.")
+
+        opened = QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
+        if opened:
+            self.documents_feedback_label.setText("Datei wird geöffnet.")
+        else:
+            self.documents_feedback_label.setText(
+                f"Datei konnte nicht geöffnet werden: {path}"
+            )
 
     def _report_subject_card(self, section: object) -> QFrame:
         card = self._card()
