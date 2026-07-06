@@ -594,8 +594,22 @@ class StudentProfileScreen(QWidget):
         documents: tuple[StudentDocumentViewModel, ...] = (),
     ) -> None:
         """Render selected student or empty state."""
+        previous_student_id = (
+            self.current_student.student_id
+            if self.current_student is not None
+            else None
+        )
+        previous_tab_index = self.profile_tabs.currentIndex()
+
         self.current_student = student
-        self.profile_tabs.setCurrentIndex(0)
+        should_reset_tab = (
+            student is None
+            or previous_student_id is None
+            or previous_student_id != student.student_id
+        )
+        if should_reset_tab:
+            self.profile_tabs.setCurrentIndex(0)
+
         if student is None:
             self.name_label.setText("Kein Schüler ausgewählt")
             self.meta_label.setText("")
@@ -629,6 +643,9 @@ class StudentProfileScreen(QWidget):
         self.set_competency_groups(competency_groups)
         self.set_report_preview(report_preview)
         self.set_documents(documents)
+
+        if not should_reset_tab and 0 <= previous_tab_index < self.profile_tabs.count():
+            self.profile_tabs.setCurrentIndex(previous_tab_index)
 
     def set_observations(
         self,
