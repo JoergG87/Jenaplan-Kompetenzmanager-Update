@@ -22,7 +22,11 @@ def _app_icon() -> QIcon:
 def main() -> int:
     """Start the desktop app."""
     app = QApplication(sys.argv)
-    app.setApplicationName("Jenaplan Kompetenzmanager")
+    app.setApplicationName("Kompetenzmanager")
+    app.setApplicationDisplayName("Kompetenzmanager")
+    app.setOrganizationName("Jenaplan")
+    app.setOrganizationDomain("jenaplan.local")
+    app.setDesktopFileName("kompetenzmanager")
     app.setWindowIcon(_app_icon())
     apply_app_theme(app)
 
