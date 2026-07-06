@@ -42,6 +42,7 @@ from src.desktop_app.theme import create_card, set_label_style
 
 
 class StudentProfileScreen(QWidget):
+    student_edit_requested = Signal(str)
     """Lightweight read-only student profile."""
 
     DEFAULT_OBSERVATION_LIMIT = 3
@@ -170,9 +171,7 @@ class StudentProfileScreen(QWidget):
         header.addWidget(add_document_button)
 
         edit_student_button = QPushButton("Schüler bearbeiten")
-        edit_student_button.clicked.connect(
-            lambda: self._show_placeholder_message(PROFILE_ACTION_MESSAGES["edit"])
-        )
+        edit_student_button.clicked.connect(self._request_edit_student)
         header.addWidget(edit_student_button)
 
         layout.addLayout(header)
@@ -228,9 +227,7 @@ class StudentProfileScreen(QWidget):
         edit_button = QPushButton("Schüler bearbeiten")
         observation_button.clicked.connect(self._request_new_observation)
         document_button.clicked.connect(self._request_add_document)
-        edit_button.clicked.connect(
-            lambda: self._show_placeholder_message(PROFILE_ACTION_MESSAGES["edit"])
-        )
+        edit_button.clicked.connect(self._request_edit_student)
         button_row.addWidget(observation_button)
         button_row.addWidget(document_button)
         button_row.addWidget(edit_button)
@@ -450,6 +447,12 @@ class StudentProfileScreen(QWidget):
             self._show_placeholder_message(PROFILE_ACTION_MESSAGES["document"])
             return
         self.document_add_requested.emit(self.current_student.student_id)
+
+    def _request_edit_student(self) -> None:
+        if self.current_student is None:
+            self._show_placeholder_message(PROFILE_ACTION_MESSAGES["edit"])
+            return
+        self.student_edit_requested.emit(self.current_student.student_id)
 
     def _render_profile_overview(
         self,

@@ -12,6 +12,7 @@ from src.application.commands import (
     CreateStudentCommand,
     DeleteObservationCommand,
     UpdateObservationCommand,
+    UpdateStudentCommand,
 )
 from src.application.dispatcher import (
     ApplicationCommandDispatcher,
@@ -19,6 +20,7 @@ from src.application.dispatcher import (
     observation_delete_handler,
     observation_update_handler,
     student_create_handler,
+    student_update_handler,
 )
 from src.core.observation import (
     ObservationCompetencyRatingRecord,
@@ -120,6 +122,10 @@ class StudentDesktopAdapter:
             student.active,
         )
 
+    def student_record_for_edit(self, student_id: str) -> StudentRecord | None:
+        """Return the persisted student record for edit dialogs."""
+        return SQLiteStudentRepository(self.database).get_student_by_id(student_id)
+
     def list_group_summaries(self) -> tuple[GroupSummaryViewModel, ...]:
         """Return group cards for the app overview."""
         students = SQLiteStudentRepository(self.database).list_students()
@@ -193,6 +199,47 @@ class StudentDesktopAdapter:
     ) -> object:
         """Persist a new student through the existing application stack."""
         command = self.create_student_command(
+            first_name=first_name,
+            last_name=last_name,
+            group_id=group_id,
+            course_id=course_id,
+            student_notes=student_notes,
+        )
+        return self._dispatcher().dispatch(command)
+
+    def update_student_command(
+        self,
+        *,
+        student_id: str,
+        first_name: str,
+        last_name: str,
+        group_id: str,
+        course_id: str,
+        student_notes: str = "",
+    ) -> UpdateStudentCommand:
+        """Create a student update command from GUI input state."""
+        return UpdateStudentCommand(
+            student_id=student_id,
+            first_name=first_name,
+            last_name=last_name,
+            group_id=group_id,
+            course_id=course_id,
+            student_notes=student_notes,
+        )
+
+    def save_existing_student(
+        self,
+        *,
+        student_id: str,
+        first_name: str,
+        last_name: str,
+        group_id: str,
+        course_id: str,
+        student_notes: str = "",
+    ) -> object:
+        """Persist edited student data through the existing application stack."""
+        command = self.update_student_command(
+            student_id=student_id,
             first_name=first_name,
             last_name=last_name,
             group_id=group_id,
@@ -609,6 +656,7 @@ class StudentDesktopAdapter:
         )
         dispatcher = ApplicationCommandDispatcher()
         dispatcher.register("student.create", student_create_handler(student_service))
+        dispatcher.register("student.update", student_update_handler(student_service))
         dispatcher.register(
             "observation.create",
             observation_create_handler(observation_service),

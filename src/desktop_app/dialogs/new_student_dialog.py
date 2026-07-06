@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.application.dispatcher import ErrorResult, SuccessResult
+from src.core.records import StudentRecord
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
@@ -35,26 +36,30 @@ STUDENT_DIALOG_DRAFT_COURSE_MESSAGE = (
 
 
 class NewStudentDialog(QDialog):
-    """Collect input and dispatch student.create through the adapter."""
+    """Collect input and dispatch student create/update through the adapter."""
 
     student_created = Signal(str)
+    student_updated = Signal(str)
 
     def __init__(
         self,
         adapter: StudentDesktopAdapter,
         master_data_adapter: MasterDataDesktopAdapter | None = None,
+        student: StudentRecord | None = None,
     ) -> None:
         super().__init__()
         self.adapter = adapter
+        self.student = student
         self.master_data_adapter = master_data_adapter or MasterDataDesktopAdapter(
             adapter
         )
         master_data = self.master_data_adapter.view_model()
         self.group_items = {group.item_id: group for group in master_data.groups}
         self.course_items = {course.item_id: course for course in master_data.courses}
-        self.setWindowTitle("Neuer Schüler")
+        self.setWindowTitle("Schüler bearbeiten" if self.student else "Neuer Schüler")
         self.setModal(True)
         self._build()
+        self._prefill_student()
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
@@ -99,27 +104,53 @@ class NewStudentDialog(QDialog):
         layout.addWidget(buttons)
 
     def save(self) -> None:
-        """Dispatch student.create and close only on success."""
+        """Dispatch student create/update and close only on success."""
         validation_message = self._validation_message()
         if validation_message:
             self.error_label.setText(validation_message)
             return
 
-        result = self.adapter.save_new_student(
-            first_name=self.first_name_input.text(),
-            last_name=self.last_name_input.text(),
-            group_id=str(self.group_select.currentData()),
-            course_id=str(self.course_select.currentData()),
-            student_notes=self.notes_input.toPlainText(),
-        )
+        payload = {
+            "first_name": self.first_name_input.text(),
+            "last_name": self.last_name_input.text(),
+            "group_id": str(self.group_select.currentData()),
+            "course_id": str(self.course_select.currentData()),
+            "student_notes": self.notes_input.toPlainText(),
+        }
+        if self.student is None:
+            result = self.adapter.save_new_student(**payload)
+        else:
+            result = self.adapter.save_existing_student(
+                student_id=self.student.student_id,
+                **payload,
+            )
+
         if isinstance(result, SuccessResult):
-            self.student_created.emit(getattr(result.value, "student_id", ""))
+            student_id = getattr(result.value, "student_id", "")
+            if self.student is None:
+                self.student_created.emit(student_id)
+            else:
+                self.student_updated.emit(student_id)
             self.accept()
             return
         if isinstance(result, ErrorResult):
             self.error_label.setText(result.message)
             return
         self.error_label.setText(f"Unerwartetes Ergebnis: {type(result).__name__}")
+
+    def _prefill_student(self) -> None:
+        if self.student is None:
+            return
+        self.first_name_input.setText(self.student.first_name)
+        self.last_name_input.setText(self.student.last_name)
+        self._select_combo_data(self.group_select, self.student.group_id)
+        self._select_combo_data(self.course_select, self.student.course_id)
+        self.notes_input.setPlainText(self.student.student_notes)
+
+    def _select_combo_data(self, select: QComboBox, item_id: str) -> None:
+        index = select.findData(item_id)
+        if index >= 0:
+            select.setCurrentIndex(index)
 
     def _populate_master_data_select(
         self,

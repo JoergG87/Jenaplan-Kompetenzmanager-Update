@@ -154,6 +154,9 @@ class AppShell(QMainWindow):
         self.student_profile_screen.observation_requested.connect(
             self.open_new_observation_dialog
         )
+        self.student_profile_screen.student_edit_requested.connect(
+            self.open_edit_student_dialog
+        )
         self.student_profile_screen.observation_edit_requested.connect(
             self.open_edit_observation_dialog
         )
@@ -287,6 +290,23 @@ class AppShell(QMainWindow):
         dialog = NewStudentDialog(self.adapter, self.master_data_adapter)
         dialog.student_created.connect(self.handle_student_created)
         dialog.exec()
+
+    def open_edit_student_dialog(self, student_id: str) -> None:
+        """Open the student dialog with persisted student data."""
+        student = self.adapter.student_record_for_edit(student_id)
+        if student is None:
+            self.status_label.setText("Schülerprofil wurde nicht gefunden.")
+            return
+        dialog = NewStudentDialog(
+            self.adapter,
+            self.master_data_adapter,
+            student=student,
+        )
+        if dialog.exec():
+            self.refresh_overview()
+            self.refresh_students()
+            self.show_student_profile(student_id)
+            self.status_label.setText("Schülerdaten wurden gespeichert.")
 
     def open_new_observation_dialog(self, student: StudentDetailViewModel) -> None:
         """Open the persistent observation dialog and refresh after success."""
