@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Sprint 1B-3 - H02 Kompetenzbestaetigung sichtbar machen
+
+### Changed
+
+- Kompetenzuebersicht ergaenzt bestaetigte Kompetenzstaende ohne aktive Beobachtungshistorie aus `student_competency_confirmations`.
+- Berichtsvorschau nutzt diese bestaetigten Kompetenzstaende ueber die bestehende Kompetenzuebersicht und erzeugt fuer bestaetigungsreine positive Staende keine kuenstliche Entwicklungslinie.
+- Nacharbeit: Berichtsvorschau zeigt je relevanter Kompetenz den aktuellen Stand mit Quelle getrennt von Entwicklung/Verlauf.
+- Nach Soft Delete der zugrunde liegenden Beobachtung bleibt ein bestaetigter Kompetenzstand sichtbar und berichtsrelevant.
+
+### Not Changed
+
+- Keine Datenbankmigration, keine neue Kompetenzstruktur, keine Bewertung pro konkreter Kompetenz, keine aktive-Faecher-Logik, keine Berichtsgrafiken, kein Dashboard, kein UI-Redesign, kein neuer Application-Command und kein Commit umgesetzt.
+
 ## Sprint 1B-2 - K02 Dokumentationsdetails zugänglich machen
 
 ### Changed
