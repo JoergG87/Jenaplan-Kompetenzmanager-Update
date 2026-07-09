@@ -313,7 +313,9 @@ class AppShell(QMainWindow):
         dialog = NewObservationDialog(student, self.curriculum_adapter, self.adapter)
         if dialog.exec():
             self.show_student_profile(student.student_id)
-            self.status_label.setText("Beobachtung wurde gespeichert.")
+            self.status_label.setText(
+                "Beobachtung wurde gespeichert. Profil bleibt geöffnet."
+            )
 
     def open_quick_observation_dialog(self, student_id: str) -> None:
         """Open the observation dialog from a student list row."""
@@ -325,7 +327,9 @@ class AppShell(QMainWindow):
         if dialog.exec():
             self.refresh_overview()
             self.refresh_students()
-            self.status_label.setText("Beobachtung wurde gespeichert.")
+            self.status_label.setText(
+                "Beobachtung wurde gespeichert. Schülerliste bleibt geöffnet."
+            )
 
     def open_edit_observation_dialog(self, observation_id: str) -> None:
         """Open the observation dialog with persisted observation data."""
@@ -345,7 +349,9 @@ class AppShell(QMainWindow):
         )
         if dialog.exec():
             self.show_student_profile(student.student_id)
-            self.status_label.setText("Beobachtung wurde aktualisiert.")
+            self.status_label.setText(
+                "Beobachtung wurde aktualisiert. Profil bleibt geöffnet."
+            )
 
     def delete_observation(self, observation_id: str) -> None:
         """Soft-delete an observation and refresh the current profile."""
@@ -371,7 +377,9 @@ class AppShell(QMainWindow):
             )
             return
         self.show_student_profile(draft.student_id)
-        self.status_label.setText("Beobachtung wurde gelöscht.")
+        self.status_label.setText(
+            "Beobachtung wurde gelöscht. Profil bleibt geöffnet."
+        )
 
     def open_student_document_dialog(self, student_id: str) -> None:
         """Attach one or more files directly to a student."""
@@ -414,7 +422,7 @@ class AppShell(QMainWindow):
             QMessageBox.warning(self, "Kompetenzstand", str(error))
             return
         self.show_student_profile(student_id)
-        self.status_label.setText("Kompetenzstand wurde bestätigt.")
+        self.status_label.setText("Kompetenzstand wurde aktuell bestätigt.")
 
     def open_app_info_dialog(self) -> None:
         """Open the compact app information dialog."""

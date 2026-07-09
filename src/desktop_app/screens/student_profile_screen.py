@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QUrl, Signal
+from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
@@ -433,6 +434,36 @@ class StudentProfileScreen(QWidget):
     def _card(self) -> QFrame:
         return create_card()
 
+    def _make_clickable_card(
+        self,
+        card: QFrame,
+        action: Callable[[], None],
+        tooltip: str,
+    ) -> None:
+        card.setCursor(Qt.CursorShape.PointingHandCursor)
+        card.setToolTip(tooltip)
+
+        def handle_mouse_release(event: object) -> None:
+            button = getattr(event, "button", lambda: None)()
+            if button != Qt.MouseButton.LeftButton:
+                getattr(event, "ignore", lambda: None)()
+                return
+            position = (
+                event.position().toPoint()
+                if hasattr(event, "position")
+                else event.pos()
+            )
+            child = card.childAt(position)
+            while child is not None and child is not card:
+                if isinstance(child, (QPushButton, QComboBox, QLineEdit)):
+                    getattr(event, "ignore", lambda: None)()
+                    return
+                child = child.parentWidget()
+            action()
+            getattr(event, "accept", lambda: None)()
+
+        card.mouseReleaseEvent = handle_mouse_release
+
     def _show_placeholder_message(self, message: str) -> None:
         self.action_feedback_label.setText(message)
 
@@ -842,12 +873,11 @@ class StudentProfileScreen(QWidget):
         details_widget.setVisible(False)
         details_button = QPushButton("Details anzeigen")
         details_button.setObjectName("ObservationTextActionButton")
-        details_button.clicked.connect(
-            lambda _checked=False: self._toggle_observation_details(
-                details_widget,
-                details_button,
-            )
-        )
+        def toggle_details() -> None:
+            self._toggle_observation_details(details_widget, details_button)
+
+        details_button.clicked.connect(lambda _checked=False: toggle_details())
+        self._make_clickable_card(card, toggle_details, "Details anzeigen")
         layout.addLayout(self._observation_header(observation, details_button))
         layout.addWidget(self._observation_summary(observation))
         details_layout = QVBoxLayout(details_widget)
@@ -1232,6 +1262,11 @@ class StudentProfileScreen(QWidget):
         )
         layout.addWidget(text_block, 1)
         layout.addWidget(open_button, 0)
+        self._make_clickable_card(
+            row,
+            lambda file_path=document.file_path: self.open_document_file(file_path),
+            "Datei öffnen",
+        )
         return row
 
     def open_document_file(self, file_path: str) -> None:
@@ -1410,12 +1445,11 @@ class StudentProfileScreen(QWidget):
                 self._missing_competencies_block(group.missing_competencies)
             )
         details_container.setVisible(False)
-        details_button.clicked.connect(
-            lambda _checked=False: self._toggle_competency_group_details(
-                details_container,
-                details_button,
-            )
-        )
+        def toggle_details() -> None:
+            self._toggle_competency_group_details(details_container, details_button)
+
+        details_button.clicked.connect(lambda _checked=False: toggle_details())
+        self._make_clickable_card(card, toggle_details, "Kompetenzdetails anzeigen")
         layout.addWidget(details_container)
         return card
 
@@ -1520,8 +1554,8 @@ class StudentProfileScreen(QWidget):
         selected_index = rating_select.findText(selected_rating)
         if selected_index >= 0:
             rating_select.setCurrentIndex(selected_index)
-        adopt_button = QPushButton("Vorschlag übernehmen")
-        confirm_button = QPushButton("Bestätigen")
+        adopt_button = QPushButton("Vorschlag aus Beobachtungen übernehmen")
+        confirm_button = QPushButton("Aktuell bestätigen")
         adopt_button.clicked.connect(
             lambda _checked=False: self._request_competency_confirmation(
                 competency,

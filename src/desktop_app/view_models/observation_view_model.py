@@ -197,8 +197,14 @@ class StudentCompetencyStatusViewModel:
     def confirmation_status_label(self) -> str:
         """Return proposal and teacher confirmation state."""
         if not self.confirmed_rating:
-            return f"Vorschlag: {self.rating} · noch nicht bestätigt"
-        return f"Vorschlag: {self.rating} · Bestätigt: {self.confirmed_rating}"
+            return (
+                f"Vorschlag aus Beobachtungen: {self.rating} · "
+                "noch nicht bestätigt"
+            )
+        return (
+            f"aus Beobachtungen abgeleitet: {self.rating} · "
+            f"von Laura bestätigt: {self.confirmed_rating}"
+        )
 
     @property
     def confirmation_meta_label(self) -> str:
@@ -207,8 +213,11 @@ class StudentCompetencyStatusViewModel:
             return ""
         confirmed_date = self.confirmed_at[:10]
         if self.last_observation_date > confirmed_date:
-            return f"Bestätigt am {confirmed_date} · neuerer Vorschlag vorhanden"
-        return f"Bestätigt am {confirmed_date}"
+            return (
+                f"von Laura bestätigt am {confirmed_date} · "
+                "neuer Vorschlag aus Beobachtungen vorhanden"
+            )
+        return f"aktuell bestätigt seit {confirmed_date}"
 
 
 @dataclass(frozen=True)

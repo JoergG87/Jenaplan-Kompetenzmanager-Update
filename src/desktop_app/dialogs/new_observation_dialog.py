@@ -35,9 +35,7 @@ from src.desktop_app.view_models.observation_view_model import (
     DOCUMENT_TYPE_OPTIONS,
     ObservationAttachmentDraft,
     OBSERVATION_RATING_OPTIONS,
-    OBSERVATION_SAVE_SUCCESS_MESSAGE,
     OBSERVATION_SAVE_VALIDATION_MESSAGE,
-    OBSERVATION_UPDATE_SUCCESS_MESSAGE,
     ObservationCompetencyRatingDraft,
     ObservationDraftViewModel,
 )
@@ -552,7 +550,7 @@ class NewObservationDialog(QDialog):
         return self.initial_draft.subject_id
 
     def save_draft(self) -> None:
-        """Persist the observation draft through the adapter and close on success."""
+        """Persist the observation draft through the adapter and return on success."""
         draft = self.create_draft()
         if not draft.competency_ratings or any(
             not rating.rating for rating in draft.competency_ratings
@@ -572,10 +570,8 @@ class NewObservationDialog(QDialog):
             return
         if draft.observation_id:
             result = self.observation_adapter.update_observation(draft)
-            success_message = OBSERVATION_UPDATE_SUCCESS_MESSAGE
         else:
             result = self.observation_adapter.save_observation(draft)
-            success_message = OBSERVATION_SAVE_SUCCESS_MESSAGE
         if not getattr(result, "success", False):
             QMessageBox.warning(
                 self,
@@ -583,9 +579,4 @@ class NewObservationDialog(QDialog):
                 str(getattr(result, "message", "Beobachtung konnte nicht gespeichert werden.")),
             )
             return
-        QMessageBox.information(
-            self,
-            "Hinweis",
-            success_message,
-        )
         self.accept()

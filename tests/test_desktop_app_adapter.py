@@ -73,7 +73,6 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationAttachmentDraft,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_SUCCESS_MESSAGE,
-    OBSERVATION_UPDATE_SUCCESS_MESSAGE,
     ObservationCompetencyRatingDraft,
     ObservationDraftViewModel,
     ObservationListItem,
@@ -748,7 +747,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(confirmation.confirmed_at)
         self.assertEqual(reloaded_status.rating, "+")
         self.assertEqual(reloaded_status.confirmed_rating, "+")
-        self.assertEqual(reloaded_status.confirmation_status_label, "Vorschlag: + · Bestätigt: +")
+        self.assertEqual(
+            reloaded_status.confirmation_status_label,
+            "aus Beobachtungen abgeleitet: + · von Laura bestätigt: +",
+        )
         self.assertEqual(len(observations), 1)
         self.assertEqual(observations[0].competency_ratings[0].rating, "+")
 
@@ -781,7 +783,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(status.rating, "-")
         self.assertEqual(status.confirmed_rating, "+")
         self.assertEqual(status.confirmation_note, "Lehrkraft entscheidet nach Gespräch.")
-        self.assertEqual(status.confirmation_status_label, "Vorschlag: - · Bestätigt: +")
+        self.assertEqual(
+            status.confirmation_status_label,
+            "aus Beobachtungen abgeleitet: - · von Laura bestätigt: +",
+        )
 
     def test_new_observation_updates_proposal_but_not_confirmed_status(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
@@ -824,7 +829,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(status.rating, "-")
         self.assertEqual(status.confirmed_rating, "+")
-        self.assertEqual(status.confirmation_status_label, "Vorschlag: - · Bestätigt: +")
+        self.assertEqual(
+            status.confirmation_status_label,
+            "aus Beobachtungen abgeleitet: - · von Laura bestätigt: +",
+        )
 
     def test_report_preview_uses_confirmed_competency_status_when_available(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
@@ -855,7 +863,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIsNotNone(preview)
         self.assertEqual(deutsch_section.subject_display_name, "Deutsch")
         self.assertEqual(deutsch_section.strengths[0].rating, "+")
-        self.assertEqual(deutsch_section.strengths[0].rating_source, "Bestätigt")
+        self.assertEqual(
+            deutsch_section.strengths[0].rating_source,
+            "von Laura bestätigt",
+        )
         self.assertEqual(
             deutsch_section.development[0].development_label,
             "Einzelbeobachtung vorhanden, noch kein Verlauf ableitbar.",
@@ -1081,7 +1092,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Kurs: Kurs 1", report_text)
         self.assertIn("Erstellt am: 2026-07-04", report_text)
         self.assertIn("## Deutsch", report_text)
-        self.assertIn("- Mit Texten und Medien umgehen · Bestätigt: +", report_text)
+        self.assertIn(
+            "- Mit Texten und Medien umgehen · von Laura bestätigt: +",
+            report_text,
+        )
         self.assertIn(
             "- Wörter und Sätze · Einzelbeobachtung vorhanden, noch kein Verlauf ableitbar.",
             report_text,
@@ -2407,7 +2421,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn("NewObservationDialog(student, self.curriculum_adapter, self.adapter)", source)
         self.assertIn("self.show_student_profile(student.student_id)", source)
-        self.assertIn("Beobachtung wurde gespeichert.", source)
+        self.assertIn(
+            "Beobachtung wurde gespeichert. Profil bleibt geöffnet.",
+            source,
+        )
         self.assertIn("list_competency_overview_for_student(student_id)", profile_source)
         self.assertIn("get_report_preview_for_student(student_id)", profile_source)
         self.assertIn("list_documentation_status_for_student(student_id)", profile_source)
@@ -2423,7 +2440,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("NewObservationDialog(student, self.curriculum_adapter, self.adapter)", quick_source)
         self.assertIn("self.refresh_overview()", quick_source)
         self.assertIn("self.refresh_students()", quick_source)
-        self.assertIn("Beobachtung wurde gespeichert.", quick_source)
+        self.assertIn(
+            "Beobachtung wurde gespeichert. Schülerliste bleibt geöffnet.",
+            quick_source,
+        )
 
     def test_shell_returns_from_filtered_student_list_to_overview(self) -> None:
         shell_source = inspect.getsource(shell.AppShell)
@@ -2445,21 +2465,28 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("observation_draft_for_edit(observation_id)", source)
         self.assertIn("initial_draft=draft", source)
         self.assertIn("self.show_student_profile(student.student_id)", source)
-        self.assertIn("Beobachtung wurde aktualisiert.", source)
+        self.assertIn(
+            "Beobachtung wurde aktualisiert. Profil bleibt geöffnet.",
+            source,
+        )
 
     def test_shell_soft_deletes_observation_and_refreshes_profile(self) -> None:
         source = inspect.getsource(shell.AppShell.delete_observation)
 
         self.assertIn("self.adapter.delete_observation(observation_id)", source)
         self.assertIn("self.show_student_profile(draft.student_id)", source)
-        self.assertIn("Beobachtung wurde gelöscht.", source)
+        self.assertIn(
+            "Beobachtung wurde gelöscht. Profil bleibt geöffnet.",
+            source,
+        )
 
     def test_observation_dialog_updates_existing_observation(self) -> None:
         source = inspect.getsource(new_observation_dialog.NewObservationDialog.save_draft)
 
         self.assertIn("draft.observation_id", source)
         self.assertIn("self.observation_adapter.update_observation(draft)", source)
-        self.assertIn("OBSERVATION_UPDATE_SUCCESS_MESSAGE", source)
+        self.assertIn("self.accept()", source)
+        self.assertNotIn("QMessageBox.information", source)
 
     def test_student_profile_observation_cards_offer_edit_and_delete(self) -> None:
         app = QApplication.instance() or QApplication([])
@@ -2842,7 +2869,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn("Keine passenden Beobachtungen.", label_texts)
         self.assertIn("Mit Texten und Medien umgehen", label_texts)
-        self.assertIn("Vorschlag: + · noch nicht bestätigt", label_texts)
+        self.assertIn(
+            "Vorschlag aus Beobachtungen: + · noch nicht bestätigt",
+            label_texts,
+        )
         self.assertIn("Verlauf: - → +", label_texts)
         self.assertIn("2 Beobachtungen · zuletzt beobachtet: 2026-07-03", label_texts)
         self.assertIsNotNone(app)
@@ -2934,7 +2964,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Kompetenzübersicht", label_texts)
         self.assertIn("Deutsch", label_texts)
         self.assertIn("Mit Texten und Medien umgehen", label_texts)
-        self.assertIn("Vorschlag: + · noch nicht bestätigt", label_texts)
+        self.assertIn(
+            "Vorschlag aus Beobachtungen: + · noch nicht bestätigt",
+            label_texts,
+        )
         self.assertIn("Verlauf: +", label_texts)
         self.assertIn("1 Beobachtung · zuletzt beobachtet: 2026-07-03", label_texts)
         self.assertIsNotNone(app)
@@ -2973,8 +3006,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
-        self.assertIn("Vorschlag: - · Bestätigt: +", label_texts)
-        self.assertIn("Bestätigt am 2026-07-03 · neuerer Vorschlag vorhanden", label_texts)
+        self.assertIn(
+            "aus Beobachtungen abgeleitet: - · von Laura bestätigt: +",
+            label_texts,
+        )
+        self.assertIn(
+            "von Laura bestätigt am 2026-07-03 · "
+            "neuer Vorschlag aus Beobachtungen vorhanden",
+            label_texts,
+        )
         self.assertIsNotNone(app)
 
     def test_student_profile_renders_report_preview(self) -> None:
@@ -2996,7 +3036,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                                 "CMP-000001",
                                 "Mit Texten und Medien umgehen",
                                 "+",
-                                "Bestätigt",
+                                "von Laura bestätigt",
                                 "+ erreicht",
                             ),
                         ),
@@ -3031,7 +3071,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Entwicklung", label_texts)
         self.assertIn("Unterstützungsbedarf", label_texts)
         self.assertIn("Beispielbeobachtungen", label_texts)
-        self.assertIn("Mit Texten und Medien umgehen · Bestätigt: +", label_texts)
+        self.assertIn(
+            "Mit Texten und Medien umgehen · von Laura bestätigt: +",
+            label_texts,
+        )
         self.assertIn("Mit Texten und Medien umgehen · Stabil beobachtet: +", label_texts)
         self.assertIn("2026-07-03 · Leseübung · Liest einen bekannten Text.", label_texts)
         self.assertIn("+ Mit Texten und Medien umgehen", label_texts)
@@ -3474,7 +3517,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Schüler: Emma Müller", clipboard_text)
         self.assertIn("Erstellt am:", clipboard_text)
         self.assertIn("## Deutsch", clipboard_text)
-        self.assertIn("Mit Texten und Medien umgehen · Bestätigt: +", clipboard_text)
+        self.assertIn(
+            "Mit Texten und Medien umgehen · von Laura bestätigt: +",
+            clipboard_text,
+        )
         self.assertIn("Bericht wurde kopiert.", label_texts)
         self.assertIsNotNone(app)
 
@@ -3537,9 +3583,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
         buttons = {button.text(): button for button in screen.findChildren(QPushButton)}
         rating_select = screen.findChild(QComboBox, "CompetencyConfirmationRatingSelect")
 
-        buttons["Vorschlag übernehmen"].click()
+        buttons["Vorschlag aus Beobachtungen übernehmen"].click()
         rating_select.setCurrentText("++")
-        buttons["Bestätigen"].click()
+        buttons["Aktuell bestätigen"].click()
 
         self.assertEqual(
             emitted,
@@ -3712,7 +3758,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                             "CMP-000001",
                             "Mit Texten und Medien umgehen",
                             "+",
-                            "Bestätigt",
+                            "von Laura bestätigt",
                             "+ erreicht",
                         ),
                     ),

@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Sprint 1A - Laura-Test-Fixes / UX-Stabilisierung
+
+### Changed
+
+- Beobachtungs-Speichern nutzt keine blockierende Erfolgsmeldung mehr; die App zeigt nach Speichern, Bearbeiten und Loeschen ruhig im bestehenden Statusbereich, welcher Kontext erhalten bleibt.
+- Kompetenzstatus-Texte verwenden ruhigere Begriffe wie `Vorschlag aus Beobachtungen`, `aus Beobachtungen abgeleitet`, `von Laura bestätigt`, `aktuell bestätigt` und `noch nicht bestätigt`.
+- Bestehende Beobachtungs-, Kompetenzgruppen- und Dokumentkarten sind zusätzlich zur vorhandenen Details-/Oeffnen-Schaltflaeche klickbar.
+
+### Not Changed
+
+- Keine fachliche Kompetenzlogik, keine Datenmodell- oder SQLite-Schemaaenderung, keine neue Detailansicht, keine Dateien-entfernen-Funktion, kein Dashboard, keine Berichtsgrafiken, kein Excel-/VBA-Bezug und kein Commit umgesetzt.
+
 ## Sprint - Schuelerprofil-Ueberblick vor Laura-Pilottest
 
 ### Added

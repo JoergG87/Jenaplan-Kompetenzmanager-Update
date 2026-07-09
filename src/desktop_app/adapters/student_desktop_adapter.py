@@ -1000,7 +1000,11 @@ class StudentDesktopAdapter:
         competency: StudentCompetencyStatusViewModel,
     ) -> StudentReportCompetencyViewModel:
         rating = competency.confirmed_rating or competency.rating
-        source = "Bestätigt" if competency.confirmed_rating else "Vorschlag"
+        source = (
+            "von Laura bestätigt"
+            if competency.confirmed_rating
+            else "aus Beobachtungen abgeleitet"
+        )
         return StudentReportCompetencyViewModel(
             competency.competency_id,
             competency.competency_label,
