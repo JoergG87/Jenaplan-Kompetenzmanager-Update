@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 from contextlib import closing
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .constants import (
@@ -99,6 +100,15 @@ class CompetencyRecord:
     sort_order: int
     active: bool
     is_core_subject: bool
+
+
+@dataclass(frozen=True)
+class DocumentationSubjectSettingRecord:
+    """Persisted documentation-relevance setting for one subject."""
+
+    subject_id: str
+    active: bool
+    updated_at: str
 
 
 @dataclass(frozen=True)
@@ -268,6 +278,12 @@ class SQLiteDatabase:
                         FOREIGN KEY (course_id) REFERENCES courses(course_id)
                     );
 
+                    CREATE TABLE IF NOT EXISTS documentation_subject_settings (
+                        subject_id TEXT PRIMARY KEY,
+                        active INTEGER NOT NULL CHECK (active IN (0, 1)),
+                        updated_at TEXT NOT NULL
+                    );
+
                     CREATE INDEX IF NOT EXISTS idx_groups_name
                         ON groups(group_name);
                     CREATE INDEX IF NOT EXISTS idx_courses_name
@@ -292,6 +308,8 @@ class SQLiteDatabase:
                         ON course_group_student_groups(student_group_id);
                     CREATE INDEX IF NOT EXISTS idx_course_group_courses_course
                         ON course_group_courses(course_id);
+                    CREATE INDEX IF NOT EXISTS idx_documentation_subject_settings_active
+                        ON documentation_subject_settings(active, subject_id);
                     """
                 )
                 self._ensure_column(connection, "groups", "sort_order", "INTEGER NOT NULL DEFAULT 0")
@@ -354,6 +372,7 @@ class SQLiteDatabase:
                 connection.execute("DELETE FROM documents")
                 connection.execute("DELETE FROM observations")
                 connection.execute("DELETE FROM student_competency_confirmations")
+                connection.execute("DELETE FROM documentation_subject_settings")
                 connection.execute("DELETE FROM course_group_courses")
                 connection.execute("DELETE FROM course_group_student_groups")
                 connection.execute("DELETE FROM course_groups")
@@ -1168,6 +1187,113 @@ class SQLiteCompetencyRepository:
         if row is None:
             return None
         return _competency_from_row(row)
+
+
+class SQLiteDocumentationSubjectSettingsRepository:
+    """Read and write documentation-relevant subject settings."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+        self.database.initialize_schema()
+
+    def list_documentation_subject_settings(
+        self,
+    ) -> tuple[DocumentationSubjectSettingRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT subject_id, active, updated_at
+                FROM documentation_subject_settings
+                ORDER BY subject_id
+                """
+            ).fetchall()
+        return tuple(self._setting_from_row(row) for row in rows)
+
+    def list_active_documentation_subject_ids(self) -> tuple[str, ...]:
+        settings = self.list_documentation_subject_settings()
+        if not settings:
+            return self._active_catalog_subject_ids()
+        active_subject_ids = {
+            setting.subject_id
+            for setting in settings
+            if setting.active
+        }
+        return self._sort_subject_ids(active_subject_ids)
+
+    def save_active_documentation_subject_ids(
+        self,
+        subject_ids: tuple[str, ...],
+        *,
+        updated_at: str | None = None,
+    ) -> tuple[DocumentationSubjectSettingRecord, ...]:
+        active_catalog_subject_ids = self._active_catalog_subject_ids()
+        active_subject_ids = {
+            subject_id.strip()
+            for subject_id in subject_ids
+            if subject_id.strip()
+        }
+        timestamp = updated_at or datetime.now(UTC).replace(microsecond=0).isoformat()
+        with closing(self.database.connect()) as connection:
+            with connection:
+                connection.execute("DELETE FROM documentation_subject_settings")
+                connection.executemany(
+                    """
+                    INSERT INTO documentation_subject_settings (
+                        subject_id,
+                        active,
+                        updated_at
+                    )
+                    VALUES (?, ?, ?)
+                    """,
+                    (
+                        (
+                            subject_id,
+                            int(subject_id in active_subject_ids),
+                            timestamp,
+                        )
+                        for subject_id in active_catalog_subject_ids
+                    ),
+                )
+        return self.list_documentation_subject_settings()
+
+    def _active_catalog_subject_ids(self) -> tuple[str, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT subject_id, MIN(sort_order) AS subject_sort_order
+                FROM competencies
+                WHERE active = 1
+                GROUP BY subject_id
+                ORDER BY subject_sort_order, subject_id
+                """
+            ).fetchall()
+        return tuple(row["subject_id"] for row in rows)
+
+    def _sort_subject_ids(self, subject_ids: set[str]) -> tuple[str, ...]:
+        catalog_order = {
+            subject_id: index
+            for index, subject_id in enumerate(self._active_catalog_subject_ids())
+        }
+        fallback_index = len(catalog_order)
+        return tuple(
+            sorted(
+                subject_ids,
+                key=lambda subject_id: (
+                    catalog_order.get(subject_id, fallback_index),
+                    subject_id,
+                ),
+            )
+        )
+
+    def _setting_from_row(
+        self,
+        row: sqlite3.Row,
+    ) -> DocumentationSubjectSettingRecord:
+        return DocumentationSubjectSettingRecord(
+            row["subject_id"],
+            bool(row[ACTIVE]),
+            row[UPDATED_AT],
+        )
 
 
 class SQLiteStudentCompetencyConfirmationRepository:

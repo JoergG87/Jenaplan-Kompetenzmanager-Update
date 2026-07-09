@@ -30,6 +30,7 @@ Beispiele fuer technische Feldnamen:
 
 - `file_ref`
 - `media_category`
+- `updated_at`
 
 Beispiele fuer sichtbare Begriffe:
 
@@ -104,6 +105,27 @@ Registrierte Tabellennamen:
 - `tbl_observation_competencies`
 - `tbl_media`
 - `tbl_settings`
+
+## Aktive SQLite-Tabellen
+
+Aktive SQLite-Tabellen verwenden englische, ASCII-kompatible technische Namen.
+
+Registriert:
+
+- `students`
+- `groups`
+- `courses`
+- `course_groups`
+- `course_group_student_groups`
+- `course_group_courses`
+- `competencies`
+- `observations`
+- `observation_competency_ratings`
+- `student_competency_confirmations`
+- `documents`
+- `documentation_subject_settings`
+
+`documentation_subject_settings` speichert ausschliesslich, welche `subject_id` fuer Dokumentations- und Auswertungslogik als dokumentationsrelevant gelten. Die Tabelle ersetzt nicht den Kompetenzkatalog und veraendert `competencies.active` nicht.
 
 ## ID-Felder
 

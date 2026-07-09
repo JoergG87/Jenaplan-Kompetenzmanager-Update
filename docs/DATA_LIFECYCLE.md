@@ -4,6 +4,38 @@ Dieses Dokument beschreibt freigegebene oder geplante Schreibprozesse fuer fachl
 
 Kein Schreibprozess darf implementiert werden, bevor sein Lebenszyklus hier dokumentiert ist.
 
+## Dokumentationsrelevante Faecher speichern
+
+Start: Laura legt spaeter in den Einstellungen fest, welche Faecher fuer Dokumentations- und Auswertungslogik zaehlen sollen.
+
+Schreibprozess: Dokumentationskonfiguration ueber SQLite-Repository. Sprint 2A legt nur Datenhaltung und Repository-Methoden an; eine Settings-UI und die Auswertungsfilterung folgen separat.
+
+Freigegebener Repository-Pfad:
+
+```text
+Repository-/Store-Aufruf
+-> SQLiteDocumentationSubjectSettingsRepository
+-> SQLite documentation_subject_settings
+```
+
+Betroffene Datenquellen:
+
+- `documentation_subject_settings` in SQLite als Source of Truth fuer die Auswahl dokumentationsrelevanter Faecher
+- `competencies` nur lesend fuer das Default-Verhalten und die vorhandenen Fachschluessel
+
+Erforderliche IDs:
+
+- bestehender `subject_id`
+
+Automatisch profitierende Ansichten:
+
+- spaeter Schuelerlisten-Dokumentationsstatus
+- spaeter Schuelerprofil-Dokumentationsstand
+- spaeter offene Kompetenzen
+- spaeter Berichtsvorbereitung
+
+Regel: Die Speicherung ersetzt die vollstaendige Auswahl in `documentation_subject_settings`. Wenn keine Settings-Zeilen vorhanden sind, bleibt das bisherige Verhalten erhalten: alle aktiven Katalogfaecher aus `competencies.active = 1` gelten als dokumentationsrelevant. Die Einstellung loescht keine Beobachtungen, veraendert keine Kompetenzdefinitionen und nutzt `competencies.active` nicht als Einstellungsfeld.
+
 ## Schueler anlegen
 
 Start: Lehrkraft oder Verwaltung legt einen neuen Schueler an.

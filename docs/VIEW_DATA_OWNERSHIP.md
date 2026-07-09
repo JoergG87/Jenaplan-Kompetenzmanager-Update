@@ -102,6 +102,27 @@ PySide6 GUI
 
 Excel liegt nur noch als archivierter Legacy-Altstand unter `legacy/excel/`.
 
+## PySide6 Einstellungen
+
+Status: In Sprint 2A nur als Datenhaltungsgrundlage vorbereitet; die sichtbare Settings-UI folgt separat.
+
+Liest:
+
+- spaeter `documentation_subject_settings`
+- spaeter `data_competencies` / SQLite `competencies` fuer Fachschluessel und sichtbare Fachnamen
+
+Schreibt:
+
+- spaeter `documentation_subject_settings` ueber Repository-/Store-Methoden
+
+UI-Projektionen:
+
+- spaeter Auswahl dokumentationsrelevanter Faecher
+
+Regel:
+
+Die Einstellungen duerfen keine Fachdefinitionen speichern und den Kompetenzkatalog nicht veraendern. Ohne gespeicherte Settings-Zeilen gelten alle aktiven Katalogfaecher als dokumentationsrelevant. Sprint 2A baut keine Settings-UI und filtert keine Auswertungen.
+
 ## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
 
 Liest:

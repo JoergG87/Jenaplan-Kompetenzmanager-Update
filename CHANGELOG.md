@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Sprint 2A - Datenhaltung dokumentationsrelevante Faecher
+
+### Added
+
+- SQLite-Tabelle `documentation_subject_settings` fuer die spaetere Auswahl dokumentationsrelevanter Faecher vorbereitet.
+- Repository-/Store-Methoden fuer Lesen, Default und vollstaendiges Speichern aktiver Dokumentationsfaecher ergaenzt.
+
+### Not Changed
+
+- Keine Settings-UI, keine Filterung von Dokumentationsstand, offenen Kompetenzen oder Bericht, keine Beobachtungsdialog-Aenderung, keine Kompetenzkatalog-Aenderung, keine aktive-Faecher-Logik in Qt-Screens und kein Commit umgesetzt.
+
 ## Sprint 1B-3 - H02 Kompetenzbestaetigung sichtbar machen
 
 ### Changed

@@ -49,6 +49,7 @@ Gepruefte Tabellen:
 | `observation_competency_ratings` | ObservationCompetencyRating | `data_observation_competencies` / `tbl_observation_competencies` |
 | `student_competency_confirmations` | StudentCompetencyConfirmation | keine Workbook-Projektion |
 | `documents` | Document / Media | `data_media` / `tbl_media` |
+| `documentation_subject_settings` | DocumentationSubjectSetting | keine Workbook-Projektion |
 
 Regel:
 
@@ -177,6 +178,12 @@ student_competency_confirmations(
   FOREIGN KEY(student_id) REFERENCES students(student_id),
   FOREIGN KEY(competency_id) REFERENCES competencies(competency_id)
 )
+
+documentation_subject_settings(
+  subject_id TEXT PRIMARY KEY,
+  active INTEGER NOT NULL CHECK (active IN (0, 1)),
+  updated_at TEXT NOT NULL
+)
 ```
 
 ## Legacy: Physische Workbook-/Export-Projektion
@@ -255,6 +262,51 @@ Regeln:
 - `Sachunterricht` wird nicht als App-Fach gefuehrt.
 - `Kunst` wird als App-Fach angezeigt; offizielle Quelle ist `Kunsterziehung`.
 - `Ethik`, `Religion`, `Werken` und `Schulgarten` sind als erweiterte Faecher enthalten.
+
+## documentation_subject_settings
+
+Zweck: Auswahl der Faecher, die fuer spaetere Dokumentations- und Auswertungslogik als dokumentationsrelevant gelten.
+
+Entity: DocumentationSubjectSetting.
+
+Storage: SQLite `documentation_subject_settings`.
+
+Projection: spaetere Einstellungen und spaetere Dokumentations-/Auswertungsprojektionen.
+
+Owner: Systemeinstellungen / Dokumentationskonfiguration.
+
+Primary Key: `subject_id`.
+
+Foreign Keys:
+
+- keine, weil `competencies.subject_id` im Kompetenzkatalog mehrfach vorkommt
+
+Wichtige Felder:
+
+- `subject_id`
+- `active`
+- `updated_at`
+
+Beziehungen:
+
+- `subject_id` verweist fachlich auf die Fachschluessel im aktiven Kompetenzkatalog, speichert aber keine Fachdefinition und keine sichtbaren Fachnamen.
+
+Schreibende Prozesse:
+
+- Dokumentationsrelevante Faecher speichern
+
+Lesende Prozesse:
+
+- spaetere Dokumentations- und Auswertungsprojektionen
+- spaetere Einstellungen
+
+Regeln:
+
+- Wenn keine Zeilen vorhanden sind, gelten alle aktiven Katalogfaecher aus `competencies.active = 1` als dokumentationsrelevant.
+- Wenn Zeilen vorhanden sind, gilt die gespeicherte Auswahl.
+- Die Tabelle veraendert den Kompetenzkatalog nicht.
+- `competencies.active` darf nicht fuer diese Dokumentationsauswahl missbraucht werden.
+- Sichtbare Fachnamen werden weiterhin aus `competencies` bzw. dem Katalog abgeleitet.
 
 ## data_students
 

@@ -25,6 +25,7 @@ from src.core.sqlite_store import (
     SQLiteCourseRepository,
     SQLiteCompetencyRepository,
     SQLiteDatabase,
+    SQLiteDocumentationSubjectSettingsRepository,
     SQLiteDocumentRepository,
     SQLiteGroupRepository,
     SQLiteMasterDataRepository,
@@ -83,6 +84,12 @@ class SQLiteSpikeTest(unittest.TestCase):
                         "PRAGMA table_info(documents)"
                     ).fetchall()
                 }
+                documentation_subject_setting_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(documentation_subject_settings)"
+                    ).fetchall()
+                }
                 confirmation_foreign_keys = {
                     (row[3], row[2], row[4])
                     for row in connection.execute(
@@ -109,6 +116,7 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("observation_competency_ratings", tables)
         self.assertIn("student_competency_confirmations", tables)
         self.assertIn("documents", tables)
+        self.assertIn("documentation_subject_settings", tables)
         self.assertIn("student_id", student_columns)
         self.assertIn("first_name", student_columns)
         self.assertIn("last_name", student_columns)
@@ -133,6 +141,9 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("file_path", document_columns)
         self.assertIn("original_filename", document_columns)
         self.assertIn("active", document_columns)
+        self.assertIn("subject_id", documentation_subject_setting_columns)
+        self.assertIn("active", documentation_subject_setting_columns)
+        self.assertIn("updated_at", documentation_subject_setting_columns)
         self.assertIn(("group_id", "groups", "group_id"), student_foreign_keys)
         self.assertIn(("course_id", "courses", "course_id"), student_foreign_keys)
         self.assertIn(("student_id", "students", "student_id"), confirmation_foreign_keys)
@@ -589,6 +600,97 @@ class SQLiteSpikeTest(unittest.TestCase):
         )
         self.assertEqual(after_second_seed, seeded)
 
+    def test_documentation_subject_settings_default_to_active_catalog_subjects(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = SQLiteDatabase(Path(temp_dir) / "kompetenzmanager.sqlite")
+            competency_repository = SQLiteCompetencyRepository(database)
+            competency_repository.ensure_catalog_defaults((
+                self._sample_competency_entry("CMP-000001", "Deutsch", "Lesen"),
+                self._sample_competency_entry("CMP-000002", "EPU", "Natur"),
+                self._sample_competency_entry(
+                    "CMP-000003",
+                    "Kunst",
+                    "Farbe",
+                    active=False,
+                ),
+            ))
+            repository = SQLiteDocumentationSubjectSettingsRepository(database)
+
+            active_subject_ids = repository.list_active_documentation_subject_ids()
+            settings = repository.list_documentation_subject_settings()
+
+        self.assertEqual(active_subject_ids, ("deutsch", "epu"))
+        self.assertEqual(settings, ())
+
+    def test_documentation_subject_settings_save_partial_selection(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = SQLiteDatabase(Path(temp_dir) / "kompetenzmanager.sqlite")
+            SQLiteCompetencyRepository(database).ensure_catalog_defaults((
+                self._sample_competency_entry("CMP-000001", "Deutsch", "Lesen"),
+                self._sample_competency_entry("CMP-000002", "EPU", "Natur"),
+                self._sample_competency_entry("CMP-000003", "Mathematik", "Zahlen"),
+            ))
+            repository = SQLiteDocumentationSubjectSettingsRepository(database)
+
+            settings = repository.save_active_documentation_subject_ids(
+                ("deutsch", "epu"),
+                updated_at="2026-07-10T09:00:00+00:00",
+            )
+            active_subject_ids = repository.list_active_documentation_subject_ids()
+            repository.save_active_documentation_subject_ids(
+                ("mathematik",),
+                updated_at="2026-07-10T10:00:00+00:00",
+            )
+            replaced_subject_ids = repository.list_active_documentation_subject_ids()
+
+        self.assertEqual(active_subject_ids, ("deutsch", "epu"))
+        self.assertEqual(replaced_subject_ids, ("mathematik",))
+        self.assertEqual(
+            {
+                setting.subject_id: (setting.active, setting.updated_at)
+                for setting in settings
+            },
+            {
+                "deutsch": (True, "2026-07-10T09:00:00+00:00"),
+                "epu": (True, "2026-07-10T09:00:00+00:00"),
+                "mathematik": (False, "2026-07-10T09:00:00+00:00"),
+            },
+        )
+
+    def test_documentation_subject_settings_persist_after_reload_without_changing_catalog(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            database = SQLiteDatabase(database_path)
+            competency_repository = SQLiteCompetencyRepository(database)
+            competency_repository.ensure_catalog_defaults((
+                self._sample_competency_entry("CMP-000001", "Deutsch", "Lesen"),
+                self._sample_competency_entry("CMP-000002", "EPU", "Natur"),
+            ))
+            before_catalog_active = {
+                competency.competency_id: competency.active
+                for competency in competency_repository.list_competencies()
+            }
+            SQLiteDocumentationSubjectSettingsRepository(
+                database
+            ).save_active_documentation_subject_ids(
+                ("epu",),
+                updated_at="2026-07-10T09:00:00+00:00",
+            )
+
+            reloaded_database = SQLiteDatabase(database_path)
+            reloaded_subject_ids = SQLiteDocumentationSubjectSettingsRepository(
+                reloaded_database
+            ).list_active_documentation_subject_ids()
+            after_catalog_active = {
+                competency.competency_id: competency.active
+                for competency in SQLiteCompetencyRepository(
+                    reloaded_database
+                ).list_competencies()
+            }
+
+        self.assertEqual(reloaded_subject_ids, ("epu",))
+        self.assertEqual(after_catalog_active, before_catalog_active)
+
     def test_observation_with_multiple_ratings_is_reloaded(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
@@ -759,6 +861,8 @@ class SQLiteSpikeTest(unittest.TestCase):
         competency_id: str,
         subject_name: str,
         label: str,
+        *,
+        active: bool = True,
     ) -> object:
         class Entry:
             pass
@@ -771,7 +875,7 @@ class SQLiteSpikeTest(unittest.TestCase):
         entry.competency_text = f"{label} beschreiben"
         entry.learning_area = label
         entry.competency_group = "Grundlage"
-        entry.is_active = True
+        entry.is_active = active
         entry.is_core_subject = True
         return entry
 

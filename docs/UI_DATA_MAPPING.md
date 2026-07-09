@@ -18,6 +18,14 @@ Spalten:
 | App-Icon | versioniertes Asset `assets/app_icon.png` | Anzeige | Nein | keine fachliche Datenquelle | sichtbares Branding in Sidebar und Info-Dialog; keine Fachlogik |
 | Visuelles Theme | freigegebene Icon-Leitlinie aus `docs/DESIGN_SYSTEM.md` | Anzeige | Nein | keine fachliche Datenquelle | app-weites PySide-Theme fuer Farben, Karten, Navigation, Tabellen, Eingaben und Dialoge; keine Fachlogik |
 
+## PySide6 Einstellungen
+
+Status: Sprint 2A legt nur die Datenhaltung fuer dokumentationsrelevante Faecher an. Es wird keine Settings-UI umgesetzt.
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Dokumentationsrelevante Faecher | spaeter SQLite `documentation_subject_settings` + SQLite `competencies.subject_id` / `subject_name` | Eingabe / Auswertung | Geplant | `documentation_subject_settings` | spaeter Auswahl der Faecher, die fuer Dokumentations- und Auswertungslogik zaehlen; ohne gespeicherte Settings-Zeilen gelten alle aktiven Katalogfaecher; sichtbare Fachnamen kommen aus `competencies`, nicht aus der Settings-Tabelle |
+
 ## Stammgruppenuebersicht
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
