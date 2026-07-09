@@ -1,10 +1,22 @@
 # CHANGELOG
 
+## Sprint 1B-1 - Laura-Test-Fix J04 Dateien entfernen
+
+### Added
+
+- Schuelerprofil zeigt im Reiter `Dateien` pro Dokument eine ruhige Aktion `Entfernen`.
+- Entfernen nutzt die bestehende Soft-Delete-Logik ueber `documents.active = 0`; physische Dateien bleiben im Dateisystem.
+
+### Not Changed
+
+- Keine Datenbanktabelle, keine Migration, keine physische Dateiloeschung, keine H02-Kompetenzbestaetigung, keine K02-Dokumentationsdetails, kein UI-Redesign, kein Dashboard und kein Commit umgesetzt.
+
 ## Sprint 1A - Laura-Test-Fixes / UX-Stabilisierung
 
 ### Changed
 
 - Beobachtungs-Speichern nutzt keine blockierende Erfolgsmeldung mehr; die App zeigt nach Speichern, Bearbeiten und Loeschen ruhig im bestehenden Statusbereich, welcher Kontext erhalten bleibt.
+- Nacharbeit H01: Nach erfolgreichem Anlegen oder Bearbeiten steht im Shell-Statusbereich wieder die klare Erfolgsmeldung `Beobachtung wurde gespeichert.` bzw. `Beobachtung wurde aktualisiert.`.
 - Kompetenzstatus-Texte verwenden ruhigere Begriffe wie `Vorschlag aus Beobachtungen`, `aus Beobachtungen abgeleitet`, `von Laura bestätigt`, `aktuell bestätigt` und `noch nicht bestätigt`.
 - Bestehende Beobachtungs-, Kompetenzgruppen- und Dokumentkarten sind zusätzlich zur vorhandenen Details-/Oeffnen-Schaltflaeche klickbar.
 
