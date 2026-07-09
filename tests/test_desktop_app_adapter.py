@@ -201,6 +201,25 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(len(reloaded_documents), 1)
         self.assertEqual(reloaded_documents[0].original_filename, "Foerderplan.pdf")
 
+    def test_adapter_remove_document_hides_document_without_deleting_file(self) -> None:
+        source_path = Path(self.temp_dir.name) / "Foerderplan.pdf"
+        source_path.write_text("PDF-Platzhalter", encoding="utf-8")
+        document = self.adapter.add_student_document(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            source_path=source_path,
+            document_type="Bericht",
+            title="Foerderplan",
+        )
+        stored_path = Path(document.file_path)
+
+        self.adapter.remove_document(document.document_id)
+        documents = self.adapter.list_documents_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(documents, ())
+        self.assertTrue(stored_path.exists())
+
     def test_observation_can_save_attachment_metadata(self) -> None:
         source_path = Path(self.temp_dir.name) / "Arbeitsprobe.txt"
         source_path.write_text("Arbeitsprobe", encoding="utf-8")
@@ -1246,7 +1265,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             summary.profile_summary_label,
             "2/5 Lernbereiche dokumentiert",
         )
-        self.assertEqual(summary.weak_subjects_label, "Noch wenig dokumentiert: EPU, Deutsch")
+        self.assertEqual(summary.weak_subjects_label, "Noch wenig belegt: EPU, Deutsch")
 
     def test_new_app_database_starts_without_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2421,10 +2440,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn("NewObservationDialog(student, self.curriculum_adapter, self.adapter)", source)
         self.assertIn("self.show_student_profile(student.student_id)", source)
-        self.assertIn(
-            "Beobachtung wurde gespeichert. Profil bleibt geöffnet.",
-            source,
-        )
+        self.assertIn('self.status_label.setText("Beobachtung wurde gespeichert.")', source)
         self.assertIn("list_competency_overview_for_student(student_id)", profile_source)
         self.assertIn("get_report_preview_for_student(student_id)", profile_source)
         self.assertIn("list_documentation_status_for_student(student_id)", profile_source)
@@ -2440,10 +2456,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("NewObservationDialog(student, self.curriculum_adapter, self.adapter)", quick_source)
         self.assertIn("self.refresh_overview()", quick_source)
         self.assertIn("self.refresh_students()", quick_source)
-        self.assertIn(
-            "Beobachtung wurde gespeichert. Schülerliste bleibt geöffnet.",
-            quick_source,
-        )
+        self.assertIn('self.status_label.setText("Beobachtung wurde gespeichert.")', quick_source)
 
     def test_shell_returns_from_filtered_student_list_to_overview(self) -> None:
         shell_source = inspect.getsource(shell.AppShell)
@@ -2465,10 +2478,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("observation_draft_for_edit(observation_id)", source)
         self.assertIn("initial_draft=draft", source)
         self.assertIn("self.show_student_profile(student.student_id)", source)
-        self.assertIn(
-            "Beobachtung wurde aktualisiert. Profil bleibt geöffnet.",
-            source,
-        )
+        self.assertIn('self.status_label.setText("Beobachtung wurde aktualisiert.")', source)
 
     def test_shell_soft_deletes_observation_and_refreshes_profile(self) -> None:
         source = inspect.getsource(shell.AppShell.delete_observation)
@@ -2478,6 +2488,23 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn(
             "Beobachtung wurde gelöscht. Profil bleibt geöffnet.",
             source,
+        )
+
+    def test_shell_soft_deletes_document_and_refreshes_profile(self) -> None:
+        shell_source = inspect.getsource(shell.AppShell)
+        remove_source = inspect.getsource(shell.AppShell.remove_student_document)
+
+        self.assertIn(
+            "self.student_profile_screen.document_remove_requested.connect",
+            shell_source,
+        )
+        self.assertIn("self.remove_student_document", shell_source)
+        self.assertIn("QMessageBox.question", remove_source)
+        self.assertIn("self.adapter.remove_document(document_id)", remove_source)
+        self.assertIn("self.show_student_profile(student_id)", remove_source)
+        self.assertIn(
+            'self.status_label.setText("Datei wurde entfernt.")',
+            remove_source,
         )
 
     def test_observation_dialog_updates_existing_observation(self) -> None:
@@ -3115,8 +3142,16 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
-        details_container = screen.findChild(QWidget, "DocumentationStatusDetails")
-        details_button = screen.findChild(
+        overview_details_container = screen.findChild(
+            QWidget,
+            "OverviewDocumentationDetails",
+        )
+        overview_details_button = screen.findChild(
+            QPushButton,
+            "OverviewDocumentationDetailsButton",
+        )
+        competency_details_container = screen.findChild(QWidget, "DocumentationStatusDetails")
+        competency_details_button = screen.findChild(
             QPushButton,
             "DocumentationStatusDetailsButton",
         )
@@ -3124,14 +3159,36 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Dokumentationsstand", label_texts)
         self.assertIn("8/20 Lernbereiche dokumentiert", label_texts)
         self.assertIn("teilweise dokumentiert", label_texts)
-        self.assertIn("Noch wenig dokumentiert: EPU, Deutsch", label_texts)
-        self.assertIsNotNone(details_container)
-        self.assertTrue(details_container.isHidden())
-        self.assertIsNotNone(details_button)
-        details_button.click()
-        self.assertFalse(details_container.isHidden())
-        self.assertIn("Deutsch: 8 / 14 dokumentiert", label_texts)
-        self.assertIn("EPU: 0 / 6 dokumentiert", label_texts)
+        self.assertIn("Noch wenig belegt: EPU, Deutsch", label_texts)
+        self.assertIsNotNone(overview_details_container)
+        self.assertTrue(overview_details_container.isHidden())
+        self.assertIsNotNone(overview_details_button)
+        self.assertFalse(overview_details_button.isHidden())
+        self.assertEqual(overview_details_button.text(), "Details anzeigen")
+        overview_details_button.click()
+        self.assertFalse(overview_details_container.isHidden())
+        self.assertEqual(overview_details_button.text(), "Details ausblenden")
+        expanded_label_texts = [label.text() for label in screen.findChildren(QLabel)]
+        self.assertIn("Deutsch", expanded_label_texts)
+        self.assertIn("8/14 Lernbereiche", expanded_label_texts)
+        self.assertIn("Deutsch: 8 / 14 dokumentiert", expanded_label_texts)
+        self.assertIn("EPU", expanded_label_texts)
+        self.assertIn("0/6 Lernbereiche", expanded_label_texts)
+        self.assertIn("EPU: 0 / 6 dokumentiert", expanded_label_texts)
+        self.assertIn(
+            "Für nächste Beobachtungen geeignet: Natur und Umwelt",
+            expanded_label_texts,
+        )
+        detail_text = " ".join(
+            label.text().casefold()
+            for label in overview_details_container.findChildren(QLabel)
+        )
+        for avoided_word in ("fehlend", "kritisch", "problem"):
+            self.assertNotIn(avoided_word, detail_text)
+        self.assertIsNotNone(competency_details_container)
+        self.assertTrue(competency_details_container.isHidden())
+        self.assertIsNotNone(competency_details_button)
+        self.assertEqual(competency_details_button.text(), "Details anzeigen")
         self.assertIsNotNone(app)
 
     def test_student_profile_opens_with_overview_tab(self) -> None:
@@ -3459,6 +3516,45 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Dokumente & Medien", label_texts)
         self.assertIn("Bericht · Foerderplan", label_texts)
         self.assertIn("2026-07-04", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_emits_document_remove_request(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        removed_documents: list[tuple[str, str]] = []
+        screen.document_remove_requested.connect(
+            lambda student_id, document_id: removed_documents.append(
+                (student_id, document_id)
+            )
+        )
+        screen.set_student(
+            self._sample_student_detail(),
+            (),
+            (),
+            None,
+            (),
+            (
+                StudentDocumentViewModel(
+                    "MED-000001",
+                    f"{STUDENT_ID_PREFIX}-000001",
+                    "",
+                    "Foerderplan",
+                    "Bericht",
+                    str(Path(self.temp_dir.name) / "Foerderplan.pdf"),
+                    "Foerderplan.pdf",
+                    "2026-07-04T12:00:00+00:00",
+                ),
+            ),
+        )
+
+        remove_button = screen.findChild(QPushButton, "DocumentRemoveButton")
+        self.assertIsNotNone(remove_button)
+        remove_button.click()
+
+        self.assertEqual(
+            removed_documents,
+            [(f"{STUDENT_ID_PREFIX}-000001", "MED-000001")],
+        )
         self.assertIsNotNone(app)
 
     def test_observation_details_render_linked_attachments(self) -> None:

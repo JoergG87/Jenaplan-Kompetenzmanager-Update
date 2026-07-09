@@ -516,6 +516,8 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen._documents_card()`
 - `StudentProfileScreen._empty_documents_card()`
 - `StudentProfileScreen._document_row(document)`
+- `StudentProfileScreen.document_remove_requested(student_id, document_id)`
+- `StudentProfileScreen._request_document_remove(document_id)`
 - `StudentProfileScreen.open_document_file(file_path)`
 - `StudentProfileScreen._observation_attachments_block(observation)`
 - `StudentProfileScreen.set_documentation_statuses(statuses)`
@@ -638,6 +640,7 @@ Registrierte Python-Klassen und Funktionen:
 - `AppShell.show_students_for_course_group(course_group_id, course_id)`
 - `AppShell.open_new_course_group_dialog()`
 - `AppShell.open_edit_course_group_dialog(course_group_id)`
+- `AppShell.remove_student_document(student_id, document_id)`
 - `OverviewScreen.set_master_data(view_model, group_summaries)`
 - `OVERVIEW_GROUP_EMPTY_STATE`
 - `OVERVIEW_COURSE_EMPTY_STATE`

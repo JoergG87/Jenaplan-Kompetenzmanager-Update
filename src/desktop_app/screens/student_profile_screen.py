@@ -53,6 +53,7 @@ class StudentProfileScreen(QWidget):
     observation_edit_requested = Signal(str)
     observation_delete_requested = Signal(str)
     document_add_requested = Signal(str)
+    document_remove_requested = Signal(str, str)
     competency_confirmation_requested = Signal(str, str, str, str)
 
     def __init__(self) -> None:
@@ -603,6 +604,24 @@ class StudentProfileScreen(QWidget):
             self.overview_documentation_layout.addWidget(
                 self._overview_text(summary.weak_subjects_label, "subtle")
             )
+        details_button = QPushButton("Details anzeigen")
+        details_button.setObjectName("OverviewDocumentationDetailsButton")
+        details_container = QWidget()
+        details_container.setObjectName("OverviewDocumentationDetails")
+        details_layout = QVBoxLayout(details_container)
+        details_layout.setContentsMargins(0, 0, 0, 0)
+        details_layout.setSpacing(4)
+        for status in statuses:
+            details_layout.addWidget(self._documentation_subject_details(status))
+        details_container.setVisible(False)
+        details_button.clicked.connect(
+            lambda _checked=False: self._toggle_documentation_status_details(
+                details_container,
+                details_button,
+            )
+        )
+        self.overview_documentation_layout.addWidget(details_button)
+        self.overview_documentation_layout.addWidget(details_container)
 
     def _render_overview_development(self, development_items: tuple[str, ...]) -> None:
         if not development_items:
@@ -1116,10 +1135,7 @@ class StudentProfileScreen(QWidget):
         details_layout.setContentsMargins(0, 0, 0, 0)
         details_layout.setSpacing(4)
         for status in statuses:
-            line = QLabel(status.progress_label)
-            line.setWordWrap(True)
-            set_label_style(line, "small")
-            details_layout.addWidget(line)
+            details_layout.addWidget(self._documentation_subject_details(status))
         details_container.setVisible(False)
         details_button.clicked.connect(
             lambda _checked=False: self._toggle_documentation_status_details(
@@ -1133,6 +1149,50 @@ class StudentProfileScreen(QWidget):
         layout.addWidget(details_button)
         layout.addWidget(details_container)
         self.documentation_status_layout.addWidget(card)
+
+    def _documentation_subject_details(
+        self,
+        status: StudentDocumentationSubjectStatus,
+    ) -> QWidget:
+        detail = QWidget()
+        layout = QVBoxLayout(detail)
+        layout.setContentsMargins(0, 2, 0, 2)
+        layout.setSpacing(2)
+
+        subject_label = QLabel(status.subject_display_name)
+        set_label_style(subject_label, "field_label")
+
+        count_label = QLabel(
+            f"{status.documented_count}/{status.total_count} Lernbereiche"
+        )
+        set_label_style(count_label, "small")
+
+        progress_label = QLabel(status.progress_label)
+        progress_label.setWordWrap(True)
+        set_label_style(progress_label, "small")
+
+        layout.addWidget(subject_label)
+        layout.addWidget(count_label)
+        layout.addWidget(progress_label)
+
+        if status.missing_competencies:
+            suitable_labels = ", ".join(
+                competency.competency_label
+                for competency in status.missing_competencies
+            )
+            next_observations_label = QLabel(
+                f"Für nächste Beobachtungen geeignet: {suitable_labels}"
+            )
+            next_observations_label.setWordWrap(True)
+            set_label_style(next_observations_label, "subtle")
+            layout.addWidget(next_observations_label)
+        elif status.documented_count < status.total_count:
+            open_label = QLabel("Noch offen für Beobachtungen.")
+            open_label.setWordWrap(True)
+            set_label_style(open_label, "subtle")
+            layout.addWidget(open_label)
+
+        return detail
 
     def _toggle_documentation_status_details(
         self,
@@ -1152,7 +1212,7 @@ class StudentProfileScreen(QWidget):
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(3)
 
-        empty_label = QLabel("Noch kein Kompetenzkatalog verfügbar.")
+        empty_label = QLabel("Noch keine Dokumentationsdetails vorhanden.")
         empty_label.setWordWrap(True)
         set_label_style(empty_label, "body")
 
@@ -1260,14 +1320,30 @@ class StudentProfileScreen(QWidget):
                 self.open_document_file(file_path)
             )
         )
+        remove_button = QPushButton("Entfernen")
+        remove_button.setObjectName("DocumentRemoveButton")
+        remove_button.clicked.connect(
+            lambda _checked=False, document_id=document.document_id: (
+                self._request_document_remove(document_id)
+            )
+        )
         layout.addWidget(text_block, 1)
         layout.addWidget(open_button, 0)
+        layout.addWidget(remove_button, 0)
         self._make_clickable_card(
             row,
             lambda file_path=document.file_path: self.open_document_file(file_path),
             "Datei öffnen",
         )
         return row
+
+    def _request_document_remove(self, document_id: str) -> None:
+        if self.current_student is None:
+            return
+        self.document_remove_requested.emit(
+            self.current_student.student_id,
+            document_id,
+        )
 
     def open_document_file(self, file_path: str) -> None:
         """Open a document through the operating system if the path exists."""

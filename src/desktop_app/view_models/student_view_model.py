@@ -40,7 +40,7 @@ class StudentDocumentationSummaryViewModel:
         """Return up to three subjects that still need documentation."""
         if not self.weak_subject_names:
             return ""
-        return "Noch wenig dokumentiert: " + ", ".join(self.weak_subject_names[:3])
+        return "Noch wenig belegt: " + ", ".join(self.weak_subject_names[:3])
 
 
 def empty_documentation_summary() -> StudentDocumentationSummaryViewModel:

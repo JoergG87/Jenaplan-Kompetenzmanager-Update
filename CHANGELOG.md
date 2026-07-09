@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Sprint 1B-2 - K02 Dokumentationsdetails zugänglich machen
+
+### Changed
+
+- Schuelerprofil zeigt im bestehenden Dokumentationsstand-Detailsbereich pro Fach Fachname, Zaehler, Fortschrittstext und ruhige Hinweise fuer naechste Beobachtungen.
+- Nacharbeit: Der Dokumentationsstand im Reiter `Überblick` bietet ebenfalls `Details anzeigen` und klappt dieselben ruhigen Fachdetails direkt im Überblick auf.
+- Dokumentationshinweise verwenden `Noch wenig belegt` und `Für nächste Beobachtungen geeignet` statt defizitorientierter Detailtexte.
+
+### Not Changed
+
+- Keine H02-Kompetenzbestaetigung, keine aktive-Faecher-Logik, keine neue Kompetenzstruktur, keine Bewertung pro konkreter Kompetenz, keine Berichtsgrafiken, kein Dashboard, keine Datenbankaenderung, keine Adapterlogik und kein Commit umgesetzt.
+
 ## Sprint 1B-1 - Laura-Test-Fix J04 Dateien entfernen
 
 ### Added

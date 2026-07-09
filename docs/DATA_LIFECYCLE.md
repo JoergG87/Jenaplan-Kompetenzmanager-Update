@@ -61,7 +61,7 @@ Regel: Neue Stammgruppen oder Kurse werden dabei nicht automatisch angelegt. `st
 
 ## Dokument oder Medium hinzufuegen
 
-Start: Lehrkraft fuegt im Schuelerprofil oder Beobachtungsdialog eine Datei hinzu.
+Start: Lehrkraft fuegt im Schuelerprofil oder Beobachtungsdialog eine Datei hinzu oder entfernt eine Datei aus dem Schuelerprofil.
 
 Schreibprozess: Dokumenten- und Medien-MVP ueber PySide.
 

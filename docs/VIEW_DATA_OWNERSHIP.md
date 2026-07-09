@@ -272,6 +272,7 @@ UI-Projektionen:
 - Berichtsvorschau aus Kompetenzstaenden und Beobachtungsbelegen
 - Dokumente und Medien aus aktiven Dokumentmetadaten
 - Aktionen zum Bearbeiten und Loeschen einzelner Beobachtungen
+- Aktion zum Entfernen einzelner Dokumente ueber Soft Delete
 - Aktion zum Bestaetigen oder manuellen Anpassen eines Kompetenzstand-Vorschlags
 - Medienhinweise
 

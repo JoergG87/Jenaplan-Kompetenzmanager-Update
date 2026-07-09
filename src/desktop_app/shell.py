@@ -166,6 +166,9 @@ class AppShell(QMainWindow):
         self.student_profile_screen.document_add_requested.connect(
             self.open_student_document_dialog
         )
+        self.student_profile_screen.document_remove_requested.connect(
+            self.remove_student_document
+        )
         self.student_profile_screen.competency_confirmation_requested.connect(
             self.confirm_competency_status
         )
@@ -313,9 +316,7 @@ class AppShell(QMainWindow):
         dialog = NewObservationDialog(student, self.curriculum_adapter, self.adapter)
         if dialog.exec():
             self.show_student_profile(student.student_id)
-            self.status_label.setText(
-                "Beobachtung wurde gespeichert. Profil bleibt geöffnet."
-            )
+            self.status_label.setText("Beobachtung wurde gespeichert.")
 
     def open_quick_observation_dialog(self, student_id: str) -> None:
         """Open the observation dialog from a student list row."""
@@ -327,9 +328,7 @@ class AppShell(QMainWindow):
         if dialog.exec():
             self.refresh_overview()
             self.refresh_students()
-            self.status_label.setText(
-                "Beobachtung wurde gespeichert. Schülerliste bleibt geöffnet."
-            )
+            self.status_label.setText("Beobachtung wurde gespeichert.")
 
     def open_edit_observation_dialog(self, observation_id: str) -> None:
         """Open the observation dialog with persisted observation data."""
@@ -349,9 +348,7 @@ class AppShell(QMainWindow):
         )
         if dialog.exec():
             self.show_student_profile(student.student_id)
-            self.status_label.setText(
-                "Beobachtung wurde aktualisiert. Profil bleibt geöffnet."
-            )
+            self.status_label.setText("Beobachtung wurde aktualisiert.")
 
     def delete_observation(self, observation_id: str) -> None:
         """Soft-delete an observation and refresh the current profile."""
@@ -402,6 +399,22 @@ class AppShell(QMainWindow):
                 return
         self.show_student_profile(student_id)
         self.status_label.setText("Dokumente & Medien wurden gespeichert.")
+
+    def remove_student_document(self, student_id: str, document_id: str) -> None:
+        """Soft-delete one student document after confirmation."""
+        response = QMessageBox.question(
+            self,
+            "Datei entfernen",
+            "Diese Datei aus dem Schülerprofil entfernen? "
+            "Die Datei bleibt im Dateisystem erhalten.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if response != QMessageBox.StandardButton.Yes:
+            return
+        self.adapter.remove_document(document_id)
+        self.show_student_profile(student_id)
+        self.status_label.setText("Datei wurde entfernt.")
 
     def confirm_competency_status(
         self,
