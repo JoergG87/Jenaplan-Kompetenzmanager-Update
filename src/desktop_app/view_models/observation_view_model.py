@@ -184,11 +184,15 @@ class StudentCompetencyStatusViewModel:
     @property
     def rating_history_label(self) -> str:
         """Return the chronological rating path."""
+        if not self.rating_history:
+            return "keine aktive Beobachtungshistorie"
         return " → ".join(self.rating_history)
 
     @property
     def observation_count_label(self) -> str:
         """Return a compact observation count label."""
+        if self.observation_count == 0:
+            return "keine aktive Beobachtung"
         if self.observation_count == 1:
             return "1 Beobachtung"
         return f"{self.observation_count} Beobachtungen"
@@ -201,6 +205,8 @@ class StudentCompetencyStatusViewModel:
                 f"Vorschlag aus Beobachtungen: {self.rating} · "
                 "noch nicht bestätigt"
             )
+        if not self.rating_history:
+            return f"von Laura bestätigt: {self.confirmed_rating}"
         return (
             f"aus Beobachtungen abgeleitet: {self.rating} · "
             f"von Laura bestätigt: {self.confirmed_rating}"
