@@ -54,6 +54,7 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationCompetencyRatingDraft,
     ObservationListItem,
     ObservationRatingViewModel,
+    ObservationSubjectOptionViewModel,
     StudentDocumentationSubjectStatus,
     StudentCompetencyStatusViewModel,
     StudentCompetencySubjectGroup,
@@ -228,6 +229,31 @@ class StudentDesktopAdapter:
         SQLiteDocumentationSubjectSettingsRepository(
             self.database
         ).save_active_documentation_subject_ids(subject_ids)
+
+    def list_observation_subject_options(
+        self,
+        initial_draft: ObservationDraftViewModel | None = None,
+    ) -> tuple[ObservationSubjectOptionViewModel, ...]:
+        """Return subject options for the observation dialog."""
+        options = [
+            ObservationSubjectOptionViewModel(option.subject_id, option.label)
+            for option in self.list_documentation_subject_options()
+            if option.selected
+        ]
+        initial_subject_key = self._initial_observation_subject_key(initial_draft)
+        if initial_subject_key and initial_subject_key not in {
+            option.subject_key for option in options
+        }:
+            initial_subject_label = self._initial_observation_subject_label(
+                initial_draft
+            ) or initial_subject_key
+            options.append(
+                ObservationSubjectOptionViewModel(
+                    initial_subject_key,
+                    f"{initial_subject_label} (nicht dokumentationsrelevant)",
+                )
+            )
+        return tuple(options)
 
     def group_id_by_name(self) -> dict[str, str]:
         """Map visible group names to stable group IDs."""
@@ -535,6 +561,7 @@ class StudentDesktopAdapter:
             statuses,
             active_competencies,
             documented_ids,
+            self._active_documentation_subject_ids(),
         )
 
     def list_documentation_status_for_student(
@@ -557,7 +584,7 @@ class StudentDesktopAdapter:
             ).list_confirmations_for_student(student_id)
         }
         return self._documentation_statuses(
-            self._active_competencies(),
+            self._documentation_relevant_competencies(),
             observed_ids | confirmed_ids,
         )
 
@@ -955,6 +982,7 @@ class StudentDesktopAdapter:
         statuses: tuple[StudentCompetencyStatusViewModel, ...],
         active_competencies: tuple[object, ...],
         documented_ids: set[str],
+        documentation_subject_ids: set[str],
     ) -> tuple[StudentCompetencySubjectGroup, ...]:
         groups: dict[str, list[StudentCompetencyStatusViewModel]] = {}
         subject_names: dict[str, str] = {}
@@ -970,7 +998,9 @@ class StudentDesktopAdapter:
                     active_competencies,
                     documented_ids,
                     subject_id,
-                ),
+                )
+                if subject_id in documentation_subject_ids
+                else (),
             )
             for subject_id in groups
         )
@@ -982,6 +1012,41 @@ class StudentDesktopAdapter:
                 self.database
             ).list_competencies()
             if getattr(competency, "active", False)
+        )
+
+    def _active_documentation_subject_ids(self) -> set[str]:
+        return set(
+            SQLiteDocumentationSubjectSettingsRepository(
+                self.database
+            ).list_active_documentation_subject_ids()
+        )
+
+    def _initial_observation_subject_key(
+        self,
+        initial_draft: ObservationDraftViewModel | None,
+    ) -> str:
+        if initial_draft is None:
+            return ""
+        if initial_draft.competency_ratings:
+            return initial_draft.competency_ratings[0].subject_key
+        return initial_draft.subject_id
+
+    def _initial_observation_subject_label(
+        self,
+        initial_draft: ObservationDraftViewModel | None,
+    ) -> str:
+        if initial_draft is None:
+            return ""
+        if initial_draft.competency_ratings:
+            return initial_draft.competency_ratings[0].subject_display_name
+        return initial_draft.subject_display_name or initial_draft.subject_id
+
+    def _documentation_relevant_competencies(self) -> tuple[object, ...]:
+        documentation_subject_ids = self._active_documentation_subject_ids()
+        return tuple(
+            competency
+            for competency in self._active_competencies()
+            if getattr(competency, "subject_id") in documentation_subject_ids
         )
 
     def _documentation_summary_for_student(

@@ -79,6 +79,7 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationDraftViewModel,
     ObservationListItem,
     ObservationRatingViewModel,
+    ObservationSubjectOptionViewModel,
     StudentDocumentationSubjectStatus,
     StudentCompetencyStatusViewModel,
     StudentCompetencySubjectGroup,
@@ -588,6 +589,62 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(
             tuple(option.subject_id for option in options if option.selected),
             ("sozialkompetenz",),
+        )
+
+    def test_observation_subject_options_use_documentation_subject_selection(
+        self,
+    ) -> None:
+        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+
+        options = self.adapter.list_observation_subject_options()
+
+        self.assertEqual(
+            tuple(option.subject_key for option in options),
+            ("deutsch", "mathematik"),
+        )
+        self.assertNotIn("epu", {option.subject_key for option in options})
+
+    def test_observation_subject_options_default_to_active_catalog_subjects(
+        self,
+    ) -> None:
+        options = self.adapter.list_observation_subject_options()
+        expected_subject_ids = tuple(
+            option.subject_id
+            for option in self.adapter.list_documentation_subject_options()
+        )
+
+        self.assertEqual(
+            tuple(option.subject_key for option in options),
+            expected_subject_ids,
+        )
+        self.assertIn("sozialkompetenz", {option.subject_key for option in options})
+
+    def test_observation_subject_options_keep_initial_non_documentation_subject(
+        self,
+    ) -> None:
+        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+        initial_draft = self._sample_observation_draft(
+            subject_id="musik",
+            subject_display_name="Musik",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000025",
+                    "musik",
+                    "Musik",
+                    "Musik wahrnehmen",
+                    "Hoeren und beschreiben",
+                    "Musikalische Eindruecke beschreiben",
+                    "+",
+                ),
+            ),
+        )
+
+        options = self.adapter.list_observation_subject_options(initial_draft)
+
+        self.assertEqual(options[-1].subject_key, "musik")
+        self.assertEqual(
+            options[-1].display_name,
+            "Musik (nicht dokumentationsrelevant)",
         )
 
     def test_settings_screen_shows_documentation_subject_checkboxes_and_saves(
@@ -1453,8 +1510,21 @@ class DesktopAppAdapterTest(unittest.TestCase):
         statuses = self.adapter.list_documentation_status_for_student(
             f"{STUDENT_ID_PREFIX}-000001"
         )
+        expected_subject_ids = tuple(
+            dict.fromkeys(
+                competency.subject_id
+                for competency in SQLiteCompetencyRepository(
+                    self.database
+                ).list_competencies()
+                if competency.active
+            )
+        )
 
         self.assertTrue(statuses)
+        self.assertEqual(
+            tuple(status.subject_id for status in statuses),
+            expected_subject_ids,
+        )
         self.assertTrue(all(status.total_count > 0 for status in statuses))
         self.assertTrue(all(status.documented_count == 0 for status in statuses))
         self.assertTrue(
@@ -1466,6 +1536,33 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(
             any(status.progress_label.startswith("Deutsch: 0 / ") for status in statuses)
         )
+
+    def test_documentation_status_uses_only_documentation_subject_selection(self) -> None:
+        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+
+        statuses = self.adapter.list_documentation_status_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        expected_total_count = sum(
+            len({
+                competency.learning_area
+                for competency in SQLiteCompetencyRepository(
+                    self.database
+                ).list_competencies()
+                if competency.active and competency.subject_id == subject_id
+            })
+            for subject_id in ("deutsch", "mathematik")
+        )
+
+        self.assertEqual(
+            tuple(status.subject_id for status in statuses),
+            ("deutsch", "mathematik"),
+        )
+        self.assertEqual(
+            sum(status.total_count for status in statuses),
+            expected_total_count,
+        )
+        self.assertNotIn("epu", {status.subject_id for status in statuses})
 
     def test_documentation_status_counts_active_observation_learning_areas(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
@@ -1547,6 +1644,93 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn(
             "CMP-000001",
             {competency.competency_id for competency in deutsch_status.missing_competencies},
+        )
+
+    def test_missing_competencies_ignore_non_documentation_subjects(self) -> None:
+        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+        self.adapter.save_observation(self._sample_observation_draft(
+            subject_id="epu",
+            subject_display_name="EPU",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000012",
+                    "epu",
+                    "EPU",
+                    "Raum und Zeit",
+                    "Orientierung in Raum und Zeit",
+                    "Sich in vertrauten Räumen orientieren",
+                    "-",
+                ),
+            ),
+        ))
+
+        groups = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        statuses = self.adapter.list_documentation_status_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        epu_group = next(group for group in groups if group.subject_id == "epu")
+        deutsch_status = next(
+            status
+            for status in statuses
+            if status.subject_id == "deutsch"
+        )
+
+        self.assertEqual(epu_group.missing_competencies, ())
+        self.assertNotIn("epu", {status.subject_id for status in statuses})
+        self.assertTrue(deutsch_status.missing_competencies)
+
+    def test_observations_in_non_documentation_subjects_stay_visible(self) -> None:
+        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+        self.adapter.save_observation(self._sample_observation_draft(
+            subject_id="epu",
+            subject_display_name="EPU",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000012",
+                    "epu",
+                    "EPU",
+                    "Raum und Zeit",
+                    "Orientierung in Raum und Zeit",
+                    "Sich in vertrauten Räumen orientieren",
+                    "+",
+                ),
+            ),
+        ))
+
+        observations = self.adapter.list_observations_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        groups = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        epu_group = next(group for group in groups if group.subject_id == "epu")
+
+        self.assertEqual(observations[0].subject_display_name, "EPU")
+        self.assertEqual(epu_group.competencies[0].rating_history, ("+",))
+
+    def test_report_keeps_confirmed_status_for_non_documentation_subject(self) -> None:
+        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000012",
+            confirmed_rating="+",
+        )
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        epu_section = next(
+            section
+            for section in preview.subject_sections
+            if section.subject_id == "epu"
+        )
+
+        self.assertEqual(epu_section.current_statuses[0].rating, "+")
+        self.assertEqual(
+            epu_section.current_statuses[0].rating_source,
+            "von Laura bestätigt",
         )
 
     def test_documentation_summary_labels_compact_list_progress(self) -> None:
@@ -2541,6 +2725,70 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn("OBSERVATION_COMPETENCY_OPTIONS", source)
         self.assertNotIn("Sachunterricht", view_model_source)
 
+    def test_observation_dialog_uses_passed_documentation_subject_options(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        dialog = new_observation_dialog.NewObservationDialog(
+            self._sample_student_detail(),
+            self.curriculum_adapter,
+            self.adapter,
+            subject_options=(
+                ObservationSubjectOptionViewModel("deutsch", "Deutsch"),
+                ObservationSubjectOptionViewModel("mathematik", "Mathematik"),
+            ),
+        )
+
+        subject_labels = tuple(
+            dialog.subject_select.itemText(index)
+            for index in range(dialog.subject_select.count())
+        )
+
+        self.assertEqual(subject_labels, ("Deutsch", "Mathematik"))
+        self.assertNotIn("EPU", subject_labels)
+        self.assertIsNotNone(app)
+
+    def test_observation_dialog_keeps_initial_non_documentation_subject(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        initial_draft = self._sample_observation_draft(
+            subject_id="musik",
+            subject_display_name="Musik",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000025",
+                    "musik",
+                    "Musik",
+                    "Musik wahrnehmen",
+                    "Hoeren und beschreiben",
+                    "Musikalische Eindruecke beschreiben",
+                    "+",
+                ),
+            ),
+        )
+        dialog = new_observation_dialog.NewObservationDialog(
+            self._sample_student_detail(),
+            self.curriculum_adapter,
+            self.adapter,
+            initial_draft=initial_draft,
+            subject_options=(
+                ObservationSubjectOptionViewModel("deutsch", "Deutsch"),
+                ObservationSubjectOptionViewModel(
+                    "musik",
+                    "Musik (nicht dokumentationsrelevant)",
+                ),
+            ),
+        )
+
+        draft = dialog.create_draft()
+
+        self.assertEqual(dialog.subject_select.currentData(), "musik")
+        self.assertEqual(
+            dialog.subject_select.currentText(),
+            "Musik (nicht dokumentationsrelevant)",
+        )
+        self.assertEqual(draft.subject_id, "musik")
+        self.assertEqual(draft.competency_ratings[0].subject_key, "musik")
+        self.assertEqual(draft.competency_ratings[0].subject_display_name, "Musik")
+        self.assertIsNotNone(app)
+
     def test_observation_dialog_uses_checkbox_list_for_competencies(self) -> None:
         source = inspect.getsource(new_observation_dialog)
 
@@ -2735,7 +2983,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         source = inspect.getsource(shell.AppShell.open_new_observation_dialog)
         profile_source = inspect.getsource(shell.AppShell.show_student_profile)
 
-        self.assertIn("NewObservationDialog(student, self.curriculum_adapter, self.adapter)", source)
+        self.assertIn("NewObservationDialog(", source)
+        self.assertIn(
+            "subject_options=self.adapter.list_observation_subject_options()",
+            source,
+        )
         self.assertIn("self.show_student_profile(student.student_id)", source)
         self.assertIn('self.status_label.setText("Beobachtung wurde gespeichert.")', source)
         self.assertIn("list_competency_overview_for_student(student_id)", profile_source)
@@ -2750,7 +3002,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("self.students_screen.observation_requested.connect", shell_source)
         self.assertIn("self.open_quick_observation_dialog", shell_source)
         self.assertIn("self.adapter.get_student_profile(student_id)", quick_source)
-        self.assertIn("NewObservationDialog(student, self.curriculum_adapter, self.adapter)", quick_source)
+        self.assertIn("NewObservationDialog(", quick_source)
+        self.assertIn(
+            "subject_options=self.adapter.list_observation_subject_options()",
+            quick_source,
+        )
         self.assertIn("self.refresh_overview()", quick_source)
         self.assertIn("self.refresh_students()", quick_source)
         self.assertIn('self.status_label.setText("Beobachtung wurde gespeichert.")', quick_source)
@@ -2774,6 +3030,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn("observation_draft_for_edit(observation_id)", source)
         self.assertIn("initial_draft=draft", source)
+        self.assertIn(
+            "subject_options=self.adapter.list_observation_subject_options(draft)",
+            source,
+        )
         self.assertIn("self.show_student_profile(student.student_id)", source)
         self.assertIn('self.status_label.setText("Beobachtung wurde aktualisiert.")', source)
 
@@ -3666,6 +3926,37 @@ class DesktopAppAdapterTest(unittest.TestCase):
             overview.reliability_hint,
             "Noch keine Beobachtungen für eine verlässliche Einschätzung.",
         )
+
+    def test_student_profile_overview_watch_items_use_documentation_subjects(self) -> None:
+        overview = build_student_profile_overview(
+            (),
+            (
+                StudentCompetencySubjectGroup(
+                    "epu",
+                    "EPU",
+                    (
+                        StudentCompetencyStatusViewModel(
+                            "CMP-000012",
+                            "Raum und Zeit",
+                            "epu",
+                            "EPU",
+                            "-",
+                            "- teilweise erreicht",
+                            "2026-07-03",
+                            11,
+                            ("-",),
+                            1,
+                        ),
+                    ),
+                ),
+            ),
+            (
+                StudentDocumentationSubjectStatus("deutsch", "Deutsch", 0, 2, (), 0),
+            ),
+        )
+
+        self.assertNotIn("Raum und Zeit weiter beobachten", overview.watch_items)
+        self.assertEqual(overview.watch_items, ("Deutsch weiter beobachten",))
 
     def test_students_screen_shows_compact_documentation_column_and_quick_action(self) -> None:
         app = QApplication.instance() or QApplication([])

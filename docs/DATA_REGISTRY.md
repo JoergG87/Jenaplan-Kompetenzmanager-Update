@@ -271,7 +271,7 @@ Entity: DocumentationSubjectSetting.
 
 Storage: SQLite `documentation_subject_settings`.
 
-Projection: PySide6 Einstellungen und spaetere Dokumentations-/Auswertungsprojektionen.
+Projection: PySide6 Einstellungen und Dokumentations-/Auswertungsprojektionen.
 
 Owner: Systemeinstellungen / Dokumentationskonfiguration.
 
@@ -297,7 +297,7 @@ Schreibende Prozesse:
 
 Lesende Prozesse:
 
-- spaetere Dokumentations- und Auswertungsprojektionen
+- Dokumentations- und Auswertungsprojektionen
 - PySide6 Einstellungen
 
 Regeln:
@@ -307,6 +307,7 @@ Regeln:
 - Die Tabelle veraendert den Kompetenzkatalog nicht.
 - `competencies.active` darf nicht fuer diese Dokumentationsauswahl missbraucht werden.
 - Sichtbare Fachnamen werden weiterhin aus `competencies` bzw. dem Katalog abgeleitet.
+- Nicht dokumentationsrelevante Faecher bleiben in Beobachtungslisten, Kompetenzhistorien und bestaetigten Kompetenzstaenden sichtbar, zaehlen aber nicht als offen im Dokumentationsstand oder in offenen Beobachtungsanlaessen.
 
 ## data_students
 

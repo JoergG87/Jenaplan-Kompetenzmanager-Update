@@ -254,7 +254,16 @@ def _overview_watch_items(
     observations: tuple[object, ...],
 ) -> tuple[str, ...]:
     items: list[str] = []
+    documentation_subject_ids = {
+        str(getattr(status, "subject_id", "")).strip()
+        for status in documentation_statuses
+        if str(getattr(status, "subject_id", "")).strip()
+    }
+    if not documentation_subject_ids:
+        return ()
     for competency in _iter_competencies(competency_groups):
+        if getattr(competency, "subject_id", "") not in documentation_subject_ids:
+            continue
         rating = getattr(competency, "rating", "")
         if rating in ("-", "--"):
             label = str(getattr(competency, "competency_label", "")).strip()

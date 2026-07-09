@@ -333,7 +333,12 @@ class AppShell(QMainWindow):
 
     def open_new_observation_dialog(self, student: StudentDetailViewModel) -> None:
         """Open the persistent observation dialog and refresh after success."""
-        dialog = NewObservationDialog(student, self.curriculum_adapter, self.adapter)
+        dialog = NewObservationDialog(
+            student,
+            self.curriculum_adapter,
+            self.adapter,
+            subject_options=self.adapter.list_observation_subject_options(),
+        )
         if dialog.exec():
             self.show_student_profile(student.student_id)
             self.status_label.setText("Beobachtung wurde gespeichert.")
@@ -344,7 +349,12 @@ class AppShell(QMainWindow):
         if student is None:
             self.status_label.setText("Schülerprofil wurde nicht gefunden.")
             return
-        dialog = NewObservationDialog(student, self.curriculum_adapter, self.adapter)
+        dialog = NewObservationDialog(
+            student,
+            self.curriculum_adapter,
+            self.adapter,
+            subject_options=self.adapter.list_observation_subject_options(),
+        )
         if dialog.exec():
             self.refresh_overview()
             self.refresh_students()
@@ -365,6 +375,7 @@ class AppShell(QMainWindow):
             self.curriculum_adapter,
             self.adapter,
             initial_draft=draft,
+            subject_options=self.adapter.list_observation_subject_options(draft),
         )
         if dialog.exec():
             self.show_student_profile(student.student_id)

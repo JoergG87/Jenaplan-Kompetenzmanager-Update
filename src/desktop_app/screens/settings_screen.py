@@ -22,7 +22,7 @@ from src.desktop_app.view_models.settings_view_model import (
 
 
 DOCUMENTATION_SUBJECTS_HELP_TEXT = (
-    "Diese Auswahl steuert später, welche Fächer im Dokumentationsstand "
+    "Diese Auswahl steuert, welche Fächer im Dokumentationsstand "
     "berücksichtigt werden. Beobachtungen bleiben immer erhalten."
 )
 

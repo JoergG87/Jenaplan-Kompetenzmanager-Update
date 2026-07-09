@@ -53,6 +53,14 @@ DOCUMENT_TYPE_OPTIONS = (
 
 
 @dataclass(frozen=True)
+class ObservationSubjectOptionViewModel:
+    """Display-ready subject option for observation entry."""
+
+    subject_key: str
+    display_name: str
+
+
+@dataclass(frozen=True)
 class ObservationAttachmentDraft:
     """Document or media attachment kept in an observation draft."""
 

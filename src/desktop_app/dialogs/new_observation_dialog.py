@@ -38,6 +38,7 @@ from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_SAVE_VALIDATION_MESSAGE,
     ObservationCompetencyRatingDraft,
     ObservationDraftViewModel,
+    ObservationSubjectOptionViewModel,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
 from src.desktop_app.theme import create_card, set_label_style
@@ -52,12 +53,14 @@ class NewObservationDialog(QDialog):
         curriculum_adapter: CurriculumDesktopAdapter | None = None,
         observation_adapter: object | None = None,
         initial_draft: ObservationDraftViewModel | None = None,
+        subject_options: tuple[ObservationSubjectOptionViewModel, ...] = (),
     ) -> None:
         super().__init__()
         self.student = student
         self.curriculum_adapter = curriculum_adapter or CurriculumDesktopAdapter()
         self.observation_adapter = observation_adapter
         self.initial_draft = initial_draft
+        self.subject_options = subject_options
         self.attachment_feedback_label = QLabel("")
         self.competency_rating_entries: dict[str, object] = {}
         self.competency_rating_widgets: dict[str, QComboBox] = {}
@@ -151,7 +154,14 @@ class NewObservationDialog(QDialog):
         self._apply_initial_draft()
 
     def _populate_subjects(self) -> None:
-        for subject in self.curriculum_adapter.list_active_subjects():
+        subject_options = self.subject_options or tuple(
+            ObservationSubjectOptionViewModel(
+                subject.subject_key,
+                subject.display_name,
+            )
+            for subject in self.curriculum_adapter.list_active_subjects()
+        )
+        for subject in subject_options:
             self.subject_select.addItem(subject.display_name, subject.subject_key)
 
     def _refresh_competencies(self) -> None:

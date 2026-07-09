@@ -8,7 +8,7 @@ Kein Schreibprozess darf implementiert werden, bevor sein Lebenszyklus hier doku
 
 Start: Laura legt in den Einstellungen fest, welche Faecher fuer spaetere Dokumentations- und Auswertungslogik zaehlen sollen.
 
-Schreibprozess: Dokumentationskonfiguration ueber Settings-UI, Desktop Adapter und SQLite-Repository. Sprint 2B speichert die Auswahl; die Auswertungsfilterung folgt separat.
+Schreibprozess: Dokumentationskonfiguration ueber Settings-UI, Desktop Adapter und SQLite-Repository. Ab Sprint 2C wird die Auswahl lesend in Dokumentationsauswertungen angewendet.
 
 Freigegebener PySide-Pfad:
 
@@ -30,12 +30,13 @@ Erforderliche IDs:
 
 Automatisch profitierende Ansichten:
 
-- spaeter Schuelerlisten-Dokumentationsstatus
-- spaeter Schuelerprofil-Dokumentationsstand
-- spaeter offene Kompetenzen
-- spaeter Berichtsvorbereitung
+- Schuelerlisten-Dokumentationsstatus
+- Schuelerprofil-Dokumentationsstand
+- offene Kompetenzen / Beobachtungsanlaesse
+- Beobachtungshinweise im Halbjahresblick
+- Berichtsvorbereitung, falls sie Dokumentationsstatus oder offene Kompetenzen nutzt
 
-Regel: Die Speicherung ersetzt die vollstaendige Auswahl in `documentation_subject_settings`. Wenn keine Settings-Zeilen vorhanden sind, bleibt das bisherige Verhalten erhalten: alle aktiven Katalogfaecher aus `competencies.active = 1` gelten als dokumentationsrelevant. Die Einstellung loescht keine Beobachtungen, veraendert keine Kompetenzdefinitionen und nutzt `competencies.active` nicht als Einstellungsfeld.
+Regel: Die Speicherung ersetzt die vollstaendige Auswahl in `documentation_subject_settings`. Wenn keine Settings-Zeilen vorhanden sind, bleibt das bisherige Verhalten erhalten: alle aktiven Katalogfaecher aus `competencies.active = 1` gelten als dokumentationsrelevant. Die Einstellung loescht keine Beobachtungen, veraendert keine Kompetenzdefinitionen und nutzt `competencies.active` nicht als Einstellungsfeld. Nicht dokumentationsrelevante Faecher bleiben in Beobachtungslisten, Kompetenzhistorien und bestaetigten Kompetenzstaenden sichtbar, zaehlen aber nicht als offen im Dokumentationsstand oder in offenen Beobachtungsanlaessen.
 
 ## Schueler anlegen
 
@@ -354,6 +355,7 @@ Betroffene Datenquellen:
 
 - SQLite `observations`
 - SQLite `observation_competency_ratings`
+- SQLite `documentation_subject_settings` nur lesend fuer die Fachauswahl
 - Export-/Legacy-Projektionen `data_observations` und `data_observation_competencies`
 - spaeter optional `data_media`
 
@@ -371,7 +373,7 @@ Automatisch profitierende Ansichten:
 - Dashboards
 
 Regel: Beobachtung ist Source of Truth. Auswertungen leiten sich daraus ab.
-Beobachtung und Kompetenzbewertungen werden atomar gespeichert; eine Bewertung gehoert zur Kompetenz, nicht global zur Beobachtung. Medien/Anhaenge und Berichte bleiben separate spaetere Prozesse.
+Neue Beobachtungen koennen nur mit dokumentationsrelevanten aktiven Faechern aus der aktuellen Settings-Auswahl angelegt werden; ohne Settings-Zeilen gilt der aktive Katalog. Beobachtung und Kompetenzbewertungen werden atomar gespeichert; eine Bewertung gehoert zur Kompetenz, nicht global zur Beobachtung. Medien/Anhaenge und Berichte bleiben separate spaetere Prozesse.
 
 ## Beobachtung aendern
 
@@ -383,6 +385,7 @@ Betroffene Datenquellen:
 
 - SQLite `observations`
 - SQLite `observation_competency_ratings`
+- SQLite `documentation_subject_settings` nur lesend fuer die Fachauswahl
 - Export-/Legacy-Projektionen `data_observations` und `data_observation_competencies`
 
 Erforderliche IDs:
@@ -398,7 +401,7 @@ Automatisch profitierende Ansichten:
 - Kompetenzansicht
 - Berichte
 
-Regel: `observation_id` bleibt erhalten. Beobachtungsfelder werden aktualisiert; Kompetenzbewertungen werden fuer die Beobachtung atomar ersetzt. Die Fachanzeige wird weiter aus den Kompetenzfaechern abgeleitet.
+Regel: `observation_id` bleibt erhalten. Beobachtungsfelder werden aktualisiert; Kompetenzbewertungen werden fuer die Beobachtung atomar ersetzt. Die Fachanzeige wird weiter aus den Kompetenzfaechern abgeleitet. Wenn das gespeicherte Fach inzwischen nicht dokumentationsrelevant ist, bleibt es beim Bearbeiten sichtbar und wird nicht automatisch ersetzt oder entfernt.
 
 ## Beobachtung loeschen
 

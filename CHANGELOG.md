@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Sprint 2C - Dokumentationsrelevante Faecher in Auswertungen
+
+### Changed
+
+- Dokumentationsstand und kompakte Dokumentations-Summary beruecksichtigen `documentation_subject_settings`.
+- Offene Beobachtungsanlaesse und `missing_competencies` werden nur fuer dokumentationsrelevante Faecher abgeleitet.
+- `Im Blick behalten` nutzt fuer Beobachtungshinweise nur noch die aktiven Dokumentationsfaecher.
+- Berichtsvorschau behaelt echte Beobachtungen und bestaetigte Kompetenzstaende auch in nicht dokumentationsrelevanten Faechern sichtbar.
+- Nacharbeit: Der Beobachtungsdialog bietet fuer neue Beobachtungen nur dokumentationsrelevante Faecher an; bei Bearbeitung bleibt ein inzwischen nicht dokumentationsrelevantes Bestandsfach sichtbar.
+
+### Not Changed
+
+- Keine Settings-UI-Neustruktur ueber eine minimale Hilfetextkorrektur hinaus, keine Datenbankmigration, keine neue Tabelle, keine Kompetenzstruktur-Aenderung, keine Aenderung an `competencies.active`, keine Beobachtungen geloescht, veraendert oder aus Beobachtungslisten versteckt und kein Commit umgesetzt.
+
 ## Sprint 2B - Settings-UI dokumentationsrelevante Faecher
 
 ### Added

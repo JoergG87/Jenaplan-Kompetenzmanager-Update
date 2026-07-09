@@ -490,6 +490,7 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationFilterInput`
 - `ObservationTextActionButton`
 - `ObservationResetButton`
+- `NewObservationDialog.subject_options`
 - `QDateEdit`
 - `QDateTimeEdit`
 - `QTimeEdit`
@@ -512,7 +513,12 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.get_report_preview_for_student(student_id)`
 - `StudentDesktopAdapter.settings_view_model()`
 - `StudentDesktopAdapter.list_documentation_subject_options()`
+- `StudentDesktopAdapter.list_observation_subject_options(initial_draft)`
 - `StudentDesktopAdapter.save_active_documentation_subjects(subject_ids)`
+- `StudentDesktopAdapter._active_documentation_subject_ids()`
+- `StudentDesktopAdapter._initial_observation_subject_key(initial_draft)`
+- `StudentDesktopAdapter._initial_observation_subject_label(initial_draft)`
+- `StudentDesktopAdapter._documentation_relevant_competencies()`
 - `StudentDesktopAdapter._report_development_line(competency)`
 - `StudentDesktopAdapter._report_development_label(rating_history)`
 - `StudentDesktopAdapter._is_monotonic(scores, increasing)`
@@ -625,6 +631,7 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationCompetencyRatingDraft`
 - `ObservationCompetencyRatingDraft.competency_id`
 - `ObservationCompetencyRatingDraft.subject_display_name`
+- `ObservationSubjectOptionViewModel`
 - `ObservationAttachmentDraft`
 - `ObservationAttachmentDraft.display_label`
 - `ObservationDraftViewModel`
