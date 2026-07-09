@@ -271,7 +271,7 @@ Entity: DocumentationSubjectSetting.
 
 Storage: SQLite `documentation_subject_settings`.
 
-Projection: spaetere Einstellungen und spaetere Dokumentations-/Auswertungsprojektionen.
+Projection: PySide6 Einstellungen und spaetere Dokumentations-/Auswertungsprojektionen.
 
 Owner: Systemeinstellungen / Dokumentationskonfiguration.
 
@@ -298,7 +298,7 @@ Schreibende Prozesse:
 Lesende Prozesse:
 
 - spaetere Dokumentations- und Auswertungsprojektionen
-- spaetere Einstellungen
+- PySide6 Einstellungen
 
 Regeln:
 

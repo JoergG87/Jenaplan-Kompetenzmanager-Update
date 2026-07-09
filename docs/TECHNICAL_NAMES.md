@@ -510,10 +510,24 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.add_student_document(student_id, source_path, document_type, title, note, observation_id)`
 - `StudentDesktopAdapter.remove_document(document_id)`
 - `StudentDesktopAdapter.get_report_preview_for_student(student_id)`
+- `StudentDesktopAdapter.settings_view_model()`
+- `StudentDesktopAdapter.list_documentation_subject_options()`
+- `StudentDesktopAdapter.save_active_documentation_subjects(subject_ids)`
 - `StudentDesktopAdapter._report_development_line(competency)`
 - `StudentDesktopAdapter._report_development_label(rating_history)`
 - `StudentDesktopAdapter._is_monotonic(scores, increasing)`
 - `StudentDesktopAdapter.save_competency_confirmation(student_id, competency_id, confirmed_rating, note)`
+- `SettingsScreen`
+- `SettingsScreen.documentation_subjects_save_requested`
+- `SettingsScreen.set_settings(view_model)`
+- `SettingsScreen.set_documentation_subjects(subjects)`
+- `SettingsScreen.show_documentation_subjects_saved()`
+- `DocumentationSubjectSettingsSection`
+- `DocumentationSubjectCheckbox_{subject_id}`
+- `DocumentationSubjectSaveButton`
+- `SettingsStatusLabel`
+- `DOCUMENTATION_SUBJECTS_HELP_TEXT`
+- `DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE`
 - `StudentProfileScreen.DEFAULT_OBSERVATION_LIMIT`
 - `StudentProfileScreen.apply_observation_filters()`
 - `StudentProfileScreen.reset_observation_filters()`
@@ -593,6 +607,8 @@ Registrierte Python-Klassen und Funktionen:
 - `MasterDataItemViewModel`
 - `MasterDataViewModel`
 - `CourseGroupViewModel`
+- `SettingsViewModel`
+- `DocumentationSubjectOptionViewModel`
 - `normalize_master_data_name(name)`
 - `course_color_from_key(color_key, fallback_index)`
 - `course_color_name(color_hex)`

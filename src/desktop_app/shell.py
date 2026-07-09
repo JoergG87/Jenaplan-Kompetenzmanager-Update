@@ -35,8 +35,12 @@ from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_targ
 from src.desktop_app.screens.master_data_screen import MasterDataScreen
 from src.desktop_app.screens.overview_screen import OverviewScreen
 from src.desktop_app.screens.placeholder_screen import PlaceholderScreen
+from src.desktop_app.screens.settings_screen import SettingsScreen
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
 from src.desktop_app.screens.students_screen import StudentsScreen
+from src.desktop_app.view_models.settings_view_model import (
+    DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE,
+)
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
 from src.desktop_app.view_models.master_data_view_model import CourseGroupViewModel
@@ -106,6 +110,7 @@ class AppShell(QMainWindow):
         self.students_screen = StudentsScreen()
         self.student_profile_screen = StudentProfileScreen()
         self.master_data_screen = MasterDataScreen()
+        self.settings_screen = SettingsScreen()
         self.placeholder_screens = {
             "observations": PlaceholderScreen(
                 "Beobachtungen",
@@ -119,10 +124,6 @@ class AppShell(QMainWindow):
                 "Berichte",
                 "Text- und Datei-Exporte folgen separat.",
             ),
-            "settings": PlaceholderScreen(
-                "Einstellungen",
-                "Datenbankpfad, Backup und Restore sind noch offen.",
-            ),
         }
 
         self.screen_index = {
@@ -130,6 +131,7 @@ class AppShell(QMainWindow):
             "students": self.stack.addWidget(self.students_screen),
             "profile": self.stack.addWidget(self.student_profile_screen),
             "master_data": self.stack.addWidget(self.master_data_screen),
+            "settings": self.stack.addWidget(self.settings_screen),
         }
         for key, screen in self.placeholder_screens.items():
             self.screen_index[key] = self.stack.addWidget(screen)
@@ -186,6 +188,9 @@ class AppShell(QMainWindow):
         self.master_data_screen.course_group_edit_requested.connect(
             self.open_edit_course_group_dialog
         )
+        self.settings_screen.documentation_subjects_save_requested.connect(
+            self.save_documentation_subject_settings
+        )
         self.navigation.setCurrentRow(0)
 
     def refresh_all(self) -> None:
@@ -193,6 +198,7 @@ class AppShell(QMainWindow):
         self.refresh_overview()
         self.refresh_students()
         self.refresh_master_data()
+        self.refresh_settings()
 
     def refresh_overview(self) -> None:
         """Refresh the overview from the current master-data scope."""
@@ -236,6 +242,20 @@ class AppShell(QMainWindow):
         """Refresh the master-data light screen from the adapter draft."""
         self.master_data_screen.set_master_data(self.master_data_adapter.view_model())
         self.refresh_overview()
+
+    def refresh_settings(self) -> None:
+        """Refresh settings from SQLite-backed adapter data."""
+        self.settings_screen.set_settings(self.adapter.settings_view_model())
+
+    def save_documentation_subject_settings(
+        self,
+        subject_ids: tuple[str, ...],
+    ) -> None:
+        """Persist documentation subject settings through the adapter."""
+        self.adapter.save_active_documentation_subjects(subject_ids)
+        self.refresh_settings()
+        self.settings_screen.show_documentation_subjects_saved()
+        self.status_label.setText(DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE)
 
     def return_to_students(self) -> None:
         """Return from profile to student list and keep current filter."""

@@ -104,24 +104,24 @@ Excel liegt nur noch als archivierter Legacy-Altstand unter `legacy/excel/`.
 
 ## PySide6 Einstellungen
 
-Status: In Sprint 2A nur als Datenhaltungsgrundlage vorbereitet; die sichtbare Settings-UI folgt separat.
+Status: Sprint 2B zeigt die Settings-UI fuer dokumentationsrelevante Faecher. Die Auswahl wird gespeichert, aber Auswertungen werden noch nicht gefiltert.
 
 Liest:
 
-- spaeter `documentation_subject_settings`
-- spaeter `data_competencies` / SQLite `competencies` fuer Fachschluessel und sichtbare Fachnamen
+- `documentation_subject_settings`
+- `data_competencies` / SQLite `competencies` fuer Fachschluessel und sichtbare Fachnamen
 
 Schreibt:
 
-- spaeter `documentation_subject_settings` ueber Repository-/Store-Methoden
+- `documentation_subject_settings` ueber Repository-/Store-Methoden
 
 UI-Projektionen:
 
-- spaeter Auswahl dokumentationsrelevanter Faecher
+- Auswahl dokumentationsrelevanter Faecher
 
 Regel:
 
-Die Einstellungen duerfen keine Fachdefinitionen speichern und den Kompetenzkatalog nicht veraendern. Ohne gespeicherte Settings-Zeilen gelten alle aktiven Katalogfaecher als dokumentationsrelevant. Sprint 2A baut keine Settings-UI und filtert keine Auswertungen.
+Die Einstellungen duerfen keine Fachdefinitionen speichern und den Kompetenzkatalog nicht veraendern. Ohne gespeicherte Settings-Zeilen gelten alle aktiven Katalogfaecher als dokumentationsrelevant. Sprint 2B filtert keine Auswertungen, keinen Bericht und keine Profilprojektionen.
 
 ## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
 

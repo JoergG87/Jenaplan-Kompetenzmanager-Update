@@ -32,6 +32,7 @@ from src.core.sqlite_store import (
     SQLiteCourseRepository,
     SQLiteCompetencyRepository,
     SQLiteDatabase,
+    SQLiteDocumentationSubjectSettingsRepository,
     SQLiteDocumentRepository,
     SQLiteGroupRepository,
     SQLiteObservationRepository,
@@ -60,6 +61,10 @@ from src.desktop_app.view_models.observation_view_model import (
     calculated_rating_from_history,
     observation_rating_label,
 )
+from src.desktop_app.view_models.settings_view_model import (
+    DocumentationSubjectOptionViewModel,
+    SettingsViewModel,
+)
 from src.desktop_app.view_models.student_view_model import (
     GroupSummaryViewModel,
     StudentDetailViewModel,
@@ -73,6 +78,17 @@ from src.desktop_app.view_models.student_view_model import (
     StudentReportSubjectSectionViewModel,
     documentation_summary_from_subjects,
     sort_student_list,
+)
+
+
+DOCUMENTATION_SUBJECT_PREFERRED_ORDER = (
+    "deutsch",
+    "mathematik",
+    "epu",
+    "sozialkompetenz",
+    "musik",
+    "kunst",
+    "sport",
 )
 
 
@@ -161,6 +177,57 @@ class StudentDesktopAdapter:
             for course in SQLiteCourseRepository(self.database).list_courses()
             if course.active
         )
+
+    def settings_view_model(self) -> SettingsViewModel:
+        """Return app settings display data."""
+        return SettingsViewModel(self.list_documentation_subject_options())
+
+    def list_documentation_subject_options(
+        self,
+    ) -> tuple[DocumentationSubjectOptionViewModel, ...]:
+        """Return selectable documentation subjects from the active catalog."""
+        competencies = tuple(
+            competency
+            for competency in SQLiteCompetencyRepository(self.database).list_competencies()
+            if competency.active
+        )
+        selected_subject_ids = set(
+            SQLiteDocumentationSubjectSettingsRepository(
+                self.database
+            ).list_active_documentation_subject_ids()
+        )
+        subject_labels: dict[str, str] = {}
+        subject_sort_order: dict[str, int] = {}
+        for competency in competencies:
+            subject_labels.setdefault(competency.subject_id, competency.subject_name)
+            current_sort_order = subject_sort_order.get(competency.subject_id)
+            if current_sort_order is None or competency.sort_order < current_sort_order:
+                subject_sort_order[competency.subject_id] = competency.sort_order
+
+        return tuple(
+            DocumentationSubjectOptionViewModel(
+                subject_id=subject_id,
+                label=subject_labels[subject_id],
+                selected=subject_id in selected_subject_ids,
+            )
+            for subject_id in sorted(
+                subject_labels,
+                key=lambda value: self._documentation_subject_sort_key(
+                    value,
+                    subject_labels,
+                    subject_sort_order,
+                ),
+            )
+        )
+
+    def save_active_documentation_subjects(
+        self,
+        subject_ids: tuple[str, ...],
+    ) -> None:
+        """Persist the complete documentation-subject selection."""
+        SQLiteDocumentationSubjectSettingsRepository(
+            self.database
+        ).save_active_documentation_subject_ids(subject_ids)
 
     def group_id_by_name(self) -> dict[str, str]:
         """Map visible group names to stable group IDs."""
@@ -690,6 +757,23 @@ class StudentDesktopAdapter:
             CurriculumDesktopAdapter().list_entries()
         )
         return database
+
+    def _documentation_subject_sort_key(
+        self,
+        subject_id: str,
+        subject_labels: dict[str, str],
+        subject_sort_order: dict[str, int],
+    ) -> tuple[int, int, str, str]:
+        preferred_order = {
+            value: index
+            for index, value in enumerate(DOCUMENTATION_SUBJECT_PREFERRED_ORDER)
+        }
+        return (
+            preferred_order.get(subject_id, len(preferred_order)),
+            subject_sort_order.get(subject_id, len(subject_sort_order)),
+            subject_labels.get(subject_id, subject_id).casefold(),
+            subject_id,
+        )
 
     def _student_list_item(
         self,

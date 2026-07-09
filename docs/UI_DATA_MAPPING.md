@@ -20,11 +20,11 @@ Spalten:
 
 ## PySide6 Einstellungen
 
-Status: Sprint 2A legt nur die Datenhaltung fuer dokumentationsrelevante Faecher an. Es wird keine Settings-UI umgesetzt.
+Status: Sprint 2B ergaenzt die Settings-UI fuer dokumentationsrelevante Faecher. Die Auswahl wird gespeichert, aber noch nicht auf Dokumentationsstand, offene Kompetenzen, Empfehlungen oder Bericht angewendet.
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| Dokumentationsrelevante Faecher | spaeter SQLite `documentation_subject_settings` + SQLite `competencies.subject_id` / `subject_name` | Eingabe / Auswertung | Geplant | `documentation_subject_settings` | spaeter Auswahl der Faecher, die fuer Dokumentations- und Auswertungslogik zaehlen; ohne gespeicherte Settings-Zeilen gelten alle aktiven Katalogfaecher; sichtbare Fachnamen kommen aus `competencies`, nicht aus der Settings-Tabelle |
+| Dokumentationsrelevante Faecher | SQLite `documentation_subject_settings` + SQLite `competencies.subject_id` / `subject_name` | Eingabe | Ja (ueber freigegebenen Prozess) | `documentation_subject_settings` | Auswahl der Faecher, die spaeter fuer Dokumentations- und Auswertungslogik zaehlen; ohne gespeicherte Settings-Zeilen gelten alle aktiven Katalogfaecher; sichtbare Fachnamen kommen aus `competencies`, nicht aus der Settings-Tabelle; Hilfetext: `Diese Auswahl steuert später, welche Fächer im Dokumentationsstand berücksichtigt werden. Beobachtungen bleiben immer erhalten.` |
 
 ## Stammgruppenuebersicht
 

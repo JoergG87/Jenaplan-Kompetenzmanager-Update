@@ -14,6 +14,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QLabel,
     QPushButton,
@@ -47,6 +48,7 @@ from src.desktop_app.dialogs import new_observation_dialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens import master_data_screen
 from src.desktop_app.screens import overview_screen
+from src.desktop_app.screens import settings_screen
 from src.desktop_app.screens import student_profile_screen
 from src.desktop_app.screens import students_screen
 from src.desktop_app import assets
@@ -84,6 +86,11 @@ from src.desktop_app.view_models.observation_view_model import (
     calculated_rating_from_history,
     observation_rating_keys,
     rating_from_weighted_score,
+)
+from src.desktop_app.view_models.settings_view_model import (
+    DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE,
+    DocumentationSubjectOptionViewModel,
+    SettingsViewModel,
 )
 from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
@@ -536,6 +543,94 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(competencies[0].subject_id, "deutsch")
         self.assertEqual(competencies[0].subject_name, "Deutsch")
         self.assertTrue(competencies[0].label)
+
+    def test_documentation_subject_options_default_to_active_catalog_subjects(self) -> None:
+        options = self.adapter.list_documentation_subject_options()
+
+        self.assertGreater(len(options), 0)
+        self.assertEqual(
+            tuple(option.subject_id for option in options[:4]),
+            ("deutsch", "mathematik", "epu", "sozialkompetenz"),
+        )
+        self.assertIn("Sozialkompetenz", tuple(option.label for option in options))
+        self.assertTrue(all(option.selected for option in options))
+
+    def test_save_active_documentation_subjects_updates_selected_options_only(
+        self,
+    ) -> None:
+        competency_repository = SQLiteCompetencyRepository(self.database)
+        active_by_competency = {
+            competency.competency_id: competency.active
+            for competency in competency_repository.list_competencies()
+        }
+
+        self.adapter.save_active_documentation_subjects(("deutsch", "epu"))
+        options = self.adapter.list_documentation_subject_options()
+        selected_subject_ids = tuple(
+            option.subject_id for option in options if option.selected
+        )
+        active_after_save = {
+            competency.competency_id: competency.active
+            for competency in competency_repository.list_competencies()
+        }
+
+        self.assertEqual(selected_subject_ids, ("deutsch", "epu"))
+        self.assertEqual(active_after_save, active_by_competency)
+
+    def test_documentation_subject_selection_survives_adapter_reinitialization(
+        self,
+    ) -> None:
+        self.adapter.save_active_documentation_subjects(("sozialkompetenz",))
+
+        reloaded_adapter = StudentDesktopAdapter(self.database_path)
+        options = reloaded_adapter.list_documentation_subject_options()
+
+        self.assertEqual(
+            tuple(option.subject_id for option in options if option.selected),
+            ("sozialkompetenz",),
+        )
+
+    def test_settings_screen_shows_documentation_subject_checkboxes_and_saves(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        self.assertIsNotNone(app)
+        screen = settings_screen.SettingsScreen()
+        emitted_subject_ids: list[tuple[str, ...]] = []
+        screen.documentation_subjects_save_requested.connect(
+            emitted_subject_ids.append
+        )
+
+        screen.set_settings(
+            SettingsViewModel(
+                (
+                    DocumentationSubjectOptionViewModel("deutsch", "Deutsch", True),
+                    DocumentationSubjectOptionViewModel("musik", "Musik", False),
+                )
+            )
+        )
+        music_checkbox = screen.findChild(
+            QCheckBox,
+            "DocumentationSubjectCheckbox_musik",
+        )
+        save_button = screen.findChild(QPushButton, "DocumentationSubjectSaveButton")
+        self.assertIsNotNone(music_checkbox)
+        self.assertIsNotNone(save_button)
+
+        if music_checkbox is not None:
+            music_checkbox.setChecked(True)
+        if save_button is not None:
+            save_button.click()
+        screen.show_documentation_subjects_saved()
+        status_label = screen.findChild(QLabel, "SettingsStatusLabel")
+
+        self.assertIsNotNone(status_label)
+        self.assertEqual(emitted_subject_ids, [("deutsch", "musik")])
+        if status_label is not None:
+            self.assertEqual(
+                status_label.text(),
+                DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE,
+            )
 
     def test_student_adapter_does_not_overwrite_existing_competency_catalog(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -4007,6 +4102,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.dialogs.new_observation_dialog",
             "src.desktop_app.dialogs.new_student_dialog",
             "src.desktop_app.screens.overview_screen",
+            "src.desktop_app.screens.settings_screen",
             "src.desktop_app.screens.students_screen",
             "src.desktop_app.screens.student_profile_screen",
             "src.desktop_app.screens.placeholder_screen",
@@ -4034,12 +4130,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.navigation",
             "src.desktop_app.screens.overview_screen",
             "src.desktop_app.screens.placeholder_screen",
+            "src.desktop_app.screens.settings_screen",
             "src.desktop_app.screens.student_profile_screen",
             "src.desktop_app.screens.students_screen",
             "src.desktop_app.shell",
             "src.desktop_app.student_list_view",
             "src.desktop_app.theme",
             "src.desktop_app.view_models.observation_view_model",
+            "src.desktop_app.view_models.settings_view_model",
             "src.desktop_app.view_models.student_view_model",
         ):
             with self.subTest(module_name=module_name):

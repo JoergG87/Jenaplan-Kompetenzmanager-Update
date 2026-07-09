@@ -6,14 +6,15 @@ Kein Schreibprozess darf implementiert werden, bevor sein Lebenszyklus hier doku
 
 ## Dokumentationsrelevante Faecher speichern
 
-Start: Laura legt spaeter in den Einstellungen fest, welche Faecher fuer Dokumentations- und Auswertungslogik zaehlen sollen.
+Start: Laura legt in den Einstellungen fest, welche Faecher fuer spaetere Dokumentations- und Auswertungslogik zaehlen sollen.
 
-Schreibprozess: Dokumentationskonfiguration ueber SQLite-Repository. Sprint 2A legt nur Datenhaltung und Repository-Methoden an; eine Settings-UI und die Auswertungsfilterung folgen separat.
+Schreibprozess: Dokumentationskonfiguration ueber Settings-UI, Desktop Adapter und SQLite-Repository. Sprint 2B speichert die Auswahl; die Auswertungsfilterung folgt separat.
 
-Freigegebener Repository-Pfad:
+Freigegebener PySide-Pfad:
 
 ```text
-Repository-/Store-Aufruf
+PySide6 SettingsScreen
+-> StudentDesktopAdapter
 -> SQLiteDocumentationSubjectSettingsRepository
 -> SQLite documentation_subject_settings
 ```
