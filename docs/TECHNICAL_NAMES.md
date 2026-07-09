@@ -561,6 +561,7 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentReportDevelopmentViewModel`
 - `StudentReportEvidenceViewModel`
 - `StudentReportSubjectSectionViewModel`
+- `StudentReportSubjectSectionViewModel.current_statuses`
 - `StudentReportPreviewViewModel`
 - `StudentDocumentViewModel`
 - `StudentDocumentViewModel.display_title`

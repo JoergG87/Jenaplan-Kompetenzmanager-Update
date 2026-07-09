@@ -1375,6 +1375,10 @@ class StudentProfileScreen(QWidget):
         set_label_style(title, "card_title")
         layout.addWidget(title)
         layout.addWidget(self._report_bucket(
+            "Aktueller Stand",
+            getattr(section, "current_statuses"),
+        ))
+        layout.addWidget(self._report_bucket(
             "Stärken",
             getattr(section, "strengths"),
         ))
@@ -1554,10 +1558,11 @@ class StudentProfileScreen(QWidget):
         )
         history.setWordWrap(True)
         set_label_style(history, "small")
-        meta = QLabel(
-            f"{getattr(competency, 'observation_count_label')} · "
-            f"zuletzt beobachtet: {getattr(competency, 'last_observation_date')}"
-        )
+        meta_parts = [getattr(competency, "observation_count_label")]
+        last_observation_date = getattr(competency, "last_observation_date")
+        if last_observation_date:
+            meta_parts.append(f"zuletzt beobachtet: {last_observation_date}")
+        meta = QLabel(" · ".join(meta_parts))
         set_label_style(meta, "subtle")
         confirmation_meta = QLabel(getattr(competency, "confirmation_meta_label"))
         set_label_style(confirmation_meta, "subtle")

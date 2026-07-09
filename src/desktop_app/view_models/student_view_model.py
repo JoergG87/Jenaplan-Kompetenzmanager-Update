@@ -404,7 +404,11 @@ class StudentReportCompetencyViewModel:
     @property
     def display_label(self) -> str:
         """Return a compact report-preview line."""
-        return f"{self.competency_label} · {self.rating_source}: {self.rating}"
+        return (
+            f"{self.competency_label} · "
+            f"Aktueller Stand: {self.rating_label} · "
+            f"{self.rating_source}"
+        )
 
 
 @dataclass(frozen=True)
@@ -449,6 +453,7 @@ class StudentReportSubjectSectionViewModel:
 
     subject_id: str
     subject_display_name: str
+    current_statuses: tuple[StudentReportCompetencyViewModel, ...]
     strengths: tuple[StudentReportCompetencyViewModel, ...]
     development: tuple[StudentReportDevelopmentViewModel, ...]
     support_needs: tuple[StudentReportCompetencyViewModel, ...]
@@ -458,6 +463,7 @@ class StudentReportSubjectSectionViewModel:
     def has_content(self) -> bool:
         """Return whether the section contains report-relevant data."""
         return any((
+            self.current_statuses,
             self.strengths,
             self.development,
             self.support_needs,
@@ -512,6 +518,9 @@ def _format_report_subject_section(
 ) -> list[str]:
     lines = [
         f"## {section.subject_display_name}",
+        "",
+        "Aktueller Stand",
+        *_format_report_competencies(section.current_statuses),
         "",
         "Stärken",
         *_format_report_competencies(section.strengths),

@@ -444,7 +444,7 @@ class StudentDesktopAdapter:
                 histories_by_competency.setdefault(rating.competency_id, []).append(
                     (rating, observation.date)
                 )
-        statuses = tuple(
+        observed_statuses = tuple(
             self._competency_status_view_model(
                 tuple(entries),
                 competencies.get(competency_id),
@@ -452,6 +452,17 @@ class StudentDesktopAdapter:
             )
             for competency_id, entries in histories_by_competency.items()
         )
+        confirmed_only_statuses = tuple(
+            self._competency_status_view_model(
+                (),
+                competencies[competency_id],
+                confirmation,
+            )
+            for competency_id, confirmation in confirmations.items()
+            if competency_id not in histories_by_competency
+            and competency_id in competencies
+        )
+        statuses = observed_statuses + confirmed_only_statuses
         documented_ids = set(histories_by_competency) | set(confirmations)
         return self._group_competency_statuses(
             statuses,
@@ -798,32 +809,48 @@ class StudentDesktopAdapter:
         competency: object | None,
         confirmation: StudentCompetencyConfirmationRecord | None,
     ) -> StudentCompetencyStatusViewModel:
-        newest_rating, newest_date = entries_newest_first[0]
-        ratings_newest_first = tuple(
-            getattr(rating, "rating")
-            for rating, _date in entries_newest_first
-        )
-        current_rating, weighted_score = calculated_rating_from_history(
-            ratings_newest_first
-        )
-        subject_id = getattr(
-            competency,
-            "subject_id",
-            getattr(newest_rating, "subject_id"),
-        )
-        subject_display_name = getattr(
-            competency,
-            "subject_name",
-            getattr(newest_rating, "subject_display_name"),
-        )
-        competency_label = getattr(
-            competency,
-            "label",
-            getattr(newest_rating, "learning_area"),
-        )
+        if entries_newest_first:
+            newest_rating, newest_date = entries_newest_first[0]
+            ratings_newest_first = tuple(
+                getattr(rating, "rating")
+                for rating, _date in entries_newest_first
+            )
+            current_rating, weighted_score = calculated_rating_from_history(
+                ratings_newest_first
+            )
+            subject_id = getattr(
+                competency,
+                "subject_id",
+                getattr(newest_rating, "subject_id"),
+            )
+            subject_display_name = getattr(
+                competency,
+                "subject_name",
+                getattr(newest_rating, "subject_display_name"),
+            )
+            competency_label = getattr(
+                competency,
+                "label",
+                getattr(newest_rating, "learning_area"),
+            )
+            competency_id = getattr(newest_rating, "competency_id")
+            rating_history = tuple(reversed(ratings_newest_first))
+            observation_count = len(entries_newest_first)
+        elif competency is not None and confirmation is not None:
+            current_rating = confirmation.confirmed_rating
+            weighted_score = 0.0
+            subject_id = getattr(competency, "subject_id")
+            subject_display_name = getattr(competency, "subject_name")
+            competency_label = getattr(competency, "label")
+            competency_id = confirmation.competency_id
+            newest_date = ""
+            rating_history = ()
+            observation_count = 0
+        else:
+            raise ValueError("Kompetenzstatus braucht Beobachtung oder Bestaetigung.")
         sort_order = int(getattr(competency, "sort_order", 0))
         return StudentCompetencyStatusViewModel(
-            getattr(newest_rating, "competency_id"),
+            competency_id,
             competency_label,
             subject_id,
             subject_display_name,
@@ -831,8 +858,8 @@ class StudentDesktopAdapter:
             observation_rating_label(current_rating),
             newest_date,
             sort_order,
-            tuple(reversed(ratings_newest_first)),
-            len(entries_newest_first),
+            rating_history,
+            observation_count,
             weighted_score,
             confirmation.confirmed_rating if confirmation else "",
             confirmation.confirmed_at if confirmation else "",
@@ -975,23 +1002,27 @@ class StudentDesktopAdapter:
             self._report_competency_line(competency)
             for competency in group.competencies
         )
+        strengths = tuple(
+            competency
+            for competency in competency_lines
+            if competency.rating in ("++", "+")
+        )
+        support_needs = tuple(
+            competency
+            for competency in competency_lines
+            if competency.rating == "--"
+        )
         return StudentReportSubjectSectionViewModel(
             group.subject_id,
             group.subject_display_name,
-            tuple(
-                competency
-                for competency in competency_lines
-                if competency.rating in ("++", "+")
-            ),
+            competency_lines,
+            strengths,
             tuple(
                 self._report_development_line(competency)
                 for competency in group.competencies
+                if competency.rating_history
             ),
-            tuple(
-                competency
-                for competency in competency_lines
-                if competency.rating == "--"
-            ),
+            support_needs,
             self._report_evidence_for_subject(group, observations),
         )
 

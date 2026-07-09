@@ -410,6 +410,7 @@ Automatisch profitierende Ansichten:
 
 - Schuelerprofil
 - Kompetenzuebersicht
+- Berichtsvorschau
 
 Regel: Der bestaetigte Kompetenzstand ist eine paedagogische Entscheidung der Lehrkraft. Er ueberschreibt keine Beobachtungen und veraendert den berechneten Vorschlag nicht. Neue Beobachtungen aktualisieren den Vorschlag, aber nicht automatisch den bestaetigten Stand.
 

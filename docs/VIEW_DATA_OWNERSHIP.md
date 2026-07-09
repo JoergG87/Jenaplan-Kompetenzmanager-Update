@@ -268,7 +268,7 @@ UI-Projektionen:
 - Beobachtungsverlauf
 - lokale Beobachtungsfilter fuer Fach, Bewertung und Suche
 - Dokumentationsstand aus aktivem Kompetenzkatalog, aktiven Beobachtungen und bestaetigten Kompetenzstaenden
-- Kompetenzuebersicht aus beobachteten Kompetenzen
+- Kompetenzuebersicht aus beobachteten und bestaetigten Kompetenzen
 - Berichtsvorschau aus Kompetenzstaenden und Beobachtungsbelegen
 - Dokumente und Medien aus aktiven Dokumentmetadaten
 - Aktionen zum Bearbeiten und Loeschen einzelner Beobachtungen

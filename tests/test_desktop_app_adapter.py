@@ -853,6 +853,127 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "aus Beobachtungen abgeleitet: - · von Laura bestätigt: +",
         )
 
+    def test_competency_overview_shows_confirmed_status_without_active_observation(self) -> None:
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="+",
+            note="im Lerngespraech bestaetigt",
+        )
+
+        groups = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        deutsch_group = next(
+            group for group in groups if group.subject_display_name == "Deutsch"
+        )
+        status = next(
+            competency
+            for competency in deutsch_group.competencies
+            if competency.competency_id == "CMP-000001"
+        )
+
+        self.assertEqual(status.rating, "+")
+        self.assertEqual(status.confirmed_rating, "+")
+        self.assertEqual(status.rating_history, ())
+        self.assertEqual(status.observation_count, 0)
+        self.assertEqual(status.confirmation_note, "im Lerngespraech bestaetigt")
+        self.assertEqual(status.confirmation_status_label, "von Laura bestätigt: +")
+        self.assertNotIn(
+            "CMP-000001",
+            {competency.competency_id for competency in deutsch_group.missing_competencies},
+        )
+
+    def test_report_preview_uses_confirmation_without_active_observation(self) -> None:
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="+",
+        )
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        deutsch_section = next(
+            section
+            for section in preview.subject_sections
+            if section.subject_display_name == "Deutsch"
+        )
+
+        self.assertEqual(deutsch_section.strengths[0].rating, "+")
+        self.assertEqual(
+            deutsch_section.strengths[0].rating_source,
+            "von Laura bestätigt",
+        )
+        self.assertEqual(deutsch_section.current_statuses[0].rating, "+")
+        self.assertEqual(
+            deutsch_section.current_statuses[0].rating_source,
+            "von Laura bestätigt",
+        )
+        self.assertEqual(
+            deutsch_section.current_statuses[0].display_label,
+            "Mit Texten und Medien umgehen · "
+            "Aktueller Stand: + erreicht · von Laura bestätigt",
+        )
+        self.assertEqual(deutsch_section.development, ())
+        self.assertEqual(deutsch_section.example_observations, ())
+
+    def test_confirmed_status_stays_visible_after_observation_soft_delete(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "-",
+                ),
+            ),
+        ))
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="+",
+        )
+        self.adapter.delete_observation("OBS-000001")
+
+        groups = self.adapter.list_competency_overview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        status = next(
+            competency
+            for group in groups
+            for competency in group.competencies
+            if competency.competency_id == "CMP-000001"
+        )
+        deutsch_section = next(
+            section
+            for section in preview.subject_sections
+            if section.subject_display_name == "Deutsch"
+        )
+
+        self.assertEqual(status.rating_history, ())
+        self.assertEqual(status.confirmed_rating, "+")
+        self.assertEqual(status.confirmation_status_label, "von Laura bestätigt: +")
+        self.assertEqual(deutsch_section.strengths[0].rating, "+")
+        self.assertEqual(
+            deutsch_section.strengths[0].rating_source,
+            "von Laura bestätigt",
+        )
+        self.assertEqual(
+            deutsch_section.current_statuses[0].display_label,
+            "Mit Texten und Medien umgehen · "
+            "Aktueller Stand: + erreicht · von Laura bestätigt",
+        )
+        self.assertEqual(deutsch_section.development, ())
+        self.assertEqual(deutsch_section.example_observations, ())
+
     def test_report_preview_uses_confirmed_competency_status_when_available(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
             date_text="2026-07-03",
@@ -887,8 +1008,82 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "von Laura bestätigt",
         )
         self.assertEqual(
+            deutsch_section.current_statuses[0].display_label,
+            "Mit Texten und Medien umgehen · "
+            "Aktueller Stand: + erreicht · von Laura bestätigt",
+        )
+        self.assertEqual(
             deutsch_section.development[0].development_label,
             "Einzelbeobachtung vorhanden, noch kein Verlauf ableitbar.",
+        )
+
+    def test_report_preview_shows_current_confirmed_competency_status(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "-",
+                ),
+            ),
+        ))
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="+",
+        )
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        deutsch_section = preview.subject_sections[0]
+
+        self.assertEqual(
+            deutsch_section.current_statuses[0].display_label,
+            "Mit Texten und Medien umgehen · "
+            "Aktueller Stand: + erreicht · von Laura bestätigt",
+        )
+        self.assertEqual(deutsch_section.current_statuses[0].rating, "+")
+        self.assertEqual(
+            deutsch_section.current_statuses[0].rating_source,
+            "von Laura bestätigt",
+        )
+
+    def test_report_preview_shows_current_derived_competency_status_without_confirmation(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-03",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001",
+                    "deutsch",
+                    "Deutsch",
+                    "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen",
+                    "Texte lesen und zentrale Informationen entnehmen",
+                    "+",
+                ),
+            ),
+        ))
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        deutsch_section = preview.subject_sections[0]
+
+        self.assertEqual(
+            deutsch_section.current_statuses[0].display_label,
+            "Mit Texten und Medien umgehen · "
+            "Aktueller Stand: + erreicht · aus Beobachtungen abgeleitet",
+        )
+        self.assertEqual(deutsch_section.current_statuses[0].rating, "+")
+        self.assertEqual(
+            deutsch_section.current_statuses[0].rating_source,
+            "aus Beobachtungen abgeleitet",
         )
 
     def test_report_preview_uses_calculated_proposal_without_confirmation(self) -> None:
@@ -912,6 +1107,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         deutsch_section = preview.subject_sections[0]
 
+        self.assertEqual(
+            deutsch_section.current_statuses[0].display_label,
+            "Mit Texten und Medien umgehen · "
+            "Aktueller Stand: - in Entwicklung · aus Beobachtungen abgeleitet",
+        )
         self.assertEqual(
             deutsch_section.development[0].development_label,
             "Einzelbeobachtung vorhanden, noch kein Verlauf ableitbar.",
@@ -1111,8 +1311,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Kurs: Kurs 1", report_text)
         self.assertIn("Erstellt am: 2026-07-04", report_text)
         self.assertIn("## Deutsch", report_text)
+        self.assertIn("Aktueller Stand", report_text)
         self.assertIn(
-            "- Mit Texten und Medien umgehen · von Laura bestätigt: +",
+            "- Mit Texten und Medien umgehen · "
+            "Aktueller Stand: + erreicht · von Laura bestätigt",
             report_text,
         )
         self.assertIn(
@@ -3068,6 +3270,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
                             ),
                         ),
                         (
+                            StudentReportCompetencyViewModel(
+                                "CMP-000001",
+                                "Mit Texten und Medien umgehen",
+                                "+",
+                                "von Laura bestätigt",
+                                "+ erreicht",
+                            ),
+                        ),
+                        (
                             StudentReportDevelopmentViewModel(
                                 "CMP-000001",
                                 "Mit Texten und Medien umgehen",
@@ -3094,12 +3305,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn("Berichtsvorschau", label_texts)
         self.assertIn("Deutsch", label_texts)
+        self.assertIn("Aktueller Stand", label_texts)
         self.assertIn("Stärken", label_texts)
         self.assertIn("Entwicklung", label_texts)
         self.assertIn("Unterstützungsbedarf", label_texts)
         self.assertIn("Beispielbeobachtungen", label_texts)
         self.assertIn(
-            "Mit Texten und Medien umgehen · von Laura bestätigt: +",
+            "Mit Texten und Medien umgehen · "
+            "Aktueller Stand: + erreicht · von Laura bestätigt",
             label_texts,
         )
         self.assertIn("Mit Texten und Medien umgehen · Stabil beobachtet: +", label_texts)
@@ -3614,7 +3827,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Erstellt am:", clipboard_text)
         self.assertIn("## Deutsch", clipboard_text)
         self.assertIn(
-            "Mit Texten und Medien umgehen · von Laura bestätigt: +",
+            "Mit Texten und Medien umgehen · "
+            "Aktueller Stand: + erreicht · von Laura bestätigt",
             clipboard_text,
         )
         self.assertIn("Bericht wurde kopiert.", label_texts)
@@ -3849,6 +4063,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 StudentReportSubjectSectionViewModel(
                     "deutsch",
                     "Deutsch",
+                    (
+                        StudentReportCompetencyViewModel(
+                            "CMP-000001",
+                            "Mit Texten und Medien umgehen",
+                            "+",
+                            "von Laura bestätigt",
+                            "+ erreicht",
+                        ),
+                    ),
                     (
                         StudentReportCompetencyViewModel(
                             "CMP-000001",
