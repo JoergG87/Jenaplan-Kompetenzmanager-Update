@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Sprint 2B - Settings-UI dokumentationsrelevante Faecher
+
+### Added
+
+- Einstellungen-Screen um den Abschnitt `Dokumentationsrelevante Faecher` mit Checkboxen, Hilfetext und Speichern-Aktion erweitert.
+- Adapter-/ViewModel-Uebersetzung fuer auswaehlbare Dokumentationsfaecher aus aktivem Kompetenzkatalog und `documentation_subject_settings` ergaenzt.
+- Tests fuer Default-Auswahl, Persistenz, unveraendertes `competencies.active` und das Settings-Screen-Signal ergaenzt.
+
+### Not Changed
+
+- Keine Filterung von Dokumentationsstand, offenen Kompetenzen, Empfehlungen oder Bericht, keine Beobachtungsdialog-Aenderung, keine Kompetenzstruktur-Aenderung, keine neue Tabelle und kein Commit umgesetzt.
+
 ## Sprint 2A - Datenhaltung dokumentationsrelevante Faecher
 
 ### Added
