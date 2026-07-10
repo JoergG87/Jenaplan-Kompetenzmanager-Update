@@ -1893,3 +1893,42 @@ Klasse-4-Kompetenzen bleiben auch fuer juengere Kinder auswaehlbar.
 - Bestehende Kompetenz-IDs bleiben unveraendert.
 - Bestehende Beobachtungen werden nicht migriert.
 - Die Logik unterstuetzt jahrgangsgemischte Gruppen und individuelle Lernwege.
+
+## ADR-049 - Produktbezogene Katalogstufe getrennt von Quellen-Geltungsbereich
+
+Status: Accepted
+
+### Kontext
+
+Der aktuelle CSV-Katalog fuehrt `grade_band` als quellenbezogenen Geltungsbereich. Im bestehenden Katalog steht dort durchgaengig `1-4`.
+
+Die Product-Owner-Entscheidung zur Stufenlogik verlangt dagegen eine spaetere Produktfilterung nach `Klassenstufe 1-3`, `Klassenstufe 4` und `stufenuebergreifend`.
+
+Diese Filterlogik ist nicht identisch mit dem Quellenfeld `grade_band`.
+
+### Entscheidung
+
+`grade_band` bleibt Quellen- und Lehrplankontext.
+
+Fuer die produktbezogene Filterlogik wird das technische Feld `learning_stage` empfohlen.
+
+Empfohlener Wertebereich:
+
+- `stage_1_3`
+- `stage_4`
+- `cross_stage`
+
+Die sichtbaren UI-Texte werden daraus abgeleitet und bleiben deutsch.
+
+### Konsequenzen
+
+- Eine spaetere CSV-Erweiterung soll `learning_stage` ergaenzen.
+- Eine spaetere SQLite-Migration soll `competencies.learning_stage` ergaenzen.
+- `active` bleibt lokale Aktivitaet.
+- `catalog_default_active` speichert den Standardwert aus dem Katalog.
+- `activation_group_key` dient optional aktivierbaren Bereichen.
+- `catalog_status` sieht zunaechst ausschliesslich `current` und `legacy` vor.
+- UI, Berichte, Schuelerprofil, Dashboard und Dokumentationsstand koennen nach fachlicher Passung filtern, ohne Kompetenzen zu sperren.
+- Bestehende Beobachtungen, bestaetigte Kompetenzstaende und Kompetenz-IDs werden nicht migriert.
+- `grade_band` darf nicht fuer die App-Filterlogik ueberladen werden.
+- Der idempotente Katalog-Upsert muss lokale Aktivierungsentscheidungen weiter schuetzen.

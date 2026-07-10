@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Sprint 4A - Kompetenz-Katalogmodell finalisieren
+
+### Added
+
+- Architektur- und Datenmodell-Empfehlung fuer das zukuenftige Kompetenzkatalogmodell dokumentiert.
+- ADR-049 als vorgeschlagene Trennung von quellenbezogenem `grade_band` und produktbezogenem `learning_stage` ergaenzt.
+- Vorgeschlagene technische Namen fuer das spaetere Katalogmodell in `docs/TECHNICAL_NAMES.md` registriert.
+
+### Not Changed
+
+- Keine CSV-Aenderung, keine SQLite-Aenderung, keine Migration, keine Code-Aenderung, kein Commit umgesetzt.
+
 ## Sprint 4 - Lehrplan-Mapping und Stufenzuordnung
 
 ### Added

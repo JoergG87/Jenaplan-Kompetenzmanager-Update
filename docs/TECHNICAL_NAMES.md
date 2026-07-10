@@ -153,6 +153,36 @@ Sprint 3B ergaenzt im CSV-Katalog die optionale Spalte `competency_label`. Sie i
 
 Bewertungen bleiben technisch in `observation_competency_ratings.rating` gespeichert. `observations` erhaelt keine globale Bewertung. Ein nicht bewerteter oder offener Kompetenzaspekt wird nicht als Ratingwert gespeichert, sondern erzeugt keine Zuordnungszeile in `observation_competency_ratings`.
 
+## Sprint-4A-Empfehlung Kompetenzkatalogmodell
+
+Status: Vorgeschlagene technische Namen fuer ein spaeteres Katalogmodell. Noch keine CSV-Aenderung, keine SQLite-Aenderung, keine Migration und keine Implementierung.
+
+Empfohlene neue CSV-/SQLite-Felder:
+
+| Technischer Name | Zweck |
+| --- | --- |
+| `learning_stage` | produktbezogene Filterstufe einer Kompetenz, getrennt vom quellenbezogenen `grade_band` |
+| `catalog_status` | fachlicher Katalogstatus fuer Freigabe, Bestandsschutz und spaetere Archivierung |
+| `activation_group_key` | stabiler Aktivierungsbereich fuer optionale Kompetenzgruppen, z. B. optionale Sportbereiche |
+| `catalog_default_active` | aus dem CSV uebernommene Default-Aktivitaet, getrennt von lokaler SQLite-Aktivitaet `active` |
+
+Empfohlene Werte fuer `learning_stage`:
+
+- `stage_1_3`
+- `stage_4`
+- `cross_stage`
+
+Empfohlene Werte fuer `catalog_status`:
+
+- `current`
+- `legacy`
+
+Optional empfohlene spaetere SQLite-Tabelle:
+
+- `competency_activation_groups`
+
+Regel: Diese Namen sind erst fuer einen spaeter freigegebenen Umsetzungs- oder Migrationssprint verbindlich. Sprint 4A dokumentiert nur die Architekturentscheidung und das empfohlene Zielmodell.
+
 ## ID-Felder
 
 Verbindliche ID-Felder fuer neue Architekturarbeit:
