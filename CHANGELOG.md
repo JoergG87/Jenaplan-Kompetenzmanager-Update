@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Sprint 4 - Lehrplan-Mapping und Stufenzuordnung
+
+### Added
+
+- Fachweise Lehrplan-Mappings fuer den spaeteren Kompetenzkatalog unter `docs/lehrplan/mapping/` abgeschlossen.
+- Verbindliche fachliche Stufenzuordnung fuer Kompetenzen eingefuehrt: `Klassenstufe 1-3`, `Klassenstufe 4` und `stufenuebergreifend`.
+- Filtergrundlage dokumentiert: spaeter `Passende Kompetenzen` als Standardansicht, zusaetzlich `Alle Kompetenzen anzeigen`; Kompetenzen werden gefiltert, aber nicht gesperrt.
+
+### Not Changed
+
+- Keine CSV-Aenderung, keine SQLite- oder Schemaaenderung, keine UI-Umsetzung, keine technische Feldentscheidung und keine Aenderung bestehender Kompetenz-IDs.
+
 ## Sprint 3D - Hierarchische Kompetenzauswahl im Beobachtungsdialog
 
 ### Changed

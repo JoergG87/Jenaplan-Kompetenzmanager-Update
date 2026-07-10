@@ -1856,3 +1856,40 @@ QT_QPA_PLATFORM=offscreen python3 -c 'from src.desktop_app.main import main; pri
 - Runtime- und Output-Dateien bleiben unversioniert.
 - Excel-/VBA-Artefakte bleiben historisch nachvollziehbar, werden aber nicht fuer neue Features, UI, Smoke-Tests oder Standardbuilds verwendet.
 - Ein spaeterer Exportauftrag muss neu fachlich und technisch freigegeben werden.
+
+## ADR-048 - Fachliche Stufenzuordnung fuer Lehrplan-Kompetenzen
+
+Status: Accepted
+
+### Kontext
+
+Sprint 4 bildet die Grundschul-Lehrplaene fachweise in beobachtbare Kompetenzen ab.
+
+Die Lehrplaene unterscheiden haeufig Schuleingangsphase, Klassenstufe 4 oder fachliche Progressionen, die nicht in jedem Fach sauber trennbar sind.
+
+Der Kompetenzkatalog muss diese Progression spaeter abbilden, ohne jahrgangsgemischte Gruppen oder individuelle Lernwege einzuschraenken.
+
+### Entscheidung
+
+Kompetenzen werden fachlich einer Lernstufe zugeordnet:
+
+- `Klassenstufe 1-3`
+- `Klassenstufe 4`
+- `stufenuebergreifend`
+
+`stufenuebergreifend` wird verwendet, wenn eine eindeutige Trennung fachlich nicht moeglich oder nicht sinnvoll ist.
+
+Die spaetere UI filtert Kompetenzen, sperrt sie aber nie.
+
+Die Standardansicht zeigt passende Kompetenzen. Klassenstufe 1-3 und Klassenstufe 4 werden unterscheidbar filterbar. Zusaetzlich gibt es `Alle Kompetenzen anzeigen`.
+
+Klasse-4-Kompetenzen bleiben auch fuer juengere Kinder auswaehlbar.
+
+### Konsequenzen
+
+- Die Stufe ist eine fachliche Katalogeigenschaft.
+- Die technische Speicherung wird spaeter entschieden.
+- Jetzt entstehen keine CSV-Aenderung, keine SQLite- oder Schemaaenderung und keine UI-Umsetzung.
+- Bestehende Kompetenz-IDs bleiben unveraendert.
+- Bestehende Beobachtungen werden nicht migriert.
+- Die Logik unterstuetzt jahrgangsgemischte Gruppen und individuelle Lernwege.
