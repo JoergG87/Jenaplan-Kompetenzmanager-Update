@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Sprint 3A - Fachliches Mapping Kompetenzstruktur
+
+### Changed
+
+- Fachliches Mapping der vorhandenen Kompetenzfelder dokumentiert: `subject_id` / `subject_name` = Fach, `learning_area` = Kompetenzbereich, `competency_group` = Thema, `description` / `competency_text` = konkrete Kompetenz und `label` = Kurzlabel fuer kompakte UI.
+- Festgehalten, dass Bewertung pro Kompetenz bereits ueber `observation_competency_ratings.rating` je `observation_id` + `competency_id` erfolgt und keine Rating-Schema-Migration fuer Sprint 3 noetig ist.
+- Regel dokumentiert: `offen` ist kein gespeicherter Ratingwert; nicht bewertete Kompetenzen erzeugen keine Zeile in `observation_competency_ratings`.
+- Bestandsdaten-Regel ergaenzt: alte grobe Kompetenzen bleiben historisch lesbar, alte Beobachtungen werden nicht automatisch auf spaetere konkrete Kompetenzen migriert, und alte Kompetenzen duerfen spaeter deaktiviert oder archiviert, aber nicht geloescht werden.
+
+### Not Changed
+
+- Keine Python-Logik, keine SQLite-Migration, keine CSV-Katalogaenderung, keine UI-Aenderung, keine Testaenderung und kein Commit umgesetzt.
+
 ## Sprint 2C - Dokumentationsrelevante Faecher in Auswertungen
 
 ### Changed
