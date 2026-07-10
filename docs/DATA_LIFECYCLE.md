@@ -475,13 +475,13 @@ Automatisch profitierende Ansichten:
 - Berichte
 - Dashboards
 
-Regel: Kompetenzstruktur wird nicht aus Beobachtungstexten abgeleitet. Sprint 3A fuehrt keine neuen DB-Felder wie `competency_area` oder `topic` ein. Die vorhandenen Felder werden fachlich gemappt: Fach = `subject_id` / `subject_name`, Kompetenzbereich = `learning_area`, Thema = `competency_group`, konkrete Kompetenz = `description` / `competency_text`, Kurzlabel = `label`.
+Regel: Kompetenzstruktur wird nicht aus Beobachtungstexten abgeleitet. Sprint 3A fuehrt keine neuen DB-Felder wie `competency_area` oder `topic` ein. Die vorhandenen Felder werden fachlich gemappt: Fach = `subject_id` / `subject_name`, Kompetenzbereich = `learning_area`, Thema = `competency_group`, konkrete Kompetenz = `description` / `competency_text`, Kurzlabel = `label`. Sprint 3B ergaenzt konkrete Arbeitskatalog-Kompetenzen ueber neue stabile `competency_id`s und nutzt die optionale CSV-Spalte `competency_label` zur Befuellung des bestehenden SQLite-Feldes `label`.
 
-## Kompetenzkatalog initialisieren
+## Kompetenzkatalog importieren oder aktualisieren
 
-Start: PySide-App oeffnet eine SQLite-Datenbank ohne vorhandene Kompetenzen.
+Start: PySide-App oeffnet eine SQLite-Datenbank ohne vorhandene Kompetenzen oder mit einem aelteren lokalen Kompetenzkatalog.
 
-Schreibprozess: Initialisierung ueber `StudentDesktopAdapter`, `CurriculumDesktopAdapter` und `SQLiteCompetencyRepository.ensure_catalog_defaults()`.
+Schreibprozess: Idempotenter Katalogimport ueber `StudentDesktopAdapter`, `CurriculumDesktopAdapter` und `SQLiteCompetencyRepository.ensure_catalog_defaults()`.
 
 Betroffene Datenquellen:
 
@@ -500,7 +500,7 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Kompetenzansicht
 
-Regel: Der Seed laeuft nur bei leerem SQLite-Kompetenzkatalog. Bestehende Kompetenzen werden nicht ueberschrieben. Kompetenzstaende werden weiterhin aus Beobachtungen abgeleitet und nicht manuell doppelt gespeichert. Spaetere konkrete Kompetenzen werden als neue oder aktualisierte Katalogeintraege vorbereitet; alte grobe Kompetenzen bleiben historisch lesbar und werden nicht automatisch aus bestehenden Beobachtungen umgeschrieben.
+Regel: Der Import ist ab Sprint 3B ein idempotenter Upsert. Bei leerer Tabelle wird der vollstaendige CSV-Katalog importiert. Bei bestehenden lokalen Datenbanken werden neue CSV-IDs eingefuegt und vorhandene CSV-IDs aktualisiert, ohne lokale Nicht-CSV-Kompetenzen zu loeschen. `competencies.active` vorhandener IDs wird nicht aus dem CSV ueberschrieben, damit alte grobe oder lokal deaktivierte Kompetenzen nicht ungefragt reaktiviert oder deaktiviert werden. Kompetenzstaende werden weiterhin aus Beobachtungen abgeleitet und nicht manuell doppelt gespeichert. Alte grobe Kompetenzen bleiben historisch lesbar und bestehende `observation_competency_ratings` werden nicht automatisch auf spaetere konkrete Kompetenzen migriert. Der Sprint-3B-Katalog ist ein Arbeitskatalog/Entwurf und muss fachlich von Laura geprueft werden.
 
 ## Testdaten fuer Laura-Pilottest erzeugen
 

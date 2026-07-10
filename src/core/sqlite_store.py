@@ -1112,15 +1112,10 @@ class SQLiteCompetencyRepository:
         self.database = database
 
     def ensure_catalog_defaults(self, entries: tuple[object, ...]) -> None:
-        """Seed competencies only when the catalog table is empty."""
+        """Import catalog entries idempotently without deleting local records."""
         self.database.initialize_schema()
         with closing(self.database.connect()) as connection:
             with connection:
-                competency_count = connection.execute(
-                    "SELECT COUNT(*) FROM competencies"
-                ).fetchone()[0]
-                if competency_count:
-                    return
                 connection.executemany(
                     """
                     INSERT INTO competencies (
@@ -1136,6 +1131,16 @@ class SQLiteCompetencyRepository:
                         is_core_subject
                     )
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(competency_id) DO UPDATE SET
+                        subject_id = excluded.subject_id,
+                        subject_name = excluded.subject_name,
+                        label = excluded.label,
+                        description = excluded.description,
+                        learning_area = excluded.learning_area,
+                        competency_group = excluded.competency_group,
+                        sort_order = excluded.sort_order,
+                        active = competencies.active,
+                        is_core_subject = excluded.is_core_subject
                     """,
                     (
                         _competency_catalog_row(entry, index)

@@ -689,7 +689,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE,
             )
 
-    def test_student_adapter_does_not_overwrite_existing_competency_catalog(self) -> None:
+    def test_student_adapter_upserts_catalog_without_removing_local_competencies(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
             database = create_sqlite_seed_database(database_path)
@@ -727,10 +727,22 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
             StudentDesktopAdapter(database_path)
             competencies = SQLiteCompetencyRepository(database).list_competencies()
+            competencies_by_id = {
+                competency.competency_id: competency
+                for competency in competencies
+            }
 
-        self.assertEqual(len(competencies), 1)
-        self.assertEqual(competencies[0].competency_id, "CMP-999999")
-        self.assertEqual(competencies[0].label, "Eigene Kompetenz")
+        self.assertIn("CMP-999999", competencies_by_id)
+        self.assertEqual(
+            competencies_by_id["CMP-999999"].label,
+            "Eigene Kompetenz",
+        )
+        self.assertIn("CMP-000059", competencies_by_id)
+        self.assertIn("CMP-000212", competencies_by_id)
+        self.assertEqual(
+            len({competency.competency_id for competency in competencies}),
+            len(competencies),
+        )
 
     def test_competency_overview_resolves_labels_from_sqlite(self) -> None:
         with self.database.connect() as connection:
@@ -2620,6 +2632,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(all(entry.competency_detail_label for entry in entries))
         self.assertEqual(entries[0].competency_id, "CMP-000001")
         self.assertEqual(entries[0].subject_id, "deutsch")
+        self.assertEqual(entries[-1].competency_id, "CMP-000212")
 
     def test_curriculum_catalog_maps_kunst_to_kunsterziehung(self) -> None:
         kunst_entries = [
@@ -2670,7 +2683,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         epu_competencies = self.curriculum_adapter.list_competencies_for_subject("epu")
         math_competencies = self.curriculum_adapter.list_competencies_for_subject("mathematik")
 
-        self.assertGreaterEqual(len(epu_competencies), 6)
+        self.assertGreaterEqual(len(epu_competencies), 30)
         self.assertTrue(all(entry.subject_key == "epu" for entry in epu_competencies))
         self.assertTrue(any(
             entry.learning_area == "Natur und Umwelt"
@@ -2680,6 +2693,71 @@ class DesktopAppAdapterTest(unittest.TestCase):
             entry.subject_key == "mathematik"
             for entry in math_competencies
         ))
+        self.assertTrue(any(
+            entry.competency_group == "Zeit"
+            and entry.competency_text == "volle Stunden auf einer analogen Uhr ablesen"
+            for entry in math_competencies
+        ))
+
+    def test_curriculum_catalog_exposes_subject_area_topic_and_competency_structure(
+        self,
+    ) -> None:
+        entries = self.curriculum_adapter.list_entries()
+        by_subject = {
+            subject: [entry for entry in entries if entry.subject_key == subject]
+            for subject in ("deutsch", "mathematik", "epu", "sozialkompetenz")
+        }
+
+        self.assertTrue(all(by_subject.values()))
+        self.assertTrue(any(
+            entry.learning_area == "Mit Texten und Medien umgehen"
+            and entry.competency_group == "Lesefluessigkeit"
+            and entry.competency_text == "einen geuebten Text sinngestaltend und verstaendlich vorlesen"
+            for entry in by_subject["deutsch"]
+        ))
+        self.assertTrue(any(
+            entry.learning_area == "Groessen und Messen"
+            and entry.competency_group == "Zeit"
+            and entry.competency_text == "volle Stunden auf einer analogen Uhr ablesen"
+            for entry in by_subject["mathematik"]
+        ))
+        self.assertTrue(any(
+            entry.learning_area == "Natur und Umwelt"
+            and entry.competency_group == "Beobachten"
+            and entry.competency_text == "ein Naturphaenomen genau beobachten und mit passenden Worten beschreiben"
+            for entry in by_subject["epu"]
+        ))
+        self.assertTrue(any(
+            entry.learning_area == "Zusammenarbeit"
+            and entry.competency_group == "Absprachen"
+            and entry.competency_text == "eine vereinbarte Aufgabe in der Partner- oder Gruppenarbeit übernehmen"
+            for entry in by_subject["sozialkompetenz"]
+        ))
+
+    def test_curriculum_catalog_uses_specific_labels_for_concrete_competencies(
+        self,
+    ) -> None:
+        math_time_entries = [
+            entry
+            for entry in self.curriculum_adapter.list_competencies_for_subject(
+                "mathematik"
+            )
+            if entry.learning_area == "Groessen und Messen"
+            and entry.competency_group == "Zeit"
+        ]
+
+        self.assertGreaterEqual(len(math_time_entries), 4)
+        self.assertEqual(
+            {
+                entry.competency_label
+                for entry in math_time_entries
+            },
+            {"Volle Stunden", "Halbe Stunden", "Viertelstunden", "Zeitspannen"},
+        )
+        self.assertGreater(
+            len({entry.competency_label for entry in math_time_entries}),
+            1,
+        )
 
     def test_curriculum_catalog_groups_competencies_by_subject(self) -> None:
         groups = self.curriculum_adapter.list_competencies_grouped_by_subject()
@@ -2702,13 +2780,28 @@ class DesktopAppAdapterTest(unittest.TestCase):
         ))
 
     def test_curriculum_competency_options_have_short_display_labels(self) -> None:
-        epu_competency = self.curriculum_adapter.list_competencies_for_subject("epu")[0]
+        math_competency = next(
+            entry
+            for entry in self.curriculum_adapter.list_competencies_for_subject(
+                "mathematik"
+            )
+            if entry.competency_id == "CMP-000083"
+        )
 
-        self.assertTrue(epu_competency.competency_id.startswith("CMP-"))
-        self.assertEqual(epu_competency.competency_display_name, epu_competency.learning_area)
-        self.assertEqual(epu_competency.competency_label, epu_competency.learning_area)
-        self.assertNotEqual(epu_competency.competency_display_name, epu_competency.competency_text)
-        self.assertIn(epu_competency.competency_text, epu_competency.competency_detail_label)
+        self.assertEqual(math_competency.competency_display_name, "Volle Stunden")
+        self.assertEqual(math_competency.competency_label, "Volle Stunden")
+        self.assertNotEqual(
+            math_competency.competency_display_name,
+            math_competency.learning_area,
+        )
+        self.assertNotEqual(
+            math_competency.competency_display_name,
+            math_competency.competency_text,
+        )
+        self.assertIn(
+            math_competency.competency_text,
+            math_competency.competency_detail_label,
+        )
 
     def test_observation_dialog_uses_curriculum_catalog_data(self) -> None:
         source = inspect.getsource(new_observation_dialog)

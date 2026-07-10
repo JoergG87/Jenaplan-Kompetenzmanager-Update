@@ -204,7 +204,7 @@ Mapping auf bestehende Datenfelder:
 | Kompetenzbereich | `learning_area` | bisher teilweise als Lernbereich bezeichnet; ab Sprint 3 fachlich als Kompetenzbereich zu verstehen |
 | Thema | `competency_group` | fachliche Untergliederung innerhalb eines Kompetenzbereichs |
 | Kompetenz | `competencies.description`, `observation_competency_ratings.competency_text`, Katalog `competency_text` | konkrete beobachtbare Kompetenz |
-| Kurzlabel fuer kompakte UI | `competencies.label`, Katalog `competency_label` | kurze Anzeige, keine eigene fachliche Ebene |
+| Kurzlabel fuer kompakte UI | `competencies.label`, Katalog `competency_label` | kurze Anzeige, keine eigene fachliche Ebene; Sprint 3B fuehrt `competency_label` als optionale CSV-Spalte ein |
 
 Bewertungen:
 
@@ -269,7 +269,7 @@ Zweck: Read-only-Katalog fuer Fachauswahl und Kompetenzauswahl im PySide6-Beobac
 
 Datei: `data/curriculum_catalog_v1.csv`
 
-Status: v1-Kataloggrundlage, noch nicht final vollstaendig ausdifferenziert.
+Status: v1-Kataloggrundlage mit Sprint-3B-Arbeitskatalog. Die konkreten Kompetenzen sind als beobachtbare Entwurfs-Kompetenzen vorbereitet und muessen fachlich von Laura geprueft werden, solange `docs/Lehrplan.md` keine detaillierte Lehrplanabbildung enthaelt.
 
 Owner: Kompetenzverwaltung / Lehrplanpflege.
 
@@ -285,6 +285,7 @@ Wichtige Felder:
 - `learning_area`
 - `competency_group`
 - `competency_text`
+- `competency_label`
 - `source_reference`
 - `is_core_subject`
 - `is_active`
@@ -293,6 +294,11 @@ Regeln:
 
 - Der Katalog wird nur lesend verwendet.
 - `competency_id` ist eine stabile Katalog-ID im Format `CMP-######`.
+- Neue konkrete Kompetenzen werden mit neuen IDs ergaenzt; bestehende IDs werden nicht fachlich umgedeutet.
+- `competency_label` befuellt beim Import das bestehende SQLite-Feld `competencies.label`; es ist keine neue SQLite-Spalte.
+- Der SQLite-Katalogimport ist idempotent: neue CSV-IDs werden in bestehende lokale Datenbanken eingefuegt, vorhandene lokale Nicht-CSV-Kompetenzen bleiben erhalten und `competencies.active` vorhandener IDs wird nicht ungefragt aus dem CSV ueberschrieben.
+- Alte grobe Kompetenzen bleiben historisch lesbar. Sie duerfen spaeter deaktiviert oder archiviert, aber nicht geloescht werden.
+- Bestehende `observation_competency_ratings` bleiben gueltig und werden nicht automatisch auf neue konkrete Kompetenzen migriert.
 - Er erzeugt selbst keine Beobachtung; der PySide-Adapter uebergibt die Katalog-IDs an `observation_competency_ratings`.
 - `EPU` ist der App-Anzeigename fuer `Epochaler Projektunterricht`.
 - Die offizielle Lehrplanquelle fuer `EPU` ist `Heimat- und Sachkunde`.

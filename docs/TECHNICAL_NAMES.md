@@ -149,6 +149,8 @@ Mapping auf vorhandene technische Namen:
 
 Regel: Keine neuen Feldnamen wie `competency_area` oder `topic` einfuehren, solange dieses Mapping fachlich ausreicht. Sichtbare UI- und Dokumentationsbegriffe duerfen deutsch sein; technische Namen bleiben stabil.
 
+Sprint 3B ergaenzt im CSV-Katalog die optionale Spalte `competency_label`. Sie ist kein neues SQLite-Feld, sondern befuellt beim Katalogimport das bestehende Feld `competencies.label`. Ohne Wert bleibt die bisherige Fallback-Logik auf vorhandene Katalogfelder moeglich.
+
 Bewertungen bleiben technisch in `observation_competency_ratings.rating` gespeichert. `observations` erhaelt keine globale Bewertung. Ein nicht bewerteter oder offener Kompetenzaspekt wird nicht als Ratingwert gespeichert, sondern erzeugt keine Zuordnungszeile in `observation_competency_ratings`.
 
 ## ID-Felder

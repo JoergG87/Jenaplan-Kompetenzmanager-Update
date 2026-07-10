@@ -158,6 +158,25 @@ Alte grobe Kompetenzen bleiben historisch lesbar. Bestehende Beobachtungen und b
 
 Sprint 3A braucht keine Rating-Schema-Migration, weil Bewertung pro Kompetenz bereits ueber die vorhandene Zuordnungstabelle modelliert ist.
 
+Sprint 3B konkretisiert den CSV-Katalog als Arbeitskatalog ueber alle aktiven Katalogfaecher. Neue konkrete Kompetenzen erhalten neue stabile `competency_id`s und nutzen dieselbe Struktur:
+
+```text
+Fach -> Kompetenzbereich -> Thema -> konkrete Kompetenz
+```
+
+Der Katalog erhaelt zusaetzlich `competency_label` als Kurzlabel fuer kompakte Anzeige. Dieses Label befuellt das bestehende technische Feld `label`; es fuehrt keine neue SQLite-Spalte ein.
+
+Beispiel:
+
+```text
+Mathematik
+  -> Groessen und Messen
+    -> Zeit
+      -> volle Stunden auf einer analogen Uhr ablesen
+```
+
+Der Katalogimport ist idempotent. Neue konkrete Kompetenzen werden in bestehenden lokalen SQLite-Datenbanken nachgezogen. Alte grobe Kompetenzen, bestehende Beobachtungen und bestehende Bewertungen bleiben unveraendert lesbar. Der Arbeitskatalog muss fachlich von Laura geprueft werden, weil `docs/Lehrplan.md` noch keine detaillierte Lehrplanabbildung enthaelt.
+
 ## Beobachtung
 
 Eine Beobachtung beschreibt eine fachlich relevante Wahrnehmung im Lernprozess eines Kindes.

@@ -340,7 +340,7 @@ Liest:
 - `data_subjects`
 - `data_competencies`
 - `documentation_subject_settings` fuer die Fachauswahl neuer Beobachtungen
-- `data/curriculum_catalog_v1.csv` im PySide6-Dialog als read-only Kataloggrundlage
+- `data/curriculum_catalog_v1.csv` ueber den SQLite-Katalogimport als read-only Kataloggrundlage mit `competency_label`, Fach, Kompetenzbereich, Thema und konkreter Kompetenz
 - `data_observations` bei Bearbeitung bestehender Beobachtungen
 - `data_observation_competencies` bei Bearbeitung bestehender Zuordnungen
 - SQLite `documents` / `data_media` fuer Dokumente und Medien
@@ -364,6 +364,7 @@ UI-Projektionen:
 - ausgewaehlter Schueler
 - Fachauswahl
 - Kompetenzauswahl mit Fach, Kompetenzbereich, Thema und Kompetenz
+- Kurzlabel aus `competencies.label` fuer kompakte Kompetenzauswahl
 - Beobachtungsnotiz
 - Kontext
 - Bewertung/Zuordnung

@@ -41,6 +41,7 @@ class CurriculumCatalogEntry:
     learning_area: str
     competency_group: str
     competency_text: str
+    catalog_label: str
     source_reference: str
     is_core_subject: bool
     is_active: bool
@@ -53,12 +54,12 @@ class CurriculumCatalogEntry:
     @property
     def competency_label(self) -> str:
         """Return the user-facing competency selection label."""
-        return self.competency_display_name
+        return self.catalog_label or self.competency_display_name
 
     @property
     def competency_display_name(self) -> str:
         """Return the short label used in the observation dialog."""
-        return self.learning_area
+        return self.catalog_label or self.learning_area
 
     @property
     def competency_detail_label(self) -> str:
@@ -172,6 +173,7 @@ class CurriculumDesktopAdapter:
             learning_area=row["learning_area"],
             competency_group=row["competency_group"],
             competency_text=row["competency_text"],
+            catalog_label=row.get("competency_label", "").strip(),
             source_reference=row["source_reference"],
             is_core_subject=self._parse_bool(row["is_core_subject"]),
             is_active=self._parse_bool(row["is_active"]),
@@ -192,6 +194,7 @@ class CurriculumDesktopAdapter:
             learning_area=competency.learning_area,
             competency_group=competency.competency_group,
             competency_text=competency.description,
+            catalog_label=competency.label,
             source_reference="SQLite competencies",
             is_core_subject=competency.is_core_subject,
             is_active=competency.active,

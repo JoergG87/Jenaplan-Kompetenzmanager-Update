@@ -37,6 +37,7 @@ from src.core.sqlite_store import (
     create_sqlite_seed_database,
 )
 from src.core.records import seed_reference_data
+from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from scripts.seed_test_data import SeedDataError, seed_test_data
 
 
@@ -578,7 +579,7 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertEqual(len(groups), 1)
         self.assertEqual(len(courses), 3)
 
-    def test_competency_catalog_seed_only_runs_when_empty(self) -> None:
+    def test_competency_catalog_upsert_adds_new_entries_without_duplicates(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database = SQLiteDatabase(Path(temp_dir) / "kompetenzmanager.sqlite")
             database.initialize_schema()
@@ -592,13 +593,127 @@ class SQLiteSpikeTest(unittest.TestCase):
             repository.ensure_catalog_defaults((
                 self._sample_competency_entry("CMP-999999", "Mathematik", "Zahlen"),
             ))
+            repository.ensure_catalog_defaults((
+                self._sample_competency_entry("CMP-999999", "Mathematik", "Zahlen"),
+            ))
             after_second_seed = repository.list_competencies()
 
         self.assertEqual(
             tuple(competency.competency_id for competency in seeded),
             ("CMP-000001", "CMP-000002"),
         )
-        self.assertEqual(after_second_seed, seeded)
+        self.assertEqual(
+            {competency.competency_id for competency in after_second_seed},
+            {"CMP-000001", "CMP-000002", "CMP-999999"},
+        )
+        self.assertEqual(
+            len({competency.competency_id for competency in after_second_seed}),
+            len(after_second_seed),
+        )
+
+    def test_competency_catalog_upsert_preserves_existing_active_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = SQLiteDatabase(Path(temp_dir) / "kompetenzmanager.sqlite")
+            repository = SQLiteCompetencyRepository(database)
+            repository.ensure_catalog_defaults((
+                self._sample_competency_entry(
+                    "CMP-000001",
+                    "Deutsch",
+                    "Lesen",
+                    active=True,
+                ),
+            ))
+            with database.connect() as connection:
+                with connection:
+                    connection.execute(
+                        "UPDATE competencies SET active = 0 WHERE competency_id = ?",
+                        ("CMP-000001",),
+                    )
+
+            repository.ensure_catalog_defaults((
+                self._sample_competency_entry(
+                    "CMP-000001",
+                    "Deutsch",
+                    "Lesen aktualisiert",
+                    active=True,
+                ),
+            ))
+            competency = repository.get_competency("CMP-000001")
+
+        self.assertIsNotNone(competency)
+        if competency is not None:
+            self.assertFalse(competency.active)
+            self.assertEqual(competency.label, "Lesen aktualisiert")
+
+    def test_full_curriculum_catalog_imports_concrete_competencies_for_empty_database(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = SQLiteDatabase(Path(temp_dir) / "kompetenzmanager.sqlite")
+            entries = CurriculumDesktopAdapter().list_entries()
+            SQLiteCompetencyRepository(database).ensure_catalog_defaults(entries)
+
+            competencies = SQLiteCompetencyRepository(database).list_competencies()
+
+        self.assertEqual(len(competencies), len(entries))
+        by_id = {competency.competency_id: competency for competency in competencies}
+        by_subject: dict[str, list[object]] = {}
+        for competency in competencies:
+            by_subject.setdefault(competency.subject_id, []).append(competency)
+        self.assertEqual(by_id["CMP-000083"].subject_id, "mathematik")
+        self.assertEqual(by_id["CMP-000083"].learning_area, "Groessen und Messen")
+        self.assertEqual(by_id["CMP-000083"].competency_group, "Zeit")
+        self.assertEqual(
+            by_id["CMP-000083"].description,
+            "volle Stunden auf einer analogen Uhr ablesen",
+        )
+        self.assertEqual(by_id["CMP-000059"].subject_id, "deutsch")
+        self.assertEqual(by_id["CMP-000099"].subject_id, "epu")
+        self.assertIn("sozialkompetenz", by_subject)
+        self.assertGreaterEqual(len(by_subject["sozialkompetenz"]), 18)
+        self.assertTrue(any(
+            competency.competency_group == "Absprachen"
+            and competency.description
+            == "eine vereinbarte Aufgabe in der Partner- oder Gruppenarbeit übernehmen"
+            for competency in by_subject["sozialkompetenz"]
+        ))
+
+    def test_competency_catalog_upsert_keeps_existing_ratings_readable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            database = create_sqlite_seed_database(database_path)
+            competency_repository = SQLiteCompetencyRepository(database)
+            competency_repository.ensure_catalog_defaults((
+                self._sample_competency_entry("CMP-000001", "Deutsch", "Lesen"),
+            ))
+            observation_repository = SQLiteObservationRepository(database)
+            observation_repository.create_observation(
+                self._sample_observation(
+                    ratings=(self._sample_rating("CMP-000001", "+"),),
+                )
+            )
+
+            competency_repository.ensure_catalog_defaults(
+                CurriculumDesktopAdapter().list_entries()
+            )
+            stored_observation = observation_repository.get_observation(
+                f"{OBSERVATION_ID_PREFIX}-000001"
+            )
+            old_competency = competency_repository.get_competency("CMP-000001")
+            new_competency = competency_repository.get_competency("CMP-000083")
+
+        self.assertIsNotNone(stored_observation)
+        if stored_observation is not None:
+            self.assertEqual(
+                tuple(
+                    rating.competency_id
+                    for rating in stored_observation.competency_ratings
+                ),
+                ("CMP-000001",),
+            )
+            self.assertEqual(stored_observation.competency_ratings[0].rating, "+")
+        self.assertIsNotNone(old_competency)
+        self.assertIsNotNone(new_competency)
 
     def test_documentation_subject_settings_default_to_active_catalog_subjects(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

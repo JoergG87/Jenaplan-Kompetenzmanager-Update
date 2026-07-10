@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## Sprint 3B - Konkreter Kompetenzkatalog und idempotenter Katalogimport
+
+### Added
+
+- `data/curriculum_catalog_v1.csv` um die optionale Spalte `competency_label` und 154 konkrete Arbeitskatalog-Kompetenzen ueber alle aktiven Katalogfaecher ergaenzt.
+- Neue konkrete Kompetenzen mit stabilen IDs `CMP-000059` bis `CMP-000212` angelegt; bestehende IDs `CMP-000001` bis `CMP-000058` bleiben erhalten und werden fachlich nicht umgedeutet.
+- Tests fuer Katalog-Upsert, leere und bestehende SQLite-Datenbanken, Idempotenz, Bestandsschutz, Fach-Struktur und konkrete Kurzlabels ergaenzt.
+
+### Changed
+
+- Katalogimport in SQLite von Empty-only-Seed auf idempotenten Upsert umgestellt: neue CSV-IDs werden auch in bestehenden lokalen Datenbanken nachgezogen, lokale Nicht-CSV-Kompetenzen bleiben erhalten und vorhandenes `active` wird bei bestehenden IDs nicht aus dem CSV ueberschrieben.
+- `CurriculumDesktopAdapter` nutzt `competency_label` fuer kompakte Kompetenzlabels; ohne Spalte oder Wert bleibt die bisherige Fallback-Logik erhalten.
+- Projektdokumentation beschreibt den konkreten Sprint-3B-Arbeitskatalog, den Bestandsschutz fuer alte grobe Kompetenzen und den fehlenden Bedarf fuer DB-Schema- oder Beobachtungsdatenmigration.
+
+### Not Changed
+
+- Keine DB-Schema-Migration, keine Beobachtungsdaten-Migration, keine neue Bewertungsskala, kein Status `offen`, keine Qt-Screens, keine Beobachtungsdialog-Hierarchie, keine Dokumentationsstand-Berechnung, keine Berichtsanpassung, keine aktive-Faecher-Logik und kein Commit umgesetzt.
+- Die neu ergaenzten konkreten Inhalte sind ein Arbeitskatalog/Entwurf und muessen fachlich von Laura geprueft werden, weil `docs/Lehrplan.md` noch keine detaillierte Lehrplanabbildung enthaelt.
+
 ## Sprint 3A - Fachliches Mapping Kompetenzstruktur
 
 ### Changed
