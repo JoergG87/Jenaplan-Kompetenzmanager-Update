@@ -365,7 +365,7 @@ UI-Projektionen:
 - Fachauswahl
 - Kompetenzauswahl mit Fach, Kompetenzbereich, Thema und Kompetenz
 - Kurzlabel aus `competencies.label` fuer kompakte Kompetenzauswahl
-- Hierarchische Kompetenzprojektion aus `StudentDesktopAdapter.list_observation_competency_subject_groups(initial_draft)` fuer den spaeteren UI-Umbau
+- Hierarchische Kompetenzprojektion aus `StudentDesktopAdapter.list_observation_competency_subject_groups(initial_draft)` fuer die Dialogdarstellung
 - Beobachtungsnotiz
 - Kontext
 - Bewertung/Zuordnung
@@ -375,7 +375,7 @@ Regel:
 
 Der Beobachtungsdialog ist der freigegebene Schreibprozess fuer Erfassung und Bearbeitung von Beobachtungen. Neue Beobachtungen bieten in der Fachauswahl nur dokumentationsrelevante aktive Faecher an. Bei Bearbeitung wird eine bestehende `observation_id` geladen; ein inzwischen nicht dokumentationsrelevantes Bestandsfach bleibt sichtbar und wird nicht automatisch ersetzt. Speichern ersetzt die Kompetenzbewertungen atomar. Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden. Die sichtbare Kompetenzstruktur lautet Fach -> Kompetenzbereich -> Thema -> Kompetenz und nutzt bestehende Felder: `subject_id` / `subject_name`, `learning_area`, `competency_group`, `description` / `competency_text`.
 
-Sprint 3C stellt diese Struktur nur als additive ViewModel-/Adapterprojektion bereit. Die bestehende flache Dialogdarstellung bleibt bis zu einem spaeteren UI-Sprint unveraendert.
+Sprint 3C stellt diese Struktur als additive ViewModel-/Adapterprojektion bereit. Sprint 3D rendert die Kompetenzauswahl im Beobachtungsdialog hierarchisch nach Fach, Kompetenzbereich, Thema und konkreter Kompetenz.
 
 Dokumente und Medien sind nur Anhaenge zur Beobachtung und ersetzen keine Beobachtungsdaten. Sie gehoeren immer zum Schueler und tragen optional die `observation_id`.
 Der PySide-Dialog schreibt nicht direkt in SQLite, sondern ueber Adapter, Command, Service und Repository. Jede ausgewaehlte Kompetenz speichert ihre eigene Bewertung in `observation_competency_ratings.rating`. `offen` ist kein gespeicherter Ratingwert; wenn eine Kompetenz nicht bewertet wird, wird keine Zuordnungszeile gespeichert.

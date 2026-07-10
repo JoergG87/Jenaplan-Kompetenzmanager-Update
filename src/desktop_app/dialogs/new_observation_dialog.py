@@ -6,6 +6,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -13,8 +14,6 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QListWidget,
-    QListWidgetItem,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -36,8 +35,12 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationAttachmentDraft,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_VALIDATION_MESSAGE,
+    ObservationCompetencyGroupViewModel,
+    ObservationCompetencyOptionViewModel,
     ObservationCompetencyRatingDraft,
+    ObservationCompetencySubjectGroupViewModel,
     ObservationDraftViewModel,
+    ObservationLearningAreaGroupViewModel,
     ObservationSubjectOptionViewModel,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
@@ -54,6 +57,9 @@ class NewObservationDialog(QDialog):
         observation_adapter: object | None = None,
         initial_draft: ObservationDraftViewModel | None = None,
         subject_options: tuple[ObservationSubjectOptionViewModel, ...] = (),
+        competency_subject_groups: tuple[
+            ObservationCompetencySubjectGroupViewModel, ...
+        ] = (),
     ) -> None:
         super().__init__()
         self.student = student
@@ -61,10 +67,12 @@ class NewObservationDialog(QDialog):
         self.observation_adapter = observation_adapter
         self.initial_draft = initial_draft
         self.subject_options = subject_options
+        self.competency_subject_groups = competency_subject_groups
         self.attachment_feedback_label = QLabel("")
         self.competency_rating_entries: dict[str, object] = {}
         self.competency_rating_widgets: dict[str, QComboBox] = {}
         self.competency_rating_rows: dict[str, QWidget] = {}
+        self.competency_checkboxes: dict[str, QCheckBox] = {}
         self.attachment_drafts: list[ObservationAttachmentDraft] = []
         self.setWindowTitle(
             "Beobachtung bearbeiten" if self.initial_draft else "Neue Beobachtung"
@@ -114,11 +122,10 @@ class NewObservationDialog(QDialog):
         self._populate_subjects()
         self.subject_select.currentIndexChanged.connect(self._refresh_competencies)
 
-        self.competency_list = QListWidget()
-        self.competency_list.setSelectionMode(QListWidget.SelectionMode.NoSelection)
-        self.competency_list.setMinimumHeight(86)
-        self.competency_list.setMaximumHeight(138)
-        self.competency_list.itemChanged.connect(self._sync_competency_ratings)
+        self.competency_tree_container = QWidget()
+        self.competency_tree_layout = QVBoxLayout(self.competency_tree_container)
+        self.competency_tree_layout.setContentsMargins(0, 2, 0, 0)
+        self.competency_tree_layout.setSpacing(6)
         self._refresh_competencies()
 
         self.context_select = QComboBox()
@@ -165,32 +172,146 @@ class NewObservationDialog(QDialog):
             self.subject_select.addItem(subject.display_name, subject.subject_key)
 
     def _refresh_competencies(self) -> None:
-        self.competency_list.blockSignals(True)
-        try:
-            self.competency_list.clear()
-            subject_key = str(self.subject_select.currentData() or "")
-            competencies = self.curriculum_adapter.list_competencies_for_subject(
-                subject_key
+        if not hasattr(self, "competency_tree_layout"):
+            return
+        self._clear_competency_tree()
+        self.competency_checkboxes.clear()
+        subject_group = self._current_subject_group()
+        if subject_group is None or not subject_group.learning_area_groups:
+            empty_label = QLabel("Keine Kompetenzen für dieses Fach hinterlegt.")
+            set_label_style(empty_label, "subtle")
+            self.competency_tree_layout.addWidget(empty_label)
+            return
+        for learning_area_group in subject_group.learning_area_groups:
+            self.competency_tree_layout.addWidget(
+                self._learning_area_widget(learning_area_group)
             )
-            if not competencies:
-                item = QListWidgetItem("Keine Kompetenzen für dieses Fach hinterlegt.")
-                item.setFlags(Qt.ItemFlag.NoItemFlags)
-                self.competency_list.addItem(item)
-                return
-            for competency in competencies:
-                competency_key = self._competency_key(competency)
-                item = QListWidgetItem(competency.competency_display_name)
-                item.setData(Qt.ItemDataRole.UserRole, competency)
-                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-                item.setCheckState(
-                    Qt.CheckState.Checked
-                    if competency_key in self.competency_rating_entries
-                    else Qt.CheckState.Unchecked
+        self.competency_tree_layout.addStretch(1)
+
+    def _clear_competency_tree(self) -> None:
+        while self.competency_tree_layout.count():
+            layout_item = self.competency_tree_layout.takeAt(0)
+            widget = layout_item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+    def _current_subject_group(
+        self,
+    ) -> ObservationCompetencySubjectGroupViewModel | None:
+        subject_key = str(self.subject_select.currentData() or "")
+        for subject_group in self.competency_subject_groups:
+            if subject_group.subject_key == subject_key:
+                return subject_group
+        return self._fallback_subject_group(subject_key)
+
+    def _fallback_subject_group(
+        self,
+        subject_key: str,
+    ) -> ObservationCompetencySubjectGroupViewModel | None:
+        if not subject_key:
+            return None
+        learning_area_groups: dict[
+            str,
+            dict[str, list[ObservationCompetencyOptionViewModel]],
+        ] = {}
+        for competency in self.curriculum_adapter.list_competencies_for_subject(
+            subject_key
+        ):
+            option = ObservationCompetencyOptionViewModel(
+                competency_id=getattr(competency, "competency_id", ""),
+                subject_key=getattr(competency, "subject_key", subject_key),
+                subject_display_name=getattr(
+                    competency,
+                    "subject_display_name",
+                    self.subject_select.currentText(),
+                ),
+                learning_area=self._learning_area_text(competency),
+                competency_group=self._competency_group_text(competency),
+                competency_text=getattr(competency, "competency_text", ""),
+                competency_label=getattr(
+                    competency,
+                    "competency_label",
+                    getattr(competency, "competency_display_name", ""),
+                ),
+            )
+            learning_area_groups.setdefault(
+                option.learning_area,
+                {},
+            ).setdefault(option.competency_group, []).append(option)
+        return ObservationCompetencySubjectGroupViewModel(
+            subject_key=subject_key,
+            subject_display_name=self.subject_select.currentText(),
+            learning_area_groups=tuple(
+                ObservationLearningAreaGroupViewModel(
+                    learning_area,
+                    tuple(
+                        ObservationCompetencyGroupViewModel(
+                            competency_group,
+                            tuple(competencies),
+                        )
+                        for competency_group, competencies in competency_groups.items()
+                    ),
                 )
-                item.setToolTip(competency.competency_detail_label)
-                self.competency_list.addItem(item)
-        finally:
-            self.competency_list.blockSignals(False)
+                for learning_area, competency_groups in learning_area_groups.items()
+            ),
+        )
+
+    def _learning_area_widget(
+        self,
+        learning_area_group: ObservationLearningAreaGroupViewModel,
+    ) -> QWidget:
+        area_widget = QWidget()
+        area_layout = QVBoxLayout(area_widget)
+        area_layout.setContentsMargins(0, 4, 0, 6)
+        area_layout.setSpacing(4)
+        area_title = QLabel(
+            f"Kompetenzbereich: {self._learning_area_text(learning_area_group)}"
+        )
+        set_label_style(area_title, "field_label")
+        area_layout.addWidget(area_title)
+        for competency_group in learning_area_group.competency_groups:
+            area_layout.addWidget(self._competency_group_widget(competency_group))
+        return area_widget
+
+    def _competency_group_widget(
+        self,
+        competency_group: ObservationCompetencyGroupViewModel,
+    ) -> QWidget:
+        group_widget = QWidget()
+        group_layout = QVBoxLayout(group_widget)
+        group_layout.setContentsMargins(12, 0, 0, 4)
+        group_layout.setSpacing(3)
+        topic_label = QLabel(
+            f"Thema: {self._competency_group_text(competency_group)}"
+        )
+        set_label_style(topic_label, "muted")
+        group_layout.addWidget(topic_label)
+        for competency in competency_group.competencies:
+            group_layout.addWidget(self._competency_checkbox_row(competency))
+        return group_widget
+
+    def _competency_checkbox_row(
+        self,
+        competency: ObservationCompetencyOptionViewModel,
+    ) -> QWidget:
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(12, 0, 0, 0)
+        row_layout.setSpacing(6)
+        competency_key = self._competency_key(competency)
+        checkbox = QCheckBox(self._competency_display_text(competency))
+        checkbox.setToolTip(self._competency_detail_text(competency))
+        checkbox.setProperty("competency_key", competency_key)
+        checkbox.setProperty("subject_key", competency.subject_key)
+        checkbox.setChecked(
+            competency.selected or competency_key in self.competency_rating_entries
+        )
+        checkbox.stateChanged.connect(
+            lambda _state, entry=competency: self._sync_competency_ratings(entry)
+        )
+        self.competency_checkboxes[competency_key] = checkbox
+        row_layout.addWidget(checkbox, 1)
+        return row_widget
 
     def _competency_card(self) -> QFrame:
         card = self._card()
@@ -203,7 +324,7 @@ class NewObservationDialog(QDialog):
         set_label_style(hint, "muted")
         layout.addWidget(title)
         layout.addWidget(hint)
-        layout.addWidget(self.competency_list)
+        layout.addWidget(self.competency_tree_container)
         return card
 
     def _competency_ratings_card(self) -> QFrame:
@@ -376,19 +497,21 @@ class NewObservationDialog(QDialog):
 
     def _sync_competency_ratings(
         self,
-        _changed_item: QListWidgetItem | None = None,
+        catalog_entry: object | None = None,
     ) -> None:
         if not hasattr(self, "competency_ratings_layout"):
             return
-        for row in range(self.competency_list.count()):
-            item = self.competency_list.item(row)
-            catalog_entry = item.data(Qt.ItemDataRole.UserRole)
-            if catalog_entry is None:
-                continue
-            competency_key = self._competency_key(catalog_entry)
-            if item.checkState() == Qt.CheckState.Checked:
+        if catalog_entry is None:
+            entries: tuple[object, ...] = tuple(self.competency_rating_entries.values())
+        else:
+            entries = (catalog_entry,)
+        for entry in entries:
+            competency_key = self._competency_key(entry)
+            checkbox = self.competency_checkboxes.get(competency_key)
+            checked = checkbox.isChecked() if checkbox is not None else True
+            if checked:
                 if competency_key not in self.competency_rating_widgets:
-                    self._add_competency_rating_row(competency_key, catalog_entry)
+                    self._add_competency_rating_row(competency_key, entry)
             elif competency_key in self.competency_rating_widgets:
                 self._remove_competency_rating_row(competency_key)
 
@@ -406,19 +529,9 @@ class NewObservationDialog(QDialog):
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(8)
         subject_display_name = getattr(catalog_entry, "subject_display_name")
-        competency_display_name = getattr(
-            catalog_entry,
-            "competency_display_name",
-            getattr(catalog_entry, "learning_area"),
-        )
+        competency_display_name = self._competency_display_text(catalog_entry)
         label = QLabel(f"{subject_display_name} · {competency_display_name}")
-        label.setToolTip(
-            getattr(
-                catalog_entry,
-                "competency_detail_label",
-                getattr(catalog_entry, "competency_text", ""),
-            )
-        )
+        label.setToolTip(self._competency_detail_text(catalog_entry))
         label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         rating_select = QComboBox()
         rating_select.setMinimumWidth(190)
@@ -479,18 +592,14 @@ class NewObservationDialog(QDialog):
         competency_key: str,
         check_state: Qt.CheckState,
     ) -> None:
-        self.competency_list.blockSignals(True)
+        checkbox = self.competency_checkboxes.get(competency_key)
+        if checkbox is None:
+            return
+        checkbox.blockSignals(True)
         try:
-            for row in range(self.competency_list.count()):
-                item = self.competency_list.item(row)
-                catalog_entry = item.data(Qt.ItemDataRole.UserRole)
-                if catalog_entry is None:
-                    continue
-                if self._competency_key(catalog_entry) == competency_key:
-                    item.setCheckState(check_state)
-                    break
+            checkbox.setCheckState(check_state)
         finally:
-            self.competency_list.blockSignals(False)
+            checkbox.blockSignals(False)
 
     def _clear_competency_ratings(self) -> None:
         self.competency_rating_entries.clear()
@@ -518,6 +627,34 @@ class NewObservationDialog(QDialog):
             getattr(catalog_entry, "learning_area"),
             getattr(catalog_entry, "competency_group"),
             getattr(catalog_entry, "competency_text"),
+        ))
+
+    def _learning_area_text(self, catalog_entry: object) -> str:
+        return str(getattr(catalog_entry, "learning_area", "") or "").strip() or (
+            "Ohne Kompetenzbereich"
+        )
+
+    def _competency_group_text(self, catalog_entry: object) -> str:
+        return str(getattr(catalog_entry, "competency_group", "") or "").strip() or (
+            "Ohne Thema"
+        )
+
+    def _competency_display_text(self, catalog_entry: object) -> str:
+        return (
+            str(getattr(catalog_entry, "competency_text", "") or "").strip()
+            or str(getattr(catalog_entry, "competency_label", "") or "").strip()
+            or str(getattr(catalog_entry, "competency_display_name", "") or "").strip()
+            or self._learning_area_text(catalog_entry)
+        )
+
+    def _competency_detail_text(self, catalog_entry: object) -> str:
+        detail = str(getattr(catalog_entry, "competency_detail_label", "") or "").strip()
+        if detail:
+            return detail
+        return "\n".join((
+            f"Kompetenzbereich: {self._learning_area_text(catalog_entry)}",
+            f"Thema: {self._competency_group_text(catalog_entry)}",
+            f"Kompetenz: {self._competency_display_text(catalog_entry)}",
         ))
 
     def _apply_initial_draft(self) -> None:

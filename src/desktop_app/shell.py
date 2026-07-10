@@ -338,6 +338,9 @@ class AppShell(QMainWindow):
             self.curriculum_adapter,
             self.adapter,
             subject_options=self.adapter.list_observation_subject_options(),
+            competency_subject_groups=(
+                self.adapter.list_observation_competency_subject_groups()
+            ),
         )
         if dialog.exec():
             self.show_student_profile(student.student_id)
@@ -354,6 +357,9 @@ class AppShell(QMainWindow):
             self.curriculum_adapter,
             self.adapter,
             subject_options=self.adapter.list_observation_subject_options(),
+            competency_subject_groups=(
+                self.adapter.list_observation_competency_subject_groups()
+            ),
         )
         if dialog.exec():
             self.refresh_overview()
@@ -376,6 +382,9 @@ class AppShell(QMainWindow):
             self.adapter,
             initial_draft=draft,
             subject_options=self.adapter.list_observation_subject_options(draft),
+            competency_subject_groups=(
+                self.adapter.list_observation_competency_subject_groups(draft)
+            ),
         )
         if dialog.exec():
             self.show_student_profile(student.student_id)

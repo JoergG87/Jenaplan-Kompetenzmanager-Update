@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Sprint 3D - Hierarchische Kompetenzauswahl im Beobachtungsdialog
+
+### Changed
+
+- Beobachtungsdialog zeigt Kompetenzen in der sichtbaren Struktur Fach -> Kompetenzbereich -> Thema -> konkrete Kompetenz.
+- Fachwechsel baut die Kompetenzauswahl aus `StudentDesktopAdapter.list_observation_competency_subject_groups(initial_draft)` neu auf.
+- Konkrete Kompetenzen werden als Checkboxzeilen dargestellt; pro ausgewaehlter Kompetenz bleibt eine eigene Bewertungszeile erhalten.
+- Bearbeiten bestehender Beobachtungen uebernimmt ausgewaehlte Kompetenzen und Bewertungen aus `initial_draft`.
+- Alte aktive Kompetenzen bleiben anhand vorhandener Katalogfelder einsortiert und auswaehlbar.
+
+### Not Changed
+
+- Keine DB-Migration, keine Katalogaenderung, keine Berichtsanpassung, keine Dokumentationsstand-Anpassung, keine aktive-Faecher-Logik, keine neue Bewertungsskala, kein Status `offen` und keine neue Persistenzlogik umgesetzt.
+
 ## Sprint 3C - Hierarchische Kompetenzdaten fuer Beobachtungsdialog
 
 ### Added

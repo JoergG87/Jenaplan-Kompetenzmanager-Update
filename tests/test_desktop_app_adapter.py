@@ -2956,10 +2956,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         ))
 
         self.assertIn("CurriculumDesktopAdapter", source)
+        self.assertIn("competency_subject_groups", source)
+        self.assertIn("ObservationCompetencySubjectGroupViewModel", source)
         self.assertIn("list_active_subjects", source)
         self.assertIn("list_competencies_for_subject", source)
         self.assertIn("currentIndexChanged.connect(self._refresh_competencies)", source)
-        self.assertIn("self.competency_list.clear()", source)
         self.assertNotIn("OBSERVATION_SUBJECT_OPTIONS", source)
         self.assertNotIn("OBSERVATION_COMPETENCY_OPTIONS", source)
         self.assertNotIn("Sachunterricht", view_model_source)
@@ -2986,35 +2987,24 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIsNotNone(app)
 
     def test_observation_dialog_keeps_initial_non_documentation_subject(self) -> None:
-        app = QApplication.instance() or QApplication([])
+        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
         initial_draft = self._sample_observation_draft(
             subject_id="musik",
             subject_display_name="Musik",
             competency_ratings=(
                 self._sample_observation_rating(
-                    "CMP-000025",
+                    "CMP-000020",
                     "musik",
                     "Musik",
-                    "Musik wahrnehmen",
-                    "Hoeren und beschreiben",
-                    "Musikalische Eindruecke beschreiben",
+                    "Musik hören",
+                    "Hören und Beschreiben",
+                    "Musik aufmerksam hören, Eindrücke beschreiben und "
+                    "musikalische Merkmale erkennen",
                     "+",
                 ),
             ),
         )
-        dialog = new_observation_dialog.NewObservationDialog(
-            self._sample_student_detail(),
-            self.curriculum_adapter,
-            self.adapter,
-            initial_draft=initial_draft,
-            subject_options=(
-                ObservationSubjectOptionViewModel("deutsch", "Deutsch"),
-                ObservationSubjectOptionViewModel(
-                    "musik",
-                    "Musik (nicht dokumentationsrelevant)",
-                ),
-            ),
-        )
+        dialog = self._observation_dialog_with_hierarchy(initial_draft)
 
         draft = dialog.create_draft()
 
@@ -3026,17 +3016,105 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(draft.subject_id, "musik")
         self.assertEqual(draft.competency_ratings[0].subject_key, "musik")
         self.assertEqual(draft.competency_ratings[0].subject_display_name, "Musik")
-        self.assertIsNotNone(app)
+        self.assertTrue(dialog.competency_checkboxes["CMP-000020"].isChecked())
 
-    def test_observation_dialog_uses_checkbox_list_for_competencies(self) -> None:
-        source = inspect.getsource(new_observation_dialog)
+    def test_observation_dialog_renders_competency_hierarchy(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
 
-        self.assertIn("QListWidget.SelectionMode.NoSelection", source)
-        self.assertIn("ItemIsUserCheckable", source)
-        self.assertIn("Qt.CheckState.Unchecked", source)
-        self.assertIn("competency.competency_display_name", source)
-        self.assertIn("Mehrfachauswahl möglich", source)
-        self.assertIn("_selected_competency_ratings", source)
+        self._select_observation_subject(dialog, "mathematik")
+        label_texts = [label.text() for label in dialog.findChildren(QLabel)]
+        checkbox_texts = [
+            checkbox.text() for checkbox in dialog.findChildren(QCheckBox)
+        ]
+
+        self.assertIn("Kompetenzbereich: Groessen und Messen", label_texts)
+        self.assertIn("Thema: Zeit", label_texts)
+        self.assertIn(
+            "volle Stunden auf einer analogen Uhr ablesen",
+            checkbox_texts,
+        )
+
+    def test_observation_dialog_checkbox_creates_rating_row_and_draft(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+
+        self._select_observation_subject(dialog, "mathematik")
+        dialog.competency_checkboxes["CMP-000083"].setChecked(True)
+        rating_select = dialog.competency_rating_widgets["CMP-000083"]
+        rating_select.setCurrentIndex(rating_select.findData("++"))
+        draft = dialog.create_draft()
+        rating = next(
+            item for item in draft.competency_ratings
+            if item.competency_id == "CMP-000083"
+        )
+
+        self.assertIn("CMP-000083", dialog.competency_rating_entries)
+        self.assertEqual(rating.rating, "++")
+        self.assertEqual(
+            rating.competency_text,
+            "volle Stunden auf einer analogen Uhr ablesen",
+        )
+
+    def test_observation_dialog_keeps_separate_ratings_per_competency(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+
+        self._select_observation_subject(dialog, "mathematik")
+        dialog.competency_checkboxes["CMP-000083"].setChecked(True)
+        dialog.competency_checkboxes["CMP-000084"].setChecked(True)
+        first_rating = dialog.competency_rating_widgets["CMP-000083"]
+        second_rating = dialog.competency_rating_widgets["CMP-000084"]
+        first_rating.setCurrentIndex(first_rating.findData("++"))
+        second_rating.setCurrentIndex(second_rating.findData("-"))
+        draft = dialog.create_draft()
+        ratings_by_id = {
+            rating.competency_id: rating.rating
+            for rating in draft.competency_ratings
+        }
+
+        self.assertEqual(ratings_by_id["CMP-000083"], "++")
+        self.assertEqual(ratings_by_id["CMP-000084"], "-")
+
+    def test_observation_dialog_edit_keeps_initial_selected_rating(self) -> None:
+        initial_draft = self._sample_observation_draft(
+            subject_id="mathematik",
+            subject_display_name="Mathematik",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000083",
+                    "mathematik",
+                    "Mathematik",
+                    "Groessen und Messen",
+                    "Zeit",
+                    "volle Stunden auf einer analogen Uhr ablesen",
+                    "++",
+                ),
+            ),
+        )
+        dialog = self._observation_dialog_with_hierarchy(initial_draft)
+
+        self.assertEqual(dialog.subject_select.currentData(), "mathematik")
+        self.assertTrue(dialog.competency_checkboxes["CMP-000083"].isChecked())
+        self.assertEqual(
+            dialog.competency_rating_widgets["CMP-000083"].currentData(),
+            "++",
+        )
+
+    def test_observation_dialog_honors_documentation_subject_hierarchy(self) -> None:
+        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+        dialog = self._observation_dialog_with_hierarchy()
+        subject_labels = tuple(
+            dialog.subject_select.itemText(index)
+            for index in range(dialog.subject_select.count())
+        )
+        visible_subject_keys: set[str] = set()
+        for index in range(dialog.subject_select.count()):
+            dialog.subject_select.setCurrentIndex(index)
+            visible_subject_keys.update(
+                str(checkbox.property("subject_key"))
+                for checkbox in dialog.findChildren(QCheckBox)
+            )
+
+        self.assertEqual(subject_labels, ("Deutsch", "Mathematik"))
+        self.assertEqual(visible_subject_keys, {"deutsch", "mathematik"})
 
     def test_observation_dialog_uses_rating_dropdown_per_competency(self) -> None:
         source = inspect.getsource(new_observation_dialog)
@@ -3060,7 +3138,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_observation_dialog_uses_compact_competency_layout(self) -> None:
         source = inspect.getsource(new_observation_dialog)
 
-        self.assertIn("self.competency_list.setMaximumHeight(138)", source)
+        self.assertIn("self.competency_tree_layout.setSpacing(6)", source)
+        self.assertIn("Kompetenzbereich:", source)
+        self.assertIn("Thema:", source)
         self.assertIn("self.competency_ratings_layout.setSpacing(4)", source)
         self.assertIn("rating_select.setMinimumWidth(190)", source)
         self.assertIn("row.addWidget(label, 1)", source)
@@ -3079,12 +3159,18 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn('QPushButton("Entfernen")', source)
         self.assertIn("self.competency_rating_entries.pop", source)
         self.assertIn("self.competency_rating_widgets.pop", source)
-        self.assertIn("self.competency_list.clear()", source)
+        self.assertIn("self.competency_checkboxes.clear()", source)
         self.assertNotIn("_clear_competency_ratings", refresh_source)
-        self.assertIn("competency_key in self.competency_rating_entries", refresh_source)
-        self.assertIn("Qt.CheckState.Checked", refresh_source)
-        self.assertIn("if competency_key not in self.competency_rating_widgets", sync_source)
-        self.assertIn("elif competency_key in self.competency_rating_widgets", sync_source)
+        self.assertIn("competency_key in self.competency_rating_entries", source)
+        self.assertIn("checkbox.setChecked", source)
+        self.assertIn(
+            "if competency_key not in self.competency_rating_widgets",
+            sync_source,
+        )
+        self.assertIn(
+            "elif competency_key in self.competency_rating_widgets",
+            sync_source,
+        )
 
     def test_observation_context_options_match_prototype_scope(self) -> None:
         self.assertEqual(
@@ -3227,6 +3313,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "subject_options=self.adapter.list_observation_subject_options()",
             source,
         )
+        self.assertIn(
+            "self.adapter.list_observation_competency_subject_groups()",
+            source,
+        )
         self.assertIn("self.show_student_profile(student.student_id)", source)
         self.assertIn('self.status_label.setText("Beobachtung wurde gespeichert.")', source)
         self.assertIn("list_competency_overview_for_student(student_id)", profile_source)
@@ -3244,6 +3334,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("NewObservationDialog(", quick_source)
         self.assertIn(
             "subject_options=self.adapter.list_observation_subject_options()",
+            quick_source,
+        )
+        self.assertIn(
+            "self.adapter.list_observation_competency_subject_groups()",
             quick_source,
         )
         self.assertIn("self.refresh_overview()", quick_source)
@@ -3271,6 +3365,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("initial_draft=draft", source)
         self.assertIn(
             "subject_options=self.adapter.list_observation_subject_options(draft)",
+            source,
+        )
+        self.assertIn(
+            "self.adapter.list_observation_competency_subject_groups(draft)",
             source,
         )
         self.assertIn("self.show_student_profile(student.student_id)", source)
@@ -4884,6 +4982,36 @@ class DesktopAppAdapterTest(unittest.TestCase):
             competency_text=competency_text,
             rating=rating,
         )
+
+    def _observation_dialog_with_hierarchy(
+        self,
+        initial_draft: ObservationDraftViewModel | None = None,
+    ) -> new_observation_dialog.NewObservationDialog:
+        app = QApplication.instance() or QApplication([])
+        self.assertIsNotNone(app)
+        return new_observation_dialog.NewObservationDialog(
+            self._sample_student_detail(),
+            self.curriculum_adapter,
+            self.adapter,
+            initial_draft=initial_draft,
+            subject_options=self.adapter.list_observation_subject_options(
+                initial_draft
+            ),
+            competency_subject_groups=(
+                self.adapter.list_observation_competency_subject_groups(
+                    initial_draft
+                )
+            ),
+        )
+
+    def _select_observation_subject(
+        self,
+        dialog: new_observation_dialog.NewObservationDialog,
+        subject_key: str,
+    ) -> None:
+        subject_index = dialog.subject_select.findData(subject_key)
+        self.assertGreaterEqual(subject_index, 0)
+        dialog.subject_select.setCurrentIndex(subject_index)
 
     def _observation_subject_group(
         self,
