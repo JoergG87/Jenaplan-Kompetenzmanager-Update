@@ -186,6 +186,43 @@ documentation_subject_settings(
 )
 ```
 
+## Sprint-3A-Mapping Kompetenzstruktur
+
+Sprint 3A klaert die fachliche Sprache, ohne neue Datenquelle, neue Spalte oder Schema-Migration einzufuehren.
+
+Sichtbare Struktur:
+
+```text
+Fach -> Kompetenzbereich -> Thema -> Kompetenz
+```
+
+Mapping auf bestehende Datenfelder:
+
+| Sichtbarer Begriff | SQLite / Katalogfeld | Bemerkung |
+| --- | --- | --- |
+| Fach | `subject_id`, `subject_name`, Katalog `subject_key`, `subject_display_name` | Fachschluessel und sichtbarer Fachname |
+| Kompetenzbereich | `learning_area` | bisher teilweise als Lernbereich bezeichnet; ab Sprint 3 fachlich als Kompetenzbereich zu verstehen |
+| Thema | `competency_group` | fachliche Untergliederung innerhalb eines Kompetenzbereichs |
+| Kompetenz | `competencies.description`, `observation_competency_ratings.competency_text`, Katalog `competency_text` | konkrete beobachtbare Kompetenz |
+| Kurzlabel fuer kompakte UI | `competencies.label`, Katalog `competency_label` | kurze Anzeige, keine eigene fachliche Ebene |
+
+Bewertungen:
+
+- `observations` enthaelt keine globale Bewertung.
+- `observation_competency_ratings.rating` speichert die Bewertung fuer genau eine Kombination aus `observation_id` und `competency_id`.
+- Eine Beobachtung kann mehrere Kompetenzbewertungen enthalten.
+- Unterschiedliche Kompetenzen innerhalb derselben Beobachtung duerfen unterschiedliche Bewertungen tragen.
+- `offen` ist kein gespeicherter Ratingwert. Wenn eine Kompetenz nicht bewertet werden soll, wird keine Zeile in `observation_competency_ratings` gespeichert.
+
+Bestandsdaten:
+
+- Alte grobe Kompetenzen bleiben ueber ihre `competency_id` historisch lesbar.
+- Bestehende `observation_competency_ratings` bleiben gueltig.
+- Alte Beobachtungen werden nicht automatisch auf spaetere konkrete Kompetenzen migriert.
+- Neue konkrete Kompetenzen werden spaeter fuer neue Beobachtungen ergaenzt.
+- Alte grobe Kompetenzen duerfen spaeter deaktiviert oder archiviert werden, aber nicht geloescht werden.
+- Sprint 3 braucht fuer Bewertung pro Kompetenz keine Rating-Schema-Migration.
+
 ## Legacy: Physische Workbook-/Export-Projektion
 
 Die `data_*`-Quellen konnten in der Excel-Linie als versteckte Tabellenblaetter in Workbooks angelegt werden. Der zugehoerige Code liegt unter `legacy/excel/` und ist kein aktiver Standardpfad.
@@ -600,7 +637,7 @@ Regel: Diese Relation filtert, welche Kurse innerhalb eines Kursverbunds angezei
 
 ## data_subjects
 
-Zweck: Faecher oder Lernbereiche als fachliche Struktur.
+Zweck: Faecher als fachliche Struktur. Kompetenzbereiche liegen im Kompetenzkatalog ueber `learning_area`.
 
 Entity: Subject.
 
@@ -684,6 +721,14 @@ Wichtige Felder:
 - `sort_order`
 - `active`
 - `is_core_subject`
+
+Sprint-3A-Mapping:
+
+- `subject_id` / `subject_name` = Fach
+- `learning_area` = Kompetenzbereich
+- `competency_group` = Thema
+- `description` = konkrete Kompetenz
+- `label` = Kurzlabel fuer kompakte UI
 
 Beziehungen:
 
@@ -811,10 +856,19 @@ Wichtige Felder:
 - `competency_text`
 - `rating`
 
+Sprint-3A-Mapping:
+
+- `subject_id` / `subject_display_name` = Fach zum Zeitpunkt der Beobachtung
+- `learning_area` = Kompetenzbereich zum Zeitpunkt der Beobachtung
+- `competency_group` = Thema zum Zeitpunkt der Beobachtung
+- `competency_text` = konkrete Kompetenz zum Zeitpunkt der Beobachtung
+- `rating` = Bewertung dieser konkreten Kompetenz innerhalb dieser Beobachtung
+
 Beziehungen:
 
 - eine Beobachtung kann vielen Kompetenzen zugeordnet werden
 - eine Kompetenz kann in vielen Beobachtungen vorkommen
+- `rating` gehoert zur Zuordnung, nicht global zur Beobachtung
 
 Schreibende Prozesse:
 

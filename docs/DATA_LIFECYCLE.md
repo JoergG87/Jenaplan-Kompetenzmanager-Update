@@ -373,7 +373,7 @@ Automatisch profitierende Ansichten:
 - Dashboards
 
 Regel: Beobachtung ist Source of Truth. Auswertungen leiten sich daraus ab.
-Neue Beobachtungen koennen nur mit dokumentationsrelevanten aktiven Faechern aus der aktuellen Settings-Auswahl angelegt werden; ohne Settings-Zeilen gilt der aktive Katalog. Beobachtung und Kompetenzbewertungen werden atomar gespeichert; eine Bewertung gehoert zur Kompetenz, nicht global zur Beobachtung. Medien/Anhaenge und Berichte bleiben separate spaetere Prozesse.
+Neue Beobachtungen koennen nur mit dokumentationsrelevanten aktiven Faechern aus der aktuellen Settings-Auswahl angelegt werden; ohne Settings-Zeilen gilt der aktive Katalog. Beobachtung und Kompetenzbewertungen werden atomar gespeichert; eine Bewertung gehoert zur konkreten Kompetenz, nicht global zur Beobachtung. Die sichtbare Struktur lautet Fach -> Kompetenzbereich -> Thema -> Kompetenz und wird ueber vorhandene Felder abgebildet: `subject_id` / `subject_name`, `learning_area`, `competency_group`, `description` / `competency_text`. `offen` ist kein gespeicherter Ratingwert; eine nicht bewertete Kompetenz erzeugt keine Zeile in `observation_competency_ratings`. Medien/Anhaenge und Berichte bleiben separate spaetere Prozesse.
 
 ## Beobachtung aendern
 
@@ -401,7 +401,7 @@ Automatisch profitierende Ansichten:
 - Kompetenzansicht
 - Berichte
 
-Regel: `observation_id` bleibt erhalten. Beobachtungsfelder werden aktualisiert; Kompetenzbewertungen werden fuer die Beobachtung atomar ersetzt. Die Fachanzeige wird weiter aus den Kompetenzfaechern abgeleitet. Wenn das gespeicherte Fach inzwischen nicht dokumentationsrelevant ist, bleibt es beim Bearbeiten sichtbar und wird nicht automatisch ersetzt oder entfernt.
+Regel: `observation_id` bleibt erhalten. Beobachtungsfelder werden aktualisiert; Kompetenzbewertungen werden fuer die Beobachtung atomar ersetzt. Die Fachanzeige wird weiter aus den Kompetenzfaechern abgeleitet. Wenn das gespeicherte Fach inzwischen nicht dokumentationsrelevant ist, bleibt es beim Bearbeiten sichtbar und wird nicht automatisch ersetzt oder entfernt. Eine Bewertung wird nur gespeichert, wenn eine konkrete Kompetenz in dieser Beobachtung bewertet wird; `offen` wird nicht als eigener Ratingwert gespeichert.
 
 ## Beobachtung loeschen
 
@@ -475,7 +475,7 @@ Automatisch profitierende Ansichten:
 - Berichte
 - Dashboards
 
-Regel: Kompetenzstruktur wird nicht aus Beobachtungstexten abgeleitet.
+Regel: Kompetenzstruktur wird nicht aus Beobachtungstexten abgeleitet. Sprint 3A fuehrt keine neuen DB-Felder wie `competency_area` oder `topic` ein. Die vorhandenen Felder werden fachlich gemappt: Fach = `subject_id` / `subject_name`, Kompetenzbereich = `learning_area`, Thema = `competency_group`, konkrete Kompetenz = `description` / `competency_text`, Kurzlabel = `label`.
 
 ## Kompetenzkatalog initialisieren
 
@@ -500,7 +500,7 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Kompetenzansicht
 
-Regel: Der Seed laeuft nur bei leerem SQLite-Kompetenzkatalog. Bestehende Kompetenzen werden nicht ueberschrieben. Kompetenzstaende werden weiterhin aus Beobachtungen abgeleitet und nicht manuell doppelt gespeichert.
+Regel: Der Seed laeuft nur bei leerem SQLite-Kompetenzkatalog. Bestehende Kompetenzen werden nicht ueberschrieben. Kompetenzstaende werden weiterhin aus Beobachtungen abgeleitet und nicht manuell doppelt gespeichert. Spaetere konkrete Kompetenzen werden als neue oder aktualisierte Katalogeintraege vorbereitet; alte grobe Kompetenzen bleiben historisch lesbar und werden nicht automatisch aus bestehenden Beobachtungen umgeschrieben.
 
 ## Testdaten fuer Laura-Pilottest erzeugen
 
@@ -569,7 +569,7 @@ Automatisch profitierende Ansichten:
 - Berichte
 - Dashboards
 
-Regel: `competency_id` bleibt erhalten. Offene Entscheidung: historische Beobachtungen zeigen entweder das aktuelle Kompetenzlabel oder das zum Beobachtungszeitpunkt gueltige Label.
+Regel: `competency_id` bleibt erhalten. Alte grobe Kompetenzen duerfen spaeter deaktiviert oder archiviert werden, aber nicht geloescht werden, solange historische Beobachtungen oder bestaetigte Kompetenzstaende darauf verweisen. Bestehende `observation_competency_ratings` bleiben gueltig und werden nicht automatisch auf spaetere konkrete Kompetenzen migriert. Offene Entscheidung fuer einen spaeteren Implementierungssprint: historische Beobachtungen zeigen entweder das aktuelle Kompetenzlabel oder das zum Beobachtungszeitpunkt gueltige Label.
 
 ## Schuelerdokument hinzufuegen
 

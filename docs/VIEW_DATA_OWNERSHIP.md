@@ -300,7 +300,7 @@ UI-Projektionen:
 
 Regel:
 
-Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Schreibprozesse. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Ohne aktive Filter begrenzt die UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den Beobachtungsverlauf und nicht auf die Kompetenzuebersicht. Kompetenzstand-Vorschlaege werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet. Bestaetigte Kompetenzstaende sind paedagogische Entscheidungen und liegen separat in `student_competency_confirmations`. Der Dokumentationsstand ist eine abgeleitete Auswertung aus aktivem Kompetenzkatalog, aktiven Beobachtungen, bestaetigten Kompetenzstaenden und `documentation_subject_settings`; er speichert nichts und ist keine Bewertung. Nicht dokumentationsrelevante Faecher zaehlen nicht als offen, bleiben aber in Beobachtungsverlauf, Kompetenzuebersicht und Berichtsvorschau sichtbar, wenn echte Beobachtungen oder bestaetigte Kompetenzstaende vorliegen. Dokumente und Medien werden aus SQLite `documents` gelesen; Dateien liegen im Dateisystem und werden bei vorhandener `file_path` ueber das Betriebssystem geoeffnet. Die Berichtsvorschau ist eine abgeleitete Struktur aus bestaetigten Staenden, Vorschlaegen und aktiven Beobachtungsbelegen; sie speichert keine Berichtsdaten und erzeugt keine finalen Zeugnisformulierungen. Kopieren und einfacher Textdatei-Export sind Ausgabeaktionen, keine fachliche Persistenz.
+Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Schreibprozesse. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Ohne aktive Filter begrenzt die UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den Beobachtungsverlauf und nicht auf die Kompetenzuebersicht. Kompetenzstand-Vorschlaege werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet. Bestaetigte Kompetenzstaende sind paedagogische Entscheidungen und liegen separat in `student_competency_confirmations`. Der Dokumentationsstand ist eine abgeleitete Auswertung aus aktivem Kompetenzkatalog, aktiven Beobachtungen, bestaetigten Kompetenzstaenden und `documentation_subject_settings`; er speichert nichts und ist keine Bewertung. Fuer spaetere Sprint-3-Umsetzung soll der Dokumentationsstand konkrete aktive Kompetenzen zaehlen; die Anzeige darf ruhig nach Fach, Kompetenzbereich und Thema aggregiert bleiben. Nicht dokumentationsrelevante Faecher zaehlen nicht als offen, bleiben aber in Beobachtungsverlauf, Kompetenzuebersicht und Berichtsvorschau sichtbar, wenn echte Beobachtungen oder bestaetigte Kompetenzstaende vorliegen. Dokumente und Medien werden aus SQLite `documents` gelesen; Dateien liegen im Dateisystem und werden bei vorhandener `file_path` ueber das Betriebssystem geoeffnet. Die Berichtsvorschau ist eine abgeleitete Struktur aus bestaetigten Staenden, Vorschlaegen und aktiven Beobachtungsbelegen; sie speichert keine Berichtsdaten und erzeugt keine finalen Zeugnisformulierungen. Kopieren und einfacher Textdatei-Export sind Ausgabeaktionen, keine fachliche Persistenz.
 
 ## Schuelerverwaltung / PySide-Dialog `Neuer Schüler`
 
@@ -363,7 +363,7 @@ UI-Projektionen:
 
 - ausgewaehlter Schueler
 - Fachauswahl
-- Kompetenzauswahl
+- Kompetenzauswahl mit Fach, Kompetenzbereich, Thema und Kompetenz
 - Beobachtungsnotiz
 - Kontext
 - Bewertung/Zuordnung
@@ -371,10 +371,10 @@ UI-Projektionen:
 
 Regel:
 
-Der Beobachtungsdialog ist der freigegebene Schreibprozess fuer Erfassung und Bearbeitung von Beobachtungen. Neue Beobachtungen bieten in der Fachauswahl nur dokumentationsrelevante aktive Faecher an. Bei Bearbeitung wird eine bestehende `observation_id` geladen; ein inzwischen nicht dokumentationsrelevantes Bestandsfach bleibt sichtbar und wird nicht automatisch ersetzt. Speichern ersetzt die Kompetenzbewertungen atomar. Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden.
+Der Beobachtungsdialog ist der freigegebene Schreibprozess fuer Erfassung und Bearbeitung von Beobachtungen. Neue Beobachtungen bieten in der Fachauswahl nur dokumentationsrelevante aktive Faecher an. Bei Bearbeitung wird eine bestehende `observation_id` geladen; ein inzwischen nicht dokumentationsrelevantes Bestandsfach bleibt sichtbar und wird nicht automatisch ersetzt. Speichern ersetzt die Kompetenzbewertungen atomar. Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden. Die sichtbare Kompetenzstruktur lautet Fach -> Kompetenzbereich -> Thema -> Kompetenz und nutzt bestehende Felder: `subject_id` / `subject_name`, `learning_area`, `competency_group`, `description` / `competency_text`.
 
 Dokumente und Medien sind nur Anhaenge zur Beobachtung und ersetzen keine Beobachtungsdaten. Sie gehoeren immer zum Schueler und tragen optional die `observation_id`.
-Der PySide-Dialog schreibt nicht direkt in SQLite, sondern ueber Adapter, Command, Service und Repository. Jede ausgewaehlte Kompetenz speichert ihre eigene Bewertung.
+Der PySide-Dialog schreibt nicht direkt in SQLite, sondern ueber Adapter, Command, Service und Repository. Jede ausgewaehlte Kompetenz speichert ihre eigene Bewertung in `observation_competency_ratings.rating`. `offen` ist kein gespeicherter Ratingwert; wenn eine Kompetenz nicht bewertet wird, wird keine Zuordnungszeile gespeichert.
 
 ## Kompetenzansicht
 
@@ -399,7 +399,7 @@ Navigation:
 UI-Projektionen:
 
 - Kompetenzkopf
-- Fach/Lernbereich
+- Fach, Kompetenzbereich und Thema
 - Beobachtungen zur Kompetenz
 - Kompetenzverlauf
 

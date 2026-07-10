@@ -127,6 +127,30 @@ Registriert:
 
 `documentation_subject_settings` speichert ausschliesslich, welche `subject_id` fuer Dokumentations- und Auswertungslogik als dokumentationsrelevant gelten. Die Tabelle ersetzt nicht den Kompetenzkatalog und veraendert `competencies.active` nicht.
 
+## Sprint-3A-Mapping Kompetenzstruktur
+
+Sprint 3A fuehrt keine neuen technischen Feldnamen und keine neuen SQLite-Spalten ein.
+
+Die sichtbare Fachsprache fuer Kompetenzstruktur lautet:
+
+```text
+Fach -> Kompetenzbereich -> Thema -> Kompetenz
+```
+
+Mapping auf vorhandene technische Namen:
+
+| Sichtbarer Begriff | Bestehender technischer Name |
+| --- | --- |
+| Fach | `subject_id` / `subject_name` |
+| Kompetenzbereich | `learning_area` |
+| Thema | `competency_group` |
+| Kompetenz | `description` in `competencies`, `competency_text` in `observation_competency_ratings` |
+| Kurzlabel fuer kompakte UI | `label` |
+
+Regel: Keine neuen Feldnamen wie `competency_area` oder `topic` einfuehren, solange dieses Mapping fachlich ausreicht. Sichtbare UI- und Dokumentationsbegriffe duerfen deutsch sein; technische Namen bleiben stabil.
+
+Bewertungen bleiben technisch in `observation_competency_ratings.rating` gespeichert. `observations` erhaelt keine globale Bewertung. Ein nicht bewerteter oder offener Kompetenzaspekt wird nicht als Ratingwert gespeichert, sondern erzeugt keine Zuordnungszeile in `observation_competency_ratings`.
+
 ## ID-Felder
 
 Verbindliche ID-Felder fuer neue Architekturarbeit:

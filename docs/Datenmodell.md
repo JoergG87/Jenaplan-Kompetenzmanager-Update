@@ -117,6 +117,47 @@ Eine Beobachtung kann mehreren Kompetenzen zugeordnet werden.
 
 Das ist fachlich erforderlich, weil eine Präsentation, Gruppenarbeit oder Lernzielkontrolle häufig mehrere Kompetenzen gleichzeitig sichtbar macht.
 
+## Kompetenzstruktur ab Sprint 3A
+
+Die sichtbare Kompetenzstruktur lautet:
+
+```text
+Fach -> Kompetenzbereich -> Thema -> Kompetenz
+```
+
+Diese Struktur nutzt vorhandene technische Felder und fuehrt keine neuen DB-Felder ein:
+
+| Fachlicher Begriff | Bestehendes technisches Feld |
+| --- | --- |
+| Fach | `subject_id` / `subject_name` |
+| Kompetenzbereich | `learning_area` |
+| Thema | `competency_group` |
+| Kompetenz | `description` / `competency_text` |
+| Kurzlabel fuer kompakte UI | `label` |
+
+Beispiel:
+
+```text
+Mathematik
+  -> Groessen & Messen
+    -> Zeit
+      -> volle Stunden ablesen
+```
+
+Bewertungen gehoeren nicht global zur Beobachtung. Eine Beobachtung kann mehrere konkrete Kompetenzen enthalten, und jede dieser Kompetenzen traegt ihre eigene Bewertung ueber `observation_competency_ratings.rating`.
+
+```text
+Beobachtung -> Kompetenz A: +
+Beobachtung -> Kompetenz B: -
+Beobachtung -> Kompetenz C: ++
+```
+
+`offen` ist kein gespeicherter Ratingwert. Wenn eine Kompetenz innerhalb einer Beobachtung nicht bewertet werden soll, entsteht fuer diese Kompetenz keine Zeile in `observation_competency_ratings`.
+
+Alte grobe Kompetenzen bleiben historisch lesbar. Bestehende Beobachtungen und bestehende `observation_competency_ratings` werden nicht automatisch auf spaetere konkrete Kompetenzen migriert. Neue konkrete Kompetenzen werden spaeter fuer neue Beobachtungen ergaenzt; alte grobe Kompetenzen duerfen spaeter deaktiviert oder archiviert werden, aber nicht geloescht werden.
+
+Sprint 3A braucht keine Rating-Schema-Migration, weil Bewertung pro Kompetenz bereits ueber die vorhandene Zuordnungstabelle modelliert ist.
+
 ## Beobachtung
 
 Eine Beobachtung beschreibt eine fachlich relevante Wahrnehmung im Lernprozess eines Kindes.
