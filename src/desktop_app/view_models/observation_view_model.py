@@ -61,6 +61,46 @@ class ObservationSubjectOptionViewModel:
 
 
 @dataclass(frozen=True)
+class ObservationCompetencyOptionViewModel:
+    """Display-ready selectable competency for observation entry."""
+
+    competency_id: str
+    subject_key: str
+    subject_display_name: str
+    learning_area: str
+    competency_group: str
+    competency_text: str
+    competency_label: str
+    selected: bool = False
+    rating: str = ""
+
+
+@dataclass(frozen=True)
+class ObservationCompetencyGroupViewModel:
+    """Observation competencies grouped by topic."""
+
+    competency_group: str
+    competencies: tuple[ObservationCompetencyOptionViewModel, ...]
+
+
+@dataclass(frozen=True)
+class ObservationLearningAreaGroupViewModel:
+    """Observation competency topics grouped by learning area."""
+
+    learning_area: str
+    competency_groups: tuple[ObservationCompetencyGroupViewModel, ...]
+
+
+@dataclass(frozen=True)
+class ObservationCompetencySubjectGroupViewModel:
+    """Observation competencies grouped by subject."""
+
+    subject_key: str
+    subject_display_name: str
+    learning_area_groups: tuple[ObservationLearningAreaGroupViewModel, ...]
+
+
+@dataclass(frozen=True)
 class ObservationAttachmentDraft:
     """Document or media attachment kept in an observation draft."""
 

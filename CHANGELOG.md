@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Sprint 3C - Hierarchische Kompetenzdaten fuer Beobachtungsdialog
+
+### Added
+
+- Hierarchische Observation-ViewModels fuer Fach -> Kompetenzbereich -> Thema -> konkrete Kompetenz ergaenzt.
+- `StudentDesktopAdapter.list_observation_competency_subject_groups(initial_draft)` als additive Projektion fuer einen spaeteren Dialog-Umbau ergaenzt.
+- Tests fuer Default-Faecher, dokumentationsrelevante Faecher, konkrete Mathematik-Zeit-Kompetenz `CMP-000083`, alte grobe Kompetenz `CMP-000001`, `initial_draft`-Ratinguebernahme und Bestandsfach-Erhalt ergaenzt.
+
+### Not Changed
+
+- Keine DB-Migration, keine Katalogaenderung, keine Beobachtungsdaten-Migration, keine Berichtsanpassung, keine aktive-Faecher-Logik und keine Dialog-UI-Hierarchie umgesetzt.
+
 ## Sprint 3B - Konkreter Kompetenzkatalog und idempotenter Katalogimport
 
 ### Added

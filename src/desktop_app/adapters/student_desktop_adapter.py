@@ -51,7 +51,11 @@ from src.desktop_app.view_models.observation_view_model import (
     DOCUMENT_TYPE_OPTIONS,
     ObservationDraftViewModel,
     ObservationAttachmentDraft,
+    ObservationCompetencyGroupViewModel,
+    ObservationCompetencyOptionViewModel,
     ObservationCompetencyRatingDraft,
+    ObservationCompetencySubjectGroupViewModel,
+    ObservationLearningAreaGroupViewModel,
     ObservationListItem,
     ObservationRatingViewModel,
     ObservationSubjectOptionViewModel,
@@ -254,6 +258,62 @@ class StudentDesktopAdapter:
                 )
             )
         return tuple(options)
+
+    def list_observation_competency_subject_groups(
+        self,
+        initial_draft: ObservationDraftViewModel | None = None,
+    ) -> tuple[ObservationCompetencySubjectGroupViewModel, ...]:
+        """Return active observation competencies grouped for later dialog rendering."""
+        selected_ratings = {
+            rating.competency_id: rating.rating
+            for rating in (initial_draft.competency_ratings if initial_draft else ())
+            if rating.competency_id
+        }
+        curriculum_adapter = CurriculumDesktopAdapter(database=self.database)
+        subject_groups: list[ObservationCompetencySubjectGroupViewModel] = []
+        for subject_option in self.list_observation_subject_options(initial_draft):
+            learning_area_groups: dict[
+                str,
+                dict[str, list[ObservationCompetencyOptionViewModel]],
+            ] = {}
+            for competency in curriculum_adapter.list_competencies_for_subject(
+                subject_option.subject_key
+            ):
+                option = ObservationCompetencyOptionViewModel(
+                    competency_id=competency.competency_id,
+                    subject_key=competency.subject_key,
+                    subject_display_name=competency.subject_display_name,
+                    learning_area=competency.learning_area,
+                    competency_group=competency.competency_group,
+                    competency_text=competency.competency_text,
+                    competency_label=competency.competency_label,
+                    selected=competency.competency_id in selected_ratings,
+                    rating=selected_ratings.get(competency.competency_id, ""),
+                )
+                learning_area_groups.setdefault(
+                    competency.learning_area,
+                    {},
+                ).setdefault(competency.competency_group, []).append(option)
+            subject_groups.append(
+                ObservationCompetencySubjectGroupViewModel(
+                    subject_key=subject_option.subject_key,
+                    subject_display_name=subject_option.display_name,
+                    learning_area_groups=tuple(
+                        ObservationLearningAreaGroupViewModel(
+                            learning_area,
+                            tuple(
+                                ObservationCompetencyGroupViewModel(
+                                    competency_group,
+                                    tuple(competencies),
+                                )
+                                for competency_group, competencies in competency_groups.items()
+                            ),
+                        )
+                        for learning_area, competency_groups in learning_area_groups.items()
+                    ),
+                )
+            )
+        return tuple(subject_groups)
 
     def group_id_by_name(self) -> dict[str, str]:
         """Map visible group names to stable group IDs."""

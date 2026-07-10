@@ -75,7 +75,9 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationAttachmentDraft,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_SUCCESS_MESSAGE,
+    ObservationCompetencyOptionViewModel,
     ObservationCompetencyRatingDraft,
+    ObservationCompetencySubjectGroupViewModel,
     ObservationDraftViewModel,
     ObservationListItem,
     ObservationRatingViewModel,
@@ -646,6 +648,150 @@ class DesktopAppAdapterTest(unittest.TestCase):
             options[-1].display_name,
             "Musik (nicht dokumentationsrelevant)",
         )
+
+    def test_observation_competency_hierarchy_defaults_to_active_catalog_subjects(
+        self,
+    ) -> None:
+        groups = self.adapter.list_observation_competency_subject_groups()
+        expected_subject_ids = tuple(
+            option.subject_id
+            for option in self.adapter.list_documentation_subject_options()
+        )
+
+        self.assertEqual(
+            tuple(group.subject_key for group in groups),
+            expected_subject_ids,
+        )
+        self.assertTrue(all(group.learning_area_groups for group in groups))
+        self.assertTrue(all(
+            isinstance(group, ObservationCompetencySubjectGroupViewModel)
+            for group in groups
+        ))
+
+    def test_observation_competency_hierarchy_uses_documentation_subjects(
+        self,
+    ) -> None:
+        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+
+        groups = self.adapter.list_observation_competency_subject_groups()
+
+        self.assertEqual(
+            tuple(group.subject_key for group in groups),
+            ("deutsch", "mathematik"),
+        )
+        self.assertNotIn("epu", {group.subject_key for group in groups})
+
+    def test_observation_competency_hierarchy_contains_concrete_math_time_competency(
+        self,
+    ) -> None:
+        groups = self.adapter.list_observation_competency_subject_groups()
+        competency = self._find_observation_competency_option(groups, "CMP-000083")
+        subject_group = self._observation_subject_group(groups, "mathematik")
+
+        self.assertIsNotNone(subject_group)
+        self.assertIsNotNone(competency)
+        self.assertEqual(subject_group.subject_display_name, "Mathematik")
+        if competency is not None:
+            self.assertEqual(competency.subject_key, "mathematik")
+            self.assertEqual(competency.learning_area, "Groessen und Messen")
+            self.assertEqual(competency.competency_group, "Zeit")
+            self.assertEqual(
+                competency.competency_text,
+                "volle Stunden auf einer analogen Uhr ablesen",
+            )
+            self.assertEqual(competency.competency_label, "Volle Stunden")
+
+    def test_observation_competency_hierarchy_keeps_old_active_competency(
+        self,
+    ) -> None:
+        groups = self.adapter.list_observation_competency_subject_groups()
+        competency = self._find_observation_competency_option(groups, "CMP-000001")
+
+        self.assertIsNotNone(competency)
+        if competency is not None:
+            self.assertEqual(competency.subject_key, "deutsch")
+            self.assertEqual(competency.subject_display_name, "Deutsch")
+            self.assertEqual(
+                competency.competency_text,
+                "Texte lesen, zentrale Informationen entnehmen und "
+                "eigene Leseeindrücke beschreiben",
+            )
+
+    def test_observation_competency_hierarchy_marks_initial_draft_rating(
+        self,
+    ) -> None:
+        initial_draft = self._sample_observation_draft(
+            subject_id="mathematik",
+            subject_display_name="Mathematik",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000083",
+                    "mathematik",
+                    "Mathematik",
+                    "Groessen und Messen",
+                    "Zeit",
+                    "volle Stunden auf einer analogen Uhr ablesen",
+                    "++",
+                ),
+            ),
+        )
+
+        groups = self.adapter.list_observation_competency_subject_groups(
+            initial_draft
+        )
+        selected = self._find_observation_competency_option(groups, "CMP-000083")
+        unselected = self._find_observation_competency_option(groups, "CMP-000084")
+
+        self.assertIsNotNone(selected)
+        if selected is not None:
+            self.assertTrue(selected.selected)
+            self.assertEqual(selected.rating, "++")
+        self.assertIsNotNone(unselected)
+        if unselected is not None:
+            self.assertFalse(unselected.selected)
+            self.assertEqual(unselected.rating, "")
+
+    def test_observation_competency_hierarchy_keeps_initial_non_documentation_subject(
+        self,
+    ) -> None:
+        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+        initial_draft = self._sample_observation_draft(
+            subject_id="musik",
+            subject_display_name="Musik",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000020",
+                    "musik",
+                    "Musik",
+                    "Musik hören",
+                    "Hören und Beschreiben",
+                    "Musik aufmerksam hören, Eindrücke beschreiben und "
+                    "musikalische Merkmale erkennen",
+                    "+",
+                ),
+            ),
+        )
+
+        groups = self.adapter.list_observation_competency_subject_groups(
+            initial_draft
+        )
+        music_group = self._observation_subject_group(groups, "musik")
+        selected = self._find_observation_competency_option(groups, "CMP-000020")
+
+        self.assertEqual(
+            tuple(group.subject_key for group in groups),
+            ("deutsch", "mathematik", "musik"),
+        )
+        self.assertIsNotNone(music_group)
+        if music_group is not None:
+            self.assertEqual(
+                music_group.subject_display_name,
+                "Musik (nicht dokumentationsrelevant)",
+            )
+        self.assertIsNotNone(selected)
+        if selected is not None:
+            self.assertTrue(selected.selected)
+            self.assertEqual(selected.rating, "+")
 
     def test_settings_screen_shows_documentation_subject_checkboxes_and_saves(
         self,
@@ -4738,6 +4884,29 @@ class DesktopAppAdapterTest(unittest.TestCase):
             competency_text=competency_text,
             rating=rating,
         )
+
+    def _observation_subject_group(
+        self,
+        groups: tuple[ObservationCompetencySubjectGroupViewModel, ...],
+        subject_key: str,
+    ) -> ObservationCompetencySubjectGroupViewModel | None:
+        return next(
+            (group for group in groups if group.subject_key == subject_key),
+            None,
+        )
+
+    def _find_observation_competency_option(
+        self,
+        groups: tuple[ObservationCompetencySubjectGroupViewModel, ...],
+        competency_id: str,
+    ) -> ObservationCompetencyOptionViewModel | None:
+        for subject_group in groups:
+            for learning_area_group in subject_group.learning_area_groups:
+                for competency_group in learning_area_group.competency_groups:
+                    for competency in competency_group.competencies:
+                        if competency.competency_id == competency_id:
+                            return competency
+        return None
 
 
 if __name__ == "__main__":
