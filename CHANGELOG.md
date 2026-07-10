@@ -51,6 +51,7 @@
 - Konkrete Kompetenzen werden als Checkboxzeilen dargestellt; pro ausgewaehlter Kompetenz bleibt eine eigene Bewertungszeile erhalten.
 - Bearbeiten bestehender Beobachtungen uebernimmt ausgewaehlte Kompetenzen und Bewertungen aus `initial_draft`.
 - Alte aktive Kompetenzen bleiben anhand vorhandener Katalogfelder einsortiert und auswaehlbar.
+- UX-Fix: Themen im Beobachtungsdialog sind ausklappbar; neue Beobachtungen starten mit eingeklappten Themen, waehrend Themen mit bestehenden Bewertungen beim Bearbeiten automatisch geoeffnet werden.
 
 ### Not Changed
 

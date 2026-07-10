@@ -73,6 +73,10 @@ class NewObservationDialog(QDialog):
         self.competency_rating_widgets: dict[str, QComboBox] = {}
         self.competency_rating_rows: dict[str, QWidget] = {}
         self.competency_checkboxes: dict[str, QCheckBox] = {}
+        self.competency_area_buttons: dict[str, QPushButton] = {}
+        self.competency_area_containers: dict[str, QWidget] = {}
+        self.competency_topic_buttons: dict[str, QPushButton] = {}
+        self.competency_topic_containers: dict[str, QWidget] = {}
         self.attachment_drafts: list[ObservationAttachmentDraft] = []
         self.setWindowTitle(
             "Beobachtung bearbeiten" if self.initial_draft else "Neue Beobachtung"
@@ -176,6 +180,10 @@ class NewObservationDialog(QDialog):
             return
         self._clear_competency_tree()
         self.competency_checkboxes.clear()
+        self.competency_area_buttons.clear()
+        self.competency_area_containers.clear()
+        self.competency_topic_buttons.clear()
+        self.competency_topic_containers.clear()
         subject_group = self._current_subject_group()
         if subject_group is None or not subject_group.learning_area_groups:
             empty_label = QLabel("Keine Kompetenzen für dieses Fach hinterlegt.")
@@ -264,14 +272,75 @@ class NewObservationDialog(QDialog):
         area_layout = QVBoxLayout(area_widget)
         area_layout.setContentsMargins(0, 4, 0, 6)
         area_layout.setSpacing(4)
-        area_title = QLabel(
-            f"Kompetenzbereich: {self._learning_area_text(learning_area_group)}"
+
+        area_key = self._area_key(learning_area_group)
+        area_is_open = self._learning_area_has_selection(learning_area_group)
+
+        area_button = QPushButton()
+        area_button.setObjectName("ObservationAreaToggleButton")
+        area_button.setFlat(True)
+        area_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        area_button.clicked.connect(
+            lambda _checked=False, key=area_key: self._toggle_competency_area(key)
         )
-        set_label_style(area_title, "field_label")
-        area_layout.addWidget(area_title)
+        area_button.setProperty("area_key", area_key)
+        self.competency_area_buttons[area_key] = area_button
+        area_layout.addWidget(area_button)
+
+        topics_container = QWidget()
+        topics_container.setObjectName("ObservationAreaTopics")
+        topics_layout = QVBoxLayout(topics_container)
+        topics_layout.setContentsMargins(12, 0, 0, 0)
+        topics_layout.setSpacing(4)
         for competency_group in learning_area_group.competency_groups:
-            area_layout.addWidget(self._competency_group_widget(competency_group))
+            topics_layout.addWidget(self._competency_group_widget(competency_group))
+        topics_container.setVisible(area_is_open)
+        self.competency_area_containers[area_key] = topics_container
+        area_layout.addWidget(topics_container)
+        self._set_area_button_text(area_key, area_is_open)
         return area_widget
+
+    def _area_key(self, learning_area_group: ObservationLearningAreaGroupViewModel) -> str:
+        first_group = (
+            learning_area_group.competency_groups[0]
+            if learning_area_group.competency_groups
+            else None
+        )
+        first_competency = (
+            first_group.competencies[0]
+            if first_group is not None and first_group.competencies
+            else None
+        )
+        subject_key = getattr(first_competency, "subject_key", "")
+        return "|".join((
+            str(subject_key),
+            self._learning_area_text(learning_area_group),
+        ))
+
+    def _learning_area_has_selection(
+        self,
+        learning_area_group: ObservationLearningAreaGroupViewModel,
+    ) -> bool:
+        return any(
+            self._competency_group_has_selection(competency_group)
+            for competency_group in learning_area_group.competency_groups
+        )
+
+    def _toggle_competency_area(self, area_key: str) -> None:
+        container = self.competency_area_containers.get(area_key)
+        if container is None:
+            return
+        is_open = container.isHidden()
+        container.setVisible(is_open)
+        self._set_area_button_text(area_key, is_open)
+
+    def _set_area_button_text(self, area_key: str, is_open: bool) -> None:
+        button = self.competency_area_buttons.get(area_key)
+        if button is None:
+            return
+        area_name = area_key.rsplit("|", 1)[-1] or "Ohne Kompetenzbereich"
+        indicator = "▾" if is_open else "▸"
+        button.setText(f"{indicator} Kompetenzbereich: {area_name}")
 
     def _competency_group_widget(
         self,
@@ -281,18 +350,83 @@ class NewObservationDialog(QDialog):
         group_layout = QVBoxLayout(group_widget)
         group_layout.setContentsMargins(12, 0, 0, 4)
         group_layout.setSpacing(3)
-        topic_label = QLabel(
-            f"Thema: {self._competency_group_text(competency_group)}"
+        topic_key = self._topic_key(competency_group)
+        topic_is_open = self._competency_group_has_selection(competency_group)
+        topic_button = QPushButton()
+        topic_button.setObjectName("ObservationTopicToggleButton")
+        topic_button.setFlat(True)
+        topic_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        topic_button.clicked.connect(
+            lambda _checked=False, key=topic_key: self._toggle_competency_topic(key)
         )
-        set_label_style(topic_label, "muted")
-        group_layout.addWidget(topic_label)
+        topic_button.setProperty("topic_key", topic_key)
+        self.competency_topic_buttons[topic_key] = topic_button
+        group_layout.addWidget(topic_button)
+        competencies_container = QWidget()
+        competencies_container.setObjectName("ObservationTopicCompetencies")
+        competencies_layout = QVBoxLayout(competencies_container)
+        competencies_layout.setContentsMargins(12, 0, 0, 0)
+        competencies_layout.setSpacing(3)
         for competency in competency_group.competencies:
-            group_layout.addWidget(self._competency_checkbox_row(competency))
+            competencies_layout.addWidget(
+                self._competency_checkbox_row(competency, topic_key)
+            )
+        competencies_container.setVisible(topic_is_open)
+        self.competency_topic_containers[topic_key] = competencies_container
+        group_layout.addWidget(competencies_container)
+        self._set_topic_button_text(topic_key, topic_is_open)
         return group_widget
+
+    def _topic_key(self, competency_group: ObservationCompetencyGroupViewModel) -> str:
+        first_competency = (
+            competency_group.competencies[0]
+            if competency_group.competencies
+            else None
+        )
+        subject_key = getattr(first_competency, "subject_key", "")
+        learning_area = getattr(first_competency, "learning_area", "")
+        return "|".join((
+            str(subject_key),
+            str(learning_area),
+            self._competency_group_text(competency_group),
+        ))
+
+    def _competency_group_has_selection(
+        self,
+        competency_group: ObservationCompetencyGroupViewModel,
+    ) -> bool:
+        return any(
+            competency.selected
+            or self._competency_key(competency) in self.competency_rating_entries
+            for competency in competency_group.competencies
+        )
+
+    def _toggle_competency_topic(self, topic_key: str) -> None:
+        container = self.competency_topic_containers.get(topic_key)
+        if container is None:
+            return
+        is_open = container.isHidden()
+        container.setVisible(is_open)
+        self._set_topic_button_text(topic_key, is_open)
+
+    def _set_topic_button_text(self, topic_key: str, is_open: bool) -> None:
+        button = self.competency_topic_buttons.get(topic_key)
+        if button is None:
+            return
+        topic_name = topic_key.rsplit("|", 1)[-1] or "Ohne Thema"
+        indicator = "▾" if is_open else "▸"
+        button.setText(f"{indicator} Thema: {topic_name}")
+
+    def _area_key_from_topic_key(self, topic_key: str) -> str:
+        parts = topic_key.split("|", 2)
+        if len(parts) < 2:
+            return topic_key
+        return "|".join(parts[:2])
 
     def _competency_checkbox_row(
         self,
         competency: ObservationCompetencyOptionViewModel,
+        topic_key: str,
     ) -> QWidget:
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
@@ -303,6 +437,8 @@ class NewObservationDialog(QDialog):
         checkbox.setToolTip(self._competency_detail_text(competency))
         checkbox.setProperty("competency_key", competency_key)
         checkbox.setProperty("subject_key", competency.subject_key)
+        checkbox.setProperty("topic_key", topic_key)
+        checkbox.setProperty("area_key", self._area_key_from_topic_key(topic_key))
         checkbox.setChecked(
             competency.selected or competency_key in self.competency_rating_entries
         )
@@ -600,6 +736,27 @@ class NewObservationDialog(QDialog):
             checkbox.setCheckState(check_state)
         finally:
             checkbox.blockSignals(False)
+        if check_state == Qt.CheckState.Checked:
+            area_key = str(checkbox.property("area_key") or "")
+            if area_key:
+                self._set_competency_area_visible(area_key, True)
+            topic_key = str(checkbox.property("topic_key") or "")
+            if topic_key:
+                self._set_competency_topic_visible(topic_key, True)
+
+    def _set_competency_area_visible(self, area_key: str, visible: bool) -> None:
+        container = self.competency_area_containers.get(area_key)
+        if container is None:
+            return
+        container.setVisible(visible)
+        self._set_area_button_text(area_key, visible)
+
+    def _set_competency_topic_visible(self, topic_key: str, visible: bool) -> None:
+        container = self.competency_topic_containers.get(topic_key)
+        if container is None:
+            return
+        container.setVisible(visible)
+        self._set_topic_button_text(topic_key, visible)
 
     def _clear_competency_ratings(self) -> None:
         self.competency_rating_entries.clear()
