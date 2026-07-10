@@ -130,7 +130,16 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("competency_id", competency_columns)
         self.assertIn("subject_id", competency_columns)
         self.assertIn("subject_name", competency_columns)
+        self.assertIn("subject_full_name", competency_columns)
+        self.assertIn("official_subject_name", competency_columns)
+        self.assertIn("school_context_name", competency_columns)
+        self.assertIn("grade_band", competency_columns)
         self.assertIn("label", competency_columns)
+        self.assertIn("learning_stage", competency_columns)
+        self.assertIn("source_reference", competency_columns)
+        self.assertIn("catalog_status", competency_columns)
+        self.assertIn("activation_group_key", competency_columns)
+        self.assertIn("catalog_default_active", competency_columns)
         self.assertIn("sort_order", competency_columns)
         self.assertIn("confirmed_rating", confirmation_columns)
         self.assertIn("confirmed_at", confirmation_columns)
@@ -645,6 +654,234 @@ class SQLiteSpikeTest(unittest.TestCase):
             self.assertFalse(competency.active)
             self.assertEqual(competency.label, "Lesen aktualisiert")
 
+    def test_competency_catalog_upsert_persists_catalog_model_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = SQLiteDatabase(Path(temp_dir) / "kompetenzmanager.sqlite")
+            repository = SQLiteCompetencyRepository(database)
+
+            repository.ensure_catalog_defaults((
+                self._sample_competency_entry(
+                    "CMP-000001",
+                    "Sport",
+                    "Gleiten",
+                    active=False,
+                    learning_stage="stage_4",
+                    catalog_status="legacy",
+                    catalog_default_active=False,
+                    activation_group_key="sport_ski_ice_inline",
+                ),
+            ))
+            competency = repository.get_competency("CMP-000001")
+
+        self.assertIsNotNone(competency)
+        if competency is not None:
+            self.assertEqual(competency.grade_band, "1-4")
+            self.assertEqual(competency.learning_stage, "stage_4")
+            self.assertEqual(competency.catalog_status, "legacy")
+            self.assertFalse(competency.catalog_default_active)
+            self.assertEqual(
+                competency.activation_group_key,
+                "sport_ski_ice_inline",
+            )
+            self.assertFalse(competency.active)
+
+    def test_competency_catalog_upsert_updates_catalog_default_not_local_active(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database = SQLiteDatabase(Path(temp_dir) / "kompetenzmanager.sqlite")
+            repository = SQLiteCompetencyRepository(database)
+            repository.ensure_catalog_defaults((
+                self._sample_competency_entry(
+                    "CMP-000001",
+                    "Sport",
+                    "Gleiten",
+                    active=True,
+                    catalog_default_active=True,
+                ),
+            ))
+            with database.connect() as connection:
+                with connection:
+                    connection.execute(
+                        "UPDATE competencies SET active = 0 WHERE competency_id = ?",
+                        ("CMP-000001",),
+                    )
+
+            repository.ensure_catalog_defaults((
+                self._sample_competency_entry(
+                    "CMP-000001",
+                    "Sport",
+                    "Gleiten",
+                    active=True,
+                    catalog_default_active=False,
+                ),
+            ))
+            competency = repository.get_competency("CMP-000001")
+
+        self.assertIsNotNone(competency)
+        if competency is not None:
+            self.assertFalse(competency.active)
+            self.assertFalse(competency.catalog_default_active)
+
+    def test_competency_schema_migrates_existing_database_with_safe_defaults(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            with closing(sqlite3.connect(database_path)) as connection:
+                connection.executescript(
+                    """
+                    CREATE TABLE competencies (
+                        competency_id TEXT PRIMARY KEY,
+                        subject_id TEXT NOT NULL,
+                        subject_name TEXT NOT NULL,
+                        label TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        learning_area TEXT NOT NULL,
+                        competency_group TEXT,
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        active INTEGER NOT NULL CHECK (active IN (0, 1)),
+                        is_core_subject INTEGER NOT NULL CHECK (is_core_subject IN (0, 1)) DEFAULT 1
+                    );
+                    CREATE TABLE observations (
+                        observation_id TEXT PRIMARY KEY,
+                        student_id TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        subject_id TEXT NOT NULL,
+                        context TEXT,
+                        note TEXT,
+                        active INTEGER NOT NULL CHECK (active IN (0, 1)) DEFAULT 1,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL
+                    );
+                    CREATE TABLE observation_competency_ratings (
+                        observation_id TEXT NOT NULL,
+                        competency_id TEXT NOT NULL,
+                        subject_id TEXT NOT NULL,
+                        subject_display_name TEXT NOT NULL,
+                        learning_area TEXT NOT NULL,
+                        competency_group TEXT,
+                        competency_text TEXT NOT NULL,
+                        rating TEXT NOT NULL,
+                        PRIMARY KEY (observation_id, competency_id)
+                    );
+                    INSERT INTO competencies (
+                        competency_id,
+                        subject_id,
+                        subject_name,
+                        label,
+                        description,
+                        learning_area,
+                        competency_group,
+                        sort_order,
+                        active,
+                        is_core_subject
+                    )
+                    VALUES (
+                        'CMP-OLD001',
+                        'deutsch',
+                        'Deutsch',
+                        'Lesen',
+                        'Alte Kompetenz',
+                        'Lesen',
+                        'Grundlage',
+                        0,
+                        0,
+                        1
+                    );
+                    INSERT INTO observations (
+                        observation_id,
+                        student_id,
+                        date,
+                        subject_id,
+                        context,
+                        note,
+                        active,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (
+                        'OBS-OLD001',
+                        'STU-OLD001',
+                        '2026-07-01',
+                        'deutsch',
+                        'Alt',
+                        'Historisch',
+                        1,
+                        '2026-07-01T10:00:00+00:00',
+                        '2026-07-01T10:00:00+00:00'
+                    );
+                    INSERT INTO observation_competency_ratings (
+                        observation_id,
+                        competency_id,
+                        subject_id,
+                        subject_display_name,
+                        learning_area,
+                        competency_group,
+                        competency_text,
+                        rating
+                    )
+                    VALUES (
+                        'OBS-OLD001',
+                        'CMP-OLD001',
+                        'deutsch',
+                        'Deutsch',
+                        'Lesen',
+                        'Grundlage',
+                        'Alte Kompetenz',
+                        '+'
+                    );
+                    """
+                )
+                connection.commit()
+
+            database = SQLiteDatabase(database_path)
+            database.initialize_schema()
+            competency = SQLiteCompetencyRepository(database).get_competency(
+                "CMP-OLD001"
+            )
+            with database.connect() as connection:
+                ratings = connection.execute(
+                    """
+                    SELECT observation_id, competency_id, rating
+                    FROM observation_competency_ratings
+                    """
+                ).fetchall()
+
+        self.assertIsNotNone(competency)
+        if competency is not None:
+            self.assertFalse(competency.active)
+            self.assertEqual(competency.learning_stage, "cross_stage")
+            self.assertEqual(competency.catalog_status, "current")
+            self.assertTrue(competency.catalog_default_active)
+            self.assertEqual(competency.activation_group_key, "")
+        self.assertEqual(
+            [tuple(row) for row in ratings],
+            [("OBS-OLD001", "CMP-OLD001", "+")],
+        )
+
+    def test_curriculum_catalog_accepts_old_csv_without_catalog_model_columns(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            catalog_path = Path(temp_dir) / "old_catalog.csv"
+            catalog_path.write_text(
+                "\n".join((
+                    "competency_id;subject_key;subject_display_name;subject_full_name;official_subject_name;school_context_name;grade_band;learning_area;competency_group;competency_text;competency_label;source_reference;is_core_subject;is_active",
+                    "CMP-OLD001;deutsch;Deutsch;Deutsch;Deutsch;Quelle;1-4;Lesen;Grundlage;Text lesen;Lesen;Quelle;true;false",
+                )),
+                encoding="utf-8",
+            )
+
+            entries = CurriculumDesktopAdapter(catalog_path).list_entries()
+
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].learning_stage, "cross_stage")
+        self.assertEqual(entries[0].catalog_status, "current")
+        self.assertFalse(entries[0].catalog_default_active)
+        self.assertFalse(entries[0].is_active)
+        self.assertEqual(entries[0].activation_group_key, "")
+
     def test_full_curriculum_catalog_imports_concrete_competencies_for_empty_database(
         self,
     ) -> None:
@@ -667,6 +904,11 @@ class SQLiteSpikeTest(unittest.TestCase):
             by_id["CMP-000083"].description,
             "volle Stunden auf einer analogen Uhr ablesen",
         )
+        self.assertEqual(by_id["CMP-000083"].grade_band, "1-4")
+        self.assertEqual(by_id["CMP-000083"].learning_stage, "cross_stage")
+        self.assertEqual(by_id["CMP-000083"].catalog_status, "current")
+        self.assertTrue(by_id["CMP-000083"].catalog_default_active)
+        self.assertEqual(by_id["CMP-000083"].activation_group_key, "")
         self.assertEqual(by_id["CMP-000059"].subject_id, "deutsch")
         self.assertEqual(by_id["CMP-000099"].subject_id, "epu")
         self.assertIn("sozialkompetenz", by_subject)
@@ -978,6 +1220,10 @@ class SQLiteSpikeTest(unittest.TestCase):
         label: str,
         *,
         active: bool = True,
+        learning_stage: str = "cross_stage",
+        catalog_status: str = "current",
+        catalog_default_active: bool | None = None,
+        activation_group_key: str = "",
     ) -> object:
         class Entry:
             pass
@@ -986,10 +1232,21 @@ class SQLiteSpikeTest(unittest.TestCase):
         entry.competency_id = competency_id
         entry.subject_id = subject_name.casefold()
         entry.subject_display_name = subject_name
+        entry.subject_full_name = subject_name
+        entry.official_subject_name = subject_name
+        entry.school_context_name = "Testkatalog"
+        entry.grade_band = "1-4"
+        entry.learning_stage = learning_stage
         entry.competency_label = label
         entry.competency_text = f"{label} beschreiben"
         entry.learning_area = label
         entry.competency_group = "Grundlage"
+        entry.source_reference = "Testquelle"
+        entry.catalog_status = catalog_status
+        entry.catalog_default_active = (
+            active if catalog_default_active is None else catalog_default_active
+        )
+        entry.activation_group_key = activation_group_key
         entry.is_active = active
         entry.is_core_subject = True
         return entry

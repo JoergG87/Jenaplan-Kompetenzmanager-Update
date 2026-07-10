@@ -1922,8 +1922,8 @@ Die sichtbaren UI-Texte werden daraus abgeleitet und bleiben deutsch.
 
 ### Konsequenzen
 
-- Eine spaetere CSV-Erweiterung soll `learning_stage` ergaenzen.
-- Eine spaetere SQLite-Migration soll `competencies.learning_stage` ergaenzen.
+- Sprint 4A ergaenzt den CSV-Katalog um `learning_stage`.
+- Sprint 4A migriert SQLite `competencies` um `learning_stage` und die Katalogmetadaten `catalog_status`, `catalog_default_active` und `activation_group_key`.
 - `active` bleibt lokale Aktivitaet.
 - `catalog_default_active` speichert den Standardwert aus dem Katalog.
 - `activation_group_key` dient optional aktivierbaren Bereichen.

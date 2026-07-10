@@ -1,10 +1,10 @@
 # Katalogmodell-Empfehlung Sprint 4A
 
-Status: Architektur- und Datenmodellvorschlag. Keine CSV-Aenderung, keine SQLite-Aenderung, keine Migration, keine Code-Aenderung.
+Status: Architektur- und Datenmodellvorschlag, in Sprint 4A technisch umgesetzt. CSV-Katalog, SQLite-Schema, Migration und idempotenter Upsert speichern die Katalogmetadaten dauerhaft.
 
 ## Ausgangslage
 
-Der aktuelle CSV-Katalog `data/curriculum_catalog_v1.csv` enthaelt 212 aktive Kompetenzzeilen in 11 Faechern. Alle Zeilen nutzen aktuell `grade_band = 1-4`.
+Der aktuelle CSV-Katalog `data/curriculum_catalog_v1.csv` enthaelt 212 aktive Kompetenzzeilen in 11 Faechern. Alle Zeilen nutzen aktuell `grade_band = 1-4` und erhalten in Sprint 4A sichere technische Defaults fuer die neuen Katalogfelder.
 
 SQLite speichert im heutigen Feldsatz der Tabelle `competencies` nur die operative Kernprojektion:
 
@@ -35,9 +35,9 @@ Eine Katalogzeile ist genau dann eine bewertbare Kompetenz, wenn sie in einer ko
 
 Historische Katalogeintraege bleiben ueber ihre `competency_id` lesbar. Neue fachliche Praezision entsteht durch neue stabile Kompetenz-IDs, nicht durch Umdeutung bestehender IDs.
 
-## Empfohlene dauerhafte CSV-Struktur
+## Dauerhafte CSV-Struktur
 
-Die CSV sollte dauerhaft folgende Spalten fuehren:
+Die CSV fuehrt dauerhaft folgende Spalten:
 
 | Spalte | Zweck |
 | --- | --- |
@@ -55,13 +55,14 @@ Die CSV sollte dauerhaft folgende Spalten fuehren:
 | `competency_label` | kompaktes UI-Label |
 | `source_reference` | knapper Quellen- oder Arbeitskatalogverweis |
 | `catalog_status` | fachlicher Katalogstatus |
+| `catalog_default_active` | Katalogstandard fuer die initiale Aktivierung |
 | `is_core_subject` | Kernfach-/Standardfach-Kennzeichen |
-| `is_active` | Default-Aktivitaet beim Erstimport |
+| `is_active` | rueckwaertskompatibler Default-Aktivitaetswert alter CSV-Dateien |
 | `activation_group_key` | optionaler Aktivierungsbereich, z. B. fuer optionale Sportbereiche |
 
-`catalog_status` wird empfohlen, damit Bestandsschutz, fachliche Freigabe und spaetere Archivierung nicht allein ueber `is_active` ausgedrueckt werden muessen.
+`catalog_status` wird gespeichert, damit Bestandsschutz, fachliche Freigabe und spaetere Archivierung nicht allein ueber `is_active` oder `active` ausgedrueckt werden muessen.
 
-Empfohlener Wertebereich:
+Wertebereich:
 
 ```text
 current
@@ -88,7 +89,7 @@ stufenuebergreifend
 
 Diese Logik darf nicht in `grade_band` versteckt werden, weil sonst Quelleninformation und Produktfilter vermischt werden.
 
-## Empfohlenes neues Feld
+## Neues Feld
 
 Name: `learning_stage`
 
@@ -117,8 +118,8 @@ Zweck:
 
 Auswirkungen:
 
-- CSV braucht eine neue Spalte `learning_stage`.
-- SQLite braucht spaeter eine neue persistente Spalte `learning_stage`.
+- CSV fuehrt die Spalte `learning_stage`.
+- SQLite fuehrt die persistente Spalte `learning_stage`.
 - `grade_band` bleibt erhalten und wird nicht fuer UI-Filter missbraucht.
 - Beobachtungen werden nicht migriert.
 - Alte Kompetenzen koennen `cross_stage` erhalten, sofern keine fachliche Trennung entschieden wird.
@@ -127,7 +128,7 @@ Auswirkungen:
 
 SQLite ist die produktive lokale Source of Truth. Nach dem Import muss SQLite alle Informationen enthalten, die die App ohne erneutes CSV-Lesen fuer UI, Berichte, Dokumentationsstand, Schuelerprofil und Dashboard braucht.
 
-Empfohlene zukuenftige Struktur fuer `competencies`:
+Struktur fuer `competencies`:
 
 ```text
 competency_id TEXT PRIMARY KEY
@@ -255,7 +256,7 @@ Das Schuelerprofil kann historische Kompetenzstaende unveraendert zeigen und akt
 
 Das Dashboard kann Handlungsbedarf aus Beobachtungen, bestaetigten Staenden und aktiven Katalogzielen ableiten. Es darf keine eigene Kataloglogik speichern.
 
-## Empfohlene Architektur
+## Architektur
 
 Endgueltige Empfehlung:
 

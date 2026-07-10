@@ -93,12 +93,21 @@ class CompetencyRecord:
     competency_id: str
     subject_id: str
     subject_name: str
+    subject_full_name: str
+    official_subject_name: str
+    school_context_name: str
+    grade_band: str
     label: str
     description: str
+    learning_stage: str
     learning_area: str
     competency_group: str
+    source_reference: str
+    catalog_status: str
+    activation_group_key: str
     sort_order: int
     active: bool
+    catalog_default_active: bool
     is_core_subject: bool
 
 
@@ -205,12 +214,23 @@ class SQLiteDatabase:
                         competency_id TEXT PRIMARY KEY,
                         subject_id TEXT NOT NULL,
                         subject_name TEXT NOT NULL,
+                        subject_full_name TEXT NOT NULL DEFAULT '',
+                        official_subject_name TEXT NOT NULL DEFAULT '',
+                        school_context_name TEXT NOT NULL DEFAULT '',
+                        grade_band TEXT NOT NULL DEFAULT '',
                         label TEXT NOT NULL,
                         description TEXT NOT NULL,
+                        learning_stage TEXT NOT NULL DEFAULT 'cross_stage'
+                            CHECK (learning_stage IN ('stage_1_3', 'stage_4', 'cross_stage')),
                         learning_area TEXT NOT NULL,
                         competency_group TEXT,
+                        source_reference TEXT NOT NULL DEFAULT '',
+                        catalog_status TEXT NOT NULL DEFAULT 'current'
+                            CHECK (catalog_status IN ('current', 'legacy')),
+                        activation_group_key TEXT NOT NULL DEFAULT '',
                         sort_order INTEGER NOT NULL DEFAULT 0,
                         active INTEGER NOT NULL CHECK (active IN (0, 1)),
+                        catalog_default_active INTEGER NOT NULL CHECK (catalog_default_active IN (0, 1)) DEFAULT 1,
                         is_core_subject INTEGER NOT NULL CHECK (is_core_subject IN (0, 1)) DEFAULT 1
                     );
 
@@ -316,6 +336,15 @@ class SQLiteDatabase:
                 self._ensure_column(connection, "courses", "color_name", "TEXT NOT NULL DEFAULT ''")
                 self._ensure_column(connection, "courses", "color_hex", "TEXT NOT NULL DEFAULT ''")
                 self._ensure_column(connection, "courses", "sort_order", "INTEGER NOT NULL DEFAULT 0")
+                self._ensure_column(connection, "competencies", "subject_full_name", "TEXT NOT NULL DEFAULT ''")
+                self._ensure_column(connection, "competencies", "official_subject_name", "TEXT NOT NULL DEFAULT ''")
+                self._ensure_column(connection, "competencies", "school_context_name", "TEXT NOT NULL DEFAULT ''")
+                self._ensure_column(connection, "competencies", "grade_band", "TEXT NOT NULL DEFAULT ''")
+                self._ensure_column(connection, "competencies", "learning_stage", "TEXT NOT NULL DEFAULT 'cross_stage'")
+                self._ensure_column(connection, "competencies", "source_reference", "TEXT NOT NULL DEFAULT ''")
+                self._ensure_column(connection, "competencies", "catalog_status", "TEXT NOT NULL DEFAULT 'current'")
+                self._ensure_column(connection, "competencies", "activation_group_key", "TEXT NOT NULL DEFAULT ''")
+                self._ensure_column(connection, "competencies", "catalog_default_active", "INTEGER NOT NULL DEFAULT 1")
                 self._ensure_column(connection, "competencies", "is_core_subject", "INTEGER NOT NULL DEFAULT 1")
                 self._backfill_course_colors(connection)
 
@@ -1122,24 +1151,42 @@ class SQLiteCompetencyRepository:
                         competency_id,
                         subject_id,
                         subject_name,
+                        subject_full_name,
+                        official_subject_name,
+                        school_context_name,
+                        grade_band,
                         label,
                         description,
+                        learning_stage,
                         learning_area,
                         competency_group,
+                        source_reference,
+                        catalog_status,
+                        activation_group_key,
                         sort_order,
                         active,
+                        catalog_default_active,
                         is_core_subject
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(competency_id) DO UPDATE SET
                         subject_id = excluded.subject_id,
                         subject_name = excluded.subject_name,
+                        subject_full_name = excluded.subject_full_name,
+                        official_subject_name = excluded.official_subject_name,
+                        school_context_name = excluded.school_context_name,
+                        grade_band = excluded.grade_band,
                         label = excluded.label,
                         description = excluded.description,
+                        learning_stage = excluded.learning_stage,
                         learning_area = excluded.learning_area,
                         competency_group = excluded.competency_group,
+                        source_reference = excluded.source_reference,
+                        catalog_status = excluded.catalog_status,
+                        activation_group_key = excluded.activation_group_key,
                         sort_order = excluded.sort_order,
                         active = competencies.active,
+                        catalog_default_active = excluded.catalog_default_active,
                         is_core_subject = excluded.is_core_subject
                     """,
                     (
@@ -1156,12 +1203,21 @@ class SQLiteCompetencyRepository:
                     competency_id,
                     subject_id,
                     subject_name,
+                    subject_full_name,
+                    official_subject_name,
+                    school_context_name,
+                    grade_band,
                     label,
                     description,
+                    learning_stage,
                     learning_area,
                     competency_group,
+                    source_reference,
+                    catalog_status,
+                    activation_group_key,
                     sort_order,
                     active,
+                    catalog_default_active,
                     is_core_subject
                 FROM competencies
                 ORDER BY sort_order, competency_id
@@ -1177,12 +1233,21 @@ class SQLiteCompetencyRepository:
                     competency_id,
                     subject_id,
                     subject_name,
+                    subject_full_name,
+                    official_subject_name,
+                    school_context_name,
+                    grade_band,
                     label,
                     description,
+                    learning_stage,
                     learning_area,
                     competency_group,
+                    source_reference,
+                    catalog_status,
+                    activation_group_key,
                     sort_order,
                     active,
+                    catalog_default_active,
                     is_core_subject
                 FROM competencies
                 WHERE competency_id = ?
@@ -1743,16 +1808,28 @@ def _competency_catalog_row(entry: object, index: int) -> tuple[object, ...]:
     subject_id = getattr(entry, "subject_id", None)
     if subject_id is None:
         subject_id = getattr(entry, "subject_key")
+    catalog_default_active = bool(
+        getattr(entry, "catalog_default_active", getattr(entry, "is_active"))
+    )
     return (
         getattr(entry, "competency_id"),
         subject_id,
         getattr(entry, "subject_display_name"),
+        getattr(entry, "subject_full_name", ""),
+        getattr(entry, "official_subject_name", ""),
+        getattr(entry, "school_context_name", ""),
+        getattr(entry, "grade_band", ""),
         label,
         getattr(entry, "competency_text"),
+        getattr(entry, "learning_stage", "cross_stage"),
         getattr(entry, "learning_area"),
         getattr(entry, "competency_group"),
+        getattr(entry, "source_reference", ""),
+        getattr(entry, "catalog_status", "current"),
+        getattr(entry, "activation_group_key", ""),
         index,
-        int(getattr(entry, "is_active")),
+        int(catalog_default_active),
+        int(catalog_default_active),
         int(getattr(entry, "is_core_subject")),
     )
 
@@ -1762,12 +1839,21 @@ def _competency_from_row(row: sqlite3.Row) -> CompetencyRecord:
         row["competency_id"],
         row["subject_id"],
         row["subject_name"],
+        row["subject_full_name"],
+        row["official_subject_name"],
+        row["school_context_name"],
+        row["grade_band"],
         row["label"],
         row["description"],
+        row["learning_stage"],
         row["learning_area"],
         row["competency_group"] or "",
+        row["source_reference"],
+        row["catalog_status"],
+        row["activation_group_key"],
         int(row["sort_order"]),
         bool(row[ACTIVE]),
+        bool(row["catalog_default_active"]),
         bool(row["is_core_subject"]),
     )
 

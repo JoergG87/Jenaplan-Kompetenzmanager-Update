@@ -65,6 +65,8 @@ PySide-Dialoge verwenden fuer produktive Schreibprozesse freigegebene Adapter, C
 
 Beobachtungen werden nicht hart geloescht. `observations.active = 0` blendet eine Beobachtung aus aktiven Profil- und Kompetenzuebersichten aus; die zugehoerigen `observation_competency_ratings` bleiben historisch erhalten.
 
+Der Kompetenzkatalog wird aus `data/curriculum_catalog_v1.csv` idempotent in SQLite `competencies` importiert. `grade_band` bleibt Quellenkontext, `learning_stage` speichert die produktbezogene Filterstufe, `catalog_status` speichert den Katalogstatus, `catalog_default_active` speichert den Katalogstandard und `activation_group_key` bereitet optional aktivierbare Bereiche vor. `competencies.active` bleibt die lokale Aktivierung und darf bei bestehenden `competency_id`s durch den Katalogimport nicht ueberschrieben werden.
+
 VBA-UserForms und worksheet-basierte Dialogseiten sind historische Artefakte der Excel-Linie und kein Zielpfad fuer neue Features.
 
 Feature 1.4a gab historisch fuer `student.create` den Runtime Adapter und den Projection Refresh Contract frei. Dieser Pfad liegt inzwischen unter `legacy/excel/` und ist kein aktiver Standardpfad.
@@ -133,12 +135,21 @@ competencies(
   competency_id TEXT PRIMARY KEY,
   subject_id TEXT NOT NULL,
   subject_name TEXT NOT NULL,
+  subject_full_name TEXT NOT NULL DEFAULT '',
+  official_subject_name TEXT NOT NULL DEFAULT '',
+  school_context_name TEXT NOT NULL DEFAULT '',
+  grade_band TEXT NOT NULL DEFAULT '',
   label TEXT NOT NULL,
   description TEXT NOT NULL,
+  learning_stage TEXT NOT NULL DEFAULT 'cross_stage',
   learning_area TEXT NOT NULL,
   competency_group TEXT,
+  source_reference TEXT NOT NULL DEFAULT '',
+  catalog_status TEXT NOT NULL DEFAULT 'current',
+  activation_group_key TEXT NOT NULL DEFAULT '',
   sort_order INTEGER NOT NULL,
   active INTEGER NOT NULL,
+  catalog_default_active INTEGER NOT NULL DEFAULT 1,
   is_core_subject INTEGER NOT NULL
 )
 

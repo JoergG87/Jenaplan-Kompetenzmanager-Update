@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## Sprint 4A - Kompetenz-Katalogmodell technisch umsetzen
+
+### Added
+
+- CSV-Katalog um `learning_stage`, `catalog_status`, `catalog_default_active` und `activation_group_key` mit sicheren Defaults erweitert, ohne neue Kompetenzen oder neue Kompetenz-IDs einzutragen.
+- SQLite `competencies` um dauerhafte Katalogmetadaten inklusive Quellenkontext, produktbezogener Stufe, Katalogstatus, Katalog-Default-Aktivierung und optionalem Aktivierungsbereich erweitert.
+- Migration fuer bestehende Datenbanken ergaenzt; alte Kompetenzen erhalten konservative Defaults und historische Beobachtungsbewertungen bleiben unveraendert.
+- Tests fuer leere Datenbank, Alt-Schema-Migration, wiederholten Import, neue Katalogfelder, lokale `active`-Werte, historische Ratings, alte CSV-Dateien und Duplikatfreiheit ergaenzt.
+
+### Changed
+
+- Katalog-Upsert aktualisiert fachliche Katalogmetadaten idempotent, schuetzt aber weiterhin `competencies.active` bei bestehenden `competency_id`s.
+- Alte CSV-Dateien ohne Sprint-4A-Spalten werden mit Defaults verarbeitet: `learning_stage = cross_stage`, `catalog_status = current`, `activation_group_key = ''` und `catalog_default_active` aus `is_active`.
+
+### Not Changed
+
+- Keine neuen fachlichen Kompetenzen, keine Aenderung bestehender Kompetenz-IDs, keine Beobachtungsdialog-Aenderung, keine Berichts-/Dashboard-Aenderung, keine Lehrplan-Mapping-Aenderung und keine Migration historischer Beobachtungen oder `observation_competency_ratings`.
+
 ## Sprint 4A - Kompetenz-Katalogmodell finalisieren
 
 ### Added

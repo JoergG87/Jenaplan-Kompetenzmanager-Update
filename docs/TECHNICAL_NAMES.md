@@ -153,11 +153,11 @@ Sprint 3B ergaenzt im CSV-Katalog die optionale Spalte `competency_label`. Sie i
 
 Bewertungen bleiben technisch in `observation_competency_ratings.rating` gespeichert. `observations` erhaelt keine globale Bewertung. Ein nicht bewerteter oder offener Kompetenzaspekt wird nicht als Ratingwert gespeichert, sondern erzeugt keine Zuordnungszeile in `observation_competency_ratings`.
 
-## Sprint-4A-Empfehlung Kompetenzkatalogmodell
+## Sprint-4A Kompetenzkatalogmodell
 
-Status: Vorgeschlagene technische Namen fuer ein spaeteres Katalogmodell. Noch keine CSV-Aenderung, keine SQLite-Aenderung, keine Migration und keine Implementierung.
+Status: Verbindliche technische Namen fuer das produktive Kompetenzkatalogmodell. Sprint 4A speichert diese Felder im CSV-Katalog und in SQLite `competencies`.
 
-Empfohlene neue CSV-/SQLite-Felder:
+Neue CSV-/SQLite-Felder:
 
 | Technischer Name | Zweck |
 | --- | --- |
@@ -166,13 +166,13 @@ Empfohlene neue CSV-/SQLite-Felder:
 | `activation_group_key` | stabiler Aktivierungsbereich fuer optionale Kompetenzgruppen, z. B. optionale Sportbereiche |
 | `catalog_default_active` | aus dem CSV uebernommene Default-Aktivitaet, getrennt von lokaler SQLite-Aktivitaet `active` |
 
-Empfohlene Werte fuer `learning_stage`:
+Zulaessige Werte fuer `learning_stage`:
 
 - `stage_1_3`
 - `stage_4`
 - `cross_stage`
 
-Empfohlene Werte fuer `catalog_status`:
+Zulaessige Werte fuer `catalog_status`:
 
 - `current`
 - `legacy`
@@ -181,7 +181,7 @@ Optional empfohlene spaetere SQLite-Tabelle:
 
 - `competency_activation_groups`
 
-Regel: Diese Namen sind erst fuer einen spaeter freigegebenen Umsetzungs- oder Migrationssprint verbindlich. Sprint 4A dokumentiert nur die Architekturentscheidung und das empfohlene Zielmodell.
+Regel: `grade_band` bleibt Quellenkontext. `learning_stage` ist die produktbezogene Filterstufe. `active` bleibt lokale SQLite-Aktivierung und wird beim erneuten Katalogimport fuer bestehende `competency_id`s nicht aus dem CSV ueberschrieben. `catalog_default_active` speichert nur den Katalogstandard.
 
 ## ID-Felder
 

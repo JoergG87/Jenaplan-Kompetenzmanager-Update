@@ -26,6 +26,9 @@ CATALOG_REQUIRED_FIELDS = (
     "competency_text",
 )
 
+LEARNING_STAGE_VALUES = {"stage_1_3", "stage_4", "cross_stage"}
+CATALOG_STATUS_VALUES = {"current", "legacy"}
+
 
 @dataclass(frozen=True)
 class CurriculumCatalogEntry:
@@ -38,11 +41,15 @@ class CurriculumCatalogEntry:
     official_subject_name: str
     school_context_name: str
     grade_band: str
+    learning_stage: str
     learning_area: str
     competency_group: str
     competency_text: str
     catalog_label: str
     source_reference: str
+    catalog_status: str
+    catalog_default_active: bool
+    activation_group_key: str
     is_core_subject: bool
     is_active: bool
 
@@ -162,6 +169,23 @@ class CurriculumDesktopAdapter:
         row: dict[str, str],
     ) -> CurriculumCatalogEntry:
         self._validate_required_fields(row)
+        catalog_default_active = self._parse_optional_bool(
+            row,
+            "catalog_default_active",
+            self._parse_bool(row["is_active"]),
+        )
+        learning_stage = self._validated_optional_value(
+            row,
+            "learning_stage",
+            "cross_stage",
+            LEARNING_STAGE_VALUES,
+        )
+        catalog_status = self._validated_optional_value(
+            row,
+            "catalog_status",
+            "current",
+            CATALOG_STATUS_VALUES,
+        )
         return CurriculumCatalogEntry(
             competency_id=row["competency_id"].strip(),
             subject_key=row["subject_key"],
@@ -170,13 +194,17 @@ class CurriculumDesktopAdapter:
             official_subject_name=row["official_subject_name"],
             school_context_name=row["school_context_name"],
             grade_band=row["grade_band"],
+            learning_stage=learning_stage,
             learning_area=row["learning_area"],
             competency_group=row["competency_group"],
             competency_text=row["competency_text"],
             catalog_label=row.get("competency_label", "").strip(),
             source_reference=row["source_reference"],
+            catalog_status=catalog_status,
+            catalog_default_active=catalog_default_active,
+            activation_group_key=row.get("activation_group_key", "").strip(),
             is_core_subject=self._parse_bool(row["is_core_subject"]),
-            is_active=self._parse_bool(row["is_active"]),
+            is_active=catalog_default_active,
         )
 
     def _entry_from_competency_record(
@@ -187,15 +215,19 @@ class CurriculumDesktopAdapter:
             competency_id=competency.competency_id,
             subject_key=competency.subject_id,
             subject_display_name=competency.subject_name,
-            subject_full_name=competency.subject_name,
-            official_subject_name=competency.subject_name,
-            school_context_name="SQLite",
-            grade_band="",
+            subject_full_name=competency.subject_full_name,
+            official_subject_name=competency.official_subject_name,
+            school_context_name=competency.school_context_name,
+            grade_band=competency.grade_band,
+            learning_stage=competency.learning_stage,
             learning_area=competency.learning_area,
             competency_group=competency.competency_group,
             competency_text=competency.description,
             catalog_label=competency.label,
-            source_reference="SQLite competencies",
+            source_reference=competency.source_reference,
+            catalog_status=competency.catalog_status,
+            catalog_default_active=competency.catalog_default_active,
+            activation_group_key=competency.activation_group_key,
             is_core_subject=competency.is_core_subject,
             is_active=competency.active,
         )
@@ -219,3 +251,37 @@ class CurriculumDesktopAdapter:
 
     def _parse_bool(self, value: str) -> bool:
         return value.strip().casefold() == "true"
+
+    def _parse_optional_bool(
+        self,
+        row: dict[str, str],
+        field_name: str,
+        default: bool,
+    ) -> bool:
+        value = row.get(field_name)
+        if value is None or not value.strip():
+            return default
+        normalized = value.strip().casefold()
+        if normalized not in {"true", "false"}:
+            raise ValueError(
+                f"Curriculum catalog field {field_name} must be true or false."
+            )
+        return normalized == "true"
+
+    def _validated_optional_value(
+        self,
+        row: dict[str, str],
+        field_name: str,
+        default: str,
+        allowed_values: set[str],
+    ) -> str:
+        value = row.get(field_name, "").strip()
+        if not value:
+            return default
+        if value not in allowed_values:
+            allowed = ", ".join(sorted(allowed_values))
+            raise ValueError(
+                f"Curriculum catalog field {field_name} has unsupported value "
+                f"{value!r}; allowed values: {allowed}."
+            )
+        return value
