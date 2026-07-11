@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Sprint 5B1 - Visueller PySide6-Prototyp des Beobachtungsdialogs
+
+### Added
+
+- Isolierten, nicht persistenten PySide6-UX-Prototyp fuer die neue Beobachtungs-Arbeitsflaeche unter `src/gui/` mit statischen Beispieldaten, Drei-Zonen-Aufteilung, hierarchischem Kompetenzkatalog und Demo-Interaktionen ergaenzt.
+- Startbefehl und Abgrenzung des Prototype-Bereichs in `src/gui/README.md` dokumentiert.
+
+### Not Changed
+
+- Keine produktiven Startpfade, Beobachtungsdialoge, Adapter, ViewModels, Domain-, Application-, Repository-, SQLite-, CSV- oder Legacy-Excel-/VBA-Bestaende geaendert; keine Persistenz, keine Suche, keine Tags, keine Klassenstufenfilter und kein Commit umgesetzt.
+
 ## Sprint 4 - Gesamtabschluss und Dokumentationsabgleich
 
 ### Changed
