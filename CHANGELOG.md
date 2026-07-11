@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## Sprint 4B-5 - Lehrplankatalog Werken und Schulgarten uebernehmen
+
+### Added
+
+- 34 neue Werken-Kompetenzen aus dem freigegebenen Lehrplan-Mapping und der Katalog-Konsolidierung mit neuen global fortlaufenden IDs `CMP-000395` bis `CMP-000428` in `data/curriculum_catalog_v1.csv` ergaenzt.
+- 20 neue Schulgarten-Kompetenzen aus dem freigegebenen Lehrplan-Mapping und der Katalog-Konsolidierung mit neuen global fortlaufenden IDs `CMP-000429` bis `CMP-000448` in `data/curriculum_catalog_v1.csv` ergaenzt.
+
+### Changed
+
+- Die vollstaendig ersetzten Bestandskompetenzen der beiden Faecher als `legacy` markiert und aus den Katalog-Default-Zielen genommen; ihre IDs, Texte und Hierarchien bleiben fuer historische Beobachtungen erhalten.
+
+### Not Changed
+
+- Keine bestehenden Kompetenztexte oder Hierarchien umgedeutet, keine IDs wiederverwendet, keine anderen Fachzeilen, keine SQLite-, UI-, Beobachtungsdialog-, Bericht- oder Schema-Aenderung und kein Commit umgesetzt.
+
 ## Sprint 4B-3 - Lehrplankatalog Mathematik uebernehmen
 
 ### Added
