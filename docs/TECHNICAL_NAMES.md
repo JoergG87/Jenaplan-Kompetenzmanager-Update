@@ -163,7 +163,7 @@ Neue CSV-/SQLite-Felder:
 | --- | --- |
 | `learning_stage` | produktbezogene Filterstufe einer Kompetenz, getrennt vom quellenbezogenen `grade_band` |
 | `catalog_status` | fachlicher Katalogstatus fuer Freigabe, Bestandsschutz und spaetere Archivierung |
-| `activation_group_key` | stabiler Aktivierungsbereich fuer optionale Kompetenzgruppen, z. B. optionale Sportbereiche |
+| `activation_group_key` | stabiler, generischer Aktivierungsbereich fuer optionale Kompetenzgruppen |
 | `catalog_default_active` | aus dem CSV uebernommene Default-Aktivitaet, getrennt von lokaler SQLite-Aktivitaet `active` |
 
 Zulaessige Werte fuer `learning_stage`:
@@ -181,7 +181,7 @@ Optional empfohlene spaetere SQLite-Tabelle:
 
 - `competency_activation_groups`
 
-Regel: `grade_band` bleibt Quellenkontext. `learning_stage` ist die produktbezogene Filterstufe. `active` bleibt lokale SQLite-Aktivierung und wird beim erneuten Katalogimport fuer bestehende `competency_id`s nicht aus dem CSV ueberschrieben. `catalog_default_active` speichert nur den Katalogstandard.
+Regel: `grade_band` bleibt Quellenkontext. `learning_stage` ist die produktbezogene Filterstufe. `active` bleibt lokale SQLite-Aktivierung und wird beim erneuten Katalogimport fuer bestehende `competency_id`s nicht aus dem CSV ueberschrieben. `catalog_default_active` speichert nur den Katalogstandard. `catalog_status = current` ist der Standard; `catalog_status = legacy` ist ausschliesslich fuer historische Kompetenzen vorgesehen. Legacy-Kompetenzen sind standardmaessig keine neuen Dokumentationsziele.
 
 ## ID-Felder
 
@@ -219,6 +219,7 @@ Regeln:
 - IDs sind technische Identitaeten und bleiben stabil.
 - Sichtbare Namen duerfen sich aendern, IDs nicht.
 - Neue IDs werden fortlaufend je Entity erzeugt.
+- Neue `competency_id`s werden global fortlaufend als `CMP-######` erzeugt; es gibt keine fachbezogenen Nummernkreise und keine Wiederverwendung vorhandener oder uebersprungener IDs.
 - Historische Seed-IDs wurden fuer Student in Sprint 4.2c kontrolliert migriert.
 - VBA-Navigation verwendet weiterhin ausschliesslich das jeweilige ID-Feld, nicht das konkrete Praefix.
 
@@ -448,6 +449,13 @@ Registrierte Spike-Skripte:
 
 - `scripts/create_sqlite_spike.py`
 - `scripts/seed_test_data.py`
+
+Registrierte interne QS-Skripte fuer den Kompetenzkatalog:
+
+- `scripts/validate_curriculum_catalog.py`
+- `scripts/compare_curriculum_catalog.py`
+- `scripts/next_competency_ids.py`
+- `scripts/curriculum_catalog_tools.py`
 
 ## Application Command Layer
 

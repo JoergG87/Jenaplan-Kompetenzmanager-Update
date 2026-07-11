@@ -293,11 +293,15 @@ Wichtige Felder:
 - `official_subject_name`
 - `school_context_name`
 - `grade_band`
+- `learning_stage`
 - `learning_area`
 - `competency_group`
 - `competency_text`
 - `competency_label`
 - `source_reference`
+- `catalog_status`
+- `catalog_default_active`
+- `activation_group_key`
 - `is_core_subject`
 - `is_active`
 
@@ -305,9 +309,12 @@ Regeln:
 
 - Der Katalog wird nur lesend verwendet.
 - `competency_id` ist eine stabile Katalog-ID im Format `CMP-######`.
-- Neue konkrete Kompetenzen werden mit neuen IDs ergaenzt; bestehende IDs werden nicht fachlich umgedeutet.
+- Neue konkrete Kompetenzen werden mit neuen global fortlaufenden IDs ergaenzt; bestehende IDs werden nicht fachlich umgedeutet oder wiederverwendet.
 - `competency_label` befuellt beim Import das bestehende SQLite-Feld `competencies.label`; es ist keine neue SQLite-Spalte.
 - Der SQLite-Katalogimport ist idempotent: neue CSV-IDs werden in bestehende lokale Datenbanken eingefuegt, vorhandene lokale Nicht-CSV-Kompetenzen bleiben erhalten und `competencies.active` vorhandener IDs wird nicht ungefragt aus dem CSV ueberschrieben.
+- Vor fachlichen CSV-Aenderungen pruefen die internen Werkzeuge `scripts/validate_curriculum_catalog.py`, `scripts/compare_curriculum_catalog.py` und `scripts/next_competency_ids.py` Header, Pflichtfelder, Wertebereiche, ID-Stabilitaet, stille Text-/Hierarchieveraenderungen und die naechsten freien globalen IDs.
+- `catalog_status = current` ist Standard. `catalog_status = legacy` dient ausschliesslich historischen Kompetenzen und macht diese nicht automatisch zu neuen Dokumentationszielen.
+- `catalog_default_active = false` bedeutet, dass neue optionale Kompetenzen beim Erstimport standardmaessig deaktiviert werden.
 - Alte grobe Kompetenzen bleiben historisch lesbar. Sie duerfen spaeter deaktiviert oder archiviert, aber nicht geloescht werden.
 - Bestehende `observation_competency_ratings` bleiben gueltig und werden nicht automatisch auf neue konkrete Kompetenzen migriert.
 - Er erzeugt selbst keine Beobachtung; der PySide-Adapter uebergibt die Katalog-IDs an `observation_competency_ratings`.

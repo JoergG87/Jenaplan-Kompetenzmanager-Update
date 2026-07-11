@@ -513,6 +513,28 @@ Automatisch profitierende Ansichten:
 
 Regel: Der Import ist ab Sprint 3B ein idempotenter Upsert. Bei leerer Tabelle wird der vollstaendige CSV-Katalog importiert. Bei bestehenden lokalen Datenbanken werden neue CSV-IDs eingefuegt und vorhandene CSV-IDs aktualisiert, ohne lokale Nicht-CSV-Kompetenzen zu loeschen. Sprint 4A aktualisiert dabei auch `grade_band`, `learning_stage`, `catalog_status`, `catalog_default_active` und `activation_group_key`. `competencies.active` vorhandener IDs wird nicht aus dem CSV ueberschrieben, damit alte grobe oder lokal deaktivierte Kompetenzen nicht ungefragt reaktiviert oder deaktiviert werden. `catalog_default_active` speichert nur den Katalogstandard. Kompetenzstaende werden weiterhin aus Beobachtungen abgeleitet und nicht manuell doppelt gespeichert. Alte grobe Kompetenzen bleiben historisch lesbar und bestehende `observation_competency_ratings` werden nicht automatisch auf spaetere konkrete Kompetenzen migriert. Fehlen Sprint-4A-Spalten in alten CSV-Dateien, setzt der Parser sichere Defaults: `learning_stage = cross_stage`, `catalog_status = current`, `activation_group_key = ''` und `catalog_default_active` aus dem alten `is_active`. Der Sprint-3B-Katalog ist ein Arbeitskatalog/Entwurf und muss fachlich von Laura geprueft werden.
 
+## Kompetenzkatalog qualitaetssichern
+
+Start: Vor einer fachlichen Ueberarbeitung von `data/curriculum_catalog_v1.csv`.
+
+Schreibprozess: Kein fachlicher Schreibprozess. Die internen QS-Skripte lesen CSV-Dateien und melden Struktur-, ID- und Bestandsschutzverletzungen.
+
+Freigegebener Pruefpfad:
+
+```text
+data/curriculum_catalog_v1.csv
+-> scripts/validate_curriculum_catalog.py
+-> scripts/compare_curriculum_catalog.py
+-> scripts/next_competency_ids.py
+```
+
+Betroffene Datenquellen:
+
+- `data/curriculum_catalog_v1.csv` nur lesend
+- Vergleichskopie eines frueheren oder freigegebenen CSV-Katalogs nur lesend
+
+Regel: Vor CSV-Aenderungen wird der aktuelle Katalog validiert. Vor Uebernahme einer neuen Katalogversion wird sie gegen den freigegebenen Altstand verglichen. Bestehende `competency_id`s duerfen niemals fachlich umgedeutet oder wiederverwendet werden; Text-, Hierarchie-, Status- und Stufenaenderungen an bestehenden IDs muessen durch das Vergleichswerkzeug sichtbar werden. Neue Kompetenz-IDs werden mit `scripts/next_competency_ids.py` global fortlaufend vergeben; fachbezogene Nummernkreise und Wiederverwendung von Luecken sind ausgeschlossen. Die QS-Skripte schreiben nicht in SQLite, erzeugen keine Migration und veraendern keine UI-Projektionen.
+
 ## Testdaten fuer Laura-Pilottest erzeugen
 
 Start: Fuer einen Pilottest soll die lokale SQLite-Datenbank mit kuenstlichen Daten befuellt werden.
