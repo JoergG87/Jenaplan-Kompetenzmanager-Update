@@ -244,41 +244,57 @@ class StudentDesktopAdapter:
             for option in self.list_documentation_subject_options()
             if option.selected
         ]
-        initial_subject_key = self._initial_observation_subject_key(initial_draft)
-        if initial_subject_key and initial_subject_key not in {
-            option.subject_key for option in options
-        }:
-            initial_subject_label = self._initial_observation_subject_label(
-                initial_draft
-            ) or initial_subject_key
+        existing_subject_keys = {option.subject_key for option in options}
+        initial_subjects = (
+            tuple(
+                (rating.subject_key, rating.subject_display_name)
+                for rating in initial_draft.competency_ratings
+                if rating.subject_key
+            )
+            if initial_draft is not None and initial_draft.competency_ratings
+            else (
+                (
+                    self._initial_observation_subject_key(initial_draft),
+                    self._initial_observation_subject_label(initial_draft),
+                ),
+            )
+        )
+        for subject_key, subject_label in initial_subjects:
+            if not subject_key or subject_key in existing_subject_keys:
+                continue
             options.append(
                 ObservationSubjectOptionViewModel(
-                    initial_subject_key,
-                    f"{initial_subject_label} (nicht dokumentationsrelevant)",
+                    subject_key,
+                    f"{subject_label or subject_key} (nicht dokumentationsrelevant)",
                 )
             )
+            existing_subject_keys.add(subject_key)
         return tuple(options)
 
     def list_observation_competency_subject_groups(
         self,
         initial_draft: ObservationDraftViewModel | None = None,
     ) -> tuple[ObservationCompetencySubjectGroupViewModel, ...]:
-        """Return active observation competencies grouped for later dialog rendering."""
+        """Return active and persisted observation competencies for dialog rendering."""
         selected_ratings = {
             rating.competency_id: rating.rating
             for rating in (initial_draft.competency_ratings if initial_draft else ())
             if rating.competency_id
         }
         curriculum_adapter = CurriculumDesktopAdapter(database=self.database)
+        catalog_entries = curriculum_adapter.list_entries()
         subject_groups: list[ObservationCompetencySubjectGroupViewModel] = []
         for subject_option in self.list_observation_subject_options(initial_draft):
             learning_area_groups: dict[
                 str,
                 dict[str, list[ObservationCompetencyOptionViewModel]],
             ] = {}
-            for competency in curriculum_adapter.list_competencies_for_subject(
-                subject_option.subject_key
-            ):
+            for competency in catalog_entries:
+                if competency.subject_key != subject_option.subject_key or (
+                    not competency.is_active
+                    and competency.competency_id not in selected_ratings
+                ):
+                    continue
                 option = ObservationCompetencyOptionViewModel(
                     competency_id=competency.competency_id,
                     subject_key=competency.subject_key,

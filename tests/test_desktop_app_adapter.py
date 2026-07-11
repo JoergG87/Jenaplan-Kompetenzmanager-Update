@@ -667,6 +667,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
             isinstance(group, ObservationCompetencySubjectGroupViewModel)
             for group in groups
         ))
+        self.assertIsNone(
+            self._find_observation_competency_option(groups, "CMP-000020")
+        )
 
     def test_observation_competency_hierarchy_uses_documentation_subjects(
         self,
@@ -758,6 +761,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self,
     ) -> None:
         self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+        legacy_competency = next(
+            competency
+            for competency in CurriculumDesktopAdapter(
+                database=self.database
+            ).list_entries()
+            if competency.competency_id == "CMP-000020"
+        )
+        self.assertEqual(legacy_competency.catalog_status, "legacy")
+        self.assertFalse(legacy_competency.is_active)
         initial_draft = self._sample_observation_draft(
             subject_id="musik",
             subject_display_name="Musik",
