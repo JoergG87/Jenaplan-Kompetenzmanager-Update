@@ -897,18 +897,23 @@ class SQLiteSpikeTest(unittest.TestCase):
         by_subject: dict[str, list[object]] = {}
         for competency in competencies:
             by_subject.setdefault(competency.subject_id, []).append(competency)
-        self.assertEqual(by_id["CMP-000083"].subject_id, "mathematik")
-        self.assertEqual(by_id["CMP-000083"].learning_area, "Groessen und Messen")
-        self.assertEqual(by_id["CMP-000083"].competency_group, "Zeit")
+        self.assertEqual(by_id["CMP-000318"].subject_id, "mathematik")
         self.assertEqual(
-            by_id["CMP-000083"].description,
-            "volle Stunden auf einer analogen Uhr ablesen",
+            by_id["CMP-000318"].learning_area,
+            "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
         )
-        self.assertEqual(by_id["CMP-000083"].grade_band, "1-4")
-        self.assertEqual(by_id["CMP-000083"].learning_stage, "cross_stage")
-        self.assertEqual(by_id["CMP-000083"].catalog_status, "current")
-        self.assertTrue(by_id["CMP-000083"].catalog_default_active)
-        self.assertEqual(by_id["CMP-000083"].activation_group_key, "")
+        self.assertEqual(by_id["CMP-000318"].competency_group, "Zeit")
+        self.assertEqual(
+            by_id["CMP-000318"].description,
+            "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.",
+        )
+        self.assertEqual(by_id["CMP-000318"].grade_band, "1-4")
+        self.assertEqual(by_id["CMP-000318"].learning_stage, "cross_stage")
+        self.assertEqual(by_id["CMP-000318"].catalog_status, "current")
+        self.assertTrue(by_id["CMP-000318"].catalog_default_active)
+        self.assertEqual(by_id["CMP-000318"].activation_group_key, "")
+        self.assertEqual(by_id["CMP-000083"].catalog_status, "legacy")
+        self.assertFalse(by_id["CMP-000083"].catalog_default_active)
         self.assertEqual(by_id["CMP-000059"].subject_id, "deutsch")
         self.assertEqual(by_id["CMP-000099"].subject_id, "epu")
         self.assertIn("sozialkompetenz", by_subject)
@@ -942,7 +947,7 @@ class SQLiteSpikeTest(unittest.TestCase):
                 f"{OBSERVATION_ID_PREFIX}-000001"
             )
             old_competency = competency_repository.get_competency("CMP-000001")
-            new_competency = competency_repository.get_competency("CMP-000083")
+            new_competency = competency_repository.get_competency("CMP-000318")
 
         self.assertIsNotNone(stored_observation)
         if stored_observation is not None:

@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Sprint 4B-3 - Lehrplankatalog Mathematik uebernehmen
+
+### Added
+
+- 54 neue Mathematik-Kompetenzen aus dem freigegebenen Lehrplan-Mapping und der Katalog-Konsolidierung mit neuen global fortlaufenden IDs `CMP-000295` bis `CMP-000348` in `data/curriculum_catalog_v1.csv` ergaenzt.
+
+### Changed
+
+- Die bisherigen Mathematik-Bestandskompetenzen `CMP-000006` bis `CMP-000010` sowie `CMP-000079` bis `CMP-000098` als `legacy` markiert und aus den Katalog-Default-Zielen genommen.
+
+### Not Changed
+
+- Keine bestehenden Mathematik-Kompetenztexte oder Hierarchien umgedeutet, keine IDs wiederverwendet, keine Deutsch- oder anderen Fachzeilen geaendert, keine SQLite-, UI-, Dashboard-, Beobachtungsdialog- oder Berichts-Aenderung und kein Commit umgesetzt.
+
 ## Sprint 4B-2 - Lehrplankatalog Deutsch uebernehmen
 
 ### Added
