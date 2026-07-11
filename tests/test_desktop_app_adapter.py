@@ -2808,8 +2808,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(all(entry.competency_detail_label for entry in entries))
         self.assertEqual(entries[0].competency_id, "CMP-000001")
         self.assertEqual(entries[0].subject_id, "deutsch")
-        self.assertEqual(entries[-1].competency_id, "CMP-000490")
-        self.assertEqual(entries[-1].subject_id, "sport")
+        self.assertEqual(entries[-1].competency_id, "CMP-000576")
+        self.assertEqual(entries[-1].subject_id, "epu")
 
     def test_curriculum_catalog_maps_kunst_to_kunsterziehung(self) -> None:
         kunst_entries = [
@@ -2863,7 +2863,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertGreaterEqual(len(epu_competencies), 30)
         self.assertTrue(all(entry.subject_key == "epu" for entry in epu_competencies))
         self.assertTrue(any(
-            entry.learning_area == "Natur und Umwelt"
+            entry.learning_area == "Natur und Technik"
             for entry in epu_competencies
         ))
         self.assertTrue(all(

@@ -587,11 +587,6 @@ class StudentDesktopAdapter:
         observations = SQLiteObservationRepository(
             self.database
         ).list_observations_for_student(student_id)
-        active_competencies = self._active_competencies()
-        competencies = {
-            competency.competency_id: competency
-            for competency in active_competencies
-        }
         confirmations = {
             confirmation.competency_id: confirmation
             for confirmation in SQLiteStudentCompetencyConfirmationRepository(
@@ -604,6 +599,13 @@ class StudentDesktopAdapter:
                 histories_by_competency.setdefault(rating.competency_id, []).append(
                     (rating, observation.date)
                 )
+        active_competencies = self._active_competencies()
+        referenced_competency_ids = set(histories_by_competency) | set(confirmations)
+        competencies = {
+            competency.competency_id: competency
+            for competency in SQLiteCompetencyRepository(self.database).list_competencies()
+            if competency.active or competency.competency_id in referenced_competency_ids
+        }
         observed_statuses = tuple(
             self._competency_status_view_model(
                 tuple(entries),

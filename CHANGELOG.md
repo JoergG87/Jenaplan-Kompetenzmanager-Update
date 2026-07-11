@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## Sprint 4B-7 - Lehrplankatalog Heimat- und Sachkunde / EPU uebernehmen
+
+### Added
+
+- 86 neue EPU-Kompetenzen aus dem freigegebenen Lehrplan-Mapping, der Katalog-Konsolidierung und den Product-Owner-Entscheidungen mit neuen global fortlaufenden IDs `CMP-000491` bis `CMP-000576` in `data/curriculum_catalog_v1.csv` ergaenzt.
+
+### Changed
+
+- Die vollstaendig ersetzten EPU-Bestandskompetenzen als `legacy` markiert und aus den Katalog-Default-Zielen genommen; ihre IDs, Texte und Hierarchien bleiben fuer historische Beobachtungen erhalten.
+- Bereits gespeicherte EPU-Bestaetigungen und Beobachtungen bleiben in der bestehenden Kompetenz- und Berichtsprojektion sichtbar, auch wenn ihre Katalogkompetenz inzwischen `legacy` oder inaktiv ist.
+
+### Not Changed
+
+- Keine bestehenden EPU-Kompetenztexte oder Hierarchien umgedeutet, keine IDs wiederverwendet, keine anderen Fachzeilen, keine SQLite-, UI-, Beobachtungsdialog-, Bericht- oder Schema-Aenderung und kein Commit umgesetzt.
+
 ## Sprint 4B-6 - Lehrplankatalog Sport uebernehmen
 
 ### Added
