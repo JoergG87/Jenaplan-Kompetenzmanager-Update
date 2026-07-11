@@ -917,12 +917,38 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertEqual(by_id["CMP-000059"].subject_id, "deutsch")
         self.assertEqual(by_id["CMP-000099"].subject_id, "epu")
         self.assertIn("sozialkompetenz", by_subject)
-        self.assertGreaterEqual(len(by_subject["sozialkompetenz"]), 18)
-        self.assertTrue(any(
-            competency.competency_group == "Absprachen"
-            and competency.description
-            == "eine vereinbarte Aufgabe in der Partner- oder Gruppenarbeit übernehmen"
+        current_social_competencies = [
+            competency
             for competency in by_subject["sozialkompetenz"]
+            if competency.catalog_status == "current"
+        ]
+        legacy_social_competencies = [
+            competency
+            for competency in by_subject["sozialkompetenz"]
+            if competency.catalog_status == "legacy"
+        ]
+        current_ethics_competencies = [
+            competency
+            for competency in by_subject["ethik"]
+            if competency.catalog_status == "current"
+        ]
+        legacy_ethics_competencies = [
+            competency
+            for competency in by_subject["ethik"]
+            if competency.catalog_status == "legacy"
+        ]
+        self.assertEqual(len(current_social_competencies), 12)
+        self.assertEqual(len(legacy_social_competencies), 24)
+        self.assertEqual(len(current_ethics_competencies), 58)
+        self.assertEqual(len(legacy_ethics_competencies), 15)
+        self.assertTrue(any(
+            competency.competency_group == "Rollen und Absprachen"
+            and competency.description
+            == (
+                "Eine übernommene Rolle ausführen und Änderungen einer Absprache "
+                "mit der Gruppe klären."
+            )
+            for competency in current_social_competencies
         ))
 
     def test_competency_catalog_upsert_keeps_existing_ratings_readable(self) -> None:

@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## Sprint 4B-8 - Lehrplankatalog Ethik und Sozialkompetenz uebernehmen
+
+### Added
+
+- 58 neue Ethik-Kompetenzen aus dem freigegebenen Ethik-Mapping, der Katalog-Konsolidierung und den Product-Owner-Entscheidungen mit den global fortlaufenden IDs `CMP-000577` bis `CMP-000620` sowie `CMP-000633` bis `CMP-000646` ergaenzt.
+- 12 neue, eigenstaendige Sozialkompetenzen fuer beobachtbare Zusammenarbeit, Dialog, Gemeinschaftsgestaltung und Konfliktbearbeitung mit den IDs `CMP-000621` bis `CMP-000632` ergaenzt.
+
+### Changed
+
+- Die vollstaendig ersetzten Ethik- und Sozialkompetenz-Bestandskompetenzen als `legacy` markiert und aus den Katalog-Default-Zielen genommen; ihre IDs, Texte und Hierarchien bleiben fuer historische Beobachtungen erhalten.
+- Den Katalogimport-Test auf die neue Anzahl aktueller und historischer Ethik- und Sozialkompetenzzeilen sowie eine aktuelle Sozialkompetenz ausgerichtet.
+
+### Not Changed
+
+- Keine bestehenden Kompetenztexte oder Hierarchien umgedeutet, keine IDs wiederverwendet, keine Religion- oder anderen Fachzeilen, keine SQLite-, UI-, Beobachtungsdialog-, Bericht- oder Schema-Aenderung und kein Commit umgesetzt.
+
 ## Sprint 4B-7 - Lehrplankatalog Heimat- und Sachkunde / EPU uebernehmen
 
 ### Added
