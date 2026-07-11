@@ -553,7 +553,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertGreater(len(options), 0)
         self.assertEqual(
             tuple(option.subject_id for option in options[:4]),
-            ("deutsch", "mathematik", "epu", "sozialkompetenz"),
+            ("deutsch", "mathematik", "epu", "musik"),
         )
         self.assertIn("Sozialkompetenz", tuple(option.label for option in options))
         self.assertTrue(all(option.selected for option in options))
@@ -2808,8 +2808,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(all(entry.competency_detail_label for entry in entries))
         self.assertEqual(entries[0].competency_id, "CMP-000001")
         self.assertEqual(entries[0].subject_id, "deutsch")
-        self.assertEqual(entries[-1].competency_id, "CMP-000448")
-        self.assertEqual(entries[-1].subject_id, "schulgarten")
+        self.assertEqual(entries[-1].competency_id, "CMP-000490")
+        self.assertEqual(entries[-1].subject_id, "sport")
 
     def test_curriculum_catalog_maps_kunst_to_kunsterziehung(self) -> None:
         kunst_entries = [

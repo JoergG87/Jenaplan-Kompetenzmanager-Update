@@ -43,7 +43,10 @@ from src.core.sqlite_store import (
 )
 from src.core.student import StudentService, StudentValidator
 from src.core.records import CourseRecord, GroupRecord, StudentRecord
-from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
+from src.desktop_app.adapters.curriculum_desktop_adapter import (
+    CurriculumDesktopAdapter,
+    DOCUMENTATION_SUBJECT_PREFERRED_ORDER,
+)
 from src.desktop_app.view_models.master_data_view_model import course_color_from_key
 from src.desktop_app.view_models.observation_view_model import (
     OBSERVATION_CROSS_SUBJECT_LABEL,
@@ -84,18 +87,6 @@ from src.desktop_app.view_models.student_view_model import (
     documentation_summary_from_subjects,
     sort_student_list,
 )
-
-
-DOCUMENTATION_SUBJECT_PREFERRED_ORDER = (
-    "deutsch",
-    "mathematik",
-    "epu",
-    "sozialkompetenz",
-    "musik",
-    "kunst",
-    "sport",
-)
-
 
 class StudentDesktopAdapter:
     """Thin adapter between Qt widgets and the application command layer."""

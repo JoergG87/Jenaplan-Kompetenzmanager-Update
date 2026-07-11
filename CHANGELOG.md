@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## Sprint 4B-6 - Lehrplankatalog Sport uebernehmen
+
+### Added
+
+- 42 neue Sport-Kompetenzen aus dem freigegebenen Lehrplan-Mapping und der Katalog-Konsolidierung mit neuen global fortlaufenden IDs `CMP-000449` bis `CMP-000490` in `data/curriculum_catalog_v1.csv` ergaenzt.
+- Die optionalen Lernbereiche Ski- und Eislaufen, Inline Skating und Federball als standardmaessig inaktive Aktivierungsgruppen vorbereitet.
+
+### Changed
+
+- Die vollstaendig ersetzten Sport-Bestandskompetenzen als `legacy` markiert und aus den Katalog-Default-Zielen genommen; ihre IDs, Texte und Hierarchien bleiben fuer historische Beobachtungen erhalten.
+- Die aktive Fachauswahl verwendet die bestehende kanonische Fachreihenfolge statt der Reihenfolge der ersten aktiven CSV-Zeile je Fach.
+
+### Not Changed
+
+- Keine bestehenden Sport-Kompetenztexte oder Hierarchien umgedeutet, keine IDs wiederverwendet, keine anderen Fachzeilen, keine SQLite-, UI-, Beobachtungsdialog-, Bericht- oder Schema-Aenderung und kein Commit umgesetzt.
+
 ## Sprint 4B-5 - Lehrplankatalog Werken und Schulgarten uebernehmen
 
 ### Added

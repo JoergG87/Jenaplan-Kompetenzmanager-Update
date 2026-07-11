@@ -29,6 +29,20 @@ CATALOG_REQUIRED_FIELDS = (
 LEARNING_STAGE_VALUES = {"stage_1_3", "stage_4", "cross_stage"}
 CATALOG_STATUS_VALUES = {"current", "legacy"}
 
+DOCUMENTATION_SUBJECT_PREFERRED_ORDER = (
+    "deutsch",
+    "mathematik",
+    "epu",
+    "musik",
+    "kunst",
+    "sport",
+    "sozialkompetenz",
+    "ethik",
+    "religion",
+    "werken",
+    "schulgarten",
+)
+
 
 @dataclass(frozen=True)
 class CurriculumCatalogEntry:
@@ -123,7 +137,7 @@ class CurriculumDesktopAdapter:
         return entries
 
     def list_active_subjects(self) -> tuple[CurriculumSubjectOption, ...]:
-        """Return active subject options, core subjects first."""
+        """Return active subject options in the canonical subject order."""
         subject_by_key: dict[str, CurriculumSubjectOption] = {}
         for entry in self.list_entries():
             if not entry.is_active:
@@ -139,7 +153,13 @@ class CurriculumDesktopAdapter:
         return tuple(
             sorted(
                 subject_by_key.values(),
-                key=lambda subject: (not subject.is_core_subject, list(subject_by_key).index(subject.subject_key)),
+                key=lambda subject: (
+                    DOCUMENTATION_SUBJECT_PREFERRED_ORDER.index(subject.subject_key)
+                    if subject.subject_key in DOCUMENTATION_SUBJECT_PREFERRED_ORDER
+                    else len(DOCUMENTATION_SUBJECT_PREFERRED_ORDER),
+                    subject.display_name.casefold(),
+                    subject.subject_key,
+                ),
             )
         )
 
