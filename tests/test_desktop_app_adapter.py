@@ -2808,7 +2808,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(all(entry.competency_detail_label for entry in entries))
         self.assertEqual(entries[0].competency_id, "CMP-000001")
         self.assertEqual(entries[0].subject_id, "deutsch")
-        self.assertEqual(entries[-1].competency_id, "CMP-000212")
+        self.assertEqual(entries[-1].competency_id, "CMP-000448")
+        self.assertEqual(entries[-1].subject_id, "schulgarten")
 
     def test_curriculum_catalog_maps_kunst_to_kunsterziehung(self) -> None:
         kunst_entries = [
