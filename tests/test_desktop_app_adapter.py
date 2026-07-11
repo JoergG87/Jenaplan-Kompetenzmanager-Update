@@ -701,11 +701,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
             )
             self.assertEqual(competency.competency_label, "Volle Stunden")
 
-    def test_observation_competency_hierarchy_keeps_old_active_competency(
+    def test_observation_competency_hierarchy_keeps_current_deutsch_competency(
         self,
     ) -> None:
         groups = self.adapter.list_observation_competency_subject_groups()
-        competency = self._find_observation_competency_option(groups, "CMP-000001")
+        competency = self._find_observation_competency_option(groups, "CMP-000241")
 
         self.assertIsNotNone(competency)
         if competency is not None:
@@ -713,8 +713,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
             self.assertEqual(competency.subject_display_name, "Deutsch")
             self.assertEqual(
                 competency.competency_text,
-                "Texte lesen, zentrale Informationen entnehmen und "
-                "eigene Leseeindrücke beschreiben",
+                "Wörter, Sätze sowie literarische und nicht literarische "
+                "altersgemäße Texte sinnverstehend lesen",
             )
 
     def test_observation_competency_hierarchy_marks_initial_draft_rating(
@@ -899,9 +899,22 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     SET label = ?
                     WHERE competency_id = ?
                     """,
-                    ("SQLite-Lesekompetenz", "CMP-000001"),
+                    ("SQLite-Lesekompetenz", "CMP-000241"),
                 )
-        self.adapter.save_observation(self._sample_observation_draft())
+        self.adapter.save_observation(self._sample_observation_draft(
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000241",
+                    "deutsch",
+                    "Deutsch",
+                    "Leseverstehen",
+                    "Sinnverstehendes Lesen",
+                    "Wörter, Sätze sowie literarische und nicht literarische "
+                    "altersgemäße Texte sinnverstehend lesen",
+                    "+",
+                ),
+            ),
+        ))
 
         groups = self.adapter.list_competency_overview_for_student(
             f"{STUDENT_ID_PREFIX}-000001"
@@ -1166,7 +1179,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_competency_overview_shows_confirmed_status_without_active_observation(self) -> None:
         self.adapter.save_competency_confirmation(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
-            competency_id="CMP-000001",
+            competency_id="CMP-000241",
             confirmed_rating="+",
             note="im Lerngespraech bestaetigt",
         )
@@ -1180,7 +1193,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         status = next(
             competency
             for competency in deutsch_group.competencies
-            if competency.competency_id == "CMP-000001"
+            if competency.competency_id == "CMP-000241"
         )
 
         self.assertEqual(status.rating, "+")
@@ -1190,14 +1203,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(status.confirmation_note, "im Lerngespraech bestaetigt")
         self.assertEqual(status.confirmation_status_label, "von Laura bestätigt: +")
         self.assertNotIn(
-            "CMP-000001",
+            "CMP-000241",
             {competency.competency_id for competency in deutsch_group.missing_competencies},
         )
 
     def test_report_preview_uses_confirmation_without_active_observation(self) -> None:
         self.adapter.save_competency_confirmation(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
-            competency_id="CMP-000001",
+            competency_id="CMP-000241",
             confirmed_rating="+",
         )
 
@@ -1222,7 +1235,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertEqual(
             deutsch_section.current_statuses[0].display_label,
-            "Mit Texten und Medien umgehen · "
+            "Sinnverstehend lesen · "
             "Aktueller Stand: + erreicht · von Laura bestätigt",
         )
         self.assertEqual(deutsch_section.development, ())
@@ -1233,19 +1246,20 @@ class DesktopAppAdapterTest(unittest.TestCase):
             date_text="2026-07-03",
             competency_ratings=(
                 self._sample_observation_rating(
-                    "CMP-000001",
+                    "CMP-000241",
                     "deutsch",
                     "Deutsch",
-                    "Mit Texten und Medien umgehen",
-                    "Lesen und Verstehen",
-                    "Texte lesen und zentrale Informationen entnehmen",
+                    "Leseverstehen",
+                    "Sinnverstehendes Lesen",
+                    "Wörter, Sätze sowie literarische und nicht literarische "
+                    "altersgemäße Texte sinnverstehend lesen",
                     "-",
                 ),
             ),
         ))
         self.adapter.save_competency_confirmation(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
-            competency_id="CMP-000001",
+            competency_id="CMP-000241",
             confirmed_rating="+",
         )
         self.adapter.delete_observation("OBS-000001")
@@ -1260,7 +1274,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             competency
             for group in groups
             for competency in group.competencies
-            if competency.competency_id == "CMP-000001"
+            if competency.competency_id == "CMP-000241"
         )
         deutsch_section = next(
             section
@@ -1278,7 +1292,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertEqual(
             deutsch_section.current_statuses[0].display_label,
-            "Mit Texten und Medien umgehen · "
+            "Sinnverstehend lesen · "
             "Aktueller Stand: + erreicht · von Laura bestätigt",
         )
         self.assertEqual(deutsch_section.development, ())
@@ -1726,21 +1740,22 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.adapter.save_observation(self._sample_observation_draft(
             competency_ratings=(
                 self._sample_observation_rating(
-                    "CMP-000001",
+                    "CMP-000241",
                     "deutsch",
                     "Deutsch",
-                    "Mit Texten und Medien umgehen",
-                    "Lesen und Verstehen",
-                    "Texte lesen und zentrale Informationen entnehmen",
+                    "Leseverstehen",
+                    "Sinnverstehendes Lesen",
+                    "Wörter, Sätze sowie literarische und nicht literarische "
+                    "altersgemäße Texte sinnverstehend lesen",
                     "+",
                 ),
                 self._sample_observation_rating(
-                    "CMP-000002",
+                    "CMP-000278",
                     "deutsch",
                     "Deutsch",
-                    "Sprache untersuchen",
-                    "Wörter und Sätze",
-                    "Wörter nach Merkmalen ordnen",
+                    "Über Sprache, Sprachverwendung und Sprachenlernen reflektieren",
+                    "Wortarten",
+                    "Substantiv, Artikel, Adjektiv, Verb und Personalpronomen unterscheiden",
                     "-",
                 ),
             ),
@@ -1787,7 +1802,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_documentation_status_counts_confirmed_competency_status(self) -> None:
         self.adapter.save_competency_confirmation(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
-            competency_id="CMP-000001",
+            competency_id="CMP-000241",
             confirmed_rating="+",
         )
 
@@ -1800,7 +1815,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(deutsch_status.documented_count, 1)
         self.assertNotIn(
-            "CMP-000001",
+            "CMP-000241",
             {competency.competency_id for competency in deutsch_status.missing_competencies},
         )
 
@@ -3022,11 +3037,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
         dialog = self._observation_dialog_with_hierarchy()
 
         self._select_observation_subject(dialog, "mathematik")
-        label_texts = [label.text() for label in dialog.findChildren(QLabel)]
+        area_button = next(
+            button
+            for area_key, button in dialog.competency_area_buttons.items()
+            if area_key.endswith("|Groessen und Messen")
+        )
         topic_button = self._observation_topic_button(dialog, "Zeit")
         topic_container = self._observation_topic_container(dialog, "Zeit")
 
-        self.assertIn("Kompetenzbereich: Groessen und Messen", label_texts)
+        self.assertEqual(area_button.text(), "▸ Kompetenzbereich: Groessen und Messen")
         self.assertEqual(topic_button.text(), "▸ Thema: Zeit")
         self.assertTrue(topic_container.isHidden())
 
@@ -5069,6 +5088,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         subject_index = dialog.subject_select.findData(subject_key)
         self.assertGreaterEqual(subject_index, 0)
         dialog.subject_select.setCurrentIndex(subject_index)
+        dialog._refresh_competencies()
 
     def _observation_topic_button(
         self,

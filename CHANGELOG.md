@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## Sprint 4B-2 - Lehrplankatalog Deutsch uebernehmen
+
+### Added
+
+- 82 neue Deutsch-Kompetenzen aus dem freigegebenen Lehrplan-Mapping und der Katalog-Konsolidierung mit neuen global fortlaufenden IDs `CMP-000213` bis `CMP-000294` in `data/curriculum_catalog_v1.csv` ergaenzt.
+
+### Changed
+
+- Die alten groben Deutsch-Bestandskompetenzen `CMP-000001` bis `CMP-000005` sowie `CMP-000063` als `legacy` markiert und aus den Katalog-Default-Zielen genommen.
+- Adaptertests auf die Trennung zwischen historischen legacy-IDs und aktuellen Deutsch-Katalogzielen umgestellt.
+
+### Not Changed
+
+- Keine bestehenden Deutsch-Kompetenztexte oder Hierarchien umgedeutet, keine IDs wiederverwendet, keine Mathematik- oder anderen Fachzeilen geaendert, keine SQLite-, UI-, Berichts-, Dashboard- oder Beobachtungsdialog-Aenderung und kein Commit umgesetzt.
+
 ## Sprint 4A - Kompetenz-Katalogmodell technisch umsetzen
 
 ### Added
