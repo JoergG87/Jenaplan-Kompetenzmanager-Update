@@ -517,6 +517,6 @@ Eine Änderung gilt als abgeschlossen, wenn:
 
 ## Aktueller Sprint
 
-Sprint 4.1 ist abgeschlossen.
+Sprint 4 ist fachlich und technisch fuer den lehrplanbasierten Kompetenzkatalog abgeschlossen.
 
-Aktueller Stand: Sprint 5.3 - Application Command Layer als Architektur-Skelett eingefuehrt; produktive CLI und UserForm-Anbindung bleiben offen.
+Aktueller Stand: Der CSV-Katalog umfasst die freigegebenen Sprint-4-Lehrplanuebernahmen fuer Deutsch, Mathematik, EPU, Musik, Kunst, Sport, Werken, Schulgarten, Ethik und Sozialkompetenz. Historische Kompetenzen bleiben als `legacy` lesbar; Religion war nicht Teil dieses Katalogabgleichs.

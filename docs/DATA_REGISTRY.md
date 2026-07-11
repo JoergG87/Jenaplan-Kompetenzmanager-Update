@@ -280,7 +280,7 @@ Zweck: Read-only-Katalog fuer Fachauswahl und Kompetenzauswahl im PySide6-Beobac
 
 Datei: `data/curriculum_catalog_v1.csv`
 
-Status: v1-Kataloggrundlage mit Sprint-3B-Arbeitskatalog. Die konkreten Kompetenzen sind als beobachtbare Entwurfs-Kompetenzen vorbereitet und muessen fachlich von Laura geprueft werden, solange `docs/Lehrplan.md` keine detaillierte Lehrplanabbildung enthaelt.
+Status: v1-Kataloggrundlage mit abgeschlossenem Sprint-4-Lehrplanabgleich fuer Deutsch, Mathematik, EPU, Musik, Kunst, Sport, Werken, Schulgarten, Ethik und Sozialkompetenz. Die konkreten Kompetenzen folgen den freigegebenen Lehrplan-Mappings, der Katalog-Konsolidierung und den Product-Owner-Entscheidungen. Religion bleibt ausserhalb dieses Sprint-4-Katalogabgleichs.
 
 Owner: Kompetenzverwaltung / Lehrplanpflege.
 

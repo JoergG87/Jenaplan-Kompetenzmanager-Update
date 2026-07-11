@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Sprint 4 - Gesamtabschluss und Dokumentationsabgleich
+
+### Changed
+
+- Veraltete Projekt-, Roadmap-, Sprint-, Data-Registry- und Data-Lifecycle-Angaben auf den tatsaechlich umgesetzten lehrplanbasierten Sprint-4-Katalogstand abgeglichen.
+
+### Not Changed
+
+- Keine Kompetenzzeile, ID, Fachformulierung oder Religion-Zeile geaendert; keine UI-, SQLite-, Schema- oder Architekturaenderung und kein Commit umgesetzt.
+
 ## Sprint 4B-8 - Lehrplankatalog Ethik und Sozialkompetenz uebernehmen
 
 ### Added

@@ -6,6 +6,18 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 4B - Lehrplanbasierter Kompetenzkatalog ✅
+
+- [x] Status: Abgeschlossen
+
+### Ergebnis
+
+- [x] Lehrplanbasierte aktuelle Kompetenzen fuer Deutsch, Mathematik, EPU, Musik, Kunst, Sport, Werken, Schulgarten, Ethik und Sozialkompetenz additiv in den CSV-Katalog uebernommen
+- [x] Ersetzte Bestandskompetenzen als `legacy` und standardmaessig inaktiv erhalten; historische Beobachtungen und Bestaetigungen bleiben sichtbar
+- [x] Globale `CMP-######`-ID-Fortfuehrung, Katalogmetadaten und optionale Sport-Aktivierungsgruppen konsistent dokumentiert
+- [x] Religion ausserhalb des Sprint-4-Katalogabgleichs unveraendert gelassen
+- [x] Keine UI-, SQLite-, Schema- oder Architekturaenderung im Abschlussabgleich
+
 ## Sprint - Schuelerprofil-Ueberblick vor Laura-Pilottest 🔄
 
 - [x] Status: Umgesetzt, nicht committed
