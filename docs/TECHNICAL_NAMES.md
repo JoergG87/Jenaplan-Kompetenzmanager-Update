@@ -570,6 +570,7 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.delete_observation(observation_id)`
 - `StudentDesktopAdapter.observation_draft_for_edit(observation_id)`
 - `StudentDesktopAdapter.list_competency_overview_for_student(student_id)`
+- `StudentDesktopAdapter.list_competency_status_projection_for_student(student_id)`
 - `StudentDesktopAdapter.list_documentation_status_for_student(student_id)`
 - `StudentDesktopAdapter.list_documents_for_student(student_id)`
 - `StudentDesktopAdapter.add_student_document(student_id, source_path, document_type, title, note, observation_id)`
@@ -588,6 +589,10 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter._report_development_label(rating_history)`
 - `StudentDesktopAdapter._is_monotonic(scores, increasing)`
 - `StudentDesktopAdapter.save_competency_confirmation(student_id, competency_id, confirmed_rating, note)`
+- `StudentCompetencyStatusViewModel.documentation_state`
+- `StudentCompetencyStatusViewModel.observed_proposal`
+- `StudentCompetencyEvidenceViewModel`
+- `StudentDocumentationLearningAreaStatus`
 - `SettingsScreen`
 - `SettingsScreen.documentation_subjects_save_requested`
 - `SettingsScreen.set_settings(view_model)`

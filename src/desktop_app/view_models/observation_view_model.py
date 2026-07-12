@@ -213,8 +213,22 @@ class ObservationListItem:
 
 
 @dataclass(frozen=True)
+class StudentCompetencyEvidenceViewModel:
+    """One chronological active observation evidence for a competency."""
+
+    observation_id: str
+    observation_date: str
+    rating: str
+    subject_id: str
+    subject_display_name: str
+    learning_area: str
+    competency_group: str
+    competency_text: str
+
+
+@dataclass(frozen=True)
 class StudentCompetencyStatusViewModel:
-    """Calculated observed rating status for one student competency."""
+    """Canonical read projection for one student competency."""
 
     competency_id: str
     competency_label: str
@@ -230,6 +244,18 @@ class StudentCompetencyStatusViewModel:
     confirmed_rating: str = ""
     confirmed_at: str = ""
     confirmation_note: str = ""
+    learning_area: str = ""
+    competency_group: str = ""
+    competency_text: str = ""
+    documentation_state: str = "undocumented"
+    observed_proposal: str = ""
+    evidence: tuple[StudentCompetencyEvidenceViewModel, ...] = ()
+    learning_stage: str = ""
+    catalog_status: str = ""
+    is_active: bool = False
+    historical: bool = False
+    missing_catalog_reference: bool = False
+    has_observations_newer_than_confirmation: bool = False
 
     @property
     def rating_history_label(self) -> str:
@@ -295,6 +321,7 @@ class StudentDocumentationSubjectStatus:
     total_count: int
     missing_competencies: tuple[StudentMissingCompetencyViewModel, ...]
     sort_order: int
+    learning_area_statuses: tuple["StudentDocumentationLearningAreaStatus", ...] = ()
 
     @property
     def progress_label(self) -> str:
@@ -311,6 +338,15 @@ class StudentDocumentationSubjectStatus:
         if count == 1:
             return "Noch nicht dokumentierte Kompetenzen (1)"
         return f"Noch nicht dokumentierte Kompetenzen ({count})"
+
+
+@dataclass(frozen=True)
+class StudentDocumentationLearningAreaStatus:
+    """Concrete competency coverage for one subject learning area."""
+
+    learning_area: str
+    documented_count: int
+    total_count: int
 
 
 @dataclass(frozen=True)

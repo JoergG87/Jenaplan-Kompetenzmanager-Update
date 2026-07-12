@@ -35,6 +35,7 @@ from src.application.commands import (
 )
 from src.application.dispatcher import SuccessResult
 from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PREFIX
+from src.core.observation import ObservationCompetencyRatingRecord, ObservationRecord
 from src.core.sqlite_store import (
     SQLiteCompetencyRepository,
     SQLiteDocumentRepository,
@@ -1779,7 +1780,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn("Diese Beobachtung wird gelöscht.", report_text)
         self.assertIn(REPORT_NO_OBSERVATIONS_MESSAGE, report_text)
 
-    def test_documentation_status_starts_with_zero_documented_learning_areas(self) -> None:
+    def test_documentation_status_starts_with_zero_documented_competencies(self) -> None:
         statuses = self.adapter.list_documentation_status_for_student(
             f"{STUDENT_ID_PREFIX}-000001"
         )
@@ -1789,7 +1790,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 for competency in SQLiteCompetencyRepository(
                     self.database
                 ).list_competencies()
-                if competency.active
+                if competency.active and competency.catalog_status == "current"
             )
         )
 
@@ -1818,11 +1819,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         expected_total_count = sum(
             len({
-                competency.learning_area
+                competency.competency_id
                 for competency in SQLiteCompetencyRepository(
                     self.database
                 ).list_competencies()
-                if competency.active and competency.subject_id == subject_id
+                if competency.active
+                and competency.catalog_status == "current"
+                and competency.subject_id == subject_id
             })
             for subject_id in ("deutsch", "mathematik")
         )
@@ -1919,6 +1922,187 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "CMP-000241",
             {competency.competency_id for competency in deutsch_status.missing_competencies},
         )
+
+    def test_canonical_status_projection_includes_undocumented_current_goals(self) -> None:
+        statuses = self.adapter.list_competency_status_projection_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        status = next(item for item in statuses if item.competency_id == "CMP-000241")
+        self.assertEqual(status.documentation_state, "undocumented")
+        self.assertEqual(status.observation_count, 0)
+        self.assertFalse(status.historical)
+        self.assertTrue(status.is_active)
+        self.assertEqual(status.catalog_status, "current")
+
+    def test_canonical_status_projection_keeps_multiple_ratings_as_proposal(self) -> None:
+        for date_text, rating in (("2026-07-03", "-"), ("2026-07-04", "+")):
+            self.adapter.save_observation(self._sample_observation_draft(
+                date_text=date_text,
+                competency_ratings=(
+                    self._sample_observation_rating(
+                        "CMP-000001", "deutsch", "Deutsch",
+                        "Mit Texten und Medien umgehen", "Lesen und Verstehen",
+                        "Snapshottext", rating,
+                    ),
+                ),
+            ))
+
+        status = self._canonical_status("CMP-000001")
+        self.assertEqual(status.documentation_state, "observed_unconfirmed")
+        self.assertEqual(status.observation_count, 2)
+        self.assertEqual(status.rating_history, ("-", "+"))
+        self.assertEqual(status.observed_proposal, status.rating)
+        self.assertEqual(
+            tuple(evidence.observation_date for evidence in status.evidence),
+            ("2026-07-03", "2026-07-04"),
+        )
+
+    def test_canonical_status_projection_keeps_confirmation_separate_from_proposal(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft())
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="-",
+            note="Bewusst getrennt.",
+        )
+
+        status = self._canonical_status("CMP-000001")
+        self.assertEqual(status.documentation_state, "confirmed")
+        self.assertEqual(status.observed_proposal, "+")
+        self.assertEqual(status.confirmed_rating, "-")
+        self.assertEqual(status.confirmation_note, "Bewusst getrennt.")
+
+    def test_canonical_status_projection_keeps_confirmation_without_observation(self) -> None:
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000241",
+            confirmed_rating="+",
+        )
+
+        status = self._canonical_status("CMP-000241")
+        self.assertEqual(status.documentation_state, "confirmed")
+        self.assertEqual(status.observed_proposal, "")
+        self.assertEqual(status.observation_count, 0)
+
+    def test_canonical_status_projection_marks_newer_observation_after_confirmation(self) -> None:
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="-",
+        )
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-07-13",
+        ))
+
+        status = self._canonical_status("CMP-000001")
+        self.assertEqual(status.documentation_state, "newer_observations")
+        self.assertTrue(status.has_observations_newer_than_confirmation)
+        self.assertEqual(status.confirmed_rating, "-")
+
+    def test_canonical_status_projection_excludes_soft_deleted_observations(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000241", "deutsch", "Deutsch", "Leseverstehen",
+                    "Sinnverstehendes Lesen", "Aktueller Snapshot", "+",
+                ),
+            ),
+        ))
+        self.adapter.delete_observation("OBS-000001")
+
+        status = self._canonical_status("CMP-000241")
+        self.assertEqual(status.documentation_state, "undocumented")
+        self.assertEqual(status.observation_count, 0)
+
+    def test_canonical_status_projection_keeps_legacy_snapshot_without_overwriting_it(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            subject_id="epu",
+            subject_display_name="EPU historisch",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000012", "epu", "EPU historisch", "Historischer Bereich",
+                    "Historisches Thema", "Historischer Snapshot", "+",
+                ),
+            ),
+        ))
+
+        status = self._canonical_status("CMP-000012")
+        self.assertTrue(status.historical)
+        self.assertEqual(status.competency_text, "Historischer Snapshot")
+        self.assertEqual(status.subject_display_name, "EPU historisch")
+
+    def test_canonical_status_projection_keeps_missing_catalog_snapshot(self) -> None:
+        SQLiteObservationRepository(self.database).create_observation(ObservationRecord(
+            "OBS-MISSING", f"{STUDENT_ID_PREFIX}-000001", "2026-07-03", "altfach",
+            "", "", True, "2026-07-03T00:00:00+00:00", "2026-07-03T00:00:00+00:00",
+            (ObservationCompetencyRatingRecord(
+                "CMP-MISSING", "altfach", "Altes Fach", "Alter Bereich",
+                "Altes Thema", "Historischer Snapshot ohne Katalog", "+",
+            ),),
+        ))
+
+        status = self._canonical_status("CMP-MISSING")
+        self.assertTrue(status.missing_catalog_reference)
+        self.assertTrue(status.historical)
+        self.assertEqual(status.competency_text, "Historischer Snapshot ohne Katalog")
+
+    def test_documentation_status_counts_concrete_competencies_and_learning_areas(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000241", "deutsch", "Deutsch", "Leseverstehen",
+                    "Sinnverstehendes Lesen", "Text 1", "+",
+                ),
+                self._sample_observation_rating(
+                    "CMP-000278", "deutsch", "Deutsch", "Über Sprache, Sprachverwendung und Sprachenlernen reflektieren",
+                    "Wortarten", "Text 2", "-",
+                ),
+            ),
+        ))
+
+        deutsch = next(
+            item for item in self.adapter.list_documentation_status_for_student(
+                f"{STUDENT_ID_PREFIX}-000001"
+            ) if item.subject_id == "deutsch"
+        )
+        self.assertEqual(deutsch.documented_count, 2)
+        self.assertEqual(sum(item.total_count for item in deutsch.learning_area_statuses), deutsch.total_count)
+        self.assertEqual(sum(item.documented_count for item in deutsch.learning_area_statuses), 2)
+
+    def test_canonical_status_projection_keeps_cross_subject_observation_evidence(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            subject_id=OBSERVATION_CROSS_SUBJECT_LABEL,
+            subject_display_name=OBSERVATION_CROSS_SUBJECT_LABEL,
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000001", "deutsch", "Deutsch", "Mit Texten und Medien umgehen",
+                    "Lesen und Verstehen", "Deutsch-Snapshot", "+",
+                ),
+                self._sample_observation_rating(
+                    "CMP-000012", "epu", "EPU", "Raum und Zeit",
+                    "Orientierung", "EPU-Snapshot", "-",
+                ),
+            ),
+        ))
+
+        self.assertEqual(self._canonical_status("CMP-000001").subject_id, "deutsch")
+        self.assertEqual(self._canonical_status("CMP-000012").subject_id, "epu")
+
+    def test_report_preview_remains_available_from_canonical_documented_statuses(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft())
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000001",
+            confirmed_rating="-",
+        )
+
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        deutsch = next(section for section in preview.subject_sections if section.subject_id == "deutsch")
+        self.assertEqual(deutsch.current_statuses[0].rating, "-")
+        self.assertEqual(deutsch.current_statuses[0].rating_source, "von Laura bestätigt")
 
     def test_missing_competencies_ignore_non_documentation_subjects(self) -> None:
         self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
@@ -5258,6 +5442,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
         ):
             with self.subTest(module_name=module_name):
                 importlib.import_module(module_name)
+
+    def _canonical_status(self, competency_id: str) -> StudentCompetencyStatusViewModel:
+        return next(
+            status
+            for status in self.adapter.list_competency_status_projection_for_student(
+                f"{STUDENT_ID_PREFIX}-000001"
+            )
+            if status.competency_id == competency_id
+        )
 
     def _sample_student_detail(self) -> StudentDetailViewModel:
         return StudentDetailViewModel(

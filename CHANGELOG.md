@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Sprint 6B - Kanonische Kompetenzstatus-Projektion
+
+### Changed
+
+- Zentrale Status-Leseprojektion je Schueler und Kompetenz im bestehenden Desktop-Adapter ergänzt. Sie trennt Beobachtungsvorschlag, Lehrkraft-Bestaetigung und chronologische aktive Nachweise; historische Referenzen bleiben lesbar, ohne Katalog- oder Statusdaten zu verändern.
+- Dokumentationsfortschritt auf eindeutige konkrete Kompetenz-IDs umgestellt und zusätzlich je Fach und Kompetenzbereich projiziert. Nur aktive `current`-Kompetenzen bilden offene Ziele.
+
+### Not Changed
+
+- Keine neue Schülerprofil-Oberfläche, Filter-UI, Persistenz, Schemaänderung, Migration, automatische Statusübertragung, Berichtsumgestaltung, PDF, LEG, Dashboard oder Commit umgesetzt.
+
 ## Sprint 5E - Schnellauswahl Zuletzt verwendet
 
 ### Changed

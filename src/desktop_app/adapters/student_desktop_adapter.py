@@ -62,7 +62,9 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationListItem,
     ObservationRatingViewModel,
     ObservationSubjectOptionViewModel,
+    StudentCompetencyEvidenceViewModel,
     StudentDocumentationSubjectStatus,
+    StudentDocumentationLearningAreaStatus,
     StudentCompetencyStatusViewModel,
     StudentCompetencySubjectGroup,
     StudentMissingCompetencyViewModel,
@@ -621,7 +623,25 @@ class StudentDesktopAdapter:
         self,
         student_id: str,
     ) -> tuple[StudentCompetencySubjectGroup, ...]:
-        """Return calculated competency statuses grouped by subject."""
+        """Return documented canonical competency statuses grouped by subject."""
+        statuses = self.list_competency_status_projection_for_student(student_id)
+        documented_ids = {
+            status.competency_id
+            for status in statuses
+            if status.documentation_state != "undocumented"
+        }
+        return self._group_competency_statuses(
+            tuple(status for status in statuses if status.documentation_state != "undocumented"),
+            self._active_current_competencies(),
+            documented_ids,
+            self._active_documentation_subject_ids(),
+        )
+
+    def list_competency_status_projection_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[StudentCompetencyStatusViewModel, ...]:
+        """Return the single canonical read projection for competency status."""
         observations = SQLiteObservationRepository(
             self.database
         ).list_observations_for_student(student_id)
@@ -631,44 +651,38 @@ class StudentDesktopAdapter:
                 self.database
             ).list_confirmations_for_student(student_id)
         }
-        histories_by_competency: dict[str, list[tuple[object, str]]] = {}
+        histories_by_competency: dict[str, list[tuple[object, str, str]]] = {}
         for observation in observations:
             for rating in observation.competency_ratings:
                 histories_by_competency.setdefault(rating.competency_id, []).append(
-                    (rating, observation.date)
+                    (rating, observation.date, observation.observation_id)
                 )
-        active_competencies = self._active_competencies()
         referenced_competency_ids = set(histories_by_competency) | set(confirmations)
         competencies = {
             competency.competency_id: competency
             for competency in SQLiteCompetencyRepository(self.database).list_competencies()
-            if competency.active or competency.competency_id in referenced_competency_ids
+            if (
+                competency.active and competency.catalog_status == "current"
+            ) or competency.competency_id in referenced_competency_ids
         }
-        observed_statuses = tuple(
+        competency_ids = set(competencies) | referenced_competency_ids
+        statuses = tuple(
             self._competency_status_view_model(
-                tuple(entries),
+                tuple(histories_by_competency.get(competency_id, ())),
                 competencies.get(competency_id),
                 confirmations.get(competency_id),
             )
-            for competency_id, entries in histories_by_competency.items()
+            for competency_id in competency_ids
         )
-        confirmed_only_statuses = tuple(
-            self._competency_status_view_model(
-                (),
-                competencies[competency_id],
-                confirmation,
+        return tuple(
+            sorted(
+                statuses,
+                key=lambda status: (
+                    status.subject_display_name.casefold(),
+                    status.sort_order,
+                    status.competency_id,
+                ),
             )
-            for competency_id, confirmation in confirmations.items()
-            if competency_id not in histories_by_competency
-            and competency_id in competencies
-        )
-        statuses = observed_statuses + confirmed_only_statuses
-        documented_ids = set(histories_by_competency) | set(confirmations)
-        return self._group_competency_statuses(
-            statuses,
-            active_competencies,
-            documented_ids,
-            self._active_documentation_subject_ids(),
         )
 
     def list_documentation_status_for_student(
@@ -676,23 +690,15 @@ class StudentDesktopAdapter:
         student_id: str,
     ) -> tuple[StudentDocumentationSubjectStatus, ...]:
         """Return catalog coverage by subject for one student."""
-        observations = SQLiteObservationRepository(
-            self.database
-        ).list_observations_for_student(student_id)
-        observed_ids = {
-            rating.competency_id
-            for observation in observations
-            for rating in observation.competency_ratings
-        }
-        confirmed_ids = {
-            confirmation.competency_id
-            for confirmation in SQLiteStudentCompetencyConfirmationRepository(
-                self.database
-            ).list_confirmations_for_student(student_id)
+        statuses = self.list_competency_status_projection_for_student(student_id)
+        documented_ids = {
+            status.competency_id
+            for status in statuses
+            if status.documentation_state != "undocumented"
         }
         return self._documentation_statuses(
             self._documentation_relevant_competencies(),
-            observed_ids | confirmed_ids,
+            documented_ids,
         )
 
     def get_report_preview_for_student(
@@ -1023,50 +1029,101 @@ class StudentDesktopAdapter:
 
     def _competency_status_view_model(
         self,
-        entries_newest_first: tuple[tuple[object, str], ...],
+        entries_newest_first: tuple[tuple[object, str, str], ...],
         competency: object | None,
         confirmation: StudentCompetencyConfirmationRecord | None,
     ) -> StudentCompetencyStatusViewModel:
+        snapshot = entries_newest_first[0][0] if entries_newest_first else None
+        evidence = tuple(
+            StudentCompetencyEvidenceViewModel(
+                observation_id,
+                observation_date,
+                getattr(rating, "rating"),
+                getattr(rating, "subject_id"),
+                getattr(rating, "subject_display_name"),
+                getattr(rating, "learning_area"),
+                getattr(rating, "competency_group"),
+                getattr(rating, "competency_text"),
+            )
+            for rating, observation_date, observation_id in reversed(entries_newest_first)
+        )
         if entries_newest_first:
-            newest_rating, newest_date = entries_newest_first[0]
+            newest_rating, newest_date, _observation_id = entries_newest_first[0]
             ratings_newest_first = tuple(
                 getattr(rating, "rating")
-                for rating, _date in entries_newest_first
+                for rating, _date, _id in entries_newest_first
             )
             current_rating, weighted_score = calculated_rating_from_history(
                 ratings_newest_first
             )
-            subject_id = getattr(
-                competency,
-                "subject_id",
-                getattr(newest_rating, "subject_id"),
+            use_current_catalog = bool(
+                competency is not None
+                and getattr(competency, "active", False)
+                and getattr(competency, "catalog_status", "current") == "current"
             )
-            subject_display_name = getattr(
-                competency,
-                "subject_name",
-                getattr(newest_rating, "subject_display_name"),
+            subject_id = (
+                getattr(competency, "subject_id")
+                if use_current_catalog else getattr(newest_rating, "subject_id")
             )
-            competency_label = getattr(
-                competency,
-                "label",
-                getattr(newest_rating, "learning_area"),
+            subject_display_name = (
+                getattr(competency, "subject_name")
+                if use_current_catalog else getattr(newest_rating, "subject_display_name")
+            )
+            competency_label = (
+                getattr(competency, "label")
+                if competency is not None else getattr(newest_rating, "competency_text")
             )
             competency_id = getattr(newest_rating, "competency_id")
             rating_history = tuple(reversed(ratings_newest_first))
             observation_count = len(entries_newest_first)
-        elif competency is not None and confirmation is not None:
-            current_rating = confirmation.confirmed_rating
+        elif competency is not None:
+            current_rating = confirmation.confirmed_rating if confirmation else ""
             weighted_score = 0.0
             subject_id = getattr(competency, "subject_id")
             subject_display_name = getattr(competency, "subject_name")
             competency_label = getattr(competency, "label")
-            competency_id = confirmation.competency_id
+            competency_id = getattr(competency, "competency_id")
             newest_date = ""
             rating_history = ()
             observation_count = 0
         else:
-            raise ValueError("Kompetenzstatus braucht Beobachtung oder Bestaetigung.")
+            # A historical observation snapshot remains displayable even if its
+            # catalog row no longer exists.
+            newest_rating, newest_date, _observation_id = entries_newest_first[0]
+            current_rating, weighted_score = calculated_rating_from_history(
+                tuple(
+                    getattr(rating, "rating")
+                    for rating, _date, _id in entries_newest_first
+                )
+            )
+            subject_id = getattr(newest_rating, "subject_id")
+            subject_display_name = getattr(newest_rating, "subject_display_name")
+            competency_label = getattr(newest_rating, "competency_text")
+            competency_id = getattr(newest_rating, "competency_id")
+            rating_history = tuple(
+                getattr(item, "rating")
+                for item, _date, _id in reversed(entries_newest_first)
+            )
+            observation_count = len(entries_newest_first)
         sort_order = int(getattr(competency, "sort_order", 0))
+        observed_proposal = current_rating if entries_newest_first else ""
+        if confirmation is not None and entries_newest_first:
+            documentation_state = (
+                "newer_observations"
+                if newest_date > confirmation.confirmed_at[:10]
+                else "confirmed"
+            )
+        elif confirmation is not None:
+            documentation_state = "confirmed"
+        elif entries_newest_first:
+            documentation_state = "observed_unconfirmed"
+        else:
+            documentation_state = "undocumented"
+        historical = bool(
+            competency is None
+            or not getattr(competency, "active", False)
+            or getattr(competency, "catalog_status", "current") != "current"
+        )
         return StudentCompetencyStatusViewModel(
             competency_id,
             competency_label,
@@ -1082,6 +1139,34 @@ class StudentDesktopAdapter:
             confirmation.confirmed_rating if confirmation else "",
             confirmation.confirmed_at if confirmation else "",
             confirmation.note if confirmation else "",
+            (
+                getattr(competency, "learning_area")
+                if competency is not None and (not historical or snapshot is None)
+                else getattr(snapshot, "learning_area", "")
+            ),
+            (
+                getattr(competency, "competency_group")
+                if competency is not None and (not historical or snapshot is None)
+                else getattr(snapshot, "competency_group", "")
+            ),
+            (
+                getattr(competency, "description")
+                if competency is not None and (not historical or snapshot is None)
+                else getattr(snapshot, "competency_text", "")
+            ),
+            documentation_state,
+            observed_proposal,
+            evidence,
+            getattr(competency, "learning_stage", ""),
+            getattr(competency, "catalog_status", ""),
+            bool(getattr(competency, "active", False)),
+            historical,
+            competency is None,
+            bool(
+                confirmation is not None
+                and entries_newest_first
+                and newest_date > confirmation.confirmed_at[:10]
+            ),
         )
 
     def _group_competency_statuses(
@@ -1121,6 +1206,13 @@ class StudentDesktopAdapter:
             if getattr(competency, "active", False)
         )
 
+    def _active_current_competencies(self) -> tuple[object, ...]:
+        return tuple(
+            competency
+            for competency in self._active_competencies()
+            if getattr(competency, "catalog_status", "current") == "current"
+        )
+
     def _active_documentation_subject_ids(self) -> set[str]:
         return set(
             SQLiteDocumentationSubjectSettingsRepository(
@@ -1152,7 +1244,7 @@ class StudentDesktopAdapter:
         documentation_subject_ids = self._active_documentation_subject_ids()
         return tuple(
             competency
-            for competency in self._active_competencies()
+            for competency in self._active_current_competencies()
             if getattr(competency, "subject_id") in documentation_subject_ids
         )
 
@@ -1187,14 +1279,17 @@ class StudentDesktopAdapter:
             StudentDocumentationSubjectStatus(
                 subject_id,
                 subject_names[subject_id],
-                len(self._documented_learning_areas(grouped[subject_id], documented_ids)),
-                len(self._learning_areas(grouped[subject_id])),
+                len({getattr(item, "competency_id") for item in grouped[subject_id] if getattr(item, "competency_id") in documented_ids}),
+                len({getattr(item, "competency_id") for item in grouped[subject_id]}),
                 self._missing_competencies_for_subject(
                     active_competencies,
                     documented_ids,
                     subject_id,
                 ),
                 subject_sort_orders[subject_id],
+                self._documentation_learning_area_statuses(
+                    grouped[subject_id], documented_ids
+                ),
             )
             for subject_id in sorted(
                 grouped,
@@ -1202,24 +1297,26 @@ class StudentDesktopAdapter:
             )
         )
 
-    def _learning_areas(self, competencies: list[object]) -> set[str]:
-        return {
-            getattr(competency, "learning_area", "")
-            for competency in competencies
-            if getattr(competency, "learning_area", "")
-        }
-
-    def _documented_learning_areas(
+    def _documentation_learning_area_statuses(
         self,
         competencies: list[object],
         documented_ids: set[str],
-    ) -> set[str]:
-        return {
-            getattr(competency, "learning_area", "")
-            for competency in competencies
-            if getattr(competency, "competency_id") in documented_ids
-            and getattr(competency, "learning_area", "")
-        }
+    ) -> tuple[StudentDocumentationLearningAreaStatus, ...]:
+        grouped: dict[str, set[str]] = {}
+        for competency in competencies:
+            learning_area = getattr(competency, "learning_area", "")
+            if learning_area:
+                grouped.setdefault(learning_area, set()).add(
+                    getattr(competency, "competency_id")
+                )
+        return tuple(
+            StudentDocumentationLearningAreaStatus(
+                learning_area,
+                len(competency_ids & documented_ids),
+                len(competency_ids),
+            )
+            for learning_area, competency_ids in sorted(grouped.items())
+        )
 
     def _missing_competencies_for_subject(
         self,
