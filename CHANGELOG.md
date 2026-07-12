@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## Sprint 7E - Isolierter Prototyp der PDF-Engine
+
+### Added
+
+- Eine eigenständige ReportLab-Anwendung unter `prototypes/pdf_engine/` ergänzt, die ein vollständiges neutrales `ReportOutputModel` ohne Datenbank- oder Produktimporte als professionelles siebenseitiges A4-PDF rendert.
+- Wiederverwendbare Komponenten für Dokumentationsabdeckung, datierte Kompetenzstände und Beobachtungszeitachsen ergänzt; sie erhalten ausschließlich fertige Darstellungsdaten und erzeugen weder Scores, Trendlinien, Ampeln noch automatische Interpretationen.
+- Fiktives Demo-Dokument `Lernentwicklungsbericht` für Mara Beispielkind mit Deckblatt, Gesamtblick, sieben konkreten Zeit-Kompetenzen, Entwicklungsdarstellungen, Beobachtungsbelegen, Zielen, Unterstützung und Abschluss vorbereitet.
+- Architektur, Datenfluss, Beispielausgabe, spätere Integrationsgrenze und bewusste Grenzen in der lokalen Prototyp-README dokumentiert.
+
+### Not Changed
+
+- Keine produktive App, SQLite-Verbindung, Datenmodell-, Migrations-, Tabellen-, Persistenz-, UI-, Freigabe-, Versionierungs-, Archivierungs- oder Exportverwaltungsänderung; keine Governance-Dokumente, vollständige Testsuite oder Commit.
+
+## Sprint 7D.1 - UX-Verfeinerung des isolierten Lernentwicklungsgespraech-Prototyps
+
+### Changed
+
+- Den vollstaendig isolierten PySide6-In-Memory-Prototyp auf einen natuerlichen sechsteiligen Gespraechsablauf mit ruhiger Gespraechsmappe ausgerichtet.
+- Fachliche Bereiche und uebergreifende Gespraechsthemen getrennt, die linke Kompetenz- und Beobachtungsauswahl unmittelbar danach gefiltert sowie die Kompetenzauswahl einklappbar nach Fach, Kompetenzbereich, Thema und konkreter Kompetenz gruppiert.
+- Vier manuell editierbare Leitfadenfelder, eine weiche Empfehlung von drei bis fuenf Beobachtungsbelegen und die visuelle Trennung zwischen Lehrkraftvorbereitung und spaeter gemeinsam getroffener Vereinbarung umgesetzt.
+- Den allgemeinen Beobachtungsverlauf entfernt und die optionale Diagrammauswahl auf Dokumentationsabdeckung, datierte Kompetenz-Einzelstaende und die Zeitachse ausgewaehlter Belege reduziert.
+
+### Not Changed
+
+- Keine produktive App, SQLite-Abfrage, Repositorys, Adapter, ViewModels, Migration, Persistenz, PDF-Erzeugung, Produktintegration, Architektur- oder Governance-Aenderung, Tests oder Commit.
+
 ## Sprint 6H - Schnellbeobachtung im Beobachtungsdialog
 
 ### Changed
