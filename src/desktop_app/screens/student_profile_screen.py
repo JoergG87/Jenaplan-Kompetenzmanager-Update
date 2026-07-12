@@ -93,6 +93,7 @@ class StudentProfileScreen(QWidget):
         self.show_all_observations = False
         self._focused_observation_id = ""
         self._competency_expanded_keys: set[str] = set()
+        self._profile_scroll_positions: dict[int, int] = {}
         self._build()
 
     def _build(self) -> None:
@@ -680,6 +681,7 @@ class StudentProfileScreen(QWidget):
             else None
         )
         previous_tab_index = self.profile_tabs.currentIndex()
+        self._capture_profile_scroll_positions()
 
         self.current_student = student
         should_reset_tab = (
@@ -719,24 +721,46 @@ class StudentProfileScreen(QWidget):
             competency_groups,
             documentation_statuses,
         )
-        self.set_observations(observations)
+        self.set_observations(
+            observations,
+            preserve_view_state=not should_reset_tab,
+        )
         self.set_competency_cockpit(competency_cockpit)
         self.set_report_preview(report_preview)
         self.set_documents(documents)
 
         if not should_reset_tab and 0 <= previous_tab_index < self.profile_tabs.count():
             self.profile_tabs.setCurrentIndex(previous_tab_index)
+            self._restore_profile_scroll_positions()
 
     def set_observations(
         self,
         observations: tuple[ObservationListItem, ...],
+        *,
+        preserve_view_state: bool = False,
     ) -> None:
         """Render persisted observations for the current profile."""
         self.current_observations = observations
-        self.show_all_observations = False
-        self._focused_observation_id = ""
+        if not preserve_view_state:
+            self.show_all_observations = False
+            self._focused_observation_id = ""
         self._populate_observation_subject_filter(observations)
         self.apply_observation_filters()
+
+    def _capture_profile_scroll_positions(self) -> None:
+        """Keep profile-local tab positions while the same student refreshes."""
+        self._profile_scroll_positions = {
+            index: scroll_area.verticalScrollBar().value()
+            for index in range(self.profile_tabs.count())
+            if (scroll_area := self.profile_tabs.widget(index)) is not None
+        }
+
+    def _restore_profile_scroll_positions(self) -> None:
+        """Restore saved positions; Qt clamps values to rebuilt tab content."""
+        for index, position in self._profile_scroll_positions.items():
+            scroll_area = self.profile_tabs.widget(index)
+            if isinstance(scroll_area, QScrollArea):
+                scroll_area.verticalScrollBar().setValue(position)
 
     def apply_observation_filters(self) -> None:
         """Render observations matching the profile-local filter state."""

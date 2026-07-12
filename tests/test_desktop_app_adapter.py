@@ -2054,6 +2054,58 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(status.historical)
         self.assertEqual(status.competency_text, "Historischer Snapshot ohne Katalog")
 
+    def test_status_projection_neither_mutates_snapshots_nor_migrates_missing_ids(self) -> None:
+        SQLiteObservationRepository(self.database).create_observation(ObservationRecord(
+            "OBS-MISSING-IMMUTABLE", f"{STUDENT_ID_PREFIX}-000001", "2026-07-03",
+            "altfach", "", "", True, "2026-07-03T00:00:00+00:00",
+            "2026-07-03T00:00:00+00:00", (ObservationCompetencyRatingRecord(
+                "CMP-MISSING-IMMUTABLE", "altfach", "Altes Fach", "Alter Bereich",
+                "Altes Thema", "Unveränderter Snapshot", "+",
+            ),),
+        ))
+        catalog_ids_before = {
+            entry.competency_id
+            for entry in SQLiteCompetencyRepository(self.database).list_competencies()
+        }
+
+        status = self._canonical_status("CMP-MISSING-IMMUTABLE")
+
+        catalog_ids_after = {
+            entry.competency_id
+            for entry in SQLiteCompetencyRepository(self.database).list_competencies()
+        }
+        self.assertEqual(status.competency_id, "CMP-MISSING-IMMUTABLE")
+        self.assertEqual(status.competency_label, "Unveränderter Snapshot")
+        self.assertEqual(status.competency_text, "Unveränderter Snapshot")
+        self.assertTrue(status.missing_catalog_reference)
+        self.assertEqual(catalog_ids_after, catalog_ids_before)
+
+    def test_documentation_totals_count_one_competency_id_once(self) -> None:
+        for date_text in ("2026-07-03", "2026-07-04"):
+            self.adapter.save_observation(self._sample_observation_draft(
+                date_text=date_text,
+                competency_ratings=(
+                    self._sample_observation_rating(
+                        "CMP-000241", "deutsch", "Deutsch", "Leseverstehen",
+                        "Sinnverstehendes Lesen", "Snapshot", "+",
+                    ),
+                ),
+            ))
+
+        deutsch = next(
+            item
+            for item in self.adapter.list_documentation_status_for_student(
+                f"{STUDENT_ID_PREFIX}-000001"
+            )
+            if item.subject_id == "deutsch"
+        )
+
+        self.assertEqual(deutsch.documented_count, 1)
+        self.assertEqual(
+            sum(item.documented_count for item in deutsch.learning_area_statuses),
+            1,
+        )
+
     def test_documentation_status_counts_concrete_competencies_and_learning_areas(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
             competency_ratings=(
@@ -5648,6 +5700,37 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(screen.profile_tabs.currentIndex(), 2)
         self.assertFalse(
             screen.findChild(QWidget, "CompetencyCockpitCompetencyDetails").isHidden()
+        )
+        self.assertIsNotNone(app)
+
+    def test_profile_refresh_keeps_observation_filters_and_scroll_state(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        observations = self._sample_many_observations()
+        screen.set_student(self._sample_student_detail(), observations)
+        screen.profile_tabs.setCurrentIndex(1)
+        screen.observation_subject_filter.setCurrentIndex(
+            screen.observation_subject_filter.findText("EPU")
+        )
+        screen.observation_rating_filter.setCurrentIndex(
+            screen.observation_rating_filter.findText("+")
+        )
+        screen.observation_search_input.setText("verbindet")
+        screen.show_all_observations = True
+        observations_scroll = screen.profile_tabs.widget(1)
+        self.assertIsInstance(observations_scroll, QScrollArea)
+        observations_scroll.verticalScrollBar().setValue(12)
+
+        screen.set_student(self._sample_student_detail(), observations)
+
+        self.assertEqual(screen.profile_tabs.currentIndex(), 1)
+        self.assertEqual(screen.observation_subject_filter.currentText(), "EPU")
+        self.assertEqual(screen.observation_rating_filter.currentText(), "+")
+        self.assertEqual(screen.observation_search_input.text(), "verbindet")
+        self.assertTrue(screen.show_all_observations)
+        self.assertEqual(
+            observations_scroll.verticalScrollBar().value(),
+            min(12, observations_scroll.verticalScrollBar().maximum()),
         )
         self.assertIsNotNone(app)
 

@@ -1091,6 +1091,9 @@ class StudentDesktopAdapter:
                 getattr(competency, "subject_name")
                 if use_current_catalog else getattr(newest_rating, "subject_display_name")
             )
+            # An inactive/legacy catalog row is retained only to make the
+            # historic reference resolvable.  Its current presentation must
+            # not overwrite the text captured with the observation.
             competency_label = (
                 getattr(competency, "label")
                 if competency is not None else getattr(newest_rating, "competency_text")
