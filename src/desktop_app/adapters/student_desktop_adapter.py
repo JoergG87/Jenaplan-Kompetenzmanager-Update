@@ -653,12 +653,22 @@ class StudentDesktopAdapter:
                 self.database
             ).list_confirmations_for_student(student_id)
         }
-        histories_by_competency: dict[str, list[tuple[object, str, str]]] = {}
+        histories_by_competency: dict[str, list[tuple[object, str, str, str]]] = {}
         for observation in observations:
             for rating in observation.competency_ratings:
-                histories_by_competency.setdefault(rating.competency_id, []).append(
-                    (rating, observation.date, observation.observation_id)
-                )
+                history = histories_by_competency.setdefault(rating.competency_id, [])
+                if not any(
+                    existing_observation_id == observation.observation_id
+                    for _rating, _date, existing_observation_id, _context in history
+                ):
+                    history.append(
+                        (
+                            rating,
+                            observation.date,
+                            observation.observation_id,
+                            observation.context,
+                        )
+                    )
         referenced_competency_ids = set(histories_by_competency) | set(confirmations)
         competencies = {
             competency.competency_id: competency
@@ -1040,7 +1050,7 @@ class StudentDesktopAdapter:
 
     def _competency_status_view_model(
         self,
-        entries_newest_first: tuple[tuple[object, str, str], ...],
+        entries_newest_first: tuple[tuple[object, str, str, str], ...],
         competency: object | None,
         confirmation: StudentCompetencyConfirmationRecord | None,
     ) -> StudentCompetencyStatusViewModel:
@@ -1055,14 +1065,15 @@ class StudentDesktopAdapter:
                 getattr(rating, "learning_area"),
                 getattr(rating, "competency_group"),
                 getattr(rating, "competency_text"),
+                context,
             )
-            for rating, observation_date, observation_id in reversed(entries_newest_first)
+            for rating, observation_date, observation_id, context in entries_newest_first
         )
         if entries_newest_first:
-            newest_rating, newest_date, _observation_id = entries_newest_first[0]
+            newest_rating, newest_date, _observation_id, _context = entries_newest_first[0]
             ratings_newest_first = tuple(
                 getattr(rating, "rating")
-                for rating, _date, _id in entries_newest_first
+                for rating, _date, _id, _context in entries_newest_first
             )
             current_rating, weighted_score = calculated_rating_from_history(
                 ratings_newest_first
@@ -1100,11 +1111,11 @@ class StudentDesktopAdapter:
         else:
             # A historical observation snapshot remains displayable even if its
             # catalog row no longer exists.
-            newest_rating, newest_date, _observation_id = entries_newest_first[0]
+            newest_rating, newest_date, _observation_id, _context = entries_newest_first[0]
             current_rating, weighted_score = calculated_rating_from_history(
                 tuple(
                     getattr(rating, "rating")
-                    for rating, _date, _id in entries_newest_first
+                    for rating, _date, _id, _context in entries_newest_first
                 )
             )
             subject_id = getattr(newest_rating, "subject_id")
@@ -1113,7 +1124,7 @@ class StudentDesktopAdapter:
             competency_id = getattr(newest_rating, "competency_id")
             rating_history = tuple(
                 getattr(item, "rating")
-                for item, _date, _id in reversed(entries_newest_first)
+                for item, _date, _id, _context in reversed(entries_newest_first)
             )
             observation_count = len(entries_newest_first)
         sort_order = int(getattr(competency, "sort_order", 0))

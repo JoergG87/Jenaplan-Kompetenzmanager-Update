@@ -89,6 +89,7 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationDraftViewModel,
     ObservationListItem,
     ObservationRatingViewModel,
+    StudentCompetencyEvidenceViewModel,
     ObservationSubjectOptionViewModel,
     StudentDocumentationSubjectStatus,
     StudentCompetencyStatusViewModel,
@@ -1957,7 +1958,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(status.observed_proposal, status.rating)
         self.assertEqual(
             tuple(evidence.observation_date for evidence in status.evidence),
-            ("2026-07-03", "2026-07-04"),
+            ("2026-07-04", "2026-07-03"),
+        )
+        self.assertEqual(
+            len({evidence.observation_id for evidence in status.evidence}),
+            len(status.evidence),
         )
 
     def test_canonical_status_projection_keeps_confirmation_separate_from_proposal(self) -> None:
@@ -4563,8 +4568,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
-        self.assertIn("Bestätigter Stand: +", label_texts)
-        self.assertIn("Vorschlag aus Beobachtungen: -", label_texts)
+        self.assertIn("Bestätigter Stand", label_texts)
+        self.assertIn("Bewertung: +", label_texts)
+        self.assertIn("Vorschlag aus Beobachtungen", label_texts)
+        self.assertIn("Bewertung: -", label_texts)
         self.assertIn(
             "Dokumentationszustand: Neue Beobachtungen seit der Bestätigung",
             label_texts,
@@ -5501,11 +5508,147 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         competency_button.click()
         observations_button = screen.findChild(
-            QPushButton, "CompetencyCockpitObservationsButton"
+            QPushButton, "CompetencyCockpitObservationOpenButton"
+        )
+        self.assertIsNone(observations_button)
+
+        screen.set_observations(self._sample_filter_observations())
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Volle Stunden",
+                documentation_state="observed_unconfirmed",
+                observation_count=1,
+                observed_proposal="+",
+                evidence=(
+                    StudentCompetencyEvidenceViewModel(
+                        "OBS-000001", "2026-07-03", "+", "mathematik",
+                        "Mathematik", "Größen & Messen", "Zeit",
+                        "Volle Stunden", "Lernzielkontrolle",
+                    ),
+                ),
+            ),
+        ))
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_filter_observations(),
+            competency_cockpit=cockpit,
+        )
+        screen.profile_tabs.setCurrentIndex(2)
+        screen.findChild(QPushButton, "CompetencyCockpitCompetencyButton").click()
+        observations_button = screen.findChild(
+            QPushButton, "CompetencyCockpitObservationOpenButton"
         )
         observations_button.click()
 
         self.assertEqual(screen.profile_tabs.currentIndex(), 1)
+        self.assertIsNotNone(
+            screen.findChild(QLabel, "ProfileObservationFocusHint")
+        )
+        self.assertIsNotNone(app)
+
+    def test_competency_detail_keeps_confirmation_and_proposal_separate(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Volle Stunden",
+                documentation_state="newer_observations",
+                confirmed_rating="+", confirmed_at="2026-07-01",
+                confirmation_note="Sicher im Unterricht.", observed_proposal="-",
+                newer_observations=True,
+                evidence=(
+                    StudentCompetencyEvidenceViewModel(
+                        "OBS-000002", "2026-07-04", "-", "mathematik",
+                        "Mathematik", "Größen & Messen", "Zeit",
+                        "Volle Stunden", "Gruppenarbeit",
+                    ),
+                ),
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.findChild(QPushButton, "CompetencyCockpitCompetencyButton").click()
+        labels = [label.text() for label in screen.findChildren(QLabel)]
+
+        self.assertIn("Bestätigter Stand", labels)
+        self.assertIn("Bestätigt am: 2026-07-01", labels)
+        self.assertIn("Notiz: Sicher im Unterricht.", labels)
+        self.assertIn("Neuere Beobachtungen vorhanden", labels)
+        self.assertIn("Vorschlag aus Beobachtungen", labels)
+        self.assertIn("Bewertung: -", labels)
+        self.assertIsNotNone(app)
+
+    def test_competency_detail_shows_quiet_empty_history_for_confirmation_only(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Volle Stunden", documentation_state="confirmed",
+                confirmed_rating="+", confirmed_at="2026-07-01",
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.findChild(QPushButton, "CompetencyCockpitCompetencyButton").click()
+
+        self.assertIsNotNone(
+            screen.findChild(QLabel, "CompetencyCockpitEvidenceEmptyState")
+        )
+        self.assertIsNone(screen.findChild(QLabel, "CompetencyCockpitProposalTitle"))
+        self.assertIsNotNone(app)
+
+    def test_competency_detail_evidence_is_newest_first_and_edit_uses_observation_id(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        requested_ids: list[str] = []
+        screen.observation_edit_requested.connect(requested_ids.append)
+        evidence = (
+            StudentCompetencyEvidenceViewModel(
+                "OBS-000002", "2026-07-04", "+", "mathematik", "Mathematik",
+                "Größen & Messen", "Zeit", "Volle Stunden", "Gruppenarbeit",
+            ),
+            StudentCompetencyEvidenceViewModel(
+                "OBS-000001", "2026-07-03", "-", "mathematik", "Mathematik",
+                "Größen & Messen", "Zeit", "Volle Stunden", "Leseübung",
+            ),
+        )
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Volle Stunden", observation_count=2,
+                documentation_state="observed_unconfirmed", observed_proposal="+",
+                evidence=evidence,
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.findChild(QPushButton, "CompetencyCockpitCompetencyButton").click()
+        rows = screen.findChildren(QFrame, "CompetencyCockpitEvidenceRow")
+        edit_buttons = screen.findChildren(
+            QPushButton, "CompetencyCockpitObservationEditButton"
+        )
+
+        self.assertEqual(len(rows), 2)
+        self.assertIn("2026-07-04", rows[0].findChild(QLabel).text())
+        edit_buttons[1].click()
+        self.assertEqual(requested_ids, ["OBS-000001"])
+        self.assertIsNotNone(app)
+
+    def test_competency_detail_refresh_keeps_tab_and_expansion_state(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "Volle Stunden"),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.profile_tabs.setCurrentIndex(2)
+        screen.findChild(QPushButton, "CompetencyCockpitSubjectButton").click()
+        screen.findChild(QPushButton, "CompetencyCockpitLearningAreaButton").click()
+        screen.findChild(QPushButton, "CompetencyCockpitTopicButton").click()
+        screen.findChild(QPushButton, "CompetencyCockpitCompetencyButton").click()
+
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+
+        self.assertEqual(screen.profile_tabs.currentIndex(), 2)
+        self.assertFalse(
+            screen.findChild(QWidget, "CompetencyCockpitCompetencyDetails").isHidden()
+        )
         self.assertIsNotNone(app)
 
     def test_competency_cockpit_does_not_recalculate_status_in_screen(self) -> None:
@@ -5639,7 +5782,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         observation_count: int = 0,
         last_observation_date: str = "",
         confirmed_rating: str = "",
+        confirmed_at: str = "",
+        confirmation_note: str = "",
         observed_proposal: str = "",
+        evidence: tuple[StudentCompetencyEvidenceViewModel, ...] = (),
+        newer_observations: bool = False,
         historical: bool = False,
         subject_id: str = "mathematik",
         subject_name: str = "Mathematik",
@@ -5656,14 +5803,18 @@ class DesktopAppAdapterTest(unittest.TestCase):
             sort_order=sort_order,
             observation_count=observation_count,
             confirmed_rating=confirmed_rating,
+            confirmed_at=confirmed_at,
+            confirmation_note=confirmation_note,
             learning_area=learning_area,
             competency_group=topic,
             competency_text=label,
             documentation_state=documentation_state,
             observed_proposal=observed_proposal,
+            evidence=evidence,
             catalog_status="legacy" if historical else "current",
             is_active=not historical,
             historical=historical,
+            has_observations_newer_than_confirmation=newer_observations,
         )
 
     def _sample_student_detail(self) -> StudentDetailViewModel:

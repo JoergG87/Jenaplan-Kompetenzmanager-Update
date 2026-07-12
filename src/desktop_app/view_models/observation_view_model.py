@@ -224,6 +224,7 @@ class StudentCompetencyEvidenceViewModel:
     learning_area: str
     competency_group: str
     competency_text: str
+    context: str = ""
 
 
 @dataclass(frozen=True)

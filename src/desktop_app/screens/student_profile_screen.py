@@ -91,6 +91,7 @@ class StudentProfileScreen(QWidget):
         self.current_report_preview: StudentReportPreviewViewModel | None = None
         self.current_competency_cockpit: StudentCompetencyCockpitViewModel | None = None
         self.show_all_observations = False
+        self._focused_observation_id = ""
         self._competency_expanded_keys: set[str] = set()
         self._build()
 
@@ -733,6 +734,7 @@ class StudentProfileScreen(QWidget):
         """Render persisted observations for the current profile."""
         self.current_observations = observations
         self.show_all_observations = False
+        self._focused_observation_id = ""
         self._populate_observation_subject_filter(observations)
         self.apply_observation_filters()
 
@@ -911,6 +913,8 @@ class StudentProfileScreen(QWidget):
 
     def _observation_card(self, observation: ObservationListItem) -> QFrame:
         card = self._card()
+        card.setObjectName("ProfileObservationCard")
+        card.setProperty("observation_id", observation.observation_id)
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(5)
@@ -925,6 +929,11 @@ class StudentProfileScreen(QWidget):
         self._make_clickable_card(card, toggle_details, "Details anzeigen")
         layout.addLayout(self._observation_header(observation, details_button))
         layout.addWidget(self._observation_summary(observation))
+        if observation.observation_id == self._focused_observation_id:
+            focused_label = QLabel("Aus dem Kompetenzverlauf geöffnet")
+            focused_label.setObjectName("ProfileObservationFocusHint")
+            set_label_style(focused_label, "subtle")
+            layout.addWidget(focused_label)
         details_layout = QVBoxLayout(details_widget)
         details_layout.setContentsMargins(0, 4, 0, 0)
         details_layout.setSpacing(5)
@@ -1483,29 +1492,129 @@ class StudentProfileScreen(QWidget):
                 or getattr(competency, "competency_label"),
             ),
             ("Dokumentationszustand", getattr(competency, "documentation_state_label")),
-            ("Bestätigter Stand", getattr(competency, "confirmed_status_label")),
-            ("Anzahl Beobachtungen", getattr(competency, "observation_count_label")),
-            (
-                "Letzte Beobachtung",
-                getattr(competency, "last_observation_date")
-                or "Keine Beobachtung",
-            ),
         )
         for label, value in rows:
             line = QLabel(f"{label}: {value}")
             line.setWordWrap(True)
             set_label_style(line, "small")
             layout.addWidget(line)
-        proposal = getattr(competency, "observed_proposal")
-        if proposal:
-            proposal_label = QLabel(f"Vorschlag aus Beobachtungen: {proposal}")
-            set_label_style(proposal_label, "small")
-            layout.addWidget(proposal_label)
-        observations_button = QPushButton("Beobachtungen anzeigen")
-        observations_button.setObjectName("CompetencyCockpitObservationsButton")
-        observations_button.clicked.connect(self._show_observations_tab)
-        layout.addWidget(observations_button, 0, Qt.AlignmentFlag.AlignLeft)
+        if getattr(competency, "missing_catalog_reference", False):
+            catalog_hint = QLabel("Katalogreferenz nicht mehr vorhanden")
+            catalog_hint.setObjectName("CompetencyCockpitMissingCatalogReferenceHint")
+            set_label_style(catalog_hint, "subtle")
+            layout.addWidget(catalog_hint)
+        self._add_competency_confirmation_block(layout, competency)
+        self._add_competency_proposal_block(layout, competency)
+        self._add_competency_evidence_block(layout, competency)
         return details
+
+    def _add_competency_confirmation_block(
+        self,
+        layout: QVBoxLayout,
+        competency: object,
+    ) -> None:
+        confirmed_rating = str(getattr(competency, "confirmed_rating", ""))
+        if not confirmed_rating:
+            return
+        title = QLabel("Bestätigter Stand")
+        title.setObjectName("CompetencyCockpitConfirmationTitle")
+        set_label_style(title, "field_label")
+        layout.addWidget(title)
+        for label, value in (
+            ("Bewertung", confirmed_rating),
+            ("Bestätigt am", str(getattr(competency, "confirmed_at", "")) or "-"),
+        ):
+            line = QLabel(f"{label}: {value}")
+            line.setWordWrap(True)
+            set_label_style(line, "small")
+            layout.addWidget(line)
+        note = str(getattr(competency, "confirmation_note", ""))
+        if note:
+            note_label = QLabel(f"Notiz: {note}")
+            note_label.setWordWrap(True)
+            set_label_style(note_label, "small")
+            layout.addWidget(note_label)
+        if getattr(competency, "has_observations_newer_than_confirmation", False):
+            newer_label = QLabel("Neuere Beobachtungen vorhanden")
+            newer_label.setObjectName("CompetencyCockpitNewerObservationsHint")
+            set_label_style(newer_label, "subtle")
+            layout.addWidget(newer_label)
+
+    def _add_competency_proposal_block(
+        self,
+        layout: QVBoxLayout,
+        competency: object,
+    ) -> None:
+        proposal = str(getattr(competency, "observed_proposal", ""))
+        if not proposal:
+            return
+        title = QLabel("Vorschlag aus Beobachtungen")
+        title.setObjectName("CompetencyCockpitProposalTitle")
+        set_label_style(title, "field_label")
+        layout.addWidget(title)
+        proposal_label = QLabel(f"Bewertung: {proposal}")
+        set_label_style(proposal_label, "small")
+        layout.addWidget(proposal_label)
+
+    def _add_competency_evidence_block(
+        self,
+        layout: QVBoxLayout,
+        competency: object,
+    ) -> None:
+        evidence = tuple(getattr(competency, "evidence", ()))
+        title = QLabel("Beobachtungsverlauf")
+        title.setObjectName("CompetencyCockpitEvidenceTitle")
+        set_label_style(title, "field_label")
+        layout.addWidget(title)
+        if not evidence:
+            empty = QLabel("Noch keine aktiven Beobachtungen zu dieser Kompetenz.")
+            empty.setObjectName("CompetencyCockpitEvidenceEmptyState")
+            empty.setWordWrap(True)
+            set_label_style(empty, "subtle")
+            layout.addWidget(empty)
+            return
+        for item in evidence:
+            layout.addWidget(self._competency_evidence_row(item))
+
+    def _competency_evidence_row(self, evidence: object) -> QFrame:
+        row = self._card()
+        row.setObjectName("CompetencyCockpitEvidenceRow")
+        layout = QVBoxLayout(row)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(3)
+        header = QLabel(
+            f"{getattr(evidence, 'observation_date')} · Bewertung: "
+            f"{getattr(evidence, 'rating')}"
+        )
+        set_label_style(header, "small")
+        layout.addWidget(header)
+        context = str(getattr(evidence, "context", ""))
+        if context:
+            context_label = QLabel(context)
+            context_label.setWordWrap(True)
+            set_label_style(context_label, "subtle")
+            layout.addWidget(context_label)
+        actions = QHBoxLayout()
+        open_button = QPushButton("Beobachtung öffnen")
+        open_button.setObjectName("CompetencyCockpitObservationOpenButton")
+        edit_button = QPushButton("Bearbeiten")
+        edit_button.setObjectName("CompetencyCockpitObservationEditButton")
+        observation_id = str(getattr(evidence, "observation_id"))
+        open_button.clicked.connect(
+            lambda _checked=False, observation_id=observation_id: (
+                self._show_observations_tab(observation_id)
+            )
+        )
+        edit_button.clicked.connect(
+            lambda _checked=False, observation_id=observation_id: (
+                self.observation_edit_requested.emit(observation_id)
+            )
+        )
+        actions.addWidget(open_button)
+        actions.addWidget(edit_button)
+        actions.addStretch()
+        layout.addLayout(actions)
+        return row
 
     def _historical_competency_section(
         self,
@@ -1574,7 +1683,13 @@ class StudentProfileScreen(QWidget):
             self._competency_expanded_keys.discard(key)
         button.setText(expanded_text if expanded else collapsed_text)
 
-    def _show_observations_tab(self) -> None:
+    def _show_observations_tab(self, observation_id: str = "") -> None:
+        """Show the existing observation tab and mark a requested observation."""
+        self._focused_observation_id = observation_id
+        if observation_id:
+            self.reset_observation_filters()
+            self.show_all_observations = True
+            self.apply_observation_filters()
         self.profile_tabs.setCurrentIndex(1)
 
     def set_report_preview(
