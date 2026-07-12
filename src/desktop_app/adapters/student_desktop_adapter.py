@@ -63,11 +63,13 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationRatingViewModel,
     ObservationSubjectOptionViewModel,
     StudentCompetencyEvidenceViewModel,
+    StudentCompetencyCockpitViewModel,
     StudentDocumentationSubjectStatus,
     StudentDocumentationLearningAreaStatus,
     StudentCompetencyStatusViewModel,
     StudentCompetencySubjectGroup,
     StudentMissingCompetencyViewModel,
+    build_student_competency_cockpit,
     calculated_rating_from_history,
     observation_rating_label,
 )
@@ -683,6 +685,15 @@ class StudentDesktopAdapter:
                     status.competency_id,
                 ),
             )
+        )
+
+    def competency_cockpit_for_student(
+        self,
+        student_id: str,
+    ) -> StudentCompetencyCockpitViewModel:
+        """Group the canonical Sprint-6B status projection for cockpit display."""
+        return build_student_competency_cockpit(
+            self.list_competency_status_projection_for_student(student_id)
         )
 
     def list_documentation_status_for_student(

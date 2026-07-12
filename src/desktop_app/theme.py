@@ -91,6 +91,17 @@ QFrame#ObservationFilterBar {{
     border: 1px solid #DCE7EF;
     border-radius: 8px;
 }}
+QProgressBar#CompetencyCockpitProgressBar {{
+    min-height: 8px;
+    max-height: 8px;
+    background-color: #E5E7EB;
+    border: none;
+    border-radius: 4px;
+}}
+QProgressBar#CompetencyCockpitProgressBar::chunk {{
+    background-color: #7C91A3;
+    border-radius: 4px;
+}}
 QPushButton {{
     background-color: {COLOR_SURFACE};
     color: {COLOR_NAVY};

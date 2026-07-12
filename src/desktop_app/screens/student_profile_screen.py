@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QProgressBar,
     QScrollArea,
     QTabWidget,
     QVBoxLayout,
@@ -35,9 +36,12 @@ from src.desktop_app.view_models.student_view_model import (
 )
 from src.desktop_app.view_models.observation_view_model import (
     ObservationListItem,
+    StudentCompetencyCockpitLearningAreaViewModel,
+    StudentCompetencyCockpitSubjectViewModel,
+    StudentCompetencyCockpitTopicViewModel,
+    StudentCompetencyCockpitViewModel,
     StudentDocumentationSubjectStatus,
     StudentCompetencySubjectGroup,
-    observation_rating_keys,
 )
 from src.desktop_app.theme import create_card, set_label_style
 
@@ -86,6 +90,7 @@ class StudentProfileScreen(QWidget):
         self.current_documents: tuple[StudentDocumentViewModel, ...] = ()
         self.current_report_preview: StudentReportPreviewViewModel | None = None
         self.show_all_observations = False
+        self._competency_expanded_keys: set[str] = set()
         self._build()
 
     def _build(self) -> None:
@@ -112,15 +117,8 @@ class StudentProfileScreen(QWidget):
             "Beobachtungen",
         )
 
-        competencies_tab = QWidget()
-        competencies_layout = QVBoxLayout(competencies_tab)
-        competencies_layout.setContentsMargins(0, 8, 0, 0)
-        competencies_layout.setSpacing(10)
-        competencies_layout.addWidget(self._documentation_status_card())
-        competencies_layout.addWidget(self._competencies_card())
-        competencies_layout.addStretch(1)
         self.profile_tabs.addTab(
-            self._scrollable_tab(competencies_tab),
+            self._scrollable_tab(self._competency_cockpit_tab()),
             "Kompetenzen",
         )
 
@@ -344,38 +342,28 @@ class StudentProfileScreen(QWidget):
         set_label_style(filter_label, "field_label")
         return filter_label
 
-    def _competencies_card(self) -> QWidget:
+    def _competency_cockpit_tab(self) -> QWidget:
         section = QWidget()
         layout = QVBoxLayout(section)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
-        title_label = QLabel("Kompetenzübersicht")
-        set_label_style(title_label, "section_title")
-        self.competencies_container = QWidget()
-        self.competencies_layout = QVBoxLayout(self.competencies_container)
-        self.competencies_layout.setContentsMargins(0, 0, 0, 0)
-        self.competencies_layout.setSpacing(8)
-        set_label_style(self.competency_empty_label, "body")
-        layout.addWidget(title_label)
-        layout.addWidget(self.competencies_container)
-        return section
-
-    def _documentation_status_card(self) -> QWidget:
-        section = QWidget()
-        layout = QVBoxLayout(section)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
-        title_label = QLabel("Dokumentationsstand")
-        set_label_style(title_label, "section_title")
-        self.documentation_status_container = QWidget()
-        self.documentation_status_layout = QVBoxLayout(
-            self.documentation_status_container
+        layout.setContentsMargins(0, 8, 0, 0)
+        layout.setSpacing(10)
+        title = QLabel("Kompetenz-Cockpit")
+        set_label_style(title, "section_title")
+        hint = QLabel(
+            "Dokumentationsstand nach Fach, Kompetenzbereich und Thema. "
+            "Alle Bereiche starten geschlossen."
         )
-        self.documentation_status_layout.setContentsMargins(0, 0, 0, 0)
-        self.documentation_status_layout.setSpacing(6)
-        set_label_style(self.documentation_empty_label, "body")
-        layout.addWidget(title_label)
-        layout.addWidget(self.documentation_status_container)
+        hint.setWordWrap(True)
+        set_label_style(hint, "subtle")
+        self.competency_cockpit_container = QWidget()
+        self.competency_cockpit_layout = QVBoxLayout(
+            self.competency_cockpit_container
+        )
+        self.competency_cockpit_layout.setContentsMargins(0, 0, 0, 0)
+        self.competency_cockpit_layout.setSpacing(8)
+        layout.addWidget(title)
+        layout.addWidget(hint)
+        layout.addWidget(self.competency_cockpit_container)
         return section
 
     def _documents_card(self) -> QWidget:
@@ -645,6 +633,7 @@ class StudentProfileScreen(QWidget):
         report_preview: StudentReportPreviewViewModel | None = None,
         documentation_statuses: tuple[StudentDocumentationSubjectStatus, ...] = (),
         documents: tuple[StudentDocumentViewModel, ...] = (),
+        competency_cockpit: StudentCompetencyCockpitViewModel | None = None,
     ) -> None:
         """Render selected student or empty state."""
         previous_student_id = (
@@ -662,6 +651,7 @@ class StudentProfileScreen(QWidget):
         )
         if should_reset_tab:
             self.profile_tabs.setCurrentIndex(0)
+            self._competency_expanded_keys.clear()
 
         if student is None:
             self.name_label.setText("Kein Schüler ausgewählt")
@@ -672,8 +662,7 @@ class StudentProfileScreen(QWidget):
             self.notes_value_label.setText("")
             self.action_feedback_label.setText("")
             self.set_observations(())
-            self.set_documentation_statuses(())
-            self.set_competency_groups(())
+            self.set_competency_cockpit(None)
             self.set_report_preview(None)
             self.set_documents(())
             self._render_profile_overview(None, (), (), ())
@@ -692,8 +681,7 @@ class StudentProfileScreen(QWidget):
             documentation_statuses,
         )
         self.set_observations(observations)
-        self.set_documentation_statuses(documentation_statuses)
-        self.set_competency_groups(competency_groups)
+        self.set_competency_cockpit(competency_cockpit)
         self.set_report_preview(report_preview)
         self.set_documents(documents)
 
@@ -1073,83 +1061,6 @@ class StudentProfileScreen(QWidget):
             layout.addWidget(row)
         return block
 
-    def set_competency_groups(
-        self,
-        competency_groups: tuple[StudentCompetencySubjectGroup, ...],
-    ) -> None:
-        """Render calculated competency status grouped by subject."""
-        self._clear_layout(self.competencies_layout)
-        if not competency_groups:
-            self.competencies_layout.addWidget(self._empty_competencies_card())
-            return
-        for group in competency_groups:
-            self.competencies_layout.addWidget(self._competency_group_card(group))
-
-    def _empty_competencies_card(self) -> QFrame:
-        card = self._card()
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(3)
-
-        empty_label = QLabel(PROFILE_SECTION_PLACEHOLDERS["competencies_title"])
-        empty_label.setWordWrap(True)
-        set_label_style(empty_label, "body")
-
-        hint_label = QLabel(PROFILE_SECTION_PLACEHOLDERS["competencies_hint"])
-        hint_label.setWordWrap(True)
-        set_label_style(hint_label, "subtle")
-
-        layout.addWidget(empty_label)
-        layout.addWidget(hint_label)
-        return card
-
-    def set_documentation_statuses(
-        self,
-        statuses: tuple[StudentDocumentationSubjectStatus, ...],
-    ) -> None:
-        """Render compact documentation coverage with optional subject details."""
-        self._clear_layout(self.documentation_status_layout)
-        if not statuses:
-            self.documentation_status_layout.addWidget(
-                self._empty_documentation_status_card()
-            )
-            return
-        card = self._card()
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(6)
-        summary = documentation_summary_from_subjects(statuses)
-        summary_label = QLabel(summary.profile_summary_label)
-        set_label_style(summary_label, "body")
-        status_label = QLabel(summary.status_label)
-        set_label_style(status_label, "small")
-        weak_subjects_label = QLabel(summary.weak_subjects_label)
-        weak_subjects_label.setWordWrap(True)
-        set_label_style(weak_subjects_label, "subtle")
-        weak_subjects_label.setVisible(bool(summary.weak_subjects_label))
-        details_button = QPushButton("Details anzeigen")
-        details_button.setObjectName("DocumentationStatusDetailsButton")
-        details_container = QWidget()
-        details_container.setObjectName("DocumentationStatusDetails")
-        details_layout = QVBoxLayout(details_container)
-        details_layout.setContentsMargins(0, 0, 0, 0)
-        details_layout.setSpacing(4)
-        for status in statuses:
-            details_layout.addWidget(self._documentation_subject_details(status))
-        details_container.setVisible(False)
-        details_button.clicked.connect(
-            lambda _checked=False: self._toggle_documentation_status_details(
-                details_container,
-                details_button,
-            )
-        )
-        layout.addWidget(summary_label)
-        layout.addWidget(status_label)
-        layout.addWidget(weak_subjects_label)
-        layout.addWidget(details_button)
-        layout.addWidget(details_container)
-        self.documentation_status_layout.addWidget(card)
-
     def _documentation_subject_details(
         self,
         status: StudentDocumentationSubjectStatus,
@@ -1158,23 +1069,18 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(detail)
         layout.setContentsMargins(0, 2, 0, 2)
         layout.setSpacing(2)
-
         subject_label = QLabel(status.subject_display_name)
         set_label_style(subject_label, "field_label")
-
         count_label = QLabel(
             f"{status.documented_count}/{status.total_count} Lernbereiche"
         )
         set_label_style(count_label, "small")
-
         progress_label = QLabel(status.progress_label)
         progress_label.setWordWrap(True)
         set_label_style(progress_label, "small")
-
         layout.addWidget(subject_label)
         layout.addWidget(count_label)
         layout.addWidget(progress_label)
-
         if status.missing_competencies:
             suitable_labels = ", ".join(
                 competency.competency_label
@@ -1191,7 +1097,6 @@ class StudentProfileScreen(QWidget):
             open_label.setWordWrap(True)
             set_label_style(open_label, "subtle")
             layout.addWidget(open_label)
-
         return detail
 
     def _toggle_documentation_status_details(
@@ -1206,23 +1111,297 @@ class StudentProfileScreen(QWidget):
             else "Details ausblenden"
         )
 
-    def _empty_documentation_status_card(self) -> QFrame:
+    def set_competency_cockpit(
+        self,
+        cockpit: StudentCompetencyCockpitViewModel | None,
+    ) -> None:
+        """Render the read-only cockpit from the canonical Sprint-6B projection."""
+        self._clear_layout(self.competency_cockpit_layout)
+        if cockpit is None or (not cockpit.subjects and not cockpit.historical_subjects):
+            self.competency_cockpit_layout.addWidget(
+                self._empty_competency_cockpit_card()
+            )
+            return
+        for subject in cockpit.subjects:
+            self.competency_cockpit_layout.addWidget(
+                self._cockpit_subject_card(subject, historical=False)
+            )
+        if cockpit.historical_subjects:
+            self.competency_cockpit_layout.addWidget(
+                self._historical_competency_section(cockpit.historical_subjects)
+            )
+
+    def _empty_competency_cockpit_card(self) -> QFrame:
         card = self._card()
         layout = QVBoxLayout(card)
+        layout.setContentsMargins(12, 10, 12, 10)
+        message = QLabel("Noch keine Kompetenzprojektion vorhanden.")
+        set_label_style(message, "body")
+        layout.addWidget(message)
+        return card
+
+    def _cockpit_subject_card(
+        self,
+        subject: StudentCompetencyCockpitSubjectViewModel,
+        *,
+        historical: bool,
+    ) -> QFrame:
+        key = f"{'historical' if historical else 'current'}:subject:{subject.subject_id}"
+        card = self._card()
+        card.setObjectName("CompetencyCockpitSubjectCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(7)
+        header = QHBoxLayout()
+        title = QLabel(subject.subject_display_name)
+        set_label_style(title, "card_title")
+        count = QLabel(
+            f"{subject.documented_count} / {subject.total_count} Kompetenzen dokumentiert"
+        )
+        set_label_style(count, "small")
+        button = QPushButton("Öffnen ▾")
+        button.setObjectName("CompetencyCockpitSubjectButton")
+        header.addWidget(title)
+        header.addStretch(1)
+        header.addWidget(count)
+        header.addWidget(button)
+        layout.addLayout(header)
+        layout.addWidget(self._cockpit_progress(subject.progress_percent))
+        details = QWidget()
+        details.setObjectName("CompetencyCockpitSubjectDetails")
+        details_layout = QVBoxLayout(details)
+        details_layout.setContentsMargins(0, 5, 0, 0)
+        details_layout.setSpacing(7)
+        for area in subject.learning_areas:
+            details_layout.addWidget(
+                self._cockpit_learning_area_card(
+                    subject.subject_id,
+                    area,
+                    historical=historical,
+                )
+            )
+        self._configure_cockpit_toggle(key, details, button, "Öffnen ▾", "Schließen ▴")
+        layout.addWidget(details)
+        self._make_clickable_card(
+            card,
+            lambda: self._toggle_cockpit_section(
+                key, details, button, "Öffnen ▾", "Schließen ▴"
+            ),
+            "Fach öffnen",
+        )
+        return card
+
+    def _cockpit_learning_area_card(
+        self,
+        subject_id: str,
+        area: StudentCompetencyCockpitLearningAreaViewModel,
+        *,
+        historical: bool,
+    ) -> QFrame:
+        key = (
+            f"{'historical' if historical else 'current'}:area:"
+            f"{subject_id}:{area.learning_area}"
+        )
+        card = self._card()
+        card.setObjectName("CompetencyCockpitLearningAreaCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(6)
+        header = QHBoxLayout()
+        title = QLabel(area.learning_area)
+        set_label_style(title, "field_label")
+        count = QLabel(f"{area.documented_count} / {area.total_count}")
+        set_label_style(count, "small")
+        button = QPushButton("Öffnen ▾")
+        button.setObjectName("CompetencyCockpitLearningAreaButton")
+        header.addWidget(title)
+        header.addStretch(1)
+        header.addWidget(count)
+        header.addWidget(button)
+        layout.addLayout(header)
+        layout.addWidget(self._cockpit_progress(area.progress_percent))
+        details = QWidget()
+        details.setObjectName("CompetencyCockpitLearningAreaDetails")
+        details_layout = QVBoxLayout(details)
+        details_layout.setContentsMargins(0, 4, 0, 0)
+        details_layout.setSpacing(6)
+        for topic in area.topics:
+            details_layout.addWidget(
+                self._cockpit_topic_card(
+                    subject_id,
+                    area.learning_area,
+                    topic,
+                    historical=historical,
+                )
+            )
+        self._configure_cockpit_toggle(key, details, button, "Öffnen ▾", "Schließen ▴")
+        layout.addWidget(details)
+        return card
+
+    def _cockpit_topic_card(
+        self,
+        subject_id: str,
+        learning_area: str,
+        topic: StudentCompetencyCockpitTopicViewModel,
+        *,
+        historical: bool,
+    ) -> QFrame:
+        key = (
+            f"{'historical' if historical else 'current'}:topic:"
+            f"{subject_id}:{learning_area}:{topic.competency_group}"
+        )
+        card = self._card()
+        card.setObjectName("CompetencyCockpitTopicCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(5)
+        header = QHBoxLayout()
+        title = QLabel(topic.competency_group)
+        set_label_style(title, "body")
+        count = QLabel(f"{topic.documented_count} / {topic.total_count}")
+        set_label_style(count, "subtle")
+        button = QPushButton("Öffnen ▾")
+        button.setObjectName("CompetencyCockpitTopicButton")
+        header.addWidget(title)
+        header.addStretch(1)
+        header.addWidget(count)
+        header.addWidget(button)
+        layout.addLayout(header)
+        details = QWidget()
+        details.setObjectName("CompetencyCockpitTopicDetails")
+        details_layout = QVBoxLayout(details)
+        details_layout.setContentsMargins(0, 4, 0, 0)
+        details_layout.setSpacing(3)
+        for competency in topic.competencies:
+            details_layout.addWidget(self._cockpit_competency_row(competency))
+        self._configure_cockpit_toggle(key, details, button, "Öffnen ▾", "Schließen ▴")
+        layout.addWidget(details)
+        return card
+
+    def _cockpit_competency_row(self, competency: object) -> QWidget:
+        row = QWidget()
+        row.setObjectName("CompetencyCockpitCompetencyRow")
+        layout = QVBoxLayout(row)
+        layout.setContentsMargins(0, 1, 0, 1)
+        layout.setSpacing(3)
+        documented = getattr(competency, "documentation_state") != "undocumented"
+        button = QPushButton(
+            f"{'☑' if documented else '☐'} {getattr(competency, 'competency_label')}"
+        )
+        button.setObjectName("CompetencyCockpitCompetencyButton")
+        details = self._cockpit_competency_details(competency)
+        details.setObjectName("CompetencyCockpitCompetencyDetails")
+        key = f"competency:{getattr(competency, 'competency_id')}"
+        self._configure_cockpit_toggle(key, details, button, button.text(), button.text())
+        layout.addWidget(button)
+        layout.addWidget(details)
+        return row
+
+    def _cockpit_competency_details(self, competency: object) -> QFrame:
+        details = self._card()
+        layout = QVBoxLayout(details)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(3)
+        rows = (
+            (
+                "Kompetenz",
+                getattr(competency, "competency_text")
+                or getattr(competency, "competency_label"),
+            ),
+            ("Dokumentationszustand", getattr(competency, "documentation_state_label")),
+            ("Bestätigter Stand", getattr(competency, "confirmed_status_label")),
+            ("Anzahl Beobachtungen", getattr(competency, "observation_count_label")),
+            (
+                "Letzte Beobachtung",
+                getattr(competency, "last_observation_date")
+                or "Keine Beobachtung",
+            ),
+        )
+        for label, value in rows:
+            line = QLabel(f"{label}: {value}")
+            line.setWordWrap(True)
+            set_label_style(line, "small")
+            layout.addWidget(line)
+        proposal = getattr(competency, "observed_proposal")
+        if proposal:
+            proposal_label = QLabel(f"Vorschlag aus Beobachtungen: {proposal}")
+            set_label_style(proposal_label, "small")
+            layout.addWidget(proposal_label)
+        observations_button = QPushButton("Beobachtungen anzeigen")
+        observations_button.setObjectName("CompetencyCockpitObservationsButton")
+        observations_button.clicked.connect(self._show_observations_tab)
+        layout.addWidget(observations_button, 0, Qt.AlignmentFlag.AlignLeft)
+        return details
 
-        empty_label = QLabel("Noch keine Dokumentationsdetails vorhanden.")
-        empty_label.setWordWrap(True)
-        set_label_style(empty_label, "body")
-
-        hint_label = QLabel("Dokumentationsstand erscheint hier nach Katalogladung.")
-        hint_label.setWordWrap(True)
-        set_label_style(hint_label, "subtle")
-
-        layout.addWidget(empty_label)
-        layout.addWidget(hint_label)
+    def _historical_competency_section(
+        self,
+        subjects: tuple[StudentCompetencyCockpitSubjectViewModel, ...],
+    ) -> QFrame:
+        key = "historical"
+        card = self._card()
+        card.setObjectName("CompetencyCockpitHistoricalCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(12, 10, 12, 10)
+        button = QPushButton("Historisch dokumentiert ▾")
+        button.setObjectName("CompetencyCockpitHistoricalButton")
+        details = QWidget()
+        details.setObjectName("CompetencyCockpitHistoricalDetails")
+        details_layout = QVBoxLayout(details)
+        details_layout.setContentsMargins(0, 6, 0, 0)
+        details_layout.setSpacing(7)
+        for subject in subjects:
+            details_layout.addWidget(self._cockpit_subject_card(subject, historical=True))
+        self._configure_cockpit_toggle(
+            key, details, button, "Historisch dokumentiert ▾", "Historisch dokumentiert ▴"
+        )
+        layout.addWidget(button)
+        layout.addWidget(details)
         return card
+
+    def _cockpit_progress(self, percent: int) -> QProgressBar:
+        progress = QProgressBar()
+        progress.setObjectName("CompetencyCockpitProgressBar")
+        progress.setRange(0, 100)
+        progress.setValue(percent)
+        progress.setTextVisible(False)
+        progress.setAccessibleName(f"Dokumentationsfortschritt {percent} Prozent")
+        return progress
+
+    def _configure_cockpit_toggle(
+        self,
+        key: str,
+        details: QWidget,
+        button: QPushButton,
+        collapsed_text: str,
+        expanded_text: str,
+    ) -> None:
+        expanded = key in self._competency_expanded_keys
+        details.setVisible(expanded)
+        button.setText(expanded_text if expanded else collapsed_text)
+        button.clicked.connect(
+            lambda _checked=False: self._toggle_cockpit_section(
+                key, details, button, collapsed_text, expanded_text
+            )
+        )
+
+    def _toggle_cockpit_section(
+        self,
+        key: str,
+        details: QWidget,
+        button: QPushButton,
+        collapsed_text: str,
+        expanded_text: str,
+    ) -> None:
+        expanded = details.isHidden()
+        details.setVisible(expanded)
+        if expanded:
+            self._competency_expanded_keys.add(key)
+        else:
+            self._competency_expanded_keys.discard(key)
+        button.setText(expanded_text if expanded else collapsed_text)
+
+    def _show_observations_tab(self) -> None:
+        self.profile_tabs.setCurrentIndex(1)
 
     def set_report_preview(
         self,
@@ -1492,182 +1671,6 @@ class StudentProfileScreen(QWidget):
         safe_name = "_".join(self.current_student.display_name.split())
         safe_id = self.current_student.student_id.replace("/", "-")
         return f"Berichtsvorbereitung_{safe_name}_{safe_id}.md"
-
-    def _competency_group_card(
-        self,
-        group: StudentCompetencySubjectGroup,
-    ) -> QFrame:
-        card = self._card()
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(5)
-        header = QHBoxLayout()
-        title = QLabel(group.subject_display_name)
-        set_label_style(title, "card_title")
-        summary = QLabel(f"{len(group.competencies)} Kompetenzen")
-        set_label_style(summary, "subtle")
-        details_button = QPushButton("Details ▾")
-        details_button.setObjectName("CompetencyGroupDetailsButton")
-        header.addWidget(title)
-        header.addStretch(1)
-        header.addWidget(summary)
-        header.addWidget(details_button)
-        layout.addLayout(header)
-        details_container = QWidget()
-        details_container.setObjectName("CompetencyGroupDetails")
-        details_layout = QVBoxLayout(details_container)
-        details_layout.setContentsMargins(0, 4, 0, 0)
-        details_layout.setSpacing(4)
-        for competency in group.competencies:
-            details_layout.addWidget(self._competency_status_row(competency))
-        if group.missing_competencies:
-            details_layout.addWidget(
-                self._missing_competencies_block(group.missing_competencies)
-            )
-        details_container.setVisible(False)
-        def toggle_details() -> None:
-            self._toggle_competency_group_details(details_container, details_button)
-
-        details_button.clicked.connect(lambda _checked=False: toggle_details())
-        self._make_clickable_card(card, toggle_details, "Kompetenzdetails anzeigen")
-        layout.addWidget(details_container)
-        return card
-
-    def _toggle_competency_group_details(
-        self,
-        details_container: QWidget,
-        details_button: QPushButton,
-    ) -> None:
-        details_container.setVisible(details_container.isHidden())
-        details_button.setText(
-            "Details ▾" if details_container.isHidden() else "Details ▴"
-        )
-
-    def _competency_status_row(self, competency: object) -> QWidget:
-        row = QWidget()
-        layout = QVBoxLayout(row)
-        layout.setContentsMargins(0, 2, 0, 4)
-        layout.setSpacing(2)
-        title = QLabel(getattr(competency, "competency_label"))
-        title.setWordWrap(True)
-        set_label_style(title, "body")
-        status = QLabel(getattr(competency, "confirmation_status_label"))
-        set_label_style(status, "small")
-        history = QLabel(
-            f"Verlauf: {getattr(competency, 'rating_history_label')}"
-        )
-        history.setWordWrap(True)
-        set_label_style(history, "small")
-        meta_parts = [getattr(competency, "observation_count_label")]
-        last_observation_date = getattr(competency, "last_observation_date")
-        if last_observation_date:
-            meta_parts.append(f"zuletzt beobachtet: {last_observation_date}")
-        meta = QLabel(" · ".join(meta_parts))
-        set_label_style(meta, "subtle")
-        confirmation_meta = QLabel(getattr(competency, "confirmation_meta_label"))
-        set_label_style(confirmation_meta, "subtle")
-        confirmation_meta.setVisible(bool(confirmation_meta.text()))
-        layout.addWidget(title)
-        layout.addWidget(status)
-        layout.addWidget(history)
-        layout.addWidget(meta)
-        layout.addWidget(confirmation_meta)
-        layout.addLayout(self._competency_confirmation_actions(competency))
-        return row
-
-    def _missing_competencies_block(
-        self,
-        missing_competencies: tuple[object, ...],
-    ) -> QWidget:
-        block = QWidget()
-        layout = QVBoxLayout(block)
-        layout.setContentsMargins(0, 4, 0, 0)
-        layout.setSpacing(4)
-        details_container = QWidget()
-        details_container.setObjectName("MissingCompetenciesDetails")
-        details_layout = QVBoxLayout(details_container)
-        details_layout.setContentsMargins(0, 0, 0, 0)
-        details_layout.setSpacing(3)
-        for competency in missing_competencies:
-            line = QLabel(getattr(competency, "competency_label"))
-            line.setWordWrap(True)
-            set_label_style(line, "subtle")
-            details_layout.addWidget(line)
-        details_container.setVisible(False)
-        details_button = QPushButton(
-            f"Noch nicht dokumentierte Kompetenzen ({len(missing_competencies)}) ▾"
-        )
-        details_button.setObjectName("MissingCompetenciesDetailsButton")
-        details_button.clicked.connect(
-            lambda _checked=False: self._toggle_missing_competencies(
-                details_container,
-                details_button,
-                len(missing_competencies),
-            )
-        )
-        layout.addWidget(details_button)
-        layout.addWidget(details_container)
-        return block
-
-    def _toggle_missing_competencies(
-        self,
-        details_container: QWidget,
-        details_button: QPushButton,
-        count: int,
-    ) -> None:
-        details_container.setVisible(details_container.isHidden())
-        indicator = "▾" if details_container.isHidden() else "▴"
-        details_button.setText(
-            f"Noch nicht dokumentierte Kompetenzen ({count}) {indicator}"
-        )
-
-    def _competency_confirmation_actions(self, competency: object) -> QHBoxLayout:
-        actions = QHBoxLayout()
-        actions.setContentsMargins(0, 0, 0, 0)
-        actions.setSpacing(6)
-        rating_select = QComboBox()
-        rating_select.setObjectName("CompetencyConfirmationRatingSelect")
-        rating_select.addItems(observation_rating_keys())
-        selected_rating = (
-            getattr(competency, "confirmed_rating")
-            or getattr(competency, "rating")
-        )
-        selected_index = rating_select.findText(selected_rating)
-        if selected_index >= 0:
-            rating_select.setCurrentIndex(selected_index)
-        adopt_button = QPushButton("Vorschlag aus Beobachtungen übernehmen")
-        confirm_button = QPushButton("Aktuell bestätigen")
-        adopt_button.clicked.connect(
-            lambda _checked=False: self._request_competency_confirmation(
-                competency,
-                getattr(competency, "rating"),
-            )
-        )
-        confirm_button.clicked.connect(
-            lambda _checked=False: self._request_competency_confirmation(
-                competency,
-                rating_select.currentText(),
-            )
-        )
-        actions.addWidget(rating_select)
-        actions.addWidget(adopt_button)
-        actions.addWidget(confirm_button)
-        actions.addStretch(1)
-        return actions
-
-    def _request_competency_confirmation(
-        self,
-        competency: object,
-        confirmed_rating: str,
-    ) -> None:
-        if self.current_student is None:
-            return
-        self.competency_confirmation_requested.emit(
-            self.current_student.student_id,
-            getattr(competency, "competency_id"),
-            confirmed_rating,
-            "",
-        )
 
     def _clear_observations(self) -> None:
         self._clear_layout(self.observations_layout)

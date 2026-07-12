@@ -101,6 +101,8 @@ Die App verwendet eine weiche, leichte Formensprache:
 
 Schuelerprofile sollen als ruhige Karten mit klaren Bereichen erscheinen.
 
+Das Kompetenz-Cockpit im Schuelerprofil nutzt verschachtelte, abgerundete Karten und neutrale Fortschrittsbalken. Fortschritt visualisiert ausschließlich Dokumentationsabdeckung und verwendet keine Bewertungs- oder Ampelfarben. Die Darstellung erweitert das bestehende Kartensystem, ohne eine neue Farbsemantik oder ein spaeteres Designsystem vorwegzunehmen.
+
 Beobachtungen sollen bevorzugt als leichte Cards oder geordnete Listen mit klarer Hierarchie gestaltet werden, nicht als reine Tabellenlisten.
 
 Auswertungen und Berichte sollen Diagrammfarben aus der Icon-Palette verwenden.

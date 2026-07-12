@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QLabel,
     QPushButton,
+    QProgressBar,
     QScrollArea,
     QSplitter,
     QTabWidget,
@@ -93,6 +94,7 @@ from src.desktop_app.view_models.observation_view_model import (
     StudentCompetencyStatusViewModel,
     StudentCompetencySubjectGroup,
     StudentMissingCompetencyViewModel,
+    build_student_competency_cockpit,
     calculated_rating_from_history,
     observation_rating_keys,
     rating_from_weighted_score,
@@ -4431,43 +4433,33 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_student_profile_observation_filters_do_not_affect_competency_overview(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Mit Texten und Medien umgehen",
+                documentation_state="observed_unconfirmed",
+                observation_count=2,
+                last_observation_date="2026-07-03",
+                observed_proposal="+",
+                subject_id="deutsch",
+                subject_name="Deutsch",
+            ),
+        ))
         screen.set_student(
             self._sample_student_detail(),
             self._sample_filter_observations(),
-            (
-                StudentCompetencySubjectGroup(
-                    "deutsch",
-                    "Deutsch",
-                    (
-                        StudentCompetencyStatusViewModel(
-                            "CMP-000001",
-                            "Mit Texten und Medien umgehen",
-                            "deutsch",
-                            "Deutsch",
-                            "+",
-                            "+ erreicht",
-                            "2026-07-03",
-                            0,
-                            ("-", "+"),
-                            2,
-                            1.6,
-                        ),
-                    ),
-                ),
-            ),
+            competency_cockpit=cockpit,
         )
 
         screen.observation_search_input.setText("nicht vorhanden")
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
         self.assertIn("Keine passenden Beobachtungen.", label_texts)
-        self.assertIn("Mit Texten und Medien umgehen", label_texts)
-        self.assertIn(
-            "Vorschlag aus Beobachtungen: + · noch nicht bestätigt",
-            label_texts,
+        self.assertTrue(
+            any(
+                "Mit Texten und Medien umgehen" in button.text()
+                for button in screen.findChildren(QPushButton)
+            )
         )
-        self.assertIn("Verlauf: - → +", label_texts)
-        self.assertIn("2 Beobachtungen · zuletzt beobachtet: 2026-07-03", label_texts)
         self.assertIsNotNone(app)
 
     def test_student_profile_cross_subject_card_keeps_rating_subjects(self) -> None:
@@ -4526,86 +4518,55 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_student_profile_renders_competency_overview_by_subject(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
-        screen.set_student(
-            self._sample_student_detail(),
-            (),
-            (
-                StudentCompetencySubjectGroup(
-                    "deutsch",
-                    "Deutsch",
-                    (
-                        StudentCompetencyStatusViewModel(
-                            "CMP-000001",
-                            "Mit Texten und Medien umgehen",
-                            "deutsch",
-                            "Deutsch",
-                            "+",
-                            "+ erreicht",
-                            "2026-07-03",
-                            0,
-                            ("+",),
-                            1,
-                            2.0,
-                        ),
-                    ),
-                ),
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Mit Texten und Medien umgehen",
+                documentation_state="observed_unconfirmed",
+                observation_count=1,
+                last_observation_date="2026-07-03",
+                observed_proposal="+",
+                subject_id="deutsch",
+                subject_name="Deutsch",
             ),
-        )
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
-        self.assertIn("Kompetenzübersicht", label_texts)
+        self.assertIn("Kompetenz-Cockpit", label_texts)
         self.assertIn("Deutsch", label_texts)
-        self.assertIn("Mit Texten und Medien umgehen", label_texts)
-        self.assertIn(
-            "Vorschlag aus Beobachtungen: + · noch nicht bestätigt",
-            label_texts,
+        self.assertTrue(
+            any(
+                "Mit Texten und Medien umgehen" in button.text()
+                for button in screen.findChildren(QPushButton)
+            )
         )
-        self.assertIn("Verlauf: +", label_texts)
-        self.assertIn("1 Beobachtung · zuletzt beobachtet: 2026-07-03", label_texts)
         self.assertIsNotNone(app)
 
     def test_student_profile_renders_confirmed_competency_status(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
-        screen.set_student(
-            self._sample_student_detail(),
-            (),
-            (
-                StudentCompetencySubjectGroup(
-                    "deutsch",
-                    "Deutsch",
-                    (
-                        StudentCompetencyStatusViewModel(
-                            "CMP-000001",
-                            "Mit Texten und Medien umgehen",
-                            "deutsch",
-                            "Deutsch",
-                            "-",
-                            "- in Entwicklung",
-                            "2026-07-04",
-                            0,
-                            ("-",),
-                            1,
-                            1.0,
-                            "+",
-                            "2026-07-03T12:00:00+00:00",
-                            "pädagogisch bestätigt",
-                        ),
-                    ),
-                ),
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Mit Texten und Medien umgehen",
+                documentation_state="newer_observations",
+                observation_count=1,
+                last_observation_date="2026-07-04",
+                confirmed_rating="+",
+                observed_proposal="-",
+                subject_id="deutsch",
+                subject_name="Deutsch",
             ),
-        )
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.findChild(QPushButton, "CompetencyCockpitCompetencyButton").click()
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
+        self.assertIn("Bestätigter Stand: +", label_texts)
+        self.assertIn("Vorschlag aus Beobachtungen: -", label_texts)
         self.assertIn(
-            "aus Beobachtungen abgeleitet: - · von Laura bestätigt: +",
-            label_texts,
-        )
-        self.assertIn(
-            "von Laura bestätigt am 2026-07-03 · "
-            "neuer Vorschlag aus Beobachtungen vorhanden",
+            "Dokumentationszustand: Neue Beobachtungen seit der Bestätigung",
             label_texts,
         )
         self.assertIsNotNone(app)
@@ -4727,15 +4688,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
             QPushButton,
             "OverviewDocumentationDetailsButton",
         )
-        competency_details_container = screen.findChild(QWidget, "DocumentationStatusDetails")
-        competency_details_button = screen.findChild(
-            QPushButton,
-            "DocumentationStatusDetailsButton",
-        )
 
         self.assertIn("Dokumentationsstand", label_texts)
         self.assertIn("8/20 Lernbereiche dokumentiert", label_texts)
-        self.assertIn("teilweise dokumentiert", label_texts)
+        self.assertIn("Noch wenig belegt: EPU, Deutsch", label_texts)
         self.assertIn("Noch wenig belegt: EPU, Deutsch", label_texts)
         self.assertIsNotNone(overview_details_container)
         self.assertTrue(overview_details_container.isHidden())
@@ -4762,10 +4718,6 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         for avoided_word in ("fehlend", "kritisch", "problem"):
             self.assertNotIn(avoided_word, detail_text)
-        self.assertIsNotNone(competency_details_container)
-        self.assertTrue(competency_details_container.isHidden())
-        self.assertIsNotNone(competency_details_button)
-        self.assertEqual(competency_details_button.text(), "Details anzeigen")
         self.assertIsNotNone(app)
 
     def test_student_profile_opens_with_overview_tab(self) -> None:
@@ -5036,64 +4988,23 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(back_requests, [True])
         self.assertIsNotNone(app)
 
-    def test_student_profile_missing_competencies_can_be_expanded(self) -> None:
+    def test_student_profile_undocumented_competencies_only_open_inside_topic(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
-        screen.set_student(
-            self._sample_student_detail(),
-            (),
-            (
-                StudentCompetencySubjectGroup(
-                    "deutsch",
-                    "Deutsch",
-                    (
-                        StudentCompetencyStatusViewModel(
-                            "CMP-000001",
-                            "Mit Texten und Medien umgehen",
-                            "deutsch",
-                            "Deutsch",
-                            "+",
-                            "+ erreicht",
-                            "2026-07-03",
-                            0,
-                            ("+",),
-                            1,
-                            2.0,
-                        ),
-                    ),
-                    (
-                        StudentMissingCompetencyViewModel(
-                            "CMP-000002",
-                            "Wörter und Sätze",
-                            1,
-                        ),
-                    ),
-                ),
-            ),
-        )
-        details_button = screen.findChild(QPushButton, "CompetencyGroupDetailsButton")
-        missing_button = screen.findChild(QPushButton, "MissingCompetenciesDetailsButton")
-        missing_container = screen.findChild(QWidget, "MissingCompetenciesDetails")
-
-        self.assertIsNotNone(details_button)
-        self.assertIsNotNone(missing_button)
-        self.assertIsNotNone(missing_container)
-        self.assertTrue(missing_container.isHidden())
-        self.assertEqual(
-            missing_button.text(),
-            "Noch nicht dokumentierte Kompetenzen (1) ▾",
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "Volle Stunden"),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        topic_button = screen.findChild(QPushButton, "CompetencyCockpitTopicButton")
+        topic_details = screen.findChild(QWidget, "CompetencyCockpitTopicDetails")
+        competency_button = screen.findChild(
+            QPushButton, "CompetencyCockpitCompetencyButton"
         )
 
-        details_button.click()
-        missing_button.click()
-
-        label_texts = [label.text() for label in screen.findChildren(QLabel)]
-        self.assertFalse(missing_container.isHidden())
-        self.assertEqual(
-            missing_button.text(),
-            "Noch nicht dokumentierte Kompetenzen (1) ▴",
-        )
-        self.assertIn("Wörter und Sätze", label_texts)
+        self.assertTrue(topic_details.isHidden())
+        self.assertTrue(competency_button.text().startswith("☐ "))
+        topic_button.click()
+        self.assertFalse(topic_details.isHidden())
         self.assertIsNotNone(app)
 
     def test_student_profile_renders_student_documents(self) -> None:
@@ -5251,97 +5162,201 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(report_text.endswith("\n"))
         self.assertIsNotNone(app)
 
-    def test_student_profile_emits_competency_confirmation_actions(self) -> None:
+    def test_student_profile_cockpit_has_no_confirmation_mutation_actions(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
-        emitted: list[tuple[str, str, str, str]] = []
-        screen.competency_confirmation_requested.connect(
-            lambda student_id, competency_id, rating, note: emitted.append(
-                (student_id, competency_id, rating, note)
-            )
-        )
-        screen.set_student(
-            self._sample_student_detail(),
-            (),
-            (
-                StudentCompetencySubjectGroup(
-                    "deutsch",
-                    "Deutsch",
-                    (
-                        StudentCompetencyStatusViewModel(
-                            "CMP-000001",
-                            "Mit Texten und Medien umgehen",
-                            "deutsch",
-                            "Deutsch",
-                            "+",
-                            "+ erreicht",
-                            "2026-07-03",
-                            0,
-                            ("+",),
-                            1,
-                            2.0,
-                        ),
-                    ),
-                ),
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Volle Stunden",
+                documentation_state="observed_unconfirmed",
+                observed_proposal="+",
+                observation_count=1,
             ),
-        )
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
         buttons = {button.text(): button for button in screen.findChildren(QPushButton)}
         rating_select = screen.findChild(QComboBox, "CompetencyConfirmationRatingSelect")
 
-        buttons["Vorschlag aus Beobachtungen übernehmen"].click()
-        rating_select.setCurrentText("++")
-        buttons["Aktuell bestätigen"].click()
-
-        self.assertEqual(
-            emitted,
-            [
-                (f"{STUDENT_ID_PREFIX}-000001", "CMP-000001", "+", ""),
-                (f"{STUDENT_ID_PREFIX}-000001", "CMP-000001", "++", ""),
-            ],
-        )
+        self.assertNotIn("Vorschlag aus Beobachtungen übernehmen", buttons)
+        self.assertNotIn("Aktuell bestätigen", buttons)
+        self.assertIsNone(rating_select)
         self.assertIsNotNone(app)
 
-    def test_student_profile_competency_groups_are_collapsible(self) -> None:
+    def test_student_profile_competency_cockpit_subjects_are_collapsible(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
-        screen.set_student(
-            self._sample_student_detail(),
-            (),
-            (
-                StudentCompetencySubjectGroup(
-                    "deutsch",
-                    "Deutsch",
-                    (
-                        StudentCompetencyStatusViewModel(
-                            "CMP-000001",
-                            "Mit Texten und Medien umgehen",
-                            "deutsch",
-                            "Deutsch",
-                            "+",
-                            "+ erreicht",
-                            "2026-07-03",
-                            0,
-                            ("-", "+"),
-                            2,
-                            1.6,
-                        ),
-                    ),
-                ),
-            ),
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "Volle Stunden"),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        details_button = screen.findChild(
+            QPushButton, "CompetencyCockpitSubjectButton"
         )
-        details_button = screen.findChild(QPushButton, "CompetencyGroupDetailsButton")
-        details_container = screen.findChild(QWidget, "CompetencyGroupDetails")
+        details_container = screen.findChild(
+            QWidget, "CompetencyCockpitSubjectDetails"
+        )
 
         self.assertIsNotNone(details_button)
         self.assertIsNotNone(details_container)
-        self.assertEqual(details_button.text(), "Details ▾")
+        self.assertEqual(details_button.text(), "Öffnen ▾")
         self.assertTrue(details_container.isHidden())
 
         details_button.click()
 
         self.assertFalse(details_container.isHidden())
-        self.assertEqual(details_button.text(), "Details ▴")
+        self.assertEqual(details_button.text(), "Schließen ▴")
         self.assertIsNotNone(app)
+
+    def test_competency_cockpit_projects_subject_area_topic_and_progress(self) -> None:
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Volle Stunden",
+                documentation_state="observed_unconfirmed",
+                observation_count=1,
+                observed_proposal="+",
+            ),
+            self._cockpit_status("CMP-000002", "Halbe Stunden"),
+        ))
+
+        subject = cockpit.subjects[0]
+        area = subject.learning_areas[0]
+        topic = area.topics[0]
+        self.assertEqual(subject.subject_display_name, "Mathematik")
+        self.assertEqual((subject.documented_count, subject.total_count), (1, 2))
+        self.assertEqual(subject.progress_percent, 50)
+        self.assertEqual((area.documented_count, area.total_count), (1, 2))
+        self.assertEqual(topic.competency_group, "Zeit")
+
+    def test_competency_cockpit_handles_empty_and_complete_subjects(self) -> None:
+        empty = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "Volle Stunden"),
+        )).subjects[0]
+        complete = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000002", "Halbe Stunden",
+                documentation_state="confirmed",
+                confirmed_rating="+",
+            ),
+        )).subjects[0]
+
+        self.assertEqual((empty.documented_count, empty.progress_percent), (0, 0))
+        self.assertEqual((complete.documented_count, complete.progress_percent), (1, 100))
+
+    def test_competency_cockpit_subject_without_observations_is_not_documented(self) -> None:
+        subject = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "Volle Stunden"),
+            self._cockpit_status("CMP-000002", "Halbe Stunden"),
+        )).subjects[0]
+
+        self.assertEqual(subject.documented_count, 0)
+        self.assertEqual(subject.total_count, 2)
+
+    def test_student_profile_renders_cockpit_cards_and_neutral_progress(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Volle Stunden",
+                documentation_state="observed_unconfirmed",
+                observation_count=1,
+                last_observation_date="2026-07-12",
+                observed_proposal="+",
+            ),
+            self._cockpit_status("CMP-000002", "Halbe Stunden"),
+        ))
+        screen.set_student(
+            self._sample_student_detail(),
+            competency_cockpit=cockpit,
+        )
+
+        subject_card = screen.findChild(QFrame, "CompetencyCockpitSubjectCard")
+        area_card = screen.findChild(QFrame, "CompetencyCockpitLearningAreaCard")
+        progress = screen.findChild(QProgressBar, "CompetencyCockpitProgressBar")
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
+        self.assertIsNotNone(subject_card)
+        self.assertIsNotNone(area_card)
+        self.assertEqual(progress.value(), 50)
+        self.assertIn("1 / 2 Kompetenzen dokumentiert", label_texts)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_cockpit_opens_levels_and_keeps_local_state(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "Volle Stunden"),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        subject_button = screen.findChild(QPushButton, "CompetencyCockpitSubjectButton")
+        subject_details = screen.findChild(QWidget, "CompetencyCockpitSubjectDetails")
+
+        self.assertTrue(subject_details.isHidden())
+        subject_button.click()
+        self.assertFalse(subject_details.isHidden())
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        restored_details = screen.findChild(QWidget, "CompetencyCockpitSubjectDetails")
+        self.assertFalse(restored_details.isHidden())
+        self.assertIsNotNone(app)
+
+    def test_student_profile_cockpit_separates_legacy_section(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "Volle Stunden"),
+            self._cockpit_status(
+                "CMP-000099", "Historische Zeitkompetenz",
+                documentation_state="confirmed",
+                confirmed_rating="+",
+                historical=True,
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        historical_button = screen.findChild(
+            QPushButton, "CompetencyCockpitHistoricalButton"
+        )
+        historical_details = screen.findChild(
+            QWidget, "CompetencyCockpitHistoricalDetails"
+        )
+
+        self.assertEqual(len(cockpit.subjects), 1)
+        self.assertEqual(len(cockpit.historical_subjects), 1)
+        self.assertTrue(historical_details.isHidden())
+        self.assertEqual(historical_button.text(), "Historisch dokumentiert ▾")
+        self.assertIsNotNone(app)
+
+    def test_competency_cockpit_observations_button_uses_profile_navigation(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Volle Stunden",
+                documentation_state="observed_unconfirmed",
+                observation_count=1,
+                observed_proposal="+",
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        competency_button = screen.findChild(
+            QPushButton, "CompetencyCockpitCompetencyButton"
+        )
+        competency_button.click()
+        observations_button = screen.findChild(
+            QPushButton, "CompetencyCockpitObservationsButton"
+        )
+        observations_button.click()
+
+        self.assertEqual(screen.profile_tabs.currentIndex(), 1)
+        self.assertIsNotNone(app)
+
+    def test_competency_cockpit_does_not_recalculate_status_in_screen(self) -> None:
+        screen_source = inspect.getsource(student_profile_screen.StudentProfileScreen)
+        adapter_source = inspect.getsource(
+            StudentDesktopAdapter.competency_cockpit_for_student
+        )
+
+        self.assertNotIn("calculated_rating_from_history", screen_source)
+        self.assertNotIn("SQLite", screen_source)
+        self.assertIn("list_competency_status_projection_for_student", adapter_source)
+        self.assertNotIn("calculated_rating_from_history", adapter_source)
 
     def test_sidebar_students_navigation_resets_to_list(self) -> None:
         target = resolve_navigation_target("students")
@@ -5450,6 +5465,44 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 f"{STUDENT_ID_PREFIX}-000001"
             )
             if status.competency_id == competency_id
+        )
+
+    def _cockpit_status(
+        self,
+        competency_id: str,
+        label: str,
+        *,
+        documentation_state: str = "undocumented",
+        learning_area: str = "Größen & Messen",
+        topic: str = "Zeit",
+        observation_count: int = 0,
+        last_observation_date: str = "",
+        confirmed_rating: str = "",
+        observed_proposal: str = "",
+        historical: bool = False,
+        subject_id: str = "mathematik",
+        subject_name: str = "Mathematik",
+        sort_order: int = 0,
+    ) -> StudentCompetencyStatusViewModel:
+        return StudentCompetencyStatusViewModel(
+            competency_id=competency_id,
+            competency_label=label,
+            subject_id=subject_id,
+            subject_display_name=subject_name,
+            rating=observed_proposal,
+            rating_label=observed_proposal,
+            last_observation_date=last_observation_date,
+            sort_order=sort_order,
+            observation_count=observation_count,
+            confirmed_rating=confirmed_rating,
+            learning_area=learning_area,
+            competency_group=topic,
+            competency_text=label,
+            documentation_state=documentation_state,
+            observed_proposal=observed_proposal,
+            catalog_status="legacy" if historical else "current",
+            is_active=not historical,
+            historical=historical,
         )
 
     def _sample_student_detail(self) -> StudentDetailViewModel:

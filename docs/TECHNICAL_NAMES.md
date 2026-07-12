@@ -571,6 +571,7 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.observation_draft_for_edit(observation_id)`
 - `StudentDesktopAdapter.list_competency_overview_for_student(student_id)`
 - `StudentDesktopAdapter.list_competency_status_projection_for_student(student_id)`
+- `StudentDesktopAdapter.competency_cockpit_for_student(student_id)`
 - `StudentDesktopAdapter.list_documentation_status_for_student(student_id)`
 - `StudentDesktopAdapter.list_documents_for_student(student_id)`
 - `StudentDesktopAdapter.add_student_document(student_id, source_path, document_type, title, note, observation_id)`
@@ -591,7 +592,14 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.save_competency_confirmation(student_id, competency_id, confirmed_rating, note)`
 - `StudentCompetencyStatusViewModel.documentation_state`
 - `StudentCompetencyStatusViewModel.observed_proposal`
+- `StudentCompetencyStatusViewModel.documentation_state_label`
+- `StudentCompetencyStatusViewModel.confirmed_status_label`
 - `StudentCompetencyEvidenceViewModel`
+- `StudentCompetencyCockpitViewModel`
+- `StudentCompetencyCockpitSubjectViewModel`
+- `StudentCompetencyCockpitLearningAreaViewModel`
+- `StudentCompetencyCockpitTopicViewModel`
+- `build_student_competency_cockpit(statuses)`
 - `StudentDocumentationLearningAreaStatus`
 - `SettingsScreen`
 - `SettingsScreen.documentation_subjects_save_requested`
@@ -619,11 +627,17 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen._toggle_observation_details(details_widget, details_button)`
 - `StudentProfileScreen._observation_actions(observation)`
 - `StudentProfileScreen._note_preview(note, max_length)`
-- `StudentProfileScreen._competency_group_card(group)`
-- `StudentProfileScreen._toggle_competency_group_details(details_container, details_button)`
-- `StudentProfileScreen._competency_status_row(competency)`
-- `StudentProfileScreen._competency_confirmation_actions(competency)`
-- `StudentProfileScreen._request_competency_confirmation(competency, confirmed_rating)`
+- `StudentProfileScreen.set_competency_cockpit(cockpit)`
+- `StudentProfileScreen._cockpit_subject_card(subject, historical)`
+- `StudentProfileScreen._cockpit_learning_area_card(subject_id, area, historical)`
+- `StudentProfileScreen._cockpit_topic_card(subject_id, learning_area, topic, historical)`
+- `StudentProfileScreen._cockpit_competency_row(competency)`
+- `StudentProfileScreen._cockpit_competency_details(competency)`
+- `StudentProfileScreen._historical_competency_section(subjects)`
+- `StudentProfileScreen._toggle_cockpit_section(key, details, button, collapsed_text, expanded_text)`
+- `StudentProfileScreen._show_observations_tab()`
+- `StudentProfileScreen._documentation_subject_details(status)`
+- `StudentProfileScreen._toggle_documentation_status_details(details_container, details_button)`
 - `StudentProfileScreen.set_documents(documents)`
 - `StudentProfileScreen._documents_card()`
 - `StudentProfileScreen._empty_documents_card()`
@@ -632,12 +646,6 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen._request_document_remove(document_id)`
 - `StudentProfileScreen.open_document_file(file_path)`
 - `StudentProfileScreen._observation_attachments_block(observation)`
-- `StudentProfileScreen.set_documentation_statuses(statuses)`
-- `StudentProfileScreen._documentation_status_card()`
-- `StudentProfileScreen._toggle_documentation_status_details(details_container, details_button)`
-- `StudentProfileScreen._empty_documentation_status_card()`
-- `StudentProfileScreen._missing_competencies_block(missing_competencies)`
-- `StudentProfileScreen._toggle_missing_competencies(details_container, details_button, count)`
 - `StudentProfileScreen.set_report_preview(report_preview)`
 - `StudentProfileScreen._report_subject_card(section)`
 - `StudentProfileScreen._report_bucket(title, competencies)`
@@ -647,11 +655,23 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen.export_report_text()`
 - `StudentProfileScreen.export_report_text_to_path(target_path)`
 - `StudentProfileScreen._default_report_export_filename()`
-- `CompetencyConfirmationRatingSelect`
-- `CompetencyGroupDetailsButton`
-- `CompetencyGroupDetails`
-- `MissingCompetenciesDetailsButton`
-- `MissingCompetenciesDetails`
+- `CompetencyCockpitSubjectCard`
+- `CompetencyCockpitSubjectButton`
+- `CompetencyCockpitSubjectDetails`
+- `CompetencyCockpitLearningAreaCard`
+- `CompetencyCockpitLearningAreaButton`
+- `CompetencyCockpitLearningAreaDetails`
+- `CompetencyCockpitTopicCard`
+- `CompetencyCockpitTopicButton`
+- `CompetencyCockpitTopicDetails`
+- `CompetencyCockpitCompetencyRow`
+- `CompetencyCockpitCompetencyButton`
+- `CompetencyCockpitCompetencyDetails`
+- `CompetencyCockpitObservationsButton`
+- `CompetencyCockpitHistoricalCard`
+- `CompetencyCockpitHistoricalButton`
+- `CompetencyCockpitHistoricalDetails`
+- `CompetencyCockpitProgressBar`
 - `MasterDataDesktopAdapter`
 - `MasterDataDesktopAdapter.add_course_group(name, selected_group_ids, selected_course_ids)`
 - `MasterDataDesktopAdapter.update_course_group(course_group_id, name, selected_group_ids, selected_course_ids)`

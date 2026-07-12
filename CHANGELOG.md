@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Sprint 6C - Kompetenz-Cockpit im Schuelerprofil
+
+### Changed
+
+- Den Reiter `Kompetenzen` als ruhiges, vierstufiges Arbeitscockpit Fach -> Kompetenzbereich -> Thema -> Kompetenz neu aufgebaut. Fach- und Bereichskarten zeigen dokumentiert/gesamt sowie neutrale Fortschrittsbalken; alle Ebenen starten geschlossen und behalten ihren lokalen Aufklappzustand je Schueler.
+- Die Cockpit-Hierarchie wird ausschließlich aus der kanonischen Sprint-6B-Statusprojektion abgeleitet. Der Screen berechnet keinen Kompetenzstatus und greift weder auf Adapter noch SQLite zu.
+- Historisch referenzierte Kompetenzen in den separaten, standardmäßig geschlossenen Abschnitt `Historisch dokumentiert` verschoben. Undokumentierte aktive Kompetenzen erscheinen erst innerhalb eines geöffneten Themas.
+- Kompetenzdetails zeigen Dokumentationszustand, bestaetigten Stand, optionalen Beobachtungsvorschlag, Beobachtungsanzahl und letzte Beobachtung. `Beobachtungen anzeigen` wechselt in den vorhandenen Profilreiter.
+
+### Not Changed
+
+- Keine Filter, Suche, Dashboard-, Berichts-, PDF-, LEG-, Bewertungsfarben-, Stundenplan- oder Klassenstufenfunktionen; keine Persistenz-, SQLite-, Schema-, Repository-, Domain- oder Katalogaenderung und kein Commit umgesetzt.
+
 ## Sprint 6B - Kanonische Kompetenzstatus-Projektion
 
 ### Changed

@@ -258,6 +258,21 @@ class StudentCompetencyStatusViewModel:
     has_observations_newer_than_confirmation: bool = False
 
     @property
+    def documentation_state_label(self) -> str:
+        """Return the teacher-facing label for the canonical status token."""
+        return {
+            "undocumented": "Nicht dokumentiert",
+            "observed_unconfirmed": "Durch Beobachtungen dokumentiert",
+            "confirmed": "Bestätigter Stand vorhanden",
+            "newer_observations": "Neue Beobachtungen seit der Bestätigung",
+        }.get(self.documentation_state, self.documentation_state)
+
+    @property
+    def confirmed_status_label(self) -> str:
+        """Return the confirmed rating without deriving a replacement value."""
+        return self.confirmed_rating or "Nicht bestätigt"
+
+    @property
     def rating_history_label(self) -> str:
         """Return the chronological rating path."""
         if not self.rating_history:
@@ -357,6 +372,162 @@ class StudentCompetencySubjectGroup:
     subject_display_name: str
     competencies: tuple[StudentCompetencyStatusViewModel, ...]
     missing_competencies: tuple[StudentMissingCompetencyViewModel, ...] = ()
+
+
+@dataclass(frozen=True)
+class StudentCompetencyCockpitTopicViewModel:
+    """Canonical competency statuses grouped as one cockpit topic."""
+
+    competency_group: str
+    competencies: tuple[StudentCompetencyStatusViewModel, ...]
+
+    @property
+    def documented_count(self) -> int:
+        return sum(
+            competency.documentation_state != "undocumented"
+            for competency in self.competencies
+        )
+
+    @property
+    def total_count(self) -> int:
+        return len(self.competencies)
+
+
+@dataclass(frozen=True)
+class StudentCompetencyCockpitLearningAreaViewModel:
+    """Cockpit topics grouped as one competency learning area."""
+
+    learning_area: str
+    topics: tuple[StudentCompetencyCockpitTopicViewModel, ...]
+
+    @property
+    def competencies(self) -> tuple[StudentCompetencyStatusViewModel, ...]:
+        return tuple(
+            competency
+            for topic in self.topics
+            for competency in topic.competencies
+        )
+
+    @property
+    def documented_count(self) -> int:
+        return sum(topic.documented_count for topic in self.topics)
+
+    @property
+    def total_count(self) -> int:
+        return sum(topic.total_count for topic in self.topics)
+
+    @property
+    def progress_percent(self) -> int:
+        return _competency_progress_percent(self.documented_count, self.total_count)
+
+
+@dataclass(frozen=True)
+class StudentCompetencyCockpitSubjectViewModel:
+    """Cockpit learning areas grouped as one subject card."""
+
+    subject_id: str
+    subject_display_name: str
+    learning_areas: tuple[StudentCompetencyCockpitLearningAreaViewModel, ...]
+
+    @property
+    def documented_count(self) -> int:
+        return sum(area.documented_count for area in self.learning_areas)
+
+    @property
+    def total_count(self) -> int:
+        return sum(area.total_count for area in self.learning_areas)
+
+    @property
+    def progress_percent(self) -> int:
+        return _competency_progress_percent(self.documented_count, self.total_count)
+
+
+@dataclass(frozen=True)
+class StudentCompetencyCockpitViewModel:
+    """Read-only competency cockpit derived from the canonical Sprint-6B rows."""
+
+    subjects: tuple[StudentCompetencyCockpitSubjectViewModel, ...]
+    historical_subjects: tuple[StudentCompetencyCockpitSubjectViewModel, ...] = ()
+
+
+def build_student_competency_cockpit(
+    statuses: tuple[StudentCompetencyStatusViewModel, ...],
+) -> StudentCompetencyCockpitViewModel:
+    """Group canonical Sprint-6B rows without recalculating competency status."""
+    return StudentCompetencyCockpitViewModel(
+        _competency_cockpit_subjects(
+            tuple(status for status in statuses if not status.historical)
+        ),
+        _competency_cockpit_subjects(
+            tuple(status for status in statuses if status.historical)
+        ),
+    )
+
+
+def _competency_cockpit_subjects(
+    statuses: tuple[StudentCompetencyStatusViewModel, ...],
+) -> tuple[StudentCompetencyCockpitSubjectViewModel, ...]:
+    subjects: dict[str, list[StudentCompetencyStatusViewModel]] = {}
+    subject_names: dict[str, str] = {}
+    for status in statuses:
+        subjects.setdefault(status.subject_id, []).append(status)
+        subject_names.setdefault(status.subject_id, status.subject_display_name)
+    return tuple(
+        StudentCompetencyCockpitSubjectViewModel(
+            subject_id,
+            subject_names[subject_id],
+            _competency_cockpit_learning_areas(tuple(subjects[subject_id])),
+        )
+        for subject_id in sorted(
+            subjects,
+            key=lambda key: (
+                min(status.sort_order for status in subjects[key]),
+                subject_names[key].casefold(),
+            ),
+        )
+    )
+
+
+def _competency_cockpit_learning_areas(
+    statuses: tuple[StudentCompetencyStatusViewModel, ...],
+) -> tuple[StudentCompetencyCockpitLearningAreaViewModel, ...]:
+    areas: dict[str, list[StudentCompetencyStatusViewModel]] = {}
+    for status in statuses:
+        areas.setdefault(status.learning_area or "Ohne Kompetenzbereich", []).append(status)
+    return tuple(
+        StudentCompetencyCockpitLearningAreaViewModel(
+            learning_area,
+            _competency_cockpit_topics(tuple(areas[learning_area])),
+        )
+        for learning_area in sorted(
+            areas,
+            key=lambda key: min(status.sort_order for status in areas[key]),
+        )
+    )
+
+
+def _competency_cockpit_topics(
+    statuses: tuple[StudentCompetencyStatusViewModel, ...],
+) -> tuple[StudentCompetencyCockpitTopicViewModel, ...]:
+    topics: dict[str, list[StudentCompetencyStatusViewModel]] = {}
+    for status in statuses:
+        topics.setdefault(status.competency_group or "Ohne Thema", []).append(status)
+    return tuple(
+        StudentCompetencyCockpitTopicViewModel(
+            topic,
+            tuple(sorted(topics[topic], key=lambda item: (item.sort_order, item.competency_id))),
+        )
+        for topic in sorted(
+            topics,
+            key=lambda key: min(status.sort_order for status in topics[key]),
+        )
+    )
+
+
+def _competency_progress_percent(documented_count: int, total_count: int) -> int:
+    if total_count == 0:
+        return 0
+    return round(documented_count / total_count * 100)
 
 
 def observation_rating_label(rating: str) -> str:
