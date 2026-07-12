@@ -281,9 +281,12 @@ class StudentDesktopAdapter:
                 dict[str, list[ObservationCompetencyOptionViewModel]],
             ] = {}
             for competency in catalog_entries:
+                is_selected = competency.competency_id in selected_ratings
+                is_current_catalog_option = (
+                    competency.is_active and competency.catalog_status == "current"
+                )
                 if competency.subject_key != subject_option.subject_key or (
-                    not competency.is_active
-                    and competency.competency_id not in selected_ratings
+                    not is_current_catalog_option and not is_selected
                 ):
                     continue
                 option = ObservationCompetencyOptionViewModel(
@@ -294,8 +297,10 @@ class StudentDesktopAdapter:
                     competency_group=competency.competency_group,
                     competency_text=competency.competency_text,
                     competency_label=competency.competency_label,
-                    selected=competency.competency_id in selected_ratings,
+                    selected=is_selected,
                     rating=selected_ratings.get(competency.competency_id, ""),
+                    catalog_status=competency.catalog_status,
+                    is_active=competency.is_active,
                 )
                 learning_area_groups.setdefault(
                     competency.learning_area,

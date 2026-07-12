@@ -373,7 +373,7 @@ Automatisch profitierende Ansichten:
 - Dashboards
 
 Regel: Beobachtung ist Source of Truth. Auswertungen leiten sich daraus ab.
-Neue Beobachtungen koennen nur mit dokumentationsrelevanten aktiven Faechern aus der aktuellen Settings-Auswahl angelegt werden; ohne Settings-Zeilen gilt der aktive Katalog. Beobachtung und Kompetenzbewertungen werden atomar gespeichert; eine Bewertung gehoert zur konkreten Kompetenz, nicht global zur Beobachtung. Die sichtbare Struktur lautet Fach -> Kompetenzbereich -> Thema -> Kompetenz und wird ueber vorhandene Felder abgebildet: `subject_id` / `subject_name`, `learning_area`, `competency_group`, `description` / `competency_text`. `offen` ist kein gespeicherter Ratingwert; eine nicht bewertete Kompetenz erzeugt keine Zeile in `observation_competency_ratings`. Medien/Anhaenge und Berichte bleiben separate spaetere Prozesse.
+Neue Beobachtungen koennen nur mit dokumentationsrelevanten aktiven Faechern aus der aktuellen Settings-Auswahl angelegt werden; ohne Settings-Zeilen gilt der aktive Katalog. Die Kompetenzauswahl bietet dabei ausschliesslich aktive `current`-Kompetenzen an. Beobachtung und Kompetenzbewertungen werden atomar gespeichert; eine Bewertung gehoert zur konkreten Kompetenz, nicht global zur Beobachtung. Die sichtbare Struktur lautet Fach -> Kompetenzbereich -> Thema -> Kompetenz und wird ueber vorhandene Felder abgebildet: `subject_id` / `subject_name`, `learning_area`, `competency_group`, `description` / `competency_text`. `offen` ist kein gespeicherter Ratingwert; eine nicht bewertete Kompetenz erzeugt keine Zeile in `observation_competency_ratings`. Medien/Anhaenge und Berichte bleiben im bestehenden separaten Prozess.
 
 ## Beobachtung aendern
 
@@ -401,7 +401,7 @@ Automatisch profitierende Ansichten:
 - Kompetenzansicht
 - Berichte
 
-Regel: `observation_id` bleibt erhalten. Beobachtungsfelder werden aktualisiert; Kompetenzbewertungen werden fuer die Beobachtung atomar ersetzt. Die Fachanzeige wird weiter aus den Kompetenzfaechern abgeleitet. Wenn das gespeicherte Fach inzwischen nicht dokumentationsrelevant ist, bleibt es beim Bearbeiten sichtbar und wird nicht automatisch ersetzt oder entfernt. Eine Bewertung wird nur gespeichert, wenn eine konkrete Kompetenz in dieser Beobachtung bewertet wird; `offen` wird nicht als eigener Ratingwert gespeichert.
+Regel: `observation_id` bleibt erhalten. Beobachtungsfelder werden aktualisiert; Kompetenzbewertungen werden fuer die Beobachtung atomar ersetzt. Die Fachanzeige wird weiter aus den Kompetenzfaechern abgeleitet. Wenn das gespeicherte Fach inzwischen nicht dokumentationsrelevant ist, bleibt es beim Bearbeiten sichtbar und wird nicht automatisch ersetzt oder entfernt. Bereits bewertete `legacy`- oder inaktive Kompetenzen bleiben mit ihrer gespeicherten `competency_id`, Hierarchie, ihrem Text und Rating sichtbar, bewertbar und entfernbar; es erfolgt keine Ersetzung oder Migration. Eine Bewertung wird nur gespeichert, wenn eine konkrete Kompetenz in dieser Beobachtung bewertet wird; `offen` wird nicht als eigener Ratingwert gespeichert.
 
 ## Beobachtung loeschen
 

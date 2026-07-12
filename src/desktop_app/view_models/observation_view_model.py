@@ -73,6 +73,8 @@ class ObservationCompetencyOptionViewModel:
     competency_label: str
     selected: bool = False
     rating: str = ""
+    catalog_status: str = "current"
+    is_active: bool = True
 
 
 @dataclass(frozen=True)

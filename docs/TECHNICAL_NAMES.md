@@ -717,6 +717,16 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationCompetencyOptionViewModel.competency_label`
 - `ObservationCompetencyOptionViewModel.selected`
 - `ObservationCompetencyOptionViewModel.rating`
+- `ObservationCompetencyOptionViewModel.catalog_status`
+- `ObservationCompetencyOptionViewModel.is_active`
+- `ObservationRatingSelector`
+- `ObservationCatalogCompetencyTile`
+- `NewObservationDialog.competency_catalog_tiles`
+- `ObservationThreeZoneWorkspace`
+- `ObservationSelectedScroll`
+- `ObservationCatalogScroll`
+- `ObservationAttachmentsScroll`
+- `ObservationPersistentActions`
 - `ObservationAttachmentDraft`
 - `ObservationAttachmentDraft.display_label`
 - `ObservationDraftViewModel`

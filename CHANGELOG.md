@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## Sprint 5C - Freigegebenen Beobachtungsdialog produktiv umgesetzt
+
+### Changed
+
+- Produktiven `NewObservationDialog` auf die freigegebene skalierbare Drei-Zonen-Arbeitsflaeche mit getrennt scrollbarer Auswahl und getrennt scrollbarem Kompetenzkatalog umgestellt.
+- Ausgewaehlte Kompetenzen als kompakte Karten mit Fach, Kompetenzbereich, Thema, Kompetenztext, vier direkt anklickbaren Bewertungs-Chips und kompetenzbezogenem Entfernen umgesetzt; neue Auswahlen werden oben eingefuegt.
+- Kompetenzkatalog als geschlossene Hierarchie Fach -> Kompetenzbereich -> Thema -> Kompetenz mit vollstaendig klickbaren und tastaturbedienbaren Kompetenzkacheln umgesetzt; Fachwechsel und Einklappen lassen Auswahl und Einzelbewertungen unveraendert.
+- Adapterprojektion fuer neue Beobachtungen auf aktive `current`-Kompetenzen begrenzt; bereits gespeicherte `legacy`- oder inaktive Kompetenzen bleiben beim Bearbeiten mit unveraenderten IDs, Texten und Bewertungen sichtbar und werden dezent als historischer Bestand markiert.
+- Dialoginternen Fallback-Hierarchieaufbau entfernt; die produktive Darstellung nutzt ausschliesslich die bestehende `StudentDesktopAdapter`-Projektion und weiterhin die vorhandenen Create-/Update-/Repository- und Attachment-Pfade.
+- Dialog- und Adaptertests auf Drei-Zonen-Struktur, geschlossene Neu-Erfassung, gezieltes Oeffnen beim Bearbeiten, Kachelinteraktion, Duplikatschutz, Auswahlreihenfolge, Zustandsbestand, historische Kompetenzen und dauerhaft erreichbares Speichern angepasst.
+
+### Not Changed
+
+- Keine Suche, zuletzt verwendeten Kompetenzen, Tags, Klassenstufenfilter, Stundenplan-Vorbelegung, Datenbank-/Schemaaenderung, neue Attachment-Logik, Bewertungsskala, Terminologie, Migration historischer Daten oder Commit umgesetzt.
+
 ## Sprint 5B1 - Visueller PySide6-Prototyp des Beobachtungsdialogs
 
 ### Added
