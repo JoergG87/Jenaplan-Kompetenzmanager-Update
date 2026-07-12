@@ -5279,6 +5279,167 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("1 / 2 Kompetenzen dokumentiert", label_texts)
         self.assertIsNotNone(app)
 
+    def test_student_profile_cockpit_filters_each_documentation_state(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "Ohne Dokumentation"),
+            self._cockpit_status(
+                "CMP-000002", "Beobachtet", documentation_state="observed_unconfirmed",
+                observation_count=1,
+            ),
+            self._cockpit_status(
+                "CMP-000003", "Nur bestätigt", documentation_state="confirmed",
+                confirmed_rating="+",
+            ),
+            self._cockpit_status(
+                "CMP-000004", "Neuere Beobachtung", documentation_state="newer_observations",
+                confirmed_rating="+", observation_count=1,
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        state_filter = screen.findChild(
+            QComboBox, "CompetencyCockpitDocumentationFilter"
+        )
+
+        expected_labels = {
+            "Dokumentiert": {"Beobachtet", "Nur bestätigt", "Neuere Beobachtung"},
+            "Noch nicht dokumentiert": {"Ohne Dokumentation"},
+            "Beobachtet, noch nicht bestätigt": {"Beobachtet"},
+            "Bestätigter Stand": {"Nur bestätigt", "Neuere Beobachtung"},
+            "Neuere Beobachtungen nach Bestätigung": {"Neuere Beobachtung"},
+        }
+        for filter_label, expected in expected_labels.items():
+            state_filter.setCurrentIndex(state_filter.findText(filter_label))
+            visible_labels = {
+                button.text()[2:]
+                for button in screen.findChildren(
+                    QPushButton, "CompetencyCockpitCompetencyButton"
+                )
+            }
+            with self.subTest(filter_label=filter_label):
+                self.assertEqual(visible_labels, expected)
+
+        self.assertIsNotNone(app)
+
+    def test_student_profile_cockpit_combines_subject_filter_and_keeps_progress(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Deutsch dokumentiert", subject_id="deutsch",
+                subject_name="Deutsch", documentation_state="observed_unconfirmed",
+                observation_count=1,
+            ),
+            self._cockpit_status(
+                "CMP-000002", "Deutsch offen", subject_id="deutsch", subject_name="Deutsch",
+            ),
+            self._cockpit_status(
+                "CMP-000003", "EPU offen", subject_id="epu", subject_name="EPU",
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        subject_filter = screen.findChild(QComboBox, "CompetencyCockpitSubjectFilter")
+        state_filter = screen.findChild(
+            QComboBox, "CompetencyCockpitDocumentationFilter"
+        )
+        subject_filter.setCurrentIndex(subject_filter.findText("Deutsch"))
+        state_filter.setCurrentIndex(state_filter.findText("Dokumentiert"))
+
+        buttons = screen.findChildren(QPushButton, "CompetencyCockpitCompetencyButton")
+        counts = [label.text() for label in screen.findChildren(QLabel)]
+        progress = screen.findChild(QProgressBar, "CompetencyCockpitProgressBar")
+        self.assertEqual([button.text()[2:] for button in buttons], ["Deutsch dokumentiert"])
+        self.assertIn("1 / 2 Kompetenzen dokumentiert", counts)
+        self.assertEqual(progress.value(), 50)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_cockpit_filter_empty_states_and_reset(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "EPU offen", subject_id="epu", subject_name="EPU"),
+            self._cockpit_status("CMP-000002", "Deutsch offen", subject_id="deutsch", subject_name="Deutsch"),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        subject_filter = screen.findChild(QComboBox, "CompetencyCockpitSubjectFilter")
+        state_filter = screen.findChild(
+            QComboBox, "CompetencyCockpitDocumentationFilter"
+        )
+        state_filter.setCurrentIndex(state_filter.findText("Dokumentiert"))
+
+        empty = screen.findChild(QWidget, "CompetencyCockpitEmptyFilterState")
+        self.assertEqual(
+            empty.text(), "Keine Kompetenzen entsprechen den gewählten Filtern."
+        )
+        subject_filter.setCurrentIndex(subject_filter.findText("EPU"))
+
+        empty = screen.findChild(QWidget, "CompetencyCockpitEmptyFilterState")
+        self.assertEqual(
+            empty.text(),
+            "Für EPU entsprechen keine Kompetenzen den gewählten Filtern.",
+        )
+        screen.findChild(QPushButton, "CompetencyCockpitFilterResetButton").click()
+        self.assertEqual(subject_filter.currentText(), "Alle Fächer")
+        self.assertEqual(state_filter.currentText(), "Alle")
+        self.assertEqual(len(screen.findChildren(QFrame, "CompetencyCockpitSubjectCard")), 2)
+        self.assertEqual(
+            [
+                label.text()
+                for label in screen.findChildren(QLabel)
+                if label.text() == "0 / 1 Kompetenzen dokumentiert"
+            ],
+            ["0 / 1 Kompetenzen dokumentiert", "0 / 1 Kompetenzen dokumentiert"],
+        )
+        self.assertIsNotNone(app)
+
+    def test_student_profile_cockpit_filters_preserve_expansion_data_and_history(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001", "Aktiv dokumentiert", documentation_state="confirmed",
+                confirmed_rating="+",
+            ),
+            self._cockpit_status("CMP-000002", "Aktiv offen"),
+            self._cockpit_status(
+                "CMP-000099", "Historisch dokumentiert", documentation_state="confirmed",
+                confirmed_rating="+", historical=True,
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.findChild(QPushButton, "CompetencyCockpitSubjectButton").click()
+        state_filter = screen.findChild(
+            QComboBox, "CompetencyCockpitDocumentationFilter"
+        )
+        original_subject = cockpit.subjects[0]
+        original_states = tuple(
+            competency.documentation_state
+            for area in original_subject.learning_areas
+            for topic in area.topics
+            for competency in topic.competencies
+        )
+        state_filter.setCurrentIndex(state_filter.findText("Dokumentiert"))
+
+        details = screen.findChild(QWidget, "CompetencyCockpitSubjectDetails")
+        historical = screen.findChild(QPushButton, "CompetencyCockpitHistoricalButton")
+        self.assertFalse(details.isHidden())
+        self.assertEqual(historical.text(), "Historisch dokumentiert ▾")
+        self.assertEqual(
+            original_states,
+            tuple(
+                competency.documentation_state
+                for area in cockpit.subjects[0].learning_areas
+                for topic in area.topics
+                for competency in topic.competencies
+            ),
+        )
+        screen.reset_competency_cockpit_filters()
+        self.assertFalse(
+            screen.findChild(QWidget, "CompetencyCockpitSubjectDetails").isHidden()
+        )
+        self.assertIsNotNone(app)
+
     def test_student_profile_cockpit_opens_levels_and_keeps_local_state(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()

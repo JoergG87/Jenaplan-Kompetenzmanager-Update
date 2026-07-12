@@ -628,6 +628,12 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen._observation_actions(observation)`
 - `StudentProfileScreen._note_preview(note, max_length)`
 - `StudentProfileScreen.set_competency_cockpit(cockpit)`
+- `StudentProfileScreen.apply_competency_cockpit_filters()`
+- `StudentProfileScreen.reset_competency_cockpit_filters()`
+- `StudentProfileScreen._populate_competency_subject_filter(cockpit)`
+- `StudentProfileScreen._filtered_cockpit_subject(subject, documentation_filter)`
+- `StudentProfileScreen._filtered_cockpit_learning_area(area, documentation_filter)`
+- `StudentProfileScreen._matches_competency_documentation_filter(competency, documentation_filter)`
 - `StudentProfileScreen._cockpit_subject_card(subject, historical)`
 - `StudentProfileScreen._cockpit_learning_area_card(subject_id, area, historical)`
 - `StudentProfileScreen._cockpit_topic_card(subject_id, learning_area, topic, historical)`
@@ -656,6 +662,11 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen.export_report_text_to_path(target_path)`
 - `StudentProfileScreen._default_report_export_filename()`
 - `CompetencyCockpitSubjectCard`
+- `CompetencyCockpitFilterBar`
+- `CompetencyCockpitSubjectFilter`
+- `CompetencyCockpitDocumentationFilter`
+- `CompetencyCockpitFilterResetButton`
+- `CompetencyCockpitEmptyFilterState`
 - `CompetencyCockpitSubjectButton`
 - `CompetencyCockpitSubjectDetails`
 - `CompetencyCockpitLearningAreaCard`

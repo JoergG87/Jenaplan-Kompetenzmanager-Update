@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Sprint 6D - Filter und leere Zustaende im Kompetenz-Cockpit
+
+### Changed
+
+- Das Kompetenz-Cockpit im Schuelerprofil um eine kompakte, lokale Filterleiste fuer aktive Faecher und kanonische Dokumentationszustaende erweitert. Fach- und Zustandsfilter kombinieren sich, veraendern weder Daten noch Statusprojektion und lassen historische Kompetenzzeilen weiterhin im separaten Abschnitt `Historisch dokumentiert`.
+- Fortschrittswerte auf Fach- und Kompetenzbereichsebene bleiben beim Filtern auf dem vollstaendigen aktiven Zielbestand. Nicht sichtbare Themen und Bereiche werden nur visuell ausgeblendet; lokale Aufklappzustaende bleiben fuer weiterhin sichtbare Ebenen erhalten und werden beim Zuruecksetzen wiederverwendet.
+- Ruhige leere Zustaende fuer Profile ohne aktive Kompetenzen sowie Filter ohne Treffer ergänzt; Fachkarten mit `0 / Gesamt` bleiben bei passenden aktiven Treffern sichtbar.
+- Screen-Tests fuer Fach-, Zustands- und Kombinationsfilter, Fortschrittsbestandsschutz, leere Treffer, Bestaetigungen ohne Beobachtung, neuere Beobachtungen, Historientrennung, Aufklappzustand, Datenunveraendertheit und Ruecksetzen ergänzt.
+
+### Not Changed
+
+- Keine Persistenz-, SQLite-, Schema-, Repository-, Domain- oder Statusregeländerung; keine Klassenstufenfilter, Suche, passende Kompetenzen, Berichte, PDF, LEG, Dashboard, Bewertungsfarben oder Commit umgesetzt.
+
 ## Sprint 6C - Kompetenz-Cockpit im Schuelerprofil
 
 ### Changed

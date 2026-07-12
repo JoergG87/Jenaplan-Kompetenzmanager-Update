@@ -89,6 +89,7 @@ class StudentProfileScreen(QWidget):
         self.current_observations: tuple[ObservationListItem, ...] = ()
         self.current_documents: tuple[StudentDocumentViewModel, ...] = ()
         self.current_report_preview: StudentReportPreviewViewModel | None = None
+        self.current_competency_cockpit: StudentCompetencyCockpitViewModel | None = None
         self.show_all_observations = False
         self._competency_expanded_keys: set[str] = set()
         self._build()
@@ -355,6 +356,41 @@ class StudentProfileScreen(QWidget):
         )
         hint.setWordWrap(True)
         set_label_style(hint, "subtle")
+        self.competency_subject_filter = QComboBox()
+        self.competency_subject_filter.setObjectName("CompetencyCockpitSubjectFilter")
+        self.competency_subject_filter.addItem("Alle Fächer", "")
+        self.competency_documentation_filter = QComboBox()
+        self.competency_documentation_filter.setObjectName(
+            "CompetencyCockpitDocumentationFilter"
+        )
+        for label, state in (
+            ("Alle", ""),
+            ("Dokumentiert", "documented"),
+            ("Noch nicht dokumentiert", "undocumented"),
+            ("Beobachtet, noch nicht bestätigt", "observed_unconfirmed"),
+            ("Bestätigter Stand", "confirmed"),
+            ("Neuere Beobachtungen nach Bestätigung", "newer_observations"),
+        ):
+            self.competency_documentation_filter.addItem(label, state)
+        self.competency_reset_button = QPushButton("Filter zurücksetzen")
+        self.competency_reset_button.setObjectName("CompetencyCockpitFilterResetButton")
+        self.competency_subject_filter.currentIndexChanged.connect(
+            self.apply_competency_cockpit_filters
+        )
+        self.competency_documentation_filter.currentIndexChanged.connect(
+            self.apply_competency_cockpit_filters
+        )
+        self.competency_reset_button.clicked.connect(self.reset_competency_cockpit_filters)
+        filters = self._card()
+        filters.setObjectName("CompetencyCockpitFilterBar")
+        filters_layout = QHBoxLayout(filters)
+        filters_layout.setContentsMargins(12, 8, 12, 8)
+        filters_layout.setSpacing(8)
+        filters_layout.addWidget(self._filter_label("Fach"))
+        filters_layout.addWidget(self.competency_subject_filter, 1)
+        filters_layout.addWidget(self._filter_label("Dokumentationszustand"))
+        filters_layout.addWidget(self.competency_documentation_filter, 1)
+        filters_layout.addWidget(self.competency_reset_button)
         self.competency_cockpit_container = QWidget()
         self.competency_cockpit_layout = QVBoxLayout(
             self.competency_cockpit_container
@@ -363,6 +399,7 @@ class StudentProfileScreen(QWidget):
         self.competency_cockpit_layout.setSpacing(8)
         layout.addWidget(title)
         layout.addWidget(hint)
+        layout.addWidget(filters)
         layout.addWidget(self.competency_cockpit_container)
         return section
 
@@ -652,6 +689,7 @@ class StudentProfileScreen(QWidget):
         if should_reset_tab:
             self.profile_tabs.setCurrentIndex(0)
             self._competency_expanded_keys.clear()
+            self.reset_competency_cockpit_filters()
 
         if student is None:
             self.name_label.setText("Kein Schüler ausgewählt")
@@ -1115,29 +1153,153 @@ class StudentProfileScreen(QWidget):
         self,
         cockpit: StudentCompetencyCockpitViewModel | None,
     ) -> None:
-        """Render the read-only cockpit from the canonical Sprint-6B projection."""
+        """Store and render the read-only cockpit from the Sprint-6B projection."""
+        self.current_competency_cockpit = cockpit
+        self._populate_competency_subject_filter(cockpit)
+        self.apply_competency_cockpit_filters()
+
+    def _populate_competency_subject_filter(
+        self,
+        cockpit: StudentCompetencyCockpitViewModel | None,
+    ) -> None:
+        selected_subject_id = self.competency_subject_filter.currentData()
+        self.competency_subject_filter.blockSignals(True)
+        self.competency_subject_filter.clear()
+        self.competency_subject_filter.addItem("Alle Fächer", "")
+        if cockpit is not None:
+            for subject in cockpit.subjects:
+                self.competency_subject_filter.addItem(
+                    subject.subject_display_name, subject.subject_id
+                )
+        selected_index = self.competency_subject_filter.findData(selected_subject_id)
+        self.competency_subject_filter.setCurrentIndex(max(selected_index, 0))
+        self.competency_subject_filter.blockSignals(False)
+
+    def apply_competency_cockpit_filters(self, _index: int = 0) -> None:
+        """Filter only visible canonical cockpit rows without changing their values."""
         self._clear_layout(self.competency_cockpit_layout)
-        if cockpit is None or (not cockpit.subjects and not cockpit.historical_subjects):
+        cockpit = self.current_competency_cockpit
+        if cockpit is None:
             self.competency_cockpit_layout.addWidget(
                 self._empty_competency_cockpit_card()
             )
             return
-        for subject in cockpit.subjects:
+        subject_id = self.competency_subject_filter.currentData() or ""
+        documentation_filter = self.competency_documentation_filter.currentData() or ""
+        visible_subjects = tuple(
+            (subject, filtered_subject)
+            for subject in cockpit.subjects
+            if (not subject_id or subject.subject_id == subject_id)
+            for filtered_subject in (self._filtered_cockpit_subject(subject, documentation_filter),)
+            if filtered_subject is not None
+        )
+        if not cockpit.subjects:
             self.competency_cockpit_layout.addWidget(
-                self._cockpit_subject_card(subject, historical=False)
+                self._empty_competency_cockpit_card()
+            )
+        elif not visible_subjects:
+            self.competency_cockpit_layout.addWidget(
+                self._empty_filtered_competency_cockpit_card(subject_id)
+            )
+        for source_subject, filtered_subject in visible_subjects:
+            self.competency_cockpit_layout.addWidget(
+                self._cockpit_subject_card(
+                    filtered_subject,
+                    historical=False,
+                    progress_subject=source_subject,
+                )
             )
         if cockpit.historical_subjects:
             self.competency_cockpit_layout.addWidget(
                 self._historical_competency_section(cockpit.historical_subjects)
             )
 
+    def reset_competency_cockpit_filters(self) -> None:
+        self.competency_subject_filter.setCurrentIndex(0)
+        self.competency_documentation_filter.setCurrentIndex(0)
+
+    def _filtered_cockpit_subject(
+        self,
+        subject: StudentCompetencyCockpitSubjectViewModel,
+        documentation_filter: str,
+    ) -> StudentCompetencyCockpitSubjectViewModel | None:
+        areas = tuple(
+            filtered_area
+            for area in subject.learning_areas
+            for filtered_area in (
+                self._filtered_cockpit_learning_area(area, documentation_filter),
+            )
+            if filtered_area is not None
+        )
+        if not areas:
+            return None
+        return StudentCompetencyCockpitSubjectViewModel(
+            subject.subject_id, subject.subject_display_name, areas
+        )
+
+    def _filtered_cockpit_learning_area(
+        self,
+        area: StudentCompetencyCockpitLearningAreaViewModel,
+        documentation_filter: str,
+    ) -> StudentCompetencyCockpitLearningAreaViewModel | None:
+        topics = tuple(
+            StudentCompetencyCockpitTopicViewModel(
+                topic.competency_group,
+                tuple(
+                    competency
+                    for competency in topic.competencies
+                    if self._matches_competency_documentation_filter(
+                        competency, documentation_filter
+                    )
+                ),
+            )
+            for topic in area.topics
+        )
+        visible_topics = tuple(topic for topic in topics if topic.competencies)
+        if not visible_topics:
+            return None
+        return StudentCompetencyCockpitLearningAreaViewModel(
+            area.learning_area, visible_topics
+        )
+
+    @staticmethod
+    def _matches_competency_documentation_filter(
+        competency: object,
+        documentation_filter: str,
+    ) -> bool:
+        state = getattr(competency, "documentation_state")
+        if not documentation_filter:
+            return True
+        if documentation_filter == "documented":
+            return state != "undocumented"
+        if documentation_filter == "confirmed":
+            return state in {"confirmed", "newer_observations"}
+        return state == documentation_filter
+
     def _empty_competency_cockpit_card(self) -> QFrame:
         card = self._card()
         layout = QVBoxLayout(card)
         layout.setContentsMargins(12, 10, 12, 10)
-        message = QLabel("Noch keine Kompetenzprojektion vorhanden.")
+        message = QLabel("Für dieses Profil sind noch keine aktiven Kompetenzen hinterlegt.")
         set_label_style(message, "body")
         layout.addWidget(message)
+        return card
+
+    def _empty_filtered_competency_cockpit_card(self, subject_id: str) -> QFrame:
+        card = self._card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(12, 10, 12, 10)
+        subject_name = self.competency_subject_filter.currentText()
+        message = (
+            f"Für {subject_name} entsprechen keine Kompetenzen den gewählten Filtern."
+            if subject_id
+            else "Keine Kompetenzen entsprechen den gewählten Filtern."
+        )
+        label = QLabel(message)
+        label.setObjectName("CompetencyCockpitEmptyFilterState")
+        label.setWordWrap(True)
+        set_label_style(label, "body")
+        layout.addWidget(label)
         return card
 
     def _cockpit_subject_card(
@@ -1145,7 +1307,9 @@ class StudentProfileScreen(QWidget):
         subject: StudentCompetencyCockpitSubjectViewModel,
         *,
         historical: bool,
+        progress_subject: StudentCompetencyCockpitSubjectViewModel | None = None,
     ) -> QFrame:
+        progress_subject = progress_subject or subject
         key = f"{'historical' if historical else 'current'}:subject:{subject.subject_id}"
         card = self._card()
         card.setObjectName("CompetencyCockpitSubjectCard")
@@ -1156,7 +1320,7 @@ class StudentProfileScreen(QWidget):
         title = QLabel(subject.subject_display_name)
         set_label_style(title, "card_title")
         count = QLabel(
-            f"{subject.documented_count} / {subject.total_count} Kompetenzen dokumentiert"
+            f"{progress_subject.documented_count} / {progress_subject.total_count} Kompetenzen dokumentiert"
         )
         set_label_style(count, "small")
         button = QPushButton("Öffnen ▾")
@@ -1166,7 +1330,7 @@ class StudentProfileScreen(QWidget):
         header.addWidget(count)
         header.addWidget(button)
         layout.addLayout(header)
-        layout.addWidget(self._cockpit_progress(subject.progress_percent))
+        layout.addWidget(self._cockpit_progress(progress_subject.progress_percent))
         details = QWidget()
         details.setObjectName("CompetencyCockpitSubjectDetails")
         details_layout = QVBoxLayout(details)
@@ -1178,6 +1342,14 @@ class StudentProfileScreen(QWidget):
                     subject.subject_id,
                     area,
                     historical=historical,
+                    progress_area=next(
+                        (
+                            source_area
+                            for source_area in progress_subject.learning_areas
+                            if source_area.learning_area == area.learning_area
+                        ),
+                        area,
+                    ),
                 )
             )
         self._configure_cockpit_toggle(key, details, button, "Öffnen ▾", "Schließen ▴")
@@ -1197,7 +1369,9 @@ class StudentProfileScreen(QWidget):
         area: StudentCompetencyCockpitLearningAreaViewModel,
         *,
         historical: bool,
+        progress_area: StudentCompetencyCockpitLearningAreaViewModel | None = None,
     ) -> QFrame:
+        progress_area = progress_area or area
         key = (
             f"{'historical' if historical else 'current'}:area:"
             f"{subject_id}:{area.learning_area}"
@@ -1210,7 +1384,7 @@ class StudentProfileScreen(QWidget):
         header = QHBoxLayout()
         title = QLabel(area.learning_area)
         set_label_style(title, "field_label")
-        count = QLabel(f"{area.documented_count} / {area.total_count}")
+        count = QLabel(f"{progress_area.documented_count} / {progress_area.total_count}")
         set_label_style(count, "small")
         button = QPushButton("Öffnen ▾")
         button.setObjectName("CompetencyCockpitLearningAreaButton")
@@ -1219,7 +1393,7 @@ class StudentProfileScreen(QWidget):
         header.addWidget(count)
         header.addWidget(button)
         layout.addLayout(header)
-        layout.addWidget(self._cockpit_progress(area.progress_percent))
+        layout.addWidget(self._cockpit_progress(progress_area.progress_percent))
         details = QWidget()
         details.setObjectName("CompetencyCockpitLearningAreaDetails")
         details_layout = QVBoxLayout(details)
