@@ -897,21 +897,59 @@ class SQLiteSpikeTest(unittest.TestCase):
         by_subject: dict[str, list[object]] = {}
         for competency in competencies:
             by_subject.setdefault(competency.subject_id, []).append(competency)
-        self.assertEqual(by_id["CMP-000318"].subject_id, "mathematik")
+        self.assertEqual(by_id["CMP-000671"].subject_id, "mathematik")
         self.assertEqual(
-            by_id["CMP-000318"].learning_area,
+            by_id["CMP-000671"].learning_area,
             "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
         )
-        self.assertEqual(by_id["CMP-000318"].competency_group, "Zeit")
+        self.assertEqual(by_id["CMP-000671"].competency_group, "Zeit")
         self.assertEqual(
-            by_id["CMP-000318"].description,
-            "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.",
+            by_id["CMP-000671"].description,
+            "Uhrzeiten minutengenau ablesen.",
         )
-        self.assertEqual(by_id["CMP-000318"].grade_band, "1-4")
-        self.assertEqual(by_id["CMP-000318"].learning_stage, "cross_stage")
-        self.assertEqual(by_id["CMP-000318"].catalog_status, "current")
-        self.assertTrue(by_id["CMP-000318"].catalog_default_active)
-        self.assertEqual(by_id["CMP-000318"].activation_group_key, "")
+        self.assertEqual(by_id["CMP-000671"].grade_band, "1-4")
+        self.assertEqual(by_id["CMP-000671"].learning_stage, "stage_4")
+        self.assertEqual(by_id["CMP-000671"].catalog_status, "current")
+        self.assertTrue(by_id["CMP-000671"].catalog_default_active)
+        self.assertEqual(by_id["CMP-000671"].activation_group_key, "")
+        replaced_math_ids = {
+            "CMP-000295", "CMP-000301", "CMP-000306", "CMP-000307",
+            "CMP-000309", "CMP-000316", "CMP-000317", "CMP-000318",
+            "CMP-000321", "CMP-000330", "CMP-000332", "CMP-000336",
+            "CMP-000338",
+        }
+        self.assertEqual(
+            len([
+                competency
+                for competency in by_subject["mathematik"]
+                if competency.catalog_status == "current" and competency.active
+            ]),
+            81,
+        )
+        self.assertTrue(all(
+            by_id[competency_id].catalog_status == "legacy"
+            and not by_id[competency_id].catalog_default_active
+            and not by_id[competency_id].active
+            for competency_id in replaced_math_ids
+        ))
+        self.assertEqual(
+            {
+                competency_id: by_id[competency_id].learning_stage
+                for competency_id in (
+                    "CMP-000668", "CMP-000669", "CMP-000670", "CMP-000671",
+                    "CMP-000672", "CMP-000673", "CMP-000674",
+                )
+            },
+            {
+                "CMP-000668": "stage_1_3",
+                "CMP-000669": "stage_1_3",
+                "CMP-000670": "stage_1_3",
+                "CMP-000671": "stage_4",
+                "CMP-000672": "cross_stage",
+                "CMP-000673": "cross_stage",
+                "CMP-000674": "cross_stage",
+            },
+        )
         self.assertEqual(by_id["CMP-000083"].catalog_status, "legacy")
         self.assertFalse(by_id["CMP-000083"].catalog_default_active)
         self.assertEqual(by_id["CMP-000059"].subject_id, "deutsch")
@@ -956,13 +994,13 @@ class SQLiteSpikeTest(unittest.TestCase):
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
             database = create_sqlite_seed_database(database_path)
             competency_repository = SQLiteCompetencyRepository(database)
-            competency_repository.ensure_catalog_defaults((
-                self._sample_competency_entry("CMP-000001", "Deutsch", "Lesen"),
-            ))
+            competency_repository.ensure_catalog_defaults(
+                CurriculumDesktopAdapter().list_entries()
+            )
             observation_repository = SQLiteObservationRepository(database)
             observation_repository.create_observation(
                 self._sample_observation(
-                    ratings=(self._sample_rating("CMP-000001", "+"),),
+                    ratings=(self._sample_rating("CMP-000318", "+"),),
                 )
             )
 
@@ -972,8 +1010,8 @@ class SQLiteSpikeTest(unittest.TestCase):
             stored_observation = observation_repository.get_observation(
                 f"{OBSERVATION_ID_PREFIX}-000001"
             )
-            old_competency = competency_repository.get_competency("CMP-000001")
-            new_competency = competency_repository.get_competency("CMP-000318")
+            old_competency = competency_repository.get_competency("CMP-000318")
+            new_competency = competency_repository.get_competency("CMP-000671")
 
         self.assertIsNotNone(stored_observation)
         if stored_observation is not None:
@@ -982,11 +1020,14 @@ class SQLiteSpikeTest(unittest.TestCase):
                     rating.competency_id
                     for rating in stored_observation.competency_ratings
                 ),
-                ("CMP-000001",),
+                ("CMP-000318",),
             )
             self.assertEqual(stored_observation.competency_ratings[0].rating, "+")
         self.assertIsNotNone(old_competency)
         self.assertIsNotNone(new_competency)
+        if old_competency is not None:
+            self.assertEqual(old_competency.catalog_status, "legacy")
+            self.assertFalse(old_competency.catalog_default_active)
 
     def test_documentation_subject_settings_default_to_active_catalog_subjects(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

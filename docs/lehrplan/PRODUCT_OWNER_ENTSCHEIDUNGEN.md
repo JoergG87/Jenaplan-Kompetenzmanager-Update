@@ -342,6 +342,22 @@ Auswirkungen auf UI oder Dokumentationsstand: Eine passend granulare Liste reduz
 
 Empfohlene Standardentscheidung: Beobachtungssituation und Foerderentscheidung als Trennkriterium nutzen.
 
+### Verbindliche Praezisierung Sprint 4C2: Mathematik
+
+Kompetenzen werden nicht mechanisch anhand von `und`, `oder`, `sowie` oder der Anzahl ihrer Verben atomisiert. Eine Trennung erfolgt nur, wenn Teilhandlungen unterschiedlich bewertet werden koennen, unterschiedliche Unterstuetzungsentscheidungen erfordern, unterschiedlichen Lernstufen angehoeren oder eine gemeinsame Bewertung paedagogisch mehrdeutig waere. Zusammenhaengende Arbeitsablaeufe bleiben eine Kompetenz, wenn sie in derselben Beobachtungssituation sinnvoll gemeinsam eingeschaetzt werden koennen.
+
+Fuer Mathematik ist die bisherige Kompetenz `CMP-000318` verbindlich in sieben getrennt bewertbare Lernziele aufzuteilen:
+
+- volle Stunden an Uhrendarstellungen ablesen (`stage_1_3`)
+- halbe Stunden an Uhrendarstellungen ablesen (`stage_1_3`)
+- Viertelstunden an Uhrendarstellungen ablesen (`stage_1_3`)
+- Uhrzeiten minutengenau ablesen (`stage_4`)
+- Uhrzeiten an einer Uhr einstellen (`cross_stage`)
+- Uhrzeiten notieren (`cross_stage`)
+- Uhrzeiten zwischen gebraeuchlichen Schreib- und Sprechweisen uebertragen (`cross_stage`)
+
+Analoge und digitale Uhrendarstellungen bleiben Darstellungsformen innerhalb der passenden Kompetenz und erzeugen keine eigenen Kompetenzzeilen. Es gibt keinen allgemeinen aktiven Nachfolger `Uhrzeiten ablesen`, weil dieser die freigegebenen Lernstufen erneut vermischen wuerde. `Zeitspannen bestimmen` wird aus `CMP-000318` nicht abgeleitet; eine spaetere Ergaenzung setzt eine eindeutige Lehrplangrundlage und die Abgrenzung zu bestehenden Kompetenzen fuer Zeitdauern und Sachrechnen mit Groessen voraus.
+
 ## Entscheidung 11: Umwelt, Naturverantwortung, Nachhaltigkeit und Energie fachlich verorten
 
 Prioritaet: P1
@@ -510,7 +526,7 @@ Prioritaet: P3
 
 Betroffene Faecher: Deutsch, Mathematik, Heimat- und Sachkunde / EPU, Ethik, Kunst, Musik, Schulgarten, Sport, Werken
 
-Hintergrund: Der Differenzbericht markiert alte grobe Eintraege als moegliche spaetere Deaktivierung oder Archivierung. Fuer Sprint 4 ist jedoch keine Deaktivierung vorgesehen.
+Hintergrund: Der Differenzbericht markiert alte grobe Eintraege als moegliche spaetere Deaktivierung oder Archivierung. Die urspruengliche Sprint-4-Entscheidung sah noch keine Deaktivierung vor. Sprint 4C2 gibt fuer die dreizehn fachlich ersetzten Mathematik-IDs `CMP-000295`, `CMP-000301`, `CMP-000306`, `CMP-000307`, `CMP-000309`, `CMP-000316`, `CMP-000317`, `CMP-000318`, `CMP-000321`, `CMP-000330`, `CMP-000332`, `CMP-000336` und `CMP-000338` die Archivierung als `legacy` und standardmaessig inaktiv ausdruecklich frei.
 
 Moegliche Optionen:
 
@@ -518,17 +534,17 @@ Moegliche Optionen:
 - Alte grobe Eintraege dauerhaft sichtbar lassen.
 - Alte grobe Eintraege nur in neuen Beobachtungen ausblenden, aber in historischen Ansichten sichtbar halten.
 
-Empfehlung: Spaeter separat entscheiden; bis dahin alte Eintraege sichtbar und historisch geschuetzt lassen.
+Empfehlung: Deaktivierungen weiterhin separat fachlich freigeben. Die dreizehn in Sprint 4C2 freigegebenen Mathematik-IDs bilden die begrenzte Ausnahme.
 
-Auswirkungen auf den Kompetenzkatalog: Keine unmittelbare Aenderung. Spaeter kann der aktive Katalog verschlankt werden.
+Auswirkungen auf den Kompetenzkatalog: Die dreizehn freigegebenen Mathematik-IDs bleiben textlich und hierarchisch unveraendert erhalten, wechseln aber auf `legacy` und standardmaessig inaktiv. Alle anderen Deaktivierungen bleiben offen.
 
 Auswirkungen auf Bestandsschutz: Historische Beobachtungen bleiben sichtbar und unveraendert.
 
-Auswirkungen auf spaetere CSV-Generierung: Keine Voraussetzung fuer die erste neue CSV-Erstellung, solange neue Sollzeilen ergaenzend entstehen.
+Auswirkungen auf spaetere CSV-Generierung: Neue fachliche Bedeutungen erhalten neue IDs. Bestehende Beobachtungen oder Bestaetigungen werden nicht automatisch auf Nachfolger uebertragen.
 
 Auswirkungen auf UI oder Dokumentationsstand: Spaeter braucht es ggf. aktive/archivierte Darstellung, damit alte Bewertungen nicht verschwinden.
 
-Empfohlene Standardentscheidung: Jetzt nicht deaktivieren.
+Empfohlene Standardentscheidung: Nur nach ausdruecklicher fachlicher Einzelfreigabe deaktivieren; Sprint 4C2 setzt die dreizehn genannten Mathematik-IDs frei.
 
 ## Entscheidung 18: Textnormalisierung fuer spaetere CSV klaeren
 

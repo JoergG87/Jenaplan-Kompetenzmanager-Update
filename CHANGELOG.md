@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## Sprint 4C2 - Mathematikkompetenzen fachlich verfeinert
+
+### Changed
+
+- Dreizehn fachlich zu breite Mathematik-Kompetenzen bestandsgeschuetzt auf `legacy` und standardmaessig inaktiv gesetzt; Texte, Hierarchien und IDs bleiben fuer historische Beobachtungen und Bestaetigungen unveraendert referenzierbar.
+- Vierzig neue, getrennt bewertbare Mathematik-Kompetenzen mit den global fortlaufenden IDs `CMP-000647` bis `CMP-000686` ergänzt. Der aktive Mathematikbestand umfasst damit 81 `current`-Kompetenzen.
+- Die bisherige Sammelkompetenz zu Uhrzeiten durch sieben freigegebene Lernziele fuer volle, halbe, Viertel- und minutengenaue Uhrzeiten sowie Einstellen, Notieren und Uebertragen ersetzt. Analoge und digitale Darstellungen bleiben Darstellungsformen innerhalb dieser Kompetenzen.
+- Product-Owner-Regel praezisiert: keine mechanische Atomisierung anhand von Verben; getrennt wird nur bei unterschiedlich bewertbaren Lernstaenden, Lernstufen oder Unterstuetzungsentscheidungen.
+- Die neuen Mathematikformulierungen gegen ihre dreizehn Legacy-Vorgaenger geprueft und verlorene Anforderungsmerkmale sowie zu abstrakte Einheiten- und Flaechenbezeichnungen inhaltstreu korrigiert, ohne IDs, Aufteilung oder Lernstufen zu veraendern.
+- Sichtbare Texte und Kurzlabels der vierzig neuen Mathematikkompetenzen abschliessend auf korrekte deutsche UTF-8-Zeichen umgestellt; die verbindlichen Einheitenformulierungen fuer `CMP-000675` und `CMP-000676` dabei wortgetreu uebernommen.
+- Katalog-, Import-, Beobachtungsdialog-, Kompetenzstatus-, Cockpit- und Berichtstests gezielt auf aktive Nachfolger und den historischen Bestandsschutz angepasst.
+
+### Validated
+
+- Katalogvalidator erfolgreich ausgefuehrt.
+- Vergleich gegen den Ausgangskatalog erfolgreich geprueft: 40 `NEW_COMPETENCY`, 13 `STATUS_CHANGED` und 26 `METADATA_CHANGED`; keine `TEXT_CHANGED`, `HIERARCHY_CHANGED`, `LEARNING_STAGE_CHANGED` oder `DELETED_COMPETENCY`.
+- Vollstaendige Testsuite erfolgreich ausgefuehrt: 300 Tests bestanden.
+
+### Not Changed
+
+- Keine SQLite-Struktur, Migration, UI-, Adapter-, Repository-, Bericht-/LEG-Architektur oder automatische Uebertragung historischer Bewertungen; keine anderen Faecher und kein Commit.
+
 ## Sprint 6D - Filter und leere Zustaende im Kompetenz-Cockpit
 
 ### Changed

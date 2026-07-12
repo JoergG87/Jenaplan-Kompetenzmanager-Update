@@ -698,7 +698,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self,
     ) -> None:
         groups = self.adapter.list_observation_competency_subject_groups()
-        competency = self._find_observation_competency_option(groups, "CMP-000318")
+        competency = self._find_observation_competency_option(groups, "CMP-000671")
         subject_group = self._observation_subject_group(groups, "mathematik")
 
         self.assertIsNotNone(subject_group)
@@ -713,9 +713,42 @@ class DesktopAppAdapterTest(unittest.TestCase):
             self.assertEqual(competency.competency_group, "Zeit")
             self.assertEqual(
                 competency.competency_text,
+                "Uhrzeiten minutengenau ablesen.",
+            )
+            self.assertEqual(competency.competency_label, "Minutengenau ablesen")
+
+    def test_observation_competency_hierarchy_keeps_replaced_math_time_snapshot(
+        self,
+    ) -> None:
+        initial_draft = self._sample_observation_draft(
+            subject_id="mathematik",
+            subject_display_name="Mathematik",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000318",
+                    "mathematik",
+                    "Mathematik",
+                    "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
+                    "Zeit",
+                    "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.",
+                    "+",
+                ),
+            ),
+        )
+
+        groups = self.adapter.list_observation_competency_subject_groups(initial_draft)
+        competency = self._find_observation_competency_option(groups, "CMP-000318")
+
+        self.assertIsNotNone(competency)
+        if competency is not None:
+            self.assertTrue(competency.selected)
+            self.assertEqual(competency.rating, "+")
+            self.assertEqual(competency.catalog_status, "legacy")
+            self.assertFalse(competency.is_active)
+            self.assertEqual(
+                competency.competency_text,
                 "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.",
             )
-            self.assertEqual(competency.competency_label, "Uhrzeiten nutzen")
 
     def test_observation_competency_hierarchy_keeps_current_deutsch_competency(
         self,
@@ -743,12 +776,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
             subject_display_name="Mathematik",
             competency_ratings=(
                 self._sample_observation_rating(
-                    "CMP-000318",
+                    "CMP-000671",
                     "mathematik",
                     "Mathematik",
                     "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
                     "Zeit",
-                    "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.",
+                    "Uhrzeiten minutengenau ablesen.",
                     "++",
                 ),
             ),
@@ -757,7 +790,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         groups = self.adapter.list_observation_competency_subject_groups(
             initial_draft
         )
-        selected = self._find_observation_competency_option(groups, "CMP-000318")
+        selected = self._find_observation_competency_option(groups, "CMP-000671")
         unselected = self._find_observation_competency_option(groups, "CMP-000319")
 
         self.assertIsNotNone(selected)
@@ -826,12 +859,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
         for date_text, competency_ratings in (
             ("2026-07-01", (self._recent_rating("CMP-000241"),)),
             ("2026-07-02", (
-                self._recent_rating("CMP-000318"),
-                self._recent_rating("CMP-000306"),
+                self._recent_rating("CMP-000671"),
+                self._recent_rating("CMP-000652"),
             )),
             ("2026-07-03", (
-                self._recent_rating("CMP-000307"),
-                self._recent_rating("CMP-000318"),
+                self._recent_rating("CMP-000656"),
+                self._recent_rating("CMP-000671"),
             )),
             ("2026-07-04", (self._recent_rating("CMP-000319"),)),
         ):
@@ -846,7 +879,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(
             tuple(competency.competency_id for competency in recent),
-            ("CMP-000319", "CMP-000307", "CMP-000318", "CMP-000306"),
+            ("CMP-000319", "CMP-000656", "CMP-000671", "CMP-000652"),
         )
 
     def test_recent_observation_competencies_filter_legacy_and_inactive_catalog_rows(self) -> None:
@@ -856,7 +889,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     "CMP-000020", "musik", "Musik", "Musik hören",
                     "Hören und Beschreiben", "Historischer Kompetenztext", "+",
                 ),
-                self._recent_rating("CMP-000318"),
+                self._recent_rating("CMP-000671"),
             ),
         ))
 
@@ -866,7 +899,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(
             tuple(competency.competency_id for competency in recent),
-            ("CMP-000318",),
+            ("CMP-000671",),
         )
         self.assertTrue(all(competency.is_active for competency in recent))
         self.assertTrue(all(competency.catalog_status == "current" for competency in recent))
@@ -876,7 +909,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(self.adapter.list_recent_observation_competencies(student_id), ())
 
         result = self.adapter.save_observation(self._sample_observation_draft(
-            competency_ratings=(self._recent_rating("CMP-000318"),),
+            competency_ratings=(self._recent_rating("CMP-000671"),),
         ))
 
         self.assertIsInstance(result, SuccessResult)
@@ -885,7 +918,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 competency.competency_id
                 for competency in self.adapter.list_recent_observation_competencies(student_id)
             ),
-            ("CMP-000318",),
+            ("CMP-000671",),
         )
 
     def test_recent_observation_competency_projection_has_no_write_path(self) -> None:
@@ -2039,6 +2072,53 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(status.competency_text, "Historischer Snapshot")
         self.assertEqual(status.subject_display_name, "EPU historisch")
 
+    def test_replaced_math_competency_stays_in_status_cockpit_and_report_history(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            subject_id="mathematik",
+            subject_display_name="Mathematik",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000318", "mathematik", "Mathematik",
+                    "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
+                    "Zeit", "Historischer Uhrzeiten-Snapshot", "+",
+                ),
+            ),
+        ))
+        self.adapter.save_competency_confirmation(
+            student_id=f"{STUDENT_ID_PREFIX}-000001",
+            competency_id="CMP-000318",
+            confirmed_rating="+",
+            note="Historisch bestaetigt.",
+        )
+
+        status = self._canonical_status("CMP-000318")
+        cockpit = self.adapter.competency_cockpit_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        historical_cockpit_ids = {
+            competency.competency_id
+            for subject in cockpit.historical_subjects
+            for area in subject.learning_areas
+            for topic in area.topics
+            for competency in topic.competencies
+        }
+        preview = self.adapter.get_report_preview_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        self.assertIsNotNone(preview)
+        report_ids = {
+            competency.competency_id
+            for section in (() if preview is None else preview.subject_sections)
+            for competency in section.current_statuses
+        }
+
+        self.assertTrue(status.historical)
+        self.assertEqual(status.competency_text, "Historischer Uhrzeiten-Snapshot")
+        self.assertEqual(status.confirmed_rating, "+")
+        self.assertEqual(status.confirmation_note, "Historisch bestaetigt.")
+        self.assertIn("CMP-000318", historical_cockpit_ids)
+        self.assertIn("CMP-000318", report_ids)
+
     def test_canonical_status_projection_keeps_missing_catalog_snapshot(self) -> None:
         SQLiteObservationRepository(self.database).create_observation(ObservationRecord(
             "OBS-MISSING", f"{STUDENT_ID_PREFIX}-000001", "2026-07-03", "altfach",
@@ -3137,8 +3217,107 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(all(entry.competency_detail_label for entry in entries))
         self.assertEqual(entries[0].competency_id, "CMP-000001")
         self.assertEqual(entries[0].subject_id, "deutsch")
-        self.assertEqual(entries[-1].competency_id, "CMP-000646")
-        self.assertEqual(entries[-1].subject_id, "ethik")
+        self.assertEqual(entries[-1].competency_id, "CMP-000686")
+        self.assertEqual(entries[-1].subject_id, "mathematik")
+
+    def test_curriculum_catalog_refines_only_approved_math_competencies(self) -> None:
+        entries = self.curriculum_adapter.list_entries()
+        replaced_ids = {
+            "CMP-000295", "CMP-000301", "CMP-000306", "CMP-000307",
+            "CMP-000309", "CMP-000316", "CMP-000317", "CMP-000318",
+            "CMP-000321", "CMP-000330", "CMP-000332", "CMP-000336",
+            "CMP-000338",
+        }
+        by_id = {entry.competency_id: entry for entry in entries}
+        current_math = [
+            entry
+            for entry in entries
+            if entry.subject_key == "mathematik"
+            and entry.catalog_status == "current"
+            and entry.is_active
+        ]
+        time_expectations = {
+            "CMP-000668": (
+                "Volle Stunden an Uhrendarstellungen ablesen.", "stage_1_3"
+            ),
+            "CMP-000669": (
+                "Halbe Stunden an Uhrendarstellungen ablesen.", "stage_1_3"
+            ),
+            "CMP-000670": (
+                "Viertelstunden an Uhrendarstellungen ablesen.", "stage_1_3"
+            ),
+            "CMP-000671": ("Uhrzeiten minutengenau ablesen.", "stage_4"),
+            "CMP-000672": ("Uhrzeiten an einer Uhr einstellen.", "cross_stage"),
+            "CMP-000673": ("Uhrzeiten notieren.", "cross_stage"),
+            "CMP-000674": (
+                "Uhrzeiten zwischen gebräuchlichen Schreib- und Sprechweisen übertragen.",
+                "cross_stage",
+            ),
+        }
+
+        self.assertEqual(len(current_math), 81)
+        self.assertTrue(all(
+            by_id[competency_id].catalog_status == "legacy"
+            and not by_id[competency_id].catalog_default_active
+            and not by_id[competency_id].is_active
+            for competency_id in replaced_ids
+        ))
+        self.assertEqual(
+            {
+                competency_id: (
+                    by_id[competency_id].competency_text,
+                    by_id[competency_id].learning_stage,
+                )
+                for competency_id in time_expectations
+            },
+            time_expectations,
+        )
+        self.assertFalse(any(
+            entry.competency_text == "Uhrzeiten ablesen"
+            for entry in current_math
+        ))
+        self.assertEqual(
+            {
+                competency_id: (
+                    by_id[competency_id].competency_text,
+                    by_id[competency_id].competency_label,
+                )
+                for competency_id in (
+                    "CMP-000650", "CMP-000661", "CMP-000675", "CMP-000676",
+                    "CMP-000682", "CMP-000683", "CMP-000684",
+                )
+            },
+            {
+                "CMP-000650": (
+                    "Grundaufgaben der Multiplikation und Division sicher wiedergeben oder ableiten.",
+                    "Multiplikation und Division",
+                ),
+                "CMP-000661": (
+                    "Zu Sachsituationen sinnvolle Fragen formulieren.",
+                    "Fragen zu Sachsituationen",
+                ),
+                "CMP-000675": (
+                    "Einheiten für Geld, Länge, Zeitdauer und Datum sachgerecht gebrauchen und Größen in verschiedenen Schreibweisen angeben.",
+                    "Geld, Länge, Zeit und Datum",
+                ),
+                "CMP-000676": (
+                    "Erweiterte Einheiten für Länge und Zeitdauer sowie Einheiten für Masse und Volumen sachgerecht gebrauchen und Größen in verschiedenen Schreibweisen angeben.",
+                    "Masse, Volumen und erweiterte Einheiten",
+                ),
+                "CMP-000682": (
+                    "Vierecke, Dreiecke und Kreise in Umwelt, Bildern und Skizzen zeigen und benennen.",
+                    "Vierecke, Dreiecke, Kreise",
+                ),
+                "CMP-000683": (
+                    "Erweiterte Vierecks- und Dreiecksarten sowie weitere Vielecke zeigen, benennen und beschreiben.",
+                    "Vierecks- und Dreiecksarten",
+                ),
+                "CMP-000684": (
+                    "Vierecke, Dreiecke, Kreise und weitere Vielecke nach ihren Eigenschaften unterscheiden und Beziehungen zwischen Flächen beschreiben.",
+                    "Flächen nach Eigenschaften",
+                ),
+            },
+        )
 
     def test_curriculum_catalog_maps_kunst_to_kunsterziehung(self) -> None:
         kunst_entries = [
@@ -3202,7 +3381,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(any(
             entry.competency_group == "Zeit"
             and entry.competency_text
-            == "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen."
+            == "Uhrzeiten minutengenau ablesen."
             for entry in math_competencies
         ))
 
@@ -3227,7 +3406,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             == "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen"
             and entry.competency_group == "Zeit"
             and entry.competency_text
-            == "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen."
+            == "Uhrzeiten minutengenau ablesen."
             for entry in by_subject["mathematik"]
         ))
         self.assertTrue(any(
@@ -3255,13 +3434,19 @@ class DesktopAppAdapterTest(unittest.TestCase):
             and entry.competency_group == "Schriftliches Rechnen"
         ]
 
-        self.assertGreaterEqual(len(math_written_entries), 3)
+        self.assertEqual(len(math_written_entries), 9)
         self.assertEqual(
             {
                 entry.competency_label
                 for entry in math_written_entries
             },
-            {"Schriftlich erklaeren", "Schriftlich rechnen", "Schriftlich pruefen"},
+            {
+                "Addition erklären", "Subtraktion erklären",
+                "Multiplikation erklären", "Division erklären",
+                "Schriftlich addieren", "Schriftlich subtrahieren",
+                "Schriftlich multiplizieren", "Schriftlich dividieren",
+                "Schriftlich pruefen",
+            },
         )
         self.assertGreater(
             len({entry.competency_label for entry in math_written_entries}),
@@ -3294,11 +3479,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
             for entry in self.curriculum_adapter.list_competencies_for_subject(
                 "mathematik"
             )
-            if entry.competency_id == "CMP-000318"
+            if entry.competency_id == "CMP-000671"
         )
 
-        self.assertEqual(math_competency.competency_display_name, "Uhrzeiten nutzen")
-        self.assertEqual(math_competency.competency_label, "Uhrzeiten nutzen")
+        self.assertEqual(math_competency.competency_display_name, "Minutengenau ablesen")
+        self.assertEqual(math_competency.competency_label, "Minutengenau ablesen")
         self.assertNotEqual(
             math_competency.competency_display_name,
             math_competency.learning_area,
@@ -3434,7 +3619,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "Groessen",  # Kompetenzbereich
         ):
             dialog.catalog_search_input.setText(search_text)
-            self.assertIn("CMP-000318", dialog.competency_catalog_tiles)
+            self.assertIn("CMP-000671", dialog.competency_catalog_tiles)
             self.assertIn("gefunden", dialog.catalog_search_result_label.text())
 
     def test_observation_dialog_catalog_search_ignores_case_and_outer_whitespace(self) -> None:
@@ -3443,12 +3628,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         dialog.catalog_search_input.setText("  uHrZeItEn  ")
 
-        self.assertIn("CMP-000318", dialog.competency_catalog_tiles)
+        self.assertIn("CMP-000671", dialog.competency_catalog_tiles)
 
     def test_observation_dialog_recent_competencies_follow_subject_and_search(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
             competency_ratings=(
-                self._recent_rating("CMP-000318"),
+                self._recent_rating("CMP-000671"),
                 self._recent_rating("CMP-000241"),
             ),
         ))
@@ -3456,7 +3641,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self._select_observation_subject(dialog, "mathematik")
         self.assertFalse(dialog.recent_competencies_container.isHidden())
-        self.assertEqual(tuple(dialog.recent_competency_chips), ("CMP-000318",))
+        self.assertEqual(tuple(dialog.recent_competency_chips), ("CMP-000671",))
 
         dialog.catalog_search_input.setText("Uhrzeiten")
         self.assertTrue(dialog.recent_competencies_container.isHidden())
@@ -3468,15 +3653,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_observation_dialog_recent_chip_selects_once_and_disables_afterward(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
-            competency_ratings=(self._recent_rating("CMP-000318"),),
+            competency_ratings=(self._recent_rating("CMP-000671"),),
         ))
         dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(dialog, "mathematik")
-        chip = dialog.recent_competency_chips["CMP-000318"]
+        chip = dialog.recent_competency_chips["CMP-000671"]
 
         QTest.keyClick(chip, Qt.Key.Key_Space)
 
-        self.assertIn("CMP-000318", dialog.competency_rating_entries)
+        self.assertIn("CMP-000671", dialog.competency_rating_entries)
         self.assertFalse(chip.isEnabled())
         self.assertEqual(chip.selection_signal.text(), "✓")
 
@@ -3493,24 +3678,24 @@ class DesktopAppAdapterTest(unittest.TestCase):
         dialog = self._observation_dialog_with_hierarchy()
         dialog.catalog_search_input.setText("Uhrzeiten")
         self._select_observation_subject(dialog, "mathematik")
-        self.assertIn("CMP-000318", dialog.competency_catalog_tiles)
+        self.assertIn("CMP-000671", dialog.competency_catalog_tiles)
 
         self._select_observation_subject(dialog, "deutsch")
 
-        self.assertNotIn("CMP-000318", dialog.competency_catalog_tiles)
+        self.assertNotIn("CMP-000671", dialog.competency_catalog_tiles)
         self.assertEqual(dialog.catalog_search_input.text(), "Uhrzeiten")
 
     def test_observation_dialog_catalog_search_keeps_selection_and_rating(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(dialog, "mathematik")
-        dialog.competency_catalog_tiles["CMP-000318"]._activate()
-        dialog.competency_rating_widgets["CMP-000318"].buttons["++"].click()
+        dialog.competency_catalog_tiles["CMP-000671"]._activate()
+        dialog.competency_rating_widgets["CMP-000671"].buttons["++"].click()
 
         dialog.catalog_search_input.setText("nicht vorhanden")
 
-        self.assertIn("CMP-000318", dialog.competency_rating_entries)
+        self.assertIn("CMP-000671", dialog.competency_rating_entries)
         self.assertEqual(
-            dialog.competency_rating_widgets["CMP-000318"].currentData(), "++"
+            dialog.competency_rating_widgets["CMP-000671"].currentData(), "++"
         )
 
     def test_observation_dialog_catalog_search_excludes_historical_competencies(self) -> None:
@@ -3557,9 +3742,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
             subject_display_name="Mathematik",
             competency_ratings=(
                 self._sample_observation_rating(
-                    "CMP-000318", "mathematik", "Mathematik",
+                    "CMP-000671", "mathematik", "Mathematik",
                     "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
-                    "Zeit", "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.", "+",
+                    "Zeit", "Uhrzeiten minutengenau ablesen.", "+",
                 ),
             ),
         )
@@ -3583,7 +3768,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertFalse(topic_container.isHidden())
         self.assertEqual(topic_button.text(), "▾ Thema: Zeit")
         self.assertIn(
-            "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.",
+            "Uhrzeiten minutengenau ablesen.",
             [
                 label.text()
                 for label in topic_container.findChildren(QLabel)
@@ -3600,22 +3785,22 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self._select_observation_subject(dialog, "mathematik")
         self._observation_area_button(dialog, "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen").click()
         self._observation_topic_button(dialog, "Zeit").click()
-        tile = dialog.competency_catalog_tiles["CMP-000318"]
+        tile = dialog.competency_catalog_tiles["CMP-000671"]
         QTest.mouseClick(tile, Qt.MouseButton.LeftButton)
-        dialog.competency_rating_widgets["CMP-000318"].buttons["++"].click()
+        dialog.competency_rating_widgets["CMP-000671"].buttons["++"].click()
         draft = dialog.create_draft()
         rating = next(
             item for item in draft.competency_ratings
-            if item.competency_id == "CMP-000318"
+            if item.competency_id == "CMP-000671"
         )
 
-        self.assertIn("CMP-000318", dialog.competency_rating_entries)
+        self.assertIn("CMP-000671", dialog.competency_rating_entries)
         self.assertTrue(tile.is_selected())
         self.assertEqual(tile.selection_signal.text(), "✓")
         self.assertEqual(rating.rating, "++")
         self.assertEqual(
             rating.competency_text,
-            "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.",
+            "Uhrzeiten minutengenau ablesen.",
         )
 
     def test_observation_dialog_selection_survives_topic_collapse(self) -> None:
@@ -3624,15 +3809,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self._select_observation_subject(dialog, "mathematik")
         topic_button = self._observation_topic_button(dialog, "Zeit")
         topic_button.click()
-        dialog.competency_catalog_tiles["CMP-000318"]._activate()
-        dialog.competency_rating_widgets["CMP-000318"].buttons["++"].click()
+        dialog.competency_catalog_tiles["CMP-000671"]._activate()
+        dialog.competency_rating_widgets["CMP-000671"].buttons["++"].click()
         topic_button.click()
         draft = dialog.create_draft()
 
         self.assertTrue(self._observation_topic_container(dialog, "Zeit").isHidden())
-        self.assertIn("CMP-000318", dialog.competency_rating_entries)
-        self.assertIn("CMP-000318", dialog.competency_rating_widgets)
-        self.assertEqual(draft.competency_ratings[0].competency_id, "CMP-000318")
+        self.assertIn("CMP-000671", dialog.competency_rating_entries)
+        self.assertIn("CMP-000671", dialog.competency_rating_widgets)
+        self.assertEqual(draft.competency_ratings[0].competency_id, "CMP-000671")
         self.assertEqual(draft.competency_ratings[0].rating, "++")
 
     def test_observation_dialog_keeps_separate_ratings_per_competency(self) -> None:
@@ -3640,10 +3825,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self._select_observation_subject(dialog, "mathematik")
         self._observation_topic_button(dialog, "Schriftliches Rechnen").click()
-        dialog.competency_catalog_tiles["CMP-000306"]._activate()
-        dialog.competency_catalog_tiles["CMP-000307"]._activate()
-        first_rating = dialog.competency_rating_widgets["CMP-000306"]
-        second_rating = dialog.competency_rating_widgets["CMP-000307"]
+        dialog.competency_catalog_tiles["CMP-000652"]._activate()
+        dialog.competency_catalog_tiles["CMP-000656"]._activate()
+        first_rating = dialog.competency_rating_widgets["CMP-000652"]
+        second_rating = dialog.competency_rating_widgets["CMP-000656"]
         first_rating.buttons["++"].click()
         second_rating.buttons["-"].click()
         draft = dialog.create_draft()
@@ -3652,8 +3837,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
             for rating in draft.competency_ratings
         }
 
-        self.assertEqual(ratings_by_id["CMP-000306"], "++")
-        self.assertEqual(ratings_by_id["CMP-000307"], "-")
+        self.assertEqual(ratings_by_id["CMP-000652"], "++")
+        self.assertEqual(ratings_by_id["CMP-000656"], "-")
 
     def test_observation_dialog_edit_keeps_initial_selected_rating(self) -> None:
         initial_draft = self._sample_observation_draft(
@@ -3661,12 +3846,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
             subject_display_name="Mathematik",
             competency_ratings=(
                 self._sample_observation_rating(
-                    "CMP-000318",
+                    "CMP-000671",
                     "mathematik",
                     "Mathematik",
                     "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
                     "Zeit",
-                    "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.",
+                    "Uhrzeiten minutengenau ablesen.",
                     "++",
                 ),
             ),
@@ -3679,9 +3864,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
             self._observation_topic_button(dialog, "Zeit").text(),
             "▾ Thema: Zeit",
         )
-        self.assertTrue(dialog.competency_catalog_tiles["CMP-000318"].is_selected())
+        self.assertTrue(dialog.competency_catalog_tiles["CMP-000671"].is_selected())
         self.assertEqual(
-            dialog.competency_rating_widgets["CMP-000318"].currentData(),
+            dialog.competency_rating_widgets["CMP-000671"].currentData(),
             "++",
         )
 
@@ -3691,12 +3876,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
             subject_display_name="Mathematik",
             competency_ratings=(
                 self._sample_observation_rating(
-                    "CMP-000318",
+                    "CMP-000671",
                     "mathematik",
                     "Mathematik",
                     "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
                     "Zeit",
-                    "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.",
+                    "Uhrzeiten minutengenau ablesen.",
                     "+",
                 ),
             ),
@@ -3732,12 +3917,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_observation_dialog_prevents_duplicate_selection(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(dialog, "mathematik")
-        tile = dialog.competency_catalog_tiles["CMP-000318"]
+        tile = dialog.competency_catalog_tiles["CMP-000671"]
 
         tile._activate()
         tile._activate()
 
-        self.assertEqual(tuple(dialog.competency_rating_entries), ("CMP-000318",))
+        self.assertEqual(tuple(dialog.competency_rating_entries), ("CMP-000671",))
         self.assertEqual(
             sum(
                 1
@@ -3747,7 +3932,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     and dialog.competency_ratings_layout.itemAt(index).widget().property(
                         "competency_key"
                     )
-                    == "CMP-000318"
+                    == "CMP-000671"
                 )
             ),
             1,
@@ -3757,34 +3942,34 @@ class DesktopAppAdapterTest(unittest.TestCase):
         dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(dialog, "mathematik")
 
-        dialog.competency_catalog_tiles["CMP-000306"]._activate()
-        dialog.competency_catalog_tiles["CMP-000307"]._activate()
+        dialog.competency_catalog_tiles["CMP-000652"]._activate()
+        dialog.competency_catalog_tiles["CMP-000656"]._activate()
 
         first_card = dialog.competency_ratings_layout.itemAt(0).widget()
         self.assertIsNotNone(first_card)
         if first_card is not None:
-            self.assertEqual(first_card.property("competency_key"), "CMP-000307")
+            self.assertEqual(first_card.property("competency_key"), "CMP-000656")
 
     def test_observation_dialog_subject_change_keeps_selection_and_rating(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(dialog, "mathematik")
-        dialog.competency_catalog_tiles["CMP-000318"]._activate()
-        dialog.competency_rating_widgets["CMP-000318"].buttons["--"].click()
+        dialog.competency_catalog_tiles["CMP-000671"]._activate()
+        dialog.competency_rating_widgets["CMP-000671"].buttons["--"].click()
         self._observation_topic_button(dialog, "Zeit").click()
 
         self._select_observation_subject(dialog, "deutsch")
         self._select_observation_subject(dialog, "mathematik")
         draft = dialog.create_draft()
 
-        self.assertIn("CMP-000318", dialog.competency_rating_entries)
+        self.assertIn("CMP-000671", dialog.competency_rating_entries)
         self.assertEqual(draft.competency_ratings[0].rating, "--")
         self.assertTrue(self._observation_topic_container(dialog, "Zeit").isHidden())
 
     def test_observation_dialog_keeps_cross_subject_selection(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(dialog, "mathematik")
-        dialog.competency_catalog_tiles["CMP-000318"]._activate()
-        dialog.competency_rating_widgets["CMP-000318"].buttons["++"].click()
+        dialog.competency_catalog_tiles["CMP-000671"]._activate()
+        dialog.competency_rating_widgets["CMP-000671"].buttons["++"].click()
         self._select_observation_subject(dialog, "deutsch")
         dialog.competency_catalog_tiles["CMP-000241"]._activate()
         dialog.competency_rating_widgets["CMP-000241"].buttons["-"].click()
@@ -3794,7 +3979,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             for item in dialog.create_draft().competency_ratings
         }
 
-        self.assertEqual(ratings, {"CMP-000318": "++", "CMP-000241": "-"})
+        self.assertEqual(ratings, {"CMP-000671": "++", "CMP-000241": "-"})
 
     def test_observation_dialog_historical_competency_is_quietly_marked(self) -> None:
         initial_draft = self._sample_observation_draft(
@@ -3845,8 +4030,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_observation_dialog_uses_four_rating_chips_per_competency(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(dialog, "mathematik")
-        dialog.competency_catalog_tiles["CMP-000318"]._activate()
-        selector = dialog.competency_rating_widgets["CMP-000318"]
+        dialog.competency_catalog_tiles["CMP-000671"]._activate()
+        selector = dialog.competency_rating_widgets["CMP-000671"]
 
         self.assertEqual(tuple(selector.buttons), ("++", "+", "-", "--"))
         selector.buttons["-"].click()
@@ -3859,12 +4044,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
             subject_display_name="Mathematik",
             competency_ratings=(
                 self._sample_observation_rating(
-                    "CMP-000318",
+                    "CMP-000671",
                     "mathematik",
                     "Mathematik",
                     "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
                     "Zeit",
-                    "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.",
+                    "Uhrzeiten minutengenau ablesen.",
                     "+",
                 ),
             ),
@@ -3873,7 +4058,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         update_draft = update_dialog.create_draft()
         create_dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(create_dialog, "mathematik")
-        create_dialog.competency_catalog_tiles["CMP-000318"]._activate()
+        create_dialog.competency_catalog_tiles["CMP-000671"]._activate()
         create_draft = create_dialog.create_draft()
 
         create_command = self.adapter.create_observation_command(create_draft)
