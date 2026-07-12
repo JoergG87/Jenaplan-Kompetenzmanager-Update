@@ -994,6 +994,11 @@ class StudentProfileScreen(QWidget):
         set_label_style(subject_label, "muted")
         header.addWidget(date_label, 0)
         header.addWidget(subject_label, 1)
+        if observation.is_quick_observation:
+            quick_label = QLabel("Schnellbeobachtung")
+            quick_label.setObjectName("ObservationQuickObservationBadge")
+            set_label_style(quick_label, "subtle")
+            header.addWidget(quick_label, 0)
         header.addWidget(details_button, 0)
         return header
 

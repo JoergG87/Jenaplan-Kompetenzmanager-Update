@@ -171,6 +171,7 @@ class ObservationDraftViewModel:
     attachment_names: tuple[str, ...] = ()
     attachments: tuple[ObservationAttachmentDraft, ...] = ()
     observation_id: str = ""
+    is_quick_observation: bool = False
 
 
 @dataclass(frozen=True)
@@ -202,6 +203,7 @@ class ObservationListItem:
     note: str
     competency_ratings: tuple[ObservationRatingViewModel, ...]
     attachments: tuple[object, ...] = ()
+    is_quick_observation: bool = False
 
     @property
     def summary(self) -> str:

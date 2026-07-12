@@ -153,6 +153,8 @@ Sprint 3B ergaenzt im CSV-Katalog die optionale Spalte `competency_label`. Sie i
 
 Bewertungen bleiben technisch in `observation_competency_ratings.rating` gespeichert. `observations` erhaelt keine globale Bewertung. Ein nicht bewerteter oder offener Kompetenzaspekt wird nicht als Ratingwert gespeichert, sondern erzeugt keine Zuordnungszeile in `observation_competency_ratings`.
 
+`is_quick_observation` ist ausschliesslich ein fluechtiger Command-/ViewModel-Name fuer die bewusste Eingabe und Anzeige einer Schnellbeobachtung. Er ist kein SQLite-Feld. Persistiert und rekonstruiert wird der Zustand als aktive Beobachtung mit nichtleerer Notiz und ohne Zeilen in `observation_competency_ratings`.
+
 ## Sprint-4A Kompetenzkatalogmodell
 
 Status: Verbindliche technische Namen fuer das produktive Kompetenzkatalogmodell. Sprint 4A speichert diese Felder im CSV-Katalog und in SQLite `competencies`.

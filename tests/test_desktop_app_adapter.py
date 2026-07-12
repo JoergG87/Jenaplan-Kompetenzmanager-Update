@@ -7,6 +7,7 @@ import importlib
 import os
 import tempfile
 import unittest
+from unittest import mock
 from dataclasses import fields
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFrame,
     QLabel,
+    QMessageBox,
     QPushButton,
     QProgressBar,
     QScrollArea,
@@ -198,6 +200,70 @@ class DesktopAppAdapterTest(unittest.TestCase):
         ).list_observations_for_student(f"{STUDENT_ID_PREFIX}-000001")
         self.assertEqual(len(stored_observations), 1)
         self.assertEqual(stored_observations[0].competency_ratings[0].rating, "+")
+
+    def test_normal_observation_without_competency_is_invalid(self) -> None:
+        result = self.adapter.save_observation(
+            self._sample_observation_draft(competency_ratings=())
+        )
+
+        self.assertFalse(result.success)
+        self.assertIn("Mindestens eine Kompetenzbewertung", result.message)
+
+    def test_quick_observation_without_competency_and_with_note_is_persisted(self) -> None:
+        result = self.adapter.save_observation(
+            self._sample_observation_draft(
+                competency_ratings=(),
+                is_quick_observation=True,
+                note="Kurze Beobachtung ohne Kompetenzzuordnung.",
+            )
+        )
+
+        self.assertTrue(result.success)
+        stored = SQLiteObservationRepository(self.database).get_observation(
+            result.value.observation_id
+        )
+        self.assertIsNotNone(stored)
+        self.assertEqual(stored.competency_ratings, ())
+        listed = self.adapter.list_observations_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        self.assertTrue(listed[0].is_quick_observation)
+
+    def test_quick_observation_requires_non_whitespace_note(self) -> None:
+        for note in ("", "   "):
+            with self.subTest(note=repr(note)):
+                result = self.adapter.save_observation(
+                    self._sample_observation_draft(
+                        competency_ratings=(),
+                        is_quick_observation=True,
+                        note=note,
+                    )
+                )
+                self.assertFalse(result.success)
+                self.assertIn("note darf nicht leer sein", result.message)
+
+    def test_quick_observation_does_not_change_competency_projection(self) -> None:
+        before = self.adapter.list_competency_status_projection_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        documentation_before = self.adapter.list_documentation_status_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        self.adapter.save_observation(
+            self._sample_observation_draft(
+                competency_ratings=(),
+                is_quick_observation=True,
+            )
+        )
+        after = self.adapter.list_competency_status_projection_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        documentation_after = self.adapter.list_documentation_status_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(after, before)
+        self.assertEqual(documentation_after, documentation_before)
 
     def test_student_document_is_copied_and_metadata_survives_reload(self) -> None:
         source_path = Path(self.temp_dir.name) / "Foerderplan.pdf"
@@ -3938,6 +4004,51 @@ class DesktopAppAdapterTest(unittest.TestCase):
             1,
         )
 
+    def test_quick_observation_activation_keeps_existing_competencies(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+        dialog.competency_catalog_tiles["CMP-000671"]._activate()
+
+        dialog.quick_observation_checkbox.setChecked(True)
+
+        self.assertFalse(dialog.quick_observation_checkbox.isChecked())
+        self.assertIn("CMP-000671", dialog.competency_rating_entries)
+        self.assertIn("Entferne zuerst", dialog.quick_observation_feedback.text())
+
+    def test_existing_quick_observation_can_be_edited_and_converted(self) -> None:
+        initial_draft = self._sample_observation_draft(
+            observation_id="OBS-000001",
+            competency_ratings=(),
+            is_quick_observation=True,
+        )
+        dialog = self._observation_dialog_with_hierarchy(initial_draft)
+
+        self.assertTrue(dialog.quick_observation_checkbox.isChecked())
+        self.assertFalse(dialog.competency_zone.isEnabled())
+        dialog.quick_observation_checkbox.setChecked(False)
+        self._select_observation_subject(dialog, "mathematik")
+        dialog.competency_catalog_tiles["CMP-000671"]._activate()
+
+        draft = dialog.create_draft()
+        self.assertFalse(draft.is_quick_observation)
+        self.assertEqual(draft.competency_ratings[0].rating, "+")
+
+    def test_quick_observation_empty_note_uses_standard_warning(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        dialog.quick_observation_checkbox.setChecked(True)
+        dialog.note_input.setPlainText("   ")
+
+        with mock.patch.object(QMessageBox, "warning") as warning:
+            dialog.save_draft()
+
+        self.assertTrue(dialog.quick_observation_checkbox.isChecked())
+        warning.assert_called_once_with(
+            dialog,
+            "Hinweis",
+            "Bitte eine Notiz für die Schnellbeobachtung eingeben.",
+        )
+        self.assertEqual(dialog.competency_zone_opacity.opacity(), 0.48)
+
     def test_observation_dialog_inserts_new_selection_at_top(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(dialog, "mathematik")
@@ -6243,6 +6354,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         subject_display_name: str = "Deutsch",
         competency_ratings: tuple[ObservationCompetencyRatingDraft, ...] | None = None,
         attachments: tuple[ObservationAttachmentDraft, ...] = (),
+        is_quick_observation: bool = False,
     ) -> ObservationDraftViewModel:
         return ObservationDraftViewModel(
             student_id=f"{STUDENT_ID_PREFIX}-000001",
@@ -6252,7 +6364,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             subject_display_name=subject_display_name,
             context=context,
             note=note,
-            competency_ratings=competency_ratings or (
+            competency_ratings=competency_ratings if competency_ratings is not None else (
                 self._sample_observation_rating(
                     "CMP-000001",
                     "deutsch",
@@ -6275,6 +6387,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             attachment_names=tuple(attachment.original_filename for attachment in attachments),
             attachments=attachments,
             observation_id=observation_id,
+            is_quick_observation=is_quick_observation,
         )
 
     def _sample_observation_rating(

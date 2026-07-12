@@ -1932,3 +1932,11 @@ Die sichtbaren UI-Texte werden daraus abgeleitet und bleiben deutsch.
 - Bestehende Beobachtungen, bestaetigte Kompetenzstaende und Kompetenz-IDs werden nicht migriert.
 - `grade_band` darf nicht fuer die App-Filterlogik ueberladen werden.
 - Der idempotente Katalog-Upsert muss lokale Aktivierungsentscheidungen weiter schuetzen.
+
+## ADR-051 - Schnellbeobachtung ohne Kompetenzzuordnung
+
+Eine Schnellbeobachtung ist eine bewusst kompetenzfreie aktive Beobachtung mit verpflichtender, nichtleerer Notiz. Sie wird ohne Eintraege in `observation_competency_ratings` gespeichert; ein neues SQLite-Feld ist nicht erforderlich, weil der produktive Schreibprozess Beobachtungen ohne Kompetenzbewertung zuvor nicht zuliess und der Zustand damit eindeutig ist.
+
+Eine spaetere Kompetenzzuordnung und Bewertung ist im normalen Bearbeitungsdialog moeglich. Es erfolgt weder beim Speichern noch spaeter eine automatische Zuordnung oder Bewertung. Sobald eine Kompetenz ergaenzt wird, gelten wieder die normalen Kompetenz- und Bewertungsregeln.
+
+Kompetenzfreie Schnellbeobachtungen erscheinen im Beobachtungsverlauf, wirken mangels Rating-Zeilen aber nicht auf Kompetenzstatus, Dokumentationsfortschritt, Diagramme oder Bestaetigungslogik und erzeugen keine Kompetenz- oder Entwicklungsinformation fuer Berichte.

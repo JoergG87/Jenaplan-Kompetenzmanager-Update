@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Sprint 6H - Schnellbeobachtung im Beobachtungsdialog
+
+### Changed
+
+- Bewusst kompetenzfreie Schnellbeobachtungen mit verpflichtender Notiz im bestehenden PySide-Beobachtungsdialog ergänzt.
+- Schnellbeobachtungen ohne Rating-Zeilen über den bestehenden Beobachtungs-, Adapter-, Service- und SQLite-Pfad speicher- und bearbeitbar gemacht.
+- Den kompetenzfreien Zustand im Beobachtungsverlauf dezent gekennzeichnet; Kompetenzstatus- und Fortschrittsprojektionen bleiben mangels Rating-Zeilen unverändert.
+- Validierungs-, Persistenz-, Bearbeitungs-, Verlaufs- und Regressionsfälle als Tests vorbereitet.
+
+### Not Changed
+
+- Kein neues SQLite-Feld, keine Migration, keine künstliche Kompetenz, keine Berichts-, LEG-, Prototyp-, Soft-Delete- oder Filteränderung und kein Commit.
+
 ## Sprint 4C2 - Mathematikkompetenzen fachlich verfeinert
 
 ### Changed

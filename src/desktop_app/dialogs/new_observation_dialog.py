@@ -9,12 +9,14 @@ from PySide6.QtCore import QDate, QTimer, Qt
 from PySide6.QtGui import QKeyEvent, QMouseEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QCheckBox,
     QComboBox,
     QDateEdit,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
     QFrame,
+    QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -312,7 +314,11 @@ class NewObservationDialog(QDialog):
         splitter.setChildrenCollapsible(False)
         splitter.setHandleWidth(10)
         splitter.addWidget(self._build_context_zone())
-        splitter.addWidget(self._build_competency_zone())
+        self.competency_zone = self._build_competency_zone()
+        self.competency_zone_opacity = QGraphicsOpacityEffect(self.competency_zone)
+        self.competency_zone_opacity.setOpacity(1.0)
+        self.competency_zone.setGraphicsEffect(self.competency_zone_opacity)
+        splitter.addWidget(self.competency_zone)
         splitter.addWidget(self._build_observation_zone())
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
@@ -355,6 +361,21 @@ class NewObservationDialog(QDialog):
         hint.setWordWrap(True)
         set_label_style(hint, "muted")
         zone_layout.addWidget(hint)
+        self.quick_observation_checkbox = QCheckBox("Schnellbeobachtung")
+        self.quick_observation_checkbox.setObjectName("ObservationQuickObservationCheckbox")
+        self.quick_observation_checkbox.toggled.connect(self._toggle_quick_observation)
+        zone_layout.addWidget(self.quick_observation_checkbox)
+        quick_hint = QLabel(
+            "Die Beobachtung wird zunächst ohne Kompetenzzuordnung gespeichert. "
+            "Eine spätere Ergänzung ist möglich."
+        )
+        quick_hint.setWordWrap(True)
+        set_label_style(quick_hint, "muted")
+        zone_layout.addWidget(quick_hint)
+        self.quick_observation_feedback = QLabel("")
+        self.quick_observation_feedback.setWordWrap(True)
+        set_label_style(self.quick_observation_feedback, "subtle")
+        zone_layout.addWidget(self.quick_observation_feedback)
         zone_layout.addStretch(1)
         return zone
 
@@ -764,6 +785,8 @@ class NewObservationDialog(QDialog):
         return tile
 
     def _select_competency(self, competency: ObservationCompetencyOptionViewModel) -> None:
+        if self.quick_observation_checkbox.isChecked():
+            self.quick_observation_checkbox.setChecked(False)
         competency_key = self._competency_key(competency)
         if competency_key in self.competency_rating_entries:
             return
@@ -965,6 +988,7 @@ class NewObservationDialog(QDialog):
             ),
             attachments=tuple(self.attachment_drafts),
             observation_id=self.initial_draft.observation_id if self.initial_draft else "",
+            is_quick_observation=self.quick_observation_checkbox.isChecked(),
         )
 
     def _render_attachments(self) -> None:
@@ -1092,6 +1116,22 @@ class NewObservationDialog(QDialog):
         self.selection_count_label.setText(f"{count} ausgewählt")
         self.competency_ratings_empty_state.setVisible(count == 0)
 
+    def _toggle_quick_observation(self, checked: bool) -> None:
+        if checked and self.competency_rating_entries:
+            self.quick_observation_checkbox.blockSignals(True)
+            self.quick_observation_checkbox.setChecked(False)
+            self.quick_observation_checkbox.blockSignals(False)
+            self.quick_observation_feedback.setText(
+                "Entferne zuerst die ausgewählten Kompetenzen, um die Beobachtung "
+                "ohne Kompetenzzuordnung zu speichern."
+            )
+            return
+        self.quick_observation_feedback.setText("")
+        self.competency_zone.setEnabled(not checked)
+        self.competency_zone_opacity.setOpacity(0.48 if checked else 1.0)
+        if checked:
+            self.note_input.setFocus(Qt.FocusReason.OtherFocusReason)
+
     def _competency_key(self, catalog_entry: object) -> str:
         competency_id = str(getattr(catalog_entry, "competency_id", "")).strip()
         if competency_id:
@@ -1148,6 +1188,9 @@ class NewObservationDialog(QDialog):
             self._set_catalog_tile_selected(self._competency_key(rating), True)
         self.attachment_drafts = list(self.initial_draft.attachments)
         self._render_attachments()
+        self.quick_observation_checkbox.setChecked(
+            self.initial_draft.is_quick_observation
+        )
 
     def _initial_visible_subject(self) -> str:
         if self.initial_draft is None:
@@ -1159,8 +1202,18 @@ class NewObservationDialog(QDialog):
     def save_draft(self) -> None:
         """Persist the observation draft through the adapter and return on success."""
         draft = self.create_draft()
-        if not draft.competency_ratings or any(
-            not rating.rating for rating in draft.competency_ratings
+        if draft.is_quick_observation and not draft.note.strip():
+            QMessageBox.warning(
+                self,
+                "Hinweis",
+                "Bitte eine Notiz für die Schnellbeobachtung eingeben.",
+            )
+            self.note_input.setFocus(Qt.FocusReason.OtherFocusReason)
+            return
+        self.quick_observation_feedback.setText("")
+        if not draft.is_quick_observation and (
+            not draft.competency_ratings
+            or any(not rating.rating for rating in draft.competency_ratings)
         ):
             QMessageBox.warning(self, "Hinweis", OBSERVATION_SAVE_VALIDATION_MESSAGE)
             return

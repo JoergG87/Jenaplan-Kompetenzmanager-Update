@@ -119,6 +119,7 @@ def observation_create_handler(service: Any) -> Callable[[object], object]:
             context=getattr(command, "context"),
             note=getattr(command, "note"),
             competency_ratings=getattr(command, "competency_ratings"),
+            is_quick_observation=getattr(command, "is_quick_observation", False),
         )
 
     return handle
@@ -136,6 +137,7 @@ def observation_update_handler(service: Any) -> Callable[[object], object]:
             context=getattr(command, "context"),
             note=getattr(command, "note"),
             competency_ratings=getattr(command, "competency_ratings"),
+            is_quick_observation=getattr(command, "is_quick_observation", False),
         )
 
     return handle

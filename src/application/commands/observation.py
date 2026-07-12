@@ -17,6 +17,7 @@ class CreateObservationCommand:
     context: str
     note: str
     competency_ratings: tuple[ObservationCompetencyRatingRecord, ...]
+    is_quick_observation: bool = False
 
     command_name: str = "observation.create"
 
@@ -32,6 +33,7 @@ class UpdateObservationCommand:
     context: str
     note: str
     competency_ratings: tuple[ObservationCompetencyRatingRecord, ...]
+    is_quick_observation: bool = False
 
     command_name: str = "observation.update"
 

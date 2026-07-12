@@ -462,6 +462,7 @@ class StudentDesktopAdapter:
             context=draft.context,
             note=draft.note,
             competency_ratings=self._rating_records_from_draft(draft),
+            is_quick_observation=draft.is_quick_observation,
         )
 
     def save_observation(self, draft: ObservationDraftViewModel) -> object:
@@ -486,6 +487,7 @@ class StudentDesktopAdapter:
             context=draft.context,
             note=draft.note,
             competency_ratings=self._rating_records_from_draft(draft),
+            is_quick_observation=draft.is_quick_observation,
         )
 
     def update_observation(self, draft: ObservationDraftViewModel) -> object:
@@ -545,6 +547,9 @@ class StudentDesktopAdapter:
                 )
             ),
             observation_id=observation.observation_id,
+            is_quick_observation=(
+                not observation.competency_ratings and bool(observation.note.strip())
+            ),
         )
 
     def list_observations_for_student(
@@ -580,6 +585,7 @@ class StudentDesktopAdapter:
                         observation.observation_id
                     )
                 ),
+                not observation.competency_ratings and bool(observation.note.strip()),
             )
             for observation in observations
         )

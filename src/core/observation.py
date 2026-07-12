@@ -63,8 +63,19 @@ class ObservationValidator:
         self._require_text(observation_data, "date")
         self._require_text(observation_data, "subject_id")
         ratings = observation_data.get("competency_ratings")
-        if not isinstance(ratings, tuple) or not ratings:
+        is_quick_observation = observation_data.get("is_quick_observation", False)
+        if not isinstance(is_quick_observation, bool):
+            raise ObservationValidationError("is_quick_observation muss boolesch sein.")
+        if not isinstance(ratings, tuple):
+            raise ObservationValidationError("Kompetenzbewertungen haben ein unbekanntes Format.")
+        if is_quick_observation and ratings:
+            raise ObservationValidationError(
+                "Eine Schnellbeobachtung darf keine Kompetenzbewertung enthalten."
+            )
+        if not is_quick_observation and not ratings:
             raise ObservationValidationError("Mindestens eine Kompetenzbewertung ist erforderlich.")
+        if is_quick_observation:
+            self._require_text(observation_data, "note")
         seen_competency_ids: set[str] = set()
         for rating in ratings:
             if not isinstance(rating, ObservationCompetencyRatingRecord):
@@ -130,6 +141,7 @@ class ObservationService:
         context: str,
         note: str,
         competency_ratings: tuple[ObservationCompetencyRatingRecord, ...],
+        is_quick_observation: bool = False,
     ) -> ObservationRecord:
         observation_data = {
             "student_id": student_id,
@@ -138,6 +150,7 @@ class ObservationService:
             "context": context,
             "note": note,
             "competency_ratings": competency_ratings,
+            "is_quick_observation": is_quick_observation,
         }
         self.validator.validate(observation_data, self.valid_student_ids)
         timestamp = self._timestamp()
@@ -165,6 +178,7 @@ class ObservationService:
         context: str,
         note: str,
         competency_ratings: tuple[ObservationCompetencyRatingRecord, ...],
+        is_quick_observation: bool = False,
     ) -> ObservationRecord:
         observation_id = self._require_observation_id(observation_id)
         existing_observation = self.repository.get_observation(observation_id)
@@ -179,6 +193,7 @@ class ObservationService:
             "context": context,
             "note": note,
             "competency_ratings": competency_ratings,
+            "is_quick_observation": is_quick_observation,
         }
         self.validator.validate(observation_data, self.valid_student_ids)
         observation = ObservationRecord(
