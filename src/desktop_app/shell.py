@@ -341,6 +341,9 @@ class AppShell(QMainWindow):
             competency_subject_groups=(
                 self.adapter.list_observation_competency_subject_groups()
             ),
+            recent_competencies=self.adapter.list_recent_observation_competencies(
+                student.student_id
+            ),
         )
         if dialog.exec():
             self.show_student_profile(student.student_id)
@@ -359,6 +362,9 @@ class AppShell(QMainWindow):
             subject_options=self.adapter.list_observation_subject_options(),
             competency_subject_groups=(
                 self.adapter.list_observation_competency_subject_groups()
+            ),
+            recent_competencies=self.adapter.list_recent_observation_competencies(
+                student.student_id
             ),
         )
         if dialog.exec():
@@ -384,6 +390,10 @@ class AppShell(QMainWindow):
             subject_options=self.adapter.list_observation_subject_options(draft),
             competency_subject_groups=(
                 self.adapter.list_observation_competency_subject_groups(draft)
+            ),
+            recent_competencies=self.adapter.list_recent_observation_competencies(
+                student.student_id,
+                draft,
             ),
         )
         if dialog.exec():

@@ -75,6 +75,22 @@ QFrame#ObservationCatalogCompetencyTile[selected="true"] {
     background-color: #F2F7FA;
     border-color: #D9E5EC;
 }
+QFrame#ObservationRecentCompetencyChip {
+    background-color: #F7FAFC;
+    border: 1px solid #D2E0EA;
+    border-radius: 12px;
+}
+QFrame#ObservationRecentCompetencyChip[selected="false"]:hover {
+    background-color: #EEF6FB;
+    border-color: #AFCADC;
+}
+QFrame#ObservationRecentCompetencyChip[selected="false"]:focus {
+    border: 2px solid #2563EB;
+}
+QFrame#ObservationRecentCompetencyChip[selected="true"] {
+    background-color: #F2F7FA;
+    border-color: #D9E5EC;
+}
 QLabel#ObservationHistoricalBadge {
     color: #8B5A2B;
     background-color: #FDF0E3;
@@ -162,17 +178,20 @@ class ObservationCatalogCompetencyTile(QFrame):
         competency_id: str,
         activate: Callable[[], None],
         selected: bool,
+        object_name: str = "ObservationCatalogCompetencyTile",
     ) -> None:
         super().__init__()
         self.competency_id = competency_id
         self._activate = activate
-        self.setObjectName("ObservationCatalogCompetencyTile")
+        self.setObjectName(object_name)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAccessibleName("Kompetenz zur Auswahl hinzufügen")
         self.set_selected(selected)
 
     def set_selected(self, selected: bool) -> None:
         self.setProperty("selected", "true" if selected else "false")
+        if self.objectName() == "ObservationRecentCompetencyChip":
+            self.setEnabled(not selected)
         self.setCursor(
             Qt.CursorShape.ArrowCursor
             if selected
@@ -218,6 +237,7 @@ class NewObservationDialog(QDialog):
         competency_subject_groups: tuple[
             ObservationCompetencySubjectGroupViewModel, ...
         ] = (),
+        recent_competencies: tuple[ObservationCompetencyOptionViewModel, ...] = (),
     ) -> None:
         super().__init__()
         self.student = student
@@ -226,11 +246,13 @@ class NewObservationDialog(QDialog):
         self.initial_draft = initial_draft
         self.subject_options = subject_options
         self.competency_subject_groups = competency_subject_groups
+        self.recent_competencies = recent_competencies
         self.attachment_feedback_label = QLabel("")
         self.competency_rating_entries: dict[str, object] = {}
         self.competency_rating_widgets: dict[str, ObservationRatingSelector] = {}
         self.competency_rating_rows: dict[str, QWidget] = {}
         self.competency_catalog_tiles: dict[str, ObservationCatalogCompetencyTile] = {}
+        self.recent_competency_chips: dict[str, ObservationCatalogCompetencyTile] = {}
         self.competency_area_buttons: dict[str, QPushButton] = {}
         self.competency_area_containers: dict[str, QWidget] = {}
         self.competency_topic_buttons: dict[str, QPushButton] = {}
@@ -381,6 +403,19 @@ class NewObservationDialog(QDialog):
         self.catalog_search_input.setClearButtonEnabled(True)
         self.catalog_search_input.textChanged.connect(self._search_catalog)
         zone_layout.addWidget(self.catalog_search_input)
+        self.recent_competencies_container = QWidget()
+        self.recent_competencies_container.setObjectName("ObservationRecentCompetencies")
+        recent_layout = QVBoxLayout(self.recent_competencies_container)
+        recent_layout.setContentsMargins(0, 2, 0, 2)
+        recent_layout.setSpacing(5)
+        recent_title = QLabel("Schnellauswahl")
+        set_label_style(recent_title, "field_label")
+        recent_layout.addWidget(recent_title)
+        self.recent_competencies_layout = QHBoxLayout()
+        self.recent_competencies_layout.setContentsMargins(0, 0, 0, 0)
+        self.recent_competencies_layout.setSpacing(6)
+        recent_layout.addLayout(self.recent_competencies_layout)
+        zone_layout.addWidget(self.recent_competencies_container)
         self.catalog_search_result_label = QLabel("")
         self.catalog_search_result_label.setObjectName("ObservationCatalogSearchResult")
         set_label_style(self.catalog_search_result_label, "muted")
@@ -458,6 +493,7 @@ class NewObservationDialog(QDialog):
         self.competency_area_containers.clear()
         self.competency_topic_buttons.clear()
         self.competency_topic_containers.clear()
+        self._refresh_recent_competencies()
         subject_group = self._current_subject_group()
         if subject_group is None or not subject_group.learning_area_groups:
             self._set_catalog_search_feedback(0)
@@ -505,6 +541,58 @@ class NewObservationDialog(QDialog):
         self._refresh_competencies()
         if not normalized_search_text:
             self._catalog_expansion_snapshot = None
+
+    def _refresh_recent_competencies(self) -> None:
+        """Render the adapter-provided quick selection for the visible subject."""
+        if not hasattr(self, "recent_competencies_layout"):
+            return
+        self._clear_horizontal_layout(self.recent_competencies_layout)
+        self.recent_competency_chips.clear()
+        subject_key = str(self.subject_select.currentData() or "")
+        visible_competencies = tuple(
+            competency
+            for competency in self.recent_competencies
+            if competency.subject_key == subject_key
+        )
+        self.recent_competencies_container.setVisible(
+            bool(visible_competencies) and not bool(self._catalog_search_text)
+        )
+        for competency in visible_competencies:
+            competency_key = self._competency_key(competency)
+            is_selected = competency_key in self.competency_rating_entries
+            chip = ObservationCatalogCompetencyTile(
+                competency_key,
+                lambda entry=competency: self._select_competency(entry),
+                is_selected,
+                "ObservationRecentCompetencyChip",
+            )
+            chip.setToolTip(self._competency_detail_text(competency))
+            chip_layout = QHBoxLayout(chip)
+            chip_layout.setContentsMargins(8, 5, 8, 5)
+            chip_layout.setSpacing(5)
+            text = QLabel(self._competency_display_text(competency))
+            text.setWordWrap(True)
+            text.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            chip_layout.addWidget(text, 1)
+            signal = QLabel("✓" if is_selected else "+")
+            signal.setObjectName("ObservationCatalogSelectionSignal")
+            signal.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            chip_layout.addWidget(signal, 0)
+            chip.selection_signal = signal
+            self.recent_competency_chips[competency_key] = chip
+            self.recent_competencies_layout.addWidget(chip)
+        self.recent_competencies_layout.addStretch(1)
+
+    def _refresh_recent_competencies_from_adapter(self) -> None:
+        if self.observation_adapter is None:
+            return
+        self.recent_competencies = (
+            self.observation_adapter.list_recent_observation_competencies(
+                self.student.student_id,
+                self.initial_draft,
+            )
+        )
+        self._refresh_recent_competencies()
 
     def _matching_catalog_competencies(
         self,
@@ -694,6 +782,10 @@ class NewObservationDialog(QDialog):
             return
         tile.set_selected(selected)
         tile.selection_signal.setText("✓" if selected else "+")
+        recent_chip = self.recent_competency_chips.get(competency_key)
+        if recent_chip is not None:
+            recent_chip.set_selected(selected)
+            recent_chip.selection_signal.setText("✓" if selected else "+")
 
     def _scroll_selected_to_top(self) -> None:
         self.selected_scroll.verticalScrollBar().setValue(
@@ -1096,6 +1188,7 @@ class NewObservationDialog(QDialog):
                 ),
             )
             return
+        self._refresh_recent_competencies_from_adapter()
         self.accept()
 
     @staticmethod
@@ -1109,3 +1202,11 @@ class NewObservationDialog(QDialog):
                 widget.deleteLater()
             elif child_layout is not None:
                 NewObservationDialog._clear_layout(child_layout)
+
+    @staticmethod
+    def _clear_horizontal_layout(layout: QHBoxLayout) -> None:
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)

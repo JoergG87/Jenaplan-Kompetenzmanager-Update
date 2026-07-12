@@ -719,6 +719,11 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationCompetencyOptionViewModel.rating`
 - `ObservationCompetencyOptionViewModel.catalog_status`
 - `ObservationCompetencyOptionViewModel.is_active`
+- `StudentDesktopAdapter.list_recent_observation_competencies(student_id, initial_draft)`
+- `NewObservationDialog.recent_competencies`
+- `NewObservationDialog.recent_competency_chips`
+- `ObservationRecentCompetencies`
+- `ObservationRecentCompetencyChip`
 - `ObservationRatingSelector`
 - `ObservationCatalogCompetencyTile`
 - `NewObservationDialog.competency_catalog_tiles`

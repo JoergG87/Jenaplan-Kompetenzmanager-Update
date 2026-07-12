@@ -327,6 +327,39 @@ class StudentDesktopAdapter:
             )
         return tuple(subject_groups)
 
+    def list_recent_observation_competencies(
+        self,
+        student_id: str,
+        initial_draft: ObservationDraftViewModel | None = None,
+    ) -> tuple[ObservationCompetencyOptionViewModel, ...]:
+        """Return up to four newest distinct active current competencies."""
+        current_competencies = {
+            competency.competency_id: competency
+            for subject_group in self.list_observation_competency_subject_groups(
+                initial_draft
+            )
+            for learning_area_group in subject_group.learning_area_groups
+            for competency_group in learning_area_group.competency_groups
+            for competency in competency_group.competencies
+            if competency.is_active and competency.catalog_status == "current"
+        }
+        recent_competencies: list[ObservationCompetencyOptionViewModel] = []
+        seen_competency_ids: set[str] = set()
+        for observation in SQLiteObservationRepository(
+            self.database
+        ).list_observations_for_student(student_id):
+            for rating in observation.competency_ratings:
+                competency_id = rating.competency_id
+                if competency_id in seen_competency_ids:
+                    continue
+                seen_competency_ids.add(competency_id)
+                competency = current_competencies.get(competency_id)
+                if competency is not None:
+                    recent_competencies.append(competency)
+                    if len(recent_competencies) == 4:
+                        return tuple(recent_competencies)
+        return tuple(recent_competencies)
+
     def group_id_by_name(self) -> dict[str, str]:
         """Map visible group names to stable group IDs."""
         return {group.group_name: group.group_id for group in self.list_groups()}

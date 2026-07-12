@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Sprint 5E - Schnellauswahl Zuletzt verwendet
+
+### Changed
+
+- Produktiven Beobachtungsdialog um die fachbezogene Schnellauswahl `Schnellauswahl` direkt unter der Katalogsuche ergänzt. Sie zeigt bis zu vier eindeutige, aktive `current`-Kompetenzen aus den neuesten aktiven Beobachtungen des aktuellen Schuelers und aktualisiert sich nach erfolgreichem Speichern aus SQLite.
+- Schnellauswahl-Chips nutzen die bestehende Auswahlinteraktion mit Maus, Tastatur, Hover und Fokus; bereits ausgewaehlte Kompetenzen bleiben mit Haken sichtbar und deaktiviert. Aktive Katalogsuche blendet die Schnellauswahl vollständig aus.
+
+### Not Changed
+
+- Keine Tabelle, Persistenz, gespeicherte Historie, Repository-/Domain- oder SQLite-Schemaänderung, Tags, Klassenstufenfilter, Stundenplan-Vorbelegung, Bewertungsfarben oder Commit umgesetzt.
+
 ## Sprint 5D - Suche im Kompetenzkatalog
 
 ### Changed

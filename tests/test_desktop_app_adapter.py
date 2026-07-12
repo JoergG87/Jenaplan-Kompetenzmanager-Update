@@ -818,6 +818,82 @@ class DesktopAppAdapterTest(unittest.TestCase):
             self.assertEqual(selected.catalog_status, "legacy")
             self.assertFalse(selected.is_active)
 
+    def test_recent_observation_competencies_are_newest_distinct_and_limited(self) -> None:
+        for date_text, competency_ratings in (
+            ("2026-07-01", (self._recent_rating("CMP-000241"),)),
+            ("2026-07-02", (
+                self._recent_rating("CMP-000318"),
+                self._recent_rating("CMP-000306"),
+            )),
+            ("2026-07-03", (
+                self._recent_rating("CMP-000307"),
+                self._recent_rating("CMP-000318"),
+            )),
+            ("2026-07-04", (self._recent_rating("CMP-000319"),)),
+        ):
+            self.adapter.save_observation(self._sample_observation_draft(
+                date_text=date_text,
+                competency_ratings=competency_ratings,
+            ))
+
+        recent = self.adapter.list_recent_observation_competencies(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(
+            tuple(competency.competency_id for competency in recent),
+            ("CMP-000319", "CMP-000307", "CMP-000318", "CMP-000306"),
+        )
+
+    def test_recent_observation_competencies_filter_legacy_and_inactive_catalog_rows(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000020", "musik", "Musik", "Musik hören",
+                    "Hören und Beschreiben", "Historischer Kompetenztext", "+",
+                ),
+                self._recent_rating("CMP-000318"),
+            ),
+        ))
+
+        recent = self.adapter.list_recent_observation_competencies(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        self.assertEqual(
+            tuple(competency.competency_id for competency in recent),
+            ("CMP-000318",),
+        )
+        self.assertTrue(all(competency.is_active for competency in recent))
+        self.assertTrue(all(competency.catalog_status == "current" for competency in recent))
+
+    def test_recent_observation_competencies_update_from_successful_save(self) -> None:
+        student_id = f"{STUDENT_ID_PREFIX}-000001"
+        self.assertEqual(self.adapter.list_recent_observation_competencies(student_id), ())
+
+        result = self.adapter.save_observation(self._sample_observation_draft(
+            competency_ratings=(self._recent_rating("CMP-000318"),),
+        ))
+
+        self.assertIsInstance(result, SuccessResult)
+        self.assertEqual(
+            tuple(
+                competency.competency_id
+                for competency in self.adapter.list_recent_observation_competencies(student_id)
+            ),
+            ("CMP-000318",),
+        )
+
+    def test_recent_observation_competency_projection_has_no_write_path(self) -> None:
+        source = inspect.getsource(
+            StudentDesktopAdapter.list_recent_observation_competencies
+        )
+
+        self.assertIn("list_observations_for_student", source)
+        self.assertNotIn(".dispatch(", source)
+        self.assertNotIn("save_", source)
+        self.assertNotIn("update_", source)
+
     def test_settings_screen_shows_documentation_subject_checkboxes_and_saves(
         self,
     ) -> None:
@@ -3126,6 +3202,41 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn("CMP-000318", dialog.competency_catalog_tiles)
 
+    def test_observation_dialog_recent_competencies_follow_subject_and_search(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            competency_ratings=(
+                self._recent_rating("CMP-000318"),
+                self._recent_rating("CMP-000241"),
+            ),
+        ))
+        dialog = self._observation_dialog_with_hierarchy()
+
+        self._select_observation_subject(dialog, "mathematik")
+        self.assertFalse(dialog.recent_competencies_container.isHidden())
+        self.assertEqual(tuple(dialog.recent_competency_chips), ("CMP-000318",))
+
+        dialog.catalog_search_input.setText("Uhrzeiten")
+        self.assertTrue(dialog.recent_competencies_container.isHidden())
+        dialog.catalog_search_input.clear()
+        self.assertFalse(dialog.recent_competencies_container.isHidden())
+
+        self._select_observation_subject(dialog, "deutsch")
+        self.assertEqual(tuple(dialog.recent_competency_chips), ("CMP-000241",))
+
+    def test_observation_dialog_recent_chip_selects_once_and_disables_afterward(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            competency_ratings=(self._recent_rating("CMP-000318"),),
+        ))
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+        chip = dialog.recent_competency_chips["CMP-000318"]
+
+        QTest.keyClick(chip, Qt.Key.Key_Space)
+
+        self.assertIn("CMP-000318", dialog.competency_rating_entries)
+        self.assertFalse(chip.isEnabled())
+        self.assertEqual(chip.selection_signal.text(), "✓")
+
     def test_observation_dialog_catalog_search_shows_quiet_empty_state(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
         dialog.catalog_search_input.setText("nicht vorhandener suchbegriff")
@@ -5360,6 +5471,24 @@ class DesktopAppAdapterTest(unittest.TestCase):
             rating=rating,
         )
 
+    def _recent_rating(self, competency_id: str) -> ObservationCompetencyRatingDraft:
+        competency = self._find_observation_competency_option(
+            self.adapter.list_observation_competency_subject_groups(),
+            competency_id,
+        )
+        self.assertIsNotNone(competency)
+        if competency is None:
+            raise AssertionError("Expected current competency missing from catalog")
+        return self._sample_observation_rating(
+            competency.competency_id,
+            competency.subject_key,
+            competency.subject_display_name,
+            competency.learning_area,
+            competency.competency_group,
+            competency.competency_text,
+            "+",
+        )
+
     def _observation_dialog_with_hierarchy(
         self,
         initial_draft: ObservationDraftViewModel | None = None,
@@ -5378,6 +5507,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 self.adapter.list_observation_competency_subject_groups(
                     initial_draft
                 )
+            ),
+            recent_competencies=self.adapter.list_recent_observation_competencies(
+                self._sample_student_detail().student_id,
+                initial_draft,
             ),
         )
 
