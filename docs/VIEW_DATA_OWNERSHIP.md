@@ -367,6 +367,7 @@ UI-Projektionen:
 - Kurzlabel aus `competencies.label` fuer kompakte Kompetenzauswahl
 - Hierarchische Kompetenzprojektion aus `StudentDesktopAdapter.list_observation_competency_subject_groups(initial_draft)` fuer die Dialogdarstellung
 - `catalog_status` und `is_active` aus derselben Adapterprojektion fuer Angebot und dezente historische Kennzeichnung
+- Lokaler Suchtext und Trefferanzeige über Kurzlabel, Kompetenztext, Thema und Kompetenzbereich aus derselben Adapterprojektion; nur aktive `current`-Kompetenzen sind neue Suchtreffer
 - Beobachtungsnotiz
 - Kontext
 - Bewertung/Zuordnung
@@ -376,7 +377,7 @@ Regel:
 
 Der Beobachtungsdialog ist der freigegebene Schreibprozess fuer Erfassung und Bearbeitung von Beobachtungen. Die produktive Drei-Zonen-Arbeitsflaeche rendert ausschliesslich die Adapterprojektion; der Dialog baut keine eigene Fallback-Hierarchie aus Katalogdaten. Neue Beobachtungen bieten in der Fachauswahl nur dokumentationsrelevante aktive Faecher und im Katalog nur aktive `current`-Kompetenzen an. Bei Bearbeitung wird eine bestehende `observation_id` geladen; ein inzwischen nicht dokumentationsrelevantes Bestandsfach sowie bereits bewertete `legacy`- oder inaktive Kompetenzen bleiben sichtbar und werden nicht automatisch ersetzt. Speichern ersetzt die Kompetenzbewertungen atomar. Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden. Die sichtbare Kompetenzstruktur lautet Fach -> Kompetenzbereich -> Thema -> Kompetenz und nutzt bestehende Felder: `subject_id` / `subject_name`, `learning_area`, `competency_group`, `description` / `competency_text`.
 
-Sprint 3C stellt diese Struktur als additive ViewModel-/Adapterprojektion bereit. Sprint 3D rendert die Kompetenzauswahl hierarchisch. Sprint 5C uebernimmt die freigegebene Drei-Zonen-UX produktiv: Neu-Erfassung startet vollstaendig geschlossen, Bearbeitung oeffnet ausschliesslich Zweige mit bereits bewerteten Kompetenzen, und Auswahl sowie Einzelbewertungen bleiben bei Fachwechsel oder Einklappen erhalten.
+Sprint 3C stellt diese Struktur als additive ViewModel-/Adapterprojektion bereit. Sprint 3D rendert die Kompetenzauswahl hierarchisch. Sprint 5C uebernimmt die freigegebene Drei-Zonen-UX produktiv: Neu-Erfassung startet vollstaendig geschlossen, Bearbeitung oeffnet ausschliesslich Zweige mit bereits bewerteten Kompetenzen, und Auswahl sowie Einzelbewertungen bleiben bei Fachwechsel oder Einklappen erhalten. Sprint 5D filtert diese bestehende Projektion ausschließlich lokal im Dialog; Suche und Treffer-Öffnung verändern weder Auswahl noch Bewertung oder Persistenz und das Löschen der Suche stellt den Aufklappzustand vor der Suche wieder her.
 
 Dokumente und Medien sind nur Anhaenge zur Beobachtung und ersetzen keine Beobachtungsdaten. Sie gehoeren immer zum Schueler und tragen optional die `observation_id`.
 Der PySide-Dialog schreibt nicht direkt in SQLite, sondern ueber Adapter, Command, Service und Repository. Jede ausgewaehlte Kompetenz speichert ihre eigene Bewertung in `observation_competency_ratings.rating`. `offen` ist kein gespeicherter Ratingwert; wenn eine Kompetenz nicht bewertet wird, wird keine Zuordnungszeile gespeichert.

@@ -3076,6 +3076,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(dialog.size().height(), 820)
         self.assertIsInstance(dialog.selected_scroll, QScrollArea)
         self.assertIsInstance(dialog.catalog_scroll, QScrollArea)
+        self.assertIsNot(dialog.catalog_scroll, dialog.selected_scroll)
+        self.assertIs(dialog.catalog_scroll.widget(), dialog.catalog_content)
+        self.assertEqual(
+            dialog.catalog_search_input.placeholderText(), "Kompetenzen durchsuchen …"
+        )
 
     def test_observation_dialog_topics_start_collapsed(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
@@ -3098,6 +3103,118 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertEqual(topic_button.text(), "▸ Thema: Zeit")
         self.assertTrue(topic_container.isHidden())
+
+    def test_observation_dialog_catalog_search_matches_all_catalog_text_fields(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+
+        for search_text in (
+            "ablesen",  # vollständiger Kompetenztext
+            "Uhrzeiten",  # Kurzlabel
+            "Zeit",  # Thema
+            "Groessen",  # Kompetenzbereich
+        ):
+            dialog.catalog_search_input.setText(search_text)
+            self.assertIn("CMP-000318", dialog.competency_catalog_tiles)
+            self.assertIn("gefunden", dialog.catalog_search_result_label.text())
+
+    def test_observation_dialog_catalog_search_ignores_case_and_outer_whitespace(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+
+        dialog.catalog_search_input.setText("  uHrZeItEn  ")
+
+        self.assertIn("CMP-000318", dialog.competency_catalog_tiles)
+
+    def test_observation_dialog_catalog_search_shows_quiet_empty_state(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        dialog.catalog_search_input.setText("nicht vorhandener suchbegriff")
+
+        self.assertEqual(dialog.catalog_search_result_label.text(), "0 Kompetenzen gefunden")
+        self.assertIsNotNone(
+            dialog.findChild(QLabel, "ObservationCatalogSearchEmptyState")
+        )
+
+    def test_observation_dialog_catalog_search_combines_with_subject_filter(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        dialog.catalog_search_input.setText("Uhrzeiten")
+        self._select_observation_subject(dialog, "mathematik")
+        self.assertIn("CMP-000318", dialog.competency_catalog_tiles)
+
+        self._select_observation_subject(dialog, "deutsch")
+
+        self.assertNotIn("CMP-000318", dialog.competency_catalog_tiles)
+        self.assertEqual(dialog.catalog_search_input.text(), "Uhrzeiten")
+
+    def test_observation_dialog_catalog_search_keeps_selection_and_rating(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+        dialog.competency_catalog_tiles["CMP-000318"]._activate()
+        dialog.competency_rating_widgets["CMP-000318"].buttons["++"].click()
+
+        dialog.catalog_search_input.setText("nicht vorhanden")
+
+        self.assertIn("CMP-000318", dialog.competency_rating_entries)
+        self.assertEqual(
+            dialog.competency_rating_widgets["CMP-000318"].currentData(), "++"
+        )
+
+    def test_observation_dialog_catalog_search_excludes_historical_competencies(self) -> None:
+        initial_draft = self._sample_observation_draft(
+            subject_id="musik",
+            subject_display_name="Musik",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000020", "musik", "Musik", "Musik hören",
+                    "Hören und Beschreiben", "Historischer Kompetenztext", "+",
+                ),
+            ),
+        )
+        dialog = self._observation_dialog_with_hierarchy(initial_draft)
+
+        dialog.catalog_search_input.setText("historischer")
+
+        self.assertNotIn("CMP-000020", dialog.competency_catalog_tiles)
+        self.assertEqual(dialog.catalog_search_result_label.text(), "0 Kompetenzen gefunden")
+
+    def test_observation_dialog_clearing_search_restores_manual_expansion_state(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+        self._observation_topic_button(dialog, "Zeit").click()
+
+        dialog.catalog_search_input.setText("Uhrzeiten")
+        self.assertFalse(self._observation_topic_container(dialog, "Zeit").isHidden())
+        dialog.catalog_search_input.clear()
+
+        self.assertFalse(self._observation_topic_container(dialog, "Zeit").isHidden())
+
+    def test_observation_dialog_clearing_search_keeps_new_catalog_closed(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+
+        dialog.catalog_search_input.setText("Uhrzeiten")
+        dialog.catalog_search_input.clear()
+
+        self.assertTrue(self._observation_topic_container(dialog, "Zeit").isHidden())
+
+    def test_observation_dialog_clearing_search_restores_editing_branches(self) -> None:
+        initial_draft = self._sample_observation_draft(
+            subject_id="mathematik",
+            subject_display_name="Mathematik",
+            competency_ratings=(
+                self._sample_observation_rating(
+                    "CMP-000318", "mathematik", "Mathematik",
+                    "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
+                    "Zeit", "Uhrzeiten ablesen, einstellen, notieren und auf verschiedene Weise benennen.", "+",
+                ),
+            ),
+        )
+        dialog = self._observation_dialog_with_hierarchy(initial_draft)
+
+        dialog.catalog_search_input.setText("Uhrzeiten")
+        dialog.catalog_search_input.clear()
+
+        self.assertFalse(self._observation_topic_container(dialog, "Zeit").isHidden())
 
     def test_observation_dialog_topic_click_shows_and_hides_competencies(
         self,

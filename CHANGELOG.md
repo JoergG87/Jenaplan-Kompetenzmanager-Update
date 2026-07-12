@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Sprint 5D - Suche im Kompetenzkatalog
+
+### Changed
+
+- Produktiven Beobachtungsdialog um eine lokale, nicht persistente Katalogsuche über Kurzlabel, Kompetenztext, Thema und Kompetenzbereich ergänzt; die Suche verwendet ausschließlich die vorhandene Adapter-/ViewModel-Projektion.
+- Suchtreffer öffnen passende Fach-, Kompetenzbereich- und Themenzweige nur visuell. Beim Löschen wird der vorherige manuelle beziehungsweise im Bearbeitungsbestand begründete Aufklappzustand wiederhergestellt.
+- Historische oder inaktive Kompetenzen bleiben beim Bearbeiten als Bestand erhalten, werden durch die Suche jedoch nicht als neue Treffer angeboten.
+
+### Not Changed
+
+- Keine SQLite-Abfragen aus dem Dialog, Persistenz, Suchhistorie, Datenbank-/Schemaänderung, Repository-/Domain-Logik, Tags, zuletzt verwendeten Kompetenzen, Klassenstufenfilter, Stundenplan-Vorbelegung, neue Attachment-Logik oder Commit umgesetzt.
+
 ## Sprint 5C - Freigegebenen Beobachtungsdialog produktiv umgesetzt
 
 ### Changed

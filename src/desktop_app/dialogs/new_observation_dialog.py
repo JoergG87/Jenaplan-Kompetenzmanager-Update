@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -234,6 +235,8 @@ class NewObservationDialog(QDialog):
         self.competency_area_containers: dict[str, QWidget] = {}
         self.competency_topic_buttons: dict[str, QPushButton] = {}
         self.competency_topic_containers: dict[str, QWidget] = {}
+        self._catalog_expansion_snapshot: tuple[dict[str, bool], dict[str, bool]] | None = None
+        self._catalog_search_text = ""
         self.attachment_drafts: list[ObservationAttachmentDraft] = []
         self._initial_selected_competency_ids = {
             rating.competency_id
@@ -372,6 +375,16 @@ class NewObservationDialog(QDialog):
         catalog_title = QLabel("Kompetenzkatalog")
         set_label_style(catalog_title, "section_title")
         zone_layout.addWidget(catalog_title)
+        self.catalog_search_input = QLineEdit()
+        self.catalog_search_input.setObjectName("ObservationCatalogSearch")
+        self.catalog_search_input.setPlaceholderText("Kompetenzen durchsuchen …")
+        self.catalog_search_input.setClearButtonEnabled(True)
+        self.catalog_search_input.textChanged.connect(self._search_catalog)
+        zone_layout.addWidget(self.catalog_search_input)
+        self.catalog_search_result_label = QLabel("")
+        self.catalog_search_result_label.setObjectName("ObservationCatalogSearchResult")
+        set_label_style(self.catalog_search_result_label, "muted")
+        zone_layout.addWidget(self.catalog_search_result_label)
         self.catalog_hint = QLabel("Fach → Kompetenzbereich → Thema → Kompetenz")
         set_label_style(self.catalog_hint, "muted")
         zone_layout.addWidget(self.catalog_hint)
@@ -447,6 +460,7 @@ class NewObservationDialog(QDialog):
         self.competency_topic_containers.clear()
         subject_group = self._current_subject_group()
         if subject_group is None or not subject_group.learning_area_groups:
+            self._set_catalog_search_feedback(0)
             empty_label = QLabel("Keine aktuellen Kompetenzen für dieses Fach hinterlegt.")
             set_label_style(empty_label, "subtle")
             self.competency_tree_layout.addWidget(empty_label)
@@ -455,12 +469,88 @@ class NewObservationDialog(QDialog):
         self.catalog_hint.setText(
             f"{subject_group.subject_display_name} · Kompetenzbereich → Thema → Kompetenz"
         )
+        matching_competency_count = 0
         for learning_area_group in subject_group.learning_area_groups:
-            self.competency_tree_layout.addWidget(
-                self._learning_area_widget(learning_area_group)
+            matching_topics = tuple(
+                (competency_group, self._matching_catalog_competencies(competency_group))
+                for competency_group in learning_area_group.competency_groups
             )
+            matching_topics = tuple(
+                (competency_group, competencies)
+                for competency_group, competencies in matching_topics
+                if competencies
+            )
+            if not matching_topics:
+                continue
+            matching_competency_count += sum(
+                len(competencies) for _group, competencies in matching_topics
+            )
+            self.competency_tree_layout.addWidget(
+                self._learning_area_widget(learning_area_group, matching_topics)
+            )
+        self._set_catalog_search_feedback(matching_competency_count)
+        if self._catalog_search_text and not matching_competency_count:
+            empty_label = QLabel("Keine passenden Kompetenzen gefunden.")
+            empty_label.setObjectName("ObservationCatalogSearchEmptyState")
+            set_label_style(empty_label, "subtle")
+            self.competency_tree_layout.addWidget(empty_label)
         self.competency_tree_layout.addStretch(1)
         self.catalog_scroll.verticalScrollBar().setValue(0)
+
+    def _search_catalog(self, search_text: str) -> None:
+        normalized_search_text = search_text.strip().casefold()
+        if normalized_search_text and not self._catalog_search_text:
+            self._catalog_expansion_snapshot = self._catalog_expansion_state()
+        self._catalog_search_text = normalized_search_text
+        self._refresh_competencies()
+        if not normalized_search_text:
+            self._catalog_expansion_snapshot = None
+
+    def _matching_catalog_competencies(
+        self,
+        competency_group: ObservationCompetencyGroupViewModel,
+    ) -> tuple[ObservationCompetencyOptionViewModel, ...]:
+        query = self._catalog_search_text
+        return tuple(
+            competency
+            for competency in competency_group.competencies
+            if (
+                not query
+                or (
+                    competency.catalog_status == "current"
+                    and competency.is_active
+                )
+            )
+            and (
+                not query
+                or query in " ".join((
+                    competency.competency_label,
+                    competency.competency_text,
+                    competency.competency_group,
+                    competency.learning_area,
+                )).casefold()
+            )
+        )
+
+    def _set_catalog_search_feedback(self, competency_count: int) -> None:
+        if not self._catalog_search_text:
+            self.catalog_search_result_label.setText("")
+            return
+        self.catalog_search_result_label.setText(
+            f"{competency_count} Kompetenz{'en' if competency_count != 1 else ''} gefunden"
+        )
+
+    def _catalog_expansion_state(self) -> tuple[dict[str, bool], dict[str, bool]]:
+        return (
+            {
+                area_key: not container.isHidden()
+                for area_key, container in self.competency_area_containers.items()
+            },
+            {
+                topic_key: not container.isHidden()
+                for topic_key, container in self.competency_topic_containers.items()
+            },
+        )
 
     def _current_subject_group(
         self,
@@ -478,13 +568,23 @@ class NewObservationDialog(QDialog):
     def _learning_area_widget(
         self,
         learning_area_group: ObservationLearningAreaGroupViewModel,
+        matching_topics: tuple[
+            tuple[
+                ObservationCompetencyGroupViewModel,
+                tuple[ObservationCompetencyOptionViewModel, ...],
+            ],
+            ...,
+        ],
     ) -> QWidget:
         area_widget = QWidget()
         area_layout = QVBoxLayout(area_widget)
         area_layout.setContentsMargins(0, 0, 0, 3)
         area_layout.setSpacing(4)
         area_key = self._area_key(learning_area_group)
-        area_is_open = self._learning_area_has_initial_selection(learning_area_group)
+        area_is_open = True if self._catalog_search_text else self._restored_area_state(
+            area_key,
+            self._learning_area_has_initial_selection(learning_area_group),
+        )
         area_button = self._hierarchy_button(area_key, self._toggle_competency_area)
         self.competency_area_buttons[area_key] = area_button
         area_layout.addWidget(area_button)
@@ -493,8 +593,10 @@ class NewObservationDialog(QDialog):
         topics_layout = QVBoxLayout(topics_container)
         topics_layout.setContentsMargins(12, 0, 0, 0)
         topics_layout.setSpacing(4)
-        for competency_group in learning_area_group.competency_groups:
-            topics_layout.addWidget(self._competency_group_widget(competency_group))
+        for competency_group, competencies in matching_topics:
+            topics_layout.addWidget(
+                self._competency_group_widget(competency_group, competencies)
+            )
         topics_container.setVisible(area_is_open)
         self.competency_area_containers[area_key] = topics_container
         area_layout.addWidget(topics_container)
@@ -504,13 +606,17 @@ class NewObservationDialog(QDialog):
     def _competency_group_widget(
         self,
         competency_group: ObservationCompetencyGroupViewModel,
+        competencies: tuple[ObservationCompetencyOptionViewModel, ...],
     ) -> QWidget:
         group_widget = QWidget()
         group_layout = QVBoxLayout(group_widget)
         group_layout.setContentsMargins(12, 0, 0, 3)
         group_layout.setSpacing(3)
         topic_key = self._topic_key(competency_group)
-        topic_is_open = self._competency_group_has_initial_selection(competency_group)
+        topic_is_open = True if self._catalog_search_text else self._restored_topic_state(
+            topic_key,
+            self._competency_group_has_initial_selection(competency_group),
+        )
         topic_button = self._hierarchy_button(topic_key, self._toggle_competency_topic)
         self.competency_topic_buttons[topic_key] = topic_button
         group_layout.addWidget(topic_button)
@@ -519,7 +625,7 @@ class NewObservationDialog(QDialog):
         competencies_layout = QVBoxLayout(competencies_container)
         competencies_layout.setContentsMargins(12, 0, 0, 0)
         competencies_layout.setSpacing(5)
-        for competency in competency_group.competencies:
+        for competency in competencies:
             competencies_layout.addWidget(self._competency_catalog_tile(competency))
         competencies_container.setVisible(topic_is_open)
         self.competency_topic_containers[topic_key] = competencies_container
@@ -633,6 +739,8 @@ class NewObservationDialog(QDialog):
         )
 
     def _toggle_competency_area(self, area_key: str) -> None:
+        if self._catalog_search_text:
+            return
         container = self.competency_area_containers.get(area_key)
         if container is None:
             return
@@ -641,12 +749,24 @@ class NewObservationDialog(QDialog):
         self._set_area_button_text(area_key, is_open)
 
     def _toggle_competency_topic(self, topic_key: str) -> None:
+        if self._catalog_search_text:
+            return
         container = self.competency_topic_containers.get(topic_key)
         if container is None:
             return
         is_open = container.isHidden()
         container.setVisible(is_open)
         self._set_topic_button_text(topic_key, is_open)
+
+    def _restored_area_state(self, area_key: str, default: bool) -> bool:
+        if self._catalog_expansion_snapshot is None:
+            return default
+        return self._catalog_expansion_snapshot[0].get(area_key, default)
+
+    def _restored_topic_state(self, topic_key: str, default: bool) -> bool:
+        if self._catalog_expansion_snapshot is None:
+            return default
+        return self._catalog_expansion_snapshot[1].get(topic_key, default)
 
     def _set_area_button_text(self, area_key: str, is_open: bool) -> None:
         button = self.competency_area_buttons.get(area_key)
