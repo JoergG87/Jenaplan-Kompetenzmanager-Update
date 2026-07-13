@@ -31,6 +31,21 @@ Status: Sprint 2C wendet die gespeicherte Auswahl in Dokumentationsauswertungen 
 | Zielart und Ziel | `timetable_entries.target_type` / `target_id` -> `groups`, `courses` oder `course_groups` | Eingabe / Anzeige | Ja (nur ID-Referenz) | Stammdaten / `timetable_entries` | Ziel-ID muss zur Zielart Stammgruppe, Kurs oder Kursverbund passen |
 | Raum/Ort | `timetable_entries.room` | Eingabe / Anzeige | Ja (ueber freigegebenen Prozess) | `timetable_entries` | optionaler Freitext, keine neue Raum-Stammdatenquelle |
 
+## PySide6 Dashboard
+
+UX-Status Sprint 8B.1: eigener Hauptnavigationspunkt `Dashboard`; die bestehende `Übersicht` bleibt separat. Die Datenherkunft der folgenden Felder ist unveraendert, nur Timeline-, Matrix-, Hero- und Aktionsanordnung folgen der freigegebenen UX-Referenz.
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Für diese Stunde | `TimetableDesktopAdapter.read_projection(at).current` beziehungsweise `.next` | Anzeige / Navigation | Nein | SQLite `timetable_entries` | zeigt Uhrzeit, Fach, Zielart, Ziel und optional Raum; ohne aktive laufende Stunde wird die naechste kanonische Occurrence gezeigt |
+| Kein Stundenplan | `TimetableWeekViewModel.is_empty` | Anzeige / Navigation | Nein | SQLite `timetable_entries` | neutraler Leerzustand `Noch kein Stundenplan eingerichtet` mit Navigation zu Einstellungen; keine erfundenen Unterrichtsdaten |
+| Heutiger Stundenplan | `TimetableDesktopAdapter.read_projection(at).today` | Anzeige / Navigation | Nein | SQLite `timetable_entries` | horizontale Timeline aus aktiven Stundenkarten; aktuelle Stunde anhand `.current` mit `JETZT` markiert, vergangene anhand des expliziten Zeitpunkts dezent; deaktivierte und geloeschte Eintraege erscheinen nicht |
+| Unterrichtsziel-Navigation | `TimetableEntryViewModel.target_type` + `target_id` | Navigation | Nein | `groups`, `courses`, `course_groups` | technische ID oeffnet den passenden bestehenden Schuelerkontext; Namen sind nur Anzeige |
+| Stundenplanbasierte Beobachtung | `subject_id`, `subject_label`, `target_type`, `target_id`, `target_label` der kanonischen Stunde | Navigation / Eingabe | Ja (erst im bestehenden Beobachtungsprozess) | `timetable_entries` + bestehender Beobachtungspfad | Dashboard navigiert zur Kindauswahl; danach oeffnet derselbe `NewObservationDialog` mit Fach und Unterrichtskontext fluechtig vorbelegt; keine Speicherung im Dashboard |
+| Dokumentations-Heatmap | kanonische `StudentDocumentationSubjectStatus.documented_count`, als Anzahl Kinder mit mindestens einer dokumentierten Kompetenz je aktiver Stammgruppe und Fach aggregiert | Auswertung | Nein | `competencies`, `observations`, `observation_competency_ratings`, `student_competency_confirmations`, `documentation_subject_settings` | reine Dokumentationsabdeckung `Kinder dokumentiert / Kinder der Stammgruppe`; neutrale Blauabstufung, keine Ratings, Leistungsscores, Rangliste oder Entwicklungsurteile |
+| Passende Kinder fuer diese Stunde | aktive Zielmitgliedschaft aus `students.group_id` / `students.course_id` und bei Kursverbund dessen bestehende Gruppen-/Kursrelationen + aktive `observations.date` mit eindeutigem Bezug zu `timetable_entries.subject_id` | Anzeige / Navigation | Nein | `students`, `course_group_student_groups`, `course_group_courses`, `observations`, `observation_competency_ratings` | maximal fuenf; keine Fachbeobachtung zuerst, danach aelteste letzte Fachbeobachtung, kuerzlich dokumentiert und heute dokumentiert; Gleichstand alphabetisch; keine Ratings oder Kompetenzstatus |
+| Beobachten beim vorgeschlagenen Kind | `DashboardSuggestedStudentViewModel.student_id` + Fach und Zielkontext der hervorgehobenen Stunde | Navigation / Eingabe | Ja (erst im bestehenden Beobachtungsprozess) | `students`, `timetable_entries`, `observations` | oeffnet direkt denselben `NewObservationDialog` fuer das Kind und belegt Fach sowie Unterrichtskontext fluechtig vor |
+
 ## Stammgruppenuebersicht
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |

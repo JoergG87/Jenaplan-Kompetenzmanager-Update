@@ -86,6 +86,104 @@ QFrame#AppPanel {{
     border: 1px solid {COLOR_BORDER};
     border-radius: 10px;
 }}
+QFrame#DashboardHero {{
+    background-color: #F2F7FF;
+    border: 1px solid #C7D8EE;
+    border-radius: 15px;
+}}
+QFrame#DashboardTimeline, QFrame#DashboardHeatmap,
+QFrame#DashboardMatchingChildren {{
+    background-color: {COLOR_GLASS};
+    border: 1px solid {COLOR_BORDER};
+    border-radius: 13px;
+}}
+QLabel#DashboardHeroTitle {{
+    color: {COLOR_NAVY};
+    font-size: 20px;
+    font-weight: 700;
+}}
+QLabel#DashboardHeroStatus {{
+    color: {COLOR_BLUE_DARK};
+    font-size: 12px;
+    font-weight: 700;
+}}
+QLabel#DashboardHeroSubject {{
+    color: {COLOR_NAVY};
+    font-size: 21px;
+    font-weight: 700;
+}}
+QLabel#DashboardHeroTime {{
+    color: {COLOR_NAVY};
+    font-size: 22px;
+    font-weight: 700;
+}}
+QFrame#DashboardHeroIllustrationSpace {{
+    background-color: rgba(255, 255, 255, 185);
+    border: 1px solid #D8E5F5;
+    border-radius: 14px;
+}}
+QLabel#DashboardHeroVisualTime {{
+    color: #70839A;
+    font-size: 10px;
+}}
+QFrame#DashboardHeroVisualBlock {{
+    background-color: #E7EEF8;
+    border: none;
+    border-radius: 4px;
+    min-height: 17px;
+}}
+QFrame#DashboardHeroVisualCurrent {{
+    background-color: #77A6E8;
+    border: 1px solid #3B75C5;
+    border-radius: 4px;
+    min-height: 24px;
+}}
+QFrame#DashboardLessonCard {{
+    background-color: #FFFFFF;
+    border: 1px solid #D7E3EC;
+    border-radius: 11px;
+}}
+QFrame#DashboardLessonCard:hover {{
+    border-color: {COLOR_BLUE};
+}}
+QFrame#DashboardLessonCard[lessonState="current"] {{
+    background-color: #EEF6FF;
+    border: 1px solid {COLOR_BLUE};
+}}
+QFrame#DashboardLessonCard[lessonState="past"] {{
+    background-color: #F8FAFC;
+    border-color: #E2E8F0;
+}}
+QFrame#DashboardLessonCard[lessonState="past"] QLabel {{
+    color: #7B8794;
+}}
+QLabel#DashboardLessonState {{
+    color: #FFFFFF;
+    background-color: {COLOR_BLUE};
+    border-radius: 8px;
+    padding: 2px 7px;
+    font-size: 10px;
+    font-weight: 700;
+}}
+QFrame#DashboardMatchingChildrenRow, QFrame#DashboardMatchingChildRow {{
+    background-color: #FBFCFE;
+    border: 1px solid #DFE7EF;
+    border-radius: 10px;
+}}
+QFrame#DashboardHeatmapCell {{
+    border: 1px solid #D7E3EC;
+    border-radius: 9px;
+}}
+QFrame#DashboardHeatmapCell[coverageLevel="0"] {{ background-color: #F8FAFC; }}
+QFrame#DashboardHeatmapCell[coverageLevel="1"] {{ background-color: #EEF6FC; }}
+QFrame#DashboardHeatmapCell[coverageLevel="2"] {{ background-color: #E3F0F9; }}
+QFrame#DashboardHeatmapCell[coverageLevel="3"] {{ background-color: #D5E9F6; }}
+QFrame#DashboardHeatmapCell[coverageLevel="4"] {{ background-color: #C8E2F2; }}
+QFrame#DashboardHeatmapCell[coverageLevel="0"] QLabel#DashboardHeatmapMarker {{ color: #A6B0BB; }}
+QFrame#DashboardHeatmapCell[coverageLevel="1"] QLabel#DashboardHeatmapMarker {{ color: #F59E0B; }}
+QFrame#DashboardHeatmapCell[coverageLevel="2"] QLabel#DashboardHeatmapMarker {{ color: #EAB308; }}
+QFrame#DashboardHeatmapCell[coverageLevel="3"] QLabel#DashboardHeatmapMarker {{ color: #22C55E; }}
+QFrame#DashboardHeatmapCell[coverageLevel="4"] QLabel#DashboardHeatmapMarker {{ color: #16A34A; }}
 QFrame#LearningReportTopBar {{
     background-color: {COLOR_NAVY};
     border: none;

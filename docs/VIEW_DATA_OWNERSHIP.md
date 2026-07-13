@@ -128,16 +128,18 @@ Regel:
 
 Die Einstellungen duerfen keine Fachdefinitionen oder Stammdatenkopien speichern und den Kompetenzkatalog nicht veraendern. Stundenplanreferenzen werden im Adapter und Domain Service aufgeloest und validiert; Widgets greifen nicht direkt auf SQLite zu. Ohne gespeicherte Settings-Zeilen gelten alle aktiven Katalogfaecher als dokumentationsrelevant. Die Auswahl wirkt auf Dokumentationsstand, offene Beobachtungsanlaesse und Beobachtungshinweise; Beobachtungen und Kompetenzhistorien bleiben sichtbar.
 
-## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
+## PySide6 Dashboard
 
 Liest:
 
+- `timetable_entries` ueber die kanonische zeitpunktparametrisierte Stundenplanprojektion
 - `data_groups`
 - `data_courses`
 - `data_students` fuer vorhandene Schuelerzahlen je Stammgruppe
 - `course_groups`
 - `course_group_student_groups`
 - `course_group_courses`
+- `competencies`, `observations`, `observation_competency_ratings` und `student_competency_confirmations` ausschliesslich ueber die kanonische Dokumentationsstatusprojektion
 
 Schreibt:
 
@@ -146,18 +148,24 @@ Schreibt:
 
 UI-Projektionen:
 
-- Stammgruppenliste
-- optionale Schueleranzahl fuer persistent bekannte Stammgruppen
-- Kursverbundliste
-- Kursliste innerhalb eines persistenten Kursverbunds
-- Kursmarker aus Kursfarbe
-- Kursfilter aus `course_id` und den Stammgruppen des Kursverbunds
+- zentrale Karte `Für diese Stunde` mit aktueller oder naechster aktiver Stunde und ruhigem Leerzustand
+- heutige aktive Stunden als horizontale, zeitbezogen markierte Timeline
+- fluechtige Stundenplanvorbelegung fuer den bestehenden Beobachtungsdialog nach bewusster Kindauswahl
+- neutrale Mini-Heatmap der Dokumentationsabdeckung je Stammgruppe und Fach; keine Bewertung, Leistung, Rangfolge oder Entwicklungsableitung
 
 Regel:
 
-Die Uebersicht zeigt den aktuellen Stammdaten-Scope der PySide-App. Sie verwaltet keine Stammdaten und schreibt nicht direkt in SQLite.
+Das Dashboard ist eine reine Lese- und Navigationsoberflaeche. Es zeigt den aktuellen Stammdaten-Scope der PySide-App, verwaltet weder Stammdaten noch Stundenplan und schreibt nicht direkt in SQLite. Aktuell, naechste und heutige Stunde stammen ausschliesslich aus `TimetableDesktopAdapter.read_projection(at)`. Zeitstatus wird beim Oeffnen beziehungsweise Aktivieren und hoechstens minuetlich neu gelesen. Die Heatmap zaehlt je Stammgruppe und Fach nur Kinder, deren bestehende kanonische Fachprojektion mindestens eine dokumentierte Kompetenz ausweist; sie zeigt keine Ratings, Scores oder automatischen Entwicklungsurteile.
 
 Eine Kursuebersicht ist kursverbundbezogen. Sie zeigt nicht automatisch alle Schueler mit demselben Kurslabel in der ganzen App, sondern filtert nach `course_id` und den Stammgruppen des ausgewaehlten Kursverbunds.
+
+UX-Regel Sprint 8B.2: Dashboard und bestehende Uebersicht sind getrennte Hauptnavigationspunkte. Die Dashboard-Projektionen erscheinen ausschliesslich in einer grossen Hero-Karte, einer horizontalen Tages-Timeline, einer kompakten Stammgruppe-mal-Fach-Matrix und der Karte fuer passenden Unterrichtskontext. Allgemeine Stammgruppen-, Kursverbund- und Schnellzugriffskarten gehoeren nur zur Uebersicht.
+
+Regel Sprint 8B.3: `Passende Kinder für diese Stunde` liest aktive Kinder aus der zur Stunde gehoerenden Stammgruppe, dem Kurs oder Kursverbund sowie deren aktive Beobachtungen. Es werden hoechstens fuenf Kinder als transparente Dokumentationshilfe projiziert. Reihenfolge und Hinweis beruhen ausschliesslich auf dem Vorhandensein und Datum einer aktiven Beobachtung mit eindeutigem Fachbezug; Ratings, Kompetenzstatus, Leistungswerte und paedagogische Urteile werden nicht gelesen oder berechnet. Der Screen rendert diese Projektion nur und startet `Beobachten` ueber den bestehenden Beobachtungsdialog.
+
+## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
+
+Liest die bestehenden Projektionen aus `groups`, `courses`, `students`, `course_groups`, `course_group_student_groups` und `course_group_courses`. Schreibt nichts direkt. Sie zeigt unveraendert Stammgruppenkarten, Schuelerzahlen, Kursverbuende und Kurszugriffe und navigiert ausschliesslich ueber die bestehenden technischen IDs. Dashboard-Daten und Stundenplanprojektionen werden in dieser Ansicht nicht gelesen.
 
 ## PySide6 Stammdaten
 

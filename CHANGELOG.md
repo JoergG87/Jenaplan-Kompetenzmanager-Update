@@ -1,5 +1,59 @@
 # CHANGELOG
 
+## Sprint 8B.3 - Passende Kinder als transparente Dokumentationshilfe
+
+### Added
+
+- Kanonische Dashboard-Projektion fuer maximal fuenf aktive Kinder des hervorgehobenen Stundenplanziels ergaenzt. Sie priorisiert ausschliesslich anhand fehlender beziehungsweise letzter aktiver Dokumentation im Stundenfach und erhaelt den Auswertungszeitpunkt explizit.
+- `Passende Kinder für diese Stunde` zeigt Name, neutralen Dokumentationshinweis und `Beobachten`; die Aktion oeffnet direkt den bestehenden Beobachtungsdialog mit Fach und Unterrichtskontext.
+- Fachlich eindeutige Schnellbeobachtungen werden beruecksichtigt; fachlich uneindeutige, soft-geloeschte, fachfremde und fremde Beobachtungen bleiben ausgeschlossen.
+
+### Not Changed
+
+- Keine Migration, Persistenz-, Schema-, Kompetenzstatus-, Rating-, Score-, Stundenplan- oder Beobachtungsschreiblogikaenderung und kein Commit.
+
+## Sprint 8B.2 - Alte Uebersichtsbereiche aus Dashboard entfernt
+
+### Changed
+
+- Allgemeine Stammgruppen-, Kursverbund- und Schnellzugriffskarten vollstaendig aus dem eigenen Dashboard-Screen entfernt.
+- Dashboard endet nun nach Hero-Karte, horizontalem Tagesstundenplan, kompakter Dokumentationsmatrix und `Passende Kinder für diese Stunde`.
+- Die getrennte `Übersicht` behaelt ihre bisherigen Stammgruppen- und Kursverbundkarten unveraendert.
+
+### Not Changed
+
+- Keine Aenderung an Stundenplanlogik, Projektionen, Adaptern, ViewModels, Persistenz, Beobachtungspfad oder Navigation; kein Commit.
+
+## Sprint 8B.1 - Dashboard UX an freigegebene Referenz angeglichen
+
+### Changed
+
+- Dashboard als eigenen Hauptnavigationspunkt vor der unveraendert erhaltenen `Übersicht` getrennt und die Screen-Komposition an die freigegebene UX-Referenz angeglichen.
+- Hero-Karte auf eine breite 60/40-Arbeitsflaeche mit Unterrichtsinformationen links und bewusst freigehaltenem Illustrationsbereich rechts umgestellt.
+- Heutigen Stundenplan als horizontale Timeline-Karten statt vertikaler Liste dargestellt; die laufende Stunde bleibt mit `JETZT` deutlich markiert.
+- Dokumentationsuebersicht als kompakte Stammgruppe-mal-Fach-Matrix angeordnet und Karten fuer passenden Unterrichtskontext sowie bestehende Schnellzugriffe referenznah untereinander gesetzt.
+
+### Not Changed
+
+- Keine Aenderung an Stundenplan- oder Dashboardlogik, Adaptern, ViewModels, Persistenz, Datenmodell, Beobachtungspfad oder bestehenden Tests; kein Commit.
+
+## Sprint 8B - Stundenplanbasiertes Dashboard
+
+### Added
+
+- Die bisherige Uebersicht als ruhige Dashboard-Startseite mit zentraler Karte `Für diese Stunde`, kanonisch projizierter aktueller beziehungsweise naechster Stunde und vertikaler Tagesliste umgesetzt.
+- Direkte Navigation aus Stundenkarten zu Stammgruppe, Kurs oder Kursverbund sowie fluechtige Fach- und Unterrichtskontext-Vorbelegung fuer den bestehenden Beobachtungsdialog nach Kindauswahl ergaenzt.
+- Neutrale Mini-Heatmap `Stammgruppe × Fach` aus der kanonischen Dokumentationsstatusprojektion ergaenzt; sie zeigt ausschliesslich die Anzahl Kinder mit vorhandener Dokumentation und keine Ratings, Leistungen oder Entwicklungsurteile.
+- Ruhige Zustaende fuer vor der ersten Stunde, Unterrichtspausen, nach Unterrichtsende, Wochenende, fehlenden Stundenplan und ausschliesslich inaktive Eintraege sowie eine hoechstens minuetliche Aktualisierung ergaenzt.
+
+### Changed
+
+- Die Hauptnavigation benennt die Startansicht als `Dashboard`; bestehende Stammgruppen- und Kursverbund-Schnellzugriffe bleiben unterhalb der neuen Arbeitsstartbereiche erhalten.
+
+### Not Changed
+
+- Keine Migration, Schema-, Repository-, Stundenplan-Schreib-, Kompetenzstatus-, Leistungs-, Score-, automatische Entwicklungs-, Excel-/VBA- oder Stammdatenaenderung und kein Commit.
+
 ## Sprint 8A.1 - Stundenplan uebersichtlich neu dargestellt
 
 ### Changed

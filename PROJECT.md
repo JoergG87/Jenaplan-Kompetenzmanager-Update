@@ -60,9 +60,11 @@ Die tägliche Arbeit erfolgt überwiegend über Stammgruppen- und Schüleransich
 
 Weitere Ansichten wie Schülerprofil, Stammgruppenübersicht, Kursübersicht, Berichte und Kompetenzbögen entstehen automatisch aus denselben Daten.
 
-Die Stammgruppenübersicht dient als Einstieg in den Arbeitsablauf. Sie hilft dabei, einen Schüler innerhalb einer Stammgruppe schnell zu finden, auszuwählen und anschließend in das Schülerprofil zu wechseln.
+Das stundenplanbasierte Dashboard dient als ruhige Arbeitsstartseite. Es zeigt den unmittelbaren Unterrichtskontext, den heutigen Stundenplan, neutrale Dokumentationsabdeckung sowie direkte Wege zu Stammgruppen, Kursen, Kursverbuenden und dem bestehenden Beobachtungsprozess.
 
-Die Stammgruppenübersicht ist kein Dashboard, keine Verwaltungsansicht, keine Analyseansicht und keine Auswertungsseite.
+Das Dashboard ist eine reine Lese- und Navigationsansicht. Es veraendert weder Stundenplan noch Kompetenz- oder Beobachtungsdaten und zeigt keine Leistungswerte oder automatischen Entwicklungsurteile.
+
+Dashboard und Uebersicht bleiben getrennte Hauptansichten: Das Dashboard ist der schnelle, stundenplanbasierte Arbeitsstart; die bestehende Uebersicht bleibt der direkte Stammgruppen- und Kursverbundzugang.
 
 Für den Unterricht darf die Stammgruppenübersicht zusätzlich einen Schnellzugriff `Neue Beobachtung` anbieten. Dieser arbeitet immer im Kontext des ausgewählten Schülers und öffnet denselben zentralen Beobachtungsdialog wie das Schülerprofil.
 

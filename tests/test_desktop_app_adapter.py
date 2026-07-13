@@ -4342,14 +4342,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         profile_source = inspect.getsource(shell.AppShell.show_student_profile)
 
         self.assertIn("NewObservationDialog(", source)
-        self.assertIn(
-            "subject_options=self.adapter.list_observation_subject_options()",
-            source,
-        )
-        self.assertIn(
-            "self.adapter.list_observation_competency_subject_groups()",
-            source,
-        )
+        self.assertIn("list_observation_subject_options(prefill)", source)
+        self.assertIn("list_observation_subject_options()", source)
+        self.assertIn("list_observation_competency_subject_groups(prefill)", source)
+        self.assertIn("list_observation_competency_subject_groups()", source)
         self.assertIn("self.show_student_profile(student.student_id)", source)
         self.assertIn('self.status_label.setText("Beobachtung wurde gespeichert.")', source)
         self.assertIn("list_competency_overview_for_student(student_id)", profile_source)
@@ -4365,14 +4361,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("self.open_quick_observation_dialog", shell_source)
         self.assertIn("self.adapter.get_student_profile(student_id)", quick_source)
         self.assertIn("NewObservationDialog(", quick_source)
-        self.assertIn(
-            "subject_options=self.adapter.list_observation_subject_options()",
-            quick_source,
-        )
-        self.assertIn(
-            "self.adapter.list_observation_competency_subject_groups()",
-            quick_source,
-        )
+        self.assertIn("list_observation_subject_options(prefill)", quick_source)
+        self.assertIn("list_observation_subject_options()", quick_source)
+        self.assertIn("list_observation_competency_subject_groups(prefill)", quick_source)
+        self.assertIn("list_observation_competency_subject_groups()", quick_source)
         self.assertIn("self.refresh_overview()", quick_source)
         self.assertIn("self.refresh_students()", quick_source)
         self.assertIn('self.status_label.setText("Beobachtung wurde gespeichert.")', quick_source)

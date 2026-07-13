@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import shutil
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from src.application.commands import (
@@ -55,6 +55,7 @@ from src.core.sqlite_store import (
     SQLiteDocumentRepository,
     SQLiteGroupRepository,
     SQLiteLearningConferenceDraftRepository,
+    SQLiteMasterDataRepository,
     SQLiteObservationRepository,
     SQLiteReportDraftRepository,
     SQLiteStudentCompetencyConfirmationRepository,
@@ -114,6 +115,10 @@ from src.desktop_app.view_models.learning_conference_view_model import (
     build_learning_conference_preparation,
 )
 from src.desktop_app.view_models.student_view_model import (
+    DashboardDocumentationCellViewModel,
+    DashboardDocumentationGroupViewModel,
+    DashboardDocumentationHeatmapViewModel,
+    DashboardSuggestedStudentViewModel,
     GroupSummaryViewModel,
     StudentDetailViewModel,
     StudentDocumentationSummaryViewModel,
@@ -141,6 +146,7 @@ class StudentDesktopAdapter:
         group_id: str | None = None,
         group_ids: tuple[str, ...] = (),
         course_id: str | None = None,
+        course_ids: tuple[str, ...] = (),
     ) -> tuple[StudentListItem, ...]:
         """Return students with readable group and course names."""
         groups = {group.group_id: group.group_name for group in self.list_groups()}
@@ -150,11 +156,21 @@ class StudentDesktopAdapter:
             course.course_id: index
             for index, course in enumerate(course_records)
         }
-        students = SQLiteStudentRepository(self.database).list_students()
+        students = tuple(
+            student
+            for student in SQLiteStudentRepository(self.database).list_students()
+            if student.active
+        )
         loaded_students = tuple(
             self._student_list_item(student, groups, courses)
             for student in students
-            if self._matches_filter(student, group_id, group_ids, course_id)
+            if self._matches_filter(
+                student,
+                group_id,
+                group_ids,
+                course_id,
+                course_ids,
+            )
         )
         return sort_student_list(loaded_students, course_order_by_id)
 
@@ -180,7 +196,11 @@ class StudentDesktopAdapter:
 
     def list_group_summaries(self) -> tuple[GroupSummaryViewModel, ...]:
         """Return group cards for the app overview."""
-        students = SQLiteStudentRepository(self.database).list_students()
+        students = tuple(
+            student
+            for student in SQLiteStudentRepository(self.database).list_students()
+            if student.active
+        )
         active_counts = {
             group.group_id: sum(
                 1
@@ -196,6 +216,204 @@ class StudentDesktopAdapter:
                 active_counts.get(group.group_id, 0),
             )
             for group in self.list_groups()
+        )
+
+    def dashboard_documentation_heatmap(
+        self,
+    ) -> DashboardDocumentationHeatmapViewModel:
+        """Aggregate canonical documentation coverage by group and subject."""
+        students = tuple(
+            student
+            for student in SQLiteStudentRepository(self.database).list_students()
+            if student.active
+        )
+        statuses_by_student = {
+            student.student_id: self.list_documentation_status_for_student(
+                student.student_id
+            )
+            for student in students
+        }
+        groups: list[DashboardDocumentationGroupViewModel] = []
+        for group in self.list_groups():
+            group_students = tuple(
+                student
+                for student in students
+                if student.group_id == group.group_id
+            )
+            subject_totals: dict[str, list[object]] = {}
+            for student in group_students:
+                for status in statuses_by_student[student.student_id]:
+                    values = subject_totals.setdefault(
+                        status.subject_id,
+                        [status.subject_display_name, 0, 0, status.sort_order],
+                    )
+                    values[1] = int(values[1]) + int(status.documented_count > 0)
+                    values[2] = int(values[2]) + 1
+                    values[3] = min(int(values[3]), status.sort_order)
+            cells = tuple(
+                DashboardDocumentationCellViewModel(
+                    subject_id,
+                    str(values[0]),
+                    int(values[1]),
+                    int(values[2]),
+                )
+                for subject_id, values in sorted(
+                    subject_totals.items(),
+                    key=lambda item: (int(item[1][3]), str(item[1][0]).casefold()),
+                )
+            )
+            groups.append(
+                DashboardDocumentationGroupViewModel(
+                    group.group_id,
+                    group.group_name,
+                    cells,
+                )
+            )
+        return DashboardDocumentationHeatmapViewModel(tuple(groups))
+
+    def list_dashboard_suggested_students(
+        self,
+        *,
+        target_type: str,
+        target_id: str,
+        subject_id: str,
+        subject_label: str,
+        at: datetime,
+        limit: int = 5,
+    ) -> tuple[DashboardSuggestedStudentViewModel, ...]:
+        """Return neutral, date-based documentation suggestions for one lesson."""
+        if limit <= 0 or not subject_id:
+            return ()
+        target_scope = self._dashboard_target_scope(target_type, target_id)
+        if target_scope is None:
+            return ()
+        group_ids, course_ids = target_scope
+        students = tuple(
+            student
+            for student in SQLiteStudentRepository(self.database).list_students()
+            if student.active
+            and self._matches_filter(
+                student,
+                None,
+                group_ids,
+                None,
+                course_ids,
+            )
+        )
+        suggestions = tuple(
+            self._dashboard_suggestion_for_student(
+                student,
+                subject_id,
+                subject_label,
+                at.date(),
+            )
+            for student in students
+        )
+        return tuple(
+            sorted(
+                suggestions,
+                key=lambda item: (
+                    self._dashboard_suggestion_priority(item, at.date()),
+                    item.last_documentation_date or date.min,
+                    item.display_name.casefold(),
+                    item.student_id,
+                ),
+            )[:limit]
+        )
+
+    def _dashboard_target_scope(
+        self,
+        target_type: str,
+        target_id: str,
+    ) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
+        if target_type == "group":
+            return (target_id,), ()
+        if target_type == "course":
+            return (), (target_id,)
+        if target_type != "course_group":
+            return None
+        course_group = next(
+            (
+                item
+                for item in SQLiteMasterDataRepository(
+                    self.database
+                ).list_course_groups()
+                if item.active and item.course_group_id == target_id
+            ),
+            None,
+        )
+        if course_group is None:
+            return None
+        return (
+            course_group.selected_group_ids,
+            course_group.selected_course_ids,
+        )
+
+    def _dashboard_suggestion_for_student(
+        self,
+        student: StudentRecord,
+        subject_id: str,
+        subject_label: str,
+        at_date: date,
+    ) -> DashboardSuggestedStudentViewModel:
+        observation_dates = tuple(
+            observation_date
+            for observation in SQLiteObservationRepository(
+                self.database
+            ).list_observations_for_student(student.student_id)
+            if self._observation_has_dashboard_subject(observation, subject_id)
+            for observation_date in (date.fromisoformat(observation.date),)
+            if observation_date <= at_date
+        )
+        display_name = f"{student.first_name} {student.last_name}"
+        if not observation_dates:
+            return DashboardSuggestedStudentViewModel(
+                student.student_id,
+                display_name,
+                f"Noch keine Dokumentation in {subject_label}",
+            )
+        last_date = max(observation_dates)
+        days_since = (at_date - last_date).days
+        if days_since == 0:
+            hint = "Heute bereits dokumentiert"
+        elif days_since == 1:
+            hint = "Letzte Beobachtung vor 1 Tag"
+        else:
+            hint = f"Letzte Beobachtung vor {days_since} Tagen"
+        return DashboardSuggestedStudentViewModel(
+            student.student_id,
+            display_name,
+            hint,
+            last_date,
+            days_since == 0,
+        )
+
+    @staticmethod
+    def _dashboard_suggestion_priority(
+        suggestion: DashboardSuggestedStudentViewModel,
+        at_date: date,
+    ) -> int:
+        if suggestion.last_documentation_date is None:
+            return 0
+        if suggestion.last_documentation_date == at_date:
+            return 2
+        return 1
+
+    @staticmethod
+    def _observation_has_dashboard_subject(
+        observation: object,
+        subject_id: str,
+    ) -> bool:
+        ratings = tuple(getattr(observation, "competency_ratings", ()))
+        if ratings:
+            return subject_id in {
+                getattr(rating, "subject_id", "") for rating in ratings
+            }
+        quick_subject_id = str(getattr(observation, "subject_id", "")).strip()
+        return bool(
+            quick_subject_id
+            and quick_subject_id != "cross_subject"
+            and quick_subject_id == subject_id
         )
 
     def list_groups(self) -> tuple[GroupRecord, ...]:
@@ -1213,12 +1431,15 @@ class StudentDesktopAdapter:
         group_id: str | None,
         group_ids: tuple[str, ...],
         course_id: str | None,
+        course_ids: tuple[str, ...],
     ) -> bool:
         if group_id and student.group_id != group_id:
             return False
         if group_ids and student.group_id not in group_ids:
             return False
         if course_id and student.course_id != course_id:
+            return False
+        if course_ids and student.course_id not in course_ids:
             return False
         return True
 

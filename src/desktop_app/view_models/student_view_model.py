@@ -180,6 +180,59 @@ class StudentDetailViewModel:
 
 
 @dataclass(frozen=True)
+class DashboardDocumentationCellViewModel:
+    """Neutral documentation coverage for one group and subject."""
+
+    subject_id: str
+    subject_display_name: str
+    documented_count: int
+    total_count: int
+
+    @property
+    def coverage_ratio(self) -> float:
+        """Return display-only coverage without interpreting performance."""
+        if self.total_count <= 0:
+            return 0.0
+        return self.documented_count / self.total_count
+
+    @property
+    def coverage_label(self) -> str:
+        """Return an explicitly documentation-only label."""
+        return f"{self.documented_count} / {self.total_count} Kinder dokumentiert"
+
+
+@dataclass(frozen=True)
+class DashboardDocumentationGroupViewModel:
+    """Documentation cells for one active student group."""
+
+    group_id: str
+    group_name: str
+    cells: tuple[DashboardDocumentationCellViewModel, ...]
+
+
+@dataclass(frozen=True)
+class DashboardDocumentationHeatmapViewModel:
+    """Group-by-subject documentation overview without achievement values."""
+
+    groups: tuple[DashboardDocumentationGroupViewModel, ...]
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.groups or not any(group.cells for group in self.groups)
+
+
+@dataclass(frozen=True)
+class DashboardSuggestedStudentViewModel:
+    """One neutral documentation suggestion for the highlighted lesson."""
+
+    student_id: str
+    display_name: str
+    documentation_hint: str
+    last_documentation_date: date | None = None
+    documented_today: bool = False
+
+
+@dataclass(frozen=True)
 class StudentProfileOverviewViewModel:
     """Teacher-facing first-read summary for the student profile."""
 

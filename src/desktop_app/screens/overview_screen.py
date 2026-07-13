@@ -1,8 +1,12 @@
-"""Overview screen for the PySide6 desktop app."""
+"""Quiet timetable-based dashboard for the PySide6 desktop app."""
 
 from __future__ import annotations
 
-from PySide6.QtCore import Signal
+from collections.abc import Callable
+from datetime import datetime
+
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QKeyEvent, QMouseEvent
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -14,21 +18,508 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.desktop_app.theme import (
+    PRIMARY_BUTTON_STYLESHEET,
+    create_card,
+    set_label_style,
+)
 from src.desktop_app.view_models.master_data_view_model import (
     CourseGroupViewModel,
     MasterDataItemViewModel,
     MasterDataViewModel,
 )
-from src.desktop_app.view_models.student_view_model import GroupSummaryViewModel
-from src.desktop_app.theme import create_card, set_label_style
+from src.desktop_app.view_models.student_view_model import (
+    DashboardDocumentationCellViewModel,
+    DashboardDocumentationHeatmapViewModel,
+    DashboardSuggestedStudentViewModel,
+    GroupSummaryViewModel,
+)
+from src.desktop_app.view_models.timetable_view_model import (
+    WEEKDAY_LABELS,
+    TimetableOccurrenceViewModel,
+    TimetableReadProjectionViewModel,
+)
 
 
 OVERVIEW_GROUP_EMPTY_STATE = "Noch keine Stammgruppen vorhanden."
 OVERVIEW_COURSE_EMPTY_STATE = "Noch keine Kurse vorhanden."
 
 
+class DashboardLessonCard(QFrame):
+    """Keyboard- and pointer-activatable lesson block."""
+
+    def __init__(
+        self,
+        occurrence: TimetableOccurrenceViewModel,
+        state: str,
+        activate: Callable[[], None],
+    ) -> None:
+        super().__init__()
+        self._activate = activate
+        self.setObjectName("DashboardLessonCard")
+        self.setProperty("lessonState", state)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setAccessibleName(
+            f"{occurrence.entry.time_label}, {occurrence.entry.subject_label}, "
+            f"{occurrence.entry.target_label} öffnen"
+        )
+        self.setMinimumWidth(150)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(5)
+        header = QHBoxLayout()
+        time = QLabel(occurrence.entry.time_label)
+        set_label_style(time, "card_title")
+        status = QLabel("JETZT" if state == "current" else "")
+        status.setObjectName("DashboardLessonState")
+        status.setVisible(state == "current")
+        header.addWidget(time)
+        header.addStretch(1)
+        header.addWidget(status)
+        subject = QLabel(occurrence.entry.subject_label)
+        set_label_style(subject, "card_title")
+        meta = QLabel(self._meta_text(occurrence))
+        meta.setWordWrap(True)
+        set_label_style(meta, "muted")
+        layout.addLayout(header)
+        layout.addWidget(subject)
+        layout.addWidget(meta)
+        layout.addStretch(1)
+
+    @staticmethod
+    def _meta_text(occurrence: TimetableOccurrenceViewModel) -> str:
+        entry = occurrence.entry
+        parts = [entry.target_type_label, entry.target_label]
+        if entry.room:
+            parts.append(entry.room)
+        return " · ".join(parts)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # noqa: N802
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._activate()
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
+            self._activate()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+
 class OverviewScreen(QWidget):
-    """Start screen with lightweight group overview."""
+    """Read-only dashboard with timetable and calm navigation."""
+
+    timetable_target_selected = Signal(str, str)
+    timetable_observation_requested = Signal(str, str, str, str, str)
+    timetable_student_observation_requested = Signal(str, str, str, str)
+    settings_timetable_requested = Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.hero_layout = QHBoxLayout()
+        self.today_layout = QHBoxLayout()
+        self.heatmap_layout = QVBoxLayout()
+        self.matching_children_layout = QVBoxLayout()
+        self._hero_occurrence: TimetableOccurrenceViewModel | None = None
+        self._build()
+
+    def _build(self) -> None:
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        header = QHBoxLayout()
+        heading = QVBoxLayout()
+        title = QLabel("Dashboard")
+        set_label_style(title, "screen_title")
+        subtitle = QLabel("Schneller Arbeitsstart")
+        set_label_style(subtitle, "muted")
+        heading.addWidget(title)
+        heading.addWidget(subtitle)
+        header.addLayout(heading)
+        header.addStretch(1)
+        self.header_observation_button = QPushButton("+ Beobachtung")
+        self.header_observation_button.setStyleSheet(PRIMARY_BUTTON_STYLESHEET)
+        self.header_observation_button.clicked.connect(
+            self._emit_header_observation
+        )
+        header.addWidget(self.header_observation_button)
+        outer.addLayout(header)
+
+        scroll = QScrollArea()
+        scroll.setObjectName("DashboardScrollArea")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(0, 8, 0, 8)
+        layout.setSpacing(14)
+        layout.addWidget(self._section_card("", self.hero_layout, "DashboardHero"))
+        layout.addWidget(
+            self._section_card(
+                "Stundenplan heute", self.today_layout, "DashboardTimeline"
+            )
+        )
+        layout.addWidget(
+            self._section_card(
+                "Meine Gruppen im Blick",
+                self.heatmap_layout,
+                "DashboardHeatmap",
+            )
+        )
+        layout.addWidget(
+            self._section_card(
+                "Passende Kinder für diese Stunde",
+                self.matching_children_layout,
+                "DashboardMatchingChildren",
+            )
+        )
+        layout.addStretch(1)
+        scroll.setWidget(content)
+        outer.addWidget(scroll, 1)
+
+    def set_dashboard(
+        self,
+        projection: TimetableReadProjectionViewModel,
+        heatmap: DashboardDocumentationHeatmapViewModel,
+        at: datetime,
+        has_timetable_entries: bool,
+        suggested_students: tuple[DashboardSuggestedStudentViewModel, ...] = (),
+    ) -> None:
+        """Render canonical read projections for one explicit point in time."""
+        self._clear_layout(self.hero_layout)
+        self._clear_layout(self.today_layout)
+        self._clear_layout(self.heatmap_layout)
+        self._clear_layout(self.matching_children_layout)
+        self._render_hero(projection, has_timetable_entries, at)
+        self._render_today(projection, at)
+        self._render_heatmap(heatmap)
+        self._render_matching_children(projection, suggested_students)
+
+    def _render_hero(
+        self,
+        projection: TimetableReadProjectionViewModel,
+        has_timetable_entries: bool,
+        at: datetime,
+    ) -> None:
+        occurrence = projection.current or projection.next
+        self._hero_occurrence = occurrence
+        self.header_observation_button.setVisible(occurrence is not None)
+        left = QWidget()
+        left.setObjectName("DashboardHeroContent")
+        left_layout = QVBoxLayout(left)
+        left_layout.setContentsMargins(4, 2, 16, 2)
+        left_layout.setSpacing(7)
+        if occurrence is None:
+            title = QLabel("Für diese Stunde")
+            title.setObjectName("DashboardHeroTitle")
+            left_layout.addWidget(title)
+            message = (
+                "Noch kein Stundenplan eingerichtet"
+                if not has_timetable_entries
+                else "Keine aktive Stunde geplant"
+            )
+            headline = QLabel(message)
+            set_label_style(headline, "card_title")
+            hint = QLabel("Nächster guter Blick: Stammgruppen und Kinder öffnen.")
+            hint.setWordWrap(True)
+            set_label_style(hint, "muted")
+            left_layout.addWidget(headline)
+            left_layout.addWidget(hint)
+            actions = QHBoxLayout()
+            if not has_timetable_entries:
+                settings = QPushButton("Zu Einstellungen · Stundenplan")
+                settings.clicked.connect(self.settings_timetable_requested.emit)
+                actions.addWidget(settings)
+            actions.addStretch(1)
+            left_layout.addLayout(actions)
+            left_layout.addStretch(1)
+            self.hero_layout.addWidget(left, 3)
+            self.hero_layout.addWidget(self._hero_visual(), 2)
+            return
+
+        entry = occurrence.entry
+        status_text = (
+            "Jetzt" if projection.current else self._next_status(occurrence, at)
+        )
+        status = QLabel(status_text)
+        status.setObjectName("DashboardHeroStatus")
+        title = QLabel("Für diese Stunde")
+        title.setObjectName("DashboardHeroTitle")
+        subject = QLabel(entry.subject_label)
+        subject.setObjectName("DashboardHeroSubject")
+        time = QLabel(entry.time_label)
+        time.setObjectName("DashboardHeroTime")
+        target = QLabel(f"{entry.target_type_label} · {entry.target_label}")
+        set_label_style(target, "card_title")
+        left_layout.addWidget(title)
+        left_layout.addWidget(status)
+        left_layout.addWidget(time)
+        left_layout.addWidget(subject)
+        left_layout.addWidget(target)
+        if entry.room:
+            room = QLabel(f"Raum · {entry.room}")
+            set_label_style(room, "muted")
+            left_layout.addWidget(room)
+        actions = QHBoxLayout()
+        open_target = QPushButton("Kinder anzeigen")
+        open_target.setStyleSheet(PRIMARY_BUTTON_STYLESHEET)
+        open_target.clicked.connect(
+            lambda: self.timetable_target_selected.emit(
+                entry.target_type, entry.target_id
+            )
+        )
+        actions.addWidget(open_target)
+        observe = QPushButton("+ Beobachtung")
+        observe.clicked.connect(lambda: self._emit_observation(entry))
+        actions.addWidget(observe)
+        actions.addStretch(1)
+        left_layout.addLayout(actions)
+        left_layout.addStretch(1)
+        self.hero_layout.addWidget(left, 3)
+        self.hero_layout.addWidget(self._hero_visual(), 2)
+
+    def _emit_header_observation(self) -> None:
+        if self._hero_occurrence is not None:
+            self._emit_observation(self._hero_occurrence.entry)
+
+    def _emit_observation(self, entry: object) -> None:
+        self.timetable_observation_requested.emit(
+            entry.subject_id,
+            entry.subject_label,
+            entry.target_type,
+            entry.target_id,
+            entry.target_label,
+        )
+
+    @staticmethod
+    def _hero_visual() -> QFrame:
+        visual = QFrame()
+        visual.setObjectName("DashboardHeroIllustrationSpace")
+        layout = QVBoxLayout(visual)
+        layout.setContentsMargins(24, 18, 24, 18)
+        grid = QGridLayout()
+        for row, time_text in enumerate(("08:00", "09:00", "10:00", "11:00")):
+            time = QLabel(time_text)
+            time.setObjectName("DashboardHeroVisualTime")
+            grid.addWidget(time, row, 0)
+            block = QFrame()
+            block.setObjectName(
+                "DashboardHeroVisualCurrent" if row == 2 else "DashboardHeroVisualBlock"
+            )
+            grid.addWidget(block, row, 1)
+        grid.setColumnStretch(1, 1)
+        layout.addLayout(grid)
+        return visual
+
+    def _render_today(
+        self,
+        projection: TimetableReadProjectionViewModel,
+        at: datetime,
+    ) -> None:
+        if not projection.today:
+            empty = QLabel("Heute sind keine aktiven Stunden geplant.")
+            set_label_style(empty, "muted")
+            self.today_layout.addWidget(empty)
+            self.today_layout.addStretch(1)
+            return
+        current_id = (
+            projection.current.entry.timetable_entry_id
+            if projection.current is not None
+            else ""
+        )
+        for occurrence in projection.today:
+            entry = occurrence.entry
+            state = (
+                "current"
+                if entry.timetable_entry_id == current_id
+                else "past"
+                if occurrence.ends_at <= at
+                else "upcoming"
+            )
+            card = DashboardLessonCard(
+                occurrence,
+                state,
+                lambda target_type=entry.target_type, target_id=entry.target_id: (
+                    self.timetable_target_selected.emit(target_type, target_id)
+                ),
+            )
+            self.today_layout.addWidget(card, 1)
+
+    def _render_heatmap(
+        self,
+        heatmap: DashboardDocumentationHeatmapViewModel,
+    ) -> None:
+        if heatmap.is_empty:
+            empty = QLabel("Noch keine Dokumentationsübersicht verfügbar.")
+            set_label_style(empty, "muted")
+            self.heatmap_layout.addWidget(empty)
+            return
+        hint = QLabel(
+            "Stammgruppen × dokumentationsrelevante Fächer · keine Leistung"
+        )
+        set_label_style(hint, "muted")
+        self.heatmap_layout.addWidget(hint)
+        subjects: list[tuple[str, str]] = []
+        for group in heatmap.groups:
+            for cell in group.cells:
+                subject = (cell.subject_id, cell.subject_display_name)
+                if subject not in subjects:
+                    subjects.append(subject)
+        matrix = QWidget()
+        matrix.setObjectName("DashboardHeatmapMatrix")
+        grid = QGridLayout(matrix)
+        grid.setContentsMargins(0, 4, 0, 2)
+        grid.setHorizontalSpacing(8)
+        grid.setVerticalSpacing(6)
+        for column, (_subject_id, subject_name) in enumerate(subjects, start=1):
+            header = QLabel(subject_name)
+            header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            set_label_style(header, "small")
+            grid.addWidget(header, 0, column)
+        for row, group in enumerate(heatmap.groups, start=1):
+            group_label = QLabel(group.group_name)
+            set_label_style(group_label, "card_title")
+            grid.addWidget(group_label, row, 0)
+            cells_by_subject = {cell.subject_id: cell for cell in group.cells}
+            for column, (subject_id, _subject_name) in enumerate(subjects, start=1):
+                cell = cells_by_subject.get(subject_id)
+                if cell is not None:
+                    grid.addWidget(self._heatmap_cell(cell), row, column)
+        matrix_scroll = QScrollArea()
+        matrix_scroll.setObjectName("DashboardHeatmapScroll")
+        matrix_scroll.setWidgetResizable(True)
+        matrix_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        matrix_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        matrix_scroll.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        matrix_scroll.setWidget(matrix)
+        matrix_scroll.setMinimumHeight(min(250, 48 * (len(heatmap.groups) + 1)))
+        self.heatmap_layout.addWidget(matrix_scroll)
+
+    @staticmethod
+    def _heatmap_cell(cell: DashboardDocumentationCellViewModel) -> QFrame:
+        frame = QFrame()
+        frame.setObjectName("DashboardHeatmapCell")
+        frame.setProperty("coverageLevel", str(min(4, int(cell.coverage_ratio * 4))))
+        frame.setMinimumWidth(76)
+        layout = QHBoxLayout(frame)
+        layout.setContentsMargins(9, 7, 9, 7)
+        layout.setSpacing(6)
+        marker = QLabel("●")
+        marker.setObjectName("DashboardHeatmapMarker")
+        coverage = QLabel(cell.coverage_label)
+        set_label_style(coverage, "small")
+        coverage.setVisible(False)
+        layout.addWidget(marker)
+        layout.addWidget(coverage)
+        layout.setAlignment(marker, Qt.AlignmentFlag.AlignCenter)
+        frame.setToolTip(
+            f"Dokumentationsabdeckung {cell.subject_display_name}: {cell.coverage_label}"
+        )
+        return frame
+
+    def _render_matching_children(
+        self,
+        projection: TimetableReadProjectionViewModel,
+        suggested_students: tuple[DashboardSuggestedStudentViewModel, ...],
+    ) -> None:
+        occurrence = projection.current or projection.next
+        if occurrence is None:
+            empty = QLabel("Ohne Unterrichtskontext werden keine Kinder vorgeschlagen.")
+            set_label_style(empty, "muted")
+            self.matching_children_layout.addWidget(empty)
+            return
+        entry = occurrence.entry
+        if not suggested_students:
+            empty = QLabel("Keine aktiven Kinder in diesem Unterrichtskontext.")
+            set_label_style(empty, "muted")
+            self.matching_children_layout.addWidget(empty)
+        for student in suggested_students:
+            row = QFrame()
+            row.setObjectName("DashboardMatchingChildRow")
+            layout = QHBoxLayout(row)
+            layout.setContentsMargins(12, 8, 12, 8)
+            labels = QVBoxLayout()
+            name = QLabel(student.display_name)
+            set_label_style(name, "card_title")
+            hint = QLabel(student.documentation_hint)
+            set_label_style(hint, "muted")
+            labels.addWidget(name)
+            labels.addWidget(hint)
+            layout.addLayout(labels, 1)
+            observe = QPushButton("Beobachten")
+            observe.setStyleSheet(PRIMARY_BUTTON_STYLESHEET)
+            observe.clicked.connect(
+                lambda _checked=False,
+                student_id=student.student_id: self.timetable_student_observation_requested.emit(
+                    student_id,
+                    entry.subject_id,
+                    entry.subject_label,
+                    entry.target_label,
+                )
+            )
+            layout.addWidget(observe)
+            self.matching_children_layout.addWidget(row)
+        footer = QHBoxLayout()
+        footer.addStretch(1)
+        open_button = QPushButton("Alle Kinder anzeigen")
+        open_button.clicked.connect(
+            lambda: self.timetable_target_selected.emit(
+                entry.target_type, entry.target_id
+            )
+        )
+        footer.addWidget(open_button)
+        self.matching_children_layout.addLayout(footer)
+
+    @staticmethod
+    def _next_status(
+        occurrence: TimetableOccurrenceViewModel,
+        at: datetime,
+    ) -> str:
+        if occurrence.occurrence_date == at.date():
+            return "Als Nächstes · heute"
+        weekday = WEEKDAY_LABELS.get(occurrence.occurrence_date.isoweekday(), "")
+        return f"Nächster Unterrichtskontext · {weekday}, {occurrence.occurrence_date:%d.%m.}"
+
+    def _section_card(
+        self,
+        title: str,
+        content_layout: object,
+        object_name: str = "",
+    ) -> QFrame:
+        card = create_card()
+        if object_name:
+            card.setObjectName(object_name)
+        layout = QVBoxLayout(card)
+        layout.setSpacing(10)
+        if title:
+            title_label = QLabel(title)
+            set_label_style(title_label, "section_title")
+            layout.addWidget(title_label)
+        layout.addLayout(content_layout)
+        return card
+
+    @staticmethod
+    def _clear_layout(layout: object) -> None:
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            child_layout = item.layout()
+            if widget is not None:
+                widget.setParent(None)
+                widget.deleteLater()
+            elif child_layout is not None:
+                OverviewScreen._clear_layout(child_layout)
+
+
+class GroupOverviewScreen(QWidget):
+    """Existing group and course-group overview kept separate from Dashboard."""
 
     group_selected = Signal(str)
     course_selected = Signal(str, str)
@@ -41,7 +532,6 @@ class OverviewScreen(QWidget):
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
-
         title = QLabel("Übersicht")
         set_label_style(title, "screen_title")
         subtitle = QLabel("Stammgruppen und Schülerbestand")
@@ -49,10 +539,9 @@ class OverviewScreen(QWidget):
         layout.addWidget(title)
         layout.addWidget(subtitle)
 
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
-
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         content = QWidget()
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
@@ -61,42 +550,28 @@ class OverviewScreen(QWidget):
         content_layout.addWidget(
             self._section_card("Kursverbünde", self.course_groups_layout)
         )
-        content_layout.addStretch()
-
-        scroll_area.setWidget(content)
-        layout.addWidget(scroll_area, 1)
-
-    def set_groups(self, groups: tuple[GroupSummaryViewModel, ...]) -> None:
-        """Replace group cards."""
-        view_model = MasterDataViewModel(
-            groups=tuple(
-                MasterDataItemViewModel(group.group_id, group.group_name, True)
-                for group in groups
-            ),
-            courses=(),
-        )
-        self.set_master_data(view_model, groups)
+        content_layout.addStretch(1)
+        scroll.setWidget(content)
+        layout.addWidget(scroll, 1)
 
     def set_master_data(
         self,
         view_model: MasterDataViewModel,
         group_summaries: tuple[GroupSummaryViewModel, ...] = (),
     ) -> None:
-        """Replace overview lists with current master-data scope."""
-        self._clear_layout(self.groups_layout)
-        self._clear_layout(self.course_groups_layout)
+        """Replace overview lists with the existing master-data scope."""
+        OverviewScreen._clear_layout(self.groups_layout)
+        OverviewScreen._clear_layout(self.course_groups_layout)
         group_counts = {
-            group.group_id: group.active_student_count
-            for group in group_summaries
+            group.group_id: group.active_student_count for group in group_summaries
         }
         groups_by_id = {group.item_id: group for group in view_model.groups}
         courses_by_id = {course.item_id: course for course in view_model.courses}
         if not view_model.groups:
             self.groups_layout.addWidget(QLabel(OVERVIEW_GROUP_EMPTY_STATE), 0, 0)
         for index, group in enumerate(view_model.groups):
-            count = group_counts.get(group.item_id)
             self.groups_layout.addWidget(
-                self._group_card(group, count),
+                self._group_card(group, group_counts.get(group.item_id)),
                 index // 2,
                 index % 2,
             )
@@ -119,18 +594,17 @@ class OverviewScreen(QWidget):
     def _group_card(
         self,
         group: MasterDataItemViewModel,
-        active_student_count: int | None = None,
+        active_student_count: int | None,
     ) -> QFrame:
         card = create_card()
         layout = QVBoxLayout(card)
         name = QLabel(group.name)
         set_label_style(name, "section_title")
-        count_text = (
+        count = QLabel(
             f"{active_student_count} Schüler"
             if active_student_count is not None
             else group.status_label
         )
-        count = QLabel(count_text)
         open_button = QPushButton("Schüler anzeigen")
         open_button.setEnabled(group.is_persistent)
         open_button.clicked.connect(lambda: self.group_selected.emit(group.item_id))
@@ -161,35 +635,21 @@ class OverviewScreen(QWidget):
         for course_id in course_group.selected_course_ids:
             course = courses_by_id.get(course_id)
             if course is not None:
-                layout.addWidget(self._course_row(course_group, course))
+                row = QWidget()
+                row_layout = QHBoxLayout(row)
+                row_layout.setContentsMargins(4, 0, 4, 0)
+                marker = QLabel("●")
+                marker.setStyleSheet(f"color: {course.color_hex or '#6B7280'};")
+                open_button = QPushButton(course.name)
+                open_button.clicked.connect(
+                    lambda _checked=False,
+                    course_group_id=course_group.course_group_id,
+                    selected_course_id=course.item_id: self.course_selected.emit(
+                        course_group_id, selected_course_id
+                    )
+                )
+                row_layout.addWidget(marker)
+                row_layout.addWidget(open_button)
+                row_layout.addStretch(1)
+                layout.addWidget(row)
         return card
-
-    def _course_row(
-        self,
-        course_group: CourseGroupViewModel,
-        course: MasterDataItemViewModel,
-    ) -> QWidget:
-        row = QWidget()
-        layout = QHBoxLayout(row)
-        layout.setContentsMargins(4, 0, 4, 0)
-        layout.setSpacing(6)
-        marker = QLabel("●")
-        marker.setStyleSheet(f"color: {course.color_hex or '#6B7280'};")
-        open_button = QPushButton(course.name)
-        open_button.clicked.connect(
-            lambda: self.course_selected.emit(
-                course_group.course_group_id,
-                course.item_id,
-            )
-        )
-        layout.addWidget(marker)
-        layout.addWidget(open_button)
-        layout.addStretch(1)
-        return row
-
-    def _clear_layout(self, layout: object) -> None:
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()

@@ -6,6 +6,47 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 8B.3 - Passende Kinder als Dokumentationshilfe 🔄
+
+- [x] Aktive Kinder aus Stammgruppe, Kurs oder Kursverbund fachbezogen projiziert
+- [x] Fehlende, aelteste, kuerzliche und heutige Dokumentation neutral und stabil priorisiert
+- [x] Eindeutige Schnellbeobachtungen einbezogen; uneindeutige, soft-geloeschte und fachfremde Beobachtungen ausgeschlossen
+- [x] Hoechstens fuenf Vorschlaege mit Name, Hinweis und direktem `Beobachten` umgesetzt
+- [x] Fach und Unterrichtskontext in den bestehenden Beobachtungsdialog uebernommen
+- [x] Keine Migration, zweite Beobachtungslogik, Kompetenzstatus-, Rating- oder Score-Nutzung
+- [x] Kein Commit erstellt
+- [ ] Product-Owner-Sichtpruefung abgeschlossen
+
+## Sprint 8B.2 - Dashboard-Bereiche bereinigt 🔄
+
+- [x] Allgemeine Stammgruppen-, Kursverbund- und Schnellzugriffskarten aus Dashboard entfernt
+- [x] Dashboard endet nach den unmittelbar stundenbezogenen Bereichen
+- [x] Bestehende Uebersicht unveraendert erhalten
+- [x] Keine Projektions-, Adapter-, ViewModel-, Persistenz- oder Stundenplanlogik geaendert
+- [x] Kein Commit erstellt
+- [ ] Product-Owner-Sichtpruefung abgeschlossen
+
+## Sprint 8B.1 - Dashboard UX-Referenz 🔄
+
+- [x] Dashboard als eigenen Hauptnavigationspunkt von der bestehenden Uebersicht getrennt
+- [x] Hero-Karte, horizontale Tages-Timeline und kompakte Heatmap-Matrix referenznah umgesetzt
+- [x] Passenden Unterrichtskontext und bestehende Schnellzugriffe als getrennte Karten angeordnet
+- [x] Stundenplan-, Dashboard-, Adapter-, ViewModel- und Persistenzlogik unveraendert gelassen
+- [x] Kein Commit erstellt
+- [ ] Product-Owner-Sichtpruefung abgeschlossen
+
+## Sprint 8B - Stundenplanbasiertes Dashboard 🔄
+
+- [x] Kanonische aktuelle, naechste und heutige Stundenprojektion in die Startansicht eingebunden
+- [x] Zeit- und Leerzustaende einschliesslich Wochenende und inaktiver Eintraege umgesetzt
+- [x] Direkte Navigation fuer Stammgruppe, Kurs und Kursverbund umgesetzt
+- [x] Bestehenden Beobachtungsdialog nach Kindauswahl mit Fach und Unterrichtskontext vorbelegt
+- [x] Neutrale Dokumentations-Heatmap Stammgruppe × Fach ohne Leistungswerte umgesetzt
+- [x] Bestehende Schnellzugriffe erhalten und Dashboard vertikal scrollbar gehalten
+- [x] Fokussierte Dashboard-, Stundenplan-, Shell- und Navigationstests ergaenzt
+- [x] Kein Commit erstellt
+- [ ] Product-Owner-Sichtpruefung abgeschlossen
+
 ## Sprint 7G.3 - Dokumentierte Kompetenzen im LEG 🔄
 
 - [x] LEG-Leseprojektion um vorhandene aktive Beobachtungsdaten und aktuelle Bestaetigungsreferenz erweitert

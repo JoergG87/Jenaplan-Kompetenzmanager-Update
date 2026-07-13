@@ -240,6 +240,8 @@ class NewObservationDialog(QDialog):
             ObservationCompetencySubjectGroupViewModel, ...
         ] = (),
         recent_competencies: tuple[ObservationCompetencyOptionViewModel, ...] = (),
+        prefill_subject_id: str = "",
+        prefill_context: str = "",
     ) -> None:
         super().__init__()
         self.student = student
@@ -249,6 +251,8 @@ class NewObservationDialog(QDialog):
         self.subject_options = subject_options
         self.competency_subject_groups = competency_subject_groups
         self.recent_competencies = recent_competencies
+        self.prefill_subject_id = prefill_subject_id
+        self.prefill_context = prefill_context
         self.attachment_feedback_label = QLabel("")
         self.competency_rating_entries: dict[str, object] = {}
         self.competency_rating_widgets: dict[str, ObservationRatingSelector] = {}
@@ -329,6 +333,7 @@ class NewObservationDialog(QDialog):
         self.subject_select.currentIndexChanged.connect(self._refresh_competencies)
         self._refresh_competencies()
         self._apply_initial_draft()
+        self._apply_prefill()
 
     def _build_context_zone(self) -> QFrame:
         zone = self._zone("Kind und Kontext")
@@ -1190,6 +1195,21 @@ class NewObservationDialog(QDialog):
         self.quick_observation_checkbox.setChecked(
             self.initial_draft.is_quick_observation
         )
+
+    def _apply_prefill(self) -> None:
+        """Apply transient timetable context for a new observation."""
+        if self.initial_draft is not None:
+            return
+        if self.prefill_context:
+            context_index = self.context_select.findText(self.prefill_context)
+            if context_index < 0:
+                self.context_select.addItem(self.prefill_context)
+                context_index = self.context_select.count() - 1
+            self.context_select.setCurrentIndex(context_index)
+        if self.prefill_subject_id:
+            subject_index = self.subject_select.findData(self.prefill_subject_id)
+            if subject_index >= 0:
+                self.subject_select.setCurrentIndex(subject_index)
 
     def _initial_visible_subject(self) -> str:
         if self.initial_draft is None:

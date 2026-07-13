@@ -1325,3 +1325,62 @@ Registrierte Adapter-, Repository- und UI-Einstiege:
 - `TimetableActive_{timetable_entry_id}`
 
 Regel: `weekday` verwendet ISO-Wochentage 1 bis 5. Zeiten werden kanonisch als `HH:MM` gespeichert. `target_type` ist genau `group`, `course` oder `course_group`; `target_id` referenziert die dazu passende bestehende Stammdaten-ID. Die Projektion erhaelt den Auswertungszeitpunkt explizit und verwendet kein verborgenes `datetime.now()`.
+
+## Sprint 8B - Stundenplanbasiertes Dashboard
+
+Registrierte Python-Komponenten und ViewModels:
+
+- `DashboardDocumentationCellViewModel`
+- `DashboardDocumentationGroupViewModel`
+- `DashboardDocumentationHeatmapViewModel`
+- `DashboardLessonCard`
+- `StudentDesktopAdapter.dashboard_documentation_heatmap()`
+- `StudentDesktopAdapter.list_students(..., course_ids)`
+- `OverviewScreen.set_dashboard(projection, heatmap, at, has_timetable_entries)`
+- `OverviewScreen.timetable_target_selected`
+- `OverviewScreen.timetable_observation_requested`
+- `OverviewScreen.settings_timetable_requested`
+- `AppShell.refresh_dashboard(at)`
+- `AppShell.show_students_for_timetable_target(target_type, target_id)`
+- `AppShell.prepare_timetable_observation(subject_id, subject_label, target_type, target_id, target_label)`
+- `NewObservationDialog.prefill_subject_id`
+- `NewObservationDialog.prefill_context`
+- `AppShell.now_provider`
+- `AppShell.dashboard_refresh_timer`
+
+Registrierter temporaerer UI-State:
+
+- `pending_observation_subject_id`
+- `pending_observation_subject_label`
+- `pending_observation_target_label`
+
+Regel: Das Dashboard liest ausschliesslich kanonische Stundenplan-, Stammdaten- und Dokumentationsprojektionen. Der aktuelle Zeitpunkt wird am Shell-Rand explizit an `TimetableDesktopAdapter.read_projection(at)` und den Screen weitergereicht. Die Stundenplanaktion merkt Fach und sichtbaren Unterrichtskontext nur fluechtig bis zur Kindauswahl vor; sie erzeugt keine neue Beobachtungs- oder Stundenplandatenquelle.
+
+## Sprint 8B.1 - Dashboard UX-Referenz
+
+Registrierte UI-Komponenten und Navigation:
+
+- `dashboard`
+- `GroupOverviewScreen`
+- `DashboardHeroIllustrationSpace`
+- `DashboardTimeline`
+- `DashboardHeatmapMatrix`
+- `DashboardMatchingChildren`
+
+Regel: `dashboard` ist ein eigener Hauptnavigationspunkt. Der bestehende technische Navigationsschluessel `overview` und seine Stammgruppen-/Kursverbunduebersicht bleiben getrennt erhalten. Sprint 8B.1 veraendert ausschliesslich Screen-Komposition, Groessenverhaeltnisse, Weissraum und Theme-Stile; Stundenplan-, Dokumentations-, Ziel- und Beobachtungsprojektionen bleiben unveraendert.
+
+## Sprint 8B.2 - Dashboard ohne allgemeine Uebersichtsbereiche
+
+Regel: Der Dashboard-Screen endet nach `DashboardMatchingChildren`. Allgemeine Stammgruppen-, Kursverbund- und sonstige Schnellzugriffskarten gehoeren ausschliesslich zu `GroupOverviewScreen` unter dem getrennten Navigationspunkt `overview`. Das Dashboard besitzt dafuer keine Layouts, Signale oder Stammdatenbefuellung.
+
+## Sprint 8B.3 - Passende Kinder als Dokumentationshilfe
+
+Registrierte Projektion und UI-Einstiege:
+
+- `DashboardSuggestedStudentViewModel`
+- `StudentDesktopAdapter.list_dashboard_suggested_students(target_type, target_id, subject_id, subject_label, at, limit)`
+- `OverviewScreen.timetable_student_observation_requested`
+- `AppShell.open_dashboard_observation(student_id, subject_id, subject_label, target_label)`
+- `DashboardMatchingChildRow`
+
+Regel: Die Projektion verwendet ausschliesslich aktive Zielmitglieder und aktive Beobachtungen mit eindeutigem Bezug zum Stundenfach. Sie erhaelt `at` explizit, begrenzt auf hoechstens fuenf Kinder und sortiert ohne Ratings, Kompetenzstatus oder Scores: keine Fachbeobachtung zuerst, danach letzte Fachbeobachtung aufsteigend, heutige Fachbeobachtung zuletzt und bei Gleichstand sichtbarer Name alphabetisch plus stabile `student_id`.

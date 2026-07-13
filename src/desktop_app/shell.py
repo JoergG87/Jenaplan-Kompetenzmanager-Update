@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QDialog,
@@ -39,7 +41,7 @@ from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
 from src.desktop_app.dialogs.timetable_entry_dialog import TimetableEntryDialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens.master_data_screen import MasterDataScreen
-from src.desktop_app.screens.overview_screen import OverviewScreen
+from src.desktop_app.screens.overview_screen import GroupOverviewScreen, OverviewScreen
 from src.desktop_app.screens.placeholder_screen import PlaceholderScreen
 from src.desktop_app.screens.settings_screen import SettingsScreen
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
@@ -49,14 +51,20 @@ from src.desktop_app.view_models.settings_view_model import (
 )
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
+from src.desktop_app.view_models.observation_view_model import ObservationDraftViewModel
 from src.desktop_app.view_models.master_data_view_model import CourseGroupViewModel
 
 
 class AppShell(QMainWindow):
     """Main window with navigation and MVP screens."""
 
-    def __init__(self, database_path: Path = SQLITE_SPIKE_PATH) -> None:
+    def __init__(
+        self,
+        database_path: Path = SQLITE_SPIKE_PATH,
+        now_provider: Callable[[], datetime] = datetime.now,
+    ) -> None:
         super().__init__()
+        self.now_provider = now_provider
         self.adapter = StudentDesktopAdapter(database_path)
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
         self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)
@@ -64,10 +72,19 @@ class AppShell(QMainWindow):
         self.selected_group_id: str | None = None
         self.selected_course_group_id: str | None = None
         self.selected_course_id: str | None = None
+        self.pending_observation_subject_id = ""
+        self.pending_observation_subject_label = ""
+        self.pending_observation_target_label = ""
         self.setWindowTitle("Jenaplan Kompetenzmanager")
         self.setMinimumSize(1100, 720)
         self.resize(1400, 900)
         self._build()
+        self.dashboard_refresh_timer = QTimer(self)
+        self.dashboard_refresh_timer.setInterval(60_000)
+        self.dashboard_refresh_timer.timeout.connect(
+            self._refresh_dashboard_if_visible
+        )
+        self.dashboard_refresh_timer.start()
         self.refresh_all()
 
     def _build(self) -> None:
@@ -113,7 +130,8 @@ class AppShell(QMainWindow):
         content.addWidget(title)
 
         self.stack = QStackedWidget()
-        self.overview_screen = OverviewScreen()
+        self.dashboard_screen = OverviewScreen()
+        self.overview_screen = GroupOverviewScreen()
         self.students_screen = StudentsScreen()
         self.student_profile_screen = StudentProfileScreen()
         self.master_data_screen = MasterDataScreen()
@@ -134,6 +152,7 @@ class AppShell(QMainWindow):
         }
 
         self.screen_index = {
+            "dashboard": self.stack.addWidget(self.dashboard_screen),
             "overview": self.stack.addWidget(self.overview_screen),
             "students": self.stack.addWidget(self.students_screen),
             "profile": self.stack.addWidget(self.student_profile_screen),
@@ -153,6 +172,18 @@ class AppShell(QMainWindow):
 
         self.overview_screen.group_selected.connect(self.show_students_for_group)
         self.overview_screen.course_selected.connect(self.show_students_for_course_group)
+        self.dashboard_screen.timetable_target_selected.connect(
+            self.show_students_for_timetable_target
+        )
+        self.dashboard_screen.timetable_observation_requested.connect(
+            self.prepare_timetable_observation
+        )
+        self.dashboard_screen.timetable_student_observation_requested.connect(
+            self.open_dashboard_observation
+        )
+        self.dashboard_screen.settings_timetable_requested.connect(
+            self.show_timetable_settings
+        )
         self.students_screen.new_student_requested.connect(self.open_new_student_dialog)
         self.students_screen.student_selected.connect(self.show_student_profile)
         self.students_screen.observation_requested.connect(
@@ -217,10 +248,10 @@ class AppShell(QMainWindow):
             self.set_timetable_entry_active
         )
         self.navigation.setCurrentRow(0)
+        self.stack.currentChanged.connect(self._handle_screen_activated)
 
     def refresh_all(self) -> None:
         """Refresh overview and student list from SQLite."""
-        self.refresh_overview()
         self.refresh_students()
         self.refresh_master_data()
         self.refresh_settings()
@@ -231,11 +262,48 @@ class AppShell(QMainWindow):
             self.master_data_adapter.view_model(),
             self.adapter.list_group_summaries(),
         )
+        self.refresh_dashboard()
+
+    def refresh_dashboard(self, at: datetime | None = None) -> None:
+        """Refresh time-sensitive dashboard reads for one explicit instant."""
+        instant = at or self.now_provider()
+        week = self.timetable_adapter.week_view_model()
+        projection = self.timetable_adapter.read_projection(instant)
+        occurrence = projection.current or projection.next
+        suggested_students = (
+            self.adapter.list_dashboard_suggested_students(
+                target_type=occurrence.entry.target_type,
+                target_id=occurrence.entry.target_id,
+                subject_id=occurrence.entry.subject_id,
+                subject_label=occurrence.entry.subject_label,
+                at=instant,
+            )
+            if occurrence is not None
+            else ()
+        )
+        self.dashboard_screen.set_dashboard(
+            projection,
+            self.adapter.dashboard_documentation_heatmap(),
+            instant,
+            not week.is_empty,
+            suggested_students,
+        )
+        if self.stack.currentWidget() is self.dashboard_screen:
+            self.status_label.setText("")
+
+    def _refresh_dashboard_if_visible(self) -> None:
+        if self.stack.currentWidget() is self.dashboard_screen:
+            self.refresh_dashboard()
+
+    def _handle_screen_activated(self, _index: int) -> None:
+        if self.stack.currentWidget() is self.dashboard_screen:
+            self.refresh_dashboard()
 
     def refresh_students(self) -> None:
         """Refresh student rows for the current filter."""
         filter_label = "Alle Schüler"
         group_ids: tuple[str, ...] = ()
+        course_ids: tuple[str, ...] = ()
         if self.selected_group_id:
             groups = {group.group_id: group.group_name for group in self.adapter.list_groups()}
             filter_label = f"Stammgruppe: {groups.get(self.selected_group_id, self.selected_group_id)}"
@@ -247,10 +315,19 @@ class AppShell(QMainWindow):
                 filter_label = f"{course_group.name} · {course_name}"
             else:
                 filter_label = f"Kurs: {course_name}"
+        elif self.selected_course_group_id:
+            course_group = self._selected_course_group()
+            if course_group is not None:
+                group_ids = course_group.selected_group_ids
+                course_ids = course_group.selected_course_ids
+                filter_label = f"Kursverbund: {course_group.name}"
+        elif self.selected_course_id:
+            filter_label = f"Kurs: {self._course_name(self.selected_course_id)}"
         students = self.adapter.list_students(
             group_id=self.selected_group_id,
             group_ids=group_ids,
             course_id=self.selected_course_id,
+            course_ids=course_ids,
         )
         self.students_screen.set_students(
             students,
@@ -371,6 +448,7 @@ class AppShell(QMainWindow):
 
     def return_to_overview(self) -> None:
         """Return from a filtered student detail list to the overview."""
+        self._clear_pending_timetable_observation()
         self.selected_group_id = None
         self.selected_course_group_id = None
         self.selected_course_id = None
@@ -380,6 +458,7 @@ class AppShell(QMainWindow):
 
     def show_students_for_group(self, group_id: str) -> None:
         """Open students screen filtered to one group."""
+        self._clear_pending_timetable_observation()
         self.selected_group_id = group_id
         self.selected_course_group_id = None
         self.selected_course_id = None
@@ -389,12 +468,69 @@ class AppShell(QMainWindow):
 
     def show_students_for_course_group(self, course_group_id: str, course_id: str) -> None:
         """Open students screen filtered to one course inside one course group."""
+        self._clear_pending_timetable_observation()
         self.selected_group_id = None
         self.selected_course_group_id = course_group_id
         self.selected_course_id = course_id
         self.refresh_students()
         self._show_screen("students")
         self._select_navigation("students")
+
+    def show_students_for_timetable_target(
+        self,
+        target_type: str,
+        target_id: str,
+    ) -> None:
+        """Open the existing student context for one timetable target ID."""
+        self._clear_pending_timetable_observation()
+        self.selected_group_id = target_id if target_type == "group" else None
+        self.selected_course_id = target_id if target_type == "course" else None
+        self.selected_course_group_id = (
+            target_id if target_type == "course_group" else None
+        )
+        if target_type not in {"group", "course", "course_group"}:
+            self.status_label.setText("Das Unterrichtsziel ist nicht verfügbar.")
+            return
+        self.refresh_students()
+        self._show_screen("students")
+        self._select_navigation("students")
+
+    def prepare_timetable_observation(
+        self,
+        subject_id: str,
+        subject_label: str,
+        target_type: str,
+        target_id: str,
+        target_label: str,
+    ) -> None:
+        """Remember a transient timetable prefill until a child is selected."""
+        self.show_students_for_timetable_target(target_type, target_id)
+        self.pending_observation_subject_id = subject_id
+        self.pending_observation_subject_label = subject_label
+        self.pending_observation_target_label = target_label
+        self.status_label.setText(
+            "Kind auswählen und „Beobachten“ öffnen · "
+            f"{subject_label} und {target_label} sind vorgemerkt."
+        )
+
+    def open_dashboard_observation(
+        self,
+        student_id: str,
+        subject_id: str,
+        subject_label: str,
+        target_label: str,
+    ) -> None:
+        """Open the existing dialog directly with transient lesson context."""
+        self.pending_observation_subject_id = subject_id
+        self.pending_observation_subject_label = subject_label
+        self.pending_observation_target_label = target_label
+        self.open_quick_observation_dialog(student_id)
+
+    def show_timetable_settings(self) -> None:
+        """Navigate to the existing timetable settings section."""
+        self._clear_pending_timetable_observation()
+        self._show_screen("settings")
+        self._select_navigation("settings")
 
     def show_student_profile(self, student_id: str) -> None:
         """Open light profile for selected student."""
@@ -547,18 +683,29 @@ class AppShell(QMainWindow):
 
     def open_new_observation_dialog(self, student: StudentDetailViewModel) -> None:
         """Open the persistent observation dialog and refresh after success."""
+        prefill = self._pending_timetable_observation_draft(student)
         dialog = NewObservationDialog(
             student,
             self.curriculum_adapter,
             self.adapter,
-            subject_options=self.adapter.list_observation_subject_options(),
+            subject_options=(
+                self.adapter.list_observation_subject_options(prefill)
+                if prefill is not None
+                else self.adapter.list_observation_subject_options()
+            ),
             competency_subject_groups=(
-                self.adapter.list_observation_competency_subject_groups()
+                self.adapter.list_observation_competency_subject_groups(prefill)
+                if prefill is not None
+                else self.adapter.list_observation_competency_subject_groups()
             ),
             recent_competencies=self.adapter.list_recent_observation_competencies(
-                student.student_id
+                student.student_id,
+                prefill,
             ),
+            prefill_subject_id=self.pending_observation_subject_id,
+            prefill_context=prefill.context if prefill is not None else "",
         )
+        self._clear_pending_timetable_observation()
         if dialog.exec():
             self.show_student_profile(student.student_id)
             self.status_label.setText("Beobachtung wurde gespeichert.")
@@ -569,18 +716,29 @@ class AppShell(QMainWindow):
         if student is None:
             self.status_label.setText("Schülerprofil wurde nicht gefunden.")
             return
+        prefill = self._pending_timetable_observation_draft(student)
         dialog = NewObservationDialog(
             student,
             self.curriculum_adapter,
             self.adapter,
-            subject_options=self.adapter.list_observation_subject_options(),
+            subject_options=(
+                self.adapter.list_observation_subject_options(prefill)
+                if prefill is not None
+                else self.adapter.list_observation_subject_options()
+            ),
             competency_subject_groups=(
-                self.adapter.list_observation_competency_subject_groups()
+                self.adapter.list_observation_competency_subject_groups(prefill)
+                if prefill is not None
+                else self.adapter.list_observation_competency_subject_groups()
             ),
             recent_competencies=self.adapter.list_recent_observation_competencies(
-                student.student_id
+                student.student_id,
+                prefill,
             ),
+            prefill_subject_id=self.pending_observation_subject_id,
+            prefill_context=prefill.context if prefill is not None else "",
         )
+        self._clear_pending_timetable_observation()
         if dialog.exec():
             self.refresh_overview()
             self.refresh_students()
@@ -806,6 +964,7 @@ class AppShell(QMainWindow):
 
     def _show_navigation_item(self, item: QListWidgetItem) -> None:
         key = str(item.data(Qt.ItemDataRole.UserRole))
+        self._clear_pending_timetable_observation()
         target = resolve_navigation_target(key)
         if target.reset_group_filter:
             self.selected_group_id = None
@@ -829,8 +988,31 @@ class AppShell(QMainWindow):
     def _has_active_student_filter(self) -> bool:
         return bool(
             self.selected_group_id
-            or (self.selected_course_group_id and self.selected_course_id)
+            or self.selected_course_group_id
+            or self.selected_course_id
         )
+
+    def _pending_timetable_observation_draft(
+        self,
+        student: StudentDetailViewModel,
+    ) -> ObservationDraftViewModel | None:
+        if not self.pending_observation_subject_id:
+            return None
+        return ObservationDraftViewModel(
+            student_id=student.student_id,
+            student_name=student.display_name,
+            date_text=self.now_provider().date().isoformat(),
+            competency_ratings=(),
+            context=f"Unterricht · {self.pending_observation_target_label}",
+            note="",
+            subject_id=self.pending_observation_subject_id,
+            subject_display_name=self.pending_observation_subject_label,
+        )
+
+    def _clear_pending_timetable_observation(self) -> None:
+        self.pending_observation_subject_id = ""
+        self.pending_observation_subject_label = ""
+        self.pending_observation_target_label = ""
 
     def _clear_invalid_course_group_filter(
         self,

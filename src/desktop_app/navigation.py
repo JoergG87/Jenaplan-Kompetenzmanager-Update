@@ -22,6 +22,7 @@ class NavigationTarget:
 
 
 NAVIGATION_ITEMS: tuple[NavigationItem, ...] = (
+    NavigationItem("dashboard", "Dashboard"),
     NavigationItem("overview", "Übersicht"),
     NavigationItem("students", "Schüler"),
     NavigationItem("observations", "Beobachtungen"),
