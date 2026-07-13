@@ -38,6 +38,35 @@ Automatisch profitierende Ansichten:
 
 Regel: Die Speicherung ersetzt die vollstaendige Auswahl in `documentation_subject_settings`. Wenn keine Settings-Zeilen vorhanden sind, bleibt das bisherige Verhalten erhalten: alle aktiven Katalogfaecher aus `competencies.active = 1` gelten als dokumentationsrelevant. Die Einstellung loescht keine Beobachtungen, veraendert keine Kompetenzdefinitionen und nutzt `competencies.active` nicht als Einstellungsfeld. Nicht dokumentationsrelevante Faecher bleiben in Beobachtungslisten, Kompetenzhistorien und bestaetigten Kompetenzstaenden sichtbar, zaehlen aber nicht als offen im Dokumentationsstand oder in offenen Beobachtungsanlaessen.
 
+## Stundenplaneintrag pflegen
+
+Start: Laura legt in den Einstellungen einen Stundenplaneintrag an, bearbeitet, aktiviert, deaktiviert oder loescht ihn.
+
+Freigegebener PySide-Pfad:
+
+```text
+PySide6 SettingsScreen / TimetableEntryDialog
+-> TimetableDesktopAdapter
+-> TimetableApplicationService
+-> TimetableService / TimetableValidator
+-> SQLiteTimetableRepository
+-> SQLite timetable_entries
+```
+
+Betroffene Datenquellen:
+
+- SQLite `timetable_entries` schreibend
+- SQLite `competencies` lesend zur Aufloesung und Validierung vorhandener `subject_id`
+- SQLite `groups`, `courses` und `course_groups` lesend zur zielartgerechten Validierung von `target_id`
+
+Erforderliche IDs:
+
+- neue oder bestehende `timetable_entry_id`
+- bestehende `subject_id`
+- bestehende, zu `target_type` passende `target_id`
+
+Regel: Anlegen und Aendern validieren Zeitbereich, Referenzen und aktive Ueberschneidungen vor dem Schreiben. Aktivieren durchlaeuft dieselben Regeln. Loeschen markiert nur den ausdruecklich gewaehlten Stundenplaneintrag mit `deleted_at` und deaktiviert ihn; bestehende Stammdaten und Stundenplan-IDs bleiben unveraendert und geloeschte IDs werden nicht wiederverwendet. Die Leseprojektion speichert nichts und berechnet aktuelle, naechste und heutige Stunden ausschliesslich aus aktiven, nicht geloeschten Eintraegen und einem explizit uebergebenen Zeitpunkt.
+
 ## Schueler anlegen
 
 Start: Lehrkraft oder Verwaltung legt einen neuen Schueler an.

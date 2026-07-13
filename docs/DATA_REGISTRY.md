@@ -50,6 +50,7 @@ Gepruefte Tabellen:
 | `student_competency_confirmations` | StudentCompetencyConfirmation | keine Workbook-Projektion |
 | `documents` | Document / Media | `data_media` / `tbl_media` |
 | `documentation_subject_settings` | DocumentationSubjectSetting | keine Workbook-Projektion |
+| `timetable_entries` | TimetableEntry | keine Workbook-Projektion |
 | `learning_conference_drafts` | LearningConferenceDraft | keine Workbook-Projektion |
 | `learning_conference_draft_subjects` | LearningConferenceDraftSubject | keine Workbook-Projektion |
 | `learning_conference_draft_cross_topics` | LearningConferenceDraftCrossTopic | keine Workbook-Projektion |
@@ -200,6 +201,22 @@ documentation_subject_settings(
   subject_id TEXT PRIMARY KEY,
   active INTEGER NOT NULL CHECK (active IN (0, 1)),
   updated_at TEXT NOT NULL
+)
+
+timetable_entries(
+  timetable_entry_id TEXT PRIMARY KEY,
+  weekday INTEGER NOT NULL,
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  subject_id TEXT NOT NULL,
+  target_type TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  room TEXT NOT NULL DEFAULT '',
+  active INTEGER NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  deleted_at TEXT NOT NULL DEFAULT ''
 )
 ```
 
@@ -377,6 +394,47 @@ Regeln:
 - `competencies.active` darf nicht fuer diese Dokumentationsauswahl missbraucht werden.
 - Sichtbare Fachnamen werden weiterhin aus `competencies` bzw. dem Katalog abgeleitet.
 - Nicht dokumentationsrelevante Faecher bleiben in Beobachtungslisten, Kompetenzhistorien und bestaetigten Kompetenzstaenden sichtbar, zaehlen aber nicht als offen im Dokumentationsstand oder in offenen Beobachtungsanlaessen.
+
+## timetable_entries
+
+Zweck: Persistenter Wochenstundenplan fuer Montag bis Freitag.
+
+Entity: TimetableEntry.
+
+Storage: SQLite `timetable_entries`.
+
+Projection: PySide6 Einstellungen sowie kanonische Leseprojektion fuer aktuelle, naechste und heutige Stunden.
+
+Owner: Stundenplankonfiguration.
+
+Primary Key: `timetable_entry_id` im Format `TTE-######`.
+
+Fachliche Referenzen:
+
+- `subject_id` muss als bestehender Fachschluessel in SQLite `competencies` vorkommen; ein sichtbarer Fachname wird nicht gespeichert.
+- `target_type = group` referenziert mit `target_id` genau SQLite `groups.group_id`.
+- `target_type = course` referenziert mit `target_id` genau SQLite `courses.course_id`.
+- `target_type = course_group` referenziert mit `target_id` genau SQLite `course_groups.course_group_id`.
+
+Wichtige Felder:
+
+- `weekday` als ISO-Wochentag 1 bis 5
+- `start_time` und `end_time` als `HH:MM`
+- `room` als optionaler Anzeigeort
+- `active` fuer bewusste Aktivierung oder Deaktivierung
+- `sort_order` fuer stabile Reihenfolge bei sonst gleichen Anzeigeattributen
+- `created_at` und `updated_at` als technische Zeitstempel
+- `deleted_at` fuer kontrolliertes Entfernen ohne Wiederverwendung der ID
+
+Regeln:
+
+- Beginn liegt strikt vor Ende; ein Eintrag kann daher nicht ueber Mitternacht reichen.
+- Aktive Eintraege duerfen sich zeitlich nicht ueberschneiden.
+- Inaktive Eintraege werden weder als aktuell noch als naechste Stunde projiziert.
+- Die Leseprojektion erhaelt einen expliziten Zeitpunkt und liest hoechstens bis zum folgenden Wochenumlauf.
+- Das Ende ist exklusiv: bei `end_time` ist die Stunde nicht mehr aktuell.
+- Es werden keine Fach-, Stammgruppen-, Kurs- oder Kursverbundnamen kopiert.
+- Loeschen blendet den Eintrag ueber `deleted_at` aus; die technische ID wird nicht wiederverwendet.
 
 ## data_students
 

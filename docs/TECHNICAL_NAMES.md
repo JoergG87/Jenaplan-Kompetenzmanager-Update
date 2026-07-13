@@ -124,6 +124,7 @@ Registriert:
 - `student_competency_confirmations`
 - `documents`
 - `documentation_subject_settings`
+- `timetable_entries`
 - `report_drafts`
 - `report_draft_subjects`
 - `report_draft_competencies`
@@ -257,6 +258,7 @@ Die folgende ID-Strategie ist projektweit verbindlich fuer neue fachliche Entita
 | Observation | `observation_id` | `OBS-######` | `OBS-000001` |
 | Media | `media_id` | `MED-######` | `MED-000001` |
 | ReportDraft | `report_draft_id` | `RPD-######` | `RPD-000001` |
+| TimetableEntry | `timetable_entry_id` | `TTE-######` | `TTE-000001` |
 
 Regeln:
 
@@ -1254,3 +1256,72 @@ Registrierte Leseparameter und UI-Rollen:
 - `LearningConferenceDialog._optional_date_value(edit)`
 
 Regel: `observation_dates` enthaelt ausschliesslich Datumsreferenzen bereits kanonisch beruecksichtigter aktiver Kompetenzbeobachtungen des Kindes. `has_current_confirmation` bildet nur das Vorhandensein der bestehenden aktuellen Bestaetigung ab. Beide Werte steuern ausschliesslich die sichtbare LEG-Auswahl und berechnen keinen Kompetenzstatus. `retained_competency_ids` darf historische Draft-Referenzen in derselben kanonischen Projektion aufloesbar halten, veraendert aber deren Statuslogik und die Standardprojektion ohne diesen Parameter nicht.
+
+## Sprint 8A - Produktiver Stundenplan
+
+Registrierte technische Felder und Werte:
+
+- `timetable_entry_id`
+- `weekday`
+- `start_time`
+- `end_time`
+- `target_type`
+- `target_id`
+- `room`
+- `deleted_at`
+- `group`
+- `course`
+- `course_group`
+
+Registrierte Python-Komponenten:
+
+- `src/core/timetable.py`
+- `src/application/commands/timetable.py`
+- `src/desktop_app/adapters/timetable_desktop_adapter.py`
+- `src/desktop_app/view_models/timetable_view_model.py`
+- `src/desktop_app/dialogs/timetable_entry_dialog.py`
+- `TimetableEntry`
+- `TimetableOccurrence`
+- `TimetableService`
+- `TimetableValidator`
+- `TimetableValidationError`
+- `TimetableProjection`
+- `TimetableRepository`
+- `SQLiteTimetableRepository`
+- `SaveTimetableEntryCommand`
+- `TimetableApplicationService`
+- `TimetableDesktopAdapter`
+- `TimetableOptionViewModel`
+- `TimetableEntryViewModel`
+- `TimetableDayViewModel`
+- `TimetableWeekViewModel`
+- `TimetableOccurrenceViewModel`
+- `TimetableReadProjectionViewModel`
+- `TimetableEntryDialog`
+- `build_timetable_projection(entries, at)`
+
+Registrierte Adapter-, Repository- und UI-Einstiege:
+
+- `SQLiteTimetableRepository.list_entries()`
+- `SQLiteTimetableRepository.get_entry(timetable_entry_id)`
+- `SQLiteTimetableRepository.create_entry(entry)`
+- `SQLiteTimetableRepository.update_entry(entry)`
+- `SQLiteTimetableRepository.next_timetable_entry_id()`
+- `SQLiteTimetableRepository.next_sort_order(weekday)`
+- `TimetableDesktopAdapter.week_view_model()`
+- `TimetableDesktopAdapter.save_entry(command)`
+- `TimetableDesktopAdapter.set_entry_active(timetable_entry_id, active)`
+- `TimetableDesktopAdapter.delete_entry(timetable_entry_id)`
+- `TimetableDesktopAdapter.read_projection(at)`
+- `SettingsScreen.timetable_add_requested`
+- `SettingsScreen.timetable_edit_requested`
+- `SettingsScreen.timetable_delete_requested`
+- `SettingsScreen.timetable_active_requested`
+- `TimetableSettingsSection`
+- `TimetableEmptyState`
+- `TimetableDay_{weekday}`
+- `TimetableEntry_{timetable_entry_id}`
+- `TimetableAdd_{weekday}`
+- `TimetableActive_{timetable_entry_id}`
+
+Regel: `weekday` verwendet ISO-Wochentage 1 bis 5. Zeiten werden kanonisch als `HH:MM` gespeichert. `target_type` ist genau `group`, `course` oder `course_group`; `target_id` referenziert die dazu passende bestehende Stammdaten-ID. Die Projektion erhaelt den Auswertungszeitpunkt explizit und verwendet kein verborgenes `datetime.now()`.

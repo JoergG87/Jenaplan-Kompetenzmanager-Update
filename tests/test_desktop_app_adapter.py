@@ -2618,6 +2618,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("python3", launcher_source)
         self.assertIn("-m src.desktop_app.main", launcher_source)
 
+    def test_desktop_app_starts_maximized_without_full_screen_mode(self) -> None:
+        source = inspect.getsource(main.main)
+
+        self.assertIn("window.showMaximized()", source)
+        self.assertNotIn("window.showFullScreen()", source)
+
     def test_master_data_view_model_displays_groups_and_courses(self) -> None:
         view_model = self.master_data_adapter.view_model()
 

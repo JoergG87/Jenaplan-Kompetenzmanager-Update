@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## Sprint 8A.1 - Stundenplan uebersichtlich neu dargestellt
+
+### Changed
+
+- Die Stundenplaneinstellungen von fuenf schmalen Tagesspalten auf Wochentags-Tabs mit einer breiten, chronologischen Stundenliste fuer den ausgewaehlten Tag umgestellt.
+- Primaere Hinzufuegen-Aktion, tagebezogene Leerzustaende, kompakte Stundenzeilen und eine ruhige Darstellung deaktivierter Stunden ergaenzt; die vertikale Scrollbarkeit der Einstellungen bleibt erhalten.
+- Das Hauptfenster startet maximiert in der verfuegbaren Fenstergroesse, ohne den Vollbildmodus zu verwenden.
+
+### Not Changed
+
+- Keine Aenderung an CRUD, Validierung, Persistenz, Datenmodell, Migration, Zeitprojektion oder Dashboard und kein Commit.
+
+## Sprint 8A - Produktiver Stundenplan
+
+### Added
+
+- Produktiven Wochenstundenplan fuer Montag bis Freitag in den Einstellungen mit kompakter Kartenansicht und Pflege von Fach, Zielart, Ziel, Beginn, Ende, optionalem Raum sowie Aktivstatus ergaenzt.
+- Additive idempotente SQLite-Migration, Domain-Validierung, Application Service, Repository, Desktop-Adapter und ViewModels fuer CRUD, Referenzpruefung und Ueberschneidungsschutz eingefuehrt.
+- Kanonische, zeitpunktparametrisierte Leseprojektion fuer aktuelle, naechste und heutige Stunden ergaenzt.
+- Fokussierte Persistenz-, Validierungs-, Projektions- und Offscreen-UI-Tests ergaenzt.
+
+### Not Changed
+
+- Keine Dashboard-, Ferien-, Vertretungs-, Kalender-, Excel-/VBA- oder Stammdatenfunktion und kein Commit.
+
 ## Sprint 7G.3 - Dokumentierte Kompetenzen im LEG
 
 ### Changed

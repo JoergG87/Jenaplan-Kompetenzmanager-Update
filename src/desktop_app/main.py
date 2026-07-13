@@ -32,7 +32,7 @@ def main() -> int:
 
     window = JenaplanDesktopApp()
     window.setWindowIcon(_app_icon())
-    window.show()
+    window.showMaximized()
     return app.exec()
 
 

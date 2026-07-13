@@ -104,24 +104,29 @@ Excel liegt nur noch als archivierter Legacy-Altstand unter `legacy/excel/`.
 
 ## PySide6 Einstellungen
 
-Status: Sprint 2C zeigt die Settings-UI fuer dokumentationsrelevante Faecher und wendet die Auswahl in Dokumentationsauswertungen an.
+Status: Sprint 8A ergaenzt den produktiven Wochenstundenplan neben der bestehenden Dokumentationskonfiguration.
 
 Liest:
 
 - `documentation_subject_settings`
 - `data_competencies` / SQLite `competencies` fuer Fachschluessel und sichtbare Fachnamen
+- `timetable_entries`
+- `groups`, `courses` und `course_groups` fuer sichtbare Zielnamen
 
 Schreibt:
 
 - `documentation_subject_settings` ueber Repository-/Store-Methoden
+- `timetable_entries` ueber `TimetableDesktopAdapter`, Application Service, Domain Service und Repository
 
 UI-Projektionen:
 
 - Auswahl dokumentationsrelevanter Faecher
+- Wochentags-Tabs Montag bis Freitag mit einer breiten chronologischen Stundenliste fuer den ausgewaehlten Tag
+- Anlegen, Bearbeiten, Loeschen und Aktivieren/Deaktivieren von Eintraegen
 
 Regel:
 
-Die Einstellungen duerfen keine Fachdefinitionen speichern und den Kompetenzkatalog nicht veraendern. Ohne gespeicherte Settings-Zeilen gelten alle aktiven Katalogfaecher als dokumentationsrelevant. Die Auswahl wirkt auf Dokumentationsstand, offene Beobachtungsanlaesse und Beobachtungshinweise; Beobachtungen und Kompetenzhistorien bleiben sichtbar.
+Die Einstellungen duerfen keine Fachdefinitionen oder Stammdatenkopien speichern und den Kompetenzkatalog nicht veraendern. Stundenplanreferenzen werden im Adapter und Domain Service aufgeloest und validiert; Widgets greifen nicht direkt auf SQLite zu. Ohne gespeicherte Settings-Zeilen gelten alle aktiven Katalogfaecher als dokumentationsrelevant. Die Auswahl wirkt auf Dokumentationsstand, offene Beobachtungsanlaesse und Beobachtungshinweise; Beobachtungen und Kompetenzhistorien bleiben sichtbar.
 
 ## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
 

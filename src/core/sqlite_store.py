@@ -57,6 +57,7 @@ from .report_draft import (
     ReportDraftRecord,
     ReportDraftSubjectRecord,
 )
+from .timetable import TIMETABLE_ENTRY_ID_PREFIX, TimetableEntry
 
 
 SQLITE_SPIKE_PATH = Path("data") / "kompetenzmanager.sqlite"
@@ -316,6 +317,24 @@ class SQLiteDatabase:
                         updated_at TEXT NOT NULL
                     );
 
+                    CREATE TABLE IF NOT EXISTS timetable_entries (
+                        timetable_entry_id TEXT PRIMARY KEY,
+                        weekday INTEGER NOT NULL CHECK (weekday BETWEEN 1 AND 5),
+                        start_time TEXT NOT NULL,
+                        end_time TEXT NOT NULL,
+                        subject_id TEXT NOT NULL,
+                        target_type TEXT NOT NULL CHECK (
+                            target_type IN ('group', 'course', 'course_group')
+                        ),
+                        target_id TEXT NOT NULL,
+                        room TEXT NOT NULL DEFAULT '',
+                        active INTEGER NOT NULL CHECK (active IN (0, 1)),
+                        sort_order INTEGER NOT NULL DEFAULT 0,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        deleted_at TEXT NOT NULL DEFAULT ''
+                    );
+
                     CREATE TABLE IF NOT EXISTS report_drafts (
                         report_draft_id TEXT PRIMARY KEY,
                         student_id TEXT NOT NULL,
@@ -491,6 +510,8 @@ class SQLiteDatabase:
                         ON course_group_courses(course_id);
                     CREATE INDEX IF NOT EXISTS idx_documentation_subject_settings_active
                         ON documentation_subject_settings(active, subject_id);
+                    CREATE INDEX IF NOT EXISTS idx_timetable_entries_week_time
+                        ON timetable_entries(weekday, start_time, end_time, sort_order);
                     CREATE INDEX IF NOT EXISTS idx_report_drafts_student_updated
                         ON report_drafts(student_id, updated_at DESC);
                     CREATE INDEX IF NOT EXISTS idx_report_draft_competencies_competency
@@ -519,6 +540,7 @@ class SQLiteDatabase:
                 self._ensure_column(connection, "competencies", "activation_group_key", "TEXT NOT NULL DEFAULT ''")
                 self._ensure_column(connection, "competencies", "catalog_default_active", "INTEGER NOT NULL DEFAULT 1")
                 self._ensure_column(connection, "competencies", "is_core_subject", "INTEGER NOT NULL DEFAULT 1")
+                self._ensure_column(connection, "timetable_entries", "deleted_at", "TEXT NOT NULL DEFAULT ''")
                 self._backfill_course_colors(connection)
 
     def ensure_master_data_defaults(self) -> None:
@@ -577,6 +599,7 @@ class SQLiteDatabase:
                 connection.execute("DELETE FROM observations")
                 connection.execute("DELETE FROM student_competency_confirmations")
                 connection.execute("DELETE FROM documentation_subject_settings")
+                connection.execute("DELETE FROM timetable_entries")
                 connection.execute("DELETE FROM course_group_courses")
                 connection.execute("DELETE FROM course_group_student_groups")
                 connection.execute("DELETE FROM course_groups")
@@ -1260,6 +1283,95 @@ class SQLiteDocumentRepository:
             if document_id not in used_ids:
                 return document_id
             next_number += 1
+
+
+class SQLiteTimetableRepository:
+    """Persist recurring timetable entries without resolving display names."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def list_entries(self) -> tuple[TimetableEntry, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM timetable_entries
+                WHERE deleted_at = ''
+                ORDER BY weekday, start_time, end_time, sort_order, timetable_entry_id
+                """
+            ).fetchall()
+        return tuple(_timetable_entry_from_row(row) for row in rows)
+
+    def get_entry(self, timetable_entry_id: str) -> TimetableEntry | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM timetable_entries
+                WHERE timetable_entry_id = ? AND deleted_at = ''
+                """,
+                (timetable_entry_id,),
+            ).fetchone()
+        return _timetable_entry_from_row(row) if row is not None else None
+
+    def create_entry(self, entry: TimetableEntry) -> TimetableEntry:
+        with closing(self.database.connect()) as connection:
+            with connection:
+                connection.execute(
+                    """
+                    INSERT INTO timetable_entries (
+                        timetable_entry_id, weekday, start_time, end_time,
+                        subject_id, target_type, target_id, room, active,
+                        sort_order, created_at, updated_at, deleted_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    _timetable_entry_values(entry),
+                )
+        return entry
+
+    def update_entry(self, entry: TimetableEntry) -> TimetableEntry:
+        with closing(self.database.connect()) as connection:
+            with connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE timetable_entries
+                    SET weekday = ?, start_time = ?, end_time = ?, subject_id = ?,
+                        target_type = ?, target_id = ?, room = ?, active = ?,
+                        sort_order = ?, created_at = ?, updated_at = ?, deleted_at = ?
+                    WHERE timetable_entry_id = ?
+                    """,
+                    (*_timetable_entry_values(entry)[1:], entry.timetable_entry_id),
+                )
+                if cursor.rowcount != 1:
+                    raise RuntimeError("Stundenplaneintrag konnte nicht aktualisiert werden.")
+        return entry
+
+    def next_timetable_entry_id(self) -> str:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                "SELECT timetable_entry_id FROM timetable_entries"
+            ).fetchall()
+        largest = 0
+        for row in rows:
+            value = row["timetable_entry_id"]
+            if value.startswith(TIMETABLE_ENTRY_ID_PREFIX):
+                suffix = value[len(TIMETABLE_ENTRY_ID_PREFIX):]
+                if suffix.isdigit():
+                    largest = max(largest, int(suffix))
+        return f"{TIMETABLE_ENTRY_ID_PREFIX}{largest + 1:06d}"
+
+    def next_sort_order(self, weekday: int) -> int:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_sort_order
+                FROM timetable_entries
+                WHERE weekday = ?
+                """,
+                (weekday,),
+            ).fetchone()
+        return int(row["next_sort_order"])
 
 
 class SQLiteGroupRepository:
@@ -2778,4 +2890,40 @@ def _document_to_row(document: DocumentRecord) -> tuple[object, ...]:
         document.created_at,
         document.note,
         int(document.active),
+    )
+
+
+def _timetable_entry_from_row(row: sqlite3.Row) -> TimetableEntry:
+    return TimetableEntry(
+        row["timetable_entry_id"],
+        int(row["weekday"]),
+        row["start_time"],
+        row["end_time"],
+        row["subject_id"],
+        row["target_type"],
+        row["target_id"],
+        row["room"] or "",
+        bool(row["active"]),
+        int(row["sort_order"]),
+        row["created_at"],
+        row["updated_at"],
+        row["deleted_at"],
+    )
+
+
+def _timetable_entry_values(entry: TimetableEntry) -> tuple[object, ...]:
+    return (
+        entry.timetable_entry_id,
+        entry.weekday,
+        entry.start_time,
+        entry.end_time,
+        entry.subject_id,
+        entry.target_type,
+        entry.target_id,
+        entry.room,
+        int(entry.active),
+        entry.sort_order,
+        entry.created_at,
+        entry.updated_at,
+        entry.deleted_at,
     )

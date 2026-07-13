@@ -7,6 +7,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QDialog,
     QFileDialog,
     QInputDialog,
     QLabel,
@@ -24,6 +25,7 @@ from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
 from src.desktop_app.assets import create_app_icon_label
 from src.desktop_app.dialogs.app_info_dialog import AppInfoDialog
 from src.desktop_app.dialogs.master_data_dialog import (
@@ -34,6 +36,7 @@ from src.desktop_app.dialogs.learning_report_dialog import LearningReportDialog
 from src.desktop_app.dialogs.learning_conference_dialog import LearningConferenceDialog
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
+from src.desktop_app.dialogs.timetable_entry_dialog import TimetableEntryDialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens.master_data_screen import MasterDataScreen
 from src.desktop_app.screens.overview_screen import OverviewScreen
@@ -57,6 +60,7 @@ class AppShell(QMainWindow):
         self.adapter = StudentDesktopAdapter(database_path)
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
         self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)
+        self.timetable_adapter = TimetableDesktopAdapter(self.adapter.database)
         self.selected_group_id: str | None = None
         self.selected_course_group_id: str | None = None
         self.selected_course_id: str | None = None
@@ -200,6 +204,18 @@ class AppShell(QMainWindow):
         self.settings_screen.documentation_subjects_save_requested.connect(
             self.save_documentation_subject_settings
         )
+        self.settings_screen.timetable_add_requested.connect(
+            self.open_new_timetable_entry_dialog
+        )
+        self.settings_screen.timetable_edit_requested.connect(
+            self.open_edit_timetable_entry_dialog
+        )
+        self.settings_screen.timetable_delete_requested.connect(
+            self.delete_timetable_entry
+        )
+        self.settings_screen.timetable_active_requested.connect(
+            self.set_timetable_entry_active
+        )
         self.navigation.setCurrentRow(0)
 
     def refresh_all(self) -> None:
@@ -255,6 +271,87 @@ class AppShell(QMainWindow):
     def refresh_settings(self) -> None:
         """Refresh settings from SQLite-backed adapter data."""
         self.settings_screen.set_settings(self.adapter.settings_view_model())
+        self.settings_screen.set_timetable(self.timetable_adapter.week_view_model())
+
+    def open_new_timetable_entry_dialog(self, weekday: int) -> None:
+        """Create one timetable entry from the settings week."""
+        week = self.timetable_adapter.week_view_model()
+        dialog = TimetableEntryDialog(week, weekday=weekday, parent=self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        self._save_timetable_dialog(dialog)
+
+    def open_edit_timetable_entry_dialog(self, timetable_entry_id: str) -> None:
+        """Edit one selected timetable entry."""
+        week = self.timetable_adapter.week_view_model()
+        entry = next(
+            (
+                entry
+                for day in week.days
+                for entry in day.entries
+                if entry.timetable_entry_id == timetable_entry_id
+            ),
+            None,
+        )
+        if entry is None:
+            QMessageBox.warning(self, "Stundenplan", "Der Eintrag wurde nicht gefunden.")
+            return
+        dialog = TimetableEntryDialog(
+            week,
+            weekday=entry.weekday,
+            entry=entry,
+            parent=self,
+        )
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        self._save_timetable_dialog(dialog)
+
+    def delete_timetable_entry(self, timetable_entry_id: str) -> None:
+        """Delete one entry after an explicit confirmation."""
+        answer = QMessageBox.question(
+            self,
+            "Stunde löschen",
+            "Diesen Stundenplaneintrag wirklich löschen?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            self.timetable_adapter.delete_entry(timetable_entry_id)
+        except (ValueError, RuntimeError) as error:
+            QMessageBox.warning(self, "Stundenplan", str(error))
+            return
+        self.refresh_settings()
+        self.status_label.setText("Stundenplaneintrag wurde gelöscht.")
+
+    def set_timetable_entry_active(
+        self,
+        timetable_entry_id: str,
+        active: bool,
+    ) -> None:
+        """Persist an explicit active-state change."""
+        try:
+            self.timetable_adapter.set_entry_active(timetable_entry_id, active)
+        except (ValueError, RuntimeError) as error:
+            QMessageBox.warning(self, "Stundenplan", str(error))
+            self.refresh_settings()
+            return
+        self.refresh_settings()
+        self.status_label.setText(
+            "Stundenplaneintrag wurde aktiviert."
+            if active
+            else "Stundenplaneintrag wurde deaktiviert."
+        )
+
+    def _save_timetable_dialog(self, dialog: TimetableEntryDialog) -> None:
+        try:
+            self.timetable_adapter.save_entry(dialog.command())
+        except (ValueError, RuntimeError) as error:
+            QMessageBox.warning(dialog, "Stundenplan", str(error))
+            return
+        self.refresh_settings()
+        self.status_label.setText("Stundenplaneintrag wurde gespeichert.")
 
     def save_documentation_subject_settings(
         self,
