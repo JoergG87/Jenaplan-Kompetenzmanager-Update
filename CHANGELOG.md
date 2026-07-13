@@ -140,6 +140,20 @@
 
 - Kein neues SQLite-Feld, keine Migration, keine künstliche Kompetenz, keine Berichts-, LEG-, Prototyp-, Soft-Delete- oder Filteränderung und kein Commit.
 
+## Sprint 7C - Isolierter UX-Prototyp fuer Lernentwicklungsbericht
+
+### Changed
+
+- Einen vollstaendig isolierten, nur mit fiktiven In-Memory-Demo-Daten arbeitenden PySide-UX-Prototyp fuer Berichtsbearbeitung und mehrseitige Berichtsvorschau angelegt.
+- Facharbeitsbereiche, manuell verantwortete Berichtstexte, bewusste Evidenz- und Grafikauswahl sowie drei neutral beschriftete Diagrammvarianten fuer Dokumentationsstand und Entwicklungsevidenz prototypisch verbunden.
+- Start, Abgrenzung, Demo-Daten, Interaktionen, offene Entscheidungen und vollstaendig entfernbare Prototypdateien in einer lokalen Prototyp-README dokumentiert.
+- Die Entwicklungsdarstellung auf eine bewusste, standardmaessig leere Auswahl von Kompetenzbereichen umgestellt; jeder gewaehlte Bereich wird getrennt, datiert und ohne Aggregation oder Trendinterpretation dargestellt.
+- Diagrammtexte, Datenhinweise und Markerlegende in umbrechende Layoutbereiche verlagert sowie neutrale Null-, Einpunkt- und Zweipunktzustaende ergaenzt.
+
+### Not Changed
+
+- Keine produktive UI, keine SQLite-Abfrage, Repositorys, Adapter, ViewModels, Migration, Tabellen, Speicherung, PDF-Erzeugung, Integration, Governance-Dokumente, vollstaendige Testsuite oder Commit.
+
 ## Sprint 4C2 - Mathematikkompetenzen fachlich verfeinert
 
 ### Changed
