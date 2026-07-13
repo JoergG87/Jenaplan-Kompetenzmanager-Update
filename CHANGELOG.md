@@ -154,6 +154,16 @@
 
 - Keine produktive UI, keine SQLite-Abfrage, Repositorys, Adapter, ViewModels, Migration, Tabellen, Speicherung, PDF-Erzeugung, Integration, Governance-Dokumente, vollstaendige Testsuite oder Commit.
 
+## Fix - Beobachtungsdialog
+
+### Changed
+
+- Die primäre Aktion im Beobachtungsdialog heißt einheitlich `Speichern`; dadurch bleibt die Beschriftung im schmalen Aktionsbereich vollständig lesbar.
+
+### Not Changed
+
+- Keine Änderung am Beobachtungsspeicherprozess, an Dialoglayout, Persistenz, SQLite, Adaptern oder Repositorys.
+
 ## Sprint 4C2 - Mathematikkompetenzen fachlich verfeinert
 
 ### Changed

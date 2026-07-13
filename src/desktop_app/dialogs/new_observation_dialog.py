@@ -475,7 +475,6 @@ class NewObservationDialog(QDialog):
         configure_save_cancel_buttons(buttons)
         save_button = buttons.button(QDialogButtonBox.StandardButton.Save)
         if save_button is not None:
-            save_button.setText("Beobachtung speichern")
             save_button.setMinimumHeight(42)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.save_draft)

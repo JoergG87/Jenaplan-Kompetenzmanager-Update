@@ -4192,7 +4192,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             save_button = actions.button(QDialogButtonBox.StandardButton.Save)
             self.assertIsNotNone(save_button)
             if save_button is not None:
-                self.assertEqual(save_button.text(), "Beobachtung speichern")
+                self.assertEqual(save_button.text(), "Speichern")
                 self.assertGreaterEqual(save_button.minimumHeight(), 42)
             parent = actions.parentWidget()
             while parent is not None:
