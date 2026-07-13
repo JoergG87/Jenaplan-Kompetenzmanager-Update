@@ -1933,6 +1933,162 @@ Die sichtbaren UI-Texte werden daraus abgeleitet und bleiben deutsch.
 - `grade_band` darf nicht fuer die App-Filterlogik ueberladen werden.
 - Der idempotente Katalog-Upsert muss lokale Aktivierungsentscheidungen weiter schuetzen.
 
+## ADR-050 - Bericht, Lernentwicklungsgespraech und PDF-Ausgabe
+
+Status: Accepted fuer die Zielarchitektur; Datenmodell und Umsetzung bleiben offen
+
+### Kontext
+
+SQLite ist die produktive Source of Truth. Sprint 6 stellt eine kanonische Kompetenzstatus-Projektion bereit, die bestaetigte Kompetenzstaende, Beobachtungsvorschlaege und historische Kompetenzinformationen nachvollziehbar trennt. Das Schuelerprofil nutzt diese Daten bereits als Live-Arbeitsansicht; die bestehende Berichtsvorschau ist ebenfalls eine fluechtige Projektion.
+
+Fuer offizielle Lernentwicklungsberichte reichen fluechtige Projektionen nicht aus. Ein freigegebener Bericht muss auch dann reproduzierbar und nachvollziehbar bleiben, wenn spaeter Beobachtungen ergaenzt, korrigiert oder deaktiviert, Kompetenzstaende neu bestaetigt oder Projektionsregeln weiterentwickelt werden.
+
+Beobachtungen sind Evidenz, aber keine fertigen paedagogischen Aussagen. Automatische Vorschlaege duerfen weder finalen Berichtstext noch eine eigenstaendige Leistungsbewertung erzeugen. Bericht, LEG und Schuelerprofil duerfen keine voneinander abweichende Kompetenzlogik entwickeln.
+
+### Architekturentscheidung
+
+#### Schuelerprofil
+
+Das Schuelerprofil bleibt eine Live-Arbeitsansicht. Es zeigt aktuelle Kompetenzstaende, Beobachtungen, Entwicklung, Dokumentationsabdeckung und Vorbereitungsmöglichkeiten. Es ist kein offizielles Dokument und kein reproduzierbarer Ausgabestand.
+
+#### Bericht
+
+Der Lernentwicklungsbericht wird langfristig eine eigene fachliche Entitaet. Diese Trennung ist erforderlich fuer:
+
+- Reproduzierbarkeit eines freigegebenen Stands
+- Versionierung und kontrollierte Korrekturen
+- Nachvollziehbarkeit von Autorenschaft, Pruefung und Freigabe
+- stabile PDF-Erzeugung
+- Schutz vor nachtraeglichen Aenderungen an Beobachtungen, Kompetenzstaenden oder Projektionsregeln
+
+Ein Bericht besitzt konzeptionell:
+
+- Schuelerbezug
+- Berichtszeitraum
+- Autor
+- Status `Entwurf`, `geprueft` oder `freigegeben`
+- manuelle Texte
+- bewusst ausgewaehlte Kompetenzinformationen
+- bewusst ausgewaehlte Beobachtungsbelege
+- Diagramme
+- finale Ausgabeversion
+
+Diese Begriffe sind in Sprint 7B fachliche Konzepte, keine freigegebenen SQLite-Felder oder neuen technischen Namen.
+
+Die Live-Berichtsvorbereitung darf auf der kanonischen Kompetenzprojektion und einer zeitraumbezogenen Evidenzprojektion beruhen. Bestaetigte Kompetenzstaende bleiben von berechneten Beobachtungsvorschlaegen getrennt. Vorschlaege duerfen nur klar als Vorbereitung gekennzeichnet werden und werden nie automatisch zu finalem Berichtstext.
+
+Spaetestens bei der Freigabe wird ein vollstaendiges Ausgabemodell eingefroren. Es enthaelt die fuer die Ausgabe benoetigten Inhalte, Anzeigenamen, Auswahlentscheidungen, Zeitbezuege und Herkunftsnachweise, sodass spaetere Quelldaten- oder Projektionsaenderungen den freigegebenen Stand nicht still veraendern. Ob Entwurf und Pruefstand ebenfalls versioniert werden, entscheidet der Product Owner vor Sprint 7E.
+
+#### Lernentwicklungsgespraech
+
+Ein Lernentwicklungsgespraech ist kein Bericht. Es ist ein eigener paedagogischer Prozess mit:
+
+- Gespraechsvorbereitung
+- Gespraechsschwerpunkten
+- relevanter Evidenz
+- Zielen
+- Vereinbarungen
+- Gespraechsergebnis
+
+Reine Vorbereitung bleibt fluechtig:
+
+- automatisch zusammengestellte Kompetenz- und Evidenzuebersichten
+- Hinweise auf Dokumentationsabdeckung
+- moegliche Gespraechsschwerpunkte
+- vorlaeufige Auswahl relevanter Beobachtungsbelege
+
+Spaeter speicherbare fachliche Daten koennen sein:
+
+- bewusst festgelegte Gespraechsschwerpunkte oder Agenda
+- ausgewaehlte Evidenz als nachvollziehbarer Gespraechsbezug
+- gemeinsam oder paedagogisch festgelegte Ziele
+- konkrete Vereinbarungen mit Verantwortlichkeit und Zeithorizont
+- dokumentiertes Gespraechsergebnis
+
+Die genaue Speichergrenze, Rollen, Datenschutz- und Aufbewahrungsregeln werden erst vor Sprint 7E entschieden. LEG-Daten werden nicht als Berichtsdaten missbraucht und ein Bericht wird nicht zum LEG-Protokoll.
+
+#### PDF und professionelle Ausgabe
+
+PDF ist ein Ausgabeformat und keine Fachschicht. Der PDF-Renderer:
+
+- berechnet nichts
+- greift nicht direkt auf SQLite zu
+- interpretiert keine Kompetenz-, Evidenz- oder Freigabelogik
+- nutzt ausschliesslich eingefrorene Ausgabemodelle
+
+Ein professionelles Ausgabepaket kann Deckblatt, Kompetenzuebersichten, Diagramme, Fachseiten, Lernentwicklung und LEG-Seiten enthalten. Bericht und LEG bleiben darin fachlich getrennte Bestandteile und werden nicht durch den Renderer miteinander vermischt.
+
+#### Grafische Entwicklung
+
+Zulaessige spaetere Grafiken sind insbesondere:
+
+- Kompetenzabdeckung je Fach
+- Entwicklungsevidenz ueber Zeit
+- Kompetenzbereiche als Balken- oder Liniendiagramm
+- Vergleich fachlich passender Zeitpunkte
+
+Grafiken zeigen Dokumentation und Entwicklungsevidenz. Sie duerfen keine algorithmische Leistungsnote, Rangfolge, Prognose oder scheinobjektive Gesamtbewertung erzeugen. Achsen, Legenden, Zeitraum, Datenbasis und fehlende Evidenz muessen nachvollziehbar sein. Die grafische Projektion verwendet dieselbe kanonische Kompetenz- und Evidenzlogik wie Profil, Bericht und LEG.
+
+#### Zielarchitektur
+
+```text
+SQLite
+-> Repositories
+-> kanonische Kompetenzprojektion
+-> zeitraumbezogene Evidenzprojektion
+-> Bericht-/LEG-Komposition
+-> freigegebener Ausgabestand
+-> PDF Renderer
+```
+
+Keine nachgelagerte Schicht darf Kompetenzstaende neu berechnen oder Beobachtungen fachlich umdeuten. Bericht-/LEG-Komposition waehlt, ordnet und ergaenzt manuell; sie ersetzt weder kanonische Kompetenzlogik noch paedagogische Autorenschaft.
+
+### Empfohlene Produktentscheidung
+
+Der Product Owner gibt die beschriebene Zielarchitektur als Leitplanke fuer die Discovery-Sprints 7C und 7D frei. Freigegeben ist damit die fachliche Trennung von Live-Profil, Berichtsentitaet, LEG-Prozess und PDF-Renderer. Nicht freigegeben sind Datenbankschema, technische Feldnamen, Persistenz, Statuswechsel, UI oder PDF-Implementierung.
+
+Die bestehende Berichtsvorschau bleibt bis zu einer spaeteren Umsetzung eine Live-Arbeitsprojektion. Offizielle Dokumente entstehen erst aus einem explizit geprueften und freigegebenen Ausgabestand. Manuelle paedagogische Texte und Auswahlentscheidungen bleiben in menschlicher Verantwortung.
+
+### Risiken
+
+- Eine Vermischung von Live-Projektion und freigegebenem Stand wuerde alte Berichte nachtraeglich veraendern.
+- Eine zweite Kompetenzberechnung in Bericht, LEG oder Diagrammen wuerde widerspruechliche Staende erzeugen.
+- Automatisch formulierte Texte koennten als paedagogische Aussage oder Leistungsbewertung missverstanden werden.
+- Unklare LEG-Speichergrenzen koennten sensible Gespraechsnotizen ohne fachlichen Zweck oder passende Aufbewahrungsregel dauerhaft speichern.
+- Diagramme koennten bei geringer Evidenz, ungeeigneten Zeitvergleichen oder bewertender Farbsemantik eine unzulaessige Objektivitaet suggerieren.
+- Historische oder inzwischen inaktive Kompetenzen koennten ohne eingefrorene Anzeigenamen und Herkunftsnachweise im Ausgabestand unlesbar werden.
+- PDF-Schriftarten, Seitenumbrueche, Barrierearmut und unterschiedliche Ausgabegeraete koennen die professionelle Reproduzierbarkeit gefaehrden.
+- Ungeklaerte Aufbewahrung, Zugriffsschutz und Korrekturregeln fuer freigegebene Ausgaben erzeugen Datenschutz- und Nachvollziehbarkeitsrisiken.
+
+### Offene Product-Owner-Entscheidungen
+
+1. Welche Berichtstypen und verbindlichen Berichtszeitraeume werden im ersten Produktumfang unterstuetzt?
+2. Wer darf Berichte erstellen, pruefen, freigeben und nach einer Freigabe korrigieren?
+3. Zu welchem Zeitpunkt wird eingefroren, und welche Versionen von Entwurf, Pruefstand und Freigabe muessen nachvollziehbar bleiben?
+4. Welche Kompetenzinformationen und Evidenzarten duerfen in einen offiziellen Bericht uebernommen werden, und ist dafuer immer ein bestaetigter Kompetenzstand erforderlich?
+5. Welche manuellen Textbereiche, fachlichen Vorlagen und verbindlichen Pflichtinhalte braucht der erste Bericht?
+6. Welche Diagramme und Kennzahlen sind fachlich erlaubt, und wie werden geringe oder fehlende Evidenz sowie ungeeignete Zeitvergleiche sichtbar gemacht?
+7. Welche LEG-Inhalte werden nur vorbereitet und welche Ziele, Vereinbarungen, Evidenzbezuege oder Ergebnisse werden dauerhaft gespeichert?
+8. Duerfen Bericht und LEG in einem gemeinsamen Ausgabepaket erscheinen, und welche klare Trennung sowie Sichtbarkeit gilt je Empfaengerkreis?
+9. Wird das freigegebene PDF selbst archiviert oder reproduzierbar aus dem eingefrorenen Ausgabemodell erzeugt, und welche Aufbewahrungs-, Zugriffsschutz- und Korrekturregeln gelten?
+
+### Naechste Schritte
+
+1. Sprint 7C erstellt Berichtsvorbereitung und UX-Prototyp als Product Discovery ohne Persistenz. Er prueft Inhaltskomposition, manuelle Autorenschaft, Evidenzauswahl, Statusverstaendnis und ein fachliches PDF-Muster.
+2. Sprint 7D erstellt LEG-Konzept und UX-Prototyp ohne Persistenz. Er prueft die Trennung von Vorbereitung, Gespraechsagenda, Zielen, Vereinbarungen und Ergebnis sowie optionale LEG-Ausgabeseiten.
+3. Vor Sprint 7E beantwortet der Product Owner die offenen Entscheidungen. Datenmodell-, Architektur-, Datenschutz- und Lifecycle-Review definieren erst dann Entitaeten, technische Namen, Speichergrenzen, Versionierung und Schreibprozesse.
+4. Sprint 7E implementiert nur den danach freigegebenen Datenmodell-, Speicherungs- und Versionierungsumfang.
+5. Sprint 7F implementiert den PDF-Renderer gegen einen stabilen, eingefrorenen Ausgabe-Contract und validiert Deckblatt, Fachseiten, Diagramme, LEG-Trennung, Seitenumbrueche, Schriftarten und Reproduzierbarkeit.
+
+### Konsequenzen
+
+- Die vorgeschlagene Reihenfolge 7B bis 7F ist fachlich sinnvoll und wird mit den genannten Quality Gates bestaetigt.
+- 7C und 7D sind UX-/Discovery-Sprints, keine vorgezogene Persistenz- oder UI-Implementierung.
+- 7E darf erst nach Product-Owner-, Datenmodell-, Architektur- und Lifecycle-Freigabe beginnen.
+- 7F darf weder SQLite noch Repositories direkt kennen; sein Eingangsvertrag ist das eingefrorene Ausgabemodell.
+- `docs/DATA_REGISTRY.md`, `docs/DATA_LIFECYCLE.md`, `docs/TECHNICAL_NAMES.md` und `docs/UI_DATA_MAPPING.md` werden in Sprint 7B nicht um neue Tabellen, Felder, technische Namen, Schreibprozesse oder UI-Felder erweitert.
+- Es entstehen in Sprint 7B keine Datenbank-, Migrations-, UI-, Code- oder PDF-Aenderungen.
+
 ## ADR-051 - Schnellbeobachtung ohne Kompetenzzuordnung
 
 Eine Schnellbeobachtung ist eine bewusst kompetenzfreie aktive Beobachtung mit verpflichtender, nichtleerer Notiz. Sie wird ohne Eintraege in `observation_competency_ratings` gespeichert; ein neues SQLite-Feld ist nicht erforderlich, weil der produktive Schreibprozess Beobachtungen ohne Kompetenzbewertung zuvor nicht zuliess und der Zustand damit eindeutig ist.

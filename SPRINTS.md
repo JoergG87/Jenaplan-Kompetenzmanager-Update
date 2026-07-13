@@ -65,6 +65,28 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Sprint 7F.2 verbindet die persistente Draft-Struktur mit der 1:1 portierten Berichtswerkstatt-UX
 - [x] Kein Commit erstellt
 
+## Sprint 7B - Product- und Architekturentscheidung fuer Bericht, LEG und PDF ✅
+
+- [x] Status: Architekturentscheidung dokumentiert, keine Implementierung
+
+### Ergebnis
+
+- [x] Schuelerprofil als Live-Arbeitsansicht und nicht als offizielles Dokument abgegrenzt
+- [x] Bericht als spaetere eigene fachliche Entitaet mit eingefrorenem, versionierbarem Ausgabestand entschieden
+- [x] LEG fachlich vom Bericht getrennt und Vorbereitung von spaeter speicherbaren Zielen, Vereinbarungen und Ergebnissen unterschieden
+- [x] PDF als rein lesender Renderer fuer eingefrorene Ausgabemodelle festgelegt
+- [x] Diagramme auf Dokumentationsabdeckung und Entwicklungsevidenz begrenzt
+- [x] Zielarchitektur und zentrale Product-Owner-Entscheidungen in ADR-050 dokumentiert
+- [x] Keine UI-, SQLite-, Schema-, Migrations- oder Codeaenderung umgesetzt
+
+### Inzwischen umgesetzter Stand
+
+- [x] Sprint 7F.1 und 7F.2 haben den persistenten Berichtsentwurf und die freigegebene Berichtswerkstatt-UX produktiv umgesetzt
+- [x] Sprint 7G.1 bis 7G.3 haben den persistenten LEG-Arbeitsentwurf, die freigegebene LEG-UX und die dokumentierte Kompetenzauswahl produktiv umgesetzt
+- [x] Der PDF-Renderer liest weiterhin ausschliesslich ein neutrales Ausgabemodell und greift nicht direkt auf SQLite zu
+- [x] Bericht- und LEG-Drafts bleiben bearbeitbare Arbeitsstaende ohne Freigabe, Versionierung, Archivierung oder eingefrorene finale Ausgabe
+- [x] Ein spaeterer finaler oder freigegebener Stand bleibt als eigene fachliche Entitaet von den produktiven Drafts getrennt
+
 ## Sprint 4B - Lehrplanbasierter Kompetenzkatalog ✅
 
 - [x] Status: Abgeschlossen

@@ -164,6 +164,23 @@
 
 - Keine Änderung am Beobachtungsspeicherprozess, an Dialoglayout, Persistenz, SQLite, Adaptern oder Repositorys.
 
+## Sprint 7B - Product- und Architekturentscheidung fuer Bericht, LEG und PDF
+
+### Changed
+
+- Schuelerprofil als Live-Arbeitsansicht und den spaeteren Lernentwicklungsbericht als eigene, versionierbare fachliche Entitaet mit eingefrorenem Ausgabestand abgegrenzt.
+- LEG fachlich vom Bericht getrennt; fluechtige Vorbereitung und spaeter moegliche speicherbare Ziele, Vereinbarungen und Gespraechsergebnisse unterschieden.
+- PDF als rein lesendes Ausgabeformat fuer eingefrorene Ausgabemodelle und Diagramme als Darstellung von Dokumentationsabdeckung und Entwicklungsevidenz festgelegt.
+- Zielarchitektur, neun zentrale Product-Owner-Entscheidungen, Risiken und die Sprintfolge 7C bis 7F in ADR-050 dokumentiert.
+
+### Validated
+
+- Dokumentations-Diffs auf Whitespace-Fehler und Scope geprueft.
+
+### Not Changed
+
+- Keine UI, keine SQLite- oder Datenmodellaenderung, keine Migration, keine neuen Tabellen oder technischen Namen, keine Codeaenderung, keine Tests und kein Commit.
+
 ## Sprint 4C2 - Mathematikkompetenzen fachlich verfeinert
 
 ### Changed

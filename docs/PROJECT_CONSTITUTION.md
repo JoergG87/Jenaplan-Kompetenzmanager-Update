@@ -340,7 +340,7 @@ Die Architektur muss folgende spaetere Anforderungen tragen, ohne erneut grundsa
 - Dokumente und Medienanhaenge: Dateien werden referenziert, studentenzentriert abgelegt und nicht in Excel eingebettet.
 - Automatisch zusammengestellte Vorbereitungsinformationen fuer Lernentwicklungsgespraeche und Berichte bleiben abgeleitete Auswertungsprojektionen. Sie schreiben keine Kompetenz-, Beobachtungs- oder Bewertungsdaten.
 - Sprint 7G.1 fuehrt nach Product-Owner- und Datenmodellfreigabe einen eigenen persistenten LEG-Arbeitsentwurf fuer manuelle Vorbereitung, bewusste Referenzauswahl und gemeinsam festgehaltene Inhalte ein. Ein LEG bleibt fachlich von einem Bericht getrennt und ist weder finale Version noch Archiv.
-- Dashboards und Berichte: reine Lese-/Auswertungsschicht, niemals fachliche Datenquelle.
+- Dashboards bleiben reine Lese-/Auswertungsschicht. Ein freigegebener Bericht ist langfristig ein versionierter, eingefrorener fachlicher Ausgabestand; die laufende Berichtsvorbereitung bleibt davon getrennt.
 - Historisierung: offene Entscheidung vor produktiver Beobachtungserfassung.
 
 ## Identitaet
@@ -388,7 +388,7 @@ Neue Ansichten duerfen nicht ohne View Data Ownership umgesetzt werden.
 
 Neue Datenquellen duerfen in einer Ansicht erst verwendet werden, nachdem `docs/VIEW_DATA_OWNERSHIP.md` entsprechend erweitert wurde.
 
-Dashboards und Berichte lesen Daten, schreiben aber niemals fachliche Daten.
+Dashboards und Live-Berichtsvorbereitungen lesen Daten, schreiben aber niemals fachliche Daten. Das spaetere Erstellen, Pruefen, Freigeben oder Korrigieren eines Berichtstands ist ein eigener fachlicher Schreibprozess und braucht vor der Umsetzung Datenmodell-, Lifecycle- und Product-Owner-Freigabe.
 
 ## Verbindliche Implementierungsreihenfolge
 

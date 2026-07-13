@@ -496,6 +496,10 @@ Sprint 7F.1 ergaenzt einen persistenten, weiter bearbeitbaren Berichtsentwurf. D
 
 Sprint 7F.2 portiert die freigegebene UX aus `prototypes/learning_report_ux/` auf diese bestehende Ownership. Die PySide-Berichtswerkstatt besitzt ausschliesslich lokalen Widgetzustand fuer die laufende Bearbeitung und delegiert Speichern ueber `LearningReportDraftViewModel` an den Desktop-Adapter. Beim Oeffnen laedt die Shell den zuletzt aktualisierten Entwurf des Schuelers. Die separate Vorschau baut ihr `ReportOutputModel` aus dem aktuellen Entwurf und den vorhandenen Leseprojektionen; sie ist keine Datenquelle. Fachseiten duerfen nur Kompetenzen des jeweiligen Fachs und nur dazu passende Beobachtungsbelege anbieten. Diagramme werden nur als gespeicherte Auswahlreferenzen gehalten; ihre Daten werden bei Vorschau und PDF aus den vorhandenen Projektionen erzeugt.
 
+Aktueller produktiver Stand: Die PDF-Ausgabe liest ausschliesslich ein neutrales `ReportOutputModel`, das fuer die Vorschau aus dem Berichtsentwurf und den freigegebenen Leseprojektionen aufgebaut wird. Sie greift weder direkt auf SQLite zu noch berechnet oder interpretiert sie fachliche Inhalte. Dieses Modell ist im Draft-Prozess noch kein eingefrorener oder freigegebener Berichtstand.
+
+Zielarchitektur nach eigener Product-Owner-, Datenmodell- und Lifecycle-Freigabe: Ein finaler Bericht ist eine eigene fachliche Entitaet. Er besitzt konzeptionell Schuelerbezug, Berichtszeitraum, Autor, Status, manuelle Texte, ausgewaehlte Kompetenzinformationen, ausgewaehlte Beobachtungsbelege, Diagramme und eine finale Ausgabeversion. Spaetestens bei Freigabe wird sein Ausgabemodell eingefroren und von spaeteren Aenderungen an Beobachtungen oder Projektionen entkoppelt. Der reine PDF-Renderer erhaelt dann dieses neutrale, eingefrorene Ausgabemodell statt eines live aufgebauten Draft-Modells.
+
 ## Lernentwicklungsgespraech
 
 Liest in der spaeteren Zielarchitektur:
