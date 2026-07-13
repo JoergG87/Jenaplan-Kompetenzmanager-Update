@@ -31,6 +31,16 @@ from src.application.commands.report import (
     ReportDraftApplicationService,
     UpdateLearningReportDraftCommand,
 )
+from src.application.commands.learning_conference import (
+    CreateLearningConferenceDraftCommand,
+    GetLearningConferenceDraftQuery,
+    LearningConferenceApplicationService,
+    LearningConferenceDraftApplicationService,
+    LearningConferenceDraftInput,
+    ListLearningConferenceDraftsQuery,
+    PrepareLearningConferenceQuery,
+    UpdateLearningConferenceDraftCommand,
+)
 from src.core.observation import (
     ObservationCompetencyRatingRecord,
     ObservationService,
@@ -44,6 +54,7 @@ from src.core.sqlite_store import (
     SQLiteDocumentationSubjectSettingsRepository,
     SQLiteDocumentRepository,
     SQLiteGroupRepository,
+    SQLiteLearningConferenceDraftRepository,
     SQLiteObservationRepository,
     SQLiteReportDraftRepository,
     SQLiteStudentCompetencyConfirmationRepository,
@@ -52,6 +63,10 @@ from src.core.sqlite_store import (
     StudentCompetencyConfirmationRecord,
 )
 from src.core.report_draft import ReportDraftService
+from src.core.learning_conference_draft import (
+    LearningConferenceDraftRecord,
+    LearningConferenceDraftService,
+)
 from src.core.student import StudentService, StudentValidator
 from src.core.records import CourseRecord, GroupRecord, StudentRecord
 from src.desktop_app.adapters.curriculum_desktop_adapter import (
@@ -92,6 +107,11 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportDraftViewModel,
     LearningReportPreparationViewModel,
     build_learning_report_preparation,
+)
+from src.desktop_app.view_models.learning_conference_view_model import (
+    LearningConferenceDraftViewModel,
+    LearningConferencePreparationViewModel,
+    build_learning_conference_preparation,
 )
 from src.desktop_app.view_models.student_view_model import (
     GroupSummaryViewModel,
@@ -664,6 +684,8 @@ class StudentDesktopAdapter:
     def list_competency_status_projection_for_student(
         self,
         student_id: str,
+        *,
+        retained_competency_ids: tuple[str, ...] = (),
     ) -> tuple[StudentCompetencyStatusViewModel, ...]:
         """Return the single canonical read projection for competency status."""
         observations = SQLiteObservationRepository(
@@ -691,7 +713,11 @@ class StudentDesktopAdapter:
                             observation.context,
                         )
                     )
-        referenced_competency_ids = set(histories_by_competency) | set(confirmations)
+        referenced_competency_ids = (
+            set(histories_by_competency)
+            | set(confirmations)
+            | {competency_id.strip() for competency_id in retained_competency_ids if competency_id.strip()}
+        )
         competencies = {
             competency.competency_id: competency
             for competency in SQLiteCompetencyRepository(self.database).list_competencies()
@@ -836,6 +862,121 @@ class StudentDesktopAdapter:
         return ReportDraftApplicationService(
             ReportDraftService(repository),
             repository,
+        )
+
+    def learning_conference_preparation_for_student(
+        self,
+        student_id: str,
+        *,
+        retained_competency_ids: tuple[str, ...] = (),
+    ) -> LearningConferencePreparationViewModel | None:
+        """Prepare LEG selection from existing canonical Live projections."""
+        source = LearningConferenceApplicationService(
+            self.get_student_profile,
+            lambda selected_student_id: self.list_competency_status_projection_for_student(
+                selected_student_id,
+                retained_competency_ids=retained_competency_ids,
+            ),
+            self.list_observations_for_student,
+        ).execute(PrepareLearningConferenceQuery(student_id))
+        if source is None:
+            return None
+        return build_learning_conference_preparation(
+            source.student,
+            source.competency_statuses,
+            source.observations,
+        )
+
+    def save_learning_conference_draft(
+        self,
+        draft: LearningConferenceDraftViewModel,
+    ) -> LearningConferenceDraftViewModel:
+        """Create or update one LEG draft through the application boundary."""
+        draft_input = LearningConferenceDraftInput(
+            student_id=draft.student_id,
+            period_start=(draft.period_start.isoformat() if draft.period_start else ""),
+            period_end=draft.period_end.isoformat() if draft.period_end else "",
+            conference_date=(
+                draft.conference_date.isoformat() if draft.conference_date else ""
+            ),
+            responsible_teacher=draft.responsible_teacher,
+            conversation_entry_text=draft.conversation_entry_text,
+            child_retrospective_text=draft.child_retrospective_text,
+            teacher_perspective_text=draft.teacher_perspective_text,
+            strengths_text=draft.strengths_text,
+            development_fields_text=draft.development_fields_text,
+            prepared_goals_text=draft.prepared_goals_text,
+            prepared_support_text=draft.prepared_support_text,
+            prepared_agreements_text=draft.prepared_agreements_text,
+            agreed_goals_text=draft.agreed_goals_text,
+            agreed_support_text=draft.agreed_support_text,
+            agreed_agreements_text=draft.agreed_agreements_text,
+            responsibilities_text=draft.responsibilities_text,
+            next_review_date=(
+                draft.next_review_date.isoformat() if draft.next_review_date else ""
+            ),
+            subject_ids=draft.subject_ids,
+            cross_topic_keys=draft.cross_topic_keys,
+            competency_ids=draft.competency_ids,
+            observation_ids=draft.observation_ids,
+            chart_types=draft.chart_types,
+        )
+        service = self._learning_conference_draft_application_service()
+        if draft.learning_conference_draft_id:
+            record = service.update(
+                UpdateLearningConferenceDraftCommand(
+                    draft.learning_conference_draft_id,
+                    draft_input,
+                )
+            )
+        else:
+            record = service.create(
+                CreateLearningConferenceDraftCommand(draft_input)
+            )
+        return self._learning_conference_draft_view_model(record)
+
+    def load_learning_conference_draft(
+        self,
+        learning_conference_draft_id: str,
+    ) -> LearningConferenceDraftViewModel | None:
+        """Load one persistent LEG draft without replacing unavailable evidence."""
+        record = self._learning_conference_draft_application_service().get(
+            GetLearningConferenceDraftQuery(learning_conference_draft_id)
+        )
+        if record is None:
+            return None
+        return self._learning_conference_draft_view_model(record)
+
+    def list_learning_conference_drafts_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningConferenceDraftViewModel, ...]:
+        """List persistent LEG drafts for later reopening."""
+        records = self._learning_conference_draft_application_service().list_for_student(
+            ListLearningConferenceDraftsQuery(student_id)
+        )
+        return tuple(
+            self._learning_conference_draft_view_model(record)
+            for record in records
+        )
+
+    def _learning_conference_draft_application_service(
+        self,
+    ) -> LearningConferenceDraftApplicationService:
+        repository = SQLiteLearningConferenceDraftRepository(self.database)
+        return LearningConferenceDraftApplicationService(
+            LearningConferenceDraftService(repository),
+            repository,
+        )
+
+    def _learning_conference_draft_view_model(
+        self,
+        record: LearningConferenceDraftRecord,
+    ) -> LearningConferenceDraftViewModel:
+        repository = SQLiteLearningConferenceDraftRepository(self.database)
+        return LearningConferenceDraftViewModel.from_record(
+            record,
+            unavailable_observation_ids=repository.unavailable_observation_ids(record),
         )
 
     def save_competency_confirmation(

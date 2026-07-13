@@ -50,6 +50,12 @@ Gepruefte Tabellen:
 | `student_competency_confirmations` | StudentCompetencyConfirmation | keine Workbook-Projektion |
 | `documents` | Document / Media | `data_media` / `tbl_media` |
 | `documentation_subject_settings` | DocumentationSubjectSetting | keine Workbook-Projektion |
+| `learning_conference_drafts` | LearningConferenceDraft | keine Workbook-Projektion |
+| `learning_conference_draft_subjects` | LearningConferenceDraftSubject | keine Workbook-Projektion |
+| `learning_conference_draft_cross_topics` | LearningConferenceDraftCrossTopic | keine Workbook-Projektion |
+| `learning_conference_draft_competencies` | LearningConferenceDraftCompetency | keine Workbook-Projektion |
+| `learning_conference_draft_observations` | LearningConferenceDraftObservation | keine Workbook-Projektion |
+| `learning_conference_draft_charts` | LearningConferenceDraftChart | keine Workbook-Projektion |
 
 Regel:
 
@@ -1098,3 +1104,52 @@ Erweiterungsregeln:
 
 - Settings duerfen keine fachlichen Daten ersetzen
 - fachliche Konfiguration gehoert in die passende Datenquelle, nicht pauschal in Settings
+
+## learning_conference_drafts und LEG-Entwurfsrelationen
+
+Zweck: Persistenter, weiter bearbeitbarer Arbeitsentwurf fuer Vorbereitung und Durchfuehrung eines Lernentwicklungsgespraechs.
+
+Entity: LearningConferenceDraft. Kein Bericht und keine finale Gespraechsversion.
+
+Storage:
+
+- `learning_conference_drafts` fuer Identitaet, Schuelerbezug, Zeitraum, Gespraechsdatum, Status, verantwortliche Lehrkraft, manuell verantwortete Vorbereitungs- und Gespraechsinhalte sowie Zeitstempel
+- `learning_conference_draft_subjects` fuer bewusste `subject_id`-Auswahl
+- `learning_conference_draft_cross_topics` fuer die vier freigegebenen uebergreifenden Themen
+- `learning_conference_draft_competencies` fuer reine `competency_id`-Referenzen
+- `learning_conference_draft_observations` fuer reine `observation_id`-Referenzen
+- `learning_conference_draft_charts` fuer die drei freigegebenen neutralen Darstellungsarten
+
+Owner: Lernentwicklungsgespraech.
+
+Primary Key: `learning_conference_draft_id`.
+
+Foreign Keys:
+
+- `student_id` -> `students.student_id`
+- `competency_id` -> `competencies.competency_id`
+- `observation_id` -> `observations.observation_id`
+- alle Relationstabellen -> `learning_conference_drafts.learning_conference_draft_id` mit `ON DELETE CASCADE`
+
+Wichtige Regeln:
+
+- `status` ist in Sprint 7G.1 ausschliesslich `draft`.
+- Der Entwurf referenziert Live-Daten und friert weder Kompetenz- noch Beobachtungsinhalte ein.
+- Kompetenztexte, Hierarchie, Bewertungen, Bestaetigungen und berechnete Kompetenzstaende werden nicht kopiert.
+- Beobachtungsdatum, Kontext, Notiz und Kompetenzbewertungen werden nicht kopiert.
+- Ausgewaehlte Beobachtungen muessen zum betroffenen Kind gehoeren. Neue Auswahl ist nur fuer aktive Beobachtungen erlaubt; bereits referenzierte, spaeter soft-geloeschte Beobachtungen bleiben als nicht verfuegbarer Beleg identifizierbar.
+- Schnellbeobachtungen duerfen als `observation_id` referenziert werden und bleiben ohne Wirkung auf Kompetenzstatus und Diagrammberechnungen.
+- Ziele, Unterstuetzung, Vereinbarungen, Zustaendigkeiten und weitere Gespraechstexte sind ausschliesslich manuelle Inhalte. Vorbereitete und gemeinsam vereinbarte Inhalte bleiben getrennt.
+- Diagrammzeilen speichern nur den Typ, keine berechneten Darstellungsdaten.
+- Keine Freigabe, Versionierung, Archivierung, Signatur oder finale Dokumentation.
+
+Schreibende Prozesse:
+
+- LEG-Arbeitsentwurf anlegen
+- LEG-Arbeitsentwurf aktualisieren
+
+Lesende Prozesse:
+
+- LEG-Arbeitsentwurf laden
+- LEG-Arbeitsentwuerfe eines Schuelers auflisten
+- Sprint-7G.2-LEG-Arbeitsbereich

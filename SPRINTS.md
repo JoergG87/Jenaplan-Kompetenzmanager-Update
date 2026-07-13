@@ -6,6 +6,42 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 7G.3 - Dokumentierte Kompetenzen im LEG 🔄
+
+- [x] LEG-Leseprojektion um vorhandene aktive Beobachtungsdaten und aktuelle Bestaetigungsreferenz erweitert
+- [x] Sichtbarkeit bei vollstaendig gesetztem Zeitraum auf kompetenzbezogene Beobachtungen im Zeitraum plus aktuelle Bestaetigungen begrenzt
+- [x] Ohne vollstaendigen Zeitraum alle dokumentierten Kompetenzen des Kindes sichtbar
+- [x] Schnellbeobachtungen, fremde und soft-geloeschte Beobachtungen sowie reine Katalogzeilen ausgeschlossen
+- [x] Leere Hierarchiezweige ausgeblendet und ruhigen Fach-Leerzustand ergaenzt
+- [x] Bereits ausgewaehlte und historische Draft-Referenzen ausserhalb des Filters sichtbar erhalten
+- [x] Zeitraumwechsel ohne automatische Abwahl umgesetzt
+- [x] Fokussierte ViewModel-, UI-, Draft-, Adapter- und Projektionspruefungen ergaenzt
+- [ ] Product-Owner-Sichtpruefung abgeschlossen
+- [x] Kein Commit erstellt
+
+## Sprint 7G.1 - Persistenter LEG-Arbeitsentwurf ✅
+
+- [x] Eigene LEG-Draft-Domain mit `LCD-######`, Schuelerbezug, Zeitraum/Gespraechsdatum, Status `draft`, verantwortlicher Lehrkraft und stabilen Zeitstempeln umgesetzt
+- [x] Vollstaendige manuelle Gespraechsstruktur einschliesslich getrennter vorbereiteter und gemeinsam vereinbarter Inhalte modelliert
+- [x] Fach-, uebergreifende Themen-, Kompetenz-, Beobachtungs- und Diagrammauswahl als normalisierte Referenzen dokumentiert
+- [x] Additive, idempotente SQLite-Migration und Kaskaden fuer abhaengige Draft-Relationen umgesetzt
+- [x] Repository, Domain-Service, Application Commands/Queries, Desktop-Adapter und ViewModel-Vorbereitung umgesetzt
+- [x] Keine produktive UI-Portierung, finale Dokumentation, Versionierung, Archivierung, Freigabe, Signatur oder PDF-Erzeugung
+- [x] Fokussierte LEG-, SQLite- und Adaptertests erfolgreich
+- [x] Compile-, Import- und Diff-Pruefung erfolgreich
+- [x] Kein Commit erstellt
+
+## Sprint 7G.2 - 1:1 UX-Portierung Lernentwicklungsgespraech 🔄
+
+- [x] Freigegebenen Prototyp `prototypes/learning_conference_ux/` ohne neue fachliche Datenmodellentscheidung als produktiven Zwei-Seiten-Arbeitsbereich portiert
+- [x] Vorbereitung und Gespraechsmappe, Kartenhierarchie, sechs Phasen, Warnung bei mehr als fuenf Belegen und drei neutrale Visualisierungen uebernommen
+- [x] Eindeutigen Profileinstieg sowie kontrollierte Auswahl bei mehreren vorhandenen Drafts umgesetzt
+- [x] Alle 7G.1-Texte und Auswahlreferenzen speicher- und rekonstruierbar angebunden
+- [x] Aktive aktuelle Kompetenzen neu auswaehlbar; historische und nicht verfuegbare Referenzen kontrolliert sichtbar
+- [x] Fokussierte UI-, Draft-, Adapter- und Offscreen-Pruefungen erfolgreich
+- [ ] Product-Owner-Sichtpruefung der produktiven Oberflaeche abgeschlossen
+- [x] Kein Commit erstellt
+
 ## Sprint 7F.2 - 1:1 UX-Portierung Lernentwicklungsbericht 🔄
 
 - [x] Oberen Wechsel `Bericht bearbeiten` / `Berichtsvorschau` aus dem freigegebenen Prototyp übernommen

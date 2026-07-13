@@ -338,7 +338,8 @@ Die Architektur muss folgende spaetere Anforderungen tragen, ohne erneut grundsa
 - Beobachtungserfassung: `observation_id`, Bezug zu `student_id`, Mehrfachbezug zu Kompetenzen.
 - Kompetenz-/Lehrplanpflege: `competency_id`, Faecherbezug, Hierarchie, Historisierung offen.
 - Dokumente und Medienanhaenge: Dateien werden referenziert, studentenzentriert abgelegt und nicht in Excel eingebettet.
-- Lernentwicklungsgespraeche und Elternvorbereitung: reine Auswertungsprojektionen, schreiben keine fachlichen Daten.
+- Automatisch zusammengestellte Vorbereitungsinformationen fuer Lernentwicklungsgespraeche und Berichte bleiben abgeleitete Auswertungsprojektionen. Sie schreiben keine Kompetenz-, Beobachtungs- oder Bewertungsdaten.
+- Sprint 7G.1 fuehrt nach Product-Owner- und Datenmodellfreigabe einen eigenen persistenten LEG-Arbeitsentwurf fuer manuelle Vorbereitung, bewusste Referenzauswahl und gemeinsam festgehaltene Inhalte ein. Ein LEG bleibt fachlich von einem Bericht getrennt und ist weder finale Version noch Archiv.
 - Dashboards und Berichte: reine Lese-/Auswertungsschicht, niemals fachliche Datenquelle.
 - Historisierung: offene Entscheidung vor produktiver Beobachtungserfassung.
 

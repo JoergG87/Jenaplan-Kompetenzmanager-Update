@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QFileDialog,
+    QInputDialog,
     QLabel,
     QListWidget,
     QListWidgetItem,
@@ -30,6 +31,7 @@ from src.desktop_app.dialogs.master_data_dialog import (
     MasterDataNameDialog,
 )
 from src.desktop_app.dialogs.learning_report_dialog import LearningReportDialog
+from src.desktop_app.dialogs.learning_conference_dialog import LearningConferenceDialog
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
@@ -177,6 +179,9 @@ class AppShell(QMainWindow):
         )
         self.student_profile_screen.report_requested.connect(
             self.open_learning_report_dialog
+        )
+        self.student_profile_screen.learning_conference_requested.connect(
+            self.open_learning_conference_dialog
         )
         self.master_data_screen.group_add_requested.connect(self.open_new_group_dialog)
         self.master_data_screen.group_rename_requested.connect(
@@ -345,6 +350,59 @@ class AppShell(QMainWindow):
 
         dialog.save_requested.connect(save_draft)
         dialog.pdf_requested.connect(self.export_learning_report_pdf)
+        dialog.exec()
+
+    def open_learning_conference_dialog(self, student_id: str) -> None:
+        """Open one unambiguous LEG draft or let the teacher choose calmly."""
+        drafts = self.adapter.list_learning_conference_drafts_for_student(student_id)
+        initial_draft = drafts[0] if len(drafts) == 1 else None
+        if len(drafts) > 1:
+            choices = ["Neuen Entwurf anlegen"]
+            draft_by_choice = {}
+            for draft in drafts:
+                context = draft.conference_date.isoformat() if draft.conference_date else (
+                    f"{draft.period_start.isoformat()}–{draft.period_end.isoformat()}"
+                    if draft.period_start and draft.period_end else "ohne Datum"
+                )
+                label = f"{context} · {draft.responsible_teacher or 'Lehrkraft offen'} · {draft.learning_conference_draft_id}"
+                choices.append(label)
+                draft_by_choice[label] = draft
+            choice, accepted = QInputDialog.getItem(
+                self,
+                "Lernentwicklungsgespräch auswählen",
+                "Für dieses Kind gibt es mehrere Entwürfe. Welcher soll geöffnet werden?",
+                choices,
+                1,
+                False,
+            )
+            if not accepted:
+                return
+            initial_draft = draft_by_choice.get(choice)
+        preparation = self.adapter.learning_conference_preparation_for_student(
+            student_id,
+            retained_competency_ids=(
+                initial_draft.competency_ids if initial_draft is not None else ()
+            ),
+        )
+        if preparation is None:
+            self.status_label.setText("Schülerprofil wurde nicht gefunden.")
+            return
+        dialog = LearningConferenceDialog(preparation, self, initial_draft)
+
+        def save_draft(draft: object) -> None:
+            try:
+                saved = self.adapter.save_learning_conference_draft(draft)
+            except Exception as error:
+                QMessageBox.warning(
+                    dialog,
+                    "Entwurf konnte nicht gespeichert werden",
+                    str(error),
+                )
+                return
+            dialog.apply_saved_draft(saved)
+            self.status_label.setText("Lernentwicklungsgespräch-Entwurf gespeichert.")
+
+        dialog.save_requested.connect(save_draft)
         dialog.exec()
 
     def export_learning_report_pdf(self, output_model: object) -> None:

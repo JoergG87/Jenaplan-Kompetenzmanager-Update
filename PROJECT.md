@@ -98,6 +98,10 @@ Das System muss deshalb Kompetenzverläufe speichern können.
 
 Nicht nur den aktuellen Stand.
 
+### Bericht, Lernentwicklungsgespraech und Ausgabe
+
+Ein Lernentwicklungsgespraech ist fachlich kein Bericht. Seine Vorbereitung nutzt dieselben kanonischen Kompetenz- und Evidenzprojektionen ausschliesslich lesend. Sprint 7G.1 fuehrt dafuer einen eigenen persistenten LEG-Arbeitsentwurf mit Status `draft` ein: Gespraechsrahmen, manuelle Vorbereitung, bewusste Fach-/Themen-, Kompetenz-, Beobachtungs- und Diagrammauswahl sowie getrennte vorbereitete und gemeinsam vereinbarte Ziele, Unterstuetzungen und Vereinbarungen. Der Entwurf referenziert Live-Daten, ist kein eingefrorener oder finaler Gespraechsstand und besitzt weder Freigabe, Versionierung noch Archivierung. Sprint 7G.2 verbindet diesen Entwurf mit der verbindlichen Zwei-Seiten-UX aus `prototypes/learning_conference_ux/`: Vorbereitung und live synchronisierte Gespraechsmappe bleiben sichtbar getrennt, alle fachlichen Inhalte werden ueber den Draft gespeichert und Kompetenzstaende ausschliesslich kanonisch gelesen. Sprint 7G.3 begrenzt die Kompetenzauswahl auf aktive kindbezogene Kompetenzbeobachtungen im LEG-Zeitraum und aktuelle Bestaetigungen; bereits ausgewaehlte Draft-Referenzen bleiben ausserhalb dieses Sichtfilters erhalten.
+
 ## Architektur
 
 Das Projekt ist modular aufgebaut.

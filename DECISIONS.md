@@ -1958,3 +1958,15 @@ Kompetenzen und Beobachtungen werden ausschliesslich ueber ihre stabilen IDs ref
 Die persistente Entwurfsstruktur besteht aus `report_drafts` und normalisierten Relationstabellen fuer Faecher/Fachtexte, Kompetenzen, Beobachtungen und Diagramme. Anlegen und Aktualisieren erfolgen atomar ueber ViewModel, Application Layer, Domain-Service und Repository. `ReportOutputModel` und `PdfRenderer` bleiben reine Ausgabeschicht und kennen die Entwurfstabellen nicht.
 
 Eine spaetere Freigabe-, Versions- oder Archivierungsdomain benoetigt eine neue Product-Owner- und Datenmodellentscheidung und darf nicht durch zusaetzliche Statuswerte in diesen Sprint hineingezogen werden.
+
+## ADR-053 - Persistenter LEG-Arbeitsentwurf bleibt eigene Live-referenzierende Domain
+
+Sprint 7G.1 fuehrt fuer Lernentwicklungsgespraeche einen eigenen persistenten Arbeitsentwurf mit Status `draft` ein. Die Product-Owner-Entscheidung umfasst die manuelle Vorbereitung, die bewusste Auswahl vorhandener Fach-, Kompetenz- und Beobachtungsreferenzen sowie die getrennte Speicherung vorbereiteter und im Gespraech gemeinsam vereinbarter Inhalte.
+
+Der LEG-Entwurf ist weder Lernentwicklungsbericht noch `report_type`, PDF-Dokument, Kopie des Schuelerprofils oder automatische Bewertung. Er verwendet die kanonische Kompetenzstatusprojektion und die vorhandene Beobachtungsprojektion ausschliesslich lesend. Kompetenztexte, Beobachtungsfachdaten, Bewertungen, Bestaetigungen und berechnete Staende werden nicht kopiert oder ueberschrieben.
+
+Der Entwurf referenziert Live-Daten. Er ist deshalb kein eingefrorener Gespraechsstand und besitzt keine finale Version, Freigabe, Archivierung, Signatur oder Historie. Neue Beobachtungsbelege muessen aktiv sein und zum Kind gehoeren. Wird ein bereits referenzierter Beleg spaeter soft-geloescht, bleibt seine ID im Entwurf erhalten und wird beim Laden kontrolliert als nicht verfuegbar ausgewiesen; eine stille Ersetzung ist ausgeschlossen.
+
+Die persistente Struktur traegt den vollstaendigen fachlichen Contract des freigegebenen Prototyps fuer Sprint 7G.2: Gespraechsrahmen, Fach- und uebergreifende Themenauswahl, Kompetenz- und Belegreferenzen, Leitfadeninhalte, getrennte vorbereitete und gemeinsam vereinbarte Ziele/Unterstuetzungen/Vereinbarungen, Zustaendigkeiten, Ueberpruefungszeitpunkt und die drei neutralen Diagrammtypen. Die produktive UI wird erst in Sprint 7G.2 portiert.
+
+Offen bleiben fachliche Aufbewahrungsfrist, Rollen-/Berechtigungsmodell, Uebergang zu einer finalen Gespraechsdokumentation sowie Historisierung gemeinsam vereinbarter Inhalte. Diese Punkte erweitern den Draft-Status in Sprint 7G.1 nicht.

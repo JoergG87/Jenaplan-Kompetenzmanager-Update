@@ -38,6 +38,11 @@ from .observation import (
     ObservationRepositoryError,
     OBSERVATION_RATING_KEYS,
 )
+from .learning_conference_draft import (
+    LEARNING_CONFERENCE_DRAFT_ID_PREFIX,
+    LearningConferenceDraftError,
+    LearningConferenceDraftRecord,
+)
 from .student import StudentRepositoryError
 from .records import (
     CourseRecord,
@@ -374,6 +379,92 @@ class SQLiteDatabase:
                             ON DELETE CASCADE
                     );
 
+                    CREATE TABLE IF NOT EXISTS learning_conference_drafts (
+                        learning_conference_draft_id TEXT PRIMARY KEY,
+                        student_id TEXT NOT NULL,
+                        period_start TEXT NOT NULL DEFAULT '',
+                        period_end TEXT NOT NULL DEFAULT '',
+                        conference_date TEXT NOT NULL DEFAULT '',
+                        status TEXT NOT NULL CHECK (status = 'draft'),
+                        responsible_teacher TEXT NOT NULL DEFAULT '',
+                        conversation_entry_text TEXT NOT NULL DEFAULT '',
+                        child_retrospective_text TEXT NOT NULL DEFAULT '',
+                        teacher_perspective_text TEXT NOT NULL DEFAULT '',
+                        strengths_text TEXT NOT NULL DEFAULT '',
+                        development_fields_text TEXT NOT NULL DEFAULT '',
+                        prepared_goals_text TEXT NOT NULL DEFAULT '',
+                        prepared_support_text TEXT NOT NULL DEFAULT '',
+                        prepared_agreements_text TEXT NOT NULL DEFAULT '',
+                        agreed_goals_text TEXT NOT NULL DEFAULT '',
+                        agreed_support_text TEXT NOT NULL DEFAULT '',
+                        agreed_agreements_text TEXT NOT NULL DEFAULT '',
+                        responsibilities_text TEXT NOT NULL DEFAULT '',
+                        next_review_date TEXT NOT NULL DEFAULT '',
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        FOREIGN KEY (student_id) REFERENCES students(student_id)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS learning_conference_draft_subjects (
+                        learning_conference_draft_id TEXT NOT NULL,
+                        subject_id TEXT NOT NULL,
+                        PRIMARY KEY (learning_conference_draft_id, subject_id),
+                        FOREIGN KEY (learning_conference_draft_id)
+                            REFERENCES learning_conference_drafts(learning_conference_draft_id)
+                            ON DELETE CASCADE
+                    );
+
+                    CREATE TABLE IF NOT EXISTS learning_conference_draft_cross_topics (
+                        learning_conference_draft_id TEXT NOT NULL,
+                        cross_topic_key TEXT NOT NULL CHECK (
+                            cross_topic_key IN (
+                                'work_habits',
+                                'social_behavior',
+                                'independence',
+                                'learning_organization'
+                            )
+                        ),
+                        PRIMARY KEY (learning_conference_draft_id, cross_topic_key),
+                        FOREIGN KEY (learning_conference_draft_id)
+                            REFERENCES learning_conference_drafts(learning_conference_draft_id)
+                            ON DELETE CASCADE
+                    );
+
+                    CREATE TABLE IF NOT EXISTS learning_conference_draft_competencies (
+                        learning_conference_draft_id TEXT NOT NULL,
+                        competency_id TEXT NOT NULL,
+                        PRIMARY KEY (learning_conference_draft_id, competency_id),
+                        FOREIGN KEY (learning_conference_draft_id)
+                            REFERENCES learning_conference_drafts(learning_conference_draft_id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY (competency_id) REFERENCES competencies(competency_id)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS learning_conference_draft_observations (
+                        learning_conference_draft_id TEXT NOT NULL,
+                        observation_id TEXT NOT NULL,
+                        PRIMARY KEY (learning_conference_draft_id, observation_id),
+                        FOREIGN KEY (learning_conference_draft_id)
+                            REFERENCES learning_conference_drafts(learning_conference_draft_id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY (observation_id) REFERENCES observations(observation_id)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS learning_conference_draft_charts (
+                        learning_conference_draft_id TEXT NOT NULL,
+                        chart_type TEXT NOT NULL CHECK (
+                            chart_type IN (
+                                'documentation_coverage',
+                                'competency_timeline',
+                                'observation_timeline'
+                            )
+                        ),
+                        PRIMARY KEY (learning_conference_draft_id, chart_type),
+                        FOREIGN KEY (learning_conference_draft_id)
+                            REFERENCES learning_conference_drafts(learning_conference_draft_id)
+                            ON DELETE CASCADE
+                    );
+
                     CREATE INDEX IF NOT EXISTS idx_groups_name
                         ON groups(group_name);
                     CREATE INDEX IF NOT EXISTS idx_courses_name
@@ -406,6 +497,12 @@ class SQLiteDatabase:
                         ON report_draft_competencies(competency_id);
                     CREATE INDEX IF NOT EXISTS idx_report_draft_observations_observation
                         ON report_draft_observations(observation_id);
+                    CREATE INDEX IF NOT EXISTS idx_learning_conference_drafts_student_updated
+                        ON learning_conference_drafts(student_id, updated_at DESC);
+                    CREATE INDEX IF NOT EXISTS idx_learning_conference_draft_competencies
+                        ON learning_conference_draft_competencies(competency_id);
+                    CREATE INDEX IF NOT EXISTS idx_learning_conference_draft_observations
+                        ON learning_conference_draft_observations(observation_id);
                     """
                 )
                 self._ensure_column(connection, "groups", "sort_order", "INTEGER NOT NULL DEFAULT 0")
@@ -473,6 +570,7 @@ class SQLiteDatabase:
         self.initialize_schema()
         with closing(self.connect()) as connection:
             with connection:
+                connection.execute("DELETE FROM learning_conference_drafts")
                 connection.execute("DELETE FROM report_drafts")
                 connection.execute("DELETE FROM observation_competency_ratings")
                 connection.execute("DELETE FROM documents")
@@ -1846,6 +1944,344 @@ class SQLiteMasterDataRepository:
             except ValueError:
                 continue
         return f"{prefix}-{next_number:0{ID_SEQUENCE_WIDTH}d}"
+
+
+class SQLiteLearningConferenceDraftRepository:
+    """Persist the complete editable LEG-draft aggregate atomically."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def next_learning_conference_draft_id(self) -> str:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                "SELECT learning_conference_draft_id FROM learning_conference_drafts"
+            ).fetchall()
+        next_number = 1
+        for row in rows:
+            value = str(row["learning_conference_draft_id"])
+            if not value.startswith(f"{LEARNING_CONFERENCE_DRAFT_ID_PREFIX}-"):
+                continue
+            try:
+                next_number = max(next_number, int(value.split("-", 1)[1]) + 1)
+            except ValueError:
+                continue
+        return (
+            f"{LEARNING_CONFERENCE_DRAFT_ID_PREFIX}-"
+            f"{next_number:0{ID_SEQUENCE_WIDTH}d}"
+        )
+
+    def create_learning_conference_draft(
+        self,
+        draft: LearningConferenceDraftRecord,
+    ) -> LearningConferenceDraftRecord:
+        if self.get_learning_conference_draft(
+            draft.learning_conference_draft_id
+        ) is not None:
+            raise LearningConferenceDraftError(
+                "learning_conference_draft_id existiert bereits: "
+                f"{draft.learning_conference_draft_id}"
+            )
+        with closing(self.database.connect()) as connection:
+            with connection:
+                self._validate_references(connection, draft, set())
+                connection.execute(
+                    f"""
+                    INSERT INTO learning_conference_drafts (
+                        {', '.join(self._draft_columns())}
+                    )
+                    VALUES ({', '.join('?' for _ in self._draft_columns())})
+                    """,
+                    self._draft_row(draft),
+                )
+                self._replace_relations(connection, draft)
+        return draft
+
+    def update_learning_conference_draft(
+        self,
+        draft: LearningConferenceDraftRecord,
+    ) -> LearningConferenceDraftRecord:
+        existing = self.get_learning_conference_draft(
+            draft.learning_conference_draft_id
+        )
+        if existing is None:
+            raise LearningConferenceDraftError(
+                "learning_conference_draft_id nicht gefunden: "
+                f"{draft.learning_conference_draft_id}"
+            )
+        with closing(self.database.connect()) as connection:
+            with connection:
+                self._validate_references(
+                    connection,
+                    draft,
+                    set(existing.observation_ids),
+                )
+                update_columns = self._draft_columns()[1:]
+                connection.execute(
+                    f"""
+                    UPDATE learning_conference_drafts
+                    SET {', '.join(f'{column} = ?' for column in update_columns)}
+                    WHERE learning_conference_draft_id = ?
+                    """,
+                    (
+                        *self._draft_row(draft)[1:],
+                        draft.learning_conference_draft_id,
+                    ),
+                )
+                self._replace_relations(connection, draft)
+        return draft
+
+    def get_learning_conference_draft(
+        self,
+        learning_conference_draft_id: str,
+    ) -> LearningConferenceDraftRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                f"""
+                SELECT {', '.join(self._draft_columns())}
+                FROM learning_conference_drafts
+                WHERE learning_conference_draft_id = ?
+                """,
+                (learning_conference_draft_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            return self._record_from_row(connection, row)
+
+    def list_learning_conference_drafts_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningConferenceDraftRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                f"""
+                SELECT {', '.join(self._draft_columns())}
+                FROM learning_conference_drafts
+                WHERE student_id = ?
+                ORDER BY updated_at DESC, learning_conference_draft_id DESC
+                """,
+                (student_id,),
+            ).fetchall()
+            return tuple(self._record_from_row(connection, row) for row in rows)
+
+    def unavailable_observation_ids(
+        self,
+        draft: LearningConferenceDraftRecord,
+    ) -> tuple[str, ...]:
+        """Resolve unavailable stored evidence without dropping or replacing IDs."""
+        if not draft.observation_ids:
+            return ()
+        placeholders = ", ".join("?" for _ in draft.observation_ids)
+        with closing(self.database.connect()) as connection:
+            active_ids = {
+                row["observation_id"]
+                for row in connection.execute(
+                    f"""
+                    SELECT observation_id
+                    FROM observations
+                    WHERE student_id = ?
+                      AND active = 1
+                      AND observation_id IN ({placeholders})
+                    """,
+                    (draft.student_id, *draft.observation_ids),
+                ).fetchall()
+            }
+        return tuple(
+            observation_id
+            for observation_id in draft.observation_ids
+            if observation_id not in active_ids
+        )
+
+    def _validate_references(
+        self,
+        connection: sqlite3.Connection,
+        draft: LearningConferenceDraftRecord,
+        existing_observation_ids: set[str],
+    ) -> None:
+        if connection.execute(
+            "SELECT 1 FROM students WHERE student_id = ?",
+            (draft.student_id,),
+        ).fetchone() is None:
+            raise LearningConferenceDraftError(
+                f"student_id nicht gefunden: {draft.student_id}"
+            )
+        if draft.subject_ids:
+            placeholders = ", ".join("?" for _ in draft.subject_ids)
+            found_subjects = {
+                row["subject_id"]
+                for row in connection.execute(
+                    f"SELECT DISTINCT subject_id FROM competencies WHERE subject_id IN ({placeholders})",
+                    draft.subject_ids,
+                ).fetchall()
+            }
+            missing_subjects = set(draft.subject_ids) - found_subjects
+            if missing_subjects:
+                raise LearningConferenceDraftError(
+                    "Fachreferenzen nicht gefunden: "
+                    f"{', '.join(sorted(missing_subjects))}"
+                )
+        if draft.competency_ids:
+            placeholders = ", ".join("?" for _ in draft.competency_ids)
+            competency_rows = connection.execute(
+                f"SELECT competency_id, subject_id FROM competencies WHERE competency_id IN ({placeholders})",
+                draft.competency_ids,
+            ).fetchall()
+            found_competencies = {
+                row["competency_id"] for row in competency_rows
+            }
+            missing_competencies = set(draft.competency_ids) - found_competencies
+            if missing_competencies:
+                raise LearningConferenceDraftError(
+                    "Kompetenzreferenzen nicht gefunden: "
+                    f"{', '.join(sorted(missing_competencies))}"
+                )
+            unselected_subjects = {
+                row["subject_id"]
+                for row in competency_rows
+                if row["subject_id"] not in set(draft.subject_ids)
+            }
+            if unselected_subjects:
+                raise LearningConferenceDraftError(
+                    "Kompetenzen duerfen nur aus ausgewaehlten Faechern stammen: "
+                    f"{', '.join(sorted(unselected_subjects))}"
+                )
+        if draft.observation_ids:
+            placeholders = ", ".join("?" for _ in draft.observation_ids)
+            rows = connection.execute(
+                f"""
+                SELECT observation_id, student_id, active
+                FROM observations
+                WHERE observation_id IN ({placeholders})
+                """,
+                draft.observation_ids,
+            ).fetchall()
+            by_id = {row["observation_id"]: row for row in rows}
+            invalid = {
+                observation_id
+                for observation_id in draft.observation_ids
+                if observation_id not in by_id
+                or by_id[observation_id]["student_id"] != draft.student_id
+                or (
+                    not bool(by_id[observation_id]["active"])
+                    and observation_id not in existing_observation_ids
+                )
+            }
+            if invalid:
+                raise LearningConferenceDraftError(
+                    "Beobachtungsreferenzen sind inaktiv, fehlen oder gehoeren "
+                    "nicht zum Schueler: "
+                    f"{', '.join(sorted(invalid))}"
+                )
+
+    def _replace_relations(
+        self,
+        connection: sqlite3.Connection,
+        draft: LearningConferenceDraftRecord,
+    ) -> None:
+        relation_values = (
+            ("learning_conference_draft_subjects", "subject_id", draft.subject_ids),
+            (
+                "learning_conference_draft_cross_topics",
+                "cross_topic_key",
+                draft.cross_topic_keys,
+            ),
+            (
+                "learning_conference_draft_competencies",
+                "competency_id",
+                draft.competency_ids,
+            ),
+            (
+                "learning_conference_draft_observations",
+                "observation_id",
+                draft.observation_ids,
+            ),
+            ("learning_conference_draft_charts", "chart_type", draft.chart_types),
+        )
+        for table, column, values in relation_values:
+            connection.execute(
+                f"DELETE FROM {table} WHERE learning_conference_draft_id = ?",
+                (draft.learning_conference_draft_id,),
+            )
+            connection.executemany(
+                f"INSERT INTO {table} (learning_conference_draft_id, {column}) VALUES (?, ?)",
+                (
+                    (draft.learning_conference_draft_id, value)
+                    for value in values
+                ),
+            )
+
+    def _record_from_row(
+        self,
+        connection: sqlite3.Connection,
+        row: sqlite3.Row,
+    ) -> LearningConferenceDraftRecord:
+        draft_id = row["learning_conference_draft_id"]
+
+        def relation_values(table: str, column: str) -> tuple[str, ...]:
+            return tuple(
+                item[column]
+                for item in connection.execute(
+                    f"""
+                    SELECT {column}
+                    FROM {table}
+                    WHERE learning_conference_draft_id = ?
+                    ORDER BY {column}
+                    """,
+                    (draft_id,),
+                ).fetchall()
+            )
+
+        return LearningConferenceDraftRecord(
+            *(row[column] for column in self._draft_columns()),
+            subject_ids=relation_values(
+                "learning_conference_draft_subjects", "subject_id"
+            ),
+            cross_topic_keys=relation_values(
+                "learning_conference_draft_cross_topics", "cross_topic_key"
+            ),
+            competency_ids=relation_values(
+                "learning_conference_draft_competencies", "competency_id"
+            ),
+            observation_ids=relation_values(
+                "learning_conference_draft_observations", "observation_id"
+            ),
+            chart_types=relation_values(
+                "learning_conference_draft_charts", "chart_type"
+            ),
+        )
+
+    def _draft_row(
+        self,
+        draft: LearningConferenceDraftRecord,
+    ) -> tuple[object, ...]:
+        return tuple(getattr(draft, column) for column in self._draft_columns())
+
+    @staticmethod
+    def _draft_columns() -> tuple[str, ...]:
+        return (
+            "learning_conference_draft_id",
+            "student_id",
+            "period_start",
+            "period_end",
+            "conference_date",
+            "status",
+            "responsible_teacher",
+            "conversation_entry_text",
+            "child_retrospective_text",
+            "teacher_perspective_text",
+            "strengths_text",
+            "development_fields_text",
+            "prepared_goals_text",
+            "prepared_support_text",
+            "prepared_agreements_text",
+            "agreed_goals_text",
+            "agreed_support_text",
+            "agreed_agreements_text",
+            "responsibilities_text",
+            "next_review_date",
+            "created_at",
+            "updated_at",
+        )
 
 
 class SQLiteReportDraftRepository:

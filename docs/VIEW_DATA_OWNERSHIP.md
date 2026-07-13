@@ -495,3 +495,38 @@ Die bestehende Berichtsvorschau ist eine Live-Auswertungsprojektion. Sie speiche
 Sprint 7F.1 ergaenzt einen persistenten, weiter bearbeitbaren Berichtsentwurf. Die Berichtswerkstatt liest und schreibt ihn ausschliesslich ueber ViewModel, Application Layer und `SQLiteReportDraftRepository`. Gespeichert werden Dokumentkontext, manuelle Gesamt- und Fachtexte sowie bewusste Fach-, Kompetenz-, Beobachtungs- und Diagrammreferenzen. Kompetenzzustaende stammen weiterhin ausschliesslich aus der kanonischen Sprint-6-Projektion; Kompetenz- und Beobachtungsinhalte werden nicht in den Entwurf kopiert. Aktive `current`-Kompetenzen sind fuer neue Auswahl vorgesehen, historisch referenzierte Kompetenzen bleiben als Kontext aufloesbar. Der Entwurf ist keine finale Berichtsdomain und besitzt weder Freigabe, Versionierung, Archivierung noch eingefrorene Ausgabe.
 
 Sprint 7F.2 portiert die freigegebene UX aus `prototypes/learning_report_ux/` auf diese bestehende Ownership. Die PySide-Berichtswerkstatt besitzt ausschliesslich lokalen Widgetzustand fuer die laufende Bearbeitung und delegiert Speichern ueber `LearningReportDraftViewModel` an den Desktop-Adapter. Beim Oeffnen laedt die Shell den zuletzt aktualisierten Entwurf des Schuelers. Die separate Vorschau baut ihr `ReportOutputModel` aus dem aktuellen Entwurf und den vorhandenen Leseprojektionen; sie ist keine Datenquelle. Fachseiten duerfen nur Kompetenzen des jeweiligen Fachs und nur dazu passende Beobachtungsbelege anbieten. Diagramme werden nur als gespeicherte Auswahlreferenzen gehalten; ihre Daten werden bei Vorschau und PDF aus den vorhandenen Projektionen erzeugt.
+
+## Lernentwicklungsgespraech
+
+Liest in der spaeteren Zielarchitektur:
+
+- kanonische Kompetenzprojektion
+- zeitraumbezogene Evidenzprojektion
+- Schueler-, Gruppen- und Kurskontext
+- freigegebene historische Kompetenzinformationen
+
+Schreibt ab Sprint 7G.1 ueber den freigegebenen Draft-Pfad:
+
+- `learning_conference_drafts`
+- `learning_conference_draft_subjects`
+- `learning_conference_draft_cross_topics`
+- `learning_conference_draft_competencies`
+- `learning_conference_draft_observations`
+- `learning_conference_draft_charts`
+
+Konzeptionelle Projektionen:
+
+- Gespraechsvorbereitung
+- Gespraechsschwerpunkte
+- relevante Evidenz
+- Ziele
+- Vereinbarungen
+- Gespraechsergebnis
+
+Regel:
+
+Ein Lernentwicklungsgespraech ist kein Bericht. Automatisch abgeleitete Uebersichten, Kompetenzstatus, moegliche Schwerpunkte und Evidenzhinweise bleiben Live-Projektionen. Sprint 7G.1 speichert ausschliesslich den eigenen bearbeitbaren LEG-Arbeitsentwurf: manuelle Inhalte, bewusste Fach-/Themenauswahl und stabile Kompetenz-/Beobachtungsreferenzen. Der Draft greift nur ueber ViewModel, `StudentDesktopAdapter`, Application Service, Domain Service und Repository auf SQLite zu. Er kopiert keine Kompetenz- oder Beobachtungsfachdaten und veraendert keine kanonische Projektion. Spaeter soft-geloeschte Beobachtungsreferenzen werden kontrolliert als nicht verfuegbar angezeigt und nicht ersetzt. Der Entwurf ist nicht final, nicht versioniert, nicht archiviert und nicht freigegeben.
+
+Sprint 7G.2 portiert `prototypes/learning_conference_ux/` als produktive PySide-Ansicht. `LearningConferenceDialog` besitzt nur den Widgetzustand der laufenden Bearbeitung und baut daraus ein `LearningConferenceDraftViewModel`; die Shell delegiert Speichern an `StudentDesktopAdapter`. Vorbereitung und Gespraechsmappe lesen denselben aktuellen Draftzustand, bleiben visuell getrennt und sind keine eigenen Datenquellen. Kompetenzstatus ist eine nicht editierbare Anzeige der kanonischen Sprint-6-Projektion. Quick Observations bleiben reine Textbelege, nicht verfuegbare gespeicherte Beobachtungsreferenzen sichtbar und Diagramme speichern ausschliesslich ihren Typ.
+
+Sprint 7G.3 schraenkt nur die sichtbare Kompetenzwahl ein. Die bestehende kanonische Projektion liefert aktive kindbezogene Kompetenznachweise und aktuelle Bestaetigungen; das LEG-ViewModel reicht deren Datums- und Vorhandenseinsreferenzen weiter. Der Dialog zeigt bei vollstaendigem Zeitraum Beobachtungsreferenzen innerhalb dieses Zeitraums, ohne vollstaendigen Zeitraum alle kanonisch beruecksichtigten Kompetenzbeobachtungen. Aktuelle Bestaetigungen bleiben zeitraumunabhaengig sichtbar. Bereits im Draft ausgewaehlte IDs werden nie automatisch entfernt und duerfen als expliziter Lesekontext auch historische Katalogzeilen in derselben Projektion aufloesbar halten. Schnellbeobachtungen, fremde oder soft-geloeschte Beobachtungen gelangen nicht in diese kanonischen Kompetenznachweise. Der lokale Filter ist keine Datenquelle und keine zweite Statuslogik.

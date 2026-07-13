@@ -129,6 +129,12 @@ Registriert:
 - `report_draft_competencies`
 - `report_draft_observations`
 - `report_draft_charts`
+- `learning_conference_drafts`
+- `learning_conference_draft_subjects`
+- `learning_conference_draft_cross_topics`
+- `learning_conference_draft_competencies`
+- `learning_conference_draft_observations`
+- `learning_conference_draft_charts`
 
 `documentation_subject_settings` speichert ausschliesslich, welche `subject_id` fuer Dokumentations- und Auswertungslogik als dokumentationsrelevant gelten. Die Tabelle ersetzt nicht den Kompetenzkatalog und veraendert `competencies.active` nicht.
 
@@ -1106,3 +1112,145 @@ Registrierte technische Namen:
 - `LearningReportReportCard`
 
 Regel: Diese Namen bilden ausschliesslich die aus `prototypes/learning_report_ux/` portierte PySide-Navigation, Kartenhierarchie, Draft-Anbindung und Auswahl der bereits registrierten Diagrammtypen ab. Sie fuehren keine neue Datenquelle, keine Kompetenzstatuslogik und keinen zusaetzlichen Schreibprozess ein.
+
+## Sprint 7G.1 - Persistenter LEG-Arbeitsentwurf
+
+Registrierte SQLite-Tabellen:
+
+- `learning_conference_drafts`
+- `learning_conference_draft_subjects`
+- `learning_conference_draft_cross_topics`
+- `learning_conference_draft_competencies`
+- `learning_conference_draft_observations`
+- `learning_conference_draft_charts`
+
+Registrierte technische Felder und Werte:
+
+- `learning_conference_draft_id`
+- `conference_date`
+- `responsible_teacher`
+- `conversation_entry_text`
+- `child_retrospective_text`
+- `teacher_perspective_text`
+- `strengths_text`
+- `development_fields_text`
+- `prepared_goals_text`
+- `prepared_support_text`
+- `prepared_agreements_text`
+- `agreed_goals_text`
+- `agreed_support_text`
+- `agreed_agreements_text`
+- `responsibilities_text`
+- `next_review_date`
+- `cross_topic_key`
+
+Zulaessiger Status: `draft`.
+
+Zulaessige `cross_topic_key`-Werte aus dem freigegebenen Prototyp:
+
+- `work_habits`
+- `social_behavior`
+- `independence`
+- `learning_organization`
+
+Zulaessige Diagrammtypen:
+
+- `documentation_coverage`
+- `competency_timeline`
+- `observation_timeline`
+
+`learning_conference_draft_id` verwendet das Format `LCD-######`.
+
+Registrierte Python-Module:
+
+- `src/core/learning_conference_draft.py`
+- `src/application/commands/learning_conference.py`
+- `src/desktop_app/view_models/learning_conference_view_model.py`
+- `tests/test_learning_conference_draft.py`
+
+Registrierte Klassen und Application-Namen:
+
+- `LearningConferenceDraftRecord`
+- `LearningConferenceDraftRepository`
+- `SQLiteLearningConferenceDraftRepository`
+- `LearningConferenceDraftService`
+- `LearningConferenceDraftApplicationService`
+- `CreateLearningConferenceDraftCommand`
+- `UpdateLearningConferenceDraftCommand`
+- `GetLearningConferenceDraftQuery`
+- `ListLearningConferenceDraftsQuery`
+- `PrepareLearningConferenceQuery`
+- `LearningConferenceApplicationService`
+- `LearningConferenceDraftViewModel`
+- `LearningConferencePreparationViewModel`
+- `LearningConferenceCompetencyViewModel`
+- `LearningConferenceEvidenceViewModel`
+- `StudentDesktopAdapter.learning_conference_preparation_for_student(student_id)`
+- `StudentDesktopAdapter.save_learning_conference_draft(draft)`
+- `StudentDesktopAdapter.load_learning_conference_draft(learning_conference_draft_id)`
+- `StudentDesktopAdapter.list_learning_conference_drafts_for_student(student_id)`
+
+Registrierte Konstanten:
+
+- `LEARNING_CONFERENCE_DRAFT_ID_PREFIX`
+- `LEARNING_CONFERENCE_DRAFT_STATUS`
+- `LEARNING_CONFERENCE_CROSS_TOPIC_KEYS`
+- `LEARNING_CONFERENCE_CHART_TYPES`
+
+Regel: Der LEG-Arbeitsentwurf ist keine Berichtsentitaet und kein `report_type`. Er speichert manuelle Inhalte und reine Referenzen, aber weder Kompetenztexte noch Beobachtungsfachdaten, Kompetenzstaende oder Diagrammdaten.
+
+## Sprint 7G.2 - Produktiver LEG-Arbeitsbereich
+
+Registrierte Python-Module und UI-Einstiege:
+
+- `src/desktop_app/dialogs/learning_conference_dialog.py`
+- `tests/test_learning_conference_ui.py`
+- `LearningConferenceDialog`
+- `LearningConferenceDialog.save_requested`
+- `LearningConferenceDialog.draft_view_model()`
+- `LearningConferenceDialog.apply_saved_draft(draft)`
+- `StudentProfileScreen.learning_conference_requested`
+- `AppShell.open_learning_conference_dialog(student_id)`
+- `_documentation_state_label(value)`
+- `_rating_label(value)`
+
+Registrierte zentrale Objektrollen:
+
+- `LearningConferenceProfileAction`
+- `LearningConferenceWorkspace`
+- `LearningConferencePreparationPanel`
+- `LearningConferenceConversationPanel`
+- `LearningConferenceCard`
+- `LearningConferenceSoftBlock`
+- `LearningConferenceChartCard`
+- `LearningConferenceHero`
+- `LearningConferenceSection`
+- `LearningConferencePrepared`
+- `LearningConferenceShared`
+- `LearningConferenceWarning`
+- `LearningConferenceSaveButton`
+- `LearningConferenceCanonicalStatus`
+- `LearningConferenceUnavailableEvidence`
+
+Regel: Diese Namen portieren ausschliesslich die freigegebene UX und binden sie an den bestehenden 7G.1-Draft. Sie fuehren keine neue Datenquelle, kein technisches Fachfeld und keine zweite Kompetenz- oder Beobachtungsprojektion ein.
+
+## Sprint 7G.3 - Dokumentationsfilter der LEG-Kompetenzauswahl
+
+Registrierte fluechtige ViewModel-Felder und Funktionen:
+
+- `LearningConferenceCompetencyViewModel.observation_dates`
+- `LearningConferenceCompetencyViewModel.has_current_confirmation`
+- `LearningConferenceCompetencyViewModel.is_documented_in_period(period_start, period_end)`
+- `_parse_evidence_date(value)`
+
+Registrierte Leseparameter und UI-Rollen:
+
+- `retained_competency_ids`
+- `LearningConferenceCompetencyFilterNote`
+- `LearningConferenceCompetencyEmpty_<subject_id>`
+- `LearningConferenceDialog._update_competency_visibility(selected_subjects)`
+- `LearningConferenceDialog._competency_filter_period()`
+- `LearningConferenceDialog._optional_date_edit(value, accessible_name)`
+- `LearningConferenceDialog._optional_date_value(edit)`
+
+Regel: `observation_dates` enthaelt ausschliesslich Datumsreferenzen bereits kanonisch beruecksichtigter aktiver Kompetenzbeobachtungen des Kindes. `has_current_confirmation` bildet nur das Vorhandensein der bestehenden aktuellen Bestaetigung ab. Beide Werte steuern ausschliesslich die sichtbare LEG-Auswahl und berechnen keinen Kompetenzstatus. `retained_competency_ids` darf historische Draft-Referenzen in derselben kanonischen Projektion aufloesbar halten, veraendert aber deren Statuslogik und die Standardprojektion ohne diesen Parameter nicht.

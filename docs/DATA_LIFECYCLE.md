@@ -626,6 +626,58 @@ SQLite report_drafts + Relationstabellen
 
 Regel: Laden rekonstruiert ausschliesslich gespeicherte manuelle Texte und Referenzen. Kompetenzstatus, Kompetenztexte und Beobachtungsinhalte werden aus ihren bestehenden Sources of Truth neu projiziert. Historische Kompetenzreferenzen bleiben dadurch aufloesbar, ohne fuer neue Auswahl reaktiviert zu werden.
 
+## LEG-Arbeitsentwurf speichern
+
+Start: Laura legt fuer einen Schueler einen Lernentwicklungsgespraech-Arbeitsentwurf an oder speichert einen bereits geladenen Entwurf erneut.
+
+Freigegebener Pfad:
+
+```text
+LEG ViewModel
+-> StudentDesktopAdapter
+-> LearningConferenceDraftApplicationService
+-> LearningConferenceDraftService
+-> SQLiteLearningConferenceDraftRepository
+-> SQLite learning_conference_drafts + Relationstabellen
+```
+
+Betroffene Datenquellen:
+
+- `learning_conference_drafts`
+- `learning_conference_draft_subjects`
+- `learning_conference_draft_cross_topics`
+- `learning_conference_draft_competencies`
+- `learning_conference_draft_observations`
+- `learning_conference_draft_charts`
+
+Erforderliche IDs:
+
+- neuer oder bestehender `learning_conference_draft_id`
+- bestehender `student_id`
+- ausgewaehlte bestehende `subject_id`
+- ausgewaehlte bestehende `competency_id`
+- ausgewaehlte bestehende `observation_id`
+
+Regel: Anlegen erzeugt genau einen Entwurf mit Status `draft` und unveraenderlichem `created_at`. Aktualisieren ersetzt manuelle Inhalte sowie Fach-, Themen-, Kompetenz-, Beobachtungs- und Diagrammreferenzen atomar und setzt `updated_at`. `student_id` bleibt stabil. Neue Beobachtungsreferenzen muessen aktiv sein und zum Kind gehoeren. Bereits referenzierte, spaeter soft-geloeschte Belege bleiben erhalten und werden beim Laden als nicht verfuegbar gekennzeichnet. Der Prozess erzeugt keine Kompetenzbewertung, keinen Kompetenzstatus, keine automatischen Texte, keine finale Version, Freigabe oder Archivierung.
+
+## LEG-Arbeitsentwurf laden
+
+Start: Laura oeffnet einen vorhandenen Entwurf zur Weiterbearbeitung.
+
+Leseweg:
+
+```text
+SQLite learning_conference_drafts + Relationstabellen
+-> SQLiteLearningConferenceDraftRepository
+-> Application Query
+-> LearningConferenceDraftViewModel
+-> produktiver Sprint-7G.2-LEG-Arbeitsbereich
+```
+
+Regel: Laden rekonstruiert manuelle Inhalte und stabile Referenzen. Kompetenzstatus, Kompetenztexte und Beobachtungsinhalte werden aus den bestehenden Live-Sources-of-Truth neu projiziert. Nicht mehr aktive Beobachtungsbelege werden weder verworfen noch ersetzt, sondern kontrolliert als nicht verfuegbar ausgewiesen. Der Draft ist kein eingefrorener Gespraechsstand.
+
+Sprint 7G.2 startet diesen Prozess im Schuelerprofil ueber `Lernentwicklungsgespräch`. Bei genau einem vorhandenen Draft wird dieser geladen. Bei mehreren Drafts muss Laura einen vorhandenen Entwurf oder das explizite Anlegen eines neuen Entwurfs waehlen. Die Dialogaktion `Entwurf speichern` darf jederzeit ausgefuehrt werden; Schliessen allein erzeugt keine finale Dokumentation und fuehrt keine stillschweigende Speicherung aus.
+
 ## Kompetenz aendern
 
 Start: Name, Beschreibung, Hierarchie oder Status einer bestehenden Kompetenz wird angepasst.

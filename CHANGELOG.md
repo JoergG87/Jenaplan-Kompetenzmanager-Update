@@ -1,5 +1,46 @@
 # CHANGELOG
 
+## Sprint 7G.3 - Dokumentierte Kompetenzen im LEG
+
+### Changed
+
+- Die LEG-Kompetenzauswahl zeigt nur noch Kompetenzen mit mindestens einer aktiven kindbezogenen Kompetenzbeobachtung im vollstaendig gesetzten LEG-Zeitraum oder mit einer aktuellen Bestaetigung; ohne vollstaendigen Zeitraum gelten alle aktiven Kompetenzbeobachtungen des Kindes.
+- Schnellbeobachtungen, soft-geloeschte Beobachtungen, Belege anderer Kinder und reine Katalogeintraege machen keine Kompetenz sichtbar.
+- Leere Themen, Kompetenzbereiche und Fachbaeume werden ausgeblendet und durch einen ruhigen fachbezogenen Leerzustand ersetzt.
+- Bereits im Draft ausgewaehlte Kompetenzen bleiben ausserhalb des aktuellen Filters sichtbar, ausgewaehlt und gekennzeichnet; historische Draft-Referenzen werden als expliziter Lesekontext weiterhin ueber die kanonische Projektion aufgeloest.
+- Zeitraumfelder koennen fuer neue beziehungsweise nur ueber das Gespraechsdatum definierte Drafts ungesetzt bleiben und aktualisieren den lokalen Sichtfilter ohne automatische Abwahl.
+
+### Not Changed
+
+- Keine Aenderung an Draft-Datenmodell, SQLite-Schema, Migration, Beobachtungen, Bestaetigungen, kanonischer Statuslogik, Berichtsfunktion oder uebriger LEG-UX und kein Commit.
+
+## Sprint 7G.2 - Produktive LEG-Oberflaeche
+
+### Added
+
+- Den freigegebenen Zwei-Seiten-Arbeitsbereich aus `prototypes/learning_conference_ux/` als produktiven PySide-Dialog portiert: links die Vorbereitung, rechts die live synchronisierte Gespraechsmappe mit den sechs freigegebenen Phasen.
+- Einen eindeutigen Einstieg `Lernentwicklungsgespräch` im Schuelerprofil ergaenzt; ein einzelner Draft wird direkt geladen, mehrere Drafts werden kontrolliert ausgewaehlt und ein neuer Draft bleibt eine explizite Auswahl.
+- Fachbereiche, vier uebergreifende Themen, vierstufige Kompetenzhierarchie, gefilterte Beobachtungsbelege, ruhige Mengenwarnung, drei neutrale Diagrammauswahlen sowie vorbereitete und gemeinsam vereinbarte Inhalte vollstaendig an den persistenten 7G.1-Draft gebunden.
+- Historische Kompetenzen und nicht mehr verfuegbare Beobachtungsreferenzen bleiben gekennzeichnet sichtbar; Kompetenzstatus bleibt ausschliesslich lesende kanonische Projektion.
+- Zentrale Theme-Regeln und fokussierte Offscreen-Tests fuer Einstieg, Rekonstruktion, Speicherung, Referenzerhalt, Warnung und unveraenderliche Kompetenzstaende ergaenzt.
+
+### Not Changed
+
+- Keine Datenmodell-, Schema-, Migrations-, Berichtsdomain-, PDF-, Kompetenzstatus-, Beobachtungs- oder Prototypaenderung und kein Commit.
+
+## Sprint 7G.1 - Persistenter LEG-Arbeitsentwurf
+
+### Added
+
+- Eigenen persistenten Arbeitsentwurf fuer Lernentwicklungsgespraeche mit stabiler `LCD-######`-ID, Schuelerbezug, Zeitraum, Gespraechsdatum, Status `draft`, verantwortlicher Lehrkraft sowie Erstellungs- und Aenderungszeitpunkt eingefuehrt.
+- Gespraechseinstieg, Kindrueckblick, Lehrkraftsicht, Staerken, Entwicklungsfelder, Ziele, Unterstuetzung, Vereinbarungen, Zustaendigkeiten und Ueberpruefungszeitpunkt als ausschliesslich manuell verantwortete Draft-Inhalte gespeichert; vorbereitete und gemeinsam vereinbarte Inhalte bleiben getrennt.
+- Fachliche Bereiche, uebergreifende Gespraechsthemen, Kompetenzen, Beobachtungsbelege und neutrale Diagrammtypen als normalisierte Auswahl beziehungsweise stabile Referenzen gespeichert.
+- Additive SQLite-Migration sowie Domain-, Repository-, Application-, Adapter- und ViewModel-Pfad fuer Anlegen, Laden, Aktualisieren und Wiedereroeffnen umgesetzt und fokussiert getestet.
+
+### Not Changed
+
+- Keine produktive UI-Portierung, finale Gespraechsdokumentation, Versionierung, Archivierung, Freigabe, Signatur, Elternportal, PDF-Erzeugung oder automatische paedagogische Texte; keine Aenderung an Kompetenzstatus, Beobachtungsbewertung, Berichtsdomain, PDF-Engine oder Prototypen und kein Commit.
+
 ## Sprint 7F.2 - 1:1 UX-Portierung Lernentwicklungsbericht
 
 ### Changed

@@ -60,6 +60,7 @@ class StudentProfileScreen(QWidget):
     document_remove_requested = Signal(str, str)
     competency_confirmation_requested = Signal(str, str, str, str)
     report_requested = Signal(str)
+    learning_conference_requested = Signal(str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -177,6 +178,10 @@ class StudentProfileScreen(QWidget):
 
         edit_student_button = QPushButton("Schüler bearbeiten")
         edit_student_button.clicked.connect(self._request_edit_student)
+        learning_conference_button = QPushButton("Lernentwicklungsgespräch")
+        learning_conference_button.setObjectName("LearningConferenceProfileAction")
+        learning_conference_button.clicked.connect(self._request_learning_conference)
+        header.addWidget(learning_conference_button)
         header.addWidget(edit_student_button)
 
         layout.addLayout(header)
@@ -522,6 +527,12 @@ class StudentProfileScreen(QWidget):
             self.report_feedback_label.setText("Bitte zuerst einen Schüler auswählen.")
             return
         self.report_requested.emit(self.current_student.student_id)
+
+    def _request_learning_conference(self) -> None:
+        if self.current_student is None:
+            self.action_feedback_label.setText("Bitte zuerst einen Schüler auswählen.")
+            return
+        self.learning_conference_requested.emit(self.current_student.student_id)
 
     def _render_profile_overview(
         self,

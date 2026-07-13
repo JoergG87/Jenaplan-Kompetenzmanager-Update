@@ -162,6 +162,106 @@ QFrame#LearningReportReportCard {{
     border: 1px solid #CFE0E6;
     border-radius: 12px;
 }}
+QFrame#LearningConferenceTopBar {{
+    background-color: {COLOR_NAVY};
+    border: none;
+}}
+QLabel#LearningConferenceEyebrow {{
+    color: #A9D7D5;
+    font-size: 11px;
+    font-weight: 700;
+}}
+QLabel#LearningConferenceTopTitle {{
+    color: #FFFFFF;
+    font-size: 22px;
+    font-weight: 700;
+}}
+QLabel#LearningConferenceTopMeta {{
+    color: #DCEAEC;
+    font-size: 12px;
+}}
+QFrame#LearningConferencePreparationPanel {{
+    background-color: #F4F8F8;
+    border: none;
+}}
+QFrame#LearningConferenceConversationPanel {{
+    background-color: #F8FAF9;
+    border: none;
+}}
+QFrame#LearningConferenceCard {{
+    background-color: #FFFFFF;
+    border: 1px solid #DCE6E9;
+    border-radius: 15px;
+}}
+QFrame#LearningConferenceSoftBlock {{
+    background-color: #F7FAFA;
+    border: none;
+    border-radius: 10px;
+}}
+QFrame#LearningConferenceChartCard {{
+    background-color: #F7FAF9;
+    border: 1px solid #E3EBEA;
+    border-radius: 12px;
+}}
+QFrame#LearningConferenceHero {{
+    background-color: {COLOR_NAVY};
+    border: none;
+    border-radius: 18px;
+}}
+QFrame#LearningConferenceSection {{
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid #E1E8E8;
+}}
+QFrame#LearningConferencePrepared {{
+    background-color: #F2F7F6;
+    border: none;
+    border-radius: 11px;
+}}
+QFrame#LearningConferenceShared {{
+    background-color: #FFFFFF;
+    border: 1px dashed #BFCFD0;
+    border-radius: 11px;
+}}
+QFrame#LearningConferenceWarning {{
+    background-color: #FFF5E8;
+    border: none;
+    border-radius: 9px;
+}}
+QLabel#LearningConferenceWarningText {{ color: #865424; }}
+QLabel#LearningConferenceSectionNumber {{
+    color: {COLOR_TURQUOISE};
+    font-size: 11px;
+    font-weight: 700;
+}}
+QLabel#LearningConferenceHeroTitle {{
+    color: #FFFFFF;
+    font-size: 25px;
+    font-weight: 700;
+}}
+QLabel#LearningConferenceHeroMeta {{ color: #DCEAEC; }}
+QToolButton#LearningConferenceHierarchyButton {{
+    color: {COLOR_NAVY};
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    padding: 7px 5px;
+    font-weight: 600;
+}}
+QToolButton#LearningConferenceHierarchyButton:hover {{
+    background-color: #EFF5F4;
+    border-radius: 7px;
+}}
+QPushButton#LearningConferenceSaveButton {{
+    background-color: {COLOR_BLUE};
+    color: #FFFFFF;
+    border: 1px solid {COLOR_BLUE_DARK};
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-weight: 700;
+}}
+QPushButton#LearningConferenceSaveButton:hover {{ background-color: {COLOR_BLUE_DARK}; }}
+QPushButton#LearningConferenceSaveButton:pressed {{ background-color: {COLOR_BLUE_PRESSED}; }}
 QFrame#LearningReportResponsibilityNote {{
     background-color: #EDF6FA;
     border: 1px solid #CFE2EA;
