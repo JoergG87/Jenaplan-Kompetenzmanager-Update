@@ -86,6 +86,105 @@ QFrame#AppPanel {{
     border: 1px solid {COLOR_BORDER};
     border-radius: 10px;
 }}
+QFrame#LearningReportTopBar {{
+    background-color: {COLOR_NAVY};
+    border: none;
+    border-radius: 0px;
+}}
+QLabel#LearningReportBrand {{
+    color: #FFFFFF;
+    font-size: 18px;
+    font-weight: 700;
+}}
+QLabel#LearningReportTopHint {{
+    color: #D8E9F0;
+    font-size: 12px;
+}}
+QPushButton#LearningReportModeButton {{
+    background-color: transparent;
+    color: #DCEAF0;
+    border: none;
+    border-radius: 9px;
+    padding: 9px 18px;
+    font-weight: 600;
+}}
+QPushButton#LearningReportModeButton:hover {{
+    background-color: #244661;
+}}
+QPushButton#LearningReportModeButton:checked {{
+    background-color: #FFFFFF;
+    color: {COLOR_NAVY};
+}}
+QFrame#LearningReportSidebar {{
+    background-color: #F7FAFB;
+    border-right: 1px solid #D8E2E7;
+}}
+QPushButton#LearningReportSubjectButton {{
+    text-align: left;
+    background-color: transparent;
+    border: none;
+    padding: 10px 12px;
+    color: #49606F;
+}}
+QPushButton#LearningReportSubjectButton:checked {{
+    background-color: #E5F0F4;
+    color: {COLOR_NAVY};
+    border-left: 3px solid {COLOR_BLUE};
+}}
+QLabel#LearningReportEyebrow {{
+    color: {COLOR_BLUE};
+    font-size: 11px;
+    font-weight: 700;
+}}
+QLabel#LearningReportStatusPill {{
+    color: #73521C;
+    background-color: #FFF4DB;
+    border: 1px solid #ECD8A6;
+    border-radius: 10px;
+    padding: 4px 10px;
+    font-weight: 600;
+}}
+QFrame#LearningReportInternalCard {{
+    background-color: #F4F7F8;
+    border: 1px dashed #B7C7CF;
+    border-radius: 12px;
+}}
+QLabel#LearningReportInternalBadge {{
+    color: #76501E;
+    background-color: #FFF6E8;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+}}
+QFrame#LearningReportReportCard {{
+    background-color: #FFFFFF;
+    border: 1px solid #CFE0E6;
+    border-radius: 12px;
+}}
+QFrame#LearningReportResponsibilityNote {{
+    background-color: #EDF6FA;
+    border: 1px solid #CFE2EA;
+    border-radius: 9px;
+}}
+QFrame#LearningReportPreviewPanel {{
+    background-color: #E9F0F3;
+    border: 1px solid #D0DCE2;
+    border-radius: 12px;
+}}
+QWidget#LearningReportPreviewCanvas {{
+    background-color: #E9F0F3;
+}}
+QFrame#LearningReportPaperPage {{
+    background-color: #FFFFFF;
+    border: 1px solid #D1DCE1;
+    border-radius: 3px;
+}}
+QFrame#LearningReportDocumentBlock {{
+    background-color: #F7FAFB;
+    border: 1px solid #D8E2E7;
+    border-radius: 8px;
+}}
 QFrame#ObservationFilterBar {{
     background-color: rgba(248, 251, 253, 210);
     border: 1px solid #DCE7EF;

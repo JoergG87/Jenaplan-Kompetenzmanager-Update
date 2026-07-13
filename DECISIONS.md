@@ -1940,3 +1940,21 @@ Eine Schnellbeobachtung ist eine bewusst kompetenzfreie aktive Beobachtung mit v
 Eine spaetere Kompetenzzuordnung und Bewertung ist im normalen Bearbeitungsdialog moeglich. Es erfolgt weder beim Speichern noch spaeter eine automatische Zuordnung oder Bewertung. Sobald eine Kompetenz ergaenzt wird, gelten wieder die normalen Kompetenz- und Bewertungsregeln.
 
 Kompetenzfreie Schnellbeobachtungen erscheinen im Beobachtungsverlauf, wirken mangels Rating-Zeilen aber nicht auf Kompetenzstatus, Dokumentationsfortschritt, Diagramme oder Bestaetigungslogik und erzeugen keine Kompetenz- oder Entwicklungsinformation fuer Berichte.
+
+## ADR-052 - Persistenter Berichtsentwurf ist keine finale Berichtsdomain
+
+Sprint 7F.1 fuehrt fuer Lernentwicklungsberichte einen persistenten Arbeitsentwurf mit Status `draft` ein. Der Entwurf speichert manuelle Texte und bewusste Auswahlreferenzen, damit Laura die Berichtswerkstatt schliessen und spaeter weiterbearbeiten kann.
+
+Der Entwurf ist bewusst von einer spaeteren finalen Berichtsentitaet getrennt:
+
+- keine Freigabe oder Pruefung
+- keine Versionierung oder Archivierung
+- kein eingefrorener Ausgabestand
+- keine Signatur oder Empfaengerverwaltung
+- keine eigene Kompetenzbewertung
+
+Kompetenzen und Beobachtungen werden ausschliesslich ueber ihre stabilen IDs referenziert. Texte, Hierarchie, Bewertungen, Bestaetigungen, Beobachtungsdatum, Kontext und Notiz bleiben in ihren bestehenden Sources of Truth. Beim Laden werden diese Informationen erneut ueber die kanonische Kompetenz- und Beobachtungsprojektion aufgeloest.
+
+Die persistente Entwurfsstruktur besteht aus `report_drafts` und normalisierten Relationstabellen fuer Faecher/Fachtexte, Kompetenzen, Beobachtungen und Diagramme. Anlegen und Aktualisieren erfolgen atomar ueber ViewModel, Application Layer, Domain-Service und Repository. `ReportOutputModel` und `PdfRenderer` bleiben reine Ausgabeschicht und kennen die Entwurfstabellen nicht.
+
+Eine spaetere Freigabe-, Versions- oder Archivierungsdomain benoetigt eine neue Product-Owner- und Datenmodellentscheidung und darf nicht durch zusaetzliche Statuswerte in diesen Sprint hineingezogen werden.

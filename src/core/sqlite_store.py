@@ -27,6 +27,7 @@ from .constants import (
     ID_SEQUENCE_WIDTH,
     LAST_NAME,
     MEDIA_ID_PREFIX,
+    REPORT_DRAFT_ID_PREFIX,
     STUDENT_ID,
     STUDENT_NOTES,
     UPDATED_AT,
@@ -44,6 +45,12 @@ from .records import (
     ReferenceData,
     StudentRecord,
     seed_reference_data,
+)
+from .report_draft import (
+    ReportDraftChartSelectionRecord,
+    ReportDraftError,
+    ReportDraftRecord,
+    ReportDraftSubjectRecord,
 )
 
 
@@ -304,6 +311,69 @@ class SQLiteDatabase:
                         updated_at TEXT NOT NULL
                     );
 
+                    CREATE TABLE IF NOT EXISTS report_drafts (
+                        report_draft_id TEXT PRIMARY KEY,
+                        student_id TEXT NOT NULL,
+                        report_type TEXT NOT NULL CHECK (report_type = 'learning_development'),
+                        period_start TEXT NOT NULL,
+                        period_end TEXT NOT NULL,
+                        status TEXT NOT NULL CHECK (status = 'draft'),
+                        teacher_name TEXT NOT NULL DEFAULT '',
+                        overall_text TEXT NOT NULL DEFAULT '',
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        FOREIGN KEY (student_id) REFERENCES students(student_id)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS report_draft_subjects (
+                        report_draft_id TEXT NOT NULL,
+                        subject_id TEXT NOT NULL,
+                        strengths_text TEXT NOT NULL DEFAULT '',
+                        development_text TEXT NOT NULL DEFAULT '',
+                        support_needs_text TEXT NOT NULL DEFAULT '',
+                        next_goals_text TEXT NOT NULL DEFAULT '',
+                        PRIMARY KEY (report_draft_id, subject_id),
+                        FOREIGN KEY (report_draft_id)
+                            REFERENCES report_drafts(report_draft_id)
+                            ON DELETE CASCADE
+                    );
+
+                    CREATE TABLE IF NOT EXISTS report_draft_competencies (
+                        report_draft_id TEXT NOT NULL,
+                        competency_id TEXT NOT NULL,
+                        PRIMARY KEY (report_draft_id, competency_id),
+                        FOREIGN KEY (report_draft_id)
+                            REFERENCES report_drafts(report_draft_id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY (competency_id) REFERENCES competencies(competency_id)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS report_draft_observations (
+                        report_draft_id TEXT NOT NULL,
+                        observation_id TEXT NOT NULL,
+                        PRIMARY KEY (report_draft_id, observation_id),
+                        FOREIGN KEY (report_draft_id)
+                            REFERENCES report_drafts(report_draft_id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY (observation_id) REFERENCES observations(observation_id)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS report_draft_charts (
+                        report_draft_id TEXT NOT NULL,
+                        subject_id TEXT NOT NULL,
+                        chart_type TEXT NOT NULL CHECK (
+                            chart_type IN (
+                                'documentation_coverage',
+                                'competency_timeline',
+                                'observation_timeline'
+                            )
+                        ),
+                        PRIMARY KEY (report_draft_id, subject_id, chart_type),
+                        FOREIGN KEY (report_draft_id)
+                            REFERENCES report_drafts(report_draft_id)
+                            ON DELETE CASCADE
+                    );
+
                     CREATE INDEX IF NOT EXISTS idx_groups_name
                         ON groups(group_name);
                     CREATE INDEX IF NOT EXISTS idx_courses_name
@@ -330,6 +400,12 @@ class SQLiteDatabase:
                         ON course_group_courses(course_id);
                     CREATE INDEX IF NOT EXISTS idx_documentation_subject_settings_active
                         ON documentation_subject_settings(active, subject_id);
+                    CREATE INDEX IF NOT EXISTS idx_report_drafts_student_updated
+                        ON report_drafts(student_id, updated_at DESC);
+                    CREATE INDEX IF NOT EXISTS idx_report_draft_competencies_competency
+                        ON report_draft_competencies(competency_id);
+                    CREATE INDEX IF NOT EXISTS idx_report_draft_observations_observation
+                        ON report_draft_observations(observation_id);
                     """
                 )
                 self._ensure_column(connection, "groups", "sort_order", "INTEGER NOT NULL DEFAULT 0")
@@ -397,6 +473,7 @@ class SQLiteDatabase:
         self.initialize_schema()
         with closing(self.connect()) as connection:
             with connection:
+                connection.execute("DELETE FROM report_drafts")
                 connection.execute("DELETE FROM observation_competency_ratings")
                 connection.execute("DELETE FROM documents")
                 connection.execute("DELETE FROM observations")
@@ -1769,6 +1846,356 @@ class SQLiteMasterDataRepository:
             except ValueError:
                 continue
         return f"{prefix}-{next_number:0{ID_SEQUENCE_WIDTH}d}"
+
+
+class SQLiteReportDraftRepository:
+    """Persist the complete editable report-draft aggregate atomically."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def next_report_draft_id(self) -> str:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                "SELECT report_draft_id FROM report_drafts"
+            ).fetchall()
+        next_number = 1
+        for row in rows:
+            value = str(row["report_draft_id"])
+            if not value.startswith(f"{REPORT_DRAFT_ID_PREFIX}-"):
+                continue
+            try:
+                next_number = max(next_number, int(value.split("-", 1)[1]) + 1)
+            except ValueError:
+                continue
+        return f"{REPORT_DRAFT_ID_PREFIX}-{next_number:0{ID_SEQUENCE_WIDTH}d}"
+
+    def create_report_draft(self, draft: ReportDraftRecord) -> ReportDraftRecord:
+        if self.get_report_draft(draft.report_draft_id) is not None:
+            raise ReportDraftError(
+                f"report_draft_id existiert bereits: {draft.report_draft_id}"
+            )
+        with closing(self.database.connect()) as connection:
+            with connection:
+                self._validate_references(connection, draft)
+                connection.execute(
+                    """
+                    INSERT INTO report_drafts (
+                        report_draft_id,
+                        student_id,
+                        report_type,
+                        period_start,
+                        period_end,
+                        status,
+                        teacher_name,
+                        overall_text,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    self._draft_row(draft),
+                )
+                self._replace_relations(connection, draft)
+        return draft
+
+    def update_report_draft(self, draft: ReportDraftRecord) -> ReportDraftRecord:
+        if self.get_report_draft(draft.report_draft_id) is None:
+            raise ReportDraftError(
+                f"report_draft_id nicht gefunden: {draft.report_draft_id}"
+            )
+        with closing(self.database.connect()) as connection:
+            with connection:
+                self._validate_references(connection, draft)
+                connection.execute(
+                    """
+                    UPDATE report_drafts
+                    SET
+                        student_id = ?,
+                        report_type = ?,
+                        period_start = ?,
+                        period_end = ?,
+                        status = ?,
+                        teacher_name = ?,
+                        overall_text = ?,
+                        updated_at = ?
+                    WHERE report_draft_id = ?
+                    """,
+                    (
+                        draft.student_id,
+                        draft.report_type,
+                        draft.period_start,
+                        draft.period_end,
+                        draft.status,
+                        draft.teacher_name,
+                        draft.overall_text,
+                        draft.updated_at,
+                        draft.report_draft_id,
+                    ),
+                )
+                self._replace_relations(connection, draft)
+        return draft
+
+    def get_report_draft(self, report_draft_id: str) -> ReportDraftRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    report_draft_id,
+                    student_id,
+                    report_type,
+                    period_start,
+                    period_end,
+                    status,
+                    teacher_name,
+                    overall_text,
+                    created_at,
+                    updated_at
+                FROM report_drafts
+                WHERE report_draft_id = ?
+                """,
+                (report_draft_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            return self._record_from_row(connection, row)
+
+    def list_report_drafts_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[ReportDraftRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    report_draft_id,
+                    student_id,
+                    report_type,
+                    period_start,
+                    period_end,
+                    status,
+                    teacher_name,
+                    overall_text,
+                    created_at,
+                    updated_at
+                FROM report_drafts
+                WHERE student_id = ?
+                ORDER BY updated_at DESC, report_draft_id DESC
+                """,
+                (student_id,),
+            ).fetchall()
+            return tuple(self._record_from_row(connection, row) for row in rows)
+
+    def _validate_references(
+        self,
+        connection: sqlite3.Connection,
+        draft: ReportDraftRecord,
+    ) -> None:
+        student = connection.execute(
+            "SELECT student_id FROM students WHERE student_id = ?",
+            (draft.student_id,),
+        ).fetchone()
+        if student is None:
+            raise ReportDraftError(f"student_id nicht gefunden: {draft.student_id}")
+        if draft.competency_ids:
+            placeholders = ", ".join("?" for _ in draft.competency_ids)
+            found = {
+                row["competency_id"]
+                for row in connection.execute(
+                    f"SELECT competency_id FROM competencies WHERE competency_id IN ({placeholders})",
+                    draft.competency_ids,
+                ).fetchall()
+            }
+            missing = set(draft.competency_ids) - found
+            if missing:
+                raise ReportDraftError(
+                    f"Kompetenzreferenzen nicht gefunden: {', '.join(sorted(missing))}"
+                )
+        if draft.observation_ids:
+            placeholders = ", ".join("?" for _ in draft.observation_ids)
+            found = {
+                row["observation_id"]
+                for row in connection.execute(
+                    f"""
+                    SELECT observation_id
+                    FROM observations
+                    WHERE student_id = ? AND observation_id IN ({placeholders})
+                    """,
+                    (draft.student_id, *draft.observation_ids),
+                ).fetchall()
+            }
+            invalid = set(draft.observation_ids) - found
+            if invalid:
+                raise ReportDraftError(
+                    "Beobachtungsreferenzen gehoeren nicht zum Schueler oder fehlen: "
+                    f"{', '.join(sorted(invalid))}"
+                )
+
+    def _replace_relations(
+        self,
+        connection: sqlite3.Connection,
+        draft: ReportDraftRecord,
+    ) -> None:
+        for table in (
+            "report_draft_subjects",
+            "report_draft_competencies",
+            "report_draft_observations",
+            "report_draft_charts",
+        ):
+            connection.execute(
+                f"DELETE FROM {table} WHERE report_draft_id = ?",
+                (draft.report_draft_id,),
+            )
+        connection.executemany(
+            """
+            INSERT INTO report_draft_subjects (
+                report_draft_id,
+                subject_id,
+                strengths_text,
+                development_text,
+                support_needs_text,
+                next_goals_text
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                (
+                    draft.report_draft_id,
+                    subject.subject_id,
+                    subject.strengths_text,
+                    subject.development_text,
+                    subject.support_needs_text,
+                    subject.next_goals_text,
+                )
+                for subject in draft.subjects
+            ),
+        )
+        connection.executemany(
+            """
+            INSERT INTO report_draft_competencies (report_draft_id, competency_id)
+            VALUES (?, ?)
+            """,
+            (
+                (draft.report_draft_id, competency_id)
+                for competency_id in draft.competency_ids
+            ),
+        )
+        connection.executemany(
+            """
+            INSERT INTO report_draft_observations (report_draft_id, observation_id)
+            VALUES (?, ?)
+            """,
+            (
+                (draft.report_draft_id, observation_id)
+                for observation_id in draft.observation_ids
+            ),
+        )
+        connection.executemany(
+            """
+            INSERT INTO report_draft_charts (report_draft_id, subject_id, chart_type)
+            VALUES (?, ?, ?)
+            """,
+            (
+                (draft.report_draft_id, chart.subject_id, chart.chart_type)
+                for chart in draft.chart_selections
+            ),
+        )
+
+    def _record_from_row(
+        self,
+        connection: sqlite3.Connection,
+        row: sqlite3.Row,
+    ) -> ReportDraftRecord:
+        report_draft_id = row["report_draft_id"]
+        subjects = tuple(
+            ReportDraftSubjectRecord(
+                subject["subject_id"],
+                subject["strengths_text"],
+                subject["development_text"],
+                subject["support_needs_text"],
+                subject["next_goals_text"],
+            )
+            for subject in connection.execute(
+                """
+                SELECT
+                    subject_id,
+                    strengths_text,
+                    development_text,
+                    support_needs_text,
+                    next_goals_text
+                FROM report_draft_subjects
+                WHERE report_draft_id = ?
+                ORDER BY subject_id
+                """,
+                (report_draft_id,),
+            ).fetchall()
+        )
+        competency_ids = tuple(
+            item["competency_id"]
+            for item in connection.execute(
+                """
+                SELECT competency_id
+                FROM report_draft_competencies
+                WHERE report_draft_id = ?
+                ORDER BY competency_id
+                """,
+                (report_draft_id,),
+            ).fetchall()
+        )
+        observation_ids = tuple(
+            item["observation_id"]
+            for item in connection.execute(
+                """
+                SELECT observation_id
+                FROM report_draft_observations
+                WHERE report_draft_id = ?
+                ORDER BY observation_id
+                """,
+                (report_draft_id,),
+            ).fetchall()
+        )
+        charts = tuple(
+            ReportDraftChartSelectionRecord(item["subject_id"], item["chart_type"])
+            for item in connection.execute(
+                """
+                SELECT subject_id, chart_type
+                FROM report_draft_charts
+                WHERE report_draft_id = ?
+                ORDER BY subject_id, chart_type
+                """,
+                (report_draft_id,),
+            ).fetchall()
+        )
+        return ReportDraftRecord(
+            report_draft_id,
+            row["student_id"],
+            row["report_type"],
+            row["period_start"],
+            row["period_end"],
+            row["status"],
+            row["teacher_name"],
+            row["overall_text"],
+            row["created_at"],
+            row["updated_at"],
+            subjects,
+            competency_ids,
+            observation_ids,
+            charts,
+        )
+
+    def _draft_row(self, draft: ReportDraftRecord) -> tuple[object, ...]:
+        return (
+            draft.report_draft_id,
+            draft.student_id,
+            draft.report_type,
+            draft.period_start,
+            draft.period_end,
+            draft.status,
+            draft.teacher_name,
+            draft.overall_text,
+            draft.created_at,
+            draft.updated_at,
+        )
 
 
 def create_sqlite_seed_database(path: Path = SQLITE_SPIKE_PATH) -> SQLiteDatabase:

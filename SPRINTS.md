@@ -6,6 +6,29 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 7F.2 - 1:1 UX-Portierung Lernentwicklungsbericht 🔄
+
+- [x] Oberen Wechsel `Bericht bearbeiten` / `Berichtsvorschau` aus dem freigegebenen Prototyp übernommen
+- [x] Linke Arbeitsbereichsnavigation mit Dokumentkontext, Fachseiten und Abschluss übernommen
+- [x] Kartenstruktur, Informationshierarchie, Fachtexte, Kompetenzauswahl, Belegauswahl und Vorschaukonzept portiert
+- [x] Vorhandene Draft-Persistenz an Öffnen, Laden, Speichern und erneutes Öffnen der Berichtswerkstatt angebunden
+- [x] Nur die drei erlaubten neutralen Diagrammtypen auswählbar und ausgabewirksam gemacht
+- [x] Keine Änderung an Datenmodell, Repository, Kompetenzprojektion, Beobachtungslogik, Output-Modellklassen oder Renderer
+- [x] Fokussierte Bericht-/Draft-/PDF-Tests erfolgreich
+- [ ] Vollständige Regression ohne fachfremde Altfehler
+- [x] Kein Commit erstellt
+
+## Sprint 7F.1 - Persistenter Berichtsentwurf 🔄
+
+- [x] Additive SQLite-Migration fuer Berichtsentwurf und normalisierte Auswahlrelationen umgesetzt
+- [x] Entwurf mit `RPD-######`, Schuelerbezug, Zeitraum, Status `draft`, Lehrkraft, Gesamtblick und Zeitstempeln angelegt
+- [x] Manuelle Fachtexte fuer Staerken, Lernentwicklung, Unterstuetzungsbedarf und naechste Ziele gespeichert
+- [x] Fach-, Kompetenz-, Beobachtungs- und Diagrammauswahl als Referenzen gespeichert
+- [x] Repository, Domain-Service, Application Commands/Queries, ViewModels und Desktop-Adapter fuer Anlegen, Laden, Aktualisieren und Auflisten umgesetzt
+- [x] Kompetenzprojektion, Beobachtungslogik, `ReportOutputModel` und PDF Renderer unveraendert gelassen
+- [x] Sprint 7F.2 verbindet die persistente Draft-Struktur mit der 1:1 portierten Berichtswerkstatt-UX
+- [x] Kein Commit erstellt
+
 ## Sprint 4B - Lehrplanbasierter Kompetenzkatalog ✅
 
 - [x] Status: Abgeschlossen

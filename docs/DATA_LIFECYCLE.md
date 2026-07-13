@@ -577,6 +577,55 @@ Automatisch profitierende Ansichten:
 
 Regel: Der produktive App-Start erzeugt keine Demo-Schueler. Testdaten werden nur durch das explizite Script erzeugt. Ohne `--reset` bricht das Script ab, wenn bereits Schueler, Beobachtungen oder Dokumente vorhanden sind. Mit `--reset` wird bewusst ein frisches lokales Testsystem erzeugt. Der Pilottest-Seed bildet ein Halbjahr von September bis Januar ab und enthaelt unterschiedliche Beobachtungsdichten, Kompetenzverlaeufe, bestaetigte Kompetenzstaende, Abweichungen zwischen Vorschlag und Bestaetigung sowie Demo-Dokumente. Es werden keine echten Kindernamen und keine echten Dokumente verwendet; Demo-Dateien sind harmlose Platzhalter und werden nicht versioniert.
 
+## Lernentwicklungsbericht-Entwurf speichern
+
+Start: Laura legt aus einem Schuelerprofil einen Lernentwicklungsbericht-Entwurf an oder speichert einen bereits geladenen Entwurf erneut.
+
+Freigegebener Pfad:
+
+```text
+PySide Berichtswerkstatt
+-> LearningReportDraftViewModel
+-> StudentDesktopAdapter
+-> Application Command / ReportDraftService
+-> SQLiteReportDraftRepository
+-> SQLite report_drafts + Relationstabellen
+```
+
+Betroffene Datenquellen:
+
+- `report_drafts`
+- `report_draft_subjects`
+- `report_draft_competencies`
+- `report_draft_observations`
+- `report_draft_charts`
+
+Erforderliche IDs:
+
+- neuer oder bestehender `report_draft_id`
+- bestehender `student_id`
+- ausgewaehlte bestehende `subject_id`
+- ausgewaehlte bestehende `competency_id`
+- ausgewaehlte bestehende `observation_id`
+
+Regel: Anlegen erzeugt genau einen Entwurf mit Status `draft` und unveraenderlichem `created_at`. Aktualisieren ersetzt Fachauswahl, Fachtexte, Kompetenz-, Beobachtungs- und Diagrammreferenzen atomar und setzt `updated_at`. Kompetenz- und Beobachtungsinhalte werden nicht kopiert. Der Prozess erzeugt keine Bewertung, Bestaetigung, Version, Freigabe, Archivierung oder finale Ausgabe. Das neutrale `ReportOutputModel` wird weiterhin erst fuer die Vorschau beziehungsweise PDF-Ausgabe aus dem geladenen Entwurf und den aktuellen freigegebenen Leseprojektionen gebaut.
+
+## Lernentwicklungsbericht-Entwurf laden
+
+Start: Laura oeffnet einen vorhandenen Entwurf zur Weiterbearbeitung.
+
+Leseweg:
+
+```text
+SQLite report_drafts + Relationstabellen
+-> SQLiteReportDraftRepository
+-> Application Query
+-> LearningReportDraftViewModel
+-> PySide Berichtswerkstatt
+```
+
+Regel: Laden rekonstruiert ausschliesslich gespeicherte manuelle Texte und Referenzen. Kompetenzstatus, Kompetenztexte und Beobachtungsinhalte werden aus ihren bestehenden Sources of Truth neu projiziert. Historische Kompetenzreferenzen bleiben dadurch aufloesbar, ohne fuer neue Auswahl reaktiviert zu werden.
+
 ## Kompetenz aendern
 
 Start: Name, Beschreibung, Hierarchie oder Status einer bestehenden Kompetenz wird angepasst.

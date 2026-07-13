@@ -29,6 +29,7 @@ from src.desktop_app.dialogs.master_data_dialog import (
     CourseGroupDialog,
     MasterDataNameDialog,
 )
+from src.desktop_app.dialogs.learning_report_dialog import LearningReportDialog
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
@@ -174,6 +175,9 @@ class AppShell(QMainWindow):
         self.student_profile_screen.competency_confirmation_requested.connect(
             self.confirm_competency_status
         )
+        self.student_profile_screen.report_requested.connect(
+            self.open_learning_report_dialog
+        )
         self.master_data_screen.group_add_requested.connect(self.open_new_group_dialog)
         self.master_data_screen.group_rename_requested.connect(
             self.open_rename_group_dialog
@@ -315,6 +319,59 @@ class AppShell(QMainWindow):
         dialog = NewStudentDialog(self.adapter, self.master_data_adapter)
         dialog.student_created.connect(self.handle_student_created)
         dialog.exec()
+
+    def open_learning_report_dialog(self, student_id: str) -> None:
+        """Open the productive report workspace with the latest saved draft."""
+        preparation = self.adapter.learning_report_preparation_for_student(student_id)
+        if preparation is None:
+            self.status_label.setText("Schülerprofil wurde nicht gefunden.")
+            return
+        drafts = self.adapter.list_learning_report_drafts_for_student(student_id)
+        initial_draft = drafts[0] if drafts else None
+        dialog = LearningReportDialog(preparation, self, initial_draft)
+
+        def save_draft(draft: object) -> None:
+            try:
+                saved = self.adapter.save_learning_report_draft(draft)
+            except Exception as error:
+                QMessageBox.warning(
+                    dialog,
+                    "Entwurf konnte nicht gespeichert werden",
+                    str(error),
+                )
+                return
+            dialog.apply_saved_draft(saved)
+            self.status_label.setText("Lernentwicklungsbericht-Entwurf gespeichert.")
+
+        dialog.save_requested.connect(save_draft)
+        dialog.pdf_requested.connect(self.export_learning_report_pdf)
+        dialog.exec()
+
+    def export_learning_report_pdf(self, output_model: object) -> None:
+        """Hand a complete neutral output model to the unchanged PDF renderer."""
+        metadata = getattr(output_model, "metadata", None)
+        student_name = str(getattr(metadata, "student_name", "Lernentwicklungsbericht"))
+        safe_name = "_".join(student_name.split()) or "Lernentwicklungsbericht"
+        target_path, _selected_filter = QFileDialog.getSaveFileName(
+            self,
+            "Lernentwicklungsbericht als PDF speichern",
+            f"Lernentwicklungsbericht_{safe_name}.pdf",
+            "PDF-Datei (*.pdf)",
+        )
+        if not target_path:
+            return
+        try:
+            from prototypes.pdf_engine.renderer import PdfRenderer
+
+            rendered_path = PdfRenderer().render(output_model, Path(target_path))
+        except Exception as error:  # pragma: no cover - platform/reportlab feedback
+            QMessageBox.warning(
+                self,
+                "PDF konnte nicht erstellt werden",
+                str(error),
+            )
+            return
+        self.status_label.setText(f"PDF erstellt: {rendered_path}")
 
     def open_edit_student_dialog(self, student_id: str) -> None:
         """Open the student dialog with persisted student data."""

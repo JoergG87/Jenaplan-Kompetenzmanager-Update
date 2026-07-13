@@ -22,6 +22,15 @@ from src.application.dispatcher import (
     student_create_handler,
     student_update_handler,
 )
+from src.application.commands.report import (
+    CreateLearningReportDraftCommand,
+    GetLearningReportDraftQuery,
+    LearningReportApplicationService,
+    ListLearningReportDraftsQuery,
+    PrepareLearningReportQuery,
+    ReportDraftApplicationService,
+    UpdateLearningReportDraftCommand,
+)
 from src.core.observation import (
     ObservationCompetencyRatingRecord,
     ObservationService,
@@ -36,11 +45,13 @@ from src.core.sqlite_store import (
     SQLiteDocumentRepository,
     SQLiteGroupRepository,
     SQLiteObservationRepository,
+    SQLiteReportDraftRepository,
     SQLiteStudentCompetencyConfirmationRepository,
     SQLiteStudentRepository,
     DocumentRecord,
     StudentCompetencyConfirmationRecord,
 )
+from src.core.report_draft import ReportDraftService
 from src.core.student import StudentService, StudentValidator
 from src.core.records import CourseRecord, GroupRecord, StudentRecord
 from src.desktop_app.adapters.curriculum_desktop_adapter import (
@@ -76,6 +87,11 @@ from src.desktop_app.view_models.observation_view_model import (
 from src.desktop_app.view_models.settings_view_model import (
     DocumentationSubjectOptionViewModel,
     SettingsViewModel,
+)
+from src.desktop_app.view_models.learning_report_view_model import (
+    LearningReportDraftViewModel,
+    LearningReportPreparationViewModel,
+    build_learning_report_preparation,
 )
 from src.desktop_app.view_models.student_view_model import (
     GroupSummaryViewModel,
@@ -742,6 +758,84 @@ class StudentDesktopAdapter:
             profile.student_id,
             profile.display_name,
             self._report_subject_sections(competency_groups, observations),
+        )
+
+    def learning_report_preparation_for_student(
+        self,
+        student_id: str,
+    ) -> LearningReportPreparationViewModel | None:
+        """Prepare a transient report selection from the canonical status projection."""
+        source = LearningReportApplicationService(
+            self.get_student_profile,
+            self.list_competency_status_projection_for_student,
+            self.list_observations_for_student,
+        ).execute(PrepareLearningReportQuery(student_id))
+        if source is None:
+            return None
+        return build_learning_report_preparation(
+            source.student,
+            source.competency_statuses,
+            source.observations,
+        )
+
+    def save_learning_report_draft(
+        self,
+        draft: LearningReportDraftViewModel,
+    ) -> LearningReportDraftViewModel:
+        """Create or update one persistent report draft through the application layer."""
+        service = self._report_draft_application_service()
+        common = dict(
+            student_id=draft.student_id,
+            report_type=draft.report_type,
+            period_start=draft.period_start.isoformat(),
+            period_end=draft.period_end.isoformat(),
+            teacher_name=draft.teacher_name,
+            overall_text=draft.overall_text,
+            subjects=tuple(subject.to_record() for subject in draft.subjects),
+            competency_ids=draft.competency_ids,
+            observation_ids=draft.observation_ids,
+            chart_selections=tuple(
+                chart.to_record() for chart in draft.chart_selections
+            ),
+        )
+        if draft.report_draft_id:
+            record = service.update(
+                UpdateLearningReportDraftCommand(
+                    report_draft_id=draft.report_draft_id,
+                    **common,
+                )
+            )
+        else:
+            record = service.create(CreateLearningReportDraftCommand(**common))
+        return LearningReportDraftViewModel.from_record(record)
+
+    def load_learning_report_draft(
+        self,
+        report_draft_id: str,
+    ) -> LearningReportDraftViewModel | None:
+        """Load one persistent report draft through the application query boundary."""
+        record = self._report_draft_application_service().get(
+            GetLearningReportDraftQuery(report_draft_id)
+        )
+        if record is None:
+            return None
+        return LearningReportDraftViewModel.from_record(record)
+
+    def list_learning_report_drafts_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningReportDraftViewModel, ...]:
+        """List persistent report drafts for future profile/UX selection."""
+        records = self._report_draft_application_service().list_for_student(
+            ListLearningReportDraftsQuery(student_id)
+        )
+        return tuple(LearningReportDraftViewModel.from_record(record) for record in records)
+
+    def _report_draft_application_service(self) -> ReportDraftApplicationService:
+        repository = SQLiteReportDraftRepository(self.database)
+        return ReportDraftApplicationService(
+            ReportDraftService(repository),
+            repository,
         )
 
     def save_competency_confirmation(

@@ -124,8 +124,42 @@ Registriert:
 - `student_competency_confirmations`
 - `documents`
 - `documentation_subject_settings`
+- `report_drafts`
+- `report_draft_subjects`
+- `report_draft_competencies`
+- `report_draft_observations`
+- `report_draft_charts`
 
 `documentation_subject_settings` speichert ausschliesslich, welche `subject_id` fuer Dokumentations- und Auswertungslogik als dokumentationsrelevant gelten. Die Tabelle ersetzt nicht den Kompetenzkatalog und veraendert `competencies.active` nicht.
+
+Die Tabellen mit Praefix `report_draft_` speichern ausschliesslich den bearbeitbaren Arbeitsentwurf eines Lernentwicklungsberichts. Sie sind keine finale Berichtsdomain, enthalten keine Kompetenzbewertung und frieren keine Kompetenz- oder Beobachtungsinhalte ein.
+
+Registrierte technische Felder fuer persistente Berichtsentwuerfe:
+
+- `report_draft_id`
+- `report_type`
+- `period_start`
+- `period_end`
+- `status`
+- `teacher_name`
+- `overall_text`
+- `strengths_text`
+- `development_text`
+- `support_needs_text`
+- `next_goals_text`
+- `chart_type`
+
+Zulaessiger Status in Sprint 7F.1: `draft`.
+
+Zulaessiger Berichtstyp in Sprint 7F.1: `learning_development`.
+
+Zulaessige Diagrammtypen:
+
+- `documentation_coverage`
+- `competency_timeline`
+- `observation_timeline`
+
+`report_draft_id` verwendet das Format `RPD-######`.
 
 ## Sprint-3A-Mapping Kompetenzstruktur
 
@@ -197,6 +231,7 @@ Verbindliche ID-Felder fuer neue Architekturarbeit:
 - `observation_id`
 - `media_id`
 - `report_id`
+- `report_draft_id`
 
 Bestehende historische Seed-IDs und Prototyp-Bezeichner werden nur kontrolliert migriert.
 
@@ -215,6 +250,7 @@ Die folgende ID-Strategie ist projektweit verbindlich fuer neue fachliche Entita
 | Competency | `competency_id` | `CMP-######` | `CMP-000001` |
 | Observation | `observation_id` | `OBS-######` | `OBS-000001` |
 | Media | `media_id` | `MED-######` | `MED-000001` |
+| ReportDraft | `report_draft_id` | `RPD-######` | `RPD-000001` |
 
 Regeln:
 
@@ -976,3 +1012,97 @@ Registrierte Standardmodule im historischen Seed:
 - `SeedImport`
 
 `SeedImport` war das Bootstrap-Modul fuer den automatischen Import versionierter `.bas`-Quellen in die historische Seed-Arbeitsmappe unter `legacy/excel/seeds/`.
+
+## Sprint 7F - Produktiver Lernentwicklungsbericht
+
+Registrierte Python-Module:
+
+- `src/desktop_app/dialogs/learning_report_dialog.py`
+- `src/desktop_app/view_models/learning_report_view_model.py`
+
+Registrierte technische Namen:
+
+- `PrepareLearningReportQuery`
+- `LearningReportSourceData`
+- `LearningReportApplicationService`
+- `LearningReportPreparationViewModel`
+- `LearningReportSubjectViewModel`
+- `LearningReportCompetencyViewModel`
+- `LearningReportEvidenceViewModel`
+- `LearningReportDraft`
+- `LearningReportDialog`
+- `StudentDesktopAdapter.learning_report_preparation_for_student(student_id)`
+- `build_learning_report_preparation(student, statuses, observations)`
+- `build_report_output_model(preparation, draft)`
+- `AppShell.open_learning_report_dialog(student_id)`
+- `AppShell.export_learning_report_pdf(output_model)`
+
+Regel: Diese Namen bezeichnen ausschliesslich die fluechtige Berichtsvorbereitung und das neutrale Ausgabemodell. Sie fuehren keine persistente Berichtsentitaet und keine zweite Kompetenzstatuslogik ein.
+
+Registrierte Qt-Objektnamen fuer das Sprint-7F.1-UX-Alignment:
+
+- `LearningReportWorkspace`
+- `LearningReportTopBar`
+- `LearningReportBrand`
+- `LearningReportTopHint`
+- `LearningReportEyebrow`
+- `LearningReportStatusPill`
+- `LearningReportInternalCard`
+- `LearningReportResponsibilityNote`
+- `LearningReportPreviewPanel`
+- `LearningReportPreviewScroll`
+- `LearningReportPreviewCanvas`
+- `LearningReportPaperPage`
+- `LearningReportDocumentBlock`
+
+## Sprint 7F.1 - Persistenter Berichtsentwurf
+
+Registrierte Python-Module:
+
+- `src/core/report_draft.py`
+- `tests/test_report_draft.py`
+
+Registrierte Klassen und Application-Namen:
+
+- `ReportDraftRecord`
+- `ReportDraftSubjectRecord`
+- `ReportDraftChartSelectionRecord`
+- `ReportDraftRepository`
+- `SQLiteReportDraftRepository`
+- `ReportDraftService`
+- `ReportDraftApplicationService`
+- `CreateLearningReportDraftCommand`
+- `UpdateLearningReportDraftCommand`
+- `GetLearningReportDraftQuery`
+- `ListLearningReportDraftsQuery`
+- `LearningReportDraftViewModel`
+- `LearningReportSubjectDraftViewModel`
+- `LearningReportChartSelectionViewModel`
+- `StudentDesktopAdapter.save_learning_report_draft(draft)`
+- `StudentDesktopAdapter.load_learning_report_draft(report_draft_id)`
+- `StudentDesktopAdapter.list_learning_report_drafts_for_student(student_id)`
+
+Registrierte Konstanten:
+
+- `REPORT_DRAFT_ID_PREFIX`
+- `REPORT_DRAFT_STATUS`
+- `LEARNING_DEVELOPMENT_REPORT_TYPE`
+- `REPORT_DRAFT_CHART_TYPES`
+
+Regel: Der persistente Entwurf ist ein bearbeitbarer Arbeitsstand. Er ist kein `ReportOutputModel`, keine finale Berichtsversion und keine Quelle fuer Kompetenzstatus oder Beobachtungsbewertung.
+
+## Sprint 7F.2 - Prototypgetreue Berichtswerkstatt
+
+Registrierte technische Namen:
+
+- `LearningReportDialog.save_requested`
+- `LearningReportDialog.report_draft_view_model()`
+- `LearningReportDialog.apply_saved_draft(saved)`
+- `CHART_OPTIONS`
+- `LearningReportModeButton`
+- `LearningReportSidebar`
+- `LearningReportSubjectButton`
+- `LearningReportInternalBadge`
+- `LearningReportReportCard`
+
+Regel: Diese Namen bilden ausschliesslich die aus `prototypes/learning_report_ux/` portierte PySide-Navigation, Kartenhierarchie, Draft-Anbindung und Auswahl der bereits registrierten Diagrammtypen ab. Sie fuehren keine neue Datenquelle, keine Kompetenzstatuslogik und keinen zusaetzlichen Schreibprozess ein.

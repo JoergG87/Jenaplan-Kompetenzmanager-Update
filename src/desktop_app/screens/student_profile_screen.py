@@ -59,6 +59,7 @@ class StudentProfileScreen(QWidget):
     document_add_requested = Signal(str)
     document_remove_requested = Signal(str, str)
     competency_confirmation_requested = Signal(str, str, str, str)
+    report_requested = Signal(str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -84,6 +85,7 @@ class StudentProfileScreen(QWidget):
         self.report_feedback_label = QLabel("")
         self.report_copy_button = QPushButton("Bericht kopieren")
         self.report_export_button = QPushButton("Als Text exportieren")
+        self.report_create_button = QPushButton("Bericht erstellen")
         self.report_copy_button.setEnabled(False)
         self.report_export_button.setEnabled(False)
         self.current_observations: tuple[ObservationListItem, ...] = ()
@@ -444,6 +446,7 @@ class StudentProfileScreen(QWidget):
         set_label_style(self.report_feedback_label, "subtle")
         self.report_copy_button.clicked.connect(self.copy_report_text_to_clipboard)
         self.report_export_button.clicked.connect(self.export_report_text)
+        self.report_create_button.clicked.connect(self._request_learning_report)
         layout.addWidget(title_label)
         layout.addLayout(self._report_action_row())
         layout.addWidget(self.report_feedback_label)
@@ -454,6 +457,7 @@ class StudentProfileScreen(QWidget):
         actions = QHBoxLayout()
         actions.setContentsMargins(0, 0, 0, 0)
         actions.setSpacing(8)
+        actions.addWidget(self.report_create_button)
         actions.addWidget(self.report_copy_button)
         actions.addWidget(self.report_export_button)
         actions.addStretch(1)
@@ -512,6 +516,12 @@ class StudentProfileScreen(QWidget):
             self._show_placeholder_message(PROFILE_ACTION_MESSAGES["edit"])
             return
         self.student_edit_requested.emit(self.current_student.student_id)
+
+    def _request_learning_report(self) -> None:
+        if self.current_student is None:
+            self.report_feedback_label.setText("Bitte zuerst einen Schüler auswählen.")
+            return
+        self.report_requested.emit(self.current_student.student_id)
 
     def _render_profile_overview(
         self,

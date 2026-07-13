@@ -278,6 +278,8 @@ Registrierte Zuordnung:
 
 Zweck: Read-only-Katalog fuer Fachauswahl und Kompetenzauswahl im PySide6-Beobachtungsdialog.
 
+Die fachbezogene Schnellauswahl `Zuletzt verwendet` ist keine eigene Datenquelle: Sie ist eine fluechtige `StudentDesktopAdapter`-Projektion aus aktiven SQLite-`observations` mit deren `observation_competency_ratings`, auf vorhandene aktive `current`-Zeilen aus `competencies` begrenzt. Sie speichert weder Historie noch Auswahlzustand.
+
 Datei: `data/curriculum_catalog_v1.csv`
 
 Status: v1-Kataloggrundlage mit abgeschlossenem Sprint-4-Lehrplanabgleich fuer Deutsch, Mathematik, EPU, Musik, Kunst, Sport, Werken, Schulgarten, Ethik und Sozialkompetenz. Die konkreten Kompetenzen folgen den freigegebenen Lehrplan-Mappings, der Katalog-Konsolidierung und den Product-Owner-Entscheidungen. Religion bleibt ausserhalb dieses Sprint-4-Katalogabgleichs.
@@ -999,6 +1001,52 @@ data/
     |-- STU-000002/
     `-- ...
 ```
+
+## report_drafts und Berichtsentwurf-Relationen
+
+Zweck: Persistenter, weiter bearbeitbarer Arbeitsentwurf fuer Lernentwicklungsberichte.
+
+Entity: ReportDraft. Keine finale Berichtsentitaet.
+
+Storage:
+
+- SQLite `report_drafts` fuer Identitaet, Schuelerbezug, Berichtstyp, Zeitraum, Status, Lehrkraft, Gesamtblick und Zeitstempel
+- SQLite `report_draft_subjects` fuer bewusste Fachauswahl und vier manuelle Fachtexte
+- SQLite `report_draft_competencies` fuer reine `competency_id`-Referenzen
+- SQLite `report_draft_observations` fuer reine `observation_id`-Referenzen
+- SQLite `report_draft_charts` fuer Diagrammtyp je ausgewaehltem Fach
+
+Owner: Lernentwicklungsbericht / Berichtsvorbereitung.
+
+Primary Key: `report_draft_id`.
+
+Foreign Keys:
+
+- `student_id` -> `students.student_id`
+- `competency_id` -> `competencies.competency_id`
+- `observation_id` -> `observations.observation_id`
+- alle Relationstabellen -> `report_drafts.report_draft_id` mit `ON DELETE CASCADE`
+
+Wichtige Regeln:
+
+- `status` ist in Sprint 7F.1 ausschliesslich `draft`.
+- Kompetenztexte, Hierarchie, Bewertungen, Vorschlaege und Bestaetigungen werden nicht kopiert.
+- Beobachtungsdatum, Kontext und Notiz werden nicht kopiert.
+- Fachtexte stammen ausschliesslich aus manueller Eingabe durch Laura.
+- Eine Zeile in `report_draft_subjects` repraesentiert ein bewusst ausgewaehltes Fach, auch wenn alle vier Texte noch leer sind.
+- Der Berichtsentwurf liest Kompetenzstatus weiterhin ausschliesslich aus der kanonischen Sprint-6-Projektion.
+- Der Entwurf ist nicht freigegeben, versioniert, archiviert oder eingefroren.
+
+Schreibende Prozesse:
+
+- Berichtsentwurf anlegen
+- Berichtsentwurf aktualisieren
+
+Lesende Prozesse:
+
+- Berichtsentwurf laden
+- Berichtsentwuerfe eines Schuelers auflisten
+- spaetere Sprint-7F.2-Berichtswerkstatt
 
 ## data_settings
 

@@ -466,9 +466,13 @@ Liest:
 - `data_media`
 - `data_settings`
 
-Schreibt:
+Schreibt im aktuellen Produktstand:
 
-- nichts
+- `report_drafts`
+- `report_draft_subjects`
+- `report_draft_competencies`
+- `report_draft_observations`
+- `report_draft_charts`
 
 Navigation:
 
@@ -486,4 +490,8 @@ UI-Projektionen:
 
 Regel:
 
-Berichte sind Ausgabeprojektionen. Sie speichern keine fachlichen Ergebnisdaten. Eine Berichtsvorschau darf bestaetigte Kompetenzstaende, berechnete Vorschlaege und aktive Beobachtungen strukturieren sowie als einfacher Text kopiert oder exportiert werden. Sie erzeugt keine KI-Texte, keine finalen Zeugnisformulierungen und keinen PDF-/Word-Export.
+Die bestehende Berichtsvorschau ist eine Live-Auswertungsprojektion. Sie speichert keine fachlichen Ergebnisdaten. Sie darf bestaetigte Kompetenzstaende, klar getrennte berechnete Vorschlaege und aktive Beobachtungen strukturieren sowie als einfachen Text kopieren oder exportieren. Sie erzeugt keine fertigen paedagogischen Aussagen, keine finalen Zeugnisformulierungen und keinen PDF-/Word-Export.
+
+Sprint 7F.1 ergaenzt einen persistenten, weiter bearbeitbaren Berichtsentwurf. Die Berichtswerkstatt liest und schreibt ihn ausschliesslich ueber ViewModel, Application Layer und `SQLiteReportDraftRepository`. Gespeichert werden Dokumentkontext, manuelle Gesamt- und Fachtexte sowie bewusste Fach-, Kompetenz-, Beobachtungs- und Diagrammreferenzen. Kompetenzzustaende stammen weiterhin ausschliesslich aus der kanonischen Sprint-6-Projektion; Kompetenz- und Beobachtungsinhalte werden nicht in den Entwurf kopiert. Aktive `current`-Kompetenzen sind fuer neue Auswahl vorgesehen, historisch referenzierte Kompetenzen bleiben als Kontext aufloesbar. Der Entwurf ist keine finale Berichtsdomain und besitzt weder Freigabe, Versionierung, Archivierung noch eingefrorene Ausgabe.
+
+Sprint 7F.2 portiert die freigegebene UX aus `prototypes/learning_report_ux/` auf diese bestehende Ownership. Die PySide-Berichtswerkstatt besitzt ausschliesslich lokalen Widgetzustand fuer die laufende Bearbeitung und delegiert Speichern ueber `LearningReportDraftViewModel` an den Desktop-Adapter. Beim Oeffnen laedt die Shell den zuletzt aktualisierten Entwurf des Schuelers. Die separate Vorschau baut ihr `ReportOutputModel` aus dem aktuellen Entwurf und den vorhandenen Leseprojektionen; sie ist keine Datenquelle. Fachseiten duerfen nur Kompetenzen des jeweiligen Fachs und nur dazu passende Beobachtungsbelege anbieten. Diagramme werden nur als gespeicherte Auswahlreferenzen gehalten; ihre Daten werden bei Vorschau und PDF aus den vorhandenen Projektionen erzeugt.

@@ -1,5 +1,65 @@
 # CHANGELOG
 
+## Sprint 7F.2 - 1:1 UX-Portierung Lernentwicklungsbericht
+
+### Changed
+
+- Die produktive Berichtswerkstatt auf die verbindliche Arbeitslogik aus `prototypes/learning_report_ux/` umgestellt: oberer Wechsel zwischen `Bericht bearbeiten` und `Berichtsvorschau`, linke Arbeitsbereichsnavigation, eigene Fachseiten und separate mehrseitige Dokumentvorschau.
+- Dokumentkontext, pädagogischen Gesamtblick, Facharbeitsbereiche, manuelle Fachtexte, hierarchische Kompetenzauswahl, bewusst gefilterte Beobachtungsbelege, Diagrammauswahl und Abschluss in die Karten- und Informationshierarchie des Prototyps portiert.
+- Beim Öffnen aus dem Schülerprofil wird der zuletzt gespeicherte Entwurf geladen; manuelle Texte und Fach-, Kompetenz-, Beobachtungs- sowie Diagrammreferenzen werden über den vorhandenen Adapter-/Service-/Repository-Pfad gespeichert und beim erneuten Öffnen rekonstruiert.
+- Das neutrale Ausgabemodell erhält die vier manuellen Fachtexte und ausschließlich bewusst ausgewählte Diagramme; Vorschau und PDF nutzen weiterhin die vorhandene Kompetenz- und Beobachtungsprojektion sowie den unveränderten Renderer.
+
+### Necessary Deviations
+
+- Die im Demo-Prototyp frei änderbaren Kompetenzstände sind produktiv rein lesend, weil Kompetenzstatus und Bestätigungslogik nicht Teil eines Berichtsentwurfs sind; gespeichert werden ausschließlich `competency_id`-Referenzen.
+- Der Abschluss fasst die gespeicherten fachbezogenen nächsten Ziele und Unterstützungsbedarfe zusammen. Zusätzliche globale Abschluss- oder interne Notizfelder wurden nicht eingeführt, weil das freigegebene `report_drafts`-Datenmodell unverändert bleibt.
+- Die Diagrammauswahl folgt den drei freigegebenen persistenten Diagrammtypen je Fach statt der rein fiktiven Kompetenzbereichs-Demoauswahl des Prototyps.
+
+### Not Changed
+
+- Keine Änderung am `report_drafts`-Datenmodell, `ReportDraftRepository`, an Kompetenzstatus- oder Beobachtungslogik, `ReportOutputModel`, PDF Engine oder `PdfRenderer`; keine automatische Texterstellung, Scores, Trendlinien oder Leistungsbewertung und kein Commit.
+
+## Sprint 7F.1 - Persistenter Lernentwicklungsbericht-Entwurf
+
+### Added
+
+- Einen persistenten, weiter bearbeitbaren Arbeitsentwurf fuer Lernentwicklungsberichte mit stabiler `RPD-######`-ID, Schuelerbezug, Berichtstyp, Zeitraum, Status `draft`, Lehrkraft, Gesamtblick sowie Erstellungs- und Aenderungszeitpunkt eingefuehrt.
+- Manuelle Fachtexte fuer Staerken, Lernentwicklung, Unterstuetzungsbedarf und naechste Ziele je bewusst ausgewaehltem Fach gespeichert.
+- Ausgewaehlte Faecher, Kompetenzen, Beobachtungsbelege und neutrale Diagrammtypen in normalisierten Relationstabellen gespeichert; Kompetenz- und Beobachtungsinhalte bleiben in ihren bestehenden Sources of Truth.
+- Additive SQLite-Migration, Domain-Service, Application Commands/Queries, Repository, Desktop-Adapter und ViewModels fuer Anlegen, Laden, Aktualisieren und Auflisten von Entwuerfen ergaenzt.
+- Fokussierte Tests fuer Migration, Anlegen, Laden, Aktualisieren, Texte, Referenzauswahlen sowie unveraenderte Kompetenz- und Beobachtungsprojektionen ergaenzt.
+
+### Not Changed
+
+- Keine finale Berichtsdomain, Freigabe, Versionierung, Archivierung, Signatur, Elternexportverwaltung oder Berechtigungslogik; keine Aenderung an Kompetenzstatus, Beobachtungslogik, `ReportOutputModel`, PDF Engine oder Renderer und kein Commit.
+
+## Sprint 7F.1 - UX Alignment Lernentwicklungsbericht
+
+### Changed
+
+- Die produktive Berichtsvorbereitung vollständig an die freigegebene Sprint-7C-UX angeglichen: ruhige Kopfzeile, durchgängiger linker Vorbereitungsbereich und rechte mehrseitige Dokumentvorschau mit großzügigem Weißraum.
+- Dokumentkontext, pädagogischen Gesamtblick, Fachauswahl, hierarchische Kompetenzauswahl, Beobachtungsbelege sowie Ziele und Unterstützung ohne Wizard- oder Schrittnavigation in klar getrennte Karten überführt.
+- Die produktive Fachauswahl zeigt weiterhin immer nur ein Fach mit der Hierarchie Fach -> Kompetenzbereich -> Thema -> Kompetenz; Beobachtungsbelege erscheinen erst nach Auswahl passender Kompetenzen beziehungsweise Bereiche.
+- Die bisherige technische Vorschau durch eine drucknahe Dokumentansicht mit Deckblatt, Fachseiten, Abschlussseite, Kopf-/Fußbereich und neutralen Entwicklungsdarstellungen ersetzt.
+
+### Not Changed
+
+- Keine Änderung an Architektur, Datenfluss, Kompetenzstatuslogik, `ReportOutputModel`, PDF Engine, Renderer, Persistenz oder Sprint-7C-/7E-Prototypdateien; kein Commit.
+
+## Sprint 7F - Produktiver Lernentwicklungsbericht
+
+### Added
+
+- Den produktiven, vollständig flüchtigen Lernentwicklungsbericht aus dem Schülerprofil heraus ergänzt: ruhige Berichtsvorbereitung mit Dokumentkontext, manuellem Gesamtblick, fachweise gefilterter Kompetenzauswahl, bewusster Beobachtungsauswahl sowie manuellen Zielen und Unterstützungsangaben.
+- Eine eigene Berichtsvorbereitungsprojektion ergänzt, die Kompetenzzustände ausschließlich aus der kanonischen Sprint-6-Projektion übernimmt; aktive `current`-Kompetenzen sind auswählbar, historisch referenzierte Kompetenzen bleiben ausschließlich sichtbar.
+- Aus der bewussten Auswahl ein neutrales `ReportOutputModel` mit Dokumentationsabdeckung, datierten Kompetenzständen und Zeitachse ausgewählter Beobachtungen erzeugt und dieses über die Shell an die unveränderte Sprint-7E-PDF-Engine übergeben.
+- Fokussierte Tests für Profileinstieg, Fachfilter, Kompetenz- und Beobachtungsauswahl, Ausgabemodell und Verarbeitung durch die PDF-Engine ergänzt.
+
+### Not Changed
+
+- Keine Berichtspersistenz, Migration, neue Tabelle, Versionierung, Archivierung, Freigabe, Signaturverwaltung, automatische Text- oder Zielerzeugung, Scores, Durchschnittswerte, Trendlinien oder automatische Entwicklungsbewertung.
+- Keine Änderung an Sprint-7D-/7E-Prototypen, PDF-Output-Modellen oder PDF-Renderer; kein Jahres-, Halbjahres- oder LEG-Bericht und kein Commit.
+
 ## Sprint 7E - Isolierter Prototyp der PDF-Engine
 
 ### Added
