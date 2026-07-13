@@ -16,3 +16,7 @@ env/
 .DS_Store
 ~$*.xls*
 *.tmp
+
+# Local project handoff artifacts
+/projekt_chatgpt*.zip
+/CODEX_PROMPT_LEHRPLAN_ABGLEICH.md
