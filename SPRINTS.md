@@ -6,6 +6,15 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## UI Sprint 6A - LEG UX Audit und Zielbild ✅
+
+- [x] Bestehenden persistenten LEG-Arbeitsablauf, sechs Phasen, Draft-Wiederaufnahme, Kompetenz-/Belegauswahl, Validierung und Profilnavigation vollstaendig auditiert
+- [x] Vorbereitung der Lehrkraft, Gespraechsinhalte und gemeinsam festgehaltene Vereinbarungen im Zielbild eindeutig getrennt
+- [x] Kompakte linke Phasennavigation, stabilen Kontext, grosszuegigen Schreibraum und persistente Aktionsleiste fuer UI-Sprint 6B festgelegt
+- [x] Responsive Verhalten fuer 1400 x 900, 1280 x 800 und 1180 x 760 sowie Tastatur- und Accessibility-Regeln definiert
+- [x] Abschluss, Revisionen, Snapshots, LEG-PDF und Exportartefakte ausdruecklich aus dem Zielbild ausgeschlossen
+- [x] Konkreten Implementierungs- und Testschnitt fuer UI-Sprint 6B in `docs/LEG_UX_AUDIT_AND_TARGET.md` dokumentiert
+
 ## UI Sprint 5 - Berichtswerkstatt, Finalisierung und Revisionen ✅
 
 - [x] Kompakten Berichtskopf mit Kindkontext, Berichtstyp, Zeitraum, Lehrkraft, Draftstatus und Revisionskontext modernisiert

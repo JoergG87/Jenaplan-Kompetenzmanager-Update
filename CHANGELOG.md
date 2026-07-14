@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## UI Sprint 6A - LEG UX Audit und Zielbild
+
+### Added
+
+- `docs/LEG_UX_AUDIT_AND_TARGET.md` dokumentiert den bestehenden persistenten LEG-Draft, die sechs produktiven Gespraechsphasen und das verbindliche UX-Zielbild fuer UI-Sprint 6B.
+
+### Not Changed
+
+- Keine produktive UI, Fachlogik, Persistenz, Tests, Abschluss-/Revisionslogik oder LEG-Ausgabe wurde geaendert.
+
 ## UI Sprint 5 - Berichtswerkstatt, Finalisierung und Revisionen
 
 ### Changed
