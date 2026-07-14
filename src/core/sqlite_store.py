@@ -28,6 +28,7 @@ from .constants import (
     LAST_NAME,
     MEDIA_ID_PREFIX,
     LEARNING_REPORT_ID_PREFIX,
+    LEARNING_REPORT_PDF_ARTIFACT_ID_PREFIX,
     LEARNING_REPORT_REVISION_ID_PREFIX,
     REPORT_DRAFT_ID_PREFIX,
     STUDENT_ID,
@@ -59,6 +60,10 @@ from .learning_report import (
     LearningReportStudentSource,
     LearningReportSubjectSource,
     ReportFinalizationError,
+)
+from .learning_report_pdf import (
+    LearningReportPdfArtifactRecord,
+    LearningReportPdfError,
 )
 from .student import StudentRepositoryError
 from .records import (
@@ -457,6 +462,23 @@ class SQLiteDatabase:
                             REFERENCES learning_reports(learning_report_id)
                     );
 
+                    CREATE TABLE IF NOT EXISTS learning_report_pdf_artifacts (
+                        learning_report_pdf_artifact_id TEXT PRIMARY KEY,
+                        learning_report_revision_id TEXT NOT NULL UNIQUE,
+                        relative_file_path TEXT NOT NULL UNIQUE,
+                        mime_type TEXT NOT NULL CHECK (mime_type = 'application/pdf'),
+                        file_size_bytes INTEGER NOT NULL CHECK (file_size_bytes > 0),
+                        snapshot_sha256 TEXT NOT NULL CHECK (
+                            length(snapshot_sha256) = 64
+                        ),
+                        pdf_sha256 TEXT NOT NULL CHECK (length(pdf_sha256) = 64),
+                        created_at TEXT NOT NULL,
+                        FOREIGN KEY (learning_report_revision_id)
+                            REFERENCES learning_report_revisions(
+                                learning_report_revision_id
+                            )
+                    );
+
                     CREATE TABLE IF NOT EXISTS learning_conference_drafts (
                         learning_conference_draft_id TEXT PRIMARY KEY,
                         student_id TEXT NOT NULL,
@@ -582,6 +604,8 @@ class SQLiteDatabase:
                         WHERE status = 'finalized';
                     CREATE INDEX IF NOT EXISTS idx_learning_report_revisions_report_number
                         ON learning_report_revisions(learning_report_id, revision_number);
+                    CREATE INDEX IF NOT EXISTS idx_learning_report_pdf_artifacts_revision
+                        ON learning_report_pdf_artifacts(learning_report_revision_id);
                     CREATE INDEX IF NOT EXISTS idx_learning_conference_drafts_student_updated
                         ON learning_conference_drafts(student_id, updated_at DESC);
                     CREATE INDEX IF NOT EXISTS idx_learning_conference_draft_competencies
@@ -625,6 +649,18 @@ class SQLiteDatabase:
                     BEFORE DELETE ON learning_reports
                     BEGIN
                         SELECT RAISE(ABORT, 'learning reports cannot be deleted');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_report_pdf_artifacts_immutable_update
+                    BEFORE UPDATE ON learning_report_pdf_artifacts
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning report PDF artifacts are immutable');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_report_pdf_artifacts_immutable_delete
+                    BEFORE DELETE ON learning_report_pdf_artifacts
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning report PDF artifacts cannot be deleted');
                     END;
                     """
                 )
@@ -3375,6 +3411,28 @@ class SQLiteLearningReportRepository:
             ).fetchone()
         return self._report_from_row(row) if row is not None else None
 
+    def get_report(
+        self,
+        learning_report_id: str,
+    ) -> LearningReportRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    learning_report_id,
+                    source_report_draft_id,
+                    student_id,
+                    report_type,
+                    period_start,
+                    period_end,
+                    created_at
+                FROM learning_reports
+                WHERE learning_report_id = ?
+                """,
+                (learning_report_id,),
+            ).fetchone()
+        return self._report_from_row(row) if row is not None else None
+
     def list_revisions(
         self,
         learning_report_id: str,
@@ -3581,6 +3639,125 @@ class SQLiteLearningReportRepository:
             row["finalized_at"],
             row["finalized_by_display_name"],
             row["superseded_at"],
+        )
+
+
+class SQLiteLearningReportPdfArtifactRepository:
+    """Persist immutable report PDF references beside managed document files."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def next_artifact_id(self) -> str:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT learning_report_pdf_artifact_id
+                FROM learning_report_pdf_artifacts
+                """
+            ).fetchall()
+        next_number = 1
+        for row in rows:
+            value = str(row["learning_report_pdf_artifact_id"])
+            if not value.startswith(f"{LEARNING_REPORT_PDF_ARTIFACT_ID_PREFIX}-"):
+                continue
+            try:
+                next_number = max(next_number, int(value.split("-", 1)[1]) + 1)
+            except ValueError:
+                continue
+        return (
+            f"{LEARNING_REPORT_PDF_ARTIFACT_ID_PREFIX}-"
+            f"{next_number:0{ID_SEQUENCE_WIDTH}d}"
+        )
+
+    def get_for_revision(
+        self,
+        learning_report_revision_id: str,
+    ) -> LearningReportPdfArtifactRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    learning_report_pdf_artifact_id,
+                    learning_report_revision_id,
+                    relative_file_path,
+                    mime_type,
+                    file_size_bytes,
+                    snapshot_sha256,
+                    pdf_sha256,
+                    created_at
+                FROM learning_report_pdf_artifacts
+                WHERE learning_report_revision_id = ?
+                """,
+                (learning_report_revision_id,),
+            ).fetchone()
+        return self._artifact_from_row(row) if row is not None else None
+
+    def save_artifact(
+        self,
+        artifact: LearningReportPdfArtifactRecord,
+    ) -> LearningReportPdfArtifactRecord:
+        try:
+            with closing(self.database.connect()) as connection:
+                with connection:
+                    connection.execute(
+                        """
+                        INSERT INTO learning_report_pdf_artifacts (
+                            learning_report_pdf_artifact_id,
+                            learning_report_revision_id,
+                            relative_file_path,
+                            mime_type,
+                            file_size_bytes,
+                            snapshot_sha256,
+                            pdf_sha256,
+                            created_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            artifact.learning_report_pdf_artifact_id,
+                            artifact.learning_report_revision_id,
+                            artifact.relative_file_path,
+                            artifact.mime_type,
+                            artifact.file_size_bytes,
+                            artifact.snapshot_sha256,
+                            artifact.pdf_sha256,
+                            artifact.created_at,
+                        ),
+                    )
+        except sqlite3.Error as error:
+            raise LearningReportPdfError(
+                f"Die PDF-Artefaktreferenz konnte nicht gespeichert werden: {error}"
+            ) from error
+        return artifact
+
+    def resolve_file_path(self, relative_file_path: str) -> Path:
+        relative = Path(relative_file_path)
+        if relative.is_absolute() or ".." in relative.parts:
+            raise LearningReportPdfError(
+                "Der verwaltete PDF-Artefaktpfad ist ungueltig."
+            )
+        root = self.database.path.parent.resolve()
+        resolved = (root / relative).resolve()
+        if not resolved.is_relative_to(root):
+            raise LearningReportPdfError(
+                "Der verwaltete PDF-Artefaktpfad liegt ausserhalb des Datenverzeichnisses."
+            )
+        return resolved
+
+    def _artifact_from_row(
+        self,
+        row: sqlite3.Row,
+    ) -> LearningReportPdfArtifactRecord:
+        return LearningReportPdfArtifactRecord(
+            row["learning_report_pdf_artifact_id"],
+            row["learning_report_revision_id"],
+            row["relative_file_path"],
+            row["mime_type"],
+            int(row["file_size_bytes"]),
+            row["snapshot_sha256"],
+            row["pdf_sha256"],
+            row["created_at"],
         )
 
 

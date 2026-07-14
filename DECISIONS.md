@@ -2148,3 +2148,15 @@ Der persistierte Snapshot friert den Berichtskontext, sichtbare Schuelerdaten, v
 Die kanonische Snapshotdarstellung ist UTF-8-JSON mit sortierten Schluesseln, kompakten Trennern, unveraenderten Unicode-Zeichen und ohne nicht endliche Zahlen. Der gespeicherte SHA-256-Hexdigest wird ueber exakt diese gespeicherten Bytes gebildet. `ReportOutputModel` bleibt eine fluechtige Rendererprojektion und ist wegen fehlender stabiler IDs und Provenienz nicht selbst der fachliche Snapshot.
 
 Nicht entschieden oder umgesetzt werden in diesem Sprint UI, finales PDF, Artefakt- und Dateiverwaltung, Renderer-Versionierung, Archivierung, LEG-Abschluss, Benutzer-/Rollendomain oder automatische Bestandsmigration vorhandener Drafts.
+
+## ADR-055 - Finales Berichts-PDF ist ein unveraenderliches Artefakt genau einer finalisierten Revision
+
+Sprint 9A erzeugt ein finales Lernentwicklungsbericht-PDF ausschliesslich aus dem gespeicherten Snapshot einer aktuellen `RPV` mit Status `finalized`. Der Draft, operative Stammdaten, aktuelle Kompetenz- oder Beobachtungsprojektionen und Widgets sind keine Eingangsquellen. Eine `superseded`-Revision bleibt historisch lesbar, darf aber kein neues finales PDF-Artefakt erzeugen.
+
+Der vorhandene reine `PdfRenderer` bleibt einzige PDF-Erzeugung. Der verifizierte `RPV`-Snapshot wird ueber die bestehende renderer-neutrale Revisionsprojektion in dasselbe `ReportOutputModel` adaptiert, das bereits Vorschau und Rendervertrag verbindet. Der Renderer kennt weder SQLite noch Repository, Revisionsstatus, Snapshot-Hash oder Artefaktregeln und berechnet keine Berichtsinhalte.
+
+Pro `RPV` wird hoechstens eine unveraenderliche `LearningReportPdfArtifact`-Referenz mit stabiler `RPA-######`-ID gespeichert. Sie enthaelt relativen verwalteten Pfad, MIME-Type, Dateigroesse, den bei der Erzeugung bestaetigten Snapshot-Hash, SHA-256 der PDF-Bytes und Erzeugungszeitpunkt. Die Datei liegt ohne Klarname unter `data/documents/<student_id>/reports/<RPT>/<RPV>/`. Ein erneuter Aufruf gibt nur ein vorhandenes, auf Pfad und Hash geprueftes Artefakt zurueck und ueberschreibt keine Datei.
+
+Vor dem Rendern werden Revisionsstatus, gespeicherter Snapshot-Hash, Snapshot-Schemaversion, Pflichtstruktur und alle innerhalb des Snapshots referenzierten Faecher, Kompetenzen, Beobachtungen und manuellen Fachtexte validiert. Nach dem Rendern wird der PDF-Hash berechnet; erst danach wird die Artefaktreferenz gespeichert. Scheitert Rendering, Hashing oder Persistenz, entsteht keine gueltige Referenz und eine neu erzeugte Datei wird kontrolliert entfernt.
+
+Eine spaetere neue Fachrevision veraendert weder PDF-Datei noch Hash oder Referenz der vorherigen Revision. Ebenso veraendert eine Draftaenderung kein bestehendes PDF. Nicht Bestandteil von Sprint 9A sind Renderer-Versionierung, Mehrfachartefakte pro Revision, komplexe Archiv- oder Retentionprozesse, LEG-PDF, Benutzerhandbuch und neue Berichtsinhalte.

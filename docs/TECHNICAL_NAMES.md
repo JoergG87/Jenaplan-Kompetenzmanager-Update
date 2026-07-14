@@ -132,6 +132,7 @@ Registriert:
 - `report_draft_charts`
 - `learning_reports`
 - `learning_report_revisions`
+- `learning_report_pdf_artifacts`
 - `learning_conference_drafts`
 - `learning_conference_draft_subjects`
 - `learning_conference_draft_cross_topics`
@@ -150,11 +151,16 @@ Registrierte technische Felder fuer persistente Berichtsentwuerfe:
 - `report_draft_id`
 - `learning_report_id`
 - `learning_report_revision_id`
+- `learning_report_pdf_artifact_id`
 - `source_report_draft_id`
 - `revision_number`
 - `snapshot_schema_version`
 - `snapshot_json`
 - `snapshot_sha256`
+- `relative_file_path`
+- `mime_type`
+- `file_size_bytes`
+- `pdf_sha256`
 - `finalized_at`
 - `finalized_by_display_name`
 - `superseded_at`
@@ -1244,6 +1250,42 @@ Registrierte Qt-Objektnamen:
 
 Regel: Die Revisionsprojektion entsteht ausschliesslich aus `snapshot_json`, `LearningReportRevisionRecord` und dem gespeicherten SHA-256. Sie darf keine aktuelle Schueler-, Gruppen-, Kurs-, Kompetenz-, Beobachtungs- oder Diagrammquelle lesen. Das Draft-Ausgabemodell und die finale snapshotbasierte Adapterprojektion bleiben getrennte Quellen fuer denselben renderer-neutralen `ReportOutputModel`-Vertrag.
 
+## Sprint 9A - Finaler PDF-Druck aus Berichtrevisionen
+
+Registrierte Python-Module:
+
+- `src/core/learning_report_pdf.py`
+- `tests/test_learning_report_pdf.py`
+
+Registrierte Klassen, Protokolle und Commands:
+
+- `LearningReportPdfArtifactRecord`
+- `LearningReportPdfArtifactRepository`
+- `LearningReportPdfSnapshotValidator`
+- `LearningReportPdfService`
+- `LearningReportPdfError`
+- `GenerateLearningReportPdfCommand`
+- `LearningReportPdfApplicationService`
+- `SQLiteLearningReportPdfArtifactRepository`
+- `LearningReportPdfArtifactViewModel`
+
+Registrierte Konstanten und Werte:
+
+- `LEARNING_REPORT_PDF_ARTIFACT_ID_PREFIX` mit Wert `RPA`
+- MIME-Type `application/pdf`
+
+Registrierte Adapteroperationen:
+
+- `StudentDesktopAdapter.generate_learning_report_pdf(learning_report_revision_id)`
+- `StudentDesktopAdapter.load_learning_report_pdf_artifact(learning_report_revision_id)`
+
+Registrierte Qt-Objektnamen:
+
+- `LearningReportGenerateFinalPdfButton`
+- `LearningReportFinalPdfStatus`
+
+Regel: `RPA` identifiziert genau eine unveraenderliche PDF-Artefaktreferenz fuer eine `RPV`. Pro `learning_report_revision_id` existiert hoechstens eine `RPA`. `relative_file_path` ist relativ zum Verzeichnis der produktiven SQLite-Datei und bleibt innerhalb `documents/<student_id>/reports/<RPT>/<RPV>/`. `pdf_sha256` ist der kleingeschriebene SHA-256-Hexdigest der unveraenderten PDF-Bytes. `snapshot_sha256` kopiert den bei der Erzeugung erfolgreich bestaetigten Hash der Quellrevision. Es werden keine Renderer- oder Template-Versionsfelder eingefuehrt.
+
 ## UI Sprint 5 - Berichtswerkstatt und Revisionen
 
 Registrierte Dialogmethoden und UI-State-Namen:
@@ -1585,6 +1627,7 @@ Registrierte Dateien und Assets:
 - `assets/icons/info.svg`
 - `assets/icons/search.svg`
 - `assets/icons/close.svg`
+- `assets/icons/chevron-down.svg`
 
 Registrierte Komponenten und Helfer (Component Library V1 und V2):
 

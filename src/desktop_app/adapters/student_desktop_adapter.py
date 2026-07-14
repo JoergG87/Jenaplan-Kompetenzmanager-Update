@@ -25,8 +25,10 @@ from src.application.dispatcher import (
 from src.application.commands.report import (
     CreateLearningReportDraftCommand,
     FinalizeLearningReportCommand,
+    GenerateLearningReportPdfCommand,
     GetLearningReportDraftQuery,
     LearningReportApplicationService,
+    LearningReportPdfApplicationService,
     ListLearningReportDraftsQuery,
     PrepareLearningReportQuery,
     ReportDraftApplicationService,
@@ -59,6 +61,7 @@ from src.core.sqlite_store import (
     SQLiteGroupRepository,
     SQLiteLearningConferenceDraftRepository,
     SQLiteLearningReportRepository,
+    SQLiteLearningReportPdfArtifactRepository,
     SQLiteMasterDataRepository,
     SQLiteObservationRepository,
     SQLiteReportDraftRepository,
@@ -72,6 +75,10 @@ from src.core.learning_report import (
     LearningReportRevisionReadService,
     ReportFinalizationError,
     ReportFinalizationService,
+)
+from src.core.learning_report_pdf import (
+    LearningReportPdfError,
+    LearningReportPdfService,
 )
 from src.core.learning_conference_draft import (
     LearningConferenceDraftRecord,
@@ -119,11 +126,14 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportPreparationViewModel,
     LearningReportRevisionStatusViewModel,
     LearningReportRevisionViewModel,
+    LearningReportPdfArtifactViewModel,
     build_learning_report_finalization_preview,
     build_learning_report_preparation,
     build_learning_report_revision_status,
     build_learning_report_revision_view_model,
+    build_learning_report_pdf_artifact_view_model,
 )
+from prototypes.pdf_engine.renderer import PdfRenderer
 from src.desktop_app.view_models.learning_conference_view_model import (
     LearningConferenceDraftViewModel,
     LearningConferencePreparationViewModel,
@@ -1168,6 +1178,59 @@ class StudentDesktopAdapter:
         revision, payload = loaded
         return build_learning_report_revision_view_model(revision, payload)
 
+    def generate_learning_report_pdf(
+        self,
+        learning_report_revision_id: str,
+    ) -> LearningReportPdfArtifactViewModel:
+        """Generate or verify the immutable managed PDF for one final RPV."""
+        artifact = self._learning_report_pdf_application_service().generate(
+            GenerateLearningReportPdfCommand(learning_report_revision_id)
+        )
+        repository = SQLiteLearningReportPdfArtifactRepository(self.database)
+        return build_learning_report_pdf_artifact_view_model(
+            artifact,
+            repository.resolve_file_path(artifact.relative_file_path),
+        )
+
+    def load_learning_report_pdf_artifact(
+        self,
+        learning_report_revision_id: str,
+    ) -> LearningReportPdfArtifactViewModel | None:
+        """Load and verify an existing final PDF artifact for one RPV."""
+        artifact = self._learning_report_pdf_application_service().load_for_revision(
+            learning_report_revision_id
+        )
+        if artifact is None:
+            return None
+        repository = SQLiteLearningReportPdfArtifactRepository(self.database)
+        return build_learning_report_pdf_artifact_view_model(
+            artifact,
+            repository.resolve_file_path(artifact.relative_file_path),
+        )
+
+    def learning_report_pdf_error_message(self, error: Exception) -> str:
+        """Translate expected final-PDF failures into calm UI language."""
+        message = str(error)
+        if "finalisierte Berichtrevision" in message:
+            return "Nur die aktuelle finale Berichtrevision kann als PDF erstellt werden."
+        if "Snapshot" in message or "snapshot" in message:
+            return (
+                "Der gespeicherte Berichtstand konnte nicht sicher verifiziert werden. "
+                "Es wurde kein finales PDF erstellt."
+            )
+        if "Referenz" in message or "referenz" in message:
+            return (
+                "Im gespeicherten Berichtstand fehlt eine erforderliche Referenz. "
+                "Es wurde kein finales PDF erstellt."
+            )
+        if "registrierten PDF-Artefakts fehlt" in message:
+            return "Die registrierte PDF-Datei wurde nicht gefunden."
+        if "SHA-256" in message or "Dateigroesse" in message:
+            return "Die Integritaet der vorhandenen PDF-Datei konnte nicht bestaetigt werden."
+        if isinstance(error, LearningReportPdfError):
+            return "Das finale PDF konnte nicht sicher erstellt werden."
+        return "Das finale PDF konnte wegen eines technischen Fehlers nicht erstellt werden."
+
     def learning_report_finalization_error_message(self, error: Exception) -> str:
         """Translate expected domain failures into calm, actionable UI language."""
         message = str(error)
@@ -1216,6 +1279,24 @@ class StudentDesktopAdapter:
         return ReportRevisionApplicationService(
             LearningReportRevisionReadService(repository)
         )
+
+    def _learning_report_pdf_application_service(
+        self,
+    ) -> LearningReportPdfApplicationService:
+        report_repository = SQLiteLearningReportRepository(self.database)
+        artifact_repository = SQLiteLearningReportPdfArtifactRepository(self.database)
+        renderer = PdfRenderer()
+        domain_service = LearningReportPdfService(
+            LearningReportRevisionReadService(report_repository),
+            artifact_repository,
+            report_repository.get_report,
+            lambda revision, payload: build_learning_report_revision_view_model(
+                revision,
+                payload,
+            ).output_model,
+            renderer.render,
+        )
+        return LearningReportPdfApplicationService(domain_service)
 
     def _learning_report_draft_view_model(
         self,

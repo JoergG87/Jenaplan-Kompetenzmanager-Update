@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 
 from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.core.learning_report import ReportFinalizationError
+from src.core.learning_report_pdf import LearningReportPdfError
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
@@ -98,15 +99,15 @@ class AppShell(QMainWindow):
         root = QWidget()
         root.setObjectName("AppRoot")
         layout = QHBoxLayout(root)
-        layout.setContentsMargins(0, 0, 18, 16)
-        layout.setSpacing(18)
+        layout.setContentsMargins(0, 0, 20, 18)
+        layout.setSpacing(20)
 
         sidebar_container = QWidget()
         sidebar_container.setObjectName("AppSidebar")
-        sidebar_container.setFixedWidth(196)
+        sidebar_container.setFixedWidth(212)
         sidebar = QVBoxLayout(sidebar_container)
-        sidebar.setContentsMargins(12, 16, 12, 12)
-        sidebar.setSpacing(8)
+        sidebar.setContentsMargins(14, 18, 14, 14)
+        sidebar.setSpacing(10)
         brand_icon = create_app_icon_label(58)
         sidebar.addWidget(brand_icon, 0, Qt.AlignmentFlag.AlignHCenter)
         brand_title = QLabel("Jenaplan")
@@ -147,7 +148,7 @@ class AppShell(QMainWindow):
         layout.addWidget(sidebar_container)
 
         content = QVBoxLayout()
-        content.setContentsMargins(0, 16, 0, 0)
+        content.setContentsMargins(0, 18, 0, 0)
 
         self.stack = QStackedWidget()
         self.dashboard_screen = OverviewScreen()
@@ -747,7 +748,43 @@ class AppShell(QMainWindow):
                     "Die ausgewählte Berichtrevision ist nicht verfügbar."
                 )
                 return
-            LearningReportRevisionDialog(revision, dialog).exec()
+            artifact = None
+            artifact_error = ""
+            try:
+                artifact = self.adapter.load_learning_report_pdf_artifact(
+                    learning_report_revision_id
+                )
+            except Exception as error:
+                artifact_error = self.adapter.learning_report_pdf_error_message(error)
+            revision_dialog = LearningReportRevisionDialog(
+                revision,
+                dialog,
+                artifact,
+            )
+            if artifact_error:
+                revision_dialog.show_pdf_error(artifact_error)
+
+            def generate_final_pdf(revision_id: str) -> None:
+                try:
+                    generated = self.adapter.generate_learning_report_pdf(revision_id)
+                except LearningReportPdfError as error:
+                    revision_dialog.show_pdf_error(
+                        self.adapter.learning_report_pdf_error_message(error)
+                    )
+                    return
+                except Exception:
+                    revision_dialog.show_pdf_error(
+                        "Das finale PDF konnte wegen eines technischen Fehlers "
+                        "nicht erstellt werden."
+                    )
+                    return
+                revision_dialog.apply_pdf_artifact(generated)
+                self.status_label.setText(
+                    f"Finales PDF erstellt: {generated.file_name}"
+                )
+
+            revision_dialog.pdf_requested.connect(generate_final_pdf)
+            revision_dialog.exec()
 
         dialog.save_requested.connect(save_draft)
         dialog.finalization_requested.connect(request_finalization)

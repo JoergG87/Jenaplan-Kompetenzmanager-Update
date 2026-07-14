@@ -13,6 +13,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import (
     BaseDocTemplate,
     Flowable,
@@ -65,6 +66,35 @@ PALE = colors.HexColor("#EEF4F3")
 LINE = colors.HexColor("#C9D5D9")
 MUTED = colors.HexColor("#667782")
 PAPER = colors.white
+
+
+class PageCountCanvas(Canvas):
+    """Replay rendered pages once so footers use the physical page count."""
+
+    def __init__(self, *args, page_number_right: float, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._saved_page_states: list[dict[str, object]] = []
+        self._page_number_right = page_number_right
+
+    def showPage(self) -> None:  # noqa: N802 - ReportLab API
+        state = dict(self.__dict__)
+        state.pop("_saved_page_states", None)
+        self._saved_page_states.append(state)
+        self._startPage()
+
+    def save(self) -> None:
+        page_count = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            self.setFont(FONT, 7.5)
+            self.setFillColor(MUTED)
+            self.drawRightString(
+                self._page_number_right,
+                9 * mm,
+                f"Seite {self.getPageNumber()} von {page_count}",
+            )
+            Canvas.showPage(self)
+        Canvas.save(self)
 
 
 def _register_fonts() -> tuple[str, str]:
@@ -297,7 +327,9 @@ class PdfRenderer:
             title=model.metadata.document_title,
             author=model.metadata.school_name,
             subject=f"{model.metadata.document_title} - {model.metadata.student_name}",
-            creator="Isolierter Jenaplan PDF-Engine-Prototyp",
+            creator="Jenaplan Kompetenzmanager PDF-Renderer",
+            invariant=1,
+            pageCompression=1,
         )
         frame = Frame(
             document.leftMargin, document.bottomMargin, document.width, document.height,
@@ -313,7 +345,14 @@ class PdfRenderer:
                 story.append(PageBreak())
             for block in page.blocks:
                 story.extend(self._render_block(block, document.width))
-        document.build(story)
+        document.build(
+            story,
+            canvasmaker=lambda *args, **kwargs: PageCountCanvas(
+                *args,
+                page_number_right=A4[0] - document.rightMargin,
+                **kwargs,
+            ),
+        )
         return target
 
     def _render_block(self, block: object, width: float) -> list[Flowable]:
@@ -380,7 +419,6 @@ class PdfRenderer:
         raise TypeError(f"Unsupported output block: {type(block).__name__}")
 
     def _page_decorations(self, canvas, document, model: ReportOutputModel) -> None:
-        page_number = canvas.getPageNumber()
         canvas.saveState()
         canvas.setFillColor(PAPER)
         canvas.rect(0, 0, A4[0], A4[1], stroke=0, fill=1)
@@ -392,5 +430,4 @@ class PdfRenderer:
         canvas.drawString(document.leftMargin, A4[1] - 13 * mm, model.metadata.header_text)
         canvas.line(document.leftMargin, 14 * mm, A4[0] - document.rightMargin, 14 * mm)
         canvas.drawString(document.leftMargin, 9 * mm, model.metadata.footer_text)
-        canvas.drawRightString(A4[0] - document.rightMargin, 9 * mm, f"Seite {page_number} von {len(model.pages)}")
         canvas.restoreState()

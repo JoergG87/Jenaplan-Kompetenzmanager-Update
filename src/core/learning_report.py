@@ -192,6 +192,11 @@ class LearningReportRepository(Protocol):
         report_draft_id: str,
     ) -> LearningReportRecord | None: ...
 
+    def get_report(
+        self,
+        learning_report_id: str,
+    ) -> LearningReportRecord | None: ...
+
     def list_revisions(
         self,
         learning_report_id: str,

@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Sprint 9A - Finaler PDF-Druck aus Berichtrevisionen
+
+### Added
+
+- Finalen PDF-Druck ausschliesslich aus der aktuellen unveraenderlichen `finalized`-Berichtrevision ergaenzt; Draft, Live-Projektionen und supersedierte Revisionen sind keine Eingangsquellen.
+- Berichtsspezifische unveraenderliche PDF-Artefaktreferenz mit stabiler `RPA-######`-ID, `RPV`-Bezug, relativem verwaltetem Dateipfad, MIME-Type, Dateigroesse, Snapshot-Hash, PDF-SHA-256 und Erzeugungszeitpunkt eingefuehrt.
+- Verwaltete Ablage unter `data/documents/<student_id>/reports/<RPT>/<RPV>/` ohne Klarnamen im Dateinamen sowie ruhige PDF-Aktion in der finalen Revisionsansicht ergaenzt.
+
+### Changed
+
+- Snapshotbasierte Revisionsprojektion um sichtbare Revisions-ID erweitert und den vorhandenen reinen ReportLab-Renderer fuer byte-stabile Wiederholungen deterministisch konfiguriert.
+- Fehlende Referenzen, ungueltige Snapshotstruktur, abweichender Snapshot-Hash, unzulaessiger Revisionsstatus, Renderfehler sowie fehlende oder beschaedigte bestehende Artefaktdateien werden vor beziehungsweise waehrend der Erzeugung kontrolliert abgefangen.
+
+### Not Changed
+
+- Keine Renderer-Versionierung, komplexe Archivverwaltung, LEG-PDF, Benutzer-/Rollendomain, neue Berichtsinhalte, zweite Kompetenz- oder Berichtsgenerierung und kein Commit.
+
 ## Schülerprofil – Variante A produktiv
 
 ### Added

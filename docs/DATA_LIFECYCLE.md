@@ -754,6 +754,49 @@ RPV-ID
 
 Regel: Nach der `RPV`-Abfrage werden keine operativen Datenquellen gelesen. Namen, Gruppen-/Kurskontext, Fachlabels, Kompetenztexte, Beobachtungsinhalte und Diagrammwerte stammen ausschliesslich aus dem Snapshot. Die Ansicht ist vollstaendig schreibgeschuetzt. Ein fehlgeschlagener Hash verhindert das Oeffnen; aktuelle Daten werden niemals als Ersatz rekonstruiert.
 
+## Finales Lernentwicklungsbericht-PDF erzeugen
+
+Start: Laura oeffnet eine konkrete aktuelle `RPV`-Revision und waehlt `Finales PDF erstellen`.
+
+Freigegebener Pfad:
+
+```text
+LearningReportRevisionDialog (RPV-ID)
+-> StudentDesktopAdapter.generate_learning_report_pdf
+-> LearningReportPdfApplicationService
+-> LearningReportPdfService
+-> LearningReportRevisionReadService + SQLiteLearningReportRepository
+-> gespeicherten RPV-Snapshot und SHA-256 validieren
+-> snapshotbasiertes ReportOutputModel
+-> reiner PdfRenderer
+-> verwaltete PDF-Datei
+-> SQLiteLearningReportPdfArtifactRepository
+-> learning_report_pdf_artifacts
+```
+
+Gelesene Datenquellen:
+
+- `learning_reports`
+- `learning_report_revisions`
+- eine bereits vorhandene `learning_report_pdf_artifacts`-Zeile fuer idempotente Wiederaufrufe
+
+Geschriebene Ziele:
+
+- PDF-Datei unter `data/documents/<student_id>/reports/<RPT>/<RPV>/`
+- genau eine unveraenderliche Zeile in `learning_report_pdf_artifacts` pro `RPV`
+
+Regeln:
+
+1. Nur eine Revision mit aktuellem Status `finalized` darf ein neues Artefakt erzeugen. Draft und `superseded` sind unzulaessig.
+2. Vor dem Rendern werden gespeicherter Snapshot-Hash, Schemaversion, Pflichtstruktur und interne Fach-, Kompetenz-, Beobachtungs- und Textreferenzen geprueft. Es werden keine operativen Quellen nachgeladen.
+3. Der vorhandene `PdfRenderer` erhaelt ausschliesslich das aus diesem Snapshot gebaute `ReportOutputModel` und kennt keine Persistenz- oder Statuslogik.
+4. Nach erfolgreichem Rendern werden PDF-SHA-256 und Dateigroesse berechnet. Erst danach wird die `RPA`-Referenz gespeichert.
+5. Ein vorhandenes Artefakt wird nie ueberschrieben. Der Wiederaufruf bestaetigt relativen Pfad, Dateigroesse und PDF-Hash und gibt dieselbe Referenz zurueck.
+6. Draftaenderungen, operative Datenaenderungen und spaetere Revisionen veraendern bestehende PDF-Dateien und Hashes nicht.
+7. Bei Render-, Datei-, Hash- oder Persistenzfehlern entsteht keine gueltige neue Artefaktreferenz; eine in diesem Versuch erzeugte Datei wird entfernt.
+
+Renderer-Versionierung, Mehrfachartefakte, komplexe Archivverwaltung, LEG-PDF und externe freie Exportpfade sind nicht Bestandteil dieses Lifecycles.
+
 ## LEG-Arbeitsentwurf speichern
 
 Start: Laura legt fuer einen Schueler einen Lernentwicklungsgespraech-Arbeitsentwurf an oder speichert einen bereits geladenen Entwurf erneut.

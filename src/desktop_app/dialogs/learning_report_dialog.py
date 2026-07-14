@@ -51,6 +51,7 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportFinalizationPreviewViewModel,
     LearningReportRevisionStatusViewModel,
     LearningReportRevisionViewModel,
+    LearningReportPdfArtifactViewModel,
     LearningReportSubjectDraftViewModel,
     LearningReportSubjectViewModel,
     build_report_output_model,
@@ -1725,13 +1726,17 @@ class LearningReportDialog(QDialog):
 class LearningReportRevisionDialog(QDialog):
     """Fully read-only final report view backed only by one snapshot projection."""
 
+    pdf_requested = Signal(str)
+
     def __init__(
         self,
         revision: LearningReportRevisionViewModel,
         parent: QWidget | None = None,
+        artifact: LearningReportPdfArtifactViewModel | None = None,
     ) -> None:
         super().__init__(parent)
         self.revision = revision
+        self.artifact = artifact
         self.setObjectName("LearningReportRevisionDialog")
         self.setWindowTitle(
             f"Finale Berichtfassung · Revision {revision.revision_number}"
@@ -1756,6 +1761,20 @@ class LearningReportRevisionDialog(QDialog):
             f"{self.revision.report_type_label} · Revision {self.revision.revision_number}",
             f"Historisches Dokument für {self.revision.student_display_name} · {self.revision.period_label}",
         )
+        if self.revision.status == "finalized":
+            self.pdf_button = QPushButton("Finales PDF erstellen")
+            self.pdf_button.setObjectName("LearningReportGenerateFinalPdfButton")
+            configure_button(
+                self.pdf_button,
+                "secondary",
+                "Finales PDF ausschließlich aus dieser unveränderlichen Revision erstellen",
+            )
+            self.pdf_button.clicked.connect(
+                lambda: self.pdf_requested.emit(
+                    self.revision.learning_report_revision_id
+                )
+            )
+            header.add_action(self.pdf_button)
         header.add_action(close)
         header_layout.addWidget(header)
         context_row = QHBoxLayout()
@@ -1793,6 +1812,11 @@ class LearningReportRevisionDialog(QDialog):
         root.addWidget(
             snapshot_message
         )
+        self.pdf_status = InlineMessage()
+        self.pdf_status.setObjectName("LearningReportFinalPdfStatus")
+        root.addWidget(self.pdf_status)
+        if self.artifact is not None:
+            self.apply_pdf_artifact(self.artifact)
         scroll = QScrollArea()
         scroll.setAccessibleName(
             f"Historische Berichtrevision {self.revision.revision_number}"
@@ -1831,6 +1855,24 @@ class LearningReportRevisionDialog(QDialog):
         canvas_layout.addWidget(paper)
         scroll.setWidget(canvas)
         root.addWidget(scroll, 1)
+
+    def apply_pdf_artifact(
+        self,
+        artifact: LearningReportPdfArtifactViewModel,
+    ) -> None:
+        """Show the verified immutable artifact without exposing storage logic."""
+        self.artifact = artifact
+        self.pdf_status.set_message(
+            f"Finales PDF vorhanden: {artifact.file_name} · "
+            f"erstellt {artifact.created_at} · SHA-256 {artifact.pdf_sha256[:12]}…",
+            tone="success",
+        )
+        if hasattr(self, "pdf_button"):
+            self.pdf_button.setText("Finales PDF vorhanden")
+            self.pdf_button.setEnabled(False)
+
+    def show_pdf_error(self, message: str) -> None:
+        self.pdf_status.set_message(message, tone="error")
 
     def _context_card(self) -> AppCard:
         card = AppCard("soft")

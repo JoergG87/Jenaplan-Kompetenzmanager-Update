@@ -14,6 +14,10 @@ from src.core.learning_report import (
     LearningReportRecord,
     ReportFinalizationService,
 )
+from src.core.learning_report_pdf import (
+    LearningReportPdfArtifactRecord,
+    LearningReportPdfService,
+)
 from src.core.report_draft import (
     ReportDraftChartSelectionRecord,
     ReportDraftRecord,
@@ -90,6 +94,34 @@ class ReportRevisionApplicationService:
         learning_report_revision_id: str,
     ) -> tuple[LearningReportRevisionRecord, dict[str, object]] | None:
         return self.read_service.snapshot_payload(learning_report_revision_id)
+
+
+@dataclass(frozen=True)
+class GenerateLearningReportPdfCommand:
+    """Generate or verify the immutable PDF artifact for one final RPV."""
+
+    learning_report_revision_id: str
+
+    command_name: str = "learning_report_pdf.generate"
+
+
+class LearningReportPdfApplicationService:
+    """Application boundary for final report PDF generation and lookup."""
+
+    def __init__(self, domain_service: LearningReportPdfService) -> None:
+        self.domain_service = domain_service
+
+    def generate(
+        self,
+        command: GenerateLearningReportPdfCommand,
+    ) -> LearningReportPdfArtifactRecord:
+        return self.domain_service.generate(command.learning_report_revision_id)
+
+    def load_for_revision(
+        self,
+        learning_report_revision_id: str,
+    ) -> LearningReportPdfArtifactRecord | None:
+        return self.domain_service.load_artifact(learning_report_revision_id)
 
 
 @dataclass(frozen=True)

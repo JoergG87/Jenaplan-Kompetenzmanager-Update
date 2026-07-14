@@ -6,6 +6,18 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 9A - Finaler PDF-Druck aus Berichtrevisionen ✅
+
+- [x] Finalen PDF-Pfad ausschliesslich fuer eine aktuelle `finalized`-Revision (`RPV`) festgelegt
+- [x] Snapshot-Integritaet, Status und vollstaendige historische Referenzen vor dem Rendern validiert
+- [x] Vorhandenes snapshotbasiertes `ReportOutputModel` und den reinen `PdfRenderer` ohne zweite Berichtsgenerierung wiederverwendet
+- [x] Unveraenderliche PDF-Artefaktreferenz mit SHA-256, Dateigroesse und relativem verwaltetem Pfad additiv modelliert
+- [x] Studentenzentrierte Ablage ohne Klarname unter `data/documents/<student_id>/reports/<RPT>/<RPV>/` festgelegt
+- [x] Finale PDF-Aktion in der schreibgeschuetzten Revisionsansicht fuer die aktuelle Revision vorgesehen
+- [x] Fokussierte Tests, Gesamttests, Architekturtests, visuelle PDF-Pruefung und `git diff --check` abgeschlossen
+- [x] Keine Renderer-Versionierung, komplexe Archivverwaltung, LEG-PDF oder neuen Berichtsinhalte eingefuehrt
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## UI Sprint 6B - LEG-Workspace umgesetzt ✅
 
 - [x] Bestehenden LEG-Draft als responsiven Sechs-Phasen-Workspace mit stabilem Kontextkopf, kompakter Phasenleiste und persistenter Aktionsleiste neu komponiert

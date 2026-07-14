@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from pathlib import Path
 
 from prototypes.pdf_engine.output_models import (
     ChartBlock,
@@ -36,6 +37,7 @@ from src.core.learning_report import (
     LearningReportRevisionRecord,
     LearningReportRevisionState,
 )
+from src.core.learning_report_pdf import LearningReportPdfArtifactRecord
 
 
 RATING_STATE_COLORS = (
@@ -344,6 +346,36 @@ class LearningReportRevisionViewModel:
     output_model: ReportOutputModel
 
 
+@dataclass(frozen=True)
+class LearningReportPdfArtifactViewModel:
+    """UI-ready verified reference to one immutable final PDF file."""
+
+    learning_report_pdf_artifact_id: str
+    learning_report_revision_id: str
+    file_path: str
+    file_name: str
+    file_size_bytes: int
+    snapshot_sha256: str
+    pdf_sha256: str
+    created_at: str
+
+
+def build_learning_report_pdf_artifact_view_model(
+    artifact: LearningReportPdfArtifactRecord,
+    file_path: Path,
+) -> LearningReportPdfArtifactViewModel:
+    return LearningReportPdfArtifactViewModel(
+        artifact.learning_report_pdf_artifact_id,
+        artifact.learning_report_revision_id,
+        str(file_path),
+        file_path.name,
+        artifact.file_size_bytes,
+        artifact.snapshot_sha256,
+        artifact.pdf_sha256,
+        _timestamp_label(artifact.created_at),
+    )
+
+
 def build_learning_report_revision_status(
     state: LearningReportRevisionState,
 ) -> LearningReportRevisionStatusViewModel:
@@ -638,6 +670,7 @@ def _build_revision_output_model(
                         ("Stammgruppe", metadata.group_name),
                         ("Zeitraum", metadata.period),
                         ("Revision", str(revision.revision_number)),
+                        ("Revisions-ID", revision.learning_report_revision_id),
                         ("Finalisiert von", metadata.teacher_name),
                         ("Finalisiert am", _timestamp_label(revision.finalized_at)),
                     )

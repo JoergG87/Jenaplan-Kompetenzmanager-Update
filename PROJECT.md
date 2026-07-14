@@ -108,7 +108,7 @@ Die bestehende Berichtsvorschau bleibt eine abgeleitete Arbeitsprojektion. Sprin
 
 Ein Lernentwicklungsgespraech ist fachlich kein Bericht. Seine Vorbereitung nutzt dieselben kanonischen Kompetenz- und Evidenzprojektionen ausschliesslich lesend. Sprint 7G.1 fuehrt dafuer einen eigenen persistenten LEG-Arbeitsentwurf mit Status `draft` ein: Gespraechsrahmen, manuelle Vorbereitung, bewusste Fach-/Themen-, Kompetenz-, Beobachtungs- und Diagrammauswahl sowie getrennte vorbereitete und gemeinsam vereinbarte Ziele, Unterstuetzungen und Vereinbarungen. Der Entwurf referenziert Live-Daten, ist kein eingefrorener oder finaler Gespraechsstand und besitzt weder Freigabe, Versionierung noch Archivierung. Sprint 7G.2 verbindet diesen Entwurf mit der verbindlichen Zwei-Seiten-UX aus `prototypes/learning_conference_ux/`: Vorbereitung und live synchronisierte Gespraechsmappe bleiben sichtbar getrennt, alle fachlichen Inhalte werden ueber den Draft gespeichert und Kompetenzstaende ausschliesslich kanonisch gelesen. Sprint 7G.3 begrenzt die Kompetenzauswahl auf aktive kindbezogene Kompetenzbeobachtungen im LEG-Zeitraum und aktuelle Bestaetigungen; bereits ausgewaehlte Draft-Referenzen bleiben ausserhalb dieses Sichtfilters erhalten.
 
-PDF ist ausschliesslich ein Ausgabeformat. Der produktiv angebundene PDF-Renderer erhaelt ein neutrales `ReportOutputModel`, greift nicht direkt auf SQLite zu und berechnet oder interpretiert keine Fachlogik. Dieses Modell wird fuer die aktuelle Draft-Vorschau aus dem bearbeitbaren Entwurf und den freigegebenen Leseprojektionen aufgebaut; es ist noch kein eingefrorener oder freigegebener Ausgabestand. Fuer einen spaeteren finalen Bericht muss derselbe reine Renderer sein Eingangsmodell aus einer getrennt freigegebenen, versionierten und eingefrorenen Berichtsdomain erhalten. Professionelle Ausgaben koennen Deckblatt, Kompetenzuebersichten, Diagramme, Fachseiten, Lernentwicklung und klar getrennte LEG-Seiten enthalten.
+PDF ist ausschliesslich ein Ausgabeformat. Der produktiv angebundene PDF-Renderer erhaelt ein neutrales `ReportOutputModel`, greift nicht direkt auf SQLite zu und berechnet oder interpretiert keine Fachlogik. Die Draft-Vorschau baut dieses Modell weiterhin aus dem bearbeitbaren Entwurf und den freigegebenen Leseprojektionen auf und bleibt klar als Entwurf gekennzeichnet. Sprint 9A erzeugt ein finales Berichts-PDF dagegen ausschliesslich aus dem verifizierten Snapshot einer aktuellen `finalized`-`RPV`; es speichert dazu eine unveraenderliche `RPA`-Artefaktreferenz mit PDF-SHA-256 im verwalteten studentenzentrierten Dokumentpfad. Draftaenderungen und spaetere operative Daten veraendern bestehende finale PDFs nicht. LEG-PDF, Renderer-Versionierung und komplexe Archivverwaltung bleiben getrennte spaetere Entscheidungen.
 
 Verbindliche Zielkette:
 
@@ -120,6 +120,7 @@ SQLite
 -> Bericht-/LEG-Komposition
 -> freigegebener Ausgabestand
 -> PDF Renderer
+-> unveraenderliche PDF-Datei und Artefaktreferenz
 ```
 
 Grafiken zeigen ausschliesslich Dokumentationsabdeckung und Entwicklungsevidenz, zum Beispiel Abdeckung je Fach, Entwicklung ueber Zeit oder Vergleiche fachlich passender Zeitpunkte. Sie erzeugen keine algorithmische Leistungsbewertung und duerfen nicht als solche gestaltet oder bezeichnet werden.

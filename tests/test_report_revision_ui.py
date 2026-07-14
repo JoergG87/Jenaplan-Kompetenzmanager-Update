@@ -12,6 +12,8 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -326,7 +328,7 @@ class ReportRevisionProductTest(unittest.TestCase):
             any(chart.details for chart in after.subjects[0].charts)
         )
 
-    def test_final_view_has_no_edit_update_delete_unlock_or_pdf_action(self) -> None:
+    def test_final_view_has_only_final_pdf_and_back_actions(self) -> None:
         status = self.adapter.finalize_learning_report(
             self.saved.report_draft_id,
             "Laura Lernbegleiterin",
@@ -339,11 +341,38 @@ class ReportRevisionProductTest(unittest.TestCase):
 
         self.assertFalse(dialog.findChildren(QLineEdit))
         self.assertFalse(dialog.findChildren(QTextEdit))
-        self.assertEqual(actions, {"Zurück"})
+        self.assertEqual(actions, {"Finales PDF erstellen", "Zurück"})
         self.assertFalse(
-            {"Bearbeiten", "Löschen", "Entsperren", "Wiederherstellen", "PDF erstellen"}
+            {"Bearbeiten", "Löschen", "Entsperren", "Wiederherstellen"}
             & actions
         )
+        requested: list[str] = []
+        dialog.pdf_requested.connect(requested.append)
+        QTest.mouseClick(
+            dialog.findChild(QPushButton, "LearningReportGenerateFinalPdfButton"),
+            Qt.MouseButton.LeftButton,
+        )
+        self.assertEqual(requested, [status.current_revision_id])
+
+    def test_superseded_revision_has_no_final_pdf_action(self) -> None:
+        first = self.adapter.finalize_learning_report(
+            self.saved.report_draft_id,
+            "Laura Lernbegleiterin",
+        )
+        first_revision_id = first.current_revision_id
+        self.saved = self.adapter.save_learning_report_draft(
+            replace(self.saved, overall_text="Bewusst korrigierte zweite Revision.")
+        )
+        self.adapter.finalize_learning_report(
+            self.saved.report_draft_id,
+            "Laura Lernbegleiterin",
+        )
+
+        revision = self.adapter.load_learning_report_revision(first_revision_id)
+        dialog = LearningReportRevisionDialog(revision)
+        actions = {button.text() for button in dialog.findChildren(QPushButton)}
+
+        self.assertEqual(actions, {"Zurück"})
 
     def test_finalization_does_not_emit_pdf_request(self) -> None:
         preparation = self.adapter.learning_report_preparation_for_student(
@@ -479,6 +508,9 @@ class ReportRevisionProductTest(unittest.TestCase):
         )
         self.assertNotIn("sqlite3", source)
         self.assertNotIn("SQLiteLearningReportRepository", source)
+        self.assertNotIn("PdfRenderer", source)
+        self.assertNotIn("hashlib", source)
+        self.assertNotIn("learning_report_pdf_artifacts", source)
 
     def _draft(self) -> LearningReportDraftViewModel:
         return LearningReportDraftViewModel(

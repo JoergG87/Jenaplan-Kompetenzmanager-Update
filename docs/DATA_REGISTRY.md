@@ -59,6 +59,7 @@ Gepruefte Tabellen:
 | `learning_conference_draft_charts` | LearningConferenceDraftChart | keine Workbook-Projektion |
 | `learning_reports` | LearningReport | keine Workbook-Projektion |
 | `learning_report_revisions` | LearningReportRevision | keine Workbook-Projektion |
+| `learning_report_pdf_artifacts` | LearningReportPdfArtifact | keine Workbook-Projektion |
 
 Regel:
 
@@ -1186,6 +1187,57 @@ Lesende Prozesse:
 
 - stabiles Berichtaggregat zum Quell-Draft lesen
 - aktuelle oder historische Revisionen eines Berichtaggregats lesen
+
+## learning_report_pdf_artifacts
+
+Zweck: Unveraenderliche Dateireferenz fuer das genau aus einer verifizierten finalisierten Lernentwicklungsbericht-Revision erzeugte PDF.
+
+Entity: LearningReportPdfArtifact. Kein fachlicher Berichtssnapshot, keine allgemeine Dokumententitaet und kein LEG-Artefakt.
+
+Storage:
+
+```text
+learning_report_pdf_artifacts(
+  learning_report_pdf_artifact_id TEXT PRIMARY KEY,
+  learning_report_revision_id TEXT NOT NULL UNIQUE,
+  relative_file_path TEXT NOT NULL UNIQUE,
+  mime_type TEXT NOT NULL CHECK(mime_type = 'application/pdf'),
+  file_size_bytes INTEGER NOT NULL CHECK(file_size_bytes > 0),
+  snapshot_sha256 TEXT NOT NULL,
+  pdf_sha256 TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(learning_report_revision_id)
+    REFERENCES learning_report_revisions(learning_report_revision_id)
+)
+```
+
+Owner: Lernentwicklungsbericht / finaler PDF-Druck.
+
+Primary Key:
+
+- `learning_report_pdf_artifacts.learning_report_pdf_artifact_id` im Format `RPA-######`
+
+Foreign Key:
+
+- `learning_report_revision_id` -> `learning_report_revisions.learning_report_revision_id`
+
+Wichtige Regeln:
+
+- Pro `RPV` existiert hoechstens eine Artefaktreferenz. Die Zeile wird nach ihrer Erstellung weder aktualisiert noch geloescht.
+- Ein neues Artefakt darf nur erzeugt werden, solange die Quellrevision den Status `finalized` besitzt und ihr kanonischer Snapshot sowie dessen interne Referenzen vollstaendig validiert sind.
+- `relative_file_path` liegt relativ zum Verzeichnis der SQLite-Datei unter `documents/<student_id>/reports/<RPT>/<RPV>/`; der Dateiname enthaelt technische IDs und keinen Schuelerklarnamen.
+- `snapshot_sha256` entspricht exakt dem bei der Erzeugung bestaetigten `learning_report_revisions.snapshot_sha256`.
+- `pdf_sha256` ist der SHA-256-Hexdigest der gespeicherten PDF-Bytes; `file_size_bytes` ist deren exakte Bytegroesse.
+- Der fachliche Snapshot bleibt Source of Truth. Das Artefakt ist ein abgeleitetes unveraenderliches Ausgabeobjekt und keine Quelle fuer neue Berichtsinhalte.
+- Renderer-Versionierung, mehrere Artefakte pro Revision, Archivstatus, Retention und LEG-PDF sind nicht Teil dieser Tabelle.
+
+Schreibender Prozess:
+
+- finales PDF aus einer aktuellen `finalized`-Berichtrevision erzeugen
+
+Lesende Prozesse:
+
+- vorhandenes PDF-Artefakt fuer eine Revision laden und gegen Pfad, Groesse und Hash pruefen
 
 ## data_settings
 
