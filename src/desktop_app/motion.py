@@ -250,9 +250,9 @@ class _CardMotionController(QObject):
         def update(value: Any) -> None:
             progress = float(value)
             setattr(self.card, "_motion_hover_progress", progress)
-            self.effect.setBlurRadius(12.0 * progress)
-            self.effect.setOffset(0.0, 2.0 * progress)
-            self.effect.setColor(QColor(31, 65, 97, round(46 * progress)))
+            self.effect.setBlurRadius(16.0 * progress)
+            self.effect.setOffset(0.0, 3.0 * progress)
+            self.effect.setColor(QColor(31, 65, 97, round(38 * progress)))
 
         animate_value(
             self.card,

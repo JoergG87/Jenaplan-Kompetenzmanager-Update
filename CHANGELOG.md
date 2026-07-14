@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Premium UI Sprint 1 - Desktop Finish Foundations
+
+### Added
+
+- Konsistentes Outline-SVG fuer ComboBox- und Datumsfeld-Disclosure ergaenzt; die technische Qt-Standardmarkierung wird nicht mehr sichtbar.
+- Dezente, systemweite Desktop-Scrollbars sowie ruhige Menu-, Tooltip-, Tab- und Divider-Zustaende in das zentrale Theme aufgenommen.
+
+### Changed
+
+- Product Shell mit ausgewogenerer Sidebar-Breite, leisem Active State, eindeutigem Selection-Indicator, ruhigeren Gruppierungen und grosszuegigerem Inhaltsabstand verfeinert.
+- Kartenvertrag gegen Object-Name-Ueberschreibungen abgesichert und Surface, Rahmen, Radien, Tabellen, Typografie, Buttonrollen, Eingabefelder, Fokus-, Hover-, Pressed- und Disabled-Zustaende zentral harmonisiert.
+- Stundenplanaktionen semantisch als sekundaer beziehungsweise destruktiv ausgezeichnet, Dialogaktionen vereinheitlicht und die vorhandene Card-Motion zu einer weicheren, layoutneutralen Elevation verfeinert.
+
+### Not Changed
+
+- Keine Fachlogik, Daten, SQLite-, Schema-, Repository-, Service-, Adapter-, ViewModel-, Navigations-, Workflow-, Dialogablauf- oder Produktentscheidungsänderung; kein QPainter und keine neuen Funktionen.
+
 ## Sprint 9A - Finaler PDF-Druck aus Berichtrevisionen
 
 ### Added

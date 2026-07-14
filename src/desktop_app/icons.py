@@ -8,7 +8,16 @@ from PySide6.QtGui import QIcon
 
 
 ICON_NAMES = frozenset(
-    {"today", "students", "master-data", "settings", "info", "search", "close"}
+    {
+        "today",
+        "students",
+        "master-data",
+        "settings",
+        "info",
+        "search",
+        "close",
+        "chevron-down",
+    }
 )
 ICON_SIZE_SMALL = 16
 ICON_SIZE_MEDIUM = 20

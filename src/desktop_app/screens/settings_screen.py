@@ -222,12 +222,14 @@ class SettingsScreen(QWidget):
         )
         layout.addWidget(active, 0)
         edit_button = QPushButton("Bearbeiten")
+        configure_button(edit_button, "secondary", "Stunde bearbeiten")
         edit_button.clicked.connect(
             lambda checked=False, entry_id=entry.timetable_entry_id: self.timetable_edit_requested.emit(
                 entry_id
             )
         )
         delete_button = QPushButton("Löschen")
+        configure_button(delete_button, "destructive", "Stunde löschen")
         delete_button.clicked.connect(
             lambda checked=False, entry_id=entry.timetable_entry_id: self.timetable_delete_requested.emit(
                 entry_id

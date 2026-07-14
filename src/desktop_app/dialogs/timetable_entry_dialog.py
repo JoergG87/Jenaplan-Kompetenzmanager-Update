@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
+
 from src.application.commands.timetable import SaveTimetableEntryCommand
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.timetable_view_model import (
@@ -108,8 +110,7 @@ class TimetableEntryDialog(QDialog):
             QDialogButtonBox.StandardButton.Cancel
             | QDialogButtonBox.StandardButton.Save
         )
-        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("Abbrechen")
-        buttons.button(QDialogButtonBox.StandardButton.Save).setText("Speichern")
+        configure_save_cancel_buttons(buttons)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
         layout.addWidget(buttons)
