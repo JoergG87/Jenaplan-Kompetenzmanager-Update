@@ -14,7 +14,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -5939,6 +5939,161 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(details_button.text(), "Schließen ▴")
         self.assertIsNotNone(app)
 
+    def test_student_profile_cockpit_learning_area_card_opens_without_closing_subject(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001",
+                "Zahlen darstellen",
+                learning_area="Arithmetik - mit Zahlen und Symbolen umgehen",
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.profile_tabs.setCurrentIndex(2)
+        screen.resize(1180, 760)
+        screen.show()
+        QApplication.processEvents()
+        subject_button = screen.findChild(
+            QPushButton, "CompetencyCockpitSubjectButton"
+        )
+        subject_details = screen.findChild(QWidget, "CompetencyCockpitSubjectDetails")
+        area_card = screen.findChild(QFrame, "CompetencyCockpitLearningAreaCard")
+        area_button = screen.findChild(
+            QPushButton, "CompetencyCockpitLearningAreaButton"
+        )
+        area_details = screen.findChild(
+            QWidget, "CompetencyCockpitLearningAreaDetails"
+        )
+
+        subject_button.click()
+        self.assertFalse(subject_details.isHidden())
+        self.assertTrue(area_details.isHidden())
+
+        area_title = area_card.findChild(QLabel)
+        QTest.mouseClick(
+            area_card,
+            Qt.MouseButton.LeftButton,
+            pos=area_title.geometry().center(),
+        )
+
+        self.assertFalse(subject_details.isHidden())
+        self.assertFalse(area_details.isHidden())
+        self.assertEqual(area_button.text(), "Schließen ▴")
+
+        area_button.click()
+        self.assertFalse(subject_details.isHidden())
+        self.assertTrue(area_details.isHidden())
+        self.assertEqual(area_card.focusPolicy(), Qt.FocusPolicy.StrongFocus)
+        QTest.keyClick(area_card, Qt.Key.Key_Return)
+        self.assertFalse(subject_details.isHidden())
+        self.assertFalse(area_details.isHidden())
+        self.assertIsNotNone(app)
+
+    def test_student_profile_cockpit_topic_card_and_button_toggle_same_details(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "Volle Stunden"),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.profile_tabs.setCurrentIndex(2)
+        screen.resize(1180, 760)
+        screen.show()
+        QApplication.processEvents()
+        screen.findChild(QPushButton, "CompetencyCockpitSubjectButton").click()
+        screen.findChild(QPushButton, "CompetencyCockpitLearningAreaButton").click()
+        topic_card = screen.findChild(QFrame, "CompetencyCockpitTopicCard")
+        topic_button = screen.findChild(QPushButton, "CompetencyCockpitTopicButton")
+        topic_details = screen.findChild(QWidget, "CompetencyCockpitTopicDetails")
+
+        self.assertTrue(topic_details.isHidden())
+        topic_title = topic_card.findChild(QLabel)
+        QTest.mouseClick(
+            topic_card,
+            Qt.MouseButton.LeftButton,
+            pos=topic_title.geometry().center(),
+        )
+        self.assertFalse(topic_details.isHidden())
+        topic_button.click()
+        self.assertTrue(topic_details.isHidden())
+        self.assertIsNotNone(app)
+
+    def test_student_profile_cockpit_competency_row_is_pointer_and_keyboard_activatable(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status("CMP-000001", "Volle Stunden"),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.profile_tabs.setCurrentIndex(2)
+        screen.resize(1180, 760)
+        screen.show()
+        QApplication.processEvents()
+        screen.findChild(QPushButton, "CompetencyCockpitSubjectButton").click()
+        screen.findChild(QPushButton, "CompetencyCockpitLearningAreaButton").click()
+        screen.findChild(QPushButton, "CompetencyCockpitTopicButton").click()
+        row = screen.findChild(QFrame, "CompetencyCockpitCompetencyRow")
+        button = screen.findChild(QPushButton, "CompetencyCockpitCompetencyButton")
+        details = screen.findChild(QWidget, "CompetencyCockpitCompetencyDetails")
+
+        self.assertEqual(row.focusPolicy(), Qt.FocusPolicy.StrongFocus)
+        self.assertTrue(details.isHidden())
+        QTest.mouseClick(row, Qt.MouseButton.LeftButton, pos=QPoint(1, 0))
+        self.assertFalse(details.isHidden())
+        button.click()
+        self.assertTrue(details.isHidden())
+        QTest.keyClick(row, Qt.Key.Key_Space)
+        self.assertFalse(details.isHidden())
+        self.assertIsNotNone(app)
+
+    def test_student_profile_historical_competency_card_stays_read_only(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000099",
+                "Historische Zeitkompetenz",
+                documentation_state="confirmed",
+                confirmed_rating="+",
+                historical=True,
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.profile_tabs.setCurrentIndex(2)
+        screen.resize(1180, 760)
+        screen.show()
+        QApplication.processEvents()
+        historical = screen.findChild(QWidget, "CompetencyCockpitHistoricalDetails")
+        screen.findChild(QPushButton, "CompetencyCockpitHistoricalButton").click()
+        historical.findChild(QPushButton, "CompetencyCockpitSubjectButton").click()
+        historical.findChild(
+            QPushButton, "CompetencyCockpitLearningAreaButton"
+        ).click()
+        historical.findChild(QPushButton, "CompetencyCockpitTopicButton").click()
+        row = historical.findChild(QFrame, "CompetencyCockpitCompetencyRow")
+        details = historical.findChild(QWidget, "CompetencyCockpitCompetencyDetails")
+
+        QTest.mouseClick(row, Qt.MouseButton.LeftButton, pos=QPoint(1, 0))
+
+        self.assertFalse(details.isHidden())
+        self.assertFalse(
+            any(
+                button.text().strip() == "+"
+                for button in historical.findChildren(QPushButton)
+            )
+        )
+        self.assertIsNone(
+            historical.findChild(QComboBox, "CompetencyConfirmationRatingSelect")
+        )
+        self.assertIsNotNone(app)
+
     def test_competency_cockpit_projects_subject_area_topic_and_progress(self) -> None:
         cockpit = build_student_competency_cockpit((
             self._cockpit_status(
@@ -6855,6 +7010,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("QPushButton:disabled", stylesheet)
         self.assertIn("QTableWidget#PremiumTable", stylesheet)
         self.assertIn("QLineEdit#SearchField:focus", stylesheet)
+        self.assertIn(
+            'QFrame#CompetencyCockpitLearningAreaCard[interactive="true"]:hover',
+            stylesheet,
+        )
+        self.assertIn(
+            'QFrame#CompetencyCockpitCompetencyRow[interactive="true"]:focus',
+            stylesheet,
+        )
 
     def test_shell_svg_icons_and_native_font_tokens_are_registered(self) -> None:
         theme_source = inspect.getsource(theme)

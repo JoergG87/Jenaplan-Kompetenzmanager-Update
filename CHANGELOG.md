@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Kompetenz-Cockpit UX Fix - Direkte Karteninteraktion
+
+### Changed
+
+- Kompetenzbereiche, Themen und Kompetenzzeilen im Schuelerprofil reagieren nun auf die gesamte sichtbare Karte sowie auf Enter und Leertaste; die vorhandenen `Öffnen`-Aktionen bleiben zusaetzlich nutzbar.
+- Verschachtelte Cockpit-Karten nehmen ihre Interaktion lokal an, sodass ein Klick auf `Arithmetik` nicht mehr bis zur uebergeordneten Fachkarte durchgereicht wird und zu `Mathematik` zurueckspringt.
+- Hover-, Fokus- und Pressed-Zustaende der direkt bedienbaren Cockpit-Karten zentral im Desktop-Theme sichtbar gemacht.
+
+### Not Changed
+
+- Keine Aenderung an Kompetenzlogik, Datenmodell, IDs, Filtern, Klassenstufen, Statusprojektion, Auswahlregeln, historischen Schutzregeln oder Persistenz.
+
 ## Sprint 10B - LEG-PDF aus unveraenderlicher Revision
 
 ### Added

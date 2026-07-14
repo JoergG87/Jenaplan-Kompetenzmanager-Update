@@ -937,6 +937,26 @@ QFrame#ObservationFileRow {{ border-radius: 8px; }}
 QFrame#CompetencyCockpitSubjectCard {{ border-color: #BBD1EE; }}
 QFrame#CompetencyCockpitLearningAreaCard {{ margin-left: 8px; }}
 QFrame#CompetencyCockpitTopicCard {{ margin-left: 12px; }}
+QFrame#CompetencyCockpitSubjectCard[interactive="true"]:hover,
+QFrame#CompetencyCockpitLearningAreaCard[interactive="true"]:hover,
+QFrame#CompetencyCockpitTopicCard[interactive="true"]:hover,
+QFrame#CompetencyCockpitCompetencyRow[interactive="true"]:hover {{
+    background-color: #F4F8FC;
+    border-color: #8EB6E5;
+}}
+QFrame#CompetencyCockpitSubjectCard[interactive="true"]:focus,
+QFrame#CompetencyCockpitLearningAreaCard[interactive="true"]:focus,
+QFrame#CompetencyCockpitTopicCard[interactive="true"]:focus,
+QFrame#CompetencyCockpitCompetencyRow[interactive="true"]:focus {{
+    border: 2px solid {COLOR_FOCUS};
+}}
+QFrame#CompetencyCockpitSubjectCard[interactive="true"][pressed="true"],
+QFrame#CompetencyCockpitLearningAreaCard[interactive="true"][pressed="true"],
+QFrame#CompetencyCockpitTopicCard[interactive="true"][pressed="true"],
+QFrame#CompetencyCockpitCompetencyRow[interactive="true"][pressed="true"] {{
+    background-color: #E7F0FA;
+    border-color: #6C9FD3;
+}}
 QPushButton#CompetencyCockpitCompetencyButton {{
     text-align: left;
     padding: 7px 9px;

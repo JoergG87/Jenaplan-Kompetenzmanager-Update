@@ -748,13 +748,19 @@ class StudentProfileScreen(QWidget):
         action: Callable[[], None],
         tooltip: str,
     ) -> None:
+        card.setProperty("interactive", True)
         card.setCursor(Qt.CursorShape.PointingHandCursor)
+        card.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        card.setAccessibleName(tooltip)
         card.setToolTip(tooltip)
+        original_key_press_event = card.keyPressEvent
 
         def handle_mouse_release(event: object) -> None:
+            if isinstance(card, AppCard):
+                card.set_pressed(False)
             button = getattr(event, "button", lambda: None)()
             if button != Qt.MouseButton.LeftButton:
-                getattr(event, "ignore", lambda: None)()
+                getattr(event, "accept", lambda: None)()
                 return
             position = (
                 event.position().toPoint()
@@ -764,13 +770,22 @@ class StudentProfileScreen(QWidget):
             child = card.childAt(position)
             while child is not None and child is not card:
                 if isinstance(child, (QPushButton, QComboBox, QLineEdit)):
-                    getattr(event, "ignore", lambda: None)()
+                    getattr(event, "accept", lambda: None)()
                     return
                 child = child.parentWidget()
             action()
             getattr(event, "accept", lambda: None)()
 
+        def handle_key_press(event: object) -> None:
+            key = getattr(event, "key", lambda: None)()
+            if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
+                action()
+                getattr(event, "accept", lambda: None)()
+                return
+            original_key_press_event(event)
+
         card.mouseReleaseEvent = handle_mouse_release
+        card.keyPressEvent = handle_key_press
 
     def _show_placeholder_message(self, message: str) -> None:
         self.action_feedback_label.setText(message)
@@ -1829,6 +1844,13 @@ class StudentProfileScreen(QWidget):
             )
         self._configure_cockpit_toggle(key, details, button, "Öffnen ▾", "Schließen ▴")
         layout.addWidget(details)
+        self._make_clickable_card(
+            card,
+            lambda: self._toggle_cockpit_section(
+                key, details, button, "Öffnen ▾", "Schließen ▴"
+            ),
+            f"Kompetenzbereich {area.learning_area} öffnen oder schließen",
+        )
         return card
 
     def _cockpit_topic_card(
@@ -1870,10 +1892,17 @@ class StudentProfileScreen(QWidget):
             details_layout.addWidget(self._cockpit_competency_row(competency))
         self._configure_cockpit_toggle(key, details, button, "Öffnen ▾", "Schließen ▴")
         layout.addWidget(details)
+        self._make_clickable_card(
+            card,
+            lambda: self._toggle_cockpit_section(
+                key, details, button, "Öffnen ▾", "Schließen ▴"
+            ),
+            f"Thema {topic.competency_group} öffnen oder schließen",
+        )
         return card
 
     def _cockpit_competency_row(self, competency: object) -> QWidget:
-        row = QWidget()
+        row = self._card("default")
         row.setObjectName("CompetencyCockpitCompetencyRow")
         layout = QVBoxLayout(row)
         layout.setContentsMargins(0, 1, 0, 1)
@@ -1893,6 +1922,13 @@ class StudentProfileScreen(QWidget):
         self._configure_cockpit_toggle(key, details, button, button.text(), button.text())
         layout.addWidget(button)
         layout.addWidget(details)
+        self._make_clickable_card(
+            row,
+            lambda: self._toggle_cockpit_section(
+                key, details, button, button.text(), button.text()
+            ),
+            f"Kompetenz {getattr(competency, 'competency_label')} öffnen oder schließen",
+        )
         return row
 
     def _cockpit_competency_details(self, competency: object) -> QFrame:
