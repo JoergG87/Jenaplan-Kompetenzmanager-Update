@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## UI Sprint 6B - Phasenorientierter LEG-Workspace
+
+### Added
+
+- Kompakte, tastaturfähige LEG-Phasenleiste mit den sechs bestehenden Gesprächsphasen und ausschließlich den lokalen Zuständen `Aktuell`, `Inhalt vorhanden` und `Noch leer` ergänzt.
+- Zentralen Dirty-State für Texte, Datumsfelder sowie Kompetenz-, Beobachtungs- und Diagrammauswahl mit sicherem Drei-Wege-Schließen, Inline-Speicherfehler und Toast-Erfolg eingeführt.
+- Ruhige Mehrfach-Draft-Auswahl mit Gesprächsdatum, Lehrkraft und gespeichertem Stand ergänzt; technische Draft-IDs dominieren die Auswahl nicht.
+
+### Changed
+
+- Den bisherigen langen Zwei-Spalten-Dialog in einen stabilen Kontextkopf, eine lokale Phasenleiste, genau eine aktive Schreib-/Auswahlphase und eine persistente Aktionsleiste umgebaut.
+- Vorbereitung der Lehrkraft, gemeinsam bearbeitete Gesprächsinhalte und im Draft festgehaltene Vereinbarungen durch Rollenlabels und Kartenhierarchie getrennt; `agreed_goals_text` erscheint ohne Persistenzänderung in Phase 4.
+- Kompetenz-, Beobachtungs- und Diagrammauswahl in Phase 5 konzentriert; die übrigen Phasen zeigen eine read-only Belegzusammenfassung mit direkter Navigation zu Phase 5.
+- Optionalen Überprüfungstermin für neue Drafts leer statt mit dem aktuellen Datum vorbelegt und den Profilmenütext auf `Lernentwicklungsgespräch öffnen` präzisiert.
+- Produktive Mindestgröße auf 1080 x 700 gesenkt; 1400 x 900, 1280 x 800 und 1180 x 760 bleiben ohne horizontalen Gesamtscroll bedienbar.
+
+### Not Changed
+
+- Keine Änderung an `LearningConferenceDraft`, SQLite-Schema, Migrationen, Feldbedeutungen, IDs, Validierung, Repository-, Service-, Adapter- oder Speicherregeln.
+- Keine Abschluss-, Finalisierungs-, Revisions-, Snapshot-, PDF-, Druck-, Export-, Autosave- oder Berichtsfunktion ergänzt.
+
 ## UI Sprint 6A - LEG UX Audit und Zielbild
 
 ### Added

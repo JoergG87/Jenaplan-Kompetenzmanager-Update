@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QDialog,
     QFileDialog,
-    QInputDialog,
     QLabel,
     QListWidget,
     QListWidgetItem,
@@ -41,7 +40,10 @@ from src.desktop_app.dialogs.learning_report_dialog import (
     LearningReportDialog,
     LearningReportRevisionDialog,
 )
-from src.desktop_app.dialogs.learning_conference_dialog import LearningConferenceDialog
+from src.desktop_app.dialogs.learning_conference_dialog import (
+    LearningConferenceDialog,
+    LearningConferenceDraftSelectionDialog,
+)
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
 from src.desktop_app.dialogs.timetable_entry_dialog import TimetableEntryDialog
@@ -755,27 +757,12 @@ class AppShell(QMainWindow):
         drafts = self.adapter.list_learning_conference_drafts_for_student(student_id)
         initial_draft = drafts[0] if len(drafts) == 1 else None
         if len(drafts) > 1:
-            choices = ["Neuen Entwurf anlegen"]
-            draft_by_choice = {}
-            for draft in drafts:
-                context = draft.conference_date.isoformat() if draft.conference_date else (
-                    f"{draft.period_start.isoformat()}–{draft.period_end.isoformat()}"
-                    if draft.period_start and draft.period_end else "ohne Datum"
-                )
-                label = f"{context} · {draft.responsible_teacher or 'Lehrkraft offen'} · {draft.learning_conference_draft_id}"
-                choices.append(label)
-                draft_by_choice[label] = draft
-            choice, accepted = QInputDialog.getItem(
+            accepted, initial_draft = LearningConferenceDraftSelectionDialog.choose(
+                drafts,
                 self,
-                "Lernentwicklungsgespräch auswählen",
-                "Für dieses Kind gibt es mehrere Entwürfe. Welcher soll geöffnet werden?",
-                choices,
-                1,
-                False,
             )
             if not accepted:
                 return
-            initial_draft = draft_by_choice.get(choice)
         preparation = self.adapter.learning_conference_preparation_for_student(
             student_id,
             retained_competency_ids=(
@@ -791,11 +778,7 @@ class AppShell(QMainWindow):
             try:
                 saved = self.adapter.save_learning_conference_draft(draft)
             except Exception as error:
-                QMessageBox.warning(
-                    dialog,
-                    "Entwurf konnte nicht gespeichert werden",
-                    str(error),
-                )
+                dialog.show_save_error(str(error))
                 return
             dialog.apply_saved_draft(saved)
             self.status_label.setText("Lernentwicklungsgespräch-Entwurf gespeichert.")

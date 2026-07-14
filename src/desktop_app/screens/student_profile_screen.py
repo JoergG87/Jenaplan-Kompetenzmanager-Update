@@ -151,7 +151,7 @@ class StudentProfileScreen(QWidget):
         more_menu.addAction("Schüler bearbeiten", self._request_edit_student)
         more_menu.addAction("Bericht öffnen", self._request_learning_report)
         more_menu.addAction(
-            "Lernentwicklungsgespräch",
+            "Lernentwicklungsgespräch öffnen",
             self._request_learning_conference,
         )
         self.profile_more_action.setMenu(more_menu)

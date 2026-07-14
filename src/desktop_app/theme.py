@@ -313,7 +313,7 @@ QLineEdit#SearchField {{
 }}
 QLineEdit#SearchField:hover {{ border-color: #9CB8CE; }}
 QLineEdit#SearchField:focus {{ border: 2px solid {COLOR_FOCUS}; padding: 6px 9px; }}
-QLabel#StatusBadge {{
+QLabel#StatusBadge, QLabel#LearningConferenceDirtyBadge {{
     background-color: #EDF2F6;
     color: {COLOR_TEXT_MUTED};
     border: 1px solid #D8E2EA;
@@ -322,9 +322,9 @@ QLabel#StatusBadge {{
     font-size: 11px;
     font-weight: 600;
 }}
-QLabel#StatusBadge[badgeTone="info"] {{ background-color: #E8F2FB; color: {COLOR_INFO}; border-color: #C7DCEB; }}
-QLabel#StatusBadge[badgeTone="success"] {{ background-color: #EAF6F0; color: {COLOR_SUCCESS}; border-color: #C7E3D6; }}
-QLabel#StatusBadge[badgeTone="warning"] {{ background-color: #FFF6E8; color: #76501E; border-color: #ECD8A6; }}
+QLabel#StatusBadge[badgeTone="info"], QLabel#LearningConferenceDirtyBadge[badgeTone="info"] {{ background-color: #E8F2FB; color: {COLOR_INFO}; border-color: #C7DCEB; }}
+QLabel#StatusBadge[badgeTone="success"], QLabel#LearningConferenceDirtyBadge[badgeTone="success"] {{ background-color: #EAF6F0; color: {COLOR_SUCCESS}; border-color: #C7E3D6; }}
+QLabel#StatusBadge[badgeTone="warning"], QLabel#LearningConferenceDirtyBadge[badgeTone="warning"] {{ background-color: #FFF6E8; color: #76501E; border-color: #ECD8A6; }}
 QFrame#DashboardHeatmapCell[coverageLevel="0"] QFrame#DashboardHeatmapMarker {{ background-color: #CBD5E1; }}
 QFrame#DashboardHeatmapCell[coverageLevel="1"] QFrame#DashboardHeatmapMarker {{ background-color: #B7C9DC; }}
 QFrame#DashboardHeatmapCell[coverageLevel="2"] QFrame#DashboardHeatmapMarker {{ background-color: #91ADC8; }}
@@ -445,6 +445,55 @@ QFrame#LearningConferencePreparationPanel {{
 QFrame#LearningConferenceConversationPanel {{
     background-color: #F8FAF9;
     border: none;
+}}
+QFrame#LearningConferenceWorkspace {{
+    background-color: transparent;
+    border: none;
+}}
+QFrame#LearningConferencePhaseNavigation {{
+    background-color: #F4F7F9;
+    border: 1px solid #D8E4EC;
+    border-radius: 14px;
+}}
+QPushButton[phaseCurrent="false"] {{
+    min-height: 72px;
+    background-color: transparent;
+    color: {COLOR_TEXT};
+    border: 1px solid transparent;
+    border-radius: 9px;
+    padding: 7px 9px;
+    text-align: left;
+    font-size: 11px;
+}}
+QPushButton[phaseCurrent="false"]:hover {{
+    background-color: #EDF3F7;
+    border-color: #D4E1E9;
+}}
+QPushButton[phaseCurrent="true"] {{
+    min-height: 72px;
+    background-color: #E8F2FB;
+    color: {COLOR_NAVY};
+    border: 1px solid #AFCBE0;
+    border-left: 4px solid {COLOR_BLUE};
+    border-radius: 9px;
+    padding: 7px 9px 7px 7px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 11px;
+}}
+QPushButton[phaseCurrent="false"]:focus,
+QPushButton[phaseCurrent="true"]:focus {{
+    border: 2px solid {COLOR_FOCUS};
+}}
+QFrame#LearningConferenceActionBar {{
+    background-color: #FFFFFF;
+    border: 1px solid #D8E4EC;
+    border-radius: 12px;
+}}
+QScrollArea#LearningConferencePhaseScroll {{
+    background-color: #F8FAFB;
+    border: 1px solid #DCE6ED;
+    border-radius: 14px;
 }}
 QFrame#LearningConferenceCard {{
     background-color: #FFFFFF;
@@ -826,7 +875,7 @@ QFrame#EmptyState {{
     border: 1px dashed {COLOR_BORDER};
     border-radius: 10px;
 }}
-QLabel#StatusBadge {{
+QLabel#StatusBadge, QLabel#LearningConferenceDirtyBadge {{
     background-color: #E7EEF5;
     color: {COLOR_INFO};
     border-radius: 9px;

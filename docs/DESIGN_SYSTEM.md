@@ -1,5 +1,19 @@
 # Design-System
 
+## LEG-Workspace-Sprache - UI Sprint 6B
+
+Der Lernentwicklungsgespraech-Draft verwendet `PageHeader`, `StatusBadge`, `SectionHeader`, `AppCard`, `SearchField`, `FilterBar`, `InlineMessage`, `Toast` und zentrale Buttonrollen als einen zusammenhaengenden kindbezogenen Workspace. Kopf, lokale Phasenleiste und Aktionsleiste bleiben ausserhalb des dominanten Phasen-Scrollbereichs. Die linke Leiste zeigt alle sechs vollstaendigen Phasentitel und genau einen textlich markierten aktuellen Schritt.
+
+Phasenstatus ist neutraler lokaler UI-State: `Aktuell`, `Inhalt vorhanden` und `Noch leer`. Haken, Prozentwerte, Ampelfarben, Leistungsdarstellung und Abschlussbegriffe sind unzulaessig. Der aktive Eintrag wird durch Flaeche, Schriftgewicht, linken Marker und Statustext vermittelt, nie allein durch Farbe. Pfeil hoch/runter sowie Home/End navigieren die Leiste nach Qt-Konvention.
+
+Die drei Inhaltsrollen bleiben auch ohne Farbe eindeutig. `Nur für die Vorbereitung` nutzt eine ruhige `AppCard[soft]`, `Im Gespräch bearbeiten` eine normale Schreibflaeche und `Im Entwurf als Vereinbarung festgehalten` sparsam `AppCard[accent]`. Rollenlabel, SectionHeader, Hilfetext, Einrueckung und Typografie verhindern, dass interne Vorbereitung wie eine gemeinsame Vereinbarung wirkt. Alle mehrzeiligen LEG-Editoren besitzen rollen- und phasenbezogene Accessible Names.
+
+Kompetenz-, Beobachtungs- und Diagrammauswahl liegt ausschliesslich in Phase 5. Andere Phasen verwenden eine read-only `AppCard[soft]`-Zusammenfassung mit der sekundaeren Aktion `Belege ansehen`. Historisch und nicht verfuegbar werden textlich benannt. Auswahl, Suche und Disclosure verwenden die bestehenden sofortigen Zustandswechsel und hoechstens eine zentrale Opacity-Bestaetigung; Reduced Motion zeigt Endzustaende unmittelbar.
+
+Die untere LEG-Aktionsleiste besitzt mit `Entwurf speichern` genau eine primaere Aktion. `Zurück`, `Weiter`, `Belege ansehen` und `Schließen` bleiben sekundaer oder quiet. Eine `InlineMessage` steht unmittelbar oberhalb der Leiste; erfolgreicher Speicherstatus darf zusaetzlich als Toast erscheinen. Bei Dirty-Close ist der ruhige Drei-Wege-Dialog mit `Entwurf speichern`, `Änderungen verwerfen` und `Weiter bearbeiten` verbindlich.
+
+Responsive Regel: bei 1400 x 900 ist die Phasenleiste 232 px, bei 1280 x 800 etwa 220 px und bei 1180 x 760 214 px breit. Es gibt keine Mindestbreite von 1200 px, keinen horizontalen Gesamtscroll und pro aktiver Phase hoechstens einen dominanten vertikalen Scrollbereich. Kopfmetadaten duerfen ruhig umbrechen; Pflichtaktionen bleiben sichtbar.
+
 ## Kindbezogene Workspace-Sprache - UI Sprint 4
 
 Schuelerprofil, Kompetenz-Cockpit und Beobachtungsdialog bilden einen zusammenhaengenden paedagogischen Workspace. Die Hierarchie ist verbindlich: zuerst Kind und aktueller Kontext, danach primaere paedagogische Information, relevante Aktion, sekundaere Details und zuletzt historische beziehungsweise ergaenzende Inhalte. Der Kindername bleibt im Profilkopf und im Dialog-`PageHeader` dauerhaft sichtbar. Im Profil markiert genau eine blaue Primaeraktion `Neue Beobachtung`; Datei und seltenere bestehende Aktionen bleiben sekundaer.

@@ -1406,6 +1406,37 @@ Registrierte Leseparameter und UI-Rollen:
 
 Regel: `observation_dates` enthaelt ausschliesslich Datumsreferenzen bereits kanonisch beruecksichtigter aktiver Kompetenzbeobachtungen des Kindes. `has_current_confirmation` bildet nur das Vorhandensein der bestehenden aktuellen Bestaetigung ab. Beide Werte steuern ausschliesslich die sichtbare LEG-Auswahl und berechnen keinen Kompetenzstatus. `retained_competency_ids` darf historische Draft-Referenzen in derselben kanonischen Projektion aufloesbar halten, veraendert aber deren Statuslogik und die Standardprojektion ohne diesen Parameter nicht.
 
+## UI Sprint 6B - Phasenorientierter LEG-Workspace
+
+Registrierte lokale UI-Kompositionen:
+
+- `LearningConferencePhaseNavigation`
+- `LearningConferencePhaseButton_<phase_key>`
+- `LearningConferencePhaseWorkspace`
+- `LearningConferencePhaseScroll`
+- `LearningConferenceEvidenceSummary`
+- `LearningConferenceActionBar`
+- `LearningConferenceDirtyBadge`
+- `LearningConferenceValidationMessage`
+- `LearningConferenceCloseDialog`
+- `LearningConferenceDraftSelectionDialog`
+- `LearningConferenceDraftChoice_<learning_conference_draft_id>`
+
+Registrierte reine Leseprojektionserweiterung:
+
+- `LearningConferencePreparationViewModel.course_name`
+
+Registrierte fluechtige UI-Schluessel:
+
+- `goal`
+- `strengths`
+- `development`
+- `goals`
+- `evidence`
+- `agreements`
+
+Regel: Die sechs Schluessel strukturieren ausschliesslich den lokalen aktiven Phasen-, Fokus-, Scroll- und Dirty-State des bestehenden `LearningConferenceDialog`. `LearningConferencePhaseNavigation` und `LearningConferenceDraftSelectionDialog` sind lokale Qt-Kompositionen aus registrierten Basiskomponenten. Sie fuehren keine Datenquelle, fachliche Phase, Abschlusslogik, Persistenz, Repository-Verantwortung oder neue Feldbedeutung ein. `LearningConferencePreparationViewModel.course_name` reicht nur den bereits vorhandenen Kursnamen aus der Schuelerprojektion in den Kontextkopf weiter. `agreed_goals_text` bleibt unveraendert persistiert und wird nur sichtbar der Phase `goals` zugeordnet.
+
 ## Sprint 8A - Produktiver Stundenplan
 
 Registrierte technische Felder und Werte:

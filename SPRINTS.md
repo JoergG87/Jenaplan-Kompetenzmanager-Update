@@ -6,6 +6,18 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## UI Sprint 6B - LEG-Workspace umgesetzt ✅
+
+- [x] Bestehenden LEG-Draft als responsiven Sechs-Phasen-Workspace mit stabilem Kontextkopf, kompakter Phasenleiste und persistenter Aktionsleiste neu komponiert
+- [x] Vorbereitung, gemeinsam bearbeitete Inhalte und im Draft festgehaltene Vereinbarungen textlich und visuell eindeutig getrennt
+- [x] `agreed_goals_text` ohne Persistenz- oder Bedeutungsänderung sichtbar Phase 4 zugeordnet
+- [x] Kompetenz-, Beobachtungs- und Diagrammauswahl in Phase 5 konzentriert und in anderen Phasen read-only zusammengefasst
+- [x] Zentralen UI-Dirty-State, Inline-Speicherfehler, Toast-Erfolg und sicheren Drei-Wege-Schließen-Ablauf umgesetzt
+- [x] Optionalen Überprüfungstermin für neue Drafts tatsächlich leer gelassen und mehrere Drafts ruhig auswählbar gemacht
+- [x] Tastatur, Accessible Names, Reduced Motion sowie 1400 x 900, 1280 x 800 und 1180 x 760 automatisiert und offscreen geprüft
+- [x] Keine Fachlogik, Schemaänderung, Finalisierung, Revision, Snapshot-, PDF-, Druck- oder Exportfunktion eingeführt
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## UI Sprint 6A - LEG UX Audit und Zielbild ✅
 
 - [x] Bestehenden persistenten LEG-Arbeitsablauf, sechs Phasen, Draft-Wiederaufnahme, Kompetenz-/Belegauswahl, Validierung und Profilnavigation vollstaendig auditiert

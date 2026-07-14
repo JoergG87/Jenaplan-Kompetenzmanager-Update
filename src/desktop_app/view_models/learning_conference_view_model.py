@@ -94,6 +94,7 @@ class LearningConferencePreparationViewModel:
     subjects: tuple[LearningConferenceSubjectViewModel, ...]
     cross_topics: tuple[LearningConferenceCrossTopicViewModel, ...]
     evidence: tuple[LearningConferenceEvidenceViewModel, ...]
+    course_name: str = ""
 
 
 @dataclass(frozen=True)
@@ -277,6 +278,7 @@ def build_learning_conference_preparation(
             for key, label in LEARNING_CONFERENCE_CROSS_TOPICS
         ),
         evidence=evidence,
+        course_name=str(getattr(student, "course_name", "")),
     )
 
 
