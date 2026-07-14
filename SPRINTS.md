@@ -6,6 +6,15 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## UI Sprint 2 - Premium Components und Workspace Modernization ✅
+
+- [x] Bestehende Komponentenbibliothek inventarisiert und auf kleine semantische V2-Basis ausgerichtet
+- [x] `PageHeader`, `SearchField`, `StatusBadge`, `EmptyState`, `SegmentedControl` und `Toast` erweitert
+- [x] `AppCard`, `SectionHeader`, `FilterBar`, `FilterChip` und `IconButton` als notwendige neue Basiskomponenten festgelegt
+- [x] Scope auf Heute, Schueler-Workspace/-liste, Gruppen-/Kursflaechen und Stammdaten begrenzt
+- [x] Keine neue Datenquelle, ViewModel-Verantwortung, Fachlogik oder QPainter-Spezialdarstellung erforderlich
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## UI Sprint 1.1 - Schuelerprofil-Zugriff und Kursansicht ✅
 
 - [x] Einfacher Zeilenklick oeffnet das Schuelerprofil genau einmal

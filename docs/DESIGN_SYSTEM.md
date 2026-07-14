@@ -1,5 +1,38 @@
 # Design-System
 
+## Component Library V2 - UI Sprint 2
+
+Bestandskomponenten, die erweitert werden:
+
+- `PageHeader`: klare Titel-/Untertitelhierarchie und stabile Aktionszone
+- `SearchField`: Suchicon, native Clear-Aktion, Escape-Reset und sichtbarer Fokus
+- `StatusBadge`: semantische, aber fachlich neutrale Tones
+- `EmptyState`: optionale Ueberschrift, Erklaerung und genau eine passende Aktion
+- `SegmentedControl`: kompakte lokale Navigation mit Maus, Fokus und Pfeiltasten
+- `InlineMessage` und `Toast`: kontextgebundene beziehungsweise fluechtige Rueckmeldung
+
+Neue notwendige Basiskomponenten:
+
+- `AppCard`: Surface-Vertrag mit `default`, `soft`, `accent` und `interactive`; nur interaktive Karten erhalten Hover und Auswahlzustand
+- `SectionHeader`: Abschnittstitel, optionale Kurzbeschreibung, Hilfe und Aktionen
+- `FilterBar`: komponiert vorhandene Suche, aktive Filter und Reset, besitzt aber keine Filterlogik
+- `FilterChip`: zeigt lokalen Filterstate; `selected`, Fokus und Disabled sind rein semantische UI-Zustaende
+- `IconButton`: kompakte Aktion mit SVG-Icon, Tooltip und verpflichtendem Accessible Name
+
+Bewusst nicht als eigene Komponenten eingefuehrt werden `DashboardCard`, `InfoCard`, `MetricCard`, `StudentRow` und `GroupCard`: Sie werden durch `AppCard`-Varianten, bestehende Qt-Tabellenzeilen und komponierte Screen-Inhalte belastbar abgedeckt. Eine Spezialklasse ohne zweiten Nutzungskontext waere nicht gerechtfertigt.
+
+Surface-Hierarchie:
+
+1. App-Hintergrund trennt globale Arbeitsflaechen.
+2. `AppCard[cardVariant="default"]` bildet normale Inhaltsflaechen.
+3. `soft` gruppiert sekundaere Informationen ohne zusaetzliche Elevation.
+4. `accent` markiert genau eine primaere Situation, zum Beispiel die aktuelle beziehungsweise naechste Stunde.
+5. `interactive` kennzeichnet klickbare Karten durch Cursor, Hover, Fokus und optional `selected`; nicht klickbare Karten reagieren nicht auf Hover.
+
+Filterregel: Suche bleibt je Schuelerliste lokal. Der sichtbare Kontextfilter stammt aus dem bestehenden Shell-/Workspace-State. Reset erscheint nur fuer einen aktiven Kontextfilter und kehrt zur ausloesenden Auswahl zurueck. Ein Segmentwechsel laedt dessen bestehenden Kontext neu; es entsteht keine persistente oder parallele Filterhaltung.
+
+QPainter-Regel: UI Sprint 2 verwendet keinen QPainter. Karten, Fokus, Chips, Tabellen, Timeline und Matrix lassen sich mit Standardwidgets und zentralem QSS hochwertig und High-DPI-sicher umsetzen. QPainter bleibt kuenftigen visuellen Elementen vorbehalten, fuer die Standardwidgets nachweislich nicht ausreichen.
+
 Das freigegebene App-Icon ist ab der PySide-Hauptanwendung die zentrale gestalterische Referenz fuer den Jenaplan-Kompetenzmanager.
 
 Das aktuelle Design der Stammgruppenübersicht wurde durch Laura freigegeben.

@@ -134,8 +134,35 @@ QListWidget#AppNavigation::item:disabled {{
 }}
 QFrame#AppCard {{
     background-color: {COLOR_GLASS};
-    border: 1px solid {COLOR_BORDER};
-    border-radius: 10px;
+    border: 1px solid #D8E4EC;
+    border-radius: 14px;
+}}
+QFrame#AppCard[cardVariant="soft"] {{
+    background-color: {COLOR_SURFACE_SOFT};
+    border-color: #E1EAF0;
+}}
+QFrame#AppCard[cardVariant="accent"] {{
+    background-color: #EEF5FF;
+    border-color: #BBD1EE;
+}}
+QFrame#AppCard[cardVariant="interactive"]:hover {{
+    background-color: #F8FBFF;
+    border-color: #8EB6E5;
+}}
+QFrame#AppCard[cardVariant="interactive"]:focus {{
+    border: 2px solid {COLOR_FOCUS};
+}}
+QFrame#AppCard[cardVariant="interactive"][pressed="true"] {{
+    background-color: #E7F0FA;
+    border-color: #6C9FD3;
+}}
+QFrame#AppCard[cardVariant="interactive"]:disabled {{
+    background-color: #F3F6F8;
+    border-color: #E2E8ED;
+}}
+QFrame#AppCard[selected="true"] {{
+    background-color: #EEF5FF;
+    border: 2px solid {COLOR_BLUE};
 }}
 QFrame#AppPanel {{
     background-color: {COLOR_GLASS_SOFT};
@@ -143,15 +170,15 @@ QFrame#AppPanel {{
     border-radius: 10px;
 }}
 QFrame#DashboardHero {{
-    background-color: #F2F7FF;
-    border: 1px solid #C7D8EE;
-    border-radius: 15px;
+    background-color: #EAF3FF;
+    border: 1px solid #ABC8EA;
+    border-radius: 18px;
 }}
 QFrame#DashboardTimeline, QFrame#DashboardHeatmap,
 QFrame#DashboardMatchingChildren {{
     background-color: {COLOR_GLASS};
-    border: 1px solid {COLOR_BORDER};
-    border-radius: 13px;
+    border: 1px solid #D8E4EC;
+    border-radius: 15px;
 }}
 QLabel#DashboardHeroTitle {{
     color: {COLOR_NAVY};
@@ -197,7 +224,7 @@ QFrame#DashboardHeroVisualCurrent {{
 QFrame#DashboardLessonCard {{
     background-color: #FFFFFF;
     border: 1px solid #D7E3EC;
-    border-radius: 11px;
+    border-radius: 13px;
 }}
 QFrame#DashboardLessonCard:hover {{
     border-color: {COLOR_BLUE};
@@ -247,6 +274,51 @@ QFrame#CourseColorMarker {{
     border: none;
     border-radius: 5px;
 }}
+QWidget#SectionHeader {{ background-color: transparent; }}
+QLabel#SectionHeaderTitle {{ font-size: 16px; font-weight: 650; }}
+QFrame#FilterBar {{
+    background-color: {COLOR_SURFACE_SOFT};
+    border: 1px solid #DCE7EF;
+    border-radius: 12px;
+}}
+QPushButton#FilterChip {{
+    background-color: #E6F0FB;
+    color: {COLOR_NAVY};
+    border: 1px solid #BDD3E8;
+    border-radius: 13px;
+    padding: 5px 11px;
+    font-weight: 600;
+}}
+QPushButton#FilterChip:hover {{ background-color: #D8E9F8; border-color: #8EB6D8; }}
+QPushButton#FilterChip:focus {{ border: 2px solid {COLOR_FOCUS}; padding: 4px 10px; }}
+QPushButton#IconButton {{
+    min-width: 28px;
+    max-width: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    padding: 0;
+    border-radius: 8px;
+}}
+QLineEdit#SearchField {{
+    min-height: 20px;
+    background-color: #FFFFFF;
+    border: 1px solid #C9D8E4;
+    border-radius: 9px;
+    padding: 7px 10px;
+}}
+QLineEdit#SearchField:hover {{ border-color: #9CB8CE; }}
+QLineEdit#SearchField:focus {{ border: 2px solid {COLOR_FOCUS}; padding: 6px 9px; }}
+QLabel#StatusBadge {{
+    background-color: #EDF2F6;
+    color: {COLOR_TEXT_MUTED};
+    border: 1px solid #D8E2EA;
+    border-radius: 10px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}}
+QLabel#StatusBadge[badgeTone="info"] {{ background-color: #E8F2FB; color: {COLOR_INFO}; border-color: #C7DCEB; }}
+QLabel#StatusBadge[badgeTone="success"] {{ background-color: #EAF6F0; color: {COLOR_SUCCESS}; border-color: #C7E3D6; }}
 QFrame#DashboardHeatmapCell[coverageLevel="0"] QFrame#DashboardHeatmapMarker {{ background-color: #CBD5E1; }}
 QFrame#DashboardHeatmapCell[coverageLevel="1"] QFrame#DashboardHeatmapMarker {{ background-color: #B7C9DC; }}
 QFrame#DashboardHeatmapCell[coverageLevel="2"] QFrame#DashboardHeatmapMarker {{ background-color: #91ADC8; }}
@@ -707,6 +779,21 @@ QTableWidget, QListWidget {{
     selection-background-color: {COLOR_BLUE_SOFT};
     selection-color: {COLOR_TEXT};
 }}
+QTableWidget#PremiumTable {{
+    background-color: #FFFFFF;
+    alternate-background-color: #FAFCFD;
+    border: 1px solid #DCE6ED;
+    border-radius: 12px;
+    gridline-color: transparent;
+    outline: none;
+}}
+QTableWidget#PremiumTable::item {{
+    border-bottom: 1px solid #E8EEF2;
+    padding: 9px 10px;
+}}
+QTableWidget#PremiumTable::item:hover {{ background-color: #F2F7FB; }}
+QTableWidget#PremiumTable::item:selected {{ background-color: #E6F0FB; color: {COLOR_TEXT}; }}
+QTableWidget#PremiumTable:focus {{ border: 2px solid {COLOR_FOCUS}; }}
 QHeaderView::section {{
     background-color: #EAF2F8;
     color: {COLOR_NAVY};

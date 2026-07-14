@@ -1401,9 +1401,23 @@ Registrierte Dateien und Assets:
 - `assets/icons/master-data.svg`
 - `assets/icons/settings.svg`
 - `assets/icons/info.svg`
+- `assets/icons/search.svg`
+- `assets/icons/close.svg`
 
-Registrierte Komponenten und Helfer:
+Registrierte Komponenten und Helfer (Component Library V1 und V2):
 
+- `AppCard`
+- `AppCard.set_selected(selected)`
+- `AppCard.set_pressed(pressed)`
+- `SectionHeader`
+- `SectionHeader.add_action(action)`
+- `FilterBar`
+- `FilterBar.reset_requested`
+- `FilterBar.set_context_filter(label, active)`
+- `FilterChip`
+- `FilterChip.remove_requested`
+- `FilterChip.set_label(label)`
+- `IconButton`
 - `PageHeader`
 - `SegmentedControl`
 - `SegmentedControl.selection_changed`

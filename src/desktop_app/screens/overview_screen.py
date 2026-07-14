@@ -18,8 +18,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.desktop_app.components import PageHeader, configure_button
-from src.desktop_app.theme import create_card, set_label_style
+from src.desktop_app.components import AppCard, PageHeader, SectionHeader, configure_button
+from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.master_data_view_model import (
     CourseGroupViewModel,
     MasterDataItemViewModel,
@@ -42,7 +42,7 @@ OVERVIEW_GROUP_EMPTY_STATE = "Noch keine Stammgruppen vorhanden."
 OVERVIEW_COURSE_EMPTY_STATE = "Noch keine Kurse vorhanden."
 
 
-class DashboardLessonCard(QFrame):
+class DashboardLessonCard(AppCard):
     """Keyboard- and pointer-activatable lesson block."""
 
     def __init__(
@@ -51,7 +51,7 @@ class DashboardLessonCard(QFrame):
         state: str,
         activate: Callable[[], None],
     ) -> None:
-        super().__init__()
+        super().__init__("interactive", interactive=True)
         self._activate = activate
         self.setObjectName("DashboardLessonCard")
         self.setProperty("lessonState", state)
@@ -94,6 +94,7 @@ class DashboardLessonCard(QFrame):
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         if event.button() == Qt.MouseButton.LeftButton:
+            self.set_pressed(False)
             self._activate()
             event.accept()
             return
@@ -101,7 +102,9 @@ class DashboardLessonCard(QFrame):
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
+            self.set_pressed(True)
             self._activate()
+            self.set_pressed(False)
             event.accept()
             return
         super().keyPressEvent(event)
@@ -127,6 +130,7 @@ class OverviewScreen(QWidget):
     def _build(self) -> None:
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(14)
         header = PageHeader("Heute", "Unterricht und Dokumentation im Blick")
         self.header_observation_button = QPushButton("+ Beobachtung")
         configure_button(
@@ -146,8 +150,8 @@ class OverviewScreen(QWidget):
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         content = QWidget()
         layout = QVBoxLayout(content)
-        layout.setContentsMargins(0, 8, 0, 8)
-        layout.setSpacing(14)
+        layout.setContentsMargins(0, 8, 8, 16)
+        layout.setSpacing(16)
         layout.addWidget(self._section_card("", self.hero_layout, "DashboardHero"))
         layout.addWidget(
             self._section_card(
@@ -156,16 +160,16 @@ class OverviewScreen(QWidget):
         )
         layout.addWidget(
             self._section_card(
-                "Meine Gruppen im Blick",
-                self.heatmap_layout,
-                "DashboardHeatmap",
+                "Passende Kinder für diese Stunde",
+                self.matching_children_layout,
+                "DashboardMatchingChildren",
             )
         )
         layout.addWidget(
             self._section_card(
-                "Passende Kinder für diese Stunde",
-                self.matching_children_layout,
-                "DashboardMatchingChildren",
+                "Dokumentation im Überblick",
+                self.heatmap_layout,
+                "DashboardHeatmap",
             )
         )
         layout.addStretch(1)
@@ -495,15 +499,27 @@ class OverviewScreen(QWidget):
         content_layout: object,
         object_name: str = "",
     ) -> QFrame:
-        card = create_card()
+        card = AppCard("accent" if object_name == "DashboardHero" else "default")
         if object_name:
             card.setObjectName(object_name)
         layout = QVBoxLayout(card)
-        layout.setSpacing(10)
+        layout.setContentsMargins(16, 14, 16, 14)
+        layout.setSpacing(12)
         if title:
-            title_label = QLabel(title)
-            set_label_style(title_label, "section_title")
-            layout.addWidget(title_label)
+            descriptions = {
+                "Stundenplan heute": "Jetzt, danach und der weitere Unterrichtstag",
+                "Passende Kinder für diese Stunde": "Transparente Dokumentationshilfe im aktuellen Unterrichtskontext",
+                "Dokumentation im Überblick": "Neutrale Abdeckung je Stammgruppe und Fach · keine Leistung",
+            }
+            help_text = (
+                "Die Abstufungen zeigen ausschließlich, wie viel dokumentiert wurde. "
+                "Sie bewerten weder Leistung noch Lernentwicklung."
+                if object_name == "DashboardHeatmap"
+                else ""
+            )
+            layout.addWidget(
+                SectionHeader(title, descriptions.get(title, ""), help_text)
+            )
         layout.addLayout(content_layout)
         return card
 
@@ -611,7 +627,7 @@ class GroupOverviewScreen(QWidget):
             )
 
     def _section_card(self, title: str, content_layout: object) -> QFrame:
-        card = create_card()
+        card = AppCard("soft")
         layout = QVBoxLayout(card)
         title_label = QLabel(title)
         set_label_style(title_label, "section_title")
@@ -620,7 +636,7 @@ class GroupOverviewScreen(QWidget):
         return card
 
     def _course_card(self, course: MasterDataItemViewModel) -> QFrame:
-        card = create_card()
+        card = AppCard("default")
         layout = QVBoxLayout(card)
         heading = QHBoxLayout()
         marker = QFrame()
@@ -659,7 +675,7 @@ class GroupOverviewScreen(QWidget):
         group: MasterDataItemViewModel,
         active_student_count: int | None,
     ) -> QFrame:
-        card = create_card()
+        card = AppCard("default")
         layout = QVBoxLayout(card)
         name = QLabel(group.name)
         set_label_style(name, "section_title")
@@ -687,7 +703,7 @@ class GroupOverviewScreen(QWidget):
         groups_by_id: dict[str, MasterDataItemViewModel],
         courses_by_id: dict[str, MasterDataItemViewModel],
     ) -> QFrame:
-        card = create_card()
+        card = AppCard("soft")
         layout = QVBoxLayout(card)
         title = QLabel(course_group.name)
         set_label_style(title, "section_title")

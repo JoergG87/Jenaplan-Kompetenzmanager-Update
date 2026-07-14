@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## UI Sprint 2 - Premium Components und Workspace Modernization
+
+### Added
+
+- Semantische Basiskomponenten `AppCard`, `SectionHeader`, `FilterBar`, `FilterChip` und `IconButton` fuer wiederverwendbare Surface-, Kontext- und Aktionsmuster ergaenzt.
+
+### Changed
+
+- Heute, Schueler-Workspace, Schuelerliste sowie Stammdaten mit klarerer Surface-Hierarchie, ruhigeren Tabellen, konsistenten Abschnittskoepfen, sichtbaren Filterzustaenden und responsiven Abstaenden modernisiert.
+- Bestehende Komponentenvertraege fuer Suche, Status, Leerzustand, Fokus, Auswahl und Accessibility auf Component Library V2 erweitert.
+
+### Not Changed
+
+- Keine Aenderung an Datenmodell, SQLite-Schema, Fachlogik, Repositories, Adaptern, ViewModels, Stundenplanlogik, Profilinhalten, Beobachtungsdialog, Bericht, LEG oder globaler Navigation.
+
 ## UI Sprint 1.1 - Schuelerprofil-Zugriff und Kursansicht
 
 ### Added

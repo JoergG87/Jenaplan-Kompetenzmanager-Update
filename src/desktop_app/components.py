@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from PySide6.QtCore import QEvent, Qt, QTimer, Signal
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import QEvent, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QKeyEvent, QMouseEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -17,7 +17,140 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.desktop_app.icons import ICON_SIZE_SMALL, load_icon
 from src.desktop_app.theme import set_button_role, set_label_style
+
+
+class AppCard(QFrame):
+    """Semantic surface with optional interactive states."""
+
+    def __init__(self, variant: str = "default", *, interactive: bool = False) -> None:
+        super().__init__()
+        if variant not in {"default", "soft", "accent", "interactive"}:
+            raise ValueError(f"Unbekannte Kartenvariante: {variant}")
+        self.setObjectName("AppCard")
+        self.setProperty("cardVariant", variant)
+        self.setProperty("selected", False)
+        self.setProperty("pressed", False)
+        self.setFrameShape(QFrame.Shape.StyledPanel)
+        if interactive or variant == "interactive":
+            self.setProperty("interactive", True)
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+            self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+
+    def set_selected(self, selected: bool) -> None:
+        """Expose one central selected state to QSS."""
+        self.setProperty("selected", selected)
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+    def set_pressed(self, pressed: bool) -> None:
+        """Expose pointer/key press without screen-local styling."""
+        self.setProperty("pressed", pressed)
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
+        if self.property("interactive") and event.button() == Qt.MouseButton.LeftButton:
+            self.set_pressed(True)
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # noqa: N802
+        if self.property("interactive"):
+            self.set_pressed(False)
+        super().mouseReleaseEvent(event)
+
+
+class IconButton(QPushButton):
+    """Compact SVG action with mandatory accessible naming."""
+
+    def __init__(self, icon_name: str, accessible_name: str, tooltip: str = "") -> None:
+        if not accessible_name.strip():
+            raise ValueError("IconButton benoetigt einen Accessible Name.")
+        super().__init__()
+        self.setObjectName("IconButton")
+        self.setIcon(load_icon(icon_name))
+        self.setIconSize(QSize(ICON_SIZE_SMALL, ICON_SIZE_SMALL))
+        self.setFixedSize(30, 30)
+        self.setAccessibleName(accessible_name)
+        self.setToolTip(tooltip or accessible_name)
+        configure_button(self, "quiet", accessible_name)
+
+
+class SectionHeader(QWidget):
+    """Reusable title, explanation, help, and action row."""
+
+    def __init__(self, title: str, description: str = "", help_text: str = "") -> None:
+        super().__init__()
+        self.setObjectName("SectionHeader")
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+        labels = QVBoxLayout()
+        labels.setSpacing(2)
+        self.title_label = QLabel(title)
+        self.title_label.setObjectName("SectionHeaderTitle")
+        set_label_style(self.title_label, "section_title")
+        self.description_label = QLabel(description)
+        self.description_label.setWordWrap(True)
+        set_label_style(self.description_label, "muted")
+        self.description_label.setVisible(bool(description))
+        labels.addWidget(self.title_label)
+        labels.addWidget(self.description_label)
+        layout.addLayout(labels, 1)
+        if help_text:
+            self.help_button = IconButton("info", f"Hilfe zu {title}", help_text)
+            layout.addWidget(self.help_button)
+        else:
+            self.help_button = None
+        self.actions_layout = QHBoxLayout()
+        self.actions_layout.setSpacing(8)
+        layout.addLayout(self.actions_layout)
+
+    def add_action(self, action: QWidget) -> None:
+        self.actions_layout.addWidget(action)
+
+
+class FilterChip(QPushButton):
+    """Visible local filter state with an optional reset request."""
+
+    remove_requested = Signal()
+
+    def __init__(self, label: str = "") -> None:
+        super().__init__(label)
+        self.setObjectName("FilterChip")
+        self.setProperty("selected", True)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.clicked.connect(self.remove_requested.emit)
+        self.setVisible(bool(label))
+
+    def set_label(self, label: str) -> None:
+        self.setText(label)
+        self.setAccessibleName(f"Aktiver Filter: {label}. Filter zurücksetzen")
+        self.setVisible(bool(label))
+
+
+class FilterBar(QFrame):
+    """Compose search and visible context state without owning filter logic."""
+
+    reset_requested = Signal()
+
+    def __init__(self, search_field: QLineEdit) -> None:
+        super().__init__()
+        self.setObjectName("FilterBar")
+        self.setAccessibleName("Suche und aktive Filter")
+        self.search_field = search_field
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(8)
+        layout.addWidget(search_field, 1)
+        self.context_chip = FilterChip()
+        self.context_chip.remove_requested.connect(self.reset_requested.emit)
+        layout.addWidget(self.context_chip)
+
+    def set_context_filter(self, label: str, active: bool) -> None:
+        """Show reset only for a real context filter."""
+        self.context_chip.set_label(label if active else "")
 
 
 class PageHeader(QWidget):
@@ -139,6 +272,7 @@ class SearchField(QLineEdit):
         self.setObjectName("SearchField")
         self.setPlaceholderText(placeholder)
         self.setClearButtonEnabled(True)
+        self.addAction(load_icon("search"), QLineEdit.ActionPosition.LeadingPosition)
         self.setAccessibleName("Schüler suchen")
         self.setAccessibleDescription(
             "Filtert die sichtbare Schülerliste während der Eingabe."
@@ -155,9 +289,10 @@ class SearchField(QLineEdit):
 class StatusBadge(QLabel):
     """Compact, neutral status label."""
 
-    def __init__(self, text: str = "") -> None:
+    def __init__(self, text: str = "", *, tone: str = "neutral") -> None:
         super().__init__(text)
         self.setObjectName("StatusBadge")
+        self.setProperty("badgeTone", tone)
         self.setAccessibleName(text)
 
 
@@ -188,17 +323,22 @@ class InlineMessage(QFrame):
 class EmptyState(QFrame):
     """Quiet, reusable empty-state panel."""
 
-    def __init__(self, text: str = "") -> None:
+    def __init__(self, text: str = "", *, title: str = "") -> None:
         super().__init__()
         self.setObjectName("EmptyState")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 14, 16, 14)
+        self.title_label = QLabel(title)
+        set_label_style(self.title_label, "card_title")
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title_label.setVisible(bool(title))
         self.label = QLabel(text)
         self.label.setWordWrap(True)
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         set_label_style(self.label, "muted")
+        layout.addWidget(self.title_label)
         layout.addWidget(self.label)
-        self.setVisible(bool(text))
+        self.setVisible(bool(text or title))
 
     def set_message(self, text: str) -> None:
         """Show the state only while it has meaningful content."""

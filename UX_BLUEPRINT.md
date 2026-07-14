@@ -18,6 +18,8 @@ Zielplattform ist Microsoft Excel für macOS.
 - Fach -> Kompetenzbereich -> Kompetenz.
 - Unterricht vor Analyse.
 - Minimalistische Informationsdarstellung.
+- Component Library V2 nutzt eine ruhige Surface-Hierarchie: eine Akzentflaeche fuer die aktuelle Situation, normale Arbeitskarten und weiche sekundaere Informationsflaechen.
+- Suche und aktive Kontextfilter werden gemeinsam sichtbar; Reset erscheint nur bei tatsaechlich aktivem Kontextfilter.
 
 ## 3. Primäre User Journeys
 

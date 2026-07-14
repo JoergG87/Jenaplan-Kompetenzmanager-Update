@@ -2991,7 +2991,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn('QColor(student.course_color_hex or "#6B7280")', source)
         self.assertNotIn('marker = QLabel("●")', source)
         self.assertIn('set_label_style(course_label, "body")', source)
-        self.assertIn("QHeaderView.ResizeMode.ResizeToContents", source)
+        self.assertIn("QHeaderView.ResizeMode.Fixed", source)
+        self.assertIn("self.table.setColumnWidth(1, 150)", source)
+        self.assertIn("self.table.setColumnWidth(3, 250)", source)
         self.assertNotIn('"Stammgruppe", "Kurs"', source)
         self.assertNotIn("self.table.setItem(row_index, 1", source)
 
@@ -6317,7 +6319,44 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(inline.property("messageTone"), "warning")
         empty = components.EmptyState("Noch keine Einträge.")
         self.assertFalse(empty.isHidden())
+
+        card = components.AppCard("interactive", interactive=True)
+        self.assertEqual(card.property("cardVariant"), "interactive")
+        self.assertEqual(card.focusPolicy(), Qt.FocusPolicy.StrongFocus)
+        card.set_selected(True)
+        self.assertTrue(card.property("selected"))
+        card.set_pressed(True)
+        self.assertTrue(card.property("pressed"))
+        card.setEnabled(False)
+        self.assertFalse(card.isEnabled())
+
+        filter_bar = components.FilterBar(search)
+        reset_requests: list[bool] = []
+        filter_bar.reset_requested.connect(lambda: reset_requests.append(True))
+        filter_bar.set_context_filter("Kurs: Kurs 1", True)
+        self.assertFalse(filter_bar.context_chip.isHidden())
+        self.assertIn("Kurs: Kurs 1", filter_bar.context_chip.accessibleName())
+        filter_bar.context_chip.click()
+        self.assertEqual(reset_requests, [True])
+        filter_bar.set_context_filter("Alle Schüler", False)
+        self.assertTrue(filter_bar.context_chip.isHidden())
+
+        icon_button = components.IconButton("info", "Dokumentationshilfe")
+        self.assertEqual(icon_button.accessibleName(), "Dokumentationshilfe")
+        self.assertTrue(icon_button.toolTip())
+        self.assertEqual(filter_bar.accessibleName(), "Suche und aktive Filter")
         self.assertIsNotNone(app)
+
+    def test_component_library_v2_styles_semantic_states_centrally(self) -> None:
+        stylesheet = theme.APP_STYLESHEET
+
+        self.assertIn('QFrame#AppCard[cardVariant="interactive"]:hover', stylesheet)
+        self.assertIn('QFrame#AppCard[selected="true"]', stylesheet)
+        self.assertIn('QFrame#AppCard[cardVariant="interactive"][pressed="true"]', stylesheet)
+        self.assertIn("QPushButton#FilterChip:focus", stylesheet)
+        self.assertIn("QPushButton:disabled", stylesheet)
+        self.assertIn("QTableWidget#PremiumTable", stylesheet)
+        self.assertIn("QLineEdit#SearchField:focus", stylesheet)
 
     def test_shell_svg_icons_and_native_font_tokens_are_registered(self) -> None:
         theme_source = inspect.getsource(theme)

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
+    QScrollArea,
 )
 
 from src.desktop_app.view_models.master_data_view_model import (
@@ -21,8 +22,8 @@ from src.desktop_app.view_models.master_data_view_model import (
     MasterDataItemViewModel,
     MasterDataViewModel,
 )
-from src.desktop_app.components import PageHeader, configure_button
-from src.desktop_app.theme import create_card, set_label_style
+from src.desktop_app.components import AppCard, PageHeader, SectionHeader, configure_button
+from src.desktop_app.theme import set_label_style
 
 
 MASTER_DATA_GROUP_EMPTY_STATE = "Noch keine Stammgruppen vorhanden."
@@ -49,43 +50,63 @@ class MasterDataScreen(QWidget):
         self.course_empty_state_label = QLabel(MASTER_DATA_COURSE_EMPTY_STATE)
         self.course_group_empty_state_label = QLabel(MASTER_DATA_COURSE_GROUP_EMPTY_STATE)
         self.group_table = QTableWidget(0, 3)
+        self.group_table.setAccessibleName("Stammgruppen verwalten")
         self.course_table = QTableWidget(0, 4)
+        self.course_table.setAccessibleName("Kurse verwalten")
         self.course_group_table = QTableWidget(0, 4)
+        self.course_group_table.setAccessibleName("Kursverbünde verwalten")
         self._build()
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(14)
         layout.addWidget(
-            PageHeader("Stammdaten", "Stammgruppen und Kurse verwalten")
+            PageHeader(
+                "Stammdaten",
+                "Strukturen verwalten, die in Schülern, Kursen und Stundenplan verwendet werden",
+            )
         )
-        layout.addWidget(
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 8, 16)
+        content_layout.setSpacing(14)
+        content_layout.addWidget(
             self._section_card(
                 "Stammgruppen",
+                "Feste Bezugsgruppen der Kinder",
                 "+ Stammgruppe",
                 self.group_table,
                 self.group_empty_state_label,
                 self.group_add_requested.emit,
             )
         )
-        layout.addWidget(
+        content_layout.addWidget(
             self._section_card(
                 "Kurse",
+                "Kursstufen mit eigener Farbe",
                 "+ Kurs",
                 self.course_table,
                 self.course_empty_state_label,
                 self.course_add_requested.emit,
             )
         )
-        layout.addWidget(
+        content_layout.addWidget(
             self._section_card(
                 "Kursverbünde",
+                "Kurse über ausgewählte Stammgruppen hinweg",
                 "+ Kursverbund",
                 self.course_group_table,
                 self.course_group_empty_state_label,
                 self.course_group_add_requested.emit,
             )
         )
-        layout.addStretch(1)
+        content_layout.addStretch(1)
+        scroll.setWidget(content)
+        layout.addWidget(scroll, 1)
 
     def set_master_data(self, view_model: MasterDataViewModel) -> None:
         """Replace all displayed master-data rows."""
@@ -113,27 +134,30 @@ class MasterDataScreen(QWidget):
     def _section_card(
         self,
         title: str,
+        description: str,
         add_button_label: str,
         table: QTableWidget,
         empty_state_label: QLabel,
         add_handler: object,
     ) -> QFrame:
-        card = create_card()
+        card = AppCard("default")
         layout = QVBoxLayout(card)
-        header = QHBoxLayout()
-        title_label = QLabel(title)
-        set_label_style(title_label, "section_title")
+        layout.setContentsMargins(16, 14, 16, 16)
+        layout.setSpacing(10)
         add_button = QPushButton(add_button_label)
         configure_button(add_button, "secondary", add_button_label.lstrip("+ "))
         add_button.clicked.connect(add_handler)
-        header.addWidget(title_label)
-        header.addStretch(1)
-        header.addWidget(add_button)
-        layout.addLayout(header)
+        section_header = SectionHeader(title, description)
+        section_header.add_action(add_button)
+        layout.addWidget(section_header)
 
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         table.setAlternatingRowColors(True)
+        table.setObjectName("PremiumTable")
+        table.setShowGrid(False)
+        table.verticalHeader().setVisible(False)
+        table.verticalHeader().setDefaultSectionSize(44)
         table.horizontalHeader().setStretchLastSection(True)
         table.setMinimumHeight(150)
         set_label_style(empty_state_label, "subtle")
@@ -147,6 +171,7 @@ class MasterDataScreen(QWidget):
         items: tuple[MasterDataItemViewModel, ...],
         rename_handler: object,
     ) -> None:
+        table.clearContents()
         table.setHorizontalHeaderLabels(("Name", "Status", "Aktion"))
         table.setRowCount(len(items))
         self.group_empty_state_label.setVisible(not items)
@@ -170,6 +195,7 @@ class MasterDataScreen(QWidget):
         items: tuple[MasterDataItemViewModel, ...],
         rename_handler: object,
     ) -> None:
+        table.clearContents()
         table.setHorizontalHeaderLabels(("Farbe", "Name", "Status", "Aktion"))
         table.setRowCount(len(items))
         self.course_empty_state_label.setVisible(not items)
@@ -196,6 +222,7 @@ class MasterDataScreen(QWidget):
         courses: tuple[MasterDataItemViewModel, ...],
         edit_handler: object,
     ) -> None:
+        table.clearContents()
         table.setHorizontalHeaderLabels(("Name", "Stammgruppen", "Kurse", "Aktion"))
         table.setRowCount(len(items))
         self.course_group_empty_state_label.setVisible(not items)

@@ -7,7 +7,9 @@ from pathlib import Path
 from PySide6.QtGui import QIcon
 
 
-ICON_NAMES = frozenset({"today", "students", "master-data", "settings", "info"})
+ICON_NAMES = frozenset(
+    {"today", "students", "master-data", "settings", "info", "search", "close"}
+)
 ICON_SIZE_SMALL = 16
 ICON_SIZE_MEDIUM = 20
 ICON_SIZE_LARGE = 24

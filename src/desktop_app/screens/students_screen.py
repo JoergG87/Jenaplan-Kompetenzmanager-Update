@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 
 from src.desktop_app.components import (
     EmptyState,
+    FilterBar,
     InlineMessage,
     PageHeader,
     SearchField,
@@ -58,6 +59,8 @@ class StudentsScreen(QWidget):
         self.empty_state = EmptyState()
         self.empty_state_label = self.empty_state.label
         self.search_input = SearchField(STUDENT_SEARCH_PLACEHOLDER)
+        self.filter_bar = FilterBar(self.search_input)
+        self.result_label = QLabel("")
         self.back_to_overview_button = QPushButton("Zurück zur Auswahl")
         self.table = QTableWidget(0, 4)
         self._show_header = show_header
@@ -77,6 +80,9 @@ class StudentsScreen(QWidget):
             "Zurück zu Stammgruppen oder Kursverbünden",
         )
         self.back_to_overview_button.setVisible(False)
+        self.filter_bar.reset_requested.connect(
+            self.back_to_overview_requested.emit
+        )
         if self._show_header:
             page_header = PageHeader("Schüler", "Alle Schüler durchsuchen und öffnen")
             new_student_button = QPushButton("Schüler anlegen")
@@ -88,13 +94,10 @@ class StudentsScreen(QWidget):
         header.addStretch()
         layout.addLayout(header)
 
-        search_row = QHBoxLayout()
         self.search_input.textChanged.connect(self.apply_search)
-        search_row.addWidget(self.search_input)
-        search_row.addStretch(1)
-        layout.addLayout(search_row)
-
-        layout.addWidget(self.filter_message)
+        layout.addWidget(self.filter_bar)
+        set_label_style(self.result_label, "small")
+        layout.addWidget(self.result_label)
         layout.addWidget(self.empty_state)
 
         self.table.setHorizontalHeaderLabels(
@@ -105,6 +108,10 @@ class StudentsScreen(QWidget):
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setAlternatingRowColors(True)
         self.table.setAccessibleName("Schülerliste")
+        self.table.setObjectName("PremiumTable")
+        self.table.setShowGrid(False)
+        self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(48)
         self.table.setAccessibleDescription(
             "Zeile anklicken oder mit Eingabe das Profil öffnen."
         )
@@ -114,16 +121,18 @@ class StudentsScreen(QWidget):
         )
         self.table.horizontalHeader().setSectionResizeMode(
             1,
-            QHeaderView.ResizeMode.ResizeToContents,
+            QHeaderView.ResizeMode.Fixed,
         )
         self.table.horizontalHeader().setSectionResizeMode(
             2,
-            QHeaderView.ResizeMode.ResizeToContents,
+            QHeaderView.ResizeMode.Stretch,
         )
         self.table.horizontalHeader().setSectionResizeMode(
             3,
-            QHeaderView.ResizeMode.ResizeToContents,
+            QHeaderView.ResizeMode.Fixed,
         )
+        self.table.setColumnWidth(1, 150)
+        self.table.setColumnWidth(3, 250)
         self.table.cellClicked.connect(self._activate_student_cell)
         self.table.cellDoubleClicked.connect(self._activate_student_cell)
         self.table.installEventFilter(self)
@@ -139,6 +148,10 @@ class StudentsScreen(QWidget):
         """Replace student rows."""
         self.students = students
         self.filter_message.set_message(group_filter_name or "Alle Schüler")
+        self.filter_bar.set_context_filter(
+            group_filter_name,
+            show_back_button,
+        )
         self.back_to_overview_button.setVisible(show_back_button)
         self.apply_search()
 
@@ -152,9 +165,15 @@ class StudentsScreen(QWidget):
             self.students,
             self.search_input.text(),
         )
+        total = len(self.students)
+        shown = len(self.filtered_students)
+        self.result_label.setText(
+            f"{shown} von {total} Schülern" if shown != total else f"{total} Schüler"
+        )
         self._render_students(self.filtered_students)
 
     def _render_students(self, students: tuple[StudentListItem, ...]) -> None:
+        self.table.clearContents()
         self.table.setRowCount(len(students))
         self._update_empty_state(students)
         for row_index, student in enumerate(students):
