@@ -1,5 +1,21 @@
 # Design-System
 
+## Kindbezogene Workspace-Sprache - UI Sprint 4
+
+Schuelerprofil, Kompetenz-Cockpit und Beobachtungsdialog bilden einen zusammenhaengenden paedagogischen Workspace. Die Hierarchie ist verbindlich: zuerst Kind und aktueller Kontext, danach primaere paedagogische Information, relevante Aktion, sekundaere Details und zuletzt historische beziehungsweise ergaenzende Inhalte. Der Kindername bleibt im Profilkopf und im Dialog-`PageHeader` dauerhaft sichtbar. Im Profil markiert genau eine blaue Primaeraktion `Neue Beobachtung`; Datei und seltenere bestehende Aktionen bleiben sekundaer.
+
+Das Profil nutzt `AppCard[accent]` fuer den kompakten Kindkontext, `SegmentedControl` fuer die lokale Navigation sowie `SectionHeader`, `FilterBar`, `SearchField`, `FilterChip`, `StatusBadge` und `EmptyState` fuer bestehende Inhalte. Beobachtungen erscheinen als scanbare Kartenzeilen: Datum und Fach bilden den Kopf, Kontext und Notiz bleiben darunter ruhig, Details und Bearbeiten sind bewusst erreichbar. Leere Beobachtungslisten bieten genau die naechste sinnvolle Aktion an.
+
+Im Kompetenz-Cockpit wird Hierarchie auch ohne Farbe ueber Einrueckung, Typografie, Abstand und Surface unterschieden. Fach nutzt eine ruhige Akzentflaeche, Kompetenzbereich eine weiche Flaeche, Thema eine normale Flaeche und die Kompetenz eine linksbuendige Disclosure-Zeile. Lange Kompetenztexte umbrechen in Details und Auswahllisten. Neutrale Fortschrittsbalken und Zaehler beschreiben ausschliesslich Dokumentationsabdeckung; historische Zeilen tragen eine eindeutige ruhige Kennzeichnung.
+
+Der Beobachtungsdialog behaelt drei Zonen: `Kind und Kontext`, `Ausgewaehlte Kompetenzen / Kompetenzkatalog` sowie `Beobachtung / Dokumente / Aktionen`. Der Katalog nutzt dieselbe Segment-, Such-, Card- und Badge-Sprache. Ausgewaehlte Kompetenzen zeigen Bewertung immer sichtbar als vier beschriftete Chips. Dateizeilen zeigen Dateiname, Typ und eine klar benannte Entfernen-Aktion. `InlineMessage` steht unmittelbar vor der persistenten Speicherleiste.
+
+Disclosure setzt Sichtbarkeit und Datenzustand sofort und verwendet nur eine zentrale Opacity-Bestaetigung von maximal `MOTION_FAST_MS`. Keine Hoehenanimation langer Listen, keine verschachtelten Animationen und kein Layoutflackern. Reduced Motion zeigt den Endzustand unmittelbar. Die Arbeitsbereiche werden fuer 1400 x 900, 1280 x 800 und 1180 x 760 geprueft; Pflichtaktionen bleiben sichtbar, der Dialog besitzt getrennte vertikale Scrollbereiche und keinen horizontalen Katalog- oder Gesamtscroll.
+
+Accessibility-Regel: lokale Navigation und Klassenstufenfilter sind per Pfeiltasten bedienbar; Disclosure, Kompetenzwahl und Bewertung reagieren auf Fokus sowie Enter/Space; Datum, Fach, Kontext, Notiz, Suche, Bewertung, Entfernen und Speichern besitzen Accessible Names. Keine Information wird ausschliesslich durch Farbe vermittelt.
+
+QPainter-Regel: UI Sprint 4 verwendet keinen QPainter. Timeline-Marker, Spezial-Focus-Ringe oder Evidenzgrafiken erzeugen gegenueber den vorhandenen Standardwidgets keinen ausreichenden Mehrwert; zentrale Qt-Widgets und QSS bleiben High-DPI-, Fokus- und Reduced-Motion-sicherer.
+
 ## Motion System - UI Sprint 3
 
 Motion unterstuetzt Orientierung und Rueckmeldung, ohne Arbeitsablaeufe zu verlangsamen. Die zentrale Implementierung liegt in `src/desktop_app/motion.py`; Screens besitzen keine eigene Animationslogik. Verbindliche Dauern bleiben `120 ms` fuer direkte Rueckmeldung, `180 ms` fuer normale Uebergaenge und `240 ms` nur fuer groessere, seltene Zustandswechsel. Standard-Easing ist `OutCubic`, Ausblendungen verwenden `InCubic`.
@@ -14,7 +30,7 @@ Komponenten mit Motion:
 - `InlineMessage`: ruhiges Einblenden neuer Information oder Erfolgsmeldung; Warnungen und Fehler erscheinen sofort
 - `Toast`: Ein-/Ausblenden, Hover-Pause und sichere Ersetzung einer laufenden Meldung
 
-Bewusst statisch bleiben `EmptyState`, Tabellen und Tabellenzeilen, globale Navigation, Search-Ergebnisse sowie nicht interaktive Karten. Dialoge nutzen weiterhin natives Qt-/macOS-Verhalten; ein eigener Dialog-Fade und Chevron-/Disclosure-Motion werden erst bei einem stabilen zentralen Nutzungsmuster eingefuehrt. Es gibt keine Screen-Uebergaenge, Feder-/Bounce-Effekte, Geometrieanimationen oder blockierende Animationen.
+Bewusst statisch bleiben `EmptyState`, Tabellen und Tabellenzeilen, globale Navigation, Search-Ergebnisse sowie nicht interaktive Karten. UI Sprint 4 nutzt fuer die wiederkehrenden Kompetenz-Disclosures ausschliesslich sofortige Sichtbarkeit plus kurze zentrale Opacity-Bestaetigung; Dialog-Fades, Hoehenanimationen und verschachtelte Listenanimationen bleiben ausgeschlossen. Es gibt keine Screen-Uebergaenge, Feder-/Bounce-Effekte, Geometrieanimationen oder blockierende Animationen.
 
 ## Component Library V2 - UI Sprint 2
 

@@ -58,6 +58,7 @@ from src.desktop_app.dialogs import new_student_dialog
 from src.desktop_app.dialogs import new_observation_dialog
 from src.desktop_app import components
 from src.desktop_app import icons
+from src.desktop_app import motion
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens import master_data_screen
 from src.desktop_app.screens import overview_screen
@@ -89,6 +90,7 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationAttachmentDraft,
     OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_SUCCESS_MESSAGE,
+    OBSERVATION_SAVE_VALIDATION_MESSAGE,
     ObservationCompetencyOptionViewModel,
     ObservationCompetencyRatingDraft,
     ObservationCompetencySubjectGroupViewModel,
@@ -3602,6 +3604,19 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn("OBSERVATION_COMPETENCY_OPTIONS", source)
         self.assertNotIn("Sachunterricht", view_model_source)
 
+    def test_observation_dialog_projection_carries_existing_learning_stage_metadata(self) -> None:
+        competencies = {
+            competency.competency_id: competency
+            for subject in self.adapter.list_observation_competency_subject_groups()
+            for area in subject.learning_area_groups
+            for topic in area.competency_groups
+            for competency in topic.competencies
+        }
+
+        self.assertEqual(competencies["CMP-000668"].learning_stage, "stage_1_3")
+        self.assertEqual(competencies["CMP-000671"].learning_stage, "stage_4")
+        self.assertEqual(competencies["CMP-000672"].learning_stage, "cross_stage")
+
     def test_observation_dialog_uses_passed_documentation_subject_options(self) -> None:
         app = QApplication.instance() or QApplication([])
         dialog = new_observation_dialog.NewObservationDialog(
@@ -3664,10 +3679,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIsNotNone(splitter)
         if splitter is not None:
             self.assertEqual(splitter.count(), 3)
-            self.assertEqual(splitter.widget(0).maximumWidth(), 290)
-            self.assertEqual(splitter.widget(2).maximumWidth(), 350)
-        self.assertEqual(dialog.size().width(), 1320)
-        self.assertEqual(dialog.size().height(), 820)
+            self.assertEqual(splitter.widget(0).maximumWidth(), 276)
+            self.assertEqual(splitter.widget(2).maximumWidth(), 338)
+        self.assertGreaterEqual(dialog.size().width(), 1040)
+        self.assertLessEqual(dialog.size().width(), 1280)
+        self.assertGreaterEqual(dialog.size().height(), 680)
+        self.assertLessEqual(dialog.size().height(), 800)
         self.assertIsInstance(dialog.selected_scroll, QScrollArea)
         self.assertIsInstance(dialog.catalog_scroll, QScrollArea)
         self.assertIsNot(dialog.catalog_scroll, dialog.selected_scroll)
@@ -3675,6 +3692,89 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(
             dialog.catalog_search_input.placeholderText(), "Kompetenzen durchsuchen …"
         )
+
+    def test_observation_dialog_learning_stage_filter_hides_stage_four_by_default(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(
+            dialog,
+            "mathematik",
+            learning_stage_filter=None,
+        )
+
+        self.assertEqual(dialog.catalog_stage_filter.current_key(), "matching")
+        self.assertIn("CMP-000668", dialog.competency_catalog_tiles)
+        self.assertIn("CMP-000672", dialog.competency_catalog_tiles)
+        self.assertNotIn("CMP-000671", dialog.competency_catalog_tiles)
+
+        dialog.catalog_stage_filter.set_current_key("stage_4", emit=True)
+        self.assertIn("CMP-000671", dialog.competency_catalog_tiles)
+        self.assertIn("CMP-000672", dialog.competency_catalog_tiles)
+        self.assertNotIn("CMP-000668", dialog.competency_catalog_tiles)
+
+        dialog.catalog_stage_filter.set_current_key("all", emit=True)
+        self.assertIn("CMP-000668", dialog.competency_catalog_tiles)
+        self.assertIn("CMP-000671", dialog.competency_catalog_tiles)
+
+    def test_observation_dialog_stage_filter_keeps_selection_and_rating(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+        dialog.competency_catalog_tiles["CMP-000671"]._activate()
+        dialog.competency_rating_widgets["CMP-000671"].buttons["++"].click()
+
+        dialog.catalog_stage_filter.set_current_key("matching", emit=True)
+
+        self.assertNotIn("CMP-000671", dialog.competency_catalog_tiles)
+        self.assertIn("CMP-000671", dialog.competency_rating_entries)
+        self.assertEqual(
+            dialog.competency_rating_widgets["CMP-000671"].currentData(),
+            "++",
+        )
+
+    def test_observation_dialog_ui_sprint_four_accessibility_contract(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        actions = dialog.findChild(QDialogButtonBox, "ObservationPersistentActions")
+        save_button = actions.button(QDialogButtonBox.StandardButton.Save)
+
+        self.assertEqual(dialog.catalog_search_input.accessibleName(), "Kompetenzkatalog durchsuchen")
+        self.assertEqual(dialog.catalog_stage_filter.accessibleName(), "Klassenstufenfilter im Kompetenzkatalog")
+        self.assertEqual(dialog.note_input.accessibleName(), "Beobachtungsnotiz")
+        self.assertEqual(save_button.accessibleName(), "Beobachtung speichern")
+        self.assertTrue(dialog.catalog_stage_filter.toolTip())
+
+    def test_observation_dialog_validation_is_inline_and_near_persistent_actions(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+
+        dialog.save_draft()
+
+        self.assertFalse(dialog.validation_message.isHidden())
+        self.assertEqual(
+            dialog.validation_message.label.text(),
+            OBSERVATION_SAVE_VALIDATION_MESSAGE,
+        )
+        self.assertEqual(dialog.validation_message.property("messageTone"), "warning")
+        self.assertIs(
+            dialog.validation_message.parentWidget(),
+            dialog.findChild(QDialogButtonBox, "ObservationPersistentActions").parentWidget(),
+        )
+
+    def test_observation_dialog_resizes_for_supported_desktop_geometries(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        dialog = self._observation_dialog_with_hierarchy()
+        actions = dialog.findChild(QDialogButtonBox, "ObservationPersistentActions")
+
+        for width, height in ((1400, 900), (1280, 800), (1180, 760)):
+            dialog.resize(width, height)
+            dialog.show()
+            app.processEvents()
+            with self.subTest(width=width, height=height):
+                self.assertGreaterEqual(dialog.width(), 1040)
+                self.assertGreaterEqual(dialog.height(), 680)
+                self.assertFalse(actions.isHidden())
+                self.assertEqual(
+                    dialog.catalog_scroll.horizontalScrollBar().maximum(),
+                    0,
+                )
+        dialog.close()
 
     def test_observation_dialog_topics_start_collapsed(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
@@ -4057,20 +4157,22 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertFalse(draft.is_quick_observation)
         self.assertEqual(draft.competency_ratings[0].rating, "+")
 
-    def test_quick_observation_empty_note_uses_standard_warning(self) -> None:
+    def test_quick_observation_empty_note_uses_inline_warning(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
+        dialog.show()
+        QApplication.processEvents()
         dialog.quick_observation_checkbox.setChecked(True)
         dialog.note_input.setPlainText("   ")
 
-        with mock.patch.object(QMessageBox, "warning") as warning:
-            dialog.save_draft()
+        dialog.save_draft()
 
         self.assertTrue(dialog.quick_observation_checkbox.isChecked())
-        warning.assert_called_once_with(
-            dialog,
-            "Hinweis",
+        self.assertEqual(
+            dialog.validation_message.label.text(),
             "Bitte eine Notiz für die Schnellbeobachtung eingeben.",
         )
+        self.assertEqual(dialog.validation_message.property("messageTone"), "warning")
+        self.assertTrue(dialog.note_input.hasFocus())
         self.assertEqual(dialog.competency_zone_opacity.opacity(), 0.48)
 
     def test_observation_dialog_inserts_new_selection_at_top(self) -> None:
@@ -4172,6 +4274,23 @@ class DesktopAppAdapterTest(unittest.TestCase):
         selector.buttons["-"].click()
         self.assertEqual(selector.currentData(), "-")
 
+    def test_observation_dialog_competency_selection_and_rating_work_by_keyboard(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+        topic_button = self._observation_topic_button(dialog, "Zeit")
+        QTest.keyClick(topic_button, Qt.Key.Key_Space)
+        tile = dialog.competency_catalog_tiles["CMP-000671"]
+
+        QTest.keyClick(tile, Qt.Key.Key_Space)
+        rating_button = dialog.competency_rating_widgets["CMP-000671"].buttons["--"]
+        QTest.keyClick(rating_button, Qt.Key.Key_Space)
+
+        self.assertIn("CMP-000671", dialog.competency_rating_entries)
+        self.assertEqual(
+            dialog.competency_rating_widgets["CMP-000671"].currentData(),
+            "--",
+        )
+
     def test_observation_dialog_draft_remains_create_update_compatible(self) -> None:
         initial_draft = self._sample_observation_draft(
             observation_id="OBS-000001",
@@ -4222,6 +4341,33 @@ class DesktopAppAdapterTest(unittest.TestCase):
             while parent is not None:
                 self.assertNotIsInstance(parent, QScrollArea)
                 parent = parent.parentWidget()
+
+    def test_observation_dialog_attachment_rows_show_name_type_and_remove_action(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        source = Path(self.temp_dir.name) / "arbeitsprobe.pdf"
+        source.write_text("test", encoding="utf-8")
+        dialog.attachment_type_select.setCurrentText("Arbeitsprobe")
+
+        dialog.add_attachment_path(source)
+
+        row = dialog.findChild(QFrame, "ObservationFileRow")
+        self.assertIsNotNone(row)
+        self.assertIn(
+            "arbeitsprobe.pdf",
+            [label.text() for label in row.findChildren(QLabel)],
+        )
+        self.assertIn(
+            "Arbeitsprobe",
+            [label.text() for label in row.findChildren(QLabel)],
+        )
+        remove = next(
+            button
+            for button in row.findChildren(QPushButton)
+            if button.text() == "Entfernen"
+        )
+        self.assertTrue(remove.accessibleName())
+        remove.click()
+        self.assertEqual(dialog.attachment_drafts, [])
 
     def test_observation_context_options_match_prototype_scope(self) -> None:
         self.assertEqual(
@@ -5106,6 +5252,43 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertIsNotNone(app)
 
+    def test_student_profile_keeps_child_and_current_section_visible(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(self._sample_student_detail())
+
+        screen.profile_navigation.set_current_key("competencies", emit=True)
+
+        self.assertEqual(screen.name_label.text(), "Emma Müller")
+        self.assertIn("Grashüpfer", screen.meta_label.text())
+        self.assertIn("Kurs 1", screen.meta_label.text())
+        self.assertIn("Kompetenzen", screen.meta_label.text())
+        self.assertEqual(screen.profile_tabs.currentIndex(), 2)
+        self.assertTrue(screen.profile_tabs.tabBar().isHidden())
+        self.assertEqual(
+            screen.profile_primary_action.property("buttonRole"),
+            "primary",
+        )
+        self.assertIsNotNone(app)
+
+    def test_student_profile_navigation_is_keyboard_reachable_and_complete(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(self._sample_student_detail())
+
+        for expected_index in range(1, 5):
+            current_button = screen.profile_navigation.button_group.buttons()[
+                expected_index - 1
+            ]
+            QTest.keyClick(current_button, Qt.Key.Key_Right)
+            self.assertEqual(screen.profile_tabs.currentIndex(), expected_index)
+
+        self.assertEqual(
+            tuple(screen.profile_tabs.tabText(index) for index in range(5)),
+            ("Überblick", "Beobachtungen", "Kompetenzen", "Bericht", "Dateien"),
+        )
+        self.assertIsNotNone(app)
+
     def test_student_profile_overview_summarizes_documented_student(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
@@ -5694,6 +5877,64 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIsNotNone(app)
 
+    def test_student_profile_cockpit_combines_search_and_learning_stage_filters(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(
+                "CMP-000001",
+                "Volle Stunden ablesen",
+                learning_stage="stage_1_3",
+            ),
+            self._cockpit_status(
+                "CMP-000002",
+                "Uhrzeiten minutengenau ablesen",
+                learning_stage="stage_4",
+            ),
+            self._cockpit_status(
+                "CMP-000003",
+                "Uhrzeiten notieren",
+                learning_stage="cross_stage",
+            ),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+
+        default_labels = {
+            button.text()[2:]
+            for button in screen.findChildren(
+                QPushButton,
+                "CompetencyCockpitCompetencyButton",
+            )
+        }
+        self.assertEqual(default_labels, {"Volle Stunden ablesen", "Uhrzeiten notieren"})
+
+        screen.competency_stage_filter.set_current_key("stage_4", emit=True)
+        stage_four_labels = {
+            button.text()[2:]
+            for button in screen.findChildren(
+                QPushButton,
+                "CompetencyCockpitCompetencyButton",
+            )
+        }
+        self.assertEqual(
+            stage_four_labels,
+            {"Uhrzeiten minutengenau ablesen", "Uhrzeiten notieren"},
+        )
+
+        screen.competency_search_input.setText("minutengenau")
+        self.assertEqual(
+            [
+                button.text()[2:]
+                for button in screen.findChildren(
+                    QPushButton,
+                    "CompetencyCockpitCompetencyButton",
+                )
+            ],
+            ["Uhrzeiten minutengenau ablesen"],
+        )
+        self.assertEqual(screen.competency_stage_filter.accessibleName(), "Klassenstufenfilter")
+        self.assertIsNotNone(app)
+
     def test_student_profile_cockpit_combines_subject_filter_and_keeps_progress(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
@@ -5828,6 +6069,39 @@ class DesktopAppAdapterTest(unittest.TestCase):
         screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
         restored_details = screen.findChild(QWidget, "CompetencyCockpitSubjectDetails")
         self.assertFalse(restored_details.isHidden())
+        self.assertIsNotNone(app)
+
+    def test_disclosure_reduced_motion_and_fast_switches_end_in_correct_state(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        motion.set_reduced_motion(True)
+        try:
+            screen = student_profile_screen.StudentProfileScreen()
+            cockpit = build_student_competency_cockpit((
+                self._cockpit_status("CMP-000001", "Volle Stunden"),
+            ))
+            screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+            button = screen.findChild(QPushButton, "CompetencyCockpitSubjectButton")
+            details = screen.findChild(QWidget, "CompetencyCockpitSubjectDetails")
+
+            for _index in range(3):
+                button.click()
+
+            self.assertFalse(details.isHidden())
+            self.assertEqual(button.text(), "Schließen ▴")
+            effect = getattr(button, "_motion_opacity_effect", None)
+            self.assertIsNotNone(effect)
+            self.assertEqual(effect.opacity(), 1.0)
+
+            dialog = self._observation_dialog_with_hierarchy()
+            self._select_observation_subject(dialog, "mathematik")
+            topic = self._observation_topic_button(dialog, "Zeit")
+            container = self._observation_topic_container(dialog, "Zeit")
+            for _index in range(4):
+                topic.click()
+            self.assertTrue(container.isHidden())
+            self.assertEqual(topic.text(), "▸ Thema: Zeit")
+        finally:
+            motion.set_reduced_motion(False)
         self.assertIsNotNone(app)
 
     def test_student_profile_cockpit_separates_legacy_section(self) -> None:
@@ -6045,6 +6319,41 @@ class DesktopAppAdapterTest(unittest.TestCase):
             observations_scroll.verticalScrollBar().value(),
             min(12, observations_scroll.verticalScrollBar().maximum()),
         )
+        self.assertIsNotNone(app)
+
+    def test_student_profile_resizes_without_losing_navigation_or_primary_action(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(
+            self._sample_student_detail(),
+            self._sample_many_observations(),
+            competency_cockpit=build_student_competency_cockpit((
+                self._cockpit_status("CMP-000001", "Sehr langer Kompetenztext mit Umbruch"),
+            )),
+        )
+        screen.show()
+
+        for width, height in ((1400, 900), (1280, 800), (1180, 760)):
+            screen.resize(width, height)
+            app.processEvents()
+            with self.subTest(width=width, height=height):
+                self.assertFalse(screen.profile_primary_action.isHidden())
+                self.assertEqual(
+                    len(screen.profile_navigation.button_group.buttons()),
+                    5,
+                )
+                self.assertTrue(
+                    all(
+                        button.width() > 0 and not button.isHidden()
+                        for button in screen.profile_navigation.button_group.buttons()
+                    )
+                )
+                current_scroll = screen.profile_tabs.currentWidget()
+                self.assertEqual(
+                    current_scroll.horizontalScrollBar().maximum(),
+                    0,
+                )
+        screen.close()
         self.assertIsNotNone(app)
 
     def test_competency_cockpit_does_not_recalculate_status_in_screen(self) -> None:
@@ -6516,6 +6825,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         subject_id: str = "mathematik",
         subject_name: str = "Mathematik",
         sort_order: int = 0,
+        learning_stage: str = "cross_stage",
     ) -> StudentCompetencyStatusViewModel:
         return StudentCompetencyStatusViewModel(
             competency_id=competency_id,
@@ -6536,6 +6846,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             documentation_state=documentation_state,
             observed_proposal=observed_proposal,
             evidence=evidence,
+            learning_stage=learning_stage,
             catalog_status="legacy" if historical else "current",
             is_active=not historical,
             historical=historical,
@@ -6803,11 +7114,18 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self,
         dialog: new_observation_dialog.NewObservationDialog,
         subject_key: str,
+        *,
+        learning_stage_filter: str | None = "all",
     ) -> None:
         subject_index = dialog.subject_select.findData(subject_key)
         self.assertGreaterEqual(subject_index, 0)
         dialog.subject_select.setCurrentIndex(subject_index)
         dialog._refresh_competencies()
+        if learning_stage_filter is not None:
+            dialog.catalog_stage_filter.set_current_key(
+                learning_stage_filter,
+                emit=True,
+            )
 
     def _observation_topic_button(
         self,

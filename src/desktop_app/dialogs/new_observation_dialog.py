@@ -8,6 +8,7 @@ from typing import Callable
 from PySide6.QtCore import QDate, QTimer, Qt
 from PySide6.QtGui import QKeyEvent, QMouseEvent
 from PySide6.QtWidgets import (
+    QApplication,
     QButtonGroup,
     QCheckBox,
     QComboBox,
@@ -19,8 +20,6 @@ from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
-    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -30,8 +29,20 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.desktop_app.components import (
+    AppCard,
+    EmptyState,
+    InlineMessage,
+    PageHeader,
+    SearchField,
+    SectionHeader,
+    SegmentedControl,
+    StatusBadge,
+    configure_button,
+)
 from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
-from src.desktop_app.theme import create_card, set_label_style
+from src.desktop_app.motion import animate_feedback
+from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.observation_view_model import (
     DOCUMENT_TYPE_OPTIONS,
     OBSERVATION_ATTACHMENT_EMPTY_STATE,
@@ -50,93 +61,11 @@ from src.desktop_app.view_models.observation_view_model import (
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
 
 
-OBSERVATION_DIALOG_STYLESHEET = """
-QFrame#ObservationDialogZone {
-    background-color: #FFFFFF;
-    border: 1px solid #C9D8E4;
-    border-radius: 14px;
-}
-QFrame#ObservationSelectedCompetencyCard,
-QFrame#ObservationCatalogCompetencyTile {
-    background-color: #FFFFFF;
-    border: 1px solid #D7E4ED;
-    border-radius: 9px;
-}
-QFrame#ObservationSelectedCompetencyCard[historical="true"] {
-    background-color: #FFFAF5;
-    border-color: #E9E1D6;
-}
-QFrame#ObservationCatalogCompetencyTile[selected="false"]:hover {
-    background-color: #EEF6FB;
-    border-color: #AFCADC;
-}
-QFrame#ObservationCatalogCompetencyTile[selected="false"]:focus {
-    border: 2px solid #2563EB;
-}
-QFrame#ObservationCatalogCompetencyTile[selected="true"] {
-    background-color: #F2F7FA;
-    border-color: #D9E5EC;
-}
-QFrame#ObservationRecentCompetencyChip {
-    background-color: #F7FAFC;
-    border: 1px solid #D2E0EA;
-    border-radius: 12px;
-}
-QFrame#ObservationRecentCompetencyChip[selected="false"]:hover {
-    background-color: #EEF6FB;
-    border-color: #AFCADC;
-}
-QFrame#ObservationRecentCompetencyChip[selected="false"]:focus {
-    border: 2px solid #2563EB;
-}
-QFrame#ObservationRecentCompetencyChip[selected="true"] {
-    background-color: #F2F7FA;
-    border-color: #D9E5EC;
-}
-QLabel#ObservationHistoricalBadge {
-    color: #8B5A2B;
-    background-color: #FDF0E3;
-    border: 1px solid #F0D9BE;
-    border-radius: 7px;
-    padding: 2px 6px;
-    font-size: 10px;
-}
-QPushButton#ObservationHierarchyToggle {
-    background-color: transparent;
-    border: none;
-    color: #0B3A63;
-    padding: 7px 5px;
-    text-align: left;
-    font-weight: 600;
-}
-QPushButton#ObservationHierarchyToggle:hover {
-    background-color: #EEF6FB;
-}
-QPushButton#ObservationRatingChip {
-    background-color: #F7FAFC;
-    border: 1px solid #D2E0EA;
-    border-radius: 7px;
-    color: #38546B;
-    min-height: 27px;
-    padding: 3px 7px;
-    font-size: 11px;
-    font-weight: 600;
-}
-QPushButton#ObservationRatingChip:checked {
-    background-color: #2563EB;
-    border-color: #2563EB;
-    color: #FFFFFF;
-}
-QPushButton#ObservationRemoveCompetencyButton {
-    background-color: #F7FAFC;
-    border: 1px solid #D7E3EC;
-    color: #556372;
-    min-width: 30px;
-    max-width: 30px;
-    min-height: 28px;
-    padding: 2px;
-}
-"""
+OBSERVATION_STAGE_FILTERS = (
+    ("matching", "Passende Kompetenzen"),
+    ("stage_4", "Klassenstufe 4"),
+    ("all", "Alle Kompetenzen"),
+)
 
 
 class ObservationRatingSelector(QWidget):
@@ -157,6 +86,8 @@ class ObservationRatingSelector(QWidget):
             button.setCheckable(True)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             button.setProperty("rating", rating)
+            button.setAccessibleName(f"Bewertung {rating_option}")
+            configure_button(button, "secondary")
             self.button_group.addButton(button)
             self.buttons[rating] = button
             layout.addWidget(button)
@@ -172,7 +103,7 @@ class ObservationRatingSelector(QWidget):
             button.setChecked(True)
 
 
-class ObservationCatalogCompetencyTile(QFrame):
+class ObservationCatalogCompetencyTile(AppCard):
     """Keyboard- and pointer-activatable catalog tile."""
 
     def __init__(
@@ -182,7 +113,7 @@ class ObservationCatalogCompetencyTile(QFrame):
         selected: bool,
         object_name: str = "ObservationCatalogCompetencyTile",
     ) -> None:
-        super().__init__()
+        super().__init__("default")
         self.competency_id = competency_id
         self._activate = activate
         self.setObjectName(object_name)
@@ -191,6 +122,7 @@ class ObservationCatalogCompetencyTile(QFrame):
         self.set_selected(selected)
 
     def set_selected(self, selected: bool) -> None:
+        changed = self.is_selected() != selected
         self.setProperty("selected", "true" if selected else "false")
         if self.objectName() == "ObservationRecentCompetencyChip":
             self.setEnabled(not selected)
@@ -206,6 +138,8 @@ class ObservationCatalogCompetencyTile(QFrame):
         )
         self.style().unpolish(self)
         self.style().polish(self)
+        if changed and self.isVisible():
+            animate_feedback(self, key="observation_competency_selection")
 
     def is_selected(self) -> bool:
         return self.property("selected") == "true"
@@ -265,6 +199,7 @@ class NewObservationDialog(QDialog):
         self.competency_topic_containers: dict[str, QWidget] = {}
         self._catalog_expansion_snapshot: tuple[dict[str, bool], dict[str, bool]] | None = None
         self._catalog_search_text = ""
+        self._catalog_stage_filter_key = "matching"
         self.attachment_drafts: list[ObservationAttachmentDraft] = []
         self._initial_selected_competency_ids = {
             rating.competency_id
@@ -283,9 +218,20 @@ class NewObservationDialog(QDialog):
             "Beobachtung bearbeiten" if self.initial_draft else "Neue Beobachtung"
         )
         self.setModal(True)
-        self.setMinimumSize(1080, 680)
-        self.resize(1320, 820)
-        self.setStyleSheet(self.styleSheet() + OBSERVATION_DIALOG_STYLESHEET)
+        self.setMinimumSize(1040, 680)
+        screen = QApplication.primaryScreen()
+        available = screen.availableGeometry() if screen is not None else None
+        target_width = (
+            min(1280, available.width() - 48)
+            if available is not None and available.width() >= 1100
+            else 1240
+        )
+        target_height = (
+            min(800, available.height() - 48)
+            if available is not None and available.height() >= 760
+            else 800
+        )
+        self.resize(target_width, target_height)
         self._build()
 
     def _build(self) -> None:
@@ -293,23 +239,31 @@ class NewObservationDialog(QDialog):
         layout.setContentsMargins(18, 16, 18, 18)
         layout.setSpacing(12)
 
-        title = QLabel(
-            "Beobachtung bearbeiten"
-            if self.initial_draft
-            else f"Neue Beobachtung für {self.student.display_name}"
+        title = PageHeader(
+            self.student.display_name,
+            (
+                "Beobachtung bearbeiten"
+                if self.initial_draft
+                else "Neue Beobachtung"
+            )
+            + f" · {self.student.group_name} · {self.student.course_name}",
         )
-        set_label_style(title, "dialog_title")
+        title.setObjectName("ObservationDialogPageHeader")
         layout.addWidget(title)
 
         self.date_input = QDateEdit()
         self.date_input.setCalendarPopup(True)
         self.date_input.setDisplayFormat("dd.MM.yyyy")
         self.date_input.setDate(QDate.currentDate())
+        self.date_input.setAccessibleName("Beobachtungsdatum")
         self.subject_select = QComboBox()
+        self.subject_select.setAccessibleName("Fach für den Kompetenzkatalog")
         self._populate_subjects()
         self.context_select = QComboBox()
+        self.context_select.setAccessibleName("Beobachtungskontext")
         self.context_select.addItems(OBSERVATION_CONTEXT_OPTIONS)
         self.note_input = QTextEdit()
+        self.note_input.setAccessibleName("Beobachtungsnotiz")
         self.note_input.setPlaceholderText("Was war konkret zu beobachten?")
         self.note_input.setMinimumHeight(150)
 
@@ -327,7 +281,7 @@ class NewObservationDialog(QDialog):
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
         splitter.setStretchFactor(2, 0)
-        splitter.setSizes([250, 704, 310])
+        splitter.setSizes([245, 650, 315])
         layout.addWidget(splitter, 1)
 
         self.subject_select.currentIndexChanged.connect(self._refresh_competencies)
@@ -338,20 +292,20 @@ class NewObservationDialog(QDialog):
     def _build_context_zone(self) -> QFrame:
         zone = self._zone("Kind und Kontext")
         zone.setMinimumWidth(225)
-        zone.setMaximumWidth(290)
+        zone.setMaximumWidth(276)
         zone_layout = zone.layout()
 
-        student_card = self._card()
+        student_card = self._card("accent")
         student_layout = QVBoxLayout(student_card)
         student_layout.setContentsMargins(12, 12, 12, 12)
         student_layout.setSpacing(4)
         student_name = QLabel(self.student.display_name)
         set_label_style(student_name, "card_title")
-        student_context = QLabel(
-            f"{self.student.group_name}\n{self.student.course_name}"
+        student_context = StatusBadge(
+            f"{self.student.group_name} · {self.student.course_name}",
+            tone="info",
         )
         student_context.setWordWrap(True)
-        set_label_style(student_context, "muted")
         student_layout.addWidget(student_name)
         student_layout.addWidget(student_context)
         zone_layout.addWidget(student_card)
@@ -389,21 +343,24 @@ class NewObservationDialog(QDialog):
         zone.setMinimumWidth(480)
         zone_layout = zone.layout()
 
-        selected_header = QHBoxLayout()
-        selected_title = QLabel("Ausgewählte Kompetenzen")
-        set_label_style(selected_title, "section_title")
-        selected_header.addWidget(selected_title)
-        selected_header.addStretch(1)
+        selected_header = SectionHeader(
+            "Ausgewählte Kompetenzen",
+            "Jede Kompetenz wird einzeln bewertet.",
+            (
+                "Der Dokumentationsstand unterstützt die pädagogische Einordnung; "
+                "die Lehrkraft trifft Auswahl und Bewertung."
+            ),
+        )
         self.selection_count_label = QLabel("0 ausgewählt")
         set_label_style(self.selection_count_label, "muted")
-        selected_header.addWidget(self.selection_count_label)
-        zone_layout.addLayout(selected_header)
+        selected_header.add_action(self.selection_count_label)
+        zone_layout.addWidget(selected_header)
 
         self.selected_scroll = QScrollArea()
         self.selected_scroll.setObjectName("ObservationSelectedScroll")
         self.selected_scroll.setWidgetResizable(True)
-        self.selected_scroll.setMinimumHeight(210)
-        self.selected_scroll.setMaximumHeight(310)
+        self.selected_scroll.setMinimumHeight(120)
+        self.selected_scroll.setMaximumHeight(230)
         selected_content = QWidget()
         self.competency_ratings_layout = QVBoxLayout(selected_content)
         self.competency_ratings_layout.setContentsMargins(0, 0, 4, 0)
@@ -420,15 +377,35 @@ class NewObservationDialog(QDialog):
         divider = QFrame()
         divider.setFrameShape(QFrame.Shape.HLine)
         zone_layout.addWidget(divider)
-        catalog_title = QLabel("Kompetenzkatalog")
-        set_label_style(catalog_title, "section_title")
+        catalog_title = SectionHeader(
+            "Kompetenzkatalog",
+            "Auswählen, anschließend oben je Kompetenz bewerten.",
+            (
+                "Passende Kompetenzen blendet Klassenstufe 4 aus, sperrt sie aber nicht. "
+                "Historische Kompetenzen bleiben nur beim Bearbeiten sichtbar."
+            ),
+        )
         zone_layout.addWidget(catalog_title)
-        self.catalog_search_input = QLineEdit()
+        self.catalog_search_input = SearchField(
+            "Kompetenzen durchsuchen …",
+            accessible_name="Kompetenzkatalog durchsuchen",
+            accessible_description=(
+                "Durchsucht Kompetenzbereich, Thema und Kompetenztext im gewählten Fach."
+            ),
+        )
         self.catalog_search_input.setObjectName("ObservationCatalogSearch")
-        self.catalog_search_input.setPlaceholderText("Kompetenzen durchsuchen …")
-        self.catalog_search_input.setClearButtonEnabled(True)
         self.catalog_search_input.textChanged.connect(self._search_catalog)
         zone_layout.addWidget(self.catalog_search_input)
+        self.catalog_stage_filter = SegmentedControl(OBSERVATION_STAGE_FILTERS)
+        self.catalog_stage_filter.setObjectName("ObservationLearningStageFilter")
+        self.catalog_stage_filter.setAccessibleName("Klassenstufenfilter im Kompetenzkatalog")
+        self.catalog_stage_filter.setToolTip(
+            "Klassenstufe 4 ist jederzeit über den Filter erreichbar."
+        )
+        self.catalog_stage_filter.selection_changed.connect(
+            self._change_catalog_stage_filter
+        )
+        zone_layout.addWidget(self.catalog_stage_filter)
         self.recent_competencies_container = QWidget()
         self.recent_competencies_container.setObjectName("ObservationRecentCompetencies")
         recent_layout = QVBoxLayout(self.recent_competencies_container)
@@ -453,6 +430,9 @@ class NewObservationDialog(QDialog):
         self.catalog_scroll = QScrollArea()
         self.catalog_scroll.setObjectName("ObservationCatalogScroll")
         self.catalog_scroll.setWidgetResizable(True)
+        self.catalog_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
         self.catalog_content = QWidget()
         self.competency_tree_layout = QVBoxLayout(self.catalog_content)
         self.competency_tree_layout.setContentsMargins(0, 0, 4, 0)
@@ -464,13 +444,17 @@ class NewObservationDialog(QDialog):
     def _build_observation_zone(self) -> QFrame:
         zone = self._zone("Beobachtung")
         zone.setMinimumWidth(285)
-        zone.setMaximumWidth(350)
+        zone.setMaximumWidth(338)
         zone_layout = zone.layout()
         zone_layout.addWidget(self._field_label("Datum"))
         zone_layout.addWidget(self.date_input)
         zone_layout.addWidget(self._field_label("Notiz"))
         zone_layout.addWidget(self.note_input, 1)
         zone_layout.addWidget(self._attachments_card())
+        self.validation_message = InlineMessage()
+        self.validation_message.setObjectName("ObservationValidationMessage")
+        self.validation_message.setAccessibleName("Validierung der Beobachtung")
+        zone_layout.addWidget(self.validation_message)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Cancel
@@ -481,21 +465,20 @@ class NewObservationDialog(QDialog):
         save_button = buttons.button(QDialogButtonBox.StandardButton.Save)
         if save_button is not None:
             save_button.setMinimumHeight(42)
+            save_button.setAccessibleName("Beobachtung speichern")
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.save_draft)
         zone_layout.addWidget(buttons, 0)
         return zone
 
     def _zone(self, title: str = "") -> QFrame:
-        zone = QFrame()
+        zone = AppCard("default")
         zone.setObjectName("ObservationDialogZone")
         zone_layout = QVBoxLayout(zone)
         zone_layout.setContentsMargins(14, 14, 14, 14)
         zone_layout.setSpacing(10)
         if title:
-            title_label = QLabel(title)
-            set_label_style(title_label, "section_title")
-            zone_layout.addWidget(title_label)
+            zone_layout.addWidget(SectionHeader(title))
         return zone
 
     def _populate_subjects(self) -> None:
@@ -551,9 +534,11 @@ class NewObservationDialog(QDialog):
             )
         self._set_catalog_search_feedback(matching_competency_count)
         if self._catalog_search_text and not matching_competency_count:
-            empty_label = QLabel("Keine passenden Kompetenzen gefunden.")
-            empty_label.setObjectName("ObservationCatalogSearchEmptyState")
-            set_label_style(empty_label, "subtle")
+            empty_label = EmptyState(
+                "Suche oder Filter anpassen.",
+                title="Keine passenden Kompetenzen gefunden",
+            )
+            empty_label.label.setObjectName("ObservationCatalogSearchEmptyState")
             self.competency_tree_layout.addWidget(empty_label)
         self.competency_tree_layout.addStretch(1)
         self.catalog_scroll.verticalScrollBar().setValue(0)
@@ -567,6 +552,15 @@ class NewObservationDialog(QDialog):
         if not normalized_search_text:
             self._catalog_expansion_snapshot = None
 
+    def _change_catalog_stage_filter(self, filter_key: str) -> None:
+        """Apply the existing learning-stage metadata as a local catalog filter."""
+        if filter_key == self._catalog_stage_filter_key:
+            return
+        self._catalog_expansion_snapshot = self._catalog_expansion_state()
+        self._catalog_stage_filter_key = filter_key
+        self._refresh_competencies()
+        self._catalog_expansion_snapshot = None
+
     def _refresh_recent_competencies(self) -> None:
         """Render the adapter-provided quick selection for the visible subject."""
         if not hasattr(self, "recent_competencies_layout"):
@@ -578,6 +572,7 @@ class NewObservationDialog(QDialog):
             competency
             for competency in self.recent_competencies
             if competency.subject_key == subject_key
+            and self._matches_catalog_learning_stage(competency)
         )
         self.recent_competencies_container.setVisible(
             bool(visible_competencies) and not bool(self._catalog_search_text)
@@ -634,6 +629,7 @@ class NewObservationDialog(QDialog):
                     and competency.is_active
                 )
             )
+            and self._matches_catalog_learning_stage(competency)
             and (
                 not query
                 or query in " ".join((
@@ -644,6 +640,19 @@ class NewObservationDialog(QDialog):
                 )).casefold()
             )
         )
+
+    def _matches_catalog_learning_stage(
+        self,
+        competency: ObservationCompetencyOptionViewModel,
+    ) -> bool:
+        if competency.competency_id in self._initial_selected_competency_ids:
+            return True
+        learning_stage = competency.learning_stage or "cross_stage"
+        if self._catalog_stage_filter_key == "all":
+            return True
+        if self._catalog_stage_filter_key == "stage_4":
+            return learning_stage in {"stage_4", "cross_stage"}
+        return learning_stage in {"stage_1_3", "cross_stage"}
 
     def _set_catalog_search_feedback(self, competency_count: int) -> None:
         if not self._catalog_search_text:
@@ -755,6 +764,9 @@ class NewObservationDialog(QDialog):
         button.setObjectName("ObservationHierarchyToggle")
         button.setFlat(True)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        configure_button(button, "quiet")
         button.clicked.connect(lambda _checked=False: toggle(key))
         return button
 
@@ -771,6 +783,14 @@ class NewObservationDialog(QDialog):
         )
         tile.setProperty("subject_key", competency.subject_key)
         tile.setToolTip(self._competency_detail_text(competency))
+        tile.setAccessibleName(
+            (
+                "Bereits ausgewählte Kompetenz: "
+                if is_selected
+                else "Kompetenz auswählen: "
+            )
+            + self._competency_display_text(competency)
+        )
         tile_layout = QHBoxLayout(tile)
         tile_layout.setContentsMargins(9, 7, 7, 7)
         tile_layout.setSpacing(8)
@@ -866,6 +886,10 @@ class NewObservationDialog(QDialog):
         is_open = container.isHidden()
         container.setVisible(is_open)
         self._set_area_button_text(area_key, is_open)
+        animate_feedback(
+            self.competency_area_buttons[area_key],
+            key="observation_area_disclosure",
+        )
 
     def _toggle_competency_topic(self, topic_key: str) -> None:
         if self._catalog_search_text:
@@ -876,6 +900,10 @@ class NewObservationDialog(QDialog):
         is_open = container.isHidden()
         container.setVisible(is_open)
         self._set_topic_button_text(topic_key, is_open)
+        animate_feedback(
+            self.competency_topic_buttons[topic_key],
+            key="observation_topic_disclosure",
+        )
 
     def _restored_area_state(self, area_key: str, default: bool) -> bool:
         if self._catalog_expansion_snapshot is None:
@@ -894,6 +922,10 @@ class NewObservationDialog(QDialog):
                 f"{'▾' if is_open else '▸'} Kompetenzbereich: "
                 f"{area_key.rsplit('|', 1)[-1] or 'Ohne Kompetenzbereich'}"
             )
+            button.setAccessibleName(
+                f"Kompetenzbereich {'schließen' if is_open else 'öffnen'}: "
+                f"{area_key.rsplit('|', 1)[-1] or 'Ohne Kompetenzbereich'}"
+            )
 
     def _set_topic_button_text(self, topic_key: str, is_open: bool) -> None:
         button = self.competency_topic_buttons.get(topic_key)
@@ -902,21 +934,31 @@ class NewObservationDialog(QDialog):
                 f"{'▾' if is_open else '▸'} Thema: "
                 f"{topic_key.rsplit('|', 1)[-1] or 'Ohne Thema'}"
             )
+            button.setAccessibleName(
+                f"Thema {'schließen' if is_open else 'öffnen'}: "
+                f"{topic_key.rsplit('|', 1)[-1] or 'Ohne Thema'}"
+            )
 
     def _attachments_card(self) -> QFrame:
-        card = self._card()
+        card = self._card("soft")
         card.setMaximumHeight(250)
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(6)
-        title = QLabel("Dokumente & Medien")
-        set_label_style(title, "card_title")
+        title = SectionHeader(
+            "Dokumente & Medien",
+            help_text=(
+                "Anhänge ergänzen die Beobachtung. Dateityp und Dateiname bleiben sichtbar."
+            ),
+        )
         self.attachment_type_select = QComboBox()
         self.attachment_type_select.addItems(DOCUMENT_TYPE_OPTIONS)
+        self.attachment_type_select.setAccessibleName("Dateityp für neuen Anhang")
         default_type_index = self.attachment_type_select.findText("Sonstiges")
         if default_type_index >= 0:
             self.attachment_type_select.setCurrentIndex(default_type_index)
         add_file_button = QPushButton("Datei hinzufügen")
+        configure_button(add_file_button, "secondary", "Datei als Anhang hinzufügen")
         add_file_button.clicked.connect(self.add_attachment_from_dialog)
         self.attachments_container = QWidget()
         self.attachments_layout = QVBoxLayout(self.attachments_container)
@@ -944,8 +986,8 @@ class NewObservationDialog(QDialog):
         set_label_style(field_label, "field_label")
         return field_label
 
-    def _card(self) -> QFrame:
-        return create_card()
+    def _card(self, variant: str = "default") -> QFrame:
+        return AppCard(variant)
 
     def add_attachment_from_dialog(self) -> None:
         """Ask for files and add them to the observation draft."""
@@ -1001,18 +1043,30 @@ class NewObservationDialog(QDialog):
             self.attachments_layout.addWidget(self.attachment_empty_state)
             return
         for index, attachment in enumerate(self.attachment_drafts):
-            row_widget = QWidget()
+            row_widget = AppCard("soft")
+            row_widget.setObjectName("ObservationFileRow")
             row = QHBoxLayout(row_widget)
-            row.setContentsMargins(0, 0, 0, 0)
+            row.setContentsMargins(8, 6, 8, 6)
             row.setSpacing(6)
-            label = QLabel(attachment.display_label)
+            label = QLabel(
+                attachment.original_filename
+                or Path(attachment.source_path).name
+                or attachment.title
+            )
             label.setWordWrap(True)
             set_label_style(label, "small")
+            file_type = StatusBadge(attachment.document_type, tone="neutral")
             remove_button = QPushButton("Entfernen")
+            configure_button(
+                remove_button,
+                "danger",
+                f"Anhang {label.text()} entfernen",
+            )
             remove_button.clicked.connect(
                 lambda _checked=False, row_index=index: self._remove_attachment(row_index)
             )
             row.addWidget(label, 1)
+            row.addWidget(file_type, 0)
             row.addWidget(remove_button, 0)
             self.attachments_layout.addWidget(row_widget)
 
@@ -1049,7 +1103,7 @@ class NewObservationDialog(QDialog):
     ) -> None:
         if competency_key in self.competency_rating_entries:
             return
-        card = QFrame()
+        card = AppCard("soft")
         card.setObjectName("ObservationSelectedCompetencyCard")
         card.setProperty(
             "historical",
@@ -1068,7 +1122,7 @@ class NewObservationDialog(QDialog):
         set_label_style(meta, "small")
         meta_row.addWidget(meta, 1)
         if competency_key in self._historical_competency_ids:
-            historical = QLabel("Historischer Bestand")
+            historical = StatusBadge("Historischer Bestand", tone="neutral")
             historical.setObjectName("ObservationHistoricalBadge")
             historical.setToolTip(
                 "Diese Kompetenz gehört zu einer bestehenden Beobachtung und "
@@ -1090,6 +1144,11 @@ class NewObservationDialog(QDialog):
         remove_button = QPushButton("×")
         remove_button.setObjectName("ObservationRemoveCompetencyButton")
         remove_button.setToolTip("Aus Auswahl entfernen")
+        configure_button(
+            remove_button,
+            "danger",
+            f"Kompetenz {self._competency_display_text(catalog_entry)} entfernen",
+        )
         remove_button.clicked.connect(
             lambda _checked=False, key=competency_key: self._remove_competency_rating(key)
         )
@@ -1221,11 +1280,11 @@ class NewObservationDialog(QDialog):
     def save_draft(self) -> None:
         """Persist the observation draft through the adapter and return on success."""
         draft = self.create_draft()
+        self.validation_message.set_message("")
         if draft.is_quick_observation and not draft.note.strip():
-            QMessageBox.warning(
-                self,
-                "Hinweis",
+            self.validation_message.set_message(
                 "Bitte eine Notiz für die Schnellbeobachtung eingeben.",
+                tone="warning",
             )
             self.note_input.setFocus(Qt.FocusReason.OtherFocusReason)
             return
@@ -1234,13 +1293,17 @@ class NewObservationDialog(QDialog):
             not draft.competency_ratings
             or any(not rating.rating for rating in draft.competency_ratings)
         ):
-            QMessageBox.warning(self, "Hinweis", OBSERVATION_SAVE_VALIDATION_MESSAGE)
+            self.validation_message.set_message(
+                OBSERVATION_SAVE_VALIDATION_MESSAGE,
+                tone="warning",
+            )
+            if not draft.competency_ratings:
+                self.catalog_search_input.setFocus(Qt.FocusReason.OtherFocusReason)
             return
         if self.observation_adapter is None:
-            QMessageBox.warning(
-                self,
-                "Hinweis",
+            self.validation_message.set_message(
                 "Beobachtungen können ohne Adapter nicht gespeichert werden.",
+                tone="error",
             )
             return
         if draft.observation_id:
@@ -1248,9 +1311,7 @@ class NewObservationDialog(QDialog):
         else:
             result = self.observation_adapter.save_observation(draft)
         if not getattr(result, "success", False):
-            QMessageBox.warning(
-                self,
-                "Speichern fehlgeschlagen",
+            self.validation_message.set_message(
                 str(
                     getattr(
                         result,
@@ -1258,6 +1319,7 @@ class NewObservationDialog(QDialog):
                         "Beobachtung konnte nicht gespeichert werden.",
                     )
                 ),
+                tone="error",
             )
             return
         self._refresh_recent_competencies_from_adapter()

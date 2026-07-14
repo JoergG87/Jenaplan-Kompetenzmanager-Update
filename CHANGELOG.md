@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## UI Sprint 4 - Schuelerprofil, Kompetenz-Cockpit und Beobachtungs-Workspace
+
+### Added
+
+- Gemeinsame Workspace-Sprache fuer Profil, Kompetenz-Cockpit und Beobachtungsdialog mit dauerhaft sichtbarem Kindkontext, lokaler Segmentnavigation, zentralen Cards, Section Headers, Suche, Statuskennzeichnungen und kontextueller Hilfe ergaenzt.
+- Lokale Klassenstufenfilter `Passende Kompetenzen`, `Klassenstufe 4` und `Alle Kompetenzen` auf Basis der bestehenden `learning_stage`-Metadaten in Profil und Beobachtungsdialog eingefuehrt.
+- Inline-Validierung, ruhige Dateizeilen, Accessibility-Vertraege sowie responsive Regressionen fuer 1400 x 900, 1280 x 800 und 1180 x 760 ergaenzt.
+
+### Changed
+
+- Profilkopf und Aktionshierarchie auf genau eine dominante Aktion `Neue Beobachtung`, sekundaeres Dateiangebot und ein Menue fuer seltenere bestehende Aktionen konzentriert.
+- Beobachtungslisten, Kompetenzhierarchie und Drei-Zonen-Dialog auf das zentrale Surface-, Button-, Search-, Badge- und Motion-System umgestellt; Disclosure bleibt daten- und zustandssicher und nutzt nur kurze Opacity-Rueckmeldung.
+- Beobachtungs-Kompetenzprojektion um das bereits vorhandene Katalogfeld `learning_stage` erweitert; weder Fachlogik noch gespeicherte Werte wurden veraendert.
+
+### Not Changed
+
+- Keine Aenderung an SQLite-Schema, Datenmodell, Bewertungslogik, Kompetenzzuordnung, historischen Regeln, Repositories, Schreibprozessen, Lehrplaninhalten, Bericht/LEG, Exporten oder Legacy Excel/VBA.
+- Kein QPainter-Einsatz; Standardwidgets und zentrales QSS decken Hierarchie, Fokus, Auswahl und Dateidarstellung High-DPI-sicher ab.
+
 ## UI Sprint 3 - Motion System und Microinteractions
 
 ### Added

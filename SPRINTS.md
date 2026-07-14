@@ -6,6 +6,19 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## UI Sprint 4 - Schuelerprofil, Kompetenz-Cockpit und Beobachtungs-Workspace ✅
+
+- [x] Profilkopf mit dauerhaft sichtbarem Kindkontext und genau einer dominanten Aktion modernisiert
+- [x] Lokale Profilnavigation auf zentrale, tastaturfaehige Segmentnavigation umgestellt und Tab-/Scroll-Restaurierung erhalten
+- [x] Beobachtungsliste als ruhige, scanbare Card-Liste mit zentraler Suche, sichtbaren Filtern und handlungsorientiertem Leerzustand komponiert
+- [x] Kompetenzhierarchie Fach -> Kompetenzbereich -> Thema -> Kompetenz visuell geschaerft und lokale Suche sowie Klassenstufenfilter ergaenzt
+- [x] Historische Kompetenzdarstellung und Edit-Autooeffnung unveraendert sichtbar gehalten; neue Auswahl bleibt active/current-only
+- [x] Beobachtungsdialog als responsive Drei-Zonen-Arbeitsflaeche mit dauerhaft sichtbarem Speichern, Inline-Validierung und ruhigen Dateizeilen modernisiert
+- [x] Disclosure nutzt zentrale kurze Motion-Rueckmeldung; Reduced Motion und schneller Mehrfachwechsel enden unmittelbar korrekt
+- [x] Accessibility, Tastatursteuerung und 1400 x 900, 1280 x 800 sowie 1180 x 760 automatisiert und offscreen geprueft
+- [x] Keine Datenmodell-, Schema-, Repository-, Bewertungs-, Berichts-, LEG-, Export- oder Legacy-Aenderung
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## UI Sprint 3 - Motion System und Microinteractions ✅
 
 - [x] Motion-Bestand inventarisiert und zentrale Qt-Bordmittel-Architektur festgelegt

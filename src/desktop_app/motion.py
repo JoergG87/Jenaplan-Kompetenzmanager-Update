@@ -235,7 +235,7 @@ class _CardMotionController(QObject):
             card.installEventFilter(self)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
-        if watched is self.card:
+        if watched is getattr(self, "card", None):
             if event.type() == QEvent.Type.Enter:
                 self._set_hovered(True)
             elif event.type() in (QEvent.Type.Leave, QEvent.Type.EnabledChange):

@@ -681,8 +681,8 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen.apply_competency_cockpit_filters()`
 - `StudentProfileScreen.reset_competency_cockpit_filters()`
 - `StudentProfileScreen._populate_competency_subject_filter(cockpit)`
-- `StudentProfileScreen._filtered_cockpit_subject(subject, documentation_filter)`
-- `StudentProfileScreen._filtered_cockpit_learning_area(area, documentation_filter)`
+- `StudentProfileScreen._filtered_cockpit_subject(subject, documentation_filter, learning_stage_filter, search_text)`
+- `StudentProfileScreen._filtered_cockpit_learning_area(area, documentation_filter, learning_stage_filter, search_text)`
 - `StudentProfileScreen._matches_competency_documentation_filter(competency, documentation_filter)`
 - `StudentProfileScreen._cockpit_subject_card(subject, historical)`
 - `StudentProfileScreen._cockpit_learning_area_card(subject_id, area, historical)`
@@ -803,6 +803,7 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationCompetencyOptionViewModel.competency_label`
 - `ObservationCompetencyOptionViewModel.selected`
 - `ObservationCompetencyOptionViewModel.rating`
+- `ObservationCompetencyOptionViewModel.learning_stage`
 - `ObservationCompetencyOptionViewModel.catalog_status`
 - `ObservationCompetencyOptionViewModel.is_active`
 - `StudentDesktopAdapter.list_recent_observation_competencies(student_id, initial_draft)`
@@ -1414,6 +1415,7 @@ Registrierte Komponenten und Helfer (Component Library V1 und V2):
 - `FilterBar`
 - `FilterBar.reset_requested`
 - `FilterBar.set_context_filter(label, active)`
+- `FilterBar.add_filter_widget(widget)`
 - `FilterChip`
 - `FilterChip.remove_requested`
 - `FilterChip.set_label(label)`
@@ -1489,3 +1491,34 @@ Registrierte Motion-Namen:
 - `stop_motion(owner, key)`
 
 Regel: Motion ist ausschliesslich lokaler, fluechtiger UI-State. Animationen setzen keine fachlichen Zustaende, besitzen keine Datenquelle und duerfen Signale, Navigation, Filter oder Schreibprozesse nicht verzoegern. Pro Widget und semantischem Schluessel existiert hoechstens eine laufende Animation; Reduced Motion setzt denselben Endzustand ohne Bewegung.
+
+## UI Sprint 4 - Schuelerprofil und Beobachtungs-Workspace
+
+Registrierte Profilnamen:
+
+- `StudentProfilePageHeader`
+- `StudentProfileHeaderSurface`
+- `StudentProfilePrimaryAction`
+- `StudentProfileMoreActions`
+- `StudentProfileNavigation`
+- `StudentProfileTabs`
+- `CompetencyCockpitSearch`
+- `CompetencyCockpitStageFilter`
+- `StudentProfileScreen._select_profile_section(key)`
+- `StudentProfileScreen._sync_profile_navigation(index)`
+- `StudentProfileScreen._update_profile_header_context()`
+- `StudentProfileScreen._matches_competency_learning_stage(competency, learning_stage_filter)`
+- `StudentProfileScreen._matches_competency_search(competency, learning_area, topic, search_text)`
+
+Registrierte Dialognamen:
+
+- `OBSERVATION_STAGE_FILTERS`
+- `ObservationDialogPageHeader`
+- `ObservationLearningStageFilter`
+- `ObservationValidationMessage`
+- `ObservationFileRow`
+- `NewObservationDialog._catalog_stage_filter_key`
+- `NewObservationDialog._change_catalog_stage_filter(filter_key)`
+- `NewObservationDialog._matches_catalog_learning_stage(competency)`
+
+Regel: Beide Klassenstufenfilter lesen ausschliesslich das bestehende Katalogfeld `learning_stage`. `matching` zeigt `stage_1_3` und `cross_stage`, `stage_4` zeigt `stage_4` und `cross_stage`, `all` zeigt alle aktiven aktuellen Katalogzeilen. Filterung bleibt lokaler UI-State und erzeugt keine neue Datenquelle, Berechnung oder Persistenz. Initial ausgewaehlte Edit-Kompetenzen bleiben unabhaengig vom Filter sichtbar und geoeffnet; historische beziehungsweise inaktive Kompetenzen werden nie als neue Auswahl reaktiviert.

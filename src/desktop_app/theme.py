@@ -132,35 +132,40 @@ QListWidget#AppNavigation::item:disabled {{
     font-size: 10px;
     font-weight: 700;
 }}
-QFrame#AppCard {{
+QFrame#AppCard, QFrame[cardVariant="default"], QFrame[cardVariant="soft"],
+QFrame[cardVariant="accent"], QFrame[cardVariant="interactive"] {{
     background-color: {COLOR_GLASS};
     border: 1px solid #D8E4EC;
     border-radius: 14px;
 }}
-QFrame#AppCard[cardVariant="soft"] {{
+QFrame[cardVariant="soft"] {{
     background-color: {COLOR_SURFACE_SOFT};
     border-color: #E1EAF0;
 }}
-QFrame#AppCard[cardVariant="accent"] {{
+QFrame[cardVariant="accent"] {{
     background-color: #EEF5FF;
     border-color: #BBD1EE;
 }}
-QFrame#AppCard[cardVariant="interactive"]:hover {{
+QFrame#AppCard[cardVariant="interactive"]:hover,
+QFrame[cardVariant="interactive"]:hover {{
     background-color: #F8FBFF;
     border-color: #8EB6E5;
 }}
-QFrame#AppCard[cardVariant="interactive"]:focus {{
+QFrame#AppCard[cardVariant="interactive"]:focus,
+QFrame[cardVariant="interactive"]:focus {{
     border: 2px solid {COLOR_FOCUS};
 }}
-QFrame#AppCard[cardVariant="interactive"][pressed="true"] {{
+QFrame#AppCard[cardVariant="interactive"][pressed="true"],
+QFrame[cardVariant="interactive"][pressed="true"] {{
     background-color: #E7F0FA;
     border-color: #6C9FD3;
 }}
-QFrame#AppCard[cardVariant="interactive"]:disabled {{
+QFrame#AppCard[cardVariant="interactive"]:disabled,
+QFrame[cardVariant="interactive"]:disabled {{
     background-color: #F3F6F8;
     border-color: #E2E8ED;
 }}
-QFrame#AppCard[selected="true"] {{
+QFrame#AppCard[selected="true"], QFrame[cardVariant][selected="true"] {{
     background-color: #EEF5FF;
     border: 2px solid {COLOR_BLUE};
 }}
@@ -628,6 +633,115 @@ QPushButton#SegmentedControlButton:checked {{
     border-color: {COLOR_NAVY};
     color: #FFFFFF;
     font-weight: 600;
+}}
+QWidget#StudentProfilePageHeader {{
+    background-color: transparent;
+}}
+QFrame#StudentProfileHeaderSurface {{
+    background-color: #EEF5FF;
+    border-color: #BBD1EE;
+}}
+QFrame#StudentProfileNavigation {{
+    background-color: transparent;
+    border: none;
+}}
+QTabWidget#StudentProfileTabs::pane {{
+    border: none;
+    background-color: transparent;
+}}
+QLineEdit#CompetencyCockpitSearch,
+QLineEdit#ObservationCatalogSearch {{
+    min-height: 20px;
+    background-color: #FFFFFF;
+    border: 1px solid #C9D8E4;
+    border-radius: 9px;
+    padding: 7px 10px;
+}}
+QLineEdit#CompetencyCockpitSearch:focus,
+QLineEdit#ObservationCatalogSearch:focus {{
+    border: 2px solid {COLOR_FOCUS};
+    padding: 6px 9px;
+}}
+QFrame#ObservationDialogZone {{
+    background-color: #FFFFFF;
+    border: 1px solid #C9D8E4;
+    border-radius: 14px;
+}}
+QFrame#ObservationSelectedCompetencyCard[historical="true"] {{
+    background-color: #FFFAF5;
+    border-color: #E9E1D6;
+}}
+QFrame#ObservationCatalogCompetencyTile[selected="false"]:hover,
+QFrame#ObservationRecentCompetencyChip[selected="false"]:hover {{
+    background-color: #EEF6FB;
+    border-color: #AFCADC;
+}}
+QFrame#ObservationCatalogCompetencyTile[selected="false"]:focus,
+QFrame#ObservationRecentCompetencyChip[selected="false"]:focus {{
+    border: 2px solid {COLOR_FOCUS};
+}}
+QFrame#ObservationCatalogCompetencyTile[selected="true"],
+QFrame#ObservationRecentCompetencyChip[selected="true"] {{
+    background-color: #F2F7FA;
+    border-color: #D9E5EC;
+}}
+QFrame#ObservationRecentCompetencyChip {{ border-radius: 12px; }}
+QLabel#ObservationHistoricalBadge {{
+    color: #76502F;
+    background-color: #F8EEE4;
+    border: 1px solid #E7D2BB;
+    border-radius: 9px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}}
+QLabel#ObservationQuickObservationBadge {{
+    color: {COLOR_TEXT_MUTED};
+    background-color: #EDF2F6;
+    border: 1px solid #D8E2EA;
+    border-radius: 9px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}}
+QPushButton#ObservationHierarchyToggle {{
+    background-color: transparent;
+    border: none;
+    color: {COLOR_NAVY};
+    padding: 7px 5px;
+    text-align: left;
+    font-weight: 600;
+}}
+QPushButton#ObservationHierarchyToggle:hover {{ background-color: #EEF6FB; }}
+QPushButton#ObservationHierarchyToggle:focus {{ border: 2px solid {COLOR_FOCUS}; }}
+QPushButton#ObservationRatingChip {{
+    background-color: #F7FAFC;
+    border: 1px solid #D2E0EA;
+    border-radius: 7px;
+    color: #38546B;
+    min-height: 27px;
+    padding: 3px 7px;
+    font-size: 11px;
+    font-weight: 600;
+}}
+QPushButton#ObservationRatingChip:checked {{
+    background-color: {COLOR_BLUE};
+    border-color: {COLOR_BLUE};
+    color: #FFFFFF;
+}}
+QPushButton#ObservationRemoveCompetencyButton {{
+    min-width: 30px;
+    max-width: 30px;
+    min-height: 28px;
+    padding: 2px;
+}}
+QFrame#ObservationFileRow {{ border-radius: 8px; }}
+QFrame#CompetencyCockpitSubjectCard {{ border-color: #BBD1EE; }}
+QFrame#CompetencyCockpitLearningAreaCard {{ margin-left: 8px; }}
+QFrame#CompetencyCockpitTopicCard {{ margin-left: 12px; }}
+QPushButton#CompetencyCockpitCompetencyButton {{
+    text-align: left;
+    padding: 7px 9px;
 }}
 QPushButton#ObservationTextActionButton {{
     background-color: transparent;

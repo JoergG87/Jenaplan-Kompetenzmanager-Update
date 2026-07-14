@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
     QPushButton,
     QProgressBar,
     QScrollArea,
@@ -22,6 +23,19 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from src.desktop_app.components import (
+    AppCard,
+    EmptyState,
+    FilterBar,
+    PageHeader,
+    SearchField,
+    SectionHeader,
+    SegmentedControl,
+    StatusBadge,
+    configure_button,
+)
+from src.desktop_app.motion import animate_feedback
 
 from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
@@ -43,7 +57,7 @@ from src.desktop_app.view_models.observation_view_model import (
     StudentDocumentationSubjectStatus,
     StudentCompetencySubjectGroup,
 )
-from src.desktop_app.theme import create_card, set_label_style
+from src.desktop_app.theme import set_label_style
 
 
 class StudentProfileScreen(QWidget):
@@ -66,8 +80,11 @@ class StudentProfileScreen(QWidget):
         super().__init__()
         self.current_student: StudentDetailViewModel | None = None
         self.back_button = QPushButton("← Zurück zur Schülerliste")
-        self.name_label = QLabel("Kein Schüler ausgewählt")
-        self.meta_label = QLabel("")
+        configure_button(self.back_button, "quiet", "Zurück zur Schülerliste")
+        self.profile_page_header = PageHeader("Kein Schüler ausgewählt")
+        self.profile_page_header.setObjectName("StudentProfilePageHeader")
+        self.name_label = self.profile_page_header.title_label
+        self.meta_label = self.profile_page_header.subtitle_label
         self.student_id_label = QLabel("")
         self.group_value_label = QLabel("")
         self.course_value_label = QLabel("")
@@ -102,7 +119,7 @@ class StudentProfileScreen(QWidget):
     def _build(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
+        layout.setSpacing(12)
 
         header = QHBoxLayout()
         self.back_button.clicked.connect(self.back_requested.emit)
@@ -110,13 +127,58 @@ class StudentProfileScreen(QWidget):
         header.addStretch()
         layout.addLayout(header)
 
-        set_label_style(self.name_label, "screen_title")
-        set_label_style(self.meta_label, "muted")
         set_label_style(self.student_id_label, "small")
-        layout.addWidget(self.name_label)
-        layout.addWidget(self.meta_label)
+
+        self.profile_primary_action = QPushButton("Neue Beobachtung")
+        self.profile_primary_action.setObjectName("StudentProfilePrimaryAction")
+        configure_button(
+            self.profile_primary_action,
+            "primary",
+            "Neue Beobachtung für dieses Kind",
+        )
+        self.profile_primary_action.clicked.connect(self._request_new_observation)
+        self.profile_page_header.add_action(self.profile_primary_action)
+
+        self.profile_file_action = QPushButton("Datei hinzufügen")
+        configure_button(self.profile_file_action, "secondary", "Datei hinzufügen")
+        self.profile_file_action.clicked.connect(self._request_add_document)
+        self.profile_page_header.add_action(self.profile_file_action)
+
+        self.profile_more_action = QPushButton("Weitere Aktionen")
+        self.profile_more_action.setObjectName("StudentProfileMoreActions")
+        configure_button(self.profile_more_action, "quiet", "Weitere Profilaktionen")
+        more_menu = QMenu(self.profile_more_action)
+        more_menu.addAction("Schüler bearbeiten", self._request_edit_student)
+        more_menu.addAction("Bericht öffnen", self._request_learning_report)
+        more_menu.addAction(
+            "Lernentwicklungsgespräch",
+            self._request_learning_conference,
+        )
+        self.profile_more_action.setMenu(more_menu)
+        self.profile_page_header.add_action(self.profile_more_action)
+        profile_header_surface = AppCard("accent")
+        profile_header_surface.setObjectName("StudentProfileHeaderSurface")
+        profile_header_layout = QVBoxLayout(profile_header_surface)
+        profile_header_layout.setContentsMargins(16, 12, 16, 12)
+        profile_header_layout.addWidget(self.profile_page_header)
+        layout.addWidget(profile_header_surface)
+
+        self.profile_navigation = SegmentedControl((
+            ("overview", "Überblick"),
+            ("observations", "Beobachtungen"),
+            ("competencies", "Kompetenzen"),
+            ("report", "Bericht"),
+            ("documents", "Dateien"),
+        ))
+        self.profile_navigation.setObjectName("StudentProfileNavigation")
+        self.profile_navigation.setAccessibleName("Bereiche im Schülerprofil")
+        self.profile_navigation.selection_changed.connect(
+            self._select_profile_section
+        )
+        layout.addWidget(self.profile_navigation)
 
         self.profile_tabs = QTabWidget()
+        self.profile_tabs.setObjectName("StudentProfileTabs")
         self.profile_tabs.addTab(self._scrollable_tab(self._overview_tab()), "Überblick")
         self.profile_tabs.addTab(
             self._scrollable_tab(self._observations_card()),
@@ -136,7 +198,32 @@ class StudentProfileScreen(QWidget):
             self._scrollable_tab(self._documents_card()),
             "Dateien",
         )
+        self.profile_tabs.tabBar().hide()
+        self.profile_tabs.currentChanged.connect(self._sync_profile_navigation)
         layout.addWidget(self.profile_tabs, 1)
+
+    def _select_profile_section(self, key: str) -> None:
+        keys = ("overview", "observations", "competencies", "report", "documents")
+        if key in keys:
+            self.profile_tabs.setCurrentIndex(keys.index(key))
+
+    def _sync_profile_navigation(self, index: int) -> None:
+        keys = ("overview", "observations", "competencies", "report", "documents")
+        if 0 <= index < len(keys):
+            self.profile_navigation.set_current_key(keys[index])
+            self._update_profile_header_context()
+
+    def _update_profile_header_context(self) -> None:
+        if self.current_student is None:
+            subtitle = ""
+        else:
+            section = self.profile_tabs.tabText(self.profile_tabs.currentIndex())
+            subtitle = (
+                f"{self.current_student.group_name} · "
+                f"{self.current_student.course_name} · {section}"
+            )
+        self.meta_label.setText(subtitle)
+        self.meta_label.setVisible(bool(subtitle))
 
     def _scrollable_tab(self, content: QWidget) -> QScrollArea:
         scroll_area = QScrollArea()
@@ -159,32 +246,10 @@ class StudentProfileScreen(QWidget):
         layout.setContentsMargins(0, 8, 0, 0)
         layout.setSpacing(10)
 
-        header = QHBoxLayout()
-        header.setContentsMargins(0, 0, 0, 0)
-        header.setSpacing(8)
-
-        title = QLabel("Überblick")
-        set_label_style(title, "section_title")
-        header.addWidget(title)
-        header.addStretch(1)
-
-        add_observation_button = QPushButton("+ Beobachtung")
-        add_observation_button.clicked.connect(self._request_new_observation)
-        header.addWidget(add_observation_button)
-
-        add_document_button = QPushButton("+ Datei hinzufügen")
-        add_document_button.clicked.connect(self._request_add_document)
-        header.addWidget(add_document_button)
-
-        edit_student_button = QPushButton("Schüler bearbeiten")
-        edit_student_button.clicked.connect(self._request_edit_student)
-        learning_conference_button = QPushButton("Lernentwicklungsgespräch")
-        learning_conference_button.setObjectName("LearningConferenceProfileAction")
-        learning_conference_button.clicked.connect(self._request_learning_conference)
-        header.addWidget(learning_conference_button)
-        header.addWidget(edit_student_button)
-
-        layout.addLayout(header)
+        layout.addWidget(SectionHeader(
+            "Überblick",
+            "Pädagogischer Halbjahresblick aus den vorhandenen Dokumentationen.",
+        ))
         layout.addWidget(self._basis_data_card())
         layout.addWidget(self._overview_summary_card())
         layout.addWidget(
@@ -203,7 +268,7 @@ class StudentProfileScreen(QWidget):
         return tab
 
     def _overview_summary_card(self) -> QFrame:
-        card = self._card()
+        card = self._card("accent")
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(6)
@@ -293,11 +358,19 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(section)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
-        title_label = QLabel("Beobachtungen")
-        set_label_style(title_label, "section_title")
+        title_label = SectionHeader(
+            "Beobachtungen",
+            "Datum, Fach und Kontext bleiben beim Scannen klar getrennt.",
+        )
         self.observation_subject_filter = QComboBox()
         self.observation_rating_filter = QComboBox()
-        self.observation_search_input = QLineEdit()
+        self.observation_search_input = SearchField(
+            "Kontext, Notiz oder Kompetenz suchen",
+            accessible_name="Beobachtungen durchsuchen",
+            accessible_description=(
+                "Filtert die Beobachtungen dieses Kindes nach Kontext, Notiz und Kompetenz."
+            ),
+        )
         self.observation_reset_button = QPushButton("Zurücksetzen")
         self.observation_show_all_button = QPushButton("")
         self.observation_show_all_button.setObjectName("ObservationTextActionButton")
@@ -314,11 +387,8 @@ class StudentProfileScreen(QWidget):
         return section
 
     def _observation_filter_card(self) -> QFrame:
-        card = QFrame()
-        card.setObjectName("ObservationFilterBar")
-        layout = QHBoxLayout(card)
-        layout.setContentsMargins(8, 6, 8, 6)
-        layout.setSpacing(6)
+        card = FilterBar(self.observation_search_input)
+        card.setAccessibleName("Beobachtungen suchen und filtern")
         self.observation_subject_filter.currentIndexChanged.connect(
             lambda _index: self.apply_observation_filters()
         )
@@ -326,25 +396,24 @@ class StudentProfileScreen(QWidget):
         self.observation_rating_filter.currentIndexChanged.connect(
             lambda _index: self.apply_observation_filters()
         )
-        self.observation_search_input.setPlaceholderText(
-            "Kontext, Notiz oder Kompetenz suchen"
-        )
         self.observation_search_input.textChanged.connect(
             lambda _text: self.apply_observation_filters()
         )
-        self.observation_search_input.setObjectName("ObservationFilterInput")
         self.observation_reset_button.setObjectName("ObservationResetButton")
         self.observation_subject_filter.setMinimumWidth(150)
         self.observation_rating_filter.setMinimumWidth(118)
         self.observation_search_input.setMinimumWidth(190)
         self.observation_search_input.setMaximumWidth(320)
         self.observation_reset_button.clicked.connect(self.reset_observation_filters)
-        layout.addWidget(self._filter_label("Fach"))
-        layout.addWidget(self.observation_subject_filter, 2)
-        layout.addWidget(self._filter_label("Bewertung"))
-        layout.addWidget(self.observation_rating_filter, 0)
-        layout.addWidget(self.observation_search_input, 1)
-        layout.addWidget(self.observation_reset_button, 0)
+        self.observation_subject_filter.setAccessibleName("Beobachtungen nach Fach filtern")
+        self.observation_rating_filter.setAccessibleName(
+            "Beobachtungen nach Bewertung filtern"
+        )
+        card.add_filter_widget(self.observation_subject_filter)
+        card.add_filter_widget(self.observation_rating_filter)
+        card.add_filter_widget(self.observation_reset_button)
+        card.reset_requested.connect(self.reset_observation_filters)
+        self.observation_filter_bar = card
         return card
 
     def _filter_label(self, label: str) -> QLabel:
@@ -357,14 +426,22 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(section)
         layout.setContentsMargins(0, 8, 0, 0)
         layout.setSpacing(10)
-        title = QLabel("Kompetenz-Cockpit")
-        set_label_style(title, "section_title")
-        hint = QLabel(
-            "Dokumentationsstand nach Fach, Kompetenzbereich und Thema. "
-            "Alle Bereiche starten geschlossen."
+        title = SectionHeader(
+            "Kompetenz-Cockpit",
+            "Fach → Kompetenzbereich → Thema → Kompetenz",
+            (
+                "Der Dokumentationsstand beschreibt vorhandene pädagogische "
+                "Dokumentation und ist keine Schulnote oder Leistungsquote."
+            ),
         )
-        hint.setWordWrap(True)
-        set_label_style(hint, "subtle")
+        self.competency_search_input = SearchField(
+            "Kompetenzen durchsuchen …",
+            accessible_name="Kompetenzen im Profil durchsuchen",
+            accessible_description=(
+                "Filtert die sichtbare Kompetenzhierarchie dieses Kindes."
+            ),
+        )
+        self.competency_search_input.setObjectName("CompetencyCockpitSearch")
         self.competency_subject_filter = QComboBox()
         self.competency_subject_filter.setObjectName("CompetencyCockpitSubjectFilter")
         self.competency_subject_filter.addItem("Alle Fächer", "")
@@ -383,23 +460,41 @@ class StudentProfileScreen(QWidget):
             self.competency_documentation_filter.addItem(label, state)
         self.competency_reset_button = QPushButton("Filter zurücksetzen")
         self.competency_reset_button.setObjectName("CompetencyCockpitFilterResetButton")
+        self.competency_stage_filter = SegmentedControl((
+            ("matching", "Passende Kompetenzen"),
+            ("stage_4", "Klassenstufe 4"),
+            ("all", "Alle Kompetenzen"),
+        ))
+        self.competency_stage_filter.setObjectName("CompetencyCockpitStageFilter")
+        self.competency_stage_filter.setAccessibleName("Klassenstufenfilter")
+        self.competency_stage_filter.setToolTip(
+            "Klassenstufe 4 ist nicht gesperrt, sondern in der passenden Ansicht ausgeblendet."
+        )
         self.competency_subject_filter.currentIndexChanged.connect(
             self.apply_competency_cockpit_filters
         )
         self.competency_documentation_filter.currentIndexChanged.connect(
             self.apply_competency_cockpit_filters
         )
+        self.competency_search_input.textChanged.connect(
+            lambda _text: self.apply_competency_cockpit_filters()
+        )
+        self.competency_stage_filter.selection_changed.connect(
+            lambda _key: self.apply_competency_cockpit_filters()
+        )
         self.competency_reset_button.clicked.connect(self.reset_competency_cockpit_filters)
-        filters = self._card()
+        filters = FilterBar(self.competency_search_input)
         filters.setObjectName("CompetencyCockpitFilterBar")
-        filters_layout = QHBoxLayout(filters)
-        filters_layout.setContentsMargins(12, 8, 12, 8)
-        filters_layout.setSpacing(8)
-        filters_layout.addWidget(self._filter_label("Fach"))
-        filters_layout.addWidget(self.competency_subject_filter, 1)
-        filters_layout.addWidget(self._filter_label("Dokumentationszustand"))
-        filters_layout.addWidget(self.competency_documentation_filter, 1)
-        filters_layout.addWidget(self.competency_reset_button)
+        filters.setAccessibleName("Kompetenzen suchen und filtern")
+        self.competency_subject_filter.setAccessibleName("Kompetenzen nach Fach filtern")
+        self.competency_documentation_filter.setAccessibleName(
+            "Kompetenzen nach Dokumentationszustand filtern"
+        )
+        filters.add_filter_widget(self.competency_subject_filter)
+        filters.add_filter_widget(self.competency_documentation_filter)
+        filters.add_filter_widget(self.competency_reset_button)
+        filters.reset_requested.connect(self.reset_competency_cockpit_filters)
+        self.competency_filter_bar = filters
         self.competency_cockpit_container = QWidget()
         self.competency_cockpit_layout = QVBoxLayout(
             self.competency_cockpit_container
@@ -407,8 +502,8 @@ class StudentProfileScreen(QWidget):
         self.competency_cockpit_layout.setContentsMargins(0, 0, 0, 0)
         self.competency_cockpit_layout.setSpacing(8)
         layout.addWidget(title)
-        layout.addWidget(hint)
         layout.addWidget(filters)
+        layout.addWidget(self.competency_stage_filter)
         layout.addWidget(self.competency_cockpit_container)
         return section
 
@@ -468,8 +563,8 @@ class StudentProfileScreen(QWidget):
         actions.addStretch(1)
         return actions
 
-    def _card(self) -> QFrame:
-        return create_card()
+    def _card(self, variant: str = "default") -> QFrame:
+        return AppCard(variant)
 
     def _make_clickable_card(
         self,
@@ -717,7 +812,7 @@ class StudentProfileScreen(QWidget):
 
         if student is None:
             self.name_label.setText("Kein Schüler ausgewählt")
-            self.meta_label.setText("")
+            self._update_profile_header_context()
             self.student_id_label.setText("")
             self.group_value_label.setText("")
             self.course_value_label.setText("")
@@ -730,7 +825,7 @@ class StudentProfileScreen(QWidget):
             self._render_profile_overview(None, (), (), ())
             return
         self.name_label.setText(student.display_name)
-        self.meta_label.setText(f"{student.group_name} · {student.course_name}")
+        self._update_profile_header_context()
         self.student_id_label.setText("")
         self.group_value_label.setText(student.group_name)
         self.course_value_label.setText(student.course_name)
@@ -753,6 +848,7 @@ class StudentProfileScreen(QWidget):
         if not should_reset_tab and 0 <= previous_tab_index < self.profile_tabs.count():
             self.profile_tabs.setCurrentIndex(previous_tab_index)
             self._restore_profile_scroll_positions()
+        self._update_profile_header_context()
 
     def set_observations(
         self,
@@ -786,6 +882,27 @@ class StudentProfileScreen(QWidget):
     def apply_observation_filters(self) -> None:
         """Render observations matching the profile-local filter state."""
         self._clear_observations()
+        if hasattr(self, "observation_filter_bar"):
+            active_labels = tuple(
+                label
+                for label in (
+                    (
+                        f"Fach: {self.observation_subject_filter.currentText()}"
+                        if self.observation_subject_filter.currentData()
+                        else ""
+                    ),
+                    (
+                        f"Bewertung: {self.observation_rating_filter.currentText()}"
+                        if self.observation_rating_filter.currentText() != "Alle"
+                        else ""
+                    ),
+                )
+                if label
+            )
+            self.observation_filter_bar.set_context_filter(
+                " · ".join(active_labels),
+                bool(active_labels),
+            )
         if not self.current_observations:
             self.observation_show_all_button.setVisible(False)
             self.observations_layout.addWidget(
@@ -814,23 +931,15 @@ class StudentProfileScreen(QWidget):
         title: str | None = None,
         hint: str | None = None,
     ) -> QFrame:
-        card = self._card()
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(3)
-
-        empty_label = QLabel(
-            title or PROFILE_SECTION_PLACEHOLDERS["observations_title"]
+        card = EmptyState(
+            hint or PROFILE_SECTION_PLACEHOLDERS["observations_hint"],
+            title=title or PROFILE_SECTION_PLACEHOLDERS["observations_title"],
         )
-        empty_label.setWordWrap(True)
-        set_label_style(empty_label, "body")
-
-        hint_label = QLabel(hint or PROFILE_SECTION_PLACEHOLDERS["observations_hint"])
-        hint_label.setWordWrap(True)
-        set_label_style(hint_label, "subtle")
-
-        layout.addWidget(empty_label)
-        layout.addWidget(hint_label)
+        if title is None:
+            action = QPushButton("Neue Beobachtung")
+            configure_button(action, "primary", "Erste Beobachtung erfassen")
+            action.clicked.connect(self._request_new_observation)
+            card.layout().addWidget(action, 0, Qt.AlignmentFlag.AlignCenter)
         return card
 
     def _populate_observation_subject_filter(
@@ -957,7 +1066,7 @@ class StudentProfileScreen(QWidget):
         return " ".join(search_parts).casefold()
 
     def _observation_card(self, observation: ObservationListItem) -> QFrame:
-        card = self._card()
+        card = self._card("soft")
         card.setObjectName("ProfileObservationCard")
         card.setProperty("observation_id", observation.observation_id)
         layout = QVBoxLayout(card)
@@ -1011,14 +1120,12 @@ class StudentProfileScreen(QWidget):
         header.setSpacing(8)
         date_label = QLabel(observation.date_text)
         set_label_style(date_label, "card_title")
-        subject_label = QLabel(observation.subject_display_name or "-")
-        set_label_style(subject_label, "muted")
+        subject_label = StatusBadge(observation.subject_display_name or "-", tone="info")
         header.addWidget(date_label, 0)
         header.addWidget(subject_label, 1)
         if observation.is_quick_observation:
-            quick_label = QLabel("Schnellbeobachtung")
+            quick_label = StatusBadge("Schnellbeobachtung", tone="neutral")
             quick_label.setObjectName("ObservationQuickObservationBadge")
-            set_label_style(quick_label, "subtle")
             header.addWidget(quick_label, 0)
         header.addWidget(details_button, 0)
         return header
@@ -1070,6 +1177,7 @@ class StudentProfileScreen(QWidget):
             if not details_widget.isHidden()
             else "Details anzeigen"
         )
+        animate_feedback(details_button, key="profile_observation_disclosure")
 
     def _observation_actions(self, observation: ObservationListItem) -> QHBoxLayout:
         actions = QHBoxLayout()
@@ -1245,11 +1353,40 @@ class StudentProfileScreen(QWidget):
             return
         subject_id = self.competency_subject_filter.currentData() or ""
         documentation_filter = self.competency_documentation_filter.currentData() or ""
+        learning_stage_filter = self.competency_stage_filter.current_key()
+        search_text = self.competency_search_input.text().strip().casefold()
+        active_labels = tuple(
+            label
+            for label in (
+                (
+                    f"Fach: {self.competency_subject_filter.currentText()}"
+                    if subject_id
+                    else ""
+                ),
+                (
+                    f"Stand: {self.competency_documentation_filter.currentText()}"
+                    if documentation_filter
+                    else ""
+                ),
+            )
+            if label
+        )
+        self.competency_filter_bar.set_context_filter(
+            " · ".join(active_labels),
+            bool(active_labels),
+        )
         visible_subjects = tuple(
             (subject, filtered_subject)
             for subject in cockpit.subjects
             if (not subject_id or subject.subject_id == subject_id)
-            for filtered_subject in (self._filtered_cockpit_subject(subject, documentation_filter),)
+            for filtered_subject in (
+                self._filtered_cockpit_subject(
+                    subject,
+                    documentation_filter,
+                    learning_stage_filter,
+                    search_text,
+                ),
+            )
             if filtered_subject is not None
         )
         if not cockpit.subjects:
@@ -1276,17 +1413,27 @@ class StudentProfileScreen(QWidget):
     def reset_competency_cockpit_filters(self) -> None:
         self.competency_subject_filter.setCurrentIndex(0)
         self.competency_documentation_filter.setCurrentIndex(0)
+        self.competency_search_input.clear()
+        self.competency_stage_filter.set_current_key("matching")
+        self.apply_competency_cockpit_filters()
 
     def _filtered_cockpit_subject(
         self,
         subject: StudentCompetencyCockpitSubjectViewModel,
         documentation_filter: str,
+        learning_stage_filter: str,
+        search_text: str,
     ) -> StudentCompetencyCockpitSubjectViewModel | None:
         areas = tuple(
             filtered_area
             for area in subject.learning_areas
             for filtered_area in (
-                self._filtered_cockpit_learning_area(area, documentation_filter),
+                self._filtered_cockpit_learning_area(
+                    area,
+                    documentation_filter,
+                    learning_stage_filter,
+                    search_text,
+                ),
             )
             if filtered_area is not None
         )
@@ -1300,6 +1447,8 @@ class StudentProfileScreen(QWidget):
         self,
         area: StudentCompetencyCockpitLearningAreaViewModel,
         documentation_filter: str,
+        learning_stage_filter: str,
+        search_text: str,
     ) -> StudentCompetencyCockpitLearningAreaViewModel | None:
         topics = tuple(
             StudentCompetencyCockpitTopicViewModel(
@@ -1309,6 +1458,16 @@ class StudentProfileScreen(QWidget):
                     for competency in topic.competencies
                     if self._matches_competency_documentation_filter(
                         competency, documentation_filter
+                    )
+                    and self._matches_competency_learning_stage(
+                        competency,
+                        learning_stage_filter,
+                    )
+                    and self._matches_competency_search(
+                        competency,
+                        area.learning_area,
+                        topic.competency_group,
+                        search_text,
                     )
                 ),
             )
@@ -1334,6 +1493,36 @@ class StudentProfileScreen(QWidget):
         if documentation_filter == "confirmed":
             return state in {"confirmed", "newer_observations"}
         return state == documentation_filter
+
+    @staticmethod
+    def _matches_competency_learning_stage(
+        competency: object,
+        learning_stage_filter: str,
+    ) -> bool:
+        learning_stage = str(getattr(competency, "learning_stage", "") or "cross_stage")
+        if learning_stage_filter == "all":
+            return True
+        if learning_stage_filter == "stage_4":
+            return learning_stage in {"stage_4", "cross_stage"}
+        return learning_stage in {"stage_1_3", "cross_stage"}
+
+    @staticmethod
+    def _matches_competency_search(
+        competency: object,
+        learning_area: str,
+        topic: str,
+        search_text: str,
+    ) -> bool:
+        if not search_text:
+            return True
+        haystack = " ".join((
+            str(getattr(competency, "competency_label", "")),
+            str(getattr(competency, "competency_text", "")),
+            learning_area,
+            topic,
+            str(getattr(competency, "subject_display_name", "")),
+        )).casefold()
+        return search_text in haystack
 
     def _empty_competency_cockpit_card(self) -> QFrame:
         card = self._card()
@@ -1370,7 +1559,7 @@ class StudentProfileScreen(QWidget):
     ) -> QFrame:
         progress_subject = progress_subject or subject
         key = f"{'historical' if historical else 'current'}:subject:{subject.subject_id}"
-        card = self._card()
+        card = self._card("accent")
         card.setObjectName("CompetencyCockpitSubjectCard")
         layout = QVBoxLayout(card)
         layout.setContentsMargins(12, 10, 12, 10)
@@ -1384,6 +1573,7 @@ class StudentProfileScreen(QWidget):
         set_label_style(count, "small")
         button = QPushButton("Öffnen ▾")
         button.setObjectName("CompetencyCockpitSubjectButton")
+        configure_button(button, "quiet", f"Fach {subject.subject_display_name} öffnen")
         header.addWidget(title)
         header.addStretch(1)
         header.addWidget(count)
@@ -1435,7 +1625,7 @@ class StudentProfileScreen(QWidget):
             f"{'historical' if historical else 'current'}:area:"
             f"{subject_id}:{area.learning_area}"
         )
-        card = self._card()
+        card = self._card("soft")
         card.setObjectName("CompetencyCockpitLearningAreaCard")
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
@@ -1447,6 +1637,7 @@ class StudentProfileScreen(QWidget):
         set_label_style(count, "small")
         button = QPushButton("Öffnen ▾")
         button.setObjectName("CompetencyCockpitLearningAreaButton")
+        configure_button(button, "quiet", f"Kompetenzbereich {area.learning_area} öffnen")
         header.addWidget(title)
         header.addStretch(1)
         header.addWidget(count)
@@ -1483,7 +1674,7 @@ class StudentProfileScreen(QWidget):
             f"{'historical' if historical else 'current'}:topic:"
             f"{subject_id}:{learning_area}:{topic.competency_group}"
         )
-        card = self._card()
+        card = self._card("default")
         card.setObjectName("CompetencyCockpitTopicCard")
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
@@ -1495,6 +1686,7 @@ class StudentProfileScreen(QWidget):
         set_label_style(count, "subtle")
         button = QPushButton("Öffnen ▾")
         button.setObjectName("CompetencyCockpitTopicButton")
+        configure_button(button, "quiet", f"Thema {topic.competency_group} öffnen")
         header.addWidget(title)
         header.addStretch(1)
         header.addWidget(count)
@@ -1522,6 +1714,10 @@ class StudentProfileScreen(QWidget):
             f"{'☑' if documented else '☐'} {getattr(competency, 'competency_label')}"
         )
         button.setObjectName("CompetencyCockpitCompetencyButton")
+        button.setAccessibleName(
+            f"Kompetenz {getattr(competency, 'competency_label')} öffnen"
+        )
+        configure_button(button, "quiet")
         details = self._cockpit_competency_details(competency)
         details.setObjectName("CompetencyCockpitCompetencyDetails")
         key = f"competency:{getattr(competency, 'competency_id')}"
@@ -1711,6 +1907,9 @@ class StudentProfileScreen(QWidget):
         expanded = key in self._competency_expanded_keys
         details.setVisible(expanded)
         button.setText(expanded_text if expanded else collapsed_text)
+        button.setAccessibleDescription(
+            "Bereich ist geöffnet" if expanded else "Bereich ist geschlossen"
+        )
         button.clicked.connect(
             lambda _checked=False: self._toggle_cockpit_section(
                 key, details, button, collapsed_text, expanded_text
@@ -1732,6 +1931,10 @@ class StudentProfileScreen(QWidget):
         else:
             self._competency_expanded_keys.discard(key)
         button.setText(expanded_text if expanded else collapsed_text)
+        button.setAccessibleDescription(
+            "Bereich ist geöffnet" if expanded else "Bereich ist geschlossen"
+        )
+        animate_feedback(button, key="competency_cockpit_disclosure")
 
     def _show_observations_tab(self, observation_id: str = "") -> None:
         """Show the existing observation tab and mark a requested observation."""

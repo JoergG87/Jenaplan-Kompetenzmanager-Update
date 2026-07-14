@@ -557,6 +557,7 @@ class StudentDesktopAdapter:
                     competency_label=competency.competency_label,
                     selected=is_selected,
                     rating=selected_ratings.get(competency.competency_id, ""),
+                    learning_stage=competency.learning_stage,
                     catalog_status=competency.catalog_status,
                     is_active=competency.is_active,
                 )

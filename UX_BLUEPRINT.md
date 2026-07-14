@@ -15,7 +15,7 @@ Zielplattform ist Microsoft Excel für macOS.
 - Das Datenmodell ist die fachliche Grundlage; alle Ansichten sind Projektionen des Datenmodells.
 - Das freigegebene Design-System ist die visuelle Source of Truth für sämtliche Benutzeroberflächen.
 - Schnellste Aktion ist `Neue Beobachtung`.
-- Fach -> Kompetenzbereich -> Kompetenz.
+- Fach -> Kompetenzbereich -> Thema -> Kompetenz.
 - Unterricht vor Analyse.
 - Minimalistische Informationsdarstellung.
 - Component Library V2 nutzt eine ruhige Surface-Hierarchie: eine Akzentflaeche fuer die aktuelle Situation, normale Arbeitskarten und weiche sekundaere Informationsflaechen.
@@ -114,33 +114,39 @@ Primärer Zweck:
 
 Elemente:
 
-- Name
-- Stammgruppe
-- Kurs
-- Beobachtungsliste
-- Kompetenzkarten
+- dauerhafter Profilkopf mit Name, Stammgruppe, Kurs und aktuellem Profilbereich
+- lokale Navigation `Überblick`, `Beobachtungen`, `Kompetenzen`, `Bericht`, `Dateien`
+- ruhige, filterbare Beobachtungsliste
+- Kompetenz-Cockpit mit Fach -> Kompetenzbereich -> Thema -> Kompetenz
 - Zurück zur vorherigen Übersicht
 
 Aktionen:
 
 - Neue Beobachtung
-- Kompetenzansicht öffnen
+- Datei hinzufügen
+- bestehende seltene Profilaktionen im Kontextmenü öffnen
 
 Produktentscheidungen:
 
 - `Neue Beobachtung` öffnet denselben zentralen Beobachtungsdialog wie der Schnellzugriff aus der Stammgruppenübersicht.
 - Das Schülerprofil wird technisch über `student_id` geöffnet. Namen dienen nur der Anzeige.
+- Es gibt hoechstens eine dominante primaere Aktion; `Neue Beobachtung` bleibt in jedem lokalen Profilbereich sichtbar.
+- Der aktive Profilbereich wird im Kindkontext wiederholt. Ein Refresh desselben Kindes erhaelt Reiter, Filter, Disclosure und Scrollposition; ein Kindwechsel setzt lokalen Zustand sicher zurueck.
+- Beobachtungen unterscheiden Datum, Fach, Kontext, Notizvorschau, Kompetenz- und Anhangszahl ohne Ampel- oder Leistungssemantik.
+- Das Kompetenz-Cockpit nutzt Einrueckung, Typografie, Abstaende und Surface-Varianten; Dokumentationsabdeckung ist keine Schulnote.
+- `Passende Kompetenzen` zeigt `stage_1_3` und `cross_stage`, `Klassenstufe 4` zeigt `stage_4` und `cross_stage`, `Alle Kompetenzen` zeigt den gesamten aktiven aktuellen Zielbestand. Historische Zeilen bleiben separat sichtbar und ungefiltert.
 
 ## 8. Neue Beobachtung
 
-Ablauf:
+Ablauf und Arbeitszonen:
 
-1. Notiz
-2. Kompetenz(en)
-3. Bewertung
-4. Speichern
+1. Kind, Fach, Kontext und optionale Schnellbeobachtung
+2. Kompetenzsuche, Klassenstufenfilter, Auswahl und Einzelbewertung
+3. Datum, Notiz, Anhänge und dauerhaft sichtbares Speichern
 
-Die Erfassung soll schnell und klar geführt werden.
+Der Name des Kindes bleibt oberhalb aller drei Zonen sichtbar. Der Katalog startet fuer neue Beobachtungen geschlossen; beim Bearbeiten werden genau die betroffenen Kompetenzbereiche und Themen geoeffnet. Collapse, Fachwechsel, Suche und Klassenstufenwechsel veraendern weder Auswahl noch Bewertung. Historische beziehungsweise inaktive Kompetenzen erscheinen nur als bereits gespeicherter Edit-Bestand und werden durch Suche oder neue Auswahl nicht reaktiviert.
+
+Validierungsfehler erscheinen als `InlineMessage` direkt vor der persistenten Aktionsleiste. Speichern bleibt primaer blau, Abbrechen sekundaer. Der Dialog ist zwischen 1100 und 1300 Pixeln als grosszuegige Arbeitsflaeche ausgelegt, bleibt bei 1180 x 760 bedienbar und erzeugt keinen horizontalen Gesamtscroll. Alle Disclosure-, Auswahl-, Bewertungs- und Speicheraktionen sind per Tastatur erreichbar; Reduced Motion setzt Endzustaende ohne Verzoegerung.
 
 ## 9. Kompetenzansicht
 

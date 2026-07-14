@@ -73,6 +73,7 @@ class ObservationCompetencyOptionViewModel:
     competency_label: str
     selected: bool = False
     rating: str = ""
+    learning_stage: str = "cross_stage"
     catalog_status: str = "current"
     is_active: bool = True
 

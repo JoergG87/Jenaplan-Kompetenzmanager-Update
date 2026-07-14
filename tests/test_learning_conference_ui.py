@@ -9,7 +9,7 @@ from datetime import date
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QTextEdit
+from PySide6.QtWidgets import QApplication, QLabel, QTextEdit
 
 from src.desktop_app import shell
 from src.desktop_app.dialogs.learning_conference_dialog import LearningConferenceDialog
@@ -40,10 +40,12 @@ class LearningConferenceUiTest(unittest.TestCase):
         requested: list[str] = []
         screen.learning_conference_requested.connect(requested.append)
 
-        button = screen.findChild(QPushButton, "LearningConferenceProfileAction")
-        self.assertIsNotNone(button)
-        self.assertEqual(button.text(), "Lernentwicklungsgespräch")
-        button.click()
+        action = next(
+            action
+            for action in screen.profile_more_action.menu().actions()
+            if action.text() == "Lernentwicklungsgespräch"
+        )
+        action.trigger()
 
         self.assertEqual(requested, ["STU-1"])
 

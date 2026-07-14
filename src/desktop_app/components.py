@@ -164,6 +164,12 @@ class FilterBar(QFrame):
         """Show reset only for a real context filter."""
         self.context_chip.set_label(label if active else "")
 
+    def add_filter_widget(self, widget: QWidget) -> None:
+        """Insert a screen-owned filter before the visible context chip."""
+        layout = self.layout()
+        if isinstance(layout, QHBoxLayout):
+            layout.insertWidget(max(1, layout.count() - 1), widget)
+
 
 class PageHeader(QWidget):
     """Consistent page title, description, and right-aligned actions."""
@@ -286,16 +292,22 @@ class SegmentedControl(QFrame):
 class SearchField(QLineEdit):
     """Search input with a clear affordance and Escape-key reset."""
 
-    def __init__(self, placeholder: str) -> None:
+    def __init__(
+        self,
+        placeholder: str,
+        *,
+        accessible_name: str = "Schüler suchen",
+        accessible_description: str = (
+            "Filtert die sichtbare Schülerliste während der Eingabe."
+        ),
+    ) -> None:
         super().__init__()
         self.setObjectName("SearchField")
         self.setPlaceholderText(placeholder)
         self.setClearButtonEnabled(True)
         self.addAction(load_icon("search"), QLineEdit.ActionPosition.LeadingPosition)
-        self.setAccessibleName("Schüler suchen")
-        self.setAccessibleDescription(
-            "Filtert die sichtbare Schülerliste während der Eingabe."
-        )
+        self.setAccessibleName(accessible_name)
+        self.setAccessibleDescription(accessible_description)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
         if event.key() == Qt.Key.Key_Escape and self.text():
