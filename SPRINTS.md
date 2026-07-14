@@ -6,6 +6,19 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 10A - LEG-Abschluss und Revision ✅
+
+- [x] Bearbeitbaren `LCD` unveraendert als Live-Draft erhalten
+- [x] Eigenes stabiles LEG-Aggregat `LCF` und unveraenderliche Revision `LCV` additiv modelliert
+- [x] Expliziten Abschluss ueber UI, ViewModel, Adapter, Application Service, Domain, Repository und SQLite gefuehrt
+- [x] Pflichtinhalte und ausgewaehlte Referenzen typisiert validiert
+- [x] LEG-spezifischen kanonischen Snapshotvertrag und SHA-256-Pruefung umgesetzt
+- [x] Identische Abschluesse idempotent behandelt und Korrekturen atomar revisioniert
+- [x] Snapshotbasierte schreibgeschuetzte historische Ansicht ergaenzt
+- [x] Tests fuer Draft-Erhalt, Integritaet, Revisionierung, Referenzfehler und Schichtengrenzen ergaenzt
+- [x] Keine Berichtsdomain, LEG-PDF-, Archivierungs- oder Renderer-Versionierungsfunktion eingefuehrt
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## Sprint 9A - Finaler PDF-Druck aus Berichtrevisionen ✅
 
 - [x] Finalen PDF-Pfad ausschliesslich fuer eine aktuelle `finalized`-Revision (`RPV`) festgelegt

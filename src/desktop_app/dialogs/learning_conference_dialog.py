@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLayout,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -44,10 +45,13 @@ from src.desktop_app.components import (
 from src.desktop_app.motion import animate_feedback
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.learning_conference_view_model import (
+    LearningConferenceCompletionErrorViewModel,
     LearningConferenceCompetencyViewModel,
     LearningConferenceDraftViewModel,
     LearningConferenceEvidenceViewModel,
     LearningConferencePreparationViewModel,
+    LearningConferenceRevisionStatusViewModel,
+    LearningConferenceRevisionViewModel,
 )
 
 
@@ -373,10 +377,167 @@ class LearningConferenceDraftSelectionDialog(QDialog):
         return accepted, dialog.selected_draft
 
 
+class LearningConferenceRevisionHistoryDialog(QDialog):
+    """Choose one immutable LCV without exposing persistence or live data."""
+
+    def __init__(
+        self,
+        status: LearningConferenceRevisionStatusViewModel,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.selected_revision_id = ""
+        self.setWindowTitle("LEG-Abschlussrevisionen")
+        self.setMinimumSize(650, 400)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(14)
+        layout.addWidget(DialogHeader(
+            "Abschlussrevisionen",
+            "Lernentwicklungsgespräch",
+            "Unveränderliche, historisch reproduzierbare Gesprächsstände.",
+            icon_name="conference",
+        ))
+        for revision in status.revisions:
+            card = AppCard("default")
+            row = QHBoxLayout(card)
+            row.setContentsMargins(16, 12, 16, 12)
+            text = QVBoxLayout()
+            text.addWidget(_label(
+                f"Revision {revision.revision_number} · {revision.status_label}",
+                "card_title",
+            ))
+            text.addWidget(_label(
+                f"{revision.completed_at_text} · {revision.completed_by_display_name}",
+                "small",
+            ))
+            row.addLayout(text, 1)
+            button = QPushButton("Öffnen")
+            configure_button(button, "secondary", f"Revision {revision.revision_number} öffnen")
+            button.clicked.connect(
+                lambda _checked=False, value=revision.learning_conference_revision_id: self._choose(value)
+            )
+            row.addWidget(button)
+            layout.addWidget(card)
+        layout.addStretch(1)
+        close_button = QPushButton("Schließen")
+        configure_button(close_button, "quiet", "Revisionshistorie schließen")
+        close_button.clicked.connect(self.reject)
+        layout.addWidget(close_button, 0, Qt.AlignmentFlag.AlignLeft)
+
+    def _choose(self, revision_id: str) -> None:
+        self.selected_revision_id = revision_id
+        self.accept()
+
+    @classmethod
+    def choose(
+        cls,
+        status: LearningConferenceRevisionStatusViewModel,
+        parent: QWidget,
+    ) -> str:
+        dialog = cls(status, parent)
+        return (
+            dialog.selected_revision_id
+            if dialog.exec() == QDialog.DialogCode.Accepted
+            else ""
+        )
+
+
+class LearningConferenceRevisionDialog(QDialog):
+    """Read-only view whose only fachliche source is one verified LCV snapshot."""
+
+    def __init__(
+        self,
+        revision: LearningConferenceRevisionViewModel,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setObjectName("LearningConferenceRevisionDialog")
+        self.setWindowTitle(
+            f"LEG-Abschluss · Revision {revision.revision_number}"
+        )
+        self.resize(900, 760)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(20, 18, 20, 18)
+        root.setSpacing(12)
+        header = DialogHeader(
+            f"{revision.student_name} · Revision {revision.revision_number}",
+            "Abgeschlossenes Lernentwicklungsgespräch",
+            f"{revision.completed_at_text} · {revision.status_label}",
+            icon_name="conference",
+        )
+        root.addWidget(header)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(4, 4, 8, 12)
+        layout.setSpacing(10)
+        context = AppCard("soft")
+        context_layout = QVBoxLayout(context)
+        context_layout.addWidget(SectionHeader(
+            "Gesprächskontext",
+            f"{revision.conference_date_text} · {revision.period_text}",
+        ))
+        context_layout.addWidget(_label(
+            f"Lehrkraft: {revision.responsible_teacher}\n"
+            f"Stammgruppe: {revision.group_name or '–'} · Kurs: {revision.course_name or '–'}",
+            "body",
+        ))
+        layout.addWidget(context)
+        for title, value in (
+            ("Gemeinsame Ziele", revision.goals),
+            ("Unterstützungen", revision.support),
+            ("Vereinbarungen", revision.agreements),
+            ("Zuständigkeiten", revision.responsibilities),
+            ("Überprüfungstermin", revision.next_review_date_text),
+        ):
+            if value and value != "Nicht festgelegt":
+                card = AppCard("default")
+                card_layout = QVBoxLayout(card)
+                card_layout.addWidget(_label(title, "field_label"))
+                card_layout.addWidget(_label(value, "body"))
+                layout.addWidget(card)
+        layout.addWidget(self._list_card(
+            "Kompetenzen",
+            revision.competency_lines,
+            "Keine Kompetenz als Abschlussbezug ausgewählt.",
+        ))
+        layout.addWidget(self._list_card(
+            "Beobachtungsbelege",
+            revision.observation_lines,
+            "Keine Beobachtung als Abschlussbeleg ausgewählt.",
+        ))
+        integrity = InlineMessage(
+            f"Integrität geprüft · SHA-256 {revision.snapshot_sha256[:12]}… · "
+            f"{revision.learning_conference_revision_id}",
+            tone="success",
+        )
+        layout.addWidget(integrity)
+        layout.addStretch(1)
+        scroll.setWidget(content)
+        root.addWidget(scroll, 1)
+        close_button = QPushButton("Schließen")
+        configure_button(close_button, "primary", "Abschlussrevision schließen")
+        close_button.clicked.connect(self.accept)
+        root.addWidget(close_button, 0, Qt.AlignmentFlag.AlignRight)
+
+    @staticmethod
+    def _list_card(title: str, values: tuple[str, ...], empty_text: str) -> AppCard:
+        card = AppCard("default")
+        layout = QVBoxLayout(card)
+        layout.addWidget(_label(title, "field_label"))
+        layout.addWidget(_label("\n".join(f"• {value}" for value in values) or empty_text, "body"))
+        return card
+
+
 class LearningConferenceDialog(QDialog):
     """Edit one LEG draft in a safe, phase-oriented workspace."""
 
     save_requested = Signal(object)
+    completion_requested = Signal(str)
+    revision_open_requested = Signal(str)
 
     def __init__(
         self,
@@ -413,6 +574,7 @@ class LearningConferenceDialog(QDialog):
         self._baseline: LearningConferenceDraftViewModel | None = None
         self._dirty = False
         self._save_pending = False
+        self._completion_status: LearningConferenceRevisionStatusViewModel | None = None
         self._close_choice_provider = LearningConferenceCloseDialog.ask
         self.setWindowTitle(f"Lernentwicklungsgespräch · {preparation.student_name}")
         self.resize(1400, 900)
@@ -483,9 +645,11 @@ class LearningConferenceDialog(QDialog):
             icon_name="conference",
         )
         self.draft_badge = StatusBadge("Bearbeitbarer Entwurf", tone="info")
+        self.completion_badge = StatusBadge("Noch nicht abgeschlossen", tone="neutral")
         self.dirty_badge = StatusBadge("Entwurf gespeichert", tone="neutral")
         self.dirty_badge.setObjectName("LearningConferenceDirtyBadge")
         self.page_header.add_action(self.draft_badge)
+        self.page_header.add_action(self.completion_badge)
         self.page_header.add_action(self.dirty_badge)
         layout.addWidget(self.page_header)
         meta = QHBoxLayout()
@@ -931,22 +1095,32 @@ class LearningConferenceDialog(QDialog):
         self.next_button = QPushButton("Weiter")
         self.evidence_button = QPushButton("Belege ansehen")
         self.save_button = QPushButton("Entwurf speichern")
+        self.complete_button = QPushButton("Gespräch abschließen")
+        self.complete_button.setObjectName("LearningConferenceCompleteButton")
+        self.revisions_button = QPushButton("Revisionen")
+        self.revisions_button.setObjectName("LearningConferenceRevisionsButton")
         self.save_button.setObjectName("LearningConferenceSaveButton")
         configure_button(self.close_button, "quiet", "LEG-Workspace schließen")
         configure_button(self.previous_button, "secondary", "Zur vorherigen Gesprächsphase")
         configure_button(self.next_button, "secondary", "Zur nächsten Gesprächsphase")
         configure_button(self.evidence_button, "secondary", "Zu Phase 5, Belege ansehen")
         configure_button(self.save_button, "primary", "LEG-Entwurf speichern")
+        configure_button(self.complete_button, "secondary", "Gespeicherten LEG-Entwurf abschließen")
+        configure_button(self.revisions_button, "quiet", "Abschlussrevisionen öffnen")
         self.close_button.clicked.connect(self.reject)
         self.previous_button.clicked.connect(lambda: self._move_phase(-1))
         self.next_button.clicked.connect(lambda: self._move_phase(1))
         self.evidence_button.clicked.connect(lambda: self.set_active_phase("evidence"))
         self.save_button.clicked.connect(self._request_save)
+        self.complete_button.clicked.connect(self._request_completion)
+        self.revisions_button.clicked.connect(self._open_revision_history)
         layout.addWidget(self.close_button)
         layout.addWidget(self.evidence_button)
         layout.addStretch(1)
         layout.addWidget(self.previous_button)
         layout.addWidget(self.next_button)
+        layout.addWidget(self.revisions_button)
+        layout.addWidget(self.complete_button)
         layout.addWidget(self.save_button)
         return bar
 
@@ -1006,6 +1180,10 @@ class LearningConferenceDialog(QDialog):
         for key, _title, _description in PHASES:
             self.phase_navigation.set_content_state(key, self._phase_has_content(key))
         self._update_evidence_summaries()
+        self.complete_button.setEnabled(has_saved_state and not self._dirty and not self._save_pending)
+        self.revisions_button.setVisible(bool(
+            self._completion_status and self._completion_status.revisions
+        ))
 
     def _phase_has_content(self, key: str) -> bool:
         if key == "goal":
@@ -1183,15 +1361,68 @@ class LearningConferenceDialog(QDialog):
         self._refresh_ui_state()
         self.toast.show_message("Entwurf gespeichert – du kannst ihn später fortsetzen.", tone="success")
 
+    def apply_revision_status(
+        self,
+        status: LearningConferenceRevisionStatusViewModel,
+    ) -> None:
+        self._completion_status = status
+        self.completion_badge.setText(status.status_label)
+        tone = (
+            "warning"
+            if status.draft_changed or not status.hash_valid
+            else "success" if status.has_completion else "neutral"
+        )
+        self.completion_badge.setProperty("badgeTone", tone)
+        self.completion_badge.style().unpolish(self.completion_badge)
+        self.completion_badge.style().polish(self.completion_badge)
+        self._refresh_ui_state()
+
+    def show_completion_error(
+        self,
+        error: LearningConferenceCompletionErrorViewModel,
+    ) -> None:
+        if error.phase_key:
+            self.set_active_phase(error.phase_key, focus=False)
+        references = (
+            f" ({', '.join(error.reference_ids)})" if error.reference_ids else ""
+        )
+        self.validation_message.set_message(
+            f"Das Gespräch konnte nicht abgeschlossen werden: {error.message}{references}",
+            tone="error",
+        )
+        self.validation_message.setFocus()
+
+    def _request_completion(self) -> None:
+        if not self._saved_draft or self._dirty or self._save_pending:
+            return
+        answer = QMessageBox.question(
+            self,
+            "Gespräch abschließen",
+            "Es wird ein unveränderlicher Abschlussstand erzeugt. "
+            "Der Entwurf bleibt für spätere Korrekturen bearbeitbar. Fortfahren?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        if answer == QMessageBox.StandardButton.Yes:
+            self.validation_message.set_message("")
+            self.completion_requested.emit(
+                self._saved_draft.learning_conference_draft_id
+            )
+
+    def _open_revision_history(self) -> None:
+        if not self._completion_status:
+            return
+        revision_id = LearningConferenceRevisionHistoryDialog.choose(
+            self._completion_status,
+            self,
+        )
+        if revision_id:
+            self.revision_open_requested.emit(revision_id)
+
     def show_save_error(self, message: str) -> None:
         self._save_pending = False
         self.save_button.setEnabled(True)
         self.save_button.setText("Entwurf speichern")
-        lower = message.casefold()
-        if "beobachtung" in lower or "kompetenz" in lower:
-            self.set_active_phase("evidence", focus=False)
-        elif "zeitraum" in lower or "datum" in lower or "student" in lower:
-            self.set_active_phase("goal", focus=False)
         self.validation_message.set_message(
             f"Der Entwurf konnte nicht gespeichert werden: {message}",
             tone="error",

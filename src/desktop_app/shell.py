@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.core.learning_report import ReportFinalizationError
 from src.core.learning_report_pdf import LearningReportPdfError
+from src.core.learning_conference import LearningConferenceCompletionError
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
@@ -44,6 +45,7 @@ from src.desktop_app.dialogs.learning_report_dialog import (
 from src.desktop_app.dialogs.learning_conference_dialog import (
     LearningConferenceDialog,
     LearningConferenceDraftSelectionDialog,
+    LearningConferenceRevisionDialog,
 )
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
@@ -61,6 +63,9 @@ from src.desktop_app.view_models.settings_view_model import (
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
 from src.desktop_app.view_models.observation_view_model import ObservationDraftViewModel
 from src.desktop_app.view_models.master_data_view_model import CourseGroupViewModel
+from src.desktop_app.view_models.learning_conference_view_model import (
+    build_learning_conference_completion_error,
+)
 
 
 class AppShell(QMainWindow):
@@ -815,6 +820,21 @@ class AppShell(QMainWindow):
             return
         dialog = LearningConferenceDialog(preparation, self, initial_draft)
 
+        def refresh_revision_status() -> None:
+            draft = dialog.draft_view_model()
+            if not draft.learning_conference_draft_id:
+                return
+            try:
+                status = self.adapter.learning_conference_revision_status(
+                    draft.learning_conference_draft_id
+                )
+            except LearningConferenceCompletionError as error:
+                dialog.show_completion_error(
+                    build_learning_conference_completion_error(error)
+                )
+                return
+            dialog.apply_revision_status(status)
+
         def save_draft(draft: object) -> None:
             try:
                 saved = self.adapter.save_learning_conference_draft(draft)
@@ -822,9 +842,38 @@ class AppShell(QMainWindow):
                 dialog.show_save_error(str(error))
                 return
             dialog.apply_saved_draft(saved)
+            refresh_revision_status()
             self.status_label.setText("Lernentwicklungsgespräch-Entwurf gespeichert.")
 
+        def complete_conference(learning_conference_draft_id: str) -> None:
+            try:
+                status = self.adapter.complete_learning_conference(
+                    learning_conference_draft_id
+                )
+            except LearningConferenceCompletionError as error:
+                dialog.show_completion_error(
+                    build_learning_conference_completion_error(error)
+                )
+                return
+            dialog.apply_revision_status(status)
+            self.status_label.setText("Lernentwicklungsgespräch abgeschlossen.")
+
+        def open_revision(learning_conference_revision_id: str) -> None:
+            try:
+                revision = self.adapter.load_learning_conference_revision(
+                    learning_conference_revision_id
+                )
+            except LearningConferenceCompletionError as error:
+                dialog.show_completion_error(
+                    build_learning_conference_completion_error(error)
+                )
+                return
+            LearningConferenceRevisionDialog(revision, dialog).exec()
+
         dialog.save_requested.connect(save_draft)
+        dialog.completion_requested.connect(complete_conference)
+        dialog.revision_open_requested.connect(open_revision)
+        refresh_revision_status()
         dialog.exec()
 
     def export_learning_report_pdf(self, output_model: object) -> None:

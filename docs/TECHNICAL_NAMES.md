@@ -1793,3 +1793,48 @@ Registrierte Dialognamen:
 - `NewObservationDialog._matches_catalog_learning_stage(competency)`
 
 Regel: Beide Klassenstufenfilter lesen ausschliesslich das bestehende Katalogfeld `learning_stage`. `matching` zeigt `stage_1_3` und `cross_stage`, `stage_4` zeigt `stage_4` und `cross_stage`, `all` zeigt alle aktiven aktuellen Katalogzeilen. Filterung bleibt lokaler UI-State und erzeugt keine neue Datenquelle, Berechnung oder Persistenz. Initial ausgewaehlte Edit-Kompetenzen bleiben unabhaengig vom Filter sichtbar und geoeffnet; historische beziehungsweise inaktive Kompetenzen werden nie als neue Auswahl reaktiviert.
+
+## LEG-Abschluss und Revision
+
+Registrierte Domainnamen:
+
+- `LearningConferenceRecord` (`LCF`)
+- `LearningConferenceRevisionRecord` (`LCV`)
+- `LearningConferenceCompletionSource`
+- `LearningConferenceCompletionResult`
+- `LearningConferenceCompletionError`
+- `LearningConferenceSnapshotBuilder`
+- `LearningConferenceCompletionService`
+- `LearningConferenceRevisionReadService`
+
+Registrierte Application- und Persistenznamen:
+
+- `LearningConferenceCompletionApplicationService`
+- `LearningConferenceRevisionApplicationService`
+- `SQLiteLearningConferenceRepository`
+- `learning_conferences`
+- `learning_conference_revisions`
+
+Registrierte UI-/Projektionsnamen:
+
+- `LearningConferenceRevisionStatusViewModel`
+- `LearningConferenceRevisionListItemViewModel`
+- `LearningConferenceRevisionViewModel`
+- `LearningConferenceCompletionErrorViewModel`
+- `LearningConferenceRevisionDialog`
+
+Registrierte IDs und Statuswerte:
+
+- `learning_conference_id` mit Praefix `LCF-`
+- `learning_conference_revision_id` mit Praefix `LCV-`
+- LCV-Status `completed`
+- LCV-Status `superseded`
+- `snapshot_schema_version`
+- `snapshot_json`
+- `snapshot_sha256`
+
+Begriffsregel:
+
+- `Abschluss` ist der explizite, validierte und atomare Schreibbefehl vom LCD zum LCF/LCV.
+- `Revision` bezeichnet ausschliesslich eine unveraenderliche LCV; der LCD bleibt ein Draft.
+- `Snapshotvertrag` bezeichnet die LEG-spezifische kanonische JSON-Struktur und ist keine gemeinsame Bericht-/LEG-Domain.

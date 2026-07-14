@@ -1338,3 +1338,50 @@ Lesende Prozesse:
 - LEG-Arbeitsentwurf laden
 - LEG-Arbeitsentwuerfe eines Schuelers auflisten
 - Sprint-7G.2-LEG-Arbeitsbereich
+
+## learning_conferences und learning_conference_revisions
+
+Zweck: Stabiles fachliches LEG-Aggregat und unveraenderliche, reproduzierbare Abschlussrevisionen.
+
+Entities:
+
+- `LearningConferenceRecord` (`LCF`) als stabile Identitaet eines explizit abgeschlossenen LCD
+- `LearningConferenceRevisionRecord` (`LCV`) als unveraenderlicher Abschlussstand
+
+Storage:
+
+- `learning_conferences` fuer `learning_conference_id`, Quell-LCD, Schuelerbezug und Erzeugungszeitpunkt
+- `learning_conference_revisions` fuer Revisionsnummer, Status, Snapshotvertrag, Snapshot-JSON, SHA-256 und Abschluss-/Ersetzungsmetadaten
+
+Owner: LEG-Abschlussdomain. Keine Berichtsdomain.
+
+Primary Keys:
+
+- `learning_conferences.learning_conference_id`
+- `learning_conference_revisions.learning_conference_revision_id`
+
+Foreign Keys:
+
+- `learning_conferences.source_learning_conference_draft_id` -> `learning_conference_drafts.learning_conference_draft_id`
+- `learning_conferences.student_id` -> `students.student_id`
+- `learning_conference_revisions.learning_conference_id` -> `learning_conferences.learning_conference_id`
+
+Wichtige Regeln:
+
+- Pro LCD existiert hoechstens ein LCF; der LCD bleibt `draft` und bearbeitbar.
+- Pro LCF existiert hoechstens eine aktuelle LCV mit Status `completed`.
+- LCV-Snapshots sind unveraenderlich und nicht loeschbar; nur der Statuswechsel `completed` nach `superseded` mit `superseded_at` ist erlaubt.
+- Ein identischer kanonischer Snapshot erzeugt keine neue LCV.
+- Der Snapshot ist die historische Source of Truth und enthaelt keine interne Lehrkraftvorbereitung oder private Notizen.
+- Ausgewaehlte historische Kompetenzen muessen vollstaendig aufloesbar und gekennzeichnet sein; fehlende Pflichtbelege blockieren den Schreibprozess.
+- Diagramme bleiben in Sprint 10A Draftreferenzen und sind nicht Bestandteil des Abschluss-Snapshotvertrags.
+
+Schreibender Prozess:
+
+- expliziter LEG-Abschluss beziehungsweise korrigierender Folgeabschluss
+
+Lesende Prozesse:
+
+- LEG-Abschlussstatus zu einem LCD
+- LCV-Historie eines LCF
+- verifizierte snapshotbasierte LCV-Lesesicht

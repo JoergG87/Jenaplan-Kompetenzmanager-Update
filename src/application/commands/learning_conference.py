@@ -10,6 +10,13 @@ from src.core.learning_conference_draft import (
     LearningConferenceDraftRepository,
     LearningConferenceDraftService,
 )
+from src.core.learning_conference import (
+    LearningConferenceCompletionResult,
+    LearningConferenceCompletionService,
+    LearningConferenceRevisionReadService,
+    LearningConferenceRevisionState,
+    LearningConferenceVerifiedRevision,
+)
 
 
 @dataclass(frozen=True)
@@ -160,4 +167,64 @@ class LearningConferenceApplicationService:
             student=student,
             competency_statuses=self.competency_status_loader(student_id),
             observations=self.observation_loader(student_id),
+        )
+
+
+@dataclass(frozen=True)
+class CompleteLearningConferenceCommand:
+    """Explicitly complete exactly one persisted LCD."""
+
+    learning_conference_draft_id: str
+    command_name: str = "learning_conference.complete"
+
+
+@dataclass(frozen=True)
+class GetLearningConferenceRevisionStateQuery:
+    """Load completion state and history for one editable LCD."""
+
+    learning_conference_draft_id: str
+
+
+@dataclass(frozen=True)
+class GetLearningConferenceRevisionQuery:
+    """Load one immutable LCV after snapshot verification."""
+
+    learning_conference_revision_id: str
+
+
+class LearningConferenceCompletionApplicationService:
+    """Application command boundary for the explicit LEG completion."""
+
+    def __init__(self, domain_service: LearningConferenceCompletionService) -> None:
+        self.domain_service = domain_service
+
+    def complete(
+        self,
+        command: CompleteLearningConferenceCommand,
+    ) -> LearningConferenceCompletionResult:
+        return self.domain_service.complete(
+            learning_conference_draft_id=command.learning_conference_draft_id
+        )
+
+
+class LearningConferenceRevisionApplicationService:
+    """Application query boundary for snapshot-only LEG revision reads."""
+
+    def __init__(self, read_service: LearningConferenceRevisionReadService) -> None:
+        self.read_service = read_service
+
+    def state_for_draft(
+        self,
+        query: GetLearningConferenceRevisionStateQuery,
+    ) -> LearningConferenceRevisionState:
+        return self.read_service.state_for_draft(
+            query.learning_conference_draft_id
+        )
+
+    def get_revision(
+        self,
+        query: GetLearningConferenceRevisionQuery,
+    ) -> LearningConferenceVerifiedRevision:
+        return self.read_service.load_verified_revision(
+            query.learning_conference_revision_id
         )

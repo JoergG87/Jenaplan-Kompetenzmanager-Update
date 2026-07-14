@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 from src.core.learning_conference_draft import (
     LEARNING_CONFERENCE_DRAFT_STATUS,
     LearningConferenceDraftRecord,
+)
+from src.core.learning_conference import (
+    COMPLETED_REVISION_STATUS,
+    LearningConferenceCompletionError,
+    LearningConferenceCompletionErrorCode,
+    LearningConferenceRevisionState,
+    LearningConferenceVerifiedRevision,
 )
 
 
@@ -309,3 +316,213 @@ def _rating_label(value: str) -> str:
         "-": "in Entwicklung",
         "--": "Unterstützungsbedarf",
     }.get(value, value)
+
+
+@dataclass(frozen=True)
+class LearningConferenceCompletionErrorViewModel:
+    """Typed UI feedback and optional phase target for one completion failure."""
+
+    code: str
+    message: str
+    phase_key: str | None
+    reference_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class LearningConferenceRevisionListItemViewModel:
+    learning_conference_revision_id: str
+    revision_number: int
+    status: str
+    status_label: str
+    completed_at_text: str
+    completed_by_display_name: str
+    snapshot_sha256: str
+
+
+@dataclass(frozen=True)
+class LearningConferenceRevisionStatusViewModel:
+    has_completion: bool
+    status_label: str
+    draft_changed: bool
+    hash_valid: bool
+    current_revision_number: int | None
+    revisions: tuple[LearningConferenceRevisionListItemViewModel, ...]
+    comparison_error: LearningConferenceCompletionErrorViewModel | None = None
+
+
+@dataclass(frozen=True)
+class LearningConferenceRevisionViewModel:
+    """Snapshot-only projection for one immutable historical LCV."""
+
+    learning_conference_revision_id: str
+    revision_number: int
+    status_label: str
+    completed_at_text: str
+    completed_by_display_name: str
+    snapshot_sha256: str
+    student_name: str
+    group_name: str
+    course_name: str
+    conference_date_text: str
+    period_text: str
+    responsible_teacher: str
+    goals: str
+    support: str
+    agreements: str
+    responsibilities: str
+    next_review_date_text: str
+    subject_names: tuple[str, ...]
+    cross_topic_labels: tuple[str, ...]
+    competency_lines: tuple[str, ...]
+    observation_lines: tuple[str, ...]
+
+
+def build_learning_conference_completion_error(
+    error: LearningConferenceCompletionError,
+) -> LearningConferenceCompletionErrorViewModel:
+    phase_by_code = {
+        LearningConferenceCompletionErrorCode.STUDENT_MISSING: "goal",
+        LearningConferenceCompletionErrorCode.CONFERENCE_DATE_MISSING: "goal",
+        LearningConferenceCompletionErrorCode.CONFERENCE_DATE_INVALID: "goal",
+        LearningConferenceCompletionErrorCode.RESPONSIBLE_TEACHER_MISSING: "goal",
+        LearningConferenceCompletionErrorCode.PERIOD_INVALID: "goal",
+        LearningConferenceCompletionErrorCode.SHARED_RESULT_MISSING: "agreements",
+        LearningConferenceCompletionErrorCode.SUBJECT_REFERENCE_MISSING: "goal",
+        LearningConferenceCompletionErrorCode.COMPETENCY_REFERENCE_MISSING: "evidence",
+        LearningConferenceCompletionErrorCode.COMPETENCY_REFERENCE_INVALID: "evidence",
+        LearningConferenceCompletionErrorCode.OBSERVATION_UNAVAILABLE: "evidence",
+        LearningConferenceCompletionErrorCode.OBSERVATION_INVALID: "evidence",
+    }
+    return LearningConferenceCompletionErrorViewModel(
+        error.code.value,
+        str(error),
+        phase_by_code.get(error.code),
+        error.reference_ids,
+    )
+
+
+def build_learning_conference_revision_status(
+    state: LearningConferenceRevisionState,
+) -> LearningConferenceRevisionStatusViewModel:
+    current = state.current_revision
+    if current is None:
+        label = "Noch nicht abgeschlossen"
+    elif not state.current_snapshot_hash_valid:
+        label = "Integritätsprüfung fehlgeschlagen"
+    elif state.draft_changed:
+        label = f"Entwurf seit Abschluss geändert · Revision {current.revision_number}"
+    else:
+        label = f"Abgeschlossen · Revision {current.revision_number}"
+    return LearningConferenceRevisionStatusViewModel(
+        has_completion=current is not None,
+        status_label=label,
+        draft_changed=state.draft_changed,
+        hash_valid=state.current_snapshot_hash_valid,
+        current_revision_number=current.revision_number if current else None,
+        revisions=tuple(
+            LearningConferenceRevisionListItemViewModel(
+                item.learning_conference_revision_id,
+                item.revision_number,
+                item.status,
+                "Aktuell" if item.status == COMPLETED_REVISION_STATUS else "Ersetzt",
+                _format_revision_timestamp(item.completed_at),
+                item.completed_by_display_name,
+                item.snapshot_sha256,
+            )
+            for item in state.revisions
+        ),
+        comparison_error=(
+            build_learning_conference_completion_error(state.comparison_error)
+            if state.comparison_error is not None
+            else None
+        ),
+    )
+
+
+def build_learning_conference_revision_view_model(
+    verified: LearningConferenceVerifiedRevision,
+) -> LearningConferenceRevisionViewModel:
+    revision = verified.revision
+    snapshot = verified.snapshot
+    student = _mapping(snapshot.get("student"))
+    group = _mapping(student.get("group"))
+    course = _mapping(student.get("course"))
+    period = _mapping(snapshot.get("period"))
+    shared = _mapping(snapshot.get("shared_results"))
+    subjects = _mapping_items(snapshot.get("subjects"))
+    topics = _mapping_items(snapshot.get("cross_topics"))
+    competencies = _mapping_items(snapshot.get("competencies"))
+    observations = _mapping_items(snapshot.get("observations"))
+    return LearningConferenceRevisionViewModel(
+        learning_conference_revision_id=revision.learning_conference_revision_id,
+        revision_number=revision.revision_number,
+        status_label=(
+            "Aktuell" if revision.status == COMPLETED_REVISION_STATUS else "Ersetzt"
+        ),
+        completed_at_text=_format_revision_timestamp(revision.completed_at),
+        completed_by_display_name=revision.completed_by_display_name,
+        snapshot_sha256=revision.snapshot_sha256,
+        student_name=str(student.get("display_name", "")),
+        group_name=str(group.get("group_name", "")),
+        course_name=str(course.get("course_name", "")),
+        conference_date_text=_format_iso_date(str(snapshot.get("conference_date", ""))),
+        period_text=_format_period(period),
+        responsible_teacher=str(snapshot.get("responsible_teacher", "")),
+        goals=str(shared.get("goals", "")),
+        support=str(shared.get("support", "")),
+        agreements=str(shared.get("agreements", "")),
+        responsibilities=str(shared.get("responsibilities", "")),
+        next_review_date_text=_format_iso_date(
+            str(shared.get("next_review_date", ""))
+        ),
+        subject_names=tuple(str(item.get("subject_name", "")) for item in subjects),
+        cross_topic_labels=tuple(str(item.get("label", "")) for item in topics),
+        competency_lines=tuple(
+            (
+                f"{item.get('subject_name', '')} · {item.get('competency_text', '')}"
+                + (" · historischer Bezug" if item.get("historical_reference") else "")
+            ).strip(" ·")
+            for item in competencies
+        ),
+        observation_lines=tuple(
+            f"{_format_iso_date(str(item.get('observed_on', '')))} · "
+            f"{item.get('subject_name', '')} · {item.get('content', '')}".strip(" ·")
+            for item in observations
+        ),
+    )
+
+
+def _mapping(value: object) -> dict[str, object]:
+    return value if isinstance(value, dict) else {}
+
+
+def _mapping_items(value: object) -> tuple[dict[str, object], ...]:
+    if not isinstance(value, list):
+        return ()
+    return tuple(item for item in value if isinstance(item, dict))
+
+
+def _format_iso_date(value: str) -> str:
+    if not value:
+        return "Nicht festgelegt"
+    try:
+        return date.fromisoformat(value[:10]).strftime("%d.%m.%Y")
+    except ValueError:
+        return value
+
+
+def _format_period(period: dict[str, object]) -> str:
+    start = str(period.get("start", ""))
+    end = str(period.get("end", ""))
+    if not start and not end:
+        return "Kein Zeitraum festgelegt"
+    return f"{_format_iso_date(start)} bis {_format_iso_date(end)}"
+
+
+def _format_revision_timestamp(value: str) -> str:
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone().strftime(
+            "%d.%m.%Y, %H:%M"
+        )
+    except ValueError:
+        return value

@@ -243,3 +243,15 @@ UX-Regel Sprint 7F.2: `prototypes/learning_report_ux/` ist die verbindliche Spez
 | LEG-Speicherstatus und Dirty-State | Vergleich des aktuellen `LearningConferenceDraftViewModel` mit dem zuletzt geladenen beziehungsweise erfolgreich gespeicherten Widgetstand | Anzeige | Nein | keine neue Datenquelle | `Ungespeicherte Aenderungen` oder lokalisierter letzter Speicherstand; keine Autosave- oder Domainstatusbehauptung |
 
 UX-Regel UI Sprint 6B: `docs/LEG_UX_AUDIT_AND_TARGET.md` ersetzt fuer die produktive Dialogkomposition die fruehere Zwei-Seiten-Darstellung aus Sprint 7G.2. Genau eine der sechs vorhandenen Phasen ist aktiv. `strengths_text` und `teacher_perspective_text` erscheinen als interne Vorbereitung, `child_retrospective_text` und `development_fields_text` als gemeinsam bearbeitete Inhalte, `agreed_goals_text` sichtbar in Phase 4 und die Kompetenz-/Beleg-/Diagrammauswahl in Phase 5. Alle Feldbedeutungen, Referenzen und der vollstaendige `LearningConferenceDraftViewModel`-Speicherpfad bleiben unveraendert.
+
+### LEG-Abschluss und Revisionen
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Abschlussaktion | gespeicherte LCD-ID | Befehl | Ja, explizit | `LearningConferenceCompletionApplicationService` | UI uebergibt ausschliesslich die ID; keine Snapshot-, Hash- oder Persistenzlogik im Widget oder ViewModel |
+| Abschlussstatus | `LearningConferenceRevisionStatusViewModel` | Anzeige | Nein | `learning_conferences`, `learning_conference_revisions` + validierter Kandidat | unterscheidet noch nicht abgeschlossen, aktuell und Draft seit Abschluss geaendert |
+| Abschlussfehler | `LearningConferenceCompletionErrorViewModel` aus typisiertem Domainfehler | Anzeige / Navigation | Nein | LEG-Domainvalidierung | Dialog wertet keine Fehlermeldungsstrings aus |
+| Revisionshistorie | `LearningConferenceRevisionListItemViewModel` | Anzeige / Navigation | Nein | `learning_conference_revisions` | neueste zuerst; keine Bearbeiten-, Loeschen- oder Wiederherstellungsaktion |
+| Historische Revisionsansicht | `LearningConferenceRevisionViewModel` | schreibgeschuetzte Anzeige | Nein | verifiziertes `snapshot_json` der LCV | keine Live-Aufloesung fachlicher Werte; Integritaetspruefung vor Anzeige |
+
+Der Abschlussbereich ist vom primaeren Draftspeichern getrennt. Solange der aktuelle Widgetstand ungespeichert ist, ist der Abschluss deaktiviert. Nach einer Korrektur bleibt der LCD bearbeitbar; erst ein erneuter expliziter Abschluss kann eine neue LCV erzeugen.

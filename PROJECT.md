@@ -547,3 +547,9 @@ Eine Änderung gilt als abgeschlossen, wenn:
 Sprint 4 ist fachlich und technisch fuer den lehrplanbasierten Kompetenzkatalog abgeschlossen.
 
 Aktueller Stand: Der CSV-Katalog umfasst die freigegebenen Sprint-4-Lehrplanuebernahmen fuer Deutsch, Mathematik, EPU, Musik, Kunst, Sport, Werken, Schulgarten, Ethik und Sozialkompetenz. Historische Kompetenzen bleiben als `legacy` lesbar; Religion war nicht Teil dieses Katalogabgleichs.
+
+## LEG-Abschluss und Revision
+
+Der produktive LEG-Arbeitsablauf trennt ab Sprint 10A drei fachliche Zustaende. `LCD` ist und bleibt der bearbeitbare, live-referenzierende Arbeitsentwurf. Ein expliziter Abschluss erzeugt beziehungsweise verwendet ein stabiles `LCF`-Aggregat und schreibt eine unveraenderliche `LCV`-Revision mit kanonischem Snapshot und SHA-256. Korrekturen erfolgen weiterhin im LCD und erzeugen beim erneuten Abschluss nur dann eine neue LCV, wenn sich der fachliche Snapshot geaendert hat.
+
+Die historische LEG-Ansicht liest ausschliesslich verifizierte Snapshotdaten. Berichtsdomain, aktuelle Live-Projektionen, Widgets und PDF-Renderer sind keine Quellen einer LCV. Die Schichtenfolge bleibt `UI -> ViewModel -> Adapter -> Application -> Domain -> Repository -> SQLite`.

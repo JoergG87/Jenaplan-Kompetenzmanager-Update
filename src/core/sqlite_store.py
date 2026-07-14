@@ -30,6 +30,8 @@ from .constants import (
     LEARNING_REPORT_ID_PREFIX,
     LEARNING_REPORT_PDF_ARTIFACT_ID_PREFIX,
     LEARNING_REPORT_REVISION_ID_PREFIX,
+    LEARNING_CONFERENCE_ID_PREFIX,
+    LEARNING_CONFERENCE_REVISION_ID_PREFIX,
     REPORT_DRAFT_ID_PREFIX,
     STUDENT_ID,
     STUDENT_NOTES,
@@ -45,6 +47,22 @@ from .learning_conference_draft import (
     LEARNING_CONFERENCE_DRAFT_ID_PREFIX,
     LearningConferenceDraftError,
     LearningConferenceDraftRecord,
+)
+from .learning_conference import (
+    COMPLETED_REVISION_STATUS,
+    LEARNING_CONFERENCE_SNAPSHOT_SCHEMA_VERSION,
+    SUPERSEDED_REVISION_STATUS as LEG_SUPERSEDED_REVISION_STATUS,
+    LearningConferenceCompetencySource,
+    LearningConferenceCompletionError,
+    LearningConferenceCompletionErrorCode,
+    LearningConferenceCompletionResult,
+    LearningConferenceCompletionSource,
+    LearningConferenceObservationRatingSource,
+    LearningConferenceObservationSource,
+    LearningConferenceRecord,
+    LearningConferenceRevisionRecord,
+    LearningConferenceStudentSource,
+    LearningConferenceSubjectSource,
 )
 from .learning_report import (
     FINALIZED_REVISION_STATUS,
@@ -505,6 +523,47 @@ class SQLiteDatabase:
                         FOREIGN KEY (student_id) REFERENCES students(student_id)
                     );
 
+                    CREATE TABLE IF NOT EXISTS learning_conferences (
+                        learning_conference_id TEXT PRIMARY KEY,
+                        source_learning_conference_draft_id TEXT NOT NULL UNIQUE,
+                        student_id TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        FOREIGN KEY (source_learning_conference_draft_id)
+                            REFERENCES learning_conference_drafts(
+                                learning_conference_draft_id
+                            ),
+                        FOREIGN KEY (student_id) REFERENCES students(student_id)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS learning_conference_revisions (
+                        learning_conference_revision_id TEXT PRIMARY KEY,
+                        learning_conference_id TEXT NOT NULL,
+                        revision_number INTEGER NOT NULL CHECK (revision_number > 0),
+                        status TEXT NOT NULL CHECK (
+                            status IN ('completed', 'superseded')
+                        ),
+                        snapshot_schema_version INTEGER NOT NULL CHECK (
+                            snapshot_schema_version > 0
+                        ),
+                        snapshot_json TEXT NOT NULL,
+                        snapshot_sha256 TEXT NOT NULL CHECK (
+                            length(snapshot_sha256) = 64
+                        ),
+                        completed_at TEXT NOT NULL,
+                        completed_by_display_name TEXT NOT NULL CHECK (
+                            length(trim(completed_by_display_name)) > 0
+                        ),
+                        superseded_at TEXT,
+                        UNIQUE (learning_conference_id, revision_number),
+                        CHECK (
+                            (status = 'completed' AND superseded_at IS NULL)
+                            OR
+                            (status = 'superseded' AND superseded_at IS NOT NULL)
+                        ),
+                        FOREIGN KEY (learning_conference_id)
+                            REFERENCES learning_conferences(learning_conference_id)
+                    );
+
                     CREATE TABLE IF NOT EXISTS learning_conference_draft_subjects (
                         learning_conference_draft_id TEXT NOT NULL,
                         subject_id TEXT NOT NULL,
@@ -612,6 +671,14 @@ class SQLiteDatabase:
                         ON learning_conference_draft_competencies(competency_id);
                     CREATE INDEX IF NOT EXISTS idx_learning_conference_draft_observations
                         ON learning_conference_draft_observations(observation_id);
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_learning_conference_current_revision
+                        ON learning_conference_revisions(learning_conference_id)
+                        WHERE status = 'completed';
+                    CREATE INDEX IF NOT EXISTS idx_learning_conference_revisions_number
+                        ON learning_conference_revisions(
+                            learning_conference_id,
+                            revision_number
+                        );
 
                     CREATE TRIGGER IF NOT EXISTS trg_learning_report_revisions_immutable_update
                     BEFORE UPDATE ON learning_report_revisions
@@ -661,6 +728,44 @@ class SQLiteDatabase:
                     BEFORE DELETE ON learning_report_pdf_artifacts
                     BEGIN
                         SELECT RAISE(ABORT, 'learning report PDF artifacts cannot be deleted');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_conference_revisions_immutable_update
+                    BEFORE UPDATE ON learning_conference_revisions
+                    WHEN NOT (
+                        OLD.status = 'completed'
+                        AND NEW.status = 'superseded'
+                        AND OLD.superseded_at IS NULL
+                        AND NEW.superseded_at IS NOT NULL
+                        AND NEW.learning_conference_revision_id IS OLD.learning_conference_revision_id
+                        AND NEW.learning_conference_id IS OLD.learning_conference_id
+                        AND NEW.revision_number IS OLD.revision_number
+                        AND NEW.snapshot_schema_version IS OLD.snapshot_schema_version
+                        AND NEW.snapshot_json IS OLD.snapshot_json
+                        AND NEW.snapshot_sha256 IS OLD.snapshot_sha256
+                        AND NEW.completed_at IS OLD.completed_at
+                        AND NEW.completed_by_display_name IS OLD.completed_by_display_name
+                    )
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning conference revisions are immutable');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_conference_revisions_immutable_delete
+                    BEFORE DELETE ON learning_conference_revisions
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning conference revisions cannot be deleted');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_conferences_immutable_update
+                    BEFORE UPDATE ON learning_conferences
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning conferences are immutable');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_conferences_immutable_delete
+                    BEFORE DELETE ON learning_conferences
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning conferences cannot be deleted');
                     END;
                     """
                 )
@@ -2531,6 +2636,514 @@ class SQLiteLearningConferenceDraftRepository:
             "next_review_date",
             "created_at",
             "updated_at",
+        )
+
+
+class SQLiteLearningConferenceRepository:
+    """Resolve LCD completion sources and persist immutable LCVs atomically."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def load_completion_source(
+        self,
+        learning_conference_draft_id: str,
+    ) -> LearningConferenceCompletionSource | None:
+        draft = SQLiteLearningConferenceDraftRepository(
+            self.database
+        ).get_learning_conference_draft(learning_conference_draft_id)
+        if draft is None:
+            return None
+        selected_subject_ids = set(draft.subject_ids)
+        with closing(self.database.connect()) as connection:
+            student_row = connection.execute(
+                """
+                SELECT
+                    s.student_id,
+                    s.first_name,
+                    s.last_name,
+                    s.group_id,
+                    COALESCE(g.group_name, '') AS group_name,
+                    s.course_id,
+                    COALESCE(c.course_name, '') AS course_name
+                FROM students s
+                LEFT JOIN groups g ON g.group_id = s.group_id
+                LEFT JOIN courses c ON c.course_id = s.course_id
+                WHERE s.student_id = ?
+                """,
+                (draft.student_id,),
+            ).fetchone()
+            student = (
+                LearningConferenceStudentSource(
+                    student_row["student_id"],
+                    student_row["first_name"],
+                    student_row["last_name"],
+                    student_row["group_id"],
+                    student_row["group_name"],
+                    student_row["course_id"],
+                    student_row["course_name"],
+                )
+                if student_row is not None
+                else None
+            )
+
+            subjects: list[LearningConferenceSubjectSource] = []
+            missing_subject_ids: list[str] = []
+            for subject_id in draft.subject_ids:
+                subject_name = self._subject_name(connection, subject_id)
+                if not subject_name:
+                    missing_subject_ids.append(subject_id)
+                else:
+                    subjects.append(
+                        LearningConferenceSubjectSource(subject_id, subject_name)
+                    )
+
+            competencies: list[LearningConferenceCompetencySource] = []
+            missing_competency_ids: list[str] = []
+            invalid_competency_ids: list[str] = []
+            for competency_id in draft.competency_ids:
+                row = connection.execute(
+                    """
+                    SELECT
+                        competency_id,
+                        subject_id,
+                        subject_name,
+                        learning_area,
+                        competency_group,
+                        description,
+                        catalog_status,
+                        active
+                    FROM competencies
+                    WHERE competency_id = ?
+                    """,
+                    (competency_id,),
+                ).fetchone()
+                if row is None:
+                    missing_competency_ids.append(competency_id)
+                    continue
+                historical = not bool(row["active"]) or row["catalog_status"] != "current"
+                latest_snapshot = connection.execute(
+                    """
+                    SELECT
+                        r.subject_id,
+                        r.subject_display_name,
+                        r.learning_area,
+                        r.competency_group,
+                        r.competency_text
+                    FROM observation_competency_ratings r
+                    JOIN observations o ON o.observation_id = r.observation_id
+                    WHERE r.competency_id = ? AND o.student_id = ?
+                    ORDER BY o.date DESC, o.observation_id DESC
+                    LIMIT 1
+                    """,
+                    (competency_id, draft.student_id),
+                ).fetchone()
+                visible = latest_snapshot if historical and latest_snapshot is not None else row
+                subject_id = visible["subject_id"]
+                if subject_id not in selected_subject_ids:
+                    invalid_competency_ids.append(competency_id)
+                    continue
+                competencies.append(
+                    LearningConferenceCompetencySource(
+                        competency_id=competency_id,
+                        subject_id=subject_id,
+                        subject_name=(
+                            visible["subject_display_name"]
+                            if "subject_display_name" in visible.keys()
+                            else visible["subject_name"]
+                        ),
+                        learning_area=visible["learning_area"] or "",
+                        competency_group=visible["competency_group"] or "",
+                        competency_text=(
+                            visible["competency_text"]
+                            if "competency_text" in visible.keys()
+                            else visible["description"]
+                        ),
+                        historical_reference=historical,
+                        active_at_completion=bool(row["active"]),
+                        catalog_status_at_completion=row["catalog_status"],
+                    )
+                )
+
+            observations: list[LearningConferenceObservationSource] = []
+            unavailable_observation_ids: list[str] = []
+            invalid_observation_ids: list[str] = []
+            for observation_id in draft.observation_ids:
+                row = connection.execute(
+                    """
+                    SELECT observation_id, student_id, date, subject_id, context, note, active
+                    FROM observations
+                    WHERE observation_id = ?
+                    """,
+                    (observation_id,),
+                ).fetchone()
+                if row is None or not bool(row["active"]):
+                    unavailable_observation_ids.append(observation_id)
+                    continue
+                if row["student_id"] != draft.student_id:
+                    invalid_observation_ids.append(observation_id)
+                    continue
+                rating_rows = connection.execute(
+                    """
+                    SELECT
+                        competency_id,
+                        subject_id,
+                        subject_display_name,
+                        learning_area,
+                        competency_group,
+                        competency_text,
+                        rating
+                    FROM observation_competency_ratings
+                    WHERE observation_id = ?
+                    ORDER BY competency_id
+                    """,
+                    (observation_id,),
+                ).fetchall()
+                ratings = tuple(
+                    LearningConferenceObservationRatingSource(
+                        rating["competency_id"],
+                        rating["subject_id"],
+                        rating["subject_display_name"],
+                        rating["learning_area"] or "",
+                        rating["competency_group"] or "",
+                        rating["competency_text"],
+                        rating["rating"],
+                    )
+                    for rating in rating_rows
+                )
+                observations.append(
+                    LearningConferenceObservationSource(
+                        observation_id=observation_id,
+                        observed_on=row["date"],
+                        subject_id=row["subject_id"],
+                        subject_name=(
+                            self._subject_name(connection, row["subject_id"])
+                            or next(
+                                (
+                                    rating.subject_name
+                                    for rating in ratings
+                                    if rating.subject_id == row["subject_id"]
+                                ),
+                                row["subject_id"],
+                            )
+                        ),
+                        context=row["context"] or "",
+                        note=row["note"] or "",
+                        ratings=ratings,
+                    )
+                )
+
+        return LearningConferenceCompletionSource(
+            draft=draft,
+            student=student,
+            subjects=tuple(sorted(subjects, key=lambda item: item.subject_id)),
+            competencies=tuple(
+                sorted(competencies, key=lambda item: item.competency_id)
+            ),
+            observations=tuple(
+                sorted(observations, key=lambda item: item.observation_id)
+            ),
+            missing_subject_ids=tuple(sorted(missing_subject_ids)),
+            missing_competency_ids=tuple(sorted(missing_competency_ids)),
+            invalid_competency_ids=tuple(sorted(invalid_competency_ids)),
+            unavailable_observation_ids=tuple(
+                sorted(unavailable_observation_ids)
+            ),
+            invalid_observation_ids=tuple(sorted(invalid_observation_ids)),
+        )
+
+    def save_completed_revision(
+        self,
+        source: LearningConferenceCompletionSource,
+        *,
+        snapshot_json: str,
+        snapshot_sha256: str,
+        completed_at: str,
+        completed_by_display_name: str,
+    ) -> LearningConferenceCompletionResult:
+        connection = self.database.connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            current_draft = connection.execute(
+                """
+                SELECT updated_at
+                FROM learning_conference_drafts
+                WHERE learning_conference_draft_id = ?
+                """,
+                (source.draft.learning_conference_draft_id,),
+            ).fetchone()
+            if current_draft is None or current_draft["updated_at"] != source.draft.updated_at:
+                raise LearningConferenceCompletionError(
+                    LearningConferenceCompletionErrorCode.DRAFT_CHANGED,
+                    "Der LEG-Entwurf wurde während des Abschlusses geändert.",
+                )
+            conference_row = connection.execute(
+                """
+                SELECT learning_conference_id, source_learning_conference_draft_id,
+                       student_id, created_at
+                FROM learning_conferences
+                WHERE source_learning_conference_draft_id = ?
+                """,
+                (source.draft.learning_conference_draft_id,),
+            ).fetchone()
+            if conference_row is None:
+                conference = LearningConferenceRecord(
+                    self._next_id(
+                        connection,
+                        "learning_conferences",
+                        "learning_conference_id",
+                        LEARNING_CONFERENCE_ID_PREFIX,
+                    ),
+                    source.draft.learning_conference_draft_id,
+                    source.draft.student_id,
+                    completed_at,
+                )
+                connection.execute(
+                    """
+                    INSERT INTO learning_conferences (
+                        learning_conference_id,
+                        source_learning_conference_draft_id,
+                        student_id,
+                        created_at
+                    ) VALUES (?, ?, ?, ?)
+                    """,
+                    (
+                        conference.learning_conference_id,
+                        conference.source_learning_conference_draft_id,
+                        conference.student_id,
+                        conference.created_at,
+                    ),
+                )
+            else:
+                conference = self._conference_from_row(conference_row)
+                if (
+                    conference.source_learning_conference_draft_id
+                    != source.draft.learning_conference_draft_id
+                    or conference.student_id != source.draft.student_id
+                ):
+                    raise LearningConferenceCompletionError(
+                        LearningConferenceCompletionErrorCode.AGGREGATE_CONFLICT,
+                        "Die Identität des bestehenden LCF stimmt nicht mit dem LCD überein.",
+                    )
+
+            current_row = connection.execute(
+                """
+                SELECT learning_conference_revision_id, learning_conference_id,
+                       revision_number, status, snapshot_schema_version,
+                       snapshot_json, snapshot_sha256, completed_at,
+                       completed_by_display_name, superseded_at
+                FROM learning_conference_revisions
+                WHERE learning_conference_id = ? AND status = ?
+                """,
+                (conference.learning_conference_id, COMPLETED_REVISION_STATUS),
+            ).fetchone()
+            if (
+                current_row is not None
+                and current_row["snapshot_sha256"] == snapshot_sha256
+                and current_row["snapshot_json"] == snapshot_json
+            ):
+                connection.commit()
+                return LearningConferenceCompletionResult(
+                    conference,
+                    self._revision_from_row(current_row),
+                    False,
+                )
+
+            revision_number = int(
+                connection.execute(
+                    """
+                    SELECT COALESCE(MAX(revision_number), 0) + 1
+                    FROM learning_conference_revisions
+                    WHERE learning_conference_id = ?
+                    """,
+                    (conference.learning_conference_id,),
+                ).fetchone()[0]
+            )
+            if current_row is not None:
+                connection.execute(
+                    """
+                    UPDATE learning_conference_revisions
+                    SET status = ?, superseded_at = ?
+                    WHERE learning_conference_revision_id = ?
+                    """,
+                    (
+                        LEG_SUPERSEDED_REVISION_STATUS,
+                        completed_at,
+                        current_row["learning_conference_revision_id"],
+                    ),
+                )
+            revision = LearningConferenceRevisionRecord(
+                learning_conference_revision_id=self._next_id(
+                    connection,
+                    "learning_conference_revisions",
+                    "learning_conference_revision_id",
+                    LEARNING_CONFERENCE_REVISION_ID_PREFIX,
+                ),
+                learning_conference_id=conference.learning_conference_id,
+                revision_number=revision_number,
+                status=COMPLETED_REVISION_STATUS,
+                snapshot_schema_version=LEARNING_CONFERENCE_SNAPSHOT_SCHEMA_VERSION,
+                snapshot_json=snapshot_json,
+                snapshot_sha256=snapshot_sha256,
+                completed_at=completed_at,
+                completed_by_display_name=completed_by_display_name.strip(),
+                superseded_at=None,
+            )
+            self._insert_revision(connection, revision)
+            connection.commit()
+            return LearningConferenceCompletionResult(conference, revision, True)
+        except sqlite3.Error as error:
+            connection.rollback()
+            raise LearningConferenceCompletionError(
+                LearningConferenceCompletionErrorCode.PERSISTENCE_FAILED,
+                f"LEG-Revision konnte nicht gespeichert werden: {error}",
+            ) from error
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def get_conference_for_source_draft(
+        self,
+        learning_conference_draft_id: str,
+    ) -> LearningConferenceRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT learning_conference_id, source_learning_conference_draft_id,
+                       student_id, created_at
+                FROM learning_conferences
+                WHERE source_learning_conference_draft_id = ?
+                """,
+                (learning_conference_draft_id,),
+            ).fetchone()
+        return self._conference_from_row(row) if row is not None else None
+
+    def list_revisions(
+        self,
+        learning_conference_id: str,
+    ) -> tuple[LearningConferenceRevisionRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT learning_conference_revision_id, learning_conference_id,
+                       revision_number, status, snapshot_schema_version,
+                       snapshot_json, snapshot_sha256, completed_at,
+                       completed_by_display_name, superseded_at
+                FROM learning_conference_revisions
+                WHERE learning_conference_id = ?
+                ORDER BY revision_number
+                """,
+                (learning_conference_id,),
+            ).fetchall()
+        return tuple(self._revision_from_row(row) for row in rows)
+
+    def get_revision(
+        self,
+        learning_conference_revision_id: str,
+    ) -> LearningConferenceRevisionRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT learning_conference_revision_id, learning_conference_id,
+                       revision_number, status, snapshot_schema_version,
+                       snapshot_json, snapshot_sha256, completed_at,
+                       completed_by_display_name, superseded_at
+                FROM learning_conference_revisions
+                WHERE learning_conference_revision_id = ?
+                """,
+                (learning_conference_revision_id,),
+            ).fetchone()
+        return self._revision_from_row(row) if row is not None else None
+
+    def _subject_name(
+        self,
+        connection: sqlite3.Connection,
+        subject_id: str,
+    ) -> str:
+        row = connection.execute(
+            """
+            SELECT subject_name
+            FROM competencies
+            WHERE subject_id = ?
+            ORDER BY CASE WHEN active = 1 AND catalog_status = 'current' THEN 0 ELSE 1 END,
+                     sort_order, competency_id
+            LIMIT 1
+            """,
+            (subject_id,),
+        ).fetchone()
+        return str(row["subject_name"]).strip() if row is not None else ""
+
+    def _next_id(
+        self,
+        connection: sqlite3.Connection,
+        table_name: str,
+        column_name: str,
+        prefix: str,
+    ) -> str:
+        rows = connection.execute(f"SELECT {column_name} FROM {table_name}").fetchall()
+        next_number = 1
+        for row in rows:
+            value = str(row[column_name])
+            if not value.startswith(f"{prefix}-"):
+                continue
+            try:
+                next_number = max(next_number, int(value.split("-", 1)[1]) + 1)
+            except ValueError:
+                continue
+        return f"{prefix}-{next_number:0{ID_SEQUENCE_WIDTH}d}"
+
+    def _insert_revision(
+        self,
+        connection: sqlite3.Connection,
+        revision: LearningConferenceRevisionRecord,
+    ) -> None:
+        connection.execute(
+            """
+            INSERT INTO learning_conference_revisions (
+                learning_conference_revision_id, learning_conference_id,
+                revision_number, status, snapshot_schema_version, snapshot_json,
+                snapshot_sha256, completed_at, completed_by_display_name,
+                superseded_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                revision.learning_conference_revision_id,
+                revision.learning_conference_id,
+                revision.revision_number,
+                revision.status,
+                revision.snapshot_schema_version,
+                revision.snapshot_json,
+                revision.snapshot_sha256,
+                revision.completed_at,
+                revision.completed_by_display_name,
+                revision.superseded_at,
+            ),
+        )
+
+    @staticmethod
+    def _conference_from_row(row: sqlite3.Row) -> LearningConferenceRecord:
+        return LearningConferenceRecord(
+            row["learning_conference_id"],
+            row["source_learning_conference_draft_id"],
+            row["student_id"],
+            row["created_at"],
+        )
+
+    @staticmethod
+    def _revision_from_row(row: sqlite3.Row) -> LearningConferenceRevisionRecord:
+        return LearningConferenceRevisionRecord(
+            row["learning_conference_revision_id"],
+            row["learning_conference_id"],
+            int(row["revision_number"]),
+            row["status"],
+            int(row["snapshot_schema_version"]),
+            row["snapshot_json"],
+            row["snapshot_sha256"],
+            row["completed_at"],
+            row["completed_by_display_name"],
+            row["superseded_at"],
         )
 
 

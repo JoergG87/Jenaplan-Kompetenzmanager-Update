@@ -19,6 +19,23 @@
 
 - Keine Aenderung an Fachlogik, Datenmodell, SQLite, Migrationen, Repositories, Services, Adaptern, ViewModels, Navigation, Persistenz, fachlichen Workflows oder bestehenden Dialogtypen; keine neue Funktion, kein QPainter und keine zusaetzliche Motion.
 
+## Sprint 10A - LEG-Abschluss und Revision
+
+### Added
+
+- Eigenes stabiles LEG-Aggregat `LCF` und unveraenderliche `LCV`-Revisionen mit kanonischem Abschluss-Snapshot und SHA-256 ergaenzt.
+- Expliziten Abschlussbefehl mit typisierter Validierung, atomarer Revisionierung und idempotenter Behandlung identischer Snapshots eingefuehrt.
+- Snapshotbasierte schreibgeschuetzte Revisionshistorie mit Integritaetspruefung vor der Anzeige ergaenzt.
+
+### Changed
+
+- LEG-Workspace um einen getrennten Abschlussstatus, die Aktion `Gespräch abschließen` und den Zugriff auf historische Revisionen erweitert.
+- Fehlende oder ungueltige ausgewaehlte Referenzen blockieren den Abschluss; vollstaendig aufloesbare historische Kompetenzreferenzen werden gekennzeichnet eingefroren.
+
+### Not Changed
+
+- Der `LCD` bleibt bearbeitbar und live-referenzierend; keine Berichtsdomainmodelle, LEG-PDF-, Archivierungs- oder Renderer-Versionierungsfunktion wurden eingefuehrt.
+
 ## Premium UI Sprint 1 - Desktop Finish Foundations
 
 ### Added

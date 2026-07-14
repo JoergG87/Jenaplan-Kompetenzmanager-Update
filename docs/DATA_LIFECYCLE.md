@@ -922,3 +922,46 @@ Automatisch profitierende Ansichten:
 - Berichte
 
 Regel: Beobachtungsanhaenge liegen im Dateisystem unter `Dokumente/<student_id>/Beobachtungsanhaenge/<observation_id>/`. Excel speichert nur `file_ref` und Metadaten. Medien referenzieren Beobachtungen und speichern keine Beobachtungsinhalte doppelt.
+
+## Lernentwicklungsgespraech abschliessen
+
+Start: Die verantwortliche Lehrkraft loest fuer einen gespeicherten `LCD` ausdruecklich `Gespraech abschliessen` aus. Die UI uebergibt nur die LCD-ID.
+
+Schreibprozess:
+
+1. `LearningConferenceCompletionApplicationService` laedt den aktuellen LCD und alle bewusst ausgewaehlten Referenzen ueber das LEG-Repository.
+2. Die LEG-Domain validiert Schuelerbezug, Gespraechsdatum, verantwortliche Lehrkraft, mindestens einen gemeinsamen Ergebnisinhalt und die vollstaendige Aufloesbarkeit aller Abschlussreferenzen.
+3. Der LEG-spezifische Snapshot Builder erzeugt ausschliesslich aus diesen validierten Daten die kanonische Snapshotstruktur. Interne Vorbereitung, private Notizen und Diagrammtypen werden nicht uebernommen.
+4. Aus kanonischem UTF-8-JSON wird SHA-256 berechnet.
+5. Das SQLite-Repository erzeugt beim ersten Abschluss LCF und LCV atomar. Bei einer Korrektur schreibt es zuerst die neue Revision und ersetzt den Status der bisherigen Revision innerhalb derselben Transaktion; bei einem Fehler wird alles zurueckgerollt.
+6. Entspricht der Hash dem aktuellen Snapshot, wird die bestehende LCV zurueckgegeben und keine neue Revision erzeugt.
+
+Betroffene Datenquellen:
+
+- lesend: `learning_conference_drafts` und Relationen, `students`, `groups`, `courses`, `competencies`, `observations`, `observation_competency_ratings`
+- schreibend: `learning_conferences`, `learning_conference_revisions`
+
+Erforderliche IDs:
+
+- bestehende `learning_conference_draft_id`
+- neue `learning_conference_id` beim ersten Abschluss
+- neue `learning_conference_revision_id` nur bei neuem Snapshot
+
+Regeln:
+
+- LCD bleibt nach jedem Abschluss bearbeitbar und wird nicht umgedeutet.
+- Alte Revisionen werden erst nach einem vollstaendig erfolgreichen Folgeabschluss `superseded`.
+- Abgeschlossene Revisionen werden weder geloescht noch inhaltlich aktualisiert.
+- Fehlende ausgewaehlte Fach-, Kompetenz- oder Beobachtungsreferenzen werden nicht still entfernt.
+
+## LEG-Abschlussrevision anzeigen
+
+Start: Eine LCV wird aus der Abschluss- beziehungsweise Revisionshistorie geoeffnet.
+
+Leseprozess:
+
+1. Adapter und Application Service laden die LCV ueber das Repository.
+2. Der LEG-Leseservice bildet aus dem gespeicherten Snapshot-JSON erneut die kanonischen Bytes und prueft SHA-256 sowie Snapshot-Schemaversion.
+3. Das ViewModel projiziert ausschliesslich diese Snapshotdaten in die schreibgeschuetzte Ansicht.
+
+Regel: Es werden keine aktuellen Schueler-, Gruppen-, Kurs-, Kompetenz- oder Beobachtungswerte nachgeladen. Ein Integritaetsfehler verhindert die Anzeige.

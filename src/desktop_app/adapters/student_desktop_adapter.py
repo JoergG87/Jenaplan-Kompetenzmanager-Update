@@ -37,11 +37,16 @@ from src.application.commands.report import (
     UpdateLearningReportDraftCommand,
 )
 from src.application.commands.learning_conference import (
+    CompleteLearningConferenceCommand,
     CreateLearningConferenceDraftCommand,
     GetLearningConferenceDraftQuery,
+    GetLearningConferenceRevisionQuery,
+    GetLearningConferenceRevisionStateQuery,
     LearningConferenceApplicationService,
+    LearningConferenceCompletionApplicationService,
     LearningConferenceDraftApplicationService,
     LearningConferenceDraftInput,
+    LearningConferenceRevisionApplicationService,
     ListLearningConferenceDraftsQuery,
     PrepareLearningConferenceQuery,
     UpdateLearningConferenceDraftCommand,
@@ -60,6 +65,7 @@ from src.core.sqlite_store import (
     SQLiteDocumentRepository,
     SQLiteGroupRepository,
     SQLiteLearningConferenceDraftRepository,
+    SQLiteLearningConferenceRepository,
     SQLiteLearningReportRepository,
     SQLiteLearningReportPdfArtifactRepository,
     SQLiteMasterDataRepository,
@@ -83,6 +89,10 @@ from src.core.learning_report_pdf import (
 from src.core.learning_conference_draft import (
     LearningConferenceDraftRecord,
     LearningConferenceDraftService,
+)
+from src.core.learning_conference import (
+    LearningConferenceCompletionService,
+    LearningConferenceRevisionReadService,
 )
 from src.core.student import StudentService, StudentValidator
 from src.core.records import CourseRecord, GroupRecord, StudentRecord
@@ -137,7 +147,11 @@ from prototypes.pdf_engine.renderer import PdfRenderer
 from src.desktop_app.view_models.learning_conference_view_model import (
     LearningConferenceDraftViewModel,
     LearningConferencePreparationViewModel,
+    LearningConferenceRevisionStatusViewModel,
+    LearningConferenceRevisionViewModel,
     build_learning_conference_preparation,
+    build_learning_conference_revision_status,
+    build_learning_conference_revision_view_model,
 )
 from src.desktop_app.view_models.student_view_model import (
     DashboardDocumentationCellViewModel,
@@ -1421,6 +1435,67 @@ class StudentDesktopAdapter:
         return LearningConferenceDraftViewModel.from_record(
             record,
             unavailable_observation_ids=repository.unavailable_observation_ids(record),
+        )
+
+    def complete_learning_conference(
+        self,
+        learning_conference_draft_id: str,
+    ) -> LearningConferenceRevisionStatusViewModel:
+        """Execute an explicit LCD-only completion command outside the UI."""
+        completion, revisions = self._learning_conference_revision_services()
+        completion.complete(
+            CompleteLearningConferenceCommand(learning_conference_draft_id)
+        )
+        state = revisions.state_for_draft(
+            GetLearningConferenceRevisionStateQuery(
+                learning_conference_draft_id
+            )
+        )
+        return build_learning_conference_revision_status(state)
+
+    def learning_conference_revision_status(
+        self,
+        learning_conference_draft_id: str,
+    ) -> LearningConferenceRevisionStatusViewModel:
+        """Project the current LCF/LCV state for one editable LCD."""
+        _completion, revisions = self._learning_conference_revision_services()
+        return build_learning_conference_revision_status(
+            revisions.state_for_draft(
+                GetLearningConferenceRevisionStateQuery(
+                    learning_conference_draft_id
+                )
+            )
+        )
+
+    def load_learning_conference_revision(
+        self,
+        learning_conference_revision_id: str,
+    ) -> LearningConferenceRevisionViewModel:
+        """Load a hash-verified snapshot-only historical LEG projection."""
+        _completion, revisions = self._learning_conference_revision_services()
+        verified = revisions.get_revision(
+            GetLearningConferenceRevisionQuery(
+                learning_conference_revision_id
+            )
+        )
+        return build_learning_conference_revision_view_model(verified)
+
+    def _learning_conference_revision_services(
+        self,
+    ) -> tuple[
+        LearningConferenceCompletionApplicationService,
+        LearningConferenceRevisionApplicationService,
+    ]:
+        repository = SQLiteLearningConferenceRepository(self.database)
+        domain_service = LearningConferenceCompletionService(repository)
+        return (
+            LearningConferenceCompletionApplicationService(domain_service),
+            LearningConferenceRevisionApplicationService(
+                LearningConferenceRevisionReadService(
+                    repository,
+                    domain_service,
+                )
+            ),
         )
 
     def save_competency_confirmation(
