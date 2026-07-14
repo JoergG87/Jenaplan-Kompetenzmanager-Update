@@ -1416,8 +1416,10 @@ Registrierte Komponenten und Helfer:
 - `configure_button(button, role, accessible_name)`
 - `set_button_role(button, role)`
 - `StudentsWorkspace`
+- `StudentsWorkspace.courses_screen`
 - `StudentsWorkspace.new_student_requested`
 - `StudentsWorkspace.all_students_requested`
+- `StudentsWorkspace.course_selected`
 - `StudentsWorkspace.set_master_data(view_model, group_summaries)`
 - `StudentsWorkspace.show_section(key)`
 - `StudentsWorkspace.show_student_list(source_key)`
@@ -1426,6 +1428,8 @@ Registrierte Komponenten und Helfer:
 - `StudentsWorkspace.current_content_key()`
 - `STUDENT_WORKSPACE_SEGMENTS`
 - `AppShell.show_all_students()`
+- `AppShell.show_students_for_course(course_id)`
+- `GroupOverviewScreen.direct_course_selected`
 - `ICON_NAMES`
 - `ICON_SIZE_SMALL`
 - `ICON_SIZE_MEDIUM`
@@ -1449,4 +1453,4 @@ Erweiterte Felder von `NavigationItem`:
 
 Regel: Der sichtbare Navigationsname des bestehenden technischen Schluessels `dashboard` lautet `Heute`. Globale produktive Ziele sind ausschliesslich `dashboard`, `students`, `master_data` und `settings`, gruppiert in `ARBEIT` und `VERWALTUNG`. Der fruehere Schluessel `overview` wird nicht mehr global aufgeloest; `GroupOverviewScreen` bleibt als bestehende reine Projektion innerhalb von `StudentsWorkspace` erhalten. `PlaceholderScreen` bleibt als registriertes Modul historisch verfuegbar, ist aber kein Product-Shell-Ziel.
 
-Regel: `StudentsWorkspace` komponiert nur vorhandene Adapter-/ViewModel-Projektionen und lokalen UI-State. Es fuehrt weder eine Datenquelle noch Businesslogik, SQLite-Zugriff, Persistenz oder einen Schreibprozess ein. Beobachtungs-, Kompetenz-, Berichts- und LEG-Pfade bleiben ueber das bestehende Schuelerprofil erreichbar.
+Regel: `StudentsWorkspace` komponiert die lokalen Segmente `groups`, `courses`, `course_groups` und `all` nur aus vorhandenen Adapter-/ViewModel-Projektionen und lokalem UI-State. Es fuehrt weder eine Datenquelle noch Businesslogik, SQLite-Zugriff, Persistenz oder einen Schreibprozess ein. Die direkte Kursansicht uebergibt eine vorhandene `course_id` an `StudentDesktopAdapter.list_students(course_id=...)`. Beobachtungs-, Kompetenz-, Berichts- und LEG-Pfade bleiben ueber das bestehende Schuelerprofil erreichbar.

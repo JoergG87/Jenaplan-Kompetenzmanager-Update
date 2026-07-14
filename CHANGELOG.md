@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## UI Sprint 1.1 - Schuelerprofil-Zugriff und Kursansicht
+
+### Added
+
+- `Kurse` als viertes lokales Segment im Schueler-Arbeitsraum ergaenzt; die Ansicht nutzt die bestehende Stammdatenreihenfolge und oeffnet die vorhandene `course_id`-Filterprojektion.
+
+### Changed
+
+- Einfacher Klick auf eine Schuelerzeile oeffnet wieder direkt das Profil; Enter und die sekundäre Aktion `Profil öffnen` bleiben erhalten, Doppelklicks werden gegen Mehrfachnavigation abgesichert.
+- Eingebettete Zeilenaktionen bleiben eigenstaendig und loesen keine zusaetzliche Profilnavigation aus.
+
+### Not Changed
+
+- Keine Aenderung an Datenmodell, SQLite-Schema, Repositories, Fachlogik, Kursverbundfilter, Profilinhalt, Beobachtungsdialog, Dashboard, Bericht, LEG oder globaler Navigation.
+
 ## UI Sprint 1 - Product Shell und Interaction Foundations
 
 ### Added

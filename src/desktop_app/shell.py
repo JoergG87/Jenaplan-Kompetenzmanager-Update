@@ -147,6 +147,7 @@ class AppShell(QMainWindow):
         self.dashboard_screen = OverviewScreen()
         self.students_workspace = StudentsWorkspace()
         self.overview_screen = self.students_workspace.groups_screen
+        self.courses_screen = self.students_workspace.courses_screen
         self.course_groups_screen = self.students_workspace.course_groups_screen
         self.students_screen = self.students_workspace.students_screen
         self.student_profile_screen = StudentProfileScreen()
@@ -176,6 +177,7 @@ class AppShell(QMainWindow):
         self.course_groups_screen.course_selected.connect(
             self.show_students_for_course_group
         )
+        self.students_workspace.course_selected.connect(self.show_students_for_course)
         self.dashboard_screen.timetable_target_selected.connect(
             self.show_students_for_timetable_target
         )
@@ -497,6 +499,17 @@ class AppShell(QMainWindow):
         self._show_screen("students")
         self._select_navigation("students")
 
+    def show_students_for_course(self, course_id: str) -> None:
+        """Open students screen filtered to one course across all groups."""
+        self._clear_pending_timetable_observation()
+        self.selected_group_id = None
+        self.selected_course_group_id = None
+        self.selected_course_id = course_id
+        self.refresh_students()
+        self.students_workspace.show_student_list(source_key="courses")
+        self._show_screen("students")
+        self._select_navigation("students")
+
     def show_students_for_course_group(self, course_group_id: str, course_id: str) -> None:
         """Open students screen filtered to one course inside one course group."""
         self._clear_pending_timetable_observation()
@@ -525,7 +538,11 @@ class AppShell(QMainWindow):
             return
         self.refresh_students()
         self.students_workspace.show_student_list(
-            source_key="groups" if target_type == "group" else "course_groups"
+            source_key={
+                "group": "groups",
+                "course": "courses",
+                "course_group": "course_groups",
+            }[target_type]
         )
         self._show_screen("students")
         self._select_navigation("students")

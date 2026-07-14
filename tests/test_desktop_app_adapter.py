@@ -6115,11 +6115,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(workspace.current_content_key(), "course_groups")
         self.assertIsNotNone(app)
 
-    def test_student_row_selection_is_separate_from_profile_opening(self) -> None:
+    def test_student_row_activation_opens_profile_once_for_each_input_path(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = students_screen.StudentsScreen()
         opened_student_ids: list[str] = []
+        observation_student_ids: list[str] = []
         screen.student_selected.connect(opened_student_ids.append)
+        screen.observation_requested.connect(observation_student_ids.append)
         screen.set_students(
             (
                 StudentListItem(
@@ -6135,9 +6137,32 @@ class DesktopAppAdapterTest(unittest.TestCase):
             )
         )
 
-        screen.table.selectRow(0)
+        screen.resize(1000, 560)
+        screen.show()
         app.processEvents()
-        self.assertEqual(opened_student_ids, [])
+        row_position = screen.table.visualItemRect(screen.table.item(0, 0)).center()
+        QTest.mouseClick(
+            screen.table.viewport(),
+            Qt.MouseButton.LeftButton,
+            pos=row_position,
+        )
+        self.assertEqual(opened_student_ids, ["STU-000001"])
+
+        opened_student_ids.clear()
+        screen._last_pointer_activation = None
+        QTest.mouseDClick(
+            screen.table.viewport(),
+            Qt.MouseButton.LeftButton,
+            pos=row_position,
+        )
+        self.assertEqual(opened_student_ids, ["STU-000001"])
+
+        opened_student_ids.clear()
+        screen.table.setCurrentCell(0, 0)
+        QTest.keyClick(screen.table, Qt.Key.Key_Return)
+        self.assertEqual(opened_student_ids, ["STU-000001"])
+
+        opened_student_ids.clear()
         action_widget = screen.table.cellWidget(0, 3)
         profile_button = next(
             button
@@ -6148,8 +6173,95 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(opened_student_ids, ["STU-000001"])
 
         opened_student_ids.clear()
-        screen.table.itemActivated.emit(screen.table.item(0, 0))
-        self.assertEqual(opened_student_ids, ["STU-000001"])
+        observe_button = next(
+            button
+            for button in action_widget.findChildren(QPushButton)
+            if button.text() == "Beobachten"
+        )
+        observe_button.click()
+        self.assertEqual(observation_student_ids, ["STU-000001"])
+        self.assertEqual(opened_student_ids, [])
+        self.assertIsNotNone(app)
+
+    def test_student_workspace_exposes_courses_in_master_data_order(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        workspace = students_workspace.StudentsWorkspace()
+        selected_course_ids: list[str] = []
+        workspace.course_selected.connect(selected_course_ids.append)
+        view_model = MasterDataViewModel(
+            groups=(),
+            courses=(
+                MasterDataItemViewModel("CRS-2", "Kurs 2", True, "Grün", "#16A34A"),
+                MasterDataItemViewModel("CRS-1", "Kurs 1", True, "Blau", "#2563EB"),
+            ),
+        )
+
+        workspace.set_master_data(view_model, ())
+        workspace.show_section("courses")
+        buttons = tuple(
+            button
+            for button in workspace.courses_screen.findChildren(QPushButton)
+            if button.text() == "Schüler anzeigen"
+        )
+
+        self.assertEqual(
+            students_workspace.STUDENT_WORKSPACE_SEGMENTS,
+            (
+                ("groups", "Stammgruppen"),
+                ("courses", "Kurse"),
+                ("course_groups", "Kursverbünde"),
+                ("all", "Alle Schüler"),
+            ),
+        )
+        self.assertEqual(workspace.current_content_key(), "courses")
+        self.assertEqual(
+            tuple(button.accessibleName() for button in buttons),
+            (
+                "Schüler im Kurs Kurs 2 anzeigen",
+                "Schüler im Kurs Kurs 1 anzeigen",
+            ),
+        )
+        buttons[0].click()
+        self.assertEqual(selected_course_ids, ["CRS-2"])
+        self.assertIsNotNone(app)
+
+    def test_shell_switches_direct_course_filters_without_changing_course_groups(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        window = shell.AppShell(self.database_path)
+        courses = window.adapter.list_courses()
+        course_group_snapshot = window.master_data_adapter.view_model().course_groups
+
+        window.show_students_for_course(courses[0].course_id)
+        first_course_students = window.students_screen.students
+        self.assertTrue(first_course_students)
+        self.assertTrue(
+            all(student.course_id == courses[0].course_id for student in first_course_students)
+        )
+        self.assertEqual(
+            tuple(student.display_name.casefold() for student in first_course_students),
+            tuple(sorted(student.display_name.casefold() for student in first_course_students)),
+        )
+        self.assertEqual(window.students_workspace.list_source_key(), "courses")
+
+        window.show_students_for_course(courses[1].course_id)
+        self.assertTrue(window.students_screen.students)
+        self.assertTrue(
+            all(
+                student.course_id == courses[1].course_id
+                for student in window.students_screen.students
+            )
+        )
+        self.assertEqual(
+            window.master_data_adapter.view_model().course_groups,
+            course_group_snapshot,
+        )
+
+        window.show_all_students()
+        self.assertEqual(
+            window.students_screen.students,
+            window.adapter.list_students(),
+        )
+        window.close()
         self.assertIsNotNone(app)
 
     def test_student_list_fits_normal_notebook_width_without_horizontal_scroll(self) -> None:

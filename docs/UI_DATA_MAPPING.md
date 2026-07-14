@@ -17,7 +17,7 @@ Spalten:
 | App-Info | statische Produkttexte | Anzeige | Nein | keine fachliche Datenquelle | benennt lokale Desktop-App, Produktversion und lokale Speicherung; keine Prototyp- oder Nicht-Persistenz-Platzhalter |
 | App-Icon | versioniertes Asset `assets/app_icon.png` | Anzeige | Nein | keine fachliche Datenquelle | sichtbares Branding in Sidebar und Info-Dialog; keine Fachlogik |
 | Globale Navigation | statische `NAVIGATION_ITEMS` | Navigation | Nein | keine fachliche Datenquelle | `ARBEIT`: `Heute`, `Schüler`; `VERWALTUNG`: `Stammdaten`, `Einstellungen`; keine leeren globalen Beobachtungs-, Kompetenz- oder Berichtsziele |
-| Lokale Schuelernavigation | temporaerer `StudentsWorkspace`-State | Navigation / Filter | Nein | keine fachliche Datenquelle | Segmente `Stammgruppen`, `Kursverbünde`, `Alle Schüler`; Drill-down behaelt den lokalen Ursprung, fachliche IDs und bestehende Filterprojektionen |
+| Lokale Schuelernavigation | temporaerer `StudentsWorkspace`-State | Navigation / Filter | Nein | keine fachliche Datenquelle | Segmente `Stammgruppen`, `Kurse`, `Kursverbünde`, `Alle Schüler`; Drill-down behaelt den lokalen Ursprung, fachliche IDs und bestehende Filterprojektionen |
 | Visuelles Theme | freigegebene Icon-Leitlinie und Tokens aus `docs/DESIGN_SYSTEM.md` | Anzeige | Nein | keine fachliche Datenquelle | native Systemschrift, semantische Farben/Typografie/Abstaende/Radien/Elevation/Motion, zentrale Buttonrollen und SVG-Shell-Icons; keine Fachlogik |
 | Shell-Feedback | bestehende Shell-Ergebnisse und UI-Zustaende | Anzeige | Nein | keine fachliche Datenquelle | nicht blockierender `Toast` fuer kurze Rueckmeldung; `InlineMessage` fuer kontextgebundene Hinweise; keine Persistenz |
 
@@ -138,25 +138,26 @@ Der PySide-Schuelerdialog ist der aktive Eingabepfad fuer `student.create`. Er s
 | Kurs | `StudentListItem.course_name` aus `data_courses.course_name` | Anzeige | Nein | `data_courses` | neutrale Textanzeige in eigener Kurs-Spalte, keine Zeilenfaerbung |
 | Kursmarker | `StudentListItem.course_color_hex` aus SQLite-Kursfarbe | Anzeige | Nein | `data_courses` / SQLite `courses` | kleiner farbiger Marker vor dem Kursnamen; Farbe markiert den Kurs, nicht die ganze Zeile |
 | Sortierung | `StudentDesktopAdapter.list_students()` + `sort_student_list()` | Anzeige | Nein | `data_students`, `data_courses` | zuerst Kursreihenfolge aus Stammdaten, dann alphabetisch nach Schuelername; Schueler ohne bekannten aktiven Kurs stehen am Ende |
-| aktiver Filterhinweis | Shell-Filterstate aus Stammgruppe oder Kursverbund/Kurs | Anzeige | Nein | keine fachliche Datenquelle | zeigt `Alle Schüler`, `Stammgruppe: ...` oder `Kursverbund · Kurs`; keine Speicherung |
+| aktiver Filterhinweis | Shell-Filterstate aus Stammgruppe, Kurs oder Kursverbund/Kurs | Anzeige | Nein | keine fachliche Datenquelle | zeigt `Alle Schüler`, `Stammgruppe: ...`, `Kurs: ...` oder `Kursverbund · Kurs`; keine Speicherung |
 | Zurueck zur Auswahl | temporaerer Shell- und `StudentsWorkspace`-State | Navigation | Nein | keine fachliche Datenquelle | erscheint in gefilterten Stammgruppen-/Kurs-/Kursverbund-Schuelerlisten, setzt den Filter zurueck und kehrt lokal zum ausloesenden Segment zurueck |
-| Profil oeffnen | `StudentListItem.student_id` | Navigation | Nein | `data_students` | reine Zeilenauswahl oeffnet nichts; Aktivierung erfolgt bewusst per Doppelklick, Enter oder Zeilenaktion `Profil öffnen`; Namen bleiben reine Anzeige |
+| Profil oeffnen | `StudentListItem.student_id` | Navigation | Nein | `data_students` | einfacher Klick auf eine Nicht-Aktionszelle, Enter oder die sekundäre Zeilenaktion `Profil öffnen` navigiert genau einmal; eingebettete Aktionen bleiben davon getrennt; Namen bleiben reine Anzeige |
 | Schnellbeobachtung | `StudentListItem.student_id` -> `NewObservationDialog` | Navigation / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `observations` / `observation_competency_ratings` | kompakte Zeilenaktion; nutzt denselben Beobachtungsdialog wie das Schuelerprofil und aktualisiert Liste und Dokumentationsstatus nach Speichern |
 
 Regel: Die Schueleruebersicht liest persistente Schueler ueber `StudentDesktopAdapter` aus SQLite. Ein leerer produktiver Start zeigt die leere Liste und erzeugt keine Demo-Schueler.
 
-## Lokale Schuelerprojektionen `Stammgruppen` und `Kursverbünde`
+## Lokale Schuelerprojektionen `Stammgruppen`, `Kurse` und `Kursverbünde`
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | Stammgruppenliste | `MasterDataViewModel.groups` aus SQLite `groups` | Anzeige | Nein | `data_groups` / SQLite `groups` | zeigt alle persistent aktiven Stammgruppen |
 | Schueleranzahl je Stammgruppe | `GroupSummaryViewModel.active_student_count` aus bestehendem Adapter | Anzeige | Nein | `data_students` | nur wenn fuer die Stammgruppe sauber verfuegbar |
+| Direkte Kursliste | `MasterDataViewModel.courses` aus SQLite `courses` | Anzeige / Filter | Nein | `data_courses` / SQLite `courses` | zeigt persistente aktive Kurse in vorhandener Stammdatenreihenfolge und uebergibt `course_id` an die bestehende Schuelerprojektion |
 | Kursverbund | `MasterDataViewModel.course_groups` aus SQLite `course_groups` + Relationen | Anzeige / Filter | Nein | SQLite `course_groups`, `course_group_student_groups`, `course_group_courses` | definiert, welche Stammgruppen gemeinsam Mathe-/Deutsch-Kurse bilden |
 | Kursliste im Kursverbund | `CourseGroupViewModel.selected_course_ids` -> `MasterDataViewModel.courses` | Anzeige / Filter | Nein | `data_courses` | Kursuebersicht ist kursverbundbezogen, nicht global ueber alle Stammgruppen |
 | Kursmarker | `MasterDataItemViewModel.color_hex` | Anzeige | Nein | `data_courses` | nur kleiner Marker, keine Zeilenfaerbung |
 | Kursverbund-Kursfilter | `course_id` + `CourseGroupViewModel.selected_group_ids` | Filter | Nein | `data_students` | zeigt nur Schueler mit Kurs und Stammgruppe im ausgewaehlten Kursverbund |
 
-Regel: Beide Projektionen werden innerhalb von `StudentsWorkspace` angezeigt und sind keine eigenen globalen Navigationsziele. Sie lesen und filtern unveraendert ueber vorhandene Adapter/ViewModels; der Workspace erzeugt keine fachliche Datenquelle und keinen Schreibprozess.
+Regel: Alle drei Projektionen werden innerhalb von `StudentsWorkspace` angezeigt und sind keine eigenen globalen Navigationsziele. Sie lesen und filtern unveraendert ueber vorhandene Adapter/ViewModels; der Workspace erzeugt keine fachliche Datenquelle und keinen Schreibprozess.
 
 ## PySide6 Stammdaten
 

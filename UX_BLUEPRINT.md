@@ -95,11 +95,12 @@ Elemente:
 
 Produktentscheidungen:
 
-- Die Kursübersicht ist eine eigene Hauptansicht.
+- Die Kursübersicht ist im globalen Arbeitsziel `Schüler` als eigenes lokales Segment `Kurse` direkt erreichbar.
 - Die Kursübersicht greift auf dieselben Schülerdaten zu wie die Stammgruppenübersicht.
 - Es existieren keine doppelten Daten.
 - Die Kursübersicht ist ausschließlich eine Projektion des Datenmodells.
 - Die visuelle Gestaltung orientiert sich am freigegebenen Design-System.
+- Ein einfacher Klick auf eine Schuelerzeile oeffnet das Profil; Enter und die sekundäre Profilaktion bleiben barrierearme Alternativen.
 
 ## 7. Schülerprofil
 

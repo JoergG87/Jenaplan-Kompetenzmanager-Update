@@ -6,6 +6,16 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## UI Sprint 1.1 - Schuelerprofil-Zugriff und Kursansicht ✅
+
+- [x] Einfacher Zeilenklick oeffnet das Schuelerprofil genau einmal
+- [x] Doppelklick, Enter und sekundäre Profilaktion ohne Mehrfachnavigation erhalten
+- [x] Eingebettete Beobachtungsaktion von der Zeilennavigation getrennt
+- [x] Lokale Segmente auf `Stammgruppen`, `Kurse`, `Kursverbünde` und `Alle Schüler` erweitert
+- [x] Direkte Kursauswahl nutzt bestehende Kursreihenfolge und `course_id`-Filterprojektion
+- [x] Keine Datenmodell-, Schema-, Repository-, Kursverbund- oder Fachlogikaenderung
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## UI Sprint 1 - Product Shell, Informationsarchitektur und Interaction Foundations ✅
 
 - [x] Globale Navigation auf `Heute`, `Schüler`, `Stammdaten` und `Einstellungen` konzentriert

@@ -525,6 +525,7 @@ class GroupOverviewScreen(QWidget):
 
     group_selected = Signal(str)
     course_selected = Signal(str, str)
+    direct_course_selected = Signal(str)
 
     def __init__(
         self,
@@ -533,11 +534,12 @@ class GroupOverviewScreen(QWidget):
         show_header: bool = True,
     ) -> None:
         super().__init__()
-        if section not in {"all", "groups", "course_groups"}:
+        if section not in {"all", "groups", "courses", "course_groups"}:
             raise ValueError(f"Unbekannter Übersichtsbereich: {section}")
         self.section = section
         self.show_header = show_header
         self.groups_layout = QGridLayout()
+        self.courses_layout = QGridLayout()
         self.course_groups_layout = QVBoxLayout()
         self._build()
 
@@ -558,6 +560,9 @@ class GroupOverviewScreen(QWidget):
         groups_card = self._section_card("Stammgruppen", self.groups_layout)
         groups_card.setVisible(self.section in {"all", "groups"})
         content_layout.addWidget(groups_card)
+        courses_card = self._section_card("Kurse", self.courses_layout)
+        courses_card.setVisible(self.section in {"all", "courses"})
+        content_layout.addWidget(courses_card)
         course_groups_card = self._section_card(
             "Kursverbünde",
             self.course_groups_layout,
@@ -575,6 +580,7 @@ class GroupOverviewScreen(QWidget):
     ) -> None:
         """Replace overview lists with the existing master-data scope."""
         OverviewScreen._clear_layout(self.groups_layout)
+        OverviewScreen._clear_layout(self.courses_layout)
         OverviewScreen._clear_layout(self.course_groups_layout)
         group_counts = {
             group.group_id: group.active_student_count for group in group_summaries
@@ -586,6 +592,14 @@ class GroupOverviewScreen(QWidget):
         for index, group in enumerate(view_model.groups):
             self.groups_layout.addWidget(
                 self._group_card(group, group_counts.get(group.item_id)),
+                index // 2,
+                index % 2,
+            )
+        if not view_model.courses:
+            self.courses_layout.addWidget(QLabel(OVERVIEW_COURSE_EMPTY_STATE), 0, 0)
+        for index, course in enumerate(view_model.courses):
+            self.courses_layout.addWidget(
+                self._course_card(course),
                 index // 2,
                 index % 2,
             )
@@ -603,6 +617,41 @@ class GroupOverviewScreen(QWidget):
         set_label_style(title_label, "section_title")
         layout.addWidget(title_label)
         layout.addLayout(content_layout)
+        return card
+
+    def _course_card(self, course: MasterDataItemViewModel) -> QFrame:
+        card = create_card()
+        layout = QVBoxLayout(card)
+        heading = QHBoxLayout()
+        marker = QFrame()
+        marker.setObjectName("CourseColorMarker")
+        marker.setFixedSize(10, 10)
+        palette = marker.palette()
+        palette.setColor(
+            QPalette.ColorRole.Window,
+            QColor(course.color_hex or "#6B7280"),
+        )
+        marker.setPalette(palette)
+        marker.setAutoFillBackground(True)
+        name = QLabel(course.name)
+        set_label_style(name, "section_title")
+        heading.addWidget(marker)
+        heading.addWidget(name)
+        heading.addStretch(1)
+        open_button = QPushButton("Schüler anzeigen")
+        configure_button(
+            open_button,
+            "secondary",
+            f"Schüler im Kurs {course.name} anzeigen",
+        )
+        open_button.setEnabled(course.is_persistent)
+        open_button.clicked.connect(
+            lambda _checked=False, course_id=course.item_id: self.direct_course_selected.emit(
+                course_id
+            )
+        )
+        layout.addLayout(heading)
+        layout.addWidget(open_button)
         return card
 
     def _group_card(
