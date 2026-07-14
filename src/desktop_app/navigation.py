@@ -11,6 +11,8 @@ class NavigationItem:
 
     key: str
     label: str
+    section: str
+    icon_name: str
 
 
 @dataclass(frozen=True)
@@ -22,14 +24,10 @@ class NavigationTarget:
 
 
 NAVIGATION_ITEMS: tuple[NavigationItem, ...] = (
-    NavigationItem("dashboard", "Dashboard"),
-    NavigationItem("overview", "Übersicht"),
-    NavigationItem("students", "Schüler"),
-    NavigationItem("observations", "Beobachtungen"),
-    NavigationItem("competencies", "Kompetenzen"),
-    NavigationItem("reports", "Berichte"),
-    NavigationItem("master_data", "Stammdaten"),
-    NavigationItem("settings", "Einstellungen"),
+    NavigationItem("dashboard", "Heute", "ARBEIT", "today"),
+    NavigationItem("students", "Schüler", "ARBEIT", "students"),
+    NavigationItem("master_data", "Stammdaten", "VERWALTUNG", "master-data"),
+    NavigationItem("settings", "Einstellungen", "VERWALTUNG", "settings"),
 )
 
 
@@ -37,4 +35,6 @@ def resolve_navigation_target(key: str) -> NavigationTarget:
     """Resolve sidebar navigation to a shell screen target."""
     if key == "students":
         return NavigationTarget("students", reset_group_filter=True)
-    return NavigationTarget(key)
+    if key in {item.key for item in NAVIGATION_ITEMS}:
+        return NavigationTarget(key)
+    raise ValueError(f"Unbekanntes Navigationsziel: {key}")

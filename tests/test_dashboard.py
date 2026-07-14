@@ -13,7 +13,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QScrollArea
+from PySide6.QtWidgets import QApplication, QFrame, QLabel, QPushButton, QScrollArea
 
 from src.application.commands.timetable import SaveTimetableEntryCommand
 from src.core.sqlite_store import SQLiteCompetencyRepository, SQLiteDatabase
@@ -23,6 +23,7 @@ from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapt
 from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
 from src.desktop_app.screens.overview_screen import DashboardLessonCard, OverviewScreen
 from src.desktop_app.shell import AppShell
+from src.desktop_app import theme
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.view_models.observation_view_model import (
     ObservationCompetencyRatingDraft,
@@ -183,6 +184,7 @@ class DashboardTest(unittest.TestCase):
         screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, False)
 
         labels = tuple(label.text() for label in screen.findChildren(QLabel))
+        self.assertIn("Heute", labels)
         self.assertIn("3 / 8 Kinder dokumentiert", labels)
         self.assertTrue(any("keine Leistung" in text for text in labels))
         self.assertFalse(any("++" in text or "Score" in text for text in labels))
@@ -190,6 +192,10 @@ class DashboardTest(unittest.TestCase):
         self.assertIsNotNone(scroll)
         self.assertTrue(scroll.widgetResizable())
         self.assertLessEqual(screen.minimumWidth(), 620)
+        markers = screen.findChildren(QFrame, "DashboardHeatmapMarker")
+        self.assertTrue(markers)
+        self.assertNotIn("QLabel#DashboardHeatmapMarker", theme.APP_STYLESHEET)
+        self.assertIn("background-color: #4F7599", theme.APP_STYLESHEET)
 
     def test_shell_navigates_all_target_types_and_builds_observation_prefill(self) -> None:
         instant = datetime(2026, 7, 13, 8, 15)

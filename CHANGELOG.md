@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## UI Sprint 1 - Product Shell und Interaction Foundations
+
+### Added
+
+- Lokalen Schueler-Arbeitsraum mit den Segmenten `Stammgruppen`, `Kursverbünde` und `Alle Schüler` sowie bewusstem Drill-down in bestehende ID-basierte Listen eingefuehrt.
+- Zentrale UI-Grundkomponenten fuer Page Header, segmentierte Navigation, Suche, Status, Inline-Hinweise, Leerzustaende und nicht blockierende Toast-Meldungen ergaenzt.
+- Konsistentes SVG-Shell-Iconset in 16-, 20- und 24-Pixel-Rollen sowie semantische Farb-, Typografie-, Abstands-, Radius-, Elevation- und Motion-Tokens registriert.
+
+### Changed
+
+- Globale Navigation auf `ARBEIT` mit `Heute` und `Schüler` sowie `VERWALTUNG` mit `Stammdaten` und `Einstellungen` reduziert; leere globale Beobachtungs-, Kompetenz- und Berichtsziele entfernt.
+- `Dashboard` sichtbar in `Heute` umbenannt und die bisherige globale `Übersicht` in den Schueler-Arbeitsraum integriert.
+- Native Systemschrift statt erzwungenem Arial, zentral definierte Buttonrollen und klar sichtbare Hover-, Aktiv-, Fokus-, Pressed- und Disabled-Zustaende verwendet.
+- Reine Zeilenauswahl in der Schuelerliste vom Profiloeffnen getrennt; Profil wird per Doppelklick, Enter oder expliziter Aktion geoeffnet.
+- Dokumentationsmatrix auf neutrale Blau-Grau-Abstufungen ohne Ampel- oder Leistungssemantik umgestellt und App-Info von ueberholten Prototyp-/Nicht-Persistenz-Hinweisen bereinigt.
+
+### Not Changed
+
+- Keine Aenderung an Datenmodell, SQLite-Schema, Migrationen, Repositories, Adaptern, ViewModels, Stundenplan-, Beobachtungs-, Kompetenzstatus-, Berichts-, LEG- oder PDF-Fachlogik.
+- Keine Excel-/VBA-, Prototyp-, Dark-Mode-, QPainter- oder vollstaendige Dialog-/Profil-Neugestaltung.
+
 ## Sprint 8B.3 - Passende Kinder als transparente Dokumentationshilfe
 
 ### Added

@@ -72,12 +72,14 @@ Rueckmeldung:
 
 ## B. Schuelerlisten / Kursuebersichten
 
-1. Stammgruppe oeffnen.
-2. Kurs oeffnen.
+1. Global `Schüler` oeffnen und zwischen `Stammgruppen`, `Kursverbünde` und `Alle Schüler` wechseln.
+2. Je eine Stammgruppe und einen Kurs innerhalb eines Kursverbunds oeffnen.
 3. Pruefen, ob Schueler nach Kurs und Alphabet sinnvoll sortiert sind.
 4. Pruefen, ob der Dokumentationsstatus in der Liste hilfreich ist.
-5. Direkt aus einer Schuelerzeile `Beobachten` oeffnen.
-6. Mit `← Zur Übersicht` aus einer gefilterten Liste zur Uebersicht zurueckgehen.
+5. Eine Schuelerzeile nur markieren und pruefen, dass das Profil nicht sofort oeffnet.
+6. Profil per Doppelklick, Enter und `Profil öffnen` aufrufen.
+7. Direkt aus einer Schuelerzeile `Beobachten` oeffnen.
+8. Mit `Zurück zur Auswahl` aus einer gefilterten Liste zum lokalen Ursprung zurueckgehen.
 
 Rueckmeldung:
 
@@ -85,7 +87,8 @@ Rueckmeldung:
 - Fehlt etwas?
 - Ist der Dokumentationsstatus hilfreich oder stressig?
 - Ist die Schnellaktion `Beobachten` gut auffindbar, ohne die Liste zu ueberladen?
-- Ist `← Zur Übersicht` an der erwarteten Stelle?
+- Sind Markieren und bewusstes Profiloeffnen klar getrennt?
+- Ist `Zurück zur Auswahl` an der erwarteten Stelle?
 
 ## C. Stammdaten / Kursverbuende
 

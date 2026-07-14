@@ -14,9 +14,12 @@ Spalten:
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| App-Info | statische PySide6-Prototyp-Texte | Anzeige | Nein | keine fachliche Datenquelle | nicht-technische Orientierung, keine Fachlogik |
+| App-Info | statische Produkttexte | Anzeige | Nein | keine fachliche Datenquelle | benennt lokale Desktop-App, Produktversion und lokale Speicherung; keine Prototyp- oder Nicht-Persistenz-Platzhalter |
 | App-Icon | versioniertes Asset `assets/app_icon.png` | Anzeige | Nein | keine fachliche Datenquelle | sichtbares Branding in Sidebar und Info-Dialog; keine Fachlogik |
-| Visuelles Theme | freigegebene Icon-Leitlinie aus `docs/DESIGN_SYSTEM.md` | Anzeige | Nein | keine fachliche Datenquelle | app-weites PySide-Theme fuer Farben, Karten, Navigation, Tabellen, Eingaben und Dialoge; keine Fachlogik |
+| Globale Navigation | statische `NAVIGATION_ITEMS` | Navigation | Nein | keine fachliche Datenquelle | `ARBEIT`: `Heute`, `Schüler`; `VERWALTUNG`: `Stammdaten`, `Einstellungen`; keine leeren globalen Beobachtungs-, Kompetenz- oder Berichtsziele |
+| Lokale Schuelernavigation | temporaerer `StudentsWorkspace`-State | Navigation / Filter | Nein | keine fachliche Datenquelle | Segmente `Stammgruppen`, `Kursverbünde`, `Alle Schüler`; Drill-down behaelt den lokalen Ursprung, fachliche IDs und bestehende Filterprojektionen |
+| Visuelles Theme | freigegebene Icon-Leitlinie und Tokens aus `docs/DESIGN_SYSTEM.md` | Anzeige | Nein | keine fachliche Datenquelle | native Systemschrift, semantische Farben/Typografie/Abstaende/Radien/Elevation/Motion, zentrale Buttonrollen und SVG-Shell-Icons; keine Fachlogik |
+| Shell-Feedback | bestehende Shell-Ergebnisse und UI-Zustaende | Anzeige | Nein | keine fachliche Datenquelle | nicht blockierender `Toast` fuer kurze Rueckmeldung; `InlineMessage` fuer kontextgebundene Hinweise; keine Persistenz |
 
 ## PySide6 Einstellungen
 
@@ -31,9 +34,9 @@ Status: Sprint 2C wendet die gespeicherte Auswahl in Dokumentationsauswertungen 
 | Zielart und Ziel | `timetable_entries.target_type` / `target_id` -> `groups`, `courses` oder `course_groups` | Eingabe / Anzeige | Ja (nur ID-Referenz) | Stammdaten / `timetable_entries` | Ziel-ID muss zur Zielart Stammgruppe, Kurs oder Kursverbund passen |
 | Raum/Ort | `timetable_entries.room` | Eingabe / Anzeige | Ja (ueber freigegebenen Prozess) | `timetable_entries` | optionaler Freitext, keine neue Raum-Stammdatenquelle |
 
-## PySide6 Dashboard
+## PySide6 Heute / technischer Screen `dashboard`
 
-UX-Status Sprint 8B.1: eigener Hauptnavigationspunkt `Dashboard`; die bestehende `Übersicht` bleibt separat. Die Datenherkunft der folgenden Felder ist unveraendert, nur Timeline-, Matrix-, Hero- und Aktionsanordnung folgen der freigegebenen UX-Referenz.
+UX-Status UI Sprint 1: sichtbarer Hauptnavigationspunkt `Heute`; der technische Schluessel `dashboard` und alle Datenherkuenfte bleiben unveraendert. Die fruehere `Übersicht` ist lokal in `Schüler` integriert.
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
@@ -136,12 +139,13 @@ Der PySide-Schuelerdialog ist der aktive Eingabepfad fuer `student.create`. Er s
 | Kursmarker | `StudentListItem.course_color_hex` aus SQLite-Kursfarbe | Anzeige | Nein | `data_courses` / SQLite `courses` | kleiner farbiger Marker vor dem Kursnamen; Farbe markiert den Kurs, nicht die ganze Zeile |
 | Sortierung | `StudentDesktopAdapter.list_students()` + `sort_student_list()` | Anzeige | Nein | `data_students`, `data_courses` | zuerst Kursreihenfolge aus Stammdaten, dann alphabetisch nach Schuelername; Schueler ohne bekannten aktiven Kurs stehen am Ende |
 | aktiver Filterhinweis | Shell-Filterstate aus Stammgruppe oder Kursverbund/Kurs | Anzeige | Nein | keine fachliche Datenquelle | zeigt `Alle Schüler`, `Stammgruppe: ...` oder `Kursverbund · Kurs`; keine Speicherung |
-| Zurueck zur Uebersicht | temporaerer Shell-Filterstate | Navigation | Nein | keine fachliche Datenquelle | erscheint in gefilterten Stammgruppen-/Kurs-/Kursverbund-Schuelerlisten und setzt den Filter zurueck zur Uebersicht |
+| Zurueck zur Auswahl | temporaerer Shell- und `StudentsWorkspace`-State | Navigation | Nein | keine fachliche Datenquelle | erscheint in gefilterten Stammgruppen-/Kurs-/Kursverbund-Schuelerlisten, setzt den Filter zurueck und kehrt lokal zum ausloesenden Segment zurueck |
+| Profil oeffnen | `StudentListItem.student_id` | Navigation | Nein | `data_students` | reine Zeilenauswahl oeffnet nichts; Aktivierung erfolgt bewusst per Doppelklick, Enter oder Zeilenaktion `Profil öffnen`; Namen bleiben reine Anzeige |
 | Schnellbeobachtung | `StudentListItem.student_id` -> `NewObservationDialog` | Navigation / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `observations` / `observation_competency_ratings` | kompakte Zeilenaktion; nutzt denselben Beobachtungsdialog wie das Schuelerprofil und aktualisiert Liste und Dokumentationsstatus nach Speichern |
 
 Regel: Die Schueleruebersicht liest persistente Schueler ueber `StudentDesktopAdapter` aus SQLite. Ein leerer produktiver Start zeigt die leere Liste und erzeugt keine Demo-Schueler.
 
-## PySide6 Uebersicht `Stammgruppen und Schülerbestand`
+## Lokale Schuelerprojektionen `Stammgruppen` und `Kursverbünde`
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
@@ -151,6 +155,8 @@ Regel: Die Schueleruebersicht liest persistente Schueler ueber `StudentDesktopAd
 | Kursliste im Kursverbund | `CourseGroupViewModel.selected_course_ids` -> `MasterDataViewModel.courses` | Anzeige / Filter | Nein | `data_courses` | Kursuebersicht ist kursverbundbezogen, nicht global ueber alle Stammgruppen |
 | Kursmarker | `MasterDataItemViewModel.color_hex` | Anzeige | Nein | `data_courses` | nur kleiner Marker, keine Zeilenfaerbung |
 | Kursverbund-Kursfilter | `course_id` + `CourseGroupViewModel.selected_group_ids` | Filter | Nein | `data_students` | zeigt nur Schueler mit Kurs und Stammgruppe im ausgewaehlten Kursverbund |
+
+Regel: Beide Projektionen werden innerhalb von `StudentsWorkspace` angezeigt und sind keine eigenen globalen Navigationsziele. Sie lesen und filtern unveraendert ueber vorhandene Adapter/ViewModels; der Workspace erzeugt keine fachliche Datenquelle und keinen Schreibprozess.
 
 ## PySide6 Stammdaten
 

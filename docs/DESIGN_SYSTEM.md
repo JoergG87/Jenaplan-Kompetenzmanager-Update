@@ -174,6 +174,37 @@ Das Icon ist Branding und Bedeutungsanker, keine dekorative Ueberladung. Es darf
 
 Die leichte Glasoptik wird technisch ueber helle, weich abgesetzte Flaechen, sanfte Rahmen und dezente Kontraste simuliert. Echte macOS-Transparenz oder schwer wartbare Spezialwidgets sind nicht Bestandteil des Design-Systems.
 
+### UI Sprint 1: Design Tokens und Grundkomponenten
+
+Die PySide-Hauptanwendung verwendet die native Systemschrift. Eine feste Schriftfamilie wie Arial wird nicht gesetzt. Semantische Typografierollen definieren Hierarchie, Gewicht und Groesse, ohne die Plattformtypografie zu ersetzen.
+
+Verbindliche Token-Stufen:
+
+- Abstaende: `4`, `8`, `12`, `16`, `24`, `32`, `48`
+- Radien: klein, mittel, gross und extra gross
+- Elevation: flach, Karte und Overlay; Tiefe bleibt dezent und dient nur der Hierarchie
+- Motion: schnell `120 ms`, Standard `180 ms`, langsam `240 ms`; Animationen sind optional und duerfen Bedienung oder Tests nicht blockieren
+- Farben: Hintergrund, Oberflaeche, Rahmen, Text, Fokus, Information, Erfolg, Warnung und Fehler werden semantisch benannt
+
+Verbindliche Buttonrollen:
+
+- `primary`: genau die wichtigste Seiten- oder Speicheraktion
+- `secondary`: normale explizite Aktion
+- `quiet`: untergeordnete Aktion ohne visuelles Gewicht
+- `destructive`: bestaetigungspflichtige destruktive Aktion
+- `icon`: kompakte Aktion mit zugaenglichem Namen und Tooltip
+- `link`: Navigation innerhalb eines fachlichen Kontexts
+
+Alle Rollen besitzen Normal-, Hover-, Fokus-, Pressed- und Disabled-Zustaende. Speichern bleibt primaer; Abbrechen bleibt sekundaer. Lokale Stylesheets duerfen fuer diese Interaktionsrollen nicht verwendet werden.
+
+Registrierte Grundkomponenten sind `PageHeader`, `SegmentedControl`, `SearchField`, `StatusBadge`, `InlineMessage`, `EmptyState` und `Toast`. `NavigationItem` ist die semantische Definition eines Shell-Eintrags. Nicht blockierender Erfolg erscheint als Toast; dauerhaft handlungsrelevante Information, Warnung oder Validierung steht inline am betroffenen Kontext. Modale Dialoge bleiben fuer irreversible Bestaetigungen und Fehler, die ein Fortsetzen verhindern.
+
+Die Shell verwendet ein konsistentes Outline-SVG-Set mit den Groessenrollen `16`, `20` und `24`. Zufaellige Unicode-Zeichen sind keine Shell- oder Aktionsicons. Fachlich variable Kursfarben werden als kleine neutrale Flaechenmarker dargestellt.
+
+Fokus folgt der sichtbaren Arbeitsreihenfolge. Alle interaktiven Elemente sind per Tab erreichbar; segmentierte Navigation reagiert zusaetzlich auf Links/Rechts, Suche auf Escape und Tabellenaktivierung auf Enter beziehungsweise Doppelklick. Iconaktionen und nicht selbsterklaerende Controls erhalten zugaengliche Namen und Tooltips.
+
+Dokumentationsabdeckung verwendet ausschliesslich neutrale Blau-Grau-Abstufungen. Sie ist keine Bewertung, keine Leistung und keine Ampel. Gruen, Orange und Rot duerfen in dieser Matrix keinen vermeintlich guten, mittleren oder schlechten Kompetenzstand codieren.
+
 ## Änderungsregel
 
 Normale Entwicklungssprints verändern das Design nicht.

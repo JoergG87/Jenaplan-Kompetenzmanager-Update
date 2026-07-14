@@ -23,14 +23,51 @@ COLOR_TEXT = "#1F2937"
 COLOR_TEXT_MUTED = "#556372"
 COLOR_TEXT_SUBTLE = "#6B7280"
 COLOR_ERROR = "#B00020"
+COLOR_SUCCESS = "#24705A"
+COLOR_WARNING = "#8A6418"
+COLOR_INFO = "#315F83"
+COLOR_FOCUS = "#5B8DEF"
 
-FONT_FAMILY = "Arial"
+# UI Sprint 1 tokens. Qt keeps the native platform font; no family is forced.
+SPACING_4 = 4
+SPACING_8 = 8
+SPACING_12 = 12
+SPACING_16 = 16
+SPACING_24 = 24
+SPACING_32 = 32
+SPACING_48 = 48
+
+RADIUS_SMALL = 6
+RADIUS_MEDIUM = 8
+RADIUS_LARGE = 12
+RADIUS_XLARGE = 16
+
+ELEVATION_FLAT = 0
+ELEVATION_CARD = 1
+ELEVATION_OVERLAY = 2
+
+MOTION_FAST_MS = 120
+MOTION_STANDARD_MS = 180
+MOTION_SLOW_MS = 240
+
+TYPOGRAPHY_STYLES = {
+    "app_title": f"font-size: 24px; font-weight: 700; color: {COLOR_NAVY};",
+    "screen_title": f"font-size: 22px; font-weight: 700; color: {COLOR_NAVY};",
+    "dialog_title": f"font-size: 20px; font-weight: 700; color: {COLOR_NAVY};",
+    "section_title": f"font-size: 16px; font-weight: 600; color: {COLOR_NAVY};",
+    "card_title": f"font-weight: 600; color: {COLOR_NAVY};",
+    "muted": f"color: {COLOR_TEXT_MUTED};",
+    "subtle": f"color: {COLOR_TEXT_SUBTLE};",
+    "body": f"color: {COLOR_TEXT};",
+    "error": f"color: {COLOR_ERROR};",
+    "small": f"color: {COLOR_TEXT_SUBTLE}; font-size: 11px;",
+    "field_label": f"color: {COLOR_TEXT_MUTED}; font-size: 12px;",
+}
 
 APP_STYLESHEET = f"""
 QMainWindow {{
     background-color: {COLOR_BACKGROUND};
     color: {COLOR_TEXT};
-    font-family: {FONT_FAMILY};
 }}
 QWidget#AppRoot {{
     background-color: {COLOR_BACKGROUND};
@@ -42,7 +79,6 @@ QWidget#AppSidebar {{
 }}
 QWidget {{
     color: {COLOR_TEXT};
-    font-family: {FONT_FAMILY};
     font-size: 13px;
 }}
 QLabel#AppIconLabel {{
@@ -57,6 +93,15 @@ QLabel#SidebarBrandSubtitle {{
     color: #CFE2F0;
     font-size: 12px;
 }}
+QWidget#AppSidebar QPushButton[buttonRole="quiet"] {{
+    color: #EAF2F8;
+    background-color: transparent;
+    border-color: transparent;
+}}
+QWidget#AppSidebar QPushButton[buttonRole="quiet"]:hover {{
+    color: #FFFFFF;
+    background-color: #174A74;
+}}
 QListWidget#AppNavigation {{
     background-color: transparent;
     color: #EAF2F8;
@@ -66,7 +111,7 @@ QListWidget#AppNavigation {{
 }}
 QListWidget#AppNavigation::item {{
     border-radius: 8px;
-    padding: 9px 10px;
+    padding: 9px 10px 9px 8px;
     margin: 2px 0;
 }}
 QListWidget#AppNavigation::item:selected {{
@@ -75,6 +120,17 @@ QListWidget#AppNavigation::item:selected {{
 }}
 QListWidget#AppNavigation::item:hover {{
     background-color: #174A74;
+}}
+QListWidget#AppNavigation::item:focus {{
+    border: 2px solid #9FC5F1;
+}}
+QListWidget#AppNavigation::item:disabled {{
+    color: #9FB6C8;
+    background-color: transparent;
+    padding-top: 16px;
+    padding-bottom: 3px;
+    font-size: 10px;
+    font-weight: 700;
 }}
 QFrame#AppCard {{
     background-color: {COLOR_GLASS};
@@ -179,11 +235,23 @@ QFrame#DashboardHeatmapCell[coverageLevel="1"] {{ background-color: #EEF6FC; }}
 QFrame#DashboardHeatmapCell[coverageLevel="2"] {{ background-color: #E3F0F9; }}
 QFrame#DashboardHeatmapCell[coverageLevel="3"] {{ background-color: #D5E9F6; }}
 QFrame#DashboardHeatmapCell[coverageLevel="4"] {{ background-color: #C8E2F2; }}
-QFrame#DashboardHeatmapCell[coverageLevel="0"] QLabel#DashboardHeatmapMarker {{ color: #A6B0BB; }}
-QFrame#DashboardHeatmapCell[coverageLevel="1"] QLabel#DashboardHeatmapMarker {{ color: #F59E0B; }}
-QFrame#DashboardHeatmapCell[coverageLevel="2"] QLabel#DashboardHeatmapMarker {{ color: #EAB308; }}
-QFrame#DashboardHeatmapCell[coverageLevel="3"] QLabel#DashboardHeatmapMarker {{ color: #22C55E; }}
-QFrame#DashboardHeatmapCell[coverageLevel="4"] QLabel#DashboardHeatmapMarker {{ color: #16A34A; }}
+QFrame#DashboardHeatmapMarker {{
+    border: none;
+    border-radius: 5px;
+    min-width: 10px;
+    max-width: 10px;
+    min-height: 10px;
+    max-height: 10px;
+}}
+QFrame#CourseColorMarker {{
+    border: none;
+    border-radius: 5px;
+}}
+QFrame#DashboardHeatmapCell[coverageLevel="0"] QFrame#DashboardHeatmapMarker {{ background-color: #CBD5E1; }}
+QFrame#DashboardHeatmapCell[coverageLevel="1"] QFrame#DashboardHeatmapMarker {{ background-color: #B7C9DC; }}
+QFrame#DashboardHeatmapCell[coverageLevel="2"] QFrame#DashboardHeatmapMarker {{ background-color: #91ADC8; }}
+QFrame#DashboardHeatmapCell[coverageLevel="3"] QFrame#DashboardHeatmapMarker {{ background-color: #6F91B2; }}
+QFrame#DashboardHeatmapCell[coverageLevel="4"] QFrame#DashboardHeatmapMarker {{ background-color: #4F7599; }}
 QFrame#LearningReportTopBar {{
     background-color: {COLOR_NAVY};
     border: none;
@@ -419,6 +487,76 @@ QPushButton:disabled {{
     background-color: #EEF3F7;
     border-color: #E3EAF0;
 }}
+QPushButton:focus {{
+    border: 2px solid {COLOR_FOCUS};
+    padding: 5px 12px;
+}}
+QPushButton[buttonRole="primary"] {{
+    background-color: {COLOR_BLUE};
+    color: #FFFFFF;
+    border-color: {COLOR_BLUE_DARK};
+    font-weight: 600;
+}}
+QPushButton[buttonRole="primary"]:hover {{ background-color: {COLOR_BLUE_DARK}; }}
+QPushButton[buttonRole="primary"]:pressed {{ background-color: {COLOR_BLUE_PRESSED}; }}
+QPushButton[buttonRole="primary"]:disabled {{
+    background-color: #93C5FD;
+    border-color: #93C5FD;
+    color: #F8FAFC;
+}}
+QPushButton[buttonRole="secondary"] {{
+    background-color: {COLOR_SURFACE};
+    color: {COLOR_NAVY};
+}}
+QPushButton[buttonRole="quiet"] {{
+    background-color: transparent;
+    color: {COLOR_TEXT_MUTED};
+    border-color: transparent;
+}}
+QPushButton[buttonRole="quiet"]:hover {{
+    background-color: #EAF2F8;
+    color: {COLOR_NAVY};
+}}
+QPushButton[buttonRole="destructive"] {{
+    background-color: #FFF5F5;
+    color: {COLOR_ERROR};
+    border-color: #E7B8C0;
+}}
+QPushButton[buttonRole="destructive"]:hover {{ background-color: #FCE8EB; }}
+QPushButton[buttonRole="icon"] {{
+    background-color: transparent;
+    border-color: transparent;
+    padding: 6px;
+    min-width: 28px;
+}}
+QPushButton[buttonRole="link"] {{
+    background-color: transparent;
+    color: {COLOR_BLUE_DARK};
+    border-color: transparent;
+    padding-left: 2px;
+    padding-right: 2px;
+}}
+QPushButton[buttonRole="link"]:hover {{ text-decoration: underline; }}
+QPushButton#SegmentedControlButton {{
+    border-radius: 0px;
+    border-right: none;
+    padding: 7px 14px;
+}}
+QPushButton#SegmentedControlButton[segmentPosition="first"] {{
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}}
+QPushButton#SegmentedControlButton[segmentPosition="last"] {{
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-right: 1px solid #BED0DE;
+}}
+QPushButton#SegmentedControlButton:checked {{
+    background-color: {COLOR_NAVY};
+    border-color: {COLOR_NAVY};
+    color: #FFFFFF;
+    font-weight: 600;
+}}
 QPushButton#ObservationTextActionButton {{
     background-color: transparent;
     border: none;
@@ -453,6 +591,53 @@ QLineEdit, QTextEdit, QComboBox, QDateEdit, QDateTimeEdit, QTimeEdit {{
 QLineEdit:focus, QTextEdit:focus, QComboBox:focus,
 QDateEdit:focus, QDateTimeEdit:focus, QTimeEdit:focus {{
     border: 1px solid {COLOR_BLUE};
+}}
+QLineEdit#SearchField {{
+    min-width: 260px;
+    padding-left: 10px;
+}}
+QTableWidget:focus, QListWidget:focus {{
+    border: 1px solid {COLOR_FOCUS};
+}}
+QFrame#InlineMessage {{
+    background-color: #EEF5FA;
+    border: 1px solid #CBDCE9;
+    border-radius: 8px;
+}}
+QFrame#InlineMessage[messageTone="warning"] {{
+    background-color: #FFF8E8;
+    border-color: #E8D3A2;
+}}
+QFrame#InlineMessage[messageTone="error"] {{
+    background-color: #FFF1F2;
+    border-color: #E7B8C0;
+}}
+QFrame#EmptyState {{
+    background-color: {COLOR_SURFACE_SOFT};
+    border: 1px dashed {COLOR_BORDER};
+    border-radius: 10px;
+}}
+QLabel#StatusBadge {{
+    background-color: #E7EEF5;
+    color: {COLOR_INFO};
+    border-radius: 9px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}}
+QFrame#Toast {{
+    background-color: #22384A;
+    border: 1px solid #38566E;
+    border-radius: 9px;
+}}
+QFrame#Toast QLabel {{ color: #FFFFFF; }}
+QFrame#Toast[toastTone="success"] {{
+    background-color: {COLOR_SUCCESS};
+    border-color: #3C806D;
+}}
+QFrame#Toast[toastTone="warning"] {{
+    background-color: #755719;
+    border-color: #947333;
 }}
 QComboBox, QDateEdit, QDateTimeEdit, QTimeEdit {{
     padding-right: 26px;
@@ -576,7 +761,7 @@ QPushButton:disabled {{
 
 
 def apply_app_theme(app: QApplication) -> None:
-    """Apply the app-wide PySide stylesheet."""
+    """Apply the app-wide stylesheet while retaining the native system font."""
     app.setStyleSheet(APP_STYLESHEET)
 
 
@@ -590,17 +775,12 @@ def create_card() -> QFrame:
 
 def set_label_style(label: QLabel, role: str) -> None:
     """Apply a semantic text style to a label."""
-    styles = {
-        "app_title": f"font-size: 24px; font-weight: 700; color: {COLOR_NAVY};",
-        "screen_title": f"font-size: 22px; font-weight: 700; color: {COLOR_NAVY};",
-        "dialog_title": f"font-size: 20px; font-weight: 700; color: {COLOR_NAVY};",
-        "section_title": f"font-size: 16px; font-weight: 600; color: {COLOR_NAVY};",
-        "card_title": f"font-weight: 600; color: {COLOR_NAVY};",
-        "muted": f"color: {COLOR_TEXT_MUTED};",
-        "subtle": f"color: {COLOR_TEXT_SUBTLE};",
-        "body": f"color: {COLOR_TEXT};",
-        "error": f"color: {COLOR_ERROR};",
-        "small": f"color: {COLOR_TEXT_SUBTLE}; font-size: 11px;",
-        "field_label": f"color: {COLOR_TEXT_MUTED}; font-size: 12px;",
-    }
-    label.setStyleSheet(styles[role])
+    label.setStyleSheet(TYPOGRAPHY_STYLES[role])
+
+
+def set_button_role(button: object, role: str) -> None:
+    """Assign one semantic button role and refresh its stylesheet state."""
+    button.setProperty("buttonRole", role)
+    style = button.style()
+    style.unpolish(button)
+    style.polish(button)

@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Signal
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
     QHeaderView,
     QLabel,
-    QLineEdit,
+    QFrame,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -16,6 +17,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.desktop_app.components import (
+    EmptyState,
+    InlineMessage,
+    PageHeader,
+    SearchField,
+    configure_button,
+)
 from src.desktop_app.view_models.student_view_model import (
     StudentListItem,
     filter_student_list,
@@ -25,7 +33,7 @@ from src.desktop_app.theme import set_label_style
 
 STUDENT_SEARCH_PLACEHOLDER = "Schüler suchen …"
 STUDENT_LIST_EMPTY_STATE = (
-    "Noch keine Schüler vorhanden.\nLege über „+ Schüler“ den ersten Schüler an."
+    "Noch keine Schüler vorhanden.\nLege über „Schüler anlegen“ den ersten Schüler an."
 )
 STUDENT_SEARCH_EMPTY_STATE = "Keine Schüler gefunden."
 
@@ -38,56 +46,64 @@ class StudentsScreen(QWidget):
     observation_requested = Signal(str)
     back_to_overview_requested = Signal()
 
-    def __init__(self) -> None:
+    def __init__(self, *, show_header: bool = True) -> None:
         super().__init__()
         self.students: tuple[StudentListItem, ...] = ()
         self.filtered_students: tuple[StudentListItem, ...] = ()
-        self.group_filter_label = QLabel("")
-        self.empty_state_label = QLabel("")
-        self.search_input = QLineEdit()
-        self.back_to_overview_button = QPushButton("← Zur Übersicht")
+        self.filter_message = InlineMessage()
+        self.group_filter_label = self.filter_message.label
+        self.empty_state = EmptyState()
+        self.empty_state_label = self.empty_state.label
+        self.search_input = SearchField(STUDENT_SEARCH_PLACEHOLDER)
+        self.back_to_overview_button = QPushButton("Zurück zur Auswahl")
         self.table = QTableWidget(0, 4)
+        self._show_header = show_header
         self._build()
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
 
         header = QHBoxLayout()
-        title = QLabel("Schüler")
-        set_label_style(title, "screen_title")
-        new_student_button = QPushButton("+ Schüler")
-        new_student_button.clicked.connect(self.new_student_requested.emit)
         self.back_to_overview_button.clicked.connect(
             self.back_to_overview_requested.emit
         )
+        configure_button(
+            self.back_to_overview_button,
+            "quiet",
+            "Zurück zu Stammgruppen oder Kursverbünden",
+        )
         self.back_to_overview_button.setVisible(False)
-        header.addWidget(title)
-        header.addStretch()
+        if self._show_header:
+            page_header = PageHeader("Schüler", "Alle Schüler durchsuchen und öffnen")
+            new_student_button = QPushButton("Schüler anlegen")
+            configure_button(new_student_button, "primary", "Neuen Schüler anlegen")
+            new_student_button.clicked.connect(self.new_student_requested.emit)
+            page_header.add_action(new_student_button)
+            layout.addWidget(page_header)
         header.addWidget(self.back_to_overview_button)
-        header.addWidget(new_student_button)
+        header.addStretch()
         layout.addLayout(header)
 
         search_row = QHBoxLayout()
-        self.search_input.setPlaceholderText(STUDENT_SEARCH_PLACEHOLDER)
         self.search_input.textChanged.connect(self.apply_search)
-        clear_search_button = QPushButton("Zurücksetzen")
-        clear_search_button.clicked.connect(self.search_input.clear)
         search_row.addWidget(self.search_input)
-        search_row.addWidget(clear_search_button)
+        search_row.addStretch(1)
         layout.addLayout(search_row)
 
-        set_label_style(self.group_filter_label, "muted")
-        layout.addWidget(self.group_filter_label)
-        set_label_style(self.empty_state_label, "subtle")
-        self.empty_state_label.setWordWrap(True)
-        layout.addWidget(self.empty_state_label)
+        layout.addWidget(self.filter_message)
+        layout.addWidget(self.empty_state)
 
         self.table.setHorizontalHeaderLabels(
             ("Name", "Kurs", "Dokumentation", "Aktion")
         )
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setAlternatingRowColors(True)
+        self.table.setAccessibleName("Schülerliste")
+        self.table.setAccessibleDescription(
+            "Zeile auswählen; mit Eingabe oder Doppelklick das Profil öffnen."
+        )
         self.table.horizontalHeader().setSectionResizeMode(
             0,
             QHeaderView.ResizeMode.Stretch,
@@ -104,8 +120,7 @@ class StudentsScreen(QWidget):
             3,
             QHeaderView.ResizeMode.ResizeToContents,
         )
-        self.table.cellDoubleClicked.connect(self._open_student)
-        self.table.itemSelectionChanged.connect(self._select_student)
+        self.table.itemActivated.connect(self._activate_student_item)
         layout.addWidget(self.table)
 
     def set_students(
@@ -117,7 +132,7 @@ class StudentsScreen(QWidget):
     ) -> None:
         """Replace student rows."""
         self.students = students
-        self.group_filter_label.setText(group_filter_name or "Alle Schüler")
+        self.filter_message.set_message(group_filter_name or "Alle Schüler")
         self.back_to_overview_button.setVisible(show_back_button)
         self.apply_search()
 
@@ -152,9 +167,16 @@ class StudentsScreen(QWidget):
         layout.setContentsMargins(4, 0, 4, 0)
         layout.setSpacing(6)
 
-        marker = QLabel("●")
-        marker.setFixedWidth(14)
-        marker.setStyleSheet(f"color: {student.course_color_hex or '#6B7280'};")
+        marker = QFrame()
+        marker.setObjectName("CourseColorMarker")
+        marker.setFixedSize(10, 10)
+        palette = marker.palette()
+        palette.setColor(
+            QPalette.ColorRole.Window,
+            QColor(student.course_color_hex or "#6B7280"),
+        )
+        marker.setPalette(palette)
+        marker.setAutoFillBackground(True)
 
         course_label = QLabel(student.course_name)
         set_label_style(course_label, "body")
@@ -168,34 +190,44 @@ class StudentsScreen(QWidget):
         cell = QWidget()
         layout = QHBoxLayout(cell)
         layout.setContentsMargins(4, 0, 4, 0)
-        layout.setSpacing(0)
-        button = QPushButton("Beobachten")
-        button.setToolTip(f"Neue Beobachtung für {student.display_name}")
-        button.clicked.connect(
+        layout.setSpacing(6)
+        observe_button = QPushButton("Beobachten")
+        configure_button(
+            observe_button,
+            "quiet",
+            f"Neue Beobachtung für {student.display_name}",
+        )
+        observe_button.setToolTip(f"Neue Beobachtung für {student.display_name}")
+        observe_button.clicked.connect(
             lambda _checked=False, student_id=student.student_id: self.observation_requested.emit(
                 student_id
             )
         )
-        layout.addWidget(button)
+        profile_button = QPushButton("Profil öffnen")
+        configure_button(
+            profile_button,
+            "secondary",
+            f"Profil von {student.display_name} öffnen",
+        )
+        profile_button.clicked.connect(
+            lambda _checked=False, student_id=student.student_id: self.student_selected.emit(
+                student_id
+            )
+        )
+        layout.addWidget(observe_button)
+        layout.addWidget(profile_button)
         return cell
 
     def _update_empty_state(self, students: tuple[StudentListItem, ...]) -> None:
         if students:
-            self.empty_state_label.setText("")
+            self.empty_state.set_message("")
             return
         if self.search_input.text().strip():
-            self.empty_state_label.setText(STUDENT_SEARCH_EMPTY_STATE)
+            self.empty_state.set_message(STUDENT_SEARCH_EMPTY_STATE)
             return
-        self.empty_state_label.setText(STUDENT_LIST_EMPTY_STATE)
+        self.empty_state.set_message(STUDENT_LIST_EMPTY_STATE)
 
-    def _select_student(self) -> None:
-        selected_items = self.table.selectedItems()
-        if not selected_items:
-            return
-        row_index = selected_items[0].row()
-        if row_index < len(self.filtered_students):
-            self.student_selected.emit(self.filtered_students[row_index].student_id)
-
-    def _open_student(self, row: int, _column: int) -> None:
+    def _activate_student_item(self, item: QTableWidgetItem) -> None:
+        row = item.row()
         if row < len(self.filtered_students):
             self.student_selected.emit(self.filtered_students[row].student_id)

@@ -151,21 +151,33 @@ Die Ansicht dient dazu, die Entwicklung einer einzelnen Kompetenz nachzuvollzieh
 ## 10. Navigation
 
 ```text
-Stammgruppenübersicht
-  -> Schülerprofil
-  -> Neue Beobachtung
-  -> Speichern
-  -> Schülerprofil
-  -> Kompetenzansicht
-  -> Verlauf
+ARBEIT
+  -> Heute
+  -> Schüler
+       -> Stammgruppen
+       -> Kursverbünde
+       -> Alle Schüler
+       -> Schülerprofil
+            -> Beobachtungen
+            -> Kompetenzen
+            -> Bericht
+            -> Lernentwicklungsgespräch
 
-Kursübersicht
-  -> Schülerprofil
+VERWALTUNG
+  -> Stammdaten
+  -> Einstellungen
 ```
+
+Produktregel UI Sprint 1:
+
+- `Heute` ist der ruhige stundenplanbasierte Arbeitsstart; technisch bleibt der Screen `dashboard`.
+- Die fruehere globale `Übersicht` ist als lokale Auswahl in `Schüler` integriert.
+- Beobachtungen, Kompetenzen, Berichte und Lernentwicklungsgespraeche sind kindbezogene Arbeitsbereiche und keine globalen Platzhalter.
+- Eine Tabellenzeile darf ausgewaehlt werden, ohne das Profil zu oeffnen. Profilnavigation erfolgt bewusst per Doppelklick, Enter oder expliziter Aktion und immer ueber `student_id`.
 
 ## 11. UX-Hypothesen
 
-- Stammgruppenübersicht als Startseite.
+- `Heute` als Arbeitsstart und `Schüler` als zentraler kindbezogener Arbeitsraum.
 - Dialog für `Neue Beobachtung`.
 - Darstellung der Kompetenzkarten.
 - Validierung im Pilotbetrieb.

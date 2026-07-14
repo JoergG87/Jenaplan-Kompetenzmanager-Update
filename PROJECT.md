@@ -60,11 +60,11 @@ Die tägliche Arbeit erfolgt überwiegend über Stammgruppen- und Schüleransich
 
 Weitere Ansichten wie Schülerprofil, Stammgruppenübersicht, Kursübersicht, Berichte und Kompetenzbögen entstehen automatisch aus denselben Daten.
 
-Das stundenplanbasierte Dashboard dient als ruhige Arbeitsstartseite. Es zeigt den unmittelbaren Unterrichtskontext, den heutigen Stundenplan, neutrale Dokumentationsabdeckung sowie direkte Wege zu Stammgruppen, Kursen, Kursverbuenden und dem bestehenden Beobachtungsprozess.
+Die globale Arbeitsstartseite `Heute` zeigt den unmittelbaren Unterrichtskontext, den heutigen Stundenplan, neutrale Dokumentationsabdeckung sowie direkte Wege zu Stammgruppen, Kursen, Kursverbuenden und dem bestehenden Beobachtungsprozess. Der technische Navigationsschluessel `dashboard` und die vorhandenen Leseprojektionen bleiben bestehen.
 
 Das Dashboard ist eine reine Lese- und Navigationsansicht. Es veraendert weder Stundenplan noch Kompetenz- oder Beobachtungsdaten und zeigt keine Leistungswerte oder automatischen Entwicklungsurteile.
 
-Dashboard und Uebersicht bleiben getrennte Hauptansichten: Das Dashboard ist der schnelle, stundenplanbasierte Arbeitsstart; die bestehende Uebersicht bleibt der direkte Stammgruppen- und Kursverbundzugang.
+Die globale Informationsarchitektur trennt `ARBEIT` mit `Heute` und `Schüler` von `VERWALTUNG` mit `Stammdaten` und `Einstellungen`. Die fruehere globale `Übersicht` ist als lokale Navigation mit `Stammgruppen`, `Kursverbünde` und `Alle Schüler` in den Schueler-Arbeitsraum integriert. Beobachtungen, Kompetenzen, Berichte und LEG bleiben ueber den bestehenden Kindkontext erreichbar und sind keine leeren globalen Ziele.
 
 Für den Unterricht darf die Stammgruppenübersicht zusätzlich einen Schnellzugriff `Neue Beobachtung` anbieten. Dieser arbeitet immer im Kontext des ausgewählten Schülers und öffnet denselben zentralen Beobachtungsdialog wie das Schülerprofil.
 

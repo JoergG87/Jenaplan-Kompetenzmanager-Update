@@ -11,15 +11,16 @@ from PySide6.QtWidgets import (
 )
 
 from src.desktop_app.assets import create_app_icon_label
+from src.desktop_app.components import StatusBadge, configure_button
 from src.desktop_app.theme import set_label_style
 
 
 APP_INFO_TITLE = "Über Jenaplan Kompetenzmanager"
 APP_INFO_APP_NAME = "Jenaplan Kompetenzmanager"
-APP_INFO_MODE = "PySide6 Prototyp"
-APP_INFO_VERSION = "Prototyp"
-APP_INFO_STORAGE_HINT = "Einige Funktionen sind noch nicht dauerhaft gespeichert."
-APP_INFO_EXCEL_HINT = "Excel/VBA ist nur noch historischer Legacy-Altstand."
+APP_INFO_MODE = "Lokale Desktop-App"
+APP_INFO_VERSION = "v0.4"
+APP_INFO_STORAGE_HINT = "Arbeitsdaten werden lokal auf diesem Gerät gespeichert."
+APP_INFO_PURPOSE = "Für die tägliche Dokumentation und Lernbegleitung."
 
 
 class AppInfoDialog(QDialog):
@@ -40,14 +41,24 @@ class AppInfoDialog(QDialog):
         title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         set_label_style(title, "dialog_title")
         layout.addWidget(title)
-        layout.addWidget(QLabel(APP_INFO_MODE))
-        layout.addWidget(QLabel(f"Version: {APP_INFO_VERSION}"))
-        layout.addWidget(QLabel(APP_INFO_STORAGE_HINT))
-        layout.addWidget(QLabel(APP_INFO_EXCEL_HINT))
+        mode = StatusBadge(APP_INFO_MODE)
+        mode.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(mode, 0, Qt.AlignmentFlag.AlignHCenter)
+        version = QLabel(f"Version: {APP_INFO_VERSION}")
+        version.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(version)
+        storage = QLabel(APP_INFO_STORAGE_HINT)
+        storage.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(storage)
+        purpose = QLabel(APP_INFO_PURPOSE)
+        purpose.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        set_label_style(purpose, "muted")
+        layout.addWidget(purpose)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         close_button = buttons.button(QDialogButtonBox.StandardButton.Close)
         if close_button is not None:
             close_button.setText("Schließen")
             close_button.setDefault(True)
+            configure_button(close_button, "secondary", "Informationen schließen")
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)

@@ -6,7 +6,8 @@ from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QSize, Qt, QTimer
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QDialog,
@@ -29,6 +30,7 @@ from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDeskt
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
 from src.desktop_app.assets import create_app_icon_label
+from src.desktop_app.components import Toast, configure_button
 from src.desktop_app.dialogs.app_info_dialog import AppInfoDialog
 from src.desktop_app.dialogs.master_data_dialog import (
     CourseGroupDialog,
@@ -40,23 +42,22 @@ from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
 from src.desktop_app.dialogs.timetable_entry_dialog import TimetableEntryDialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
+from src.desktop_app.icons import ICON_SIZE_MEDIUM, load_icon
 from src.desktop_app.screens.master_data_screen import MasterDataScreen
-from src.desktop_app.screens.overview_screen import GroupOverviewScreen, OverviewScreen
-from src.desktop_app.screens.placeholder_screen import PlaceholderScreen
+from src.desktop_app.screens.overview_screen import OverviewScreen
 from src.desktop_app.screens.settings_screen import SettingsScreen
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
-from src.desktop_app.screens.students_screen import StudentsScreen
+from src.desktop_app.screens.students_workspace import StudentsWorkspace
 from src.desktop_app.view_models.settings_view_model import (
     DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE,
 )
-from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
 from src.desktop_app.view_models.observation_view_model import ObservationDraftViewModel
 from src.desktop_app.view_models.master_data_view_model import CourseGroupViewModel
 
 
 class AppShell(QMainWindow):
-    """Main window with navigation and MVP screens."""
+    """Product shell for the local teacher-facing desktop application."""
 
     def __init__(
         self,
@@ -112,66 +113,69 @@ class AppShell(QMainWindow):
         sidebar.addWidget(brand_subtitle)
         self.navigation = QListWidget()
         self.navigation.setObjectName("AppNavigation")
+        self.navigation.setIconSize(QSize(ICON_SIZE_MEDIUM, ICON_SIZE_MEDIUM))
+        self.navigation.setSpacing(1)
+        self.navigation.viewport().setCursor(Qt.CursorShape.PointingHandCursor)
+        current_section = ""
         for item in NAVIGATION_ITEMS:
+            if item.section != current_section:
+                section_item = QListWidgetItem(item.section)
+                section_item.setFlags(Qt.ItemFlag.NoItemFlags)
+                self.navigation.addItem(section_item)
+                current_section = item.section
             nav_item = QListWidgetItem(item.label)
             nav_item.setData(Qt.ItemDataRole.UserRole, item.key)
+            nav_item.setData(Qt.ItemDataRole.AccessibleTextRole, item.label)
+            nav_item.setIcon(load_icon(item.icon_name))
+            nav_item.setToolTip(item.label)
             self.navigation.addItem(nav_item)
         self.navigation.currentRowChanged.connect(self._show_navigation_index)
         self.navigation.itemClicked.connect(self._show_navigation_item)
         sidebar.addWidget(self.navigation, 1)
-        self.info_button = QPushButton("Info")
+        self.info_button = QPushButton("Über die App")
+        self.info_button.setIcon(load_icon("info"))
+        self.info_button.setIconSize(QSize(16, 16))
+        configure_button(self.info_button, "quiet", "Informationen über die App")
         self.info_button.clicked.connect(self.open_app_info_dialog)
         sidebar.addWidget(self.info_button)
         layout.addWidget(sidebar_container)
 
         content = QVBoxLayout()
-        title = QLabel("Jenaplan Kompetenzmanager")
-        set_label_style(title, "app_title")
-        content.addWidget(title)
+        content.setContentsMargins(0, 16, 0, 0)
 
         self.stack = QStackedWidget()
         self.dashboard_screen = OverviewScreen()
-        self.overview_screen = GroupOverviewScreen()
-        self.students_screen = StudentsScreen()
+        self.students_workspace = StudentsWorkspace()
+        self.overview_screen = self.students_workspace.groups_screen
+        self.course_groups_screen = self.students_workspace.course_groups_screen
+        self.students_screen = self.students_workspace.students_screen
         self.student_profile_screen = StudentProfileScreen()
         self.master_data_screen = MasterDataScreen()
         self.settings_screen = SettingsScreen()
-        self.placeholder_screens = {
-            "observations": PlaceholderScreen(
-                "Beobachtungen",
-                "Beobachtungsmaske folgt in einem späteren Sprint.",
-            ),
-            "competencies": PlaceholderScreen(
-                "Kompetenzen",
-                "Kompetenzübersicht folgt in einem späteren Sprint.",
-            ),
-            "reports": PlaceholderScreen(
-                "Berichte",
-                "Text- und Datei-Exporte folgen separat.",
-            ),
-        }
 
         self.screen_index = {
             "dashboard": self.stack.addWidget(self.dashboard_screen),
-            "overview": self.stack.addWidget(self.overview_screen),
-            "students": self.stack.addWidget(self.students_screen),
+            "students": self.stack.addWidget(self.students_workspace),
             "profile": self.stack.addWidget(self.student_profile_screen),
             "master_data": self.stack.addWidget(self.master_data_screen),
             "settings": self.stack.addWidget(self.settings_screen),
         }
-        for key, screen in self.placeholder_screens.items():
-            self.screen_index[key] = self.stack.addWidget(screen)
 
         content.addWidget(self.stack)
-        self.status_label = QLabel("")
-        set_label_style(self.status_label, "muted")
-        content.addWidget(self.status_label)
+        self.status_label = Toast()
+        content.addWidget(
+            self.status_label,
+            0,
+            Qt.AlignmentFlag.AlignLeft,
+        )
         layout.addLayout(content)
 
         self.setCentralWidget(root)
 
         self.overview_screen.group_selected.connect(self.show_students_for_group)
-        self.overview_screen.course_selected.connect(self.show_students_for_course_group)
+        self.course_groups_screen.course_selected.connect(
+            self.show_students_for_course_group
+        )
         self.dashboard_screen.timetable_target_selected.connect(
             self.show_students_for_timetable_target
         )
@@ -184,7 +188,12 @@ class AppShell(QMainWindow):
         self.dashboard_screen.settings_timetable_requested.connect(
             self.show_timetable_settings
         )
-        self.students_screen.new_student_requested.connect(self.open_new_student_dialog)
+        self.students_workspace.new_student_requested.connect(
+            self.open_new_student_dialog
+        )
+        self.students_workspace.all_students_requested.connect(
+            self.show_all_students
+        )
         self.students_screen.student_selected.connect(self.show_student_profile)
         self.students_screen.observation_requested.connect(
             self.open_quick_observation_dialog
@@ -247,7 +256,7 @@ class AppShell(QMainWindow):
         self.settings_screen.timetable_active_requested.connect(
             self.set_timetable_entry_active
         )
-        self.navigation.setCurrentRow(0)
+        self._select_navigation("dashboard")
         self.stack.currentChanged.connect(self._handle_screen_activated)
 
     def refresh_all(self) -> None:
@@ -258,7 +267,7 @@ class AppShell(QMainWindow):
 
     def refresh_overview(self) -> None:
         """Refresh the overview from the current master-data scope."""
-        self.overview_screen.set_master_data(
+        self.students_workspace.set_master_data(
             self.master_data_adapter.view_model(),
             self.adapter.list_group_summaries(),
         )
@@ -294,6 +303,12 @@ class AppShell(QMainWindow):
     def _refresh_dashboard_if_visible(self) -> None:
         if self.stack.currentWidget() is self.dashboard_screen:
             self.refresh_dashboard()
+
+    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
+        """Stop shell-owned timers before the Qt window is released."""
+        self.dashboard_refresh_timer.stop()
+        self.status_label.timer.stop()
+        super().closeEvent(event)
 
     def _handle_screen_activated(self, _index: int) -> None:
         if self.stack.currentWidget() is self.dashboard_screen:
@@ -443,18 +458,33 @@ class AppShell(QMainWindow):
     def return_to_students(self) -> None:
         """Return from profile to student list and keep current filter."""
         self.refresh_students()
+        self.students_workspace.show_student_list(
+            source_key=self.students_workspace.list_source_key()
+        )
         self._show_screen("students")
         self._select_navigation("students")
 
     def return_to_overview(self) -> None:
-        """Return from a filtered student detail list to the overview."""
+        """Return from a filtered list to its local student selection."""
         self._clear_pending_timetable_observation()
         self.selected_group_id = None
         self.selected_course_group_id = None
         self.selected_course_id = None
         self.refresh_all()
-        self._show_screen("overview")
-        self._select_navigation("overview")
+        self.students_workspace.show_source_selection()
+        self._show_screen("students")
+        self._select_navigation("students")
+
+    def show_all_students(self) -> None:
+        """Open the unfiltered list inside the local student workspace."""
+        self._clear_pending_timetable_observation()
+        self.selected_group_id = None
+        self.selected_course_group_id = None
+        self.selected_course_id = None
+        self.refresh_students()
+        self.students_workspace.show_student_list(source_key="all")
+        self._show_screen("students")
+        self._select_navigation("students")
 
     def show_students_for_group(self, group_id: str) -> None:
         """Open students screen filtered to one group."""
@@ -463,6 +493,7 @@ class AppShell(QMainWindow):
         self.selected_course_group_id = None
         self.selected_course_id = None
         self.refresh_students()
+        self.students_workspace.show_student_list(source_key="groups")
         self._show_screen("students")
         self._select_navigation("students")
 
@@ -473,6 +504,7 @@ class AppShell(QMainWindow):
         self.selected_course_group_id = course_group_id
         self.selected_course_id = course_id
         self.refresh_students()
+        self.students_workspace.show_student_list(source_key="course_groups")
         self._show_screen("students")
         self._select_navigation("students")
 
@@ -492,6 +524,9 @@ class AppShell(QMainWindow):
             self.status_label.setText("Das Unterrichtsziel ist nicht verfügbar.")
             return
         self.refresh_students()
+        self.students_workspace.show_student_list(
+            source_key="groups" if target_type == "group" else "course_groups"
+        )
         self._show_screen("students")
         self._select_navigation("students")
 
@@ -952,10 +987,14 @@ class AppShell(QMainWindow):
 
     def handle_student_created(self, student_id: str) -> None:
         """Refresh views and show non-modal success feedback."""
+        self.selected_group_id = None
+        self.selected_course_group_id = None
+        self.selected_course_id = None
         self.refresh_all()
+        self.students_workspace.show_student_list(source_key="all")
         self._show_screen("students")
         self._select_navigation("students")
-        self.status_label.setText("Schüler wurde gespeichert.")
+        self.status_label.show_message("Schüler wurde gespeichert.", tone="success")
 
     def _show_navigation_index(self, index: int) -> None:
         if index < 0:
@@ -963,7 +1002,10 @@ class AppShell(QMainWindow):
         self._show_navigation_item(self.navigation.item(index))
 
     def _show_navigation_item(self, item: QListWidgetItem) -> None:
-        key = str(item.data(Qt.ItemDataRole.UserRole))
+        key_data = item.data(Qt.ItemDataRole.UserRole)
+        if not key_data:
+            return
+        key = str(key_data)
         self._clear_pending_timetable_observation()
         target = resolve_navigation_target(key)
         if target.reset_group_filter:
@@ -971,6 +1013,7 @@ class AppShell(QMainWindow):
             self.selected_course_group_id = None
             self.selected_course_id = None
             self.refresh_students()
+            self.students_workspace.show_section("groups")
         self._show_screen(target.screen_key)
 
     def _selected_course_group(self) -> CourseGroupViewModel | None:

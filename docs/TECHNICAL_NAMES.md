@@ -565,9 +565,12 @@ Registrierte Python-Module:
 - `src/desktop_app/dialogs/master_data_dialog.py`
 - `src/desktop_app/dialogs/new_observation_dialog.py`
 - `src/desktop_app/dialogs/new_student_dialog.py`
+- `src/desktop_app/components.py`
+- `src/desktop_app/icons.py`
 - `src/desktop_app/screens/master_data_screen.py`
 - `src/desktop_app/screens/overview_screen.py`
 - `src/desktop_app/screens/students_screen.py`
+- `src/desktop_app/screens/students_workspace.py`
 - `src/desktop_app/screens/student_profile_screen.py`
 - `src/desktop_app/screens/placeholder_screen.py`
 - `src/desktop_app/view_models/master_data_view_model.py`
@@ -596,6 +599,7 @@ Registrierte Python-Klassen und Funktionen:
 - `PRIMARY_BUTTON_STYLESHEET`
 - `create_card()`
 - `set_label_style(label, role)`
+- `set_button_role(button, role)`
 - `ObservationFilterBar`
 - `ObservationFilterInput`
 - `ObservationTextActionButton`
@@ -862,14 +866,13 @@ Registrierte Python-Klassen und Funktionen:
 - `observation_rating_keys()`
 - `DIALOG_CANCEL_TEXT`
 - `DIALOG_SAVE_TEXT`
-- `DIALOG_PRIMARY_BUTTON_STYLE`
 - `configure_save_cancel_buttons(buttons)`
 - `AppShell.refresh_overview()`
 - `AppShell.show_students_for_course_group(course_group_id, course_id)`
 - `AppShell.open_new_course_group_dialog()`
 - `AppShell.open_edit_course_group_dialog(course_group_id)`
 - `AppShell.remove_student_document(student_id, document_id)`
-- `OverviewScreen.set_master_data(view_model, group_summaries)`
+- `GroupOverviewScreen.set_master_data(view_model, group_summaries)`
 - `OVERVIEW_GROUP_EMPTY_STATE`
 - `OVERVIEW_COURSE_EMPTY_STATE`
 - `MASTER_DATA_COURSE_GROUP_EMPTY_STATE`
@@ -879,7 +882,7 @@ Registrierte Python-Klassen und Funktionen:
 - `APP_INFO_MODE`
 - `APP_INFO_VERSION`
 - `APP_INFO_STORAGE_HINT`
-- `APP_INFO_EXCEL_HINT`
+- `APP_INFO_PURPOSE`
 - `STUDENT_SEARCH_PLACEHOLDER`
 - `STUDENT_LIST_EMPTY_STATE`
 - `STUDENT_SEARCH_EMPTY_STATE`
@@ -894,6 +897,7 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentListView`
 - `OverviewScreen`
 - `StudentsScreen`
+- `StudentsWorkspace`
 - `StudentsScreen.observation_requested`
 - `StudentsScreen.back_to_overview_requested`
 - `StudentProfileScreen`
@@ -1384,3 +1388,65 @@ Registrierte Projektion und UI-Einstiege:
 - `DashboardMatchingChildRow`
 
 Regel: Die Projektion verwendet ausschliesslich aktive Zielmitglieder und aktive Beobachtungen mit eindeutigem Bezug zum Stundenfach. Sie erhaelt `at` explizit, begrenzt auf hoechstens fuenf Kinder und sortiert ohne Ratings, Kompetenzstatus oder Scores: keine Fachbeobachtung zuerst, danach letzte Fachbeobachtung aufsteigend, heutige Fachbeobachtung zuletzt und bei Gleichstand sichtbarer Name alphabetisch plus stabile `student_id`.
+
+## UI Sprint 1 - Product Shell und Interaction Foundations
+
+Registrierte Dateien und Assets:
+
+- `src/desktop_app/components.py`
+- `src/desktop_app/icons.py`
+- `src/desktop_app/screens/students_workspace.py`
+- `assets/icons/today.svg`
+- `assets/icons/students.svg`
+- `assets/icons/master-data.svg`
+- `assets/icons/settings.svg`
+- `assets/icons/info.svg`
+
+Registrierte Komponenten und Helfer:
+
+- `PageHeader`
+- `SegmentedControl`
+- `SegmentedControl.selection_changed`
+- `SearchField`
+- `StatusBadge`
+- `InlineMessage`
+- `EmptyState`
+- `Toast`
+- `Toast.show_message(text, tone, duration_ms)`
+- `configure_button(button, role, accessible_name)`
+- `set_button_role(button, role)`
+- `StudentsWorkspace`
+- `StudentsWorkspace.new_student_requested`
+- `StudentsWorkspace.all_students_requested`
+- `StudentsWorkspace.set_master_data(view_model, group_summaries)`
+- `StudentsWorkspace.show_section(key)`
+- `StudentsWorkspace.show_student_list(source_key)`
+- `StudentsWorkspace.show_source_selection()`
+- `StudentsWorkspace.list_source_key()`
+- `StudentsWorkspace.current_content_key()`
+- `STUDENT_WORKSPACE_SEGMENTS`
+- `AppShell.show_all_students()`
+- `ICON_NAMES`
+- `ICON_SIZE_SMALL`
+- `ICON_SIZE_MEDIUM`
+- `ICON_SIZE_LARGE`
+- `icon_path(name)`
+- `load_icon(name)`
+
+Registrierte Theme-Tokens:
+
+- `SPACING_4`, `SPACING_8`, `SPACING_12`, `SPACING_16`, `SPACING_24`, `SPACING_32`, `SPACING_48`
+- `RADIUS_SMALL`, `RADIUS_MEDIUM`, `RADIUS_LARGE`, `RADIUS_XLARGE`
+- `ELEVATION_FLAT`, `ELEVATION_CARD`, `ELEVATION_OVERLAY`
+- `MOTION_FAST_MS`, `MOTION_STANDARD_MS`, `MOTION_SLOW_MS`
+- `TYPOGRAPHY_STYLES`
+- `COLOR_SUCCESS`, `COLOR_WARNING`, `COLOR_INFO`, `COLOR_FOCUS`
+
+Erweiterte Felder von `NavigationItem`:
+
+- `section`
+- `icon_name`
+
+Regel: Der sichtbare Navigationsname des bestehenden technischen Schluessels `dashboard` lautet `Heute`. Globale produktive Ziele sind ausschliesslich `dashboard`, `students`, `master_data` und `settings`, gruppiert in `ARBEIT` und `VERWALTUNG`. Der fruehere Schluessel `overview` wird nicht mehr global aufgeloest; `GroupOverviewScreen` bleibt als bestehende reine Projektion innerhalb von `StudentsWorkspace` erhalten. `PlaceholderScreen` bleibt als registriertes Modul historisch verfuegbar, ist aber kein Product-Shell-Ziel.
+
+Regel: `StudentsWorkspace` komponiert nur vorhandene Adapter-/ViewModel-Projektionen und lokalen UI-State. Es fuehrt weder eine Datenquelle noch Businesslogik, SQLite-Zugriff, Persistenz oder einen Schreibprozess ein. Beobachtungs-, Kompetenz-, Berichts- und LEG-Pfade bleiben ueber das bestehende Schuelerprofil erreichbar.

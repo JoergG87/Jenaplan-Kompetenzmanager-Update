@@ -6,6 +6,19 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## UI Sprint 1 - Product Shell, Informationsarchitektur und Interaction Foundations ✅
+
+- [x] Globale Navigation auf `Heute`, `Schüler`, `Stammdaten` und `Einstellungen` konzentriert
+- [x] Fruehere Uebersicht als lokale Segmente `Stammgruppen`, `Kursverbünde` und `Alle Schüler` integriert
+- [x] Bestehende Schueler-, Profil-, Beobachtungs-, Kompetenz-, Bericht- und LEG-Pfade erreichbar erhalten
+- [x] Design Tokens, native Systemschrift, SVG-Shell-Icons und semantische Buttonrollen eingefuehrt
+- [x] `PageHeader`, `SegmentedControl`, `SearchField`, `StatusBadge`, `InlineMessage`, `EmptyState` und `Toast` als Grundkomponenten umgesetzt
+- [x] Zeilenauswahl und bewusstes Profiloeffnen getrennt; Fokus-, Tastatur- und Accessibility-Grundlagen ergaenzt
+- [x] Dokumentationsmatrix auf neutrale Abstufungen ohne Ampelsemantik umgestellt
+- [x] Keine Datenmodell-, Schema-, Migrations-, Adapter-, Repository-, ViewModel- oder Fachlogikaenderung
+- [x] Fokussierte UI-Tests, Gesamttests und aktive Build-Pruefung erfolgreich
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## Sprint 8B.3 - Passende Kinder als Dokumentationshilfe 🔄
 
 - [x] Aktive Kinder aus Stammgruppe, Kurs oder Kursverbund fachbezogen projiziert

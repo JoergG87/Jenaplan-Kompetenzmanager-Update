@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QKeyEvent, QMouseEvent
+from PySide6.QtGui import QColor, QKeyEvent, QMouseEvent, QPalette
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -18,11 +18,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.desktop_app.theme import (
-    PRIMARY_BUTTON_STYLESHEET,
-    create_card,
-    set_label_style,
-)
+from src.desktop_app.components import PageHeader, configure_button
+from src.desktop_app.theme import create_card, set_label_style
 from src.desktop_app.view_models.master_data_view_model import (
     CourseGroupViewModel,
     MasterDataItemViewModel,
@@ -130,23 +127,18 @@ class OverviewScreen(QWidget):
     def _build(self) -> None:
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
-        header = QHBoxLayout()
-        heading = QVBoxLayout()
-        title = QLabel("Dashboard")
-        set_label_style(title, "screen_title")
-        subtitle = QLabel("Schneller Arbeitsstart")
-        set_label_style(subtitle, "muted")
-        heading.addWidget(title)
-        heading.addWidget(subtitle)
-        header.addLayout(heading)
-        header.addStretch(1)
+        header = PageHeader("Heute", "Unterricht und Dokumentation im Blick")
         self.header_observation_button = QPushButton("+ Beobachtung")
-        self.header_observation_button.setStyleSheet(PRIMARY_BUTTON_STYLESHEET)
+        configure_button(
+            self.header_observation_button,
+            "primary",
+            "Beobachtung für die hervorgehobene Stunde vorbereiten",
+        )
         self.header_observation_button.clicked.connect(
             self._emit_header_observation
         )
-        header.addWidget(self.header_observation_button)
-        outer.addLayout(header)
+        header.add_action(self.header_observation_button)
+        outer.addWidget(header)
 
         scroll = QScrollArea()
         scroll.setObjectName("DashboardScrollArea")
@@ -231,6 +223,7 @@ class OverviewScreen(QWidget):
             actions = QHBoxLayout()
             if not has_timetable_entries:
                 settings = QPushButton("Zu Einstellungen · Stundenplan")
+                configure_button(settings, "secondary", "Stundenplan einrichten")
                 settings.clicked.connect(self.settings_timetable_requested.emit)
                 actions.addWidget(settings)
             actions.addStretch(1)
@@ -265,7 +258,7 @@ class OverviewScreen(QWidget):
             left_layout.addWidget(room)
         actions = QHBoxLayout()
         open_target = QPushButton("Kinder anzeigen")
-        open_target.setStyleSheet(PRIMARY_BUTTON_STYLESHEET)
+        configure_button(open_target, "secondary", "Kinder dieser Stunde anzeigen")
         open_target.clicked.connect(
             lambda: self.timetable_target_selected.emit(
                 entry.target_type, entry.target_id
@@ -411,7 +404,7 @@ class OverviewScreen(QWidget):
         layout = QHBoxLayout(frame)
         layout.setContentsMargins(9, 7, 9, 7)
         layout.setSpacing(6)
-        marker = QLabel("●")
+        marker = QFrame()
         marker.setObjectName("DashboardHeatmapMarker")
         coverage = QLabel(cell.coverage_label)
         set_label_style(coverage, "small")
@@ -454,7 +447,11 @@ class OverviewScreen(QWidget):
             labels.addWidget(hint)
             layout.addLayout(labels, 1)
             observe = QPushButton("Beobachten")
-            observe.setStyleSheet(PRIMARY_BUTTON_STYLESHEET)
+            configure_button(
+                observe,
+                "quiet",
+                f"Neue Beobachtung für {student.display_name}",
+            )
             observe.clicked.connect(
                 lambda _checked=False,
                 student_id=student.student_id: self.timetable_student_observation_requested.emit(
@@ -469,6 +466,11 @@ class OverviewScreen(QWidget):
         footer = QHBoxLayout()
         footer.addStretch(1)
         open_button = QPushButton("Alle Kinder anzeigen")
+        configure_button(
+            open_button,
+            "secondary",
+            "Alle Kinder der hervorgehobenen Stunde anzeigen",
+        )
         open_button.clicked.connect(
             lambda: self.timetable_target_selected.emit(
                 entry.target_type, entry.target_id
@@ -519,25 +521,32 @@ class OverviewScreen(QWidget):
 
 
 class GroupOverviewScreen(QWidget):
-    """Existing group and course-group overview kept separate from Dashboard."""
+    """Group and course-group projections for the local student workspace."""
 
     group_selected = Signal(str)
     course_selected = Signal(str, str)
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        section: str = "all",
+        show_header: bool = True,
+    ) -> None:
         super().__init__()
+        if section not in {"all", "groups", "course_groups"}:
+            raise ValueError(f"Unbekannter Übersichtsbereich: {section}")
+        self.section = section
+        self.show_header = show_header
         self.groups_layout = QGridLayout()
         self.course_groups_layout = QVBoxLayout()
         self._build()
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
-        title = QLabel("Übersicht")
-        set_label_style(title, "screen_title")
-        subtitle = QLabel("Stammgruppen und Schülerbestand")
-        set_label_style(subtitle, "muted")
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
+        if self.show_header:
+            layout.addWidget(
+                PageHeader("Schüler", "Stammgruppen und Kursverbünde auswählen")
+            )
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -546,10 +555,15 @@ class GroupOverviewScreen(QWidget):
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(12)
-        content_layout.addWidget(self._section_card("Stammgruppen", self.groups_layout))
-        content_layout.addWidget(
-            self._section_card("Kursverbünde", self.course_groups_layout)
+        groups_card = self._section_card("Stammgruppen", self.groups_layout)
+        groups_card.setVisible(self.section in {"all", "groups"})
+        content_layout.addWidget(groups_card)
+        course_groups_card = self._section_card(
+            "Kursverbünde",
+            self.course_groups_layout,
         )
+        course_groups_card.setVisible(self.section in {"all", "course_groups"})
+        content_layout.addWidget(course_groups_card)
         content_layout.addStretch(1)
         scroll.setWidget(content)
         layout.addWidget(scroll, 1)
@@ -606,6 +620,11 @@ class GroupOverviewScreen(QWidget):
             else group.status_label
         )
         open_button = QPushButton("Schüler anzeigen")
+        configure_button(
+            open_button,
+            "secondary",
+            f"Schüler der Stammgruppe {group.name} anzeigen",
+        )
         open_button.setEnabled(group.is_persistent)
         open_button.clicked.connect(lambda: self.group_selected.emit(group.item_id))
         layout.addWidget(name)
@@ -638,9 +657,22 @@ class GroupOverviewScreen(QWidget):
                 row = QWidget()
                 row_layout = QHBoxLayout(row)
                 row_layout.setContentsMargins(4, 0, 4, 0)
-                marker = QLabel("●")
-                marker.setStyleSheet(f"color: {course.color_hex or '#6B7280'};")
+                marker = QFrame()
+                marker.setObjectName("CourseColorMarker")
+                marker.setFixedSize(10, 10)
+                palette = marker.palette()
+                palette.setColor(
+                    QPalette.ColorRole.Window,
+                    QColor(course.color_hex or "#6B7280"),
+                )
+                marker.setPalette(palette)
+                marker.setAutoFillBackground(True)
                 open_button = QPushButton(course.name)
+                configure_button(
+                    open_button,
+                    "link",
+                    f"Schüler im Kurs {course.name} anzeigen",
+                )
                 open_button.clicked.connect(
                     lambda _checked=False,
                     course_group_id=course_group.course_group_id,

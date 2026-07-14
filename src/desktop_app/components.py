@@ -1,0 +1,292 @@
+"""Small, reusable interaction foundations for the PySide desktop app."""
+
+from __future__ import annotations
+
+from collections.abc import Iterable
+
+from PySide6.QtCore import QEvent, Qt, QTimer, Signal
+from PySide6.QtGui import QKeyEvent
+from PySide6.QtWidgets import (
+    QButtonGroup,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+from src.desktop_app.theme import set_button_role, set_label_style
+
+
+class PageHeader(QWidget):
+    """Consistent page title, description, and right-aligned actions."""
+
+    def __init__(self, title: str, subtitle: str = "") -> None:
+        super().__init__()
+        self.setObjectName("PageHeader")
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(16)
+
+        heading = QVBoxLayout()
+        heading.setSpacing(3)
+        self.title_label = QLabel(title)
+        self.title_label.setObjectName("PageHeaderTitle")
+        set_label_style(self.title_label, "screen_title")
+        self.subtitle_label = QLabel(subtitle)
+        self.subtitle_label.setObjectName("PageHeaderSubtitle")
+        self.subtitle_label.setWordWrap(True)
+        set_label_style(self.subtitle_label, "muted")
+        self.subtitle_label.setVisible(bool(subtitle))
+        heading.addWidget(self.title_label)
+        heading.addWidget(self.subtitle_label)
+        layout.addLayout(heading, 1)
+
+        self.actions_layout = QHBoxLayout()
+        self.actions_layout.setSpacing(8)
+        layout.addLayout(self.actions_layout)
+
+    def add_action(self, action: QWidget) -> None:
+        """Add one page-level action."""
+        self.actions_layout.addWidget(action)
+
+
+class SegmentedControl(QFrame):
+    """Exclusive local navigation with pointer and arrow-key operation."""
+
+    selection_changed = Signal(str)
+
+    def __init__(self, items: Iterable[tuple[str, str]]) -> None:
+        super().__init__()
+        self.setObjectName("SegmentedControl")
+        self._keys: list[str] = []
+        self._buttons: dict[str, QPushButton] = {}
+        self.button_group = QButtonGroup(self)
+        self.button_group.setExclusive(True)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        item_list = list(items)
+        for index, (key, label) in enumerate(item_list):
+            button = QPushButton(label)
+            button.setObjectName("SegmentedControlButton")
+            button.setCheckable(True)
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+            button.setAccessibleName(label)
+            if index == 0:
+                position = "first"
+            elif index == len(item_list) - 1:
+                position = "last"
+            else:
+                position = "middle"
+            button.setProperty("segmentPosition", position)
+            button.installEventFilter(self)
+            self.button_group.addButton(button, index)
+            self._keys.append(key)
+            self._buttons[key] = button
+            layout.addWidget(button)
+        self.button_group.idClicked.connect(self._emit_selection)
+        if self._keys:
+            self.set_current_key(self._keys[0])
+
+    def current_key(self) -> str:
+        """Return the selected semantic key."""
+        for key, button in self._buttons.items():
+            if button.isChecked():
+                return key
+        return ""
+
+    def set_current_key(self, key: str, *, emit: bool = False) -> None:
+        """Select one segment without triggering navigation by default."""
+        if key not in self._buttons:
+            raise ValueError(f"Unbekannter Segment-Schlüssel: {key}")
+        self._buttons[key].setChecked(True)
+        if emit:
+            self.selection_changed.emit(key)
+
+    def eventFilter(self, watched: object, event: QEvent) -> bool:  # noqa: N802
+        if event.type() == QEvent.Type.KeyPress and watched in self._buttons.values():
+            key_event = event
+            if key_event.key() in (Qt.Key.Key_Left, Qt.Key.Key_Right):
+                direction = -1 if key_event.key() == Qt.Key.Key_Left else 1
+                self._move_selection(direction)
+                return True
+        return super().eventFilter(watched, event)
+
+    def _move_selection(self, direction: int) -> None:
+        current = self.current_key()
+        if current not in self._keys:
+            return
+        next_index = (self._keys.index(current) + direction) % len(self._keys)
+        next_key = self._keys[next_index]
+        self.set_current_key(next_key, emit=True)
+        self._buttons[next_key].setFocus()
+
+    def _emit_selection(self, button_id: int) -> None:
+        if 0 <= button_id < len(self._keys):
+            self.selection_changed.emit(self._keys[button_id])
+
+
+class SearchField(QLineEdit):
+    """Search input with a clear affordance and Escape-key reset."""
+
+    def __init__(self, placeholder: str) -> None:
+        super().__init__()
+        self.setObjectName("SearchField")
+        self.setPlaceholderText(placeholder)
+        self.setClearButtonEnabled(True)
+        self.setAccessibleName("Schüler suchen")
+        self.setAccessibleDescription(
+            "Filtert die sichtbare Schülerliste während der Eingabe."
+        )
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
+        if event.key() == Qt.Key.Key_Escape and self.text():
+            self.clear()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+
+class StatusBadge(QLabel):
+    """Compact, neutral status label."""
+
+    def __init__(self, text: str = "") -> None:
+        super().__init__(text)
+        self.setObjectName("StatusBadge")
+        self.setAccessibleName(text)
+
+
+class InlineMessage(QFrame):
+    """Persistent message for contextual information, warnings, or errors."""
+
+    def __init__(self, text: str = "", *, tone: str = "info") -> None:
+        super().__init__()
+        self.setObjectName("InlineMessage")
+        self.setProperty("messageTone", tone)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(10, 7, 10, 7)
+        self.label = QLabel(text)
+        self.label.setWordWrap(True)
+        layout.addWidget(self.label)
+        self.setVisible(bool(text))
+
+    def set_message(self, text: str, *, tone: str = "info") -> None:
+        """Update content and tone while retaining space only when needed."""
+        self.label.setText(text)
+        self.setProperty("messageTone", tone)
+        self.setAccessibleName(text)
+        self.setVisible(bool(text))
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+
+class EmptyState(QFrame):
+    """Quiet, reusable empty-state panel."""
+
+    def __init__(self, text: str = "") -> None:
+        super().__init__()
+        self.setObjectName("EmptyState")
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 14, 16, 14)
+        self.label = QLabel(text)
+        self.label.setWordWrap(True)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        set_label_style(self.label, "muted")
+        layout.addWidget(self.label)
+        self.setVisible(bool(text))
+
+    def set_message(self, text: str) -> None:
+        """Show the state only while it has meaningful content."""
+        self.label.setText(text)
+        self.setAccessibleName(text)
+        self.setVisible(bool(text))
+
+
+class Toast(QFrame):
+    """Non-blocking, automatically disappearing shell feedback."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("Toast")
+        self.setMaximumWidth(520)
+        self.setProperty("toastTone", "info")
+        self.setAccessibleName("Statusmeldung")
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(12, 8, 12, 8)
+        self.label = QLabel("")
+        self.label.setWordWrap(True)
+        layout.addWidget(self.label)
+        self.timer = QTimer(self)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.hide)
+        self.hide()
+
+    def show_message(
+        self,
+        text: str,
+        *,
+        tone: str = "info",
+        duration_ms: int = 4200,
+    ) -> None:
+        """Show one message without interrupting the current workflow."""
+        if not text:
+            self.clear()
+            return
+        self.label.setText(text)
+        self.setProperty("toastTone", tone)
+        self.setAccessibleDescription(text)
+        self.style().unpolish(self)
+        self.style().polish(self)
+        self.show()
+        self.timer.start(duration_ms)
+
+    def setText(self, text: str) -> None:  # noqa: N802
+        """Keep the former shell status-label call site compatible."""
+        if not self.window().isVisible():
+            self.timer.stop()
+            self.label.setText(text)
+            self.hide()
+            return
+        normalized = text.casefold()
+        if any(
+            term in normalized
+            for term in (
+                "gespeichert",
+                "aktualisiert",
+                "erstellt",
+                "entfernt",
+                "gelöscht",
+                "aktiviert",
+                "deaktiviert",
+                "bestätigt",
+            )
+        ):
+            tone = "success"
+        elif "nicht gefunden" in normalized or "nicht verfügbar" in normalized:
+            tone = "warning"
+        else:
+            tone = "info"
+        self.show_message(text, tone=tone)
+
+    def text(self) -> str:
+        """Return the currently displayed message."""
+        return self.label.text()
+
+    def clear(self) -> None:
+        """Clear and hide the toast immediately."""
+        self.timer.stop()
+        self.label.clear()
+        self.hide()
+
+
+def configure_button(button: QPushButton, role: str, accessible_name: str = "") -> None:
+    """Apply role, pointer cursor, and optional accessible naming."""
+    set_button_role(button, role)
+    button.setCursor(Qt.CursorShape.PointingHandCursor)
+    if accessible_name:
+        button.setAccessibleName(accessible_name)

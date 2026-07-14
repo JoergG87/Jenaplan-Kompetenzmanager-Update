@@ -16,7 +16,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.desktop_app.theme import PRIMARY_BUTTON_STYLESHEET, create_card, set_label_style
+from src.desktop_app.components import PageHeader, configure_button
+from src.desktop_app.theme import create_card, set_label_style
 from src.desktop_app.view_models.settings_view_model import (
     DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE,
     DocumentationSubjectOptionViewModel,
@@ -57,7 +58,11 @@ class SettingsScreen(QWidget):
         self.timetable_day_layout = QVBoxLayout()
         self.timetable_empty_label = QLabel("")
         self.timetable_add_button = QPushButton("Stunde hinzufügen")
-        self.timetable_add_button.setStyleSheet(PRIMARY_BUTTON_STYLESHEET)
+        configure_button(
+            self.timetable_add_button,
+            "secondary",
+            "Stunde zum ausgewählten Wochentag hinzufügen",
+        )
         self.timetable_add_button.clicked.connect(self._emit_timetable_add)
         self._build()
 
@@ -70,12 +75,12 @@ class SettingsScreen(QWidget):
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         content = QWidget()
         layout = QVBoxLayout(content)
-        title = QLabel("Einstellungen")
-        set_label_style(title, "screen_title")
-        subtitle = QLabel("Grundlagen für Dokumentation und Auswertung")
-        set_label_style(subtitle, "muted")
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
+        layout.addWidget(
+            PageHeader(
+                "Einstellungen",
+                "Grundlagen für Dokumentation und Auswertung",
+            )
+        )
         layout.addWidget(self._timetable_card())
         layout.addWidget(self._documentation_subjects_card())
         layout.addStretch(1)
@@ -150,6 +155,11 @@ class SettingsScreen(QWidget):
         action_row.addStretch(1)
         save_button = QPushButton("Speichern")
         save_button.setObjectName("DocumentationSubjectSaveButton")
+        configure_button(
+            save_button,
+            "primary",
+            "Dokumentationsrelevante Fächer speichern",
+        )
         save_button.clicked.connect(self._emit_documentation_subjects_save)
         action_row.addWidget(save_button)
         layout.addLayout(action_row)

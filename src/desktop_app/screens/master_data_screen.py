@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Signal
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFrame,
@@ -21,6 +21,7 @@ from src.desktop_app.view_models.master_data_view_model import (
     MasterDataItemViewModel,
     MasterDataViewModel,
 )
+from src.desktop_app.components import PageHeader, configure_button
 from src.desktop_app.theme import create_card, set_label_style
 
 
@@ -54,12 +55,9 @@ class MasterDataScreen(QWidget):
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
-        title = QLabel("Stammdaten")
-        set_label_style(title, "screen_title")
-        subtitle = QLabel("Stammgruppen und Kurse verwalten")
-        set_label_style(subtitle, "muted")
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
+        layout.addWidget(
+            PageHeader("Stammdaten", "Stammgruppen und Kurse verwalten")
+        )
         layout.addWidget(
             self._section_card(
                 "Stammgruppen",
@@ -126,6 +124,7 @@ class MasterDataScreen(QWidget):
         title_label = QLabel(title)
         set_label_style(title_label, "section_title")
         add_button = QPushButton(add_button_label)
+        configure_button(add_button, "secondary", add_button_label.lstrip("+ "))
         add_button.clicked.connect(add_handler)
         header.addWidget(title_label)
         header.addStretch(1)
@@ -155,6 +154,11 @@ class MasterDataScreen(QWidget):
             table.setItem(row_index, 0, QTableWidgetItem(item.name))
             table.setItem(row_index, 1, QTableWidgetItem(item.status_label))
             rename_button = QPushButton("Umbenennen")
+            configure_button(
+                rename_button,
+                "quiet",
+                f"Stammgruppe {item.name} umbenennen",
+            )
             rename_button.clicked.connect(
                 lambda _checked=False, item_id=item.item_id: rename_handler(item_id)
             )
@@ -170,12 +174,15 @@ class MasterDataScreen(QWidget):
         table.setRowCount(len(items))
         self.course_empty_state_label.setVisible(not items)
         for row_index, item in enumerate(items):
-            color_item = QTableWidgetItem(f"● {item.color_name}")
-            color_item.setForeground(QColor(item.color_hex))
-            table.setItem(row_index, 0, color_item)
+            table.setCellWidget(row_index, 0, self._course_color_cell(item))
             table.setItem(row_index, 1, QTableWidgetItem(item.name))
             table.setItem(row_index, 2, QTableWidgetItem(item.status_label))
             rename_button = QPushButton("Umbenennen")
+            configure_button(
+                rename_button,
+                "quiet",
+                f"Kurs {item.name} umbenennen",
+            )
             rename_button.clicked.connect(
                 lambda _checked=False, item_id=item.item_id: rename_handler(item_id)
             )
@@ -209,7 +216,31 @@ class MasterDataScreen(QWidget):
             table.setItem(row_index, 1, QTableWidgetItem(group_names))
             table.setItem(row_index, 2, QTableWidgetItem(course_names))
             edit_button = QPushButton("Bearbeiten")
+            configure_button(
+                edit_button,
+                "secondary",
+                f"Kursverbund {item.name} bearbeiten",
+            )
             edit_button.clicked.connect(
                 lambda _checked=False, item_id=item.course_group_id: edit_handler(item_id)
             )
             table.setCellWidget(row_index, 3, edit_button)
+
+    @staticmethod
+    def _course_color_cell(item: MasterDataItemViewModel) -> QWidget:
+        cell = QWidget()
+        layout = QHBoxLayout(cell)
+        layout.setContentsMargins(4, 0, 4, 0)
+        layout.setSpacing(7)
+        marker = QFrame()
+        marker.setObjectName("CourseColorMarker")
+        marker.setFixedSize(10, 10)
+        palette = marker.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(item.color_hex))
+        marker.setPalette(palette)
+        marker.setAutoFillBackground(True)
+        label = QLabel(item.color_name)
+        layout.addWidget(marker)
+        layout.addWidget(label)
+        layout.addStretch(1)
+        return cell

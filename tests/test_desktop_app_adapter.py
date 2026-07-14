@@ -7,6 +7,7 @@ import importlib
 import os
 import tempfile
 import unittest
+from datetime import date, timedelta
 from unittest import mock
 from dataclasses import fields
 from pathlib import Path
@@ -55,12 +56,15 @@ from src.desktop_app.dialogs import dialog_buttons
 from src.desktop_app.dialogs import master_data_dialog
 from src.desktop_app.dialogs import new_student_dialog
 from src.desktop_app.dialogs import new_observation_dialog
+from src.desktop_app import components
+from src.desktop_app import icons
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.screens import master_data_screen
 from src.desktop_app.screens import overview_screen
 from src.desktop_app.screens import settings_screen
 from src.desktop_app.screens import student_profile_screen
 from src.desktop_app.screens import students_screen
+from src.desktop_app.screens import students_workspace
 from src.desktop_app import assets
 from src.desktop_app import main
 from src.desktop_app import shell
@@ -2098,7 +2102,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             confirmed_rating="-",
         )
         self.adapter.save_observation(self._sample_observation_draft(
-            date_text="2026-07-13",
+            date_text=(date.today() + timedelta(days=1)).isoformat(),
         ))
 
         status = self._canonical_status("CMP-000001")
@@ -2865,11 +2869,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(new_student_dialog))
         self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(new_observation_dialog))
         self.assertIn("configure_save_cancel_buttons(buttons)", inspect.getsource(master_data_dialog))
-        self.assertIn("DIALOG_PRIMARY_BUTTON_STYLE", button_source)
-        self.assertIn("PRIMARY_BUTTON_STYLESHEET", button_source)
-        self.assertIn("background-color: #2563EB", theme.PRIMARY_BUTTON_STYLESHEET)
-        self.assertIn("color: #FFFFFF", theme.PRIMARY_BUTTON_STYLESHEET)
-        self.assertIn("save_button.setStyleSheet(DIALOG_PRIMARY_BUTTON_STYLE)", button_source)
+        self.assertNotIn("DIALOG_PRIMARY_BUTTON_STYLE", button_source)
+        self.assertNotIn("PRIMARY_BUTTON_STYLESHEET", button_source)
+        self.assertIn('configure_button(save_button, "primary"', button_source)
+        self.assertIn('configure_button(cancel_button, "secondary"', button_source)
+        self.assertNotIn("save_button.setStyleSheet", button_source)
         self.assertIn("save_button.setDefault(True)", button_source)
         self.assertIn('cancel_button.setShortcut("Esc")', button_source)
 
@@ -2878,6 +2882,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         main_source = inspect.getsource(main)
         shell_source = inspect.getsource(shell)
         screen_source = inspect.getsource(students_screen)
+        component_source = inspect.getsource(components)
 
         self.assertIn('COLOR_NAVY = "#0B3A63"', theme_source)
         self.assertIn('COLOR_BLUE = "#2563EB"', theme_source)
@@ -2893,11 +2898,16 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("def apply_app_theme(", theme_source)
         self.assertIn("def create_card(", theme_source)
         self.assertIn("def set_label_style(", theme_source)
+        self.assertIn("def set_button_role(", theme_source)
+        self.assertNotIn('FONT_FAMILY = "Arial"', theme_source)
+        self.assertIn("class PageHeader", component_source)
+        self.assertIn("class SegmentedControl", component_source)
+        self.assertIn("class Toast", component_source)
         self.assertIn("apply_app_theme(app)", main_source)
         self.assertIn('root.setObjectName("AppRoot")', shell_source)
         self.assertIn('sidebar_container.setObjectName("AppSidebar")', shell_source)
         self.assertIn('self.navigation.setObjectName("AppNavigation")', shell_source)
-        self.assertIn('set_label_style(title, "screen_title")', screen_source)
+        self.assertIn('PageHeader("Schüler"', screen_source)
 
     def test_app_icon_asset_and_helpers_are_available(self) -> None:
         source = inspect.getsource(assets)
@@ -2919,13 +2929,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
         shell_source = inspect.getsource(shell)
 
         self.assertIn('APP_INFO_APP_NAME = "Jenaplan Kompetenzmanager"', source)
-        self.assertIn('APP_INFO_MODE = "PySide6 Prototyp"', source)
+        self.assertIn('APP_INFO_MODE = "Lokale Desktop-App"', source)
         self.assertIn(
-            'APP_INFO_STORAGE_HINT = "Einige Funktionen sind noch nicht dauerhaft gespeichert."',
+            'APP_INFO_STORAGE_HINT = "Arbeitsdaten werden lokal auf diesem Gerät gespeichert."',
             source,
         )
+        self.assertNotIn("PySide6 Prototyp", source)
+        self.assertNotIn("nicht dauerhaft gespeichert", source)
         self.assertIn("AppInfoDialog", shell_source)
-        self.assertIn('self.info_button = QPushButton("Info")', shell_source)
+        self.assertIn('self.info_button = QPushButton("Über die App")', shell_source)
         self.assertIn("create_app_icon_label(112)", source)
         self.assertIn("open_app_info_dialog", shell_source)
 
@@ -2946,8 +2958,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
         shell_source = inspect.getsource(shell.AppShell.open_new_course_dialog)
 
         self.assertIn('("Farbe", "Name", "Status", "Aktion")', source)
-        self.assertIn('QTableWidgetItem(f"● {item.color_name}")', source)
-        self.assertIn("setForeground(QColor(item.color_hex))", source)
+        self.assertIn("self._course_color_cell(item)", source)
+        self.assertIn('marker.setObjectName("CourseColorMarker")', source)
+        self.assertNotIn('QTableWidgetItem(f"●', source)
         self.assertIn("COURSE_COLOR_OPTIONS", dialog_source)
         self.assertIn('form.addRow("Farbe", self.color_select)', dialog_source)
         self.assertIn("include_color=True", shell_source)
@@ -2974,8 +2987,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "self.table.setCellWidget(row_index, 1, self._course_cell(student))",
             source,
         )
-        self.assertIn('marker = QLabel("●")', source)
-        self.assertIn("student.course_color_hex or '#6B7280'", source)
+        self.assertIn('marker.setObjectName("CourseColorMarker")', source)
+        self.assertIn('QColor(student.course_color_hex or "#6B7280")', source)
+        self.assertNotIn('marker = QLabel("●")', source)
         self.assertIn('set_label_style(course_label, "body")', source)
         self.assertIn("QHeaderView.ResizeMode.ResizeToContents", source)
         self.assertNotIn('"Stammgruppe", "Kurs"', source)
@@ -2994,8 +3008,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("course_group.selected_group_ids", source)
         self.assertIn("course_group.selected_course_ids", source)
         self.assertIn("course_selected = Signal(str, str)", source)
-        self.assertIn('QLabel("●")', source)
-        self.assertIn("course.color_hex or '#6B7280'", source)
+        self.assertIn('marker.setObjectName("CourseColorMarker")', source)
+        self.assertIn('QColor(course.color_hex or "#6B7280")', source)
+        self.assertNotIn('QLabel("●")', source)
         self.assertIn("self.master_data_adapter.view_model()", shell_source)
         self.assertIn("self.adapter.list_group_summaries()", shell_source)
 
@@ -3091,9 +3106,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn('STUDENT_SEARCH_PLACEHOLDER = "Schüler suchen …"', source)
         self.assertIn("Noch keine Schüler vorhanden.", source)
-        self.assertIn("Lege über „+ Schüler“ den ersten Schüler an.", source)
+        self.assertIn("Lege über „Schüler anlegen“ den ersten Schüler an.", source)
         self.assertIn('STUDENT_SEARCH_EMPTY_STATE = "Keine Schüler gefunden."', source)
-        self.assertIn('clear_search_button = QPushButton("Zurücksetzen")', source)
+        self.assertIn("SearchField(STUDENT_SEARCH_PLACEHOLDER)", source)
+        self.assertIn("setClearButtonEnabled(True)", inspect.getsource(components))
         self.assertIn("self.search_input.text().strip()", source)
 
     def test_master_data_empty_states_are_registered(self) -> None:
@@ -4379,8 +4395,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("self.selected_group_id = None", return_source)
         self.assertIn("self.selected_course_group_id = None", return_source)
         self.assertIn("self.selected_course_id = None", return_source)
-        self.assertIn('self._show_screen("overview")', return_source)
-        self.assertIn('self._select_navigation("overview")', return_source)
+        self.assertIn("self.students_workspace.show_source_selection()", return_source)
+        self.assertIn('self._show_screen("students")', return_source)
+        self.assertIn('self._select_navigation("students")', return_source)
         self.assertIn("show_back_button=self._has_active_student_filter()", refresh_source)
 
     def test_shell_opens_observation_for_edit_and_refreshes_profile(self) -> None:
@@ -5336,7 +5353,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
         self.assertFalse(screen.back_to_overview_button.isHidden())
-        self.assertEqual(screen.back_to_overview_button.text(), "← Zur Übersicht")
+        self.assertEqual(screen.back_to_overview_button.text(), "Zurück zur Auswahl")
         screen.back_to_overview_button.click()
         self.assertEqual(back_requests, [True])
         self.assertIsNotNone(app)
@@ -6045,11 +6062,187 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(target.screen_key, "students")
         self.assertTrue(target.reset_group_filter)
 
-    def test_placeholder_navigation_keeps_target_key(self) -> None:
-        target = resolve_navigation_target("reports")
+    def test_product_shell_navigation_matches_released_information_architecture(self) -> None:
+        self.assertEqual(
+            tuple((item.key, item.label, item.section) for item in NAVIGATION_ITEMS),
+            (
+                ("dashboard", "Heute", "ARBEIT"),
+                ("students", "Schüler", "ARBEIT"),
+                ("master_data", "Stammdaten", "VERWALTUNG"),
+                ("settings", "Einstellungen", "VERWALTUNG"),
+            ),
+        )
+        self.assertEqual(
+            {item.icon_name for item in NAVIGATION_ITEMS},
+            {"today", "students", "master-data", "settings"},
+        )
 
-        self.assertEqual(target.screen_key, "reports")
-        self.assertFalse(target.reset_group_filter)
+    def test_shell_integrates_group_overview_into_student_workspace(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        window = shell.AppShell(self.database_path)
+
+        self.assertEqual(
+            set(window.screen_index),
+            {"dashboard", "students", "profile", "master_data", "settings"},
+        )
+        self.assertNotIn("overview", window.screen_index)
+        self.assertIs(window.overview_screen, window.students_workspace.groups_screen)
+        window._show_navigation_item(
+            next(
+                window.navigation.item(index)
+                for index in range(window.navigation.count())
+                if window.navigation.item(index).data(Qt.ItemDataRole.UserRole)
+                == "students"
+            )
+        )
+        self.assertIs(window.stack.currentWidget(), window.students_workspace)
+        self.assertEqual(window.students_workspace.current_content_key(), "groups")
+
+        window.students_workspace.segmented_control.set_current_key("all", emit=True)
+        self.assertEqual(window.students_workspace.current_content_key(), "all")
+        self.assertFalse(window._has_active_student_filter())
+        window.close()
+        self.assertIsNotNone(app)
+
+    def test_student_workspace_keeps_filtered_navigation_origin(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        workspace = students_workspace.StudentsWorkspace()
+
+        workspace.show_student_list(source_key="course_groups")
+        self.assertEqual(workspace.current_content_key(), "filtered_students")
+        self.assertEqual(workspace.segmented_control.current_key(), "course_groups")
+        self.assertEqual(workspace.show_source_selection(), "course_groups")
+        self.assertEqual(workspace.current_content_key(), "course_groups")
+        self.assertIsNotNone(app)
+
+    def test_student_row_selection_is_separate_from_profile_opening(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = students_screen.StudentsScreen()
+        opened_student_ids: list[str] = []
+        screen.student_selected.connect(opened_student_ids.append)
+        screen.set_students(
+            (
+                StudentListItem(
+                    "STU-000001",
+                    "Anna",
+                    "Muster",
+                    "GRP-1",
+                    "Gruppe",
+                    "CRS-1",
+                    "Kurs 1",
+                    documentation_status=documentation_summary_from_subjects(()),
+                ),
+            )
+        )
+
+        screen.table.selectRow(0)
+        app.processEvents()
+        self.assertEqual(opened_student_ids, [])
+        action_widget = screen.table.cellWidget(0, 3)
+        profile_button = next(
+            button
+            for button in action_widget.findChildren(QPushButton)
+            if button.text() == "Profil öffnen"
+        )
+        profile_button.click()
+        self.assertEqual(opened_student_ids, ["STU-000001"])
+
+        opened_student_ids.clear()
+        screen.table.itemActivated.emit(screen.table.item(0, 0))
+        self.assertEqual(opened_student_ids, ["STU-000001"])
+        self.assertIsNotNone(app)
+
+    def test_student_list_fits_normal_notebook_width_without_horizontal_scroll(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        window = shell.AppShell(self.database_path)
+        window.show_all_students()
+        window.resize(1180, 760)
+        window.show()
+        app.processEvents()
+
+        self.assertEqual(
+            window.students_screen.table.horizontalScrollBar().maximum(),
+            0,
+        )
+        self.assertGreater(window.students_screen.table.viewport().width(), 800)
+        window.close()
+        self.assertIsNotNone(app)
+
+    def test_interaction_foundations_expose_keyboard_focus_and_feedback(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        segmented = components.SegmentedControl(
+            (("groups", "Stammgruppen"), ("all", "Alle Schüler"))
+        )
+        selected: list[str] = []
+        segmented.selection_changed.connect(selected.append)
+        first_button = segmented.button_group.buttons()[0]
+        QTest.keyClick(first_button, Qt.Key.Key_Right)
+        self.assertEqual(segmented.current_key(), "all")
+        self.assertEqual(selected, ["all"])
+        self.assertEqual(first_button.focusPolicy(), Qt.FocusPolicy.StrongFocus)
+
+        search = components.SearchField("Schüler suchen …")
+        search.setText("Anna")
+        QTest.keyClick(search, Qt.Key.Key_Escape)
+        self.assertEqual(search.text(), "")
+        self.assertTrue(search.accessibleName())
+
+        button = QPushButton("Speichern")
+        components.configure_button(button, "primary", "Änderungen speichern")
+        self.assertEqual(button.property("buttonRole"), "primary")
+        self.assertEqual(button.accessibleName(), "Änderungen speichern")
+
+        toast = components.Toast()
+        toast.show_message("Gespeichert.", tone="success", duration_ms=10_000)
+        self.assertFalse(toast.isHidden())
+        self.assertEqual(toast.property("toastTone"), "success")
+        toast.clear()
+        self.assertTrue(toast.isHidden())
+
+        inline = components.InlineMessage()
+        inline.set_message("Eingabe prüfen.", tone="warning")
+        self.assertFalse(inline.isHidden())
+        self.assertEqual(inline.property("messageTone"), "warning")
+        empty = components.EmptyState("Noch keine Einträge.")
+        self.assertFalse(empty.isHidden())
+        self.assertIsNotNone(app)
+
+    def test_shell_svg_icons_and_native_font_tokens_are_registered(self) -> None:
+        theme_source = inspect.getsource(theme)
+
+        self.assertEqual(icons.ICON_SIZE_SMALL, 16)
+        self.assertEqual(icons.ICON_SIZE_MEDIUM, 20)
+        self.assertEqual(icons.ICON_SIZE_LARGE, 24)
+        for icon_name in icons.ICON_NAMES:
+            self.assertTrue(icons.icon_path(icon_name).exists())
+            self.assertEqual(icons.icon_path(icon_name).suffix, ".svg")
+        self.assertNotIn("font-family:", theme.APP_STYLESHEET)
+        self.assertNotIn("Arial", theme_source)
+        self.assertEqual(
+            (
+                theme.SPACING_4,
+                theme.SPACING_8,
+                theme.SPACING_12,
+                theme.SPACING_16,
+                theme.SPACING_24,
+                theme.SPACING_32,
+                theme.SPACING_48,
+            ),
+            (4, 8, 12, 16, 24, 32, 48),
+        )
+        self.assertLess(theme.MOTION_FAST_MS, theme.MOTION_STANDARD_MS)
+        self.assertLess(theme.MOTION_STANDARD_MS, theme.MOTION_SLOW_MS)
+
+    def test_placeholder_navigation_is_not_part_of_product_shell(self) -> None:
+        navigation_keys = {item.key for item in NAVIGATION_ITEMS}
+
+        self.assertTrue(
+            {"overview", "observations", "competencies", "reports"}.isdisjoint(
+                navigation_keys
+            )
+        )
+        with self.assertRaises(ValueError):
+            resolve_navigation_target("reports")
 
     def test_student_search_finds_first_name(self) -> None:
         students = self.adapter.list_students()
@@ -6100,6 +6293,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.screens.overview_screen",
             "src.desktop_app.screens.settings_screen",
             "src.desktop_app.screens.students_screen",
+            "src.desktop_app.screens.students_workspace",
             "src.desktop_app.screens.student_profile_screen",
             "src.desktop_app.screens.placeholder_screen",
         )
@@ -6119,6 +6313,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.adapters.student_desktop_adapter",
             "src.desktop_app.app",
             "src.desktop_app.assets",
+            "src.desktop_app.components",
+            "src.desktop_app.icons",
             "src.desktop_app.dialogs.new_observation_dialog",
             "src.desktop_app.dialogs.new_student_dialog",
             "src.desktop_app.main",
@@ -6129,6 +6325,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.screens.settings_screen",
             "src.desktop_app.screens.student_profile_screen",
             "src.desktop_app.screens.students_screen",
+            "src.desktop_app.screens.students_workspace",
             "src.desktop_app.shell",
             "src.desktop_app.student_list_view",
             "src.desktop_app.theme",
