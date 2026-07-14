@@ -33,9 +33,9 @@ from PySide6.QtWidgets import (
 from src.desktop_app.theme import create_card, set_label_style
 from src.desktop_app.components import (
     AppCard,
+    DialogHeader,
     EmptyState,
     InlineMessage,
-    PageHeader,
     SegmentedControl,
     SectionHeader,
     StatusBadge,
@@ -169,9 +169,11 @@ class LearningReportDialog(QDialog):
         layout = QVBoxLayout(bar)
         layout.setContentsMargins(24, 16, 24, 14)
         layout.setSpacing(8)
-        self.page_header = PageHeader(
+        self.page_header = DialogHeader(
             f"Lernentwicklungsbericht · {self.preparation.student_name}",
-            "Ruhiger Schreib- und Prüfworkspace für einen bearbeitbaren Entwurf.",
+            "Berichtswerkstatt · bearbeitbarer Entwurf",
+            "Schreiben, Belege prüfen, Vorschau lesen und Revisionen nachvollziehen.",
+            icon_name="report",
         )
         self.header_status_badge = StatusBadge()
         self.page_header.add_action(self.header_status_badge)
@@ -1097,9 +1099,11 @@ class LearningReportDialog(QDialog):
         layout.setContentsMargins(24, 22, 24, 22)
         layout.setSpacing(14)
         layout.addWidget(
-            PageHeader(
+            DialogHeader(
                 f"Revision {preview.revision_number} finalisieren",
+                f"{preview.student_display_name} · {preview.period_label}",
                 "Bitte den gespeicherten Berichtsentwurf vor der Bestätigung prüfen.",
+                icon_name="report",
             )
         )
         summary = AppCard("soft")
@@ -1190,6 +1194,34 @@ class LearningReportDialog(QDialog):
         if not self._validate_period():
             return
         self.save_requested.emit(self.report_draft_view_model())
+
+    def reject(self) -> None:
+        if not self._dirty:
+            super().reject()
+            return
+        confirmation = QMessageBox(self)
+        confirmation.setIcon(QMessageBox.Icon.Warning)
+        confirmation.setWindowTitle("Ungespeicherte Änderungen")
+        confirmation.setText("In der Berichtswerkstatt gibt es ungespeicherte Änderungen.")
+        confirmation.setInformativeText(
+            "Weiter bearbeiten behält den aktuellen Arbeitsstand geöffnet. "
+            "Änderungen verwerfen schließt die Berichtswerkstatt ohne Speichern."
+        )
+        continue_button = confirmation.addButton(
+            "Weiter bearbeiten",
+            QMessageBox.ButtonRole.RejectRole,
+        )
+        discard_button = confirmation.addButton(
+            "Änderungen verwerfen",
+            QMessageBox.ButtonRole.DestructiveRole,
+        )
+        configure_button(continue_button, "secondary", "Bericht weiter bearbeiten")
+        configure_button(discard_button, "destructive", "Änderungen verwerfen")
+        confirmation.setDefaultButton(continue_button)
+        confirmation.setEscapeButton(continue_button)
+        confirmation.exec()
+        if confirmation.clickedButton() is discard_button:
+            super().reject()
 
     def _request_pdf(self) -> None:
         if not self.selected_subject_ids:
@@ -1757,9 +1789,11 @@ class LearningReportRevisionDialog(QDialog):
         close = QPushButton("Zurück")
         configure_button(close, "secondary", "Zur Berichtswerkstatt zurückkehren")
         close.clicked.connect(self.accept)
-        header = PageHeader(
+        header = DialogHeader(
             f"{self.revision.report_type_label} · Revision {self.revision.revision_number}",
-            f"Historisches Dokument für {self.revision.student_display_name} · {self.revision.period_label}",
+            f"{self.revision.student_display_name} · {self.revision.period_label}",
+            "Historisches, schreibgeschütztes Dokument aus dem gespeicherten Snapshot.",
+            icon_name="report",
         )
         if self.revision.status == "finalized":
             self.pdf_button = QPushButton("Finales PDF erstellen")

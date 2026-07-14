@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.desktop_app.icons import ICON_SIZE_SMALL, load_icon
+from src.desktop_app.icons import ICON_SIZE_LARGE, ICON_SIZE_SMALL, load_icon
 from src.desktop_app.motion import (
     animate_feedback,
     animate_opacity,
@@ -201,6 +201,64 @@ class PageHeader(QWidget):
 
     def add_action(self, action: QWidget) -> None:
         """Add one page-level action."""
+        self.actions_layout.addWidget(action)
+
+
+class DialogHeader(QFrame):
+    """Consistent dialog identity, context, description, and action zone."""
+
+    def __init__(
+        self,
+        title: str,
+        context: str = "",
+        description: str = "",
+        *,
+        icon_name: str = "info",
+    ) -> None:
+        super().__init__()
+        self.setObjectName("DialogHeader")
+        self.setAccessibleName(title)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 14)
+        layout.setSpacing(14)
+
+        self.icon_label = QLabel()
+        self.icon_label.setObjectName("DialogHeaderIcon")
+        self.icon_label.setFixedSize(42, 42)
+        self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.icon_label.setPixmap(
+            load_icon(icon_name).pixmap(ICON_SIZE_LARGE, ICON_SIZE_LARGE)
+        )
+        self.icon_label.setAccessibleName("")
+        layout.addWidget(self.icon_label, 0, Qt.AlignmentFlag.AlignTop)
+
+        heading = QVBoxLayout()
+        heading.setSpacing(2)
+        self.title_label = QLabel(title)
+        self.title_label.setObjectName("DialogHeaderTitle")
+        self.title_label.setWordWrap(True)
+        set_label_style(self.title_label, "dialog_title")
+        self.context_label = QLabel(context)
+        self.context_label.setObjectName("DialogHeaderContext")
+        self.context_label.setWordWrap(True)
+        set_label_style(self.context_label, "field_label")
+        self.context_label.setVisible(bool(context))
+        self.description_label = QLabel(description)
+        self.description_label.setObjectName("DialogHeaderDescription")
+        self.description_label.setWordWrap(True)
+        set_label_style(self.description_label, "muted")
+        self.description_label.setVisible(bool(description))
+        heading.addWidget(self.title_label)
+        heading.addWidget(self.context_label)
+        heading.addWidget(self.description_label)
+        layout.addLayout(heading, 1)
+
+        self.actions_layout = QHBoxLayout()
+        self.actions_layout.setSpacing(8)
+        layout.addLayout(self.actions_layout)
+
+    def add_action(self, action: QWidget) -> None:
+        """Add one compact status or dialog-level action."""
         self.actions_layout.addWidget(action)
 
 

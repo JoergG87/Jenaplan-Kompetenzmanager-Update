@@ -30,6 +30,8 @@ class AppInfoDialog(QDialog):
         super().__init__()
         self.setWindowTitle(APP_INFO_TITLE)
         self.setModal(True)
+        self.setMinimumWidth(420)
+        self.resize(460, 430)
         self._build()
 
     def _build(self) -> None:
@@ -55,6 +57,7 @@ class AppInfoDialog(QDialog):
         set_label_style(purpose, "muted")
         layout.addWidget(purpose)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.setObjectName("DialogActionBar")
         close_button = buttons.button(QDialogButtonBox.StandardButton.Close)
         if close_button is not None:
             close_button.setText("Schließen")

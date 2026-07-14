@@ -9,16 +9,18 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
-    QLabel,
     QLineEdit,
     QTimeEdit,
     QVBoxLayout,
 )
 
-from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
+from src.desktop_app.dialogs.dialog_buttons import (
+    DialogActionBar,
+    configure_save_cancel_buttons,
+)
 
 from src.application.commands.timetable import SaveTimetableEntryCommand
-from src.desktop_app.theme import set_label_style
+from src.desktop_app.components import AppCard, DialogHeader, SectionHeader
 from src.desktop_app.view_models.timetable_view_model import (
     TARGET_TYPE_LABELS,
     WEEKDAY_LABELS,
@@ -42,7 +44,8 @@ class TimetableEntryDialog(QDialog):
         self.week = week
         self.entry = entry
         self.setWindowTitle("Stundenplaneintrag bearbeiten" if entry else "Stunde anlegen")
-        self.setMinimumWidth(440)
+        self.setMinimumWidth(520)
+        self.resize(540, 680)
         self._build(weekday)
         if entry is not None:
             self._set_entry(entry)
@@ -64,10 +67,25 @@ class TimetableEntryDialog(QDialog):
 
     def _build(self, weekday: int) -> None:
         layout = QVBoxLayout(self)
-        title = QLabel(self.windowTitle())
-        set_label_style(title, "dialog_title")
-        layout.addWidget(title)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(14)
+        layout.addWidget(
+            DialogHeader(
+                self.windowTitle(),
+                "Wochenstundenplan",
+                "Zeit, Fach und Unterrichtsziel für diesen Eintrag festlegen.",
+                icon_name="timetable-dialog",
+            )
+        )
+        card = AppCard("default")
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(18, 16, 18, 18)
+        card_layout.setSpacing(10)
+        card_layout.addWidget(SectionHeader("Stunde und Zuordnung"))
         form = QFormLayout()
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        form.setVerticalSpacing(8)
 
         self.weekday_combo = QComboBox()
         for value, label in WEEKDAY_LABELS.items():
@@ -104,9 +122,10 @@ class TimetableEntryDialog(QDialog):
         self.active_checkbox = QCheckBox("Eintrag aktiv")
         self.active_checkbox.setChecked(True)
         form.addRow("", self.active_checkbox)
-        layout.addLayout(form)
+        card_layout.addLayout(form)
+        layout.addWidget(card, 1)
 
-        buttons = QDialogButtonBox(
+        buttons = DialogActionBar(
             QDialogButtonBox.StandardButton.Cancel
             | QDialogButtonBox.StandardButton.Save
         )
@@ -114,6 +133,7 @@ class TimetableEntryDialog(QDialog):
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
         layout.addWidget(buttons)
+        self.weekday_combo.setFocus()
 
     def _populate_targets(self) -> None:
         selected_id = self.target_combo.currentData() if hasattr(self, "target_combo") else None

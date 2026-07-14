@@ -31,16 +31,19 @@ from PySide6.QtWidgets import (
 
 from src.desktop_app.components import (
     AppCard,
+    DialogHeader,
     EmptyState,
     InlineMessage,
-    PageHeader,
     SearchField,
     SectionHeader,
     SegmentedControl,
     StatusBadge,
     configure_button,
 )
-from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
+from src.desktop_app.dialogs.dialog_buttons import (
+    DialogActionBar,
+    configure_save_cancel_buttons,
+)
 from src.desktop_app.motion import animate_feedback
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.observation_view_model import (
@@ -239,14 +242,11 @@ class NewObservationDialog(QDialog):
         layout.setContentsMargins(18, 16, 18, 18)
         layout.setSpacing(12)
 
-        title = PageHeader(
-            self.student.display_name,
-            (
-                "Beobachtung bearbeiten"
-                if self.initial_draft
-                else "Neue Beobachtung"
-            )
-            + f" · {self.student.group_name} · {self.student.course_name}",
+        title = DialogHeader(
+            "Beobachtung bearbeiten" if self.initial_draft else "Neue Beobachtung",
+            f"{self.student.display_name} · {self.student.group_name} · {self.student.course_name}",
+            "Kontext festlegen, Kompetenzen auswählen und die Beobachtung dokumentieren.",
+            icon_name="observation",
         )
         title.setObjectName("ObservationDialogPageHeader")
         layout.addWidget(title)
@@ -290,7 +290,7 @@ class NewObservationDialog(QDialog):
         self._apply_prefill()
 
     def _build_context_zone(self) -> QFrame:
-        zone = self._zone("Kind und Kontext")
+        zone = self._zone("Kind und Kontext", role="context")
         zone.setMinimumWidth(225)
         zone.setMaximumWidth(276)
         zone_layout = zone.layout()
@@ -339,7 +339,7 @@ class NewObservationDialog(QDialog):
         return zone
 
     def _build_competency_zone(self) -> QFrame:
-        zone = self._zone()
+        zone = self._zone(role="primary")
         zone.setMinimumWidth(480)
         zone_layout = zone.layout()
 
@@ -442,7 +442,7 @@ class NewObservationDialog(QDialog):
         return zone
 
     def _build_observation_zone(self) -> QFrame:
-        zone = self._zone("Beobachtung")
+        zone = self._zone("Beobachtung", role="entry")
         zone.setMinimumWidth(285)
         zone.setMaximumWidth(338)
         zone_layout = zone.layout()
@@ -456,7 +456,7 @@ class NewObservationDialog(QDialog):
         self.validation_message.setAccessibleName("Validierung der Beobachtung")
         zone_layout.addWidget(self.validation_message)
 
-        buttons = QDialogButtonBox(
+        buttons = DialogActionBar(
             QDialogButtonBox.StandardButton.Cancel
             | QDialogButtonBox.StandardButton.Save
         )
@@ -471,9 +471,10 @@ class NewObservationDialog(QDialog):
         zone_layout.addWidget(buttons, 0)
         return zone
 
-    def _zone(self, title: str = "") -> QFrame:
+    def _zone(self, title: str = "", *, role: str = "primary") -> QFrame:
         zone = AppCard("default")
         zone.setObjectName("ObservationDialogZone")
+        zone.setProperty("zoneRole", role)
         zone_layout = QVBoxLayout(zone)
         zone_layout.setContentsMargins(14, 14, 14, 14)
         zone_layout.setSpacing(10)

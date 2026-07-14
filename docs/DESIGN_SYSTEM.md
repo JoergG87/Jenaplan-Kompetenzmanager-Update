@@ -1,5 +1,19 @@
 # Design-System
 
+## Dialog Experience und Workspace Polish - Premium UI Sprint 2
+
+Produktive PySide-Dialoge verwenden drei Groessenrollen: kleine Dialoge fuer eine kompakte Eingabe, mittlere Dialoge fuer mehrere klar getrennte Feldgruppen und grosse Dialoge als temporaere Arbeitsraeume. Grosse Arbeitsdialoge behalten ihren fachlich freigegebenen Aufbau; die Groessenrolle veraendert weder Navigation noch Workflow. Bei 1180 x 760 bleiben Kopf, zentrale Orientierung und Pflichtaktionen sichtbar, bei 1400 x 900 wird zusaetzlicher Raum den Arbeitsflaechen gegeben.
+
+Komplexe Dialoge verwenden `DialogHeader` mit Kontexticon, fachlich eindeutigem Titel, sichtbarem Kind-, Entwurfs- oder Verwaltungskontext, optionaler Kurzbeschreibung und ruhiger Trennlinie. Der Fenstertitel allein traegt die Orientierung nicht. Kleine Eingabedialoge gruppieren Felder in `AppCard`-Flaechen mit `SectionHeader`; Labels stehen direkt oberhalb der Felder. `QFormLayout` bleibt ausschliesslich Layouttechnik und bestimmt nicht mehr die sichtbare Form-Anmutung.
+
+Die Aktionszone bleibt am unteren Rand beziehungsweise bei grossen Workspaces ausserhalb des dominanten Scrollbereichs sichtbar. Sekundaere oder ruhige Aktionen stehen links von genau einer primaeren Speicher- oder Bestaetigungsaktion. Speichern ist bei einfachen Eingabedialogen die Enter-Standardaktion, Escape bricht ab. Bei verlustkritischen Arbeitsdialogen ist `Weiter bearbeiten` die sichere Standardwahl; destruktives Verwerfen wird textlich benannt und nie nur durch Farbe vermittelt.
+
+Validierungs- und Speicherfehler erscheinen als `InlineMessage` am betroffenen Kontext. Erfolgreiches Speichern darf weiterhin ueber den vorhandenen `Toast` bestaetigt werden. Native `QMessageBox`-Fehler und -Bestaetigungen erhalten die zentrale Typografie, Mindestbreite und Buttonflaeche; irreversible Spezialbestaetigungen behalten ihre bereits freigegebenen Texte und Schutzmechanismen.
+
+Der Beobachtungsdialog unterscheidet die vorhandenen drei Zonen sichtbar als ruhigen Kontext, dominante Kompetenzarbeit und Eingabe-/Aktionsbereich, ohne Auswahl oder Speicherpfad zu veraendern. Berichtswerkstatt und finale Revision verwenden denselben Dialogkopf, unterscheiden bearbeitbaren Draft, Vorschau und schreibgeschuetzte Revision aber weiterhin ueber vorhandene Status- und Dokumentflaechen. Der LEG-Workspace verbindet Kindkontext, sechs Phasen, Dirty-State und feste Aktionsleiste in derselben Kopfsprache.
+
+Premium UI Sprint 2 fuehrt keine neue Motion ein. Vorhandene `InlineMessage`-, `Toast`-, Segment- und Disclosure-Motion bleibt zentral, kurz und Reduced-Motion-sicher. Dialog-Fades, Hoehenanimationen, verschachtelte Animationen und QPainter-Spezialelemente sind fuer diesen Sprint nicht gerechtfertigt.
+
 ## LEG-Workspace-Sprache - UI Sprint 6B
 
 Der Lernentwicklungsgespraech-Draft verwendet `PageHeader`, `StatusBadge`, `SectionHeader`, `AppCard`, `SearchField`, `FilterBar`, `InlineMessage`, `Toast` und zentrale Buttonrollen als einen zusammenhaengenden kindbezogenen Workspace. Kopf, lokale Phasenleiste und Aktionsleiste bleiben ausserhalb des dominanten Phasen-Scrollbereichs. Die linke Leiste zeigt alle sechs vollstaendigen Phasentitel und genau einen textlich markierten aktuellen Schritt.

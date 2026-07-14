@@ -17,6 +17,12 @@ ICON_NAMES = frozenset(
         "search",
         "close",
         "chevron-down",
+        "conference",
+        "observation",
+        "report",
+        "student-record",
+        "timetable-dialog",
+        "master-data-dialog",
     }
 )
 ICON_SIZE_SMALL = 16

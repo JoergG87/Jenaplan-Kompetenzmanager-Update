@@ -32,9 +32,9 @@ from PySide6.QtWidgets import (
 
 from src.desktop_app.components import (
     AppCard,
+    DialogHeader,
     FilterBar,
     InlineMessage,
-    PageHeader,
     SearchField,
     SectionHeader,
     StatusBadge,
@@ -242,9 +242,11 @@ class LearningConferenceCloseDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 22, 24, 20)
         layout.setSpacing(16)
-        layout.addWidget(SectionHeader(
+        layout.addWidget(DialogHeader(
             "Ungespeicherte Änderungen",
+            "Lernentwicklungsgespräch",
             "Möchtest du den bearbeitbaren Entwurf vor dem Schließen speichern?",
+            icon_name="conference",
         ))
         note = InlineMessage(
             "Änderungen verwerfen entfernt nur Eingaben seit dem letzten Speichern. Der gespeicherte Draft bleibt erhalten.",
@@ -259,6 +261,10 @@ class LearningConferenceCloseDialog(QDialog):
         configure_button(continue_button, "quiet", "Weiter bearbeiten")
         configure_button(discard_button, "secondary", "Änderungen verwerfen")
         configure_button(save_button, "primary", "Entwurf speichern und schließen")
+        continue_button.setDefault(True)
+        continue_button.setAutoDefault(True)
+        discard_button.setAutoDefault(False)
+        save_button.setAutoDefault(False)
         continue_button.clicked.connect(self.reject)
         discard_button.clicked.connect(lambda: self._finish("discard"))
         save_button.clicked.connect(lambda: self._finish("save"))
@@ -294,9 +300,11 @@ class LearningConferenceDraftSelectionDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 22, 24, 20)
         layout.setSpacing(14)
-        layout.addWidget(PageHeader(
+        layout.addWidget(DialogHeader(
             "Entwurf weiterbearbeiten",
+            "Lernentwicklungsgespräch",
             "Wähle einen gespeicherten Stand oder lege einen neuen bearbeitbaren Entwurf an.",
+            icon_name="conference",
         ))
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -465,9 +473,14 @@ class LearningConferenceDialog(QDialog):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(18, 14, 18, 14)
         layout.setSpacing(8)
-        self.page_header = PageHeader(
-            self.preparation.student_name,
-            "Lernentwicklungsgespräch · bearbeitbarer Entwurf",
+        group_course = " · ".join(
+            value for value in (self.preparation.group_name, self.preparation.course_name) if value
+        ) or "Stammgruppe und Kurs offen"
+        self.page_header = DialogHeader(
+            "Lernentwicklungsgespräch",
+            f"{self.preparation.student_name} · {group_course}",
+            "Bearbeitbarer Entwurf in sechs klaren Gesprächsphasen.",
+            icon_name="conference",
         )
         self.draft_badge = StatusBadge("Bearbeitbarer Entwurf", tone="info")
         self.dirty_badge = StatusBadge("Entwurf gespeichert", tone="neutral")
@@ -477,9 +490,6 @@ class LearningConferenceDialog(QDialog):
         layout.addWidget(self.page_header)
         meta = QHBoxLayout()
         meta.setSpacing(18)
-        group_course = " · ".join(
-            value for value in (self.preparation.group_name, self.preparation.course_name) if value
-        ) or "Stammgruppe und Kurs offen"
         self.group_course_label = _label(group_course, "small")
         self.date_context_label = _label("Gesprächsdatum offen", "small")
         self.teacher_context_label = _label("Lehrkraft offen", "small")

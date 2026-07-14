@@ -289,6 +289,33 @@ QFrame#CourseColorMarker {{
 }}
 QWidget#SectionHeader {{ background-color: transparent; }}
 QLabel#SectionHeaderTitle {{ font-size: 16px; font-weight: 650; }}
+QFrame#DialogHeader {{
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid #D7E2EA;
+}}
+QLabel#DialogHeaderIcon {{
+    background-color: #E8F2FB;
+    border: 1px solid #C6DCEB;
+    border-radius: 11px;
+}}
+QLabel#DialogHeaderTitle {{
+    color: {COLOR_NAVY};
+    font-size: 20px;
+    font-weight: 650;
+}}
+QLabel#DialogHeaderContext {{
+    color: #365966;
+    font-size: 12px;
+    font-weight: 650;
+}}
+QDialogButtonBox#DialogActionBar,
+QDialogButtonBox#ObservationPersistentActions {{
+    background-color: transparent;
+    border: none;
+    border-top: 1px solid #D7E2EA;
+    padding-top: 12px;
+}}
 QFrame#FilterBar {{
     background-color: rgba(255, 255, 255, 232);
     border: 1px solid #D7E2EA;
@@ -826,6 +853,18 @@ QFrame#ObservationDialogZone {{
     border: 1px solid #C9D8E4;
     border-radius: 14px;
 }}
+QFrame#ObservationDialogZone[zoneRole="context"] {{
+    background-color: #F8FBFD;
+    border-color: #D5E2EA;
+}}
+QFrame#ObservationDialogZone[zoneRole="primary"] {{
+    background-color: #FFFFFF;
+    border-color: #AFC8DA;
+}}
+QFrame#ObservationDialogZone[zoneRole="entry"] {{
+    background-color: #FBFCFE;
+    border-color: #CAD9E4;
+}}
 QFrame#ObservationSelectedCompetencyCard[historical="true"] {{
     background-color: #FFFAF5;
     border-color: #E9E1D6;
@@ -1197,6 +1236,17 @@ QGroupBox::title {{
     subcontrol-origin: margin;
     left: 10px;
     padding: 0 4px;
+}}
+QMessageBox {{
+    background-color: {COLOR_BACKGROUND};
+}}
+QMessageBox QLabel#qt_msgbox_label {{
+    min-width: 320px;
+    color: {COLOR_TEXT};
+    font-size: 13px;
+}}
+QMessageBox QPushButton {{
+    min-width: 92px;
 }}
 QScrollArea {{
     border: none;

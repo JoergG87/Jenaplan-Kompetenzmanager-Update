@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## Premium UI Sprint 2 - Dialog Experience and Workspace Polish
+
+### Added
+
+- Wiederverwendbaren `DialogHeader` mit Kontexticon, Titel, sichtbarem Arbeitskontext, optionaler Beschreibung und stabiler Aktionszone fuer produktive PySide-Dialoge eingefuehrt.
+- Sechs zentrale Outline-SVGs fuer Schueler-, Stammdaten-, Stundenplan-, Beobachtungs-, Berichts- und LEG-Dialoge ergaenzt.
+- Verlustwarnung fuer ungespeicherte Aenderungen in der Berichtswerkstatt mit sicherer Standardaktion `Weiter bearbeiten` ergaenzt.
+
+### Changed
+
+- Kleine Schueler-, Stammdaten- und Stundenplandialoge in klare Groessenrollen, Card-basierte Feldgruppen, Labels oberhalb der Felder, Inline-Validierung und eine einheitliche Aktionshierarchie ueberfuehrt.
+- Beobachtungsdialog als Drei-Zonen-Workspace visuell gewichtet und Kopf, Kontext sowie feste Speicherzone vereinheitlicht; Kompetenz- und Speicherlogik bleiben unveraendert.
+- Berichtswerkstatt, Finalisierungsbestaetigung, finale Revision, LEG-Workspace, Dirty-Close und Draft-Auswahl auf dieselbe Dialogkopfsprache ausgerichtet; Draft, Vorschau und Revision bleiben klar getrennte Zustaende.
+- Native Bestaetigungs- und Fehlerdialoge zentral typografisch beruhigt sowie Fokus, Enter-/Escape-Defaults und die Reihenfolge sekundaerer und primaerer Aktionen konsolidiert.
+
+### Not Changed
+
+- Keine Aenderung an Fachlogik, Datenmodell, SQLite, Migrationen, Repositories, Services, Adaptern, ViewModels, Navigation, Persistenz, fachlichen Workflows oder bestehenden Dialogtypen; keine neue Funktion, kein QPainter und keine zusaetzliche Motion.
+
 ## Premium UI Sprint 1 - Desktop Finish Foundations
 
 ### Added

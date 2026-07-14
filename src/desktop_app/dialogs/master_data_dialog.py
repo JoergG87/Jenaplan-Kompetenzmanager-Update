@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -16,7 +15,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.desktop_app.dialogs.dialog_buttons import configure_save_cancel_buttons
+from src.desktop_app.dialogs.dialog_buttons import (
+    DialogActionBar,
+    configure_save_cancel_buttons,
+)
+from src.desktop_app.components import AppCard, DialogHeader, InlineMessage, SectionHeader
 from src.desktop_app.view_models.master_data_view_model import (
     COURSE_GROUP_EMPTY_COURSES_MESSAGE,
     COURSE_GROUP_EMPTY_GROUPS_MESSAGE,
@@ -26,7 +29,6 @@ from src.desktop_app.view_models.master_data_view_model import (
     MasterDataItemViewModel,
     normalize_master_data_name,
 )
-from src.desktop_app.theme import set_label_style
 
 
 class MasterDataNameDialog(QDialog):
@@ -43,23 +45,44 @@ class MasterDataNameDialog(QDialog):
         super().__init__()
         self.setWindowTitle(title)
         self.setModal(True)
+        self.setMinimumWidth(460)
+        self.resize(500, 340 if not include_color else 410)
         self.name_input = QLineEdit(initial_name)
         self.include_color = include_color
         self.color_select = QComboBox()
         self._populate_colors(initial_color_hex)
-        self.error_label = QLabel("")
-        set_label_style(self.error_label, "error")
         self._build()
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(14)
+        layout.addWidget(
+            DialogHeader(
+                self.windowTitle(),
+                "Stammdaten",
+                "Die Änderung gilt nach dem Speichern in allen zugehörigen Ansichten.",
+                icon_name="master-data-dialog",
+            )
+        )
+        card = AppCard("default")
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(18, 16, 18, 18)
+        card_layout.setSpacing(10)
+        card_layout.addWidget(SectionHeader("Bezeichnung"))
         form = QFormLayout()
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         form.addRow("Name", self.name_input)
         if self.include_color:
             form.addRow("Farbe", self.color_select)
-        layout.addLayout(form)
-        layout.addWidget(self.error_label)
-        buttons = QDialogButtonBox(
+        card_layout.addLayout(form)
+        layout.addWidget(card, 1)
+        self.validation_message = InlineMessage()
+        self.validation_message.setAccessibleName("Validierung der Stammdaten")
+        self.error_label = self.validation_message.label
+        layout.addWidget(self.validation_message)
+        buttons = DialogActionBar(
             QDialogButtonBox.StandardButton.Cancel
             | QDialogButtonBox.StandardButton.Save
         )
@@ -67,6 +90,7 @@ class MasterDataNameDialog(QDialog):
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.save)
         layout.addWidget(buttons)
+        self.name_input.setFocus()
 
     def name(self) -> str:
         """Return the validated name."""
@@ -81,8 +105,12 @@ class MasterDataNameDialog(QDialog):
         try:
             self.name()
         except ValueError:
-            self.error_label.setText(MASTER_DATA_EMPTY_NAME_MESSAGE)
+            self.validation_message.set_message(
+                MASTER_DATA_EMPTY_NAME_MESSAGE,
+                tone="error",
+            )
             return
+        self.validation_message.set_message("")
         self.accept()
 
     def _populate_colors(self, initial_color_hex: str) -> None:
@@ -108,21 +136,38 @@ class CourseGroupDialog(QDialog):
         super().__init__()
         self.setWindowTitle(title)
         self.setModal(True)
+        self.setMinimumSize(580, 520)
+        self.resize(640, 650)
         self.course_group = course_group
         self.groups = groups
         self.courses = courses
         self.name_input = QLineEdit(course_group.name)
         self.group_checkboxes: dict[str, QCheckBox] = {}
         self.course_checkboxes: dict[str, QCheckBox] = {}
-        self.error_label = QLabel("")
-        set_label_style(self.error_label, "error")
         self._build()
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(14)
+        layout.addWidget(
+            DialogHeader(
+                self.windowTitle(),
+                "Stammgruppen und Kurse gemeinsam organisieren",
+                "Name und Zuordnungen werden zusammen als ein Kursverbund gespeichert.",
+                icon_name="master-data-dialog",
+            )
+        )
+        name_card = AppCard("default")
+        name_layout = QVBoxLayout(name_card)
+        name_layout.setContentsMargins(18, 14, 18, 16)
+        name_layout.addWidget(SectionHeader("Bezeichnung"))
         form = QFormLayout()
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         form.addRow("Name", self.name_input)
-        layout.addLayout(form)
+        name_layout.addLayout(form)
+        layout.addWidget(name_card)
         layout.addWidget(self._checkbox_group(
             "Stammgruppen",
             self.groups,
@@ -136,8 +181,11 @@ class CourseGroupDialog(QDialog):
             self.course_checkboxes,
             include_color=True,
         ))
-        layout.addWidget(self.error_label)
-        buttons = QDialogButtonBox(
+        self.validation_message = InlineMessage()
+        self.validation_message.setAccessibleName("Validierung des Kursverbunds")
+        self.error_label = self.validation_message.label
+        layout.addWidget(self.validation_message)
+        buttons = DialogActionBar(
             QDialogButtonBox.StandardButton.Cancel
             | QDialogButtonBox.StandardButton.Save
         )
@@ -145,6 +193,7 @@ class CourseGroupDialog(QDialog):
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.save)
         layout.addWidget(buttons)
+        self.name_input.setFocus()
 
     def name(self) -> str:
         """Return the validated course-group name."""
@@ -171,14 +220,24 @@ class CourseGroupDialog(QDialog):
         try:
             self.name()
         except ValueError:
-            self.error_label.setText(MASTER_DATA_EMPTY_NAME_MESSAGE)
+            self.validation_message.set_message(
+                MASTER_DATA_EMPTY_NAME_MESSAGE,
+                tone="error",
+            )
             return
         if not self.selected_group_ids():
-            self.error_label.setText(COURSE_GROUP_EMPTY_GROUPS_MESSAGE)
+            self.validation_message.set_message(
+                COURSE_GROUP_EMPTY_GROUPS_MESSAGE,
+                tone="error",
+            )
             return
         if not self.selected_course_ids():
-            self.error_label.setText(COURSE_GROUP_EMPTY_COURSES_MESSAGE)
+            self.validation_message.set_message(
+                COURSE_GROUP_EMPTY_COURSES_MESSAGE,
+                tone="error",
+            )
             return
+        self.validation_message.set_message("")
         self.accept()
 
     def _checkbox_group(
@@ -189,9 +248,11 @@ class CourseGroupDialog(QDialog):
         target: dict[str, QCheckBox],
         *,
         include_color: bool = False,
-    ) -> QGroupBox:
-        group_box = QGroupBox(title)
+    ) -> AppCard:
+        group_box = AppCard("soft")
         layout = QVBoxLayout(group_box)
+        layout.setContentsMargins(18, 14, 18, 16)
+        layout.addWidget(SectionHeader(title))
         selected_set = set(selected_ids)
         for item in items:
             checkbox = QCheckBox(item.name)

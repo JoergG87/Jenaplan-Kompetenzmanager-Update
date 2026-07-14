@@ -1695,6 +1695,30 @@ Regel: Der sichtbare Navigationsname des bestehenden technischen Schluessels `da
 
 Regel: `StudentsWorkspace` komponiert die lokalen Segmente `groups`, `courses`, `course_groups` und `all` nur aus vorhandenen Adapter-/ViewModel-Projektionen und lokalem UI-State. Es fuehrt weder eine Datenquelle noch Businesslogik, SQLite-Zugriff, Persistenz oder einen Schreibprozess ein. Die direkte Kursansicht uebergibt eine vorhandene `course_id` an `StudentDesktopAdapter.list_students(course_id=...)`. Beobachtungs-, Kompetenz-, Berichts- und LEG-Pfade bleiben ueber das bestehende Schuelerprofil erreichbar.
 
+## Premium UI Sprint 2 - Dialog Experience und Workspace Polish
+
+Registrierte UI-Komponenten und Objektrollen:
+
+- `DialogHeader`
+- `DialogHeader.add_action(action)`
+- `DialogActionBar`
+- `ObservationDialogZone.zoneRole`
+- `zoneRole = context`
+- `zoneRole = primary`
+- `zoneRole = entry`
+- `LearningReportDialog.reject()`
+
+Registrierte Dialogicons:
+
+- `assets/icons/student-record.svg`
+- `assets/icons/master-data-dialog.svg`
+- `assets/icons/timetable-dialog.svg`
+- `assets/icons/observation.svg`
+- `assets/icons/report.svg`
+- `assets/icons/conference.svg`
+
+Regel: `DialogHeader`, `DialogActionBar` und `zoneRole` strukturieren ausschliesslich visuelle Hierarchie, Kontext, Fokusreihenfolge und lokale Surface-Gewichtung vorhandener Dialoge. `LearningReportDialog.reject()` bestaetigt nur das Verwerfen eines bereits lokal erkannten Dirty-State. Diese Namen besitzen keine Datenquelle, erzeugen keine Fachlogik und veraendern weder Adapter-, ViewModel-, Repository-, SQLite-, Navigations- noch Speicherpfade.
+
 ## UI Sprint 3 - Motion System und Microinteractions
 
 Registrierte Datei:
