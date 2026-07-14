@@ -6,6 +6,18 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 10B - LEG-PDF aus unveraenderlicher Revision ✅
+
+- [x] PDF-Erzeugung ausschliesslich fuer eine aktuelle `completed`-Revision (`LCV`) festgelegt
+- [x] LEG-Snapshotvertrag und SHA-256 vor jedem Rendern erneut validiert
+- [x] Reinen `PdfRenderer` und renderer-neutrale Ausgabebloecke ohne Berichtsdomain wiederverwendet
+- [x] Eigenes unveraenderliches LEG-PDF-Artefakt `LCA` mit Dateigroesse, SHA-256 und Erzeugungszeitpunkt modelliert
+- [x] Idempotente Wiederaufrufe und Integritaetspruefung vorhandener Artefakte umgesetzt
+- [x] PDF-Aktion ausschliesslich in der schreibgeschuetzten aktuellen LEG-Revision vorgesehen
+- [x] Tests fuer Snapshotquelle, Draft-Unabhaengigkeit, Hashstabilitaet, Status, Beschädigung und UI-Schichtengrenzen ergaenzt
+- [x] Keine Berichtsdomain, Archivierung, Verschluesselung, Renderer-Versionierung, Mehrfachartefakte oder Rollenmodell eingefuehrt
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## Sprint 10A - LEG-Abschluss und Revision ✅
 
 - [x] Bearbeitbaren `LCD` unveraendert als Live-Draft erhalten

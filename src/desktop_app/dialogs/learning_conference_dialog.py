@@ -50,6 +50,7 @@ from src.desktop_app.view_models.learning_conference_view_model import (
     LearningConferenceDraftViewModel,
     LearningConferenceEvidenceViewModel,
     LearningConferencePreparationViewModel,
+    LearningConferencePdfArtifactViewModel,
     LearningConferenceRevisionStatusViewModel,
     LearningConferenceRevisionViewModel,
 )
@@ -446,12 +447,17 @@ class LearningConferenceRevisionHistoryDialog(QDialog):
 class LearningConferenceRevisionDialog(QDialog):
     """Read-only view whose only fachliche source is one verified LCV snapshot."""
 
+    pdf_requested = Signal(str)
+
     def __init__(
         self,
         revision: LearningConferenceRevisionViewModel,
         parent: QWidget | None = None,
+        artifact: LearningConferencePdfArtifactViewModel | None = None,
     ) -> None:
         super().__init__(parent)
+        self.revision = revision
+        self.artifact = artifact
         self.setObjectName("LearningConferenceRevisionDialog")
         self.setWindowTitle(
             f"LEG-Abschluss · Revision {revision.revision_number}"
@@ -466,7 +472,26 @@ class LearningConferenceRevisionDialog(QDialog):
             f"{revision.completed_at_text} · {revision.status_label}",
             icon_name="conference",
         )
+        if revision.status == "completed":
+            self.pdf_button = QPushButton("Finales PDF erstellen")
+            self.pdf_button.setObjectName("LearningConferenceGenerateFinalPdfButton")
+            configure_button(
+                self.pdf_button,
+                "secondary",
+                "Finales PDF ausschließlich aus dieser unveränderlichen LEG-Revision erstellen",
+            )
+            self.pdf_button.clicked.connect(
+                lambda: self.pdf_requested.emit(
+                    revision.learning_conference_revision_id
+                )
+            )
+            header.add_action(self.pdf_button)
         root.addWidget(header)
+        self.pdf_status = InlineMessage()
+        self.pdf_status.setObjectName("LearningConferenceFinalPdfStatus")
+        root.addWidget(self.pdf_status)
+        if artifact is not None:
+            self.apply_pdf_artifact(artifact)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -522,6 +547,24 @@ class LearningConferenceRevisionDialog(QDialog):
         configure_button(close_button, "primary", "Abschlussrevision schließen")
         close_button.clicked.connect(self.accept)
         root.addWidget(close_button, 0, Qt.AlignmentFlag.AlignRight)
+
+    def apply_pdf_artifact(
+        self,
+        artifact: LearningConferencePdfArtifactViewModel,
+    ) -> None:
+        """Show the verified immutable artifact without exposing storage logic."""
+        self.artifact = artifact
+        self.pdf_status.set_message(
+            f"Finales PDF vorhanden: {artifact.file_name} · "
+            f"erstellt {artifact.created_at} · SHA-256 {artifact.pdf_sha256[:12]}…",
+            tone="success",
+        )
+        if hasattr(self, "pdf_button"):
+            self.pdf_button.setText("Finales PDF vorhanden")
+            self.pdf_button.setEnabled(False)
+
+    def show_pdf_error(self, message: str) -> None:
+        self.pdf_status.set_message(message, tone="error")
 
     @staticmethod
     def _list_card(title: str, values: tuple[str, ...], empty_text: str) -> AppCard:

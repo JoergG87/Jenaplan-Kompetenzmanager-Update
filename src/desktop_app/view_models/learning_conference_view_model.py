@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from pathlib import Path
 
 from src.core.learning_conference_draft import (
     LEARNING_CONFERENCE_DRAFT_STATUS,
@@ -16,6 +17,7 @@ from src.core.learning_conference import (
     LearningConferenceRevisionState,
     LearningConferenceVerifiedRevision,
 )
+from src.core.learning_conference_pdf import LearningConferencePdfArtifactRecord
 
 
 LEARNING_CONFERENCE_CROSS_TOPICS = (
@@ -356,6 +358,7 @@ class LearningConferenceRevisionViewModel:
 
     learning_conference_revision_id: str
     revision_number: int
+    status: str
     status_label: str
     completed_at_text: str
     completed_by_display_name: str
@@ -375,6 +378,36 @@ class LearningConferenceRevisionViewModel:
     cross_topic_labels: tuple[str, ...]
     competency_lines: tuple[str, ...]
     observation_lines: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class LearningConferencePdfArtifactViewModel:
+    """UI-ready verified reference to one immutable final LEG PDF file."""
+
+    learning_conference_pdf_artifact_id: str
+    learning_conference_revision_id: str
+    file_path: str
+    file_name: str
+    file_size_bytes: int
+    snapshot_sha256: str
+    pdf_sha256: str
+    created_at: str
+
+
+def build_learning_conference_pdf_artifact_view_model(
+    artifact: LearningConferencePdfArtifactRecord,
+    file_path: Path,
+) -> LearningConferencePdfArtifactViewModel:
+    return LearningConferencePdfArtifactViewModel(
+        artifact.learning_conference_pdf_artifact_id,
+        artifact.learning_conference_revision_id,
+        str(file_path),
+        file_path.name,
+        artifact.file_size_bytes,
+        artifact.snapshot_sha256,
+        artifact.pdf_sha256,
+        _format_revision_timestamp(artifact.created_at),
+    )
 
 
 def build_learning_conference_completion_error(
@@ -456,6 +489,7 @@ def build_learning_conference_revision_view_model(
     return LearningConferenceRevisionViewModel(
         learning_conference_revision_id=revision.learning_conference_revision_id,
         revision_number=revision.revision_number,
+        status=revision.status,
         status_label=(
             "Aktuell" if revision.status == COMPLETED_REVISION_STATUS else "Ersetzt"
         ),

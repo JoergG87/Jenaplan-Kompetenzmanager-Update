@@ -965,3 +965,46 @@ Leseprozess:
 3. Das ViewModel projiziert ausschliesslich diese Snapshotdaten in die schreibgeschuetzte Ansicht.
 
 Regel: Es werden keine aktuellen Schueler-, Gruppen-, Kurs-, Kompetenz- oder Beobachtungswerte nachgeladen. Ein Integritaetsfehler verhindert die Anzeige.
+
+## Finales LEG-PDF erzeugen
+
+Start: Laura oeffnet eine konkrete aktuelle LCV mit Status `completed` und waehlt `Finales PDF erstellen`.
+
+Freigegebener Pfad:
+
+```text
+LearningConferenceRevisionDialog (LCV-ID)
+-> StudentDesktopAdapter.generate_learning_conference_pdf
+-> LearningConferencePdfApplicationService
+-> LearningConferencePdfService
+-> LearningConferenceRevisionReadService + SQLiteLearningConferenceRepository
+-> gespeicherten LCV-Snapshot und SHA-256 validieren
+-> LEG-spezifisches renderer-neutrales Ausgabemodell
+-> reiner PdfRenderer
+-> verwaltete PDF-Datei
+-> SQLiteLearningConferencePdfArtifactRepository
+-> learning_conference_pdf_artifacts
+```
+
+Gelesene Datenquellen:
+
+- `learning_conference_revisions`
+- `learning_conferences`
+- eine vorhandene `learning_conference_pdf_artifacts`-Zeile fuer idempotente Wiederaufrufe
+
+Geschriebene Ziele:
+
+- PDF-Datei unter `data/documents/<student_id>/learning_conferences/<LCF>/<LCV>/`
+- genau eine unveraenderliche Zeile in `learning_conference_pdf_artifacts` pro LCV
+
+Regeln:
+
+1. Nur eine LCV mit aktuellem Status `completed` darf ein neues Artefakt erzeugen. LCD und `superseded` sind unzulaessig.
+2. Der LEG-Revisionsleseservice prueft kanonisches Snapshot-JSON, Schemaversion und SHA-256. Danach validiert die PDF-Domain alle fuer die Ausgabe erforderlichen Snapshotstrukturen und Referenzen.
+3. Es werden weder LCD noch aktuelle Schueler-, Kompetenz-, Beobachtungs- oder sonstige Live-Projektionen gelesen.
+4. Der reine `PdfRenderer` erhaelt nur das aus dem LCV-Snapshot gebaute Ausgabemodell und kennt weder Persistenz, Status noch Hashregeln.
+5. Nach erfolgreichem Rendern werden Dateigroesse und PDF-SHA-256 berechnet; erst danach wird die `LCA`-Referenz gespeichert.
+6. Ein vorhandenes Artefakt wird nie ueberschrieben. Der Wiederaufruf verifiziert Snapshot-Hash, Pfad, Dateigroesse und PDF-Hash und gibt dieselbe Referenz zurueck.
+7. Bei Render-, Datei-, Hash- oder Persistenzfehlern entsteht keine gueltige neue Artefaktreferenz; eine in diesem Versuch erzeugte Datei wird entfernt.
+
+Archivierung, Verschluesselung, Renderer-Versionierung, Mehrfachartefakte, Rollenmodell und Berichtsdomain sind nicht Bestandteil dieses Lifecycles.

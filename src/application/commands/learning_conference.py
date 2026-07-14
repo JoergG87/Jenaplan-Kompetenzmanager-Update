@@ -17,6 +17,10 @@ from src.core.learning_conference import (
     LearningConferenceRevisionState,
     LearningConferenceVerifiedRevision,
 )
+from src.core.learning_conference_pdf import (
+    LearningConferencePdfArtifactRecord,
+    LearningConferencePdfService,
+)
 
 
 @dataclass(frozen=True)
@@ -228,3 +232,30 @@ class LearningConferenceRevisionApplicationService:
         return self.read_service.load_verified_revision(
             query.learning_conference_revision_id
         )
+
+
+@dataclass(frozen=True)
+class GenerateLearningConferencePdfCommand:
+    """Generate or verify the immutable PDF artifact for one completed LCV."""
+
+    learning_conference_revision_id: str
+    command_name: str = "learning_conference_pdf.generate"
+
+
+class LearningConferencePdfApplicationService:
+    """Application boundary for final LEG PDF generation and lookup."""
+
+    def __init__(self, domain_service: LearningConferencePdfService) -> None:
+        self.domain_service = domain_service
+
+    def generate(
+        self,
+        command: GenerateLearningConferencePdfCommand,
+    ) -> LearningConferencePdfArtifactRecord:
+        return self.domain_service.generate(command.learning_conference_revision_id)
+
+    def load_for_revision(
+        self,
+        learning_conference_revision_id: str,
+    ) -> LearningConferencePdfArtifactRecord | None:
+        return self.domain_service.load_artifact(learning_conference_revision_id)

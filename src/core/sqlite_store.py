@@ -31,6 +31,7 @@ from .constants import (
     LEARNING_REPORT_PDF_ARTIFACT_ID_PREFIX,
     LEARNING_REPORT_REVISION_ID_PREFIX,
     LEARNING_CONFERENCE_ID_PREFIX,
+    LEARNING_CONFERENCE_PDF_ARTIFACT_ID_PREFIX,
     LEARNING_CONFERENCE_REVISION_ID_PREFIX,
     REPORT_DRAFT_ID_PREFIX,
     STUDENT_ID,
@@ -63,6 +64,10 @@ from .learning_conference import (
     LearningConferenceRevisionRecord,
     LearningConferenceStudentSource,
     LearningConferenceSubjectSource,
+)
+from .learning_conference_pdf import (
+    LearningConferencePdfArtifactRecord,
+    LearningConferencePdfError,
 )
 from .learning_report import (
     FINALIZED_REVISION_STATUS,
@@ -564,6 +569,23 @@ class SQLiteDatabase:
                             REFERENCES learning_conferences(learning_conference_id)
                     );
 
+                    CREATE TABLE IF NOT EXISTS learning_conference_pdf_artifacts (
+                        learning_conference_pdf_artifact_id TEXT PRIMARY KEY,
+                        learning_conference_revision_id TEXT NOT NULL UNIQUE,
+                        relative_file_path TEXT NOT NULL UNIQUE,
+                        mime_type TEXT NOT NULL CHECK (mime_type = 'application/pdf'),
+                        file_size_bytes INTEGER NOT NULL CHECK (file_size_bytes > 0),
+                        snapshot_sha256 TEXT NOT NULL CHECK (
+                            length(snapshot_sha256) = 64
+                        ),
+                        pdf_sha256 TEXT NOT NULL CHECK (length(pdf_sha256) = 64),
+                        created_at TEXT NOT NULL,
+                        FOREIGN KEY (learning_conference_revision_id)
+                            REFERENCES learning_conference_revisions(
+                                learning_conference_revision_id
+                            )
+                    );
+
                     CREATE TABLE IF NOT EXISTS learning_conference_draft_subjects (
                         learning_conference_draft_id TEXT NOT NULL,
                         subject_id TEXT NOT NULL,
@@ -679,6 +701,10 @@ class SQLiteDatabase:
                             learning_conference_id,
                             revision_number
                         );
+                    CREATE INDEX IF NOT EXISTS idx_learning_conference_pdf_artifacts_revision
+                        ON learning_conference_pdf_artifacts(
+                            learning_conference_revision_id
+                        );
 
                     CREATE TRIGGER IF NOT EXISTS trg_learning_report_revisions_immutable_update
                     BEFORE UPDATE ON learning_report_revisions
@@ -766,6 +792,18 @@ class SQLiteDatabase:
                     BEFORE DELETE ON learning_conferences
                     BEGIN
                         SELECT RAISE(ABORT, 'learning conferences cannot be deleted');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_conference_pdf_artifacts_immutable_update
+                    BEFORE UPDATE ON learning_conference_pdf_artifacts
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning conference PDF artifacts are immutable');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_conference_pdf_artifacts_immutable_delete
+                    BEFORE DELETE ON learning_conference_pdf_artifacts
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning conference PDF artifacts cannot be deleted');
                     END;
                     """
                 )
@@ -4365,6 +4403,128 @@ class SQLiteLearningReportPdfArtifactRepository:
         return LearningReportPdfArtifactRecord(
             row["learning_report_pdf_artifact_id"],
             row["learning_report_revision_id"],
+            row["relative_file_path"],
+            row["mime_type"],
+            int(row["file_size_bytes"]),
+            row["snapshot_sha256"],
+            row["pdf_sha256"],
+            row["created_at"],
+        )
+
+
+class SQLiteLearningConferencePdfArtifactRepository:
+    """Persist immutable LEG PDF references beside managed document files."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def next_artifact_id(self) -> str:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT learning_conference_pdf_artifact_id
+                FROM learning_conference_pdf_artifacts
+                """
+            ).fetchall()
+        next_number = 1
+        for row in rows:
+            value = str(row["learning_conference_pdf_artifact_id"])
+            if not value.startswith(
+                f"{LEARNING_CONFERENCE_PDF_ARTIFACT_ID_PREFIX}-"
+            ):
+                continue
+            try:
+                next_number = max(next_number, int(value.split("-", 1)[1]) + 1)
+            except ValueError:
+                continue
+        return (
+            f"{LEARNING_CONFERENCE_PDF_ARTIFACT_ID_PREFIX}-"
+            f"{next_number:0{ID_SEQUENCE_WIDTH}d}"
+        )
+
+    def get_for_revision(
+        self,
+        learning_conference_revision_id: str,
+    ) -> LearningConferencePdfArtifactRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    learning_conference_pdf_artifact_id,
+                    learning_conference_revision_id,
+                    relative_file_path,
+                    mime_type,
+                    file_size_bytes,
+                    snapshot_sha256,
+                    pdf_sha256,
+                    created_at
+                FROM learning_conference_pdf_artifacts
+                WHERE learning_conference_revision_id = ?
+                """,
+                (learning_conference_revision_id,),
+            ).fetchone()
+        return self._artifact_from_row(row) if row is not None else None
+
+    def save_artifact(
+        self,
+        artifact: LearningConferencePdfArtifactRecord,
+    ) -> LearningConferencePdfArtifactRecord:
+        try:
+            with closing(self.database.connect()) as connection:
+                with connection:
+                    connection.execute(
+                        """
+                        INSERT INTO learning_conference_pdf_artifacts (
+                            learning_conference_pdf_artifact_id,
+                            learning_conference_revision_id,
+                            relative_file_path,
+                            mime_type,
+                            file_size_bytes,
+                            snapshot_sha256,
+                            pdf_sha256,
+                            created_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            artifact.learning_conference_pdf_artifact_id,
+                            artifact.learning_conference_revision_id,
+                            artifact.relative_file_path,
+                            artifact.mime_type,
+                            artifact.file_size_bytes,
+                            artifact.snapshot_sha256,
+                            artifact.pdf_sha256,
+                            artifact.created_at,
+                        ),
+                    )
+        except sqlite3.Error as error:
+            raise LearningConferencePdfError(
+                "Die LEG-PDF-Artefaktreferenz konnte nicht gespeichert werden: "
+                f"{error}"
+            ) from error
+        return artifact
+
+    def resolve_file_path(self, relative_file_path: str) -> Path:
+        relative = Path(relative_file_path)
+        if relative.is_absolute() or ".." in relative.parts:
+            raise LearningConferencePdfError(
+                "Der verwaltete LEG-PDF-Artefaktpfad ist ungueltig."
+            )
+        root = self.database.path.parent.resolve()
+        resolved = (root / relative).resolve()
+        if not resolved.is_relative_to(root):
+            raise LearningConferencePdfError(
+                "Der verwaltete LEG-PDF-Artefaktpfad liegt ausserhalb des Datenverzeichnisses."
+            )
+        return resolved
+
+    @staticmethod
+    def _artifact_from_row(
+        row: sqlite3.Row,
+    ) -> LearningConferencePdfArtifactRecord:
+        return LearningConferencePdfArtifactRecord(
+            row["learning_conference_pdf_artifact_id"],
+            row["learning_conference_revision_id"],
             row["relative_file_path"],
             row["mime_type"],
             int(row["file_size_bytes"]),

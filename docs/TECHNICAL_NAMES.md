@@ -139,6 +139,9 @@ Registriert:
 - `learning_conference_draft_competencies`
 - `learning_conference_draft_observations`
 - `learning_conference_draft_charts`
+- `learning_conferences`
+- `learning_conference_revisions`
+- `learning_conference_pdf_artifacts`
 
 `documentation_subject_settings` speichert ausschliesslich, welche `subject_id` fuer Dokumentations- und Auswertungslogik als dokumentationsrelevant gelten. Die Tabelle ersetzt nicht den Kompetenzkatalog und veraendert `competencies.active` nicht.
 
@@ -722,6 +725,7 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen._cockpit_topic_card(subject_id, learning_area, topic, historical)`
 - `StudentProfileScreen._cockpit_competency_row(competency)`
 - `StudentProfileScreen._cockpit_competency_details(competency)`
+- `StudentProfileScreen._make_clickable_card(card, action, tooltip)`
 - `StudentProfileScreen._historical_competency_section(subjects)`
 - `StudentProfileScreen._toggle_cockpit_section(key, details, button, collapsed_text, expanded_text)`
 - `StudentProfileScreen._show_observations_tab()`
@@ -1838,3 +1842,45 @@ Begriffsregel:
 - `Abschluss` ist der explizite, validierte und atomare Schreibbefehl vom LCD zum LCF/LCV.
 - `Revision` bezeichnet ausschliesslich eine unveraenderliche LCV; der LCD bleibt ein Draft.
 - `Snapshotvertrag` bezeichnet die LEG-spezifische kanonische JSON-Struktur und ist keine gemeinsame Bericht-/LEG-Domain.
+
+## Sprint 10B - Finales LEG-PDF aus abgeschlossener Revision
+
+Registrierte Python-Module:
+
+- `src/core/learning_conference_pdf.py`
+- `tests/test_learning_conference_pdf.py`
+
+Registrierte Klassen, Protokolle und Commands:
+
+- `LearningConferencePdfArtifactRecord`
+- `LearningConferencePdfArtifactRepository`
+- `LearningConferencePdfSnapshotValidator`
+- `LearningConferencePdfOutputModelBuilder`
+- `LearningConferencePdfService`
+- `LearningConferencePdfError`
+- `GenerateLearningConferencePdfCommand`
+- `LearningConferencePdfApplicationService`
+- `SQLiteLearningConferencePdfArtifactRepository`
+- `LearningConferencePdfArtifactViewModel`
+
+Registrierte Konstanten und Werte:
+
+- `LEARNING_CONFERENCE_PDF_ARTIFACT_ID_PREFIX` mit Wert `LCA`
+- MIME-Type `application/pdf`
+
+Registrierte technische Felder und Adapteroperationen:
+
+- `learning_conference_pdf_artifact_id`
+- `relative_file_path`
+- `mime_type`
+- `file_size_bytes`
+- `pdf_sha256`
+- `StudentDesktopAdapter.generate_learning_conference_pdf(learning_conference_revision_id)`
+- `StudentDesktopAdapter.load_learning_conference_pdf_artifact(learning_conference_revision_id)`
+
+Registrierte Qt-Objektnamen:
+
+- `LearningConferenceGenerateFinalPdfButton`
+- `LearningConferenceFinalPdfStatus`
+
+Regel: `LCA` identifiziert genau eine unveraenderliche PDF-Artefaktreferenz fuer eine `LCV`. Pro `learning_conference_revision_id` existiert hoechstens eine `LCA`. Neue Erzeugung ist nur fuer Status `completed` erlaubt. `relative_file_path` liegt relativ zur produktiven SQLite-Datei innerhalb `documents/<student_id>/learning_conferences/<LCF>/<LCV>/`; der Dateiname enthaelt keinen Schuelerklartext. `pdf_sha256` ist der kleingeschriebene SHA-256-Hexdigest der PDF-Bytes. Die renderer-neutrale PDF-Projektion ist keine Berichtsdomain und liest ausschliesslich den verifizierten LCV-Snapshot.

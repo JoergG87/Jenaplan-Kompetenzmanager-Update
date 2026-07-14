@@ -39,6 +39,7 @@ from src.application.commands.report import (
 from src.application.commands.learning_conference import (
     CompleteLearningConferenceCommand,
     CreateLearningConferenceDraftCommand,
+    GenerateLearningConferencePdfCommand,
     GetLearningConferenceDraftQuery,
     GetLearningConferenceRevisionQuery,
     GetLearningConferenceRevisionStateQuery,
@@ -47,6 +48,7 @@ from src.application.commands.learning_conference import (
     LearningConferenceDraftApplicationService,
     LearningConferenceDraftInput,
     LearningConferenceRevisionApplicationService,
+    LearningConferencePdfApplicationService,
     ListLearningConferenceDraftsQuery,
     PrepareLearningConferenceQuery,
     UpdateLearningConferenceDraftCommand,
@@ -65,6 +67,7 @@ from src.core.sqlite_store import (
     SQLiteDocumentRepository,
     SQLiteGroupRepository,
     SQLiteLearningConferenceDraftRepository,
+    SQLiteLearningConferencePdfArtifactRepository,
     SQLiteLearningConferenceRepository,
     SQLiteLearningReportRepository,
     SQLiteLearningReportPdfArtifactRepository,
@@ -93,6 +96,11 @@ from src.core.learning_conference_draft import (
 from src.core.learning_conference import (
     LearningConferenceCompletionService,
     LearningConferenceRevisionReadService,
+)
+from src.core.learning_conference_pdf import (
+    LearningConferencePdfError,
+    LearningConferencePdfOutputModelBuilder,
+    LearningConferencePdfService,
 )
 from src.core.student import StudentService, StudentValidator
 from src.core.records import CourseRecord, GroupRecord, StudentRecord
@@ -149,6 +157,8 @@ from src.desktop_app.view_models.learning_conference_view_model import (
     LearningConferencePreparationViewModel,
     LearningConferenceRevisionStatusViewModel,
     LearningConferenceRevisionViewModel,
+    LearningConferencePdfArtifactViewModel,
+    build_learning_conference_pdf_artifact_view_model,
     build_learning_conference_preparation,
     build_learning_conference_revision_status,
     build_learning_conference_revision_view_model,
@@ -1479,6 +1489,69 @@ class StudentDesktopAdapter:
             )
         )
         return build_learning_conference_revision_view_model(verified)
+
+    def generate_learning_conference_pdf(
+        self,
+        learning_conference_revision_id: str,
+    ) -> LearningConferencePdfArtifactViewModel:
+        """Generate or verify the immutable managed PDF for one completed LCV."""
+        artifact = self._learning_conference_pdf_application_service().generate(
+            GenerateLearningConferencePdfCommand(learning_conference_revision_id)
+        )
+        repository = SQLiteLearningConferencePdfArtifactRepository(self.database)
+        return build_learning_conference_pdf_artifact_view_model(
+            artifact,
+            repository.resolve_file_path(artifact.relative_file_path),
+        )
+
+    def load_learning_conference_pdf_artifact(
+        self,
+        learning_conference_revision_id: str,
+    ) -> LearningConferencePdfArtifactViewModel | None:
+        """Load and verify an existing final LEG PDF artifact for one LCV."""
+        artifact = self._learning_conference_pdf_application_service().load_for_revision(
+            learning_conference_revision_id
+        )
+        if artifact is None:
+            return None
+        repository = SQLiteLearningConferencePdfArtifactRepository(self.database)
+        return build_learning_conference_pdf_artifact_view_model(
+            artifact,
+            repository.resolve_file_path(artifact.relative_file_path),
+        )
+
+    def learning_conference_pdf_error_message(self, error: Exception) -> str:
+        """Translate expected LEG-PDF failures into calm UI language."""
+        message = str(error)
+        if "aktuelle abgeschlossene LEG-Revision" in message:
+            return "Nur die aktuelle abgeschlossene LEG-Revision kann als PDF erstellt werden."
+        if "Snapshot" in message or "snapshot" in message:
+            return (
+                "Der gespeicherte LEG-Abschluss konnte nicht sicher verifiziert werden. "
+                "Es wurde kein finales PDF erstellt."
+            )
+        if "registrierten LEG-PDF-Artefakts fehlt" in message:
+            return "Die registrierte LEG-PDF-Datei wurde nicht gefunden."
+        if "SHA-256" in message or "Dateigroesse" in message or "keine PDF-Datei" in message:
+            return "Die Integritaet der vorhandenen LEG-PDF-Datei konnte nicht bestaetigt werden."
+        if isinstance(error, LearningConferencePdfError):
+            return "Das finale LEG-PDF konnte nicht sicher erstellt werden."
+        return "Das finale LEG-PDF konnte wegen eines technischen Fehlers nicht erstellt werden."
+
+    def _learning_conference_pdf_application_service(
+        self,
+    ) -> LearningConferencePdfApplicationService:
+        revision_repository = SQLiteLearningConferenceRepository(self.database)
+        artifact_repository = SQLiteLearningConferencePdfArtifactRepository(
+            self.database
+        )
+        domain_service = LearningConferencePdfService(
+            LearningConferenceRevisionReadService(revision_repository),
+            artifact_repository,
+            LearningConferencePdfOutputModelBuilder(),
+            PdfRenderer().render,
+        )
+        return LearningConferencePdfApplicationService(domain_service)
 
     def _learning_conference_revision_services(
         self,

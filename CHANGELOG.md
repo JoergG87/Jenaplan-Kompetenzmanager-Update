@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## Sprint 10B - LEG-PDF aus unveraenderlicher Revision
+
+### Added
+
+- Eigenes unveraenderliches LEG-PDF-Artefakt `LCA` fuer genau eine aktuelle `completed`-`LCV` mit Dateigroesse, Snapshot- und PDF-SHA-256 sowie Erzeugungszeitpunkt ergaenzt.
+- Snapshotbasierte LEG-PDF-Projektion mit Schuelerkontext, Gespraechsdatum, verantwortlicher Lehrkraft, gemeinsamen Ergebnissen sowie ausgewaehlten Kompetenz- und Beobachtungsbelegen eingefuehrt.
+- Idempotente Erzeugung, verwaltete studentenzentrierte Dateiablage und Integritaetspruefung bestehender Artefakte umgesetzt.
+
+### Changed
+
+- Schreibgeschuetzte aktuelle LEG-Revision um die Aktion `Finales PDF erstellen` und einen ruhigen Artefaktstatus erweitert.
+- Bestehenden reinen PDF-Renderer als technische Infrastruktur wiederverwendet, ohne Berichtsentitaeten, Berichtstatus oder Berichtsinhalte in die LEG-Domain zu uebernehmen.
+
+### Not Changed
+
+- LCD, LCF und LCV bleiben in Bedeutung und Lebenszyklus unveraendert; Draft, Live-Projektionen und aktuelle Kompetenz-/Beobachtungsdaten sind keine PDF-Quellen.
+- Keine Archivierung, Verschluesselung, Renderer-Versionierung, Mehrfachartefakte, Rollenlogik oder Berichtsdomain eingefuehrt.
+
 ## Premium UI Sprint 2 - Dialog Experience and Workspace Polish
 
 ### Added

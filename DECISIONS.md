@@ -2174,3 +2174,15 @@ Ein Abschluss benoetigt Schuelerbezug, Gespraechsdatum, verantwortliche Lehrkraf
 Pro LCD existiert hoechstens ein LCF. Pro LCF existiert hoechstens eine Revision mit Status `completed`. Ein identischer kanonischer Snapshot liefert die vorhandene aktuelle Revision zurueck und erzeugt keine neue Revision. Eine inhaltliche Korrektur erzeugt atomar die naechste LCV; erst innerhalb derselben erfolgreichen Transaktion wird die bisherige Revision auf `superseded` gesetzt. Abgeschlossene Revisionen koennen nicht geloescht oder inhaltlich geaendert werden.
 
 Die historische Lesesicht verwendet ausschliesslich den gespeicherten Snapshot und prueft dessen SHA-256 vor der Projektion. Sie loest keine aktuellen Schueler-, Kompetenz- oder Beobachtungswerte nach und bietet keine Bearbeitung. LEG-PDF, Archivierung, Renderer-Versionierung und eine gemeinsame universelle Bericht-/LEG-Snapshotdomain bleiben ausserhalb von Sprint 10A.
+
+## ADR-057 - LEG-PDF ist ein unveraenderliches Artefakt genau einer abgeschlossenen LCV
+
+Sprint 10B erzeugt ein finales LEG-PDF ausschliesslich aus dem gespeicherten und SHA-256-verifizierten Snapshot einer aktuellen `LearningConferenceRevisionRecord` (`LCV`) mit Status `completed`. LCD, Live-Projektionen, aktuelle Kompetenzaufloesung, aktuelle Beobachtungsdaten und Widgets sind keine Eingangsquellen. Eine `superseded`-Revision bleibt historisch lesbar, darf aber kein neues Artefakt erzeugen.
+
+LCF, LCV und das neue Artefakt bleiben eine eigene LEG-Domain. Berichtsentitaeten `RPD`, `RPT`, `RPV`, `RPA`, Berichtstatus, Bericht-Repositories und Berichtsinhalte werden nicht wiederverwendet. Wiederverwendet werden ausschliesslich der reine `PdfRenderer`, seine renderer-neutralen Ausgabebloecke sowie die technischen Prinzipien fuer verwaltete Pfade, atomare Dateiablage, Dateigroesse und SHA-256-Pruefung.
+
+Pro `LCV` existiert hoechstens eine unveraenderliche `LearningConferencePdfArtifactRecord`-Referenz mit stabiler `LCA-######`-ID. Sie speichert LCV-ID, relativen verwalteten Pfad, MIME-Type, Dateigroesse, bestaetigten Snapshot-Hash, PDF-SHA-256 und Erzeugungszeitpunkt. Die Datei liegt unter `data/documents/<student_id>/learning_conferences/<LCF>/<LCV>/` und enthaelt keinen Schuelerklartext im Dateinamen.
+
+Das PDF enthaelt ausschliesslich abgeschlossene Snapshotinhalte: Schuelerkontext, Gespraechsdatum, verantwortliche Lehrkraft, gemeinsame Ziele, Unterstuetzungen, Vereinbarungen, Zustaendigkeiten sowie bewusst ausgewaehlte Kompetenz- und Beobachtungsbelege. Interne Vorbereitung und nicht abgeschlossene Draftinhalte werden nicht adaptiert. Ein erneuter Erzeugungsaufruf verifiziert ein vorhandenes Artefakt und gibt dieselbe Referenz zurueck; Dateien werden nicht ueberschrieben.
+
+Nicht Bestandteil dieser Entscheidung sind Archivierung, Verschluesselung, Renderer-Versionierung, mehrere Artefakte pro Revision, ein Rollenmodell oder eine gemeinsame Bericht-/LEG-Artefaktdomain.

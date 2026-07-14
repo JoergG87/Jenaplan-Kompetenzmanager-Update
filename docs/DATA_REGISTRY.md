@@ -60,6 +60,9 @@ Gepruefte Tabellen:
 | `learning_reports` | LearningReport | keine Workbook-Projektion |
 | `learning_report_revisions` | LearningReportRevision | keine Workbook-Projektion |
 | `learning_report_pdf_artifacts` | LearningReportPdfArtifact | keine Workbook-Projektion |
+| `learning_conferences` | LearningConference | keine Workbook-Projektion |
+| `learning_conference_revisions` | LearningConferenceRevision | keine Workbook-Projektion |
+| `learning_conference_pdf_artifacts` | LearningConferencePdfArtifact | keine Workbook-Projektion |
 
 Regel:
 
@@ -1385,3 +1388,53 @@ Lesende Prozesse:
 - LEG-Abschlussstatus zu einem LCD
 - LCV-Historie eines LCF
 - verifizierte snapshotbasierte LCV-Lesesicht
+
+## learning_conference_pdf_artifacts
+
+Zweck: Unveraenderliche Referenz auf genau ein verwaltetes finales PDF einer abgeschlossenen LEG-Revision.
+
+Entity:
+
+- `LearningConferencePdfArtifactRecord` (`LCA`)
+
+Storage:
+
+```text
+learning_conference_pdf_artifacts(
+  learning_conference_pdf_artifact_id TEXT PRIMARY KEY,
+  learning_conference_revision_id TEXT NOT NULL UNIQUE,
+  relative_file_path TEXT NOT NULL UNIQUE,
+  mime_type TEXT NOT NULL,
+  file_size_bytes INTEGER NOT NULL,
+  snapshot_sha256 TEXT NOT NULL,
+  pdf_sha256 TEXT NOT NULL,
+  created_at TEXT NOT NULL
+)
+```
+
+Owner: LEG-PDF-Domain. Keine Berichtsdomain und keine Workbook-Projektion.
+
+Primary Key:
+
+- `learning_conference_pdf_artifacts.learning_conference_pdf_artifact_id` im Format `LCA-######`
+
+Foreign Key:
+
+- `learning_conference_pdf_artifacts.learning_conference_revision_id` -> `learning_conference_revisions.learning_conference_revision_id`
+
+Wichtige Regeln:
+
+- Pro LCV existiert hoechstens eine Artefaktzeile; sie darf weder aktualisiert noch geloescht werden.
+- Ein neues Artefakt darf nur fuer eine LCV mit Status `completed` entstehen.
+- `snapshot_sha256` entspricht exakt dem vor dem Rendern bestaetigten Hash der LCV.
+- `pdf_sha256` und `file_size_bytes` beschreiben exakt die unveraenderten gespeicherten PDF-Bytes.
+- `relative_file_path` liegt unter `documents/<student_id>/learning_conferences/<LCF>/<LCV>/` relativ zum Verzeichnis der SQLite-Datei.
+- Wiederaufrufe lesen und verifizieren die bestehende Zeile und Datei; es entsteht kein zweites Artefakt.
+
+Schreibender Prozess:
+
+- finales LEG-PDF aus einer verifizierten aktuellen LCV erzeugen
+
+Lesender Prozess:
+
+- vorhandenes LEG-PDF-Artefakt nach Pfad, Dateigroesse und SHA-256 verifizieren

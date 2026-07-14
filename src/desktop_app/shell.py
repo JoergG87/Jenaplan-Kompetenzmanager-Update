@@ -27,6 +27,7 @@ from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.core.learning_report import ReportFinalizationError
 from src.core.learning_report_pdf import LearningReportPdfError
 from src.core.learning_conference import LearningConferenceCompletionError
+from src.core.learning_conference_pdf import LearningConferencePdfError
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
@@ -868,7 +869,47 @@ class AppShell(QMainWindow):
                     build_learning_conference_completion_error(error)
                 )
                 return
-            LearningConferenceRevisionDialog(revision, dialog).exec()
+            artifact = None
+            artifact_error = ""
+            try:
+                artifact = self.adapter.load_learning_conference_pdf_artifact(
+                    learning_conference_revision_id
+                )
+            except Exception as error:
+                artifact_error = self.adapter.learning_conference_pdf_error_message(
+                    error
+                )
+            revision_dialog = LearningConferenceRevisionDialog(
+                revision,
+                dialog,
+                artifact,
+            )
+            if artifact_error:
+                revision_dialog.show_pdf_error(artifact_error)
+
+            def generate_final_pdf(revision_id: str) -> None:
+                try:
+                    generated = self.adapter.generate_learning_conference_pdf(
+                        revision_id
+                    )
+                except LearningConferencePdfError as error:
+                    revision_dialog.show_pdf_error(
+                        self.adapter.learning_conference_pdf_error_message(error)
+                    )
+                    return
+                except Exception:
+                    revision_dialog.show_pdf_error(
+                        "Das finale LEG-PDF konnte wegen eines technischen Fehlers "
+                        "nicht erstellt werden."
+                    )
+                    return
+                revision_dialog.apply_pdf_artifact(generated)
+                self.status_label.setText(
+                    f"Finales LEG-PDF erstellt: {generated.file_name}"
+                )
+
+            revision_dialog.pdf_requested.connect(generate_final_pdf)
+            revision_dialog.exec()
 
         dialog.save_requested.connect(save_draft)
         dialog.completion_requested.connect(complete_conference)
