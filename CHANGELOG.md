@@ -100,6 +100,16 @@
 - Keine Aenderung an Datenmodell, SQLite-Schema, Migrationen, Repositories, Adaptern, ViewModels, Stundenplan-, Beobachtungs-, Kompetenzstatus-, Berichts-, LEG- oder PDF-Fachlogik.
 - Keine Excel-/VBA-, Prototyp-, Dark-Mode-, QPainter- oder vollstaendige Dialog-/Profil-Neugestaltung.
 
+## Dashboard-UX - Beobachtungsaktionen vereinfachen
+
+### Changed
+
+- Redundante Aktion `+ Beobachtung` aus der hervorgehobenen Stundenkarte entfernt; der globale Header-Einstieg und die kindbezogenen `Beobachten`-Aktionen bleiben erhalten.
+
+### Not Changed
+
+- Keine Aenderung an Stundenplan-, Beobachtungs-, Adapter-, ViewModel- oder Fachlogik.
+
 ## Sprint 8B.3 - Passende Kinder als transparente Dokumentationshilfe
 
 ### Added
