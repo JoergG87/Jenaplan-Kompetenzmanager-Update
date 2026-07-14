@@ -586,6 +586,7 @@ Betroffene Datenquellen:
 
 - SQLite `data/kompetenzmanager.sqlite`
 - Dateisystem `data/documents/<student_id>/`
+- SQLite `timetable_entries`
 
 Erforderliche IDs:
 
@@ -593,6 +594,7 @@ Erforderliche IDs:
 - bestehende oder kuenstliche `group_id`, `course_id`, `course_group_id`
 - kuenstliche `observation_id`
 - kuenstliche `document_id`
+- kuenstliche `timetable_entry_id`
 
 Automatisch profitierende Ansichten:
 
@@ -603,8 +605,9 @@ Automatisch profitierende Ansichten:
 - Berichtsvorbereitung
 - Dokumentationsstand
 - Dokumente & Medien
+- Dashboard und Stundenplan
 
-Regel: Der produktive App-Start erzeugt keine Demo-Schueler. Testdaten werden nur durch das explizite Script erzeugt. Ohne `--reset` bricht das Script ab, wenn bereits Schueler, Beobachtungen oder Dokumente vorhanden sind. Mit `--reset` wird bewusst ein frisches lokales Testsystem erzeugt. Der Pilottest-Seed bildet ein Halbjahr von September bis Januar ab und enthaelt unterschiedliche Beobachtungsdichten, Kompetenzverlaeufe, bestaetigte Kompetenzstaende, Abweichungen zwischen Vorschlag und Bestaetigung sowie Demo-Dokumente. Es werden keine echten Kindernamen und keine echten Dokumente verwendet; Demo-Dateien sind harmlose Platzhalter und werden nicht versioniert.
+Regel: Der produktive App-Start erzeugt keine Demo-Schueler. Testdaten werden nur durch das explizite Script erzeugt. Ohne `--reset` bricht das Script ab, wenn bereits Schueler, Beobachtungen oder Dokumente vorhanden sind. Mit `--reset` wird bewusst ein frisches lokales Testsystem erzeugt. Der Pilottest-Seed bildet einen rund achtmonatigen Nutzungsstand bis zum aktuellen Pilotzeitraum ab und enthaelt vier Stammgruppen, mehrere Kurse und Kursverbuende, einen vollstaendigen Wochenstundenplan, fachbezogene Kompetenzbeobachtungen fuer alle aktiven Katalogfaecher, unterschiedliche Beobachtungsdichten, Kompetenzverlaeufe, eindeutige Schnellbeobachtungen, Soft Deletes, bestaetigte Kompetenzstaende sowie Demo-Dokumente. Es werden keine echten Kindernamen und keine echten Dokumente verwendet; Demo-Dateien sind harmlose Platzhalter und werden nicht versioniert.
 
 ## Lernentwicklungsbericht-Entwurf speichern
 

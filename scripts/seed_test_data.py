@@ -6,6 +6,7 @@ import argparse
 import shutil
 import sys
 from dataclasses import dataclass
+from datetime import date, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +23,7 @@ from src.core.observation import (  # noqa: E402
     ObservationService,
     ObservationValidator,
 )
+from src.application.commands.timetable import SaveTimetableEntryCommand  # noqa: E402
 from src.core.sqlite_store import (  # noqa: E402
     SQLITE_SPIKE_PATH,
     DocumentRecord,
@@ -35,11 +37,15 @@ from src.core.sqlite_store import (  # noqa: E402
     SQLiteObservationRepository,
     SQLiteStudentCompetencyConfirmationRepository,
     SQLiteStudentRepository,
+    SQLiteTimetableRepository,
     StudentCompetencyConfirmationRecord,
 )
 from src.core.records import StudentRecord  # noqa: E402
 from src.desktop_app.adapters.curriculum_desktop_adapter import (  # noqa: E402
     CurriculumDesktopAdapter,
+)
+from src.desktop_app.adapters.timetable_desktop_adapter import (  # noqa: E402
+    TimetableDesktopAdapter,
 )
 
 
@@ -55,6 +61,7 @@ class SeedResult:
     student_count: int
     observation_count: int
     document_count: int
+    timetable_count: int
 
 
 COURSES = (
@@ -64,23 +71,37 @@ COURSES = (
 )
 
 GROUPS = (
-    ("Grashuepfer", 0),
+    ("Grashüpfer", 0),
     ("Libellen", 1),
+    ("Feldmäuse", 2),
+    ("Mäuse", 3),
 )
 
 STUDENTS = (
-    ("Aster", 0, 0),
-    ("Birk", 0, 1),
-    ("Corda", 0, 2),
-    ("Daru", 0, 0),
-    ("Elinor", 0, 1),
-    ("Feno", 0, 2),
-    ("Gala", 1, 0),
-    ("Haru", 1, 1),
-    ("Ivo", 1, 2),
-    ("Jona", 1, 0),
-    ("Kimo", 1, 1),
-    ("Liora", 1, 2),
+    ("Amelie", "Vogel", 0, 0),
+    ("Jonas", "Bauer", 0, 1),
+    ("Emma", "Schulz", 0, 2),
+    ("Noah", "Klein", 0, 0),
+    ("Mila", "Hartmann", 0, 1),
+    ("Luca", "Werner", 0, 2),
+    ("Lea", "Fischer", 1, 0),
+    ("Ben", "Richter", 1, 1),
+    ("Lina", "Wolf", 1, 2),
+    ("Finn", "Neumann", 1, 0),
+    ("Clara", "Schwarz", 1, 1),
+    ("Paul", "Zimmer", 1, 2),
+    ("Sophie", "Krause", 2, 0),
+    ("Elias", "Hofmann", 2, 1),
+    ("Marie", "Koch", 2, 2),
+    ("Henry", "Becker", 2, 0),
+    ("Ida", "Schmitt", 2, 1),
+    ("Theo", "Krüger", 2, 2),
+    ("Ella", "Lange", 3, 0),
+    ("Anton", "Weber", 3, 1),
+    ("Greta", "Lehmann", 3, 2),
+    ("Oskar", "König", 3, 0),
+    ("Frieda", "Schröder", 3, 1),
+    ("Max", "Brandt", 3, 2),
 )
 
 
@@ -98,6 +119,7 @@ def seed_test_data(
     _initialize_catalog(database)
     _guard_existing_data(database, reset=reset)
     _seed_master_data(database)
+    _seed_timetable(database)
     students = _seed_students(database)
     observation_ids = _seed_observations(database, students)
     _seed_confirmations(database)
@@ -107,6 +129,7 @@ def seed_test_data(
         student_count=len(students),
         observation_count=len(SQLiteObservationRepository(database).list_observations()),
         document_count=document_count,
+        timetable_count=len(SQLiteTimetableRepository(database).list_entries()),
     )
 
 
@@ -135,9 +158,11 @@ def _guard_existing_data(database: SQLiteDatabase, *, reset: bool) -> None:
             student.student_id
         )
     )
-    if any((student_count, observation_count, document_count)):
+    timetable_count = len(SQLiteTimetableRepository(database).list_entries())
+    if any((student_count, observation_count, document_count, timetable_count)):
         raise SeedDataError(
-            "Die Datenbank enthaelt bereits Schueler, Beobachtungen oder Dokumente. "
+            "Die Datenbank enthaelt bereits Schueler, Beobachtungen, Dokumente "
+            "oder Stundenplaneintraege. "
             "Nutze --reset fuer ein bewusstes frisches Testsystem."
         )
 
@@ -167,8 +192,8 @@ def _seed_master_data(database: SQLiteDatabase) -> None:
     repository.update_course_group(
         MasterDataCourseGroupRecord(
             "course-group-default",
-            "Kursverbund Grashuepfer",
-            (f"{GROUP_ID_PREFIX}-000001",),
+            "Kursverbund A",
+            (f"{GROUP_ID_PREFIX}-000001", f"{GROUP_ID_PREFIX}-000003"),
             tuple(f"{COURSE_ID_PREFIX}-{index:06d}" for index in range(1, 4)),
             True,
             0,
@@ -177,27 +202,109 @@ def _seed_master_data(database: SQLiteDatabase) -> None:
     repository.update_course_group(
         MasterDataCourseGroupRecord(
             "CRG-000001",
-            "Kursverbund Libellen",
-            (f"{GROUP_ID_PREFIX}-000002",),
+            "Kursverbund B",
+            (f"{GROUP_ID_PREFIX}-000002", f"{GROUP_ID_PREFIX}-000004"),
             tuple(f"{COURSE_ID_PREFIX}-{index:06d}" for index in range(1, 4)),
             True,
             1,
         )
     )
+    repository.update_course_group(
+        MasterDataCourseGroupRecord(
+            "CRG-000002",
+            "Mathematik jahrgangsgemischt",
+            (f"{GROUP_ID_PREFIX}-000001", f"{GROUP_ID_PREFIX}-000002"),
+            (f"{COURSE_ID_PREFIX}-000002", f"{COURSE_ID_PREFIX}-000003"),
+            True,
+            2,
+        )
+    )
+
+
+def _seed_timetable(database: SQLiteDatabase) -> None:
+    adapter = TimetableDesktopAdapter(database)
+    week = adapter.week_view_model()
+    subject_ids = tuple(option.item_id for option in week.subjects)
+    if not subject_ids:
+        raise SeedDataError("Der Kompetenzkatalog enthaelt keine Stundenplanfaecher.")
+    time_slots = (
+        ("08:00", "08:45"),
+        ("09:00", "09:45"),
+        ("10:15", "11:00"),
+        ("11:15", "12:00"),
+        ("12:15", "13:00"),
+    )
+    target_cycles = (
+        (
+            ("group", f"{GROUP_ID_PREFIX}-000001"),
+            ("course", f"{COURSE_ID_PREFIX}-000001"),
+            ("course_group", "course-group-default"),
+            ("group", f"{GROUP_ID_PREFIX}-000003"),
+            ("course", f"{COURSE_ID_PREFIX}-000002"),
+        ),
+        (
+            ("group", f"{GROUP_ID_PREFIX}-000002"),
+            ("course", f"{COURSE_ID_PREFIX}-000002"),
+            ("course_group", "CRG-000001"),
+            ("group", f"{GROUP_ID_PREFIX}-000004"),
+            ("course", f"{COURSE_ID_PREFIX}-000003"),
+        ),
+        (
+            ("course_group", "CRG-000002"),
+            ("group", f"{GROUP_ID_PREFIX}-000001"),
+            ("course", f"{COURSE_ID_PREFIX}-000003"),
+            ("group", f"{GROUP_ID_PREFIX}-000002"),
+            ("course_group", "course-group-default"),
+        ),
+        (
+            ("group", f"{GROUP_ID_PREFIX}-000003"),
+            ("course", f"{COURSE_ID_PREFIX}-000001"),
+            ("course_group", "CRG-000001"),
+            ("group", f"{GROUP_ID_PREFIX}-000004"),
+            ("course", f"{COURSE_ID_PREFIX}-000002"),
+        ),
+        (
+            ("group", f"{GROUP_ID_PREFIX}-000001"),
+            ("course_group", "CRG-000002"),
+            ("course", f"{COURSE_ID_PREFIX}-000003"),
+            ("group", f"{GROUP_ID_PREFIX}-000002"),
+            ("course_group", "CRG-000001"),
+        ),
+    )
+    rooms = ("Raum 2", "Atelier", "Werkraum", "Schulgarten", "Turnhalle")
+    for weekday, targets in enumerate(target_cycles, start=1):
+        for slot_index, ((start_time, end_time), (target_type, target_id)) in enumerate(
+            zip(time_slots, targets, strict=True)
+        ):
+            adapter.save_entry(
+                SaveTimetableEntryCommand(
+                    "",
+                    weekday,
+                    start_time,
+                    end_time,
+                    subject_ids[(weekday * 3 + slot_index) % len(subject_ids)],
+                    target_type,
+                    target_id,
+                    rooms[(weekday + slot_index) % len(rooms)],
+                    True,
+                )
+            )
 
 
 def _seed_students(database: SQLiteDatabase) -> tuple[StudentRecord, ...]:
     repository = SQLiteStudentRepository(database)
     students: list[StudentRecord] = []
     timestamp = "2026-07-04T09:00:00+00:00"
-    for index, (last_name, group_index, course_index) in enumerate(STUDENTS, start=1):
+    for index, (first_name, last_name, group_index, course_index) in enumerate(
+        STUDENTS, start=1
+    ):
         student = StudentRecord(
             f"{STUDENT_ID_PREFIX}-{index:06d}",
-            "Testkind",
+            first_name,
             last_name,
             f"{GROUP_ID_PREFIX}-{group_index + 1:06d}",
             f"{COURSE_ID_PREFIX}-{course_index + 1:06d}",
-            "Kuenstlicher Datensatz fuer Laura-Pilottest.",
+            "Kuenstlicher Datensatz fuer einen realistischen Acht-Monats-Test.",
             True,
             timestamp,
             timestamp,
@@ -325,6 +432,112 @@ def _seed_observations(
         created_ids.append(observation.observation_id)
         if spec_index == len(observation_specs) - 1:
             service.delete_observation(observation_id=observation.observation_id)
+    created_ids.extend(
+        _seed_all_subject_history(database, service, students)
+    )
+    return tuple(created_ids)
+
+
+def _seed_all_subject_history(
+    database: SQLiteDatabase,
+    service: ObservationService,
+    students: tuple[StudentRecord, ...],
+) -> tuple[str, ...]:
+    competencies_by_subject: dict[str, list[object]] = {}
+    for competency in SQLiteCompetencyRepository(database).list_competencies():
+        if not competency.active or competency.catalog_status != "current":
+            continue
+        competencies_by_subject.setdefault(competency.subject_id, []).append(competency)
+    subjects = tuple(
+        sorted(
+            competencies_by_subject,
+            key=lambda subject_id: (
+                min(item.sort_order for item in competencies_by_subject[subject_id]),
+                subject_id,
+            ),
+        )
+    )
+    if not subjects:
+        raise SeedDataError("Keine aktiven aktuellen Katalogfaecher fuer Testdaten gefunden.")
+
+    created_ids: list[str] = []
+    history_start = date(2025, 12, 1)
+    rating_cycle = ("+", "-", "++", "+")
+    contexts = (
+        "Unterrichtsbeobachtung",
+        "Arbeitsphase",
+        "Praesentation",
+        "Partnerarbeit",
+        "Lernprodukt",
+    )
+    for student_index, student in enumerate(students):
+        for subject_index, subject_id in enumerate(subjects):
+            if student_index >= 18 and (student_index + subject_index) % 3 != 0:
+                continue
+            competencies = competencies_by_subject[subject_id]
+            competency = competencies[(student_index + subject_index) % len(competencies)]
+            observation_date = history_start + timedelta(
+                days=(student_index * 17 + subject_index * 29) % 218
+            )
+            observation = service.create_observation(
+                student_id=student.student_id,
+                date=observation_date.isoformat(),
+                subject_id=subject_id,
+                context=contexts[(student_index + subject_index) % len(contexts)],
+                note=(
+                    f"Dokumentiert eine konkrete Lernhandlung in {competency.subject_name}; "
+                    "kuenstlicher Acht-Monats-Testdatensatz."
+                ),
+                competency_ratings=(
+                    _rating_record(
+                        competency,
+                        rating_cycle[(student_index + subject_index) % len(rating_cycle)],
+                    ),
+                ),
+            )
+            created_ids.append(observation.observation_id)
+
+            if subject_id in {"deutsch", "mathematik", "epu"} and student_index < 12:
+                recent_day = 13 if student_index % 6 == 0 else 1 + (
+                    student_index * 2 + subject_index
+                ) % 11
+                recent_competency = competencies[
+                    (student_index + subject_index + 1) % len(competencies)
+                ]
+                recent = service.create_observation(
+                    student_id=student.student_id,
+                    date=date(2026, 7, recent_day).isoformat(),
+                    subject_id=subject_id,
+                    context="Aktuelle Unterrichtsbeobachtung",
+                    note=(
+                        f"Aktueller kuenstlicher Nachweis in {recent_competency.subject_name} "
+                        "fuer Dashboard-, Profil- und Berichtstests."
+                    ),
+                    competency_ratings=(
+                        _rating_record(
+                            recent_competency,
+                            rating_cycle[(student_index + subject_index + 1) % len(rating_cycle)],
+                        ),
+                    ),
+                )
+                created_ids.append(recent.observation_id)
+
+        if student_index % 5 == 0:
+            quick_subject_id = subjects[student_index % len(subjects)]
+            quick_subject_name = competencies_by_subject[quick_subject_id][0].subject_name
+            quick = service.create_observation(
+                student_id=student.student_id,
+                date=date(2026, 7, 13).isoformat(),
+                subject_id=quick_subject_id,
+                context="Schnellbeobachtung im Unterricht",
+                note=(
+                    f"Eindeutige kurze Fachbeobachtung in {quick_subject_name}; "
+                    "kuenstlicher Testdatensatz."
+                ),
+                competency_ratings=(),
+                is_quick_observation=True,
+            )
+            created_ids.append(quick.observation_id)
     return tuple(created_ids)
 
 
@@ -467,6 +680,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Schueler: {result.student_count}")
     print(f"Beobachtungen: {result.observation_count}")
     print(f"Dokumente/Medien: {result.document_count}")
+    print(f"Stundenplaneintraege: {result.timetable_count}")
     return 0
 
 

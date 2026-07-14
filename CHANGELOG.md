@@ -110,6 +110,19 @@
 
 - Keine Aenderung an Stundenplan-, Beobachtungs-, Adapter-, ViewModel- oder Fachlogik.
 
+## Testdaten - Achtmonatiger produktionsnaher Nutzungsstand
+
+### Changed
+
+- SQLite-Testdatenseed auf 24 kuenstliche Kinder in vier Stammgruppen, drei Kursen und drei Kursverbuenden erweitert.
+- Vollstaendigen Wochenstundenplan mit 25 aktiven Stunden und Zielen vom Typ Stammgruppe, Kurs und Kursverbund ergaenzt.
+- Fachbezogene Beobachtungshistorie von September bis Juli deckt alle aktiven Katalogfaecher ab und enthaelt bewusst unterschiedliche Dokumentationsdichten, aktuelle und heutige Eintraege, eindeutige Schnellbeobachtungen sowie einen Soft Delete.
+- Seed-Regressionstest prueft nun zusaetzlich Wochenplan, Zieltypen, alle aktiven Faecher und alle 24 dokumentierten Kinder.
+
+### Not Changed
+
+- Keine Migration, Schema-, Produktivlogik-, Adapter-, ViewModel- oder Widget-Aenderung und kein Commit.
+
 ## Sprint 8B.3 - Passende Kinder als transparente Dokumentationshilfe
 
 ### Added

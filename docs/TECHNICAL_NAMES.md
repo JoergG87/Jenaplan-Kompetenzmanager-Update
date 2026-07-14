@@ -446,6 +446,9 @@ Registrierte Python-Spike-Komponenten:
 - `SeedDataError`
 - `SeedResult`
 - `seed_test_data(database_path, reset)`
+- `SeedResult.timetable_count`
+- `_seed_timetable(database)`
+- `_seed_all_subject_history(database, service, students)`
 
 Regel: `create_sqlite_seed_database(path)` ist ein expliziter Seed-/Testpfad. Der produktive PySide-App-Start nutzt diesen Pfad nicht, damit keine Demo-Schueler erzeugt oder Nutzerdaten ueberschrieben werden.
 

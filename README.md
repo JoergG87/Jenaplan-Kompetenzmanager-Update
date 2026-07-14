@@ -109,7 +109,7 @@ Die aktuelle lokale SQLite-Datenbank kann fuer den Laura-Pilottest mit kuenstlic
 python3 scripts/seed_test_data.py
 ```
 
-Das Script schreibt standardmaessig nach `data/kompetenzmanager.sqlite`. Wenn dort bereits Schueler, Beobachtungen oder Dokumente liegen, bricht es ohne Aenderung ab.
+Das Script schreibt standardmaessig nach `data/kompetenzmanager.sqlite`. Wenn dort bereits Schueler, Beobachtungen, Dokumente oder Stundenplaneintraege liegen, bricht es ohne Aenderung ab.
 
 Ein bewusst frisches Testsystem wird so erzeugt:
 
@@ -119,11 +119,13 @@ python3 scripts/seed_test_data.py --reset
 
 `--reset` loescht die lokale Testdatenbank und die Demo-Dateien unter `data/documents/` kontrolliert neu. Es werden nur kuenstliche Namen und harmlose Platzhalterdateien erzeugt.
 
-Die Testdaten bilden ein Halbjahr von September bis Januar ab. Sie enthalten unterschiedlich dichte Beobachtungen, positive und stabile Kompetenzverlaeufe, wechselnde Beobachtungslagen, Unterstuetzungsbedarf, bestaetigte Kompetenzstaende und bewusste Abweichungen zwischen Vorschlag und Lehrkraftentscheidung.
+Die Testdaten bilden einen rund achtmonatigen Nutzungsstand von September bis Juli ab. Sie enthalten 24 kuenstliche Kinder in vier Stammgruppen, drei Kurse, drei Kursverbuende, 25 Unterrichtsstunden einer vollstaendigen Woche und Kompetenzdokumentationen in allen aktiven Katalogfaechern. Unterschiedliche Dokumentationsdichten, aktuelle und aeltere Beobachtungen, eindeutige Schnellbeobachtungen, ein Soft Delete, bestaetigte Kompetenzstaende und Demo-Dokumente ermoeglichen realistische Leer-, Priorisierungs-, Profil- und Berichtstests.
 
 Pilottest-Checkliste:
 
 - Stammgruppen, Kurse und Kursverbuende
+- Dashboard und Stundenplan mit Stammgruppen-, Kurs- und Kursverbundzielen
+- Fachabdeckung, alte, aktuelle und heute erfasste Dokumentationen
 - Schuelerlisten-Sortierung nach Kurs und Name
 - Einzel- und Multi-Fach-Beobachtungen
 - Kompetenzvorschlaege, Verlauf und bestaetigte Staende

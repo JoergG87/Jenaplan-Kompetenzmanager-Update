@@ -6,6 +6,8 @@ Es geht nicht um perfekte Eingaben. Wichtig ist, ob die App verstaendlich, ruhig
 
 Alle Testdaten sind kuenstlich. Es werden keine echten Kindernamen und keine echten Dokumente verwendet.
 
+Der Seed simuliert einen rund achtmonatigen Nutzungsstand: 24 Kinder in vier Stammgruppen, drei Kurse, drei Kursverbuende, eine Unterrichtswoche mit 25 Stunden sowie unterschiedlich dichte Dokumentationen in allen aktiven Katalogfaechern.
+
 ## Start
 
 Testdaten frisch erzeugen:
@@ -63,12 +65,15 @@ Prioritaet:
 1. App starten.
 2. Pruefen, ob Testdaten sichtbar sind.
 3. Pruefen, ob Stammgruppen, Kurse und Schueler verstaendlich dargestellt sind.
+4. `Heute` zu unterschiedlichen Uhrzeiten pruefen: laufende Stunde, Pause und nach Unterrichtsende.
+5. Stundenkarten fuer Stammgruppe, Kurs und Kursverbund oeffnen.
 
 Rueckmeldung:
 
 - Findet man sich schnell zurecht?
 - Wirkt die Startansicht ueberladen?
 - Sind Begriffe verstaendlich?
+- Wirken Tagesplan, Dokumentationsmatrix und passende Kinder wie ein bereits genutztes System?
 
 ## B. Schuelerlisten / Kursuebersichten
 

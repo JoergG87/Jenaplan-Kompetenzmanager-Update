@@ -69,6 +69,17 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Fokussierte UI-Tests, Gesamttests und aktive Build-Pruefung erfolgreich
 - [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
 
+## Testdaten - Achtmonatiger produktionsnaher Nutzungsstand 🔄
+
+- [x] 24 kuenstliche Kinder auf vier Stammgruppen und drei Kurse verteilt
+- [x] Drei Kursverbuende mit unterschiedlichen Stammgruppen-/Kurskombinationen angelegt
+- [x] Vollstaendige Unterrichtswoche mit 25 Stammgruppen-, Kurs- und Kursverbundstunden angelegt
+- [x] Kompetenzdokumentationen in allen aktiven Katalogfaechern von September bis Juli erzeugt
+- [x] Unterschiedliche Dokumentationsdichten, aktuelle Eintraege, Schnellbeobachtungen und Soft Delete enthalten
+- [x] Seed-Regressionstest erweitert
+- [x] Kein Commit erstellt
+- [ ] Product-Owner-Sichtpruefung abgeschlossen
+
 ## Sprint 8B.3 - Passende Kinder als Dokumentationshilfe 🔄
 
 - [x] Aktive Kinder aus Stammgruppe, Kurs oder Kursverbund fachbezogen projiziert

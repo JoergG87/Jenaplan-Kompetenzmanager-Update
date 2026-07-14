@@ -374,6 +374,15 @@ class SQLiteSpikeTest(unittest.TestCase):
                 course_group_count = connection.execute(
                     "SELECT COUNT(*) FROM course_groups WHERE active = 1"
                 ).fetchone()[0]
+                timetable_count = connection.execute(
+                    "SELECT COUNT(*) FROM timetable_entries WHERE active = 1"
+                ).fetchone()[0]
+                timetable_target_types = {
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT DISTINCT target_type FROM timetable_entries WHERE active = 1"
+                    ).fetchall()
+                }
                 active_observation_count = connection.execute(
                     "SELECT COUNT(*) FROM observations WHERE active = 1"
                 ).fetchone()[0]
@@ -392,6 +401,28 @@ class SQLiteSpikeTest(unittest.TestCase):
                 observed_student_count = connection.execute(
                     "SELECT COUNT(DISTINCT student_id) FROM observations WHERE active = 1"
                 ).fetchone()[0]
+                observed_subject_ids = {
+                    row[0]
+                    for row in connection.execute(
+                        """
+                        SELECT DISTINCT subject_id
+                        FROM observation_competency_ratings
+                        WHERE observation_id IN (
+                            SELECT observation_id FROM observations WHERE active = 1
+                        )
+                        """
+                    ).fetchall()
+                }
+                current_subject_ids = {
+                    row[0]
+                    for row in connection.execute(
+                        """
+                        SELECT DISTINCT subject_id
+                        FROM competencies
+                        WHERE active = 1 AND catalog_status = 'current'
+                        """
+                    ).fetchall()
+                }
                 longest_rating_history = connection.execute(
                     """
                     SELECT COUNT(*)
@@ -414,17 +445,21 @@ class SQLiteSpikeTest(unittest.TestCase):
 
             document_files = tuple((Path(temp_dir) / "documents").rglob("*.txt"))
 
-        self.assertEqual(result.student_count, 12)
-        self.assertEqual(student_count, 12)
-        self.assertGreaterEqual(group_count, 2)
+        self.assertEqual(result.student_count, 24)
+        self.assertEqual(student_count, 24)
+        self.assertEqual(group_count, 4)
         self.assertEqual(course_count, 3)
-        self.assertGreaterEqual(course_group_count, 2)
-        self.assertGreaterEqual(active_observation_count, 30)
+        self.assertEqual(course_group_count, 3)
+        self.assertEqual(result.timetable_count, 25)
+        self.assertEqual(timetable_count, 25)
+        self.assertEqual(timetable_target_types, {"group", "course", "course_group"})
+        self.assertGreaterEqual(active_observation_count, 200)
         self.assertEqual(inactive_observation_count, 1)
         self.assertGreaterEqual(confirmation_count, 4)
         self.assertGreaterEqual(document_count, 3)
-        self.assertEqual(active_date_range, ("2025-09-08", "2026-01-23"))
-        self.assertGreaterEqual(observed_student_count, 11)
+        self.assertEqual(active_date_range, ("2025-09-08", "2026-07-13"))
+        self.assertEqual(observed_student_count, 24)
+        self.assertEqual(observed_subject_ids, current_subject_ids)
         self.assertGreaterEqual(longest_rating_history, 3)
         self.assertEqual(blob_columns, set())
         self.assertGreaterEqual(len(document_files), 3)
@@ -441,6 +476,7 @@ class SQLiteSpikeTest(unittest.TestCase):
 
         self.assertEqual(first_result.student_count, second_result.student_count)
         self.assertEqual(first_result.document_count, second_result.document_count)
+        self.assertEqual(first_result.timetable_count, second_result.timetable_count)
 
     def test_seed_data_is_written_to_sqlite_without_id_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
