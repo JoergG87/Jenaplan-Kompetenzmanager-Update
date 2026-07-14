@@ -24,11 +24,14 @@ from src.application.dispatcher import (
 )
 from src.application.commands.report import (
     CreateLearningReportDraftCommand,
+    FinalizeLearningReportCommand,
     GetLearningReportDraftQuery,
     LearningReportApplicationService,
     ListLearningReportDraftsQuery,
     PrepareLearningReportQuery,
     ReportDraftApplicationService,
+    ReportFinalizationApplicationService,
+    ReportRevisionApplicationService,
     UpdateLearningReportDraftCommand,
 )
 from src.application.commands.learning_conference import (
@@ -55,6 +58,7 @@ from src.core.sqlite_store import (
     SQLiteDocumentRepository,
     SQLiteGroupRepository,
     SQLiteLearningConferenceDraftRepository,
+    SQLiteLearningReportRepository,
     SQLiteMasterDataRepository,
     SQLiteObservationRepository,
     SQLiteReportDraftRepository,
@@ -64,6 +68,11 @@ from src.core.sqlite_store import (
     StudentCompetencyConfirmationRecord,
 )
 from src.core.report_draft import ReportDraftRecord, ReportDraftService
+from src.core.learning_report import (
+    LearningReportRevisionReadService,
+    ReportFinalizationError,
+    ReportFinalizationService,
+)
 from src.core.learning_conference_draft import (
     LearningConferenceDraftRecord,
     LearningConferenceDraftService,
@@ -106,8 +115,14 @@ from src.desktop_app.view_models.settings_view_model import (
 )
 from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportDraftViewModel,
+    LearningReportFinalizationPreviewViewModel,
     LearningReportPreparationViewModel,
+    LearningReportRevisionStatusViewModel,
+    LearningReportRevisionViewModel,
+    build_learning_report_finalization_preview,
     build_learning_report_preparation,
+    build_learning_report_revision_status,
+    build_learning_report_revision_view_model,
 )
 from src.desktop_app.view_models.learning_conference_view_model import (
     LearningConferenceDraftViewModel,
@@ -1081,11 +1096,100 @@ class StudentDesktopAdapter:
         )
         return tuple(self._learning_report_draft_view_model(record) for record in records)
 
+    def learning_report_revision_status(
+        self,
+        report_draft_id: str,
+    ) -> LearningReportRevisionStatusViewModel:
+        """Return the current revision and newest-first history for one draft."""
+        state = self._report_revision_application_service().state_for_draft(
+            report_draft_id
+        )
+        return build_learning_report_revision_status(state)
+
+    def prepare_learning_report_finalization(
+        self,
+        report_draft_id: str,
+    ) -> LearningReportFinalizationPreviewViewModel:
+        """Validate a saved draft and project its confirmation summary."""
+        preview = self._report_finalization_application_service().prepare(
+            report_draft_id
+        )
+        return build_learning_report_finalization_preview(preview)
+
+    def finalize_learning_report(
+        self,
+        report_draft_id: str,
+        finalized_by_display_name: str,
+    ) -> LearningReportRevisionStatusViewModel:
+        """Create the next immutable revision and return refreshed UI status."""
+        self._report_finalization_application_service().finalize(
+            FinalizeLearningReportCommand(
+                report_draft_id,
+                finalized_by_display_name,
+            )
+        )
+        return self.learning_report_revision_status(report_draft_id)
+
+    def load_learning_report_revision(
+        self,
+        learning_report_revision_id: str,
+    ) -> LearningReportRevisionViewModel | None:
+        """Build a final read projection exclusively from stored RPV data."""
+        loaded = self._report_revision_application_service().snapshot_payload(
+            learning_report_revision_id
+        )
+        if loaded is None:
+            return None
+        revision, payload = loaded
+        return build_learning_report_revision_view_model(revision, payload)
+
+    def learning_report_finalization_error_message(self, error: Exception) -> str:
+        """Translate expected domain failures into calm, actionable UI language."""
+        message = str(error)
+        if "Aggregateidentitaet" in message or "anderen Berichtstyp" in message:
+            return (
+                "Berichtstyp oder Zeitraum weicht von der letzten finalen Fassung ab. "
+                "Für einen anderen Berichtstyp oder Zeitraum muss ein neuer "
+                "Berichtsentwurf angelegt werden."
+            )
+        translations = (
+            (("finalized_by_display_name",), "Bitte den Anzeigenamen der verantwortlichen Lehrkraft eingeben."),
+            (("Berichtszeitraum", "period_end"), "Bitte einen gültigen Berichtszeitraum auswählen. Das Ende muss nach dem Beginn liegen."),
+            (("Mindestens ein Fach", "Fachreferenzen", "Faecher"), "Bitte mindestens ein verfügbares Fach auswählen."),
+            (("Berichtstext",), "Bitte mindestens einen bewusst verfassten Berichtstext ergänzen."),
+            (("Kompetenzreferenzen", "Kompetenzen"), "Eine ausgewählte Kompetenz ist nicht mehr zulässig oder passt nicht zum Fach. Bitte die Auswahl prüfen."),
+            (("Nicht verfuegbare Beobachtungsreferenzen",), "Ein ausgewählter Beobachtungsbeleg ist nicht mehr verfügbar. Bitte den Bezug im Entwurf abwählen."),
+            (("Beobachtungsreferenzen", "Beobachtungen"), "Ein ausgewählter Beobachtungsbeleg gehört nicht zu diesem Kind oder Fach. Bitte die Auswahl prüfen."),
+            (("Diagrammreferenzen",), "Eine Diagrammauswahl passt nicht zu den ausgewählten Fächern. Bitte die Auswahl prüfen."),
+        )
+        for needles, visible in translations:
+            if any(needle in message for needle in needles):
+                return visible
+        if isinstance(error, ReportFinalizationError):
+            return "Der Bericht kann noch nicht finalisiert werden. Bitte den Entwurf und seine Auswahl prüfen."
+        return "Die Finalisierung konnte wegen eines technischen Fehlers nicht abgeschlossen werden."
+
     def _report_draft_application_service(self) -> ReportDraftApplicationService:
         repository = SQLiteReportDraftRepository(self.database)
         return ReportDraftApplicationService(
             ReportDraftService(repository),
             repository,
+        )
+
+    def _report_finalization_application_service(
+        self,
+    ) -> ReportFinalizationApplicationService:
+        repository = SQLiteLearningReportRepository(self.database)
+        return ReportFinalizationApplicationService(
+            ReportFinalizationService(repository)
+        )
+
+    def _report_revision_application_service(
+        self,
+    ) -> ReportRevisionApplicationService:
+        repository = SQLiteLearningReportRepository(self.database)
+        return ReportRevisionApplicationService(
+            LearningReportRevisionReadService(repository)
         )
 
     def _learning_report_draft_view_model(

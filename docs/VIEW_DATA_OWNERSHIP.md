@@ -517,6 +517,10 @@ Sprint 5B.2 ergaenzt ohne neue Ansicht einen reinen Backend-Schreib- und Lesepfa
 
 Aktueller Revisionsstand: Ein finalisierter Bericht ist mit `RPT` und `RPV` als eigene fachliche Entitaet umgesetzt. Der fachliche Snapshot friert Schuelerbezug, Berichtszeitraum, verantwortlichen Anzeigenamen, manuelle Texte, ausgewaehlte Kompetenzinformationen, ausgewaehlte Beobachtungsbelege und Diagrammdaten ein. Eine finale Ausgabeversion beziehungsweise PDF-Artefaktverwaltung fehlt weiterhin; der bestehende reine Renderer erhaelt in diesem Sprint noch kein neues Eingangsmodell.
 
+Sprint 5B.3 bindet den vorhandenen Revisionspfad produktiv an die Berichtswerkstatt an. Die Werkstatt liest Status, aktuelle Revision und neueste-zuerst sortierte Historie ausschliesslich ueber `StudentDesktopAdapter`, `ReportRevisionApplicationService`, `LearningReportRevisionReadService` und `SQLiteLearningReportRepository`. Der zentrale Leseservice erzeugt fuer die Aenderungserkennung einen vollstaendig validierten deterministischen Finalisierungskandidaten und vergleicht dessen SHA-256 mit der aktuellen Revision; Widgets besitzen keine Snapshot-, Hash- oder Repositorylogik. Finalisierung speichert ungespeicherte Draftaenderungen zuerst und verwendet danach den bestehenden transaktionalen Schreibpfad.
+
+Die neue `LearningReportRevisionDialog` besitzt ausschliesslich die bereits snapshotbasierte `LearningReportRevisionViewModel`-Projektion. Deren einzige fachliche Inhaltsquelle sind `snapshot_json`, Revisionsmetadaten und gespeicherter Hash. Sie darf keine aktuellen Schueler-, Gruppen-, Kurs-, Kompetenz-, Beobachtungs- oder Diagrammdaten nachladen und bietet keine Schreib-, Loesch-, Entsperr-, Wiederherstellungs- oder PDF-Aktion. Die Projektion adaptiert den Snapshot getrennt vom Live-Draft an den renderer-neutralen `ReportOutputModel`-Vertrag; ein finales PDF-Artefaktmodell bleibt offen.
+
 ## Lernentwicklungsgespraech
 
 Liest in der spaeteren Zielarchitektur:

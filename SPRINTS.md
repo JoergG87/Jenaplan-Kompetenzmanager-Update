@@ -6,6 +6,17 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 5B.3 - Bericht finalisieren und Revisionen anzeigen ✅
+
+- [x] Bestehende `RPT`-/`RPV`-Revisionen produktiv an die PySide-Berichtswerkstatt angebunden
+- [x] Status `Entwurf`, `Finalisiert · Revision X` und `Entwurf geändert` zentral projiziert
+- [x] Erst- und Folgerevision mit verpflichtendem Lehrkraft-Anzeigenamen und expliziter Bestaetigung umgesetzt
+- [x] Revisionshistorie neueste zuerst mit `Aktuell`, `Ersetzt` und ausschliesslicher Oeffnen-Aktion umgesetzt
+- [x] Finale Leseansicht ausschliesslich aus Snapshot, Revisionsmetadaten und gespeichertem Hash umgesetzt
+- [x] Snapshotbasierte renderer-neutrale Revisionsprojektion fuer Qt und spaeteren PDF-Sprint bereitgestellt
+- [x] Keine Schemaaenderung, kein finales PDF-Artefakt, kein LEG-Abschluss und keine Benutzer-/Rollendomain umgesetzt
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## Sprint 5B.2 - Unveraenderliche Berichtrevisionen im Backend 🔄
 
 - [x] Fuenf freigegebene Product-Owner-Entscheidungen verbindlich dokumentiert; Sprint-5A-Vorschlag bleibt nicht bindend

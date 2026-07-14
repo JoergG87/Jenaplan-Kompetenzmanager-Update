@@ -202,3 +202,11 @@ Produktregel UI Sprint 1:
 - Analysefunktionen
 - Mehrstammgruppenverwaltung
 - Rollenverwaltung
+
+## 13. Berichtswerkstatt - Finalisierung und Revisionen
+
+Die Berichtswerkstatt behaelt ihre bestehende Bearbeitungs- und Vorschauorganisation. Im Abschlusskontext ergaenzt sie einen ruhigen Statusbereich mit `Entwurf`, `Finalisiert · Revision X` oder `Entwurf geändert`. Speichern bleibt die primaere Draftaktion; Finalisieren steht in einem fachlich getrennten Bereich und wird nicht wie eine austauschbare Speicheraktion dargestellt.
+
+Vor jeder Finalisierung wird der aktuelle Draft gespeichert und zentral validiert. Die Bestaetigung zeigt Kind, Berichtstyp, Zeitraum, ausgewaehlte Faecher sowie Kompetenz- und Beobachtungsanzahl. Der Anzeigename der verantwortlichen Lehrkraft ist verpflichtend. Eine ruhige Warnung erklaert die Unveraenderlichkeit und die Korrektur als Folgerevision; eine ausdrueckliche Bestaetigung ist erforderlich.
+
+Das Revisionsprotokoll ist kompakt, neueste zuerst und vollstaendig lesend. Es bietet je Revision ausschliesslich `Öffnen`; Bearbeiten, Loeschen, Entsperren, Wiederherstellen und Ueberschreiben existieren nicht. Die finale Ansicht zeigt historische Kennzeichnung, Kontext, Texte, Kompetenzen, Beobachtungsbelege und gespeicherte Diagrammdaten ohne editierbar wirkende Felder. Sie laedt keine aktuellen Stammdaten oder operativen Fachinhalte nach.

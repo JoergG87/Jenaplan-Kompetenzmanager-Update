@@ -662,9 +662,15 @@ Regel: Laden rekonstruiert ausschliesslich gespeicherte manuelle Texte und Refer
 
 Start: Eine verantwortliche Lehrkraft finalisiert bewusst einen vorhandenen `RPD` und uebergibt ihren nichtleeren Anzeigenamen. Es wird keine Benutzer-ID erzeugt oder abgeleitet.
 
-Freigegebener Backendpfad:
+Freigegebener produktiver Pfad:
 
 ```text
+PySide Berichtswerkstatt
+-> LearningReportDraftViewModel speichern
+-> StudentDesktopAdapter.prepare_learning_report_finalization
+-> ReportFinalizationService.prepare
+-> explizite Bestaetigung mit Lehrkraft-Anzeigename
+-> StudentDesktopAdapter.finalize_learning_report
 FinalizeLearningReportCommand
 -> ReportFinalizationApplicationService
 -> ReportFinalizationService
@@ -714,6 +720,39 @@ Validierungsregeln:
 - Bestaetigte Kompetenzstaende sind keine allgemeine Finalisierungspflicht.
 
 Regel: Der `RPD` bleibt nach jeder Finalisierung im Status `draft` und normal bearbeitbar. Seine spaeteren Text- und Referenzaenderungen duerfen eine Folgerevision erzeugen, seine nach Revision 1 abweichenden Angaben zu Berichtstyp oder Zeitraum aber nicht dasselbe `RPT` umdeuten. `learning_reports` wird nach seiner Erstellung weder aktualisiert noch geloescht. Spaetere Aenderungen an Draft, Student, Kompetenz, Beobachtung oder Projektionen veraendern keine bestehende `RPV`. PDF-Artefakte, Renderer-Versionierung, Archivierung und LEG-Abschluss sind nicht Bestandteil dieses Schreibprozesses.
+
+Produktive UI-Regel Sprint 5B.3: Vor jeder Bestaetigung wird der aktuelle Widgetstand ueber den bestehenden Draft-Lifecycle gespeichert. `ReportFinalizationService.prepare` validiert danach denselben gespeicherten Stand und erzeugt die Zusammenfassung fuer Kind, Berichtstyp, Zeitraum, Faecher, Kompetenz- und Beobachtungsanzahl sowie neue Revisionsnummer. Der Anzeigename wird sinnvoll aus `report_drafts.teacher_name` vorbelegt, bleibt aber eine verpflichtende freie Anzeigeeingabe ohne Benutzer- oder Rollen-ID. Erst eine ausdrueckliche Checkbox-Bestaetigung loest den bestehenden transaktionalen Finalisierungscommand aus. Bei fachlichen Fehlern bleibt die aktuelle Revision unveraendert und die Berichtswerkstatt zeigt eine handlungsorientierte `InlineMessage`; nur unerwartete technische Fehler sind modal. Es wird kein PDF automatisch erzeugt.
+
+## Lernentwicklungsbericht-Revisionen und Snapshot lesen
+
+Start: Laura oeffnet die Berichtswerkstatt oder waehlt eine konkrete `RPV`-Revision.
+
+Status- und Historienweg:
+
+```text
+PySide Berichtswerkstatt
+-> StudentDesktopAdapter.learning_report_revision_status(report_draft_id)
+-> ReportRevisionApplicationService
+-> LearningReportRevisionReadService
+-> SQLiteLearningReportRepository
+-> learning_reports + learning_report_revisions
+```
+
+Regel: Der Leseservice ermittelt das `RPT` zu einem `RPD`, die aktuelle `finalized`-Revision und alle Revisionen neueste zuerst. Fuer `Entwurf geändert` baut er den aktuellen Finalisierungskandidaten mit dem gespeicherten Anzeigenamen und Finalisierungszeitpunkt der aktuellen Revision deterministisch auf und vergleicht dessen SHA-256 mit `snapshot_sha256`. Fachliche Validierung und Vergleich finden zentral statt; die UI liest weder SQLite noch Repositorydetails.
+
+Einzelrevisionsweg:
+
+```text
+RPV-ID
+-> StudentDesktopAdapter.load_learning_report_revision
+-> ReportRevisionApplicationService.snapshot_payload
+-> LearningReportRevisionReadService
+-> gespeicherten SHA-256 pruefen und snapshot_json lesen
+-> LearningReportRevisionViewModel + snapshotbasiertes ReportOutputModel
+-> LearningReportRevisionDialog
+```
+
+Regel: Nach der `RPV`-Abfrage werden keine operativen Datenquellen gelesen. Namen, Gruppen-/Kurskontext, Fachlabels, Kompetenztexte, Beobachtungsinhalte und Diagrammwerte stammen ausschliesslich aus dem Snapshot. Die Ansicht ist vollstaendig schreibgeschuetzt. Ein fehlgeschlagener Hash verhindert das Oeffnen; aktuelle Daten werden niemals als Ersatz rekonstruiert.
 
 ## LEG-Arbeitsentwurf speichern
 

@@ -31,12 +31,25 @@ from PySide6.QtWidgets import (
 )
 
 from src.desktop_app.theme import PRIMARY_BUTTON_STYLESHEET, create_card, set_label_style
+from src.desktop_app.components import (
+    AppCard,
+    EmptyState,
+    InlineMessage,
+    PageHeader,
+    SectionHeader,
+    StatusBadge,
+    Toast,
+    configure_button,
+)
 from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportChartSelectionViewModel,
     LearningReportDraft,
     LearningReportDraftViewModel,
     LearningReportEvidenceViewModel,
     LearningReportPreparationViewModel,
+    LearningReportFinalizationPreviewViewModel,
+    LearningReportRevisionStatusViewModel,
+    LearningReportRevisionViewModel,
     LearningReportSubjectDraftViewModel,
     LearningReportSubjectViewModel,
     build_report_output_model,
@@ -55,16 +68,25 @@ class LearningReportDialog(QDialog):
 
     save_requested = Signal(object)
     pdf_requested = Signal(object)
+    finalization_requested = Signal(object)
+    finalize_confirmed = Signal(str, str)
+    revision_open_requested = Signal(str)
 
     def __init__(
         self,
         preparation: LearningReportPreparationViewModel,
         parent: QWidget | None = None,
         initial_draft: LearningReportDraftViewModel | None = None,
+        revision_status: LearningReportRevisionStatusViewModel | None = None,
     ) -> None:
         super().__init__(parent)
         self.preparation = preparation
         self._saved_draft = initial_draft
+        self._revision_status = revision_status or LearningReportRevisionStatusViewModel(
+            "not_finalized",
+            "Entwurf",
+            "Für diesen Entwurf existiert noch keine historische Fassung.",
+        )
         self.selected_subject_ids = set(
             initial_draft.selected_subject_ids if initial_draft else ()
         )
@@ -104,6 +126,8 @@ class LearningReportDialog(QDialog):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
         root.addWidget(self._top_bar())
+        self.toast = Toast(self)
+        root.addWidget(self.toast, 0, Qt.AlignmentFlag.AlignHCenter)
         self.mode_stack = QStackedWidget()
         self.mode_stack.addWidget(self._editor_screen())
         self.mode_stack.addWidget(self._preview_screen())
@@ -449,6 +473,14 @@ class LearningReportDialog(QDialog):
                 "Die Vorschau zeigt den aktuellen Entwurf. Speichern und PDF-Erzeugung bleiben getrennte bewusste Aktionen.",
             )
         )
+        self.finalization_message = InlineMessage()
+        layout.addWidget(self.finalization_message)
+        self.revision_context = QWidget()
+        self.revision_context_layout = QVBoxLayout(self.revision_context)
+        self.revision_context_layout.setContentsMargins(0, 0, 0, 0)
+        self.revision_context_layout.setSpacing(14)
+        layout.addWidget(self.revision_context)
+        self._render_revision_context()
         summary = create_card()
         summary_layout = QVBoxLayout(summary)
         summary_layout.setContentsMargins(22, 20, 22, 22)
@@ -474,6 +506,128 @@ class LearningReportDialog(QDialog):
         actions.addWidget(preview)
         layout.addLayout(actions)
         return self._scroll_page(content)
+
+    def _render_revision_context(self) -> None:
+        if not hasattr(self, "revision_context_layout"):
+            return
+        self._clear_layout(self.revision_context_layout)
+        status = self._revision_status
+        card = AppCard("soft")
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(20, 18, 20, 18)
+        card_layout.setSpacing(10)
+        header = SectionHeader(
+            "Finalisierungsstatus",
+            "Entwurf und historische Fassungen bleiben fachlich getrennt.",
+        )
+        badge_tone = "success" if status.state == "finalized" else "info"
+        badge = StatusBadge(status.badge_text, tone=badge_tone)
+        header.add_action(badge)
+        card_layout.addWidget(header)
+        hint = QLabel(status.hint_text)
+        hint.setWordWrap(True)
+        set_label_style(hint, "body")
+        card_layout.addWidget(hint)
+        if status.has_current_revision:
+            metadata = QLabel(
+                f"Finalisiert am {status.finalized_at} · "
+                f"verantwortlich: {status.finalized_by_display_name}"
+            )
+            metadata.setWordWrap(True)
+            set_label_style(metadata, "muted")
+            card_layout.addWidget(metadata)
+            badge.setToolTip(
+                f"{status.current_revision_id}\nSnapshot SHA-256: "
+                f"{next((item.snapshot_sha256 for item in status.history if item.learning_report_revision_id == status.current_revision_id), '')}"
+            )
+        if not status.snapshot_hash_valid:
+            card_layout.addWidget(
+                InlineMessage(
+                    "Der gespeicherte Snapshot-Hash konnte nicht bestätigt werden. "
+                    "Die Revision wird nicht geöffnet.",
+                    tone="error",
+                )
+            )
+        actions = QHBoxLayout()
+        actions.addStretch(1)
+        if status.state == "not_finalized":
+            finalize = QPushButton("Bericht finalisieren")
+            finalize.setObjectName("LearningReportFinalizeButton")
+            configure_button(finalize, "secondary")
+            finalize.clicked.connect(self._request_finalization)
+            actions.addWidget(finalize)
+        elif status.state == "draft_changed":
+            open_current = QPushButton("Letzte finale Fassung öffnen")
+            configure_button(open_current, "quiet")
+            open_current.clicked.connect(
+                lambda: self.revision_open_requested.emit(status.current_revision_id)
+            )
+            finalize = QPushButton("Neue Revision finalisieren")
+            finalize.setObjectName("LearningReportFinalizeButton")
+            configure_button(finalize, "secondary")
+            finalize.clicked.connect(self._request_finalization)
+            actions.addWidget(open_current)
+            actions.addWidget(finalize)
+        else:
+            open_current = QPushButton("Finale Fassung öffnen")
+            open_current.setObjectName("LearningReportOpenCurrentRevisionButton")
+            configure_button(open_current, "secondary")
+            open_current.clicked.connect(
+                lambda: self.revision_open_requested.emit(status.current_revision_id)
+            )
+            actions.addWidget(open_current)
+        card_layout.addLayout(actions)
+        self.revision_context_layout.addWidget(card)
+
+        history_header = SectionHeader(
+            "Revisionsprotokoll",
+            "Historische Revisionen sind schreibgeschützt und bleiben unverändert.",
+        )
+        self.revision_context_layout.addWidget(history_header)
+        if not status.history:
+            self.revision_context_layout.addWidget(
+                EmptyState(
+                    "Nach der ersten Finalisierung erscheint hier die Historie.",
+                    title="Noch keine Revision",
+                )
+            )
+            return
+        for item in status.history:
+            row = AppCard()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(16, 12, 16, 12)
+            labels = QVBoxLayout()
+            title = QLabel(f"Revision {item.revision_number}")
+            set_label_style(title, "card_title")
+            labels.addWidget(title)
+            detail = QLabel(
+                f"{item.finalized_at} · {item.finalized_by_display_name}\n"
+                f"{item.report_type_label} · {item.period_label}"
+            )
+            detail.setWordWrap(True)
+            set_label_style(detail, "muted")
+            labels.addWidget(detail)
+            row_layout.addLayout(labels, 1)
+            item_badge = StatusBadge(
+                item.status_label,
+                tone="success" if item.status_label == "Aktuell" else "neutral",
+            )
+            item_badge.setToolTip(
+                f"{item.learning_report_revision_id}\nSnapshot SHA-256: {item.snapshot_sha256}"
+            )
+            row_layout.addWidget(item_badge)
+            open_button = QPushButton("Öffnen")
+            open_button.setObjectName(
+                f"LearningReportOpenRevision_{item.learning_report_revision_id}"
+            )
+            configure_button(open_button, "quiet")
+            open_button.clicked.connect(
+                lambda _checked=False, revision_id=item.learning_report_revision_id: (
+                    self.revision_open_requested.emit(revision_id)
+                )
+            )
+            row_layout.addWidget(open_button)
+            self.revision_context_layout.addWidget(row)
 
     def _preview_screen(self) -> QWidget:
         screen = QWidget()
@@ -759,6 +913,138 @@ class LearningReportDialog(QDialog):
         self.save_button.setText("Entwurf gespeichert")
         QTimer.singleShot(1600, lambda: self.save_button.setText("Entwurf speichern"))
 
+    def apply_revision_status(
+        self,
+        status: LearningReportRevisionStatusViewModel,
+        *,
+        finalized: bool = False,
+    ) -> None:
+        self._revision_status = status
+        self.finalization_message.set_message("")
+        self._render_revision_context()
+        if finalized:
+            self.toast.show_message(
+                f"Revision {status.current_revision_number} wurde unveränderlich gespeichert.",
+                tone="success",
+            )
+
+    def show_finalization_error(self, message: str) -> None:
+        self.finalization_message.set_message(message, tone="error")
+        self.finalization_message.setFocus()
+
+    def _request_finalization(self) -> None:
+        if not self._validate_period():
+            return
+        self.finalization_message.set_message("")
+        self.finalization_requested.emit(self.report_draft_view_model())
+
+    def show_finalization_confirmation(
+        self,
+        preview: LearningReportFinalizationPreviewViewModel,
+    ) -> None:
+        confirmation = self.create_finalization_confirmation(preview)
+        confirmation.exec()
+
+    def create_finalization_confirmation(
+        self,
+        preview: LearningReportFinalizationPreviewViewModel,
+    ) -> QDialog:
+        """Create the serious, non-destructive irreversible confirmation dialog."""
+        dialog = QDialog(self)
+        dialog.setObjectName("LearningReportFinalizationConfirmation")
+        dialog.setWindowTitle(
+            "Bericht finalisieren"
+            if preview.revision_number == 1
+            else "Neue Revision finalisieren"
+        )
+        dialog.setModal(True)
+        dialog.setMinimumWidth(600)
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(24, 22, 24, 22)
+        layout.setSpacing(14)
+        layout.addWidget(
+            PageHeader(
+                f"Revision {preview.revision_number} finalisieren",
+                "Bitte den gespeicherten Berichtsentwurf vor der Bestätigung prüfen.",
+            )
+        )
+        summary = AppCard("soft")
+        summary_layout = QGridLayout(summary)
+        summary_layout.setContentsMargins(18, 16, 18, 16)
+        summary_layout.setHorizontalSpacing(20)
+        summary_layout.setVerticalSpacing(8)
+        values = (
+            ("Kind", preview.student_display_name),
+            ("Berichtstyp", preview.report_type_label),
+            ("Zeitraum", preview.period_label),
+            ("Fächer", ", ".join(preview.subject_names)),
+            ("Kompetenzen", str(preview.competency_count)),
+            ("Beobachtungen", str(preview.observation_count)),
+            ("Neue Revision", str(preview.revision_number)),
+        )
+        for row, (label_text, value) in enumerate(values):
+            label = QLabel(label_text)
+            set_label_style(label, "field_label")
+            content = QLabel(value or "–")
+            content.setWordWrap(True)
+            set_label_style(content, "body")
+            summary_layout.addWidget(label, row, 0)
+            summary_layout.addWidget(content, row, 1)
+        layout.addWidget(summary)
+        responsible = QLineEdit(preview.suggested_responsible_display_name)
+        responsible.setObjectName("LearningReportFinalizedByInput")
+        responsible.setPlaceholderText("Anzeigename der verantwortlichen Lehrkraft")
+        layout.addWidget(
+            self._field("Verantwortliche Lehrkraft", responsible)
+        )
+        layout.addWidget(
+            InlineMessage(
+                "Diese Revision wird unveränderlich gespeichert. Spätere Korrekturen "
+                "erfolgen im bestehenden Entwurf und erzeugen eine neue Revision; "
+                "bestehende Revisionen bleiben erhalten.",
+                tone="warning",
+            )
+        )
+        acknowledge = QCheckBox(
+            "Ich habe den Bericht geprüft und möchte diese Revision finalisieren."
+        )
+        acknowledge.setObjectName("LearningReportFinalizationAcknowledgement")
+        layout.addWidget(acknowledge)
+        buttons = QHBoxLayout()
+        buttons.addStretch(1)
+        cancel = QPushButton("Abbrechen")
+        configure_button(cancel, "quiet")
+        cancel.clicked.connect(dialog.reject)
+        confirm = QPushButton(
+            "Bericht finalisieren"
+            if preview.revision_number == 1
+            else "Neue Revision finalisieren"
+        )
+        confirm.setObjectName("LearningReportFinalizationConfirmButton")
+        configure_button(confirm, "primary")
+        confirm.setEnabled(False)
+
+        def update_confirmation_state() -> None:
+            confirm.setEnabled(
+                bool(responsible.text().strip()) and acknowledge.isChecked()
+            )
+
+        responsible.textChanged.connect(lambda _text: update_confirmation_state())
+        acknowledge.toggled.connect(lambda _checked: update_confirmation_state())
+
+        def confirm_finalization() -> None:
+            name = responsible.text().strip()
+            if not name:
+                return
+            dialog.accept()
+            self.finalize_confirmed.emit(preview.report_draft_id, name)
+
+        confirm.clicked.connect(confirm_finalization)
+        buttons.addWidget(cancel)
+        buttons.addWidget(confirm)
+        layout.addLayout(buttons)
+        return dialog
+
     def _request_save(self) -> None:
         if not self._validate_period():
             return
@@ -781,11 +1067,11 @@ class LearningReportDialog(QDialog):
 
     def _validate_period(self) -> bool:
         if self.period_end.date() <= self.period_start.date():
-            QMessageBox.warning(
-                self,
-                "Bericht vorbereiten",
-                "Das Ende des Berichtszeitraums muss nach dem Beginn liegen.",
-            )
+            message = "Das Ende des Berichtszeitraums muss nach dem Beginn liegen."
+            if hasattr(self, "finalization_message"):
+                self.finalization_message.set_message(message, tone="error")
+            else:
+                QMessageBox.warning(self, "Bericht vorbereiten", message)
             return False
         return True
 
@@ -1245,3 +1531,166 @@ class LearningReportDialog(QDialog):
                 widget.deleteLater()
             elif child_layout is not None:
                 cls._clear_layout(child_layout)  # type: ignore[arg-type]
+
+
+class LearningReportRevisionDialog(QDialog):
+    """Fully read-only final report view backed only by one snapshot projection."""
+
+    def __init__(
+        self,
+        revision: LearningReportRevisionViewModel,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.revision = revision
+        self.setObjectName("LearningReportRevisionDialog")
+        self.setWindowTitle(
+            f"Finale Berichtfassung · Revision {revision.revision_number}"
+        )
+        self.resize(1180, 820)
+        self.setMinimumSize(760, 620)
+        self._build()
+
+    def _build(self) -> None:
+        root = QVBoxLayout(self)
+        root.setContentsMargins(20, 18, 20, 18)
+        root.setSpacing(14)
+        close = QPushButton("Schließen")
+        configure_button(close, "secondary")
+        close.clicked.connect(self.accept)
+        header = PageHeader(
+            f"{self.revision.report_type_label} · Revision {self.revision.revision_number}",
+            "Historische, unveränderliche Fassung aus dem gespeicherten Snapshot.",
+        )
+        header.add_action(close)
+        root.addWidget(header)
+        context_row = QHBoxLayout()
+        badge = StatusBadge(
+            f"{self.revision.status_label} · Revision {self.revision.revision_number}",
+            tone="success" if self.revision.status_label == "Aktuell" else "neutral",
+        )
+        badge.setToolTip(
+            f"{self.revision.learning_report_revision_id}\n"
+            f"Snapshot SHA-256: {self.revision.snapshot_sha256}"
+        )
+        context_row.addWidget(badge)
+        context_row.addStretch(1)
+        root.addLayout(context_row)
+        root.addWidget(
+            InlineMessage(
+                "Diese Ansicht liest ausschließlich den bei der Finalisierung "
+                "gespeicherten Snapshot. Aktuelle Stammdaten und Beobachtungen "
+                "werden nicht nachgeladen.",
+                tone="info",
+            )
+        )
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        canvas = QWidget()
+        layout = QVBoxLayout(canvas)
+        layout.setContentsMargins(0, 0, 8, 20)
+        layout.setSpacing(14)
+        layout.addWidget(self._context_card())
+        layout.addWidget(self._text_card("Pädagogischer Gesamtblick", self.revision.overall_text))
+        for subject in self.revision.subjects:
+            layout.addWidget(self._subject_card(subject))
+        layout.addStretch(1)
+        scroll.setWidget(canvas)
+        root.addWidget(scroll, 1)
+
+    def _context_card(self) -> AppCard:
+        card = AppCard("soft")
+        layout = QGridLayout(card)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setHorizontalSpacing(22)
+        layout.setVerticalSpacing(10)
+        values = (
+            ("Kind", self.revision.student_display_name),
+            ("Stammgruppe", self.revision.group_name or "–"),
+            ("Kurs", self.revision.course_name or "–"),
+            ("Berichtstyp", self.revision.report_type_label),
+            ("Zeitraum", self.revision.period_label),
+            ("Finalisiert am", self.revision.finalized_at),
+            ("Finalisiert von", self.revision.finalized_by_display_name),
+        )
+        for row, (label_text, value) in enumerate(values):
+            label = QLabel(label_text)
+            set_label_style(label, "field_label")
+            content = QLabel(value)
+            content.setWordWrap(True)
+            set_label_style(content, "body")
+            layout.addWidget(label, row, 0)
+            layout.addWidget(content, row, 1)
+        return card
+
+    def _text_card(self, title_text: str, text: str) -> AppCard:
+        card = AppCard()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(8)
+        layout.addWidget(SectionHeader(title_text))
+        body = QLabel(text or "Kein Text gespeichert.")
+        body.setWordWrap(True)
+        set_label_style(body, "body")
+        layout.addWidget(body)
+        return card
+
+    def _subject_card(self, subject: object) -> AppCard:
+        card = AppCard()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 16, 18, 18)
+        layout.setSpacing(10)
+        layout.addWidget(SectionHeader(str(getattr(subject, "subject_name", "Fach"))))
+        for title, text in (
+            ("Lernentwicklung", str(getattr(subject, "development_text", ""))),
+            ("Stärken", str(getattr(subject, "strengths_text", ""))),
+            ("Unterstützungsbedarf", str(getattr(subject, "support_needs_text", ""))),
+            ("Nächste Ziele", str(getattr(subject, "next_goals_text", ""))),
+        ):
+            heading = QLabel(title)
+            set_label_style(heading, "card_title")
+            layout.addWidget(heading)
+            body = QLabel(text or "Kein Text gespeichert.")
+            body.setWordWrap(True)
+            layout.addWidget(body)
+        layout.addWidget(SectionHeader("Eingefrorene Kompetenzen"))
+        competencies = tuple(getattr(subject, "competencies", ()))
+        if not competencies:
+            layout.addWidget(EmptyState("Keine Kompetenz im Snapshot enthalten."))
+        for competency in competencies:
+            suffix = " · historisch" if getattr(competency, "historical_reference", False) else ""
+            item = QLabel(
+                f"{getattr(competency, 'learning_area', '')} → "
+                f"{getattr(competency, 'competency_group', '')}\n"
+                f"{getattr(competency, 'competency_text', '')}{suffix}"
+            )
+            item.setWordWrap(True)
+            layout.addWidget(item)
+        layout.addWidget(SectionHeader("Eingefrorene Beobachtungsbelege"))
+        observations = tuple(getattr(subject, "observations", ()))
+        if not observations:
+            layout.addWidget(EmptyState("Kein Beobachtungsbeleg im Snapshot enthalten."))
+        for observation in observations:
+            item = QLabel(
+                f"{getattr(observation, 'observed_on', '')} · "
+                f"{getattr(observation, 'context', '')}\n"
+                f"{getattr(observation, 'content', '')}"
+            )
+            item.setWordWrap(True)
+            layout.addWidget(item)
+        charts = tuple(getattr(subject, "charts", ()))
+        if charts:
+            layout.addWidget(SectionHeader("Gespeicherte Diagrammdaten"))
+            for chart in charts:
+                chart_label = QLabel(
+                    f"{getattr(chart, 'title', '')} · {getattr(chart, 'summary', '')}"
+                )
+                chart_label.setWordWrap(True)
+                layout.addWidget(chart_label)
+                for detail in tuple(getattr(chart, "details", ())):
+                    detail_label = QLabel(f"• {detail}")
+                    detail_label.setWordWrap(True)
+                    set_label_style(detail_label, "muted")
+                    layout.addWidget(detail_label)
+        return card

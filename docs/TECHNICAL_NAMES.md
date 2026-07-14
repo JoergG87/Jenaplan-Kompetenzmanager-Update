@@ -1189,6 +1189,55 @@ Registrierte Konstanten und Werte:
 
 Regel: `RPD` bleibt der bearbeitbare Arbeitsentwurf. `RPT` ist das stabile, pro `source_report_draft_id` eindeutige Berichtaggregat. Nach Revision 1 bleiben `source_report_draft_id`, `student_id`, `report_type`, `period_start` und `period_end` des `RPT` unveraenderlich; ein anderer Berichtstyp oder Zeitraum braucht einen neuen `RPD` und damit ein neues `RPT`. `RPV` ist eine unveraenderliche Revision; ausschliesslich beim atomaren Erzeugen einer Folgerevision darf der Status der bisherigen aktuellen Revision von `finalized` auf `superseded` wechseln und `superseded_at` gesetzt werden. Der kanonische Snapshot wird als UTF-8-JSON mit sortierten Schluesseln, kompakten Trennern und ohne nicht endliche Zahlen serialisiert; `snapshot_sha256` ist der kleingeschriebene SHA-256-Hexdigest exakt dieser gespeicherten JSON-Bytes.
 
+## Sprint 5B.3 - Produktive Berichtfinalisierung und Revisionsprojektion
+
+Registrierte Klassen und Projektionen:
+
+- `LearningReportFinalizationPreview`
+- `LearningReportRevisionState`
+- `LearningReportRevisionReadService`
+- `ReportRevisionApplicationService`
+- `LearningReportRevisionStatusViewModel`
+- `LearningReportRevisionHistoryItemViewModel`
+- `LearningReportFinalizationPreviewViewModel`
+- `LearningReportRevisionViewModel`
+- `LearningReportRevisionSubjectViewModel`
+- `LearningReportRevisionCompetencyViewModel`
+- `LearningReportRevisionObservationViewModel`
+- `LearningReportRevisionChartViewModel`
+- `LearningReportRevisionDialog`
+
+Registrierte Funktionen und Adapteroperationen:
+
+- `ReportFinalizationService.prepare(report_draft_id)`
+- `LearningReportRevisionReadService.report_for_draft(report_draft_id)`
+- `LearningReportRevisionReadService.current_revision_for_draft(report_draft_id)`
+- `LearningReportRevisionReadService.revision_history_for_draft(report_draft_id)`
+- `LearningReportRevisionReadService.revision_by_id(learning_report_revision_id)`
+- `LearningReportRevisionReadService.snapshot_hash_valid(revision)`
+- `LearningReportRevisionReadService.snapshot_payload(learning_report_revision_id)`
+- `SQLiteLearningReportRepository.get_revision(learning_report_revision_id)`
+- `StudentDesktopAdapter.learning_report_revision_status(report_draft_id)`
+- `StudentDesktopAdapter.prepare_learning_report_finalization(report_draft_id)`
+- `StudentDesktopAdapter.finalize_learning_report(report_draft_id, finalized_by_display_name)`
+- `StudentDesktopAdapter.load_learning_report_revision(learning_report_revision_id)`
+- `build_learning_report_revision_status(state)`
+- `build_learning_report_finalization_preview(preview)`
+- `build_learning_report_revision_view_model(revision, payload)`
+
+Registrierte Qt-Objektnamen:
+
+- `LearningReportFinalizeButton`
+- `LearningReportOpenCurrentRevisionButton`
+- `LearningReportOpenRevision_<learning_report_revision_id>`
+- `LearningReportFinalizationConfirmation`
+- `LearningReportFinalizedByInput`
+- `LearningReportFinalizationAcknowledgement`
+- `LearningReportFinalizationConfirmButton`
+- `LearningReportRevisionDialog`
+
+Regel: Die Revisionsprojektion entsteht ausschliesslich aus `snapshot_json`, `LearningReportRevisionRecord` und dem gespeicherten SHA-256. Sie darf keine aktuelle Schueler-, Gruppen-, Kurs-, Kompetenz-, Beobachtungs- oder Diagrammquelle lesen. Das Draft-Ausgabemodell und die finale snapshotbasierte Adapterprojektion bleiben getrennte Quellen fuer denselben renderer-neutralen `ReportOutputModel`-Vertrag.
+
 ## Sprint 7G.1 - Persistenter LEG-Arbeitsentwurf
 
 Registrierte SQLite-Tabellen:

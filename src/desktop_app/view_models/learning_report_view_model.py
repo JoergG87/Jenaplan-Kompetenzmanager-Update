@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 from prototypes.pdf_engine.output_models import (
     ChartBlock,
@@ -29,6 +29,12 @@ from src.core.report_draft import (
     ReportDraftChartSelectionRecord,
     ReportDraftRecord,
     ReportDraftSubjectRecord,
+)
+from src.core.learning_report import (
+    FINALIZED_REVISION_STATUS,
+    LearningReportFinalizationPreview,
+    LearningReportRevisionRecord,
+    LearningReportRevisionState,
 )
 
 
@@ -226,6 +232,526 @@ class LearningReportDraft:
     subject_texts: tuple[LearningReportSubjectDraftViewModel, ...] = ()
     chart_selections: tuple[LearningReportChartSelectionViewModel, ...] = ()
     unavailable_observation_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class LearningReportRevisionHistoryItemViewModel:
+    """Compact metadata for one read-only historical revision row."""
+
+    learning_report_revision_id: str
+    revision_number: int
+    status: str
+    status_label: str
+    finalized_at: str
+    finalized_by_display_name: str
+    period_label: str
+    report_type_label: str
+    snapshot_sha256: str
+
+
+@dataclass(frozen=True)
+class LearningReportRevisionStatusViewModel:
+    """Calm report-workspace status derived by the central read service."""
+
+    state: str
+    badge_text: str
+    hint_text: str
+    current_revision_id: str = ""
+    current_revision_number: int = 0
+    finalized_at: str = ""
+    finalized_by_display_name: str = ""
+    snapshot_hash_valid: bool = True
+    comparison_error: str = ""
+    history: tuple[LearningReportRevisionHistoryItemViewModel, ...] = ()
+
+    @property
+    def has_current_revision(self) -> bool:
+        return bool(self.current_revision_id)
+
+
+@dataclass(frozen=True)
+class LearningReportFinalizationPreviewViewModel:
+    """UI-ready confirmation context from a validated saved draft."""
+
+    report_draft_id: str
+    student_display_name: str
+    report_type_label: str
+    period_label: str
+    subject_names: tuple[str, ...]
+    competency_count: int
+    observation_count: int
+    revision_number: int
+    suggested_responsible_display_name: str
+
+
+@dataclass(frozen=True)
+class LearningReportRevisionCompetencyViewModel:
+    competency_id: str
+    learning_area: str
+    competency_group: str
+    competency_text: str
+    historical_reference: bool
+
+
+@dataclass(frozen=True)
+class LearningReportRevisionObservationViewModel:
+    observation_id: str
+    observed_on: str
+    context: str
+    content: str
+
+
+@dataclass(frozen=True)
+class LearningReportRevisionChartViewModel:
+    chart_type: str
+    title: str
+    summary: str
+    details: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class LearningReportRevisionSubjectViewModel:
+    subject_id: str
+    subject_name: str
+    strengths_text: str
+    development_text: str
+    support_needs_text: str
+    next_goals_text: str
+    competencies: tuple[LearningReportRevisionCompetencyViewModel, ...]
+    observations: tuple[LearningReportRevisionObservationViewModel, ...]
+    charts: tuple[LearningReportRevisionChartViewModel, ...]
+
+
+@dataclass(frozen=True)
+class LearningReportRevisionViewModel:
+    """Renderer-neutral read projection built exclusively from one RPV snapshot."""
+
+    learning_report_revision_id: str
+    revision_number: int
+    status: str
+    status_label: str
+    finalized_at: str
+    finalized_by_display_name: str
+    snapshot_sha256: str
+    snapshot_hash_valid: bool
+    student_display_name: str
+    group_name: str
+    course_name: str
+    report_type_label: str
+    period_label: str
+    overall_text: str
+    subjects: tuple[LearningReportRevisionSubjectViewModel, ...]
+    output_model: ReportOutputModel
+
+
+def build_learning_report_revision_status(
+    state: LearningReportRevisionState,
+) -> LearningReportRevisionStatusViewModel:
+    """Project one domain revision state without persistence details in the UI."""
+    current = state.current_revision
+    if current is None:
+        return LearningReportRevisionStatusViewModel(
+            state="not_finalized",
+            badge_text="Entwurf",
+            hint_text="Für diesen Entwurf existiert noch keine historische Fassung.",
+            history=(),
+        )
+    if state.draft_changed:
+        status_key = "draft_changed"
+        badge_text = "Entwurf geändert"
+        hint = (
+            "Die letzte finale Revision bleibt unverändert erhalten. "
+            "Die gespeicherten Änderungen können als neue Revision finalisiert werden."
+        )
+    else:
+        status_key = "finalized"
+        badge_text = f"Finalisiert · Revision {current.revision_number}"
+        hint = "Der gespeicherte Entwurf entspricht der aktuellen finalen Revision."
+    report = state.report
+    period_label = (
+        _period_label(report.period_start, report.period_end) if report else ""
+    )
+    history = tuple(
+        LearningReportRevisionHistoryItemViewModel(
+            revision.learning_report_revision_id,
+            revision.revision_number,
+            revision.status,
+            "Aktuell" if revision.status == FINALIZED_REVISION_STATUS else "Ersetzt",
+            _timestamp_label(revision.finalized_at),
+            revision.finalized_by_display_name,
+            period_label,
+            _report_type_label(report.report_type if report else ""),
+            revision.snapshot_sha256,
+        )
+        for revision in state.revisions
+    )
+    return LearningReportRevisionStatusViewModel(
+        state=status_key,
+        badge_text=badge_text,
+        hint_text=hint,
+        current_revision_id=current.learning_report_revision_id,
+        current_revision_number=current.revision_number,
+        finalized_at=_timestamp_label(current.finalized_at),
+        finalized_by_display_name=current.finalized_by_display_name,
+        snapshot_hash_valid=state.current_snapshot_hash_valid,
+        comparison_error=state.comparison_error or "",
+        history=history,
+    )
+
+
+def build_learning_report_finalization_preview(
+    preview: LearningReportFinalizationPreview,
+) -> LearningReportFinalizationPreviewViewModel:
+    return LearningReportFinalizationPreviewViewModel(
+        report_draft_id=preview.report_draft_id,
+        student_display_name=preview.student_display_name,
+        report_type_label=_report_type_label(preview.report_type),
+        period_label=_period_label(preview.period_start, preview.period_end),
+        subject_names=preview.subject_names,
+        competency_count=preview.competency_count,
+        observation_count=preview.observation_count,
+        revision_number=preview.revision_number,
+        suggested_responsible_display_name=(
+            preview.suggested_responsible_display_name
+        ),
+    )
+
+
+def build_learning_report_revision_view_model(
+    revision: LearningReportRevisionRecord,
+    payload: dict[str, object],
+) -> LearningReportRevisionViewModel:
+    """Build the final read model only from stored revision data and snapshot JSON."""
+    student = _mapping(payload.get("student"))
+    group = _mapping(student.get("group"))
+    course = _mapping(student.get("course"))
+    period = _mapping(payload.get("period"))
+    manual_texts = _mapping(payload.get("manual_texts"))
+    subject_texts = {
+        str(item.get("subject_id", "")): item
+        for item in _mapping_items(manual_texts.get("subjects"))
+    }
+    competencies = _mapping_items(payload.get("competencies"))
+    observations = _mapping_items(payload.get("observations"))
+    charts = _mapping_items(payload.get("charts"))
+    subjects: list[LearningReportRevisionSubjectViewModel] = []
+    for subject in _mapping_items(payload.get("subjects")):
+        subject_id = str(subject.get("subject_id", ""))
+        texts = subject_texts.get(subject_id, {})
+        subject_competencies = tuple(
+            LearningReportRevisionCompetencyViewModel(
+                str(item.get("competency_id", "")),
+                str(item.get("learning_area", "")),
+                str(item.get("competency_group", "")),
+                str(item.get("competency_text", "")),
+                bool(item.get("historical_reference", False)),
+            )
+            for item in competencies
+            if str(item.get("subject_id", "")) == subject_id
+        )
+        subject_observations = tuple(
+            LearningReportRevisionObservationViewModel(
+                str(item.get("observation_id", "")),
+                str(item.get("observed_on", "")),
+                str(item.get("context", "")),
+                str(item.get("content", "")),
+            )
+            for item in observations
+            if subject_id in {
+                str(value) for value in item.get("matched_subject_ids", [])
+            }
+        )
+        subject_charts = tuple(
+            _revision_chart_view_model(item)
+            for item in charts
+            if str(item.get("subject_id", "")) == subject_id
+        )
+        subjects.append(
+            LearningReportRevisionSubjectViewModel(
+                subject_id,
+                str(subject.get("subject_name", subject_id)),
+                str(texts.get("strengths_text", "")),
+                str(texts.get("development_text", "")),
+                str(texts.get("support_needs_text", "")),
+                str(texts.get("next_goals_text", "")),
+                subject_competencies,
+                subject_observations,
+                subject_charts,
+            )
+        )
+    student_name = str(student.get("display_name", ""))
+    report_type = str(payload.get("report_type", ""))
+    period_start = str(period.get("start", ""))
+    period_end = str(period.get("end", ""))
+    subject_tuple = tuple(subjects)
+    output_model = _build_revision_output_model(
+        revision=revision,
+        student_name=student_name,
+        group_name=str(group.get("group_name", "")),
+        report_type=report_type,
+        period_start=period_start,
+        period_end=period_end,
+        overall_text=str(manual_texts.get("overall_text", "")),
+        subjects=subject_tuple,
+        chart_payloads=charts,
+    )
+    return LearningReportRevisionViewModel(
+        revision.learning_report_revision_id,
+        revision.revision_number,
+        revision.status,
+        "Aktuell" if revision.status == FINALIZED_REVISION_STATUS else "Ersetzt",
+        _timestamp_label(revision.finalized_at),
+        revision.finalized_by_display_name,
+        revision.snapshot_sha256,
+        True,
+        student_name,
+        str(group.get("group_name", "")),
+        str(course.get("course_name", "")),
+        _report_type_label(report_type),
+        _period_label(period_start, period_end),
+        str(manual_texts.get("overall_text", "")),
+        subject_tuple,
+        output_model,
+    )
+
+
+def _mapping(value: object) -> dict[str, object]:
+    return value if isinstance(value, dict) else {}
+
+
+def _mapping_items(value: object) -> tuple[dict[str, object], ...]:
+    if not isinstance(value, list):
+        return ()
+    return tuple(item for item in value if isinstance(item, dict))
+
+
+def _report_type_label(report_type: str) -> str:
+    if report_type == LEARNING_DEVELOPMENT_REPORT_TYPE:
+        return "Lernentwicklungsbericht"
+    return report_type or "Bericht"
+
+
+def _date_label(value: str) -> str:
+    try:
+        return date.fromisoformat(value).strftime("%d.%m.%Y")
+    except ValueError:
+        return value
+
+
+def _period_label(period_start: str, period_end: str) -> str:
+    return f"{_date_label(period_start)} bis {_date_label(period_end)}"
+
+
+def _timestamp_label(value: str) -> str:
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return value
+    return parsed.astimezone().strftime("%d.%m.%Y · %H:%M Uhr")
+
+
+def _revision_chart_view_model(
+    payload: dict[str, object],
+) -> LearningReportRevisionChartViewModel:
+    chart_type = str(payload.get("chart_type", ""))
+    values = _mapping(payload.get("values"))
+    if chart_type == "documentation_coverage":
+        title = "Dokumentationsabdeckung"
+        summary = (
+            f"{int(values.get('documented_competency_count', 0))} von "
+            f"{int(values.get('current_competency_count', 0))} Kompetenzen dokumentiert"
+        )
+        details = (summary,)
+    elif chart_type == "competency_timeline":
+        title = "Kompetenzentwicklung mit Einzelständen"
+        series_items = _mapping_items(values.get("series"))
+        summary = f"{len(series_items)} eingefrorene Reihen"
+        details = tuple(
+            f"{series.get('label', '')}: "
+            + ", ".join(
+                f"{_date_label(str(point.get('recorded_on', '')))} · {point.get('rating', '')}"
+                for point in _mapping_items(series.get("points"))
+            )
+            for series in series_items
+        )
+    elif chart_type == "observation_timeline":
+        title = "Zeitachse ausgewählter Beobachtungen"
+        event_items = _mapping_items(values.get("events"))
+        summary = f"{len(event_items)} eingefrorene Ereignisse"
+        details = tuple(
+            " · ".join(
+                part
+                for part in (
+                    _date_label(str(event.get("observed_on", ""))),
+                    str(event.get("context", "")),
+                    str(event.get("content", "")),
+                )
+                if part
+            )
+            for event in event_items
+        )
+    else:
+        title = chart_type or "Gespeicherte Diagrammdaten"
+        summary = "Historisch gespeicherter Diagrammstand"
+        details = ()
+    return LearningReportRevisionChartViewModel(chart_type, title, summary, details)
+
+
+def _build_revision_output_model(
+    *,
+    revision: LearningReportRevisionRecord,
+    student_name: str,
+    group_name: str,
+    report_type: str,
+    period_start: str,
+    period_end: str,
+    overall_text: str,
+    subjects: tuple[LearningReportRevisionSubjectViewModel, ...],
+    chart_payloads: tuple[dict[str, object], ...],
+) -> ReportOutputModel:
+    """Adapt the immutable snapshot projection to the shared renderer contract."""
+    created_on = date.fromisoformat(revision.finalized_at[:10])
+    metadata = DocumentMetadata(
+        document_title=_report_type_label(report_type),
+        student_name=student_name,
+        group_name=group_name,
+        period=_period_label(period_start, period_end),
+        teacher_name=revision.finalized_by_display_name,
+        school_name="Jenaplan-Schule",
+        created_on=created_on,
+        header_text=f"Jenaplan-Schule | {_report_type_label(report_type)}",
+        footer_text=f"Finale Revision {revision.revision_number}",
+    )
+    chart_by_subject: dict[str, list[dict[str, object]]] = {}
+    for chart in chart_payloads:
+        chart_by_subject.setdefault(str(chart.get("subject_id", "")), []).append(chart)
+    pages: list[ReportPage] = [
+        ReportPage(
+            label="Dokumentkontext",
+            is_cover=True,
+            blocks=(
+                SpacerBlock(18),
+                HeadingBlock(metadata.document_title, level=0),
+                HeadingBlock(metadata.student_name, level=1),
+                KeyValueBlock(
+                    (
+                        ("Stammgruppe", metadata.group_name),
+                        ("Zeitraum", metadata.period),
+                        ("Revision", str(revision.revision_number)),
+                        ("Finalisiert von", metadata.teacher_name),
+                        ("Finalisiert am", _timestamp_label(revision.finalized_at)),
+                    )
+                ),
+            ),
+        ),
+        ReportPage(
+            label="Pädagogischer Gesamtblick",
+            blocks=(
+                HeadingBlock("Pädagogischer Gesamtblick"),
+                ParagraphBlock(overall_text or "Kein Gesamttext gespeichert."),
+            ),
+        ),
+    ]
+    for subject in subjects:
+        blocks: list[object] = [
+            HeadingBlock(subject.subject_name),
+            HeadingBlock("Lernentwicklung", level=2),
+            ParagraphBlock(subject.development_text or "Kein Text gespeichert."),
+            HeadingBlock("Stärken", level=2),
+            ParagraphBlock(subject.strengths_text or "Kein Text gespeichert."),
+            HeadingBlock("Unterstützungsbedarf", level=2),
+            ParagraphBlock(subject.support_needs_text or "Kein Text gespeichert."),
+            HeadingBlock("Nächste Ziele", level=2),
+            ParagraphBlock(subject.next_goals_text or "Kein Text gespeichert."),
+            HeadingBlock("Eingefrorene Kompetenzen", level=2),
+            TableBlock(
+                headers=("Kompetenzbereich", "Thema", "Kompetenz"),
+                rows=tuple(
+                    (
+                        item.learning_area,
+                        item.competency_group,
+                        item.competency_text
+                        + (" · historisch" if item.historical_reference else ""),
+                    )
+                    for item in subject.competencies
+                ),
+                column_weights=(0.24, 0.24, 0.52),
+            ),
+            HeadingBlock("Eingefrorene Beobachtungsbelege", level=2),
+            TableBlock(
+                headers=("Datum", "Kontext", "Inhalt"),
+                rows=tuple(
+                    (_date_label(item.observed_on), item.context, item.content)
+                    for item in subject.observations
+                ),
+                column_weights=(0.18, 0.24, 0.58),
+            ),
+        ]
+        for chart_payload in chart_by_subject.get(subject.subject_id, []):
+            chart_block = _revision_chart_block(chart_payload)
+            if chart_block is not None:
+                blocks.append(chart_block)
+        pages.append(ReportPage(label=subject.subject_name, blocks=tuple(blocks)))
+    return ReportOutputModel(metadata=metadata, pages=tuple(pages))
+
+
+def _revision_chart_block(payload: dict[str, object]) -> ChartBlock | None:
+    chart_type = str(payload.get("chart_type", ""))
+    subject_name = str(payload.get("subject_name", ""))
+    values = _mapping(payload.get("values"))
+    if chart_type == "documentation_coverage":
+        documented = int(values.get("documented_competency_count", 0))
+        total = int(values.get("current_competency_count", 0))
+        return ChartBlock(
+            DocumentationCoverageData(
+                title="Dokumentationsabdeckung",
+                items=(DocumentationCoverageItem(subject_name, documented, total),),
+                note="Historisch eingefrorener Dokumentationsstand; keine Leistungsbewertung.",
+            )
+        )
+    period_start = date.fromisoformat(str(values.get("period_start", "")))
+    period_end = date.fromisoformat(str(values.get("period_end", "")))
+    if chart_type == "competency_timeline":
+        return ChartBlock(
+            CompetencyTimelineData(
+                title="Kompetenzentwicklung mit Einzelständen",
+                period_start=period_start,
+                period_end=period_end,
+                series=tuple(
+                    CompetencyTimelineSeries(
+                        label=str(series.get("label", "")),
+                        points=tuple(
+                            CompetencyTimelinePoint(
+                                date.fromisoformat(str(point.get("recorded_on", ""))),
+                                str(point.get("rating", "")),
+                            )
+                            for point in _mapping_items(series.get("points"))
+                        ),
+                    )
+                    for series in _mapping_items(values.get("series"))
+                ),
+                state_colors=RATING_STATE_COLORS,
+                note="Historisch eingefrorene Einzelstände; keine Trendlinie.",
+            )
+        )
+    if chart_type == "observation_timeline":
+        return ChartBlock(
+            ObservationTimelineData(
+                title="Zeitachse ausgewählter Beobachtungen",
+                period_start=period_start,
+                period_end=period_end,
+                events=tuple(
+                    ObservationTimelineEvent(
+                        date.fromisoformat(str(event.get("observed_on", ""))),
+                        str(event.get("context", "")),
+                        str(event.get("content", "")),
+                    )
+                    for event in _mapping_items(values.get("events"))
+                ),
+                note="Historisch eingefrorene Beobachtungsbelege.",
+            )
+        )
+    return None
 
 
 def build_learning_report_preparation(

@@ -60,6 +60,34 @@ class LearningReportFinalizationResult:
 
 
 @dataclass(frozen=True)
+class LearningReportFinalizationPreview:
+    """Validated context shown before one irreversible finalization."""
+
+    report_draft_id: str
+    student_display_name: str
+    report_type: str
+    period_start: str
+    period_end: str
+    subject_names: tuple[str, ...]
+    competency_count: int
+    observation_count: int
+    revision_number: int
+    suggested_responsible_display_name: str
+
+
+@dataclass(frozen=True)
+class LearningReportRevisionState:
+    """Read-only revision state for one editable report draft."""
+
+    report: LearningReportRecord | None
+    current_revision: LearningReportRevisionRecord | None
+    revisions: tuple[LearningReportRevisionRecord, ...]
+    draft_changed: bool
+    current_snapshot_hash_valid: bool
+    comparison_error: str | None = None
+
+
+@dataclass(frozen=True)
 class LearningReportStudentSource:
     """Visible student master data frozen into the report snapshot."""
 
@@ -168,6 +196,11 @@ class LearningReportRepository(Protocol):
         self,
         learning_report_id: str,
     ) -> tuple[LearningReportRevisionRecord, ...]: ...
+
+    def get_revision(
+        self,
+        learning_report_revision_id: str,
+    ) -> LearningReportRevisionRecord | None: ...
 
 
 class LearningReportFinalizationValidator:
@@ -531,35 +564,229 @@ class ReportFinalizationService:
             finalized_by_display_name=finalized_by_display_name.strip(),
         )
 
+    def prepare(
+        self,
+        *,
+        report_draft_id: str,
+    ) -> LearningReportFinalizationPreview:
+        """Validate the saved draft and return its confirmation context."""
+        normalized_draft_id = report_draft_id.strip()
+        if not normalized_draft_id:
+            raise ReportFinalizationError("report_draft_id darf nicht leer sein.")
+        source = self.repository.load_finalization_source(normalized_draft_id)
+        if source is None:
+            raise ReportFinalizationError(
+                f"report_draft_id nicht gefunden: {normalized_draft_id}"
+            )
+        existing_report = self.repository.get_report_for_source_draft(
+            normalized_draft_id
+        )
+        if existing_report is not None:
+            self._validate_aggregate_identity(existing_report, source.draft)
+        # The display name is collected in the confirmation. Use an internal,
+        # non-persisted value so all other fachliche rules are checked here.
+        self.validator.validate(
+            source,
+            source.draft.teacher_name.strip() or "Finalisierungsvorschau",
+        )
+        revisions = (
+            self.repository.list_revisions(existing_report.learning_report_id)
+            if existing_report is not None
+            else ()
+        )
+        return LearningReportFinalizationPreview(
+            report_draft_id=source.draft.report_draft_id,
+            student_display_name=(
+                source.student.display_name if source.student is not None else ""
+            ),
+            report_type=source.draft.report_type,
+            period_start=source.draft.period_start,
+            period_end=source.draft.period_end,
+            subject_names=tuple(subject.subject_name for subject in source.subjects),
+            competency_count=len(source.draft.competency_ids),
+            observation_count=len(source.draft.observation_ids),
+            revision_number=max(
+                (revision.revision_number for revision in revisions),
+                default=0,
+            )
+            + 1,
+            suggested_responsible_display_name=source.draft.teacher_name.strip(),
+        )
+
     def _validate_aggregate_identity(
         self,
         report: LearningReportRecord,
         draft: ReportDraftRecord,
     ) -> None:
-        mismatches = tuple(
-            field_name
-            for field_name, report_value, draft_value in (
-                (
-                    "source_report_draft_id",
-                    report.source_report_draft_id,
-                    draft.report_draft_id,
-                ),
-                ("student_id", report.student_id, draft.student_id),
-                ("report_type", report.report_type, draft.report_type),
-                ("period_start", report.period_start, draft.period_start),
-                ("period_end", report.period_end, draft.period_end),
-            )
-            if report_value != draft_value
-        )
-        if mismatches:
-            raise ReportFinalizationError(
-                "Die Aggregateidentitaet des bestehenden RPT weicht vom RPD ab "
-                f"({', '.join(mismatches)}). Fuer einen anderen Berichtstyp oder "
-                "Zeitraum ist ein neuer Berichtsdraft erforderlich."
-            )
+        _validate_report_aggregate_identity(report, draft)
 
     def _timestamp(self) -> str:
         value = self.now()
         if value.tzinfo is None:
             value = value.replace(tzinfo=UTC)
         return value.astimezone(UTC).isoformat()
+
+
+def _validate_report_aggregate_identity(
+    report: LearningReportRecord,
+    draft: ReportDraftRecord,
+) -> None:
+    """Protect the stable RPT identity in write and comparison paths."""
+    mismatches = tuple(
+        field_name
+        for field_name, report_value, draft_value in (
+            (
+                "source_report_draft_id",
+                report.source_report_draft_id,
+                draft.report_draft_id,
+            ),
+            ("student_id", report.student_id, draft.student_id),
+            ("report_type", report.report_type, draft.report_type),
+            ("period_start", report.period_start, draft.period_start),
+            ("period_end", report.period_end, draft.period_end),
+        )
+        if report_value != draft_value
+    )
+    if mismatches:
+        raise ReportFinalizationError(
+            "Die Aggregateidentitaet des bestehenden RPT weicht vom RPD ab "
+            f"({', '.join(mismatches)}). Fuer einen anderen Berichtstyp oder "
+            "Zeitraum ist ein neuer Berichtsdraft erforderlich."
+        )
+
+
+class LearningReportRevisionReadService:
+    """Read and compare immutable revisions without exposing persistence details."""
+
+    def __init__(
+        self,
+        repository: LearningReportRepository,
+        *,
+        validator: LearningReportFinalizationValidator | None = None,
+        snapshot_builder: LearningReportSnapshotBuilder | None = None,
+    ) -> None:
+        self.repository = repository
+        self.validator = validator or LearningReportFinalizationValidator()
+        self.snapshot_builder = snapshot_builder or LearningReportSnapshotBuilder()
+
+    def report_for_draft(
+        self,
+        report_draft_id: str,
+    ) -> LearningReportRecord | None:
+        """Resolve the stable RPT aggregate belonging to one RPD."""
+        return self.repository.get_report_for_source_draft(report_draft_id.strip())
+
+    def revision_history_for_draft(
+        self,
+        report_draft_id: str,
+    ) -> tuple[LearningReportRevisionRecord, ...]:
+        """Load the immutable revision history newest first."""
+        report = self.report_for_draft(report_draft_id)
+        if report is None:
+            return ()
+        return tuple(
+            sorted(
+                self.repository.list_revisions(report.learning_report_id),
+                key=lambda item: item.revision_number,
+                reverse=True,
+            )
+        )
+
+    def current_revision_for_draft(
+        self,
+        report_draft_id: str,
+    ) -> LearningReportRevisionRecord | None:
+        """Load the one currently finalized RPV for a draft, if present."""
+        return next(
+            (
+                revision
+                for revision in self.revision_history_for_draft(report_draft_id)
+                if revision.status == FINALIZED_REVISION_STATUS
+            ),
+            None,
+        )
+
+    def snapshot_hash_valid(self, revision: LearningReportRevisionRecord) -> bool:
+        """Verify the stored SHA-256 against the exact stored snapshot bytes."""
+        return snapshot_sha256(revision.snapshot_json) == revision.snapshot_sha256
+
+    def state_for_draft(self, report_draft_id: str) -> LearningReportRevisionState:
+        """Return current/history status and deterministic draft-change state."""
+        normalized_draft_id = report_draft_id.strip()
+        report = self.report_for_draft(normalized_draft_id)
+        if report is None:
+            return LearningReportRevisionState(None, None, (), False, True)
+        revisions = tuple(
+            sorted(
+                self.repository.list_revisions(report.learning_report_id),
+                key=lambda item: item.revision_number,
+                reverse=True,
+            )
+        )
+        current = next(
+            (
+                revision
+                for revision in revisions
+                if revision.status == FINALIZED_REVISION_STATUS
+            ),
+            None,
+        )
+        if current is None:
+            return LearningReportRevisionState(report, None, revisions, True, True)
+        hash_valid = self.snapshot_hash_valid(current)
+        try:
+            source = self.repository.load_finalization_source(normalized_draft_id)
+            if source is None:
+                raise ReportFinalizationError("Berichtsentwurf ist nicht mehr verfügbar.")
+            _validate_report_aggregate_identity(report, source.draft)
+            self.validator.validate(source, current.finalized_by_display_name)
+            candidate = self.snapshot_builder.build(
+                source,
+                responsible_display_name=current.finalized_by_display_name,
+                snapshot_created_at=current.finalized_at,
+            )
+            candidate_hash = snapshot_sha256(canonical_snapshot_json(candidate))
+            draft_changed = candidate_hash != current.snapshot_sha256
+            comparison_error = None
+        except ReportFinalizationError as error:
+            draft_changed = True
+            comparison_error = str(error)
+        return LearningReportRevisionState(
+            report,
+            current,
+            revisions,
+            draft_changed,
+            hash_valid,
+            comparison_error,
+        )
+
+    def revision_by_id(
+        self,
+        learning_report_revision_id: str,
+    ) -> LearningReportRevisionRecord | None:
+        """Load one revision by its stable RPV identity."""
+        return self.repository.get_revision(learning_report_revision_id.strip())
+
+    def snapshot_payload(
+        self,
+        learning_report_revision_id: str,
+    ) -> tuple[LearningReportRevisionRecord, dict[str, object]] | None:
+        """Verify and decode only the stored immutable snapshot."""
+        revision = self.revision_by_id(learning_report_revision_id)
+        if revision is None:
+            return None
+        if not self.snapshot_hash_valid(revision):
+            raise ReportFinalizationError(
+                "Der gespeicherte Snapshot-Hash der Berichtrevision ist ungültig."
+            )
+        try:
+            payload = json.loads(revision.snapshot_json)
+        except json.JSONDecodeError as error:
+            raise ReportFinalizationError(
+                "Der gespeicherte Bericht-Snapshot ist nicht lesbar."
+            ) from error
+        if not isinstance(payload, dict):
+            raise ReportFinalizationError(
+                "Der gespeicherte Bericht-Snapshot besitzt kein gültiges Format."
+            )
+        return revision, payload

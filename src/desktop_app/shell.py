@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.core.sqlite_store import SQLITE_SPIKE_PATH
+from src.core.learning_report import ReportFinalizationError
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
@@ -36,7 +37,10 @@ from src.desktop_app.dialogs.master_data_dialog import (
     CourseGroupDialog,
     MasterDataNameDialog,
 )
-from src.desktop_app.dialogs.learning_report_dialog import LearningReportDialog
+from src.desktop_app.dialogs.learning_report_dialog import (
+    LearningReportDialog,
+    LearningReportRevisionDialog,
+)
 from src.desktop_app.dialogs.learning_conference_dialog import LearningConferenceDialog
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
@@ -623,22 +627,126 @@ class AppShell(QMainWindow):
         if preparation is None:
             self.status_label.setText("Schülerprofil wurde nicht gefunden.")
             return
-        dialog = LearningReportDialog(preparation, self, initial_draft)
+        revision_status = (
+            self.adapter.learning_report_revision_status(
+                initial_draft.report_draft_id
+            )
+            if initial_draft is not None
+            else None
+        )
+        dialog = LearningReportDialog(
+            preparation,
+            self,
+            initial_draft,
+            revision_status,
+        )
 
-        def save_draft(draft: object) -> None:
+        def persist_draft(draft: object, *, finalizing: bool = False) -> object | None:
             try:
                 saved = self.adapter.save_learning_report_draft(draft)
             except Exception as error:
+                if finalizing:
+                    dialog.show_finalization_error(
+                        "Der Berichtsentwurf konnte vor der Finalisierung nicht "
+                        "gespeichert werden. Bitte die markierten Eingaben prüfen."
+                    )
+                    return None
                 QMessageBox.warning(
                     dialog,
                     "Entwurf konnte nicht gespeichert werden",
                     str(error),
                 )
-                return
+                return None
             dialog.apply_saved_draft(saved)
+            dialog.apply_revision_status(
+                self.adapter.learning_report_revision_status(
+                    saved.report_draft_id
+                )
+            )
             self.status_label.setText("Lernentwicklungsbericht-Entwurf gespeichert.")
+            return saved
+
+        def save_draft(draft: object) -> None:
+            persist_draft(draft)
+
+        def request_finalization(draft: object) -> None:
+            saved = persist_draft(draft, finalizing=True)
+            if saved is None:
+                return
+            try:
+                preview = self.adapter.prepare_learning_report_finalization(
+                    saved.report_draft_id
+                )
+            except ReportFinalizationError as error:
+                dialog.show_finalization_error(
+                    self.adapter.learning_report_finalization_error_message(error)
+                )
+                return
+            except Exception:
+                QMessageBox.warning(
+                    dialog,
+                    "Finalisierung konnte nicht vorbereitet werden",
+                    "Ein unerwarteter technischer Fehler ist aufgetreten. "
+                    "Der bestehende Berichtstand wurde nicht verändert.",
+                )
+                return
+            dialog.show_finalization_confirmation(preview)
+
+        def finalize_report(report_draft_id: str, display_name: str) -> None:
+            try:
+                status = self.adapter.finalize_learning_report(
+                    report_draft_id,
+                    display_name,
+                )
+            except ReportFinalizationError as error:
+                dialog.show_finalization_error(
+                    self.adapter.learning_report_finalization_error_message(error)
+                )
+                return
+            except Exception:
+                QMessageBox.warning(
+                    dialog,
+                    "Bericht konnte nicht finalisiert werden",
+                    "Ein unerwarteter technischer Fehler ist aufgetreten. "
+                    "Die aktuelle finale Revision bleibt unverändert.",
+                )
+                return
+            dialog.apply_revision_status(status, finalized=True)
+            self.status_label.setText(
+                f"Berichtrevision {status.current_revision_number} finalisiert."
+            )
+
+        def open_revision(learning_report_revision_id: str) -> None:
+            try:
+                revision = self.adapter.load_learning_report_revision(
+                    learning_report_revision_id
+                )
+            except ReportFinalizationError:
+                QMessageBox.warning(
+                    dialog,
+                    "Finale Fassung konnte nicht geöffnet werden",
+                    "Der gespeicherte Snapshot konnte nicht verifiziert werden. "
+                    "Aktuelle Schüler- oder Berichtsdaten wurden nicht als Ersatz geladen.",
+                )
+                return
+            except Exception:
+                QMessageBox.warning(
+                    dialog,
+                    "Finale Fassung konnte nicht geöffnet werden",
+                    "Ein unerwarteter technischer Fehler ist aufgetreten.",
+                )
+                return
+            if revision is None:
+                dialog.show_finalization_error(
+                    "Die ausgewählte Berichtrevision ist nicht verfügbar."
+                )
+                return
+            LearningReportRevisionDialog(revision, dialog).exec()
 
         dialog.save_requested.connect(save_draft)
+        dialog.finalization_requested.connect(request_finalization)
+        dialog.finalize_confirmed.connect(finalize_report)
+        dialog.revision_open_requested.connect(open_revision)
         dialog.pdf_requested.connect(self.export_learning_report_pdf)
         dialog.exec()
 

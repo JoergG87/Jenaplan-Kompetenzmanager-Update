@@ -3401,6 +3401,31 @@ class SQLiteLearningReportRepository:
             ).fetchall()
         return tuple(self._revision_from_row(row) for row in rows)
 
+    def get_revision(
+        self,
+        learning_report_revision_id: str,
+    ) -> LearningReportRevisionRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    learning_report_revision_id,
+                    learning_report_id,
+                    revision_number,
+                    status,
+                    snapshot_schema_version,
+                    snapshot_json,
+                    snapshot_sha256,
+                    finalized_at,
+                    finalized_by_display_name,
+                    superseded_at
+                FROM learning_report_revisions
+                WHERE learning_report_revision_id = ?
+                """,
+                (learning_report_revision_id,),
+            ).fetchone()
+        return self._revision_from_row(row) if row is not None else None
+
     def _competency_evidence(
         self,
         connection: sqlite3.Connection,

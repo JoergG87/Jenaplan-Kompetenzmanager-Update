@@ -6,7 +6,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from src.core.learning_report import (
+    LearningReportFinalizationPreview,
     LearningReportFinalizationResult,
+    LearningReportRevisionReadService,
+    LearningReportRevisionRecord,
+    LearningReportRevisionState,
+    LearningReportRecord,
     ReportFinalizationService,
 )
 from src.core.report_draft import (
@@ -42,6 +47,49 @@ class ReportFinalizationApplicationService:
             report_draft_id=command.report_draft_id,
             finalized_by_display_name=command.finalized_by_display_name,
         )
+
+    def prepare(
+        self,
+        report_draft_id: str,
+    ) -> LearningReportFinalizationPreview:
+        return self.domain_service.prepare(report_draft_id=report_draft_id)
+
+
+class ReportRevisionApplicationService:
+    """Application read boundary for immutable report revisions."""
+
+    def __init__(self, read_service: LearningReportRevisionReadService) -> None:
+        self.read_service = read_service
+
+    def state_for_draft(self, report_draft_id: str) -> LearningReportRevisionState:
+        return self.read_service.state_for_draft(report_draft_id)
+
+    def report_for_draft(self, report_draft_id: str) -> LearningReportRecord | None:
+        return self.read_service.report_for_draft(report_draft_id)
+
+    def current_revision_for_draft(
+        self,
+        report_draft_id: str,
+    ) -> LearningReportRevisionRecord | None:
+        return self.read_service.current_revision_for_draft(report_draft_id)
+
+    def revision_history_for_draft(
+        self,
+        report_draft_id: str,
+    ) -> tuple[LearningReportRevisionRecord, ...]:
+        return self.read_service.revision_history_for_draft(report_draft_id)
+
+    def revision_by_id(
+        self,
+        learning_report_revision_id: str,
+    ) -> LearningReportRevisionRecord | None:
+        return self.read_service.revision_by_id(learning_report_revision_id)
+
+    def snapshot_payload(
+        self,
+        learning_report_revision_id: str,
+    ) -> tuple[LearningReportRevisionRecord, dict[str, object]] | None:
+        return self.read_service.snapshot_payload(learning_report_revision_id)
 
 
 @dataclass(frozen=True)

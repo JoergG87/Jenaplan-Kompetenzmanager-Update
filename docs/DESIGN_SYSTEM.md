@@ -440,3 +440,11 @@ Die sichtbare Startansicht heißt `Stammgruppenübersicht`.
 Die Schülerkarten der Stammgruppenübersicht zeigen den Kurs des Schülers. Die Stammgruppe wird dort nicht erneut auf jeder Karte angezeigt, weil die Ansicht bereits genau eine Stammgruppe darstellt.
 
 Die Kartenfarbe wird aus der Kurszuordnung abgeleitet. Die konkrete Farbwelt bleibt Teil des freigegebenen Grunddesigns.
+
+## Berichtfinalisierung und historische Revisionen
+
+Die Berichtswerkstatt verwendet fuer Finalisierung und Historie ausschliesslich vorhandene Komponenten: `SectionHeader`, `AppCard`, `StatusBadge`, `InlineMessage`, `EmptyState`, `Toast` und zentrale Buttonrollen. Der Status steht in einer weichen Informationskarte. `Entwurf` und `Entwurf geändert` verwenden einen ruhigen Info-Ton; `Finalisiert · Revision X` verwendet den positiven Statuston ohne Erfolgsinszenierung.
+
+`Entwurf speichern` bleibt die primaere Draftaktion. `Bericht finalisieren` beziehungsweise `Neue Revision finalisieren` steht raeumlich getrennt im Finalisierungsstatus und verwendet eine serioese sekundaere Aktion. Erst der Bestaetigungsdialog verwendet fuer die explizite irreversible Bestaetigung die primaere Buttonrolle. Irreversibilitaet wird durch Text und erforderliche Checkbox vermittelt, nicht durch aggressive rote Gestaltung.
+
+Revisionszeilen sind ruhige nicht-interaktive Karten mit Statusbadge und genau einer Aktion `Öffnen`. Technische `RPV`-ID und Snapshot-Hash erscheinen nur im Tooltip. Die finale Revisionsansicht nutzt ausschliesslich Labels und Lesekarten; keine Eingabefelder, Bearbeiten-, Loeschen-, Entsperr- oder PDF-Aktion. Bestehende zentrale Motion-Regeln gelten unveraendert; Reduced Motion setzt Toast- und Inline-Endzustaende unmittelbar.

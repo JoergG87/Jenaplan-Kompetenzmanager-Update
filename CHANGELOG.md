@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## Sprint 5B.3 - Bericht finalisieren und Revisionen anzeigen
+
+### Added
+
+- Berichtswerkstatt um ruhigen Finalisierungsstatus, bewusste Erst- und Folgerevision, handlungsorientierte Inline-Validierung sowie ein neuestes-zuerst sortiertes schreibgeschuetztes Revisionsprotokoll ergaenzt.
+- Zentrale Read-API fuer Berichtaggregat, aktuelle Revision, Revisionshistorie, einzelne `RPV`-Revision, Snapshot-Hashpruefung und deterministische Draft-Aenderungserkennung umgesetzt.
+- Vollstaendig schreibgeschuetzte finale Revisionsansicht und renderer-neutrale `LearningReportRevisionViewModel`-Projektion eingefuehrt; beide lesen ausschliesslich gespeichertes `snapshot_json`, Revisionsmetadaten und SHA-256.
+- Ernsthafte, nicht destruktiv gestaltete Finalisierungsbestaetigung mit Kind, Berichtstyp, Zeitraum, Fach-, Kompetenz- und Beobachtungsumfang, neuer Revisionsnummer und verpflichtendem Lehrkraft-Anzeigenamen ergaenzt.
+
+### Changed
+
+- Der produktive Finalisierungsweg speichert ungespeicherte Draftaenderungen zuerst, validiert anschliessend zentral und aktualisiert Status und Historie ohne automatische PDF-Erzeugung.
+- `ReportOutputModel` erhaelt fuer finale Revisionen eine getrennte snapshotbasierte Adapterprojektion; die bestehende Draft-Vorschau und Draft-PDF-Anbindung bleiben live und unveraendert getrennt.
+
+### Not Changed
+
+- Keine Schema- oder Migrationserweiterung, kein finales PDF-Artefaktmodell, keine Artefaktverwaltung, Archivierung, Renderer-/Templateversionierung, LEG-Finalisierung, Benutzer-/Rollendomain oder globale Berichtsnavigation.
+
 ## Sprint 5B.2 - Unveraenderliche Berichtrevisionen im Backend
 
 ### Added
