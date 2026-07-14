@@ -5,6 +5,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from src.core.learning_report import (
+    LearningReportFinalizationResult,
+    ReportFinalizationService,
+)
 from src.core.report_draft import (
     ReportDraftChartSelectionRecord,
     ReportDraftRecord,
@@ -12,6 +16,32 @@ from src.core.report_draft import (
     ReportDraftService,
     ReportDraftSubjectRecord,
 )
+
+
+@dataclass(frozen=True)
+class FinalizeLearningReportCommand:
+    """Create the next immutable revision for one editable report draft."""
+
+    report_draft_id: str
+    finalized_by_display_name: str
+
+    command_name: str = "learning_report.finalize"
+
+
+class ReportFinalizationApplicationService:
+    """Application boundary for explicit learning-report finalization."""
+
+    def __init__(self, domain_service: ReportFinalizationService) -> None:
+        self.domain_service = domain_service
+
+    def finalize(
+        self,
+        command: FinalizeLearningReportCommand,
+    ) -> LearningReportFinalizationResult:
+        return self.domain_service.finalize(
+            report_draft_id=command.report_draft_id,
+            finalized_by_display_name=command.finalized_by_display_name,
+        )
 
 
 @dataclass(frozen=True)

@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## Sprint 5B.2 - Unveraenderliche Berichtrevisionen im Backend
+
+### Added
+
+- Verbindliche Product-Owner-Entscheidungen fuer verantwortliche Selbstfinalisierung per Anzeigename, Mindestanforderungen, getrennten spaeteren LEG-Abschluss, Korrekturen als Folgerevisionen und den fachlichen Snapshot als historische Source of Truth dokumentiert.
+- Stabile `RPT`-Berichtaggregate und unveraenderliche `RPV`-Revisionen mit berichtsspezifischem Snapshotvertrag, kanonischem JSON und SHA-256 als additiven Backendpfad umgesetzt.
+- Additive, idempotente SQLite-Migration, transaktionale Erst- und Folgerevision, Datenbank-Guards gegen Revisionsaenderung oder -loeschung sowie Finalisierungsvalidator, Snapshot-Builder, Repository, Domain-Service und Application Command ergaenzt.
+- Abschlussreview: Die mit Revision 1 festgelegte `RPT`-Identitaet aus Quell-Draft, Kind, Berichtstyp und Zeitraum wird gegen spaetere Draftabweichungen geschuetzt. `learning_reports` kann nach Erstellung weder aktualisiert noch geloescht werden; ein anderer Zeitraum oder Berichtstyp erfordert einen neuen Draft.
+
+### Changed
+
+- Der freigegebene Lifecycle unterscheidet nun explizit den weiter bearbeitbaren `RPD`, das pro Draft stabile `RPT` und die nummerierte unveraenderliche `RPV`; Sprint 5A bleibt ein nicht bindender Vorschlag.
+- Fokussierte Finalisierungs-, Migrations-, Hash-, Historien- und Rollbacktests sowie bestehende Bericht-, PDF- und LEG-Regressionen sichern den neuen Backendpfad ab.
+
+### Not Changed
+
+- Keine UI-Aktion oder Aenderung der Berichtswerkstatt, kein finales PDF, keine Artefakt- oder Dateiverwaltung, keine Renderer-Versionierung, Archivierung, LEG-Finalisierung, gemeinsame Bericht-/LEG-Domain, Benutzer-/Rollendomain oder automatische Draftmigration.
+
 ## Sprint 5B.1 - Historische Berichtreferenzen bestandssicher
 
 ### Changed

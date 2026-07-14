@@ -658,6 +658,63 @@ SQLite report_drafts + Relationstabellen
 
 Regel: Laden rekonstruiert ausschliesslich gespeicherte manuelle Texte und Referenzen. Kompetenzstatus und Kompetenztexte werden mit den gespeicherten `competency_id`-Werten als `retained_competency_ids` aus der kanonischen Projektion gelesen. Nicht mehr regulaer verfuegbare Kompetenzen bleiben gekennzeichnet ausgewaehlt, koennen nach Abwahl aber nicht neu ausgewaehlt werden. Aktive Beobachtungsinhalte werden aus der bestehenden Beobachtungsprojektion gelesen; gespeicherte, dort nicht mehr aktive `observation_id`-Werte bleiben ohne erfundene Inhalte als nicht verfuegbar sichtbar. Vorschau und `ReportOutputModel` weisen solche Ausfaelle neutral aus.
 
+## Lernentwicklungsbericht finalisieren und revidieren
+
+Start: Eine verantwortliche Lehrkraft finalisiert bewusst einen vorhandenen `RPD` und uebergibt ihren nichtleeren Anzeigenamen. Es wird keine Benutzer-ID erzeugt oder abgeleitet.
+
+Freigegebener Backendpfad:
+
+```text
+FinalizeLearningReportCommand
+-> ReportFinalizationApplicationService
+-> ReportFinalizationService
+-> LearningReportFinalizationValidator
+-> LearningReportSnapshotBuilder
+-> SQLiteLearningReportRepository
+-> SQLite learning_reports + learning_report_revisions
+```
+
+Gelesene Datenquellen:
+
+- `report_drafts` und alle `report_draft_*`-Relationen
+- `students`, `groups`, `courses`
+- `competencies`
+- `observations`, `observation_competency_ratings`
+- `student_competency_confirmations` ausschliesslich fuer bewusst ausgewaehlte Diagrammwerte
+
+Geschriebene Datenquellen:
+
+- `learning_reports`
+- `learning_report_revisions`
+
+Erstfinalisierung:
+
+1. `RPD` und alle referenzierten Quelldaten laden.
+2. Zeitraum, Berichtstyp, Fachauswahl, verantwortete manuelle Inhalte sowie Kompetenz- und Beobachtungsreferenzen vollstaendig validieren.
+3. Fachlichen Snapshot vollstaendig im Speicher erzeugen.
+4. Snapshot kanonisch als UTF-8-JSON serialisieren und SHA-256 ueber exakt diese Bytes bilden.
+5. Genau ein `RPT` fuer das Quell-`RPD` und Revision 1 als `RPV` in einer Transaktion schreiben.
+6. Bei jedem Fehler die gesamte Transaktion zurueckrollen.
+
+Folgerevision:
+
+1. Dasselbe ueber `source_report_draft_id` gefundene `RPT` verwenden und dessen unveraenderliche Aggregateidentitaet gegen `student_id`, `report_type`, `period_start` und `period_end` des Drafts pruefen.
+2. Bei einer Abweichung die Finalisierung als Domainfehler ablehnen; ein anderer Berichtstyp oder Zeitraum braucht einen neuen `RPD` und ein neues `RPT`.
+3. Naechste Revisionsnummer und neue globale `RPV`-ID innerhalb der Schreibtransaktion bestimmen.
+4. Bisher aktuelle Revision auf `superseded` setzen und `superseded_at` setzen.
+5. Neue Revision mit Status `finalized` schreiben.
+6. Bei jedem Fehler bleibt die bisherige Revision unveraendert aktuell.
+
+Validierungsregeln:
+
+- Draft, Student, unterstuetzter Berichtstyp und gueltiger Zeitraum muessen existieren beziehungsweise gueltig sein.
+- Mindestens ein Fach und mindestens ein nichtleerer, manuell verantworteter Gesamt- oder Fachtext sind erforderlich.
+- Alle Kompetenzreferenzen muessen vollstaendig aufloesbar und einem ausgewaehlten Fach zugeordnet sein. Bereits im Draft gespeicherte inaktive oder `legacy`-Kompetenzen duerfen mit Historienkennzeichnung eingefroren werden.
+- Alle Beobachtungsreferenzen muessen aktiv, dem Kind zugeordnet und ueber Beobachtungsfach oder Kompetenzbewertung mindestens einem ausgewaehlten Fach fachlich zuordenbar sein. Fehlende oder inaktive `OBS`-IDs blockieren bis zur ausdruecklichen Abwahl im Draft.
+- Bestaetigte Kompetenzstaende sind keine allgemeine Finalisierungspflicht.
+
+Regel: Der `RPD` bleibt nach jeder Finalisierung im Status `draft` und normal bearbeitbar. Seine spaeteren Text- und Referenzaenderungen duerfen eine Folgerevision erzeugen, seine nach Revision 1 abweichenden Angaben zu Berichtstyp oder Zeitraum aber nicht dasselbe `RPT` umdeuten. `learning_reports` wird nach seiner Erstellung weder aktualisiert noch geloescht. Spaetere Aenderungen an Draft, Student, Kompetenz, Beobachtung oder Projektionen veraendern keine bestehende `RPV`. PDF-Artefakte, Renderer-Versionierung, Archivierung und LEG-Abschluss sind nicht Bestandteil dieses Schreibprozesses.
+
 ## LEG-Arbeitsentwurf speichern
 
 Start: Laura legt fuer einen Schueler einen Lernentwicklungsgespraech-Arbeitsentwurf an oder speichert einen bereits geladenen Entwurf erneut.

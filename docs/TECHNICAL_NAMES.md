@@ -130,6 +130,8 @@ Registriert:
 - `report_draft_competencies`
 - `report_draft_observations`
 - `report_draft_charts`
+- `learning_reports`
+- `learning_report_revisions`
 - `learning_conference_drafts`
 - `learning_conference_draft_subjects`
 - `learning_conference_draft_cross_topics`
@@ -141,9 +143,21 @@ Registriert:
 
 Die Tabellen mit Praefix `report_draft_` speichern ausschliesslich den bearbeitbaren Arbeitsentwurf eines Lernentwicklungsberichts. Sie sind keine finale Berichtsdomain, enthalten keine Kompetenzbewertung und frieren keine Kompetenz- oder Beobachtungsinhalte ein.
 
+`learning_reports` speichert die stabile Identitaet eines aus genau einem `RPD` hervorgegangenen Lernentwicklungsberichts. `learning_report_revisions` speichert dessen unveraenderliche fachliche Revisionen als kanonischen JSON-Snapshot mit SHA-256-Hash. Beide Tabellen erweitern den Draft additiv; sie veraendern weder `RPD` noch dessen Statusvertrag.
+
 Registrierte technische Felder fuer persistente Berichtsentwuerfe:
 
 - `report_draft_id`
+- `learning_report_id`
+- `learning_report_revision_id`
+- `source_report_draft_id`
+- `revision_number`
+- `snapshot_schema_version`
+- `snapshot_json`
+- `snapshot_sha256`
+- `finalized_at`
+- `finalized_by_display_name`
+- `superseded_at`
 - `report_type`
 - `period_start`
 - `period_end`
@@ -239,6 +253,8 @@ Verbindliche ID-Felder fuer neue Architekturarbeit:
 - `media_id`
 - `report_id`
 - `report_draft_id`
+- `learning_report_id`
+- `learning_report_revision_id`
 
 Bestehende historische Seed-IDs und Prototyp-Bezeichner werden nur kontrolliert migriert.
 
@@ -258,6 +274,8 @@ Die folgende ID-Strategie ist projektweit verbindlich fuer neue fachliche Entita
 | Observation | `observation_id` | `OBS-######` | `OBS-000001` |
 | Media | `media_id` | `MED-######` | `MED-000001` |
 | ReportDraft | `report_draft_id` | `RPD-######` | `RPD-000001` |
+| LearningReport | `learning_report_id` | `RPT-######` | `RPT-000001` |
+| LearningReportRevision | `learning_report_revision_id` | `RPV-######` | `RPV-000001` |
 | TimetableEntry | `timetable_entry_id` | `TTE-######` | `TTE-000001` |
 
 Regeln:
@@ -1137,6 +1155,39 @@ Registrierte Lese- und Projektionsnamen:
 - `LearningReportUnavailableEvidence_<observation_id>`
 
 Regel: `retained_competency_ids` erweitert fuer einen geladenen Berichtsdraft ausschliesslich den Lesekontext der bestehenden kanonischen Kompetenzprojektion. `unavailable_observation_ids` ist eine abgeleitete Kennzeichnung bereits gespeicherter, nicht mehr aktiver `OBS`-Referenzen und kein persistiertes Fachfeld. Beide Pfade erhalten bestehende IDs, erlauben keine neue Auswahl inaktiver Quellen und erzeugen weder Snapshottexte noch eine zweite Kompetenzstatuslogik.
+
+## Sprint 5B.2 - Unveraenderliche Berichtrevisionen
+
+Registrierte Python-Module:
+
+- `src/core/learning_report.py`
+- `tests/test_report_finalization.py`
+
+Registrierte Klassen, Protokolle und Funktionen:
+
+- `LearningReportRecord`
+- `LearningReportRevisionRecord`
+- `LearningReportFinalizationSource`
+- `LearningReportRepository`
+- `LearningReportSnapshotBuilder`
+- `LearningReportFinalizationValidator`
+- `ReportFinalizationService`
+- `ReportFinalizationError`
+- `FinalizeLearningReportCommand`
+- `ReportFinalizationApplicationService`
+- `canonical_snapshot_json(snapshot)`
+- `snapshot_sha256(canonical_json)`
+- `SQLiteLearningReportRepository`
+
+Registrierte Konstanten und Werte:
+
+- `LEARNING_REPORT_ID_PREFIX` mit Wert `RPT`
+- `LEARNING_REPORT_REVISION_ID_PREFIX` mit Wert `RPV`
+- `LEARNING_REPORT_SNAPSHOT_SCHEMA_VERSION` mit Wert `1`
+- Revisionsstatus `finalized`
+- Revisionsstatus `superseded`
+
+Regel: `RPD` bleibt der bearbeitbare Arbeitsentwurf. `RPT` ist das stabile, pro `source_report_draft_id` eindeutige Berichtaggregat. Nach Revision 1 bleiben `source_report_draft_id`, `student_id`, `report_type`, `period_start` und `period_end` des `RPT` unveraenderlich; ein anderer Berichtstyp oder Zeitraum braucht einen neuen `RPD` und damit ein neues `RPT`. `RPV` ist eine unveraenderliche Revision; ausschliesslich beim atomaren Erzeugen einer Folgerevision darf der Status der bisherigen aktuellen Revision von `finalized` auf `superseded` wechseln und `superseded_at` gesetzt werden. Der kanonische Snapshot wird als UTF-8-JSON mit sortierten Schluesseln, kompakten Trennern und ohne nicht endliche Zahlen serialisiert; `snapshot_sha256` ist der kleingeschriebene SHA-256-Hexdigest exakt dieser gespeicherten JSON-Bytes.
 
 ## Sprint 7G.1 - Persistenter LEG-Arbeitsentwurf
 

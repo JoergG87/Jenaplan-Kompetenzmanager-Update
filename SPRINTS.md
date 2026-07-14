@@ -6,6 +6,16 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 5B.2 - Unveraenderliche Berichtrevisionen im Backend 🔄
+
+- [x] Fuenf freigegebene Product-Owner-Entscheidungen verbindlich dokumentiert; Sprint-5A-Vorschlag bleibt nicht bindend
+- [x] `RPT-######` als stabiles Berichtaggregat und `RPV-######` als unveraenderliche Revision additiv umgesetzt
+- [x] Berichtsspezifischen fachlichen Snapshot mit kanonischem JSON und SHA-256 umgesetzt
+- [x] Erstfinalisierung und atomare Folgerevision ueber Validator, Builder, Service, Command und Repository umgesetzt
+- [x] Finalisierungs-, Migrations- und Regressionschecks vollstaendig gruen
+- [x] Keine UI, kein finales PDF, keine Artefaktverwaltung, kein LEG-Abschluss und keine Benutzer-/Rollendomain vorgesehen
+- [x] Kein Commit vorgesehen
+
 ## Sprint 5B.1 - Historische Berichtreferenzen bestandssicher machen 🔄
 
 - [x] Gespeicherte, spaeter deaktivierte Berichtskompetenzen ueber `retained_competency_ids` in der kanonischen Projektion sichtbar und ausgewaehlt erhalten

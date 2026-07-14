@@ -57,6 +57,8 @@ Gepruefte Tabellen:
 | `learning_conference_draft_competencies` | LearningConferenceDraftCompetency | keine Workbook-Projektion |
 | `learning_conference_draft_observations` | LearningConferenceDraftObservation | keine Workbook-Projektion |
 | `learning_conference_draft_charts` | LearningConferenceDraftChart | keine Workbook-Projektion |
+| `learning_reports` | LearningReport | keine Workbook-Projektion |
+| `learning_report_revisions` | LearningReportRevision | keine Workbook-Projektion |
 
 Regel:
 
@@ -1113,6 +1115,77 @@ Lesende Prozesse:
 - Berichtsentwurf laden
 - Berichtsentwuerfe eines Schuelers auflisten
 - spaetere Sprint-7F.2-Berichtswerkstatt
+
+## learning_reports und learning_report_revisions
+
+Zweck: Stabile Lernentwicklungsbericht-Aggregate und unveraenderliche fachliche Revisionen aus einer bewussten Finalisierung eines weiterhin bearbeitbaren Berichtsentwurfs.
+
+Entities: LearningReport und LearningReportRevision. Keine PDF-Artefakte und keine LEG-Entitaeten.
+
+Storage:
+
+```text
+learning_reports(
+  learning_report_id TEXT PRIMARY KEY,
+  source_report_draft_id TEXT NOT NULL UNIQUE,
+  student_id TEXT NOT NULL,
+  report_type TEXT NOT NULL,
+  period_start TEXT NOT NULL,
+  period_end TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(source_report_draft_id) REFERENCES report_drafts(report_draft_id),
+  FOREIGN KEY(student_id) REFERENCES students(student_id)
+)
+
+learning_report_revisions(
+  learning_report_revision_id TEXT PRIMARY KEY,
+  learning_report_id TEXT NOT NULL,
+  revision_number INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('finalized', 'superseded')),
+  snapshot_schema_version INTEGER NOT NULL,
+  snapshot_json TEXT NOT NULL,
+  snapshot_sha256 TEXT NOT NULL,
+  finalized_at TEXT NOT NULL,
+  finalized_by_display_name TEXT NOT NULL,
+  superseded_at TEXT,
+  UNIQUE(learning_report_id, revision_number),
+  FOREIGN KEY(learning_report_id) REFERENCES learning_reports(learning_report_id)
+)
+```
+
+Owner: Lernentwicklungsbericht / Finalisierung und Revisionshistorie.
+
+Primary Keys:
+
+- `learning_reports.learning_report_id` im Format `RPT-######`
+- `learning_report_revisions.learning_report_revision_id` im Format `RPV-######`
+
+Foreign Keys:
+
+- `source_report_draft_id` -> `report_drafts.report_draft_id`
+- `student_id` -> `students.student_id`
+- `learning_report_id` -> `learning_reports.learning_report_id`
+
+Wichtige Regeln:
+
+- Pro `source_report_draft_id` existiert hoechstens ein stabiles `RPT`-Aggregat.
+- Nach der Erstfinalisierung sind `source_report_draft_id`, `student_id`, `report_type`, `period_start` und `period_end` unveraenderliche Aggregateidentitaet. `learning_reports` besitzt keinen Update- oder Delete-Pfad. Weicht ein spaeter bearbeiteter `RPD` in Berichtstyp oder Zeitraum ab, wird die Folgerevision abgelehnt; der abweichende Bericht braucht einen neuen Draft und ein neues Aggregat.
+- Revisionsnummern sind innerhalb eines `RPT` eindeutig, beginnen bei 1 und steigen ohne Luecke im normalen Finalisierungspfad.
+- Pro `RPT` besitzt hoechstens eine Revision den Status `finalized`.
+- Revisionszeilen werden weder geloescht noch fachlich aktualisiert. Nur beim Erzeugen einer Folgerevision darf die bisherige aktuelle Revision in derselben Transaktion von `finalized` auf `superseded` wechseln; dabei wird ausschliesslich `superseded_at` zusaetzlich gesetzt.
+- Der fachliche Snapshot ist die historische Source of Truth. Er enthaelt Quell-`RPD`, eingefrorene sichtbare Schuelerdaten, Berichtskontext, verantwortlichen Anzeigenamen, manuelle Texte, Faecher, Kompetenzen mit Historienkennzeichnung, aktive ausgewaehlte Beobachtungsbelege, bewusst ausgewaehlte Diagrammdaten und Snapshot-Zeitpunkt.
+- `snapshot_json` ist exakt die kanonische UTF-8-JSON-Darstellung. `snapshot_sha256` ist der SHA-256-Hexdigest genau dieser Bytes.
+- `ReportOutputModel`, PDF-Dateien, Renderer-Versionen und Artefaktpfade sind keine Felder dieser Tabellen.
+- Die bestehenden `report_drafts*`-Tabellen und ihr ausschliesslicher Status `draft` bleiben unveraendert.
+
+Schreibender Prozess:
+
+- Lernentwicklungsbericht-Draft finalisieren beziehungsweise als neue Revision erneut finalisieren
+
+Lesende Prozesse:
+
+- stabiles Berichtaggregat zum Quell-Draft lesen
+- aktuelle oder historische Revisionen eines Berichtaggregats lesen
 
 ## data_settings
 

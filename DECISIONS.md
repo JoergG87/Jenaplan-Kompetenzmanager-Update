@@ -2126,3 +2126,25 @@ Der Entwurf referenziert Live-Daten. Er ist deshalb kein eingefrorener Gespraech
 Die persistente Struktur traegt den vollstaendigen fachlichen Contract des freigegebenen Prototyps fuer Sprint 7G.2: Gespraechsrahmen, Fach- und uebergreifende Themenauswahl, Kompetenz- und Belegreferenzen, Leitfadeninhalte, getrennte vorbereitete und gemeinsam vereinbarte Ziele/Unterstuetzungen/Vereinbarungen, Zustaendigkeiten, Ueberpruefungszeitpunkt und die drei neutralen Diagrammtypen. Die produktive UI wird erst in Sprint 7G.2 portiert.
 
 Offen bleiben fachliche Aufbewahrungsfrist, Rollen-/Berechtigungsmodell, Uebergang zu einer finalen Gespraechsdokumentation sowie Historisierung gemeinsam vereinbarter Inhalte. Diese Punkte erweitern den Draft-Status in Sprint 7G.1 nicht.
+
+## ADR-054 - Unveraenderliche Lernentwicklungsbericht-Revisionen
+
+Sprint 5B.2 setzt die folgenden fuenf Product-Owner-Entscheidungen verbindlich um:
+
+1. Die verantwortliche Lehrkraft darf einen vorhandenen Lernentwicklungsbericht-Draft selbst finalisieren. Gespeichert werden ihr Anzeigename und der Finalisierungszeitpunkt; eine Benutzer-ID oder Rollendomain wird nicht erfunden.
+2. Eine Finalisierung benoetigt einen gueltigen Zeitraum, mindestens ein bewusst ausgewaehltes Fach, mindestens einen nichtleeren manuell verantworteten Inhalt und vollstaendig pruefbare Referenzen. Bestaetigte Kompetenzstaende sind keine allgemeine Pflicht.
+3. Ein spaeterer LEG-Abschluss enthaelt gemeinsame Vereinbarungen und uebernimmt interne Vorbereitungsnotizen nicht automatisch.
+4. Eine Korrektur eines finalisierten Berichts erzeugt eine neue unveraenderliche Revision desselben stabilen Berichtaggregats. Ein neuer LEG-Termin waere dagegen ein neues, getrenntes LEG-Aggregat.
+5. Der fachliche Snapshot ist die historische Source of Truth. PDF-Artefakte werden spaeter getrennt modelliert und sind nicht Bestandteil dieser Revisionstabellen.
+
+Der in Sprint 5A dokumentierte Architekturvorschlag bleibt ausdruecklich nicht bindend. Verbindlich sind fuer Sprint 5B.2 ausschliesslich die fuenf vorstehenden Entscheidungen und der hier dokumentierte schmale Berichtspfad; insbesondere wird keine gemeinsame Bericht-/LEG-Basisklasse oder universelle Snapshot-Domain eingefuehrt.
+
+Ein bestehender `RPD` bleibt die bearbeitbare Arbeitsgrundlage und behaelt ausschliesslich den Status `draft`. Bei der ersten bewussten Finalisierung entstehen additiv genau ein stabiles `RPT`-Aggregat und eine unveraenderliche `RPV`-Revision. Weitere Finalisierungen desselben `RPD` verwenden dasselbe `RPT`, setzen die bisher aktuelle Revision innerhalb derselben Transaktion auf `superseded` und erzeugen eine neue `finalized`-Revision mit der naechsten Nummer. Ein Fehler rollt den gesamten Wechsel zurueck.
+
+Mit Revision 1 werden `source_report_draft_id`, `student_id`, `report_type`, `period_start` und `period_end` zur unveraenderlichen Identitaet des `RPT`. Text- und Referenzkorrekturen duerfen weitere Revisionen desselben Aggregats erzeugen. Ein spaeter im `RPD` abweichender Berichtstyp oder Zeitraum darf das vorhandene `RPT` nicht aktualisieren oder umdeuten und blockiert die Folgerevision mit einem Domainfehler. Dafuer ist ein neuer Draft und damit ein neues Berichtaggregat erforderlich.
+
+Der persistierte Snapshot friert den Berichtskontext, sichtbare Schuelerdaten, verantwortlichen Anzeigenamen, manuelle Texte, ausgewaehlte Fachnamen, vollstaendig aufgeloeste Kompetenzen mit Historienkennzeichnung, aktive kind- und fachbezogene Beobachtungsbelege sowie die fachlichen Werte bewusst ausgewaehlter Diagramme ein. Fehlende oder inaktive Beobachtungsreferenzen blockieren die Finalisierung. Bereits gespeicherte, deaktivierte, aber vollstaendig aufloesbare Kompetenzreferenzen duerfen historisch gekennzeichnet eingefroren werden.
+
+Die kanonische Snapshotdarstellung ist UTF-8-JSON mit sortierten Schluesseln, kompakten Trennern, unveraenderten Unicode-Zeichen und ohne nicht endliche Zahlen. Der gespeicherte SHA-256-Hexdigest wird ueber exakt diese gespeicherten Bytes gebildet. `ReportOutputModel` bleibt eine fluechtige Rendererprojektion und ist wegen fehlender stabiler IDs und Provenienz nicht selbst der fachliche Snapshot.
+
+Nicht entschieden oder umgesetzt werden in diesem Sprint UI, finales PDF, Artefakt- und Dateiverwaltung, Renderer-Versionierung, Archivierung, LEG-Abschluss, Benutzer-/Rollendomain oder automatische Bestandsmigration vorhandener Drafts.

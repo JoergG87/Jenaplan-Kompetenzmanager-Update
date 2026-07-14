@@ -27,6 +27,8 @@ from .constants import (
     ID_SEQUENCE_WIDTH,
     LAST_NAME,
     MEDIA_ID_PREFIX,
+    LEARNING_REPORT_ID_PREFIX,
+    LEARNING_REPORT_REVISION_ID_PREFIX,
     REPORT_DRAFT_ID_PREFIX,
     STUDENT_ID,
     STUDENT_NOTES,
@@ -42,6 +44,21 @@ from .learning_conference_draft import (
     LEARNING_CONFERENCE_DRAFT_ID_PREFIX,
     LearningConferenceDraftError,
     LearningConferenceDraftRecord,
+)
+from .learning_report import (
+    FINALIZED_REVISION_STATUS,
+    LEARNING_REPORT_SNAPSHOT_SCHEMA_VERSION,
+    SUPERSEDED_REVISION_STATUS,
+    LearningReportCompetencyEvidenceSource,
+    LearningReportCompetencySource,
+    LearningReportFinalizationResult,
+    LearningReportFinalizationSource,
+    LearningReportObservationSource,
+    LearningReportRecord,
+    LearningReportRevisionRecord,
+    LearningReportStudentSource,
+    LearningReportSubjectSource,
+    ReportFinalizationError,
 )
 from .student import StudentRepositoryError
 from .records import (
@@ -398,6 +415,48 @@ class SQLiteDatabase:
                             ON DELETE CASCADE
                     );
 
+                    CREATE TABLE IF NOT EXISTS learning_reports (
+                        learning_report_id TEXT PRIMARY KEY,
+                        source_report_draft_id TEXT NOT NULL UNIQUE,
+                        student_id TEXT NOT NULL,
+                        report_type TEXT NOT NULL,
+                        period_start TEXT NOT NULL,
+                        period_end TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        FOREIGN KEY (source_report_draft_id)
+                            REFERENCES report_drafts(report_draft_id),
+                        FOREIGN KEY (student_id) REFERENCES students(student_id)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS learning_report_revisions (
+                        learning_report_revision_id TEXT PRIMARY KEY,
+                        learning_report_id TEXT NOT NULL,
+                        revision_number INTEGER NOT NULL CHECK (revision_number > 0),
+                        status TEXT NOT NULL CHECK (
+                            status IN ('finalized', 'superseded')
+                        ),
+                        snapshot_schema_version INTEGER NOT NULL CHECK (
+                            snapshot_schema_version > 0
+                        ),
+                        snapshot_json TEXT NOT NULL,
+                        snapshot_sha256 TEXT NOT NULL CHECK (
+                            length(snapshot_sha256) = 64
+                        ),
+                        finalized_at TEXT NOT NULL,
+                        finalized_by_display_name TEXT NOT NULL CHECK (
+                            length(trim(finalized_by_display_name)) > 0
+                        ),
+                        superseded_at TEXT,
+                        UNIQUE (learning_report_id, revision_number),
+                        CHECK (
+                            (status = 'finalized' AND superseded_at IS NULL)
+                            OR
+                            (status = 'superseded' AND superseded_at IS NOT NULL)
+                        ),
+                        FOREIGN KEY (learning_report_id)
+                            REFERENCES learning_reports(learning_report_id)
+                    );
+
                     CREATE TABLE IF NOT EXISTS learning_conference_drafts (
                         learning_conference_draft_id TEXT PRIMARY KEY,
                         student_id TEXT NOT NULL,
@@ -518,12 +577,55 @@ class SQLiteDatabase:
                         ON report_draft_competencies(competency_id);
                     CREATE INDEX IF NOT EXISTS idx_report_draft_observations_observation
                         ON report_draft_observations(observation_id);
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_learning_report_current_revision
+                        ON learning_report_revisions(learning_report_id)
+                        WHERE status = 'finalized';
+                    CREATE INDEX IF NOT EXISTS idx_learning_report_revisions_report_number
+                        ON learning_report_revisions(learning_report_id, revision_number);
                     CREATE INDEX IF NOT EXISTS idx_learning_conference_drafts_student_updated
                         ON learning_conference_drafts(student_id, updated_at DESC);
                     CREATE INDEX IF NOT EXISTS idx_learning_conference_draft_competencies
                         ON learning_conference_draft_competencies(competency_id);
                     CREATE INDEX IF NOT EXISTS idx_learning_conference_draft_observations
                         ON learning_conference_draft_observations(observation_id);
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_report_revisions_immutable_update
+                    BEFORE UPDATE ON learning_report_revisions
+                    WHEN NOT (
+                        OLD.status = 'finalized'
+                        AND NEW.status = 'superseded'
+                        AND OLD.superseded_at IS NULL
+                        AND NEW.superseded_at IS NOT NULL
+                        AND NEW.learning_report_revision_id IS OLD.learning_report_revision_id
+                        AND NEW.learning_report_id IS OLD.learning_report_id
+                        AND NEW.revision_number IS OLD.revision_number
+                        AND NEW.snapshot_schema_version IS OLD.snapshot_schema_version
+                        AND NEW.snapshot_json IS OLD.snapshot_json
+                        AND NEW.snapshot_sha256 IS OLD.snapshot_sha256
+                        AND NEW.finalized_at IS OLD.finalized_at
+                        AND NEW.finalized_by_display_name IS OLD.finalized_by_display_name
+                    )
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning report revisions are immutable');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_report_revisions_immutable_delete
+                    BEFORE DELETE ON learning_report_revisions
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning report revisions cannot be deleted');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_reports_immutable_update
+                    BEFORE UPDATE ON learning_reports
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning reports are immutable');
+                    END;
+
+                    CREATE TRIGGER IF NOT EXISTS trg_learning_reports_immutable_delete
+                    BEFORE DELETE ON learning_reports
+                    BEGIN
+                        SELECT RAISE(ABORT, 'learning reports cannot be deleted');
+                    END;
                     """
                 )
                 self._ensure_column(connection, "groups", "sort_order", "INTEGER NOT NULL DEFAULT 0")
@@ -2855,6 +2957,605 @@ class SQLiteReportDraftRepository:
             draft.overall_text,
             draft.created_at,
             draft.updated_at,
+        )
+
+
+class SQLiteLearningReportRepository:
+    """Resolve finalization sources and persist immutable revisions atomically."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def load_finalization_source(
+        self,
+        report_draft_id: str,
+    ) -> LearningReportFinalizationSource | None:
+        draft = SQLiteReportDraftRepository(self.database).get_report_draft(
+            report_draft_id
+        )
+        if draft is None:
+            return None
+        selected_subject_ids = {subject.subject_id for subject in draft.subjects}
+        with closing(self.database.connect()) as connection:
+            student_row = connection.execute(
+                """
+                SELECT
+                    s.student_id,
+                    s.first_name,
+                    s.last_name,
+                    s.group_id,
+                    COALESCE(g.group_name, '') AS group_name,
+                    s.course_id,
+                    COALESCE(c.course_name, '') AS course_name
+                FROM students s
+                LEFT JOIN groups g ON g.group_id = s.group_id
+                LEFT JOIN courses c ON c.course_id = s.course_id
+                WHERE s.student_id = ?
+                """,
+                (draft.student_id,),
+            ).fetchone()
+            student = (
+                LearningReportStudentSource(
+                    student_row["student_id"],
+                    student_row["first_name"],
+                    student_row["last_name"],
+                    student_row["group_id"],
+                    student_row["group_name"],
+                    student_row["course_id"],
+                    student_row["course_name"],
+                )
+                if student_row is not None
+                else None
+            )
+
+            subjects: list[LearningReportSubjectSource] = []
+            missing_subject_ids: list[str] = []
+            for subject in draft.subjects:
+                subject_name = self._subject_name(connection, subject.subject_id)
+                if not subject_name:
+                    missing_subject_ids.append(subject.subject_id)
+                    continue
+                coverage = connection.execute(
+                    """
+                    SELECT
+                        COUNT(*) AS current_count,
+                        COALESCE(SUM(
+                            CASE WHEN
+                                EXISTS (
+                                    SELECT 1
+                                    FROM observation_competency_ratings r
+                                    JOIN observations o
+                                      ON o.observation_id = r.observation_id
+                                    WHERE r.competency_id = competencies.competency_id
+                                      AND o.student_id = ?
+                                      AND o.active = 1
+                                )
+                                OR EXISTS (
+                                    SELECT 1
+                                    FROM student_competency_confirmations confirmation
+                                    WHERE confirmation.student_id = ?
+                                      AND confirmation.competency_id = competencies.competency_id
+                                )
+                            THEN 1 ELSE 0 END
+                        ), 0) AS documented_count
+                    FROM competencies
+                    WHERE subject_id = ?
+                      AND active = 1
+                      AND catalog_status = 'current'
+                    """,
+                    (draft.student_id, draft.student_id, subject.subject_id),
+                ).fetchone()
+                subjects.append(
+                    LearningReportSubjectSource(
+                        subject.subject_id,
+                        subject_name,
+                        int(coverage["documented_count"]),
+                        int(coverage["current_count"]),
+                    )
+                )
+
+            competencies: list[LearningReportCompetencySource] = []
+            missing_competency_ids: list[str] = []
+            invalid_competency_ids: list[str] = []
+            for competency_id in draft.competency_ids:
+                row = connection.execute(
+                    """
+                    SELECT
+                        competency_id,
+                        subject_id,
+                        subject_name,
+                        learning_area,
+                        competency_group,
+                        description,
+                        catalog_status,
+                        active
+                    FROM competencies
+                    WHERE competency_id = ?
+                    """,
+                    (competency_id,),
+                ).fetchone()
+                if row is None:
+                    missing_competency_ids.append(competency_id)
+                    continue
+                if row["subject_id"] not in selected_subject_ids:
+                    invalid_competency_ids.append(competency_id)
+                    continue
+                historical = not bool(row["active"]) or row["catalog_status"] != "current"
+                latest_snapshot = connection.execute(
+                    """
+                    SELECT
+                        r.subject_id,
+                        r.subject_display_name,
+                        r.learning_area,
+                        r.competency_group,
+                        r.competency_text
+                    FROM observation_competency_ratings r
+                    JOIN observations o ON o.observation_id = r.observation_id
+                    WHERE r.competency_id = ?
+                      AND o.student_id = ?
+                      AND o.active = 1
+                    ORDER BY o.date DESC, o.observation_id DESC
+                    LIMIT 1
+                    """,
+                    (competency_id, draft.student_id),
+                ).fetchone()
+                visible = latest_snapshot if historical and latest_snapshot is not None else row
+                visible_subject_id = visible["subject_id"]
+                if visible_subject_id not in selected_subject_ids:
+                    invalid_competency_ids.append(competency_id)
+                    continue
+                evidence = self._competency_evidence(
+                    connection,
+                    draft.student_id,
+                    competency_id,
+                )
+                competencies.append(
+                    LearningReportCompetencySource(
+                        competency_id=competency_id,
+                        subject_id=visible_subject_id,
+                        subject_name=(
+                            visible["subject_display_name"]
+                            if "subject_display_name" in visible.keys()
+                            else visible["subject_name"]
+                        ),
+                        learning_area=visible["learning_area"] or "",
+                        competency_group=visible["competency_group"] or "",
+                        competency_text=(
+                            visible["competency_text"]
+                            if "competency_text" in visible.keys()
+                            else visible["description"]
+                        ),
+                        historical_reference=historical,
+                        active_at_finalization=bool(row["active"]),
+                        catalog_status_at_finalization=row["catalog_status"],
+                        evidence_points=evidence,
+                    )
+                )
+
+            observations: list[LearningReportObservationSource] = []
+            unavailable_observation_ids: list[str] = []
+            invalid_observation_ids: list[str] = []
+            for observation_id in draft.observation_ids:
+                row = connection.execute(
+                    """
+                    SELECT observation_id, student_id, date, subject_id, context, note, active
+                    FROM observations
+                    WHERE observation_id = ?
+                    """,
+                    (observation_id,),
+                ).fetchone()
+                if row is None or not bool(row["active"]):
+                    unavailable_observation_ids.append(observation_id)
+                    continue
+                rating_subject_ids = {
+                    rating["subject_id"]
+                    for rating in connection.execute(
+                        """
+                        SELECT DISTINCT subject_id
+                        FROM observation_competency_ratings
+                        WHERE observation_id = ?
+                        """,
+                        (observation_id,),
+                    ).fetchall()
+                }
+                matched_subject_ids = tuple(
+                    sorted(
+                        ({row["subject_id"]} | rating_subject_ids)
+                        & selected_subject_ids
+                    )
+                )
+                if row["student_id"] != draft.student_id or not matched_subject_ids:
+                    invalid_observation_ids.append(observation_id)
+                    continue
+                observations.append(
+                    LearningReportObservationSource(
+                        observation_id=observation_id,
+                        observed_on=row["date"],
+                        subject_id=row["subject_id"],
+                        subject_name=(
+                            self._subject_name(connection, row["subject_id"])
+                            or row["subject_id"]
+                        ),
+                        context=row["context"] or "",
+                        note=row["note"] or "",
+                        matched_subject_ids=matched_subject_ids,
+                    )
+                )
+
+        return LearningReportFinalizationSource(
+            draft=draft,
+            student=student,
+            subjects=tuple(subjects),
+            competencies=tuple(sorted(competencies, key=lambda item: item.competency_id)),
+            observations=tuple(sorted(observations, key=lambda item: item.observation_id)),
+            missing_subject_ids=tuple(sorted(missing_subject_ids)),
+            missing_competency_ids=tuple(sorted(missing_competency_ids)),
+            invalid_competency_ids=tuple(sorted(invalid_competency_ids)),
+            unavailable_observation_ids=tuple(sorted(unavailable_observation_ids)),
+            invalid_observation_ids=tuple(sorted(invalid_observation_ids)),
+        )
+
+    def save_finalized_revision(
+        self,
+        source: LearningReportFinalizationSource,
+        *,
+        snapshot_json: str,
+        snapshot_sha256: str,
+        finalized_at: str,
+        finalized_by_display_name: str,
+    ) -> LearningReportFinalizationResult:
+        connection = self.database.connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            current_draft = connection.execute(
+                """
+                SELECT updated_at
+                FROM report_drafts
+                WHERE report_draft_id = ?
+                """,
+                (source.draft.report_draft_id,),
+            ).fetchone()
+            if (
+                current_draft is None
+                or current_draft["updated_at"] != source.draft.updated_at
+            ):
+                raise ReportFinalizationError(
+                    "Der Berichtsdraft wurde waehrend der Finalisierung geaendert."
+                )
+            report_row = connection.execute(
+                """
+                SELECT
+                    learning_report_id,
+                    source_report_draft_id,
+                    student_id,
+                    report_type,
+                    period_start,
+                    period_end,
+                    created_at
+                FROM learning_reports
+                WHERE source_report_draft_id = ?
+                """,
+                (source.draft.report_draft_id,),
+            ).fetchone()
+            if report_row is None:
+                learning_report_id = self._next_id(
+                    connection,
+                    "learning_reports",
+                    "learning_report_id",
+                    LEARNING_REPORT_ID_PREFIX,
+                )
+                connection.execute(
+                    """
+                    INSERT INTO learning_reports (
+                        learning_report_id,
+                        source_report_draft_id,
+                        student_id,
+                        report_type,
+                        period_start,
+                        period_end,
+                        created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        learning_report_id,
+                        source.draft.report_draft_id,
+                        source.draft.student_id,
+                        source.draft.report_type,
+                        source.draft.period_start,
+                        source.draft.period_end,
+                        finalized_at,
+                    ),
+                )
+                report = LearningReportRecord(
+                    learning_report_id,
+                    source.draft.report_draft_id,
+                    source.draft.student_id,
+                    source.draft.report_type,
+                    source.draft.period_start,
+                    source.draft.period_end,
+                    finalized_at,
+                )
+            else:
+                report = self._report_from_row(report_row)
+                if (
+                    report.source_report_draft_id != source.draft.report_draft_id
+                    or report.student_id != source.draft.student_id
+                    or report.report_type != source.draft.report_type
+                    or report.period_start != source.draft.period_start
+                    or report.period_end != source.draft.period_end
+                ):
+                    raise ReportFinalizationError(
+                        "Die Aggregateidentitaet des bestehenden RPT weicht vom RPD "
+                        "ab. Fuer einen anderen Berichtstyp oder Zeitraum ist ein "
+                        "neuer Berichtsdraft erforderlich."
+                    )
+
+            current_revision = connection.execute(
+                """
+                SELECT learning_report_revision_id
+                FROM learning_report_revisions
+                WHERE learning_report_id = ? AND status = ?
+                """,
+                (report.learning_report_id, FINALIZED_REVISION_STATUS),
+            ).fetchone()
+            revision_number = int(
+                connection.execute(
+                    """
+                    SELECT COALESCE(MAX(revision_number), 0) + 1
+                    FROM learning_report_revisions
+                    WHERE learning_report_id = ?
+                    """,
+                    (report.learning_report_id,),
+                ).fetchone()[0]
+            )
+            if current_revision is not None:
+                connection.execute(
+                    """
+                    UPDATE learning_report_revisions
+                    SET status = ?, superseded_at = ?
+                    WHERE learning_report_revision_id = ?
+                    """,
+                    (
+                        SUPERSEDED_REVISION_STATUS,
+                        finalized_at,
+                        current_revision["learning_report_revision_id"],
+                    ),
+                )
+            revision = LearningReportRevisionRecord(
+                learning_report_revision_id=self._next_id(
+                    connection,
+                    "learning_report_revisions",
+                    "learning_report_revision_id",
+                    LEARNING_REPORT_REVISION_ID_PREFIX,
+                ),
+                learning_report_id=report.learning_report_id,
+                revision_number=revision_number,
+                status=FINALIZED_REVISION_STATUS,
+                snapshot_schema_version=LEARNING_REPORT_SNAPSHOT_SCHEMA_VERSION,
+                snapshot_json=snapshot_json,
+                snapshot_sha256=snapshot_sha256,
+                finalized_at=finalized_at,
+                finalized_by_display_name=finalized_by_display_name,
+                superseded_at=None,
+            )
+            self._insert_revision(connection, revision)
+            connection.commit()
+            return LearningReportFinalizationResult(report, revision)
+        except sqlite3.Error as error:
+            connection.rollback()
+            raise ReportFinalizationError(
+                f"Berichtrevision konnte nicht gespeichert werden: {error}"
+            ) from error
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def get_report_for_source_draft(
+        self,
+        report_draft_id: str,
+    ) -> LearningReportRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    learning_report_id,
+                    source_report_draft_id,
+                    student_id,
+                    report_type,
+                    period_start,
+                    period_end,
+                    created_at
+                FROM learning_reports
+                WHERE source_report_draft_id = ?
+                """,
+                (report_draft_id,),
+            ).fetchone()
+        return self._report_from_row(row) if row is not None else None
+
+    def list_revisions(
+        self,
+        learning_report_id: str,
+    ) -> tuple[LearningReportRevisionRecord, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    learning_report_revision_id,
+                    learning_report_id,
+                    revision_number,
+                    status,
+                    snapshot_schema_version,
+                    snapshot_json,
+                    snapshot_sha256,
+                    finalized_at,
+                    finalized_by_display_name,
+                    superseded_at
+                FROM learning_report_revisions
+                WHERE learning_report_id = ?
+                ORDER BY revision_number
+                """,
+                (learning_report_id,),
+            ).fetchall()
+        return tuple(self._revision_from_row(row) for row in rows)
+
+    def _competency_evidence(
+        self,
+        connection: sqlite3.Connection,
+        student_id: str,
+        competency_id: str,
+    ) -> tuple[LearningReportCompetencyEvidenceSource, ...]:
+        points = [
+            LearningReportCompetencyEvidenceSource(
+                row["date"],
+                row["rating"],
+                "observation",
+                row["observation_id"],
+            )
+            for row in connection.execute(
+                """
+                SELECT o.date, r.rating, o.observation_id
+                FROM observation_competency_ratings r
+                JOIN observations o ON o.observation_id = r.observation_id
+                WHERE r.competency_id = ?
+                  AND o.student_id = ?
+                  AND o.active = 1
+                """,
+                (competency_id, student_id),
+            ).fetchall()
+        ]
+        confirmation = connection.execute(
+            """
+            SELECT confirmed_at, confirmed_rating
+            FROM student_competency_confirmations
+            WHERE student_id = ? AND competency_id = ?
+            """,
+            (student_id, competency_id),
+        ).fetchone()
+        if confirmation is not None:
+            points.append(
+                LearningReportCompetencyEvidenceSource(
+                    confirmation["confirmed_at"][:10],
+                    confirmation["confirmed_rating"],
+                    "confirmation",
+                    competency_id,
+                )
+            )
+        return tuple(
+            sorted(
+                points,
+                key=lambda item: (
+                    item.recorded_on,
+                    item.source_type,
+                    item.source_id,
+                ),
+            )
+        )
+
+    def _subject_name(
+        self,
+        connection: sqlite3.Connection,
+        subject_id: str,
+    ) -> str:
+        row = connection.execute(
+            """
+            SELECT subject_name
+            FROM competencies
+            WHERE subject_id = ?
+            ORDER BY
+                CASE WHEN active = 1 AND catalog_status = 'current' THEN 0 ELSE 1 END,
+                sort_order,
+                competency_id
+            LIMIT 1
+            """,
+            (subject_id,),
+        ).fetchone()
+        return str(row["subject_name"]).strip() if row is not None else ""
+
+    def _next_id(
+        self,
+        connection: sqlite3.Connection,
+        table_name: str,
+        column_name: str,
+        prefix: str,
+    ) -> str:
+        rows = connection.execute(
+            f"SELECT {column_name} FROM {table_name}"
+        ).fetchall()
+        next_number = 1
+        for row in rows:
+            value = str(row[column_name])
+            if not value.startswith(f"{prefix}-"):
+                continue
+            try:
+                next_number = max(next_number, int(value.split("-", 1)[1]) + 1)
+            except ValueError:
+                continue
+        return f"{prefix}-{next_number:0{ID_SEQUENCE_WIDTH}d}"
+
+    def _insert_revision(
+        self,
+        connection: sqlite3.Connection,
+        revision: LearningReportRevisionRecord,
+    ) -> None:
+        connection.execute(
+            """
+            INSERT INTO learning_report_revisions (
+                learning_report_revision_id,
+                learning_report_id,
+                revision_number,
+                status,
+                snapshot_schema_version,
+                snapshot_json,
+                snapshot_sha256,
+                finalized_at,
+                finalized_by_display_name,
+                superseded_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                revision.learning_report_revision_id,
+                revision.learning_report_id,
+                revision.revision_number,
+                revision.status,
+                revision.snapshot_schema_version,
+                revision.snapshot_json,
+                revision.snapshot_sha256,
+                revision.finalized_at,
+                revision.finalized_by_display_name,
+                revision.superseded_at,
+            ),
+        )
+
+    def _report_from_row(self, row: sqlite3.Row) -> LearningReportRecord:
+        return LearningReportRecord(
+            row["learning_report_id"],
+            row["source_report_draft_id"],
+            row["student_id"],
+            row["report_type"],
+            row["period_start"],
+            row["period_end"],
+            row["created_at"],
+        )
+
+    def _revision_from_row(
+        self,
+        row: sqlite3.Row,
+    ) -> LearningReportRevisionRecord:
+        return LearningReportRevisionRecord(
+            row["learning_report_revision_id"],
+            row["learning_report_id"],
+            int(row["revision_number"]),
+            row["status"],
+            int(row["snapshot_schema_version"]),
+            row["snapshot_json"],
+            row["snapshot_sha256"],
+            row["finalized_at"],
+            row["finalized_by_display_name"],
+            row["superseded_at"],
         )
 
 
