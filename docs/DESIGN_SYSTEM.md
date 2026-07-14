@@ -180,6 +180,8 @@ Die App verwendet eine weiche, leichte Formensprache:
 
 Schuelerprofile sollen als ruhige Karten mit klaren Bereichen erscheinen.
 
+Das freigegebene Variante-A-Arbeitsprofil verwendet einen kompakten Profilkopf mit Initialenavatar, Stammgruppen-/Kurskontext, neutralem Dokumentationsring und genau einer blauen Primaeraktion `Beobachtung erfassen`. Die erste Uebersichtsreihe besteht aus einer breiten Orientierungskarte sowie den schmaleren Karten `Kompetenzen` und `Noch nicht dokumentiert`. Bei geringerer Inhaltsbreite steht die Orientierungskarte oberhalb der beiden Informationskarten. Der Ring und alle Counts beschreiben ausschließlich Dokumentationsumfang; fehlende Dokumentation bleibt neutral. Die Orientierungskarte zeigt hoechstens drei textlich vollstaendige, belegverknuepfte Statuswechsel und verwendet keine Diagramm-, Score-, Ampel- oder Trendsemantik.
+
 Das Kompetenz-Cockpit im Schuelerprofil nutzt verschachtelte, abgerundete Karten und neutrale Fortschrittsbalken. Fortschritt visualisiert ausschließlich Dokumentationsabdeckung und verwendet keine Bewertungs- oder Ampelfarben. Die Darstellung erweitert das bestehende Kartensystem, ohne eine neue Farbsemantik oder ein spaeteres Designsystem vorwegzunehmen.
 
 Beobachtungen sollen bevorzugt als leichte Cards oder geordnete Listen mit klarer Hierarchie gestaltet werden, nicht als reine Tabellenlisten.

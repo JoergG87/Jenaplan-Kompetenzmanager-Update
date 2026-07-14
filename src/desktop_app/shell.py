@@ -599,6 +599,9 @@ class AppShell(QMainWindow):
         documentation_statuses = self.adapter.list_documentation_status_for_student(student_id)
         documents = self.adapter.list_documents_for_student(student_id)
         competency_cockpit = self.adapter.competency_cockpit_for_student(student_id)
+        profile_dashboard = self.adapter.student_profile_dashboard_for_student(
+            student_id
+        )
         self.student_profile_screen.set_student(
             profile,
             observations,
@@ -607,6 +610,7 @@ class AppShell(QMainWindow):
             documentation_statuses,
             documents,
             competency_cockpit,
+            profile_dashboard,
         )
         self._show_screen("profile")
 

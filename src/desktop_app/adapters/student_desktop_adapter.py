@@ -136,6 +136,7 @@ from src.desktop_app.view_models.student_view_model import (
     DashboardSuggestedStudentViewModel,
     GroupSummaryViewModel,
     StudentDetailViewModel,
+    StudentProfileDashboardViewModel,
     StudentDocumentationSummaryViewModel,
     StudentDocumentViewModel,
     StudentReportDevelopmentViewModel,
@@ -144,6 +145,7 @@ from src.desktop_app.view_models.student_view_model import (
     StudentReportEvidenceViewModel,
     StudentReportPreviewViewModel,
     StudentReportSubjectSectionViewModel,
+    build_student_profile_dashboard,
     documentation_summary_from_subjects,
     sort_student_list,
 )
@@ -1002,6 +1004,29 @@ class StudentDesktopAdapter:
         return self._documentation_statuses(
             self._documentation_relevant_competencies(),
             documented_ids,
+        )
+
+    def student_profile_dashboard_for_student(
+        self,
+        student_id: str,
+        *,
+        as_of: date | None = None,
+    ) -> StudentProfileDashboardViewModel:
+        """Compose the Variant-A profile from existing canonical projections."""
+        statuses = self.list_competency_status_projection_for_student(student_id)
+        documented_ids = {
+            status.competency_id
+            for status in statuses
+            if status.documentation_state != "undocumented"
+        }
+        documentation_statuses = self._documentation_statuses(
+            self._documentation_relevant_competencies(),
+            documented_ids,
+        )
+        return build_student_profile_dashboard(
+            statuses,
+            documentation_statuses,
+            as_of or date.today(),
         )
 
     def get_report_preview_for_student(

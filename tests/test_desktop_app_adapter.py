@@ -99,6 +99,7 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationRatingViewModel,
     StudentCompetencyEvidenceViewModel,
     ObservationSubjectOptionViewModel,
+    StudentDocumentationLearningAreaStatus,
     StudentDocumentationSubjectStatus,
     StudentCompetencyStatusViewModel,
     StudentCompetencySubjectGroup,
@@ -119,12 +120,15 @@ from src.desktop_app.view_models.student_view_model import (
     REPORT_NO_OBSERVATIONS_MESSAGE,
     StudentDetailViewModel,
     StudentDocumentViewModel,
+    StudentProfileDashboardViewModel,
+    StudentProfileUndocumentedSubjectViewModel,
     StudentReportDevelopmentViewModel,
     StudentListItem,
     StudentReportCompetencyViewModel,
     StudentReportEvidenceViewModel,
     StudentReportPreviewViewModel,
     StudentReportSubjectSectionViewModel,
+    build_student_profile_dashboard,
     build_student_profile_overview,
     documentation_summary_from_subjects,
     filter_student_list,
@@ -1219,6 +1223,220 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(rating_from_weighted_score(1.50), "+")
         self.assertEqual(rating_from_weighted_score(2.49), "+")
         self.assertEqual(rating_from_weighted_score(2.50), "++")
+
+    def test_profile_dashboard_limits_real_changes_and_uses_curricular_tie_order(
+        self,
+    ) -> None:
+        statuses = tuple(
+            self._cockpit_status(
+                f"CMP-TEST-{index}",
+                f"Kompetenz {index}",
+                sort_order=sort_order,
+                observation_count=2,
+                evidence=(
+                    StudentCompetencyEvidenceViewModel(
+                        f"OBS-{index}-1", "2026-01-10", "-", "mathematik",
+                        "Mathematik", "Größen und Messen", "Zeit",
+                        f"Kompetenz {index}", "Unterricht",
+                    ),
+                    StudentCompetencyEvidenceViewModel(
+                        f"OBS-{index}-2", change_date, "+", "mathematik",
+                        "Mathematik", "Größen und Messen", "Zeit",
+                        f"Kompetenz {index}", "Lernzielkontrolle",
+                    ),
+                ),
+            )
+            for index, sort_order, change_date in (
+                (1, 30, "2026-07-10"),
+                (2, 10, "2026-07-10"),
+                (3, 20, "2026-07-10"),
+                (4, 5, "2026-07-01"),
+            )
+        )
+
+        dashboard = build_student_profile_dashboard(
+            statuses,
+            (),
+            date(2026, 7, 14),
+        )
+
+        self.assertEqual(
+            tuple(change.competency_id for change in dashboard.orientation_changes),
+            ("CMP-TEST-2", "CMP-TEST-3", "CMP-TEST-1"),
+        )
+
+    def test_profile_dashboard_uses_cutoff_and_never_interpolates(self) -> None:
+        changed = self._cockpit_status(
+            "CMP-TEST-1",
+            "Zeitspannen bestimmen",
+            sort_order=1,
+            observation_count=3,
+            evidence=(
+                StudentCompetencyEvidenceViewModel(
+                    "OBS-3", "2026-12-01", "++", "mathematik", "Mathematik",
+                    "Größen und Messen", "Zeit", "Zeitspannen bestimmen", "Test",
+                ),
+                StudentCompetencyEvidenceViewModel(
+                    "OBS-2", "2026-06-01", "+", "mathematik", "Mathematik",
+                    "Größen und Messen", "Zeit", "Zeitspannen bestimmen", "Projekt",
+                ),
+                StudentCompetencyEvidenceViewModel(
+                    "OBS-1", "2026-01-01", "-", "mathematik", "Mathematik",
+                    "Größen und Messen", "Zeit", "Zeitspannen bestimmen", "Unterricht",
+                ),
+            ),
+        )
+        unchanged = self._cockpit_status(
+            "CMP-TEST-2",
+            "Uhrzeiten lesen",
+            sort_order=2,
+            observation_count=2,
+            evidence=(
+                StudentCompetencyEvidenceViewModel(
+                    "OBS-5", "2026-05-01", "+", "mathematik", "Mathematik",
+                    "Größen und Messen", "Zeit", "Uhrzeiten lesen", "Unterricht",
+                ),
+                StudentCompetencyEvidenceViewModel(
+                    "OBS-4", "2026-03-01", "+", "mathematik", "Mathematik",
+                    "Größen und Messen", "Zeit", "Uhrzeiten lesen", "Unterricht",
+                ),
+            ),
+        )
+
+        dashboard = build_student_profile_dashboard(
+            (changed, unchanged),
+            (),
+            date(2026, 7, 14),
+        )
+
+        self.assertEqual(len(dashboard.orientation_changes), 1)
+        change = dashboard.orientation_changes[0]
+        self.assertEqual(change.previous_rating, "-")
+        self.assertEqual(change.new_rating, "+")
+        self.assertEqual(change.period_label, "01.01.2026 – 01.06.2026")
+        self.assertEqual(change.triggering_event.reference_id, "OBS-2")
+        self.assertNotIn("2026-12-01", change.triggering_event.evidence_label)
+
+    def test_profile_dashboard_cutoff_excludes_future_documentation(self) -> None:
+        future_only = self._cockpit_status(
+            "CMP-TEST-FUTURE",
+            "Künftige Beobachtung",
+            learning_area="Größen und Messen",
+            observation_count=1,
+            evidence=(StudentCompetencyEvidenceViewModel(
+                "OBS-FUTURE", "2026-12-01", "+", "mathematik", "Mathematik",
+                "Größen und Messen", "Zeit", "Künftige Beobachtung", "Test",
+            ),),
+        )
+        documentation_statuses = (StudentDocumentationSubjectStatus(
+            "mathematik",
+            "Mathematik",
+            1,
+            1,
+            (),
+            0,
+            (StudentDocumentationLearningAreaStatus(
+                "Größen und Messen", 1, 1,
+            ),),
+        ),)
+
+        dashboard = build_student_profile_dashboard(
+            (future_only,),
+            documentation_statuses,
+            date(2026, 7, 14),
+        )
+
+        self.assertEqual(
+            dashboard.documentation_summary.documented_learning_area_count,
+            0,
+        )
+        self.assertEqual(
+            dashboard.documentation_summary.total_learning_area_count,
+            1,
+        )
+        self.assertEqual(dashboard.undocumented_count, 1)
+        self.assertEqual(
+            dashboard.undocumented_subjects[0].subject_display_name,
+            "Mathematik",
+        )
+
+    def test_profile_dashboard_keeps_confirmation_and_historical_evidence(self) -> None:
+        status = self._cockpit_status(
+            "CMP-HIST-1",
+            "Zeitspannen bestimmen (alter Katalogstand)",
+            sort_order=1,
+            observation_count=1,
+            confirmed_rating="+",
+            confirmed_at="2026-06-12T09:00:00+00:00",
+            historical=True,
+            evidence=(
+                StudentCompetencyEvidenceViewModel(
+                    "OBS-HIST-1", "2026-02-01", "-", "mathematik",
+                    "Mathematik", "Größen und Messen", "Zeit",
+                    "Zeitspannen bestimmen (alter Katalogstand)", "Unterricht",
+                ),
+            ),
+        )
+
+        dashboard = build_student_profile_dashboard(
+            (status,),
+            (),
+            date(2026, 7, 14),
+        )
+
+        change = dashboard.orientation_changes[0]
+        self.assertTrue(change.historical)
+        self.assertEqual(change.triggering_event.source, "confirmation")
+        self.assertEqual(change.triggering_event.source_label, "Kompetenz bestätigt")
+        self.assertEqual(change.previous_rating, "-")
+        self.assertEqual(change.new_rating, "+")
+
+    def test_profile_dashboard_adapter_projects_real_observation_events(self) -> None:
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-02-01",
+            competency_ratings=(self._sample_observation_rating(
+                "CMP-000001", "deutsch", "Deutsch",
+                "Mit Texten und Medien umgehen", "Lesen und Verstehen",
+                "Texte lesen und zentrale Informationen entnehmen", "-",
+            ),),
+        ))
+        self.adapter.save_observation(self._sample_observation_draft(
+            date_text="2026-06-01",
+            competency_ratings=(self._sample_observation_rating(
+                "CMP-000001", "deutsch", "Deutsch",
+                "Mit Texten und Medien umgehen", "Lesen und Verstehen",
+                "Texte lesen und zentrale Informationen entnehmen", "+",
+            ),),
+        ))
+
+        dashboard = self.adapter.student_profile_dashboard_for_student(
+            f"{STUDENT_ID_PREFIX}-000001",
+            as_of=date(2026, 7, 14),
+        )
+        documentation_statuses = self.adapter.list_documentation_status_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+
+        change = next(
+            item
+            for item in dashboard.orientation_changes
+            if item.competency_id == "CMP-000001"
+        )
+        self.assertEqual(change.previous_rating, "-")
+        self.assertEqual(change.new_rating, "+")
+        self.assertEqual(change.triggering_event.reference_id, "OBS-000002")
+        self.assertEqual(
+            dashboard.documentation_summary.total_learning_area_count,
+            sum(len(status.learning_area_statuses) for status in documentation_statuses),
+        )
+        self.assertEqual(
+            dashboard.documentation_summary.documented_learning_area_count,
+            sum(
+                area.documented_count > 0
+                for status in documentation_statuses
+                for area in status.learning_area_statuses
+            ),
+        )
 
     def test_deleted_observation_is_excluded_from_calculated_competency_status(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
@@ -5166,76 +5384,44 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_student_profile_renders_compact_documentation_status(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
+        documentation_statuses = (
+            StudentDocumentationSubjectStatus(
+                "deutsch", "Deutsch", 8, 14, (), 0,
+            ),
+            StudentDocumentationSubjectStatus(
+                "epu", "EPU", 0, 6,
+                (StudentMissingCompetencyViewModel(
+                    "CMP-000003", "Natur und Umwelt", 3,
+                ),),
+                3,
+            ),
+        )
         screen.set_student(
             self._sample_student_detail(),
-            (),
-            (),
-            None,
-            (
-                StudentDocumentationSubjectStatus(
-                    "deutsch",
-                    "Deutsch",
-                    8,
-                    14,
-                    (),
-                    0,
+            documentation_statuses=documentation_statuses,
+            profile_dashboard=StudentProfileDashboardViewModel(
+                documentation_summary_from_subjects(documentation_statuses),
+                3,
+                5,
+                12,
+                (
+                    StudentProfileUndocumentedSubjectViewModel("Deutsch", 6, 0),
+                    StudentProfileUndocumentedSubjectViewModel("EPU", 6, 3),
                 ),
-                StudentDocumentationSubjectStatus(
-                    "epu",
-                    "EPU",
-                    0,
-                    6,
-                    (
-                        StudentMissingCompetencyViewModel(
-                            "CMP-000003",
-                            "Natur und Umwelt",
-                            3,
-                        ),
-                    ),
-                    3,
-                ),
+                (),
             ),
         )
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
-        overview_details_container = screen.findChild(
-            QWidget,
-            "OverviewDocumentationDetails",
-        )
-        overview_details_button = screen.findChild(
-            QPushButton,
-            "OverviewDocumentationDetailsButton",
-        )
 
-        self.assertIn("Dokumentationsstand", label_texts)
-        self.assertIn("8/20 Lernbereiche dokumentiert", label_texts)
-        self.assertIn("Noch wenig belegt: EPU, Deutsch", label_texts)
-        self.assertIn("Noch wenig belegt: EPU, Deutsch", label_texts)
-        self.assertIsNotNone(overview_details_container)
-        self.assertTrue(overview_details_container.isHidden())
-        self.assertIsNotNone(overview_details_button)
-        self.assertFalse(overview_details_button.isHidden())
-        self.assertEqual(overview_details_button.text(), "Details anzeigen")
-        overview_details_button.click()
-        self.assertFalse(overview_details_container.isHidden())
-        self.assertEqual(overview_details_button.text(), "Details ausblenden")
-        expanded_label_texts = [label.text() for label in screen.findChildren(QLabel)]
-        self.assertIn("Deutsch", expanded_label_texts)
-        self.assertIn("8/14 Lernbereiche", expanded_label_texts)
-        self.assertIn("Deutsch: 8 / 14 dokumentiert", expanded_label_texts)
-        self.assertIn("EPU", expanded_label_texts)
-        self.assertIn("0/6 Lernbereiche", expanded_label_texts)
-        self.assertIn("EPU: 0 / 6 dokumentiert", expanded_label_texts)
-        self.assertIn(
-            "Für nächste Beobachtungen geeignet: Natur und Umwelt",
-            expanded_label_texts,
-        )
-        detail_text = " ".join(
-            label.text().casefold()
-            for label in overview_details_container.findChildren(QLabel)
-        )
-        for avoided_word in ("fehlend", "kritisch", "problem"):
-            self.assertNotIn(avoided_word, detail_text)
+        self.assertIn("8 / 20", label_texts)
+        self.assertIn("Bestätigter Stand", label_texts)
+        self.assertIn("Beobachtet", label_texts)
+        self.assertIn("NOCH NICHT DOKUMENTIERT", label_texts)
+        self.assertIn("Deutsch", label_texts)
+        self.assertIn("EPU", label_texts)
+        self.assertEqual(screen.header_documentation_label.text(), "8 / 20 Lernbereiche")
+        self.assertEqual(screen.overview_undocumented_metric.text(), "12")
         self.assertIsNotNone(app)
 
     def test_student_profile_opens_with_overview_tab(self) -> None:
@@ -5262,7 +5448,6 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(screen.name_label.text(), "Emma Müller")
         self.assertIn("Grashüpfer", screen.meta_label.text())
         self.assertIn("Kurs 1", screen.meta_label.text())
-        self.assertIn("Kompetenzen", screen.meta_label.text())
         self.assertEqual(screen.profile_tabs.currentIndex(), 2)
         self.assertTrue(screen.profile_tabs.tabBar().isHidden())
         self.assertEqual(
@@ -5292,101 +5477,90 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_student_profile_overview_summarizes_documented_student(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
+        documentation_statuses = (
+            StudentDocumentationSubjectStatus("deutsch", "Deutsch", 2, 3, (), 0),
+            StudentDocumentationSubjectStatus("epu", "EPU", 1, 2, (), 1),
+        )
+        orientation_status = self._cockpit_status(
+            "CMP-000001",
+            "Texte sinnentnehmend lesen",
+            subject_id="deutsch",
+            subject_name="Deutsch",
+            learning_area="Mit Texten und Medien umgehen",
+            topic="Lesen",
+            observation_count=2,
+            evidence=(
+                StudentCompetencyEvidenceViewModel(
+                    "OBS-000001", "2026-03-01", "-", "deutsch", "Deutsch",
+                    "Mit Texten und Medien umgehen", "Lesen",
+                    "Texte sinnentnehmend lesen", "Leseübung",
+                ),
+                StudentCompetencyEvidenceViewModel(
+                    "OBS-000002", "2026-07-05", "+", "deutsch", "Deutsch",
+                    "Mit Texten und Medien umgehen", "Lesen",
+                    "Texte sinnentnehmend lesen", "Präsentation",
+                ),
+            ),
+        )
         screen.set_student(
             self._sample_student_detail(),
             self._sample_many_observations(),
-            (
-                StudentCompetencySubjectGroup(
-                    "deutsch",
-                    "Deutsch",
-                    (
-                        StudentCompetencyStatusViewModel(
-                            "CMP-000001",
-                            "Texte sinnentnehmend lesen",
-                            "deutsch",
-                            "Deutsch",
-                            "+",
-                            "+ erreicht",
-                            "2026-07-05",
-                            0,
-                            ("-", "+", "+"),
-                            3,
-                            2.1,
-                        ),
-                    ),
-                ),
-                StudentCompetencySubjectGroup(
-                    "epu",
-                    "EPU",
-                    (
-                        StudentCompetencyStatusViewModel(
-                            "CMP-000003",
-                            "Naturphänomene beschreiben",
-                            "epu",
-                            "EPU",
-                            "++",
-                            "++ sicher erreicht",
-                            "2026-07-04",
-                            1,
-                            ("+", "++"),
-                            2,
-                            2.8,
-                        ),
-                    ),
-                ),
-            ),
-            documentation_statuses=(
-                StudentDocumentationSubjectStatus("deutsch", "Deutsch", 2, 3, (), 0),
-                StudentDocumentationSubjectStatus("epu", "EPU", 1, 2, (), 1),
+            documentation_statuses=documentation_statuses,
+            profile_dashboard=build_student_profile_dashboard(
+                (orientation_status,),
+                documentation_statuses,
+                date(2026, 7, 14),
             ),
         )
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
-        self.assertIn("Halbjahresblick", label_texts)
-        self.assertIn("4 Beobachtungen · 3/5 Lernbereiche dokumentiert", label_texts)
+        self.assertIn("Arbeitsprofil", label_texts)
+        self.assertIn("Lernentwicklung", label_texts)
+        self.assertIn("Texte sinnentnehmend lesen", label_texts)
+        self.assertIn("- in Entwicklung → + erreicht", label_texts)
+        self.assertIn("01.03.2026 – 05.07.2026", label_texts)
         self.assertIn(
-            f"Letzte Beobachtung: 2026-07-06 · Mathematik · Projektarbeit",
+            "2026-07-06 · Mathematik · Projektarbeit · Neueste Beobachtung.",
             label_texts,
         )
-        self.assertIn("Stärken", label_texts)
-        self.assertIn("✓ Texte sinnentnehmend lesen", label_texts)
-        self.assertIn("✓ Naturphänomene beschreiben", label_texts)
-        self.assertIn("Im Blick behalten", label_texts)
-        self.assertIn("Entwicklung", label_texts)
-        self.assertNotIn("Texte sinnentnehmend lesen: - → + → +", label_texts)
-        self.assertIn(
-            "Sichtbare Entwicklung erscheint hier nach mehreren Beobachtungen.",
-            label_texts,
+        self.assertNotIn("Stärken", label_texts)
+        self.assertNotIn("Im Blick behalten", label_texts)
+        evidence_button = screen.findChild(
+            QPushButton,
+            "StudentProfileOrientationEvidenceOpen",
         )
+        self.assertIsNotNone(evidence_button)
+        evidence_button.click()
+        self.assertEqual(screen.profile_tabs.currentIndex(), 1)
+        self.assertEqual(screen._focused_observation_id, "OBS-000002")
         self.assertIsNotNone(app)
 
     def test_student_profile_overview_does_not_invent_strengths_without_data(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
+        documentation_statuses = (
+            StudentDocumentationSubjectStatus("deutsch", "Deutsch", 0, 3, (), 0),
+        )
         screen.set_student(
             self._sample_student_detail(),
-            (),
-            (),
-            documentation_statuses=(
-                StudentDocumentationSubjectStatus("deutsch", "Deutsch", 0, 3, (), 0),
+            documentation_statuses=documentation_statuses,
+            profile_dashboard=build_student_profile_dashboard(
+                (), documentation_statuses, date(2026, 7, 14)
             ),
         )
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
         strength_lines = [text for text in label_texts if text.startswith("✓ ")]
 
-        self.assertIn("0 Beobachtungen · 0/3 Lernbereiche dokumentiert", label_texts)
         self.assertIn(
-            "Letzte Beobachtung: noch keine Beobachtung dokumentiert",
+            "Noch keine Entwicklung über mehrere Zeitpunkte sichtbar",
             label_texts,
         )
-        self.assertIn(
-            "Noch keine Beobachtungen für eine verlässliche Einschätzung.",
-            label_texts,
-        )
+        self.assertEqual(screen.header_documentation_label.text(), "0 / 3 Lernbereiche")
+        self.assertEqual(screen.overview_undocumented_metric.text(), "3")
         self.assertEqual(strength_lines, [])
-        self.assertIn("! Deutsch weiter beobachten", label_texts)
+        self.assertIn("Deutsch", label_texts)
         self.assertIsNotNone(app)
 
     def test_student_profile_overview_resets_when_switching_students(self) -> None:
@@ -5408,17 +5582,20 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 "",
                 True,
             ),
-            (),
-            (),
-            documentation_statuses=(
-                StudentDocumentationSubjectStatus("deutsch", "Deutsch", 0, 2, (), 0),
+            profile_dashboard=build_student_profile_dashboard(
+                (),
+                (StudentDocumentationSubjectStatus(
+                    "deutsch", "Deutsch", 0, 2, (), 0
+                ),),
+                date(2026, 7, 14),
             ),
         )
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
         self.assertEqual(tab_widget.currentIndex(), 0)
         self.assertIn("Noah Beispiel", label_texts)
-        self.assertIn("0 Beobachtungen · 0/2 Lernbereiche dokumentiert", label_texts)
+        self.assertEqual(screen.header_documentation_label.text(), "0 / 2 Lernbereiche")
+        self.assertEqual(screen.overview_undocumented_metric.text(), "2")
         self.assertNotIn("Neueste Beobachtung.", label_texts)
         self.assertIsNotNone(app)
 
@@ -6353,6 +6530,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     current_scroll.horizontalScrollBar().maximum(),
                     0,
                 )
+                self.assertEqual(screen._overview_compact, width < 1200)
         screen.close()
         self.assertIsNotNone(app)
 
@@ -6366,6 +6544,17 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn("SQLite", screen_source)
         self.assertIn("list_competency_status_projection_for_student", adapter_source)
         self.assertNotIn("calculated_rating_from_history", adapter_source)
+
+    def test_profile_dashboard_projection_is_not_calculated_in_screen(self) -> None:
+        screen_source = inspect.getsource(student_profile_screen.StudentProfileScreen)
+        adapter_source = inspect.getsource(
+            StudentDesktopAdapter.student_profile_dashboard_for_student
+        )
+
+        self.assertNotIn("build_student_profile_dashboard", screen_source)
+        self.assertNotIn("SQLite", screen_source)
+        self.assertIn("list_competency_status_projection_for_student", adapter_source)
+        self.assertIn("build_student_profile_dashboard", adapter_source)
 
     def test_sidebar_students_navigation_resets_to_list(self) -> None:
         target = resolve_navigation_target("students")

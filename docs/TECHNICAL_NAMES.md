@@ -671,6 +671,12 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentCompetencyCockpitLearningAreaViewModel`
 - `StudentCompetencyCockpitTopicViewModel`
 - `build_student_competency_cockpit(statuses)`
+- `StudentProfileDashboardViewModel`
+- `StudentProfileOrientationChangeViewModel`
+- `StudentProfileOrientationEventViewModel`
+- `StudentProfileUndocumentedSubjectViewModel`
+- `build_student_profile_dashboard(statuses, documentation_statuses, as_of)`
+- `StudentDesktopAdapter.student_profile_dashboard_for_student(student_id, as_of)`
 - `StudentDocumentationLearningAreaStatus`
 - `SettingsScreen`
 - `SettingsScreen.documentation_subjects_save_requested`
@@ -1677,11 +1683,34 @@ Registrierte Profilnamen:
 - `StudentProfileMoreActions`
 - `StudentProfileNavigation`
 - `StudentProfileTabs`
+- `DocumentationRing`
+- `StudentProfileAvatar`
+- `StudentProfileContextBadge`
+- `StudentProfileHeaderDocumentation`
+- `StudentProfileDocumentationRing`
+- `StudentProfileOverviewCards`
+- `StudentProfileOrientationCard`
+- `StudentProfileOrientationChange`
+- `StudentProfileOrientationStatusChange`
+- `StudentProfileOrientationEvidence`
+- `StudentProfileOrientationEvidenceOpen`
+- `StudentProfileEvidenceBadge`
+- `StudentProfileHistoricalBadge`
+- `StudentProfileCompetencySummaryCard`
+- `StudentProfileUndocumentedCard`
+- `StudentProfileEyebrow`
+- `StudentProfileDocumentationMetric`
+- `StudentProfileDashboardSummaryRow`
+- `StudentProfileOpenCompetencyCockpit`
+- `StudentProfileOpenUndocumented`
 - `CompetencyCockpitSearch`
 - `CompetencyCockpitStageFilter`
 - `StudentProfileScreen._select_profile_section(key)`
 - `StudentProfileScreen._sync_profile_navigation(index)`
 - `StudentProfileScreen._update_profile_header_context()`
+- `StudentProfileScreen._apply_overview_card_layout(compact)`
+- `StudentProfileScreen._orientation_change_row(change)`
+- `StudentProfileScreen._open_undocumented_competencies()`
 - `StudentProfileScreen._matches_competency_learning_stage(competency, learning_stage_filter)`
 - `StudentProfileScreen._matches_competency_search(competency, learning_area, topic, search_text)`
 

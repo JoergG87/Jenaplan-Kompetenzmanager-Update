@@ -5,6 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 
+from src.desktop_app.view_models.observation_view_model import (
+    observation_rating_label,
+)
+
 
 @dataclass(frozen=True)
 class StudentDocumentationSummaryViewModel:
@@ -243,6 +247,372 @@ class StudentProfileOverviewViewModel:
     watch_items: tuple[str, ...]
     development_items: tuple[str, ...]
     reliability_hint: str = ""
+
+
+@dataclass(frozen=True)
+class StudentProfileOrientationEventViewModel:
+    """One real dated observation or confirmation in the profile projection."""
+
+    event_date: date
+    rating: str
+    rating_label: str
+    source: str
+    source_label: str
+    reference_id: str
+    evidence_label: str
+
+
+@dataclass(frozen=True)
+class StudentProfileOrientationChangeViewModel:
+    """One actual status change selected for the Variant-A orientation card."""
+
+    competency_id: str
+    competency_label: str
+    subject_display_name: str
+    topic_label: str
+    previous_rating: str
+    previous_status_label: str
+    new_rating: str
+    new_status_label: str
+    period_label: str
+    latest_change_date: date
+    triggering_event: StudentProfileOrientationEventViewModel
+    sort_order: int
+    historical: bool = False
+
+
+@dataclass(frozen=True)
+class StudentProfileUndocumentedSubjectViewModel:
+    """Neutral open-documentation count for one curricular subject."""
+
+    subject_display_name: str
+    count: int
+    sort_order: int
+
+
+@dataclass(frozen=True)
+class StudentProfileDashboardViewModel:
+    """Read-only Variant-A composition for the productive student profile."""
+
+    documentation_summary: StudentDocumentationSummaryViewModel
+    confirmed_documented_count: int
+    observed_only_count: int
+    undocumented_count: int
+    undocumented_subjects: tuple[StudentProfileUndocumentedSubjectViewModel, ...]
+    orientation_changes: tuple[StudentProfileOrientationChangeViewModel, ...]
+
+
+def empty_student_profile_dashboard() -> StudentProfileDashboardViewModel:
+    """Return a neutral empty Variant-A dashboard projection."""
+    return StudentProfileDashboardViewModel(
+        empty_documentation_summary(),
+        0,
+        0,
+        0,
+        (),
+        (),
+    )
+
+
+def build_student_profile_dashboard(
+    statuses: tuple[object, ...],
+    documentation_statuses: tuple[object, ...],
+    as_of: date,
+) -> StudentProfileDashboardViewModel:
+    """Compose Variant A from canonical status rows without recalculating status."""
+    documentation_subject_ids = {
+        str(getattr(status, "subject_id", "")).strip()
+        for status in documentation_statuses
+        if str(getattr(status, "subject_id", "")).strip()
+    }
+    documented_statuses = tuple(
+        status
+        for status in statuses
+        if getattr(status, "subject_id", "") in documentation_subject_ids
+        and getattr(status, "is_active", False)
+        and not getattr(status, "historical", False)
+        and getattr(status, "documentation_state", "undocumented")
+        != "undocumented"
+    )
+    confirmed_documented_count = sum(
+        bool(getattr(status, "confirmed_rating", ""))
+        for status in documented_statuses
+    )
+    observed_only_count = sum(
+        not bool(getattr(status, "confirmed_rating", ""))
+        for status in documented_statuses
+    )
+    (
+        documentation_summary,
+        area_confirmed_count,
+        area_observed_count,
+        undocumented_subjects,
+    ) = _profile_documentation_metrics(
+        statuses,
+        documentation_statuses,
+        confirmed_documented_count,
+        observed_only_count,
+        as_of,
+    )
+    confirmed_documented_count = area_confirmed_count
+    observed_only_count = area_observed_count
+    changes = tuple(
+        change
+        for status in statuses
+        if (change := _orientation_change(status, as_of)) is not None
+    )
+    orientation_changes = tuple(
+        sorted(
+            changes,
+            key=lambda item: (
+                -item.latest_change_date.toordinal(),
+                item.sort_order,
+                item.subject_display_name.casefold(),
+                item.competency_id,
+            ),
+        )[:3]
+    )
+    return StudentProfileDashboardViewModel(
+        documentation_summary,
+        confirmed_documented_count,
+        observed_only_count,
+        sum(item.count for item in undocumented_subjects),
+        undocumented_subjects,
+        orientation_changes,
+    )
+
+
+def _profile_documentation_metrics(
+    statuses: tuple[object, ...],
+    documentation_statuses: tuple[object, ...],
+    fallback_confirmed_count: int,
+    fallback_observed_count: int,
+    as_of: date,
+) -> tuple[
+    StudentDocumentationSummaryViewModel,
+    int,
+    int,
+    tuple[StudentProfileUndocumentedSubjectViewModel, ...],
+]:
+    area_rows = tuple(
+        (
+            str(getattr(subject, "subject_id", "")),
+            str(getattr(subject, "subject_display_name", "")),
+            int(getattr(subject, "sort_order", 0)),
+            area,
+        )
+        for subject in documentation_statuses
+        for area in getattr(subject, "learning_area_statuses", ())
+    )
+    if not area_rows:
+        summary = documentation_summary_from_subjects(documentation_statuses)
+        open_subjects = tuple(
+            StudentProfileUndocumentedSubjectViewModel(
+                str(getattr(subject, "subject_display_name", "")),
+                max(
+                    0,
+                    int(getattr(subject, "total_count", 0))
+                    - int(getattr(subject, "documented_count", 0)),
+                ),
+                int(getattr(subject, "sort_order", 0)),
+            )
+            for subject in sorted(
+                documentation_statuses,
+                key=lambda item: (
+                    int(getattr(item, "sort_order", 0)),
+                    str(getattr(item, "subject_display_name", "")).casefold(),
+                ),
+            )
+            if int(getattr(subject, "total_count", 0))
+            > int(getattr(subject, "documented_count", 0))
+        )
+        return (
+            summary,
+            fallback_confirmed_count,
+            fallback_observed_count,
+            open_subjects,
+        )
+
+    documented_areas = 0
+    confirmed_areas = 0
+    observed_areas = 0
+    open_by_subject: dict[tuple[int, str], int] = {}
+    for subject_id, subject_name, sort_order, area in area_rows:
+        area_name = str(getattr(area, "learning_area", ""))
+        matching = tuple(
+            status
+            for status in statuses
+            if getattr(status, "subject_id", "") == subject_id
+            and getattr(status, "learning_area", "") == area_name
+            and getattr(status, "is_active", False)
+            and not getattr(status, "historical", False)
+            and getattr(status, "documentation_state", "undocumented")
+            != "undocumented"
+        )
+        documented_matching = tuple(
+            status
+            for status in matching
+            if _orientation_events(status, as_of)
+        )
+        if not documented_matching:
+            key = (sort_order, subject_name)
+            open_by_subject[key] = open_by_subject.get(key, 0) + 1
+            continue
+        documented_areas += 1
+        if any(
+            getattr(status, "confirmed_rating", "")
+            and (
+                confirmed_at := _profile_date(
+                    getattr(status, "confirmed_at", "")
+                )
+            ) is not None
+            and confirmed_at <= as_of
+            for status in documented_matching
+        ):
+            confirmed_areas += 1
+        else:
+            observed_areas += 1
+    total_areas = len(area_rows)
+    weak_subject_names = tuple(
+        subject_name
+        for _sort_order, subject_name in sorted(open_by_subject)
+    )
+    summary = StudentDocumentationSummaryViewModel(
+        documented_areas,
+        total_areas,
+        _documentation_status_label(documented_areas, total_areas),
+        weak_subject_names[:3],
+    )
+    open_subjects = tuple(
+        StudentProfileUndocumentedSubjectViewModel(
+            subject_name,
+            open_by_subject[(sort_order, subject_name)],
+            sort_order,
+        )
+        for sort_order, subject_name in sorted(open_by_subject)
+    )
+    return summary, confirmed_areas, observed_areas, open_subjects
+
+
+def _orientation_change(
+    status: object,
+    as_of: date,
+) -> StudentProfileOrientationChangeViewModel | None:
+    events = _orientation_events(status, as_of)
+    if len(events) < 2:
+        return None
+    changed_pairs = tuple(
+        (previous, current)
+        for previous, current in zip(events, events[1:])
+        if previous.rating != current.rating
+    )
+    if not changed_pairs:
+        return None
+    previous, current = changed_pairs[-1]
+    topic_label = str(getattr(status, "competency_group", "")).strip()
+    if not topic_label:
+        topic_label = str(getattr(status, "learning_area", "")).strip()
+    return StudentProfileOrientationChangeViewModel(
+        competency_id=str(getattr(status, "competency_id", "")),
+        competency_label=(
+            str(getattr(status, "competency_label", "")).strip()
+            or str(getattr(status, "competency_text", "")).strip()
+        ),
+        subject_display_name=str(
+            getattr(status, "subject_display_name", "")
+        ).strip(),
+        topic_label=topic_label,
+        previous_rating=previous.rating,
+        previous_status_label=previous.rating_label,
+        new_rating=current.rating,
+        new_status_label=current.rating_label,
+        period_label=(
+            f"{_format_profile_date(events[0].event_date)} – "
+            f"{_format_profile_date(events[-1].event_date)}"
+        ),
+        latest_change_date=current.event_date,
+        triggering_event=current,
+        sort_order=int(getattr(status, "sort_order", 0)),
+        historical=bool(getattr(status, "historical", False)),
+    )
+
+
+def _orientation_events(
+    status: object,
+    as_of: date,
+) -> tuple[StudentProfileOrientationEventViewModel, ...]:
+    events: list[tuple[StudentProfileOrientationEventViewModel, int]] = []
+    for evidence in getattr(status, "evidence", ()):
+        event_date = _profile_date(getattr(evidence, "observation_date", ""))
+        if event_date is None or event_date > as_of:
+            continue
+        rating = str(getattr(evidence, "rating", "")).strip()
+        if not rating:
+            continue
+        source_label = "Beobachtung"
+        context = str(getattr(evidence, "context", "")).strip()
+        evidence_label = (
+            f"{source_label} vom {_format_profile_date(event_date)}: "
+            f"{observation_rating_label(rating)}"
+        )
+        if context:
+            evidence_label += f" · {context}"
+        events.append((
+            StudentProfileOrientationEventViewModel(
+                event_date,
+                rating,
+                observation_rating_label(rating),
+                "observation",
+                source_label,
+                str(getattr(evidence, "observation_id", "")),
+                evidence_label,
+            ),
+            0,
+        ))
+    confirmed_rating = str(getattr(status, "confirmed_rating", "")).strip()
+    confirmed_at = _profile_date(getattr(status, "confirmed_at", ""))
+    if confirmed_rating and confirmed_at is not None and confirmed_at <= as_of:
+        source_label = "Kompetenz bestätigt"
+        events.append((
+            StudentProfileOrientationEventViewModel(
+                confirmed_at,
+                confirmed_rating,
+                observation_rating_label(confirmed_rating),
+                "confirmation",
+                source_label,
+                "",
+                (
+                    f"{source_label} am {_format_profile_date(confirmed_at)}: "
+                    f"{observation_rating_label(confirmed_rating)}"
+                ),
+            ),
+            1,
+        ))
+    return tuple(
+        event
+        for event, _priority in sorted(
+            events,
+            key=lambda item: (
+                item[0].event_date,
+                item[1],
+                item[0].reference_id,
+            ),
+        )
+    )
+
+
+def _profile_date(value: object) -> date | None:
+    text = str(value).strip()
+    if len(text) < 10:
+        return None
+    try:
+        return date.fromisoformat(text[:10])
+    except ValueError:
+        return None
+
+
+def _format_profile_date(value: date) -> str:
+    return value.strftime("%d.%m.%Y")
 
 
 def build_student_profile_overview(

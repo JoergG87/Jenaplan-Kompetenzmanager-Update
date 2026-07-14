@@ -5,13 +5,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QUrl, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import QRectF, Qt, QUrl, Signal
+from PySide6.QtGui import QColor, QDesktopServices, QPainter, QPen
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
     QFileDialog,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -43,9 +44,10 @@ from src.desktop_app.view_models.student_view_model import (
     REPORT_NO_OBSERVATIONS_MESSAGE,
     StudentDetailViewModel,
     StudentDocumentViewModel,
+    StudentProfileDashboardViewModel,
+    StudentProfileOrientationChangeViewModel,
     StudentReportPreviewViewModel,
-    build_student_profile_overview,
-    documentation_summary_from_subjects,
+    empty_student_profile_dashboard,
     format_student_report_preview_text,
 )
 from src.desktop_app.view_models.observation_view_model import (
@@ -57,7 +59,54 @@ from src.desktop_app.view_models.observation_view_model import (
     StudentDocumentationSubjectStatus,
     StudentCompetencySubjectGroup,
 )
-from src.desktop_app.theme import set_label_style
+from src.desktop_app.theme import COLOR_NAVY, COLOR_TURQUOISE, set_label_style
+
+
+class DocumentationRing(QWidget):
+    """Neutral documentation coverage ring without performance semantics."""
+
+    def __init__(self, diameter: int = 64) -> None:
+        super().__init__()
+        self._documented = 0
+        self._total = 0
+        self.setFixedSize(diameter, diameter)
+        self.setObjectName("StudentProfileDocumentationRing")
+        self.set_counts(0, 0)
+
+    def set_counts(self, documented: int, total: int) -> None:
+        self._documented = max(0, documented)
+        self._total = max(0, total)
+        self.setAccessibleName(
+            f"Dokumentiert: {self._documented} von {self._total} Lernbereichen"
+        )
+        self.update()
+
+    def paintEvent(self, _event: object) -> None:  # noqa: N802 - Qt API
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        ring = QRectF(6, 6, self.width() - 12, self.height() - 12)
+        painter.setPen(QPen(
+            QColor("#DFE8EA"),
+            6,
+            Qt.PenStyle.SolidLine,
+            Qt.PenCapStyle.RoundCap,
+        ))
+        painter.drawArc(ring, 0, 360 * 16)
+        if self._total:
+            span = int(360 * 16 * min(1.0, self._documented / self._total))
+            painter.setPen(QPen(
+                QColor(COLOR_TURQUOISE),
+                6,
+                Qt.PenStyle.SolidLine,
+                Qt.PenCapStyle.RoundCap,
+            ))
+            painter.drawArc(ring, 90 * 16, -span)
+        painter.setPen(QColor(COLOR_NAVY))
+        painter.drawText(
+            ring,
+            Qt.AlignmentFlag.AlignCenter,
+            f"{self._documented}/{self._total}",
+        )
 
 
 class StudentProfileScreen(QWidget):
@@ -85,18 +134,11 @@ class StudentProfileScreen(QWidget):
         self.profile_page_header.setObjectName("StudentProfilePageHeader")
         self.name_label = self.profile_page_header.title_label
         self.meta_label = self.profile_page_header.subtitle_label
-        self.student_id_label = QLabel("")
-        self.group_value_label = QLabel("")
-        self.course_value_label = QLabel("")
-        self.notes_value_label = QLabel("")
+        self.meta_label.setObjectName("StudentProfileContextBadge")
         self.action_feedback_label = QLabel("")
-        self.overview_summary_layout = QVBoxLayout()
         self.overview_recent_layout = QVBoxLayout()
-        self.overview_documentation_layout = QVBoxLayout()
-        self.overview_development_layout = QVBoxLayout()
         self.observation_empty_label = QLabel("")
         self.competency_empty_label = QLabel("")
-        self.documentation_empty_label = QLabel("")
         self.documents_empty_label = QLabel("")
         self.documents_feedback_label = QLabel("")
         self.report_empty_label = QLabel("")
@@ -110,6 +152,7 @@ class StudentProfileScreen(QWidget):
         self.current_documents: tuple[StudentDocumentViewModel, ...] = ()
         self.current_report_preview: StudentReportPreviewViewModel | None = None
         self.current_competency_cockpit: StudentCompetencyCockpitViewModel | None = None
+        self.current_profile_dashboard = empty_student_profile_dashboard()
         self.show_all_observations = False
         self._focused_observation_id = ""
         self._competency_expanded_keys: set[str] = set()
@@ -121,34 +164,43 @@ class StudentProfileScreen(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
 
-        header = QHBoxLayout()
         self.back_button.clicked.connect(self.back_requested.emit)
-        header.addWidget(self.back_button)
-        header.addStretch()
-        layout.addLayout(header)
 
-        set_label_style(self.student_id_label, "small")
-
-        self.profile_primary_action = QPushButton("Neue Beobachtung")
+        self.profile_primary_action = QPushButton("Beobachtung erfassen")
         self.profile_primary_action.setObjectName("StudentProfilePrimaryAction")
+        self.profile_primary_action.setMaximumWidth(210)
         configure_button(
             self.profile_primary_action,
             "primary",
             "Neue Beobachtung für dieses Kind",
         )
         self.profile_primary_action.clicked.connect(self._request_new_observation)
+        header_documentation = QWidget()
+        header_documentation.setObjectName("StudentProfileHeaderDocumentation")
+        header_documentation_layout = QHBoxLayout(header_documentation)
+        header_documentation_layout.setContentsMargins(0, 0, 0, 0)
+        header_documentation_layout.setSpacing(8)
+        self.header_documentation_ring = DocumentationRing(58)
+        header_documentation_layout.addWidget(self.header_documentation_ring)
+        header_documentation_text = QVBoxLayout()
+        header_documentation_text.setSpacing(1)
+        header_documentation_title = QLabel("Dokumentiert")
+        set_label_style(header_documentation_title, "card_title")
+        self.header_documentation_label = QLabel("0 / 0 Lernbereiche")
+        set_label_style(self.header_documentation_label, "small")
+        header_documentation_text.addWidget(header_documentation_title)
+        header_documentation_text.addWidget(self.header_documentation_label)
+        header_documentation_layout.addLayout(header_documentation_text)
+        self.profile_page_header.add_action(header_documentation)
         self.profile_page_header.add_action(self.profile_primary_action)
-
-        self.profile_file_action = QPushButton("Datei hinzufügen")
-        configure_button(self.profile_file_action, "secondary", "Datei hinzufügen")
-        self.profile_file_action.clicked.connect(self._request_add_document)
-        self.profile_page_header.add_action(self.profile_file_action)
 
         self.profile_more_action = QPushButton("Weitere Aktionen")
         self.profile_more_action.setObjectName("StudentProfileMoreActions")
+        self.profile_more_action.setMaximumWidth(170)
         configure_button(self.profile_more_action, "quiet", "Weitere Profilaktionen")
         more_menu = QMenu(self.profile_more_action)
         more_menu.addAction("Schüler bearbeiten", self._request_edit_student)
+        more_menu.addAction("Datei hinzufügen", self._request_add_document)
         more_menu.addAction("Bericht öffnen", self._request_learning_report)
         more_menu.addAction(
             "Lernentwicklungsgespräch öffnen",
@@ -160,7 +212,19 @@ class StudentProfileScreen(QWidget):
         profile_header_surface.setObjectName("StudentProfileHeaderSurface")
         profile_header_layout = QVBoxLayout(profile_header_surface)
         profile_header_layout.setContentsMargins(16, 12, 16, 12)
-        profile_header_layout.addWidget(self.profile_page_header)
+        back_row = QHBoxLayout()
+        back_row.addWidget(self.back_button)
+        back_row.addStretch(1)
+        profile_header_layout.addLayout(back_row)
+        identity_row = QHBoxLayout()
+        identity_row.setSpacing(12)
+        self.profile_avatar = QLabel("")
+        self.profile_avatar.setObjectName("StudentProfileAvatar")
+        self.profile_avatar.setFixedSize(52, 52)
+        self.profile_avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        identity_row.addWidget(self.profile_avatar)
+        identity_row.addWidget(self.profile_page_header, 1)
+        profile_header_layout.addLayout(identity_row)
         layout.addWidget(profile_header_surface)
 
         self.profile_navigation = SegmentedControl((
@@ -217,13 +281,24 @@ class StudentProfileScreen(QWidget):
         if self.current_student is None:
             subtitle = ""
         else:
-            section = self.profile_tabs.tabText(self.profile_tabs.currentIndex())
             subtitle = (
-                f"{self.current_student.group_name} · "
-                f"{self.current_student.course_name} · {section}"
+                f"Stammgruppe {self.current_student.group_name} · "
+                f"{self.current_student.course_name}"
             )
         self.meta_label.setText(subtitle)
+        context_width = (
+            min(480, self.meta_label.fontMetrics().horizontalAdvance(subtitle) + 80)
+            if subtitle else 0
+        )
+        self.meta_label.setMinimumWidth(context_width)
+        self.meta_label.setMaximumWidth(context_width or 16777215)
         self.meta_label.setVisible(bool(subtitle))
+
+    def resizeEvent(self, event: object) -> None:  # noqa: N802 - Qt API
+        super().resizeEvent(event)
+        compact = self.width() < 1200
+        if compact != getattr(self, "_overview_compact", None):
+            self._apply_overview_card_layout(compact=compact)
 
     def _scrollable_tab(self, content: QWidget) -> QScrollArea:
         scroll_area = QScrollArea()
@@ -244,39 +319,166 @@ class StudentProfileScreen(QWidget):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(0, 8, 0, 0)
-        layout.setSpacing(10)
+        layout.setSpacing(12)
 
         layout.addWidget(SectionHeader(
-            "Überblick",
-            "Pädagogischer Halbjahresblick aus den vorhandenen Dokumentationen.",
+            "Arbeitsprofil",
+            "Wichtige Informationen zuerst, Details in den fachlichen Bereichen.",
         ))
-        layout.addWidget(self._basis_data_card())
-        layout.addWidget(self._overview_summary_card())
+        self.overview_cards = QWidget()
+        self.overview_cards.setObjectName("StudentProfileOverviewCards")
+        self.overview_cards_layout = QGridLayout(self.overview_cards)
+        self.overview_cards_layout.setContentsMargins(0, 0, 0, 0)
+        self.overview_cards_layout.setHorizontalSpacing(16)
+        self.overview_cards_layout.setVerticalSpacing(12)
+        self.overview_orientation_card = self._orientation_card()
+        self.overview_competency_card = self._competency_summary_card()
+        self.overview_undocumented_card = self._undocumented_card()
+        layout.addWidget(self.overview_cards)
+        self._apply_overview_card_layout(compact=False)
         layout.addWidget(
-            self._overview_list_card("Entwicklung", self.overview_development_layout)
-        )
-        layout.addWidget(
-            self._overview_list_card("Letzte Beobachtungen", self.overview_recent_layout)
-        )
-        layout.addWidget(
-            self._overview_list_card(
-                "Dokumentationsstand",
-                self.overview_documentation_layout,
-            )
+            self._overview_list_card("Neueste Beobachtungen", self.overview_recent_layout)
         )
         layout.addStretch(1)
         return tab
 
-    def _overview_summary_card(self) -> QFrame:
-        card = self._card("accent")
+    def _orientation_card(self) -> QFrame:
+        card = self._card()
+        card.setObjectName("StudentProfileOrientationCard")
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(6)
-        title = QLabel("Halbjahresblick")
-        set_label_style(title, "card_title")
-        layout.addWidget(title)
-        layout.addLayout(self.overview_summary_layout)
+        layout.setContentsMargins(15, 12, 15, 12)
+        layout.setSpacing(8)
+        title_row = QHBoxLayout()
+        title = QLabel("Lernentwicklung")
+        set_label_style(title, "section_title")
+        current = QLabel("Aktuell dokumentiert")
+        set_label_style(current, "small")
+        title_row.addWidget(title, 1)
+        title_row.addWidget(current)
+        layout.addLayout(title_row)
+        self.orientation_changes_layout = QVBoxLayout()
+        self.orientation_changes_layout.setContentsMargins(0, 0, 0, 0)
+        self.orientation_changes_layout.setSpacing(8)
+        layout.addLayout(self.orientation_changes_layout)
         return card
+
+    def _competency_summary_card(self) -> QFrame:
+        card = self._card("accent")
+        card.setObjectName("StudentProfileCompetencySummaryCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(15, 12, 15, 12)
+        layout.setSpacing(9)
+        eyebrow = QLabel("KOMPETENZEN")
+        eyebrow.setObjectName("StudentProfileEyebrow")
+        layout.addWidget(eyebrow)
+        metric_row = QHBoxLayout()
+        self.overview_documentation_ring = DocumentationRing(72)
+        metric_row.addWidget(self.overview_documentation_ring)
+        metric_text = QVBoxLayout()
+        metric_text.setSpacing(2)
+        self.overview_documentation_metric = QLabel("0 / 0")
+        self.overview_documentation_metric.setObjectName(
+            "StudentProfileDocumentationMetric"
+        )
+        metric_text.addWidget(self.overview_documentation_metric)
+        metric_text.addWidget(self._overview_text("Lernbereiche dokumentiert", "body"))
+        metric_row.addLayout(metric_text, 1)
+        layout.addLayout(metric_row)
+        self.overview_competency_counts_layout = QVBoxLayout()
+        self.overview_competency_counts_layout.setSpacing(7)
+        layout.addLayout(self.overview_competency_counts_layout)
+        layout.addWidget(self._overview_text(
+            "Umfang und Herkunft der Dokumentation · keine Leistung oder Rangfolge.",
+            "small",
+        ))
+        button = QPushButton("Kompetenz-Cockpit öffnen")
+        button.setObjectName("StudentProfileOpenCompetencyCockpit")
+        configure_button(button, "secondary", "Kompetenz-Cockpit öffnen")
+        button.clicked.connect(
+            lambda _checked=False: self._select_profile_section("competencies")
+        )
+        layout.addWidget(button, 0, Qt.AlignmentFlag.AlignLeft)
+        return card
+
+    def _undocumented_card(self) -> QFrame:
+        card = self._card("soft")
+        card.setObjectName("StudentProfileUndocumentedCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(15, 12, 15, 12)
+        layout.setSpacing(9)
+        eyebrow = QLabel("NOCH NICHT DOKUMENTIERT")
+        eyebrow.setObjectName("StudentProfileEyebrow")
+        layout.addWidget(eyebrow)
+        count_row = QHBoxLayout()
+        self.overview_undocumented_metric = QLabel("0")
+        self.overview_undocumented_metric.setObjectName(
+            "StudentProfileDocumentationMetric"
+        )
+        count_row.addWidget(self.overview_undocumented_metric)
+        count_row.addWidget(self._overview_text(
+            "Lernbereiche ohne vorhandene Dokumentation",
+            "body",
+        ), 1)
+        layout.addLayout(count_row)
+        self.overview_undocumented_subjects_layout = QVBoxLayout()
+        self.overview_undocumented_subjects_layout.setSpacing(7)
+        layout.addLayout(self.overview_undocumented_subjects_layout)
+        button = QPushButton("Offene Bereiche ansehen")
+        button.setObjectName("StudentProfileOpenUndocumented")
+        configure_button(button, "quiet", "Noch nicht dokumentierte Bereiche ansehen")
+        button.clicked.connect(
+            lambda _checked=False: self._open_undocumented_competencies()
+        )
+        layout.addWidget(button, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addStretch(1)
+        layout.addWidget(self._overview_text(
+            "Hinweis auf Dokumentationsumfang · keine Aussage über Leistung.",
+            "small",
+        ))
+        return card
+
+    def _apply_overview_card_layout(self, *, compact: bool) -> None:
+        if not hasattr(self, "overview_cards_layout"):
+            return
+        for widget in (
+            self.overview_orientation_card,
+            self.overview_competency_card,
+            self.overview_undocumented_card,
+        ):
+            self.overview_cards_layout.removeWidget(widget)
+        if compact:
+            self.overview_cards_layout.addWidget(
+                self.overview_orientation_card, 0, 0, 1, 2
+            )
+            self.overview_cards_layout.addWidget(
+                self.overview_competency_card, 1, 0
+            )
+            self.overview_cards_layout.addWidget(
+                self.overview_undocumented_card, 1, 1
+            )
+            self.overview_cards_layout.setColumnStretch(0, 1)
+            self.overview_cards_layout.setColumnStretch(1, 1)
+            self.overview_cards_layout.setColumnStretch(2, 0)
+        else:
+            self.overview_cards_layout.addWidget(
+                self.overview_orientation_card, 0, 0
+            )
+            self.overview_cards_layout.addWidget(
+                self.overview_competency_card, 0, 1
+            )
+            self.overview_cards_layout.addWidget(
+                self.overview_undocumented_card, 0, 2
+            )
+            self.overview_cards_layout.setColumnStretch(0, 6)
+            self.overview_cards_layout.setColumnStretch(1, 3)
+            self.overview_cards_layout.setColumnStretch(2, 3)
+        self._overview_compact = compact
+
+    def _open_undocumented_competencies(self) -> None:
+        self._select_profile_section("competencies")
+        index = self.competency_documentation_filter.findData("undocumented")
+        if index >= 0:
+            self.competency_documentation_filter.setCurrentIndex(index)
 
     def _overview_list_card(self, title: str, content_layout: QVBoxLayout) -> QFrame:
         card = self._card()
@@ -312,32 +514,6 @@ class StudentProfileScreen(QWidget):
         layout.addLayout(button_row)
         layout.addWidget(self.action_feedback_label)
         return card
-
-    def _basis_data_card(self) -> QFrame:
-        card = self._card()
-        layout = QVBoxLayout(card)
-        title = QLabel("Basisdaten")
-        set_label_style(title, "card_title")
-        field_row = QHBoxLayout()
-        field_row.addWidget(self._basis_field_column("Stammgruppe", self.group_value_label), 1)
-        field_row.addWidget(self._basis_field_column("Kurs", self.course_value_label), 1)
-        field_row.addWidget(self._basis_field_column("Notiz", self.notes_value_label), 2)
-        layout.addWidget(title)
-        layout.addLayout(field_row)
-        return card
-
-    def _basis_field_column(self, label: str, value_label: QLabel) -> QWidget:
-        column = QWidget()
-        layout = QVBoxLayout(column)
-        layout.setContentsMargins(0, 0, 0, 0)
-        field_label = QLabel(label)
-        set_label_style(field_label, "field_label")
-        set_label_style(value_label, "body")
-        value_label.setWordWrap(True)
-        layout.addWidget(field_label)
-        layout.addWidget(value_label)
-        layout.addStretch()
-        return column
 
     def _placeholder_card(self, title: str, placeholder: str, hint: str) -> QFrame:
         card = self._card()
@@ -633,78 +809,163 @@ class StudentProfileScreen(QWidget):
         self,
         student: StudentDetailViewModel | None,
         observations: tuple[ObservationListItem, ...],
-        competency_groups: tuple[StudentCompetencySubjectGroup, ...],
-        documentation_statuses: tuple[StudentDocumentationSubjectStatus, ...],
+        dashboard: StudentProfileDashboardViewModel,
     ) -> None:
-        self._clear_layout(self.overview_summary_layout)
         self._clear_layout(self.overview_recent_layout)
-        self._clear_layout(self.overview_documentation_layout)
-        self._clear_layout(self.overview_development_layout)
+        self._clear_layout(self.orientation_changes_layout)
+        self._clear_layout(self.overview_competency_counts_layout)
+        self._clear_layout(self.overview_undocumented_subjects_layout)
         if student is None:
-            self.overview_summary_layout.addWidget(
-                self._overview_text("Kein Schüler ausgewählt.", "body")
+            self.orientation_changes_layout.addWidget(
+                EmptyState("Bitte zuerst ein Kind auswählen.")
             )
             return
-        overview = build_student_profile_overview(
-            observations,
-            competency_groups,
-            documentation_statuses,
+        summary = dashboard.documentation_summary
+        documented = summary.documented_learning_area_count
+        total = summary.total_learning_area_count
+        self.header_documentation_ring.set_counts(documented, total)
+        self.header_documentation_label.setText(
+            f"{documented} / {total} Lernbereiche"
         )
-        self.overview_summary_layout.addWidget(
-            self._overview_text(
-                f"{overview.observation_count_label} · {overview.documentation_label}",
-                "body",
+        self.overview_documentation_ring.set_counts(documented, total)
+        self.overview_documentation_metric.setText(f"{documented} / {total}")
+        self.overview_undocumented_metric.setText(str(dashboard.undocumented_count))
+        self.overview_competency_counts_layout.addWidget(
+            self._dashboard_summary_row(
+                "Bestätigter Stand",
+                str(dashboard.confirmed_documented_count),
             )
         )
-        self.overview_summary_layout.addWidget(
-            self._overview_text(overview.latest_observation_label, "small")
-        )
-        if overview.reliability_hint:
-            self.overview_summary_layout.addWidget(
-                self._overview_text(overview.reliability_hint, "subtle")
-            )
-        self.overview_summary_layout.addWidget(
-            self._overview_subsection("Stärken", overview.strengths, "✓")
-        )
-        self.overview_summary_layout.addWidget(
-            self._overview_subsection(
-                "Im Blick behalten",
-                overview.watch_items,
-                "!",
-                empty_text="Aktuell kein besonderer Beobachtungshinweis aus den vorhandenen Daten.",
+        self.overview_competency_counts_layout.addWidget(
+            self._dashboard_summary_row(
+                "Beobachtet",
+                str(dashboard.observed_only_count),
             )
         )
+        for subject in dashboard.undocumented_subjects:
+            self.overview_undocumented_subjects_layout.addWidget(
+                self._dashboard_summary_row(
+                    subject.subject_display_name,
+                    str(subject.count),
+                )
+            )
+        if not dashboard.undocumented_subjects:
+            self.overview_undocumented_subjects_layout.addWidget(
+                self._overview_text(
+                    "Alle dokumentationsrelevanten Kompetenzen sind belegt.",
+                    "small",
+                )
+            )
+        if dashboard.orientation_changes:
+            for change in dashboard.orientation_changes:
+                self.orientation_changes_layout.addWidget(
+                    self._orientation_change_row(change)
+                )
+        else:
+            self.orientation_changes_layout.addWidget(EmptyState(
+                (
+                    "Sobald zu einer Kompetenz unterschiedliche dokumentierte "
+                    "Stände vorliegen, erscheint sie hier."
+                ),
+                title="Noch keine Entwicklung über mehrere Zeitpunkte sichtbar",
+            ))
         self._render_overview_recent_observations(observations)
-        self._render_overview_documentation(documentation_statuses)
-        self._render_overview_development(overview.development_items)
+
+    def _orientation_change_row(
+        self,
+        change: StudentProfileOrientationChangeViewModel,
+    ) -> QFrame:
+        row = self._card("soft")
+        row.setObjectName("StudentProfileOrientationChange")
+        layout = QVBoxLayout(row)
+        layout.setContentsMargins(11, 8, 11, 8)
+        layout.setSpacing(5)
+        top = QHBoxLayout()
+        title = QVBoxLayout()
+        title.setSpacing(1)
+        competency = QLabel(change.competency_label)
+        competency.setWordWrap(True)
+        set_label_style(competency, "card_title")
+        topic = QLabel(
+            " · ".join(
+                part
+                for part in (change.subject_display_name, change.topic_label)
+                if part
+            )
+        )
+        set_label_style(topic, "small")
+        title.addWidget(competency)
+        title.addWidget(topic)
+        if change.historical:
+            historical = QLabel("Historische Kompetenzreferenz")
+            historical.setObjectName("StudentProfileHistoricalBadge")
+            title.addWidget(historical)
+        top.addLayout(title, 1)
+        status = QLabel(
+            f"{change.previous_status_label} → {change.new_status_label}"
+        )
+        status.setObjectName("StudentProfileOrientationStatusChange")
+        status.setWordWrap(True)
+        status.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+        top.addWidget(status)
+        period = QLabel(change.period_label)
+        set_label_style(period, "small")
+        period.setAlignment(Qt.AlignmentFlag.AlignRight)
+        top.addWidget(period)
+        layout.addLayout(top)
+        evidence = QFrame()
+        evidence.setObjectName("StudentProfileOrientationEvidence")
+        evidence_layout = QHBoxLayout(evidence)
+        evidence_layout.setContentsMargins(9, 5, 9, 5)
+        source = QLabel(change.triggering_event.source_label)
+        source.setObjectName("StudentProfileEvidenceBadge")
+        evidence_layout.addWidget(source)
+        evidence_text = QLabel(change.triggering_event.evidence_label)
+        evidence_text.setWordWrap(True)
+        set_label_style(evidence_text, "body")
+        evidence_layout.addWidget(evidence_text, 1)
+        if change.triggering_event.reference_id:
+            open_evidence = QPushButton("Beobachtung öffnen")
+            open_evidence.setObjectName("StudentProfileOrientationEvidenceOpen")
+            configure_button(
+                open_evidence,
+                "quiet",
+                f"Beobachtung zu {change.competency_label} öffnen",
+            )
+            open_evidence.clicked.connect(
+                lambda _checked=False, observation_id=(
+                    change.triggering_event.reference_id
+                ): self._show_observations_tab(observation_id)
+            )
+            evidence_layout.addWidget(open_evidence)
+        layout.addWidget(evidence)
+        row.setAccessibleName(
+            f"{change.competency_label}: {change.previous_status_label} zu "
+            f"{change.new_status_label}, {change.period_label}. "
+            f"{change.triggering_event.evidence_label}"
+        )
+        return row
+
+    def _dashboard_summary_row(self, label: str, value: str) -> QFrame:
+        row = self._card("soft")
+        row.setObjectName("StudentProfileDashboardSummaryRow")
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(10, 8, 10, 8)
+        title = QLabel(label)
+        set_label_style(title, "card_title")
+        count = QLabel(value)
+        set_label_style(count, "small")
+        layout.addWidget(title, 1)
+        layout.addWidget(count)
+        return row
 
     def _overview_text(self, text: str, style: str) -> QLabel:
         label = QLabel(text)
         label.setWordWrap(True)
         set_label_style(label, style)
         return label
-
-    def _overview_subsection(
-        self,
-        title: str,
-        items: tuple[str, ...],
-        marker: str,
-        *,
-        empty_text: str = "Noch zu wenig Beobachtungen für eine verlässliche Einschätzung.",
-    ) -> QWidget:
-        section = QWidget()
-        layout = QVBoxLayout(section)
-        layout.setContentsMargins(0, 2, 0, 0)
-        layout.setSpacing(3)
-        title_label = QLabel(title)
-        set_label_style(title_label, "field_label")
-        layout.addWidget(title_label)
-        if not items:
-            layout.addWidget(self._overview_text(empty_text, "subtle"))
-            return section
-        for item in items:
-            layout.addWidget(self._overview_text(f"{marker} {item}", "small"))
-        return section
 
     def _render_overview_recent_observations(
         self,
@@ -730,56 +991,6 @@ class StudentProfileScreen(QWidget):
                 self._overview_text(" · ".join(part for part in parts if part), "small")
             )
 
-    def _render_overview_documentation(
-        self,
-        statuses: tuple[StudentDocumentationSubjectStatus, ...],
-    ) -> None:
-        if not statuses:
-            self.overview_documentation_layout.addWidget(
-                self._overview_text("Noch kein Kompetenzkatalog verfügbar.", "subtle")
-            )
-            return
-        summary = documentation_summary_from_subjects(statuses)
-        self.overview_documentation_layout.addWidget(
-            self._overview_text(summary.profile_summary_label, "body")
-        )
-        if summary.weak_subjects_label:
-            self.overview_documentation_layout.addWidget(
-                self._overview_text(summary.weak_subjects_label, "subtle")
-            )
-        details_button = QPushButton("Details anzeigen")
-        details_button.setObjectName("OverviewDocumentationDetailsButton")
-        details_container = QWidget()
-        details_container.setObjectName("OverviewDocumentationDetails")
-        details_layout = QVBoxLayout(details_container)
-        details_layout.setContentsMargins(0, 0, 0, 0)
-        details_layout.setSpacing(4)
-        for status in statuses:
-            details_layout.addWidget(self._documentation_subject_details(status))
-        details_container.setVisible(False)
-        details_button.clicked.connect(
-            lambda _checked=False: self._toggle_documentation_status_details(
-                details_container,
-                details_button,
-            )
-        )
-        self.overview_documentation_layout.addWidget(details_button)
-        self.overview_documentation_layout.addWidget(details_container)
-
-    def _render_overview_development(self, development_items: tuple[str, ...]) -> None:
-        if not development_items:
-            self.overview_development_layout.addWidget(
-                self._overview_text(
-                    "Sichtbare Entwicklung erscheint hier nach mehreren Beobachtungen.",
-                    "subtle",
-                )
-            )
-            return
-        for item in development_items:
-            self.overview_development_layout.addWidget(
-                self._overview_text(item, "small")
-            )
-
     def set_student(
         self,
         student: StudentDetailViewModel | None,
@@ -789,6 +1000,7 @@ class StudentProfileScreen(QWidget):
         documentation_statuses: tuple[StudentDocumentationSubjectStatus, ...] = (),
         documents: tuple[StudentDocumentViewModel, ...] = (),
         competency_cockpit: StudentCompetencyCockpitViewModel | None = None,
+        profile_dashboard: StudentProfileDashboardViewModel | None = None,
     ) -> None:
         """Render selected student or empty state."""
         previous_student_id = (
@@ -800,6 +1012,9 @@ class StudentProfileScreen(QWidget):
         self._capture_profile_scroll_positions()
 
         self.current_student = student
+        self.current_profile_dashboard = (
+            profile_dashboard or empty_student_profile_dashboard()
+        )
         should_reset_tab = (
             student is None
             or previous_student_id is None
@@ -813,29 +1028,33 @@ class StudentProfileScreen(QWidget):
         if student is None:
             self.name_label.setText("Kein Schüler ausgewählt")
             self._update_profile_header_context()
-            self.student_id_label.setText("")
-            self.group_value_label.setText("")
-            self.course_value_label.setText("")
-            self.notes_value_label.setText("")
+            self.profile_avatar.setText("")
             self.action_feedback_label.setText("")
             self.set_observations(())
             self.set_competency_cockpit(None)
             self.set_report_preview(None)
             self.set_documents(())
-            self._render_profile_overview(None, (), (), ())
+            self._render_profile_overview(
+                None,
+                (),
+                self.current_profile_dashboard,
+            )
             return
         self.name_label.setText(student.display_name)
+        self.profile_avatar.setText(
+            "".join(
+                part[:1]
+                for part in student.display_name.split()[:2]
+                if part
+            ).upper()
+        )
+        self.profile_avatar.setAccessibleName(f"Avatar von {student.display_name}")
         self._update_profile_header_context()
-        self.student_id_label.setText("")
-        self.group_value_label.setText(student.group_name)
-        self.course_value_label.setText(student.course_name)
-        self.notes_value_label.setText(student.student_notes or "Keine Notiz hinterlegt.")
         self.action_feedback_label.setText("")
         self._render_profile_overview(
             student,
             observations,
-            competency_groups,
-            documentation_statuses,
+            self.current_profile_dashboard,
         )
         self.set_observations(
             observations,
@@ -1265,56 +1484,6 @@ class StudentProfileScreen(QWidget):
             row_layout.addWidget(open_button, 0)
             layout.addWidget(row)
         return block
-
-    def _documentation_subject_details(
-        self,
-        status: StudentDocumentationSubjectStatus,
-    ) -> QWidget:
-        detail = QWidget()
-        layout = QVBoxLayout(detail)
-        layout.setContentsMargins(0, 2, 0, 2)
-        layout.setSpacing(2)
-        subject_label = QLabel(status.subject_display_name)
-        set_label_style(subject_label, "field_label")
-        count_label = QLabel(
-            f"{status.documented_count}/{status.total_count} Lernbereiche"
-        )
-        set_label_style(count_label, "small")
-        progress_label = QLabel(status.progress_label)
-        progress_label.setWordWrap(True)
-        set_label_style(progress_label, "small")
-        layout.addWidget(subject_label)
-        layout.addWidget(count_label)
-        layout.addWidget(progress_label)
-        if status.missing_competencies:
-            suitable_labels = ", ".join(
-                competency.competency_label
-                for competency in status.missing_competencies
-            )
-            next_observations_label = QLabel(
-                f"Für nächste Beobachtungen geeignet: {suitable_labels}"
-            )
-            next_observations_label.setWordWrap(True)
-            set_label_style(next_observations_label, "subtle")
-            layout.addWidget(next_observations_label)
-        elif status.documented_count < status.total_count:
-            open_label = QLabel("Noch offen für Beobachtungen.")
-            open_label.setWordWrap(True)
-            set_label_style(open_label, "subtle")
-            layout.addWidget(open_label)
-        return detail
-
-    def _toggle_documentation_status_details(
-        self,
-        details_container: QWidget,
-        details_button: QPushButton,
-    ) -> None:
-        details_container.setVisible(details_container.isHidden())
-        details_button.setText(
-            "Details anzeigen"
-            if details_container.isHidden()
-            else "Details ausblenden"
-        )
 
     def set_competency_cockpit(
         self,

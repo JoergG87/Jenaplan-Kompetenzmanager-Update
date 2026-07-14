@@ -710,8 +710,73 @@ QWidget#StudentProfilePageHeader {{
     background-color: transparent;
 }}
 QFrame#StudentProfileHeaderSurface {{
-    background-color: #EEF5FF;
-    border-color: #BBD1EE;
+    background-color: #FFFFFF;
+    border-color: #D8E4EC;
+    border-radius: 18px;
+}}
+QLabel#StudentProfileAvatar {{
+    background-color: #2F7096;
+    color: #FFFFFF;
+    border-radius: 26px;
+    font-size: 16px;
+    font-weight: 700;
+}}
+QLabel#StudentProfileContextBadge {{
+    color: #365966;
+    background-color: #E9F1F3;
+    border: 1px solid #D4E2E5;
+    border-radius: 9px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 600;
+}}
+QFrame#StudentProfileOrientationCard {{
+    background-color: #FFFFFF;
+    border-color: #D8E4EC;
+}}
+QFrame#StudentProfileCompetencySummaryCard {{
+    background-color: #EAF4F5;
+    border-color: #CEE1E3;
+}}
+QFrame#StudentProfileUndocumentedCard {{
+    background-color: #FFF7EA;
+    border-color: #EDDDBE;
+}}
+QLabel#StudentProfileEyebrow {{
+    color: #2F7096;
+    font-size: 10px;
+    font-weight: 700;
+}}
+QLabel#StudentProfileDocumentationMetric {{
+    color: {COLOR_NAVY};
+    font-size: 25px;
+    font-weight: 700;
+}}
+QFrame#StudentProfileOrientationChange,
+QFrame#StudentProfileDashboardSummaryRow {{
+    background-color: #FAFCFC;
+    border-color: #DFE8EA;
+    border-radius: 11px;
+}}
+QLabel#StudentProfileOrientationStatusChange {{
+    color: {COLOR_NAVY};
+    font-size: 12px;
+    font-weight: 700;
+}}
+QFrame#StudentProfileOrientationEvidence {{
+    background-color: #F2F7F7;
+    border: none;
+    border-radius: 8px;
+}}
+QLabel#StudentProfileEvidenceBadge,
+QLabel#StudentProfileHistoricalBadge {{
+    color: #365966;
+    background-color: #E9F1F3;
+    border: 1px solid #D4E2E5;
+    border-radius: 9px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 600;
 }}
 QFrame#StudentProfileNavigation {{
     background-color: transparent;

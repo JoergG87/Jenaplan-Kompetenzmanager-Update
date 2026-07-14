@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## Schülerprofil – Variante A produktiv
+
+### Added
+
+- Reine, stichtagsfähige Profil-Dashboard-Projektion auf Basis der kanonischen Kompetenzstatus- und Dokumentationsstatusprojektionen ergänzt.
+- Orientierungskarte für höchstens drei reale Kompetenzstatuswechsel mit Beleg, Zeitraum, curricularer Gleichstandssortierung und historischem Snapshot-Bestandsschutz produktiv angebunden.
+
+### Changed
+
+- Produktiven Schülerprofilkopf und Überblick auf die freigegebene Variante-A-Designsprache mit Dokumentationsring, Kompetenzkarte und neutraler Karte `Noch nicht dokumentiert` ausgerichtet.
+
+### Not Changed
+
+- Keine Änderung an SQLite-Schema, Kompetenzmodell, Beobachtungsdialog, Bericht, Lernentwicklungsgespräch, Dashboard oder globaler Navigation.
+
 ## UI Sprint 6B - Phasenorientierter LEG-Workspace
 
 ### Added
