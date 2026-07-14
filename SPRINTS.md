@@ -6,6 +6,15 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 5A - Product Discovery und Architecture Gate fuer Bericht und LEG ✅
+
+- [x] Bestehende Berichtsvorschau, Text-/Markdown-Export, Berichtswerkstatt, PDF-Weg und LEG mit sechs Phasen analysiert
+- [x] Aktuelle Bericht-/LEG-Draftpersistenz, SQLite-Schema, Migrationstechnik, Adapter, ViewModels, Tests und Pilotdaten geprueft
+- [x] Konkretes Lebenszyklus-, Snapshot-, Versions-, Korrektur-, Archiv- und Artefaktmodell als nicht bindenden Vorschlag dokumentiert
+- [x] Schmale gemeinsame Dokument-/Snapshot-Infrastruktur mit getrennten Bericht-/LEG-Aggregaten empfohlen
+- [x] Folge-Sprints und maximal fuenf notwendige Product-Owner-Entscheidungen definiert
+- [x] Keine UI-, Produktcode-, Schema-, Migrations-, Test- oder ADR-Aenderung umgesetzt
+
 ## UI Sprint 4 - Schuelerprofil, Kompetenz-Cockpit und Beobachtungs-Workspace ✅
 
 - [x] Profilkopf mit dauerhaft sichtbarem Kindkontext und genau einer dominanten Aktion modernisiert

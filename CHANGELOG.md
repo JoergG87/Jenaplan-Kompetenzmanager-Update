@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Sprint 5A - Product Discovery und Architecture Gate fuer Bericht und LEG
+
+### Added
+
+- Nicht bindenden Produkt- und Architekturvorschlag fuer Bericht, LEG, Live-Daten, Snapshots, Abschluss, Versionierung, Korrekturen, Vorschau, PDF-Artefakte, Migration und Folge-Sprints ergaenzt.
+
+### Changed
+
+- Bestehende Draft-, Vorschau-, Export-, PDF- und LEG-Wege belastbar als implementiert, nur dokumentiert, im Pilottest erwartet oder offen/widerspruechlich eingeordnet.
+
+### Not Changed
+
+- Keine Produktcode-, UI-, SQLite-Schema-, Migrations-, Test-, Seed-, ADR- oder bestehende Governance-Entscheidung geaendert.
+
 ## UI Sprint 4 - Schuelerprofil, Kompetenz-Cockpit und Beobachtungs-Workspace
 
 ### Added
