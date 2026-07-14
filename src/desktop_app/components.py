@@ -227,7 +227,8 @@ class SegmentedControl(QFrame):
             button.setCheckable(True)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-            button.setAccessibleName(label)
+            accessible_label = label.replace("&&", "\0").replace("&", "").replace("\0", "&")
+            button.setAccessibleName(accessible_label)
             if index == 0:
                 position = "first"
             elif index == len(item_list) - 1:

@@ -6,6 +6,19 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## UI Sprint 5 - Berichtswerkstatt, Finalisierung und Revisionen ✅
+
+- [x] Kompakten Berichtskopf mit Kindkontext, Berichtstyp, Zeitraum, Lehrkraft, Draftstatus und Revisionskontext modernisiert
+- [x] Lokale, tastaturfaehige Navigation `Schreiben`, `Kompetenzen & Belege`, `Vorschau`, `Revisionen` umgesetzt
+- [x] Gesamttext und Fachtexte als ruhigen Schreibworkspace von Kompetenz-, Beobachtungs- und Diagrammauswahl getrennt
+- [x] Historische Kompetenzen und nicht verfuegbare Beobachtungsreferenzen sichtbar erhalten, ohne neue Auswahl oder Rekonstruktion zu erlauben
+- [x] Draft-Vorschau dokumentartig und eindeutig als aktueller, gespeicherter oder noch ungespeicherter Entwurf gekennzeichnet
+- [x] Finalisierungsdialog, neuestes-zuerst Revisionshistorie und snapshotbasierte finale Leseansicht visuell geschaerft
+- [x] Speichern als einzige primaere Draftaktion und Finalisieren als getrennten bewussten Abschluss eingeordnet
+- [x] Accessibility, Tastatursteuerung, Reduced Motion sowie 1400 x 900, 1280 x 800 und 1180 x 760 geprueft
+- [x] Keine Fachlogik, Datenhaltung, Snapshotauswertung, Revisionsregel oder finales PDF-Artefakt veraendert
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## Sprint 5B.3 - Bericht finalisieren und Revisionen anzeigen ✅
 
 - [x] Bestehende `RPT`-/`RPV`-Revisionen produktiv an die PySide-Berichtswerkstatt angebunden

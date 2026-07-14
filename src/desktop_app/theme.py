@@ -324,15 +324,20 @@ QLabel#StatusBadge {{
 }}
 QLabel#StatusBadge[badgeTone="info"] {{ background-color: #E8F2FB; color: {COLOR_INFO}; border-color: #C7DCEB; }}
 QLabel#StatusBadge[badgeTone="success"] {{ background-color: #EAF6F0; color: {COLOR_SUCCESS}; border-color: #C7E3D6; }}
+QLabel#StatusBadge[badgeTone="warning"] {{ background-color: #FFF6E8; color: #76501E; border-color: #ECD8A6; }}
 QFrame#DashboardHeatmapCell[coverageLevel="0"] QFrame#DashboardHeatmapMarker {{ background-color: #CBD5E1; }}
 QFrame#DashboardHeatmapCell[coverageLevel="1"] QFrame#DashboardHeatmapMarker {{ background-color: #B7C9DC; }}
 QFrame#DashboardHeatmapCell[coverageLevel="2"] QFrame#DashboardHeatmapMarker {{ background-color: #91ADC8; }}
 QFrame#DashboardHeatmapCell[coverageLevel="3"] QFrame#DashboardHeatmapMarker {{ background-color: #6F91B2; }}
 QFrame#DashboardHeatmapCell[coverageLevel="4"] QFrame#DashboardHeatmapMarker {{ background-color: #4F7599; }}
 QFrame#LearningReportTopBar {{
-    background-color: {COLOR_NAVY};
+    background-color: #FFFFFF;
     border: none;
+    border-bottom: 1px solid #D8E2E7;
     border-radius: 0px;
+}}
+QFrame#LearningReportTopBar QWidget#PageHeader {{
+    background-color: #FFFFFF;
 }}
 QLabel#LearningReportBrand {{
     color: #FFFFFF;
@@ -361,6 +366,16 @@ QPushButton#LearningReportModeButton:checked {{
 QFrame#LearningReportSidebar {{
     background-color: #F7FAFB;
     border-right: 1px solid #D8E2E7;
+}}
+QFrame#LearningReportWorkspaceNavigation {{
+    background-color: #F7FAFB;
+    border: none;
+    border-bottom: 1px solid #D8E2E7;
+}}
+QFrame#LearningReportActionBar {{
+    background-color: #FFFFFF;
+    border: none;
+    border-top: 1px solid #D8E2E7;
 }}
 QPushButton#LearningReportSubjectButton {{
     text-align: left;
@@ -519,6 +534,14 @@ QWidget#LearningReportPreviewCanvas {{
     background-color: #E9F0F3;
 }}
 QFrame#LearningReportPaperPage {{
+    background-color: #FFFFFF;
+    border: 1px solid #D1DCE1;
+    border-radius: 3px;
+}}
+QWidget#LearningReportRevisionCanvas {{
+    background-color: #E9F0F3;
+}}
+QFrame#LearningReportRevisionPaper {{
     background-color: #FFFFFF;
     border: 1px solid #D1DCE1;
     border-radius: 3px;

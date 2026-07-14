@@ -353,15 +353,15 @@ def build_learning_report_revision_status(
         return LearningReportRevisionStatusViewModel(
             state="not_finalized",
             badge_text="Entwurf",
-            hint_text="Für diesen Entwurf existiert noch keine historische Fassung.",
+            hint_text="Für diesen Bericht existiert noch keine unveränderliche Fassung.",
             history=(),
         )
     if state.draft_changed:
         status_key = "draft_changed"
         badge_text = "Entwurf geändert"
         hint = (
-            "Die letzte finale Revision bleibt unverändert erhalten. "
-            "Die gespeicherten Änderungen können als neue Revision finalisiert werden."
+            "Der Entwurf wurde nach der letzten Finalisierung verändert. "
+            "Die vorhandene Revision bleibt unverändert."
         )
     else:
         status_key = "finalized"

@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## UI Sprint 5 - Berichtswerkstatt, Finalisierung und Revisionen
+
+### Changed
+
+- Berichtswerkstatt in die vier tastaturfaehigen lokalen Bereiche `Schreiben`, `Kompetenzen & Belege`, `Vorschau` und `Revisionen` gegliedert; Fachtexte und Auswahlworkspace konkurrieren nicht mehr gleichzeitig um Aufmerksamkeit.
+- Kompakten Berichtskopf mit Kind, Stammgruppe, Berichtstyp, Zeitraum, verantwortlicher Lehrkraft, Draftstatus und aktuellem Revisionskontext eingefuehrt; technische Draft-, Revisions- und Hashwerte bleiben aus dem Hauptbereich herausgenommen.
+- Primaere Draftaktion in einer dauerhaft erreichbaren Aktionsleiste auf `Entwurf speichern` konzentriert; Vorschau, Schliessen und der raeumlich getrennte Finalisierungsbereich verwenden passende zentrale Buttonrollen.
+- Draft-Vorschau eindeutig als Vorschau des aktuellen Entwurfs gekennzeichnet und ihre tatsaechliche Quelle als gespeichert beziehungsweise noch ungespeichert ausgewiesen; bestehender Draft-PDF-Weg bleibt als `Entwurfs-PDF exportieren` klar abgegrenzt.
+- Finalisierungsbestaetigung, neuestes-zuerst sortierte Revisionshistorie und snapshotbasierte finale Leseansicht zu ruhigen Pruef- und Dokumentflaechen modernisiert; finale Revisionen zeigen ausschliesslich `Zurueck` und keine irrefuehrende finale PDF-Aktion.
+- Semantische UI-Tests fuer Berichtskopf, alle Statuszustaende, lokale Navigation, getrennte Schreib-/Auswahlbereiche, Draft-Kennzeichnung, Finalisierung, Accessibility, Zielgroessen und unveraenderliche Revisionsansicht erweitert.
+
+### Not Changed
+
+- Keine Fach-, Validierungs-, Finalisierungs-, Snapshot-, Hash-, Revisions-, Schema-, Repository-, Service-, Adapter-, PDF-Artefakt-, Berichtstyp-, Zeitraum- oder historische Referenzregel geaendert.
+
 ## Sprint 5B.3 - Bericht finalisieren und Revisionen anzeigen
 
 ### Added

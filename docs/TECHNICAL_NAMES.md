@@ -1238,6 +1238,32 @@ Registrierte Qt-Objektnamen:
 
 Regel: Die Revisionsprojektion entsteht ausschliesslich aus `snapshot_json`, `LearningReportRevisionRecord` und dem gespeicherten SHA-256. Sie darf keine aktuelle Schueler-, Gruppen-, Kurs-, Kompetenz-, Beobachtungs- oder Diagrammquelle lesen. Das Draft-Ausgabemodell und die finale snapshotbasierte Adapterprojektion bleiben getrennte Quellen fuer denselben renderer-neutralen `ReportOutputModel`-Vertrag.
 
+## UI Sprint 5 - Berichtswerkstatt und Revisionen
+
+Registrierte Dialogmethoden und UI-State-Namen:
+
+- `LearningReportDialog._set_workspace(key)`
+- `LearningReportDialog._evidence_screen()`
+- `LearningReportDialog._subject_evidence_editor(subject)`
+- `LearningReportDialog._action_bar()`
+- `LearningReportDialog._refresh_workspace_context()`
+- `LearningReportDialog.workspace_navigation`
+- `LearningReportDialog.evidence_navigation_group`
+- `LearningReportDialog.evidence_stack`
+
+Registrierte Qt-Objektnamen:
+
+- `LearningReportWorkspaceNavigation`
+- `LearningReportWorkspaceStack`
+- `LearningReportActionBar`
+- `LearningReportSaveButton`
+- `LearningReportIncludeSubject_<subject_id>`
+- `LearningReportSubjectText_<subject_id>_<text_key>`
+- `LearningReportRevisionCanvas`
+- `LearningReportRevisionPaper`
+
+Regel: Diese Namen strukturieren ausschliesslich lokalen UI-State, Fokus, Bereichswechsel, zentrale Aktionshierarchie und Dokumentdarstellung. Sie fuehren keine Datenquelle, fachliche Filterung, Persistenz, Validierung, Snapshotauswertung oder Revisionslogik ein. `Schreiben` und `Kompetenzen & Belege` verwenden getrennte Widget-Stapel, lesen und schreiben jedoch weiterhin denselben bestehenden `LearningReportDraftViewModel` ueber die vorhandenen Dialogsignale.
+
 ## Sprint 7G.1 - Persistenter LEG-Arbeitsentwurf
 
 Registrierte SQLite-Tabellen:

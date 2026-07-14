@@ -224,6 +224,17 @@ class ReportRevisionProductTest(unittest.TestCase):
 
         self.assertIn("Bericht finalisieren", text)
         self.assertIn("Revision", all_text)
+        self.assertIn("Kind", all_text)
+        self.assertIn("Berichtstyp", all_text)
+        self.assertIn("Zeitraum", all_text)
+        self.assertIn("Fächer", all_text)
+        self.assertIn("Kompetenzen", all_text)
+        self.assertIn("Beobachtungen", all_text)
+        self.assertEqual(
+            responsible.accessibleName(),
+            "Verantwortliche Lehrkraft für die neue Revision",
+        )
+        self.assertIn("unveränderliche Revision", acknowledge.text())
         self.assertFalse(confirm.isEnabled())
         acknowledge.setChecked(True)
         self.assertTrue(confirm.isEnabled())
@@ -328,7 +339,7 @@ class ReportRevisionProductTest(unittest.TestCase):
 
         self.assertFalse(dialog.findChildren(QLineEdit))
         self.assertFalse(dialog.findChildren(QTextEdit))
-        self.assertEqual(actions, {"Schließen"})
+        self.assertEqual(actions, {"Zurück"})
         self.assertFalse(
             {"Bearbeiten", "Löschen", "Entsperren", "Wiederherstellen", "PDF erstellen"}
             & actions
@@ -370,7 +381,7 @@ class ReportRevisionProductTest(unittest.TestCase):
         )
         final_view = LearningReportRevisionDialog(revision)
         try:
-            for width, height in ((1400, 900), (1180, 760)):
+            for width, height in ((1400, 900), (1280, 800), (1180, 760)):
                 workspace.resize(width, height)
                 workspace.show()
                 final_view.resize(width, height)
@@ -384,6 +395,80 @@ class ReportRevisionProductTest(unittest.TestCase):
             workspace.close()
             final_view.close()
             set_reduced_motion(False)
+
+    def test_workspace_header_exposes_student_context_and_all_revision_states(self) -> None:
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            retained_competency_ids=self.saved.competency_ids,
+        )
+        draft_dialog = LearningReportDialog(
+            preparation,
+            initial_draft=self.saved,
+            revision_status=self.adapter.learning_report_revision_status(
+                self.saved.report_draft_id
+            ),
+        )
+        self.assertIn(self.student.display_name, draft_dialog.page_header.title_label.text())
+        self.assertIn(self.student.group_name, draft_dialog.header_context.text())
+        self.assertIn("Laura Lernbegleiterin", draft_dialog.header_context.text())
+        self.assertEqual(draft_dialog.header_status_badge.text(), "Entwurf")
+        self.assertEqual(
+            draft_dialog.header_revision_context.text(),
+            "Noch keine finale Revision",
+        )
+
+        finalized = self.adapter.finalize_learning_report(
+            self.saved.report_draft_id,
+            "Laura Lernbegleiterin",
+        )
+        finalized_dialog = LearningReportDialog(
+            preparation,
+            initial_draft=self.saved,
+            revision_status=finalized,
+        )
+        self.assertEqual(
+            finalized_dialog.header_status_badge.text(),
+            "Finalisiert · Revision 1",
+        )
+        self.assertIn("Revision 1", finalized_dialog.header_revision_context.text())
+
+        self.saved = self.adapter.save_learning_report_draft(
+            replace(self.saved, overall_text="Bewusst geänderter Entwurf.")
+        )
+        changed = self.adapter.learning_report_revision_status(
+            self.saved.report_draft_id
+        )
+        changed_dialog = LearningReportDialog(
+            preparation,
+            initial_draft=self.saved,
+            revision_status=changed,
+        )
+        self.assertEqual(changed_dialog.header_status_badge.text(), "Entwurf geändert")
+        visible_hints = " ".join(
+            label.text() for label in changed_dialog.findChildren(QLabel)
+        )
+        self.assertIn("Die vorhandene Revision bleibt unverändert", visible_hints)
+
+    def test_workspace_actions_have_accessible_names_and_one_finalization_action(self) -> None:
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            retained_competency_ids=self.saved.competency_ids,
+        )
+        dialog = LearningReportDialog(
+            preparation,
+            initial_draft=self.saved,
+            revision_status=self.adapter.learning_report_revision_status(
+                self.saved.report_draft_id
+            ),
+        )
+        buttons = dialog.findChildren(QPushButton)
+        finalization_buttons = [
+            button for button in buttons if "finalisieren" in button.text().lower()
+        ]
+
+        self.assertEqual(dialog.save_button.accessibleName(), "Berichtsentwurf speichern")
+        self.assertEqual(len(finalization_buttons), 1)
+        self.assertTrue(dialog.workspace_navigation.accessibleName())
 
     def test_qt_report_dialog_does_not_reference_sqlite_or_repositories(self) -> None:
         source = inspect.getsource(

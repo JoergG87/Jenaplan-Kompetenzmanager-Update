@@ -11,17 +11,21 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
     QCheckBox,
     QLabel,
     QStackedWidget,
+    QTextEdit,
+    QTreeWidget,
 )
 
 from prototypes.pdf_engine.output_models import ChartBlock, ReportOutputModel, TableBlock
 from prototypes.pdf_engine.renderer import PdfRenderer
 from src.desktop_app.dialogs.learning_report_dialog import LearningReportDialog
+from src.desktop_app.components import SegmentedControl
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
 from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportCompetencyViewModel,
@@ -112,17 +116,67 @@ class LearningReportTest(unittest.TestCase):
 
         self.assertEqual(requested, ["STU-000001"])
 
-    def test_workspace_uses_prototype_mode_and_section_navigation(self) -> None:
+    def test_workspace_uses_four_calm_sections_and_subject_navigation(self) -> None:
         dialog = LearningReportDialog(self.preparation)
 
-        self.assertEqual(len(dialog.findChildren(QStackedWidget)), 2)
-        self.assertEqual(len(dialog.findChildren(QButtonGroup)), 2)
-        self.assertEqual(dialog.edit_mode_button.text(), "✎  Bericht bearbeiten")
-        self.assertEqual(dialog.preview_mode_button.text(), "▤  Berichtsvorschau")
+        self.assertEqual(len(dialog.findChildren(QStackedWidget)), 3)
+        self.assertGreaterEqual(len(dialog.findChildren(QButtonGroup)), 3)
+        self.assertIsInstance(dialog.workspace_navigation, SegmentedControl)
+        self.assertEqual(dialog.workspace_navigation.current_key(), "writing")
         self.assertEqual(
             [button.text() for button in dialog.navigation_group.buttons()],
-            ["Dokument & Gesamtblick", "Deutsch", "Mathematik", "Abschluss"],
+            ["Gesamttext", "Deutsch", "Mathematik"],
         )
+        self.assertEqual(
+            [button.accessibleName() for button in dialog.workspace_navigation.findChildren(type(dialog.save_button))],
+            ["Schreiben", "Kompetenzen & Belege", "Vorschau", "Revisionen"],
+        )
+        writing_button = next(
+            button
+            for button in dialog.workspace_navigation.findChildren(type(dialog.save_button))
+            if button.accessibleName() == "Schreiben"
+        )
+        QTest.keyClick(writing_button, Qt.Key.Key_Right)
+        self.assertEqual(dialog.workspace_navigation.current_key(), "evidence")
+
+        dialog.workspace_navigation.set_current_key("evidence", emit=True)
+        self.assertEqual(dialog.mode_stack.currentIndex(), 1)
+        dialog.workspace_navigation.set_current_key("preview", emit=True)
+        self.assertEqual(dialog.mode_stack.currentIndex(), 2)
+        dialog.workspace_navigation.set_current_key("revisions", emit=True)
+        self.assertEqual(dialog.mode_stack.currentIndex(), 3)
+
+    def test_writing_and_evidence_are_visually_separate_but_keep_shared_state(self) -> None:
+        dialog = LearningReportDialog(self.preparation)
+        german = dialog.subject_widgets["german"]
+
+        self.assertIsInstance(german["texts"]["strengths"], QTextEdit)
+        self.assertIsInstance(german["tree"], QTreeWidget)
+        self.assertEqual(
+            german["texts"]["strengths"].accessibleName(),
+            "Stärken im Fach Deutsch",
+        )
+        self.assertEqual(
+            german["tree"].accessibleName(),
+            "Kompetenzauswahl für Deutsch",
+        )
+        self.assertIn(
+            german["texts"]["strengths"],
+            dialog.editor_stack.widget(1).findChildren(QTextEdit),
+        )
+        self.assertIn(
+            german["tree"],
+            dialog.evidence_stack.widget(0).findChildren(QTreeWidget),
+        )
+
+    def test_preview_is_explicitly_draft_and_reports_unsaved_source_state(self) -> None:
+        dialog = LearningReportDialog(self.preparation)
+        dialog.overall_input.setPlainText("Noch nicht gespeicherter Text")
+        dialog.update_preview()
+
+        self.assertIn("Vorschau des aktuellen Entwurfs", dialog.preview_status.text())
+        self.assertIn("noch nicht gespeicherte Änderungen", dialog.preview_status.text())
+        self.assertEqual(dialog.draft_status.text(), "Ungespeicherte Änderungen")
 
     def test_subject_filter_preserves_selection_and_historical_visibility(self) -> None:
         dialog = LearningReportDialog(self.preparation)
@@ -352,7 +406,7 @@ class LearningReportTest(unittest.TestCase):
         dialog = LearningReportDialog(self.preparation)
         dialog.show()
         self.app.processEvents()
-        dialog._set_mode(1)
+        dialog._set_mode(2)
         self.app.processEvents()
         pages = [
             dialog.preview_layout.itemAt(index).widget()
