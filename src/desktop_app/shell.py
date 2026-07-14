@@ -612,12 +612,17 @@ class AppShell(QMainWindow):
 
     def open_learning_report_dialog(self, student_id: str) -> None:
         """Open the productive report workspace with the latest saved draft."""
-        preparation = self.adapter.learning_report_preparation_for_student(student_id)
+        drafts = self.adapter.list_learning_report_drafts_for_student(student_id)
+        initial_draft = drafts[0] if drafts else None
+        preparation = self.adapter.learning_report_preparation_for_student(
+            student_id,
+            retained_competency_ids=(
+                initial_draft.competency_ids if initial_draft is not None else ()
+            ),
+        )
         if preparation is None:
             self.status_label.setText("Schülerprofil wurde nicht gefunden.")
             return
-        drafts = self.adapter.list_learning_report_drafts_for_student(student_id)
-        initial_draft = drafts[0] if drafts else None
         dialog = LearningReportDialog(preparation, self, initial_draft)
 
         def save_draft(draft: object) -> None:

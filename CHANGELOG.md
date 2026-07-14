@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Sprint 5B.1 - Historische Berichtreferenzen bestandssicher
+
+### Changed
+
+- Beim Oeffnen eines gespeicherten Berichtsdrafts werden dessen Kompetenz-IDs als Lesekontext an die kanonische Kompetenzprojektion uebergeben; spaeter deaktivierte oder historische Auswahlen bleiben gekennzeichnet erhalten und koennen nur abgewaehlt, nicht neu ausgewaehlt werden.
+- Das Bericht-Repository unterscheidet bei Kompetenzen und Beobachtungen neue von bereits gespeicherten Referenzen. Neue inaktive, fremde oder fachfremde Referenzen werden abgewiesen; gespeicherte spaetere Ausfaelle bleiben bis zur ausdruecklichen Abwahl erhalten.
+- Nicht mehr verfuegbare gespeicherte Beobachtungs-IDs werden ohne rekonstruierte Inhalte in Berichtswerkstatt, Qt-Vorschau und neutralem `ReportOutputModel` ausgewiesen; der bestehende PDF-Renderer verarbeitet weiterhin nur dieses Ausgabemodell.
+- Fokussierte Persistenz-, UI-, Vorschau- und Output-Regressionen fuer Bestandserhalt, Neuauswahlverbot, Abwahl und Referenzgrenzen ergaenzt; die vorhandene PDF-Regression bleibt gruen.
+
+### Not Changed
+
+- Keine neue Tabelle oder Migration; `RPD`, `CMP` und `OBS`, bestehende Berichtstabellen, Berichtsdraft-Aggregat, LEG-Aggregat und PDF-Renderer bleiben erhalten.
+- Keine Finalisierung, Revision, Snapshots, Hashes, Artefaktverwaltung, Renderer-Versionierung, LEG-Aenderung, UI-Neugestaltung oder Universal-Workflow-Engine und kein Commit.
+
 ## Sprint 5A - Product Discovery und Architecture Gate fuer Bericht und LEG
 
 ### Added

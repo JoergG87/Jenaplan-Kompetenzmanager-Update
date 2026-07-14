@@ -63,7 +63,7 @@ from src.core.sqlite_store import (
     DocumentRecord,
     StudentCompetencyConfirmationRecord,
 )
-from src.core.report_draft import ReportDraftService
+from src.core.report_draft import ReportDraftRecord, ReportDraftService
 from src.core.learning_conference_draft import (
     LearningConferenceDraftRecord,
     LearningConferenceDraftService,
@@ -1008,11 +1008,16 @@ class StudentDesktopAdapter:
     def learning_report_preparation_for_student(
         self,
         student_id: str,
+        *,
+        retained_competency_ids: tuple[str, ...] = (),
     ) -> LearningReportPreparationViewModel | None:
         """Prepare a transient report selection from the canonical status projection."""
         source = LearningReportApplicationService(
             self.get_student_profile,
-            self.list_competency_status_projection_for_student,
+            lambda selected_student_id: self.list_competency_status_projection_for_student(
+                selected_student_id,
+                retained_competency_ids=retained_competency_ids,
+            ),
             self.list_observations_for_student,
         ).execute(PrepareLearningReportQuery(student_id))
         if source is None:
@@ -1052,7 +1057,7 @@ class StudentDesktopAdapter:
             )
         else:
             record = service.create(CreateLearningReportDraftCommand(**common))
-        return LearningReportDraftViewModel.from_record(record)
+        return self._learning_report_draft_view_model(record)
 
     def load_learning_report_draft(
         self,
@@ -1064,7 +1069,7 @@ class StudentDesktopAdapter:
         )
         if record is None:
             return None
-        return LearningReportDraftViewModel.from_record(record)
+        return self._learning_report_draft_view_model(record)
 
     def list_learning_report_drafts_for_student(
         self,
@@ -1074,13 +1079,23 @@ class StudentDesktopAdapter:
         records = self._report_draft_application_service().list_for_student(
             ListLearningReportDraftsQuery(student_id)
         )
-        return tuple(LearningReportDraftViewModel.from_record(record) for record in records)
+        return tuple(self._learning_report_draft_view_model(record) for record in records)
 
     def _report_draft_application_service(self) -> ReportDraftApplicationService:
         repository = SQLiteReportDraftRepository(self.database)
         return ReportDraftApplicationService(
             ReportDraftService(repository),
             repository,
+        )
+
+    def _learning_report_draft_view_model(
+        self,
+        record: ReportDraftRecord,
+    ) -> LearningReportDraftViewModel:
+        repository = SQLiteReportDraftRepository(self.database)
+        return LearningReportDraftViewModel.from_record(
+            record,
+            unavailable_observation_ids=repository.unavailable_observation_ids(record),
         )
 
     def learning_conference_preparation_for_student(

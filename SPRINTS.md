@@ -6,6 +6,19 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 5B.1 - Historische Berichtreferenzen bestandssicher machen 🔄
+
+- [x] Gespeicherte, spaeter deaktivierte Berichtskompetenzen ueber `retained_competency_ids` in der kanonischen Projektion sichtbar und ausgewaehlt erhalten
+- [x] Neue Auswahl inaktiver oder historischer Kompetenzen unterbunden
+- [x] Gespeicherte, spaeter soft-geloeschte Beobachtungsreferenzen als nicht verfuegbar erhalten und neue Auswahl unterbunden
+- [x] Explizite Abwahl als einzigen Loeschweg fuer nicht verfuegbare Kompetenz- und Beobachtungsrelationen umgesetzt
+- [x] Kind- und Fachzuordnung im Bericht-Repository strikt validiert
+- [x] Qt-Vorschau und `ReportOutputModel` um neutrale Ausfallkennzeichnung ohne rekonstruierte Inhalte ergaenzt
+- [x] Bestehende Tabellen, IDs, Aggregate, Berichtswerkstatt und PDF-Renderer unveraendert erhalten
+- [x] Keine Migration, Finalisierung, Revision, Snapshots, Hashes oder Artefaktverwaltung umgesetzt
+- [ ] Product-Owner-Sichtpruefung abgeschlossen
+- [x] Kein Commit erstellt
+
 ## Sprint 5A - Product Discovery und Architecture Gate fuer Bericht und LEG ✅
 
 - [x] Bestehende Berichtsvorschau, Text-/Markdown-Export, Berichtswerkstatt, PDF-Weg und LEG mit sechs Phasen analysiert

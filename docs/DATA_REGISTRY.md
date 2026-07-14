@@ -1099,6 +1099,8 @@ Wichtige Regeln:
 - Fachtexte stammen ausschliesslich aus manueller Eingabe durch Laura.
 - Eine Zeile in `report_draft_subjects` repraesentiert ein bewusst ausgewaehltes Fach, auch wenn alle vier Texte noch leer sind.
 - Der Berichtsentwurf liest Kompetenzstatus weiterhin ausschliesslich aus der kanonischen Sprint-6-Projektion.
+- Neue Kompetenzreferenzen muessen aktiv und `current` sein sowie zu einem ausgewaehlten Fach gehoeren. Bereits gespeicherte, spaeter deaktivierte oder historische Kompetenz-IDs bleiben als nicht mehr regulaer verfuegbare Auswahl erhalten und werden nicht erneut zur Auswahl angeboten.
+- Neue Beobachtungsreferenzen muessen aktiv sein, zum Kind gehoeren und mindestens einem ausgewaehlten Fach ueber Beobachtungsfach oder Kompetenzbewertung zugeordnet sein. Bereits gespeicherte, spaeter soft-geloeschte `OBS`-IDs bleiben als nicht verfuegbare Referenzen erhalten; Beobachtungsinhalte werden nicht rekonstruiert.
 - Der Entwurf ist nicht freigegeben, versioniert, archiviert oder eingefroren.
 
 Schreibende Prozesse:

@@ -161,13 +161,19 @@ class LearningReportDraftViewModel:
     status: str = REPORT_DRAFT_STATUS
     created_at: str = ""
     updated_at: str = ""
+    unavailable_observation_ids: tuple[str, ...] = ()
 
     @property
     def selected_subject_ids(self) -> tuple[str, ...]:
         return tuple(subject.subject_id for subject in self.subjects)
 
     @classmethod
-    def from_record(cls, record: ReportDraftRecord) -> "LearningReportDraftViewModel":
+    def from_record(
+        cls,
+        record: ReportDraftRecord,
+        *,
+        unavailable_observation_ids: tuple[str, ...] = (),
+    ) -> "LearningReportDraftViewModel":
         return cls(
             student_id=record.student_id,
             period_start=date.fromisoformat(record.period_start),
@@ -198,6 +204,7 @@ class LearningReportDraftViewModel:
             status=record.status,
             created_at=record.created_at,
             updated_at=record.updated_at,
+            unavailable_observation_ids=unavailable_observation_ids,
         )
 
 
@@ -218,6 +225,7 @@ class LearningReportDraft:
     school_name: str = "Jenaplan-Schule"
     subject_texts: tuple[LearningReportSubjectDraftViewModel, ...] = ()
     chart_selections: tuple[LearningReportChartSelectionViewModel, ...] = ()
+    unavailable_observation_ids: tuple[str, ...] = ()
 
 
 def build_learning_report_preparation(
@@ -379,7 +387,7 @@ def build_report_output_model(
         competency
         for subject in subjects
         for competency in subject.competencies
-        if competency.selectable and competency.competency_id in competency_ids
+        if competency.competency_id in competency_ids
     )
     selected_evidence = _unique_evidence(
         evidence
@@ -456,6 +464,7 @@ def build_report_output_model(
             blocks=(
                 HeadingBlock("Übergreifende Entwicklung und nächste Schritte"),
                 *_closing_blocks(subjects, subject_texts, draft),
+                *_unavailable_evidence_blocks(draft),
             ),
         ),
     )
@@ -491,7 +500,11 @@ def _subject_output_page(
                 (
                     competency.learning_area,
                     competency.competency_group,
-                    competency.competency_text,
+                    (
+                        competency.competency_text
+                        if competency.selectable
+                        else f"{competency.competency_text} · historisch ausgewählt; nicht mehr regulär verfügbar"
+                    ),
                 )
                 for competency in selected_competencies
             ),
@@ -620,6 +633,33 @@ def _closing_blocks(
             )
         )
     return tuple(blocks)
+
+
+def _unavailable_evidence_blocks(
+    draft: LearningReportDraft,
+) -> tuple[object, ...]:
+    unavailable_ids = tuple(
+        observation_id
+        for observation_id in draft.unavailable_observation_ids
+        if observation_id in set(draft.selected_observation_ids)
+    )
+    if not unavailable_ids:
+        return ()
+    return (
+        SpacerBlock(8),
+        HeadingBlock("Nicht mehr verfügbare Beobachtungsbelege", level=2),
+        ParagraphBlock(
+            "Die gespeicherten Referenzen bleiben erhalten; Inhalte werden nicht rekonstruiert."
+        ),
+        TableBlock(
+            headers=("Referenz", "Status"),
+            rows=tuple(
+                (observation_id, "Nicht mehr verfügbar")
+                for observation_id in unavailable_ids
+            ),
+            column_weights=(0.35, 0.65),
+        ),
+    )
 
 
 def _parse_date(value: object) -> date | None:

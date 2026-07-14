@@ -10,6 +10,7 @@ from datetime import date
 from pathlib import Path
 
 from src.core.observation import ObservationRecord
+from src.core.report_draft import ReportDraftError
 from src.core.sqlite_store import (
     SQLiteCompetencyRepository,
     SQLiteDatabase,
@@ -31,9 +32,13 @@ class ReportDraftPersistenceTest(unittest.TestCase):
         create_sqlite_seed_database(self.database_path)
         self.adapter = StudentDesktopAdapter(self.database_path)
         self.student = self.adapter.list_students()[0]
-        self.competency = SQLiteCompetencyRepository(
-            self.adapter.database
-        ).list_competencies()[0]
+        self.competency = next(
+            competency
+            for competency in SQLiteCompetencyRepository(
+                self.adapter.database
+            ).list_competencies()
+            if competency.active and competency.catalog_status == "current"
+        )
         self.observation = ObservationRecord(
             "OBS-REPORT-DRAFT",
             self.student.student_id,
@@ -214,6 +219,146 @@ class ReportDraftPersistenceTest(unittest.TestCase):
             observation_columns,
             {"report_draft_id", "observation_id"},
         )
+
+    def test_deactivated_selected_competency_remains_resolvable_and_selected(self) -> None:
+        saved = self.adapter.save_learning_report_draft(self._draft())
+        with self.adapter.database.connect() as connection:
+            connection.execute(
+                "UPDATE competencies SET active = 0 WHERE competency_id = ?",
+                (self.competency.competency_id,),
+            )
+            connection.commit()
+
+        loaded = self.adapter.load_learning_report_draft(saved.report_draft_id)
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            retained_competency_ids=loaded.competency_ids,
+        )
+        retained = next(
+            competency
+            for subject in preparation.subjects
+            for competency in subject.competencies
+            if competency.competency_id == self.competency.competency_id
+        )
+        resaved = self.adapter.save_learning_report_draft(loaded)
+
+        self.assertEqual(loaded.competency_ids, (self.competency.competency_id,))
+        self.assertEqual(resaved.competency_ids, (self.competency.competency_id,))
+        self.assertTrue(retained.historical)
+        self.assertFalse(retained.selectable)
+
+    def test_deactivated_competency_cannot_be_newly_selected(self) -> None:
+        with self.adapter.database.connect() as connection:
+            connection.execute(
+                "UPDATE competencies SET active = 0 WHERE competency_id = ?",
+                (self.competency.competency_id,),
+            )
+            connection.commit()
+
+        with self.assertRaises(ReportDraftError):
+            self.adapter.save_learning_report_draft(self._draft())
+
+    def test_soft_deleted_selected_observation_remains_unavailable_reference(self) -> None:
+        saved = self.adapter.save_learning_report_draft(self._draft())
+        SQLiteObservationRepository(self.adapter.database).deactivate_observation(
+            self.observation.observation_id,
+            "2026-03-13T10:00:00+00:00",
+        )
+
+        loaded = self.adapter.load_learning_report_draft(saved.report_draft_id)
+        resaved = self.adapter.save_learning_report_draft(loaded)
+        reloaded = self.adapter.load_learning_report_draft(resaved.report_draft_id)
+
+        self.assertEqual(reloaded.observation_ids, (self.observation.observation_id,))
+        self.assertEqual(
+            reloaded.unavailable_observation_ids,
+            (self.observation.observation_id,),
+        )
+
+    def test_soft_deleted_observation_cannot_be_newly_selected(self) -> None:
+        SQLiteObservationRepository(self.adapter.database).deactivate_observation(
+            self.observation.observation_id,
+            "2026-03-13T10:00:00+00:00",
+        )
+
+        with self.assertRaises(ReportDraftError):
+            self.adapter.save_learning_report_draft(self._draft())
+
+    def test_explicit_deselection_removes_retained_relations(self) -> None:
+        saved = self.adapter.save_learning_report_draft(self._draft())
+        with self.adapter.database.connect() as connection:
+            connection.execute(
+                "UPDATE competencies SET active = 0 WHERE competency_id = ?",
+                (self.competency.competency_id,),
+            )
+            connection.execute(
+                "UPDATE observations SET active = 0 WHERE observation_id = ?",
+                (self.observation.observation_id,),
+            )
+            connection.commit()
+
+        updated = self.adapter.save_learning_report_draft(
+            replace(saved, competency_ids=(), observation_ids=())
+        )
+
+        self.assertEqual(updated.competency_ids, ())
+        self.assertEqual(updated.observation_ids, ())
+        self.assertEqual(updated.unavailable_observation_ids, ())
+
+    def test_foreign_child_subject_and_observation_references_are_rejected(self) -> None:
+        other_student = self.adapter.list_students()[1]
+        other_subject_competency = next(
+            competency
+            for competency in SQLiteCompetencyRepository(
+                self.adapter.database
+            ).list_competencies()
+            if competency.active
+            and competency.catalog_status == "current"
+            and competency.subject_id != self.competency.subject_id
+        )
+        foreign_child_observation = ObservationRecord(
+            "OBS-FOREIGN-CHILD",
+            other_student.student_id,
+            "2026-03-12",
+            self.competency.subject_id,
+            "Lernzeit",
+            "Fremder Beleg.",
+            True,
+            "2026-03-12T10:00:00+00:00",
+            "2026-03-12T10:00:00+00:00",
+            (),
+        )
+        wrong_subject_observation = replace(
+            self.observation,
+            observation_id="OBS-WRONG-SUBJECT",
+            subject_id=other_subject_competency.subject_id,
+        )
+        repository = SQLiteObservationRepository(self.adapter.database)
+        repository.create_observation(foreign_child_observation)
+        repository.create_observation(wrong_subject_observation)
+
+        with self.assertRaises(ReportDraftError):
+            self.adapter.save_learning_report_draft(
+                replace(
+                    self._draft(),
+                    observation_ids=(foreign_child_observation.observation_id,),
+                )
+            )
+        with self.assertRaises(ReportDraftError):
+            self.adapter.save_learning_report_draft(
+                replace(
+                    self._draft(),
+                    competency_ids=(other_subject_competency.competency_id,),
+                    observation_ids=(),
+                )
+            )
+        with self.assertRaises(ReportDraftError):
+            self.adapter.save_learning_report_draft(
+                replace(
+                    self._draft(),
+                    observation_ids=(wrong_subject_observation.observation_id,),
+                )
+            )
 
     def _draft(self) -> LearningReportDraftViewModel:
         subject = LearningReportSubjectDraftViewModel(

@@ -2425,7 +2425,7 @@ class SQLiteReportDraftRepository:
             )
         with closing(self.database.connect()) as connection:
             with connection:
-                self._validate_references(connection, draft)
+                self._validate_references(connection, draft, set(), set())
                 connection.execute(
                     """
                     INSERT INTO report_drafts (
@@ -2448,13 +2448,19 @@ class SQLiteReportDraftRepository:
         return draft
 
     def update_report_draft(self, draft: ReportDraftRecord) -> ReportDraftRecord:
-        if self.get_report_draft(draft.report_draft_id) is None:
+        existing = self.get_report_draft(draft.report_draft_id)
+        if existing is None:
             raise ReportDraftError(
                 f"report_draft_id nicht gefunden: {draft.report_draft_id}"
             )
         with closing(self.database.connect()) as connection:
             with connection:
-                self._validate_references(connection, draft)
+                self._validate_references(
+                    connection,
+                    draft,
+                    set(existing.competency_ids),
+                    set(existing.observation_ids),
+                )
                 connection.execute(
                     """
                     UPDATE report_drafts
@@ -2534,10 +2540,40 @@ class SQLiteReportDraftRepository:
             ).fetchall()
             return tuple(self._record_from_row(connection, row) for row in rows)
 
+    def unavailable_observation_ids(
+        self,
+        draft: ReportDraftRecord,
+    ) -> tuple[str, ...]:
+        """Resolve unavailable stored evidence without dropping or replacing IDs."""
+        if not draft.observation_ids:
+            return ()
+        placeholders = ", ".join("?" for _ in draft.observation_ids)
+        with closing(self.database.connect()) as connection:
+            active_ids = {
+                row["observation_id"]
+                for row in connection.execute(
+                    f"""
+                    SELECT observation_id
+                    FROM observations
+                    WHERE student_id = ?
+                      AND active = 1
+                      AND observation_id IN ({placeholders})
+                    """,
+                    (draft.student_id, *draft.observation_ids),
+                ).fetchall()
+            }
+        return tuple(
+            observation_id
+            for observation_id in draft.observation_ids
+            if observation_id not in active_ids
+        )
+
     def _validate_references(
         self,
         connection: sqlite3.Connection,
         draft: ReportDraftRecord,
+        existing_competency_ids: set[str],
+        existing_observation_ids: set[str],
     ) -> None:
         student = connection.execute(
             "SELECT student_id FROM students WHERE student_id = ?",
@@ -2545,38 +2581,114 @@ class SQLiteReportDraftRepository:
         ).fetchone()
         if student is None:
             raise ReportDraftError(f"student_id nicht gefunden: {draft.student_id}")
-        if draft.competency_ids:
-            placeholders = ", ".join("?" for _ in draft.competency_ids)
-            found = {
-                row["competency_id"]
+        subject_ids = {subject.subject_id for subject in draft.subjects}
+        if subject_ids:
+            placeholders = ", ".join("?" for _ in subject_ids)
+            found_subjects = {
+                row["subject_id"]
                 for row in connection.execute(
-                    f"SELECT competency_id FROM competencies WHERE competency_id IN ({placeholders})",
-                    draft.competency_ids,
+                    f"SELECT DISTINCT subject_id FROM competencies WHERE subject_id IN ({placeholders})",
+                    tuple(subject_ids),
                 ).fetchall()
             }
-            missing = set(draft.competency_ids) - found
+            missing_subjects = subject_ids - found_subjects
+            if missing_subjects:
+                raise ReportDraftError(
+                    "Fachreferenzen nicht gefunden: "
+                    f"{', '.join(sorted(missing_subjects))}"
+                )
+        if draft.competency_ids:
+            placeholders = ", ".join("?" for _ in draft.competency_ids)
+            rows = connection.execute(
+                f"""
+                SELECT competency_id, subject_id, active, catalog_status
+                FROM competencies
+                WHERE competency_id IN ({placeholders})
+                """,
+                draft.competency_ids,
+            ).fetchall()
+            by_id = {row["competency_id"]: row for row in rows}
+            missing = set(draft.competency_ids) - set(by_id)
             if missing:
                 raise ReportDraftError(
                     f"Kompetenzreferenzen nicht gefunden: {', '.join(sorted(missing))}"
                 )
+            unselected_subjects = {
+                row["subject_id"]
+                for row in rows
+                if row["subject_id"] not in subject_ids
+            }
+            if unselected_subjects:
+                raise ReportDraftError(
+                    "Kompetenzen duerfen nur aus ausgewaehlten Faechern stammen: "
+                    f"{', '.join(sorted(unselected_subjects))}"
+                )
+            unavailable_new = {
+                competency_id
+                for competency_id, row in by_id.items()
+                if (
+                    not bool(row["active"])
+                    or row["catalog_status"] != "current"
+                )
+                and competency_id not in existing_competency_ids
+            }
+            if unavailable_new:
+                raise ReportDraftError(
+                    "Nicht regulär verfügbare Kompetenzen dürfen nicht neu ausgewählt werden: "
+                    f"{', '.join(sorted(unavailable_new))}"
+                )
         if draft.observation_ids:
             placeholders = ", ".join("?" for _ in draft.observation_ids)
-            found = {
-                row["observation_id"]
-                for row in connection.execute(
-                    f"""
-                    SELECT observation_id
-                    FROM observations
-                    WHERE student_id = ? AND observation_id IN ({placeholders})
-                    """,
-                    (draft.student_id, *draft.observation_ids),
-                ).fetchall()
+            rows = connection.execute(
+                f"""
+                SELECT observation_id, student_id, subject_id, active
+                FROM observations
+                WHERE observation_id IN ({placeholders})
+                """,
+                draft.observation_ids,
+            ).fetchall()
+            by_id = {row["observation_id"]: row for row in rows}
+            invalid = {
+                observation_id
+                for observation_id in draft.observation_ids
+                if observation_id not in by_id
+                or by_id[observation_id]["student_id"] != draft.student_id
+                or (
+                    not bool(by_id[observation_id]["active"])
+                    and observation_id not in existing_observation_ids
+                )
             }
-            invalid = set(draft.observation_ids) - found
             if invalid:
                 raise ReportDraftError(
-                    "Beobachtungsreferenzen gehoeren nicht zum Schueler oder fehlen: "
+                    "Beobachtungsreferenzen sind inaktiv, fehlen oder gehoeren "
+                    "nicht zum Schueler: "
                     f"{', '.join(sorted(invalid))}"
+                )
+            rating_subjects_by_observation: dict[str, set[str]] = {}
+            for row in connection.execute(
+                f"""
+                SELECT observation_id, subject_id
+                FROM observation_competency_ratings
+                WHERE observation_id IN ({placeholders})
+                """,
+                draft.observation_ids,
+            ).fetchall():
+                rating_subjects_by_observation.setdefault(
+                    row["observation_id"], set()
+                ).add(row["subject_id"])
+            wrong_subject = {
+                observation_id
+                for observation_id, row in by_id.items()
+                if observation_id not in invalid
+                and not (
+                    {row["subject_id"]}
+                    | rating_subjects_by_observation.get(observation_id, set())
+                ).intersection(subject_ids)
+            }
+            if wrong_subject:
+                raise ReportDraftError(
+                    "Beobachtungen duerfen nur zu ausgewaehlten Faechern gehoeren: "
+                    f"{', '.join(sorted(wrong_subject))}"
                 )
 
     def _replace_relations(

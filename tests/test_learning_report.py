@@ -11,7 +11,13 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QButtonGroup, QCheckBox, QStackedWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QButtonGroup,
+    QCheckBox,
+    QLabel,
+    QStackedWidget,
+)
 
 from prototypes.pdf_engine.output_models import ChartBlock, ReportOutputModel, TableBlock
 from prototypes.pdf_engine.renderer import PdfRenderer
@@ -177,6 +183,103 @@ class LearningReportTest(unittest.TestCase):
         self.assertEqual(subject_table.rows[0][2], "Volle Stunden ablesen")
         self.assertNotIn("Historische Sammelkompetenz Zeit", str(subject_table.rows))
 
+    def test_retained_historical_competency_is_visible_selected_and_removable(self) -> None:
+        initial = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            subjects=(LearningReportSubjectDraftViewModel("math"),),
+            competency_ids=("CMP-OLD",),
+            report_draft_id="RPD-000001",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+        tree = dialog.subject_widgets["math"]["tree"]
+        retained_item = next(
+            item
+            for item in self._competency_items(tree)
+            if item.data(0, Qt.ItemDataRole.UserRole) == "CMP-OLD"
+        )
+
+        self.assertEqual(retained_item.checkState(0), Qt.CheckState.Checked)
+        self.assertIn("nicht mehr regulär verfügbar", retained_item.text(0))
+        retained_item.setCheckState(0, Qt.CheckState.Unchecked)
+
+        self.assertNotIn("CMP-OLD", dialog.selected_competency_ids)
+        self.assertFalse(bool(retained_item.flags() & Qt.ItemFlag.ItemIsEnabled))
+
+    def test_unavailable_evidence_survives_view_and_period_changes_until_unchecked(self) -> None:
+        initial = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            subjects=(LearningReportSubjectDraftViewModel("math"),),
+            competency_ids=("CMP-000001",),
+            observation_ids=("OBS-MISSING",),
+            report_draft_id="RPD-000001",
+            unavailable_observation_ids=("OBS-MISSING",),
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+        unavailable_check = next(
+            check
+            for check in dialog.findChildren(QCheckBox)
+            if check.objectName() == "LearningReportUnavailableEvidence_OBS-MISSING"
+        )
+
+        dialog.editor_stack.setCurrentIndex(1)
+        dialog.editor_stack.setCurrentIndex(0)
+        dialog.period_start.setDate(date(2026, 2, 1))
+        self.app.processEvents()
+
+        self.assertIn("OBS-MISSING", dialog.selected_observation_ids)
+        self.assertTrue(unavailable_check.isChecked())
+        unavailable_check.setChecked(False)
+        self.assertNotIn("OBS-MISSING", dialog.report_draft_view_model().observation_ids)
+
+    def test_preview_and_output_model_show_unavailable_saved_references(self) -> None:
+        draft = LearningReportDraft(
+            date(2026, 1, 1),
+            date(2026, 12, 31),
+            "Laura Lernbegleiterin",
+            "Manueller Gesamtblick.",
+            "",
+            "",
+            ("math",),
+            ("CMP-OLD",),
+            ("OBS-MISSING",),
+            unavailable_observation_ids=("OBS-MISSING",),
+        )
+
+        output = build_report_output_model(self.preparation, draft)
+        subject_table = next(
+            block for block in output.pages[2].blocks if isinstance(block, TableBlock)
+        )
+        unavailable_table = next(
+            block for block in output.pages[-1].blocks
+            if isinstance(block, TableBlock)
+        )
+        initial = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=draft.period_start,
+            period_end=draft.period_end,
+            subjects=(LearningReportSubjectDraftViewModel("math"),),
+            competency_ids=draft.selected_competency_ids,
+            observation_ids=draft.selected_observation_ids,
+            unavailable_observation_ids=draft.unavailable_observation_ids,
+            report_draft_id="RPD-000001",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+        dialog.update_preview()
+        preview_text = " ".join(
+            label.text() for label in dialog.findChildren(QLabel)
+        )
+
+        self.assertIn("historisch ausgewählt", str(subject_table.rows))
+        self.assertEqual(
+            unavailable_table.rows,
+            (("OBS-MISSING", "Nicht mehr verfügbar"),),
+        )
+        self.assertIn("OBS-MISSING · nicht mehr verfügbar", preview_text)
+
     def test_saved_draft_loads_and_emits_complete_manual_state(self) -> None:
         initial = LearningReportDraftViewModel(
             student_id="STU-000001",
@@ -308,6 +411,19 @@ class LearningReportTest(unittest.TestCase):
             ("CMP-000001",),
             ("OBS-000001",),
         )
+
+    @staticmethod
+    def _competency_items(tree):
+        from PySide6.QtWidgets import QTreeWidgetItemIterator
+
+        iterator = QTreeWidgetItemIterator(tree)
+        items = []
+        while iterator.value():
+            item = iterator.value()
+            if item.data(0, Qt.ItemDataRole.UserRole):
+                items.append(item)
+            iterator += 1
+        return items
 
 
 if __name__ == "__main__":

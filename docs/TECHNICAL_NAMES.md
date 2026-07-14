@@ -1047,7 +1047,7 @@ Registrierte technische Namen:
 - `LearningReportEvidenceViewModel`
 - `LearningReportDraft`
 - `LearningReportDialog`
-- `StudentDesktopAdapter.learning_report_preparation_for_student(student_id)`
+- `StudentDesktopAdapter.learning_report_preparation_for_student(student_id, retained_competency_ids=())`
 - `build_learning_report_preparation(student, statuses, observations)`
 - `build_report_output_model(preparation, draft)`
 - `AppShell.open_learning_report_dialog(student_id)`
@@ -1122,6 +1122,21 @@ Registrierte technische Namen:
 - `LearningReportReportCard`
 
 Regel: Diese Namen bilden ausschliesslich die aus `prototypes/learning_report_ux/` portierte PySide-Navigation, Kartenhierarchie, Draft-Anbindung und Auswahl der bereits registrierten Diagrammtypen ab. Sie fuehren keine neue Datenquelle, keine Kompetenzstatuslogik und keinen zusaetzlichen Schreibprozess ein.
+
+## Sprint 5B.1 - Bestandssichere Berichtreferenzen
+
+Registrierte Lese- und Projektionsnamen:
+
+- `LearningReportDraftViewModel.unavailable_observation_ids`
+- `LearningReportDraft.unavailable_observation_ids`
+- `SQLiteReportDraftRepository.unavailable_observation_ids(draft)`
+- `StudentDesktopAdapter._learning_report_draft_view_model(record)`
+- `_unavailable_evidence_blocks(draft)`
+- `LearningReportDialog._unavailable_evidence_card()`
+- `LearningReportUnavailableEvidence`
+- `LearningReportUnavailableEvidence_<observation_id>`
+
+Regel: `retained_competency_ids` erweitert fuer einen geladenen Berichtsdraft ausschliesslich den Lesekontext der bestehenden kanonischen Kompetenzprojektion. `unavailable_observation_ids` ist eine abgeleitete Kennzeichnung bereits gespeicherter, nicht mehr aktiver `OBS`-Referenzen und kein persistiertes Fachfeld. Beide Pfade erhalten bestehende IDs, erlauben keine neue Auswahl inaktiver Quellen und erzeugen weder Snapshottexte noch eine zweite Kompetenzstatuslogik.
 
 ## Sprint 7G.1 - Persistenter LEG-Arbeitsentwurf
 

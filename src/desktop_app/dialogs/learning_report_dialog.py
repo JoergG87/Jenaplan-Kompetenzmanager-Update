@@ -74,6 +74,9 @@ class LearningReportDialog(QDialog):
         self.selected_observation_ids = set(
             initial_draft.observation_ids if initial_draft else ()
         )
+        self._unavailable_observation_ids = set(
+            initial_draft.unavailable_observation_ids if initial_draft else ()
+        )
         self._selected_charts = {
             (chart.subject_id, chart.chart_type)
             for chart in (initial_draft.chart_selections if initial_draft else ())
@@ -458,6 +461,8 @@ class LearningReportDialog(QDialog):
         set_label_style(self.closing_summary, "body")
         summary_layout.addWidget(self.closing_summary)
         layout.addWidget(summary)
+        if self._unavailable_observation_ids:
+            layout.addWidget(self._unavailable_evidence_card())
         actions = QHBoxLayout()
         actions.addStretch(1)
         save = QPushButton("Entwurf speichern")
@@ -543,16 +548,22 @@ class LearningReportDialog(QDialog):
                 topic = QTreeWidgetItem([competency.competency_group])
                 area.addChild(topic)
                 topics[topic_key] = topic
-            suffix = " · historisch (nur sichtbar)" if competency.historical else ""
+            is_selected = competency.competency_id in self.selected_competency_ids
+            if not competency.selectable and is_selected:
+                suffix = " · historisch ausgewählt · nicht mehr regulär verfügbar"
+            elif not competency.selectable:
+                suffix = " · historisch · nicht regulär verfügbar"
+            else:
+                suffix = ""
             item = QTreeWidgetItem([f"{competency.competency_text}{suffix}"])
             item.setData(0, Qt.ItemDataRole.UserRole, competency.competency_id)
             item.setToolTip(0, self._documentation_state_label(competency.documentation_state))
-            if competency.selectable:
+            if competency.selectable or is_selected:
                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                 item.setCheckState(
                     0,
                     Qt.CheckState.Checked
-                    if competency.competency_id in self.selected_competency_ids
+                    if is_selected
                     else Qt.CheckState.Unchecked,
                 )
             else:
@@ -578,7 +589,6 @@ class LearningReportDialog(QDialog):
             tree = self.subject_widgets[subject_id]["tree"]
             if isinstance(tree, QTreeWidget):
                 self._reset_tree_checks(tree)
-        self._prune_evidence_selection()
         self._render_evidence(subject)
         self._schedule_preview()
 
@@ -595,7 +605,17 @@ class LearningReportDialog(QDialog):
             self.selected_competency_ids.add(competency_id)
         else:
             self.selected_competency_ids.discard(competency_id)
-        self._prune_evidence_selection()
+            subject = self._subject(subject_id)
+            competency = next(
+                (
+                    entry
+                    for entry in subject.competencies
+                    if entry.competency_id == competency_id
+                ),
+                None,
+            ) if subject else None
+            if competency is not None and not competency.selectable:
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
         subject = self._subject(subject_id)
         if subject:
             self._render_evidence(subject)
@@ -660,27 +680,9 @@ class LearningReportDialog(QDialog):
         self._schedule_preview()
 
     def _period_changed(self) -> None:
-        start = self.period_start.date().toPython()
-        end = self.period_end.date().toPython()
-        valid = {
-            evidence.observation_id
-            for subject in self.preparation.subjects
-            for evidence in subject.evidence
-            if start <= evidence.observed_on <= end
-        }
-        self.selected_observation_ids.intersection_update(valid)
         for subject in self.preparation.subjects:
             self._render_evidence(subject)
         self._schedule_preview()
-
-    def _prune_evidence_selection(self) -> None:
-        visible = {
-            evidence.observation_id
-            for subject in self.preparation.subjects
-            if subject.subject_id in self.selected_subject_ids
-            for evidence in self._visible_evidence_for_subject(subject)
-        }
-        self.selected_observation_ids.intersection_update(visible)
 
     def report_draft_view_model(self) -> LearningReportDraftViewModel:
         subjects: list[LearningReportSubjectDraftViewModel] = []
@@ -723,6 +725,12 @@ class LearningReportDialog(QDialog):
             status=saved.status if saved else "draft",
             created_at=saved.created_at if saved else "",
             updated_at=saved.updated_at if saved else "",
+            unavailable_observation_ids=tuple(
+                sorted(
+                    self._unavailable_observation_ids
+                    & self.selected_observation_ids
+                )
+            ),
         )
 
     def report_draft(self) -> LearningReportDraft:
@@ -739,6 +747,7 @@ class LearningReportDialog(QDialog):
             selected_observation_ids=persisted.observation_ids,
             subject_texts=persisted.subjects,
             chart_selections=persisted.chart_selections,
+            unavailable_observation_ids=persisted.unavailable_observation_ids,
         )
 
     def report_output_model(self) -> object:
@@ -910,9 +919,14 @@ class LearningReportDialog(QDialog):
         if not selected:
             layout.addWidget(self._small_label("Keine konkrete Kompetenz ausgewählt."))
         for competency in selected:
+            suffix = (
+                " · historisch ausgewählt; nicht mehr regulär verfügbar"
+                if not competency.selectable
+                else ""
+            )
             item = QLabel(
                 f"•  {competency.learning_area} → {competency.competency_group}\n"
-                f"   {competency.competency_text}"
+                f"   {competency.competency_text}{suffix}"
             )
             item.setWordWrap(True)
             layout.addWidget(item)
@@ -1014,6 +1028,26 @@ class LearningReportDialog(QDialog):
             body.setWordWrap(True)
             layout.addWidget(body)
         layout.addSpacing(22)
+        selected_unavailable = tuple(
+            sorted(
+                self._unavailable_observation_ids
+                & self.selected_observation_ids
+            )
+        )
+        if selected_unavailable:
+            title = QLabel("Nicht mehr verfügbare Beobachtungsbelege")
+            set_label_style(title, "section_title")
+            layout.addWidget(title)
+            layout.addWidget(
+                self._responsibility_note(
+                    "Die gespeicherten Referenzen bleiben erhalten; Inhalte werden nicht rekonstruiert."
+                )
+            )
+            for observation_id in selected_unavailable:
+                layout.addWidget(
+                    self._small_label(f"{observation_id} · nicht mehr verfügbar")
+                )
+            layout.addSpacing(12)
         layout.addWidget(
             self._small_label(
                 f"Verantwortliche Lehrkraft: {self.teacher_input.text().strip() or 'Noch offen'}"
@@ -1021,6 +1055,36 @@ class LearningReportDialog(QDialog):
         )
         layout.addWidget(self._small_label("Status: Entwurf · noch nicht fachlich freigegeben"))
         return page
+
+    def _unavailable_evidence_card(self) -> QFrame:
+        card = create_card()
+        card.setObjectName("LearningReportUnavailableEvidence")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(22, 20, 22, 22)
+        layout.setSpacing(8)
+        title = QLabel("Nicht mehr verfügbare Beobachtungsbelege")
+        set_label_style(title, "section_title")
+        layout.addWidget(title)
+        layout.addWidget(
+            self._small_label(
+                "Nur die gespeicherte ID bleibt sichtbar. Es werden keine Inhalte rekonstruiert."
+            )
+        )
+        for observation_id in sorted(self._unavailable_observation_ids):
+            check = QCheckBox(
+                f"{observation_id} · gespeicherten Bezug beibehalten"
+            )
+            check.setObjectName(
+                f"LearningReportUnavailableEvidence_{observation_id}"
+            )
+            check.setChecked(observation_id in self.selected_observation_ids)
+            check.toggled.connect(
+                lambda checked, selected_id=observation_id: self._toggle_evidence(
+                    selected_id, checked
+                )
+            )
+            layout.addWidget(check)
+        return card
 
     def _paper_page(self, kicker: str) -> tuple[QFrame, QVBoxLayout]:
         page = QFrame()

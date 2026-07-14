@@ -640,7 +640,7 @@ Erforderliche IDs:
 - ausgewaehlte bestehende `competency_id`
 - ausgewaehlte bestehende `observation_id`
 
-Regel: Anlegen erzeugt genau einen Entwurf mit Status `draft` und unveraenderlichem `created_at`. Aktualisieren ersetzt Fachauswahl, Fachtexte, Kompetenz-, Beobachtungs- und Diagrammreferenzen atomar und setzt `updated_at`. Kompetenz- und Beobachtungsinhalte werden nicht kopiert. Der Prozess erzeugt keine Bewertung, Bestaetigung, Version, Freigabe, Archivierung oder finale Ausgabe. Das neutrale `ReportOutputModel` wird weiterhin erst fuer die Vorschau beziehungsweise PDF-Ausgabe aus dem geladenen Entwurf und den aktuellen freigegebenen Leseprojektionen gebaut.
+Regel: Anlegen erzeugt genau einen Entwurf mit Status `draft` und unveraenderlichem `created_at`. Aktualisieren ersetzt Fachauswahl, Fachtexte, Kompetenz-, Beobachtungs- und Diagrammreferenzen atomar und setzt `updated_at`. Neue Kompetenzreferenzen muessen aktiv und `current` sein; neue Beobachtungsreferenzen muessen aktiv sein. Beide Referenzarten muessen zum ausgewaehlten Fachkontext gehoeren, Beobachtungen zusaetzlich zum Kind. Bereits im Draft gespeicherte, spaeter deaktivierte Kompetenz- oder soft-geloeschte Beobachtungsreferenzen bleiben beim Speichern erhalten, solange sie nicht ausdruecklich abgewaehlt werden. Kompetenz- und Beobachtungsinhalte werden nicht kopiert. Der Prozess erzeugt keine Bewertung, Bestaetigung, Version, Freigabe, Archivierung oder finale Ausgabe. Das neutrale `ReportOutputModel` wird weiterhin erst fuer die Vorschau beziehungsweise PDF-Ausgabe aus dem geladenen Entwurf und den aktuellen freigegebenen Leseprojektionen gebaut.
 
 ## Lernentwicklungsbericht-Entwurf laden
 
@@ -656,7 +656,7 @@ SQLite report_drafts + Relationstabellen
 -> PySide Berichtswerkstatt
 ```
 
-Regel: Laden rekonstruiert ausschliesslich gespeicherte manuelle Texte und Referenzen. Kompetenzstatus, Kompetenztexte und Beobachtungsinhalte werden aus ihren bestehenden Sources of Truth neu projiziert. Historische Kompetenzreferenzen bleiben dadurch aufloesbar, ohne fuer neue Auswahl reaktiviert zu werden.
+Regel: Laden rekonstruiert ausschliesslich gespeicherte manuelle Texte und Referenzen. Kompetenzstatus und Kompetenztexte werden mit den gespeicherten `competency_id`-Werten als `retained_competency_ids` aus der kanonischen Projektion gelesen. Nicht mehr regulaer verfuegbare Kompetenzen bleiben gekennzeichnet ausgewaehlt, koennen nach Abwahl aber nicht neu ausgewaehlt werden. Aktive Beobachtungsinhalte werden aus der bestehenden Beobachtungsprojektion gelesen; gespeicherte, dort nicht mehr aktive `observation_id`-Werte bleiben ohne erfundene Inhalte als nicht verfuegbar sichtbar. Vorschau und `ReportOutputModel` weisen solche Ausfaelle neutral aus.
 
 ## LEG-Arbeitsentwurf speichern
 
