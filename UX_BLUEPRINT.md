@@ -20,6 +20,8 @@ Zielplattform ist Microsoft Excel für macOS.
 - Minimalistische Informationsdarstellung.
 - Component Library V2 nutzt eine ruhige Surface-Hierarchie: eine Akzentflaeche fuer die aktuelle Situation, normale Arbeitskarten und weiche sekundaere Informationsflaechen.
 - Suche und aktive Kontextfilter werden gemeinsam sichtbar; Reset erscheint nur bei tatsaechlich aktivem Kontextfilter.
+- Motion bestaetigt nur bereits ausgefuehrte Interaktionen: kurze zentrale Uebergaenge duerfen Navigation, Filter, Fokus, Speichern oder fachliche Signale nie verzoegern.
+- Reduced Motion setzt alle Endzustaende sofort; Tabellen, Leerzustaende, globale Navigation und Dialoge bleiben bewusst statisch beziehungsweise nativ.
 
 ## 3. Primäre User Journeys
 

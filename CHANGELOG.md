@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## UI Sprint 3 - Motion System und Microinteractions
+
+### Added
+
+- Zentrales, Qt-basiertes Motion-System mit einheitlichen Dauer-, Easing-, Lifecycle- und Reduced-Motion-Regeln ergaenzt.
+- Kurze funktionale Microinteractions fuer interaktive Karten, Segmentwechsel, Filterchips, Inline-Hinweise und Toasts eingefuehrt.
+
+### Changed
+
+- Toasts pausieren ihre Verweildauer bei Hover, ersetzen laufende Meldungen ohne Animationsstapel und blenden kontrolliert ein und aus.
+- Interaktive Karten erhalten dezente Hover-Tiefe; Auswahl, Fokus, Filterausfuehrung und fachliche Aktionen bleiben unmittelbar.
+
+### Not Changed
+
+- Keine Aenderung an Datenmodell, SQLite-Schema, Fachlogik, Repositories, Adaptern, ViewModels, Tabellen, Leerzustaenden, Navigation oder Dialogarchitektur.
+
 ## UI Sprint 2 - Premium Components und Workspace Modernization
 
 ### Added

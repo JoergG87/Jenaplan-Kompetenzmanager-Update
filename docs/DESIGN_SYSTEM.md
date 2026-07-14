@@ -1,5 +1,21 @@
 # Design-System
 
+## Motion System - UI Sprint 3
+
+Motion unterstuetzt Orientierung und Rueckmeldung, ohne Arbeitsablaeufe zu verlangsamen. Die zentrale Implementierung liegt in `src/desktop_app/motion.py`; Screens besitzen keine eigene Animationslogik. Verbindliche Dauern bleiben `120 ms` fuer direkte Rueckmeldung, `180 ms` fuer normale Uebergaenge und `240 ms` nur fuer groessere, seltene Zustandswechsel. Standard-Easing ist `OutCubic`, Ausblendungen verwenden `InCubic`.
+
+Die globale `MotionPolicy` besitzt genau einen Reduced-Motion-Schalter. Im reduzierten Modus werden fachlicher Zustand, Sichtbarkeit, Fokus und Endwerte sofort gesetzt. Timer duerfen weiterhin die Lesedauer einer Meldung steuern, erzeugen aber keine Bewegung. Animationen werden pro Widget und semantischem Schluessel ersetzt statt gestapelt; Qt-Ownership und Aufraeumen bei Abschluss beziehungsweise Widget-Zerstoerung sind Bestandteil des zentralen Vertrags. Eine spaetere verlaessliche Qt-/Plattformanbindung setzt ausschliesslich diese Policy und erfordert keine Aenderung an Komponenten; UI Sprint 3 erzwingt dafuer keine neue sichtbare Einstellung.
+
+Komponenten mit Motion:
+
+- `AppCard` nur bei `interactive`: dezenter, layout-neutraler Hover-Schatten; Pressed, Fokus und Auswahl bleiben sofort sichtbar
+- `SegmentedControl`: kurze Opacity-Bestaetigung des bereits gesetzten Zielsegments; Signal und Navigation werden nicht verzoegert
+- `FilterChip`: Einblenden eines neu sichtbaren Filterzustands; Reset und Filterausfuehrung bleiben unmittelbar
+- `InlineMessage`: ruhiges Einblenden neuer Information oder Erfolgsmeldung; Warnungen und Fehler erscheinen sofort
+- `Toast`: Ein-/Ausblenden, Hover-Pause und sichere Ersetzung einer laufenden Meldung
+
+Bewusst statisch bleiben `EmptyState`, Tabellen und Tabellenzeilen, globale Navigation, Search-Ergebnisse sowie nicht interaktive Karten. Dialoge nutzen weiterhin natives Qt-/macOS-Verhalten; ein eigener Dialog-Fade und Chevron-/Disclosure-Motion werden erst bei einem stabilen zentralen Nutzungsmuster eingefuehrt. Es gibt keine Screen-Uebergaenge, Feder-/Bounce-Effekte, Geometrieanimationen oder blockierende Animationen.
+
 ## Component Library V2 - UI Sprint 2
 
 Bestandskomponenten, die erweitert werden:

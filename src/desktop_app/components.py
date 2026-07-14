@@ -18,6 +18,13 @@ from PySide6.QtWidgets import (
 )
 
 from src.desktop_app.icons import ICON_SIZE_SMALL, load_icon
+from src.desktop_app.motion import (
+    animate_feedback,
+    animate_opacity,
+    install_card_motion,
+    stop_motion,
+)
+from src.desktop_app.theme import MOTION_FAST_MS
 from src.desktop_app.theme import set_button_role, set_label_style
 
 
@@ -37,6 +44,7 @@ class AppCard(QFrame):
             self.setProperty("interactive", True)
             self.setCursor(Qt.CursorShape.PointingHandCursor)
             self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+            install_card_motion(self)
 
     def set_selected(self, selected: bool) -> None:
         """Expose one central selected state to QSS."""
@@ -125,9 +133,13 @@ class FilterChip(QPushButton):
         self.setVisible(bool(label))
 
     def set_label(self, label: str) -> None:
+        was_hidden = self.isHidden()
         self.setText(label)
         self.setAccessibleName(f"Aktiver Filter: {label}. Filter zurücksetzen")
-        self.setVisible(bool(label))
+        if label and was_hidden:
+            animate_opacity(self, visible=True, duration_ms=MOTION_FAST_MS)
+        else:
+            self.setVisible(bool(label))
 
 
 class FilterBar(QFrame):
@@ -237,7 +249,10 @@ class SegmentedControl(QFrame):
         """Select one segment without triggering navigation by default."""
         if key not in self._buttons:
             raise ValueError(f"Unbekannter Segment-Schlüssel: {key}")
+        changed = self.current_key() != key
         self._buttons[key].setChecked(True)
+        if changed and self.isVisible():
+            animate_feedback(self._buttons[key], key="segment_selection")
         if emit:
             self.selection_changed.emit(key)
 
@@ -261,6 +276,10 @@ class SegmentedControl(QFrame):
 
     def _emit_selection(self, button_id: int) -> None:
         if 0 <= button_id < len(self._keys):
+            animate_feedback(
+                self._buttons[self._keys[button_id]],
+                key="segment_selection",
+            )
             self.selection_changed.emit(self._keys[button_id])
 
 
@@ -312,12 +331,28 @@ class InlineMessage(QFrame):
 
     def set_message(self, text: str, *, tone: str = "info") -> None:
         """Update content and tone while retaining space only when needed."""
+        was_hidden = self.isHidden()
         self.label.setText(text)
         self.setProperty("messageTone", tone)
         self.setAccessibleName(text)
-        self.setVisible(bool(text))
         self.style().unpolish(self)
         self.style().polish(self)
+        if not text:
+            if was_hidden:
+                stop_motion(self, "opacity")
+                self.hide()
+            else:
+                animate_opacity(self, visible=False)
+        elif tone in {"warning", "error"}:
+            stop_motion(self, "opacity")
+            self.setVisible(True)
+            effect = getattr(self, "_motion_opacity_effect", None)
+            if effect is not None:
+                effect.setOpacity(1.0)
+        elif was_hidden:
+            animate_opacity(self, visible=True)
+        else:
+            self.setVisible(True)
 
 
 class EmptyState(QFrame):
@@ -353,6 +388,7 @@ class Toast(QFrame):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("Toast")
+        self.setMinimumWidth(280)
         self.setMaximumWidth(520)
         self.setProperty("toastTone", "info")
         self.setAccessibleName("Statusmeldung")
@@ -363,7 +399,9 @@ class Toast(QFrame):
         layout.addWidget(self.label)
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
-        self.timer.timeout.connect(self.hide)
+        self.timer.timeout.connect(self._dismiss)
+        self._duration_ms = 4200
+        self._remaining_ms = self._duration_ms
         self.hide()
 
     def show_message(
@@ -382,8 +420,33 @@ class Toast(QFrame):
         self.setAccessibleDescription(text)
         self.style().unpolish(self)
         self.style().polish(self)
-        self.show()
-        self.timer.start(duration_ms)
+        was_hidden = self.isHidden()
+        stop_motion(self)
+        if was_hidden:
+            animate_opacity(self, visible=True)
+        else:
+            animate_feedback(self, key="toast_feedback")
+        self._duration_ms = max(0, duration_ms)
+        self._remaining_ms = self._duration_ms
+        self.timer.start(self._duration_ms)
+
+    def event(self, event: QEvent) -> bool:
+        """Pause a toast's reading time while the pointer rests on it."""
+        if event.type() == QEvent.Type.Enter and self.timer.isActive():
+            self._remaining_ms = max(0, self.timer.remainingTime())
+            self.timer.stop()
+        elif (
+            event.type() == QEvent.Type.Leave
+            and self.isVisible()
+            and self._remaining_ms > 0
+        ):
+            self.timer.start(self._remaining_ms)
+        return super().event(event)
+
+    def _dismiss(self) -> None:
+        self._remaining_ms = 0
+        stop_motion(self)
+        animate_opacity(self, visible=False)
 
     def setText(self, text: str) -> None:  # noqa: N802
         """Keep the former shell status-label call site compatible."""
@@ -420,7 +483,12 @@ class Toast(QFrame):
     def clear(self) -> None:
         """Clear and hide the toast immediately."""
         self.timer.stop()
+        self._remaining_ms = 0
+        stop_motion(self)
         self.label.clear()
+        effect = getattr(self, "_motion_opacity_effect", None)
+        if effect is not None:
+            effect.setOpacity(1.0)
         self.hide()
 
 

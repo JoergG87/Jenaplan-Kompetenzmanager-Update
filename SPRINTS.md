@@ -6,6 +6,15 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## UI Sprint 3 - Motion System und Microinteractions ✅
+
+- [x] Motion-Bestand inventarisiert und zentrale Qt-Bordmittel-Architektur festgelegt
+- [x] Globale Reduced-Motion-Policy sowie lifecycle-sichere Animationsverwaltung definiert
+- [x] Interaktive Karten, Segmentwechsel, Filterchips, Inline-Hinweise und Toasts auf zentrale Motion-API ausgerichtet
+- [x] Tabellen, Leerzustaende, Navigation und Dialoge bewusst statisch beziehungsweise nativ belassen
+- [x] Keine neue Datenquelle, Fachlogik, Persistenz, Screen-spezifische Animation oder QPainter-Darstellung erforderlich
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+
 ## UI Sprint 2 - Premium Components und Workspace Modernization ✅
 
 - [x] Bestehende Komponentenbibliothek inventarisiert und auf kleine semantische V2-Basis ausgerichtet

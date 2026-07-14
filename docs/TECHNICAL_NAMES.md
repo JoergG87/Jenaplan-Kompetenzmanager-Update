@@ -1468,3 +1468,24 @@ Erweiterte Felder von `NavigationItem`:
 Regel: Der sichtbare Navigationsname des bestehenden technischen Schluessels `dashboard` lautet `Heute`. Globale produktive Ziele sind ausschliesslich `dashboard`, `students`, `master_data` und `settings`, gruppiert in `ARBEIT` und `VERWALTUNG`. Der fruehere Schluessel `overview` wird nicht mehr global aufgeloest; `GroupOverviewScreen` bleibt als bestehende reine Projektion innerhalb von `StudentsWorkspace` erhalten. `PlaceholderScreen` bleibt als registriertes Modul historisch verfuegbar, ist aber kein Product-Shell-Ziel.
 
 Regel: `StudentsWorkspace` komponiert die lokalen Segmente `groups`, `courses`, `course_groups` und `all` nur aus vorhandenen Adapter-/ViewModel-Projektionen und lokalem UI-State. Es fuehrt weder eine Datenquelle noch Businesslogik, SQLite-Zugriff, Persistenz oder einen Schreibprozess ein. Die direkte Kursansicht uebergibt eine vorhandene `course_id` an `StudentDesktopAdapter.list_students(course_id=...)`. Beobachtungs-, Kompetenz-, Berichts- und LEG-Pfade bleiben ueber das bestehende Schuelerprofil erreichbar.
+
+## UI Sprint 3 - Motion System und Microinteractions
+
+Registrierte Datei:
+
+- `src/desktop_app/motion.py`
+
+Registrierte Motion-Namen:
+
+- `MotionPolicy`
+- `motion_policy`
+- `set_reduced_motion(enabled)`
+- `reduced_motion_enabled()`
+- `motion_duration(duration_ms)`
+- `animate_value(owner, key, start_value, end_value, update, duration_ms, easing)`
+- `animate_opacity(widget, visible, duration_ms, key)`
+- `animate_feedback(widget, key, duration_ms)`
+- `install_card_motion(card)`
+- `stop_motion(owner, key)`
+
+Regel: Motion ist ausschliesslich lokaler, fluechtiger UI-State. Animationen setzen keine fachlichen Zustaende, besitzen keine Datenquelle und duerfen Signale, Navigation, Filter oder Schreibprozesse nicht verzoegern. Pro Widget und semantischem Schluessel existiert hoechstens eine laufende Animation; Reduced Motion setzt denselben Endzustand ohne Bewegung.
