@@ -3151,18 +3151,32 @@ class DesktopAppAdapterTest(unittest.TestCase):
         source = inspect.getsource(app_info_dialog)
         shell_source = inspect.getsource(shell)
 
-        self.assertIn('APP_INFO_APP_NAME = "Jenaplan Kompetenzmanager"', source)
+        self.assertIn('APP_INFO_APP_NAME = "Jenaplan-Kompetenzmanager"', source)
         self.assertIn('APP_INFO_MODE = "Lokale Desktop-App"', source)
-        self.assertIn(
-            'APP_INFO_STORAGE_HINT = "Arbeitsdaten werden lokal auf diesem Gerät gespeichert."',
-            source,
-        )
+        self.assertIn('APP_INFO_DEVELOPER_NAME = "Jörg Gehrke"', source)
+        self.assertIn('APP_INFO_DESCRIPTION = "Kompetenzmanagement und Entwicklungsdokumentation für Jenaplan-Schulen"', source)
+        self.assertIn('APP_INFO_COPYRIGHT = "© 2026 Jörg Gehrke"', source)
+        self.assertNotIn("APP_INFO_VERSION", source)
+        self.assertNotIn("APP_INFO_STORAGE_HINT", source)
         self.assertNotIn("PySide6 Prototyp", source)
         self.assertNotIn("nicht dauerhaft gespeichert", source)
         self.assertIn("AppInfoDialog", shell_source)
         self.assertIn('self.info_button = QPushButton("Über die App")', shell_source)
         self.assertIn("create_app_icon_label(112)", source)
         self.assertIn("open_app_info_dialog", shell_source)
+        app = QApplication.instance() or QApplication([])
+        info_dialog = app_info_dialog.AppInfoDialog()
+        visible_text = "\n".join(
+            label.text() for label in info_dialog.findChildren(QLabel)
+        )
+        self.assertIn("Jenaplan-Kompetenzmanager", visible_text)
+        self.assertIn("Entwickelt von", visible_text)
+        self.assertIn("Jörg Gehrke", visible_text)
+        self.assertIn("© 2026 Jörg Gehrke", visible_text)
+        self.assertNotIn("v0.4", visible_text)
+        self.assertNotIn("/Users/", visible_text)
+        info_dialog.close()
+        self.assertIsNotNone(app)
 
     def test_sidebar_and_info_dialog_include_app_icon_without_click_tests(self) -> None:
         app = QApplication.instance() or QApplication([])

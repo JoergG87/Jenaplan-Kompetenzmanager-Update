@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Info-Ansicht – Projektinhaber
+
+### Changed
+
+- Die bestehende Info-Ansicht benennt den Jenaplan-Kompetenzmanager, Jörg Gehrke als Entwickler, die vorhandene Einordnung als lokale Desktop-App, eine kurze Produktbeschreibung sowie den Copyright-Hinweis für 2026.
+- Die veraltete Workbook-Version `v0.4` und der Speicherhinweis erscheinen nicht mehr als aktuelle Produktinformation.
+
+### Not Changed
+
+- Keine Geschäftslogik, Datenquelle, SQLite-Anbindung, Persistenz, Navigation oder andere Menüfunktion geändert.
+
 ## UI Fix - Dynamische Stundenmarkierung im Dashboard
 
 ### Changed

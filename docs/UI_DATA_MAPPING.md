@@ -14,7 +14,7 @@ Spalten:
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| App-Info | statische Produkttexte | Anzeige | Nein | keine fachliche Datenquelle | benennt lokale Desktop-App, Produktversion und lokale Speicherung; keine Prototyp- oder Nicht-Persistenz-Platzhalter |
+| App-Info | statische Produkttexte | Anzeige | Nein | keine fachliche Datenquelle | benennt App-Name, Entwickler, lokale Desktop-App, Kurzbeschreibung und Copyright; zeigt keine technische Versions-, Build-, Pfad- oder Repositoryinformation ohne freigegebene aktuelle Produktquelle |
 | App-Icon | versioniertes Asset `assets/app_icon.png` | Anzeige | Nein | keine fachliche Datenquelle | sichtbares Branding in Sidebar und Info-Dialog; keine Fachlogik |
 | Globale Navigation | statische `NAVIGATION_ITEMS` | Navigation | Nein | keine fachliche Datenquelle | `ARBEIT`: `Heute`, `Schüler`; `VERWALTUNG`: `Stammdaten`, `Einstellungen`; keine leeren globalen Beobachtungs-, Kompetenz- oder Berichtsziele |
 | Lokale Schuelernavigation | temporaerer `StudentsWorkspace`-State | Navigation / Filter | Nein | keine fachliche Datenquelle | Segmente `Stammgruppen`, `Kurse`, `Kursverbünde`, `Alle Schüler`; Drill-down behaelt den lokalen Ursprung, fachliche IDs und bestehende Filterprojektionen |
