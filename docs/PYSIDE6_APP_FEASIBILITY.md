@@ -2,7 +2,9 @@
 
 Dieses Dokument dokumentiert die abgeschlossene Machbarkeitspruefung, aus der die PySide-Hauptanwendung hervorgegangen ist.
 
-Status: Historische Umsetzungspruefung, erfolgreich abgeschlossen.
+Status: Historische Umsetzungspruefung, erfolgreich abgeschlossen. Die frueher
+offenen Packaging- und Produktivpfadfragen sind fuer das macOS-Pilotpaket durch
+ADR-058 und die aktuelle Implementierung konkretisiert.
 
 Hinweis: Die offene Architekturfrage wurde nach Freigabe des App-Icons und weiteren PySide-Sprints entschieden. PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers. SQLite ist die produktive lokale Datenbasis. Excel/VBA bleibt als Export-, Berichts-, Referenz- oder Legacy-Projektion erhalten.
 
@@ -256,26 +258,29 @@ Wichtig ist eine konsistente, ruhige Desktop-Anwendung, die die freigegebene Inf
 
 Packaging als macOS-App:
 
-- hohes Risiko
-- PySide6 muss mit Python, Assets und SQLite-Pfad ausgeliefert werden
-- Signierung, Gatekeeper und Updates sind zu klaeren
+- fuer den Apple-Silicon-Pilotbuild mit PyInstaller 6.21 reproduzierbar umgesetzt
+- Python 3.14, PySide6 6.11, Qt-Plug-ins, ReportLab, Assets und Katalog werden eingebettet
+- Bundle-ID, Pilotversion, App-Icon und macOS-13-Mindestversion sind festgelegt
+- ohne lokale Developer-ID bleibt der Build ad-hoc signiert und nicht notarisiert
 
 Datenbankpfad produktiv:
 
-- hohes Risiko
-- `data/kompetenzmanager.sqlite` ist fuer Entwicklung plausibel, aber nicht automatisch ein produktiver Nutzerpfad
-- Mehrbenutzerbetrieb und Dateiablage sind offen
+- fuer den lokalen Einzelplatz-Piloten unter
+  `~/Library/Application Support/Jenaplan-Kompetenzmanager/` umgesetzt
+- Datenbank, Dokumente, Exporte, Backups und Logs liegen außerhalb der `.app`
+- `data/kompetenzmanager.sqlite` bleibt ausschließlich Entwicklerpfad
 
 Backup/Restore:
 
-- hohes Risiko
-- SQLite braucht klares Backup-Konzept, Restore-Prozess und Schutz vor versehentlicher Ueberschreibung
+- geschlossenes App-Backup von SQLite und verwalteten Dokumenten als technisches
+  Pilot-Skript umgesetzt
+- automatische Wiederherstellung bleibt bewusst ausgeschlossen
 
 Updates:
 
-- mittleres bis hohes Risiko
-- App-Updates duerfen SQLite-Schema und bestehende Daten nicht brechen
-- Migrationsstrategie fehlt noch
+- App-Austausch und Benutzerdaten sind durch getrennte Pfade entkoppelt
+- kein Auto-Updater; Schema- und Migrationsstrategie bleibt eine gesonderte
+  Voraussetzung fuer spaetere schemaaendernde Releases
 
 Datei-Export/Berichte:
 
@@ -352,10 +357,9 @@ Akzeptanzkriterien:
 
 ## 11. Offene Folgeentscheidungen
 
-- Wo liegt die produktive SQLite-Datei?
-- Wie funktionieren Backup und Restore?
-- Wie werden Schema-Migrationen versioniert?
-- Wie wird die App fuer macOS paketiert?
+- Wie werden kuenftige Schema-Migrationen versioniert und freigegeben?
+- Wann stehen Developer-ID, Notarisierungsprofil und ein sauberer Zweitgeraetetest bereit?
+- Ist spaeter zusaetzlich ein Universal- oder Intel-Build erforderlich?
 - Wie werden Excel-Berichte und Exporte aus SQLite erzeugt?
 - Wie wird das Design-System in PySide6 technisch zentralisiert?
 - Welche UI-Tests sind stabil genug fuer den Alltag?

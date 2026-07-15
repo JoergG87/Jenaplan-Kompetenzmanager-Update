@@ -1,5 +1,73 @@
 # CHANGELOG
 
+## Sprint 8D - Laura-Pilotpaket
+
+### Added
+
+- Selbsterklärendes ZIP-Paket `Jenaplan-Kompetenzmanager_Pilot_0.1.0_Laura.zip` mit Startdatei, Laura-DMG, Installation, Erste-Schritte-Kurzanleitung, Benutzerhandbuch, Schnellstart, führender Pilottest-Arbeitsmappe, Backup-Anleitung, Backup-Skript und Versionsübersicht erzeugt.
+- Kompakte zweitseitige Lehrkraft-PDFs für erste Testschritte, Schnellstart und technisches Pilot-Backup in der bestehenden ruhigen Pilotgestaltung ergänzt.
+
+### Verified
+
+- ZIP vollständig entpackt, erwartete Ordnerstruktur und verständliche Dateinamen geprüft sowie verschachtelte ZIPs, Entwicklerdateien und lose Datenbankdateien ausgeschlossen.
+- Alle enthaltenen PDFs geprüft, Pilottest-Arbeitsmappe erfolgreich in Microsoft Excel geöffnet, Backup-Skript syntaktisch validiert und Laura-DMG bytegleich zum geprüften Ausgangsartefakt bestätigt.
+- Paketdatenmodus mit 24 ausschließlich fiktiven Kindern, Bericht-/LEG-Revisionen und `real_student_data_included=false` erneut per Packaged-App-Smoke-Test bestätigt.
+
+### Not Changed
+
+- Keine Fachlogik, App-UI, Datenmodelle, Migrationen oder Produktfunktionen geändert.
+
+## Sprint 8C - Pilotpaket UX und Installation
+
+### Added
+
+- Ruhiges gebrandetes DMG-Finder-Layout mit viel Weißraum, klarer Installationsrichtung, App, Programme-Verknüpfung und Lehrkraft-Installationsanleitung ergänzt.
+- Lehrkraftgerechte Installationsanleitung als Markdown-Quelle und reproduzierbar erzeugtes PDF sowie gestaltetes PDF-Benutzerhandbuch mit Inhaltsverzeichnis, Seitenzahlen und Produktscreenshots ergänzt.
+- Getrennte Paketvarianten `empty` für den technischen Smoke-Test und `laura` für die Übergabe mit ausdrücklich fiktiven Pilotdaten und eindeutigen DMG-Dateinamen ergänzt.
+- Laura-Pilotdaten um Berichtsentwürfe, Berichtrevisionen, LEG-Entwürfe, LEG-Revisionen und finale Beispiel-PDFs über die bestehenden produktiven Schichten erweitert.
+
+### Changed
+
+- Benutzerhandbuch um `Installation und erster Start`, lokale Datenablage, Pilotdaten, App-Austausch und Backup-Hinweis ergänzt; Entwicklerstart, Entwicklerpfade, interne Klassenquellen und Prototypverweise aus der Lehrkraftfassung entfernt.
+- Technische Installations- und Backup-Dokumentation auf das aufgeräumte DMG und die getrennt ausgelieferten Übergabeartefakte ausgerichtet.
+
+### Not Changed
+
+- Keine Änderung an Fachlogik, App-UI, Datenmodell, Schema, Migration oder produktiven Funktionen.
+- Kein Windows-Paket, Auto-Updater, Cloudkonto, App-Store-Release oder UI-Backup-Assistent.
+
+## macOS Pilot-Deployment 0.1.0
+
+### Added
+
+- Reproduzierbaren Apple-Silicon-Build mit PyInstaller, eingebetteter Python-/PySide6-/ReportLab-Laufzeit, Bundle-ID, App-Icon, macOS-13-Mindestversion und Drag-and-drop-DMG ergänzt.
+- Getrennten Benutzerdatenpfad unter `~/Library/Application Support/Jenaplan-Kompetenzmanager/` mit Datenbank, Dokumenten, Exporten, Backups und Logs sowie verständlicher Startfehlermeldung ergänzt.
+- Kontrollierte Pilotdatenoptionen `empty` und ausdrücklich fiktiv `laura`, automatisierten Packaged-App-Smoke-Test und technisches geschlossenes App-Backup ergänzt.
+- Installations-, Gatekeeper-, Update-, Deinstallations- und Backup-Dokumentation für den Pilotbetrieb ergänzt.
+
+### Changed
+
+- Statische Assets und Lehrplankatalog werden in Quell- und Bundle-Ausführung über denselben Ressourcenpfad aufgelöst; der Entwicklerstart verwendet weiterhin `data/kompetenzmanager.sqlite`.
+- Historische Packaging-, Produktivpfad- und Backup-Risiken in `docs/PYSIDE6_APP_FEASIBILITY.md` auf den verifizierten Pilotstand fortgeschrieben.
+
+### Not Changed
+
+- Keine Änderung am fachlichen Datenmodell, an Fachlogik, Berichts-/LEG-Snapshotregeln oder bestehender SQLite-Schemaarchitektur.
+- Kein Windows-Paket, Auto-Updater, App-Store-Release, Cloudkonto oder UI-Backup-Assistent.
+
+## Benutzerhandbuch – aktuelle Funktionsgrundlage
+
+### Added
+
+- Vollständige deutschsprachige Inhaltsgrundlage für das Benutzerhandbuch unter `docs/user_manual/USER_MANUAL_SOURCE.md` aus dem tatsächlich implementierten PySide-/SQLite-Stand ergänzt.
+- Vierzehn aktuelle, visuell geprüfte Produktscreenshots mit ausschließlich fiktiven Testdaten unter `docs/user_manual/screenshots/` ergänzt.
+- Produktiv umgesetzte Funktionen, Prototypen, Planungen und bewusst noch nicht verfügbare Funktionen getrennt ausgewiesen sowie ein interner Quellenanhang für die spätere fachliche Redaktion ergänzt.
+
+### Not Changed
+
+- Keine Produktcode-, Datenmodell-, SQLite-, Migrations- oder Teständerung.
+- Kein gestaltetes Word- oder PDF-Handbuch und keine Produktfreigabe erzeugt.
+
 ## Info-Ansicht – Projektinhaber
 
 ### Changed
@@ -24,6 +92,20 @@
 
 - Keine Änderung an Datenmodell, SQLite, Repository, Services, Adaptern, ViewModels, Stammdaten-, Kurs- oder Persistenzlogik.
 - Keine neuen Funktionen, Datenquellen, UI-Felder oder technischen Identitäten ergänzt.
+
+## Sprint 11A - Release Documentation Alignment
+
+### Changed
+
+- `PROJECT.md` auf den tatsaechlich implementierten PySide-/SQLite-Produktstand nach Sprint 10B und den Schuelerprofil-UX-Fixes ausgerichtet; Excel/VBA, historische Workbook-Artefakte und fruehe Excel-Sprints klar als abgeloeste Vorstufe gekennzeichnet.
+- `SPRINTS.md` ohne Entfernung von Sprintinhalten konsolidiert: produktiv umgesetzte Sprints abgeschlossen markiert, alte Commit-Statushinweise entfernt und historische Excel-/Workbook-Spikes als beendet beziehungsweise abgeloest eingeordnet.
+- ADR-050 bis ADR-057 um einheitliche Umsetzungsstatus ergaenzt; bereits entschiedene Teile und verbleibende Product-Owner- beziehungsweise Betriebsfragen sichtbar getrennt.
+- Changelog-Struktur fuer Sprint 10B, die beiden produktiven Schuelerprofil-UX-Fixes und diese Dokumentationsharmonisierung vorbereitet, ohne Release-Version oder Auslieferungsstatus festzulegen.
+
+### Not Changed
+
+- Keine Produktfunktion, Architektur, Fachlogik, Datenmodell-, SQLite-, Repository-, Service-, Adapter-, ViewModel-, UI-, Test-, Prototyp- oder Pilottestdatei geaendert.
+- Keine Release-Version, kein Release-Tag und keine Auslieferungsentscheidung festgelegt.
 
 ## UI Fix - Dynamische Stundenmarkierung im Dashboard
 

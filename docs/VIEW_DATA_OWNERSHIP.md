@@ -89,6 +89,8 @@ Sie darf Daten anzeigen, Eingaben sammeln, Commands erzeugen und den `Applicatio
 
 Sie darf keine Businesslogik enthalten, keine fachlichen IDs erzeugen und nicht direkt aus Qt Widgets in SQLite schreiben.
 
+Die macOS-Laufzeitvorbereitung liegt vor dem Aufbau der Views. Sie projiziert keine fachlichen Inhalte, sondern stellt ausschliesslich den getrennten lokalen Benutzerpfad bereit. Pfadfehler werden vor dem Start der Arbeitsansichten verstaendlich gemeldet. Views kennen weder Bundlepfad, Startdatenvariante, Backupordner noch Signierungsstatus.
+
 Der validierte Schreibpfad lautet:
 
 ```text

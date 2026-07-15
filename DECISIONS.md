@@ -1,5 +1,19 @@
 # Architekturentscheidungen
 
+## ADR-058 - Eigenständiges macOS-Pilotpaket und getrennte Benutzerdaten
+
+Status: Fuer den lokalen Apple-Silicon-Piloten umgesetzt
+
+Der Jenaplan-Kompetenzmanager wird fuer den macOS-Piloten mit PyInstaller als eigenstaendige `.app` inklusive Python-, PySide6-, Qt- und PDF-Laufzeit gebaut. Die technische Pilotversion stammt ausschliesslich aus `src/version.py`; die stabile Bundle-ID lautet `de.jenaplan.kompetenzmanager`. Der erste Pilotbuild ist `arm64` und setzt macOS 13 voraus.
+
+Das App-Bundle ist unveraenderlicher Programm- und Ressourcenbereich. Produktive Daten liegen ausschliesslich unter `~/Library/Application Support/Jenaplan-Kompetenzmanager/`. Eine vorhandene Benutzerdatenbank wird beim Start niemals durch Paket-, Start- oder Demodaten ersetzt. Der Entwicklerstart behaelt den bisherigen relativen Pfad unter `data/`.
+
+Die Standard-Paketvariante `empty` enthaelt keine SQLite-Datei und erzeugt beim ersten Start eine leere produktive Datenbank mit den bereits freigegebenen Schema-, Stammdaten- und Katalogdefaults. Die Variante `demo` darf nur ueber die explizite Buildoption entstehen und verwendet ausschliesslich die fiktiven Daten aus `scripts/seed_test_data.py`. Die gebaute Variante wird im Bundle dokumentiert. Die Entwicklerdatenbank aus `data/` wird nie paketiert.
+
+App-Aktualisierungen erfolgen im Piloten durch Ersetzen der `.app`; Benutzerdaten bleiben davon getrennt. Es gibt keinen Auto-Updater, keine automatische Wiederherstellung und keine automatische Loeschung von Benutzerdaten. Das technische Backup verlangt eine geschlossene App und sichert Datenbank und verwaltete Dokumente in einen neuen Zeitstempelordner.
+
+Developer-ID-Signierung und Notarisierung erfolgen nur, wenn lokal eine echte geeignete Identitaet und separat konfigurierte Apple-Zugangsdaten vorhanden sind. Ohne Identitaet wird der Pilotbuild hoechstens ad-hoc signiert und der Gatekeeper-Status sichtbar dokumentiert. Zertifikate oder Geheimnisse sind nie Repositoryinhalt.
+
 ## ADR-001
 
 Excel-Dateien werden ausschließlich durch Python erzeugt.
@@ -1935,7 +1949,9 @@ Die sichtbaren UI-Texte werden daraus abgeleitet und bleiben deutsch.
 
 ## ADR-050 - Bericht, Lernentwicklungsgespraech und PDF-Ausgabe
 
-Status: Accepted fuer die Zielarchitektur; Datenmodell und Umsetzung bleiben offen
+Status: Teilweise offen
+
+Umgesetzt sind die Trennung von Live-Profil, Bericht, LEG und PDF-Renderer, persistente Bericht- und LEG-Drafts, getrennte unveraenderliche Bericht- und LEG-Revisionen sowie revisionsgebundene PDF-Artefakte. Offen bleiben die unten ausgewiesenen Produkt- und Betriebsentscheidungen; sie aendern den umgesetzten Kernvertrag nicht.
 
 ### Kontext
 
@@ -2043,9 +2059,9 @@ SQLite
 
 Keine nachgelagerte Schicht darf Kompetenzstaende neu berechnen oder Beobachtungen fachlich umdeuten. Bericht-/LEG-Komposition waehlt, ordnet und ergaenzt manuell; sie ersetzt weder kanonische Kompetenzlogik noch paedagogische Autorenschaft.
 
-### Empfohlene Produktentscheidung
+### Historische Produktentscheidung
 
-Der Product Owner gibt die beschriebene Zielarchitektur als Leitplanke fuer die Discovery-Sprints 7C und 7D frei. Freigegeben ist damit die fachliche Trennung von Live-Profil, Berichtsentitaet, LEG-Prozess und PDF-Renderer. Nicht freigegeben sind Datenbankschema, technische Feldnamen, Persistenz, Statuswechsel, UI oder PDF-Implementierung.
+Der Product Owner gab die beschriebene Zielarchitektur als Leitplanke fuer die Discovery-Sprints 7C und 7D frei. Freigegeben wurde damit die fachliche Trennung von Live-Profil, Berichtsentitaet, LEG-Prozess und PDF-Renderer. Datenbankschema, technische Feldnamen, Persistenz, Statuswechsel, UI und PDF-Implementierung waren zu diesem Zeitpunkt noch nicht freigegeben und wurden erst in den nachfolgenden ADRs entschieden.
 
 Die bestehende Berichtsvorschau bleibt bis zu einer spaeteren Umsetzung eine Live-Arbeitsprojektion. Offizielle Dokumente entstehen erst aus einem explizit geprueften und freigegebenen Ausgabestand. Manuelle paedagogische Texte und Auswahlentscheidungen bleiben in menschlicher Verantwortung.
 
@@ -2060,19 +2076,30 @@ Die bestehende Berichtsvorschau bleibt bis zu einer spaeteren Umsetzung eine Liv
 - PDF-Schriftarten, Seitenumbrueche, Barrierearmut und unterschiedliche Ausgabegeraete koennen die professionelle Reproduzierbarkeit gefaehrden.
 - Ungeklaerte Aufbewahrung, Zugriffsschutz und Korrekturregeln fuer freigegebene Ausgaben erzeugen Datenschutz- und Nachvollziehbarkeitsrisiken.
 
-### Offene Product-Owner-Entscheidungen
+### Urspruengliche Product-Owner-Fragen und aktueller Klaerungsstand
 
-1. Welche Berichtstypen und verbindlichen Berichtszeitraeume werden im ersten Produktumfang unterstuetzt?
-2. Wer darf Berichte erstellen, pruefen, freigeben und nach einer Freigabe korrigieren?
-3. Zu welchem Zeitpunkt wird eingefroren, und welche Versionen von Entwurf, Pruefstand und Freigabe muessen nachvollziehbar bleiben?
-4. Welche Kompetenzinformationen und Evidenzarten duerfen in einen offiziellen Bericht uebernommen werden, und ist dafuer immer ein bestaetigter Kompetenzstand erforderlich?
-5. Welche manuellen Textbereiche, fachlichen Vorlagen und verbindlichen Pflichtinhalte braucht der erste Bericht?
-6. Welche Diagramme und Kennzahlen sind fachlich erlaubt, und wie werden geringe oder fehlende Evidenz sowie ungeeignete Zeitvergleiche sichtbar gemacht?
-7. Welche LEG-Inhalte werden nur vorbereitet und welche Ziele, Vereinbarungen, Evidenzbezuege oder Ergebnisse werden dauerhaft gespeichert?
-8. Duerfen Bericht und LEG in einem gemeinsamen Ausgabepaket erscheinen, und welche klare Trennung sowie Sichtbarkeit gilt je Empfaengerkreis?
-9. Wird das freigegebene PDF selbst archiviert oder reproduzierbar aus dem eingefrorenen Ausgabemodell erzeugt, und welche Aufbewahrungs-, Zugriffsschutz- und Korrekturregeln gelten?
+1. **Offen:** Welche Berichtstypen und verbindlichen Berichtszeitraeume werden im ersten Produktumfang unterstuetzt?
+2. **Offen:** Wer darf Berichte erstellen, pruefen, freigeben und nach einer Freigabe korrigieren?
+3. **Umgesetzt:** Zeitpunkt, Snapshot und Revisionsnachvollziehbarkeit sind fuer Bericht und LEG in ADR-054 und ADR-056 festgelegt.
+4. **Teilweise umgesetzt:** Der produktive Berichtspfad und seine Referenzvalidierung sind festgelegt; eine weitergehende fachliche Freigabepolitik fuer offizielle Berichtsinhalte bleibt offen.
+5. **Teilweise umgesetzt:** Manuelle Textbereiche und technische Mindestanforderungen sind produktiv vorhanden; verbindliche fachliche Vorlagen und ein abschliessender Pflichtinhaltskatalog bleiben offen.
+6. **Teilweise umgesetzt:** Die produktiven neutralen Diagramme und das Verbot automatischer Leistungsdeutung sind festgelegt; eine weitergehende fachliche Kennzahlenpolitik bleibt offen.
+7. **Umgesetzt:** Draft-Speichergrenze und Abschluss-Snapshot des LEG sind in ADR-053 und ADR-056 getrennt festgelegt.
+8. **Offen:** Duerfen Bericht und LEG in einem gemeinsamen Ausgabepaket erscheinen, und welche klare Trennung sowie Sichtbarkeit gilt je Empfaengerkreis?
+9. **Teilweise umgesetzt:** Bericht- und LEG-PDF werden als unveraenderliche Artefakte ihrer Revision gespeichert. Aufbewahrung, Zugriffsschutz, Verschluesselung und betriebliche Archivierung bleiben offen.
 
-### Naechste Schritte
+### Verbleibende Product-Owner- und Betriebsentscheidungen
+
+- unterstuetzte Berichtstypen und verbindliche Zeitraeume
+- Rollen, Berechtigungen, Pruefung und Freigabe
+- abschliessende fachliche Vorlagen, Pflichtinhalte und Kennzahlenpolitik
+- gemeinsames, weiterhin fachlich getrenntes Bericht-/LEG-Ausgabepaket
+- Aufbewahrung, Zugriffsschutz, Verschluesselung und betriebliche Archivierung
+- Renderer-Versionierung und mehrere Artefakte pro Revision
+
+### Historische naechste Schritte
+
+Die folgende Reihenfolge dokumentiert den damaligen Planungsstand. Die produktiven Folgeentscheidungen und Umsetzungen sind inzwischen durch ADR-052 bis ADR-057 sowie die zugehoerigen Sprints erfolgt.
 
 1. Sprint 7C erstellt Berichtsvorbereitung und UX-Prototyp als Product Discovery ohne Persistenz. Er prueft Inhaltskomposition, manuelle Autorenschaft, Evidenzauswahl, Statusverstaendnis und ein fachliches PDF-Muster.
 2. Sprint 7D erstellt LEG-Konzept und UX-Prototyp ohne Persistenz. Er prueft die Trennung von Vorbereitung, Gespraechsagenda, Zielen, Vereinbarungen und Ergebnis sowie optionale LEG-Ausgabeseiten.
@@ -2091,6 +2118,8 @@ Die bestehende Berichtsvorschau bleibt bis zu einer spaeteren Umsetzung eine Liv
 
 ## ADR-051 - Schnellbeobachtung ohne Kompetenzzuordnung
 
+Status: Umgesetzt
+
 Eine Schnellbeobachtung ist eine bewusst kompetenzfreie aktive Beobachtung mit verpflichtender, nichtleerer Notiz. Sie wird ohne Eintraege in `observation_competency_ratings` gespeichert; ein neues SQLite-Feld ist nicht erforderlich, weil der produktive Schreibprozess Beobachtungen ohne Kompetenzbewertung zuvor nicht zuliess und der Zustand damit eindeutig ist.
 
 Eine spaetere Kompetenzzuordnung und Bewertung ist im normalen Bearbeitungsdialog moeglich. Es erfolgt weder beim Speichern noch spaeter eine automatische Zuordnung oder Bewertung. Sobald eine Kompetenz ergaenzt wird, gelten wieder die normalen Kompetenz- und Bewertungsregeln.
@@ -2098,6 +2127,8 @@ Eine spaetere Kompetenzzuordnung und Bewertung ist im normalen Bearbeitungsdialo
 Kompetenzfreie Schnellbeobachtungen erscheinen im Beobachtungsverlauf, wirken mangels Rating-Zeilen aber nicht auf Kompetenzstatus, Dokumentationsfortschritt, Diagramme oder Bestaetigungslogik und erzeugen keine Kompetenz- oder Entwicklungsinformation fuer Berichte.
 
 ## ADR-052 - Persistenter Berichtsentwurf ist keine finale Berichtsdomain
+
+Status: Umgesetzt
 
 Sprint 7F.1 fuehrt fuer Lernentwicklungsberichte einen persistenten Arbeitsentwurf mit Status `draft` ein. Der Entwurf speichert manuelle Texte und bewusste Auswahlreferenzen, damit Laura die Berichtswerkstatt schliessen und spaeter weiterbearbeiten kann.
 
@@ -2117,6 +2148,10 @@ Eine spaetere Freigabe-, Versions- oder Archivierungsdomain benoetigt eine neue 
 
 ## ADR-053 - Persistenter LEG-Arbeitsentwurf bleibt eigene Live-referenzierende Domain
 
+Status: Umgesetzt
+
+Offen: fachliche Aufbewahrungsfrist und Rollen-/Berechtigungsmodell
+
 Sprint 7G.1 fuehrt fuer Lernentwicklungsgespraeche einen eigenen persistenten Arbeitsentwurf mit Status `draft` ein. Die Product-Owner-Entscheidung umfasst die manuelle Vorbereitung, die bewusste Auswahl vorhandener Fach-, Kompetenz- und Beobachtungsreferenzen sowie die getrennte Speicherung vorbereiteter und im Gespraech gemeinsam vereinbarter Inhalte.
 
 Der LEG-Entwurf ist weder Lernentwicklungsbericht noch `report_type`, PDF-Dokument, Kopie des Schuelerprofils oder automatische Bewertung. Er verwendet die kanonische Kompetenzstatusprojektion und die vorhandene Beobachtungsprojektion ausschliesslich lesend. Kompetenztexte, Beobachtungsfachdaten, Bewertungen, Bestaetigungen und berechnete Staende werden nicht kopiert oder ueberschrieben.
@@ -2125,9 +2160,13 @@ Der Entwurf referenziert Live-Daten. Er ist deshalb kein eingefrorener Gespraech
 
 Die persistente Struktur traegt den vollstaendigen fachlichen Contract des freigegebenen Prototyps fuer Sprint 7G.2: Gespraechsrahmen, Fach- und uebergreifende Themenauswahl, Kompetenz- und Belegreferenzen, Leitfadeninhalte, getrennte vorbereitete und gemeinsam vereinbarte Ziele/Unterstuetzungen/Vereinbarungen, Zustaendigkeiten, Ueberpruefungszeitpunkt und die drei neutralen Diagrammtypen. Die produktive UI wird erst in Sprint 7G.2 portiert.
 
-Offen bleiben fachliche Aufbewahrungsfrist, Rollen-/Berechtigungsmodell, Uebergang zu einer finalen Gespraechsdokumentation sowie Historisierung gemeinsam vereinbarter Inhalte. Diese Punkte erweitern den Draft-Status in Sprint 7G.1 nicht.
+Zum Zeitpunkt von Sprint 7G.1 blieben fachliche Aufbewahrungsfrist, Rollen-/Berechtigungsmodell, Uebergang zu einer finalen Gespraechsdokumentation sowie Historisierung gemeinsam vereinbarter Inhalte offen. Uebergang und Historisierung sind inzwischen durch ADR-056 umgesetzt. Aufbewahrungsfrist und Rollen-/Berechtigungsmodell bleiben offen und erweitern den Draft-Status weiterhin nicht.
 
 ## ADR-054 - Unveraenderliche Lernentwicklungsbericht-Revisionen
+
+Status: Umgesetzt
+
+Offen: Renderer-Versionierung, Archivierung und Benutzer-/Rollendomain
 
 Sprint 5B.2 setzt die folgenden fuenf Product-Owner-Entscheidungen verbindlich um:
 
@@ -2149,7 +2188,13 @@ Die kanonische Snapshotdarstellung ist UTF-8-JSON mit sortierten Schluesseln, ko
 
 Nicht entschieden oder umgesetzt werden in diesem Sprint UI, finales PDF, Artefakt- und Dateiverwaltung, Renderer-Versionierung, Archivierung, LEG-Abschluss, Benutzer-/Rollendomain oder automatische Bestandsmigration vorhandener Drafts.
 
+Statusfortschreibung: Die UI-Anbindung wurde in Sprint 5B.3, das finale Bericht-PDF in ADR-055 und der getrennte LEG-Abschluss in ADR-056 umgesetzt. Renderer-Versionierung, Archivierung und Benutzer-/Rollendomain bleiben offen.
+
 ## ADR-055 - Finales Berichts-PDF ist ein unveraenderliches Artefakt genau einer finalisierten Revision
+
+Status: Umgesetzt
+
+Offen: Renderer-Versionierung, Mehrfachartefakte, Retention, Archivierung und Rollenmodell
 
 Sprint 9A erzeugt ein finales Lernentwicklungsbericht-PDF ausschliesslich aus dem gespeicherten Snapshot einer aktuellen `RPV` mit Status `finalized`. Der Draft, operative Stammdaten, aktuelle Kompetenz- oder Beobachtungsprojektionen und Widgets sind keine Eingangsquellen. Eine `superseded`-Revision bleibt historisch lesbar, darf aber kein neues finales PDF-Artefakt erzeugen.
 
@@ -2161,7 +2206,13 @@ Vor dem Rendern werden Revisionsstatus, gespeicherter Snapshot-Hash, Snapshot-Sc
 
 Eine spaetere neue Fachrevision veraendert weder PDF-Datei noch Hash oder Referenz der vorherigen Revision. Ebenso veraendert eine Draftaenderung kein bestehendes PDF. Nicht Bestandteil von Sprint 9A sind Renderer-Versionierung, Mehrfachartefakte pro Revision, komplexe Archiv- oder Retentionprozesse, LEG-PDF, Benutzerhandbuch und neue Berichtsinhalte.
 
+Statusfortschreibung: Das getrennte LEG-PDF wurde spaeter durch ADR-057 umgesetzt. Die uebrigen genannten Betriebsfragen bleiben offen.
+
 ## ADR-056 - LEG-Abschluss als eigenes stabiles Aggregat mit unveraenderlichen Revisionen
+
+Status: Umgesetzt
+
+Offen: Aufbewahrung, Archivierung, Renderer-Versionierung und Rollenmodell
 
 Sprint 10A fuehrt fuer Lernentwicklungsgespraeche einen expliziten Abschluss ein. Der vorhandene `LearningConferenceDraftRecord` (`LCD`) bleibt dabei dauerhaft ein bearbeitbarer, live-referenzierender Entwurf mit Status `draft`. Ein Abschluss aendert, sperrt oder loescht den Draft nicht. Beim ersten erfolgreichen Abschluss entstehen additiv ein stabiles `LearningConferenceRecord` (`LCF`) und eine unveraenderliche `LearningConferenceRevisionRecord` (`LCV`).
 
@@ -2175,7 +2226,13 @@ Pro LCD existiert hoechstens ein LCF. Pro LCF existiert hoechstens eine Revision
 
 Die historische Lesesicht verwendet ausschliesslich den gespeicherten Snapshot und prueft dessen SHA-256 vor der Projektion. Sie loest keine aktuellen Schueler-, Kompetenz- oder Beobachtungswerte nach und bietet keine Bearbeitung. LEG-PDF, Archivierung, Renderer-Versionierung und eine gemeinsame universelle Bericht-/LEG-Snapshotdomain bleiben ausserhalb von Sprint 10A.
 
+Statusfortschreibung: Das LEG-PDF wurde in ADR-057 separat umgesetzt. Archivierung, Renderer-Versionierung und eine gemeinsame Artefaktdomain bleiben offen beziehungsweise bewusst nicht eingefuehrt.
+
 ## ADR-057 - LEG-PDF ist ein unveraenderliches Artefakt genau einer abgeschlossenen LCV
+
+Status: Umgesetzt
+
+Offen: Archivierung, Verschluesselung, Renderer-Versionierung, Mehrfachartefakte und Rollenmodell
 
 Sprint 10B erzeugt ein finales LEG-PDF ausschliesslich aus dem gespeicherten und SHA-256-verifizierten Snapshot einer aktuellen `LearningConferenceRevisionRecord` (`LCV`) mit Status `completed`. LCD, Live-Projektionen, aktuelle Kompetenzaufloesung, aktuelle Beobachtungsdaten und Widgets sind keine Eingangsquellen. Eine `superseded`-Revision bleibt historisch lesbar, darf aber kein neues Artefakt erzeugen.
 

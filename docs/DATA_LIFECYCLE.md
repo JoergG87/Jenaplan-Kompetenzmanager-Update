@@ -4,6 +4,38 @@ Dieses Dokument beschreibt freigegebene oder geplante Schreibprozesse fuer fachl
 
 Kein Schreibprozess darf implementiert werden, bevor sein Lebenszyklus hier dokumentiert ist.
 
+## macOS-Pilotstart und lokale Datenordner
+
+Start: Die installierte `.app` wird fuer einen macOS-Benutzer geoeffnet.
+
+Technischer Pfad:
+
+```text
+PySide Entry Point
+-> RuntimePaths / sichere Ordnerpruefung
+-> vorhandene Benutzerdatenbank oder einmalige Initialisierung
+-> bestehende Adapter-/Repository-/SQLite-Initialisierung
+```
+
+Die App legt bei Bedarf den Benutzerordner sowie `documents/`, `exports/`, `backups/` und `logs/` an. Eine vorhandene `kompetenzmanager.sqlite` wird nie durch Bundleinhalte ersetzt. Die technische Smoke-Test-Variante `empty` enthaelt keine Startdatenbank und laesst den vorhandenen produktiven Initialisierungspfad eine leere Schuelerdatenbasis mit Stammdaten- und Katalogdefaults anlegen.
+
+Nur die explizite Buildvariante `laura` darf beim ersten Start eine als `Fiktive Pilotdaten` markierte Datenbank und ihre zugehoerigen Dokumente und Beispiel-PDFs kopieren. Dies geschieht ausschliesslich, wenn noch keine Benutzerdatenbank existiert; vorhandene Dokumente blockieren eine kollidierende Ersteinrichtung statt still ersetzt zu werden. Der Entwicklerstart bleibt bei `data/kompetenzmanager.sqlite`.
+
+## Technisches macOS-Pilotbackup
+
+Start: Die Lehrkraft hat die App vollstaendig geschlossen und startet bewusst `PILOT_BACKUP.sh`.
+
+Schreibprozess:
+
+```text
+Prozesspruefung
+-> SQLite Online-Backup der geschlossenen lokalen Datenbank
+-> Kopie des verwalteten documents/-Baums
+-> neuer backups/YYYYMMDD-HHMMSS/-Ordner
+```
+
+Eine vorhandene Sicherung wird nie ueberschrieben. Das Skript aendert weder Benutzerdatenbank noch Dokumente und fuehrt keine Wiederherstellung aus. Eine technische Wiederherstellung bleibt ein separater, manuell gepruefter Eingriff.
+
 ## Dokumentationsrelevante Faecher speichern
 
 Start: Laura legt in den Einstellungen fest, welche Faecher fuer spaetere Dokumentations- und Auswertungslogik zaehlen sollen.

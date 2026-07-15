@@ -72,6 +72,45 @@ pip install -r requirements.txt
 
 ## PySide-App starten
 
+### Installiertes macOS-Pilotpaket
+
+Der eigenständige Apple-Silicon-Pilotbuild wird als
+`Jenaplan-Kompetenzmanager.app` und Drag-and-drop-DMG erzeugt. Er benötigt auf
+dem Ziel-Mac weder Python noch Terminal, Repository oder Entwicklungsumgebung.
+Installation, Gatekeeper, Datenpfad und Update sind in
+`docs/PILOT_INSTALLATION_MACOS.md` beschrieben; das technische Backup in
+`docs/PILOT_BACKUP.md`. Die kurze Lehrkraftanleitung liegt unter
+`docs/PILOT_INSTALLATION_LEHRKRAFT.md`, das Benutzerhandbuch unter
+`docs/user_manual/USER_MANUAL_SOURCE.md`.
+
+Reproduzierbarer Build auf einem Apple-Silicon-Mac:
+
+```bash
+scripts/build_macos_pilot.sh --data-mode empty
+scripts/build_macos_pilot.sh --data-mode laura
+```
+
+`empty` erzeugt die leere technische Smoke-Test-Variante mit eigenem Dateinamen.
+`laura` erzeugt die Lehrkraft-Pilotübergabe mit 24 ausdrücklich fiktiven Kindern,
+Stammdaten, Stundenplan, Beobachtungen, Bericht-/LEG-Drafts, Revisionen und
+finalen Beispiel-PDFs. Der Build schreibt seine Variante in
+`pilot_build_info.json` im App-Bundle und übernimmt niemals
+`data/kompetenzmanager.sqlite` aus dem Entwicklerarbeitsstand.
+
+Zusätzlich erzeugt der Build die gebrandete Lehrkraft-Installationsanleitung und
+das Benutzerhandbuch als PDF. Das DMG verwendet ein ruhiges Finder-Layout mit
+App, Programme-Verknüpfung und Installationsanleitung.
+
+Die App verwendet im installierten Betrieb ausschließlich:
+
+```text
+~/Library/Application Support/Jenaplan-Kompetenzmanager/
+```
+
+Der Entwicklerstart verwendet weiterhin den bisherigen Projektpfad unter `data/`.
+
+### Entwicklerstart
+
 Primaerer Start per Doppelklick auf macOS:
 
 ```text
@@ -87,7 +126,9 @@ python3 -m src.desktop_app.main
 Der Launcher nutzt `.venv/bin/python`, wenn eine virtuelle Umgebung vorhanden ist,
 und faellt sonst auf `python3` zurueck.
 
-Hinweis: Das ist ein Entwickler-/Prototyp-Launcher. Es ist noch kein Installer und kein fertiges App-Paket. Python und die Abhaengigkeiten muessen weiterhin eingerichtet sein.
+Hinweis: Der `.command`-Launcher bleibt ausschließlich der Entwicklerstart und
+benötigt Python sowie die Projektabhängigkeiten. Für den Piloteinsatz dient das
+eigenständige App-/DMG-Paket.
 
 ## Standardchecks
 

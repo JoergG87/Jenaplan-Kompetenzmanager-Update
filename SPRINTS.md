@@ -6,6 +6,51 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 8D - Laura-Pilotpaket ✅
+
+- [x] Selbsterklärendes Laura-ZIP mit nummerierter Übergabestruktur erstellt
+- [x] Startdatei und Pilotversionsübersicht mit ausschließlich fiktiven Testdaten ergänzt
+- [x] DMG, Installation, Erste Schritte, Benutzerhandbuch, Schnellstart, Pilottest-Excel und Backup vollständig gebündelt
+- [x] ZIP entpackt und auf Struktur, verständliche Dateinamen, fehlende Entwicklerdateien und fehlende ZIP-in-ZIP-Struktur geprüft
+- [x] Alle PDFs geprüft, Excel-Datei in Microsoft Excel geöffnet und Backup-Skript validiert
+- [x] Laura-DMG-Prüfsumme und fiktiver Datenmodus mit 24 Kindern erneut bestätigt
+- [x] Keine Fachlogik, App-UI, Datenmodelle, Migrationen, neuen Produktfunktionen, Staging oder Commit
+
+## Sprint 8C - Pilotpaket UX und Installation ✅
+
+- [x] Gebrandetes, ruhiges DMG-Layout mit App, Programme-Verknüpfung und Installationsanleitung umgesetzt
+- [x] Lehrkraft-Installationsanleitung und reproduzierbares PDF mit eindeutigem Versionsnamen erstellt
+- [x] Benutzerhandbuch um Installation und ersten Start ergänzt und als gestaltetes PDF mit Inhaltsverzeichnis, Seitenzahlen und aktuellen Screenshots geprüft
+- [x] Technischen leeren Smoke-Test und Laura-Pilot mit 24 ausschließlich fiktiven Kindern klar getrennt
+- [x] Laura-Pilot um Gruppen, Kurse, Stundenplan, Beobachtungen, Bericht-/LEG-Drafts, Revisionen und finale Beispiel-PDFs vervollständigt
+- [x] Update-durch-App-Austausch, getrennte lokale Daten und technisches Backup verifiziert
+- [x] Keine Fachlogik, App-UI, Datenmodelle, Migrationen, neue Funktionen, Staging oder Commit
+
+## Pilot-Deployment macOS 0.1.0
+
+- [x] Aktuellen Entry Point, Abhängigkeiten, Ressourcen, PDF-Renderer, Pfade, Imports und Qt-Plug-ins geprüft
+- [x] PyInstaller 6.21 als Python-3.14-fähigen, kontrollierbaren Packaging-Weg festgelegt
+- [x] Apple-Silicon-App-Bundle mit stabiler Bundle-ID, Icon, Pilotversion und macOS-13-Mindestversion vorbereitet
+- [x] Produktive Benutzerdaten vollständig aus der `.app` nach `~/Library/Application Support/Jenaplan-Kompetenzmanager/` getrennt
+- [x] Leere Smoke-Test-Variante und ausdrücklich fiktive Laura-Buildoption ohne Entwicklerdatenbank umgesetzt
+- [x] Drag-and-drop-DMG, technische Installation, Gatekeeper-Hinweis und Update-durch-App-Austausch vorbereitet
+- [x] Sicheres geschlossenes App-Backup für SQLite und verwaltete Dokumente ergänzt
+- [x] Automatisierten Packaged-App-Smoke-Test ergänzt
+- [ ] Developer-ID-Signierung und Apple-Notarisierung; lokal ist keine geeignete Identität verfügbar
+- [ ] Vollständiger manueller Abnahmelauf auf zweitem macOS-Benutzerkonto oder repositoryfreiem Zweitgerät
+- [x] Kein Windows-Paket, Auto-Updater, App-Store-Release, Produktcode-Redesign, Staging oder Commit
+
+## Sprint 11A - Release Documentation Alignment ✅
+
+- [x] `PROJECT.md` auf den produktiven PySide-/SQLite-Systemstand nach Sprint 10B und den Schuelerprofil-UX-Fixes ausgerichtet
+- [x] Abgeschlossene produktive Sprints konsistent als abgeschlossen markiert
+- [x] Historische Excel-/Workbook-Sprints ohne Inhaltsverlust als beendet beziehungsweise abgeloest gekennzeichnet
+- [x] Alte Commit-Statushinweise aus den historischen Sprintbloecken entfernt
+- [x] ADR-050 bis ADR-057 um einheitliche Umsetzungs- und Offenheitsstatus ergaenzt
+- [x] Verbleibende Product-Owner- und Betriebsentscheidungen sichtbar erhalten
+- [x] Changelog ohne Release-Version oder Auslieferungsaussage vorbereitet
+- [x] Keine Produktfunktion, Architektur, Tests, Datenmodell-, Prototyp- oder Pilottestdatei geaendert
+
 ## Sprint 10B - LEG-PDF aus unveraenderlicher Revision ✅
 
 - [x] PDF-Erzeugung ausschliesslich fuer eine aktuelle `completed`-Revision (`LCV`) festgelegt
@@ -88,7 +133,7 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Keine Schemaaenderung, kein finales PDF-Artefakt, kein LEG-Abschluss und keine Benutzer-/Rollendomain umgesetzt
 - [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
 
-## Sprint 5B.2 - Unveraenderliche Berichtrevisionen im Backend 🔄
+## Sprint 5B.2 - Unveraenderliche Berichtrevisionen im Backend ✅
 
 - [x] Fuenf freigegebene Product-Owner-Entscheidungen verbindlich dokumentiert; Sprint-5A-Vorschlag bleibt nicht bindend
 - [x] `RPT-######` als stabiles Berichtaggregat und `RPV-######` als unveraenderliche Revision additiv umgesetzt
@@ -96,9 +141,8 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Erstfinalisierung und atomare Folgerevision ueber Validator, Builder, Service, Command und Repository umgesetzt
 - [x] Finalisierungs-, Migrations- und Regressionschecks vollstaendig gruen
 - [x] Keine UI, kein finales PDF, keine Artefaktverwaltung, kein LEG-Abschluss und keine Benutzer-/Rollendomain vorgesehen
-- [x] Kein Commit vorgesehen
 
-## Sprint 5B.1 - Historische Berichtreferenzen bestandssicher machen 🔄
+## Sprint 5B.1 - Historische Berichtreferenzen bestandssicher machen ✅
 
 - [x] Gespeicherte, spaeter deaktivierte Berichtskompetenzen ueber `retained_competency_ids` in der kanonischen Projektion sichtbar und ausgewaehlt erhalten
 - [x] Neue Auswahl inaktiver oder historischer Kompetenzen unterbunden
@@ -108,8 +152,7 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Qt-Vorschau und `ReportOutputModel` um neutrale Ausfallkennzeichnung ohne rekonstruierte Inhalte ergaenzt
 - [x] Bestehende Tabellen, IDs, Aggregate, Berichtswerkstatt und PDF-Renderer unveraendert erhalten
 - [x] Keine Migration, Finalisierung, Revision, Snapshots, Hashes oder Artefaktverwaltung umgesetzt
-- [ ] Product-Owner-Sichtpruefung abgeschlossen
-- [x] Kein Commit erstellt
+- [ ] Historischer Product-Owner-Sichtpruefpunkt: nicht separat dokumentiert
 
 ## Sprint 5A - Product Discovery und Architecture Gate fuer Bericht und LEG ✅
 
@@ -174,7 +217,7 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Fokussierte UI-Tests, Gesamttests und aktive Build-Pruefung erfolgreich
 - [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
 
-## Testdaten - Achtmonatiger produktionsnaher Nutzungsstand 🔄
+## Testdaten - Achtmonatiger produktionsnaher Nutzungsstand ✅
 
 - [x] 24 kuenstliche Kinder auf vier Stammgruppen und drei Kurse verteilt
 - [x] Drei Kursverbuende mit unterschiedlichen Stammgruppen-/Kurskombinationen angelegt
@@ -182,10 +225,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Kompetenzdokumentationen in allen aktiven Katalogfaechern von September bis Juli erzeugt
 - [x] Unterschiedliche Dokumentationsdichten, aktuelle Eintraege, Schnellbeobachtungen und Soft Delete enthalten
 - [x] Seed-Regressionstest erweitert
-- [x] Kein Commit erstellt
-- [ ] Product-Owner-Sichtpruefung abgeschlossen
+- [ ] Historischer Product-Owner-Sichtpruefpunkt: nicht separat dokumentiert
 
-## Sprint 8B.3 - Passende Kinder als Dokumentationshilfe 🔄
+## Sprint 8B.3 - Passende Kinder als Dokumentationshilfe ✅
 
 - [x] Aktive Kinder aus Stammgruppe, Kurs oder Kursverbund fachbezogen projiziert
 - [x] Fehlende, aelteste, kuerzliche und heutige Dokumentation neutral und stabil priorisiert
@@ -193,28 +235,25 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Hoechstens fuenf Vorschlaege mit Name, Hinweis und direktem `Beobachten` umgesetzt
 - [x] Fach und Unterrichtskontext in den bestehenden Beobachtungsdialog uebernommen
 - [x] Keine Migration, zweite Beobachtungslogik, Kompetenzstatus-, Rating- oder Score-Nutzung
-- [x] Kein Commit erstellt
-- [ ] Product-Owner-Sichtpruefung abgeschlossen
+- [ ] Historischer Product-Owner-Sichtpruefpunkt: nicht separat dokumentiert
 
-## Sprint 8B.2 - Dashboard-Bereiche bereinigt 🔄
+## Sprint 8B.2 - Dashboard-Bereiche bereinigt ✅
 
 - [x] Allgemeine Stammgruppen-, Kursverbund- und Schnellzugriffskarten aus Dashboard entfernt
 - [x] Dashboard endet nach den unmittelbar stundenbezogenen Bereichen
 - [x] Bestehende Uebersicht unveraendert erhalten
 - [x] Keine Projektions-, Adapter-, ViewModel-, Persistenz- oder Stundenplanlogik geaendert
-- [x] Kein Commit erstellt
-- [ ] Product-Owner-Sichtpruefung abgeschlossen
+- [ ] Historischer Product-Owner-Sichtpruefpunkt: nicht separat dokumentiert
 
-## Sprint 8B.1 - Dashboard UX-Referenz 🔄
+## Sprint 8B.1 - Dashboard UX-Referenz ✅
 
 - [x] Dashboard als eigenen Hauptnavigationspunkt von der bestehenden Uebersicht getrennt
 - [x] Hero-Karte, horizontale Tages-Timeline und kompakte Heatmap-Matrix referenznah umgesetzt
 - [x] Passenden Unterrichtskontext und bestehende Schnellzugriffe als getrennte Karten angeordnet
 - [x] Stundenplan-, Dashboard-, Adapter-, ViewModel- und Persistenzlogik unveraendert gelassen
-- [x] Kein Commit erstellt
-- [ ] Product-Owner-Sichtpruefung abgeschlossen
+- [ ] Historischer Product-Owner-Sichtpruefpunkt: nicht separat dokumentiert
 
-## Sprint 8B - Stundenplanbasiertes Dashboard 🔄
+## Sprint 8B - Stundenplanbasiertes Dashboard ✅
 
 - [x] Kanonische aktuelle, naechste und heutige Stundenprojektion in die Startansicht eingebunden
 - [x] Zeit- und Leerzustaende einschliesslich Wochenende und inaktiver Eintraege umgesetzt
@@ -223,10 +262,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Neutrale Dokumentations-Heatmap Stammgruppe × Fach ohne Leistungswerte umgesetzt
 - [x] Bestehende Schnellzugriffe erhalten und Dashboard vertikal scrollbar gehalten
 - [x] Fokussierte Dashboard-, Stundenplan-, Shell- und Navigationstests ergaenzt
-- [x] Kein Commit erstellt
-- [ ] Product-Owner-Sichtpruefung abgeschlossen
+- [ ] Historischer Product-Owner-Sichtpruefpunkt: nicht separat dokumentiert
 
-## Sprint 7G.3 - Dokumentierte Kompetenzen im LEG 🔄
+## Sprint 7G.3 - Dokumentierte Kompetenzen im LEG ✅
 
 - [x] LEG-Leseprojektion um vorhandene aktive Beobachtungsdaten und aktuelle Bestaetigungsreferenz erweitert
 - [x] Sichtbarkeit bei vollstaendig gesetztem Zeitraum auf kompetenzbezogene Beobachtungen im Zeitraum plus aktuelle Bestaetigungen begrenzt
@@ -236,8 +274,7 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Bereits ausgewaehlte und historische Draft-Referenzen ausserhalb des Filters sichtbar erhalten
 - [x] Zeitraumwechsel ohne automatische Abwahl umgesetzt
 - [x] Fokussierte ViewModel-, UI-, Draft-, Adapter- und Projektionspruefungen ergaenzt
-- [ ] Product-Owner-Sichtpruefung abgeschlossen
-- [x] Kein Commit erstellt
+- [ ] Historischer Product-Owner-Sichtpruefpunkt: nicht separat dokumentiert
 
 ## Sprint 7G.1 - Persistenter LEG-Arbeitsentwurf ✅
 
@@ -249,9 +286,8 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Keine produktive UI-Portierung, finale Dokumentation, Versionierung, Archivierung, Freigabe, Signatur oder PDF-Erzeugung
 - [x] Fokussierte LEG-, SQLite- und Adaptertests erfolgreich
 - [x] Compile-, Import- und Diff-Pruefung erfolgreich
-- [x] Kein Commit erstellt
 
-## Sprint 7G.2 - 1:1 UX-Portierung Lernentwicklungsgespraech 🔄
+## Sprint 7G.2 - 1:1 UX-Portierung Lernentwicklungsgespraech ✅
 
 - [x] Freigegebenen Prototyp `prototypes/learning_conference_ux/` ohne neue fachliche Datenmodellentscheidung als produktiven Zwei-Seiten-Arbeitsbereich portiert
 - [x] Vorbereitung und Gespraechsmappe, Kartenhierarchie, sechs Phasen, Warnung bei mehr als fuenf Belegen und drei neutrale Visualisierungen uebernommen
@@ -259,10 +295,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Alle 7G.1-Texte und Auswahlreferenzen speicher- und rekonstruierbar angebunden
 - [x] Aktive aktuelle Kompetenzen neu auswaehlbar; historische und nicht verfuegbare Referenzen kontrolliert sichtbar
 - [x] Fokussierte UI-, Draft-, Adapter- und Offscreen-Pruefungen erfolgreich
-- [ ] Product-Owner-Sichtpruefung der produktiven Oberflaeche abgeschlossen
-- [x] Kein Commit erstellt
+- [ ] Historischer Product-Owner-Sichtpruefpunkt der produktiven Oberflaeche: nicht separat dokumentiert
 
-## Sprint 7F.2 - 1:1 UX-Portierung Lernentwicklungsbericht 🔄
+## Sprint 7F.2 - 1:1 UX-Portierung Lernentwicklungsbericht ✅
 
 - [x] Oberen Wechsel `Bericht bearbeiten` / `Berichtsvorschau` aus dem freigegebenen Prototyp übernommen
 - [x] Linke Arbeitsbereichsnavigation mit Dokumentkontext, Fachseiten und Abschluss übernommen
@@ -271,10 +306,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Nur die drei erlaubten neutralen Diagrammtypen auswählbar und ausgabewirksam gemacht
 - [x] Keine Änderung an Datenmodell, Repository, Kompetenzprojektion, Beobachtungslogik, Output-Modellklassen oder Renderer
 - [x] Fokussierte Bericht-/Draft-/PDF-Tests erfolgreich
-- [ ] Vollständige Regression ohne fachfremde Altfehler
-- [x] Kein Commit erstellt
+- [x] Vollstaendige Regression in spaeteren Gesamttestlaeufen bestaetigt
 
-## Sprint 7F.1 - Persistenter Berichtsentwurf 🔄
+## Sprint 7F.1 - Persistenter Berichtsentwurf ✅
 
 - [x] Additive SQLite-Migration fuer Berichtsentwurf und normalisierte Auswahlrelationen umgesetzt
 - [x] Entwurf mit `RPD-######`, Schuelerbezug, Zeitraum, Status `draft`, Lehrkraft, Gesamtblick und Zeitstempeln angelegt
@@ -283,7 +317,6 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Repository, Domain-Service, Application Commands/Queries, ViewModels und Desktop-Adapter fuer Anlegen, Laden, Aktualisieren und Auflisten umgesetzt
 - [x] Kompetenzprojektion, Beobachtungslogik, `ReportOutputModel` und PDF Renderer unveraendert gelassen
 - [x] Sprint 7F.2 verbindet die persistente Draft-Struktur mit der 1:1 portierten Berichtswerkstatt-UX
-- [x] Kein Commit erstellt
 
 ## Sprint 7B - Product- und Architekturentscheidung fuer Bericht, LEG und PDF ✅
 
@@ -304,8 +337,8 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Sprint 7F.1 und 7F.2 haben den persistenten Berichtsentwurf und die freigegebene Berichtswerkstatt-UX produktiv umgesetzt
 - [x] Sprint 7G.1 bis 7G.3 haben den persistenten LEG-Arbeitsentwurf, die freigegebene LEG-UX und die dokumentierte Kompetenzauswahl produktiv umgesetzt
 - [x] Der PDF-Renderer liest weiterhin ausschliesslich ein neutrales Ausgabemodell und greift nicht direkt auf SQLite zu
-- [x] Bericht- und LEG-Drafts bleiben bearbeitbare Arbeitsstaende ohne Freigabe, Versionierung, Archivierung oder eingefrorene finale Ausgabe
-- [x] Ein spaeterer finaler oder freigegebener Stand bleibt als eigene fachliche Entitaet von den produktiven Drafts getrennt
+- [x] Bericht- und LEG-Drafts bleiben bearbeitbare Arbeitsstaende; finale Zustaende werden getrennt als unveraenderliche `RPV`- beziehungsweise `LCV`-Revisionen gefuehrt
+- [x] Sprint 9A und Sprint 10B erzeugen getrennte unveraenderliche PDF-Artefakte ausschliesslich aus den jeweils aktuellen verifizierten Revisionen
 
 ## Sprint 4B - Lehrplanbasierter Kompetenzkatalog ✅
 
@@ -319,9 +352,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Religion ausserhalb des Sprint-4-Katalogabgleichs unveraendert gelassen
 - [x] Keine UI-, SQLite-, Schema- oder Architekturaenderung im Abschlussabgleich
 
-## Sprint - Schuelerprofil-Ueberblick vor Laura-Pilottest 🔄
+## Sprint - Schuelerprofil-Ueberblick vor Laura-Pilottest ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -334,9 +367,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Laura-Pilottestpunkte zum Schuelerprofil wurden aktualisiert statt doppelt ergaenzt
 - [x] Keine neue Persistenz, keine Schemaaenderung, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Schnellbeobachtung und Zurueck-Navigation 🔄
+## Sprint - Schnellbeobachtung und Zurueck-Navigation ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -347,9 +380,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Gefilterte Stammgruppen-/Kurs-/Kursverbund-Listen zeigen `← Zur Übersicht`
 - [x] Keine neue Beobachtungslogik, keine Schemaaenderung, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Excel/VBA-Legacy bereinigen 🔄
+## Sprint - Excel/VBA-Legacy bereinigen ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -360,11 +393,10 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] `output/.gitkeep` entfernt; Runtime-/Output-Dateien bleiben unversioniert
 - [x] README und Governance-Dokumente beschreiben PySide/SQLite als aktiven Hauptpfad
 - [x] `python3 build.py` ist kein Pflichtcheck mehr; Standardcheck nutzt PySide-/SQLite-Tests und Offscreen-Import
-- [x] Kein Commit umgesetzt
 
-## Sprint - Berichtsvorschau und Halbjahres-Testdaten 🔄
+## Sprint - Berichtsvorschau und Halbjahres-Testdaten ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -376,9 +408,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Testdaten enthalten mehrere Verlaufsmuster, bestaetigte Kompetenzstaende, Abweichungen, Dokumente und unterschiedlich dichte Dokumentationsstaende
 - [x] Keine KI-Textgenerierung, keine Schemaaenderung, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Dokumentationsstatus kompakt in Schuelerlisten 🔄
+## Sprint - Dokumentationsstatus kompakt in Schuelerlisten ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -390,9 +422,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Soft-geloeschte Beobachtungen zaehlen nicht
 - [x] Keine neue Persistenz, keine Schemaaenderung, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Laura-Pilottestdaten fuer SQLite 🔄
+## Sprint - Laura-Pilottestdaten fuer SQLite ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -403,9 +435,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Demo-Dateien werden als harmlose Platzhalter unter `data/documents/` erzeugt
 - [x] Keine echten Namen, keine echten Dokumente, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Dokumente & Medien MVP 🔄
+## Sprint - Dokumente & Medien MVP ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -417,9 +449,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Aufgeklappte Beobachtungskarten zeigen verknuepfte Anhaenge
 - [x] Keine PDF-Erstellung, keine Vorschau, keine Berichte-Erweiterung, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Dokumentationsstand im Schuelerprofil 🔄
+## Sprint - Dokumentationsstand im Schuelerprofil ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -429,9 +461,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Fehlende Kompetenzen koennen pro Fachgruppe aufgeklappt werden
 - [x] Keine neue Persistenz, keine Schemaaenderung, keine Dokumentenverwaltung, keine Berichtserweiterung, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Berichtsvorschau kopieren und Text exportieren 🔄
+## Sprint - Berichtsvorschau kopieren und Text exportieren ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -442,9 +474,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Soft-geloeschte Beobachtungen erscheinen nicht
 - [x] Keine PDF-/Word-Erstellung, keine KI-Textgenerierung, keine neue Persistenz, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint B - Berichtsvorbereitung aus Kompetenzstaenden und Beobachtungen 🔄
+## Sprint B - Berichtsvorbereitung aus Kompetenzstaenden und Beobachtungen ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -455,9 +487,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Soft-geloeschte Beobachtungen fliessen nicht ein
 - [x] Keine KI-Textgenerierung, kein Export, keine neue Persistenz, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint A - Bestaetigten Kompetenzstand speichern 🔄
+## Sprint A - Bestaetigten Kompetenzstand speichern ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -469,9 +501,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Beobachtungen werden nicht veraendert
 - [x] Keine Berichte, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Kompetenzvorschlag und Fachgruppen im Schuelerprofil 🔄
+## Sprint - Kompetenzvorschlag und Fachgruppen im Schuelerprofil ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -484,9 +516,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Folgethema dokumentiert: Lehrkraft kann Vorschlag spaeter bestaetigen oder manuell anpassen
 - [x] Beobachtungsverlauf, Persistenz, Schema, Berichte und Excel/VBA unveraendert
 
-## Sprint - Kursverbund anlegen und Schuelerlisten sortieren 🔄
+## Sprint - Kursverbund anlegen und Schuelerlisten sortieren ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -499,9 +531,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Schueler ohne bekannten aktiven Kurs stehen am Ende
 - [x] Kursverbund-Filterlogik, Schema, Beobachtungen, Medien und Excel/VBA unveraendert
 
-## UI-Polish - Beobachtungsverlauf im Schuelerprofil beruhigen 🔄
+## UI-Polish - Beobachtungsverlauf im Schuelerprofil beruhigen ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -514,9 +546,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Datum-, Zeit- und Datum-Zeit-Felder sind an den globalen Dropdown-Stil angeglichen
 - [x] Kompetenzuebersicht, Persistenz, Schema und Excel/VBA unveraendert
 
-## UI-Polish - Beobachtungen im Schuelerprofil filtern 🔄
+## UI-Polish - Beobachtungen im Schuelerprofil filtern ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -526,9 +558,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Reset setzt alle Beobachtungsfilter zurueck
 - [x] Kompetenzuebersicht, Persistenz, Schema, Excel/VBA und Bearbeiten/Loeschen unveraendert
 
-## UI-Polish - Aufklappbare Beobachtungskarten 🔄
+## UI-Polish - Aufklappbare Beobachtungskarten ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -537,9 +569,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Aufgeklappt bleiben volle Notiz, Kompetenzbewertungen sowie Bearbeiten/Loeschen erreichbar
 - [x] Kompetenzuebersicht, Persistenz, Schema, Excel/VBA und Sortierung unveraendert
 
-## Sprint - Beobachtungen bearbeiten und löschen 🔄
+## Sprint - Beobachtungen bearbeiten und löschen ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -551,9 +583,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Multi-Fach-Fachanzeige wird aus den Kompetenzfaechern neu berechnet
 - [x] Keine Medien, keine Berichte, kein UI-Redesign, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Kompetenzen SQLite-persistent machen 🔄
+## Sprint - Kompetenzen SQLite-persistent machen ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -564,9 +596,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Letzte Bewertung je Kompetenz wird aus Beobachtungen abgeleitet
 - [x] Keine freie Kompetenzbearbeitung, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Kompetenzkatalog fachlich stabilisieren 🔄
+## Sprint - Kompetenzkatalog fachlich stabilisieren ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -576,9 +608,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] EPU bleibt UI-Name, Sozialkompetenz bleibt eigener Bereich
 - [x] Keine freie Kompetenzbearbeitung, keine Schema-Migration, kein Excel/VBA und kein Commit umgesetzt
 
-## Korrektur - Fachanzeige bei Multi-Fach-Beobachtungen 🔄
+## Korrektur - Fachanzeige bei Multi-Fach-Beobachtungen ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Ergebnis
 
@@ -588,9 +620,9 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 - [x] Einzelne Kompetenzbewertungen behalten ihr Fachlabel
 - [x] Keine Schema-Migration, kein Excel/VBA und kein Commit umgesetzt
 
-## Sprint - Beobachtungen SQLite-Persistenz 🔄
+## Sprint - Beobachtungen SQLite-Persistenz ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Titel
 
@@ -605,9 +637,9 @@ Beobachtungen persistent speichern und nach Neustart laden
 - [x] Dialog speichert ueber Adapter, Service, Repository und nicht direkt in Qt-Widgets
 - [x] Keine Medien, Berichte, Export, Packaging, Excel/VBA oder UI-Redesign geaendert
 
-## Sprint - Schuelerdaten SQLite-Persistenz 🔄
+## Sprint - Schuelerdaten SQLite-Persistenz ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Titel
 
@@ -622,9 +654,9 @@ Schuelerdaten persistent speichern und nach Neustart laden
 - [x] Schuelerliste, Suche, Profil, Stammgruppenfilter und Kursverbundfilter mit persistenten Schuelern getestet
 - [x] Keine Beobachtungspersistenz, Medien, Berichte, Packaging, Excel/VBA oder UI-Redesign geaendert
 
-## Sprint - Stammdaten und Kursverbuende SQLite-Persistenz 🔄
+## Sprint - Stammdaten und Kursverbuende SQLite-Persistenz ✅
 
-- [x] Status: Umgesetzt, nicht committed
+- [x] Status: Abgeschlossen
 
 ### Titel
 
@@ -673,7 +705,11 @@ Icon-basierte visuelle Anpassung der PySide-Hauptanwendung
 - [x] Kursfarbmarker als fachliche Marker erhalten
 - [x] Keine Fachlogik, keine Persistenz und kein Excel-/VBA-Pfad geaendert
 
-## Sprint 0 ✅
+## Historische Excel-/Workbook-Sprints
+
+Die folgenden Sprintstaende dokumentieren die fruehere Excel-/Workbook-Produktlinie. Sie sind beendet oder durch die produktive PySide-/SQLite-Anwendung abgeloest und gehoeren nicht mehr zur aktiven Sprintplanung. Offene Checkboxen bleiben als historische Pruef- oder Planungsreste sichtbar.
+
+## Sprint 0 - Historische Projektgrundlage ✅
 
 - [x] Status: Abgeschlossen
 
@@ -695,9 +731,9 @@ python3 build.py
 
 gestartet werden.
 
-## Sprint 1 🔄
+## Sprint 1 - Historischer Excel-Generator-Spike 🗂️
 
-- [ ] Status: In Arbeit
+- [x] Status: Historischer Spike beendet; durch die PySide-/SQLite-Produktlinie abgeloest
 
 ### Titel
 
@@ -721,11 +757,15 @@ Excel-Generator
 - [x] output/Jenaplan_v3.2.xlsx wird erzeugt
 - [ ] Datei lässt sich in Excel öffnen
 
-## Sprint 2
+## Sprint 2 - Historisches Dashboard- und Designkonzept 🗂️
+
+- [x] Status: Historischer Konzeptstand; durch das PySide-Design-System abgeloest
 
 Dashboard & Design
 
-## Sprint 3
+## Sprint 3 - Historischer Excel-UX-Prototyp 🗂️
+
+- [x] Status: Historischer Prototypstand; nicht mehr aktive Zielplattform
 
 Architekturwechsel UX-Prototyp
 
@@ -774,9 +814,9 @@ Schülerverwaltung Phase 1: Architektur validieren
 - [x] VBA-Navigation über `student_id` bleibt funktionsfähig
 - [x] Release `v0.4` vorbereitet
 
-## Sprint 4.2 🔜
+## Sprint 4.2 - Historischer transaktionaler Schreibprozess 🗂️
 
-- [ ] Status: Vorbereitet
+- [x] Status: Historischer Plan; produktiver Schreibprozess spaeter ueber PySide, Application Layer und SQLite umgesetzt
 
 ### Titel
 
@@ -790,9 +830,9 @@ Schülerverwaltung: erster transaktionaler Schreibprozess
 - [ ] Keine physische Löschung
 - [ ] Schreibprozess vollständig oder gar nicht ausführen
 
-## Sprint 5 🔜
+## Sprint 5 - Historisches Excel-Dialog-Framework 🗂️
 
-- [ ] Status: Scope abgeschlossen; Dialog Framework begonnen
+- [x] Status: Historischer Scope; VBA-/Worksheet-Dialogpfad beendet und durch PySide-Dialoge abgeloest
 
 ### Titel
 

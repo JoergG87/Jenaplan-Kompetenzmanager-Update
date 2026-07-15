@@ -22,17 +22,44 @@ Jede Datenquelle braucht einen registrierten Primary Key.
 
 Alle Foreign Keys muessen in diesem Dokument explizit dokumentiert sein.
 
-## SQLite Datenbasis
+## Produktiver Benutzerpfad und SQLite-Datenbasis
 
 SQLite ist die produktive lokale Datenbasis.
 
-Spike-Pfad:
+Installiertes macOS-Pilotpaket:
+
+```text
+~/Library/Application Support/Jenaplan-Kompetenzmanager/
+├── kompetenzmanager.sqlite
+├── documents/
+├── exports/
+├── backups/
+└── logs/
+```
+
+Der Pfad liegt bewusst ausserhalb der `.app`. App-Austausch, Update und Loeschen der `.app` ersetzen oder loeschen keine Benutzerdaten. `JENAPLAN_APP_DATA_DIR` ist nur ein technischer Override fuer isolierte automatisierte Pakettests und keine zweite fachliche Datenquelle.
+
+Entwicklerpfad:
 
 ```text
 data/kompetenzmanager.sqlite
 ```
 
-Der Pfad verwendet das bestehende Projektverzeichnis `data/`. Der alternative Vorschlag `Daten/kompetenzmanager.sqlite` wird im Spike nicht eingefuehrt, weil dafuer keine bestehende Projektkonvention vorliegt.
+Der Entwicklerstart behaelt damit die bestehende Projektkonvention. Die Datei wird nie in ein Pilotpaket uebernommen.
+
+Statische Bundle-Ressourcen sind keine veraenderlichen Benutzerdaten:
+
+- `data/curriculum_catalog_v1.csv` als eingebettete Kataloggrundlage;
+- `assets/app_icon.png` und `assets/icons/*.svg` als eingebettete UI-Ressourcen;
+- optional `pilot_initial/` nur fuer die explizit fiktive Buildvariante `laura`;
+- `pilot_build_info.json` zur technischen Kennzeichnung des konkreten Pakets.
+
+Die Variante `laura` wird ausschliesslich aus `scripts/seed_test_data.py`
+erzeugt. Sie enthaelt 24 fiktive Kinder, Stammdaten, Stundenplan,
+Beobachtungen, Dokumentplatzhalter, Bericht-/LEG-Drafts, je eine zweistufige
+Revisionshistorie und finale Beispiel-PDFs. Die Variante `empty` bleibt fuer den
+technischen Smoke-Test ohne Schueler und Dokumente. Beide Varianten verwenden
+dieselben registrierten SQLite-Tabellen; es entsteht keine neue Datenquelle.
 
 Gepruefte Tabellen:
 

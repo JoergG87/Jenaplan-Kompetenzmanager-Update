@@ -2,414 +2,207 @@
 
 ## Aktueller Produktstand
 
-Aktuelle Produktversion: `v0.4`.
+Der Jenaplan-Kompetenzmanager ist eine lokale Python-/PySide6-Desktop-Anwendung fuer Lehrkraefte. PySide ist die aktive Produktoberflaeche, SQLite die produktive lokale Datenhaltung.
 
-Kurzbeschreibung: PySide-Hauptanwendung mit lokaler SQLite-Datenbasis und archiviertem Excel-/Workbook-Legacy-Pfad.
+Der implementierte Stand nach Sprint 10B und den anschliessenden Schuelerprofil-UX-Korrekturen umfasst die zentralen Arbeitsbereiche fuer Stammdaten, Unterrichtsalltag, Beobachtung, Kompetenzdokumentation, Schuelerprofil, Lernentwicklungsbericht und Lernentwicklungsgespraech. Unveraenderliche Bericht- und LEG-Revisionen sowie daraus erzeugte PDF-Artefakte sind produktiv umgesetzt.
 
-Version `v0.4` repräsentiert historisch die abgeschlossene Core Data Architecture mit datengetriebener Workbook-Projektion. Die aktive Produktlinie ist inzwischen die PySide-Desktop-App.
+Das Projekt befindet sich in der **Produktreifephase**. Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit, Dokumentationsqualitaet, Betriebsentscheidungen und Release-Vorbereitung. Fuer den technischen macOS-Pilotbuild ist die Paketversion `0.1.0` festgelegt; daraus folgt noch keine allgemeine Produktrelease- oder App-Store-Entscheidung.
+
+Excel/VBA ist eine historische Vorstufe. Die damalige Workbook-Linie wird unter `legacy/excel/` als Referenz erhalten, ist aber weder Zielplattform noch aktiver Produktpfad. Historische Workbook-Versionen wie `v0.4` und fruehere Ausgabedateien sind keine aktuellen Hauptartefakte.
 
 ## Projektziel
 
-Der Jenaplan-Kompetenzmanager ist ein professionelles Python-Projekt zur strukturierten Verwaltung, Auswertung und späteren Ausgabe von Kompetenzdaten im Jenaplan-Kontext.
+Der Kompetenzmanager unterstuetzt Lehrkraefte an Jenaplan-Grundschulen bei der strukturierten, nachvollziehbaren und alltagstauglichen Dokumentation von Lernentwicklung nach dem Thueringer Lehrplan.
 
-PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+Das Produkt soll den Dokumentationsaufwand reduzieren, ohne paedagogische Entscheidungen zu automatisieren. Beobachtungen, bestaetigte Kompetenzstaende, Berichte und Lernentwicklungsgespraeche bleiben fachlich unterscheidbare Arbeits- und Ausgabekontexte.
 
-SQLite ist die produktive lokale Datenbasis.
+## Paedagogische Leitlinien
 
-Das Projekt hat sich damit von einer Excel-zentrierten Arbeitsmappe zu einer modernen Desktop-App fuer macOS entwickelt. Excel/VBA liegt nur noch im Legacy-Archiv `legacy/excel/` und ist nicht mehr Zielrichtung fuer die Haupt-App.
+- Beobachtung steht vor Bewertung.
+- Dokumentierte Ereignisse bleiben bis zum konkreten Beleg nachvollziehbar.
+- Entwicklung wird aus realen Beobachtungen und Bestaetigungen sichtbar, nicht aus erfundenen Zwischenwerten.
+- Fehlende Dokumentation ist kein negativer Leistungsstatus.
+- Automatische Projektionen liefern Orientierung, aber keine fertigen paedagogischen Aussagen.
+- Lehrkraefte verantworten manuelle Berichtstexte, Gespraechsinhalte und bewusste Evidenzauswahl.
+- Status, Dokumentationsabdeckung und Entwicklung duerfen nicht allein durch Farbe vermittelt werden.
 
-Python bleibt verantwortlich fuer Datenmodell, Application Layer, Domain Layer, Persistenz, UI-nahe Adapter, PySide-Oberflaeche, Berichte, Exporte und Fachlogik.
+## Abgeschlossene Kernfunktionen
 
-Fachliche Logik wandert weder in PySide-Widgets noch nach VBA. Das Datenmodell bleibt unabhaengig von der Oberflaeche.
+### Stammdaten und Unterrichtskontext
 
-Sprint 0 dient ausschließlich dem Aufbau des technischen und dokumentarischen Fundaments. Es wird noch keine produktive Excel-Datei erzeugt.
+- persistente Schueler-, Stammgruppen-, Kurs- und Kursverbundverwaltung
+- stabile technische IDs und kontrollierte Archivierungs- beziehungsweise Aktivitaetsregeln
+- persistenter Wochenstundenplan mit Stammgruppen-, Kurs- und Kursverbundkontext
+- read-only Dashboard `Heute` mit aktueller beziehungsweise naechster Stunde, Tagesverlauf, Dokumentationsorientierung und direkten Arbeitswegen
 
-## Leitbild
+### Beobachtungen und Dokumente
 
-Das Projekt soll fachlich nachvollziehbar, technisch wartbar und langfristig erweiterbar sein.
+- Beobachtungen mit Datum, Kontext, Notiz, Kompetenzzuordnung und Einzelbewertungen
+- Schnellbeobachtungen ohne erzwungene Kompetenzzuordnung
+- Bearbeiten und Soft Delete ueber den bestehenden Application-/Repository-Pfad
+- studentenzentrierte Dokument- und Medienreferenzen ohne Datei-BLOBs in SQLite
+- historisch sichere Darstellung nicht mehr aktiver oder nicht mehr verfuegbarer Referenzen
 
-Die Entwicklung folgt diesen Grundsätzen:
+### Schuelerprofil und Kompetenzen
 
-- Pädagogische Fachlichkeit steht vor technischer Komplexität.
-- Daten werden strukturiert, nachvollziehbar und konsistent verarbeitet.
-- Jede Version bleibt lauffähig.
-- Änderungen werden dokumentiert und versioniert.
-- PySide ist die Hauptanwendung.
-- Excel ist nur noch historischer Legacy-Altstand und kein aktiver Produktpfad.
+- kindbezogener Arbeitsraum mit dauerhaft sichtbarem Schuelerkontext
+- Profilueberblick nach der produktiven Variante-A-UX
+- dokumentationsbezogene Orientierungskarten, Kompetenzuebersicht, neueste Beobachtungen und neutrale Hinweise auf noch nicht dokumentierte Bereiche
+- Kompetenz-Cockpit mit der Hierarchie `Fach -> Kompetenzbereich -> Thema -> Kompetenz`
+- kanonische Trennung von bestaetigtem Stand, berechnetem Vorschlag und Beobachtungsevidenz
+- Maus-, Tastatur-, Fokus- und Accessibility-Vertraege fuer zentrale Profilinteraktionen
 
-## Pädagogische Produktvision
+### Lernentwicklungsbericht
 
-### Zielgruppe
+- persistenter bearbeitbarer Berichtsentwurf `RPD`
+- bewusst ausgewaehlte Fach-, Kompetenz-, Beobachtungs- und Diagrammreferenzen
+- manuell verantwortete Gesamt- und Fachtexte
+- stabiles Berichtaggregat `RPT` mit unveraenderlichen Revisionen `RPV`
+- snapshotbasierte historische Leseansicht mit Integritaetspruefung
+- unveraenderliches finales PDF-Artefakt `RPA` genau einer aktuellen finalisierten Revision
 
-Der Kompetenzmanager richtet sich an Lehrkräfte an Jenaplan-Grundschulen und unterstützt die Kompetenzbeobachtung nach dem Thüringer Lehrplan.
+### Lernentwicklungsgespraech
 
-Das Projekt verfolgt das Ziel, den Dokumentationsaufwand zu reduzieren und gleichzeitig eine qualitativ hochwertige Kompetenzdokumentation zu ermöglichen.
+- persistenter, live-referenzierender LEG-Arbeitsentwurf `LCD`
+- phasenorientierter Arbeitsraum fuer Vorbereitung, Gespraech und gemeinsam festgehaltene Ergebnisse
+- bewusst ausgewaehlte Kompetenz- und Beobachtungsbelege
+- stabiles LEG-Aggregat `LCF` mit unveraenderlichen Revisionen `LCV`
+- snapshotbasierte historische Leseansicht mit Integritaetspruefung
+- unveraenderliches finales PDF-Artefakt `LCA` genau einer aktuellen abgeschlossenen Revision
 
-### Pädagogische Leitlinien
+## Aktive Systemarchitektur
 
-- Beobachtung vor Bewertung.
-- Bewertungen entstehen aus dokumentierten Beobachtungen.
-- Entwicklung ist wichtiger als Momentaufnahmen.
-- Dokumentation soll den Unterricht unterstützen und nicht behindern.
-- Kompetenzen werden lehrplanorientiert organisiert.
-- Mehrfache Dateneingaben sollen vermieden werden.
-
-### Arbeitsweise der Lehrkraft
-
-Die tägliche Arbeit erfolgt überwiegend über Stammgruppen- und Schüleransichten.
-
-Weitere Ansichten wie Schülerprofil, Stammgruppenübersicht, Kursübersicht, Berichte und Kompetenzbögen entstehen automatisch aus denselben Daten.
-
-Die globale Arbeitsstartseite `Heute` zeigt den unmittelbaren Unterrichtskontext, den heutigen Stundenplan, neutrale Dokumentationsabdeckung sowie direkte Wege zu Stammgruppen, Kursen, Kursverbuenden und dem bestehenden Beobachtungsprozess. Der technische Navigationsschluessel `dashboard` und die vorhandenen Leseprojektionen bleiben bestehen.
-
-Das Dashboard ist eine reine Lese- und Navigationsansicht. Es veraendert weder Stundenplan noch Kompetenz- oder Beobachtungsdaten und zeigt keine Leistungswerte oder automatischen Entwicklungsurteile.
-
-Die globale Informationsarchitektur trennt `ARBEIT` mit `Heute` und `Schüler` von `VERWALTUNG` mit `Stammdaten` und `Einstellungen`. Die fruehere globale `Übersicht` ist als lokale Navigation mit `Stammgruppen`, `Kursverbünde` und `Alle Schüler` in den Schueler-Arbeitsraum integriert. Beobachtungen, Kompetenzen, Berichte und LEG bleiben ueber den bestehenden Kindkontext erreichbar und sind keine leeren globalen Ziele.
-
-Für den Unterricht darf die Stammgruppenübersicht zusätzlich einen Schnellzugriff `Neue Beobachtung` anbieten. Dieser arbeitet immer im Kontext des ausgewählten Schülers und öffnet denselben zentralen Beobachtungsdialog wie das Schülerprofil.
-
-Kurse bezeichnen fachlich Mathe-/Deutsch-Unterrichtsgruppen innerhalb eines Kursverbunds.
-
-Ein Kursverbund definiert, aus welchen Stammgruppen die Kurse gebildet werden. Eine Kursuebersicht zeigt deshalb nicht global alle Schueler mit demselben Kurslabel, sondern nur Schueler mit passendem Kurs aus den Stammgruppen des ausgewaehlten Kursverbunds.
-
-## Fachliches Domänenmodell
-
-### Der Kompetenzmanager ist ein Lernentwicklungsmanager.
-
-Nicht einzelne Bewertungen stehen im Mittelpunkt.
-
-Im Mittelpunkt steht die Lernentwicklung der Schülerinnen und Schüler.
-
-Bewertungen sind lediglich ein Ergebnis dokumentierter Beobachtungen.
-
-### Beobachtungen sind die fachliche Quelle aller Informationen.
-
-Beobachtungen bilden die Grundlage für
-
-- Kompetenzstände
-- Schülerprofile
-- Lernentwicklungsberichte
-- Dashboards
-- Auswertungen
-
-### Kompetenzentwicklung
-
-Kompetenzen entwickeln sich über einen längeren Zeitraum.
-
-Das System muss deshalb Kompetenzverläufe speichern können.
-
-Nicht nur den aktuellen Stand.
-
-### Bericht, Lernentwicklungsgespraech und Ausgabe
-
-Das Schuelerprofil bleibt eine Live-Arbeitsansicht. Es zeigt aktuelle Kompetenzstaende, Beobachtungen, Entwicklung, Dokumentationsabdeckung und Vorbereitungsmöglichkeiten, ist aber kein offizielles Dokument.
-
-Die bestehende Berichtsvorschau bleibt eine abgeleitete Arbeitsprojektion. Sprint 7F.1 fuehrt zusaetzlich einen persistenten, weiter bearbeitbaren Berichtsentwurf mit Status `draft`, manuellen Gesamt- und Fachtexten sowie bewussten Fach-, Kompetenz-, Beobachtungs- und Diagrammreferenzen ein. Sprint 7F.2 verbindet diesen Entwurf mit der verbindlichen UX aus `prototypes/learning_report_ux/`: Laura wechselt zwischen abschnittsweiser Bearbeitung und separater Dokumentvorschau, waehlt Faecher, konkrete Kompetenzen, Beobachtungsbelege und neutrale Diagramme bewusst aus und speichert keine automatisch erzeugten Aussagen. Dieser Arbeitsentwurf ist keine finale Berichtsdomain: Er besitzt weder Freigabe, Versionierung, Archivierung noch eingefrorene Ausgabe und berechnet keinen eigenen Kompetenzstatus. Langfristig wird der freigegebene Lernentwicklungsbericht als eigene fachliche Entitaet mit Pruef- und Freigabestatus sowie finaler Ausgabeversion gefuehrt. Beobachtungen und automatische Vorschlaege liefern Evidenz, aber keine fertigen paedagogischen Aussagen oder Berichtstexte.
-
-Ein Lernentwicklungsgespraech ist fachlich kein Bericht. Seine Vorbereitung nutzt dieselben kanonischen Kompetenz- und Evidenzprojektionen ausschliesslich lesend. Sprint 7G.1 fuehrt dafuer einen eigenen persistenten LEG-Arbeitsentwurf mit Status `draft` ein: Gespraechsrahmen, manuelle Vorbereitung, bewusste Fach-/Themen-, Kompetenz-, Beobachtungs- und Diagrammauswahl sowie getrennte vorbereitete und gemeinsam vereinbarte Ziele, Unterstuetzungen und Vereinbarungen. Der Entwurf referenziert Live-Daten, ist kein eingefrorener oder finaler Gespraechsstand und besitzt weder Freigabe, Versionierung noch Archivierung. Sprint 7G.2 verbindet diesen Entwurf mit der verbindlichen Zwei-Seiten-UX aus `prototypes/learning_conference_ux/`: Vorbereitung und live synchronisierte Gespraechsmappe bleiben sichtbar getrennt, alle fachlichen Inhalte werden ueber den Draft gespeichert und Kompetenzstaende ausschliesslich kanonisch gelesen. Sprint 7G.3 begrenzt die Kompetenzauswahl auf aktive kindbezogene Kompetenzbeobachtungen im LEG-Zeitraum und aktuelle Bestaetigungen; bereits ausgewaehlte Draft-Referenzen bleiben ausserhalb dieses Sichtfilters erhalten.
-
-PDF ist ausschliesslich ein Ausgabeformat. Der produktiv angebundene PDF-Renderer erhaelt ein neutrales `ReportOutputModel`, greift nicht direkt auf SQLite zu und berechnet oder interpretiert keine Fachlogik. Die Draft-Vorschau baut dieses Modell weiterhin aus dem bearbeitbaren Entwurf und den freigegebenen Leseprojektionen auf und bleibt klar als Entwurf gekennzeichnet. Sprint 9A erzeugt ein finales Berichts-PDF ausschliesslich aus dem verifizierten Snapshot einer aktuellen `finalized`-`RPV` und speichert eine unveraenderliche `RPA`. Sprint 10B verwendet denselben reinen Renderer fuer ein LEG-spezifisch gebautes Ausgabemodell ausschliesslich aus einer aktuellen, hashverifizierten `completed`-`LCV` und speichert eine eigene unveraenderliche `LCA`. Bericht- und LEG-Artefakte, Status und Inhalte bleiben getrennte Domains. Draftaenderungen und spaetere operative Daten veraendern bestehende finale PDFs nicht. Renderer-Versionierung und komplexe Archivverwaltung bleiben getrennte spaetere Entscheidungen.
-
-Verbindliche Zielkette:
+Die aktive Schichtenfolge lautet:
 
 ```text
-SQLite
--> Repositories
--> kanonische Kompetenzprojektion
--> zeitraumbezogene Evidenzprojektion
--> Bericht-/LEG-Komposition
--> freigegebener Ausgabestand
--> PDF Renderer
--> unveraenderliche PDF-Datei und Artefaktreferenz
-```
-
-Grafiken zeigen ausschliesslich Dokumentationsabdeckung und Entwicklungsevidenz, zum Beispiel Abdeckung je Fach, Entwicklung ueber Zeit oder Vergleiche fachlich passender Zeitpunkte. Sie erzeugen keine algorithmische Leistungsbewertung und duerfen nicht als solche gestaltet oder bezeichnet werden.
-
-## Architektur
-
-Das Projekt ist modular aufgebaut.
-
-- `src/desktop_app/` enthaelt die PySide-Hauptanwendung mit Shell, Screens, Dialogen, Adaptern und ViewModels.
-- `src/core/` enthaelt fachliche Python-Logik, Application-/Domain-/Infrastructure-Bausteine und SQLite-Repositories.
-- `legacy/excel/` enthaelt alte Workbook-Builder, openpyxl-Projektionen, VBA-Quellen, Seeds und Hilfsskripte aus der Excel-Linie.
-- `data/` enthält Eingabedaten und Konfigurationen.
-- `docs/` enthält fachliche Begleitdokumentation.
-- `docs/DESIGN_SYSTEM.md` beschreibt das freigegebene Design-System als verbindliche Referenz für zukünftige Ansichten.
-- `tests/` ist für automatisierte Tests vorgesehen.
-- `assets/` ist für statische Ressourcen vorgesehen.
-- `BACKLOG.md` sammelt zukünftige Produktideen und Erweiterungen.
-- `DISCOVERY.md` dokumentiert fachliche Erkenntnisse aus Anwenderinterviews und Discovery-Workshops.
-
-Die Architektur vermeidet feste Zellreferenzen und UI-nahe Schattenlogik. Stattdessen sollen strukturierte Daten, eindeutige IDs, Repositories, ViewModels und wiederverwendbare Builder-/Export-Komponenten verwendet werden.
-
-Die Stammgruppenübersicht und die Kursübersicht besitzen keine eigene Geschäftslogik. Sie stellen vorhandene Schülerdaten dar und werden aus diesen Daten generiert. Änderungen an Schülerdaten erfolgen künftig ausschließlich über die Schülerverwaltung.
-
-VBA-Quellstände bleiben als Legacy-Altstand unter `legacy/excel/vba/` nachvollziehbar. Neue Features werden nicht mehr in VBA umgesetzt. Der Seed-Import-Pfad ist archiviert und kein aktiver Workflow.
-
-## Visuelle Produktlinie
-
-Das freigegebene App-Icon ist die zentrale gestalterische Referenz fuer die PySide-Hauptanwendung.
-
-Der Jenaplan Kompetenzmanager soll wie eine moderne paedagogische Entwicklungs-App wirken: ruhig, klar, wachstumsorientiert, datenbewusst und freundlich.
-
-Die Gestaltung nimmt die Icon-Symbolik auf:
-
-- Baum fuer Wachstum und Lernentwicklung
-- Personen fuer Schuelerbezug und paedagogische Arbeit
-- Diagramm fuer Auswertungen, Kompetenzverlaeufe und Berichte
-- Kreis/Bogen fuer Ganzheitlichkeit, Ueberblick und Schutzraum
-- farbige Blaetter fuer individuelle Lernwege und Entwicklungsfelder
-
-Die Icon-Farbwelt aus Dunkelblau, Blau, Tuerkis, Gruen, Orange und hellen neutralen Hintergruenden bildet die visuelle Grundlage fuer Navigation, Karten, Kursfarben, Beobachtungen, Auswertungen und Statusbereiche.
-
-## Architecture Baseline v3.0
-
-Architecture Baseline v3.0 dokumentiert den aktuell freigegebenen Zielzustand nach der PySide-Architekturentscheidung.
-
-Die Baseline entwickelt keine neue Architektur, sondern fasst die bereits umgesetzten Entscheidungen zusammen:
-
-```text
-Adapter Layer
-(PySide Desktop Adapter / CLI / Export Adapter)
--> Application Layer
-   (Dispatcher / Commands)
--> Domain Layer
-   (Services / Validatoren)
--> Infrastructure Layer
-   (SQLite / Repository)
--> Projection Layer
-   (PySide ViewModels / Export Builder)
--> PySide UI / Exportprojektion
-```
-
-Verbindliche Prinzipien:
-
-- SQLite ist die produktive lokale Source of Truth fuer fachliche Daten.
-- Python bleibt die einzige fachliche Schreibschicht.
-- Commands sind der Einstiegspunkt fachlicher Ablaeufe.
-- Dispatcher routen Commands und enthalten keine Businesslogik.
-- Services und Validatoren enthalten die fachliche Logik.
-- Repositories kapseln Persistenz und SQLite-Zugriff.
-- PySide ViewModels und Screens zeigen fachliche Daten, sind aber keine fachliche Datenquelle.
-- Builder erzeugen aktive PySide-ViewModels oder explizit beauftragte Exporte.
-- Excel bleibt archivierter Legacy-Altstand.
-- VBA ist kein Zielpfad fuer neue Features, UI, Smoke-Tests oder produktive Workflows.
-
-Historische Architecture v1 bleibt als Grundlage erhalten:
-
-```text
-Python
--> Workbook Builder
--> Excel
-```
-
-Architecture v2.0 bleibt als historischer Zwischenschritt dokumentiert. Architecture v3.0 richtet dieselben Application-, Domain- und Infrastructure-Layer auf PySide als Hauptanwendung aus; Excel ist unter `legacy/excel/` archiviert.
-
-## Engineering Lessons Learned
-
-Aenderungen an UI-Projektionen koennen indirekt Hidden-Spalten, Named Ranges, VBA-Navigation, Suchfunktion und weitere UI-Projektionen beeinflussen.
-
-Kuenftige Aenderungen an Projection Buildern muessen deshalb immer eine Regression dieser Bereiche enthalten:
-
-- Hidden-Spalten
-- Named Ranges
-- VBA-Navigation
-- Suchfunktion
-- UI-Projektionen
-
-## Sprint 5 - Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
-
-Historischer Stand der Excel-/VBA-Linie. Dieser Abschnitt beschreibt den damaligen Sprint-5-Kontext und ist nicht mehr Zielbild fuer neue UI-Entwicklung.
-
-Sprint 5 hat den Scope Freeze abgeschlossen und das Dialog Framework begonnen.
-
-Der aktuelle Stand:
-
-- Scope abgeschlossen
-- Dialog Framework begonnen
-- erste UserForm vorbereitet
-- Schuelerverwaltung begonnen, aber noch nicht produktiv freigegeben
-- Sprint 5.1a bereitet den verbindlichen Dialogstandard vor
-- Sprint 5.1b wurde an der fehlenden VBA-zu-Python-Service-Bruecke gestoppt
-- Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis fuer spaetere UserForm-Schreibprozesse
-- Sprint 5.3 fuehrt den Application Command Layer als Bruecke zwischen Command-Adaptern und Domain Services ein
-
-Damals geltender Grundsatz:
-
-Der Kompetenzmanager ist eine Anwendung. Excel war in dieser Linie nur die Runtime.
-
-Fachliche Eingaben sollten in dieser historischen Linie ueber modale VBA-UserForms und nicht direkt in Tabellen erfolgen.
-
-UserForms sammeln Eingaben, fuehren nur einfache Oberflaechenvalidierung durch, rufen freigegebene Services auf und aktualisieren anschliessend die betroffene Ansicht.
-
-UserForms enthalten keine Businesslogik und schreiben nicht direkt in Workbook-Tabellen.
-
-Erste Referenzimplementierung des Dialog Frameworks:
-
-- Titel: Neuer Schueler
-- Technischer Name: `frm_student_new`
-- Felder: Vorname, Nachname, Stammgruppe, Kurs, Notiz, Dokumente
-- Aktionen: Abbrechen, Speichern, Dokument hinzufuegen
-- Status: vorbereitet, noch nicht produktiv freigegeben
-
-Sprint 5.1a definiert `frm_student_new` als Referenzdialog fuer alle zukuenftigen Eingabemasken. Der Dialog darf UI-nahe Pflichtzustaende vorbereiten, enthaelt aber keine produktive Speicherlogik, keine StudentService-Anbindung und keinen Tabellenzugriff.
-
-Sprint 5.1b pruefte die produktive Anbindung der UserForm an `StudentService.create_student()`. Der produktive Schreibpfad wird nicht umgesetzt, weil aktuell kein freigegebener, validierter Mechanismus existiert, mit dem Excel/VBA den Python-`StudentService` direkt aufrufen kann. Eine direkte VBA-Schreiblogik in `tbl_students` ist ausgeschlossen. Die naechste Architekturentscheidung betrifft die Laufzeitbruecke zwischen UserForm und Python-Service-Schicht; bevorzugt zu pruefen ist eine CSV- oder Hidden-Sheet-Command-Queue.
-
-Sprint 5.2a prueft SQLite als moegliche neue Source of Truth. Der Spike verwendet `data/kompetenzmanager.sqlite`, weil das Projekt bereits `data/` als Datenverzeichnis fuehrt. Python erzeugt die Datenbank, schreibt Seed-Daten fuer Students, Groups und Courses und erzeugt daraus testweise die bestehende Excel-Projektion. VBA schreibt nicht direkt in SQLite; fuer produktive UserForm-Schreibprozesse bleibt eine Python Bridge oder CLI erforderlich.
-
-Sprint 5.3 fuehrt eine Application-Schicht ein:
-
-```text
-VBA
--> Command Adapter
--> Application Command Dispatcher
--> Domain Services
+PySide UI
+-> ViewModels
+-> Desktop Adapter
+-> Application Commands und Queries
+-> Domain Services und Validatoren
 -> Repositories
 -> SQLite
--> Builder
--> Excel-Projektion
 ```
 
-Die CLI ist nur ein moeglicher Adapter. Der Dispatcher nimmt Commands entgegen und leitet sie an passende Domain-Service-Handler weiter. Er enthaelt keine Fachlogik, schreibt nicht in SQLite und erzeugt keine Excel-Projektionen. VBA ruft spaeter Commands aus, bleibt aber reine Interaktionsschicht.
+Fuer Ausgaben gilt zusaetzlich:
 
-Dokumentenstruktur:
+```text
+verifizierter fachlicher Snapshot
+-> renderer-neutrales Ausgabemodell
+-> reiner PDF Renderer
+-> unveraenderliche Datei und Artefaktreferenz
+```
 
-- Dateien werden nicht in Excel eingebettet.
-- Excel speichert nur Referenzen und Metadaten in `data_media`.
-- Dokumente werden studentenzentriert unter `Dokumente/<student_id>/` abgelegt.
-- Hauptdokumente liegen unter `Hauptdokumente/`.
-- Beobachtungsanhaenge liegen unter `Beobachtungsanhaenge/<observation_id>/`.
+Fuer den lokalen macOS-Pilotbetrieb gilt:
 
-Die eigentliche Dokumentenverwaltung ist nicht Bestandteil von Sprint 5. Die Architektur und Grundstruktur werden vorbereitet.
+```text
+signiertes oder ad-hoc signiertes App-Bundle
+-> unveraenderliche eingebettete Laufzeit und Ressourcen
+-> getrennter Benutzerpfad unter ~/Library/Application Support/
+-> SQLite, Dokumente, Exporte, Backups und Logs ausserhalb der App
+```
 
-Der Beobachtungsdialog wird nur vorbereitet. Kompetenzen muessen dort zwingend mitgedacht werden; die Beobachtungserfassung selbst bleibt ausserhalb von Sprint 5.
+Der Apple-Silicon-Pilotbuild wird reproduzierbar mit PyInstaller erzeugt und setzt macOS 13 voraus. Die Standardvariante enthaelt keine Schuelerdaten. Ein Update ersetzt nur die `.app`; es gibt bewusst keinen Auto-Updater.
 
-## Entity Blueprint: Student
+### Architekturprinzipien
 
-Der Student-Blueprint ist die Referenzarchitektur fuer die erste fachliche Verwaltungs-Entity.
+- Widgets enthalten keine Businesslogik und greifen nicht direkt auf SQLite zu.
+- SQLite und die dokumentierten Datenquellen bilden die fachliche Source of Truth.
+- Repositories kapseln Persistenz; Application- und Domain-Schichten verantworten Schreibprozesse und Validierung.
+- ViewModels und Adapter liefern displayfertige Projektionen, ohne fachliche Daten in der UI neu zu berechnen.
+- Jede Funktion besitzt eine Implementierung, kann aber mehrere Einstiegspunkte haben.
+- Schuelerprofil, Bericht und LEG verwenden dieselbe kanonische Kompetenz- und Evidenzprojektion, ohne eigene Statuslogik zu entwickeln.
+- Historische Snapshots werden vor jeder Lese- oder PDF-Projektion gegen ihren gespeicherten SHA-256 geprueft.
+- `PdfRenderer` kennt weder SQLite noch Repositories, Draftstatus oder fachliche Freigaberegeln.
+- Bericht und LEG bleiben getrennte fachliche Domains mit getrennten Aggregaten, Revisionen und Artefakten.
+- Schema- und Datenmodellveraenderungen erfolgen nur nach Product-Owner-, Datenmodell- und Architekturreview.
 
-| Architekturteil | Festlegung |
-| --- | --- |
-| Entity | Student |
-| Technische ID | `student_id` |
-| ID-Format | `STU-000001` |
-| Storage | `data_students` |
-| Tabelle | `tbl_students` |
-| Owner | Schuelerverwaltung |
-| Validator | `StudentValidator` |
-| Repository | `StudentRepository` |
-| Service | `StudentService` |
-| Builder | `StudentProjectionBuilder` |
-| Navigation | `student_id` |
+## Datenhaltung und Dateien
 
-UI-Projektionen:
+- Produktive lokale Datenbank: `data/kompetenzmanager.sqlite`
+- Lehrplanbasierter Kompetenzkatalog: `data/curriculum_catalog_v1.csv`
+- Konfiguration und Farbreferenzen: strukturierte Dateien unter `data/`
+- Verwaltete Schuelerdokumente: `data/documents/<student_id>/`
+- Finale Berichtartefakte: `data/documents/<student_id>/reports/<RPT>/<RPV>/`
+- Finale LEG-Artefakte: `data/documents/<student_id>/learning_conferences/<LCF>/<LCV>/`
 
-- Stammgruppenübersicht
-- Schülerprofil
-- Kursübersicht
+SQLite speichert fuer Dokumente und PDF-Ausgaben Metadaten und Referenzen. Dateien werden nicht als BLOB in der Datenbank gespeichert. Produktive Beziehungen verwenden stabile IDs und nicht sichtbare Namen oder UI-Positionen.
 
-Schreibprozesse:
+## Produkt- und Ausgabemodell
 
-- create
-- update
-- archive
+### Schuelerprofil
 
-Regel: Das Schema wird nicht als Python-Klasse implementiert. Die fachliche Definition erfolgt ueber `docs/DATA_REGISTRY.md`; technische Bezeichner werden in `src/core/constants.py` zentral gefuehrt.
+Das Schuelerprofil ist eine aktuelle Live-Arbeitsansicht. Es zeigt dokumentierte Staende, Evidenz, Dokumentationsabdeckung und Arbeitswege, ist aber kein offizielles oder eingefrorenes Dokument.
 
-Validator-Kontext:
+### Bericht
 
-- `StudentValidator` prueft `group_id` und `course_id` gegen Referenzdaten, die vom `StudentService` bereitgestellt werden.
-- In Sprint 4.2 werden keine eigenen `GroupRepository`- oder `CourseRepository`-Klassen eingefuehrt.
-- Der Validator validiert nur gegen bereitgestellte Referenzdaten und liest selbst keine Workbook-Tabellen.
+Der Berichtsentwurf bleibt bearbeitbar und live-referenzierend. Eine bewusste Finalisierung erzeugt beziehungsweise aktualisiert ein stabiles Berichtaggregat und schreibt eine neue unveraenderliche Revision. Korrekturen erfolgen als Folgerevision; fruehere Revisionen bleiben historisch lesbar.
 
-UI-Regel fuer Sprint 4.2:
+### Lernentwicklungsgespraech
 
-- Es wird keine neue Excel-Verwaltungsansicht erstellt.
-- Es wird keine Testmaske erstellt.
-- Der erste Architekturtest erfolgt ausschliesslich ueber `StudentValidator`, `StudentRepository` und `StudentService`.
-- Eine Benutzeroberflaeche folgt erst nach Erweiterung von `docs/VIEW_DATA_OWNERSHIP.md` und `docs/UI_DATA_MAPPING.md`.
+Der LEG-Entwurf bleibt ein eigener bearbeitbarer Gespraechsarbeitsstand. Ein expliziter Abschluss friert ausschliesslich den reproduzierbaren Gespraechskontext, gemeinsame Ergebnisse und bewusst ausgewaehlte Belege in einer unveraenderlichen LEG-Revision ein. Interne Vorbereitung wird nicht automatisch Teil des Abschlusses.
 
-## ID-Migrationsplan Student
+### PDF-Artefakte
 
-Die bisherigen Seed-IDs wie `s001` wurden in Sprint 4.2c kontrolliert migriert.
+PDF ist ein Ausgabeformat und keine Fachschicht. Finale Bericht- und LEG-PDFs werden ausschliesslich aus der jeweils aktuellen, hashverifizierten Revision erzeugt. Drafts, Widgets und spaetere operative Daten sind keine Quellen eines finalen PDF-Artefakts. Ein vorhandenes Artefakt wird bei erneutem Aufruf verifiziert und nicht ueberschrieben.
 
-Die Migration auf `STU-000001` erfolgte gemeinsam mit der Implementierung des `StudentService`.
+## Informationsarchitektur und Design-System
 
-Betroffene Dateien und Komponenten:
+Die globale Navigation trennt `ARBEIT` mit `Heute` und `Schueler` von `VERWALTUNG` mit `Stammdaten` und `Einstellungen`. Beobachtungen, Kompetenzen, Berichte und LEG bleiben ueber den Kindkontext erreichbar.
 
-- `legacy/excel/src/core/workbook_data.py`: historischer Seed-Datenstand mit neuer `student_id`-Strategie.
-- `src/core/constants.py`: technische Feldnamen und ID-Praefixe verwenden.
-- `legacy/excel/src/ui/screens/klassenuebersicht.py`: historische Projektion liest `student_id`, darf aber kein konkretes ID-Format voraussetzen.
-- `legacy/excel/src/ui/screens/schuelerprofil.py`: historische Profilprojektion liest `student_id`, darf aber kein konkretes ID-Format voraussetzen.
-- `legacy/excel/scripts/create_vba_framework_poc.py`: historisches Packaging bleibt unveraendert, solange Named Ranges und CodeNames stabil bleiben.
-- `legacy/excel/vba/modules/Navigation.bas`: VBA verwendet weiterhin ausschliesslich `student_id`; keine Navigation ueber Namen oder Zellpositionen.
-- `legacy/excel/vba/modules/UI.bas`: Slot-ID-Mechanismus bleibt unveraendert und liest die sichtbare `student_id`-Projektion.
+Das verbindliche PySide-Design-System ist in `docs/DESIGN_SYSTEM.md` dokumentiert. Es definiert Tokens, Typografie, Flaechen, Karten, Tabellen, Dialoge, Fokus, Reduced Motion, Tastaturbedienung und Accessibility. Historische Workbook-Layouts, feste Zellpositionen und Excel-Zoomstufen sind keine Designreferenz der aktiven Produktlinie.
 
-Migrationsregel: Die Umstellung erfolgt kontrolliert in einem Schritt, damit Seed, Workbook-Tabellen, UI-Projektionen, Named Ranges und VBA-Navigation dasselbe ID-Format verwenden.
+Zentrale UX-Prinzipien:
 
-## Legacy-Analyse Student-ID
+- ruhige, lehrkraftzentrierte Informationshierarchie
+- genau eine dominante Aktion pro Arbeitskontext
+- ganze sinnvolle Zeilen und Karten als ausreichend grosse Interaktionsflaechen
+- progressive Disclosure fuer Evidenz und historische Details
+- sichtbare Fokuszustaende und vollstaendige Tastaturwege
+- Status nie ausschliesslich ueber Farbe
+- responsive Desktop-Zielgroessen 1180 x 760, 1280 x 800 und 1400 x 900
 
-| Legacy-Name / Referenz | Fundstelle | Status | Entscheidung |
-| --- | --- | --- | --- |
-| `ui_profile_student_s001` | frueher `legacy/excel/src/ui/screens/schuelerprofil.py` | entfernt | wurde entfernt, da kein zentraler Navigationsanker |
-| `s001` als `DEFAULT_STUDENT_ID` | frueher `legacy/excel/src/core/workbook_data.py` | migriert | `STU-000001` |
-| `s001` in Seed-Daten | frueher `legacy/excel/src/core/workbook_data.py` | migriert | `STU-000001`-Strategie |
-| `ui_student_slot_id_XX` | `legacy/excel/src/ui/screens/klassenuebersicht.py`, `legacy/excel/vba/modules/Globals.bas` | formatneutraler Slot-ID-Mechanismus | bleibt als Legacy-Namensmuster bestehen |
-| `ui_profile_selected_student_id` | `legacy/excel/src/ui/screens/schuelerprofil.py`, `legacy/excel/vba/modules/Globals.bas` | formatneutraler Zielbereich fuer `student_id` | bleibt bestehen |
-| VBA-Meldungstexte mit `student_id` | `legacy/excel/vba/modules/Navigation.bas` | technische Diagnose-/Fehlermeldung | bleibt bestehen |
+## Prototypen und Product Discovery
 
-Die Legacy-Migration fuer Student-Seed-IDs ist mit Sprint 4.2c umgesetzt.
+In `prototypes/` abgelegte UX-Studien sind isolierte Entscheidungs- und Referenzartefakte. Sie verwenden fiktive Daten und werden erst nach ausdruecklicher Produktentscheidung in die produktive App uebertragen. Ein Prototyp ist weder Datenquelle noch produktive Nebenanwendung.
 
-Architecture Gate fuer Sprint 4.2c:
+## Historische Excel-/VBA-Linie
 
-- Builder-Regel ist geklaert.
-- Keine Verwaltungsoberflaeche in Sprint 4.2.
-- Validator-Kontext ist geklaert.
-- Legacy-Migration ist vorbereitet, aber nicht ausgefuehrt.
-- Student ist ohne weitere Architekturentscheidung implementierbar.
+Die fruehere Excel-/Workbook-Architektur, VBA-Interaktionsschicht, UserForm- und Worksheet-Dialogspikes sowie die historische Version `v0.4` bleiben als Projektgeschichte dokumentiert. Ausfuehrbare Altstaende und Quellen liegen unter `legacy/excel/`.
 
-Ergebnis: PASS.
+Fuer die aktive Produktlinie gilt:
 
-Offener Implementierungspunkt:
+- keine neuen Excel- oder VBA-Funktionen
+- keine Workbook-Datei als aktuelles Hauptartefakt
+- keine VBA-/AppleScript-Smoke-Tests als Standardpruefung
+- Excel/openpyxl nur bei ausdruecklichem Legacy- oder Exportauftrag
 
-- Die Stammgruppenübersicht besitzt weiterhin 28 sichtbare Karten-Slots. Ein zusaetzlich per Service erzeugter 29. aktiver Seed-Schueler ist in `tbl_students` vorhanden, benoetigt fuer sichtbare Karten-Navigation aber eine spaetere Slot-/Seed-Entscheidung.
+Historische Sprint- und ADR-Texte bleiben als damaliger Entscheidungsstand lesbar, werden aber als historisch oder durch die PySide-/SQLite-Linie abgeloest gekennzeichnet.
 
-## Technischer Stack
+## Dokumentationssystem
 
-- Python 3.11 oder neuer
-- `pandas` für strukturierte Datenverarbeitung
-- `pillow` für spätere Bild- oder Asset-Verarbeitung
-- `PySide6` fuer die Desktop-App
-- Markdown für Projektdokumentation
-- CSV und JSON für strukturierte Eingabe- und Konfigurationsdaten
+- `PROJECT.md`: aktueller Produktstand und dauerhafte Projektgrundlagen
+- `SPRINTS.md`: operative Planung und historisch gekennzeichnete Sprintstaende
+- `DECISIONS.md`: Architekturentscheidungen und ihr Umsetzungsstatus
+- `CHANGELOG.md`: chronologische Aenderungen ohne Vorwegnahme einer Release-Version
+- `docs/PROJECT_CONSTITUTION.md`: verbindliche Projektverfassung
+- `docs/TECHNICAL_NAMES.md`: technische Namen und IDs
+- `docs/DATA_REGISTRY.md`: Datenquellen und Persistenzobjekte
+- `docs/DATA_LIFECYCLE.md`: Schreib-, Historien- und Loeschprozesse
+- `docs/VIEW_DATA_OWNERSHIP.md`: Owner und Quellen der Ansichten
+- `docs/UI_DATA_MAPPING.md`: sichtbare UI-Felder und ihre Datenquellen
+- `docs/DESIGN_SYSTEM.md`: verbindliches PySide-Design-System
 
-## Rollen
+Neue Architektur-Dokumente werden nur eingefuehrt, wenn eine echte Luecke nicht in den bestehenden Governance-Dokumenten geschlossen werden kann.
 
-- Product Owner: Gibt neue Funktionen, fachliche Änderungen und Änderungen am Datenmodell frei.
-- Entwicklung: Implementiert die freigegebenen Funktionen nach Projektregeln.
-- Fachliche Review: Prüft pädagogische Verständlichkeit, Bewertungssystem und Lehrplanbezug.
-- Technische Review: Prüft Wartbarkeit, Kompatibilität und Lauffähigkeit.
+## Rollen und Entwicklungsreihenfolge
 
-## Entwicklungsprinzipien
+- Product Owner: gibt neue Funktionen, fachliche Aenderungen und Datenmodellaenderungen frei.
+- Fachliche Review: prueft paedagogische Verstaendlichkeit, Lehrplanbezug und nicht bewertende Darstellung.
+- UX-/Accessibility-Review: prueft Informationshierarchie, Bedienbarkeit, Tastatur, Fokus und Kontrast.
+- Technische Review: prueft Architekturgrenzen, Wartbarkeit, Integritaet und Lauffaehigkeit.
 
-- Keine Implementierung ohne fachliche Freigabe.
-- Keine Änderung am Datenmodell ohne Rücksprache.
-- Jede Änderung wird im Changelog dokumentiert.
-- Jede Version muss lauffähig bleiben.
-- Funktionen werden sprintbasiert geplant und umgesetzt.
-- Generierte Excel-Dateien werden nicht manuell verändert.
-- Die spätere Darstellung wird für Microsoft Excel auf macOS ausgelegt.
-- Fachliche Logik verbleibt vollständig im Python- und Datenmodell.
-- VBA darf ausschließlich UI-Aufgaben wie Navigation, Buttons, Dialoge, Benutzerinteraktion und UserForms übernehmen.
-- Das Datenmodell ist Source of Truth für fachliche Daten.
-- Das Design-System ist Source of Truth für sämtliche Benutzeroberflächen.
-- Strukturierte Tabellen und eindeutige IDs haben Vorrang vor festen Zellpositionen.
-- Jede Ansicht besitzt genau eine Hauptaufgabe.
-- Neue Funktionen dürfen die Hauptaufgabe einer Ansicht nicht verwässern.
-- Eine Funktion besitzt genau eine Implementierung, darf aber mehrere Einstiegspunkte besitzen.
-
-### Standard-Reihenfolge jeder Implementierung
+Jede Implementierung folgt dieser Reihenfolge:
 
 1. Vision
 2. Product Discovery
@@ -423,135 +216,29 @@ Offener Implementierungspunkt:
 10. Test
 11. Commit
 
-## Versionierung
+## Aktueller Entwicklungsstatus
 
-Das Projekt verwendet ab Version `v0.4` eine produktorientierte Versionsfolge.
+Der Funktionsaufbau bis Sprint 10B sowie die anschliessenden Schuelerprofil-UX-Korrekturen sind umgesetzt. Die aktive Phase ist die Produktreifephase.
 
-Aktuelles Hauptartefakt:
+Aktuelle Arbeitsschwerpunkte sind:
 
-- `output/Jenaplan_Kompetenzmanager_v0.4.xlsm`
+- Dokumentationskonsistenz und nachvollziehbare Produktbaseline
+- fachliche und visuelle Pilotpruefung
+- Accessibility- und Tastaturqualitaet
+- robuste Desktop-Darstellung in den festgelegten Zielgroessen
+- Packaging-, Betriebs- und Datenschutzentscheidungen
+- Release-Vorbereitung ohne Vorwegnahme von Version oder Auslieferung
 
-Optionale aktuelle Kopie:
-
-- `output/latest.xlsm`
-
-Historische UX-Prototyp-Namen bleiben im Git-Verlauf erhalten, werden aber künftig nicht weitergeführt.
-
-Änderungen werden in `CHANGELOG.md` dokumentiert. Grundsätzliche Architekturentscheidungen werden in `DECISIONS.md` festgehalten.
-
-## Roadmap
-
-Die verbindliche Roadmap befindet sich in `ROADMAP.md`.
-
-Aktuelle Planung:
-
-- Sprint 3.0: Architekturwechsel auf Microsoft Excel für macOS
-- Sprint 3.1: Klassenübersicht als frühere Bezeichnung der heutigen Stammgruppenübersicht
-- Sprint 3.2: Schülerprofil
-- Sprint 3.3a: Architektur konsolidieren
-- Sprint 5: Scope abgeschlossen, Dialog Framework begonnen, erste UserForm vorbereitet
-- Weitere Produktbereiche erst nach fachlicher Freigabe und Review
-
-## Bekannte offene Punkte v0.4
-
-- Seed enthält aktuell 28 Testschüler; Demo-Seed und Minimal-Seed werden später getrennt.
-- Kursfarben werden noch nicht dynamisch aus `tbl_courses[color_key]` im Workbook projiziert.
-- Header `Stammgruppenübersicht` wird in der aktuellen Darstellung noch abgeschnitten.
-
-## Bewertungssystem
-
-Das Bewertungssystem wird in einem später freigegebenen Sprint fachlich ausgearbeitet.
-
-Die Architekturentscheidung für das Bewertungssystem ist bereits festgelegt:
-
-- `++`
-- `+`
-- `-`
-- `--`
-
-Die visuelle Darstellung erfolgt später über Ampelfarben. Die Bewertungssymbole sind fachliche Datenwerte und dürfen nicht durch reine Farbwerte ersetzt werden.
-
-## Datenmodell
-
-Das Datenmodell basiert auf strukturierten Datenquellen in `data/`.
-
-Aktuelle Dateien:
-
-- `data/competencies.csv` für Kompetenzdaten
-- `data/colors.json` für Farbdefinitionen
-- `data/config.json` für Projektkonfiguration
-
-Das Datenmodell ist die fachliche Grundlage des Projekts.
-
-Alle Beziehungen im Datenmodell erfolgen über eindeutige IDs. Das Datenmodell darf nicht ohne Rücksprache mit dem Product Owner geändert werden.
-
-Neue UI-Elemente, Hilfstabellen, Formeln, VBA-Routinen und Screens dürfen das Datenmodell niemals umgehen. Alle Ansichten sind Projektionen des Datenmodells.
-
-Die Domänensprache ersetzt `Klasse` durch `Stammgruppe`. Jeder Schüler gehört genau einer Stammgruppe und genau einem Kurs an. Der Kurs beschreibt den Jahrgang, die Stammgruppe beschreibt die organisatorische Zugehörigkeit.
-
-Die zentralen Entitäten für Schülerzuordnung sind:
-
-- Student mit `student_id`, Vorname, Nachname, `stammgruppe_id`, `kurs_id`
-- Stammgruppe mit `stammgruppe_id`, Name
-- Kurs mit `kurs_id`, Name und optionaler Farbe für spätere UI
-
-Die Standardreihenfolge der Schüler in der Stammgruppenübersicht erfolgt alphabetisch nach Vorname. Diese Sortierung gilt als Projektstandard, weil Lehrkräfte Kinder im Unterricht überwiegend mit dem Vornamen suchen und ansprechen.
-
-Schülerkarten werden nicht manuell gepflegt. Wenn Schüler in der Schülerverwaltung hinzugefügt, bearbeitet oder archiviert werden, aktualisieren sich Stammgruppenübersicht und Kursübersicht automatisch aus den vorhandenen Schülerdaten. Eine physische Löschung von Schülern ist nicht vorgesehen.
-
-Stammgruppen und Kurse sind eigenständige fachliche Entitäten. Neue Stammgruppen werden über die Stammgruppenverwaltung angelegt, nicht automatisch beim Anlegen eines Schülers. Kurse werden über die Kursverwaltung gepflegt.
-
-## Design-System
-
-Das aktuelle Design der Stammgruppenübersicht wurde durch Laura freigegeben und ist die verbindliche Referenz für alle zukünftigen Ansichten.
-
-Das Design-System ist Source of Truth für sämtliche Benutzeroberflächen. Es umfasst Farbwelt, Typografie, Kartenlayout, Kartenabstände, Desktop-App-Anmutung, 140-%-Zoom der Stammgruppenübersicht, Suchfeld, Weißraum und visuelle Hierarchie.
-
-Neue Ansichten müssen sich an diesem Design-System orientieren. Designänderungen erfolgen ausschließlich in einem eigenen UX-Sprint.
-
-## Projektregeln
-
-Die dauerhaften Projektregeln sind in `AGENTS.md` festgelegt.
-
-Zusammenfassung:
-
-- PySide ist die Hauptanwendung.
-- SQLite ist die produktive lokale Datenbasis.
-- Python verantwortet Datenmodell, Application Layer, Domain Layer, Persistenz, ViewModels, Adapter, UI-Projektionen, Berichte, Exporte und Fachlogik.
-- Keine Businesslogik in PySide-Widgets.
-- Keine direkte SQLite-Logik in Qt-Widgets.
-- Excel/openpyxl nur im archivierten `legacy/excel/`-Pfad anfassen, wenn ein ausdruecklicher Legacy- oder Exportauftrag vorliegt.
-- Keine neuen Excel-/VBA-Features und keine VBA-Smoke-Tests als Zielpfad.
-- Keine festen Zellreferenzen.
-- Strukturierte Tabellen bevorzugen.
-- Datenmodell niemals ohne Rücksprache ändern.
-- Design-System nicht ohne eigenen UX-Sprint ändern.
-- Jede Änderung muss im Changelog dokumentiert werden.
-- Jede Version muss lauffähig bleiben.
-- Neue Funktionen nur nach Freigabe durch den Product Owner.
+Weiterhin offen bleiben insbesondere Product-Owner- beziehungsweise Betriebsentscheidungen zu Rollen und Berechtigungen, Aufbewahrung und Zugriffsschutz, Archivierung und Verschluesselung, Renderer-Versionierung, mehreren Artefakten pro Revision sowie einem moeglichen gemeinsamen, klar getrennten Bericht-/LEG-Ausgabepaket.
 
 ## Definition of Done
 
-Eine Änderung gilt als abgeschlossen, wenn:
+Eine Aenderung gilt als abgeschlossen, wenn:
 
-- die fachliche Anforderung umgesetzt oder dokumentiert ist,
-- keine Projektregel verletzt wurde,
-- die Projektdokumentation konsistent bleibt,
+- die freigegebene fachliche Anforderung umgesetzt oder dokumentiert ist,
+- keine Projekt- oder Architekturregel verletzt wurde,
+- Datenquellen, technische Namen, Lifecycle und UI-Mapping konsistent dokumentiert sind,
 - das Changelog aktualisiert wurde,
-- der Build-Einstiegspunkt weiterhin lauffähig ist,
-- keine nicht freigegebenen Funktionen eingeführt wurden,
-- keine Excel-Datei erzeugt wurde, sofern der Sprint dies nicht ausdrücklich vorsieht.
-
-## Aktueller Sprint
-
-Sprint 4 ist fachlich und technisch fuer den lehrplanbasierten Kompetenzkatalog abgeschlossen.
-
-Aktueller Stand: Der CSV-Katalog umfasst die freigegebenen Sprint-4-Lehrplanuebernahmen fuer Deutsch, Mathematik, EPU, Musik, Kunst, Sport, Werken, Schulgarten, Ethik und Sozialkompetenz. Historische Kompetenzen bleiben als `legacy` lesbar; Religion war nicht Teil dieses Katalogabgleichs.
-
-## LEG-Abschluss und Revision
-
-Der produktive LEG-Arbeitsablauf trennt ab Sprint 10A drei fachliche Zustaende. `LCD` ist und bleibt der bearbeitbare, live-referenzierende Arbeitsentwurf. Ein expliziter Abschluss erzeugt beziehungsweise verwendet ein stabiles `LCF`-Aggregat und schreibt eine unveraenderliche `LCV`-Revision mit kanonischem Snapshot und SHA-256. Korrekturen erfolgen weiterhin im LCD und erzeugen beim erneuten Abschluss nur dann eine neue LCV, wenn sich der fachliche Snapshot geaendert hat.
-
-Die historische LEG-Ansicht liest ausschliesslich verifizierte Snapshotdaten. Berichtsdomain, aktuelle Live-Projektionen, Widgets und PDF-Renderer sind keine Quellen einer LCV. Die Schichtenfolge bleibt `UI -> ViewModel -> Adapter -> Application -> Domain -> Repository -> SQLite`.
-
-Sprint 10B ergaenzt fuer die aktuelle `completed`-LCV genau ein unveraenderliches LEG-PDF-Artefakt `LCA`. Die PDF-Domain laedt die Revision ausschliesslich ueber den verifizierenden LEG-Revisionsleseservice, validiert den vollstaendigen LEG-Snapshotvertrag und baut daraus das renderer-neutrale Ausgabemodell. LCD, aktuelle Stammdaten, Live-Kompetenzprojektionen und aktuelle Beobachtungen werden nicht gelesen. Ein Wiederaufruf gibt nur ein auf Pfad, Dateigroesse und SHA-256 geprueftes bestehendes Artefakt zurueck; eine `superseded`-LCV kann kein neues PDF erzeugen.
+- fokussierte und risikogerechte Pruefungen erfolgreich sind,
+- die PySide-Anwendung weiterhin importierbar und offscreen startbar ist,
+- keine nicht freigegebene Funktion oder Datenmodellentscheidung eingefuehrt wurde.

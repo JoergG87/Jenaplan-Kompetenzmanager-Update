@@ -2,6 +2,20 @@
 
 Dieses Dokument ist ab Sprint 4 die verbindliche Registry fuer technische Namen.
 
+## macOS Pilot-Deployment
+
+| Technischer Name | Bedeutung |
+| --- | --- |
+| `APP_VERSION` | einzige Projektquelle fuer die technische Pilot-Paketversion |
+| `de.jenaplan.kompetenzmanager` | stabile macOS-Bundle-ID |
+| `JENAPLAN_APP_DATA_DIR` | ausschliesslich technischer Override des Benutzerpfads fuer automatisierte Pakettests |
+| `RuntimePaths` | Pfadprojektion fuer Datenbank, Dokumente, Exporte, Backups und Logs |
+| `pilot_build_info.json` | nicht geheime Buildmetadaten mit Version, Architektur, Git-HEAD, Quellbaumzustand und Pilotdatenvariante |
+| `pilot_initial` | optionaler, unveraenderlicher Bundlebereich fuer explizite fiktive Laura-Startdaten |
+| `empty` | technische Smoke-Test-Variante ohne gepackte SQLite-Datei oder Schuelerdaten |
+| `laura` | Lehrkraft-Pilotvariante mit ausschliesslich fiktiven Daten aus `scripts/seed_test_data.py` |
+| `FIKTIVE_PILOTDATEN.txt` | sichtbare technische Kennzeichnung der fiktiven Startdaten im Laura-Payload |
+
 ## Grundregeln
 
 Technische Namen werden grundsaetzlich englisch und ASCII-kompatibel gefuehrt.
