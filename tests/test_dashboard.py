@@ -178,6 +178,50 @@ class DashboardTest(unittest.TestCase):
         labels = tuple(label.text() for label in screen.findChildren(QLabel))
         self.assertNotIn("09:00–09:45", labels)
 
+    def test_hero_timeline_highlights_only_the_current_timetable_lesson(self) -> None:
+        self._save(1, "08:00", "08:45")
+        self._save(1, "10:00", "10:45")
+        screen = OverviewScreen()
+
+        cases = (
+            (datetime(2026, 7, 13, 8, 15), ("08:00",)),
+            (datetime(2026, 7, 13, 10, 0), ("10:00",)),
+            (datetime(2026, 7, 13, 9, 0), ()),
+            (datetime(2026, 7, 13, 10, 45), ()),
+        )
+        for at, expected_highlighted_times in cases:
+            with self.subTest(at=at):
+                screen.set_dashboard(
+                    self.adapter.read_projection(at), self.heatmap, at, True
+                )
+                visual = screen.findChild(QFrame, "DashboardHeroIllustrationSpace")
+                grid = visual.layout().itemAt(0).layout()
+                highlighted_times = tuple(
+                    grid.itemAtPosition(row, 0).widget().text()
+                    for row in range(grid.rowCount())
+                    if grid.itemAtPosition(row, 1).widget().objectName()
+                    == "DashboardHeroVisualCurrent"
+                )
+                self.assertEqual(highlighted_times, expected_highlighted_times)
+
+    def test_hero_timeline_scales_at_supported_desktop_sizes(self) -> None:
+        self._save(1, "08:00", "08:45")
+        screen = OverviewScreen()
+        at = datetime(2026, 7, 13, 8, 15)
+        screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, True)
+
+        for width, height in ((1180, 760), (1400, 900)):
+            with self.subTest(width=width, height=height):
+                screen.resize(width, height)
+                screen.show()
+                self.app.processEvents()
+                scroll = screen.findChild(QScrollArea, "DashboardScrollArea")
+                self.assertEqual(scroll.horizontalScrollBar().maximum(), 0)
+                self.assertEqual(
+                    len(screen.findChildren(QFrame, "DashboardHeroVisualCurrent")), 1
+                )
+        screen.close()
+
     def test_heatmap_is_documentation_only_and_dashboard_scales_down(self) -> None:
         screen = OverviewScreen()
         screen.resize(620, 650)

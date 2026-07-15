@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## UI Fix - Dynamische Stundenmarkierung im Dashboard
+
+### Changed
+
+- Die vorhandene blaue Markierung in der Dashboard-Hero-Timeline folgt jetzt der laufenden Stunde aus der bestehenden Stundenplanprojektion; außerhalb einer Stunde bleibt sie neutral.
+
+### Not Changed
+
+- Keine Änderung an Stundenplanlogik, Datenmodell, Navigation, Dashboardstruktur oder sichtbaren UI-Elementen.
+
 ## UI Fix - Beobachtungsdialog-Workspacegröße
 
 ### Changed

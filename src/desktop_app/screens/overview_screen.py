@@ -244,7 +244,9 @@ class OverviewScreen(QWidget):
             left_layout.addLayout(actions)
             left_layout.addStretch(1)
             self.hero_layout.addWidget(left, 3)
-            self.hero_layout.addWidget(self._hero_visual(), 2)
+            self.hero_layout.addWidget(
+                self._hero_visual(projection.today, projection.current), 2
+            )
             return
 
         entry = occurrence.entry
@@ -283,7 +285,9 @@ class OverviewScreen(QWidget):
         left_layout.addLayout(actions)
         left_layout.addStretch(1)
         self.hero_layout.addWidget(left, 3)
-        self.hero_layout.addWidget(self._hero_visual(), 2)
+        self.hero_layout.addWidget(
+            self._hero_visual(projection.today, projection.current), 2
+        )
 
     def _emit_header_observation(self) -> None:
         if self._hero_occurrence is not None:
@@ -299,19 +303,25 @@ class OverviewScreen(QWidget):
         )
 
     @staticmethod
-    def _hero_visual() -> QFrame:
+    def _hero_visual(
+        occurrences: tuple[TimetableOccurrenceViewModel, ...],
+        current: TimetableOccurrenceViewModel | None,
+    ) -> QFrame:
         visual = QFrame()
         visual.setObjectName("DashboardHeroIllustrationSpace")
         layout = QVBoxLayout(visual)
         layout.setContentsMargins(24, 18, 24, 18)
         grid = QGridLayout()
-        for row, time_text in enumerate(("08:00", "09:00", "10:00", "11:00")):
-            time = QLabel(time_text)
+        current_id = current.entry.timetable_entry_id if current is not None else ""
+        for row, occurrence in enumerate(occurrences):
+            time = QLabel(occurrence.entry.start_time)
             time.setObjectName("DashboardHeroVisualTime")
             grid.addWidget(time, row, 0)
             block = QFrame()
             block.setObjectName(
-                "DashboardHeroVisualCurrent" if row == 2 else "DashboardHeroVisualBlock"
+                "DashboardHeroVisualCurrent"
+                if occurrence.entry.timetable_entry_id == current_id
+                else "DashboardHeroVisualBlock"
             )
             grid.addWidget(block, row, 1)
         grid.setColumnStretch(1, 1)
