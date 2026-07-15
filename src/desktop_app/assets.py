@@ -8,18 +8,20 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QLabel
 
+from src.desktop_app.runtime import resource_path
+
 
 APP_ICON_RELATIVE_PATH = Path("assets") / "app_icon.png"
 
 
 def project_root() -> Path:
-    """Return the repository root independently from the current working directory."""
-    return Path(__file__).resolve().parents[2]
+    """Return the immutable resource root in source and packaged executions."""
+    return resource_path()
 
 
 def app_icon_path() -> Path:
     """Return the app icon path."""
-    return project_root() / APP_ICON_RELATIVE_PATH
+    return resource_path(APP_ICON_RELATIVE_PATH)
 
 
 def load_app_icon_pixmap(size: int) -> QPixmap:

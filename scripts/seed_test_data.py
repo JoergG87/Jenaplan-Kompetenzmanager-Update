@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import shutil
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -47,6 +47,17 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import (  # noqa: E402
 from src.desktop_app.adapters.timetable_desktop_adapter import (  # noqa: E402
     TimetableDesktopAdapter,
 )
+from src.desktop_app.adapters.student_desktop_adapter import (  # noqa: E402
+    StudentDesktopAdapter,
+)
+from src.desktop_app.view_models.learning_conference_view_model import (  # noqa: E402
+    LearningConferenceDraftViewModel,
+)
+from src.desktop_app.view_models.learning_report_view_model import (  # noqa: E402
+    LearningReportChartSelectionViewModel,
+    LearningReportDraftViewModel,
+    LearningReportSubjectDraftViewModel,
+)
 
 
 class SeedDataError(RuntimeError):
@@ -62,6 +73,10 @@ class SeedResult:
     observation_count: int
     document_count: int
     timetable_count: int
+    report_draft_count: int
+    report_revision_count: int
+    conference_draft_count: int
+    conference_revision_count: int
 
 
 COURSES = (
@@ -124,12 +139,17 @@ def seed_test_data(
     observation_ids = _seed_observations(database, students)
     _seed_confirmations(database)
     document_count = _seed_documents(database, documents_root, observation_ids)
+    workflow_counts = _seed_pilot_workflows(database_path, students)
     return SeedResult(
         database_path=database_path,
         student_count=len(students),
         observation_count=len(SQLiteObservationRepository(database).list_observations()),
         document_count=document_count,
         timetable_count=len(SQLiteTimetableRepository(database).list_entries()),
+        report_draft_count=workflow_counts[0],
+        report_revision_count=workflow_counts[1],
+        conference_draft_count=workflow_counts[2],
+        conference_revision_count=workflow_counts[3],
     )
 
 
@@ -651,6 +671,218 @@ def _seed_documents(
     return len(documents)
 
 
+def _seed_pilot_workflows(
+    database_path: Path,
+    students: tuple[StudentRecord, ...],
+) -> tuple[int, int, int, int]:
+    """Add fictional report and LEG states through the productive boundaries."""
+    adapter = StudentDesktopAdapter(database_path)
+
+    focus_student = students[0]
+    observation_repository = SQLiteObservationRepository(adapter.database)
+    focus_observations = tuple(
+        observation
+        for observation in observation_repository.list_observations_for_student(
+            focus_student.student_id
+        )
+        if observation.competency_ratings
+    )[:4]
+    focus_competencies = tuple(
+        dict.fromkeys(
+            rating.competency_id
+            for observation in focus_observations
+            for rating in observation.competency_ratings
+        )
+    )
+    focus_subjects = tuple(
+        dict.fromkeys(
+            rating.subject_id
+            for observation in focus_observations
+            for rating in observation.competency_ratings
+        )
+    )
+    if not focus_observations or not focus_competencies or not focus_subjects:
+        raise SeedDataError("Die fiktiven Pilotdaten enthalten keine Berichtbelege.")
+
+    report = adapter.save_learning_report_draft(
+        LearningReportDraftViewModel(
+            student_id=focus_student.student_id,
+            period_start=date(2025, 8, 1),
+            period_end=date(2026, 1, 31),
+            teacher_name="Laura Lernbegleiterin",
+            overall_text=(
+                "Amelie arbeitet zunehmend selbstständig und nutzt Rückmeldungen "
+                "sichtbar für ihre nächsten Lernschritte."
+            ),
+            subjects=tuple(
+                LearningReportSubjectDraftViewModel(
+                    subject_id,
+                    "Stärken werden an konkreten Beobachtungen sichtbar.",
+                    "Die Entwicklung über das Halbjahr ist gut nachvollziehbar.",
+                    "Überschaubare Zwischenschritte geben Sicherheit.",
+                    "Eigene Lösungswege weiter erklären und festhalten.",
+                )
+                for subject_id in focus_subjects
+            ),
+            competency_ids=focus_competencies,
+            observation_ids=tuple(
+                observation.observation_id for observation in focus_observations
+            ),
+            chart_selections=(
+                LearningReportChartSelectionViewModel(
+                    focus_subjects[0],
+                    "documentation_coverage",
+                ),
+                LearningReportChartSelectionViewModel(
+                    focus_subjects[0],
+                    "competency_timeline",
+                ),
+            ),
+        )
+    )
+    adapter.finalize_learning_report(
+        report.report_draft_id,
+        "Laura Lernbegleiterin",
+    )
+    report = adapter.save_learning_report_draft(
+        replace(
+            report,
+            overall_text=(
+                "Amelie arbeitet zunehmend selbstständig, begründet ihre Wege "
+                "klarer und nutzt Rückmeldungen sicher für nächste Lernschritte."
+            ),
+        )
+    )
+    report_status = adapter.finalize_learning_report(
+        report.report_draft_id,
+        "Laura Lernbegleiterin",
+    )
+    adapter.generate_learning_report_pdf(
+        report_status.current_revision_id
+    )
+
+    second_student = students[1]
+    second_observations = tuple(
+        observation
+        for observation in observation_repository.list_observations_for_student(
+            second_student.student_id
+        )
+        if observation.competency_ratings
+    )[:2]
+    second_ratings = tuple(
+        rating
+        for observation in second_observations
+        for rating in observation.competency_ratings
+    )
+    if second_observations and second_ratings:
+        second_subjects = tuple(dict.fromkeys(rating.subject_id for rating in second_ratings))
+        adapter.save_learning_report_draft(
+            LearningReportDraftViewModel(
+                student_id=second_student.student_id,
+                period_start=date(2025, 8, 1),
+                period_end=date(2026, 1, 31),
+                teacher_name="Laura Lernbegleiterin",
+                overall_text="Fiktiver, noch bearbeitbarer Berichtsentwurf.",
+                subjects=tuple(
+                    LearningReportSubjectDraftViewModel(
+                        subject_id,
+                        "Sicherer Lernweg in den beobachteten Situationen.",
+                        "Nächste Schritte werden im Entwurf weiter ergänzt.",
+                        "",
+                        "",
+                    )
+                    for subject_id in second_subjects
+                ),
+                competency_ids=tuple(
+                    dict.fromkeys(rating.competency_id for rating in second_ratings)
+                ),
+                observation_ids=tuple(
+                    observation.observation_id for observation in second_observations
+                ),
+            )
+        )
+
+    conference = adapter.save_learning_conference_draft(
+        LearningConferenceDraftViewModel(
+            student_id=focus_student.student_id,
+            period_start=date(2025, 8, 1),
+            period_end=date(2026, 1, 31),
+            conference_date=date(2026, 1, 28),
+            responsible_teacher="Laura Lernbegleiterin",
+            conversation_entry_text="Ruhiger Einstieg mit einem gelungenen Lernmoment.",
+            child_retrospective_text="Ich kann meinen Lernweg immer besser erklären.",
+            teacher_perspective_text="Fiktive interne Vorbereitung für den Pilottest.",
+            strengths_text="Amelie bleibt an Aufgaben dran und fragt gezielt nach.",
+            development_fields_text="Eigene Lösungswege noch regelmäßiger festhalten.",
+            prepared_goals_text="Lösungswege mit einem Beispiel erklären.",
+            prepared_support_text="Zeit für kurze Reflexionspausen einplanen.",
+            prepared_agreements_text="Wöchentlich einen Lernweg auswählen.",
+            agreed_goals_text="Ich erkläre jede Woche einen Lernweg.",
+            agreed_support_text="Die Lehrkraft gibt dafür eine ruhige Reflexionszeit.",
+            agreed_agreements_text="Freitags wählen wir gemeinsam ein Beispiel aus.",
+            responsibilities_text="Amelie: Beispiel auswählen; Lehrkraft: Zeit geben.",
+            next_review_date=date(2026, 3, 27),
+            subject_ids=focus_subjects,
+            cross_topic_keys=("work_habits", "independence"),
+            competency_ids=focus_competencies,
+            observation_ids=tuple(
+                observation.observation_id for observation in focus_observations
+            ),
+            chart_types=("documentation_coverage",),
+        )
+    )
+    adapter.complete_learning_conference(conference.learning_conference_draft_id)
+    conference = adapter.save_learning_conference_draft(
+        replace(
+            conference,
+            agreed_agreements_text=(
+                "Freitags wählen wir gemeinsam ein Beispiel aus und halten den "
+                "nächsten Schritt kurz fest."
+            ),
+        )
+    )
+    conference_status = adapter.complete_learning_conference(
+        conference.learning_conference_draft_id
+    )
+    current_conference_revision = next(
+        item for item in conference_status.revisions if item.status == "completed"
+    )
+    adapter.generate_learning_conference_pdf(
+        current_conference_revision.learning_conference_revision_id
+    )
+
+    if second_observations and second_ratings:
+        adapter.save_learning_conference_draft(
+            LearningConferenceDraftViewModel(
+                student_id=second_student.student_id,
+                period_start=date(2025, 8, 1),
+                period_end=date(2026, 1, 31),
+                conference_date=date(2026, 2, 4),
+                responsible_teacher="Laura Lernbegleiterin",
+                conversation_entry_text="Fiktiver Gesprächseinstieg.",
+                child_retrospective_text="Das möchte ich im Gespräch ergänzen.",
+                strengths_text="Erste Stärken sind vorbereitet.",
+                development_fields_text="Entwicklungsfelder werden gemeinsam besprochen.",
+                subject_ids=tuple(
+                    dict.fromkeys(rating.subject_id for rating in second_ratings)
+                ),
+                competency_ids=tuple(
+                    dict.fromkeys(rating.competency_id for rating in second_ratings)
+                ),
+                observation_ids=tuple(
+                    observation.observation_id for observation in second_observations
+                ),
+            )
+        )
+
+    return (
+        sum(len(adapter.list_learning_report_drafts_for_student(student.student_id)) for student in students),
+        len(report_status.history),
+        sum(len(adapter.list_learning_conference_drafts_for_student(student.student_id)) for student in students),
+        len(conference_status.revisions),
+    )
+
+
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Seed Laura-Pilottestdaten in eine SQLite-Datenbank."
@@ -681,6 +913,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Beobachtungen: {result.observation_count}")
     print(f"Dokumente/Medien: {result.document_count}")
     print(f"Stundenplaneintraege: {result.timetable_count}")
+    print(f"Berichtsentwuerfe: {result.report_draft_count}")
+    print(f"Berichtrevisionen: {result.report_revision_count}")
+    print(f"LEG-Entwuerfe: {result.conference_draft_count}")
+    print(f"LEG-Revisionen: {result.conference_revision_count}")
     return 0
 
 

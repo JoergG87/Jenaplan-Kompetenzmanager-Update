@@ -1,0 +1,15 @@
+# Exact build environment for the macOS arm64 pilot bundle.
+pip==26.1.2
+setuptools==83.0.0
+altgraph==0.17.5
+charset-normalizer==3.4.9
+macholib==1.16.4
+packaging==26.2
+PySide6==6.11.1
+PySide6_Addons==6.11.1
+PySide6_Essentials==6.11.1
+shiboken6==6.11.1
+pillow==12.2.0
+reportlab==5.0.0
+pyinstaller==6.21.0
+pyinstaller-hooks-contrib==2026.6

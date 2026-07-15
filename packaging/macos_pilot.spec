@@ -1,0 +1,94 @@
+# -*- mode: python ; coding: utf-8 -*-
+"""PyInstaller configuration for the macOS arm64 pilot application."""
+
+from __future__ import annotations
+
+import os
+import runpy
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(SPECPATH).parent
+VERSION = runpy.run_path(PROJECT_ROOT / "src" / "version.py")["APP_VERSION"]
+APP_NAME = "Jenaplan-Kompetenzmanager"
+BUNDLE_ID = "de.jenaplan.kompetenzmanager"
+PAYLOAD_ROOT = Path(os.environ["JENAPLAN_PILOT_PAYLOAD_DIR"])
+ICON_PATH = Path(os.environ["JENAPLAN_MACOS_ICON"])
+
+datas = [
+    (str(PROJECT_ROOT / "assets"), "assets"),
+    (str(PROJECT_ROOT / "data" / "curriculum_catalog_v1.csv"), "data"),
+    (str(PAYLOAD_ROOT / "pilot_build_info.json"), "."),
+]
+initial_data = PAYLOAD_ROOT / "pilot_initial"
+if initial_data.is_dir():
+    datas.append((str(initial_data), "pilot_initial"))
+
+a = Analysis(
+    [str(PROJECT_ROOT / "src" / "desktop_app" / "main.py")],
+    pathex=[str(PROJECT_ROOT)],
+    binaries=[],
+    datas=datas,
+    hiddenimports=[
+        "PySide6.QtSvg",
+        "prototypes.pdf_engine.output_models",
+        "prototypes.pdf_engine.renderer",
+    ],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[
+        "numpy",
+        "pandas",
+        "PySide6.QtMultimedia",
+        "PySide6.QtQml",
+        "PySide6.QtQuick",
+        "PySide6.QtWebEngineCore",
+        "PySide6.QtWebEngineWidgets",
+    ],
+    noarchive=False,
+    optimize=1,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name=APP_NAME,
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,
+    console=False,
+    target_arch="arm64",
+    codesign_identity=None,
+    entitlements_file=None,
+)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=False,
+    upx_exclude=[],
+    name=APP_NAME,
+)
+app = BUNDLE(
+    coll,
+    name=f"{APP_NAME}.app",
+    icon=str(ICON_PATH),
+    bundle_identifier=BUNDLE_ID,
+    version=VERSION,
+    info_plist={
+        "CFBundleDisplayName": APP_NAME,
+        "CFBundleName": APP_NAME,
+        "CFBundleShortVersionString": VERSION,
+        "CFBundleVersion": VERSION,
+        "LSMinimumSystemVersion": "13.0",
+        "LSApplicationCategoryType": "public.app-category.education",
+        "NSHighResolutionCapable": True,
+        "NSRequiresAquaSystemAppearance": False,
+    },
+)

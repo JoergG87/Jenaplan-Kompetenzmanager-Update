@@ -80,6 +80,7 @@ class AppShell(QMainWindow):
         super().__init__()
         self.now_provider = now_provider
         self.adapter = StudentDesktopAdapter(database_path)
+        self.exports_directory = self.adapter.database_path.parent / "exports"
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
         self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)
         self.timetable_adapter = TimetableDesktopAdapter(self.adapter.database)
@@ -167,7 +168,9 @@ class AppShell(QMainWindow):
         self.courses_screen = self.students_workspace.courses_screen
         self.course_groups_screen = self.students_workspace.course_groups_screen
         self.students_screen = self.students_workspace.students_screen
-        self.student_profile_screen = StudentProfileScreen()
+        self.student_profile_screen = StudentProfileScreen(
+            export_directory=self.exports_directory
+        )
         self.master_data_screen = MasterDataScreen()
         self.settings_screen = SettingsScreen()
 
@@ -929,7 +932,7 @@ class AppShell(QMainWindow):
         target_path, _selected_filter = QFileDialog.getSaveFileName(
             self,
             "Lernentwicklungsbericht als PDF speichern",
-            f"Lernentwicklungsbericht_{safe_name}.pdf",
+            str(self.exports_directory / f"Lernentwicklungsbericht_{safe_name}.pdf"),
             "PDF-Datei (*.pdf)",
         )
         if not target_path:

@@ -11,11 +11,10 @@ from src.core.sqlite_store import (
     SQLiteCompetencyRepository,
     SQLiteDatabase,
 )
+from src.desktop_app.runtime import resource_path
 
 
-CURRICULUM_CATALOG_V1_PATH = (
-    Path(__file__).resolve().parents[3] / "data" / "curriculum_catalog_v1.csv"
-)
+CURRICULUM_CATALOG_V1_PATH = resource_path("data", "curriculum_catalog_v1.csv")
 
 CATALOG_REQUIRED_FIELDS = (
     "competency_id",

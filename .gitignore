@@ -2,6 +2,9 @@
 data/*.sqlite
 data/*.db
 data/documents/
+data/exports/
+data/backups/
+data/logs/
 
 output/
 __pycache__/
@@ -13,6 +16,13 @@ __pycache__/
 .venv/
 venv/
 env/
+.venv-macos-build/
+build/
+dist/
+*.dmg
+*.dmg.sha256
+*.app/
+docs/user_manual/screenshots.zip
 .DS_Store
 ~$*.xls*
 *.tmp

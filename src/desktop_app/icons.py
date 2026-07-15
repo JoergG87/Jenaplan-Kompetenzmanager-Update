@@ -6,6 +6,8 @@ from pathlib import Path
 
 from PySide6.QtGui import QIcon
 
+from src.desktop_app.runtime import resource_path
+
 
 ICON_NAMES = frozenset(
     {
@@ -34,7 +36,7 @@ def icon_path(name: str) -> Path:
     """Return one registered shell icon path."""
     if name not in ICON_NAMES:
         raise ValueError(f"Unbekanntes App-Icon: {name}")
-    return Path(__file__).resolve().parents[2] / "assets" / "icons" / f"{name}.svg"
+    return resource_path("assets", "icons", f"{name}.svg")
 
 
 def load_icon(name: str) -> QIcon:

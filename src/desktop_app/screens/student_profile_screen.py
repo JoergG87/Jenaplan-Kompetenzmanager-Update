@@ -126,8 +126,9 @@ class StudentProfileScreen(QWidget):
     report_requested = Signal(str)
     learning_conference_requested = Signal(str)
 
-    def __init__(self) -> None:
+    def __init__(self, export_directory: Path | None = None) -> None:
         super().__init__()
+        self.export_directory = export_directory
         self.current_student: StudentDetailViewModel | None = None
         self.back_button = QPushButton("← Zurück zur Schülerliste")
         configure_button(self.back_button, "quiet", "Zurück zur Schülerliste")
@@ -2490,10 +2491,14 @@ class StudentProfileScreen(QWidget):
 
     def _default_report_export_filename(self) -> str:
         if self.current_student is None:
-            return "Berichtsvorbereitung.md"
-        safe_name = "_".join(self.current_student.display_name.split())
-        safe_id = self.current_student.student_id.replace("/", "-")
-        return f"Berichtsvorbereitung_{safe_name}_{safe_id}.md"
+            filename = "Berichtsvorbereitung.md"
+        else:
+            safe_name = "_".join(self.current_student.display_name.split())
+            safe_id = self.current_student.student_id.replace("/", "-")
+            filename = f"Berichtsvorbereitung_{safe_name}_{safe_id}.md"
+        if self.export_directory is None:
+            return filename
+        return str(self.export_directory / filename)
 
     def _clear_observations(self) -> None:
         self._clear_layout(self.observations_layout)
