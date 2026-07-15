@@ -12,6 +12,8 @@ Ein ruhiger Einstieg in den Jenaplan-Kompetenzmanager
 
 Diese Pilotversion enthält ausschließlich fiktive Testdaten.
 
+Bei einer leeren Anwendung zuerst Stammgruppe und Kurs anlegen. Im Laura-Pilot sind diese Daten bereits vorbereitet.
+
 <!-- pagebreak -->
 
 ## Was soll getestet werden?

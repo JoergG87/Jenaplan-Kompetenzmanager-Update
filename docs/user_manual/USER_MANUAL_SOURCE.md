@@ -66,6 +66,22 @@ Gruppen, Kurse, Stundenplan, Beobachtungen, Berichte, Revisionen und
 Lernentwicklungsgespräche. Diese Inhalte sind ausschließlich zum Erproben der
 App gedacht und als `Fiktive Pilotdaten` gekennzeichnet.
 
+### Erste Einrichtung einer leeren Anwendung
+
+1. Unter `Stammdaten` mindestens eine Stammgruppe anlegen.
+2. Unter `Stammdaten` mindestens einen Kurs anlegen.
+3. Optional einen Kursverbund anlegen.
+4. Erst danach unter `Schüler` ein Kind anlegen.
+5. Dokumentationsrelevante Fächer prüfen.
+6. Stundenplan einrichten.
+
+Stammgruppe und Kurs sind beim Schüler Pflichtzuordnungen. Ohne eine vorhandene
+Stammgruppe und einen vorhandenen Kurs kann kein Schüler vollständig angelegt
+werden.
+
+Der Laura-Pilot enthält bereits fiktive Stammgruppen, Kurse und Kinder. Dort ist
+diese Ersteinrichtung nicht erforderlich.
+
 ### Pilotversion aktualisieren
 
 Schließen Sie die App vollständig. Öffnen Sie das neue DMG und ersetzen Sie die
@@ -580,7 +596,32 @@ Wird eine laufende oder kommende Stunde deaktiviert, verschwindet sie aus dem Da
 
 ## 14. Stammdaten und Einstellungen
 
+### Stammgruppen und Kurse
+
+![Zentrale Stammdatenansicht](screenshots/14_master_data.png)
+
+Unter `Stammdaten` stehen die Bereiche:
+
+- `Stammgruppen` mit `+ Stammgruppe`
+- `Kurse` mit `+ Kurs`
+
+`Bearbeiten` ändert Namen. Kurse erhalten eine `Farbe`; verfügbar sind `Blau`, `Grün`, `Orange`, `Gelb`, `Lila`, `Rot` und `Grau`.
+
+Ein Name darf nicht leer sein. Nach erfolgreicher Änderung meldet die App `Stammdaten wurden gespeichert.` und lädt die betroffenen Listen und Auswahlfelder neu.
+
+Der sichtbare Status `Vorhanden` ist eine Bestandsanzeige. Für Stammgruppen und Kurse gibt es derzeit keine sichtbare Deaktivierungs- oder Löschfunktion.
+
+### Kursverbünde
+
+Unter `Stammdaten` steht außerdem `Kursverbünde` mit `+ Kursverbund`. Kursverbünde bündeln vorhandene Stammgruppen und Kurse. `Bearbeiten` ändert den Namen beziehungsweise die Zuordnungen.
+
+Ein Kursverbund benötigt mindestens eine Stammgruppe und mindestens einen Kurs; ein bereits vorhandener Name wird mit `Ein Kursverbund mit diesem Namen existiert bereits.` abgelehnt. Nach erfolgreicher Änderung meldet die App `Stammdaten wurden gespeichert.` und lädt die betroffenen Listen und Auswahlfelder neu.
+
+Der sichtbare Status `Vorhanden` ist eine Bestandsanzeige. Für Kursverbünde gibt es derzeit keine sichtbare Deaktivierungs- oder Löschfunktion.
+
 ### Kinder
+
+**Voraussetzung: Vor dem Anlegen eines Kindes müssen mindestens eine Stammgruppe und ein Kurs vorhanden sein.**
 
 Kinder werden unter `Schüler` gepflegt, nicht unter `Stammdaten`. `Schüler anlegen` erfasst `Vorname`, `Nachname`, `Stammgruppe`, `Kurs` und `Notiz`. Im Profil öffnet `Schüler bearbeiten` dieselben Angaben zur Änderung.
 
@@ -589,22 +630,6 @@ Die Schülerliste kann über `Schüler suchen …` gefiltert werden. Sie zeigt u
 Vor- beziehungsweise Nachname sowie Stammgruppe und Kurs werden geprüft. Mögliche Hinweise sind `Bitte einen Namen eingeben.`, `Bitte eine Stammgruppe auswählen.` und `Bitte einen Kurs auswählen.` Nach erfolgreichem Speichern werden Schülerliste, Zuordnungen und Profil neu geladen.
 
 **Nicht vorhanden:** Eine sichtbare Funktion zum Deaktivieren, Archivieren oder Löschen eines Kindes.
-
-### Stammgruppen, Kurse und Kursverbünde
-
-![Zentrale Stammdatenansicht](screenshots/14_master_data.png)
-
-Unter `Stammdaten` stehen drei Bereiche:
-
-- `Stammgruppen` mit `+ Stammgruppe`
-- `Kurse` mit `+ Kurs`
-- `Kursverbünde` mit `+ Kursverbund`
-
-`Bearbeiten` ändert Namen beziehungsweise Zuordnungen. Kurse erhalten eine `Farbe`; verfügbar sind `Blau`, `Grün`, `Orange`, `Gelb`, `Lila`, `Rot` und `Grau`. Kursverbünde bündeln vorhandene Stammgruppen und Kurse.
-
-Ein Name darf nicht leer sein. Ein Kursverbund benötigt mindestens eine Stammgruppe und mindestens einen Kurs; ein bereits vorhandener Name wird mit `Ein Kursverbund mit diesem Namen existiert bereits.` abgelehnt. Nach erfolgreicher Änderung meldet die App `Stammdaten wurden gespeichert.` und lädt die betroffenen Listen und Auswahlfelder neu.
-
-Der sichtbare Status `Vorhanden` ist eine Bestandsanzeige. Für Stammgruppen, Kurse und Kursverbünde gibt es derzeit keine sichtbare Deaktivierungs- oder Löschfunktion.
 
 ### Fächer und Kompetenzen beziehungsweise Lehrplan
 
@@ -631,6 +656,16 @@ Die produktive Oberfläche bietet eine direkte Aktiv-/Inaktiv-Steuerung nur bei 
 Weitere allgemeine Einstellungen – etwa Benutzerkonten, Schulname, Logo, Notenskalen, Speicherort, Backup-Plan oder Cloud-Zugang – sind in der aktuellen Oberfläche nicht vorhanden.
 
 ## 15. Typische Arbeitsabläufe
+
+### Leere Anwendung erstmals einrichten
+
+1. Unter `Stammdaten` eine Stammgruppe anlegen.
+2. Unter `Stammdaten` einen Kurs anlegen.
+3. Optional einen Kursverbund anlegen.
+4. Unter `Schüler` einen Schüler anlegen.
+5. Unter `Einstellungen` die dokumentationsrelevanten Fächer prüfen.
+6. Unter `Einstellungen` den Stundenplan einrichten.
+7. Eine erste Beobachtung erfassen.
 
 ### Beobachtung während einer laufenden Stunde erfassen
 
@@ -755,6 +790,7 @@ Weitere allgemeine Einstellungen – etwa Benutzerkonten, Schulname, Logo, Noten
 
 | Situation | Hinweis oder Wirkung | Was ist zu tun? |
 |---|---|---|
+| Keine Stammgruppe oder kein Kurs vorhanden | Schüler kann nicht vollständig angelegt werden | Zuerst die benötigten Stammdaten anlegen. |
 | Normale Beobachtung ohne Bewertung | `Bitte mindestens eine Kompetenz mit Bewertung auswählen.` | Kompetenz auswählen und bewerten oder bewusst zur Schnellbeobachtung wechseln. |
 | Schnellbeobachtung ohne Notiz | `Bitte eine Notiz für die Schnellbeobachtung eingeben.` | Verständliche Notiz ergänzen. |
 | Schnellbeobachtung mit ausgewählten Kompetenzen | Kompetenzbereich bleibt nicht als Schnellbeobachtung speicherbar | Ausgewählte Kompetenzen entfernen oder Schnellbeobachtung ausschalten. |
@@ -773,6 +809,10 @@ Weitere allgemeine Einstellungen – etwa Benutzerkonten, Schulname, Logo, Noten
 | Ungespeicherte Änderungen beim Schließen | Schutzdialog | Weiterarbeiten, Änderungen verwerfen oder Entwurf speichern. |
 
 ## 17. Häufige Fragen
+
+### Warum kann ich noch keinen Schüler anlegen?
+
+Ein Schüler muss einer Stammgruppe und einem Kurs zugeordnet werden. Lege deshalb zuerst unter `Stammdaten` mindestens eine Stammgruppe und einen Kurs an.
 
 ### Warum sehe ich ein Kind bei `Passende Kinder`?
 

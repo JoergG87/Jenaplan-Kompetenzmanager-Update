@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Pilot 0.1.2 - Einrichtungsreihenfolge in den Pilotunterlagen
+
+### Changed
+
+- Technische Pilotversion auf `0.1.2` angehoben; App, Packaging, sichtbare Dokumentversionen und Laura-Paket beziehen die Version weiterhin aus `src/version.py`.
+- Benutzerhandbuch um die verbindliche Ersteinrichtung einer leeren Anwendung ergänzt und die Reihenfolge in Stammdaten, Arbeitsabläufen, FAQ sowie Hinweisen auf Stammgruppe und Kurs vor dem Anlegen eines Kindes ausgerichtet.
+- Schnellstart und Erste Schritte um den kompakten Unterschied zwischen leerer Anwendung und bereits vorbereiteten fiktiven Laura-Pilotdaten ergänzt.
+
+### Not Changed
+
+- Keine Produktcode-, App-UI-, Fachlogik-, Datenmodell-, SQLite-, Repository-, Service-, Adapter-, ViewModel-, Migrations- oder Testdatenänderung.
+
 ## Pilot 0.1.1 - aktualisierter Beobachtungsdialog und Releasequellen
 
 ### Changed

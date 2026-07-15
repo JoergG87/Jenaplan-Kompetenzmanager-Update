@@ -6,7 +6,7 @@ Der Jenaplan-Kompetenzmanager ist eine lokale Python-/PySide6-Desktop-Anwendung 
 
 Der implementierte Stand nach Sprint 10B und den anschliessenden Schuelerprofil-UX-Korrekturen umfasst die zentralen Arbeitsbereiche fuer Stammdaten, Unterrichtsalltag, Beobachtung, Kompetenzdokumentation, Schuelerprofil, Lernentwicklungsbericht und Lernentwicklungsgespraech. Unveraenderliche Bericht- und LEG-Revisionen sowie daraus erzeugte PDF-Artefakte sind produktiv umgesetzt.
 
-Das Projekt befindet sich in der **Produktreifephase**. Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit, Dokumentationsqualitaet, Betriebsentscheidungen und Release-Vorbereitung. Fuer den aktualisierten technischen macOS-Pilotbuild ist die Paketversion `0.1.1` festgelegt; daraus folgt noch keine allgemeine Produktrelease- oder App-Store-Entscheidung.
+Das Projekt befindet sich in der **Produktreifephase**. Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit, Dokumentationsqualitaet, Betriebsentscheidungen und Release-Vorbereitung. Fuer den aktualisierten technischen macOS-Pilotbuild ist die Paketversion `0.1.2` festgelegt; daraus folgt noch keine allgemeine Produktrelease- oder App-Store-Entscheidung.
 
 Excel/VBA ist eine historische Vorstufe. Die damalige Workbook-Linie wird unter `legacy/excel/` als Referenz erhalten, ist aber weder Zielplattform noch aktiver Produktpfad. Historische Workbook-Versionen wie `v0.4` und fruehere Ausgabedateien sind keine aktuellen Hauptartefakte.
 

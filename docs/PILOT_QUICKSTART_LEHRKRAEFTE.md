@@ -12,6 +12,8 @@ Die wichtigsten Wege der Pilotversion {{PILOT_VERSION}}
 
 Änderungen werden lokal gespeichert und bleiben nach einem App-Neustart erhalten.
 
+Bei einer leeren Anwendung zuerst Stammgruppe und Kurs anlegen. Im Laura-Pilot sind diese Daten bereits vorbereitet.
+
 <!-- pagebreak -->
 
 ## Im Pilot besonders wichtig

@@ -6,6 +6,14 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Pilot 0.1.2 - Einrichtungsreihenfolge und neuer Release-Build ✅
+
+- [x] Handbuchreihenfolge auf Stammgruppe und Kurs vor dem Anlegen eines Kindes korrigiert
+- [x] Leere Anwendung und vorbereitete fiktive Laura-Pilotdaten klar unterschieden
+- [x] Schnellstart und Erste Schritte um einen kompakten Einrichtungshinweis ergänzt
+- [x] Pilotversion, sichtbare Dokumentangaben und Paketnamen auf `0.1.2` vorbereitet
+- [x] Keine Produktcode-, App-UI-, Fachlogik-, Datenmodell- oder Testdatenänderung
+
 ## Pilot 0.1.1 - Releasevorbereitung ✅
 
 - [x] Aktuellen committed UI-Fix und sauberen Quellstand geprüft

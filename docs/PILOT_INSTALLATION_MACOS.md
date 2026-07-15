@@ -3,7 +3,7 @@
 ## Paketstand
 
 - Produkt: `Jenaplan-Kompetenzmanager`
-- Pilotversion: `0.1.1`
+- Pilotversion: `0.1.2`
 - Architektur: Apple Silicon (`arm64`)
 - minimale unterstützte Version: macOS 13
 - Auslieferungsvariante: `laura` mit ausschließlich fiktiven Pilotdaten
@@ -16,7 +16,7 @@ Repository noch Entwicklungsumgebung benötigt.
 
 Die kurze Lehrkraftfassung liegt in `docs/PILOT_INSTALLATION_LEHRKRAFT.md` und
 wird beim Build als
-`Jenaplan-Kompetenzmanager-Pilot-0.1.1-Installationsanleitung.pdf` erzeugt.
+`Jenaplan-Kompetenzmanager-Pilot-0.1.2-Installationsanleitung.pdf` erzeugt.
 
 ## Reproduzierbarer Build
 
@@ -34,8 +34,8 @@ scripts/build_macos_pilot.sh --data-mode laura
 Die Buildvarianten überschreiben einander nicht beim DMG:
 
 ```text
-dist/macos/Jenaplan-Kompetenzmanager-SmokeTest-0.1.1-macOS-arm64.dmg
-dist/macos/Jenaplan-Kompetenzmanager-Pilot-0.1.1-macOS-arm64.dmg
+dist/macos/Jenaplan-Kompetenzmanager-SmokeTest-0.1.2-macOS-arm64.dmg
+dist/macos/Jenaplan-Kompetenzmanager-Pilot-0.1.2-macOS-arm64.dmg
 ```
 
 Der zuletzt ausgeführte Build stellt außerdem
@@ -44,7 +44,7 @@ versionierte Installationsanleitung, Erste Schritte, das PDF-Benutzerhandbuch,
 den Schnellstart, die Backup-Anleitung, das technische Backup-Skript und
 SHA-256-Prüfsummen. Die Variante `laura` erzeugt zusätzlich ausschließlich aus
 diesen aktuellen Ausgaben das Übergabepaket
-`dist/Jenaplan-Kompetenzmanager_Pilot_0.1.1_Laura.zip`.
+`dist/Jenaplan-Kompetenzmanager_Pilot_0.1.2_Laura.zip`.
 
 Das Skript erzeugt eine isolierte Build-Umgebung, entfernt nur seine bekannten
 alten Zwischenausgaben und prüft die Datenvariante. `empty` darf keine
