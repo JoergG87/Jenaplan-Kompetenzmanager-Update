@@ -304,6 +304,32 @@
 
 - Keine Änderung an SQLite-Schema, Kompetenzmodell, Beobachtungsdialog, Bericht, Lernentwicklungsgespräch, Dashboard oder globaler Navigation.
 
+## UX-Prototyp – Schülerprofil-Dashboard
+
+### Added
+
+- Vollständige Ist-, Rollen-, Architektur- und Accessibility-Analyse des produktiven Schülerprofils unter `prototypes/student_profile_ux/` dokumentiert.
+- Zwei vollständig isolierte PySide6-Layoutvarianten mit neun statischen Profilzuständen, lokaler Navigation, Kompetenz-, Beobachtungs-, Dokument- und Verlaufssichten ergänzt.
+- Bevorzugte Dashboardvariante mit bis zu drei regelbasiert erkennbaren Kompetenzentwicklungen, neutralem Dokumentationsüberblick, noch nicht dokumentierten Lernbereichen, neuesten Beobachtungen sowie Bericht-/Revisions-/LEG-Kurzstatus ausgearbeitet.
+- Verbindliche Screenshots beider Varianten bei 1400 x 900 und 1180 x 760 ergänzt.
+- Sechs zusätzliche Referenzscreenshots für Mathematik, Deutsch, Empty State sowie die beiden Kompetenzkartenstudien ergänzt, ohne bestehende Bilder zu überschreiben.
+- Eigenständige UX Discovery mit sechs grundverschiedenen Denkmodellen für Kompetenzentwicklung, nachvollziehbarer Bewertung und eindeutiger Entscheidung für belegbasierte `Beobachtungskapitel` ergänzt.
+- Isolierten PySide6-Mockup der Beobachtungskapitel bei 1400 x 900 und 1180 x 760 ergänzt: aktueller dokumentierter Stand, reale Ereigniskarten und explizite Statuswechsel statt Kurve, Achse oder Interpolation.
+
+### Changed
+
+- Gemeinsames Kompetenz- oder Themendiagramm der Variante A durch eine Orientierungskarte ersetzt: höchstens drei Kompetenzen mit mindestens zwei realen Ereignissen und mindestens einem Statuswechsel, sortiert nach jüngster tatsächlicher Änderung und curricularer Reihenfolge.
+- Jede ausgewählte Kompetenz als eigene kompakte, belegverknüpfte Zeile mit Kurzbezeichnung, `Fach · Thema`, früherem und neuem Status sowie Zeitraum dargestellt; die zeitliche Verbindung dient ausschließlich der Orientierung zwischen dokumentierten Ereignissen und bildet keinen kontinuierlichen Verlauf ab.
+- Statische Demokompetenzen und -ereignisse ergänzt, damit Verbesserung, zwischenzeitliche Verschlechterung, unveränderte Mehrfachereignisse, Einpunkt-, Leer-, Mehr-als-drei-, Fachwechsel- und Historienzustände prüfbar bleiben, ohne fehlende Dokumentation als Status oder künstliche Linie darzustellen.
+- Profilkopf mit Avatar, ruhigen Stammgruppen-/Kurschips und neutralem Dokumentationsring gestärkt; Kompetenzkarte, Dokumentzeilen und Hierarchie der neuesten Beobachtungen kompakter ausgearbeitet.
+- Fach- und Themenchips als Steuerung, gemeinsame Statusachse, mehrere Kompetenzlinien, Legende und Treppenlinien aus der Übersicht der Variante A entfernt; keine Noten-, Score-, Prozent-, Mittelwert-, Ranking-, Lerngeschwindigkeits- oder automatische Trendlogik ergänzt.
+- Den bestehenden chronologischen lokalen Bereich in Variante A als `Entwicklung` bezeichnet; Variante B behält unverändert `Verlauf`.
+
+### Not Changed
+
+- Keine produktive Schülerprofil-, Navigations-, Fachlogik-, Kompetenzstatus-, Bericht-, LEG-, Persistenz-, Schema-, Migrations- oder Teständerung.
+- Keine SQLite-, Repository-, Adapter- oder produktive ViewModel-Anbindung des Prototyps.
+
 ## UI Sprint 6B - Phasenorientierter LEG-Workspace
 
 ### Added
