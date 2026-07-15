@@ -185,7 +185,7 @@ class DashboardTest(unittest.TestCase):
 
         labels = tuple(label.text() for label in screen.findChildren(QLabel))
         self.assertIn("Heute", labels)
-        self.assertIn("3 / 8 Kinder dokumentiert", labels)
+        self.assertIn("3/8", labels)
         self.assertTrue(any("keine Leistung" in text for text in labels))
         self.assertFalse(any("++" in text or "Score" in text for text in labels))
         scroll = screen.findChild(QScrollArea, "DashboardScrollArea")
@@ -194,6 +194,10 @@ class DashboardTest(unittest.TestCase):
         self.assertLessEqual(screen.minimumWidth(), 620)
         markers = screen.findChildren(QFrame, "DashboardHeatmapMarker")
         self.assertTrue(markers)
+        cells = screen.findChildren(QFrame, "DashboardHeatmapCell")
+        self.assertTrue(cells)
+        self.assertIn("3 / 8 Kinder dokumentiert", cells[0].accessibleName())
+        self.assertIn("keine Leistungsbewertung", cells[0].accessibleName())
         self.assertNotIn("QLabel#DashboardHeatmapMarker", theme.APP_STYLESHEET)
         self.assertIn("background-color: #4F7599", theme.APP_STYLESHEET)
 
@@ -401,7 +405,12 @@ class DashboardTest(unittest.TestCase):
         empty = OverviewScreen()
         empty.set_dashboard(projection, self.heatmap, at, True, ())
         labels = tuple(label.text() for label in empty.findChildren(QLabel))
-        self.assertIn("Keine aktiven Kinder in diesem Unterrichtskontext.", labels)
+        self.assertTrue(
+            any(
+                "keine aktiven Kinder zugeordnet" in text
+                for text in labels
+            )
+        )
 
     def test_shell_opens_direct_suggestion_with_lesson_prefill(self) -> None:
         student = self._add_student("Mara", "Direkt")

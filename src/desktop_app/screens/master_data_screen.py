@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFrame,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QPushButton,
     QTableWidget,
@@ -22,13 +23,25 @@ from src.desktop_app.view_models.master_data_view_model import (
     MasterDataItemViewModel,
     MasterDataViewModel,
 )
-from src.desktop_app.components import AppCard, PageHeader, SectionHeader, configure_button
+from src.desktop_app.components import (
+    AppCard,
+    EmptyState,
+    PageHeader,
+    SectionHeader,
+    configure_button,
+)
 from src.desktop_app.theme import set_label_style
 
 
-MASTER_DATA_GROUP_EMPTY_STATE = "Noch keine Stammgruppen vorhanden."
-MASTER_DATA_COURSE_EMPTY_STATE = "Noch keine Kurse vorhanden."
-MASTER_DATA_COURSE_GROUP_EMPTY_STATE = "Noch keine Kursverbünde vorhanden."
+MASTER_DATA_GROUP_EMPTY_STATE = (
+    "Noch keine Stammgruppen angelegt. Über „+ Stammgruppe“ kannst du die erste anlegen."
+)
+MASTER_DATA_COURSE_EMPTY_STATE = (
+    "Noch keine Kurse angelegt. Über „+ Kurs“ kannst du den ersten anlegen."
+)
+MASTER_DATA_COURSE_GROUP_EMPTY_STATE = (
+    "Noch keine Kursverbünde angelegt. Über „+ Kursverbund“ kannst du den ersten anlegen."
+)
 
 
 class MasterDataScreen(QWidget):
@@ -46,16 +59,58 @@ class MasterDataScreen(QWidget):
         self.group_items: tuple[MasterDataItemViewModel, ...] = ()
         self.course_items: tuple[MasterDataItemViewModel, ...] = ()
         self.course_group_items: tuple[CourseGroupViewModel, ...] = ()
-        self.group_empty_state_label = QLabel(MASTER_DATA_GROUP_EMPTY_STATE)
-        self.course_empty_state_label = QLabel(MASTER_DATA_COURSE_EMPTY_STATE)
-        self.course_group_empty_state_label = QLabel(MASTER_DATA_COURSE_GROUP_EMPTY_STATE)
+        self.group_empty_state = EmptyState(MASTER_DATA_GROUP_EMPTY_STATE)
+        self.course_empty_state = EmptyState(MASTER_DATA_COURSE_EMPTY_STATE)
+        self.course_group_empty_state = EmptyState(MASTER_DATA_COURSE_GROUP_EMPTY_STATE)
+        self.group_empty_state_label = self.group_empty_state.label
+        self.course_empty_state_label = self.course_empty_state.label
+        self.course_group_empty_state_label = self.course_group_empty_state.label
         self.group_table = QTableWidget(0, 3)
         self.group_table.setAccessibleName("Stammgruppen verwalten")
         self.course_table = QTableWidget(0, 4)
         self.course_table.setAccessibleName("Kurse verwalten")
         self.course_group_table = QTableWidget(0, 4)
         self.course_group_table.setAccessibleName("Kursverbünde verwalten")
+        for table in (
+            self.group_table,
+            self.course_table,
+            self.course_group_table,
+        ):
+            table.installEventFilter(self)
+            table.cellDoubleClicked.connect(
+                lambda row, _column, source=table: self._activate_table_row(
+                    source,
+                    row,
+                )
+            )
         self._build()
+
+    def eventFilter(self, watched: object, event: QEvent) -> bool:  # noqa: N802
+        if (
+            watched in {
+                self.group_table,
+                self.course_table,
+                self.course_group_table,
+            }
+            and event.type() == QEvent.Type.KeyPress
+            and event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)
+        ):
+            self._activate_table_row(watched, watched.currentRow())
+            return True
+        return super().eventFilter(watched, event)
+
+    def _activate_table_row(self, table: QTableWidget, row: int) -> None:
+        if table is self.group_table and 0 <= row < len(self.group_items):
+            self.group_rename_requested.emit(self.group_items[row].item_id)
+        elif table is self.course_table and 0 <= row < len(self.course_items):
+            self.course_rename_requested.emit(self.course_items[row].item_id)
+        elif (
+            table is self.course_group_table
+            and 0 <= row < len(self.course_group_items)
+        ):
+            self.course_group_edit_requested.emit(
+                self.course_group_items[row].course_group_id
+            )
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
@@ -80,7 +135,7 @@ class MasterDataScreen(QWidget):
                 "Feste Bezugsgruppen der Kinder",
                 "+ Stammgruppe",
                 self.group_table,
-                self.group_empty_state_label,
+                self.group_empty_state,
                 self.group_add_requested.emit,
             )
         )
@@ -90,7 +145,7 @@ class MasterDataScreen(QWidget):
                 "Kursstufen mit eigener Farbe",
                 "+ Kurs",
                 self.course_table,
-                self.course_empty_state_label,
+                self.course_empty_state,
                 self.course_add_requested.emit,
             )
         )
@@ -100,7 +155,7 @@ class MasterDataScreen(QWidget):
                 "Kurse über ausgewählte Stammgruppen hinweg",
                 "+ Kursverbund",
                 self.course_group_table,
-                self.course_group_empty_state_label,
+                self.course_group_empty_state,
                 self.course_group_add_requested.emit,
             )
         )
@@ -137,7 +192,7 @@ class MasterDataScreen(QWidget):
         description: str,
         add_button_label: str,
         table: QTableWidget,
-        empty_state_label: QLabel,
+        empty_state: EmptyState,
         add_handler: object,
     ) -> QFrame:
         card = AppCard("default")
@@ -153,15 +208,18 @@ class MasterDataScreen(QWidget):
 
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         table.setAlternatingRowColors(True)
         table.setObjectName("PremiumTable")
         table.setShowGrid(False)
         table.verticalHeader().setVisible(False)
         table.verticalHeader().setDefaultSectionSize(44)
-        table.horizontalHeader().setStretchLastSection(True)
+        table.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         table.setMinimumHeight(150)
-        set_label_style(empty_state_label, "subtle")
-        layout.addWidget(empty_state_label)
+        table.setAccessibleDescription(
+            "Mit Enter oder Doppelklick bearbeiten; die sichtbare Aktion ist auch mit Tab erreichbar."
+        )
+        layout.addWidget(empty_state)
         layout.addWidget(table)
         return card
 
@@ -173,8 +231,14 @@ class MasterDataScreen(QWidget):
     ) -> None:
         table.clearContents()
         table.setHorizontalHeaderLabels(("Name", "Status", "Aktion"))
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        table.setColumnWidth(1, 110)
+        table.setColumnWidth(2, 125)
         table.setRowCount(len(items))
-        self.group_empty_state_label.setVisible(not items)
+        self.group_empty_state.setVisible(not items)
+        table.setVisible(bool(items))
         for row_index, item in enumerate(items):
             table.setItem(row_index, 0, QTableWidgetItem(item.name))
             table.setItem(row_index, 1, QTableWidgetItem(item.status_label))
@@ -197,8 +261,16 @@ class MasterDataScreen(QWidget):
     ) -> None:
         table.clearContents()
         table.setHorizontalHeaderLabels(("Farbe", "Name", "Status", "Aktion"))
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+        table.setColumnWidth(0, 125)
+        table.setColumnWidth(2, 110)
+        table.setColumnWidth(3, 125)
         table.setRowCount(len(items))
-        self.course_empty_state_label.setVisible(not items)
+        self.course_empty_state.setVisible(not items)
+        table.setVisible(bool(items))
         for row_index, item in enumerate(items):
             table.setCellWidget(row_index, 0, self._course_color_cell(item))
             table.setItem(row_index, 1, QTableWidgetItem(item.name))
@@ -224,8 +296,14 @@ class MasterDataScreen(QWidget):
     ) -> None:
         table.clearContents()
         table.setHorizontalHeaderLabels(("Name", "Stammgruppen", "Kurse", "Aktion"))
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+        table.setColumnWidth(3, 125)
         table.setRowCount(len(items))
-        self.course_group_empty_state_label.setVisible(not items)
+        self.course_group_empty_state.setVisible(not items)
+        table.setVisible(bool(items))
         groups_by_id = {group.item_id: group.name for group in groups}
         courses_by_id = {course.item_id: course.name for course in courses}
         for row_index, item in enumerate(items):

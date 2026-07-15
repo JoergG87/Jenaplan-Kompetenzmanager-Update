@@ -1382,7 +1382,9 @@ class StudentProfileScreen(QWidget):
         set_label_style(competencies_title, "field_label")
         details_layout.addWidget(competencies_title)
         if not observation.competency_ratings:
-            empty_competencies = QLabel("Keine Kompetenzen hinterlegt.")
+            empty_competencies = QLabel(
+                "Diese Beobachtung wurde ohne Kompetenzbezug erfasst."
+            )
             set_label_style(empty_competencies, "subtle")
             details_layout.addWidget(empty_competencies)
             details_layout.addWidget(self._observation_attachments_block(observation))
@@ -1523,7 +1525,9 @@ class StudentProfileScreen(QWidget):
         set_label_style(title, "field_label")
         layout.addWidget(title)
         if not observation.attachments:
-            empty = QLabel("Keine Anhänge hinterlegt.")
+            empty = QLabel(
+                "Zu dieser Beobachtung wurden keine Dokumente oder Medien hinzugefügt."
+            )
             set_label_style(empty, "subtle")
             layout.addWidget(empty)
             return block
@@ -1764,7 +1768,11 @@ class StudentProfileScreen(QWidget):
         card = self._card()
         layout = QVBoxLayout(card)
         layout.setContentsMargins(12, 10, 12, 10)
-        message = QLabel("Für dieses Profil sind noch keine aktiven Kompetenzen hinterlegt.")
+        message = QLabel(
+            "Für dieses Profil sind keine aktiven Kompetenzen verfügbar. "
+            "Prüfe bei Bedarf den aktiven Kompetenzkatalog."
+        )
+        message.setWordWrap(True)
         set_label_style(message, "body")
         layout.addWidget(message)
         return card
@@ -1775,9 +1783,11 @@ class StudentProfileScreen(QWidget):
         layout.setContentsMargins(12, 10, 12, 10)
         subject_name = self.competency_subject_filter.currentText()
         message = (
-            f"Für {subject_name} entsprechen keine Kompetenzen den gewählten Filtern."
+            f"Für {subject_name} entsprechen keine Kompetenzen den gewählten Filtern. "
+            "Ändere die Suche oder setze die Filter zurück."
             if subject_id
-            else "Keine Kompetenzen entsprechen den gewählten Filtern."
+            else "Keine Kompetenzen entsprechen den gewählten Filtern. "
+            "Ändere die Suche oder setze die Filter zurück."
         )
         label = QLabel(message)
         label.setObjectName("CompetencyCockpitEmptyFilterState")
@@ -2070,7 +2080,10 @@ class StudentProfileScreen(QWidget):
         set_label_style(title, "field_label")
         layout.addWidget(title)
         if not evidence:
-            empty = QLabel("Noch keine aktiven Beobachtungen zu dieser Kompetenz.")
+            empty = QLabel(
+                "Zu dieser Kompetenz gibt es noch keine aktive Beobachtung. "
+                "Eine neue Beobachtung kann den Verlauf ergänzen."
+            )
             empty.setObjectName("CompetencyCockpitEvidenceEmptyState")
             empty.setWordWrap(True)
             set_label_style(empty, "subtle")
@@ -2382,7 +2395,9 @@ class StudentProfileScreen(QWidget):
         set_label_style(title_label, "field_label")
         layout.addWidget(title_label)
         if not competencies:
-            empty_label = QLabel("Keine Einträge.")
+            empty_label = QLabel(
+                "Für diesen Abschnitt wurden keine Kompetenzen zugeordnet."
+            )
             set_label_style(empty_label, "subtle")
             layout.addWidget(empty_label)
             return block
@@ -2405,7 +2420,9 @@ class StudentProfileScreen(QWidget):
         set_label_style(title_label, "field_label")
         layout.addWidget(title_label)
         if not observations:
-            empty_label = QLabel("Keine passenden Beobachtungen.")
+            empty_label = QLabel(
+                "Für diesen Abschnitt wurden keine passenden Beobachtungsbelege ausgewählt."
+            )
             set_label_style(empty_label, "subtle")
             layout.addWidget(empty_label)
             return block

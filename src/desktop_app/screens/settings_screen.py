@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Signal
+from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import QGraphicsOpacityEffect
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -52,6 +53,10 @@ class SettingsScreen(QWidget):
         self.timetable_week: TimetableWeekViewModel | None = None
         self.selected_timetable_weekday = 1
         self.timetable_tabs = QTabBar()
+        self.timetable_tabs.setAccessibleName("Wochentag im Stundenplan")
+        self.timetable_tabs.setAccessibleDescription(
+            "Mit Pfeil links und rechts zwischen Montag und Freitag wechseln."
+        )
         self.timetable_tabs.setExpanding(True)
         self.timetable_tabs.setUsesScrollButtons(False)
         self.timetable_tabs.currentChanged.connect(self._select_timetable_day)
@@ -126,6 +131,9 @@ class SettingsScreen(QWidget):
                 f"DocumentationSubjectCheckbox_{subject.subject_id}"
             )
             checkbox.setChecked(subject.selected)
+            checkbox.setAccessibleName(
+                f"{subject.label} als dokumentationsrelevantes Fach verwenden"
+            )
             self.documentation_subject_checkboxes[subject.subject_id] = checkbox
             self.documentation_subjects_layout.addWidget(checkbox)
         self.documentation_subjects_layout.addStretch(1)
@@ -160,6 +168,7 @@ class SettingsScreen(QWidget):
             "primary",
             "Dokumentationsrelevante Fächer speichern",
         )
+        save_button.setShortcut(QKeySequence.StandardKey.Save)
         save_button.clicked.connect(self._emit_documentation_subjects_save)
         action_row.addWidget(save_button)
         layout.addLayout(action_row)
@@ -215,6 +224,7 @@ class SettingsScreen(QWidget):
         active = QCheckBox("Aktiv")
         active.setChecked(entry.active)
         active.setObjectName(f"TimetableActive_{entry.timetable_entry_id}")
+        active.setAccessibleName(f"Stunde {entry.time_label} aktiv")
         active.toggled.connect(
             lambda checked, entry_id=entry.timetable_entry_id: self.timetable_active_requested.emit(
                 entry_id, checked
@@ -259,7 +269,8 @@ class SettingsScreen(QWidget):
             if day.weekday == self.selected_timetable_weekday
         )
         self.timetable_empty_label.setText(
-            f"Für {day.label} sind noch keine Stunden eingetragen."
+            f"Für {day.label} sind noch keine Stunden eingetragen. "
+            "Über „Stunde hinzufügen“ kannst du den Tagesplan beginnen."
         )
         self.timetable_empty_label.setVisible(not day.entries)
         self.timetable_add_button.setObjectName(f"TimetableAdd_{day.weekday}")

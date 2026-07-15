@@ -8,7 +8,7 @@ from datetime import date, datetime
 import textwrap
 
 from PySide6.QtCore import QDate, QEvent, Qt, QTimer, Signal
-from PySide6.QtGui import QCloseEvent, QKeyEvent, QResizeEvent
+from PySide6.QtGui import QCloseEvent, QKeyEvent, QKeySequence, QResizeEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -960,7 +960,10 @@ class LearningConferenceDialog(QDialog):
             "Kompetenzen auswählen",
             "Fach → Kompetenzbereich → Thema → Kompetenz. Der angezeigte Stand ist kanonisch und nicht editierbar.",
         ))
-        self.competency_empty = _label("Bitte zuerst in Phase 1 mindestens einen fachlichen Bereich auswählen.", "subtle")
+        self.competency_empty = _label(
+            "Noch kein fachlicher Bereich gewählt. Wähle zuerst in Phase 1 mindestens einen Gesprächsbereich aus.",
+            "subtle",
+        )
         self.competency_empty.setObjectName("LearningConferenceCompetencyEmpty")
         layout.addWidget(self.competency_empty)
         for subject in self.preparation.subjects:
@@ -994,7 +997,7 @@ class LearningConferenceDialog(QDialog):
             self.competency_sections[subject.subject_id] = section
             layout.addWidget(section)
             empty = _label(
-                f"Für dieses Kind sind in {subject.subject_name} noch keine kompetenzbezogenen Beobachtungen dokumentiert.",
+                f"Für dieses Kind sind in {subject.subject_name} noch keine kompetenzbezogenen Beobachtungen dokumentiert. Passe bei Bedarf Zeitraum oder Suche an.",
                 "subtle",
             )
             empty.setObjectName(f"LearningConferenceCompetencyEmpty_{subject.subject_id}")
@@ -1049,7 +1052,10 @@ class LearningConferenceDialog(QDialog):
         self.evidence_warning_label.setWordWrap(True)
         self.evidence_warning.layout().addWidget(self.evidence_warning_label)
         layout.addWidget(self.evidence_warning)
-        self.evidence_empty = _label("Für die gewählten Bereiche sind keine Beobachtungsbelege sichtbar.", "subtle")
+        self.evidence_empty = _label(
+            "Für die gewählten Bereiche sind keine Beobachtungsbelege sichtbar. Passe Gesprächsbereiche, Zeitraum oder Suche an.",
+            "subtle",
+        )
         layout.addWidget(self.evidence_empty)
         for evidence in self.preparation.evidence:
             block = QVBoxLayout()
@@ -1138,6 +1144,7 @@ class LearningConferenceDialog(QDialog):
         self.next_button = QPushButton("Weiter")
         self.evidence_button = QPushButton("Belege ansehen")
         self.save_button = QPushButton("Entwurf speichern")
+        self.save_button.setShortcut(QKeySequence.StandardKey.Save)
         self.complete_button = QPushButton("Gespräch abschließen")
         self.complete_button.setObjectName("LearningConferenceCompleteButton")
         self.revisions_button = QPushButton("Revisionen")
@@ -1326,7 +1333,7 @@ class LearningConferenceDialog(QDialog):
             subject_name = next(subject.subject_name for subject in self.preparation.subjects if subject.subject_id == subject_id)
             period_suffix = " und im gewählten Zeitraum" if period_start and period_end else ""
             self.competency_empty_by_subject[subject_id].setText(
-                f"Für dieses Kind sind in {subject_name}{period_suffix} noch keine kompetenzbezogenen Beobachtungen dokumentiert."
+                f"Für dieses Kind sind in {subject_name}{period_suffix} noch keine kompetenzbezogenen Beobachtungen dokumentiert. Passe bei Bedarf Zeitraum oder Suche an."
             )
 
     def _competency_filter_period(self) -> tuple[date | None, date | None]:

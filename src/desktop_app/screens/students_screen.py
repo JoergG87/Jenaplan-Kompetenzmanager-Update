@@ -39,7 +39,10 @@ STUDENT_SEARCH_PLACEHOLDER = "Schüler suchen …"
 STUDENT_LIST_EMPTY_STATE = (
     "Noch keine Schüler vorhanden.\nLege über „Schüler anlegen“ den ersten Schüler an."
 )
-STUDENT_SEARCH_EMPTY_STATE = "Keine Schüler gefunden."
+STUDENT_SEARCH_EMPTY_STATE = (
+    "Keine Schüler passen zu dieser Suche.\n"
+    "Ändere den Suchbegriff oder lösche ihn mit Escape."
+)
 
 
 class StudentsScreen(QWidget):
@@ -97,6 +100,7 @@ class StudentsScreen(QWidget):
         self.search_input.textChanged.connect(self.apply_search)
         layout.addWidget(self.filter_bar)
         set_label_style(self.result_label, "small")
+        self.result_label.setAccessibleName("Anzahl sichtbarer Schüler")
         layout.addWidget(self.result_label)
         layout.addWidget(self.empty_state)
 
@@ -111,7 +115,10 @@ class StudentsScreen(QWidget):
         self.table.setObjectName("PremiumTable")
         self.table.setShowGrid(False)
         self.table.verticalHeader().setVisible(False)
-        self.table.verticalHeader().setDefaultSectionSize(48)
+        self.table.verticalHeader().setDefaultSectionSize(46)
+        self.table.setVerticalScrollMode(
+            QAbstractItemView.ScrollMode.ScrollPerPixel
+        )
         self.table.setAccessibleDescription(
             "Zeile anklicken oder mit Eingabe das Profil öffnen."
         )
@@ -176,14 +183,24 @@ class StudentsScreen(QWidget):
         self.table.clearContents()
         self.table.setRowCount(len(students))
         self._update_empty_state(students)
+        self.table.setVisible(bool(students))
         for row_index, student in enumerate(students):
-            self.table.setItem(row_index, 0, QTableWidgetItem(student.display_name))
-            self.table.setCellWidget(row_index, 1, self._course_cell(student))
-            self.table.setItem(
-                row_index,
-                2,
-                QTableWidgetItem(student.documentation_status.list_label),
+            name_item = QTableWidgetItem(student.display_name)
+            name_item.setData(
+                Qt.ItemDataRole.AccessibleTextRole,
+                f"Schüler {student.display_name}",
             )
+            self.table.setItem(row_index, 0, name_item)
+            self.table.setCellWidget(row_index, 1, self._course_cell(student))
+            documentation_item = QTableWidgetItem(
+                student.documentation_status.list_label
+            )
+            documentation_item.setToolTip(student.documentation_status.list_label)
+            documentation_item.setData(
+                Qt.ItemDataRole.AccessibleTextRole,
+                f"Dokumentation: {student.documentation_status.list_label}",
+            )
+            self.table.setItem(row_index, 2, documentation_item)
             self.table.setCellWidget(row_index, 3, self._observation_action_cell(student))
 
     def _course_cell(self, student: StudentListItem) -> QWidget:

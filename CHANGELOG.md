@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## Premium UI Sprint 3 - Informationsdichte und Accessibility
+
+### Added
+
+- Appweite Tastaturkürzel für lokale Suche (`Ctrl/Cmd+F`) und Speichern (`Ctrl/Cmd+S`) sowie Enter-/Doppelklick-Aktivierung in den bestehenden produktiven Tabellen ergänzt.
+- Explizite Accessible Names für Hauptnavigation, kleine Eingabedialoge, Stundenplansteuerung, Statuswechsel und die Dokumentationsmatrix ergänzt.
+- Gezielte Offscreen-Regressionstests für Empty States, Tabellenaktivierung, Tastaturkürzel, Badge-Accessibility und farbunabhängige Matrixwerte ergänzt.
+
+### Changed
+
+- Schüler- und Stammdatentabellen auf kompakte Produktlisten mit ruhigen Headern, 44- bis 46-Pixel-Zeilen, zeilenweiser Auswahl, Hover-, Fokus- und Auswahlzuständen, inhaltsgerechten Spalten sowie pixelweisem Scrollen verdichtet.
+- Technische Leer-Tabellen durch erklärende Empty States ersetzt; bestehende leere Zustände in Dashboard, Profil, Beobachtung, Bericht, LEG, Einstellungen und Dialogen um Ursache und nächsten sinnvollen Schritt ergänzt.
+- Kompetenzbäume und Standardlisten zentral mit klareren Zeilenabständen, Fokus- und Auswahlzuständen versehen; die bestehende Hierarchie `Fach → Kompetenzbereich → Thema → Kompetenz` bleibt unverändert.
+- Statusbadges vereinheitlicht, ihren gesprochenen Namen mit sichtbaren Textänderungen synchronisiert und die Dashboard-Dokumentationsmatrix zusätzlich mit sichtbaren Zahlenwerten statt alleiniger Farbintensität versehen.
+- Formularfelder in Schüler-, Stammdaten- und Stundenplandialogen explizit für Screenreader benannt; vorhandene Enter-, Escape-, Pfeiltasten- und Tab-Reihenfolgen bleiben erhalten.
+
+### Not Changed
+
+- Keine Änderung an Fachlogik, Datenmodell, SQLite, Migrationen, Repositories, Services, Adaptern, ViewModels, Workflows, Navigation, Datenquellen oder fachlichen Statusregeln; keine neue Funktion, kein neuer Screen und kein QPainter.
+
 ## Kompetenz-Entwicklungskarten UX Fix
 
 ### Changed

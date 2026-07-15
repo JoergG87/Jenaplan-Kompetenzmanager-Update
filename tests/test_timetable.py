@@ -235,7 +235,11 @@ class TimetableTest(unittest.TestCase):
         empty = screen.findChild(QLabel, "TimetableEmptyState")
         tabs = screen.findChild(QTabBar)
         self.assertEqual(tabs.count(), 5)
-        self.assertEqual(empty.text(), "Für Montag sind noch keine Stunden eingetragen.")
+        self.assertEqual(
+            empty.text(),
+            "Für Montag sind noch keine Stunden eingetragen. "
+            "Über „Stunde hinzufügen“ kannst du den Tagesplan beginnen.",
+        )
         self.assertFalse(empty.isHidden())
         for index, weekday in enumerate(range(1, 6)):
             tabs.setCurrentIndex(index)

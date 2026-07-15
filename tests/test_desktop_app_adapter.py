@@ -15,6 +15,7 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import QKeySequence
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -3243,7 +3244,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         dialog_source = inspect.getsource(master_data_dialog)
         shell_source = inspect.getsource(shell.AppShell.open_edit_course_group_dialog)
 
-        self.assertIn('MASTER_DATA_COURSE_GROUP_EMPTY_STATE = "Noch keine Kursverbünde vorhanden."', source)
+        self.assertIn("Noch keine Kursverbünde angelegt.", source)
         self.assertIn('"Kursverbünde"', source)
         self.assertIn('"+ Kursverbund"', source)
         self.assertIn("course_group_add_requested = Signal()", source)
@@ -3331,7 +3332,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn('STUDENT_SEARCH_PLACEHOLDER = "Schüler suchen …"', source)
         self.assertIn("Noch keine Schüler vorhanden.", source)
         self.assertIn("Lege über „Schüler anlegen“ den ersten Schüler an.", source)
-        self.assertIn('STUDENT_SEARCH_EMPTY_STATE = "Keine Schüler gefunden."', source)
+        self.assertIn("Keine Schüler passen zu dieser Suche.", source)
+        self.assertIn("lösche ihn mit Escape", source)
         self.assertIn("SearchField(STUDENT_SEARCH_PLACEHOLDER)", source)
         self.assertIn("setClearButtonEnabled(True)", inspect.getsource(components))
         self.assertIn("self.search_input.text().strip()", source)
@@ -3340,15 +3342,16 @@ class DesktopAppAdapterTest(unittest.TestCase):
         source = inspect.getsource(master_data_screen)
 
         self.assertIn(
-            'MASTER_DATA_GROUP_EMPTY_STATE = "Noch keine Stammgruppen vorhanden."',
+            "Noch keine Stammgruppen angelegt.",
             source,
         )
         self.assertIn(
-            'MASTER_DATA_COURSE_EMPTY_STATE = "Noch keine Kurse vorhanden."',
+            "Noch keine Kurse angelegt.",
             source,
         )
-        self.assertIn("self.group_empty_state_label.setVisible(not items)", source)
-        self.assertIn("self.course_empty_state_label.setVisible(not items)", source)
+        self.assertIn("self.group_empty_state.setVisible(not items)", source)
+        self.assertIn("self.course_empty_state.setVisible(not items)", source)
+        self.assertIn("table.setVisible(bool(items))", source)
 
     def test_new_student_dialog_uses_master_data_for_group_and_course_options(self) -> None:
         source = inspect.getsource(new_student_dialog)
@@ -3366,8 +3369,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         source = inspect.getsource(new_student_dialog)
 
         self.assertIn('STUDENT_DIALOG_SELECT_PLACEHOLDER = "Bitte auswählen"', source)
-        self.assertIn('"Keine Stammgruppen vorhanden"', source)
-        self.assertIn('"Keine Kurse vorhanden"', source)
+        self.assertIn('"Keine Stammgruppen – zuerst unter Stammdaten anlegen"', source)
+        self.assertIn('"Keine Kurse – zuerst unter Stammdaten anlegen"', source)
         self.assertIn("select.addItem(STUDENT_DIALOG_SELECT_PLACEHOLDER, \"\")", source)
 
     def test_new_student_dialog_validates_name_group_and_course(self) -> None:
@@ -4706,7 +4709,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertEqual(
             OBSERVATION_ATTACHMENT_EMPTY_STATE,
-            "Noch keine Anhänge ausgewählt.",
+            "Noch keine Anhänge ausgewählt. Über „Datei hinzufügen“ kannst du einen ergänzen.",
         )
         self.assertIn("Sonstiges", DOCUMENT_TYPE_OPTIONS)
 
@@ -6472,14 +6475,17 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         empty = screen.findChild(QWidget, "CompetencyCockpitEmptyFilterState")
         self.assertEqual(
-            empty.text(), "Keine Kompetenzen entsprechen den gewählten Filtern."
+            empty.text(),
+            "Keine Kompetenzen entsprechen den gewählten Filtern. "
+            "Ändere die Suche oder setze die Filter zurück.",
         )
         subject_filter.setCurrentIndex(subject_filter.findText("EPU"))
 
         empty = screen.findChild(QWidget, "CompetencyCockpitEmptyFilterState")
         self.assertEqual(
             empty.text(),
-            "Für EPU entsprechen keine Kompetenzen den gewählten Filtern.",
+            "Für EPU entsprechen keine Kompetenzen den gewählten Filtern. "
+            "Ändere die Suche oder setze die Filter zurück.",
         )
         screen.findChild(QPushButton, "CompetencyCockpitFilterResetButton").click()
         self.assertEqual(subject_filter.currentText(), "Alle Fächer")
@@ -7106,6 +7112,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(first_button.focusPolicy(), Qt.FocusPolicy.StrongFocus)
 
         search = components.SearchField("Schüler suchen …")
+        self.assertEqual(
+            search.find_shortcut.key().matches(
+                QKeySequence(QKeySequence.StandardKey.Find)
+            ),
+            QKeySequence.SequenceMatch.ExactMatch,
+        )
         search.setText("Anna")
         QTest.keyClick(search, Qt.Key.Key_Escape)
         self.assertEqual(search.text(), "")
@@ -7129,6 +7141,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(inline.property("messageTone"), "warning")
         empty = components.EmptyState("Noch keine Einträge.")
         self.assertFalse(empty.isHidden())
+        self.assertIn("Noch keine Einträge", empty.accessibleName())
+
+        badge = components.StatusBadge("Entwurf", tone="info")
+        badge.setText("Entwurf geändert")
+        self.assertEqual(badge.accessibleName(), "Entwurf geändert")
 
         card = components.AppCard("interactive", interactive=True)
         self.assertEqual(card.property("cardVariant"), "interactive")
@@ -7155,6 +7172,41 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(icon_button.accessibleName(), "Dokumentationshilfe")
         self.assertTrue(icon_button.toolTip())
         self.assertEqual(filter_bar.accessibleName(), "Suche und aktive Filter")
+        self.assertIsNotNone(app)
+
+    def test_product_tables_replace_empty_grids_with_explanatory_states(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        students = students_screen.StudentsScreen()
+        students.set_students(())
+        self.assertTrue(students.table.isHidden())
+        self.assertIn("Schüler anlegen", students.empty_state.accessibleName())
+
+        master_data = master_data_screen.MasterDataScreen()
+        master_data.set_master_data(MasterDataViewModel((), (), ()))
+        self.assertTrue(master_data.group_table.isHidden())
+        self.assertTrue(master_data.course_table.isHidden())
+        self.assertTrue(master_data.course_group_table.isHidden())
+        self.assertIn("+ Stammgruppe", master_data.group_empty_state.accessibleName())
+        self.assertTrue(master_data.group_table.accessibleDescription())
+
+        renamed: list[str] = []
+        master_data.group_rename_requested.connect(renamed.append)
+        master_data.set_master_data(MasterDataViewModel(
+            (
+                MasterDataItemViewModel(
+                    "GRP-000001",
+                    "Grashüpfer",
+                    True,
+                ),
+            ),
+            (),
+            (),
+        ))
+        master_data.show()
+        app.processEvents()
+        master_data.group_table.setCurrentCell(0, 0)
+        QTest.keyClick(master_data.group_table, Qt.Key.Key_Return)
+        self.assertEqual(renamed, ["GRP-000001"])
         self.assertIsNotNone(app)
 
     def test_component_library_v2_styles_semantic_states_centrally(self) -> None:

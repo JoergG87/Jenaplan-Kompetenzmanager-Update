@@ -366,7 +366,7 @@ class NewObservationDialog(QDialog):
         self.competency_ratings_layout.setContentsMargins(0, 0, 4, 0)
         self.competency_ratings_layout.setSpacing(7)
         self.competency_ratings_empty_state = QLabel(
-            "Noch keine Kompetenz ausgewählt."
+            "Noch keine Kompetenz ausgewählt. Wähle unten eine Kompetenz aus."
         )
         set_label_style(self.competency_ratings_empty_state, "subtle")
         self.competency_ratings_layout.addWidget(self.competency_ratings_empty_state)

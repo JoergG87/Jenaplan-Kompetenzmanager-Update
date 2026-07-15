@@ -88,38 +88,46 @@ class TimetableEntryDialog(QDialog):
         form.setVerticalSpacing(8)
 
         self.weekday_combo = QComboBox()
+        self.weekday_combo.setAccessibleName("Wochentag")
         for value, label in WEEKDAY_LABELS.items():
             self.weekday_combo.addItem(label, value)
         self.weekday_combo.setCurrentIndex(max(0, weekday - 1))
         form.addRow("Wochentag", self.weekday_combo)
 
         self.start_time = QTimeEdit(QTime(8, 0))
+        self.start_time.setAccessibleName("Beginn der Stunde")
         self.start_time.setDisplayFormat("HH:mm")
         self.end_time = QTimeEdit(QTime(8, 45))
+        self.end_time.setAccessibleName("Ende der Stunde")
         self.end_time.setDisplayFormat("HH:mm")
         form.addRow("Beginn", self.start_time)
         form.addRow("Ende", self.end_time)
 
         self.subject_combo = QComboBox()
+        self.subject_combo.setAccessibleName("Fach")
         for option in self.week.subjects:
             self.subject_combo.addItem(option.label, option.item_id)
         form.addRow("Fach", self.subject_combo)
 
         self.target_type_combo = QComboBox()
+        self.target_type_combo.setAccessibleName("Zielart")
         for target_type, label in TARGET_TYPE_LABELS.items():
             self.target_type_combo.addItem(label, target_type)
         self.target_type_combo.currentIndexChanged.connect(self._populate_targets)
         form.addRow("Zielart", self.target_type_combo)
 
         self.target_combo = QComboBox()
+        self.target_combo.setAccessibleName("Unterrichtsziel")
         form.addRow("Ziel", self.target_combo)
         self._populate_targets()
 
         self.room_input = QLineEdit()
+        self.room_input.setAccessibleName("Raum oder Ort")
         self.room_input.setPlaceholderText("optional")
         form.addRow("Raum/Ort", self.room_input)
 
         self.active_checkbox = QCheckBox("Eintrag aktiv")
+        self.active_checkbox.setAccessibleName("Stundenplaneintrag aktiv")
         self.active_checkbox.setChecked(True)
         form.addRow("", self.active_checkbox)
         card_layout.addLayout(form)

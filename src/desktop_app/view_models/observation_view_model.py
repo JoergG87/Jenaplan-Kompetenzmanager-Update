@@ -37,7 +37,9 @@ OBSERVATION_SAVE_VALIDATION_MESSAGE = (
     "Bitte mindestens eine Kompetenz mit Bewertung auswählen."
 )
 
-OBSERVATION_ATTACHMENT_EMPTY_STATE = "Noch keine Anhänge ausgewählt."
+OBSERVATION_ATTACHMENT_EMPTY_STATE = (
+    "Noch keine Anhänge ausgewählt. Über „Datei hinzufügen“ kannst du einen ergänzen."
+)
 
 OBSERVATION_CROSS_SUBJECT_LABEL = "Fächerübergreifend"
 

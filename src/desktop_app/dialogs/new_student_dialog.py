@@ -97,21 +97,26 @@ class NewStudentDialog(QDialog):
         form.setVerticalSpacing(9)
 
         self.first_name_input = QLineEdit()
+        self.first_name_input.setAccessibleName("Vorname")
         self.last_name_input = QLineEdit()
+        self.last_name_input.setAccessibleName("Nachname")
         self.group_select = QComboBox()
+        self.group_select.setAccessibleName("Stammgruppe")
         self.course_select = QComboBox()
+        self.course_select.setAccessibleName("Kurs")
         self.notes_input = QTextEdit()
+        self.notes_input.setAccessibleName("Pädagogische Notiz")
         self.notes_input.setFixedHeight(90)
 
         self._populate_master_data_select(
             self.group_select,
             tuple(self.group_items.values()),
-            "Keine Stammgruppen vorhanden",
+            "Keine Stammgruppen – zuerst unter Stammdaten anlegen",
         )
         self._populate_master_data_select(
             self.course_select,
             tuple(self.course_items.values()),
-            "Keine Kurse vorhanden",
+            "Keine Kurse – zuerst unter Stammdaten anlegen",
         )
 
         form.addRow("Vorname", self.first_name_input)

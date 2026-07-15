@@ -38,8 +38,12 @@ from src.desktop_app.view_models.timetable_view_model import (
 )
 
 
-OVERVIEW_GROUP_EMPTY_STATE = "Noch keine Stammgruppen vorhanden."
-OVERVIEW_COURSE_EMPTY_STATE = "Noch keine Kurse vorhanden."
+OVERVIEW_GROUP_EMPTY_STATE = (
+    "Noch keine Stammgruppen angelegt. Lege sie unter „Stammdaten“ an."
+)
+OVERVIEW_COURSE_EMPTY_STATE = (
+    "Noch keine Kurse angelegt. Lege sie unter „Stammdaten“ an."
+)
 
 
 class DashboardLessonCard(AppCard):
@@ -314,7 +318,11 @@ class OverviewScreen(QWidget):
         at: datetime,
     ) -> None:
         if not projection.today:
-            empty = QLabel("Heute sind keine aktiven Stunden geplant.")
+            empty = QLabel(
+                "Heute sind keine aktiven Stunden geplant. "
+                "Den Wochenplan kannst du unter „Einstellungen“ prüfen."
+            )
+            empty.setWordWrap(True)
             set_label_style(empty, "muted")
             self.today_layout.addWidget(empty)
             self.today_layout.addStretch(1)
@@ -347,7 +355,11 @@ class OverviewScreen(QWidget):
         heatmap: DashboardDocumentationHeatmapViewModel,
     ) -> None:
         if heatmap.is_empty:
-            empty = QLabel("Noch keine Dokumentationsübersicht verfügbar.")
+            empty = QLabel(
+                "Noch keine Dokumentationsübersicht verfügbar. "
+                "Sie erscheint, sobald Stammgruppen und dokumentationsrelevante Fächer vorliegen."
+            )
+            empty.setWordWrap(True)
             set_label_style(empty, "muted")
             self.heatmap_layout.addWidget(empty)
             return
@@ -381,7 +393,7 @@ class OverviewScreen(QWidget):
             for column, (subject_id, _subject_name) in enumerate(subjects, start=1):
                 cell = cells_by_subject.get(subject_id)
                 if cell is not None:
-                    grid.addWidget(self._heatmap_cell(cell), row, column)
+                    grid.addWidget(self._heatmap_cell(cell, group.group_name), row, column)
         matrix_scroll = QScrollArea()
         matrix_scroll.setObjectName("DashboardHeatmapScroll")
         matrix_scroll.setWidgetResizable(True)
@@ -397,7 +409,10 @@ class OverviewScreen(QWidget):
         self.heatmap_layout.addWidget(matrix_scroll)
 
     @staticmethod
-    def _heatmap_cell(cell: DashboardDocumentationCellViewModel) -> QFrame:
+    def _heatmap_cell(
+        cell: DashboardDocumentationCellViewModel,
+        group_name: str,
+    ) -> QFrame:
         frame = QFrame()
         frame.setObjectName("DashboardHeatmapCell")
         frame.setProperty("coverageLevel", str(min(4, int(cell.coverage_ratio * 4))))
@@ -407,15 +422,16 @@ class OverviewScreen(QWidget):
         layout.setSpacing(6)
         marker = QFrame()
         marker.setObjectName("DashboardHeatmapMarker")
-        coverage = QLabel(cell.coverage_label)
+        coverage = QLabel(f"{cell.documented_count}/{cell.total_count}")
         set_label_style(coverage, "small")
-        coverage.setVisible(False)
         layout.addWidget(marker)
         layout.addWidget(coverage)
-        layout.setAlignment(marker, Qt.AlignmentFlag.AlignCenter)
-        frame.setToolTip(
-            f"Dokumentationsabdeckung {cell.subject_display_name}: {cell.coverage_label}"
+        spoken = (
+            f"{group_name}, {cell.subject_display_name}: {cell.coverage_label}. "
+            "Dokumentationsumfang, keine Leistungsbewertung."
         )
+        frame.setAccessibleName(spoken)
+        frame.setToolTip(spoken)
         return frame
 
     def _render_matching_children(
@@ -425,13 +441,21 @@ class OverviewScreen(QWidget):
     ) -> None:
         occurrence = projection.current or projection.next
         if occurrence is None:
-            empty = QLabel("Ohne Unterrichtskontext werden keine Kinder vorgeschlagen.")
+            empty = QLabel(
+                "Ohne aktuelle oder nächste Stunde werden hier keine Kinder vorgeschlagen. "
+                "Öffne den Schülerbereich für die vollständige Liste."
+            )
+            empty.setWordWrap(True)
             set_label_style(empty, "muted")
             self.matching_children_layout.addWidget(empty)
             return
         entry = occurrence.entry
         if not suggested_students:
-            empty = QLabel("Keine aktiven Kinder in diesem Unterrichtskontext.")
+            empty = QLabel(
+                "Für diesen Unterrichtskontext sind keine aktiven Kinder zugeordnet. "
+                "Prüfe bei Bedarf Stammgruppen, Kurse oder Kursverbünde."
+            )
+            empty.setWordWrap(True)
             set_label_style(empty, "muted")
             self.matching_children_layout.addWidget(empty)
         for student in suggested_students:
@@ -617,7 +641,9 @@ class GroupOverviewScreen(QWidget):
                 index % 2,
             )
         if not view_model.course_groups:
-            self.course_groups_layout.addWidget(QLabel(OVERVIEW_COURSE_EMPTY_STATE))
+            self.course_groups_layout.addWidget(QLabel(
+                "Noch keine Kursverbünde angelegt. Lege sie unter „Stammdaten“ an."
+            ))
         for course_group in view_model.course_groups:
             self.course_groups_layout.addWidget(
                 self._course_group_card(course_group, groups_by_id, courses_by_id)

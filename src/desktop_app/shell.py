@@ -126,6 +126,10 @@ class AppShell(QMainWindow):
         sidebar.addWidget(brand_subtitle)
         self.navigation = QListWidget()
         self.navigation.setObjectName("AppNavigation")
+        self.navigation.setAccessibleName("Hauptnavigation")
+        self.navigation.setAccessibleDescription(
+            "Mit Pfeil hoch und runter direkt zwischen den Bereichen wechseln."
+        )
         self.navigation.setIconSize(QSize(ICON_SIZE_MEDIUM, ICON_SIZE_MEDIUM))
         self.navigation.setSpacing(1)
         self.navigation.viewport().setCursor(Qt.CursorShape.PointingHandCursor)

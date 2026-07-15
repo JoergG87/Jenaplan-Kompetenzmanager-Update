@@ -915,6 +915,7 @@ Registrierte Python-Klassen und Funktionen:
 - `OVERVIEW_COURSE_EMPTY_STATE`
 - `MASTER_DATA_COURSE_GROUP_EMPTY_STATE`
 - `MasterDataScreen.course_group_add_requested`
+- `MasterDataScreen._activate_table_row(table, row)`
 - `APP_INFO_TITLE`
 - `APP_INFO_APP_NAME`
 - `APP_INFO_MODE`
@@ -1652,9 +1653,12 @@ Registrierte Komponenten und Helfer (Component Library V1 und V2):
 - `SegmentedControl`
 - `SegmentedControl.selection_changed`
 - `SearchField`
+- `SearchField.find_shortcut`
 - `StatusBadge`
+- `StatusBadge.setText(text)`
 - `InlineMessage`
 - `EmptyState`
+- `EmptyState._update_accessibility()`
 - `Toast`
 - `Toast.show_message(text, tone, duration_ms)`
 - `configure_button(button, role, accessible_name)`

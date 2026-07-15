@@ -1059,7 +1059,7 @@ QLineEdit#SearchField {{
     min-width: 260px;
     padding-left: 10px;
 }}
-QTableWidget:focus, QListWidget:focus {{
+QTableWidget:focus, QListWidget:focus, QTreeWidget:focus {{
     border: 1px solid {COLOR_FOCUS};
 }}
 QFrame#InlineMessage {{
@@ -1079,14 +1079,6 @@ QFrame#EmptyState {{
     background-color: {COLOR_SURFACE_SOFT};
     border: 1px dashed {COLOR_BORDER};
     border-radius: 10px;
-}}
-QLabel#StatusBadge, QLabel#LearningConferenceDirtyBadge {{
-    background-color: #E7EEF5;
-    color: {COLOR_INFO};
-    border-radius: 9px;
-    padding: 3px 8px;
-    font-size: 11px;
-    font-weight: 600;
 }}
 QFrame#Toast {{
     background-color: #22384A;
@@ -1207,7 +1199,7 @@ QTabBar::tab:selected {{
     border-color: #91AAC0;
     font-weight: 650;
 }}
-QTableWidget, QListWidget {{
+QTableWidget, QListWidget, QTreeWidget {{
     background-color: {COLOR_GLASS};
     alternate-background-color: #F3F8FB;
     border: 1px solid {COLOR_BORDER};
@@ -1230,7 +1222,33 @@ QTableWidget#PremiumTable::item {{
 }}
 QTableWidget#PremiumTable::item:hover {{ background-color: #F2F7FB; }}
 QTableWidget#PremiumTable::item:selected {{ background-color: #E6F0FB; color: {COLOR_TEXT}; }}
+QTableWidget#PremiumTable::item:focus {{
+    border: 1px solid {COLOR_FOCUS};
+    background-color: #EDF5FF;
+}}
 QTableWidget#PremiumTable:focus {{ border: 2px solid {COLOR_FOCUS}; }}
+QListWidget::item {{
+    min-height: 28px;
+    padding: 6px 9px;
+    border-radius: 6px;
+}}
+QListWidget::item:hover {{ background-color: #F2F7FB; }}
+QListWidget::item:selected {{ background-color: #E6F0FB; color: {COLOR_TEXT}; }}
+QTreeWidget {{
+    background-color: #FFFFFF;
+    border: 1px solid #DCE6ED;
+    border-radius: 10px;
+    outline: none;
+    padding: 4px;
+}}
+QTreeWidget::item {{
+    min-height: 26px;
+    padding: 5px 7px;
+    border-radius: 6px;
+}}
+QTreeWidget::item:hover {{ background-color: #F2F7FB; }}
+QTreeWidget::item:selected {{ background-color: #E6F0FB; color: {COLOR_TEXT}; }}
+QTreeWidget::item:focus {{ border: 1px solid {COLOR_FOCUS}; }}
 QHeaderView::section {{
     background-color: #E8F0F6;
     color: {COLOR_NAVY};
@@ -1239,6 +1257,7 @@ QHeaderView::section {{
     padding: 7px 8px;
     font-weight: 600;
 }}
+QHeaderView::section:hover {{ background-color: #DCE8F1; }}
 QFrame[frameShape="4"] {{
     background-color: #DDE6EC;
     border: none;

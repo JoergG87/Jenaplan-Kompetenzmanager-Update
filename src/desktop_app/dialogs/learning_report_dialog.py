@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from PySide6.QtCore import QDate, Qt, QTimer, Signal
+from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -318,6 +319,7 @@ class LearningReportDialog(QDialog):
         self.save_button = QPushButton("Entwurf speichern")
         self.save_button.setObjectName("LearningReportSaveButton")
         configure_button(self.save_button, "primary", "Berichtsentwurf speichern")
+        self.save_button.setShortcut(QKeySequence.StandardKey.Save)
         self.save_button.clicked.connect(self._request_save)
         layout.addWidget(self.save_button)
         return bar
@@ -520,6 +522,9 @@ class LearningReportDialog(QDialog):
         tree.setIndentation(20)
         tree.setMinimumHeight(310)
         tree.setWordWrap(True)
+        tree.setUniformRowHeights(False)
+        tree.setAnimated(False)
+        tree.setAllColumnsShowFocus(True)
         tree.setAccessibleName(f"Kompetenzauswahl für {subject.subject_name}")
         tree.setAccessibleDescription(
             "Historische Einträge sind textlich gekennzeichnet und nicht neu auswählbar."
@@ -1385,7 +1390,9 @@ class LearningReportDialog(QDialog):
         set_label_style(title, "section_title")
         layout.addWidget(title)
         if not selected:
-            layout.addWidget(self._small_label("Keine konkrete Kompetenz ausgewählt."))
+            layout.addWidget(self._small_label(
+                "Keine konkrete Kompetenz ausgewählt. Die Auswahl kann im Bereich „Kompetenzen & Belege“ ergänzt werden."
+            ))
         for competency in selected:
             suffix = (
                 " · historisch ausgewählt; nicht mehr regulär verfügbar"
@@ -1407,7 +1414,9 @@ class LearningReportDialog(QDialog):
         set_label_style(title, "section_title")
         layout.addWidget(title)
         if not evidence:
-            layout.addWidget(self._small_label("Keine Beobachtungsbelege ausgewählt."))
+            layout.addWidget(self._small_label(
+                "Keine Beobachtungsbelege ausgewählt. Die Auswahl kann im Bereich „Kompetenzen & Belege“ ergänzt werden."
+            ))
         for item in evidence:
             body = QLabel(
                 f"{item.observed_on.strftime('%d.%m.%Y')} · {item.context}\n"
@@ -1966,7 +1975,10 @@ class LearningReportRevisionDialog(QDialog):
         layout.addWidget(SectionHeader("Eingefrorene Kompetenzen"))
         competencies = tuple(getattr(subject, "competencies", ()))
         if not competencies:
-            layout.addWidget(EmptyState("Keine Kompetenz im Snapshot enthalten."))
+            layout.addWidget(EmptyState(
+                "In dieser Revision wurde keine Kompetenz ausgewählt. "
+                "Der eingefrorene Stand bleibt unverändert."
+            ))
         for competency in competencies:
             suffix = " · historisch" if getattr(competency, "historical_reference", False) else ""
             item = QLabel(
@@ -1979,7 +1991,10 @@ class LearningReportRevisionDialog(QDialog):
         layout.addWidget(SectionHeader("Eingefrorene Beobachtungsbelege"))
         observations = tuple(getattr(subject, "observations", ()))
         if not observations:
-            layout.addWidget(EmptyState("Kein Beobachtungsbeleg im Snapshot enthalten."))
+            layout.addWidget(EmptyState(
+                "In dieser Revision wurde kein Beobachtungsbeleg ausgewählt. "
+                "Der eingefrorene Stand bleibt unverändert."
+            ))
         for observation in observations:
             item = QLabel(
                 f"{getattr(observation, 'observed_on', '')} · "

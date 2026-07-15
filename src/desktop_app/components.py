@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from PySide6.QtCore import QEvent, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QKeyEvent, QMouseEvent
+from PySide6.QtGui import QKeyEvent, QKeySequence, QMouseEvent, QShortcut
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -367,6 +367,8 @@ class SearchField(QLineEdit):
         self.addAction(load_icon("search"), QLineEdit.ActionPosition.LeadingPosition)
         self.setAccessibleName(accessible_name)
         self.setAccessibleDescription(accessible_description)
+        self.find_shortcut = QShortcut(QKeySequence.StandardKey.Find, self)
+        self.find_shortcut.activated.connect(self.setFocus)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
         if event.key() == Qt.Key.Key_Escape and self.text():
@@ -383,6 +385,11 @@ class StatusBadge(QLabel):
         super().__init__(text)
         self.setObjectName("StatusBadge")
         self.setProperty("badgeTone", tone)
+        self.setAccessibleName(text)
+
+    def setText(self, text: str) -> None:  # noqa: N802
+        """Keep the spoken status synchronized with its visible wording."""
+        super().setText(text)
         self.setAccessibleName(text)
 
 
@@ -444,13 +451,22 @@ class EmptyState(QFrame):
         set_label_style(self.label, "muted")
         layout.addWidget(self.title_label)
         layout.addWidget(self.label)
+        self._update_accessibility()
         self.setVisible(bool(text or title))
 
     def set_message(self, text: str) -> None:
         """Show the state only while it has meaningful content."""
         self.label.setText(text)
-        self.setAccessibleName(text)
+        self._update_accessibility()
         self.setVisible(bool(text))
+
+    def _update_accessibility(self) -> None:
+        spoken = ". ".join(
+            part.strip().rstrip(".")
+            for part in (self.title_label.text(), self.label.text())
+            if part.strip()
+        )
+        self.setAccessibleName(f"{spoken}." if spoken else "")
 
 
 class Toast(QFrame):

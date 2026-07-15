@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtGui import QShowEvent
+from PySide6.QtGui import QKeySequence, QShowEvent
 from PySide6.QtWidgets import QDialogButtonBox, QHBoxLayout
 
 from src.desktop_app.components import configure_button
@@ -54,6 +54,7 @@ def configure_save_cancel_buttons(buttons: QDialogButtonBox) -> None:
     if save_button is not None:
         save_button.setText(DIALOG_SAVE_TEXT)
         configure_button(save_button, "primary", "Änderungen speichern")
+        save_button.setShortcut(QKeySequence.StandardKey.Save)
         save_button.setDefault(True)
         save_button.setAutoDefault(True)
     if isinstance(buttons, DialogActionBar):

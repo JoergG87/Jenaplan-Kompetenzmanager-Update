@@ -1,5 +1,23 @@
 # Design-System
 
+## Informationsdichte und Accessibility - Premium UI Sprint 3
+
+Informationsdichte bedeutet schnellere Erfassbarkeit, nicht mehr sichtbare Information. Produktive Listen und Tabellen priorisieren deshalb je Zeile Identität, fachlichen Kontext, textlich benannten Status und vorhandene Aktion. Sekundäre Metadaten bleiben typografisch ruhig; technische IDs bleiben verborgen oder im Tooltip. Standarddichte sind 44 bis 46 Pixel hohe Tabellenzeilen, kompakte Card-Zeilen und mindestens 28 Pixel hohe Listeneinträge. Lange Texte umbrechen in Inhaltsflächen oder werden in Tabellen mit vollständigem Tooltip angeboten.
+
+`QTableWidget` verwendet als `PremiumTable` keine sichtbaren Gitterlinien, sondern ruhige Zeilentrenner, einen klaren Header sowie zeilenweise Hover-, Auswahl- und Fokuszustände. Inhaltsorientierte Spalten verwenden `ResizeToContents`, dominante Textspalten den verbleibenden Raum. Leere Tabellen werden ausgeblendet und durch `EmptyState` ersetzt. Sortierung wird nur angezeigt, wenn die bestehende Projektion oder Tabelle sie tatsächlich anbietet; Filterzustand bleibt in `FilterBar`, Result Count oder eindeutigem Kontexttext sichtbar. Tabellen sind keine Datenbankansichten und keine fachlichen Datenquellen.
+
+Ganze fachlich aktivierbare Zeilen reagieren konsistent auf Maus und Tastatur: Schülerzeilen öffnen das Profil, Stammdatenzeilen die vorhandene Bearbeitung. Enter und Doppelklick sind gleichwertig; eingebettete Sekundäraktionen bleiben per Tab erreichbar und tragen einen eindeutigen Accessible Name. Nicht interaktive Zeilen erhalten keinen künstlichen Hover oder Hand-Cursor.
+
+Kompetenzdarstellungen behalten verbindlich `Fach → Kompetenzbereich → Thema → Kompetenz`. Einrückung, Surface, Typografie und Abstand unterscheiden die Ebenen auch ohne Farbe. Disclosure und Kontrollkästchen verwenden Standardwidgets, sichtbaren Fokus und Enter beziehungsweise Leertaste. Bericht und LEG leiten keine zweite Hierarchie oder Statuslogik ab.
+
+Statusbadges verwenden ausschließlich die Tones `neutral`, `info`, `success` und `warning`. Der sichtbare Text ist die primäre Bedeutung und wird gleichzeitig als Accessible Name geführt; Farbe darf Bedeutung nur unterstützen. Dasselbe gilt für Dokumentationsabdeckung: Matrixzellen zeigen einen sichtbaren Zahlenwert und nennen im Tooltip beziehungsweise Accessible Name ausdrücklich den Dokumentationsbezug ohne Leistungsbewertung.
+
+Jeder leere Zustand beantwortet in ruhiger Sprache, warum kein Inhalt sichtbar ist und welcher bestehende Schritt weiterführt. Eine leere technische Tabelle, `Keine Daten vorhanden` ohne Kontext oder eine neue fachliche Aktion ausschließlich für den Empty State sind unzulässig. Schreibgeschützte Revisionen erklären statt einer Aktion, dass der eingefrorene Stand unverändert bleibt.
+
+Tastaturgrundlage ist: `Ctrl/Cmd+F` fokussiert die lokale Suche, Escape leert eine befüllte Suche oder schließt gemäß sicherem Dialogvertrag, `Ctrl/Cmd+S` löst die vorhandene Speicheraktion aus, Enter öffnet beziehungsweise aktiviert, Leertaste schaltet Auswahl und Disclosure, Pfeiltasten steuern Segmente, Tabs und LEG-Phasen. Fokus folgt der sichtbaren Arbeitsreihenfolge. Alle Eingabefelder, Iconaktionen, Tabellen, komplexen Auswahlen und Primäraktionen besitzen Accessible Names; ergänzende Beschreibungen erklären nur nicht sichtbare Bedienhinweise.
+
+Die produktiven Arbeitsflächen werden bei 1180 x 760, 1280 x 800 und 1400 x 900 sowie mit Device Pixel Ratio 2 geprüft. Primäraktionen und lokale Navigation bleiben sichtbar, horizontale Scrollbereiche entstehen nur bei inhaltlich unvermeidbaren Matrizen, und es gibt keinen horizontalen Gesamtscroll. QPainter wird nicht eingesetzt; Standardwidgets und zentrale QSS-Zustände liefern den erforderlichen High-DPI-, Fokus- und Screenreader-Nutzen.
+
 ## Dialog Experience und Workspace Polish - Premium UI Sprint 2
 
 Produktive PySide-Dialoge verwenden drei Groessenrollen: kleine Dialoge fuer eine kompakte Eingabe, mittlere Dialoge fuer mehrere klar getrennte Feldgruppen und grosse Dialoge als temporaere Arbeitsraeume. Grosse Arbeitsdialoge behalten ihren fachlich freigegebenen Aufbau; die Groessenrolle veraendert weder Navigation noch Workflow. Bei 1180 x 760 bleiben Kopf, zentrale Orientierung und Pflichtaktionen sichtbar, bei 1400 x 900 wird zusaetzlicher Raum den Arbeitsflaechen gegeben.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 
+from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import QApplication, QDialog, QDialogButtonBox, QVBoxLayout
 
 from src.desktop_app.components import DialogHeader
@@ -54,6 +55,10 @@ class DialogExperienceTests(unittest.TestCase):
         self.assertLess(cancel.geometry().x(), save.geometry().x())
         self.assertTrue(save.isDefault())
         self.assertEqual(cancel.shortcut().toString(), "Esc")
+        self.assertEqual(
+            save.shortcut().matches(QKeySequence(QKeySequence.StandardKey.Save)),
+            QKeySequence.SequenceMatch.ExactMatch,
+        )
         dialog.close()
 
     def test_small_master_data_dialog_uses_header_inline_error_and_action_bar(self) -> None:
@@ -68,6 +73,7 @@ class DialogExperienceTests(unittest.TestCase):
             "Bitte einen Namen eingeben.",
         )
         self.assertFalse(dialog.validation_message.isHidden())
+        self.assertEqual(dialog.name_input.accessibleName(), "Bezeichnung")
 
 
 if __name__ == "__main__":

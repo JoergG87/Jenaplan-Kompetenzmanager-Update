@@ -48,8 +48,10 @@ class MasterDataNameDialog(QDialog):
         self.setMinimumWidth(460)
         self.resize(500, 340 if not include_color else 410)
         self.name_input = QLineEdit(initial_name)
+        self.name_input.setAccessibleName("Bezeichnung")
         self.include_color = include_color
         self.color_select = QComboBox()
+        self.color_select.setAccessibleName("Kursfarbe")
         self._populate_colors(initial_color_hex)
         self._build()
 
@@ -142,6 +144,7 @@ class CourseGroupDialog(QDialog):
         self.groups = groups
         self.courses = courses
         self.name_input = QLineEdit(course_group.name)
+        self.name_input.setAccessibleName("Name des Kursverbunds")
         self.group_checkboxes: dict[str, QCheckBox] = {}
         self.course_checkboxes: dict[str, QCheckBox] = {}
         self._build()
@@ -257,6 +260,9 @@ class CourseGroupDialog(QDialog):
         for item in items:
             checkbox = QCheckBox(item.name)
             checkbox.setChecked(item.item_id in selected_set)
+            checkbox.setAccessibleName(
+                f"{title}: {item.name} dem Kursverbund zuordnen"
+            )
             target[item.item_id] = checkbox
             if include_color:
                 row = QWidget()
