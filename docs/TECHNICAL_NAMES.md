@@ -875,6 +875,8 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationRecentCompetencies`
 - `ObservationRecentCompetencyChip`
 - `ObservationRatingSelector`
+- `ObservationRatingSelector.FULL_LABEL_MINIMUM_WIDTH`
+- `ObservationRatingSelector.resizeEvent(event)`
 - `ObservationCatalogCompetencyTile`
 - `NewObservationDialog.competency_catalog_tiles`
 - `ObservationThreeZoneWorkspace`
@@ -1684,6 +1686,7 @@ Registrierte Komponenten und Helfer (Component Library V1 und V2):
 - `StatusBadge.setText(text)`
 - `StatusBadge.ratingToken`
 - `RatingBadgeButton`
+- `RatingBadgeButton.set_compact(compact)`
 - `apply_rating_badge_variant(widget, rating_token)`
 - `InlineMessage`
 - `EmptyState`

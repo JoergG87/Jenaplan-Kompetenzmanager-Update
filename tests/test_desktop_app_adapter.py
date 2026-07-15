@@ -4051,6 +4051,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
         actions = dialog.findChild(QDialogButtonBox, "ObservationPersistentActions")
         self._select_observation_subject(dialog, "mathematik")
         dialog.competency_catalog_tiles["CMP-000671"]._activate()
+        selector = dialog.competency_rating_widgets["CMP-000671"]
+        full_labels = tuple(OBSERVATION_RATING_OPTIONS)
+        rating_tokens = tuple(selector.buttons)
 
         for width, height in ((1400, 900), (1280, 800), (1180, 760)):
             dialog.resize(width, height)
@@ -4068,6 +4071,50 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     dialog.selected_scroll.horizontalScrollBar().maximum(),
                     0,
                 )
+                self.assertEqual(
+                    len({button.y() for button in selector.buttons.values()}),
+                    1,
+                )
+                visible_labels = tuple(
+                    button.text().removeprefix("✓ ")
+                    for button in selector.buttons.values()
+                )
+                if width == 1400:
+                    self.assertEqual(visible_labels, full_labels)
+                    self.assertTrue(
+                        all(
+                            not button.property("compact")
+                            for button in selector.buttons.values()
+                        )
+                    )
+                    self.assertTrue(
+                        all(
+                            not button.toolTip()
+                            for button in selector.buttons.values()
+                        )
+                    )
+                elif width == 1180:
+                    self.assertEqual(visible_labels, rating_tokens)
+                    self.assertTrue(
+                        all(
+                            button.property("compact")
+                            for button in selector.buttons.values()
+                        )
+                    )
+                    self.assertEqual(
+                        tuple(button.toolTip() for button in selector.buttons.values()),
+                        full_labels,
+                    )
+                    self.assertTrue(
+                        all(
+                            full_label in button.accessibleName()
+                            for button, full_label in zip(
+                                selector.buttons.values(),
+                                full_labels,
+                                strict=True,
+                            )
+                        )
+                    )
         dialog.close()
 
     def test_observation_dialog_topics_start_collapsed(self) -> None:

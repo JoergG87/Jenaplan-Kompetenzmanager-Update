@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Callable
 
 from PySide6.QtCore import QDate, QTimer, Qt
-from PySide6.QtGui import QKeyEvent, QMouseEvent
+from PySide6.QtGui import QKeyEvent, QMouseEvent, QResizeEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -17,7 +17,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
     QGraphicsOpacityEffect,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -75,28 +74,38 @@ OBSERVATION_STAGE_FILTERS = (
 class ObservationRatingSelector(QWidget):
     """Exclusive four-chip selector with the former combo-box data contract."""
 
+    FULL_LABEL_MINIMUM_WIDTH = 520
+
     def __init__(self, initial_rating: str = "") -> None:
         super().__init__()
-        layout = QGridLayout(self)
+        layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
-        layout.setColumnStretch(0, 1)
-        layout.setColumnStretch(1, 1)
+        self.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
         self.button_group = QButtonGroup(self)
         self.button_group.setExclusive(True)
         self.buttons: dict[str, QPushButton] = {}
-        for index, rating_option in enumerate(OBSERVATION_RATING_OPTIONS):
+        for rating_option in OBSERVATION_RATING_OPTIONS:
             rating = rating_option.split(" ", 1)[0]
             button = RatingBadgeButton(rating_option, rating)
             button.setProperty("rating", rating)
             button.setSizePolicy(
-                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Ignored,
                 QSizePolicy.Policy.Fixed,
             )
             self.button_group.addButton(button)
             self.buttons[rating] = button
-            layout.addWidget(button, index // 2, index % 2)
+            layout.addWidget(button, 1)
         self.set_current_data(initial_rating)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        compact = event.size().width() < self.FULL_LABEL_MINIMUM_WIDTH
+        for button in self.buttons.values():
+            button.set_compact(compact)
 
     def currentData(self) -> str:  # noqa: N802 - matches QComboBox contract
         checked_button = self.button_group.checkedButton()

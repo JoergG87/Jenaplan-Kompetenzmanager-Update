@@ -5,7 +5,7 @@
 ### Changed
 
 - Die vier textgestuetzten Bewertungsstufen im Beobachtungsdialog verwenden jetzt dieselbe zentrale `ratingToken`-Pastellvariante wie die Lernentwicklungskarten.
-- Auswahl, Hover, Fokus, Pressed und Disabled sind zentral gestaltet; die aktive Stufe bleibt zusaetzlich durch Haken, Rahmen, Schriftgewicht und nativen Auswahlstatus erkennbar. Ein kompaktes 2-mal-2-Raster haelt alle Bedeutungen auch bei 1180 x 760 vollstaendig sichtbar.
+- Auswahl, Hover, Fokus, Pressed und Disabled sind zentral gestaltet; die aktive Stufe bleibt zusaetzlich durch Haken, Rahmen, Schriftgewicht und nativen Auswahlstatus erkennbar. Die vier Badges stehen immer in einer Reihe: bei breiter Arbeitsflaeche mit vollstaendiger Bedeutung, bei 1180 x 760 kompakt als `++`, `+`, `-`, `--`.
 - Accessible Names nennen Symbol, sichtbare Bedeutung und Auswahlstatus; Maus, Enter und Leertaste bedienen weiterhin die vollstaendige Bewertungsflaeche.
 
 ### Not Changed

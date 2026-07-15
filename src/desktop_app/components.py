@@ -418,15 +418,28 @@ class RatingBadgeButton(QPushButton):
     def __init__(self, text: str, rating_token: str) -> None:
         super().__init__(text)
         self._rating_text = text
+        self._rating_token = rating_token
+        self._compact = False
         self.setObjectName("RatingBadgeButton")
+        self.setProperty("compact", False)
         self.setCheckable(True)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         apply_rating_badge_variant(self, rating_token)
         self.toggled.connect(self._sync_selection_state)
         self._sync_selection_state(False)
 
+    def set_compact(self, compact: bool) -> None:
+        """Show only the symbol when the selector cannot fit full meanings."""
+        if self._compact == compact:
+            return
+        self._compact = compact
+        self.setProperty("compact", compact)
+        self.setToolTip(self._rating_text if compact else "")
+        self._sync_selection_state(self.isChecked())
+
     def _sync_selection_state(self, selected: bool) -> None:
-        self.setText(f"✓ {self._rating_text}" if selected else self._rating_text)
+        visible_text = self._rating_token if self._compact else self._rating_text
+        self.setText(f"✓ {visible_text}" if selected else visible_text)
         state = "ausgewählt" if selected else "nicht ausgewählt"
         self.setAccessibleName(f"Bewertung {self._rating_text}, {state}")
         self.setAccessibleDescription(
