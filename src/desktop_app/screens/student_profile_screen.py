@@ -351,10 +351,7 @@ class StudentProfileScreen(QWidget):
         title_row = QHBoxLayout()
         title = QLabel("Lernentwicklung")
         set_label_style(title, "section_title")
-        current = QLabel("Aktuell dokumentiert")
-        set_label_style(current, "small")
         title_row.addWidget(title, 1)
-        title_row.addWidget(current)
         layout.addLayout(title_row)
         self.orientation_changes_layout = QVBoxLayout()
         self.orientation_changes_layout.setContentsMargins(0, 0, 0, 0)
@@ -893,11 +890,12 @@ class StudentProfileScreen(QWidget):
         row = self._card("soft")
         row.setObjectName("StudentProfileOrientationChange")
         layout = QVBoxLayout(row)
-        layout.setContentsMargins(11, 8, 11, 8)
-        layout.setSpacing(5)
-        top = QHBoxLayout()
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(8)
+        summary = QHBoxLayout()
+        summary.setSpacing(14)
         title = QVBoxLayout()
-        title.setSpacing(1)
+        title.setSpacing(3)
         competency = QLabel(change.competency_label)
         competency.setWordWrap(True)
         set_label_style(competency, "card_title")
@@ -912,56 +910,110 @@ class StudentProfileScreen(QWidget):
         title.addWidget(competency)
         title.addWidget(topic)
         if change.historical:
-            historical = QLabel("Historische Kompetenzreferenz")
+            historical = QLabel("Historische Referenz")
             historical.setObjectName("StudentProfileHistoricalBadge")
-            title.addWidget(historical)
-        top.addLayout(title, 1)
-        status = QLabel(
-            f"{change.previous_status_label} → {change.new_status_label}"
-        )
+            title.addWidget(historical, 0, Qt.AlignmentFlag.AlignLeft)
+        summary.addLayout(title, 1)
+
+        status = QFrame()
         status.setObjectName("StudentProfileOrientationStatusChange")
-        status.setWordWrap(True)
-        status.setAlignment(
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-        )
-        top.addWidget(status)
-        period = QLabel(change.period_label)
-        set_label_style(period, "small")
-        period.setAlignment(Qt.AlignmentFlag.AlignRight)
-        top.addWidget(period)
-        layout.addLayout(top)
+        status_layout = QVBoxLayout(status)
+        status_layout.setContentsMargins(0, 0, 0, 0)
+        status_layout.setSpacing(2)
+        status_layout.addLayout(self._orientation_status_row(
+            "Ausgangslage",
+            change.previous_rating,
+            change.previous_status_label,
+        ))
+        arrow = QLabel("↓")
+        arrow.setObjectName("StudentProfileDevelopmentArrow")
+        arrow.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        arrow.setAccessibleName("Veränderung zum aktuell dokumentierten Stand")
+        status_layout.addWidget(arrow)
+        status_layout.addLayout(self._orientation_status_row(
+            "Aktueller dokumentierter Stand",
+            change.new_rating,
+            change.new_status_label,
+        ))
+        summary.addWidget(status)
+        layout.addLayout(summary)
+
         evidence = QFrame()
         evidence.setObjectName("StudentProfileOrientationEvidence")
-        evidence_layout = QHBoxLayout(evidence)
-        evidence_layout.setContentsMargins(9, 5, 9, 5)
-        source = QLabel(change.triggering_event.source_label)
+        evidence_layout = QVBoxLayout(evidence)
+        evidence_layout.setContentsMargins(9, 6, 9, 6)
+        evidence_layout.setSpacing(3)
+        evidence_meta = QHBoxLayout()
+        evidence_meta.setSpacing(7)
+        event_date = QLabel(change.triggering_event.event_date.strftime("%d.%m.%Y"))
+        set_label_style(event_date, "small")
+        evidence_meta.addWidget(event_date)
+        source_text = (
+            "Bestätigung"
+            if change.triggering_event.source == "confirmation"
+            else change.triggering_event.source_label
+        )
+        source = QLabel(source_text)
         source.setObjectName("StudentProfileEvidenceBadge")
-        evidence_layout.addWidget(source)
-        evidence_text = QLabel(change.triggering_event.evidence_label)
+        evidence_meta.addWidget(source)
+        evidence_meta.addStretch(1)
+        evidence_layout.addLayout(evidence_meta)
+        evidence_text = QLabel(
+            self._orientation_evidence_excerpt(change.triggering_event)
+        )
         evidence_text.setWordWrap(True)
         set_label_style(evidence_text, "body")
-        evidence_layout.addWidget(evidence_text, 1)
+        evidence_layout.addWidget(evidence_text)
+        layout.addWidget(evidence)
         if change.triggering_event.reference_id:
-            open_evidence = QPushButton("Beobachtung öffnen")
-            open_evidence.setObjectName("StudentProfileOrientationEvidenceOpen")
-            configure_button(
-                open_evidence,
-                "quiet",
+            self._make_clickable_card(
+                row,
+                lambda observation_id=change.triggering_event.reference_id: (
+                    self._show_observations_tab(observation_id)
+                ),
                 f"Beobachtung zu {change.competency_label} öffnen",
             )
-            open_evidence.clicked.connect(
-                lambda _checked=False, observation_id=(
-                    change.triggering_event.reference_id
-                ): self._show_observations_tab(observation_id)
+        else:
+            self._make_clickable_card(
+                row,
+                lambda: self._select_profile_section("competencies"),
+                f"Kompetenz {change.competency_label} öffnen",
             )
-            evidence_layout.addWidget(open_evidence)
-        layout.addWidget(evidence)
         row.setAccessibleName(
-            f"{change.competency_label}: {change.previous_status_label} zu "
-            f"{change.new_status_label}, {change.period_label}. "
-            f"{change.triggering_event.evidence_label}"
+            f"{change.competency_label}. Ausgangslage {change.previous_status_label}. "
+            f"Aktueller dokumentierter Stand {change.new_status_label}. "
+            f"{source_text} am {change.triggering_event.event_date.strftime('%d.%m.%Y')}. "
+            f"{self._orientation_evidence_excerpt(change.triggering_event)}"
         )
         return row
+
+    def _orientation_status_row(
+        self,
+        label: str,
+        rating: str,
+        status_label: str,
+    ) -> QHBoxLayout:
+        row = QHBoxLayout()
+        row.setSpacing(8)
+        stage = QLabel(label)
+        set_label_style(stage, "small")
+        row.addWidget(stage, 1)
+        badge = StatusBadge(status_label)
+        badge.setObjectName("StudentProfileDevelopmentStatusBadge")
+        badge.setProperty("ratingToken", rating)
+        row.addWidget(badge, 0)
+        return row
+
+    @staticmethod
+    def _orientation_evidence_excerpt(event: object) -> str:
+        evidence_label = str(getattr(event, "evidence_label", "")).strip()
+        if getattr(event, "source", "") == "observation":
+            if " · " in evidence_label:
+                return f"„{evidence_label.rsplit(' · ', 1)[-1].strip()}“"
+            return "Dokumentierter Stand durch Beobachtung belegt."
+        if getattr(event, "source", "") == "confirmation":
+            return "Dokumentierter Stand wurde bestätigt."
+        return evidence_label
 
     def _dashboard_summary_row(self, label: str, value: str) -> QFrame:
         row = self._card("soft")

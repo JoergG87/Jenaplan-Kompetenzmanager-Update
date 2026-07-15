@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Kompetenz-Entwicklungskarten UX Fix
+
+### Changed
+
+- Lernentwicklungskarten im Schuelerprofil auf Kompetenz, Fach/Thema, textgestuetzte Ausgangslage, aktuellen dokumentierten Stand und genau einen datierten realen Beleg verdichtet.
+- Die Status `--`, `-`, `+` und `++` mit ruhigen Pastell-Badges sowie einem neutralen Abwaertspfeil dargestellt, ohne Score-, Leistungs- oder Ampelsemantik.
+- Separate Beobachtungsbuttons entfernt und die gesamte Karte inklusive Hover, Fokus und Tastaturbedienung an die bestehende Beobachtungs- beziehungsweise Kompetenznavigation angebunden.
+- Historische Referenzen auf ein dezentes Badge reduziert und die Karten fuer 1180 x 760 sowie 1400 x 900 kompakt gehalten.
+
+### Not Changed
+
+- Keine Aenderung an Kompetenzlogik, Statusermittlung, Ereignisauswahl, Datenmodell, IDs, Persistenz, Bewertung oder kanonischer Profilprojektion.
+
 ## Kompetenz-Cockpit UX Fix - Direkte Karteninteraktion
 
 ### Changed

@@ -807,13 +807,57 @@ QFrame#StudentProfileDashboardSummaryRow {{
     border-color: #DFE8EA;
     border-radius: 11px;
 }}
-QLabel#StudentProfileOrientationStatusChange {{
-    color: {COLOR_NAVY};
-    font-size: 12px;
+QFrame#StudentProfileOrientationChange[interactive="true"]:hover {{
+    background-color: #F4F8FC;
+    border-color: #9BBBD2;
+}}
+QFrame#StudentProfileOrientationChange[interactive="true"]:focus {{
+    border: 2px solid {COLOR_FOCUS};
+}}
+QFrame#StudentProfileOrientationChange[interactive="true"][pressed="true"] {{
+    background-color: #EAF2F8;
+    border-color: #7EA6C2;
+}}
+QFrame#StudentProfileOrientationStatusChange {{
+    background-color: transparent;
+    border: none;
+    min-width: 250px;
+}}
+QLabel#StudentProfileDevelopmentStatusBadge {{
+    border: 1px solid #D5E0E4;
+    border-radius: 9px;
+    padding: 3px 8px;
+    font-size: 10px;
     font-weight: 700;
 }}
+QLabel#StudentProfileDevelopmentStatusBadge[ratingToken="--"] {{
+    color: #754B52;
+    background-color: #F9ECEE;
+    border-color: #E8CDD2;
+}}
+QLabel#StudentProfileDevelopmentStatusBadge[ratingToken="-"] {{
+    color: #6F5B2D;
+    background-color: #FBF4DC;
+    border-color: #E8DCA9;
+}}
+QLabel#StudentProfileDevelopmentStatusBadge[ratingToken="+"] {{
+    color: #3F6752;
+    background-color: #EAF5EE;
+    border-color: #CBE1D3;
+}}
+QLabel#StudentProfileDevelopmentStatusBadge[ratingToken="++"] {{
+    color: #315B47;
+    background-color: #DCEDE4;
+    border-color: #B8D5C5;
+}}
+QLabel#StudentProfileDevelopmentArrow {{
+    color: #718491;
+    font-size: 13px;
+    font-weight: 700;
+    min-height: 12px;
+}}
 QFrame#StudentProfileOrientationEvidence {{
-    background-color: #F2F7F7;
+    background-color: #F3F7F8;
     border: none;
     border-radius: 8px;
 }}

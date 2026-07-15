@@ -121,6 +121,8 @@ from src.desktop_app.view_models.student_view_model import (
     StudentDetailViewModel,
     StudentDocumentViewModel,
     StudentProfileDashboardViewModel,
+    StudentProfileOrientationChangeViewModel,
+    StudentProfileOrientationEventViewModel,
     StudentProfileUndocumentedSubjectViewModel,
     StudentReportDevelopmentViewModel,
     StudentListItem,
@@ -5518,22 +5520,177 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Arbeitsprofil", label_texts)
         self.assertIn("Lernentwicklung", label_texts)
         self.assertIn("Texte sinnentnehmend lesen", label_texts)
-        self.assertIn("- in Entwicklung → + erreicht", label_texts)
-        self.assertIn("01.03.2026 – 05.07.2026", label_texts)
+        self.assertIn("Ausgangslage", label_texts)
+        self.assertIn("- in Entwicklung", label_texts)
+        self.assertIn("Aktueller dokumentierter Stand", label_texts)
+        self.assertIn("+ erreicht", label_texts)
+        self.assertIn("05.07.2026", label_texts)
+        self.assertIn("Beobachtung", label_texts)
+        self.assertIn("„Präsentation“", label_texts)
+        self.assertNotIn("- in Entwicklung → + erreicht", label_texts)
+        self.assertNotIn("01.03.2026 – 05.07.2026", label_texts)
         self.assertIn(
             "2026-07-06 · Mathematik · Projektarbeit · Neueste Beobachtung.",
             label_texts,
         )
         self.assertNotIn("Stärken", label_texts)
         self.assertNotIn("Im Blick behalten", label_texts)
-        evidence_button = screen.findChild(
-            QPushButton,
-            "StudentProfileOrientationEvidenceOpen",
+        self.assertIsNone(
+            screen.findChild(
+                QPushButton,
+                "StudentProfileOrientationEvidenceOpen",
+            )
         )
-        self.assertIsNotNone(evidence_button)
-        evidence_button.click()
+        development_card = screen.findChild(
+            QFrame, "StudentProfileOrientationChange"
+        )
+        screen.resize(1180, 760)
+        screen.show()
+        QApplication.processEvents()
+        QTest.mouseClick(development_card, Qt.MouseButton.LeftButton)
         self.assertEqual(screen.profile_tabs.currentIndex(), 1)
         self.assertEqual(screen._focused_observation_id, "OBS-000002")
+        self.assertIsNotNone(app)
+
+    def test_student_profile_development_badges_render_all_documented_statuses(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        changes = (
+            StudentProfileOrientationChangeViewModel(
+                "CMP-TEST-1", "Kommunikation", "Deutsch", "Gespräche führen",
+                "--", "-- Unterstützungsbedarf", "-", "- in Entwicklung",
+                "01.02.2026 – 01.03.2026", date(2026, 3, 1),
+                StudentProfileOrientationEventViewModel(
+                    date(2026, 3, 1), "-", "- in Entwicklung", "observation",
+                    "Beobachtung", "OBS-TEST-1",
+                    "Beobachtung vom 01.03.2026: - in Entwicklung · Gesprächskreis",
+                ),
+                1,
+            ),
+            StudentProfileOrientationChangeViewModel(
+                "CMP-TEST-2", "Zeit", "Mathematik", "Uhrzeit",
+                "+", "+ erreicht", "++", "++ sicher erreicht",
+                "01.04.2026 – 01.05.2026", date(2026, 5, 1),
+                StudentProfileOrientationEventViewModel(
+                    date(2026, 5, 1), "++", "++ sicher erreicht", "confirmation",
+                    "Kompetenz bestätigt", "",
+                    "Kompetenz bestätigt am 01.05.2026: ++ sicher erreicht",
+                ),
+                2,
+            ),
+        )
+
+        cards = tuple(screen._orientation_change_row(change) for change in changes)
+        badges = tuple(
+            badge
+            for card in cards
+            for badge in card.findChildren(
+                QLabel, "StudentProfileDevelopmentStatusBadge"
+            )
+        )
+
+        self.assertEqual(
+            tuple(badge.property("ratingToken") for badge in badges),
+            ("--", "-", "+", "++"),
+        )
+        self.assertEqual(
+            tuple(badge.text() for badge in badges),
+            (
+                "-- Unterstützungsbedarf",
+                "- in Entwicklung",
+                "+ erreicht",
+                "++ sicher erreicht",
+            ),
+        )
+        self.assertIsNotNone(app)
+
+    def test_student_profile_historical_development_is_quiet_and_read_only(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        status = self._cockpit_status(
+            "CMP-HIST-1",
+            "Zeitspannen bestimmen (alter Katalogstand)",
+            subject_id="mathematik",
+            subject_name="Mathematik",
+            confirmed_rating="+",
+            confirmed_at="2026-06-12T09:00:00+00:00",
+            historical=True,
+            evidence=(StudentCompetencyEvidenceViewModel(
+                "OBS-HIST-1", "2026-02-01", "-", "mathematik", "Mathematik",
+                "Größen und Messen", "Zeit",
+                "Zeitspannen bestimmen (alter Katalogstand)", "Unterricht",
+            ),),
+        )
+        dashboard = build_student_profile_dashboard(
+            (status,), (), date(2026, 7, 14)
+        )
+        screen.set_student(
+            self._sample_student_detail(),
+            profile_dashboard=dashboard,
+        )
+
+        historical_badge = screen.findChild(QLabel, "StudentProfileHistoricalBadge")
+        development_card = screen.findChild(
+            QFrame, "StudentProfileOrientationChange"
+        )
+
+        self.assertEqual(historical_badge.text(), "Historische Referenz")
+        self.assertIsNone(
+            screen.findChild(QPushButton, "StudentProfileOrientationEvidenceOpen")
+        )
+        QTest.keyClick(development_card, Qt.Key.Key_Return)
+        self.assertEqual(screen.profile_tabs.currentIndex(), 2)
+        self.assertIsNotNone(app)
+
+    def test_student_profile_development_cards_fit_supported_profile_sizes(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        status = self._cockpit_status(
+            "CMP-000001",
+            "Texte sinnentnehmend lesen und zentrale Aussagen benennen",
+            subject_id="deutsch",
+            subject_name="Deutsch",
+            topic="Lesen",
+            evidence=(
+                StudentCompetencyEvidenceViewModel(
+                    "OBS-000001", "2026-03-01", "-", "deutsch", "Deutsch",
+                    "Mit Texten und Medien umgehen", "Lesen",
+                    "Texte sinnentnehmend lesen", "Leseübung",
+                ),
+                StudentCompetencyEvidenceViewModel(
+                    "OBS-000002", "2026-07-05", "+", "deutsch", "Deutsch",
+                    "Mit Texten und Medien umgehen", "Lesen",
+                    "Texte sinnentnehmend lesen", "Präsentation",
+                ),
+            ),
+        )
+        dashboard = build_student_profile_dashboard(
+            (status,), (), date(2026, 7, 14)
+        )
+
+        for width, height, compact in ((1180, 760, True), (1400, 900, False)):
+            with self.subTest(size=(width, height)):
+                screen = student_profile_screen.StudentProfileScreen()
+                screen.set_student(
+                    self._sample_student_detail(),
+                    profile_dashboard=dashboard,
+                )
+                screen.resize(width, height)
+                screen.show()
+                QApplication.processEvents()
+                overview_scroll = screen.profile_tabs.widget(0)
+                development_card = screen.findChild(
+                    QFrame, "StudentProfileOrientationChange"
+                )
+
+                self.assertIsInstance(overview_scroll, QScrollArea)
+                self.assertEqual(overview_scroll.horizontalScrollBar().maximum(), 0)
+                self.assertEqual(screen._overview_compact, compact)
+                self.assertLessEqual(development_card.minimumSizeHint().height(), 180)
+                screen.close()
         self.assertIsNotNone(app)
 
     def test_student_profile_overview_does_not_invent_strengths_without_data(self) -> None:
@@ -7018,6 +7175,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
             'QFrame#CompetencyCockpitCompetencyRow[interactive="true"]:focus',
             stylesheet,
         )
+        self.assertIn(
+            'QFrame#StudentProfileOrientationChange[interactive="true"]:hover',
+            stylesheet,
+        )
+        for rating in ("--", "-", "+", "++"):
+            self.assertIn(
+                f'QLabel#StudentProfileDevelopmentStatusBadge[ratingToken="{rating}"]',
+                stylesheet,
+            )
 
     def test_shell_svg_icons_and_native_font_tokens_are_registered(self) -> None:
         theme_source = inspect.getsource(theme)

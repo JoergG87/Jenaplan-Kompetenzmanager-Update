@@ -1764,7 +1764,8 @@ Registrierte Profilnamen:
 - `StudentProfileOrientationChange`
 - `StudentProfileOrientationStatusChange`
 - `StudentProfileOrientationEvidence`
-- `StudentProfileOrientationEvidenceOpen`
+- `StudentProfileDevelopmentStatusBadge`
+- `StudentProfileDevelopmentArrow`
 - `StudentProfileEvidenceBadge`
 - `StudentProfileHistoricalBadge`
 - `StudentProfileCompetencySummaryCard`
@@ -1781,6 +1782,8 @@ Registrierte Profilnamen:
 - `StudentProfileScreen._update_profile_header_context()`
 - `StudentProfileScreen._apply_overview_card_layout(compact)`
 - `StudentProfileScreen._orientation_change_row(change)`
+- `StudentProfileScreen._orientation_status_row(label, rating, status_label)`
+- `StudentProfileScreen._orientation_evidence_excerpt(event)`
 - `StudentProfileScreen._open_undocumented_competencies()`
 - `StudentProfileScreen._matches_competency_learning_stage(competency, learning_stage_filter)`
 - `StudentProfileScreen._matches_competency_search(competency, learning_area, topic, search_text)`
