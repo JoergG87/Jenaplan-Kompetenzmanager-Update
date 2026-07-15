@@ -119,6 +119,9 @@ class MotionSystemTest(unittest.TestCase):
         self.assertEqual(list(card._motion_animations), ["card_hover"])
         card._motion_animations["card_hover"].setCurrentTime(MOTION_FAST_MS)
         self.assertAlmostEqual(card._motion_hover_progress, 1.0)
+        self.assertAlmostEqual(controller.effect.blurRadius(), 14.0)
+        self.assertAlmostEqual(controller.effect.offset().y(), 2.0)
+        self.assertEqual(controller.effect.color().alpha(), 30)
 
         controller._set_hovered(False)
         card._motion_animations["card_hover"].setCurrentTime(MOTION_FAST_MS)

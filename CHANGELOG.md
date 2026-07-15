@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Premium UI Sprint 4 - Visual Signature und Release Polish
+
+### Changed
+
+- Product Shell mit einem sehr ruhigen blau-grauen Arbeitsflaechenverlauf und einer tonal abgestuften tiefblauen Sidebar als finale visuelle Signatur verfeinert.
+- Glasakzente auf Navigation, Suche, Filter, Menues, Tooltips und kleine Overlays begrenzt; Inhaltskarten, Tabellen, Formulare und Dokumentflaechen bewusst opak gehalten.
+- Kartenhierarchie ueber feine Tiefenkanten statt starker Floating-Schatten praezisiert und die vorhandene interaktive Card-Elevation kuerzer, naeher an der Flaeche und ruhiger abgestimmt.
+- Dashboard-, Profil-, Bericht- und LEG-Fokusbereiche ohne Groessen-, Workflow- oder Farbsemantikaenderung klarer von sekundaeren Flaechen getrennt.
+- Tabellenheader, Hover und Auswahl sowie Kontextmenues, Tooltips und Scrollbars auf denselben ruhigen blau-grauen Kontrastvertrag ausgerichtet.
+
+### Not Changed
+
+- Keine neue Funktion, Fachlogik, Datenmodell-, SQLite-, Persistenz-, Repository-, Service-, Adapter-, ViewModel-, Workflow-, Navigations- oder Screen-Aenderung; keine neuen Animationstypen und kein QPainter.
+
 ## UI Fix - Kursfarben als Kontextbadges
 
 ### Added

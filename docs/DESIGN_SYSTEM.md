@@ -1,5 +1,17 @@
 # Design-System
 
+## Visual Signature und Release Polish - Premium UI Sprint 4
+
+Die finale visuelle Signatur entsteht in der bestehenden Product Shell: ein sehr ruhiger blau-grauer Hintergrundverlauf trennt die Arbeitsflaeche von der tiefblauen, tonal abgestuften Sidebar. Aktive Navigation bleibt durch Flaeche, Text, linken Marker und sichtbaren Fokus eindeutig. Die Signatur fuehrt weder eine neue Navigation noch einen neuen Screen ein und bleibt bei allen freigegebenen Fenstergroessen stabil.
+
+Glas bleibt ein Akzent fuer Sidebar, obere Navigationsflaechen, `SearchField`, `FilterBar`, Menues, Tooltips und kleine Overlays. Inhaltskarten, Tabellen, Formulare und Dokumentflaechen sind opak. Transparenz simuliert dort ausschliesslich leichte Tiefe vor dem Shell-Hintergrund; Blur, native Plattformtransparenz und grossflaechiges Glassmorphism bleiben ausgeschlossen.
+
+Normale `AppCard`-Flaechen erhalten eine feine untere Tiefenkante statt eines starken Schattens. `soft` bleibt flach, `accent` darf als einziger Fokusbereich eine etwas deutlichere Surface-Hierarchie zeigen. Nur interaktive Karten besitzen eine kurze Hover-Elevation; sie bleibt layoutneutral, verwendet `MOTION_FAST_MS` mit `OutCubic` und wird bei Reduced Motion unmittelbar in den Endzustand gesetzt. Es entstehen keine neuen Animationstypen und keine Screen-Uebergaenge.
+
+Dashboard-Hero, Schuelerprofilkopf, Berichtskontext und LEG-Kontext bleiben die vier bewusst hervorgehobenen Fokusbereiche. Sie werden nicht vergroessert und erhalten keine neue Farbsemantik. Tabellen, Listen, Header, Kontextmenues, Tooltips, Divider und Scrollbars verwenden denselben blau-grauen Kontrast- und Fokusvertrag. Das bestehende Outline-SVG-System behaelt die Rollen `16`, `20` und `24`; die unterschiedlichen Vordergrundfarben dienen ausschliesslich dem hellen Sidebar- beziehungsweise hellen Inhaltskontext.
+
+QPainter wird nicht eingesetzt. Standardwidgets, zentrale QSS-Zustaende und das bestehende Motion-System liefern den benoetigten High-DPI-, Tastatur-, Fokus- und Reduced-Motion-Schutz. Die Release-Pruefung umfasst `1180 x 760`, `1280 x 800`, `1400 x 900` sowie Device Pixel Ratio 2.
+
 ## Informationsdichte und Accessibility - Premium UI Sprint 3
 
 Informationsdichte bedeutet schnellere Erfassbarkeit, nicht mehr sichtbare Information. Produktive Listen und Tabellen priorisieren deshalb je Zeile Identität, fachlichen Kontext, textlich benannten Status und vorhandene Aktion. Sekundäre Metadaten bleiben typografisch ruhig; technische IDs bleiben verborgen oder im Tooltip. Standarddichte sind 44 bis 46 Pixel hohe Tabellenzeilen, kompakte Card-Zeilen und mindestens 28 Pixel hohe Listeneinträge. Lange Texte umbrechen in Inhaltsflächen oder werden in Tabellen mit vollständigem Tooltip angeboten.

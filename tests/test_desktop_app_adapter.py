@@ -7271,6 +7271,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_component_library_v2_styles_semantic_states_centrally(self) -> None:
         stylesheet = theme.APP_STYLESHEET
+        card_surface = stylesheet.split(
+            'QFrame#AppCard, QFrame[cardVariant="default"]',
+            1,
+        )[1].split("}", 1)[0]
+        table_surface = stylesheet.split(
+            "QTableWidget, QListWidget, QTreeWidget",
+            1,
+        )[1].split("}", 1)[0]
 
         self.assertIn('QFrame#AppCard[cardVariant="interactive"]:hover', stylesheet)
         self.assertIn('QFrame#AppCard[selected="true"]', stylesheet)
@@ -7279,6 +7287,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("QPushButton:disabled", stylesheet)
         self.assertIn("QTableWidget#PremiumTable", stylesheet)
         self.assertIn("QLineEdit#SearchField:focus", stylesheet)
+        self.assertIn(f"background-color: {theme.COLOR_SURFACE};", card_surface)
+        self.assertNotIn(theme.COLOR_GLASS, card_surface)
+        self.assertIn(f"background-color: {theme.COLOR_SURFACE};", table_surface)
+        self.assertNotIn(theme.COLOR_GLASS, table_surface)
+        self.assertIn(
+            "QFrame#FilterBar {\n    background-color: rgba(255, 255, 255, 232);",
+            stylesheet,
+        )
         self.assertIn(
             'QFrame#CompetencyCockpitLearningAreaCard[interactive="true"]:hover',
             stylesheet,

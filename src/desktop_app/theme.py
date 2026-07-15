@@ -15,7 +15,7 @@ COLOR_BLUE_SOFT = "#DBEAFE"
 COLOR_TURQUOISE = "#0EA5A7"
 COLOR_GREEN = "#16A34A"
 COLOR_ORANGE = "#F97316"
-COLOR_BACKGROUND = "#F2F6F9"
+COLOR_BACKGROUND = "#EEF3F7"
 COLOR_SURFACE = "#FFFFFF"
 COLOR_SURFACE_SOFT = "#F7FAFC"
 COLOR_GLASS = "rgba(255, 255, 255, 246)"
@@ -72,11 +72,21 @@ QMainWindow {{
     color: {COLOR_TEXT};
 }}
 QWidget#AppRoot {{
-    background-color: {COLOR_BACKGROUND};
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0 #EAF1F6,
+        stop: 0.56 #F3F7FA,
+        stop: 1 #EAF1F5
+    );
 }}
 QWidget#AppSidebar {{
-    background-color: {COLOR_NAVY};
-    border-right: 1px solid #285B83;
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 0, y2: 1,
+        stop: 0 rgba(11, 58, 99, 252),
+        stop: 0.54 rgba(10, 65, 105, 250),
+        stop: 1 rgba(8, 53, 89, 252)
+    );
+    border-right: 1px solid #35698F;
     border-top-right-radius: 16px;
     border-bottom-right-radius: 16px;
 }}
@@ -120,12 +130,12 @@ QListWidget#AppNavigation::item {{
     margin: 2px 0;
 }}
 QListWidget#AppNavigation::item:selected {{
-    background-color: #1C527D;
-    border-left: 3px solid #8EC5FF;
+    background-color: rgba(103, 172, 225, 32);
+    border-left: 3px solid #9ED2FA;
     color: #FFFFFF;
 }}
 QListWidget#AppNavigation::item:hover {{
-    background-color: #174A74;
+    background-color: rgba(93, 158, 207, 25);
     color: #FFFFFF;
 }}
 QListWidget#AppNavigation::item:focus {{
@@ -142,17 +152,20 @@ QListWidget#AppNavigation::item:disabled {{
 }}
 QFrame#AppCard, QFrame[cardVariant="default"], QFrame[cardVariant="soft"],
 QFrame[cardVariant="accent"], QFrame[cardVariant="interactive"] {{
-    background-color: {COLOR_GLASS};
+    background-color: {COLOR_SURFACE};
     border: 1px solid #D5E0E8;
+    border-bottom: 2px solid #C9D7E1;
     border-radius: 13px;
 }}
 QFrame[cardVariant="soft"] {{
     background-color: {COLOR_SURFACE_SOFT};
     border-color: #DEE7ED;
+    border-bottom-width: 1px;
 }}
 QFrame[cardVariant="accent"] {{
     background-color: #EEF5FF;
     border-color: #B8CEE8;
+    border-bottom: 2px solid #9FBBD5;
 }}
 QFrame#AppCard[cardVariant="interactive"]:hover,
 QFrame[cardVariant="interactive"]:hover {{
@@ -189,8 +202,9 @@ QFrame#DashboardHero {{
 }}
 QFrame#DashboardTimeline, QFrame#DashboardHeatmap,
 QFrame#DashboardMatchingChildren {{
-    background-color: {COLOR_GLASS};
+    background-color: {COLOR_SURFACE};
     border: 1px solid #D8E4EC;
+    border-bottom: 2px solid #CBD9E3;
     border-radius: 15px;
 }}
 QLabel#DashboardHeroTitle {{
@@ -290,7 +304,7 @@ QFrame#CourseColorMarker {{
 QWidget#SectionHeader {{ background-color: transparent; }}
 QLabel#SectionHeaderTitle {{ font-size: 16px; font-weight: 650; }}
 QFrame#DialogHeader {{
-    background-color: transparent;
+    background-color: {COLOR_GLASS};
     border: none;
     border-bottom: 1px solid #D7E2EA;
 }}
@@ -319,6 +333,7 @@ QDialogButtonBox#ObservationPersistentActions {{
 QFrame#FilterBar {{
     background-color: rgba(255, 255, 255, 232);
     border: 1px solid #D7E2EA;
+    border-bottom: 2px solid #C8D8E3;
     border-radius: 11px;
 }}
 QPushButton#FilterChip {{
@@ -354,8 +369,9 @@ QPushButton#IconButton:focus {{
 }}
 QLineEdit#SearchField {{
     min-height: 22px;
-    background-color: #FFFFFF;
+    background-color: {COLOR_GLASS};
     border: 1px solid #C5D3DE;
+    border-bottom: 2px solid #B8CAD7;
     border-radius: 10px;
     padding: 7px 11px;
 }}
@@ -379,13 +395,13 @@ QFrame#DashboardHeatmapCell[coverageLevel="2"] QFrame#DashboardHeatmapMarker {{ 
 QFrame#DashboardHeatmapCell[coverageLevel="3"] QFrame#DashboardHeatmapMarker {{ background-color: #6F91B2; }}
 QFrame#DashboardHeatmapCell[coverageLevel="4"] QFrame#DashboardHeatmapMarker {{ background-color: #4F7599; }}
 QFrame#LearningReportTopBar {{
-    background-color: #FFFFFF;
+    background-color: {COLOR_GLASS};
     border: none;
     border-bottom: 1px solid #D8E2E7;
     border-radius: 0px;
 }}
 QFrame#LearningReportTopBar QWidget#PageHeader {{
-    background-color: #FFFFFF;
+    background-color: transparent;
 }}
 QLabel#LearningReportBrand {{
     color: #FFFFFF;
@@ -412,11 +428,11 @@ QPushButton#LearningReportModeButton:checked {{
     color: {COLOR_NAVY};
 }}
 QFrame#LearningReportSidebar {{
-    background-color: #F7FAFB;
+    background-color: {COLOR_GLASS_SOFT};
     border-right: 1px solid #D8E2E7;
 }}
 QFrame#LearningReportWorkspaceNavigation {{
-    background-color: #F7FAFB;
+    background-color: {COLOR_GLASS_SOFT};
     border: none;
     border-bottom: 1px solid #D8E2E7;
 }}
@@ -499,7 +515,7 @@ QFrame#LearningConferenceWorkspace {{
     border: none;
 }}
 QFrame#LearningConferencePhaseNavigation {{
-    background-color: #F4F7F9;
+    background-color: {COLOR_GLASS_SOFT};
     border: 1px solid #D8E4EC;
     border-radius: 14px;
 }}
@@ -1136,6 +1152,10 @@ QMenu::item:selected {{
     background-color: #E7F0F8;
     color: {COLOR_NAVY};
 }}
+QMenu::item:disabled {{
+    color: #93A1AE;
+    background-color: transparent;
+}}
 QMenu::separator {{
     height: 1px;
     background-color: #E2E9EE;
@@ -1144,7 +1164,7 @@ QMenu::separator {{
 QToolTip {{
     background-color: #243A4C;
     color: #FFFFFF;
-    border: 1px solid #3B566C;
+    border: 1px solid #49677F;
     border-radius: 6px;
     padding: 5px 7px;
 }}
@@ -1200,7 +1220,7 @@ QTabBar::tab:selected {{
     font-weight: 650;
 }}
 QTableWidget, QListWidget, QTreeWidget {{
-    background-color: {COLOR_GLASS};
+    background-color: {COLOR_SURFACE};
     alternate-background-color: #F3F8FB;
     border: 1px solid {COLOR_BORDER};
     border-radius: 8px;
@@ -1220,8 +1240,8 @@ QTableWidget#PremiumTable::item {{
     border-bottom: 1px solid #E8EEF2;
     padding: 9px 10px;
 }}
-QTableWidget#PremiumTable::item:hover {{ background-color: #F2F7FB; }}
-QTableWidget#PremiumTable::item:selected {{ background-color: #E6F0FB; color: {COLOR_TEXT}; }}
+QTableWidget#PremiumTable::item:hover {{ background-color: #F4F8FB; }}
+QTableWidget#PremiumTable::item:selected {{ background-color: #E2EEF9; color: {COLOR_TEXT}; }}
 QTableWidget#PremiumTable::item:focus {{
     border: 1px solid {COLOR_FOCUS};
     background-color: #EDF5FF;
@@ -1250,14 +1270,14 @@ QTreeWidget::item:hover {{ background-color: #F2F7FB; }}
 QTreeWidget::item:selected {{ background-color: #E6F0FB; color: {COLOR_TEXT}; }}
 QTreeWidget::item:focus {{ border: 1px solid {COLOR_FOCUS}; }}
 QHeaderView::section {{
-    background-color: #E8F0F6;
+    background-color: #EAF1F5;
     color: {COLOR_NAVY};
     border: none;
     border-bottom: 1px solid {COLOR_BORDER};
     padding: 7px 8px;
     font-weight: 600;
 }}
-QHeaderView::section:hover {{ background-color: #DCE8F1; }}
+QHeaderView::section:hover {{ background-color: #DDE8EF; }}
 QFrame[frameShape="4"] {{
     background-color: #DDE6EC;
     border: none;
@@ -1274,12 +1294,12 @@ QScrollBar:vertical {{
     margin: 2px 1px;
 }}
 QScrollBar::handle:vertical {{
-    background-color: #B5C4D0;
+    background-color: #B8C6D0;
     border-radius: 4px;
     min-height: 32px;
 }}
-QScrollBar::handle:vertical:hover {{ background-color: #8FA4B5; }}
-QScrollBar::handle:vertical:pressed {{ background-color: #748C9F; }}
+QScrollBar::handle:vertical:hover {{ background-color: #8CA2B3; }}
+QScrollBar::handle:vertical:pressed {{ background-color: #70899D; }}
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
     height: 0px;
     background: transparent;
@@ -1293,12 +1313,12 @@ QScrollBar:horizontal {{
     margin: 1px 2px;
 }}
 QScrollBar::handle:horizontal {{
-    background-color: #B5C4D0;
+    background-color: #B8C6D0;
     border-radius: 4px;
     min-width: 32px;
 }}
-QScrollBar::handle:horizontal:hover {{ background-color: #8FA4B5; }}
-QScrollBar::handle:horizontal:pressed {{ background-color: #748C9F; }}
+QScrollBar::handle:horizontal:hover {{ background-color: #8CA2B3; }}
+QScrollBar::handle:horizontal:pressed {{ background-color: #70899D; }}
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
     width: 0px;
     background: transparent;
@@ -1311,7 +1331,7 @@ QGroupBox {{
     border-radius: 10px;
     margin-top: 10px;
     padding: 10px;
-    background-color: {COLOR_GLASS_SOFT};
+    background-color: {COLOR_SURFACE_SOFT};
     font-weight: 600;
     color: {COLOR_NAVY};
 }}
