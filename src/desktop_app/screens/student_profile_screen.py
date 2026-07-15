@@ -1006,9 +1006,7 @@ class StudentProfileScreen(QWidget):
         stage = QLabel(label)
         set_label_style(stage, "small")
         row.addWidget(stage, 1)
-        badge = StatusBadge(status_label)
-        badge.setObjectName("StudentProfileDevelopmentStatusBadge")
-        badge.setProperty("ratingToken", rating)
+        badge = StatusBadge(status_label, rating_token=rating)
         row.addWidget(badge, 0)
         return row
 

@@ -1682,6 +1682,9 @@ Registrierte Komponenten und Helfer (Component Library V1 und V2):
 - `SearchField.find_shortcut`
 - `StatusBadge`
 - `StatusBadge.setText(text)`
+- `StatusBadge.ratingToken`
+- `RatingBadgeButton`
+- `apply_rating_badge_variant(widget, rating_token)`
 - `InlineMessage`
 - `EmptyState`
 - `EmptyState._update_accessibility()`
@@ -1794,7 +1797,6 @@ Registrierte Profilnamen:
 - `StudentProfileOrientationChange`
 - `StudentProfileOrientationStatusChange`
 - `StudentProfileOrientationEvidence`
-- `StudentProfileDevelopmentStatusBadge`
 - `StudentProfileDevelopmentArrow`
 - `StudentProfileEvidenceBadge`
 - `StudentProfileHistoricalBadge`

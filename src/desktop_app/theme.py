@@ -389,6 +389,64 @@ QLabel#StatusBadge, QLabel#LearningConferenceDirtyBadge {{
 QLabel#StatusBadge[badgeTone="info"], QLabel#LearningConferenceDirtyBadge[badgeTone="info"] {{ background-color: #E8F2FB; color: {COLOR_INFO}; border-color: #C7DCEB; }}
 QLabel#StatusBadge[badgeTone="success"], QLabel#LearningConferenceDirtyBadge[badgeTone="success"] {{ background-color: #EAF6F0; color: {COLOR_SUCCESS}; border-color: #C7E3D6; }}
 QLabel#StatusBadge[badgeTone="warning"], QLabel#LearningConferenceDirtyBadge[badgeTone="warning"] {{ background-color: #FFF6E8; color: #76501E; border-color: #ECD8A6; }}
+QLabel#StatusBadge[ratingBadge="true"],
+QPushButton#RatingBadgeButton[ratingBadge="true"] {{
+    border: 1px solid #D5E0E4;
+    border-radius: 9px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 700;
+}}
+QLabel#StatusBadge[ratingToken="--"],
+QPushButton#RatingBadgeButton[ratingToken="--"] {{
+    color: #754B52;
+    background-color: #F9ECEE;
+    border-color: #E8CDD2;
+}}
+QLabel#StatusBadge[ratingToken="-"],
+QPushButton#RatingBadgeButton[ratingToken="-"] {{
+    color: #6F5B2D;
+    background-color: #FBF4DC;
+    border-color: #E8DCA9;
+}}
+QLabel#StatusBadge[ratingToken="+"],
+QPushButton#RatingBadgeButton[ratingToken="+"] {{
+    color: #3F6752;
+    background-color: #EAF5EE;
+    border-color: #CBE1D3;
+}}
+QLabel#StatusBadge[ratingToken="++"],
+QPushButton#RatingBadgeButton[ratingToken="++"] {{
+    color: #315B47;
+    background-color: #DCEDE4;
+    border-color: #B8D5C5;
+}}
+QPushButton#RatingBadgeButton:hover {{
+    border: 2px solid #7897B0;
+    padding: 2px 7px;
+}}
+QPushButton#RatingBadgeButton:pressed {{
+    border: 2px solid #38546B;
+    padding: 2px 7px;
+}}
+QPushButton#RatingBadgeButton:checked {{
+    border: 2px solid {COLOR_NAVY};
+    padding: 2px 7px;
+    font-weight: 750;
+}}
+QPushButton#RatingBadgeButton:focus {{
+    border: 2px solid {COLOR_FOCUS};
+    padding: 2px 7px;
+}}
+QPushButton#RatingBadgeButton:checked:pressed {{
+    background-color: #E1ECF5;
+    border-color: #38546B;
+}}
+QPushButton#RatingBadgeButton:disabled {{
+    color: #718096;
+    background-color: #EDF2F6;
+    border-color: #D8E2EA;
+}}
 QFrame#DashboardHeatmapCell[coverageLevel="0"] QFrame#DashboardHeatmapMarker {{ background-color: #CBD5E1; }}
 QFrame#DashboardHeatmapCell[coverageLevel="1"] QFrame#DashboardHeatmapMarker {{ background-color: #B7C9DC; }}
 QFrame#DashboardHeatmapCell[coverageLevel="2"] QFrame#DashboardHeatmapMarker {{ background-color: #91ADC8; }}
@@ -839,33 +897,6 @@ QFrame#StudentProfileOrientationStatusChange {{
     border: none;
     min-width: 250px;
 }}
-QLabel#StudentProfileDevelopmentStatusBadge {{
-    border: 1px solid #D5E0E4;
-    border-radius: 9px;
-    padding: 3px 8px;
-    font-size: 10px;
-    font-weight: 700;
-}}
-QLabel#StudentProfileDevelopmentStatusBadge[ratingToken="--"] {{
-    color: #754B52;
-    background-color: #F9ECEE;
-    border-color: #E8CDD2;
-}}
-QLabel#StudentProfileDevelopmentStatusBadge[ratingToken="-"] {{
-    color: #6F5B2D;
-    background-color: #FBF4DC;
-    border-color: #E8DCA9;
-}}
-QLabel#StudentProfileDevelopmentStatusBadge[ratingToken="+"] {{
-    color: #3F6752;
-    background-color: #EAF5EE;
-    border-color: #CBE1D3;
-}}
-QLabel#StudentProfileDevelopmentStatusBadge[ratingToken="++"] {{
-    color: #315B47;
-    background-color: #DCEDE4;
-    border-color: #B8D5C5;
-}}
 QLabel#StudentProfileDevelopmentArrow {{
     color: #718491;
     font-size: 13px;
@@ -972,21 +1003,6 @@ QPushButton#ObservationHierarchyToggle {{
 }}
 QPushButton#ObservationHierarchyToggle:hover {{ background-color: #EEF6FB; }}
 QPushButton#ObservationHierarchyToggle:focus {{ border: 2px solid {COLOR_FOCUS}; }}
-QPushButton#ObservationRatingChip {{
-    background-color: #F7FAFC;
-    border: 1px solid #D2E0EA;
-    border-radius: 7px;
-    color: #38546B;
-    min-height: 27px;
-    padding: 3px 7px;
-    font-size: 11px;
-    font-weight: 600;
-}}
-QPushButton#ObservationRatingChip:checked {{
-    background-color: {COLOR_BLUE};
-    border-color: {COLOR_BLUE};
-    color: #FFFFFF;
-}}
 QPushButton#ObservationRemoveCompetencyButton {{
     min-width: 30px;
     max-width: 30px;

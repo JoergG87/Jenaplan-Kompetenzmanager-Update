@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## UI-Fix - Pastell-Bewertungsbadges im Beobachtungsdialog
+
+### Changed
+
+- Die vier textgestuetzten Bewertungsstufen im Beobachtungsdialog verwenden jetzt dieselbe zentrale `ratingToken`-Pastellvariante wie die Lernentwicklungskarten.
+- Auswahl, Hover, Fokus, Pressed und Disabled sind zentral gestaltet; die aktive Stufe bleibt zusaetzlich durch Haken, Rahmen, Schriftgewicht und nativen Auswahlstatus erkennbar. Ein kompaktes 2-mal-2-Raster haelt alle Bedeutungen auch bei 1180 x 760 vollstaendig sichtbar.
+- Accessible Names nennen Symbol, sichtbare Bedeutung und Auswahlstatus; Maus, Enter und Leertaste bedienen weiterhin die vollstaendige Bewertungsflaeche.
+
+### Not Changed
+
+- Keine Aenderung an den gespeicherten Werten `--`, `-`, `+`, `++`, Bewertungs- oder Kompetenzlogik, Datenmodell, SQLite, Backend-Schichten, Speicherablauf oder Validierung.
+
 ## Sprint 8D - Laura-Pilotpaket
 
 ### Added

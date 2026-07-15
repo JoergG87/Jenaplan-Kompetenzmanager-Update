@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
     QGraphicsOpacityEffect,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -33,6 +34,7 @@ from src.desktop_app.components import (
     DialogHeader,
     EmptyState,
     InlineMessage,
+    RatingBadgeButton,
     SearchField,
     SectionHeader,
     SegmentedControl,
@@ -75,24 +77,25 @@ class ObservationRatingSelector(QWidget):
 
     def __init__(self, initial_rating: str = "") -> None:
         super().__init__()
-        layout = QHBoxLayout(self)
+        layout = QGridLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
         self.button_group = QButtonGroup(self)
         self.button_group.setExclusive(True)
         self.buttons: dict[str, QPushButton] = {}
-        for rating_option in OBSERVATION_RATING_OPTIONS:
+        for index, rating_option in enumerate(OBSERVATION_RATING_OPTIONS):
             rating = rating_option.split(" ", 1)[0]
-            button = QPushButton(rating_option)
-            button.setObjectName("ObservationRatingChip")
-            button.setCheckable(True)
-            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button = RatingBadgeButton(rating_option, rating)
             button.setProperty("rating", rating)
-            button.setAccessibleName(f"Bewertung {rating_option}")
-            configure_button(button, "secondary")
+            button.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Fixed,
+            )
             self.button_group.addButton(button)
             self.buttons[rating] = button
-            layout.addWidget(button)
+            layout.addWidget(button, index // 2, index % 2)
         self.set_current_data(initial_rating)
 
     def currentData(self) -> str:  # noqa: N802 - matches QComboBox contract

@@ -382,16 +382,67 @@ class SearchField(QLineEdit):
 class StatusBadge(QLabel):
     """Compact, neutral status label."""
 
-    def __init__(self, text: str = "", *, tone: str = "neutral") -> None:
+    def __init__(
+        self,
+        text: str = "",
+        *,
+        tone: str = "neutral",
+        rating_token: str = "",
+    ) -> None:
         super().__init__(text)
         self.setObjectName("StatusBadge")
         self.setProperty("badgeTone", tone)
+        if rating_token:
+            apply_rating_badge_variant(self, rating_token)
         self.setAccessibleName(text)
 
     def setText(self, text: str) -> None:  # noqa: N802
         """Keep the spoken status synchronized with its visible wording."""
         super().setText(text)
         self.setAccessibleName(text)
+
+
+def apply_rating_badge_variant(widget: QWidget, rating_token: str) -> None:
+    """Apply the shared four-level rating palette without owning rating logic."""
+    if rating_token not in {"--", "-", "+", "++"}:
+        raise ValueError(f"Unbekannte Bewertungsstufe: {rating_token}")
+    widget.setProperty("ratingBadge", True)
+    widget.setProperty("ratingToken", rating_token)
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
+
+
+class RatingBadgeButton(QPushButton):
+    """Checkable rating badge with visible and spoken selection state."""
+
+    def __init__(self, text: str, rating_token: str) -> None:
+        super().__init__(text)
+        self._rating_text = text
+        self.setObjectName("RatingBadgeButton")
+        self.setCheckable(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        apply_rating_badge_variant(self, rating_token)
+        self.toggled.connect(self._sync_selection_state)
+        self._sync_selection_state(False)
+
+    def _sync_selection_state(self, selected: bool) -> None:
+        self.setText(f"✓ {self._rating_text}" if selected else self._rating_text)
+        state = "ausgewählt" if selected else "nicht ausgewählt"
+        self.setAccessibleName(f"Bewertung {self._rating_text}, {state}")
+        self.setAccessibleDescription(
+            "Gespeicherte Bewertungsstufe. "
+            f"Aktueller Auswahlstatus: {state}."
+        )
+        self.setProperty("selected", selected)
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self.click()
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
 
 class CourseBadge(QFrame):

@@ -4012,6 +4012,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
             dialog.competency_rating_widgets["CMP-000671"].currentData(),
             "++",
         )
+        selected_button = dialog.competency_rating_widgets["CMP-000671"].buttons["++"]
+        self.assertTrue(selected_button.isChecked())
+        self.assertTrue(selected_button.property("selected"))
+        self.assertTrue(selected_button.text().startswith("✓ "))
+        self.assertIn("ausgewählt", selected_button.accessibleName())
 
     def test_observation_dialog_ui_sprint_four_accessibility_contract(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
@@ -4044,6 +4049,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         app = QApplication.instance() or QApplication([])
         dialog = self._observation_dialog_with_hierarchy()
         actions = dialog.findChild(QDialogButtonBox, "ObservationPersistentActions")
+        self._select_observation_subject(dialog, "mathematik")
+        dialog.competency_catalog_tiles["CMP-000671"]._activate()
 
         for width, height in ((1400, 900), (1280, 800), (1180, 760)):
             dialog.resize(width, height)
@@ -4055,6 +4062,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 self.assertFalse(actions.isHidden())
                 self.assertEqual(
                     dialog.catalog_scroll.horizontalScrollBar().maximum(),
+                    0,
+                )
+                self.assertEqual(
+                    dialog.selected_scroll.horizontalScrollBar().maximum(),
                     0,
                 )
         dialog.close()
@@ -4342,6 +4353,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
             dialog.competency_rating_widgets["CMP-000671"].currentData(),
             "++",
         )
+        selected_button = dialog.competency_rating_widgets["CMP-000671"].buttons["++"]
+        self.assertTrue(selected_button.isChecked())
+        self.assertTrue(selected_button.property("selected"))
+        self.assertTrue(selected_button.text().startswith("✓ "))
+        self.assertIn("ausgewählt", selected_button.accessibleName())
 
     def test_observation_dialog_edit_opens_only_rated_branches(self) -> None:
         initial_draft = self._sample_observation_draft(
@@ -4552,10 +4568,30 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self._select_observation_subject(dialog, "mathematik")
         dialog.competency_catalog_tiles["CMP-000671"]._activate()
         selector = dialog.competency_rating_widgets["CMP-000671"]
+        expected_labels = {
+            option.split(" ", 1)[0]: option
+            for option in OBSERVATION_RATING_OPTIONS
+        }
 
         self.assertEqual(tuple(selector.buttons), ("++", "+", "-", "--"))
-        selector.buttons["-"].click()
-        self.assertEqual(selector.currentData(), "-")
+        for rating, button in selector.buttons.items():
+            self.assertIsInstance(button, components.RatingBadgeButton)
+            self.assertEqual(button.objectName(), "RatingBadgeButton")
+            self.assertTrue(button.property("ratingBadge"))
+            self.assertEqual(button.property("ratingToken"), rating)
+            self.assertIn(expected_labels[rating], button.accessibleName())
+
+            QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+
+            self.assertEqual(selector.currentData(), rating)
+            self.assertTrue(button.isChecked())
+            self.assertTrue(button.property("selected"))
+            self.assertTrue(button.text().startswith("✓ "))
+            self.assertIn("ausgewählt", button.accessibleName())
+            self.assertEqual(
+                dialog.create_draft().competency_ratings[0].rating,
+                rating,
+            )
 
     def test_observation_dialog_competency_selection_and_rating_work_by_keyboard(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
@@ -4565,14 +4601,19 @@ class DesktopAppAdapterTest(unittest.TestCase):
         tile = dialog.competency_catalog_tiles["CMP-000671"]
 
         QTest.keyClick(tile, Qt.Key.Key_Space)
-        rating_button = dialog.competency_rating_widgets["CMP-000671"].buttons["--"]
-        QTest.keyClick(rating_button, Qt.Key.Key_Space)
+        selector = dialog.competency_rating_widgets["CMP-000671"]
+        QTest.keyClick(selector.buttons["-"], Qt.Key.Key_Return)
+
+        self.assertEqual(selector.currentData(), "-")
+
+        QTest.keyClick(selector.buttons["--"], Qt.Key.Key_Space)
 
         self.assertIn("CMP-000671", dialog.competency_rating_entries)
-        self.assertEqual(
-            dialog.competency_rating_widgets["CMP-000671"].currentData(),
-            "--",
-        )
+        self.assertEqual(selector.currentData(), "--")
+        self.assertFalse(selector.buttons["-"].isChecked())
+        self.assertFalse(selector.buttons["-"].property("selected"))
+        self.assertTrue(selector.buttons["--"].isChecked())
+        self.assertTrue(selector.buttons["--"].property("selected"))
 
     def test_observation_dialog_draft_remains_create_update_compatible(self) -> None:
         initial_draft = self._sample_observation_draft(
@@ -5653,15 +5694,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
         badges = tuple(
             badge
             for card in cards
-            for badge in card.findChildren(
-                QLabel, "StudentProfileDevelopmentStatusBadge"
-            )
+            for badge in card.findChildren(QLabel, "StatusBadge")
         )
 
         self.assertEqual(
             tuple(badge.property("ratingToken") for badge in badges),
             ("--", "-", "+", "++"),
         )
+        self.assertTrue(all(badge.property("ratingBadge") for badge in badges))
         self.assertEqual(
             tuple(badge.text() for badge in badges),
             (
@@ -7412,9 +7452,17 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         for rating in ("--", "-", "+", "++"):
             self.assertIn(
-                f'QLabel#StudentProfileDevelopmentStatusBadge[ratingToken="{rating}"]',
+                f'QLabel#StatusBadge[ratingToken="{rating}"]',
                 stylesheet,
             )
+            self.assertIn(
+                f'QPushButton#RatingBadgeButton[ratingToken="{rating}"]',
+                stylesheet,
+            )
+        self.assertIn("QPushButton#RatingBadgeButton:checked", stylesheet)
+        self.assertIn("QPushButton#RatingBadgeButton:focus", stylesheet)
+        self.assertIn("QPushButton#RatingBadgeButton:checked:pressed", stylesheet)
+        self.assertIn("QPushButton#RatingBadgeButton:disabled", stylesheet)
 
     def test_shell_svg_icons_and_native_font_tokens_are_registered(self) -> None:
         theme_source = inspect.getsource(theme)
