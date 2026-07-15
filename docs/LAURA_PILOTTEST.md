@@ -1,251 +1,41 @@
 # Laura-Pilottest
 
-Diese Anleitung hilft dabei, den Jenaplan-Kompetenzmanager mit kuenstlichen Testdaten im Alltag zu pruefen.
+## Zweck
 
-Es geht nicht um perfekte Eingaben. Wichtig ist, ob die App verstaendlich, ruhig, hilfreich und fuer paedagogische Arbeit praktikabel wirkt.
+Der Pilottest prüft den Jenaplan-Kompetenzmanager mit ausschließlich künstlichen Testdaten aus der Sicht einer Lehrkraft. Im Mittelpunkt stehen Verständlichkeit, ruhige Bedienung, fachlich nachvollziehbare Zustände und alltagstaugliche Wege – nicht eine vollständige technische Abnahme.
 
-Alle Testdaten sind kuenstlich. Es werden keine echten Kindernamen und keine echten Dokumente verwendet.
+## Führende Testdatei
 
-Der Seed simuliert einen rund achtmonatigen Nutzungsstand: 24 Kinder in vier Stammgruppen, drei Kurse, drei Kursverbuende, eine Unterrichtswoche mit 25 Stunden sowie unterschiedlich dichte Dokumentationen in allen aktiven Katalogfaechern.
+Die einzige führende Pilot-Testdatei für Laura ist [Pilottest_Laura_Schuelerprofil_Variante_A.xlsx](/Users/lauragehrke/Documents/Pilottest_Laura_Schuelerprofil_Variante_A.xlsx).
 
-## Start
+Sie enthält den Testplan, konkrete Schritte und Erwartungen im Blatt `Testhinweise`, die Ergebniserfassung sowie das Feedbackblatt. Neue Rückmeldungen werden dort eingetragen; die frühere CSV dient nicht mehr als führender Feedbackweg.
 
-Testdaten frisch erzeugen:
+## Testablauf
 
-```bash
-python3 scripts/seed_test_data.py --reset
-```
+1. Künstliche Testdaten erzeugen und die App starten:
 
-App starten:
+   ```bash
+   python3 scripts/seed_test_data.py --reset
+   python3 -m src.desktop_app.main
+   ```
 
-```bash
-python3 -m src.desktop_app.main
-```
+2. Die Arbeitsmappe öffnen und die Fälle im Blatt `Testplan` in der vorgeschlagenen Reihenfolge bearbeiten. Detail-Schritte, erwartete Ergebnisse und Hinweise stehen im Blatt `Testhinweise` unter derselben Testnummer.
 
-Alternativ kann auf macOS der Launcher gestartet werden:
+3. Im Testplan das Ergebnis auswählen. Auffälligkeiten einzeln im Blatt `Feedback` mit Testnummer, Kategorie, Beobachtung, Erwartung und tatsächlichem Verhalten erfassen.
 
-```text
-launcher/Jenaplan_Kompetenzmanager.command
-```
+4. Für die Profilfälle bewusst Kinder mit vielen, wenigen, fehlenden und historischen Dokumentationen wählen. Für Bericht- und LEG-Abschlussfälle nur künstliche Testdaten verwenden.
 
-## Rueckmeldung eintragen
+## Version und Stand
 
-Bitte Auffaelligkeiten direkt in diese Datei eintragen:
+- Datei: `Pilottest_Laura_Schuelerprofil_Variante_A.xlsx`
+- Stand: 15.07.2026
+- Umfang: 65 Testfälle
+- Schwerpunkt: Schülerprofil Variante A, Beobachtungen, Dashboard/Stundenplan, Berichtsdraft und Revisionen, finale Bericht-PDFs, LEG-Draft, LEG-Abschluss/Revision/PDF sowie historische und schreibgeschützte Ansichten.
 
-```text
-docs/laura_pilottest_feedback.csv
-```
+## Hinweise für Laura
 
-Kurz und ehrlich reicht, zum Beispiel:
-
-- verstaendlich
-- zu voll
-- fehlt
-- unklar
-- wuerde ich anders nennen
-- funktioniert nicht
-- brauche ich im Alltag nicht
-
-Status-Werte in der CSV:
-
-- OK
-- Unklar
-- Fehler
-- Wunsch
-- Nicht getestet
-
-Prioritaet:
-
-- Hoch
-- Mittel
-- Niedrig
-
-## A. Start & Orientierung
-
-1. App starten.
-2. Pruefen, ob Testdaten sichtbar sind.
-3. Pruefen, ob Stammgruppen, Kurse und Schueler verstaendlich dargestellt sind.
-4. `Heute` zu unterschiedlichen Uhrzeiten pruefen: laufende Stunde, Pause und nach Unterrichtsende.
-5. Stundenkarten fuer Stammgruppe, Kurs und Kursverbund oeffnen.
-
-Rueckmeldung:
-
-- Findet man sich schnell zurecht?
-- Wirkt die Startansicht ueberladen?
-- Sind Begriffe verstaendlich?
-- Wirken Tagesplan, Dokumentationsmatrix und passende Kinder wie ein bereits genutztes System?
-
-## B. Schuelerlisten / Kursuebersichten
-
-1. Global `Schüler` oeffnen und zwischen `Stammgruppen`, `Kursverbünde` und `Alle Schüler` wechseln.
-2. Je eine Stammgruppe und einen Kurs innerhalb eines Kursverbunds oeffnen.
-3. Pruefen, ob Schueler nach Kurs und Alphabet sinnvoll sortiert sind.
-4. Pruefen, ob der Dokumentationsstatus in der Liste hilfreich ist.
-5. Eine Schuelerzeile nur markieren und pruefen, dass das Profil nicht sofort oeffnet.
-6. Profil per Doppelklick, Enter und `Profil öffnen` aufrufen.
-7. Direkt aus einer Schuelerzeile `Beobachten` oeffnen.
-8. Mit `Zurück zur Auswahl` aus einer gefilterten Liste zum lokalen Ursprung zurueckgehen.
-
-Rueckmeldung:
-
-- Reicht die Information in der Liste?
-- Fehlt etwas?
-- Ist der Dokumentationsstatus hilfreich oder stressig?
-- Ist die Schnellaktion `Beobachten` gut auffindbar, ohne die Liste zu ueberladen?
-- Sind Markieren und bewusstes Profiloeffnen klar getrennt?
-- Ist `Zurück zur Auswahl` an der erwarteten Stelle?
-
-## C. Stammdaten / Kursverbuende
-
-1. Stammdaten oeffnen.
-2. Kursverbund anschauen.
-3. Neuen Kursverbund testweise anlegen.
-4. Doppelte Namen testen.
-
-Rueckmeldung:
-
-- Ist "+ Kursverbund" verstaendlich?
-- Sind Stammgruppen und Kurse logisch zuordenbar?
-- Ist die Fehlermeldung bei Duplikaten verstaendlich?
-
-## D. Schuelerprofil
-
-Mehrere Testschueler oeffnen:
-
-- einen gut dokumentierten Schueler
-- einen teilweise dokumentierten Schueler
-- einen kaum dokumentierten Schueler
-
-Pruefen:
-
-- Name, Stammgruppe, Kurs
-- Reiter `Überblick` beim Oeffnen
-- Karte `Halbjahresblick`
-- Beobachtungszahl, Dokumentationsstand und letzte Beobachtung
-- `Stärken` und `Im Blick behalten`
-- letzte Beobachtungen als Kurzliste
-- Reiter `Beobachtungen`, `Kompetenzen`, `Bericht` und `Dateien`
-
-Rueckmeldung:
-
-- Versteht Laura innerhalb weniger Sekunden den Lernentwicklungsstand?
-- Ist die Halbjahresblick-Karte hilfreich?
-- Sind Beobachtungszahl, Dokumentationsstand und letzte Beobachtung verstaendlich?
-- Sind `Stärken` nachvollziehbar aus Beobachtungen und Kompetenzdaten abgeleitet?
-- Ist `Im Blick behalten` hilfreich formuliert oder wirkt es defizitorientiert?
-- Helfen die Reiter gegen den ersten Eindruck von Ueberladung?
-- Findet Laura Beobachtungen, Kompetenzen, Bericht und Dateien weiterhin zuverlaessig?
-- Geht durch die neue Struktur keine vorhandene Funktion verloren?
-
-## E. Beobachtungen
-
-1. Neue Beobachtung anlegen.
-2. Fach auswaehlen.
-3. Eine oder mehrere Kompetenzen auswaehlen.
-4. Bewertung setzen.
-5. Notiz eintragen.
-6. Beobachtung speichern.
-7. Beobachtung bearbeiten.
-8. Beobachtung loeschen.
-9. Neue Beobachtung direkt aus einer Schuelerliste anlegen und speichern.
-
-Rueckmeldung:
-
-- Ist der Dialog schnell genug?
-- Sind Kompetenzauswahl und Bewertung verstaendlich?
-- Ist Bearbeiten und Loeschen auffindbar?
-- Ist der schnelle Einstieg aus der Liste alltagstauglich?
-- Fehlt eine wichtige Beobachtungsart?
-
-## F. Mehrfachkompetenzen / faecheruebergreifend
-
-1. Beobachtung mit Kompetenzen aus mehreren Faechern pruefen oder neu anlegen.
-2. Pruefen, ob "Faecheruebergreifend" verstaendlich angezeigt wird.
-
-Rueckmeldung:
-
-- Ist klar, warum dort faecheruebergreifend steht?
-- Bleiben die Einzelkompetenzen trotzdem nachvollziehbar?
-
-## G. Kompetenzvorschlaege und Entwicklung
-
-1. Schueler mit mehreren Beobachtungen oeffnen.
-2. Kompetenzuebersicht pruefen.
-3. Entwicklung pruefen, zum Beispiel "- -> +".
-4. Stabile Entwicklung pruefen.
-5. Wechselnde Beobachtungslage pruefen.
-
-Rueckmeldung:
-
-- Ist der Vorschlag nachvollziehbar?
-- Ist "Entwicklung" verstaendlich?
-- Wirkt die Darstellung paedagogisch hilfreich?
-
-## H. Bestaetigte Kompetenzstaende
-
-1. Kompetenzstand bestaetigen.
-2. Vorschlag uebernehmen.
-3. Vorschlag bewusst abaendern.
-4. Pruefen, ob die Abweichung sichtbar ist.
-5. App neu starten und pruefen, ob die Bestaetigung erhalten bleibt.
-
-Rueckmeldung:
-
-- Ist klar, dass Laura entscheidet?
-- Ist klar, was Vorschlag und was Bestaetigung ist?
-- Ist die Abweichung hilfreich oder irritierend?
-
-## I. Berichtsvorschau
-
-Berichtsvorschau fuer mehrere Schueler oeffnen.
-
-Pruefen:
-
-- aktueller Stand
-- Entwicklung
-- Beobachtungsbelege
-- bestaetigte Kompetenzstaende
-- Faelle mit Einzelbeobachtung
-- Faelle mit wechselnder Beobachtungslage
-
-Rueckmeldung:
-
-- Ist die Berichtsvorschau hilfreich?
-- Welche Formulierungen sind unklar?
-- Fehlt etwas fuer Elterngespraeche oder Lernentwicklung?
-
-## J. Dokumente & Medien
-
-1. Dokument direkt beim Schueler pruefen.
-2. Dokument an Beobachtung pruefen.
-3. Neues Dokument oder Medium hinzufuegen.
-4. Datei oeffnen.
-5. Datei entfernen.
-
-Rueckmeldung:
-
-- Ist "Dokumente & Medien" der richtige Begriff?
-- Ist die Ablage verstaendlich?
-- Braucht Laura Vorschau oder reicht Oeffnen ueber das System?
-
-## K. Dokumentationsstand / offene Kompetenzen
-
-1. Dokumentationsstand im Profil pruefen.
-2. Details ein- und ausklappen.
-3. Offene Kompetenzen pruefen.
-
-Rueckmeldung:
-
-- Ist das hilfreich oder wirkt es kontrollierend?
-- Sollte es kompakter sein?
-- Welche Ansicht braucht Laura im Alltag?
-
-## L. Gesamteindruck
-
-Rueckmeldung:
-
-- Was wuerde Laura im Alltag wirklich nutzen?
-- Was ist zu kompliziert?
-- Was fehlt vor einem echten Einsatz?
-- Welche Begriffe passen nicht?
-- Welche Funktion ist am wichtigsten als naechstes?
+- Es werden keine echten Kindernamen, echten Dokumente oder personenbezogenen Daten verwendet.
+- Ein Fehler, eine unklare Bedienung, ein Wunsch und eine Produktentscheidung sind unterschiedliche Rückmeldekategorien; bitte die passende Kategorie wählen.
+- Screenshots oder genaue Bildschirmtexte helfen besonders bei Fehlern.
+- Beim finalen PDF immer unterscheiden: Entwurfs-PDFs stammen aus einem bearbeitbaren Berichtsentwurf; finale PDFs ausschließlich aus der aktuellen unveränderlichen Revision.
+- Bereits vorhandene, ältere Testmappen nicht zusammenführen. Sie bleiben als Archiv erhalten, aber neue Testläufe beginnen ausschließlich mit der führenden Datei.
