@@ -6,6 +6,16 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Pilot 0.1.1 - Releasevorbereitung ✅
+
+- [x] Aktuellen committed UI-Fix und sauberen Quellstand geprüft
+- [x] Produktiven Beobachtungsdialog mit fiktiven Pilotdaten und vollständiger farbiger Bewertungszeile neu aufgenommen
+- [x] Handbucherklärung auf Text, Symbol, Auswahlzustand und ergänzende Farborientierung ausgerichtet
+- [x] Pilotversion, Installationsquellen und Paketnamen auf `0.1.1` vorbereitet
+- [x] Schnellstart, Erste Schritte und Backup-Anleitung in den reproduzierbaren Dokumentbau aufgenommen
+- [x] Laura-Paketbau auf ausschließlich frisch erzeugte Release-Ausgaben ausgerichtet
+- [x] Keine weitere Produkt-UI, Fachlogik, Datenmodell- oder Testdatenänderung
+
 ## Sprint 8D - Laura-Pilotpaket ✅
 
 - [x] Selbsterklärendes Laura-ZIP mit nummerierter Übergabestruktur erstellt

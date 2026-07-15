@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Pilot 0.1.1 - aktualisierter Beobachtungsdialog und Releasequellen
+
+### Changed
+
+- Technische Pilotversion auf `0.1.1` angehoben; Packaging, Dokumentnamen und Laura-Paket beziehen die Version weiterhin aus `src/version.py`.
+- Produktiven Handbuch-Screenshot des normalen Beobachtungsdialogs mit fiktiven Pilotdaten, konkreter Kompetenz, vollständiger farbiger Bewertungszeile und eindeutigem Auswahlzustand ersetzt.
+- Handbuchtext um die ergänzende Orientierungsfunktion der Pastellfarben sowie die weiterhin maßgeblichen Text-, Symbol- und Auswahlzustände ergänzt; Schulnoten- oder automatische Gesamtbewertungssemantik ausdrücklich ausgeschlossen.
+- Schnellstart, Erste Schritte und Backup-Anleitung als reproduzierbare, versionierte PDF-Quellen in den Dokumentbau aufgenommen und das Laura-ZIP auf eine frische Zusammenstellung der aktuellen Release-Ausgaben umgestellt.
+
+### Not Changed
+
+- Keine weitere App-UI, Fachlogik, Datenmodell-, SQLite-, Repository-, Service-, Adapter-, ViewModel-, Migrations- oder Testdatenänderung.
+- Der Schnellbeobachtungs-Screenshot bleibt unverändert, weil dort keine Bewertungsoptionen sichtbar oder fachlich relevant sind.
+
 ## UI-Fix - Pastell-Bewertungsbadges im Beobachtungsdialog
 
 ### Changed

@@ -65,7 +65,11 @@ DMG_BACKGROUND="$BUILD_ROOT/dmg-background.png"
 DMG_RW="$BUILD_ROOT/pilot-layout-rw.dmg"
 INSTALLATION_PDF="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Installationsanleitung.pdf"
 MANUAL_PDF="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Benutzerhandbuch.pdf"
+FIRST_STEPS_PDF="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Erste-Schritte.pdf"
+QUICKSTART_PDF="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Schnellstart-Lehrkraefte.pdf"
+BACKUP_GUIDE_PDF="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Backup-Anleitung.pdf"
 BACKUP_SCRIPT="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Backup.sh"
+LAURA_ZIP="$ROOT/dist/${APP_NAME}_Pilot_${VERSION}_Laura.zip"
 MOUNT_DIR=""
 
 cleanup_mount() {
@@ -95,6 +99,9 @@ python3 -m venv "$VENV"
     --output-dir "$DIST_ROOT" \
     --installation-source docs/PILOT_INSTALLATION_LEHRKRAFT.md \
     --manual-source docs/user_manual/USER_MANUAL_SOURCE.md \
+    --first-steps-source docs/PILOT_FIRST_STEPS.md \
+    --quickstart-source docs/PILOT_QUICKSTART_LEHRKRAEFTE.md \
+    --backup-source docs/PILOT_BACKUP.md \
     --icon assets/app_icon.png
 cp scripts/backup_macos_pilot.sh "$BACKUP_SCRIPT"
 chmod +x "$BACKUP_SCRIPT"
@@ -203,13 +210,37 @@ fi
 shasum -a 256 "$DMG_PATH" > "$DMG_PATH.sha256"
 shasum -a 256 "$INSTALLATION_PDF" > "$INSTALLATION_PDF.sha256"
 shasum -a 256 "$MANUAL_PDF" > "$MANUAL_PDF.sha256"
+shasum -a 256 "$FIRST_STEPS_PDF" > "$FIRST_STEPS_PDF.sha256"
+shasum -a 256 "$QUICKSTART_PDF" > "$QUICKSTART_PDF.sha256"
+shasum -a 256 "$BACKUP_GUIDE_PDF" > "$BACKUP_GUIDE_PDF.sha256"
 shasum -a 256 "$BACKUP_SCRIPT" > "$BACKUP_SCRIPT.sha256"
+
+if [ "$DATA_MODE" = "laura" ]; then
+    "$VENV/bin/python" scripts/build_laura_pilot_package.py \
+        --output-root "$ROOT/dist" \
+        --version "$VERSION" \
+        --dmg "$DMG_PATH" \
+        --installation-pdf "$INSTALLATION_PDF" \
+        --first-steps-pdf "$FIRST_STEPS_PDF" \
+        --manual-pdf "$MANUAL_PDF" \
+        --quickstart-pdf "$QUICKSTART_PDF" \
+        --pilot-workbook docs/Pilottest_Laura_Schuelerprofil_Variante_A.xlsx \
+        --backup-pdf "$BACKUP_GUIDE_PDF" \
+        --backup-script "$BACKUP_SCRIPT"
+    shasum -a 256 "$LAURA_ZIP" > "$LAURA_ZIP.sha256"
+fi
 
 echo "App: $APP_PATH"
 echo "DMG: $DMG_PATH"
 echo "Installationsanleitung: $INSTALLATION_PDF"
 echo "Benutzerhandbuch: $MANUAL_PDF"
+echo "Erste Schritte: $FIRST_STEPS_PDF"
+echo "Schnellstart: $QUICKSTART_PDF"
+echo "Backup-Anleitung: $BACKUP_GUIDE_PDF"
 echo "Backup-Skript: $BACKUP_SCRIPT"
+if [ "$DATA_MODE" = "laura" ]; then
+    echo "Laura-ZIP: $LAURA_ZIP"
+fi
 echo "Pilotdaten: $DATA_MODE"
 echo "Quellbaum: $SOURCE_TREE_STATE bei $GIT_COMMIT"
 echo "Signierung: $SIGNING_STATUS"

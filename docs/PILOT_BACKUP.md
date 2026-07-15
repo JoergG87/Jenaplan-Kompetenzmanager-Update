@@ -12,7 +12,7 @@ verwalteten Dokumente. Es führt keine automatische Wiederherstellung durch.
 3. Ein Terminal öffnen und das Skript ausführen:
 
 ```bash
-bash /Pfad/zu/Jenaplan-Kompetenzmanager-Pilot-0.1.0-Backup.sh
+bash /Pfad/zu/Jenaplan-Kompetenzmanager-Pilot-{{PILOT_VERSION}}-Backup.sh
 ```
 
 Das Skript bricht ab, wenn die App noch läuft. Es verwendet die sichere

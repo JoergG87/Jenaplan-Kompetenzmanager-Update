@@ -9,9 +9,9 @@ automatisch in eine Cloud.
 - Mac mit Apple-Prozessor (M1 oder neuer)
 - macOS 13 oder neuer
 - ungefähr 300 MB freier Speicherplatz für App und erste lokale Daten
-- die Datei `Jenaplan-Kompetenzmanager-Pilot-0.1.0-macOS-arm64.dmg`
+- die Datei `Jenaplan-Kompetenzmanager-Pilot-{{PILOT_VERSION}}-macOS-arm64.dmg`
 
-Die Version 0.1.0 ist eine Pilotversion. Sie ist für den vereinbarten Test gedacht
+Die Version {{PILOT_VERSION}} ist eine Pilotversion. Sie ist für den vereinbarten Test gedacht
 und besitzt noch keinen automatischen Aktualisierungsdienst.
 
 ## 2. Installation

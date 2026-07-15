@@ -15,6 +15,9 @@ Dieses Dokument ist ab Sprint 4 die verbindliche Registry fuer technische Namen.
 | `empty` | technische Smoke-Test-Variante ohne gepackte SQLite-Datei oder Schuelerdaten |
 | `laura` | Lehrkraft-Pilotvariante mit ausschliesslich fiktiven Daten aus `scripts/seed_test_data.py` |
 | `FIKTIVE_PILOTDATEN.txt` | sichtbare technische Kennzeichnung der fiktiven Startdaten im Laura-Payload |
+| `scripts/build_laura_pilot_package.py` | reproduzierbare Zusammenstellung des Laura-Uebergabeordners und ZIPs ausschliesslich aus aktuellen Release-Ausgaben |
+| `00_START_HIER.txt` | versionierter Einstiegstext im Laura-Uebergabepaket |
+| `PILOT_VERSION.txt` | versionierte Inhalts- und Datenkennzeichnung im Laura-Uebergabepaket |
 
 ## Grundregeln
 

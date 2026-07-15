@@ -2,7 +2,7 @@
 
 ## 1. Titel und Versionsstand
 
-- Benutzerhandbuch zur Pilotversion 0.1.0
+- Benutzerhandbuch zur Pilotversion {{PILOT_VERSION}}
 - Stand: 15. Juli 2026
 - Ausgabe: macOS für Apple Silicon
 
@@ -42,7 +42,7 @@ Die Kapitel zu `Schüler`, `Stammdaten`, `Einstellungen` und `Stundenplan` richt
 
 ### App installieren
 
-1. Die Datei `Jenaplan-Kompetenzmanager-Pilot-0.1.0-macOS-arm64.dmg` öffnen.
+1. Die Datei `Jenaplan-Kompetenzmanager-Pilot-{{PILOT_VERSION}}-macOS-arm64.dmg` öffnen.
 2. Den `Jenaplan-Kompetenzmanager` im geöffneten Fenster auf `Programme` ziehen.
 3. Nach dem Kopieren das geöffnete Laufwerk auswerfen.
 4. Die App im Ordner `Programme` öffnen.
@@ -211,6 +211,8 @@ Der Dialog heißt `Neue Beobachtung` beziehungsweise `Beobachtung bearbeiten` un
 10. `Speichern` wählen.
 
 Ein Fachwechsel filtert nur den Katalog. Bereits ausgewählte Kompetenzen und ihre Bewertungen bleiben erhalten; dadurch ist eine fachübergreifende Beobachtung möglich.
+
+Die Pastellfarben unterstützen die Orientierung zwischen den vier Bewertungsstufen. Text, Symbol und sichtbarer Auswahlzustand bleiben maßgeblich; Farbe ist nicht der alleinige Informationsträger. Die Farben bedeuten weder eine Schulnote noch eine automatische Gesamtbewertung.
 
 **Nach dem Speichern:** Die App meldet `Beobachtung wurde gespeichert.` beziehungsweise bei einer Änderung, dass die Beobachtung aktualisiert wurde. Der Eintrag erscheint im Schülerprofil und kann Dokumentationszustände, Vorschläge und Berichtsvorbereitungen beeinflussen.
 

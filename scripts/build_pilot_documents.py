@@ -50,7 +50,14 @@ def _register_fonts() -> None:
 
 
 class PilotDocTemplate(BaseDocTemplate):
-    def __init__(self, filename: str, *, version: str, title: str) -> None:
+    def __init__(
+        self,
+        filename: str,
+        *,
+        version: str,
+        title: str,
+        header_on_first_page: bool = False,
+    ) -> None:
         super().__init__(
             filename,
             pagesize=A4,
@@ -63,6 +70,7 @@ class PilotDocTemplate(BaseDocTemplate):
         )
         self.version = version
         self.document_title = title
+        self.header_on_first_page = header_on_first_page
         frame = Frame(
             self.leftMargin,
             self.bottomMargin,
@@ -74,7 +82,7 @@ class PilotDocTemplate(BaseDocTemplate):
 
     def _page(self, canvas, doc) -> None:  # type: ignore[no-untyped-def]
         canvas.saveState()
-        if doc.page > 1:
+        if doc.page > 1 or self.header_on_first_page:
             canvas.setFont("PilotSans", 8)
             canvas.setFillColor(MUTED)
             canvas.drawString(22 * mm, PAGE_HEIGHT - 12 * mm, self.document_title)
@@ -87,14 +95,12 @@ class PilotDocTemplate(BaseDocTemplate):
         canvas.restoreState()
 
     def afterFlowable(self, flowable) -> None:  # type: ignore[no-untyped-def]
-        if isinstance(flowable, Paragraph):
-            level = getattr(flowable.style, "toc_level", None)
-            if level is not None:
-                text = flowable.getPlainText()
-                key = f"heading-{self.seq.nextf('heading')}"
-                self.canv.bookmarkPage(key)
-                self.canv.addOutlineEntry(text, key, level=level, closed=False)
-                self.notify("TOCEntry", (level, text, self.page, key))
+        if isinstance(flowable, Paragraph) and flowable.style.name == "PilotH1":
+            text = flowable.getPlainText()
+            key = f"heading-{self.seq.nextf('heading')}"
+            self.canv.bookmarkPage(key)
+            self.canv.addOutlineEntry(text, key, level=0, closed=False)
+            self.notify("TOCEntry", (0, text, self.page, key))
 
 
 def _styles() -> dict[str, ParagraphStyle]:
@@ -179,8 +185,6 @@ def _styles() -> dict[str, ParagraphStyle]:
             spaceAfter=7,
         ),
     }
-    styles["h1"].toc_level = 0  # type: ignore[attr-defined]
-    styles["h2"].toc_level = 1  # type: ignore[attr-defined]
     return styles
 
 
@@ -197,8 +201,16 @@ def _paragraph(text: str, style: ParagraphStyle) -> Paragraph:
     return Paragraph(_inline(" ".join(text.split())), style)
 
 
-def _markdown_story(source_path: Path, styles: dict[str, ParagraphStyle]) -> list[object]:
-    lines = source_path.read_text(encoding="utf-8").splitlines()
+def _markdown_story(
+    source_path: Path,
+    styles: dict[str, ParagraphStyle],
+    *,
+    version: str,
+) -> list[object]:
+    lines = source_path.read_text(encoding="utf-8").replace(
+        "{{PILOT_VERSION}}",
+        version,
+    ).splitlines()
     story: list[object] = []
     paragraph: list[str] = []
     in_code = False
@@ -281,6 +293,11 @@ def _markdown_story(source_path: Path, styles: dict[str, ParagraphStyle]) -> lis
             flush()
             index += 1
             continue
+        if stripped == "<!-- pagebreak -->":
+            flush()
+            story.append(PageBreak())
+            index += 1
+            continue
         bullet = re.match(r"^[-*]\s+(.+)$", stripped)
         numbered = re.match(r"^(\d+)\.\s+(.+)$", stripped)
         if bullet or numbered:
@@ -320,20 +337,36 @@ def _cover(title: str, subtitle: str, version: str, icon_path: Path, styles: dic
     ]
 
 
-def build_pdf(source: Path, output: Path, *, title: str, subtitle: str, version: str, icon: Path, include_toc: bool) -> None:
+def build_pdf(
+    source: Path,
+    output: Path,
+    *,
+    title: str,
+    subtitle: str,
+    version: str,
+    icon: Path,
+    include_toc: bool,
+    include_cover: bool = True,
+    header_on_first_page: bool = False,
+) -> None:
     styles = _styles()
-    story = _cover(title, subtitle, version, icon, styles)
+    story = _cover(title, subtitle, version, icon, styles) if include_cover else []
     if include_toc:
-        story.append(Paragraph("Inhaltsverzeichnis", styles["h1"]))
+        toc_heading = ParagraphStyle("TOCHeading", parent=styles["h1"])
+        story.append(Paragraph("Inhaltsverzeichnis", toc_heading))
         toc = TableOfContents()
         toc.levelStyles = (
             ParagraphStyle("TOC1", fontName="PilotSans", fontSize=10, leading=15, leftIndent=0, firstLineIndent=0, textColor=INK),
-            ParagraphStyle("TOC2", fontName="PilotSans", fontSize=9, leading=13, leftIndent=8 * mm, firstLineIndent=0, textColor=MUTED),
         )
         story.extend((toc, PageBreak()))
-    story.extend(_markdown_story(source, styles))
+    story.extend(_markdown_story(source, styles, version=version))
     output.parent.mkdir(parents=True, exist_ok=True)
-    PilotDocTemplate(str(output), version=version, title=title).multiBuild(story)
+    PilotDocTemplate(
+        str(output),
+        version=version,
+        title=title,
+        header_on_first_page=header_on_first_page,
+    ).multiBuild(story)
 
 
 def main() -> int:
@@ -342,11 +375,17 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--installation-source", type=Path, required=True)
     parser.add_argument("--manual-source", type=Path, required=True)
+    parser.add_argument("--first-steps-source", type=Path, required=True)
+    parser.add_argument("--quickstart-source", type=Path, required=True)
+    parser.add_argument("--backup-source", type=Path, required=True)
     parser.add_argument("--icon", type=Path, default=Path("assets/app_icon.png"))
     args = parser.parse_args()
     _register_fonts()
     installation_output = args.output_dir / f"Jenaplan-Kompetenzmanager-Pilot-{args.version}-Installationsanleitung.pdf"
     manual_output = args.output_dir / f"Jenaplan-Kompetenzmanager-Pilot-{args.version}-Benutzerhandbuch.pdf"
+    first_steps_output = args.output_dir / f"Jenaplan-Kompetenzmanager-Pilot-{args.version}-Erste-Schritte.pdf"
+    quickstart_output = args.output_dir / f"Jenaplan-Kompetenzmanager-Pilot-{args.version}-Schnellstart-Lehrkraefte.pdf"
+    backup_output = args.output_dir / f"Jenaplan-Kompetenzmanager-Pilot-{args.version}-Backup-Anleitung.pdf"
     build_pdf(
         args.installation_source,
         installation_output,
@@ -365,8 +404,42 @@ def main() -> int:
         icon=args.icon,
         include_toc=True,
     )
+    build_pdf(
+        args.first_steps_source,
+        first_steps_output,
+        title="Erste Schritte - Jenaplan-Kompetenzmanager",
+        subtitle="Ein ruhiger Einstieg in den Pilottest",
+        version=args.version,
+        icon=args.icon,
+        include_toc=False,
+        include_cover=False,
+        header_on_first_page=True,
+    )
+    build_pdf(
+        args.quickstart_source,
+        quickstart_output,
+        title="Schnellstart für Lehrkräfte",
+        subtitle="Die wichtigsten Wege im Pilottest",
+        version=args.version,
+        icon=args.icon,
+        include_toc=False,
+        include_cover=False,
+        header_on_first_page=True,
+    )
+    build_pdf(
+        args.backup_source,
+        backup_output,
+        title="Backup für den Pilottest",
+        subtitle="Lokale Pilotdaten sicher sichern",
+        version=args.version,
+        icon=args.icon,
+        include_toc=False,
+    )
     print(installation_output)
     print(manual_output)
+    print(first_steps_output)
+    print(quickstart_output)
+    print(backup_output)
     return 0
 
 
