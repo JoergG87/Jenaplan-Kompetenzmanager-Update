@@ -8,7 +8,6 @@ from typing import Callable
 from PySide6.QtCore import QDate, QTimer, Qt
 from PySide6.QtGui import QKeyEvent, QMouseEvent
 from PySide6.QtWidgets import (
-    QApplication,
     QButtonGroup,
     QCheckBox,
     QComboBox,
@@ -222,19 +221,7 @@ class NewObservationDialog(QDialog):
         )
         self.setModal(True)
         self.setMinimumSize(1040, 680)
-        screen = QApplication.primaryScreen()
-        available = screen.availableGeometry() if screen is not None else None
-        target_width = (
-            min(1280, available.width() - 48)
-            if available is not None and available.width() >= 1100
-            else 1240
-        )
-        target_height = (
-            min(800, available.height() - 48)
-            if available is not None and available.height() >= 760
-            else 800
-        )
-        self.resize(target_width, target_height)
+        self.resize(1400, 900)
         self._build()
 
     def _build(self) -> None:

@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## UI Fix - Beobachtungsdialog-Workspacegröße
+
+### Changed
+
+- Beobachtungsdialog startet nun wie der vergleichbare LEG-Workspace in der großen Desktop-Arbeitsgröße 1400 × 900 und nutzt damit den verfügbaren Bildschirmbereich besser aus.
+
+### Not Changed
+
+- Keine Änderung an Beobachtungs-, Kompetenz-, Bewertungs-, Speicher-, Datenmodell-, Navigations- oder Fachlogik; die bestehende skalierbare Mindestgröße sowie die drei getrennten Workspace-Zonen bleiben erhalten.
+
 ## Premium UI Sprint 4 - Visual Signature und Release Polish
 
 ### Changed
