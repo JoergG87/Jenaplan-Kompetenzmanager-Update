@@ -3194,9 +3194,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         dialog_source = inspect.getsource(master_data_dialog)
         shell_source = inspect.getsource(shell.AppShell.open_new_course_dialog)
 
-        self.assertIn('("Farbe", "Name", "Status", "Aktion")', source)
+        self.assertIn('("Kurs", "Kursfarbe", "Status", "")', source)
         self.assertIn("self._course_color_cell(item)", source)
-        self.assertIn('marker.setObjectName("CourseColorMarker")', source)
+        self.assertIn("CourseBadge(item.color_name, item.color_hex)", source)
+        self.assertIn("dient zur Orientierung und Zugehörigkeit", source)
+        self.assertNotIn('marker.setObjectName("CourseColorMarker")', source)
         self.assertNotIn('QTableWidgetItem(f"●', source)
         self.assertIn("COURSE_COLOR_OPTIONS", dialog_source)
         self.assertIn('form.addRow("Farbe", self.color_select)', dialog_source)
@@ -3287,13 +3289,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn('"+ Kursverbund"', source)
         self.assertIn("course_group_add_requested = Signal()", source)
         self.assertIn("course_group_edit_requested = Signal(str)", source)
-        self.assertIn("self.course_group_table = QTableWidget(0, 4)", source)
+        self.assertIn("self.course_group_table = QTableWidget(0, 3)", source)
         self.assertIn(
-            'table.setHorizontalHeaderLabels(("Name", "Stammgruppen", "Kurse", "Aktion"))',
+            'table.setHorizontalHeaderLabels(("Kursverbund", "Zuordnung", ""))',
             source,
         )
         self.assertIn("item.selected_group_ids", source)
         self.assertIn("item.selected_course_ids", source)
+        self.assertIn('QLabel(f"Stammgruppen · {group_names or \'Keine\'}")', source)
+        self.assertIn('QLabel(f"Kurse · {course_names or \'Keine\'}")', source)
         self.assertIn('edit_button = QPushButton("Bearbeiten")', source)
         self.assertIn("CourseGroupDialog", dialog_source)
         self.assertIn("QCheckBox", dialog_source)
@@ -7281,6 +7285,91 @@ class DesktopAppAdapterTest(unittest.TestCase):
         master_data.group_table.setCurrentCell(0, 0)
         QTest.keyClick(master_data.group_table, Qt.Key.Key_Return)
         self.assertEqual(renamed, ["GRP-000001"])
+        self.assertIsNotNone(app)
+
+    def test_master_data_lists_are_compact_accessible_and_responsive(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = master_data_screen.MasterDataScreen()
+        screen.set_master_data(
+            MasterDataViewModel(
+                (
+                    MasterDataItemViewModel(
+                        "GRP-000001",
+                        "Grashüpfer",
+                        True,
+                    ),
+                ),
+                (
+                    MasterDataItemViewModel(
+                        "CRS-000001",
+                        "Kurs 1",
+                        True,
+                        "Blau",
+                        "#2563EB",
+                    ),
+                ),
+                (
+                    CourseGroupViewModel(
+                        "CGR-000001",
+                        "Mathe/Deutsch Kursverbund A",
+                        ("GRP-000001",),
+                        ("CRS-000001",),
+                    ),
+                ),
+            )
+        )
+
+        self.assertEqual(
+            tuple(
+                screen.group_table.horizontalHeaderItem(index).text()
+                for index in range(screen.group_table.columnCount())
+            ),
+            ("Stammgruppe", "Status", ""),
+        )
+        self.assertEqual(
+            tuple(
+                screen.course_group_table.horizontalHeaderItem(index).text()
+                for index in range(screen.course_group_table.columnCount())
+            ),
+            ("Kursverbund", "Zuordnung", ""),
+        )
+        self.assertEqual(screen.group_table.rowHeight(0), 46)
+        self.assertEqual(screen.course_group_table.rowHeight(0), 62)
+        self.assertIn(
+            "Status: Vorhanden",
+            screen.group_table.cellWidget(0, 1).accessibleName(),
+        )
+
+        color_cell = screen.course_table.cellWidget(0, 1)
+        color_badge = color_cell.findChild(components.CourseBadge)
+        self.assertIsNotNone(color_badge)
+        self.assertEqual(color_badge.label.text(), "Blau")
+        self.assertEqual(color_badge.property("courseColorHex"), "#2563EB")
+        self.assertIn("Orientierung", color_cell.accessibleName())
+
+        relation_cell = screen.course_group_table.cellWidget(0, 1)
+        self.assertIn("Stammgruppen: Grashüpfer", relation_cell.accessibleName())
+        self.assertIn("Kurse: Kurs 1", relation_cell.accessibleName())
+        edit_buttons = tuple(
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.text() == "Bearbeiten"
+        )
+        self.assertEqual(len(edit_buttons), 3)
+        self.assertTrue(all(button.minimumWidth() >= 96 for button in edit_buttons))
+        self.assertTrue(all(button.accessibleName() for button in edit_buttons))
+
+        screen.show()
+        for width, height in ((900, 700), (1120, 840)):
+            screen.resize(width, height)
+            app.processEvents()
+            for table in (
+                screen.group_table,
+                screen.course_table,
+                screen.course_group_table,
+            ):
+                self.assertEqual(table.horizontalScrollBar().maximum(), 0)
+        screen.close()
         self.assertIsNotNone(app)
 
     def test_component_library_v2_styles_semantic_states_centrally(self) -> None:

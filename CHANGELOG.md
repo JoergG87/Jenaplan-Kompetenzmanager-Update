@@ -11,6 +11,20 @@
 
 - Keine Geschäftslogik, Datenquelle, SQLite-Anbindung, Persistenz, Navigation oder andere Menüfunktion geändert.
 
+## UI Fix - Stammdaten-Verwaltungslisten
+
+### Changed
+
+- Stammgruppen, Kurse und Kursverbünde als kompakte, responsive Verwaltungslisten mit ruhigen Headern, klaren Zeilenabständen sowie sichtbaren Hover-, Auswahl- und Fokuszuständen überarbeitet.
+- Statuswerte als textlich eindeutige Badges und Kursfarben als dezente Kontext-Badges dargestellt; Farbe bleibt ergänzende Orientierung und nie alleinige Information.
+- Kursverbünde bündeln Stammgruppen und Kurse in einer zweizeiligen Zuordnungsdarstellung; Bearbeiten bleibt über die große Zeilenfläche per Doppelklick, per Enter und über eine ausreichend breite, per Tab erreichbare Aktion verfügbar.
+- Erklärende Empty States, Accessible Names, Tooltips und die Darstellung bei 1180 × 760 sowie 1400 × 900 verifiziert.
+
+### Not Changed
+
+- Keine Änderung an Datenmodell, SQLite, Repository, Services, Adaptern, ViewModels, Stammdaten-, Kurs- oder Persistenzlogik.
+- Keine neuen Funktionen, Datenquellen, UI-Felder oder technischen Identitäten ergänzt.
+
 ## UI Fix - Dynamische Stundenmarkierung im Dashboard
 
 ### Changed
