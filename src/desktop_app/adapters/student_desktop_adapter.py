@@ -231,14 +231,20 @@ class StudentDesktopAdapter:
         if student is None:
             return None
         groups = {group.group_id: group.group_name for group in self.list_groups()}
-        courses = {course.course_id: course.course_name for course in self.list_courses()}
+        courses = {course.course_id: course for course in self.list_courses()}
+        course_name, course_color_name, course_color_hex = self._course_context(
+            student.course_id,
+            courses,
+        )
         return StudentDetailViewModel(
             student.student_id,
             f"{student.first_name} {student.last_name}",
             groups.get(student.group_id, student.group_id),
-            courses.get(student.course_id, student.course_id),
+            course_name,
             student.student_notes,
             student.active,
+            course_color_name,
+            course_color_hex,
         )
 
     def student_record_for_edit(self, student_id: str) -> StudentRecord | None:
@@ -339,6 +345,7 @@ class StudentDesktopAdapter:
         if target_scope is None:
             return ()
         group_ids, course_ids = target_scope
+        courses = {course.course_id: course for course in self.list_courses()}
         students = tuple(
             student
             for student in SQLiteStudentRepository(self.database).list_students()
@@ -357,6 +364,7 @@ class StudentDesktopAdapter:
                 subject_id,
                 subject_label,
                 at.date(),
+                courses,
             )
             for student in students
         )
@@ -406,6 +414,7 @@ class StudentDesktopAdapter:
         subject_id: str,
         subject_label: str,
         at_date: date,
+        courses: dict[str, CourseRecord],
     ) -> DashboardSuggestedStudentViewModel:
         observation_dates = tuple(
             observation_date
@@ -417,11 +426,18 @@ class StudentDesktopAdapter:
             if observation_date <= at_date
         )
         display_name = f"{student.first_name} {student.last_name}"
+        course_name, course_color_name, course_color_hex = self._course_context(
+            student.course_id,
+            courses,
+        )
         if not observation_dates:
             return DashboardSuggestedStudentViewModel(
-                student.student_id,
-                display_name,
-                f"Noch keine Dokumentation in {subject_label}",
+                student_id=student.student_id,
+                display_name=display_name,
+                documentation_hint=f"Noch keine Dokumentation in {subject_label}",
+                course_name=course_name,
+                course_color_name=course_color_name,
+                course_color_hex=course_color_hex,
             )
         last_date = max(observation_dates)
         days_since = (at_date - last_date).days
@@ -432,11 +448,14 @@ class StudentDesktopAdapter:
         else:
             hint = f"Letzte Beobachtung vor {days_since} Tagen"
         return DashboardSuggestedStudentViewModel(
-            student.student_id,
-            display_name,
-            hint,
-            last_date,
-            days_since == 0,
+            student_id=student.student_id,
+            display_name=display_name,
+            documentation_hint=hint,
+            last_documentation_date=last_date,
+            documented_today=days_since == 0,
+            course_name=course_name,
+            course_color_name=course_color_name,
+            course_color_hex=course_color_hex,
         )
 
     @staticmethod
@@ -1775,17 +1794,10 @@ class StudentDesktopAdapter:
         groups: dict[str, str],
         courses: dict[str, CourseRecord],
     ) -> StudentListItem:
-        course = courses.get(student.course_id)
-        course_name = student.course_id
-        course_color_name = ""
-        course_color_hex = ""
-        if course is not None:
-            course_name = course.course_name
-            course_index = tuple(courses).index(course.course_id)
-            course_color_name, course_color_hex = course_color_from_key(
-                course.color_key,
-                course_index,
-            )
+        course_name, course_color_name, course_color_hex = self._course_context(
+            student.course_id,
+            courses,
+        )
         return StudentListItem(
             student.student_id,
             student.first_name,
@@ -1798,6 +1810,22 @@ class StudentDesktopAdapter:
             course_color_hex,
             self._documentation_summary_for_student(student.student_id),
         )
+
+    @staticmethod
+    def _course_context(
+        course_id: str,
+        courses: dict[str, CourseRecord],
+    ) -> tuple[str, str, str]:
+        """Resolve one existing course to the shared display context."""
+        course = courses.get(course_id)
+        if course is None:
+            return course_id, "", ""
+        course_index = tuple(courses).index(course.course_id)
+        color_name, color_hex = course_color_from_key(
+            course.color_key,
+            course_index,
+        )
+        return course.course_name, color_name, color_hex
 
     def _matches_filter(
         self,

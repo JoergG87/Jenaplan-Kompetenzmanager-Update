@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 
 from src.desktop_app.components import (
     AppCard,
+    CourseBadge,
     EmptyState,
     FilterBar,
     PageHeader,
@@ -135,6 +136,8 @@ class StudentProfileScreen(QWidget):
         self.name_label = self.profile_page_header.title_label
         self.meta_label = self.profile_page_header.subtitle_label
         self.meta_label.setObjectName("StudentProfileContextBadge")
+        self.course_badge = CourseBadge()
+        self.course_badge.hide()
         self.action_feedback_label = QLabel("")
         self.overview_recent_layout = QVBoxLayout()
         self.observation_empty_label = QLabel("")
@@ -191,6 +194,7 @@ class StudentProfileScreen(QWidget):
         header_documentation_text.addWidget(header_documentation_title)
         header_documentation_text.addWidget(self.header_documentation_label)
         header_documentation_layout.addLayout(header_documentation_text)
+        self.profile_page_header.add_action(self.course_badge)
         self.profile_page_header.add_action(header_documentation)
         self.profile_page_header.add_action(self.profile_primary_action)
 
@@ -280,11 +284,14 @@ class StudentProfileScreen(QWidget):
     def _update_profile_header_context(self) -> None:
         if self.current_student is None:
             subtitle = ""
+            self.course_badge.hide()
         else:
-            subtitle = (
-                f"Stammgruppe {self.current_student.group_name} · "
-                f"{self.current_student.course_name}"
+            subtitle = f"Stammgruppe {self.current_student.group_name}"
+            self.course_badge.set_course(
+                self.current_student.course_name,
+                self.current_student.course_color_hex,
             )
+            self.course_badge.show()
         self.meta_label.setText(subtitle)
         context_width = (
             min(480, self.meta_label.fontMetrics().horizontalAdvance(subtitle) + 80)

@@ -5,14 +5,12 @@ from __future__ import annotations
 from time import monotonic
 
 from PySide6.QtCore import QEvent, Qt, Signal
-from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QHBoxLayout,
     QHeaderView,
     QLabel,
-    QFrame,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -21,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.desktop_app.components import (
+    CourseBadge,
     EmptyState,
     FilterBar,
     InlineMessage,
@@ -210,22 +209,7 @@ class StudentsScreen(QWidget):
         layout.setContentsMargins(4, 0, 4, 0)
         layout.setSpacing(6)
 
-        marker = QFrame()
-        marker.setObjectName("CourseColorMarker")
-        marker.setFixedSize(10, 10)
-        palette = marker.palette()
-        palette.setColor(
-            QPalette.ColorRole.Window,
-            QColor(student.course_color_hex or "#6B7280"),
-        )
-        marker.setPalette(palette)
-        marker.setAutoFillBackground(True)
-
-        course_label = QLabel(student.course_name)
-        set_label_style(course_label, "body")
-
-        layout.addWidget(marker)
-        layout.addWidget(course_label)
+        layout.addWidget(CourseBadge(student.course_name, student.course_color_hex))
         layout.addStretch(1)
         return cell
 

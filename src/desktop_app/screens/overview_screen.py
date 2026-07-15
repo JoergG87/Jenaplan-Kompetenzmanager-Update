@@ -18,7 +18,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.desktop_app.components import AppCard, PageHeader, SectionHeader, configure_button
+from src.desktop_app.components import (
+    AppCard,
+    CourseBadge,
+    PageHeader,
+    SectionHeader,
+    configure_button,
+)
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.master_data_view_model import (
     CourseGroupViewModel,
@@ -464,11 +470,18 @@ class OverviewScreen(QWidget):
             layout = QHBoxLayout(row)
             layout.setContentsMargins(12, 8, 12, 8)
             labels = QVBoxLayout()
+            identity = QHBoxLayout()
+            identity.setSpacing(8)
             name = QLabel(student.display_name)
             set_label_style(name, "card_title")
+            identity.addWidget(name)
+            identity.addWidget(
+                CourseBadge(student.course_name, student.course_color_hex)
+            )
+            identity.addStretch(1)
             hint = QLabel(student.documentation_hint)
             set_label_style(hint, "muted")
-            labels.addWidget(name)
+            labels.addLayout(identity)
             labels.addWidget(hint)
             layout.addLayout(labels, 1)
             observe = QPushButton("Beobachten")

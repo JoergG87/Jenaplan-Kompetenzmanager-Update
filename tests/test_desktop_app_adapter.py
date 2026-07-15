@@ -3200,6 +3200,29 @@ class DesktopAppAdapterTest(unittest.TestCase):
             {"#2563EB", "#16A34A", "#F97316"},
         )
 
+        course_badges = tuple(
+            components.CourseBadge(course_name, color_hex)
+            for course_name, color_hex in (
+                ("Kurs 1", "#2563EB"),
+                ("Kurs 2", "#16A34A"),
+                ("Kurs 3", "#F97316"),
+            )
+        )
+        self.assertEqual(
+            tuple(badge.label.text() for badge in course_badges),
+            ("Kurs 1", "Kurs 2", "Kurs 3"),
+        )
+        self.assertEqual(
+            tuple(badge.property("courseColorHex") for badge in course_badges),
+            ("#2563EB", "#16A34A", "#F97316"),
+        )
+        for badge, expected_color in zip(
+            course_badges,
+            ("#2563EB", "#16A34A", "#F97316"),
+            strict=True,
+        ):
+            self.assertIn(f"background-color: {expected_color}", badge.styleSheet())
+
     def test_students_screen_shows_course_color_marker(self) -> None:
         source = inspect.getsource(importlib.import_module(
             "src.desktop_app.screens.students_screen"
@@ -3210,10 +3233,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "self.table.setCellWidget(row_index, 1, self._course_cell(student))",
             source,
         )
-        self.assertIn('marker.setObjectName("CourseColorMarker")', source)
-        self.assertIn('QColor(student.course_color_hex or "#6B7280")', source)
-        self.assertNotIn('marker = QLabel("●")', source)
-        self.assertIn('set_label_style(course_label, "body")', source)
+        self.assertIn(
+            "CourseBadge(student.course_name, student.course_color_hex)",
+            source,
+        )
+        self.assertNotIn('marker.setObjectName("CourseColorMarker")', source)
         self.assertIn("QHeaderView.ResizeMode.Fixed", source)
         self.assertIn("self.table.setColumnWidth(1, 150)", source)
         self.assertIn("self.table.setColumnWidth(3, 250)", source)
@@ -3409,6 +3433,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(profile.display_name, students[0].display_name)
         self.assertEqual(profile.group_name, "Grashüpfer")
         self.assertIn(profile.course_name, {"Kurs 1", "Kurs 2", "Kurs 3"})
+        self.assertIn(profile.course_color_name, {"Blau", "Grün", "Orange"})
+        self.assertIn(
+            profile.course_color_hex,
+            {"#2563EB", "#16A34A", "#F97316"},
+        )
         self.assertIsInstance(profile.student_notes, str)
         self.assertTrue(profile.active)
 
@@ -3422,6 +3451,19 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(profile.group_name, students[0].group_name)
         self.assertEqual(profile.course_name, students[0].course_name)
         self.assertIsInstance(profile.student_notes, str)
+
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(profile)
+        self.assertEqual(screen.meta_label.text(), f"Stammgruppe {profile.group_name}")
+        self.assertEqual(screen.course_badge.label.text(), profile.course_name)
+        self.assertEqual(
+            screen.course_badge.property("courseColorHex"),
+            profile.course_color_hex,
+        )
+        self.assertEqual(
+            screen.course_badge.accessibleName(),
+            f"Kurszugehörigkeit: {profile.course_name}",
+        )
 
     def test_profile_placeholder_messages_are_registered(self) -> None:
         self.assertEqual(
@@ -5452,7 +5494,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(screen.name_label.text(), "Emma Müller")
         self.assertIn("Grashüpfer", screen.meta_label.text())
-        self.assertIn("Kurs 1", screen.meta_label.text())
+        self.assertEqual(screen.course_badge.label.text(), "Kurs 1")
+        self.assertEqual(
+            screen.course_badge.accessibleName(),
+            "Kurszugehörigkeit: Kurs 1",
+        )
         self.assertEqual(screen.profile_tabs.currentIndex(), 2)
         self.assertTrue(screen.profile_tabs.tabBar().isHidden())
         self.assertEqual(
@@ -7146,6 +7192,20 @@ class DesktopAppAdapterTest(unittest.TestCase):
         badge = components.StatusBadge("Entwurf", tone="info")
         badge.setText("Entwurf geändert")
         self.assertEqual(badge.accessibleName(), "Entwurf geändert")
+
+        course_badge = components.CourseBadge("Kurs 1", "#2563EB")
+        self.assertEqual(course_badge.label.text(), "Kurs 1")
+        self.assertEqual(course_badge.accessibleName(), "Kurszugehörigkeit: Kurs 1")
+        self.assertEqual(course_badge.property("semanticRole"), "courseContext")
+        self.assertFalse(course_badge.property("usesNeutralColor"))
+        self.assertNotEqual(course_badge.objectName(), badge.objectName())
+        neutral_course_badge = components.CourseBadge("Kurs ohne Farbe", "")
+        self.assertEqual(neutral_course_badge.label.text(), "Kurs ohne Farbe")
+        self.assertEqual(
+            neutral_course_badge.property("courseColorHex"),
+            components.CourseBadge.NEUTRAL_COLOR,
+        )
+        self.assertTrue(neutral_course_badge.property("usesNeutralColor"))
 
         card = components.AppCard("interactive", interactive=True)
         self.assertEqual(card.property("cardVariant"), "interactive")

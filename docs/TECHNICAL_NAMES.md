@@ -786,6 +786,11 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentListItem`
 - `StudentListItem.documentation_status`
 - `StudentDetailViewModel`
+- `StudentDetailViewModel.course_color_name`
+- `StudentDetailViewModel.course_color_hex`
+- `DashboardSuggestedStudentViewModel.course_name`
+- `DashboardSuggestedStudentViewModel.course_color_name`
+- `DashboardSuggestedStudentViewModel.course_color_hex`
 - `GroupSummaryViewModel`
 - `StudentReportCompetencyViewModel`
 - `StudentReportDevelopmentViewModel`
@@ -807,6 +812,13 @@ Registrierte Python-Klassen und Funktionen:
 - `course_color_from_key(color_key, fallback_index)`
 - `course_color_name(color_hex)`
 - `COURSE_COLOR_OPTIONS`
+- `CourseBadge`
+- `CourseBadge.set_course(course_name, color_hex)`
+- `CourseBadgeIndicator`
+- `CourseBadgeLabel`
+- `semanticRole = courseContext`
+- `courseColorHex`
+- `usesNeutralColor`
 - `COURSE_GROUP_EMPTY_GROUPS_MESSAGE`
 - `COURSE_GROUP_EMPTY_COURSES_MESSAGE`
 - `COURSE_GROUP_DUPLICATE_NAME_MESSAGE`

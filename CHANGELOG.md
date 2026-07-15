@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## UI Fix - Kursfarben als Kontextbadges
+
+### Added
+
+- Wiederverwendbares `CourseBadge` mit sichtbarem Kursnamen, bestehender Stammdatenfarbe, neutralem Fallback und eindeutigem Accessible Name ergänzt.
+
+### Changed
+
+- Kurszugehörigkeit in Schülerliste, Schülerprofil und bei passenden Kindern im Dashboard als kleinen, kontrastreichen Pastellchip dargestellt.
+- Vorhandene Kursfarben aus der bestehenden Adapter-/ViewModel-Projektion wiederverwendet; vollständige Karten und Tabellenzeilen bleiben ungefärbt.
+
+### Not Changed
+
+- Keine Änderung an Datenmodell, SQLite, Persistenz, Kurslogik, Kompetenzstatus, Entwicklungsdarstellung, Dokumentationsfarben, Navigation oder Workflows.
+
 ## Premium UI Sprint 3 - Informationsdichte und Accessibility
 
 ### Added

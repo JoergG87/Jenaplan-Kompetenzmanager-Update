@@ -181,6 +181,8 @@ class StudentDetailViewModel:
     course_name: str
     student_notes: str
     active: bool
+    course_color_name: str = ""
+    course_color_hex: str = ""
 
 
 @dataclass(frozen=True)
@@ -234,6 +236,9 @@ class DashboardSuggestedStudentViewModel:
     documentation_hint: str
     last_documentation_date: date | None = None
     documented_today: bool = False
+    course_name: str = ""
+    course_color_name: str = ""
+    course_color_hex: str = ""
 
 
 @dataclass(frozen=True)

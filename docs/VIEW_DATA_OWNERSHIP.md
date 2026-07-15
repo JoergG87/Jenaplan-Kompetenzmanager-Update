@@ -151,6 +151,7 @@ UI-Projektionen:
 - zentrale Karte `Für diese Stunde` mit aktueller oder naechster aktiver Stunde und ruhigem Leerzustand
 - heutige aktive Stunden als horizontale, zeitbezogen markierte Timeline
 - fluechtige Stundenplanvorbelegung fuer den bestehenden Beobachtungsdialog nach bewusster Kindauswahl
+- passende Kinder mit textlich sichtbarer Kurszugehoerigkeit und bestehender Kursfarbe als reinem Kontextbadge
 - neutrale Mini-Heatmap der Dokumentationsabdeckung je Stammgruppe und Fach; keine Bewertung, Leistung, Rangfolge oder Entwicklungsableitung
 
 Regel:
@@ -167,7 +168,7 @@ Regel Sprint 8B.3: `Passende Kinder für diese Stunde` liest aktive Kinder aus d
 
 Liest die bestehenden Projektionen aus `groups`, `courses`, `students`, `course_groups`, `course_group_student_groups` und `course_group_courses`. Schreibt nichts direkt. `StudentsWorkspace` komponiert die lokalen Segmente `Stammgruppen`, `Kurse`, `Kursverbünde` und `Alle Schüler`, ohne eine neue Datenquelle zu besitzen. Stammgruppenkarten, direkte Kurskarten, Schuelerzahlen, Kursverbuende, Kurszugriffe, Listenfilter und Profilnavigation verwenden ausschliesslich die bestehenden technischen IDs. Ein einfacher Klick auf eine Nicht-Aktionszelle, Enter oder die sekundäre Profilaktion navigiert per `student_id`; eingebettete Zeilenaktionen bleiben davon getrennt. Dashboard-Daten und Stundenplanprojektionen werden in diesem Arbeitsraum nicht gelesen.
 
-Der Workspace darf nur lokale Segment-, Drill-down-, Such-, Fokus- und Auswahlzustaende halten. Beobachtung, Kompetenz, Bericht und LEG bleiben im vorhandenen Schuelerprofilkontext und verwenden ihre bereits dokumentierten Lese- und Schreibpfade. Der Workspace berechnet weder Mitgliedschaften noch Dokumentationsstatus und greift nicht direkt auf SQLite zu.
+Der Workspace darf nur lokale Segment-, Drill-down-, Such-, Fokus- und Auswahlzustaende halten. Kursname und Kursfarbe werden in Schuelerliste und Profilkopf ausschliesslich aus der bestehenden Kursprojektion als `CourseBadge` dargestellt. Beobachtung, Kompetenz, Bericht und LEG bleiben im vorhandenen Schuelerprofilkontext und verwenden ihre bereits dokumentierten Lese- und Schreibpfade. Der Workspace berechnet weder Mitgliedschaften noch Dokumentationsstatus und greift nicht direkt auf SQLite zu.
 
 ## PySide6 Stammdaten
 

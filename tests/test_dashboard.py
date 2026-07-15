@@ -21,6 +21,7 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDeskto
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
+from src.desktop_app.components import CourseBadge
 from src.desktop_app.screens.overview_screen import DashboardLessonCard, OverviewScreen
 from src.desktop_app.shell import AppShell
 from src.desktop_app import theme
@@ -385,6 +386,14 @@ class DashboardTest(unittest.TestCase):
             lambda *values: emitted.append(tuple(values))
         )
         screen.set_dashboard(projection, self.heatmap, at, True, suggestions)
+        course_badges = screen.findChildren(CourseBadge)
+        self.assertEqual(len(course_badges), 1)
+        self.assertEqual(course_badges[0].label.text(), suggestions[0].course_name)
+        self.assertEqual(
+            course_badges[0].property("courseColorHex"),
+            suggestions[0].course_color_hex,
+        )
+        self.assertTrue(course_badges[0].accessibleName().startswith("Kurszugehörigkeit:"))
         observe = next(
             button
             for button in screen.findChildren(QPushButton)

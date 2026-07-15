@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from PySide6.QtCore import QEvent, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QKeyEvent, QKeySequence, QMouseEvent, QShortcut
+from PySide6.QtGui import QColor, QKeyEvent, QKeySequence, QMouseEvent, QShortcut
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -391,6 +392,82 @@ class StatusBadge(QLabel):
         """Keep the spoken status synchronized with its visible wording."""
         super().setText(text)
         self.setAccessibleName(text)
+
+
+class CourseBadge(QFrame):
+    """Compact course context whose visible text never depends on color."""
+
+    NEUTRAL_COLOR = "#6B7280"
+
+    def __init__(self, course_name: str = "", color_hex: str = "") -> None:
+        super().__init__()
+        self.setObjectName("CourseBadge")
+        self.setProperty("semanticRole", "courseContext")
+        self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+        self.setFixedHeight(24)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(7, 2, 8, 2)
+        layout.setSpacing(6)
+        self.indicator = QFrame()
+        self.indicator.setObjectName("CourseBadgeIndicator")
+        self.indicator.setFixedSize(8, 8)
+        self.indicator.setAccessibleName("")
+        self.label = QLabel()
+        self.label.setObjectName("CourseBadgeLabel")
+        self.label.setAccessibleName("")
+        layout.addWidget(self.indicator)
+        layout.addWidget(self.label)
+        self.set_course(course_name, color_hex)
+
+    def set_course(self, course_name: str, color_hex: str = "") -> None:
+        """Update the visible course name and its supporting master-data color."""
+        visible_name = course_name.strip() or "Kein Kurs"
+        color = QColor(color_hex.strip())
+        uses_neutral_color = not color.isValid()
+        if uses_neutral_color:
+            color = QColor(self.NEUTRAL_COLOR)
+
+        background = self._blend_with_white(color, 0.12)
+        border = self._blend_with_white(color, 0.38)
+        accent_hex = color.name().upper()
+        background_hex = background.name().upper()
+        border_hex = border.name().upper()
+        self.setStyleSheet(
+            f"""
+            QFrame#CourseBadge {{
+                background-color: {background_hex};
+                border: 1px solid {border_hex};
+                border-radius: 10px;
+            }}
+            QFrame#CourseBadgeIndicator {{
+                background-color: {accent_hex};
+                border: none;
+                border-radius: 4px;
+            }}
+            QLabel#CourseBadgeLabel {{
+                background-color: transparent;
+                color: #24313A;
+                border: none;
+                font-size: 11px;
+                font-weight: 650;
+            }}
+            """
+        )
+        self.label.setText(visible_name)
+        self.setProperty("courseColorHex", accent_hex)
+        self.setProperty("usesNeutralColor", uses_neutral_color)
+        accessible_name = f"Kurszugehörigkeit: {visible_name}"
+        self.setAccessibleName(accessible_name)
+        self.setToolTip(accessible_name)
+
+    @staticmethod
+    def _blend_with_white(color: QColor, color_share: float) -> QColor:
+        return QColor(
+            round(color.red() * color_share + 255 * (1 - color_share)),
+            round(color.green() * color_share + 255 * (1 - color_share)),
+            round(color.blue() * color_share + 255 * (1 - color_share)),
+        )
 
 
 class InlineMessage(QFrame):
