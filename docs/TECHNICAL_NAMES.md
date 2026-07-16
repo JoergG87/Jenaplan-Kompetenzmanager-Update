@@ -2,6 +2,67 @@
 
 Dieses Dokument ist ab Sprint 4 die verbindliche Registry fuer technische Namen.
 
+## Sprint 0.2A.3b - Restore-Staging, V0-V1-Migration und Sicherheitsbackup
+
+Registrierte Python-Module:
+
+- `src/core/restore.py`
+- `src/application/commands/restore.py`
+- `tests/test_restore.py`
+
+Registrierte Konstanten und technische Pfade:
+
+- `RESTORE_STAGING_DIRECTORY = "restore-staging"`
+- `RESTORE_SOURCE_DIRECTORY = "source"`
+- `RESTORE_PREPARED_DIRECTORY = "prepared"`
+- `RESTORE_STATE_FILENAME = "staging-state.json"`
+- `RESTORE_SAFETY_DIRECTORY = "restore-safety"`
+- `restore-staging/<restore-id>/source/`
+- `restore-staging/<restore-id>/prepared/`
+- `backups/restore-safety/<restore-id>/`
+
+Registrierte unveraenderliche Datenobjekte:
+
+- `RestoreStagingPaths`
+- `RestoreStagingResult`
+- `PreparedRestoreVerificationResult`
+- `RestoreSafetyBackupResult`
+
+Registrierte Fehlerklassen:
+
+- `RestoreStagingError`
+- `RestoreStateError`
+- `RestoreMigrationError`
+- `RestoreMaterializationError`
+- `RestoreSafetyBackupError`
+
+Registrierte Services und Application-Vertraege:
+
+- `RestoreStagingService`
+- `RestoreSafetyBackupService`
+- `RuntimeRestorePathSet`
+- `BackupVerifier.parse_manifest(manifest_bytes)`
+- `RestoreVerifier.verify_extracted(extraction_root, manifest)`
+- `PrepareRestoreStagingCommand`
+- `CreateRestoreSafetyBackupCommand`
+- `VerifyPreparedRestoreQuery`
+- `CleanupRestoreStagingCommand`
+- `RestoreApplicationService.prepare_staging(command)`
+- `RestoreApplicationService.create_safety_backup(command)`
+- `RestoreApplicationService.verify_prepared(query)`
+- `RestoreApplicationService.cleanup_staging(command)`
+
+Registrierte technische Phasen:
+
+- `source_extracted`
+- `database_prepared`
+- `files_materialized`
+- `paths_rebased`
+- `completed`
+- `failed`
+
+Regel: Diese Namen gehoeren ausschliesslich zur allgemeinen Betriebsfunktion. Restore-IDs sind technische Identitaeten und duerfen keine fachlichen Werte enthalten. Staging-State, Preview und Ergebnisse enthalten keine Namen, fachlichen Texte, Originaldateinamen oder fachlichen Pfade. Es entstehen keine neue SQLite-Tabelle, fachliche Entitaet, sichtbare View, UI-Aktion, Live-Migration oder Restore-Ausfuehrung.
+
 ## macOS Pilot-Deployment
 
 | Technischer Name | Bedeutung |

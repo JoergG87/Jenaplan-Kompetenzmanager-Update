@@ -4,7 +4,7 @@ Dieses Dokument beschreibt, aus welcher Datenquelle sichtbare UI-Informationen s
 
 UI-Felder duerfen nicht eingefuehrt werden, ohne ihre Datenherkunft hier zu dokumentieren.
 
-Sprint 0.2A.2 fuehrt ausschliesslich ein injizierbares Backup-Backend ein. Sprint 0.2A.3a ergaenzt read-only Datenbank-Kompatibilitaet, Restore-Verifikation und eine rein technische, nicht sichtbare `RestorePreview`. Es entstehen keine sichtbare Ansicht, keine UI-Aktion und keine neuen UI-Felder; deshalb besitzen diese Betriebsfunktionen keine Feldzuordnung. Eine spaetere Settings-, Backup- oder Restore-UI benoetigt vor ihrer Implementierung eine eigene Product-Owner- und Mapping-Freigabe.
+Sprint 0.2A.2 fuehrt ausschliesslich ein injizierbares Backup-Backend ein. Sprint 0.2A.3a ergaenzt read-only Datenbank-Kompatibilitaet, Restore-Verifikation und eine rein technische, nicht sichtbare `RestorePreview`. Sprint 0.2A.3b ergaenzt ausschliesslich technisches Restore-Staging, vorbereitete V1-Kopie, Managed-File-Materialisierung, Pfad-Rebasing, Prepared-Verifikation, Cleanup und ein getrenntes Sicherheitsbackup. Es entstehen keine sichtbare Ansicht, keine UI-Aktion und keine neuen UI-Felder; deshalb besitzen diese Betriebsfunktionen keine Feldzuordnung. Eine spaetere Settings-, Backup- oder Restore-UI benoetigt vor ihrer Implementierung eine eigene Product-Owner- und Mapping-Freigabe.
 
 Spalten:
 

@@ -6,6 +6,20 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 0.2A.3b - Restore-Staging, V0-V1-Migration, Pfad-Rebasing und Sicherheitsbackup
+
+- [x] Governance-Grenzen fuer ausschliessliches Restore-Staging vor Code dokumentiert
+- [x] Persistente eindeutige Restore-Struktur innerhalb der Runtime-Wurzel und ausserhalb von Live-DB und `documents/` festgelegt
+- [x] Archivbytes durch Groesse, SHA-256, vollstaendigen BackupVerifier und RestoreVerifier vor und waehrend der Extraktion gebunden
+- [x] exaktes V1 kontrolliert kopiert und ausschliesslich den registrierten V0-Vorgaenger transaktional auf V1 migriert
+- [x] Managed Documents ueber technische IDs materialisiert und nur in der vorbereiteten Datenbank rebased
+- [x] finale Bericht-/LEG-PDFs an vertraglichen relativen Pfaden mit unveraenderten Bytes, Groessen und Hashes materialisiert
+- [x] Prepared-Staging mit Integritaet, Fremdschluesseln, V1-Fingerprint, Counts, Inhalten, externen Referenzen und Inventar erneut geprueft
+- [x] getrennten Sicherheitsbackup-Dienst auf Basis des vorhandenen BackupService vorgesehen
+- [x] Application-Schritte fuer Pruefung, Vorbereitung, Sicherheitsbackup, Prepared-Pruefung und Cleanup getrennt
+- [x] 26 Restore-, 17 Kompatibilitaets-, 61 Backup- und 639 Gesamttests sowie Compile-, Import- und Diff-Pruefungen abgeschlossen
+- [x] Kein Live-Austausch, Rename, Worker, Instanz-Lock, Rollback, Journal, Start-Recovery, Neustart, UI oder Commit vorgesehen
+
 ## Sprint 0.2A.3a - Datenbank-Kompatibilitaet und Restore-Verifier
 
 - [x] Backupformat-, Datenbank-Kompatibilitaets- und App-Version als unabhaengige Verträge dokumentiert

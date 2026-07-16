@@ -12,6 +12,8 @@ Neue Datenquellen duerfen nur nach Erweiterung dieser Dokumentation in einer Ans
 
 Eine Ansicht darf nur fachlich erforderliche Datenquellen lesen.
 
+Sprint 0.2A.3b fuehrt keine neue Ansicht ein. Restore-Pruefung, persistentes Staging, vorbereitete V1-Kopie, Pfad-Rebasing, Managed-File-Materialisierung, Prepared-Verifikation, Cleanup und Sicherheitsbackup bleiben reine Core-/Application-Betriebsfunktionen. Keine bestehende PySide-Ansicht erhaelt Lese- oder Schreibownership auf `restore-staging/`, `staging-state.json` oder `backups/restore-safety/`. Eine spaetere Restore-UI benoetigt eine eigene Product-Owner- und Ownership-Freigabe.
+
 Nicht erlaubt ist:
 
 ```text

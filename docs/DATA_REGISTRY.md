@@ -77,6 +77,14 @@ Eine schemafreie neue Datenbank wird transaktional als V1 erzeugt. Eine vorhande
 
 Die `RestorePreview` ist eine kurzlebige technische Projektion aus einem isoliert verifizierten Backup. Sie speichert nichts und enthaelt nur Erstellungszeit, App-, Backupformat-, Datenbank-Kompatibilitaets- und SQLite-Version, Kompatibilitaetsstatus sowie aggregierte Counts fuer Schueler, Beobachtungen, Berichtrevisionen, LEG-Revisionen, Managed Files und externe beziehungsweise fehlende externe Referenzen. Namen, Notizen, fachliche Texte, Dateinamen, absolute oder externe Pfade und Schueler-IDs sind ausgeschlossen.
 
+### Persistentes Restore-Staging und Sicherheitsbackup
+
+`restore-staging/<restore-id>/` ist eine abgeleitete technische Arbeitsablage innerhalb der Runtime-Datenwurzel und keine fachliche Source of Truth. `source/` enthaelt ausschliesslich die an Archivgroesse und SHA-256 gebunden extrahierten Backupbytes. `prepared/` enthaelt eine kontrollierte V1-Datenbankkopie und ausschliesslich verifizierte Managed Files. `staging-state.json` speichert nur technische Identitaet, Versionen, Phase, aggregierte Counts und Zeitpunkte; fachliche Inhalte, Namen, Originalpfade und externe Pfade sind ausgeschlossen.
+
+Die vorbereitete Datenbank darf ausschliesslich aus exaktem V1 oder dem registrierten unversionierten V0-Vorgaenger entstehen. Eine V0-V1-Migration aendert nur SQLite-`user_version` und nur in `prepared/`. Managed Documents werden ueber `documents.document_id` aus dem Manifest zugeordnet und unter einem technischen Zielpfad materialisiert. Ihre `documents.file_path`-Werte werden nur in der vorbereiteten Datenbank auf die aktuelle Runtime-Documents-Wurzel rebased. Nicht im Manifest enthaltene externe Dokumentreferenzen bleiben unveraendert. `learning_report_pdf_artifacts.relative_file_path` und `learning_conference_pdf_artifacts.relative_file_path` bleiben runtime-relativ und unveraendert; ihre Bytes, Groessen und Hashes werden erneut geprueft.
+
+`backups/restore-safety/<restore-id>/` enthaelt ein unveraendertes `.jkmbackup` der bestehenden Formatversion, das vor einem spaeteren Live-Austausch mit dem vorhandenen `BackupService` aus dem Live-Bestand erzeugt und vollstaendig verifiziert wird. Es ist eine technische Sicherung, keine neue Datenquelle. Restore-Staging, Sicherheitsbackup, produktive Datenbank und produktive `documents/` bleiben getrennte Pfadbereiche.
+
 Entwicklerpfad:
 
 ```text

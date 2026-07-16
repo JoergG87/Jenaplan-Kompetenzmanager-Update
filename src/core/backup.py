@@ -882,7 +882,7 @@ class BackupVerifier:
                     manifest_bytes = (
                         extraction_root / MANIFEST_ARCHIVE_PATH
                     ).read_bytes()
-                    manifest = self._parse_manifest(manifest_bytes)
+                    manifest = self.parse_manifest(manifest_bytes)
                     self._verify_payload(extraction_root, infos, manifest)
         except BackupError:
             raise
@@ -918,6 +918,10 @@ class BackupVerifier:
             )
         self._extract_isolated(archive, infos, Path(extraction_root))
         return infos
+
+    def parse_manifest(self, manifest_bytes: bytes) -> BackupManifest:
+        """Parse canonical manifest bytes through the public verifier contract."""
+        return self._parse_manifest(manifest_bytes)
 
     def _validate_members(self, infos: list[zipfile.ZipInfo]) -> None:
         if not infos or len(infos) > self.max_file_count:

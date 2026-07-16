@@ -1,5 +1,17 @@
 # Architekturentscheidungen
 
+## ADR-061 - Persistentes Restore-Staging vor jedem spaeteren Live-Austausch
+
+Status: Fuer Sprint 0.2A.3b freigegeben
+
+Restore-Staging veraendert niemals produktive Daten. Ein vollstaendig verifiziertes `.jkmbackup` wird in einen eindeutig per technischer Restore-ID gebundenen Bereich `restore-staging/<restore-id>/` innerhalb der aktuellen Runtime-Datenwurzel extrahiert. Dieser Bereich liegt ausserhalb der produktiven SQLite-Datei und ausserhalb von `documents/`; vorhandene Restore-Verzeichnisse werden nie ueberschrieben. Das technische `staging-state.json` enthaelt nur Restore-ID, Archivhash und -groesse, Format- und Kompatibilitaetswerte, Quell- und Ziel-`user_version`, Phase, aggregierte technische Counts und Zeitpunkte.
+
+Unterstuetzt werden ausschliesslich exaktes V1 sowie der registrierte unversionierte `c029aff`-Vorgaenger. Exaktes V1 wird kontrolliert nach `prepared/` kopiert. Beim bekannten V0-Vorgaenger wird ausschliesslich die Staging-Datenbank in einer expliziten SQLite-Transaktion auf V1 migriert; der vollstaendige V0-Fingerprint wird vorher read-only bestaetigt und `PRAGMA user_version = 1` ist der letzte Migrationsschritt. Unbekannte, widerspruechliche oder neuere Schemata werden abgelehnt. Fachliche Werte, IDs, Counts, Bericht-/LEG-Snapshots und Snapshot-Hashes bleiben unveraendert.
+
+Managed Files werden ausschliesslich ueber die verifizierten technischen Manifest-IDs materialisiert. Originalpfade werden nie als Ziel verwendet; Symlinks, Sonderdateien, Traversal und Hash- oder Groessenabweichungen werden abgelehnt. Finale Bericht- und LEG-PDFs behalten ihre vertraglichen runtime-relativen Artefaktpfade. Regulare Managed Documents erhalten einen sicheren technischen Zielpfad unter `prepared/documents/`; nur deren `documents.file_path` wird in einer eigenen Transaktion auf die spaetere aktuelle Runtime-Documents-Wurzel umgebogen. Externe Referenzen, PDF-Pfade, Snapshot-JSON und Snapshot-Hashes bleiben unveraendert.
+
+Vor einem spaeteren Live-Austausch ist ein vollstaendig durch den vorhandenen `BackupService` erzeugtes und verifiziertes Sicherheitsbackup unter `backups/restore-safety/<restore-id>/` Pflicht. Sprint 0.2A.3b stellt diesen getrennten technischen Schritt bereit, verbindet ihn aber noch nicht mit einem Restore. Nicht freigegeben sind produktiver Austausch, Live-Renames, Restore-Journal, Worker, Instanz-Lock, Live-Rollback, Start-Recovery, App-Neustart oder sichtbare UI.
+
 ## ADR-060 - Datenbank-Kompatibilitaetsvertrag und isolierter Restore-Verifier
 
 Status: Fuer Sprint 0.2A.3a freigegeben
@@ -16,7 +28,7 @@ Backup-Metadaten duerfen Kompatibilitaetsversion `1` nur aus einer read-only gep
 
 Der neue `RestoreVerifier` ist ausschliesslich eine isolierte technische Verifikation und Vorschau. Er bindet Archivgroesse und SHA-256 an das bereits durch den `BackupVerifier` gepruefte Archiv, extrahiert sicher in ein kurzlebiges temporaeres Verzeichnis, oeffnet die Kandidatendatenbank nur read-only, vergleicht Manifest und tatsaechliche Datenbankversion, berechnet den vollstaendigen Fingerprint und prueft Integritaet, Fremdschluessel, Counts sowie Managed Files. Jede temporaere Datei wird bei Erfolg und Fehler entfernt. Die Vorschau enthaelt nur technische Versionen und aggregierte Counts, keine Namen, Texte, Dateinamen, IDs oder Pfade.
 
-Nicht freigegeben sind persistentes Restore-Staging, Migration, Pfad-Rebasing, Sicherheitsbackup, Worker, Austausch der Live-Datenbank, Rollback, Journal, Start-Recovery, App-Neustart oder eine sichtbare UI.
+In ADR-060 selbst nicht freigegeben waren persistentes Restore-Staging, Migration, Pfad-Rebasing und Sicherheitsbackup; diese Grenze wird fuer die ausschliesslich technische Staging-Vorbereitung durch ADR-061 erweitert. Worker, Austausch der Live-Datenbank, Rollback, Journal, Start-Recovery, App-Neustart und sichtbare UI bleiben nicht freigegeben.
 
 ## ADR-059 - Verifiziertes ZIP-Backup als allgemeine Betriebsfunktion
 

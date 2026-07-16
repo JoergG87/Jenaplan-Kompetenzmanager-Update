@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## Sprint 0.2A.3b - Restore-Staging, V0-V1-Migration, Pfad-Rebasing und Sicherheitsbackup
+
+### Added
+
+- Verbindliche Governance fuer ausschliesslich stagingbasiertes Restore-Preprocessing, registrierte V0-V1-Migration, technische Managed-File-Materialisierung, vorbereitetes Pfad-Rebasing und getrenntes Restore-Sicherheitsbackup ergaenzt.
+- Persistente, per Restore-ID gebundene Staging-Struktur mit datensparsamem technischem State sowie getrennte Application-Schritte fuer Pruefung, Vorbereitung, Sicherheitsbackup, Prepared-Pruefung und Cleanup umgesetzt.
+
+### Security
+
+- Produktive SQLite-Datei und produktive `documents/` bleiben waehrend aller Staging-, Migrations-, Materialisierungs-, Rebase- und Pruefschritte unveraendert.
+- Unbekannte oder neuere Schemata, Archivwechsel, Restore-ID-Kollisionen, Pfadtraversal, Symlinks, Sonderdateien sowie Hash-, Groessen-, Count-, Snapshot- oder Inventarabweichungen werden abgelehnt.
+
+### Verified
+
+- 26 Restore-, 17 Datenbank-Kompatibilitaets- und 61 Backup-Tests sowie 639 Gesamttests erfolgreich ausgefuehrt.
+- Staging-only V0-V1-Migration, vollstaendiger Transaktionsrollback, Pfad-Rebasing, externe Referenzen, Bericht-/LEG-Snapshots und PDFs, Archivbindung, technischer State, Speicherplatz, Symlink- und Korruptionsfaelle, Cleanup und Sicherheitsbackup abgedeckt.
+
+### Not Changed
+
+- Keine fachliche Funktion, sichtbare UI, SQLite-Fachtabelle, Live-Migration, produktiver Austausch, Live-Rename, Worker, Instanz-Lock, Live-Rollback, Journal, Start-Recovery, App-Neustart oder Commit.
+
 ## Sprint 0.2A.3a - Datenbank-Kompatibilitaet und Restore-Verifier
 
 ### Added

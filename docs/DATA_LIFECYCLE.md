@@ -106,7 +106,48 @@ VerifyRestoreBackupQuery
 
 Der Prozess veraendert weder die Kandidatendatenbank noch Live-Daten oder Managed Files und fuehrt keine Migration aus. Ein Widerspruch zwischen Manifest und tatsaechlicher Datenbankversion, ein unbekannter Fingerprint, eine neuere Datenbank, Integritaets- oder Fremdschluesselfehler, falsche Counts oder fehlende beziehungsweise veraenderte Managed Files fuehren zu einem typisierten Fehler ohne Ergebnis. Es bleiben keine Stagingdaten zurueck.
 
-Nicht Bestandteil dieses Lifecycles sind persistentes Restore-Staging, Pfad-Rebasing, Sicherheitsbackup, Worker, Austausch, Rollback, Journal, Start-Recovery, Neustart oder UI.
+Nicht Bestandteil dieses read-only Verifikations-Lifecycles sind persistentes Restore-Staging, Pfad-Rebasing und Sicherheitsbackup; diese werden im nachfolgenden Sprint-0.2A.3b-Lifecycle getrennt freigegeben. Worker, Austausch, Rollback, Journal, Start-Recovery, Neustart und UI bleiben weiterhin ausgeschlossen.
+
+## Restore-Staging vorbereiten, pruefen und bereinigen
+
+Start: Ein expliziter Application-Command uebergibt ein zuvor pruefbares `.jkmbackup`, die aktuelle `RuntimePaths`-Projektion und optional eine technische Restore-ID. Es gibt keinen sichtbaren UI-Ausloeser.
+
+```text
+PrepareRestoreStagingCommand
+-> BackupVerifier und RestoreVerifier vollstaendig ausfuehren
+-> Archivgroesse und SHA-256 an einen geoeffneten Dateideskriptor binden
+-> restore-staging/<restore-id>/ exklusiv anlegen
+-> dieselben gebundenen Archivbytes sicher nach source/ extrahieren
+-> Datenbank nach prepared/ kopieren
+-> exaktes V1 unveraendert uebernehmen oder registriertes V0 transaktional auf V1 migrieren
+-> Managed Files anhand technischer Manifest-IDs nach prepared/documents/ materialisieren
+-> Managed documents.file_path in eigener Transaktion rebasen
+-> Prepared-Staging vollstaendig erneut pruefen
+-> staging-state.json auf completed setzen
+```
+
+Restore-Staging schreibt niemals in die produktive Datenbank oder in produktive `documents/`. Migrationen laufen ausschliesslich auf der Staging-Kopie. Unterstuetzt werden nur exaktes V1 und der registrierte V0-Vorgaenger; unbekannte, widerspruechliche oder neuere Schemata werden abgelehnt. Bei V0 wird der vollstaendige Fingerprint vor der Transaktion bestaetigt, kein fachlicher Wert oder keine ID veraendert und `PRAGMA user_version = 1` als letzter Schritt gesetzt. Jeder Fehler rollt die laufende Staging-Transaktion zurueck und markiert den eindeutig zugeordneten Staging-State technisch als `failed`.
+
+Managed Files werden ausschliesslich aus dem verifizierten Manifest gelesen. Symlinks, Sonderdateien, Traversal, fehlende Dateien und Hash- oder Groessenabweichungen blockieren. Regulare Dokumente erhalten einen technischen Zielpfad; Bericht- und LEG-PDFs werden an ihren bereits registrierten relativen Artefaktpfaden materialisiert. Externe Referenzen, PDF-Pfade, Snapshot-JSON, Snapshot-Hashes und alle fachlichen IDs bleiben unveraendert. Nach Migration, Materialisierung und Rebase werden Integritaet, Fremdschluessel, V1-Fingerprint, Counts, Tabelleninhalte, Managed-File-Inventar sowie PDF-Bytes und -Hashes erneut geprueft.
+
+`VerifyPreparedRestoreQuery` ist wiederholbar und liest ausschliesslich ein eindeutig zugeordnetes abgeschlossenes Staging. Unbekannte oder widerspruechliche Phasen werden nicht automatisch fortgesetzt. `CleanupRestoreStagingCommand` darf nur das direkte, per gueltiger Restore-ID und passendem State gebundene Kind von `restore-staging/` entfernen; beliebige Pfade werden nie akzeptiert. Erfolg und kontrollierter Fehler koennen so gezielt bereinigt werden.
+
+## Restore-Sicherheitsbackup erzeugen
+
+Start: Ein expliziter, vom Staging getrennter Application-Command fordert fuer eine technische Restore-ID das Sicherheitsbackup des aktuellen Live-Bestands an.
+
+```text
+CreateRestoreSafetyBackupCommand
+-> RestoreSafetyBackupService
+-> vorhandener BackupService
+-> backups/restore-safety/<restore-id>/
+-> vorhandener BackupVerifier
+-> technisches Ergebnis mit Pfad, Groesse und SHA-256
+```
+
+Das Zielverzeichnis und vorhandene Backups werden nie ueberschrieben. Ein Fehler erzeugt keine Restore-Freigabe. Sicherheitsbackup, Restore-Staging, produktive SQLite-Datei und produktive `documents/` sind disjunkt. Dieser Sprint verbindet das Sicherheitsbackup noch nicht mit einem produktiven Austausch.
+
+Nicht Bestandteil beider Lifecycles sind Live-Austausch, Rename der produktiven Datenbank oder `documents/`, Worker, Instanz-Lock, Wartungszustand, Live-Rollback, Live-Journal, Start-Recovery, App-Neustart oder UI.
 
 ## Dokumentationsrelevante Faecher speichern
 
