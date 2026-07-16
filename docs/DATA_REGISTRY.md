@@ -63,6 +63,20 @@ Ausgeschlossen:
 
 Unregistrierte Nutzdateien unter `documents/` sind kein stiller Zusatzbestand und blockieren das Backup; `.DS_Store` wird ignoriert. Das Manifest ist eine technische Integritaetsprojektion und enthaelt keine personenbezogenen Klartexte. `sqlite_user_version`, `compatibility_version` und der strukturelle Schema-Fingerprint dokumentieren den Datenbankstand; der Fingerprint beruecksichtigt bei expliziten Indizes die normalisierte Definition samt Partial-Index-Praedikat. Diese Werte geben noch keine Restore-Kompatibilitaet frei.
 
+Ab Sprint 0.2A.3a wird `compatibility_version = 1` beim Erstellen nicht mehr aus einer ungeprueften Konstante behauptet. Der read-only inspizierte Snapshot muss entweder exaktes Datenbankschema V1 mit `sqlite_user_version = 1` oder der registrierte bekannte unversionierte `c029aff`-Vorgaenger mit `sqlite_user_version = 0` sein. Unbekannte oder neuere Schemata blockieren die Backup-Erstellung. Der bestehende strukturelle Backup-Fingerprint und das Manifestformat v1 bleiben unveraendert.
+
+### Datenbank-Kompatibilitaetsidentitaet V1
+
+`PRAGMA user_version` ist SQLite-Metadatum und keine neue fachliche Datenquelle. Die registrierte V1-Identitaet besteht aus `DATABASE_COMPATIBILITY_VERSION = 1`, `sqlite_user_version` und einem vollstaendigen SHA-256-Kompatibilitaetsfingerprint ueber kanonisches JSON der nicht-internen Schemastruktur. Die App-Version ist kein Bestandteil dieser Identitaet.
+
+Der vollstaendige Fingerprint bindet Tabellenname, normalisiertes Tabellen-SQL, Spaltenmetadaten, Primaer- und Fremdschluessel, explizite Indizes samt Partial-Praedikat, Trigger und Views. Damit sind auch `CHECK`-Constraints und Defaultwerte gebunden. Ausgeschlossen sind Dateninhalte, `sqlite_%`-Objekte, interne Indexnamen, Autoincrement-Zaehler und fluechtige SQLite-Werte.
+
+Eine schemafreie neue Datenbank wird transaktional als V1 erzeugt. Eine vorhandene unversionierte Datenbank wird beim normalen Start nicht veraendert oder adoptiert. Nur der registrierte vollstaendige Fingerprint des bekannten unversionierten `c029aff`-Vorgaengers ist ein V1-Migrationskandidat; unbekannte Schemata sind keine registrierte Quelle und werden abgelehnt.
+
+### Technische Restore-Vorschau ohne View
+
+Die `RestorePreview` ist eine kurzlebige technische Projektion aus einem isoliert verifizierten Backup. Sie speichert nichts und enthaelt nur Erstellungszeit, App-, Backupformat-, Datenbank-Kompatibilitaets- und SQLite-Version, Kompatibilitaetsstatus sowie aggregierte Counts fuer Schueler, Beobachtungen, Berichtrevisionen, LEG-Revisionen, Managed Files und externe beziehungsweise fehlende externe Referenzen. Namen, Notizen, fachliche Texte, Dateinamen, absolute oder externe Pfade und Schueler-IDs sind ausgeschlossen.
+
 Entwicklerpfad:
 
 ```text

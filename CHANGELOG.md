@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## Sprint 0.2A.3a - Datenbank-Kompatibilitaet und Restore-Verifier
+
+### Added
+
+- Verbindlichen, von Backupformat und App-Version unabhaengigen Datenbank-Kompatibilitaetsvertrag V1 mit `PRAGMA user_version`, registriertem vollstaendigem Schemafingerprint und bekanntem unversioniertem `c029aff`-Vorgaenger dokumentiert.
+- Read-only Kompatibilitaetsinspektion, isolierte Restore-Verifikation und datensparsame technische Vorschau als allgemeine Betriebsfunktionen umgesetzt.
+
+### Changed
+
+- Neue schemafreie Datenbanken werden als V1 gekennzeichnet; vorhandene unversionierte Datenbanken bleiben beim normalen Start unveraendert und werden nicht automatisch adoptiert oder migriert.
+- Backup-Kompatibilitaetsmetadaten werden aus dem tatsaechlich inspizierten Snapshotzustand statt allein aus einer Konstante abgeleitet; Backupformat v1 und dessen bestehender Schema-Fingerprint bleiben unveraendert.
+
+### Verified
+
+- 17 Kompatibilitaets-, 12 Restore- und 61 Backup-Tests sowie 625 Gesamttests erfolgreich ausgefuehrt.
+- Schema-/`user_version`-Rollback, bekannte V0-Pilotdaten, vollstaendige Fingerprint-Unterschiede, Manifestwidersprueche, Integritaets-, Fremdschluessel-, Count-, Managed-File-, Datenschutz-, Temp-Bereinigungs- und Live-Unveraendertheitspfade abgedeckt.
+
+### Not Changed
+
+- Keine fachliche Funktion, sichtbare UI, SQLite-Fachtabelle, Migration, persistentes Restore-Staging, Pfad-Rebasing, Sicherheitsbackup, Worker, Live-Austausch, Rollback, Start-Recovery, Neustart oder Commit.
+
 ## Sprint 0.2A.2a - Backup-Sicherheitsnachpruefung
 
 ### Changed

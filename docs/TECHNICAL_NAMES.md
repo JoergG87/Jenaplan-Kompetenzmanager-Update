@@ -79,6 +79,58 @@ Validierte technische Buildwerte im Manifest:
 
 Regel: Diese Namen gehoeren ausschliesslich zur allgemeinen Betriebsfunktion. Der Smoke-Marker ist nur gemeinsam mit einer geprueften temporaeren Datenwurzel gueltig und ersetzt den Pfadnachweis nicht. Die Namen fuehren keine SQLite-Tabelle, Migration, fachliche Entitaet, sichtbare View, UI-Aktion, Restore-Freigabe oder Universal-Storage-Engine ein.
 
+## Sprint 0.2A.3a - Datenbank-Kompatibilitaet und Restore-Verifier
+
+Registrierte Python-Module:
+
+- `src/core/database_compatibility.py`
+- `src/core/restore.py`
+- `src/application/commands/restore.py`
+- `tests/test_database_compatibility.py`
+- `tests/test_restore.py`
+
+Registrierte Konstanten und technische Werte:
+
+- `BACKUP_FORMAT_VERSION = 1`
+- `DATABASE_COMPATIBILITY_VERSION = 1`
+- `V1_COMPATIBILITY_FINGERPRINT`
+- `KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT`
+- SQLite `PRAGMA user_version`
+- `DatabaseCompatibilityStatus.EXACT`
+- `DatabaseCompatibilityStatus.MIGRATION_REQUIRED`
+- `DatabaseCompatibilityStatus.INCOMPATIBLE`
+
+Registrierte unveraenderliche Datenobjekte:
+
+- `DatabaseSchemaIdentity`
+- `DatabaseVersionInfo`
+- `DatabaseCompatibilityResult`
+- `RestoreCompatibility`
+- `RestorePreview`
+- `RestoreVerificationResult`
+- `VerifyRestoreBackupQuery`
+
+Registrierte Fehlerklassen:
+
+- `DatabaseCompatibilityError`
+- `UnsupportedDatabaseVersionError`
+- `UnknownDatabaseSchemaError`
+- `DatabaseVersionMismatchError`
+- `RestoreError`
+- `RestoreFormatError`
+- `RestoreCompatibilityError`
+- `RestoreIntegrityError`
+
+Registrierte Services:
+
+- `DatabaseCompatibilityInspector`
+- `DatabaseCompatibilityPolicy`
+- `RestoreVerifier`
+- `RestoreApplicationService`
+- `BackupVerifier.extract_isolated(archive, extraction_root)`
+
+Regel: Diese Namen beschreiben ausschliesslich read-only ermittelbare Datenbank-Kompatibilitaet und technische Restore-Verifikation. Sie fuehren keine fachliche Entitaet, neue SQLite-Tabelle, Migration, persistentes Staging, Live-Austausch, Desktop-Adapter, sichtbare View oder UI-Aktion ein. `APP_VERSION` bleibt unabhaengig von Backupformat- und Datenbank-Kompatibilitaetsversion.
+
 ## Grundregeln
 
 Technische Namen werden grundsaetzlich englisch und ASCII-kompatibel gefuehrt.

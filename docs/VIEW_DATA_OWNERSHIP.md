@@ -110,6 +110,12 @@ Sprint 0.2A.2 fuehrt keine Ansicht und keine sichtbare UI-Aktion ein. Der Applic
 
 Die Funktion darf keine Qt-Widgets, Desktop-Adapter, fachlichen Repositories oder UI-Projektionen als Datenquelle verwenden. Sie darf keine Live-Daten, Dokumente, PDF-Artefakte, Exporte, Logs oder vorhandenen Backups veraendern. Externe Referenzen werden nicht in das Archiv uebernommen. Weil keine View entsteht, besitzt das Backup keine UI-Felder, Navigation oder temporaeren UI-State.
 
+## Datenbank-Kompatibilitaet und Restore-Verifikation ohne View
+
+Sprint 0.2A.3a fuehrt weiterhin keine Ansicht und keine sichtbare UI-Aktion ein. `DatabaseCompatibilityInspector` darf eine explizit injizierte SQLite-Datenbank ausschliesslich read-only fuer `PRAGMA user_version` und die registrierte nicht-interne Schemastruktur lesen. `RestoreVerifier` darf ein explizit injiziertes `.jkmbackup` nach erfolgreichem `BackupVerifier` nur in einem isolierten kurzlebigen temporaeren Verzeichnis lesen.
+
+Die technische `RestorePreview` ist kein Screen und kein persistenter UI-State. Sie darf ausschliesslich technische Versionen, Kompatibilitaetsstatus und aggregierte Counts enthalten. Namen, Notizen, Beobachtungs-, Bericht- oder LEG-Texte, Dateinamen, fachliche IDs und Pfade sind nicht freigegeben. Die Funktion darf keine Qt-Widgets, Desktop-Adapter, fachlichen Repositories oder Live-Daten lesen oder veraendern und kein persistentes Staging, keine Migration und keinen Austausch ausloesen.
+
 ## PySide6 Einstellungen
 
 Status: Sprint 8A ergaenzt den produktiven Wochenstundenplan neben der bestehenden Dokumentationskonfiguration.

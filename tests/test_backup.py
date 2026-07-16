@@ -36,6 +36,10 @@ from src.core.backup import (
     BackupVerifier,
     SQLiteBackupEngine,
 )
+from src.core.database_compatibility import (
+    UnknownDatabaseSchemaError,
+    UnsupportedDatabaseVersionError,
+)
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.runtime import RuntimePaths, runtime_paths
 
@@ -361,8 +365,11 @@ def test_wal_mode_is_captured_without_copying_wal_files(tmp_path: Path) -> None:
     paths = _runtime(tmp_path)
     connection = sqlite3.connect(paths.database)
     journal_mode = connection.execute("PRAGMA journal_mode = WAL").fetchone()[0]
-    connection.execute("CREATE TABLE wal_probe (value TEXT)")
-    connection.execute("INSERT INTO wal_probe VALUES (?)", ("included" * 10_000,))
+    connection.execute(
+        "INSERT INTO groups (group_id, group_name, sort_order, active) "
+        "VALUES ('GRP-WAL001', ?, 0, 1)",
+        ("included" * 10_000,),
+    )
     connection.commit()
     wal_path = Path(f"{paths.database}-wal")
     assert journal_mode.lower() == "wal"
@@ -376,9 +383,9 @@ def test_wal_mode_is_captured_without_copying_wal_files(tmp_path: Path) -> None:
     database_copy = tmp_path / "wal-copy.sqlite"
     database_copy.write_bytes(payload["database/kompetenzmanager.sqlite"])
     with sqlite3.connect(database_copy) as snapshot:
-        assert snapshot.execute("SELECT value FROM wal_probe").fetchone()[0] == (
-            "included" * 10_000
-        )
+        assert snapshot.execute(
+            "SELECT group_name FROM groups WHERE group_id = 'GRP-WAL001'"
+        ).fetchone()[0] == ("included" * 10_000)
     assert not any(name.endswith(("-wal", "-shm")) for name in payload)
 
 
@@ -396,15 +403,30 @@ def test_snapshot_foreign_key_check_is_successful(tmp_path: Path) -> None:
     assert result.verification.manifest.counts.observations == 1
 
 
-def test_backup_preserves_live_sqlite_user_version(tmp_path: Path) -> None:
+def test_backup_rejects_newer_sqlite_user_version_without_changing_live_database(
+    tmp_path: Path,
+) -> None:
     paths = _runtime(tmp_path)
     with sqlite3.connect(paths.database) as connection:
         connection.execute("PRAGMA user_version = 37")
-    result = _create(paths)
+    with pytest.raises(UnsupportedDatabaseVersionError):
+        _create(paths)
     with sqlite3.connect(paths.database) as connection:
         live_user_version = connection.execute("PRAGMA user_version").fetchone()[0]
     assert live_user_version == 37
-    assert result.manifest.database.sqlite_user_version == 37
+    assert not tuple(paths.backups.iterdir())
+
+
+def test_backup_rejects_unknown_unversioned_schema_without_claiming_v1(
+    tmp_path: Path,
+) -> None:
+    paths = _runtime(tmp_path)
+    with sqlite3.connect(paths.database) as connection:
+        connection.execute("CREATE TABLE unknown_extension (value TEXT)")
+        connection.execute("PRAGMA user_version = 0")
+    with pytest.raises(UnknownDatabaseSchemaError):
+        _create(paths)
+    assert not tuple(paths.backups.iterdir())
 
 
 def test_schema_fingerprint_is_stable_for_identical_schema(tmp_path: Path) -> None:

@@ -1,5 +1,23 @@
 # Architekturentscheidungen
 
+## ADR-060 - Datenbank-Kompatibilitaetsvertrag und isolierter Restore-Verifier
+
+Status: Fuer Sprint 0.2A.3a freigegeben
+
+Backupformat, Datenbank-Kompatibilitaet und App-Version sind unabhaengige Verträge. `BACKUP_FORMAT_VERSION = 1` beschreibt weiterhin ausschliesslich die unveraenderte `.jkmbackup`-Archivstruktur. `DATABASE_COMPATIBILITY_VERSION = 1` bezeichnet das registrierte produktive V1-Schema. `APP_VERSION` bleibt eine davon unabhaengige Produkt- und Paketversion.
+
+`PRAGMA user_version` ist ab diesem Sprint die verbindliche Datenbankschemaversion. Eine neu erzeugte, zuvor schemafreie SQLite-Datenbank erhaelt `user_version = 1` innerhalb derselben Transaktion wie die V1-Schemaerzeugung. Eine bereits vorhandene Datenbank mit nicht-internen Schemaobjekten und `user_version = 0` bleibt historisch unversioniert und wird beim normalen Start weder adoptiert noch in-place migriert. Es gibt keine automatische Startmigration.
+
+Die bekannte unversionierte Datenbankstruktur aus dem Stand `c029aff` ist ausschliesslich ueber ihren registrierten vollstaendigen Kompatibilitaetsfingerprint als V1-Vorgaengerkandidat anerkannt. Ein bekannter Vorgaenger liefert `MIGRATION_REQUIRED`, ist aber in diesem Sprint kein Migrationsauftrag. Unbekannte `user_version = 0`- oder `user_version = 1`-Schemata sowie Datenbanken mit einer Version groesser als `1` sind `INCOMPATIBLE`.
+
+Der vollstaendige Restore-Fingerprint ist deterministisches kanonisches JSON mit SHA-256. Er umfasst alle nicht-internen Tabellen samt normalisiertem Tabellen-SQL, Spalten, Typen, `NOT NULL`, Defaults, Primaerschluesseln und Fremdschluesseln, ausserdem explizite Indizes samt Spalten und Partial-Praedikaten, Trigger und Views. Tabellen-SQL bindet insbesondere `CHECK`-Constraints. Ausgeschlossen bleiben Dateninhalte, SQLite-interne Tabellen und Indexnamen, Autoincrement-Zaehler sowie fluechtige SQLite-Werte. Der bestehende strukturelle Backup-Fingerprint aus Format v1 bleibt unveraendert.
+
+Backup-Metadaten duerfen Kompatibilitaetsversion `1` nur aus einer read-only geprueften Snapshot-Datenbank ableiten. Exaktes V1 wird mit `sqlite_user_version = 1`, der registrierte unversionierte Vorgaenger mit `sqlite_user_version = 0` dokumentiert. Unbekannte oder neuere Datenbankstaende duerfen kein Backup mit einer falschen V1-Behauptung erzeugen. Bestehende gueltige Format-v1-Backups bleiben durch den bisherigen `BackupVerifier` verifizierbar.
+
+Der neue `RestoreVerifier` ist ausschliesslich eine isolierte technische Verifikation und Vorschau. Er bindet Archivgroesse und SHA-256 an das bereits durch den `BackupVerifier` gepruefte Archiv, extrahiert sicher in ein kurzlebiges temporaeres Verzeichnis, oeffnet die Kandidatendatenbank nur read-only, vergleicht Manifest und tatsaechliche Datenbankversion, berechnet den vollstaendigen Fingerprint und prueft Integritaet, Fremdschluessel, Counts sowie Managed Files. Jede temporaere Datei wird bei Erfolg und Fehler entfernt. Die Vorschau enthaelt nur technische Versionen und aggregierte Counts, keine Namen, Texte, Dateinamen, IDs oder Pfade.
+
+Nicht freigegeben sind persistentes Restore-Staging, Migration, Pfad-Rebasing, Sicherheitsbackup, Worker, Austausch der Live-Datenbank, Rollback, Journal, Start-Recovery, App-Neustart oder eine sichtbare UI.
+
 ## ADR-059 - Verifiziertes ZIP-Backup als allgemeine Betriebsfunktion
 
 Status: Fuer Sprint 0.2A.2 freigegeben

@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from .database_compatibility import DATABASE_COMPATIBILITY_VERSION
+
 from .constants import (
     ACTIVE,
     ARCHIVED_AT,
@@ -220,9 +222,15 @@ class SQLiteDatabase:
 
     def initialize_schema(self) -> None:
         with closing(self.connect()) as connection:
+            schema_was_empty = connection.execute(
+                "SELECT 1 FROM sqlite_schema "
+                "WHERE name NOT LIKE 'sqlite_%' LIMIT 1"
+            ).fetchone() is None
             with connection:
                 connection.executescript(
                     """
+                    BEGIN IMMEDIATE;
+
                     CREATE TABLE IF NOT EXISTS groups (
                         group_id TEXT PRIMARY KEY,
                         group_name TEXT NOT NULL,
@@ -823,6 +831,10 @@ class SQLiteDatabase:
                 self._ensure_column(connection, "competencies", "is_core_subject", "INTEGER NOT NULL DEFAULT 1")
                 self._ensure_column(connection, "timetable_entries", "deleted_at", "TEXT NOT NULL DEFAULT ''")
                 self._backfill_course_colors(connection)
+                if schema_was_empty:
+                    connection.execute(
+                        f"PRAGMA user_version = {DATABASE_COMPATIBILITY_VERSION}"
+                    )
 
     def ensure_master_data_defaults(self) -> None:
         """Create default master data only for empty master-data scopes."""

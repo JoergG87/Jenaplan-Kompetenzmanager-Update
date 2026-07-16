@@ -67,6 +67,47 @@ Der Packaged-App-Smoke validiert vor `prepare_runtime_storage()` einen explizite
 
 Dieser Lifecycle veraendert keine fachlichen Daten. Restore, Vorschau, Migration, automatische Sicherung, Aufbewahrung, Verschluesselung, Signierung, Passwortschutz, Nutzerkonto, Import, Onboarding und Cloud sind nicht freigegeben.
 
+## Datenbankschema V1 initialisieren und Kompatibilitaet pruefen
+
+Start: Die bestehende SQLite-Initialisierung oeffnet eine neue oder vorhandene lokale Datenbank.
+
+Technischer Prozess fuer eine schemafreie Datenbank:
+
+```text
+SQLiteDatabase.initialize_schema()
+-> vor Schemaerzeugung keine nicht-internen Schemaobjekte festgestellt
+-> BEGIN IMMEDIATE
+-> vollstaendiges V1-Schema erzeugen
+-> PRAGMA user_version = 1
+-> COMMIT
+```
+
+Eine vorhandene Datenbank mit nicht-internen Schemaobjekten und `user_version = 0` bleibt beim normalen Start unversioniert. Sie wird weder als V1 adoptiert noch in-place migriert. Der bestehende fachliche Betrieb bleibt davon getrennt. `DatabaseCompatibilityInspector` liest Version und vollstaendigen Schemafingerprint ausschliesslich read-only; `DatabaseCompatibilityPolicy` klassifiziert exaktes V1 als `EXACT`, den registrierten unversionierten `c029aff`-Vorgaenger als `MIGRATION_REQUIRED` und unbekannte oder neuere Staende als `INCOMPATIBLE`.
+
+## Restore-Backup technisch verifizieren und Vorschau erzeugen
+
+Start: Eine explizite `VerifyRestoreBackupQuery` uebergibt den Pfad eines bestehenden `.jkmbackup`. Es gibt keinen sichtbaren UI-Ausloeser.
+
+```text
+VerifyRestoreBackupQuery
+-> RestoreApplicationService
+-> RestoreVerifier
+-> BackupVerifier
+-> Archivgroesse und SHA-256 erneut binden
+-> sichere isolierte temporaere Extraktion
+-> Datenbank read-only oeffnen
+-> Manifest- und Datenbankversion vergleichen
+-> vollstaendigen Kompatibilitaetsfingerprint und Status bestimmen
+-> integrity_check / foreign_key_check
+-> Counts und Managed Files pruefen
+-> datensparsame RestorePreview erzeugen
+-> temporaeres Verzeichnis vollstaendig entfernen
+```
+
+Der Prozess veraendert weder die Kandidatendatenbank noch Live-Daten oder Managed Files und fuehrt keine Migration aus. Ein Widerspruch zwischen Manifest und tatsaechlicher Datenbankversion, ein unbekannter Fingerprint, eine neuere Datenbank, Integritaets- oder Fremdschluesselfehler, falsche Counts oder fehlende beziehungsweise veraenderte Managed Files fuehren zu einem typisierten Fehler ohne Ergebnis. Es bleiben keine Stagingdaten zurueck.
+
+Nicht Bestandteil dieses Lifecycles sind persistentes Restore-Staging, Pfad-Rebasing, Sicherheitsbackup, Worker, Austausch, Rollback, Journal, Start-Recovery, Neustart oder UI.
+
 ## Dokumentationsrelevante Faecher speichern
 
 Start: Laura legt in den Einstellungen fest, welche Faecher fuer spaetere Dokumentations- und Auswertungslogik zaehlen sollen.

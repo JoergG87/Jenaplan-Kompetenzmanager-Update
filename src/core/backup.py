@@ -19,10 +19,15 @@ from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from typing import Callable, Mapping
 
+from .database_compatibility import (
+    DATABASE_COMPATIBILITY_VERSION,
+    DatabaseCompatibilityInspector,
+    DatabaseCompatibilityPolicy,
+)
+
 
 BACKUP_FORMAT = "jenaplan-kompetenzmanager-backup"
 BACKUP_FORMAT_VERSION = 1
-DATABASE_COMPATIBILITY_VERSION = 1
 BACKUP_EXTENSION = ".jkmbackup"
 DATABASE_ARCHIVE_PATH = "database/kompetenzmanager.sqlite"
 MANIFEST_ARCHIVE_PATH = "manifest.json"
@@ -749,11 +754,16 @@ class BackupService:
         external_references: BackupExternalReferenceSummary,
     ) -> BackupManifest:
         database_size, database_sha256 = _file_size_and_sha256(snapshot_path)
+        compatibility = DatabaseCompatibilityPolicy.require_backup_compatible(
+            DatabaseCompatibilityInspector().inspect(snapshot_path)
+        )
         with closing(_open_read_only_database(snapshot_path)) as connection:
-            sqlite_user_version = int(
-                connection.execute("PRAGMA user_version").fetchone()[0]
-            )
             counts = _read_counts(connection)
+        compatibility_version = compatibility.version.compatibility_version
+        if compatibility_version is None:  # pragma: no cover - enforced by policy
+            raise BackupIntegrityError(
+                "Der SQLite-Snapshot besitzt keine Backup-Kompatibilitaetsversion."
+            )
         return BackupManifest(
             backup_format=BACKUP_FORMAT,
             backup_format_version=BACKUP_FORMAT_VERSION,
@@ -765,8 +775,8 @@ class BackupService:
                 archive_path=DATABASE_ARCHIVE_PATH,
                 sha256=database_sha256,
                 size_bytes=database_size,
-                sqlite_user_version=sqlite_user_version,
-                compatibility_version=DATABASE_COMPATIBILITY_VERSION,
+                sqlite_user_version=compatibility.version.sqlite_user_version,
+                compatibility_version=compatibility_version,
                 schema_fingerprint=self.sqlite_engine.schema_fingerprint(snapshot_path),
             ),
             counts=counts,
@@ -866,16 +876,9 @@ class BackupVerifier:
             raise BackupFormatError("Die Backup-Datei ist kein gueltiges ZIP-Archiv.")
         try:
             with zipfile.ZipFile(path, mode="r") as archive:
-                infos = archive.infolist()
-                self._validate_members(infos)
-                bad_member = archive.testzip()
-                if bad_member is not None:
-                    raise BackupIntegrityError(
-                        f"ZIP-CRC-Pruefung fehlgeschlagen: {bad_member}"
-                    )
                 with tempfile.TemporaryDirectory(prefix="jkmbackup-verify-") as temp:
                     extraction_root = Path(temp)
-                    self._extract_isolated(archive, infos, extraction_root)
+                    infos = self.extract_isolated(archive, extraction_root)
                     manifest_bytes = (
                         extraction_root / MANIFEST_ARCHIVE_PATH
                     ).read_bytes()
@@ -899,6 +902,22 @@ class BackupVerifier:
             archive_file_count=len(infos),
             warnings=warnings,
         )
+
+    def extract_isolated(
+        self,
+        archive: zipfile.ZipFile,
+        extraction_root: Path,
+    ) -> list[zipfile.ZipInfo]:
+        """Validate and safely extract one already opened backup archive."""
+        infos = archive.infolist()
+        self._validate_members(infos)
+        bad_member = archive.testzip()
+        if bad_member is not None:
+            raise BackupIntegrityError(
+                f"ZIP-CRC-Pruefung fehlgeschlagen: {bad_member}"
+            )
+        self._extract_isolated(archive, infos, Path(extraction_root))
+        return infos
 
     def _validate_members(self, infos: list[zipfile.ZipInfo]) -> None:
         if not infos or len(infos) > self.max_file_count:

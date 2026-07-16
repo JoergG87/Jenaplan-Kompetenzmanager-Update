@@ -6,6 +6,18 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 0.2A.3a - Datenbank-Kompatibilitaet und Restore-Verifier
+
+- [x] Backupformat-, Datenbank-Kompatibilitaets- und App-Version als unabhaengige Verträge dokumentiert
+- [x] `PRAGMA user_version = 1` nur fuer schemafreie neue Datenbanken in derselben Schema-Transaktion setzen
+- [x] vollstaendigen deterministischen V1-Kompatibilitaetsfingerprint registrieren
+- [x] bekannte unversionierte `c029aff`-Vorgaengerstruktur als migrationspflichtigen Kandidaten registrieren
+- [x] Backup-Metadaten aus der read-only inspizierten Snapshot-Datenbank ableiten
+- [x] isolierten `RestoreVerifier` und datensparsame technische `RestorePreview` umsetzen
+- [x] Application-Query ohne Desktop-Adapter oder sichtbare UI anbinden
+- [x] fokussierte Kompatibilitaets-, Fingerprint-, Restore- und Gesamtregressionen abschliessen
+- [x] Kein produktiver Restore, Staging, Migration, Rebase, Sicherheitsbackup, Worker, Austausch, Rollback, Recovery, Neustart, UI oder Commit vorgesehen
+
 ## Sprint 0.2A.2a - Sicherheitsnachpruefung des Backup-Backends ✅
 
 - [x] Exklusive Veroeffentlichung gegen das Loeschen eines fremden Race-Gewinners gehaertet
