@@ -149,6 +149,46 @@ Das Zielverzeichnis und vorhandene Backups werden nie ueberschrieben. Ein Fehler
 
 Nicht Bestandteil beider Lifecycles sind Live-Austausch, Rename der produktiven Datenbank oder `documents/`, Worker, Instanz-Lock, Wartungszustand, Live-Rollback, Live-Journal, Start-Recovery, App-Neustart oder UI.
 
+## Produktiven Restore ausfuehren und journalgestuetzt absichern
+
+Start: Eine kontrollierte Application-Funktion erzeugt nach vollstaendiger Prepared-Pruefung eine einmalige Handoff-Datei. Der normale App-Prozess beendet alle Datenbankzugriffe und uebergibt den gehaltenen Runtime-Lock kontrolliert an den Qt-freien Worker. Es gibt keine sichtbare UI und keine frei waehlbaren Zielpfade.
+
+```text
+CreateRestoreHandoffCommand
+-> Handoff 0600 atomar schreiben
+-> App-Datenbankzugriffe beenden / Wartungszustand
+-> Restore-Worker mit Lockuebergabe starten
+-> Handoff atomar nach consumed umbenennen
+-> Archiv-, Staging- und Prepared-Bindung erneut pruefen
+-> Sicherheitsbackup erstellen und verifizieren
+-> Live-DB integrity_check / foreign_key_check / WAL checkpoint
+-> Rename-Intent journalen und fsyncen
+-> DB, WAL, SHM und documents in rollback/ verschieben
+-> Prepared-DB und Prepared-documents nach Live verschieben
+-> neuen Live-Bestand read-only vollstaendig pruefen
+-> installed_verified
+-> App mit einmaligem Resume-Token starten
+-> Startup-Handshake abwarten
+-> completed
+```
+
+Bis einschliesslich `preflight_verified` und vor dem ersten Rename bleiben produktive Bytes unveraendert. Der Austausch besteht ausschliesslich aus atomaren Einzel-Renames auf demselben Dateisystem; die Gesamtoperation ist nur durch Journal und Rollback abgesichert. Ein fehlender oder leerer alter `documents/`-Baum sowie vorhandene oder fehlende `-wal`-/`-shm`-Dateien werden als eigene Zustaende erfasst.
+
+Bei jedem Fehler vor erfolgreichem Startup-Handshake wird der neue Bestand nach `failed-new/` verschoben und der alte DB-, WAL-, SHM- und Documents-Zustand exakt aus `rollback/` wiederhergestellt. Erst nach read-only Integritaets-, Fremdschluessel- und Inventarpruefung darf die alte App neu starten. Scheitert ein Teilrollback oder widersprechen Journal, Pfade, Groessen oder Hashes einander, wird `manual_recovery_required` geschrieben; es startet keine App und nichts wird automatisch bereinigt.
+
+## Unterbrochenen Restore vor App-Start recovern
+
+Start: Jeder normale Start prueft den kanonischen Runtime-Root vor `prepare_runtime_storage()`, Logging, `QApplication`, Datenbankinitialisierung und Pilotdateninstallation.
+
+- Ohne aktives kritisches Journal startet die App normal.
+- Vor dem Austausch darf ein Restore kontrolliert abgebrochen werden; Live-Daten bleiben unveraendert.
+- Nach begonnenem, aber nicht verifiziertem Austausch hat automatischer Rollback Vorrang.
+- `installed_verified` ohne Handshake darf nur begrenzt mit demselben Restore-Vertrag resumed werden; danach erfolgt Rollback.
+- Widerspruechliche Existenz-, Groessen- oder Hashbeweise fuehren zu `manual_recovery_required`.
+- Recovery ist wiederholbar; abgeschlossene, sauber gerollte oder manuell gesperrte Zustaende werden nicht nochmals mutiert.
+
+Der Startup-Handshake konsumiert einen kurzlebigen Resume-Token atomar, prueft Restore-ID und Token, Live-V1-Kompatibilitaet, SQLite-Integritaet, Fremdschluessel und das erwartete Documents-Inventar und markiert erst danach `completed`. Fachliche Daten werden nicht transformiert; alte Pilot-V0-Daten wurden bereits ausschliesslich im Prepared-Staging migriert.
+
 ## Dokumentationsrelevante Faecher speichern
 
 Start: Laura legt in den Einstellungen fest, welche Faecher fuer spaetere Dokumentations- und Auswertungslogik zaehlen sollen.

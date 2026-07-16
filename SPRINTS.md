@@ -6,6 +6,21 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 0.2A.3c - Produktiver Restore, Worker, Journal, Rollback und Start-Recovery
+
+- [x] workerbasierten Restore, verpflichtendes Sicherheitsbackup, Journal und Rollback-Prioritaet vor Produktcode dokumentiert
+- [x] Runtime-gebundenen exklusiven Instanz-/Restore-Lock und kontrollierte einmalige Handoff-Datei umgesetzt
+- [x] Qt-freien Restore-Worker mit eindeutigen Exitcodes und fruehem Paket-Dispatch umgesetzt
+- [x] atomaren aktuellen Restore-State und append-only JSONL-Journal mit fsync vor und nach kritischen Renames umgesetzt
+- [x] DB, WAL, SHM und `documents/` ueber disjunkte Live-, Rollback-, Fehler-, Staging- und Backupbereiche ausgetauscht
+- [x] vollstaendigen Rollback und `manual_recovery_required` fuer nicht beweisbare Zustaende umgesetzt
+- [x] Start-Recovery vor Runtime-Vorbereitung, Logging, Qt und Datenbankinitialisierung integriert
+- [x] einmaligen Resume-Token, kontrollierten Neustart und Startup-Handshake integriert
+- [x] Fehler-Injektion, Recovery-Idempotenz, Entwickler-/Paketpfad und fachliche Unveraendertheit getestet
+- [x] 30 neue Worker-/Journal-/Recovery-Tests und 669 Gesamttests, Compile, Import, temporaeren PyInstaller-Build, Worker-Dispatch und isolierten Packaged-Smoke geprueft
+- [x] Keine Settings-UI, Benutzerinteraktion, Passwortschutz, Nutzerkonten, Import-, Onboarding-, automatische Backup- oder Aufbewahrungsfunktion vorgesehen
+- [x] Kein Commit vorgesehen
+
 ## Sprint 0.2A.3b - Restore-Staging, V0-V1-Migration, Pfad-Rebasing und Sicherheitsbackup
 
 - [x] Governance-Grenzen fuer ausschliessliches Restore-Staging vor Code dokumentiert

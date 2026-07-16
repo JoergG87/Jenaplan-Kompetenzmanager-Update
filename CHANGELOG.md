@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## Sprint 0.2A.3c - Produktiver Restore, Worker, Journal, Rollback und Start-Recovery
+
+### Added
+
+- Governance-Vertrag fuer exklusiven Runtime-Lock, einmalige Handoff-Datei, Qt-freien Restore-Worker, persistentes technisches Journal, Live-Austausch, vollstaendigen Rollback, Start-Recovery und Startup-Handshake ergaenzt.
+- Kernel-gestuetzten Runtime-Lock mit Prozessstart-Identitaet, kontrollierter Deskriptoruebergabe, einmaliger kanonischer Handoff-Datei und stabil gebundener Archivkopie umgesetzt.
+- Produktiven Restore-Service mit Sicherheitsbackup, WAL-Checkpoint, komponentenweisem DB-/WAL-/SHM-/Documents-Austausch, atomarem Current-State, append-only Ereignisjournal, vollstaendigem Rollback und idempotenter Start-Recovery umgesetzt.
+- Einmaligen kurzlebigen Resume-Token, read-only Startup-Verifikation und fruehen Entwickler-/Paket-Workerdispatch vor Qt- und Runtime-Initialisierung umgesetzt.
+
+### Changed
+
+- `main.py` erwirbt den exklusiven Instanz-Lock und fuehrt Start-Recovery beziehungsweise Restore-Handshake vor `QApplication`, Runtime-Vorbereitung, Logging und Datenbankinitialisierung aus.
+- Die PyInstaller-Spezifikation bindet den Qt-freien Restore-Worker und seine Core-Services explizit in das gebuendelte Executable ein.
+
+### Security
+
+- Sicherheitsbackup, vollstaendige Prepared-Pruefung, V1-Kompatibilitaet, Pfad-Disjunktheit, Speicher, Schreibrechte und beendete App-Datenbankzugriffe sind zwingende Vorbedingungen des ersten Live-Renames.
+- Bei jedem unsicheren Zustand hat Rollback Vorrang; ist ein konsistenter Zustand nicht beweisbar, bleibt die App mit `manual_recovery_required` geschlossen und alle technischen Beweis- und Wiederherstellungsartefakte bleiben erhalten.
+- Jeder kritische Rename besitzt gefsynctes Intent und Completed; installierte Managed Files werden gegen den vor dem Austausch gehashten Prepared-Bestand geprueft, alte Komponenten gegen ihre journalisierten Groessen und SHA-256-Hashes zurueckgestellt.
+
+### Verified
+
+- 30 neue Lock-, Handoff-, Worker-, Journal-, WAL-/SHM-, Austausch-, Fehler-, Rollback-, Recovery- und Handshake-Tests sowie 669 Gesamttests erfolgreich ausgefuehrt.
+- `compileall`, offscreen Import, temporaerer arm64-PyInstaller-Build, gebuendelter Worker-Exitcode und isolierter Packaged-App-Smoke mit PDF und verifiziertem Backup erfolgreich.
+
+### Not Changed
+
+- Keine fachliche Funktion, sichtbare UI, Fachdatenmigration ausserhalb des vorhandenen Stagings, Import-, Passwort-, Nutzerkonto-, Onboarding-, automatische Backup- oder Aufbewahrungsfunktion und kein Commit.
+
 ## Sprint 0.2A.3b - Restore-Staging, V0-V1-Migration, Pfad-Rebasing und Sicherheitsbackup
 
 ### Added

@@ -2,6 +2,45 @@
 
 Dieses Dokument ist ab Sprint 4 die verbindliche Registry fuer technische Namen.
 
+## Sprint 0.2A.3c - Produktiver Worker-Restore
+
+Registrierte Python-Module:
+
+- `src/core/restore_runtime.py`
+- `src/desktop_app/restore_worker.py`
+- `src/application/commands/restore.py`
+- `tests/test_restore_runtime.py`
+
+Technische Runtime-Namen:
+
+- `instance.lock`: exklusiver, an die kanonische Runtime-Wurzel gebundener Instanz-/Restore-Lock mit ausschliesslich PID, Prozessstart-Identitaet und UTC-Zeit.
+- `restore-handoffs/<restore-id>.json`: noch nicht konsumierte einmalige Handoff-Datei, Modus `0600`.
+- `restore-handoffs/<restore-id>.consumed.json`: atomar konsumierte Handoff-Datei; ihre Existenz blockiert Wiederverwendung.
+- `restore-transactions/<restore-id>/`: ausschliesslich aus Runtime-Wurzel und Restore-ID abgeleiteter Transaktionsbereich.
+- `source-backup.jkmbackup`: in den Transaktionsbereich stabil kopierte und an Groesse/SHA-256 gebundene Restore-Quelle; der Worker erhaelt keinen frei interpretierbaren Archivpfad.
+- `current-state.json`: atomar ersetzter kanonischer aktueller Restore-Zustand.
+- `events.jsonl`: append-only technisches Ereignisjournal.
+- `rollback/`: alter Live-Bestand aus DB, WAL, SHM und `documents/`.
+- `failed-new/`: nach Fehler aus Live zurueckgenommener neuer Bestand.
+- `resume-token.json`: einmaliger kurzlebiger Startup-Handshake-Token, Modus `0600`.
+- `resume-token.consumed.json`: atomar konsumierter Resume-Token.
+
+Technische Versionen und IDs:
+
+- `RESTORE_HANDOFF_VERSION = 1`
+- `RESTORE_JOURNAL_VERSION = 1`
+- `RESTORE_RESUME_TOKEN_VERSION = 1`
+- `restore_id`: bestehende technische Restore-ID nach `_RESTORE_ID_PATTERN`.
+- `nonce`: kryptografisch zufaelliger URL-sicherer Wert ohne fachliche Bedeutung.
+- `staging_state_sha256`: SHA-256 der kanonischen `staging-state.json`-Bytes.
+- `prepared_database_sha256`: SHA-256 der vollstaendig geprueften Prepared-V1-Datenbank.
+
+Zustaende: `maintenance`, `preflight_verified`, `replacement_started`, `installed_verified`, `completed`, `rolled_back` und `manual_recovery_required`.
+
+Application-Namen: `CreateRestoreHandoffCommand`, `ExecutePreparedRestoreCommand`, `RecoverInterruptedRestoreCommand` und `ConfirmRestoreStartupCommand`.
+
+Worker-Start: Entwicklerbetrieb ueber `python3 -m src.desktop_app.restore_worker --handoff <datei>`; Paketbetrieb ueber fruehen `--restore-worker`-Dispatch im gebuendelten Executable vor Qt- und Runtime-Initialisierung.
+
 ## Sprint 0.2A.3b - Restore-Staging, V0-V1-Migration und Sicherheitsbackup
 
 Registrierte Python-Module:

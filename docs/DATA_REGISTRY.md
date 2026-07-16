@@ -85,6 +85,23 @@ Die vorbereitete Datenbank darf ausschliesslich aus exaktem V1 oder dem registri
 
 `backups/restore-safety/<restore-id>/` enthaelt ein unveraendertes `.jkmbackup` der bestehenden Formatversion, das vor einem spaeteren Live-Austausch mit dem vorhandenen `BackupService` aus dem Live-Bestand erzeugt und vollstaendig verifiziert wird. Es ist eine technische Sicherung, keine neue Datenquelle. Restore-Staging, Sicherheitsbackup, produktive Datenbank und produktive `documents/` bleiben getrennte Pfadbereiche.
 
+### Produktive Restore-Transaktion
+
+Technische, nicht fachliche Runtime-Quellen:
+
+| Quelle | Owner | Inhalt | Regel |
+| --- | --- | --- | --- |
+| `instance.lock` | Restore-Lock-Service | PID, Prozessstart-Identitaet, UTC-Zeit und Runtime-Root-Hash | keine fachlichen Daten; niemals nur wegen alter PID entfernen |
+| `restore-handoffs/<restore-id>.json` | `CreateRestoreHandoffCommand` | Handoff-Version, Restore-ID, Nonce, kanonische Runtime-Wurzel, Archivgroesse/-hash, Staging-State-Hash, Prepared-DB-Groesse/-hash und UTC-Erstellungszeit | Modus `0600`, einmalige atomare Konsumierung, keine frei waehlbaren Zielpfade |
+| `restore-transactions/<restore-id>/current-state.json` | Restore-Journal | kanonischer technischer Gesamtzustand, naechster Schritt, Hash-/Groessenbeweise, Rename-Intents, Teilzustaende, Fehlerklasse und Handshake | atomar ersetzt und vor kritischen Renames gefsynct |
+| `restore-transactions/<restore-id>/events.jsonl` | Restore-Journal | append-only technische Zustandsereignisse | jede Zeile kanonisches JSON; Datei und Elternverzeichnis werden gefsynct |
+| `restore-transactions/<restore-id>/source-backup.jkmbackup` | Restore-Handoff-Service | stabile Kopie der bereits verifizierten Archivbytes | Worker leitet den Pfad selbst ab; Groesse und SHA-256 muessen zur Handoff-Datei passen |
+| `restore-transactions/<restore-id>/rollback/` | Restore-Executor | alter DB-, WAL-, SHM- und Documents-Zustand | nie automatisch loeschen; bis bestaetigtem Abschluss erhalten |
+| `restore-transactions/<restore-id>/failed-new/` | Restore-Rollback | nach Fehler zurueckgenommener neuer Bestand | bei Fehler und manueller Recovery erhalten |
+| `restore-transactions/<restore-id>/resume-token.json` | Restore-Executor | Restore-ID, zufaelliges Token, Erstellungs- und Ablaufzeit | Modus `0600`, einmalig, keine fachlichen Daten |
+
+Diese Quellen enthalten keine Datenbankinhalte, Namen, Notizen, fachlichen Texte oder frei injizierten fachlichen Pfade. Sie sind technische Beweise und Steuerdaten; SQLite und `documents/` bleiben die fachliche Source of Truth.
+
 Entwicklerpfad:
 
 ```text

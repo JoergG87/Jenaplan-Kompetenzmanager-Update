@@ -1,5 +1,17 @@
 # Architekturentscheidungen
 
+## ADR-062 - Journalgestuetzter Worker-Restore mit Rollback-Prioritaet
+
+Status: Fuer Sprint 0.2A.3c freigegeben
+
+Der produktive Restore laeuft ausserhalb der normalen PySide-Laufzeit in einem Qt-freien Worker. App und Worker verwenden denselben an der kanonischen Runtime-Wurzel gebundenen exklusiven Instanz-Lock; die App beendet vor der Worker-Uebergabe alle Datenbankzugriffe. Eine einmalige Handoff-Datei bindet Restore-ID, kryptografische Nonce, kanonische Runtime-Wurzel, Archivgroesse und -hash, Staging-State-Hash sowie Groesse und Hash der vorbereiteten V1-Datenbank. Der Worker leitet Live-, Staging-, Rollback-, Fehler- und Journalpfade ausschliesslich selbst ab und akzeptiert keine frei waehlbaren Zielpfade.
+
+Vor dem ersten produktiven Rename muessen Prepared-Staging, V1-Kompatibilitaet, Managed-File-Inventar, Pfad-Disjunktheit, Speicher, Schreibrechte, Live-SQLite-Integritaet, kontrollierter WAL-Checkpoint und ein vollstaendig verifiziertes Sicherheitsbackup bewiesen sein. Bis dahin bleiben die Live-Daten byteidentisch. Der Gesamtaustausch ist nicht physisch atomar; er besteht aus atomaren Einzel-Renames auf demselben Dateisystem und wird deshalb durch einen atomar ersetzten aktuellen Zustand sowie ein append-only JSONL-Ereignisjournal abgesichert. Vor jedem kritischen Rename werden Intent und Dateisystemzustand gefsynct, danach Rename und Completed-Zustand.
+
+DB, `-wal`, `-shm` und `documents/` werden als getrennte technische Zustaende behandelt. Alte Daten werden nie geloescht, sondern in den Restore-gebundenen Rollbackbereich verschoben. Jeder Fehler vor einem erfolgreichen Startup-Handshake priorisiert den vollstaendigen Rollback. Kann der alte oder neue konsistente Zustand nicht anhand von Journal, Existenz, Groesse, Hash, SQLite-Pruefung und Dateiinventar bewiesen werden, lautet der Zustand `manual_recovery_required`; die normale App darf dann nicht starten und es findet keine automatische Bereinigung statt.
+
+Start-Recovery laeuft vor Runtime-Vorbereitung, Logging, `QApplication`, Datenbankinitialisierung und Pilotdateninstallation. Ein installierter neuer Bestand wird erst nach einem einmaligen, kurzlebigen Resume-Token und erneuter read-only Pruefung von Datenbank und Dokumentinventar als `completed` markiert. Alte Pilot-V0-Daten werden weiterhin ausschliesslich im Staging migriert. Es werden keine fachlichen Daten transformiert, keine sichtbare UI und keine automatische Sicherung eingefuehrt.
+
 ## ADR-061 - Persistentes Restore-Staging vor jedem spaeteren Live-Austausch
 
 Status: Fuer Sprint 0.2A.3b freigegeben

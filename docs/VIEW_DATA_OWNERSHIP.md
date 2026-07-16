@@ -118,6 +118,12 @@ Sprint 0.2A.3a fuehrt weiterhin keine Ansicht und keine sichtbare UI-Aktion ein.
 
 Die technische `RestorePreview` ist kein Screen und kein persistenter UI-State. Sie darf ausschliesslich technische Versionen, Kompatibilitaetsstatus und aggregierte Counts enthalten. Namen, Notizen, Beobachtungs-, Bericht- oder LEG-Texte, Dateinamen, fachliche IDs und Pfade sind nicht freigegeben. Die Funktion darf keine Qt-Widgets, Desktop-Adapter, fachlichen Repositories oder Live-Daten lesen oder veraendern und kein persistentes Staging, keine Migration und keinen Austausch ausloesen.
 
+## Produktiver Restore, Worker und Start-Recovery ohne View
+
+Sprint 0.2A.3c fuehrt weiterhin keine Ansicht, sichtbare Aktion oder UI-Projektion ein. Owner der technischen Restore-Steuerung sind Application-Commands und Qt-freie Core-Services. Der Worker und die Start-Recovery lesen ausschliesslich Runtime-gebundene Handoff-, Lock-, Journal-, Staging-, Backup-, Rollback- und Resume-Daten sowie SQLite und Managed Files fuer technische Integritaetspruefungen.
+
+Qt-Widgets, Screens, ViewModels, Desktop-Adapter und fachliche Repositories besitzen weder Lock-, Rename-, Journal-, Rollback- noch Recovery-Verantwortung. Die normale App darf bei offenem kritischem oder widerspruechlichem Restore-Zustand keine View erzeugen.
+
 ## PySide6 Einstellungen
 
 Status: Sprint 8A ergaenzt den produktiven Wochenstundenplan neben der bestehenden Dokumentationskonfiguration.

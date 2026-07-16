@@ -33,6 +33,8 @@ a = Analysis(
         "PySide6.QtSvg",
         "prototypes.pdf_engine.output_models",
         "prototypes.pdf_engine.renderer",
+        "src.core.restore_runtime",
+        "src.desktop_app.restore_worker",
     ],
     hookspath=[],
     hooksconfig={},

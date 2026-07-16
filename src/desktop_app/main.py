@@ -9,24 +9,28 @@ import sys
 import tempfile
 from datetime import date
 from pathlib import Path
-from typing import Mapping
+from typing import TYPE_CHECKING, Mapping
 
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QMessageBox
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QApplication
+    from src.desktop_app.app import JenaplanDesktopApp
 
-from src.desktop_app.app import JenaplanDesktopApp
+# Kept as a patchable sentinel for pre-existing startup-isolation tests. Qt is
+# imported only after restore recovery has admitted normal startup.
+QApplication = None
+
 from src.desktop_app.runtime import (
     APP_DATA_DIR_ENV,
     APP_BUNDLE_ID,
     APP_NAME,
     RuntimePaths,
     RuntimeStorageError,
+    application_data_root,
     configure_runtime_logging,
     load_build_info,
     prepare_runtime_storage,
     resource_path,
 )
-from src.desktop_app.theme import apply_app_theme
 from src.version import APP_VERSION
 
 
@@ -80,17 +84,37 @@ def _validated_packaged_smoke_data_root(
     return resolved_root
 
 
-def _app_icon() -> QIcon:
+def _app_icon():
     """Return the application icon used for windows and the task switcher."""
+    from PySide6.QtGui import QIcon
+
     icon_path = resource_path("assets", "app_icon.png")
     return QIcon(str(icon_path))
 
 
+def _argument_value(arguments: list[str], name: str) -> str | None:
+    if name not in arguments:
+        return None
+    index = arguments.index(name)
+    if index + 1 >= len(arguments):
+        raise RuntimeStorageError(f"Technisches Startargument ohne Wert: {name}")
+    value = arguments[index + 1]
+    del arguments[index : index + 2]
+    return value
+
+
 def main() -> int:
     """Start the desktop app."""
-    packaged_smoke = "--packaged-smoke-test" in sys.argv
+    arguments = list(sys.argv)
+    if "--restore-worker" in arguments:
+        arguments.remove("--restore-worker")
+        from src.desktop_app.restore_worker import run as run_restore_worker
+
+        return run_restore_worker(arguments[1:])
+
+    packaged_smoke = "--packaged-smoke-test" in arguments
     if packaged_smoke:
-        sys.argv.remove("--packaged-smoke-test")
+        arguments.remove("--packaged-smoke-test")
         try:
             smoke_data_root = _validated_packaged_smoke_data_root()
         except RuntimeStorageError as error:
@@ -98,7 +122,61 @@ def main() -> int:
             return 2
     else:
         smoke_data_root = None
-    app = QApplication(sys.argv)
+
+    try:
+        resume_restore_id = _argument_value(arguments, "--restore-resume")
+        resume_token = _argument_value(arguments, "--restore-token")
+        inherited_lock_value = _argument_value(arguments, "--restore-lock-fd")
+        if (resume_restore_id is None) != (resume_token is None):
+            raise RuntimeStorageError("Der Restore-Resume-Start ist unvollstaendig.")
+        inherited_lock_fd = (
+            None if inherited_lock_value is None else int(inherited_lock_value)
+        )
+    except (RuntimeStorageError, ValueError) as error:
+        print(f"App-Start abgelehnt: {error}", file=sys.stderr)
+        return 3
+
+    data_root = smoke_data_root or application_data_root()
+    from src.core.restore_runtime import (
+        RestoreManualRecoveryRequired,
+        RestoreRuntimeError,
+        RuntimeInstanceLock,
+        confirm_restore_startup,
+        recover_interrupted_restore,
+    )
+
+    lock = RuntimeInstanceLock(data_root, inherited_fd=inherited_lock_fd)
+    try:
+        lock.acquire()
+        if resume_restore_id is not None and resume_token is not None:
+            confirm_restore_startup(data_root, resume_restore_id, resume_token)
+        else:
+            recovery = recover_interrupted_restore(data_root)
+            if recovery.status == "resume_required":
+                if recovery.restore_id is None or recovery.resume_token is None:
+                    raise RestoreManualRecoveryRequired(
+                        "Der Resume-Zustand ist unvollstaendig."
+                    )
+                confirm_restore_startup(
+                    data_root,
+                    recovery.restore_id,
+                    recovery.resume_token,
+                )
+    except (RestoreManualRecoveryRequired, RestoreRuntimeError) as error:
+        lock.release()
+        print(
+            "App-Start wegen eines unsicheren Restore-Zustands abgelehnt: "
+            f"{error}",
+            file=sys.stderr,
+        )
+        return 3
+
+    from PySide6.QtWidgets import QApplication, QMessageBox
+    from src.desktop_app.app import JenaplanDesktopApp
+    from src.desktop_app.theme import apply_app_theme
+
+    sys.argv[:] = arguments
+    app = QApplication(arguments)
     app.setApplicationName(APP_NAME)
     app.setApplicationDisplayName(APP_NAME)
     app.setApplicationVersion(APP_VERSION)
@@ -118,6 +196,7 @@ def main() -> int:
             "App-Daten nicht zugänglich",
             f"{error}\n\nDie App wurde nicht gestartet, damit keine Daten gefährdet werden.",
         )
+        lock.release()
         return 1
     except Exception as error:  # pragma: no cover - startup/platform feedback
         logging.exception("Die App konnte nicht initialisiert werden.")
@@ -125,15 +204,21 @@ def main() -> int:
             None,
             "App konnte nicht gestartet werden",
             "Die lokale Datenbank oder eine benötigte Ressource konnte nicht "
-            f"geöffnet werden.\n\nDatenordner: {paths.root}\nFehler: {error}",
+            f"geöffnet werden.\n\nDatenordner: {data_root}\nFehler: {error}",
         )
+        lock.release()
         return 1
 
     window.setWindowIcon(_app_icon())
     if packaged_smoke:
-        return _run_packaged_smoke(app, window, paths)
+        result = _run_packaged_smoke(app, window, paths)
+        lock.release()
+        return result
     window.showMaximized()
-    return app.exec()
+    try:
+        return app.exec()
+    finally:
+        lock.release()
 
 
 def _run_packaged_smoke(
