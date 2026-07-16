@@ -6,6 +6,29 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 0.2A.2a - Sicherheitsnachpruefung des Backup-Backends ✅
+
+- [x] Exklusive Veroeffentlichung gegen das Loeschen eines fremden Race-Gewinners gehaertet
+- [x] Packaged-Smoke vor jeder Runtime-Initialisierung zwingend doppelt isoliert
+- [x] Partial-Index-SQL in den strukturellen Schema-Fingerprint aufgenommen
+- [x] Busy-Frist auf zusammenhaengende Blockierungsphasen begrenzt
+- [x] Verwaltete Dateien ueber Directory-FDs ohne Symlink-Folgen und mit Inode-Pruefung gelesen
+- [x] Reale Race-, ZIP-, Limit-, Datenschutz-, Fehlerbereinigungs- und Unveraendertheitsregressionen abgeschlossen
+
+## Sprint 0.2A.2 - Sicheres Backup-Backend und Integritaetspruefung (durch 0.2A.2a nachgeprueft)
+
+- [x] Produkt- und Governance-Grenzen sowie bestehende Runtime-, SQLite-, Dokument-, PDF- und Shell-Backup-Pfade geprueft
+- [x] Backup als allgemeine, fachlich nicht schreibende Betriebsfunktion dokumentiert
+- [x] SQLite-Snapshot ausschliesslich ueber `sqlite3.Connection.backup()` mit begrenztem Busy-Warten umgesetzt
+- [x] Snapshot-Integritaet, Fremdschluessel und deterministischen Schema-Fingerprint geprueft
+- [x] registrierte verwaltete Dateien, externe Referenzsummen und freie Dateien strikt inventarisiert
+- [x] kanonisches Manifest v1 und sicheres `.jkmbackup`-ZIP ohne Klartextnamen erzeugt
+- [x] isolierten `BackupVerifier` mit Struktur-, Limit-, Hash-, SQLite-, Fingerprint- und Count-Pruefungen umgesetzt
+- [x] Application-Schicht und isolierten Packaged-App-Smoke ohne Desktop-Adapter oder Settings-UI angebunden
+- [x] 32 fokussierte Backup-Tests, Runtime-, Bericht-/LEG-PDF-, Gesamt-, Compile- und Diff-Pruefungen abgeschlossen
+- [x] Keine Migration, kein Restore, keine automatische Sicherung, keine sichtbare UI und keine Aenderung am Shell-Backup vorgesehen
+- [x] Kein Commit vorgesehen
+
 ## Pilot 0.1.2 - Einrichtungsreihenfolge und neuer Release-Build ✅
 
 - [x] Handbuchreihenfolge auf Stammgruppe und Kurs vor dem Anlegen eines Kindes korrigiert

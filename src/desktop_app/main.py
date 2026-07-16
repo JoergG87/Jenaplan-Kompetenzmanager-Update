@@ -4,14 +4,19 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
+import tempfile
 from datetime import date
+from pathlib import Path
+from typing import Mapping
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from src.desktop_app.app import JenaplanDesktopApp
 from src.desktop_app.runtime import (
+    APP_DATA_DIR_ENV,
     APP_BUNDLE_ID,
     APP_NAME,
     RuntimePaths,
@@ -25,6 +30,56 @@ from src.desktop_app.theme import apply_app_theme
 from src.version import APP_VERSION
 
 
+PACKAGED_SMOKE_MARKER_ENV = "JENAPLAN_PACKAGED_SMOKE_MARKER"
+PACKAGED_SMOKE_MARKER_VALUE = "isolated-v1"
+PACKAGED_SMOKE_TEMP_PREFIX = "jenaplan-packaged-smoke-"
+
+
+def _validated_packaged_smoke_data_root(
+    environ: Mapping[str, str] | None = None,
+) -> Path:
+    """Require an explicit marker and a dedicated system-temporary data root."""
+    environment = os.environ if environ is None else environ
+    if environment.get(PACKAGED_SMOKE_MARKER_ENV) != PACKAGED_SMOKE_MARKER_VALUE:
+        raise RuntimeStorageError(
+            "Packaged-Smoke ohne gueltigen expliziten Smoke-Marker abgelehnt."
+        )
+    raw_root = environment.get(APP_DATA_DIR_ENV, "")
+    data_root = Path(raw_root).expanduser() if raw_root else Path()
+    if not raw_root or not data_root.is_absolute():
+        raise RuntimeStorageError(
+            "Packaged-Smoke ohne absoluten isolierten Datenpfad abgelehnt."
+        )
+    temporary_root = Path(tempfile.gettempdir()).resolve()
+    resolved_root = data_root.resolve(strict=False)
+    try:
+        relative = resolved_root.relative_to(temporary_root)
+    except ValueError as error:
+        raise RuntimeStorageError(
+            "Packaged-Smoke ausserhalb der temporaeren Datenwurzel abgelehnt."
+        ) from error
+    smoke_component_index = next(
+        (
+            index
+            for index, component in enumerate(relative.parts)
+            if component.startswith(PACKAGED_SMOKE_TEMP_PREFIX)
+        ),
+        None,
+    )
+    if smoke_component_index is None:
+        raise RuntimeStorageError(
+            "Packaged-Smoke ohne eigenes temporaeres Smoke-Verzeichnis abgelehnt."
+        )
+    smoke_container = temporary_root.joinpath(
+        *relative.parts[: smoke_component_index + 1]
+    )
+    if not smoke_container.is_dir() or smoke_container.is_symlink():
+        raise RuntimeStorageError(
+            "Das temporaere Smoke-Verzeichnis ist nicht sicher vorhanden."
+        )
+    return resolved_root
+
+
 def _app_icon() -> QIcon:
     """Return the application icon used for windows and the task switcher."""
     icon_path = resource_path("assets", "app_icon.png")
@@ -36,6 +91,13 @@ def main() -> int:
     packaged_smoke = "--packaged-smoke-test" in sys.argv
     if packaged_smoke:
         sys.argv.remove("--packaged-smoke-test")
+        try:
+            smoke_data_root = _validated_packaged_smoke_data_root()
+        except RuntimeStorageError as error:
+            print(f"Packaged-App-Smoke abgelehnt: {error}", file=sys.stderr)
+            return 2
+    else:
+        smoke_data_root = None
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     app.setApplicationDisplayName(APP_NAME)
@@ -47,7 +109,7 @@ def main() -> int:
     apply_app_theme(app)
 
     try:
-        paths = prepare_runtime_storage()
+        paths = prepare_runtime_storage(data_root=smoke_data_root)
         configure_runtime_logging(paths)
         window = JenaplanDesktopApp(paths.database)
     except RuntimeStorageError as error:
@@ -79,7 +141,11 @@ def _run_packaged_smoke(
     window: JenaplanDesktopApp,
     paths: RuntimePaths,
 ) -> int:
-    """Exercise the packaged shell, catalog, SQLite and PDF dependencies."""
+    """Exercise packaged shell, catalog, SQLite, PDF and backup dependencies."""
+    from src.application.commands.backup import (
+        BackupApplicationService,
+        CreateBackupCommand,
+    )
     from prototypes.pdf_engine.output_models import (
         DocumentMetadata,
         HeadingBlock,
@@ -115,11 +181,28 @@ def _run_packaged_smoke(
         ),
     )
     PdfRenderer().render(model, pdf_path)
+    build_info = load_build_info()
+    backup_result = BackupApplicationService().create(
+        CreateBackupCommand(
+            database_path=paths.database,
+            runtime_paths=paths,
+            target_path=paths.backups,
+            app_version=APP_VERSION,
+            build_commit=str(build_info.get("git_commit", "unknown")),
+            source_tree_state=(
+                str(build_info["source_tree_state"])
+                if build_info.get("source_tree_state") is not None
+                else None
+            ),
+        )
+    )
     student_count = len(window.adapter.list_students())
     competency_count = len(window.curriculum_adapter.list_entries())
     payload = {
         "app_version": APP_VERSION,
-        "build_info": load_build_info(),
+        "backup_exists": backup_result.path.is_file(),
+        "backup_verified": backup_result.verification.path == backup_result.path,
+        "build_info": build_info,
         "competency_count": competency_count,
         "data_root": str(paths.root),
         "database_exists": paths.database.is_file(),

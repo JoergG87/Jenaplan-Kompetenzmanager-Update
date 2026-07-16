@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
+import json
+import os
+import plistlib
 import sqlite3
+import subprocess
+import sys
 import tempfile
 import unittest
-import json
 from pathlib import Path
+from unittest import mock
 
+from scripts.prepare_macos_pilot_payload import prepare_payload
+from scripts.smoke_test_macos_app import (
+    PACKAGED_SMOKE_MARKER_ENV,
+    PACKAGED_SMOKE_MARKER_VALUE,
+    smoke_test,
+)
+from src.desktop_app import main as desktop_main
 from src.desktop_app.runtime import (
     APP_DATA_DIR_ENV,
     DATABASE_FILENAME,
@@ -17,7 +29,6 @@ from src.desktop_app.runtime import (
     application_data_root,
     prepare_runtime_storage,
 )
-from scripts.prepare_macos_pilot_payload import prepare_payload
 
 
 class MacosRuntimeTest(unittest.TestCase):
@@ -43,6 +54,151 @@ class MacosRuntimeTest(unittest.TestCase):
             ),
             Path("/tmp/jenaplan-smoke"),
         )
+
+    def test_packaged_smoke_without_marker_stops_before_runtime_initialization(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            productive_root = Path(temp) / "normal-user-data"
+            productive_root.mkdir()
+            sentinel = productive_root / "existing-user-data.txt"
+            sentinel.write_bytes(b"unchanged")
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {APP_DATA_DIR_ENV: str(productive_root)},
+                    clear=True,
+                ),
+                mock.patch.object(
+                    sys,
+                    "argv",
+                    ["app", "--packaged-smoke-test"],
+                ),
+                mock.patch.object(desktop_main, "QApplication") as application,
+                mock.patch.object(
+                    desktop_main,
+                    "prepare_runtime_storage",
+                ) as prepare,
+            ):
+                self.assertEqual(desktop_main.main(), 2)
+            application.assert_not_called()
+            prepare.assert_not_called()
+            self.assertEqual(sentinel.read_bytes(), b"unchanged")
+            self.assertEqual(tuple(productive_root.iterdir()), (sentinel,))
+
+    def test_packaged_smoke_marker_with_normal_path_is_rejected_without_writes(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            productive_root = Path(temp) / "normal-user-data"
+            productive_root.mkdir()
+            sentinel = productive_root / "existing-user-data.txt"
+            sentinel.write_bytes(b"unchanged")
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {
+                        APP_DATA_DIR_ENV: str(productive_root),
+                        PACKAGED_SMOKE_MARKER_ENV: PACKAGED_SMOKE_MARKER_VALUE,
+                    },
+                    clear=True,
+                ),
+                mock.patch.object(
+                    sys,
+                    "argv",
+                    ["app", "--packaged-smoke-test"],
+                ),
+                mock.patch.object(desktop_main, "QApplication") as application,
+                mock.patch.object(
+                    desktop_main,
+                    "prepare_runtime_storage",
+                ) as prepare,
+            ):
+                self.assertEqual(desktop_main.main(), 2)
+            application.assert_not_called()
+            prepare.assert_not_called()
+            self.assertEqual(sentinel.read_bytes(), b"unchanged")
+            self.assertEqual(tuple(productive_root.iterdir()), (sentinel,))
+
+    def test_packaged_smoke_accepts_marker_and_dedicated_temporary_root(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="jenaplan-packaged-smoke-"
+        ) as temp:
+            data_root = Path(temp) / "Application Support" / "Jenaplan-Kompetenzmanager"
+            validated = desktop_main._validated_packaged_smoke_data_root(
+                {
+                    APP_DATA_DIR_ENV: str(data_root),
+                    PACKAGED_SMOKE_MARKER_ENV: PACKAGED_SMOKE_MARKER_VALUE,
+                }
+            )
+            self.assertEqual(validated, data_root.resolve())
+
+    def test_packaged_smoke_harness_sets_both_isolation_conditions(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            app_path = Path(temp) / "Jenaplan-Kompetenzmanager.app"
+            executable = (
+                app_path
+                / "Contents"
+                / "MacOS"
+                / "Jenaplan-Kompetenzmanager"
+            )
+            executable.parent.mkdir(parents=True)
+            executable.write_bytes(b"executable")
+            info_plist = app_path / "Contents" / "Info.plist"
+            with info_plist.open("wb") as plist_file:
+                plistlib.dump(
+                    {
+                        "CFBundleIdentifier": "de.jenaplan.kompetenzmanager",
+                        "CFBundleShortVersionString": "0.1.2",
+                        "LSMinimumSystemVersion": "13.0",
+                    },
+                    plist_file,
+                )
+            observed_environment: dict[str, str] = {}
+
+            def simulate_packaged_run(*args, **kwargs):
+                environment = kwargs["env"]
+                observed_environment.update(environment)
+                data_root = Path(environment[APP_DATA_DIR_ENV])
+                for name in ("documents", "exports", "backups", "logs"):
+                    (data_root / name).mkdir(parents=True, exist_ok=True)
+                database = data_root / DATABASE_FILENAME
+                with sqlite3.connect(database) as connection:
+                    connection.execute("CREATE TABLE students (student_id TEXT)")
+                    connection.execute(
+                        "CREATE TABLE learning_report_revisions (revision_id TEXT)"
+                    )
+                    connection.execute(
+                        "CREATE TABLE learning_conference_revisions (revision_id TEXT)"
+                    )
+                (data_root / "exports" / "packaged-app-smoke.pdf").write_bytes(b"pdf")
+                (data_root / "backups" / "smoke.jkmbackup").write_bytes(b"backup")
+                payload = {
+                    "backup_exists": True,
+                    "backup_verified": True,
+                    "build_info": {"data_mode": "empty"},
+                }
+                return subprocess.CompletedProcess(
+                    args=args[0],
+                    returncode=0,
+                    stdout=json.dumps(payload) + "\n",
+                    stderr="",
+                )
+
+            with mock.patch(
+                "scripts.smoke_test_macos_app.subprocess.run",
+                side_effect=simulate_packaged_run,
+            ):
+                result = smoke_test(app_path)
+            self.assertEqual(
+                observed_environment[PACKAGED_SMOKE_MARKER_ENV],
+                PACKAGED_SMOKE_MARKER_VALUE,
+            )
+            self.assertIn(
+                "jenaplan-packaged-smoke-",
+                observed_environment[APP_DATA_DIR_ENV],
+            )
+            self.assertEqual(result["backup"]["count"], 1)
 
     def test_empty_first_start_creates_all_mutable_directories(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

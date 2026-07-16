@@ -1,5 +1,43 @@
 # CHANGELOG
 
+## Sprint 0.2A.2a - Backup-Sicherheitsnachpruefung
+
+### Changed
+
+- Exklusive Hardlink-Veroeffentlichung so gehaertet, dass ein fremder Race-Gewinner niemals geloescht oder ueberschrieben wird.
+- Packaged-Smoke vor jeder Qt-/Runtime-Initialisierung an einen expliziten Marker und ein geprueftes eigenes temporaeres Smoke-Verzeichnis gebunden.
+- Busy-Timeout auf die tatsaechliche zusammenhaengende Blockierungsdauer begrenzt und bei erkennbarem Snapshot-Fortschritt zurueckgesetzt.
+- Verwaltete Dateien ueber einen geoeffneten `documents`-Directory-FD ohne Symlink-Folgen gelesen und Geraet/Inode zusaetzlich zu Typ, Groesse und Aenderungszeit geprueft.
+- Normalisierte explizite Indexdefinitionen einschliesslich Partial-Index-`WHERE`-Praedikaten in den Schema-Fingerprint aufgenommen.
+- Manifest-Buildwerte strikt auf technische Versions-, Git- und Tree-State-Werte begrenzt; Gesamtgroessenlimit auch waehrend der isolierten Extraktion durchgesetzt.
+- Nicht erforderliche PyInstaller-Hidden-Imports fuer statisch erkennbare Backup-Module entfernt und den Runtime-Path-Protocol auf tatsaechlich benoetigte Pfade reduziert.
+
+### Verified
+
+- 60 fokussierte Backup-Tests und 595 Gesamttests erfolgreich ausgefuehrt; reale SQLite-Busy-/WAL-, Datei-/Inode-/Symlink-, Publish-, ZIP-, Datenschutz- und Fehlerbereinigungspfade sind abgedeckt.
+- Fingerprint mit Python SQLite 3.50.4 und SQLite CLI 3.51.0 fuer identische Schemata verglichen; abweichende Partial-Index-Praedikate erzeugen unterschiedliche Fingerprints.
+- Temporaerer PyInstaller-Testbuild ausserhalb des Repositorys ohne Backup-Hidden-Imports erfolgreich; isolierter Laura-Paket-Smoke erzeugte und verifizierte genau ein `.jkmbackup`.
+
+## Sprint 0.2A.2 - Sicheres Backup-Backend und Integritaetspruefung
+
+### Added
+
+- Explizites, ZIP-basiertes `.jkmbackup` der Formatversion 1 als allgemeine Betriebsfunktion mit Core- und Application-Schicht ergaenzt.
+- SQLite-Online-Snapshot ausschliesslich ueber Pythons Backup API, begrenztes Busy-Warten, `integrity_check`, `foreign_key_check` und deterministischen strukturellen Schema-Fingerprint umgesetzt.
+- Striktes Inventar fuer aktive und soft-deaktivierte registrierte Dokumente sowie finale Bericht-/LEG-PDFs ergaenzt; externe Referenzen erscheinen nur als pfadfreie Summen, unregistrierte oder instabile verwaltete Dateien blockieren die Sicherung.
+- Kanonisches datensparsames Manifest, sichere ZIP-Struktur, SHA-256-Pruefungen, Limits und isolierten `BackupVerifier` mit erneuter Datenbank-, Count-, Fingerprint- und Nutzdateipruefung ergaenzt.
+- Packaged-App-Smoke um Backup-Erstellung und -Verifikation auf isolierten Pilotdaten erweitert; PyInstaller-Module explizit registriert.
+
+### Pruefbasis vor Sprint 0.2A.2a
+
+- 32 fokussierte Backup-Szenarien, macOS-Runtime-, Bericht-/LEG-PDF- und Revisionsregressionen sowie die vollstaendige Testsuite mit 563 Tests erfolgreich ausgefuehrt.
+- Quell-Smoke und fiktiver Laura-Pilotdaten-Smoke erzeugten jeweils ein verifiziertes Backup ausserhalb produktiver Datenwurzeln.
+
+### Not Changed
+
+- Keine fachliche Funktion, sichtbare UI, SQLite-Tabelle, Schema-Migration, Restore-Funktion, automatische Sicherung, Verschluesselung, Passwort-, Nutzerkonto-, Import- oder Onboarding-Funktion.
+- Das bestehende geschlossene macOS-Shell-Backup bleibt unveraendert nutzbar.
+
 ## Pilot 0.1.2 - Einrichtungsreihenfolge in den Pilotunterlagen
 
 ### Changed

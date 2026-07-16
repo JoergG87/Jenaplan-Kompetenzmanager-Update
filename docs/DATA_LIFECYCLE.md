@@ -36,6 +36,37 @@ Prozesspruefung
 
 Eine vorhandene Sicherung wird nie ueberschrieben. Das Skript aendert weder Benutzerdatenbank noch Dokumente und fuehrt keine Wiederherstellung aus. Eine technische Wiederherstellung bleibt ein separater, manuell gepruefter Eingriff.
 
+## Verifiziertes Anwendungsbackup erstellen und pruefen
+
+Start: Ein expliziter Application-Command erhaelt Datenbankpfad, vollstaendige `RuntimePaths`, Zielordner, Buildinformationen und UTC-Zeitquelle. In Sprint 0.2A.2 existiert dafuer noch keine sichtbare UI und kein automatischer Ausloeser.
+
+Technischer Prozess:
+
+```text
+CreateBackupCommand
+-> BackupApplicationService
+-> BackupService
+-> SQLiteBackupEngine / sqlite3.Connection.backup()
+-> Snapshot integrity_check + foreign_key_check
+-> BackupInventoryService liest ausschliesslich den Snapshot
+-> verwaltete Dateien stabil kopieren und SHA-256 bilden
+-> kanonisches Manifest v1 und ZIP-Stagingdatei schreiben
+-> BackupVerifier prueft das geschlossene Archiv isoliert erneut
+-> flush / fsync / atomare exklusive Veroeffentlichung
+```
+
+Der Prozess liest die Live-Datenbank kontrolliert und schreibt niemals in sie. Er kopiert keine laufende SQLite-Datei, keine `-wal`- oder `-shm`-Datei und verwendet keinen externen SQLite-Prozess. Bei einer laenger blockierten Transaktion endet das begrenzte Warten mit `BackupBusyError`.
+
+Das Inventar stammt aus dem Snapshot. Registrierte Dokumente innerhalb `RuntimePaths.documents` werden aktiv wie soft-deaktiviert aufgenommen. Finale Bericht- und LEG-PDF-Artefakte werden aufgenommen und ihre gespeicherten Groessen und SHA-256-Hashes gegen die tatsaechlichen Dateien geprueft. Fehlende, veraenderte, verlinkte oder besondere verwaltete Dateien, unbekannte Nutzdateien unter `documents/` sowie Hashabweichungen brechen den gesamten Prozess ab. Externe Dokumentreferenzen werden nur gezaehlt und nie kopiert.
+
+Verwaltete Dateien werden relativ zu einem geoeffneten `documents`-Directory-FD gelesen. Jede Pfadkomponente wird ohne Symlink-Folgen geoeffnet; Geraet, Inode, Dateityp, Groesse und Aenderungszeit muessen vom Inventar bis nach dem Streaming identisch bleiben. Ein Parent-Verzeichnis-Austausch oder ein Endkomponenten-Symlink kann dadurch keine externe Datei in das Backup umlenken.
+
+Bei jedem Fehler werden temporaeres Archiv und Staging entfernt; vorhandene Backups bleiben unveraendert und es entsteht kein Erfolgsergebnis. Bei der exklusiven Veroeffentlichung darf der finale Pfad nur entfernt werden, wenn genau dieser Aufruf den Hardlink zuvor selbst erfolgreich erzeugt hat. Der abschliessende Verifier prueft ZIP-Struktur und CRC, Pfadsicherheit und macOS-Namenskollisionen, Limits vor und waehrend der Extraktion, Manifestversion, Datenbank- und Dateihashes, SQLite-Integritaet, Fremdschluessel, Schema-Fingerprint, Counts und vollstaendiges Inventar in einem isolierten temporaeren Verzeichnis.
+
+Der Packaged-App-Smoke validiert vor `prepare_runtime_storage()` einen expliziten Smoke-Marker und eine eigene temporaere Datenwurzel. Fehlt eine der beiden unabhaengigen Bedingungen, endet der Start ohne Anlegen von Runtime-Verzeichnissen, Datenbank, PDF oder Backup.
+
+Dieser Lifecycle veraendert keine fachlichen Daten. Restore, Vorschau, Migration, automatische Sicherung, Aufbewahrung, Verschluesselung, Signierung, Passwortschutz, Nutzerkonto, Import, Onboarding und Cloud sind nicht freigegeben.
+
 ## Dokumentationsrelevante Faecher speichern
 
 Start: Laura legt in den Einstellungen fest, welche Faecher fuer spaetere Dokumentations- und Auswertungslogik zaehlen sollen.

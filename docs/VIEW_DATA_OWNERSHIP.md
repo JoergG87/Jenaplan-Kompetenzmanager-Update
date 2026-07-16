@@ -104,6 +104,12 @@ PySide6 GUI
 
 Excel liegt nur noch als archivierter Legacy-Altstand unter `legacy/excel/`.
 
+## Allgemeine Backup-Betriebsfunktion ohne View
+
+Sprint 0.2A.2 fuehrt keine Ansicht und keine sichtbare UI-Aktion ein. Der Application Service darf fuer eine ausdrueckliche technische Ausfuehrung die produktive SQLite-Datenbank, `RuntimePaths`, Buildinformationen und den Zielordner lesen. Der Core-Service liest aus dem erzeugten Snapshot Counts und das registrierte Dateiinventar; er schreibt ausschliesslich temporaere Stagingdaten und das neue `.jkmbackup` im explizit injizierten Zielordner.
+
+Die Funktion darf keine Qt-Widgets, Desktop-Adapter, fachlichen Repositories oder UI-Projektionen als Datenquelle verwenden. Sie darf keine Live-Daten, Dokumente, PDF-Artefakte, Exporte, Logs oder vorhandenen Backups veraendern. Externe Referenzen werden nicht in das Archiv uebernommen. Weil keine View entsteht, besitzt das Backup keine UI-Felder, Navigation oder temporaeren UI-State.
+
 ## PySide6 Einstellungen
 
 Status: Sprint 8A ergaenzt den produktiven Wochenstundenplan neben der bestehenden Dokumentationskonfiguration.

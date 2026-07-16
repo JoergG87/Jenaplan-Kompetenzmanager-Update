@@ -13,6 +13,8 @@ from pathlib import Path
 
 
 APP_NAME = "Jenaplan-Kompetenzmanager"
+PACKAGED_SMOKE_MARKER_ENV = "JENAPLAN_PACKAGED_SMOKE_MARKER"
+PACKAGED_SMOKE_MARKER_VALUE = "isolated-v1"
 
 
 def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str, object]:
@@ -34,6 +36,7 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
         data_root = Path(temp) / "Application Support" / APP_NAME
         environment = os.environ.copy()
         environment["JENAPLAN_APP_DATA_DIR"] = str(data_root)
+        environment[PACKAGED_SMOKE_MARKER_ENV] = PACKAGED_SMOKE_MARKER_VALUE
         environment["QT_QPA_PLATFORM"] = "offscreen"
         result = subprocess.run(
             [str(executable), "--packaged-smoke-test"],
@@ -66,6 +69,13 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
         missing = tuple(path for path in required if not path.exists())
         if missing:
             raise RuntimeError(f"Packaged-App-Smoke: Pfad fehlt: {missing[0]}")
+        backups = tuple((data_root / "backups").glob("*.jkmbackup"))
+        if len(backups) != 1 or not payload.get("backup_exists"):
+            raise RuntimeError(
+                "Packaged-App-Smoke hat kein eindeutiges Anwendungsbackup erzeugt."
+            )
+        if not payload.get("backup_verified"):
+            raise RuntimeError("Packaged-App-Smoke hat das Backup nicht verifiziert.")
         with sqlite3.connect(data_root / "kompetenzmanager.sqlite") as connection:
             student_count = connection.execute("SELECT COUNT(*) FROM students").fetchone()[0]
             report_revision_count = connection.execute(
@@ -99,6 +109,10 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
             "student_count": student_count,
             "report_revision_count": report_revision_count,
             "conference_revision_count": conference_revision_count,
+        }
+        payload["backup"] = {
+            "count": len(backups),
+            "suffix": backups[0].suffix,
         }
         return payload
 

@@ -37,7 +37,31 @@ Installiertes macOS-Pilotpaket:
 └── logs/
 ```
 
-Der Pfad liegt bewusst ausserhalb der `.app`. App-Austausch, Update und Loeschen der `.app` ersetzen oder loeschen keine Benutzerdaten. `JENAPLAN_APP_DATA_DIR` ist nur ein technischer Override fuer isolierte automatisierte Pakettests und keine zweite fachliche Datenquelle.
+Der Pfad liegt bewusst ausserhalb der `.app`. App-Austausch, Update und Loeschen der `.app` ersetzen oder loeschen keine Benutzerdaten. `JENAPLAN_APP_DATA_DIR` ist nur ein technischer Override fuer isolierte automatisierte Pakettests und keine zweite fachliche Datenquelle. Beim Modus `--packaged-smoke-test` genuegt dieser Override allein nicht: Zusaetzlich muss `JENAPLAN_PACKAGED_SMOKE_MARKER=isolated-v1` gesetzt sein und die Datenwurzel nachweislich unter einem eigens erzeugten temporaeren Smoke-Verzeichnis liegen. Die Pruefung erfolgt vor jeder Runtime-Initialisierung.
+
+### Verifiziertes Anwendungsbackup v1
+
+Ein `.jkmbackup` ist eine abgeleitete technische Sicherung und keine neue fachliche Source of Truth. Das ZIP enthaelt genau einen mit Pythons SQLite Backup API erzeugten und geprueften Datenbanksnapshot, ein kanonisches manifestiertes Inventar und die registrierten verwalteten Dateien.
+
+Enthaltene Quellen:
+
+- SQLite-Snapshot der produktiven `kompetenzmanager.sqlite` unter `database/kompetenzmanager.sqlite`
+- alle registrierten `documents.file_path` innerhalb `RuntimePaths.documents`, unabhaengig von `documents.active`
+- alle registrierten finalen Dateien aus `learning_report_pdf_artifacts.relative_file_path`
+- alle registrierten finalen Dateien aus `learning_conference_pdf_artifacts.relative_file_path`
+
+Nur zusammengefasst, nicht kopiert:
+
+- registrierte `documents.file_path` ausserhalb `RuntimePaths.documents`; das Manifest speichert ausschliesslich `count`, `missing_count`, `included = false` und einen neutralen Hinweis
+
+Ausgeschlossen:
+
+- `exports/`, `logs/` und `backups/`
+- frei gewaehlte Entwurfs-PDFs sowie freie Text- und Markdown-Exporte
+- unregistrierte externe Dateien
+- Originaldateinamen und absolute oder externe Pfade
+
+Unregistrierte Nutzdateien unter `documents/` sind kein stiller Zusatzbestand und blockieren das Backup; `.DS_Store` wird ignoriert. Das Manifest ist eine technische Integritaetsprojektion und enthaelt keine personenbezogenen Klartexte. `sqlite_user_version`, `compatibility_version` und der strukturelle Schema-Fingerprint dokumentieren den Datenbankstand; der Fingerprint beruecksichtigt bei expliziten Indizes die normalisierte Definition samt Partial-Index-Praedikat. Diese Werte geben noch keine Restore-Kompatibilitaet frei.
 
 Entwicklerpfad:
 

@@ -1,5 +1,19 @@
 # Architekturentscheidungen
 
+## ADR-059 - Verifiziertes ZIP-Backup als allgemeine Betriebsfunktion
+
+Status: Fuer Sprint 0.2A.2 freigegeben
+
+Das neue Anwendungsbackup ist eine allgemeine, ausdruecklich ausgeloeste Betriebsfunktion. Es liest die produktive SQLite-Datenbank und registrierte verwaltete Dateien, veraendert aber weder fachliche Daten noch Dokumente, Revisionen oder Artefakte. Die sichtbare PySide-Oberflaeche und das bestehende geschlossene Shell-Backup bleiben unveraendert.
+
+Die Datenbank wird ausschliesslich mit `sqlite3.Connection.backup()` in einen temporaeren Snapshot geschrieben. Eine normale Kopie der laufenden Datenbank, manuelle WAL-/SHM-Kopien, ein externer `sqlite3`-Prozess oder plattformspezifische Shellwerkzeuge sind fuer diesen Service ausgeschlossen. Der Snapshot muss `PRAGMA integrity_check` und `PRAGMA foreign_key_check` bestehen; blockierte Schreibtransaktionen werden nur begrenzt abgewartet und fuehren danach zu einem typisierten Betriebsfehler.
+
+Das Archiv ist ein normales ZIP mit der Endung `.jkmbackup`, `backup_format_version = 1` und den Pfaden `manifest.json`, `database/kompetenzmanager.sqlite` sowie `files/<technical-id>.<neutral-extension>`. Das kanonische Manifest enthaelt technische Build-, Datenbank-, Schema-, Mengen- und Dateiintegritaetsinformationen, aber keine Schuelernamen, Lehrkraftnamen, Notizen, Beobachtungs- oder Berichtstexte, Originaldateinamen oder absoluten beziehungsweise externen Pfade.
+
+Gesichert werden registrierte aktive und soft-deaktivierte Dokumentdateien innerhalb von `RuntimePaths.documents` sowie registrierte finale Bericht- und LEG-PDF-Artefakte. Registrierte externe Dokumentreferenzen werden nicht kopiert und nur als Anzahl samt `missing_count` dokumentiert. Freie Exporte, Logs, vorhandene Backups, frei gewaehlte Entwurfs-PDFs und unregistrierte Dateien sind kein Backup-Inhalt; unregistrierte Nutzdateien unter `documents/` oder fehlende beziehungsweise veraenderte verwaltete Dateien blockieren die Erstellung.
+
+`sqlite_user_version`, ein deterministischer struktureller Schema-Fingerprint und `compatibility_version` dokumentieren den gesicherten Datenbankstand. Fuer explizite Indizes gehoert die stabil normalisierte Definition aus `sqlite_master.sql` einschliesslich eines Partial-Index-`WHERE`-Praedikats zur Struktur. SQLite-interne Indizes und fluechtige Schemawerte bleiben ausgeschlossen. Die Kompatibilitaetsversion ist in diesem Sprint ausdruecklich kein Restore-Vertrag. Restore, Restore-Vorschau, Migration, automatische Sicherung, Aufbewahrung, Verschluesselung, Signierung, Passwortschutz, Nutzerkonto, Import, Onboarding und Cloud bleiben nicht implementiert.
+
 ## ADR-058 - Eigenständiges macOS-Pilotpaket und getrennte Benutzerdaten
 
 Status: Fuer den lokalen Apple-Silicon-Piloten umgesetzt

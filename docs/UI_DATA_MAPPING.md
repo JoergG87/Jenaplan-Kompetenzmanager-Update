@@ -4,6 +4,8 @@ Dieses Dokument beschreibt, aus welcher Datenquelle sichtbare UI-Informationen s
 
 UI-Felder duerfen nicht eingefuehrt werden, ohne ihre Datenherkunft hier zu dokumentieren.
 
+Sprint 0.2A.2 fuehrt ausschliesslich ein injizierbares Backup-Backend ein. Es entstehen keine sichtbare Ansicht, keine UI-Aktion und keine neuen UI-Felder; deshalb besitzt die Betriebsfunktion in diesem Sprint keine Feldzuordnung. Eine spaetere Settings- oder Backup-UI benoetigt vor ihrer Implementierung eine eigene Product-Owner- und Mapping-Freigabe.
+
 Spalten:
 
 - Projektionstyp: `Anzeige`, `Navigation`, `Filter`, `Eingabe`, `Auswertung`

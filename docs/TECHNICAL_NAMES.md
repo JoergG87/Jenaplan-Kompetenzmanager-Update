@@ -19,6 +19,66 @@ Dieses Dokument ist ab Sprint 4 die verbindliche Registry fuer technische Namen.
 | `00_START_HIER.txt` | versionierter Einstiegstext im Laura-Uebergabepaket |
 | `PILOT_VERSION.txt` | versionierte Inhalts- und Datenkennzeichnung im Laura-Uebergabepaket |
 
+## Sprint 0.2A.2 - Backup-Backend und Integritaetspruefung
+
+Registrierte Python-Module:
+
+- `src/core/backup.py`
+- `src/application/commands/backup.py`
+- `tests/test_backup.py`
+
+Registrierte Fehlerklassen:
+
+- `BackupError`
+- `BackupValidationError`
+- `BackupIntegrityError`
+- `BackupBusyError`
+- `BackupFileError`
+- `BackupFormatError`
+
+Registrierte unveraenderliche Datenobjekte:
+
+- `BackupManifest`
+- `BackupDatabaseInfo`
+- `BackupManagedFile`
+- `BackupExternalReferenceSummary`
+- `BackupCounts`
+- `BackupResult`
+- `BackupVerificationResult`
+- `RuntimePathSet`
+
+Registrierte Services und Application-Vertraege:
+
+- `SQLiteBackupEngine`
+- `BackupInventoryService`
+- `BackupService`
+- `BackupVerifier`
+- `CreateBackupCommand`
+- `VerifyBackupQuery`
+- `BackupApplicationService`
+- `SQLiteBackupEngine.schema_fingerprint(database_path)`
+
+Registrierte technische Werte und Pfade:
+
+- `.jkmbackup`
+- `jenaplan-kompetenzmanager-backup`
+- `backup_format_version` mit Wert `1`
+- `compatibility_version` mit Wert `1`
+- `manifest.json`
+- `database/kompetenzmanager.sqlite`
+- `files/<technical-id>.<neutral-extension>`
+- `Jenaplan-Kompetenzmanager-Backup-YYYYMMDDTHHMMSSZ.jkmbackup`
+- Command-Name `backup.create`
+- Umgebungsmarker `JENAPLAN_PACKAGED_SMOKE_MARKER` mit dem festen technischen Wert `isolated-v1`
+
+Validierte technische Buildwerte im Manifest:
+
+- `app_version`: kanonische SemVer-aehnliche Produktversion oder `unknown`
+- `build_commit`: Git-Hex-ID mit 7 bis 64 Zeichen oder `unknown`
+- `source_tree_state`: ausschliesslich `clean` oder `dirty`, falls vorhanden
+
+Regel: Diese Namen gehoeren ausschliesslich zur allgemeinen Betriebsfunktion. Der Smoke-Marker ist nur gemeinsam mit einer geprueften temporaeren Datenwurzel gueltig und ersetzt den Pfadnachweis nicht. Die Namen fuehren keine SQLite-Tabelle, Migration, fachliche Entitaet, sichtbare View, UI-Aktion, Restore-Freigabe oder Universal-Storage-Engine ein.
+
 ## Grundregeln
 
 Technische Namen werden grundsaetzlich englisch und ASCII-kompatibel gefuehrt.
