@@ -1,5 +1,39 @@
 # Data Lifecycle
 
+## Sprint 0.2B.5 - Sichtbarer Support-Reset und Betriebsprozess
+
+1. Nutzer erzeugt lokal genau eine aktive technische Anfrage; eine neue widerruft
+   die vorige. Kopieren oder `.jkmresetrequest`-Export erfolgt nur bewusst.
+2. Nutzer übermittelt ausschließlich diese Anfrage. Support prüft Identität
+   organisatorisch und signiert extern mit verschlüsseltem Privatschlüssel.
+3. Die App normalisiert nur äußere ASCII-Leerzeichen, begrenzt die Eingabe und
+   prüft Envelope, kanonisches Payload, Key, Signatur, Installation, Nutzer,
+   Anfrage, Nonce, Aktion, Zeiten, Status und Wiederverwendung. Die Vorschau
+   konsumiert nichts.
+4. Erst die ausdrückliche Bestätigung startet einen nicht abbrechbaren Worker.
+   Der bestehende Backup-Service erzeugt ein neues `.jkmbackup` im kanonischen
+   Backupziel und verifiziert die publizierten Bytes erneut.
+5. Nur mit gültigem Proof konsumiert der Core Anfrage und Token-Digest atomar,
+   ersetzt den Passworthash durch den Resetmarker, widerruft alle Recovery-Sätze
+   und Gerätecredentials, neutralisiert Drosselungen, erhöht die Epoch und setzt
+   `password_reset_pending`.
+6. Desktop verdeckt die Fach-UI, verwirft die Sitzung, bereinigt Keychain-Reste
+   best effort und beendet die App. Ein Löschfehler kann wegen Storestatus und
+   Epoch nicht authentifizieren.
+7. Der nächste Start erlaubt weder Passwortlogin noch Gerätecredential/Touch ID.
+   Erst neues Passwort, neuer Recovery-Satz, einmalige Anzeige und bewusste
+   Sicherungsbestätigung aktivieren Konto und neue Sitzung.
+
+Fehler vor dem Security-Commit lassen Store, Anfrage und Token unbenutzt; ein
+bereits erfolgreich erzeugtes Sicherheitsbackup darf erhalten bleiben. Der
+Vor-Auth-Pfad liest die fachliche DB ausschließlich über den Backup-Service und
+erzeugt keine AppShell oder Fachprojektion. Anzeigename, Onboardingstatus,
+Fachdaten, Dokumentpfade und Restoreverträge werden nie verändert.
+
+Audit im externen Supportprozess umfasst `key_id`, Anfrage-ID, Aktion,
+Ausgabe-/Ablaufzeit, Supportbearbeiter und gekürzte Installations-ID. Die App
+implementiert kein zentrales Audit, keine automatische Übertragung und keine Cloud.
+
 ## Sprint 0.2B.4a - Gerätecredential-Lebenszyklus
 
 ### Aktivierung

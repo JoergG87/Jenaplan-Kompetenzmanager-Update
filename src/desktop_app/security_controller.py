@@ -44,6 +44,7 @@ from .security_ui import (
     RecoveryCodesConfirmationDialog,
     SecurityOperationWorker,
 )
+from .support_reset import SupportResetDialog
 
 
 _SECURITY_LOG = logging.getLogger("jenaplan.security")
@@ -187,6 +188,8 @@ def run_startup_device_authentication(
 def run_startup_authentication(
     *, service, repository, decision: SecurityStartupDecision, device_credentials=None,
     touch_id_preferred: bool = False,
+    support_reset=None,
+    support_reset_backup_factory=None,
 ) -> StartupAuthenticationResult | None:
     dialog = AuthenticationDialog(
         service=service,
@@ -194,6 +197,8 @@ def run_startup_authentication(
         decision=decision,
         device_credentials=device_credentials,
         touch_id_preferred=touch_id_preferred,
+        support_reset=support_reset,
+        support_reset_backup_factory=support_reset_backup_factory,
     )
     if dialog.exec() != QDialog.DialogCode.Accepted:
         return None
@@ -226,6 +231,8 @@ class SecurityUiCoordinator(QObject):
         display_name: str | None,
         device_credentials=None,
         touch_id_preferred: bool = False,
+        support_reset=None,
+        support_reset_backup_factory=None,
     ) -> None:
         super().__init__(shell)
         self.app = app
@@ -235,6 +242,9 @@ class SecurityUiCoordinator(QObject):
         self.preferences_file = preferences_file
         self.device_credentials = device_credentials
         self.touch_id_preferred = touch_id_preferred
+        self.support_reset = support_reset
+        self.support_reset_backup_factory = support_reset_backup_factory
+        self._support_reset_committed = False
         self.session_controller = SecuritySessionController(
             session,
             inactivity_minutes=inactivity_minutes,
@@ -264,6 +274,8 @@ class SecurityUiCoordinator(QObject):
             shell.device_credential_disable_requested.connect(self.disable_device_credential)
         if hasattr(shell, "touch_id_preference_changed"):
             shell.touch_id_preference_changed.connect(self.set_touch_id_preference)
+        if hasattr(shell, "support_reset_requested"):
+            shell.support_reset_requested.connect(self.open_support_reset)
         shell.restore_handoff_started.connect(self._restore_handoff_started)
         shell.set_display_name(display_name)
         shell.settings_screen.set_security_status(inactivity_minutes)
@@ -276,6 +288,8 @@ class SecurityUiCoordinator(QObject):
 
     @Slot()
     def _poll(self) -> None:
+        if self._support_reset_committed:
+            return
         session = self.session_controller.session
         if session is not None:
             try:
@@ -298,7 +312,7 @@ class SecurityUiCoordinator(QObject):
             self.lock(reason)
 
     def lock(self, reason: SessionLockReason) -> None:
-        if self._lock_dialog is not None:
+        if self._lock_dialog is not None or self._support_reset_committed:
             return
         self.session_controller.lock(reason)
         event_code = {
@@ -476,6 +490,50 @@ class SecurityUiCoordinator(QObject):
         self.shell.settings_screen.show_security_message(
             "Die neuen Recovery-Codes sind aktiv."
         )
+
+    @Slot()
+    def open_support_reset(self) -> None:
+        if self.support_reset is None or self.support_reset_backup_factory is None:
+            self.shell.settings_screen.show_security_message(
+                "Die weitere Wiederherstellung ist in dieser App-Version nicht verfügbar.",
+                tone="error",
+            )
+            return
+        if self.shell.backup_restore_operations.is_busy:
+            self.shell.settings_screen.show_security_message(
+                "Schließe zuerst den laufenden Sicherungs- oder Wiederherstellungsvorgang ab.",
+                tone="error",
+            )
+            return
+        dialog = SupportResetDialog(
+            service=self.support_reset,
+            backup_factory=self.support_reset_backup_factory,
+            parent=self.shell,
+        )
+        dialog.reset_completed.connect(self._support_reset_completed)
+        dialog.exec()
+
+    @Slot(object)
+    def _support_reset_completed(self, _result: object) -> None:
+        """Remove every visible product surface immediately after the commit."""
+        self._support_reset_committed = True
+        self.poll_timer.stop()
+        self.wake_monitor.timer.stop()
+        self.session_controller.lock(SessionLockReason.EPOCH_CHANGED)
+        if self.device_credentials is not None:
+            try:
+                self.device_credentials.status()
+            except Exception:
+                pass
+        try:
+            current = self.preferences_file.load()
+            if current.touch_id_preferred:
+                self.preferences_file.save(replace(current, touch_id_preferred=False))
+        except Exception:
+            pass
+        for widget in self.app.topLevelWidgets():
+            widget.hide()
+        self.app.quit()
 
     @Slot()
     def enable_device_credential(self) -> None:

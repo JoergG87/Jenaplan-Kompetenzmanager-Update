@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QPushButton,
     QWidget,
 )
 
@@ -165,8 +166,12 @@ def test_security_settings_offer_fixed_intervals_and_device_comfort_is_platform_
     assert [combo.itemData(index) for index in range(combo.count())] == [5, 10, 15, 30, 60]
     text = " ".join(label.text() for label in screen.findChildren(QLabel))
     assert "Die App-Sperre ist keine Verschlüsselung" in text
-    for excluded in ("Keychain", "Windows Hello", "Support-Reset"):
+    for excluded in ("Keychain", "Windows Hello"):
         assert excluded not in text
+    assert any(
+        button.text() == "Technische Support-Reset-Anfrage erstellen"
+        for button in screen.findChildren(QPushButton)
+    )
     remember = next(
         checkbox
         for checkbox in screen.findChildren(QCheckBox)

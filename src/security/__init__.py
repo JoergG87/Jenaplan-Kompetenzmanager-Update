@@ -7,6 +7,7 @@ from .domain import (
     PasswordPolicy,
     SecurityStoreState,
     SupportResetRejected,
+    SupportResetVerificationResult,
 )
 from .support_reset import SupportResetService, SupportResetTokenCodec
 
@@ -19,4 +20,5 @@ __all__ = [
     "SupportResetRejected",
     "SupportResetService",
     "SupportResetTokenCodec",
+    "SupportResetVerificationResult",
 ]

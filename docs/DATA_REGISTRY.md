@@ -1,5 +1,20 @@
 # Data Registry
 
+## Sprint 0.2B.5 - Support-Reset-UI-Datenquellen
+
+| Quelle | Inhalt | Owner | Persistenz-/Datenschutzgrenze |
+|---|---|---|---|
+| bestehende `security.sqlite.support_reset_requests` | technische Installation, Nutzer, Anfrage-ID, Nonce, Aktion, Status und UTC-Zeiten | `SQLiteSecurityRepository` | kein Fachbezug; weiterhin Security Store v3 |
+| bestehende `security.sqlite.support_reset_token_uses` | ausschließlich Token-Digest, `key_id`, Aktion, Status und Zeiten | `SQLiteSecurityRepository` | kein vollständiger Token |
+| `.jkmresetrequest` | kanonische versionierte Anfragebytes | bewusster Nutzerexport | keine automatische Datei, keine Fach- oder Authgeheimnisse |
+| `.jkmresettoken` | optionaler äußerer Tokenaustausch | externer Supportprozess / temporäre UI-Eingabe | nie AppPreferences, Security Store, Backup oder Log |
+| `DEFAULT_SUPPORT_KEY_REGISTRY` | ausschließlich freigegebene öffentliche Ed25519-Schlüssel | paketierter Produktcode | aktuell leer; kein Test-/Privatschlüssel |
+
+Der Reset erzeugt ein bestehendes fachliches `.jkmbackup`; Format und Ausschlüsse
+bleiben unverändert. Anfrageexport und Token sind keine Cloud-, Telemetrie- oder
+fachlichen Datenquellen. Private Schlüssel und organisatorische Auditdaten wie
+Supportbearbeiter bleiben vollständig außerhalb der App.
+
 ## Sprint 0.2B.4a - Gerätecredential-Datenquellen
 
 | Datenquelle | Inhalt | Kanonischer Owner | Backup/Restore |

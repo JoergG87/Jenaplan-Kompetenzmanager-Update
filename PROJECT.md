@@ -1,5 +1,30 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Support-Reset-Ablauf ab Version 0.2B.5
+
+Wenn Passwort und Recovery-Codes nicht mehr verfügbar sind, kann die App eine
+rein technische Reset-Anfrage erzeugen. Sie wird nicht automatisch übertragen
+und enthält keine Schüler-, Dokument-, Schul-, E-Mail- oder Betriebssystemdaten.
+Support prüft die Identität organisatorisch außerhalb der App und signiert die
+Anfrage mit einem extern verwahrten privaten Ed25519-Schlüssel.
+
+Die App prüft Tokenformat, Signatur, öffentlichen Schlüssel, Installation,
+Nutzer, Anfrage, Nonce, Aktion und Zeitfenster. Der Reset erfolgt erst nach einer
+zweiten bewussten Bestätigung und einem erfolgreich erzeugten und erneut
+verifizierten fachlichen Sicherheitsbackup. Danach sind altes Passwort,
+Recovery-Codes, gespeicherte Geräteanmeldung, Touch ID und laufende Sitzung
+unwirksam; die App endet in `password_reset_pending` und beendet sich.
+
+Beim nächsten Start werden neues Passwort, neuer Recovery-Satz und bewusste
+Sicherungsbestätigung verlangt. Fachliche Daten, IDs, Dokumentpfade,
+Backupformat, Anzeigename und Onboardingstatus bleiben unverändert. Der Prozess
+entschlüsselt nichts und ist kein Masterkennwort.
+
+Es liegt weiterhin kein freigegebener produktiver öffentlicher Supportschlüssel
+vor. Die Default-Key-Registry bleibt daher leer; die UI kann Anfragen erzeugen,
+meldet den Produktivbetrieb aber als noch nicht freigeschaltet. Private Schlüssel
+und zentrale Audit-/Cloudsysteme sind nicht Bestandteil der App.
+
 ## Geräteanmeldung und Touch ID ab Version 0.2B.4a
 
 `Auf diesem Gerät angemeldet bleiben` bezeichnet eine widerrufbare lokale

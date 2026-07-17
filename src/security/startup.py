@@ -12,6 +12,7 @@ from src.core.app_preferences import AppPreferencesFile
 from .application import SecurityApplicationService, SecurityStateResult
 from .domain import SecurityStoreError, SecurityStoreState
 from .device_credentials import DeviceCredentialService
+from .support_reset import SupportResetService
 from .infrastructure import (
     Argon2idPasswordHasher,
     EnrollmentMarkerFile,
@@ -20,6 +21,8 @@ from .infrastructure import (
     SystemClock,
     SystemRandomSource,
     build_platform_authentication_adapters,
+    DEFAULT_SUPPORT_KEY_REGISTRY,
+    Ed25519SignatureVerifier,
 )
 
 
@@ -88,6 +91,7 @@ class SecurityRuntime:
     repository: SQLiteSecurityRepository
     preferences: AppPreferencesFile
     device_credentials: DeviceCredentialService
+    support_reset: SupportResetService
 
 
 def build_security_runtime(paths: SecurityRuntimePaths) -> SecurityRuntime:
@@ -114,11 +118,21 @@ def build_security_runtime(paths: SecurityRuntimePaths) -> SecurityRuntime:
         security_epoch=repository.security_epoch,
         account_loader=repository.load_account,
     )
+    marker = EnrollmentMarkerFile(paths.enrollment_marker, permissions)
+    support_reset = SupportResetService(
+        repository=repository,
+        marker=marker,
+        random_source=random_source,
+        utc_clock=clock,
+        key_registry=DEFAULT_SUPPORT_KEY_REGISTRY,
+        signature_verifier=Ed25519SignatureVerifier(),
+    )
     return SecurityRuntime(
         service,
         repository,
         AppPreferencesFile(paths.app_preferences, permissions),
         device_credentials,
+        support_reset,
     )
 
 

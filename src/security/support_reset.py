@@ -9,6 +9,7 @@ import hashlib
 import hmac
 import json
 import re
+from dataclasses import dataclass
 from typing import Any
 
 from .domain import (
@@ -34,6 +35,7 @@ from .domain import (
     SupportResetRejected,
     SupportResetRequest,
     SupportResetResult,
+    SupportResetVerificationResult,
     validate_uuid4,
 )
 from .ports import (
@@ -76,6 +78,20 @@ _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 class SupportResetTokenCodec:
     """Strict canonical JSON and base64url contract for JKM-SR1."""
+
+    @staticmethod
+    def normalize_input(token: str) -> str:
+        """Remove controlled outer ASCII whitespace, never token content."""
+        if not isinstance(token, str):
+            raise SupportResetRejected(SupportResetFailureCode.FORMAT_INVALID)
+        normalized = token.strip(" \t\r\n")
+        try:
+            encoded = normalized.encode("ascii")
+        except UnicodeEncodeError as error:
+            raise SupportResetRejected(SupportResetFailureCode.FORMAT_INVALID) from error
+        if not normalized or len(encoded) > SUPPORT_RESET_MAX_TOKEN_BYTES:
+            raise SupportResetRejected(SupportResetFailureCode.FORMAT_INVALID)
+        return normalized
 
     @classmethod
     def canonical_payload_bytes(cls, payload: SupportResetPayload) -> bytes:
@@ -242,6 +258,12 @@ class SupportResetTokenCodec:
         _validate_nonce(payload.nonce)
 
 
+@dataclass(frozen=True)
+class _VerifiedSupportResetToken:
+    payload: SupportResetPayload
+    token_digest: bytes
+
+
 class SupportResetService:
     """Create bound requests and execute reset only after verified backup."""
 
@@ -261,6 +283,11 @@ class SupportResetService:
         self._clock = utc_clock
         self._keys = key_registry
         self._signature_verifier = signature_verifier
+
+    @property
+    def product_enabled(self) -> bool:
+        """Whether at least one public support key is released in this build."""
+        return bool(self._keys.key_ids())
 
     def create_request(
         self, *, duration: timedelta = SUPPORT_RESET_REQUEST_MAX_AGE
@@ -291,7 +318,45 @@ class SupportResetService:
     def execute(
         self, token: str, *, backup: SupportSecurityBackupPort
     ) -> SupportResetResult:
-        payload, canonical_bytes, signature = SupportResetTokenCodec.decode(token)
+        self._verify_token(token)
+
+        try:
+            proof = backup.create_and_verify()
+        except Exception as error:
+            raise SupportResetRejected(SupportResetFailureCode.BACKUP_FAILED) from error
+        _validate_backup_proof(proof)
+
+        # Backup may take time. Revalidate all bindings and time limits directly
+        # before entering the atomic store transaction.
+        verified = self._verify_token(token)
+        payload = verified.payload
+        token_digest = verified.token_digest
+        now = self._now()
+
+        try:
+            epoch = self._repository.consume_support_reset(
+                payload=payload,
+                token_digest=token_digest,
+                now=now,
+            )
+        except SecurityStoreError as error:
+            raise SupportResetRejected(SupportResetFailureCode.STORE_UNAVAILABLE) from error
+        if epoch is None:
+            raise SupportResetRejected(SupportResetFailureCode.CONCURRENT_USE)
+        return SupportResetResult(payload.reset_request_id, epoch, proof)
+
+    def verify_token(self, token: str) -> SupportResetVerificationResult:
+        """Validate a token without backup, consumption, or security mutation."""
+        verified = self._verify_token(token)
+        return SupportResetVerificationResult(
+            reset_request_id=verified.payload.reset_request_id,
+            key_id=verified.payload.key_id,
+            expires_at=verified.payload.expires_at,
+        )
+
+    def _verify_token(self, token: str) -> _VerifiedSupportResetToken:
+        normalized = SupportResetTokenCodec.normalize_input(token)
+        payload, canonical_bytes, signature = SupportResetTokenCodec.decode(normalized)
         if payload.algorithm != SUPPORT_RESET_ALGORITHM:
             raise SupportResetRejected(SupportResetFailureCode.ALGORITHM_UNSUPPORTED)
         now = self._now()
@@ -332,7 +397,7 @@ class SupportResetService:
         self._validate_time(payload, request, now)
 
         try:
-            token_bytes = token.encode("ascii")
+            token_bytes = normalized.encode("ascii")
         except UnicodeEncodeError as error:  # already rejected by the codec
             raise SupportResetRejected(SupportResetFailureCode.FORMAT_INVALID) from error
         token_digest = hashlib.sha256(token_bytes).digest()
@@ -344,24 +409,7 @@ class SupportResetService:
             raise SupportResetRejected(SupportResetFailureCode.TOKEN_ALREADY_USED)
         if request.status != "active":
             raise SupportResetRejected(SupportResetFailureCode.REQUEST_NOT_ACTIVE)
-
-        try:
-            proof = backup.create_and_verify()
-        except Exception as error:
-            raise SupportResetRejected(SupportResetFailureCode.BACKUP_FAILED) from error
-        _validate_backup_proof(proof)
-
-        try:
-            epoch = self._repository.consume_support_reset(
-                payload=payload,
-                token_digest=token_digest,
-                now=now,
-            )
-        except SecurityStoreError as error:
-            raise SupportResetRejected(SupportResetFailureCode.STORE_UNAVAILABLE) from error
-        if epoch is None:
-            raise SupportResetRejected(SupportResetFailureCode.CONCURRENT_USE)
-        return SupportResetResult(payload.reset_request_id, epoch, proof)
+        return _VerifiedSupportResetToken(payload, token_digest)
 
     @staticmethod
     def _validate_time(

@@ -1,5 +1,25 @@
 # UI Data Mapping
 
+## Sprint 0.2B.5 - Support-Reset-UI
+
+| UI-Feld/Aktion | Quelle/Command | Persistenz | Regel |
+|---|---|---|---|
+| Weitere Wiederherstellungsmöglichkeiten | statische Auth-Gate-Navigation | Nein | nur Login/Recovery, keine Fachhauptnavigation |
+| Reset-Anfrage erstellen | `SupportResetService.create_request` | bestehender Security Store v3 | genau eine aktive Anfrage; keine Fachdaten |
+| Installations-/Nutzer-/Anfrage-ID und Ablauf | datensparsame Projektion aus `SupportResetRequest` | nur Security Store / flüchtige Anzeige | IDs gekürzt angezeigt, vollständige Kopie nur bewusst |
+| Technische Anfrage kopieren | kanonische Requestbytes | Zwischenablage nur nach Klick | keine automatische Zwischenablage |
+| Anfrage exportieren | kanonische Requestbytes | bewusste `.jkmresetrequest`-Datei | kein automatischer Pfad oder Export |
+| Reset-Code | temporäre Texteingabe / bewusster `.jkmresettoken`-Import | Nein | Größenlimit, keine Logs/Preferences, nach Fehler/Abschluss löschen |
+| Reset-Code prüfen | `SupportResetService.verify_token` | Nein | vollständige Prüfung; generische Fehlermeldung; kein Konsum |
+| Nichtfreigabe-Hinweis | leere `DEFAULT_SUPPORT_KEY_REGISTRY` | Nein | verbindlicher Produkttext, kein Testkey-Fallback |
+| Reset-Vorschau | `SupportResetVerificationResult` plus statische Folgen | Nein | keine Signaturdetails oder Fachdaten |
+| Sicherheitsbackup erstellen und Passwort zurücksetzen | `VerifiedSecurityBackupAdapter` -> `SupportResetService.execute` | normales `.jkmbackup` plus atomarer Security-Commit | zweite bewusste Bestätigung, keine Mehrfachauslösung |
+| Fortschritt/Fehler | Workerphase und datensparsame Ergebnisprojektion | Nein | kein Prozentwert, kein Exception-/Token-/Pfadtext |
+
+Nach Erfolg beendet der Desktop die Sitzung und App. Der nächste Start projiziert
+den bestehenden `password_reset_pending`-Flow; `display_name` und Onboardingstatus
+bleiben aus AppPreferences erhalten.
+
 ## Sprint 0.2B.4a - Geräteanmeldung und Touch ID
 
 | UI-Feld/Aktion | Quelle/Command | Rolle | Persistenz | Regeln |

@@ -1,5 +1,28 @@
 # Design-System
 
+## Support-Reset - Sprint 0.2B.5
+
+Der Support-Reset ist ein ruhiger modaler Recoveryprozess, keine neue
+Hauptnavigation. Das Auth-Gate verwendet den dezenten sekundären Einstieg
+`Weitere Wiederherstellungsmöglichkeiten`; die Sicherheits-Unterseite erhält
+unter `Wiederherstellung` eine sekundäre Anfrageaktion.
+
+Jeder Zustand zeigt genau eine eindeutige blaue Primäraktion. Anfragewerte und
+Exporttext stehen in gut lesbaren, umbruchfähigen Flächen ohne horizontale
+Scrollbalken. Kopieren, Speichern und Import sind explizite sekundäre Aktionen.
+Token wird nur im Eingabeschritt angezeigt und verschwindet vor der Vorschau.
+
+Die irreversible Aktion heißt vollständig `Sicherheitsbackup erstellen und
+Passwort zurücksetzen`. Warnung entsteht durch klare Folgen und Abstand, nicht
+durch aggressive rote Flächen. Escape/Schließen bricht nur vor dem Worker ab;
+während Backup und Commit blockiert der Dialog das Schließen und zeigt einen
+unbestimmten Fortschritt ohne erfundene Prozentwerte.
+
+Generische Ablehnung lautet: `Der Reset-Code ist ungültig, abgelaufen oder passt
+nicht zu dieser Installation.` Eine leere Registry verwendet den verbindlichen
+Nichtfreigabe-Hinweis. Layout, Fokus, Tastatur und opake Sperrung bleiben bei
+1180 x 760 und 1400 x 900 vollständig nutzbar.
+
 ## Geräteanmeldung und Touch ID - Sprint 0.2B.4a
 
 Der bestehende Passwortbereich bleibt die dominante, immer verfügbare

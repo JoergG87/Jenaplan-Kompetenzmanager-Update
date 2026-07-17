@@ -1,5 +1,23 @@
 # Project Constitution
 
+## Sicherheitsnachtrag Sprint 0.2B.5
+
+- Support-Reset ist kein Masterkennwort, entschlüsselt keine Daten und darf
+  ausschließlich Authentifizierungszustände verändern.
+- Anfrage und Token enthalten nur technische Bindungsdaten. Support erhält
+  keine Schüler-, Dokument-, Backup- oder sonstigen Fachinhalte.
+- Ohne aktive Anfrage, gültigen kurzlebigen einmaligen Ed25519-Token und
+  erfolgreich erzeugtes sowie verifiziertes `.jkmbackup` findet kein Reset statt.
+- Der atomare Abschluss invalidiert Passwort, Recovery-Codes,
+  Gerätecredentials und Sitzung, erhöht die Security-Epoch, setzt
+  `password_reset_pending` und beendet die App.
+- Private Schlüssel bleiben außerhalb von Repository, Build und App-Bundle.
+  Ohne freigegebenen öffentlichen Schlüssel bleibt die produktive Registry leer.
+- Der nächste Start erzwingt neues Passwort, neuen Recovery-Satz und
+  Sicherungsbestätigung, bevor die Fach-App geöffnet wird.
+- Fachliche Daten, IDs, Dokumentpfade, Backup-/Restoreverträge, Anzeigename und
+  Onboardingstatus bleiben unverändert. Offene reale Pilotprüfungen bleiben offen.
+
 ## Sicherheitsnachtrag Sprint 0.2B.4a
 
 - Persistente Geräteanmeldung und aktive App-Sitzung sind getrennte Konzepte.

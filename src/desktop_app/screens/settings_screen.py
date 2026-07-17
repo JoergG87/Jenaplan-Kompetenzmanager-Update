@@ -87,6 +87,7 @@ class SettingsScreen(QWidget):
     inactivity_minutes_changed = Signal(int)
     password_change_requested = Signal()
     recovery_codes_requested = Signal()
+    support_reset_requested = Signal()
     lock_requested = Signal()
     display_name_changed = Signal(str)
     onboarding_requested = Signal()
@@ -478,10 +479,29 @@ class SettingsScreen(QWidget):
         configure_button(change, "secondary", "Lokales Passwort ändern")
         change.clicked.connect(self.password_change_requested)
         layout.addWidget(change, 0, Qt.AlignmentFlag.AlignLeft)
+        recovery_title = QLabel("Wiederherstellung")
+        set_label_style(recovery_title, "section_title")
+        layout.addWidget(recovery_title)
+        recovery_note = QLabel(
+            "Wenn Passwort und Recovery-Codes nicht mehr verfügbar sind, kann eine "
+            "technisch gebundene Support-Anfrage erstellt werden."
+        )
+        recovery_note.setWordWrap(True)
+        set_label_style(recovery_note, "small")
+        layout.addWidget(recovery_note)
         recovery = QPushButton("Recovery-Codes neu erzeugen")
         configure_button(recovery, "secondary", "Neue Recovery-Codes erzeugen")
         recovery.clicked.connect(self.recovery_codes_requested)
         layout.addWidget(recovery, 0, Qt.AlignmentFlag.AlignLeft)
+        support_reset = QPushButton("Technische Support-Reset-Anfrage erstellen")
+        support_reset.setObjectName("SupportResetSettingsButton")
+        configure_button(
+            support_reset,
+            "secondary",
+            "Technische Support-Reset-Anfrage erstellen",
+        )
+        support_reset.clicked.connect(self.support_reset_requested)
+        layout.addWidget(support_reset, 0, Qt.AlignmentFlag.AlignLeft)
         lock = QPushButton("Jetzt sperren")
         configure_button(lock, "primary", "App jetzt sperren")
         lock.clicked.connect(self.lock_requested)

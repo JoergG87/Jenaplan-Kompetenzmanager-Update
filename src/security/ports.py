@@ -61,6 +61,7 @@ class SupportResetSignatureVerifier(Protocol):
 
 class SupportPublicKeyRegistry(Protocol):
     def get(self, key_id: str) -> SupportPublicKey | None: ...
+    def key_ids(self) -> tuple[str, ...]: ...
 
 
 class SupportSecurityBackupPort(Protocol):

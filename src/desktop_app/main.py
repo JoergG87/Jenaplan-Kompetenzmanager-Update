@@ -194,6 +194,7 @@ def main() -> int:
         run_startup_device_authentication,
     )
     from src.desktop_app.security_ui import AuthenticationDialog
+    from src.desktop_app.support_reset import SupportResetBackupFactory
 
     sys.argv[:] = arguments
     app = QApplication(arguments)
@@ -210,6 +211,17 @@ def main() -> int:
     try:
         security_paths = prepare_security_runtime_storage(data_root=data_root)
         security_runtime = build_security_runtime(security_paths)
+        support_build_info = load_build_info()
+        support_reset_backup_factory = SupportResetBackupFactory(
+            paths=security_paths,
+            app_version=APP_VERSION,
+            build_commit=str(support_build_info.get("git_commit", "unknown")),
+            source_tree_state=(
+                str(support_build_info["source_tree_state"])
+                if support_build_info.get("source_tree_state") is not None
+                else None
+            ),
+        )
         security_state = security_runtime.service.security_store_state()
         decision = SecurityStartupResolver().resolve(
             security_state,
@@ -244,6 +256,8 @@ def main() -> int:
                     decision=decision,
                     device_credentials=security_runtime.device_credentials,
                     touch_id_preferred=pre_auth_preferences.touch_id_preferred,
+                    support_reset=security_runtime.support_reset,
+                    support_reset_backup_factory=support_reset_backup_factory,
                 )
                 session = authentication.session if authentication is not None else None
             if authentication is not None and authentication.enrollment_completed:
@@ -304,6 +318,8 @@ def main() -> int:
             display_name=preferences.display_name,
             device_credentials=security_runtime.device_credentials,
             touch_id_preferred=preferences.touch_id_preferred,
+            support_reset=security_runtime.support_reset,
+            support_reset_backup_factory=support_reset_backup_factory,
         )
         window.configure_onboarding(
             preferences_file=security_runtime.preferences,

@@ -8,6 +8,7 @@ import logging
 from PySide6.QtCore import QObject, QThread, Qt, Signal, Slot
 from PySide6.QtGui import QCloseEvent, QFont
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QDialog,
     QHBoxLayout,
@@ -33,6 +34,7 @@ from src.security.session import InMemorySession
 from src.security.startup import SecurityStartState, SecurityStartupDecision
 
 from .components import AppCard, InlineMessage, configure_button
+from .support_reset import SupportResetDialog
 from .theme import set_label_style
 from src.core.app_preferences import DISPLAY_NAME_MAX_LENGTH, normalize_display_name
 
@@ -120,6 +122,8 @@ class AuthenticationDialog(QDialog):
         decision: SecurityStartupDecision,
         device_credentials=None,
         touch_id_preferred: bool = False,
+        support_reset=None,
+        support_reset_backup_factory=None,
         parent: QWidget | None = None,
         allow_cancel: bool = True,
     ) -> None:
@@ -129,6 +133,8 @@ class AuthenticationDialog(QDialog):
         self.decision = decision
         self.device_credentials = device_credentials
         self.touch_id_preferred = touch_id_preferred
+        self.support_reset = support_reset
+        self.support_reset_backup_factory = support_reset_backup_factory
         self.allow_cancel = allow_cancel
         self.authenticated_session: InMemorySession | None = None
         self.enrollment_display_name: str | None = None
@@ -230,6 +236,15 @@ class AuthenticationDialog(QDialog):
         configure_button(self.recovery_button, "quiet", "Recovery öffnen")
         self.recovery_button.clicked.connect(self._open_recovery)
         actions.addWidget(self.recovery_button)
+        self.support_reset_button = QPushButton("Weitere Wiederherstellungsmöglichkeiten")
+        self.support_reset_button.setAutoDefault(False)
+        configure_button(
+            self.support_reset_button,
+            "quiet",
+            "Weitere Wiederherstellungsmöglichkeiten öffnen",
+        )
+        self.support_reset_button.clicked.connect(self._open_support_reset)
+        self.support_reset_button.setVisible(False)
         self.touch_id_button = QPushButton("Mit Touch ID entsperren")
         self.touch_id_button.setAutoDefault(False)
         configure_button(self.touch_id_button, "secondary", "Mit Touch ID entsperren")
@@ -243,6 +258,9 @@ class AuthenticationDialog(QDialog):
         self.submit_button.clicked.connect(self._submit_password)
         actions.addWidget(self.submit_button)
         form.addLayout(actions)
+        form.addWidget(
+            self.support_reset_button, 0, Qt.AlignmentFlag.AlignLeft
+        )
         layout.addStretch(1)
         layout.addWidget(card)
         layout.addStretch(1)
@@ -322,6 +340,11 @@ class AuthenticationDialog(QDialog):
             self.submit_button.setText("Entsperren")
             self.password_confirmation.setVisible(False)
             self.recovery_button.setVisible(True)
+            self.support_reset_button.setVisible(
+                state is SecurityStartState.LOGIN_REQUIRED
+                and self.support_reset is not None
+                and self.support_reset_backup_factory is not None
+            )
             can_remember = (
                 state is SecurityStartState.LOGIN_REQUIRED
                 and self.device_credentials is not None
@@ -601,6 +624,39 @@ class AuthenticationDialog(QDialog):
         self.codes_page.button.setDefault(False)
         self.recovery_submit.setDefault(True)
         self.recovery_code.setFocus()
+
+    def _open_support_reset(self) -> None:
+        if (
+            self._operation_busy
+            or self.support_reset is None
+            or self.support_reset_backup_factory is None
+        ):
+            return
+        dialog = SupportResetDialog(
+            service=self.support_reset,
+            backup_factory=self.support_reset_backup_factory,
+            parent=self,
+        )
+        dialog.reset_completed.connect(self._support_reset_completed)
+        dialog.exec()
+
+    @Slot(object)
+    def _support_reset_completed(self, _result: object) -> None:
+        self.password.clear()
+        self.password_confirmation.clear()
+        self.recovery_code.clear()
+        self.authenticated_session = None
+        if self.device_credentials is not None:
+            try:
+                # Store revocation is authoritative; this performs best-effort
+                # cleanup of the now-unusable platform secret.
+                self.device_credentials.status()
+            except Exception:
+                pass
+        app = QApplication.instance()
+        if app is not None:
+            app.quit()
+        super().reject()
 
     def _return_to_password(self) -> None:
         self.stack.setCurrentWidget(self.password_page)

@@ -89,6 +89,32 @@ unwirksam. Ein fachliches Backup enthält weder das Gerätegeheimnis noch dessen
 Security-Metadaten; Restore und Gerätewechsel übertragen die Anmeldung nicht.
 Die Funktion verschlüsselt keine Datenbank, Dokumente oder Backups.
 
+### Weitere Wiederherstellungsmöglichkeiten
+
+Wenn weder Passwort noch Recovery-Codes verfügbar sind, kann unter
+`Weitere Wiederherstellungsmöglichkeiten` beziehungsweise
+`Einstellungen > Sicherheit > Wiederherstellung` eine technische
+Support-Reset-Anfrage erstellt werden. Sie enthält keine Schülerdaten und wird
+nicht automatisch übertragen. Kopieren oder Speichern erfolgt nur nach einer
+bewussten Aktion.
+
+Support kann ausschließlich das lokale Passwort zurücksetzen. Der Vorgang ist
+kein Masterkennwort, entschlüsselt keine Dateien und gibt Support keinen Zugriff
+auf fachliche Daten. Nach organisatorischer Identitätsprüfung erzeugt Support
+außerhalb der App einen zeitlich begrenzten signierten Reset-Code.
+
+Die App prüft den Code zunächst ohne Änderung. Erst nach der ausdrücklichen
+Aktion `Sicherheitsbackup erstellen und Passwort zurücksetzen` wird ein normales
+fachliches Backup erstellt und vollständig geprüft. Danach werden Passwort,
+Recovery-Codes, gespeicherte Anmeldung und Touch ID ungültig und die App beendet
+sich. Beim nächsten Start müssen ein neues Passwort und neue Recovery-Codes
+eingerichtet und deren Sicherung bestätigt werden. Fachliche Daten bleiben
+erhalten.
+
+Für diese App-Version ist noch kein produktiver öffentlicher Supportschlüssel
+freigegeben. Deshalb kann die technische Anfrage bereits erzeugt werden, der
+produktive Reset ist jedoch noch nicht freigeschaltet.
+
 Nach erfolgreicher Anmeldung kann die Ansicht `Erste Schritte` erscheinen. Sie
 erklärt kurz den Zweck der App, verweist auf lokale Datenhaltung und führt zu
 vorhandenen Bereichen wie `Stammdaten`, `Schüler`, `Einstellungen` und

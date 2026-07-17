@@ -36,3 +36,5 @@ Nutze anschließend die Excel-Datei im Ordner `04_Pilottest`.
 - technische Details der eingebetteten Laufzeit
 - fehlende Cloud, Rollen oder mehrere Benutzerkonten
 - fehlende automatische Backups oder ein Auto-Updater
+- produktiven Support-Reset; die technische Anfrage ist sichtbar, aber ohne
+  freigegebenen öffentlichen Supportschlüssel noch nicht produktiv freigeschaltet

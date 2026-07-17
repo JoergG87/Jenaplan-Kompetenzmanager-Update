@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## Sprint 0.2B.5 - Support-Reset-UI und vollständiger Reset-Abschluss
+
+### Added
+
+- Den bestehenden signierten Offline-Support-Reset als ruhigen, mehrstufigen
+  Wiederherstellungsprozess in Login/Recovery und `Einstellungen > Sicherheit`
+  zugänglich gemacht: technische Anfrage, bewusster Export, Tokenprüfung,
+  Vorschau, verifiziertes Sicherheitsbackup und kontrollierter App-Abschluss.
+- Einen rein prüfenden Application-Schritt vor der ausdrücklichen
+  Resetbestätigung sowie datensparsame Desktop-Projektionen und Workerzustände
+  ergänzt; Signatur-, Backup- und Security-Logik bleibt außerhalb der Widgets.
+
+### Security
+
+- Support-Reset bleibt kein Masterkennwort und entschlüsselt keine Daten. Anfrage
+  und Token enthalten nur technische Bindungsdaten; Support erhält keine
+  Schüler-, Dokument- oder Fachdaten.
+- Reset setzt erst nach vollständig erzeugtem und erneut verifiziertem
+  `.jkmbackup` atomar auf `password_reset_pending`, widerruft Passwort,
+  Recovery-Sätze, Gerätecredentials und Sitzung und beendet anschließend die App.
+- Die produktive Key Registry bleibt mangels freigegebenem öffentlichem Schlüssel
+  leer. Die UI erzeugt technische Anfragen, meldet aber, dass produktiver
+  Support-Reset in dieser App-Version noch nicht freigeschaltet ist.
+
+### Not Changed
+
+- Kein privater Supportschlüssel, Produktivschlüssel, Cloud-, Audit-, Masterpasswort-
+  oder Verschlüsselungsdienst und keine fachliche Daten-/Schemaänderung.
+- Echte Sleep/Wake-, Touch-ID-, App-Switcher-, Aktivierungs-/Widerrufs-,
+  Developer-ID- und Notarisierungsprüfungen bleiben offen. Kein Commit.
+
 ## Sprint 0.2B.4a - Gespeicherte Geräteanmeldung, macOS-Schlüsselbund und Touch ID
 
 ### Added

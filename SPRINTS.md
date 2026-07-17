@@ -1,5 +1,25 @@
 # Sprintplanung
 
+## Sprint 0.2B.5 - Support-Reset-UI, Betriebsprozess und vollständiger Abschluss
+
+**Ziel:** Den vorhandenen signierten Offline-Core als bestätigten sichtbaren
+Recoveryprozess anbinden: technische Anfrage, bewusster Export, lokale
+Tokenprüfung, verifiziertes Sicherheitsbackup, atomarer Wechsel auf
+`password_reset_pending`, Sitzungsende und kontrollierter App-Neustart.
+
+**Architektur:** Qt-freie Prüfung und Reset-Use-Cases, bestehende Ed25519-Key-
+Registry und SQLite-Transaktion, bestehender Backup-Service als zwingender Port,
+Desktop-Worker und datensparsame UI-Projektion in Auth-Gate und bestehender
+Sicherheits-Unterseite. Keine Signatur- oder SQLite-Logik in Widgets.
+
+**Betrieb:** Anfrage wird ausschließlich bewusst übertragen; Support prüft
+Identität außerhalb der App und signiert extern. Die produktive Registry bleibt
+ohne erfundenen Schlüssel leer und die UI meldet die fehlende Freischaltung.
+
+**Grenzen:** Kein Masterkennwort, kein privater Schlüssel, keine Cloud, keine
+Verschlüsselung, keine fachliche Migration oder Funktion. Die physischen
+Pilot-Mac-Prüfungen bleiben offen. In diesem Auftrag kein Commit.
+
 ## Sprint 0.2B.4a - Gespeicherte Geräteanmeldung, macOS-Schlüsselbund und Touch ID
 
 **Ziel:** Nach erfolgreicher Passwortanmeldung kann genau eine widerrufbare

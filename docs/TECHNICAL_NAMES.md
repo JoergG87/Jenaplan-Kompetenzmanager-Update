@@ -1,5 +1,26 @@
 # Technical Naming Registry
 
+## Sprint 0.2B.5 - Sichtbarer Support-Reset-Handoff
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `SupportResetVerificationResult` | Datensparsame erfolgreiche Tokenprüfung ohne Konsum oder Reset | Security Domain |
+| `SupportResetService.verify_token` | Vollständige bindende Tokenprüfung ohne Backup/Mutation | Security Application |
+| `SupportResetDialog` | Modaler mehrstufiger Auth-/Settings-Ablauf ohne Signatur- oder SQLite-Logik | Desktop UI |
+| `SupportResetBackupFactory` | Erzeugt den bestehenden verifizierten Backup-Port aus RuntimePaths | Desktop Adapter |
+| `SupportResetOperationWorker` | Nicht abbrechbarer Qt-Worker für Prüfung beziehungsweise Backup+Reset | Desktop Controller |
+| `.jkmresetrequest` | Versionierter kanonischer technischer Anfrageexport | Support-Betrieb |
+| `.jkmresettoken` | Optionaler lokaler Token-Dateiaustausch; niemals persistenter App-State | Support-Betrieb |
+| `support_reset_request_created` | Datenschutzneutrales Security-Ereignis | Security Logging |
+| `support_reset_token_rejected` | Datenschutzneutrales Security-Ereignis | Security Logging |
+| `support_reset_token_accepted` | Datenschutzneutrales Security-Ereignis | Security Logging |
+| `support_reset_backup_started` | Datenschutzneutrales Security-Ereignis | Security Logging |
+| `support_reset_backup_failed` | Datenschutzneutrales Security-Ereignis | Security Logging |
+| `support_reset_completed` | Datenschutzneutrales Security-Ereignis | Security Logging |
+
+`DEFAULT_SUPPORT_KEY_REGISTRY` bleibt ohne Product-Owner-Freigabe leer. Testkeys
+und private Schlüssel sind keine Produktnamen oder Bundle-Ressourcen.
+
 ## Sprint 0.2B.4a - Gerätecredential und lokale Authentifizierung
 
 | Technischer Name | Bedeutung | Eigentümer |

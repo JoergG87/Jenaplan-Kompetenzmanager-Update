@@ -92,6 +92,7 @@ class AppShell(QMainWindow):
     lock_requested = Signal()
     password_change_requested = Signal()
     recovery_codes_requested = Signal()
+    support_reset_requested = Signal()
     inactivity_minutes_changed = Signal(int)
     device_credential_enable_requested = Signal()
     device_credential_disable_requested = Signal()
@@ -369,6 +370,9 @@ class AppShell(QMainWindow):
         )
         self.settings_screen.recovery_codes_requested.connect(
             self.recovery_codes_requested
+        )
+        self.settings_screen.support_reset_requested.connect(
+            self.support_reset_requested
         )
         self.settings_screen.inactivity_minutes_changed.connect(
             self.inactivity_minutes_changed

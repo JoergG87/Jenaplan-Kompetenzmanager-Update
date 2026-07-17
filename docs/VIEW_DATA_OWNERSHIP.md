@@ -1,5 +1,25 @@
 # View Data Ownership
 
+## Sprint 0.2B.5 - Support-Reset-Ansicht
+
+`SupportResetDialog` besitzt ausschließlich flüchtige Anzeige-, Eingabe- und
+Schrittzustände: datensparsame Anfrageprojektion, bewusst angezeigten
+kanonischen Exporttext, Token-Eingabe bis zur Prüfung, Bestätigung und
+Workerstatus. Nach Fehler, Abschluss oder Schließen werden Tokenfeld und
+geprüfter Token verworfen. Die View liest weder SQLite noch Key Registry,
+verifiziert keine Signatur und erstellt kein Backup selbst.
+
+`SupportResetService` besitzt Anfrage, Bindungsprüfung und atomaren Reset.
+`SupportResetBackupFactory` baut aus RuntimePaths ausschließlich den vorhandenen
+`VerifiedSecurityBackupAdapter`. Der Desktop-Controller besitzt Worker,
+Dateidialoge, Zwischenablageaktion, Sperr-/Sitzungshandoff und App-Ende.
+
+Im Auth-Gate bleibt die Fach-UI nicht konstruiert. Im Settings-Einstieg ist der
+Dialog modal; laufende fachliche Backup-/Restore-Operationen verhindern einen
+parallelen Start. Während des Support-Backups kann die zentrale opake Sperre den
+Dialog vollständig verdecken, ohne den Worker abzubrechen. Nach erfolgreichem
+Commit gibt es keine Rückkehr in den verdeckten Widgetbaum.
+
 ## Sprint 0.2B.4a - Geräteanmeldung und lokale Entsperrung
 
 Login- und Sperransicht besitzen ausschließlich temporäre Eingabe-, Anzeige-

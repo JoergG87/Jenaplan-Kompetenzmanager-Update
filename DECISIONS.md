@@ -1,5 +1,44 @@
 # Architekturentscheidungen
 
+## ADR-069 - Sichtbarer Offline-Support-Reset als bestätigter Recovery-Handoff
+
+**Status:** Für Sprint 0.2B.5 freigegeben.
+
+Support-Reset ist kein Masterkennwort, keine Entschlüsselung und kein Zugriff des
+Supports auf fachliche Daten. Die lokal erzeugte, versionierte Anfrage enthält
+ausschließlich Installation, Nutzer, Anfrage-ID, Nonce, Aktion und technische
+UTC-Zeitpunkte. Der extern erzeugte `JKM-SR1`-Token ist zusätzlich an `key_id`
+und Ed25519 gebunden, kurzlebig und einmalig. Private Schlüssel und der
+organisatorische Support-Audit bleiben vollständig außerhalb der App.
+
+Die produktive `DEFAULT_SUPPORT_KEY_REGISTRY` bleibt leer, solange kein
+öffentlicher Schlüssel ausdrücklich freigegeben ist. Die App darf trotzdem eine
+technische Anfrage erzeugen, kopieren und bewusst als `.jkmresetrequest`
+exportieren. Tokenprüfung und Reset bleiben mit unbekannter `key_id` fail-closed;
+die UI nennt den fehlenden Produktivbetrieb ausdrücklich und verwendet keinen
+Testschlüssel als Ersatz.
+
+Der sichtbare Prozess trennt Tokenprüfung und irreversible Ausführung. Prüfung
+liefert nur eine datensparsame Vorschau und konsumiert weder Anfrage noch Token.
+Erst `Sicherheitsbackup erstellen und Passwort zurücksetzen` startet einen
+nicht abbrechbaren Worker. Dieser verwendet den bestehenden Backup-Service,
+publiziert und verifiziert ein normales fachliches `.jkmbackup` und übergibt den
+Proof an den bestehenden Support-Reset-Core. Erst danach setzt eine einzelne
+Security-Transaktion Konto, Recovery, Epoch und Gerätecredentials zurück.
+
+Der Vor-Auth-Recoverypfad darf für genau dieses verpflichtende Sicherheitsbackup
+die vorhandene fachliche SQLite und verwalteten Dokumente ausschließlich über
+den Backup-Service lesen. Er baut keine AppShell, Adapter oder Fachprojektion auf
+und verändert keine Fachdaten. Nach erfolgreichem Security-Commit werden alle
+fachlichen Fenster verdeckt, die Sitzung verworfen, Keychain-Reste best effort
+bereinigt und die App beendet. Der nächste Start verwendet ausschließlich den
+bestehenden `password_reset_pending`-Abschluss mit neuem Passwort, neuem
+Recovery-Satz und Sicherungsbestätigung.
+
+Backup-/Restoreformat, fachliche IDs, Dokumentpfade, AppPreferences-Anzeigename
+und Onboardingstatus bleiben unverändert. Die offenen physischen Pilot-Mac-
+Prüfungen aus 0.2B.4/0.2B.4a bleiben offen.
+
 ## ADR-068 - Gerätecredential statt gespeichertem Passwort und optionale lokale Authentifizierung
 
 **Status:** Für Sprint 0.2B.4a freigegeben.

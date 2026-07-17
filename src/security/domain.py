@@ -354,6 +354,15 @@ class SupportResetResult:
     backup: SecurityBackupProof
 
 
+@dataclass(frozen=True)
+class SupportResetVerificationResult:
+    """Non-secret projection returned by the non-mutating token check."""
+
+    reset_request_id: str
+    key_id: str
+    expires_at: datetime
+
+
 def validate_uuid4(value: str) -> str:
     if not isinstance(value, str) or not _UUID_PATTERN.fullmatch(value):
         raise SecurityStoreError("invalid_uuid4")

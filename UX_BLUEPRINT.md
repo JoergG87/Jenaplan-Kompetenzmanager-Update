@@ -1,5 +1,27 @@
 # UX Blueprint v1.0
 
+## Support-Reset - ruhiger Recovery-Handoff
+
+Der Einstieg heißt `Weitere Wiederherstellungsmöglichkeiten` im Auth-Gate und
+`Technische Support-Reset-Anfrage erstellen` im bestehenden Bereich
+`Einstellungen > Sicherheit > Wiederherstellung`. Es entsteht weder eine neue
+Hauptnavigation noch ein prominenter Supportpfad während normaler Facharbeit.
+
+Der modale Ablauf besitzt klar getrennte Zustände: Erklärung, Anfrage,
+Reset-Code, geprüfte Vorschau und laufender Abschluss. Kopieren und Dateiexport
+erfolgen ausschließlich nach expliziter Aktion. Token und Signatur werden nie
+automatisch in Zwischenablage, Preferences oder Datei übernommen.
+
+Nach gültiger Prüfung nennt die Vorschau ruhig die Folgen und bietet genau die
+Primäraktion `Sicherheitsbackup erstellen und Passwort zurücksetzen`. Escape und
+Schließen führen nie zum Reset. Während Backup und Commit zeigt die Oberfläche
+einen unbestimmten Fortschritt, verhindert Mehrfachauslösung und wartet auf das
+echte Workerende. Bei erfolgreichem Commit gibt es kein Zurück zur Fach-UI.
+
+Eine leere produktive Key Registry wird nicht als technischer Defekt inszeniert,
+sondern mit dem verbindlichen Satz erklärt: `Der Support-Reset ist in dieser
+App-Version noch nicht für den produktiven Betrieb freigeschaltet.`
+
 ## Lokaler Komfortzugang ab Sprint 0.2B.4a
 
 Die Auth-Journey lautet: Restore-Recovery -> Auth-Gate -> gültiges ausdrücklich

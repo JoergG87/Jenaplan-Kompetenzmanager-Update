@@ -218,6 +218,31 @@ def test_canonical_payload_is_deterministic_and_has_fixed_field_order(tmp_path: 
     assert canonical == SupportResetTokenCodec.canonical_payload_bytes(payload)
 
 
+def test_token_input_normalizes_only_outer_ascii_whitespace(tmp_path: Path) -> None:
+    _security, reset, repository, _clock, private = make_environment(tmp_path / "runtime")
+    request = reset.create_request()
+    token = signed_token(request, private)
+    before = security_snapshot(repository.database_path)
+    verified = reset.verify_token(f" \t{token}\r\n")
+    assert verified.reset_request_id == request.reset_request_id
+    assert security_snapshot(repository.database_path) == before
+    with pytest.raises(SupportResetRejected):
+        reset.verify_token(token.replace(".", ". ", 1))
+
+
+def test_preview_verification_never_consumes_request_or_creates_backup(tmp_path: Path) -> None:
+    _security, reset, repository, _clock, private = make_environment(tmp_path / "runtime")
+    assert reset.product_enabled is True
+    request = reset.create_request()
+    token = signed_token(request, private)
+    before = security_snapshot(repository.database_path)
+    result = reset.verify_token(token)
+    assert result.key_id == "support-2026-a"
+    assert result.expires_at == request.created_at + timedelta(minutes=30)
+    assert repository.load_support_reset_request(request.reset_request_id).status == "active"
+    assert security_snapshot(repository.database_path) == before
+
+
 def test_support_reset_request_never_contains_local_display_name(tmp_path: Path) -> None:
     _security, reset, _repository, _clock, _private = make_environment(tmp_path / "runtime")
     preferences = tmp_path / "runtime" / "app-preferences.json"
@@ -604,6 +629,27 @@ def test_every_backup_failure_leaves_store_unchanged(tmp_path: Path, error: Exce
     assert caught.value.code == SupportResetFailureCode.BACKUP_FAILED
     assert security_snapshot(repository.database_path) == before
     assert repository.security_epoch() == 1
+
+
+def test_token_is_revalidated_after_a_slow_backup(tmp_path: Path) -> None:
+    clock = MutableClock()
+    _security, reset, repository, _clock, private = make_environment(
+        tmp_path / "slow-backup", clock=clock
+    )
+    request = reset.create_request()
+    token = signed_token(request, private)
+    before = security_snapshot(repository.database_path)
+
+    class SlowBackup(BackupPort):
+        def create_and_verify(self):
+            proof = super().create_and_verify()
+            clock.now = request.created_at + timedelta(minutes=33)
+            return proof
+
+    with pytest.raises(SupportResetRejected) as caught:
+        reset.execute(token, backup=SlowBackup())
+    assert caught.value.code == SupportResetFailureCode.TOKEN_EXPIRED
+    assert security_snapshot(repository.database_path) == before
 
 
 @pytest.mark.parametrize(
