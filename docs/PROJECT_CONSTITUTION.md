@@ -1,5 +1,19 @@
 # Project Constitution
 
+## Release-Grenze Version 0.2.0
+
+Der technisch umgesetzte Stand darf als leerer macOS-arm64-Pilot-
+Release-Kandidat `0.2.0` gebaut werden. `src/version.py` bleibt die kanonische
+Produktversionsquelle. Release-Artefakte enthalten keine Pilot-, Fach-,
+Runtime- oder Security-Daten und keine privaten oder Testschlüssel.
+
+Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
+Die produktive Support-Key-Registry bleibt ohne freigegebenen öffentlichen
+Schlüssel leer. Echter Sleep/Wake, physische Touch ID, App-Switcher,
+vollständige Aktivierungs-/Widerrufsreise, produktiver Support-Reset,
+Developer-ID-Signierung und Apple-Notarisierung bleiben offene reale
+Release-Prüfungen und dürfen nicht als automatisiert bestanden gelten.
+
 ## Sicherheitsnachtrag Sprint 0.2B.5
 
 - Support-Reset ist kein Masterkennwort, entschlüsselt keine Daten und darf

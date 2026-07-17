@@ -1,5 +1,51 @@
 # Architekturentscheidungen
 
+## ADR-071 - Zentrale maximierte Arbeitsfenster und deterministische LEG-Seiten
+
+**Status:** Für den UI-Stabilitätsnachschnitt von Version 0.2.0 freigegeben.
+
+Beobachtungs-, Bericht- und LEG-Arbeitsfenster werden über eine gemeinsame
+Qt-Window-Policy als maximierte normale Fenster auf dem Bildschirm des
+Hauptfensters geöffnet. Die Policy verwendet ausschließlich die verfügbare
+Bildschirmgeometrie, berücksichtigt damit Menüleiste und Dock, setzt keinen
+macOS-Vollbildzustand und begrenzt vorhandene Mindestgrößen auf sehr kleinen
+Displays. Fachlogik, Persistenz und Dialoginhalte bleiben davon getrennt.
+
+Der LEG-Seitenwechsel verwendet weiterhin genau einen `QStackedWidget`-Eintrag
+je vorhandener Phase. Nicht aktive Seiten werden zusätzlich unsichtbar und
+nicht interaktiv gehalten. Ein Opazitätseffekt auf dem gesamten Stack ist
+unzulässig, weil dessen Plattform-Rendering vorherige Seitenbilder cachen und
+über die neue Seite zeichnen kann. Seiten und Eingaben bleiben im Widgetbaum,
+sodass Vor-/Zurücknavigation keinen Entwurfszustand verwirft.
+
+Lange Bestätigungsaktionen erhalten ihre Mindestbreite aus der finalen
+Schriftmetrik zuzüglich Fokus- und Innenabstand. Die Primäraktion bleibt der
+sichere Fortsetzungsweg; Enter und Escape dürfen weder Onboarding noch
+ungespeicherte Berichtsinhalte unbeabsichtigt verwerfen.
+
+## ADR-070 - Version 0.2.0 als leerer, ad-hoc-signierter Pilot-Release-Kandidat
+
+**Status:** Für Sprint 0.2R freigegeben.
+
+`src/version.py` bleibt die einzige Produktversionsquelle und verwendet das
+vorhandene dreiteilige SemVer-Schema. Version `0.2.0` wird daraus in
+Qt-Anwendung, PyInstaller-Metadaten, Build-Info, DMG und Dokumente übernommen.
+Der finale Kandidat verwendet den Datenmodus `release`: Er enthält keine
+Startdatenbank, Pilotdaten, Runtime-Dateien, AppPreferences, Security Stores,
+Backups, Recovery- oder Reset-Artefakte.
+
+Die Distribution besteht aus einem arm64-DMG, kanonisch gebauten PDFs,
+Prüfsummen, Release-Inventar und einem auf diese freigegebenen Artefakte
+begrenzten Laura-Paket. Die bestehende Test-Excel bleibt die einzige kanonische
+Abnahmemappe. Build- und Übergabeartefakte sind keine neuen Governance- oder
+Datenquellen.
+
+Ohne verfügbare Developer-ID bleibt der Kandidat ad hoc signiert und nicht
+notarisiert. Die produktive Support-Key-Registry bleibt leer. Reale Sleep/Wake-
+und Touch-ID-Prüfung, App-Switcher, vollständige Aktivierungs-/Widerrufsreise,
+produktiver Support-Reset, Developer-ID und Notarisierung sind keine
+automatisiert bestandenen Release-Gates und bleiben sichtbar offen.
+
 ## ADR-069 - Sichtbarer Offline-Support-Reset als bestätigter Recovery-Handoff
 
 **Status:** Für Sprint 0.2B.5 freigegeben.

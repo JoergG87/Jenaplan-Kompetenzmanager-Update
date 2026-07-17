@@ -1,5 +1,20 @@
 # UX Blueprint v1.0
 
+## Version 0.2.0 - Release- und Sicherheitskommunikation
+
+Handbuch, Handouts, Release-Screenshots und Laura-Übergabe verwenden dieselben
+ruhigen Primärtexte wie die App. `Auf diesem Gerät angemeldet bleiben` wird nie
+als dauerhafte Sitzung beschrieben; Inaktivitäts- und Wake-Sperre bleiben
+sichtbar. Touch ID ist optional, das Passwort bleibt Fallback. Die verbindliche
+Grenze lautet: `Die App-Sperre ist keine Verschlüsselung der Datenbank,
+Dokumente oder Backups.`
+
+Der Support-Reset-Einstieg bleibt sichtbar, kennzeichnet die fehlende produktive
+Freischaltung jedoch vor einer Tokenaktion. Screenshots zeigen ausschließlich
+neutrale künstliche oder leere Zustände und niemals Passwörter, Recovery-Codes,
+Tokens, Schülerdaten oder lokale Pfade. Offene physische Prüfungen werden nicht
+durch Offscreen-Aufnahmen ersetzt.
+
 ## Support-Reset - ruhiger Recovery-Handoff
 
 Der Einstieg heißt `Weitere Wiederherstellungsmöglichkeiten` im Auth-Gate und

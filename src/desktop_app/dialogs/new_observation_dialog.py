@@ -190,8 +190,9 @@ class NewObservationDialog(QDialog):
         recent_competencies: tuple[ObservationCompetencyOptionViewModel, ...] = (),
         prefill_subject_id: str = "",
         prefill_context: str = "",
+        parent: QWidget | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(parent)
         self.student = student
         self.curriculum_adapter = curriculum_adapter
         self.observation_adapter = observation_adapter
@@ -968,9 +969,14 @@ class NewObservationDialog(QDialog):
         attachments_scroll.setObjectName("ObservationAttachmentsScroll")
         attachments_scroll.setWidgetResizable(True)
         attachments_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        attachments_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
         attachments_scroll.setMaximumHeight(105)
         attachments_scroll.setWidget(self.attachments_container)
         self.attachment_empty_state = QLabel(OBSERVATION_ATTACHMENT_EMPTY_STATE)
+        self.attachment_empty_state.setWordWrap(True)
+        self.attachment_feedback_label.setWordWrap(True)
         set_label_style(self.attachment_empty_state, "subtle")
         set_label_style(self.attachment_feedback_label, "muted")
         layout.addWidget(title)

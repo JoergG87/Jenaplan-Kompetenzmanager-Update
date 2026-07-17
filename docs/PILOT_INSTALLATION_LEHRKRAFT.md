@@ -9,7 +9,7 @@ automatisch in eine Cloud.
 - Mac mit Apple-Prozessor (M1 oder neuer)
 - macOS 13 oder neuer
 - ungefähr 300 MB freier Speicherplatz für App und erste lokale Daten
-- die Datei `Jenaplan-Kompetenzmanager-Pilot-{{PILOT_VERSION}}-macOS-arm64.dmg`
+- die Datei `Jenaplan-Kompetenzmanager-{{PILOT_VERSION}}-macOS-arm64.dmg`
 
 Die Version {{PILOT_VERSION}} ist eine Pilotversion. Sie ist für den vereinbarten Test gedacht
 und besitzt noch keinen automatischen Aktualisierungsdienst.
@@ -49,15 +49,13 @@ nicht allgemein die Schutzfunktionen Ihres Macs.
 Beim ersten Start legt die App ihren geschützten lokalen Datenordner automatisch
 an. Vorhandene Daten werden dabei nicht überschrieben.
 
-Die Laura-Pilotversion enthält ausschließlich fiktive Pilotdaten. Sie erkennen
-die Beispieldaten an den künstlichen Namen und Hinweisen. Enthalten sind 24
-Kinder sowie vorbereitete Gruppen, Kurse, Stundenplanbeispiele, Beobachtungen,
-Berichte und Lernentwicklungsgespräche. Verwenden Sie diese Daten nur zum
-Ausprobieren und tragen Sie in dieser Pilotübergabe keine echten Schülerdaten ein,
-sofern dies nicht ausdrücklich vereinbart wurde.
+Der Release-Kandidat startet ohne Kinder, Pilotdaten und Dokumente. Nach dem
+Anlegen des lokalen Kontos werden Recovery-Codes einmalig angezeigt. Bewahren
+Sie diese getrennt und sicher auf. Die geführten `Ersten Schritte` unterstützen
+bei der Einrichtung; sie legt selbst keine Daten an.
 
-Eine getrennte technische Prüfversion startet leer. Sie ist nicht für den
-fachlichen Pilottest vorgesehen.
+Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
+FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
 
 ## 5. Update der Pilotversion
 

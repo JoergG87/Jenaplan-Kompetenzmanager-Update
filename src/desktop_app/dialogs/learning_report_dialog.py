@@ -42,6 +42,7 @@ from src.desktop_app.components import (
     StatusBadge,
     Toast,
     configure_button,
+    stabilize_message_box_buttons,
 )
 from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportChartSelectionViewModel,
@@ -1220,10 +1221,14 @@ class LearningReportDialog(QDialog):
             "Änderungen verwerfen",
             QMessageBox.ButtonRole.DestructiveRole,
         )
-        configure_button(continue_button, "secondary", "Bericht weiter bearbeiten")
+        configure_button(continue_button, "primary", "Bericht weiter bearbeiten")
         configure_button(discard_button, "destructive", "Änderungen verwerfen")
         confirmation.setDefaultButton(continue_button)
         confirmation.setEscapeButton(continue_button)
+        stabilize_message_box_buttons(
+            confirmation,
+            (discard_button, continue_button),
+        )
         confirmation.exec()
         if confirmation.clickedButton() is discard_button:
             super().reject()

@@ -42,7 +42,6 @@ from src.desktop_app.components import (
     Toast,
     configure_button,
 )
-from src.desktop_app.motion import animate_feedback
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.learning_conference_view_model import (
     LearningConferenceCompletionErrorViewModel,
@@ -1260,7 +1259,14 @@ class LearningConferenceDialog(QDialog):
         if key not in keys:
             raise ValueError(f"Unbekannte LEG-Phase: {key}")
         self.phase_navigation.set_current(key)
-        self.phase_stack.setCurrentWidget(self.phase_pages[key])
+        active_page = self.phase_pages[key]
+        self.phase_stack.setCurrentWidget(active_page)
+        for page in self.phase_pages.values():
+            is_active = page is active_page
+            page.setEnabled(is_active)
+            page.setVisible(is_active)
+        active_page.raise_()
+        self.phase_stack.update()
         index = keys.index(key)
         title = PHASES[index][1]
         self.phase_context_label.setText(f"Phase {index + 1} · {title}")
@@ -1269,7 +1275,6 @@ class LearningConferenceDialog(QDialog):
         self.next_button.setText("Weiter" if index < len(keys) - 1 else "Weiter")
         self.evidence_button.setVisible(key in {"strengths", "development", "goals", "agreements"})
         self._refresh_ui_state()
-        animate_feedback(self.phase_stack, key="learning_conference_phase")
         if focus:
             target = self.phase_first_focus.get(key)
             if target is not None:

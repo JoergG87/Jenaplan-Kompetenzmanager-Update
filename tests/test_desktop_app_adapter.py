@@ -4715,6 +4715,18 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_observation_dialog_attachment_rows_show_name_type_and_remove_action(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
+        attachments_scroll = dialog.findChild(
+            QScrollArea,
+            "ObservationAttachmentsScroll",
+        )
+        self.assertIsNotNone(attachments_scroll)
+        if attachments_scroll is not None:
+            self.assertEqual(
+                attachments_scroll.horizontalScrollBarPolicy(),
+                Qt.ScrollBarPolicy.ScrollBarAlwaysOff,
+            )
+        self.assertTrue(dialog.attachment_empty_state.wordWrap())
+        self.assertTrue(dialog.attachment_feedback_label.wordWrap())
         source = Path(self.temp_dir.name) / "arbeitsprobe.pdf"
         source.write_text("test", encoding="utf-8")
         dialog.attachment_type_select.setCurrentText("Arbeitsprobe")

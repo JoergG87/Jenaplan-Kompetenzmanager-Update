@@ -1,49 +1,40 @@
-# Technisches Backup für den macOS-Pilottest
+# Datensicherung im macOS-Pilottest
 
-Das Backup-Skript sichert die lokale SQLite-Datenbank und alle von der App
-verwalteten Dokumente. Es führt keine automatische Wiederherstellung durch.
+Die App erstellt unter `Einstellungen > Datensicherung` ein fachliches Backup
+mit SQLite-sicherer Datenbankkopie und den von der App verwalteten Dokumenten.
+Das Backup enthält weder das lokale Passwort noch Recovery-Codes, Security
+Store, gespeicherte Geräteanmeldung oder `app-preferences.json`.
 
-## Backup erstellen
+## Backup erstellen und prüfen
 
-1. Den Jenaplan-Kompetenzmanager vollständig schließen.
-2. Das getrennt mitgelieferte, versionierte Backup-Skript in einen gut
-   auffindbaren Ordner kopieren. Es liegt neben dem DMG und bewusst nicht im
-   aufgeräumten Installationsfenster.
-3. Ein Terminal öffnen und das Skript ausführen:
+1. `Einstellungen > Datensicherung` öffnen.
+2. `Backup erstellen` wählen und einen Zielort festlegen.
+3. Warten, bis die App das Backup vollständig erstellt und geprüft hat.
+4. Die Bestätigung und den Speicherort kontrollieren.
 
-```bash
-bash /Pfad/zu/Jenaplan-Kompetenzmanager-Pilot-{{PILOT_VERSION}}-Backup.sh
-```
+Ein Backup ist keine Verschlüsselung. Bewahren Sie es an einem schulisch
+freigegebenen, geschützten Ort auf; FileVault beziehungsweise ein
+verschlüsselter Datenträger wird empfohlen.
 
-Das Skript bricht ab, wenn die App noch läuft. Es verwendet die sichere
-SQLite-Backup-Funktion, kopiert `documents/` und legt eine neue, nicht
-überschriebene Sicherung mit Zeitstempel an:
+## Backup prüfen
 
-```text
-~/Library/Application Support/Jenaplan-Kompetenzmanager/backups/YYYYMMDD-HHMMSS/
-├── kompetenzmanager.sqlite
-├── documents/
-└── BACKUP_INFO.txt
-```
+Über `Backup prüfen` kann eine vorhandene `.jkmbackup`-Datei ohne Änderung der
+laufenden Daten verifiziert werden. Eine positive Prüfung bestätigt Format und
+Integrität, ersetzt aber keine organisatorische Kontrolle des Speicherorts.
 
-Der abschließend ausgegebene Pfad ist die vollständige Sicherung. Für Schutz vor
-einem Defekt des Macs sollte dieser gesamte Ordner zusätzlich auf einen
-verschlüsselten externen Datenträger kopiert werden.
+## Wiederherstellung
 
-## Technische Wiederherstellung
+1. Unter `Wiederherstellen` die gewünschte `.jkmbackup`-Datei auswählen.
+2. Die datensparsame Vorschau mit Version, Kompatibilität und zusammengefassten
+   Anzahlen lesen.
+3. Den Restore nur nach bewusster Prüfung bestätigen.
+4. Den nicht abbrechbaren Vorgang vollständig ausführen lassen.
 
-Es gibt bewusst keine automatische Restore-Funktion. Eine Wiederherstellung ist
-ein kontrollierter technischer Eingriff:
+Der fachliche Restore übernimmt keine Anmeldedaten. Security Store,
+Geräteanmeldung, Anzeigename und Stand der geführten `Ersten Schritte` bleiben
+zur Zielinstallation gehörig. Ein kompletter Umzug des Runtime-Ordners auf ein
+anderes Gerät wird nicht unterstützt.
 
-1. App schließen und prüfen, dass sie nicht mehr läuft.
-2. Vom aktuellen Datenordner zunächst eine zusätzliche Sicherung anlegen.
-3. Den gewünschten Backup-Ordner vollständig prüfen; Datenbank und `documents/`
-   gehören zusammen.
-4. Die aktuelle `kompetenzmanager.sqlite` und `documents/` nicht löschen, sondern
-   zunächst in einen eindeutig datierten Sicherheitsordner verschieben.
-5. Datenbank und `documents/` aus genau derselben Sicherung in den App-Datenordner
-   kopieren.
-6. App starten und Schüler, Dokumente sowie letzte fachliche Änderungen prüfen.
-
-Bei Unsicherheit keine Dateien ersetzen. Das Backup-Skript selbst verändert
-keine aktuellen Nutzerdaten.
+Während Backup oder Restore darf die App nicht beendet werden. Beim Sperren
+wird eine offene Restore-Vorschau geschlossen; ein bereits gestarteter
+kritischer Vorgang wird sicher zu Ende geführt.

@@ -278,9 +278,15 @@ class DashboardTest(unittest.TestCase):
             course_id=targets["course"],
         )
         student = shell.adapter.list_students(group_id=targets["group"])[0]
-        with patch("src.desktop_app.shell.NewObservationDialog") as dialog_type:
-            dialog_type.return_value.exec.return_value = 0
+        with (
+            patch("src.desktop_app.shell.NewObservationDialog") as dialog_type,
+            patch(
+                "src.desktop_app.shell.exec_maximized_workspace",
+                return_value=0,
+            ) as execute_workspace,
+        ):
             shell.open_quick_observation_dialog(student.student_id)
+        execute_workspace.assert_called_once_with(dialog_type.return_value, shell)
         kwargs = dialog_type.call_args.kwargs
         self.assertEqual(kwargs["prefill_subject_id"], self.subject.item_id)
         self.assertEqual(kwargs["prefill_context"], f"Unterricht · {self.group.label}")
@@ -469,14 +475,20 @@ class DashboardTest(unittest.TestCase):
         student = self._add_student("Mara", "Direkt")
         instant = datetime(2026, 7, 13, 8, 15)
         shell = AppShell(self.database_path, now_provider=lambda: instant)
-        with patch("src.desktop_app.shell.NewObservationDialog") as dialog_type:
-            dialog_type.return_value.exec.return_value = 0
+        with (
+            patch("src.desktop_app.shell.NewObservationDialog") as dialog_type,
+            patch(
+                "src.desktop_app.shell.exec_maximized_workspace",
+                return_value=0,
+            ) as execute_workspace,
+        ):
             shell.open_dashboard_observation(
                 student.student_id,
                 self.subject.item_id,
                 self.subject.label,
                 self.group.label,
             )
+        execute_workspace.assert_called_once_with(dialog_type.return_value, shell)
         kwargs = dialog_type.call_args.kwargs
         self.assertEqual(kwargs["prefill_subject_id"], self.subject.item_id)
         self.assertEqual(kwargs["prefill_context"], f"Unterricht · {self.group.label}")

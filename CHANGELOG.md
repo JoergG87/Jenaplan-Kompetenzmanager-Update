@@ -1,5 +1,53 @@
 # CHANGELOG
 
+## Version 0.2.0 - Pilot-Release-Kandidat
+
+### UI-Stabilität
+
+- Lange Aktionen in Onboarding- und Bericht-Bestätigungen gegen abgeschnittene
+  Texte unter macOS gehärtet; sichere Fortsetzungsaktionen bleiben Default und
+  sichtbare blaue Primäraktion.
+- Beobachtungs-, Bericht- und LEG-Arbeitsfenster über eine gemeinsame
+  Bildschirm- und Maximierungsregel auf die verfügbare Arbeitsfläche gelegt.
+- Den LEG-Seitenwechsel ohne Stack-weiten Opazitätseffekt abgesichert, sodass
+  genau eine Phase sichtbar und interaktiv bleibt, während Entwurfseingaben bei
+  wiederholter Vor-/Zurücknavigation erhalten bleiben.
+- Den leeren Release-Build vom erst später freigegebenen Laura-Paket getrennt;
+  das ZIP entsteht nur mit dem ausdrücklichen Schalter `--with-laura-package`.
+
+### Security
+
+- Lokales Lehrkraftkonto, Argon2id-Passwortschutz, Recovery-Codes,
+  Fehlversuchsdrosselung, sichere Startreihenfolge und flüchtige Sitzung mit
+  manueller, Inaktivitäts- und Wake-Sperre als Version 0.2 zusammengeführt.
+- Ausdrücklich aktivierbare Geräteanmeldung mit zufälligem macOS-Keychain-
+  Geheimnis und optionaler Touch-ID-Entsperrung; das Passwort wird nicht
+  gespeichert und bleibt Fallback.
+- Signierten Support-Reset mit Sicherheitsbackup und
+  `password_reset_pending` sichtbar abgeschlossen. Ohne freigegebenen
+  öffentlichen Produktivschlüssel bleibt der produktive Ablauf deaktiviert.
+
+### Betrieb und Dokumentation
+
+- Backup/Restore, geführte `Erste Schritte`, optionalen Anzeigenamen,
+  Dashboard-Begrüßung und Sicherheitseinstellungen in Handbuch, Handouts und
+  Release-Hinweisen auf den implementierten Stand gebracht.
+- Produktversion, App-Metadaten, leeren arm64-Release-Build, Dokumentnamen,
+  Prüfsummen, Inventar und Laura-Übergabepaket auf `0.2.0` vereinheitlicht.
+
+### Known limitations
+
+- Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder
+  Backups. FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
+- Der Kandidat ist ad hoc signiert und nicht notarisiert. Echte Sleep/Wake-,
+  physische Touch-ID-, App-Switcher- und vollständige reale
+  Aktivierungs-/Widerrufsprüfung bleiben offen.
+
+### Not changed
+
+- Keine neue fachliche Funktion, Datenmigration, Verschlüsselung, Cloudfunktion,
+  Produktiv- oder Privatschlüssel und keine echten Schüler- oder Pilotdaten.
+
 ## Sprint 0.2B.5 - Support-Reset-UI und vollständiger Reset-Abschluss
 
 ### Added

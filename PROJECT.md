@@ -1,5 +1,23 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Pilot-Release-Kandidat 0.2.0
+
+Version `0.2.0` fasst den implementierten lokalen Security-, Betriebs- und
+Onboardingstand als technisch prüfbaren Pilot-Release-Kandidaten zusammen. Die
+kanonische Version stammt aus `src/version.py`; App-Metadaten, Build-Info, DMG
+und Dokumentbuild übernehmen sie ohne zweite Versionsquelle.
+
+Der Release-Kandidat startet ohne Schüler-, Pilot- oder Runtime-Daten. Die
+App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
+FileVault und ein geschütztes macOS-Benutzerkonto bleiben erforderlich. Der
+produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel nicht
+freigeschaltet; die produktive Registry bleibt leer.
+
+Technisch nicht durch reale Hardwareabnahme ersetzt sind echter Sleep/Wake, die
+physische Touch-ID-Systemaufforderung mit Fingerabdruck, App-Switcher und die
+vollständige Aktivierungs-/Widerrufsreise. Developer-ID-Signierung,
+Apple-Notarisierung und produktiver Support-Reset bleiben ebenfalls offen.
+
 ## Support-Reset-Ablauf ab Version 0.2B.5
 
 Wenn Passwort und Recovery-Codes nicht mehr verfügbar sind, kann die App eine
@@ -124,7 +142,7 @@ Der Jenaplan-Kompetenzmanager ist eine lokale Python-/PySide6-Desktop-Anwendung 
 
 Der implementierte Stand nach Sprint 10B und den anschliessenden Schuelerprofil-UX-Korrekturen umfasst die zentralen Arbeitsbereiche fuer Stammdaten, Unterrichtsalltag, Beobachtung, Kompetenzdokumentation, Schuelerprofil, Lernentwicklungsbericht und Lernentwicklungsgespraech. Unveraenderliche Bericht- und LEG-Revisionen sowie daraus erzeugte PDF-Artefakte sind produktiv umgesetzt.
 
-Das Projekt befindet sich in der **Produktreifephase**. Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit, Dokumentationsqualitaet, Betriebsentscheidungen und Release-Vorbereitung. Fuer den aktualisierten technischen macOS-Pilotbuild ist die Paketversion `0.1.2` festgelegt; daraus folgt noch keine allgemeine Produktrelease- oder App-Store-Entscheidung.
+Das Projekt befindet sich in der **Produktreifephase**. Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit, Dokumentationsqualitaet, Betriebsentscheidungen und Release-Vorbereitung. Fuer den technischen macOS-Pilot-Release-Kandidaten ist die Paketversion `0.2.0` festgelegt; daraus folgt noch keine allgemeine Produktrelease-, reale Pilotabnahme- oder App-Store-Entscheidung.
 
 Excel/VBA ist eine historische Vorstufe. Die damalige Workbook-Linie wird unter `legacy/excel/` als Referenz erhalten, ist aber weder Zielplattform noch aktiver Produktpfad. Historische Workbook-Versionen wie `v0.4` und fruehere Ausgabedateien sind keine aktuellen Hauptartefakte.
 

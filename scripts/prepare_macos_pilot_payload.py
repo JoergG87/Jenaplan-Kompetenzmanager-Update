@@ -41,9 +41,11 @@ def prepare_payload(
         "git_commit": git_commit,
         "packaged": True,
         "real_student_data_included": False,
-        "pilot_data_label": (
-            "Fiktive Pilotdaten" if data_mode == "laura" else "Technischer Smoke-Test - leer"
-        ),
+        "pilot_data_label": {
+            "laura": "Fiktive Pilotdaten",
+            "empty": "Technischer Smoke-Test - leer",
+            "release": "Release-Kandidat - leer",
+        }[data_mode],
         "source_tree_state": source_tree_state,
     }
     (output_dir / BUILD_INFO_FILENAME).write_text(
@@ -59,7 +61,7 @@ def prepare_payload(
             "Fiktive Pilotdaten - keine echten Schülerdaten.\n",
             encoding="utf-8",
         )
-    elif data_mode != "empty":
+    elif data_mode not in {"empty", "release"}:
         raise ValueError(f"Unbekannte Pilotdaten-Variante: {data_mode}")
     return output_dir
 
@@ -88,7 +90,11 @@ def _normalize_pilot_document_paths(database_path: Path, initial_root: Path) -> 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--data-mode", choices=("empty", "laura"), required=True)
+    parser.add_argument(
+        "--data-mode",
+        choices=("empty", "laura", "release"),
+        required=True,
+    )
     parser.add_argument("--version", required=True)
     parser.add_argument("--git-commit", required=True)
     parser.add_argument("--source-tree-state", choices=("clean", "dirty"), required=True)

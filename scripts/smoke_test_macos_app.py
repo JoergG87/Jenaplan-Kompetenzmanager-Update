@@ -25,7 +25,7 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
     if not executable.is_file() or not info_plist.is_file():
         raise RuntimeError(f"Ungültiges App-Bundle: {app_path}")
     bundled_databases = tuple(app_path.rglob("*.sqlite")) + tuple(app_path.rglob("*.db"))
-    if expected_data_mode == "empty" and bundled_databases:
+    if expected_data_mode in {"empty", "release"} and bundled_databases:
         raise RuntimeError(f"Unerwartete Datenbank im App-Bundle: {bundled_databases[0]}")
     if expected_data_mode == "laura" and len(bundled_databases) != 1:
         raise RuntimeError(
@@ -84,7 +84,7 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
             conference_revision_count = connection.execute(
                 "SELECT COUNT(*) FROM learning_conference_revisions"
             ).fetchone()[0]
-        if expected_data_mode == "empty" and student_count != 0:
+        if expected_data_mode in {"empty", "release"} and student_count != 0:
             raise RuntimeError("Leeres Pilotpaket enthält unerwartet Schülerdaten.")
         if expected_data_mode == "laura" and (
             student_count != 24
@@ -120,7 +120,11 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("app", type=Path)
-    parser.add_argument("--expected-data-mode", choices=("empty", "laura"), default="empty")
+    parser.add_argument(
+        "--expected-data-mode",
+        choices=("empty", "laura", "release"),
+        default="empty",
+    )
     return parser.parse_args()
 
 

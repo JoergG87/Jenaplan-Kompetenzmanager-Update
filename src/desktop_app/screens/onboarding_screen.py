@@ -19,7 +19,11 @@ from PySide6.QtWidgets import (
 )
 
 from src.core.app_preferences import ONBOARDING_STEP_COUNT
-from src.desktop_app.components import PageHeader, configure_button
+from src.desktop_app.components import (
+    PageHeader,
+    configure_button,
+    stabilize_message_box_buttons,
+)
 from src.desktop_app.theme import create_card, set_label_style
 
 
@@ -330,7 +334,11 @@ class OnboardingScreen(QWidget):
             QMessageBox.ButtonRole.AcceptRole,
         )
         keep = message.addButton("Weiter ansehen", QMessageBox.ButtonRole.RejectRole)
+        configure_button(skip, "secondary", "Erste Schritte überspringen")
+        configure_button(keep, "primary", "Weiter ansehen")
         message.setDefaultButton(keep)
+        message.setEscapeButton(keep)
+        stabilize_message_box_buttons(message, (skip, keep))
         return message, skip
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802

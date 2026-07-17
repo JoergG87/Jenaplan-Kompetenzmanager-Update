@@ -1,5 +1,14 @@
 # View Data Ownership
 
+## Sprint 0.2R - Dokumentation und Release-Screenshots
+
+Der Release-Abschluss führt keine neue View und keinen UI-State ein. Handbuch,
+Handouts und Screenshots bilden ausschließlich vorhandene Auth-, Onboarding-,
+Shell-, Settings-, Lock-, Backup/Restore- und Support-Reset-Views ab.
+Screenshots besitzen keine Datenhoheit und verwenden leere oder künstliche
+neutrale Projektionen ohne Passwörter, Recovery-Codes, Tokens, Schülerdaten oder
+lokale Pfade. Offscreen-Zustände ersetzen keine reale Hardwareabnahme.
+
 ## Sprint 0.2B.5 - Support-Reset-Ansicht
 
 `SupportResetDialog` besitzt ausschließlich flüchtige Anzeige-, Eingabe- und

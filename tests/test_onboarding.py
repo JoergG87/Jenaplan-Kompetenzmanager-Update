@@ -12,7 +12,13 @@ import pytest
 
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QLabel, QMessageBox, QScrollArea
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialogButtonBox,
+    QLabel,
+    QMessageBox,
+    QScrollArea,
+)
 
 from src.core.app_preferences import (
     AppPreferences,
@@ -166,16 +172,41 @@ def test_onboarding_screen_steps_keyboard_skip_and_sizes() -> None:
 
     QTest.keyClick(screen, Qt.Key.Key_Escape)
     assert emitted == ["next"]
-    message, skip_button = screen._skip_confirmation_message()
-    try:
-        assert "Erste Schritte jetzt überspringen?" in message.text()
-        assert skip_button.text() == "Erste Schritte überspringen"
-        assert any(button.text() == "Weiter ansehen" for button in message.buttons())
-    finally:
-        message.close()
-        message.hide()
-        message.deleteLater()
-        app.processEvents()
+    for width, height in ((1180, 760), (1400, 900)):
+        screen.resize(width, height)
+        for key in (Qt.Key.Key_Return, Qt.Key.Key_Escape):
+            message, skip_button = screen._skip_confirmation_message()
+            keep_button = next(
+                button for button in message.buttons() if button.text() == "Weiter ansehen"
+            )
+            try:
+                message.show()
+                app.processEvents()
+                assert "Erste Schritte jetzt überspringen?" in message.text()
+                assert skip_button.text() == "Erste Schritte überspringen"
+                assert skip_button.minimumWidth() >= (
+                    skip_button.fontMetrics().horizontalAdvance(skip_button.text()) + 40
+                )
+                assert keep_button.property("buttonRole") == "primary"
+                assert keep_button.isDefault()
+                button_box = message.findChild(QDialogButtonBox)
+                assert button_box.layout().spacing() >= 12
+                keep_button.setFocus()
+                app.processEvents()
+                assert keep_button.hasFocus()
+                target = keep_button if key == Qt.Key.Key_Return else message
+                QTest.keyClick(target, key)
+                app.processEvents()
+                assert message.clickedButton() is not skip_button
+                if key == Qt.Key.Key_Return:
+                    assert message.clickedButton() is keep_button
+                else:
+                    assert message.clickedButton() in (None, keep_button)
+            finally:
+                message.close()
+                message.hide()
+                message.deleteLater()
+                app.processEvents()
     screen._skip_confirmation_accepted = lambda: True
     screen.skip_button.click()
     assert emitted[-1] == "skip"

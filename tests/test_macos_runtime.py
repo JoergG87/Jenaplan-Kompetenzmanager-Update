@@ -10,9 +10,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from unittest import mock
 
+from scripts.build_laura_pilot_package import build_package
 from scripts.prepare_macos_pilot_payload import prepare_payload
 from scripts.smoke_test_macos_app import (
     PACKAGED_SMOKE_MARKER_ENV,
@@ -32,6 +34,63 @@ from src.desktop_app.runtime import (
 
 
 class MacosRuntimeTest(unittest.TestCase):
+    def test_release_package_contains_only_the_approved_laura_handoff(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            inputs = root / "inputs"
+            inputs.mkdir()
+            files = {
+                "dmg": inputs / "Jenaplan-Kompetenzmanager-0.2.0-macOS-arm64.dmg",
+                "manual": inputs / "manual.pdf",
+                "first": inputs / "first.pdf",
+                "quick": inputs / "quick.pdf",
+                "installation": inputs / "installation.pdf",
+                "backup": inputs / "backup.pdf",
+                "workbook": inputs / "Pilottest_Laura_Schuelerprofil_Variante_A.xlsx",
+                "notes": inputs / "RELEASE_NOTES.md",
+                "inventory": inputs / "RELEASE_INVENTORY-0.2.0.txt",
+            }
+            for name, path in files.items():
+                path.write_bytes(f"test-{name}".encode())
+
+            package_root, zip_path = build_package(
+                output_root=root / "dist",
+                version="0.2.0",
+                architecture="arm64",
+                dmg=files["dmg"],
+                first_steps_pdf=files["first"],
+                manual_pdf=files["manual"],
+                quickstart_pdf=files["quick"],
+                installation_pdf=files["installation"],
+                backup_guide_pdf=files["backup"],
+                pilot_workbook=files["workbook"],
+                release_notes=files["notes"],
+                release_inventory=files["inventory"],
+            )
+
+            self.assertTrue(zip_path.is_file())
+            self.assertEqual(
+                {path.name for path in package_root.iterdir()},
+                {
+                    "README.txt",
+                    "Jenaplan-Kompetenzmanager-0.2.0-macOS-arm64.dmg",
+                    "Jenaplan-Kompetenzmanager-0.2.0-Benutzerhandbuch.pdf",
+                    "Jenaplan-Kompetenzmanager-0.2.0-Erste-Schritte.pdf",
+                    "Jenaplan-Kompetenzmanager-0.2.0-Schnellstart.pdf",
+                    "Jenaplan-Kompetenzmanager-0.2.0-Installationsanleitung.pdf",
+                    "Jenaplan-Kompetenzmanager-0.2.0-Backup-Anleitung.pdf",
+                    "Pilottest_Laura_Schuelerprofil_Variante_A.xlsx",
+                    "RELEASE_NOTES.md",
+                    "SHA256SUMS-0.2.0.txt",
+                    "RELEASE_INVENTORY-0.2.0.txt",
+                },
+            )
+            with zipfile.ZipFile(zip_path) as archive:
+                self.assertIsNone(archive.testzip())
+                names = archive.namelist()
+            self.assertEqual(len(names), 11)
+            self.assertFalse(any("__MACOSX" in name for name in names))
+
     def test_developer_and_packaged_data_roots_are_separate(self) -> None:
         self.assertEqual(
             application_data_root(packaged=False, environ={}),
@@ -149,7 +208,7 @@ class MacosRuntimeTest(unittest.TestCase):
                 plistlib.dump(
                     {
                         "CFBundleIdentifier": "de.jenaplan.kompetenzmanager",
-                        "CFBundleShortVersionString": "0.1.2",
+                        "CFBundleShortVersionString": "0.2.0",
                         "LSMinimumSystemVersion": "13.0",
                     },
                     plist_file,
@@ -283,6 +342,20 @@ class MacosRuntimeTest(unittest.TestCase):
             )
             self.assertEqual(empty_info["pilot_data_label"], "Technischer Smoke-Test - leer")
             self.assertFalse(tuple(empty.rglob("*.sqlite")))
+
+            release = prepare_payload(
+                root / "release",
+                data_mode="release",
+                version="0.2.0",
+                git_commit="test-commit",
+                source_tree_state="clean",
+                architecture="arm64",
+            )
+            release_info = json.loads(
+                (release / "pilot_build_info.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(release_info["pilot_data_label"], "Release-Kandidat - leer")
+            self.assertFalse(tuple(release.rglob("*.sqlite")))
 
             laura = prepare_payload(
                 root / "laura",

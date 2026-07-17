@@ -1,5 +1,18 @@
 # UI Data Mapping
 
+## Sprint 0.2R - Release-Dokumentation
+
+Version `0.2.0` fügt keine UI-Felder hinzu. Dokumentation und Screenshots bilden
+nur bereits registrierte UI-Projektionen ab. Die Produktversion stammt aus
+`src/version.py`; Signierungs-, Notarisierungs-, Produktivschlüssel- und reale
+Hardware-Prüfstände erscheinen ausschließlich in Release-Hinweisen und
+Build-Inventar, nicht als neuer persistenter UI-State.
+
+Die Sicherheitsgrenze wird nutzernah als `Die App-Sperre ist keine
+Verschlüsselung der Datenbank, Dokumente oder Backups.` wiedergegeben. Eine
+fehlende produktive Support-Key-Freigabe darf nie als erfolgreiches
+Reset-Ergebnis projiziert werden.
+
 ## Sprint 0.2B.5 - Support-Reset-UI
 
 | UI-Feld/Aktion | Quelle/Command | Persistenz | Regel |
@@ -95,7 +108,7 @@ Spalten:
 | Status Arbeitsgrundlage | bestehende Adapter-/ViewModel-Projektionen fuer Faecher, Stundenplan, Stammdaten und Kinder | Anzeige | Nein | vorhandene fachliche Datenquellen, nur aggregiert | `Bereits eingerichtet`, `Noch offen` oder `Nicht geprüft`; keine Namen, Scores, Prozentwerte oder Blockade |
 | Zielbuttons | bestehende Shell-/Settings-Routen | Navigation | Nein | keine neue fachliche Datenquelle | navigiert nur zu vorhandenen Seiten; fehlendes Ziel zeigt ruhige Rueckmeldung |
 | Weiter/Zurück | `OnboardingController` | lokale Navigation | Ja, nur lokale Praeferenz | `app-preferences.json` | Enter aktiviert Weiter beziehungsweise Abschliessen |
-| Erste Schritte überspringen | Bestätigung -> `OnboardingController.dismiss` | lokale Praeferenz | Ja | `app-preferences.json` | Escape ueberspringt nicht unbemerkt |
+| Erste Schritte überspringen | Bestätigung -> `OnboardingController.dismiss` | lokale Praeferenz | Ja | `app-preferences.json` | vollständiger Buttontext; `Weiter ansehen` bleibt blaue Default-/Escape-Aktion; Enter oder Escape ueberspringen nicht unbemerkt |
 | Abschließen | `OnboardingController.complete` | lokale Praeferenz/Navigation | Ja | `app-preferences.json` | danach normales Dashboard; keine automatische Sicherung oder Datenanlage |
 
 ## PySide6 Einstellungen

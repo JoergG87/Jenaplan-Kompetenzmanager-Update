@@ -8,10 +8,12 @@ from PySide6.QtCore import QEvent, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QKeyEvent, QKeySequence, QMouseEvent, QShortcut
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QDialogButtonBox,
     QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QVBoxLayout,
@@ -726,3 +728,28 @@ def configure_button(button: QPushButton, role: str, accessible_name: str = "") 
     button.setCursor(Qt.CursorShape.PointingHandCursor)
     if accessible_name:
         button.setAccessibleName(accessible_name)
+
+
+def ensure_button_text_width(button: QPushButton, *, horizontal_chrome: int = 40) -> int:
+    """Reserve complete text, padding and focus chrome after final font polishing."""
+    button.ensurePolished()
+    required_width = button.fontMetrics().horizontalAdvance(button.text()) + horizontal_chrome
+    button.setMinimumWidth(max(button.minimumWidth(), required_width))
+    button.updateGeometry()
+    return button.minimumWidth()
+
+
+def stabilize_message_box_buttons(
+    message: QMessageBox,
+    buttons: Iterable[QPushButton],
+    *,
+    spacing: int = 12,
+) -> None:
+    """Keep long message-box actions complete under native macOS focus metrics."""
+    for button in buttons:
+        ensure_button_text_width(button)
+    button_box = message.findChild(QDialogButtonBox)
+    if button_box is not None and button_box.layout() is not None:
+        button_box.layout().setSpacing(max(spacing, button_box.layout().spacing()))
+    message.ensurePolished()
+    message.adjustSize()

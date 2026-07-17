@@ -1,28 +1,33 @@
 # Schnellstart für Lehrkräfte
 
-## Schnellstart für Lehrkräfte
+## In acht Schritten starten
 
-Die wichtigsten Wege der Pilotversion {{PILOT_VERSION}}
+Pilotversion {{PILOT_VERSION}}
 
-1. App aus dem Ordner `Programme` öffnen.
-2. Im Dashboard die aktuelle Stunde und passende Kinder prüfen.
-3. Ein Kind auswählen und das Schülerprofil öffnen.
-4. Über `Beobachtung erfassen` einen Eintrag mit Notiz und bei Bedarf Kompetenzen speichern.
-5. Bericht oder LEG aus dem Dokumentbereich des Schülerprofils öffnen.
+1. DMG öffnen, die App nach `Programme` ziehen und von dort starten.
+2. Beim ersten Start das lokale Konto mit einem Passwort anlegen.
+3. Die einmalig angezeigten Recovery-Codes sicher aufbewahren.
+4. Mit dem lokalen Passwort anmelden.
+5. Auf Wunsch unter `Einstellungen > Sicherheit` die gespeicherte Anmeldung und
+   auf einem unterstützten Mac Touch ID aktivieren. Das Passwort bleibt Fallback.
+6. Die geführten `Ersten Schritte` durchführen oder bewusst überspringen.
+7. Fächer, Stundenplan, Stammgruppen, Kurse und Kinder prüfen und anschließend
+   die erste Beobachtung erfassen.
+8. Unter `Einstellungen > Datensicherung` ein Backup erstellen und prüfen.
 
-Änderungen werden lokal gespeichert und bleiben nach einem App-Neustart erhalten.
-
-Bei einer leeren Anwendung zuerst Stammgruppe und Kurs anlegen. Im Laura-Pilot sind diese Daten bereits vorbereitet.
+Hilfe zur Installation, Recovery und Wiederherstellung steht im
+Benutzerhandbuch. `Erste Schritte` kann in `Einstellungen` erneut geöffnet
+werden.
 
 <!-- pagebreak -->
 
-## Im Pilot besonders wichtig
+## Wichtige Pilotgrenzen
 
-Orientierung für den Testalltag
-
-- Finalisierung und LEG-Abschluss erzeugen eine unveränderliche Revision, aber noch kein PDF.
-- Ein finales PDF wird nur aus der jeweils aktuellen Revision erzeugt.
-- Ersetzte Revisionen bleiben schreibgeschützt lesbar.
-- Die App speichert Nutzerdaten getrennt von der App im Benutzerordner.
-- Vor einem technischen Backup die App vollständig schließen.
-- Bei Feedback immer Testnummer, Kategorie, Beschreibung und möglichst einen Screenshot angeben.
+- Die App speichert lokal und überträgt keine Daten automatisch in eine Cloud.
+- Die automatische Sperre bleibt auch bei gespeicherter Anmeldung aktiv.
+- Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
+  FileVault wird empfohlen.
+- Der produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel
+  noch nicht freigeschaltet.
+- Der Release-Kandidat ist ad hoc signiert und nicht notarisiert. Reale
+  Sleep/Wake- und Touch-ID-Abnahmen bleiben offen.

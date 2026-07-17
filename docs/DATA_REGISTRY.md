@@ -1,5 +1,19 @@
 # Data Registry
 
+## Sprint 0.2R - Release-Ausgaben
+
+DMG, kanonisch gebaute PDFs, Release-Hinweise, Prüfsummen, Release-Inventar,
+Laura-Testmappe und Pilot-ZIP sind unveränderliche Build-/Übergabeartefakte,
+aber keine produktiven Datenquellen. Der Modus `release` enthält ausschließlich
+nicht geheime Build-Info und niemals fachliche SQLite, Security Store,
+AppPreferences, Enrollment-Marker, Backups, Recovery-Codes, Reset-Anfragen oder
+Tokens, Schlüsselbundwerte, private oder Testschlüssel.
+
+Das Laura-Paket enthält keine App zusätzlich zum DMG, keinen Sourcecode, keine
+Tests oder Fixtures und keine Screenshots. Die bestehende Testmappe bleibt die
+einzige kanonische Ergebniserfassung; reale Ergebnisse werden nicht durch den
+Build erzeugt oder überschrieben.
+
 ## Sprint 0.2B.5 - Support-Reset-UI-Datenquellen
 
 | Quelle | Inhalt | Owner | Persistenz-/Datenschutzgrenze |

@@ -3,10 +3,10 @@
 ## Paketstand
 
 - Produkt: `Jenaplan-Kompetenzmanager`
-- Pilotversion: `0.1.2`
+- Pilotversion: `0.2.0`
 - Architektur: Apple Silicon (`arm64`)
 - minimale unterstützte Version: macOS 13
-- Auslieferungsvariante: `laura` mit ausschließlich fiktiven Pilotdaten
+- Auslieferungsvariante: `release` ohne Schüler-, Pilot- oder Runtime-Daten
 - technische Prüfvariante: `empty` ohne Schüler und Dokumente
 - Auto-Updater und App-Store-Verteilung: nicht vorhanden
 
@@ -16,7 +16,7 @@ Repository noch Entwicklungsumgebung benötigt.
 
 Die kurze Lehrkraftfassung liegt in `docs/PILOT_INSTALLATION_LEHRKRAFT.md` und
 wird beim Build als
-`Jenaplan-Kompetenzmanager-Pilot-0.1.2-Installationsanleitung.pdf` erzeugt.
+`Jenaplan-Kompetenzmanager-Pilot-0.2.0-Installationsanleitung.pdf` erzeugt.
 
 ## Reproduzierbarer Build
 
@@ -27,29 +27,32 @@ versionierten Paketen aus `requirements-macos-build.txt`:
 # Leer, nur für den technischen Paket-Smoke-Test
 scripts/build_macos_pilot.sh --data-mode empty
 
-# Fiktive Übergabe für Laura
-scripts/build_macos_pilot.sh --data-mode laura
+# Leerer Release-Kandidat und Übergabepaket für Laura
+scripts/build_macos_pilot.sh --data-mode release
 ```
+
+Für das lokale Laura-Paket wird die führende Abnahmemappe bei Bedarf ohne
+Speicherung eines Benutzerpfads im Repository über `LAURA_TEST_WORKBOOK`
+übergeben. Ohne Variable verwendet der Build die versionierte Repository-Kopie.
 
 Die Buildvarianten überschreiben einander nicht beim DMG:
 
 ```text
-dist/macos/Jenaplan-Kompetenzmanager-SmokeTest-0.1.2-macOS-arm64.dmg
-dist/macos/Jenaplan-Kompetenzmanager-Pilot-0.1.2-macOS-arm64.dmg
+dist/macos/Jenaplan-Kompetenzmanager-SmokeTest-0.2.0-macOS-arm64.dmg
+dist/macos/Jenaplan-Kompetenzmanager-0.2.0-macOS-arm64.dmg
 ```
 
 Der zuletzt ausgeführte Build stellt außerdem
 `dist/macos/Jenaplan-Kompetenzmanager.app` bereit. Beide Builds erzeugen die
 versionierte Installationsanleitung, Erste Schritte, das PDF-Benutzerhandbuch,
 den Schnellstart, die Backup-Anleitung, das technische Backup-Skript und
-SHA-256-Prüfsummen. Die Variante `laura` erzeugt zusätzlich ausschließlich aus
-diesen aktuellen Ausgaben das Übergabepaket
-`dist/Jenaplan-Kompetenzmanager_Pilot_0.1.2_Laura.zip`.
+SHA-256-Prüfsummen. Die Variante `release` erzeugt zusätzlich ausschließlich
+aus den aktuellen, freigegebenen Ausgaben das Übergabepaket
+`dist/Jenaplan-Kompetenzmanager-0.2.0-Pilotpaket-Laura-macOS-arm64.zip`.
 
 Das Skript erzeugt eine isolierte Build-Umgebung, entfernt nur seine bekannten
-alten Zwischenausgaben und prüft die Datenvariante. `empty` darf keine
-SQLite-Datei im Bundle enthalten. `laura` muss genau eine Startdatenbank und die
-Kennzeichnung `FIKTIVE_PILOTDATEN.txt` enthalten. Die technische Versionsquelle
+alten Zwischenausgaben und prüft die Datenvariante. `empty` und `release` dürfen
+keine SQLite-Datei im Bundle enthalten. Die technische Versionsquelle
 ist `src/version.py`; `pilot_build_info.json` nennt Version, Architektur,
 Git-HEAD, Quellbaumzustand, Datenvariante und sichtbare Kennzeichnung. Die
 Entwicklerdatenbank `data/kompetenzmanager.sqlite` wird nie übernommen.
@@ -71,9 +74,9 @@ Sichtbarer DMG-Inhalt:
 - `Programme` als Verknüpfung nach `/Applications`
 - `Installationsanleitung.pdf`
 
-Schnellstart, Pilottestdatei, Backup-Skript und ergänzende Dokumentation werden
-bewusst im getrennten Laura-ZIP ausgeliefert, damit das Installationsfenster
-ruhig und eindeutig bleibt.
+Schnellstart, Pilottestdatei, Release-Hinweise und Prüfsummen werden bewusst im
+getrennten Laura-ZIP ausgeliefert, damit das Installationsfenster ruhig und
+eindeutig bleibt.
 
 ## Installation und erster Start
 
@@ -82,11 +85,11 @@ ruhig und eindeutig bleibt.
 3. Das DMG auswerfen.
 4. Die App im Ordner `Programme` öffnen.
 
-Beim ersten Start legt die App den lokalen Datenordner an. Die Laura-Variante
-kopiert ihre ausdrücklich fiktive Datenbank und die zugehörigen Dokumente nur,
-wenn noch keine Benutzerdatenbank existiert. Vorhandene Daten werden nie ersetzt.
-Die technische `empty`-Variante initialisiert eine leere Schülerdatenbasis mit
-Stammdaten- und Katalogdefaults.
+Beim ersten Start legt die App den lokalen Datenordner an. Der Release-Kandidat
+enthält keine Startdatenbank, Pilotdaten oder Dokumente. Vorhandene Daten werden
+nie ersetzt. Die Anwendung initialisiert die leere fachliche Datenbasis erst
+nach erfolgreicher Authentifizierung; Stammdaten- und Katalogdefaults enthalten
+keine Kinder.
 
 ## Gatekeeper und Signierung
 
@@ -150,4 +153,9 @@ dem lokalen Datenordner entfernt werden.
 - keine Windows-Version;
 - keine automatische Aktualisierung;
 - keine Cloud-Synchronisation oder Benutzerkonten;
-- ohne Developer-ID keine Notarisierung und daher Gatekeeper-Hinweis beim Erststart.
+- ohne Developer-ID keine Notarisierung und daher möglicher Gatekeeper-Hinweis
+  beim Erststart;
+- produktiver Support-Reset ohne freigegebenen öffentlichen Schlüssel nicht
+  freigeschaltet;
+- echte Sleep/Wake-, physische Touch-ID-, App-Switcher- und vollständige reale
+  Aktivierungs-/Widerrufsprüfung noch offen.

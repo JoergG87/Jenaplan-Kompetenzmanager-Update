@@ -4,11 +4,26 @@
 
 Der Pilottest prüft den Jenaplan-Kompetenzmanager mit ausschließlich künstlichen Testdaten aus der Sicht einer Lehrkraft. Im Mittelpunkt stehen Verständlichkeit, ruhige Bedienung, fachlich nachvollziehbare Zustände und alltagstaugliche Wege – nicht eine vollständige technische Abnahme.
 
-## Führende Testdatei
+## Führende Testdatei und versionierte Testfallquelle
 
-Die einzige führende Pilot-Testdatei für Laura ist [Pilottest_Laura_Schuelerprofil_Variante_A.xlsx](/Users/lauragehrke/Documents/Pilottest_Laura_Schuelerprofil_Variante_A.xlsx).
+Die einzige führende Pilot-Testdatei für Laura heißt
+`Pilottest_Laura_Schuelerprofil_Variante_A.xlsx`. Der lokale Originalpfad wird
+nicht in Release-Dokumente oder Pakete geschrieben; für den Build wird er über
+`LAURA_TEST_WORKBOOK` übergeben.
 
-Sie enthält den Testplan, konkrete Schritte und Erwartungen im Blatt `Testhinweise`, die Ergebniserfassung sowie das Feedbackblatt. Neue Rückmeldungen werden dort eingetragen; die frühere CSV dient nicht mehr als führender Feedbackweg.
+Sie enthält den ausführbaren Testplan, konkrete Schritte und Erwartungen im
+Blatt `Testhinweise`, die Ergebniserfassung sowie das Feedbackblatt. Neue
+Rückmeldungen werden dort eingetragen; die frühere CSV dient nicht mehr als
+führender Feedbackweg. Dieses Dokument ist die versionierte kanonische Quelle
+für noch nicht in die Arbeitsmappe übernommene Testfallergänzungen. Die
+Arbeitsmappe wird erst im ausdrücklich beauftragten Excel-Schritt daraus
+aktualisiert; bestehende Ergebnisse werden dabei nicht überschrieben.
+
+## Vorgemerkt für die nächste Testmappen-Aktualisierung
+
+- **LEG:** Prüfen, ob Vorschau beziehungsweise Gesprächsführung während der
+  Bearbeitung ausreichend sichtbar und erreichbar sind. Status: offen, reale
+  Laura-Prüfung noch nicht durchgeführt.
 
 ## Testablauf
 

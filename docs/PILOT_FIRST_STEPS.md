@@ -2,39 +2,39 @@
 
 ## Dein erster Test
 
-Ein ruhiger Einstieg in den Jenaplan-Kompetenzmanager
+Diese kompakte Orientierung ergänzt das Benutzerhandbuch.
 
-Diese Kurzanleitung ergänzt das Benutzerhandbuch und bleibt eine kompakte Pilottest-Orientierung.
+1. Starte die App aus dem Ordner `Programme`.
+2. Lege beim ersten Start das lokale Konto mit einem sicheren Passwort an.
+3. Sichere alle einmalig angezeigten Recovery-Codes.
+4. Lege auf Wunsch einen Anzeigenamen für die Begrüßung fest.
+5. Nutze die geführten `Ersten Schritte` oder öffne sie später erneut unter
+   `Einstellungen`.
+6. Prüfe die dokumentationsrelevanten Fächer.
+7. Prüfe den Stundenplan.
+8. Prüfe Stammgruppen, Kurse und Kinder. In einer leeren Installation müssen
+   zuerst mindestens eine Stammgruppe und ein Kurs angelegt werden.
+9. Erfasse eine erste Beobachtung und öffne sie anschließend erneut.
+10. Erstelle unter `Einstellungen > Datensicherung` ein Backup und lasse es
+    durch die App prüfen.
 
-1. Öffne das DMG und ziehe die App in den Ordner `Programme`.
-2. Starte die App aus `Programme` und bestätige bei Bedarf den macOS-Sicherheitshinweis.
-3. Richte beim ersten Start das lokale Konto ein und sichere die Recovery-Codes.
-4. Nutze `Erste Schritte` als kurze Orientierung oder überspringe sie bewusst.
-5. Schau dir das Dashboard und den heutigen Unterrichtskontext an.
-6. Öffne ein Schülerprofil und orientiere dich im Profilkopf und Überblick.
-7. Erfasse eine erste Beobachtung und öffne sie anschließend erneut.
-
-Diese Pilotversion enthält ausschließlich fiktive Testdaten.
-
-Bei einer leeren Anwendung zuerst Stammgruppe und Kurs anlegen. Im Laura-Pilot sind diese Daten bereits vorbereitet. `Erste Schritte` legt keine Beispiel-, Pilot- oder Demodaten an.
+`Erste Schritte` legt keine Beispiel-, Pilot- oder Demodaten an.
 
 <!-- pagebreak -->
 
-## Was soll getestet werden?
+## Sicherheit im Alltag
 
-Nutze anschließend die Excel-Datei im Ordner `04_Pilottest`.
+- Die App sperrt sich weiterhin nach dem gewählten Inaktivitätsintervall und
+  nach dem Ruhezustand. `Nie sperren` wird nicht angeboten.
+- Auf einem unterstützten Mac kann Touch ID nach einer Passwortanmeldung
+  optional aktiviert werden. Das Passwort bleibt immer verfügbar.
+- `Auf diesem Gerät angemeldet bleiben` ersetzt nur die erneute
+  Passworteingabe beim normalen Start; die automatische Sperre bleibt aktiv.
+- Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
+  FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
+- Wenn weder Passwort noch Recovery-Codes verfügbar sind, zeigt die App eine
+  technische Support-Reset-Anfrage. Der produktive Reset ist ohne freigegebenen
+  öffentlichen Schlüssel in Version {{PILOT_VERSION}} noch nicht freigeschaltet.
 
-- Schülerprofil Variante A
-- Entwicklungsgrafiken und Kompetenzübersicht
-- Bereich `Noch nicht dokumentiert`
-- Beobachtungen und Belege
-- Bericht, Finalisierung, Revisionen und finales PDF
-- LEG, Abschluss, Revisionen und finales PDF
-
-### Nicht bewerten
-
-- technische Details der eingebetteten Laufzeit
-- fehlende Cloud, Rollen oder mehrere Benutzerkonten
-- fehlende automatische Backups oder ein Auto-Updater
-- produktiven Support-Reset; die technische Anfrage ist sichtbar, aber ohne
-  freigegebenen öffentlichen Supportschlüssel noch nicht produktiv freigeschaltet
+Für Rückmeldungen die mitgelieferte Test-Excel verwenden und nur künstliche
+Testdaten einsetzen.

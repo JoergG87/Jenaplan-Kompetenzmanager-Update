@@ -1,5 +1,22 @@
 # Sprintplanung
 
+## Sprint 0.2R - Dokumentations-, Qualitäts- und Build-Abschluss
+
+**Ziel:** Den tatsächlich implementierten Stand als konsistent versionierten,
+leeren macOS-arm64-Pilot-Release-Kandidaten `0.2.0` mit kanonischen Dokumenten,
+Prüfsummen, Inventar und Laura-Übergabepaket abschließen.
+
+**Umfang:** Versionsabgleich, Benutzerhandbuch, Erste Schritte, Schnellstart,
+Release-Hinweise, Governance, vollständige automatisierte Prüfung, frischer
+Release-Build, Artefakt-Scan und bestehende kanonische Laura-Testmappe. Keine
+neue fachliche Funktion und kein Commit in diesem Auftrag.
+
+**Abnahmegrenze:** Version 0.2 ist technisch umgesetzt, aber die reale
+Release-Abnahme ist nicht vollständig. Echter Sleep/Wake, physische Touch ID,
+App-Switcher, vollständige Aktivierungs-/Widerrufsreise, produktiver
+Support-Reset, Developer-ID-Signierung und Apple-Notarisierung bleiben offen.
+Die produktive Public-Key-Registry bleibt leer.
+
 ## Sprint 0.2B.5 - Support-Reset-UI, Betriebsprozess und vollständiger Abschluss
 
 **Ziel:** Den vorhandenen signierten Offline-Core als bestätigten sichtbaren

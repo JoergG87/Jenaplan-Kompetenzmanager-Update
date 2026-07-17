@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
+from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -17,6 +18,8 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
     QLabel,
+    QMessageBox,
+    QPushButton,
     QStackedWidget,
     QTextEdit,
     QTreeWidget,
@@ -177,6 +180,38 @@ class LearningReportTest(unittest.TestCase):
         self.assertIn("Vorschau des aktuellen Entwurfs", dialog.preview_status.text())
         self.assertIn("noch nicht gespeicherte Änderungen", dialog.preview_status.text())
         self.assertEqual(dialog.draft_status.text(), "Ungespeicherte Änderungen")
+
+    def test_unsaved_close_actions_keep_complete_macos_button_text(self) -> None:
+        dialog = LearningReportDialog(self.preparation)
+        dialog.overall_input.setPlainText("Ungespeicherter Teststand")
+        captured: dict[str, object] = {}
+
+        def inspect_confirmation(message: QMessageBox) -> int:
+            buttons = {
+                button.text(): button
+                for button in message.buttons()
+                if isinstance(button, QPushButton)
+            }
+            discard = buttons["Änderungen verwerfen"]
+            keep = buttons["Weiter bearbeiten"]
+            captured.update(discard=discard, keep=keep)
+            self.assertGreaterEqual(
+                discard.minimumWidth(),
+                discard.fontMetrics().horizontalAdvance(discard.text()) + 40,
+            )
+            self.assertGreaterEqual(
+                keep.minimumWidth(),
+                keep.fontMetrics().horizontalAdvance(keep.text()) + 40,
+            )
+            self.assertEqual(keep.property("buttonRole"), "primary")
+            self.assertTrue(keep.isDefault())
+            self.assertIs(message.escapeButton(), keep)
+            return int(QMessageBox.DialogCode.Rejected)
+
+        with mock.patch.object(QMessageBox, "exec", new=inspect_confirmation):
+            dialog.reject()
+
+        self.assertEqual(set(captured), {"discard", "keep"})
 
     def test_subject_filter_preserves_selection_and_historical_visibility(self) -> None:
         dialog = LearningReportDialog(self.preparation)

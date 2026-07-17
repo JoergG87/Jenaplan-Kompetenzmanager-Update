@@ -1,5 +1,37 @@
 # Design-System
 
+## Version 0.2.0 - Arbeitsfenster und Bestätigungsdialoge
+
+Beobachtung, Bericht und LEG öffnen als maximierte normale Fenster auf dem
+Bildschirm des Hauptfensters. Sie verwenden die verfügbare Geometrie mit
+Menüleiste und Dock, niemals den macOS-Vollbildmodus mit eigenem Space.
+Vorhandene Scrollflächen bleiben die Absicherung für kleine Displays; kein
+Arbeitsfenster darf außerhalb der sichtbaren Geometrie beginnen.
+
+Bestätigungsbuttons zeigen ihren vollständigen Text ohne Eliding oder
+Abschneiden. Die Breite wird nach der finalen Schriftmetrik mit Reserve für
+Innenabstand und sichtbaren Fokusrahmen bestimmt. Zwischen Aktionen bleiben
+mindestens zwölf Pixel. Der sichere Fortsetzungsweg ist die blaue Primäraktion;
+Escape und Enter lösen keine verwerfende oder überspringende Sekundäraktion aus.
+
+Im LEG ist genau eine Arbeitsphase sichtbar und interaktiv. Nicht aktive Seiten
+bleiben für den Erhalt ungespeicherter Eingaben im Seitencontainer, werden aber
+aus Darstellung, Maus- und Tastaturinteraktion genommen. Animationen dürfen
+keinen Effekt auf dem gesamten Seitenstack hinterlassen.
+
+## Version 0.2.0 - Release-Dokumente und Screenshots
+
+Release-PDFs verwenden weiterhin die bestehende blau-graue Typografie,
+Seitenköpfe, Fußzeilen und A4-Raster des registrierten Dokumentbuilds.
+Release-Screenshots werden in 1180 × 760 und 1400 × 900 erzeugt, zeigen
+vollständige ruhige Zustände ohne abgeschnittene Primäraktionen und enthalten
+keine echten Daten, Geheimnisse oder Pfade.
+
+Sicherheitskommunikation bleibt sachlich: Touch ID ist optional, das Passwort
+bleibt Fallback, die automatische Sperre bleibt aktiv und die App-Sperre wird
+nicht als Verschlüsselung dargestellt. Ad-hoc-Signierung und offene reale
+Abnahmen dürfen visuell oder textlich nicht in eine Freigabe umgedeutet werden.
+
 ## Support-Reset - Sprint 0.2B.5
 
 Der Support-Reset ist ein ruhiger modaler Recoveryprozess, keine neue

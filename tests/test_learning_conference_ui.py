@@ -267,6 +267,52 @@ class LearningConferenceUiTest(unittest.TestCase):
         dialog.set_active_phase("strengths", focus=False)
         self.assertIn("Aktuell", dialog.phase_navigation.button_for("strengths").text())
 
+    def test_exactly_one_phase_stays_visible_and_interactive_across_navigation(self) -> None:
+        dialog = LearningConferenceDialog(self.preparation)
+        dialog.resize(1180, 760)
+        dialog.show()
+        self.app.processEvents()
+        dialog.text_inputs["strengths_text"].setPlainText("Bleibt im Entwurf erhalten")
+
+        sequence = ("strengths", "development", "goals", "evidence", "goals", "strengths")
+        for index, key in enumerate(sequence):
+            dialog.set_active_phase(key)
+            dialog.resize(1180 + (index % 2) * 220, 760 + (index % 2) * 140)
+            self.app.processEvents()
+            active_page = dialog.phase_pages[key]
+            self.assertIs(dialog.phase_stack.currentWidget(), active_page)
+            self.assertTrue(active_page.isVisibleTo(dialog))
+            self.assertTrue(active_page.isEnabled())
+            for other_key, page in dialog.phase_pages.items():
+                if other_key == key:
+                    continue
+                self.assertTrue(page.isHidden(), other_key)
+                self.assertFalse(page.isEnabled(), other_key)
+            focused = self.app.focusWidget()
+            self.assertTrue(
+                focused is not None
+                and (focused is active_page or active_page.isAncestorOf(focused))
+            )
+
+        self.assertEqual(
+            dialog.text_inputs["strengths_text"].toPlainText(),
+            "Bleibt im Entwurf erhalten",
+        )
+        self.assertIsNone(dialog.phase_stack.graphicsEffect())
+        dialog._close_choice_provider = lambda _parent: "discard"
+        dialog.close()
+
+    def test_existing_navigation_reaches_conversation_editing_roles(self) -> None:
+        dialog = LearningConferenceDialog(self.preparation)
+
+        for key in ("strengths", "development"):
+            self.assertTrue(dialog.phase_navigation.button_for(key).isEnabled())
+            dialog.set_active_phase(key, focus=False)
+            labels = [label.text() for label in dialog.phase_pages[key].findChildren(QLabel)]
+            self.assertIn(ROLE_CONVERSATION, labels)
+
+        self.assertEqual(dialog.active_phase_key, "development")
+
     def test_all_existing_fields_are_assigned_to_the_decided_phases(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
         expected = {

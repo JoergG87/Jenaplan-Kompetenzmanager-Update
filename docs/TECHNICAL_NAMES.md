@@ -1,5 +1,32 @@
 # Technical Naming Registry
 
+## Version 0.2.0 - UI-Stabilitätsnachschnitt
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `ensure_button_text_width` | Bestimmt eine sichere Button-Mindestbreite aus finaler Schriftmetrik, Innenabstand und Fokusreserve | Desktop UI |
+| `stabilize_message_box_buttons` | Wendet vollständige Textbreiten und ruhigen Abstand auf vorhandene `QMessageBox`-Aktionen an | Desktop UI |
+| `workspace_screen` | Wählt bevorzugt den Bildschirm des besitzenden Hauptfensters und sonst den aktuellen beziehungsweise primären Qt-Bildschirm | Desktop Window Policy |
+| `prepare_maximized_workspace` | Begrenzt Mindestgröße und Geometrie eines Arbeitsdialogs auf die verfügbare Bildschirmfläche ohne Vollbild-Space | Desktop Window Policy |
+| `exec_maximized_workspace` | Öffnet einen vorbereiteten Arbeitsdialog maximiert und modal über den bestehenden Qt-Dialogvertrag | Desktop Window Policy |
+
+Diese Namen steuern ausschließlich Qt-Layout und Fensterzustand. Sie besitzen
+keine fachliche Datenquelle, keine Persistenz und keine Plattformauthentifizierung.
+
+## Sprint 0.2R - Release-Artefakte
+
+| Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `release` | leerer macOS-Buildmodus ohne Pilot-, Fach- oder Runtime-Daten | Packaging |
+| `--with-laura-package` | expliziter Zusatzschalter für das Laura-Übergabepaket nach separat freigegebener Testmappen-Aktualisierung; ohne Schalter baut `release` kein ZIP | Packaging |
+| `Jenaplan-Kompetenzmanager-0.2.0-macOS-arm64.dmg` | kanonisches Installationsartefakt des Pilot-Release-Kandidaten | Packaging |
+| `RELEASE_INVENTORY-0.2.0.txt` | Build-Inventar mit Version, Commit, Plattform, Signaturstatus, Hashes und offenen realen Prüfungen | Release-Build |
+| `SHA256SUMS-0.2.0.txt` | SHA-256-Liste der freigegebenen Release-Ausgaben | Release-Build |
+| `Jenaplan-Kompetenzmanager-0.2.0-Pilotpaket-Laura-macOS-arm64.zip` | begrenztes Übergabepaket aus DMG, Dokumenten, kanonischer Testmappe, Hinweisen und Prüfsummen | Release-Build |
+
+Diese Namen bezeichnen Build-Artefakte und keine neuen fachlichen Entitäten,
+Datenquellen oder Runtime-Verträge.
+
 ## Sprint 0.2B.5 - Sichtbarer Support-Reset-Handoff
 
 | Technischer Name | Bedeutung | Eigentümer |

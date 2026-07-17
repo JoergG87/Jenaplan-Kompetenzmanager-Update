@@ -3,14 +3,11 @@
 ## 1. Titel und Versionsstand
 
 - Benutzerhandbuch zur Pilotversion {{PILOT_VERSION}}
-- Stand: 15. Juli 2026
+- Stand: 17. Juli 2026
 - Ausgabe: macOS für Apple Silicon
 
 Dieses Handbuch beschreibt den tatsächlich verfügbaren Stand der lokalen
 Pilot-App. Die abgebildeten Namen und Inhalte sind fiktiv.
-
-Die aktuelle kanonische Quelle beschreibt zusätzlich die Umsetzung aus Sprint
-0.2B.4a; ein finaler Release-Build des Handbuchs ist noch nicht erstellt.
 
 Kennzeichnung des Funktionsstands:
 
@@ -45,7 +42,7 @@ Die Kapitel zu `Schüler`, `Stammdaten`, `Einstellungen` und `Stundenplan` richt
 
 ### App installieren
 
-1. Die Datei `Jenaplan-Kompetenzmanager-Pilot-{{PILOT_VERSION}}-macOS-arm64.dmg` öffnen.
+1. Die Datei `Jenaplan-Kompetenzmanager-{{PILOT_VERSION}}-macOS-arm64.dmg` öffnen.
 2. Den `Jenaplan-Kompetenzmanager` im geöffneten Fenster auf `Programme` ziehen.
 3. Nach dem Kopieren das geöffnete Laufwerk auswerfen.
 4. Die App im Ordner `Programme` öffnen.
@@ -65,8 +62,10 @@ Eine vorhandene Datensammlung wird beim Start nicht durch Pilotdaten ersetzt.
 ### Lokales Konto und Erste Schritte
 
 Beim ersten normalen Start richtet die App ein lokales Lehrkraftkonto ein oder
-nimmt eine vorhandene ungeschützte Installation auf. Recovery-Codes werden
-einmalig angezeigt und müssen bewusst gesichert werden.
+nimmt eine vorhandene ungeschützte Pilotinstallation kontrolliert auf. Das
+Passwort muss mindestens 15 Zeichen haben. Ein optionaler Anzeigename wird nur
+für die persönliche Begrüßung verwendet. Recovery-Codes werden einmalig
+angezeigt und müssen vollständig und getrennt vom Mac gesichert werden.
 
 Nach einer erfolgreichen Passwortanmeldung kann unter
 `Einstellungen > Sicherheit` ausdrücklich `Auf diesem Gerät angemeldet bleiben`
@@ -115,6 +114,27 @@ Für diese App-Version ist noch kein produktiver öffentlicher Supportschlüssel
 freigegeben. Deshalb kann die technische Anfrage bereits erzeugt werden, der
 produktive Reset ist jedoch noch nicht freigeschaltet.
 
+### Anmeldung, Sperre und Recovery
+
+Beim normalen Start wird das lokale Passwort eingegeben; Enter startet die
+Anmeldung. Eine gespeicherte Geräteanmeldung kann die erneute Passworteingabe
+beim Start ersetzen, erzeugt aber immer nur eine neue flüchtige Sitzung. Beim
+Schließen der App endet diese Sitzung.
+
+`Jetzt sperren`, das gewählte Inaktivitätsintervall und der Ruhezustand legen
+eine vollständig verdeckende Sperransicht über die Fachoberfläche. Ungespeicherte
+Eingaben bleiben darunter erhalten. Entsperrt wird mit Passwort oder, falls
+ausdrücklich aktiviert und verfügbar, mit Touch ID. Ein Touch-ID-Abbruch löst
+keine Dialogschleife aus; das Passwort kann sofort verwendet werden.
+
+Über `Recovery-Code verwenden` kann genau ein noch unbenutzter Code bestätigt
+werden. Danach wird ein neues Passwort festgelegt und ein vollständig neuer
+Satz Recovery-Codes erzeugt und bestätigt. Der verwendete Code und der alte
+Satz sind anschließend ungültig. Sind Passwort und alle Recovery-Codes verloren,
+bleibt nur der sichtbare Support-Reset-Weg; dieser ist in Version
+{{PILOT_VERSION}} ohne freigegebenen öffentlichen Schlüssel noch nicht
+produktiv freigeschaltet.
+
 Nach erfolgreicher Anmeldung kann die Ansicht `Erste Schritte` erscheinen. Sie
 erklärt kurz den Zweck der App, verweist auf lokale Datenhaltung und führt zu
 vorhandenen Bereichen wie `Stammdaten`, `Schüler`, `Einstellungen` und
@@ -122,12 +142,13 @@ vorhandenen Bereichen wie `Stammdaten`, `Schüler`, `Einstellungen` und
 Beobachtungen oder Backups automatisch an. Sie kann übersprungen und später in
 `Einstellungen` mit `Erste Schritte erneut öffnen` wieder aufgerufen werden.
 
-### Fiktive Pilotdaten
+### Frische und bestehende Installation
 
-Die Laura-Pilotversion enthält 24 fiktive Kinder und vorbereitete Beispiele für
-Gruppen, Kurse, Stundenplan, Beobachtungen, Berichte, Revisionen und
-Lernentwicklungsgespräche. Diese Inhalte sind ausschließlich zum Erproben der
-App gedacht und als `Fiktive Pilotdaten` gekennzeichnet.
+Der Release-Kandidat enthält keine Kinder, Pilotdaten oder Dokumente. Eine
+frische Installation beginnt deshalb nach der Kontoanlage mit einer leeren
+fachlichen Datenbasis. Bei einer bestehenden Pilotinstallation bleiben die
+vorhandenen fachlichen Daten erhalten; eine bisher ungeschützte Installation
+wird erst nach erfolgreicher Kontoaufnahme zugänglich.
 
 ### Erste Einrichtung einer leeren Anwendung
 
@@ -145,8 +166,9 @@ Stammgruppe und Kurs sind beim Schüler Pflichtzuordnungen. Ohne eine vorhandene
 Stammgruppe und einen vorhandenen Kurs kann kein Schüler vollständig angelegt
 werden.
 
-Der Laura-Pilot enthält bereits fiktive Stammgruppen, Kurse und Kinder. Dort ist
-diese Ersteinrichtung nicht erforderlich.
+Der Release-Kandidat enthält keine vorbereiteten Kinder. Diese Ersteinrichtung
+ist deshalb bei einer frischen Installation erforderlich; eine bestehende
+Pilotinstallation behält ihren vorhandenen Stand.
 
 ### Pilotversion aktualisieren
 
@@ -718,9 +740,28 @@ Kursfarben helfen bei der Orientierung in Schülerlisten und Profilen. Die Farbe
 
 Die produktive Oberfläche bietet eine direkte Aktiv-/Inaktiv-Steuerung nur bei Stundenplaneinträgen. Historisch deaktivierte Fach- oder Kompetenzreferenzen können in fachlichen Ansichten lesbar bleiben, werden aber nicht über `Stammdaten` administriert. Für Kinder, Stammgruppen, Kurse und Kursverbünde gibt es keine sichtbare Aktiv-/Inaktiv-Aktion.
 
-### Weitere Einstellungen
+### Persönliche Begrüßung und Sicherheit
 
-Weitere allgemeine Einstellungen – etwa mehrere Benutzerkonten, Rollen, Schulname, Logo, Notenskalen, Speicherort, Backup-Plan, Touch ID, Keychain oder Cloud-Zugang – sind in der aktuellen Oberfläche nicht vorhanden.
+Unter `Einstellungen > Sicherheit` kann der optionale Anzeigename geändert
+werden. Dort stehen außerdem die Sperrzeit 5, 10, 15, 30 oder 60 Minuten,
+`Passwort ändern`, `Recovery-Codes neu erzeugen`, `Jetzt sperren` und die
+Wiederherstellungsmöglichkeiten zur Verfügung. Eine Option `Nie sperren` gibt
+es nicht.
+
+Nach Bestätigung des aktuellen Passworts kann auf unterstützten Macs
+`Auf diesem Gerät angemeldet bleiben` aktiviert werden. Das App-Passwort wird
+nicht gespeichert. `Gespeicherte Anmeldung widerrufen` entfernt die
+Komfortanmeldung; Passwortänderung und Recovery widerrufen sie ebenfalls.
+`Touch ID zum Entsperren verwenden` erscheint nur, wenn die lokale
+Systemauthentifizierung verfügbar und ein Gerätecredential aktiv ist. Touch ID
+bleibt optional, und das Passwort bleibt als Fallback sichtbar.
+
+### Datensicherung und Restore
+
+Unter `Einstellungen > Datensicherung` können Backups erstellt und geprüft
+sowie nach einer datensparsamen Vorschau bewusst wiederhergestellt werden. Ein
+fachlicher Restore verändert weder Security Store noch Geräteanmeldung,
+Anzeigename oder Stand der geführten `Ersten Schritte`.
 
 ## 15. Typische Arbeitsabläufe
 
@@ -955,6 +996,11 @@ Die Arbeitsdaten liegen im persönlichen lokalen Datenordner des
 Jenaplan-Kompetenzmanagers. Dokumente und erzeugte Ausgaben werden ebenfalls
 lokal verwaltet. Die App überträgt Daten nicht automatisch in eine Cloud.
 
+Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
+FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen. Personen
+mit lokalen Administratorrechten können grundsätzlich auf lokale Dateien
+zugreifen. Ein verlorenes App-Passwort löscht keine fachlichen Daten.
+
 ### Was Lehrkräfte beachten sollten
 
 - Nur schulisch freigegebene Geräte und Speicherorte verwenden.
@@ -980,6 +1026,18 @@ erstellt, geprüft und für eine Wiederherstellung vorbereitet werden. Es gibt
 keine automatische Sicherung, keine Cloud-Synchronisation und keinen
 vollständigen Datenexport.
 
+Security Store, Recovery-Codes, gespeicherte Geräteanmeldung und
+`app-preferences.json` sind kein Bestandteil des fachlichen Backups. Ein Restore
+übernimmt deshalb keine Anmeldedaten.
+
+### Geräteabgabe und Gerätewechsel
+
+Vor einer Geräteabgabe die gespeicherte Anmeldung in den Sicherheitseinstellungen
+widerrufen. Anschließend müssen App-Daten, verwaltete Dokumente, Backups und der
+getrennte Security Store gemeinsam nach dem schulisch freigegebenen Verfahren
+gelöscht werden. Ein vollständiger Umzug des Runtime-Ordners und ein Export des
+Schlüsselbund-Eintrags werden nicht unterstützt.
+
 ## 19. Bewusst noch nicht verfügbare Funktionen
 
 ### Produktiv ausdrücklich nicht vorhanden
@@ -997,7 +1055,11 @@ vollständigen Datenexport.
 - Word-Export.
 - Vertretungsplan, Feiertagskalender, Pausenverwaltung oder externe Kalenderanbindung.
 - Automatische Archivierungs-, Aufbewahrungs- oder Löschfristen.
-- Verschlüsselungs- oder Passwortverwaltung innerhalb der App.
+- Verschlüsselung der Datenbank, Dokumente oder Backups.
+- Produktiver Support-Reset ohne freigegebenen öffentlichen Schlüssel.
+- Developer-ID-Signierung oder Apple-Notarisierung dieses Kandidaten.
+- Abgeschlossene reale Abnahme von Sleep/Wake, physischer Touch ID,
+  App-Switcher und vollständiger Aktivierungs-/Widerrufsreise.
 
 ## 20. Glossar
 

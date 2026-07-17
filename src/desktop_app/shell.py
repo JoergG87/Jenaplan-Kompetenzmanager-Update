@@ -84,6 +84,7 @@ from src.desktop_app.view_models.master_data_view_model import CourseGroupViewMo
 from src.desktop_app.view_models.learning_conference_view_model import (
     build_learning_conference_completion_error,
 )
+from src.desktop_app.window_policy import exec_maximized_workspace
 
 
 class AppShell(QMainWindow):
@@ -1306,7 +1307,7 @@ class AppShell(QMainWindow):
         dialog.finalize_confirmed.connect(finalize_report)
         dialog.revision_open_requested.connect(open_revision)
         dialog.pdf_requested.connect(self.export_learning_report_pdf)
-        dialog.exec()
+        exec_maximized_workspace(dialog, self)
 
     def open_learning_conference_dialog(self, student_id: str) -> None:
         """Open one unambiguous LEG draft or let the teacher choose calmly."""
@@ -1424,7 +1425,7 @@ class AppShell(QMainWindow):
         dialog.completion_requested.connect(complete_conference)
         dialog.revision_open_requested.connect(open_revision)
         refresh_revision_status()
-        dialog.exec()
+        exec_maximized_workspace(dialog, self)
 
     def export_learning_report_pdf(self, output_model: object) -> None:
         """Hand a complete neutral output model to the unchanged PDF renderer."""
@@ -1492,9 +1493,10 @@ class AppShell(QMainWindow):
             ),
             prefill_subject_id=self.pending_observation_subject_id,
             prefill_context=prefill.context if prefill is not None else "",
+            parent=self,
         )
         self._clear_pending_timetable_observation()
-        if dialog.exec():
+        if exec_maximized_workspace(dialog, self):
             self.show_student_profile(student.student_id)
             self.status_label.setText("Beobachtung wurde gespeichert.")
 
@@ -1525,9 +1527,10 @@ class AppShell(QMainWindow):
             ),
             prefill_subject_id=self.pending_observation_subject_id,
             prefill_context=prefill.context if prefill is not None else "",
+            parent=self,
         )
         self._clear_pending_timetable_observation()
-        if dialog.exec():
+        if exec_maximized_workspace(dialog, self):
             self.refresh_overview()
             self.refresh_students()
             self.status_label.setText("Beobachtung wurde gespeichert.")
@@ -1555,8 +1558,9 @@ class AppShell(QMainWindow):
                 student.student_id,
                 draft,
             ),
+            parent=self,
         )
-        if dialog.exec():
+        if exec_maximized_workspace(dialog, self):
             self.show_student_profile(student.student_id)
             self.status_label.setText("Beobachtung wurde aktualisiert.")
 

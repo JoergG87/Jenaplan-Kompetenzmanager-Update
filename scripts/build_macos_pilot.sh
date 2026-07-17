@@ -5,12 +5,26 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 DATA_MODE="empty"
-if [ "${1:-}" = "--data-mode" ]; then
-    DATA_MODE="${2:-}"
-    shift 2
-fi
-if [ "$#" -ne 0 ] || { [ "$DATA_MODE" != "empty" ] && [ "$DATA_MODE" != "laura" ]; }; then
-    echo "Aufruf: scripts/build_macos_pilot.sh [--data-mode empty|laura]" >&2
+BUILD_LAURA_PACKAGE="0"
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --data-mode)
+            DATA_MODE="${2:-}"
+            shift 2
+            ;;
+        --with-laura-package)
+            BUILD_LAURA_PACKAGE="1"
+            shift
+            ;;
+        *)
+            echo "Unbekannte Option: $1" >&2
+            exit 2
+            ;;
+    esac
+done
+if { [ "$DATA_MODE" != "empty" ] && [ "$DATA_MODE" != "laura" ] && [ "$DATA_MODE" != "release" ]; } \
+    || { [ "$BUILD_LAURA_PACKAGE" = "1" ] && [ "$DATA_MODE" != "release" ]; }; then
+    echo "Aufruf: scripts/build_macos_pilot.sh [--data-mode empty|laura|release] [--with-laura-package]" >&2
     exit 2
 fi
 
@@ -53,7 +67,10 @@ PYI_DIST="$BUILD_ROOT/pyinstaller-dist"
 PYI_WORK="$BUILD_ROOT/pyinstaller-work"
 DIST_ROOT="$ROOT/dist/macos"
 APP_PATH="$DIST_ROOT/$APP_NAME.app"
-if [ "$DATA_MODE" = "laura" ]; then
+if [ "$DATA_MODE" = "release" ]; then
+    DMG_NAME="$APP_NAME-$VERSION-macOS-$ARCHITECTURE.dmg"
+    VOLUME_NAME="Jenaplan $VERSION"
+elif [ "$DATA_MODE" = "laura" ]; then
     DMG_NAME="$APP_NAME-Pilot-$VERSION-macOS-$ARCHITECTURE.dmg"
     VOLUME_NAME="Jenaplan Pilot $VERSION"
 else
@@ -70,7 +87,11 @@ FIRST_STEPS_PDF="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Erste-Schritte.pdf"
 QUICKSTART_PDF="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Schnellstart-Lehrkraefte.pdf"
 BACKUP_GUIDE_PDF="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Backup-Anleitung.pdf"
 BACKUP_SCRIPT="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Backup.sh"
-LAURA_ZIP="$ROOT/dist/${APP_NAME}_Pilot_${VERSION}_Laura.zip"
+RELEASE_NOTES="$DIST_ROOT/$APP_NAME-$VERSION-Release-Notes.md"
+RELEASE_CHECKSUMS="$DIST_ROOT/SHA256SUMS-$VERSION.txt"
+RELEASE_INVENTORY="$DIST_ROOT/RELEASE_INVENTORY-$VERSION.txt"
+LAURA_ZIP="$ROOT/dist/$APP_NAME-$VERSION-Pilotpaket-Laura-macOS-$ARCHITECTURE.zip"
+LAURA_TEST_WORKBOOK="${LAURA_TEST_WORKBOOK:-$ROOT/docs/Pilottest_Laura_Schuelerprofil_Variante_A.xlsx}"
 MOUNT_DIR=""
 
 cleanup_mount() {
@@ -80,9 +101,8 @@ cleanup_mount() {
 }
 trap cleanup_mount EXIT
 
-rm -rf "$BUILD_ROOT"
+rm -rf "$BUILD_ROOT" "$DIST_ROOT"
 mkdir -p "$BUILD_ROOT" "$DIST_ROOT"
-rm -rf "$APP_PATH" "$DMG_PATH" "$DMG_PATH.sha256"
 
 python3 -m venv "$VENV"
 "$VENV/bin/python" -m pip install --disable-pip-version-check -r requirements-macos-build.txt
@@ -131,7 +151,7 @@ export MACOSX_DEPLOYMENT_TARGET="13.0"
     packaging/macos_pilot.spec
 
 ditto "$PYI_DIST/$APP_NAME.app" "$APP_PATH"
-if [ "$DATA_MODE" = "empty" ] && find "$APP_PATH" -type f \( -name '*.sqlite' -o -name '*.db' \) -print -quit | grep -q .; then
+if { [ "$DATA_MODE" = "empty" ] || [ "$DATA_MODE" = "release" ]; } && find "$APP_PATH" -type f \( -name '*.sqlite' -o -name '*.db' \) -print -quit | grep -q .; then
     echo "Abbruch: Das App-Bundle enthält unerwartet eine Datenbank." >&2
     exit 1
 fi
@@ -218,20 +238,62 @@ shasum -a 256 "$FIRST_STEPS_PDF" > "$FIRST_STEPS_PDF.sha256"
 shasum -a 256 "$QUICKSTART_PDF" > "$QUICKSTART_PDF.sha256"
 shasum -a 256 "$BACKUP_GUIDE_PDF" > "$BACKUP_GUIDE_PDF.sha256"
 shasum -a 256 "$BACKUP_SCRIPT" > "$BACKUP_SCRIPT.sha256"
+cp docs/RELEASE_NOTES.md "$RELEASE_NOTES"
 
-if [ "$DATA_MODE" = "laura" ]; then
+shasum -a 256 \
+    "$DMG_PATH" \
+    "$INSTALLATION_PDF" \
+    "$MANUAL_PDF" \
+    "$FIRST_STEPS_PDF" \
+    "$QUICKSTART_PDF" \
+    "$BACKUP_GUIDE_PDF" \
+    "$BACKUP_SCRIPT" \
+    "$RELEASE_NOTES" \
+    > "$RELEASE_CHECKSUMS"
+
+BUILD_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+{
+    echo "Jenaplan-Kompetenzmanager - Release-Inventar"
+    echo
+    echo "Version: $VERSION"
+    echo "Git-Commit: $GIT_COMMIT"
+    echo "Quellbaum: $SOURCE_TREE_STATE"
+    echo "Buildzeit: $BUILD_TIME"
+    echo "Architektur: $ARCHITECTURE"
+    echo "Bundle-ID: de.jenaplan.kompetenzmanager"
+    echo "Mindest-macOS: 13.0"
+    echo "Signierung: $SIGNING_STATUS"
+    echo "Notarisierung: nicht durchgeführt"
+    echo "Datenmodus: $DATA_MODE (Release-Kandidat ohne Pilot- oder Echtdaten)"
+    echo "Produktiver Support-Reset: nicht freigeschaltet; Public-Key-Registry leer"
+    echo
+    echo "Automatisierter Teststand: siehe Abschlussbericht zum Release-Kandidaten"
+    echo "Offene reale Prüfungen: echter Sleep/Wake; physische Touch-ID-Systemaufforderung und Fingerabdruck; App-Switcher; vollständige reale Aktivierungs-/Widerrufsreise; produktiver Support-Reset; Developer-ID-Signierung; Apple-Notarisierung."
+    echo
+    echo "Artefakte (Bytes, SHA-256, Datei):"
+    for artifact in "$DMG_PATH" "$MANUAL_PDF" "$FIRST_STEPS_PDF" "$QUICKSTART_PDF" "$INSTALLATION_PDF" "$BACKUP_GUIDE_PDF" "$RELEASE_NOTES"; do
+        echo "$(stat -f '%z' "$artifact")  $(shasum -a 256 "$artifact" | awk '{print $1}')  $(basename "$artifact")"
+    done
+} > "$RELEASE_INVENTORY"
+
+if [ "$DATA_MODE" = "release" ] && [ "$BUILD_LAURA_PACKAGE" = "1" ]; then
     "$VENV/bin/python" scripts/build_laura_pilot_package.py \
         --output-root "$ROOT/dist" \
         --version "$VERSION" \
+        --architecture "$ARCHITECTURE" \
         --dmg "$DMG_PATH" \
-        --installation-pdf "$INSTALLATION_PDF" \
         --first-steps-pdf "$FIRST_STEPS_PDF" \
         --manual-pdf "$MANUAL_PDF" \
         --quickstart-pdf "$QUICKSTART_PDF" \
-        --pilot-workbook docs/Pilottest_Laura_Schuelerprofil_Variante_A.xlsx \
-        --backup-pdf "$BACKUP_GUIDE_PDF" \
-        --backup-script "$BACKUP_SCRIPT"
-    shasum -a 256 "$LAURA_ZIP" > "$LAURA_ZIP.sha256"
+        --installation-pdf "$INSTALLATION_PDF" \
+        --backup-guide-pdf "$BACKUP_GUIDE_PDF" \
+        --pilot-workbook "$LAURA_TEST_WORKBOOK" \
+        --release-notes "$RELEASE_NOTES" \
+        --release-inventory "$RELEASE_INVENTORY"
+    LAURA_ZIP_SHA="$(shasum -a 256 "$LAURA_ZIP" | awk '{print $1}')"
+    echo "$LAURA_ZIP_SHA  $(basename "$LAURA_ZIP")" > "$LAURA_ZIP.sha256"
+    echo "$LAURA_ZIP_SHA  $(basename "$LAURA_ZIP")" >> "$RELEASE_CHECKSUMS"
+    echo "$(stat -f '%z' "$LAURA_ZIP")  $LAURA_ZIP_SHA  $(basename "$LAURA_ZIP")" >> "$RELEASE_INVENTORY"
 fi
 
 echo "App: $APP_PATH"
@@ -242,9 +304,11 @@ echo "Erste Schritte: $FIRST_STEPS_PDF"
 echo "Schnellstart: $QUICKSTART_PDF"
 echo "Backup-Anleitung: $BACKUP_GUIDE_PDF"
 echo "Backup-Skript: $BACKUP_SCRIPT"
-if [ "$DATA_MODE" = "laura" ]; then
+if [ "$DATA_MODE" = "release" ] && [ "$BUILD_LAURA_PACKAGE" = "1" ]; then
     echo "Laura-ZIP: $LAURA_ZIP"
 fi
+echo "Release-Prüfsummen: $RELEASE_CHECKSUMS"
+echo "Release-Inventar: $RELEASE_INVENTORY"
 echo "Pilotdaten: $DATA_MODE"
 echo "Quellbaum: $SOURCE_TREE_STATE bei $GIT_COMMIT"
 echo "Signierung: $SIGNING_STATUS"

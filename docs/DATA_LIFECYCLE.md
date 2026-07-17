@@ -1,5 +1,22 @@
 # Data Lifecycle
 
+## Sprint 0.2R - Release-Build und Übergabe
+
+Der Release-Build entfernt seine bekannten Build- und macOS-Ausgabeverzeichnisse,
+erzeugt den `release`-Payload ohne Startdaten, baut Security-Bridge, App und DMG
+frisch, signiert ad hoc sofern keine Developer-ID verfügbar ist, verifiziert die
+Signatur und erzeugt Dokumente, Prüfsummen und Inventar aus kanonischen Quellen.
+
+Das Laura-ZIP wird ausschließlich aus diesen aktuellen Ausgaben und der
+bestehenden kanonischen Testmappe zusammengestellt. Seine interne
+`SHA256SUMS.txt` bindet alle enthaltenen Dateien. Entpacken, Inhaltsliste,
+Dokumentöffnung, Mappe und DMG werden anschließend geprüft. Build- und
+Übergabeartefakte schreiben weder fachliche noch Security-Daten zurück.
+
+Reale Testresultate werden nur nach tatsächlicher Durchführung in der
+Testmappe erfasst. Offene Hardware-, Produktivschlüssel-, Signierungs- und
+Notarisierungsprüfungen bleiben offen.
+
 ## Sprint 0.2B.5 - Sichtbarer Support-Reset und Betriebsprozess
 
 1. Nutzer erzeugt lokal genau eine aktive technische Anfrage; eine neue widerruft
