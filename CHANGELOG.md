@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## Sprint 0.2B.2 - Security Core
+
+### Added
+
+- Eigenstaendigen Domain-/Application-/Infrastructure-Security-Core mit separatem versioniertem SQLite Store, fail-closed Enrollment-Marker und restriktiven Runtime-Dateirechten ergaenzt.
+- Argon2id-Passworthashing, unveraendernde Passwort-Policy, persistente Fehlversuchsdrosselung, zufaellige Installations-/Nutzer-IDs und lokales Ein-Konto-Modell umgesetzt.
+- Zehn einmalige lokal gesalzene und gehashte Recovery-Codes je Satz sowie crash-sichere zweiphasige Regeneration umgesetzt.
+- Explizite Security-Ausschluesse fuer bestehende Backup-, Restore-, Export- und Diagnosegrenzen sowie umfassende Core-/Kompatibilitaetstests ergaenzt.
+
+### Security
+
+- Die Anwendungssperre ist keine Verschluesselung der Datenbank, Dokumente oder Backups; direkter lokaler Dateizugriff bleibt ein dokumentiertes Restrisiko.
+- Store-/Marker-Widersprueche, Korruption und unbekannte neuere Versionen werden fail-closed behandelt. Passwortverlust loescht oder migriert keine fachlichen Daten.
+- Argon2id-Time-Cost nach realer Pilot-Mac-Kalibrierung von 3 auf 6 erhoeht; Memory 65536 KiB, Parallelism 1, Salt 16 Byte, Hash 32 Byte sowie Schema- und Hashformatversion 1 bleiben unveraendert. Time-Cost-3-PHC-Hashes bleiben pruefbar und werden nur nach erfolgreicher Anmeldung aktualisiert.
+
+### Verified
+
+- 40 fokussierte Security-Core-Tests sowie 724 Gesamttests und 67 Subtests erfolgreich ausgefuehrt; Crashpunkte, Uhrmanipulation, Parallelzugriff, Geheimnisschutz und Backup-/Restore-Ausschluesse sind abgedeckt.
+- `compileall`, Offscreen-Import, realer Argon2id-Hash-/Verify-Smoke sowie isolierter arm64-PyInstaller-Build mit vorhandenem Packaged-App-Smoke erfolgreich.
+- Kalibrierung nach je einem Aufwaermlauf und acht Messungen: Time Cost 4 `146,00 / 145,83 / 149,08 / 145,93 / 150,41 / 148,37 / 145,75 / 145,96 ms` (Mittel `147,17 ms`), Time Cost 5 `182,87 / 182,94 / 182,41 / 182,34 / 184,69 / 182,34 / 182,36 / 182,47 ms` (Mittel `182,80 ms`) und Time Cost 6 `219,66 / 219,18 / 219,30 / 221,22 / 219,21 / 220,08 / 219,71 / 219,85 ms` (Mittel `219,78 ms`).
+
+### Not Changed
+
+- Keine Login-, Konto-, Sperr-, Recovery- oder Passwortaenderungs-UI, keine Sitzung, keine Startblockade, keine fachliche Datenbankmigration, keine geaenderten fachlichen IDs, kein Ed25519, Support-Reset, Keychain, Cloudkonto, Rollen- oder Mehrbenutzerbetrieb. Kein Commit.
+
 ## Sprint 0.2A.4a - Asynchrone Backup-/Restore-Operationen
 
 ### Added

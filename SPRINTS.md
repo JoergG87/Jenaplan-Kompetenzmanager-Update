@@ -2,6 +2,20 @@
 
 SPRINTS.md dient ausschließlich der operativen Projektplanung.
 
+## Sprint 0.2B.2 - Security Core
+
+- [x] Anwendungssperre klar von Datenbank-, Dokument- und Backupverschluesselung abgegrenzt
+- [x] separaten versionierten Security Store und fail-closed Enrollment-Marker vertraglich festgelegt
+- [x] zufaellige Installations-/Nutzer-IDs und lokales Ein-Konto-Modell vorbereitet
+- [x] Argon2id-Passwortvertrag, Policy und atomaren Rehash-/Passwortwechselpfad umgesetzt
+- [x] Argon2id auf dem Pilot-Mac kalibriert und kleinsten geeigneten Time Cost 6 mit 219,78 ms Mittelwert festgelegt
+- [x] persistente Login- und getrennte Recovery-Drosselung mit injizierbaren Uhren umgesetzt
+- [x] einmalige gehashte Recovery-Codes und zweiphasige Regeneration umgesetzt
+- [x] Security-Artefakte explizit aus Backup, Restore, Export und Diagnose ausgeschlossen
+- [x] keine UI, Sitzung, Startblockade, Verschluesselung, Support-Reset, Rollen oder Mehrbenutzerfunktion eingefuehrt
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+- [ ] produktive Startintegration und sichtbare Login-/Recovery-Flows in eigenen spaeteren Sprints
+
 ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nicht.
 
 ## Sprintübersicht

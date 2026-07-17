@@ -4,6 +4,41 @@ Dieses Dokument definiert die verbindlichen Datenquellen des Jenaplan-Kompetenzm
 
 SQLite ist die produktive lokale Source of Truth. Workbook-Tabellen sind historische Legacy-Projektionen unter `legacy/excel/`.
 
+## Separater Security Store v1
+
+`<runtime-root>/security/security.sqlite` ist eine rein technische lokale
+Security-Quelle und ausdruecklich keine fachliche Source of Truth. Sie liegt
+ausserhalb von `documents/`, verwendet eine von `kompetenzmanager.sqlite`
+unabhaengige Schema-/Formatversion und besitzt keine fachlichen Fremdschluessel.
+Die fachliche `DATABASE_COMPATIBILITY_VERSION = 1` und das Backupformat v1
+bleiben unveraendert.
+
+Tabellen des Security-Schemas v1:
+
+| Tabelle | Primary Key | Foreign Keys / Eindeutigkeit | Inhalt |
+| --- | --- | --- | --- |
+| `security_metadata` | Singleton `metadata_id = 1` | keine | Schema-/Formatversion und technische Zeitpunkte |
+| `installations` | `installation_id` | `marker_reference` eindeutig | zufaellige UUIDv4, nicht geheime Markerbindung, Status und Zeitpunkte |
+| `local_accounts` | `user_id` | `installation_id -> installations`, genau ein Konto je Installation | Argon2id-PHC-String, Hashformatversion, Kontostatus, Login- und getrennte Recovery-Drosselung, Zeitpunkte |
+| `recovery_code_sets` | `recovery_set_id` | `user_id -> local_accounts`; hoechstens ein aktiver und ein vorbereiteter Satz je Nutzer | zweiphasiger Satzstatus und Zeitpunkte |
+| `recovery_codes` | `recovery_code_id` | `recovery_set_id -> recovery_code_sets`; Hash je Satz eindeutig | individueller Salt, SHA-256-Hash, Formatversion, benutzt/widerrufen und Zeitpunkte |
+
+Unzulaessig sind E-Mail-Adresse, Schulname, Betriebssystem-Benutzername,
+Klarname, Rolle, Passwort-Hinweis, Sicherheitsfrage sowie jeder Bezug auf
+Schueler-, Beobachtungs-, Berichts-, LEG- oder Dokument-IDs. Klartextpasswoerter
+und Klartext-Recovery-Codes sind keine Datenquelle und werden nie persistiert.
+
+`<runtime-root>/security/enrollment.marker` ist ein streng versionierter,
+nicht geheimer technischer Nachweis. Er enthaelt ausschliesslich Formatversion
+und zufaellige Markerreferenz, ist kein kryptografischer Integritaetsnachweis
+und keine zweite Authentifizierungsquelle.
+
+Explizit ausgeschlossen aus `.jkmbackup`, Restore-Staging, Restore-Journal,
+Restore-Recovery, Exporten und Diagnose-Allowlists sind das gesamte
+`security/`-Verzeichnis, `security.sqlite`, alle SQLite-Sidecars und
+`enrollment.marker`. Fachlicher Restore darf diese Quellen weder ersetzen noch
+loeschen oder materialisieren.
+
 ## Sprint 0.2A.4 - Sichtbare allgemeine Betriebsprojektion
 
 Die Datensicherungs-Unterseite liest ausschliesslich explizit gewaehlte `.jkmbackup`-Dateien und vollstaendig verifizierte Archive im bestehenden Runtime-Standardordner `backups/`. Die Quellen werden nur durch vorhandene Backup-/Restore-Services geprueft; Namen, IDs, Texte, Originaldateinamen und Pfade gelangen nicht in die UI-Projektion. Es entsteht keine persistente UI-Historie und keine neue Datenquelle.

@@ -18,6 +18,33 @@ Die View Data Ownership in `docs/VIEW_DATA_OWNERSHIP.md` ist Source of Truth fue
 
 Der Data Lifecycle in `docs/DATA_LIFECYCLE.md` ist Source of Truth fuer freigegebene Schreibprozesse.
 
+## Security-Grenze ab Version 0.2
+
+Die lokale Anwendungssperre schuetzt ausschliesslich den normalen Zugang ueber
+die Anwendung. Sie ist keine Verschluesselung der Datenbank, Dokumente oder
+Backups. `kompetenzmanager.sqlite`, verwaltete Dokumente und `.jkmbackup`
+bleiben unverschluesselt; FileVault, ein geschuetztes Betriebssystemkonto und
+sichere Geraeteverwaltung bleiben notwendig.
+
+Authentifizierungsdaten sind technisch und fachlich vollstaendig von allen
+Schueler-, Beobachtungs-, Kompetenz-, Berichts-, LEG- und Dokumentdaten
+getrennt. Der kanonische Security Store liegt unter
+`<runtime-root>/security/security.sqlite`, besitzt eine eigene Versionierung
+und ist niemals Bestandteil von Backup, Restore, Export oder Diagnose. Ein
+Restore fachlicher Daten ersetzt, loescht oder initialisiert ihn nicht.
+
+Version 0.2 erlaubt genau ein aktives lokales Lehrkraftkonto je Installation.
+Es gibt kein Masterkennwort, keinen Pepper im App-Bundle, kein Cloudkonto,
+keinen Cloud-Reset, keine Rollen und keinen Mehrbenutzerbetrieb. Passwortverlust
+darf fachliche Daten weder loeschen noch unbrauchbar machen. Der Security Core
+bleibt eine eigenstaendige Domain-/Application-/Infrastructure-Grenze; Qt,
+fachliche Adapter und Widgets greifen nicht direkt auf den Store zu.
+
+Sprint 0.2B.2 stellt ausschliesslich diesen Core bereit. Eine spaetere
+Startintegration muss Neuinstallation und ungeschuetzte Bestandsinstallation
+bewusst unterscheiden. Sie darf erst nach eigener Freigabe die App sperren;
+der produktive Start bleibt in diesem Sprint unveraendert und unblocked.
+
 ## Architekturprinzipien
 
 PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.

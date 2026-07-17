@@ -3,3 +3,4 @@ pillow
 PySide6
 reportlab
 pypdf
+argon2-cffi

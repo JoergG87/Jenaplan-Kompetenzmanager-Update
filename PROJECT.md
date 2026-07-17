@@ -1,5 +1,15 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Security Core ab Version 0.2
+
+Die Architektur besitzt einen fachlich getrennten Security Core unter
+`<runtime-root>/security/`. Die App-Sperre ist keine Verschluesselung der
+Datenbank, Dokumente oder Backups. Der Security Store wird nicht gesichert,
+restored, exportiert oder diagnostiziert und ist nicht mit fachlichen IDs oder
+Inhalten verbunden. Sprint 0.2B.2 liefert nur den testbaren Core; App-Start,
+Sitzung und sichtbare Login-/Recovery-Oberflaechen bleiben unveraendert fuer
+einen spaeter freizugebenden Integrationssprint.
+
 ## Aktueller Produktstand
 
 Der Jenaplan-Kompetenzmanager ist eine lokale Python-/PySide6-Desktop-Anwendung fuer Lehrkraefte. PySide ist die aktive Produktoberflaeche, SQLite die produktive lokale Datenhaltung.

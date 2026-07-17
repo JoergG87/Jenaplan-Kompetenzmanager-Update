@@ -2,6 +2,49 @@
 
 Dieses Dokument ist ab Sprint 4 die verbindliche Registry fuer technische Namen.
 
+## Sprint 0.2B.2 - Security Core
+
+Registrierte Module:
+
+- `src.security.domain`
+- `src.security.ports`
+- `src.security.application`
+- `src.security.infrastructure.argon2_hasher`
+- `src.security.infrastructure.sqlite_repository`
+- `src.security.infrastructure.system`
+- `tests/test_security_core.py`
+- `tests/test_security_recovery.py`
+
+Runtime-Namen und Versionen:
+
+- `RuntimePaths.security`: kanonisches Security-Verzeichnis unter der Runtime-Wurzel.
+- `RuntimePaths.security_database`: `<runtime-root>/security/security.sqlite`.
+- `RuntimePaths.enrollment_marker`: `<runtime-root>/security/enrollment.marker`.
+- `SECURITY_SCHEMA_VERSION = 1`, `SECURITY_FORMAT_VERSION = 1` und `ENROLLMENT_MARKER_VERSION = 1`.
+- `PASSWORD_HASH_FORMAT_VERSION = 1` fuer Argon2id-PHC-Strings.
+- `RECOVERY_CODE_FORMAT_VERSION = 1` fuer `JKM1-XXXX-XXXX-XXXX-XXXX-C`.
+- `installation_id`: zufaellige UUIDv4; Supportdarstellung `INS-<uuid>`.
+- `user_id`, `recovery_set_id` und `recovery_code_id`: zufaellige UUIDv4 ohne Personenbezug.
+
+Domain- und Application-Namen:
+
+- `SecurityStoreState`: `uninitialized`, `ready`, `password_reset_pending`, `inconsistent`, `corrupt` oder `unsupported_version`.
+- `AccountStatus`: `active`, `password_reset_pending` oder `disabled`.
+- `AuthenticationStatus`: `authenticated`, `invalid_credentials`, `throttled`, `store_unavailable` oder `password_reset_required`.
+- `PasswordPolicy`, `PasswordPolicyError` und strukturierte `PasswordViolation`-Codes.
+- `SecurityApplicationService`, `EnrollmentResult`, `AuthenticationResult`, `LockState`, `RecoveryPreparation` und `RecoveryConsumptionResult`.
+- Ports `SecurityRepository`, `PasswordHasher`, `RandomSource`, `UtcClock`, `MonotonicClock`, `EnrollmentMarkerStore` und `FilePermissionManager`.
+
+Infrastructure-Namen:
+
+- `SQLiteSecurityRepository`: kurzlebige Verbindungen, `foreign_keys=ON`, kontrolliertes WAL und `BEGIN IMMEDIATE` fuer kritische Schreibvorgaenge.
+- `Argon2idPasswordHasher`: Memory 65536 KiB, Time 6, Parallelism 1, Salt 16 Byte, Hash 32 Byte, PHC-String.
+- `SystemRandomSource`, `SystemClock`, `EnrollmentMarkerFile` und `PlatformFilePermissionManager`.
+
+Die Security-Namen sind keine fachlichen IDs. Sie besitzen keine Verbindung zu
+Autorennamen oder fachlichen Tabellen. Es gibt keine Security-View, kein
+Security-UI-Feld und keine Qt-Integration in diesem Sprint.
+
 ## Sprint 0.2A.4a - Asynchrone Settings-Operationen
 
 - Modul `src.desktop_app.backup_restore_operations`

@@ -1,5 +1,45 @@
 # Architekturentscheidungen
 
+## ADR-064 - Separate lokale Anwendungssperre als Security Core
+
+**Status:** Freigegeben und in Sprint 0.2B.2 umgesetzt; produktive
+Startintegration und UI bleiben offen.
+
+Version 0.2 fuehrt eine Anwendungssperre, keine Dateiverschluesselung ein. Die
+verbindliche Benutzerinformation lautet: „Die App-Sperre ist keine
+Verschlüsselung der Datenbank, Dokumente oder Backups.“ Direkter Dateizugriff
+bleibt moeglich; FileVault, geschuetztes OS-Konto und Geraeteverwaltung bleiben
+notwendig.
+
+Der Security Core ist eine eigenstaendige Domain-/Application-/Infrastructure-
+Grenze mit separatem versioniertem SQLite Store unter
+`<runtime-root>/security/security.sqlite` und nicht geheimem versioniertem
+Enrollment-Marker. Er ist weder fachliche Datenquelle noch Bestandteil von
+Backup, Restore, Export oder Diagnose. Fachliche Restore-Abläufe und
+`DATABASE_COMPATIBILITY_VERSION = 1` bleiben unveraendert.
+
+Version 0.2 erzwingt im Application Service genau ein aktives lokales Konto je
+Installation. Installations- und Nutzer-ID sind unabhaengige zufaellige UUIDv4.
+Passwoerter werden ausschliesslich mit Argon2id und explizitem PHC-/Formatvertrag
+gespeichert; es gibt keinen Pepper, Fallback, Masterzugang oder Cloud-Reset.
+Recovery verwendet zehn einmalige lokal gehashte Codes je Satz und eine
+zweiphasige, crash-sichere Regeneration.
+
+Die lokale Kalibrierung fuer Sprint 0.2B.2 verwendet 65536 KiB Memory,
+Time Cost 6, Parallelism 1, 16-Byte-Salt und 32-Byte-Hash. Nach je einem
+Aufwaermlauf lagen die Mittelwerte fuer Time Cost 4, 5 und 6 bei 147,17 ms,
+182,80 ms und 219,78 ms. Time Cost 6 ist die kleinste gemessene ganzzahlige
+Erhoehung im Zielkorridor von ungefaehr 200 bis 350 ms. Bestehende
+Time-Cost-3-PHC-Hashes bleiben kompatibel und werden erst nach erfolgreicher
+Verifikation aktualisiert; Schema- und Hashformatversion bleiben `1`.
+
+Store-/Marker-Widersprueche, Korruption und unbekannte neuere Versionen sind
+fail-closed. Die spaetere Startintegration muss die ungeschuetzte
+Bestandsinstallation bewusst behandeln und wird in diesem Sprint nicht
+vorweggenommen. Gezielt gemeinsames Loeschen von Store und Marker, Offline-
+Hashangriffe und lokaler Zugriff auf unverschluesselte Fachdaten bleiben
+dokumentierte Restrisiken.
+
 ## ADR-063 - Einstellungen als Übersicht mit einzelnem lokalem Arbeitsbereich
 
 Status: Fuer Sprint 0.2A.4 freigegeben

@@ -19,6 +19,9 @@ APP_NAME = "Jenaplan-Kompetenzmanager"
 APP_BUNDLE_ID = "de.jenaplan.kompetenzmanager"
 APP_DATA_DIR_ENV = "JENAPLAN_APP_DATA_DIR"
 DATABASE_FILENAME = "kompetenzmanager.sqlite"
+SECURITY_DIRECTORY = "security"
+SECURITY_DATABASE_FILENAME = "security.sqlite"
+ENROLLMENT_MARKER_FILENAME = "enrollment.marker"
 BUILD_INFO_FILENAME = "pilot_build_info.json"
 INITIAL_DATA_DIRECTORY = "pilot_initial"
 INITIAL_PATH_TOKEN = "__PILOT_DATA_ROOT__"
@@ -39,6 +42,21 @@ class RuntimePaths:
     exports: Path
     backups: Path
     logs: Path
+
+    @property
+    def security(self) -> Path:
+        """Return the isolated security root without creating it."""
+        return self.root / SECURITY_DIRECTORY
+
+    @property
+    def security_database(self) -> Path:
+        """Return the canonical local security-store path."""
+        return self.security / SECURITY_DATABASE_FILENAME
+
+    @property
+    def enrollment_marker(self) -> Path:
+        """Return the canonical non-secret enrollment-marker path."""
+        return self.security / ENROLLMENT_MARKER_FILENAME
 
 
 def is_packaged_app() -> bool:

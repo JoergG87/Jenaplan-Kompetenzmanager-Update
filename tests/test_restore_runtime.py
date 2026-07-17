@@ -219,6 +219,38 @@ def test_successful_v1_restore_completes_only_after_startup_handshake(tmp_path: 
     assert state["restart_handshake"]["status"] == "confirmed"
 
 
+def test_productive_restore_leaves_security_store_marker_and_sidecars_byte_identical(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(tmp_path)
+    live.security.mkdir(mode=0o700)
+    security_files = {
+        live.security_database: b"security-store-sentinel",
+        live.enrollment_marker: b"enrollment-marker-sentinel",
+        Path(f"{live.security_database}-wal"): b"security-wal-sentinel",
+        Path(f"{live.security_database}-shm"): b"security-shm-sentinel",
+        Path(f"{live.security_database}-journal"): b"security-journal-sentinel",
+    }
+    for path, payload in security_files.items():
+        path.write_bytes(payload)
+
+    with RuntimeInstanceLock(live.root) as lock:
+        result = ProductiveRestoreService().execute(
+            handoff_path=handoff.path,
+            nonce=handoff.nonce,
+            lock=lock,
+            restart=lambda paths, token, _lock: bool(
+                confirm_restore_startup(paths.runtime_root, paths.transaction.name, token)
+            ),
+        )
+
+    assert result.status == "completed"
+    assert {path: path.read_bytes() for path in security_files} == security_files
+    transaction = restore_transaction_paths(live.root, handoff.restore_id).transaction
+    assert not tuple(transaction.rglob("security.sqlite"))
+    assert not tuple(transaction.rglob("enrollment.marker"))
+
+
 def test_successful_prepared_v0_to_v1_restore_keeps_rows_and_installs_v1(tmp_path: Path) -> None:
     source = _runtime(tmp_path / "source-v0")
     _insert_data(source, "V00001", managed=True)

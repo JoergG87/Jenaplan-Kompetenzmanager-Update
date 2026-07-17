@@ -1,5 +1,115 @@
 # Data Lifecycle
 
+## Security Store feststellen und initial einrichten
+
+Der Security Core wird nur durch einen expliziten Application-Aufruf aktiviert;
+Import, normaler App-Start und fachliche Datenbankinitialisierung erzeugen
+weder Store noch Marker. Der aktuelle produktive Start bleibt in Sprint 0.2B.2
+ohne Authentifizierungsblockade.
+
+Zustandsvertrag vor jeder Operation:
+
+- Store und Marker fehlen: `uninitialized`.
+- Store und Marker sind vorhanden, streng valide und gebunden: `ready` oder `password_reset_pending`.
+- Marker vorhanden, Store fehlt oder ist unbrauchbar: fail-closed `inconsistent`/`corrupt`.
+- Store vorhanden, Marker fehlt oder stimmt nicht: fail-closed `inconsistent`; keine stille Reparatur.
+- unbekannte neuere Schema-/Formatversion: fail-closed `unsupported_version`.
+
+Initiale Einrichtung:
+
+```text
+SecurityApplicationService.enroll_local_account
+-> Passwort-Policy pruefen
+-> IDs, Markerreferenz und 10 Recovery-Codes aus injizierter Zufallsquelle erzeugen
+-> Argon2id-Hash und ausschliesslich gesalzene Recovery-Hashes berechnen
+-> SQLiteSecurityRepository erzeugt und validiert einen temporaeren Store
+-> Storetransaktion committen, fsyncen und atomar publizieren
+-> enrollment.marker restriktiv, atomar und gefsynct publizieren
+-> vollstaendigen gebundenen Zustand erneut pruefen
+```
+
+Ein Fehler vor der Store-Publikation hinterlaesst keinen akzeptierten Store. Ein
+Crash nach Store-, aber vor Marker-Publikation ist sichtbar fail-closed und wird
+nicht als Erststart behandelt. Gezielt gemeinsames Loeschen von Store und Marker
+durch einen lokalen Angreifer bleibt ein Restrisiko; der Marker ist kein
+kryptografischer Integritaetsnachweis.
+
+## Passwort pruefen, drosseln und aendern
+
+Passwort-Hashing verwendet ausschliesslich Argon2id als PHC-String mit 64 MiB,
+Time Cost 6, Parallelism 1, 16-Byte-Salt, 32-Byte-Hash und
+`hash_format_version = 1`. Es gibt keinen Pepper und keinen Fallback. Ein
+Rehash erfolgt nur nach erfolgreicher Verifikation und atomar mit dem
+Login-Erfolg. Eine normale Passwortaenderung prueft zuerst das aktuelle
+Passwort und schreibt den neuen Hash transaktional.
+
+Kalibrierung auf dem aktuellen arm64-Pilot-Mac am 17.07.2026: Je Kandidat wurde
+ein Aufwaermhash verworfen und danach acht reale Argon2id-PHC-Hashes bei
+unveraendert 65536 KiB Memory, Parallelism 1, 16-Byte-Salt und 32-Byte-Hash
+gemessen. Time Cost 4 ergab `146,00 / 145,83 / 149,08 / 145,93 / 150,41 /
+148,37 / 145,75 / 145,96 ms` und im Mittel `147,17 ms`. Time Cost 5 ergab
+`182,87 / 182,94 / 182,41 / 182,34 / 184,69 / 182,34 / 182,36 / 182,47 ms`
+und im Mittel `182,80 ms`. Time Cost 6 ergab `219,66 / 219,18 / 219,30 /
+221,22 / 219,21 / 220,08 / 219,71 / 219,85 ms` und im Mittel `219,78 ms`.
+Time Cost 6 ist damit die kleinste ganzzahlige Erhoehung, die das Ziel von
+ungefaehr 200 bis 350 ms stabil erreicht und auf dem Pilot-Mac deutlich unter
+der UX-Obergrenze von 500 ms bleibt. Die Parametererhoehung aendert weder
+Argon2id, PHC-Format noch `hash_format_version`. Vorhandene PHC-Hashes mit Time
+Cost 3 bleiben pruefbar und werden ausschliesslich nach erfolgreicher
+Passwortpruefung per `check_needs_rehash()` atomar aktualisiert.
+
+Passwoerter haben mindestens 15 Unicode-Zeichen und hoechstens 1024 UTF-8-Byte;
+mindestens 128 Unicode-Zeichen sind damit zugelassen. Leerzeichen und
+Passphrasen sind erlaubt. Es erfolgen weder Trimming, Case-Aenderung,
+Unicode-Normalisierung noch Komplexitaets- oder periodische Wechselvorgaben.
+Eine kleine lokale Sperrliste wird exakt gegen die unveraenderte Eingabe
+geprueft.
+
+Fehlversuche werden vor Rueckgabe transaktional persistiert: 1-4 ohne
+Zusatzsperre, danach 30, 60, 120, 240 und ab Versuch 9 hoechstens 300 Sekunden.
+Erfolg setzt Zaehler und Sperrzeit zurueck. UTC-Zeitpunkte tragen den Zustand
+ueber Neustarts; injizierte monotone Zeit verhindert innerhalb eines Prozesses
+eine Verkuerzung. Bei mehr als fuenf Minuten rueckwaerts gesetzter UTC-Uhr gilt
+konservativ eine fuenfminuetige Sperre. Recovery besitzt getrennte Zaehler und
+Sperrzeitpunkte. Diese Drosselung verhindert keine Offline-Angriffe auf kopierte
+Hashes.
+
+## Recovery-Codes erzeugen, verbrauchen und regenerieren
+
+Ein Satz besitzt genau zehn Codes mit 80 Bit Zufall im Format
+`JKM1-XXXX-XXXX-XXXX-XXXX-C`. Die kontrollierte ASCII-Normalisierung entfernt
+nur Bindestriche und ASCII-Leerzeichen, wandelt ASCII in Grossschrift sowie
+`O` zu `0` und `I`/`L` zu `1`; Unicode-Lookalikes werden abgelehnt. Prefix,
+Laenge und Crockford-Pruefsymbol muessen stimmen.
+
+Persistiert werden ausschliesslich Code-ID, individueller 16-Byte-Salt,
+`SHA-256(salt || canonical_code)`, Formatversion, Satz-ID, Status und technische
+Zeitpunkte. Die Pruefung vergleicht konstantzeitnah gegen alle aktiven Codes.
+Erfolgreicher Verbrauch und Wechsel zu `password_reset_pending` erfolgen in
+einer `BEGIN IMMEDIATE`-Transaktion; konkurrierende Doppelnutzung kann nur
+einmal erfolgreich sein.
+
+Regeneration ist zweiphasig: Vorbereitung persistiert einen unbestaetigten Satz,
+waehrend der alte aktive Satz gueltig bleibt. Nur die Bestaetigung aktiviert den
+neuen Satz und widerruft den alten atomar. Crash oder Abbruch vor Bestaetigung
+laesst mindestens den alten bestaetigten Satz gueltig. Klartextcodes werden nur
+einmal an den aufrufenden Prozess zurueckgegeben und sind aus dem Store nicht
+rekonstruierbar. Es gibt keine Datei-, Zwischenablage-, Log-, Backup- oder
+Diagnoseausgabe.
+
+## Security-Dateirechte und Ausschluss
+
+Auf POSIX-Systemen verwendet `security/` Modus `0700`; Datenbank, Marker und
+SQLite-Sidecars verwenden `0600`. Setzen und Pruefen sind in Infrastructure
+gekapselt und wirken nie ausserhalb des Security-Verzeichnisses. Andere
+Plattformen melden POSIX-Schutz als nicht verifizierbar, niemals als bestaetigt.
+
+Alle fachlichen Backup-/Restore-Pfade bleiben Allowlist-basiert: ausschliesslich
+`kompetenzmanager.sqlite` und registrierte Managed Files sind Backupinhalt.
+Restore ersetzt ausschliesslich fachliche Live-Komponenten. Security Store,
+Marker und Sidecars werden nicht gelesen, kopiert, gestaged, ersetzt, geloescht,
+exportiert oder an Diagnose/Support angehaengt.
+
 Dieses Dokument beschreibt freigegebene oder geplante Schreibprozesse fuer fachliche Daten.
 
 Kein Schreibprozess darf implementiert werden, bevor sein Lebenszyklus hier dokumentiert ist.
