@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
 import hashlib
 import hmac
@@ -11,7 +11,7 @@ import re
 import uuid
 
 
-SECURITY_SCHEMA_VERSION = 1
+SECURITY_SCHEMA_VERSION = 2
 SECURITY_FORMAT_VERSION = 1
 ENROLLMENT_MARKER_VERSION = 1
 PASSWORD_HASH_FORMAT_VERSION = 1
@@ -20,6 +20,17 @@ RECOVERY_CODE_COUNT = 10
 RECOVERY_CODE_ENTROPY_BYTES = 10
 RECOVERY_CODE_SALT_BYTES = 16
 RECOVERY_CODE_HASH_BYTES = 32
+SUPPORT_RESET_FORMAT_VERSION = 1
+SUPPORT_RESET_ENVELOPE = "JKM-SR1"
+SUPPORT_RESET_ALGORITHM = "Ed25519"
+SUPPORT_RESET_ACTION = "reset_local_password_v1"
+SUPPORT_RESET_REQUEST_MAX_AGE = timedelta(hours=24)
+SUPPORT_RESET_TOKEN_DEFAULT_AGE = timedelta(minutes=30)
+SUPPORT_RESET_TOKEN_MAX_AGE = timedelta(hours=2)
+SUPPORT_RESET_CLOCK_SKEW = timedelta(minutes=2)
+SUPPORT_RESET_NONCE_BYTES = 32
+SUPPORT_RESET_MAX_TOKEN_BYTES = 8192
+SUPPORT_RESET_MAX_PAYLOAD_BYTES = 4096
 
 _CROCKFORD_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 _CROCKFORD_CHECK_ALPHABET = _CROCKFORD_ALPHABET + "*~$=U"
@@ -46,6 +57,50 @@ class UnsupportedSecurityVersionError(SecurityStoreError):
 
 class ConcurrentSecurityOperationError(SecurityError):
     """A competing critical operation won the transaction."""
+
+
+class SupportResetFailureCode(str, Enum):
+    FORMAT_INVALID = "format_invalid"
+    ENVELOPE_INVALID = "envelope_invalid"
+    BASE64URL_INVALID = "base64url_invalid"
+    JSON_INVALID = "json_invalid"
+    PAYLOAD_NOT_CANONICAL = "payload_not_canonical"
+    FIELDS_INVALID = "fields_invalid"
+    VERSION_UNSUPPORTED = "version_unsupported"
+    ALGORITHM_UNSUPPORTED = "algorithm_unsupported"
+    KEY_UNKNOWN = "key_unknown"
+    KEY_REVOKED = "key_revoked"
+    KEY_NOT_YET_VALID = "key_not_yet_valid"
+    KEY_EXPIRED = "key_expired"
+    SIGNATURE_INVALID = "signature_invalid"
+    INSTALLATION_MISMATCH = "installation_mismatch"
+    USER_MISMATCH = "user_mismatch"
+    REQUEST_MISMATCH = "request_mismatch"
+    NONCE_MISMATCH = "nonce_mismatch"
+    ACTION_UNSUPPORTED = "action_unsupported"
+    TOKEN_NOT_YET_VALID = "token_not_yet_valid"
+    TOKEN_EXPIRED = "token_expired"
+    TOKEN_LIFETIME_INVALID = "token_lifetime_invalid"
+    TOKEN_ALREADY_USED = "token_already_used"
+    REQUEST_NOT_ACTIVE = "request_not_active"
+    REQUEST_EXPIRED = "request_expired"
+    STORE_UNAVAILABLE = "store_unavailable"
+    BACKUP_FAILED = "backup_failed"
+    CONCURRENT_USE = "concurrent_use"
+
+
+class SupportResetRejected(SecurityError):
+    """Generic outward rejection with a structured, non-secret internal code."""
+
+    def __init__(self, code: SupportResetFailureCode):
+        self.code = code
+        super().__init__("support_reset_rejected")
+
+
+class SupportPublicKeyStatus(str, Enum):
+    ACTIVE = "active"
+    RETIRING = "retiring"
+    REVOKED = "revoked"
 
 
 class PasswordViolation(str, Enum):
@@ -166,6 +221,55 @@ class RecoveryCodeCandidate:
     salt: bytes
     digest: bytes
     status: str
+
+
+@dataclass(frozen=True)
+class SupportResetRequest:
+    format_version: int
+    installation_id: str
+    user_id: str
+    reset_request_id: str
+    action: str
+    created_at: datetime
+    expires_at: datetime
+    nonce: str = field(repr=False)
+    status: str = "active"
+
+
+@dataclass(frozen=True)
+class SupportResetPayload:
+    format_version: int
+    algorithm: str
+    key_id: str
+    installation_id: str
+    user_id: str
+    reset_request_id: str
+    action: str
+    created_at: datetime
+    expires_at: datetime
+    nonce: str = field(repr=False)
+
+
+@dataclass(frozen=True)
+class SupportPublicKey:
+    key_id: str
+    public_key: bytes = field(repr=False)
+    status: SupportPublicKeyStatus
+    not_before: datetime
+    not_after: datetime
+
+
+@dataclass(frozen=True)
+class SecurityBackupProof:
+    path: str
+    sha256: str
+
+
+@dataclass(frozen=True)
+class SupportResetResult:
+    reset_request_id: str
+    security_epoch: int
+    backup: SecurityBackupProof
 
 
 def validate_uuid4(value: str) -> str:

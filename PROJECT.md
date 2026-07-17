@@ -10,6 +10,18 @@ Inhalten verbunden. Sprint 0.2B.2 liefert nur den testbaren Core; App-Start,
 Sitzung und sichtbare Login-/Recovery-Oberflaechen bleiben unveraendert fuer
 einen spaeter freizugebenden Integrationssprint.
 
+Sprint 0.2B.3 ergaenzt den Qt-freien Core um einen offline signierten
+Ed25519-Support-Reset ohne Masterpasswort. Private Schluessel bleiben
+ausserhalb von Repository, Build und App; die App fuehrt nur eine oeffentliche,
+per App-Update rotierbare Registry. Anfrage und Token sind kurzlebig, einmalig
+und an Installation, Nutzer, Anfrage, Nonce, Aktion und `key_id` gebunden. Vor
+dem atomaren Wechsel zu `password_reset_pending` ist ein erfolgreich erzeugtes
+und verifiziertes fachliches `.jkmbackup` zwingend. Der Reset widerruft
+Recovery-Zustaende und erhoeht die Security-Epoch, veraendert aber keine
+fachlichen Daten, Dokumente, Backups, IDs oder Restore-Vertraege. UI,
+Startintegration, Sitzung, neues Passwort und neue Recovery-Codes bleiben
+weiterhin offen.
+
 ## Aktueller Produktstand
 
 Der Jenaplan-Kompetenzmanager ist eine lokale Python-/PySide6-Desktop-Anwendung fuer Lehrkraefte. PySide ist die aktive Produktoberflaeche, SQLite die produktive lokale Datenhaltung.

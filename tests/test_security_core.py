@@ -256,7 +256,7 @@ def test_enrollment_creates_strict_schema_uuid4_ids_and_posix_permissions(
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
         assert connection.execute("PRAGMA application_id").fetchone()[0] == 0x4A4B4D53
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
         tables = {
             row[0]
@@ -270,6 +270,9 @@ def test_enrollment_creates_strict_schema_uuid4_ids_and_posix_permissions(
             "local_accounts",
             "recovery_code_sets",
             "recovery_codes",
+            "support_reset_requests",
+            "support_reset_token_uses",
+            "security_epochs",
         }
         columns = {
             row[1]
@@ -330,7 +333,7 @@ def test_newer_store_and_marker_versions_fail_closed(tmp_path: Path) -> None:
     service, _repository, _clock, _result = enroll(root)
     paths = runtime_paths(root)
     with sqlite3.connect(paths.security_database) as connection:
-        connection.execute("UPDATE security_metadata SET schema_version = 2")
+        connection.execute("UPDATE security_metadata SET schema_version = 3")
     assert service.security_store_state().state == SecurityStoreState.UNSUPPORTED_VERSION
 
     root = tmp_path / "marker-newer"

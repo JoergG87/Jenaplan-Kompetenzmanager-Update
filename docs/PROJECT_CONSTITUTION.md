@@ -45,6 +45,23 @@ Startintegration muss Neuinstallation und ungeschuetzte Bestandsinstallation
 bewusst unterscheiden. Sie darf erst nach eigener Freigabe die App sperren;
 der produktive Start bleibt in diesem Sprint unveraendert und unblocked.
 
+Sprint 0.2B.3 erlaubt ausschliesslich einen Qt-freien Offline-Support-Reset mit
+Ed25519. Es gibt weiterhin kein Masterkennwort. Private Schluessel duerfen
+niemals im Repository, Build oder App-Bundle liegen; die App enthaelt nur eine
+oeffentliche Key-Registry, deren Rotation und Widerruf ein App-Update erfordert.
+Anfrage und Token muessen kurzlebig, einmalig und vollstaendig an Installation,
+Nutzer, Anfrage, Nonce, Aktion und `key_id` gebunden sein. Das Offline-Verfahren
+besitzt ein dokumentiertes Risiko durch eine falsch gesetzte lokale Uhr.
+
+Vor jeder Reset-Transaktion ist ein mit dem vorhandenen Backupformat
+erfolgreich erzeugtes und vollstaendig verifiziertes fachliches
+Sicherheitsbackup zwingend. Der Security Store bleibt ausgeschlossen. Der
+Reset darf ausschliesslich Authentifizierungszustaende auf
+`password_reset_pending` setzen, Recovery-Zustaende widerrufen und die monotone
+Security-Epoch erhoehen. Fachliche Daten, Dokumente, Backups, IDs und
+Restore-Vertraege duerfen nicht veraendert werden. UI, Startintegration,
+Sitzung, neues Passwort und neue Recovery-Codes bleiben ausserhalb von 0.2B.3.
+
 ## Architekturprinzipien
 
 PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.

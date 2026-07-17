@@ -21,7 +21,12 @@ from ..domain import (
     RecoveryCodeHash,
     SECURITY_FORMAT_VERSION,
     SECURITY_SCHEMA_VERSION,
+    SUPPORT_RESET_ACTION,
+    SUPPORT_RESET_CLOCK_SKEW,
+    SUPPORT_RESET_FORMAT_VERSION,
     SecurityStoreError,
+    SupportResetPayload,
+    SupportResetRequest,
     UnsupportedSecurityVersionError,
     delay_seconds_for_failure,
     validate_uuid4,
@@ -31,7 +36,7 @@ from ..ports import FilePermissionManager
 
 _SQLITE_APPLICATION_ID = 0x4A4B4D53
 
-_EXPECTED_TABLE_COLUMNS = {
+_EXPECTED_TABLE_COLUMNS_V1 = {
     "security_metadata": (
         "metadata_id", "schema_version", "format_version", "created_at_utc", "updated_at_utc"
     ),
@@ -52,7 +57,22 @@ _EXPECTED_TABLE_COLUMNS = {
     ),
 }
 
-_SCHEMA_SQL = """
+_EXPECTED_TABLE_COLUMNS = {
+    **_EXPECTED_TABLE_COLUMNS_V1,
+    "support_reset_requests": (
+        "reset_request_id", "installation_id", "user_id", "nonce", "action",
+        "status", "created_at_utc", "expires_at_utc", "revoked_at_utc", "consumed_at_utc"
+    ),
+    "support_reset_token_uses": (
+        "token_digest", "reset_request_id", "key_id", "action", "status",
+        "created_at_utc", "expires_at_utc", "consumed_at_utc"
+    ),
+    "security_epochs": (
+        "user_id", "installation_id", "generation", "updated_at_utc"
+    ),
+}
+
+_SCHEMA_V1_SQL = """
 CREATE TABLE security_metadata (
     metadata_id INTEGER PRIMARY KEY CHECK (metadata_id = 1),
     schema_version INTEGER NOT NULL CHECK (schema_version >= 1),
@@ -126,6 +146,55 @@ CREATE TABLE recovery_codes (
 ) STRICT;
 """
 
+_SCHEMA_V2_SQL = """
+CREATE TABLE support_reset_requests (
+    reset_request_id TEXT PRIMARY KEY,
+    installation_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    nonce TEXT NOT NULL,
+    action TEXT NOT NULL CHECK (action = 'reset_local_password_v1'),
+    status TEXT NOT NULL CHECK (status IN ('active', 'revoked', 'consumed')),
+    created_at_utc TEXT NOT NULL,
+    expires_at_utc TEXT NOT NULL,
+    revoked_at_utc TEXT,
+    consumed_at_utc TEXT,
+    CHECK (
+        (status = 'active' AND revoked_at_utc IS NULL AND consumed_at_utc IS NULL)
+        OR (status = 'revoked' AND revoked_at_utc IS NOT NULL AND consumed_at_utc IS NULL)
+        OR (status = 'consumed' AND consumed_at_utc IS NOT NULL)
+    ),
+    FOREIGN KEY (installation_id) REFERENCES installations(installation_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES local_accounts(user_id) ON DELETE CASCADE
+) STRICT;
+
+CREATE UNIQUE INDEX one_active_support_reset_request_per_user
+ON support_reset_requests(user_id) WHERE status = 'active';
+
+CREATE TABLE support_reset_token_uses (
+    token_digest BLOB PRIMARY KEY CHECK (length(token_digest) = 32),
+    reset_request_id TEXT NOT NULL,
+    key_id TEXT NOT NULL,
+    action TEXT NOT NULL CHECK (action = 'reset_local_password_v1'),
+    status TEXT NOT NULL CHECK (status IN ('consumed', 'revoked')),
+    created_at_utc TEXT NOT NULL,
+    expires_at_utc TEXT NOT NULL,
+    consumed_at_utc TEXT NOT NULL,
+    FOREIGN KEY (reset_request_id) REFERENCES support_reset_requests(reset_request_id) ON DELETE RESTRICT
+) STRICT;
+
+CREATE TABLE security_epochs (
+    user_id TEXT PRIMARY KEY,
+    installation_id TEXT NOT NULL UNIQUE,
+    generation INTEGER NOT NULL CHECK (generation >= 1),
+    updated_at_utc TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES local_accounts(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (installation_id) REFERENCES installations(installation_id) ON DELETE CASCADE
+) STRICT;
+"""
+
+_SCHEMA_SQL = _SCHEMA_V1_SQL + _SCHEMA_V2_SQL
+_RESET_PASSWORD_MARKER = "!password-reset-pending!"
+
 
 class SQLiteSecurityRepository:
     def __init__(
@@ -150,6 +219,7 @@ class SQLiteSecurityRepository:
         if self._database_path.is_symlink():
             raise SecurityStoreError("security_store_symlink_rejected")
         try:
+            self._ensure_current_schema()
             with self._read_connection() as connection:
                 integrity = connection.execute("PRAGMA integrity_check").fetchone()
                 if integrity is None or integrity[0] != "ok":
@@ -191,11 +261,15 @@ class SQLiteSecurityRepository:
                 _parse_required_datetime(installation_created)
                 _parse_required_datetime(installation_updated)
                 account = self._account_from_row(account_rows[0])
-                if not account.password_hash.startswith("$argon2id$"):
+                if not account.password_hash.startswith("$argon2id$") and not (
+                    account.status == AccountStatus.PASSWORD_RESET_PENDING
+                    and account.password_hash == _RESET_PASSWORD_MARKER
+                ):
                     raise SecurityStoreError("security_password_hash_format_invalid")
                 if account.installation_id != installation_id:
                     raise SecurityStoreError("security_store_binding_invalid")
-                self._validate_recovery_sets(connection, account.user_id)
+                self._validate_recovery_sets(connection, account)
+                self._validate_support_reset_state(connection, account)
                 self._validate_all_timestamps(connection)
                 return schema_version, format_version, marker_reference, account
         except UnsupportedSecurityVersionError:
@@ -264,6 +338,10 @@ class SQLiteSecurityRepository:
                     self._insert_recovery_codes(
                         connection, recovery_set_id, recovery_codes, stamp
                     )
+                    connection.execute(
+                        "INSERT INTO security_epochs VALUES (?, ?, 1, ?)",
+                        (user_id, installation_id, stamp),
+                    )
                     self._failure_injector("before_commit")
                     connection.execute("COMMIT")
                 except Exception:
@@ -287,6 +365,7 @@ class SQLiteSecurityRepository:
             raise
 
     def load_account(self) -> AccountRecord:
+        self._ensure_current_schema()
         with self._read_connection() as connection:
             rows = connection.execute("SELECT * FROM local_accounts").fetchall()
             if len(rows) != 1:
@@ -354,6 +433,7 @@ class SQLiteSecurityRepository:
             return cursor.rowcount == 1
 
     def active_recovery_codes(self) -> tuple[RecoveryCodeCandidate, ...]:
+        self._ensure_current_schema()
         with self._read_connection() as connection:
             rows = connection.execute(
                 "SELECT c.recovery_code_id, c.salt, c.code_hash, c.status "
@@ -528,6 +608,283 @@ class SQLiteSecurityRepository:
             )
             return cursor.rowcount == 1
 
+    def create_support_reset_request(self, request: SupportResetRequest) -> None:
+        for identifier in (
+            request.installation_id,
+            request.user_id,
+            request.reset_request_id,
+        ):
+            validate_uuid4(identifier)
+        if (
+            request.format_version != SUPPORT_RESET_FORMAT_VERSION
+            or request.action != SUPPORT_RESET_ACTION
+            or request.status != "active"
+            or request.expires_at <= request.created_at
+            or request.expires_at - request.created_at > timedelta(hours=24)
+        ):
+            raise SecurityStoreError("support_reset_request_invalid")
+        with self._write_transaction() as connection:
+            account = self._single_account(connection)
+            if (
+                account.status != AccountStatus.ACTIVE
+                or account.installation_id != request.installation_id
+                or account.user_id != request.user_id
+            ):
+                raise SecurityStoreError("support_reset_account_binding_invalid")
+            stamp = _format_datetime(request.created_at)
+            connection.execute(
+                "UPDATE support_reset_requests SET status = 'revoked', revoked_at_utc = ? "
+                "WHERE user_id = ? AND status = 'active'",
+                (stamp, account.user_id),
+            )
+            connection.execute(
+                "INSERT INTO support_reset_requests VALUES "
+                "(?, ?, ?, ?, ?, 'active', ?, ?, NULL, NULL)",
+                (
+                    request.reset_request_id,
+                    request.installation_id,
+                    request.user_id,
+                    request.nonce,
+                    request.action,
+                    stamp,
+                    _format_datetime(request.expires_at),
+                ),
+            )
+
+    def load_support_reset_request(
+        self, reset_request_id: str
+    ) -> SupportResetRequest | None:
+        validate_uuid4(reset_request_id)
+        self._ensure_current_schema()
+        with self._read_connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM support_reset_requests WHERE reset_request_id = ?",
+                (reset_request_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            return SupportResetRequest(
+                format_version=SUPPORT_RESET_FORMAT_VERSION,
+                installation_id=validate_uuid4(row["installation_id"]),
+                user_id=validate_uuid4(row["user_id"]),
+                reset_request_id=validate_uuid4(row["reset_request_id"]),
+                action=row["action"],
+                created_at=_parse_required_datetime(row["created_at_utc"]),
+                expires_at=_parse_required_datetime(row["expires_at_utc"]),
+                nonce=row["nonce"],
+                status=row["status"],
+            )
+
+    def support_token_digest_used(self, token_digest: bytes) -> bool:
+        if not isinstance(token_digest, bytes) or len(token_digest) != 32:
+            raise SecurityStoreError("support_token_digest_invalid")
+        self._ensure_current_schema()
+        with self._read_connection() as connection:
+            return connection.execute(
+                "SELECT 1 FROM support_reset_token_uses WHERE token_digest = ?",
+                (sqlite3.Binary(token_digest),),
+            ).fetchone() is not None
+
+    def consume_support_reset(
+        self,
+        *,
+        payload: SupportResetPayload,
+        token_digest: bytes,
+        now: datetime,
+    ) -> int | None:
+        for identifier in (
+            payload.installation_id,
+            payload.user_id,
+            payload.reset_request_id,
+        ):
+            validate_uuid4(identifier)
+        if not isinstance(token_digest, bytes) or len(token_digest) != 32:
+            raise SecurityStoreError("support_token_digest_invalid")
+        if payload.action != SUPPORT_RESET_ACTION:
+            raise SecurityStoreError("support_reset_action_invalid")
+        with self._write_transaction() as connection:
+            account = self._single_account(connection)
+            if (
+                account.status != AccountStatus.ACTIVE
+                or account.installation_id != payload.installation_id
+                or account.user_id != payload.user_id
+            ):
+                return None
+            request = connection.execute(
+                "SELECT * FROM support_reset_requests "
+                "WHERE reset_request_id = ? AND installation_id = ? AND user_id = ? "
+                "AND nonce = ? AND action = ? AND status = 'active'",
+                (
+                    payload.reset_request_id,
+                    payload.installation_id,
+                    payload.user_id,
+                    payload.nonce,
+                    payload.action,
+                ),
+            ).fetchone()
+            if request is None or (
+                _parse_required_datetime(request["expires_at_utc"])
+                < now - SUPPORT_RESET_CLOCK_SKEW
+            ):
+                return None
+            if connection.execute(
+                "SELECT 1 FROM support_reset_token_uses WHERE token_digest = ?",
+                (sqlite3.Binary(token_digest),),
+            ).fetchone() is not None:
+                return None
+            stamp = _format_datetime(now)
+            connection.execute(
+                "INSERT INTO support_reset_token_uses VALUES "
+                "(?, ?, ?, ?, 'consumed', ?, ?, ?)",
+                (
+                    sqlite3.Binary(token_digest),
+                    payload.reset_request_id,
+                    payload.key_id,
+                    payload.action,
+                    _format_datetime(payload.created_at),
+                    _format_datetime(payload.expires_at),
+                    stamp,
+                ),
+            )
+            cursor = connection.execute(
+                "UPDATE support_reset_requests SET status = 'consumed', consumed_at_utc = ? "
+                "WHERE reset_request_id = ? AND status = 'active'",
+                (stamp, payload.reset_request_id),
+            )
+            if cursor.rowcount != 1:
+                return None
+            connection.execute(
+                "UPDATE recovery_codes SET status = 'revoked', revoked_at_utc = ? "
+                "WHERE status = 'active' AND recovery_set_id IN "
+                "(SELECT recovery_set_id FROM recovery_code_sets WHERE user_id = ?)",
+                (stamp, account.user_id),
+            )
+            connection.execute(
+                "UPDATE recovery_code_sets SET status = 'revoked', revoked_at_utc = ? "
+                "WHERE user_id = ? AND status IN ('active', 'pending')",
+                (stamp, account.user_id),
+            )
+            account_cursor = connection.execute(
+                "UPDATE local_accounts SET password_hash = ?, status = 'password_reset_pending', "
+                "failed_attempts = 0, locked_until_utc = NULL, last_observed_utc = ?, "
+                "recovery_failed_attempts = 0, recovery_locked_until_utc = NULL, "
+                "recovery_last_observed_utc = ?, updated_at_utc = ? "
+                "WHERE user_id = ? AND status = 'active'",
+                (_RESET_PASSWORD_MARKER, stamp, stamp, stamp, account.user_id),
+            )
+            if account_cursor.rowcount != 1:
+                raise SecurityStoreError("support_reset_account_state_changed")
+            connection.execute(
+                "UPDATE security_epochs SET generation = generation + 1, updated_at_utc = ? "
+                "WHERE user_id = ? AND installation_id = ?",
+                (stamp, account.user_id, account.installation_id),
+            )
+            row = connection.execute(
+                "SELECT generation FROM security_epochs WHERE user_id = ?",
+                (account.user_id,),
+            ).fetchone()
+            if row is None:
+                raise SecurityStoreError("security_epoch_missing")
+            return int(row[0])
+
+    def security_epoch(self) -> int:
+        self._ensure_current_schema()
+        with self._read_connection() as connection:
+            rows = connection.execute("SELECT generation FROM security_epochs").fetchall()
+            if len(rows) != 1 or int(rows[0][0]) < 1:
+                raise SecurityStoreError("security_epoch_invalid")
+            return int(rows[0][0])
+
+    def _ensure_current_schema(self) -> None:
+        if self._database_path.is_symlink() or not self._database_path.is_file():
+            raise SecurityStoreError("security_store_missing")
+        try:
+            probe = sqlite3.connect(
+                f"file:{self._database_path.resolve()}?mode=ro",
+                uri=True,
+                isolation_level=None,
+            )
+            try:
+                application_id = int(probe.execute("PRAGMA application_id").fetchone()[0])
+                user_version = int(probe.execute("PRAGMA user_version").fetchone()[0])
+            finally:
+                probe.close()
+        except sqlite3.Error as error:
+            raise SecurityStoreError("security_store_invalid") from error
+        if application_id != _SQLITE_APPLICATION_ID:
+            raise SecurityStoreError("security_store_identity_invalid")
+        if user_version > SECURITY_SCHEMA_VERSION:
+            raise UnsupportedSecurityVersionError("security_store_version_newer")
+        if user_version == SECURITY_SCHEMA_VERSION:
+            return
+        if user_version != 1:
+            raise SecurityStoreError("security_store_version_invalid")
+
+        connection: sqlite3.Connection | None = None
+        try:
+            connection = sqlite3.connect(
+                self._database_path, isolation_level=None, timeout=5.0
+            )
+            connection.row_factory = sqlite3.Row
+            connection.execute("PRAGMA foreign_keys = ON")
+            connection.execute("PRAGMA journal_mode = WAL")
+            connection.execute("PRAGMA synchronous = FULL")
+            connection.execute("BEGIN IMMEDIATE")
+            application_id = int(connection.execute("PRAGMA application_id").fetchone()[0])
+            user_version = int(connection.execute("PRAGMA user_version").fetchone()[0])
+            if application_id != _SQLITE_APPLICATION_ID:
+                raise SecurityStoreError("security_store_identity_invalid")
+            if user_version > SECURITY_SCHEMA_VERSION:
+                raise UnsupportedSecurityVersionError("security_store_version_newer")
+            if user_version == SECURITY_SCHEMA_VERSION:
+                connection.execute("COMMIT")
+                return
+            if user_version != 1:
+                raise SecurityStoreError("security_store_version_invalid")
+            metadata = connection.execute(
+                "SELECT schema_version, format_version FROM security_metadata "
+                "WHERE metadata_id = 1"
+            ).fetchone()
+            if metadata is None:
+                raise SecurityStoreError("security_metadata_missing")
+            if int(metadata[0]) != 1 or int(metadata[1]) != SECURITY_FORMAT_VERSION:
+                raise SecurityStoreError("security_store_version_invalid")
+            self._validate_schema_shape(connection, _EXPECTED_TABLE_COLUMNS_V1)
+            self._failure_injector("before_migration")
+            for statement in _SCHEMA_V2_SQL.split(";"):
+                if statement.strip():
+                    connection.execute(statement)
+            accounts = connection.execute(
+                "SELECT user_id, installation_id, updated_at_utc FROM local_accounts"
+            ).fetchall()
+            if len(accounts) != 1:
+                raise SecurityStoreError("security_account_cardinality_invalid")
+            connection.execute(
+                "INSERT INTO security_epochs VALUES (?, ?, 1, ?)",
+                (accounts[0][0], accounts[0][1], accounts[0][2]),
+            )
+            connection.execute(
+                "UPDATE security_metadata SET schema_version = ?, updated_at_utc = ? "
+                "WHERE metadata_id = 1",
+                (SECURITY_SCHEMA_VERSION, accounts[0][2]),
+            )
+            connection.execute(f"PRAGMA user_version = {SECURITY_SCHEMA_VERSION}")
+            self._failure_injector("before_migration_commit")
+            connection.execute("COMMIT")
+            self._failure_injector("after_migration_commit")
+        except (UnsupportedSecurityVersionError, SecurityStoreError):
+            if connection is not None and connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+        except (OSError, sqlite3.Error, ValueError, TypeError):
+            if connection is not None and connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise SecurityStoreError("security_store_migration_failed")
+        finally:
+            if connection is not None:
+                connection.close()
+            self._permissions.secure_sqlite_files(self._database_path)
+
     def _connect_read_only(self) -> sqlite3.Connection:
         if self._database_path.is_symlink() or not self._database_path.is_file():
             raise SecurityStoreError("security_store_missing")
@@ -549,6 +906,7 @@ class SQLiteSecurityRepository:
             self._permissions.secure_sqlite_files(self._database_path)
 
     def _connect_write(self) -> sqlite3.Connection:
+        self._ensure_current_schema()
         connection = sqlite3.connect(self._database_path, isolation_level=None, timeout=5.0)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
@@ -604,13 +962,20 @@ class SQLiteSecurityRepository:
             )
 
     @staticmethod
-    def _validate_recovery_sets(connection: sqlite3.Connection, user_id: str) -> None:
+    def _validate_recovery_sets(
+        connection: sqlite3.Connection, account: AccountRecord
+    ) -> None:
         rows = connection.execute(
             "SELECT status, COUNT(*) FROM recovery_code_sets WHERE user_id = ? GROUP BY status",
-            (user_id,),
+            (account.user_id,),
         ).fetchall()
         counts = {row[0]: int(row[1]) for row in rows}
-        if counts.get("active", 0) != 1 or counts.get("pending", 0) > 1:
+        active_count = counts.get("active", 0)
+        if (
+            active_count > 1
+            or counts.get("pending", 0) > 1
+            or (account.status == AccountStatus.ACTIVE and active_count != 1)
+        ):
             raise SecurityStoreError("recovery_set_cardinality_invalid")
         formats = {
             int(row[0])
@@ -631,16 +996,19 @@ class SQLiteSecurityRepository:
                 raise SecurityStoreError("recovery_code_count_invalid")
 
     @staticmethod
-    def _validate_schema_shape(connection: sqlite3.Connection) -> None:
+    def _validate_schema_shape(
+        connection: sqlite3.Connection,
+        expected: dict[str, tuple[str, ...]] = _EXPECTED_TABLE_COLUMNS,
+    ) -> None:
         tables = {
             row[0]
             for row in connection.execute(
                 "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
             ).fetchall()
         }
-        if tables != set(_EXPECTED_TABLE_COLUMNS):
+        if tables != set(expected):
             raise SecurityStoreError("security_schema_tables_invalid")
-        for table, expected_columns in _EXPECTED_TABLE_COLUMNS.items():
+        for table, expected_columns in expected.items():
             columns = tuple(
                 row[1] for row in connection.execute(f'PRAGMA table_info("{table}")').fetchall()
             )
@@ -661,6 +1029,15 @@ class SQLiteSecurityRepository:
             "recovery_codes": (
                 ("created_at_utc", False), ("used_at_utc", True), ("revoked_at_utc", True),
             ),
+            "support_reset_requests": (
+                ("created_at_utc", False), ("expires_at_utc", False),
+                ("revoked_at_utc", True), ("consumed_at_utc", True),
+            ),
+            "support_reset_token_uses": (
+                ("created_at_utc", False), ("expires_at_utc", False),
+                ("consumed_at_utc", False),
+            ),
+            "security_epochs": (("updated_at_utc", False),),
         }
         for table, columns in timestamp_columns.items():
             names = ", ".join(name for name, _nullable in columns)
@@ -669,6 +1046,31 @@ class SQLiteSecurityRepository:
                     if value is None and nullable:
                         continue
                     _parse_required_datetime(value)
+
+    @staticmethod
+    def _validate_support_reset_state(
+        connection: sqlite3.Connection, account: AccountRecord
+    ) -> None:
+        epochs = connection.execute(
+            "SELECT user_id, installation_id, generation, updated_at_utc FROM security_epochs"
+        ).fetchall()
+        if len(epochs) != 1:
+            raise SecurityStoreError("security_epoch_cardinality_invalid")
+        epoch = epochs[0]
+        if (
+            epoch["user_id"] != account.user_id
+            or epoch["installation_id"] != account.installation_id
+            or int(epoch["generation"]) < 1
+        ):
+            raise SecurityStoreError("security_epoch_binding_invalid")
+        _parse_required_datetime(epoch["updated_at_utc"])
+        active_requests = int(
+            connection.execute(
+                "SELECT COUNT(*) FROM support_reset_requests WHERE status = 'active'"
+            ).fetchone()[0]
+        )
+        if active_requests > 1:
+            raise SecurityStoreError("support_reset_request_cardinality_invalid")
 
 
 class _WriteTransaction:

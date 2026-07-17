@@ -1,5 +1,48 @@
 # Architekturentscheidungen
 
+## ADR-065 - Offline signierter Support-Reset mit Ed25519
+
+**Status:** Fuer den Qt-freien Core in Sprint 0.2B.3 freigegeben; UI,
+Startintegration und Sitzung bleiben offen.
+
+Ein Support-Reset verwendet keinen Masterzugang. Eine lokal erzeugte technische
+Reset-Anfrage wird ausserhalb der App mit Ed25519 signiert. Private Schluessel
+liegen ausschliesslich in getrennten Support-Werkzeugen und werden nur als
+passphrasengeschuetztes PKCS#8 gespeichert; Repository, Build und App-Bundle
+enthalten weder private noch produktive Testschluessel. Die App besitzt nur eine
+versionierte Offline-Registry oeffentlicher Schluessel. Rotation und Widerruf
+der Zustaende `active`, `retiring` und `revoked` erfolgen ausschliesslich durch
+ein App-Update, nicht ueber Netzwerk oder Cloud.
+
+Das Format `JKM-SR1.<payload>.<signature>` bindet kanonisch und signiert
+Formatversion, Algorithmus, `key_id`, Installation, Nutzer, Reset-Anfrage,
+Aktion, Erzeugungs- und Ablaufzeit sowie eine zufaellige Nonce. Anfragen gelten
+hoechstens 24 Stunden; Tokens standardmaessig 30 Minuten und technisch
+hoechstens zwei Stunden. Zwei Minuten Uhrtoleranz begrenzen unvermeidbare
+Offline-Uhrabweichungen, koennen aber eine grob falsche lokale Uhr nicht sicher
+erkennen. Token und Anfrage sind einmalig. Unbekannte Versionen, Algorithmen,
+Aktionen, Schluessel und nicht kanonische Darstellungen werden ohne Fallback
+abgelehnt.
+
+Vor jeder Security-Aenderung muss der vorhandene Backup-Service ein fachliches
+`.jkmbackup` erfolgreich erzeugen und vollstaendig verifizieren. Der Security
+Store bleibt aus diesem Backup ausgeschlossen. Erst danach darf eine einzelne
+Security-Transaktion Anfrage und Token-Digest verbrauchen, den alten
+Passworthash unbrauchbar machen, das Konto auf `password_reset_pending` setzen,
+alle aktiven und vorbereiteten Recovery-Saetze widerrufen, Drosselungszustaende
+neutralisieren und die monotone Security-Epoch erhoehen. Fachliche Datenbank,
+Dokumente, Backups, IDs und Restore-Vertraege bleiben unveraendert.
+
+Die Security-Epoch bildet spaeter den Widerrufsanker fuer gespeicherte
+Anmeldungen, Geraete- oder Sitzungstokens. `Auf diesem Geraet angemeldet
+bleiben`, Keychain und optionales Touch ID werden in diesem Sprint nicht
+eingefuehrt; die Inaktivitaetssperre bleibt spaeter aktiv und das Passwort
+bleibt bei Touch ID der Fallback. Ein Support-Reset muss solche spaeteren
+Anmeldungen durch Epoch-Wechsel widerrufen.
+
+Sprint 0.2B.3 fuehrt keine UI, Startblockade, Sitzung, App-Beendigung, neues
+Passwort oder neue Recovery-Codes ein.
+
 ## ADR-064 - Separate lokale Anwendungssperre als Security Core
 
 **Status:** Freigegeben und in Sprint 0.2B.2 umgesetzt; produktive

@@ -4,7 +4,7 @@ Dieses Dokument definiert die verbindlichen Datenquellen des Jenaplan-Kompetenzm
 
 SQLite ist die produktive lokale Source of Truth. Workbook-Tabellen sind historische Legacy-Projektionen unter `legacy/excel/`.
 
-## Separater Security Store v1
+## Separater Security Store v2
 
 `<runtime-root>/security/security.sqlite` ist eine rein technische lokale
 Security-Quelle und ausdruecklich keine fachliche Source of Truth. Sie liegt
@@ -13,7 +13,12 @@ unabhaengige Schema-/Formatversion und besitzt keine fachlichen Fremdschluessel.
 Die fachliche `DATABASE_COMPATIBILITY_VERSION = 1` und das Backupformat v1
 bleiben unveraendert.
 
-Tabellen des Security-Schemas v1:
+Security-Schema v2 erweitert den vollstaendig erhaltenen v1-Bestand additiv.
+Eine einzelne transaktionale Migration uebernimmt Accounts, Argon2id-Hashes,
+Recovery-Codes, Markerbindung und Zeitpunkte unveraendert. Unbekannte neuere
+Versionen werden fail-closed abgelehnt.
+
+Tabellen des Security-Schemas v2:
 
 | Tabelle | Primary Key | Foreign Keys / Eindeutigkeit | Inhalt |
 | --- | --- | --- | --- |
@@ -22,11 +27,18 @@ Tabellen des Security-Schemas v1:
 | `local_accounts` | `user_id` | `installation_id -> installations`, genau ein Konto je Installation | Argon2id-PHC-String, Hashformatversion, Kontostatus, Login- und getrennte Recovery-Drosselung, Zeitpunkte |
 | `recovery_code_sets` | `recovery_set_id` | `user_id -> local_accounts`; hoechstens ein aktiver und ein vorbereiteter Satz je Nutzer | zweiphasiger Satzstatus und Zeitpunkte |
 | `recovery_codes` | `recovery_code_id` | `recovery_set_id -> recovery_code_sets`; Hash je Satz eindeutig | individueller Salt, SHA-256-Hash, Formatversion, benutzt/widerrufen und Zeitpunkte |
+| `support_reset_requests` | `reset_request_id` | `user_id -> local_accounts`, `installation_id -> installations`; hoechstens eine aktive Anfrage | rein technische Bindung aus Installation, Nutzer, Nonce, Aktion, Status und Zeitpunkten; maximal 24 Stunden |
+| `support_reset_token_uses` | `token_digest` | `reset_request_id -> support_reset_requests` | ausschliesslich SHA-256-Digest, `key_id`, Aktion, Status sowie Erzeugungs-, Ablauf- und Verbrauchszeitpunkt; kein vollstaendiges Token |
+| `security_epochs` | `user_id` | `installation_id` eindeutig; beide an Account/Installation gebunden | monotone Generation und technischer Aenderungszeitpunkt fuer spaetere Widerrufsvertraege |
 
 Unzulaessig sind E-Mail-Adresse, Schulname, Betriebssystem-Benutzername,
 Klarname, Rolle, Passwort-Hinweis, Sicherheitsfrage sowie jeder Bezug auf
 Schueler-, Beobachtungs-, Berichts-, LEG- oder Dokument-IDs. Klartextpasswoerter
 und Klartext-Recovery-Codes sind keine Datenquelle und werden nie persistiert.
+Vollstaendige Support-Reset-Tokens, private Schluessel und Passphrasen sind
+ebenfalls keine Datenquelle. Oeffentliche Ed25519-Schluessel liegen
+ausschliesslich in der paketierten Code-Registry; Rotation und Widerruf
+erfordern ein App-Update und erzeugen keine Netzwerkquelle.
 
 `<runtime-root>/security/enrollment.marker` ist ein streng versionierter,
 nicht geheimer technischer Nachweis. Er enthaelt ausschliesslich Formatversion

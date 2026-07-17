@@ -2,6 +2,49 @@
 
 Dieses Dokument ist ab Sprint 4 die verbindliche Registry fuer technische Namen.
 
+## Sprint 0.2B.3 - Signierter Support-Reset-Core
+
+Registrierte Module und Werkzeuge:
+
+- `src.security.support_reset`
+- `src.security.infrastructure.ed25519`
+- `src.security.infrastructure.key_registry`
+- `src.application.commands.security_backup`
+- `tools/generate_support_keypair.py`
+- `tools/generate_support_reset.py`
+- `tests/test_support_reset.py`
+- `tests/test_support_reset_tools.py`
+
+Versionen und Formate:
+
+- `SECURITY_SCHEMA_VERSION = 2`; `SECURITY_FORMAT_VERSION = 1` bleibt unveraendert.
+- `SUPPORT_RESET_FORMAT_VERSION = 1`, Envelope `JKM-SR1`.
+- `SUPPORT_RESET_ALGORITHM = "Ed25519"`.
+- `SUPPORT_RESET_ACTION = "reset_local_password_v1"`.
+- `reset_request_id`: zufaellige UUIDv4 ohne Personenbezug.
+- `nonce`: 32 kryptografisch zufaellige Bytes in striktem Base64url ohne Padding.
+- `key_id`: registrierte technische Identitaet eines oeffentlichen Schluessels.
+- `token_digest`: SHA-256 ueber die vollstaendigen UTF-8-Tokenbytes; vollstaendige Tokens werden nicht persistiert.
+- `security_epoch`: persistente monotone Generation pro Konto und Installation.
+
+Domain/Application-Namen: `SupportResetRequest`, `SupportResetPayload`,
+`SupportResetFailureCode`, `SupportResetRejected`, `SupportResetResult`,
+`SupportResetService`, `SupportResetTokenCodec`, `SupportSecurityBackupPort`,
+`SupportResetSignatureVerifier` und die erweiterten `SecurityRepository`-Ports.
+
+Infrastructure-Namen: `Ed25519SignatureVerifier`, `SupportPublicKey`,
+`SupportPublicKeyStatus`, `PublicKeyRegistry` und `DEFAULT_SUPPORT_KEY_REGISTRY`. Die
+Default-Registry enthaelt ohne freigegebenen Produktivschluessel keinen
+nutzbaren Schluessel. Testschluessel liegen ausschliesslich unter `tests/` und
+werden nicht paketiert.
+
+Tabellen: `support_reset_requests`, `support_reset_token_uses` und
+`security_epochs`. Zustaende fuer Anfragen sind `active`, `revoked` und
+`consumed`; Schluesselzustaende sind `active`, `retiring` und `revoked`.
+
+Es entstehen keine View, kein UI-Feld, keine Qt-Integration, kein normaler
+Autostart und keine Sitzung.
+
 ## Sprint 0.2B.2 - Security Core
 
 Registrierte Module:
@@ -20,7 +63,7 @@ Runtime-Namen und Versionen:
 - `RuntimePaths.security`: kanonisches Security-Verzeichnis unter der Runtime-Wurzel.
 - `RuntimePaths.security_database`: `<runtime-root>/security/security.sqlite`.
 - `RuntimePaths.enrollment_marker`: `<runtime-root>/security/enrollment.marker`.
-- `SECURITY_SCHEMA_VERSION = 1`, `SECURITY_FORMAT_VERSION = 1` und `ENROLLMENT_MARKER_VERSION = 1`.
+- Security-Schema v1 war der Ausgangsstand; Sprint 0.2B.3 migriert kontrolliert auf v2. `SECURITY_FORMAT_VERSION = 1` und `ENROLLMENT_MARKER_VERSION = 1` bleiben unveraendert.
 - `PASSWORD_HASH_FORMAT_VERSION = 1` fuer Argon2id-PHC-Strings.
 - `RECOVERY_CODE_FORMAT_VERSION = 1` fuer `JKM1-XXXX-XXXX-XXXX-XXXX-C`.
 - `installation_id`: zufaellige UUIDv4; Supportdarstellung `INS-<uuid>`.

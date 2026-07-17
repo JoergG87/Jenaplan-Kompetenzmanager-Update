@@ -2,6 +2,20 @@
 
 SPRINTS.md dient ausschließlich der operativen Projektplanung.
 
+## Sprint 0.2B.3 - Signierter Support-Reset-Core mit Ed25519
+
+- [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
+- [x] Ed25519-Reset ohne Masterpasswort und ohne privaten Schluessel im Produkt vertraglich festgelegt
+- [x] kanonisches `JKM-SR1`-Token, strikte Pruefung und oeffentliche Offline-Key-Registry umgesetzt
+- [x] einmalige maximal 24 Stunden aktive Reset-Anfrage mit injizierbarer Uhr und Zufallsquelle umgesetzt
+- [x] Security Store transaktional von Schema v1 auf v2 migriert und Security-Epoch persistiert
+- [x] verifiziertes fachliches Sicherheitsbackup als zwingende Vorbedingung angebunden
+- [x] atomaren Reset auf `password_reset_pending` mit Recovery-Widerruf und Epoch-Erhoehung umgesetzt
+- [x] getrennte Support-Tools fuer verschluesseltes PKCS#8-Keypair und Tokensignatur ergaenzt
+- [x] Dependency, arm64-PyInstaller-Packaging, Bundle-Ausschluesse, Tests und Scans abgeschlossen
+- [x] keine UI, Startblockade, Sitzung, App-Beendigung, neues Passwort oder neue Recovery-Codes vorgesehen
+- [x] kein Commit vorgesehen
+
 ## Sprint 0.2B.2 - Security Core
 
 - [x] Anwendungssperre klar von Datenbank-, Dokument- und Backupverschluesselung abgegrenzt

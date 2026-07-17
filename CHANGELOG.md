@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## Sprint 0.2B.3 - Signierter Support-Reset-Core mit Ed25519
+
+### Added
+
+- Qt-freien Offline-Support-Reset mit Ed25519, kanonischem `JKM-SR1`-Token und strikt gebundener technischer Reset-Anfrage umgesetzt.
+- Oeffentliche Offline-Key-Registry mit Rotation/Widerruf per App-Update, monotone Security-Epoch und migrationssicheren Security-Store v2 ergaenzt.
+- Vorbedingung eines erfolgreich erzeugten und vollstaendig verifizierten fachlichen `.jkmbackup` sowie atomaren Wechsel zu `password_reset_pending` angebunden.
+- Getrennte Support-Werkzeuge fuer passphrasengeschuetztes PKCS#8-Keymaterial und Tokensignatur ohne Aufnahme in das App-Bundle ergaenzt.
+
+### Changed
+
+- `cryptography 49.0.0` samt reproduzierbaren macOS-Buildabhaengigkeiten registriert und die PyInstaller-Spezifikation um den Qt-freien Support-Reset-Core erweitert.
+- Security Store v1 wird bei explizitem Security-Zugriff additiv und transaktional auf Schema v2 migriert; bestehende Accounts, Argon2id-Hashes, Recovery-Codes und Markerbindung bleiben erhalten.
+
+### Security
+
+- Es gibt kein Masterpasswort, keinen privaten Schluessel im Repository, Build oder App-Bundle, keinen Cloud-Dienst und keinen algorithmischen Fallback.
+- Reset-Anfragen gelten hoechstens 24 Stunden; Tokens standardmaessig 30 Minuten und hoechstens zwei Stunden bei zwei Minuten Uhrtoleranz. Installation, Nutzer, Anfrage, Nonce, Aktion und `key_id` sind signiert gebunden und einmalig.
+- Der Reset veraendert ausschliesslich Authentifizierungszustaende. Fachliche Datenbank, Dokumente, Backups, IDs, Backupformat und Restore-Vertraege bleiben unveraendert.
+
+### Verified
+
+- 43 neue Support-Reset-/Tool-Tests, 83 fokussierte Security-Tests, 128 Backup-/Restore-/Runtime-Kompatibilitaetstests sowie 767 Gesamttests und 67 Subtests erfolgreich ausgefuehrt.
+- `compileall`, Offscreen-Import, realer Ed25519-Sign-/Verify-Smoke, v1-v2-Migrations-Smoke, reales verifiziertes `.jkmbackup` und `pip check` erfolgreich.
+- Isolierter arm64-PyInstaller-App-Build, Packaged-App-Smoke und eigener gebuendelter Ed25519-Smoke erfolgreich; Bundle-Scan bestaetigt den Core und schliesst Support-Tools, Tests, Fixtures sowie private Schluesseldateien aus.
+
+### Not Changed
+
+- Keine Auth-/Reset-/Sperr-UI, Startblockade, Sitzung, App-Beendigung, neues Passwort, neue Recovery-Codes, Keychain, Touch ID, Geraete-/Sitzungstokens, Verschluesselung, Cloud oder fachliche Funktion. Kein Commit.
+
 ## Sprint 0.2B.2 - Security Core
 
 ### Added

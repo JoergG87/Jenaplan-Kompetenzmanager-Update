@@ -1,5 +1,70 @@
 # Data Lifecycle
 
+## Signierten Support-Reset anfordern und atomar ausfuehren
+
+Der Prozess wird nur durch explizite Qt-freie Application-Aufrufe aktiviert.
+Import und normaler App-Start erzeugen weder Anfrage noch Token, Backup oder
+Security-Aenderung. Sprint 0.2B.3 besitzt keine UI, Startblockade oder Sitzung.
+
+Anfrage:
+
+```text
+SupportResetService.create_request
+-> gebundenen Security-Zustand `ready` und aktives lokales Konto pruefen
+-> zufaellige UUIDv4 `reset_request_id` und 32-Byte-Nonce erzeugen
+-> hoechstens 24 Stunden Gueltigkeit festlegen
+-> bisher aktive Anfrage atomar widerrufen
+-> neue technische Anfrage atomar aktivieren
+```
+
+Die Anfrage enthaelt nur Formatversion, Installation, Nutzer, Anfrage-ID,
+Nonce, Aktion und UTC-Zeitpunkte. Ein getrenntes Support-Werkzeug liest diese
+technischen Werte, laedt einen passphrasengeschuetzten privaten Ed25519-PKCS#8-
+Schluessel und erzeugt ein standardmaessig 30 Minuten, maximal zwei Stunden
+gueltiges `JKM-SR1`-Token. Private Schluessel, Passphrase und Klartext werden
+weder geloggt noch in die App oder Registry uebernommen.
+
+Pruefung und Reset:
+
+```text
+SupportResetService.execute
+-> Groesse, Envelope/Version und striktes Base64url pruefen
+-> kanonisches UTF-8-JSON, feste Felder/Reihenfolge/Typen und Algorithmus pruefen
+-> oeffentlichen Key-Status und -Gueltigkeit pruefen
+-> Ed25519-Signatur ueber exakt die kanonischen Payloadbytes pruefen
+-> Installation, Nutzer, Anfrage, Nonce und Aktion binden
+-> Tokenzeit mit zwei Minuten Toleranz und maximal zwei Stunden pruefen
+-> Token-Digest und aktive einmalige Anfrage read-only vorpruefen
+-> vorhandenen Backup-Service aufrufen
+-> neues fachliches `.jkmbackup` vollstaendig erzeugen und verifizieren
+-> erst danach eine `BEGIN IMMEDIATE`-Security-Transaktion starten
+-> Anfrage und Token-Digest verbrauchen
+-> alten Passworthash in einen nicht verifizierbaren Reset-Marker ersetzen
+-> Konto auf `password_reset_pending` setzen
+-> aktive und vorbereitete Recovery-Saetze samt Codes widerrufen
+-> Login-/Recovery-Fehlversuche und Sperren neutralisieren
+-> Security-Epoch monoton erhoehen und technischen Aenderungszeitpunkt setzen
+```
+
+Jeder Erstellungs-, Verifikations-, Port- oder Backupfehler bricht vor der
+Security-Transaktion ab. Konkurrenz kann nur eine Anfrage/Token-Kombination
+verbrauchen. Das Sicherheitsbackup verwendet unveraendert `.jkmbackup`; der
+Security Store bleibt ausgeschlossen. Fachliche Datenbank, Dokumente, Backups,
+IDs und Restore-Vertraege werden nicht migriert oder veraendert.
+
+Anfrage und Token sind nicht vor `created_at` und nicht nach `expires_at`
+gueltig. Zwei Minuten Toleranz dienen ausschliesslich begrenztem Clock Skew;
+eine manipulierte oder stark falsche Offline-Uhr bleibt ein Restrisiko.
+Unbekannte Version, Aktion, Algorithmus, unbekannte/widerrufene/nicht gueltige
+Schluessel, nicht kanonische Payloads und Wiederverwendung werden ohne Fallback
+abgelehnt. Nach Erfolg sind altes Passwort, alte Recovery-Codes und dasselbe
+Token unwirksam.
+
+Die Security-Epoch ist der spaetere Widerrufsanker fuer gespeicherte
+Anmeldungen. `Auf diesem Geraet angemeldet bleiben`, Geraete-/Sitzungstokens,
+Keychain und optionales Touch ID folgen erst in eigenen Sprints;
+Inaktivitaetssperre und Passwort-Fallback bleiben dann verbindlich.
+
 ## Security Store feststellen und initial einrichten
 
 Der Security Core wird nur durch einen expliziten Application-Aufruf aktiviert;

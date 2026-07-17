@@ -6,7 +6,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Protocol, Sequence
 
-from .domain import AccountRecord, RecoveryCodeCandidate, RecoveryCodeHash
+from .domain import (
+    AccountRecord,
+    RecoveryCodeCandidate,
+    RecoveryCodeHash,
+    SecurityBackupProof,
+    SupportPublicKey,
+    SupportResetPayload,
+    SupportResetRequest,
+)
 
 
 class RandomSource(Protocol):
@@ -41,6 +49,18 @@ class FilePermissionManager(Protocol):
     def secure_file(self, path: Path) -> None: ...
     def secure_sqlite_files(self, database_path: Path) -> None: ...
     def verify(self, security_directory: Path) -> bool | None: ...
+
+
+class SupportResetSignatureVerifier(Protocol):
+    def verify(self, public_key: bytes, message: bytes, signature: bytes) -> bool: ...
+
+
+class SupportPublicKeyRegistry(Protocol):
+    def get(self, key_id: str) -> SupportPublicKey | None: ...
+
+
+class SupportSecurityBackupPort(Protocol):
+    def create_and_verify(self) -> SecurityBackupProof: ...
 
 
 class SecurityRepository(Protocol):
@@ -95,3 +115,16 @@ class SecurityRepository(Protocol):
         recovery_codes: Sequence[RecoveryCodeHash],
         now: datetime,
     ) -> bool: ...
+    def create_support_reset_request(self, request: SupportResetRequest) -> None: ...
+    def load_support_reset_request(
+        self, reset_request_id: str
+    ) -> SupportResetRequest | None: ...
+    def support_token_digest_used(self, token_digest: bytes) -> bool: ...
+    def consume_support_reset(
+        self,
+        *,
+        payload: SupportResetPayload,
+        token_digest: bytes,
+        now: datetime,
+    ) -> int | None: ...
+    def security_epoch(self) -> int: ...
