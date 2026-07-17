@@ -2,6 +2,54 @@
 
 ## Security Core ab Version 0.2
 
+Sprint 0.2B.4 integriert den Core produktiv. Restore-Recovery bleibt vor der
+Authentifizierung; die fachliche Runtime samt Pilotdaten, Produktordnern,
+SQLite-Adaptern und `AppShell` entsteht erst nach erfolgreichem Erstkonto,
+Login oder abgeschlossenem Passwort-Reset. Neuinstallationen und vorhandene
+ungeschuetzte Installationen erhalten genau ein lokales Konto mit zehn einmalig
+angezeigten Recovery-Codes.
+
+Die Sitzung existiert nur im Arbeitsspeicher und wird durch `user_id`,
+`installation_id` und `security_epoch` gebunden. Manuelle Sperre, Inaktivitaet
+und Wake zeigen eine opake neutrale Sperransicht und erhalten ungespeicherte
+In-Memory-Eingaben. Die Sicherheitseinstellungen bieten feste Intervalle,
+Passwortwechsel, Recovery-Code-Erneuerung und `Jetzt sperren`.
+
+Ein optionaler lokaler Anzeigename gehoert zum allgemeinen App-Profil, nicht
+zum Authentifizierungskonto. Er wird bei Erstkonto/Legacy-Aufnahme freiwillig
+erfasst, spaeter im getrennten Bereich `Persönliche Begrüßung` geaendert und
+fuer eine dezente tageszeitabhaengige Dashboard-Begruessung verwendet. Der
+atomare Store `<runtime-root>/app-preferences.json` bleibt ausserhalb von
+Security-SQLite, fachlicher SQLite, Support-Reset und `.jkmbackup`.
+
+Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
+FileVault und ein geschuetztes Betriebssystemkonto bleiben empfohlen. Keychain,
+Touch ID, Windows Hello, `angemeldet bleiben`, Support-Reset-Token-UI und
+Verschluesselung sind nicht Bestandteil dieses Stands.
+
+Die reale Pilot-Mac-Abnahme der 0.2B.4-Sicherheitsintegration bleibt trotz
+automatisierter und Offscreen-Pruefungen weiterhin offen, solange die
+physische Bedienungshilfen-basierte Abnahme nicht nachgeholt wurde.
+Insbesondere ist echter Sleep/Wake auf dem Pilot-Mac noch nicht physisch
+bestaetigt.
+
+## Erste Schritte ab Version 0.2C.1
+
+Nach erfolgreicher Authentifizierung und Aufbau der fachlichen Shell kann die
+Lehrkraft einmalig eine kurze Orientierung `Erste Schritte` erhalten. Der Flow
+ist kein fachlicher Assistent: Er erklaert Zweck und Reihenfolge, zeigt nur
+vorhandene Bereiche und navigiert zu bestehenden Seiten. Er erzeugt keine
+Stammgruppen, Kurse, Kinder, Beobachtungen, Backups, Beispiel- oder
+Pilotdaten.
+
+Der Status liegt rein lokal in
+`<runtime-root>/app-preferences.json` und ist weder Security-Attribut noch
+fachlicher Datenbestand. Fachliches Restore, Support-Reset, Passwortwechsel und
+Recovery veraendern ihn nicht. Bestehende Installationen ohne Onboarding-Status
+duerfen beim ersten Start dieser Produktversion einmal die Orientierung sehen;
+`completed` und `dismissed` oeffnen nicht erneut automatisch. Unter
+`Einstellungen` kann `Erste Schritte erneut öffnen` bewusst aufgerufen werden.
+
 Die Architektur besitzt einen fachlich getrennten Security Core unter
 `<runtime-root>/security/`. Die App-Sperre ist keine Verschluesselung der
 Datenbank, Dokumente oder Backups. Der Security Store wird nicht gesichert,

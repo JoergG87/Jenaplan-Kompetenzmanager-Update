@@ -1,5 +1,101 @@
 # CHANGELOG
 
+## Sprint 0.2C.1 - Geführte Erste Schritte bei erster Ausführung
+
+### Added
+
+- Ruhige Shell-interne Ansicht `Erste Schritte` mit fünf kurzen Schritten:
+  Willkommen, Arbeitsgrundlage, Kinder und Zuordnungen, erste Beobachtung sowie
+  Datensicherung und Abschluss.
+- Navigation aus dem Onboarding zu vorhandenen Zielen:
+  `Fächer für die Dokumentation`, `Stundenplan`, `Stammdaten`, `Schüler` und
+  `Datensicherung`; es werden keine Screens direkt konstruiert.
+- Lokaler Onboarding-Fortschritt in `app-preferences.json` mit
+  `onboarding_status`, `onboarding_current_step` und
+  `onboarding_format_version`.
+- Aktion `Erste Schritte erneut öffnen` in der bestehenden
+  Einstellungsübersicht.
+
+### Changed
+
+- Das Pilot-Handout `Erste Schritte` bleibt als kompakte Pilottest-Orientierung
+  eingeordnet; die verbindlichen Produkt-, Lifecycle-, Mapping- und
+  Bedienverträge liegen weiterhin in den bestehenden kanonischen Quellen.
+- `AppPreferencesFile` ist rueckwaertskompatibel zu Formatversion 1 und liest
+  unbekannte neuere Preference-/Onboarding-Versionen konservativ ohne
+  App-Absturz.
+- Passwortwechsel, Recovery, Support-Reset und fachliches Restore bleiben vom
+  Onboarding-Status getrennt; der Store bleibt ausserhalb von Security Store,
+  fachlicher SQLite und `.jkmbackup`.
+- Der Packaged-Smoke oeffnet das Onboarding nicht automatisch.
+
+### Verified
+
+- Neue Onboarding-/Preference-/Shell-Fokustests sowie betroffene
+  Security-/Settings-Regressionen wurden ergänzt und erfolgreich ausgeführt.
+- `git diff --check` und `compileall` waren erfolgreich.
+
+### Not Changed
+
+- Keine Importfunktion, keine fachliche Datenanlage, keine neue
+  Stammgruppen-, Kurs-, Schüler-, Beobachtungs-, Berichts- oder LEG-Funktion.
+- Keine Keychain-, Touch-ID-, Windows-Hello-, `angemeldet bleiben`-,
+  Support-Reset-UI- oder Verschlüsselungsfunktion.
+- Die reale Pilot-Mac-Abnahme von Sprint 0.2B.4 bleibt offen. Kein Commit.
+
+## Sprint 0.2B.4 - Sichere Startintegration, Erstkonto, Login, Recovery, Sitzung und Sperre
+
+### Added
+
+- Produktives Auth-Gate mit expliziter Startzustandsmaschine, Erstkonto- und
+  Legacy-Aufnahme, Login, Recovery-/Pending-Abschluss und fail-closed
+  Fehleransichten.
+- Epoch-gebundene In-Memory-Sitzung sowie zentrale manuelle, Inaktivitaets- und
+  Wake-Sperre mit opaker neutraler Ansicht und Erhalt ungespeicherter Eingaben.
+- Sicherheits-Unterseite fuer feste Sperrintervalle, Passwortwechsel,
+  Recovery-Code-Erneuerung, `Jetzt sperren`, Verschluesselungsgrenze und
+  FileVault-Hinweis.
+- Optionalen lokalen Anzeigenamen bei Erstkonto und Legacy-Aufnahme,
+  `Persönliche Begrüßung` in den Einstellungen und eine dezente
+  Morgen-/Tag-/Abend-Begruessung auf dem Dashboard ergaenzt.
+
+### Changed
+
+- Runtime-Vorbereitung in technische Vor-Auth- und fachliche Nach-Auth-Phase
+  geteilt; Pilotdaten, Produktordner, Logging, fachliche SQLite, Adapter,
+  Projektionen und `AppShell` starten erst nach Authentifizierung.
+- Recovery und Kontoaufnahme aktivieren neue Codes erst nach ausdruecklicher
+  Sicherungsbestaetigung; Passwortwechsel und Reset binden Sitzungen an die
+  monotone Security-Epoch.
+- Backup-/Restore-UI reagiert auf Sperre, ohne laufende Backups oder bestaetigte
+  Worker-Handoffs abzubrechen; Packaged-Smoke bleibt doppelt isoliert.
+- Den vorhandenen atomaren lokalen Praeferenzpfad als allgemeinen
+  `app-preferences.json`-Store fuer Sperrintervall und optionalen `display_name`
+  ausgerichtet; kein zweiter Store und keine Security-/Fachdatenkopplung.
+
+### Verified
+
+- 800 Gesamttests mit Subtests sowie 250 fokussierte
+  Profil-/Dashboard-/Security-/Backup-/Restore-Tests, `compileall` und
+  Offscreen-Import erfolgreich.
+- Offscreen-Start- und Sichtpruefungen fuer Erstkonto, Login, opake Sperre,
+  ungespeicherte Eingaben und fail-closed Zustaende in 1180x760 und 1400x900
+  erfolgreich.
+- Isolierter arm64-PyInstaller-Build und Packaged-App-Smoke erfolgreich;
+  normaler Paketstart bleibt am Auth-Gate, ein einzelner Smoke-Schalter wird
+  fail-closed abgewiesen und das leere Bundle enthaelt keine fachliche
+  Datenbank.
+
+### Not Changed
+
+- Keine fachliche Funktion, fachliche Datenmigration, Aenderung von IDs,
+  Dokumentpfaden, Backupformat oder Restore-Vertraegen.
+- Anzeigename bleibt ausserhalb von `security.sqlite`, Security-Logs,
+  Support-Reset-Anfragen und `.jkmbackup`; Passwortwechsel, Recovery und Reset
+  veraendern ihn nicht.
+- Keine Keychain-, Touch-ID-, Windows-Hello-, `angemeldet bleiben`-,
+  Support-Reset-UI- oder Verschluesselungsfunktion und kein Commit.
+
 ## Sprint 0.2B.3 - Signierter Support-Reset-Core mit Ed25519
 
 ### Added

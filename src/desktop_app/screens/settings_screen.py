@@ -6,9 +6,10 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeySequence, QKeyEvent
 from PySide6.QtWidgets import (
     QCheckBox, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QPushButton, QScrollArea,
-    QProgressBar, QStackedWidget, QTabBar, QVBoxLayout, QWidget,
+    QComboBox, QLineEdit, QProgressBar, QStackedWidget, QTabBar, QVBoxLayout, QWidget,
 )
 
+from src.core.app_preferences import DISPLAY_NAME_MAX_LENGTH
 from src.desktop_app.components import AppCard, InlineMessage, PageHeader, configure_button
 from src.desktop_app.theme import create_card, set_label_style
 from src.desktop_app.view_models.backup_restore_view_model import (
@@ -83,6 +84,12 @@ class SettingsScreen(QWidget):
     restore_prepare_requested = Signal()
     restore_start_requested = Signal()
     backup_restore_page_opened = Signal()
+    inactivity_minutes_changed = Signal(int)
+    password_change_requested = Signal()
+    recovery_codes_requested = Signal()
+    lock_requested = Signal()
+    display_name_changed = Signal(str)
+    onboarding_requested = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -114,6 +121,7 @@ class SettingsScreen(QWidget):
         self.pages.addWidget(self._detail_page("timetable", "Stundenplan", self._timetable_card()))
         self.pages.addWidget(self._detail_page("documentation_subjects", "Fächer für die Dokumentation", self._documentation_subjects_card()))
         self.pages.addWidget(self._detail_page("backup_restore", "Datensicherung", self._backup_restore_card()))
+        self.pages.addWidget(self._detail_page("security", "Sicherheit", self._security_card()))
         outer.addWidget(self.pages)
 
     def _scroll_page(self, content: QWidget) -> QWidget:
@@ -132,10 +140,36 @@ class SettingsScreen(QWidget):
             "timetable": SettingsNavigationCard("timetable", "Stundenplan", "Unterrichtszeiten und Zuordnungen verwalten"),
             "documentation_subjects": SettingsNavigationCard("documentation_subjects", "Fächer für die Dokumentation", "Sichtbare Fächer auswählen"),
             "backup_restore": SettingsNavigationCard("backup_restore", "Datensicherung", "Backup erstellen und wiederherstellen"),
+            "security": SettingsNavigationCard("security", "Sicherheit", "Passwortschutz und automatische Sperre"),
         }
         for card in self.settings_cards.values():
             card.activated.connect(self.show_page)
             layout.addWidget(card)
+        general = create_card()
+        general_layout = QHBoxLayout(general)
+        general_layout.setContentsMargins(20, 14, 18, 14)
+        text = QVBoxLayout()
+        title = QLabel("Allgemein")
+        set_label_style(title, "section_title")
+        text.addWidget(title)
+        hint = QLabel("Kurze Orientierung zur Einrichtung erneut öffnen.")
+        hint.setWordWrap(True)
+        set_label_style(hint, "muted")
+        text.addWidget(hint)
+        general_layout.addLayout(text, 1)
+        self.onboarding_button = QPushButton("Erste Schritte erneut öffnen")
+        configure_button(
+            self.onboarding_button,
+            "secondary",
+            "Erste Schritte erneut öffnen",
+        )
+        self.onboarding_button.clicked.connect(self.onboarding_requested)
+        general_layout.addWidget(
+            self.onboarding_button,
+            0,
+            Qt.AlignmentFlag.AlignVCenter,
+        )
+        layout.addWidget(general)
         layout.addStretch(1)
         return self._scroll_page(content)
 
@@ -154,10 +188,10 @@ class SettingsScreen(QWidget):
         return self._scroll_page(content)
 
     def show_page(self, key: str) -> None:
-        if self.operation_active or key not in {"timetable", "documentation_subjects", "backup_restore"}:
+        if self.operation_active or key not in {"timetable", "documentation_subjects", "backup_restore", "security"}:
             return
         self.current_page = key
-        self.pages.setCurrentIndex({"timetable": 1, "documentation_subjects": 2, "backup_restore": 3}[key])
+        self.pages.setCurrentIndex({"timetable": 1, "documentation_subjects": 2, "backup_restore": 3, "security": 4}[key])
         if key == "backup_restore":
             self.backup_restore_page_opened.emit()
 
@@ -213,6 +247,25 @@ class SettingsScreen(QWidget):
         else:
             self.settings_cards["backup_restore"].status.setText(f"Letzte geprüfte Sicherung: {backup.created_at}")
             self.latest_backup_label.setText(f"{backup.created_at} · {backup.file_name} · {backup.size_label} · Geprüft")
+
+    def set_security_status(self, inactivity_minutes: int) -> None:
+        self.settings_cards["security"].status.setText(
+            f"Passwortschutz aktiv · Sperre nach {inactivity_minutes} Minuten"
+        )
+        self.inactivity_combo.blockSignals(True)
+        self.inactivity_combo.setCurrentIndex(
+            max(0, self.inactivity_combo.findData(inactivity_minutes))
+        )
+        self.inactivity_combo.blockSignals(False)
+
+    def show_security_message(self, text: str, *, tone: str = "success") -> None:
+        self.security_message.set_message(text, tone=tone)
+
+    def set_display_name(self, display_name: str | None) -> None:
+        self.display_name_input.setText(display_name or "")
+
+    def show_profile_message(self, text: str, *, tone: str = "success") -> None:
+        self.profile_message.set_message(text, tone=tone)
 
     def show_backup_success(self, summary: BackupSummaryViewModel, *, verified: bool = False) -> None:
         self.set_backup_status(summary)
@@ -294,6 +347,80 @@ class SettingsScreen(QWidget):
         self.restore_preview_label = QLabel(""); self.restore_preview_label.setWordWrap(True); self.restore_preview_label.setObjectName("RestorePreview"); set_label_style(self.restore_preview_label, "muted"); layout.addWidget(self.restore_preview_label)
         self.restore_message = InlineMessage(); layout.addWidget(self.restore_message)
         self.restore_start_button = QPushButton("Wiederherstellung starten"); configure_button(self.restore_start_button, "primary", "Vorbereitete Wiederherstellung verbindlich starten"); self.restore_start_button.setEnabled(False); self.restore_start_button.clicked.connect(self.restore_start_requested); layout.addWidget(self.restore_start_button, 0, Qt.AlignmentFlag.AlignLeft)
+        return card
+
+    def _security_card(self) -> QFrame:
+        card = create_card()
+        card.setObjectName("SecuritySettingsSection")
+        layout = QVBoxLayout(card)
+        profile_title = QLabel("Persönliche Begrüßung")
+        set_label_style(profile_title, "section_title")
+        layout.addWidget(profile_title)
+        layout.addWidget(QLabel("Wie dürfen wir dich begrüßen?"))
+        self.display_name_input = QLineEdit()
+        self.display_name_input.setPlaceholderText("Zum Beispiel Laura")
+        self.display_name_input.setAccessibleName(
+            "Optionaler Anzeigename für die persönliche Begrüßung"
+        )
+        self.display_name_input.setMaxLength(DISPLAY_NAME_MAX_LENGTH)
+        self.display_name_input.returnPressed.connect(
+            lambda: self.display_name_changed.emit(self.display_name_input.text())
+        )
+        layout.addWidget(self.display_name_input)
+        profile_hint = QLabel("Optional · Wird nur lokal als Klartext angezeigt.")
+        set_label_style(profile_hint, "small")
+        layout.addWidget(profile_hint)
+        save_profile = QPushButton("Begrüßung speichern")
+        configure_button(save_profile, "secondary", "Persönliche Begrüßung speichern")
+        save_profile.clicked.connect(
+            lambda: self.display_name_changed.emit(self.display_name_input.text())
+        )
+        layout.addWidget(save_profile, 0, Qt.AlignmentFlag.AlignLeft)
+        self.profile_message = InlineMessage()
+        layout.addWidget(self.profile_message)
+        security_title = QLabel("App-Sperre")
+        set_label_style(security_title, "section_title")
+        layout.addWidget(security_title)
+        active = QLabel("Passwortschutz aktiv")
+        layout.addWidget(active)
+        interval_label = QLabel("Automatisch sperren nach")
+        layout.addWidget(interval_label)
+        self.inactivity_combo = QComboBox()
+        self.inactivity_combo.setAccessibleName("Automatische Sperrzeit")
+        for minutes in (5, 10, 15, 30, 60):
+            self.inactivity_combo.addItem(f"{minutes} Minuten", minutes)
+        self.inactivity_combo.currentIndexChanged.connect(
+            lambda _index: self.inactivity_minutes_changed.emit(
+                int(self.inactivity_combo.currentData())
+            )
+        )
+        layout.addWidget(self.inactivity_combo, 0, Qt.AlignmentFlag.AlignLeft)
+        self.security_message = InlineMessage()
+        layout.addWidget(self.security_message)
+        change = QPushButton("Passwort ändern")
+        configure_button(change, "secondary", "Lokales Passwort ändern")
+        change.clicked.connect(self.password_change_requested)
+        layout.addWidget(change, 0, Qt.AlignmentFlag.AlignLeft)
+        recovery = QPushButton("Recovery-Codes neu erzeugen")
+        configure_button(recovery, "secondary", "Neue Recovery-Codes erzeugen")
+        recovery.clicked.connect(self.recovery_codes_requested)
+        layout.addWidget(recovery, 0, Qt.AlignmentFlag.AlignLeft)
+        lock = QPushButton("Jetzt sperren")
+        configure_button(lock, "primary", "App jetzt sperren")
+        lock.clicked.connect(self.lock_requested)
+        layout.addWidget(lock, 0, Qt.AlignmentFlag.AlignLeft)
+        notice = QLabel(
+            "Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups."
+        )
+        notice.setWordWrap(True)
+        set_label_style(notice, "muted")
+        layout.addWidget(notice)
+        filevault = QLabel(
+            "Für den Schutz der Dateien auf dem Mac empfehlen wir FileVault und ein geschütztes Benutzerkonto."
+        )
+        filevault.setWordWrap(True)
+        set_label_style(filevault, "small")
+        layout.addWidget(filevault)
         return card
 
     def _update_backup_restore_actions(self) -> None:

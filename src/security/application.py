@@ -176,6 +176,49 @@ class SecurityApplicationService:
             displayed_codes,
         )
 
+    def prepare_local_account_enrollment(self, password: str) -> EnrollmentResult:
+        """Create a fail-closed pending account until codes are confirmed."""
+        if self.security_store_state().state != SecurityStoreState.UNINITIALIZED:
+            raise SecurityStateError("security_store_not_uninitialized")
+        self._password_policy.validate(password)
+        now = self._now()
+        installation_id = self._new_uuid4()
+        marker_reference = self._new_uuid4()
+        user_id = self._new_uuid4()
+        recovery_set_id = self._new_uuid4()
+        displayed_codes, code_hashes = self._new_recovery_codes()
+        password_hash = self._password_hasher.hash(password, self._random.bytes(16))
+        self._repository.initialize(
+            installation_id=installation_id,
+            marker_reference=marker_reference,
+            user_id=user_id,
+            password_hash=password_hash,
+            hash_format_version=PASSWORD_HASH_FORMAT_VERSION,
+            recovery_set_id=recovery_set_id,
+            recovery_codes=code_hashes,
+            now=now,
+            pending=True,
+        )
+        self._marker.publish(marker_reference)
+        if self.security_store_state().state != SecurityStoreState.PASSWORD_RESET_PENDING:
+            raise SecurityStateError("security_enrollment_pending_incomplete")
+        self._permissions.secure_sqlite_files(self._repository.database_path)
+        return EnrollmentResult(
+            installation_id,
+            format_installation_id(installation_id),
+            user_id,
+            recovery_set_id,
+            displayed_codes,
+        )
+
+    def confirm_local_account_enrollment(self, recovery_set_id: str) -> bool:
+        self._require_state(SecurityStoreState.PASSWORD_RESET_PENDING)
+        validate_uuid4(recovery_set_id)
+        confirmed = self._repository.activate_pending_account(
+            recovery_set_id=recovery_set_id, now=self._now()
+        )
+        return confirmed and self.security_store_state().state == SecurityStoreState.READY
+
     def current_lock_state(self) -> LockState:
         self._require_state(SecurityStoreState.READY)
         account = self._repository.load_account()
@@ -314,6 +357,14 @@ class SecurityApplicationService:
     def complete_recovery_password_reset(
         self, replacement_password: str
     ) -> RecoveryPreparation:
+        prepared = self.prepare_recovery_password_reset(replacement_password)
+        if not self.confirm_recovery_password_reset(prepared.recovery_set_id):
+            raise SecurityStateError("password_reset_confirmation_failed")
+        return prepared
+
+    def prepare_recovery_password_reset(
+        self, replacement_password: str
+    ) -> RecoveryPreparation:
         self._require_state(SecurityStoreState.PASSWORD_RESET_PENDING)
         self._password_policy.validate(replacement_password)
         password_hash = self._password_hasher.hash(
@@ -321,7 +372,7 @@ class SecurityApplicationService:
         )
         recovery_set_id = self._new_uuid4()
         displayed, hashed = self._new_recovery_codes()
-        if not self._repository.complete_password_reset(
+        if not self._repository.prepare_password_reset(
             replacement_hash=password_hash,
             recovery_set_id=recovery_set_id,
             recovery_codes=hashed,
@@ -331,6 +382,14 @@ class SecurityApplicationService:
         self._login_monotonic_deadline = None
         self._recovery_monotonic_deadline = None
         return RecoveryPreparation(recovery_set_id, displayed)
+
+    def confirm_recovery_password_reset(self, recovery_set_id: str) -> bool:
+        self._require_state(SecurityStoreState.PASSWORD_RESET_PENDING)
+        validate_uuid4(recovery_set_id)
+        confirmed = self._repository.confirm_password_reset(
+            recovery_set_id=recovery_set_id, now=self._now()
+        )
+        return confirmed and self.security_store_state().state == SecurityStoreState.READY
 
     def _lock_state(self, account: AccountRecord, *, recovery: bool) -> LockState:
         now = self._now()

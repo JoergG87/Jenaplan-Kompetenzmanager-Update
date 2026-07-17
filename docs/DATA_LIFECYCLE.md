@@ -1,5 +1,80 @@
 # Data Lifecycle
 
+## Sprint 0.2B.4 - Kontoaufnahme, Authentifizierung und Sperre
+
+Start: Nach Restore-Recovery werden nur Runtime-Root und `security/` sicher
+vorbereitet. Store und Marker werden getrennt validiert. Erst `authenticated`
+gibt die bestehende fachliche Runtime-Vorbereitung frei; vorher sind
+Pilotdatenkopie, Produktordner, fachliche SQLite-Verbindung, Adapter,
+`refresh_all()` und `AppShell` unzulaessig.
+
+Erstkonto und Legacy-Aufnahme: Nur wenn Store und Marker gemeinsam fehlen,
+wird anhand bereits vorhandener fachlicher Runtime-Artefakte zwischen
+`first_run` und `legacy_enrollment` unterschieden, ohne die fachliche Datenbank
+zu oeffnen. Passwort und zehn Codes werden vorbereitet. Der Account bleibt bis
+zur ausdruecklichen Sicherungsbestaetigung `password_reset_pending`; erst die
+atomare Bestaetigung aktiviert Konto und Recovery-Satz. Abbruch vor der
+Bestaetigung gibt die fachliche App nicht frei. Store-/Marker-Asymmetrie ist
+`inconsistent` und darf nicht neu aufgenommen werden.
+
+Optionales App-Profil bei Kontoaufnahme: Erstkonto und Legacy-Aufnahme sammeln
+`display_name` rein optional neben dem Security-Prozess. Die UI entfernt nur
+aeussere Leerzeichen, wertet leere Eingabe als `null`, erhaelt internen
+Unicode-Inhalt und begrenzt auf 80 Zeichen. Persistiert wird erst nach der
+erfolgreich bestaetigten Kontoaktivierung atomar in `app-preferences.json`.
+Fehler oder Verzicht beim Anzeigenamen veraendern weder Pending-/Crashvertrag
+noch Account-Aktivierung, Recovery-Codes oder Freigabeentscheidung.
+
+Login: Argon2-Verifikation laeuft ausserhalb des UI-Threads. Erfolg setzt
+Fehlversuche zurueck, darf atomar rehashen und erzeugt eine neue fluechtige
+Sitzung aus Kontobindung und aktueller Epoch. Fehler und Sperrzeiten bleiben
+generisch; Secrets werden weder geloggt noch persistiert.
+
+Recovery: Ein akzeptierter einmaliger Code setzt das Konto atomar auf
+`password_reset_pending`; normaler Login ist danach gesperrt. Neues Passwort
+und neuer Recovery-Satz werden vorbereitet, alte Saetze widerrufen und die
+Epoch erhoeht. Erst die Bestaetigung der einmal gezeigten Codes aktiviert Satz
+und Konto atomar. Ein Crash bleibt fortsetzbar in `password_reset_pending`;
+altes Passwort und alte Codes geben die App nicht frei. Derselbe Abschluss gilt
+fuer einen bereits erfolgten Support-Reset, ohne Token-Eingabe in der UI.
+
+Passwortwechsel: Aktuelles Passwort, Policy und atomarer Hashaustausch werden
+im Core geprueft. Fehlversuche werden neutralisiert und die Epoch wird in
+derselben Transaktion erhoeht. Der bestehende Recovery-Satz bleibt erhalten;
+die laufende Sitzung wird mit der neuen Epoch erneuert.
+
+App-Profil aendern: Die Unterseite `Sicherheit` fuehrt den klar getrennten
+Bereich `Persönliche Begrüßung`. Speichern normalisiert und validiert ueber
+`AppPreferencesFile`, aktualisiert die Dashboard-Projektion und beruehrt weder
+Security Store noch fachliche SQLite. Passwortwechsel, Recovery und
+Support-Reset lesen oder schreiben `display_name` nicht. Fachliches Restore
+ersetzt den Wert nicht; `.jkmbackup` nimmt ihn nicht auf.
+
+Erste Schritte: Nach erfolgreicher Authentifizierung und Shell-Aufbau prueft
+`OnboardingController` ausschliesslich den lokalen `AppPreferencesFile`.
+`not_started` und `in_progress` koennen die ruhige Orientierung oeffnen;
+`completed` und `dismissed` oeffnen nicht automatisch. Bestehende
+Installationen ohne Onboarding-Felder werden als neue lokale Produkteinfuehrung
+einmal `not_started` migriert. Weiter/Zurueck speichern atomar den aktuellen
+Schritt, Ueberspringen speichert `dismissed`, Abschluss speichert `completed`.
+Navigation aus der Ansicht nutzt nur vorhandene Shell-Routen und speichert keine
+fachlichen Daten. Fachliches Restore, Passwortwechsel, Recovery und
+Support-Reset veraendern den Onboarding-Status nicht.
+
+Sperre: Der zentrale Session-Controller akzeptiert nur echte Tastatur-, Maus-,
+Touch-/Trackpad- und relevante Fensteraktivierung. Timer, Worker,
+Backupfortschritt, Refreshes und Hintergrundsignale sind keine Aktivitaet.
+Manuelle Sperre wirkt sofort; Inaktivitaet nutzt 5/10/15/30/60 Minuten mit
+Standard 15; Wake sperrt bei Fristueberschreitung oder unklarer Zeitbasis.
+Fachliche Fenster werden unsichtbar gehalten, ohne In-Memory-Eingaben zu
+speichern oder zu verwerfen, und nach Authentifizierung wiederhergestellt.
+
+Backup/Restore unter Sperre: Ein laufendes Backup endet weiter; sein
+Fortschritt und Ergebnis werden bis zum Entsperren nicht gezeigt. Eine noch
+unbestaetigte Restore-Vorschau wird geschlossen und aus dem UI-State entfernt.
+Ein bestaetigter Handoff/Worker laeuft weiter. Nach Restore-Recovery ist stets
+eine neue Authentifizierung erforderlich.
+
 ## Signierten Support-Reset anfordern und atomar ausfuehren
 
 Der Prozess wird nur durch explizite Qt-freie Application-Aufrufe aktiviert.

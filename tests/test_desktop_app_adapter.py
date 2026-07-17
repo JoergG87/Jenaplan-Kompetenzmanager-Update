@@ -7052,9 +7052,17 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(
             set(window.screen_index),
-            {"dashboard", "students", "profile", "master_data", "settings"},
+            {
+                "dashboard",
+                "onboarding",
+                "students",
+                "profile",
+                "master_data",
+                "settings",
+            },
         )
         self.assertNotIn("overview", window.screen_index)
+        self.assertNotIn("onboarding", {item.key for item in NAVIGATION_ITEMS})
         self.assertIs(window.overview_screen, window.students_workspace.groups_screen)
         window._show_navigation_item(
             next(

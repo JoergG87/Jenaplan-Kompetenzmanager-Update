@@ -61,6 +61,26 @@ def _runtime(tmp_path: Path) -> RuntimePaths:
     return paths
 
 
+def test_general_app_preferences_are_not_part_of_domain_backup(tmp_path: Path) -> None:
+    paths = _runtime(tmp_path)
+    paths.app_preferences.write_text(
+        '{"display_name":"Laura","format_version":1,"inactivity_minutes":15}\n',
+        encoding="utf-8",
+    )
+    result = BackupApplicationService(now=lambda: FIXED_NOW).create(
+        CreateBackupCommand(
+            paths.database,
+            paths,
+            paths.backups,
+            "0.2.0",
+            "82df25df150e1de219a334d80904c25dbc371659",
+        )
+    )
+    with zipfile.ZipFile(result.path) as archive:
+        assert "app-preferences.json" not in archive.namelist()
+        assert b"Laura" not in b"".join(archive.read(name) for name in archive.namelist())
+
+
 def _insert_base_data(paths: RuntimePaths) -> None:
     with sqlite3.connect(paths.database) as connection:
         connection.execute("PRAGMA foreign_keys = ON")

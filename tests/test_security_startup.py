@@ -1,0 +1,179 @@
+"""Productive auth-gate, pending-account and runtime split contracts."""
+
+from __future__ import annotations
+
+import inspect
+from pathlib import Path
+
+import pytest
+
+from src.desktop_app import main as desktop_main
+from src.desktop_app.runtime import (
+    prepare_security_runtime_storage,
+    runtime_paths,
+)
+from src.security.domain import (
+    AuthenticationStatus,
+    RecoveryStatus,
+    SecurityStoreError,
+    SecurityStoreState,
+)
+from src.security.startup import (
+    SecurityStartState,
+    SecurityStartupResolver,
+    build_security_runtime,
+    legacy_installation_present,
+)
+from src.core.app_preferences import (
+    AppPreferences,
+    AppPreferencesError,
+    OnboardingStatus,
+    normalize_display_name,
+)
+
+
+PASSWORD = "eine lange sichere Startpassphrase"
+NEW_PASSWORD = "eine andere lange sichere Startpassphrase"
+
+
+def _runtime(root: Path):
+    paths = prepare_security_runtime_storage(data_root=root)
+    return paths, build_security_runtime(paths)
+
+
+def test_security_runtime_preparation_creates_no_product_storage(tmp_path: Path) -> None:
+    paths = prepare_security_runtime_storage(data_root=tmp_path / "runtime")
+    assert paths.root.is_dir()
+    assert paths.security.is_dir()
+    assert not paths.database.exists()
+    assert not paths.documents.exists()
+    assert not paths.exports.exists()
+    assert not paths.backups.exists()
+    assert not paths.logs.exists()
+
+
+def test_startup_resolver_distinguishes_first_run_and_legacy_without_db_open(
+    tmp_path: Path,
+) -> None:
+    paths, runtime = _runtime(tmp_path / "runtime")
+    state = runtime.service.security_store_state()
+    resolver = SecurityStartupResolver()
+    assert resolver.resolve(state, legacy_installation_present=False).state is SecurityStartState.FIRST_RUN
+    paths.database.write_bytes(b"not opened sqlite bytes")
+    assert legacy_installation_present(paths)
+    assert resolver.resolve(state, legacy_installation_present=True).state is SecurityStartState.LEGACY_ENROLLMENT
+
+
+def test_pending_enrollment_activates_only_after_code_confirmation(tmp_path: Path) -> None:
+    _paths, runtime = _runtime(tmp_path / "runtime")
+    prepared = runtime.service.prepare_local_account_enrollment(PASSWORD)
+    assert len(prepared.recovery_codes) == 10
+    assert runtime.service.security_store_state().state is SecurityStoreState.PASSWORD_RESET_PENDING
+    assert runtime.service.authenticate_password(PASSWORD).status is AuthenticationStatus.PASSWORD_RESET_REQUIRED
+    assert runtime.service.confirm_local_account_enrollment(prepared.recovery_set_id)
+    assert runtime.service.security_store_state().state is SecurityStoreState.READY
+    assert runtime.service.authenticate_password(PASSWORD).status is AuthenticationStatus.AUTHENTICATED
+
+
+def test_recovery_reset_stays_pending_across_reopen_until_codes_confirmed(
+    tmp_path: Path,
+) -> None:
+    paths, runtime = _runtime(tmp_path / "runtime")
+    enrolled = runtime.service.enroll_local_account(PASSWORD)
+    assert runtime.service.verify_and_consume_recovery_code(enrolled.recovery_codes[0]).status is RecoveryStatus.ACCEPTED
+    epoch_before = runtime.repository.security_epoch()
+    prepared = runtime.service.prepare_recovery_password_reset(NEW_PASSWORD)
+    assert runtime.service.security_store_state().state is SecurityStoreState.PASSWORD_RESET_PENDING
+    assert runtime.repository.security_epoch() == epoch_before + 1
+
+    reopened = build_security_runtime(paths)
+    assert reopened.service.authenticate_password(NEW_PASSWORD).status is AuthenticationStatus.PASSWORD_RESET_REQUIRED
+    assert reopened.service.confirm_recovery_password_reset(prepared.recovery_set_id)
+    assert reopened.service.authenticate_password(NEW_PASSWORD).status is AuthenticationStatus.AUTHENTICATED
+    assert reopened.service.verify_and_consume_recovery_code(enrolled.recovery_codes[1]).status is RecoveryStatus.INVALID
+
+
+def test_password_change_increments_epoch_and_keeps_recovery_set(tmp_path: Path) -> None:
+    _paths, runtime = _runtime(tmp_path / "runtime")
+    enrolled = runtime.service.enroll_local_account(PASSWORD)
+    epoch = runtime.repository.security_epoch()
+    assert runtime.service.change_password(PASSWORD, NEW_PASSWORD).status is AuthenticationStatus.AUTHENTICATED
+    assert runtime.repository.security_epoch() == epoch + 1
+    assert runtime.service.authenticate_password(PASSWORD).status is AuthenticationStatus.INVALID_CREDENTIALS
+    assert runtime.service.authenticate_password(NEW_PASSWORD).status is AuthenticationStatus.AUTHENTICATED
+    assert runtime.service.verify_and_consume_recovery_code(enrolled.recovery_codes[0]).status is RecoveryStatus.ACCEPTED
+
+
+def test_password_change_and_recovery_do_not_change_app_display_name(tmp_path: Path) -> None:
+    paths, runtime = _runtime(tmp_path / "runtime")
+    runtime.preferences.save(
+        AppPreferences(
+            15,
+            "Laura 🌿",
+            onboarding_status=OnboardingStatus.IN_PROGRESS,
+            onboarding_current_step=2,
+        )
+    )
+    enrolled = runtime.service.enroll_local_account(PASSWORD)
+    assert b"Laura" not in paths.security_database.read_bytes()
+    runtime.service.change_password(PASSWORD, NEW_PASSWORD)
+    preferences = runtime.preferences.load()
+    assert preferences.display_name == "Laura 🌿"
+    assert preferences.onboarding_status is OnboardingStatus.IN_PROGRESS
+    assert preferences.onboarding_current_step == 2
+    assert runtime.service.verify_and_consume_recovery_code(
+        enrolled.recovery_codes[0]
+    ).status is RecoveryStatus.ACCEPTED
+    prepared = runtime.service.prepare_recovery_password_reset(PASSWORD)
+    assert runtime.service.confirm_recovery_password_reset(prepared.recovery_set_id)
+    preferences = runtime.preferences.load()
+    assert preferences.display_name == "Laura 🌿"
+    assert preferences.onboarding_status is OnboardingStatus.IN_PROGRESS
+    assert preferences.onboarding_current_step == 2
+    assert b"Laura" not in paths.security_database.read_bytes()
+
+
+def test_app_preferences_store_optional_unicode_name_and_validate_contract(
+    tmp_path: Path,
+) -> None:
+    paths, runtime = _runtime(tmp_path / "runtime")
+    assert runtime.preferences.load() == AppPreferences(15)
+    for minutes in (5, 10, 15, 30, 60):
+        runtime.preferences.save(AppPreferences(minutes, "Łucja 🌿"))
+        assert runtime.preferences.load().inactivity_minutes == minutes
+        assert runtime.preferences.load().display_name == "Łucja 🌿"
+    with pytest.raises(ValueError):
+        AppPreferences(0)
+    assert normalize_display_name("  Laura  ") == "Laura"
+    assert normalize_display_name("  ") is None
+    assert normalize_display_name("L  au  ra") == "L  au  ra"
+    with pytest.raises(ValueError):
+        normalize_display_name("x" * 81)
+    paths.app_preferences.write_text(
+        '{"display_name":null,"format_version":1,"inactivity_minutes":0}\n'
+    )
+    with pytest.raises(AppPreferencesError):
+        runtime.preferences.load()
+
+
+def test_productive_start_order_keeps_product_runtime_and_shell_after_auth() -> None:
+    source = inspect.getsource(desktop_main.main)
+    restore = source.index("recover_interrupted_restore(data_root)")
+    security_paths = source.index("prepare_security_runtime_storage(data_root=data_root)")
+    auth = source.index("run_startup_authentication(")
+    product_runtime = source.index("prepare_runtime_storage(data_root=data_root)")
+    shell = source.index("JenaplanDesktopApp(paths.database")
+    assert restore < security_paths < auth < product_runtime < shell
+    assert source.index("--restore-worker") < restore
+    assert "DISABLE_AUTH" not in source
+
+
+def test_store_marker_asymmetry_never_resolves_to_enrollment(tmp_path: Path) -> None:
+    paths, runtime = _runtime(tmp_path / "runtime")
+    runtime.service.enroll_local_account(PASSWORD)
+    paths.enrollment_marker.unlink()
+    decision = SecurityStartupResolver().resolve(
+        runtime.service.security_store_state(),
+        legacy_installation_present=True,
+    )
+    assert decision.state is SecurityStartState.INCONSISTENT

@@ -6,6 +6,35 @@ SQLite ist die produktive lokale Source of Truth. Workbook-Tabellen sind histori
 
 ## Separater Security Store v2
 
+Sprint 0.2B.4 behaelt Security-Schema v2 und alle vorhandenen Tabellen,
+fachlichen Daten, IDs, Dokumentpfade sowie Backup-/Restore-Formate unveraendert.
+Die produktive Startintegration fuehrt keine fachliche Migration ein.
+
+Zusaetzliche rein technische Runtime-Quelle:
+
+| Quelle | Owner | Inhalt | Ausschluesse |
+| --- | --- | --- | --- |
+| `<runtime-root>/app-preferences.json` | `AppPreferencesFile` | Formatversion, genau eines der Inaktivitaetsintervalle 5/10/15/30/60 Minuten, optionaler lokaler `display_name`, lokaler Onboarding-Status `not_started`/`in_progress`/`completed`/`dismissed`, aktueller Onboarding-Schritt und `onboarding_format_version` | kein Authentifizierungskonto, keine IDs, Tokens, Passwoerter, Recovery-Codes, Rollen, Schul-/E-Mail-/OS-Namen oder fachlichen Daten; ausgeschlossen aus `.jkmbackup`, Restore, Export, Security-Logs und Support-Reset |
+
+`display_name` ist ein allgemeiner lokaler App-Profilwert und keine
+Security-Identitaet. Er ist `null` oder ein nach Entfernen aeusserer Leerzeichen
+hoechstens 80 Zeichen langer Unicode-Klartext. Interner Inhalt bleibt
+unveraendert; HTML/Rich Text wird nicht interpretiert. Der Wert liegt weder in
+`security.sqlite` noch in `kompetenzmanager.sqlite` und besitzt keine Kopplung
+an `user_id`, Recovery, Passwort, Rolle oder Schuelerdaten.
+
+Der Onboarding-Status ist eine lokale Bedienpraeferenz, keine fachliche
+Einrichtung und keine Konto-Eigenschaft. `in_progress` speichert nur den
+aktuellen Schritt. `completed` und `dismissed` verhindern automatische
+Wiederoeffnung; manuelles Oeffnen aus den Einstellungen ist weiterhin moeglich.
+Unbekannte neuere Preference-/Onboarding-Versionen werden konservativ gelesen,
+ohne daraus fachliche Daten zu erzeugen.
+
+`InMemorySession` ist ausdruecklich keine persistente Datenquelle. `user_id`,
+`installation_id` und `security_epoch` existieren nur im Prozessspeicher und
+werden beim App-Ende verworfen. Keychain, Geraete-Token und persistente
+Sitzungsdaten entstehen nicht.
+
 `<runtime-root>/security/security.sqlite` ist eine rein technische lokale
 Security-Quelle und ausdruecklich keine fachliche Source of Truth. Sie liegt
 ausserhalb von `documents/`, verwendet eine von `kompetenzmanager.sqlite`
@@ -50,6 +79,10 @@ Restore-Recovery, Exporten und Diagnose-Allowlists sind das gesamte
 `security/`-Verzeichnis, `security.sqlite`, alle SQLite-Sidecars und
 `enrollment.marker`. Fachlicher Restore darf diese Quellen weder ersetzen noch
 loeschen oder materialisieren.
+
+Ebenso ausgeschlossen bleibt `<runtime-root>/app-preferences.json`, weil
+allgemeine lokale App-Einstellungen nicht zum fachlichen Backupinventar
+gehoeren. Der bestehende Backup- und Restore-Vertrag wird nicht erweitert.
 
 ## Sprint 0.2A.4 - Sichtbare allgemeine Betriebsprojektion
 

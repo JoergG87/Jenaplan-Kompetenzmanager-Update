@@ -15,9 +15,12 @@ class SettingsNavigationTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
 
-    def test_overview_has_exactly_three_areas_and_back_returns(self) -> None:
+    def test_overview_has_exactly_four_areas_and_back_returns(self) -> None:
         screen = SettingsScreen()
-        self.assertEqual(set(screen.settings_cards), {"timetable", "documentation_subjects", "backup_restore"})
+        self.assertEqual(
+            set(screen.settings_cards),
+            {"timetable", "documentation_subjects", "backup_restore", "security"},
+        )
         screen.show_page("backup_restore")
         self.assertEqual(screen.current_page, "backup_restore")
         screen.show_overview()

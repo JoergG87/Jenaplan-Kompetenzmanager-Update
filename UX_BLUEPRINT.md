@@ -25,6 +25,8 @@ Zielplattform ist Microsoft Excel für macOS.
 
 ## 3. Primäre User Journeys
 
+- Erste Ausführung -> Konto/Legacy-Aufnahme -> fachliche Shell ->
+  Erste Schritte -> vorhandene Einrichtungseiten -> Dashboard
 - Stammgruppenübersicht -> Schülerprofil -> Neue Beobachtung -> Speichern -> Schülerprofil
 - Stammgruppenübersicht -> Schülerprofil -> Kompetenz -> Verlauf
 - Kursübersicht -> Schülerprofil
@@ -36,6 +38,7 @@ Zielplattform ist Microsoft Excel für macOS.
 - Schülerprofil
 - Neue Beobachtung
 - Kompetenzansicht
+- Erste Schritte
 
 ## 5. Stammgruppenübersicht
 
@@ -162,6 +165,14 @@ Die Ansicht dient dazu, die Entwicklung einer einzelnen Kompetenz nachzuvollzieh
 ## 10. Navigation
 
 ```text
+ERSTE AUSFÜHRUNG
+  -> Erste Schritte
+       -> Einstellungen / Fächer für die Dokumentation
+       -> Einstellungen / Stundenplan
+       -> Stammdaten
+       -> Schüler
+       -> Einstellungen / Datensicherung
+
 ARBEIT
   -> Heute
   -> Schüler
@@ -185,6 +196,15 @@ Produktregel UI Sprint 1:
 - Die fruehere globale `Übersicht` ist als lokale Auswahl in `Schüler` integriert.
 - Beobachtungen, Kompetenzen, Berichte und Lernentwicklungsgespraeche sind kindbezogene Arbeitsbereiche und keine globalen Platzhalter.
 - Eine Tabellenzeile darf ausgewaehlt werden, ohne das Profil zu oeffnen. Profilnavigation erfolgt bewusst per Doppelklick, Enter oder expliziter Aktion und immer ueber `student_id`.
+
+Produktregel Sprint 0.2C.1:
+
+- `Erste Schritte` ist keine neue Hauptnavigation und keine fachliche
+  Einrichtungspflicht. Die Ansicht erscheint nur nach Authentifizierung und
+  Shell-Aufbau, bleibt ueberspringbar und kann in den Einstellungen erneut
+  geoeffnet werden.
+- Der Flow legt keine fachlichen Daten an, startet keinen Import und kein
+  Backup und nutzt nur vorhandene Navigationsziele.
 
 ## 11. UX-Hypothesen
 

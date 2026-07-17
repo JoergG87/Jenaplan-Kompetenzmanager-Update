@@ -22,6 +22,7 @@ DATABASE_FILENAME = "kompetenzmanager.sqlite"
 SECURITY_DIRECTORY = "security"
 SECURITY_DATABASE_FILENAME = "security.sqlite"
 ENROLLMENT_MARKER_FILENAME = "enrollment.marker"
+APP_PREFERENCES_FILENAME = "app-preferences.json"
 BUILD_INFO_FILENAME = "pilot_build_info.json"
 INITIAL_DATA_DIRECTORY = "pilot_initial"
 INITIAL_PATH_TOKEN = "__PILOT_DATA_ROOT__"
@@ -57,6 +58,11 @@ class RuntimePaths:
     def enrollment_marker(self) -> Path:
         """Return the canonical non-secret enrollment-marker path."""
         return self.security / ENROLLMENT_MARKER_FILENAME
+
+    @property
+    def app_preferences(self) -> Path:
+        """Return the general local app-preferences path outside Security."""
+        return self.root / APP_PREFERENCES_FILENAME
 
 
 def is_packaged_app() -> bool:
@@ -141,6 +147,28 @@ def prepare_runtime_storage(
     except (OSError, sqlite3.Error) as error:
         raise RuntimeStorageError(
             f"Der lokale Datenordner konnte nicht vorbereitet werden: {paths.root}"
+        ) from error
+    return paths
+
+
+def prepare_security_runtime_storage(*, data_root: Path | None = None) -> RuntimePaths:
+    """Prepare only the technical root and isolated security directory."""
+    paths = runtime_paths(data_root)
+    try:
+        paths.root.mkdir(parents=True, exist_ok=True)
+        _assert_directory(paths.root)
+        if paths.security.is_symlink():
+            raise RuntimeStorageError("Der Security-Pfad darf kein Link sein.")
+        paths.security.mkdir(parents=True, exist_ok=True, mode=0o700)
+        _assert_directory(paths.security)
+        if os.name == "posix":
+            os.chmod(paths.security, 0o700)
+        _verify_writable(paths.root)
+    except RuntimeStorageError:
+        raise
+    except OSError as error:
+        raise RuntimeStorageError(
+            "Die technische Sicherheitsablage konnte nicht vorbereitet werden."
         ) from error
     return paths
 
@@ -246,6 +274,43 @@ def configure_runtime_logging(paths: RuntimePaths) -> Path:
         root_logger.addHandler(handler)
     logging.getLogger(__name__).info("App-Datenpfad: %s", paths.root)
     return log_path
+
+
+class PreAuthSecurityLogBuffer(logging.Handler):
+    """Keep data-minimized security event codes in memory until auth succeeds."""
+
+    def __init__(self) -> None:
+        super().__init__(logging.INFO)
+        self.records: list[logging.LogRecord] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.name == "jenaplan.security":
+            self.records.append(record)
+
+
+def begin_pre_auth_security_logging() -> PreAuthSecurityLogBuffer:
+    handler = PreAuthSecurityLogBuffer()
+    logger = logging.getLogger("jenaplan.security")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.addHandler(handler)
+    return handler
+
+
+def flush_pre_auth_security_logging(handler: PreAuthSecurityLogBuffer) -> None:
+    logger = logging.getLogger("jenaplan.security")
+    logger.removeHandler(handler)
+    logger.propagate = True
+    for record in handler.records:
+        logger.log(record.levelno, record.getMessage())
+    handler.records.clear()
+
+
+def discard_pre_auth_security_logging(handler: PreAuthSecurityLogBuffer) -> None:
+    logger = logging.getLogger("jenaplan.security")
+    logger.removeHandler(handler)
+    logger.propagate = True
+    handler.records.clear()
 
 
 def load_build_info() -> dict[str, object]:

@@ -79,7 +79,11 @@ class SecurityRepository(Protocol):
         recovery_set_id: str,
         recovery_codes: Sequence[RecoveryCodeHash],
         now: datetime,
+        pending: bool = False,
     ) -> None: ...
+    def activate_pending_account(
+        self, *, recovery_set_id: str, now: datetime
+    ) -> bool: ...
     def load_account(self) -> AccountRecord: ...
     def record_login_failure(self, *, now: datetime) -> AccountRecord: ...
     def record_login_success(
@@ -114,6 +118,17 @@ class SecurityRepository(Protocol):
         recovery_set_id: str,
         recovery_codes: Sequence[RecoveryCodeHash],
         now: datetime,
+    ) -> bool: ...
+    def prepare_password_reset(
+        self,
+        *,
+        replacement_hash: str,
+        recovery_set_id: str,
+        recovery_codes: Sequence[RecoveryCodeHash],
+        now: datetime,
+    ) -> bool: ...
+    def confirm_password_reset(
+        self, *, recovery_set_id: str, now: datetime
     ) -> bool: ...
     def create_support_reset_request(self, request: SupportResetRequest) -> None: ...
     def load_support_reset_request(

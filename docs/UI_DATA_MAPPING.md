@@ -1,5 +1,28 @@
 # UI Data Mapping
 
+## Sprint 0.2B.4 - Security-Oberflaechen
+
+| UI-Feld/Aktion | Quelle | Modus | Persistiert | Grenze |
+| --- | --- | --- | --- | --- |
+| Startzustand | `SecurityStartupResolver` aus Store-/Marker-Zustand und rein technischer Legacy-Erkennung | Anzeige/Navigation | Nein | kein fachlicher DB-Zugriff |
+| Passwort und Bestaetigung | temporaerer Widget-State -> `SecurityApplicationService` | Eingabe | nur Argon2id-Hash im Security Store | Anzeigen/Verbergen und Einfuegen erlaubt; kein Logging/Clipboard-Autofill |
+| Wie dürfen wir dich begrüßen? | temporaerer Widget-State -> `normalize_display_name` -> `AppPreferencesFile` | optionale Eingabe | `<runtime-root>/app-preferences.json`, erst nach bestaetigter Kontoaufnahme | Beispiel `Zum Beispiel Laura`; kein Einfluss auf Auth-Aktivierung; keine automatische Uebernahme aus E-Mail, Schule, OS oder Schuelerdaten |
+| Recovery-Code | temporaerer Widget-State -> Recovery-Service | Eingabe | nur gesalzener Digest und Nutzungsstatus | generische Fehler, eigene Drosselung |
+| Zehn neue Recovery-Codes | `EnrollmentResult`/`RecoveryPreparation` | einmalige Anzeige | Klartext nie persistiert | Sicherungsbestaetigung zwingend, druckfreundlich, keine automatische Ablage |
+| Login-Sperrzeit | `LockState.remaining_seconds` | Anzeige | Drosselzustand im Security Store | keine Nutzerwahl oder fachlicher Hintergrund |
+| Passwortschutz aktiv | validierter Security-Store-Zustand | Anzeige | Nein | keine vollstaendigen IDs |
+| Automatische Sperrzeit | `AppPreferences` | Auswahl 5/10/15/30/60 | `app-preferences.json` | kein `Nie`, keine freie Eingabe |
+| Persönliche Begrüßung | `AppPreferences.display_name` | Anzeige/Eingabe | `app-preferences.json` | optional, Unicode, maximal 80 Zeichen, nur aeussere Leerzeichen entfernt, leere Eingabe loescht; Klartext ohne HTML-Auswertung |
+| Erste Schritte | `AppPreferences.onboarding_status` + `onboarding_current_step` | Navigation/Anzeige | `app-preferences.json` | lokale Orientierung nach Auth und Shell-Aufbau; kein fachlicher Assistent, keine Datenanlage |
+| Erste Schritte erneut öffnen | bestehende Einstellungsübersicht -> `AppShell.open_onboarding_from_settings` | Navigation | erst bei bewusster Fortsetzung | keine neue Einstellungsunterseite; completed/dismissed werden durch bloßes Öffnen nicht zurückgesetzt |
+| Passwort aendern | Security Application Service | Schreibaktion | Security Store | Epoch erhoehen, Recovery-Satz erhalten |
+| Recovery-Codes neu erzeugen | zweiphasiger Recovery-Satz | Schreibaktion | Security Store | Aktivierung erst nach Bestaetigung |
+| Jetzt sperren | `SecuritySessionController` | temporaere Aktion | Nein | fachliche Fenster vollstaendig unsichtbar |
+| Hinweis zur App-Sperre | konstanter Produkttext | Anzeige | Nein | `Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.` plus FileVault-Hinweis |
+
+Touch ID, Keychain, Windows Hello, `angemeldet bleiben`, Support-Reset-Token,
+Cloud/E-Mail, Rollen und Verschluesselungsstatus besitzen keine UI-Felder.
+
 Dieses Dokument beschreibt, aus welcher Datenquelle sichtbare UI-Informationen stammen.
 
 UI-Felder duerfen nicht eingefuehrt werden, ohne ihre Datenherkunft hier zu dokumentieren.
@@ -22,12 +45,26 @@ Spalten:
 | Lokale Schuelernavigation | temporaerer `StudentsWorkspace`-State | Navigation / Filter | Nein | keine fachliche Datenquelle | Segmente `Stammgruppen`, `Kurse`, `Kursverbünde`, `Alle Schüler`; Drill-down behaelt den lokalen Ursprung, fachliche IDs und bestehende Filterprojektionen |
 | Visuelles Theme | freigegebene Icon-Leitlinie und Tokens aus `docs/DESIGN_SYSTEM.md` | Anzeige | Nein | keine fachliche Datenquelle | native Systemschrift, semantische Farben/Typografie/Abstaende/Radien/Elevation/Motion, zentrale Buttonrollen und SVG-Shell-Icons; keine Fachlogik |
 | Shell-Feedback | bestehende Shell-Ergebnisse und UI-Zustaende | Anzeige | Nein | keine fachliche Datenquelle | nicht blockierender `Toast` fuer kurze Rueckmeldung; `InlineMessage` fuer kontextgebundene Hinweise; keine Persistenz |
+| Zurück zu Erste Schritte | fluechtiger Shell-Zustand nach Onboarding-Navigation | Navigation | Nein | keine fachliche Datenquelle | nur sichtbar, wenn aus dem Onboarding zu einer bestehenden Seite navigiert wurde; normales Weiterarbeiten bleibt moeglich |
+
+## PySide6 Erste Schritte
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Aktueller Schritt | `OnboardingController` aus `AppPreferences.onboarding_current_step` | Anzeige/Navigation | Ja, nur lokale Praeferenz | `app-preferences.json` | Schritte 1 bis 5; App-Ende oder Navigationssprung behalten den Schritt |
+| Willkommen mit Namen | `AppPreferences.display_name` | Anzeige | Nein | `app-preferences.json` | optional, Plain Text, kein Security-Attribut |
+| Zweck- und Datenschutzhinweis | konstanter Produkttext | Anzeige | Nein | keine fachliche Datenquelle | nennt lokale Datenhaltung und die Grenze: App-Sperre ist keine Verschluesselung |
+| Status Arbeitsgrundlage | bestehende Adapter-/ViewModel-Projektionen fuer Faecher, Stundenplan, Stammdaten und Kinder | Anzeige | Nein | vorhandene fachliche Datenquellen, nur aggregiert | `Bereits eingerichtet`, `Noch offen` oder `Nicht geprüft`; keine Namen, Scores, Prozentwerte oder Blockade |
+| Zielbuttons | bestehende Shell-/Settings-Routen | Navigation | Nein | keine neue fachliche Datenquelle | navigiert nur zu vorhandenen Seiten; fehlendes Ziel zeigt ruhige Rueckmeldung |
+| Weiter/Zurück | `OnboardingController` | lokale Navigation | Ja, nur lokale Praeferenz | `app-preferences.json` | Enter aktiviert Weiter beziehungsweise Abschliessen |
+| Erste Schritte überspringen | Bestätigung -> `OnboardingController.dismiss` | lokale Praeferenz | Ja | `app-preferences.json` | Escape ueberspringt nicht unbemerkt |
+| Abschließen | `OnboardingController.complete` | lokale Praeferenz/Navigation | Ja | `app-preferences.json` | danach normales Dashboard; keine automatische Sicherung oder Datenanlage |
 
 ## PySide6 Einstellungen
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| Einstellungsübersicht | lokaler `SettingsScreen`-Navigationsstate + vorhandene Stundenplan-/Fach-/Backup-Projektionen | Navigation / Anzeige | Nein | keine neue Datenquelle | genau drei Karten; Bearbeitung nur in genau einer Unterseite; erneutes Öffnen beginnt in der Übersicht |
+| Einstellungsübersicht | lokaler `SettingsScreen`-Navigationsstate + vorhandene Stundenplan-/Fach-/Backup-/Security-Projektionen | Navigation / Anzeige | Nein | keine neue fachliche Datenquelle | vier Navigationskarten plus dezente Allgemein-Aktion; Bearbeitung nur in genau einer Unterseite; erneutes Öffnen beginnt in der Übersicht |
 | Datensicherungsstatus | `BackupSummaryViewModel` aus vollständig verifiziertem `.jkmbackup` | Anzeige | Nein | vorhandener Backup-Service / Runtime-Ordner `backups/` | keine Dateizeit als Vertrauensbeweis; keine Namen, Pfade oder personenbezogenen Daten |
 | Restore-Vorschau | `RestorePreviewViewModel` aus vorhandener `RestorePreview` | Anzeige / bestätigte Betriebsaktion | Ja, nur technisch | vorhandener Restore-Service | nur Versionen und aggregierte Counts; Auswahl, Prüfung, Vorschau und ausdrückliche Bestätigung vor Workerstart |
 | Laufende Datensicherungsoperation | `BackupRestoreOperationsState` + `BackupRestoreProgressPhase` | temporaerer UI-Zustand | Nein | shell-eigener Operations-Controller | unbestimmter Fortschritt ohne Prozentwert; alle Backup-/Restore-Aktionen und Navigation bis zum echten Thread-Ende gesperrt; kein Cancel |
@@ -51,6 +88,7 @@ UX-Status UI Sprint 1: sichtbarer Hauptnavigationspunkt `Heute`; der technische 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | Für diese Stunde | `TimetableDesktopAdapter.read_projection(at).current` beziehungsweise `.next` | Anzeige / Navigation | Nein | SQLite `timetable_entries` | zeigt Uhrzeit, Fach, Zielart, Ziel und optional Raum; ohne aktive laufende Stunde wird die naechste kanonische Occurrence gezeigt |
+| Persönliche Tagesbegrüßung | `dashboard_greeting(at, AppPreferences.display_name)` | Anzeige | Nein | `app-preferences.json` + injizierter lokaler Zeitpunkt | vor 11 Uhr `Guten Morgen`, vor 18 Uhr `Guten Tag`, sonst `Guten Abend`; optional Name; Klartext, keine Schueler-/Stundenplandaten |
 | Kein Stundenplan | `TimetableWeekViewModel.is_empty` | Anzeige / Navigation | Nein | SQLite `timetable_entries` | neutraler Leerzustand `Noch kein Stundenplan eingerichtet` mit Navigation zu Einstellungen; keine erfundenen Unterrichtsdaten |
 | Heutiger Stundenplan | `TimetableDesktopAdapter.read_projection(at).today` | Anzeige / Navigation | Nein | SQLite `timetable_entries` | horizontale Timeline aus aktiven Stundenkarten; aktuelle Stunde anhand `.current` mit `JETZT` markiert, vergangene anhand des expliziten Zeitpunkts dezent; deaktivierte und geloeschte Eintraege erscheinen nicht |
 | Unterrichtsziel-Navigation | `TimetableEntryViewModel.target_type` + `target_id` | Navigation | Nein | `groups`, `courses`, `course_groups` | technische ID oeffnet den passenden bestehenden Schuelerkontext; Namen sind nur Anzeige |

@@ -20,11 +20,46 @@ Der Data Lifecycle in `docs/DATA_LIFECYCLE.md` ist Source of Truth fuer freigege
 
 ## Security-Grenze ab Version 0.2
 
+Sprint 0.2B.4 aktiviert diese Grenze im produktiven Start. Die verbindliche
+Reihenfolge lautet: Restore-Worker-Dispatch, Runtime-Pfade, Instanz-Lock,
+Restore-Recovery, ausschliesslich technische Runtime-/Security-Pfade,
+Security-Store-Pruefung, minimale Authentifizierungsoberflaeche und erst nach
+einer erfolgreichen Authentifizierung beziehungsweise vollstaendig
+bestaetigten Kontoaufnahme Pilotdaten, Produktverzeichnisse, normales Logging,
+fachliche SQLite-Datenbank, Adapter, `AppShell`, Projektionen und Hauptfenster.
+Restore-Recovery bleibt damit ausnahmslos vor Login; fachliche Daten werden vor
+Authentifizierung weder geoeffnet noch projiziert.
+
+Die Start- und Sperrgrenze ist fail-closed. Marker ohne Store, Store ohne
+Marker, korrupte oder neuere unbekannte Security-Daten sowie nicht eindeutig
+klassifizierbare Sicherheitsfehler starten keine fachliche App und loesen
+weder eine neue Kontoaufnahme noch eine stille Reparatur aus. Genau ein lokales
+Konto, eine rein fluechtige In-Memory-Sitzung und eine monotone
+`security_epoch` sind verbindlich. Passwortwechsel, Recovery und Support-Reset
+invalidieren aeltere Sitzungen. Es gibt keinen allgemeinen Auth-Bypass.
+
+Manuelle Sperre, Inaktivitaet und Wake verdecken nicht transparent, sondern
+entfernen alle fachlichen Fenster aus der sichtbaren Oberflaeche. Ungespeicherte
+Eingaben bleiben ausschliesslich im Arbeitsspeicher erhalten und werden nach
+erfolgreichem Entsperren fortgesetzt. Laufende Backups duerfen im Hintergrund
+sicher enden; eine unbestaetigte Restore-Vorschau wird beim Sperren verworfen,
+ein bereits bestaetigter Worker-Handoff nicht abgebrochen. Eine Sitzung wird
+niemals ueber einen Neustart oder Restore hinweg fortgesetzt.
+
 Die lokale Anwendungssperre schuetzt ausschliesslich den normalen Zugang ueber
 die Anwendung. Sie ist keine Verschluesselung der Datenbank, Dokumente oder
 Backups. `kompetenzmanager.sqlite`, verwaltete Dokumente und `.jkmbackup`
 bleiben unverschluesselt; FileVault, ein geschuetztes Betriebssystemkonto und
 sichere Geraeteverwaltung bleiben notwendig.
+
+Sprint 0.2C.1 darf nach erfolgreicher Authentifizierung und nach Aufbau der
+fachlichen Shell einmalig `Erste Schritte` anzeigen. Diese Ansicht ist
+ausschliesslich Orientierung und Navigation. Sie darf keine fachlichen Daten
+anlegen, keinen Import starten, kein Backup automatisch erzeugen, keine
+fachliche Entscheidung treffen und keine Security-/Restore-Reihenfolge
+veraendern. Der lokale Fortschritt gehoert zu `app-preferences.json`, nicht zum
+Security Store, nicht zur fachlichen SQLite-Datenbank und nicht zu
+`.jkmbackup`.
 
 Authentifizierungsdaten sind technisch und fachlich vollstaendig von allen
 Schueler-, Beobachtungs-, Kompetenz-, Berichts-, LEG- und Dokumentdaten

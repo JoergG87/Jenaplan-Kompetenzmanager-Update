@@ -290,6 +290,7 @@ class SQLiteSecurityRepository:
         recovery_set_id: str,
         recovery_codes: Sequence[RecoveryCodeHash],
         now: datetime,
+        pending: bool = False,
     ) -> None:
         for identifier in (installation_id, marker_reference, user_id, recovery_set_id):
             validate_uuid4(identifier)
@@ -307,6 +308,9 @@ class SQLiteSecurityRepository:
         temporary = Path(temporary_name)
         self._permissions.secure_file(temporary)
         stamp = _format_datetime(now)
+        account_status = "password_reset_pending" if pending else "active"
+        recovery_status = "pending" if pending else "active"
+        confirmed_at = None if pending else stamp
         try:
             self._failure_injector("before_schema")
             with closing(sqlite3.connect(temporary, isolation_level=None)) as connection:
@@ -328,12 +332,12 @@ class SQLiteSecurityRepository:
                         (installation_id, marker_reference, stamp, stamp),
                     )
                     connection.execute(
-                        "INSERT INTO local_accounts VALUES (?, ?, ?, ?, 'active', 0, NULL, NULL, 0, NULL, NULL, ?, ?)",
-                        (user_id, installation_id, password_hash, hash_format_version, stamp, stamp),
+                        "INSERT INTO local_accounts VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, 0, NULL, NULL, ?, ?)",
+                        (user_id, installation_id, password_hash, hash_format_version, account_status, stamp, stamp),
                     )
                     connection.execute(
-                        "INSERT INTO recovery_code_sets VALUES (?, ?, 'active', ?, ?, NULL)",
-                        (recovery_set_id, user_id, stamp, stamp),
+                        "INSERT INTO recovery_code_sets VALUES (?, ?, ?, ?, ?, NULL)",
+                        (recovery_set_id, user_id, recovery_status, stamp, confirmed_at),
                     )
                     self._insert_recovery_codes(
                         connection, recovery_set_id, recovery_codes, stamp
@@ -363,6 +367,36 @@ class SQLiteSecurityRepository:
         except Exception:
             temporary.unlink(missing_ok=True)
             raise
+
+    def activate_pending_account(
+        self, *, recovery_set_id: str, now: datetime
+    ) -> bool:
+        validate_uuid4(recovery_set_id)
+        with self._write_transaction() as connection:
+            account = self._single_account(connection)
+            if account.status != AccountStatus.PASSWORD_RESET_PENDING:
+                return False
+            pending_count = connection.execute(
+                "SELECT COUNT(*) FROM recovery_codes c JOIN recovery_code_sets s "
+                "ON s.recovery_set_id = c.recovery_set_id "
+                "WHERE s.recovery_set_id = ? AND s.user_id = ? "
+                "AND s.status = 'pending' AND c.status = 'active'",
+                (recovery_set_id, account.user_id),
+            ).fetchone()[0]
+            if pending_count != RECOVERY_CODE_COUNT:
+                return False
+            stamp = _format_datetime(now)
+            set_cursor = connection.execute(
+                "UPDATE recovery_code_sets SET status = 'active', confirmed_at_utc = ? "
+                "WHERE recovery_set_id = ? AND status = 'pending'",
+                (stamp, recovery_set_id),
+            )
+            account_cursor = connection.execute(
+                "UPDATE local_accounts SET status = 'active', updated_at_utc = ? "
+                "WHERE user_id = ? AND status = 'password_reset_pending'",
+                (stamp, account.user_id),
+            )
+            return set_cursor.rowcount == 1 and account_cursor.rowcount == 1
 
     def load_account(self) -> AccountRecord:
         self._ensure_current_schema()
@@ -430,7 +464,16 @@ class SQLiteSecurityRepository:
                 "updated_at_utc = ? WHERE user_id = ? AND password_hash = ? AND status = 'active'",
                 (replacement_hash, PASSWORD_HASH_FORMAT_VERSION, _format_datetime(now), _format_datetime(now), account.user_id, expected_hash),
             )
-            return cursor.rowcount == 1
+            if cursor.rowcount != 1:
+                return False
+            epoch = connection.execute(
+                "UPDATE security_epochs SET generation = generation + 1, updated_at_utc = ? "
+                "WHERE user_id = ? AND installation_id = ?",
+                (_format_datetime(now), account.user_id, account.installation_id),
+            )
+            if epoch.rowcount != 1:
+                raise SecurityStoreError("security_epoch_missing")
+            return True
 
     def active_recovery_codes(self) -> tuple[RecoveryCodeCandidate, ...]:
         self._ensure_current_schema()
@@ -607,6 +650,60 @@ class SQLiteSecurityRepository:
                 (replacement_hash, PASSWORD_HASH_FORMAT_VERSION, stamp, stamp, account.user_id),
             )
             return cursor.rowcount == 1
+
+    def prepare_password_reset(
+        self,
+        *,
+        replacement_hash: str,
+        recovery_set_id: str,
+        recovery_codes: Sequence[RecoveryCodeHash],
+        now: datetime,
+    ) -> bool:
+        validate_uuid4(recovery_set_id)
+        if len(recovery_codes) != RECOVERY_CODE_COUNT:
+            raise SecurityStoreError("recovery_code_count_invalid")
+        with self._write_transaction() as connection:
+            account = self._single_account(connection)
+            if account.status != AccountStatus.PASSWORD_RESET_PENDING:
+                return False
+            stamp = _format_datetime(now)
+            connection.execute(
+                "UPDATE recovery_codes SET status = 'revoked', revoked_at_utc = ? "
+                "WHERE status = 'active' AND recovery_set_id IN "
+                "(SELECT recovery_set_id FROM recovery_code_sets WHERE user_id = ?)",
+                (stamp, account.user_id),
+            )
+            connection.execute(
+                "UPDATE recovery_code_sets SET status = 'revoked', revoked_at_utc = ? "
+                "WHERE user_id = ? AND status IN ('active', 'pending')",
+                (stamp, account.user_id),
+            )
+            connection.execute(
+                "INSERT INTO recovery_code_sets VALUES (?, ?, 'pending', ?, NULL, NULL)",
+                (recovery_set_id, account.user_id, stamp),
+            )
+            self._insert_recovery_codes(connection, recovery_set_id, recovery_codes, stamp)
+            cursor = connection.execute(
+                "UPDATE local_accounts SET password_hash = ?, hash_format_version = ?, "
+                "failed_attempts = 0, locked_until_utc = NULL, last_observed_utc = ?, "
+                "recovery_failed_attempts = 0, recovery_locked_until_utc = NULL, "
+                "recovery_last_observed_utc = ?, updated_at_utc = ? "
+                "WHERE user_id = ? AND status = 'password_reset_pending'",
+                (replacement_hash, PASSWORD_HASH_FORMAT_VERSION, stamp, stamp, stamp, account.user_id),
+            )
+            epoch = connection.execute(
+                "UPDATE security_epochs SET generation = generation + 1, updated_at_utc = ? "
+                "WHERE user_id = ? AND installation_id = ?",
+                (stamp, account.user_id, account.installation_id),
+            )
+            if epoch.rowcount != 1:
+                raise SecurityStoreError("security_epoch_missing")
+            return cursor.rowcount == 1
+
+    def confirm_password_reset(
+        self, *, recovery_set_id: str, now: datetime
+    ) -> bool:
+        return self.activate_pending_account(recovery_set_id=recovery_set_id, now=now)
 
     def create_support_reset_request(self, request: SupportResetRequest) -> None:
         for identifier in (

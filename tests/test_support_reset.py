@@ -216,6 +216,21 @@ def test_canonical_payload_is_deterministic_and_has_fixed_field_order(tmp_path: 
     assert canonical == SupportResetTokenCodec.canonical_payload_bytes(payload)
 
 
+def test_support_reset_request_never_contains_local_display_name(tmp_path: Path) -> None:
+    _security, reset, _repository, _clock, _private = make_environment(tmp_path / "runtime")
+    preferences = tmp_path / "runtime" / "app-preferences.json"
+    preferences.write_text(
+        '{"display_name":"Laura","format_version":1,"inactivity_minutes":15}\n',
+        encoding="utf-8",
+    )
+    before = preferences.read_bytes()
+    request = reset.create_request()
+    encoded = SupportResetTokenCodec.canonical_request_bytes(request)
+    assert b"Laura" not in encoded
+    assert b"display_name" not in encoded
+    assert preferences.read_bytes() == before
+
+
 @pytest.mark.parametrize(
     ("mutator", "code"),
     [
@@ -477,6 +492,12 @@ def test_successful_reset_requires_backup_and_changes_only_security_state(tmp_pa
     document.parent.mkdir(parents=True)
     main_database.write_bytes(b"fachliche-db-unveraendert")
     document.write_bytes(b"dokument-unveraendert")
+    app_preferences = root / "app-preferences.json"
+    app_preferences.write_text(
+        '{"display_name":"Laura","format_version":1,"inactivity_minutes":15}\n',
+        encoding="utf-8",
+    )
+    app_preferences_before = app_preferences.read_bytes()
     security, reset, repository, _clock, private = make_environment(root)
     enrolled_codes = security.prepare_recovery_code_regeneration()
     request = reset.create_request()
@@ -506,6 +527,7 @@ def test_successful_reset_requires_backup_and_changes_only_security_state(tmp_pa
     assert enrolled_codes.recovery_codes
     assert main_database.read_bytes() == b"fachliche-db-unveraendert"
     assert document.read_bytes() == b"dokument-unveraendert"
+    assert app_preferences.read_bytes() == app_preferences_before
     with pytest.raises(SupportResetRejected) as reused:
         reset.execute(token, backup=BackupPort())
     assert reused.value.code in {
@@ -542,6 +564,7 @@ def test_real_jkmbackup_is_created_verified_and_excludes_security_store(tmp_path
     with zipfile.ZipFile(archive) as package:
         assert all("security" not in name for name in package.namelist())
         assert all("enrollment.marker" not in name for name in package.namelist())
+        assert all("app-preferences.json" not in name for name in package.namelist())
 
 
 @pytest.mark.parametrize("error", [RuntimeError("create"), ValueError("verify"), OSError("port")])

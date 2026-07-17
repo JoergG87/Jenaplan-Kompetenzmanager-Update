@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import logging
 import os
+import secrets
 import sys
 import tempfile
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING, Mapping
@@ -26,8 +28,12 @@ from src.desktop_app.runtime import (
     RuntimePaths,
     RuntimeStorageError,
     application_data_root,
+    begin_pre_auth_security_logging,
     configure_runtime_logging,
+    discard_pre_auth_security_logging,
+    flush_pre_auth_security_logging,
     load_build_info,
+    prepare_security_runtime_storage,
     prepare_runtime_storage,
     resource_path,
 )
@@ -172,8 +178,19 @@ def main() -> int:
         return 3
 
     from PySide6.QtWidgets import QApplication, QMessageBox
-    from src.desktop_app.app import JenaplanDesktopApp
     from src.desktop_app.theme import apply_app_theme
+    from src.security.domain import SecurityStoreError
+    from src.core.app_preferences import AppPreferences, AppPreferencesError
+    from src.security.session import InMemorySession
+    from src.security.startup import (
+        SecurityStartState,
+        SecurityStartupDecision,
+        SecurityStartupResolver,
+        build_security_runtime,
+        legacy_installation_present,
+    )
+    from src.desktop_app.security_controller import run_startup_authentication
+    from src.desktop_app.security_ui import AuthenticationDialog
 
     sys.argv[:] = arguments
     app = QApplication(arguments)
@@ -185,11 +202,92 @@ def main() -> int:
     app.setDesktopFileName(APP_BUNDLE_ID)
     app.setWindowIcon(_app_icon())
     apply_app_theme(app)
+    security_event_buffer = begin_pre_auth_security_logging()
 
     try:
-        paths = prepare_runtime_storage(data_root=smoke_data_root)
+        security_paths = prepare_security_runtime_storage(data_root=data_root)
+        security_runtime = build_security_runtime(security_paths)
+        security_state = security_runtime.service.security_store_state()
+        decision = SecurityStartupResolver().resolve(
+            security_state,
+            legacy_installation_present=legacy_installation_present(security_paths),
+        )
+        if packaged_smoke:
+            session = _isolated_packaged_smoke_session(
+                security_runtime.service,
+                security_runtime.repository,
+                decision,
+            )
+        else:
+            authentication = run_startup_authentication(
+                service=security_runtime.service,
+                repository=security_runtime.repository,
+                decision=decision,
+            )
+            session = authentication.session if authentication is not None else None
+            if authentication is not None and authentication.enrollment_completed:
+                try:
+                    current_preferences = security_runtime.preferences.load()
+                except AppPreferencesError:
+                    current_preferences = AppPreferences()
+                try:
+                    security_runtime.preferences.save(
+                        replace(
+                            current_preferences,
+                            display_name=authentication.enrollment_display_name,
+                        )
+                    )
+                except (OSError, ValueError, RuntimeError):
+                    pass
+        if session is None:
+            discard_pre_auth_security_logging(security_event_buffer)
+            lock.release()
+            return 0
+    except (RuntimeStorageError, SecurityStoreError) as error:
+        logging.getLogger("jenaplan.security").error(
+            "fatal_security_error error_class=%s", type(error).__name__
+        )
+        decision = SecurityStartupDecision(
+            SecurityStartState.FATAL_SECURITY_ERROR,
+            "SEC-FATAL_SECURITY_ERROR",
+        )
+        AuthenticationDialog(
+            service=None,
+            repository=None,
+            decision=decision,
+        ).exec()
+        discard_pre_auth_security_logging(security_event_buffer)
+        lock.release()
+        return 1
+
+    try:
+        try:
+            preferences = security_runtime.preferences.load()
+        except AppPreferencesError:
+            preferences = AppPreferences()
+        paths = prepare_runtime_storage(data_root=data_root)
         configure_runtime_logging(paths)
+        flush_pre_auth_security_logging(security_event_buffer)
+        from src.desktop_app.app import JenaplanDesktopApp
+        from src.desktop_app.security_controller import SecurityUiCoordinator
+
         window = JenaplanDesktopApp(paths.database, paths=paths, runtime_lock=lock)
+        window.security_coordinator = SecurityUiCoordinator(
+            app=app,
+            shell=window,
+            service=security_runtime.service,
+            repository=security_runtime.repository,
+            preferences_file=security_runtime.preferences,
+            session=session,
+            inactivity_minutes=preferences.inactivity_minutes,
+            display_name=preferences.display_name,
+        )
+        window.configure_onboarding(
+            preferences_file=security_runtime.preferences,
+            preferences=preferences,
+            automatic_open=True,
+            packaged_smoke=packaged_smoke,
+        )
     except RuntimeStorageError as error:
         QMessageBox.critical(
             None,
@@ -219,6 +317,38 @@ def main() -> int:
         return app.exec()
     finally:
         lock.release()
+
+
+def _isolated_packaged_smoke_session(
+    service,
+    repository,
+    decision,
+) -> InMemorySession:
+    """Automate auth only after the caller proved double smoke isolation."""
+    from src.security.domain import AuthenticationStatus
+    from src.security.session import InMemorySession
+    from src.security.startup import SecurityStartState
+
+    if decision.state is not SecurityStartState.FIRST_RUN:
+        raise RuntimeStorageError(
+            "Der isolierte Pakettest erwartet eine neue temporaere Sicherheitsablage."
+        )
+    password = secrets.token_urlsafe(32)
+    prepared = service.prepare_local_account_enrollment(password)
+    if not service.confirm_local_account_enrollment(prepared.recovery_set_id):
+        raise RuntimeStorageError("Der isolierte Pakettest konnte Auth nicht aktivieren.")
+    result = service.authenticate_password(password)
+    password = ""
+    if result.status is not AuthenticationStatus.AUTHENTICATED:
+        raise RuntimeStorageError("Der isolierte Pakettest konnte Auth nicht bestaetigen.")
+    state = service.security_store_state()
+    if state.user_id is None or state.installation_id is None:
+        raise RuntimeStorageError("Der isolierte Pakettest hat keine Sitzungsbindung.")
+    return InMemorySession(
+        state.user_id,
+        state.installation_id,
+        repository.security_epoch(),
+    )
 
 
 def _run_packaged_smoke(

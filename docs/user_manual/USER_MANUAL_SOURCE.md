@@ -36,7 +36,7 @@ Der Hauptteil richtet sich an Lehrkräfte, die Beobachtungen erfassen, Schülerp
 
 ### Stammdatenpflege und Administration
 
-Die Kapitel zu `Schüler`, `Stammdaten`, `Einstellungen` und `Stundenplan` richten sich an Personen, die die lokale Arbeitsgrundlage pflegen. Die Anwendung besitzt derzeit keine Benutzerkonten, Rollen oder Berechtigungen. „Administration“ bezeichnet deshalb eine organisatorische Aufgabe, keine technisch geschützte Rolle.
+Die Kapitel zu `Schüler`, `Stammdaten`, `Einstellungen` und `Stundenplan` richten sich an Personen, die die lokale Arbeitsgrundlage pflegen. Die Anwendung besitzt genau ein lokales Lehrkraftkonto je Installation, aber keine Rollen, Berechtigungen oder Freigabe-Workflows. „Administration“ bezeichnet deshalb eine organisatorische Aufgabe, keine technisch getrennte Rolle.
 
 ## 4. Installation und erster Start
 
@@ -59,6 +59,19 @@ ein. Er liegt im persönlichen Benutzerbereich unter
 Arbeitsdaten, Dokumente, Ausgaben und Sicherungen getrennt von der App erhalten.
 Eine vorhandene Datensammlung wird beim Start nicht durch Pilotdaten ersetzt.
 
+### Lokales Konto und Erste Schritte
+
+Beim ersten normalen Start richtet die App ein lokales Lehrkraftkonto ein oder
+nimmt eine vorhandene ungeschützte Installation auf. Recovery-Codes werden
+einmalig angezeigt und müssen bewusst gesichert werden.
+
+Nach erfolgreicher Anmeldung kann die Ansicht `Erste Schritte` erscheinen. Sie
+erklärt kurz den Zweck der App, verweist auf lokale Datenhaltung und führt zu
+vorhandenen Bereichen wie `Stammdaten`, `Schüler`, `Einstellungen` und
+`Datensicherung`. Die Orientierung legt keine Stammgruppen, Kurse, Kinder,
+Beobachtungen oder Backups automatisch an. Sie kann übersprungen und später in
+`Einstellungen` mit `Erste Schritte erneut öffnen` wieder aufgerufen werden.
+
 ### Fiktive Pilotdaten
 
 Die Laura-Pilotversion enthält 24 fiktive Kinder und vorbereitete Beispiele für
@@ -68,12 +81,15 @@ App gedacht und als `Fiktive Pilotdaten` gekennzeichnet.
 
 ### Erste Einrichtung einer leeren Anwendung
 
-1. Unter `Stammdaten` mindestens eine Stammgruppe anlegen.
-2. Unter `Stammdaten` mindestens einen Kurs anlegen.
-3. Optional einen Kursverbund anlegen.
-4. Erst danach unter `Schüler` ein Kind anlegen.
-5. Dokumentationsrelevante Fächer prüfen.
-6. Stundenplan einrichten.
+1. Das lokale Konto einrichten und Recovery-Codes sichern.
+2. `Erste Schritte` als Orientierung nutzen oder bewusst überspringen.
+3. Unter `Stammdaten` mindestens eine Stammgruppe anlegen.
+4. Unter `Stammdaten` mindestens einen Kurs anlegen.
+5. Optional einen Kursverbund anlegen.
+6. Erst danach unter `Schüler` ein Kind anlegen.
+7. Unter `Einstellungen` die dokumentationsrelevanten Fächer prüfen.
+8. Unter `Einstellungen` den Stundenplan einrichten.
+9. Unter `Einstellungen > Datensicherung` eine erste lokale Sicherung bewusst erstellen und prüfen.
 
 Stammgruppe und Kurs sind beim Schüler Pflichtzuordnungen. Ohne eine vorhandene
 Stammgruppe und einen vorhandenen Kurs kann kein Schüler vollständig angelegt
@@ -100,10 +116,11 @@ sein. Eine Wiederherstellung erfolgt nur begleitet und nicht automatisch.
 ### App starten
 
 Öffnen Sie den Ordner `Programme` und starten Sie dort den
-`Jenaplan-Kompetenzmanager`. Beim normalen Start wird kein zusätzliches Fenster
-geöffnet.
+`Jenaplan-Kompetenzmanager`. Melden Sie sich mit dem lokalen Passwort an.
 
-Nach dem Start öffnet sich die Seite `Heute`. Es gibt keine Anmeldung und keine Auswahl einer Benutzerrolle.
+Nach dem Start öffnet sich normalerweise die Seite `Heute`. Bei der ersten
+Nutzung dieser Produktversion kann vorher `Erste Schritte` erscheinen. Es gibt
+keine Auswahl einer Benutzerrolle.
 
 ### Die vier Hauptbereiche
 
@@ -653,19 +670,22 @@ Die produktive Oberfläche bietet eine direkte Aktiv-/Inaktiv-Steuerung nur bei 
 
 ### Weitere Einstellungen
 
-Weitere allgemeine Einstellungen – etwa Benutzerkonten, Schulname, Logo, Notenskalen, Speicherort, Backup-Plan oder Cloud-Zugang – sind in der aktuellen Oberfläche nicht vorhanden.
+Weitere allgemeine Einstellungen – etwa mehrere Benutzerkonten, Rollen, Schulname, Logo, Notenskalen, Speicherort, Backup-Plan, Touch ID, Keychain oder Cloud-Zugang – sind in der aktuellen Oberfläche nicht vorhanden.
 
 ## 15. Typische Arbeitsabläufe
 
 ### Leere Anwendung erstmals einrichten
 
-1. Unter `Stammdaten` eine Stammgruppe anlegen.
-2. Unter `Stammdaten` einen Kurs anlegen.
-3. Optional einen Kursverbund anlegen.
-4. Unter `Schüler` einen Schüler anlegen.
-5. Unter `Einstellungen` die dokumentationsrelevanten Fächer prüfen.
-6. Unter `Einstellungen` den Stundenplan einrichten.
-7. Eine erste Beobachtung erfassen.
+1. Lokales Konto einrichten und Recovery-Codes sichern.
+2. `Erste Schritte` öffnen, fortsetzen oder bewusst überspringen.
+3. Unter `Stammdaten` eine Stammgruppe anlegen.
+4. Unter `Stammdaten` einen Kurs anlegen.
+5. Optional einen Kursverbund anlegen.
+6. Unter `Schüler` einen Schüler anlegen.
+7. Unter `Einstellungen` die dokumentationsrelevanten Fächer prüfen.
+8. Unter `Einstellungen` den Stundenplan einrichten.
+9. Eine erste Beobachtung erfassen.
+10. Unter `Einstellungen > Datensicherung` eine lokale Sicherung erstellen und prüfen.
 
 ### Beobachtung während einer laufenden Stunde erfassen
 
@@ -868,11 +888,14 @@ Nein. Die jeweilige Speicheraktion muss bewusst gewählt werden.
 
 ### Kann ich mehrere Benutzer oder Zugriffsrechte verwalten?
 
-Nein. Benutzerkonten, Rollen und Berechtigungen sind nicht implementiert.
+Nein. Es gibt ein lokales Lehrkraftkonto für den App-Zugang, aber keine
+mehreren Benutzerkonten, Rollen oder Berechtigungen.
 
 ### Gibt es ein Backup in der App?
 
-Nein. Die App besitzt keine sichtbare Backup-, Wiederherstellungs- oder Gesamtexportfunktion. Die technische Betreuung muss die lokale Datendatei und zugehörige Dateien außerhalb der App sichern.
+Ja, unter `Einstellungen > Datensicherung` kann eine lokale Sicherung bewusst
+erstellt und geprüft werden. Automatische Backups, Cloud-Backups und ein
+vollständiger Gesamtexport sind nicht vorhanden.
 
 ## 18. Datenschutz und lokale Datenhaltung
 
@@ -902,18 +925,18 @@ Das Deaktivieren einer Stunde oder das Ausblenden einer Beobachtung entfernt nic
 
 Produktiv vorhanden sind fachliche Ausgaben: Text-/Markdown-Export aus der Profilvorschau, Entwurfs-PDFs sowie finale PDFs aktueller Bericht- und LEG-Revisionen. Das sind keine vollständigen Datensicherungen.
 
-Nicht vorhanden sind ein Backup-Assistent in der App, eine automatische
-Wiederherstellung, ein vollständiger Datenexport, Cloud-Synchronisation oder eine
-automatische Sicherung. Für den Pilottest steht eine getrennte technische
-Sicherung zur Verfügung.
+Unter `Einstellungen > Datensicherung` kann eine lokale Sicherung bewusst
+erstellt, geprüft und für eine Wiederherstellung vorbereitet werden. Es gibt
+keine automatische Sicherung, keine Cloud-Synchronisation und keinen
+vollständigen Datenexport.
 
 ## 19. Bewusst noch nicht verfügbare Funktionen
 
 ### Produktiv ausdrücklich nicht vorhanden
 
-- Benutzerkonten, Anmeldung, Rollen, Berechtigungen oder Freigabe-Workflows.
+- Mehrere Benutzerkonten, Rollen, Berechtigungen oder Freigabe-Workflows.
 - Cloud-Synchronisation oder Mehrgeräte-Zusammenarbeit.
-- Backup-, Wiederherstellungs- oder vollständige Datenexportfunktion.
+- Automatischer Backup-Plan, Cloud-Backup oder vollständige Datenexportfunktion.
 - UI zur Pflege des Lehrplankatalogs, der Fächer und Kompetenzen.
 - Deaktivieren, Archivieren oder Löschen von Kindern, Stammgruppen, Kursen oder Kursverbünden.
 - Wiederherstellen gelöschter Stunden, ausgeblendeter Beobachtungen oder entfernter Dokumentreferenzen über die UI.

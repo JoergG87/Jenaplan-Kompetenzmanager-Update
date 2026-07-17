@@ -1,8 +1,56 @@
 # Design-System
 
+## Erste Schritte - Sprint 0.2C.1
+
+`Erste Schritte` ist eine ruhige Shell-interne Orientierungsansicht, keine
+Tour mit Overlays und keine Popup-Kette. Sie nutzt `PageHeader`, eine
+grosszuegige Hauptflaeche, kurze Plain-Text-Abschnitte, wenige Stichpunkte und
+zentrale Buttonrollen. Der Primaerbutton bleibt blau und heisst je nach Schritt
+`Weiter` oder `Abschließen`; `Zurück` und Zielnavigation bleiben sekundaer,
+`Erste Schritte überspringen` bleibt ruhig.
+
+Die Ansicht ist bei 1180 x 760 und 1400 x 900 bedienbar, verwendet keinen
+horizontalen Gesamtscroll und legt keinen fachlichen Inhalt unter transparente
+Overlays. Statuszeilen sind textlich eindeutig (`Bereits eingerichtet`,
+`Noch offen`, `Nicht geprüft`) und nie reine Farbkommunikation. Enter aktiviert
+die Primaeraktion; Escape ueberspringt nicht unbemerkt, sondern bewirkt keinen
+Abschluss. Die Rueckkehrzeile `Zurück zu Erste Schritte` erscheint nur nach
+einem bewussten Navigationssprung aus dem Onboarding.
+
+## Authentifizierung und Sperre - Sprint 0.2B.4
+
+Die minimale Authentifizierungsoberflaeche ist eine ruhige, vollstaendig opake
+Einzelflaeche ohne fachlichen Hintergrund. Sie zeigt nur App-Identitaet,
+aktuellen Schritt, ein grosszuegiges Passwort- beziehungsweise Recovery-Feld,
+eine generische Inline-Rueckmeldung und genau eine blaue Primaeraktion. Enter
+loest die Primaeraktion aus. Passwortfelder erlauben Einfuegen und besitzen
+eine explizite Anzeigen-/Verbergen-Aktion; automatische Zwischenablage oder
+Dateiablage ist ausgeschlossen.
+
+Recovery-Codes werden einmalig in einer gut lesbaren Monospace-Flaeche mit
+ausreichendem Zeilenabstand und druckfreundlichem Kontrast gezeigt. Die
+Sicherungsbestaetigung steht direkt vor dem Abschlussbutton und ist nicht
+vorbelegt. Sprache bleibt ruhig und erklaerend, auch bei Drosselung oder
+fail-closed Fehlern.
+
+Die Einstellungsuebersicht bleibt das bestehende Muster aus einer aktiven
+Unterseite; `Sicherheit` wird als vierte Navigationskarte aufgenommen. Die
+Unterseite zeigt Passwortschutz, feste Sperrzeitwahl 5/10/15/30/60,
+Passwortwechsel, Recovery-Code-Erneuerung und `Jetzt sperren`. Der verbindliche
+Hinweis lautet: „Die App-Sperre ist keine Verschlüsselung der Datenbank,
+Dokumente oder Backups.“ Ein kurzer FileVault-Hinweis ergaenzt ihn. Touch ID,
+Keychain, Windows Hello, `angemeldet bleiben` und Support-Reset werden nicht
+angezeigt.
+
+Die Sperransicht ist niemals transparent. Beim Sperren verschwinden Shell,
+Dialoge, Popups, Namen und alle fachlichen Inhalte vollstaendig aus der
+sichtbaren Fensterliste; die neutrale Sperransicht besitzt denselben opaken
+Hintergrund bei 1180 x 760 und 1400 x 900. Ungespeicherte Eingaben bleiben im
+verdeckten Widgetbaum erhalten und erscheinen nach Entsperren unveraendert.
+
 ## Einstellungsnavigation - Sprint 0.2A.4
 
-Einstellungen sind keine Dashboard-Fläche. Die Übersicht verwendet drei grosse ruhige `SettingsNavigationCard`-Zeilen mit Titel, kurzer Erklärung, Status und Chevron. Die ganze Karte besitzt vorhandene interaktive Card-Zustände und reagiert auf Enter und Leertaste. Eine Unterseite zeigt einen sichtbaren ruhigen Zurück-Mechanismus; Akkordeons, dichte Formularoptik und parallele Bearbeitungsbereiche sind ausgeschlossen. Die Datensicherungsseite nutzt einen blauen Primärbutton nur für `Backup erstellen` beziehungsweise nach ausdrücklicher Warnung `Wiederherstellung starten`; Prüfung und Vorbereitung bleiben neutral.
+Einstellungen sind keine Dashboard-Fläche. Die Übersicht verwendet vier grosse ruhige `SettingsNavigationCard`-Zeilen mit Titel, kurzer Erklärung, Status und Chevron. Die ganze Karte besitzt vorhandene interaktive Card-Zustände und reagiert auf Enter und Leertaste. Eine Unterseite zeigt einen sichtbaren ruhigen Zurück-Mechanismus; Akkordeons, dichte Formularoptik und parallele Bearbeitungsbereiche sind ausgeschlossen. Die Datensicherungsseite nutzt einen blauen Primärbutton nur für `Backup erstellen` beziehungsweise nach ausdrücklicher Warnung `Wiederherstellung starten`; Prüfung und Vorbereitung bleiben neutral.
 
 Lange Datensicherungsoperationen zeigen eine textlich eindeutige Phase und einen unbestimmten Progress-Indikator. Prozentwerte sind nur mit einem echten Core-Fortschrittsvertrag zulaessig und werden hier nicht simuliert. Waehrend `running` und `finishing` sind Backup-, Restore-, Zurueck- und Hauptnavigation deaktiviert. Es gibt keinen Abbrechen-Button; ein Close-Versuch erklaert ruhig, dass der sichere Abschluss abgewartet wird.
 

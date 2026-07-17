@@ -1,5 +1,86 @@
 # Architekturentscheidungen
 
+## ADR-067 - Erste Schritte als lokale Orientierung, nicht als Fachassistent
+
+**Status:** Fuer Sprint 0.2C.1 freigegeben und umgesetzt.
+
+`Erste Schritte` ist eine Shell-interne Orientierung nach erfolgreicher
+Authentifizierung und nach Aufbau der fachlichen Shell. Sie startet nicht vor
+Login, nicht in `password_reset_pending`, nicht bei fail-closed
+Security-Zustaenden, nicht im Restore-Worker und nicht automatisch im
+isolierten Packaged-Smoke.
+
+Der Flow besitzt hoechstens fuenf kurze Schritte und navigiert ausschliesslich
+ueber vorhandene Shell-/Settings-Routen zu bestehenden Seiten. Es gibt keine
+neue Hauptnavigation, keine Popup-Tour, keine Overlays ueber Schuelerdaten und
+keine neue fachliche Bearbeitungsfunktion. Statushinweise duerfen nur
+aggregierte technische Zustaende lesen und zeigen keine Schuelernamen,
+Leistungswertung oder Prozentbewertung.
+
+Der Fortschritt wird ausschliesslich in
+`<runtime-root>/app-preferences.json` gespeichert:
+`onboarding_status`, `onboarding_current_step` und
+`onboarding_format_version`. Der Store bleibt ausserhalb von Security Store,
+fachlicher SQLite, Support-Reset-Anfragen und `.jkmbackup`. Fachliches Restore,
+Passwortwechsel, Recovery und Support-Reset veraendern den Onboarding-Status
+nicht.
+
+Bestehende Installationen ohne lokalen Onboarding-Status duerfen beim ersten
+Start dieser neuen Produktversion einmal automatisch eingefuehrt werden.
+`completed` und `dismissed` unterdruecken die automatische Anzeige. Manuelles
+erneutes Oeffnen in den Einstellungen setzt den Status erst bei bewusster
+Fortsetzung wieder auf `in_progress`.
+
+Nicht eingefuehrt werden Import, Demo-/Pilotdatenerzeugung, automatische
+Backups, fachliche Datenanlage, Support-Reset-UI, Keychain, Touch ID, Windows
+Hello, persistente Anmeldung oder Verschluesselung.
+
+## ADR-066 - Auth-Gate vor jeder fachlichen Initialisierung und fluechtige Sitzung
+
+**Status:** Fuer Sprint 0.2B.4 freigegeben und umgesetzt.
+
+Der produktive Start wird in eine technische Vor-Auth-Phase und die bestehende
+fachliche Nach-Auth-Phase geteilt. Restore-Worker, Runtime-Pfade, Instanz-Lock
+und Restore-Recovery bleiben zuerst. Danach duerfen nur Runtime-Root,
+Security-Verzeichnis, Store und Marker
+angelegt beziehungsweise validiert werden. Erst ein eindeutig authentifizierter
+Security-Zustand gibt Pilotdaten, Produktverzeichnisse, Logging, fachliche
+SQLite-Verbindung, Adapter, `AppShell`, `refresh_all()` und Hauptfenster frei.
+
+Allgemeine lokale App-Voreinstellungen liegen in genau einem atomaren
+`<runtime-root>/app-preferences.json` ausserhalb des Security-Verzeichnisses.
+Der optionale `display_name` ist kein Kontoattribut und besitzt keine Bindung an
+`user_id`, Passwort, Recovery, Support-Reset oder Rollen. Er wird erst nach
+bestaetigter Kontoaufnahme gespeichert, als Klartext projiziert und bleibt wie
+alle allgemeinen App-Voreinstellungen ausserhalb des fachlichen Backups.
+
+Neuinstallation und vorhandene ungeschuetzte Installation unterscheiden sich
+nur durch eine read-only Existenzpruefung technischer fachlicher Artefakte; die
+fachliche Datenbank wird dafuer nicht geoeffnet. Die Kontoaufnahme verwendet
+vorhandene Security-v2-Zustaende zweiphasig: Passwort und Recovery-Satz bleiben
+bis zur Sicherungsbestaetigung `password_reset_pending`. Marker-/Store-
+Asymmetrie, Korruption, unbekannte Version oder technischer Sicherheitsfehler
+sind fail-closed ohne Reparatur oder erneute Kontoaufnahme.
+
+Eine Sitzung enthaelt nur `user_id`, `installation_id` und `security_epoch` im
+Arbeitsspeicher. Sie wird nicht gespeichert. Ein zentraler, Qt-freier
+Session-Controller bewertet echte Eingaben, Inaktivitaet und Wake; ein Qt-
+Adapter sammelt Events und Plattformzeit. Sperren versteckt alle fachlichen
+Top-Level-Fenster opak, erhaelt deren In-Memory-State und zeigt nur eine
+neutrale Loginflaeche. Passwortwechsel, Recovery und Support-Reset invalidieren
+aeltere Epochen.
+
+Laufende Backups duerfen unter Sperre enden; UI-Fortschritt bleibt verdeckt.
+Unbestaetigte Restore-Vorschauen werden verworfen, bestaetigte Worker-Handoffs
+nicht abgebrochen. Nach jedem Neustart und Restore ist eine neue
+Authentifizierung erforderlich. Der Packaged-Smoke darf den interaktiven
+Dialog nur nach doppelter Isolation durch Marker und nachweislich temporaere
+Datenwurzel ersetzen; normale Paketdaten koennen diesen Pfad nicht nutzen.
+
+Nicht eingefuehrt werden Keychain, Touch ID, Windows Hello, persistente
+Geraete-/Sitzungstokens, `angemeldet bleiben`, Support-Reset-UI oder
+Verschluesselung.
+
 ## ADR-065 - Offline signierter Support-Reset mit Ed25519
 
 **Status:** Fuer den Qt-freien Core in Sprint 0.2B.3 freigegeben; UI,

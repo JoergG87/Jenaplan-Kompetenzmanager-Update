@@ -1,5 +1,42 @@
 # View Data Ownership
 
+## Sprint 0.2B.4 - Authentifizierung und Sicherheit
+
+`AuthenticationDialog` besitzt ausschliesslich temporaere Eingabewerte,
+sichtbaren Authzustand, generische Fehlermeldung, Sperrzeit und die einmalige
+Anzeige neu erzeugter Recovery-Codes sowie bei Erstkonto/Legacy-Aufnahme den
+optionalen Begruessungsnamen. Es liest weder fachliche SQLite-Daten
+noch fachliche Adapter oder Projektionen. Secrets werden nicht in ViewModels,
+Logs, Zwischenablage oder Dateien uebernommen.
+
+Die Einstellungs-Unterseite `Sicherheit` liest eine datensparsame Projektion aus
+dem Security Application Service und `AppPreferencesFile`: aktiver
+Passwortschutz, aktuelles Inaktivitaetsintervall, lokale persoenliche
+Begruessung und erlaubte Aktionen. Der Profilbereich schreibt ausschliesslich
+ueber den injizierten Preferences-Adapter, Security-Aktionen ueber injizierte
+Security-Services. `AppShell` leitet
+`Jetzt sperren` weiter und besitzt weder Kryptologie noch Security-SQLite.
+
+Das Dashboard besitzt read-only Ownership auf den injizierten lokalen
+Zeitpunkt und `AppPreferences.display_name`. `dashboard_greeting` erzeugt nur
+die Klartextbegruessung; Stundenplan-, Schueler- und Fachdaten werden dafuer
+nicht gelesen. `AppShell` reicht den Wert weiter, besitzt aber keine
+Profilpersistenz.
+
+`OnboardingScreen` besitzt nur sichtbaren Schritt-, Text-, Button- und lokalen
+Fokuszustand. Persistenz gehoert `OnboardingController` und
+`AppPreferencesFile`; Navigation gehoert `AppShell`. Kleine Statuszeilen werden
+aus bestehenden Adapter-/ViewModel-Projektionen als aggregierte Ja/Nein-Werte
+uebergeben. Die View liest keine SQLite-Daten direkt, zeigt keine Schuelernamen
+und schreibt keine fachlichen Daten.
+
+`SecurityUiCoordinator` besitzt den rein technischen sichtbaren Lock-State. Er
+versteckt bei Sperre alle fachlichen Top-Level-Fenster und zeigt eine vollstaendig
+undurchsichtige neutrale Authentifizierungsansicht. Die fachlichen Widgets
+behalten ihren In-Memory-State, bleiben aber waehrend der Sperre ohne sichtbare
+Ownership. Backup-Ergebnisse werden gepuffert; unbestaetigte Restore-Vorschauen
+werden ueber die vorhandene Settings-View geleert.
+
 Dieses Dokument definiert, welche Datenquellen eine Ansicht lesen oder schreiben darf.
 
 Eine neue Ansicht darf nicht umgesetzt werden, bevor ihre Datenverantwortung hier dokumentiert ist.

@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt, QTimer
+from PySide6.QtCore import QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -23,6 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.core.app_preferences import AppPreferences, AppPreferencesFile
+from src.core.onboarding import OnboardingController, OnboardingSession
 from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.core.learning_report import ReportFinalizationError
 from src.core.learning_report_pdf import LearningReportPdfError
@@ -62,6 +64,10 @@ from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_targ
 from src.desktop_app.icons import ICON_SIZE_MEDIUM, load_icon
 from src.desktop_app.screens.master_data_screen import MasterDataScreen
 from src.desktop_app.screens.overview_screen import OverviewScreen
+from src.desktop_app.screens.onboarding_screen import (
+    OnboardingScreen,
+    OnboardingStatusProjection,
+)
 from src.desktop_app.screens.settings_screen import SettingsScreen
 from src.desktop_app.runtime import RuntimePaths, runtime_paths, load_build_info
 from src.desktop_app.view_models.backup_restore_view_model import RestorePreviewViewModel
@@ -83,6 +89,13 @@ from src.desktop_app.view_models.learning_conference_view_model import (
 class AppShell(QMainWindow):
     """Product shell for the local teacher-facing desktop application."""
 
+    lock_requested = Signal()
+    password_change_requested = Signal()
+    recovery_codes_requested = Signal()
+    inactivity_minutes_changed = Signal(int)
+    display_name_changed = Signal(str)
+    restore_handoff_started = Signal()
+
     def __init__(
         self,
         database_path: Path = SQLITE_SPIKE_PATH,
@@ -93,6 +106,7 @@ class AppShell(QMainWindow):
     ) -> None:
         super().__init__()
         self.now_provider = now_provider
+        self.display_name: str | None = None
         self.adapter = StudentDesktopAdapter(database_path)
         self.exports_directory = self.adapter.database_path.parent / "exports"
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
@@ -114,7 +128,9 @@ class AppShell(QMainWindow):
         )
         self._prepared_restore_preview: RestorePreviewViewModel | None = None
         self._restore_worker_start_attempted = False
+        self._restore_confirmed = False
         self._backup_status_loaded = False
+        self.onboarding_controller: OnboardingController | None = None
         self.selected_group_id: str | None = None
         self.selected_course_group_id: str | None = None
         self.selected_course_id: str | None = None
@@ -187,13 +203,32 @@ class AppShell(QMainWindow):
         configure_button(self.info_button, "quiet", "Informationen über die App")
         self.info_button.clicked.connect(self.open_app_info_dialog)
         sidebar.addWidget(self.info_button)
+        self.lock_button = QPushButton("App sperren")
+        configure_button(self.lock_button, "quiet", "App jetzt sperren")
+        self.lock_button.clicked.connect(self.lock_requested)
+        sidebar.addWidget(self.lock_button)
         layout.addWidget(sidebar_container)
 
         content = QVBoxLayout()
         content.setContentsMargins(0, 18, 0, 0)
+        self.onboarding_return_button = QPushButton("‹ Zurück zu Erste Schritte")
+        self.onboarding_return_button.setObjectName("OnboardingReturnButton")
+        configure_button(
+            self.onboarding_return_button,
+            "quiet",
+            "Zurück zu Erste Schritte",
+        )
+        self.onboarding_return_button.clicked.connect(self._return_to_onboarding)
+        self.onboarding_return_button.setVisible(False)
+        content.addWidget(
+            self.onboarding_return_button,
+            0,
+            Qt.AlignmentFlag.AlignLeft,
+        )
 
         self.stack = QStackedWidget()
         self.dashboard_screen = OverviewScreen()
+        self.onboarding_screen = OnboardingScreen()
         self.students_workspace = StudentsWorkspace()
         self.overview_screen = self.students_workspace.groups_screen
         self.courses_screen = self.students_workspace.courses_screen
@@ -207,6 +242,7 @@ class AppShell(QMainWindow):
 
         self.screen_index = {
             "dashboard": self.stack.addWidget(self.dashboard_screen),
+            "onboarding": self.stack.addWidget(self.onboarding_screen),
             "students": self.stack.addWidget(self.students_workspace),
             "profile": self.stack.addWidget(self.student_profile_screen),
             "master_data": self.stack.addWidget(self.master_data_screen),
@@ -240,6 +276,13 @@ class AppShell(QMainWindow):
         )
         self.dashboard_screen.settings_timetable_requested.connect(
             self.show_timetable_settings
+        )
+        self.onboarding_screen.next_requested.connect(self._onboarding_next)
+        self.onboarding_screen.back_requested.connect(self._onboarding_back)
+        self.onboarding_screen.skip_confirmed.connect(self._onboarding_dismiss)
+        self.onboarding_screen.finish_requested.connect(self._onboarding_complete)
+        self.onboarding_screen.navigation_requested.connect(
+            self._navigate_from_onboarding
         )
         self.students_workspace.new_student_requested.connect(
             self.open_new_student_dialog
@@ -316,6 +359,18 @@ class AppShell(QMainWindow):
         self.settings_screen.backup_restore_page_opened.connect(
             self._load_backup_status
         )
+        self.settings_screen.onboarding_requested.connect(self.open_onboarding_from_settings)
+        self.settings_screen.lock_requested.connect(self.lock_requested)
+        self.settings_screen.password_change_requested.connect(
+            self.password_change_requested
+        )
+        self.settings_screen.recovery_codes_requested.connect(
+            self.recovery_codes_requested
+        )
+        self.settings_screen.inactivity_minutes_changed.connect(
+            self.inactivity_minutes_changed
+        )
+        self.settings_screen.display_name_changed.connect(self.display_name_changed)
         self.backup_restore_operations.progress.connect(
             self._show_backup_restore_progress
         )
@@ -368,6 +423,7 @@ class AppShell(QMainWindow):
             instant,
             not week.is_empty,
             suggested_students,
+            self.display_name,
         )
         if self.stack.currentWidget() is self.dashboard_screen:
             self.status_label.setText("")
@@ -385,6 +441,30 @@ class AppShell(QMainWindow):
         self.dashboard_refresh_timer.stop()
         self.status_label.timer.stop()
         super().closeEvent(event)
+
+    def configure_onboarding(
+        self,
+        *,
+        preferences_file: AppPreferencesFile,
+        preferences: AppPreferences,
+        automatic_open: bool = True,
+        packaged_smoke: bool = False,
+    ) -> None:
+        """Attach local onboarding persistence after the shell exists."""
+        self.onboarding_controller = OnboardingController(
+            preferences_file,
+            preferences=preferences,
+        )
+        if (
+            automatic_open
+            and self.onboarding_controller.should_open_automatically(
+                packaged_smoke=packaged_smoke
+            )
+        ):
+            QTimer.singleShot(0, self._open_onboarding_automatically)
+
+    def open_onboarding_from_settings(self) -> None:
+        self._open_onboarding(manual=True)
 
     def _handle_screen_activated(self, _index: int) -> None:
         if self.stack.currentWidget() is self.dashboard_screen:
@@ -441,6 +521,162 @@ class AppShell(QMainWindow):
         self.settings_screen.set_settings(self.adapter.settings_view_model())
         self.settings_screen.set_timetable(self.timetable_adapter.week_view_model())
 
+    def set_display_name(self, display_name: str | None) -> None:
+        """Project the local app profile without owning its persistence."""
+        self.display_name = display_name
+        self.settings_screen.set_display_name(display_name)
+        if self.stack.currentWidget() is self.onboarding_screen:
+            self._render_onboarding()
+        self.refresh_dashboard()
+
+    def _open_onboarding_automatically(self) -> None:
+        self._open_onboarding(manual=False)
+
+    def _open_onboarding(self, *, manual: bool) -> None:
+        if self.onboarding_controller is None:
+            return
+        try:
+            session = self.onboarding_controller.start(manual=manual)
+        except Exception:
+            self.status_label.setText("Erste Schritte konnten nicht geöffnet werden.")
+            return
+        self._show_onboarding_session(session)
+
+    def _show_onboarding_session(self, session: OnboardingSession) -> None:
+        self._render_onboarding(session.current_step)
+        self.onboarding_return_button.setVisible(False)
+        self._show_screen("onboarding")
+        self._clear_navigation_selection()
+
+    def _render_onboarding(self, step: int | None = None) -> None:
+        if self.onboarding_controller is None:
+            return
+        session = self.onboarding_controller.session
+        current_step = (
+            step
+            if step is not None
+            else session.current_step if session is not None else 0
+        )
+        self.onboarding_screen.set_context(
+            step=current_step,
+            display_name=self.display_name,
+            status_projection=self._onboarding_status_projection(),
+        )
+
+    def _onboarding_status_projection(self) -> OnboardingStatusProjection:
+        try:
+            settings = self.adapter.settings_view_model()
+            documentation_subjects = any(
+                item.selected for item in settings.documentation_subjects
+            )
+        except Exception:
+            documentation_subjects = None
+        try:
+            week = self.timetable_adapter.week_view_model()
+            timetable = any(day.entries for day in week.days)
+        except Exception:
+            timetable = None
+        try:
+            master_data = self.master_data_adapter.view_model()
+            organization = bool(
+                master_data.groups
+                or master_data.courses
+                or master_data.course_groups
+            )
+        except Exception:
+            organization = None
+        try:
+            children = bool(self.adapter.list_students())
+        except Exception:
+            children = None
+        return OnboardingStatusProjection(
+            documentation_subjects_configured=documentation_subjects,
+            timetable_configured=timetable,
+            organization_configured=organization,
+            children_configured=children,
+        )
+
+    def _onboarding_next(self) -> None:
+        if self.onboarding_controller is None:
+            return
+        try:
+            session = self.onboarding_controller.next_step()
+        except Exception:
+            self.status_label.setText("Erste Schritte konnten nicht gespeichert werden.")
+            return
+        self._show_onboarding_session(session)
+
+    def _onboarding_back(self) -> None:
+        if self.onboarding_controller is None:
+            return
+        try:
+            session = self.onboarding_controller.previous_step()
+        except Exception:
+            self.status_label.setText("Erste Schritte konnten nicht gespeichert werden.")
+            return
+        self._show_onboarding_session(session)
+
+    def _onboarding_complete(self) -> None:
+        if self.onboarding_controller is None:
+            return
+        try:
+            self.onboarding_controller.complete()
+        except Exception:
+            self.status_label.setText("Erste Schritte konnten nicht gespeichert werden.")
+            return
+        self.onboarding_return_button.setVisible(False)
+        self._show_screen("dashboard")
+        self._select_navigation("dashboard")
+
+    def _onboarding_dismiss(self) -> None:
+        if self.onboarding_controller is None:
+            return
+        try:
+            self.onboarding_controller.dismiss()
+        except Exception:
+            self.status_label.setText("Erste Schritte konnten nicht gespeichert werden.")
+            return
+        self.onboarding_return_button.setVisible(False)
+        self._show_screen("dashboard")
+        self._select_navigation("dashboard")
+
+    def _navigate_from_onboarding(self, target: str) -> None:
+        if self.onboarding_controller is not None:
+            try:
+                self.onboarding_controller.mark_navigation()
+            except Exception:
+                self.status_label.setText(
+                    "Der aktuelle Schritt konnte nicht gespeichert werden."
+                )
+                return
+        self.onboarding_return_button.setVisible(True)
+        if target == "settings_documentation_subjects":
+            self._show_settings_page("documentation_subjects")
+        elif target == "settings_timetable":
+            self._show_settings_page("timetable")
+        elif target == "settings_backup_restore":
+            self._show_settings_page("backup_restore")
+        elif target == "master_data":
+            self._show_screen("master_data")
+            self._select_navigation("master_data")
+        elif target == "students":
+            self.return_to_overview()
+        else:
+            self.status_label.setText("Dieses Ziel ist aktuell nicht verfügbar.")
+
+    def _show_settings_page(self, page_key: str) -> None:
+        self._show_screen("settings")
+        self.settings_screen.show_page(page_key)
+        self._select_navigation("settings")
+
+    def _return_to_onboarding(self) -> None:
+        if self.onboarding_controller is None:
+            return
+        session = self.onboarding_controller.session
+        if session is None:
+            session = self.onboarding_controller.start(manual=True)
+        self._show_onboarding_session(session)
+
     def create_backup(self) -> None:
         if self.backup_restore_operations.is_busy:
             return
@@ -476,6 +712,7 @@ class AppShell(QMainWindow):
             return
         self._prepared_restore_preview = None
         self._restore_worker_start_attempted = False
+        self._restore_confirmed = False
         self.settings_screen.clear_restore_preview()
         self.backup_restore_operations.start(
             self.backup_restore_adapter.verify_restore_operation(Path(path))
@@ -495,6 +732,7 @@ class AppShell(QMainWindow):
         )
         if answer != QMessageBox.StandardButton.Yes:
             return
+        self._restore_confirmed = True
         self._prepared_restore_preview = None
         self._restore_worker_start_attempted = False
         self.backup_restore_operations.start(
@@ -592,6 +830,12 @@ class AppShell(QMainWindow):
         operation_type: BackupRestoreOperationType,
         _error_info: BackupRestoreOperationErrorInfo,
     ) -> None:
+        if operation_type in {
+            BackupRestoreOperationType.VERIFY_RESTORE_BACKUP,
+            BackupRestoreOperationType.PREPARE_RESTORE_STAGING,
+            BackupRestoreOperationType.VERIFY_PREPARED_RESTORE,
+        }:
+            self._restore_confirmed = False
         if operation_type is BackupRestoreOperationType.CREATE_BACKUP:
             self.settings_screen.show_backup_error(
                 "Die Sicherung konnte nicht erstellt werden."
@@ -616,10 +860,12 @@ class AppShell(QMainWindow):
         except Exception:
             self._show_restore_workflow_error()
             return
+        self.restore_handoff_started.emit()
         self.close()
 
     def _show_restore_workflow_error(self) -> None:
         self._prepared_restore_preview = None
+        self._restore_confirmed = False
         self.settings_screen.clear_restore_preview()
         self.settings_screen.show_restore_error(
             "Die Wiederherstellung konnte nicht sicher gestartet werden. "
@@ -1575,3 +1821,9 @@ class AppShell(QMainWindow):
                 self.navigation.setCurrentRow(row_index)
                 self.navigation.blockSignals(False)
                 return
+
+    def _clear_navigation_selection(self) -> None:
+        self.navigation.blockSignals(True)
+        self.navigation.clearSelection()
+        self.navigation.setCurrentRow(-1)
+        self.navigation.blockSignals(False)

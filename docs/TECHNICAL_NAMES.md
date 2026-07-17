@@ -2,6 +2,48 @@
 
 Dieses Dokument ist ab Sprint 4 die verbindliche Registry fuer technische Namen.
 
+## Sprint 0.2B.4 - Produktive Security-Startintegration
+
+Registrierte Module: `src.core.app_preferences`, `src.core.onboarding`,
+`src.security.startup`, `src.security.session`, `src.desktop_app.security_ui`,
+`src.desktop_app.security_controller` und
+`src.desktop_app.screens.onboarding_screen`.
+
+Startzustaende: `SecurityStartState` mit `first_run`, `legacy_enrollment`,
+`login_required`, `recovery_available`, `password_reset_pending`, `locked`,
+`authenticated`, `inconsistent`, `corrupt`, `unsupported_version` und
+`fatal_security_error`. `SecurityStartupResolver` erzeugt genau einen Zustand;
+boolesche Mehrfachdeutungen und stille Reparaturen sind ausgeschlossen.
+
+Runtime-/Application-Namen: `prepare_security_runtime_storage`,
+`SecurityRuntimePaths`, `AppPreferences`, `AppPreferencesFile`,
+`AppPreferencesError`, `normalize_display_name`, `DISPLAY_NAME_MAX_LENGTH`,
+`OnboardingStatus`, `ONBOARDING_FORMAT_VERSION`, `ONBOARDING_STEP_COUNT`,
+`OnboardingController`, `OnboardingSession`, `InMemorySession`,
+`SecuritySessionController`, `SessionLockReason`, `SessionActivityKind` und
+`WakeObservation`. `app-preferences.json` liegt in
+der Runtime-Wurzel, enthaelt ausschliesslich das erlaubte
+Inaktivitaetsintervall, den optionalen normalisierten `display_name`,
+`onboarding_status`, `onboarding_current_step` und
+`onboarding_format_version` und ist weder Security-Store noch fachliche
+Datenquelle. Zulaessige Onboarding-Zustaende sind `not_started`,
+`in_progress`, `completed` und `dismissed`. `dashboard_greeting` ist die reine
+lokale Zeitprojektion fuer Morgen, Tag und Abend.
+
+Qt-Namen: `AuthenticationDialog`, `SecurityOperationWorker`,
+`RecoveryCodesPage`, `SecurityUiCoordinator`, `ApplicationActivityFilter` und
+`WakeMonitor`, `OnboardingScreen`, `OnboardingStatusProjection`,
+`OnboardingStatusItem`, `OnboardingStep` und `OnboardingAction`. Das technische
+Shell-Signal `restore_handoff_started` beendet
+eine bereits bestaetigte Restore-Uebergabe auch hinter der Sperransicht. Qt
+zeigt an, sammelt Eingaben und leitet Signale weiter; Hashing,
+Policy, Drosselung, Epoch und Zustandsuebergaenge bleiben im Security Core.
+
+Security-Ereigniscodes: `login_success`, `login_failed`, `lock_manual`,
+`lock_inactivity`, `lock_wake`, `recovery_started`, `recovery_completed` und
+`password_changed`. Logs enthalten keine Passwoerter, Codes, Hashes,
+vollstaendigen IDs oder fachlichen Inhalte.
+
 ## Sprint 0.2B.3 - Signierter Support-Reset-Core
 
 Registrierte Module und Werkzeuge:

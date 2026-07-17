@@ -1,5 +1,56 @@
 # Sprintplanung
 
+## Sprint 0.2C.1 - Geführte Erste Schritte bei erster Ausführung
+
+Status: umgesetzt und automatisiert/offscreen geprüft, ohne Commit.
+
+- Shell-interne Onboarding-Ansicht mit maximal fünf kurzen Schritten:
+  Willkommen, Arbeitsgrundlage, Kinder und Zuordnungen, erste Beobachtung,
+  Datensicherung und Abschluss.
+- Automatische Anzeige nach erfolgreicher Authentifizierung und Shell-Aufbau,
+  einschliesslich erster Einführung bei bestehenden Installationen ohne lokalen
+  Onboarding-Status; nicht vor Login, nicht in Pending-/fail-closed-Zuständen
+  und nicht im isolierten Packaged-Smoke.
+- Lokaler Fortschritt in `<runtime-root>/app-preferences.json` mit
+  `not_started`, `in_progress`, `completed` und `dismissed`.
+- Überspringen mit kurzer Bestätigung, Fortsetzen des aktuellen Schritts,
+  Abschluss zum Dashboard und erneutes Öffnen aus der bestehenden
+  Einstellungsübersicht.
+- Navigation nur zu vorhandenen Seiten: Dokumentationsfächer, Stundenplan,
+  Stammdaten, Schüler und Datensicherung.
+- Kleine aggregierte Statushinweise ohne Schülernamen, Prozentwerte,
+  Leistungsbewertung oder Blockade des Abschlusses.
+- Keine fachliche Datenanlage, kein Import, keine automatische Sicherung, keine
+  neue fachliche Funktion, keine Security-/Restore-Vertragsänderung.
+- Reale 0.2B.4-Pilot-Mac-Abnahme bleibt weiterhin offen.
+
+## Sprint 0.2B.4 - Sichere Startintegration, Erstkonto, Login, Recovery, Sitzung und Sperre
+
+Status: umgesetzt und geprueft, ohne Commit.
+
+- Restore-Worker und Restore-Recovery bleiben vor Authentifizierung.
+- Runtime wird in technische Vor-Auth- und bestehende fachliche Nach-Auth-
+  Vorbereitung geteilt; fachliche SQLite, Pilotdaten, Adapter und `AppShell`
+  sind erst nach erfolgreicher Authentifizierung zulaessig.
+- Explizite fail-closed Startzustandsmaschine fuer Erststart, Legacy-Aufnahme,
+  Login, Recovery, Pending, Sperre und technische Fehler.
+- Zweiphasige Kontoaufnahme und Recovery mit zehn einmalig sichtbaren Codes und
+  zwingender Sicherungsbestaetigung.
+- Argon2-Verifikation ausserhalb des UI-Threads, Rehash, Drosselung,
+  Passwortwechsel und Epoch-gebundene In-Memory-Sitzung.
+- Zentrale manuelle, Inaktivitaets- und Wake-Sperre mit opaker neutraler
+  Sperransicht und Erhalt ungespeicherter Eingaben.
+- Sicherheits-Unterseite, Backup-/Restore-Vertrag unter Sperre und doppelt
+  isolierter Packaged-Smoke.
+- Optionalen lokalen `display_name` bei Erstkonto und Legacy-Aufnahme, spaetere
+  Aenderung als klar getrennte `Persönliche Begrüßung` sowie dezente
+  tageszeitabhaengige Dashboard-Begruessung umgesetzt.
+- Allgemeinen atomaren `app-preferences.json`-Store statt eines
+  Security-gekoppelten Praeferenzspeichers verwendet; Anzeigename bleibt aus
+  Security Store, Support-Reset und fachlichem Backup ausgeschlossen.
+- Keine fachliche Funktion, fachliche Migration, Verschluesselung, Keychain,
+  Touch ID, Windows Hello, persistente Anmeldung oder Support-Reset-UI.
+
 SPRINTS.md dient ausschließlich der operativen Projektplanung.
 
 ## Sprint 0.2B.3 - Signierter Support-Reset-Core mit Ed25519

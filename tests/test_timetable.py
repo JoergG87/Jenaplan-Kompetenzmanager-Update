@@ -12,6 +12,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QFrame, QLabel, QPushButton, QTabBar
 
 from src.application.commands.timetable import SaveTimetableEntryCommand
@@ -24,6 +25,8 @@ from src.core.timetable import TimetableValidationError
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
 from src.desktop_app.screens.settings_screen import SettingsScreen
+from src.desktop_app.screens.overview_screen import OverviewScreen, dashboard_greeting
+from src.desktop_app.view_models.student_view_model import DashboardDocumentationHeatmapViewModel
 
 
 class TimetableTest(unittest.TestCase):
@@ -265,6 +268,26 @@ class TimetableTest(unittest.TestCase):
             screen.findChild(QFrame, "TimetableEntry_TTE-000003")
         )
         self.assertFalse(screen.timetable_tabs.usesScrollButtons())
+
+    def test_dashboard_greeting_boundaries_with_and_without_display_name(self) -> None:
+        self.assertEqual(dashboard_greeting(datetime(2026, 7, 17, 10, 59)), "Guten Morgen")
+        self.assertEqual(dashboard_greeting(datetime(2026, 7, 17, 11, 0), "Laura"), "Guten Tag, Laura")
+        self.assertEqual(dashboard_greeting(datetime(2026, 7, 17, 17, 59), "Łucja"), "Guten Tag, Łucja")
+        self.assertEqual(dashboard_greeting(datetime(2026, 7, 17, 18, 0), "Laura"), "Guten Abend, Laura")
+
+    def test_dashboard_projects_display_name_as_plain_text(self) -> None:
+        screen = OverviewScreen()
+        at = datetime(2026, 7, 17, 8, 0)
+        screen.set_dashboard(
+            self.adapter.read_projection(at),
+            DashboardDocumentationHeatmapViewModel(()),
+            at,
+            False,
+            (),
+            "<b>Laura</b>",
+        )
+        self.assertEqual(screen.greeting_label.text(), "Guten Morgen, <b>Laura</b>")
+        self.assertEqual(screen.greeting_label.textFormat(), Qt.TextFormat.PlainText)
 
     def _save(
         self,

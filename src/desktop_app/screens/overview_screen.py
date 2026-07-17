@@ -52,6 +52,17 @@ OVERVIEW_COURSE_EMPTY_STATE = (
 )
 
 
+def dashboard_greeting(at: datetime, display_name: str | None = None) -> str:
+    """Return the plain-text greeting for one explicit local instant."""
+    if at.hour < 11:
+        greeting = "Guten Morgen"
+    elif at.hour < 18:
+        greeting = "Guten Tag"
+    else:
+        greeting = "Guten Abend"
+    return f"{greeting}, {display_name}" if display_name else greeting
+
+
 class DashboardLessonCard(AppCard):
     """Keyboard- and pointer-activatable lesson block."""
 
@@ -141,6 +152,11 @@ class OverviewScreen(QWidget):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(14)
+        self.greeting_label = QLabel("Guten Tag")
+        self.greeting_label.setObjectName("DashboardGreeting")
+        self.greeting_label.setTextFormat(Qt.TextFormat.PlainText)
+        set_label_style(self.greeting_label, "section_title")
+        outer.addWidget(self.greeting_label)
         header = PageHeader("Heute", "Unterricht und Dokumentation im Blick")
         self.header_observation_button = QPushButton("+ Beobachtung")
         configure_button(
@@ -193,8 +209,10 @@ class OverviewScreen(QWidget):
         at: datetime,
         has_timetable_entries: bool,
         suggested_students: tuple[DashboardSuggestedStudentViewModel, ...] = (),
+        display_name: str | None = None,
     ) -> None:
         """Render canonical read projections for one explicit point in time."""
+        self.greeting_label.setText(dashboard_greeting(at, display_name))
         self._clear_layout(self.hero_layout)
         self._clear_layout(self.today_layout)
         self._clear_layout(self.heatmap_layout)
