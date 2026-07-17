@@ -4,6 +4,10 @@ Dieses Dokument definiert die verbindlichen Datenquellen des Jenaplan-Kompetenzm
 
 SQLite ist die produktive lokale Source of Truth. Workbook-Tabellen sind historische Legacy-Projektionen unter `legacy/excel/`.
 
+## Sprint 0.2A.4 - Sichtbare allgemeine Betriebsprojektion
+
+Die Datensicherungs-Unterseite liest ausschliesslich explizit gewaehlte `.jkmbackup`-Dateien und vollstaendig verifizierte Archive im bestehenden Runtime-Standardordner `backups/`. Die Quellen werden nur durch vorhandene Backup-/Restore-Services geprueft; Namen, IDs, Texte, Originaldateinamen und Pfade gelangen nicht in die UI-Projektion. Es entsteht keine persistente UI-Historie und keine neue Datenquelle.
+
 UI-Ansichten sind Projektionen dieser Datenquellen. Sie duerfen selbst keine fachliche Datenquelle werden.
 
 ## Schreib- und Leseprinzip

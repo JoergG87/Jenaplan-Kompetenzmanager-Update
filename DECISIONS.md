@@ -1,5 +1,15 @@
 # Architekturentscheidungen
 
+## ADR-063 - Einstellungen als Übersicht mit einzelnem lokalem Arbeitsbereich
+
+Status: Fuer Sprint 0.2A.4 freigegeben
+
+`Einstellungen` bleibt ein bestehendes Hauptnavigationsziel, ist aber ausschliesslich eine Orientierung mit genau drei tastaturbedienbaren Karten: `Stundenplan`, `Fächer für die Dokumentation` und `Datensicherung`. Bearbeitung findet immer nur in einer lokalen Unterseite statt; Zurueck fuehrt sichtbar zur Übersicht, und ein erneutes Öffnen des Hauptziels beginnt wieder dort. Die Stundenplan- und Fachauswahlpfade behalten ihre vorhandenen Adapter, Commands und fachlichen Regeln.
+
+Die Datensicherungsseite ist eine allgemeine Betriebsfunktion. `SettingsScreen` zeigt nur ViewModels, UI-Zustaende und Signale. `BackupRestoreDesktopAdapter` kapselt vorhandene Services, Runtime-Pfade, Prepared-Pruefung, Handoff und Worker-Start. Restore braucht Auswahl, Verifikation, Vorschau, ausdrueckliche Bestaetigung, Prepared-Pruefung und einmaligen Workerstart; der Worker erzeugt das verpflichtende Sicherheitsbackup vor jedem produktiven Austausch. Es gibt keine automatische Sicherung oder Aufbewahrung.
+
+Sprint 0.2A.4a ergaenzt fuer potenziell lange technische Aufrufe einen shell-eigenen `BackupRestoreOperationsController`. Genau ein unveraenderlicher Auftrag laeuft ueber `QThread` und einen widgetfreien `QObject`-Worker in vorhandene Application-Services. Ergebnis- und Fehlerprojektion bleiben im Hauptthread. Der Controller kennt nur `idle`, `running` und `finishing`, haelt Thread und Worker bis zum echten Thread-Ende und verwendet ausschliesslich `quit()`/`deleteLater()`, niemals `terminate()` oder einen fachlich nicht abgesicherten Cancel. Dateiauswahl, Restore-Vorschau, Bestaetigung, Handoff, Prozessstart und kontrolliertes App-Schliessen bleiben im Hauptthread.
+
 ## ADR-062 - Journalgestuetzter Worker-Restore mit Rollback-Prioritaet
 
 Status: Fuer Sprint 0.2A.3c freigegeben

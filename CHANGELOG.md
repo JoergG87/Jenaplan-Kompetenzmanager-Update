@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## Sprint 0.2A.4a - Asynchrone Backup-/Restore-Operationen
+
+### Added
+
+- Lang laufende Backup-Erstellung, Backup-Prüfung, Restore-Prüfung, Restore-Staging und Prepared-Prüfung über einen langlebigen `BackupRestoreOperationsController`, genau einen `QThread` und einen widgetfreien `QObject`-Worker aus dem Qt-Hauptthread verlagert.
+- Unbestimmte technische Fortschrittsphasen, vollständige Aktions- und Navigationssperre während `running`/`finishing`, kontrollierte Close-Blockade und datensparsame Fehlerprojektion ergänzt.
+- Restore-Handoff und Prozessstart bleiben im Hauptthread; die App schließt erst nach erfolgreichem einmaligem Prozessstart. Ein Startfehler lässt App und Live-Daten unverändert geöffnet und verwirft die UI-Vorschau für diesen Versuch.
+
+### Not Changed
+
+- Keine fachliche Funktion oder fachliche UI, keine Backup-/Restore-Core-Logik, kein automatisches Backup, kein Import, kein Passwortschutz und kein Nutzerkonto geändert oder ergänzt. Kein Commit.
+
+## Sprint 0.2A.4 - Einstellungsnavigation und Backup-/Restore-UI
+
+### Added
+
+- Einstellungen als ruhige Übersicht mit den getrennten Unterseiten `Stundenplan`, `Fächer für die Dokumentation` und `Datensicherung` ergänzt.
+- Manuelle Backup-Erstellung, Backup-Prüfung, datensparsame Restore-Vorschau, ausdrückliche Wiederherstellungsbestätigung und kontrollierte Worker-Übergabe über die vorhandenen technischen Services sichtbar gemacht.
+
+### Not Changed
+
+- Keine fachliche Funktion oder fachliche UI, keine Beobachtungs-, Kompetenz-, Dashboard-, Profil-, Bericht-, LEG-, Stundenplan-, Fachauswahl-, Stammdaten- oder Lehrplankataloglogik geändert. Keine automatische Sicherung, Aufbewahrung, Import-, Passwort- oder Nutzerkontofunktion und kein Commit.
+
 ## Sprint 0.2A.3c - Produktiver Restore, Worker, Journal, Rollback und Start-Recovery
 
 ### Added

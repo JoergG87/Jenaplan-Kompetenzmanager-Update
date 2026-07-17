@@ -189,7 +189,7 @@ def main() -> int:
     try:
         paths = prepare_runtime_storage(data_root=smoke_data_root)
         configure_runtime_logging(paths)
-        window = JenaplanDesktopApp(paths.database)
+        window = JenaplanDesktopApp(paths.database, paths=paths, runtime_lock=lock)
     except RuntimeStorageError as error:
         QMessageBox.critical(
             None,

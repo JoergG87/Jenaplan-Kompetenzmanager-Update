@@ -32,6 +32,13 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDeskto
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
+from src.desktop_app.adapters.backup_restore_desktop_adapter import BackupRestoreDesktopAdapter
+from src.desktop_app.backup_restore_operations import (
+    BackupRestoreOperationErrorInfo,
+    BackupRestoreOperationsController,
+    BackupRestoreOperationType,
+    BackupRestoreProgressPhase,
+)
 from src.desktop_app.assets import create_app_icon_label
 from src.desktop_app.components import Toast, configure_button
 from src.desktop_app.dialogs.app_info_dialog import AppInfoDialog
@@ -56,6 +63,10 @@ from src.desktop_app.icons import ICON_SIZE_MEDIUM, load_icon
 from src.desktop_app.screens.master_data_screen import MasterDataScreen
 from src.desktop_app.screens.overview_screen import OverviewScreen
 from src.desktop_app.screens.settings_screen import SettingsScreen
+from src.desktop_app.runtime import RuntimePaths, runtime_paths, load_build_info
+from src.desktop_app.view_models.backup_restore_view_model import RestorePreviewViewModel
+from src.version import APP_VERSION
+from src.core.restore_runtime import RuntimeInstanceLock
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
 from src.desktop_app.screens.students_workspace import StudentsWorkspace
 from src.desktop_app.view_models.settings_view_model import (
@@ -76,6 +87,9 @@ class AppShell(QMainWindow):
         self,
         database_path: Path = SQLITE_SPIKE_PATH,
         now_provider: Callable[[], datetime] = datetime.now,
+        *,
+        paths: RuntimePaths | None = None,
+        runtime_lock: RuntimeInstanceLock | None = None,
     ) -> None:
         super().__init__()
         self.now_provider = now_provider
@@ -84,6 +98,23 @@ class AppShell(QMainWindow):
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
         self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)
         self.timetable_adapter = TimetableDesktopAdapter(self.adapter.database)
+        build_info = load_build_info()
+        self.runtime_paths = paths or runtime_paths(database_path.parent)
+        self.backup_restore_adapter = BackupRestoreDesktopAdapter(
+            self.runtime_paths,
+            app_version=APP_VERSION,
+            build_commit=str(build_info.get("git_commit", "unknown")),
+            source_tree_state=(str(build_info["source_tree_state"]) if build_info.get("source_tree_state") is not None else None),
+            lock=runtime_lock,
+        )
+        self.backup_restore_operations = BackupRestoreOperationsController(
+            backup_service=self.backup_restore_adapter.backup_service,
+            restore_service=self.backup_restore_adapter.restore_service,
+            parent=self,
+        )
+        self._prepared_restore_preview: RestorePreviewViewModel | None = None
+        self._restore_worker_start_attempted = False
+        self._backup_status_loaded = False
         self.selected_group_id: str | None = None
         self.selected_course_group_id: str | None = None
         self.selected_course_id: str | None = None
@@ -278,6 +309,25 @@ class AppShell(QMainWindow):
         self.settings_screen.timetable_active_requested.connect(
             self.set_timetable_entry_active
         )
+        self.settings_screen.backup_create_requested.connect(self.create_backup)
+        self.settings_screen.backup_verify_requested.connect(self.verify_backup)
+        self.settings_screen.restore_prepare_requested.connect(self.prepare_restore)
+        self.settings_screen.restore_start_requested.connect(self.start_restore)
+        self.settings_screen.backup_restore_page_opened.connect(
+            self._load_backup_status
+        )
+        self.backup_restore_operations.progress.connect(
+            self._show_backup_restore_progress
+        )
+        self.backup_restore_operations.succeeded.connect(
+            self._handle_backup_restore_success
+        )
+        self.backup_restore_operations.failed.connect(
+            self._handle_backup_restore_failure
+        )
+        self.backup_restore_operations.state_changed.connect(
+            self._handle_backup_restore_state
+        )
         self._select_navigation("dashboard")
         self.stack.currentChanged.connect(self._handle_screen_activated)
 
@@ -328,6 +378,10 @@ class AppShell(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         """Stop shell-owned timers before the Qt window is released."""
+        if self.backup_restore_operations.is_busy:
+            event.ignore()
+            self.settings_screen.show_close_blocked()
+            return
         self.dashboard_refresh_timer.stop()
         self.status_label.timer.stop()
         super().closeEvent(event)
@@ -386,6 +440,191 @@ class AppShell(QMainWindow):
         """Refresh settings from SQLite-backed adapter data."""
         self.settings_screen.set_settings(self.adapter.settings_view_model())
         self.settings_screen.set_timetable(self.timetable_adapter.week_view_model())
+
+    def create_backup(self) -> None:
+        if self.backup_restore_operations.is_busy:
+            return
+        target = QFileDialog.getExistingDirectory(self, "Backup-Zielordner wählen", str(self.runtime_paths.backups))
+        if not target:
+            return
+        self.backup_restore_operations.start(
+            self.backup_restore_adapter.create_backup_operation(Path(target))
+        )
+
+    def _load_backup_status(self) -> None:
+        if self._backup_status_loaded or self.backup_restore_operations.is_busy:
+            return
+        self.backup_restore_operations.start(
+            self.backup_restore_adapter.discover_verified_backups_operation()
+        )
+
+    def verify_backup(self) -> None:
+        if self.backup_restore_operations.is_busy:
+            return
+        path, _ = QFileDialog.getOpenFileName(self, "Backup prüfen", str(self.runtime_paths.backups), "Jenaplan-Sicherung (*.jkmbackup)")
+        if not path:
+            return
+        self.backup_restore_operations.start(
+            self.backup_restore_adapter.verify_backup_operation(Path(path))
+        )
+
+    def prepare_restore(self) -> None:
+        if self.backup_restore_operations.is_busy:
+            return
+        path, _ = QFileDialog.getOpenFileName(self, "Sicherung wiederherstellen", str(self.runtime_paths.backups), "Jenaplan-Sicherung (*.jkmbackup)")
+        if not path:
+            return
+        self._prepared_restore_preview = None
+        self._restore_worker_start_attempted = False
+        self.settings_screen.clear_restore_preview()
+        self.backup_restore_operations.start(
+            self.backup_restore_adapter.verify_restore_operation(Path(path))
+        )
+
+    def start_restore(self) -> None:
+        if self.backup_restore_operations.is_busy:
+            return
+        preview: RestorePreviewViewModel | None = self.settings_screen.restore_preview
+        if preview is None:
+            return
+        answer = QMessageBox.question(
+            self, "Wiederherstellung starten",
+            "Der aktuelle lokale Datenbestand wird ersetzt. Vorher wird automatisch ein Sicherheitsbackup erstellt. Die App wird anschließend neu gestartet.\n\nWiederherstellung jetzt starten?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        self._prepared_restore_preview = None
+        self._restore_worker_start_attempted = False
+        self.backup_restore_operations.start(
+            self.backup_restore_adapter.prepare_restore_operation(
+                preview.archive_path
+            )
+        )
+
+    def _handle_backup_restore_state(self, state: str) -> None:
+        active = state != "idle"
+        self.navigation.setDisabled(active)
+        if state == "running":
+            self.settings_screen.set_operation_active(
+                True,
+                "Technischer Vorgang wird vorbereitet …",
+            )
+        elif state == "finishing":
+            self.settings_screen.set_operation_active(
+                True,
+                "Vorgang wird sicher abgeschlossen …",
+            )
+        else:
+            self.settings_screen.set_operation_active(False)
+
+    def _show_backup_restore_progress(
+        self,
+        _operation_type: BackupRestoreOperationType,
+        phase: BackupRestoreProgressPhase,
+    ) -> None:
+        messages = {
+            BackupRestoreProgressPhase.PREPARING_BACKUP: "Sicherung wird vorbereitet …",
+            BackupRestoreProgressPhase.VERIFYING_BACKUP: "Dateien werden geprüft …",
+            BackupRestoreProgressPhase.VERIFYING_RESTORE: "Wiederherstellung wird geprüft …",
+            BackupRestoreProgressPhase.PREPARING_RESTORE: "Wiederherstellung wird vorbereitet …",
+            BackupRestoreProgressPhase.VERIFYING_PREPARED_RESTORE: "Sicherung wird verifiziert …",
+            BackupRestoreProgressPhase.PREPARING_SAFETY_BACKUP: "Sicherheitsbackup wird vorbereitet …",
+        }
+        self.settings_screen.set_operation_active(True, messages[phase])
+
+    def _handle_backup_restore_success(
+        self,
+        operation_type: BackupRestoreOperationType,
+        result: object,
+    ) -> None:
+        if operation_type is BackupRestoreOperationType.CREATE_BACKUP:
+            self._backup_status_loaded = True
+            self.settings_screen.show_backup_success(
+                self.backup_restore_adapter.backup_summary(result.verification)
+            )
+            return
+        if operation_type is BackupRestoreOperationType.DISCOVER_VERIFIED_BACKUPS:
+            self._backup_status_loaded = True
+            self.settings_screen.set_backup_status(
+                self.backup_restore_adapter.latest_backup_summary(result)
+            )
+            return
+        if operation_type is BackupRestoreOperationType.VERIFY_BACKUP:
+            self._backup_status_loaded = True
+            self.settings_screen.show_backup_success(
+                self.backup_restore_adapter.backup_summary(result),
+                verified=True,
+            )
+            return
+        if operation_type is BackupRestoreOperationType.VERIFY_RESTORE_BACKUP:
+            self.settings_screen.show_restore_preview(
+                self.backup_restore_adapter.restore_preview(result)
+            )
+            return
+        if operation_type is BackupRestoreOperationType.PREPARE_RESTORE_STAGING:
+            source_preview = self.settings_screen.restore_preview
+            if source_preview is None:
+                self._show_restore_workflow_error()
+                return
+            prepared = self.backup_restore_adapter.staged_restore_preview(
+                result,
+                source_preview.archive_path,
+            )
+            self._prepared_restore_preview = prepared
+            if not self.backup_restore_operations.start(
+                self.backup_restore_adapter.verify_prepared_restore_operation(
+                    prepared.restore_id
+                )
+            ):
+                self._show_restore_workflow_error()
+            return
+        if operation_type is BackupRestoreOperationType.VERIFY_PREPARED_RESTORE:
+            prepared = self._prepared_restore_preview
+            if prepared is None or prepared.restore_id != result.restore_id:
+                self._show_restore_workflow_error()
+                return
+            self._launch_verified_restore(prepared)
+
+    def _handle_backup_restore_failure(
+        self,
+        operation_type: BackupRestoreOperationType,
+        _error_info: BackupRestoreOperationErrorInfo,
+    ) -> None:
+        if operation_type is BackupRestoreOperationType.CREATE_BACKUP:
+            self.settings_screen.show_backup_error(
+                "Die Sicherung konnte nicht erstellt werden."
+            )
+        elif operation_type is BackupRestoreOperationType.VERIFY_BACKUP:
+            self.settings_screen.show_backup_error(
+                "Die ausgewählte Sicherung konnte nicht bestätigt werden."
+            )
+        elif operation_type is BackupRestoreOperationType.DISCOVER_VERIFIED_BACKUPS:
+            self._backup_status_loaded = True
+            self.settings_screen.set_backup_status(None)
+        else:
+            self._show_restore_workflow_error()
+
+    def _launch_verified_restore(self, preview: RestorePreviewViewModel) -> None:
+        if self._restore_worker_start_attempted:
+            return
+        self._restore_worker_start_attempted = True
+        try:
+            handoff = self.backup_restore_adapter.create_restore_handoff(preview)
+            self.backup_restore_adapter.launch_prepared_restore(handoff)
+        except Exception:
+            self._show_restore_workflow_error()
+            return
+        self.close()
+
+    def _show_restore_workflow_error(self) -> None:
+        self._prepared_restore_preview = None
+        self.settings_screen.clear_restore_preview()
+        self.settings_screen.show_restore_error(
+            "Die Wiederherstellung konnte nicht sicher gestartet werden. "
+            "Die App bleibt geöffnet; der lokale Datenbestand wurde nicht ersetzt."
+        )
 
     def open_new_timetable_entry_dialog(self, weekday: int) -> None:
         """Create one timetable entry from the settings week."""
@@ -602,6 +841,7 @@ class AppShell(QMainWindow):
         """Navigate to the existing timetable settings section."""
         self._clear_pending_timetable_observation()
         self._show_screen("settings")
+        self.settings_screen.show_page("timetable")
         self._select_navigation("settings")
 
     def show_student_profile(self, student_id: str) -> None:
@@ -1253,6 +1493,8 @@ class AppShell(QMainWindow):
         self._show_navigation_item(self.navigation.item(index))
 
     def _show_navigation_item(self, item: QListWidgetItem) -> None:
+        if self.backup_restore_operations.is_busy:
+            return
         key_data = item.data(Qt.ItemDataRole.UserRole)
         if not key_data:
             return
@@ -1266,6 +1508,8 @@ class AppShell(QMainWindow):
             self.refresh_students()
             self.students_workspace.show_section("groups")
         self._show_screen(target.screen_key)
+        if target.screen_key == "settings":
+            self.settings_screen.reset_navigation()
 
     def _selected_course_group(self) -> CourseGroupViewModel | None:
         for course_group in self.master_data_adapter.view_model().course_groups:

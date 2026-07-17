@@ -38,6 +38,14 @@ Eine vorhandene Sicherung wird nie ueberschrieben. Das Skript aendert weder Benu
 
 ## Verifiziertes Anwendungsbackup erstellen und pruefen
 
+### Sichtbarer manueller Ausloeser in Einstellungen
+
+Start: Die Lehrkraft öffnet `Einstellungen > Datensicherung`, wählt bewusst einen Zielordner oder eine bestehende `.jkmbackup`-Datei und erhält nur nach vollständiger Verifikation ein Ergebnis. Die UI speichert weder Zielordner noch eine eigene Historie.
+
+Wiederherstellung: Auswahl -> isolierte Prüfung -> datensparsame Vorschau -> ausdrückliche Bestätigung -> Prepared-Staging und erneute Prepared-Prüfung -> Runtime-gebundener Handoff -> Worker. Der Worker erstellt das vorhandene verpflichtende Sicherheitsbackup vor dem ersten Live-Rename. Bei jedem Fehler vor erfolgreichem Workerstart bleibt die App geöffnet und Live-Daten bleiben unverändert. Es gibt keine automatische Sicherung, Erinnerung oder Aufbewahrungsautomatik.
+
+Qt-Ausfuehrung ab Sprint 0.2A.4a: Backup-Erstellung, Backup-Pruefung, Restore-Pruefung, Prepared-Staging und Prepared-Pruefung laufen als jeweils genau ein unveraenderlicher Auftrag ueber den shell-eigenen Operations-Controller in einem `QThread`. Der `QObject`-Worker ruft ausschliesslich die vorhandenen Application-Services auf und emittiert technische Ergebnisse, Fehlerklassen und neutrale Phasen. UI-Projektion, Dateidialoge, Vorschau, Bestaetigung, Handoff, Prozessstart und App-Beendigung bleiben im Qt-Hauptthread. Ohne sicheren Core-Cancel-Vertrag gibt es keinen Abbruch; Close und Navigation werden bis zum echten Thread-Ende kontrolliert blockiert. `terminate()` ist ausgeschlossen.
+
 Start: Ein expliziter Application-Command erhaelt Datenbankpfad, vollstaendige `RuntimePaths`, Zielordner, Buildinformationen und UTC-Zeitquelle. In Sprint 0.2A.2 existiert dafuer noch keine sichtbare UI und kein automatischer Ausloeser.
 
 Technischer Prozess:

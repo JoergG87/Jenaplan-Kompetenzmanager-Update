@@ -6,6 +6,24 @@ ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nic
 
 ## Sprintübersicht
 
+## Sprint 0.2A.4a - Asynchrone Backup-/Restore-Operationen
+
+- [x] genau einen langlebigen Settings-Operations-Controller mit `idle`, `running` und `finishing` ergänzt
+- [x] Backup-Erstellung/-Prüfung sowie Restore-Prüfung, Staging und Prepared-Prüfung außerhalb des Qt-Hauptthreads ausgeführt
+- [x] widgetfreien `QObject`-Worker ohne fachliche Logik, Dateidialoge, Meldungsdialoge oder App-Zugriff umgesetzt
+- [x] unbestimmte Fortschrittsphasen, kontrollierte Navigation und Close-Blockade ohne unsicheren Abbruch ergänzt
+- [x] Restore-Handoff und einmaligen Prozessstart im Hauptthread belassen; App-Schließen erst nach bestätigtem Prozessstart
+- [x] 11 fokussierte Threading-/Settings-Lifecycle-Tests ergänzt und 683 Gesamttests grün abgeschlossen
+- [ ] Kein Commit vorgesehen
+
+## Sprint 0.2A.4 - Einstellungsnavigation und Backup-/Restore-UI
+
+- [x] Einstellungen als Übersicht plus drei getrennte lokale Unterseiten umgesetzt
+- [x] vorhandenen Stundenplan und vorhandene Fachauswahl ohne fachliche Änderung übernommen
+- [x] manuelle Backup-Erstellung, Verifikation, datensparsame Restore-Vorschau und bestätigten Worker-Handoff sichtbar angebunden
+- [x] keine automatische Sicherung, Aufbewahrung, Import-, Passwort- oder Nutzerkontofunktion ergänzt
+- [ ] Kein Commit vorgesehen
+
 ## Sprint 0.2A.3c - Produktiver Restore, Worker, Journal, Rollback und Start-Recovery
 
 - [x] workerbasierten Restore, verpflichtendes Sicherheitsbackup, Journal und Rollback-Prioritaet vor Produktcode dokumentiert

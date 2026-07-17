@@ -25,6 +25,14 @@ Spalten:
 
 ## PySide6 Einstellungen
 
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Einstellungsübersicht | lokaler `SettingsScreen`-Navigationsstate + vorhandene Stundenplan-/Fach-/Backup-Projektionen | Navigation / Anzeige | Nein | keine neue Datenquelle | genau drei Karten; Bearbeitung nur in genau einer Unterseite; erneutes Öffnen beginnt in der Übersicht |
+| Datensicherungsstatus | `BackupSummaryViewModel` aus vollständig verifiziertem `.jkmbackup` | Anzeige | Nein | vorhandener Backup-Service / Runtime-Ordner `backups/` | keine Dateizeit als Vertrauensbeweis; keine Namen, Pfade oder personenbezogenen Daten |
+| Restore-Vorschau | `RestorePreviewViewModel` aus vorhandener `RestorePreview` | Anzeige / bestätigte Betriebsaktion | Ja, nur technisch | vorhandener Restore-Service | nur Versionen und aggregierte Counts; Auswahl, Prüfung, Vorschau und ausdrückliche Bestätigung vor Workerstart |
+| Laufende Datensicherungsoperation | `BackupRestoreOperationsState` + `BackupRestoreProgressPhase` | temporaerer UI-Zustand | Nein | shell-eigener Operations-Controller | unbestimmter Fortschritt ohne Prozentwert; alle Backup-/Restore-Aktionen und Navigation bis zum echten Thread-Ende gesperrt; kein Cancel |
+| Technischer Operationsfehler | `BackupRestoreOperationErrorInfo` | temporaere Fehlermeldung | Nein | Qt-Worker -> Controller -> Shell | UI erzeugt datensparsame Nutzerbotschaft; kein Core-Exception-Text, interner Pfad, Traceback oder fachlicher Inhalt |
+
 Status: Sprint 2C wendet die gespeicherte Auswahl in Dokumentationsauswertungen an.
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |

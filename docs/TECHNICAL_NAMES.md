@@ -2,6 +2,28 @@
 
 Dieses Dokument ist ab Sprint 4 die verbindliche Registry fuer technische Namen.
 
+## Sprint 0.2A.4a - Asynchrone Settings-Operationen
+
+- Modul `src.desktop_app.backup_restore_operations`
+- `BackupRestoreOperationsController`: shell-eigener Qt-Controller fuer genau eine technische Operation gleichzeitig.
+- `BackupRestoreOperationWorker`: widgetfreier `QObject`-Worker, der genau einen vorhandenen Application-Service-Aufruf in einem `QThread` ausfuehrt.
+- `BackupRestoreOperation`: unveraenderlicher, nach Operationstyp und vorhandenem Application-Command typgepruefter Auftrag.
+- `BackupRestoreOperationType`: `create_backup`, `discover_verified_backups`, `verify_backup`, `verify_restore_backup`, `prepare_restore_staging`, `verify_prepared_restore`, `create_restore_safety_backup`.
+- `BackupRestoreProgressPhase`: neutrale technische Phase ohne Prozentwert und ohne Core-Fehlertext.
+- `BackupRestoreOperationsState`: ausschliesslich `idle`, `running`, `finishing`.
+- `BackupRestoreOperationErrorInfo`: datensparsame Fehlerprojektion aus Operationstyp und Fehlerklasse ohne Exception-Text, Pfad oder fachlichen Inhalt.
+
+Regel: Der Worker greift nie auf Widgets, Dialoge, `QApplication`, Lock-Handoff oder App-Beendigung zu. Er dupliziert keine Backup-/Restore-Logik und wird nie mit `terminate()` beendet.
+
+## Sprint 0.2A.4 - Einstellungsnavigation und Backup-/Restore-UI
+
+- `BackupRestoreDesktopAdapter`: Desktop-Adapter fuer Runtime-gebundene Backup-/Restore-Commands ohne Qt-Screen- oder Fachlogik.
+- `BackupSummaryViewModel`: datensparsame Anzeige einer vollstaendig verifizierten Sicherung.
+- `RestorePreviewViewModel`: datensparsame Anzeige der vorhandenen technischen Restore-Vorschau.
+- `SettingsNavigationCard`: tastaturbedienbare Einstellungszeile fuer einen lokalen Bereich.
+
+Regel: Diese Namen beschreiben nur allgemeine Betriebs- und UI-Projektionen. Sie fuehren keine SQLite-Tabelle, fachliche Entitaet, automatische Sicherung, Aufbewahrung oder neue fachliche Datenquelle ein.
+
 ## Sprint 0.2A.3c - Produktiver Worker-Restore
 
 Registrierte Python-Module:

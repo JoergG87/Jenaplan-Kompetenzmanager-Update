@@ -1,32 +1,25 @@
-"""Settings screen for the PySide6 desktop app."""
+"""Settings overview and its deliberately separated local pages."""
 
 from __future__ import annotations
 
-from PySide6.QtCore import Signal
-from PySide6.QtGui import QKeySequence
-from PySide6.QtWidgets import QGraphicsOpacityEffect
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QKeySequence, QKeyEvent
 from PySide6.QtWidgets import (
-    QCheckBox,
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QScrollArea,
-    QTabBar,
-    QVBoxLayout,
-    QWidget,
+    QCheckBox, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QPushButton, QScrollArea,
+    QProgressBar, QStackedWidget, QTabBar, QVBoxLayout, QWidget,
 )
 
-from src.desktop_app.components import PageHeader, configure_button
+from src.desktop_app.components import AppCard, InlineMessage, PageHeader, configure_button
 from src.desktop_app.theme import create_card, set_label_style
+from src.desktop_app.view_models.backup_restore_view_model import (
+    BackupSummaryViewModel, RestorePreviewViewModel,
+)
 from src.desktop_app.view_models.settings_view_model import (
-    DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE,
-    DocumentationSubjectOptionViewModel,
+    DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE, DocumentationSubjectOptionViewModel,
     SettingsViewModel,
 )
 from src.desktop_app.view_models.timetable_view_model import (
-    TimetableEntryViewModel,
-    TimetableWeekViewModel,
+    TimetableEntryViewModel, TimetableWeekViewModel,
 )
 
 
@@ -36,217 +29,293 @@ DOCUMENTATION_SUBJECTS_HELP_TEXT = (
 )
 
 
+class SettingsNavigationCard(AppCard):
+    """One large keyboard-operable local settings destination."""
+
+    activated = Signal(str)
+
+    def __init__(self, key: str, title: str, description: str) -> None:
+        super().__init__("interactive")
+        self.key = key
+        self.setObjectName(f"SettingsNavigationCard_{key}")
+        self.setAccessibleName(f"{title}. {description}")
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(20, 16, 18, 16)
+        copy = QVBoxLayout()
+        title_label = QLabel(title)
+        set_label_style(title_label, "section_title")
+        copy.addWidget(title_label)
+        description_label = QLabel(description)
+        set_label_style(description_label, "muted")
+        copy.addWidget(description_label)
+        self.status = QLabel("")
+        set_label_style(self.status, "small")
+        copy.addWidget(self.status)
+        layout.addLayout(copy, 1)
+        chevron = QLabel("›")
+        chevron.setAccessibleName("Öffnen")
+        chevron.setStyleSheet("font-size: 28px; color: #556372;")
+        layout.addWidget(chevron, 0, Qt.AlignmentFlag.AlignVCenter)
+
+    def mouseReleaseEvent(self, event) -> None:  # noqa: N802
+        super().mouseReleaseEvent(event)
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.position().toPoint()):
+            self.activated.emit(self.key)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
+            self.activated.emit(self.key)
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+
 class SettingsScreen(QWidget):
-    """Show app settings and emit save requests without persistence logic."""
+    """Render settings state and emit UI commands without service access."""
 
     documentation_subjects_save_requested = Signal(tuple)
     timetable_add_requested = Signal(int)
     timetable_edit_requested = Signal(str)
     timetable_delete_requested = Signal(str)
     timetable_active_requested = Signal(str, bool)
+    backup_create_requested = Signal()
+    backup_verify_requested = Signal()
+    restore_prepare_requested = Signal()
+    restore_start_requested = Signal()
+    backup_restore_page_opened = Signal()
 
     def __init__(self) -> None:
         super().__init__()
         self.documentation_subject_checkboxes: dict[str, QCheckBox] = {}
         self.documentation_subjects_layout = QVBoxLayout()
-        self.status_label = QLabel("")
+        self.documentation_status_label = QLabel("")
         self.timetable_week: TimetableWeekViewModel | None = None
         self.selected_timetable_weekday = 1
         self.timetable_tabs = QTabBar()
         self.timetable_tabs.setAccessibleName("Wochentag im Stundenplan")
-        self.timetable_tabs.setAccessibleDescription(
-            "Mit Pfeil links und rechts zwischen Montag und Freitag wechseln."
-        )
-        self.timetable_tabs.setExpanding(True)
         self.timetable_tabs.setUsesScrollButtons(False)
         self.timetable_tabs.currentChanged.connect(self._select_timetable_day)
         self.timetable_day_layout = QVBoxLayout()
         self.timetable_empty_label = QLabel("")
         self.timetable_add_button = QPushButton("Stunde hinzufügen")
-        configure_button(
-            self.timetable_add_button,
-            "secondary",
-            "Stunde zum ausgewählten Wochentag hinzufügen",
-        )
+        configure_button(self.timetable_add_button, "secondary", "Stunde zum ausgewählten Wochentag hinzufügen")
         self.timetable_add_button.clicked.connect(self._emit_timetable_add)
+        self.current_page = "overview"
+        self.operation_active = False
+        self.restore_preview: RestorePreviewViewModel | None = None
+        self.detail_back_buttons: dict[str, QPushButton] = {}
         self._build()
 
     def _build(self) -> None:
-        outer_layout = QVBoxLayout(self)
-        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        self.pages = QStackedWidget()
+        self.pages.addWidget(self._overview_page())
+        self.pages.addWidget(self._detail_page("timetable", "Stundenplan", self._timetable_card()))
+        self.pages.addWidget(self._detail_page("documentation_subjects", "Fächer für die Dokumentation", self._documentation_subjects_card()))
+        self.pages.addWidget(self._detail_page("backup_restore", "Datensicherung", self._backup_restore_card()))
+        outer.addWidget(self.pages)
+
+    def _scroll_page(self, content: QWidget) -> QWidget:
         scroll = QScrollArea()
         scroll.setObjectName("SettingsScrollArea")
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidget(content)
+        return scroll
+
+    def _overview_page(self) -> QWidget:
         content = QWidget()
         layout = QVBoxLayout(content)
-        layout.addWidget(
-            PageHeader(
-                "Einstellungen",
-                "Grundlagen für Dokumentation und Auswertung",
-            )
-        )
-        layout.addWidget(self._timetable_card())
-        layout.addWidget(self._documentation_subjects_card())
+        layout.addWidget(PageHeader("Einstellungen", "Grundlagen für Dokumentation und Auswertung"))
+        self.settings_cards = {
+            "timetable": SettingsNavigationCard("timetable", "Stundenplan", "Unterrichtszeiten und Zuordnungen verwalten"),
+            "documentation_subjects": SettingsNavigationCard("documentation_subjects", "Fächer für die Dokumentation", "Sichtbare Fächer auswählen"),
+            "backup_restore": SettingsNavigationCard("backup_restore", "Datensicherung", "Backup erstellen und wiederherstellen"),
+        }
+        for card in self.settings_cards.values():
+            card.activated.connect(self.show_page)
+            layout.addWidget(card)
         layout.addStretch(1)
-        scroll.setWidget(content)
-        outer_layout.addWidget(scroll)
+        return self._scroll_page(content)
+
+    def _detail_page(self, key: str, title: str, body: QWidget) -> QWidget:
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        back = QPushButton("‹ Einstellungen")
+        back.setObjectName(f"SettingsBack_{key}")
+        configure_button(back, "quiet", "Zur Einstellungsübersicht zurück")
+        back.clicked.connect(self.show_overview)
+        self.detail_back_buttons[key] = back
+        layout.addWidget(back, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(PageHeader(title))
+        layout.addWidget(body)
+        layout.addStretch(1)
+        return self._scroll_page(content)
+
+    def show_page(self, key: str) -> None:
+        if self.operation_active or key not in {"timetable", "documentation_subjects", "backup_restore"}:
+            return
+        self.current_page = key
+        self.pages.setCurrentIndex({"timetable": 1, "documentation_subjects": 2, "backup_restore": 3}[key])
+        if key == "backup_restore":
+            self.backup_restore_page_opened.emit()
+
+    def show_overview(self) -> None:
+        if self.operation_active:
+            return
+        self.current_page = "overview"
+        self.pages.setCurrentIndex(0)
+
+    def reset_navigation(self) -> None:
+        """Open settings predictably at its orientation-only overview."""
+        if not self.operation_active:
+            self.show_overview()
+
+    def set_operation_active(self, active: bool, message: str = "") -> None:
+        self.operation_active = active
+        self.operation_status_label.setText(message if active else "")
+        self.operation_progress.setAccessibleName(message if active else "")
+        self.operation_progress.setVisible(active)
+        for button in self.detail_back_buttons.values():
+            button.setDisabled(active)
+        self._update_backup_restore_actions()
+
+    def show_close_blocked(self) -> None:
+        self.operation_status_label.setText(
+            "Die laufende Datensicherung wird sicher abgeschlossen. "
+            "Danach kann die App geschlossen werden."
+        )
 
     def set_settings(self, view_model: SettingsViewModel) -> None:
-        """Replace settings content with the current view model."""
         self.set_documentation_subjects(view_model.documentation_subjects)
+        selected = sum(item.selected for item in view_model.documentation_subjects)
+        self.settings_cards["documentation_subjects"].status.setText(f"{selected} von {len(view_model.documentation_subjects)} Fächern aktiv")
 
     def set_timetable(self, week: TimetableWeekViewModel) -> None:
-        """Replace the timetable projection while keeping the selected day."""
         self.timetable_week = week
+        count = sum(len(day.entries) for day in week.days)
+        self.settings_cards["timetable"].status.setText("Nicht eingerichtet" if not count else f"{count} Unterrichtsblöcke eingerichtet")
         self.timetable_tabs.blockSignals(True)
-        while self.timetable_tabs.count():
-            self.timetable_tabs.removeTab(0)
+        while self.timetable_tabs.count(): self.timetable_tabs.removeTab(0)
         for day in week.days:
             suffix = f" ({len(day.entries)})" if day.entries else ""
             self.timetable_tabs.addTab(f"{day.label}{suffix}")
             self.timetable_tabs.setTabData(self.timetable_tabs.count() - 1, day.weekday)
-        selected_index = next(
-            (
-                index
-                for index in range(self.timetable_tabs.count())
-                if self.timetable_tabs.tabData(index) == self.selected_timetable_weekday
-            ),
-            0,
-        )
-        self.timetable_tabs.setCurrentIndex(selected_index)
+        self.timetable_tabs.setCurrentIndex(next((i for i in range(self.timetable_tabs.count()) if self.timetable_tabs.tabData(i) == self.selected_timetable_weekday), 0))
         self.timetable_tabs.blockSignals(False)
         self._render_selected_timetable_day()
 
-    def set_documentation_subjects(
-        self,
-        subjects: tuple[DocumentationSubjectOptionViewModel, ...],
-    ) -> None:
-        """Replace the documentation subject checkbox list."""
-        self._clear_documentation_subjects()
+    def set_backup_status(self, backup: BackupSummaryViewModel | None) -> None:
+        if backup is None:
+            self.settings_cards["backup_restore"].status.setText("Noch keine geprüfte Sicherung")
+            self.latest_backup_label.setText("Noch keine geprüfte Sicherung")
+        else:
+            self.settings_cards["backup_restore"].status.setText(f"Letzte geprüfte Sicherung: {backup.created_at}")
+            self.latest_backup_label.setText(f"{backup.created_at} · {backup.file_name} · {backup.size_label} · Geprüft")
+
+    def show_backup_success(self, summary: BackupSummaryViewModel, *, verified: bool = False) -> None:
+        self.set_backup_status(summary)
+        action = "Die Sicherung wurde geprüft." if verified else "Die Sicherung wurde erstellt und geprüft."
+        self.backup_message.set_message(f"{action} {summary.created_at} · {summary.size_label}", tone="success")
+
+    def show_backup_error(self, text: str) -> None:
+        self.backup_message.set_message(text, tone="error")
+
+    def show_restore_preview(self, preview: RestorePreviewViewModel) -> None:
+        self.restore_preview = preview
+        status = {"exact": "Kompatibel", "migration_required": "Migration wird vorbereitet", "incompatible": "Nicht kompatibel"}.get(preview.compatibility_status.lower(), preview.compatibility_status)
+        self.restore_preview_label.setText(
+            f"Erstellt: {preview.created_at}\nApp-Version: {preview.app_version}\nDatenbank: {status}\n"
+            f"Kinder: {preview.students_count} · Beobachtungen: {preview.observations_count}\n"
+            f"Berichtrevisionen: {preview.learning_report_revisions_count} · LEG-Revisionen: {preview.learning_conference_revisions_count}\n"
+            f"Verwaltete Dateien: {preview.managed_files_count} · Externe Referenzen: {preview.external_references_count} · Fehlend: {preview.external_missing_count}"
+        )
+        compatible = preview.compatibility_status.lower() != "incompatible"
+        self._update_backup_restore_actions()
+        self.restore_message.set_message(
+            "Die Wiederherstellung ersetzt den aktuellen lokalen Datenbestand. Vorher wird automatisch ein Sicherheitsbackup erstellt. Externe Dateien werden nicht wiederhergestellt. Der Vorgang darf nicht unterbrochen werden.",
+            tone="warning" if compatible else "error",
+        )
+
+    def show_restore_error(self, text: str) -> None:
+        self.restore_message.set_message(text, tone="error")
+
+    def clear_restore_preview(self) -> None:
+        self.restore_preview = None
+        self.restore_preview_label.setText("")
+        self._update_backup_restore_actions()
+
+    def set_documentation_subjects(self, subjects: tuple[DocumentationSubjectOptionViewModel, ...]) -> None:
+        self._clear_layout(self.documentation_subjects_layout)
         self.documentation_subject_checkboxes = {}
         for subject in subjects:
             checkbox = QCheckBox(subject.label)
-            checkbox.setObjectName(
-                f"DocumentationSubjectCheckbox_{subject.subject_id}"
-            )
+            checkbox.setObjectName(f"DocumentationSubjectCheckbox_{subject.subject_id}")
             checkbox.setChecked(subject.selected)
-            checkbox.setAccessibleName(
-                f"{subject.label} als dokumentationsrelevantes Fach verwenden"
-            )
+            checkbox.setAccessibleName(f"{subject.label} als dokumentationsrelevantes Fach verwenden")
             self.documentation_subject_checkboxes[subject.subject_id] = checkbox
             self.documentation_subjects_layout.addWidget(checkbox)
         self.documentation_subjects_layout.addStretch(1)
 
     def show_documentation_subjects_saved(self) -> None:
-        """Show the calm save confirmation for documentation subjects."""
-        self.status_label.setText(DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE)
+        self.documentation_status_label.setText(DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE)
 
     def _documentation_subjects_card(self) -> QFrame:
-        card = create_card()
-        card.setObjectName("DocumentationSubjectSettingsSection")
+        card = create_card(); card.setObjectName("DocumentationSubjectSettingsSection")
         layout = QVBoxLayout(card)
-        header = QHBoxLayout()
-        title = QLabel("Dokumentationsrelevante Fächer")
-        set_label_style(title, "section_title")
-        header.addWidget(title)
-        header.addStretch(1)
-        layout.addLayout(header)
-
-        help_label = QLabel(DOCUMENTATION_SUBJECTS_HELP_TEXT)
-        help_label.setWordWrap(True)
-        set_label_style(help_label, "muted")
-        layout.addWidget(help_label)
-        layout.addLayout(self.documentation_subjects_layout)
-
-        action_row = QHBoxLayout()
-        action_row.addStretch(1)
-        save_button = QPushButton("Speichern")
-        save_button.setObjectName("DocumentationSubjectSaveButton")
-        configure_button(
-            save_button,
-            "primary",
-            "Dokumentationsrelevante Fächer speichern",
-        )
-        save_button.setShortcut(QKeySequence.StandardKey.Save)
-        save_button.clicked.connect(self._emit_documentation_subjects_save)
-        action_row.addWidget(save_button)
-        layout.addLayout(action_row)
-
-        set_label_style(self.status_label, "muted")
-        self.status_label.setObjectName("SettingsStatusLabel")
-        layout.addWidget(self.status_label)
+        help_label = QLabel(DOCUMENTATION_SUBJECTS_HELP_TEXT); help_label.setWordWrap(True); set_label_style(help_label, "muted")
+        layout.addWidget(help_label); layout.addLayout(self.documentation_subjects_layout)
+        save = QPushButton("Speichern"); save.setObjectName("DocumentationSubjectSaveButton"); configure_button(save, "primary", "Dokumentationsfächer speichern")
+        save.setShortcut(QKeySequence.StandardKey.Save); save.clicked.connect(self._emit_documentation_subjects_save)
+        layout.addWidget(save, 0, Qt.AlignmentFlag.AlignRight)
+        set_label_style(self.documentation_status_label, "muted"); self.documentation_status_label.setObjectName("SettingsStatusLabel"); layout.addWidget(self.documentation_status_label)
         return card
 
     def _timetable_card(self) -> QFrame:
-        card = create_card()
-        card.setObjectName("TimetableSettingsSection")
-        layout = QVBoxLayout(card)
-        title = QLabel("Stundenplan")
-        set_label_style(title, "section_title")
-        layout.addWidget(title)
-        help_label = QLabel(
-            "Wochenplan für Montag bis Freitag. Überschneidungen werden beim Speichern geprüft."
-        )
-        help_label.setWordWrap(True)
-        set_label_style(help_label, "muted")
-        layout.addWidget(help_label)
-        header = QHBoxLayout()
-        header.addWidget(self.timetable_tabs, 1)
-        header.addWidget(self.timetable_add_button)
-        layout.addLayout(header)
-        set_label_style(self.timetable_empty_label, "muted")
-        self.timetable_empty_label.setObjectName("TimetableEmptyState")
-        layout.addWidget(self.timetable_empty_label)
-        layout.addLayout(self.timetable_day_layout)
+        card = create_card(); card.setObjectName("TimetableSettingsSection"); layout = QVBoxLayout(card)
+        help_label = QLabel("Wochenplan für Montag bis Freitag. Überschneidungen werden beim Speichern geprüft."); help_label.setWordWrap(True); set_label_style(help_label, "muted")
+        layout.addWidget(help_label); header = QHBoxLayout(); header.addWidget(self.timetable_tabs, 1); header.addWidget(self.timetable_add_button); layout.addLayout(header)
+        set_label_style(self.timetable_empty_label, "muted"); self.timetable_empty_label.setObjectName("TimetableEmptyState"); layout.addWidget(self.timetable_empty_label); layout.addLayout(self.timetable_day_layout)
         return card
 
+    def _backup_restore_card(self) -> QFrame:
+        card = create_card(); card.setObjectName("BackupRestoreSettingsSection"); layout = QVBoxLayout(card)
+        title = QLabel("Letzte geprüfte lokale Sicherung"); set_label_style(title, "section_title"); layout.addWidget(title)
+        self.latest_backup_label = QLabel("Noch keine geprüfte Sicherung"); self.latest_backup_label.setWordWrap(True); set_label_style(self.latest_backup_label, "muted"); layout.addWidget(self.latest_backup_label)
+        note = QLabel("Freie Exporte und externe Dateireferenzen sind nicht Bestandteil der Sicherung."); note.setWordWrap(True); set_label_style(note, "small"); layout.addWidget(note)
+        self.operation_status_label = QLabel(""); self.operation_status_label.setWordWrap(True); self.operation_status_label.setObjectName("BackupRestoreOperationStatus"); self.operation_status_label.setAccessibleName("Status der Datensicherung"); set_label_style(self.operation_status_label, "muted"); layout.addWidget(self.operation_status_label)
+        self.operation_progress = QProgressBar(); self.operation_progress.setObjectName("BackupRestoreOperationProgress"); self.operation_progress.setRange(0, 0); self.operation_progress.setTextVisible(False); self.operation_progress.setVisible(False); layout.addWidget(self.operation_progress)
+        self.backup_message = InlineMessage(); layout.addWidget(self.backup_message)
+        self.backup_create_button = QPushButton("Backup erstellen"); configure_button(self.backup_create_button, "primary", "Backup in einen ausgewählten Ordner erstellen"); self.backup_create_button.clicked.connect(self.backup_create_requested); layout.addWidget(self.backup_create_button, 0, Qt.AlignmentFlag.AlignLeft)
+        self.backup_verify_button = QPushButton("Backup prüfen …"); configure_button(self.backup_verify_button, "secondary", "Bestehende Sicherung technisch prüfen"); self.backup_verify_button.clicked.connect(self.backup_verify_requested); layout.addWidget(self.backup_verify_button, 0, Qt.AlignmentFlag.AlignLeft)
+        restore_title = QLabel("Wiederherstellung"); set_label_style(restore_title, "section_title"); layout.addWidget(restore_title)
+        self.restore_prepare_button = QPushButton("Wiederherstellen …"); configure_button(self.restore_prepare_button, "secondary", "Sicherung prüfen und Wiederherstellung vorbereiten"); self.restore_prepare_button.clicked.connect(self.restore_prepare_requested); layout.addWidget(self.restore_prepare_button, 0, Qt.AlignmentFlag.AlignLeft)
+        self.restore_preview_label = QLabel(""); self.restore_preview_label.setWordWrap(True); self.restore_preview_label.setObjectName("RestorePreview"); set_label_style(self.restore_preview_label, "muted"); layout.addWidget(self.restore_preview_label)
+        self.restore_message = InlineMessage(); layout.addWidget(self.restore_message)
+        self.restore_start_button = QPushButton("Wiederherstellung starten"); configure_button(self.restore_start_button, "primary", "Vorbereitete Wiederherstellung verbindlich starten"); self.restore_start_button.setEnabled(False); self.restore_start_button.clicked.connect(self.restore_start_requested); layout.addWidget(self.restore_start_button, 0, Qt.AlignmentFlag.AlignLeft)
+        return card
+
+    def _update_backup_restore_actions(self) -> None:
+        self.backup_create_button.setDisabled(self.operation_active)
+        self.backup_verify_button.setDisabled(self.operation_active)
+        self.restore_prepare_button.setDisabled(self.operation_active)
+        restore_is_compatible = (
+            self.restore_preview is not None
+            and self.restore_preview.compatibility_status.lower() != "incompatible"
+        )
+        self.restore_start_button.setEnabled(
+            not self.operation_active and restore_is_compatible
+        )
+
     def _timetable_entry_card(self, entry: TimetableEntryViewModel) -> QFrame:
-        card = create_card()
-        card.setObjectName(f"TimetableEntry_{entry.timetable_entry_id}")
-        layout = QHBoxLayout(card)
-        time = QLabel(entry.time_label)
-        time.setMinimumWidth(105)
-        set_label_style(time, "card_title")
-        layout.addWidget(time, 0)
-        details = QVBoxLayout()
-        subject = QLabel(entry.subject_label)
-        set_label_style(subject, "card_title")
-        details.addWidget(subject)
-        meta_parts = [entry.target_type_label, entry.target_label]
-        if entry.room:
-            meta_parts.append(entry.room)
-        target = QLabel(" · ".join(meta_parts))
-        target.setWordWrap(True)
-        set_label_style(target, "muted")
-        details.addWidget(target)
-        layout.addLayout(details, 1)
-        active = QCheckBox("Aktiv")
-        active.setChecked(entry.active)
-        active.setObjectName(f"TimetableActive_{entry.timetable_entry_id}")
-        active.setAccessibleName(f"Stunde {entry.time_label} aktiv")
-        active.toggled.connect(
-            lambda checked, entry_id=entry.timetable_entry_id: self.timetable_active_requested.emit(
-                entry_id, checked
-            )
-        )
-        layout.addWidget(active, 0)
-        edit_button = QPushButton("Bearbeiten")
-        configure_button(edit_button, "secondary", "Stunde bearbeiten")
-        edit_button.clicked.connect(
-            lambda checked=False, entry_id=entry.timetable_entry_id: self.timetable_edit_requested.emit(
-                entry_id
-            )
-        )
-        delete_button = QPushButton("Löschen")
-        configure_button(delete_button, "destructive", "Stunde löschen")
-        delete_button.clicked.connect(
-            lambda checked=False, entry_id=entry.timetable_entry_id: self.timetable_delete_requested.emit(
-                entry_id
-            )
-        )
-        layout.addWidget(edit_button, 0)
-        layout.addWidget(delete_button, 0)
+        card = create_card(); card.setObjectName(f"TimetableEntry_{entry.timetable_entry_id}"); layout = QHBoxLayout(card)
+        time = QLabel(entry.time_label); time.setMinimumWidth(105); set_label_style(time, "card_title"); layout.addWidget(time)
+        details = QVBoxLayout(); subject = QLabel(entry.subject_label); set_label_style(subject, "card_title"); details.addWidget(subject)
+        target = QLabel(" · ".join(part for part in [entry.target_type_label, entry.target_label, entry.room] if part)); target.setWordWrap(True); set_label_style(target, "muted"); details.addWidget(target); layout.addLayout(details, 1)
+        active = QCheckBox("Aktiv"); active.setChecked(entry.active); active.setObjectName(f"TimetableActive_{entry.timetable_entry_id}"); active.toggled.connect(lambda checked, entry_id=entry.timetable_entry_id: self.timetable_active_requested.emit(entry_id, checked)); layout.addWidget(active)
+        edit = QPushButton("Bearbeiten"); configure_button(edit, "secondary", "Stunde bearbeiten"); edit.clicked.connect(lambda checked=False, entry_id=entry.timetable_entry_id: self.timetable_edit_requested.emit(entry_id)); layout.addWidget(edit)
+        delete = QPushButton("Löschen"); configure_button(delete, "destructive", "Stunde löschen"); delete.clicked.connect(lambda checked=False, entry_id=entry.timetable_entry_id: self.timetable_delete_requested.emit(entry_id)); layout.addWidget(delete)
         if not entry.active:
             opacity = QGraphicsOpacityEffect(card)
             opacity.setOpacity(0.58)
@@ -254,58 +323,23 @@ class SettingsScreen(QWidget):
         return card
 
     def _select_timetable_day(self, index: int) -> None:
-        if index < 0:
-            return
-        self.selected_timetable_weekday = int(self.timetable_tabs.tabData(index))
-        self._render_selected_timetable_day()
+        if index >= 0:
+            self.selected_timetable_weekday = int(self.timetable_tabs.tabData(index)); self._render_selected_timetable_day()
 
     def _render_selected_timetable_day(self) -> None:
         self._clear_layout(self.timetable_day_layout)
-        if self.timetable_week is None:
-            return
-        day = next(
-            day
-            for day in self.timetable_week.days
-            if day.weekday == self.selected_timetable_weekday
-        )
-        self.timetable_empty_label.setText(
-            f"Für {day.label} sind noch keine Stunden eingetragen. "
-            "Über „Stunde hinzufügen“ kannst du den Tagesplan beginnen."
-        )
-        self.timetable_empty_label.setVisible(not day.entries)
-        self.timetable_add_button.setObjectName(f"TimetableAdd_{day.weekday}")
-        day_container = QFrame()
-        day_container.setObjectName(f"TimetableDay_{day.weekday}")
-        day_layout = QVBoxLayout(day_container)
-        day_layout.setContentsMargins(0, 0, 0, 0)
-        for entry in day.entries:
-            day_layout.addWidget(self._timetable_entry_card(entry))
-        self.timetable_day_layout.addWidget(day_container)
+        if self.timetable_week is None: return
+        day = next(day for day in self.timetable_week.days if day.weekday == self.selected_timetable_weekday)
+        self.timetable_empty_label.setText(f"Für {day.label} sind noch keine Stunden eingetragen. Über „Stunde hinzufügen“ kannst du den Tagesplan beginnen.")
+        self.timetable_empty_label.setVisible(not day.entries); self.timetable_add_button.setObjectName(f"TimetableAdd_{day.weekday}")
+        container = QFrame(); container.setObjectName(f"TimetableDay_{day.weekday}"); rows = QVBoxLayout(container); rows.setContentsMargins(0, 0, 0, 0)
+        for entry in day.entries: rows.addWidget(self._timetable_entry_card(entry))
+        self.timetable_day_layout.addWidget(container)
 
-    def _emit_timetable_add(self) -> None:
-        self.timetable_add_requested.emit(self.selected_timetable_weekday)
-
-    def _emit_documentation_subjects_save(self) -> None:
-        selected_subject_ids = tuple(
-            subject_id
-            for subject_id, checkbox in self.documentation_subject_checkboxes.items()
-            if checkbox.isChecked()
-        )
-        self.documentation_subjects_save_requested.emit(selected_subject_ids)
-
-    def _clear_documentation_subjects(self) -> None:
-        while self.documentation_subjects_layout.count():
-            item = self.documentation_subjects_layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
-                widget.deleteLater()
-
+    def _emit_timetable_add(self) -> None: self.timetable_add_requested.emit(self.selected_timetable_weekday)
+    def _emit_documentation_subjects_save(self) -> None: self.documentation_subjects_save_requested.emit(tuple(key for key, value in self.documentation_subject_checkboxes.items() if value.isChecked()))
     @staticmethod
     def _clear_layout(layout: QVBoxLayout) -> None:
         while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
-                widget.deleteLater()
+            item = layout.takeAt(0); widget = item.widget()
+            if widget is not None: widget.setParent(None); widget.deleteLater()

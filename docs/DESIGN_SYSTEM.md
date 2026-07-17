@@ -1,5 +1,11 @@
 # Design-System
 
+## Einstellungsnavigation - Sprint 0.2A.4
+
+Einstellungen sind keine Dashboard-Fläche. Die Übersicht verwendet drei grosse ruhige `SettingsNavigationCard`-Zeilen mit Titel, kurzer Erklärung, Status und Chevron. Die ganze Karte besitzt vorhandene interaktive Card-Zustände und reagiert auf Enter und Leertaste. Eine Unterseite zeigt einen sichtbaren ruhigen Zurück-Mechanismus; Akkordeons, dichte Formularoptik und parallele Bearbeitungsbereiche sind ausgeschlossen. Die Datensicherungsseite nutzt einen blauen Primärbutton nur für `Backup erstellen` beziehungsweise nach ausdrücklicher Warnung `Wiederherstellung starten`; Prüfung und Vorbereitung bleiben neutral.
+
+Lange Datensicherungsoperationen zeigen eine textlich eindeutige Phase und einen unbestimmten Progress-Indikator. Prozentwerte sind nur mit einem echten Core-Fortschrittsvertrag zulaessig und werden hier nicht simuliert. Waehrend `running` und `finishing` sind Backup-, Restore-, Zurueck- und Hauptnavigation deaktiviert. Es gibt keinen Abbrechen-Button; ein Close-Versuch erklaert ruhig, dass der sichere Abschluss abgewartet wird.
+
 ## Visual Signature und Release Polish - Premium UI Sprint 4
 
 Die finale visuelle Signatur entsteht in der bestehenden Product Shell: ein sehr ruhiger blau-grauer Hintergrundverlauf trennt die Arbeitsflaeche von der tiefblauen, tonal abgestuften Sidebar. Aktive Navigation bleibt durch Flaeche, Text, linken Marker und sichtbaren Fokus eindeutig. Die Signatur fuehrt weder eine neue Navigation noch einen neuen Screen ein und bleibt bei allen freigegebenen Fenstergroessen stabil.
