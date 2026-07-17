@@ -1,5 +1,22 @@
 # Project Constitution
 
+## Sicherheitsnachtrag Sprint 0.2B.4a
+
+- Persistente Geräteanmeldung und aktive App-Sitzung sind getrennte Konzepte.
+  Das Credential darf am Auth-Gate eine neue flüchtige Sitzung erzeugen, hebt
+  aber manuelle, Inaktivitäts- oder Wake-Sperren niemals auf.
+- Das App-Passwort darf weder im Schlüsselbund noch in Preferences, Dateien,
+  Backups, Logs oder Diagnose landen. Nur ein zufälliges, widerrufbares
+  256-Bit-Gerätegeheimnis darf im lokalen, nicht synchronisierenden
+  Plattform-Secret-Store liegen.
+- Security Store ist kanonisch für Hash, Bindung, Security-Epoch und Status.
+  Passwortänderung, Recovery und Support-Reset widerrufen Gerätecredentials.
+- Lokale Biometrie ist optional. Passwort bleibt immer verfügbar; OS-Abbruch,
+  Nichtverfügbarkeit, Lockout oder Fehler dürfen keine Sitzung freigeben.
+- Es entsteht keine Datenbank-, Dokument- oder Backupverschlüsselung. Die
+  physische 0.2B.4-Pilot-Mac-Abnahme einschließlich echtem Sleep/Wake bleibt
+  offen und darf nicht als bestanden dargestellt werden.
+
 Dieses Dokument legt die verbindlichen Architekturregeln fuer den Jenaplan-Kompetenzmanager ab Sprint 4 fest.
 
 ## Source-of-Truth-Regeln

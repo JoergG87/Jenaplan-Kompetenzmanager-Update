@@ -1,5 +1,28 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Geräteanmeldung und Touch ID ab Version 0.2B.4a
+
+`Auf diesem Gerät angemeldet bleiben` bezeichnet eine widerrufbare lokale
+Geräteanmeldung, keine dauerhafte App-Sitzung. Nach ausdrücklich bestätigter,
+erfolgreicher Passwortanmeldung speichert macOS ausschließlich ein zufälliges
+256-Bit-Gerätegeheimnis im nicht synchronisierenden Schlüsselbund. Das Passwort
+wird niemals gespeichert; Security Store v3 enthält nur Salt, versionierten
+Hash und technische Bindungs-/Statusmetadaten. Eine neue Sitzung entsteht erst
+am Auth-Gate und endet beim Schließen der App.
+
+Manuelle, Inaktivitäts- und Wake-Sperre bleiben aktiv. Nach einer Sperre kann
+auf unterstützten Macs optional echtes Touch ID verwendet werden; das Passwort
+bleibt jederzeit sichtbar verfügbar. Abbruch, fehlende Einrichtung, Lockout,
+Systemabbruch oder Credential-Inkonsistenz öffnen die App nicht, sondern führen
+zum Passwortpfad. Passwortänderung, Recovery und Support-Reset widerrufen über
+die Security-Epoch alle gespeicherten Geräteanmeldungen.
+
+Die Funktion verschlüsselt keine fachliche SQLite-Datenbank, Dokumente oder
+Backups. `.jkmbackup`, Restore, Diagnose und AppPreferences enthalten kein
+Gerätegeheimnis und keine Credential-Metadaten. Nicht-macOS-Plattformen bleiben
+ohne Dummy-Sicherheit vollständig passwortfähig. Die reale physische Abnahme
+von Sprint 0.2B.4, insbesondere echter Sleep/Wake, bleibt offen.
+
 ## Security Core ab Version 0.2
 
 Sprint 0.2B.4 integriert den Core produktiv. Restore-Recovery bleibt vor der

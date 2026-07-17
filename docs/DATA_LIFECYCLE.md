@@ -1,5 +1,55 @@
 # Data Lifecycle
 
+## Sprint 0.2B.4a - Gerätecredential-Lebenszyklus
+
+### Aktivierung
+
+Aktivierung ist nur unmittelbar nach erfolgreicher Passwortanmeldung oder nach
+erneuter aktueller Passwortbestätigung und ausdrücklicher Zustimmung zulässig.
+Der Application Service erzeugt UUIDv4, 32 zufällige Secret-Bytes und 16 Byte
+Salt und bildet `SHA-256(salt || secret)`. Zuerst wird ein nicht
+authentifizierender `pending`-Datensatz geschrieben, danach das Secret im
+Plattform-Store angelegt und erst zuletzt genau dieser Datensatz transaktional
+aktiviert; dabei wird ein Vorgänger widerrufen. Scheitert ein Schritt, wird
+`pending` widerrufen und das neue Secret best effort gelöscht. Beim nächsten
+Start werden verbliebene `pending`-/`revoked`-Secrets bereinigt. Ohne aktiven
+Storedatensatz kann ein Secret niemals authentifizieren; nach erfolgreichem
+Commit wird ein verdrängtes altes Secret best effort entfernt.
+
+### Start und Entsperrung
+
+Restore-Recovery bleibt vor Auth. Erst am Auth-Gate lädt der Application Service
+den aktiven Datensatz, prüft Status, Installation, Nutzer und aktuelle
+Security-Epoch und liest anschließend das Secret. Die Verifikation erfolgt mit
+konstantzeitnahem Vergleich. Nur ein vollständig passender Datensatz erzeugt
+eine neue flüchtige Sitzung. Inkonsistenz, fehlendes Secret, Lesefehler, falscher
+Hash oder Epoch-Abweichung widerrufen den Storezustand und führen zum Passwort;
+es gibt keinen automatischen Credential-Neuaufbau und keine Fach-DB vor Auth.
+
+Touch ID verlangt zusätzlich vor dem Secret-Lesen eine erfolgreiche echte
+LocalAuthentication-Prüfung. Alle anderen Resultate lassen die Sperre bestehen
+und den Passwort-Fallback unmittelbar verfügbar. Ein Abbruch erzeugt keinen
+Dialogloop und keinen eigenen Biometrie-Fehlversuchszähler.
+
+### Widerruf und Bereinigung
+
+Explizite Deaktivierung, Passwortänderung, Recovery-Abschluss, Support-Reset,
+Security-Store-Inkonsistenz und optionale Konto-Neueinrichtung markieren aktive
+Credentials zuerst atomar `revoked`. Passwort-/Resetpfade erhöhen zusätzlich
+die Security-Epoch. Keychain-Löschung erfolgt danach best effort; ein nicht
+löschbarer Eintrag bleibt wegen Storestatus/Epoch unwirksam. Fehlende
+Keychain-Einträge werden niemals rekonstruiert.
+
+### Backup, Restore, Diagnose und App-Ende
+
+Gerätegeheimnis und Credential-Metadaten sind vollständig von `.jkmbackup`
+ausgeschlossen. Fachliches Restore verändert die Zielinstallation nicht. Ein
+Runtime-Ordnerumzug oder Gerätewechsel ist nicht unterstützt. Diagnose und Logs
+enthalten nur erlaubte Ereigniscodes ohne Secret, Hash, Salt, vollständige ID,
+Passwort oder biometrische Geräteinformationen. Beim App-Ende endet nur die
+In-Memory-Sitzung; das widerrufbare Credential kann am nächsten Auth-Gate eine
+neue Sitzung erzeugen.
+
 ## Sprint 0.2B.4 - Kontoaufnahme, Authentifizierung und Sperre
 
 Start: Nach Restore-Recovery werden nur Runtime-Root und `security/` sicher

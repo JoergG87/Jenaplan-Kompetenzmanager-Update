@@ -90,6 +90,9 @@ class SettingsScreen(QWidget):
     lock_requested = Signal()
     display_name_changed = Signal(str)
     onboarding_requested = Signal()
+    device_credential_enable_requested = Signal()
+    device_credential_disable_requested = Signal()
+    touch_id_preference_changed = Signal(bool)
 
     def __init__(self) -> None:
         super().__init__()
@@ -261,6 +264,39 @@ class SettingsScreen(QWidget):
     def show_security_message(self, text: str, *, tone: str = "success") -> None:
         self.security_message.set_message(text, tone=tone)
 
+    def set_device_credential_status(
+        self,
+        *,
+        supported: bool,
+        enabled: bool,
+        local_authentication: str,
+        touch_id_preferred: bool = False,
+        secret_available: bool = False,
+    ) -> None:
+        self.remember_device.blockSignals(True)
+        self.remember_device.setChecked(enabled)
+        self.remember_device.blockSignals(False)
+        self.remember_device.setVisible(supported)
+        self.remember_device_hint.setVisible(supported)
+        self.revoke_device_button.setVisible(supported and enabled)
+        touch_available = enabled and secret_available and local_authentication == "available"
+        self.touch_id_checkbox.blockSignals(True)
+        self.touch_id_checkbox.setChecked(touch_available and touch_id_preferred)
+        self.touch_id_checkbox.blockSignals(False)
+        self.touch_id_checkbox.setVisible(touch_available)
+        status_text = {
+            "available": "verfügbar",
+            "not_enrolled": "nicht eingerichtet",
+            "not_available": "nicht verfügbar",
+            "locked_out": "nicht verfügbar",
+            "unsupported": "nicht verfügbar",
+            "error": "nicht verfügbar",
+        }.get(local_authentication, "nicht verfügbar")
+        if touch_available and touch_id_preferred:
+            status_text = "aktiviert"
+        self.touch_id_status.setText(f"Touch ID: {status_text}")
+        self.touch_id_status.setVisible(supported and enabled)
+
     def set_display_name(self, display_name: str | None) -> None:
         self.display_name_input.setText(display_name or "")
 
@@ -395,6 +431,47 @@ class SettingsScreen(QWidget):
             )
         )
         layout.addWidget(self.inactivity_combo, 0, Qt.AlignmentFlag.AlignLeft)
+        comfort_title = QLabel("Komfort beim Entsperren")
+        set_label_style(comfort_title, "section_title")
+        layout.addWidget(comfort_title)
+        self.remember_device = QCheckBox("Auf diesem Gerät angemeldet bleiben")
+        self.remember_device.setAccessibleName("Auf diesem Gerät angemeldet bleiben")
+        self.remember_device.setVisible(False)
+        self.remember_device.clicked.connect(
+            lambda checked: (
+                self.device_credential_enable_requested.emit()
+                if checked
+                else self.device_credential_disable_requested.emit()
+            )
+        )
+        layout.addWidget(self.remember_device)
+        self.remember_device_hint = QLabel(
+            "Die App wird weiterhin nach Inaktivität oder Ruhezustand gesperrt."
+        )
+        self.remember_device_hint.setWordWrap(True)
+        set_label_style(self.remember_device_hint, "small")
+        self.remember_device_hint.setVisible(False)
+        layout.addWidget(self.remember_device_hint)
+        self.touch_id_checkbox = QCheckBox("Touch ID zum Entsperren verwenden")
+        self.touch_id_checkbox.setAccessibleName("Touch ID zum Entsperren verwenden")
+        self.touch_id_checkbox.setVisible(False)
+        self.touch_id_checkbox.toggled.connect(self.touch_id_preference_changed)
+        layout.addWidget(self.touch_id_checkbox)
+        self.touch_id_status = QLabel("Touch ID: nicht verfügbar")
+        set_label_style(self.touch_id_status, "small")
+        self.touch_id_status.setVisible(False)
+        layout.addWidget(self.touch_id_status)
+        self.revoke_device_button = QPushButton("Gespeicherte Anmeldung widerrufen")
+        configure_button(
+            self.revoke_device_button,
+            "secondary",
+            "Gespeicherte Anmeldung widerrufen",
+        )
+        self.revoke_device_button.clicked.connect(
+            self.device_credential_disable_requested
+        )
+        self.revoke_device_button.setVisible(False)
+        layout.addWidget(self.revoke_device_button, 0, Qt.AlignmentFlag.AlignLeft)
         self.security_message = InlineMessage()
         layout.addWidget(self.security_message)
         change = QPushButton("Passwort ändern")

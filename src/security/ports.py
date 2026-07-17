@@ -8,12 +8,16 @@ from typing import Protocol, Sequence
 
 from .domain import (
     AccountRecord,
+    DeviceCredential,
     RecoveryCodeCandidate,
     RecoveryCodeHash,
     SecurityBackupProof,
     SupportPublicKey,
     SupportResetPayload,
     SupportResetRequest,
+    LocalAuthenticationAvailability,
+    LocalAuthenticationResult,
+    SecretStoreReadResult,
 )
 
 
@@ -61,6 +65,36 @@ class SupportPublicKeyRegistry(Protocol):
 
 class SupportSecurityBackupPort(Protocol):
     def create_and_verify(self) -> SecurityBackupProof: ...
+
+
+class DeviceCredentialRepository(Protocol):
+    def active_device_credential(self) -> DeviceCredential | None: ...
+    def pending_device_credentials(self) -> tuple[DeviceCredential, ...]: ...
+    def revoked_device_credentials(self) -> tuple[DeviceCredential, ...]: ...
+    def prepare_device_credential(self, credential: DeviceCredential) -> None: ...
+    def activate_device_credential(
+        self, *, credential_id: str, now: datetime
+    ) -> str | None: ...
+    def touch_device_credential(
+        self, *, credential_id: str, now: datetime
+    ) -> bool: ...
+    def revoke_device_credential(
+        self, *, credential_id: str, now: datetime
+    ) -> bool: ...
+    def revoke_all_device_credentials(self, *, now: datetime) -> tuple[str, ...]: ...
+
+
+class DeviceSecretStore(Protocol):
+    @property
+    def supported(self) -> bool: ...
+    def create(self, *, installation_id: str, credential_id: str, secret: bytes) -> None: ...
+    def read(self, *, installation_id: str, credential_id: str) -> SecretStoreReadResult: ...
+    def delete(self, *, installation_id: str, credential_id: str) -> bool: ...
+
+
+class LocalDeviceAuthenticator(Protocol):
+    def availability(self) -> LocalAuthenticationAvailability: ...
+    def authenticate(self, reason: str) -> LocalAuthenticationResult: ...
 
 
 class SecurityRepository(Protocol):

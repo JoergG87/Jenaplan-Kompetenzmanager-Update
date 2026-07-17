@@ -189,7 +189,10 @@ def main() -> int:
         build_security_runtime,
         legacy_installation_present,
     )
-    from src.desktop_app.security_controller import run_startup_authentication
+    from src.desktop_app.security_controller import (
+        run_startup_authentication,
+        run_startup_device_authentication,
+    )
     from src.desktop_app.security_ui import AuthenticationDialog
 
     sys.argv[:] = arguments
@@ -219,12 +222,30 @@ def main() -> int:
                 decision,
             )
         else:
-            authentication = run_startup_authentication(
-                service=security_runtime.service,
-                repository=security_runtime.repository,
-                decision=decision,
-            )
-            session = authentication.session if authentication is not None else None
+            try:
+                pre_auth_preferences = security_runtime.preferences.load()
+            except AppPreferencesError:
+                pre_auth_preferences = AppPreferences()
+            authentication = None
+            if decision.state is SecurityStartState.LOGIN_REQUIRED:
+                device_authentication = run_startup_device_authentication(
+                    service=security_runtime.service,
+                    repository=security_runtime.repository,
+                    device_credentials=security_runtime.device_credentials,
+                )
+            else:
+                device_authentication = None
+            if device_authentication is not None:
+                session = device_authentication.session
+            else:
+                authentication = run_startup_authentication(
+                    service=security_runtime.service,
+                    repository=security_runtime.repository,
+                    decision=decision,
+                    device_credentials=security_runtime.device_credentials,
+                    touch_id_preferred=pre_auth_preferences.touch_id_preferred,
+                )
+                session = authentication.session if authentication is not None else None
             if authentication is not None and authentication.enrollment_completed:
                 try:
                     current_preferences = security_runtime.preferences.load()
@@ -281,6 +302,8 @@ def main() -> int:
             session=session,
             inactivity_minutes=preferences.inactivity_minutes,
             display_name=preferences.display_name,
+            device_credentials=security_runtime.device_credentials,
+            touch_id_preferred=preferences.touch_id_preferred,
         )
         window.configure_onboarding(
             preferences_file=security_runtime.preferences,

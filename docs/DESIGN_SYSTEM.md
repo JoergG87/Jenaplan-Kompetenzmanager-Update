@@ -1,5 +1,26 @@
 # Design-System
 
+## Geräteanmeldung und Touch ID - Sprint 0.2B.4a
+
+Der bestehende Passwortbereich bleibt die dominante, immer verfügbare
+Fallback-Fläche. `Mit Touch ID entsperren` ist eine klar benannte sekundäre
+Aktion und erscheint nur bei tatsächlich verfügbarer, eingerichteter lokaler
+Biometrie und konsistentem Gerätecredential. Ein Abbruch zeigt ruhig den
+Passwortpfad und startet keinen automatischen Dialogloop.
+
+`Einstellungen > Sicherheit` erhält im bestehenden Bereich
+`Komfort beim Entsperren` zwei ruhige Schalterzeilen und eine sekundäre
+Widerrufsaktion. Direkt unter `Auf diesem Gerät angemeldet bleiben` steht:
+„Die App wird weiterhin nach Inaktivität oder Ruhezustand gesperrt.“ Touch ID
+ist nur bei aktivem Gerätecredential sichtbar. Technische Begriffe wie
+Keychain, Token, Hash, Salt oder Epoch stehen nicht im Primärtext.
+
+Die Statussprache unterscheidet `verfügbar`, `nicht eingerichtet`,
+`nicht verfügbar` und `aktiviert` ohne Alarmfarbe. Es gibt genau eine dominante
+Aktion je Zustand, keine neue Hauptnavigation, keine eigene Unterseite und keine
+Behauptung von Datei- oder Secure-Enclave-Verschlüsselung. Login und Sperre
+bleiben opak, bei 1180 x 760 und 1400 x 900 ohne verdeckte Passwortaktion.
+
 ## Erste Schritte - Sprint 0.2C.1
 
 `Erste Schritte` ist eine ruhige Shell-interne Orientierungsansicht, keine

@@ -1,5 +1,18 @@
 # Data Registry
 
+## Sprint 0.2B.4a - Gerätecredential-Datenquellen
+
+| Datenquelle | Inhalt | Kanonischer Owner | Backup/Restore |
+|---|---|---|---|
+| `security.sqlite.device_credentials` | `credential_id`, Installation, Nutzer, technisches Label, individueller Salt, SHA-256-Verifikationswert, Formatversion, Epoch, Status und UTC-Zeitpunkte | `SQLiteSecurityRepository` über `DeviceCredentialRepository` | Nie Bestandteil von `.jkmbackup`; fachliches Restore verändert sie nicht |
+| macOS-Schlüsselbund, Service `de.jenaplan.kompetenzmanager.device-credential` | Ausschließlich 32 zufällige Secret-Bytes, Account namespaced mit Installation und Credential-ID, nicht synchronisierender generischer Passwortdatensatz mit ACL für die erzeugende codesignierte Anwendung | `MacOSKeychainSecretStore` | Nie exportiert, gesichert, diagnostiziert oder wiederhergestellt |
+
+`app-preferences.json`, fachliche SQLite, Dokumentordner, Exporte, Logs,
+Screenshots und Diagnosepakete dürfen weder Secret, Salt, Hash,
+`credential_id` noch Security-Epoch enthalten. Die Keychain-Quelle ist keine
+Cloudquelle und speichert niemals das App-Passwort. Hardware-Seriennummern und
+Fingerprints sind keine Datenquelle.
+
 Dieses Dokument definiert die verbindlichen Datenquellen des Jenaplan-Kompetenzmanagers.
 
 SQLite ist die produktive lokale Source of Truth. Workbook-Tabellen sind historische Legacy-Projektionen unter `legacy/excel/`.
@@ -14,7 +27,7 @@ Zusaetzliche rein technische Runtime-Quelle:
 
 | Quelle | Owner | Inhalt | Ausschluesse |
 | --- | --- | --- | --- |
-| `<runtime-root>/app-preferences.json` | `AppPreferencesFile` | Formatversion, genau eines der Inaktivitaetsintervalle 5/10/15/30/60 Minuten, optionaler lokaler `display_name`, lokaler Onboarding-Status `not_started`/`in_progress`/`completed`/`dismissed`, aktueller Onboarding-Schritt und `onboarding_format_version` | kein Authentifizierungskonto, keine IDs, Tokens, Passwoerter, Recovery-Codes, Rollen, Schul-/E-Mail-/OS-Namen oder fachlichen Daten; ausgeschlossen aus `.jkmbackup`, Restore, Export, Security-Logs und Support-Reset |
+| `<runtime-root>/app-preferences.json` | `AppPreferencesFile` | Formatversion 3, genau eines der Inaktivitaetsintervalle 5/10/15/30/60 Minuten, optionaler lokaler `display_name`, lokaler Onboarding-Status `not_started`/`in_progress`/`completed`/`dismissed`, aktueller Onboarding-Schritt, `onboarding_format_version` und boolesches `touch_id_preferred` | kein Authentifizierungskonto, keine IDs, Tokens, Passwoerter, Recovery-Codes, Hashes, Salts, Security-Epoch, Rollen, Schul-/E-Mail-/OS-Namen oder fachlichen Daten; ausgeschlossen aus `.jkmbackup`, Restore, Export, Security-Logs und Support-Reset |
 
 `display_name` ist ein allgemeiner lokaler App-Profilwert und keine
 Security-Identitaet. Er ist `null` oder ein nach Entfernen aeusserer Leerzeichen

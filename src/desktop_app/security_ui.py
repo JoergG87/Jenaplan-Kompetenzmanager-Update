@@ -23,6 +23,9 @@ from PySide6.QtWidgets import (
 from src.security.application import EnrollmentResult, RecoveryPreparation
 from src.security.domain import (
     AuthenticationStatus,
+    DeviceCredentialAuthenticationStatus,
+    LocalAuthenticationAvailability,
+    LocalAuthenticationResult,
     PasswordPolicyError,
     RecoveryStatus,
 )
@@ -115,6 +118,8 @@ class AuthenticationDialog(QDialog):
         service,
         repository,
         decision: SecurityStartupDecision,
+        device_credentials=None,
+        touch_id_preferred: bool = False,
         parent: QWidget | None = None,
         allow_cancel: bool = True,
     ) -> None:
@@ -122,6 +127,8 @@ class AuthenticationDialog(QDialog):
         self.service = service
         self.repository = repository
         self.decision = decision
+        self.device_credentials = device_credentials
+        self.touch_id_preferred = touch_id_preferred
         self.allow_cancel = allow_cancel
         self.authenticated_session: InMemorySession | None = None
         self.enrollment_display_name: str | None = None
@@ -195,24 +202,40 @@ class AuthenticationDialog(QDialog):
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
         self.password.setPlaceholderText("Passwort")
         self.password.setAccessibleName("Passwort")
-        self.password.returnPressed.connect(self._submit_password)
         form.addWidget(self.password)
         self.password_confirmation = QLineEdit()
         self.password_confirmation.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_confirmation.setPlaceholderText("Passwort bestätigen")
         self.password_confirmation.setAccessibleName("Passwort bestätigen")
-        self.password_confirmation.returnPressed.connect(self._submit_password)
         form.addWidget(self.password_confirmation)
         self.show_password = QCheckBox("Passwort anzeigen")
         self.show_password.toggled.connect(self._toggle_password_visibility)
         form.addWidget(self.show_password)
+        self.remember_device = QCheckBox("Auf diesem Gerät angemeldet bleiben")
+        self.remember_device.setAccessibleName("Auf diesem Gerät angemeldet bleiben")
+        self.remember_device.setVisible(False)
+        form.addWidget(self.remember_device)
+        self.remember_device_hint = QLabel(
+            "Die App wird weiterhin nach Inaktivität oder Ruhezustand gesperrt."
+        )
+        self.remember_device_hint.setWordWrap(True)
+        self.remember_device_hint.setVisible(False)
+        set_label_style(self.remember_device_hint, "small")
+        form.addWidget(self.remember_device_hint)
         self.message = InlineMessage()
         form.addWidget(self.message)
         actions = QHBoxLayout()
         self.recovery_button = QPushButton("Recovery-Code verwenden")
+        self.recovery_button.setAutoDefault(False)
         configure_button(self.recovery_button, "quiet", "Recovery öffnen")
         self.recovery_button.clicked.connect(self._open_recovery)
         actions.addWidget(self.recovery_button)
+        self.touch_id_button = QPushButton("Mit Touch ID entsperren")
+        self.touch_id_button.setAutoDefault(False)
+        configure_button(self.touch_id_button, "secondary", "Mit Touch ID entsperren")
+        self.touch_id_button.clicked.connect(self._submit_touch_id)
+        self.touch_id_button.setVisible(False)
+        actions.addWidget(self.touch_id_button)
         actions.addStretch(1)
         self.submit_button = QPushButton("Weiter")
         self.submit_button.setDefault(True)
@@ -239,14 +262,14 @@ class AuthenticationDialog(QDialog):
         self.recovery_code = QLineEdit()
         self.recovery_code.setPlaceholderText("JKM1-…")
         self.recovery_code.setAccessibleName("Recovery-Code")
-        self.recovery_code.returnPressed.connect(self._submit_recovery)
         form.addWidget(self.recovery_code)
         self.recovery_message = InlineMessage()
         form.addWidget(self.recovery_message)
         actions = QHBoxLayout()
         back = QPushButton("Zurück")
+        back.setAutoDefault(False)
         configure_button(back, "quiet", "Zurück zum Login")
-        back.clicked.connect(lambda: self.stack.setCurrentWidget(self.password_page))
+        back.clicked.connect(self._return_to_password)
         actions.addWidget(back)
         actions.addStretch(1)
         self.recovery_submit = QPushButton("Code prüfen")
@@ -299,6 +322,22 @@ class AuthenticationDialog(QDialog):
             self.submit_button.setText("Entsperren")
             self.password_confirmation.setVisible(False)
             self.recovery_button.setVisible(True)
+            can_remember = (
+                state is SecurityStartState.LOGIN_REQUIRED
+                and self.device_credentials is not None
+                and self.device_credentials.supported
+            )
+            self.remember_device.setVisible(can_remember)
+            self.remember_device_hint.setVisible(can_remember)
+            if self.device_credentials is not None:
+                status = self.device_credentials.status()
+                self.touch_id_button.setVisible(
+                    status.enabled
+                    and status.secret_available
+                    and self.touch_id_preferred
+                    and status.local_authentication
+                    is LocalAuthenticationAvailability.AVAILABLE
+                )
         else:
             self.error_text.setText(
                 "Die Sicherheitsdaten konnten nicht eindeutig geprüft werden. "
@@ -306,6 +345,14 @@ class AuthenticationDialog(QDialog):
                 f"technischen Kennung {self.decision.technical_code} an den Support."
             )
             self.stack.setCurrentWidget(self.error_page)
+        if self.stack.currentWidget() is self.password_page:
+            self.recovery_submit.setDefault(False)
+            self.codes_page.button.setDefault(False)
+            self.submit_button.setDefault(True)
+        else:
+            self.submit_button.setDefault(False)
+            self.recovery_submit.setDefault(False)
+            self.codes_page.button.setDefault(False)
 
     def _show_password_reset(self) -> None:
         self.heading.setText("Neues Passwort festlegen")
@@ -318,6 +365,9 @@ class AuthenticationDialog(QDialog):
         self.password.clear()
         self.password_confirmation.clear()
         self.stack.setCurrentWidget(self.password_page)
+        self.recovery_submit.setDefault(False)
+        self.codes_page.button.setDefault(False)
+        self.submit_button.setDefault(True)
 
     def _submit_password(self) -> None:
         if self._operation_busy:
@@ -334,9 +384,37 @@ class AuthenticationDialog(QDialog):
             operation = lambda: self.service.prepare_recovery_password_reset(password)
             handler = self._reset_prepared
         else:
-            operation = lambda: self.service.authenticate_password(password)
+            remember = self.remember_device.isVisible() and self.remember_device.isChecked()
+            operation = lambda: self._authenticate_password(password, remember)
             handler = self._authentication_finished
         self._run_operation(operation, handler, self._password_operation_failed)
+
+    def _authenticate_password(self, password: str, remember: bool):
+        result = self.service.authenticate_password(password)
+        registration_failed = False
+        if (
+            remember
+            and result.status is AuthenticationStatus.AUTHENTICATED
+            and self.device_credentials is not None
+        ):
+            try:
+                self.device_credentials.register()
+                _SECURITY_LOG.info("device_credential_enabled")
+            except Exception:
+                registration_failed = True
+                _SECURITY_LOG.info("device_credential_rejected")
+        return result, registration_failed
+
+    def _submit_touch_id(self) -> None:
+        if self._operation_busy or self.device_credentials is None:
+            return
+        self._run_operation(
+            lambda: self.device_credentials.authenticate(require_local_authentication=True),
+            self._touch_id_finished,
+            lambda _error: self.message.set_message(
+                "Touch ID ist gerade nicht verfügbar. Verwende dein Passwort.", tone="error"
+            ),
+        )
 
     def _submit_recovery(self) -> None:
         if self._operation_busy:
@@ -390,11 +468,17 @@ class AuthenticationDialog(QDialog):
         self._pending_result = result
         self.codes_page.set_codes(result.recovery_codes)
         self.stack.setCurrentWidget(self.codes_page)
+        self.submit_button.setDefault(False)
+        self.recovery_submit.setDefault(False)
+        self.codes_page.button.setDefault(True)
 
     def _reset_prepared(self, result: RecoveryPreparation) -> None:
         self._pending_result = result
         self.codes_page.set_codes(result.recovery_codes, reset=True)
         self.stack.setCurrentWidget(self.codes_page)
+        self.submit_button.setDefault(False)
+        self.recovery_submit.setDefault(False)
+        self.codes_page.button.setDefault(True)
 
     def _confirm_codes(self) -> None:
         if self._operation_busy or self._pending_result is None:
@@ -419,8 +503,17 @@ class AuthenticationDialog(QDialog):
         self._accept_current_session()
 
     def _authentication_finished(self, result) -> None:
+        registration_failed = False
+        if isinstance(result, tuple):
+            result, registration_failed = result
         if result.status is AuthenticationStatus.AUTHENTICATED:
             _SECURITY_LOG.info("login_success")
+            if registration_failed:
+                self.message.set_message(
+                    "Die gespeicherte Anmeldung konnte nicht aktiviert werden. "
+                    "Die Anmeldung mit Passwort war erfolgreich.",
+                    tone="error",
+                )
             self._accept_current_session()
             return
         _SECURITY_LOG.info("login_failed")
@@ -438,6 +531,27 @@ class AuthenticationDialog(QDialog):
             self.message.set_message(
                 "Das Passwort konnte nicht bestätigt werden.", tone="error"
             )
+
+    def _touch_id_finished(self, result) -> None:
+        if result.status is DeviceCredentialAuthenticationStatus.AUTHENTICATED:
+            _SECURITY_LOG.info("local_auth_success")
+            self._accept_current_session()
+            return
+        if result.local_authentication_result in {
+            LocalAuthenticationResult.USER_CANCEL,
+            LocalAuthenticationResult.FALLBACK_REQUESTED,
+            LocalAuthenticationResult.SYSTEM_CANCEL,
+        }:
+            _SECURITY_LOG.info("local_auth_cancelled")
+            self.message.set_message("Touch ID wurde beendet. Verwende dein Passwort.")
+        else:
+            _SECURITY_LOG.info("local_auth_unavailable")
+            self.message.set_message(
+                "Touch ID ist gerade nicht verfügbar. Verwende dein Passwort.",
+                tone="error",
+            )
+        self.touch_id_button.setVisible(False)
+        self.password.setFocus()
 
     def _recovery_finished(self, result) -> None:
         if result.status is RecoveryStatus.ACCEPTED:
@@ -483,7 +597,17 @@ class AuthenticationDialog(QDialog):
     def _open_recovery(self) -> None:
         self.message.set_message("")
         self.stack.setCurrentWidget(self.recovery_page)
+        self.submit_button.setDefault(False)
+        self.codes_page.button.setDefault(False)
+        self.recovery_submit.setDefault(True)
         self.recovery_code.setFocus()
+
+    def _return_to_password(self) -> None:
+        self.stack.setCurrentWidget(self.password_page)
+        self.recovery_submit.setDefault(False)
+        self.codes_page.button.setDefault(False)
+        self.submit_button.setDefault(True)
+        self.password.setFocus()
 
     def _toggle_password_visibility(self, visible: bool) -> None:
         mode = QLineEdit.EchoMode.Normal if visible else QLineEdit.EchoMode.Password

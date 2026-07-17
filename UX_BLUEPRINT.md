@@ -1,5 +1,19 @@
 # UX Blueprint v1.0
 
+## Lokaler Komfortzugang ab Sprint 0.2B.4a
+
+Die Auth-Journey lautet: Restore-Recovery -> Auth-Gate -> gültiges ausdrücklich
+aktiviertes Gerätecredential oder Passwort -> neue flüchtige Sitzung ->
+fachliche Shell. `Auf diesem Gerät angemeldet bleiben` ist keine fortdauernde
+Sitzung; App-Ende, manuelle Sperre, Inaktivität und Wake behalten ihre Wirkung.
+
+Auf unterstützten Macs kann die Lehrkraft nach einer Sperre bewusst
+`Mit Touch ID entsperren` wählen. Das Passwortfeld bleibt sichtbar. Abbruch,
+Nichtverfügbarkeit oder Fehler führen ohne Wiederholungsloop zurück zum
+Passwort. Aktivierung und Widerruf liegen ausschließlich in der vorhandenen
+Sicherheits-Unterseite; es gibt keine neue Navigation und keine fachliche
+Journey.
+
 ## 1. Ziel
 
 Der erste Prototyp dient dazu, die zentralen Arbeitsabläufe der Lehrkraft als klaren, schnellen und nachvollziehbaren Bedienfluss abzubilden.

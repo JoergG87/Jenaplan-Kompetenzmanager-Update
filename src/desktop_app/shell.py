@@ -93,6 +93,9 @@ class AppShell(QMainWindow):
     password_change_requested = Signal()
     recovery_codes_requested = Signal()
     inactivity_minutes_changed = Signal(int)
+    device_credential_enable_requested = Signal()
+    device_credential_disable_requested = Signal()
+    touch_id_preference_changed = Signal(bool)
     display_name_changed = Signal(str)
     restore_handoff_started = Signal()
 
@@ -369,6 +372,15 @@ class AppShell(QMainWindow):
         )
         self.settings_screen.inactivity_minutes_changed.connect(
             self.inactivity_minutes_changed
+        )
+        self.settings_screen.device_credential_enable_requested.connect(
+            self.device_credential_enable_requested
+        )
+        self.settings_screen.device_credential_disable_requested.connect(
+            self.device_credential_disable_requested
+        )
+        self.settings_screen.touch_id_preference_changed.connect(
+            self.touch_id_preference_changed
         )
         self.settings_screen.display_name_changed.connect(self.display_name_changed)
         self.backup_restore_operations.progress.connect(

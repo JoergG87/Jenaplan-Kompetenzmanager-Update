@@ -11,6 +11,7 @@ from src.core.app_preferences import AppPreferencesFile
 
 from .application import SecurityApplicationService, SecurityStateResult
 from .domain import SecurityStoreError, SecurityStoreState
+from .device_credentials import DeviceCredentialService
 from .infrastructure import (
     Argon2idPasswordHasher,
     EnrollmentMarkerFile,
@@ -18,6 +19,7 @@ from .infrastructure import (
     SQLiteSecurityRepository,
     SystemClock,
     SystemRandomSource,
+    build_platform_authentication_adapters,
 )
 
 
@@ -85,25 +87,38 @@ class SecurityRuntime:
     service: SecurityApplicationService
     repository: SQLiteSecurityRepository
     preferences: AppPreferencesFile
+    device_credentials: DeviceCredentialService
 
 
 def build_security_runtime(paths: SecurityRuntimePaths) -> SecurityRuntime:
     permissions = PlatformFilePermissionManager()
     repository = SQLiteSecurityRepository(paths.security_database, permissions)
     clock = SystemClock()
+    random_source = SystemRandomSource()
     service = SecurityApplicationService(
         repository=repository,
         marker=EnrollmentMarkerFile(paths.enrollment_marker, permissions),
         password_hasher=Argon2idPasswordHasher(),
-        random_source=SystemRandomSource(),
+        random_source=random_source,
         utc_clock=clock,
         monotonic_clock=clock,
         permissions=permissions,
+    )
+    secret_store, local_authenticator = build_platform_authentication_adapters()
+    device_credentials = DeviceCredentialService(
+        repository=repository,
+        secret_store=secret_store,
+        local_authenticator=local_authenticator,
+        random_source=random_source,
+        utc_clock=clock,
+        security_epoch=repository.security_epoch,
+        account_loader=repository.load_account,
     )
     return SecurityRuntime(
         service,
         repository,
         AppPreferencesFile(paths.app_preferences, permissions),
+        device_credentials,
     )
 
 

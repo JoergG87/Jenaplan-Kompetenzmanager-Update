@@ -10,6 +10,13 @@ from .system import (
     SystemClock,
     SystemRandomSource,
 )
+from .platform_auth import (
+    MacOSKeychainSecretStore,
+    MacOSLocalDeviceAuthenticator,
+    UnsupportedDeviceSecretStore,
+    UnsupportedLocalDeviceAuthenticator,
+    build_platform_authentication_adapters,
+)
 
 __all__ = [
     "Argon2idPasswordHasher",

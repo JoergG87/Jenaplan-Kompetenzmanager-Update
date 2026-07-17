@@ -14,6 +14,11 @@ import tempfile
 from ..domain import (
     AccountRecord,
     AccountStatus,
+    DEVICE_CREDENTIAL_HASH_BYTES,
+    DEVICE_CREDENTIAL_HASH_FORMAT_VERSION,
+    DEVICE_CREDENTIAL_SALT_BYTES,
+    DeviceCredential,
+    DeviceCredentialStatus,
     PASSWORD_HASH_FORMAT_VERSION,
     RECOVERY_CODE_COUNT,
     RECOVERY_CODE_FORMAT_VERSION,
@@ -69,6 +74,11 @@ _EXPECTED_TABLE_COLUMNS = {
     ),
     "security_epochs": (
         "user_id", "installation_id", "generation", "updated_at_utc"
+    ),
+    "device_credentials": (
+        "credential_id", "installation_id", "user_id", "device_label", "salt",
+        "secret_hash", "hash_format_version", "security_epoch_at_issue", "status",
+        "created_at_utc", "last_used_at_utc", "revoked_at_utc"
     ),
 }
 
@@ -192,7 +202,33 @@ CREATE TABLE security_epochs (
 ) STRICT;
 """
 
-_SCHEMA_SQL = _SCHEMA_V1_SQL + _SCHEMA_V2_SQL
+_SCHEMA_V3_SQL = """
+CREATE TABLE device_credentials (
+    credential_id TEXT PRIMARY KEY,
+    installation_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    device_label TEXT NOT NULL CHECK (length(device_label) BETWEEN 1 AND 80),
+    salt BLOB NOT NULL CHECK (length(salt) = 16),
+    secret_hash BLOB NOT NULL CHECK (length(secret_hash) = 32),
+    hash_format_version INTEGER NOT NULL CHECK (hash_format_version >= 1),
+    security_epoch_at_issue INTEGER NOT NULL CHECK (security_epoch_at_issue >= 1),
+    status TEXT NOT NULL CHECK (status IN ('pending', 'active', 'revoked')),
+    created_at_utc TEXT NOT NULL,
+    last_used_at_utc TEXT,
+    revoked_at_utc TEXT,
+    CHECK (
+        (status IN ('pending', 'active') AND revoked_at_utc IS NULL)
+        OR (status = 'revoked' AND revoked_at_utc IS NOT NULL)
+    ),
+    FOREIGN KEY (installation_id) REFERENCES installations(installation_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES local_accounts(user_id) ON DELETE CASCADE
+) STRICT;
+
+CREATE UNIQUE INDEX one_active_device_credential_per_account
+ON device_credentials(installation_id, user_id) WHERE status = 'active';
+"""
+
+_SCHEMA_SQL = _SCHEMA_V1_SQL + _SCHEMA_V2_SQL + _SCHEMA_V3_SQL
 _RESET_PASSWORD_MARKER = "!password-reset-pending!"
 
 
@@ -270,6 +306,7 @@ class SQLiteSecurityRepository:
                     raise SecurityStoreError("security_store_binding_invalid")
                 self._validate_recovery_sets(connection, account)
                 self._validate_support_reset_state(connection, account)
+                self._validate_device_credentials(connection, account)
                 self._validate_all_timestamps(connection)
                 return schema_version, format_version, marker_reference, account
         except UnsupportedSecurityVersionError:
@@ -473,6 +510,7 @@ class SQLiteSecurityRepository:
             )
             if epoch.rowcount != 1:
                 raise SecurityStoreError("security_epoch_missing")
+            self._revoke_active_device_credentials(connection, now)
             return True
 
     def active_recovery_codes(self) -> tuple[RecoveryCodeCandidate, ...]:
@@ -548,6 +586,14 @@ class SQLiteSecurityRepository:
                 "recovery_last_observed_utc = ?, updated_at_utc = ? WHERE user_id = ?",
                 (stamp, stamp, account.user_id),
             )
+            epoch = connection.execute(
+                "UPDATE security_epochs SET generation = generation + 1, updated_at_utc = ? "
+                "WHERE user_id = ? AND installation_id = ?",
+                (stamp, account.user_id, account.installation_id),
+            )
+            if epoch.rowcount != 1:
+                raise SecurityStoreError("security_epoch_missing")
+            self._revoke_active_device_credentials(connection, now)
             return True
 
     def prepare_recovery_set(
@@ -691,13 +737,6 @@ class SQLiteSecurityRepository:
                 "WHERE user_id = ? AND status = 'password_reset_pending'",
                 (replacement_hash, PASSWORD_HASH_FORMAT_VERSION, stamp, stamp, stamp, account.user_id),
             )
-            epoch = connection.execute(
-                "UPDATE security_epochs SET generation = generation + 1, updated_at_utc = ? "
-                "WHERE user_id = ? AND installation_id = ?",
-                (stamp, account.user_id, account.installation_id),
-            )
-            if epoch.rowcount != 1:
-                raise SecurityStoreError("security_epoch_missing")
             return cursor.rowcount == 1
 
     def confirm_password_reset(
@@ -876,6 +915,7 @@ class SQLiteSecurityRepository:
                 "WHERE user_id = ? AND installation_id = ?",
                 (stamp, account.user_id, account.installation_id),
             )
+            self._revoke_active_device_credentials(connection, now)
             row = connection.execute(
                 "SELECT generation FROM security_epochs WHERE user_id = ?",
                 (account.user_id,),
@@ -891,6 +931,143 @@ class SQLiteSecurityRepository:
             if len(rows) != 1 or int(rows[0][0]) < 1:
                 raise SecurityStoreError("security_epoch_invalid")
             return int(rows[0][0])
+
+    def active_device_credential(self) -> DeviceCredential | None:
+        self._ensure_current_schema()
+        with self._read_connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM device_credentials WHERE status = 'active'"
+            ).fetchall()
+            if len(rows) > 1:
+                raise SecurityStoreError("device_credential_cardinality_invalid")
+            return None if not rows else self._device_credential_from_row(rows[0])
+
+    def pending_device_credentials(self) -> tuple[DeviceCredential, ...]:
+        return self._device_credentials_with_status(DeviceCredentialStatus.PENDING)
+
+    def revoked_device_credentials(self) -> tuple[DeviceCredential, ...]:
+        return self._device_credentials_with_status(DeviceCredentialStatus.REVOKED)
+
+    def _device_credentials_with_status(
+        self, status: DeviceCredentialStatus
+    ) -> tuple[DeviceCredential, ...]:
+        self._ensure_current_schema()
+        with self._read_connection() as connection:
+            return tuple(
+                self._device_credential_from_row(row)
+                for row in connection.execute(
+                    "SELECT * FROM device_credentials WHERE status = ?",
+                    (status.value,),
+                ).fetchall()
+            )
+
+    def prepare_device_credential(self, credential: DeviceCredential) -> None:
+        self._validate_device_credential_value(credential)
+        with self._write_transaction() as connection:
+            account = self._single_account(connection)
+            epoch = self._single_epoch(connection)
+            if (
+                credential.installation_id != account.installation_id
+                or credential.user_id != account.user_id
+                or credential.security_epoch_at_issue != epoch
+                or credential.status is not DeviceCredentialStatus.PENDING
+            ):
+                raise SecurityStoreError("device_credential_binding_invalid")
+            stamp = _format_datetime(credential.created_at)
+            connection.execute(
+                "UPDATE device_credentials SET status = 'revoked', revoked_at_utc = ? "
+                "WHERE status = 'pending'",
+                (stamp,),
+            )
+            connection.execute(
+                "INSERT INTO device_credentials VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, NULL, NULL)",
+                (
+                    credential.credential_id,
+                    credential.installation_id,
+                    credential.user_id,
+                    credential.device_label,
+                    sqlite3.Binary(credential.salt),
+                    sqlite3.Binary(credential.secret_hash),
+                    credential.hash_format_version,
+                    credential.security_epoch_at_issue,
+                    stamp,
+                ),
+            )
+
+    def activate_device_credential(
+        self, *, credential_id: str, now: datetime
+    ) -> str | None:
+        validate_uuid4(credential_id)
+        with self._write_transaction() as connection:
+            pending = connection.execute(
+                "SELECT * FROM device_credentials WHERE credential_id = ? AND status = 'pending'",
+                (credential_id,),
+            ).fetchone()
+            if pending is None:
+                raise SecurityStoreError("device_credential_pending_missing")
+            credential = self._device_credential_from_row(pending)
+            account = self._single_account(connection)
+            if (
+                credential.installation_id != account.installation_id
+                or credential.user_id != account.user_id
+                or credential.security_epoch_at_issue != self._single_epoch(connection)
+            ):
+                raise SecurityStoreError("device_credential_binding_invalid")
+            existing = connection.execute(
+                "SELECT credential_id FROM device_credentials WHERE status = 'active'"
+            ).fetchall()
+            if len(existing) > 1:
+                raise SecurityStoreError("device_credential_cardinality_invalid")
+            replaced = None if not existing else str(existing[0][0])
+            stamp = _format_datetime(now)
+            if replaced is not None:
+                connection.execute(
+                    "UPDATE device_credentials SET status = 'revoked', revoked_at_utc = ? "
+                    "WHERE credential_id = ? AND status = 'active'",
+                    (stamp, replaced),
+                )
+            cursor = connection.execute(
+                "UPDATE device_credentials SET status = 'active' "
+                "WHERE credential_id = ? AND status = 'pending'",
+                (credential_id,),
+            )
+            if cursor.rowcount != 1:
+                raise SecurityStoreError("device_credential_activation_failed")
+            return replaced
+
+    def touch_device_credential(self, *, credential_id: str, now: datetime) -> bool:
+        validate_uuid4(credential_id)
+        with self._write_transaction() as connection:
+            cursor = connection.execute(
+                "UPDATE device_credentials SET last_used_at_utc = ? "
+                "WHERE credential_id = ? AND status = 'active'",
+                (_format_datetime(now), credential_id),
+            )
+            return cursor.rowcount == 1
+
+    def revoke_device_credential(self, *, credential_id: str, now: datetime) -> bool:
+        validate_uuid4(credential_id)
+        with self._write_transaction() as connection:
+            cursor = connection.execute(
+                "UPDATE device_credentials SET status = 'revoked', revoked_at_utc = ? "
+                "WHERE credential_id = ? AND status IN ('pending', 'active')",
+                (_format_datetime(now), credential_id),
+            )
+            return cursor.rowcount == 1
+
+    def revoke_all_device_credentials(self, *, now: datetime) -> tuple[str, ...]:
+        with self._write_transaction() as connection:
+            rows = connection.execute(
+                "SELECT credential_id FROM device_credentials WHERE status IN ('pending', 'active')"
+            ).fetchall()
+            identifiers = tuple(str(row[0]) for row in rows)
+            if identifiers:
+                connection.execute(
+                    "UPDATE device_credentials SET status = 'revoked', revoked_at_utc = ? "
+                    "WHERE status IN ('pending', 'active')",
+                    (_format_datetime(now),),
+                )
+            return identifiers
 
     def _ensure_current_schema(self) -> None:
         if self._database_path.is_symlink() or not self._database_path.is_file():
@@ -914,7 +1091,7 @@ class SQLiteSecurityRepository:
             raise UnsupportedSecurityVersionError("security_store_version_newer")
         if user_version == SECURITY_SCHEMA_VERSION:
             return
-        if user_version != 1:
+        if user_version not in (1, 2):
             raise SecurityStoreError("security_store_version_invalid")
 
         connection: sqlite3.Connection | None = None
@@ -936,7 +1113,7 @@ class SQLiteSecurityRepository:
             if user_version == SECURITY_SCHEMA_VERSION:
                 connection.execute("COMMIT")
                 return
-            if user_version != 1:
+            if user_version not in (1, 2):
                 raise SecurityStoreError("security_store_version_invalid")
             metadata = connection.execute(
                 "SELECT schema_version, format_version FROM security_metadata "
@@ -944,26 +1121,40 @@ class SQLiteSecurityRepository:
             ).fetchone()
             if metadata is None:
                 raise SecurityStoreError("security_metadata_missing")
-            if int(metadata[0]) != 1 or int(metadata[1]) != SECURITY_FORMAT_VERSION:
+            if int(metadata[0]) != user_version or int(metadata[1]) != SECURITY_FORMAT_VERSION:
                 raise SecurityStoreError("security_store_version_invalid")
-            self._validate_schema_shape(connection, _EXPECTED_TABLE_COLUMNS_V1)
+            expected = (
+                _EXPECTED_TABLE_COLUMNS_V1
+                if user_version == 1
+                else {key: value for key, value in _EXPECTED_TABLE_COLUMNS.items() if key != "device_credentials"}
+            )
+            self._validate_schema_shape(connection, expected)
             self._failure_injector("before_migration")
-            for statement in _SCHEMA_V2_SQL.split(";"):
+            if user_version == 1:
+                for statement in _SCHEMA_V2_SQL.split(";"):
+                    if statement.strip():
+                        connection.execute(statement)
+                accounts = connection.execute(
+                    "SELECT user_id, installation_id, updated_at_utc FROM local_accounts"
+                ).fetchall()
+                if len(accounts) != 1:
+                    raise SecurityStoreError("security_account_cardinality_invalid")
+                connection.execute(
+                    "INSERT INTO security_epochs VALUES (?, ?, 1, ?)",
+                    (accounts[0][0], accounts[0][1], accounts[0][2]),
+                )
+            for statement in _SCHEMA_V3_SQL.split(";"):
                 if statement.strip():
                     connection.execute(statement)
-            accounts = connection.execute(
-                "SELECT user_id, installation_id, updated_at_utc FROM local_accounts"
-            ).fetchall()
-            if len(accounts) != 1:
+            updated_at = connection.execute(
+                "SELECT updated_at_utc FROM local_accounts"
+            ).fetchone()
+            if updated_at is None:
                 raise SecurityStoreError("security_account_cardinality_invalid")
-            connection.execute(
-                "INSERT INTO security_epochs VALUES (?, ?, 1, ?)",
-                (accounts[0][0], accounts[0][1], accounts[0][2]),
-            )
             connection.execute(
                 "UPDATE security_metadata SET schema_version = ?, updated_at_utc = ? "
                 "WHERE metadata_id = 1",
-                (SECURITY_SCHEMA_VERSION, accounts[0][2]),
+                (SECURITY_SCHEMA_VERSION, updated_at[0]),
             )
             connection.execute(f"PRAGMA user_version = {SECURITY_SCHEMA_VERSION}")
             self._failure_injector("before_migration_commit")
@@ -1038,6 +1229,50 @@ class SQLiteSecurityRepository:
         )
 
     @staticmethod
+    def _device_credential_from_row(row: sqlite3.Row) -> DeviceCredential:
+        credential = DeviceCredential(
+            credential_id=validate_uuid4(row["credential_id"]),
+            installation_id=validate_uuid4(row["installation_id"]),
+            user_id=validate_uuid4(row["user_id"]),
+            device_label=str(row["device_label"]),
+            salt=bytes(row["salt"]),
+            secret_hash=bytes(row["secret_hash"]),
+            hash_format_version=int(row["hash_format_version"]),
+            security_epoch_at_issue=int(row["security_epoch_at_issue"]),
+            created_at=_parse_required_datetime(row["created_at_utc"]),
+            last_used_at=_parse_optional_datetime(row["last_used_at_utc"]),
+            revoked_at=_parse_optional_datetime(row["revoked_at_utc"]),
+            status=DeviceCredentialStatus(row["status"]),
+        )
+        SQLiteSecurityRepository._validate_device_credential_value(credential)
+        return credential
+
+    @staticmethod
+    def _validate_device_credential_value(credential: DeviceCredential) -> None:
+        validate_uuid4(credential.credential_id)
+        validate_uuid4(credential.installation_id)
+        validate_uuid4(credential.user_id)
+        if not 1 <= len(credential.device_label) <= 80:
+            raise SecurityStoreError("device_credential_label_invalid")
+        if len(credential.salt) != DEVICE_CREDENTIAL_SALT_BYTES:
+            raise SecurityStoreError("device_credential_salt_invalid")
+        if len(credential.secret_hash) != DEVICE_CREDENTIAL_HASH_BYTES:
+            raise SecurityStoreError("device_credential_hash_invalid")
+        if credential.hash_format_version > DEVICE_CREDENTIAL_HASH_FORMAT_VERSION:
+            raise UnsupportedSecurityVersionError("device_credential_version_newer")
+        if credential.hash_format_version != DEVICE_CREDENTIAL_HASH_FORMAT_VERSION:
+            raise SecurityStoreError("device_credential_version_invalid")
+        if credential.security_epoch_at_issue < 1:
+            raise SecurityStoreError("device_credential_epoch_invalid")
+
+    @staticmethod
+    def _single_epoch(connection: sqlite3.Connection) -> int:
+        rows = connection.execute("SELECT generation FROM security_epochs").fetchall()
+        if len(rows) != 1 or int(rows[0][0]) < 1:
+            raise SecurityStoreError("security_epoch_invalid")
+        return int(rows[0][0])
+
+    @staticmethod
     def _insert_recovery_codes(
         connection: sqlite3.Connection,
         recovery_set_id: str,
@@ -1057,6 +1292,16 @@ class SQLiteSecurityRepository:
                     stamp,
                 ),
             )
+
+    @staticmethod
+    def _revoke_active_device_credentials(
+        connection: sqlite3.Connection, now: datetime
+    ) -> None:
+        connection.execute(
+            "UPDATE device_credentials SET status = 'revoked', revoked_at_utc = ? "
+            "WHERE status IN ('pending', 'active')",
+            (_format_datetime(now),),
+        )
 
     @staticmethod
     def _validate_recovery_sets(
@@ -1135,6 +1380,10 @@ class SQLiteSecurityRepository:
                 ("consumed_at_utc", False),
             ),
             "security_epochs": (("updated_at_utc", False),),
+            "device_credentials": (
+                ("created_at_utc", False), ("last_used_at_utc", True),
+                ("revoked_at_utc", True),
+            ),
         }
         for table, columns in timestamp_columns.items():
             names = ", ".join(name for name, _nullable in columns)
@@ -1168,6 +1417,26 @@ class SQLiteSecurityRepository:
         )
         if active_requests > 1:
             raise SecurityStoreError("support_reset_request_cardinality_invalid")
+
+    @staticmethod
+    def _validate_device_credentials(
+        connection: sqlite3.Connection, account: AccountRecord
+    ) -> None:
+        active = 0
+        pending = 0
+        for row in connection.execute("SELECT * FROM device_credentials").fetchall():
+            credential = SQLiteSecurityRepository._device_credential_from_row(row)
+            if (
+                credential.installation_id != account.installation_id
+                or credential.user_id != account.user_id
+            ):
+                raise SecurityStoreError("device_credential_binding_invalid")
+            if credential.status is DeviceCredentialStatus.ACTIVE:
+                active += 1
+            elif credential.status is DeviceCredentialStatus.PENDING:
+                pending += 1
+        if active > 1 or pending > 1:
+            raise SecurityStoreError("device_credential_cardinality_invalid")
 
 
 class _WriteTransaction:

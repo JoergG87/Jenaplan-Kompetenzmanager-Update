@@ -1,5 +1,70 @@
 # Architekturentscheidungen
 
+## ADR-068 - Gerätecredential statt gespeichertem Passwort und optionale lokale Authentifizierung
+
+**Status:** Für Sprint 0.2B.4a freigegeben.
+
+`Auf diesem Gerät angemeldet bleiben` speichert keine Sitzung und kein
+App-Passwort. Nach einer unmittelbar erfolgreichen Passwortanmeldung und
+ausdrücklicher Zustimmung erzeugt der Security Application Service genau ein
+zufälliges Gerätegeheimnis mit 256 Bit Entropie. Nur dieses Geheimnis liegt als
+nicht synchronisierender generischer Passwortdatensatz im lokalen macOS-
+Schlüsselbund. Eine explizite ACL vertraut ausschließlich der erzeugenden,
+codesignierten Anwendung; der Accountname bindet Installation und Credential.
+Der getrennte
+Security Store speichert ausschließlich `credential_id`, Installation, Nutzer,
+technisches datensparsames Label, individuellen Salt, versionierten
+`SHA-256(salt || secret)`-Verifikationswert, Security-Epoch bei Ausstellung und
+Status-/Zeitmetadaten. AppPreferences enthält keinen dieser Werte.
+
+Eine gültige Geräteanmeldung darf am normalen Auth-Gate eine neue flüchtige
+In-Memory-Sitzung erzeugen. Sie deaktiviert weder die manuelle noch die
+Inaktivitäts- oder Wake-Sperre. Nach App-Ende existiert keine Sitzung. Fehlender
+Schlüsselbundeintrag, falscher Verifikationswert, Epoch-Abweichung, widerrufener
+Datensatz, Storefehler oder Plattformfehler führen ausschließlich zum
+Passwort-Fallback; es gibt keinen stillen Wiederaufbau.
+
+Die Qt-freie Anwendung definiert `DeviceCredentialRepository`,
+`DeviceSecretStore` und `LocalDeviceAuthenticator`. macOS implementiert den
+Secret Store über Security.framework und lokale Authentifizierung über
+LocalAuthentication.framework; Widgets kennen weder Schlüsselbund noch
+Biometrie. Andere Plattformen liefern einen strukturierten `unsupported`-Status
+und behalten den vollständigen Passwortpfad. Windows Hello und Credential
+Locker bleiben späteren Adaptern vorbehalten.
+
+Touch ID ist optional und wird nur bei verfügbarer, eingerichteter Biometrie,
+aktivem Credential, vorhandenem Geheimnis und passender Epoch angeboten. Eine
+erfolgreiche LocalAuthentication-Prüfung wird vor dem Lesen und Verifizieren des
+Gerätegeheimnisses verlangt. Weil dasselbe Credential den ausdrücklich
+gewählten passwortlosen Normalstart ermöglichen muss, ist der Keychain-Datensatz
+nicht mit einer biometrischen Access-Control-Flag versehen. Die Grenze ist damit
+eine echte OS-Authentifizierungsprüfung plus anschließende
+Credential-Verifikation, aber keine behauptete Secure-Enclave- oder
+biometryCurrentSet-Bindung des Geheimnisses.
+
+Der Adapter verwendet bewusst den klassischen macOS-Schlüsselbund mit
+anwendungsspezifischer ACL statt des Data-Protection-Keychains: Letzterer ist
+ohne passende Keychain-Access-Group-Entitlements im weiterhin erlaubten
+ad-hoc-signierten Pilotbuild nicht zuverlässig nutzbar. Der Datensatz setzt
+keine Synchronisierung, wird nicht exportiert und kann wegen der getrennten
+Store-/Epoch-Prüfung auch nach einem nicht löschbaren Restwert keine Sitzung
+freigeben.
+
+Registrierung ist kompensierbar: Zuerst wird ein nicht authentifizierender
+`pending`-Datensatz angelegt, danach das Geheimnis und zuletzt der Datensatz
+transaktional aktiviert; jeder Fehler widerruft `pending`, entfernt das
+Geheimnis best effort und lässt keinen authentifizierenden Zwischenzustand zurück.
+Deaktivierung und globale Widerrufe machen zuerst den Storezustand unwirksam und
+löschen danach den Schlüsselbundeintrag best effort. Passwortänderung, Recovery,
+Support-Reset und Neueinrichtung invalidieren über die monotone Security-Epoch
+alle älteren Credentials, auch wenn ein Schlüsselbundeintrag nicht löschbar ist.
+
+Security Store v3 ist eine additive, transaktionale Migration von v2. Fachliches
+Restore und `.jkmbackup` enthalten oder verändern weder Credential-Metadaten
+noch Geheimnisse. Es wird keine Datenbank-, Dokument- oder
+Backupverschlüsselung eingeführt. Die physische 0.2B.4-Pilot-Mac-Abnahme samt
+echtem Sleep/Wake bleibt offen.
+
 ## ADR-067 - Erste Schritte als lokale Orientierung, nicht als Fachassistent
 
 **Status:** Fuer Sprint 0.2C.1 freigegeben und umgesetzt.

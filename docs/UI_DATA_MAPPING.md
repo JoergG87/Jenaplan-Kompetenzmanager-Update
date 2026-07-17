@@ -1,5 +1,23 @@
 # UI Data Mapping
 
+## Sprint 0.2B.4a - Geräteanmeldung und Touch ID
+
+| UI-Feld/Aktion | Quelle/Command | Rolle | Persistenz | Regeln |
+|---|---|---|---|---|
+| Auf diesem Gerät angemeldet bleiben | `DeviceCredentialService.status` / Aktivierung nach Passwort | Anzeige/Schreibaktion | Secret nur Keychain, Hash/Metadaten nur Security Store | nie automatisch; Sperre bleibt aktiv; auf unsupported Plattform nicht angeboten |
+| Hinweis zur Sperre | konstanter Produkttext | Anzeige | Nein | `Die App wird weiterhin nach Inaktivität oder Ruhezustand gesperrt.` |
+| Touch ID zum Entsperren verwenden | `LocalDeviceAuthenticator.availability` plus aktives Credential und aktuelle Passwortbestätigung | Anzeige/optionale Aktion | nur boolesche Bedienpräferenz in AppPreferences, kein biometrisches Datum | nur sichtbar bei unterstütztem Mac; Aktivierung erst nach Passwortbestätigung; Passwort bleibt verfügbar |
+| Touch-ID-Status | strukturierte Verfügbarkeitsprojektion | Anzeige | Nein | `verfügbar`, `nicht eingerichtet`, `nicht verfügbar`, `aktiviert` |
+| Mit Touch ID entsperren | LocalAuth-Ergebnis -> Credential-Verifikation | temporäre Aktion | Nein | kein Dialogloop; Abbruch/Fehler lassen Passwortfeld verfügbar |
+| Gespeicherte Anmeldung widerrufen | `DeviceCredentialService.disable` | Schreibaktion | Store zuerst revoked, Keychain best effort gelöscht | nicht löschbares Secret bleibt wegen Store/Epoch unwirksam |
+| Passwort-Fallback | bestehender Passwortservice | Eingabe/Aktion | nur bestehender Argon2id-Hash | immer sichtbar und verfügbar |
+
+Es gibt kein UI-Feld für Secret, Hash, Salt, `credential_id`, Security-Epoch,
+Keychain-Account oder biometrische Details. `app-preferences.json` bleibt ohne
+Credentialdaten; AppPreferences darf ausschließlich die boolesche
+Touch-ID-Bedienpräferenz speichern. Aktivierungs- und Verfügbarkeitsstatus werden
+weiterhin kanonisch aus Credential und Plattformadapter abgeleitet.
+
 ## Sprint 0.2B.4 - Security-Oberflaechen
 
 | UI-Feld/Aktion | Quelle | Modus | Persistiert | Grenze |

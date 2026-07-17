@@ -14,6 +14,7 @@ APP_NAME = "Jenaplan-Kompetenzmanager"
 BUNDLE_ID = "de.jenaplan.kompetenzmanager"
 PAYLOAD_ROOT = Path(os.environ["JENAPLAN_PILOT_PAYLOAD_DIR"])
 ICON_PATH = Path(os.environ["JENAPLAN_MACOS_ICON"])
+SECURITY_BRIDGE = Path(os.environ["JENAPLAN_MACOS_SECURITY_BRIDGE"])
 
 datas = [
     (str(PROJECT_ROOT / "assets"), "assets"),
@@ -27,7 +28,7 @@ if initial_data.is_dir():
 a = Analysis(
     [str(PROJECT_ROOT / "src" / "desktop_app" / "main.py")],
     pathex=[str(PROJECT_ROOT)],
-    binaries=[],
+    binaries=[(str(SECURITY_BRIDGE), ".")],
     datas=datas,
     hiddenimports=[
         "PySide6.QtSvg",
@@ -36,12 +37,14 @@ a = Analysis(
         "src.core.restore_runtime",
         "src.desktop_app.restore_worker",
         "src.security.application",
+        "src.security.device_credentials",
         "src.security.support_reset",
         "src.security.infrastructure.argon2_hasher",
         "src.security.infrastructure.ed25519",
         "src.security.infrastructure.key_registry",
         "src.security.infrastructure.sqlite_repository",
         "src.security.infrastructure.system",
+        "src.security.infrastructure.platform_auth",
         "argon2",
         "argon2.low_level",
         "cryptography",

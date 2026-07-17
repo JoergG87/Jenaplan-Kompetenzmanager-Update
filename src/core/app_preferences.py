@@ -53,6 +53,7 @@ class AppPreferences:
     onboarding_status: OnboardingStatus = OnboardingStatus.NOT_STARTED
     onboarding_current_step: int = 0
     onboarding_format_version: int = ONBOARDING_FORMAT_VERSION
+    touch_id_preferred: bool = False
 
     def __post_init__(self) -> None:
         if self.inactivity_minutes not in ALLOWED_INACTIVITY_MINUTES:
@@ -73,13 +74,16 @@ class AppPreferences:
         object.__setattr__(
             self, "onboarding_current_step", int(self.onboarding_current_step)
         )
+        if not isinstance(self.touch_id_preferred, bool):
+            raise ValueError("touch_id_preferred_invalid")
 
 
 class AppPreferencesFile:
     """Atomic JSON persistence for general local app preferences."""
 
-    FORMAT_VERSION = 2
+    FORMAT_VERSION = 3
     LEGACY_FORMAT_VERSION = 1
+    ONBOARDING_FORMAT_FILE_VERSION = 2
 
     def __init__(self, path: Path, permissions: FilePermissionPort):
         self.path = Path(path)
@@ -97,23 +101,27 @@ class AppPreferencesFile:
             raw_format_version = int(payload.get("format_version", 0))
             if raw_format_version > self.FORMAT_VERSION:
                 return self._newer_preferences(payload)
-            if set(payload) != {
+            if raw_format_version == self.LEGACY_FORMAT_VERSION:
+                if set(payload) != {
+                    "display_name", "format_version", "inactivity_minutes"
+                }:
+                    raise ValueError
+                return self._legacy_preferences(payload)
+            onboarding_fields = {
                 "display_name",
                 "format_version",
                 "inactivity_minutes",
-            }:
-                if set(payload) != {
-                    "display_name",
-                    "format_version",
-                    "inactivity_minutes",
-                    "onboarding_current_step",
-                    "onboarding_format_version",
-                    "onboarding_status",
-                }:
+                "onboarding_current_step",
+                "onboarding_format_version",
+                "onboarding_status",
+            }
+            if raw_format_version == self.ONBOARDING_FORMAT_FILE_VERSION:
+                if set(payload) != onboarding_fields:
                     raise ValueError
-            if raw_format_version == self.LEGACY_FORMAT_VERSION:
-                return self._legacy_preferences(payload)
+                return self._onboarding_preferences(payload)
             if raw_format_version != self.FORMAT_VERSION:
+                raise ValueError
+            if set(payload) != onboarding_fields | {"touch_id_preferred"}:
                 raise ValueError
             raw_name = payload["display_name"]
             if raw_name is not None and not isinstance(raw_name, str):
@@ -129,6 +137,7 @@ class AppPreferencesFile:
                 onboarding_status=OnboardingStatus(payload["onboarding_status"]),
                 onboarding_current_step=int(payload["onboarding_current_step"]),
                 onboarding_format_version=raw_onboarding_format_version,
+                touch_id_preferred=payload["touch_id_preferred"],
             )
         except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError) as error:
             raise AppPreferencesError("app_preferences_invalid") from error
@@ -143,6 +152,7 @@ class AppPreferencesFile:
                 "onboarding_current_step": preferences.onboarding_current_step,
                 "onboarding_format_version": preferences.onboarding_format_version,
                 "onboarding_status": preferences.onboarding_status.value,
+                "touch_id_preferred": preferences.touch_id_preferred,
             },
             ensure_ascii=False,
             sort_keys=True,
@@ -172,6 +182,18 @@ class AppPreferencesFile:
         return AppPreferences(
             inactivity_minutes=int(payload["inactivity_minutes"]),
             display_name=raw_name,
+        )
+
+    def _onboarding_preferences(self, payload: dict[str, object]) -> AppPreferences:
+        raw_name = payload["display_name"]
+        if raw_name is not None and not isinstance(raw_name, str):
+            raise ValueError
+        return AppPreferences(
+            inactivity_minutes=int(payload["inactivity_minutes"]),
+            display_name=raw_name,
+            onboarding_status=OnboardingStatus(payload["onboarding_status"]),
+            onboarding_current_step=int(payload["onboarding_current_step"]),
+            onboarding_format_version=int(payload["onboarding_format_version"]),
         )
 
     def _newer_preferences(self, payload: dict[str, object]) -> AppPreferences:

@@ -1,5 +1,28 @@
 # View Data Ownership
 
+## Sprint 0.2B.4a - Geräteanmeldung und lokale Entsperrung
+
+Login- und Sperransicht besitzen ausschließlich temporäre Eingabe-, Anzeige-
+und Busy-Zustände. Sie erhalten eine datensparsame Projektion aus dem
+`DeviceCredentialService`: ob eine gültige gespeicherte Anmeldung vorliegt, ob
+lokale Authentifizierung verfügbar ist und welches generische Ergebnis
+vorliegt. Sie lesen weder Security SQLite noch Schlüsselbund und rufen keine
+Frameworks direkt auf.
+
+Die bestehende Unterseite `Sicherheit` besitzt lokalen Bedienzustand für
+`Auf diesem Gerät angemeldet bleiben`, `Touch ID zum Entsperren verwenden` und
+`Gespeicherte Anmeldung widerrufen`. Der Security Coordinator vermittelt alle
+Schreibaktionen über Application-Ports, aktualisiert den Status aus dem
+kanonischen Security Store und hält Plattformdetails aus Widgets fern.
+`AppShell` bleibt reiner Signal-/Navigationsowner.
+
+Der Security Application Service besitzt Credential-Lebenszyklus,
+Epoch-Prüfung, Verifikation und Widerruf. `SQLiteSecurityRepository` besitzt
+Metadaten, der Plattformadapter ausschließlich das Secret. Die Fach-UI, ihre
+Adapter und Repositories erhalten keinerlei Lese- oder Schreibownership. Die
+opake Sperre und der erhaltene unsichtbare In-Memory-Widgetzustand bleiben
+unverändert.
+
 ## Sprint 0.2B.4 - Authentifizierung und Sicherheit
 
 `AuthenticationDialog` besitzt ausschliesslich temporaere Eingabewerte,

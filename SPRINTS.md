@@ -1,5 +1,24 @@
 # Sprintplanung
 
+## Sprint 0.2B.4a - Gespeicherte Geräteanmeldung, macOS-Schlüsselbund und Touch ID
+
+**Ziel:** Nach erfolgreicher Passwortanmeldung kann genau eine widerrufbare
+lokale Geräteanmeldung ausdrücklich aktiviert werden. Ein zufälliges
+256-Bit-Geheimnis liegt nur im macOS-Schlüsselbund, sein versionierter
+Verifikationsdatensatz nur im Security Store v3. Optionales echtes Touch ID
+entsperrt nach OS-Prüfung und Credential-Verifikation; Passwort, manuelle,
+Inaktivitäts- und Wake-Sperre bleiben erhalten.
+
+**Architektur:** Qt-freie Domain/Application-Modelle und Ports,
+SQLite-Security-Migration v2-v3, Security.framework-/LocalAuthentication-Adapter
+für macOS, `unsupported`-Adapter für andere Plattformen sowie reine
+UI-Projektionen in Login, Sperre und bestehender Sicherheits-Unterseite.
+
+**Grenzen:** Kein gespeichertes Passwort, keine persistente Sitzung, keine
+Verschlüsselung, keine Support-Reset-UI, kein Windows Hello, kein Cloudkonto,
+keine fachliche Daten- oder Backup-/Restore-Änderung. Die physische
+0.2B.4-Sleep/Wake-Abnahme bleibt offen. In diesem Auftrag kein Commit.
+
 ## Sprint 0.2C.1 - Geführte Erste Schritte bei erster Ausführung
 
 Status: umgesetzt und automatisiert/offscreen geprüft, ohne Commit.

@@ -23,7 +23,7 @@ if [ "$ARCHITECTURE" != "arm64" ]; then
     echo "Dieser Pilotbuild ist für arm64 konfiguriert; gefunden: $ARCHITECTURE" >&2
     exit 1
 fi
-for tool in python3 hdiutil codesign ditto sips iconutil security osascript; do
+for tool in python3 hdiutil codesign ditto sips iconutil security osascript xcrun; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "Benötigtes Build-Werkzeug fehlt: $tool" >&2
         exit 1
@@ -48,6 +48,7 @@ VENV="$BUILD_ROOT/venv"
 PAYLOAD="$BUILD_ROOT/payload"
 ICONSET="$BUILD_ROOT/AppIcon.iconset"
 ICON="$BUILD_ROOT/AppIcon.icns"
+SECURITY_BRIDGE="$BUILD_ROOT/libjkm_macos_security.dylib"
 PYI_DIST="$BUILD_ROOT/pyinstaller-dist"
 PYI_WORK="$BUILD_ROOT/pyinstaller-work"
 DIST_ROOT="$ROOT/dist/macos"
@@ -116,8 +117,11 @@ for size in 16 32 128 256 512; do
 done
 iconutil -c icns "$ICONSET" -o "$ICON"
 
+scripts/build_macos_security_bridge.sh "$SECURITY_BRIDGE"
+
 export JENAPLAN_PILOT_PAYLOAD_DIR="$PAYLOAD"
 export JENAPLAN_MACOS_ICON="$ICON"
+export JENAPLAN_MACOS_SECURITY_BRIDGE="$SECURITY_BRIDGE"
 export MACOSX_DEPLOYMENT_TARGET="13.0"
 "$VENV/bin/python" -m PyInstaller \
     --noconfirm \

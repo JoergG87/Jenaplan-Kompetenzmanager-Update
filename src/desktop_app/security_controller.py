@@ -8,9 +8,22 @@ import logging
 import time
 
 from PySide6.QtCore import QEvent, QObject, QThread, QTimer, Signal, Slot
-from PySide6.QtWidgets import QApplication, QDialog, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
-from src.security.domain import AuthenticationStatus, PasswordPolicyError
+from src.security.domain import (
+    AuthenticationStatus,
+    DeviceCredentialAuthenticationStatus,
+    PasswordPolicyError,
+    SecurityStoreError,
+)
 from src.security.session import (
     InMemorySession,
     SecuritySessionController,
@@ -151,13 +164,36 @@ class StartupAuthenticationResult:
     enrollment_completed: bool
 
 
+def run_startup_device_authentication(
+    *, service, repository, device_credentials
+) -> StartupAuthenticationResult | None:
+    result = device_credentials.authenticate()
+    if result.status is not DeviceCredentialAuthenticationStatus.AUTHENTICATED:
+        return None
+    state = service.security_store_state()
+    if state.user_id is None or state.installation_id is None:
+        raise SecurityStoreError("device_credential_identity_missing")
+    return StartupAuthenticationResult(
+        InMemorySession(
+            state.user_id,
+            state.installation_id,
+            repository.security_epoch(),
+        ),
+        None,
+        False,
+    )
+
+
 def run_startup_authentication(
-    *, service, repository, decision: SecurityStartupDecision
+    *, service, repository, decision: SecurityStartupDecision, device_credentials=None,
+    touch_id_preferred: bool = False,
 ) -> StartupAuthenticationResult | None:
     dialog = AuthenticationDialog(
         service=service,
         repository=repository,
         decision=decision,
+        device_credentials=device_credentials,
+        touch_id_preferred=touch_id_preferred,
     )
     if dialog.exec() != QDialog.DialogCode.Accepted:
         return None
@@ -188,6 +224,8 @@ class SecurityUiCoordinator(QObject):
         session: InMemorySession,
         inactivity_minutes: int,
         display_name: str | None,
+        device_credentials=None,
+        touch_id_preferred: bool = False,
     ) -> None:
         super().__init__(shell)
         self.app = app
@@ -195,6 +233,8 @@ class SecurityUiCoordinator(QObject):
         self.service = service
         self.repository = repository
         self.preferences_file = preferences_file
+        self.device_credentials = device_credentials
+        self.touch_id_preferred = touch_id_preferred
         self.session_controller = SecuritySessionController(
             session,
             inactivity_minutes=inactivity_minutes,
@@ -218,9 +258,16 @@ class SecurityUiCoordinator(QObject):
         shell.recovery_codes_requested.connect(self.regenerate_recovery_codes)
         shell.inactivity_minutes_changed.connect(self.set_inactivity_minutes)
         shell.display_name_changed.connect(self.set_display_name)
+        if hasattr(shell, "device_credential_enable_requested"):
+            shell.device_credential_enable_requested.connect(self.enable_device_credential)
+        if hasattr(shell, "device_credential_disable_requested"):
+            shell.device_credential_disable_requested.connect(self.disable_device_credential)
+        if hasattr(shell, "touch_id_preference_changed"):
+            shell.touch_id_preference_changed.connect(self.set_touch_id_preference)
         shell.restore_handoff_started.connect(self._restore_handoff_started)
         shell.set_display_name(display_name)
         shell.settings_screen.set_security_status(inactivity_minutes)
+        self._refresh_device_credential_status()
 
     def _activity(self, kind: SessionActivityKind) -> None:
         self.session_controller.activity(
@@ -287,6 +334,8 @@ class SecurityUiCoordinator(QObject):
             service=self.service,
             repository=self.repository,
             decision=decision,
+            device_credentials=self.device_credentials,
+            touch_id_preferred=self.touch_id_preferred,
             allow_cancel=False,
         )
         self._lock_dialog = dialog
@@ -395,6 +444,8 @@ class SecurityUiCoordinator(QObject):
         )
         _SECURITY_LOG.info("password_changed")
         self.shell.settings_screen.show_security_message("Das Passwort wurde geändert.")
+        if self.device_credentials is not None:
+            self._refresh_device_credential_status()
 
     @Slot()
     def regenerate_recovery_codes(self) -> None:
@@ -425,3 +476,129 @@ class SecurityUiCoordinator(QObject):
         self.shell.settings_screen.show_security_message(
             "Die neuen Recovery-Codes sind aktiv."
         )
+
+    @Slot()
+    def enable_device_credential(self) -> None:
+        if self.device_credentials is None or not self.device_credentials.supported:
+            self.shell.settings_screen.show_security_message(
+                "Die gespeicherte Anmeldung wird auf diesem Gerät nicht unterstützt.",
+                tone="error",
+            )
+            return
+        current_password, accepted = QInputDialog.getText(
+            self.shell,
+            "Gespeicherte Anmeldung aktivieren",
+            "Aktuelles Passwort",
+            QLineEdit.EchoMode.Password,
+        )
+        if not accepted or not current_password:
+            return
+        operation = _ModalOperationDialog(
+            lambda: self._enable_device_after_password(current_password), self.shell
+        )
+        result, error = operation.exec_operation()
+        current_password = ""
+        if error is not None or result is not True:
+            self.shell.settings_screen.show_security_message(
+                "Die gespeicherte Anmeldung konnte nicht aktiviert werden.", tone="error"
+            )
+            self._refresh_device_credential_status()
+            return
+        _SECURITY_LOG.info("device_credential_enabled")
+        self._refresh_device_credential_status()
+        self.shell.settings_screen.show_security_message(
+            "Die gespeicherte Anmeldung ist auf diesem Gerät aktiv."
+        )
+
+    def _enable_device_after_password(self, password: str) -> bool:
+        authenticated = self.service.authenticate_password(password)
+        if authenticated.status is not AuthenticationStatus.AUTHENTICATED:
+            return False
+        self.device_credentials.register()
+        return True
+
+    @Slot()
+    def disable_device_credential(self) -> None:
+        if self.device_credentials is None:
+            return
+        operation = _ModalOperationDialog(self.device_credentials.disable, self.shell)
+        _result, error = operation.exec_operation()
+        if error is not None:
+            self.shell.settings_screen.show_security_message(
+                "Die gespeicherte Anmeldung konnte nicht widerrufen werden.", tone="error"
+            )
+            return
+        _SECURITY_LOG.info("device_credential_disabled")
+        self._refresh_device_credential_status()
+        self.shell.settings_screen.show_security_message(
+            "Die gespeicherte Anmeldung wurde widerrufen."
+        )
+
+    def _refresh_device_credential_status(self) -> None:
+        if not hasattr(self.shell.settings_screen, "set_device_credential_status"):
+            return
+        if self.device_credentials is None:
+            self.shell.settings_screen.set_device_credential_status(
+                supported=False,
+                enabled=False,
+                local_authentication="unsupported",
+                touch_id_preferred=False,
+                secret_available=False,
+            )
+            return
+        status = self.device_credentials.status()
+        if not status.enabled and self.touch_id_preferred:
+            try:
+                current = self.preferences_file.load()
+                self.preferences_file.save(replace(current, touch_id_preferred=False))
+            except Exception:
+                pass
+            self.touch_id_preferred = False
+        self.shell.settings_screen.set_device_credential_status(
+            supported=self.device_credentials.supported,
+            enabled=status.enabled,
+            local_authentication=status.local_authentication.value,
+            touch_id_preferred=self.touch_id_preferred,
+            secret_available=status.secret_available,
+        )
+
+    @Slot(bool)
+    def set_touch_id_preference(self, enabled: bool) -> None:
+        try:
+            status = self.device_credentials.status() if self.device_credentials else None
+            if enabled and (
+                status is None
+                or not status.enabled
+                or status.local_authentication.value != "available"
+            ):
+                raise ValueError("touch_id_not_available")
+            if enabled:
+                current_password, accepted = QInputDialog.getText(
+                    self.shell,
+                    "Touch ID aktivieren",
+                    "Aktuelles Passwort",
+                    QLineEdit.EchoMode.Password,
+                )
+                if not accepted or not current_password:
+                    self._refresh_device_credential_status()
+                    return
+                operation = _ModalOperationDialog(
+                    lambda: self.service.authenticate_password(current_password),
+                    self.shell,
+                )
+                authentication, error = operation.exec_operation()
+                current_password = ""
+                if (
+                    error is not None
+                    or authentication is None
+                    or authentication.status is not AuthenticationStatus.AUTHENTICATED
+                ):
+                    raise ValueError("touch_id_password_not_confirmed")
+            current = self.preferences_file.load()
+            self.preferences_file.save(replace(current, touch_id_preferred=enabled))
+            self.touch_id_preferred = enabled
+        except Exception:
+            self.shell.settings_screen.show_security_message(
+                "Die Touch-ID-Einstellung konnte nicht gespeichert werden.", tone="error"
+            )
+        self._refresh_device_credential_status()

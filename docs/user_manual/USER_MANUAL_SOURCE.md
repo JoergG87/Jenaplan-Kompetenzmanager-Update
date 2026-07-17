@@ -9,6 +9,9 @@
 Dieses Handbuch beschreibt den tatsächlich verfügbaren Stand der lokalen
 Pilot-App. Die abgebildeten Namen und Inhalte sind fiktiv.
 
+Die aktuelle kanonische Quelle beschreibt zusätzlich die Umsetzung aus Sprint
+0.2B.4a; ein finaler Release-Build des Handbuchs ist noch nicht erstellt.
+
 Kennzeichnung des Funktionsstands:
 
 - **In der Pilotversion verfügbar:** in der ausgelieferten App erreichbar.
@@ -64,6 +67,27 @@ Eine vorhandene Datensammlung wird beim Start nicht durch Pilotdaten ersetzt.
 Beim ersten normalen Start richtet die App ein lokales Lehrkraftkonto ein oder
 nimmt eine vorhandene ungeschützte Installation auf. Recovery-Codes werden
 einmalig angezeigt und müssen bewusst gesichert werden.
+
+Nach einer erfolgreichen Passwortanmeldung kann unter
+`Einstellungen > Sicherheit` ausdrücklich `Auf diesem Gerät angemeldet bleiben`
+aktiviert werden. Dabei wird nicht das Passwort gespeichert, sondern nur ein
+zufälliges, widerrufbares Gerätegeheimnis im lokalen macOS-Schlüsselbund. Beim
+nächsten normalen Start darf daraus eine neue Sitzung entstehen. Die Sitzung
+selbst wird nicht gespeichert und endet beim Schließen der App.
+
+Die App wird weiterhin nach Inaktivität oder Ruhezustand gesperrt; auch
+`Jetzt sperren` bleibt verfügbar. Auf einem unterstützten und eingerichteten Mac
+kann optional `Touch ID zum Entsperren verwenden` aktiviert werden. Touch ID ist
+erst nach erneuter Bestätigung des aktuellen Passworts aktivierbar und nie
+Pflicht: Das Passwortfeld bleibt sichtbar, und nach Abbruch,
+Nichtverfügbarkeit oder Fehler kann sofort das Passwort verwendet werden. Die
+App erhält keine Fingerabdruck- oder anderen biometrischen Rohdaten.
+
+`Gespeicherte Anmeldung widerrufen` entfernt die Komfortanmeldung. Eine
+Passwortänderung, Recovery oder ein Support-Reset macht sie ebenfalls
+unwirksam. Ein fachliches Backup enthält weder das Gerätegeheimnis noch dessen
+Security-Metadaten; Restore und Gerätewechsel übertragen die Anmeldung nicht.
+Die Funktion verschlüsselt keine Datenbank, Dokumente oder Backups.
 
 Nach erfolgreicher Anmeldung kann die Ansicht `Erste Schritte` erscheinen. Sie
 erklärt kurz den Zweck der App, verweist auf lokale Datenhaltung und führt zu

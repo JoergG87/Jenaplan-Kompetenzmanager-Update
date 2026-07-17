@@ -1,5 +1,34 @@
 # Technical Naming Registry
 
+## Sprint 0.2B.4a - Gerätecredential und lokale Authentifizierung
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `DeviceCredential` | Persistenter, widerrufbarer Verifikationsdatensatz ohne Secret | Security Domain |
+| `DeviceCredentialStatus` | `pending`, `active` oder `revoked` | Security Domain |
+| `DeviceCredentialRepository` | Port für Credential-Metadaten im Security Store | Security Application |
+| `DeviceSecretStore` | Port für Klartext-Gerätegeheimnisse im Plattform-Secret-Store | Security Application |
+| `LocalDeviceAuthenticator` | Port für lokale OS-Authentifizierung ohne biometrische Rohdaten | Security Application |
+| `DeviceCredentialService` | Registrierung, Verifikation, Rotation und Widerruf | Security Application |
+| `DeviceCredentialAuthenticationStatus` | `authenticated`, `not_configured`, `rejected`, `unsupported`, `store_unavailable` | Security Domain |
+| `LocalAuthenticationAvailability` | `available`, `not_available`, `not_enrolled`, `locked_out`, `unsupported`, `error` | Security Domain |
+| `LocalAuthenticationResult` | `success`, `user_cancel`, `fallback_requested`, `not_available`, `not_enrolled`, `locked_out`, `system_cancel`, `failed`, `error` | Security Domain |
+| `MacOSKeychainSecretStore` | Security.framework-Adapter für nicht synchronisierendes Gerätegeheimnis | Infrastructure macOS |
+| `MacOSLocalDeviceAuthenticator` | LocalAuthentication.framework-Adapter | Infrastructure macOS |
+| `UnsupportedDeviceSecretStore` | Sicherer Nicht-macOS-Adapter ohne Dummy-Secret | Infrastructure |
+| `UnsupportedLocalDeviceAuthenticator` | Sicherer Nicht-macOS-Adapter mit `unsupported` | Infrastructure |
+| `device_credentials` | Security-v3-Tabelle mit Hash-/Bindungs-/Statusmetadaten | Security Store |
+| `credential_id` | Zufällige UUIDv4 eines Credentials; nie vollständig geloggt | Security Domain |
+| `hash_format_version` | Version des Credential-Verifikationsformats, initial `1` | Security Domain |
+| `security_epoch_at_issue` | Epoch-Bindung zum Ausstellungszeitpunkt | Security Domain |
+| `device_label` | Technisches datensparsames Label ohne Seriennummer/Fingerprint | Security Domain |
+| `device_credential_enabled` | Datenminimiertes technisches Ereignis | Security Logging |
+| `device_credential_disabled` | Datenminimiertes technisches Ereignis | Security Logging |
+| `device_credential_rejected` | Datenminimiertes technisches Ereignis | Security Logging |
+| `local_auth_success` | Datenminimiertes technisches Ereignis | Security Logging |
+| `local_auth_cancelled` | Datenminimiertes technisches Ereignis | Security Logging |
+| `local_auth_unavailable` | Datenminimiertes technisches Ereignis | Security Logging |
+
 Dieses Dokument ist ab Sprint 4 die verbindliche Registry fuer technische Namen.
 
 ## Sprint 0.2B.4 - Produktive Security-Startintegration
@@ -24,8 +53,9 @@ Runtime-/Application-Namen: `prepare_security_runtime_storage`,
 `WakeObservation`. `app-preferences.json` liegt in
 der Runtime-Wurzel, enthaelt ausschliesslich das erlaubte
 Inaktivitaetsintervall, den optionalen normalisierten `display_name`,
-`onboarding_status`, `onboarding_current_step` und
-`onboarding_format_version` und ist weder Security-Store noch fachliche
+`onboarding_status`, `onboarding_current_step`,
+`onboarding_format_version` und die boolesche Bedienpräferenz
+`touch_id_preferred` und ist weder Security-Store noch fachliche
 Datenquelle. Zulaessige Onboarding-Zustaende sind `not_started`,
 `in_progress`, `completed` und `dismissed`. `dashboard_greeting` ist die reine
 lokale Zeitprojektion fuer Morgen, Tag und Abend.

@@ -24,6 +24,8 @@ from src.desktop_app.runtime import runtime_paths
 from src.security.application import SecurityApplicationService
 from src.security.domain import (
     AuthenticationStatus,
+    DeviceCredential,
+    DeviceCredentialStatus,
     SecurityBackupProof,
     SecurityStoreState,
     SupportPublicKey,
@@ -499,6 +501,25 @@ def test_successful_reset_requires_backup_and_changes_only_security_state(tmp_pa
     )
     app_preferences_before = app_preferences.read_bytes()
     security, reset, repository, _clock, private = make_environment(root)
+    account_record = repository.load_account()
+    device_credential = DeviceCredential(
+        credential_id=str(uuid.uuid4()),
+        installation_id=account_record.installation_id,
+        user_id=account_record.user_id,
+        device_label="Dieser Mac",
+        salt=b"s" * 16,
+        secret_hash=b"h" * 32,
+        hash_format_version=1,
+        security_epoch_at_issue=repository.security_epoch(),
+        created_at=NOW,
+        last_used_at=None,
+        revoked_at=None,
+        status=DeviceCredentialStatus.PENDING,
+    )
+    repository.prepare_device_credential(device_credential)
+    repository.activate_device_credential(
+        credential_id=device_credential.credential_id, now=NOW
+    )
     enrolled_codes = security.prepare_recovery_code_regeneration()
     request = reset.create_request()
     token = signed_token(request, private)
@@ -521,6 +542,10 @@ def test_successful_reset_requires_backup_and_changes_only_security_state(tmp_pa
         assert connection.execute(
             "SELECT COUNT(*) FROM recovery_codes WHERE status = 'active'"
         ).fetchone()[0] == 0
+        assert connection.execute(
+            "SELECT status FROM device_credentials WHERE credential_id = ?",
+            (device_credential.credential_id,),
+        ).fetchone()[0] == "revoked"
         assert connection.execute(
             "SELECT length(token_digest), key_id, action, status FROM support_reset_token_uses"
         ).fetchone() == (32, "support-2026-a", "reset_local_password_v1", "consumed")
@@ -624,6 +649,7 @@ def test_concurrent_token_use_has_exactly_one_winner(tmp_path: Path) -> None:
 
 def downgrade_store_to_v1(path: Path) -> None:
     with sqlite3.connect(path) as connection:
+        connection.execute("DROP TABLE device_credentials")
         connection.execute("DROP TABLE support_reset_token_uses")
         connection.execute("DROP TABLE support_reset_requests")
         connection.execute("DROP TABLE security_epochs")
@@ -639,19 +665,48 @@ def test_v1_migrates_transactionally_and_preserves_existing_auth_data(tmp_path: 
         before_codes = connection.execute("SELECT COUNT(*), hex(min(code_hash)) FROM recovery_codes").fetchone()
     downgrade_store_to_v1(repository.database_path)
     reopened = SQLiteSecurityRepository(repository.database_path, PlatformFilePermissionManager())
-    assert reopened.inspect()[0] == 2
+    assert reopened.inspect()[0] == 3
     assert reopened.load_account().password_hash == before_hash
     assert reopened.security_epoch() == 1
     with sqlite3.connect(repository.database_path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
         assert connection.execute("SELECT COUNT(*), hex(min(code_hash)) FROM recovery_codes").fetchone() == before_codes
     assert security.authenticate_password(PASSWORD).status == AuthenticationStatus.AUTHENTICATED
     assert clock.now == NOW
 
 
+def test_v2_migrates_to_v3_without_changing_account_recovery_or_epoch(tmp_path: Path) -> None:
+    root = tmp_path / "runtime-v2"
+    security, _reset, repository, _clock, _private = make_environment(root)
+    account_before = repository.load_account()
+    epoch_before = repository.security_epoch()
+    with sqlite3.connect(repository.database_path) as connection:
+        recovery_before = connection.execute(
+            "SELECT recovery_code_id, salt, code_hash, status FROM recovery_codes "
+            "ORDER BY recovery_code_id"
+        ).fetchall()
+        connection.execute("DROP TABLE device_credentials")
+        connection.execute("UPDATE security_metadata SET schema_version = 2")
+        connection.execute("PRAGMA user_version = 2")
+    reopened = SQLiteSecurityRepository(
+        repository.database_path, PlatformFilePermissionManager()
+    )
+    assert reopened.inspect()[0] == 3
+    assert reopened.load_account() == account_before
+    assert reopened.security_epoch() == epoch_before
+    assert reopened.active_device_credential() is None
+    with sqlite3.connect(repository.database_path) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert connection.execute(
+            "SELECT recovery_code_id, salt, code_hash, status FROM recovery_codes "
+            "ORDER BY recovery_code_id"
+        ).fetchall() == recovery_before
+    assert security.authenticate_password(PASSWORD).status == AuthenticationStatus.AUTHENTICATED
+
+
 @pytest.mark.parametrize(
     ("point", "version"),
-    [("before_migration", 1), ("before_migration_commit", 1), ("after_migration_commit", 2)],
+    [("before_migration", 1), ("before_migration_commit", 1), ("after_migration_commit", 3)],
 )
 def test_migration_crash_before_and_after_commit(tmp_path: Path, point: str, version: int) -> None:
     root = tmp_path / point
@@ -667,12 +722,12 @@ def test_migration_crash_before_and_after_commit(tmp_path: Path, point: str, ver
     with sqlite3.connect(repository.database_path) as connection:
         assert connection.execute("PRAGMA user_version").fetchone()[0] == version
     failure.point = None
-    assert migrating.inspect()[0] == 2
+    assert migrating.inspect()[0] == 3
 
 
 def test_unknown_newer_security_schema_fails_closed(tmp_path: Path) -> None:
     security, _reset, repository, _clock, _private = make_environment(tmp_path / "runtime")
     with sqlite3.connect(repository.database_path) as connection:
-        connection.execute("UPDATE security_metadata SET schema_version = 3")
-        connection.execute("PRAGMA user_version = 3")
+        connection.execute("UPDATE security_metadata SET schema_version = 4")
+        connection.execute("PRAGMA user_version = 4")
     assert security.security_store_state().state == SecurityStoreState.UNSUPPORTED_VERSION

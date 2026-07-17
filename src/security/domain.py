@@ -11,7 +11,7 @@ import re
 import uuid
 
 
-SECURITY_SCHEMA_VERSION = 2
+SECURITY_SCHEMA_VERSION = 3
 SECURITY_FORMAT_VERSION = 1
 ENROLLMENT_MARKER_VERSION = 1
 PASSWORD_HASH_FORMAT_VERSION = 1
@@ -31,6 +31,10 @@ SUPPORT_RESET_CLOCK_SKEW = timedelta(minutes=2)
 SUPPORT_RESET_NONCE_BYTES = 32
 SUPPORT_RESET_MAX_TOKEN_BYTES = 8192
 SUPPORT_RESET_MAX_PAYLOAD_BYTES = 4096
+DEVICE_CREDENTIAL_HASH_FORMAT_VERSION = 1
+DEVICE_CREDENTIAL_SECRET_BYTES = 32
+DEVICE_CREDENTIAL_SALT_BYTES = 16
+DEVICE_CREDENTIAL_HASH_BYTES = 32
 
 _CROCKFORD_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 _CROCKFORD_CHECK_ALPHABET = _CROCKFORD_ALPHABET + "*~$=U"
@@ -155,6 +159,49 @@ class RecoveryStatus(str, Enum):
     STORE_UNAVAILABLE = "store_unavailable"
 
 
+class DeviceCredentialStatus(str, Enum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    REVOKED = "revoked"
+
+
+class DeviceCredentialAuthenticationStatus(str, Enum):
+    AUTHENTICATED = "authenticated"
+    NOT_CONFIGURED = "not_configured"
+    REJECTED = "rejected"
+    UNSUPPORTED = "unsupported"
+    STORE_UNAVAILABLE = "store_unavailable"
+
+
+class SecretStoreStatus(str, Enum):
+    SUCCESS = "success"
+    NOT_FOUND = "not_found"
+    UNSUPPORTED = "unsupported"
+    ACCESS_DENIED = "access_denied"
+    ERROR = "error"
+
+
+class LocalAuthenticationAvailability(str, Enum):
+    AVAILABLE = "available"
+    NOT_AVAILABLE = "not_available"
+    NOT_ENROLLED = "not_enrolled"
+    LOCKED_OUT = "locked_out"
+    UNSUPPORTED = "unsupported"
+    ERROR = "error"
+
+
+class LocalAuthenticationResult(str, Enum):
+    SUCCESS = "success"
+    USER_CANCEL = "user_cancel"
+    FALLBACK_REQUESTED = "fallback_requested"
+    NOT_AVAILABLE = "not_available"
+    NOT_ENROLLED = "not_enrolled"
+    LOCKED_OUT = "locked_out"
+    SYSTEM_CANCEL = "system_cancel"
+    FAILED = "failed"
+    ERROR = "error"
+
+
 @dataclass(frozen=True)
 class PasswordPolicy:
     min_characters: int = 15
@@ -206,6 +253,41 @@ class AccountRecord:
     recovery_failed_attempts: int
     recovery_locked_until_utc: datetime | None
     recovery_last_observed_utc: datetime | None
+
+
+@dataclass(frozen=True)
+class DeviceCredential:
+    credential_id: str
+    installation_id: str
+    user_id: str
+    device_label: str
+    salt: bytes = field(repr=False)
+    secret_hash: bytes = field(repr=False)
+    hash_format_version: int
+    security_epoch_at_issue: int
+    created_at: datetime
+    last_used_at: datetime | None
+    revoked_at: datetime | None
+    status: DeviceCredentialStatus
+
+
+@dataclass(frozen=True)
+class SecretStoreReadResult:
+    status: SecretStoreStatus
+    secret: bytes | None = field(default=None, repr=False)
+
+
+@dataclass(frozen=True)
+class DeviceCredentialAuthenticationResult:
+    status: DeviceCredentialAuthenticationStatus
+    credential: DeviceCredential | None = field(default=None, repr=False)
+    local_authentication_result: LocalAuthenticationResult | None = None
+
+
+@dataclass(frozen=True)
+class DeviceCredentialRegistrationResult:
+    credential: DeviceCredential = field(repr=False)
+    replaced_credential_id: str | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -339,3 +421,21 @@ def hash_recovery_code(salt: bytes, canonical_code: str) -> bytes:
     if len(salt) != RECOVERY_CODE_SALT_BYTES:
         raise ValueError("Recovery salt must contain exactly 16 bytes.")
     return hashlib.sha256(salt + canonical_code.encode("ascii")).digest()
+
+
+def hash_device_secret(salt: bytes, secret: bytes) -> bytes:
+    if len(salt) != DEVICE_CREDENTIAL_SALT_BYTES:
+        raise ValueError("Device credential salt must contain exactly 16 bytes.")
+    if len(secret) != DEVICE_CREDENTIAL_SECRET_BYTES:
+        raise ValueError("Device credential secret must contain exactly 32 bytes.")
+    return hashlib.sha256(salt + secret).digest()
+
+
+def verify_device_secret(credential: DeviceCredential, secret: bytes) -> bool:
+    if credential.hash_format_version != DEVICE_CREDENTIAL_HASH_FORMAT_VERSION:
+        return False
+    try:
+        candidate = hash_device_secret(credential.salt, secret)
+    except ValueError:
+        candidate = b"\x00" * DEVICE_CREDENTIAL_HASH_BYTES
+    return hmac.compare_digest(credential.secret_hash, candidate)

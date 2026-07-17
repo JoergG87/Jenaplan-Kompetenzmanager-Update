@@ -14,6 +14,8 @@ from src.desktop_app.runtime import (
 )
 from src.security.domain import (
     AuthenticationStatus,
+    DeviceCredentialAuthenticationResult,
+    DeviceCredentialAuthenticationStatus,
     RecoveryStatus,
     SecurityStoreError,
     SecurityStoreState,
@@ -24,6 +26,7 @@ from src.security.startup import (
     build_security_runtime,
     legacy_installation_present,
 )
+from src.desktop_app.security_controller import run_startup_device_authentication
 from src.core.app_preferences import (
     AppPreferences,
     AppPreferencesError,
@@ -80,8 +83,9 @@ def test_recovery_reset_stays_pending_across_reopen_until_codes_confirmed(
 ) -> None:
     paths, runtime = _runtime(tmp_path / "runtime")
     enrolled = runtime.service.enroll_local_account(PASSWORD)
-    assert runtime.service.verify_and_consume_recovery_code(enrolled.recovery_codes[0]).status is RecoveryStatus.ACCEPTED
     epoch_before = runtime.repository.security_epoch()
+    assert runtime.service.verify_and_consume_recovery_code(enrolled.recovery_codes[0]).status is RecoveryStatus.ACCEPTED
+    assert runtime.repository.security_epoch() == epoch_before + 1
     prepared = runtime.service.prepare_recovery_password_reset(NEW_PASSWORD)
     assert runtime.service.security_store_state().state is SecurityStoreState.PASSWORD_RESET_PENDING
     assert runtime.repository.security_epoch() == epoch_before + 1
@@ -166,6 +170,55 @@ def test_productive_start_order_keeps_product_runtime_and_shell_after_auth() -> 
     assert restore < security_paths < auth < product_runtime < shell
     assert source.index("--restore-worker") < restore
     assert "DISABLE_AUTH" not in source
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        DeviceCredentialAuthenticationStatus.NOT_CONFIGURED,
+        DeviceCredentialAuthenticationStatus.REJECTED,
+        DeviceCredentialAuthenticationStatus.UNSUPPORTED,
+        DeviceCredentialAuthenticationStatus.STORE_UNAVAILABLE,
+    ],
+)
+def test_startup_device_credential_failure_never_creates_session(
+    tmp_path: Path, status: DeviceCredentialAuthenticationStatus
+) -> None:
+    _paths, runtime = _runtime(tmp_path / status.value)
+    runtime.service.enroll_local_account(PASSWORD)
+
+    class CredentialService:
+        def authenticate(self):
+            return DeviceCredentialAuthenticationResult(status)
+
+    assert run_startup_device_authentication(
+        service=runtime.service,
+        repository=runtime.repository,
+        device_credentials=CredentialService(),
+    ) is None
+
+
+def test_valid_startup_device_credential_creates_fresh_epoch_bound_session(
+    tmp_path: Path,
+) -> None:
+    _paths, runtime = _runtime(tmp_path / "valid-device")
+    enrolled = runtime.service.enroll_local_account(PASSWORD)
+
+    class CredentialService:
+        def authenticate(self):
+            return DeviceCredentialAuthenticationResult(
+                DeviceCredentialAuthenticationStatus.AUTHENTICATED
+            )
+
+    result = run_startup_device_authentication(
+        service=runtime.service,
+        repository=runtime.repository,
+        device_credentials=CredentialService(),
+    )
+    assert result is not None
+    assert result.session.user_id == enrolled.user_id
+    assert result.session.installation_id == enrolled.installation_id
+    assert result.session.security_epoch == runtime.repository.security_epoch()
 
 
 def test_store_marker_asymmetry_never_resolves_to_enrollment(tmp_path: Path) -> None:

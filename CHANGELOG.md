@@ -1,5 +1,45 @@
 # CHANGELOG
 
+## Sprint 0.2B.4a - Gespeicherte Geräteanmeldung, macOS-Schlüsselbund und Touch ID
+
+### Added
+
+- Plattformneutrale Gerätecredential-Ports und einen Security-Epoch-gebundenen
+  Credential-Lebenszyklus für genau eine gespeicherte Anmeldung je lokaler
+  Installation und Konto ergänzt.
+- Echten, nicht synchronisierenden macOS-Schlüsselbund-Adapter für ein zufälliges
+  256-Bit-Gerätegeheimnis sowie echte LocalAuthentication-Anbindung für optionales
+  Touch ID ergänzt.
+- Den vorhandenen Login, die opake Sperransicht und `Einstellungen > Sicherheit`
+  um `Auf diesem Gerät angemeldet bleiben`, optionales Touch ID und den
+  ausdrücklichen Widerruf der gespeicherten Anmeldung erweitert.
+- `app-preferences.json` auf Formatversion 3 mit ausschließlich der booleschen
+  Bedienpräferenz `touch_id_preferred` erweitert; Version 1 und 2 bleiben
+  lesbar, Credential-ID, Hash, Salt, Secret und Security-Epoch bleiben ausgeschlossen.
+
+### Security
+
+- Das App-Passwort wird niemals gespeichert. Der Schlüsselbund enthält nur das
+  zufällige Gerätegeheimnis; Security Store v3 enthält nur individuellen Salt,
+  versionierten SHA-256-Verifikationswert, Bindungs-, Status- und Zeitmetadaten.
+- Geräteanmeldung und App-Sitzung bleiben getrennt. Jede neu erzeugte Sitzung ist
+  flüchtig; manuelle, Inaktivitäts- und Wake-Sperre mit 5/10/15/30/60 Minuten
+  bleiben vollständig aktiv, `Nie sperren` bleibt ausgeschlossen.
+- Passwortänderung, Recovery, Support-Reset, Epoch-Abweichung und Inkonsistenz
+  widerrufen Credentials im Store; Schlüsselbund-Löschung erfolgt best effort.
+- Touch ID ist optional, liefert keine biometrischen Rohdaten und besitzt immer
+  den sichtbaren Passwort-Fallback. Nicht-macOS-Plattformen melden `unsupported`
+  und bleiben vollständig im Passwortbetrieb.
+
+### Not Changed
+
+- Keine Verschlüsselung von Datenbank, Dokumenten oder Backups, keine
+  Support-Reset-UI, Cloud-, E-Mail-, Windows-Hello-, Mehrgeräte- oder fachliche
+  Funktion; fachliche Daten, IDs, Dokumentpfade, Backupformat und
+  Restore-Verträge bleiben unverändert.
+- Die reale physische Pilot-Mac-Abnahme von Sprint 0.2B.4, insbesondere echter
+  Sleep/Wake, bleibt offen und ist keine bestandene Freigabe. Kein Commit.
+
 ## Sprint 0.2C.1 - Geführte Erste Schritte bei erster Ausführung
 
 ### Added
@@ -72,6 +112,7 @@
 - Den vorhandenen atomaren lokalen Praeferenzpfad als allgemeinen
   `app-preferences.json`-Store fuer Sperrintervall und optionalen `display_name`
   ausgerichtet; kein zweiter Store und keine Security-/Fachdatenkopplung.
+- Login: Enter startet Anmeldung statt versehentlich Recovery zu öffnen.
 
 ### Verified
 
