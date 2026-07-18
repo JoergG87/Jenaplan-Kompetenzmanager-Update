@@ -232,6 +232,7 @@ class NewObservationDialog(QDialog):
         self.setWindowTitle(
             "Beobachtung bearbeiten" if self.initial_draft else "Neue Beobachtung"
         )
+        self.setProperty("dialogContext", "observation")
         self.setModal(True)
         self.setMinimumSize(1040, 680)
         self.resize(1400, 900)
@@ -247,6 +248,7 @@ class NewObservationDialog(QDialog):
             f"{self.student.display_name} · {self.student.group_name} · {self.student.course_name}",
             "Kontext festlegen, Kompetenzen auswählen und die Beobachtung dokumentieren.",
             icon_name="observation",
+            context_role="observation",
         )
         title.setObjectName("ObservationDialogPageHeader")
         layout.addWidget(title)

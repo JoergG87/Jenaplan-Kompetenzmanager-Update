@@ -121,6 +121,7 @@ class LearningReportDialog(QDialog):
         self._dirty = False
 
         self.setWindowTitle(f"Lernentwicklungsbericht · {preparation.student_name}")
+        self.setProperty("dialogContext", "report")
         self.resize(1500, 980)
         self.setMinimumSize(980, 680)
         self._build()
@@ -176,6 +177,7 @@ class LearningReportDialog(QDialog):
             "Berichtswerkstatt · bearbeitbarer Entwurf",
             "Schreiben, Belege prüfen, Vorschau lesen und Revisionen nachvollziehen.",
             icon_name="report",
+            context_role="report",
         )
         self.header_status_badge = StatusBadge()
         self.page_header.add_action(self.header_status_badge)
@@ -1110,6 +1112,7 @@ class LearningReportDialog(QDialog):
                 f"{preview.student_display_name} · {preview.period_label}",
                 "Bitte den gespeicherten Berichtsentwurf vor der Bestätigung prüfen.",
                 icon_name="report",
+                context_role="report",
             )
         )
         summary = AppCard("soft")
@@ -1808,6 +1811,7 @@ class LearningReportRevisionDialog(QDialog):
             f"{self.revision.student_display_name} · {self.revision.period_label}",
             "Historisches, schreibgeschütztes Dokument aus dem gespeicherten Snapshot.",
             icon_name="report",
+            context_role="report",
         )
         if self.revision.status == "finalized":
             self.pdf_button = QPushButton("Finales PDF erstellen")

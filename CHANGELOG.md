@@ -3167,3 +3167,25 @@
 - Projektdokumentation erstellt
 - Architekturentscheidungen dokumentiert
 - README und Projektregeln aktualisiert
+
+## Brand Color Harmonization
+
+### Changed
+
+- Zentrale Brand-Navy-, Blue-, Teal-, Green-, Lime- und Orange-Rollen samt
+  heller Kontext-Surfaces aus dem bestehenden App-Icon abgeleitet und die
+  Shell, Interaktionsfarben sowie zentrale Komponenten damit harmonisiert.
+- Wiederverwendbare, nicht semantische Dialog-Kontextrollen fuer Beobachtung,
+  Bericht, LEG und neutrale Dialoge eingefuehrt; keine lokalen Dialog-
+  Stylesheets oder neuen Arbeitsablaeufe ergaenzt.
+- Sidebar und aktive Hauptnavigation freundlicher abgestuft, Primaeraktionen
+  auf Brand Blue und den globalen Fokus auf Brand Teal ausgerichtet.
+- Dashboard- und Schuelerprofilakzente kontrolliert an die Markenpalette
+  angenaehert; Stammdaten, Einstellungen, Tabellen und Dokumentflaechen bleiben
+  ueberwiegend neutral.
+
+### Not changed
+
+- Keine Fachlogik, Datenmodelle, SQLite-, Repository-, Service-, Adapter-,
+  ViewModel-, Navigations-, Workflow-, Kursfarben-, Bewertungs-,
+  Dokumentations- oder Statuslogik geaendert.

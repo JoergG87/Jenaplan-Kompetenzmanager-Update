@@ -251,6 +251,7 @@ class LearningConferenceCloseDialog(QDialog):
             "Lernentwicklungsgespräch",
             "Möchtest du den bearbeitbaren Entwurf vor dem Schließen speichern?",
             icon_name="conference",
+            context_role="learning_conference",
         ))
         note = InlineMessage(
             "Änderungen verwerfen entfernt nur Eingaben seit dem letzten Speichern. Der gespeicherte Draft bleibt erhalten.",
@@ -309,6 +310,7 @@ class LearningConferenceDraftSelectionDialog(QDialog):
             "Lernentwicklungsgespräch",
             "Wähle einen gespeicherten Stand oder lege einen neuen bearbeitbaren Entwurf an.",
             icon_name="conference",
+            context_role="learning_conference",
         ))
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -397,6 +399,7 @@ class LearningConferenceRevisionHistoryDialog(QDialog):
             "Lernentwicklungsgespräch",
             "Unveränderliche, historisch reproduzierbare Gesprächsstände.",
             icon_name="conference",
+            context_role="learning_conference",
         ))
         for revision in status.revisions:
             card = AppCard("default")
@@ -470,6 +473,7 @@ class LearningConferenceRevisionDialog(QDialog):
             "Abgeschlossenes Lernentwicklungsgespräch",
             f"{revision.completed_at_text} · {revision.status_label}",
             icon_name="conference",
+            context_role="learning_conference",
         )
         if revision.status == "completed":
             self.pdf_button = QPushButton("Finales PDF erstellen")
@@ -619,6 +623,7 @@ class LearningConferenceDialog(QDialog):
         self._completion_status: LearningConferenceRevisionStatusViewModel | None = None
         self._close_choice_provider = LearningConferenceCloseDialog.ask
         self.setWindowTitle(f"Lernentwicklungsgespräch · {preparation.student_name}")
+        self.setProperty("dialogContext", "learning_conference")
         self.resize(1400, 900)
         self.setMinimumSize(1080, 700)
         self._build()
@@ -674,6 +679,7 @@ class LearningConferenceDialog(QDialog):
 
     def _context_header(self) -> QFrame:
         card = AppCard("accent")
+        card.setProperty("dialogContextSurface", "learning_conference")
         layout = QVBoxLayout(card)
         layout.setContentsMargins(18, 14, 18, 14)
         layout.setSpacing(8)
@@ -685,6 +691,7 @@ class LearningConferenceDialog(QDialog):
             f"{self.preparation.student_name} · {group_course}",
             "Bearbeitbarer Entwurf in sechs klaren Gesprächsphasen.",
             icon_name="conference",
+            context_role="learning_conference",
         )
         self.draft_badge = StatusBadge("Bearbeitbarer Entwurf", tone="info")
         self.completion_badge = StatusBadge("Noch nicht abgeschlossen", tone="neutral")

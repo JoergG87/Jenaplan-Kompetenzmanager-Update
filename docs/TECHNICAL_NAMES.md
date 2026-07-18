@@ -2365,3 +2365,42 @@ Registrierte Qt-Objektnamen:
 - `LearningConferenceFinalPdfStatus`
 
 Regel: `LCA` identifiziert genau eine unveraenderliche PDF-Artefaktreferenz fuer eine `LCV`. Pro `learning_conference_revision_id` existiert hoechstens eine `LCA`. Neue Erzeugung ist nur fuer Status `completed` erlaubt. `relative_file_path` liegt relativ zur produktiven SQLite-Datei innerhalb `documents/<student_id>/learning_conferences/<LCF>/<LCV>/`; der Dateiname enthaelt keinen Schuelerklartext. `pdf_sha256` ist der kleingeschriebene SHA-256-Hexdigest der PDF-Bytes. Die renderer-neutrale PDF-Projektion ist keine Berichtsdomain und liest ausschliesslich den verifizierten LCV-Snapshot.
+
+## Brand Color Harmonization - Theme- und Dialogrollen
+
+Registrierte zentrale Marken-Tokens:
+
+- `BRAND_NAVY`
+- `BRAND_BLUE`
+- `BRAND_BLUE_HOVER`
+- `BRAND_BLUE_PRESSED`
+- `BRAND_TEAL`
+- `BRAND_GREEN`
+- `BRAND_LIME`
+- `BRAND_ORANGE`
+- `LIGHT_BLUE`
+- `LIGHT_TEAL`
+- `LIGHT_GREEN`
+- `LIGHT_LIME`
+- `LIGHT_ORANGE`
+- `LIGHT_NEUTRAL`
+
+Registrierte zentrale Dialog-Kontextnamen:
+
+- `DialogHeader.CONTEXT_ROLES`
+- `DialogHeader.context_role`
+- `dialogContext`
+- `dialogContext = neutral`
+- `dialogContext = observation`
+- `dialogContext = report`
+- `dialogContext = learning_conference`
+- `dialogContextSurface`
+
+Regel: `dialogContext` und `dialogContextSurface` sind ausschliesslich
+visuelle, nicht persistente Qt-Properties. Sie unterscheiden geoeffnete
+Arbeitsbereiche und duerfen keine Status-, Bewertungs-, Leistungs-, Prioritaets-,
+Erfolgs- oder Fehlerbedeutung erhalten. Sie besitzen keine Datenquelle und
+veraendern weder Kursfarben, Bewertungsbadges, Dokumentationsabdeckung,
+Feedbackfarben noch Adapter-, ViewModel-, Repository-, SQLite-, Navigations-
+oder Speicherpfade. Unbekannte `DialogHeader.context_role`-Werte werden
+abgelehnt; kleine und administrative Dialoge verwenden den Default `neutral`.

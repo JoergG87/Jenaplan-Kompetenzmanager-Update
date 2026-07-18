@@ -210,6 +210,10 @@ class PageHeader(QWidget):
 class DialogHeader(QFrame):
     """Consistent dialog identity, context, description, and action zone."""
 
+    CONTEXT_ROLES = frozenset(
+        {"neutral", "observation", "report", "learning_conference"}
+    )
+
     def __init__(
         self,
         title: str,
@@ -217,9 +221,13 @@ class DialogHeader(QFrame):
         description: str = "",
         *,
         icon_name: str = "info",
+        context_role: str = "neutral",
     ) -> None:
         super().__init__()
+        if context_role not in self.CONTEXT_ROLES:
+            raise ValueError(f"Unbekannte Dialog-Kontextrolle: {context_role}")
         self.setObjectName("DialogHeader")
+        self.setProperty("dialogContext", context_role)
         self.setAccessibleName(title)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 14)

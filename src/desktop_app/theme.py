@@ -7,15 +7,32 @@ from PySide6.QtWidgets import QApplication, QFrame, QLabel
 from src.desktop_app.icons import icon_path
 
 
-COLOR_NAVY = "#0B3A63"
-COLOR_BLUE = "#2563EB"
-COLOR_BLUE_DARK = "#1D4ED8"
-COLOR_BLUE_PRESSED = "#1E40AF"
-COLOR_BLUE_SOFT = "#DBEAFE"
-COLOR_TURQUOISE = "#0EA5A7"
-COLOR_GREEN = "#16A34A"
-COLOR_ORANGE = "#F97316"
-COLOR_BACKGROUND = "#EEF3F7"
+BRAND_NAVY = "#123F67"
+BRAND_BLUE = "#176BC1"
+BRAND_BLUE_HOVER = "#115AA7"
+BRAND_BLUE_PRESSED = "#0D4A8E"
+BRAND_TEAL = "#087F83"
+BRAND_GREEN = "#3B7F34"
+BRAND_LIME = "#8DCB22"
+BRAND_ORANGE = "#B2530A"
+
+LIGHT_BLUE = "#EAF4FE"
+LIGHT_TEAL = "#E8F7F5"
+LIGHT_GREEN = "#EDF7EA"
+LIGHT_LIME = "#F4F9E8"
+LIGHT_ORANGE = "#FFF2E5"
+LIGHT_NEUTRAL = "#F6F9FB"
+
+# Backwards-compatible semantic aliases used by existing UI projections.
+COLOR_NAVY = BRAND_NAVY
+COLOR_BLUE = BRAND_BLUE
+COLOR_BLUE_DARK = BRAND_BLUE_HOVER
+COLOR_BLUE_PRESSED = BRAND_BLUE_PRESSED
+COLOR_BLUE_SOFT = LIGHT_BLUE
+COLOR_TURQUOISE = BRAND_TEAL
+COLOR_GREEN = BRAND_GREEN
+COLOR_ORANGE = BRAND_ORANGE
+COLOR_BACKGROUND = "#F0F5F8"
 COLOR_SURFACE = "#FFFFFF"
 COLOR_SURFACE_SOFT = "#F7FAFC"
 COLOR_GLASS = "rgba(255, 255, 255, 246)"
@@ -28,7 +45,7 @@ COLOR_ERROR = "#B00020"
 COLOR_SUCCESS = "#24705A"
 COLOR_WARNING = "#8A6418"
 COLOR_INFO = "#315F83"
-COLOR_FOCUS = "#5B8DEF"
+COLOR_FOCUS = BRAND_TEAL
 
 # UI Sprint 1 tokens. Qt keeps the native platform font; no family is forced.
 SPACING_4 = 4
@@ -74,19 +91,19 @@ QMainWindow {{
 QWidget#AppRoot {{
     background: qlineargradient(
         x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 #EAF1F6,
-        stop: 0.56 #F3F7FA,
-        stop: 1 #EAF1F5
+        stop: 0 #ECF4F8,
+        stop: 0.56 #F6F9FB,
+        stop: 1 #EAF5F4
     );
 }}
 QWidget#AppSidebar {{
     background: qlineargradient(
         x1: 0, y1: 0, x2: 0, y2: 1,
-        stop: 0 rgba(11, 58, 99, 252),
-        stop: 0.54 rgba(10, 65, 105, 250),
-        stop: 1 rgba(8, 53, 89, 252)
+        stop: 0 rgba(18, 63, 103, 252),
+        stop: 0.56 rgba(15, 72, 111, 250),
+        stop: 1 rgba(9, 78, 96, 252)
     );
-    border-right: 1px solid #35698F;
+    border-right: 1px solid #3E7F99;
     border-top-right-radius: 16px;
     border-bottom-right-radius: 16px;
 }}
@@ -113,7 +130,7 @@ QWidget#AppSidebar QPushButton[buttonRole="quiet"] {{
 }}
 QWidget#AppSidebar QPushButton[buttonRole="quiet"]:hover {{
     color: #FFFFFF;
-    background-color: #174A74;
+    background-color: rgba(48, 151, 165, 72);
 }}
 QListWidget#AppNavigation {{
     background-color: transparent;
@@ -130,17 +147,17 @@ QListWidget#AppNavigation::item {{
     margin: 2px 0;
 }}
 QListWidget#AppNavigation::item:selected {{
-    background-color: rgba(103, 172, 225, 32);
-    border-left: 3px solid #9ED2FA;
+    background-color: rgba(226, 247, 246, 42);
+    border-left: 3px solid #62D1D0;
     color: #FFFFFF;
 }}
 QListWidget#AppNavigation::item:hover {{
-    background-color: rgba(93, 158, 207, 25);
+    background-color: rgba(130, 205, 211, 30);
     color: #FFFFFF;
 }}
 QListWidget#AppNavigation::item:focus {{
-    border: 1px solid #A8CEF3;
-    border-left: 3px solid #A8CEF3;
+    border: 1px solid #85D8D6;
+    border-left: 3px solid #85D8D6;
 }}
 QListWidget#AppNavigation::item:disabled {{
     color: #9FB6C8;
@@ -163,9 +180,14 @@ QFrame[cardVariant="soft"] {{
     border-bottom-width: 1px;
 }}
 QFrame[cardVariant="accent"] {{
-    background-color: #EEF5FF;
-    border-color: #B8CEE8;
-    border-bottom: 2px solid #9FBBD5;
+    background-color: {LIGHT_BLUE};
+    border-color: #B8D5EC;
+    border-bottom: 2px solid #9BC3E2;
+}}
+QFrame#AppCard[dialogContextSurface="learning_conference"] {{
+    background-color: {LIGHT_GREEN};
+    border-color: #B8D7B1;
+    border-bottom: 2px solid #95C28C;
 }}
 QFrame#AppCard[cardVariant="interactive"]:hover,
 QFrame[cardVariant="interactive"]:hover {{
@@ -196,8 +218,8 @@ QFrame#AppPanel {{
     border-radius: 10px;
 }}
 QFrame#DashboardHero {{
-    background-color: #EAF3FF;
-    border: 1px solid #ABC8EA;
+    background-color: {LIGHT_BLUE};
+    border: 1px solid #A8CDEA;
     border-radius: 18px;
 }}
 QFrame#DashboardTimeline, QFrame#DashboardHeatmap,
@@ -309,8 +331,8 @@ QFrame#DialogHeader {{
     border-bottom: 1px solid #D7E2EA;
 }}
 QLabel#DialogHeaderIcon {{
-    background-color: #E8F2FB;
-    border: 1px solid #C6DCEB;
+    background-color: {LIGHT_BLUE};
+    border: 1px solid #BCD9EC;
     border-radius: 11px;
 }}
 QLabel#DialogHeaderTitle {{
@@ -322,6 +344,37 @@ QLabel#DialogHeaderContext {{
     color: #365966;
     font-size: 12px;
     font-weight: 650;
+}}
+QFrame#DialogHeader[dialogContext="neutral"],
+QFrame[dialogContext="neutral"] {{
+    border-bottom: 2px solid #B8D5EC;
+}}
+QFrame#DialogHeader[dialogContext="observation"],
+QFrame[dialogContext="observation"] {{
+    background-color: {LIGHT_TEAL};
+    border-bottom: 2px solid {BRAND_TEAL};
+}}
+QFrame[dialogContext="observation"] QLabel#DialogHeaderIcon {{
+    background-color: #D9F1EE;
+    border-color: #9BCFCB;
+}}
+QFrame#DialogHeader[dialogContext="report"],
+QFrame[dialogContext="report"] {{
+    background-color: {LIGHT_ORANGE};
+    border-bottom: 2px solid {BRAND_ORANGE};
+}}
+QFrame[dialogContext="report"] QLabel#DialogHeaderIcon {{
+    background-color: #FFE5CB;
+    border-color: #EDBD8C;
+}}
+QFrame#DialogHeader[dialogContext="learning_conference"],
+QFrame[dialogContext="learning_conference"] {{
+    background-color: {LIGHT_GREEN};
+    border-bottom: 2px solid {BRAND_GREEN};
+}}
+QFrame[dialogContext="learning_conference"] QLabel#DialogHeaderIcon {{
+    background-color: #DDF0D8;
+    border-color: #ACD0A5;
 }}
 QDialogButtonBox#DialogActionBar,
 QDialogButtonBox#ObservationPersistentActions {{
@@ -352,13 +405,13 @@ QPushButton#IconButton {{
     min-height: 30px;
     max-height: 30px;
     padding: 0;
-    border: 1px solid #315F83;
+    border: 1px solid {BRAND_BLUE_HOVER};
     border-radius: 9px;
-    background-color: #315F83;
+    background-color: {BRAND_BLUE};
 }}
 QPushButton#IconButton:hover {{
-    background-color: #244F72;
-    border-color: #244F72;
+    background-color: {BRAND_BLUE_HOVER};
+    border-color: {BRAND_BLUE_HOVER};
 }}
 QPushButton#IconButton:pressed {{
     background-color: {COLOR_NAVY};
@@ -453,9 +506,9 @@ QFrame#DashboardHeatmapCell[coverageLevel="2"] QFrame#DashboardHeatmapMarker {{ 
 QFrame#DashboardHeatmapCell[coverageLevel="3"] QFrame#DashboardHeatmapMarker {{ background-color: #6F91B2; }}
 QFrame#DashboardHeatmapCell[coverageLevel="4"] QFrame#DashboardHeatmapMarker {{ background-color: #4F7599; }}
 QFrame#LearningReportTopBar {{
-    background-color: {COLOR_GLASS};
+    background-color: {LIGHT_ORANGE};
     border: none;
-    border-bottom: 1px solid #D8E2E7;
+    border-bottom: 1px solid #E8C9A8;
     border-radius: 0px;
 }}
 QFrame#LearningReportTopBar QWidget#PageHeader {{
@@ -490,7 +543,7 @@ QFrame#LearningReportSidebar {{
     border-right: 1px solid #D8E2E7;
 }}
 QFrame#LearningReportWorkspaceNavigation {{
-    background-color: {COLOR_GLASS_SOFT};
+    background-color: #FFFAF5;
     border: none;
     border-bottom: 1px solid #D8E2E7;
 }}
@@ -507,12 +560,12 @@ QPushButton#LearningReportSubjectButton {{
     color: #49606F;
 }}
 QPushButton#LearningReportSubjectButton:checked {{
-    background-color: #E5F0F4;
+    background-color: {LIGHT_ORANGE};
     color: {COLOR_NAVY};
-    border-left: 3px solid {COLOR_BLUE};
+    border-left: 3px solid {BRAND_ORANGE};
 }}
 QLabel#LearningReportEyebrow {{
-    color: {COLOR_BLUE};
+    color: {BRAND_ORANGE};
     font-size: 11px;
     font-weight: 700;
 }}
@@ -593,10 +646,10 @@ QPushButton[phaseCurrent="false"]:hover {{
 }}
 QPushButton[phaseCurrent="true"] {{
     min-height: 72px;
-    background-color: #E8F2FB;
+    background-color: {LIGHT_GREEN};
     color: {COLOR_NAVY};
-    border: 1px solid #AFCBE0;
-    border-left: 4px solid {COLOR_BLUE};
+    border: 1px solid #B8D7B1;
+    border-left: 4px solid {BRAND_GREEN};
     border-radius: 9px;
     padding: 7px 9px 7px 7px;
     text-align: left;
@@ -777,8 +830,13 @@ QPushButton[buttonRole="primary"]:disabled {{
     color: #F8FAFC;
 }}
 QPushButton[buttonRole="secondary"] {{
-    background-color: {COLOR_SURFACE};
+    background-color: {LIGHT_BLUE};
     color: {COLOR_NAVY};
+    border-color: #AFCFE5;
+}}
+QPushButton[buttonRole="secondary"]:hover {{
+    background-color: {LIGHT_TEAL};
+    border-color: #8FC7C5;
 }}
 QPushButton[buttonRole="quiet"] {{
     background-color: transparent;
@@ -786,7 +844,7 @@ QPushButton[buttonRole="quiet"] {{
     border-color: transparent;
 }}
 QPushButton[buttonRole="quiet"]:hover {{
-    background-color: #E8F0F6;
+    background-color: {LIGHT_TEAL};
     color: {COLOR_NAVY};
 }}
 QPushButton[buttonRole="destructive"] {{
@@ -824,10 +882,18 @@ QPushButton#SegmentedControlButton[segmentPosition="last"] {{
     border-right: 1px solid #BED0DE;
 }}
 QPushButton#SegmentedControlButton:checked {{
-    background-color: #E7F0F8;
+    background-color: {LIGHT_BLUE};
     border-color: #9FB9CE;
     color: {COLOR_NAVY};
     font-weight: 650;
+}}
+QDialog[dialogContext="observation"] QPushButton#SegmentedControlButton:checked {{
+    background-color: {LIGHT_TEAL};
+    border-color: #8FC7C5;
+}}
+QDialog[dialogContext="report"] QPushButton#SegmentedControlButton:checked {{
+    background-color: {LIGHT_ORANGE};
+    border-color: #E0B581;
 }}
 QWidget#StudentProfilePageHeader {{
     background-color: transparent;
@@ -838,7 +904,7 @@ QFrame#StudentProfileHeaderSurface {{
     border-radius: 18px;
 }}
 QLabel#StudentProfileAvatar {{
-    background-color: #2F7096;
+    background-color: {BRAND_TEAL};
     color: #FFFFFF;
     border-radius: 26px;
     font-size: 16px;
@@ -858,15 +924,15 @@ QFrame#StudentProfileOrientationCard {{
     border-color: #D8E4EC;
 }}
 QFrame#StudentProfileCompetencySummaryCard {{
-    background-color: #EAF4F5;
-    border-color: #CEE1E3;
+    background-color: {LIGHT_TEAL};
+    border-color: #C2E2DE;
 }}
 QFrame#StudentProfileUndocumentedCard {{
-    background-color: #FFF7EA;
-    border-color: #EDDDBE;
+    background-color: {LIGHT_ORANGE};
+    border-color: #EBCBAA;
 }}
 QLabel#StudentProfileEyebrow {{
-    color: #2F7096;
+    color: {BRAND_TEAL};
     font-size: 10px;
     font-weight: 700;
 }}
@@ -945,12 +1011,12 @@ QFrame#ObservationDialogZone {{
     border-radius: 14px;
 }}
 QFrame#ObservationDialogZone[zoneRole="context"] {{
-    background-color: #F8FBFD;
-    border-color: #D5E2EA;
+    background-color: {LIGHT_TEAL};
+    border-color: #C4E1DE;
 }}
 QFrame#ObservationDialogZone[zoneRole="primary"] {{
     background-color: #FFFFFF;
-    border-color: #AFC8DA;
+    border-color: #9FCFCC;
 }}
 QFrame#ObservationDialogZone[zoneRole="entry"] {{
     background-color: #FBFCFE;
@@ -962,8 +1028,8 @@ QFrame#ObservationSelectedCompetencyCard[historical="true"] {{
 }}
 QFrame#ObservationCatalogCompetencyTile[selected="false"]:hover,
 QFrame#ObservationRecentCompetencyChip[selected="false"]:hover {{
-    background-color: #EEF6FB;
-    border-color: #AFCADC;
+    background-color: {LIGHT_TEAL};
+    border-color: #9BCFCC;
 }}
 QFrame#ObservationCatalogCompetencyTile[selected="false"]:focus,
 QFrame#ObservationRecentCompetencyChip[selected="false"]:focus {{
@@ -1067,7 +1133,7 @@ QTimeEdit, QSpinBox, QDoubleSpinBox {{
     border: 1px solid #C5D3DE;
     border-radius: 8px;
     padding: 7px 9px;
-    selection-background-color: {COLOR_BLUE};
+    selection-background-color: {BRAND_BLUE};
 }}
 QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover, QComboBox:hover,
 QDateEdit:hover, QDateTimeEdit:hover, QTimeEdit:hover,
@@ -1165,7 +1231,7 @@ QMenu::item {{
     padding: 7px 24px 7px 10px;
 }}
 QMenu::item:selected {{
-    background-color: #E7F0F8;
+    background-color: {LIGHT_TEAL};
     color: {COLOR_NAVY};
 }}
 QMenu::item:disabled {{
@@ -1178,7 +1244,7 @@ QMenu::separator {{
     margin: 5px 8px;
 }}
 QToolTip {{
-    background-color: #243A4C;
+    background-color: {BRAND_NAVY};
     color: #FFFFFF;
     border: 1px solid #49677F;
     border-radius: 6px;

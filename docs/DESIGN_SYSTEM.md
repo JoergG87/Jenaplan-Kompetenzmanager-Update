@@ -1,5 +1,47 @@
 # Design-System
 
+## Brand Color Harmonization - App-Icon und Arbeitskontexte
+
+Die zentrale Markenpalette leitet sich kontrolliert aus dem App-Icon ab. `Brand
+Navy` traegt Struktur, wichtige Texte, dunkle Icons und die Sidebar. `Brand
+Blue` traegt Primaeraktionen und zentrale Auswahl. `Brand Teal` traegt Fokus,
+neutrale Dokumentationsinformation und den Beobachtungskontext. `Brand Green`
+traegt ausschliesslich den LEG-Arbeitskontext und kleine unterstuetzende
+Markenakzente. `Brand Lime` bleibt ein sehr sparsamer dekorativer Akzent.
+`Brand Orange` traegt den Berichtskontext und offene Dokumentationspunkte, aber
+keinen Fehlerzustand. Sehr helle Blue-, Teal-, Green-, Lime-, Orange- und
+Neutral-Surfaces sind nur fuer kleine Kontext-, Icon- und Auswahlflaechen
+zulaessig; grosse Arbeitsflaechen bleiben neutral und opak.
+
+`DialogHeader` verwendet die wiederverwendbaren Kontextrollen `observation`,
+`report`, `learning_conference` und `neutral`. Beobachtung wird durch Teal, LEG
+durch Green und Bericht durch Orange unterschieden. Die Rolle darf nur in
+Iconflaeche, duenne Akzentlinie, sehr heller Kopfflaeche, lokaler aktiver
+Navigation oder kleinen Kontextdetails erscheinen. Sie bezeichnet weder
+Status noch Bewertung, Leistung, Prioritaet, Erfolg oder Fehler. Titel, Icon und
+sichtbarer Kontext tragen die Bedeutung auch ohne Farbe. Kleine CRUD-,
+Stammdaten-, Stundenplan-, Schueler- und App-Info-Dialoge bleiben neutral.
+
+Kursfarben, Bewertungsfarben `--` bis `++`, neutrale
+Dokumentationsabdeckung und Feedbackfarben bleiben technisch und visuell
+getrennte Systeme. Keine Marken- oder Dialogfarbe ersetzt eines dieser Systeme.
+Dokumentvorschauen, finale Revisionen, Tabellen, Editoren und vollstaendige
+Inhaltskarten bleiben neutral beziehungsweise papierartig.
+
+Die Sidebar nutzt einen ruhigen Navy-Blau-Teal-Verlauf mit genau einem hellen
+Teal-Auswahlmarker. Primaerbuttons verwenden Brand Blue, Sekundaerbuttons helle
+Blue-/Teal-Surfaces und Quiet-Buttons Markenfarbe nur bei Hover oder Fokus. Der
+globale Fokus ist Brand Teal und bleibt als sichtbarer Rahmen erhalten. Glas
+bleibt auf Sidebar, Navigation, Suche, Filter, Menues, Tooltips und kleine
+Overlays begrenzt; Dialogkontextflaechen sind hell und opak. Es entstehen keine
+neuen Motion-Typen.
+
+Kontrastvertrag auf Weiss: Brand Navy `10,87:1`, Brand Blue `5,37:1`, Brand
+Teal `4,80:1`, Brand Green `4,92:1`, Brand Orange `5,08:1`. Brand Navy erreicht
+auf allen hellen Kontext-Surfaces mindestens `9,76:1`. Farbe ist niemals der
+einzige Informationstraeger; Accessible Names, Fokusreihenfolge und vorhandene
+Tastaturablaeufe bleiben verbindlich.
+
 ## Version 0.2.0 - Arbeitsfenster und Bestätigungsdialoge
 
 Beobachtung, Bericht und LEG öffnen als maximierte normale Fenster auf dem
@@ -138,7 +180,7 @@ Glas bleibt ein Akzent fuer Sidebar, obere Navigationsflaechen, `SearchField`, `
 
 Normale `AppCard`-Flaechen erhalten eine feine untere Tiefenkante statt eines starken Schattens. `soft` bleibt flach, `accent` darf als einziger Fokusbereich eine etwas deutlichere Surface-Hierarchie zeigen. Nur interaktive Karten besitzen eine kurze Hover-Elevation; sie bleibt layoutneutral, verwendet `MOTION_FAST_MS` mit `OutCubic` und wird bei Reduced Motion unmittelbar in den Endzustand gesetzt. Es entstehen keine neuen Animationstypen und keine Screen-Uebergaenge.
 
-Dashboard-Hero, Schuelerprofilkopf, Berichtskontext und LEG-Kontext bleiben die vier bewusst hervorgehobenen Fokusbereiche. Sie werden nicht vergroessert und erhalten keine neue Farbsemantik. Tabellen, Listen, Header, Kontextmenues, Tooltips, Divider und Scrollbars verwenden denselben blau-grauen Kontrast- und Fokusvertrag. Das bestehende Outline-SVG-System behaelt die Rollen `16`, `20` und `24`; die unterschiedlichen Vordergrundfarben dienen ausschliesslich dem hellen Sidebar- beziehungsweise hellen Inhaltskontext.
+Dashboard-Hero, Schuelerprofilkopf, Berichtskontext und LEG-Kontext bleiben die vier bewusst hervorgehobenen Fokusbereiche. Sie werden nicht vergroessert und erhalten keine neue fachliche Farbsemantik; die nicht semantischen Dialog-Kontextrollen folgen dem Brand-Color-Vertrag. Tabellen, Listen, Header, Kontextmenues, Tooltips, Divider und Scrollbars verwenden denselben blau-grauen Kontrast- und Fokusvertrag. Das bestehende Outline-SVG-System behaelt die Rollen `16`, `20` und `24`; die unterschiedlichen Vordergrundfarben dienen ausschliesslich dem hellen Sidebar- beziehungsweise hellen Inhaltskontext.
 
 QPainter wird nicht eingesetzt. Standardwidgets, zentrale QSS-Zustaende und das bestehende Motion-System liefern den benoetigten High-DPI-, Tastatur-, Fokus- und Reduced-Motion-Schutz. Die Release-Pruefung umfasst `1180 x 760`, `1280 x 800`, `1400 x 900` sowie Device Pixel Ratio 2.
 
@@ -333,10 +375,11 @@ Diese Bedeutungsanker sollen bei spaeteren UI-Entscheidungen beruecksichtigt wer
 Die Icon-Palette ist die Grundlage fuer die kuenftige PySide-Oberflaeche.
 
 - Dunkelblau: Struktur, Professionalitaet, Navigation, Auswertung
-- Blau: Klarheit, Kompetenzentwicklung, Berichte
-- Tuerkis: Entwicklung, Uebergaenge, Lernverlaeufe
-- Gruen: Wachstum, Lernen, Foerderung
-- Orange: Aktivitaet, Beobachtung, paedagogischer Impuls
+- Blau: Klarheit, Primaeraktion und zentrale Auswahl
+- Tuerkis: Entwicklung, Fokus, Dokumentation und Beobachtungsarbeitsraum
+- Gruen: Wachstum, Lernen und LEG-Arbeitsraum
+- Limettengruen: sparsamer organischer Markenakzent
+- Orange: Schreiben, Berichtskontext und offene Dokumentationspunkte
 - helle neutrale Hintergruende: Ruhe, Lesbarkeit, Konzentration
 
 Die Farben werden nicht grell oder verspielt eingesetzt. Sie sollen modern, ausgewogen und hochwertig wirken.

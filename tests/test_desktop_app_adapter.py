@@ -3107,11 +3107,28 @@ class DesktopAppAdapterTest(unittest.TestCase):
         screen_source = inspect.getsource(students_screen)
         component_source = inspect.getsource(components)
 
-        self.assertIn('COLOR_NAVY = "#0B3A63"', theme_source)
-        self.assertIn('COLOR_BLUE = "#2563EB"', theme_source)
-        self.assertIn('COLOR_TURQUOISE = "#0EA5A7"', theme_source)
-        self.assertIn('COLOR_GREEN = "#16A34A"', theme_source)
-        self.assertIn('COLOR_ORANGE = "#F97316"', theme_source)
+        self.assertEqual(theme.BRAND_NAVY, "#123F67")
+        self.assertEqual(theme.BRAND_BLUE, "#176BC1")
+        self.assertEqual(theme.BRAND_TEAL, "#087F83")
+        self.assertEqual(theme.BRAND_GREEN, "#3B7F34")
+        self.assertEqual(theme.BRAND_LIME, "#8DCB22")
+        self.assertEqual(theme.BRAND_ORANGE, "#B2530A")
+        self.assertEqual(theme.COLOR_NAVY, theme.BRAND_NAVY)
+        self.assertEqual(theme.COLOR_BLUE, theme.BRAND_BLUE)
+        self.assertEqual(theme.COLOR_TURQUOISE, theme.BRAND_TEAL)
+        self.assertEqual(theme.COLOR_GREEN, theme.BRAND_GREEN)
+        self.assertEqual(theme.COLOR_ORANGE, theme.BRAND_ORANGE)
+        self.assertEqual(
+            (
+                theme.LIGHT_BLUE,
+                theme.LIGHT_TEAL,
+                theme.LIGHT_GREEN,
+                theme.LIGHT_LIME,
+                theme.LIGHT_ORANGE,
+                theme.LIGHT_NEUTRAL,
+            ),
+            ("#EAF4FE", "#E8F7F5", "#EDF7EA", "#F4F9E8", "#FFF2E5", "#F6F9FB"),
+        )
         self.assertIn("APP_STYLESHEET", theme_source)
         self.assertIn("QWidget#AppSidebar", theme.APP_STYLESHEET)
         self.assertIn("QListWidget#AppNavigation", theme.APP_STYLESHEET)
