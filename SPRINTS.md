@@ -1,5 +1,54 @@
 # Sprintplanung
 
+SPRINTS.md dient ausschließlich der operativen Projektplanung. `ROADMAP.md`
+ordnet die Produktphasen; ein Planungskandidat in diesem Dokument ist noch
+keine Freigabe zur Implementierung.
+
+## Nächster Sprintkandidat - Pilottest 0.2 und befundbasierte Stabilisierung
+
+Status: als nächster Planungsschritt vorbereitet; keine Freigabe einer neuen
+Produktfunktion.
+
+**Ziel:** Den Release-Kandidaten 0.2 mit künstlichen Testdaten unter realen
+Arbeitsbedingungen prüfen und ausschließlich belegte pilotkritische Fehler
+beheben.
+
+**P0-Grenze:** Datenverlust, fehlerhafte Speicherung, Sicherheitsfehler,
+blockierte Hauptabläufe sowie starke Überlagerungen oder abgeschnittene
+Kernaktionen. Wünsche und Komfortideen werden getrennt erfasst und nicht in
+diesen Sprint gezogen.
+
+**Reale Validierung:** Sleep/Wake, Touch ID, App-Switcher bei Sperre,
+Aktivierung und Widerruf der Geräteanmeldung, Backup/Restore, Berichtsvorschau
+und Exporttext, LEG-Vorschau/Gesprächsführung, Dokumentationsstatus,
+Schülerprofil, Kompetenzstand-Vorschläge, Dokumente/Medien, Dashboarddichte,
+beobachtungsbasierter Alltagsweg und `Erste Schritte`.
+
+**Abnahme:** Befunde sind reproduzierbar klassifiziert; P0-Fehler sind behoben
+und risikogerecht geprüft. Aus einem Pilottestwunsch entsteht keine neue
+Produktentscheidung ohne gesonderte Freigabe.
+
+## Planungskandidat nach dem Pilottest - Schülerlisten-Import (nicht freigegeben)
+
+**Kleinster geeigneter Schritt:** Product Discovery und Architecture Gate, noch
+keine Implementierung und keine Datenmodelländerung.
+
+Vor einem Implementierungssprint müssen Eingabeformate, Pflichtfelder,
+Vorschau, Dublettenregeln, Stammgruppen-/Kurszuordnung, atomarer Import ohne
+Teilbestand, Wiederholungsimport und Archivierung statt Löschung entschieden
+werden. Erst danach folgen Datenmodell-, Lifecycle-, Datenschutz-, UX- und
+Migration-Review.
+
+## Weitere Planungskandidaten (nicht freigegeben)
+
+- Schuljahreswechsel erst nach Importentscheidung und eigenem Lifecycle-Review
+- Gruppenbeobachtung beziehungsweise Mehrkind-Schnellbeobachtung erst nach
+  Entscheidung über Beobachtungsaggregat, Einzelbewertungen und Transaktion
+- Klassen-/Kursmatrix erst nach Pilottest des vorhandenen
+  Dokumentationsstatus und der Dashboard-Heatmap
+- Professioneller Betrieb erst nach Entscheidungen zu Signierung,
+  Notarisierung, produktivem Supportprozess, Updates und Diagnose
+
 ## Sprint 0.2R - Dokumentations-, Qualitäts- und Build-Abschluss
 
 **Ziel:** Den tatsächlich implementierten Stand als konsistent versionierten,
@@ -107,8 +156,6 @@ Status: umgesetzt und geprueft, ohne Commit.
 - Keine fachliche Funktion, fachliche Migration, Verschluesselung, Keychain,
   Touch ID, Windows Hello, persistente Anmeldung oder Support-Reset-UI.
 
-SPRINTS.md dient ausschließlich der operativen Projektplanung.
-
 ## Sprint 0.2B.3 - Signierter Support-Reset-Core mit Ed25519
 
 - [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
@@ -135,7 +182,7 @@ SPRINTS.md dient ausschließlich der operativen Projektplanung.
 - [x] Security-Artefakte explizit aus Backup, Restore, Export und Diagnose ausgeschlossen
 - [x] keine UI, Sitzung, Startblockade, Verschluesselung, Support-Reset, Rollen oder Mehrbenutzerfunktion eingefuehrt
 - [x] Product-Owner-Freigabe durch den vorliegenden Sprintauftrag
-- [ ] produktive Startintegration und sichtbare Login-/Recovery-Flows in eigenen spaeteren Sprints
+- [x] produktive Startintegration und sichtbare Login-/Recovery-Flows in Sprint 0.2B.4 umgesetzt
 
 ROADMAP.md beschreibt die langfristige Vision. SPRINTS.md ersetzt ROADMAP.md nicht.
 

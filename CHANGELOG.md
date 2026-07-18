@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## Produktplanung nach Version 0.2
+
+### Changed
+
+- Vision, Roadmap, Backlog, Projektstand und Sprintplanung mit dem tatsächlich
+  implementierten PySide6-/SQLite-Stand des Pilot-Release-Kandidaten 0.2
+  abgeglichen.
+- Bereits umgesetzte Beobachtungs-, Profil-, Bericht-, LEG-, Stundenplan-,
+  Stammdaten-, Backup-/Restore-, Security-, Onboarding- und Packaging-Arbeit aus
+  der aktiven Zukunftsplanung entfernt und als bestätigt beziehungsweise im
+  Pilottest zu validieren eingeordnet.
+- Alte Excel-/VBA-Aufgaben ohne Verlust der Historie als abgeschlossen,
+  historisch oder durch die PySide-/SQLite-Architektur ersetzt gekennzeichnet.
+- Pilottest und befundbasierte P0-Stabilisierung als nächste Phase vorgeschlagen;
+  Schülerlisten-Import, Schuljahreswechsel, Mehrkind-Schnellbeobachtung und
+  Klassen-/Kursmatrix bleiben bis zur Product-Owner-Entscheidung ausdrücklich
+  nicht freigegebene Planungskandidaten.
+
+### Not changed
+
+- Keine Produktfunktion, Fachlogik, Architektur, Persistenz, Migration, UI oder
+  Tests geändert; kein Zukunftskandidat als beschlossener Implementierungssprint
+  dargestellt.
+
 ## Version 0.2.0 - Pilot-Release-Kandidat
 
 ### UI-Stabilität

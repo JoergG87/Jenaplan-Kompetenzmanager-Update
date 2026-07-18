@@ -89,9 +89,10 @@ atomare Store `<runtime-root>/app-preferences.json` bleibt ausserhalb von
 Security-SQLite, fachlicher SQLite, Support-Reset und `.jkmbackup`.
 
 Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
-FileVault und ein geschuetztes Betriebssystemkonto bleiben empfohlen. Keychain,
-Touch ID, Windows Hello, `angemeldet bleiben`, Support-Reset-Token-UI und
-Verschluesselung sind nicht Bestandteil dieses Stands.
+FileVault und ein geschuetztes Betriebssystemkonto bleiben empfohlen. Die
+gespeicherte Geräteanmeldung, macOS-Keychain, Touch ID und die
+Support-Reset-Token-UI sind im Stand 0.2 umgesetzt. Windows Hello und eine
+Verschluesselung der fachlichen Dateien sind nicht Bestandteil dieses Stands.
 
 Die reale Pilot-Mac-Abnahme der 0.2B.4-Sicherheitsintegration bleibt trotz
 automatisierter und Offscreen-Pruefungen weiterhin offen, solange die
@@ -120,21 +121,13 @@ Die Architektur besitzt einen fachlich getrennten Security Core unter
 `<runtime-root>/security/`. Die App-Sperre ist keine Verschluesselung der
 Datenbank, Dokumente oder Backups. Der Security Store wird nicht gesichert,
 restored, exportiert oder diagnostiziert und ist nicht mit fachlichen IDs oder
-Inhalten verbunden. Sprint 0.2B.2 liefert nur den testbaren Core; App-Start,
-Sitzung und sichtbare Login-/Recovery-Oberflaechen bleiben unveraendert fuer
-einen spaeter freizugebenden Integrationssprint.
+Inhalten verbunden.
 
-Sprint 0.2B.3 ergaenzt den Qt-freien Core um einen offline signierten
-Ed25519-Support-Reset ohne Masterpasswort. Private Schluessel bleiben
-ausserhalb von Repository, Build und App; die App fuehrt nur eine oeffentliche,
-per App-Update rotierbare Registry. Anfrage und Token sind kurzlebig, einmalig
-und an Installation, Nutzer, Anfrage, Nonce, Aktion und `key_id` gebunden. Vor
-dem atomaren Wechsel zu `password_reset_pending` ist ein erfolgreich erzeugtes
-und verifiziertes fachliches `.jkmbackup` zwingend. Der Reset widerruft
-Recovery-Zustaende und erhoeht die Security-Epoch, veraendert aber keine
-fachlichen Daten, Dokumente, Backups, IDs oder Restore-Vertraege. UI,
-Startintegration, Sitzung, neues Passwort und neue Recovery-Codes bleiben
-weiterhin offen.
+Historisch lieferten Sprint 0.2B.2 zunächst nur den testbaren Core und Sprint
+0.2B.3 den offline signierten Ed25519-Support-Reset. Die damals noch offenen
+Start-, Sitzungs-, Login-, Recovery- und Reset-Oberflaechen wurden durch Sprint
+0.2B.4 und 0.2B.5 umgesetzt. Offen bleibt die betriebliche Freischaltung des
+Support-Resets durch einen freigegebenen öffentlichen Produktivschlüssel.
 
 ## Aktueller Produktstand
 
@@ -145,6 +138,22 @@ Der implementierte Stand nach Sprint 10B und den anschliessenden Schuelerprofil-
 Das Projekt befindet sich in der **Produktreifephase**. Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit, Dokumentationsqualitaet, Betriebsentscheidungen und Release-Vorbereitung. Fuer den technischen macOS-Pilot-Release-Kandidaten ist die Paketversion `0.2.0` festgelegt; daraus folgt noch keine allgemeine Produktrelease-, reale Pilotabnahme- oder App-Store-Entscheidung.
 
 Excel/VBA ist eine historische Vorstufe. Die damalige Workbook-Linie wird unter `legacy/excel/` als Referenz erhalten, ist aber weder Zielplattform noch aktiver Produktpfad. Historische Workbook-Versionen wie `v0.4` und fruehere Ausgabedateien sind keine aktuellen Hauptartefakte.
+
+## Nächste Phase nach Version 0.2
+
+Die unmittelbar nächste Phase ist der beaufsichtigte Pilottest des
+Release-Kandidaten 0.2 und die Behebung ausschließlich tatsächlich beobachteter
+pilotkritischer Fehler. Pilottestpunkte sind Validierungen und noch keine
+automatisch beschlossenen Funktionsänderungen.
+
+Für den ersten alltagsrelevanten Funktionsschnitt nach dem Pilottest sind
+Schülerlisten-Import, Schuljahreswechsel, Mehrkind-Schnellbeobachtung und
+Klassen-/Kursmatrix Kandidaten. Keiner dieser Kandidaten ist derzeit als
+Implementierungssprint freigegeben. Vor einer Freigabe folgen Product Discovery,
+Produktentscheidung, Datenmodell-, Architektur-, Datenschutz- und UX-Review.
+Der kleinste empfohlene nächste fachliche Planungsschritt ist ein
+Discovery-/Architecture-Gate für den Schülerlisten-Import; ein
+Implementierungssprint folgt daraus nicht automatisch.
 
 ## Projektziel
 
@@ -354,16 +363,19 @@ Jede Implementierung folgt dieser Reihenfolge:
 
 ## Aktueller Entwicklungsstatus
 
-Der Funktionsaufbau bis Sprint 10B sowie die anschliessenden Schuelerprofil-UX-Korrekturen sind umgesetzt. Die aktive Phase ist die Produktreifephase.
+Der Funktionsaufbau bis Sprint 10B sowie die anschliessenden
+Schuelerprofil-UX-Korrekturen sind umgesetzt. Die aktive Phase ist der
+beaufsichtigte Pilottest von Version 0.2 mit anschliessender, befundbasierter
+Fehlerbehebung.
 
 Aktuelle Arbeitsschwerpunkte sind:
 
-- Dokumentationskonsistenz und nachvollziehbare Produktbaseline
-- fachliche und visuelle Pilotpruefung
+- reale fachliche, ergonomische und betriebliche Pilotpruefung
+- ausschliesslich befundbasierte P0-Fehlerbehebung
 - Accessibility- und Tastaturqualitaet
 - robuste Desktop-Darstellung in den festgelegten Zielgroessen
-- Packaging-, Betriebs- und Datenschutzentscheidungen
-- Release-Vorbereitung ohne Vorwegnahme von Version oder Auslieferung
+- Vorbereitung der noch nicht freigegebenen Planungskandidaten aus `BACKLOG.md`
+- Betriebs- und Datenschutzentscheidungen ohne Vorwegnahme einer Auslieferung
 
 Weiterhin offen bleiben insbesondere Product-Owner- beziehungsweise Betriebsentscheidungen zu Rollen und Berechtigungen, Aufbewahrung und Zugriffsschutz, Archivierung und Verschluesselung, Renderer-Versionierung, mehreren Artefakten pro Revision sowie einem moeglichen gemeinsamen, klar getrennten Bericht-/LEG-Ausgabepaket.
 

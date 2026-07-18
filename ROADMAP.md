@@ -1,216 +1,118 @@
 # Roadmap
 
-## Zielplattform und Architektur
+## Einordnung
 
-PySide ist die Hauptanwendung des Jenaplan-Kompetenzmanagers.
+Die Roadmap ordnet Produktphasen nach Version 0.2. Sie ist keine
+Sprintfreigabe. Konkrete Aufgaben, Status und Abhängigkeiten stehen in
+`BACKLOG.md`; operative, bereits freigegebene Arbeit steht in `SPRINTS.md`.
 
-SQLite ist die produktive lokale Datenbasis.
+PySide6 ist die aktive Produktoberfläche, SQLite die produktive lokale
+Datenbasis. Python verantwortet Datenmodell, Application- und Domain-Schicht,
+Persistenz, ViewModels, Adapter, UI-Projektionen, Berichte, Exporte und
+Fachlogik. Excel/VBA ist ausschließlich historische Legacy-/Referenzlinie unter
+`legacy/excel/` und kein Zielpfad für neue Funktionen.
 
-Python bleibt verantwortlich für Datenmodell, Application Layer, Domain Layer, Persistenz, PySide-Oberflaeche, UI-Projektionen, Export-Erzeugung, Berichte und Fachlogik.
+Alle Phasen bleiben den pädagogischen Leitlinien untergeordnet:
 
-Excel/VBA liegt nur noch im Archiv `legacy/excel/` und ist nicht mehr die Zielrichtung fuer die Haupt-App.
+- Beobachtungen bilden die fachliche Grundlage.
+- Die Software unterstützt pädagogische Entscheidungen und ersetzt sie nicht.
+- Fehlende Dokumentation ist kein negativer Leistungsstatus.
+- Es gibt keine automatische Benotung oder automatische Leistungsbewertung.
+- Datenhaltung bleibt lokal, nachvollziehbar und verantwortbar.
 
-VBA wird nicht weiter als Zielpfad fuer neue Features, UI, Smoke-Tests, Automatisierung oder produktive Workflows verfolgt.
+## Phase 0 - Produktgrundlage bis Version 0.2 abgeschlossen
 
-Worksheet-basierte Dialogseiten, VBA-UserForms und VBA-Runtime-Adapter sind historische Artefakte der Excel-Linie.
+Der Pilot-Release-Kandidat 0.2 umfasst die lokale PySide6-/SQLite-Anwendung mit
+Lehrplankatalog, Einzel- und Schnellbeobachtung für ein Kind, Schülerprofilen,
+Kompetenz- und Dokumentationsprojektionen, Lernentwicklungsberichten,
+Lernentwicklungsgesprächen, unveränderlichen Revisionen und finalen
+PDF-Artefakten, Stundenplan und Dashboard, Stammdaten, Dokumenten/Medien,
+Backup/Restore, lokalem Konto, Passwort und Recovery-Codes, App-Sperre,
+macOS-Keychain/Touch ID, gespeicherter Geräteanmeldung, Support-Reset-Workflow,
+`Erste Schritte`, Pilotdokumentation und macOS-arm64-Paket.
 
-Der PySide6 Desktop-App-Spike ist zur Hauptanwendungslinie geworden. Excel bleibt nur als historischer Legacy-Altstand erhalten.
+Diese Funktionen werden nicht mehr als Zukunftsarbeit geführt. Reale
+Hardware-, Alltags- und Ergonomieprüfung bleibt Teil der nächsten Phase.
 
-Der Excel/VBA-Runtime-Adapter wird vorerst nicht weiter ausgebaut. Ein Ruecksprungpunkt fuer den Excel/xlwings-Pfad existiert mit dem Tag `checkpoint-excel-adapter-before-python-gui`.
+## Phase 1 - Pilottest 0.2 und Stabilisierung
 
-Offen bleiben produktiver Nutzer-Datenbankpfad, Backup/Restore, Packaging als macOS-App, Updates/Migrationen und spaetere Exportformate.
+Zuerst wird der implementierte Stand unter realen Pilotbedingungen validiert.
+Priorität P0 haben ausschließlich Datenverlust, fehlerhafte Speicherung,
+Sicherheitsfehler, blockierte Hauptabläufe sowie starke Überlagerungen oder
+abgeschnittene Kernaktionen.
 
-Der VBA-Seed wurde historisch validiert. `.xlsm` ist kein Hauptartefakt der aktiven Produktlinie mehr.
+Pilottestwünsche und Komfortideen werden getrennt erfasst. Sie werden nicht
+allein durch ihre Nennung zu beschlossenen Produktänderungen.
 
-Das Datenmodell ist die fachliche Grundlage des Projekts. Alle Ansichten sind Projektionen dieses Datenmodells.
+## Phase 2 - Alltagsdaten effizient einrichten
 
-Das Design-System ist die visuelle Grundlage des Projekts. Alle zukünftigen Ansichten orientieren sich am freigegebenen App-Icon und an der daraus abgeleiteten ruhigen, modernen PySide-Desktop-App-Anmutung.
+Ziel ist, den manuellen Einrichtungsaufwand vor und zwischen Schuljahren zu
+reduzieren. Planungskandidaten sind:
 
-## Aktueller UX-Prototyp-Pfad
+- Schülerlisten-Import
+- Dublettenprüfung und wiederholbarer Import
+- Schuljahreswechsel, Versetzung und kontrollierte Archivierung
+- Übernahme von Stammgruppen, Kursen und Kursverbünden
 
-Sprint 3.0: Architekturwechsel auf Microsoft Excel für macOS und Vorbereitung der v0.2-Prototyp-Generation.
+Empfohlene Reihenfolge: zuerst ein Discovery-/Architecture-Gate für den
+Schülerlisten-Import, danach erst eine Implementierungsentscheidung. Der
+Schuljahreswechsel baut auf den Import-, Historien- und Archivierungsregeln auf
+und ist nicht gleichzeitig freigegeben.
 
-Sprint 3.1: Klassenübersicht als erster UX-Screen unter der früheren Bezeichnung.
+## Phase 3 - Beobachtung im Unterricht beschleunigen
 
-Sprint 3.2: Schülerprofil als zweiter UX-Screen.
+Nach Auswertung des Pilotworkflows werden mögliche Mehrkind-Abläufe geprüft:
 
-Sprint 3.3a: Architektur konsolidieren und Dokumentation bereinigen.
+- Gruppenbeobachtung
+- Schnellbeobachtung mehrerer Kinder beziehungsweise Gruppenbewertung
+- geplante Beobachtungen
+- Kompetenzvorlagen für Unterrichtssituationen
 
-Sprint 3.3b: VBA-Seed praktisch validieren.
+Vor Umsetzung muss entschieden werden, ob fachlich eine gemeinsame Beobachtung
+oder mehrere atomar erzeugte Einzelbeobachtungen entstehen. Gemeinsame Notiz,
+individuelle Bewertung, spätere Bearbeitung, Datenschutz und Fehlerrollback
+sind Teil dieser Entscheidung. Es wird keine automatische Bewertung eingeführt.
 
-Sprint 3.3c: VBA-Framework als versionierbare Quelle anlegen und ersten `.xlsm`-Interaktionstest vorbereiten.
+## Phase 4 - Übersichten und Lernentwicklung vertiefen
 
-Sprint 3.4: Design Freeze als dauerhaftes Design-System dokumentieren und Domänenmodell auf Stammgruppe und Kurs präzisieren.
+Erst nach Pilottest des vorhandenen Schülerprofils, Dokumentationsstatus und
+Dashboard-Heatmaps werden zusätzliche Übersichten bewertet:
 
-Sprint 4.0: Core Data Architecture, technische Namen, Data Registry, View Ownership und Data Lifecycle dokumentieren.
+- Klassenmatrix und Kursmatrix
+- gruppenbezogene Dokumentationsstände
+- historische Kompetenz- und Entwicklungsansichten
+- pädagogische Hinweise aus vorhandener Evidenz ohne automatische Bewertung
 
-Sprint 4.1: Core Data Architecture durch Hidden Data Sheets, strukturierte Tabellen und datengetriebene UI-Projektionen validieren. Abgeschlossen mit Release `v0.4`.
+Das Dashboard bleibt stundenbezogener Arbeitsstart. Eine allgemeine
+`Entwicklung sichtbar`-Analyse auf dem Dashboard wurde verworfen; neue
+Analyseflächen benötigen eine eigene Produktentscheidung.
 
-Sprint 4.2: Schülerverwaltung vorbereiten und ersten transaktionalen Schreibprozess umsetzen: Schüler anlegen, ändern und archivieren.
+## Phase 5 - Professioneller Betrieb und Verteilung
 
-Sprint 4B: Lehrplanbasierten Kompetenzkatalog fachweise uebernehmen. Die freigegebenen Kompetenzen fuer Deutsch, Mathematik, Musik, Kunst, Werken, Schulgarten, Sport, EPU, Ethik und Sozialkompetenz werden additiv mit globalen `CMP-######`-IDs aufgenommen; ersetzte Bestandskompetenzen bleiben als `legacy` fuer historische Beobachtungen und Bestaetigungen erhalten. Religion bleibt ausserhalb dieses Sprint-4-Katalogabgleichs.
+Planungskandidaten sind produktiver Support-Reset-Schlüssel und Supportprozess,
+Developer-ID-Signierung und Apple-Notarisierung, kontrollierter Update- und
+Migrationsprozess, Diagnosepaket, Backup-Erinnerung, geregelter Gerätewechsel
+sowie eine spätere Windows-Version mit plattformeigener Credential-Anbindung.
 
-Sprint 5: Scope Freeze abgeschlossen, Dialog Framework begonnen und erste Referenz-UserForm `Neuer Schueler` vorbereitet. Sprint 5.1a konkretisiert den Dialogstandard fuer zukuenftige Eingabemasken. Sprint 5.1b stoppt die produktive Schueleranlage an der noch offenen Laufzeitbruecke zwischen Excel/VBA und Python-Service-Schicht. Sprint 5.2a prueft SQLite als moegliche zentrale Datenbasis. Sprint 5.3 fuehrt den Application Command Layer ein. Sprint 5.4 validiert `student.create` im Python-Stack. Architecture Baseline v2.0 dokumentiert diesen erreichten Stand. Feature 1 fuehrt den UX-Prototyp als verbindlichen Zwischenschritt vor Dialogumsetzungen ein und wechselt wegen macOS-UserForm-Problemen auf die worksheet-basierte Dialogseite `dlg_neuer_schueler`. Feature 1.4a definiert den Runtime Adapter und den Refresh Contract fuer `student.create`. Feature 1.4b implementiert den produktiven Schreibpfad bis SQLite ohne Projection Refresh. Der PySide6 Desktop-App-Spike validiert anschliessend einen UI-Adapter ueber denselben Application-/Service-/Repository-Stack. Nach dem freigegebenen App-Icon wird PySide zur Hauptanwendungslinie.
+Diese Punkte werden getrennt priorisiert. Der bestehende manuelle App-Austausch
+und das bestehende Backup/Restore bleiben bis zu einer neuen Entscheidung der
+verbindliche Pilotpfad.
 
-Kurzfristige Produktziele
+## Langfristige strategische Optionen
 
-- PySide-App stabilisieren
-- Stammdaten und Kursverbuende weiter klaeren
-- Beobachtungspersistenz
-- Schuelerprofile ausbauen
-- lokale SQLite-Datenhaltung produktionsnaeher machen
-- Exportstrategie spaeter definieren
+Verschlüsselung, Mehrbenutzerbetrieb, Rollen, schulweite Installation und
+Cloud-/Mehrgerätebetrieb sind langfristige Optionen, keine beschlossenen
+Funktionen. Jede Option benötigt eine eigenständige Produkt-, Datenschutz-,
+Bedrohungs-, Betriebs-, Datenmodell- und Migrationsentscheidung. Die App-Sperre
+von Version 0.2 darf nicht als Dateiverschlüsselung dargestellt werden.
 
-Mittelfristige Produktziele
+## Historische Produktlinie
 
-- Berichte und Auswertungen in PySide
-- Datei-Exportfunktionen
-- Packaging/Installer fuer macOS
-- Datenschutz, Backup/Restore und Freischaltcode spaeter klaeren
-
-Excel/VBA Legacy
-
-- keine aktive Feature-Roadmap
-- alte Workbook-/VBA-Pfade sind unter `legacy/excel/` archiviert
-- Excel ist kein aktiver Zielpfad fuer neue Features, UI oder Pflichtchecks
-
-Zukünftige Produktziele ohne Sprintzuordnung
-
-- Beobachtungsverwaltung
-- Historisierung von Kompetenzständen
-- Schülerprofile auf Basis von Beobachtungen
-- Lernentwicklungsberichte
-- Dashboard auf Basis historischer Daten
-- Vorschläge für Kompetenzstände
-- Beobachtungsverläufe
-- Geplante Beobachtungen
-- Spontane Beobachtungen
-- Gruppenbeobachtungen
-- Schnellbeobachtung / Gruppenbewertung
-- Stammgruppenverwaltung
-- Kursverwaltung
-- Kursübersicht
-- UX Hauptfenster fuer die PySide-Hauptanwendung
-- Schuelerprofil in der PySide-Hauptanwendung
-- Beobachtungsmaske in der PySide-Hauptanwendung
-- Packaging als macOS-App
-- Produktiver Nutzer-Datenbankpfad, Backup und Restore
-- Datei-Export und Berichte auf Basis von SQLite
-
-Diese Punkte stellen zukünftige Produktziele dar.
-
-Sie gehören aktuell noch keinem Sprint an.
-
-Sprint 2c
-
-- Sprint 2c erzeugte den ersten UX-Prototyp, der ab Sprint 3.0 als `Jenaplan_UX_Prototype_v0.1_FirstAttempt.xlsx` erhalten bleibt.
-- Der Prototyp dient dem Anwenderfeedback und ist nicht die produktive Version.
-- Auf Basis des UX Blueprint wird der erste klickbare Excel-Prototyp umgesetzt.
-
-Sprint 3.0
-
-- Der erste UX-Prototyp bleibt als `Jenaplan_UX_Prototype_v0.1_FirstAttempt.xlsx` erhalten.
-- Die zweite UX-Prototyp-Generation startet mit `Jenaplan_UX_Prototype_v0.2.xlsx`.
-- Zielplattform ist Microsoft Excel für macOS.
-- Python bleibt für Workbook, Datenstruktur, Styles und Generierung verantwortlich.
-- VBA wird für spätere UI-Aufgaben vorbereitet, aber noch nicht umgesetzt.
-
-Sprint 3.1
-
-- Einziger Auftrag: Klassenübersicht bauen; ab Sprint 3.4 lautet die fachliche Bezeichnung Stammgruppenübersicht.
-- Keine weiteren Bildschirme.
-- Abschluss mit Review durch Laura.
-- Die v0.2-Arbeitsmappe enthält nur die damalige Klassenübersicht.
-- Schülerprofil, Beobachtungsdialog und Kompetenzansicht folgen in späteren Sprints.
-
-Sprint 3.1a
-
-- UX-Review der heutigen Stammgruppenübersicht.
-- Optimierung auf Stammgruppen bis mindestens 28 Schüler.
-- Kompaktes 4-spaltiges Referenzdesign.
-- Keine Dashboard-, Analyse- oder Verwaltungsfunktionen in der Stammgruppenübersicht.
-
-Sprint 3.1b
-
-- Dokumentation der Produktentscheidungen aus Sprint 3.1 und Sprint 3.1a.
-- Stammgruppenübersicht als Einstieg in den Arbeitsablauf festgeschrieben.
-- Schülerverwaltung als separater Bereich für Schülerdaten festgelegt.
-- Design Freeze für die Stammgruppenübersicht dokumentiert.
-
-Sprint 3.1c bis 3.1f
-
-- Live-Suche in der Stammgruppenübersicht ergänzt und abgesichert.
-- Datenmodell-Schutz für Stammgruppenübersicht und Suche festgeschrieben.
-- Schnellzugriff `Neue Beobachtung` als Produktentscheidung dokumentiert.
-
-Sprint 3.2
-
-- Schülerprofil als zweiter UX-Screen ergänzt.
-- Testpfad Stammgruppenübersicht -> Schülerprofil -> Stammgruppenübersicht über `student_id` vorbereitet.
-- Beobachtungsdialog bleibt zurückgestellt.
-
-Sprint 3.3a
-
-- Zielplattform, Architektur, Entwicklungsprozess und Datenmodell-Prinzipien konsolidiert.
-- Keine funktionalen Änderungen.
-
-Sprint 3.3b
-
-- Manuell erzeugten VBA-Seed mit Python und `openpyxl keep_vba=True` validiert.
-- Nachgewiesen, dass `xl/vbaProject.bin` beim Laden, Ändern und Speichern erhalten bleibt.
-
-Sprint 3.3c
-
-- Versionierbare VBA-Quellstruktur unter `vba/` vorbereitet.
-- `.xlsm`-PoC auf Basis der bestehenden UX-Arbeitsmappe und des validierten Seeds vorbereitet.
-- Keine Fachlogik in VBA.
-
-Sprint 3.4
-
-- Laura hat das aktuelle Design der Stammgruppenübersicht freigegeben.
-- Das freigegebene Design wird als Design-System und Source of Truth für zukünftige Benutzeroberflächen dokumentiert.
-- Die Domänensprache ersetzt `Klasse` durch `Stammgruppe`.
-- `Stammgruppe` und `Kurs` werden als eigenständige fachliche Entitäten dokumentiert.
-- `Kursübersicht`, Schülerverwaltung, Stammgruppenverwaltung und Kursverwaltung werden als zukünftige Produktbereiche aufgenommen.
-- Keine Codeänderungen und kein Build.
-
-Sprint 4.1
-
-- Core Data Architecture erstmals technisch validiert.
-- Builder erzeugt Hidden Data Sheets `data_students`, `data_groups` und `data_courses`.
-- Builder erzeugt strukturierte Tabellen `tbl_students`, `tbl_groups` und `tbl_courses`.
-- Stammgruppenübersicht und Schülerprofil lesen aus den Workbook-Datenquellen.
-- VBA-Navigation über `student_id` bleibt funktionsfähig.
-- Release-Artefakt: `output/Jenaplan_Kompetenzmanager_v0.4.xlsm`.
-
-Sprint 4.2
-
-- Schülerverwaltung als nächste Funktion vorbereitet.
-- Fokus: erster transaktionaler Schreibprozess.
-- Umfang: Schüler anlegen, Schüler ändern, Schüler archivieren.
-- Keine physische Löschung.
-
-Sprint 5
-
-- Scope Freeze abgeschlossen.
-- Dialog Framework begonnen.
-- Sprint 5.1a konkretisiert Standardgroesse, Titelbereich, Abstaende, Labels, Pflichtfeldkennzeichnung, Button-Reihenfolge, Tab-Reihenfolge, Enter/Esc-Verhalten und modales Oeffnen.
-- Erste Referenz-UserForm `Neuer Schueler` als nicht-produktive Referenzimplementierung vorbereitet.
-- Sprint 5.1b prueft die produktive Anbindung und stoppt ohne Implementierung, weil kein freigegebener direkter VBA-zu-Python-Service-Aufruf existiert.
-- Naechster Architekturspike: Command Queue zwischen UserForm und Python-Service-Schicht pruefen.
-- Sprint 5.2a erzeugt `data/kompetenzmanager.sqlite` mit Students, Groups und Courses und baut daraus eine separate Excel-Projektion.
-- Naechster Architekturspike: Python Bridge / CLI fuer UserForm-Auftraege nach SQLite pruefen.
-- Sprint 5.3 fuehrt den Application Command Dispatcher als Zwischenschicht zwischen Command-Adaptern und Domain Services ein.
-- `student.create` Adapter bis SQLite umgesetzt, ohne Fachlogik in CLI oder VBA zu verschieben.
-- Architecture Baseline v2.0 fasst den validierten Zielzustand zusammen: Adapter -> Application -> Domain -> Infrastructure -> Projection -> Excel UI.
-- UX-Prototypen sind fuer neue Eingabedialoge kuenftig verbindlicher Zwischenschritt vor der technischen Umsetzung.
-- `output/Jenaplan_UX_Prototype_v0.1.xlsx` enthaelt das Blatt `Feature 1 – Neuer Schüler` als visuelle Vorlage fuer `dlg_neuer_schueler`.
-- VBA-UserForms sind fuer Feature 1 auf macOS als instabil bewertet und nicht mehr primaeres Eingabe-Pattern.
-- Worksheet-basierte Dialogseite `dlg_neuer_schueler` wird als neuer UI-Pfad vorbereitet.
-- PySide6 Desktop-App-Spike erfolgreich validiert: App startet, Maske `Neuer Schüler` funktioniert, Speichern schreibt ueber ApplicationCommandDispatcher, StudentService und SQLiteStudentRepository nach SQLite.
-- PySide6 wurde durch ADR-046 zur Hauptanwendung. Excel/VBA bleibt Export-, Berichts-, Referenz- oder Legacy-Projektion.
-- `docs/PYSIDE6_APP_FEASIBILITY.md` dokumentiert die Umsetzungspruefung fuer App-Struktur, MVP-Navigation, Risiken und naechsten moeglichen Sprint, ohne eine finale Architekturentscheidung zu treffen.
-- Dokumentenbereich fuer Schuelerdokumente dokumentiert.
-- Studentenzentrierte Dokumenten- und Medienstruktur festgelegt.
-- Beobachtungsdialog mit Kompetenzen, Bewertung, Notiz sowie Dokumenten und Medien nur vorbereitet.
-- Keine Beobachtungserfassung, Schnellbeobachtung, Kompetenzzuordnung im Beobachtungsdialog, Dokument-Upload, Medienvorschau, Kursverwaltung, Stammgruppenverwaltung oder Berichte umsetzen.
+Die frühere Excel-/Workbook-/VBA-Roadmap mit UserForms,
+Worksheet-Dialogseiten, Runtime Adapter, Projection Refresh, Seeds und
+AppleScript-Smoke-Tests ist abgeschlossen, archiviert oder durch ADR-046 und
+ADR-047 ersetzt. Historische Details bleiben in `SPRINTS.md`, `DECISIONS.md`
+und `CHANGELOG.md` erhalten; sie bilden keine aktive Roadmap. Frühere Abschnitte
+in `DISCOVERY.md` und `UX_BLUEPRINT.md`, die Excel als Zielplattform oder den
+ersten Prototypumfang beschreiben, sind historischer Entstehungskontext und
+keine Freigabe entgegen dem aktuellen PySide6-/SQLite-Produktpfad.
