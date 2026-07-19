@@ -1,0 +1,15 @@
+{
+  "format_version": 1,
+  "keys": [
+    {
+      "key_id": "support-JAHR-a",
+      "algorithm": "Ed25519",
+      "public_key": "BASE64URL_DES_32_BYTE_PUBLIC_KEYS",
+      "status": "active",
+      "not_before": "JJJJ-MM-TTTHH:MM:SSZ",
+      "not_after": "JJJJ-MM-TTTHH:MM:SSZ",
+      "revoked_at": null,
+      "fingerprint_sha256": "64_KLEINE_HEX_ZEICHEN"
+    }
+  ]
+}

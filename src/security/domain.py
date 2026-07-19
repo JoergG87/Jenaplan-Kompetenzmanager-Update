@@ -74,6 +74,7 @@ class SupportResetFailureCode(str, Enum):
     ALGORITHM_UNSUPPORTED = "algorithm_unsupported"
     KEY_UNKNOWN = "key_unknown"
     KEY_REVOKED = "key_revoked"
+    KEY_NOT_ACTIVE = "key_not_active"
     KEY_NOT_YET_VALID = "key_not_yet_valid"
     KEY_EXPIRED = "key_expired"
     SIGNATURE_INVALID = "signature_invalid"
@@ -104,6 +105,7 @@ class SupportResetRejected(SecurityError):
 class SupportPublicKeyStatus(str, Enum):
     ACTIVE = "active"
     RETIRING = "retiring"
+    RETIRED = "retired"
     REVOKED = "revoked"
 
 

@@ -1,5 +1,32 @@
 # Architekturentscheidungen
 
+## ADR-072 - Getrenntes Offline-Supportpaket und versionierte Produktivregistry
+
+**Status:** Für Sprint 0.2B.6 freigegeben.
+
+Der Supportbetrieb wird nicht in App, DMG oder Laura-Paket aufgenommen. Ein
+separates macOS-arm64-Paket enthält ausschließlich zwei Finder-Starter,
+eigenständige Offline-Laufzeiten, Betriebsanleitung, öffentliche
+Registry-Struktur, Version und Prüfsummen. Die Starter bestimmen ihren eigenen
+Ort, übertragen keine Secrets als Argument oder Umgebung und delegieren die
+Passphraseeingabe ausschließlich an Python `getpass`.
+
+Reset-Signatur und Schlüsselbereitstellung bleiben getrennte lineare Prozesse.
+Private Ed25519-Schlüssel entstehen nur bewusst außerhalb jedes Repositorys,
+direkt passphrasenverschlüsselt als PKCS#8. Der Signaturprozess prüft Anfrage,
+Gerätebestätigung, Dateirechte, Schlüsselpaar und Fingerprint und publiziert nur
+eine exklusiv neu angelegte kurzlebige Token-Datei. Er öffnet keine fachliche
+SQLite, Backups oder Dokumente.
+
+Die App lädt öffentliche Produktivschlüssel aus einem codeversionierten
+Manifest der Formatversion 1. Manifest und Einträge werden vollständig und
+deterministisch validiert. `active` sowie das kurze Rotationsfenster `retiring`
+sind verifizierbar; `retired`, `revoked`, unbekannte, noch nicht gültige und
+abgelaufene Schlüssel sind fail-closed. Aktivierung, Rotation und Widerruf
+erfordern weiterhin einen App-Release. Ohne ausdrücklich bereitgestellten
+öffentlichen PO-Schlüssel bleibt das Manifest leer; kein Testschlüssel wird zum
+Produktivschlüssel umgedeutet.
+
 ## ADR-071 - Zentrale maximierte Arbeitsfenster und deterministische LEG-Seiten
 
 **Status:** Für den UI-Stabilitätsnachschnitt von Version 0.2.0 freigegeben.

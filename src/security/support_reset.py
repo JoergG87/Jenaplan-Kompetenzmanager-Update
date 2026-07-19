@@ -365,6 +365,8 @@ class SupportResetService:
             raise SupportResetRejected(SupportResetFailureCode.KEY_UNKNOWN)
         if public_key.status == SupportPublicKeyStatus.REVOKED:
             raise SupportResetRejected(SupportResetFailureCode.KEY_REVOKED)
+        if public_key.status == SupportPublicKeyStatus.RETIRED:
+            raise SupportResetRejected(SupportResetFailureCode.KEY_NOT_ACTIVE)
         if now < public_key.not_before:
             raise SupportResetRejected(SupportResetFailureCode.KEY_NOT_YET_VALID)
         if now > public_key.not_after:

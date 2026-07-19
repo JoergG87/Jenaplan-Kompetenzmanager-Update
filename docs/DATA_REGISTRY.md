@@ -1,5 +1,19 @@
 # Data Registry
 
+## Sprint 0.2B.6 - Externe Support-Betriebsquellen
+
+| Quelle | Inhalt | Owner | Ausschlüsse |
+|---|---|---|---|
+| `PRODUCT_SUPPORT_KEY_REGISTRY` | Formatversion 1, `key_id`, Ed25519-Public-Key, Status, Gültigkeits-/Widerrufszeit und SHA-256-Fingerprint | geprüfter App-Release | kein privater Schlüssel, keine Passphrase, Anfrage oder Token; aktuell leer |
+| externe öffentliche Schlüsselbeschreibung | `key_id`, Algorithmus, Public-Key, Erstellungszeit, vorgesehener Status und Fingerprint | Support-Verantwortlicher | darf getrennt zur Registry-Prüfung weitergegeben werden |
+| externer verschlüsselter PKCS#8-Schlüssel | ausschließlich privater Ed25519-Schlüssel, verschlüsselt und Dateirechte `600` in Verzeichnis `700` | Support-Verantwortlicher | niemals App, Repository, Build, DMG, Pilot-/Laura- oder Supportpaket |
+| separates Supportpaket | Finder-Starter, arm64-Laufzeiten, Anleitung, Strukturbeispiel, Version und Prüfsummen | Support-Packaging | keine App, DMG, Fachdatenbank, Backups, Schülerdaten, Secrets, Testkeys, Anfragen oder Tokens |
+
+Der interaktive Supportprozess hält Anfrage, Passphrase, Private-Key-Objekt und
+Token ausschließlich so kurz wie für Prüfung und Ausgabe nötig im Prozess. Nur
+die bewusst gewählte `.jkmresettoken`-Datei wird mit Rechten `600` geschrieben;
+es gibt keine automatische Suche, Ablage, Netzwerkquelle oder Protokollierung.
+
 ## Sprint 0.2R - Release-Ausgaben
 
 DMG, kanonisch gebaute PDFs, Release-Hinweise, Prüfsummen, Release-Inventar,

@@ -1,5 +1,22 @@
 # Sprintplanung
 
+## Sprint 0.2B.6 - Produktives Support-Reset-Werkzeug für macOS
+
+**Ziel:** Den vollständig implementierten App-/Core-Reset durch einen sicheren,
+lokal startbaren Offline-Supportbetrieb, eine versionierte Public-Key-Registry
+und ein vom Pilotpaket getrenntes macOS-arm64-Supportpaket operationalisieren.
+
+**Umfang:** Finder-Starter, geführte deutsche Anfrage-/Signaturinteraktion,
+getrennte externe Keypair-Provisionierung, Public-Key-Fingerprint und manuelle
+Registry-Freigabe, restriktiver Tokenexport, separater Package-Build,
+Prüfsummen/Secret-Scan, Betriebs- und Nutzeranleitung sowie synthetische Tests.
+
+**Grenze:** Kein privater oder Testschlüssel in Registry, Repository, App oder
+Paket; keine Passphrase in Argument/Umgebung/Log; kein fachlicher Datenzugriff,
+Masterkennwort, Netzwerk, Cloud, E-Mail oder Umgehen des Sicherheitsbackups. Die
+Produktivaktivierung bleibt bis zum bewusst bereitgestellten öffentlichen
+PO-Schlüssel offen. Kein Commit in diesem Auftrag.
+
 SPRINTS.md dient ausschließlich der operativen Projektplanung. `ROADMAP.md`
 ordnet die Produktphasen; ein Planungskandidat in diesem Dokument ist noch
 keine Freigabe zur Implementierung.

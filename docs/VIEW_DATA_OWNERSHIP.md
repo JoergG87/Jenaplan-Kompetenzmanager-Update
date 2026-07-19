@@ -1,5 +1,18 @@
 # View Data Ownership
 
+## Sprint 0.2B.6 - Externe Support-Terminalansichten
+
+`support_reset_cli` besitzt nur flüchtigen Promptzustand: gewählte Anfrage,
+technische Anfrageprojektion, bewusste Bestätigung, Pfade, begrenzte Laufzeit und
+optionale Tokenanzeige. Das Tool liest weder fachliche SQLite noch Backups oder
+Dokumente. Anfrageprüfung und Tokenformat bleiben im vorhandenen Qt-freien
+`SupportResetTokenCodec`; Kryptografie bleibt im vorhandenen Generator.
+
+`keypair_cli` besitzt nur den bewussten externen Zielpfad, `key_id` und die
+zweimalige verdeckte Passphraseeingabe. `generate_support_keypair` besitzt
+Erzeugung und atomare Publikation. Weder Terminalansicht noch Generator besitzen
+Registry-, App-, Build- oder Fachdatenownership.
+
 ## Sprint 0.2R - Dokumentation und Release-Screenshots
 
 Der Release-Abschluss führt keine neue View und keinen UI-State ein. Handbuch,

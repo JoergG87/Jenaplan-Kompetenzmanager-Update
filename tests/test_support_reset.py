@@ -329,9 +329,10 @@ def test_full_request_binding_is_enforced(tmp_path: Path, change: dict, code) ->
     ("status", "code"),
     [
         (SupportPublicKeyStatus.REVOKED, SupportResetFailureCode.KEY_REVOKED),
+        (SupportPublicKeyStatus.RETIRED, SupportResetFailureCode.KEY_NOT_ACTIVE),
     ],
 )
-def test_revoked_key_is_rejected_before_signature(tmp_path: Path, status, code) -> None:
+def test_non_active_key_is_rejected_before_signature(tmp_path: Path, status, code) -> None:
     _security, reset, _repository, _clock, private = make_environment(
         tmp_path / "runtime", key_status=status
     )

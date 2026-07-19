@@ -1,5 +1,23 @@
 # UI Data Mapping
 
+## Sprint 0.2B.6 - Externes Support-Werkzeug
+
+| Prompt/Aktion | Quelle/Command | Persistenz | Regel |
+|---|---|---|---|
+| Anfragepfad oder Anfrageblock | bewusste Supporteingabe -> `SupportResetTokenCodec.decode_request` | Nein | keine automatische Suche; striktes Format und Größenlimit |
+| technische Anfrageübersicht | `SupportResetRequest` | Nein | Anfrage-ID vollständig, Installation/Konto gekürzt, Zeiten; keine Nonce- oder Fachdatenanzeige |
+| Gerätebestätigung | exakte Eingabe `JA` | Nein | ohne Bestätigung kein Schlüsselzugriff und kein Token |
+| privater Schlüsselpfad | bewusste Supporteingabe | Nein | verschlüsseltes PKCS#8, `600`, kein Symlink, keine Suche |
+| öffentliche Schlüsselbeschreibung | bewusste Supporteingabe | Nein | `key_id`, Algorithmus, Status, Public-Key und Fingerprint werden strikt gebunden |
+| Passphrase | Python `getpass` | Nein | unsichtbar, höchstens drei Versuche, nie Argument/Umgebungsvariable/Log |
+| Gültigkeitsdauer | feste Auswahl 15/30/60/120 | Nein | Standard 30, nie länger als zwei Stunden |
+| Tokenziel | bewusste Pfadeingabe -> exklusive Datei | `.jkmresettoken` mit `600` | kein Überschreiben; keine automatische Ablage |
+| Token zusätzlich anzeigen | separate exakte Eingabe `JA` | nur Terminal | Warnhinweis; standardmäßig nicht anzeigen |
+| Abschluss | Payload plus öffentliche Beschreibung | Nein | nur Zielpfad, Ablauf, `key_id`, Fingerprint |
+
+Die Support-Terminalansicht ist keine App-View und kommt nicht in App, DMG oder
+Laura-Paket. Die Lehrkraft-UI und ihr bestehendes Mapping bleiben unverändert.
+
 ## Sprint 0.2R - Release-Dokumentation
 
 Version `0.2.0` fügt keine UI-Felder hinzu. Dokumentation und Screenshots bilden

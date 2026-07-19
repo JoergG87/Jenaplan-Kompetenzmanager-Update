@@ -1,5 +1,21 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Produktiver Supportbetrieb ab Sprint 0.2B.6
+
+Der vorhandene App- und Security-Vertrag bleibt unverändert. Neu ist ein
+vollständig getrenntes macOS-arm64-Supportpaket mit Finder-Startern für
+Token-Signatur und bewusste externe Schlüsselbereitstellung. Es arbeitet
+offline, liest keine fachliche Runtime und wird weder App-/DMG- noch Laura-
+Paketbestandteil. Der private Schlüssel wird ausschließlich außerhalb des
+Repositorys verschlüsselt als PKCS#8 mit restriktiven Rechten erzeugt.
+
+Die produktive Public-Key-Registry besitzt jetzt einen strikt versionierten,
+deterministisch validierten Einbindungsweg für mehrere aktive, rotierende,
+retirierte und widerrufene öffentliche Schlüssel. Ohne den ausdrücklich vom
+Product Owner bereitgestellten öffentlichen Schlüssel bleibt sie leer und die
+App fail-closed. Der letzte Produktivaktivierungsschritt ist deshalb bewusst
+manuell und erfordert einen neuen geprüften App-Release.
+
 ## Pilot-Release-Kandidat 0.2.0
 
 Version `0.2.0` fasst den implementierten lokalen Security-, Betriebs- und

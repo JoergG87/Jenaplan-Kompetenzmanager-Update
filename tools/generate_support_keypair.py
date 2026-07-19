@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import base64
+from datetime import UTC, datetime
 import getpass
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -39,8 +41,13 @@ def validate_strong_passphrase(passphrase: bytes) -> None:
 
 
 def generate_keypair(
-    *, private_path: Path, public_path: Path, key_id: str, passphrase: bytes
-) -> None:
+    *,
+    private_path: Path,
+    public_path: Path,
+    key_id: str,
+    passphrase: bytes,
+    created_at: datetime | None = None,
+) -> dict[str, object]:
     if not _KEY_ID_PATTERN.fullmatch(key_id):
         raise ValueError("Invalid key_id.")
     validate_strong_passphrase(passphrase)
@@ -61,16 +68,25 @@ def generate_keypair(
         serialization.Encoding.Raw,
         serialization.PublicFormat.Raw,
     )
+    timestamp = created_at or datetime.now(UTC)
+    if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+        raise ValueError("Creation time must be timezone-aware.")
+    timestamp = timestamp.astimezone(UTC)
+    descriptor: dict[str, object] = {
+        "format_version": 1,
+        "algorithm": "Ed25519",
+        "key_id": key_id,
+        "public_key": base64.urlsafe_b64encode(public_raw).decode("ascii").rstrip("="),
+        "created_at": timestamp.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "intended_status": "active",
+        "fingerprint_sha256": hashlib.sha256(public_raw).hexdigest(),
+    }
     public_bytes = json.dumps(
-        {
-            "format_version": 1,
-            "algorithm": "Ed25519",
-            "key_id": key_id,
-            "public_key": base64.urlsafe_b64encode(public_raw).decode("ascii").rstrip("="),
-        },
+        descriptor,
         separators=(",", ":"),
     ).encode("utf-8") + b"\n"
     _publish_pair(private_path, private_bytes, public_path, public_bytes)
+    return descriptor
 
 
 def _publish_pair(

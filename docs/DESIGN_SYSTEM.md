@@ -1,5 +1,19 @@
 # Design-System
 
+## Sprint 0.2B.6 - Support-Terminalführung
+
+Die externe `.command` verwendet eine lineare deutsche Terminalführung ohne
+Menüvermischung von Reset und Schlüsselanlage. Hinweise sind sachlich,
+Entscheidungen explizit und Exitcodes sichtbar. Anfrageübersicht zeigt nur
+technische Werte; Passphrase bleibt unsichtbar. Genau eine bewusste `JA`-
+Bestätigung bindet die Geräteherkunft, eine weitere optionale `JA`-Bestätigung
+steuert allein die Tokenanzeige. Abbruchtexte enthalten keine Exceptiondetails,
+Secrets, vollständigen Private-Key-Inhalt oder ungefragt gespeicherte Werte.
+
+Die Finder-Starter halten das Terminal bis zu einer Eingabetaste offen, lesen
+aber selbst weder Passphrase noch Anfrage oder Token. Reset und
+Schlüsselbereitstellung bleiben zwei klar benannte `.command`-Dateien.
+
 ## Brand Color Harmonization - App-Icon und Arbeitskontexte
 
 Die zentrale Markenpalette leitet sich kontrolliert aus dem App-Icon ab. `Brand

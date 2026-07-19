@@ -36,12 +36,33 @@ def generate_token(
     lifetime: timedelta = SUPPORT_RESET_TOKEN_DEFAULT_AGE,
     output_path: Path | None = None,
 ) -> str:
+    return generate_token_from_request_bytes(
+        request_bytes=Path(request_path).read_bytes(),
+        private_key_path=private_key_path,
+        key_id=key_id,
+        passphrase=passphrase,
+        now=now,
+        lifetime=lifetime,
+        output_path=output_path,
+    )
+
+
+def generate_token_from_request_bytes(
+    *,
+    request_bytes: bytes,
+    private_key_path: Path,
+    key_id: str,
+    passphrase: bytes,
+    now: datetime,
+    lifetime: timedelta = SUPPORT_RESET_TOKEN_DEFAULT_AGE,
+    output_path: Path | None = None,
+) -> str:
     if lifetime <= timedelta(0) or lifetime > SUPPORT_RESET_TOKEN_MAX_AGE:
         raise ValueError("Token lifetime must be between one second and two hours.")
     if now.tzinfo is None or now.utcoffset() is None:
         raise ValueError("Signing time must be timezone-aware.")
     now = now.astimezone(UTC)
-    request = SupportResetTokenCodec.decode_request(Path(request_path).read_bytes())
+    request = SupportResetTokenCodec.decode_request(request_bytes)
     if now < request.created_at or now >= request.expires_at:
         raise ValueError("Reset request is not active at the signing time.")
     expires_at = min(now + lifetime, request.expires_at)

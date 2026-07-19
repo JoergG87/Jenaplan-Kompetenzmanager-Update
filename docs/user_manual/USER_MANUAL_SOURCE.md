@@ -90,7 +90,8 @@ Die Funktion verschlüsselt keine Datenbank, Dokumente oder Backups.
 
 ### Weitere Wiederherstellungsmöglichkeiten
 
-Wenn weder Passwort noch Recovery-Codes verfügbar sind, kann unter
+Der normale erste Wiederherstellungsweg ist immer `Recovery-Code verwenden`.
+Nur wenn weder Passwort noch Recovery-Codes verfügbar sind, kann unter
 `Weitere Wiederherstellungsmöglichkeiten` beziehungsweise
 `Einstellungen > Sicherheit > Wiederherstellung` eine technische
 Support-Reset-Anfrage erstellt werden. Sie enthält keine Schülerdaten und wird
@@ -100,7 +101,10 @@ bewussten Aktion.
 Support kann ausschließlich das lokale Passwort zurücksetzen. Der Vorgang ist
 kein Masterkennwort, entschlüsselt keine Dateien und gibt Support keinen Zugriff
 auf fachliche Daten. Nach organisatorischer Identitätsprüfung erzeugt Support
-außerhalb der App einen zeitlich begrenzten signierten Reset-Code.
+mit einem getrennten, offline betriebenen macOS-Werkzeug außerhalb der App
+einen installations- und anfragegebundenen, einmal verwendbaren, zeitlich
+begrenzten signierten Reset-Code. Private Schlüssel und Support-Passphrase
+bleiben ausschließlich beim Support und erreichen die Lehrkraft nicht.
 
 Die App prüft den Code zunächst ohne Änderung. Erst nach der ausdrücklichen
 Aktion `Sicherheitsbackup erstellen und Passwort zurücksetzen` wird ein normales

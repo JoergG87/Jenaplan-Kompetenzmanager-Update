@@ -1,5 +1,38 @@
 # Data Lifecycle
 
+## Sprint 0.2B.6 - Schlüsselbereitstellung, Signatur und Supportpaket
+
+Provisionierung wird ausschließlich durch den getrennten Finder-Starter bewusst
+ausgelöst. Der Support-Verantwortliche wählt ein Verzeichnis außerhalb jedes
+Repositorys; es erhält `700`, der private Ed25519-Schlüssel wird direkt als
+passphrasenverschlüsseltes PKCS#8 mit `600` publiziert. Die separat publizierte
+öffentliche Beschreibung enthält `key_id`, Erstellungszeit, vorgesehenen Status
+und Fingerprint. Es gibt keinen Klartextschlüssel und keine automatische
+Registry-Änderung.
+
+Die Registry-Aktivierung ist ein eigener App-Release. Das strikt versionierte
+Manifest wird beim Import deterministisch validiert; unbekannte Felder,
+Versionen, Algorithmen, Schlüsselgrößen, Base64url-Darstellungen, Fingerprints,
+Zeiten, IDs, Duplikate und Lebensdauern brechen fail-closed ab. Ohne bewusst
+eingetragenen öffentlichen PO-Schlüssel bleibt `product_enabled = False`.
+`active` und kurzzeitig `retiring` verifizieren; `retired`, `revoked`, unbekannt,
+noch nicht gültig und abgelaufen werden abgelehnt.
+
+Der Support-Starter bestimmt seinen eigenen Ort und startet ausschließlich die
+interaktive Offline-Laufzeit. Diese liest eine bewusst gewählte Datei oder einen
+eingefügten Anfrageblock, zeigt nur technische Projektionen, verlangt die
+Gerätebestätigung, prüft verschlüsselten privaten Schlüssel gegen die
+öffentliche Beschreibung und liest die Passphrase höchstens dreimal verdeckt
+über Python `getpass`. Nur 15/30/60/120 Minuten sind zulässig. Der Token wird
+mit exklusiver Neuanlage und `600` am bewusst gewählten Ziel publiziert; Ausgabe
+im Terminal erfolgt nur nach separatem `JA`. Kein Schritt öffnet fachliche
+SQLite, Backups oder Dokumente.
+
+Das Supportpaket wird separat vom App-/Laura-Build aus zwei arm64-Onefile-
+Executables und einer festen Allowliste erzeugt. Prüfsummen, ZIP-Struktur,
+Dateirechte, lokale Pfade und Secretmuster werden nach erneutem Entpacken
+verifiziert. Der App-/DMG-/Laura-Build ruft diesen Prozess nicht auf.
+
 ## Sprint 0.2R - Release-Build und Übergabe
 
 Der Release-Build entfernt seine bekannten Build- und macOS-Ausgabeverzeichnisse,

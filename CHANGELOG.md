@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## Sprint 0.2B.6 - Produktives Support-Reset-Werkzeug für macOS
+
+### Added
+
+- Zwei getrennte Finder-Starter für den geführten Offline-Signaturprozess und
+  die bewusste externe, ausschließlich verschlüsselte PKCS#8-
+  Schlüsselbereitstellung ergänzt.
+- Versionierte, strikt validierte Produktiv-Public-Key-Registry mit
+  Rotation, Retirement und Widerruf per App-Release sowie Fingerprintbindung
+  ergänzt; sie bleibt ohne PO-Schlüssel leer und fail-closed.
+- Separaten macOS-arm64-Supportpaket-Build mit fester Allowliste,
+  Prüfsummen, Versionsinformation, Betriebsanleitung sowie Secret-, Pfad- und
+  Paketscan ergänzt.
+
+### Security
+
+- Support-Werkzeug verarbeitet ausschließlich technische Anfragen, gibt keine
+  Passphrase als Argument oder Umgebung weiter, begrenzt Entsperrversuche und
+  Tokenlaufzeiten und überschreibt keine Ausgabedatei.
+- App, DMG, Pilot-/Laura-Paket, fachliche Datenbank, Backups, Dokumente,
+  Schülerdaten, private/Testschlüssel, Recovery-Codes und erzeugte Anfragen oder
+  Tokens bleiben aus dem Supportpaket ausgeschlossen.
+
+### Not Changed
+
+- Keine neue Kryptografie, kein Masterkennwort, keine Cloud-/E-Mail-/
+  Telemetriefunktion, keine fachliche Daten-, Schema- oder UI-Änderung. Ohne
+  bereitgestellten öffentlichen Produktivschlüssel bleibt der App-Reset nicht
+  produktiv freigeschaltet. Kein Commit.
+
 ## Version 0.2.0 - Release-Artefakte nach Brand Color Harmonization
 
 ### Changed

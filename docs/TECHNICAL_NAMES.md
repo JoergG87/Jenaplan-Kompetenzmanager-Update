@@ -1,5 +1,24 @@
 # Technical Naming Registry
 
+## Sprint 0.2B.6 - Produktives macOS-Supportwerkzeug
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `PRODUCT_SUPPORT_KEY_REGISTRY` | Versioniertes, reviewbares Manifest ausschließlich öffentlicher Produktivschlüssel; bis zur PO-Freigabe leer | Security Infrastructure |
+| `SUPPORT_KEY_REGISTRY_FORMAT_VERSION` | Strikte Manifestversion der Public-Key-Registry, initial `1` | Security Infrastructure |
+| `Jenaplan-Support-Reset.command` | Finder-Starter ohne Secretargumente für den geführten Offline-Signaturprozess | Support-Betrieb |
+| `support_reset_cli` | Deutsche interaktive Supportprojektion für Anfrageprüfung, Schlüsselpaarprüfung, Laufzeit und sicheren Tokenexport | Support-Betrieb |
+| `Jenaplan-Support-Schluessel-einrichten.command` | Getrennter Finder-Starter für die bewusste externe Ed25519-Provisionierung | Support-Betrieb |
+| `keypair_cli` | Deutsche interaktive Provisionierung ausschließlich verschlüsselter PKCS#8-Schlüssel außerhalb von Repository und Builds | Support-Betrieb |
+| `Jenaplan-Kompetenzmanager-0.2.0-Support-Reset-macOS.zip` | Eigenständiges arm64-Supportpaket ohne App, Fachdaten, Secrets oder Testschlüssel | Packaging |
+| `scripts/build_macos_support_reset_package.sh` | Separater reproduzierbarer Build der beiden Support-Executables und des Support-ZIPs | Packaging |
+| `scripts/build_support_reset_package.py` | Allowlists, Prüfsummen, deterministisches ZIP und Secret-/Pfadscan für das Supportpaket | Packaging |
+
+Registry-Schlüsselzustände sind `active`, `retiring`, `retired` und `revoked`.
+Nur `active` und das kurze Rotationsfenster `retiring` sind verifizierbar;
+`retired` und `revoked` sind fail-closed. Private Schlüssel, Passphrasen,
+Anfragen und Tokens sind keine Registry- oder Buildnamen.
+
 ## Version 0.2.0 - UI-Stabilitätsnachschnitt
 
 | Technischer Name | Bedeutung | Eigentümer |
