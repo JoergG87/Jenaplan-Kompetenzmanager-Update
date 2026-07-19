@@ -3,7 +3,7 @@
 ## 1. Titel und Versionsstand
 
 - Benutzerhandbuch zur Pilotversion {{PILOT_VERSION}}
-- Stand: 17. Juli 2026
+- Stand: 18. Juli 2026
 - Ausgabe: macOS für Apple Silicon
 
 Dieses Handbuch beschreibt den tatsächlich verfügbaren Stand der lokalen
@@ -208,6 +208,22 @@ Unten in der Seitenleiste öffnet `Über die App` einen kurzen Hinweis zur lokal
 - Änderungen werden nur durch die jeweilige Schaltfläche wie `Speichern`, `Entwurf speichern` oder `Gespräch abschließen` verbindlich.
 - Ein Schließen mit ungespeicherten Änderungen führt in Bericht und LEG zu einer Rückfrage.
 - Historische Einträge werden nicht stillschweigend entfernt, wenn ein Fach, eine Kompetenz oder ein Beleg später nicht mehr aktiv verfügbar ist.
+
+### Visuelle Orientierung
+
+Primäraktionen wie `Speichern`, `Entwurf speichern` oder `Beobachtung anlegen`
+sind klar blau hervorgehoben. Die Arbeitsbereiche unterstützen die Orientierung
+zusätzlich durch unterschiedliche ruhige Kontextfarben: Beobachtungen sind
+türkis, Lernentwicklungsgespräche grün und die Berichtswerkstatt orange
+akzentuiert. Diese Farben kennzeichnen den aktuellen Arbeitsbereich; die
+Beschriftungen und Überschriften bleiben immer maßgeblich.
+
+Kursfarben, die vier Bewertungsstufen und der Dokumentationsstand behalten ihre
+eigene fachliche Bedeutung. Grüne Flächen im Lernentwicklungsgespräch bedeuten
+daher weder Abschluss noch Leistung, und Orange in der Berichtswerkstatt ist
+keine Warnung. Fokusrahmen zeigen bei der Tastaturbedienung die aktuelle
+Position. Formulare, Tabellen, Dokumente und Vorschauen bleiben überwiegend auf
+neutralen Flächen, damit Inhalte ruhig lesbar sind.
 - Die App speichert lokal. Es findet keine automatische Cloud-Synchronisation statt.
 
 ## 6. Navigation

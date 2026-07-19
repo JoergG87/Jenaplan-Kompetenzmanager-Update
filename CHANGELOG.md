@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## Version 0.2.0 - Release-Artefakte nach Brand Color Harmonization
+
+### Changed
+
+- Die Pilotübergabe in eine leere Erststartvariante und eine klar bezeichnete
+  Laura-Testdatenvariante getrennt; beide enthalten dasselbe leere App-/DMG-
+  Artefakt.
+- Den bestehenden deterministischen Acht-Monats-Seed über den offiziellen
+  SQLite-sicheren Backup-Service als separates, verifiziertes
+  `Laura-Testdaten-0.2.0.jkmbackup` bereitgestellt. Security Store,
+  Kontodaten, Recovery-Codes, Gerätecredentials, Tokens und Schlüssel bleiben
+  ausgeschlossen.
+- Paket- und Restore-Vertrag durch fokussierte Regressionstests abgesichert.
+- Benutzerhandbuch, Erste Schritte, Schnellstart und Release Notes auf die
+  harmonisierte Markenpalette und die klar unterscheidbaren Arbeitskontexte von
+  Beobachtung, LEG und Bericht ausgerichtet.
+- Vierzehn datenschutzneutrale Handbuchscreenshots auf Basis des aktuellen
+  Branding-Stands erneuert.
+- Der PDF-Build weist den vollständigen Pilot-Commit nun auf den Ausgabeseiten
+  und in den Dokumentmetadaten aus.
+
+### Not changed
+
+- Keine Produktfunktion, Fachlogik, Navigation, fachliche Kurs-, Bewertungs-,
+  Dokumentations- oder Feedbackfarbe geändert. Kein Commit.
+
 ## Produktplanung nach Version 0.2
 
 ### Changed

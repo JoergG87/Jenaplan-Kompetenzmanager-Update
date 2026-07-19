@@ -4,6 +4,21 @@
 
 Diese kompakte Orientierung ergänzt das Benutzerhandbuch.
 
+Das Pilotpaket liegt in zwei klar getrennten Varianten vor:
+
+- `Leer` für Erststart, Kontoerstellung, Recovery-Codes, Onboarding, Login,
+  gespeicherte Anmeldung, Touch ID, Stammdaten, Backup/Restore und Leerzustände.
+- `Laura-Testdaten` für den fachlichen Pilottest mit einem vorbereiteten,
+  ausschließlich synthetischen Acht-Monats-Datenbestand.
+
+Beide Varianten verwenden exakt dasselbe leere DMG. In der
+Laura-Testdatenvariante wird zuerst das lokale Konto eingerichtet. Danach wird
+`Laura-Testdaten-{{PILOT_VERSION}}.jkmbackup` unter
+`Einstellungen > Datensicherung` über den normalen Restore-Weg ausgewählt,
+geprüft und bewusst wiederhergestellt. Das Backup enthält keine Kontodaten,
+Passwörter, Recovery-Codes, Gerätecredentials, Security Stores, Support-Tokens
+oder Schlüssel.
+
 1. Starte die App aus dem Ordner `Programme`.
 2. Lege beim ersten Start das lokale Konto mit einem sicheren Passwort an.
 3. Sichere alle einmalig angezeigten Recovery-Codes.
@@ -19,6 +34,11 @@ Diese kompakte Orientierung ergänzt das Benutzerhandbuch.
     durch die App prüfen.
 
 `Erste Schritte` legt keine Beispiel-, Pilot- oder Demodaten an.
+
+Blaue Primäraktionen helfen bei der Orientierung. Beobachtung, Bericht und LEG
+sind zusätzlich durch unterschiedliche ruhige Arbeitsbereichsfarben erkennbar;
+maßgeblich bleiben immer Überschrift und Beschriftung. Kurs- und
+Bewertungsfarben behalten ihre eigene Bedeutung.
 
 <!-- pagebreak -->
 

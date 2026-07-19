@@ -90,7 +90,9 @@ BACKUP_SCRIPT="$DIST_ROOT/$APP_NAME-Pilot-$VERSION-Backup.sh"
 RELEASE_NOTES="$DIST_ROOT/$APP_NAME-$VERSION-Release-Notes.md"
 RELEASE_CHECKSUMS="$DIST_ROOT/SHA256SUMS-$VERSION.txt"
 RELEASE_INVENTORY="$DIST_ROOT/RELEASE_INVENTORY-$VERSION.txt"
-LAURA_ZIP="$ROOT/dist/$APP_NAME-$VERSION-Pilotpaket-Laura-macOS-$ARCHITECTURE.zip"
+EMPTY_ZIP="$ROOT/dist/$APP_NAME-$VERSION-Pilotpaket-Leer-macOS-$ARCHITECTURE.zip"
+LAURA_ZIP="$ROOT/dist/$APP_NAME-$VERSION-Pilotpaket-Laura-Testdaten-macOS-$ARCHITECTURE.zip"
+LAURA_TESTDATA_BACKUP="$DIST_ROOT/Laura-Testdaten-$VERSION.jkmbackup"
 LAURA_TEST_WORKBOOK="${LAURA_TEST_WORKBOOK:-$ROOT/docs/Pilottest_Laura_Schuelerprofil_Variante_A.xlsx}"
 MOUNT_DIR=""
 
@@ -117,6 +119,7 @@ python3 -m venv "$VENV"
 
 "$VENV/bin/python" scripts/build_pilot_documents.py \
     --version "$VERSION" \
+    --pilot-commit "$GIT_COMMIT" \
     --output-dir "$DIST_ROOT" \
     --installation-source docs/PILOT_INSTALLATION_LEHRKRAFT.md \
     --manual-source docs/user_manual/USER_MANUAL_SOURCE.md \
@@ -277,10 +280,17 @@ BUILD_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 } > "$RELEASE_INVENTORY"
 
 if [ "$DATA_MODE" = "release" ] && [ "$BUILD_LAURA_PACKAGE" = "1" ]; then
+    "$VENV/bin/python" scripts/build_laura_testdata_backup.py \
+        --output-directory "$DIST_ROOT" \
+        --version "$VERSION" \
+        --build-commit "$GIT_COMMIT" \
+        --source-tree-state "$SOURCE_TREE_STATE"
     "$VENV/bin/python" scripts/build_laura_pilot_package.py \
         --output-root "$ROOT/dist" \
         --version "$VERSION" \
+        --pilot-commit "$GIT_COMMIT" \
         --architecture "$ARCHITECTURE" \
+        --variant empty \
         --dmg "$DMG_PATH" \
         --first-steps-pdf "$FIRST_STEPS_PDF" \
         --manual-pdf "$MANUAL_PDF" \
@@ -290,9 +300,33 @@ if [ "$DATA_MODE" = "release" ] && [ "$BUILD_LAURA_PACKAGE" = "1" ]; then
         --pilot-workbook "$LAURA_TEST_WORKBOOK" \
         --release-notes "$RELEASE_NOTES" \
         --release-inventory "$RELEASE_INVENTORY"
+    "$VENV/bin/python" scripts/build_laura_pilot_package.py \
+        --output-root "$ROOT/dist" \
+        --version "$VERSION" \
+        --pilot-commit "$GIT_COMMIT" \
+        --architecture "$ARCHITECTURE" \
+        --variant laura_testdata \
+        --pilot-backup "$LAURA_TESTDATA_BACKUP" \
+        --dmg "$DMG_PATH" \
+        --first-steps-pdf "$FIRST_STEPS_PDF" \
+        --manual-pdf "$MANUAL_PDF" \
+        --quickstart-pdf "$QUICKSTART_PDF" \
+        --installation-pdf "$INSTALLATION_PDF" \
+        --backup-guide-pdf "$BACKUP_GUIDE_PDF" \
+        --pilot-workbook "$LAURA_TEST_WORKBOOK" \
+        --release-notes "$RELEASE_NOTES" \
+        --release-inventory "$RELEASE_INVENTORY"
+    EMPTY_ZIP_SHA="$(shasum -a 256 "$EMPTY_ZIP" | awk '{print $1}')"
     LAURA_ZIP_SHA="$(shasum -a 256 "$LAURA_ZIP" | awk '{print $1}')"
+    LAURA_TESTDATA_BACKUP_SHA="$(shasum -a 256 "$LAURA_TESTDATA_BACKUP" | awk '{print $1}')"
+    echo "$EMPTY_ZIP_SHA  $(basename "$EMPTY_ZIP")" > "$EMPTY_ZIP.sha256"
     echo "$LAURA_ZIP_SHA  $(basename "$LAURA_ZIP")" > "$LAURA_ZIP.sha256"
+    echo "$LAURA_TESTDATA_BACKUP_SHA  $(basename "$LAURA_TESTDATA_BACKUP")" > "$LAURA_TESTDATA_BACKUP.sha256"
+    echo "$LAURA_TESTDATA_BACKUP_SHA  $(basename "$LAURA_TESTDATA_BACKUP")" >> "$RELEASE_CHECKSUMS"
+    echo "$EMPTY_ZIP_SHA  $(basename "$EMPTY_ZIP")" >> "$RELEASE_CHECKSUMS"
     echo "$LAURA_ZIP_SHA  $(basename "$LAURA_ZIP")" >> "$RELEASE_CHECKSUMS"
+    echo "$(stat -f '%z' "$LAURA_TESTDATA_BACKUP")  $LAURA_TESTDATA_BACKUP_SHA  $(basename "$LAURA_TESTDATA_BACKUP")" >> "$RELEASE_INVENTORY"
+    echo "$(stat -f '%z' "$EMPTY_ZIP")  $EMPTY_ZIP_SHA  $(basename "$EMPTY_ZIP")" >> "$RELEASE_INVENTORY"
     echo "$(stat -f '%z' "$LAURA_ZIP")  $LAURA_ZIP_SHA  $(basename "$LAURA_ZIP")" >> "$RELEASE_INVENTORY"
 fi
 
@@ -305,7 +339,9 @@ echo "Schnellstart: $QUICKSTART_PDF"
 echo "Backup-Anleitung: $BACKUP_GUIDE_PDF"
 echo "Backup-Skript: $BACKUP_SCRIPT"
 if [ "$DATA_MODE" = "release" ] && [ "$BUILD_LAURA_PACKAGE" = "1" ]; then
-    echo "Laura-ZIP: $LAURA_ZIP"
+    echo "Leere Pilotvariante: $EMPTY_ZIP"
+    echo "Laura-Testdaten-Backup: $LAURA_TESTDATA_BACKUP"
+    echo "Laura-Testdatenvariante: $LAURA_ZIP"
 fi
 echo "Release-Prüfsummen: $RELEASE_CHECKSUMS"
 echo "Release-Inventar: $RELEASE_INVENTORY"

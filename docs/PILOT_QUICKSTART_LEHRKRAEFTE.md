@@ -19,6 +19,10 @@ Hilfe zur Installation, Recovery und Wiederherstellung steht im
 Benutzerhandbuch. `Erste Schritte` kann in `Einstellungen` erneut geöffnet
 werden.
 
+Primäraktionen sind einheitlich hervorgehoben. Beobachtung, Bericht und LEG
+haben unterscheidbare Arbeitsbereichskontexte; wählen Sie Aktionen dennoch
+immer nach ihrer Beschriftung, nicht allein nach der Farbe.
+
 <!-- pagebreak -->
 
 ## Wichtige Pilotgrenzen

@@ -7,6 +7,14 @@ Release-Kandidat `0.2.0` gebaut werden. `src/version.py` bleibt die kanonische
 Produktversionsquelle. Release-Artefakte enthalten keine Pilot-, Fach-,
 Runtime- oder Security-Daten und keine privaten oder Testschlüssel.
 
+Diese Grenze gilt unverändert für App-Bundle und DMG. Für den fachlichen
+Pilottest darf daneben ein eindeutig bezeichnetes, ausschließlich synthetisches
+`.jkmbackup` als separates Restore-Artefakt übergeben werden. Es wird nicht in
+die App eingebettet und enthält weder Security Store noch Konto, Passwort,
+Recovery-Codes, Gerätecredentials, Support-Tokens oder Schlüssel. Leere
+Erststartvariante und Laura-Testdatenvariante verwenden exakt dasselbe leere
+Installationsartefakt.
+
 Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
 Die produktive Support-Key-Registry bleibt ohne freigegebenen öffentlichen
 Schlüssel leer. Echter Sleep/Wake, physische Touch ID, App-Switcher,

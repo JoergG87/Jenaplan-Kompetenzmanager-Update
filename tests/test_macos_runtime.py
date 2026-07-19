@@ -15,6 +15,7 @@ from pathlib import Path
 from unittest import mock
 
 from scripts.build_laura_pilot_package import build_package
+from scripts.build_laura_testdata_backup import build_laura_testdata_backup
 from scripts.prepare_macos_pilot_payload import prepare_payload
 from scripts.smoke_test_macos_app import (
     PACKAGED_SMOKE_MARKER_ENV,
@@ -22,6 +23,10 @@ from scripts.smoke_test_macos_app import (
     smoke_test,
 )
 from src.desktop_app import main as desktop_main
+from src.application.commands.restore import (
+    RestoreApplicationService,
+    VerifyRestoreBackupQuery,
+)
 from src.desktop_app.runtime import (
     APP_DATA_DIR_ENV,
     DATABASE_FILENAME,
@@ -34,7 +39,7 @@ from src.desktop_app.runtime import (
 
 
 class MacosRuntimeTest(unittest.TestCase):
-    def test_release_package_contains_only_the_approved_laura_handoff(self) -> None:
+    def test_release_packages_separate_empty_and_laura_testdata_handoffs(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             inputs = root / "inputs"
@@ -52,8 +57,14 @@ class MacosRuntimeTest(unittest.TestCase):
             }
             for name, path in files.items():
                 path.write_bytes(f"test-{name}".encode())
+            pilot_backup, _seed = build_laura_testdata_backup(
+                output_directory=inputs,
+                version="0.2.0",
+                build_commit="e48436d2249ac108246d77a817e141e15611ab0f",
+                source_tree_state="dirty",
+            )
 
-            package_root, zip_path = build_package(
+            empty_root, empty_zip = build_package(
                 output_root=root / "dist",
                 version="0.2.0",
                 architecture="arm64",
@@ -66,11 +77,29 @@ class MacosRuntimeTest(unittest.TestCase):
                 pilot_workbook=files["workbook"],
                 release_notes=files["notes"],
                 release_inventory=files["inventory"],
+                variant="empty",
+            )
+            laura_root, laura_zip = build_package(
+                output_root=root / "dist",
+                version="0.2.0",
+                architecture="arm64",
+                dmg=files["dmg"],
+                first_steps_pdf=files["first"],
+                manual_pdf=files["manual"],
+                quickstart_pdf=files["quick"],
+                installation_pdf=files["installation"],
+                backup_guide_pdf=files["backup"],
+                pilot_workbook=files["workbook"],
+                release_notes=files["notes"],
+                release_inventory=files["inventory"],
+                variant="laura_testdata",
+                pilot_backup=pilot_backup,
             )
 
-            self.assertTrue(zip_path.is_file())
+            self.assertTrue(empty_zip.is_file())
+            self.assertTrue(laura_zip.is_file())
             self.assertEqual(
-                {path.name for path in package_root.iterdir()},
+                {path.name for path in empty_root.iterdir()},
                 {
                     "README.txt",
                     "Jenaplan-Kompetenzmanager-0.2.0-macOS-arm64.dmg",
@@ -85,11 +114,61 @@ class MacosRuntimeTest(unittest.TestCase):
                     "RELEASE_INVENTORY-0.2.0.txt",
                 },
             )
-            with zipfile.ZipFile(zip_path) as archive:
+            self.assertEqual(
+                {path.name for path in laura_root.iterdir()},
+                {path.name for path in empty_root.iterdir()}
+                | {"Laura-Testdaten-0.2.0.jkmbackup"},
+            )
+            self.assertNotIn("jkmbackup", (empty_root / "README.txt").read_text())
+            self.assertIn(
+                "normalen Restore-Weg",
+                (laura_root / "README.txt").read_text(),
+            )
+            self.assertEqual(
+                (empty_root / files["dmg"].name).read_bytes(),
+                (laura_root / files["dmg"].name).read_bytes(),
+            )
+            with zipfile.ZipFile(empty_zip) as archive:
                 self.assertIsNone(archive.testzip())
-                names = archive.namelist()
-            self.assertEqual(len(names), 11)
-            self.assertFalse(any("__MACOSX" in name for name in names))
+                empty_names = archive.namelist()
+            with zipfile.ZipFile(laura_zip) as archive:
+                self.assertIsNone(archive.testzip())
+                laura_names = archive.namelist()
+            self.assertEqual(len(empty_names), 11)
+            self.assertEqual(len(laura_names), 12)
+            self.assertFalse(any("__MACOSX" in name for name in (*empty_names, *laura_names)))
+
+    def test_laura_testdata_backup_uses_official_restore_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            backup, seed = build_laura_testdata_backup(
+                output_directory=Path(temp),
+                version="0.2.0",
+                build_commit="e48436d2249ac108246d77a817e141e15611ab0f",
+                source_tree_state="dirty",
+            )
+            verified = RestoreApplicationService().verify(
+                VerifyRestoreBackupQuery(backup)
+            )
+
+            self.assertEqual(backup.name, "Laura-Testdaten-0.2.0.jkmbackup")
+            self.assertEqual(verified.preview.students_count, seed.student_count)
+            self.assertEqual(
+                verified.preview.observations_count,
+                seed.observation_count,
+            )
+            self.assertEqual(
+                verified.preview.learning_report_revisions_count,
+                seed.report_revision_count,
+            )
+            self.assertEqual(
+                verified.preview.learning_conference_revisions_count,
+                seed.conference_revision_count,
+            )
+            with zipfile.ZipFile(backup) as archive:
+                names = tuple(archive.namelist())
+            self.assertEqual(names[0], "manifest.json")
+            self.assertIn("database/kompetenzmanager.sqlite", names)
+            self.assertFalse(any("security" in name.casefold() for name in names))
 
     def test_developer_and_packaged_data_roots_are_separate(self) -> None:
         self.assertEqual(

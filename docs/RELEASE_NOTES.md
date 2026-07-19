@@ -22,6 +22,15 @@ produktive Schlüsselregistry bleibt leer.
 
 ## Betrieb und Orientierung
 
+- Zwei klar getrennte Pilotvarianten: eine leere Variante für Erststart,
+  Konto, Onboarding und Leerzustände sowie eine Laura-Testdatenvariante für den
+  fachlichen Pilottest.
+- Beide Varianten installieren exakt dasselbe leere App-/DMG-Artefakt. Die
+  Laura-Variante enthält zusätzlich ein ausdrücklich synthetisches
+  `Laura-Testdaten-0.2.0.jkmbackup`, das erst nach lokaler Kontoerstellung über
+  `Einstellungen > Datensicherung` wiederhergestellt wird.
+- Das Testdatenbackup enthält keine Passwörter, Recovery-Codes,
+  Gerätecredentials, Security Stores, Support-Tokens oder Schlüssel.
 - Backup erstellen und prüfen, Restore-Vorschau und bewusst bestätigter Restore.
 - Geführte `Erste Schritte`, optionaler Anzeigename und persönliche
   Dashboard-Begrüßung.
@@ -30,6 +39,13 @@ produktive Schlüsselregistry bleibt leer.
 - Arbeitsfenster für Beobachtung, Bericht und LEG öffnen maximiert auf der
   verfügbaren Bildschirmfläche. Lange Bestätigungsaktionen bleiben vollständig
   lesbar; beim LEG-Seitenwechsel bleibt genau eine Phase sichtbar.
+- Die Oberfläche verwendet nun eine konsistentere Markenpalette und klarer
+  unterscheidbare Arbeitsbereichskontexte: Beobachtung, LEG und Bericht sind
+  visuell ruhiger voneinander abgegrenzt, die Sidebar ist zurückhaltender und
+  Primäraktionen sind konsistent hervorgehoben.
+- Sichtbare Fokusrahmen unterstützen die Tastaturorientierung. Fachliche Kurs-,
+  Bewertungs-, Dokumentations- und Feedbackfarben bleiben unverändert; es gibt
+  keine Navigations- oder Funktionsänderung.
 
 ## Wichtige Grenzen
 

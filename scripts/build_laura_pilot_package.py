@@ -5,14 +5,32 @@ from __future__ import annotations
 import argparse
 import hashlib
 import shutil
+import sys
 import zipfile
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-README_TEXT = """Jenaplan-Kompetenzmanager - Pilotpaket für Laura
+from src.application.commands.backup import (
+    BackupApplicationService,
+    VerifyBackupQuery,
+)
+from src.application.commands.restore import (
+    RestoreApplicationService,
+    VerifyRestoreBackupQuery,
+)
+
+
+EMPTY_README_TEXT = """Jenaplan-Kompetenzmanager - Leere Pilotvariante
 
 Version: {version}
+Pilot-Commit: {pilot_commit}
 Plattform: macOS 13 oder neuer, Apple Silicon (arm64)
+
+Diese Variante ist für Erststart-, Konto-, Onboarding-, Login-, Touch-ID-,
+Stammdaten-, Backup-/Restore- und Leerzustandstests bestimmt.
 
 Empfohlene Reihenfolge:
 
@@ -23,7 +41,8 @@ Empfohlene Reihenfolge:
 
 Wichtige Grenzen:
 
-- Diese App ist für den Pilottest vorgesehen.
+- Diese App ist für den begleiteten Pilottest vorgesehen. Sie enthält das
+  harmonisierte Branding und die abgestimmten Dialogkontexte aus Version {version}.
 - Sie ist ad hoc signiert und nicht notarisiert. macOS kann beim ersten Öffnen
   einen Sicherheitshinweis anzeigen; die Installationshinweise im Handbuch
   beschreiben den vorgesehenen Weg.
@@ -31,10 +50,63 @@ Wichtige Grenzen:
   FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
 - Der produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel
   noch nicht freigeschaltet.
-- Echte Sleep/Wake- und Touch-ID-Abnahme, App-Switcher-Prüfung sowie die
-  vollständige reale Aktivierungs- und Widerrufsreise und die LEG-UX-Bewertung
-  von Vorschau beziehungsweise Gesprächsführung sind noch offen.
-- Das Paket enthält keine Schüler-, Laufzeit- oder Anmeldedaten.
+- Das Paket enthält keine Schüler-, Fach-, Laufzeit- oder Anmeldedaten.
+
+Offene reale Prüfungen:
+
+- echter Sleep/Wake
+- physische Touch-ID-Systemaufforderung und Fingerabdruck
+- App-Switcher-Prüfung
+- vollständige Aktivierungs-/Widerrufsreise
+- produktiver Support-Reset
+- LEG-UX-Bewertung zur Sichtbarkeit von Vorschau und Gesprächsführung
+- Developer-ID-Signierung
+- Apple-Notarisierung
+"""
+
+
+LAURA_TESTDATA_README_TEXT = """Jenaplan-Kompetenzmanager - Laura-Testdatenvariante
+
+Version: {version}
+Pilot-Commit: {pilot_commit}
+Plattform: macOS 13 oder neuer, Apple Silicon (arm64)
+
+Diese Variante ist für den fachlichen Pilottest mit einem vorbereiteten,
+ausschließlich synthetischen Acht-Monats-Datenbestand bestimmt.
+
+Empfohlene Reihenfolge:
+
+1. README und Release-Hinweise lesen.
+2. DMG öffnen und dieselbe leere App wie in der Erststartvariante installieren.
+3. Beim Erststart das lokale Konto vollständig einrichten und anmelden.
+4. Einstellungen > Datensicherung öffnen.
+5. "Laura-Testdaten-{version}.jkmbackup" über den normalen Restore-Weg auswählen,
+   die schreibgeschützte Vorschau prüfen und die Wiederherstellung bestätigen.
+6. Nach dem automatischen Neustart mit dem zuvor lokal angelegten Konto anmelden.
+7. Die Test-Excel für die Rückmeldungen verwenden.
+
+Klare Trennung:
+
+- App-Bundle und DMG enthalten keine Schüler- oder Fachdaten.
+- Nur die separat beiliegende .jkmbackup-Datei enthält synthetische Fachdaten.
+- Konto, Passwort, Recovery-Codes, Touch-ID-Zuordnung, Gerätecredentials,
+  Security Store, Support-Tokens und Schlüssel sind nicht Bestandteil des Backups.
+- Die produktive Public-Key-Registry bleibt leer.
+- Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
+  FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
+- Der produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel
+  noch nicht freigeschaltet.
+
+Offene reale Prüfungen:
+
+- echter Sleep/Wake
+- physische Touch-ID-Systemaufforderung und Fingerabdruck
+- App-Switcher-Prüfung
+- vollständige Aktivierungs-/Widerrufsreise
+- produktiver Support-Reset
+- LEG-UX-Bewertung zur Sichtbarkeit von Vorschau und Gesprächsführung
+- Developer-ID-Signierung
+- Apple-Notarisierung
 """
 
 
@@ -67,9 +139,34 @@ def build_package(
     pilot_workbook: Path,
     release_notes: Path,
     release_inventory: Path,
+    pilot_commit: str = "nicht angegeben",
+    variant: str = "empty",
+    pilot_backup: Path | None = None,
 ) -> tuple[Path, Path]:
+    if variant == "empty":
+        package_variant = "Leer"
+        readme_text = EMPTY_README_TEXT
+        if pilot_backup is not None:
+            raise ValueError("Die leere Pilotvariante darf kein Testdaten-Backup enthalten.")
+    elif variant == "laura_testdata":
+        package_variant = "Laura-Testdaten"
+        readme_text = LAURA_TESTDATA_README_TEXT
+        if pilot_backup is None:
+            raise ValueError("Die Laura-Testdatenvariante benötigt ein Testdaten-Backup.")
+        backup_verification = BackupApplicationService().verify(
+            VerifyBackupQuery(pilot_backup)
+        )
+        restore_verification = RestoreApplicationService().verify(
+            VerifyRestoreBackupQuery(pilot_backup)
+        )
+        if backup_verification.manifest.app_version != version:
+            raise ValueError("Das Testdaten-Backup gehört zu einer anderen App-Version.")
+        if restore_verification.preview.students_count <= 0:
+            raise ValueError("Das Testdaten-Backup enthält keine synthetischen Schülerdaten.")
+    else:
+        raise ValueError(f"Unbekannte Pilotvariante: {variant}")
     package_name = (
-        f"Jenaplan-Kompetenzmanager-{version}-Pilotpaket-Laura-macOS-{architecture}"
+        f"Jenaplan-Kompetenzmanager-{version}-Pilotpaket-{package_variant}-macOS-{architecture}"
     )
     package_root = output_root / package_name
     zip_path = output_root / f"{package_name}.zip"
@@ -79,7 +176,7 @@ def build_package(
     package_root.mkdir(parents=True)
 
     (package_root / "README.txt").write_text(
-        README_TEXT.format(version=version),
+        readme_text.format(version=version, pilot_commit=pilot_commit),
         encoding="utf-8",
     )
     _copy(dmg, package_root / dmg.name)
@@ -110,6 +207,13 @@ def build_package(
         release_inventory,
         package_root / f"RELEASE_INVENTORY-{version}.txt",
     )
+    if pilot_backup is not None:
+        expected_backup_name = f"Laura-Testdaten-{version}.jkmbackup"
+        if pilot_backup.name != expected_backup_name:
+            raise ValueError(
+                f"Das Testdaten-Backup muss {expected_backup_name} heißen."
+            )
+        _copy(pilot_backup, package_root / expected_backup_name)
 
     checksum_name = f"SHA256SUMS-{version}.txt"
     checksum_targets = tuple(
@@ -139,6 +243,8 @@ def build_package(
         checksum_name,
         f"RELEASE_INVENTORY-{version}.txt",
     }
+    if pilot_backup is not None:
+        expected_names.add(f"Laura-Testdaten-{version}.jkmbackup")
     actual_names = {path.name for path in files}
     if actual_names != expected_names:
         raise RuntimeError(
@@ -163,7 +269,13 @@ def build_package(
         relative = path.relative_to(package_root).as_posix()
         if "0.1.2" in relative or "SmokeTest" in relative:
             raise RuntimeError(f"Altes oder unerlaubtes Release-Artefakt: {relative}")
-        if path.name in forbidden_names or path.suffix.lower() in forbidden_suffixes:
+        allowed_backup = (
+            variant == "laura_testdata"
+            and path.name == f"Laura-Testdaten-{version}.jkmbackup"
+        )
+        if path.name in forbidden_names or (
+            path.suffix.lower() in forbidden_suffixes and not allowed_backup
+        ):
             raise RuntimeError(f"Unzulässige Datei im Pilotpaket: {relative}")
         if "__pycache__" in path.parts or "__MACOSX" in path.parts:
             raise RuntimeError(f"Entwicklerdatei im Pilotpaket: {relative}")
@@ -187,6 +299,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--version", required=True)
+    parser.add_argument("--pilot-commit", required=True)
     parser.add_argument("--architecture", required=True)
     parser.add_argument("--dmg", type=Path, required=True)
     parser.add_argument("--first-steps-pdf", type=Path, required=True)
@@ -197,10 +310,17 @@ def main() -> int:
     parser.add_argument("--pilot-workbook", type=Path, required=True)
     parser.add_argument("--release-notes", type=Path, required=True)
     parser.add_argument("--release-inventory", type=Path, required=True)
+    parser.add_argument(
+        "--variant",
+        choices=("empty", "laura_testdata"),
+        default="empty",
+    )
+    parser.add_argument("--pilot-backup", type=Path)
     args = parser.parse_args()
     package_root, zip_path = build_package(
         output_root=args.output_root,
         version=args.version,
+        pilot_commit=args.pilot_commit,
         architecture=args.architecture,
         dmg=args.dmg,
         first_steps_pdf=args.first_steps_pdf,
@@ -211,6 +331,8 @@ def main() -> int:
         pilot_workbook=args.pilot_workbook,
         release_notes=args.release_notes,
         release_inventory=args.release_inventory,
+        variant=args.variant,
+        pilot_backup=args.pilot_backup,
     )
     print(package_root)
     print(zip_path)

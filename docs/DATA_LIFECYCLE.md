@@ -7,11 +7,24 @@ erzeugt den `release`-Payload ohne Startdaten, baut Security-Bridge, App und DMG
 frisch, signiert ad hoc sofern keine Developer-ID verfügbar ist, verifiziert die
 Signatur und erzeugt Dokumente, Prüfsummen und Inventar aus kanonischen Quellen.
 
-Das Laura-ZIP wird ausschließlich aus diesen aktuellen Ausgaben und der
-bestehenden kanonischen Testmappe zusammengestellt. Seine interne
-`SHA256SUMS.txt` bindet alle enthaltenen Dateien. Entpacken, Inhaltsliste,
-Dokumentöffnung, Mappe und DMG werden anschließend geprüft. Build- und
-Übergabeartefakte schreiben weder fachliche noch Security-Daten zurück.
+Die leere Pilotvariante wird ausschließlich aus diesen aktuellen Ausgaben und
+der bestehenden kanonischen Testmappe zusammengestellt. Für die getrennte
+Laura-Testdatenvariante erzeugt `scripts/build_laura_testdata_backup.py` in
+einer isolierten temporären Runtime den bestehenden deterministischen
+Acht-Monats-Seed und transportiert ihn ausschließlich über
+`BackupApplicationService` in `Laura-Testdaten-0.2.0.jkmbackup`. Das Archiv
+wird anschließend über Backup- und Restore-Vertrag vollständig verifiziert.
+Beide ZIPs enthalten dasselbe leere DMG; nur die Laura-Testdatenvariante enthält
+das separate Backup. Die interne `SHA256SUMS.txt` bindet jeweils alle
+enthaltenen Dateien. Entpacken, Inhaltsliste, Dokumentöffnung, Mappe, DMG und
+Restore-Vorschau werden anschließend geprüft. Build- und Übergabeartefakte
+schreiben weder fachliche noch Security-Daten in eine produktive Runtime zurück.
+
+Laura richtet beim Erststart zunächst ausschließlich ihr lokales Konto ein und
+stellt das Testdatenbackup danach über `Einstellungen > Datensicherung` und den
+normalen bestätigten Restore-Weg wieder her. Konto, Security Store,
+Recovery-Codes, Gerätecredentials und AppPreferences bleiben lokal erhalten und
+werden vom fachlichen Restore weder geliefert noch ersetzt.
 
 Reale Testresultate werden nur nach tatsächlicher Durchführung in der
 Testmappe erfasst. Offene Hardware-, Produktivschlüssel-, Signierungs- und
@@ -370,7 +383,12 @@ PySide Entry Point
 
 Die App legt bei Bedarf den Benutzerordner sowie `documents/`, `exports/`, `backups/` und `logs/` an. Eine vorhandene `kompetenzmanager.sqlite` wird nie durch Bundleinhalte ersetzt. Die technische Smoke-Test-Variante `empty` enthaelt keine Startdatenbank und laesst den vorhandenen produktiven Initialisierungspfad eine leere Schuelerdatenbasis mit Stammdaten- und Katalogdefaults anlegen.
 
-Nur die explizite Buildvariante `laura` darf beim ersten Start eine als `Fiktive Pilotdaten` markierte Datenbank und ihre zugehoerigen Dokumente und Beispiel-PDFs kopieren. Dies geschieht ausschliesslich, wenn noch keine Benutzerdatenbank existiert; vorhandene Dokumente blockieren eine kollidierende Ersteinrichtung statt still ersetzt zu werden. Der Entwicklerstart bleibt bei `data/kompetenzmanager.sqlite`.
+Die historische explizite Buildvariante `laura` bleibt ausschließlich als
+interner Paket-/Runtime-Testpfad erhalten. Sie ist nicht der Freigabepfad für
+die Version-0.2.0-Übergabe. Dort bleiben App und DMG leer; synthetische
+Fachdaten gelangen ausschließlich als separates, vollständig verifiziertes
+`.jkmbackup` über den normalen Restore-Vertrag in die lokale Runtime. Der
+Entwicklerstart bleibt bei `data/kompetenzmanager.sqlite`.
 
 ## Technisches macOS-Pilotbackup
 

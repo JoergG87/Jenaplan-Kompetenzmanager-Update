@@ -55,6 +55,7 @@ class PilotDocTemplate(BaseDocTemplate):
         filename: str,
         *,
         version: str,
+        pilot_commit: str,
         title: str,
         header_on_first_page: bool = False,
     ) -> None:
@@ -67,8 +68,10 @@ class PilotDocTemplate(BaseDocTemplate):
             bottomMargin=20 * mm,
             title=title,
             author="Jenaplan-Kompetenzmanager",
+            subject=f"Pilot-Commit {pilot_commit}",
         )
         self.version = version
+        self.pilot_commit = pilot_commit
         self.document_title = title
         self.header_on_first_page = header_on_first_page
         frame = Frame(
@@ -90,7 +93,11 @@ class PilotDocTemplate(BaseDocTemplate):
             canvas.line(22 * mm, PAGE_HEIGHT - 15 * mm, PAGE_WIDTH - 22 * mm, PAGE_HEIGHT - 15 * mm)
         canvas.setFont("PilotSans", 8)
         canvas.setFillColor(MUTED)
-        canvas.drawString(22 * mm, 11 * mm, f"Pilotversion {self.version}")
+        canvas.drawString(
+            22 * mm,
+            11 * mm,
+            f"Pilotversion {self.version} · Pilot-Commit {self.pilot_commit}",
+        )
         canvas.drawRightString(PAGE_WIDTH - 22 * mm, 11 * mm, f"Seite {doc.page}")
         canvas.restoreState()
 
@@ -319,7 +326,14 @@ def _markdown_story(
     return story
 
 
-def _cover(title: str, subtitle: str, version: str, icon_path: Path, styles: dict[str, ParagraphStyle]) -> list[object]:
+def _cover(
+    title: str,
+    subtitle: str,
+    version: str,
+    pilot_commit: str,
+    icon_path: Path,
+    styles: dict[str, ParagraphStyle],
+) -> list[object]:
     return [
         Spacer(1, 24 * mm),
         Image(str(icon_path), width=34 * mm, height=34 * mm, hAlign="CENTER"),
@@ -328,7 +342,12 @@ def _cover(title: str, subtitle: str, version: str, icon_path: Path, styles: dic
         Paragraph(_inline(subtitle), ParagraphStyle("CoverSubtitle", parent=styles["body"], fontSize=14, leading=20, alignment=TA_CENTER, textColor=MUTED)),
         Spacer(1, 22 * mm),
         Table(
-            [[Paragraph(f"<b>Pilotversion {html.escape(version)}</b><br/>Apple Silicon - macOS 13 oder neuer", styles["body"])]],
+            [[Paragraph(
+                f"<b>Pilotversion {html.escape(version)}</b><br/>"
+                f"Pilot-Commit {html.escape(pilot_commit)}<br/>"
+                "Apple Silicon - macOS 13 oder neuer",
+                styles["body"],
+            )]],
             colWidths=[110 * mm],
             hAlign="CENTER",
             style=TableStyle((("BACKGROUND", (0, 0), (-1, -1), PALE), ("BOX", (0, 0), (-1, -1), 0.8, LINE), ("LEFTPADDING", (0, 0), (-1, -1), 12), ("RIGHTPADDING", (0, 0), (-1, -1), 12), ("TOPPADDING", (0, 0), (-1, -1), 10), ("BOTTOMPADDING", (0, 0), (-1, -1), 10))),
@@ -344,13 +363,18 @@ def build_pdf(
     title: str,
     subtitle: str,
     version: str,
+    pilot_commit: str,
     icon: Path,
     include_toc: bool,
     include_cover: bool = True,
     header_on_first_page: bool = False,
 ) -> None:
     styles = _styles()
-    story = _cover(title, subtitle, version, icon, styles) if include_cover else []
+    story = (
+        _cover(title, subtitle, version, pilot_commit, icon, styles)
+        if include_cover
+        else []
+    )
     if include_toc:
         toc_heading = ParagraphStyle("TOCHeading", parent=styles["h1"])
         story.append(Paragraph("Inhaltsverzeichnis", toc_heading))
@@ -364,6 +388,7 @@ def build_pdf(
     PilotDocTemplate(
         str(output),
         version=version,
+        pilot_commit=pilot_commit,
         title=title,
         header_on_first_page=header_on_first_page,
     ).multiBuild(story)
@@ -372,6 +397,7 @@ def build_pdf(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", required=True)
+    parser.add_argument("--pilot-commit", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--installation-source", type=Path, required=True)
     parser.add_argument("--manual-source", type=Path, required=True)
@@ -392,6 +418,7 @@ def main() -> int:
         title="Installation des Jenaplan-Kompetenzmanagers - Pilotversion",
         subtitle="Schritt für Schritt zum ersten Start",
         version=args.version,
+        pilot_commit=args.pilot_commit,
         icon=args.icon,
         include_toc=False,
     )
@@ -401,6 +428,7 @@ def main() -> int:
         title="Jenaplan-Kompetenzmanager - Benutzerhandbuch",
         subtitle="Sicher orientieren, dokumentieren und Berichte vorbereiten",
         version=args.version,
+        pilot_commit=args.pilot_commit,
         icon=args.icon,
         include_toc=True,
     )
@@ -410,6 +438,7 @@ def main() -> int:
         title="Erste Schritte - Jenaplan-Kompetenzmanager",
         subtitle="Ein ruhiger Einstieg in den Pilottest",
         version=args.version,
+        pilot_commit=args.pilot_commit,
         icon=args.icon,
         include_toc=False,
         include_cover=False,
@@ -421,6 +450,7 @@ def main() -> int:
         title="Schnellstart für Lehrkräfte",
         subtitle="Die wichtigsten Wege im Pilottest",
         version=args.version,
+        pilot_commit=args.pilot_commit,
         icon=args.icon,
         include_toc=False,
         include_cover=False,
@@ -432,6 +462,7 @@ def main() -> int:
         title="Backup für den Pilottest",
         subtitle="Lokale Pilotdaten sicher sichern",
         version=args.version,
+        pilot_commit=args.pilot_commit,
         icon=args.icon,
         include_toc=False,
     )

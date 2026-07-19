@@ -18,11 +18,14 @@ keine fachliche Datenquelle, keine Persistenz und keine Plattformauthentifizieru
 | Name | Bedeutung | Eigentümer |
 |---|---|---|
 | `release` | leerer macOS-Buildmodus ohne Pilot-, Fach- oder Runtime-Daten | Packaging |
-| `--with-laura-package` | expliziter Zusatzschalter für das Laura-Übergabepaket nach separat freigegebener Testmappen-Aktualisierung; ohne Schalter baut `release` kein ZIP | Packaging |
+| `--with-laura-package` | expliziter Zusatzschalter für beide getrennten Pilot-Übergabepakete; ohne Schalter baut `release` kein ZIP | Packaging |
 | `Jenaplan-Kompetenzmanager-0.2.0-macOS-arm64.dmg` | kanonisches Installationsartefakt des Pilot-Release-Kandidaten | Packaging |
 | `RELEASE_INVENTORY-0.2.0.txt` | Build-Inventar mit Version, Commit, Plattform, Signaturstatus, Hashes und offenen realen Prüfungen | Release-Build |
 | `SHA256SUMS-0.2.0.txt` | SHA-256-Liste der freigegebenen Release-Ausgaben | Release-Build |
-| `Jenaplan-Kompetenzmanager-0.2.0-Pilotpaket-Laura-macOS-arm64.zip` | begrenztes Übergabepaket aus DMG, Dokumenten, kanonischer Testmappe, Hinweisen und Prüfsummen | Release-Build |
+| `Jenaplan-Kompetenzmanager-0.2.0-Pilotpaket-Leer-macOS-arm64.zip` | Erststart-Übergabepaket aus leerem DMG, Dokumenten, kanonischer Testmappe, Hinweisen und Prüfsummen | Release-Build |
+| `Jenaplan-Kompetenzmanager-0.2.0-Pilotpaket-Laura-Testdaten-macOS-arm64.zip` | fachliches Pilot-Übergabepaket mit demselben leeren DMG und separatem synthetischem Restore-Artefakt | Release-Build |
+| `Laura-Testdaten-0.2.0.jkmbackup` | verifiziertes offizielles Backupformat mit ausschließlich synthetischem Acht-Monats-Fachdatenbestand; kein Security- oder Kontozustand | Release-Build |
+| `scripts/build_laura_testdata_backup.py` | erzeugt den isolierten Seed, erstellt das SQLite-sichere Backup und prüft seine Zählwerte und Security-Ausschlüsse | Packaging |
 
 Diese Namen bezeichnen Build-Artefakte und keine neuen fachlichen Entitäten,
 Datenquellen oder Runtime-Verträge.
@@ -343,7 +346,7 @@ Regel: Diese Namen gehoeren ausschliesslich zur allgemeinen Betriebsfunktion. Re
 | `empty` | technische Smoke-Test-Variante ohne gepackte SQLite-Datei oder Schuelerdaten |
 | `laura` | Lehrkraft-Pilotvariante mit ausschliesslich fiktiven Daten aus `scripts/seed_test_data.py` |
 | `FIKTIVE_PILOTDATEN.txt` | sichtbare technische Kennzeichnung der fiktiven Startdaten im Laura-Payload |
-| `scripts/build_laura_pilot_package.py` | reproduzierbare Zusammenstellung des Laura-Uebergabeordners und ZIPs ausschliesslich aus aktuellen Release-Ausgaben |
+| `scripts/build_laura_pilot_package.py` | reproduzierbare Zusammenstellung der getrennten leeren und Laura-Testdaten-Übergabeordner und ZIPs aus aktuellen Release-Ausgaben |
 | `00_START_HIER.txt` | versionierter Einstiegstext im Laura-Uebergabepaket |
 | `PILOT_VERSION.txt` | versionierte Inhalts- und Datenkennzeichnung im Laura-Uebergabepaket |
 
