@@ -46,6 +46,8 @@ def prepare_payload(
             "empty": "Technischer Smoke-Test - leer",
             "release": "Release-Kandidat - leer",
         }[data_mode],
+        "release_channel": "pilot",
+        "pilot_features": ["guided_testdata_restore", "sparkle_updates"],
         "source_tree_state": source_tree_state,
     }
     (output_dir / BUILD_INFO_FILENAME).write_text(

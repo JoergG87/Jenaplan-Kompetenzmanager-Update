@@ -1,6 +1,6 @@
 # Schnellstart für Lehrkräfte
 
-## In acht Schritten starten
+## In zehn Schritten starten
 
 Pilotversion {{PILOT_VERSION}}
 
@@ -11,9 +11,13 @@ Pilotversion {{PILOT_VERSION}}
 5. Auf Wunsch unter `Einstellungen > Sicherheit` die gespeicherte Anmeldung und
    auf einem unterstützten Mac Touch ID aktivieren. Das Passwort bleibt Fallback.
 6. Die geführten `Ersten Schritte` durchführen oder bewusst überspringen.
-7. Fächer, Stundenplan, Stammgruppen, Kurse und Kinder prüfen und anschließend
+7. Zuerst die leere Anwendung prüfen. Danach im letzten Pilot-Schritt der
+   `Ersten Schritte` bewusst den vorhandenen Restore-Weg öffnen.
+8. `Laura-Testdaten-{{PILOT_VERSION}}.jkmbackup` selbst auswählen, Vorschau
+   prüfen und Wiederherstellung bestätigen.
+9. Fächer, Stundenplan, Stammgruppen, Kurse und Kinder prüfen und anschließend
    die erste Beobachtung erfassen.
-8. Unter `Einstellungen > Datensicherung` ein Backup erstellen und prüfen.
+10. Unter `Einstellungen > Datensicherung` ein Backup erstellen und prüfen.
 
 Hilfe zur Installation, Recovery und Wiederherstellung steht im
 Benutzerhandbuch. `Erste Schritte` kann in `Einstellungen` erneut geöffnet
@@ -33,5 +37,7 @@ immer nach ihrer Beschriftung, nicht allein nach der Farbe.
   FileVault wird empfohlen.
 - Der produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel
   noch nicht freigeschaltet.
+- Pilotupdates werden nur unter `Einstellungen > Updates` bewusst gestartet;
+  es gibt keine unbeaufsichtigte Prüfung oder Installation.
 - Der Release-Kandidat ist ad hoc signiert und nicht notarisiert. Reale
   Sleep/Wake- und Touch-ID-Abnahmen bleiben offen.

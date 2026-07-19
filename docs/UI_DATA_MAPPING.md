@@ -1,5 +1,20 @@
 # UI Data Mapping
 
+## Sprint 0.2U.2 - Updates und Pilot-Testdatenhandoff
+
+| UI-Feld/Aktion | Quelle/Command | Persistenz | Regel |
+|---|---|---|---|
+| Aktuelle Version / Build | `src.version` | Nein | exakt Bundle-/Release-Metadaten |
+| Kanal `Pilot` | `UpdateChannel.PILOT` | Nein | fest, nicht durch Lehrkraft editierbar |
+| Letzte Prüfung | Sparkle `lastUpdateCheckDate` | Sparkle-Systemzustand | keine lokale ID oder Telemetrie |
+| Nach Updates suchen | `UpdateApplicationService.check_for_updates` -> `MacOSSparkleAdapter` | Nein | nur bewusster Start; Standard-Sparkle-Fenster übernimmt Release-Hinweise und Bestätigung |
+| Pilottest mit Beispieldaten fortsetzen | Pilot-Build-Info | nur bestehender Onboarding-Fortschritt | im Stable-Kanal unsichtbar |
+| Testdaten jetzt einspielen | `AppShell` -> vorhandene Datensicherungsseite und `prepare_restore` | Nein | nur Dateiauswahl öffnen; keine Suche, Vorauswahl oder Bestätigung |
+| Anleitung öffnen | gebündelte Erste-Schritte-PDF | Nein | keine Netzwerk- oder Fachdatenquelle |
+
+Feed, Signatur und Installation besitzen keine View-Ownership. Die UI erhält
+nur strukturierte Zustände und öffnet das native Sparkle-Fenster.
+
 ## Sprint 0.2B.6 - Externes Support-Werkzeug
 
 | Prompt/Aktion | Quelle/Command | Persistenz | Regel |

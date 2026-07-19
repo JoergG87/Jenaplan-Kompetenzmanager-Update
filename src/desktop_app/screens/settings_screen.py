@@ -22,6 +22,7 @@ from src.desktop_app.view_models.settings_view_model import (
 from src.desktop_app.view_models.timetable_view_model import (
     TimetableEntryViewModel, TimetableWeekViewModel,
 )
+from src.updater.domain import UpdateProjection, UpdateState
 
 
 DOCUMENTATION_SUBJECTS_HELP_TEXT = (
@@ -94,6 +95,8 @@ class SettingsScreen(QWidget):
     device_credential_enable_requested = Signal()
     device_credential_disable_requested = Signal()
     touch_id_preference_changed = Signal(bool)
+    update_check_requested = Signal()
+    updates_page_opened = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -126,6 +129,7 @@ class SettingsScreen(QWidget):
         self.pages.addWidget(self._detail_page("documentation_subjects", "Fächer für die Dokumentation", self._documentation_subjects_card()))
         self.pages.addWidget(self._detail_page("backup_restore", "Datensicherung", self._backup_restore_card()))
         self.pages.addWidget(self._detail_page("security", "Sicherheit", self._security_card()))
+        self.pages.addWidget(self._detail_page("updates", "Updates", self._updates_card()))
         outer.addWidget(self.pages)
 
     def _scroll_page(self, content: QWidget) -> QWidget:
@@ -145,6 +149,7 @@ class SettingsScreen(QWidget):
             "documentation_subjects": SettingsNavigationCard("documentation_subjects", "Fächer für die Dokumentation", "Sichtbare Fächer auswählen"),
             "backup_restore": SettingsNavigationCard("backup_restore", "Datensicherung", "Backup erstellen und wiederherstellen"),
             "security": SettingsNavigationCard("security", "Sicherheit", "Passwortschutz und automatische Sperre"),
+            "updates": SettingsNavigationCard("updates", "Updates", "Pilotversion bewusst aktualisieren"),
         }
         for card in self.settings_cards.values():
             card.activated.connect(self.show_page)
@@ -192,12 +197,14 @@ class SettingsScreen(QWidget):
         return self._scroll_page(content)
 
     def show_page(self, key: str) -> None:
-        if self.operation_active or key not in {"timetable", "documentation_subjects", "backup_restore", "security"}:
+        if self.operation_active or key not in {"timetable", "documentation_subjects", "backup_restore", "security", "updates"}:
             return
         self.current_page = key
-        self.pages.setCurrentIndex({"timetable": 1, "documentation_subjects": 2, "backup_restore": 3, "security": 4}[key])
+        self.pages.setCurrentIndex({"timetable": 1, "documentation_subjects": 2, "backup_restore": 3, "security": 4, "updates": 5}[key])
         if key == "backup_restore":
             self.backup_restore_page_opened.emit()
+        elif key == "updates":
+            self.updates_page_opened.emit()
 
     def show_overview(self) -> None:
         if self.operation_active:
@@ -300,6 +307,22 @@ class SettingsScreen(QWidget):
 
     def set_display_name(self, display_name: str | None) -> None:
         self.display_name_input.setText(display_name or "")
+
+    def set_update_status(self, projection: UpdateProjection) -> None:
+        self.settings_cards["updates"].status.setText(
+            f"Version {projection.current_version} · Kanal Pilot"
+        )
+        self.update_version_label.setText(
+            f"Installiert: {projection.current_version} · Build {projection.build_version}"
+        )
+        self.update_channel_label.setText("Updatekanal: Pilot")
+        checked = projection.last_checked_at or "Noch nicht geprüft"
+        self.update_last_check_label.setText(f"Letzte Prüfung: {checked}")
+        self.update_status_message.set_message(
+            projection.message,
+            tone="error" if projection.state is UpdateState.ERROR else "info",
+        )
+        self.update_check_button.setEnabled(projection.can_check)
 
     def show_profile_message(self, text: str, *, tone: str = "success") -> None:
         self.profile_message.set_message(text, tone=tone)
@@ -518,6 +541,50 @@ class SettingsScreen(QWidget):
         filevault.setWordWrap(True)
         set_label_style(filevault, "small")
         layout.addWidget(filevault)
+        return card
+
+    def _updates_card(self) -> QFrame:
+        card = create_card()
+        card.setObjectName("UpdateSettingsSection")
+        layout = QVBoxLayout(card)
+        title = QLabel("Beaufsichtigte Pilotupdates")
+        set_label_style(title, "section_title")
+        layout.addWidget(title)
+        note = QLabel(
+            "Updates werden nur nach deiner ausdrücklichen Auswahl gesucht und "
+            "installiert. Es gibt keine automatische Hintergrundinstallation."
+        )
+        note.setWordWrap(True)
+        set_label_style(note, "muted")
+        layout.addWidget(note)
+        self.update_version_label = QLabel("Installiert: –")
+        self.update_version_label.setTextFormat(Qt.TextFormat.PlainText)
+        layout.addWidget(self.update_version_label)
+        self.update_channel_label = QLabel("Updatekanal: Pilot")
+        self.update_channel_label.setTextFormat(Qt.TextFormat.PlainText)
+        layout.addWidget(self.update_channel_label)
+        self.update_last_check_label = QLabel("Letzte Prüfung: Noch nicht geprüft")
+        self.update_last_check_label.setTextFormat(Qt.TextFormat.PlainText)
+        set_label_style(self.update_last_check_label, "small")
+        layout.addWidget(self.update_last_check_label)
+        self.update_status_message = InlineMessage()
+        layout.addWidget(self.update_status_message)
+        self.update_check_button = QPushButton("Nach Updates suchen")
+        self.update_check_button.setObjectName("CheckForUpdatesButton")
+        configure_button(
+            self.update_check_button,
+            "primary",
+            "Im Pilotkanal nach einer neuen Version suchen",
+        )
+        self.update_check_button.clicked.connect(self.update_check_requested)
+        layout.addWidget(self.update_check_button, 0, Qt.AlignmentFlag.AlignLeft)
+        fallback = QLabel(
+            "Falls die Updateprüfung nicht möglich ist, kann weiterhin ein neues "
+            "DMG manuell installiert werden. Die lokalen Daten bleiben außerhalb der App."
+        )
+        fallback.setWordWrap(True)
+        set_label_style(fallback, "small")
+        layout.addWidget(fallback)
         return card
 
     def _update_backup_restore_actions(self) -> None:

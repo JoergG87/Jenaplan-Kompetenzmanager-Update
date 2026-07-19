@@ -1,5 +1,18 @@
 # Data Registry
 
+## Sprint 0.2U.2 - Öffentliche Pilot-Updatequellen
+
+| Quelle | Inhalt | Owner | Ausschlüsse |
+|---|---|---|---|
+| `packaging/pilot_appcast_url.txt` | feste HTTPS-URL des Pilot-Appcasts | Release-Betrieb | keine Zugangsdaten, lokale Pfade oder Nutzerwahl |
+| `packaging/sparkle_pilot_public_key.txt` | öffentlicher Sparkle-EdDSA-Schlüssel | Update-Vertrauensanker im App-Bundle | kein privater Update- oder Supportschlüssel |
+| GitHub Pages `pilot/appcast.xml` | signierter Feed mit Version, Release-Hinweisen und Release-Asset-URL | Pilot-Release | keine Fach-, Konto-, Installations- oder Telemetriedaten |
+| GitHub Release | EdDSA-signiertes ZIP des geschlossenen App-Bundles | Pilot-Release | kein DMG, Testdatenbackup, Pilotpaket, Secret oder Runtime-Bestand |
+
+Der spätere Pfad `stable` bleibt ohne Appcast und damit deaktiviert. Private
+Sparkle-Schlüssel verbleiben extern im macOS-Schlüsselbund des
+Release-Verantwortlichen und sind strikt vom Support-Reset-Schlüssel getrennt.
+
 ## Sprint 0.2B.6 - Externe Support-Betriebsquellen
 
 | Quelle | Inhalt | Owner | Ausschlüsse |
@@ -27,7 +40,7 @@ Tokens, Schlüsselbundwerte, private oder Testschlüssel.
 Beide Pilotpakete enthalten keine App zusätzlich zum identischen leeren DMG,
 keinen Sourcecode, keine Tests oder Fixtures und keine Screenshots. Nur die
 Laura-Testdatenvariante enthält zusätzlich
-`Laura-Testdaten-0.2.0.jkmbackup`: eine mit dem offiziellen Backup-Service aus
+`Laura-Testdaten-0.2.1.jkmbackup`: eine mit dem offiziellen Backup-Service aus
 dem deterministischen Acht-Monats-Seed abgeleitete Sicherung mit ausschließlich
 synthetischen Fachdaten. Sie enthält keinen Security Store, keine Kontodaten,
 Passwörter, Recovery-Codes, Gerätecredentials, Support-Tokens oder Schlüssel.

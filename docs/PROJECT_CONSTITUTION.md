@@ -1,9 +1,9 @@
 # Project Constitution
 
-## Release-Grenze Version 0.2.0
+## Release-Grenze Version 0.2.1
 
 Der technisch umgesetzte Stand darf als leerer macOS-arm64-Pilot-
-Release-Kandidat `0.2.0` gebaut werden. `src/version.py` bleibt die kanonische
+Release-Kandidat `0.2.1` gebaut werden. `src/version.py` bleibt die kanonische
 Produktversionsquelle. Release-Artefakte enthalten keine Pilot-, Fach-,
 Runtime- oder Security-Daten und keine privaten oder Testschlüssel.
 
@@ -14,6 +14,17 @@ die App eingebettet und enthält weder Security Store noch Konto, Passwort,
 Recovery-Codes, Gerätecredentials, Support-Tokens oder Schlüssel. Leere
 Erststartvariante und Laura-Testdatenvariante verwenden exakt dasselbe leere
 Installationsartefakt.
+
+Laura hat `0.2.0` nicht installiert und beginnt direkt mit `0.2.1`. Diese
+Version darf im beaufsichtigten Einzelpiloten den festen, EdDSA-authentisierten
+Sparkle-Pilotkanal enthalten. Prüfung, Download und Installation erfolgen nur
+nach bewusster Nutzeraktion. Stable, automatische Hintergrundinstallation und
+eine allgemeine Produktivfreigabe bleiben ohne Developer ID, Notarisierung und
+die übrigen ADR-073-Gates verboten.
+
+Der Pilot-Zusatzschritt in `Erste Schritte` darf ausschließlich den bestehenden
+Restore-Dateidialog öffnen. Er darf kein Backup suchen, vorauswählen, importieren
+oder bestätigen. Synthetische Fachdaten bleiben ein separates `.jkmbackup`.
 
 Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
 Die produktive Support-Key-Registry bleibt ohne freigegebenen öffentlichen

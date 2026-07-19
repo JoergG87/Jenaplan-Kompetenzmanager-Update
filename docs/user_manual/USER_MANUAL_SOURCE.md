@@ -3,7 +3,7 @@
 ## 1. Titel und Versionsstand
 
 - Benutzerhandbuch zur Pilotversion {{PILOT_VERSION}}
-- Stand: 18. Juli 2026
+- Stand: 19. Juli 2026
 - Ausgabe: macOS für Apple Silicon
 
 Dieses Handbuch beschreibt den tatsächlich verfügbaren Stand der lokalen
@@ -145,6 +145,13 @@ vorhandenen Bereichen wie `Stammdaten`, `Schüler`, `Einstellungen` und
 `Datensicherung`. Die Orientierung legt keine Stammgruppen, Kurse, Kinder,
 Beobachtungen oder Backups automatisch an. Sie kann übersprungen und später in
 `Einstellungen` mit `Erste Schritte erneut öffnen` wieder aufgerufen werden.
+Im Pilotbuild besitzt sie einen zusätzlichen letzten Schritt `Pilottest mit
+Beispieldaten fortsetzen`. `Testdaten jetzt einspielen` öffnet ausschließlich
+die bereits vorhandene Seite `Einstellungen > Datensicherung` und deren
+Dateiauswahl. Die App sucht keine Datei automatisch, wählt nichts vor und
+bestätigt keinen Restore. Die Lehrkraft wählt das synthetische
+`Laura-Testdaten-{{PILOT_VERSION}}.jkmbackup` selbst, prüft die Vorschau und
+bestätigt die Wiederherstellung bewusst.
 
 ### Frische und bestehende Installation
 
@@ -176,16 +183,30 @@ Pilotinstallation behält ihren vorhandenen Stand.
 
 ### Pilotversion aktualisieren
 
-Schließen Sie die App vollständig. Öffnen Sie das neue DMG und ersetzen Sie die
-vorhandene App im Ordner `Programme`. Die lokalen Daten bleiben dabei erhalten,
-weil sie getrennt von der App gespeichert werden. Ein automatisches Update gibt
-es in der Pilotversion bewusst nicht.
+Version {{PILOT_VERSION}} ist Lauras erste Installation mit beaufsichtigtem
+Pilot-Updater. Öffnen Sie `Einstellungen > Updates` und wählen Sie bewusst
+`Nach Updates suchen`. Sparkle zeigt eine verfügbare neuere Version und deren
+Release-Hinweise in einem eigenen Fenster; Download und Installation erfolgen
+nur nach ausdrücklicher Bestätigung. Es gibt keine automatische Prüfung, keinen
+Hintergrunddownload und keine unbeaufsichtigte Installation.
+
+Die lokalen Daten bleiben erhalten, weil der Updater ausschließlich das
+geschlossene App-Bundle ersetzt. Fachliche Datenbank, Dokumente, Backups,
+Security Store, Installations-ID und App-Einstellungen liegen außerhalb. Das
+erste geplante Pilotupdate ist `0.2.2`. Falls der Feed nicht erreichbar ist,
+bleibt das manuelle Ersetzen der App über ein neues DMG der Fallback.
+
+Der beaufsichtigte Pilot ist ad hoc signiert und nicht notarisiert. Deshalb
+kann macOS einen Hinweis anzeigen, und Touch ID beziehungsweise die gespeicherte
+Geräteanmeldung müssen möglicherweise einmal erneut aktiviert werden. Das
+Passwort bleibt immer verfügbar. Eine reguläre Verteilung an weitere Nutzer
+setzt Developer ID und Apple-Notarisierung voraus.
 
 ### Vorher sichern
 
-Erstellen Sie vor einem Update und regelmäßig während des Pilottests die
-vereinbarte technische Sicherung. Die App muss dafür vollständig geschlossen
-sein. Eine Wiederherstellung erfolgt nur begleitet und nicht automatisch.
+Erstellen Sie vor einem Update und regelmäßig während des Pilottests über
+`Einstellungen > Datensicherung` eine geprüfte Sicherung. Eine
+Wiederherstellung erfolgt nur begleitet und nicht automatisch.
 
 ## 5. Erste Orientierung
 

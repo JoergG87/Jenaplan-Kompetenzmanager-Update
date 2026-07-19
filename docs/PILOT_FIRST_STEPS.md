@@ -25,15 +25,22 @@ oder Schlüssel.
 4. Lege auf Wunsch einen Anzeigenamen für die Begrüßung fest.
 5. Nutze die geführten `Ersten Schritte` oder öffne sie später erneut unter
    `Einstellungen`.
-6. Prüfe die dokumentationsrelevanten Fächer.
-7. Prüfe den Stundenplan.
-8. Prüfe Stammgruppen, Kurse und Kinder. In einer leeren Installation müssen
+6. Prüfe zunächst die leere Anwendung. In der Pilotversion erscheint danach
+   der Schritt `Pilottest mit Beispieldaten fortsetzen`.
+7. Wähle dort `Testdaten jetzt einspielen` oder öffne später
+   `Einstellungen > Datensicherung`. Die App öffnet nur den bestehenden
+   Restore-Weg: Du wählst die beiliegende `.jkmbackup`-Datei selbst, prüfst die
+   Vorschau und bestätigst die Wiederherstellung bewusst.
+8. Prüfe die dokumentationsrelevanten Fächer.
+9. Prüfe den Stundenplan.
+10. Prüfe Stammgruppen, Kurse und Kinder. In einer leeren Installation müssen
    zuerst mindestens eine Stammgruppe und ein Kurs angelegt werden.
-9. Erfasse eine erste Beobachtung und öffne sie anschließend erneut.
-10. Erstelle unter `Einstellungen > Datensicherung` ein Backup und lasse es
+11. Erfasse eine erste Beobachtung und öffne sie anschließend erneut.
+12. Erstelle unter `Einstellungen > Datensicherung` ein Backup und lasse es
     durch die App prüfen.
 
-`Erste Schritte` legt keine Beispiel-, Pilot- oder Demodaten an.
+`Erste Schritte` legt keine Beispiel-, Pilot- oder Demodaten an und sucht keine
+Backupdatei automatisch.
 
 Blaue Primäraktionen helfen bei der Orientierung. Beobachtung, Bericht und LEG
 sind zusätzlich durch unterschiedliche ruhige Arbeitsbereichsfarben erkennbar;
@@ -55,6 +62,9 @@ Bewertungsfarben behalten ihre eigene Bedeutung.
 - Wenn weder Passwort noch Recovery-Codes verfügbar sind, zeigt die App eine
   technische Support-Reset-Anfrage. Der produktive Reset ist ohne freigegebenen
   öffentlichen Schlüssel in Version {{PILOT_VERSION}} noch nicht freigeschaltet.
+- Unter `Einstellungen > Updates` wird ausschließlich auf bewusste Aktion im
+  festen Pilotkanal geprüft. `0.2.2` ist das erste beaufsichtigte Update. Es
+  darf keine fachlichen Daten oder Kontodaten ersetzen.
 
 Für Rückmeldungen die mitgelieferte Test-Excel verwenden und nur künstliche
 Testdaten einsetzen.

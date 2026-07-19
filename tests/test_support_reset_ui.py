@@ -172,7 +172,7 @@ def test_confirmed_reset_emits_handoff_only_after_worker_success() -> None:
     assert dialog._verified_token == ""
 
 
-def test_settings_exposes_recovery_action_without_new_navigation_area() -> None:
+def test_settings_exposes_recovery_action_without_support_reset_navigation_area() -> None:
     _app()
     screen = SettingsScreen()
     buttons = {
@@ -180,7 +180,11 @@ def test_settings_exposes_recovery_action_without_new_navigation_area() -> None:
     }
     assert "Technische Support-Reset-Anfrage erstellen" in buttons
     assert set(screen.settings_cards) == {
-        "timetable", "documentation_subjects", "backup_restore", "security"
+        "timetable",
+        "documentation_subjects",
+        "backup_restore",
+        "security",
+        "updates",
     }
     spy = QSignalSpy(screen.support_reset_requested)
     buttons["Technische Support-Reset-Anfrage erstellen"].click()

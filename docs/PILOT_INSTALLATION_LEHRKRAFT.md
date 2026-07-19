@@ -11,8 +11,9 @@ automatisch in eine Cloud.
 - ungefähr 300 MB freier Speicherplatz für App und erste lokale Daten
 - die Datei `Jenaplan-Kompetenzmanager-{{PILOT_VERSION}}-macOS-arm64.dmg`
 
-Die Version {{PILOT_VERSION}} ist eine Pilotversion. Sie ist für den vereinbarten Test gedacht
-und besitzt noch keinen automatischen Aktualisierungsdienst.
+Die Version {{PILOT_VERSION}} ist Lauras erste Pilotinstallation. Sie besitzt
+einen beaufsichtigten Pilot-Updater; Updates werden ausschließlich nach einer
+bewussten manuellen Prüfung und Bestätigung installiert.
 
 ## 2. Installation
 
@@ -57,16 +58,24 @@ bei der Einrichtung; sie legt selbst keine Daten an.
 Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
 FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
 
-## 5. Update der Pilotversion
+## 5. Pilotversion aktualisieren
 
-1. Schließen Sie den Jenaplan-Kompetenzmanager vollständig.
-2. Erstellen Sie nach Möglichkeit vorher die vereinbarte Sicherung.
-3. Öffnen Sie das neue DMG.
-4. Ziehen Sie die neue App wieder auf `Programme` und bestätigen Sie `Ersetzen`.
-5. Starten Sie die App erneut.
+1. Erstellen Sie vor dem ersten Update eine geprüfte Sicherung.
+2. Öffnen Sie `Einstellungen > Updates`.
+3. Wählen Sie `Nach Updates suchen`.
+4. Prüfen Sie Versionsnummer und Release-Hinweise im Sparkle-Fenster.
+5. Bestätigen Sie Download und Installation bewusst.
+6. Prüfen Sie nach dem Neustart Version, Anmeldung und fachliche Daten.
 
 Die lokalen Daten liegen getrennt von der App und bleiben beim Ersetzen erhalten.
-Es gibt bewusst keinen automatischen Updater.
+Der Pilotkanal prüft oder installiert nie unbeaufsichtigt. Falls er nicht
+erreichbar ist, bleibt der bisherige Weg über ein neues DMG verfügbar.
+
+Die App ist ad hoc signiert und nicht notarisiert. macOS kann deshalb auch bei
+einem Pilotupdate einen Hinweis zeigen; Touch ID oder die gespeicherte
+Geräteanmeldung müssen möglicherweise einmal neu aktiviert werden. Das lokale
+Passwort bleibt immer der Fallback. Ein Verlust von Konto oder Fachdaten ist
+nicht zulässig.
 
 ## 6. Fehler melden
 

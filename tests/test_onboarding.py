@@ -17,13 +17,15 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QLabel,
     QMessageBox,
+    QPushButton,
     QScrollArea,
 )
 
 from src.core.app_preferences import (
     AppPreferences,
     AppPreferencesError,
-    ONBOARDING_STEP_COUNT,
+    ONBOARDING_BASE_STEP_COUNT,
+    ONBOARDING_PILOT_STEP_COUNT,
     OnboardingStatus,
 )
 from src.core.onboarding import OnboardingController
@@ -159,7 +161,7 @@ def test_onboarding_screen_steps_keyboard_skip_and_sizes() -> None:
     texts = " ".join(label.text() for label in screen.findChildren(QLabel))
     assert "Willkommen, Laura" in texts
     assert "Die App-Sperre ist keine Verschlüsselung" in texts
-    assert len(ONBOARDING_STEPS) == ONBOARDING_STEP_COUNT
+    assert len(ONBOARDING_STEPS) == ONBOARDING_BASE_STEP_COUNT
 
     emitted: list[str] = []
     screen.next_requested.connect(lambda: emitted.append("next"))
@@ -217,6 +219,33 @@ def test_onboarding_screen_steps_keyboard_skip_and_sizes() -> None:
         scroll = screen.findChild(QScrollArea)
         assert scroll.horizontalScrollBar().maximum() == 0
     screen.close()
+
+
+def test_pilot_onboarding_adds_only_deliberate_restore_and_guide_actions() -> None:
+    _app()
+    screen = OnboardingScreen()
+    screen.set_context(
+        step=ONBOARDING_PILOT_STEP_COUNT - 1,
+        display_name="Laura",
+        status_projection=OnboardingStatusProjection(),
+        pilot_mode=True,
+    )
+    texts = " ".join(label.text() for label in screen.findChildren(QLabel))
+    assert "Pilottest mit Beispieldaten fortsetzen" in texts
+    assert "synthetischen Datenbestand" in texts
+    assert screen.next_button.text() == "Später über Einstellungen"
+    labels = {button.text() for button in screen.findChildren(QPushButton)}
+    assert "Testdaten jetzt einspielen" in labels
+    assert "Anleitung öffnen" in labels
+
+    screen.set_context(
+        step=ONBOARDING_BASE_STEP_COUNT - 1,
+        display_name=None,
+        status_projection=OnboardingStatusProjection(),
+        pilot_mode=False,
+    )
+    assert screen.step_count == ONBOARDING_BASE_STEP_COUNT
+    assert screen.next_button.text() == "Abschließen"
 
 
 def test_shell_opens_onboarding_after_auth_and_navigates_existing_targets(

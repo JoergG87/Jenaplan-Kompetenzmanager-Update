@@ -1,5 +1,18 @@
 # Design-System
 
+## Sprint 0.2U.2 - Update- und Pilot-Handoff
+
+`Einstellungen > Updates` folgt der bestehenden ruhigen Übersichts-/Unterseiten-
+struktur. Genau eine blaue Primäraktion `Nach Updates suchen` öffnet das native
+Sparkle-Fenster; Versionsdaten, Kanal, letzter Prüfzeitpunkt und Fallback-Hinweis
+bleiben kompakte Klartextprojektionen. Kryptografische Details, URLs und lokale
+Pfade erscheinen nicht in der normalen Nutzeroberfläche.
+
+Der Pilot-Zusatzschritt der `Ersten Schritte` verwendet genau eine bewusste
+Aktion zum vorhandenen Restore-Weg. `Später über Einstellungen` bleibt der
+ruhige Abschluss; Escape importiert nichts. Der Text kennzeichnet synthetische
+Beispieldaten und die ersetzende Wirkung des fachlichen Restore eindeutig.
+
 ## Sprint 0.2B.6 - Support-Terminalführung
 
 Die externe `.command` verwendet eine lineare deutsche Terminalführung ohne

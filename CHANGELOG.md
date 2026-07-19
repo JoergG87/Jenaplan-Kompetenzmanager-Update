@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## Version 0.2.1 - Beaufsichtigte Pilot-Updater-Basis
+
+- Sparkle 2.9.4 mit fest geprüftem SHA-256, öffentlichem Pilot-EdDSA-Schlüssel,
+  kleiner nativer C-ABI-Bridge und vollständiger Einbettung ins arm64-App-Bundle
+  ergänzt; Python, Qt, SQLite und Sparkle werden nicht separat installiert.
+- `Einstellungen > Updates` mit fester Kanalprojektion `Pilot` und ausschließlich
+  bewusster Aktion `Nach Updates suchen` ergänzt. Automatische Prüfung,
+  Hintergrunddownload und unbeaufsichtigte Installation bleiben aus.
+- Signierter Pilot-Appcast über GitHub Pages und signiertes App-Archiv als
+  getrenntes GitHub-Release-Asset vorgesehen; `stable` bleibt deaktiviert.
+- Pilotbuild um den sechsten Schritt `Pilottest mit Beispieldaten fortsetzen`
+  ergänzt. Er öffnet ausschließlich den vorhandenen Restore-Dialog und sucht,
+  wählt oder importiert keine Datei automatisch.
+- Version und monotone Bundle-Buildnummer auf `0.2.1` / `201` angehoben; Bundle-ID,
+  macOS-13-Grenze, Fachschema, Securityschema und Runtime-Pfade bleiben gleich.
+- Die produktive Support-Key-Registry bleibt in `0.2.1` leer. `0.2.2` ist als
+  erstes beaufsichtigtes Update mit gesondert freigegebenem öffentlichen
+  Support-Reset-Schlüssel vorgesehen.
+- Ad-hoc-Signierung und fehlende Apple-Notarisierung bleiben ausdrücklich
+  Pilotgrenzen; ein Stable-/Regelbetrieb ist nicht freigegeben.
+
 ## Sprint 0.2B.6 - Produktives Support-Reset-Werkzeug für macOS
 
 ### Added

@@ -1,6 +1,6 @@
-# Jenaplan-Kompetenzmanager 0.2.0 – Pilot-Release-Kandidat
+# Jenaplan-Kompetenzmanager 0.2.1 – Laura-Pilotbasis
 
-Version 0.2.0 bündelt den aktuellen technisch geprüften Stand der lokalen
+Version 0.2.1 ist die erste tatsächlich an Laura ausgegebene Version der lokalen
 PySide-Anwendung für den vereinbarten Pilottest. Alle Arbeitsdaten bleiben auf
 dem verwendeten Mac; eine Cloudübertragung findet nicht statt.
 
@@ -27,11 +27,18 @@ produktive Schlüsselregistry bleibt leer.
   fachlichen Pilottest.
 - Beide Varianten installieren exakt dasselbe leere App-/DMG-Artefakt. Die
   Laura-Variante enthält zusätzlich ein ausdrücklich synthetisches
-  `Laura-Testdaten-0.2.0.jkmbackup`, das erst nach lokaler Kontoerstellung über
+  `Laura-Testdaten-0.2.1.jkmbackup`, das erst nach lokaler Kontoerstellung über
   `Einstellungen > Datensicherung` wiederhergestellt wird.
 - Das Testdatenbackup enthält keine Passwörter, Recovery-Codes,
   Gerätecredentials, Security Stores, Support-Tokens oder Schlüssel.
 - Backup erstellen und prüfen, Restore-Vorschau und bewusst bestätigter Restore.
+- Beaufsichtigter Sparkle-Pilotkanal unter `Einstellungen > Updates`: keine
+  automatische Prüfung, kein Hintergrunddownload und keine unbeaufsichtigte
+  Installation. Updatearchiv und Appcast werden mit einem getrennten
+  Sparkle-EdDSA-Schlüssel authentisiert.
+- Der nur im Pilotbuild sichtbare letzte Schritt `Pilottest mit Beispieldaten
+  fortsetzen` öffnet ausschließlich den vorhandenen Restore-Weg. Er sucht oder
+  importiert keine Datei automatisch.
 - Geführte `Erste Schritte`, optionaler Anzeigename und persönliche
   Dashboard-Begrüßung.
 - Sicherheitseinstellungen für Sperrintervall, Passwort, Recovery-Codes,

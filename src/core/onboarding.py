@@ -30,9 +30,13 @@ class OnboardingController:
         preferences_file: AppPreferencesFile,
         *,
         preferences: AppPreferences | None = None,
+        step_count: int = 5,
     ) -> None:
         self.preferences_file = preferences_file
         self.preferences = preferences if preferences is not None else self._load()
+        if not 1 <= int(step_count) <= ONBOARDING_STEP_COUNT:
+            raise ValueError("onboarding_step_count_invalid")
+        self.step_count = int(step_count)
         self.session: OnboardingSession | None = None
 
     def should_open_automatically(self, *, packaged_smoke: bool = False) -> bool:
@@ -50,7 +54,7 @@ class OnboardingController:
             OnboardingStatus.DISMISSED,
         }
         if status is OnboardingStatus.IN_PROGRESS:
-            step = self.preferences.onboarding_current_step
+            step = self._bounded_step(self.preferences.onboarding_current_step)
         else:
             step = 0
         if not manual_preview and status is not OnboardingStatus.IN_PROGRESS:
@@ -73,7 +77,7 @@ class OnboardingController:
 
     def next_step(self) -> OnboardingSession:
         session = self.session or self.start(manual=True)
-        return self.set_step(min(session.current_step + 1, ONBOARDING_STEP_COUNT - 1))
+        return self.set_step(min(session.current_step + 1, self.step_count - 1))
 
     def previous_step(self) -> OnboardingSession:
         session = self.session or self.start(manual=True)
@@ -90,7 +94,7 @@ class OnboardingController:
             replace(
                 self.preferences,
                 onboarding_status=OnboardingStatus.COMPLETED,
-                onboarding_current_step=ONBOARDING_STEP_COUNT - 1,
+                onboarding_current_step=self.step_count - 1,
             )
         )
         self.session = None
@@ -130,6 +134,5 @@ class OnboardingController:
         except AppPreferencesError:
             return AppPreferences()
 
-    @staticmethod
-    def _bounded_step(step: int) -> int:
-        return max(0, min(int(step), ONBOARDING_STEP_COUNT - 1))
+    def _bounded_step(self, step: int) -> int:
+        return max(0, min(int(step), self.step_count - 1))

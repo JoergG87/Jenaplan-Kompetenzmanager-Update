@@ -1,5 +1,19 @@
 # View Data Ownership
 
+## Sprint 0.2U.2 - Updateansicht und Pilot-Onboarding
+
+Die Unterseite `Updates` besitzt ausschließlich die read-only Projektion aus
+`UpdateApplicationService`: sichtbare Version, Build, fester Kanal, letzter
+Prüfzeitpunkt und lokalisierter Status. Sie lädt keinen Feed, prüft keine
+Signatur, entpackt kein Archiv und ersetzt keine App. Diese Verantwortung liegt
+bei Sparkle hinter `MacOSSparkleAdapter` und der nativen C-ABI-Bridge.
+
+`OnboardingScreen` besitzt für den Pilot-Zusatzschritt nur Text und Aktionen.
+`AppShell` navigiert zur vorhandenen Datensicherungsseite und startet deren
+Dateiauswahl. Backupprüfung, Restore-Vorschau, Bestätigung, Worker und Recovery
+bleiben vollständig bei den vorhandenen Controllern und Services. Es gibt keine
+automatische Dateisuche und keine fachliche Ownership in der Onboarding-View.
+
 ## Sprint 0.2B.6 - Externe Support-Terminalansichten
 
 `support_reset_cli` besitzt nur flüchtigen Promptzustand: gewählte Anfrage,

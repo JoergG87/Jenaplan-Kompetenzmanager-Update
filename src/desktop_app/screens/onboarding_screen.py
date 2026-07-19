@@ -18,7 +18,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.core.app_preferences import ONBOARDING_STEP_COUNT
+from src.core.app_preferences import (
+    ONBOARDING_BASE_STEP_COUNT,
+    ONBOARDING_PILOT_STEP_COUNT,
+)
 from src.desktop_app.components import (
     PageHeader,
     configure_button,
@@ -72,6 +75,7 @@ class OnboardingStep:
     bullets: tuple[str, ...] = ()
     actions: tuple[OnboardingAction, ...] = ()
     status_items: tuple[tuple[str, str], ...] = ()
+    primary_label: str | None = None
 
 
 ONBOARDING_STEPS: tuple[OnboardingStep, ...] = (
@@ -148,6 +152,25 @@ ONBOARDING_STEPS: tuple[OnboardingStep, ...] = (
     ),
 )
 
+PILOT_TESTDATA_STEP = OnboardingStep(
+    "Pilottest mit Beispieldaten fortsetzen",
+    (
+        "Prüfe zuerst Konto, Recovery-Codes, Sperre und die leere Anwendung. "
+        "Danach kannst du den vollständig synthetischen Datenbestand bewusst "
+        "über die vorhandene Wiederherstellung einspielen."
+    ),
+    (
+        "Die Wiederherstellung ersetzt den fachlichen Datenbestand nach dem normalen Restore-Vertrag.",
+        "Konto, Passwort, Recovery-Codes und Security Store werden nicht aus dem Backup übernommen.",
+        "Sichere eigene Testeingaben, bevor du die Wiederherstellung bestätigst.",
+    ),
+    (
+        OnboardingAction("Testdaten jetzt einspielen", "pilot_testdata_restore"),
+        OnboardingAction("Anleitung öffnen", "pilot_first_steps_guide"),
+    ),
+    primary_label="Später über Einstellungen",
+)
+
 
 class OnboardingScreen(QWidget):
     """Render onboarding steps and emit shell-owned commands."""
@@ -164,6 +187,7 @@ class OnboardingScreen(QWidget):
         self.current_step = 0
         self.status_projection = OnboardingStatusProjection()
         self.display_name: str | None = None
+        self.pilot_mode = False
         self.status_grid = QGridLayout()
         self.bullet_layout = QVBoxLayout()
         self.action_layout = QHBoxLayout()
@@ -240,16 +264,19 @@ class OnboardingScreen(QWidget):
         step: int,
         display_name: str | None,
         status_projection: OnboardingStatusProjection,
+        pilot_mode: bool = False,
     ) -> None:
-        self.current_step = max(0, min(step, ONBOARDING_STEP_COUNT - 1))
+        self.pilot_mode = bool(pilot_mode)
+        step_count = self.step_count
+        self.current_step = max(0, min(step, step_count - 1))
         self.display_name = display_name
         self.status_projection = status_projection
         self.render()
 
     def render(self) -> None:
-        step = ONBOARDING_STEPS[self.current_step]
+        step = self.steps[self.current_step]
         self.step_label.setText(
-            f"Schritt {self.current_step + 1} von {ONBOARDING_STEP_COUNT}"
+            f"Schritt {self.current_step + 1} von {self.step_count}"
         )
         title = step.title
         if self.current_step == 0 and self.display_name:
@@ -261,9 +288,8 @@ class OnboardingScreen(QWidget):
         self._render_actions(step.actions)
         self.back_button.setEnabled(self.current_step > 0)
         self.next_button.setText(
-            "Abschließen"
-            if self.current_step == ONBOARDING_STEP_COUNT - 1
-            else "Weiter"
+            step.primary_label
+            or ("Abschließen" if self.current_step == self.step_count - 1 else "Weiter")
         )
         self.next_button.setAccessibleName(self.next_button.text())
 
@@ -306,10 +332,18 @@ class OnboardingScreen(QWidget):
         self.action_layout.addStretch(1)
 
     def _primary_clicked(self) -> None:
-        if self.current_step == ONBOARDING_STEP_COUNT - 1:
+        if self.current_step == self.step_count - 1:
             self.finish_requested.emit()
             return
         self.next_requested.emit()
+
+    @property
+    def steps(self) -> tuple[OnboardingStep, ...]:
+        return ONBOARDING_STEPS + ((PILOT_TESTDATA_STEP,) if self.pilot_mode else ())
+
+    @property
+    def step_count(self) -> int:
+        return ONBOARDING_PILOT_STEP_COUNT if self.pilot_mode else ONBOARDING_BASE_STEP_COUNT
 
     def _confirm_skip(self) -> None:
         if self._skip_confirmation_accepted():

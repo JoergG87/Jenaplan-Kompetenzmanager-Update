@@ -6,8 +6,8 @@ from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtCore import QSize, Qt, QTimer, Signal, QUrl
+from PySide6.QtGui import QCloseEvent, QDesktopServices
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QDialog,
@@ -23,7 +23,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.core.app_preferences import AppPreferences, AppPreferencesFile
+from src.core.app_preferences import (
+    AppPreferences,
+    AppPreferencesFile,
+    ONBOARDING_BASE_STEP_COUNT,
+    ONBOARDING_PILOT_STEP_COUNT,
+)
 from src.core.onboarding import OnboardingController, OnboardingSession
 from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.core.learning_report import ReportFinalizationError
@@ -69,9 +74,13 @@ from src.desktop_app.screens.onboarding_screen import (
     OnboardingStatusProjection,
 )
 from src.desktop_app.screens.settings_screen import SettingsScreen
-from src.desktop_app.runtime import RuntimePaths, runtime_paths, load_build_info
+from src.desktop_app.runtime import RuntimePaths, runtime_paths, load_build_info, resource_path
 from src.desktop_app.view_models.backup_restore_view_model import RestorePreviewViewModel
 from src.version import APP_VERSION
+from src.version import APP_BUILD_VERSION
+from src.updater.application import UpdateApplicationService
+from src.updater.domain import UpdateChannel
+from src.updater.infrastructure import build_native_update_adapter
 from src.core.restore_runtime import RuntimeInstanceLock
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
 from src.desktop_app.screens.students_workspace import StudentsWorkspace
@@ -108,6 +117,7 @@ class AppShell(QMainWindow):
         *,
         paths: RuntimePaths | None = None,
         runtime_lock: RuntimeInstanceLock | None = None,
+        update_service: UpdateApplicationService | None = None,
     ) -> None:
         super().__init__()
         self.now_provider = now_provider
@@ -118,6 +128,16 @@ class AppShell(QMainWindow):
         self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)
         self.timetable_adapter = TimetableDesktopAdapter(self.adapter.database)
         build_info = load_build_info()
+        self.pilot_testdata_onboarding = (
+            build_info.get("release_channel") == "pilot"
+            and "guided_testdata_restore" in build_info.get("pilot_features", [])
+        )
+        self.update_service = update_service or UpdateApplicationService(
+            build_native_update_adapter(),
+            current_version=APP_VERSION,
+            build_version=APP_BUILD_VERSION,
+            channel=UpdateChannel.PILOT,
+        )
         self.runtime_paths = paths or runtime_paths(database_path.parent)
         self.backup_restore_adapter = BackupRestoreDesktopAdapter(
             self.runtime_paths,
@@ -364,6 +384,8 @@ class AppShell(QMainWindow):
         self.settings_screen.backup_restore_page_opened.connect(
             self._load_backup_status
         )
+        self.settings_screen.updates_page_opened.connect(self.refresh_update_status)
+        self.settings_screen.update_check_requested.connect(self.check_for_updates)
         self.settings_screen.onboarding_requested.connect(self.open_onboarding_from_settings)
         self.settings_screen.lock_requested.connect(self.lock_requested)
         self.settings_screen.password_change_requested.connect(
@@ -402,6 +424,7 @@ class AppShell(QMainWindow):
         )
         self._select_navigation("dashboard")
         self.stack.currentChanged.connect(self._handle_screen_activated)
+        self.refresh_update_status()
 
     def refresh_all(self) -> None:
         """Refresh overview and student list from SQLite."""
@@ -466,11 +489,20 @@ class AppShell(QMainWindow):
         preferences: AppPreferences,
         automatic_open: bool = True,
         packaged_smoke: bool = False,
+        pilot_mode: bool | None = None,
     ) -> None:
         """Attach local onboarding persistence after the shell exists."""
         self.onboarding_controller = OnboardingController(
             preferences_file,
             preferences=preferences,
+            step_count=(
+                ONBOARDING_PILOT_STEP_COUNT
+                if (self.pilot_testdata_onboarding if pilot_mode is None else pilot_mode)
+                else ONBOARDING_BASE_STEP_COUNT
+            ),
+        )
+        self.onboarding_screen.pilot_mode = (
+            self.pilot_testdata_onboarding if pilot_mode is None else bool(pilot_mode)
         )
         if (
             automatic_open
@@ -538,6 +570,15 @@ class AppShell(QMainWindow):
         self.settings_screen.set_settings(self.adapter.settings_view_model())
         self.settings_screen.set_timetable(self.timetable_adapter.week_view_model())
 
+    def refresh_update_status(self) -> None:
+        """Project native update state without exposing Sparkle to the view."""
+        self.settings_screen.set_update_status(self.update_service.projection())
+
+    def check_for_updates(self) -> None:
+        """Start one explicit supervised check; Sparkle owns the update dialog."""
+        projection = self.update_service.check_for_updates()
+        self.settings_screen.set_update_status(projection)
+
     def set_display_name(self, display_name: str | None) -> None:
         """Project the local app profile without owning its persistence."""
         self.display_name = display_name
@@ -578,6 +619,7 @@ class AppShell(QMainWindow):
             step=current_step,
             display_name=self.display_name,
             status_projection=self._onboarding_status_projection(),
+            pilot_mode=self.onboarding_screen.pilot_mode,
         )
 
     def _onboarding_status_projection(self) -> OnboardingStatusProjection:
@@ -673,6 +715,21 @@ class AppShell(QMainWindow):
             self._show_settings_page("timetable")
         elif target == "settings_backup_restore":
             self._show_settings_page("backup_restore")
+        elif target == "pilot_testdata_restore" and self.onboarding_screen.pilot_mode:
+            self._show_settings_page("backup_restore")
+            QTimer.singleShot(0, self.prepare_restore)
+        elif target == "pilot_first_steps_guide" and self.onboarding_screen.pilot_mode:
+            guide = resource_path(
+                "pilot_guides",
+                f"Jenaplan-Kompetenzmanager-Pilot-{APP_VERSION}-Erste-Schritte.pdf",
+            )
+            if not guide.is_file():
+                candidates = tuple(resource_path("pilot_guides").glob("*.pdf"))
+                guide = candidates[0] if len(candidates) == 1 else guide
+            if not guide.is_file() or not QDesktopServices.openUrl(
+                QUrl.fromLocalFile(str(guide))
+            ):
+                self.status_label.setText("Die Anleitung konnte nicht geöffnet werden.")
         elif target == "master_data":
             self._show_screen("master_data")
             self._select_navigation("master_data")

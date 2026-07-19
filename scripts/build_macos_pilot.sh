@@ -50,6 +50,7 @@ if [ "$PYTHON_VERSION" != "3.14.6" ]; then
 fi
 
 VERSION="$(python3 -c 'from src.version import APP_VERSION; print(APP_VERSION)')"
+BUILD_VERSION="$(python3 -c 'from src.version import APP_BUILD_VERSION; print(APP_BUILD_VERSION)')"
 GIT_COMMIT="$(git rev-parse HEAD)"
 if [ -n "$(git status --porcelain)" ]; then
     SOURCE_TREE_STATE="dirty"
@@ -63,6 +64,8 @@ PAYLOAD="$BUILD_ROOT/payload"
 ICONSET="$BUILD_ROOT/AppIcon.iconset"
 ICON="$BUILD_ROOT/AppIcon.icns"
 SECURITY_BRIDGE="$BUILD_ROOT/libjkm_macos_security.dylib"
+SPARKLE_BRIDGE="$BUILD_ROOT/libjkm_macos_sparkle.dylib"
+SPARKLE_VENDOR="$BUILD_ROOT/sparkle"
 PYI_DIST="$BUILD_ROOT/pyinstaller-dist"
 PYI_WORK="$BUILD_ROOT/pyinstaller-work"
 DIST_ROOT="$ROOT/dist/macos"
@@ -142,10 +145,31 @@ iconutil -c icns "$ICONSET" -o "$ICON"
 
 scripts/build_macos_security_bridge.sh "$SECURITY_BRIDGE"
 
+SPARKLE_FETCH_ARGS=(--output "$SPARKLE_VENDOR")
+if [ -n "${JENAPLAN_SPARKLE_ARCHIVE:-}" ]; then
+    SPARKLE_FETCH_ARGS+=(--archive "$JENAPLAN_SPARKLE_ARCHIVE")
+fi
+SPARKLE_SOURCE="$("$VENV/bin/python" scripts/fetch_sparkle.py "${SPARKLE_FETCH_ARGS[@]}")"
+scripts/build_macos_sparkle_bridge.sh "$SPARKLE_SOURCE" "$SPARKLE_BRIDGE"
+SPARKLE_LICENSE="$BUILD_ROOT/Sparkle-LICENSE.txt"
+cp "$SPARKLE_SOURCE/LICENSE" "$SPARKLE_LICENSE"
+
+PILOT_APPCAST_URL="${JENAPLAN_PILOT_APPCAST_URL:-$(cat packaging/pilot_appcast_url.txt)}"
+if [[ "$PILOT_APPCAST_URL" != https://* ]]; then
+    echo "JENAPLAN_PILOT_APPCAST_URL muss auf den festen HTTPS-Pilot-Appcast zeigen." >&2
+    exit 2
+fi
+
 export JENAPLAN_PILOT_PAYLOAD_DIR="$PAYLOAD"
 export JENAPLAN_MACOS_ICON="$ICON"
 export JENAPLAN_MACOS_SECURITY_BRIDGE="$SECURITY_BRIDGE"
+export JENAPLAN_MACOS_SPARKLE_BRIDGE="$SPARKLE_BRIDGE"
+export JENAPLAN_SPARKLE_FRAMEWORK="$SPARKLE_SOURCE/Sparkle.framework"
+export JENAPLAN_SPARKLE_LICENSE="$SPARKLE_LICENSE"
+export JENAPLAN_PILOT_APPCAST_URL="$PILOT_APPCAST_URL"
+export JENAPLAN_PILOT_FIRST_STEPS_PDF="$FIRST_STEPS_PDF"
 export MACOSX_DEPLOYMENT_TARGET="13.0"
+export DYLD_FRAMEWORK_PATH="$SPARKLE_SOURCE"
 "$VENV/bin/python" -m PyInstaller \
     --noconfirm \
     --clean \
@@ -154,6 +178,8 @@ export MACOSX_DEPLOYMENT_TARGET="13.0"
     packaging/macos_pilot.spec
 
 ditto "$PYI_DIST/$APP_NAME.app" "$APP_PATH"
+rm -rf "$APP_PATH/Contents/Frameworks/Sparkle.framework"
+ditto "$SPARKLE_SOURCE/Sparkle.framework" "$APP_PATH/Contents/Frameworks/Sparkle.framework"
 if { [ "$DATA_MODE" = "empty" ] || [ "$DATA_MODE" = "release" ]; } && find "$APP_PATH" -type f \( -name '*.sqlite' -o -name '*.db' \) -print -quit | grep -q .; then
     echo "Abbruch: Das App-Bundle enthält unerwartet eine Datenbank." >&2
     exit 1
@@ -181,6 +207,20 @@ else
     SIGNING_STATUS="ad-hoc signiert; nicht notarisiert"
 fi
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+PLIST_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")"
+PLIST_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_PATH/Contents/Info.plist")"
+PLIST_FEED="$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' "$APP_PATH/Contents/Info.plist")"
+PLIST_SIGNED_FEED="$(/usr/libexec/PlistBuddy -c 'Print :SURequireSignedFeed' "$APP_PATH/Contents/Info.plist")"
+PLIST_VERIFY_BEFORE_EXTRACTION="$(/usr/libexec/PlistBuddy -c 'Print :SUVerifyUpdateBeforeExtraction' "$APP_PATH/Contents/Info.plist")"
+if [ "$PLIST_VERSION" != "$VERSION" ] || [ "$PLIST_BUILD" != "$BUILD_VERSION" ] || [ "$PLIST_FEED" != "$PILOT_APPCAST_URL" ] || [ "$PLIST_SIGNED_FEED" != "true" ] || [ "$PLIST_VERIFY_BEFORE_EXTRACTION" != "true" ]; then
+    echo "Abbruch: Version, Buildnummer oder Pilot-Appcast im Bundle ist inkonsistent." >&2
+    exit 1
+fi
+if [ ! -f "$APP_PATH/Contents/Resources/third_party_licenses/Sparkle-LICENSE.txt" ]; then
+    echo "Abbruch: Der Sparkle-Lizenzhinweis fehlt im App-Bundle." >&2
+    exit 1
+fi
 
 mkdir -p "$DMG_STAGE"
 ditto "$APP_PATH" "$DMG_STAGE/$APP_NAME.app"
@@ -259,6 +299,7 @@ BUILD_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     echo "Jenaplan-Kompetenzmanager - Release-Inventar"
     echo
     echo "Version: $VERSION"
+    echo "Build: $BUILD_VERSION"
     echo "Git-Commit: $GIT_COMMIT"
     echo "Quellbaum: $SOURCE_TREE_STATE"
     echo "Buildzeit: $BUILD_TIME"
@@ -269,6 +310,9 @@ BUILD_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     echo "Notarisierung: nicht durchgeführt"
     echo "Datenmodus: $DATA_MODE (Release-Kandidat ohne Pilot- oder Echtdaten)"
     echo "Produktiver Support-Reset: nicht freigeschaltet; Public-Key-Registry leer"
+    echo "Updatekanal: pilot (manuelle Prüfung; keine automatische Installation)"
+    echo "Pilot-Appcast: $PILOT_APPCAST_URL"
+    echo "Stable-Kanal: deaktiviert"
     echo
     echo "Automatisierter Teststand: siehe Abschlussbericht zum Release-Kandidaten"
     echo "Offene reale Prüfungen: echter Sleep/Wake; physische Touch-ID-Systemaufforderung und Fingerabdruck; App-Switcher; vollständige reale Aktivierungs-/Widerrufsreise; produktiver Support-Reset; Developer-ID-Signierung; Apple-Notarisierung."

@@ -37,7 +37,9 @@ Empfohlene Reihenfolge:
 1. README und Release-Hinweise lesen.
 2. DMG öffnen und die App nach Programme ziehen.
 3. Benutzerhandbuch beziehungsweise Erste Schritte bereithalten.
-4. Die Test-Excel für die Rückmeldungen verwenden.
+4. Leere App, Konto, Recovery, Sperre und erstes Backup prüfen.
+5. Updates später ausschließlich unter Einstellungen > Updates bewusst prüfen.
+6. Die Test-Excel für die Rückmeldungen verwenden.
 
 Wichtige Grenzen:
 
@@ -50,6 +52,8 @@ Wichtige Grenzen:
   FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
 - Der produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel
   noch nicht freigeschaltet.
+- Der Sparkle-Pilotkanal prüft oder installiert nichts automatisch. Version
+  0.2.2 wird später bewusst unter Einstellungen > Updates angestoßen.
 - Das Paket enthält keine Schüler-, Fach-, Laufzeit- oder Anmeldedaten.
 
 Offene reale Prüfungen:
@@ -79,11 +83,14 @@ Empfohlene Reihenfolge:
 1. README und Release-Hinweise lesen.
 2. DMG öffnen und dieselbe leere App wie in der Erststartvariante installieren.
 3. Beim Erststart das lokale Konto vollständig einrichten und anmelden.
-4. Einstellungen > Datensicherung öffnen.
-5. "Laura-Testdaten-{version}.jkmbackup" über den normalen Restore-Weg auswählen,
+4. Zuerst leere App, Recovery, Sperre und erstes Backup prüfen.
+5. Im letzten Schritt der Ersten Schritte "Testdaten jetzt einspielen" wählen
+   oder später Einstellungen > Datensicherung öffnen.
+6. "Laura-Testdaten-{version}.jkmbackup" über den normalen Restore-Weg auswählen,
    die schreibgeschützte Vorschau prüfen und die Wiederherstellung bestätigen.
-6. Nach dem automatischen Neustart mit dem zuvor lokal angelegten Konto anmelden.
-7. Die Test-Excel für die Rückmeldungen verwenden.
+7. Nach dem automatischen Neustart mit dem zuvor lokal angelegten Konto anmelden.
+8. Die Test-Excel für die Rückmeldungen verwenden.
+9. Version 0.2.2 später unter Einstellungen > Updates bewusst installieren.
 
 Klare Trennung:
 
@@ -96,6 +103,8 @@ Klare Trennung:
   FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
 - Der produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel
   noch nicht freigeschaltet.
+- Testdaten werden niemals automatisch gesucht, ausgewählt oder importiert.
+- Der Sparkle-Pilotkanal prüft oder installiert nichts automatisch.
 
 Offene reale Prüfungen:
 
