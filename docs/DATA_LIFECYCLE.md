@@ -27,7 +27,7 @@ ungespeicherte Arbeitsstände verschieben Installation und Relaunch. Ein Fehler
 vor dem atomaren Austausch lässt App und Runtime unverändert; ein Fehler beim
 nächsten Start darf keine stille Datenreparatur auslösen.
 
-Version `0.2.1` bleibt fach- und security-schemaidentisch zu `0.2.0`. Der
+Version `0.2.2` bleibt fach- und security-schemaidentisch zu `0.2.1`. Der
 Security Store besitzt seinen bestehenden kontrollierten Migrationsvertrag;
 für die fachliche SQLite existiert noch kein allgemeiner Update-Migrations- und
 Rollbackvertrag. Ein späteres schemaänderndes Update benötigt deshalb vorab
@@ -36,9 +36,11 @@ nur zwischen schemaidentischen, signierten/notarisierten Appversionen.
 
 Laura hat `0.2.0` nicht installiert und beginnt direkt mit der manuell
 installierten, ad-hoc-signierten `0.2.1`. Ab dieser Version kann sie den festen
-Pilot-Appcast ausschließlich bewusst prüfen; Stable und ein produktiver
-Updatekanal bleiben deaktiviert. Keychain- und Touch-ID-Verhalten beim ersten
-Update auf einen Nachfolger bleiben eine reale Pilotprüfung.
+Pilot-Appcast ausschließlich bewusst prüfen. `0.2.2` ist das erste
+beaufsichtigte Folgeupdate und ersetzt nur das geschlossene App-Bundle. Stable
+und ein produktiver Updatekanal bleiben deaktiviert. Keychain- und
+Touch-ID-Verhalten beim ersten realen Update auf Lauras Mac bleibt eine offene
+Pilotprüfung.
 
 ## Sprint 0.2B.6 - Schlüsselbereitstellung, Signatur und Supportpaket
 
@@ -57,6 +59,13 @@ Zeiten, IDs, Duplikate und Lebensdauern brechen fail-closed ab. Ohne bewusst
 eingetragenen öffentlichen PO-Schlüssel bleibt `product_enabled = False`.
 `active` und kurzzeitig `retiring` verifizieren; `retired`, `revoked`, unbekannt,
 noch nicht gültig und abgelaufen werden abgelehnt.
+
+Version `0.2.2` aktiviert nach getrennter Product-Owner-Fingerprintfreigabe
+genau den öffentlichen Schlüssel `support-2026-b`. Der private Schlüssel und
+die Passphrase bleiben extern und getrennt. Recovery-Code bleibt der erste Weg;
+der Support-Reset ist der betreute Ausnahmeweg. Die technische Anfrage enthält
+keine Schülerdaten, und das neue Passwort wird ausschließlich von der Lehrkraft
+beim Folgestart gesetzt.
 
 Der Support-Starter bestimmt seinen eigenen Ort und startet ausschließlich die
 interaktive Offline-Laufzeit. Diese liest eine bewusst gewählte Datei oder einen

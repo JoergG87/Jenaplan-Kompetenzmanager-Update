@@ -43,8 +43,8 @@ Build-Inventar, nicht als neuer persistenter UI-State.
 
 Die Sicherheitsgrenze wird nutzernah als `Die App-Sperre ist keine
 Verschlüsselung der Datenbank, Dokumente oder Backups.` wiedergegeben. Eine
-fehlende produktive Support-Key-Freigabe darf nie als erfolgreiches
-Reset-Ergebnis projiziert werden.
+fehlende, widerrufene oder abgelaufene Support-Key-Freigabe darf nie als
+erfolgreiches Reset-Ergebnis projiziert werden.
 
 ## Sprint 0.2B.5 - Support-Reset-UI
 
@@ -57,7 +57,7 @@ Reset-Ergebnis projiziert werden.
 | Anfrage exportieren | kanonische Requestbytes | bewusste `.jkmresetrequest`-Datei | kein automatischer Pfad oder Export |
 | Reset-Code | temporäre Texteingabe / bewusster `.jkmresettoken`-Import | Nein | Größenlimit, keine Logs/Preferences, nach Fehler/Abschluss löschen |
 | Reset-Code prüfen | `SupportResetService.verify_token` | Nein | vollständige Prüfung; generische Fehlermeldung; kein Konsum |
-| Nichtfreigabe-Hinweis | leere `DEFAULT_SUPPORT_KEY_REGISTRY` | Nein | verbindlicher Produkttext, kein Testkey-Fallback |
+| Support-Reset-Freigabe | `DEFAULT_SUPPORT_KEY_REGISTRY` mit aktivem `support-2026-b` | Nein | ab `0.2.2` produktiv prüfbar; kein Testkey-Fallback und keine Schlüsseldetails in der normalen UI |
 | Reset-Vorschau | `SupportResetVerificationResult` plus statische Folgen | Nein | keine Signaturdetails oder Fachdaten |
 | Sicherheitsbackup erstellen und Passwort zurücksetzen | `VerifiedSecurityBackupAdapter` -> `SupportResetService.execute` | normales `.jkmbackup` plus atomarer Security-Commit | zweite bewusste Bestätigung, keine Mehrfachauslösung |
 | Fortschritt/Fehler | Workerphase und datensparsame Ergebnisprojektion | Nein | kein Prozentwert, kein Exception-/Token-/Pfadtext |

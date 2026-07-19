@@ -58,7 +58,7 @@ Leistungsbewertung einführen.
 | Verwaltete Dateien im Backup | Registrierte verwaltete Dokumente und finale Bericht-/LEG-Artefakte sind Bestandteil des verifizierten Backupvertrags. |
 | Lokales Konto und Passwortschutz | Ein lokales Lehrkraftkonto mit Argon2id, Drosselung und flüchtiger Sitzung ist umgesetzt. |
 | Recovery-Codes | Erzeugen, einmaliges Anzeigen, Verbrauchen und Erneuern sind umgesetzt. |
-| Technischer Support-Reset-Workflow | Anfrage, Offline-Tokenprüfung, Sicherheitsbackup und Resetabschluss sind umgesetzt; Produktivschlüssel bleibt D. |
+| Technischer Support-Reset-Workflow | Anfrage, Offline-Tokenprüfung, Sicherheitsbackup und Resetabschluss sind umgesetzt; der bestätigte öffentliche Produktivschlüssel ist ab `0.2.2` aktiv. |
 | macOS-Pilotpaket | Reproduzierbarer arm64-App-/DMG-/Dokumentbau mit ad-hoc Signierung ist umgesetzt. |
 
 ## B - Im Pilottest zu validieren
@@ -129,7 +129,6 @@ implementieren. P0-Fehler aus dem Pilottest werden befundbezogen priorisiert.
 | Stammgruppen archivieren | P2-Kandidat | Historien- und Zuordnungsregeln vor Schreibprozess entscheiden. |
 | Kurse archivieren | P2-Kandidat | Historien- und Zuordnungsregeln vor Schreibprozess entscheiden. |
 | Automatisierte Backup-Erinnerung | P3-Kandidat | Erinnerung ist kein automatisches Backup; Frequenz und lokale Speicherung entscheiden. |
-| Produktiver Support-Reset-Schlüssel und Supportprozess | P3-Kandidat | Schlüsselverwaltung, Rotation, Identitätsprüfung und Betrieb freigeben. |
 | Developer-ID-Signierung und Apple-Notarisierung | P3-Kandidat | Zertifikat, Verantwortlichkeit und reproduzierbaren Releaseprozess klären. |
 | Schemaändernde Update-Migrationen | P3-Kandidat | Vor der ersten Schemaänderung Vorwärtsmigration, Sicherung, Wiederanlauf, Kompatibilitätsfenster und Downgradeverbot gesondert entscheiden. |
 | Diagnosepaket | P3-Kandidat | Strikte Datenschutz-Allowlist und Security-Ausschlüsse entscheiden. |
@@ -207,8 +206,10 @@ Archivierungsfunktionen.
 
 ### P3 - Betrieb und Verteilung
 
-Produktiver Support-Reset, Developer-ID/Notarisierung, Updateprozess,
-Diagnosepaket, Backup-Erinnerung, Gerätewechsel und später Windows.
+Developer-ID/Notarisierung, Stable-Updateprozess, Diagnosepaket,
+Backup-Erinnerung, Gerätewechsel und später Windows. Der produktive
+Support-Reset-Schlüssel und der beaufsichtigte Pilot-Updateprozess sind mit
+`0.2.2` umgesetzt und bleiben im realen Pilottest zu validieren.
 
 ### P4 - Strategische Erweiterungen
 

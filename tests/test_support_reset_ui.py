@@ -25,6 +25,7 @@ from src.security.domain import (
     SupportResetVerificationResult,
 )
 from src.security.support_reset import SupportResetTokenCodec
+from src.security.infrastructure.key_registry import PublicKeyRegistry
 from src.security.startup import build_security_runtime
 
 
@@ -87,8 +88,13 @@ class _Service:
         return SupportResetResult(self.request.reset_request_id, 2, proof)
 
 
-def test_empty_product_registry_allows_request_but_blocks_token_step(tmp_path: Path) -> None:
+def test_empty_product_registry_allows_request_but_blocks_token_step(
+    tmp_path: Path, monkeypatch
+) -> None:
     app = _app()
+    monkeypatch.setattr(
+        "src.security.startup.DEFAULT_SUPPORT_KEY_REGISTRY", PublicKeyRegistry()
+    )
     paths = prepare_security_runtime_storage(data_root=tmp_path / "runtime")
     runtime = build_security_runtime(paths)
     runtime.service.enroll_local_account("eine ausreichend lange Support-Reset-Testpassphrase")

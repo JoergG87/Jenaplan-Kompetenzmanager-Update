@@ -35,8 +35,8 @@ immer nach ihrer Beschriftung, nicht allein nach der Farbe.
 - Die automatische Sperre bleibt auch bei gespeicherter Anmeldung aktiv.
 - Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
   FileVault wird empfohlen.
-- Der produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel
-  noch nicht freigeschaltet.
+- Der produktive Support-Reset ist ab Version `0.2.2` als betreuter Ausnahmeweg
+  nach Kontakt mit dem Support freigeschaltet.
 - Pilotupdates werden nur unter `Einstellungen > Updates` bewusst gestartet;
   es gibt keine unbeaufsichtigte Prüfung oder Installation.
 - Der Release-Kandidat ist ad hoc signiert und nicht notarisiert. Reale

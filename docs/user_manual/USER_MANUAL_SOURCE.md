@@ -114,9 +114,11 @@ sich. Beim nächsten Start müssen ein neues Passwort und neue Recovery-Codes
 eingerichtet und deren Sicherung bestätigt werden. Fachliche Daten bleiben
 erhalten.
 
-Für diese App-Version ist noch kein produktiver öffentlicher Supportschlüssel
-freigegeben. Deshalb kann die technische Anfrage bereits erzeugt werden, der
-produktive Reset ist jedoch noch nicht freigeschaltet.
+Ab Version `0.2.2` ist der produktive Support-Reset für den beaufsichtigten
+Pilotbetrieb freigeschaltet. Er bleibt der Ausnahmeweg nach Kontakt mit dem
+Support; `Recovery-Code verwenden` ist weiterhin der bevorzugte erste Weg.
+Support erzeugt weder ein Passwort noch ein Masterkennwort. Das neue Passwort
+setzt die Lehrkraft beim nächsten Start selbst.
 
 ### Anmeldung, Sperre und Recovery
 
@@ -135,9 +137,9 @@ keine Dialogschleife aus; das Passwort kann sofort verwendet werden.
 werden. Danach wird ein neues Passwort festgelegt und ein vollständig neuer
 Satz Recovery-Codes erzeugt und bestätigt. Der verwendete Code und der alte
 Satz sind anschließend ungültig. Sind Passwort und alle Recovery-Codes verloren,
-bleibt nur der sichtbare Support-Reset-Weg; dieser ist in Version
-{{PILOT_VERSION}} ohne freigegebenen öffentlichen Schlüssel noch nicht
-produktiv freigeschaltet.
+bleibt ab Version `0.2.2` der sichtbare, betreute Support-Reset-Weg. Gespeicherte
+Anmeldung und Touch ID werden dabei widerrufen und müssen anschließend bewusst
+neu eingerichtet werden.
 
 Nach erfolgreicher Anmeldung kann die Ansicht `Erste Schritte` erscheinen. Sie
 erklärt kurz den Zweck der App, verweist auf lokale Datenhaltung und führt zu
@@ -150,7 +152,7 @@ Beispieldaten fortsetzen`. `Testdaten jetzt einspielen` öffnet ausschließlich
 die bereits vorhandene Seite `Einstellungen > Datensicherung` und deren
 Dateiauswahl. Die App sucht keine Datei automatisch, wählt nichts vor und
 bestätigt keinen Restore. Die Lehrkraft wählt das synthetische
-`Laura-Testdaten-{{PILOT_VERSION}}.jkmbackup` selbst, prüft die Vorschau und
+`Laura-Testdaten-0.2.1.jkmbackup` selbst, prüft die Vorschau und
 bestätigt die Wiederherstellung bewusst.
 
 ### Frische und bestehende Installation
@@ -183,8 +185,9 @@ Pilotinstallation behält ihren vorhandenen Stand.
 
 ### Pilotversion aktualisieren
 
-Version {{PILOT_VERSION}} ist Lauras erste Installation mit beaufsichtigtem
-Pilot-Updater. Öffnen Sie `Einstellungen > Updates` und wählen Sie bewusst
+Version `0.2.1` ist Lauras erste Installation mit beaufsichtigtem
+Pilot-Updater. Version {{PILOT_VERSION}} wird als erstes beaufsichtigtes
+Sparkle-Pilotupdate installiert. Öffnen Sie `Einstellungen > Updates` und wählen Sie bewusst
 `Nach Updates suchen`. Sparkle zeigt eine verfügbare neuere Version und deren
 Release-Hinweise in einem eigenen Fenster; Download und Installation erfolgen
 nur nach ausdrücklicher Bestätigung. Es gibt keine automatische Prüfung, keinen
@@ -193,7 +196,8 @@ Hintergrunddownload und keine unbeaufsichtigte Installation.
 Die lokalen Daten bleiben erhalten, weil der Updater ausschließlich das
 geschlossene App-Bundle ersetzt. Fachliche Datenbank, Dokumente, Backups,
 Security Store, Installations-ID und App-Einstellungen liegen außerhalb. Das
-erste geplante Pilotupdate ist `0.2.2`. Falls der Feed nicht erreichbar ist,
+erste Pilotupdate ist `0.2.2` / Build `202` und enthält keine Fach- oder
+Securitymigration. Falls der Feed nicht erreichbar ist,
 bleibt das manuelle Ersetzen der App über ein neues DMG der Fallback.
 
 Der beaufsichtigte Pilot ist ad hoc signiert und nicht notarisiert. Deshalb
@@ -1097,10 +1101,10 @@ Schlüsselbund-Eintrags werden nicht unterstützt.
 - Vertretungsplan, Feiertagskalender, Pausenverwaltung oder externe Kalenderanbindung.
 - Automatische Archivierungs-, Aufbewahrungs- oder Löschfristen.
 - Verschlüsselung der Datenbank, Dokumente oder Backups.
-- Produktiver Support-Reset ohne freigegebenen öffentlichen Schlüssel.
 - Developer-ID-Signierung oder Apple-Notarisierung dieses Kandidaten.
 - Abgeschlossene reale Abnahme von Sleep/Wake, physischer Touch ID,
-  App-Switcher und vollständiger Aktivierungs-/Widerrufsreise.
+  App-Switcher, Keychain-/Touch-ID-Verhalten nach dem Update und vollständiger
+  Aktivierungs-/Widerrufsreise.
 
 ## 20. Glossar
 

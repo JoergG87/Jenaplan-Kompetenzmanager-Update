@@ -274,25 +274,35 @@ hdiutil convert "$DMG_RW" -format UDZO -imagekey zlib-level=9 -ov -o "$DMG_PATH"
 if [ -n "$SIGNING_IDENTITY" ]; then
     codesign --force --timestamp --sign "$SIGNING_IDENTITY" "$DMG_PATH"
 fi
-shasum -a 256 "$DMG_PATH" > "$DMG_PATH.sha256"
-shasum -a 256 "$INSTALLATION_PDF" > "$INSTALLATION_PDF.sha256"
-shasum -a 256 "$MANUAL_PDF" > "$MANUAL_PDF.sha256"
-shasum -a 256 "$FIRST_STEPS_PDF" > "$FIRST_STEPS_PDF.sha256"
-shasum -a 256 "$QUICKSTART_PDF" > "$QUICKSTART_PDF.sha256"
-shasum -a 256 "$BACKUP_GUIDE_PDF" > "$BACKUP_GUIDE_PDF.sha256"
-shasum -a 256 "$BACKUP_SCRIPT" > "$BACKUP_SCRIPT.sha256"
+write_checksum() {
+    local artifact="$1"
+    (
+        cd "$(dirname "$artifact")"
+        shasum -a 256 "$(basename "$artifact")"
+    ) > "$artifact.sha256"
+}
+
+write_checksum "$DMG_PATH"
+write_checksum "$INSTALLATION_PDF"
+write_checksum "$MANUAL_PDF"
+write_checksum "$FIRST_STEPS_PDF"
+write_checksum "$QUICKSTART_PDF"
+write_checksum "$BACKUP_GUIDE_PDF"
+write_checksum "$BACKUP_SCRIPT"
 cp docs/RELEASE_NOTES.md "$RELEASE_NOTES"
 
-shasum -a 256 \
-    "$DMG_PATH" \
-    "$INSTALLATION_PDF" \
-    "$MANUAL_PDF" \
-    "$FIRST_STEPS_PDF" \
-    "$QUICKSTART_PDF" \
-    "$BACKUP_GUIDE_PDF" \
-    "$BACKUP_SCRIPT" \
-    "$RELEASE_NOTES" \
-    > "$RELEASE_CHECKSUMS"
+(
+    cd "$DIST_ROOT"
+    shasum -a 256 \
+        "$(basename "$DMG_PATH")" \
+        "$(basename "$INSTALLATION_PDF")" \
+        "$(basename "$MANUAL_PDF")" \
+        "$(basename "$FIRST_STEPS_PDF")" \
+        "$(basename "$QUICKSTART_PDF")" \
+        "$(basename "$BACKUP_GUIDE_PDF")" \
+        "$(basename "$BACKUP_SCRIPT")" \
+        "$(basename "$RELEASE_NOTES")"
+) > "$RELEASE_CHECKSUMS"
 
 BUILD_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 {
@@ -309,13 +319,13 @@ BUILD_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     echo "Signierung: $SIGNING_STATUS"
     echo "Notarisierung: nicht durchgeführt"
     echo "Datenmodus: $DATA_MODE (Release-Kandidat ohne Pilot- oder Echtdaten)"
-    echo "Produktiver Support-Reset: nicht freigeschaltet; Public-Key-Registry leer"
+    echo "Produktiver Support-Reset: freigeschaltet; Public-Key-Registry aktiv"
     echo "Updatekanal: pilot (manuelle Prüfung; keine automatische Installation)"
     echo "Pilot-Appcast: $PILOT_APPCAST_URL"
     echo "Stable-Kanal: deaktiviert"
     echo
     echo "Automatisierter Teststand: siehe Abschlussbericht zum Release-Kandidaten"
-    echo "Offene reale Prüfungen: echter Sleep/Wake; physische Touch-ID-Systemaufforderung und Fingerabdruck; App-Switcher; vollständige reale Aktivierungs-/Widerrufsreise; produktiver Support-Reset; Developer-ID-Signierung; Apple-Notarisierung."
+    echo "Offene reale Prüfungen: echter Sleep/Wake; physische Touch-ID-Systemaufforderung und Fingerabdruck; App-Switcher; reale Keychain-/Touch-ID-Prüfung nach Update auf Lauras Mac; Developer-ID-Signierung; Apple-Notarisierung."
     echo
     echo "Artefakte (Bytes, SHA-256, Datei):"
     for artifact in "$DMG_PATH" "$MANUAL_PDF" "$FIRST_STEPS_PDF" "$QUICKSTART_PDF" "$INSTALLATION_PDF" "$BACKUP_GUIDE_PDF" "$RELEASE_NOTES"; do

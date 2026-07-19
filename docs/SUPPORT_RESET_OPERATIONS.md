@@ -59,10 +59,12 @@ Klartext-Private-Key und keine Standardpassphrase.
 
 ## Manuelle Produktivaktivierung
 
-Ohne ausdrücklich vom Product Owner bereitgestellte öffentliche Beschreibung
-bleibt `PRODUCT_SUPPORT_KEY_REGISTRY` in
-`src/security/infrastructure/product_support_keys.py` leer und die App
-fail-closed. Aktivierung ist ein gesonderter, geprüfter App-Release:
+Version `0.2.2` aktiviert nach ausdrücklicher Product-Owner-Bestätigung den
+öffentlichen Schlüssel `support-2026-b` in
+`src/security/infrastructure/product_support_keys.py`. Der bestätigte
+SHA-256-Fingerprint lautet
+`76e619df93483de9313d5bf592fc852c88f1ba7ac5261018801c0fcd5e96be77`.
+Aktivierung bleibt ein gesonderter, geprüfter App-Release:
 
 1. Öffentliche Beschreibung und Fingerprint über getrennte Kanäle vergleichen.
 2. `key_id`, Algorithmus `Ed25519`, Base64url-Public-Key, Status, `not_before`,
@@ -73,6 +75,10 @@ fail-closed. Aktivierung ist ein gesonderter, geprüfter App-Release:
 4. Registry-, Signatur-, Bundle-, Paket- und Geheimnisscan vollständig ausführen.
 5. Erst den geprüften App-Release verteilen; es gibt keine Laufzeit- oder
    Netzwerkfreischaltung.
+
+Registry-Format 1 verlangt ein technisches `not_after`. Für diesen Schlüssel
+steht `9999-12-31T23:59:59Z` für kein bewusst terminiertes Ablaufdatum; Rotation
+und sofortiger Widerruf per App-Release bleiben unverändert verpflichtend.
 
 Die App akzeptiert `active` und während einer kurzen Rotation `retiring`.
 `retired`, `revoked`, unbekannte, noch nicht gültige und abgelaufene Schlüssel

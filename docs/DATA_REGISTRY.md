@@ -17,7 +17,7 @@ Release-Verantwortlichen und sind strikt vom Support-Reset-Schlüssel getrennt.
 
 | Quelle | Inhalt | Owner | Ausschlüsse |
 |---|---|---|---|
-| `PRODUCT_SUPPORT_KEY_REGISTRY` | Formatversion 1, `key_id`, Ed25519-Public-Key, Status, Gültigkeits-/Widerrufszeit und SHA-256-Fingerprint | geprüfter App-Release | kein privater Schlüssel, keine Passphrase, Anfrage oder Token; aktuell leer |
+| `PRODUCT_SUPPORT_KEY_REGISTRY` | Formatversion 1; ab `0.2.2` ausschließlich `support-2026-b`, Ed25519-Public-Key, Status `active`, Aktivierung `2026-07-19T22:12:15Z`, technische Obergrenze und bestätigter SHA-256-Fingerprint | geprüfter App-Release | kein privater Schlüssel, keine Passphrase, Anfrage oder Token |
 | externe öffentliche Schlüsselbeschreibung | `key_id`, Algorithmus, Public-Key, Erstellungszeit, vorgesehener Status und Fingerprint | Support-Verantwortlicher | darf getrennt zur Registry-Prüfung weitergegeben werden |
 | externer verschlüsselter PKCS#8-Schlüssel | ausschließlich privater Ed25519-Schlüssel, verschlüsselt und Dateirechte `600` in Verzeichnis `700` | Support-Verantwortlicher | niemals App, Repository, Build, DMG, Pilot-/Laura- oder Supportpaket |
 | separates Supportpaket | Finder-Starter, arm64-Laufzeiten, Anleitung, Strukturbeispiel, Version und Prüfsummen | Support-Packaging | keine App, DMG, Fachdatenbank, Backups, Schülerdaten, Secrets, Testkeys, Anfragen oder Tokens |
@@ -26,6 +26,12 @@ Der interaktive Supportprozess hält Anfrage, Passphrase, Private-Key-Objekt und
 Token ausschließlich so kurz wie für Prüfung und Ausgabe nötig im Prozess. Nur
 die bewusst gewählte `.jkmresettoken`-Datei wird mit Rechten `600` geschrieben;
 es gibt keine automatische Suche, Ablage, Netzwerkquelle oder Protokollierung.
+
+Der öffentliche Registry-Fingerprint von `support-2026-b` lautet
+`76e619df93483de9313d5bf592fc852c88f1ba7ac5261018801c0fcd5e96be77`.
+Registry-Format 1 verlangt `not_after`; `9999-12-31T23:59:59Z` bedeutet hier
+kein bewusst terminiertes Ablaufdatum. Rotation oder Widerruf bleiben jederzeit
+per geprüftem App-Release möglich.
 
 ## Sprint 0.2R - Release-Ausgaben
 
@@ -40,11 +46,12 @@ Tokens, Schlüsselbundwerte, private oder Testschlüssel.
 Beide Pilotpakete enthalten keine App zusätzlich zum identischen leeren DMG,
 keinen Sourcecode, keine Tests oder Fixtures und keine Screenshots. Nur die
 Laura-Testdatenvariante enthält zusätzlich
-`Laura-Testdaten-0.2.1.jkmbackup`: eine mit dem offiziellen Backup-Service aus
+`Laura-Testdaten-0.2.1.jkmbackup`: das bereits an Laura ausgegebene, mit dem offiziellen Backup-Service aus
 dem deterministischen Acht-Monats-Seed abgeleitete Sicherung mit ausschließlich
 synthetischen Fachdaten. Sie enthält keinen Security Store, keine Kontodaten,
 Passwörter, Recovery-Codes, Gerätecredentials, Support-Tokens oder Schlüssel.
-Die produktive Public-Key-Registry bleibt leer. Die bestehende Testmappe bleibt
+Das Updateartefakt `0.2.2` enthält keine `.jkmbackup`; die produktive
+Public-Key-Registry enthält ausschließlich `support-2026-b`. Die bestehende Testmappe bleibt
 die einzige kanonische Ergebniserfassung; reale Ergebnisse werden nicht durch
 den Build erzeugt oder überschrieben.
 
@@ -56,7 +63,7 @@ den Build erzeugt oder überschrieben.
 | bestehende `security.sqlite.support_reset_token_uses` | ausschließlich Token-Digest, `key_id`, Aktion, Status und Zeiten | `SQLiteSecurityRepository` | kein vollständiger Token |
 | `.jkmresetrequest` | kanonische versionierte Anfragebytes | bewusster Nutzerexport | keine automatische Datei, keine Fach- oder Authgeheimnisse |
 | `.jkmresettoken` | optionaler äußerer Tokenaustausch | externer Supportprozess / temporäre UI-Eingabe | nie AppPreferences, Security Store, Backup oder Log |
-| `DEFAULT_SUPPORT_KEY_REGISTRY` | ausschließlich freigegebene öffentliche Ed25519-Schlüssel | paketierter Produktcode | aktuell leer; kein Test-/Privatschlüssel |
+| `DEFAULT_SUPPORT_KEY_REGISTRY` | ausschließlich freigegebene öffentliche Ed25519-Schlüssel | paketierter Produktcode | ab `0.2.2` genau `support-2026-b`; kein Test-/Privatschlüssel |
 
 Der Reset erzeugt ein bestehendes fachliches `.jkmbackup`; Format und Ausschlüsse
 bleiben unverändert. Anfrageexport und Token sind keine Cloud-, Telemetrie- oder

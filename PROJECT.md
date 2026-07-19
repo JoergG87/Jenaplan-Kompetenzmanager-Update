@@ -7,14 +7,15 @@ produktiven Updater. Der unveränderte Release-Kandidat `0.2.0` besitzt keinen
 Updateclient und wurde Laura nicht installiert. Ihre erste Installation ist
 deshalb direkt ein bewusst manuell geöffnetes Pilot-DMG `0.2.1`; erst diese
 Version enthält den für den beaufsichtigten Pilotkanal konfigurierten
-Sparkle-2-Client. Ein gleichnamiger Neuaufbau von `0.2.0` wird wegen nicht
+Sparkle-2-Client. `0.2.2` / Build `202` ist das erste beaufsichtigte
+Sparkle-Folgeupdate. Ein gleichnamiger Neuaufbau von `0.2.0` wird wegen nicht
 unterscheidbarer Installationen verworfen.
 
 Der spätere Updatepfad ersetzt ausschließlich das unveränderliche App-Bundle.
 Fachliche SQLite, verwaltete Dokumente, Exporte, Backups, Logs, Security Store,
 AppPreferences und nicht synchronisierender macOS-Schlüsselbund bleiben
-außerhalb des Bundles. `0.2.1` darf deshalb keine fachliche Schemaänderung
-enthalten. Der ad-hoc-signierte Einzelpilot behauptet weder Developer ID noch
+außerhalb des Bundles. `0.2.2` enthält deshalb weder Fach- noch
+Securitymigration. Der ad-hoc-signierte Einzelpilot behauptet weder Developer ID noch
 Notarisierung. Produktive Veröffentlichung bleibt gesperrt, bis Developer ID,
 Hardened Runtime, Notarisierung/Stapling, signierter HTTPS-Appcast, externer
 privater EdDSA-Schlüssel und der reale Schlüsselbund-/Touch-ID-Übergang von der
@@ -29,12 +30,12 @@ offline, liest keine fachliche Runtime und wird weder App-/DMG- noch Laura-
 Paketbestandteil. Der private Schlüssel wird ausschließlich außerhalb des
 Repositorys verschlüsselt als PKCS#8 mit restriktiven Rechten erzeugt.
 
-Die produktive Public-Key-Registry besitzt jetzt einen strikt versionierten,
+Die produktive Public-Key-Registry besitzt einen strikt versionierten,
 deterministisch validierten Einbindungsweg für mehrere aktive, rotierende,
-retirierte und widerrufene öffentliche Schlüssel. Ohne den ausdrücklich vom
-Product Owner bereitgestellten öffentlichen Schlüssel bleibt sie leer und die
-App fail-closed. Der letzte Produktivaktivierungsschritt ist deshalb bewusst
-manuell und erfordert einen neuen geprüften App-Release.
+retirierte und widerrufene öffentliche Schlüssel. Version `0.2.2` aktiviert
+nach ausdrücklicher Fingerprintbestätigung ausschließlich den öffentlichen
+Schlüssel `support-2026-b`; privater Schlüssel und Passphrase bleiben extern.
+Rotation und Widerruf erfordern weiterhin einen neuen geprüften App-Release.
 
 ## Pilot-Release-Kandidat 0.2.0
 
@@ -46,13 +47,14 @@ und Dokumentbuild übernehmen sie ohne zweite Versionsquelle.
 Der Release-Kandidat startet ohne Schüler-, Pilot- oder Runtime-Daten. Die
 App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
 FileVault und ein geschütztes macOS-Benutzerkonto bleiben erforderlich. Der
-produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel nicht
-freigeschaltet; die produktive Registry bleibt leer.
+produktive Support-Reset ist ab `0.2.2` für den beaufsichtigten Pilotbetrieb als
+betreuter Ausnahmeweg freigeschaltet. Recovery-Code bleibt der erste Weg.
 
 Technisch nicht durch reale Hardwareabnahme ersetzt sind echter Sleep/Wake, die
 physische Touch-ID-Systemaufforderung mit Fingerabdruck, App-Switcher und die
 vollständige Aktivierungs-/Widerrufsreise. Developer-ID-Signierung,
-Apple-Notarisierung und produktiver Support-Reset bleiben ebenfalls offen.
+Apple-Notarisierung sowie die reale Keychain-/Touch-ID-Prüfung nach dem Update
+auf Lauras Mac bleiben ebenfalls offen.
 
 ## Support-Reset-Ablauf ab Version 0.2B.5
 
@@ -74,10 +76,10 @@ Sicherungsbestätigung verlangt. Fachliche Daten, IDs, Dokumentpfade,
 Backupformat, Anzeigename und Onboardingstatus bleiben unverändert. Der Prozess
 entschlüsselt nichts und ist kein Masterkennwort.
 
-Es liegt weiterhin kein freigegebener produktiver öffentlicher Supportschlüssel
-vor. Die Default-Key-Registry bleibt daher leer; die UI kann Anfragen erzeugen,
-meldet den Produktivbetrieb aber als noch nicht freigeschaltet. Private Schlüssel
-und zentrale Audit-/Cloudsysteme sind nicht Bestandteil der App.
+Ab Version `0.2.2` enthält die Default-Key-Registry genau den vom Product Owner
+bestätigten öffentlichen Schlüssel `support-2026-b`. Die UI kann damit
+signierte Codes produktiv prüfen. Private Schlüssel, Passphrase und zentrale
+Audit-/Cloudsysteme sind nicht Bestandteil der App.
 
 ## Geräteanmeldung und Touch ID ab Version 0.2B.4a
 
@@ -162,8 +164,8 @@ Inhalten verbunden.
 Historisch lieferten Sprint 0.2B.2 zunächst nur den testbaren Core und Sprint
 0.2B.3 den offline signierten Ed25519-Support-Reset. Die damals noch offenen
 Start-, Sitzungs-, Login-, Recovery- und Reset-Oberflaechen wurden durch Sprint
-0.2B.4 und 0.2B.5 umgesetzt. Offen bleibt die betriebliche Freischaltung des
-Support-Resets durch einen freigegebenen öffentlichen Produktivschlüssel.
+0.2B.4 und 0.2B.5 umgesetzt. Version `0.2.2` schließt die betriebliche
+Freischaltung mit einem freigegebenen öffentlichen Produktivschlüssel ab.
 
 ## Aktueller Produktstand
 
@@ -171,7 +173,7 @@ Der Jenaplan-Kompetenzmanager ist eine lokale Python-/PySide6-Desktop-Anwendung 
 
 Der implementierte Stand nach Sprint 10B und den anschliessenden Schuelerprofil-UX-Korrekturen umfasst die zentralen Arbeitsbereiche fuer Stammdaten, Unterrichtsalltag, Beobachtung, Kompetenzdokumentation, Schuelerprofil, Lernentwicklungsbericht und Lernentwicklungsgespraech. Unveraenderliche Bericht- und LEG-Revisionen sowie daraus erzeugte PDF-Artefakte sind produktiv umgesetzt.
 
-Das Projekt befindet sich in der **Produktreifephase**. Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit, Dokumentationsqualitaet, Betriebsentscheidungen und Release-Vorbereitung. Fuer den technischen macOS-Pilot-Release-Kandidaten ist die Paketversion `0.2.0` festgelegt; daraus folgt noch keine allgemeine Produktrelease-, reale Pilotabnahme- oder App-Store-Entscheidung.
+Das Projekt befindet sich in der **Produktreifephase**. Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit, Dokumentationsqualitaet, Betriebsentscheidungen und Release-Vorbereitung. Lauras installierte Ausgangsversion ist `0.2.1`; `0.2.2` / Build `202` ist das erste beaufsichtigte Sparkle-Pilotupdate. Daraus folgt noch keine allgemeine Produktrelease-, reale Pilotabnahme- oder App-Store-Entscheidung.
 
 Excel/VBA ist eine historische Vorstufe. Die damalige Workbook-Linie wird unter `legacy/excel/` als Referenz erhalten, ist aber weder Zielplattform noch aktiver Produktpfad. Historische Workbook-Versionen wie `v0.4` und fruehere Ausgabedateien sind keine aktuellen Hauptartefakte.
 
@@ -283,7 +285,7 @@ signiertes oder ad-hoc signiertes App-Bundle
 -> SQLite, Dokumente, Exporte, Backups und Logs ausserhalb der App
 ```
 
-Der Apple-Silicon-Pilotbuild wird reproduzierbar mit PyInstaller erzeugt und setzt macOS 13 voraus. Die Standardvariante enthaelt keine Schuelerdaten. Version `0.2.0` wird weiterhin ausschließlich durch geschlossenen manuellen App-Austausch aktualisiert; der in ADR-073 beschlossene Sparkle-2-Pfad beginnt frühestens mit `0.2.1` und bleibt bis zu allen Release-Gates deaktiviert.
+Der Apple-Silicon-Pilotbuild wird reproduzierbar mit PyInstaller erzeugt und setzt macOS 13 voraus. Die Standardvariante enthaelt keine Schuelerdaten. Laura beginnt mit der manuell installierten Version `0.2.1`; `0.2.2` wird als erstes beaufsichtigtes Folgeupdate über den festen Sparkle-Pilotkanal installiert. Stable bleibt deaktiviert.
 
 ### Architekturprinzipien
 

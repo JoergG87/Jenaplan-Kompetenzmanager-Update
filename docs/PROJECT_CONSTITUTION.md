@@ -1,9 +1,10 @@
 # Project Constitution
 
-## Release-Grenze Version 0.2.1
+## Release-Grenze Version 0.2.2
 
 Der technisch umgesetzte Stand darf als leerer macOS-arm64-Pilot-
-Release-Kandidat `0.2.1` gebaut werden. `src/version.py` bleibt die kanonische
+Release-Kandidat `0.2.2` gebaut und ausschließlich als beaufsichtigtes
+Sparkle-Pilotupdate von `0.2.1` installiert werden. `src/version.py` bleibt die kanonische
 Produktversionsquelle. Release-Artefakte enthalten keine Pilot-, Fach-,
 Runtime- oder Security-Daten und keine privaten oder Testschlüssel.
 
@@ -15,10 +16,10 @@ Recovery-Codes, Gerätecredentials, Support-Tokens oder Schlüssel. Leere
 Erststartvariante und Laura-Testdatenvariante verwenden exakt dasselbe leere
 Installationsartefakt.
 
-Laura hat `0.2.0` nicht installiert und beginnt direkt mit `0.2.1`. Diese
-Version darf im beaufsichtigten Einzelpiloten den festen, EdDSA-authentisierten
-Sparkle-Pilotkanal enthalten. Prüfung, Download und Installation erfolgen nur
-nach bewusster Nutzeraktion. Stable, automatische Hintergrundinstallation und
+Laura hat `0.2.0` nicht installiert und beginnt direkt mit `0.2.1`. Version
+`0.2.2` ist das erste beaufsichtigte Folgeupdate über den festen,
+EdDSA-authentisierten Sparkle-Pilotkanal. Prüfung, Download und Installation
+erfolgen nur nach bewusster Nutzeraktion. Stable, automatische Hintergrundinstallation und
 eine allgemeine Produktivfreigabe bleiben ohne Developer ID, Notarisierung und
 die übrigen ADR-073-Gates verboten.
 
@@ -27,9 +28,10 @@ Restore-Dateidialog öffnen. Er darf kein Backup suchen, vorauswählen, importie
 oder bestätigen. Synthetische Fachdaten bleiben ein separates `.jkmbackup`.
 
 Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
-Die produktive Support-Key-Registry bleibt ohne freigegebenen öffentlichen
-Schlüssel leer. Echter Sleep/Wake, physische Touch ID, App-Switcher,
-vollständige Aktivierungs-/Widerrufsreise, produktiver Support-Reset,
+Die produktive Support-Key-Registry enthält ab `0.2.2` ausschließlich den vom
+Product Owner bestätigten öffentlichen Schlüssel `support-2026-b` im Status
+`active`. Privater Schlüssel und Passphrase bleiben extern. Echter Sleep/Wake,
+physische Touch ID, App-Switcher, vollständige Aktivierungs-/Widerrufsreise,
 Developer-ID-Signierung und Apple-Notarisierung bleiben offene reale
 Release-Prüfungen und dürfen nicht als automatisiert bestanden gelten.
 
@@ -45,7 +47,8 @@ Release-Prüfungen und dürfen nicht als automatisiert bestanden gelten.
   Gerätecredentials und Sitzung, erhöht die Security-Epoch, setzt
   `password_reset_pending` und beendet die App.
 - Private Schlüssel bleiben außerhalb von Repository, Build und App-Bundle.
-  Ohne freigegebenen öffentlichen Schlüssel bleibt die produktive Registry leer.
+  Die produktive Registry enthält ab `0.2.2` nur den bestätigten öffentlichen
+  Schlüssel; Rotation und Widerruf benötigen weiterhin ein App-Update.
 - Der nächste Start erzwingt neues Passwort, neuen Recovery-Satz und
   Sicherungsbestätigung, bevor die Fach-App geöffnet wird.
 - Fachliche Daten, IDs, Dokumentpfade, Backup-/Restoreverträge, Anzeigename und

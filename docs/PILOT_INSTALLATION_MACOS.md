@@ -3,15 +3,14 @@
 ## Paketstand
 
 - Produkt: `Jenaplan-Kompetenzmanager`
-- Pilotversion: `0.2.0`
+- Pilotversion: `0.2.2` / Build `202`
 - Architektur: Apple Silicon (`arm64`)
 - minimale unterstützte Version: macOS 13
 - Auslieferungsvariante: `release` ohne Schüler-, Pilot- oder Runtime-Daten
 - technische Prüfvariante: `empty` ohne Schüler und Dokumente
-- Auto-Updater und App-Store-Verteilung: nicht vorhanden
-- Status nach Sprint 0.2U.1: entschiedener Folgepfad über manuelles DMG
-  `0.2.1`, danach beaufsichtigter Sparkle-2-Pilotkanal erst nach allen
-  Release-Gates
+- Updatekanal: beaufsichtigter Sparkle-2-Pilotkanal; Stable deaktiviert
+- Ausgangsversion `0.2.1`, erstes Pilotupdate `0.2.2`; keine automatische
+  Prüfung, kein Hintergrunddownload und keine unbeaufsichtigte Installation
 
 Das App-Bundle enthält Python 3.14, PySide6 6.11 und die benötigten Qt- und
 PDF-Laufzeitbestandteile. Auf dem Ziel-Mac werden weder Python, Terminal,
@@ -19,7 +18,7 @@ Repository noch Entwicklungsumgebung benötigt.
 
 Die kurze Lehrkraftfassung liegt in `docs/PILOT_INSTALLATION_LEHRKRAFT.md` und
 wird beim Build als
-`Jenaplan-Kompetenzmanager-Pilot-0.2.0-Installationsanleitung.pdf` erzeugt.
+`Jenaplan-Kompetenzmanager-Pilot-0.2.2-Installationsanleitung.pdf` erzeugt.
 
 ## Reproduzierbarer Build
 
@@ -144,6 +143,8 @@ Veränderliche Daten liegen immer außerhalb der App unter:
 
 `0.2.0` bleibt unverändert und wurde Laura nicht installiert. Ihre erste
 tatsächliche Installation ist direkt das manuell geöffnete Pilot-DMG `0.2.1`.
+Das erste Folgeupdate ist `0.2.2` / Build `202` über den bewusst ausgelösten
+Sparkle-Pilotkanal.
 Es ist ad hoc signiert und nicht notarisiert; ein inhaltlich neu gebautes
 `0.2.0` wird nicht verteilt. Die Daten bleiben außerhalb der App.
 
@@ -156,7 +157,7 @@ Reset, anderem Schreibvorgang oder ungespeichertem Arbeitsstand verschoben.
 
 Der Updater ersetzt nur das App-Bundle. Fachliche Datenbank, Dokumente,
 Exporte, Backups, Logs, Security Store, Einstellungen und macOS-Schlüsselbund
-bleiben unverändert. `0.2.1` enthält keine Datenmigration. Ein manueller
+bleiben unverändert. `0.2.2` enthält weder Fach- noch Securitymigration. Ein manueller
 Rollback auf ein aufbewahrtes vorheriges DMG ist nur zwischen
 schemaidentischen Versionen zulässig.
 
@@ -181,7 +182,7 @@ dem lokalen Datenordner entfernt werden.
 - keine Cloud-Synchronisation oder Benutzerkonten;
 - ohne Developer-ID keine Notarisierung und daher möglicher Gatekeeper-Hinweis
   beim Erststart;
-- produktiver Support-Reset ohne freigegebenen öffentlichen Schlüssel nicht
-  freigeschaltet;
+- produktiver Support-Reset ist ab `0.2.2` als betreuter Ausnahmeweg aktiviert;
+  Recovery-Code bleibt der bevorzugte erste Weg;
 - echte Sleep/Wake-, physische Touch-ID-, App-Switcher- und vollständige reale
   Aktivierungs-/Widerrufsprüfung noch offen.

@@ -50,8 +50,8 @@ Wichtige Grenzen:
   beschreiben den vorgesehenen Weg.
 - Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
   FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
-- Der produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel
-  noch nicht freigeschaltet.
+- Der produktive Support-Reset ist ab Version 0.2.2 als betreuter Ausnahmeweg
+  nach Kontakt mit dem Support freigeschaltet.
 - Der Sparkle-Pilotkanal prüft oder installiert nichts automatisch. Version
   0.2.2 wird später bewusst unter Einstellungen > Updates angestoßen.
 - Das Paket enthält keine Schüler-, Fach-, Laufzeit- oder Anmeldedaten.
@@ -62,7 +62,7 @@ Offene reale Prüfungen:
 - physische Touch-ID-Systemaufforderung und Fingerabdruck
 - App-Switcher-Prüfung
 - vollständige Aktivierungs-/Widerrufsreise
-- produktiver Support-Reset
+- reale Keychain-/Touch-ID-Prüfung nach einem Support-Reset
 - LEG-UX-Bewertung zur Sichtbarkeit von Vorschau und Gesprächsführung
 - Developer-ID-Signierung
 - Apple-Notarisierung
@@ -98,11 +98,12 @@ Klare Trennung:
 - Nur die separat beiliegende .jkmbackup-Datei enthält synthetische Fachdaten.
 - Konto, Passwort, Recovery-Codes, Touch-ID-Zuordnung, Gerätecredentials,
   Security Store, Support-Tokens und Schlüssel sind nicht Bestandteil des Backups.
-- Die produktive Public-Key-Registry bleibt leer.
+- Die produktive Public-Key-Registry enthält den freigegebenen öffentlichen
+  Support-Schlüssel; private Schlüssel und Passphrasen bleiben außerhalb.
 - Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
   FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
-- Der produktive Support-Reset ist ohne freigegebenen öffentlichen Schlüssel
-  noch nicht freigeschaltet.
+- Der produktive Support-Reset ist ab Version 0.2.2 als betreuter Ausnahmeweg
+  nach Kontakt mit dem Support freigeschaltet.
 - Testdaten werden niemals automatisch gesucht, ausgewählt oder importiert.
 - Der Sparkle-Pilotkanal prüft oder installiert nichts automatisch.
 
@@ -112,7 +113,7 @@ Offene reale Prüfungen:
 - physische Touch-ID-Systemaufforderung und Fingerabdruck
 - App-Switcher-Prüfung
 - vollständige Aktivierungs-/Widerrufsreise
-- produktiver Support-Reset
+- reale Keychain-/Touch-ID-Prüfung nach einem Support-Reset
 - LEG-UX-Bewertung zur Sichtbarkeit von Vorschau und Gesprächsführung
 - Developer-ID-Signierung
 - Apple-Notarisierung

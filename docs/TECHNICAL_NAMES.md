@@ -22,7 +22,7 @@ Supportpaketnamen.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
-| `PRODUCT_SUPPORT_KEY_REGISTRY` | Versioniertes, reviewbares Manifest ausschließlich öffentlicher Produktivschlüssel; bis zur PO-Freigabe leer | Security Infrastructure |
+| `PRODUCT_SUPPORT_KEY_REGISTRY` | Versioniertes, reviewbares Manifest ausschließlich öffentlicher Produktivschlüssel; ab `0.2.2` mit `support-2026-b` aktiv | Security Infrastructure |
 | `SUPPORT_KEY_REGISTRY_FORMAT_VERSION` | Strikte Manifestversion der Public-Key-Registry, initial `1` | Security Infrastructure |
 | `Jenaplan-Support-Reset.command` | Finder-Starter ohne Secretargumente für den geführten Offline-Signaturprozess | Support-Betrieb |
 | `support_reset_cli` | Deutsche interaktive Supportprojektion für Anfrageprüfung, Schlüsselpaarprüfung, Laufzeit und sicheren Tokenexport | Support-Betrieb |
@@ -36,6 +36,10 @@ Registry-Schlüsselzustände sind `active`, `retiring`, `retired` und `revoked`.
 Nur `active` und das kurze Rotationsfenster `retiring` sind verifizierbar;
 `retired` und `revoked` sind fail-closed. Private Schlüssel, Passphrasen,
 Anfragen und Tokens sind keine Registry- oder Buildnamen.
+
+Registry-Format 1 verlangt technisch `not_after`. Für `support-2026-b` bildet
+`9999-12-31T23:59:59Z` ausdrücklich „kein bewusst terminiertes Ablaufdatum“ ab;
+das ist keine Aufhebung von Rotation oder sofortigem Widerruf per App-Release.
 
 ## Version 0.2.0 - UI-Stabilitätsnachschnitt
 
@@ -85,8 +89,9 @@ Datenquellen oder Runtime-Verträge.
 | `support_reset_backup_failed` | Datenschutzneutrales Security-Ereignis | Security Logging |
 | `support_reset_completed` | Datenschutzneutrales Security-Ereignis | Security Logging |
 
-`DEFAULT_SUPPORT_KEY_REGISTRY` bleibt ohne Product-Owner-Freigabe leer. Testkeys
-und private Schlüssel sind keine Produktnamen oder Bundle-Ressourcen.
+`DEFAULT_SUPPORT_KEY_REGISTRY` enthält ab `0.2.2` ausschließlich den vom
+Product Owner bestätigten öffentlichen Schlüssel `support-2026-b`. Testkeys und
+private Schlüssel sind keine Produktnamen oder Bundle-Ressourcen.
 
 ## Sprint 0.2B.4a - Gerätecredential und lokale Authentifizierung
 

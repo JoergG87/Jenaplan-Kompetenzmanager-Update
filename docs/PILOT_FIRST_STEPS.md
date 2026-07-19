@@ -13,7 +13,7 @@ Das Pilotpaket liegt in zwei klar getrennten Varianten vor:
 
 Beide Varianten verwenden exakt dasselbe leere DMG. In der
 Laura-Testdatenvariante wird zuerst das lokale Konto eingerichtet. Danach wird
-`Laura-Testdaten-{{PILOT_VERSION}}.jkmbackup` unter
+`Laura-Testdaten-0.2.1.jkmbackup` unter
 `Einstellungen > Datensicherung` über den normalen Restore-Weg ausgewählt,
 geprüft und bewusst wiederhergestellt. Das Backup enthält keine Kontodaten,
 Passwörter, Recovery-Codes, Gerätecredentials, Security Stores, Support-Tokens
@@ -60,11 +60,16 @@ Bewertungsfarben behalten ihre eigene Bedeutung.
 - Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
   FileVault und ein geschütztes macOS-Benutzerkonto werden empfohlen.
 - Wenn weder Passwort noch Recovery-Codes verfügbar sind, zeigt die App eine
-  technische Support-Reset-Anfrage. Der produktive Reset ist ohne freigegebenen
-  öffentlichen Schlüssel in Version {{PILOT_VERSION}} noch nicht freigeschaltet.
+  technische Support-Reset-Anfrage. Ab Version `0.2.2` ist der betreute
+  Ausnahmeweg nach Kontakt mit dem Support freigeschaltet. Die Anfrage enthält
+  keine Schülerdaten; das neue Passwort setzt die Lehrkraft selbst.
+- Recovery-Code bleibt der bevorzugte erste Wiederherstellungsweg. Nach einem
+  Support-Reset müssen gespeicherte Anmeldung und Touch ID erneut eingerichtet
+  werden.
 - Unter `Einstellungen > Updates` wird ausschließlich auf bewusste Aktion im
-  festen Pilotkanal geprüft. `0.2.2` ist das erste beaufsichtigte Update. Es
-  darf keine fachlichen Daten oder Kontodaten ersetzen.
+  festen Pilotkanal geprüft. `0.2.1` ist die Ausgangsversion; `0.2.2` / Build
+  `202` ist das erste beaufsichtigte Update. Es ersetzt ausschließlich das
+  App-Bundle und keine fachlichen Daten oder Kontodaten.
 
 Für Rückmeldungen die mitgelieferte Test-Excel verwenden und nur künstliche
 Testdaten einsetzen.

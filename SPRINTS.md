@@ -1,5 +1,21 @@
 # Sprintplanung
 
+## Sprint 0.2.2 - Erstes beaufsichtigtes Sparkle-Pilotupdate
+
+**Status:** Product-Owner-Fingerprint bestätigt; öffentliche Registry,
+Version `0.2.2` / Build `202`, Release-Dokumentation, Artefakte und Pilotfeed im
+Release-Gate. Kein Commit oder Staging in diesem Auftrag.
+
+**Umfang:** Ausschließlich `support-2026-b` als aktiver öffentlicher
+Ed25519-Schlüssel, unveränderte Bundle-ID/macOS-13-/arm64-/Pilotgrenze,
+signiertes Sparkle-Updatearchiv, Pilot-Appcast, Release Notes, DMG-Fallback und
+Prüfprotokolle. Keine Fachfunktion, Daten- oder Securitymigration und keine
+UI-Neuentwicklung.
+
+**Offene reale Grenze:** Keychain, Touch ID, Sleep/Wake und App-Switcher bleiben
+auf Lauras Mac separat real zu prüfen. Developer ID, Apple-Notarisierung und
+Stable werden nicht behauptet beziehungsweise aktiviert.
+
 ## Sprint 0.2U.1 - Discovery und Architektur für sichere macOS-Updates
 
 **Status:** Discovery und Architektur entschieden; keine Produktintegration,
@@ -53,9 +69,9 @@ Prüfsummen/Secret-Scan, Betriebs- und Nutzeranleitung sowie synthetische Tests.
 
 **Grenze:** Kein privater oder Testschlüssel in Registry, Repository, App oder
 Paket; keine Passphrase in Argument/Umgebung/Log; kein fachlicher Datenzugriff,
-Masterkennwort, Netzwerk, Cloud, E-Mail oder Umgehen des Sicherheitsbackups. Die
-Produktivaktivierung bleibt bis zum bewusst bereitgestellten öffentlichen
-PO-Schlüssel offen. Kein Commit in diesem Auftrag.
+Masterkennwort, Netzwerk, Cloud, E-Mail oder Umgehen des Sicherheitsbackups.
+Die damalige Produktivaktivierung wurde mit Version `0.2.2` und dem bestätigten
+öffentlichen Schlüssel `support-2026-b` gesondert freigegeben.
 
 SPRINTS.md dient ausschließlich der operativen Projektplanung. `ROADMAP.md`
 ordnet die Produktphasen; ein Planungskandidat in diesem Dokument ist noch

@@ -63,8 +63,31 @@ def _inputs(values: list[str]):
     return lambda _prompt: next(iterator)
 
 
-def test_versioned_product_registry_is_empty_and_validates_active_rotation() -> None:
-    assert PRODUCT_SUPPORT_KEY_REGISTRY == {"format_version": 1, "keys": ()}
+def test_versioned_product_registry_contains_only_approved_public_key() -> None:
+    assert PRODUCT_SUPPORT_KEY_REGISTRY == {
+        "format_version": 1,
+        "keys": (
+            {
+                "key_id": "support-2026-b",
+                "algorithm": "Ed25519",
+                "public_key": "qjrZixhRuZd7dGXIvpchvWAdGwGhtlFm2mVTHB0XVUU",
+                "status": "active",
+                "not_before": "2026-07-19T22:12:15Z",
+                "not_after": "9999-12-31T23:59:59Z",
+                "revoked_at": None,
+                "fingerprint_sha256": (
+                    "76e619df93483de9313d5bf592fc852c"
+                    "88f1ba7ac5261018801c0fcd5e96be77"
+                ),
+            },
+        ),
+    }
+    registry = PublicKeyRegistry.from_manifest(PRODUCT_SUPPORT_KEY_REGISTRY)
+    assert registry.key_ids() == ("support-2026-b",)
+    assert registry.get("support-2026-b").status is SupportPublicKeyStatus.ACTIVE
+
+
+def test_versioned_registry_validates_active_rotation() -> None:
     private = Ed25519PrivateKey.generate()
     raw = private.public_key().public_bytes_raw()
     encoded = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")

@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## Version 0.2.2 - Erstes beaufsichtigtes Sparkle-Pilotupdate
+
+- Den vom Product Owner bestätigten öffentlichen Ed25519-Descriptor
+  `support-2026-b` in der versionierten Produktivregistry aktiviert; privater
+  Schlüssel und Passphrase bleiben getrennt außerhalb von Repository, App und
+  Release-Artefakten.
+- Produktversion und monotone Bundle-Buildnummer auf `0.2.2` / `202` angehoben
+  und Release-Dokumentation, Pilot-Appcast sowie Build-Inventar auf das erste
+  beaufsichtigte Sparkle-Update vorbereitet.
+- Recovery-Code als bevorzugten ersten Weg und Support-Reset als betreuten
+  Ausnahmeweg dokumentiert. Reset-Anfragen enthalten keine Schülerdaten; das
+  neue Passwort setzt weiterhin die Lehrkraft selbst.
+- Keine Fachfunktion, Fach- oder Security-Store-Migration, UI-Neuentwicklung,
+  Bundle-ID-, Plattform- oder Kanaländerung. Stable bleibt deaktiviert;
+  Developer-ID-Signierung und Apple-Notarisierung werden nicht behauptet.
+
 ## Version 0.2.1 - Beaufsichtigte Pilot-Updater-Basis
 
 - Sparkle 2.9.4 mit fest geprüftem SHA-256, öffentlichem Pilot-EdDSA-Schlüssel,
