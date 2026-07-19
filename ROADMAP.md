@@ -44,6 +44,12 @@ abgeschnittene Kernaktionen.
 Pilottestwünsche und Komfortideen werden getrennt erfasst. Sie werden nicht
 allein durch ihre Nennung zu beschlossenen Produktänderungen.
 
+Der sichere macOS-Updatepfad ist durch Sprint 0.2U.1/ADR-073 architektonisch
+entschieden, aber noch nicht produktiv. `0.2.0` bleibt unverändert und wird
+Laura nicht installiert. Sie beginnt direkt mit der manuell installierten,
+ad-hoc-signierten `0.2.1` als erster updaterfähiger Basis; Pilot-Updates bleiben
+anschließend bewusst angestoßen und vom späteren Stable-Kanal getrennt.
+
 ## Phase 2 - Alltagsdaten effizient einrichten
 
 Ziel ist, den manuellen Einrichtungsaufwand vor und zwischen Schuljahren zu
@@ -90,13 +96,15 @@ Analyseflächen benötigen eine eigene Produktentscheidung.
 ## Phase 5 - Professioneller Betrieb und Verteilung
 
 Planungskandidaten sind produktiver Support-Reset-Schlüssel und Supportprozess,
-Developer-ID-Signierung und Apple-Notarisierung, kontrollierter Update- und
-Migrationsprozess, Diagnosepaket, Backup-Erinnerung, geregelter Gerätewechsel
-sowie eine spätere Windows-Version mit plattformeigener Credential-Anbindung.
+Developer-ID-Signierung und Apple-Notarisierung, die produktive Inbetriebnahme
+des in ADR-073 entschiedenen Sparkle-2-Pfads, ein erst vor Schemaänderungen zu
+entscheidender Migrationsprozess, Diagnosepaket, Backup-Erinnerung, geregelter
+Gerätewechsel sowie eine spätere Windows-Version mit plattformeigener
+Credential-Anbindung.
 
 Diese Punkte werden getrennt priorisiert. Der bestehende manuelle App-Austausch
-und das bestehende Backup/Restore bleiben bis zu einer neuen Entscheidung der
-verbindliche Pilotpfad.
+und das bestehende Backup/Restore bleiben bis zum vollständigen Bestehen der
+Updater-Release-Gates der verbindliche Pilotpfad.
 
 ## Langfristige strategische Optionen
 

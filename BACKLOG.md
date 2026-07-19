@@ -88,10 +88,16 @@ automatisch über eine Funktionsänderung.
 
 ## C - Beschlossen und noch umzusetzen
 
-Derzeit gibt es keine fachliche offene Funktion, die zugleich eindeutig
+Es gibt weiterhin keine fachliche offene Funktion, die zugleich eindeutig
 beschlossen, datenmodellseitig geklärt und als Implementierungssprint
-freigegeben ist. P0-Fehler aus dem Pilottest werden befundbezogen priorisiert,
-sind aber keine vorab definierte neue Funktion.
+freigegeben ist. Technisch beschlossen ist ausschließlich die deaktivierte
+Sparkle-2-Updatebasis aus ADR-073; Sprint 0.2U.2 darf sie ohne Produktivfeed,
+Schlüsselbereitstellung, automatische Installation oder Datenmigration
+implementieren. P0-Fehler aus dem Pilottest werden befundbezogen priorisiert.
+
+| Technischer Punkt | Beschlossener Umfang | Produktivgrenze |
+| --- | --- | --- |
+| Sichere macOS-Updatebasis | Sparkle 2, Infrastructure-Bridge, Application-Port, Settings-Projektion, getrennte Kanäle, monotone Buildnummer und synthetische Negativtests | Kein produktiver Feed vor Developer ID, Notarisierung, externer EdDSA-Schlüsselverwaltung, realem Keychain-/Touch-ID-Übergang und allen ADR-073-Gates |
 
 ## D - Ideen, noch nicht entschieden
 
@@ -125,7 +131,7 @@ sind aber keine vorab definierte neue Funktion.
 | Automatisierte Backup-Erinnerung | P3-Kandidat | Erinnerung ist kein automatisches Backup; Frequenz und lokale Speicherung entscheiden. |
 | Produktiver Support-Reset-Schlüssel und Supportprozess | P3-Kandidat | Schlüsselverwaltung, Rotation, Identitätsprüfung und Betrieb freigeben. |
 | Developer-ID-Signierung und Apple-Notarisierung | P3-Kandidat | Zertifikat, Verantwortlichkeit und reproduzierbaren Releaseprozess klären. |
-| Update- und Migrationsmechanismus | P3-Kandidat | Paketverteilung, Datenbankkompatibilität, Rollback und Signierung entscheiden. |
+| Schemaändernde Update-Migrationen | P3-Kandidat | Vor der ersten Schemaänderung Vorwärtsmigration, Sicherung, Wiederanlauf, Kompatibilitätsfenster und Downgradeverbot gesondert entscheiden. |
 | Diagnosepaket | P3-Kandidat | Strikte Datenschutz-Allowlist und Security-Ausschlüsse entscheiden. |
 | Geregelter Geräte- oder Schulwechsel | P3-Kandidat | Backup/Restore, externe Referenzen, Security-Neuanlage und Übergabeprozess entscheiden. |
 | Weitere Datei-/Ausgabeformate | P2/P3-Kandidat | Finales PDF ist umgesetzt; zusätzliche Formate einzeln entscheiden. |

@@ -9,6 +9,9 @@
 - Auslieferungsvariante: `release` ohne Schüler-, Pilot- oder Runtime-Daten
 - technische Prüfvariante: `empty` ohne Schüler und Dokumente
 - Auto-Updater und App-Store-Verteilung: nicht vorhanden
+- Status nach Sprint 0.2U.1: entschiedener Folgepfad über manuelles DMG
+  `0.2.1`, danach beaufsichtigter Sparkle-2-Pilotkanal erst nach allen
+  Release-Gates
 
 Das App-Bundle enthält Python 3.14, PySide6 6.11 und die benötigten Qt- und
 PDF-Laufzeitbestandteile. Auf dem Ziel-Mac werden weder Python, Terminal,
@@ -139,9 +142,30 @@ Veränderliche Daten liegen immer außerhalb der App unter:
 
 ## Aktualisieren und Deinstallieren
 
-Für ein Update wird die vollständig geschlossene `.app` in `Programme` durch
-die neue `.app` ersetzt. Die Daten bleiben erhalten, weil sie außerhalb der App
-liegen. Es gibt bewusst keinen automatischen Updater.
+`0.2.0` bleibt unverändert und wurde Laura nicht installiert. Ihre erste
+tatsächliche Installation ist direkt das manuell geöffnete Pilot-DMG `0.2.1`.
+Es ist ad hoc signiert und nicht notarisiert; ein inhaltlich neu gebautes
+`0.2.0` wird nicht verteilt. Die Daten bleiben außerhalb der App.
+
+Ab einer updaterfähigen, vollständig freigegebenen Basis sieht die Lehrkraft
+unter `Einstellungen -> Updates` installierte Version/Build, den festen Kanal,
+letzte Prüfung und `Nach Updates suchen`. Im Pilotkanal erfolgt die Prüfung nur
+bewusst; automatische Prüfung, Download, Installation und erzwungener Neustart
+bleiben deaktiviert. Installation wird bei laufendem Backup/Restore/Support-
+Reset, anderem Schreibvorgang oder ungespeichertem Arbeitsstand verschoben.
+
+Der Updater ersetzt nur das App-Bundle. Fachliche Datenbank, Dokumente,
+Exporte, Backups, Logs, Security Store, Einstellungen und macOS-Schlüsselbund
+bleiben unverändert. `0.2.1` enthält keine Datenmigration. Ein manueller
+Rollback auf ein aufbewahrtes vorheriges DMG ist nur zwischen
+schemaidentischen Versionen zulässig.
+
+Ein produktiver Updatekanal bleibt deaktiviert, solange Developer-ID-Signierung,
+Hardened Runtime, Apple-Notarisierung und Stapling, signierter HTTPS-Appcast,
+externe Sparkle-EdDSA-Schlüsselverwaltung, Pilot-/Stable-Trennung und die reale
+Keychain-/Touch-ID-Prüfung nicht vollständig bestanden sind. Bei Feed-,
+Signatur-, Plattform-, Netzwerk- oder Installationsfehlern wird nicht
+weiterinstalliert; die UI verweist ruhig auf den manuellen DMG-Pfad.
 
 Das Löschen der `.app` entfernt nur die Anwendung. Die Benutzerdaten bleiben
 bewusst erhalten und dürfen nur nach gesonderter Entscheidung und Sicherung aus
@@ -152,6 +176,8 @@ dem lokalen Datenordner entfernt werden.
 - nur Apple-Silicon-Macs, kein Intel-/Universal-Build;
 - keine Windows-Version;
 - keine automatische Aktualisierung;
+  der Sparkle-2-Folgepfad ist entschieden, aber bis zu allen Release-Gates
+  nicht produktiv;
 - keine Cloud-Synchronisation oder Benutzerkonten;
 - ohne Developer-ID keine Notarisierung und daher möglicher Gatekeeper-Hinweis
   beim Erststart;

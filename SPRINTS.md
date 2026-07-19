@@ -1,5 +1,45 @@
 # Sprintplanung
 
+## Sprint 0.2U.1 - Discovery und Architektur für sichere macOS-Updates
+
+**Status:** Discovery und Architektur entschieden; keine Produktintegration,
+keine Schlüsselbereitstellung, kein Feed und kein Commit in diesem Sprint.
+
+**Ergebnis:** Sparkle 2 ist der gewählte native Updatekern. Ein isolierter
+arm64-Spike hat Framework-Laden, C-ABI-Bridge, PySide-Aufruf und Einbettung in
+das vorhandene PyInstaller-Bundle technisch bestätigt. ADR-073 entscheidet
+Daten-, Security-, Kanal-, Versions-, UX-, Fehler- und Rollbackgrenzen.
+
+**Releaseentscheidung:** Das bestehende `0.2.0` bleibt unverändert und wurde
+Laura nicht installiert. Ihre erste Installation ist direkt `0.2.1` aus einem
+manuell geöffneten Pilot-DMG. Erst ab dieser Basis darf der getrennte
+beaufsichtigte Pilotfeed genutzt werden. `0.2.1` enthält keine Fach- oder
+Securitymigration. Developer ID und Notarisierung werden nicht behauptet.
+
+**Offene Produktivblocker:** lokal fehlt eine Developer-ID-Identität;
+Notarisierung/Stapling, Hosting, öffentlicher Sparkle-Schlüssel und externer
+privater Signierprozess sind nicht eingerichtet. Zusätzlich ist der reale
+Keychain-/Touch-ID-Übergang von der ad-hoc-signierten Pilotbasis auf einen
+Nachfolger nicht bewiesen.
+Ohne vollständige Gates bleibt der Updater deaktiviert und der manuelle
+App-Austausch verbindlich.
+
+## Nächster technischer Sprintkandidat 0.2U.2 - deaktivierte Updatebasis
+
+**Freigabegrenze:** Darf als isolierter Implementierungssprint beginnen, aber
+kein produktives Release und keine Feedpublikation erzeugen.
+
+Umfang: gepinnte Sparkle-Distribution; kleine Infrastructure-Bridge;
+Application-Port und Zustandsmodell; `Einstellungen -> Updates`; getrennte
+Pilot-/Stable-Konfiguration; eigene monotone Bundle-Buildnummer; Build- und
+Codesign-Reihenfolge; ausschließlich synthetischer lokaler Testfeed;
+Negativtests für Feed, Signatur, Plattform, Offline und Installationsaufschub.
+
+Nicht im Umfang: privater Schlüssel, Produktivfeed/-URL, produktive
+Schlüsselbereitstellung, automatische Prüfung/Installation, App Sandbox/XPC,
+fachliche Funktion, SQLite-/Securitymigration, Cloud, Telemetrie oder Commit
+ohne eigenen Auftrag. Vor Auslieferung gelten alle Gates aus ADR-073.
+
 ## Sprint 0.2B.6 - Produktives Support-Reset-Werkzeug für macOS
 
 **Ziel:** Den vollständig implementierten App-/Core-Reset durch einen sicheren,

@@ -1,5 +1,25 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Sicherer macOS-Updatepfad ab Sprint 0.2U.1
+
+Sprint 0.2U.1 entscheidet die Architektur, implementiert aber noch keinen
+produktiven Updater. Der unveränderte Release-Kandidat `0.2.0` besitzt keinen
+Updateclient und wurde Laura nicht installiert. Ihre erste Installation ist
+deshalb direkt ein bewusst manuell geöffnetes Pilot-DMG `0.2.1`; erst diese
+Version enthält den für den beaufsichtigten Pilotkanal konfigurierten
+Sparkle-2-Client. Ein gleichnamiger Neuaufbau von `0.2.0` wird wegen nicht
+unterscheidbarer Installationen verworfen.
+
+Der spätere Updatepfad ersetzt ausschließlich das unveränderliche App-Bundle.
+Fachliche SQLite, verwaltete Dokumente, Exporte, Backups, Logs, Security Store,
+AppPreferences und nicht synchronisierender macOS-Schlüsselbund bleiben
+außerhalb des Bundles. `0.2.1` darf deshalb keine fachliche Schemaänderung
+enthalten. Der ad-hoc-signierte Einzelpilot behauptet weder Developer ID noch
+Notarisierung. Produktive Veröffentlichung bleibt gesperrt, bis Developer ID,
+Hardened Runtime, Notarisierung/Stapling, signierter HTTPS-Appcast, externer
+privater EdDSA-Schlüssel und der reale Schlüsselbund-/Touch-ID-Übergang von der
+ad-hoc-signierten Pilotbasis nachgewiesen sind. Details regelt ADR-073.
+
 ## Produktiver Supportbetrieb ab Sprint 0.2B.6
 
 Der vorhandene App- und Security-Vertrag bleibt unverändert. Neu ist ein
@@ -263,7 +283,7 @@ signiertes oder ad-hoc signiertes App-Bundle
 -> SQLite, Dokumente, Exporte, Backups und Logs ausserhalb der App
 ```
 
-Der Apple-Silicon-Pilotbuild wird reproduzierbar mit PyInstaller erzeugt und setzt macOS 13 voraus. Die Standardvariante enthaelt keine Schuelerdaten. Ein Update ersetzt nur die `.app`; es gibt bewusst keinen Auto-Updater.
+Der Apple-Silicon-Pilotbuild wird reproduzierbar mit PyInstaller erzeugt und setzt macOS 13 voraus. Die Standardvariante enthaelt keine Schuelerdaten. Version `0.2.0` wird weiterhin ausschließlich durch geschlossenen manuellen App-Austausch aktualisiert; der in ADR-073 beschlossene Sparkle-2-Pfad beginnt frühestens mit `0.2.1` und bleibt bis zu allen Release-Gates deaktiviert.
 
 ### Architekturprinzipien
 

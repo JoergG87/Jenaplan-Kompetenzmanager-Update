@@ -1,5 +1,166 @@
 # Architekturentscheidungen
 
+## ADR-073 - Sparkle 2 als sicherer macOS-Updatepfad ab Version 0.2.1
+
+**Status:** Architektur für Sprint 0.2U.1 entschieden; ein isolierter
+Implementierungssprint darf beginnen, produktive Auslieferung bleibt an die
+unten genannten Release-Gates gebunden.
+
+### Verifizierte Ausgangslage und Spike
+
+Der aktuelle Buildvertrag erzeugt ein PyInstaller-App-Bundle mit Bundle-ID
+`de.jenaplan.kompetenzmanager`, Version/Build `0.2.0`, Mindestversion macOS 13
+und Zielarchitektur arm64. Es gibt keine App-Sandbox- oder Updateentitlements.
+Lokal ist keine Developer-ID-Identität vorhanden; der vorhandene Buildpfad
+signiert deshalb ad hoc, ohne Notarisierung und ohne belastbare
+Update-Vertrauenskette.
+
+Der ausschließlich außerhalb des Produktrepositorys ausgeführte Spike nutzte
+die offizielle Sparkle-Distribution `2.9.4` (`Sparkle-2.9.4.tar.xz`,
+SHA-256 `ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9`).
+Framework und Helfer enthalten arm64; eine minimale Objective-C-/C-ABI-Bridge
+ließ sich für macOS 13 arm64 linken, aus einem PySide-Prozess laden und in eine
+isolierte Kopie des Bundles einbetten. Codesign-Verifikation, der vorhandene
+Packaged-Smoke und der Scan auf eingebettete SQLite-/DB-Dateien blieben dort
+erfolgreich. Das bestätigt technische Machbarkeit, nicht produktive Signierung,
+Notarisierung, Feedbetrieb oder Schlüsselverwaltung. Die Implementierung muss
+Version und Hash erneut reviewen und exakt pinnen.
+
+### Entscheidung und Versionsübergang
+
+Der native macOS-Updatepfad verwendet Sparkle 2. Die PySide-Anwendung bindet
+das Framework über eine kleine Objective-C++-/C-ABI-Bridge in der
+Infrastructure-Schicht ein. Eine Qt-freie Application-Schnittstelle liefert
+nur Updatezustand, Version, Kanal, Fortschritt und strukturierte Fehler; die
+bestehende Einstellungsansicht projiziert diese Daten. Widgets laden weder
+Feeds noch Dateien und entscheiden weder Signaturen noch Installation.
+
+`0.2.0` bleibt unverändert und wurde Laura noch nicht installiert. Ihre erste
+tatsächliche Installation ist deshalb direkt `0.2.1` aus einem bewusst manuell
+geöffneten DMG. Ein inhaltlich anderes `0.2.0` wird nicht neu gebaut, weil es
+dieselbe sichtbare und technische Version tragen und keinen verlässlichen
+Updateausgangspunkt bilden würde. Ab `0.2.1` steht Sparkle im beaufsichtigten
+Pilotbetrieb nur auf ausdrückliches `Nach Updates suchen` bereit;
+automatische Prüfungen, automatische Downloads und automatische Installation
+bleiben aus. Ein produktiver automatischer Installationsmodus ist nicht Teil
+dieser Entscheidung.
+
+`CFBundleShortVersionString` folgt SemVer (`0.2.1`). `CFBundleVersion` wird als
+eigene monoton steigende Buildnummer geführt; Appcast, Bundle, Build-Info,
+DMG, Prüfsummen und Release-Inventar müssen dieselben beiden Werte nennen. Ein
+Appcast-Eintrag muss strikt neuer sein und `macOS >= 13` sowie `arm64` verlangen.
+
+### Vertrauenskette, Kanäle und Packaging
+
+Für reguläre Verteilung verlangt jedes Release dieselbe stabile Bundle-ID, eine gültige Developer-ID-
+Application-Signatur mit Hardened Runtime und sicherem Zeitstempel, vollständige
+Signierung aller verschachtelten Sparkle-Helfer und Frameworks, erfolgreiche
+Apple-Notarisierung, geprüftes Notary-Log und an App sowie DMG geheftete Tickets.
+Eine pauschale produktive `codesign --deep`-Nachsignierung ist ausgeschlossen;
+verschachtelte Komponenten werden innen nach außen mit ihrer vorgesehenen
+Identität signiert und anschließend strikt verifiziert.
+
+Artefakt und Appcast sind unabhängig authentisiert: ausschließlich HTTPS,
+Sparkle-EdDSA-Signatur des unveränderten DMG/Archivs, signierter Feed und
+Verifikation vor dem Entpacken. Nur der öffentliche EdDSA-Schlüssel liegt im
+Bundle. Privater Schlüssel, Feed-Signierschlüssel, Developer-ID-Privatschlüssel,
+Notarisierungszugänge und Passwörter bleiben außerhalb von Repository, App,
+DMG, Logs und Supportpaket. Schlüsselrotation darf nie Apple-Signieridentität
+und Sparkle-EdDSA-Schlüssel im selben Übergangsrelease wechseln.
+
+Pilot und Stable verwenden zwei feste, nicht durch Lehrkräfte editierbare
+HTTPS-Appcast-URLs. Der Pilotfeed enthält ausschließlich freigegebene
+Pilotartefakte und den Kanal `pilot`; der spätere Stable-Feed ausschließlich
+den Defaultkanal. Eine Pilotversion wechselt nicht automatisch auf Stable.
+Der einzelne beaufsichtigte Laura-Pilot darf mit ad-hoc-signierten Bundles
+erprobt werden. Diese Ausnahme ist weder Developer-ID-/Notarisierungsnachweis
+noch Freigabe eines produktiven Updatekanals.
+Feedveröffentlichung ist ein eigener, atomarer Release-Schritt: zuerst
+Artefakt hochladen und unabhängig prüfen, zuletzt den vollständig signierten
+Appcast veröffentlichen. Zurückziehen entfernt den Eintrag aus dem Feed, nicht
+eine bereits installierte Version.
+
+Das aktuelle Produkt ist nicht App-Sandboxed. Daher wird Sparkle zunächst ohne
+separate Downloader-/Installer-XPC-Dienste integriert. App-Sandbox, XPC-
+Mach-Lookup-Ausnahmen oder zusätzliche Netzwerkentitlements dürfen nicht
+vorsorglich ergänzt werden; eine spätere Sandbox-Entscheidung öffnet diesen
+Security-Review erneut.
+
+### Daten-, Security- und Installationsgrenze
+
+Sparkle ersetzt atomar nur `/Applications/Jenaplan-Kompetenzmanager.app`.
+`~/Library/Application Support/Jenaplan-Kompetenzmanager/` einschließlich
+fachlicher SQLite, `documents/`, `exports/`, `backups/`, `logs/`,
+`security/security.sqlite`, Enrollment-Marker und `app-preferences.json` wird
+weder in den Feed aufgenommen noch kopiert, gelöscht oder zurückgesetzt. Der
+macOS-Schlüsselbundeintrag unter dem stabilen Service bleibt ebenfalls
+außerhalb des Updateartefakts. Das Update ist kein Backup und kein Restore.
+
+Vor Download darf die App auf eine neue Version hinweisen. Installation und
+Relaunch sind nur nach ausdrücklicher Zustimmung und an einem sicheren Punkt
+zulässig: kein Backup/Restore/Support-Reset-Worker, kein Login-/Recovery-
+Abschluss, kein laufender Schreibvorgang und kein geänderter Bericht-/LEG-
+Entwurf oder anderer vom Shell-Vertrag gemeldeter ungespeicherter Arbeitsstand.
+Kann die Shell diese Bedingungen nicht vollständig beweisen, wird die
+Installation verschoben; sie darf die App nicht erzwungen beenden.
+
+Der klassische Schlüsselbundvertrag aus ADR-068 vertraut der codesignierten
+Anwendung. Ein ad-hoc neu signiertes Bundle erhält eine andere Codeidentität;
+deshalb ist der Gerätecredential- und Touch-ID-Zugriff beim späteren Übergang
+von der ad-hoc-signierten `0.2.1` auf einen Nachfolger nicht als erhalten
+bewiesen. Dieser Übergang muss auf dem realen Pilot-Mac mit vorher aktiviertem
+Gerätecredential geprüft werden. Passwort-Fallback muss immer funktionieren;
+eine einmalige Neuanmeldung/Neuregistrierung ist im Einzelpilot akzeptabel,
+Konto- oder Datenverlust nicht. Eine nur auf Bundle-ID basierende ad-hoc-
+Vertrauensregel ist als spoofbar ausgeschlossen. Ab einem
+erfolgreich geprüften Developer-ID-Basisstand müssen alle Updates dieselbe
+designated requirement erhalten.
+
+Security Store v3 besitzt kontrollierte interne Migrationen; die fachliche
+Datenbank besitzt derzeit keinen allgemeinen Start-Migrations-/Rollbackvertrag.
+Daher ändert `0.2.1` weder Fachschema noch Securityformat. Vor jedem späteren
+schemaändernden Update sind Vorwärtsmigration, Wiederanlauf, Sicherungszeitpunkt,
+Kompatibilitätsfenster und Rollback gesondert zu entscheiden und zu testen.
+Bis dahin bedeutet Rollback ausschließlich: App schließen, vorheriges
+Developer-ID-signiertes/notarisiertes DMG wieder installieren und dieselben
+unveränderten Daten öffnen. Ein Downgrade nach Schemaänderung ist verboten.
+
+### UX, Fehler und Freigabe
+
+`Einstellungen -> Updates` zeigt installierte Version/Build, festen Kanal,
+Zeitpunkt der letzten Prüfung und genau eine Primäraktion `Nach Updates suchen`.
+Die Zustände lauten ruhig und lokalisiert: aktuell, Update verfügbar, Prüfung,
+Download, bereit zur Installation, verschoben und fehlgeschlagen. Release Notes
+dürfen aus dem authentisierten Feed angezeigt werden; Fehler nennen keine
+lokalen Pfade, IDs, Tokens, Feedinhalte oder Schülerdaten. Offline, Timeout,
+ungültiger Feed, ungültige Signatur, falsche Architektur/Systemversion,
+Notarisierungs-/Installationsfehler und nicht beschreibbarer App-Ort bleiben
+fail-closed und führen zum manuellen DMG-Hinweis, niemals zum Umgehen der
+Prüfung.
+
+Freigabegates sind: echte Developer-ID lokal verfügbar; reproduzierbare
+Signierung innen nach außen; Hardened-Runtime-Test; Notarisierung und Stapling;
+Sparkle-Version und Distributionshash gepinnt; HTTPS-Feed und Hostingbetrieb;
+EdDSA-Schlüsselprozess/Rotation; Pilot-/Stable-Trennung; Feed- und
+Artefaktsignatur-Negativtests; arm64/macOS-13-Bundleprüfung; Update von
+installierter `0.2.1` auf einen Testnachfolger; Offline-/Abbruch-/Retry-
+Verhalten; keine Daten im Bundle; unveränderte Fach-, Dokument-, Backup-,
+Security- und Präferenzdaten; Keychain/Touch-ID-/Passwort-Fallback auf realer
+Hardware; sicherer Installationsaufschub bei ungespeicherter oder laufender
+Arbeit; manueller Rollback bei schemaidentischen Versionen. Ohne ein Gate gibt
+es keinen produktiven Feed.
+
+Technische Primärreferenzen sind die Sparkle-Dokumentation zu
+[Integration](https://sparkle-project.org/documentation/),
+[programmatischer Qt-Anbindung](https://sparkle-project.org/documentation/programmatic-setup/),
+[Sandbox/XPC](https://sparkle-project.org/documentation/sandboxing/),
+[Appcasts und Kanälen](https://sparkle-project.org/documentation/publishing/) und
+[Sicherheitsmodell](https://sparkle-project.org/documentation/security-and-reliability/)
+sowie Apples Vorgaben zu
+[Developer ID](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/)
+und
+[Notarisierung/Hardened Runtime](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
+
 ## ADR-072 - Getrenntes Offline-Supportpaket und versionierte Produktivregistry
 
 **Status:** Für Sprint 0.2B.6 freigegeben.

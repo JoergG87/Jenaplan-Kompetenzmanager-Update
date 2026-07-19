@@ -1,5 +1,23 @@
 # Technical Naming Registry
 
+## Sprint 0.2U.1 - Sicherer macOS-Updatepfad
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `Sparkle.framework` | Gepinnter nativer Updatekern für macOS; kein Eigentümer fachlicher Daten | Packaging / macOS Infrastructure |
+| `MacOSUpdateService` | Geplanter Qt-freier Application-Port für Prüfung, Status und sicheren Installationsaufschub | Application |
+| `SparkleUpdateAdapter` | Geplanter Infrastructure-Adapter über kleine Objective-C++-/C-ABI-Bridge | Infrastructure macOS |
+| `pilot` | Fester beaufsichtigter Appcast-Kanal; nicht durch Lehrkräfte editierbar | Release-Betrieb |
+| `stable` | Getrennter späterer Standardkanal ohne automatische Übernahme von Pilotinstallationen | Release-Betrieb |
+| `APP_BUILD_VERSION` | Geplante monotone technische `CFBundleVersion`, getrennt von der sichtbaren SemVer-Produktversion | Packaging |
+| `Einstellungen -> Updates` | Geplante ruhige Projektion von Version, Build, Kanal, letzter Prüfung und manueller Primäraktion | Desktop UI |
+
+Feed-URL, öffentlicher EdDSA-Schlüssel und Release-Metadaten sind technische
+Buildkonfiguration, keine fachlichen Datenquellen. Private EdDSA- und
+Developer-ID-Schlüssel, Notarisierungszugänge, Passwörter und Feed-Publishing-
+Credentials sind ausdrücklich keine Repository-, Bundle-, Log- oder
+Supportpaketnamen.
+
 ## Sprint 0.2B.6 - Produktives macOS-Supportwerkzeug
 
 | Technischer Name | Bedeutung | Eigentümer |

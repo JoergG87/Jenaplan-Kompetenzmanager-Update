@@ -1,5 +1,45 @@
 # Data Lifecycle
 
+## Sprint 0.2U.1 - App-Update ohne Zugriff auf Nutzerdaten
+
+Der Updateclient ist ein reiner Distributionspfad und keine fachliche
+Datenquelle. Er liest ausschließlich fest konfigurierte Updatekonfiguration,
+authentisierten Appcast, Release-Metadaten und das signierte Appartefakt. Feed,
+Release Notes und Updatezustand enthalten keine Schüler-, Schul-, Dokument-,
+Konto-, Installations- oder Gerätecredentialdaten. Es gibt keine Telemetrie und
+keinen Upload aus der lokalen Runtime.
+
+```text
+bewusste Prüfung
+-> signierten HTTPS-Appcast authentisieren
+-> Version, Build, Kanal, macOS und arm64 prüfen
+-> EdDSA-signiertes Artefakt laden und vor Entpacken verifizieren
+-> sicheren Installationszeitpunkt durch Shell bestätigen
+-> ausschließlich geschlossenes .app-Bundle atomar ersetzen
+-> neue App gegen unveränderte externe Runtime starten
+```
+
+Ausgeschlossen sind `kompetenzmanager.sqlite`, `documents/`, `exports/`,
+`backups/`, `logs/`, `security/security.sqlite`, Enrollment-Marker,
+`app-preferences.json` und macOS-Keychain. Das Update erzeugt, kopiert, migriert,
+sichert, löscht oder repariert keinen dieser Bestände. Offene Worker und
+ungespeicherte Arbeitsstände verschieben Installation und Relaunch. Ein Fehler
+vor dem atomaren Austausch lässt App und Runtime unverändert; ein Fehler beim
+nächsten Start darf keine stille Datenreparatur auslösen.
+
+Version `0.2.1` bleibt fach- und security-schemaidentisch zu `0.2.0`. Der
+Security Store besitzt seinen bestehenden kontrollierten Migrationsvertrag;
+für die fachliche SQLite existiert noch kein allgemeiner Update-Migrations- und
+Rollbackvertrag. Ein späteres schemaänderndes Update benötigt deshalb vorab
+einen eigenen dokumentierten Lifecycle. Der zulässige manuelle Rollback gilt
+nur zwischen schemaidentischen, signierten/notarisierten Appversionen.
+
+Laura hat `0.2.0` nicht installiert und beginnt direkt mit der manuell
+installierten, ad-hoc-signierten `0.2.1`. Ab dieser Version kann sie den festen
+Pilot-Appcast ausschließlich bewusst prüfen; Stable und ein produktiver
+Updatekanal bleiben deaktiviert. Keychain- und Touch-ID-Verhalten beim ersten
+Update auf einen Nachfolger bleiben eine reale Pilotprüfung.
+
 ## Sprint 0.2B.6 - Schlüsselbereitstellung, Signatur und Supportpaket
 
 Provisionierung wird ausschließlich durch den getrennten Finder-Starter bewusst
