@@ -11,9 +11,9 @@ automatisch in eine Cloud.
 - ungefähr 300 MB freier Speicherplatz für App und erste lokale Daten
 - die Datei `Jenaplan-Kompetenzmanager-{{PILOT_VERSION}}-macOS-arm64.dmg`
 
-Die Version {{PILOT_VERSION}} ist Lauras erste Pilotinstallation. Sie besitzt
-einen beaufsichtigten Pilot-Updater; Updates werden ausschließlich nach einer
-bewussten manuellen Prüfung und Bestätigung installiert.
+Lauras erste Pilotinstallation ist Version 0.2.1. Version 0.2.2 wird
+ausschließlich als beaufsichtigtes Folgeupdate nach einer bewussten manuellen
+Prüfung und Bestätigung installiert.
 
 ## 2. Installation
 

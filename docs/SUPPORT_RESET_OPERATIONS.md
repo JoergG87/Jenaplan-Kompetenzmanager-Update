@@ -17,7 +17,7 @@ Supportprotokolle kopiert werden.
 
 ## Supportpaket
 
-Das Paket `Jenaplan-Kompetenzmanager-0.2.0-Support-Reset-macOS.zip` wird separat
+Das Paket `Jenaplan-Kompetenzmanager-0.2.2-Support-Reset-macOS.zip` wird separat
 mit `scripts/build_macos_support_reset_package.sh` gebaut. Es enthält zwei
 Finder-Starter, eigenständige arm64-Laufzeiten, diese Anleitung, eine
 ausschließlich strukturelle Public-Key-Registry-Vorlage, Versionsangaben und

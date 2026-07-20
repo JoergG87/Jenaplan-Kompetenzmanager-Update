@@ -18,6 +18,8 @@ done
 python3 -c 'import PyInstaller, PySide6, cryptography' >/dev/null
 
 VERSION="$(python3 -c 'from src.version import APP_VERSION; print(APP_VERSION)')"
+BUILD_VERSION="$(python3 -c 'from src.version import APP_BUILD_VERSION; print(APP_BUILD_VERSION)')"
+MINIMUM_MACOS_VERSION="13.0"
 BUILD_COMMIT="$(git rev-parse HEAD)"
 if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
     SOURCE_TREE_STATE="dirty"
@@ -55,16 +57,31 @@ python3 -m PyInstaller \
 
 APP="$BUILD_ROOT/dist/Jenaplan Support-Assistent.app"
 EXECUTABLE="$APP/Contents/MacOS/Jenaplan Support-Assistent"
+INFO_PLIST="$APP/Contents/Info.plist"
 if ! file "$EXECUTABLE" | grep -q "arm64"; then
     print -u2 "Der Support-Assistent ist nicht macOS arm64."
     exit 1
 fi
-if [[ "$(plutil -extract CFBundleIdentifier raw "$APP/Contents/Info.plist")" != "de.jenaplan.support-assistent" ]]; then
+if [[ "$(plutil -extract CFBundleIdentifier raw "$INFO_PLIST")" != "de.jenaplan.support-assistent" ]]; then
     print -u2 "Die Bundle-ID des Support-Assistenten ist ungültig."
     exit 1
 fi
+
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$INFO_PLIST"
+/usr/libexec/PlistBuddy -c "Delete :CFBundleVersion" "$INFO_PLIST" >/dev/null 2>&1 || true
+/usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $BUILD_VERSION" "$INFO_PLIST"
+/usr/libexec/PlistBuddy -c "Delete :LSMinimumSystemVersion" "$INFO_PLIST" >/dev/null 2>&1 || true
+/usr/libexec/PlistBuddy -c "Add :LSMinimumSystemVersion string $MINIMUM_MACOS_VERSION" "$INFO_PLIST"
+
 if [[ -x /usr/bin/codesign ]]; then
+    /usr/bin/codesign --force --deep --sign - "$APP"
     /usr/bin/codesign --verify --deep --strict "$APP"
+fi
+if [[ "$(plutil -extract CFBundleShortVersionString raw "$INFO_PLIST")" != "$VERSION" \
+    || "$(plutil -extract CFBundleVersion raw "$INFO_PLIST")" != "$BUILD_VERSION" \
+    || "$(plutil -extract LSMinimumSystemVersion raw "$INFO_PLIST")" != "$MINIMUM_MACOS_VERSION" ]]; then
+    print -u2 "Die Release-Metadaten des Support-Assistenten sind inkonsistent."
+    exit 1
 fi
 if ! "$EXECUTABLE" --packaged-smoke-test; then
     print -u2 "Der paketierte Support-Assistent hat den isolierten Smoke-Test nicht bestanden."
@@ -75,5 +92,7 @@ python3 scripts/build_support_assistant_package.py \
     --app-bundle "$APP" \
     --output-root "$ROOT/dist" \
     --version "$VERSION" \
+    --build-version "$BUILD_VERSION" \
+    --minimum-macos-version "$MINIMUM_MACOS_VERSION" \
     --build-commit "$BUILD_COMMIT" \
     --source-tree-state "$SOURCE_TREE_STATE"

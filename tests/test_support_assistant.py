@@ -252,6 +252,9 @@ def test_support_assistant_package_is_separate_and_contains_no_runtime_data(
             {
                 "CFBundleIdentifier": "de.jenaplan.support-assistent",
                 "CFBundleDisplayName": "Jenaplan Support-Assistent",
+                "CFBundleShortVersionString": "0.2.2",
+                "CFBundleVersion": "202",
+                "LSMinimumSystemVersion": "13.0",
             }
         )
     )
@@ -259,10 +262,17 @@ def test_support_assistant_package_is_separate_and_contains_no_runtime_data(
         app_bundle=app,
         output_root=tmp_path / "dist",
         version="0.2.2",
+        build_version="202",
+        minimum_macos_version="13.0",
         build_commit="eb1fdfe",
         source_tree_state="dirty",
     )
-    verify_package(output)
+    verify_package(
+        output,
+        expected_version="0.2.2",
+        expected_build_version="202",
+        expected_minimum_macos="13.0",
+    )
     with zipfile.ZipFile(output) as archive:
         names = archive.namelist()
         assert any("Jenaplan Support-Assistent.app/Contents/MacOS" in name for name in names)

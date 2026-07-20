@@ -2,6 +2,9 @@
 
 ## Sprint 0.2S.1 - Support-Assistent UX
 
+- macOS-Bundlemetadaten des Support-Assistenten auf Produktversion `0.2.2`,
+  Release-Build `202` und Mindestversion macOS 13 festgelegt und in der
+  Paketprüfung verbindlich abgesichert.
 - Eigenständige grafische macOS-arm64-Betreiberanwendung für das Öffnen,
   verständliche Prüfen und Signieren einer bewusst gewählten
   `.jkmresetrequest` ergänzt.

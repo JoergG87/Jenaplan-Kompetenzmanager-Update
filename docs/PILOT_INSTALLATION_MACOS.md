@@ -40,8 +40,8 @@ Speicherung eines Benutzerpfads im Repository über `LAURA_TEST_WORKBOOK`
 Die Buildvarianten überschreiben einander nicht beim DMG:
 
 ```text
-dist/macos/Jenaplan-Kompetenzmanager-SmokeTest-0.2.0-macOS-arm64.dmg
-dist/macos/Jenaplan-Kompetenzmanager-0.2.0-macOS-arm64.dmg
+dist/macos/Jenaplan-Kompetenzmanager-SmokeTest-0.2.2-macOS-arm64.dmg
+dist/macos/Jenaplan-Kompetenzmanager-0.2.2-macOS-arm64.dmg
 ```
 
 Der zuletzt ausgeführte Build stellt außerdem
@@ -50,7 +50,7 @@ versionierte Installationsanleitung, Erste Schritte, das PDF-Benutzerhandbuch,
 den Schnellstart, die Backup-Anleitung, das technische Backup-Skript und
 SHA-256-Prüfsummen. Die Variante `release` erzeugt zusätzlich ausschließlich
 aus den aktuellen, freigegebenen Ausgaben das Übergabepaket
-`dist/Jenaplan-Kompetenzmanager-0.2.0-Pilotpaket-Laura-macOS-arm64.zip`.
+`dist/Jenaplan-Kompetenzmanager-0.2.2-Pilotpaket-Laura-Testdaten-macOS-arm64.zip`.
 
 Das Skript erzeugt eine isolierte Build-Umgebung, entfernt nur seine bekannten
 alten Zwischenausgaben und prüft die Datenvariante. `empty` und `release` dürfen

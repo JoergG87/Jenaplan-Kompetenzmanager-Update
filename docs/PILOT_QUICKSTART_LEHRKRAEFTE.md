@@ -13,7 +13,7 @@ Pilotversion {{PILOT_VERSION}}
 6. Die geführten `Ersten Schritte` durchführen oder bewusst überspringen.
 7. Zuerst die leere Anwendung prüfen. Danach im letzten Pilot-Schritt der
    `Ersten Schritte` bewusst den vorhandenen Restore-Weg öffnen.
-8. `Laura-Testdaten-{{PILOT_VERSION}}.jkmbackup` selbst auswählen, Vorschau
+8. `Laura-Testdaten-0.2.1.jkmbackup` selbst auswählen, Vorschau
    prüfen und Wiederherstellung bestätigen.
 9. Fächer, Stundenplan, Stammgruppen, Kurse und Kinder prüfen und anschließend
    die erste Beobachtung erfassen.
