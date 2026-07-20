@@ -1,5 +1,28 @@
 # Project Constitution
 
+## Sprint 0.2S.1 - Eigenständiger Support-Assistent
+
+Der `Jenaplan Support-Assistent` ist eine eigenständige macOS-arm64-
+Betreiberanwendung. Er ist weder Bestandteil von
+`Jenaplan-Kompetenzmanager.app` noch von Pilot-, Laura- oder normalen
+Updatepaketen. Er darf keine fachliche SQLite-Datenbank, Dokumente, Backups,
+AppPreferences, Security Store oder produktive Runtime öffnen oder suchen.
+
+Der Assistent ersetzt ausschließlich die Bedienoberfläche des vorhandenen
+Offline-Signaturwegs. Requestformat, `JKM-SR1`-Tokenformat, Ed25519-
+Kryptografie, Schlüsselmodell, UUID-Bindung, Backupvertrag und App-seitiger
+Reset bleiben unverändert. Private Schlüssel und Passphrasen bleiben extern
+und werden niemals gebündelt. Als Schlüsselmaterial enthält das Paket nur die
+öffentliche Projektion der Produktregistry.
+
+Ein menschlicher Installationsname und der daraus abgeleitete lesbare
+Anfragecode sind flüchtige, nicht sicherheitsrelevante Zuordnungshilfen. Sie
+werden weder in Request oder Token aufgenommen noch persistiert oder auditiert.
+Die Sicherheitsbindung bleibt ausschließlich die vorhandene Installations-UUID.
+Das lokale technische Audit enthält nur Zeitpunkt, Request-ID, Key-ID und
+Aktion; niemals Token, Passphrase, privaten Schlüssel, Nonce, fachliche Daten
+oder lokale Quellpfade.
+
 ## Release-Grenze Version 0.2.2
 
 Der technisch umgesetzte Stand darf als leerer macOS-arm64-Pilot-

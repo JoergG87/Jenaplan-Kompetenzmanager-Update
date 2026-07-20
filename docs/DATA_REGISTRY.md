@@ -1,5 +1,20 @@
 # Data Registry
 
+## Sprint 0.2S.1 - Datenquellen des Support-Assistenten
+
+| Quelle | Inhalt | Owner | Ausschlüsse |
+|---|---|---|---|
+| bewusst gewählte `.jkmresetrequest` | unveränderte kanonische technische Anfragebytes | betroffene Installation / `SupportResetTokenCodec` | keine automatische Suche, keine Schüler-, Dokument- oder Backupdaten |
+| `PRODUCT_SUPPORT_KEY_REGISTRY` | ausschließlich öffentliche freigegebene Key-Metadaten | geprüfter App-Release | kein privater Schlüssel, keine Passphrase, kein Token |
+| `SUPPORT_ASSISTANT_PRODUCT_KEY` | im getrennten Bundle eingebettete, strikt gleiche öffentliche Projektion des aktiven `support-2026-b` | Support-Packaging; Gleichheit zur Produktregistry wird getestet | kein privater Schlüssel, keine Passphrase, kein weiterer oder Testschlüssel |
+| bewusst gewählte verschlüsselte PKCS#8-Datei | externer Ed25519-Privatschlüssel nur für den aktuellen Prozess | Support-Verantwortlicher | nie Paket, Repository, Audit oder Runtime-Datenquelle |
+| `~/Library/Application Support/Jenaplan Support-Assistent/audit.jsonl` | UTC-Zeitpunkt, vollständige Request-ID, Key-ID und feste Aktion | `SupportAssistantAuditLog` | kein Token, Passwort, Passphrase, Private-Key-Inhalt, Nonce, Installationsname, Benutzername, Schüler- oder Fachdaten |
+| separates Support-Assistent-Paket | App-Bundle, Betriebsanleitung, Version und Prüfsummen | Support-Packaging | keine Produkt-App, Datenbank, Dokumente, Backups, Runtime-Daten, Requests, Tokens, privaten Schlüssel oder Passphrase |
+
+Installationsname und lesbare Anfragecode-Referenz sind ausschließlich
+flüchtiger UI-State. Ein Benutzername ist im unveränderten Requestformat 1
+nicht enthalten und wird nicht aus Konto-, OS- oder Fachdaten nachgeladen.
+
 ## Sprint 0.2U.2 - Öffentliche Pilot-Updatequellen
 
 | Quelle | Inhalt | Owner | Ausschlüsse |

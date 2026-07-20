@@ -1,5 +1,27 @@
 # Architekturentscheidungen
 
+## ADR-074 - Separater grafischer Support-Assistent
+
+**Status:** Für Sprint 0.2S.1 freigegeben.
+
+Der Betreiberworkflow wird als eigene PySide-Anwendung mit eigener Bundle-ID
+und eigenem Supportpaket umgesetzt. Er wird nicht in Haupt-App, Pilot-/Laura-
+Pakete oder normalen Updatekanal integriert. Die Qt-freie Application-Schicht
+verwendet ausschließlich den bestehenden Requestcodec und Tokengenerator;
+Widgets besitzen weder Protokoll-, Krypto- noch Dateipersistenzlogik.
+
+Der vorhandene Terminalweg bleibt als technisch validierter Referenz- und
+Fallbackpfad erhalten. Der Support-Assistent ändert weder Request- noch
+Tokenformat. Weil Format 1 keinen Gerätenamen oder Benutzernamen enthält, wird
+der Installationsname nur flüchtig erfasst und der Benutzername ehrlich als
+nicht enthalten projiziert. Eine Protokollerweiterung würde eine eigene
+Security- und Kompatibilitätsentscheidung benötigen und ist ausgeschlossen.
+
+Der private Schlüssel bleibt extern. Das Bundle enthält ausschließlich die
+öffentliche Produktregistry und prüft den bewusst gewählten verschlüsselten
+Ed25519-Schlüssel dagegen. Audit ist eine eigene minimale JSONL-Quelle des
+Support-Assistenten mit genau Zeitpunkt, Request-ID, Key-ID und Aktion.
+
 ## ADR-073 - Sparkle 2 als sicherer macOS-Updatepfad ab Version 0.2.1
 
 **Status:** Architektur für Sprint 0.2U.1 entschieden; ein isolierter

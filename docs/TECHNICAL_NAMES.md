@@ -1,5 +1,29 @@
 # Technical Naming Registry
 
+## Sprint 0.2S.1 - Support-Assistent UX
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `SupportAssistantApplicationService` | Qt-freie Orchestrierung von Requestprüfung, externer Schlüsselpaarprüfung und unveränderter Tokenerzeugung | Support Application |
+| `SupportAssistantError` | Strukturierter fail-closed Bedienfehler ohne Secret- oder Payloaddetails | Support Application |
+| `SupportProductKey` | Strikt geprüfter öffentlicher Schlüsselwert des eigenständigen Assistenten | Support Application |
+| `SupportRequestProjection` | Datenschutzarme sichtbare Projektion einer kanonisch geprüften Reset-Anfrage | Support Application |
+| `SupportKeyProjection` | Sichtbare Public-Key-Projektion aus der freigegebenen Produktregistry | Support Application |
+| `LoadedSupportRequest` | Flüchtige Verbindung aus unveränderten kanonischen Bytes, Core-Request und sichtbarer Projektion | Support Application |
+| `GeneratedResetCode` | Flüchtiges Ergebnis aus Token, Ablauf, Request-ID und Key-ID; keine Persistenz | Support Application |
+| `support_request_reference` | Nicht sicherheitsrelevante Referenz `JKM-<NAME>-<4 ZIFFERN>` aus flüchtigem Installationsnamen und Request-ID | Support Application |
+| `SupportAssistantAuditLog` | Append-only JSONL-Audit mit Zeitpunkt, Request-ID, Key-ID und Aktion | Support Infrastructure |
+| `SupportAssistantWindow` | Eigenständiger PySide-Schrittfluss für Öffnen, Prüfen, Signieren und bewusste Ausgabe | Support UI |
+| `SUPPORT_ASSISTANT_PRODUCT_KEY` | Im separaten Bundle eingebettete öffentliche 1:1-Projektion des freigegebenen `support-2026-b`; Gleichheit zur Produktregistry wird getestet | Support Packaging / Security Review |
+| `Jenaplan Support-Assistent.app` | Eigenständige macOS-arm64-Betreiberanwendung ohne Zugriff auf Produkt-Runtime | Packaging |
+| `Jenaplan-Support-Assistent-0.2.2-macOS-arm64.zip` | Separates Supportpaket mit App, Anleitung, Version und Prüfsummen | Packaging |
+| `scripts/build_macos_support_assistant.sh` | Separater arm64-Build, Bundleprüfung und Paketaufruf | Packaging |
+| `scripts/build_support_assistant_package.py` | Feste Paketanlage sowie Secret-, Daten- und Pfadscan | Packaging |
+
+Installationsname, sichtbarer Benutzername und Anfragecode erweitern weder
+`SupportResetRequest` noch `SupportResetPayload`. Protokollversion, Feldlisten,
+Nonce, Signaturbytes und UUID-Bindung bleiben unverändert.
+
 ## Sprint 0.2U.1 - Sicherer macOS-Updatepfad
 
 | Technischer Name | Bedeutung | Eigentümer |

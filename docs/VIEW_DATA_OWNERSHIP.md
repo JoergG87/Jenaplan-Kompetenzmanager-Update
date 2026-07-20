@@ -1,5 +1,20 @@
 # View Data Ownership
 
+## Sprint 0.2S.1 - Eigenständige Support-Assistent-Ansicht
+
+`SupportAssistantWindow` besitzt nur flüchtigen Schritt-, Fokus-, Datei-,
+Installationsname-, Passphrase- und Ergebniszustand. Sie erhält geprüfte
+`SupportRequestProjection`- und `SupportKeyProjection`-Werte vom
+`SupportAssistantApplicationService`. Die View decodiert kein Protokoll,
+entscheidet keine Schlüsselgültigkeit und implementiert keine Signatur.
+
+Dateidialoge öffnen ausschließlich nach bewusster Aktion. Die View besitzt
+keine Ownership auf fachliche SQLite, Security Store, AppPreferences,
+Dokumente, Backups oder Produkt-Runtime. Der Auditadapter darf ausschließlich
+die vier registrierten technischen Felder schreiben. Das Token bleibt bis zum
+Schließen flüchtig und gelangt nur durch `Kopieren` oder `Datei speichern` nach
+außen.
+
 ## Sprint 0.2U.2 - Updateansicht und Pilot-Onboarding
 
 Die Unterseite `Updates` besitzt ausschließlich die read-only Projektion aus

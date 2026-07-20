@@ -1,5 +1,31 @@
 # Data Lifecycle
 
+## Sprint 0.2S.1 - Grafischer Offline-Supportablauf
+
+```text
+bewusste .jkmresetrequest-Auswahl
+-> kanonische Requestprüfung ohne Dateisuche
+-> datensparsame Projektion und flüchtiger Installationsname
+-> aktiven öffentlichen support-2026-b samt gekürztem Fingerprint zeigen
+-> bewusst gewählten externen verschlüsselten Privatschlüssel entsperren
+-> Public-Key-Gleichheit prüfen
+-> unveränderten JKM-SR1-Code über den bestehenden Generator erzeugen
+-> minimales technisches Audit schreiben
+-> nur auf Klick kopieren oder exklusiv als .jkmresettoken mit 600 speichern
+```
+
+Ungültige, noch nicht gültige oder abgelaufene Requests brechen vor
+Schlüsselzugriff ab. Ein falscher, unverschlüsselter, zu offen berechtigter oder
+nicht zur Produktregistry passender Schlüssel erzeugt keinen Token und keinen
+Erfolgsaudit. Die Passphrase bleibt ausschließlich im Arbeitsspeicher des
+laufenden Vorgangs. Es gibt keine automatische Übertragung und keine
+automatische Ausgabedatei.
+
+Der sichtbare Installationsname ersetzt keine Installations-ID und gelangt
+weder in Request, Token noch Audit. Der Anfragecode ist nur eine telefonische
+Referenz. Tokenformat, Signatur, Laufzeitgrenzen, App-seitige Prüfung,
+Sicherheitsbackup und Resettransaktion bleiben byte- und verhaltensgleich.
+
 ## Sprint 0.2U.1 - App-Update ohne Zugriff auf Nutzerdaten
 
 Der Updateclient ist ein reiner Distributionspfad und keine fachliche

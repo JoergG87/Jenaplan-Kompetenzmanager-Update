@@ -1,5 +1,27 @@
 # Design-System
 
+## Sprint 0.2S.1 - Ruhiger Support-Assistent
+
+Der eigenständige Support-Assistent verwendet einen linearen Schrittfluss mit
+genau einer dominanten Primäraktion: zuerst `Reset-Anfrage öffnen`, nach
+vollständiger Prüfung `Reset-Code erzeugen`. Es gibt keine automatische Suche,
+kein Dashboard und keine Produktnavigation. Helle ruhige Karten trennen
+Anfrage, flüchtige Installationsbezeichnung und öffentlichen Schlüsselstatus.
+
+Gültigkeit wird mit sichtbarem Text `Gültig` und einem positiven, nicht allein
+farblichen Status dargestellt. Ablehnungen erscheinen als sachliche
+Inline-Meldung ohne Payload-, Signatur- oder Pfaddetails. Der Fingerprint wird
+gekürzt, technische IDs nur soweit für die Zuordnung erforderlich. Der
+Ergebniszustand zeigt Ablaufzeit sowie die ausdrücklich ausgelösten Aktionen
+`Kopieren` und `Datei speichern`; der Token selbst wird nicht dauerhaft im
+Layout gezeigt.
+
+Der Starttext lautet verbindlich: `Dieses Werkzeug erzeugt keinen Zugang und
+kein Passwort. Es erstellt ausschließlich einen zeitlich begrenzten
+Reset-Code.` Tastaturfokus folgt dem linearen Ablauf; alle Datei-, Passphrase-
+und Hauptaktionen besitzen Accessible Names. Die App ist visuell und im
+Fenstertitel eindeutig vom Jenaplan-Kompetenzmanager getrennt.
+
 ## Sprint 0.2U.2 - Update- und Pilot-Handoff
 
 `Einstellungen > Updates` folgt der bestehenden ruhigen Übersichts-/Unterseiten-

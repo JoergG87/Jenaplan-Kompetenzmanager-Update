@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## Sprint 0.2S.1 - Support-Assistent UX
+
+- Eigenständige grafische macOS-arm64-Betreiberanwendung für das Öffnen,
+  verständliche Prüfen und Signieren einer bewusst gewählten
+  `.jkmresetrequest` ergänzt.
+- Flüchtigen Installationsnamen, nicht sicherheitsrelevante lesbare
+  Anfragecode-Referenz, gekürzte Installationskennung sowie sichtbaren aktiven
+  Supportschlüssel und gekürzten Fingerprint festgelegt.
+- Bewusste Ausgabe per Zwischenablage oder exklusiver Token-Datei und minimales
+  lokales Audit ausschließlich aus Zeitpunkt, Request-ID, Key-ID und Aktion
+  umgesetzt.
+- Request-/Tokenprotokoll, Kryptografie, Schlüsselmodell, Backupvertrag,
+  Kompetenzmanager-App, Fach- und Security-Daten bleiben unverändert; kein
+  privater Schlüssel, keine Passphrase und keine Runtime-Daten im Paket.
+
 ## Version 0.2.2 - Erstes beaufsichtigtes Sparkle-Pilotupdate
 
 - Den vom Product Owner bestätigten öffentlichen Ed25519-Descriptor

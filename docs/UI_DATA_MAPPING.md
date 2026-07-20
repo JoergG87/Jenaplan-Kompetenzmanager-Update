@@ -1,5 +1,29 @@
 # UI Data Mapping
 
+## Sprint 0.2S.1 - Jenaplan Support-Assistent
+
+| UI-Feld/Aktion | Quelle/Command | Persistenz | Regel |
+|---|---|---|---|
+| Anwendung | statischer Produkttext `Jenaplan-Kompetenzmanager` | Nein | keine Produkterkennung oder Runtime-Suche |
+| Benutzername | unverändertes Requestformat 1 | Nein | `Nicht in dieser Anfrage enthalten`; kein Nachladen |
+| Gerätename / Installationsname | bewusste flüchtige Supporteingabe | Nein | ersetzt niemals die Installations-ID |
+| Installationskennung | `SupportResetRequest.installation_id` | Nein | nur gekürzt sichtbar |
+| Anfrage- und Ablaufzeit | geprüfter `SupportResetRequest` | Nein | lokale verständliche Anzeige, Prüfung in UTC |
+| Status | Requestformat und Zeitprüfung | Nein | nur vollständig gültige Anfrage gelangt zur Erzeugung |
+| Anfragecode | `support_request_reference` aus Installationsname und Request-ID | Nein | nur telefonische Zuordnung, keine Sicherheitsbindung |
+| Supportschlüssel / Status | `PRODUCT_SUPPORT_KEY_REGISTRY` | Nein | `support-2026-b`, `aktiv`; kein Testkey-Fallback |
+| Fingerprint | SHA-256 des registrierten Public Keys | Nein | gekürzt sichtbar |
+| privater Schlüssel | bewusste Dateiauswahl | Nein | extern, verschlüsselt, `600`, kein Symlink |
+| Passphrase | temporäres verdecktes Eingabefeld | Nein | nie Log, Audit, Zwischenablage oder Argument |
+| Gültigkeit | feste Auswahl 15/30/60/120 Minuten | Nein | nie länger als Request oder zwei Stunden |
+| Reset-Code erzeugen | `SupportAssistantApplicationService.generate_reset_code` | Audit ohne Token | verwendet unveränderten Generator und Key-ID |
+| Kopieren | flüchtiger Token | Zwischenablage nur nach Klick | keine automatische Übertragung |
+| Datei speichern | flüchtiger Token | bewusste `.jkmresettoken`, exklusiv `600` | keine automatische Ablage, kein Überschreiben |
+
+Nonce, interne Payload, Hashwerte außer dem gekürzten öffentlichen
+Key-Fingerprint, vollständige Installations-/Nutzer-ID und technische
+Fehlerdetails werden nicht angezeigt.
+
 ## Sprint 0.2U.2 - Updates und Pilot-Testdatenhandoff
 
 | UI-Feld/Aktion | Quelle/Command | Persistenz | Regel |

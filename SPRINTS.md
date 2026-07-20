@@ -1,5 +1,21 @@
 # Sprintplanung
 
+## Sprint 0.2S.1 - Support-Assistent UX
+
+**Status:** Vollständig implementiert, getestet und als separates arm64-
+Supportpaket gebaut; kein Commit ohne separaten Auftrag.
+
+**Ziel:** Eigenständige grafische Betreiber-App für den bestehenden geprüften
+Offline-Support-Reset mit verständlicher Anfrageprojektion, flüchtigem
+Installationsnamen, lesbarer Referenz, Public-Key-Status, bewusster
+Tokenausgabe und minimalem lokalem Audit.
+
+**Grenze:** Keine Änderung an Protokoll, Kryptografie, Tokenformat,
+Schlüsselmodell, Backupvertrag, Kompetenzmanager-App oder Schülerdatenmodell.
+Keine fachliche SQLite, Security Store, Dokumente, Backups, Runtime-Daten,
+privaten Schlüssel oder Passphrase im Bundle. Separater arm64-Build und
+Supportpaket; nicht Teil von Pilot-, Laura- oder Updatepaketen.
+
 ## Sprint 0.2.2 - Erstes beaufsichtigtes Sparkle-Pilotupdate
 
 **Status:** Product-Owner-Fingerprint bestätigt; öffentliche Registry,

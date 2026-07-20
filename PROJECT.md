@@ -1,5 +1,18 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Sprint 0.2S.1 - Support-Assistent UX
+
+Der Betreiber erhält mit `Jenaplan Support-Assistent.app` eine vom
+Kompetenzmanager, Pilotpaket und Updatepfad getrennte grafische macOS-arm64-
+Anwendung. Sie macht den bereits geprüften Offline-Support-Reset verständlich,
+ohne Protokoll, Kryptografie, Tokenformat, Schlüsselmodell, Backupvertrag,
+Appfunktion oder Schülerdatenmodell zu verändern.
+
+Der Assistent verarbeitet nur eine bewusst gewählte technische Anfrage, einen
+bewusst gewählten externen verschlüsselten Privatschlüssel und flüchtigen
+UI-State. Fachliche SQLite, Security Store, Dokumente, Backups und Runtime-
+Daten liegen außerhalb seiner Architektur- und Paketgrenze.
+
 ## Sicherer macOS-Updatepfad ab Sprint 0.2U.1
 
 Sprint 0.2U.1 entscheidet die Architektur, implementiert aber noch keinen
