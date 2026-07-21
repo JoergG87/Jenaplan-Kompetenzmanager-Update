@@ -1,5 +1,37 @@
 # UI Data Mapping
 
+## Security Sprint 5 - Keine UI- oder Startup-Projektion
+
+Security Sprint 5 ergänzt keine UI-Felder, Aktionen, Anzeigen, Dialoge,
+Einstellungen oder Startupzustände. Envelope-Lifecycle, Journalphasen,
+Recovery-Entscheidungen, Schlüssel-IDs und technische Fehlercodes werden nicht
+in PySide projiziert. Login, Passwortwechsel, Recovery-Codes, Support-Reset,
+Backup/Restore und normale Navigation importieren oder starten die Foundation
+nicht.
+
+## Security Sprint 4 - Keine UI- oder Startup-Projektion
+
+Der Migrationsprototyp ergänzt keine UI-Felder, Aktionen, Statusanzeigen,
+Dialoge, Einstellungen oder Startupzustände. Es gibt keine sichtbare
+Verschlüsselungsumschaltung und keine Schlüsselabfrage. Login, Recovery,
+Touch ID, Support Reset, Backup/Restore und normale fachliche Navigation
+importieren oder starten den Prototyp nicht.
+
+## Security Sprint 3 - Keine UI- oder Startup-Projektion
+
+Security Sprint 3 ergänzt keine UI-Felder, Aktionen, Anzeigen oder
+Einstellungswerte. Es gibt keine sichtbare Engine-Auswahl, keinen
+Verschlüsselungsstatus und keine Schlüsselabfrage. Login, Passwortwechsel,
+Recovery, Support-Reset, Backup/Restore und Startreihenfolge bleiben
+unverändert und rufen den SQLCipher-Provider nicht auf.
+
+## Security Sprint 2 - Keine UI-Projektion
+
+Security Sprint 2 fügt keine UI-Felder, Aktionen oder sichtbaren Statuswerte
+hinzu. DMK, Key-ID, Fingerprint, Envelope und Plattformstore-Zustand werden
+nicht projiziert. Die bestehende Passwortwechsel-UI bleibt unverändert und
+führt keine DMK-Operation aus.
+
 ## Sprint 0.2S.1 - Jenaplan Support-Assistent
 
 | UI-Feld/Aktion | Quelle/Command | Persistenz | Regel |

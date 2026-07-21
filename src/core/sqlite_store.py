@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .database_compatibility import DATABASE_COMPATIBILITY_VERSION
+from .database_engine import SQLiteConnectionProvider
 
 from .constants import (
     ACTIVE,
@@ -212,13 +213,10 @@ class SQLiteDatabase:
 
     def __init__(self, path: Path = SQLITE_SPIKE_PATH) -> None:
         self.path = path
+        self._connection_provider = SQLiteConnectionProvider()
 
     def connect(self) -> sqlite3.Connection:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        connection = sqlite3.connect(self.path)
-        connection.row_factory = sqlite3.Row
-        connection.execute("PRAGMA foreign_keys = ON")
-        return connection
+        return self._connection_provider.connect(self.path, create=True)
 
     def initialize_schema(self) -> None:
         with closing(self.connect()) as connection:

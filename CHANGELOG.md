@@ -1,5 +1,229 @@
 # CHANGELOG
 
+## Security Sprint 5 - Product-Key-Envelope und Migrationsjournal-Foundation
+
+### Added
+
+- HKDF-SHA-256-Domain-Separation für den flüchtigen Database-Wrapping-Key und
+  einen getrennten Migration-Journal-HMAC-Key ergänzt.
+- Zufälligen 256-Bit-Database-Key, strikt versioniertes AES-256-GCM-Envelope,
+  vollständige Metadaten-AAD, monotone Rewrap-Revision und fail-closed
+  Lifecycle mit persistentem Generations-High-Water-Mark
+  implementiert.
+- Eigene atomare Envelope-Registry außerhalb von fachlicher SQLite,
+  `security.sqlite`, Keyset-Sidecar und Journal ergänzt; komplette Registry
+  einschließlich leerem High-Water-Zustand per eigener HKDF-Domain und
+  HMAC-SHA-256 authentifiziert.
+- Kanonisches HMAC-SHA-256-Migrationsjournal mit vollständiger
+  Transition-Historie, expliziter Zustandsmaschine, rollenbasierten
+  Dateiidentitäten und reiner Recovery-Entscheidung ergänzt.
+- Den guarded synthetischen Sprint-4-Prototyp isoliert mit Envelope und Journal
+  verbunden und Abbrüche nach Backup, während/nach Export, während Validierung
+  sowie nach Neuöffnung nachgewiesen.
+
+### Security
+
+- Unbekannte Versionen/Algorithmen, falscher DMK, AAD-/Nonce-/Ciphertext-
+  Manipulation, Journal-HMAC-Fehler, Korruption, Temp-Reste, illegale
+  Übergänge und Dateiabweichungen werden ohne Neuerzeugung blockiert.
+- Database-Key, Wrapping-Key, Journal-Key, DMK und App-Passwort erscheinen
+  weder in Journal/Metadaten noch in Logs oder Exceptions. Jeder
+  Lifecycle-Rewrap verwendet einen revisionsverschiedenen HKDF-Kontext und
+  eine neue zufällige Nonce.
+- Journal und Envelope werden nach Authentisierung über Database-Context sowie
+  Database-Key-ID/-Generation kreuzgebunden; gültige fremde Paare blockieren.
+- Reservierte Pflichtchecks sind an ihre tatsächlich erreichte Journalphase
+  gebunden; unbekannte oder vorzeitig behauptete Checks und rückläufige
+  Zeitpunkte werden abgelehnt.
+- Recovery entscheidet nur; sie führt weder produktiven Austausch noch
+  Löschung einer Klartextquelle oder unbekannten Datei aus.
+
+### Boundaries
+
+- Keine Startup-, Login-, Passwort-, UI-, Recovery-Code-, Support-Reset-,
+  Backup/Restore-, Dokument-, Produktdaten-, Pilot-, Appcast-, Packaging- oder
+  Releaseintegration. Normales SQLite bleibt Produktstandard.
+- RC `0.2.2`, `security.sqlite`, fachliche SQLite, Pilot-/Laura-Artefakte und
+  bekannte Exceldatei bleiben unverändert. Ein Commit ist erst nach dem
+  separaten Gesamtreview der Security Sprints 2 bis 5 zulässig.
+
+### Open Gates
+
+- Replay-Schutz durch externen monotonen Anker, produktive Database-Context-Bindung,
+  Windows-DPAPI/ACL/File-ID/Reparse-Point-Port, macOS-Full-Durability,
+  SQLCipher-4.17.0-Supply-Chain, Packaging/Signierung und reale Crashabnahme
+  bleiben offen.
+
+### Gesamtreview
+
+- Fokussierte Sprintmatrix nach Reviewkorrekturen: Sprint 2 mit 46, Sprint 3
+  mit 20, Sprint 4 mit 21 und Sprint 5 mit 68 bestandenen Tests.
+- Vollständige Security-Regression mit 276, Backup/Restore mit 130 und
+  Support-Reset mit 75 bestandenen Tests.
+- Gesamtsuite mit 1020 Tests und 67 Subtests bestanden; `compileall`,
+  `pip check`, `git diff --check`, Hash- und Artefaktprüfungen erfolgreich.
+
+## Security Sprint 4 - isolierter SQLCipher-Migrationsprototyp
+
+### Added
+
+- Vollständig getrennten, Qt-freien Klartext-SQLite-zu-SQLCipher-Prototyp unter
+  `prototypes/database_encryption_migration/` ergänzt. Er akzeptiert nur eine
+  technisch markierte synthetische Fixture in einem temporären Arbeitsbereich.
+- Deterministische synthetische Testquelle mit 11 eigenen Tabellen, Primär- und
+  Fremdschlüsseln, Trigger, Views, expliziten Indizes, Schülern,
+  Beobachtungen, Kompetenzen, Berichten, Dokumentverweisen und Binäranhängen
+  ergänzt.
+- Verifiziertes SQLite-Backup, separaten `sqlcipher_export`-Transfer,
+  Schema-/Objekt-/Zeilen-/Wert-/Hash-/PRAGMA-Vergleich, Cipher-/SQLite-
+  Integrität, Neuöffnen und Quell-Dateihashkontrolle implementiert.
+- Fehlerproben für Backup, Export, Commit, Exportabbruch, Zielkorruption,
+  falschen Schlüssel, Quellkorruption und falsche SQLCipher-Version sowie eine
+  rein beschreibende atomare Austauschsimulation ergänzt.
+
+### Security
+
+- Der Prototyp erzeugt einen zufälligen 32-Byte-Database-Key ausschließlich
+  zur Laufzeit. Er verwendet weder DMK noch App-Passwort und persistiert oder
+  protokolliert kein Schlüsselmaterial.
+- Die spätere Hierarchie bleibt `DMK -> zweckgebundener Database-Wrapping-Key
+  -> zufälliger Database-Key`; DMK und SQLCipher-Key sind ausdrücklich nicht
+  identisch. Wrapping und produktive Persistenz sind nicht implementiert.
+- Bei jedem simulierten Fehler bleibt die Klartextquelle bytegleich. Ein
+  angelegtes Cipher-Ziel wird nur bei unveränderter Dateiidentität entfernt;
+  nach erfolgreichem Backup bleibt das verifizierte Backup erhalten.
+- Der Vollvergleich bindet zusätzlich `sqlite_sequence`, damit die
+  AUTOINCREMENT-Fortsetzung nicht unbemerkt abweichen kann.
+- Ein eigenes Backup, das die nachgelagerte Vollprüfung nicht besteht, wird nur
+  bei unveränderter Dateiidentität entfernt und nicht als verifiziert belassen.
+
+### Performance
+
+- Ein lokaler synthetischer Referenzlauf am 2026-07-22 über 12 validierte
+  Tabellen und 50.062 Zeilen einschließlich `sqlite_sequence` maß 4.739.072
+  Byte für Quelle/Backup, 4.583.424 Byte für das Cipher-Ziel, 0,123 s
+  Quellintegrität, 0,143 s Backup, 0,057 s Export, 0,169 s Vergleich, 0,074 s
+  Neuöffnen und 0,586 s Gesamtdauer. Das ist kein Produktbenchmark.
+
+### Boundaries
+
+- Keine Startup-, Login-, Recovery-, Touch-ID-, Support-Reset-,
+  Backup/Restore-, UI-, Produktdaten-, `security.sqlite`-, Release-, Appcast-
+  oder Pilotintegration. Kein Dateiaustausch und keine Klartextlöschung.
+- RC `0.2.2`, Pilotdaten, bekannte Excel-Datei und produktive SQLite werden
+  durch den Prototyp nicht geöffnet oder verändert. Der gemeinsame Commit ist
+  an ein separates Gesamtreview gebunden.
+
+## Security Sprint 3 - SQLCipher Infrastructure ohne produktive Migration
+
+### Added
+
+- Explizite Qt-freie Datenbank-Engine-Grenze mit unverändertem Standard-SQLite
+  und separat konstruiertem SQLCipher-Provider ergänzt.
+- Fail-closed Fehlerklassen für fehlende Engine, inkompatible Version,
+  fehlendes/ungültiges Keymaterial, nicht authentisierbaren Key/Header,
+  Korruption, Klartextformat und ungültige Engine-Konfiguration eingeführt.
+- Isolierten Smoke und Testmatrix für verschlüsselte temporäre Datenbanken,
+  Transaktionen, Integrität, Klartext-Ablehnung und synthetische Daten ergänzt.
+
+### Security
+
+- Keine Umgebungsumschaltung und kein Rückfall auf normales SQLite; bestehende
+  Dateien werden bei Key-, Format- oder Integritätsfehlern weder überschrieben
+  noch als leere Datenbank neu angelegt.
+- Testkeys entstehen nur zur Laufzeit, werden nicht persistiert oder geloggt
+  und sind weder App-Passwort noch DMK. Eine spätere Produktarchitektur braucht
+  einen eigenen zufälligen DB-Key unter DMK-Wrapping.
+- SQLCipher- und SQLite-Integrität, Foreign Keys, Cipherstatus, Headerpolicy,
+  Memory-/Temp-/Journal-/Sync-Regeln und exakte Spike-Version werden geprüft.
+
+### Packaging
+
+- `sqlcipher3` 0.6.2 mit nachgewiesener SQLCipher Community 4.12.0 auf
+  macOS arm64/Python 3.14 isoliert aufgenommen.
+- Separater 13-MB-PyInstaller-Onefile-Prototyp enthält die Cipher-Extension,
+  ist arm64, lokal ad-hoc-signiert und besteht den technischen Smoke.
+- Dieser lokale Packaging-Nachweis besitzt im Repository noch keine eigene
+  reproduzierbare Spec, Buildanweisung oder Manifestkette und ist kein
+  Produkt-Packaging-Beleg.
+- Dynamisch geladenes Binding, native Extension und Lizenzdaten müssen in
+  PyInstaller explizit gesammelt werden; der unvollständige Prototyp schlug
+  erwartungsgemäß fail-closed statt auf Standard-SQLite zurückzufallen.
+- Produktziel SQLCipher 4.17.0, kontrollierte Wheels, Developer-ID,
+  Notarisierung, DMG, Update-ZIP, Notices und Windows bleiben offene Gates.
+
+### Verified
+
+- 195 fokussierte SQLCipher-/SQLite-/Backup-/Restore-Tests bestanden.
+- Vollständige Security-Regression mit 187 Tests bestanden.
+- Gesamtsuite mit 929 Tests und 67 Subtests bestanden; keine gesammelten Tests
+  wurden im nachgewiesenen macOS-arm64-Lauf übersprungen.
+- Finaler arm64-PyInstaller-Smoke, `compileall`, `pip check` und
+  `git diff --check` bestanden.
+
+### Not Changed
+
+- Keine Migration, Startup-/Login-/UI-/Recovery-/Support-Reset-Integration,
+  Dokument- oder Backupverschlüsselung und keine Änderung am produktiven
+  Backup-/Restorepfad.
+- RC `0.2.2`, Pilotdaten, `security.sqlite`, fachliche Datenbank und Appcast
+  bleiben unangetastet. Die bereits vor Sprintbeginn vorhandene Änderung der
+  bekannten Pilottest-Exceldatei wird unverändert bewahrt. Der gemeinsame
+  Commit ist an ein separates Gesamtreview gebunden.
+
+## Security Sprint 2 - Key Foundation und Data Master Key Lifecycle
+
+### Added
+
+- Qt-freies Keyset- und DMK-Lifecycle-Modell mit `pending`, `active`, `revoked`
+  und `failed`, 256-Bit-Zufallsschlüsseln und SHA-256-Fingerprintprüfung.
+- Eigenen macOS-Keychain-Adapter mit getrenntem Service-Namespace sowie
+  plattformneutralen Port für eine spätere Windows-DPAPI-/Credential-Manager-
+  Implementierung ergänzt.
+- Kanonisches, versioniertes Envelope-Format für bereits geschütztes
+  Schlüsselmaterial und einen isolierten Metadaten-Sidecar ohne DMK-Payload
+  eingeführt.
+
+### Security
+
+- App-Passwort und DMK vollständig getrennt; Passwortwechsel verändert weder
+  Key-ID, Generation, Fingerprint noch Schlüsselmaterial.
+- Falsche Bindung, Zugriffssperre, Plattformfehler, beschädigte Einträge,
+  Neustartfortsetzung und wiederholbare Löschung schlagen strukturiert und
+  ohne Secret-Inhalte fehl.
+- Uneindeutige Längen-/Fingerprint-Korruption markiert Metadaten fail-closed,
+  löscht den möglicherweise korrekten Plattform-DMK aber nicht automatisch.
+- Den DMK-Keychain-Adapter in ein eigenes Infrastrukturmodul getrennt, damit
+  der normale Security-Startup die Verschlüsselungs-Foundations nicht importiert.
+- DMK wird weder geloggt noch an SQLite übergeben; Python-Buffers werden im
+  Erzeugungspfad bestmöglich überschrieben.
+
+### Verified
+
+- 16 fokussierte DMK-/Keychain-/Envelope-Tests bestanden.
+- Vollständige Testsuite mit 909 Tests und 67 Subtests bestanden.
+
+### Not Changed
+
+- Release Candidate `0.2.2`, Pilotdaten, `security.sqlite` v3, fachliche
+  Datenbank, Dokumente, Backups, UI, Startup und Releasepfad bleiben
+  unverändert. Keine Migration, kein SQLCipher und keine Produktaktivierung.
+
+## Technische Voranalyse - Integrierte Verschlüsselung und Support-Reset v2
+
+- Den bestätigten Klartext-Ist-Zustand von fachlicher SQLite-Datenbank,
+  verwalteten Dokumenten, PDF-Artefakten, Backup v1 sowie Restore-Staging und
+  die bestehende Security-/Keychain-/Startarchitektur dokumentiert.
+- Zielarchitektur für SQLCipher, plattformgeschützten Datenhauptschlüssel,
+  authentifizierte Dokument- und Backupcontainer, Klartextmigration und einen
+  registrierungsgebundenen dateibasierten Support-Reset einschließlich
+  Geheimwort-Updatebestätigung voranalysiert.
+- Bedrohungsmodell, Schlüsselhierarchie, Protokollformate, Modul-/Schemafolgen,
+  Testmatrix, Packaging-/Lizenzrisiken, Umsetzungssprints und harte
+  Stopbedingungen als nicht implementierte Entscheidungsgrundlage festgehalten.
+- Keine Produkt-, Schema-, Security-, Runtime-, Build- oder Teständerung; keine
+  Freigabe zur Implementierung.
+
 ## Sprint 0.2S.1 - Support-Assistent UX
 
 - macOS-Bundlemetadaten des Support-Assistenten auf Produktversion `0.2.2`,

@@ -1,5 +1,378 @@
 # Architekturentscheidungen
 
+## ADR-080 - HMAC-authentisiertes Migrationsjournal und reine Recovery-State-Machine
+
+**Status:** Für Security Sprint 5 als isolierte Foundation und ausschließlich
+für den synthetischen Migrationsprototyp freigegeben. Keine Startup-,
+Produktmigrations-, Austausch-, Rollback- oder Löschfreigabe.
+
+Das Journal ist eine einzelne streng kanonische JSON-Datei mit Version,
+Migration-ID, technischem Datenkontext, Database-Key-ID/-Generation,
+DMK-Key-ID/-Generation,
+HMAC-Algorithmus/-KDF-Version, Rollenpfaden, Dateibeweisen, aktuellem Zustand,
+sanitisierten Prüf- und Fehlercodes sowie vollständiger begrenzter
+Transition-Historie. Ein eigener HKDF-Kontext
+`jenaplan-kompetenzmanager/migration-journal-auth/v1` leitet aus dem DMK einen
+nur flüchtigen 256-Bit-HMAC-Schlüssel ab. `HMAC-SHA-256` authentifiziert alle
+Journalfelder. Der HMAC ist öffentlich; DMK, Journal-Key, Database-Key,
+Wrapping-Key, Passwort, Recovery-/Support-Secrets, Schülerdaten, Inhalte und
+SQL stehen niemals im Journal.
+
+Geprüfte Variante A, gewählt: kanonisches JSON wird vollständig in eine neue
+Datei im selben Verzeichnis geschrieben, geflusht, soweit unterstützt mit
+Datei-`fsync` dauerhaft gemacht, per `os.replace` publiziert und auf POSIX mit
+Verzeichnis-`fsync` abgeschlossen. Vorteil sind kleine Angriffsfläche, keine
+SQLite-Sidecars, einfaches Fuzzing und genau eine atomare Einheit. Nachteile
+sind vollständiges Neuschreiben und die notwendige DMK-Verfügbarkeit für jede
+Prüfung. Wartungs- und Testaufwand sind moderat; Recovery liest genau eine
+authentisierte Einheit.
+
+Geprüfte Variante B: ein eigenes STRICT-SQLite-Journal mit Events,
+Transaktionen und HMAC je Datensatz. Vorteile wären starke
+Transaktionssemantik und natürliche append-only Tabellen. Nachteile sind ein
+zweiter SQLite-Lifecycle, Locking, eigene `-journal`-/Recoveryfälle,
+Windows-Sharing-/Antivirusrisiken, größere Packagingfläche und deutlich mehr
+Tests. Für höchstens einige Dutzend Zustandswechsel entsteht kein ausreichender
+Produktvorteil. Ein unkeyed Hash oder eine unkeyed Hashkette wurde verworfen:
+ein Angreifer mit Schreibzugriff könnte sie neu berechnen.
+
+Die explizite Zustandsmaschine kennt `not_started`, Preflight, Quellenprüfung,
+Backup-Start/-Erzeugung/-Prüfung, Zielerzeugung, Export, Validierung,
+Neuöffnung, die nur vorbereiteten Swap-Zustände, Rollback, `failed`, `blocked`
+und `completed`. Jede Kante ist allowlisted und exhaustiv getestet;
+`completed`, `failed` und `blocked` sind terminal. Kritische Operationen haben
+Write-ahead- und Abschlusszustand. Der Sprint-5-Prototyp darf nach
+`reopen_verified` direkt `completed` erreichen; er führt keinen Swap aus.
+Reservierte Prüf-Codes besitzen eine feste früheste Abschlussphase und dürfen
+weder vorzeitig noch als unbekannte freie Werte eingetragen werden.
+Journalzeitpunkte müssen monoton sein.
+
+Journal und Envelope werden nach erfolgreicher HMAC-/AEAD-Prüfung zusätzlich
+über Database-Context sowie Database-Key-ID und -Generation kreuzgebunden; ein
+für denselben DMK gültiges, aber zu einer anderen Datenbank gehörendes Paar
+blockiert. Dateipfade im Journal sind ausschließlich sichere Dateinamen unter einem vom
+Aufrufer injizierten, symlinkfreien Test-Workspace. Quelle, Backup und Ziel
+werden über denselben `O_NOFOLLOW`-Descriptor gehasht und durch Rolle,
+`st_dev`, `st_ino`, Größe, SHA-256 und schwaches `mtime_ns` gebunden. Während
+`target_created` und `export_started` darf sich nur der Inhalt des bereits identitätsgebundenen
+Ziels ändern. Eine fehlende, zusätzliche, ausgetauschte oder hashabweichende
+Datei blockiert. Keine Recovery-Entscheidung löscht oder ersetzt eine Datei.
+
+Die reine Recovery-Auswertung liefert abhängig vom authentisierten Journal und
+den erneut geprüften Dateien ausschließlich `no_action`, `verify_backup`,
+`rollback_target`, `continue_validation`, `reopen_target`,
+`cleanup_completed_artifacts` oder
+`block_manual_review`. Unbekannte Version, falscher HMAC-Key, Temp-Rest,
+illegale Historie, Widerspruch oder fehlender Beweis führen zu
+`block_manual_review`. Mehrfacher Aufruf ist ohne Dateiveränderung identisch.
+Die vorbereiteten Swap-Zustände blockieren in Version 1 immer, weil das Journal
+noch keine beweisbare Rename-/Live-Pfad-Topologie besitzt. Bei
+`rollback_started` wird ausschließlich zwischen dem identisch gebundenen noch
+vorhandenen Ziel (`rollback_target`) und seinem Fehlen nach bereits erfolgter
+Löschung (`no_action`) unterschieden; die unveränderte Quelle wird nicht
+"restored".
+
+Bedrohungsgrenze: HMAC erkennt Manipulation ohne DMK, aber nicht das gemeinsame
+Zurückspielen einer vollständigen älteren, damals gültigen Journaldatei. Ein
+produktiver Rollout benötigt dafür einen vertrauenswürdig monotonen Anker.
+Ebenso schützt die Foundation nicht gegen einen kompromittierten Prozess mit
+DMK-Zugriff oder gegen physische Datenträgeranalyse.
+
+Auf macOS/POSIX gelten im isolierten Pfad `0700`/`0600`, `O_NOFOLLOW` und
+Verzeichnis-`fsync`. Das belegt keine vollständige Stromausfallsicherheit;
+`F_FULLFSYNC` bleibt zu bewerten. Die Prototyp-Löschung prüft die Datei-ID vor
+`unlink`, kann aber ohne exklusiven Prozess-Lock oder handlegebundene
+Plattformoperation einen Austausch exakt zwischen Prüfung und Löschung nicht
+atomar ausschließen; der isolierte `0700`-Root reduziert nur die Angriffsfläche.
+Windows bleibt gesperrt, bis ACLs,
+Reparse-Point-/Junction-Abweisung, handlebasierte Volume-/File-ID,
+Replace-/Sharing-Verhalten und reale Crash-/Packagingtests implementiert sind.
+
+## ADR-079 - Versioniertes AEAD-Format und atomare Product-Envelope-Registry
+
+**Status:** Für Security Sprint 5 als isolierte Foundation freigegeben; keine
+produktive Persistenzadresse, RuntimePaths-, Startup- oder Rotationsfreigabe.
+
+`DatabaseKeyEnvelope` ist bewusst ein neuer Typ und überlädt den generischen
+Sprint-2-`KeyEnvelope` nicht. Version 1 enthält exakt: Envelope-Version,
+Database-Key-ID/-Generation, monotone Rewrap-Revision, festen Key-Purpose, Lifecycle-Status,
+Wrapping-Algorithmus, KDF-Algorithmus/-Version, DMK-Key-ID/-Generation,
+technische Database-Context-UUID, 96-Bit-Nonce, kanonischen UTC-Zeitpunkt und
+Ciphertext. Der geschützte Inhalt sind exakt 32 zufällige Database-Key-Bytes;
+AES-GCM publiziert 48 Byte einschließlich 128-Bit-Tag.
+
+Alle öffentlichen Headerfelder einschließlich Nonce und Status bilden eine
+einzige kanonische JSON-AAD. Unbekannte oder boolesch mehrdeutige Versionen,
+Algorithmen, KDFs, Felder, Typen, Base64url-Darstellungen, Längen und Status
+werden vor Entschlüsselung abgelehnt. Falscher DMK, falsche Bindung sowie
+Manipulation von AAD, Nonce oder Ciphertext liefern nur sanitierte Fehlercodes.
+Es gibt keinen Klartextfallback und keine Neuerzeugung bei Fehlern.
+
+Geprüfte Variante A, gewählt: AES-256-GCM aus `cryptography` 49.0.0 mit pro
+Versiegelung neuer zufälliger 96-Bit-Nonce. Vorteile sind etablierte AEAD-API,
+explizite AAD, bestehende Buildabhängigkeit und breite macOS-/Windows-
+Verfügbarkeit. Hauptrisiko ist Nonce-Wiederverwendung; jede Statusänderung
+erhöht deshalb die authentifizierte `rewrap_revision`, die Bestandteil des
+HKDF-Kontexts ist, und verwendet zusätzlich eine neue Zufallsnonce. Selbst eine
+nicht benachbarte Zufallsnonce-Kollision trifft damit einen anderen AEAD-Key;
+gleiche aufeinanderfolgende Nonces werden zusätzlich abgewiesen. Der persistente
+Registry-High-Water-Mark verhindert Generationswiedervergabe nach terminaler
+Metadatenbereinigung.
+
+Geprüfte Variante B: ChaCha20-Poly1305 mit KBKDF-HMAC-SHA-256. Vorteile wären
+explizite Label-/Context-Trennung und gute Softwareleistung ohne
+AES-Beschleunigung. Nachteile sind dieselbe Nonce-Eindeutigkeitsanforderung,
+eine neue KDF-Entscheidung, Abweichung von der bestehenden HKDF-Voranalyse und
+zusätzliche Plattform-/Packagingtests ohne Nutzen für 32 Byte Nutzlast.
+AES-GCM-SIV wurde wegen Nonce-Missbrauchsresistenz geprüft, aber wegen
+OpenSSL-/Backendverfügbarkeit und zusätzlichem Produktbuild-Gate nicht gewählt.
+RFC-3394 AES Key Wrap allein erfüllt die verbindliche AAD-/Nonce-Anforderung
+nicht.
+
+Die isolierte Registry `database-key-envelopes-v1.json` enthält zusätzlich die
+stabile Database-Context-UUID und den monotonen Generations-High-Water-Mark und liegt als eigener
+Sidecar weder in fachlicher SQLite noch in `security.sqlite`,
+`data-keysets.sqlite`, Keychain oder Journal. Sie speichert nur bereits
+geschützte Envelopes. Tempdatei, Flush, Datei-`fsync`, atomare Publikation und
+POSIX-Verzeichnis-`fsync` schützen den letzten Zustand; `0600`/`0700`,
+Symlinkabweisung, Descriptor-/Dateiidentitätsprüfung und Compare-before-replace
+begrenzen Pfadaustausch. Vorhandene unbekannte, korrupte oder geänderte Dateien
+werden nicht überschrieben; Temp-Reste blockieren.
+
+Die gesamte kanonische Registry einschließlich Version, Context,
+High-Water-Mark und Envelope-Mitgliedschaft wird zusätzlich mit HMAC-SHA-256
+authentifiziert. Der ausschließlich flüchtige MAC-Key stammt aus der getrennten
+HKDF-Domain `jenaplan-kompetenzmanager/database-key-registry-auth/v1` und ist
+an die Database-Context-UUID gebunden. Damit werden auch eine leere Registry,
+selektives Entfernen/Wiedereinsetzen einzelner Envelopes und Steuerdaten-
+Manipulation ohne DMK erkannt. Vollständiges Replay einer früher gültigen
+Registry bleibt ohne externen monotonen Anker das dokumentierte Release-Gate.
+
+Lifecycle: `create pending`, `activate`, idempotentes `load active`, `revoke`,
+`fail`, Generations- und Mehrfach-Aktiv-Prüfung sowie explizite idempotente
+Metadatenlöschung terminaler Einträge; Context und High-Water-Mark bleiben dabei
+erhalten. Jede Statusänderung authentifiziert den neuen Status mit neuer
+Rewrap-Revision und Nonce. Produktive Rotation und physisch sicheres Löschen
+auf APFS/NTFS/SSD sind nicht implementiert oder behauptet.
+
+## ADR-078 - Domain-separierte Product Database-Key-Hierarchie
+
+**Status:** Für Security Sprint 5 als isolierte kryptografische Foundation
+freigegeben; keine Aktivierung der Datenbankverschlüsselung.
+
+Die verbindliche Hierarchie wird implementiert als `zufälliger 256-Bit-DMK ->
+zweckgebundener 256-Bit-Database-Wrapping-Key -> zufälliger 256-Bit-
+Database-Key -> SQLCipher`. App-Passwort, Recovery-Code, Support-Key und
+Gerätecredential sind an keiner Ableitung beteiligt. Der Database-Key wird mit
+`secrets.token_bytes` erzeugt und nie deterministisch aus Pfad,
+Installations-ID, Passwort oder DMK abgeleitet.
+
+Gewählt ist HKDF-SHA-256 aus `cryptography` mit dokumentiertem festem
+Extract-Salt und einer kanonischen `info`, die Zweck, Ableitungsversion,
+DMK-Key-ID/-Generation, Database-Context-UUID, Database-Key-Generation und
+Rewrap-Revision
+enthält. Der feste Zweck lautet
+`jenaplan-kompetenzmanager/database-key-wrap/v1`. Gleicher DMK und identischer
+vollständiger Kontext liefern denselben flüchtigen Wrapping-Key; anderer Zweck,
+Version, DMK-Kontext, Datenbankkontext, Generation oder Rewrap-Revision liefert
+einen anderen Schlüssel.
+Der Wrapping-Key wird nicht persistiert und nicht für Dokumente oder Backups
+verwendet. Registry-HMAC und Journal erhalten jeweils eigene getrennte Zwecke.
+
+Geprüfte Variante A, gewählt: HKDF-SHA-256 plus AES-256-GCM. Vorteile sind der
+für hochentropische Eingabeschlüssel passende Extract-and-Expand-Vertrag,
+kleine API, etablierte Library und klare Erweiterbarkeit durch neue
+versionierte Zwecke. Nachteile sind unvermeidliche Secret-Kopien in Python/
+OpenSSL und die Notwendigkeit strikt stabiler Kontextkodierung. Wartungs- und
+Testaufwand sind moderat; Re-Wrapping kann später vom SQLCipher-Datenwechsel
+getrennt werden.
+
+Geprüfte Variante B: unmittelbares Wrapping jedes Database-Key durch
+macOS-Keychain beziehungsweise Windows-DPAPI. Vorteil wäre weniger eigene
+KDF-Metadaten. Nachteile sind Umgehung der beschlossenen DMK-/Keyset-Domain,
+plattformverschiedene Envelopes, schwierigere Recovery/Rotation und stärkere
+Gerätebindung. KBKDF-HMAC-SHA-256 wäre kryptografisch tragfähig, hat gegenüber
+HKDF im vorhandenen Architekturpfad aber keinen Integrationsvorteil.
+
+Die Database-Context-UUID ist eine technische, authentifizierte Bindung und
+kein Pfad oder fachlicher Identifier. Eine zusätzliche Installationsbindung
+wird in Sprint 5 bewusst nicht gesetzt, weil sie Restore und Gerätewechsel
+vorweg entscheiden würde. Ein späterer produktiver Datenbankanker muss diese
+UUID innerhalb der verschlüsselten Datenbank oder eines vertrauenswürdigen
+monotonen Metadatenmodells binden.
+
+Verbleibende Grenzen: Python kann immutable Secret-Kopien und native
+Bibliothekspuffer nicht garantiert löschen. Der Registry-High-Water-Mark ist
+kein gegen Rollback geschützter externer monotoner Anker; gemeinsames
+Zurückspielen einer älteren gültigen Registry bleibt daher möglich. Der
+Windows-DMK-Store ist weiterhin nicht implementiert. Reale Keychain-,
+DPAPI-, SQLCipher-, PyInstaller-, Signatur-, Update- und Crashabnahmen bleiben
+Release-Gates.
+
+## ADR-077 - Separater synthetischer SQLCipher-Migrationsprototyp und DB-Key-Hierarchie
+
+**Status:** Für Security Sprint 4 ausschließlich als isolierter Prototyp mit
+synthetischen Daten freigegeben; keine Produkt-, Startup-, Austausch-,
+Backup/Restore-, Pilot- oder Releasefreigabe.
+
+Die vorgeschlagene Hierarchie wird mit einer zusätzlichen Zwecktrennung
+übernommen: Ein zufälliger 256-Bit-Database-Key verschlüsselt genau eine
+fachliche SQLCipher-Datenbank. Der DMK wird nicht als SQLCipher-Key verwendet,
+sondern leitet später per domain-separiertem KDF-Kontext einen flüchtigen
+Database-Wrapping-Key ab. Dieser schützt den zufälligen Database-Key in einem
+authentisierten, versionierten Envelope. Dokument-, Backup- und spätere Keys
+erhalten eigene Zwecke und dürfen weder Database-Key noch Wrapping-Key
+wiederverwenden. Security Sprint 4 implementiert davon nur einen zufälligen
+flüchtigen Test-Database-Key; DMK-Ableitung, Envelope, Store und Rotation
+bleiben gesperrt.
+
+Diese Trennung ist besser als `DMK == SQLCipher-Key`, weil DMK-Wechsel ein
+reines Re-Wrapping erlauben können, Datenbankkeyrotation getrennt planbar ist
+und die Kompromittierung eines Verwendungszwecks nicht automatisch alle
+anderen Schlüsselzwecke öffnet. Ein deterministisch direkt aus dem DMK
+abgeleiteter Database-Key wurde wegen enger Rotations-, Wiederherstellungs- und
+Mehrdatenbankkopplung verworfen. Ein passwortabgeleiteter SQLCipher-Key wurde
+wegen Passwortwechsel, Offline-Brute-Force und Vermischung von Anmeldung und
+Datenverschlüsselung verworfen. Direktes Plattform-Wrapping jedes Inhaltskeys
+bleibt technisch möglich, würde aber die bereits gewählte DMK-/Keyset-Domain
+umgehen.
+
+Der Prototyp öffnet die durch Application-ID, User-Version und Guard-Tabelle
+dreifach markierte Quelle ausschließlich read-only/immutable. Er erstellt ein
+separates verifiziertes SQLite-Backup und ein neues Cipher-Ziel. Der Transfer
+verwendet die offizielle `sqlcipher_export('main', 'plaintext')`-Semantik. Weil
+`sqlcipher_export` `user_version` und `auto_vacuum` nicht übernimmt, setzt der
+Prototyp `auto_vacuum` vor dem Export sowie `application_id` und `user_version`
+innerhalb der Exporttransaktion explizit. Es gibt keinen In-place-`rekey` und
+keinen SQLite-Fallback.
+
+Freigabe verlangt Gleichheit von Tabellen, Zeilenzahlen, Primärschlüsseln,
+Fremdschlüsseldefinitionen, Triggern, Views, expliziten Indizes, persistenten
+PRAGMAs, `sqlite_sequence`, normalisiertem Schemahash und typ-/längenkanonischen
+Datenhashes pro Tabelle und global. Zusätzlich müssen `foreign_key_check`, `integrity_check`,
+`cipher_integrity_check` und ein neues SQLCipher-Öffnen erfolgreich sein. Die
+Quelle muss vor und nach dem Lauf denselben Datei-SHA-256 besitzen.
+
+Rollback bedeutet in diesem Sprint: Die Quelle bleibt immer maßgeblich und
+wird nie umbenannt. Ein fehlerhaftes eigenes Cipher-Ziel wird nur bei gleicher
+Dateiidentität entfernt; ein bereits verifiziertes Backup bleibt erhalten. Ein
+späterer atomarer Austausch braucht exklusiven Prozess-/Dateilock, dauerhaftes
+Journal, `fsync` von Kandidat und Verzeichnis, retained rollback name,
+atomaren Rename, erneutes Verzeichnis-`fsync`, SQLCipher-Neuöffnen und eine
+eindeutige Start-Recovery-State-Machine. Dieser Austausch wird nur beschrieben,
+nicht ausgeführt.
+
+RC `0.2.2`, normale `sqlite3`-Runtime, `security.sqlite`, Produkt- und
+Pilotdaten, Dokumente, Backups, bekannte Excel-Datei, Startup, Login, Recovery,
+Touch ID, Support Reset, Appcast und Releaseartefakte bleiben unverändert.
+
+## ADR-076 - SQLCipher als explizite isolierte Datenbank-Engine
+
+**Status:** Für Security Sprint 3 als isolierte optionale Infrastruktur
+freigegeben; keine Produkt-, Startup-, Migrations-, Backup-, Restore-, Pilot-
+oder Releasefreigabe.
+
+Die Anwendung behält Standard-`sqlite3` als feste Default-Engine. Eine kleine
+Qt-freie Provider-Grenze kapselt treiberspezifische Connection-Erzeugung,
+Row-Factory, PRAGMAs, Versions- und Integritätsprüfungen. SQLCipher ist nur
+durch explizite Konstruktion erreichbar. Es gibt weder Umgebungsumschaltung
+noch stillen Fallback. Die normale fachliche Verbindung delegiert bei
+funktional unverändertem Verhalten an den Standard-SQLite-Provider.
+SQLCipher-Aktivierung, Security Store, Development-Keyset-Sidecar, Backup,
+Restore und Startup-Konfiguration bleiben außerhalb dieser Naht.
+
+Als DB-API wird `sqlcipher3` gewählt, weil es dem bestehenden `sqlite3`-Modell
+am nächsten liegt. Der isolierte macOS-arm64-/Python-3.14-Spike pinnt
+`sqlcipher3` 0.6.2 und prüft die tatsächlich geladene SQLCipher Community
+Engine exakt als `4.12.0 community`. Dieses öffentliche Wheel ist keine
+Produktfreigabe: Es wurde nicht über Trusted Publishing veröffentlicht, nennt
+die eingebettete SQLCipher-Version nicht in den Paketmetadaten und liegt hinter
+dem Produktziel SQLCipher 4.17.0. Für eine spätere Freigabe sind kontrolliert
+aus geprüften Quellen gebaute, hash-gepinnte Wheels gegen exakt SQLCipher
+4.17.0 für macOS arm64 und Windows x64 erforderlich.
+
+Geprüfte Alternativen: Ein kontrollierter `sqlcipher3`-Source-Build gegen
+4.17.0 ist das spätere Ziel, benötigt aber eigene Wheel-/SBOM-/CVE-Pflege.
+APSW plus eigener SQLCipher-Build ist technisch möglich, wegen abweichender
+Row-, Exception-, Transaktions- und Backup-Semantik für den kleinen Sprint aber
+zu invasiv. `pysqlcipher3` wird wegen eingestellter Wartung, altem SQLCipher-
+Stand, fehlenden modernen Wheels und externer nativer Buildabhängigkeit
+abgelehnt. Offizielle kommerzielle SQLCipher-Pakete bleiben eine
+Beschaffungsoption, stellen aber kein öffentliches offizielles Python-DB-API
+bereit.
+
+Der Provider akzeptiert im Sprint ausschließlich einen expliziten, zur
+Laufzeit erzeugten 32-Byte-Testkey. App-Passwort und DMK sind ausgeschlossen.
+Später ist ein eigener zufälliger DB-Key unter einem zweckgebundenen
+DMK-Wrapping erforderlich; Ableitung, Wrapping und Persistenz sind nicht Teil
+dieser Entscheidung. Der rohe Key wird als erste SQLCipher-Operation gesetzt,
+aus `repr`, Logs und Fehlern ferngehalten und in einem kopierten Python-
+`bytearray` bestmöglich überschrieben; das Binding-Statement-Caching ist
+deaktiviert. Die unvermeidbare immutable Hex-/SQL-Zeichenkette sowie Python
+und der C-Treiber garantieren dennoch keine vollständige sofortige
+Speicherlöschung.
+
+Nach dem Keying und vor dem ersten Schema-Lesezugriff werden Cipher-Version,
+`cipher_status`, `cipher_plaintext_header_size=0`, 4096-Byte-Cipherseiten,
+256000 KDF-Iterationen, HMAC-SHA-512, PBKDF2-HMAC-SHA-512, Seiten-HMAC,
+Memory-Security und In-Memory-Tempstore gesetzt und geprüft. Danach folgen
+DELETE-Journal, FULL-Synchronisierung, Secure Delete und Foreign Keys.
+Jedes Öffnen verlangt Schemaauthentisierung, `cipher_integrity_check`,
+`integrity_check` und `foreign_key_check`. Klartext-SQLite, fehlende Engine,
+falsche Version, fehlende/ungültige Keys und beschädigte Dateien werden ohne
+Neuerstellung abgewiesen. Falscher Schlüssel, beschädigter verschlüsselter
+Header und inkompatible Cipher-Parameter können denselben `SQLITE_NOTADB`-
+Befund erzeugen; die gemeinsame sanitierte Ablehnung ist beabsichtigt und
+vermeidet eine nicht belegbare Fehlerursache.
+
+SQLCipher Community verlangt BSD-artige Attribution und zugängliche
+Lizenzhinweise einschließlich der Abhängigkeiten. Beim Binding widersprechen
+sich PyPI-Metadaten (`MIT`) und mitgelieferte Lizenzdatei/Repository
+(zlib-artig); vor Distribution muss der tatsächlich gebaute Quell- und
+Notice-Satz geklärt werden. Ein isolierter arm64-PyInstaller-Onefile-Smoke
+funktioniert und enthält sowohl Standard-`sqlite3` als auch die statisch
+eingebettete SQLCipher-Extension. Wegen des späten Imports muss die spätere
+PyInstaller-Spec Binding, Extension und Lizenzdaten explizit sammeln; ohne
+diese Regel fehlt SQLCipher und der Provider bricht fail-closed ab. Developer-ID, Hardened Runtime,
+Notarisierung, DMG, Update-ZIP, saubere Bundle-Notices, reproduzierbarer Build,
+Windows x64, Authenticode und echter Upgradepfad bleiben Release-Gates.
+
+## ADR-075 - Isolierte Key Foundation mit plattformgeschütztem Data Master Key
+
+**Status:** Für Security Sprint 2 als isolierte Entwicklungsgrundlage
+freigegeben; keine Produkt-, Startup-, Migrations- oder Releasefreigabe.
+
+Der DMK besteht aus genau 32 zufälligen Bytes und ist unabhängig vom
+App-Passwort. Domain und Application Layer besitzen den Lifecycle; ein
+plattformneutraler Port besitzt die Secret-Persistenz. macOS verwendet den
+eigenen, nicht synchronisierenden Keychain-Service
+`de.jenaplan.kompetenzmanager.data-master-key`. Der Gerätecredential-Namespace
+wird nicht wiederverwendet. Für Windows ist ausschließlich der gemeinsame Port
+für eine spätere DPAPI-/Credential-Manager-Implementierung definiert.
+
+Versionierte Keysets durchlaufen `pending`, `active`, `revoked` oder `failed`.
+Der isolierte Entwicklungs-Sidecar speichert ausschließlich Key-ID,
+Generation, Status und SHA-256-Fingerprint. DMK und geschütztes
+Envelope-Material werden niemals in SQLite gespeichert. Das versionierte
+Envelope-Format transportiert ausschließlich bereits plattformgeschütztes
+Material mit Key-ID, Zweck, Algorithmus und technischen Metadaten; es führt
+selbst keine Verschlüsselung aus.
+
+Länge und Fingerprint werden bei jedem Laden geprüft. Fehlende oder beschädigte
+aktive Einträge schlagen fail-closed fehl und werden niemals still ersetzt;
+der noch nicht authentifizierte Development-Sidecar darf bei einer
+uneindeutigen Längen-/Fingerprintabweichung den möglicherweise korrekten
+Plattform-DMK nicht automatisch löschen. Temporäre Zugriffs- und
+Plattformfehler bleiben wiederholbar. Widerruf wird vor
+der Plattformlöschung festgeschrieben. Ein Löschfehler kann über die terminalen
+Metadaten erneut bereinigt werden. Passwortwechsel, Recovery und Support-Reset
+rotieren oder verändern den DMK in diesem Sprint nicht.
+
+Der bestehende RC `0.2.2`, `security.sqlite`, Pilotdaten, fachliche SQLite,
+Dokumente, Backups, SQLCipher und App-Start bleiben vollständig außerhalb
+dieser Entscheidung. Eine spätere Produktintegration benötigt einen eigenen
+Product-Owner-, Datenmodell-, Migrations-, Packaging- und Releaseentscheid.
+
 ## ADR-074 - Separater grafischer Support-Assistent
 
 **Status:** Für Sprint 0.2S.1 freigegeben.

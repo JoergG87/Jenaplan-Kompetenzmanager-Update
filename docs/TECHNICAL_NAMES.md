@@ -1,5 +1,99 @@
 # Technical Naming Registry
 
+## Security Sprint 5 - Product-Key-Envelope und Migrationsjournal
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `DatabaseKey` | Flüchtiger zufälliger 32-Byte-Key mit UUID und monotoner Generation; kein Passwort und kein DMK | Security Domain |
+| `DatabaseKeyEnvelope` | Striktes kanonisches AES-256-GCM-Envelope v1 für genau einen `DatabaseKey` | Security Domain |
+| `DatabaseKeyEnvelopeStatus` | Allowlist `pending`, `active`, `revoked`, `failed` | Security Domain |
+| `DatabaseKeyEnvelopeService` | Qt-freier Lifecycle für Erzeugen, Aktivieren, Laden, Widerrufen, Fehlschlagen und terminale Metadatenbereinigung | Security Application |
+| `derive_database_wrapping_key` | HKDF-SHA-256-Ableitung mit Database-Kontext, Key-Generation und Rewrap-Revision | Security Domain |
+| `DATABASE_KEY_WRAP_PURPOSE` | Feste Domain `jenaplan-kompetenzmanager/database-key-wrap/v1` | Security Domain |
+| `DATABASE_KEY_REGISTRY_AUTH_PURPOSE` | Getrennte HMAC-Domain `jenaplan-kompetenzmanager/database-key-registry-auth/v1` | Security Domain |
+| `rewrap_revision` | Monotoner Envelope-Zähler, der pro Status-Rewrap einen anderen AEAD-Key-Kontext erzwingt | Security Domain |
+| `FileDatabaseKeyEnvelopeRepository` | Atomare HMAC-authentifizierte Sidecar-Registry mit stabilem Database-Kontext und dauerhaftem Generations-High-Water-Mark | Security Infrastructure |
+| `database-key-envelopes-v1.json` | Ausschließlich geschützte Envelopes plus öffentliche Registry-Bindung; kein Klartextschlüssel | Security Infrastructure |
+| `MigrationJournalState` | Versionierter technischer Zustand mit vollständiger Transition-Historie, Prüfbelegen und Envelope-Cross-Binding | Security Domain |
+| `MigrationPhase` | Explizite Allowlist aller vorbereiteten Migrations-, Rollback- und Terminalphasen | Security Domain |
+| `MigrationRecoveryEvaluator` | Reine, nicht mutierende, fail-closed Recovery-Entscheidung | Security Domain |
+| `AuthenticatedMigrationJournalRepository` | HMAC-authentisierte kanonische und atomare Journalpersistenz | Security Infrastructure |
+| `database-migration-journal-v1.json` | Technisches Journal ohne Schlüssel, Passwörter, Schülerdaten, Inhalte oder Klartext-SQL | Security Infrastructure |
+| `MIGRATION_JOURNAL_AUTH_PURPOSE` | Feste Domain `jenaplan-kompetenzmanager/migration-journal-auth/v1` | Security Domain |
+| `SecureMigrationPrototypeEngine` | Einzige Sprint-5-Integration; ausschließlich guarded synthetischer Sprint-4-Prototyp | Security Prototype |
+
+Diese Namen führen keine RuntimePaths-Adresse, Produktdatenquelle, UI,
+Startup-/Login-Kopplung, produktive Migration oder Verschlüsselungsaktivierung
+ein.
+
+## Security Sprint 4 - isolierter Migrationsprototyp
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `MigrationPrototypeEngine` | Qt-freie Orchestrierung ausschließlich für guarded synthetische SQLite-zu-SQLCipher-Läufe | Security Prototype |
+| `MigrationPaths` | Vier explizite Pfade im selben isolierten Prototyp-Arbeitsbereich: Root, Quelle, Backup, Ziel; offizieller Runner und Tests verwenden einen temporären Root | Security Prototype |
+| `FailurePoint` | Testinjektion `backup`, `export`, `commit`, `corrupt_target`, `wrong_key` oder `interrupt_export` | Security Test |
+| `DatabaseSnapshot` | Generische technische Struktur- und Wertprojektion für den Vergleich | Security Prototype |
+| `ValidationResult` | Gleichheitsnachweis für Tabellen, Rows, PK/FK, Trigger, Views, Indizes, PRAGMAs und Hashes | Security Prototype |
+| `MigrationReport` | Sanitisiertes Laufresultat mit Validierung, Größen, Zeitmessung und unverändertem Quellhash | Security Prototype |
+| `SyntheticScale` | Ausschließlich synthetische Mengensteuerung einschließlich großer Fixture | Security Test |
+| `create_synthetic_source` | Erzeugt die dreifach markierte synthetische Quelle mit 11 repräsentativen Tabellen | Security Test |
+| `__jkm_security_sprint_4_synthetic_guard` | Technische Stop-Guard-Tabelle; keine produktive oder fachliche Tabelle | Security Test |
+| `simulate_atomic_exchange` | Nicht mutierende Beschreibung eines späteren atomaren Austauschs | Security Prototype |
+| `scripts/run_database_encryption_migration_prototype.py` | Flüchtiger Standard-/Großlauf mit Laufzeitkey und JSON-Messprotokoll | Security Test |
+
+`Database Key` bezeichnet einen zufälligen 256-Bit-Schlüssel pro fachlicher
+Datenbank. `Database Wrapping Key` bezeichnet den später zweckgebunden aus dem
+DMK abgeleiteten flüchtigen KEK. Beide Namen sind Architekturbegriffe; Wrapping
+und produktive Persistenz werden in Security Sprint 4 nicht implementiert.
+
+## Security Sprint 3 - Isolierte SQLCipher-Infrastruktur
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `DatabaseEngine` | Explizite Engine-Auswahl `sqlite` oder `sqlcipher`; keine Umgebungsumschaltung | Core Infrastructure |
+| `DEFAULT_DATABASE_ENGINE` | Unveränderter Standard `sqlite` | Core Infrastructure |
+| `DatabaseConnectionProvider` | Kleiner Qt-freier Verbindungsport für isolierte Engine-Aufrufe | Core Infrastructure |
+| `SQLiteConnectionProvider` | Standardbibliothek-Provider mit `sqlite3.Row` und `foreign_keys=ON`; normale Repository-Verbindungen delegieren bei unverändertem Verhalten an ihn | Core Infrastructure |
+| `SQLCipherConnectionProvider` | Optionaler fail-closed Provider für neue oder bestehende verschlüsselte Testdatenbanken | Core Infrastructure |
+| `SQLCIPHER_SPIKE_BINDING_VERSION` | Für den isolierten Spike gepinntes Python-Binding `sqlcipher3` 0.6.2 | Build / Security Infrastructure |
+| `SQLCIPHER_SPIKE_ENGINE_VERSION` | Im Spike nachgewiesene Engine `4.12.0 community`; keine Produktfreigabe | Build / Security Infrastructure |
+| `SQLCIPHER_PRODUCT_TARGET_VERSION` | Kontrollierter späterer Build gegen SQLCipher 4.17.0; offenes Release-Gate | Build / Security Infrastructure |
+| `DatabaseEngineError` | Basisklasse mit ausschließlich sanitisiertem Fehlercode | Core Infrastructure |
+| `SQLCipherUnavailableError` | Binding oder native SQLCipher-Engine fehlt | Core Infrastructure |
+| `SQLCipherVersionError` | Geladene Cipher-Version entspricht nicht der expliziten Erwartung | Core Infrastructure |
+| `DatabaseKeyMissingError` | Kein Schlüsselmaterial übergeben | Core Infrastructure |
+| `DatabaseKeyInvalidError` | Schlüsselmaterial besitzt nicht das freigegebene 32-Byte-Format | Core Infrastructure |
+| `DatabaseKeyRejectedError` | Verschlüsselter Header kann mit dem Schlüssel nicht authentisiert/gelesen werden; umfasst technisch ununterscheidbare Headerkorruption | Core Infrastructure |
+| `DatabaseCorruptError` | Datei ist strukturell unmöglich oder nach erfolgreichem Keying schlägt Cipher-/SQLite-Integrität fehl | Core Infrastructure |
+| `DatabaseFormatUnsupportedError` | Eine Datei mit Standard-SQLite-Klartextheader wurde an SQLCipher übergeben | Core Infrastructure |
+| `DatabaseEngineConfigurationError` | Pfad, Modus, Treibervertrag oder Engine-Konfiguration ist ungültig | Core Infrastructure |
+| `scripts/smoke_test_sqlcipher_engine.py` | Isolierter technischer Smoke mit Laufzeitschlüssel und synthetischen Daten | Test / Packaging |
+
+Regel: Diese Namen führen keine fachliche Entität, Tabelle, UI-Projektion,
+RuntimePaths-Erweiterung, Migration oder Produktaktivierung ein.
+
+## Security Sprint 2 - Key Foundation und DMK
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `DataKeyset` | Ausschließlich Key-ID, Generation, Lifecycle-Status und SHA-256-Fingerprint | Security Domain |
+| `DataKeysetStatus` | `pending`, `active`, `revoked`, `failed` | Security Domain |
+| `LoadedDataMasterKey` | Flüchtiger 32-Byte-DMK mit Key-ID und Generation; Secret aus `repr` ausgeschlossen | Security Domain |
+| `DataMasterKeyService` | Qt-freie Orchestrierung von Erzeugung, Wiederanlauf, Laden, Prüfung, Widerruf und Lösch-Retry | Security Application |
+| `DataKeysetRepository` | Port für ausschließlich technische Keyset-Metadaten | Security Port |
+| `DataMasterKeyStore` | Plattformport für geheimes DMK-Material; macOS Keychain und spätere Windows-DPAPI-Implementierung | Security Port |
+| `SQLiteDataKeysetRepository` | Isolierter Development-Sidecar v1; keine Erweiterung oder Migration von `security.sqlite` | Security Infrastructure |
+| `MacOSDataMasterKeyStore` | Keychain-Adapter im eigenen DMK-Namespace | Security Infrastructure |
+| `UnsupportedDataMasterKeyStore` | Fail-closed Portadapter ohne Plattformimplementierung | Security Infrastructure |
+| `KeyEnvelope` | Kanonisches Format für bereits geschütztes Schlüsselmaterial | Security Domain |
+| `KEY_ENVELOPE_FORMAT_VERSION` | Envelope-Version 1 | Security Domain |
+| `DATA_MASTER_KEY_BYTES` | Exakt 32 Bytes / 256 Bit | Security Domain |
+| `DATA_MASTER_KEY_PURPOSE` | Fester Zweck `data_master_key` | Security Domain |
+| `DATA_MASTER_KEY_ALGORITHM` | Erzeugungsalgorithmus `random-256` | Security Domain |
+| `DataMasterKeyStoreStatus` | `success`, `not_found`, `unsupported`, `access_denied`, `corrupt`, `error` | Security Domain |
+| `de.jenaplan.kompetenzmanager.data-master-key` | Getrennter, nicht mit Gerätecredentials geteilter macOS-Keychain-Service | Security Infrastructure |
+
 ## Sprint 0.2S.1 - Support-Assistent UX
 
 | Technischer Name | Bedeutung | Eigentümer |

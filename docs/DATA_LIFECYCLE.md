@@ -1,5 +1,161 @@
 # Data Lifecycle
 
+## Security Sprint 5 - Product-Key- und Journal-Lifecycle
+
+Der isolierte Envelope-Lifecycle ist `create pending -> activate -> load
+active -> revoke|fail`. Der Database-Key entsteht mit kryptografischem Zufall;
+der DMK leitet per HKDF-SHA-256 und der festen Domain
+`jenaplan-kompetenzmanager/database-key-wrap/v1` einen flüchtigen
+Wrapping-Key ab. Database-Context, Key-Generation und monotone
+`rewrap_revision` sind KDF-Kontext. Eine zweite getrennte HKDF-Domain erzeugt
+den flüchtigen HMAC-Key für die komplette Registry. Jeder Statuswechsel versiegelt denselben
+Database-Key mit einem revisionsverschiedenen AEAD-Key-Kontext und neuer
+96-Bit-Nonce. Die Registry hält Context und Generations-High-Water-Mark auch
+nach idempotenter Entfernung terminaler Envelope-Metadaten; beim aktuellen
+authentisierten Registry-Stand wird eine Generation nie erneut vergeben.
+HMAC-SHA-256 bindet dabei auch Context,
+High-Water-Mark, leere Envelope-Liste und Mitgliedschaft. Beschädigte,
+unbekannte oder mehrdeutige Registrys
+werden weder ersetzt noch neu erzeugt.
+
+Der Journal-Lifecycle schreibt vor jeder kritischen Phase einen atomaren
+Zustand und danach den Abschlussbeleg. Die erlaubte Hauptkette ist:
+
+```text
+not_started -> preflight_started -> source_verified
+-> backup_started -> backup_created -> backup_verified
+-> target_creation_started -> target_created
+-> export_started -> export_completed
+-> validation_started -> validation_completed
+-> reopen_started -> reopen_verified -> completed
+```
+
+`failed`, `blocked` und `completed` sind terminal. Rollback ist nur von
+Ziel-/Export-/Validierungsphasen über `rollback_started -> rollback_completed
+-> failed` erlaubt. Swap-Phasen sind für spätere Versionen reserviert und
+führen in Sprint 5 stets zu manueller Blockierung, weil noch keine
+Rename-Topologie persistiert wird. Prüf-Codes wachsen monoton.
+Reservierte Pflichtchecks stammen aus einer festen Allowlist, dürfen erst mit
+der zugehörigen erreichten Phase erscheinen und Journalzeitpunkte sind monoton.
+
+Jeder Journalstand bindet Migration-ID, Database-Context,
+Database-Key-ID/-Generation und DMK-Key-ID/-Generation. Quelle, Backup und Ziel
+werden durch sichere relative Rolle, `st_dev`, `st_ino`, Größe, SHA-256 und
+schwaches `mtime_ns` belegt. Fehlender Beleg, fremde ID, Hashabweichung,
+Symlink, Temp-Rest, ungültige Historie, falsche Version oder HMAC führen zu
+`block_manual_review`. Bei `rollback_started` bedeutet das eigene noch
+vorhandene Ziel `rollback_target`; sein nachweisliches Fehlen nach bereits
+erfolgter Löschung bedeutet `no_action`. Die Entscheidung führt selbst keine
+Dateioperation aus und löscht niemals die Klartextquelle.
+
+Persistenz erfolgt über Tempdatei, Flush, Datei-`fsync`, `os.replace` und auf
+POSIX Verzeichnis-`fsync`; Create nutzt exklusives Link-Publizieren. Ein
+übriggebliebenes Tempfile blockiert. Vollständige Stromausfallsicherheit,
+Rollbackschutz gegen das Zurückspielen einer alten gültigen Registry oder
+eines alten gültigen Journals und
+physisch sicheres Löschen werden nicht behauptet. Windows bleibt bis zu ACL-,
+Reparse-Point-, handlebasierter File-ID-, Replace-/Sharing- und Crashabnahme
+gesperrt.
+
+Der synthetische Sprint-4-Pfad führt vor jedem Sidecar-Schreiben erneut
+Workspace-, Guard- und Integritäts-Preflight aus. Nur danach werden Envelope
+und Journal angelegt und der entschlüsselte flüchtige Database-Key an den
+SQLCipher-Testprovider übergeben. Es gibt keine Startup-, Login-, UI-,
+Backup/Restore- oder Produktintegration.
+
+## Security Sprint 4 - isolierter Migrations- und Rollback-Lifecycle
+
+1. Ein Test erzeugt einen neuen temporären Root, eine deterministische
+   synthetische Fixture und einen zufälligen flüchtigen 32-Byte-Database-Key.
+2. Die Engine prüft Root/Pfadtrennung, reguläre Datei, Symlinkfreiheit,
+   Guard-Wert, Application-ID, User-Version, `integrity_check` und
+   `foreign_key_check`; anschließend wird der Quell-Dateihash fixiert.
+3. Die SQLite-Backup-API erzeugt ein separates Backup. Integrität, Tabellen,
+   Zeilen, PK/FK, Trigger, Views, Indizes, PRAGMAs, Schemahash und Datenhash
+   müssen vor dem Export der Quelle entsprechen.
+4. `SQLCipherConnectionProvider` erzeugt ein leeres Ziel. Die Quelle wird
+   read-only/immutable mit leerem Attach-Key angehängt; `sqlcipher_export`
+   überträgt in einer expliziten Transaktion Schema und Daten. Persistente,
+   nicht automatisch übertragene PRAGMAs werden explizit gesetzt.
+5. Nach Commit und `fsync` wird das Ziel geschlossen und über den normalen
+   SQLCipher-Provider neu geöffnet. Dadurch laufen Cipher-, SQLite- und
+   Fremdschlüsselintegrität erneut.
+6. Die Vergleichskomponente bildet Quell- und Zielsnapshot. Jeder Wert erhält
+   einen SQLite-Typmarker und eine Längenrahmung; sortierte Zeilenhashes pro
+   Tabelle bilden zusammen den globalen Datenhash. Die persistente interne
+   AUTOINCREMENT-Fortsetzung aus `sqlite_sequence` ist ausdrücklich enthalten.
+   Nur vollständige Gleichheit aller registrierten Dimensionen gibt das Ziel
+   frei.
+7. Der Quell-Dateihash wird erneut geprüft. Der Prototyp meldet Größen und
+   Laufzeiten und entfernt nach dem Lauf den gesamten temporären Root.
+
+Rollback bei Backupfehler entfernt nur ein eigenes Teilbackup. Rollback nach
+erfolgreichem Backup behält dieses Backup, entfernt ein eigenes fehlgeschlagenes
+Cipher-Ziel nur bei gleicher Dateiidentität und prüft Quelle sowie Backup
+erneut. Weil kein Live-Austausch stattfindet, bleibt die Quelle zu jeder Zeit
+maßgeblich.
+
+Ein späterer Live-Lifecycle benötigt exklusiven App-Lock, dauerhaftes Journal,
+ausreichend reservierten Speicher, `fsync` von Datei und Verzeichnis,
+retained rollback source, atomaren Rename und eindeutige Start-Recovery vor
+Öffnung der fachlichen Runtime. Diese Schritte sind nur dokumentiert.
+
+## Security Sprint 3 - Isolierter SQLCipher-Test-Lifecycle
+
+1. Ein Test oder technischer Smoke erzeugt ein neues temporäres Verzeichnis
+   und 32 zufällige Schlüsselbytes im Arbeitsspeicher.
+2. `SQLCipherConnectionProvider` lädt den expliziten optionalen Treiber, prüft
+   dessen Cipher-Version und legt ausschließlich eine neue Testdatei an.
+3. Der rohe 256-Bit-Testschlüssel wird als erste SQLCipher-Operation gesetzt;
+   danach folgen feste Memory-, Foreign-Key-, Journal-, Sync- und Temp-Regeln.
+4. Der Test schreibt nur synthetisches Schema und synthetische Daten, committet
+   beziehungsweise rollt kontrolliert zurück und schließt jede Verbindung.
+5. Wiederöffnen mit dem richtigen Schlüssel prüft
+   `cipher_integrity_check`, `integrity_check`, Schema und Zeilenanzahl.
+   Klartext-SQLite, falscher Schlüssel, fehlende Engine und beschädigte Datei
+   werden ohne Fallback, Neuerstellung oder Überschreiben abgewiesen.
+6. Der normale `sqlite3`-Treiber muss die Datei ablehnen; zusätzlich wird
+   geprüft, dass der synthetische Marker nicht als Klartext in der Datei liegt.
+7. Nach Ende des Smokes wird das gesamte temporäre Verzeichnis entfernt.
+
+Der Produkt-Lifecycle ruft diesen Pfad nicht auf. Eine spätere Migration muss
+die Anwendung exklusiv sperren, ein verifiziertes unverändertes Backup
+erzeugen, Quelle und separates Cipher-Ziel prüfen, fachliche Invarianten und
+Anhänge berücksichtigen, atomar austauschen und bei jedem Fehler rollback- oder
+fortsetzungsfähig bleiben. Das Entlinken beziehungsweise Überschreiben einer
+Klartextdatei garantiert auf SSD/APFS/NTFS wegen Copy-on-write,
+Wear-Leveling, Snapshots und Betriebssystem-Caches keine physische sichere
+Löschung.
+
+## Security Sprint 2 - Data Master Key Lifecycle
+
+Der Lifecycle wird nur durch einen expliziten Entwicklungsaufruf gestartet;
+Startup und Runtime rufen ihn nicht auf.
+
+1. Der Zufallsgenerator erzeugt genau 32 Bytes und eine neue Key-ID.
+2. Aus dem DMK entsteht ein SHA-256-Fingerprint; der Sidecar schreibt nur ein
+   `pending`-Keyset mit Generation und technischen Metadaten.
+3. `DataMasterKeyStore` schreibt den DMK unter Installations- und Key-ID-Bindung
+   in den Plattformstore.
+4. Erst danach wird das Keyset `active`. Bei Neustart wird ein passender
+   `pending`-Eintrag gelesen, auf Länge und Fingerprint geprüft und fortgesetzt.
+5. Laden liest ausschließlich über Key-ID und Installation, prüft 32-Byte-Länge
+   und Fingerprint und gibt Material nur flüchtig an den Aufrufer zurück.
+
+Fehlende oder beschädigte Schlüssel werden `failed` und niemals still neu
+erzeugt. Weil der Development-Sidecar noch nicht authentifiziert ist, löscht
+eine Längen- oder Fingerprintabweichung den Plattform-DMK nicht automatisch;
+Bereinigung erfordert den expliziten Lösch-Lifecycle. Falsche Bindung liefert
+`not_found`; verweigerter Zugriff und temporäre
+Plattformfehler bleiben retry-fähig. Widerruf setzt zuerst `revoked` und löscht
+danach den Plattformwert. Bleibt die Löschung aus, wird sie anhand terminaler
+Metadaten beim nächsten expliziten Löschaufruf erneut versucht.
+
+Ein Passwortwechsel betrifft ausschließlich den bestehenden Auth-Lifecycle und
+ruft keine DMK-Operation auf. Unbekannte Sidecar- oder Envelope-Versionen werden
+abgewiesen, nicht migriert. Es gibt keine automatische Startup-Aktion, keine
+Migration, keinen Pilotdatenzugriff und keine fachliche Verschlüsselung.
+
 ## Sprint 0.2S.1 - Grafischer Offline-Supportablauf
 
 ```text

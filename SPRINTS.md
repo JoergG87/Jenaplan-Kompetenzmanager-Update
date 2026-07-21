@@ -1,5 +1,79 @@
 # Sprintplanung
 
+## Security Sprint 5 - Product Database-Key Envelope & Migration Journal Foundation
+
+**Status:** Isolierte Implementierung und Test; keine Produktaktivierung.
+
+- [x] DMK-/Keyset-/Envelope-/SQLCipher-/Migrationsbestand und zwei ernsthafte
+  Varianten je Foundation geprüft.
+- [x] HKDF-SHA-256-Domain-Separation für Database-Wrapping-Key und getrennten
+  Journal-HMAC-Key implementiert.
+- [x] Zufälligen 256-Bit-Database-Key sowie AES-256-GCM-Envelope mit
+  vollständiger kanonischer AAD implementiert.
+- [x] Atomare geschützte Envelope-Registry mit Rewrap-Revision,
+  HMAC-authentifiziertem Generations-High-Water-Mark und fail-closed Lifecycle
+  `pending`, `active`, `revoked`, `failed` implementiert.
+- [x] HMAC-authentisiertes atomares Journal, exhaustive Transition-Matrix,
+  Envelope-Cross-Binding, Dateibeweise und reine idempotente
+  Recovery-Entscheidung implementiert.
+- [x] Sprint-4-Prototyp isoliert mit Envelope/Journal und fünf Crashpunkten
+  verbunden; kein produktiver Swap.
+- [ ] Produktive Database-Context-/Replay-Anker, Startup-Recovery, Rotation,
+  SQLCipher-4.17.0-Supply-Chain, Windows-Port und reale Plattform-Crashabnahme.
+- [ ] Product-Owner-Freigabe für jeden späteren produktiven Integrationssprint.
+
+## Security Sprint 4 - isolierter Datenbankmigrationsprototyp
+
+**Status:** Vollständig mit synthetischen Daten implementiert und fokussiert
+getestet; keine Produktintegration. Der gemeinsame Commit erfolgt erst nach dem
+separaten Gesamtreview der Security Sprints 2 bis 5.
+
+**Ergebnis:** Guarded synthetische Klartextquelle, verifiziertes Backup,
+separater SQLCipher-Export, vollständiger Struktur-/Daten-/Hash-/PRAGMA-
+Vergleich, Cipher-/SQLite-Integrität, echtes Neuöffnen, Wiederholbarkeit,
+Rollback-Fehlerproben und Performanceprotokoll. Der Dateiaustausch ist nur als
+nicht mutierende Ablaufbeschreibung vorhanden.
+
+**Grenze:** Keine produktive Datenbank, keine Pilotdaten, keine Startup-,
+Login-, Recovery-, Touch-ID-, Support-Reset-, Backup/Restore-, UI-, Packaging-
+oder Releaseänderung. Kein DMK-/DB-Key-Wrapping und keine Klartextlöschung.
+
+**Damals nach Sprint 4 offene Gates:** Der authentisierte Key-Envelope und das
+dauerhafte technische Journal wurden als isolierte Foundation in Sprint 5
+ergänzt. Produktiv offen bleiben kontrollierter SQLCipher-4.17.0-Build,
+exklusiver App-Lock, ausführende Startup-Recovery, Crash-/Power-Loss-Harness auf
+realen Dateisystemen, Speicherplatzreserve, engine-bewusstes Backup/Restore,
+produktives Schema-/Invariantenprofil, macOS-/Windows-Packaging und
+beaufsichtigter Upgrade-/Rollbacktest.
+
+## Security Sprint 3 - SQLCipher Infrastructure
+
+**Status:** Isolierte optionale Infrastruktur implementiert und getestet;
+SQLite bleibt Produktstandard, keine Produktaktivierung.
+
+- [x] Explizite SQLite-/SQLCipher-Providergrenze ohne Environment-Umschaltung
+  oder Klartextfallback implementiert.
+- [x] Fehlende Engine, falsche Version, fehlender/falscher Key, Klartextformat
+  und Korruption fail-closed abgedeckt.
+- [x] `sqlcipher3` 0.6.2 / SQLCipher 4.12.0 ausschließlich als getrennten
+  Spike geprüft.
+- [ ] Reproduzierbarer SQLCipher-4.17.0-Produktbuild, SBOM/Notices,
+  macOS-/Windows-Packaging, Signierung und Upgradepfad.
+
+## Security Sprint 2 - Key Foundation
+
+**Status:** Isolierte DMK-/Keyset-Foundation implementiert und getestet; keine
+Startup-, RuntimePaths- oder Produktintegration.
+
+- [x] Zufälligen 256-Bit-DMK, getrennten Plattformport und macOS-Keychain-
+  Namespace implementiert.
+- [x] Keyset-Lifecycle `pending`, `active`, `revoked`, `failed`, kanonisches
+  Envelope-Grundformat und Neustartfortsetzung implementiert.
+- [x] Automatische Löschung bei uneindeutiger Fingerprint-/Keychain-Korruption
+  ausgeschlossen; Secret-Bereinigung bleibt ein expliziter Löschvorgang.
+- [ ] Authentisierte beziehungsweise rollbackgeschützte produktive
+  Keyset-Metadaten und Windows-DPAPI-Port.
+
 ## Sprint 0.2S.1 - Support-Assistent UX
 
 **Status:** Vollständig implementiert, getestet und als separates arm64-

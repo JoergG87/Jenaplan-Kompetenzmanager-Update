@@ -1,5 +1,39 @@
 # View Data Ownership
 
+## Security Sprint 5 - Foundation ohne View
+
+Security Sprint 5 besitzt keine View, kein ViewModel, keinen Desktop-Adapter
+und keine sichtbare Produktprojektion. `DatabaseKeyEnvelopeService`,
+`AuthenticatedMigrationJournalRepository` und `MigrationRecoveryEvaluator`
+bleiben Qt-freie Security-Bausteine; `SecureMigrationPrototypeEngine` gehört
+ausschließlich zum synthetischen Prototyp. Widgets und Shell besitzen weder
+Schlüssel-, Envelope-, Journal-, Pfad- noch Recovery-Ownership.
+
+## Security Sprint 4 - Prototyp ohne View
+
+Security Sprint 4 besitzt keine View, kein ViewModel, keinen Desktop-Adapter
+und keine sichtbare Produktprojektion. `MigrationPrototypeEngine`,
+`DatabaseSnapshot`, `ValidationResult` und `MigrationReport` gehören nur zum
+Qt-freien technischen Prototyp. Konsolen-JSON aus dem isolierten Runner ist ein
+Testprotokoll und kein Produkt-View. Kein Widget erhält Engine-Auswahl,
+Schlüssel, Pfade, Migrationsstatus oder Fehlerdetails.
+
+## Security Sprint 3 - Infrastruktur ohne View
+
+Security Sprint 3 besitzt keine View, kein ViewModel und keine sichtbare
+Projektion. `SQLCipherConnectionProvider` gehört ausschließlich zur Qt-freien
+technischen Infrastruktur. Widgets, Shell, Dialoge, Adapter und bestehende
+Repositories erhalten weder Engine-Auswahl noch Schlüsselmaterial oder
+SQLCipher-Fehlertexte. Der technische Smoke ist kein Produkt-View.
+
+## Security Sprint 2 - Foundation ohne View
+
+Es gibt keine View-Ownership. `DataMasterKeyService` besitzt die
+Lifecycle-Orchestrierung, `DataKeysetRepository` ausschließlich technische
+Metadaten und `DataMasterKeyStore` den Plattformzugriff auf Secret-Material.
+Widgets, Shell, ViewModels und fachliche Adapter erhalten keinen DMK-,
+Fingerprint-, Envelope- oder Storezugriff.
+
 ## Sprint 0.2S.1 - Eigenständige Support-Assistent-Ansicht
 
 `SupportAssistantWindow` besitzt nur flüchtigen Schritt-, Fokus-, Datei-,

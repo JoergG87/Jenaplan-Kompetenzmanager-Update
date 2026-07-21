@@ -1,5 +1,73 @@
 # Data Registry
 
+## Security Sprint 5 - isolierte technische Sidecars
+
+| Datenquelle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| `database-key-envelopes-v1.json` | Registry-Version, stabile Database-Context-UUID, monotoner Generations-High-Water-Mark, bereits AEAD-geschützte Envelopes und HMAC-SHA-256-Tag über die gesamte kanonische Registry | atomar im explizit injizierten synthetischen Test-Root; weder fachliche SQLite noch `security.sqlite`, Keychain oder Produkt-Runtime | implementierte Foundation, nicht produktiv adressiert |
+| `database-migration-journal-v1.json` | Migration-/Database-Key-/DMK-Bindungs-IDs, Phasenhistorie, sichere relative Rollenpfade, Dateibeweise, Prüf- und sanitierte Fehlercodes, HMAC-Tag | atomar im selben isolierten Test-Root; getrennt von Envelope und Keyset-Metadaten | implementierte Foundation, nicht produktiv adressiert |
+| Laufzeit-Database-Key | UUID, Generation und 32 zufällige Secret-Bytes | nur flüchtig; Secret ausschließlich als AES-GCM-Ciphertext im Envelope | implementiertes Testmittel |
+| Laufzeit-Database-Wrapping-Key | 32 per HKDF-SHA-256 aus dem DMK abgeleitete Bytes | nur flüchtig; nicht in Registry, Journal, SQLite, Keychain, Log oder Report | implementiertes Testmittel |
+| Laufzeit-Registry-HMAC-Key | 32 per eigener HKDF-Domain und Database-Context abgeleitete Bytes | nur flüchtig; authentifiziert Steuerdaten und Envelope-Mitgliedschaft | implementiertes Testmittel |
+| Laufzeit-Journal-Key | 32 per getrennter HKDF-Domain abgeleitete Bytes | nur flüchtig; nur zur HMAC-SHA-256-Prüfung | implementiertes Testmittel |
+
+Im Journal und in öffentlichen Envelope-Metadaten verboten sind DMK,
+Database-Key, Wrapping-/Journal-Key, App-Passwort, Recovery-/Support-Secrets,
+Schülerdaten, Dokumentinhalte und Klartext-SQL. Envelope-Ciphertext und
+AEAD-/HMAC-Tags sind öffentlich speicherbar, enthalten aber kein
+Klartextschlüsselmaterial. Beide Dateiquellen bleiben außerhalb aller
+produktiven Pfadauflösungen.
+
+## Security Sprint 4 - Quellen des isolierten Migrationsprototyps
+
+| Datenquelle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| `synthetic-source.sqlite` | ausschließlich deterministische synthetische Schüler, Kurse, Kompetenzen, Beobachtungen, Berichte, Dokumentverweise und Binäranhänge | pro Lauf im temporären Prototyp-Root; dreifach durch Guard/Application-ID/User-Version markiert | implementierte Testquelle |
+| `*-verified-backup.sqlite` | vollständiger SQLite-Backup-Snapshot derselben Fixture | separates Ziel im Prototyp-Root; Integrität und vollständiger Snapshotvergleich vor Export | implementiertes Testartefakt |
+| `*-encrypted.sqlcipher` | vollständiges SQLCipher-Ziel derselben Fixture | separates Ziel im Prototyp-Root; wird bei Fehlern identitätsgebunden verworfen | implementiertes Testartefakt |
+| Laufzeit-Database-Key | 32 zufällige Bytes | nur flüchtig; kein DMK, App-Passwort, Sidecar, Log, Report oder Repositoryinhalt | Testmittel |
+| `MigrationReport` | Counts, Bool-Prüfungen, Schema-/Datenhash, Größen und Zeitdauern | nur Rückgabewert/optionale Konsolenausgabe; keine Pfade oder Secrets | technisches Testprotokoll |
+
+Der Prototyp liest keine registrierte Produkt-, Pilot-, Security-, Dokument-,
+Backup- oder Releasequelle. Die Guard ist eine zusätzliche Stopbedingung und
+keine Berechtigung, beliebige gleichnamige Dateien zu migrieren. Der spätere
+gewrappte Database-Key und seine Metadaten sind noch keine Datenquelle.
+
+## Security Sprint 3 - Temporäre SQLCipher-Testquelle
+
+| Datenquelle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| temporäre SQLCipher-Testdatenbank | ausschließlich synthetische Smoke-/Testzeilen | nur in pro Lauf neu erzeugtem temporärem Verzeichnis; nach Schließen entfernt; kein RuntimePath | implementierter Infrastrukturtest, nicht produktiv |
+| Laufzeit-Testschlüssel | 32 zufällige Bytes aus `secrets.token_bytes` | ausschließlich flüchtig im Test-/Smoke-Prozess; weder Repository noch Datei, Log, Snapshot oder Sidecar | Testmittel, kein Produkt-Key |
+| `sqlcipher3` 0.6.2 | DB-API-Binding mit statisch eingebetteter SQLCipher Community 4.12.0 im geprüften Wheel | optionale Entwicklungs-/Testabhängigkeit; nicht im RC und nicht im produktiven Startup importiert | isolierter Spike; Supply-Chain- und Produktbuild-Gate offen |
+
+Die bestehende fachliche SQLite-Datenquelle und ihr Verhalten bleiben
+unverändert; ihre normale Connection-Erzeugung delegiert nun an den expliziten
+Standard-SQLite-Provider. SQLCipher ist dort nicht konfiguriert. Security
+Sprint 3 registriert keine neue fachliche Datenquelle und speichert weder DMK
+noch DB-Key-Metadaten.
+
+## Security Sprint 2 - Isolierte Key-Foundation-Datenquellen
+
+| Datenquelle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| Development-Keyset-Sidecar `data-keysets.sqlite` | ausschließlich Key-ID, Generation, Status und SHA-256-Fingerprint | neuer isolierter Test-/Entwicklungsstore; nicht `security.sqlite`, nicht RuntimePaths, keine Migration | implementierte Foundation, nicht produktiv aktiviert |
+| macOS Keychain Service `de.jenaplan.kompetenzmanager.data-master-key` | exakt 32 geheime DMK-Bytes je Installations-/Key-ID-Bindung | nicht synchronisierender Plattformstore hinter `DataMasterKeyStore` | macOS-Adapter implementiert, keine Startup-Aktivierung |
+| `KeyEnvelope` | Version, Key-ID, Zweck, Algorithmus, technische Metadaten, bereits geschütztes Material | in diesem Sprint nicht persistiert | Format implementiert |
+| Windows DPAPI / Credential Manager | zukünftige plattformgeschützte DMK-Ablage | nur Portvertrag, keine Datenquelle und keine Implementierung | offen |
+
+In Security- und Keyset-SQLite-Stores unzulässig sind DMK, geschütztes
+Envelope-Material sowie Schüler-, Dokument-, Berichts-, LEG- und Backupdaten.
+Passwörter werden dort niemals im Klartext gespeichert. Der
+bestehende Pilot-Security-Store und alle Pilotdaten werden weder geöffnet noch
+verändert. Der Sidecar ist eine bewusste Entwicklungsisolation und keine
+Entscheidung über eine spätere produktive Store-Topologie.
+
+Der Development-Keyset-Sidecar ist noch nicht kryptografisch authentifiziert
+oder rollbackgeschützt. Eine Metadatenabweichung blockiert den Lifecycle, darf
+aber keinen möglicherweise korrekten Plattform-DMK automatisch löschen.
+Authentisierung und monotoner Produktanker bleiben Aktivierungsgates.
+
 ## Sprint 0.2S.1 - Datenquellen des Support-Assistenten
 
 | Quelle | Inhalt | Owner | Ausschlüsse |

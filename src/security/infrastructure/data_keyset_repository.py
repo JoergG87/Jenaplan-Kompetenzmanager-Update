@@ -1,0 +1,285 @@
+"""Isolated, metadata-only store for the development DMK foundation."""
+
+from __future__ import annotations
+
+from contextlib import contextmanager
+import os
+from pathlib import Path
+import sqlite3
+import tempfile
+
+from ..data_keys import DataKeyset, DataKeysetStatus
+from ..domain import SecurityStoreError, validate_uuid4
+from ..ports import FilePermissionManager
+
+
+DATA_KEYSET_STORE_SCHEMA_VERSION = 1
+_SQLITE_APPLICATION_ID = 0x4A4B4D4B
+_EXPECTED_COLUMNS = (
+    "key_id",
+    "generation",
+    "status",
+    "fingerprint_sha256",
+)
+_SCHEMA_SQL = """
+CREATE TABLE data_keysets (
+    key_id TEXT PRIMARY KEY,
+    generation INTEGER NOT NULL CHECK (generation >= 1),
+    status TEXT NOT NULL CHECK (status IN ('pending', 'active', 'revoked', 'failed')),
+    fingerprint_sha256 TEXT NOT NULL CHECK (
+        length(fingerprint_sha256) = 64
+        AND fingerprint_sha256 NOT GLOB '*[^0-9a-f]*'
+    ),
+    UNIQUE (generation)
+) STRICT;
+
+CREATE UNIQUE INDEX one_active_data_keyset
+ON data_keysets(status) WHERE status = 'active';
+CREATE UNIQUE INDEX one_pending_data_keyset
+ON data_keysets(status) WHERE status = 'pending';
+"""
+
+
+class SQLiteDataKeysetRepository:
+    """New-store-only repository; it never opens or migrates security.sqlite."""
+
+    def __init__(self, database_path: Path, permissions: FilePermissionManager) -> None:
+        self._database_path = Path(database_path)
+        self._permissions = permissions
+
+    @property
+    def database_path(self) -> Path:
+        return self._database_path
+
+    def initialize(self) -> None:
+        self._permissions.prepare_directory(self._database_path.parent)
+        if self._database_path.exists():
+            self._validate_store()
+            return
+        descriptor, name = tempfile.mkstemp(
+            prefix=".data-keysets-", suffix=".sqlite", dir=self._database_path.parent
+        )
+        os.close(descriptor)
+        temporary = Path(name)
+        self._permissions.secure_file(temporary)
+        try:
+            with sqlite3.connect(temporary, isolation_level=None) as connection:
+                connection.execute("PRAGMA journal_mode = DELETE")
+                connection.execute("PRAGMA synchronous = FULL")
+                connection.execute("BEGIN IMMEDIATE")
+                try:
+                    for statement in _SCHEMA_SQL.split(";"):
+                        if statement.strip():
+                            connection.execute(statement)
+                    connection.execute(f"PRAGMA application_id = {_SQLITE_APPLICATION_ID}")
+                    connection.execute(
+                        f"PRAGMA user_version = {DATA_KEYSET_STORE_SCHEMA_VERSION}"
+                    )
+                    connection.execute("COMMIT")
+                except Exception:
+                    if connection.in_transaction:
+                        connection.execute("ROLLBACK")
+                    raise
+            if self._database_path.exists():
+                raise SecurityStoreError("data_keyset_store_already_exists")
+            os.link(temporary, self._database_path)
+            temporary.unlink()
+            self._permissions.secure_sqlite_files(self._database_path)
+            self._validate_store()
+        except Exception:
+            temporary.unlink(missing_ok=True)
+            raise
+
+    def active_data_keyset(self) -> DataKeyset | None:
+        with self._read_connection() as connection:
+            rows = connection.execute(
+                "SELECT * FROM data_keysets WHERE status = 'active'"
+            ).fetchall()
+            if len(rows) > 1:
+                raise SecurityStoreError("data_keyset_cardinality_invalid")
+            return None if not rows else self._from_row(rows[0])
+
+    def pending_data_keysets(self) -> tuple[DataKeyset, ...]:
+        with self._read_connection() as connection:
+            return tuple(
+                self._from_row(row)
+                for row in connection.execute(
+                    "SELECT * FROM data_keysets WHERE status = 'pending' ORDER BY generation"
+                ).fetchall()
+            )
+
+    def data_keysets_for_cleanup(self) -> tuple[DataKeyset, ...]:
+        with self._read_connection() as connection:
+            return tuple(
+                self._from_row(row)
+                for row in connection.execute(
+                    "SELECT * FROM data_keysets WHERE status IN ('revoked', 'failed') "
+                    "ORDER BY generation"
+                ).fetchall()
+            )
+
+    def next_data_key_generation(self) -> int:
+        with self._read_connection() as connection:
+            return int(
+                connection.execute(
+                    "SELECT COALESCE(MAX(generation), 0) + 1 FROM data_keysets"
+                ).fetchone()[0]
+            )
+
+    def prepare_data_keyset(self, keyset: DataKeyset) -> None:
+        self._validate_value(keyset)
+        if keyset.status is not DataKeysetStatus.PENDING:
+            raise SecurityStoreError("data_keyset_status_invalid")
+        with self._write_connection() as connection:
+            if connection.execute(
+                "SELECT 1 FROM data_keysets WHERE status IN ('pending', 'active')"
+            ).fetchone() is not None:
+                raise SecurityStoreError("data_keyset_active_or_pending_exists")
+            expected = int(
+                connection.execute(
+                    "SELECT COALESCE(MAX(generation), 0) + 1 FROM data_keysets"
+                ).fetchone()[0]
+            )
+            if keyset.generation != expected:
+                raise SecurityStoreError("data_keyset_generation_invalid")
+            connection.execute(
+                "INSERT INTO data_keysets VALUES (?, ?, 'pending', ?)",
+                (
+                    keyset.key_id,
+                    keyset.generation,
+                    keyset.fingerprint_sha256,
+                ),
+            )
+
+    def activate_data_keyset(self, *, key_id: str) -> DataKeyset:
+        validate_uuid4(key_id)
+        with self._write_connection() as connection:
+            if connection.execute(
+                "SELECT 1 FROM data_keysets WHERE status = 'active'"
+            ).fetchone() is not None:
+                raise SecurityStoreError("active_data_keyset_exists")
+            cursor = connection.execute(
+                "UPDATE data_keysets SET status = 'active' "
+                "WHERE key_id = ? AND status = 'pending'",
+                (key_id,),
+            )
+            if cursor.rowcount != 1:
+                raise SecurityStoreError("pending_data_keyset_missing")
+            row = connection.execute(
+                "SELECT * FROM data_keysets WHERE key_id = ?", (key_id,)
+            ).fetchone()
+            assert row is not None
+            return self._from_row(row)
+
+    def fail_data_keyset(self, *, key_id: str) -> bool:
+        return self._set_terminal_status(key_id, DataKeysetStatus.FAILED)
+
+    def revoke_data_keyset(self, *, key_id: str) -> bool:
+        return self._set_terminal_status(key_id, DataKeysetStatus.REVOKED)
+
+    def _set_terminal_status(
+        self, key_id: str, status: DataKeysetStatus
+    ) -> bool:
+        validate_uuid4(key_id)
+        with self._write_connection() as connection:
+            cursor = connection.execute(
+                "UPDATE data_keysets SET status = ? "
+                "WHERE key_id = ? AND status IN ('pending', 'active')",
+                (status.value, key_id),
+            )
+            return cursor.rowcount == 1
+
+    def _validate_store(self) -> None:
+        if self._database_path.is_symlink() or not self._database_path.is_file():
+            raise SecurityStoreError("data_keyset_store_missing")
+        try:
+            with sqlite3.connect(
+                f"file:{self._database_path.resolve()}?mode=ro", uri=True
+            ) as connection:
+                connection.row_factory = sqlite3.Row
+                if int(connection.execute("PRAGMA application_id").fetchone()[0]) != _SQLITE_APPLICATION_ID:
+                    raise SecurityStoreError("data_keyset_store_identity_invalid")
+                if int(connection.execute("PRAGMA user_version").fetchone()[0]) != DATA_KEYSET_STORE_SCHEMA_VERSION:
+                    raise SecurityStoreError("data_keyset_store_version_invalid")
+                integrity = connection.execute("PRAGMA integrity_check").fetchone()
+                if integrity is None or integrity[0] != "ok":
+                    raise SecurityStoreError("data_keyset_store_integrity_failed")
+                tables = {
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT name FROM sqlite_master WHERE type = 'table' "
+                        "AND name NOT LIKE 'sqlite_%'"
+                    ).fetchall()
+                }
+                if tables != {"data_keysets"}:
+                    raise SecurityStoreError("data_keyset_store_tables_invalid")
+                columns = tuple(
+                    row[1] for row in connection.execute("PRAGMA table_info(data_keysets)")
+                )
+                if columns != _EXPECTED_COLUMNS:
+                    raise SecurityStoreError("data_keyset_store_columns_invalid")
+                active = pending = 0
+                for row in connection.execute("SELECT * FROM data_keysets").fetchall():
+                    keyset = self._from_row(row)
+                    active += keyset.status is DataKeysetStatus.ACTIVE
+                    pending += keyset.status is DataKeysetStatus.PENDING
+                if active > 1 or pending > 1:
+                    raise SecurityStoreError("data_keyset_cardinality_invalid")
+        except SecurityStoreError:
+            raise
+        except (OSError, sqlite3.Error, ValueError, TypeError):
+            raise SecurityStoreError("data_keyset_store_invalid") from None
+
+    @contextmanager
+    def _read_connection(self):
+        self._validate_store()
+        connection = sqlite3.connect(
+            f"file:{self._database_path.resolve()}?mode=ro", uri=True
+        )
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA query_only = ON")
+        try:
+            yield connection
+        finally:
+            connection.close()
+
+    @contextmanager
+    def _write_connection(self):
+        self._validate_store()
+        connection = sqlite3.connect(self._database_path, isolation_level=None, timeout=5.0)
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA journal_mode = WAL")
+        connection.execute("PRAGMA synchronous = FULL")
+        connection.execute("BEGIN IMMEDIATE")
+        try:
+            yield connection
+            connection.execute("COMMIT")
+        except Exception:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+        finally:
+            connection.close()
+            self._permissions.secure_sqlite_files(self._database_path)
+
+    @staticmethod
+    def _from_row(row: sqlite3.Row) -> DataKeyset:
+        keyset = DataKeyset(
+            key_id=validate_uuid4(row["key_id"]),
+            generation=int(row["generation"]),
+            status=DataKeysetStatus(row["status"]),
+            fingerprint_sha256=str(row["fingerprint_sha256"]),
+        )
+        SQLiteDataKeysetRepository._validate_value(keyset)
+        return keyset
+
+    @staticmethod
+    def _validate_value(keyset: DataKeyset) -> None:
+        validate_uuid4(keyset.key_id)
+        if keyset.generation < 1:
+            raise SecurityStoreError("data_keyset_generation_invalid")
+        if len(keyset.fingerprint_sha256) != 64 or any(
+            character not in "0123456789abcdef"
+            for character in keyset.fingerprint_sha256
+        ):
+            raise SecurityStoreError("data_keyset_fingerprint_invalid")

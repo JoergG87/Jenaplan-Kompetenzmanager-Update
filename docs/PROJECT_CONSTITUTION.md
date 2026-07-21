@@ -1,5 +1,103 @@
 # Project Constitution
 
+## Entwicklungsgrenze Security Sprint 5
+
+Security Sprint 5 darf ausschließlich im explizit injizierten isolierten
+Prototyp-Workspace arbeiten. Runner und Tests verwenden dafür jeweils einen
+neu erzeugten temporären Root. Zulässig sind dort nur die guarded synthetische
+Quelle, ihr verifiziertes Backup, das separate SQLCipher-Ziel, das bereits
+geschützte Database-Key-Envelope und das authentisierte technische Journal.
+Keiner dieser Pfade wird durch Startup, RuntimePaths, UI, Login,
+Backup/Restore oder Support-Reset aufgerufen.
+
+Die Schlüsselhierarchie ist verbindlich `DMK -> HKDF-SHA-256 Database-
+Wrapping-Key -> zufälliger 256-Bit-Database-Key -> SQLCipher`. App-Passwort,
+Recovery-Code, Support-Key und Gerätecredential sind ausgeschlossen.
+Database-Wrapping-Key, Journal-HMAC-Key und Database-Key bleiben flüchtig und
+zweckgetrennt. Kein Secret darf in SQLite, Sidecar-Metadaten, Journal, Log,
+Exception, Konfiguration, Backup oder Bundle stehen.
+
+Envelope, vollständige Envelope-Registry und Journal sind über getrennte
+Domain-Keys strikt versioniert, kanonisch, authentifiziert und
+fail-closed. Unbekannte Felder/Versionen/Algorithmen, Manipulation, Korruption,
+Symlink, Temp-Rest oder geänderte Dateiidentität blockieren; vorhandene
+unbekannte Bestände werden weder ersetzt noch neu erzeugt. Recovery liefert
+nur eine Entscheidung und löscht, verschiebt oder ersetzt keine Datei.
+
+Produktive SQLite, `security.sqlite`, Development-Keyset-Sidecar, Keychain,
+Runtime, Pilotdaten, Dokumente, Backups, RC `0.2.2`, Appcast, Release- und
+Supportpakete sowie die bekannte Exceldatei bleiben unangetastet. Der
+Dateiaustausch bleibt simuliert. Es gibt keine Freigabe für Produktmigration,
+Rotation, Startup-Recovery, Klartextlöschung oder Windowsbetrieb.
+
+## Entwicklungsgrenze Security Sprint 4
+
+Security Sprint 4 darf nur neu erzeugte, eindeutig markierte synthetische
+Klartextdatenbanken in einem eigenen temporären Arbeitsbereich lesen. Die
+Migration erzeugt ausschließlich ein separates verifiziertes Backup und ein
+separates SQLCipher-Ziel. Eine Quelle ohne Guard-Tabelle, feste Application-ID
+und feste Prototyp-User-Version wird vor Backup und Cipher-Dateierzeugung
+abgelehnt.
+
+Der Database-Key ist zufällig, 32 Byte lang und nur im Testprozess vorhanden.
+Er ist weder DMK noch App-Passwort. Das spätere Ziel ist `DMK ->
+zweckgebundener Database-Wrapping-Key -> zufälliger Database-Key`; Wrapping,
+Envelope-Persistenz und Rotation sind nicht Teil dieses Sprints.
+
+Ein Lauf ist nur erfolgreich, wenn Quelle, Backup und Ziel strukturell und
+inhaltlich gleich sind, alle SQLite-/SQLCipher-/Fremdschlüsselprüfungen
+erfolgreich sind, das Ziel mit dem richtigen Key neu geöffnet wird und der
+Quell-Dateihash unverändert bleibt. Bei Fehlern bleibt die Quelle maßgeblich;
+ein eigenes Ziel wird verworfen. Der Dateiaustausch wird nicht implementiert.
+
+Produktive SQLite, `security.sqlite`, RuntimePaths, Startup, Login, Recovery,
+Touch ID, Support Reset, Backup/Restore, UI, RC `0.2.2`, Appcast, Releasepakete,
+Pilotdaten, Dokumente, Backups und bekannte Excel-Datei werden nicht geöffnet,
+migriert oder verändert. Es gibt keine Produkt- oder Pilotfreigabe.
+
+## Entwicklungsgrenze Security Sprint 3
+
+Security Sprint 3 stellt ausschließlich eine optionale, isolierte
+SQLCipher-Infrastruktur bereit. Normales SQLite bleibt der unveränderte
+Standard der Hauptanwendung. Es gibt keine Umschaltung über Startup,
+Umgebungsvariablen, Login oder UI und keinen Rückfall von SQLCipher auf
+unverschlüsseltes SQLite.
+
+SQLCipher-Tests dürfen nur zur Laufzeit erzeugte 32-Byte-Testschlüssel,
+synthetische Inhalte und automatisch entfernte temporäre Verzeichnisse
+verwenden. Bestehende fachliche Datenbanken, `security.sqlite`, der
+Development-Keyset-Sidecar, Pilotdaten, Release Candidate `0.2.2`, Appcast,
+Backups und Dokumente werden nicht geöffnet, migriert oder verändert.
+
+Der DMK ist weder App-Passwort noch unmittelbarer produktiver
+Datenbankschlüssel. Eine spätere Produktarchitektur benötigt einen eigenen
+zufälligen DB-Key, der unter einem zweckgebundenen Schlüssel des DMK geschützt
+wird. Ableitung, Wrapping, Persistenz, Migration und Startup-Freigabe bleiben
+außerhalb dieses Sprints.
+
+Ein falscher Schlüssel und ein beschädigter verschlüsselter Header können an
+der SQLCipher-Grenze denselben Fehler liefern. Der Provider weist beide
+fail-closed und ohne Neuerstellung ab; er behauptet ohne zusätzliche
+authentisierte Metadaten keine technisch nicht belegbare Unterscheidung.
+
+## Entwicklungsgrenze Security Sprint 2
+
+Security Sprint 2 ist ausschließlich eine isolierte Entwicklungsgrundlage.
+Release Candidate `0.2.2`, Pilot- und Laura-Daten, bestehender Security Store,
+Startup, RuntimePaths, UI und Releasepakete bleiben unverändert. Es gibt keine
+Migration und keinen Zugriff auf Pilotdaten.
+
+Der Data Master Key darf niemals in SQLite, Logs, Diagnosen, Backups, UI oder
+Fehlermeldungen gelangen. Keyset-Metadaten enthalten keine fachlichen IDs und
+keine Schüler-, Dokument-, Berichts- oder LEG-Inhalte. App-Passwort,
+Recovery-Code, Support-Reset, Gerätecredential und DMK bleiben getrennt;
+Passwortwechsel und Recovery-Aktionen verändern den DMK in diesem Sprint nicht.
+
+Die bestehende Aussage, dass die App-Sperre keine Verschlüsselung von
+Datenbank, Dokumenten oder Backups ist, bleibt vollständig gültig. Die
+Foundation erzeugt noch keinen Schutz fachlicher Daten und wird nicht
+automatisch ausgeführt.
+
 ## Sprint 0.2S.1 - Eigenständiger Support-Assistent
 
 Der `Jenaplan Support-Assistent` ist eine eigenständige macOS-arm64-

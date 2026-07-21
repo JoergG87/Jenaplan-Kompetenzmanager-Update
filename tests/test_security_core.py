@@ -168,7 +168,7 @@ def test_security_layer_has_no_qt_or_desktop_store_access() -> None:
         source = path.read_text(encoding="utf-8")
         assert "PySide6" not in source
         assert "src.desktop_app" not in source
-        if path.name != "sqlite_repository.py":
+        if path.name not in {"sqlite_repository.py", "data_keyset_repository.py"}:
             assert "import sqlite3" not in source
     for path in (
         project_root / "src" / "desktop_app" / "shell.py",
@@ -178,6 +178,29 @@ def test_security_layer_has_no_qt_or_desktop_store_access() -> None:
         source = path.read_text(encoding="utf-8")
         assert "SQLiteSecurityRepository" not in source
         assert "SecurityApplicationService" not in source
+
+
+def test_product_security_startup_does_not_import_encryption_foundations() -> None:
+    project_root = Path(__file__).resolve().parents[1]
+    script = """
+import sys
+import src.security.startup
+for name in (
+    'src.security.data_keys',
+    'src.security.database_keys',
+    'src.security.migration_journal',
+    'src.security.infrastructure.data_master_key_store',
+):
+    assert name not in sys.modules, name
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.parametrize(
