@@ -1,5 +1,16 @@
 # UI Data Mapping
 
+## Security Sprint 6 - Keine UI- oder Startup-Projektion
+
+Security Sprint 6 ergänzt keine UI-Felder, Aktionen, Anzeigen, Dialoge,
+Einstellungen oder Startupzustände. Anchor-Revisionen, Lock-Owner,
+Journalphasen, Recovery-Schritte, Crashpunkte und technische Fehlercodes werden
+nicht in PySide projiziert. Login, Passwortwechsel, Auth-Recovery-Codes, Touch
+ID, Support-Reset, Backup/Restore und normale Navigation importieren oder
+starten die Foundation nicht. Retained Quarantine besitzt keine Anzeige oder
+Cleanup-Aktion. Der Sprint-6-Nachweis erzeugt ausdrücklich keine sichtbare
+Verschlüsselungs-, Cleanup- oder Produktfreigabe.
+
 ## Security Sprint 5 - Keine UI- oder Startup-Projektion
 
 Security Sprint 5 ergänzt keine UI-Felder, Aktionen, Anzeigen, Dialoge,

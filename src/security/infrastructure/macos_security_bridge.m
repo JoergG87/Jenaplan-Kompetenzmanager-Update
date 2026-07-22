@@ -118,6 +118,110 @@ int32_t jkm_keychain_delete(const char *service, const char *account) {
     }
 }
 
+int32_t jkm_anchor_create(
+    const char *service,
+    const char *account,
+    const uint8_t *payload,
+    size_t payload_length,
+    const uint8_t *payload_digest,
+    size_t digest_length
+) {
+    @autoreleasepool {
+        NSDictionary *base = jkm_query(service, account);
+        if (
+            base == nil || payload == NULL || payload_length == 0 ||
+            payload_length > 8192 || payload_digest == NULL || digest_length != 32
+        ) {
+            return errSecParam;
+        }
+        SecAccessRef access = jkm_current_application_access();
+        if (access == NULL) {
+            return errSecAuthFailed;
+        }
+        NSMutableDictionary *query = [base mutableCopy];
+        query[(__bridge id)kSecValueData] = [NSData dataWithBytes:payload length:payload_length];
+        query[(__bridge id)kSecAttrGeneric] = [NSData dataWithBytes:payload_digest length:digest_length];
+        query[(__bridge id)kSecAttrSynchronizable] = @NO;
+        query[(__bridge id)kSecAttrAccess] = (__bridge id)access;
+        OSStatus status = SecItemAdd((__bridge CFDictionaryRef)query, NULL);
+        CFRelease(access);
+        return (int32_t)status;
+    }
+}
+
+int32_t jkm_anchor_read(
+    const char *service,
+    const char *account,
+    uint8_t **payload,
+    size_t *payload_length
+) {
+    @autoreleasepool {
+        if (payload == NULL || payload_length == NULL) {
+            return errSecParam;
+        }
+        *payload = NULL;
+        *payload_length = 0;
+        NSDictionary *base = jkm_query(service, account);
+        if (base == nil) {
+            return errSecParam;
+        }
+        NSMutableDictionary *query = [base mutableCopy];
+        query[(__bridge id)kSecAttrSynchronizable] = @NO;
+        query[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitOne;
+        query[(__bridge id)kSecReturnData] = @YES;
+        CFTypeRef result = NULL;
+        OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
+        if (status != errSecSuccess) {
+            return (int32_t)status;
+        }
+        NSData *data = CFBridgingRelease(result);
+        if (data.length == 0 || data.length > 8192) {
+            return errSecDecode;
+        }
+        uint8_t *copy = malloc(data.length);
+        if (copy == NULL) {
+            return errSecAllocate;
+        }
+        memcpy(copy, data.bytes, data.length);
+        *payload = copy;
+        *payload_length = data.length;
+        return errSecSuccess;
+    }
+}
+
+int32_t jkm_anchor_update(
+    const char *service,
+    const char *account,
+    const uint8_t *expected_digest,
+    size_t expected_digest_length,
+    const uint8_t *payload,
+    size_t payload_length,
+    const uint8_t *payload_digest,
+    size_t digest_length
+) {
+    @autoreleasepool {
+        NSDictionary *base = jkm_query(service, account);
+        if (
+            base == nil || expected_digest == NULL || expected_digest_length != 32 ||
+            payload == NULL || payload_length == 0 || payload_length > 8192 ||
+            payload_digest == NULL || digest_length != 32
+        ) {
+            return errSecParam;
+        }
+        NSMutableDictionary *query = [base mutableCopy];
+        query[(__bridge id)kSecAttrSynchronizable] = @NO;
+        query[(__bridge id)kSecAttrGeneric] = [NSData dataWithBytes:expected_digest length:expected_digest_length];
+        NSDictionary *replacement = @{
+            (__bridge id)kSecValueData: [NSData dataWithBytes:payload length:payload_length],
+            (__bridge id)kSecAttrGeneric: [NSData dataWithBytes:payload_digest length:digest_length],
+        };
+        return (int32_t)SecItemUpdate(
+            (__bridge CFDictionaryRef)query,
+            (__bridge CFDictionaryRef)replacement
+        );
+    }
+}
+
 void jkm_secret_free(uint8_t *secret, size_t secret_length) {
     if (secret != NULL) {
         memset(secret, 0, secret_length);

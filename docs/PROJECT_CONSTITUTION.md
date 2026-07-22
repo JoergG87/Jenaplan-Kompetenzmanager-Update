@@ -1,5 +1,70 @@
 # Project Constitution
 
+## Entwicklungsgrenze Security Sprint 6
+
+Security Sprint 6 darf ausschließlich die isolierten Security-Foundations und
+den explizit injizierten synthetischen Migrations-Workspace erweitern. Der
+offizielle Runner und sämtliche Recovery-, Crash- und Fault-Injection-Tests
+verwenden einen pro Lauf neu erzeugten temporären Root. Produktive
+`RuntimePaths`, fachliche SQLite, `security.sqlite`, Dokumente, Backups,
+Pilotdaten, RC- und Releaseartefakte werden weder als Quelle akzeptiert noch
+verändert.
+
+Ein externer monotoner Security-Anker bindet Installation beziehungsweise
+Security-Context, Formatversion, monotone Revision, Database-Context,
+DMK-/Keyset-ID und -Generation, Registry-High-Water-Mark,
+Journal-/Migrationsgeneration sowie die exakten SHA-256-Digests der
+authentisierten Registry und des authentisierten Journals außerhalb dieser
+replaybaren Dateien. Der Plattformport ist fail-closed. Ein fehlender,
+beschädigter, rückläufiger, kontextfremder oder unplausibel vorspringender Anker darf bei
+vorhandenen Security-Artefakten weder still zurückgesetzt noch neu erzeugt
+werden. macOS verwendet einen eigenen Keychain-Namespace ohne Datei-Fallback;
+Windows bleibt auf Port, Fake und dokumentierten DPAPI-Vertrag begrenzt.
+
+Dateien und Plattformstore werden über ein explizites `committed`/`pending`-
+Protokoll gekoppelt. Prepare bindet den alten committed Snapshot und exakt den
+geplanten neuen Snapshot, danach werden die authentisierten Dateien publiziert;
+Commit ist nur bei exakt den pending Digests zulässig. Nach Crash darf
+`abort_pending(expected, observed_committed)` ausschließlich bei exakt dem
+alten Dateistand pending entfernen und die vorbereitete höhere Anchor-Revision
+übernehmen; exakt der neue Dateistand darf pending committen. Jeder andere
+Mischstand blockiert. Abort ist kein Reset oder Revisionsrücklauf. Der
+exklusive Migrations-Lock serialisiert dieses Protokoll prozessübergreifend.
+
+Eine Migration oder technische Migrations-Recovery benötigt für denselben
+Installations- und Datenbankkontext einen exklusiven, verifizierten Lock. PID
+oder Pfad allein beweisen kein Eigentum. Lock-Nonce, Prozessstartidentität und
+Dateiidentität sind mitzubeweisen; fremde, manipulierte oder uneindeutig stale
+Locks werden nicht automatisch gelöscht oder überschrieben. Eine Stale-
+Übernahme ist ohne erfolgreichen Recovery-Evidence-Validator unzulässig. Symlinks,
+Pfade außerhalb des Test-Roots und Identitätswechsel blockieren.
+
+Die ausführende Recovery-Orchestrierung ist ausschließlich für eigene,
+identitätsgebundene Testartefakte freigegeben. Vor jeder Operation müssen Lock,
+Journal-HMAC, Replay-Anker, Rootgrenze und unmittelbare Dateiidentität erneut
+geprüft werden. Sie darf ein eindeutig unvollständiges eigenes Testziel
+entfernen, Prüfungen fortsetzen, das Testziel neu öffnen und bei
+authentisiertem `COMPLETED` ausschließlich evidence-gebundenes Testziel und
+Backup in eine eindeutig benannte retained Quarantine verschieben. Recovery
+darf dabei keinen vorhandenen Namen überschreiben und diese Quarantänebestände
+nicht löschen. Klartextquelle, Anchor, Registry,
+Journal, Lock und unbekannte Dateien bleiben erhalten. Sie darf niemals produktive
+Pfade oder reservierte Swap-Phasen verändern. Unklare Zustände sind `blocked`
+und führen zu keiner Dateioperation.
+
+Crash-, ENOSPC-, Rechte-, `fsync`-, Rename-/Replace- und Austauschtests belegen nur
+das Verhalten des isolierten Prototyps; vollständige Stromausfallsicherheit
+wird nicht behauptet. Recovery verwendet für Ziel und Backup keinerlei
+pathname-basiertes `unlink` oder `remove`; das frühere finale Unlink-TOCTOU ist
+damit beseitigt. Als bekannte P2-Grenze bleiben evidence-gebundene retained
+Quarantine-Artefakte ohne freigegebenen handlebasierten Bereinigungsprozess.
+Startup,
+Login, Passwortwechsel, Auth-Recovery-Codes, Touch ID, Support-Reset,
+produktives Backup/Restore, Produktmigration, UI und Verschlüsselungsaktivierung
+bleiben unverändert. `Recovery-Code` bezeichnet weiterhin ausschließlich den
+bestehenden Authentifizierungsweg und ist nicht mit Migrations-Recovery
+gleichzusetzen.
+
 ## Entwicklungsgrenze Security Sprint 5
 
 Security Sprint 5 darf ausschließlich im explizit injizierten isolierten

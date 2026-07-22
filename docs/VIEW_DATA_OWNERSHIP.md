@@ -1,5 +1,23 @@
 # View Data Ownership
 
+## Security Sprint 6 - Foundation ohne View
+
+Security Sprint 6 besitzt keine View, kein ViewModel, keinen Desktop-Adapter
+und keine sichtbare Produktprojektion. `MonotonicSecurityAnchorStore` besitzt
+den Anchor-Plattformvertrag, `MigrationLockPort` den Lockvertrag,
+`ExclusiveMigrationLock` ausschließlich den technischen POSIX/macOS-Lock im
+injizierten Test-Root und `PrototypeMigrationRecoveryOrchestrator` die
+eng begrenzten ausführenden Testoperationen einschließlich retained Quarantine
+ohne Löschownership. Ein späterer handlebasierter Bereinigungsprozess besitzt
+in Security Sprint 6 ausdrücklich keinen Owner. Domain und Prototyp entscheiden;
+Infrastruktur persistiert beziehungsweise operiert nur nach diesem Vertrag.
+
+Widgets, Shell, Login, Einstellungen, Backup-/Restore-Controller und
+Support-Reset besitzen weder Anchor-, Lock-, Journal-, Migrationspfad- noch
+Recovery-Ownership. Auth-Recovery-Codes und technische Migrations-Recovery sind
+getrennte Domänen; keine Sprint-6-Komponente liest oder schreibt
+`security.sqlite.recovery_codes`.
+
 ## Security Sprint 5 - Foundation ohne View
 
 Security Sprint 5 besitzt keine View, kein ViewModel, keinen Desktop-Adapter

@@ -1,5 +1,69 @@
 # CHANGELOG
 
+## Security Sprint 6 - Governance für Replay-Anker, Lock und Prototype-Recovery
+
+### Added
+
+- Isolierte Sprint-6-Entwicklungsgrenze für externen monotonen Replay-Anker,
+  exklusiven Migrations-Lock und ausführende, identitätsgebundene Recovery im
+  synthetischen temporären Test-Root ergänzt.
+- Anchor-, Lock- und Recovery-Namen, macOS-Keychain-Service,
+  `database-migration-v1.lock`, technische Datenquellen, Lifecycles und
+  Ownership registriert.
+- Replay-Angreifermodell, Lock-/Stale-Regeln, Crash-/ENOSPC-/Rechteverhalten,
+  verbleibende Power-Loss-/Quarantänegrenzen und Windows-DPAPI-/Dateisystemgates in
+  ADR-081 bis ADR-083 dokumentiert.
+- Committed/pending Cross-Store-Protokoll für Anchor-Prepare, externe
+  Registry-/Journalpublikation, Digest-exakten Commit und monotones Abort nach
+  Crash festgelegt; der exklusive Lock serialisiert den Advance.
+- `MigrationLockPort`, `ExclusiveMigrationLock`, `InMemoryMigrationLock` und
+  `UnsupportedMigrationLock` sowie die monotone Anchor-Operation
+  `abort_pending(expected, observed_committed)` implementiert.
+- Ausführende Prototype-Recovery mit identitätsgebundenem Rollback,
+  Validierungs-/Reopen-Fortsetzung und idempotenter terminaler Verschiebung von
+  evidence-gebundenem Ziel und Backup per atomarem No-Clobber-Rename in retained Quarantine ergänzt; Recovery
+  löscht diese Bestände nicht. Quelle, Anchor, Registry, Journal, Lock und
+  unbekannte Dateien bleiben erhalten.
+- Recovery zusätzlich hart an temporären Root und Synthetik-Guard gebunden;
+  ein konkurrierend angelegter fremder Quarantänepfad wird nie überschrieben.
+- Prozessstartidentitäten prozessübergreifend vergleichbar gemacht und
+  Stale-Takeover unter dem Kernel-Lock an einen expliziten erfolgreichen
+  Recovery-Evidence-Validator für Journal-/Anchor-Nachweise gebunden.
+- Kontrollierten ad-hoc-signierten Einzelpilot ohne Developer ID und den davon
+  getrennten späteren Developer-ID-/Notarisierungs- beziehungsweise MDM-Pfad
+  beschrieben.
+
+### Boundaries
+
+- Keine UI, keine Startup-, RuntimePaths-, Login-, Passwortwechsel-,
+  Auth-Recovery-Code-, Touch-ID-, Support-Reset-, produktive Backup/Restore-,
+  Produktmigrations-, Pilot-, Appcast- oder Releaseaktivierung.
+- Security Sprint 7A ist nicht Bestandteil dieses Commits; Security Sprint 8A
+  ist nicht begonnen und bleibt gesperrt.
+- RC `0.2.2`, fachliche SQLite, `security.sqlite`, Pilot-/Laura-Artefakte und
+  bekannte Exceldatei bleiben außerhalb der Sprint-6-Foundation.
+
+### Gate
+
+- Den im Schlussreview reproduzierten P1 behoben: Recovery führt für Ziel und
+  Backup kein pathname-basiertes `unlink` oder `remove` mehr aus, sondern
+  belässt exakt evidence-gebundene Artefakte in retained Quarantine. Das
+  frühere finale Unlink-TOCTOU besteht damit nicht mehr.
+- Drei im selektiven Gesamtreview reproduzierte P1 zusätzlich behoben:
+  Quarantäne-Namen verwenden atomare No-Clobber-Semantik, lebende Owner werden
+  bei nicht vergleichbarer Prozessidentität fail-closed blockiert, und eine
+  Stale-Übernahme ist ohne erfolgreiche Recovery-Evidence-Prüfung unmöglich.
+- Post-Fix-Gate vollständig grün: 215 fokussierte Sprint-6-Tests, 265
+  fokussierte Tests der Security Sprints 2 bis 6, 465 Security-/Support- und
+  130 Backup-/Restore-Regressionstests sowie 1148 Tests plus 67 Subtests der
+  Gesamtsuite. `compileall`, `pip check`, `git diff --check`, native Bridge-
+  Checks mit ausschließlich Deprecated-Warnungen und Hashprüfungen bestanden;
+  P0 = 0 und P1 = 0.
+- Bekannte P2-Grenze ist retained Quarantine ohne freigegebenen handlebasierten
+  Bereinigungsprozess.
+- Aus dem grünen Post-Fix-Gate folgt keine Produktfreigabe. Security Sprint 7A
+  ist nicht Bestandteil dieses Commits; Security Sprint 8A bleibt gesperrt.
+
 ## Security Sprint 5 - Product-Key-Envelope und Migrationsjournal-Foundation
 
 ### Added

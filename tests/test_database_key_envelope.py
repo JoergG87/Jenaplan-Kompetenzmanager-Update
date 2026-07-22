@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import hashlib
 import json
 import logging
 import os
@@ -144,6 +145,21 @@ def test_create_activate_persist_load_and_restart(tmp_path: Path) -> None:
     assert pending.key_material not in repository.path.read_bytes()
     assert pending.key_material.hex().encode("ascii") not in repository.path.read_bytes()
     assert "key_material" not in repr(pending)
+
+
+def test_authenticated_registry_load_returns_descriptor_bound_digest(
+    tmp_path: Path,
+) -> None:
+    repository, service = _environment(tmp_path)
+    dmk = _dmk()
+    service.create_pending(dmk, database_context_id=str(uuid.uuid4()), generation=1)
+    service.activate(dmk, generation=1)
+    auth_key = _registry_auth(repository, dmk)
+
+    envelopes, digest = repository.load_with_digest(auth_key)
+
+    assert envelopes == repository.load(auth_key)
+    assert digest == hashlib.sha256(repository.path.read_bytes()).hexdigest()
 
 
 def test_database_keys_and_nonces_are_fresh(tmp_path: Path) -> None:

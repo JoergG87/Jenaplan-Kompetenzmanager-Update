@@ -160,6 +160,26 @@ def test_complete_legal_state_run_is_persistent_and_terminal(tmp_path: Path) -> 
     assert not repository.delete_completed(state, auth_key)
 
 
+def test_authenticated_repository_exposes_digest_for_loaded_and_planned_state(
+    tmp_path: Path,
+) -> None:
+    _planned, _dmk_value, auth_key, state, repository = _environment(tmp_path)
+    repository.create(state, auth_key)
+
+    loaded, published_digest = repository.load_with_digest(auth_key)
+
+    assert loaded == state
+    assert published_digest == hashlib.sha256(repository.path.read_bytes()).hexdigest()
+    replacement = transition_migration_journal(
+        state,
+        MigrationPhase.PREFLIGHT_STARTED,
+        now=NOW,
+    )
+    assert repository.preview_digest(replacement, auth_key) == hashlib.sha256(
+        repository._encode(replacement, auth_key)
+    ).hexdigest()
+
+
 def test_every_declared_swap_and_rollback_transition_is_legal(tmp_path: Path) -> None:
     _planned, _dmk_value, _auth_key, state, _repository = _environment(tmp_path)
     main = (

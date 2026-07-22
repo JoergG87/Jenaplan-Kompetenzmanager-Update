@@ -1,5 +1,125 @@
 # Data Lifecycle
 
+## Security Sprint 6 - Anchor-, Lock- und Prototype-Recovery-Lifecycle
+
+Der externe Anchor-Lifecycle lautet:
+
+```text
+kein Security-Bestand + kein Anker
+-> initialize(context, revision 1)
+-> read + verify
+-> compare(current registry/journal)
+-> atomisches advance um genau eine freigegebene Revision
+-> read-after-write + verify
+```
+
+Initialisierung ist nur ohne vorhandene Security-Artefakte zulässig. Der
+committed Snapshot bindet zusätzlich Database-Context, DMK-/Keyset-ID und
+-Generation sowie die exakten SHA-256-Digests der bereits HMAC-
+authentisierten Registry und des bereits HMAC-authentisierten Journals. Bei
+vorhandener Envelope-Registry oder vorhandenem Migrationsjournal führen ein
+fehlender, beschädigter, kontextfremder, rückläufiger oder unplausibel
+vorspringender Anker sowie ein wiederverwendeter Revisionswert zu `blocked`.
+Blockierung wird nicht automatisch zurückgesetzt. Registry und Journal werden
+erst als aktueller Stand akzeptiert, wenn Installation/Security-Context,
+Registry-High-Water-Mark und Journal-/Migrationsgeneration mit dem externen
+Anker konsistent sind. Der Anker wird niemals vorgezogen, solange die zu
+bindende Dateioperation oder ihre dauerhafte Journalpublikation nicht bewiesen
+ist.
+
+Ein Cross-Store-Advance folgt verbindlich diesem Protokoll und wird während der
+gesamten Folge durch den exklusiven Migrations-Lock serialisiert:
+
+```text
+Lock-Owner prüfen
+-> Anchor-prepare: alten committed Snapshot und exakt geplanten neuen Snapshot
+   als pending mit geplanter Revision committed + 1 binden; committed Revision
+   noch nicht vorziehen
+-> Registry/Journal atomar extern publizieren und dauerhaft prüfen
+-> beobachtete authentisierte Digests neu bilden
+-> nur bei exakter Gleichheit mit pending: Anchor-commit auf exakt die geplante
+   Revision
+```
+
+Nach Crash gelten genau drei Fälle. Entsprechen beide beobachteten Digests und
+Bindungen exakt dem alten committed Snapshot, darf pending ausschließlich über
+`abort_pending(expected, observed_committed)` verworfen werden. Dabei bleibt
+der committed Artifact-Snapshot erhalten, pending wird entfernt und die
+vorbereitete höhere Anchor-Revision wird als monotoner Abbruchnachweis
+übernommen. Entsprechen die beobachteten Artefakte exakt dem pending Snapshot,
+darf Commit fortgesetzt werden. Jeder Mischstand, unbekannte
+Digest oder Kontextwiderspruch führt zu `blocked`. Prepare reserviert genau die
+nächste Revision im pending Snapshot; Commit oder Abort übernehmen genau diese
+Revision. Keine Operation setzt den Anker zurück oder verwendet eine Revision
+erneut. Der Lock verhindert parallele Advances desselben
+Datenbankkontexts aus verschiedenen Prozessen.
+
+Der Lock-Lifecycle lautet:
+
+```text
+Root und Zielkontext prüfen
+-> database-migration-v1.lock mit exklusiver Create-Semantik anlegen
+-> Inhalt, Rechte und Dateiidentität zurücklesen
+-> vor jeder Operation verify_owner
+-> Operation und Journal-/Anchor-Prepare/Publish/Commit-Schritt ausführen
+-> Eigentum und Dateiidentität erneut prüfen
+-> kontrolliert release
+```
+
+Ein zweiter Prozess, ein fremder Owner, ein Symlink, eine ausgetauschte oder
+manipulierte Datei und ein Pfad außerhalb des freigegebenen Test-Roots
+blockieren. PID allein ist kein Eigentumsbeweis. Ein stale Lock darf nur nach
+belastbarer Prüfung von Prozessstartidentität, Nonce, gespeicherter
+Dateiidentität und Journalzustand ausdrücklich übernommen werden; ein
+uneindeutiger Zustand bleibt bestehen und wird nicht automatisch überschrieben
+oder gelöscht.
+
+Die ausführende Prototype-Recovery beginnt mit einer rein verifizierenden
+Auswertung. Vor jedem einzelnen Schritt werden Rootgrenze, Lock-Eigentum,
+Journal-HMAC, Replay-Anker und die unmittelbar aktuelle Dateiidentität geprüft.
+Zulässige Schritte sind ausschließlich:
+
+1. ein verifiziertes Backup erneut prüfen;
+2. ein eindeutig eigenes und unvollständiges SQLCipher-Testziel nach erneuter
+   Identitätsprüfung in retained Quarantine verschieben;
+3. Validierung eines identitätsgebundenen Testziels fortsetzen;
+4. ein vollständig validiertes Testziel mit explizitem Key erneut öffnen;
+5. bei authentisiertem `COMPLETED` plus
+   `synthetic_prototype_completed` ausschließlich das evidence-gebundene
+   SQLCipher-Testziel und das evidence-gebundene Backup kontrolliert in
+   `.recovery-<role>-<migration_id>.quarantine` verschieben; bereits fehlende
+   Rollen beziehungsweise ein exakt gebundener Quarantänerest werden
+   idempotent als retained bestätigt, niemals gelöscht.
+
+Kritische Schritte schreiben vor der Dateioperation einen authentisierten
+Write-ahead-Zustand und danach einen neuen Beweis. Abbruch zwischen
+Dateioperation und Journalupdate muss beim nächsten Aufruf eindeutig blockieren
+oder anhand unveränderter Identitäten idempotent fortsetzbar sein. Die
+Klartextquelle bleibt immer maßgeblich und wird niemals automatisch gelöscht,
+umbenannt oder ersetzt. Anchor, Registry, authentisiertes Journal, Lock und
+retained Quarantine bleiben auch nach terminaler Behandlung als Auditbeleg
+erhalten. Reservierte
+Swap-Phasen, unbekannte Dateien, fremde Tempdateien und widersprüchliche
+Beweise führen ohne Dateioperation zu `blocked`.
+
+Subprozessabbrüche, ENOSPC, fehlende Rechte, fehlgeschlagenes `fsync`,
+fehlgeschlagene No-Clobber-Renames/Replace-Injektionen sowie Dateiwechsel zwischen Prüfung und Operation
+werden ausschließlich an synthetischen temporären Daten injiziert. Nach jedem
+Fehler bleiben Quelle und ein gültiges Backup erhalten; die ausdrücklich
+autorisierte terminale `COMPLETED`-Behandlung verschiebt das exakt gebundene
+Backup lediglich unter seinem retained Quarantine-Namen. Journal und Lock
+bleiben auswertbar oder der Zustand blockiert. Recovery ruft für Ziel und
+Backup kein pathname-basiertes `unlink` oder `remove` mehr auf; das frühere
+finale Unlink-TOCTOU ist beseitigt. Die bekannte P2-Grenze ist ausschließlich
+die retained Quarantine ohne freigegebenen handlebasierten
+Bereinigungsprozess. Die Tests belegen keine vollständige
+Power-Loss-Sicherheit.
+
+Dieser Lifecycle ist keine Startup-Recovery, kein fachlicher Restore und kein
+Authentifizierungsprozess. Passwortwechsel, Auth-Recovery-Codes, Touch ID,
+Support-Reset, bestehendes Backup/Restore und `security.sqlite` bleiben
+unverändert.
+
 ## Security Sprint 5 - Product-Key- und Journal-Lifecycle
 
 Der isolierte Envelope-Lifecycle ist `create pending -> activate -> load

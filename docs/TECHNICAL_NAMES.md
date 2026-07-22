@@ -1,5 +1,44 @@
 # Technical Naming Registry
 
+## Security Sprint 6 - Replay-Anker, Migrations-Lock und Prototype-Recovery
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `SecurityAnchorState` | Strikt versionierter, nicht geheimer Zustand aus Installation/Security-Context, Anchor-Revision, Database-/DMK-/Keyset-Bindung sowie committed und optional exakt pending Registry-/Journal-Snapshot | Security Domain |
+| `committed` | Zuletzt vollständig akzeptierter Anchor-Snapshot mit Database-Context, DMK-/Keyset-ID/-Generation, Registry-High-Water-Mark, Journal-/Migrationsgeneration und exakten Registry-/Journal-SHA-256-Digests | Security Domain |
+| `pending` | Optionaler vorbereiteter neuer Snapshot, der den alten committed Stand und exakt geplante neue Digests bindet; kein freier Zwischenstand | Security Domain |
+| `registry_sha256` | SHA-256 der exakt authentisierten kanonischen Registry-Datei | Security Domain |
+| `journal_sha256` | SHA-256 der exakt authentisierten kanonischen Journaldatei | Security Domain |
+| `SecurityAnchorStatus` | Fail-closed Statusallowlist des monotonen Ankers einschließlich aktiv und dauerhaft blockiert | Security Domain |
+| `SecurityAnchorError` | Strukturierter Anchor-Fehler ohne Schlüssel, Payload, Pfad oder fachliche Daten | Security Domain |
+| `MonotonicSecurityAnchorStore` | Plattformport für Initialisieren, idempotentes Lesen, Vergleichen, Verifizieren, monotones Prepare/Advance, Digest-exakten Commit, monotones Abort und Blockieren | Security Port |
+| `abort_pending(expected, observed_committed)` | Monotone Crashauflösung ausschließlich für exakt den weiterhin beobachteten committed Dateistand; entfernt pending, übernimmt dessen höhere Anchor-Revision und setzt weder Artifact-Snapshot noch Revision zurück | Security Port |
+| `InMemoryMonotonicSecurityAnchorStore` | Deterministischer, threadsicherer Fake für plattformneutrale Replay-, Parallelitäts- und Windows-Vertragstests | Security Test |
+| `MacOSMonotonicSecurityAnchorStore` | Isolierter Keychain-Adapter ohne Datei-Fallback und ohne stille Neuerzeugung bei vorhandenem Security-Bestand | Security Infrastructure |
+| `UnsupportedMonotonicSecurityAnchorStore` | Fail-closed Plattformadapter ohne produktive Implementierung, insbesondere für den noch offenen Windows-Pfad | Security Infrastructure |
+| `de.jenaplan.kompetenzmanager.monotonic-security-anchor` | Eigener macOS-Keychain-Service für den nicht geheimen, aber vertrauensgebundenen Anchor-Zustand | Security Infrastructure |
+| `MigrationLockOwner` | Strikte Eigentümerbindung aus Installation, Database-Context, Migration-ID, PID, Prozessstartidentität, Nonce, Zeitpunkten und SHA-256 der Rootbindung | Security Domain |
+| `MigrationLockInspection` | Nicht mutierende Projektion eines verifizierten, fremden, stale, manipulierten oder uneindeutigen Locks | Security Domain |
+| `MigrationLockStatus` | Allowlist der Lock-Prüfzustände | Security Domain |
+| `MigrationLockError` | Strukturierter fail-closed Lockfehler ohne Secret- oder Fachdateninhalt | Security Domain |
+| `MigrationLockPort` | Plattformneutraler Lockvertrag für `acquire`, `verify_owner`, `release` und nicht mutierendes `inspect` | Security Port |
+| `ExclusiveMigrationLock` | POSIX/macOS-Prototyp für exklusives Acquire, Eigentumsprüfung, Inspect, kontrollierte Stale-Übernahme und Release; serialisiert Anchor-Prepare/Publish/Commit pro Datenbankkontext prozessübergreifend | Security Infrastructure |
+| `InMemoryMigrationLock` | Threadsicherer, eigentümergebundener Fake für deterministische Konkurrenz-, Fremd-Release- und Portvertragstests ohne Dateisystem | Security Test |
+| `UnsupportedMigrationLock` | Fail-closed Adapter für Plattformen ohne geprüftes Lock-Backend; jede mutierende Operation liefert `migration_lock_platform_unsupported` | Security Infrastructure |
+| `database-migration-v1.lock` | Exklusiv angelegte technische Lockdatei im injizierten synthetischen Test-Root; kein Schlüssel und keine Fachdaten | Security Infrastructure |
+| `.recovery-<role>-<migration_id>.quarantine` | Retained Quarantine für ein exakt evidence-gebundenes eigenes Testziel beziehungsweise Backup; Recovery verschiebt per atomarem No-Clobber-Rename, verifiziert die Identität erneut und löscht den Bestand nicht | Security Prototype |
+| `PrototypeMigrationRecoveryOrchestrator` | Ausführende Recovery ausschließlich für identitätsgebundene Artefakte des guarded synthetischen Prototyps | Security Prototype |
+| `RecoveryExecutionResult` | Sanitisiertes Ergebnis aus vorheriger/nachheriger Journalphase, ausgeführten technischen Schritten und allowlistetem Blockiercode; enthält keine Pfade, Payloads oder Secrets | Security Prototype |
+| `src/security/monotonic_anchor.py` | Qt-freie Anchor-Domain und Portvertrag | Security Domain / Port |
+| `src/security/infrastructure/monotonic_anchor_store.py` | Plattform- und Testadapter des monotonen Ankers | Security Infrastructure |
+| `src/security/migration_lock.py` | Qt-freier Lockvertrag und POSIX/macOS-Prototyp | Security Infrastructure |
+| `prototypes/database_encryption_migration/recovery.py` | Isolierte ausführende Recovery-Orchestrierung ohne Produktimport | Security Prototype |
+
+Keiner dieser Namen führt eine `RuntimePaths`-Adresse, UI-, Startup-, Login-,
+Auth-Recovery-Code-, Support-Reset-, Backup/Restore- oder Produktintegration
+ein. `Recovery` in diesen Namen bedeutet ausschließlich technische
+Migrations-Recovery im synthetischen Test-Root.
+
 ## Security Sprint 5 - Product-Key-Envelope und Migrationsjournal
 
 | Technischer Name | Bedeutung | Eigentümer |

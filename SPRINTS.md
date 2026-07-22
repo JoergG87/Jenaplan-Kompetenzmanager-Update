@@ -1,5 +1,47 @@
 # Sprintplanung
 
+## Security Sprint 6 - Replay Anchor, Exclusive Migration Lock & Crash Recovery
+
+**Status:** Als isolierte Security-Foundation implementiert, reviewt und nach
+dem P1-Fix vollständig gegatet. Keine Produktaktivierung und keine automatische
+Freigabe von Security Sprint 8A.
+
+- [x] Governance-Grenze, technische Namen, Datenquellen, Lifecycle,
+  Ownership und fehlende UI-Projektion vor Implementierung festgelegt.
+- [x] Externen monotonen Anchor-Port, macOS-Keychain-Adapter, In-Memory-Fake
+  und fail-closed Windows-Vertrag vollständig implementieren; committed/pending
+  Cross-Store-Prepare/Publish/Commit/Abort, exakte Registry-/Journal-Digests und
+  Crashauflösung für exakt alten beziehungsweise neuen Stand fokussiert prüfen.
+- [x] `MigrationLockPort`, `ExclusiveMigrationLock`,
+  `InMemoryMigrationLock` und `UnsupportedMigrationLock` mit Owner-/Dateiidentität,
+  Symlinkschutz, prozessübergreifend vergleichbarer Startidentität,
+  evidence-validierter Stale-Behandlung und Konkurrenztests umsetzen.
+- [x] Ausführende Recovery ausschließlich für identitätsgebundene Artefakte im
+  guarded synthetischen Test-Root umsetzen; Ziel und Backup nur in retained
+  Quarantine per atomarem No-Clobber-Rename verschieben, niemals pathname-basiert
+  löschen; Quelle, unbekannte
+  Dateien und reservierte Swap-Phasen niemals verändern.
+- [x] Echte Subprozessabbrüche sowie ENOSPC-, Rechte-, `fsync`-, `os.replace`-
+  und Austauschfehler testen; keine vollständige Power-Loss-Aussage ableiten.
+- [x] Kontrollierten ad-hoc-signierten Laura-Einzelpilot und getrenntes späteres
+  Developer-ID-/Notarisierungs- beziehungsweise MDM-Gate dokumentiert; kein
+  Build in diesem Sprint.
+- [x] Post-Fix-Sprint-6-Fokus mit 215 Tests grün abgeschlossen.
+- [x] Post-Fix-Baselines erneut abgenommen: Sprints 2 bis 6 fokussiert 265,
+  Security/Support 465, Backup/Restore 130, Gesamtsuite 1148 Tests plus 67
+  Subtests sowie `compileall`, `pip check`, `git diff --check`, native Bridge-
+  Checks mit ausschließlich Deprecated-Warnungen und Hashprüfungen; P0/P1 = 0.
+- [ ] Security Sprint 7A ist nicht Bestandteil dieses Commits.
+- [ ] Security Sprint 8A bleibt gesperrt und stets mit Security-Präfix zu
+  führen, da `Sprint 8A` bereits den produktiven Stundenplan bezeichnet.
+
+**Behobene P1-Grenze:** Recovery ruft für Ziel und Backup kein
+pathname-basiertes `unlink` oder `remove` mehr auf; das finale Unlink-TOCTOU ist
+beseitigt. Ein fremder Quarantänepfad wird niemals überschrieben; fehlende
+No-Clobber-Unterstützung blockiert. **Bekannte P2-Grenze:** Evidence-gebundene Artefakte verbleiben in
+retained Quarantine, weil Security Sprint 6 keinen handlebasierten
+Bereinigungsprozess freigibt. Security Sprint 8A bleibt gesperrt.
+
 ## Security Sprint 5 - Product Database-Key Envelope & Migration Journal Foundation
 
 **Status:** Isolierte Implementierung und Test; keine Produktaktivierung.

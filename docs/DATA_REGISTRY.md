@@ -1,5 +1,40 @@
 # Data Registry
 
+## Security Sprint 6 - isolierter Replay-Anker und Migrations-Lock
+
+| Datenquelle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| macOS Keychain Service `de.jenaplan.kompetenzmanager.monotonic-security-anchor` | strikt versionierter Anchor-Zustand mit Installation/Security-Context, monotoner Revision, Database-Context, DMK-/Keyset-ID/-Generation sowie committed und optional pending Registry-/Journal-Snapshot; jeder Snapshot bindet High-Water-Mark, Journal-/Migrationsgeneration und exakte SHA-256-Digests der authentisierten Dateien | eigener nicht synchronisierender Keychain-Namespace; kein Datei-Fallback, kein Schlüsselmaterial, keine fachlichen IDs oder Inhalte | isolierte macOS-Foundation implementiert und getestet; keine Startup- oder Produktadressierung |
+| `InMemoryMonotonicSecurityAnchorStore` | derselbe technische Anchor-Vertrag einschließlich atomarem Compare-and-Advance | ausschließlich Prozessspeicher in Tests; Neustart wird durch explizit injizierten Testzustand simuliert | Testquelle/Fake, keine Produktpersistenz |
+| `database-migration-v1.lock` | Installation, Database-Context, Migration-ID, PID, Prozessstartidentität, Lock-Nonce, Erstellungs-/Aktualisierungszeit und SHA-256 der Rootbindung | exklusiv und atomar ausschließlich im injizierten synthetischen Test-Root; reguläre Datei, restriktive Rechte und geprüfte Dateiidentität | isolierter POSIX/macOS-Prototyp implementiert und getestet; kein RuntimePath |
+| Sprint-6-Recovery-Testartefakte | guarded synthetische Quelle, verifiziertes Backup, separates SQLCipher-Ziel, authentisiertes Journal, geschützte Envelope-Registry und technische Fehlersimulationsreste | pro Test in neuem temporärem Root; ausschließlich bekannte Rollen und identitätsgebundene eigene Dateien | Testquellen/-artefakte, keine Produktdaten |
+
+Bei authentisiertem `COMPLETED` mit
+`synthetic_prototype_completed` darf der isolierte Recovery-Prototyp nur das
+exakt evidence-gebundene Testziel und Backup per atomarem No-Clobber-Rename in
+`.recovery-<role>-<migration_id>.quarantine` verschieben und dort erneut
+identitätsgebunden verifizieren. Diese Quarantänebestände werden nicht durch
+Recovery gelöscht. Quelle, Keychain-Anchor, Envelope-Registry, Journal, Lock
+und unbekannte Dateien bleiben als Audit- beziehungsweise Blockierbeleg
+erhalten.
+
+Im Anker und Lock verboten sind DMK, Database-Key, Wrapping-/HMAC-Key,
+Passwort, Auth-Recovery-Code, Gerätecredential, Support-Secret, Schülerdaten,
+Dokumentinhalte, Klartext-SQL und frei übernommene externe Pfade. Ein fehlender
+Anker bei bereits vorhandenem Registry-/Journalbestand ist kein leerer
+Erstzustand, sondern ein blockierender Sicherheitsbefund.
+
+`pending` ist keine zweite Source of Truth. Es bindet ausschließlich den alten
+committed Snapshot und einen exakt geplanten neuen Snapshot für das
+Cross-Store-Protokoll. Nach Dateipublikation darf nur der beobachtete exakt
+pending Registry-/Journal-Digest committen. Nach Crash kann exakt der alte
+Dateistand über eine monotone Abort-Transition oder exakt der neue Dateistand
+über Commit aufgelöst werden; unbekannte oder gemischte Digests blockieren.
+Die implementierte Portoperation `abort_pending(expected, observed_committed)`
+behält den committed Registry-/Journal-Snapshot bei, entfernt ausschließlich
+pending und übernimmt dessen höhere Anchor-Revision als monotonen
+Abbruchnachweis.
+
 ## Security Sprint 5 - isolierte technische Sidecars
 
 | Datenquelle | Inhalt | Persistenz / Grenze | Status |

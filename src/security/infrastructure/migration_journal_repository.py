@@ -66,6 +66,26 @@ class AuthenticatedMigrationJournalRepository:
             raise MigrationJournalError("migration_journal_missing")
         return self._decode(self._read_regular_bytes(), auth_key)
 
+    def load_with_digest(
+        self, auth_key: DerivedDomainKey
+    ) -> tuple[MigrationJournalState, str]:
+        """Authenticate one descriptor-bound read and return its public digest."""
+
+        self._require_clean_directory(prepare=False)
+        if not self.path.exists() and not self.path.is_symlink():
+            raise MigrationJournalError("migration_journal_missing")
+        raw = self._read_regular_bytes()
+        return self._decode(raw, auth_key), hashlib.sha256(raw).hexdigest()
+
+    @staticmethod
+    def preview_digest(
+        state: MigrationJournalState,
+        auth_key: DerivedDomainKey,
+    ) -> str:
+        return hashlib.sha256(
+            AuthenticatedMigrationJournalRepository._encode(state, auth_key)
+        ).hexdigest()
+
     def save(
         self,
         expected: MigrationJournalState,

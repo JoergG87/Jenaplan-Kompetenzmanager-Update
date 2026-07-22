@@ -189,7 +189,10 @@ for name in (
     'src.security.data_keys',
     'src.security.database_keys',
     'src.security.migration_journal',
+    'src.security.monotonic_anchor',
+    'src.security.migration_lock',
     'src.security.infrastructure.data_master_key_store',
+    'src.security.infrastructure.monotonic_anchor_store',
 ):
     assert name not in sys.modules, name
 """

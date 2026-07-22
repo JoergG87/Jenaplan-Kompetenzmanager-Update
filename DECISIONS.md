@@ -1,5 +1,142 @@
 # Architekturentscheidungen
 
+## ADR-083 - Ausführende Migrations-Recovery nur unter exklusivem Test-Lock
+
+**Status:** Für Security Sprint 6 ausschließlich im guarded synthetischen
+Migrationsprototyp implementiert und nach dem P1-Fix vollständig gegatet. Keine Startup-,
+Produktmigrations-, Live-Swap-, Klartextlöschungs- oder Restorefreigabe.
+
+Die reine `MigrationRecoveryEvaluator`-Entscheidung aus ADR-080 bleibt die
+fachliche Sicherheitsgrenze. Neu ist ein davon getrennter
+`PrototypeMigrationRecoveryOrchestrator`, der nur nach erfolgreicher Entscheidung
+und nur in einem explizit injizierten temporären Test-Root mit verifiziertem
+Synthetik-Guard wenige allowlistete
+Operationen ausführt: Backup erneut prüfen, ein eindeutig identitätsgebundenes
+unvollständiges Testziel entfernen, Validierung fortsetzen, ein validiertes
+Testziel neu öffnen und bei authentisiertem `COMPLETED` ausschließlich
+evidence-gebundenes Ziel und Backup per atomarem No-Clobber-Rename in retained Quarantine
+verschieben und dort idempotent identitätsprüfen, aber nicht löschen.
+Quelle, Anchor, Registry, Journal, Lock, unbekannte Dateien, produktive Pfade
+und reservierte Swap-Phasen sind unveränderlich beziehungsweise blockiert.
+
+Der plattformneutrale `MigrationLockPort` wird im POSIX/macOS-Prototyp durch
+`ExclusiveMigrationLock`, in deterministischen Tests durch
+`InMemoryMigrationLock` und auf nicht geprüften Plattformen fail-closed durch
+`UnsupportedMigrationLock` erfüllt. Jede Operation verlangt einen durch
+`ExclusiveMigrationLock` exklusiv angelegten und unmittelbar erneut
+verifizierten Lock. Eigentum bindet
+Installation, Database-Context, Migration-ID, PID, Prozessstartidentität,
+Lock-Nonce, Erstellungszeit und Dateiidentität. PID oder Dateiname allein
+reichen nicht. Fremde, manipulierte, ausgetauschte und nicht belastbar stale
+Locks werden nicht automatisch entfernt oder überschrieben. Eine kontrollierte
+Stale-Übernahme ist nur nach expliziter Prüfung von Prozessstartidentität,
+Nonce, Journal und gespeicherter Dateiidentität erlaubt; jede Unklarheit führt
+zu `blocked`. Der Takeover verlangt dafür unter dem gehaltenen Kernel-Lock
+einen expliziten Recovery-Evidence-Validator; fehlt er, schlägt fehl oder
+liefert er nicht exakt `True`, bleibt der Lock unverändert blockiert.
+
+Vor jedem Schritt werden zusätzlich Journal-HMAC, externer Replay-Anker,
+Rootgrenze und die aktuelle Dateiidentität geprüft. Kritische Operationen
+besitzen einen authentisierten Write-ahead-Zustand und einen nachgelagerten
+Beweis. Subprozessabbrüche einschließlich hartem Kill, ENOSPC, fehlende Rechte,
+`fsync`-/Rename-/Replace-Fehler und Dateiwechsel zwischen Prüfung und Operation
+werden ausschließlich mit synthetischen temporären Daten getestet. Ein Fehler
+darf Quelle oder ein gültiges Backup nicht verändern und keine unbekannte Datei
+löschen. Auch die separat autorisierte terminale Behandlung verschiebt das
+exakt evidence-gebundene Backup nur in retained Quarantine.
+
+Der POSIX/macOS-Prototyp verwendet exklusive Create-Semantik, restriktive
+Rechte, Symlinkabweisung und Dateiidentitätsprüfung. Recovery führt für Ziel
+und Backup keinerlei pathname-basiertes `unlink` oder `remove` aus; das frühere
+finale Unlink-TOCTOU ist beseitigt. Der Quarantäne-Rename verwendet
+`RENAME_EXCL` beziehungsweise `RENAME_NOREPLACE` und blockiert auf Plattformen
+ohne geprüften No-Clobber-Primitive, sodass ein im Rennfenster erzeugter
+fremder Quarantänepfad niemals überschrieben wird. Als P2 verbleibt
+ausschließlich retained Quarantine ohne freigegebenen handlebasierten
+Bereinigungsprozess; reale
+Power-Loss-Sicherheit wird nicht behauptet. Windows benötigt weiterhin ACL-,
+Reparse-Point-/Junction-, handlebasierte File-ID-, Replace-/Sharing- und reale
+Crashabnahme. Auth-Recovery-Codes und Support-Reset sind andere Domänen und
+bleiben byte- und verhaltensgleich.
+
+## ADR-082 - Externer monotoner Security-Anker gegen gültiges Datei-Replay
+
+**Status:** Für Security Sprint 6 als isolierte Security-Foundation
+implementiert und nach dem P1-Fix vollständig gegatet; keine RuntimePaths-,
+Startup- oder Produktaktivierung.
+
+HMAC und AEAD erkennen Manipulation ohne DMK, nicht aber das gemeinsame
+Zurückspielen älterer, damals gültiger Registry- und Journaldateien. Deshalb
+liegt der zuletzt akzeptierte Sicherheitsstand hinter dem Plattformport
+`MonotonicSecurityAnchorStore` außerhalb dieser replaybaren Dateien. Der
+strikte `SecurityAnchorState` bindet Formatversion,
+Installation/Security-Context, monotone Anchor-Revision, Database-Context,
+DMK-/Keyset-ID und -Generation, Registry-High-Water-Mark,
+Journalrevision beziehungsweise Migrationsgeneration sowie die exakten
+SHA-256-Digests der bereits authentisierten Registry und des bereits
+authentisierten Journals. Er enthält keine Schlüssel, Passwörter, Recovery-
+oder Support-Secrets und keine fachlichen Daten.
+
+`initialize` ist ausschließlich ohne vorhandene Security-Artefakte zulässig.
+`read`, `compare`, `verify` und `advance` sind idempotent beziehungsweise
+atomar; ein Advance akzeptiert nur den erwarteten unmittelbaren Vorgänger und
+den vollständig gebundenen neuen Stand. Weil Keychain und Dateisystem keine
+gemeinsame atomare Transaktion besitzen, speichert der Anker einen committed
+Snapshot und optional genau einen pending Snapshot. Prepare bindet sowohl den
+alten committed als auch den exakt geplanten neuen Registry-/Journalstand mit
+der Revision committed + 1; die committed Revision wird dabei noch nicht
+vorgezogen. Erst danach werden die authentisierten Dateien extern atomar
+publiziert. Commit ist nur zulässig, wenn die erneut beobachteten Dateidigests
+und sämtliche Kontextbindungen exakt pending entsprechen, und übernimmt genau
+die vorbereitete Revision.
+
+Nach Crash darf exakt der alte Dateistand pending durch
+`abort_pending(expected, observed_committed)` verwerfen: Der committed
+Artifact-Snapshot bleibt erhalten, pending wird entfernt und dessen höhere
+Anchor-Revision als monotoner Abbruchnachweis übernommen. Exakt der neue
+Dateistand darf den Commit fortsetzen. Abort ist kein Reset. Jeder
+partielle, gemischte oder unbekannte Dateistand blockiert. Der
+`ExclusiveMigrationLock` serialisiert Prepare, Dateipublikation und
+Commit/Abort für denselben Datenbankkontext prozessübergreifend. Rücklauf,
+doppelte Revision, unplausibler Sprung, falscher Kontext, Korruption oder
+Parallelitätskonflikt blockieren. Ein fehlender oder gelöschter Anker bei vorhandener Registry oder
+vorhandenem Journal darf nicht still neu erzeugt werden. `block` wird nicht
+automatisch zurückgesetzt; ein späterer Wiederherstellungsprozess braucht eine
+eigene Product-Owner- und Recovery-Entscheidung.
+
+macOS speichert den Zustand im eigenen nicht synchronisierenden Keychain-Service
+`de.jenaplan.kompetenzmanager.monotonic-security-anchor`. Es gibt keinen
+Datei-Fallback. Der In-Memory-Adapter dient ausschließlich deterministischen
+Port-, Replay- und Parallelitätstests. Für Windows sind Port, Fehlerklassen,
+Fake und ein DPAPI-user-scope-Entwurf zulässig; produktive DPAPI-Persistenz,
+Credential-Manager-/ACL-Entscheidung und reale Windows-Prüfung bleiben offen.
+
+Bedrohungsgrenze: Der Anker schützt gegen das Replay der dateibasierten
+Sidecars durch einen Angreifer ohne Zugriff auf den Plattformstore. Er schützt
+nicht gegen einen kompromittierten entsperrten Prozess, kompromittiertes OS,
+autorisierten Keychain-/DPAPI-Zugriff oder vollständige physische
+Plattformkompromittierung.
+
+## ADR-081 - Kontrollierter ad-hoc-signierter Einzelpilot bleibt eigener Releasepfad
+
+**Status:** Ergänzt ADR-070 und ADR-073 für Security Sprint 6; reine
+Releasepfad-Dokumentation, kein Build und keine Veröffentlichung.
+
+Die fehlende Developer-ID ist kein Blocker für den bereits eng kontrollierten
+Laura-Einzelpiloten. Dieser Pfad verlangt einen reproduzierbaren Clean Build,
+ad-hoc-Signatur, SHA-256-Prüfsummenmanifest, persönliche oder anderweitig
+kontrollierte Übergabe, dokumentierte Gatekeeper-Freigabe sowie reale Prüfung
+von Bundle-ID-, Update- und Keychain-Stabilität. Er behauptet weder Apple-
+Notarisierung noch eine verifizierte Entwickleridentität und ist keine Freigabe
+für automatische oder breite Verteilung.
+
+Der spätere Distributionspfad bleibt davon getrennt. Developer ID, Hardened
+Runtime, Notarisierung und Stapling oder eine ausdrücklich entschiedene
+schulinterne Administration/MDM bleiben organisatorische Release-Gates für eine
+breitere Vertrauenskette. Sie sind keine Voraussetzung für die isolierte
+Verschlüsselungsarchitektur. Security Sprint 6 baut, ersetzt oder veröffentlicht
+kein RC-, Pilot-, DMG-, ZIP-, Appcast- oder Updateartefakt.
+
 ## ADR-080 - HMAC-authentisiertes Migrationsjournal und reine Recovery-State-Machine
 
 **Status:** Für Security Sprint 5 als isolierte Foundation und ausschließlich
@@ -84,7 +221,10 @@ Verzeichnis-`fsync`. Das belegt keine vollständige Stromausfallsicherheit;
 `unlink`, kann aber ohne exklusiven Prozess-Lock oder handlegebundene
 Plattformoperation einen Austausch exakt zwischen Prüfung und Löschung nicht
 atomar ausschließen; der isolierte `0700`-Root reduziert nur die Angriffsfläche.
-Windows bleibt gesperrt, bis ACLs,
+Diese historische ADR-080-Aussage beschreibt die Sprint-4/5-Engine und ist
+keine Erlaubnis für die ausführende Sprint-6-Recovery. ADR-083 verbietet dort
+pathname-basiertes `unlink`/`remove` und behält die evidence-gebundenen
+Artefakte in retained Quarantine. Windows bleibt gesperrt, bis ACLs,
 Reparse-Point-/Junction-Abweisung, handlebasierte Volume-/File-ID,
 Replace-/Sharing-Verhalten und reale Crash-/Packagingtests implementiert sind.
 

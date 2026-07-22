@@ -68,6 +68,20 @@ class FileDatabaseKeyEnvelopeRepository:
         )
         return envelopes
 
+    def load_with_digest(
+        self, auth_key: DerivedDomainKey
+    ) -> tuple[tuple[DatabaseKeyEnvelope, ...], str]:
+        """Authenticate one descriptor-bound read and return its public digest."""
+
+        self._require_clean_directory(prepare=False)
+        if not self.path.exists() and not self.path.is_symlink():
+            raise DatabaseKeyEnvelopeError("database_key_envelope_missing")
+        raw = self._read_regular_bytes()
+        _context_id, _highest_generation, envelopes = self._decode_registry(
+            raw, auth_key
+        )
+        return envelopes, hashlib.sha256(raw).hexdigest()
+
     def highest_generation(self, auth_key: DerivedDomainKey) -> int:
         self._require_clean_directory(prepare=False)
         _context_id, highest_generation, _envelopes = self._decode_registry(

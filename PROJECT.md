@@ -1,5 +1,84 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Security Sprint 6 - Replay-Schutz, exklusiver Lock und Prototype-Recovery
+
+Security Sprint 6 ist als Erweiterung der nicht produktiv aktivierten
+Foundations implementiert und nach dem P1-Fix vollständig gegatet: ein externer monotoner
+Replay-Anker, ein exklusiver POSIX/macOS-Migrations-Lock und eine eng
+allowlistete ausführende Recovery-Orchestrierung für den guarded synthetischen
+Migrationsprototyp. Alle Abhängigkeiten werden
+explizit injiziert; es gibt weiterhin keine `RuntimePaths`-, Startup-, UI-,
+Login-, Backup/Restore- oder Produktkopplung.
+
+Der Anchor-Zustand liegt außerhalb von Envelope-Registry und Journal und bindet
+Installation/Security-Context, Anchor-Version/-Revision, Database-Context,
+DMK-/Keyset-ID/-Generation, Registry-High-Water-Mark,
+Journal-/Migrationsgeneration sowie die exakten SHA-256-Digests beider
+authentisierten Dateien. macOS verwendet
+den eigenen Keychain-Service
+`de.jenaplan.kompetenzmanager.monotonic-security-anchor` ohne Datei-Fallback.
+Ein fehlender oder beschädigter Anker bei vorhandenem Security-Bestand,
+Rollback, doppelte Revision, unplausibler Sprung, Kontextabweichung und
+Parallelitätskonflikt blockieren ohne stille Neuerzeugung. Ein
+`committed`/`pending`-Protokoll koppelt Plattformstore und Dateipublikation:
+Prepare bindet alten und exakt geplanten neuen Snapshot, Publish schreibt die
+Dateien und Commit akzeptiert ausschließlich exakt pending Digests. Nach Crash
+darf exakt der alte Stand durch
+`abort_pending(expected, observed_committed)` monoton verworfen oder exakt der
+neue Stand durch Commit aufgelöst werden; jeder Mischstand blockiert. Der
+exklusive Lock serialisiert diesen Advance prozessübergreifend. Windows bleibt
+auf Port, Fake, Fehlervertrag und DPAPI-user-scope-Entwurf begrenzt.
+
+Der Plattformvertrag `MigrationLockPort` besitzt den threadsicheren Test-Fake
+`InMemoryMigrationLock`, den fail-closed Adapter
+`UnsupportedMigrationLock` und den POSIX/macOS-Prototyp
+`ExclusiveMigrationLock`. `database-migration-v1.lock` wird im injizierten
+Test-Root exklusiv angelegt.
+Eigentum bindet mehr als eine PID: Installation, Datenbankkontext,
+Migration-ID, Prozessstartidentität, Nonce, Erstellungszeit und Dateiidentität
+werden geprüft. Fremde, manipulierte, ausgetauschte oder uneindeutig stale
+Locks werden nicht automatisch gelöscht oder überschrieben.
+
+Die ausführende Recovery prüft vor jedem Schritt Lock, Journal-HMAC,
+Replay-Anker, Rootgrenze und Dateiidentität. Sie darf nur eigene
+identitätsgebundene Testziele zurückrollen, Backup-/Zielvalidierung fortsetzen,
+das Testziel neu öffnen und bei authentisiertem `COMPLETED` ausschließlich das
+evidence-gebundene Testziel und Backup per atomarem No-Clobber-Rename in retained Quarantine
+verschieben und dort idempotent identitätsprüfen, aber niemals löschen.
+Klartextquelle, Anchor, Registry, Journal, Lock, unbekannte Dateien, produktive
+Pfade und reservierte Swap-Phasen bleiben unverändert. Auth-Recovery-Codes und
+Support-Reset sind nicht Teil dieser Recovery.
+
+Echte Subprozessabbrüche und kontrollierte Fehleradapter decken Crashfenster,
+ENOSPC, Rechte, `fsync`, Rename/Replace und Dateiwechsel ab. Der Nachweis gilt nur
+für synthetische temporäre Testdaten; vollständige Power-Loss-Sicherheit bleibt
+ein offenes Plattformgate. Recovery verwendet für Ziel und Backup kein
+pathname-basiertes `unlink` oder `remove`; das frühere finale Unlink-TOCTOU ist
+beseitigt. Ein konkurrierend angelegter Quarantänepfad wird durch
+`RENAME_EXCL`/`RENAME_NOREPLACE` niemals überschrieben; fehlt dieser
+No-Clobber-Primitive, blockiert Recovery. Die bekannte P2-Grenze ist retained Quarantine ohne freigegebenen
+handlebasierten Bereinigungsprozess.
+
+Das Post-Fix-Gate ist vollständig grün: 215 fokussierte Sprint-6-Tests, 265
+fokussierte Tests der Security Sprints 2 bis 6, 465
+Security-/Support-Regressionstests, 130 Backup-/Restore-Regressionstests sowie
+die Gesamtsuite mit 1148 Tests und 67 Subtests. `compileall`, `pip check`,
+`git diff --check`, native Bridge-Checks mit ausschließlich erwarteten
+Deprecated-Warnungen und die geschützten Hashprüfungen waren erfolgreich;
+P0 = 0 und P1 = 0. Daraus folgt keine Produktfreigabe.
+
+Für den kontrollierten Laura-Einzelpiloten bleibt der ad-hoc-signierte,
+persönlich übergebene Pfad mit reproduzierbarem Clean Build, SHA-256-Manifest,
+dokumentierter Gatekeeper-Freigabe und realer Keychain-/Bundle-ID-Prüfung
+zulässig. Er ist nicht notarisiert und behauptet keine verifizierte
+Entwickleridentität. Breite Verteilung bleibt an Developer ID und
+Notarisierung oder eine gesonderte schulinterne MDM-Entscheidung gebunden.
+Security Sprint 6 baut oder verändert kein RC- oder Pilotartefakt.
+
+Security Sprint 7A ist nicht Bestandteil dieses Commits. Security Sprint 8A
+wurde nicht begonnen und bleibt gesperrt; der historische fachliche
+`Sprint 8A - Produktiver Stundenplan` ist davon verschieden.
+
 ## Security Sprint 5 - Product-Key-Envelope und Migrationsjournal-Foundation
 
 Security Sprint 5 ergänzt zwei strikt isolierte, Qt-freie Bausteine. Ein

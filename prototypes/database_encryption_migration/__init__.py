@@ -16,6 +16,10 @@ from .secure_migration import (
     SecureMigrationPrototypeReport,
     SimulatedProcessInterruption,
 )
+from .recovery import (
+    PrototypeMigrationRecoveryOrchestrator,
+    RecoveryExecutionResult,
+)
 
 __all__ = [
     "FailurePoint",
@@ -24,6 +28,8 @@ __all__ = [
     "MigrationPrototypeError",
     "MigrationReport",
     "PrototypeInterruptionPoint",
+    "PrototypeMigrationRecoveryOrchestrator",
+    "RecoveryExecutionResult",
     "SecureMigrationPrototypeEngine",
     "SecureMigrationPrototypeReport",
     "SimulatedProcessInterruption",
