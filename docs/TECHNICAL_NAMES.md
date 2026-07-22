@@ -1,5 +1,29 @@
 # Technical Naming Registry
 
+## Security Sprint 7B - Migration State Foundations
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `MigrationCrossbindingContext` | Kanonischer Kontext aller Sicherheits-, Artefakt- und Versionsbindungen | Security Domain |
+| `MigrationArtifactBinding` | Capability- und Identitätsbindung einer Rolle `source`, `backup` oder `target` | Security Domain |
+| `lock_binding_digest_sha256` | Nicht zirkulärer Digest aller Kontextfelder außer Lockzustand | Security Domain |
+| `LockTransitionType` | Allowlist der sechs Locktransitionen | Security Domain |
+| `AuthenticatedLockTransition` | Kanonischer HMAC-Eintrag mit Sequenz, Vorgänger, Kontext, Owner und Evidenz | Security Domain |
+| `AuthenticatedLockTransitionChain` | Verifizierbare append-only Transitionen samt Head-Digest | Security Domain |
+| `AppendOnlyLockTransitionRepository` | Per-entry und fsync-gebundene Lockpersistenz ohne Produktpfad | Security Infrastructure |
+| `AuthenticatedSourceAbsence` | Adapter-authentisierter Abwesenheitsbeleg | Security Domain |
+| `AuthenticatedReplayAnchorProjection` | Authentisierte Replay-Anker-Projektion | Security Domain |
+| `AuthenticatedEnvelopeRegistryProjection` | Authentisierte Envelope-/Registry-Projektion | Security Domain |
+| `AuthenticatedJournalProjection` | Journalprojektion mit Quelldigest und Projektions-Seal | Security Domain |
+| `AuthenticatedLockHeadProjection` | Projektion des HMAC-verifizierten vollständigen Lockkopfs | Security Domain |
+| `AuthenticatedArtifactProjection` | Capability-authentisierte Soll-/Ist-Projektion der Dateirollen | Security Domain |
+| `AuthenticatedMigrationPreflightProjection` | Gemeinsame read-only Preflight-Eingabe | Security Domain |
+| `MigrationPreflightMode` | Allowlist `NEW`, `RESUME`, `RECOVERY`, `COMPLETED`, `BLOCKED` | Security Domain |
+| `derive_migration_preflight` | Deterministische Modusableitung aus crossgebundenen Projektionen | Security Domain |
+
+Diese Namen begründen keine Produkt-, UI-, Startup- oder
+Orchestratorintegration.
+
 ## Security Sprint 6 - Replay-Anker, Migrations-Lock und Prototype-Recovery
 
 | Technischer Name | Bedeutung | Eigentümer |

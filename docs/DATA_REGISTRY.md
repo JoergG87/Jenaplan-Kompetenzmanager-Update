@@ -1,5 +1,17 @@
 # Data Registry
 
+## Security Sprint 7B - Kontrollprojektionen ohne neue Produktdatenquelle
+
+| Datenbestand / Projektion | Owner | Zweck | Persistenz |
+|---|---|---|---|
+| Locktransition-Einträge | Security Infrastructure | HMAC-authentisierte append-only Lockevidenz | Je Transition eine unveränderliche kanonische Datei im injizierten Security-Root |
+| `MigrationCrossbindingContext` | Security Domain | Bindung von Installation, Migration, Schlüsseln, Security-Artefakten, Dateirollen und Versionen | Unveränderlicher In-Memory-Wert |
+| Authentisierte Preflight-Projektionen | Security Domain / Adapter | Read-only Evidenz für Anchor, Registry, Journal, Lock und Artefakte | Unveränderliche In-Memory-Werte |
+| `MigrationPreflightDecision` | Security Domain | Abgeleiteter Modus oder sanitisiertes Blockierungsergebnis | Keine Persistenz |
+
+Es entsteht keine neue fachliche Datenquelle, Produktprojektion oder
+Runtime-Pfad.
+
 ## Security Sprint 6 - isolierter Replay-Anker und Migrations-Lock
 
 | Datenquelle | Inhalt | Persistenz / Grenze | Status |

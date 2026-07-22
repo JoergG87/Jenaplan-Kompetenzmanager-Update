@@ -1,5 +1,16 @@
 # View Data Ownership
 
+## Security Sprint 7B - Foundation ohne View
+
+Security Sprint 7B besitzt keine View, kein ViewModel, keinen Desktop-Adapter
+und keine Shell- oder Startup-Projektion. `MigrationCrossbindingContext`, die
+authentisierte Lock-Transitionskette und `derive_migration_preflight` gehören
+ausschließlich zur Qt-freien Security-Domain beziehungsweise isolierten
+Security-Infrastruktur.
+
+Widgets, Dialoge, Shell, Login, Einstellungen und Backup/Restore besitzen
+keine Ownership an Locktransitionen, Crossbinding oder Preflight-Modi.
+
 ## Security Sprint 6 - Foundation ohne View
 
 Security Sprint 6 besitzt keine View, kein ViewModel, keinen Desktop-Adapter

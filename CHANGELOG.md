@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## Security Sprint 7B - Migration State Foundations
+
+### Added
+
+- Vollständigen kanonischen Migrations-Crossbinding-Kontext für Installation,
+  Datenbankkontext, Migration, Schlüsselgenerationen, Registry, Journal,
+  Replay-Anker, Lockkettenkopf, Dateirollen und Versionen ergänzt.
+- HMAC-authentisierte append-only Locktransitionen mit Vorgängerdigest,
+  monotoner Sequenz, Owner-Kontinuität und replaygebundener Evidenz ergänzt.
+- Deterministische read-only Preflight-Ableitung für `NEW`, `RESUME`,
+  `RECOVERY`, `COMPLETED` und `BLOCKED` aus authentisierten Projektionen
+  ergänzt.
+
+### Security review
+
+- Tail-Replay verlangt einen extern erwarteten Lockkettenkopf samt Sequenz;
+  manipulierte, entfernte, eingefügte und zurückgespielte Einträge blockieren.
+- Journalphase und Locktransition sind keine frei wählbaren Preflight-Eingaben.
+- Der vollständige Kontext bindet den echten Lockkopf; der Lockeintrag bindet
+  über einen nicht zirkulären Digest alle übrigen Kontextfelder.
+
+### Boundaries
+
+- Keine Orchestrator-, Produkt-, Startup-, Login-, UI-, Backup/Restore- oder
+  Migrationsverkabelung und keine Aktivierung nachgelagerter Security-Sprints.
+
 ## Security Sprint 6 - Governance für Replay-Anker, Lock und Prototype-Recovery
 
 ### Added

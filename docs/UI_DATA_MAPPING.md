@@ -1,5 +1,13 @@
 # UI Data Mapping
 
+## Security Sprint 7B - Keine UI- oder Startup-Projektion
+
+Security Sprint 7B ergänzt keine sichtbaren Felder, Aktionen, Dialoge,
+Meldungen, Einstellungen, Navigation oder Startupzustände. Locktransitionen,
+Preflight-Modus und Migrations-Crossbinding werden nicht in die Produkt-UI
+projiziert. Eine spätere Integration benötigt eine eigene
+Product-Owner-Freigabe und ein neues Mapping.
+
 ## Security Sprint 6 - Keine UI- oder Startup-Projektion
 
 Security Sprint 6 ergänzt keine UI-Felder, Aktionen, Anzeigen, Dialoge,

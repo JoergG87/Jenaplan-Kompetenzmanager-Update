@@ -1,5 +1,26 @@
 # Project Constitution
 
+## Entwicklungsgrenze Security Sprint 7B - Migration State Foundations
+
+Security Sprint 7B darf isolierte, Qt-freie Foundations für eine
+authentisierte Lock-Transitionskette, eine reine recovery-aware
+Preflight-Ableitung und einen vollständigen Migrations-Crossbinding-Kontext
+ergänzen. Produkt- und Orchestratorverkabelung sind nicht freigegeben.
+
+Locktransitionen sind append-only, HMAC-authentisiert, lückenlos sequenziert
+und über Vorgängerdigest, Replay-Anker und Kontext gebunden. Der Kontext bindet
+Installation, Datenbankkontext, Migration, DMK und Database-Key samt
+Generationen, Registry, Journal, Anchor, Lockkopf, Quelle, Backup, Ziel,
+Capabilities, Dateiidentitäten sowie erwartete SQLite-, SQLCipher- und
+Schemaversionen.
+
+Der Preflight liefert ausschließlich `NEW`, `RESUME`, `RECOVERY`,
+`COMPLETED` oder `BLOCKED`. Fehlende, zusätzliche, ausgetauschte,
+phasenfremde oder widersprüchliche Evidenz blockiert. Adapter authentisieren
+Quellen vor der Projektion; die Domain führt weder I/O noch Mutation aus.
+Startup, Login, UI, RuntimePaths, Backup/Restore und Produktmigration bleiben
+unverändert.
+
 ## Entwicklungsgrenze Security Sprint 6
 
 Security Sprint 6 darf ausschließlich die isolierten Security-Foundations und

@@ -1,5 +1,21 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Security Sprint 7B - Migration State Foundations
+
+Security Sprint 7B ergänzt drei Qt-freie Security-Foundations: eine
+HMAC-authentisierte append-only Lock-Transitionskette, einen vollständigen
+kanonischen Migrations-Crossbinding-Kontext und eine deterministische
+recovery-aware Preflight-Ableitung.
+
+Crossbinding umfasst Installation, Datenbankkontext, Migration und Generation,
+DMK und Database-Key, Registry, Journal, Replay-Anker, Lockkopf, Source,
+Backup, Target, Capabilities, Dateiidentitäten und erwartete Engine- sowie
+Schemaversionen. Der Preflight besitzt genau die Modi `NEW`, `RESUME`,
+`RECOVERY`, `COMPLETED` und `BLOCKED`.
+
+Die Foundations bleiben ohne Produkt-, Startup-, Login-, UI-, Backup/Restore-
+oder Orchestratorintegration. Nachgelagerte Security-Sprints bleiben gesperrt.
+
 ## Security Sprint 6 - Replay-Schutz, exklusiver Lock und Prototype-Recovery
 
 Security Sprint 6 ist als Erweiterung der nicht produktiv aktivierten

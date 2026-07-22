@@ -1,5 +1,30 @@
 # Architekturentscheidungen
 
+## ADR-084 - Authentisierte Migrationszustände bleiben eine isolierte Domainfoundation
+
+**Status:** Angenommen für die isolierten Security-7B-Foundations; keine
+Produkt- oder Orchestratorfreigabe.
+
+Lockzustände werden als HMAC-authentisierte append-only Transitionskette
+persistiert. Jeder Eintrag bindet Vorgänger, Sequenz, Installation,
+Datenbankkontext, Migration, Owner, Replay-Anker, Journal und Artefakte.
+Wiederaufnahme verlangt den extern erwarteten Kettenkopf und die Sequenz; die
+Owner-Evidenz wird nicht durch Truncate ersetzt.
+
+Ein kanonischer `MigrationCrossbindingContext` bindet sämtliche technischen
+Migrationsbestandteile. Sein vollständiger Digest enthält den Lockkettenkopf.
+Der Lockeintrag bindet umgekehrt einen nicht zirkulären Digest aller übrigen
+Kontextfelder. So bleiben Lock-Head und Kontext ohne Digestzyklus prüfbar.
+
+`derive_migration_preflight` bleibt rein, read-only und deterministisch.
+Adapter authentisieren ihre Quellen vor der Projektion. Die Domain vergleicht
+reale Quelldigests, Revisionen, Identitäten und Generationen mit dem Kontext
+und leitet nur `NEW`, `RESUME`, `RECOVERY`, `COMPLETED` oder `BLOCKED`
+ab. Widersprüche und unerwartete Artefakte blockieren.
+
+Keine Startup-, Login-, UI-, Backup/Restore-, Produktmigrations- oder
+Orchestratorverkabelung wird freigegeben.
+
 ## ADR-083 - Ausführende Migrations-Recovery nur unter exklusivem Test-Lock
 
 **Status:** Für Security Sprint 6 ausschließlich im guarded synthetischen

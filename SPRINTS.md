@@ -1,5 +1,20 @@
 # Sprintplanung
 
+## Security Sprint 7B - Migration State Foundations
+
+- [x] HMAC-authentisierte append-only Lock-Transitionskette mit Vorgängerdigest,
+  Sequenz, Owner-Kontinuität und Replay-Erwartung implementiert.
+- [x] Vollständigen kanonischen `MigrationCrossbindingContext` einschließlich
+  Capabilities, Dateiidentitäten und Versionen implementiert.
+- [x] Nicht zirkulären Vertrag zwischen Kontext und echtem HMAC-Lockkopf
+  implementiert.
+- [x] Reine Preflight-Ableitung für `NEW`, `RESUME`, `RECOVERY`,
+  `COMPLETED` und `BLOCKED` implementiert.
+- [x] Manipulations-, Replay-, Phasen-, Artefakt- und Crossbinding-Negativtests
+  ergänzt.
+- [ ] Keine Orchestrator- oder Produktintegration; nachgelagerte
+  Security-Sprints bleiben blockiert.
+
 ## Security Sprint 6 - Replay Anchor, Exclusive Migration Lock & Crash Recovery
 
 **Status:** Als isolierte Security-Foundation implementiert, reviewt und nach

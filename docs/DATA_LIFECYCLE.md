@@ -1,5 +1,40 @@
 # Data Lifecycle
 
+## Security Sprint 7B - Authentisierte Lock-, Preflight- und Crossbinding-Lebenszyklen
+
+Die Locktransitionen folgen ausschließlich dieser Zustandsmatrix:
+
+| Vorzustand | Erlaubter Folgezustand |
+|---|---|
+| kein Eintrag | `ACQUIRED` |
+| `ACQUIRED` | `RELEASED`, `STALE_DETECTED`, `BLOCKED` |
+| `RELEASED` | `ACQUIRED`, `BLOCKED` |
+| `STALE_DETECTED` | `TAKEOVER_PREPARED`, `BLOCKED` |
+| `TAKEOVER_PREPARED` | `TAKEOVER_COMMITTED`, `BLOCKED` |
+| `TAKEOVER_COMMITTED` | `RELEASED`, `STALE_DETECTED`, `BLOCKED` |
+| `BLOCKED` | kein Folgezustand |
+
+Jeder Eintrag trägt Sequenz, Vorgängerdigest, HMAC, Installation,
+Datenbankkontext, Migration, Owner sowie Replay-Anker-, Journal- und
+Artefaktevidenz. Das Repository publiziert nur den nächsten nummerierten
+Eintrag mit Create-exclusively, Datei-`fsync` und Verzeichnis-`fsync`.
+Laden und Fortsetzen verlangen den erwarteten Head-Digest samt Sequenz.
+
+Der vollständige Kontextdigest bindet den echten Lockkopf. Der HMAC-Lockeintrag
+bindet einen nicht zirkulären Digest aller übrigen Kontextfelder. Kein
+Bestandteil kann unabhängig ausgetauscht werden.
+
+Der Preflight ist rein, read-only und wiederholbar. Adapter liefern
+authentisierte Anchor-, Registry-, Journal-, Lock- und Artefaktprojektionen.
+Die Domain prüft IDs, Generationen, Revisionen, reale Quelldigests,
+Dateiidentitäten, Capabilities, Versionen und phasengerechte Rollen. Freie
+Backup-/Zielrollen ergeben `NEW`; fortsetzbare Phasen `RESUME`,
+crashkritische Phasen `RECOVERY`, konsistenter Abschluss `COMPLETED`.
+Jede Abweichung ergibt `BLOCKED`.
+
+Diese Lebenszyklen führen keine Migration aus und verändern keine Produkt-,
+Startup-, Login-, UI- oder Backup/Restore-Pfade.
+
 ## Security Sprint 6 - Anchor-, Lock- und Prototype-Recovery-Lifecycle
 
 Der externe Anchor-Lifecycle lautet:
