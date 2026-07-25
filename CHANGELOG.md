@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## Security Sprint 8 - vereinfachter synthetischer Migrationsorchestrator
+
+### Added
+
+- VFS-freien Crossbinding-v2- und read-only Preflight-v2-Vertrag fuer feste
+  Source-/Backup-/Target-Rollen im injizierten privaten Test-Root implementiert.
+- Byte-identischen Backupvertrag nach Close/WAL-Ruhe, separaten SQLCipher-
+  Transfer ohne `ATTACH`, vollstaendige Snapshot-/PRAGMA-/Integritaetspruefung,
+  Reopen, authentisiertes Journal/Replay-Anker-Protokoll, Neustart-Recovery und
+  ausschliesslich simulierten atomaren Austausch implementiert.
+- Zehn zentrale Abbruchfenster mit echten Prozessen sowie ENOSPC-, Rechte-,
+  `fsync`-, `os.replace`-, Journalmanipulations-, Replay-, Artefakttausch- und
+  Fremdartefaktfaelle fail-closed beziehungsweise recoverbar getestet.
+
+### Tests
+
+- 55 neue Sprint-8-Tests, 272 Security-Sprint-2-bis-6-Tests, 168
+  Migration-State-/Sprint-8-Tests, 97 Security-Core-/Startup-/UI-Tests, 315
+  Security-/Migration-State-Regressionen, 140 Support-/Sprint-8-Regressionen,
+  130 Backup-/Restore-Regressionen und 29 Startup-Import-Isolationstests gruen.
+- Gesamtsuite: 1431 bestanden, 20 uebersprungen, 67 Subtests bestanden;
+  `compileall`, `pip check` und `git diff --check` bestanden.
+
+### Boundaries
+
+- Keine Produkt-, Startup-, UI-, RuntimePath-, Backup/Restore-, Pilot-, RC-,
+  Release-, Identity-VFS- oder Excel-Aktivierung.
+- P0 = 0 und P1 = 0 fuer den isolierten synthetischen Pfad. Reale
+  Produktpfade, Windows, Packaging und produktiver Austausch bleiben P2/
+  Folge-Sprints.
+
 ## Security Sprint 7B - Migration State Foundations
 
 ### Added

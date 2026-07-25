@@ -1,5 +1,22 @@
 # Technical Naming Registry
 
+## Security Sprint 8 - vereinfachte Migrationsarchitektur
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `SimplifiedMigrationArtifactV2` | VFS-freie gebundene Source-, Backup- oder Target-Dateirolle mit sicherem relativen Namen, Geräte-/Dateiidentität, Größe und SHA-256 | Security Domain |
+| `SimplifiedMigrationCrossbindingV2` | Versionierter VFS-freier Kontext für Root, feste Rollen, Schlüsselgenerationen, Journal, Replay-Anker, Lockkopf und erwartete Engine-/Schemaversionen | Security Domain |
+| `SimplifiedMigrationPreflightV2` | Reine read-only Ableitung `NEW`, `RESUME`, `RECOVERY`, `COMPLETED`, `BLOCKED` aus authentisiertem Kontext und phasengerechter Evidenz | Security Domain |
+| `SimplifiedMigrationRecoveryDecision` | Allowlist `SAFE_RESTART`, `REPEAT_VALIDATION`, `QUARANTINE_TARGET`, `CONFIRM_BACKUP_AUTHORITATIVE`, `MANUAL_REVIEW_REQUIRED`, `BLOCKED` | Security Domain |
+| `AuthenticatedMigrationJournalV2` | Kanonisches HMAC-authentisiertes Journal mit fester Rollenbindung und monotoner Revision | Security Infrastructure |
+| `ExternalReplayAnchorV2` | Injizierter committed/pending Replay-Anker außerhalb des Migrationsroots | Security Port / Test Infrastructure |
+| `SyntheticMigrationOrchestratorV2` | Ausschließlich per Dependency Injection verdrahteter Orchestrator für einen synthetischen privaten Testroot ohne Produktaktivierung | Security Prototype |
+| `SimulatedAtomicExchangePlanV2` | Isolierter Testplan für den simulierten Austausch mit Neustartprüfung und retained Vorgänger | Security Prototype |
+
+Diese Namen sind ausschließlich im isolierten Security-Sprint-8-Pfad
+implementiert. Sie importieren weder Identity-VFS noch RuntimePaths und
+aktivieren keinen Produkt-, Startup-, Login-, UI- oder Backup/Restore-Pfad.
+
 ## Security Sprint 7B - Migration State Foundations
 
 | Technischer Name | Bedeutung | Eigentümer |
