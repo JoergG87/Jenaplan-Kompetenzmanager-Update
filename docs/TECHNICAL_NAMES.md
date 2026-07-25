@@ -1,5 +1,16 @@
 # Technical Naming Registry
 
+## Security Sprint 9 - isolierte technische Namen
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `EncryptedBackupContainer` | Versionierter authentifizierter Secretstream-Container für synthetische Backupdaten; keine Produktaktivierung | Core Security / Backup |
+| `BackupContainerContextV1` | stabile Installations- und Datenbankkontext-IDs für HKDF- und Envelope-Bindung | Core Security |
+| `BackupKeyEnvelopeV1` | AES-256-GCM-Envelope eines zufälligen Backup-Keys unter einem getrennten Backup-Wrapping-Key | Core Security |
+| `EncryptedBackupManifestV1` | ausschließlich verschlüsseltes Manifest mit Rollen, Reihenfolge, Größen, Hashes und Chunkanzahl | Core Security / Backup |
+| `SyntheticEncryptedBackupServiceV1` | injizierter Writer/Verifier/Restore-Service nur für synthetische Sprint-9-Daten | Security Prototype |
+| `SYNTHETIC_BACKUP_TEST_ROOT_MARKER` | feste Markerdatei zur Begrenzung des privaten synthetischen Test-Roots | Security Prototype |
+
 ## Security Sprint 8 - vereinfachte Migrationsarchitektur
 
 | Technischer Name | Bedeutung | Eigentümer |

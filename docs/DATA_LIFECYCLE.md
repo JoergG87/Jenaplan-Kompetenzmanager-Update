@@ -1,5 +1,18 @@
 # Data Lifecycle
 
+## Security Sprint 9 - isolierter Backupcontainer-Lifecycle
+
+1. Der injizierte private Test-Root, DMK, technische Kontext und synthetische
+   Quellen werden vor dem Schreiben geprüft.
+2. Der Writer erzeugt einen zufälligen Backup-Key, schützt ihn per
+   HKDF-SHA-256-Backup-Wrapping-Key und AES-256-GCM-Envelope und schreibt einen
+   versionierten Secretstream-Recordstrom.
+3. Der Verifier authentifiziert Header, Envelope, Manifest, Recordreihenfolge,
+   Größen, Hashes, Final-Tag und EOF ohne Extraktion.
+4. Restore erfolgt erst nach vollständiger Verifikation in einen neuen,
+   exklusiv erzeugten synthetischen Root; der bestehende Produkt- und
+   `.jkmbackup`-Lifecycle wird nicht verwendet.
+
 ## Security Sprint 7B - Authentisierte Lock-, Preflight- und Crossbinding-Lebenszyklen
 
 Die Locktransitionen folgen ausschließlich dieser Zustandsmatrix:

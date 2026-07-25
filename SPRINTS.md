@@ -1,5 +1,17 @@
 # Sprintplanung
 
+## Security Sprint 9 - Verschlüsseltes Backupformat
+
+**Status:** Isolierte synthetische Foundation abgeschlossen; P0 = 0, P1 = 0,
+keine Produktaktivierung.
+
+- [x] Versionierten Backupcontainer mit Secretstream XChaCha20-Poly1305,
+  zufälligem Backup-Key und DMK-gebundenem Key-Envelope nachgewiesen.
+- [x] Writer, Verifier, Restore-Prototyp sowie Manipulations- und Crashgrenzen
+  ausschließlich im synthetischen Test-Root geprüft.
+- [ ] Packaging, Windows, realer Power-Loss, Same-User-ABA, Retained-GC und
+  weitergehende Zeroization bleiben Folge-Gates.
+
 ## Security Sprint 7B - Migration State Foundations
 
 - [x] HMAC-authentisierte append-only Lock-Transitionskette mit Vorgängerdigest,

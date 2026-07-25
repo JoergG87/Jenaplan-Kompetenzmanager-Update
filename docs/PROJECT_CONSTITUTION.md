@@ -1,5 +1,20 @@
 # Project Constitution
 
+## Entwicklungsgrenze Security Sprint 9
+
+Security Sprint 9 darf ausschließlich einen isolierten Writer, Verifier und
+Restore-Prototyp für einen verschlüsselten Backupcontainer mit synthetischer
+SQLCipher-Testdatenbank und synthetischen Dokumenten ergänzen.
+
+Jeder Container benötigt einen zufälligen 256-Bit-Backup-Key, einen
+DMK-gebundenen HKDF-SHA-256-Backup-Wrapping-Key und ein versioniertes
+AES-256-GCM-Envelope. Der Nutzdatenstrom verwendet Secretstream
+XChaCha20-Poly1305 und blockiert unbekannte oder inkonsistente Formate
+fail-closed.
+
+Produktintegration, Aktivierung des bestehenden `.jkmbackup`-Pfads, Startup,
+Login, UI, RuntimePaths, Pilot, RC, Release und Excel bleiben ausgeschlossen.
+
 ## Entwicklungsgrenze Security Sprint 7B - Migration State Foundations
 
 Security Sprint 7B darf isolierte, Qt-freie Foundations für eine

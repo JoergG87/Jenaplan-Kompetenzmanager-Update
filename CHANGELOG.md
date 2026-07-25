@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Security Sprint 9 - isolierter verschlüsselter Backupcontainer
+
+- Isolierte synthetische Foundation für versionierte, authentifizierte Backupcontainer ergänzt.
+- Ein zufälliger Backup-Key je Container wird über DMK, HKDF-zweckgetrennten
+  Backup-Wrapping-Key und ein AES-256-GCM-Envelope geschützt.
+- Writer, Verifier und Restore-Prototyp nutzen Secretstream XChaCha20-Poly1305;
+  Produkt-Backup, `.jkmbackup`-Pfad, Startup, UI, RC und Pilot bleiben unverändert.
+- Offene Folge-Gates: Packaging, Windows, realer Power-Loss, Same-User-ABA,
+  Retained-GC und weitergehende Zeroization.
+
 ## Security Sprint 8 - vereinfachter synthetischer Migrationsorchestrator
 
 ### Added

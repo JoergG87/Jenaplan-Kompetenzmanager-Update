@@ -1,5 +1,15 @@
 # Data Registry
 
+## Security Sprint 9 - isolierte synthetische Backupquellen
+
+| Datenquelle / Rolle | Inhalt | Grenze |
+|---|---|---|
+| `BackupContainerContextV1` | stabile Installations- und Datenbankkontext-IDs | nur injizierter Testkontext; Bindung in HKDF und Envelope-AAD |
+| synthetischer Test-Root | Marker, SQLCipher-Testquelle und künstliche Dokumente | privat, eigentümergeprüft, keine RuntimePaths oder Produktdaten |
+| Containerheader und Key-Envelope | Format-/Algorithmuswerte, Key-ID, DMK-Generation und geschützter Backup-Key | technisch sichtbar, keine Schülerdaten oder Klartextschlüssel |
+| verschlüsseltes Manifest und Eintragsrecords | Metadaten sowie SQLCipher-/Dokumentbytes | nur authentifizierter Secretstream-Recordstrom |
+| Retained-Container und Restore-Root | Publikations- beziehungsweise Abschlussbeleg | ausschließlich synthetischer Prototyp, kein Produkt-Backup |
+
 ## Security Sprint 7B - Kontrollprojektionen ohne neue Produktdatenquelle
 
 | Datenbestand / Projektion | Owner | Zweck | Persistenz |

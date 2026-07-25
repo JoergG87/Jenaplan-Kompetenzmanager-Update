@@ -1,5 +1,22 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Security Sprint 9 - isolierter verschlüsselter Backupcontainer
+
+Der Sprint ergänzt ausschließlich für synthetische Testdaten einen
+versionierten, authentifizierten und streamend verschlüsselten Backupcontainer.
+Der bestehende `.jkmbackup`-Writer, dessen Restore-Staging, Startup, Login, UI
+und RuntimePaths bleiben unverändert und importieren den neuen Pfad nicht.
+
+Jeder Container verwendet einen zufälligen 256-Bit-Backup-Key. DMK,
+HKDF-zweckgetrennter Backup-Wrapping-Key und AES-256-GCM-Envelope schützen den
+Schlüssel; Manifest und Nutzdaten werden mit Secretstream XChaCha20-Poly1305
+authentifiziert verschlüsselt.
+
+Writer, Verifier und Restore-Prototyp prüfen und veröffentlichen ausschließlich
+im privaten synthetischen Test-Root. Packaging, Windows, realer Power-Loss,
+Same-User-ABA, Retained-GC, weitergehende Zeroization und Produktintegration
+bleiben Folge-Gates; P0 = 0 und P1 = 0 im ADR-088-Bedrohungsmodell.
+
 ## Security Sprint 7B - Migration State Foundations
 
 Security Sprint 7B ergänzt drei Qt-freie Security-Foundations: eine

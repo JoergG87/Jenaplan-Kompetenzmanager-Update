@@ -1,5 +1,28 @@
 # Architekturentscheidungen
 
+## ADR-090 - Secretstream schützt den isolierten Sprint-9-Backupcontainer
+
+**Status:** Angenommen für den isolierten synthetischen Nachweis; keine
+Produktaktivierung und keine Ablösung des bestehenden Backup-/Restore-Pfads.
+
+Der Container verwendet `libsodium-secretstream-xchacha20poly1305` über PyNaCl.
+Ein eigenes AES-GCM-Chunkprotokoll wird nicht eingeführt: Secretstream übernimmt
+die kryptografische Verkettung sowie die Finalitätsprüfung.
+
+Jeder Container erhält einen zufälligen 256-Bit-Backup-Key. Aus dem DMK leitet
+HKDF-SHA-256 einen zweckgetrennten Backup-Wrapping-Key ab; AES-256-GCM schützt
+den Backup-Key im streng versionierten Envelope.
+
+Das Format besitzt einen versionierten Header, verschlüsseltes Manifest und
+einen strikt geordneten authentisierten Recordstrom mit genau einem Final-Tag.
+Unbekannte Versionen oder Algorithmen, Manipulation, Trunkierung, Umordnung,
+Duplikation und Zusatzdaten blockieren fail-closed.
+
+Writer, Verifier und Restore bleiben auf einen injizierten synthetischen,
+privaten Test-Root begrenzt. Der bestehende `.jkmbackup`-Produktpfad bleibt
+inaktiv. Packaging, Windows, realer Power-Loss, Same-User-ABA, Retained-GC und
+weitergehende Zeroization sind Folge-Gates.
+
 ## ADR-084 - Authentisierte Migrationszustände bleiben eine isolierte Domainfoundation
 
 **Status:** Angenommen für die isolierten Security-7B-Foundations; keine
