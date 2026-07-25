@@ -1,0 +1,6 @@
+# Isolated Security Sprint 9 only; not consumed by the product/RC build.
+# PyNaCl provides the established libsodium secretstream construction.
+PyNaCl==1.6.2
+
+# Restore verification uses the existing isolated SQLCipher test provider.
+sqlcipher3==0.6.2
