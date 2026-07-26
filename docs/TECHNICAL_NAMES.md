@@ -1,5 +1,37 @@
 # Technical Naming Registry
 
+## Vereinfachte Verschlüsselungsarchitektur nach ADR-088
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `DocumentWrappingKey` | Vom Database- und Backup-Zweck getrennter Wrapping-Key für zufällige Document-Keys | Core Security |
+| `DocumentKey` | Zufälliger Schlüssel genau eines versionierten Dokumentcontainers; ausschließlich geschützt im Envelope | Core Security |
+| `EncryptedDocumentContainer` | Geplanter versionierter authentifizierter Streaming-AEAD-Container für PDF, Bild, Anhang oder Bericht | Core Security / Documents |
+| `DocumentContainerContextV1` | Extern eingebrachter stabiler Installations-, Datenbank- und Dokumentkontext für HKDF, Envelope-AAD und Öffnungsprüfung; kein Produktpfad | Core Security |
+| `DocumentKeyEnvelopeV1` | Eigenes strikt versioniertes AES-256-GCM-Envelope für genau einen zufälligen Document-Key; integriert im Ein-Datei-Container, aber vom unveränderlichen Payload-Binding getrennt | Core Security |
+| `EncryptedDocumentManifestV1` | Kanonisches ausschließlich verschlüsseltes Manifest mit Dokument-/Storage-Identität, Generationen, Originalname, MIME-Typ, Größe, SHA-256, Chunkanzahl, Erstellungszeit und technischer App-/Formatversion | Core Security / Documents |
+| `SyntheticEncryptedDocumentServiceV1` | Injizierter Writer, Header-Inspector, Verifier, sequenzieller Reader, bewusster Export-, Rewrap-, Austausch- und Inventarprototyp ausschließlich für synthetische Sprint-10-Daten | Security Prototype |
+| `SYNTHETIC_DOCUMENT_TEST_ROOT_MARKER` | Feste Markerdatei, die zusammen mit Eigentümer-, Modus-, Unterverzeichnis- und Synthetikquellprüfung den Sprint-10-Test-Root mechanisch begrenzt | Security Prototype |
+| `DocumentStorageState` | Technische Lifecycle-Allowlist `ACTIVE`, `PREPARED`, `RETAINED`, `QUARANTINED`, `GC_ELIGIBLE`; keine Produkt- oder UI-Projektion | Security Prototype |
+| `SyntheticEncryptedDocumentWriterV1` | Streamender No-Clobber-Writer über gebundene synthetische Quelle, versteckte Retained-Datei, `fsync`, vollständige Neu-Verifikation und Hardlink-Publikation | Security Prototype |
+| `SyntheticEncryptedDocumentVerifierV1` | Schreibfreie Header-, Envelope-, Kontext-, Manifest-, Chunk-, Hash-, Größen-, Final-, EOF- und Dateiidentitätsprüfung | Security Prototype |
+| `SyntheticEncryptedDocumentReaderV1` | Kontrollierter zweiphasiger Reader: vollständige Vorabverifikation, danach sequenzielle zweite Entschlüsselung mit Erfolg erst nach Final-/EOF-/Hash-Prüfung | Security Prototype |
+| `SyntheticEncryptedDocumentExportV1` | Bewusster Testexport in einen neuen markergebundenen Root über exklusives no-follow-Tempziel, vollständige Vorab- und Abschlussverifikation, atomaren No-Clobber-Rename sowie descriptor-gebundenes Leeren eigener unvollständiger Ausgabe bei normalen Fehlern | Security Prototype |
+| `SyntheticDocumentKeyRewrapV1` | No-Clobber-Neuverpackung desselben Document-Keys unter neuem DMK/Envelope-Revision bei unverändert kopiertem Ciphertext; niemals in-place | Security Prototype |
+
+`EncryptedDocumentContainer`, `DocumentContainerContextV1`,
+`DocumentKeyEnvelopeV1`, `EncryptedDocumentManifestV1`,
+`SyntheticEncryptedDocumentServiceV1`,
+`SyntheticEncryptedDocumentWriterV1`,
+`SyntheticEncryptedDocumentVerifierV1`,
+`SyntheticEncryptedDocumentReaderV1`,
+`SyntheticEncryptedDocumentExportV1` und
+`SyntheticDocumentKeyRewrapV1` gehören ausschließlich zum isolierten
+synthetischen Security-Sprint-10-Pfad und sind nicht produktiv adressiert.
+`AppInstanceLock` bleibt ein registrierter Zielname und ist nicht produktiv
+aktiviert.
+
+
 ## Security Sprint 9 - isolierte technische Namen
 
 | Technischer Name | Bedeutung | Eigentümer |

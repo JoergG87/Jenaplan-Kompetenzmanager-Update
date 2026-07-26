@@ -1,5 +1,25 @@
 # Data Registry
 
+## Security Sprint 10 - isolierte synthetische Dokumentquellen
+
+| Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| injizierter `DocumentContainerContextV1` | stabile Installation-ID, Datenbankkontext-ID, erwartete Dokument-ID/-Generation und technische App-/Formatversion | nur im Aufrufer und verschlüsselten Manifest; stabile Identitäten binden HKDF und Envelope-AAD | isolierte Testquelle |
+| synthetischer Sprint-10-Test-Root | private feste Unterbereiche `sources`, `storage` und `exports` plus feste Marker | explizit injiziert; keine RuntimePaths, Produktroots oder frei adressierbaren Ziele | mechanische Testgrenze |
+| synthetische Dokumentquelle | künstliche Bytes mit festem Sprint-10-Synthetikmarker | reguläre, einfach verlinkte no-follow-Datei ausschließlich unter `sources`; nie verändert | isolierte Testquelle |
+| opaque Storage-Dateiname | zufällige UUIDv4-Storage-ID, Envelope-Revision und `.jkmedoc` | keine Dokument-, Schüler-, Fach-, Kurs- oder Originalnamen | bewusst sichtbar |
+| öffentlicher Dokumentheader v1 | Magic, Format-/Header-/Framing-/Algorithmusversion, Chunkgröße, zufällige Container-/Document-Key-ID, Key-Generation, Secretstream-Header und integriertes Envelope samt DMK-ID/-Generation und Revision | kanonisch; Payload-Binding und Envelope-AAD sind getrennt, aber auf dieselben technischen Identitäten gebunden | bewusst sichtbar |
+| verschlüsseltes Dokumentmanifest v1 | Dokument-ID/-Generation, Storage-ID, Document-Key-ID/-Generation, Installation-/Datenbankkontext, Originalname, MIME-Typ, Größe, Klartext-SHA-256, Chunkanzahl, Erstellungszeit und technische App-/Formatversion | erster authentisierter Secretstream-Record | ausschließlich verschlüsselt |
+| verschlüsselte Dokumentrecords | genau die synthetischen Quelldaten in fester Chunkreihenfolge | Secretstream-Records mit eigener Dokument-AAD-Domain, Ordinal, Chunkindex und erwarteter Größe | ausschließlich verschlüsselt |
+| versteckte Container-Retained-Datei | vollständig gefsyncter und kryptografisch verifizierter Container vor Veröffentlichung | bleibt als Retained-Evidenz; sichtbares Ziel entsteht per No-Clobber-Hardlink | isolierte Publikationsevidenz |
+| bewusster synthetischer Export | vollständig verifizierter Klartext nur unter dem markergebundenen `exports`-Root | exklusiv, no-follow, nie automatisch geöffnet; atomarer No-Clobber-Rename ist der Commitpunkt, normale Fehler leeren den Inhalt nur über den offenen eigenen FD, harter Abbruch davor kann nur eine versteckte nicht erfolgreiche Retained-Datei hinterlassen | isolierter Prototyp |
+| Storage-Inventar/GC-Plan | read-only Klassifikation bekannter Container als `ACTIVE`, `PREPARED`, `RETAINED`, `QUARANTINED` oder explizit `GC_ELIGIBLE` | Dry-Run; unbekannte oder ungebundene Dateien werden niemals automatisch gelöscht | isolierter Prototyp |
+
+Produktive `documents`-Tabelle, heutige Klartextpfade, Produkt-Dokumentroot,
+Backup-/Restore-Inventar, PDF-Artefakte, `security.sqlite`, RuntimePaths,
+Pilot-, RC-, Release- und Excel-Artefakte sind keine Sprint-10-Datenquellen.
+
+
 ## Security Sprint 9 - isolierte synthetische Backupquellen
 
 | Datenquelle / Rolle | Inhalt | Grenze |

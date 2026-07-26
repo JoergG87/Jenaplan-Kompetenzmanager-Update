@@ -1,5 +1,70 @@
 # Architekturentscheidungen
 
+## ADR-091 - Eigenes Secretstream-Dokumentformat mit integriertem Envelope
+
+**Status:** Angenommen für den isolierten synthetischen
+Security-Sprint-10-Nachweis; keine Produktaktivierung und keine Änderung
+bestehender Dokument-, Viewer-, Export- oder Backup-/Restore-Pfade.
+
+Der Dokumentcontainer verwendet wie der isolierte Backupnachweis
+`libsodium-secretstream-xchacha20poly1305`, aber ein vollständig eigenes
+Dokumentformat, eine eigene HKDF-Domain, eigene Envelope-/Record-AAD,
+Dokumentmetadaten und Fehlercodes. Backup-Envelope, -Header, -Manifest und
+-Container sind keine Dokumenttypen. Secretstream wurde ausgewählt, weil es
+begrenztes Streaming, kryptografisch verkettete Sequenz und einen expliziten
+`TAG_FINAL` bereitstellt. Ein eigenes chunked XChaCha20-Poly1305-Protokoll
+wurde für v1 verworfen, weil Nonce-Eindeutigkeit, Offset-/Indexauthentisierung,
+Sequenz, Trunkierung und Finalität dann zusätzlich selbst entworfen werden
+müssten. Sein Vorteil, echtes Random Access, bleibt ein mögliches Format-v2-
+Gate für einen späteren Viewer.
+
+Jede Dokumentgeneration besitzt einen zufälligen 256-Bit-Document-Key. Der DMK
+leitet per HKDF-SHA-256 einen ausschließlich dokumentbezogenen Wrapping-Key ab;
+AES-256-GCM schützt den Document-Key mit frischer Nonce in
+`DocumentKeyEnvelopeV1`. App-Passwort, Database-Key, Backup-Key und
+Document-Key werden weder gleichgesetzt noch voneinander abgeleitet.
+
+Envelope und Ciphertext liegen in einer Datei. Dies vermeidet Torn States,
+Vertauschung und atomare Veröffentlichung zweier Sidecars. Der Header ist
+logisch geteilt: Das unveränderliche Payload-Binding enthält Format,
+Algorithmen, Container-ID, Document-Key-ID/-Generation, Streamheader und
+Chunkvertrag. Secretstream-AAD bindet dessen Digest und den erwarteten
+Dokumentkontext, nicht die austauschbaren Nonce-, DMK- oder Ciphertextfelder
+des Envelopes. Envelope-AAD bindet Payload-Binding, Dokument-ID/-Generation,
+Installation-/Datenbankkontext, DMK-ID/-Generation und Envelope-Revision.
+Damit kann ein DMK-Wechsel denselben Document-Key in einer neuen
+No-Clobber-Datei rewrappen und den verschlüsselten Payload bytegleich
+übernehmen; ein In-place-Rewrap bleibt verboten.
+
+Der sichtbare Header enthält ausschließlich technische Format-, Algorithmus-,
+Framing-, Container-, Key-, Envelope- und Streamwerte. Dokument-ID,
+Originalname, MIME-Typ, Größe, Klartexthash, fachliche Zuordnung,
+Installations-/Datenbankkontext, Erstellungszeit und App-/Formatversion liegen
+im verschlüsselten Manifest beziehungsweise später zusätzlich in der
+SQLCipher-Fachdatenbank. Der Dateiname verwendet nur eine zufällige opaque
+Storage-ID und Envelope-Revision.
+
+Der Recordstrom besteht genau aus einem verschlüsselten Manifest, der
+manifestierten Zahl sequenzieller Dokumentchunks und einem leeren
+`TAG_FINAL`-Record; physisches EOF ist Pflicht. Reader und Export verifizieren
+vor Klartextausgabe vollständig und lesen danach sequenziell erneut. Ein
+vollständig gültiger Altcontainer-Replay ist ohne produktiven DB-Pointer oder
+externen monotonen Zustand nicht erkennbar. Produkt-Packaging von PyNaCl,
+Windows-ACL-/Reparse-Abnahme, echter Power-Loss, Viewer-/Random-Access-UX,
+produktive Lifecyclepersistenz und vollständige Schlüssel-Zeroization bleiben
+offene Integrations-Gates.
+
+Der isolierte bewusste Klartextexport publiziert sein exklusiv erzeugtes,
+verifiziertes Tempziel mit einem plattformspezifisch atomaren
+No-Clobber-Rename. Anders als die verschlüsselte Containerpublikation benötigt
+er keinen pfadbasierten Temp-Unlink. Normale Fehler leeren ausschließlich den
+noch offenen eigenen FD und lassen einen analysierbaren leeren Retained-Eintrag
+zurück. Ein Prozessabbruch vor dem Rename kann eine versteckte
+Retained-Klartextdatei nur im markergebundenen Exportroot hinterlassen; sie ist
+kein erfolgreicher Export. Produktive Restart-Bereinigung und Nutzerführung
+bleiben ausdrücklich ein Sprint-11-Gate.
+
+
 ## ADR-090 - Secretstream schützt den isolierten Sprint-9-Backupcontainer
 
 **Status:** Angenommen für den isolierten synthetischen Nachweis; keine

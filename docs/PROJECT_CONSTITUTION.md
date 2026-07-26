@@ -1,5 +1,69 @@
 # Project Constitution
 
+## Entwicklungsgrenze Security Sprint 10
+
+Security Sprint 10 darf ausschließlich eine isolierte Foundation für
+synthetische verschlüsselte Dokumente ergänzen. Der Pfad erhält Test-Root,
+Quelle, DMK, Dokument-/Installationskontext, Storage-ID und erwartete
+Generationen explizit per Dependency Injection. Er liest weder `RuntimePaths`
+noch Produktdaten und wird von `src/core`, `src/desktop_app`, Startup, Login,
+UI, produktiven Dokumentservices, Backup/Restore oder Releasecode nicht
+importiert.
+
+Jede Dokumentgeneration erhält einen zufälligen 256-Bit-Document-Key. Ein per
+HKDF-SHA-256 zweckgetrennter Document-Wrapping-Key unter dem DMK schützt ihn in
+einem eigenen AES-256-GCM-Envelope. Der Dokumentstrom verwendet libsodium
+Secretstream XChaCha20-Poly1305 mit strikt versioniertem eigenem Format,
+kanonischen AAD-Verträgen, genau einem Abschluss-Tag und physischem EOF.
+Backup-Key-, Backup-Envelope-, Backup-Manifest- und Backupcontainerformate
+werden nicht als Dokumentformat wiederverwendet.
+
+Der Container ist eine Datei mit integriertem Envelope. Ein unveränderliches
+Payload-Binding ist vom austauschbaren Envelope getrennt: Secretstream bindet
+Format, Container-, Storage- und Document-Key-Identität, Key-Generation,
+Streamheader und Chunkvertrag; Envelope-AAD bindet zusätzlich erwartete
+Dokument-ID/-Generation, Installation, Datenbankkontext, DMK und
+Envelope-Revision. Ein DMK-Schutzwechsel erzeugt immer einen neuen
+No-Clobber-Container und darf den bestehenden Container niemals in-place
+ändern. Datenrotation verwendet einen neuen zufälligen Document-Key und eine
+vollständige Neuverschlüsselung; Dokumentaustausch erzeugt eine neue
+Dokumentgeneration.
+
+Dateinamen enthalten ausschließlich eine zufällige opaque Storage-ID,
+Envelope-Revision und technische Erweiterung. Dokument-ID, Originalname,
+MIME-Typ, Klartextgröße/-hash, fachliche Zuordnung, Installation,
+Datenbankkontext, Erstellungszeit und App-/Formatversion liegen nur im
+verschlüsselten Manifest beziehungsweise im späteren SQLCipher-Produktmodell.
+Der sichtbare Header bleibt auf technisch notwendige Format-, Algorithmus-,
+Framing-, Container-, Key-, Envelope- und Streamwerte beschränkt.
+
+Writer, Verifier, Reader, bewusster Testexport, Rewrap,
+Generationsaustausch-Simulation und Retained-/GC-Dry-Run arbeiten nur in einem
+privaten, eigentümergeprüften, markergebundenen synthetischen Root. Quellen
+liegen außerhalb des verwalteten Storagebereichs, tragen einen festen
+Synthetikmarker und werden no-follow sowie identitätsgebunden gelesen.
+Container werden zunächst als versteckte Retained-Datei vollständig
+geschrieben, synchronisiert und neu verifiziert und erst danach per atomarem
+No-Clobber-Hardlink veröffentlicht. Bestehende Ziele, Quellen, alte
+Generationen, unbekannte Dateien und ausgetauschte Pfade werden weder
+überschrieben noch automatisch gelöscht.
+
+Secretstream v1 ist sequenziell und besitzt kein Random Access. Ein späterer
+interner Viewer muss den Container vor Ausgabe vollständig verifizieren und
+anschließend denselben gebundenen Inhalt erneut sequenziell lesen; echtes
+Seek/Random-Access benötigt ein neues, separat freizugebendes Format. Ein
+vollständig gültiger Altcontainer- oder Datenroot-Replay ist ohne produktiven
+SQLCipher-Pointer beziehungsweise externen monotonen Zustand nicht erkennbar
+und bleibt Integrations-Gate.
+
+Produktimport, Produktviewer, Produktdownload/-export, bestehende
+Dokumentpfade, Produktdatenmodell, Startup, Login, UI, Application Services,
+Backup/Restore, Migration realer Daten, Identity-VFS, Packaging, RC, Pilot,
+Appcast, Build, Release und die bekannte Exceldatei bleiben unverändert. Es
+gibt keine Produktaktivierung, keine rechtliche Compliance-Aussage und keine
+Garantie physischer sicherer Löschung auf SSD, APFS oder NTFS.
+
+
 ## Entwicklungsgrenze Security Sprint 9
 
 Security Sprint 9 darf ausschließlich einen isolierten Writer, Verifier und

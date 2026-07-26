@@ -1,5 +1,22 @@
 # View Data Ownership
 
+## Security Sprint 10 - Foundation ohne View
+
+Core Security besitzt Document-Key-Domain-Separation, eigenes Envelope,
+kanonisches Dokumentformat und fail-closed Parsing. Der isolierte
+Security-Prototyp besitzt Synthetikquellbindung, Streaming, Retained-/
+No-Clobber-Publikation, Verifikation, kontrollierten Reader, bewussten
+Testexport, Rewrap, Austauschsimulation und GC-Dry-Run ausschließlich im
+injizierten Sprint-10-Root.
+
+Es gibt keine View, kein ViewModel, keinen Desktop-Adapter und keine Startup-,
+Produktdokument-, Viewer-, Export-, Backup- oder Restore-Ownership. Widgets
+besitzen keine Schlüssel-, Container-, Manifest-, Lifecycle-, Repository-
+oder Dateisystemlogik. Eine spätere Produktintegration benötigt eine eigene
+Product-Owner-, Datenmodell-, Lifecycle-, UX-, Ownership- und
+Mapping-Freigabe.
+
+
 ## Security Sprint 7B - Foundation ohne View
 
 Security Sprint 7B besitzt keine View, kein ViewModel, keinen Desktop-Adapter

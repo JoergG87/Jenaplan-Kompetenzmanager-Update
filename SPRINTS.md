@@ -1,5 +1,22 @@
 # Sprintplanung
 
+## Security-Roadmap nach ADR-088
+
+### Security Sprint 10 - Dokumentverschlüsselung
+
+**Status:** Isolierte synthetische Foundation abgeschlossen; P0 = 0, P1 = 0.
+Keine Produktaktivierung.
+
+- [x] Zufällige Document-Keys unter getrenntem Document-Wrapping-Key
+  verwenden.
+- [x] Synthetische PDF-, Bild-, Anhang- und Berichtsdaten in einem versionierten
+  Streaming-AEAD-Container schützen.
+- [x] Zweiphasigen Reader als Grundlage für spätere Vorschau entwerfen; echte
+  Viewer-/Druck-UX bleibt Sprint 11.
+- [x] Klartextexport ausschließlich als bewusste isolierte Aktion mit klarer
+  Schutz- und Commitgrenze behandeln.
+
+
 ## Security Sprint 9 - Verschlüsseltes Backupformat
 
 **Status:** Isolierte synthetische Foundation abgeschlossen; P0 = 0, P1 = 0,

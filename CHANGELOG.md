@@ -1,5 +1,54 @@
 # CHANGELOG
 
+## Security Sprint 10 - isolierte verschlüsselte Dokumentablage
+
+### Architecture
+
+- Eigenes versioniertes Dokumentcontainerformat auf Basis von libsodium
+  Secretstream XChaCha20-Poly1305 ausgewählt; Backupformat und
+  Backup-Domainen bleiben vollständig getrennt.
+- Zufälligen 256-Bit-Document-Key pro Dokumentgeneration,
+  HKDF-SHA-256-zweckgetrennten Document-Wrapping-Key und integriertes
+  AES-256-GCM-Envelope mit getrenntem unveränderlichem Payload-Binding
+  festgelegt.
+- Opaque Storage-ID, verschlüsseltes Metadatenmanifest, unveränderliche
+  Generationen, No-Clobber-Publikation, DMK-Rewrap ohne Datenrotation und
+  getrennte vollständige Document-Key-Rotation definiert.
+
+### Added
+
+- Isolierten synthetischen Writer, Header-Inspector, read-only Verifier,
+  zweiphasigen sequenziellen Reader, bewussten Testexport,
+  Generationsaustausch-/Rewrap-Prototyp und Retained-/GC-Dry-Run ergänzt.
+- Bewussten Testexport per atomarem No-Clobber-Rename veröffentlicht; bei
+  normalen Fehlern den Inhalt nur über den offenen eigenen FD geleert und
+  harte Abbrüche vor dem Commitpunkt als nicht erfolgreichen Retained-Stand
+  im isolierten Exportroot abgegrenzt.
+- Manipulation, falsche Identitäten/Generationen/Schlüssel, Trunkierung,
+  Zusatzdaten, Chunkfehler, Symlinks, Traversal, Zielkonflikte,
+  Identitätswechsel und echte Prozessabbrüche fail-closed abgedeckt.
+
+### Tests
+
+- 73 Sprint-10-Fokus- und Crash-Tests grün; darunter 21 echte
+  Subprozessabbrüche an Writer-, Export- und Generationsgrenzen.
+- Gesamtsuite: 1595 bestanden, 20 übersprungen, 67 Subtests bestanden;
+  `compileall`, `pip check`, `git diff --check`, Produktimport-Isolation sowie
+  lokale Secret-, Artefakt- und Klartextscans bestanden.
+
+### Boundaries
+
+- Keine Änderung oder Aktivierung von Produktimport, Produktviewer/-export,
+  bestehendem Dokumentmodell, Startup, Login, UI, Application Services,
+  Backup/Restore, Identity-VFS, Packaging, Pilot, RC, Appcast, Release oder
+  Excel.
+- Secretstream v1 ist sequenziell; Random Access, vollständige Replaypolicy,
+  produktive Pointer-/Lifecyclepersistenz, Windows/Packaging und reale
+  Power-Loss-Abnahme bleiben Folge-Gates.
+- P0 = 0 und P1 = 0 im isolierten synthetischen Sprint-10-Pfad.
+  Produktintegration bleibt ausdrücklich NO-GO.
+
+
 ## Security Sprint 9 - isolierter verschlüsselter Backupcontainer
 
 - Isolierte synthetische Foundation für versionierte, authentifizierte Backupcontainer ergänzt.

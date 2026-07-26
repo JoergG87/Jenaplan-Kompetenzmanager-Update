@@ -1,5 +1,22 @@
 # UI Data Mapping
 
+## Security Sprint 10 - keine UI-, Startup- oder Dokumentprojektion
+
+Writer, Headerprüfung, Verifier, Reader, Testexport, Rewrap,
+Generationsaustausch, Storage-Inventar sowie Envelope-, Manifest-, Chunk- und
+Fehlerzustände des isolierten verschlüsselten Dokumentcontainers werden nicht
+in PySide, ViewModels, Desktop-Adapter, Startup, Login, Einstellungen,
+Schülerprofil, Beobachtungsdialog, Produktviewer, Export oder Backup/Restore
+projiziert. Es entstehen keine sichtbaren Felder, Aktionen, Fortschrittsphasen,
+Pfadwähler, Vorschauen, Cleanup-Buttons oder automatischen
+Migrationszustände.
+
+Eine spätere Produktintegration muss den bewussten Klartextexport und dessen
+Hinweis, dass die Datei außerhalb der App unverschlüsselt ist, separat
+freigeben. DMK, Wrapping-Key, Document-Key, Envelope, interne IDs,
+Containerhashes und Dateisystemdetails bleiben unsichtbar.
+
+
 ## Security Sprint 7B - Keine UI- oder Startup-Projektion
 
 Security Sprint 7B ergänzt keine sichtbaren Felder, Aktionen, Dialoge,

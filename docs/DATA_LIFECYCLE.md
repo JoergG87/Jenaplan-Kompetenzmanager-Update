@@ -1,5 +1,109 @@
 # Data Lifecycle
 
+## Security Sprint 10 - isolierter Dokumentcontainer-Lifecycle
+
+### Neue Dokumentgeneration schreiben
+
+1. Privaten markergebundenen Test-Root sowie seine festen, nicht symlinkenden
+   `sources`-, `storage`- und `exports`-Unterbereiche prüfen. Produktpfade und
+   unbekannte Roots blockieren.
+2. Die synthetische Quelle unter `sources` no-follow und identitätsgebunden
+   öffnen. Reguläre Datei, einfacher Link, feste Synthetiksignatur, erlaubter
+   MIME-Typ, Größenlimit, unveränderte Identität und begrenzte Reads prüfen.
+3. Opaque Storage-ID, Container-ID, zufälligen 256-Bit-Document-Key und
+   Document-Key-ID erzeugen. Dokumentgeneration, Key-Generation und
+   Envelope-Revision sind getrennte positive monotone Werte.
+4. Einen eigenen HKDF-SHA-256-Document-Wrapping-Key aus dem DMK ableiten und
+   den Document-Key in einem integrierten `DocumentKeyEnvelopeV1` per
+   AES-256-GCM schützen. Envelope-AAD bindet Payload-Binding, Dokumentkontext,
+   DMK und Envelope-Revision.
+5. Das kanonische verschlüsselte Manifest erzeugen. Es bindet Dokument- und
+   Storage-ID, Generationen, technischen Kontext, Originalname, MIME-Typ,
+   Klartextgröße/-hash, Chunkvertrag, Erstellungszeit und App-/Formatversion.
+6. Magic, längenbegrenzten kanonischen Header, Manifestrecord und
+   Dokumentchunks streamend in eine neue versteckte Retained-Datei schreiben.
+   Eigene Record-AAD bindet Payload-Digest, Dokumentkontext, Manifestdigest,
+   Ordinal, Chunkindex und erwartete Größe.
+7. Genau einen leeren Secretstream-`TAG_FINAL`-Record schreiben, Datei
+   synchronisieren, schließen, Verzeichnis synchronisieren und den Container
+   vollständig neu öffnen und verifizieren.
+8. Erst den verifizierten Retained-Stand per atomarem No-Clobber-Hardlink unter
+   dem opaque Zielnamen veröffentlichen, das Verzeichnis erneut
+   synchronisieren und das veröffentlichte Ziel vollständig erneut
+   verifizieren.
+9. Erst danach Erfolg melden. Quelle und bestehende Ziele bleiben unverändert;
+   vor dem Hardlink existiert kein sichtbarer Zielcontainer.
+
+### Headerprüfung, Verifikation und Reader
+
+Die Headerprüfung liest nur Magic, Längenrahmen und kanonischen sichtbaren
+Header und schreibt nichts. Vollverifikation öffnet den Container no-follow,
+prüft Format, Algorithmen, erwarteten Dokument-/Installationskontext,
+Envelope, Manifest, Recordreihenfolge, Final-Tag, physisches EOF,
+Klartextgröße/-hash und unveränderte Containeridentität.
+
+Der kontrollierte Reader führt zuerst eine vollständige schreibfreie
+Verifikation ohne Klartextausgabe aus. Danach entschlüsselt er denselben
+erwarteten Container sequenziell erneut. Ausgegebene Chunks gelten bis zum
+erfolgreichen `finish` nach Final-/EOF-/Hash- und Identitätsprüfung als
+vorläufig; jeder Fehler ruft `abort` auf und darf nicht als Erfolg behandelt
+werden. Secretstream v1 bietet kein Seek/Random Access.
+
+### Bewusster synthetischer Export
+
+Export ist nur ein expliziter isolierter Methodenaufruf. Nach vollständiger
+Vorabverifikation wird ein neuer, exklusiver, no-follow Klartextstand unter
+`exports` versteckt geschrieben, synchronisiert, gegen Manifestgröße und
+-hash geprüft und per plattformspezifisch atomarem No-Clobber-Rename
+veröffentlicht. Erst danach wird Erfolg gemeldet. Eigene unvollständige
+Tempinhalte werden bei normalen Fehlerpfaden ausschließlich über den noch
+offenen, identitätsgebundenen eigenen Deskriptor geleert; es gibt keinen
+pfadbasierten Cleanup-Unlink. Der leere Retained-Dateieintrag bleibt
+analysierbar. Ein harter Prozessabbruch vor dem Rename kann eine versteckte,
+eindeutig nicht veröffentlichte Retained-Datei ausschließlich im
+markergebundenen Exportroot hinterlassen. Sie gilt nie als erfolgreicher
+Export. Vorhandene, symlinkende oder fremde Ziele bleiben unverändert. Es gibt
+keine automatische Öffnung oder Vorschau. Ein späteres Produkt muss deutlich
+anzeigen, dass der Export außerhalb der App unverschlüsselt ist, und benötigt
+eine eigene Restart-/Cleanup-UX.
+
+### Austausch und Rotation
+
+- Dokumentaustausch erzeugt eine vollständig neue Dokumentgeneration mit
+  neuem Storage-, Container- und zufälligem Document-Key. Erst nach
+  vollständiger Verifikation darf ein injizierter Pointer-Switch als
+  erfolgreich simuliert werden. Bei Fehlschlag bleibt die alte Generation
+  maßgeblich und nutzbar.
+- DMK-Schutzwechsel rewrappt denselben Document-Key mit frischer Nonce und
+  höherer Envelope-Revision in eine neue No-Clobber-Containerdatei. Der
+  verschlüsselte Payload wird unverändert kopiert, anschließend unter dem
+  neuen DMK vollständig verifiziert und erst dann für einen Pointer-Switch
+  angeboten. Keine Datei wird in-place geändert.
+- Datenrotation erzeugt einen neuen zufälligen Document-Key, erhöht dessen
+  Generation und verschlüsselt den gesamten Payload in einen neuen Container.
+  Der Sprint-10-Writer stellt dieses isolierte Primitive mit expliziter
+  Key-Generation bereit; eine produktive Pointer-/Rotationsoperation ist nicht
+  aktiviert. Die Datenrotation ist von einem reinen DMK-Rewrap und von einem
+  inhaltlichen Dokumentaustausch getrennt.
+- Der Austauschprototyp bestätigt die vorbereitete Generation unmittelbar vor
+  dem simulierten Pointer-Switch erneut. Nur ein eindeutig erfolgreicher
+  Callback liefert die vorhandene Retained-Hardlink-Evidenz der alten
+  Generation im Ergebnis; bei Callback-Ausnahme ist der Umschaltzustand
+  ausdrücklich unbekannt und muss ein späteres Produkt transaktional
+  rekonstruieren.
+
+### Retained, Quarantäne und GC
+
+`ACTIVE`, `PREPARED`, `RETAINED`, `QUARANTINED` und `GC_ELIGIBLE` sind
+technische Lifecyclezustände des isolierten Inventars. Ein Neustartscan ist
+read-only, folgt keinen Symlinks und klassifiziert ausschließlich bekannte
+Containerformen. Unbekannte, ungebundene, beschädigte oder kontextfremde
+Dateien werden niemals automatisch gelöscht. `GC_ELIGIBLE` setzt eine
+explizite bekannte Retained-Allowlist, erfolgreichen Bestandsabgleich und
+vollständige Verifikation voraus. Sprint 10 liefert nur einen Dry-Run und
+behauptet keine sichere physische Löschung.
+
+
 ## Security Sprint 9 - isolierter Backupcontainer-Lifecycle
 
 1. Der injizierte private Test-Root, DMK, technische Kontext und synthetische
