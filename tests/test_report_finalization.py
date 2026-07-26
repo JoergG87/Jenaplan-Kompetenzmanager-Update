@@ -588,7 +588,7 @@ class ReportFinalizationTest(unittest.TestCase):
 
 
 class ReportFinalizationMigrationTest(unittest.TestCase):
-    def test_additive_idempotent_migration_preserves_filled_report_draft_tables(self) -> None:
+    def test_unknown_partial_schema_is_rejected_and_preserves_report_draft_tables(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "migration.sqlite"
             create_sqlite_seed_database(path)
@@ -643,9 +643,13 @@ class ReportFinalizationMigrationTest(unittest.TestCase):
                 connection.execute("DROP TABLE learning_reports")
                 connection.commit()
 
+            before = path.read_bytes()
+            from src.core.database_compatibility import DatabaseCompatibilityError
+
             database = SQLiteDatabase(path)
-            database.initialize_schema()
-            database.initialize_schema()
+            with self.assertRaises(DatabaseCompatibilityError):
+                database.initialize_schema()
+            self.assertEqual(path.read_bytes(), before)
 
             with database.connect() as connection:
                 main = connection.execute(
@@ -683,8 +687,8 @@ class ReportFinalizationMigrationTest(unittest.TestCase):
                 observation.observation_id,
             )
             self.assertEqual(chart["chart_type"], "documentation_coverage")
-            self.assertIn("learning_reports", tables)
-            self.assertIn("learning_report_revisions", tables)
+            self.assertNotIn("learning_reports", tables)
+            self.assertNotIn("learning_report_revisions", tables)
 
 
 if __name__ == "__main__":

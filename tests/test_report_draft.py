@@ -393,7 +393,7 @@ class ReportDraftPersistenceTest(unittest.TestCase):
 
 
 class ReportDraftMigrationTest(unittest.TestCase):
-    def test_initialize_schema_adds_report_tables_without_replacing_existing_rows(self) -> None:
+    def test_unknown_partial_schema_is_rejected_without_replacing_existing_rows(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "existing.sqlite"
             connection = sqlite3.connect(path)
@@ -414,32 +414,12 @@ class ReportDraftMigrationTest(unittest.TestCase):
             connection.commit()
             connection.close()
 
-            database = SQLiteDatabase(path)
-            database.initialize_schema()
+            before = path.read_bytes()
+            from src.core.database_compatibility import DatabaseCompatibilityError
 
-            with database.connect() as migrated:
-                tables = {
-                    row["name"]
-                    for row in migrated.execute(
-                        "SELECT name FROM sqlite_master WHERE type = 'table'"
-                    ).fetchall()
-                }
-                group = migrated.execute(
-                    "SELECT group_name FROM groups WHERE group_id = ?",
-                    ("GRP-KEEP",),
-                ).fetchone()
-            self.assertEqual(
-                {
-                    "report_drafts",
-                    "report_draft_subjects",
-                    "report_draft_competencies",
-                    "report_draft_observations",
-                    "report_draft_charts",
-                }
-                - tables,
-                set(),
-            )
-            self.assertEqual(group["group_name"], "Bestehende Gruppe")
+            with self.assertRaises(DatabaseCompatibilityError):
+                SQLiteDatabase(path).initialize_schema()
+            self.assertEqual(path.read_bytes(), before)
 
 
 if __name__ == "__main__":

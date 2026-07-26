@@ -759,7 +759,7 @@ class SQLiteSpikeTest(unittest.TestCase):
             self.assertFalse(competency.active)
             self.assertFalse(competency.catalog_default_active)
 
-    def test_competency_schema_migrates_existing_database_with_safe_defaults(
+    def test_unknown_legacy_competency_schema_is_rejected_without_mutation(
         self,
     ) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -871,30 +871,12 @@ class SQLiteSpikeTest(unittest.TestCase):
                 )
                 connection.commit()
 
-            database = SQLiteDatabase(database_path)
-            database.initialize_schema()
-            competency = SQLiteCompetencyRepository(database).get_competency(
-                "CMP-OLD001"
-            )
-            with database.connect() as connection:
-                ratings = connection.execute(
-                    """
-                    SELECT observation_id, competency_id, rating
-                    FROM observation_competency_ratings
-                    """
-                ).fetchall()
+            before = database_path.read_bytes()
+            from src.core.database_compatibility import DatabaseCompatibilityError
 
-        self.assertIsNotNone(competency)
-        if competency is not None:
-            self.assertFalse(competency.active)
-            self.assertEqual(competency.learning_stage, "cross_stage")
-            self.assertEqual(competency.catalog_status, "current")
-            self.assertTrue(competency.catalog_default_active)
-            self.assertEqual(competency.activation_group_key, "")
-        self.assertEqual(
-            [tuple(row) for row in ratings],
-            [("OBS-OLD001", "CMP-OLD001", "+")],
-        )
+            with self.assertRaises(DatabaseCompatibilityError):
+                SQLiteDatabase(database_path).initialize_schema()
+            self.assertEqual(database_path.read_bytes(), before)
 
     def test_curriculum_catalog_accepts_old_csv_without_catalog_model_columns(
         self,

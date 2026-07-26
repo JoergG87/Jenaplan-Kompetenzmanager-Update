@@ -484,7 +484,7 @@ class LearningConferenceDraftPersistenceTest(unittest.TestCase):
 
 
 class LearningConferenceDraftMigrationTest(unittest.TestCase):
-    def test_migration_is_additive_idempotent_and_keeps_master_data(self) -> None:
+    def test_unknown_partial_schema_is_rejected_without_changing_master_data(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "existing.sqlite"
             connection = sqlite3.connect(path)
@@ -505,35 +505,12 @@ class LearningConferenceDraftMigrationTest(unittest.TestCase):
             connection.commit()
             connection.close()
 
-            database = SQLiteDatabase(path)
-            database.initialize_schema()
-            database.initialize_schema()
+            before = path.read_bytes()
+            from src.core.database_compatibility import DatabaseCompatibilityError
 
-            with database.connect() as migrated:
-                tables = {
-                    row["name"]
-                    for row in migrated.execute(
-                        "SELECT name FROM sqlite_master WHERE type = 'table'"
-                    ).fetchall()
-                }
-                group = migrated.execute(
-                    "SELECT group_name FROM groups WHERE group_id = ?",
-                    ("GRP-KEEP",),
-                ).fetchone()
-
-        self.assertEqual(
-            {
-                "learning_conference_drafts",
-                "learning_conference_draft_subjects",
-                "learning_conference_draft_cross_topics",
-                "learning_conference_draft_competencies",
-                "learning_conference_draft_observations",
-                "learning_conference_draft_charts",
-            }
-            - tables,
-            set(),
-        )
-        self.assertEqual(group["group_name"], "Bestehende Gruppe")
+            with self.assertRaises(DatabaseCompatibilityError):
+                SQLiteDatabase(path).initialize_schema()
+            self.assertEqual(path.read_bytes(), before)
 
 
 if __name__ == "__main__":

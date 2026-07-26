@@ -25,6 +25,7 @@ from src.application.commands.restore import (
 )
 from src.core.backup import SQLiteBackupEngine
 from src.core.database_compatibility import DatabaseCompatibilityStatus
+from src.core.persistence_events import SQLitePersistenceEventRepository
 from src.core.restore import (
     RestoreCompatibilityError,
     RestoreError,
@@ -107,6 +108,52 @@ def _create_backup(paths: RuntimePaths) -> Path:
         )
     )
     return result.path
+
+
+def _set_v1_schema(paths: RuntimePaths, *, user_version: int = 1) -> None:
+    with sqlite3.connect(paths.database) as connection:
+        connection.execute("DROP TABLE persistence_events")
+        connection.execute(f"PRAGMA user_version = {user_version}")
+
+
+def _insert_historical_freshness_tie(paths: RuntimePaths) -> None:
+    with sqlite3.connect(paths.database) as connection:
+        connection.execute(
+            """
+            INSERT INTO competencies (
+                competency_id, subject_id, subject_name, subject_full_name,
+                official_subject_name, school_context_name, grade_band, label,
+                description, learning_stage, learning_area, competency_group,
+                source_reference, catalog_status, activation_group_key,
+                sort_order, active, catalog_default_active, is_core_subject
+            ) VALUES (
+                'CMP-RESTORE-001', 'MAT', 'Mathematik', '', '', '', '',
+                'Zahlen', 'Zahlen', 'cross_stage', 'Zahlen', 'Grundlagen',
+                '', 'current', '', 0, 1, 1, 1
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO observation_competency_ratings (
+                observation_id, competency_id, subject_id, subject_display_name,
+                learning_area, competency_group, competency_text, rating
+            ) VALUES (
+                'OBS-000001', 'CMP-RESTORE-001', 'MAT', 'Mathematik',
+                'Zahlen', 'Grundlagen', 'Zahlen', '+'
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO student_competency_confirmations (
+                student_id, competency_id, confirmed_rating, confirmed_at, note
+            ) VALUES (
+                'STU-000001', 'CMP-RESTORE-001', '+',
+                '2026-01-02T00:00:00+00:00', ''
+            )
+            """
+        )
 
 
 def _zip_payload(path: Path) -> dict[str, bytes]:
@@ -284,7 +331,7 @@ def test_valid_v1_backup_produces_exact_preview(tmp_path: Path) -> None:
     result = RestoreVerifier().verify(backup)
     assert result.compatibility.status is DatabaseCompatibilityStatus.EXACT
     assert result.preview.compatibility_status is DatabaseCompatibilityStatus.EXACT
-    assert result.preview.sqlite_user_version == 1
+    assert result.preview.sqlite_user_version == 2
     assert result.preview.students_count == 1
     assert result.preview.observations_count == 1
 
@@ -293,8 +340,7 @@ def test_known_v0_backup_is_migration_required_and_old_format_remains_verifiable
     tmp_path: Path,
 ) -> None:
     paths = _runtime(tmp_path)
-    with sqlite3.connect(paths.database) as connection:
-        connection.execute("PRAGMA user_version = 0")
+    _set_v1_schema(paths, user_version=0)
     backup = _create_backup(paths)
     result = RestoreApplicationService().verify(VerifyRestoreBackupQuery(backup))
     assert result.compatibility.status is (
@@ -489,7 +535,7 @@ def test_valid_v1_backup_is_prepared_with_rebased_managed_document(
     )
     assert result.status == "completed"
     assert result.migrated is False
-    assert _user_version(prepared_database) == 1
+    assert _user_version(prepared_database) == 2
     assert prepared_file.read_bytes() == b"private managed bytes"
     with sqlite3.connect(prepared_database) as connection:
         rebased = connection.execute(
@@ -512,8 +558,7 @@ def test_known_v0_is_migrated_only_in_staging_and_rows_remain_identical(
 ) -> None:
     paths = _runtime(tmp_path)
     _insert_personal_data(paths, managed_file=True)
-    with sqlite3.connect(paths.database) as connection:
-        connection.execute("PRAGMA user_version = 0")
+    _set_v1_schema(paths, user_version=0)
     backup = _create_backup(paths)
     before = _live_state(paths)
     result = RestoreApplicationService(now=lambda: FIXED_NOW).prepare_staging(
@@ -524,7 +569,7 @@ def test_known_v0_is_migrated_only_in_staging_and_rows_remain_identical(
     prepared_database = staging / "prepared" / "kompetenzmanager.sqlite"
     assert result.migrated is True
     assert _user_version(source_database) == 0
-    assert _user_version(prepared_database) == 1
+    assert _user_version(prepared_database) == 2
     assert _user_version(paths.database) == 0
     with sqlite3.connect(source_database) as source, sqlite3.connect(
         prepared_database
@@ -539,18 +584,53 @@ def test_known_v0_is_migrated_only_in_staging_and_rows_remain_identical(
     assert _live_state(paths) == before
 
 
+def test_v1_backup_restore_backfills_historical_unknown_freshness(
+    tmp_path: Path,
+) -> None:
+    paths = _runtime(tmp_path)
+    _insert_personal_data(paths)
+    _insert_historical_freshness_tie(paths)
+    _set_v1_schema(paths, user_version=1)
+    backup = _create_backup(paths)
+
+    result = RestoreApplicationService(now=lambda: FIXED_NOW).prepare_staging(
+        PrepareRestoreStagingCommand(backup, paths, "RST-V1-EVENT-BACKFILL")
+    )
+    prepared_database = (
+        paths.root
+        / "restore-staging"
+        / "RST-V1-EVENT-BACKFILL"
+        / "prepared"
+        / "kompetenzmanager.sqlite"
+    )
+
+    assert result.migrated is True
+    assert _user_version(prepared_database) == 2
+    freshness = SQLitePersistenceEventRepository(
+        SQLiteDatabase(prepared_database)
+    ).freshness_for_student("STU-000001")
+    assert freshness["CMP-RESTORE-001"].state == "confirmation_unknown"
+    with sqlite3.connect(prepared_database) as connection:
+        assert connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM persistence_events
+            WHERE competency_id = 'CMP-RESTORE-001'
+              AND ordering_state = 'unknown'
+            """
+        ).fetchone()[0] == 2
+
+
 def test_migration_failure_rolls_back_prepared_database_and_marks_failed(
     tmp_path: Path,
 ) -> None:
     paths = _runtime(tmp_path)
     _insert_personal_data(paths)
-    with sqlite3.connect(paths.database) as connection:
-        connection.execute("PRAGMA user_version = 0")
+    _set_v1_schema(paths, user_version=0)
     backup = _create_backup(paths)
     service = RestoreApplicationService(now=lambda: FIXED_NOW)
-    with mock.patch.object(
-        service.staging_service,
-        "_set_v1_user_version",
+    with mock.patch(
+        "src.core.restore.migrate_persistence_events",
         side_effect=sqlite3.OperationalError("simulierter Migrationsfehler"),
     ):
         with pytest.raises(RestoreMigrationError):

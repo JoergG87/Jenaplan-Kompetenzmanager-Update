@@ -15,6 +15,7 @@ from src.core.database_compatibility import (
     DATABASE_COMPATIBILITY_VERSION,
     KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT,
     V1_COMPATIBILITY_FINGERPRINT,
+    V2_COMPATIBILITY_FINGERPRINT,
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityPolicy,
     DatabaseCompatibilityStatus,
@@ -26,6 +27,14 @@ from src.core.sqlite_store import SQLiteDatabase
 
 
 def _v1_database(path: Path) -> Path:
+    SQLiteDatabase(path).initialize_schema()
+    with sqlite3.connect(path) as connection:
+        connection.execute("DROP TABLE persistence_events")
+        connection.execute("PRAGMA user_version = 1")
+    return path
+
+
+def _v2_database(path: Path) -> Path:
     SQLiteDatabase(path).initialize_schema()
     return path
 
@@ -40,17 +49,43 @@ def _set_user_version(path: Path, value: int) -> None:
         connection.execute(f"PRAGMA user_version = {value}")
 
 
-def test_new_empty_database_receives_user_version_one(tmp_path: Path) -> None:
-    database = _v1_database(tmp_path / "new.sqlite")
-    assert _user_version(database) == DATABASE_COMPATIBILITY_VERSION == 1
+def test_new_empty_database_receives_user_version_two(tmp_path: Path) -> None:
+    database = _v2_database(tmp_path / "new.sqlite")
+    assert _user_version(database) == DATABASE_COMPATIBILITY_VERSION == 2
 
 
-def test_existing_unversioned_database_remains_unversioned(tmp_path: Path) -> None:
-    database = _v1_database(tmp_path / "existing.sqlite")
+def test_v2_schema_with_unversioned_metadata_is_rejected_unchanged(
+    tmp_path: Path,
+) -> None:
+    database = _v2_database(tmp_path / "existing.sqlite")
     _set_user_version(database, 0)
     before = database.read_bytes()
-    SQLiteDatabase(database).initialize_schema()
+    with pytest.raises(UnknownDatabaseSchemaError):
+        SQLiteDatabase(database).initialize_schema()
     assert _user_version(database) == 0
+    assert database.read_bytes() == before
+
+
+def test_newer_live_database_is_rejected_before_any_schema_mutation(
+    tmp_path: Path,
+) -> None:
+    database = _v2_database(tmp_path / "newer.sqlite")
+    _set_user_version(database, DATABASE_COMPATIBILITY_VERSION + 1)
+    before = database.read_bytes()
+    with pytest.raises(UnsupportedDatabaseVersionError):
+        SQLiteDatabase(database).initialize_schema()
+    assert database.read_bytes() == before
+
+
+def test_unknown_live_schema_is_rejected_before_any_schema_mutation(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "unknown.sqlite"
+    with sqlite3.connect(database) as connection:
+        connection.execute("CREATE TABLE foreign_product (value TEXT)")
+    before = database.read_bytes()
+    with pytest.raises(UnknownDatabaseSchemaError):
+        SQLiteDatabase(database).initialize_schema()
     assert database.read_bytes() == before
 
 
@@ -72,13 +107,13 @@ def test_schema_and_user_version_are_rolled_back_together(tmp_path: Path) -> Non
     assert objects == []
 
 
-def test_exact_v1_is_accepted(tmp_path: Path) -> None:
+def test_exact_v2_is_accepted(tmp_path: Path) -> None:
     result = DatabaseCompatibilityInspector().inspect(
-        _v1_database(tmp_path / "exact.sqlite")
+        _v2_database(tmp_path / "exact.sqlite")
     )
     assert result.status is DatabaseCompatibilityStatus.EXACT
-    assert result.version.compatibility_version == 1
-    assert result.schema_identity.fingerprint == V1_COMPATIBILITY_FINGERPRINT
+    assert result.version.compatibility_version == 2
+    assert result.schema_identity.fingerprint == V2_COMPATIBILITY_FINGERPRINT
 
 
 def test_known_unversioned_predecessor_requires_migration(tmp_path: Path) -> None:
@@ -112,8 +147,8 @@ def test_unknown_v0_and_v1_schema_are_incompatible(
 
 
 def test_newer_database_version_is_incompatible(tmp_path: Path) -> None:
-    database = _v1_database(tmp_path / "newer.sqlite")
-    _set_user_version(database, 2)
+    database = _v2_database(tmp_path / "newer.sqlite")
+    _set_user_version(database, 3)
     result = DatabaseCompatibilityInspector().inspect(database)
     assert result.status is DatabaseCompatibilityStatus.INCOMPATIBLE
     with pytest.raises(UnsupportedDatabaseVersionError, match="neuer"):
@@ -123,7 +158,7 @@ def test_newer_database_version_is_incompatible(tmp_path: Path) -> None:
 def test_app_version_does_not_influence_database_compatibility(
     tmp_path: Path,
 ) -> None:
-    database = _v1_database(tmp_path / "independent.sqlite")
+    database = _v2_database(tmp_path / "independent.sqlite")
     before = DatabaseCompatibilityInspector().inspect(database)
     application_versions = ("0.1.2", "99.42.7", "unknown")
     after = tuple(DatabaseCompatibilityInspector().inspect(database) for _ in application_versions)
@@ -216,15 +251,16 @@ def test_sqlite_internal_structures_and_sequence_values_are_excluded(
     assert "sqlite_autoindex" not in canonical
 
 
-def test_known_pilot_database_user_version_is_not_changed(tmp_path: Path) -> None:
+def test_known_pilot_database_is_migrated_to_v2(tmp_path: Path) -> None:
     source = Path("data/kompetenzmanager.sqlite")
     if not source.is_file():
         pytest.skip("Keine lokale Pilotdatenbank vorhanden.")
     copied = tmp_path / source.name
     shutil.copy2(source, copied)
-    before = _user_version(copied)
-    before_bytes = copied.read_bytes()
     SQLiteDatabase(copied).initialize_schema()
     after = _user_version(copied)
-    assert before == after == 0
-    assert copied.read_bytes() == before_bytes
+    assert after == 2
+    with sqlite3.connect(copied) as connection:
+        assert connection.execute(
+            "SELECT 1 FROM sqlite_schema WHERE name = 'persistence_events'"
+        ).fetchone()

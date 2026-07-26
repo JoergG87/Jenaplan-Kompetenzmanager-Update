@@ -100,6 +100,12 @@ def _backup(paths: RuntimePaths) -> Path:
     ).path
 
 
+def _set_v1_schema(paths: RuntimePaths, *, user_version: int = 1) -> None:
+    with sqlite3.connect(paths.database) as connection:
+        connection.execute("DROP TABLE persistence_events")
+        connection.execute(f"PRAGMA user_version = {user_version}")
+
+
 def _prepared(tmp_path: Path, restore_id: str = "RST-RUNTIME"):
     source = _runtime(tmp_path / "source")
     _insert_data(source, "NEW001", managed=True)
@@ -528,11 +534,10 @@ def test_productive_restore_leaves_security_store_marker_and_sidecars_byte_ident
     assert not tuple(transaction.rglob("enrollment.marker"))
 
 
-def test_successful_prepared_v0_to_v1_restore_keeps_rows_and_installs_v1(tmp_path: Path) -> None:
+def test_successful_prepared_v1_to_v2_restore_keeps_rows_and_installs_v2(tmp_path: Path) -> None:
     source = _runtime(tmp_path / "source-v0")
     _insert_data(source, "V00001", managed=True)
-    with sqlite3.connect(source.database) as connection:
-        connection.execute("PRAGMA user_version = 0")
+    _set_v1_schema(source, user_version=0)
     archive = _backup(source)
     live = _runtime(tmp_path / "live-v0")
     service = RestoreApplicationService()
@@ -551,7 +556,7 @@ def test_successful_prepared_v0_to_v1_restore_keeps_rows_and_installs_v1(tmp_pat
             ),
         )
     with sqlite3.connect(live.database) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
         assert connection.execute("SELECT student_id FROM students").fetchall() == [("STU-V00001",)]
 
 
