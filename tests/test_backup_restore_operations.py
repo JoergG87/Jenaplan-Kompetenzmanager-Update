@@ -422,6 +422,9 @@ class TestBackupRestoreShellLifecycle:
             )
             window._prepared_restore_preview = preview
             handoff = SimpleNamespace(path=Path("handoff.json"), nonce="nonce")
+            started = SimpleNamespace(process=object(), parent_lifetime_fd=9)
+            application = QApplication.instance()
+            assert application is not None
             with mock.patch.object(
                 window.backup_restore_adapter,
                 "create_restore_handoff",
@@ -429,7 +432,11 @@ class TestBackupRestoreShellLifecycle:
             ) as create_handoff, mock.patch.object(
                 window.backup_restore_adapter,
                 "launch_prepared_restore",
-            ) as launch, mock.patch.object(window, "close") as close:
+                return_value=started,
+            ) as launch, mock.patch.object(
+                application,
+                "quit",
+            ) as quit_application, mock.patch.object(window, "close") as close:
                 window._handle_backup_restore_success(
                     BackupRestoreOperationType.VERIFY_PREPARED_RESTORE,
                     SimpleNamespace(restore_id="RST-123"),
@@ -437,7 +444,9 @@ class TestBackupRestoreShellLifecycle:
 
             create_handoff.assert_called_once_with(preview)
             launch.assert_called_once_with(handoff)
-            close.assert_called_once_with()
+            assert window._restore_worker_process is started
+            quit_application.assert_called_once_with()
+            close.assert_not_called()
 
     def test_restore_worker_start_error_keeps_app_open_and_clears_preview(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -458,6 +467,8 @@ class TestBackupRestoreShellLifecycle:
             )
             window.settings_screen.show_restore_preview(preview)
             handoff = SimpleNamespace(path=Path("handoff.json"), nonce="nonce")
+            application = QApplication.instance()
+            assert application is not None
             with mock.patch.object(
                 window.backup_restore_adapter,
                 "create_restore_handoff",
@@ -466,13 +477,17 @@ class TestBackupRestoreShellLifecycle:
                 window.backup_restore_adapter,
                 "launch_prepared_restore",
                 side_effect=OSError("/private/hidden"),
-            ) as launch, mock.patch.object(window, "close") as close:
+            ) as launch, mock.patch.object(
+                application,
+                "quit",
+            ) as quit_application, mock.patch.object(window, "close") as close:
                 window._launch_verified_restore(preview)
                 window._launch_verified_restore(preview)
 
             create_handoff.assert_called_once_with(preview)
             launch.assert_called_once_with(handoff)
             close.assert_not_called()
+            quit_application.assert_not_called()
             assert window.settings_screen.restore_preview is None
             assert "/private" not in window.settings_screen.restore_message.label.text()
             window.close()

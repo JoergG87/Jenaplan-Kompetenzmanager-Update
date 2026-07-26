@@ -221,6 +221,13 @@ Einstellungen sind keine Dashboard-Fläche. Die Übersicht verwendet vier grosse
 
 Lange Datensicherungsoperationen zeigen eine textlich eindeutige Phase und einen unbestimmten Progress-Indikator. Prozentwerte sind nur mit einem echten Core-Fortschrittsvertrag zulaessig und werden hier nicht simuliert. Waehrend `running` und `finishing` sind Backup-, Restore-, Zurueck- und Hauptnavigation deaktiviert. Es gibt keinen Abbrechen-Button; ein Close-Versuch erklaert ruhig, dass der sichere Abschluss abgewartet wird.
 
+Nach der Restore-Bestaetigung verschwindet die App erst, wenn der separate
+Worker die authentisierte Uebernahme bestaetigt hat. Fehlt diese Bestaetigung,
+bleibt die bestehende opake Hauptoberflaeche sichtbar und zeigt den ruhigen
+Inline-Fehler `Die Wiederherstellung konnte nicht sicher gestartet werden. Die
+App bleibt geöffnet; der lokale Datenbestand wurde nicht ersetzt.` Ein leeres
+Restfenster oder ein Schliessen auf blossen Prozess-PID-Erhalt ist unzulaessig.
+
 ## Visual Signature und Release Polish - Premium UI Sprint 4
 
 Die finale visuelle Signatur entsteht in der bestehenden Product Shell: ein sehr ruhiger blau-grauer Hintergrundverlauf trennt die Arbeitsflaeche von der tiefblauen, tonal abgestuften Sidebar. Aktive Navigation bleibt durch Flaeche, Text, linken Marker und sichtbaren Fokus eindeutig. Die Signatur fuehrt weder eine neue Navigation noch einen neuen Screen ein und bleibt bei allen freigegebenen Fenstergroessen stabil.

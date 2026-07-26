@@ -467,6 +467,14 @@ Technische, nicht fachliche Runtime-Quellen:
 
 Diese Quellen enthalten keine Datenbankinhalte, Namen, Notizen, fachlichen Texte oder frei injizierten fachlichen Pfade. Sie sind technische Beweise und Steuerdaten; SQLite und `documents/` bleiben die fachliche Source of Truth.
 
+Die kurzlebigen Prozesskanaele fuer `worker_started` und das Ende der
+Haupt-App sind ausschliesslich geerbte Kernel-Deskriptoren. Sie werden nicht
+persistiert und sind keine neue Datenquelle. `current-state.json` bleibt die
+persistente Wahrheit: `handoff_created` bestaetigt nur die vollstaendig
+geschriebene Uebergabedatei, `worker_started` erst die authentisierte
+Lock-Uebernahme. Ein Startfehler wird vor jeder Live-Mutation als
+`aborted_before_replacement` abgeschlossen.
+
 Entwicklerpfad:
 
 ```text

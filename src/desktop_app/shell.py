@@ -9,6 +9,7 @@ from pathlib import Path
 from PySide6.QtCore import QSize, Qt, QTimer, Signal, QUrl
 from PySide6.QtGui import QCloseEvent, QDesktopServices
 from PySide6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QDialog,
     QFileDialog,
@@ -82,6 +83,7 @@ from src.updater.application import UpdateApplicationService
 from src.updater.domain import UpdateChannel
 from src.updater.infrastructure import build_native_update_adapter
 from src.core.restore_runtime import RuntimeInstanceLock
+from src.desktop_app.restore_worker import RestoreWorkerProcess
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
 from src.desktop_app.screens.students_workspace import StudentsWorkspace
 from src.desktop_app.view_models.settings_view_model import (
@@ -152,6 +154,7 @@ class AppShell(QMainWindow):
             parent=self,
         )
         self._prepared_restore_preview: RestorePreviewViewModel | None = None
+        self._restore_worker_process: RestoreWorkerProcess | None = None
         self._restore_worker_start_attempted = False
         self._restore_confirmed = False
         self._backup_status_loaded = False
@@ -930,12 +933,18 @@ class AppShell(QMainWindow):
         self._restore_worker_start_attempted = True
         try:
             handoff = self.backup_restore_adapter.create_restore_handoff(preview)
-            self.backup_restore_adapter.launch_prepared_restore(handoff)
+            self._restore_worker_process = (
+                self.backup_restore_adapter.launch_prepared_restore(handoff)
+            )
         except Exception:
             self._show_restore_workflow_error()
             return
         self.restore_handoff_started.emit()
-        self.close()
+        application = QApplication.instance()
+        if application is None:
+            self.close()
+        else:
+            application.quit()
 
     def _show_restore_workflow_error(self) -> None:
         self._prepared_restore_preview = None

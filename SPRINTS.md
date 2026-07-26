@@ -1,5 +1,21 @@
 # Sprintplanung
 
+## Restore-Handoff-P1 - paketierte Worker-Uebernahme
+
+**Status:** Korrektur und reale DMG-Abnahme in Arbeit; keine Pilot-,
+Appcast- oder Releasefreigabe.
+
+- [x] Reales DMG-Fehlerbild bis PID, Exitcode und unveraendertem Journal
+  reproduziert.
+- [x] Bundleinhalt, arm64, Codesign, Hidden Import, Argumente und
+  Arbeitsverzeichnis gegen den Quellpfad verglichen.
+- [x] Lock-FD-Rewind, persistentes `worker_started` und Parent-Lebensdauerkanal
+  implementieren.
+- [x] Fehlstart-, Prozess-, UI-, Restart- und echte Pakethelfer-Tests
+  vollstaendig gruen nachweisen.
+- [ ] Clean-Build und zweimaligen realen DMG-Restore ohne Restfenster,
+  Zombieprozess oder Datenabweichung bestaetigen.
+
 ## Security Sprint 12 - Release-Hardening und Packaging-Abnahme
 
 **Status:** Technische Abnahme mit GO ausschließlich für den internen

@@ -206,6 +206,7 @@ class RuntimeInstanceLock:
         if self._inherited_fd is not None:
             try:
                 self._file = os.fdopen(self._inherited_fd, "r+", closefd=True)
+                self._file.seek(0)
                 self._validate_locked_payload(self._file.read(), allow_live_owner=True)
                 self._write_current_owner()
                 return self
@@ -595,14 +596,21 @@ class ProductiveRestoreService:
         nonce: str,
         lock: RuntimeInstanceLock,
         restart: Callable[[RestoreTransactionPaths, str, RuntimeInstanceLock], bool] | None = None,
+        worker_started: Callable[[RestoreTransactionPaths], None] | None = None,
         handshake_timeout_seconds: float = 30.0,
     ) -> RestoreExecutionResult:
         paths, handoff = self.handoff_service.consume(handoff_path, expected_nonce=nonce)
         if lock.runtime_root != paths.runtime_root or lock._file is None:
             raise RestoreLockError("Der Worker haelt nicht den passenden Runtime-Lock.")
         journal = RestoreJournal(paths)
-        journal.transition("maintenance", next_step="verify_preflight")
+        journal.transition(
+            "worker_started",
+            next_step="await_main_app_exit",
+        )
         try:
+            if worker_started is not None:
+                worker_started(paths)
+            journal.transition("maintenance", next_step="verify_preflight")
             safety_hash = self._preflight(paths, handoff, journal)
             journal.transition("preflight_verified", next_step="move_live_database")
             journal.transition("replacement_started", next_step="move_live_database")
@@ -876,7 +884,12 @@ def recover_interrupted_restore(runtime_root: Path) -> RestoreRecoveryResult:
     phase = str(state.get("phase"))
     if phase == "manual_recovery_required":
         raise RestoreManualRecoveryRequired("Der Restore verlangt manuelle Wiederherstellung.")
-    if phase in {"handoff_created", "maintenance", "preflight_verified"}:
+    if phase in {
+        "handoff_created",
+        "worker_started",
+        "maintenance",
+        "preflight_verified",
+    }:
         if state.get("completed_renames"):
             return _recover_by_rollback(paths, journal)
         components = state.get("components")
@@ -1195,19 +1208,33 @@ def _copy_bound_archive(
 
 
 def _restart_application(paths: RestoreTransactionPaths, token: str, lock: RuntimeInstanceLock) -> bool:
+    try:
+        executable = Path(sys.executable).expanduser().resolve(strict=True)
+    except OSError:
+        return False
+    if not executable.is_file() or not os.access(executable, os.X_OK):
+        return False
     if getattr(sys, "frozen", False):
-        command = [sys.executable]
+        command = [str(executable)]
+        working_directory = paths.runtime_root
     else:
-        command = [sys.executable, "-m", "src.desktop_app.main"]
+        command = [str(executable), "-m", "src.desktop_app.main"]
+        working_directory = Path(__file__).resolve().parents[2]
     command.extend([
         "--restore-resume", paths.transaction.name,
         "--restore-token", token,
         "--restore-lock-fd", str(lock.fileno),
     ])
     try:
-        subprocess.Popen(command, pass_fds=(lock.fileno,), close_fds=True)
+        subprocess.Popen(
+            command,
+            pass_fds=(lock.fileno,),
+            close_fds=True,
+            cwd=working_directory,
+            start_new_session=os.name == "posix",
+        )
         return True
-    except OSError:
+    except (OSError, subprocess.SubprocessError):
         return False
 
 

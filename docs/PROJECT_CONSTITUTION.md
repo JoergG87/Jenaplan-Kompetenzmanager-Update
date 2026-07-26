@@ -499,8 +499,13 @@ entfernen alle fachlichen Fenster aus der sichtbaren Oberflaeche. Ungespeicherte
 Eingaben bleiben ausschliesslich im Arbeitsspeicher erhalten und werden nach
 erfolgreichem Entsperren fortgesetzt. Laufende Backups duerfen im Hintergrund
 sicher enden; eine unbestaetigte Restore-Vorschau wird beim Sperren verworfen,
-ein bereits bestaetigter Worker-Handoff nicht abgebrochen. Eine Sitzung wird
-niemals ueber einen Neustart oder Restore hinweg fortgesetzt.
+ein bereits bestaetigter Worker-Handoff nicht abgebrochen. Ein erzeugter
+Handoff und ein zurueckgekehrtes `Popen` sind noch keine bestaetigte
+Worker-Uebernahme: Erst der authentisierte Worker, der den Runtime-Lock
+uebernommen und `worker_started` persistent bestaetigt hat, darf die
+vollstaendige App-Beendigung ausloesen. Bis zum Prozessende der Haupt-App
+bleibt der Worker vor jeder Datenmutation blockiert. Eine Sitzung wird niemals
+ueber einen Neustart oder Restore hinweg fortgesetzt.
 
 Die lokale Anwendungssperre schuetzt ausschliesslich den normalen Zugang ueber
 die Anwendung. Sie ist keine Verschluesselung der Datenbank, Dokumente oder

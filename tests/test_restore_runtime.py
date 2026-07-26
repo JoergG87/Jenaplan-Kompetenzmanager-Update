@@ -7,11 +7,13 @@ import json
 import os
 import sqlite3
 import stat
+import sys
 from pathlib import Path
 from unittest import mock
 
 import pytest
 
+from src.core import restore_runtime as restore_runtime_module
 from src.application.commands.backup import BackupApplicationService, CreateBackupCommand
 from src.application.commands.restore import (
     CreateRestoreHandoffCommand,
@@ -35,6 +37,12 @@ from src.core.restore_runtime import (
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app import main as desktop_main
 from src.desktop_app import restore_worker
+from src.desktop_app.restore_worker import (
+    RestoreWorkerLaunchError,
+    RestoreWorkerLaunchPlan,
+    launch_restore_worker,
+    resolve_restore_worker_launch,
+)
 from src.desktop_app.runtime import RuntimePaths, runtime_paths
 
 
@@ -150,6 +158,23 @@ def test_valid_orphaned_lock_is_reused_but_contradictory_lock_is_not_deleted(tmp
     assert lock_path.read_text(encoding="utf-8") == "{}"
 
 
+def test_inherited_runtime_lock_is_rewound_before_validation(
+    tmp_path: Path,
+) -> None:
+    owner = RuntimeInstanceLock(tmp_path / "runtime").acquire()
+    inherited_fd = os.dup(owner.fileno)
+    assert os.lseek(inherited_fd, 0, os.SEEK_CUR) == os.fstat(inherited_fd).st_size
+
+    inherited = RuntimeInstanceLock(
+        owner.runtime_root,
+        inherited_fd=inherited_fd,
+    ).acquire()
+
+    assert inherited.fileno == inherited_fd
+    inherited.transfer()
+    owner.release()
+
+
 def test_handoff_is_0600_runtime_bound_and_contains_no_target_paths(tmp_path: Path) -> None:
     _source, live, _archive, handoff = _prepared(tmp_path)
     assert stat.S_IMODE(handoff.path.stat().st_mode) == 0o600
@@ -177,6 +202,258 @@ def test_wrong_nonce_tampering_and_handoff_reuse_are_rejected(tmp_path: Path) ->
     with pytest.raises(RestoreHandoffError):
         service.consume(handoff.path, expected_nonce=handoff.nonce)
     assert paths.runtime_root == live.root.resolve()
+
+
+def test_worker_started_is_persisted_before_parent_exit_or_live_mutation(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-WORKER-STARTED",
+    )
+    before = _live_bytes(live)
+    observed: list[str] = []
+
+    def reject_parent_exit(paths) -> None:
+        state = RestoreJournal(paths).read()
+        observed.append(str(state["phase"]))
+        assert state["next_step"] == "await_main_app_exit"
+        assert _live_bytes(live) == before
+        raise OSError("synthetic parent-lifetime failure")
+
+    with RuntimeInstanceLock(live.root) as lock:
+        with pytest.raises(RestorePreflightError):
+            ProductiveRestoreService().execute(
+                handoff_path=handoff.path,
+                nonce=handoff.nonce,
+                lock=lock,
+                worker_started=reject_parent_exit,
+            )
+
+    assert observed == ["worker_started"]
+    assert _live_bytes(live) == before
+    state = RestoreJournal(
+        restore_transaction_paths(live.root, handoff.restore_id)
+    ).read()
+    assert state["phase"] == "aborted_before_replacement"
+
+
+def test_real_source_worker_confirms_takeover_before_parent_exit_and_is_reaped(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-REAL-SOURCE-WORKER",
+    )
+    before = _live_bytes(live)
+    lock = RuntimeInstanceLock(live.root).acquire()
+
+    started = launch_restore_worker(
+        handoff=handoff.path,
+        nonce=handoff.nonce,
+        lock=lock,
+    )
+    try:
+        assert started.process.poll() is None
+        if os.name == "posix":
+            assert os.getsid(started.process.pid) == started.process.pid
+        state = RestoreJournal(
+            restore_transaction_paths(live.root, handoff.restore_id)
+        ).read()
+        assert state["phase"] == "worker_started"
+        assert _live_bytes(live) == before
+    finally:
+        started.process.terminate()
+        started.process.wait(timeout=5)
+        os.close(started.parent_lifetime_fd)
+
+    recovery = recover_interrupted_restore(live.root)
+    assert recovery.status == "aborted_before_replacement"
+    assert _live_bytes(live) == before
+    assert started.process.poll() is not None
+
+
+@pytest.mark.parametrize("mode", ("missing", "not_executable"))
+def test_worker_executable_resolution_fails_closed(
+    tmp_path: Path,
+    mode: str,
+) -> None:
+    executable = tmp_path / "Bundle With Spaces.app" / "Contents" / "MacOS" / "worker"
+    if mode == "not_executable":
+        executable.parent.mkdir(parents=True)
+        executable.write_bytes(b"not executable")
+        executable.chmod(0o600)
+
+    with pytest.raises(RestoreWorkerLaunchError):
+        resolve_restore_worker_launch(
+            tmp_path,
+            executable=executable,
+            frozen=True,
+        )
+
+
+def test_bundle_launch_plan_preserves_spaces_arguments_and_runtime_cwd(
+    tmp_path: Path,
+) -> None:
+    runtime_root = tmp_path / "Runtime With Spaces"
+    runtime_root.mkdir()
+    executable = (
+        tmp_path
+        / "Bundle With Spaces.app"
+        / "Contents"
+        / "MacOS"
+        / "Jenaplan-Kompetenzmanager"
+    )
+    executable.parent.mkdir(parents=True)
+    executable.write_bytes(b"synthetic executable")
+    executable.chmod(0o700)
+
+    plan = resolve_restore_worker_launch(
+        runtime_root,
+        executable=executable,
+        frozen=True,
+    )
+    command = plan.command(
+        handoff=runtime_root / "restore-handoffs" / "RST-TEST.json",
+        nonce="nonce",
+        lock_fd=3,
+        ready_fd=4,
+        parent_lifetime_fd=5,
+    )
+
+    assert plan.command_prefix == (str(executable.resolve()), "--restore-worker")
+    assert plan.working_directory == runtime_root.resolve()
+    assert command[2:4] == [
+        "--handoff",
+        str(runtime_root / "restore-handoffs" / "RST-TEST.json"),
+    ]
+    assert command[-6:] == [
+        "--lock-fd",
+        "3",
+        "--ready-fd",
+        "4",
+        "--parent-lifetime-fd",
+        "5",
+    ]
+
+
+def test_worker_immediate_exit_aborts_handoff_without_live_mutation(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-WORKER-EXIT",
+    )
+    before = _live_bytes(live)
+    exit_script = tmp_path / "exit_immediately.py"
+    exit_script.write_text("raise SystemExit(50)\n", encoding="utf-8")
+    plan = RestoreWorkerLaunchPlan(
+        (sys.executable, str(exit_script)),
+        tmp_path,
+    )
+    lock = RuntimeInstanceLock(live.root).acquire()
+
+    with pytest.raises(RestoreWorkerLaunchError):
+        launch_restore_worker(
+            handoff=handoff.path,
+            nonce=handoff.nonce,
+            lock=lock,
+            launch_plan=plan,
+        )
+
+    assert _live_bytes(live) == before
+    state = RestoreJournal(
+        restore_transaction_paths(live.root, handoff.restore_id)
+    ).read()
+    assert state["phase"] == "aborted_before_replacement"
+    assert lock.fileno >= 0
+    lock.release()
+
+
+def test_worker_popen_error_aborts_handoff_and_keeps_parent_lock(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-WORKER-MISSING",
+    )
+    before = _live_bytes(live)
+    plan = RestoreWorkerLaunchPlan(
+        (str(tmp_path / "missing-worker"),),
+        tmp_path,
+    )
+    lock = RuntimeInstanceLock(live.root).acquire()
+
+    with pytest.raises(RestoreWorkerLaunchError):
+        launch_restore_worker(
+            handoff=handoff.path,
+            nonce=handoff.nonce,
+            lock=lock,
+            launch_plan=plan,
+        )
+
+    assert _live_bytes(live) == before
+    state = RestoreJournal(
+        restore_transaction_paths(live.root, handoff.restore_id)
+    ).read()
+    assert state["phase"] == "aborted_before_replacement"
+    assert lock.fileno >= 0
+    lock.release()
+
+
+def test_packaged_restart_uses_bundle_executable_runtime_cwd_and_new_session(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-PACKAGED-RESTART",
+    )
+    executable = (
+        tmp_path
+        / "Installed App With Spaces.app"
+        / "Contents"
+        / "MacOS"
+        / "Jenaplan-Kompetenzmanager"
+    )
+    executable.parent.mkdir(parents=True)
+    executable.write_bytes(b"synthetic executable")
+    executable.chmod(0o700)
+    paths = restore_transaction_paths(live.root, handoff.restore_id)
+    lock = RuntimeInstanceLock(live.root).acquire()
+
+    with mock.patch.object(
+        restore_runtime_module.sys,
+        "executable",
+        str(executable),
+    ), mock.patch.object(
+        restore_runtime_module.sys,
+        "frozen",
+        True,
+        create=True,
+    ), mock.patch.object(
+        restore_runtime_module.subprocess,
+        "Popen",
+    ) as popen:
+        assert restore_runtime_module._restart_application(
+            paths,
+            "resume-token",
+            lock,
+        )
+
+    command = popen.call_args.args[0]
+    assert command == [
+        str(executable.resolve()),
+        "--restore-resume",
+        handoff.restore_id,
+        "--restore-token",
+        "resume-token",
+        "--restore-lock-fd",
+        str(lock.fileno),
+    ]
+    assert popen.call_args.kwargs["pass_fds"] == (lock.fileno,)
+    assert popen.call_args.kwargs["cwd"] == live.root.resolve()
+    assert popen.call_args.kwargs["start_new_session"] is True
+    lock.release()
 
 
 def test_free_runtime_target_projection_is_rejected(tmp_path: Path) -> None:

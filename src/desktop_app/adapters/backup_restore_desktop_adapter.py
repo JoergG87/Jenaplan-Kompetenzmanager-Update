@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import subprocess
 
 from src.application.commands.backup import (
     BackupApplicationService,
@@ -24,7 +23,10 @@ from src.desktop_app.backup_restore_operations import (
     BackupRestoreOperationType,
     DiscoverVerifiedBackupsQuery,
 )
-from src.desktop_app.restore_worker import launch_restore_worker
+from src.desktop_app.restore_worker import (
+    RestoreWorkerProcess,
+    launch_restore_worker,
+)
 from src.desktop_app.runtime import RuntimePaths
 from src.desktop_app.view_models.backup_restore_view_model import (
     BackupSummaryViewModel,
@@ -142,7 +144,7 @@ class BackupRestoreDesktopAdapter:
     def launch_prepared_restore(
         self,
         handoff: RestoreHandoffResult,
-    ) -> subprocess.Popen[bytes]:
+    ) -> RestoreWorkerProcess:
         if self.lock is None:
             raise RuntimeError("Der sichere Wiederherstellungsmodus ist nicht verfügbar.")
         return launch_restore_worker(

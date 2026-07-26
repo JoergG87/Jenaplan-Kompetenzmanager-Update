@@ -1257,6 +1257,17 @@ Status: Fuer Sprint 0.2A.3c freigegeben
 
 Der produktive Restore laeuft ausserhalb der normalen PySide-Laufzeit in einem Qt-freien Worker. App und Worker verwenden denselben an der kanonischen Runtime-Wurzel gebundenen exklusiven Instanz-Lock; die App beendet vor der Worker-Uebergabe alle Datenbankzugriffe. Eine einmalige Handoff-Datei bindet Restore-ID, kryptografische Nonce, kanonische Runtime-Wurzel, Archivgroesse und -hash, Staging-State-Hash sowie Groesse und Hash der vorbereiteten V1-Datenbank. Der Worker leitet Live-, Staging-, Rollback-, Fehler- und Journalpfade ausschliesslich selbst ab und akzeptiert keine frei waehlbaren Zielpfade.
 
+Der paketierte Start verwendet das eigene Bundle-Executable mit argv-Liste,
+niemals einen Entwicklerpfad oder Shellstring. Ein erfolgreiches `Popen` und
+`handoff_created` beweisen noch keine Uebernahme. Der Worker muss den
+geerbten Lock-Descriptor vom Dateianfang validieren, den Handoff einmalig
+authentisieren, `worker_started` journalen und dies ueber einen privaten
+Ready-Kanal bestaetigen. Danach wartet er blockierend auf das EOF eines nur
+von der Haupt-App gehaltenen Lebensdauerkanals. Erst das vollstaendige
+Prozessende der Haupt-App erlaubt Preflight oder Datenmutation. Fehlende
+Bestaetigung beendet und erntet den Worker, markiert den unmutierten Vorgang
+als `aborted_before_replacement` und laesst die App geoeffnet.
+
 Vor dem ersten produktiven Rename muessen Prepared-Staging, V1-Kompatibilitaet, Managed-File-Inventar, Pfad-Disjunktheit, Speicher, Schreibrechte, Live-SQLite-Integritaet, kontrollierter WAL-Checkpoint und ein vollstaendig verifiziertes Sicherheitsbackup bewiesen sein. Bis dahin bleiben die Live-Daten byteidentisch. Der Gesamtaustausch ist nicht physisch atomar; er besteht aus atomaren Einzel-Renames auf demselben Dateisystem und wird deshalb durch einen atomar ersetzten aktuellen Zustand sowie ein append-only JSONL-Ereignisjournal abgesichert. Vor jedem kritischen Rename werden Intent und Dateisystemzustand gefsynct, danach Rename und Completed-Zustand.
 
 DB, `-wal`, `-shm` und `documents/` werden als getrennte technische Zustaende behandelt. Alte Daten werden nie geloescht, sondern in den Restore-gebundenen Rollbackbereich verschoben. Jeder Fehler vor einem erfolgreichen Startup-Handshake priorisiert den vollstaendigen Rollback. Kann der alte oder neue konsistente Zustand nicht anhand von Journal, Existenz, Groesse, Hash, SQLite-Pruefung und Dateiinventar bewiesen werden, lautet der Zustand `manual_recovery_required`; die normale App darf dann nicht starten und es findet keine automatische Bereinigung statt.

@@ -269,6 +269,7 @@ Spalten:
 | Restore-Vorschau | `RestorePreviewViewModel` aus vorhandener `RestorePreview` | Anzeige / bestätigte Betriebsaktion | Ja, nur technisch | vorhandener Restore-Service | nur Versionen und aggregierte Counts; Auswahl, Prüfung, Vorschau und ausdrückliche Bestätigung vor Workerstart |
 | Laufende Datensicherungsoperation | `BackupRestoreOperationsState` + `BackupRestoreProgressPhase` | temporaerer UI-Zustand | Nein | shell-eigener Operations-Controller | unbestimmter Fortschritt ohne Prozentwert; alle Backup-/Restore-Aktionen und Navigation bis zum echten Thread-Ende gesperrt; kein Cancel |
 | Technischer Operationsfehler | `BackupRestoreOperationErrorInfo` | temporaere Fehlermeldung | Nein | Qt-Worker -> Controller -> Shell | UI erzeugt datensparsame Nutzerbotschaft; kein Core-Exception-Text, interner Pfad, Traceback oder fachlicher Inhalt |
+| Restore-Worker-Uebernahme | `RestoreWorkerProcess` erst nach persistentem `worker_started` | temporaerer technischer Zustand | Nein | `BackupRestoreDesktopAdapter` / Restore-Journal | nur die bestaetigte Uebernahme darf die Haupt-App beenden; fehlender, nicht ausfuehrbarer oder sofort fehlschlagender Worker zeigt den vorhandenen generischen Restore-Fehler und laesst die App geoeffnet |
 
 Status: Sprint 2C wendet die gespeicherte Auswahl in Dokumentationsauswertungen an.
 

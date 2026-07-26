@@ -256,6 +256,8 @@ fi
 "$VENV/bin/python" scripts/smoke_test_macos_app.py \
     "$APP_PATH" \
     --expected-data-mode "$DATA_MODE"
+"$VENV/bin/python" scripts/smoke_test_packaged_restore_worker.py \
+    "$APP_PATH"
 "$VENV/bin/python" scripts/smoke_test_macos_security_integration.py \
     "$APP_PATH"
 "$VENV/bin/python" scripts/smoke_test_macos_keychain.py \

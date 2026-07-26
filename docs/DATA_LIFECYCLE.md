@@ -1070,7 +1070,16 @@ Eine vorhandene Sicherung wird nie ueberschrieben. Das Skript aendert weder Benu
 
 Start: Die Lehrkraft öffnet `Einstellungen > Datensicherung`, wählt bewusst einen Zielordner oder eine bestehende `.jkmbackup`-Datei und erhält nur nach vollständiger Verifikation ein Ergebnis. Die UI speichert weder Zielordner noch eine eigene Historie.
 
-Wiederherstellung: Auswahl -> isolierte Prüfung -> datensparsame Vorschau -> ausdrückliche Bestätigung -> Prepared-Staging und erneute Prepared-Prüfung -> Runtime-gebundener Handoff -> Worker. Der Worker erstellt das vorhandene verpflichtende Sicherheitsbackup vor dem ersten Live-Rename. Bei jedem Fehler vor erfolgreichem Workerstart bleibt die App geöffnet und Live-Daten bleiben unverändert. Es gibt keine automatische Sicherung, Erinnerung oder Aufbewahrungsautomatik.
+Wiederherstellung: Auswahl -> isolierte Prüfung -> datensparsame Vorschau ->
+ausdrückliche Bestätigung -> Prepared-Staging und erneute Prepared-Prüfung ->
+Runtime-gebundener Handoff -> authentisierte Worker-Uebernahme. Ein
+erfolgreiches `Popen` allein gilt nicht als Workerstart. Der Worker bestaetigt
+erst nach Handoff- und Lock-Pruefung persistent `worker_started`, wartet dann
+ohne Poll-Sleep auf das vollstaendige Ende der Haupt-App und erstellt
+anschliessend das vorhandene verpflichtende Sicherheitsbackup vor dem ersten
+Live-Rename. Bei jedem Fehler vor erfolgreicher Worker-Uebernahme bleibt die
+App geöffnet und Live-Daten bleiben unverändert. Es gibt keine automatische
+Sicherung, Erinnerung oder Aufbewahrungsautomatik.
 
 Qt-Ausfuehrung ab Sprint 0.2A.4a: Backup-Erstellung, Backup-Pruefung, Restore-Pruefung, Prepared-Staging und Prepared-Pruefung laufen als jeweils genau ein unveraenderlicher Auftrag ueber den shell-eigenen Operations-Controller in einem `QThread`. Der `QObject`-Worker ruft ausschliesslich die vorhandenen Application-Services auf und emittiert technische Ergebnisse, Fehlerklassen und neutrale Phasen. UI-Projektion, Dateidialoge, Vorschau, Bestaetigung, Handoff, Prozessstart und App-Beendigung bleiben im Qt-Hauptthread. Ohne sicheren Core-Cancel-Vertrag gibt es keinen Abbruch; Close und Navigation werden bis zum echten Thread-Ende kontrolliert blockiert. `terminate()` ist ausgeschlossen.
 
@@ -1192,9 +1201,11 @@ Start: Eine kontrollierte Application-Funktion erzeugt nach vollstaendiger Prepa
 ```text
 CreateRestoreHandoffCommand
 -> Handoff 0600 atomar schreiben
--> App-Datenbankzugriffe beenden / Wartungszustand
--> Restore-Worker mit Lockuebergabe starten
 -> Handoff atomar nach consumed umbenennen
+-> Runtime-Lock im Worker validieren und worker_started journalen
+-> Workerstart ueber privaten Ready-Kanal bestaetigen
+-> Haupt-App kontrolliert vollstaendig beenden
+-> Worker wartet bis zum EOF des Parent-Lebensdauerkanals
 -> Archiv-, Staging- und Prepared-Bindung erneut pruefen
 -> Sicherheitsbackup erstellen und verifizieren
 -> Live-DB integrity_check / foreign_key_check / WAL checkpoint
@@ -1207,6 +1218,14 @@ CreateRestoreHandoffCommand
 -> Startup-Handshake abwarten
 -> completed
 ```
+
+Kann Executable, Berechtigung, Argumentliste, Arbeitsverzeichnis,
+Lock-Uebergabe oder Ready-Bestaetigung nicht nachgewiesen werden, wird der
+Worker beendet und geerntet, der Zustand ohne Live-Mutation auf
+`aborted_before_replacement` gesetzt und die Haupt-App bleibt mit einer
+datensparsamen Fehlermeldung benutzbar. Der Parent-Lebensdauerkanal verhindert,
+dass der Worker vor dem vollstaendigen Prozessende der Haupt-App mit
+Preflight oder Austausch beginnt.
 
 Bis einschliesslich `preflight_verified` und vor dem ersten Rename bleiben produktive Bytes unveraendert. Der Austausch besteht ausschliesslich aus atomaren Einzel-Renames auf demselben Dateisystem; die Gesamtoperation ist nur durch Journal und Rollback abgesichert. Ein fehlender oder leerer alter `documents/`-Baum sowie vorhandene oder fehlende `-wal`-/`-shm`-Dateien werden als eigene Zustaende erfasst.
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Paketierten Restore-Worker erst nach authentisierter Lock-/Handoff-Uebernahme
+  als gestartet behandeln; der Worker wartet bis zum vollstaendigen Ende der
+  Haupt-App, waehrend fehlende oder sofort fehlschlagende Starts ohne
+  Live-Datenmutation in der geoeffneten UI gemeldet werden.
 - Stabilität des realen SQLite-Backup-Sperrtests verbessert: Der Test prüft
   weiter Retry, begrenztes Warten, `BackupBusyError` und Snapshot-Cleanup,
   koppelt sich aber nicht an eine nicht spezifizierte Callback-Anzahl der

@@ -584,11 +584,29 @@ Technische Versionen und IDs:
 - `staging_state_sha256`: SHA-256 der kanonischen `staging-state.json`-Bytes.
 - `prepared_database_sha256`: SHA-256 der vollstaendig geprueften Prepared-V1-Datenbank.
 
-Zustaende: `maintenance`, `preflight_verified`, `replacement_started`, `installed_verified`, `completed`, `rolled_back` und `manual_recovery_required`.
+Zustaende: `handoff_created`, `worker_started`, `maintenance`,
+`preflight_verified`, `replacement_started`, `installed_verified`,
+`completed`, `rolled_back`, `aborted_before_replacement` und
+`manual_recovery_required`.
 
 Application-Namen: `CreateRestoreHandoffCommand`, `ExecutePreparedRestoreCommand`, `RecoverInterruptedRestoreCommand` und `ConfirmRestoreStartupCommand`.
 
-Worker-Start: Entwicklerbetrieb ueber `python3 -m src.desktop_app.restore_worker --handoff <datei>`; Paketbetrieb ueber fruehen `--restore-worker`-Dispatch im gebuendelten Executable vor Qt- und Runtime-Initialisierung.
+Worker-Start: Entwicklerbetrieb ueber
+`python3 -m src.desktop_app.restore_worker --handoff <datei>`; Paketbetrieb
+ueber fruehen `--restore-worker`-Dispatch im gebuendelten Executable vor Qt-
+und Runtime-Initialisierung. `RestoreWorkerLaunchPlan` bindet Executable,
+Argumentliste und Arbeitsverzeichnis ohne Shellauswertung.
+`RestoreWorkerProcess` haelt den bestaetigten separaten Prozess und den nur bis
+zum Ende der Haupt-App offenen Parent-Lebensdauerkanal. Die technischen
+Argumente `--ready-fd` und `--parent-lifetime-fd` transportieren keine
+fachlichen Daten oder Secrets: Der erste Kanal bestaetigt exakt
+`worker_started`, der zweite wird erst durch das vollstaendige Prozessende der
+Haupt-App geschlossen.
+`Packaged Restore Worker Smoke` bezeichnet den Build-Gate-Test
+`scripts/smoke_test_packaged_restore_worker.py`, der den echten Executable aus
+dem signierten `.app`-Bundle als separaten Restore-Worker startet, die
+persistente Uebernahme ohne Live-Aenderung prueft und den Testprozess
+anschliessend kontrolliert beendet und reappt.
 
 ## Sprint 0.2A.3b - Restore-Staging, V0-V1-Migration und Sicherheitsbackup
 

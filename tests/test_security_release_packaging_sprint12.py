@@ -56,8 +56,13 @@ def test_030_release_versions_and_security_dependencies_are_pinned() -> None:
         '"sqlcipher3._sqlite3"',
         '"src.security.packaged_integration_smoke"',
         '"src.security.packaged_keychain_smoke"',
+        '"src.desktop_app.restore_worker"',
     ):
         assert required in spec
+    build_script = Path("scripts/build_macos_pilot.sh").read_text(
+        encoding="utf-8"
+    )
+    assert "scripts/smoke_test_packaged_restore_worker.py" in build_script
 
 
 @pytest.mark.skipif(
