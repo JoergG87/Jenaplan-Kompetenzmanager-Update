@@ -48,7 +48,7 @@ from src.desktop_app.backup_restore_operations import (
     BackupRestoreProgressPhase,
 )
 from src.desktop_app.assets import create_app_icon_label
-from src.desktop_app.components import Toast, configure_button
+from src.desktop_app.components import Toast, configure_button, create_confirmation_message
 from src.desktop_app.dialogs.app_info_dialog import AppInfoDialog
 from src.desktop_app.dialogs.master_data_dialog import (
     CourseGroupDialog,
@@ -801,13 +801,16 @@ class AppShell(QMainWindow):
         preview: RestorePreviewViewModel | None = self.settings_screen.restore_preview
         if preview is None:
             return
-        answer = QMessageBox.question(
-            self, "Wiederherstellung starten",
+        message, confirm = create_confirmation_message(
+            self,
+            "Wiederherstellung starten",
             "Der aktuelle lokale Datenbestand wird ersetzt. Vorher wird automatisch ein Sicherheitsbackup erstellt. Die App wird anschließend neu gestartet.\n\nWiederherstellung jetzt starten?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+            confirm_text="Wiederherstellen",
         )
-        if answer != QMessageBox.StandardButton.Yes:
+        message.exec()
+        confirmed = message.clickedButton() is confirm
+        message.deleteLater()
+        if not confirmed:
             return
         self._restore_confirmed = True
         self._prepared_restore_preview = None
@@ -990,14 +993,16 @@ class AppShell(QMainWindow):
 
     def delete_timetable_entry(self, timetable_entry_id: str) -> None:
         """Delete one entry after an explicit confirmation."""
-        answer = QMessageBox.question(
+        message, confirm = create_confirmation_message(
             self,
             "Stunde löschen",
             "Diesen Stundenplaneintrag wirklich löschen?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+            confirm_text="Stunde löschen",
         )
-        if answer != QMessageBox.StandardButton.Yes:
+        message.exec()
+        confirmed = message.clickedButton() is confirm
+        message.deleteLater()
+        if not confirmed:
             return
         try:
             self.timetable_adapter.delete_entry(timetable_entry_id)
@@ -1636,14 +1641,16 @@ class AppShell(QMainWindow):
         if draft is None:
             self.status_label.setText("Beobachtung wurde nicht gefunden.")
             return
-        response = QMessageBox.question(
+        message, confirm = create_confirmation_message(
             self,
             "Beobachtung löschen",
             "Diese Beobachtung aus dem Profil ausblenden?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+            confirm_text="Beobachtung löschen",
         )
-        if response != QMessageBox.StandardButton.Yes:
+        message.exec()
+        confirmed = message.clickedButton() is confirm
+        message.deleteLater()
+        if not confirmed:
             return
         result = self.adapter.delete_observation(observation_id)
         if not getattr(result, "success", False):
@@ -1682,15 +1689,17 @@ class AppShell(QMainWindow):
 
     def remove_student_document(self, student_id: str, document_id: str) -> None:
         """Soft-delete one student document after confirmation."""
-        response = QMessageBox.question(
+        message, confirm = create_confirmation_message(
             self,
             "Datei entfernen",
             "Diese Datei aus dem Schülerprofil entfernen? "
             "Die Datei bleibt im Dateisystem erhalten.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+            confirm_text="Datei entfernen",
         )
-        if response != QMessageBox.StandardButton.Yes:
+        message.exec()
+        confirmed = message.clickedButton() is confirm
+        message.deleteLater()
+        if not confirmed:
             return
         self.adapter.remove_document(document_id)
         self.show_student_profile(student_id)

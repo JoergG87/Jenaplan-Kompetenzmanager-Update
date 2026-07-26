@@ -761,3 +761,27 @@ def stabilize_message_box_buttons(
         button_box.layout().setSpacing(max(spacing, button_box.layout().spacing()))
     message.ensurePolished()
     message.adjustSize()
+
+
+def create_confirmation_message(
+    parent: QWidget | None,
+    title: str,
+    text: str,
+    *,
+    confirm_text: str,
+    cancel_text: str = "Abbrechen",
+) -> tuple[QMessageBox, QPushButton]:
+    """Build an explicit, safe-by-default product confirmation message."""
+    message = QMessageBox(parent)
+    message.setWindowTitle(title)
+    message.setText(text)
+    cancel = message.addButton(cancel_text, QMessageBox.ButtonRole.RejectRole)
+    confirm = message.addButton(confirm_text, QMessageBox.ButtonRole.AcceptRole)
+    configure_button(cancel, "secondary", cancel_text)
+    configure_button(confirm, "primary", confirm_text)
+    cancel.setDefault(True)
+    confirm.setAutoDefault(False)
+    message.setDefaultButton(cancel)
+    message.setEscapeButton(cancel)
+    stabilize_message_box_buttons(message, (cancel, confirm))
+    return message, confirm

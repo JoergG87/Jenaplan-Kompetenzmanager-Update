@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLayout,
     QLineEdit,
-    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -41,6 +40,7 @@ from src.desktop_app.components import (
     StatusBadge,
     Toast,
     configure_button,
+    create_confirmation_message,
 )
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.learning_conference_view_model import (
@@ -1457,15 +1457,17 @@ class LearningConferenceDialog(QDialog):
     def _request_completion(self) -> None:
         if not self._saved_draft or self._dirty or self._save_pending:
             return
-        answer = QMessageBox.question(
+        message, confirm = create_confirmation_message(
             self,
             "Gespräch abschließen",
             "Es wird ein unveränderlicher Abschlussstand erzeugt. "
             "Der Entwurf bleibt für spätere Korrekturen bearbeitbar. Fortfahren?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
-            QMessageBox.StandardButton.Cancel,
+            confirm_text="Gespräch abschließen",
         )
-        if answer == QMessageBox.StandardButton.Yes:
+        message.exec()
+        confirmed = message.clickedButton() is confirm
+        message.deleteLater()
+        if confirmed:
             self.validation_message.set_message("")
             self.completion_requested.emit(
                 self._saved_draft.learning_conference_draft_id
