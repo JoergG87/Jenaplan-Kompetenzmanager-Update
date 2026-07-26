@@ -276,7 +276,6 @@ class BackupRestoreOperationsController(QObject):
         worker.finished.connect(thread.quit)
         worker.finished.connect(worker.deleteLater)
         thread.finished.connect(self._on_thread_finished)
-        thread.finished.connect(thread.deleteLater)
         thread.start()
         return True
 
@@ -307,9 +306,16 @@ class BackupRestoreOperationsController(QObject):
 
     @Slot()
     def _on_thread_finished(self) -> None:
+        thread = self._thread
         operation = self._operation
         result = self._terminal_result
         error_info = self._terminal_error
+        if thread is not None:
+            # QThread.finished is emitted before its native thread has wholly
+            # unwound. Defer deletion only after wait() confirms that no worker
+            # event can still access the Python-backed QThread wrapper.
+            thread.wait()
+            thread.deleteLater()
         self._thread = None
         self._worker = None
         self._operation = None

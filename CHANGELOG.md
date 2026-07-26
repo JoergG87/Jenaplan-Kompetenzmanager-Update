@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Stabilität des realen SQLite-Backup-Sperrtests verbessert: Der Test prüft
+  weiter Retry, begrenztes Warten, `BackupBusyError` und Snapshot-Cleanup,
+  koppelt sich aber nicht an eine nicht spezifizierte Callback-Anzahl der
+  SQLite-C-API.
+- Qt-Backup-/Restore-Worker erst nach bestätigtem nativem Thread-Ende zur
+  Löschung vormerken, damit ausstehende Qt-Events keinen bereits zerstörten
+  PySide-Threadwrapper erreichen.
+- Manipulationsprüfung beim Streamen einer verwalteten Backup-Datei an den
+  ersten tatsächlich gelesenen Chunk gebunden statt an ein zeitabhängiges
+  Polling auf ein Stagingziel.
 - Lokale Sicherheitslaufzeitdaten, Einstellungen und die Instanzsperre werden
   nicht mehr als unversionierte Repositoryänderungen angezeigt.
 

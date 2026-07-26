@@ -339,7 +339,10 @@ def test_long_write_transaction_retries_then_times_out(tmp_path: Path) -> None:
         blocker.rollback()
         blocker.close()
     elapsed = time.monotonic() - started
-    assert len(monotonic_calls) >= 3
+    # The SQLite C API owns the retry loop and its progress-callback cadence is
+    # not a Python-level contract. Two BUSY callbacks prove that a retry
+    # occurred and that this engine's bounded-timeout path raised the error.
+    assert len(monotonic_calls) >= 2
     assert elapsed >= 0.10
     assert elapsed < 1.0
     assert not (tmp_path / "busy.sqlite").exists()
@@ -645,28 +648,49 @@ def test_file_changed_during_real_streaming_aborts(tmp_path: Path) -> None:
     paths = _runtime(tmp_path)
     _insert_base_data(paths)
     document = _add_document(paths, "MED-000007", b"a" * (16 * 1024 * 1024))
+    first_chunk_read = threading.Event()
     mutation_finished = threading.Event()
+    real_fdopen = os.fdopen
 
-    def replace_while_streaming() -> None:
-        deadline = time.monotonic() + 5
-        while time.monotonic() < deadline:
-            staged = tuple(
-                paths.backups.glob(
-                    ".jkmbackup-staging-*/files/MED-000007.txt"
-                )
-            )
-            if staged and staged[0].exists():
-                replacement = document.with_suffix(".replacement")
-                replacement.write_bytes(b"b" * (16 * 1024 * 1024))
-                os.replace(replacement, document)
-                mutation_finished.set()
-                return
-            time.sleep(0.001)
+    class SignallingSource:
+        def __init__(self, source) -> None:
+            self._source = source
 
-    thread = threading.Thread(target=replace_while_streaming)
+        def __enter__(self):
+            self._source.__enter__()
+            return self
+
+        def __exit__(self, *args) -> None:
+            self._source.__exit__(*args)
+
+        def read(self, size: int) -> bytes:
+            chunk = self._source.read(size)
+            if chunk and not first_chunk_read.is_set():
+                first_chunk_read.set()
+                mutation_finished.wait(timeout=5)
+            return chunk
+
+        def __getattr__(self, name: str):
+            return getattr(self._source, name)
+
+    def open_source(descriptor: int, mode: str, *args, **kwargs):
+        source = real_fdopen(descriptor, mode, *args, **kwargs)
+        if mode == "rb":
+            return SignallingSource(source)
+        return source
+
+    def replace_after_first_chunk() -> None:
+        if not first_chunk_read.wait(timeout=5):
+            return
+        replacement = document.with_suffix(".replacement")
+        replacement.write_bytes(b"b" * (16 * 1024 * 1024))
+        os.replace(replacement, document)
+        mutation_finished.set()
+
+    thread = threading.Thread(target=replace_after_first_chunk)
     thread.start()
     try:
-        with mock.patch("src.core.backup._COPY_CHUNK_SIZE", 4096):
+        with mock.patch("src.core.backup.os.fdopen", side_effect=open_source):
             with pytest.raises(BackupIntegrityError, match="veraendert oder ersetzt"):
                 _create(paths)
     finally:
