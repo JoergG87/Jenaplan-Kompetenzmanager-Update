@@ -1,11 +1,19 @@
-# Jenaplan-Kompetenzmanager 0.2.2 – Beaufsichtigtes Pilotupdate
+# Jenaplan-Kompetenzmanager 0.3.0 – Interner Security-Release-Candidate
 
-- Der Support-Reset ist für den beaufsichtigten Pilotbetrieb aktiviert.
-- Der Recovery-Code bleibt der bevorzugte erste Wiederherstellungsweg.
-- Der Support-Reset ist ausschließlich der betreute Ausnahmeweg nach Kontakt
-  mit dem Support.
-- Eine Reset-Anfrage überträgt keine Schülerdaten.
-- Das neue Passwort wird weiterhin von der Lehrkraft selbst festgelegt und
-  nicht durch den Support erzeugt.
-- Gespeicherte Anmeldung und Touch ID müssen nach einem Support-Reset erneut
-  eingerichtet werden.
+Dieser Stand dient ausschließlich der internen technischen Abnahme.
+
+- Der normale Produktpfad bleibt unverändert bei lokaler SQLite-Datenbank,
+  bestehender Dokumentablage und ZIP-v1-Backup/Restore.
+- Die neue Verschlüsselungsintegration ist standardmäßig deaktiviert, besitzt
+  keinen Schalter in der App und führt keine automatische Migration aus.
+- SQLCipher sowie verschlüsselte Dokument- und Backupcontainer werden nur in
+  einem privaten, markergebundenen technischen Testbestand geprüft.
+- Der produktive Support-Reset bleibt der beaufsichtigte Ausnahmeweg; ein
+  Passwortwechsel oder Support-Reset rotiert keine Datenverschlüsselungskeys.
+- Windows, Developer-ID-Signierung, Apple-Notarisierung, physische Touch ID,
+  Produkt- oder Pilotmigration und ein öffentlicher Release sind nicht
+  freigegeben.
+
+Die Bezeichnung „Security-Release-Candidate“ ist keine Aussage über
+Datenschutzkonformität, sichere physische Löschung oder Schutz vor einem
+kompromittierten Benutzerprozess.

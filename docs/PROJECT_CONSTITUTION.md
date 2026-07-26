@@ -1,5 +1,47 @@
 # Project Constitution
 
+## Entwicklungsgrenze Security Sprint 12
+
+Security Sprint 12 darf einen internen macOS-arm64-Testbuild `0.3.0` /
+Build `300` erzeugen und den bereits committed Sprint-11-Pfad darin prüfen.
+Das Integrationsgate bleibt standardmäßig aus, besitzt keine UI und darf nur
+über den expliziten Pakettestbefehl, den exakten Gatewert, den separaten
+Pakettestmarker sowie den privaten doppelt markierten System-Temporärroot
+ausgeführt werden. Normaler Startup darf weder den Integrationsorchestrator
+noch den Pakettestrunner importieren.
+
+Der Gate-Off-Build bleibt beim bestehenden Klartext-SQLite-, Dokument- und
+ZIP-v1-Backup-/Restorepfad. Der interne Gate-On-Pakettest darf ausschließlich
+synthetische Daten verwenden und prüft SQLCipher, Dokument- und
+Backupcontainer, Restore-Staging, Reopen, falschen Schlüssel, Manipulation,
+echte Prozessabbrüche und deaktiviertes Gate bei vorhandenem Testbestand.
+Deterministische synthetische Testschlüssel sind keine Produktkeys und dürfen
+nur aus der Identität des markergebundenen temporären Testroots abgeleitet
+werden.
+
+Der macOS-Build muss Python, PySide6/Shiboken, SQLCipher, PyNaCl/libsodium,
+cryptography, cffi, `_cffi_backend`, PyInstaller, Sparkle und die native
+Security-Bridge exakt prüfen. Das fertige Bundle enthält ausschließlich
+arm64-Mach-O-Slices, die erforderlichen Lizenzhinweise und keine Datenbanken,
+Backups, Dokumentcontainer, Schlüssel, Exceldateien, Pilotdaten, Secrets oder
+textuellen Entwicklerpfade. Abweichungen blockieren den Build.
+
+Ein separat markergebundener Pakettest darf mit künstlicher technischer
+Security-Ablage einen DMK im realen macOS-Keychain anlegen, nach Prozess- und
+Bundlepfadwechsel erneut lesen, einen Passwortwechsel ohne DMK-Rotation
+prüfen, fehlende beziehungsweise falsche Einträge fail-closed nachweisen und
+den Testeintrag anschließend entfernen. Verweigerter Zugriff,
+Developer-ID-/Notarisierungsübergang und neue echte Buildsignatur bleiben
+reale Abnahmegrenzen.
+
+Windows bleibt ohne reale Windows-x64-E2E-Umgebung ungeprüft. Der vorhandene
+DMK-Plattformport bleibt dort absichtlich unsupported; es wird keine
+DPAPI-Freigabe simuliert. SQLCipher Community 4.12.0 ist ausschließlich die
+explizit dokumentierte Sprint-11-Testengine im internen Gate-On-Pfad; der
+kontrollierte SQLCipher-4.17.0-Produktzielstand bleibt offen. Keine
+Produktmigration, Pilotaktivierung, Recovery-UI, Stable-Appcast-Aktivierung,
+Veröffentlichung oder rechtliche Compliance-Aussage ist zulässig.
+
 ## Entwicklungsgrenze Security Sprint 11
 
 Security Sprint 11 darf die Foundations aus Security Sprint 8 bis 10

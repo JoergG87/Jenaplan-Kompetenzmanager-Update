@@ -1,5 +1,14 @@
 # UI Data Mapping
 
+## Security Sprint 12 - Versionsprojektion im Über-Dialog
+
+| UI-Feld | Quelle | Persistenz | Regel |
+|---|---|---|---|
+| Version / Build | `APP_VERSION` und `APP_BUILD_VERSION` aus `src.version` | Nein | read-only; identisch zu Bundle-, Update- und Releasemetadaten |
+
+Gate, SQLCipher-/libsodium-Status, Keychain-Testzustand, Testpfade,
+Architekturen und Paketprüfungen werden nicht in der normalen UI angezeigt.
+
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 
 Das interne Gate, die Integrationsphasen, Schema-/Key-/Storage-IDs,

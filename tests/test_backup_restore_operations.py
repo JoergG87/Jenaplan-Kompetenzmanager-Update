@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 import tempfile
+import threading
 import time
 from unittest import mock
 
@@ -90,6 +91,20 @@ class _RestoreService:
 
     def create_safety_backup(self, _command) -> object:
         return self._run("create_safety_backup")
+
+
+class _EventLoopProbeBackupService:
+    def __init__(self) -> None:
+        self.entered = threading.Event()
+        self.release = threading.Event()
+        self.completed = False
+
+    def create(self, _command) -> object:
+        self.entered.set()
+        if not self.release.wait(timeout=3):
+            raise RuntimeError("event_loop_probe_not_released")
+        self.completed = True
+        return object()
 
 
 def _create_operation() -> BackupRestoreOperation:
@@ -217,7 +232,7 @@ class TestBackupRestoreOperationsController:
         cls.app = QApplication.instance() or QApplication([])
 
     def test_slow_backup_keeps_main_event_loop_responsive(self) -> None:
-        service = _BackupService(delay=0.2)
+        service = _EventLoopProbeBackupService()
         controller = BackupRestoreOperationsController(
             backup_service=service,
             restore_service=_RestoreService(),
@@ -225,11 +240,12 @@ class TestBackupRestoreOperationsController:
         ticks_while_running: list[bool] = []
         timer = QTimer()
         timer.setInterval(5)
-        timer.timeout.connect(
-            lambda: ticks_while_running.append(True)
-            if not service.completed
-            else None
-        )
+        def observe_running_worker() -> None:
+            if service.entered.is_set() and not service.completed:
+                ticks_while_running.append(True)
+                service.release.set()
+
+        timer.timeout.connect(observe_running_worker)
         timer.start()
 
         assert controller.start(_create_operation())

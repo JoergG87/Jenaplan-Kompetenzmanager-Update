@@ -1,5 +1,31 @@
 # Sprintplanung
 
+## Security Sprint 12 - Release-Hardening und Packaging-Abnahme
+
+**Status:** Technische Abnahme mit GO ausschließlich für den internen
+macOS-arm64-Security-RC abgeschlossen; kein Commit, keine Veröffentlichung und
+keine Produkt- oder Pilotaktivierung.
+
+- [x] Release-/Packaging-Matrix vor Buildänderungen erstellen.
+- [x] Version `0.3.0` / Build `300` zentralisieren und im Über-Dialog
+  read-only projizieren.
+- [x] PyNaCl 1.6.2, sqlcipher3 0.6.2, `_cffi_backend` und native Module für
+  den internen macOS-Build pinnen und explizit bündeln.
+- [x] Nur markergebundene interne Gate-On- und Keychain-Pakettestrunner
+  ergänzen; normaler Startup bleibt importfrei.
+- [x] arm64-Thinning, Bundle-/Lizenz-/Artefakt-/Pfadprüfung und sichere
+  temporäre Buildziele ergänzen.
+- [x] Gate-Off-, Gate-On-, Keychain- und Bundle-Smokes im gebauten App-Bundle
+  vollständig grün nachweisen.
+- [x] Sprint-8-bis-11-, Support-, Qt-Stabilitäts- und Gesamtsuite erneut grün
+  nachweisen.
+- [x] Finale P0/P1/P2-Klassifikation und RC-Gates dokumentieren.
+
+Windows-E2E, Developer-ID-Signierung, Notarisierung, physische Touch ID,
+vollständiger Power-Loss, SQLCipher-4.17.0-Produktbasis, Produktmigration,
+Pilotaktivierung und Veröffentlichung sind nicht Bestandteil dieses internen
+GO.
+
 ## Security-Roadmap nach ADR-088
 
 ### Security Sprint 10 - Dokumentverschlüsselung

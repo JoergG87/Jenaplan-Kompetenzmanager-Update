@@ -1,5 +1,43 @@
 # Architekturentscheidungen
 
+## ADR-093 - Security-Funktionen werden im Bundle nur über doppelt gegatete interne Smokes geprüft
+
+**Status:** Angenommen für Security Sprint 12 und den internen
+macOS-arm64-Testbuild 0.3.0; keine Produkt-, Pilot- oder Releaseaktivierung.
+
+Der normale App-Start bleibt Gate-Off und importiert weder den
+Sprint-11-Orchestrator noch die Pakettestrunner. PyInstaller nimmt die
+erforderlichen SQLCipher-, PyNaCl/libsodium-, cffi- und Integrationsmodule
+dennoch explizit auf. Nur ein eigener Kommandozeilen-Testeinstieg zusammen mit
+dem bestehenden Paketmarker, dem exakten Sprint-11-Gatewert und einem privaten
+doppelt markierten System-Temporärroot darf den Gate-On-Pfad laden. Dadurch
+wird die echte Bundleauflösung geprüft, ohne einen normalen Startuphook oder
+eine UI-Aktivierung einzuführen.
+
+Der Gate-On-Smoke verwendet ausschließlich synthetische Daten und an die
+temporäre Rootidentität gebundene deterministische Testschlüssel. Er prüft
+Migration, verschlüsselte Dokumente und Backups, Restore-Staging, Reopen,
+falschen Schlüssel, manipulierte Artefakte, Gate-Off bei vorhandenem Bestand
+und repräsentative echte Prozessabbrüche. Diese Testschlüssel sind weder
+Produkt- noch Pilotkeys und verlassen den temporären Testbestand nicht.
+
+Ein zweiter Testeinstieg prüft den realen macOS-Keychain-DMK-Port in einem
+separaten künstlichen Security-Root. Der Test widerruft und löscht seinen
+Eintrag am Ende. Physische Touch ID, verweigerter Nutzerzugriff,
+Developer-ID-/Notarisierungsübergang und eine tatsächlich neue signierte
+Buildversion bleiben manuelle reale Gates.
+
+Der macOS-Build pinnt `sqlcipher3` 0.6.2 / SQLCipher Community 4.12.0 und
+PyNaCl 1.6.2 ausschließlich für diesen internen inaktiven Testpfad. Das ist
+keine Ersetzung des dokumentierten SQLCipher-4.17.0-Produktziels. Eine
+automatische oder produktive Migration bleibt gesperrt. Das fertige Bundle
+wird vor Codesign auf arm64 reduziert und danach auf Version, native
+Abhängigkeiten, Lizenztexte, verbotene Artefakte und Entwicklerpfade geprüft.
+
+Windows besitzt weiterhin keinen implementierten DPAPI-Adapter und keine
+reale E2E-Abnahme. Ein unsupported/fail-closed Port darf nicht als
+Windows-Freigabe umgedeutet werden.
+
 ## ADR-092 - Sprint 11 integriert nur in einem markergebundenen Test-Root
 
 **Status:** Angenommen für den standardmäßig inaktiven Security-Sprint-11-

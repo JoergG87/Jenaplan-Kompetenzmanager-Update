@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import runpy
+from importlib import metadata
 from pathlib import Path
 
 
@@ -28,12 +29,60 @@ PILOT_FIRST_STEPS_PDF = Path(os.environ["JENAPLAN_PILOT_FIRST_STEPS_PDF"])
 if not PILOT_APPCAST_URL.startswith("https://"):
     raise RuntimeError("Der Pilot-Appcast muss eine feste HTTPS-URL verwenden.")
 
+
+def distribution_file(distribution_name, suffix):
+    distribution = metadata.distribution(distribution_name)
+    matches = tuple(
+        distribution.locate_file(item)
+        for item in distribution.files or ()
+        if str(item).endswith(suffix)
+    )
+    if len(matches) != 1 or not matches[0].is_file():
+        raise RuntimeError(
+            f"Lizenzdatei für {distribution_name} fehlt: {suffix}"
+        )
+    return matches[0]
+
+
 datas = [
     (str(PROJECT_ROOT / "assets"), "assets"),
     (str(PROJECT_ROOT / "data" / "curriculum_catalog_v1.csv"), "data"),
     (str(PAYLOAD_ROOT / "pilot_build_info.json"), "."),
     (str(PILOT_FIRST_STEPS_PDF), "pilot_guides"),
     (str(SPARKLE_LICENSE), "third_party_licenses"),
+    (
+        str(distribution_file("PyNaCl", "licenses/LICENSE")),
+        "third_party_licenses/PyNaCl",
+    ),
+    (
+        str(
+            distribution_file(
+                "PyNaCl",
+                "licenses/licenses/LICENSE.libsodium.txt",
+            )
+        ),
+        "third_party_licenses/libsodium",
+    ),
+    (
+        str(distribution_file("sqlcipher3", "licenses/LICENSE")),
+        "third_party_licenses/sqlcipher3",
+    ),
+    (
+        str(distribution_file("cryptography", "licenses/LICENSE")),
+        "third_party_licenses/cryptography",
+    ),
+    (
+        str(distribution_file("cffi", "licenses/LICENSE")),
+        "third_party_licenses/cffi",
+    ),
+    (
+        str(
+            PROJECT_ROOT
+            / "packaging"
+            / "THIRD_PARTY_NOTICES_SECURITY_0.3.0.md"
+        ),
+        "third_party_licenses",
+    ),
 ]
 initial_data = PAYLOAD_ROOT / "pilot_initial"
 if initial_data.is_dir():
@@ -66,6 +115,14 @@ a = Analysis(
         "src.security.infrastructure.sqlite_repository",
         "src.security.infrastructure.system",
         "src.security.infrastructure.platform_auth",
+        "src.security.packaged_integration_smoke",
+        "src.security.packaged_keychain_smoke",
+        "src.security.integration_gate",
+        "src.security.integration_orchestrator",
+        "src.security.integration_database",
+        "src.security.integration_backup",
+        "src.security.document_container",
+        "src.security.backup_container",
         "src.updater.application",
         "src.updater.domain",
         "src.updater.infrastructure.sparkle",
@@ -73,6 +130,13 @@ a = Analysis(
         "argon2.low_level",
         "cryptography",
         "cryptography.hazmat.primitives.asymmetric.ed25519",
+        "_cffi_backend",
+        "cffi",
+        "nacl",
+        "nacl._sodium",
+        "nacl.bindings",
+        "sqlcipher3",
+        "sqlcipher3._sqlite3",
     ],
     hookspath=[],
     hooksconfig={},

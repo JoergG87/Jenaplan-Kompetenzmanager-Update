@@ -43,6 +43,10 @@ from src.version import APP_VERSION
 PACKAGED_SMOKE_MARKER_ENV = "JENAPLAN_PACKAGED_SMOKE_MARKER"
 PACKAGED_SMOKE_MARKER_VALUE = "isolated-v1"
 PACKAGED_SMOKE_TEMP_PREFIX = "jenaplan-packaged-smoke-"
+PACKAGED_SECURITY_INTEGRATION_ARGUMENT = (
+    "--packaged-security-integration-test"
+)
+PACKAGED_KEYCHAIN_SMOKE_ARGUMENT = "--packaged-keychain-smoke"
 
 
 def _validated_packaged_smoke_data_root(
@@ -112,6 +116,40 @@ def _argument_value(arguments: list[str], name: str) -> str | None:
 def main() -> int:
     """Start the desktop app."""
     arguments = list(sys.argv)
+    try:
+        packaged_keychain_mode = _argument_value(
+            arguments,
+            PACKAGED_KEYCHAIN_SMOKE_ARGUMENT,
+        )
+    except RuntimeStorageError as error:
+        print(f"Keychain-Pakettest abgelehnt: {error}", file=sys.stderr)
+        return 2
+    if packaged_keychain_mode is not None:
+        from src.security.packaged_keychain_smoke import (
+            run_packaged_keychain_smoke,
+        )
+
+        return run_packaged_keychain_smoke(
+            packaged_keychain_mode,
+            environ=os.environ,
+        )
+    try:
+        packaged_security_mode = _argument_value(
+            arguments,
+            PACKAGED_SECURITY_INTEGRATION_ARGUMENT,
+        )
+    except RuntimeStorageError as error:
+        print(f"Security-Pakettest abgelehnt: {error}", file=sys.stderr)
+        return 2
+    if packaged_security_mode is not None:
+        from src.security.packaged_integration_smoke import (
+            run_packaged_security_integration_smoke,
+        )
+
+        return run_packaged_security_integration_smoke(
+            packaged_security_mode,
+            environ=os.environ,
+        )
     if "--restore-worker" in arguments:
         arguments.remove("--restore-worker")
         from src.desktop_app.restore_worker import run as run_restore_worker
@@ -348,7 +386,12 @@ def main() -> int:
 
     window.setWindowIcon(_app_icon())
     if packaged_smoke:
-        result = _run_packaged_smoke(app, window, paths)
+        result = _run_packaged_smoke(
+            app,
+            window,
+            paths,
+            login_authenticated=session is not None,
+        )
         lock.release()
         return result
     window.showMaximized()
@@ -394,11 +437,19 @@ def _run_packaged_smoke(
     app: QApplication,
     window: JenaplanDesktopApp,
     paths: RuntimePaths,
+    *,
+    login_authenticated: bool,
 ) -> int:
-    """Exercise packaged shell, catalog, SQLite, PDF and backup dependencies."""
+    """Exercise packaged auth, shell, SQLite, document, backup and restore."""
     from src.application.commands.backup import (
         BackupApplicationService,
         CreateBackupCommand,
+    )
+    from src.application.commands.restore import (
+        PrepareRestoreStagingCommand,
+        RestoreApplicationService,
+        VerifyPreparedRestoreQuery,
+        VerifyRestoreBackupQuery,
     )
     from prototypes.pdf_engine.output_models import (
         DocumentMetadata,
@@ -450,6 +501,27 @@ def _run_packaged_smoke(
             ),
         )
     )
+    restore_service = RestoreApplicationService()
+    restore_verification = restore_service.verify(
+        VerifyRestoreBackupQuery(backup_result.path)
+    )
+    restore_staging = restore_service.prepare_staging(
+        PrepareRestoreStagingCommand(
+            backup_result.path,
+            paths,
+            "RST-PACKAGED-SMOKE",
+        )
+    )
+    prepared_restore = restore_service.verify_prepared(
+        VerifyPreparedRestoreQuery(restore_staging.restore_id, paths)
+    )
+    document_probe = paths.documents / ".packaged-smoke-document-probe"
+    document_probe.write_bytes(b"synthetic packaged document probe\n")
+    document_access_verified = (
+        document_probe.read_bytes()
+        == b"synthetic packaged document probe\n"
+    )
+    document_probe.unlink()
     student_count = len(window.adapter.list_students())
     competency_count = len(window.curriculum_adapter.list_entries())
     payload = {
@@ -460,13 +532,29 @@ def _run_packaged_smoke(
         "competency_count": competency_count,
         "data_root": str(paths.root),
         "database_exists": paths.database.is_file(),
+        "document_access_verified": document_access_verified,
+        "document_probe_removed": not document_probe.exists(),
+        "login_authenticated": login_authenticated,
         "pdf_exists": pdf_path.is_file(),
+        "restore": {
+            "archive_verified": (
+                restore_verification.path == backup_result.path
+            ),
+            "prepared_status": prepared_restore.status,
+            "restore_id": prepared_restore.restore_id,
+        },
+        "security_integration_imported": any(
+            name == "src.security.integration_orchestrator"
+            or name.startswith("src.security.packaged_integration")
+            for name in sys.modules
+        ),
         "student_count": student_count,
         "window_title": window.windowTitle(),
     }
-    print(json.dumps(payload, ensure_ascii=False, sort_keys=True), flush=True)
     window.close()
     app.processEvents()
+    payload["regular_exit_completed"] = not window.isVisible()
+    print(json.dumps(payload, ensure_ascii=False, sort_keys=True), flush=True)
     return 0
 
 

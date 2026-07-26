@@ -13,11 +13,13 @@ from PySide6.QtWidgets import (
 from src.desktop_app.assets import create_app_icon_label
 from src.desktop_app.components import StatusBadge, configure_button
 from src.desktop_app.theme import set_label_style
+from src.version import APP_BUILD_VERSION, APP_VERSION
 
 
 APP_INFO_TITLE = "Über Jenaplan-Kompetenzmanager"
 APP_INFO_APP_NAME = "Jenaplan-Kompetenzmanager"
 APP_INFO_MODE = "Lokale Desktop-App"
+APP_INFO_VERSION = f"Version {APP_VERSION} · Build {APP_BUILD_VERSION}"
 APP_INFO_DEVELOPER_NAME = "Jörg Gehrke"
 APP_INFO_DESCRIPTION = "Kompetenzmanagement und Entwicklungsdokumentation für Jenaplan-Schulen"
 APP_INFO_COPYRIGHT = "© 2026 Jörg Gehrke"
@@ -46,6 +48,10 @@ class AppInfoDialog(QDialog):
         mode = StatusBadge(APP_INFO_MODE)
         mode.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(mode, 0, Qt.AlignmentFlag.AlignHCenter)
+        version = QLabel(APP_INFO_VERSION)
+        version.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        set_label_style(version, "muted")
+        layout.addWidget(version)
         developed_by = QLabel("Entwickelt von")
         developed_by.setAlignment(Qt.AlignmentFlag.AlignCenter)
         set_label_style(developed_by, "muted")

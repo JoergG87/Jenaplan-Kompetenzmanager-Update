@@ -1,5 +1,53 @@
 # CHANGELOG
 
+## Security Sprint 12 - Release-Hardening für internen 0.3.0-RC
+
+### Changed
+
+- Produkt- und Bundleversion auf `0.3.0` / Build `300` vereinheitlicht und im
+  bestehenden Über-Dialog sichtbar gemacht.
+- macOS-Build um exakt gepinnte PyNaCl-/libsodium- und
+  sqlcipher3-/SQLCipher-Testlaufzeiten, explizite Hidden Imports und gebündelte
+  Security-Lizenztexte ergänzt.
+- Build- und Distributionsziele auf validierte Projekt-/Temporärwurzeln
+  begrenzt; universelle Mach-O-Dateien vor Codesign auf arm64 reduziert.
+
+### Added
+
+- Doppelt markergebundenen internen Pakettest für Migration,
+  Dokumentcontainer, verschlüsseltes Backup, Restore-Staging, Reopen,
+  falschen Key, Manipulation, Gate-Off-Bestand und echte Crash-Recovery
+  ergänzt.
+- Separaten realen macOS-Keychain-Pakettest für DMK-Provisionierung,
+  Prozess-/Bundle-Reopen, Passwortwechsel ohne Rotation, fehlenden/falschen
+  Eintrag und Cleanup ergänzt.
+- Vor-PyInstaller-Laufzeitaudit sowie statischen Bundle-, Architektur-,
+  Lizenz-, Artefakt- und Entwicklerpfadscan ergänzt.
+- DMG-Erzeugung gegen die asynchrone Finder-Mount-Sichtbarkeit gehärtet und
+  den Qt-Responsivitätstest deterministisch an einen real verarbeiteten
+  Hauptthread-Timer-Tick gebunden.
+
+### Tests
+
+- Finaler interner arm64-Build einschließlich Gate-Off, 23 Gate-On-Schritten,
+  vier echten Crash-Recoveries, realem Keychain-Lifecycle, 141
+  arm64-Mach-O-Prüfungen und DMG-Erzeugung grün.
+- Gesamtsuite final mit 1.625 bestandenen und 20 bestehenden
+  plattformgebundenen übersprungenen Tests grün; 576 Security-/Support-/
+  Backup-/Restore-Fokustests sowie wiederholte Qt-Reihenfolgeläufe grün.
+- `compileall`, `pip check`, Build-Syntax, Codesign-, Lizenz-, Secret-,
+  Artefakt-, Entwicklerpfad- und Klartextprüfungen bestanden.
+
+### Boundaries
+
+- Normaler Gate-Off-Startup importiert keinen Integrationsorchestrator und
+  bleibt beim bestehenden SQLite-, Dokument- und ZIP-v1-Pfad.
+- SQLCipher Community 4.12.0 ist nur die explizite interne
+  Sprint-11-Testengine; SQLCipher 4.17.0 bleibt Produktgate.
+- Keine Produkt-/Pilotmigration, keine Recovery-UI, kein Stable-Appcast, keine
+  Windows-Freigabe, keine Developer-ID-/Notarisierungsbehauptung und keine
+  rechtliche Compliance-Aussage.
+
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 
 ### Architecture

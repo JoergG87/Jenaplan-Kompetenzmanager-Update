@@ -1,5 +1,31 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Security Sprint 12 - interner 0.3.0-Release-Candidate
+
+Security Sprint 12 härtet ausschließlich Build, Paketlaufzeit und technische
+Abnahme des standardmäßig inaktiven Sprint-11-Pfads. Die verbindliche
+Release-/Packaging-Matrix und die jeweils automatisiert, statisch oder real
+erhobene Evidenz stehen in `docs/SECURITY_RELEASE_0_3_0.md`.
+
+`src.version` führt `0.3.0` / Build `300` als gemeinsame Quelle für Bundle,
+Über-Dialog, Updates, Dateinamen und internen Releasebericht. Der normale
+Gate-Off-Pfad bleibt Klartext-SQLite, bestehende Dokumentablage und
+ZIP-v1-Backup/Restore. Nur interne markergebundene Pakettests laden SQLCipher,
+PyNaCl/libsodium und den Integrationsorchestrator. Es gibt keine automatische
+Migration, keine UI-Aktivierung und keinen Zugriff auf Pilot- oder
+Produktdaten.
+
+Der macOS-arm64-Build verwendet ein neues Venv mit exakt gepinnten Versionen,
+prüft native Laufzeiten vor PyInstaller, reduziert das fertige Bundle auf
+arm64, signiert erst danach und führt Gate-Off-, Gate-On-, Keychain-, Bundle-,
+Artefakt-, Pfad- und Klartextprüfungen vor DMG-Erzeugung aus. SQLCipher
+Community 4.12.0 bleibt ausdrücklich nur die Sprint-11-Testengine; das
+SQLCipher-4.17.0-Produktziel ist nicht freigegeben.
+
+Windows, Developer ID, Notarisierung, physische Touch ID, vollständiger
+Power-Loss-Nachweis, Produktmigration, Pilotaktivierung, Stable-Appcast und
+öffentlicher Release bleiben getrennte Gates.
+
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 
 Security Sprint 11 verbindet die isolierten Foundations aus Sprint 8 bis 10

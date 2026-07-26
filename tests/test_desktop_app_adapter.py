@@ -3170,10 +3170,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn('APP_INFO_APP_NAME = "Jenaplan-Kompetenzmanager"', source)
         self.assertIn('APP_INFO_MODE = "Lokale Desktop-App"', source)
+        self.assertIn(
+            'APP_INFO_VERSION = f"Version {APP_VERSION} · Build {APP_BUILD_VERSION}"',
+            source,
+        )
         self.assertIn('APP_INFO_DEVELOPER_NAME = "Jörg Gehrke"', source)
         self.assertIn('APP_INFO_DESCRIPTION = "Kompetenzmanagement und Entwicklungsdokumentation für Jenaplan-Schulen"', source)
         self.assertIn('APP_INFO_COPYRIGHT = "© 2026 Jörg Gehrke"', source)
-        self.assertNotIn("APP_INFO_VERSION", source)
         self.assertNotIn("APP_INFO_STORAGE_HINT", source)
         self.assertNotIn("PySide6 Prototyp", source)
         self.assertNotIn("nicht dauerhaft gespeichert", source)
@@ -3187,6 +3190,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             label.text() for label in info_dialog.findChildren(QLabel)
         )
         self.assertIn("Jenaplan-Kompetenzmanager", visible_text)
+        self.assertIn("Version 0.3.0 · Build 300", visible_text)
         self.assertIn("Entwickelt von", visible_text)
         self.assertIn("Jörg Gehrke", visible_text)
         self.assertIn("© 2026 Jörg Gehrke", visible_text)

@@ -37,7 +37,7 @@ if [ "$ARCHITECTURE" != "arm64" ]; then
     echo "Dieser Pilotbuild ist für arm64 konfiguriert; gefunden: $ARCHITECTURE" >&2
     exit 1
 fi
-for tool in python3 hdiutil codesign ditto sips iconutil security osascript xcrun; do
+for tool in python3 hdiutil codesign ditto sips iconutil security osascript xcrun file lipo; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "Benötigtes Build-Werkzeug fehlt: $tool" >&2
         exit 1
@@ -58,7 +58,7 @@ else
     SOURCE_TREE_STATE="clean"
 fi
 APP_NAME="Jenaplan-Kompetenzmanager"
-BUILD_ROOT="$ROOT/build/macos-pilot"
+BUILD_ROOT="${JENAPLAN_MACOS_BUILD_ROOT:-$ROOT/build/macos-pilot}"
 VENV="$BUILD_ROOT/venv"
 PAYLOAD="$BUILD_ROOT/payload"
 ICONSET="$BUILD_ROOT/AppIcon.iconset"
@@ -68,7 +68,7 @@ SPARKLE_BRIDGE="$BUILD_ROOT/libjkm_macos_sparkle.dylib"
 SPARKLE_VENDOR="$BUILD_ROOT/sparkle"
 PYI_DIST="$BUILD_ROOT/pyinstaller-dist"
 PYI_WORK="$BUILD_ROOT/pyinstaller-work"
-DIST_ROOT="$ROOT/dist/macos"
+DIST_ROOT="${JENAPLAN_MACOS_DIST_ROOT:-$ROOT/dist/macos}"
 APP_PATH="$DIST_ROOT/$APP_NAME.app"
 if [ "$DATA_MODE" = "release" ]; then
     DMG_NAME="$APP_NAME-$VERSION-macOS-$ARCHITECTURE.dmg"
@@ -99,6 +99,32 @@ LAURA_TESTDATA_BACKUP="$DIST_ROOT/Laura-Testdaten-$VERSION.jkmbackup"
 LAURA_TEST_WORKBOOK="${LAURA_TEST_WORKBOOK:-$ROOT/docs/Pilottest_Laura_Schuelerprofil_Variante_A.xlsx}"
 MOUNT_DIR=""
 
+validate_output_root() {
+    local candidate="$1"
+    local label="$2"
+    if [[ "$candidate" != /* ]] \
+        || [ "$candidate" = "/" ] \
+        || [ "$candidate" = "$ROOT" ] \
+        || [ -L "$candidate" ]; then
+        echo "Abbruch: Unsicheres $label: $candidate" >&2
+        exit 2
+    fi
+    case "$candidate" in
+        "$ROOT/build/"*|"$ROOT/dist/"*|/private/tmp/*|"${TMPDIR%/}/"*)
+            ;;
+        *)
+            echo "Abbruch: $label liegt nicht in einer freigegebenen Build- oder Temporärwurzel." >&2
+            exit 2
+            ;;
+    esac
+}
+validate_output_root "$BUILD_ROOT" "Build-Ziel"
+validate_output_root "$DIST_ROOT" "Distributions-Ziel"
+if [ "$BUILD_ROOT" = "$DIST_ROOT" ]; then
+    echo "Abbruch: Build- und Distributions-Ziel müssen getrennt sein." >&2
+    exit 2
+fi
+
 cleanup_mount() {
     if [ -n "$MOUNT_DIR" ] && [ -d "$MOUNT_DIR" ]; then
         hdiutil detach "$MOUNT_DIR" -quiet >/dev/null 2>&1 || true
@@ -111,6 +137,7 @@ mkdir -p "$BUILD_ROOT" "$DIST_ROOT"
 
 python3 -m venv "$VENV"
 "$VENV/bin/python" -m pip install --disable-pip-version-check -r requirements-macos-build.txt
+"$VENV/bin/python" scripts/audit_macos_security_runtime.py
 
 "$VENV/bin/python" scripts/prepare_macos_pilot_payload.py \
     --output "$PAYLOAD" \
@@ -180,6 +207,7 @@ export DYLD_FRAMEWORK_PATH="$SPARKLE_SOURCE"
 ditto "$PYI_DIST/$APP_NAME.app" "$APP_PATH"
 rm -rf "$APP_PATH/Contents/Frameworks/Sparkle.framework"
 ditto "$SPARKLE_SOURCE/Sparkle.framework" "$APP_PATH/Contents/Frameworks/Sparkle.framework"
+"$VENV/bin/python" scripts/thin_macos_bundle_arm64.py "$APP_PATH"
 if { [ "$DATA_MODE" = "empty" ] || [ "$DATA_MODE" = "release" ]; } && find "$APP_PATH" -type f \( -name '*.sqlite' -o -name '*.db' \) -print -quit | grep -q .; then
     echo "Abbruch: Das App-Bundle enthält unerwartet eine Datenbank." >&2
     exit 1
@@ -221,6 +249,17 @@ if [ ! -f "$APP_PATH/Contents/Resources/third_party_licenses/Sparkle-LICENSE.txt
     echo "Abbruch: Der Sparkle-Lizenzhinweis fehlt im App-Bundle." >&2
     exit 1
 fi
+"$VENV/bin/python" scripts/audit_macos_app_bundle.py \
+    "$APP_PATH" \
+    --expected-version "$VERSION" \
+    --expected-build "$BUILD_VERSION"
+"$VENV/bin/python" scripts/smoke_test_macos_app.py \
+    "$APP_PATH" \
+    --expected-data-mode "$DATA_MODE"
+"$VENV/bin/python" scripts/smoke_test_macos_security_integration.py \
+    "$APP_PATH"
+"$VENV/bin/python" scripts/smoke_test_macos_keychain.py \
+    "$APP_PATH"
 
 mkdir -p "$DMG_STAGE"
 ditto "$APP_PATH" "$DMG_STAGE/$APP_NAME.app"
@@ -245,6 +284,13 @@ if [ -z "$MOUNT_DIR" ] || [ ! -d "$MOUNT_DIR" ]; then
 fi
 osascript <<OSA
 tell application "Finder"
+    repeat with attempt from 1 to 100
+        if exists disk "$VOLUME_NAME" then exit repeat
+        delay 0.1
+    end repeat
+    if not (exists disk "$VOLUME_NAME") then
+        error "DMG-Arbeitsvolume ist in Finder nicht sichtbar."
+    end if
     tell disk "$VOLUME_NAME"
         open
         set current view of container window to icon view
@@ -323,6 +369,10 @@ BUILD_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     echo "Updatekanal: pilot (manuelle Prüfung; keine automatische Installation)"
     echo "Pilot-Appcast: $PILOT_APPCAST_URL"
     echo "Stable-Kanal: deaktiviert"
+    echo "Security-Integrationsgate: standardmäßig deaktiviert; keine UI; nur markergebundener interner Test-Root"
+    echo "Gebündelter Security-Testpfad: sqlcipher3 0.6.2 / SQLCipher Community 4.12.0 / PyNaCl 1.6.2"
+    echo "Produktmigration: nicht aktiviert"
+    echo "Windows-Freigabe: nicht erteilt"
     echo
     echo "Automatisierter Teststand: siehe Abschlussbericht zum Release-Kandidaten"
     echo "Offene reale Prüfungen: echter Sleep/Wake; physische Touch-ID-Systemaufforderung und Fingerabdruck; App-Switcher; reale Keychain-/Touch-ID-Prüfung nach Update auf Lauras Mac; Developer-ID-Signierung; Apple-Notarisierung."

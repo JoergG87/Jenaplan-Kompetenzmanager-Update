@@ -1,5 +1,43 @@
 # Data Lifecycle
 
+## Security Sprint 12 - interner Build- und Pakettest-Lifecycle
+
+1. Branch, Referenz-HEAD, Index, gemischten Worktree, geschützte Exceldatei,
+   Versionsquellen, Requirements, Spec, native Laufzeiten und offene
+   Plattformgrenzen read-only inventarisieren.
+2. Den macOS-arm64-Build nur in einem explizit validierten Build- und
+   Distributionsroot ausführen. Abhängigkeiten aus der gepinnten Builddatei in
+   ein neues Venv installieren und Versionen, SQLCipher-Engine sowie
+   arm64-Verfügbarkeit vor PyInstaller fail-closed prüfen.
+3. Das App-Bundle mit Security-Testmodulen, SQLCipher, PyNaCl/libsodium,
+   `_cffi_backend`, Security-/Sparkle-Bridges und Lizenztexten bauen. Nach dem
+   Kopieren universelle Mach-O-Dateien auf arm64 reduzieren und erst danach
+   das vollständige Bundle signieren.
+4. Bundlemetadaten, native Architektur, benötigte Module, Lizenzen, verbotene
+   Artefakte und textuelle Entwicklerpfade statisch prüfen. Ein Fehler beendet
+   den Build vor DMG-Erzeugung.
+5. Gate-Off mit dem normalen Paket-Smoke in einem separaten
+   `JENAPLAN_APP_DATA_DIR` prüfen. Der Lauf muss normalen SQLite-, Dokument-,
+   PDF-, ZIP-v1-Backup- und Beendenpfad verwenden und bestätigt ausdrücklich,
+   dass kein Sprint-11-Orchestrator importiert wurde.
+6. Gate-On ausschließlich mit Paketmarker, exaktem Gatewert und beiden
+   Sprint-11-Markern prüfen. Separate Prozesse führen Migration, Reopen,
+   verschlüsseltes Backup, Restore-Staging, falschen Key, Manipulation,
+   deaktiviertes Gate bei vorhandenem Bestand sowie echte Abbrüche und
+   Neustart-Recovery aus.
+7. Den DMK-Keychain-Lifecycle in einem getrennten synthetischen Security-Root
+   prüfen: anlegen, in einem neuen Prozess und kopierten Bundle lesen,
+   Passwort ändern ohne DMK-Rotation, fehlenden/falschen Eintrag blockieren,
+   widerrufen und löschen. Zugriffverweigerung und Developer-ID-/Notarisierungs-
+   wechsel bleiben reale manuelle Gates.
+8. Erst nach Tests, Bundle-/Secret-/Pfad-/Klartextscan und vollständiger
+   Dokumentation darf ein interner RC als technisch vorbereitet gelten. Ein
+   uncommitteter oder inhaltlich nicht reproduzierbarer Stand bleibt NO-GO.
+
+Die Pakettestbefehle sind keine Startup-, UI-, Produktmigrations- oder
+Recoveryfunktion. Sie dürfen weder normale App-Daten noch Pilotbestände
+adressieren und erzeugen keine produktive Schlüsselablage.
+
 ## Security Sprint 11 - kontrollierter Integrations-Lifecycle
 
 ### Startup und Gate

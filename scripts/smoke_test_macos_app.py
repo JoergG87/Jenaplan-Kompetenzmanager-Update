@@ -76,6 +76,31 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
             )
         if not payload.get("backup_verified"):
             raise RuntimeError("Packaged-App-Smoke hat das Backup nicht verifiziert.")
+        if not payload.get("login_authenticated"):
+            raise RuntimeError("Packaged-App-Smoke hat den Login nicht bestätigt.")
+        if not payload.get("document_access_verified") or not payload.get(
+            "document_probe_removed"
+        ):
+            raise RuntimeError(
+                "Packaged-App-Smoke hat den Dokumentpfad nicht sauber geprüft."
+            )
+        restore = payload.get("restore", {})
+        if (
+            not restore.get("archive_verified")
+            or restore.get("prepared_status") != "verified"
+            or restore.get("restore_id") != "RST-PACKAGED-SMOKE"
+        ):
+            raise RuntimeError(
+                "Packaged-App-Smoke hat ZIP-v1-Restore-Staging nicht bestätigt."
+            )
+        if not payload.get("regular_exit_completed"):
+            raise RuntimeError(
+                "Packaged-App-Smoke hat das reguläre Beenden nicht bestätigt."
+            )
+        if payload.get("security_integration_imported"):
+            raise RuntimeError(
+                "Gate-Off-Startup hat den Security-Integrationspfad importiert."
+            )
         with sqlite3.connect(data_root / "kompetenzmanager.sqlite") as connection:
             student_count = connection.execute("SELECT COUNT(*) FROM students").fetchone()[0]
             report_revision_count = connection.execute(

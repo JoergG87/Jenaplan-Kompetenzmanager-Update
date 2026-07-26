@@ -1,5 +1,21 @@
 # Data Registry
 
+## Security Sprint 12 - interne Build- und Testdaten
+
+| Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| `requirements-macos-build.txt` | exakt gepinnte macOS-Buildabhängigkeiten einschließlich PyNaCl 1.6.2 und sqlcipher3 0.6.2 | Repository; keine Schlüssel oder Nutzerdaten | Build-Source-of-Truth |
+| interner Gate-Off-Buildroot | Venv, PyInstaller-Zwischenstand, Frameworks und generierte Dokumente | ausschließlich freigegebener Build- oder System-Temporärroot; kein Nutzerroot | verwerfbares Buildartefakt |
+| internes 0.3.0-App-Bundle | arm64-Code, Ressourcen, öffentliche Updatekonfiguration und Lizenztexte | internes Testartefakt; keine Datenbanken, Backups, Container, Schlüssel oder Exceldateien | nicht veröffentlicht |
+| Paket-Integrationsroot | synthetische SQLite-Quelle, Safety Copy, SQLCipher-Ziel, Dokument-/Backupcontainer, Journal, Replay-Anker und Restore-Staging | privater doppelt markierter System-Temporärroot | interner Gate-On-Testbestand |
+| Paket-Keychain-Root | ausschließlich künstlicher Security Store und DMK-Keysetmetadaten | privater markergebundener System-Temporärroot | interner Keychain-Testbestand |
+| macOS-Keychain-Testeintrag | zufälliger 256-Bit-DMK unter dem getrennten DMK-Service und zufälligen Test-IDs | realer lokaler Keychain; am Testende explizit widerrufen und gelöscht | flüchtige Abnahmeevidenz |
+| Security-Drittanbieterhinweise | Lizenztexte für PyNaCl, libsodium, sqlcipher3, cryptography und cffi plus Versionshinweis | nur App-Ressource `third_party_licenses` | Distributionshinweis |
+
+Produkt-, Pilot-, Laura-, Excel-, Appcast-, Supportschlüssel- und bestehende
+Runtime-Daten sind keine Sprint-12-Testquelle. Der Pakettest darf keinen
+normalen `RuntimePaths`-Root akzeptieren.
+
 ## Security Sprint 11 - markergebundene Integrationsquellen
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |

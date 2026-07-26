@@ -17,3 +17,7 @@ argon2-cffi==25.1.0
 cryptography==49.0.0
 cffi==2.0.0
 pycparser==3.0
+# Security Sprint 12: only the marker-bound Sprint-11 package test imports
+# these runtimes. Gate-Off continues to use standard-library SQLite.
+PyNaCl==1.6.2
+sqlcipher3==0.6.2

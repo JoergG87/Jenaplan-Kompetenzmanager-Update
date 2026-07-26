@@ -315,6 +315,15 @@ class MacosRuntimeTest(unittest.TestCase):
                     "backup_exists": True,
                     "backup_verified": True,
                     "build_info": {"data_mode": "empty"},
+                    "document_access_verified": True,
+                    "document_probe_removed": True,
+                    "login_authenticated": True,
+                    "regular_exit_completed": True,
+                    "restore": {
+                        "archive_verified": True,
+                        "prepared_status": "verified",
+                        "restore_id": "RST-PACKAGED-SMOKE",
+                    },
                 }
                 return subprocess.CompletedProcess(
                     args=args[0],

@@ -1,5 +1,16 @@
 # View Data Ownership
 
+## Security Sprint 12 - bestehender Über-Dialog und technische Testreports
+
+Der vorhandene `AppInfoDialog` projiziert zusätzlich ausschließlich
+`APP_VERSION` und `APP_BUILD_VERSION` aus `src.version`. Er besitzt keine
+Build-, Appcast-, Gate-, Keychain-, SQLCipher- oder Releaseentscheidung.
+
+Gate-Off-, Gate-On-, Bundle- und Keychain-Smokes liefern nur sanitierte
+technische JSON-Testreports an den aufrufenden internen Prüfprozess. Sie sind
+keine Produkt-View, kein ViewModel und keine sichtbare Recoveryführung.
+Widgets besitzen weiterhin keine Security-, Repository- oder Dateisystemlogik.
+
 ## Security Sprint 11 - Integration ohne neue View
 
 `SecurityIntegrationGate` und `SecurityIntegrationOrchestrator` besitzen die

@@ -1,5 +1,20 @@
 # Technical Naming Registry
 
+## Security Sprint 12 - Release-Hardening und Paketabnahme
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `PACKAGED_SECURITY_INTEGRATION_ARGUMENT` | Interner gefrorener Testeinstieg `--packaged-security-integration-test`; benötigt zusätzlich Paketmarker, exaktes Sprint-11-Gate und gültigen Test-Root | Security Packaging |
+| `PackagedSecurityIntegrationSmoke` | Qt-freier, nur im expliziten Pakettest importierter Ablauf für Migration, Reopen, Restore, Manipulation, falschen Key und echte Crash-Recovery | Security Packaging |
+| `PACKAGED_KEYCHAIN_SMOKE_ARGUMENT` | Interner gefrorener Testeinstieg `--packaged-keychain-smoke` für einen isolierten realen macOS-Keychain-Lifecycle | Security Packaging |
+| `PackagedKeychainSmoke` | Marker- und Temporärroot-gebundene DMK-Provisionierung, Reopen-, Passwortwechsel-, Fehler- und Cleanup-Prüfung ohne Produktdaten | Security Packaging |
+| `JENAPLAN_MACOS_BUILD_ROOT` | Optionales absolutes internes Buildziel ausschließlich unter freigegebener Build- oder System-Temporärwurzel | Packaging |
+| `JENAPLAN_MACOS_DIST_ROOT` | Optionales absolutes internes Distributionsziel ausschließlich unter freigegebener Dist- oder System-Temporärwurzel | Packaging |
+| `audit_macos_security_runtime.py` | Prüft gepinnte Python-/Krypto-/Qt-/SQLCipher-Laufzeiten und arm64-Verfügbarkeit vor PyInstaller | Packaging QA |
+| `thin_macos_bundle_arm64.py` | Entfernt vor Codesign alle nicht-arm64-Slices aus Mach-O-Dateien des internen Bundles | Packaging QA |
+| `audit_macos_app_bundle.py` | Prüft Bundlemetadaten, arm64-only, native Laufzeiten, Lizenzen und verbotene Artefakte/Pfade | Packaging QA |
+| `APP_INFO_VERSION` | Sichtbare read-only Projektion `Version <APP_VERSION> · Build <APP_BUILD_VERSION>` im bestehenden Über-Dialog | Desktop UI |
+
 ## Security Sprint 11 - kontrollierte Testintegration
 
 | Technischer Name | Bedeutung | Eigentümer |
