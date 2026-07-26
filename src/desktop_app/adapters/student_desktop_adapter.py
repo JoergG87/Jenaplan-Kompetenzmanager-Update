@@ -187,9 +187,16 @@ from src.desktop_app.view_models.student_view_model import (
 class StudentDesktopAdapter:
     """Thin adapter between Qt widgets and the application command layer."""
 
-    def __init__(self, database_path: Path = SQLITE_SPIKE_PATH) -> None:
-        self.database_path = Path(database_path)
-        self.database = self._open_database()
+    def __init__(
+        self,
+        database_path: Path = SQLITE_SPIKE_PATH,
+        *,
+        database: SQLiteDatabase | None = None,
+    ) -> None:
+        self.database_path = (
+            Path(database.path) if database is not None else Path(database_path)
+        )
+        self.database = database or self._open_database()
 
     def list_students(
         self,

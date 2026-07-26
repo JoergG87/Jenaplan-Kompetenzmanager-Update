@@ -230,12 +230,23 @@ class SyntheticEncryptedDocumentServiceV1:
         clock: UtcClock,
         fault_injector: Callable[[str], None] | None = None,
         chunk_size: int = DEFAULT_DOCUMENT_CHUNK_SIZE,
+        required_source_prefix: bytes | None = (
+            SYNTHETIC_DOCUMENT_SOURCE_PREFIX
+        ),
     ) -> None:
         self._random = random_source
         self._clock = clock
         self._fault = fault_injector or (lambda _phase: None)
         validate_document_chunk_size(chunk_size)
         self._chunk_size = chunk_size
+        if required_source_prefix is not None and (
+            not isinstance(required_source_prefix, bytes)
+            or not required_source_prefix
+        ):
+            raise EncryptedDocumentError(
+                "document_source_prefix_invalid"
+            )
+        self._required_source_prefix = required_source_prefix
 
     def create(
         self,
@@ -256,7 +267,12 @@ class SyntheticEncryptedDocumentServiceV1:
         source_name = _safe_leaf(source.source_name, "document_source_name_invalid")
         storage_name = _container_filename(storage_id, 1)
         _require_absent(storage_root / storage_name, "document_target_exists")
-        bound = _bind_source(source_root, source_name, self._chunk_size)
+        bound = _bind_source(
+            source_root,
+            source_name,
+            self._chunk_size,
+            required_prefix=self._required_source_prefix,
+        )
         try:
             self._fault("writer_after_source_bound")
             _require_layout_identity(layout_identity)
@@ -832,7 +848,11 @@ class SyntheticEncryptedDocumentServiceV1:
             _write_frame(fd, manifest_ciphertext, "document_manifest_write_failed")
             self._fault("writer_after_manifest")
             manifest_hash = hashlib.sha256(manifest_bytes).hexdigest()
-            os.lseek(source.fd, len(SYNTHETIC_DOCUMENT_SOURCE_PREFIX), os.SEEK_SET)
+            os.lseek(
+                source.fd,
+                len(self._required_source_prefix or b""),
+                os.SEEK_SET,
+            )
             streamed_hash = hashlib.sha256()
             streamed_size = 0
             for chunk_index in range(manifest.chunk_count):
@@ -1212,12 +1232,21 @@ def _validate_marker(path: Path, expected: bytes, code: str) -> None:
         raise EncryptedDocumentError(code)
 
 
-def _bind_source(source_root: Path, name: str, chunk_size: int) -> _BoundSource:
+def _bind_source(
+    source_root: Path,
+    name: str,
+    chunk_size: int,
+    *,
+    required_prefix: bytes | None,
+) -> _BoundSource:
     fd, identity = _open_regular_at(source_root, name, require_single_link=True)
     try:
-        prefix = os.read(fd, len(SYNTHETIC_DOCUMENT_SOURCE_PREFIX))
-        if prefix != SYNTHETIC_DOCUMENT_SOURCE_PREFIX:
-            raise EncryptedDocumentError("document_source_not_synthetic")
+        prefix_size = 0
+        if required_prefix is not None:
+            prefix = os.read(fd, len(required_prefix))
+            if prefix != required_prefix:
+                raise EncryptedDocumentError("document_source_not_synthetic")
+            prefix_size = len(required_prefix)
         hasher = hashlib.sha256()
         total = 0
         while True:
@@ -1226,7 +1255,7 @@ def _bind_source(source_root: Path, name: str, chunk_size: int) -> _BoundSource:
                 break
             hasher.update(chunk)
             total += len(chunk)
-        if total != identity[2] - len(SYNTHETIC_DOCUMENT_SOURCE_PREFIX):
+        if total != identity[2] - prefix_size:
             raise EncryptedDocumentError("document_source_changed")
         bound = _BoundSource(
             fd=fd,

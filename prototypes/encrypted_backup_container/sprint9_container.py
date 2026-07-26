@@ -219,11 +219,15 @@ class SyntheticEncryptedBackupServiceV1:
         sqlcipher_provider: SQLCipherConnectionProvider,
         fault_injector: Callable[[str], None] | None = None,
         chunk_size: int = DEFAULT_BACKUP_CHUNK_SIZE,
+        sqlcipher_guard_validator: (
+            Callable[[object, BackupContainerContextV1], None] | None
+        ) = None,
     ) -> None:
         self._random = random_source
         self._clock = clock
         self._provider = sqlcipher_provider
         self._fault = fault_injector or (lambda _phase: None)
+        self._sqlcipher_guard_validator = sqlcipher_guard_validator
         validate_backup_chunk_size(chunk_size)
         self._chunk_size = chunk_size
 
@@ -840,22 +844,34 @@ class SyntheticEncryptedBackupServiceV1:
             cipher_row = connection.execute("PRAGMA cipher_version").fetchone()
             application_row = connection.execute("PRAGMA application_id").fetchone()
             user_row = connection.execute("PRAGMA user_version").fetchone()
-            guard_rows = connection.execute(
-                f'SELECT marker FROM "{SYNTHETIC_BACKUP_GUARD_TABLE}"'
-            ).fetchall()
             if (
                 sqlite_row is None
                 or str(sqlite_row[0]) != expected_context.sqlite_version
                 or cipher_row is None
                 or str(cipher_row[0]) != expected_context.sqlcipher_version
-                or application_row is None
-                or int(application_row[0]) != SYNTHETIC_BACKUP_APPLICATION_ID
-                or user_row is None
-                or int(user_row[0]) != SYNTHETIC_BACKUP_USER_VERSION
-                or guard_rows != [(SYNTHETIC_BACKUP_GUARD_VALUE,)]
             ):
                 raise EncryptedBackupError(
                     "backup_sqlcipher_synthetic_guard_invalid"
+                )
+            if self._sqlcipher_guard_validator is None:
+                guard_rows = connection.execute(
+                    f'SELECT marker FROM "{SYNTHETIC_BACKUP_GUARD_TABLE}"'
+                ).fetchall()
+                if (
+                    application_row is None
+                    or int(application_row[0])
+                    != SYNTHETIC_BACKUP_APPLICATION_ID
+                    or user_row is None
+                    or int(user_row[0]) != SYNTHETIC_BACKUP_USER_VERSION
+                    or guard_rows != [(SYNTHETIC_BACKUP_GUARD_VALUE,)]
+                ):
+                    raise EncryptedBackupError(
+                        "backup_sqlcipher_synthetic_guard_invalid"
+                    )
+            else:
+                self._sqlcipher_guard_validator(
+                    connection,
+                    expected_context,
                 )
             _require_bound_source_unchanged(source)
         except EncryptedBackupError:
