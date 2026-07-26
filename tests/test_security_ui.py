@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QDialogButtonBox,
     QLabel,
     QLineEdit,
     QMainWindow,
@@ -24,10 +25,11 @@ from PySide6.QtWidgets import (
 
 from src.core.app_preferences import AppPreferences, DISPLAY_NAME_MAX_LENGTH
 
+from src.desktop_app.components import create_confirmation_message
 from src.desktop_app.runtime import prepare_security_runtime_storage
 from src.desktop_app.screens.settings_screen import SettingsScreen
 from src.desktop_app.security_controller import SecurityUiCoordinator
-from src.desktop_app.security_ui import AuthenticationDialog
+from src.desktop_app.security_ui import AuthenticationDialog, PasswordChangeDialog
 from src.security.session import InMemorySession, SessionLockReason
 from src.security.domain import LocalAuthenticationAvailability
 from src.security.startup import (
@@ -70,6 +72,90 @@ def test_first_and_legacy_enrollment_offer_optional_bounded_display_name() -> No
         assert dialog.display_name.maxLength() == DISPLAY_NAME_MAX_LENGTH
         assert dialog.display_name.placeholderText() == "Zum Beispiel Laura"
         assert "Optional" in dialog.display_name_hint.text()
+
+
+def test_password_inputs_are_sensitive_and_semantically_distinguished() -> None:
+    _app()
+    dialog = AuthenticationDialog(
+        service=None,
+        repository=None,
+        decision=SecurityStartupDecision(SecurityStartState.FIRST_RUN, "SEC-ENROLLMENT"),
+    )
+    change = PasswordChangeDialog()
+    required_hints = (
+        Qt.InputMethodHint.ImhHiddenText
+        | Qt.InputMethodHint.ImhSensitiveData
+        | Qt.InputMethodHint.ImhNoAutoUppercase
+        | Qt.InputMethodHint.ImhNoPredictiveText
+    )
+    for field in (
+        dialog.password,
+        dialog.password_confirmation,
+        change.current,
+        change.replacement,
+        change.confirmation,
+    ):
+        assert field.echoMode() is QLineEdit.EchoMode.Password
+        assert field.inputMethodHints() & required_hints == required_hints
+        assert "nicht gespeichert" in field.accessibleDescription()
+    assert dialog.password.accessibleName() == "Neues Passwort"
+    assert dialog.password_confirmation.accessibleName() == "Neues Passwort bestätigen"
+    assert change.current.accessibleName() == "Aktuelles Passwort"
+
+
+def test_product_confirmation_has_explicit_german_safe_actions() -> None:
+    app = _app()
+    message, confirm = create_confirmation_message(
+        None,
+        "Wiederherstellung starten",
+        "Der lokale Bestand wird ersetzt.",
+        confirm_text="Wiederherstellen",
+    )
+    cancel = next(button for button in message.buttons() if button is not confirm)
+    assert confirm.text() == "Wiederherstellen"
+    assert cancel.text() == "Abbrechen"
+    assert message.defaultButton() is cancel
+    assert message.escapeButton() is cancel
+    assert message.findChild(QDialogButtonBox).layout().spacing() >= 12
+    message.show()
+    app.processEvents()
+    QTest.keyClick(message, Qt.Key.Key_Escape)
+    app.processEvents()
+    assert message.clickedButton() in (None, cancel)
+    assert message.clickedButton() is not confirm
+    assert message.result() == message.DialogCode.Rejected
+    message.deleteLater()
+
+
+def test_login_explains_touch_id_credential_prerequisite() -> None:
+    _app()
+
+    class DeviceCredentialWithoutRegistration:
+        supported = True
+
+        @staticmethod
+        def status():
+            return SimpleNamespace(
+                enabled=False,
+                secret_available=False,
+                local_authentication=LocalAuthenticationAvailability.AVAILABLE,
+            )
+
+    dialog = AuthenticationDialog(
+        service=None,
+        repository=None,
+        decision=SecurityStartupDecision(
+            SecurityStartState.LOGIN_REQUIRED, "SEC-LOGIN_REQUIRED"
+        ),
+        device_credentials=DeviceCredentialWithoutRegistration(),
+        touch_id_preferred=True,
+    )
+    assert dialog.touch_id_button.isHidden()
+    assert not dialog.touch_id_notice.isHidden()
+    assert dialog.touch_id_notice.text() == (
+        "Touch ID steht nach der ersten Anmeldung mit Passwort zur Verfügung."
+    )
+    assert dialog.password.isVisibleTo(dialog.password_page)
 
 
 def test_login_enter_submits_password_without_opening_recovery() -> None:
@@ -186,6 +272,18 @@ def test_security_settings_offer_fixed_intervals_and_device_comfort_is_platform_
     assert touch_id.isHidden()
     screen.set_device_credential_status(
         supported=True,
+        enabled=False,
+        local_authentication="available",
+        secret_available=False,
+    )
+    assert not remember.isHidden()
+    assert not touch_id.isHidden()
+    assert not touch_id.isEnabled()
+    assert screen.touch_id_status.text() == (
+        "Touch ID: zuerst gespeicherte Anmeldung aktivieren"
+    )
+    screen.set_device_credential_status(
+        supported=True,
         enabled=True,
         local_authentication="available",
         touch_id_preferred=True,
@@ -194,6 +292,7 @@ def test_security_settings_offer_fixed_intervals_and_device_comfort_is_platform_
     assert not remember.isHidden()
     assert remember.isChecked()
     assert not touch_id.isHidden()
+    assert touch_id.isEnabled()
     assert touch_id.isChecked()
 
 

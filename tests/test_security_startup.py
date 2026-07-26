@@ -22,11 +22,15 @@ from src.security.domain import (
 )
 from src.security.startup import (
     SecurityStartState,
+    SecurityStartupDecision,
     SecurityStartupResolver,
     build_security_runtime,
     legacy_installation_present,
 )
-from src.desktop_app.security_controller import run_startup_device_authentication
+from src.desktop_app.security_controller import (
+    run_startup_device_authentication,
+    should_attempt_startup_device_authentication,
+)
 from src.core.app_preferences import (
     AppPreferences,
     AppPreferencesError,
@@ -170,6 +174,22 @@ def test_productive_start_order_keeps_product_runtime_and_shell_after_auth() -> 
     assert restore < security_paths < auth < product_runtime < shell
     assert source.index("--restore-worker") < restore
     assert "DISABLE_AUTH" not in source
+
+
+def test_startup_device_authentication_does_not_bypass_touch_id_preference() -> None:
+    login = SecurityStartupDecision(
+        SecurityStartState.LOGIN_REQUIRED, "SEC-LOGIN_REQUIRED"
+    )
+    locked = SecurityStartupDecision(SecurityStartState.LOCKED, "SEC-LOCKED")
+    assert should_attempt_startup_device_authentication(
+        decision=login, touch_id_preferred=False
+    )
+    assert not should_attempt_startup_device_authentication(
+        decision=login, touch_id_preferred=True
+    )
+    assert not should_attempt_startup_device_authentication(
+        decision=locked, touch_id_preferred=False
+    )
 
 
 @pytest.mark.parametrize(

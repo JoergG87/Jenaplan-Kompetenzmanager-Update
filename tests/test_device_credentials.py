@@ -21,6 +21,7 @@ from src.security.domain import (
     hash_device_secret,
 )
 from src.security.infrastructure.system import SystemClock, SystemRandomSource
+from src.security.infrastructure.platform_auth import MacOSLocalDeviceAuthenticator
 from src.security.startup import build_security_runtime
 
 
@@ -221,6 +222,58 @@ def test_touch_id_success_plus_secret_verification_authenticates(tmp_path: Path)
     result = service.authenticate(require_local_authentication=True)
     assert result.status is DeviceCredentialAuthenticationStatus.AUTHENTICATED
     assert local_auth.calls == 1
+
+
+@pytest.mark.parametrize(
+    ("native_code", "expected"),
+    [
+        (0, LocalAuthenticationAvailability.AVAILABLE),
+        (3, LocalAuthenticationAvailability.NOT_AVAILABLE),
+        (4, LocalAuthenticationAvailability.NOT_ENROLLED),
+        (5, LocalAuthenticationAvailability.LOCKED_OUT),
+        (8, LocalAuthenticationAvailability.ERROR),
+    ],
+)
+def test_macos_touch_id_availability_codes_are_projected(
+    native_code: int, expected: LocalAuthenticationAvailability
+) -> None:
+    class Library:
+        @staticmethod
+        def jkm_local_auth_availability():
+            return native_code
+
+    authenticator = MacOSLocalDeviceAuthenticator(
+        bridge=type("Bridge", (), {"library": Library()})()
+    )
+    assert authenticator.availability() is expected
+
+
+@pytest.mark.parametrize(
+    ("native_code", "expected"),
+    [
+        (0, LocalAuthenticationResult.SUCCESS),
+        (1, LocalAuthenticationResult.USER_CANCEL),
+        (2, LocalAuthenticationResult.FALLBACK_REQUESTED),
+        (3, LocalAuthenticationResult.NOT_AVAILABLE),
+        (4, LocalAuthenticationResult.NOT_ENROLLED),
+        (5, LocalAuthenticationResult.LOCKED_OUT),
+        (6, LocalAuthenticationResult.SYSTEM_CANCEL),
+        (7, LocalAuthenticationResult.FAILED),
+        (8, LocalAuthenticationResult.ERROR),
+    ],
+)
+def test_macos_touch_id_results_distinguish_cancel_failure_and_lockout(
+    native_code: int, expected: LocalAuthenticationResult
+) -> None:
+    class Library:
+        @staticmethod
+        def jkm_local_authenticate(_reason):
+            return native_code
+
+    authenticator = MacOSLocalDeviceAuthenticator(
+        bridge=type("Bridge", (), {"library": Library()})()
+    )
+    assert authenticator.authenticate("Test") is expected
 
 
 def test_password_change_epoch_revokes_active_device_credential(tmp_path: Path) -> None:

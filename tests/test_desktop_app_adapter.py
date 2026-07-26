@@ -3190,7 +3190,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             label.text() for label in info_dialog.findChildren(QLabel)
         )
         self.assertIn("Jenaplan-Kompetenzmanager", visible_text)
-        self.assertIn("Version 0.3.0 · Build 300", visible_text)
+        self.assertIn("Version 0.3.0 · Build 301", visible_text)
         self.assertIn("Entwickelt von", visible_text)
         self.assertIn("Jörg Gehrke", visible_text)
         self.assertIn("© 2026 Jörg Gehrke", visible_text)
@@ -4987,7 +4987,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
             shell_source,
         )
         self.assertIn("self.remove_student_document", shell_source)
-        self.assertIn("QMessageBox.question", remove_source)
+        self.assertIn("create_confirmation_message", remove_source)
+        self.assertIn('confirm_text="Datei entfernen"', remove_source)
         self.assertIn("self.adapter.remove_document(document_id)", remove_source)
         self.assertIn("self.show_student_profile(student_id)", remove_source)
         self.assertIn(
