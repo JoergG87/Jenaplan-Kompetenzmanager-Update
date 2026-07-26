@@ -1,6 +1,9 @@
 # Runtime database
 data/*.sqlite
 data/*.db
+data/app-preferences.json
+data/instance.lock
+data/security/
 data/documents/
 data/exports/
 data/backups/

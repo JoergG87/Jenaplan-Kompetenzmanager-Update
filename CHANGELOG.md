@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased
+
+- Lokale Sicherheitslaufzeitdaten, Einstellungen und die Instanzsperre werden
+  nicht mehr als unversionierte Repositoryänderungen angezeigt.
+
 ## Security Sprint 12 - Release-Hardening für internen 0.3.0-RC
 
 ### Changed
