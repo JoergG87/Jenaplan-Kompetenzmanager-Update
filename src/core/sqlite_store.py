@@ -211,14 +211,30 @@ class DocumentRecord:
 class SQLiteDatabase:
     """Manage the Sprint 5.2a SQLite spike database."""
 
-    def __init__(self, path: Path = SQLITE_SPIKE_PATH) -> None:
+    def __init__(
+        self,
+        path: Path = SQLITE_SPIKE_PATH,
+        *,
+        connection_provider=None,
+        create: bool = True,
+        initialize_schema: bool = True,
+    ) -> None:
         self.path = path
-        self._connection_provider = SQLiteConnectionProvider()
+        self._connection_provider = (
+            connection_provider or SQLiteConnectionProvider()
+        )
+        self._create = bool(create)
+        self._initialize_schema = bool(initialize_schema)
 
     def connect(self) -> sqlite3.Connection:
-        return self._connection_provider.connect(self.path, create=True)
+        return self._connection_provider.connect(
+            self.path,
+            create=self._create,
+        )
 
     def initialize_schema(self) -> None:
+        if not self._initialize_schema:
+            return
         with closing(self.connect()) as connection:
             schema_was_empty = connection.execute(
                 "SELECT 1 FROM sqlite_schema "

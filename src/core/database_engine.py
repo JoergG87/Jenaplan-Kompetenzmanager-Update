@@ -22,6 +22,7 @@ _SQLCIPHER_PAGE_SIZE = 4096
 SQLCIPHER_SPIKE_BINDING_VERSION = "0.6.2"
 SQLCIPHER_SPIKE_ENGINE_VERSION = "4.12.0 community"
 SQLCIPHER_PRODUCT_TARGET_VERSION = "4.17.0"
+SQLITE_RUNTIME_VERSION = sqlite3.sqlite_version
 
 
 class DatabaseEngine(str, Enum):
@@ -116,6 +117,39 @@ class SQLiteConnectionProvider:
         return connection
 
 
+class SQLiteReadOnlyConnectionProvider:
+    """Existing-file SQLite provider which cannot create or mutate a store."""
+
+    engine = DatabaseEngine.SQLITE
+
+    def connect(
+        self,
+        path: Path,
+        *,
+        create: bool,
+        key_material: bytes | bytearray | memoryview | None = None,
+    ) -> sqlite3.Connection:
+        if create or key_material is not None:
+            raise DatabaseEngineConfigurationError(
+                "sqlite_read_only_configuration_invalid"
+            )
+        database_path = Path(path)
+        _require_existing_regular_file(database_path)
+        try:
+            connection = sqlite3.connect(
+                f"{database_path.resolve().as_uri()}?mode=ro&immutable=1",
+                uri=True,
+            )
+            connection.row_factory = sqlite3.Row
+            connection.execute("PRAGMA query_only = ON")
+            connection.execute("PRAGMA foreign_keys = ON")
+            return connection
+        except sqlite3.Error:
+            raise DatabaseEngineConfigurationError(
+                "sqlite_read_only_open_failed"
+            ) from None
+
+
 class SQLCipherConnectionProvider:
     """Isolated SQLCipher provider with explicit keying and no fallback."""
 
@@ -205,6 +239,68 @@ class SQLCipherConnectionProvider:
         )
         if cipher_rows or not integrity_ok or foreign_key_rows:
             raise DatabaseCorruptError("sqlcipher_database_corrupt")
+
+    def connect_read_only(
+        self,
+        path: Path,
+        *,
+        key_material: bytes | bytearray | memoryview | None = None,
+    ) -> Any:
+        key_buffer = _validated_key_buffer(key_material)
+        connection = None
+        database_path = Path(path)
+        try:
+            existing_identity = self._validate_path(
+                database_path,
+                create=False,
+            )
+            assert existing_identity is not None
+            before = database_path.stat()
+            driver = self._load_driver()
+            self._probe_engine_version(driver)
+            connection = driver.connect(
+                f"{database_path.resolve().as_uri()}?mode=ro&immutable=1",
+                uri=True,
+                cached_statements=0,
+            )
+            _require_same_file_identity(database_path, existing_identity)
+            self._apply_key(connection, key_buffer)
+            self._verify_engine_version(connection)
+            self._configure_cipher_before_authentication(connection)
+            self._authenticate_schema(connection)
+            connection.row_factory = driver.Row
+            connection.execute("PRAGMA query_only = ON")
+            connection.execute("PRAGMA foreign_keys = ON")
+            self.verify_integrity(connection)
+            after = database_path.stat()
+            if (
+                before.st_dev,
+                before.st_ino,
+                before.st_size,
+                before.st_mtime_ns,
+            ) != (
+                after.st_dev,
+                after.st_ino,
+                after.st_size,
+                after.st_mtime_ns,
+            ):
+                raise DatabaseEngineConfigurationError(
+                    "database_read_only_changed"
+                )
+            return connection
+        except DatabaseEngineError:
+            if connection is not None:
+                _close_without_masking_primary_error(connection)
+            raise
+        except Exception:
+            if connection is not None:
+                _close_without_masking_primary_error(connection)
+            raise DatabaseEngineConfigurationError(
+                "sqlcipher_read_only_connection_failed"
+            ) from None
+        finally:
+            for index in range(len(key_buffer)):
+                key_buffer[index] = 0
 
     def _load_driver(self):
         try:
