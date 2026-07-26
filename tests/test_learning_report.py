@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
+import inspect
 from datetime import date
 from pathlib import Path
 from unittest import mock
@@ -27,7 +28,11 @@ from PySide6.QtWidgets import (
 
 from prototypes.pdf_engine.output_models import ChartBlock, ReportOutputModel, TableBlock
 from prototypes.pdf_engine.renderer import PdfRenderer
-from src.desktop_app.dialogs.learning_report_dialog import LearningReportDialog
+from src.desktop_app import shell
+from src.desktop_app.dialogs.learning_report_dialog import (
+    LearningReportDialog,
+    LearningReportDraftSelectionDialog,
+)
 from src.desktop_app.components import SegmentedControl
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
 from src.desktop_app.view_models.learning_report_view_model import (
@@ -118,6 +123,54 @@ class LearningReportTest(unittest.TestCase):
         screen.report_create_button.click()
 
         self.assertEqual(requested, ["STU-000001"])
+
+    def test_shell_always_offers_existing_or_new_report_selection(self) -> None:
+        source = inspect.getsource(shell.AppShell.open_learning_report_dialog)
+
+        self.assertIn("if drafts:", source)
+        self.assertIn("LearningReportDraftSelectionDialog.choose", source)
+        self.assertNotIn("drafts[0] if drafts else None", source)
+
+    def test_report_draft_selection_lists_periods_and_allows_new_or_cancel(self) -> None:
+        first = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            teacher_name="Laura Lernbegleiterin",
+            report_draft_id="RPD-000001",
+        )
+        second = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=date(2025, 8, 1),
+            period_end=date(2026, 1, 31),
+            teacher_name="Mika Lernbegleiter",
+            report_draft_id="RPD-000002",
+        )
+        dialog = LearningReportDraftSelectionDialog((first, second))
+        labels = [label.text() for label in dialog.findChildren(QLabel)]
+        buttons = [button.text() for button in dialog.findChildren(QPushButton)]
+
+        self.assertIn("Zeitraum 01.01.2026 bis 31.07.2026", labels)
+        self.assertIn("Zeitraum 01.08.2025 bis 31.01.2026", labels)
+        self.assertEqual(labels.count("Status: Entwurf"), 2)
+        self.assertEqual(buttons.count("Öffnen"), 2)
+        self.assertIn("Neuer Entwurf", buttons)
+        self.assertIn("Abbrechen", buttons)
+
+        dialog._choose(second)
+        self.assertEqual(dialog.selected_draft, second)
+        self.assertEqual(dialog.result(), dialog.DialogCode.Accepted)
+
+        new_dialog = LearningReportDraftSelectionDialog((first,))
+        new_dialog._choose(None)
+        new_dialog._choose(None)
+        self.assertIsNone(new_dialog.selected_draft)
+        self.assertEqual(new_dialog.result(), new_dialog.DialogCode.Accepted)
+
+        cancelled = LearningReportDraftSelectionDialog((first,))
+        cancelled.reject()
+        self.assertIsNone(cancelled.selected_draft)
+        self.assertEqual(cancelled.result(), cancelled.DialogCode.Rejected)
 
     def test_workspace_uses_four_calm_sections_and_subject_navigation(self) -> None:
         dialog = LearningReportDialog(self.preparation)

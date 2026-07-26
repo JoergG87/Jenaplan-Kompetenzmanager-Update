@@ -56,6 +56,7 @@ from src.desktop_app.dialogs.master_data_dialog import (
 )
 from src.desktop_app.dialogs.learning_report_dialog import (
     LearningReportDialog,
+    LearningReportDraftSelectionDialog,
     LearningReportRevisionDialog,
 )
 from src.desktop_app.dialogs.learning_conference_dialog import (
@@ -1211,9 +1212,16 @@ class AppShell(QMainWindow):
         dialog.exec()
 
     def open_learning_report_dialog(self, student_id: str) -> None:
-        """Open the productive report workspace with the latest saved draft."""
+        """Choose an existing report draft or start a deliberate new one."""
         drafts = self.adapter.list_learning_report_drafts_for_student(student_id)
-        initial_draft = drafts[0] if drafts else None
+        initial_draft = None
+        if drafts:
+            accepted, initial_draft = LearningReportDraftSelectionDialog.choose(
+                drafts,
+                self,
+            )
+            if not accepted:
+                return
         preparation = self.adapter.learning_report_preparation_for_student(
             student_id,
             retained_competency_ids=(
@@ -1383,10 +1391,10 @@ class AppShell(QMainWindow):
         exec_maximized_workspace(dialog, self)
 
     def open_learning_conference_dialog(self, student_id: str) -> None:
-        """Open one unambiguous LEG draft or let the teacher choose calmly."""
+        """Choose an existing LEG draft or start an independent new one."""
         drafts = self.adapter.list_learning_conference_drafts_for_student(student_id)
-        initial_draft = drafts[0] if len(drafts) == 1 else None
-        if len(drafts) > 1:
+        initial_draft = None
+        if drafts:
             accepted, initial_draft = LearningConferenceDraftSelectionDialog.choose(
                 drafts,
                 self,

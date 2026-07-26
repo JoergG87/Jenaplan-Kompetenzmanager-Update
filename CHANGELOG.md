@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Bericht- und LEG-Entwürfe bei vorhandenem Arbeitsstand bewusst auswählen
+  lassen: vorhandenen Entwurf öffnen, neuen eigenständigen Entwurf beginnen
+  oder ohne Datenänderung abbrechen. Ältere Entwürfe bleiben erreichbar.
 - Bestätigungsfrische auf eine monotone append-only Ereignisreihenfolge
   umgestellt; historische Observation-/Confirmation-Gleichstände bleiben
   sichtbar unklar, bis bewusst erneut bestätigt wird.

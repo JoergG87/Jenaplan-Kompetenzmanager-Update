@@ -93,6 +93,36 @@ class LearningConferenceDraftPersistenceTest(unittest.TestCase):
             },
         )
 
+    def test_new_leg_creates_a_separate_aggregate_without_changing_existing_one(self) -> None:
+        first = self.adapter.save_learning_conference_draft(self._draft())
+        second = self.adapter.save_learning_conference_draft(
+            replace(
+                self._draft(),
+                conference_date=date(2026, 12, 3),
+                conversation_entry_text="Eigenständiges Folgegespräch.",
+            )
+        )
+
+        listed = self.adapter.list_learning_conference_drafts_for_student(
+            self.student.student_id
+        )
+        reloaded_first = self.adapter.load_learning_conference_draft(
+            first.learning_conference_draft_id
+        )
+
+        self.assertNotEqual(
+            first.learning_conference_draft_id,
+            second.learning_conference_draft_id,
+        )
+        self.assertEqual(len(listed), 2)
+        self.assertEqual(reloaded_first, first)
+        self.assertEqual(
+            self.adapter.load_learning_conference_draft(
+                second.learning_conference_draft_id
+            ).conference_date,
+            date(2026, 12, 3),
+        )
+
     def test_manual_prepared_and_agreed_contents_round_trip(self) -> None:
         saved = self.adapter.save_learning_conference_draft(self._draft())
         loaded = self.adapter.load_learning_conference_draft(

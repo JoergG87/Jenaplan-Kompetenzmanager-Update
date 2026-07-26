@@ -80,6 +80,30 @@ class ReportDraftPersistenceTest(unittest.TestCase):
             },
         )
 
+    def test_new_period_creates_a_separate_draft_without_changing_existing_one(self) -> None:
+        first = self.adapter.save_learning_report_draft(self._draft())
+        second = self.adapter.save_learning_report_draft(
+            replace(
+                self._draft(),
+                period_start=date(2026, 8, 1),
+                period_end=date(2027, 1, 31),
+                overall_text="Eigenständiger Bericht für den nächsten Zeitraum.",
+            )
+        )
+
+        listed = self.adapter.list_learning_report_drafts_for_student(
+            self.student.student_id
+        )
+        reloaded_first = self.adapter.load_learning_report_draft(first.report_draft_id)
+
+        self.assertNotEqual(first.report_draft_id, second.report_draft_id)
+        self.assertEqual(len(listed), 2)
+        self.assertEqual(reloaded_first, first)
+        self.assertEqual(
+            self.adapter.load_learning_report_draft(second.report_draft_id).period_start,
+            date(2026, 8, 1),
+        )
+
     def test_update_replaces_texts_and_all_selections_atomically(self) -> None:
         created = self.adapter.save_learning_report_draft(self._draft())
         updated_subject = LearningReportSubjectDraftViewModel(

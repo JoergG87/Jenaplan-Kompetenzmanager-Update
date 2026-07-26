@@ -1993,6 +1993,8 @@ SQLite report_drafts + Relationstabellen
 
 Regel: Laden rekonstruiert ausschliesslich gespeicherte manuelle Texte und Referenzen. Kompetenzstatus und Kompetenztexte werden mit den gespeicherten `competency_id`-Werten als `retained_competency_ids` aus der kanonischen Projektion gelesen. Nicht mehr regulaer verfuegbare Kompetenzen bleiben gekennzeichnet ausgewaehlt, koennen nach Abwahl aber nicht neu ausgewaehlt werden. Aktive Beobachtungsinhalte werden aus der bestehenden Beobachtungsprojektion gelesen; gespeicherte, dort nicht mehr aktive `observation_id`-Werte bleiben ohne erfundene Inhalte als nicht verfuegbar sichtbar. Vorschau und `ReportOutputModel` weisen solche Ausfaelle neutral aus.
 
+Beim Öffnen aus dem Schülerprofil zeigt die Shell bei mindestens einem vorhandenen RPD eine bewusste Auswahl: vorhandenen Entwurf nach Zeitraum und Status öffnen, neuen noch ungespeicherten Entwurf beginnen oder abbrechen. Die Auswahl schreibt keine Daten. Ein neuer Zeitraum wird erst über den bestehenden Create-Command als neuer RPD persistiert; er ändert keinen vorhandenen RPD, RPT oder RPV.
+
 ## Lernentwicklungsbericht finalisieren und revidieren
 
 Start: Eine verantwortliche Lehrkraft finalisiert bewusst einen vorhandenen `RPD` und uebergibt ihren nichtleeren Anzeigenamen. Es wird keine Benutzer-ID erzeugt oder abgeleitet.
@@ -2182,7 +2184,7 @@ SQLite learning_conference_drafts + Relationstabellen
 
 Regel: Laden rekonstruiert manuelle Inhalte und stabile Referenzen. Kompetenzstatus, Kompetenztexte und Beobachtungsinhalte werden aus den bestehenden Live-Sources-of-Truth neu projiziert. Nicht mehr aktive Beobachtungsbelege werden weder verworfen noch ersetzt, sondern kontrolliert als nicht verfuegbar ausgewiesen. Der Draft ist kein eingefrorener Gespraechsstand.
 
-Sprint 7G.2 startet diesen Prozess im Schuelerprofil ueber `Lernentwicklungsgespräch`. Bei genau einem vorhandenen Draft wird dieser geladen. Bei mehreren Drafts muss Laura einen vorhandenen Entwurf oder das explizite Anlegen eines neuen Entwurfs waehlen. Die Dialogaktion `Entwurf speichern` darf jederzeit ausgefuehrt werden; Schliessen allein erzeugt keine finale Dokumentation und fuehrt keine stillschweigende Speicherung aus.
+Sprint 7G.2 startet diesen Prozess im Schuelerprofil ueber `Lernentwicklungsgespräch`. Bei mindestens einem vorhandenen Draft muss Laura einen vorhandenen Entwurf öffnen, ein neues eigenständiges LEG beginnen oder abbrechen. Die Auswahl schreibt keine Daten; das neue LEG wird erst über den bestehenden Create-Command als eigener LCD persistiert und ist keine Revision eines vorhandenen LCF/LCV. Die Dialogaktion `Entwurf speichern` darf jederzeit ausgefuehrt werden; Schliessen allein erzeugt keine finale Dokumentation und fuehrt keine stillschweigende Speicherung aus.
 
 ## Kompetenz aendern
 

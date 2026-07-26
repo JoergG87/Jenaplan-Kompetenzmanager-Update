@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date
 
 from PySide6.QtCore import QDate, Qt, QTimer, Signal
@@ -70,6 +71,102 @@ CHART_OPTIONS = (
     ("competency_timeline", "Kompetenzentwicklung mit Einzelständen"),
     ("observation_timeline", "Zeitachse ausgewählter Beobachtungen"),
 )
+
+
+def _selection_label(text: str, role: str) -> QLabel:
+    label = QLabel(text)
+    label.setWordWrap(True)
+    set_label_style(label, role)
+    return label
+
+
+class LearningReportDraftSelectionDialog(MotionDialog):
+    """Choose an existing report draft or deliberately start a new one."""
+
+    def __init__(
+        self,
+        drafts: Sequence[LearningReportDraftViewModel],
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setObjectName("LearningReportDraftSelectionDialog")
+        self.setWindowTitle("Lernentwicklungsbericht auswählen")
+        self.setMinimumSize(660, 420)
+        self.selected_draft: LearningReportDraftViewModel | None = None
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(14)
+        layout.addWidget(
+            DialogHeader(
+                "Entwurf weiterbearbeiten",
+                "Lernentwicklungsbericht",
+                "Wähle einen gespeicherten Stand oder lege einen neuen bearbeitbaren Entwurf an.",
+                icon_name="report",
+                context_role="report",
+            )
+        )
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 4, 0)
+        content_layout.setSpacing(10)
+        for draft in drafts:
+            card = AppCard("default")
+            card.setObjectName(f"LearningReportDraftChoice_{draft.report_draft_id}")
+            card.setAccessibleDescription(
+                f"Technische Entwurfskennung {draft.report_draft_id}"
+            )
+            row = QHBoxLayout(card)
+            row.setContentsMargins(16, 14, 16, 14)
+            text = QVBoxLayout()
+            period = (
+                f"Zeitraum {draft.period_start.strftime('%d.%m.%Y')} bis "
+                f"{draft.period_end.strftime('%d.%m.%Y')}"
+            )
+            text.addWidget(_selection_label(period, "card_title"))
+            text.addWidget(_selection_label("Status: Entwurf", "body"))
+            text.addWidget(_selection_label(
+                draft.teacher_name or "Lehrkraft offen",
+                "small",
+            ))
+            row.addLayout(text, 1)
+            open_button = QPushButton("Öffnen")
+            configure_button(open_button, "secondary", f"Entwurf für {period} öffnen")
+            open_button.clicked.connect(
+                lambda _checked=False, item=draft: self._choose(item)
+            )
+            row.addWidget(open_button)
+            content_layout.addWidget(card)
+        content_layout.addStretch(1)
+        scroll.setWidget(content)
+        layout.addWidget(scroll, 1)
+        actions = QHBoxLayout()
+        cancel_button = QPushButton("Abbrechen")
+        new_button = QPushButton("Neuer Entwurf")
+        configure_button(cancel_button, "quiet", "Auswahl abbrechen")
+        configure_button(new_button, "primary", "Neuen Berichtsentwurf anlegen")
+        cancel_button.clicked.connect(self.reject)
+        new_button.clicked.connect(lambda: self._choose(None))
+        actions.addWidget(cancel_button)
+        actions.addStretch(1)
+        actions.addWidget(new_button)
+        layout.addLayout(actions)
+
+    def _choose(self, draft: LearningReportDraftViewModel | None) -> None:
+        self.selected_draft = draft
+        self.accept()
+
+    @classmethod
+    def choose(
+        cls,
+        drafts: Sequence[LearningReportDraftViewModel],
+        parent: QWidget,
+    ) -> tuple[bool, LearningReportDraftViewModel | None]:
+        dialog = cls(drafts, parent)
+        accepted = dialog.exec() == QDialog.DialogCode.Accepted
+        return accepted, dialog.selected_draft
 
 
 class LearningReportDialog(MotionDialog):

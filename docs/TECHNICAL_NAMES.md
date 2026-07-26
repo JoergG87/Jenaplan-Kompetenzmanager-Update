@@ -1927,6 +1927,8 @@ Registrierte technische Namen:
 - `LearningReportEvidenceViewModel`
 - `LearningReportDraft`
 - `LearningReportDialog`
+- `LearningReportDraftSelectionDialog`
+- `LearningReportDraftChoice_<report_draft_id>`
 - `StudentDesktopAdapter.learning_report_preparation_for_student(student_id, retained_competency_ids=())`
 - `build_learning_report_preparation(student, statuses, observations)`
 - `build_report_output_model(preparation, draft)`
@@ -2001,7 +2003,7 @@ Registrierte technische Namen:
 - `LearningReportInternalBadge`
 - `LearningReportReportCard`
 
-Regel: Diese Namen bilden ausschliesslich die aus `prototypes/learning_report_ux/` portierte PySide-Navigation, Kartenhierarchie, Draft-Anbindung und Auswahl der bereits registrierten Diagrammtypen ab. Sie fuehren keine neue Datenquelle, keine Kompetenzstatuslogik und keinen zusaetzlichen Schreibprozess ein.
+Regel: Diese Namen bilden ausschliesslich die aus `prototypes/learning_report_ux/` portierte PySide-Navigation, Kartenhierarchie, Draft-Anbindung und Auswahl der bereits registrierten Diagrammtypen ab. `LearningReportDraftSelectionDialog` ist eine lokale Qt-Komposition: Bei mindestens einem vorhandenen Entwurf wählt sie bewusst einen gespeicherten RPD oder den neuen, noch ungespeicherten Arbeitsstand. Sie fuehrt keine neue Datenquelle, keine Kompetenzstatuslogik und keinen zusaetzlichen Schreibprozess ein.
 
 ## Sprint 5B.1 - Bestandssichere Berichtreferenzen
 
@@ -2333,7 +2335,7 @@ Registrierte fluechtige UI-Schluessel:
 - `evidence`
 - `agreements`
 
-Regel: Die sechs Schluessel strukturieren ausschliesslich den lokalen aktiven Phasen-, Fokus-, Scroll- und Dirty-State des bestehenden `LearningConferenceDialog`. `LearningConferencePhaseNavigation` und `LearningConferenceDraftSelectionDialog` sind lokale Qt-Kompositionen aus registrierten Basiskomponenten. Sie fuehren keine Datenquelle, fachliche Phase, Abschlusslogik, Persistenz, Repository-Verantwortung oder neue Feldbedeutung ein. `LearningConferencePreparationViewModel.course_name` reicht nur den bereits vorhandenen Kursnamen aus der Schuelerprojektion in den Kontextkopf weiter. `agreed_goals_text` bleibt unveraendert persistiert und wird nur sichtbar der Phase `goals` zugeordnet.
+Regel: Die sechs Schluessel strukturieren ausschliesslich den lokalen aktiven Phasen-, Fokus-, Scroll- und Dirty-State des bestehenden `LearningConferenceDialog`. `LearningConferencePhaseNavigation` und `LearningConferenceDraftSelectionDialog` sind lokale Qt-Kompositionen aus registrierten Basiskomponenten. Bei mindestens einem vorhandenen LEG wählt die Auswahl bewusst einen gespeicherten LCD oder ein neues, noch ungespeichertes eigenständiges Gespräch. Sie fuehren keine Datenquelle, fachliche Phase, Abschlusslogik, Persistenz, Repository-Verantwortung oder neue Feldbedeutung ein. `LearningConferencePreparationViewModel.course_name` reicht nur den bereits vorhandenen Kursnamen aus der Schuelerprojektion in den Kontextkopf weiter. `agreed_goals_text` bleibt unveraendert persistiert und wird nur sichtbar der Phase `goals` zugeordnet.
 
 ## Sprint 8A - Produktiver Stundenplan
 

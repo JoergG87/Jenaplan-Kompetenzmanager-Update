@@ -60,10 +60,11 @@ class LearningConferenceUiTest(unittest.TestCase):
 
         self.assertEqual(requested, ["STU-1"])
 
-    def test_shell_loads_single_draft_and_controls_multiple_drafts(self) -> None:
+    def test_shell_always_offers_existing_or_new_leg_selection(self) -> None:
         source = inspect.getsource(shell.AppShell.open_learning_conference_dialog)
-        self.assertIn("len(drafts) == 1", source)
+        self.assertIn("if drafts:", source)
         self.assertIn("LearningConferenceDraftSelectionDialog.choose", source)
+        self.assertNotIn("len(drafts) == 1", source)
         self.assertNotIn("report_type", source)
 
     def test_new_draft_collects_all_persistent_content_groups(self) -> None:
@@ -490,7 +491,8 @@ class LearningConferenceUiTest(unittest.TestCase):
         self.assertIn("13.07.2026", labels)
         self.assertIn("Mika Lernbegleiter", labels)
         self.assertEqual(buttons.count("Öffnen"), 2)
-        self.assertIn("Neuer Draft", buttons)
+        self.assertIn("Status: Entwurf", labels)
+        self.assertIn("Neues LEG", buttons)
         self.assertFalse(any(term in " ".join(buttons) for term in ("Löschen", "Archivieren", "Abschließen")))
 
     def test_phase_navigation_is_keyboard_accessible(self) -> None:

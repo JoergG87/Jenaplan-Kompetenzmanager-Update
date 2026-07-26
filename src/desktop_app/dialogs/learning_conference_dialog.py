@@ -295,7 +295,7 @@ class LearningConferenceCloseDialog(MotionDialog):
 
 
 class LearningConferenceDraftSelectionDialog(MotionDialog):
-    """Calm selection for multiple existing LEG drafts."""
+    """Choose an existing LEG draft or deliberately start an independent one."""
 
     def __init__(
         self,
@@ -338,6 +338,7 @@ class LearningConferenceDraftSelectionDialog(MotionDialog):
                 if draft.conference_date else "Gesprächsdatum offen"
             )
             title = _label(date_text, "card_title")
+            status = _label("Status: Entwurf", "body")
             teacher = _label(draft.responsible_teacher or "Lehrkraft offen", "body")
             saved = _label(_format_saved_at(draft.updated_at), "subtle")
             context = (
@@ -345,6 +346,7 @@ class LearningConferenceDraftSelectionDialog(MotionDialog):
                 if draft.period_start and draft.period_end else "Gesprächszeitraum offen"
             )
             text.addWidget(title)
+            text.addWidget(status)
             text.addWidget(teacher)
             text.addWidget(_label(context, "small"))
             text.addWidget(saved)
@@ -358,10 +360,10 @@ class LearningConferenceDraftSelectionDialog(MotionDialog):
         scroll.setWidget(content)
         layout.addWidget(scroll, 1)
         actions = QHBoxLayout()
-        cancel_button = QPushButton("Schließen")
-        new_button = QPushButton("Neuer Draft")
-        configure_button(cancel_button, "quiet", "Auswahl schließen")
-        configure_button(new_button, "primary", "Neuen LEG-Entwurf anlegen")
+        cancel_button = QPushButton("Abbrechen")
+        new_button = QPushButton("Neues LEG")
+        configure_button(cancel_button, "quiet", "Auswahl abbrechen")
+        configure_button(new_button, "primary", "Neues eigenständiges LEG anlegen")
         cancel_button.clicked.connect(self.reject)
         new_button.clicked.connect(lambda: self._choose(None))
         actions.addWidget(cancel_button)
