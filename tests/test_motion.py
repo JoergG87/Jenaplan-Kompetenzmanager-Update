@@ -9,7 +9,14 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QStackedWidget,
+    QWidget,
+)
 
 from src.desktop_app.components import (
     AppCard,
@@ -19,14 +26,23 @@ from src.desktop_app.components import (
     Toast,
 )
 from src.desktop_app.motion import (
+    MotionDialog,
     animate_opacity,
+    animate_save_confirmation,
+    animate_stack_transition,
     animate_value,
+    install_item_selection_motion,
     motion_duration,
     reduced_motion_enabled,
     set_reduced_motion,
     stop_motion,
 )
-from src.desktop_app.theme import MOTION_FAST_MS, MOTION_STANDARD_MS
+from src.desktop_app.theme import (
+    MOTION_FAST_MS,
+    MOTION_SELECTION_MS,
+    MOTION_STANDARD_MS,
+    MOTION_TOAST_MS,
+)
 
 
 class MotionSystemTest(unittest.TestCase):
@@ -196,15 +212,102 @@ class MotionSystemTest(unittest.TestCase):
         toast._dismiss()
         fade_out = toast._motion_animations.get("opacity")
         self.assertIsNotNone(fade_out)
-        fade_out.setCurrentTime(MOTION_STANDARD_MS)
+        fade_out.setCurrentTime(MOTION_TOAST_MS)
         self.assertTrue(toast.isHidden())
         self.assertEqual(toast._motion_animations, {})
-
         toast.show_message("Letzte Meldung", duration_ms=10_000)
         toast.clear()
         self.assertTrue(toast.isHidden())
         self.assertEqual(toast.text(), "")
         self.assertEqual(toast._motion_animations, {})
+
+    def test_button_badge_and_save_feedback_share_reduced_motion_policy(self) -> None:
+        button = QPushButton("Speichern")
+        from src.desktop_app.components import RatingBadgeButton, configure_button
+
+        configure_button(button, "primary", "Änderungen speichern")
+        self.assertIsNotNone(button._motion_button_controller)
+
+        badge = RatingBadgeButton("+ sicher", "+")
+        badge.show()
+        badge.setChecked(True)
+        self.assertIn("rating_selection", badge._motion_animations)
+        badge._motion_animations["rating_selection"].setCurrentTime(
+            MOTION_SELECTION_MS
+        )
+        self.assertTrue(badge.text().startswith("✓ "))
+
+        animate_save_confirmation(button)
+        self.assertTrue(button.property("saveConfirmed"))
+        self.assertIn("save_confirmation", button._motion_animations)
+
+        set_reduced_motion(True)
+        other = QPushButton("Speichern")
+        configure_button(other, "primary")
+        self.assertIsNone(animate_save_confirmation(other))
+        self.assertEqual(getattr(other, "_motion_animations", {}), {})
+
+    def test_segment_and_navigation_indicators_move_without_content_animation(self) -> None:
+        control = SegmentedControl((("first", "Erste"), ("second", "Zweite")))
+        control.resize(300, 38)
+        control.show()
+        self.app.processEvents()
+        start = control.selection_indicator.geometry()
+
+        control.set_current_key("second")
+
+        indicator_animation = control.selection_indicator._motion_animations[
+            "segment_indicator"
+        ]
+        indicator_animation.setCurrentTime(MOTION_SELECTION_MS)
+        self.assertGreater(control.selection_indicator.geometry().x(), start.x())
+
+        navigation = QListWidget()
+        first = QListWidgetItem("Heute")
+        second = QListWidgetItem("Schüler")
+        navigation.addItem(first)
+        navigation.addItem(second)
+        controller = install_item_selection_motion(navigation)
+        navigation.resize(220, 160)
+        navigation.show()
+        navigation.setCurrentRow(0)
+        self.app.processEvents()
+        first_geometry = controller.indicator.geometry()
+        navigation.setCurrentRow(1)
+        animation = controller.indicator._motion_animations["navigation_selection"]
+        animation.setCurrentTime(MOTION_SELECTION_MS)
+        self.assertGreater(controller.indicator.geometry().y(), first_geometry.y())
+
+    def test_dialog_and_stack_transitions_keep_semantic_state_immediate(self) -> None:
+        dialog = MotionDialog()
+        dialog.show()
+        self.app.processEvents()
+        self.assertEqual(getattr(dialog, "_motion_animations", {}), {})
+        self.assertAlmostEqual(dialog.windowOpacity(), 1.0)
+
+        stack = QStackedWidget()
+        first = QWidget()
+        second = QWidget()
+        stack.addWidget(first)
+        stack.addWidget(second)
+        stack.show()
+        self.app.processEvents()
+        transition = animate_stack_transition(stack, 1)
+        self.assertIs(stack.currentWidget(), second)
+        self.assertIsNotNone(transition)
+        transition.setCurrentTime(MOTION_SELECTION_MS)
+        self.assertAlmostEqual(second.graphicsEffect().opacity(), 1.0)
+
+        dialog.reject()
+        self.assertFalse(dialog.isVisible())
+
+        set_reduced_motion(True)
+        reduced_dialog = MotionDialog()
+        reduced_dialog.show()
+        self.app.processEvents()
+        self.assertEqual(getattr(reduced_dialog, "_motion_animations", {}), {})
+        reduced_dialog.reject()
+        self.assertFalse(reduced_dialog.isVisible())
 
     def test_toast_tones_and_long_text_keep_one_shared_component_contract(self) -> None:
         toast = Toast()

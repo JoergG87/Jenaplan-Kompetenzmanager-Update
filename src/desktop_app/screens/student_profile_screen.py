@@ -37,7 +37,7 @@ from src.desktop_app.components import (
     StatusBadge,
     configure_button,
 )
-from src.desktop_app.motion import animate_feedback
+from src.desktop_app.motion import animate_feedback, install_card_motion
 
 from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
@@ -758,6 +758,7 @@ class StudentProfileScreen(QWidget):
         card.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         card.setAccessibleName(tooltip)
         card.setToolTip(tooltip)
+        install_card_motion(card)
         original_key_press_event = card.keyPressEvent
 
         def handle_mouse_release(event: object) -> None:

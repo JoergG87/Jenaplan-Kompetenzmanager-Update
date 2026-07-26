@@ -4,22 +4,40 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from typing import Any
+import weakref
 
 from PySide6.QtCore import (
     QEasingCurve,
     QEvent,
     QObject,
+    QPoint,
+    QRect,
+    QTimer,
+    Qt,
     QVariantAnimation,
     Signal,
 )
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QFrame,
     QGraphicsDropShadowEffect,
     QGraphicsOpacityEffect,
+    QListWidget,
+    QPushButton,
+    QStackedWidget,
     QWidget,
 )
 
-from src.desktop_app.theme import MOTION_FAST_MS, MOTION_STANDARD_MS
+from src.desktop_app.theme import (
+    MOTION_DIALOG_MS,
+    MOTION_FAST_MS,
+    MOTION_HOVER_MS,
+    MOTION_PRESSED_MS,
+    MOTION_SELECTION_MS,
+    MOTION_STANDARD_MS,
+)
 
 
 class MotionPolicy(QObject):
@@ -218,12 +236,236 @@ def animate_feedback(
     )
 
 
+def animate_selection(
+    widget: QWidget,
+    *,
+    key: str = "selection",
+) -> QVariantAnimation | None:
+    """Confirm a selected control without delaying its check state or label."""
+    effect = _opacity_effect(widget)
+    if effect is None:
+        return None
+    effect.setOpacity(0.82)
+    return animate_value(
+        widget,
+        key,
+        effect.opacity(),
+        1.0,
+        effect.setOpacity,
+        MOTION_SELECTION_MS,
+        QEasingCurve.Type.OutCubic,
+    )
+
+
+def animate_save_confirmation(button: QPushButton) -> QVariantAnimation | None:
+    """Show one short, semantic confirmation on a persistent save action."""
+    button.setProperty("saveConfirmed", True)
+    button.style().unpolish(button)
+    button.style().polish(button)
+    animation = animate_selection(button, key="save_confirmation")
+
+    def reset() -> None:
+        button.setProperty("saveConfirmed", False)
+        button.style().unpolish(button)
+        button.style().polish(button)
+
+    QTimer.singleShot(520, reset)
+    return animation
+
+
+def animate_stack_transition(
+    stack: QStackedWidget,
+    target: int | QWidget,
+    *,
+    key: str = "stack_selection",
+) -> QVariantAnimation | None:
+    """Switch immediately, then softly settle only the newly active page."""
+    if isinstance(target, QWidget):
+        stack.setCurrentWidget(target)
+    else:
+        stack.setCurrentIndex(target)
+    page = stack.currentWidget()
+    if page is None or not stack.isVisible():
+        return None
+    effect = _opacity_effect(page)
+    if effect is None:
+        return None
+    effect.setOpacity(0.92)
+    return animate_value(
+        page,
+        key,
+        effect.opacity(),
+        1.0,
+        effect.setOpacity,
+        MOTION_SELECTION_MS,
+        QEasingCurve.Type.OutCubic,
+    )
+
+
+class MotionDialog(QDialog):
+    """Product dialog with quiet open and close transitions."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._motion_dialog_closing = False
+        self._motion_dialog_origin = QPoint()
+
+    @staticmethod
+    def _supports_window_motion() -> bool:
+        return (
+            not reduced_motion_enabled()
+            and QApplication.platformName().casefold() not in {"offscreen", "minimal"}
+        )
+
+    def showEvent(self, event: object) -> None:  # noqa: N802
+        super().showEvent(event)
+        self._motion_dialog_closing = False
+        self._motion_dialog_origin = self.pos()
+        if not self._supports_window_motion():
+            self.setWindowOpacity(1.0)
+            return
+        self.setWindowOpacity(0.0)
+        moves = not self.isMaximized() and not self.isFullScreen()
+        if moves:
+            self.move(self._motion_dialog_origin + QPoint(0, 5))
+
+        def update(value: Any) -> None:
+            progress = float(value)
+            self.setWindowOpacity(progress)
+            if moves:
+                self.move(
+                    self._motion_dialog_origin
+                    + QPoint(0, round(5.0 * (1.0 - progress)))
+                )
+
+        animate_value(
+            self,
+            "dialog_open",
+            0.0,
+            1.0,
+            update,
+            MOTION_DIALOG_MS,
+            QEasingCurve.Type.OutCubic,
+        )
+
+    def done(self, result: int) -> None:
+        if (
+            not self._supports_window_motion()
+            or not self.isVisible()
+            or self._motion_dialog_closing
+            or QApplication.closingDown()
+        ):
+            QDialog.done(self, result)
+            return
+        self._motion_dialog_closing = True
+        stop_motion(self, "dialog_open")
+        start_opacity = self.windowOpacity()
+
+        def update(value: Any) -> None:
+            self.setWindowOpacity(float(value))
+
+        animation = animate_value(
+            self,
+            "dialog_close",
+            start_opacity,
+            0.0,
+            update,
+            MOTION_DIALOG_MS,
+            QEasingCurve.Type.InCubic,
+        )
+        if animation is None:
+            self.setWindowOpacity(1.0)
+            QDialog.done(self, result)
+            return
+
+        def finish() -> None:
+            self.setWindowOpacity(1.0)
+            QDialog.done(self, result)
+
+        animation.finished.connect(finish)
+
+
+class _ButtonMotionController(QObject):
+    """Add short pointer and focus feedback without changing button geometry."""
+
+    def __init__(self, button: QPushButton) -> None:
+        super().__init__(button)
+        self._button_ref = weakref.ref(button)
+        self.effect: QGraphicsOpacityEffect | None = None
+        button.installEventFilter(self)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        button = self._button_ref()
+        if button is not None and watched is button:
+            event_type = event.type()
+            if event_type in (QEvent.Type.Enter, QEvent.Type.FocusIn):
+                self._respond(0.94, MOTION_HOVER_MS, "button_hover")
+            elif event_type == QEvent.Type.MouseButtonPress:
+                self._respond(0.86, MOTION_PRESSED_MS, "button_pressed", 0.94)
+            elif event_type == QEvent.Type.MouseButtonRelease:
+                effect = self._ensure_effect()
+                if effect is not None:
+                    self._respond(
+                        effect.opacity(),
+                        MOTION_PRESSED_MS,
+                        "button_pressed",
+                    )
+            elif (
+                event_type == QEvent.Type.EnabledChange
+                and not button.isEnabled()
+                and self.effect is not None
+            ):
+                stop_motion(button)
+                self.effect.setOpacity(1.0)
+        return False
+
+    def _ensure_effect(self) -> QGraphicsOpacityEffect | None:
+        button = self._button_ref()
+        if button is None:
+            return None
+        if self.effect is None:
+            self.effect = _opacity_effect(button)
+        return self.effect
+
+    def _respond(
+        self,
+        start: float,
+        duration_ms: int,
+        key: str,
+        end: float = 1.0,
+    ) -> None:
+        button = self._button_ref()
+        effect = self._ensure_effect()
+        if button is None or not button.isEnabled() or effect is None:
+            return
+        stop_motion(button)
+        effect.setOpacity(start)
+        animate_value(
+            button,
+            key,
+            start,
+            end,
+            effect.setOpacity,
+            duration_ms,
+            QEasingCurve.Type.OutCubic,
+        )
+
+
+def install_button_motion(button: QPushButton) -> QObject:
+    """Install the shared button microinteraction exactly once."""
+    controller = getattr(button, "_motion_button_controller", None)
+    if controller is None:
+        controller = _ButtonMotionController(button)
+        setattr(button, "_motion_button_controller", controller)
+    return controller
+
+
 class _CardMotionController(QObject):
     """Translate pointer presence into layout-neutral card elevation."""
 
     def __init__(self, card: QWidget) -> None:
         super().__init__(card)
-        self.card = card
+        self._card_ref = weakref.ref(card)
         setattr(card, "_motion_hover_progress", 0.0)
         self.effect = QGraphicsDropShadowEffect(card)
         self.effect.setBlurRadius(0.0)
@@ -235,32 +477,36 @@ class _CardMotionController(QObject):
             card.installEventFilter(self)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
-        if watched is getattr(self, "card", None):
+        card = self._card_ref()
+        if card is not None and watched is card:
             if event.type() == QEvent.Type.Enter:
                 self._set_hovered(True)
             elif event.type() in (QEvent.Type.Leave, QEvent.Type.EnabledChange):
                 self._set_hovered(False)
-        return super().eventFilter(watched, event)
+        return False
 
     def _set_hovered(self, hovered: bool) -> None:
+        card = self._card_ref()
+        if card is None:
+            return
         if not self._installed:
             return
-        start_value = float(getattr(self.card, "_motion_hover_progress", 0.0))
+        start_value = float(getattr(card, "_motion_hover_progress", 0.0))
 
         def update(value: Any) -> None:
             progress = float(value)
-            setattr(self.card, "_motion_hover_progress", progress)
+            setattr(card, "_motion_hover_progress", progress)
             self.effect.setBlurRadius(14.0 * progress)
             self.effect.setOffset(0.0, 2.0 * progress)
             self.effect.setColor(QColor(31, 65, 97, round(30 * progress)))
 
         animate_value(
-            self.card,
+            card,
             "card_hover",
             start_value,
-            1.0 if hovered and self.card.isEnabled() else 0.0,
+            1.0 if hovered and card.isEnabled() else 0.0,
             update,
-            MOTION_FAST_MS,
+            MOTION_HOVER_MS,
         )
 
 
@@ -270,4 +516,75 @@ def install_card_motion(card: QWidget) -> QObject:
     if controller is None:
         controller = _CardMotionController(card)
         setattr(card, "_motion_card_controller", controller)
+    return controller
+
+
+class _ItemSelectionController(QObject):
+    """Move one tiny overlay along a list without animating list content."""
+
+    def __init__(self, list_widget: QListWidget) -> None:
+        super().__init__(list_widget)
+        self._list_widget_ref = weakref.ref(list_widget)
+        self.viewport = list_widget.viewport()
+        self.indicator = QFrame(self.viewport)
+        self.indicator.setObjectName("NavigationSelectionIndicator")
+        self.indicator.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents,
+            True,
+        )
+        self.indicator.hide()
+        list_widget.currentRowChanged.connect(self._move_to_current)
+        self.viewport.installEventFilter(self)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        if watched is getattr(self, "viewport", None) and event.type() in (
+            QEvent.Type.Resize,
+            QEvent.Type.Show,
+        ):
+            list_widget = self._list_widget_ref()
+            if list_widget is None:
+                return False
+            try:
+                row = list_widget.currentRow()
+            except (AttributeError, RuntimeError):
+                return False
+            self._move_to_current(row, animated=False)
+        return False
+
+    def _move_to_current(self, row: int, *, animated: bool = True) -> None:
+        list_widget = self._list_widget_ref()
+        if list_widget is None:
+            return
+        try:
+            item = list_widget.item(row)
+        except RuntimeError:
+            return
+        if item is None or not item.flags():
+            self.indicator.hide()
+            return
+        rect = list_widget.visualItemRect(item)
+        target = QRect(1, rect.top() + 5, 3, max(4, rect.height() - 10))
+        if self.indicator.isHidden() or not animated:
+            self.indicator.setGeometry(target)
+            self.indicator.show()
+            self.indicator.raise_()
+            return
+        animate_value(
+            self.indicator,
+            "navigation_selection",
+            self.indicator.geometry(),
+            target,
+            self.indicator.setGeometry,
+            MOTION_SELECTION_MS,
+            QEasingCurve.Type.OutCubic,
+        )
+        self.indicator.raise_()
+
+
+def install_item_selection_motion(list_widget: QListWidget) -> QObject:
+    """Install one layout-neutral active-item indicator on a compact list."""
+    controller = getattr(list_widget, "_motion_selection_controller", None)
+    if controller is None:
+        controller = _ItemSelectionController(list_widget)
+        setattr(list_widget, "_motion_selection_controller", controller)
     return controller

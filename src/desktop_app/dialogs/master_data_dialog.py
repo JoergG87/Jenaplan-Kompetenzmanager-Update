@@ -20,6 +20,7 @@ from src.desktop_app.dialogs.dialog_buttons import (
     configure_save_cancel_buttons,
 )
 from src.desktop_app.components import AppCard, DialogHeader, InlineMessage, SectionHeader
+from src.desktop_app.motion import MotionDialog
 from src.desktop_app.view_models.master_data_view_model import (
     COURSE_GROUP_EMPTY_COURSES_MESSAGE,
     COURSE_GROUP_EMPTY_GROUPS_MESSAGE,
@@ -31,7 +32,7 @@ from src.desktop_app.view_models.master_data_view_model import (
 )
 
 
-class MasterDataNameDialog(QDialog):
+class MasterDataNameDialog(MotionDialog):
     """Collect one master-data name and optional course color."""
 
     def __init__(
@@ -124,7 +125,7 @@ class MasterDataNameDialog(QDialog):
                 return
 
 
-class CourseGroupDialog(QDialog):
+class CourseGroupDialog(MotionDialog):
     """Edit one persisted course-group configuration."""
 
     def __init__(

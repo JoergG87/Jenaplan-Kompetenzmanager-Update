@@ -68,6 +68,11 @@ ELEVATION_OVERLAY = 2
 MOTION_FAST_MS = 120
 MOTION_STANDARD_MS = 180
 MOTION_SLOW_MS = 240
+MOTION_HOVER_MS = 100
+MOTION_PRESSED_MS = 80
+MOTION_SELECTION_MS = 160
+MOTION_DIALOG_MS = 200
+MOTION_TOAST_MS = 220
 
 TYPOGRAPHY_STYLES = {
     "app_title": f"font-size: 24px; font-weight: 650; color: {COLOR_NAVY};",
@@ -1191,6 +1196,21 @@ QFrame#Toast[toastTone="success"] {{
 QFrame#Toast[toastTone="warning"] {{
     background-color: #755719;
     border-color: #947333;
+}}
+QFrame#NavigationSelectionIndicator {{
+    background-color: #85D8D6;
+    border: none;
+    border-radius: 2px;
+}}
+QFrame#SegmentedControlIndicator {{
+    background-color: {COLOR_FOCUS};
+    border: none;
+    border-radius: 1px;
+}}
+QPushButton[saveConfirmed="true"] {{
+    background-color: {COLOR_SUCCESS};
+    border-color: #3C806D;
+    color: #FFFFFF;
 }}
 QComboBox, QDateEdit, QDateTimeEdit, QTimeEdit, QSpinBox, QDoubleSpinBox {{
     padding-right: 26px;

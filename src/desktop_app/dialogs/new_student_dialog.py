@@ -22,6 +22,7 @@ from src.desktop_app.dialogs.dialog_buttons import (
     DialogActionBar,
     configure_save_cancel_buttons,
 )
+from src.desktop_app.motion import MotionDialog
 from src.desktop_app.view_models.master_data_view_model import MasterDataItemViewModel
 
 
@@ -37,7 +38,7 @@ STUDENT_DIALOG_DRAFT_COURSE_MESSAGE = (
 )
 
 
-class NewStudentDialog(QDialog):
+class NewStudentDialog(MotionDialog):
     """Collect input and dispatch student create/update through the adapter."""
 
     student_created = Signal(str)

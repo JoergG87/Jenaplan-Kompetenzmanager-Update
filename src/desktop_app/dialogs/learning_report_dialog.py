@@ -44,6 +44,11 @@ from src.desktop_app.components import (
     configure_button,
     stabilize_message_box_buttons,
 )
+from src.desktop_app.motion import (
+    MotionDialog,
+    animate_save_confirmation,
+    animate_stack_transition,
+)
 from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportChartSelectionViewModel,
     LearningReportDraft,
@@ -67,7 +72,7 @@ CHART_OPTIONS = (
 )
 
 
-class LearningReportDialog(QDialog):
+class LearningReportDialog(MotionDialog):
     """Edit, persist, preview and export one report draft through explicit signals."""
 
     save_requested = Signal(object)
@@ -206,7 +211,11 @@ class LearningReportDialog(QDialog):
     def _set_workspace(self, key: str) -> None:
         indexes = {"writing": 0, "evidence": 1, "preview": 2, "revisions": 3}
         index = indexes.get(key, 0)
-        self.mode_stack.setCurrentIndex(index)
+        animate_stack_transition(
+            self.mode_stack,
+            index,
+            key="report_workspace",
+        )
         if index == 2:
             self.update_preview()
         if index == 3:
@@ -246,9 +255,7 @@ class LearningReportDialog(QDialog):
             button.setCheckable(True)
             button.setChecked(index == 0)
             button.clicked.connect(
-                lambda _checked=False, target=index: self.editor_stack.setCurrentIndex(
-                    target
-                )
+                lambda _checked=False, target=index: self._set_editor_section(target)
             )
             self.navigation_group.addButton(button)
             layout.addWidget(button)
@@ -283,7 +290,7 @@ class LearningReportDialog(QDialog):
             button.setChecked(index == 0)
             button.setAccessibleName(f"Kompetenzen und Belege für {subject.subject_name}")
             button.clicked.connect(
-                lambda _checked=False, target=index: self.evidence_stack.setCurrentIndex(target)
+                lambda _checked=False, target=index: self._set_evidence_section(target)
             )
             self.evidence_navigation_group.addButton(button)
             sidebar_layout.addWidget(button)
@@ -298,6 +305,20 @@ class LearningReportDialog(QDialog):
         layout.addWidget(sidebar)
         layout.addWidget(self.evidence_stack, 1)
         return screen
+
+    def _set_editor_section(self, index: int) -> None:
+        animate_stack_transition(
+            self.editor_stack,
+            index,
+            key="report_editor_section",
+        )
+
+    def _set_evidence_section(self, index: int) -> None:
+        animate_stack_transition(
+            self.evidence_stack,
+            index,
+            key="report_evidence_section",
+        )
 
     def _action_bar(self) -> QFrame:
         bar = QFrame()
@@ -1046,6 +1067,7 @@ class LearningReportDialog(QDialog):
         self.draft_status.setText(self._draft_status_text())
         self.draft_status.setToolTip(saved.report_draft_id)
         self.save_button.setText("Entwurf gespeichert")
+        animate_save_confirmation(self.save_button)
         self.workspace_message.set_message("")
         self.toast.show_message("Berichtsentwurf gespeichert.", tone="success")
         self._refresh_workspace_context()
@@ -1772,7 +1794,7 @@ class LearningReportDialog(QDialog):
                 cls._clear_layout(child_layout)  # type: ignore[arg-type]
 
 
-class LearningReportRevisionDialog(QDialog):
+class LearningReportRevisionDialog(MotionDialog):
     """Fully read-only final report view backed only by one snapshot projection."""
 
     pdf_requested = Signal(str)

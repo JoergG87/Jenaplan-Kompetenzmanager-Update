@@ -42,6 +42,11 @@ from src.desktop_app.components import (
     configure_button,
     create_confirmation_message,
 )
+from src.desktop_app.motion import (
+    MotionDialog,
+    animate_save_confirmation,
+    animate_stack_transition,
+)
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.learning_conference_view_model import (
     LearningConferenceCompletionErrorViewModel,
@@ -233,7 +238,7 @@ class LearningConferencePhaseNavigation(QFrame):
             button.style().polish(button)
 
 
-class LearningConferenceCloseDialog(QDialog):
+class LearningConferenceCloseDialog(MotionDialog):
     """Three-way decision for closing a dirty LEG workspace."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -289,7 +294,7 @@ class LearningConferenceCloseDialog(QDialog):
         return dialog.choice if dialog.exec() == QDialog.DialogCode.Accepted else "continue"
 
 
-class LearningConferenceDraftSelectionDialog(QDialog):
+class LearningConferenceDraftSelectionDialog(MotionDialog):
     """Calm selection for multiple existing LEG drafts."""
 
     def __init__(
@@ -379,7 +384,7 @@ class LearningConferenceDraftSelectionDialog(QDialog):
         return accepted, dialog.selected_draft
 
 
-class LearningConferenceRevisionHistoryDialog(QDialog):
+class LearningConferenceRevisionHistoryDialog(MotionDialog):
     """Choose one immutable LCV without exposing persistence or live data."""
 
     def __init__(
@@ -446,7 +451,7 @@ class LearningConferenceRevisionHistoryDialog(QDialog):
         )
 
 
-class LearningConferenceRevisionDialog(QDialog):
+class LearningConferenceRevisionDialog(MotionDialog):
     """Read-only view whose only fachliche source is one verified LCV snapshot."""
 
     pdf_requested = Signal(str)
@@ -578,7 +583,7 @@ class LearningConferenceRevisionDialog(QDialog):
         return card
 
 
-class LearningConferenceDialog(QDialog):
+class LearningConferenceDialog(MotionDialog):
     """Edit one LEG draft in a safe, phase-oriented workspace."""
 
     save_requested = Signal(object)
@@ -1267,7 +1272,11 @@ class LearningConferenceDialog(QDialog):
             raise ValueError(f"Unbekannte LEG-Phase: {key}")
         self.phase_navigation.set_current(key)
         active_page = self.phase_pages[key]
-        self.phase_stack.setCurrentWidget(active_page)
+        animate_stack_transition(
+            self.phase_stack,
+            active_page,
+            key="learning_conference_phase",
+        )
         for page in self.phase_pages.values():
             is_active = page is active_page
             page.setEnabled(is_active)
@@ -1419,6 +1428,7 @@ class LearningConferenceDialog(QDialog):
         self._save_pending = False
         self.save_button.setEnabled(True)
         self.save_button.setText("Entwurf speichern")
+        animate_save_confirmation(self.save_button)
         self.validation_message.set_message("")
         self._refresh_ui_state()
         self.toast.show_message("Entwurf gespeichert – du kannst ihn später fortsetzen.", tone="success")

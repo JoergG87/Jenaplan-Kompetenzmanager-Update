@@ -44,6 +44,7 @@ from .security_ui import (
     RecoveryCodesConfirmationDialog,
     SecurityOperationWorker,
 )
+from .motion import MotionDialog
 from .support_reset import SupportResetDialog
 
 
@@ -112,7 +113,7 @@ class WakeMonitor(QObject):
             )
 
 
-class _ModalOperationDialog(QDialog):
+class _ModalOperationDialog(MotionDialog):
     def __init__(self, operation, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.result_value = None

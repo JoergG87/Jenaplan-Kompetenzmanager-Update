@@ -68,6 +68,7 @@ from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
 from src.desktop_app.dialogs.timetable_entry_dialog import TimetableEntryDialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.icons import ICON_SIZE_MEDIUM, load_icon
+from src.desktop_app.motion import install_item_selection_motion
 from src.desktop_app.screens.master_data_screen import MasterDataScreen
 from src.desktop_app.screens.overview_screen import OverviewScreen
 from src.desktop_app.screens.onboarding_screen import (
@@ -224,6 +225,7 @@ class AppShell(QMainWindow):
             self.navigation.addItem(nav_item)
         self.navigation.currentRowChanged.connect(self._show_navigation_index)
         self.navigation.itemClicked.connect(self._show_navigation_item)
+        install_item_selection_motion(self.navigation)
         sidebar.addWidget(self.navigation, 1)
         self.info_button = QPushButton("Über die App")
         self.info_button.setIcon(load_icon("info"))

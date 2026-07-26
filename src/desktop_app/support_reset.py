@@ -35,6 +35,7 @@ from src.security.domain import (
 from src.security.support_reset import SupportResetTokenCodec
 
 from .components import AppCard, InlineMessage, configure_button
+from .motion import MotionDialog
 from .theme import set_label_style
 
 
@@ -96,7 +97,7 @@ class SupportResetOperationWorker(QObject):
             self.finished.emit()
 
 
-class SupportResetDialog(QDialog):
+class SupportResetDialog(MotionDialog):
     """Guided request, validation preview, and confirmed reset UI."""
 
     reset_completed = Signal(object)

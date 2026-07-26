@@ -2570,7 +2570,13 @@ Registrierte Motion-Namen:
 - `animate_value(owner, key, start_value, end_value, update, duration_ms, easing)`
 - `animate_opacity(widget, visible, duration_ms, key)`
 - `animate_feedback(widget, key, duration_ms)`
+- `animate_selection(widget, key)`
+- `animate_save_confirmation(button)`
+- `animate_stack_transition(stack, target, key)`
+- `MotionDialog`
+- `install_button_motion(button)`
 - `install_card_motion(card)`
+- `install_item_selection_motion(list_widget)`
 - `stop_motion(owner, key)`
 
 Regel: Motion ist ausschliesslich lokaler, fluechtiger UI-State. Animationen setzen keine fachlichen Zustaende, besitzen keine Datenquelle und duerfen Signale, Navigation, Filter oder Schreibprozesse nicht verzoegern. Pro Widget und semantischem Schluessel existiert hoechstens eine laufende Animation; Reduced Motion setzt denselben Endzustand ohne Bewegung.

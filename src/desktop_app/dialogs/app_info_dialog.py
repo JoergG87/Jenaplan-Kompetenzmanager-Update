@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 from src.desktop_app.assets import create_app_icon_label
 from src.desktop_app.components import StatusBadge, configure_button
+from src.desktop_app.motion import MotionDialog
 from src.desktop_app.theme import set_label_style
 from src.version import APP_BUILD_VERSION, APP_VERSION
 
@@ -25,7 +26,7 @@ APP_INFO_DESCRIPTION = "Kompetenzmanagement und Entwicklungsdokumentation für J
 APP_INFO_COPYRIGHT = "© 2026 Jörg Gehrke"
 
 
-class AppInfoDialog(QDialog):
+class AppInfoDialog(MotionDialog):
     """Show a compact, non-technical app information dialog."""
 
     def __init__(self) -> None:

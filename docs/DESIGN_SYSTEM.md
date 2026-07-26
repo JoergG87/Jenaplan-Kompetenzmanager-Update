@@ -234,7 +234,7 @@ Die finale visuelle Signatur entsteht in der bestehenden Product Shell: ein sehr
 
 Glas bleibt ein Akzent fuer Sidebar, obere Navigationsflaechen, `SearchField`, `FilterBar`, Menues, Tooltips und kleine Overlays. Inhaltskarten, Tabellen, Formulare und Dokumentflaechen sind opak. Transparenz simuliert dort ausschliesslich leichte Tiefe vor dem Shell-Hintergrund; Blur, native Plattformtransparenz und grossflaechiges Glassmorphism bleiben ausgeschlossen.
 
-Normale `AppCard`-Flaechen erhalten eine feine untere Tiefenkante statt eines starken Schattens. `soft` bleibt flach, `accent` darf als einziger Fokusbereich eine etwas deutlichere Surface-Hierarchie zeigen. Nur interaktive Karten besitzen eine kurze Hover-Elevation; sie bleibt layoutneutral, verwendet `MOTION_FAST_MS` mit `OutCubic` und wird bei Reduced Motion unmittelbar in den Endzustand gesetzt. Es entstehen keine neuen Animationstypen und keine Screen-Uebergaenge.
+Normale `AppCard`-Flaechen erhalten eine feine untere Tiefenkante statt eines starken Schattens. `soft` bleibt flach, `accent` darf als einziger Fokusbereich eine etwas deutlichere Surface-Hierarchie zeigen. Nur interaktive Karten besitzen eine kurze Hover-Elevation; sie bleibt layoutneutral, verwendet `MOTION_HOVER_MS` mit `OutCubic` und wird bei Reduced Motion unmittelbar in den Endzustand gesetzt. Vollflaechige Screen-Uebergaenge bleiben ausgeschlossen.
 
 Dashboard-Hero, Schuelerprofilkopf, Berichtskontext und LEG-Kontext bleiben die vier bewusst hervorgehobenen Fokusbereiche. Sie werden nicht vergroessert und erhalten keine neue fachliche Farbsemantik; die nicht semantischen Dialog-Kontextrollen folgen dem Brand-Color-Vertrag. Tabellen, Listen, Header, Kontextmenues, Tooltips, Divider und Scrollbars verwenden denselben blau-grauen Kontrast- und Fokusvertrag. Das bestehende Outline-SVG-System behaelt die Rollen `16`, `20` und `24`; die unterschiedlichen Vordergrundfarben dienen ausschliesslich dem hellen Sidebar- beziehungsweise hellen Inhaltskontext.
 
@@ -308,19 +308,25 @@ QPainter-Regel: UI Sprint 4 verwendet keinen QPainter. Timeline-Marker, Spezial-
 
 ## Motion System - UI Sprint 3
 
-Motion unterstuetzt Orientierung und Rueckmeldung, ohne Arbeitsablaeufe zu verlangsamen. Die zentrale Implementierung liegt in `src/desktop_app/motion.py`; Screens besitzen keine eigene Animationslogik. Verbindliche Dauern bleiben `120 ms` fuer direkte Rueckmeldung, `180 ms` fuer normale Uebergaenge und `240 ms` nur fuer groessere, seltene Zustandswechsel. Standard-Easing ist `OutCubic`, Ausblendungen verwenden `InCubic`.
+Motion unterstuetzt Orientierung und Rueckmeldung, ohne Arbeitsablaeufe zu verlangsamen. Die zentrale Implementierung liegt in `src/desktop_app/motion.py`; Screens besitzen keine eigene Animationslogik. Verbindliche Dauern sind `80 ms` fuer Pressed, `100 ms` fuer Hover, `120 ms` fuer direkte Rueckmeldung, `160 ms` fuer Auswahl und lokalen Inhaltswechsel, `180 ms` fuer normale Uebergaenge, `200 ms` fuer Dialoge sowie `220 ms` fuer Toasts. `240 ms` bleibt die Obergrenze fuer groessere seltene Rueckmeldungen. Standard-Easing ist `OutCubic`, Ausblendungen verwenden `InCubic`. Feder-, Bounce-, elastische und pulsierende Verlaeufe bleiben ausgeschlossen.
 
 Die globale `MotionPolicy` besitzt genau einen Reduced-Motion-Schalter. Im reduzierten Modus werden fachlicher Zustand, Sichtbarkeit, Fokus und Endwerte sofort gesetzt. Timer duerfen weiterhin die Lesedauer einer Meldung steuern, erzeugen aber keine Bewegung. Animationen werden pro Widget und semantischem Schluessel ersetzt statt gestapelt; Qt-Ownership und Aufraeumen bei Abschluss beziehungsweise Widget-Zerstoerung sind Bestandteil des zentralen Vertrags. Eine spaetere verlaessliche Qt-/Plattformanbindung setzt ausschliesslich diese Policy und erfordert keine Aenderung an Komponenten; UI Sprint 3 erzwingt dafuer keine neue sichtbare Einstellung.
 
 Komponenten mit Motion:
 
+- semantisch konfigurierte Buttons: kurze Hover-, Pressed- und Fokusantwort; Disabled bleibt statisch und eindeutig
 - `AppCard` nur bei `interactive`: dezenter, layout-neutraler Hover-Schatten; Pressed, Fokus und Auswahl bleiben sofort sichtbar
-- `SegmentedControl`: kurze Opacity-Bestaetigung des bereits gesetzten Zielsegments; Signal und Navigation werden nicht verzoegert
+- `SegmentedControl`: gleitender lokaler Auswahlindikator plus kurze Opacity-Bestaetigung des bereits gesetzten Zielsegments; Signal und Navigation werden nicht verzoegert
+- Sidebar-Navigation: ausschliesslich der drei Pixel breite Auswahlindikator bewegt sich; Eintrag, Screen und Inhalt wechseln sofort
+- Bewertungsbadges: Auswahl und sichtbarer Haken werden mit einer kurzen Fade-Bestaetigung quittiert
 - `FilterChip`: Einblenden eines neu sichtbaren Filterzustands; Reset und Filterausfuehrung bleiben unmittelbar
 - `InlineMessage`: ruhiges Einblenden neuer Information oder Erfolgsmeldung; Warnungen und Fehler erscheinen sofort
-- `Toast`: Ein-/Ausblenden, Hover-Pause und sichere Ersetzung einer laufenden Meldung
+- `MotionDialog`: 200-ms-Einblendung mit maximal fuenf Pixel vertikaler Beruhigung sowie Ausblendung; maximierte Arbeitsdialoge bewegen sich nicht
+- Bericht und LEG: nur der neu aktive lokale Abschnitt beziehungsweise die neu aktive Phase wird mit 160 ms eingeblendet; Editorzustand, Auswahl und Fokus bleiben stabil
+- persistente Primaer-Speicheraktionen: kurzer bestaetigender Zustand nach fachlich bestaetigtem Erfolg
+- `Toast`: 220-ms-Ein-/Ausblenden, Hover-Pause und sichere Ersetzung einer laufenden Meldung
 
-Bewusst statisch bleiben `EmptyState`, Tabellen und Tabellenzeilen, globale Navigation, Search-Ergebnisse sowie nicht interaktive Karten. UI Sprint 4 nutzt fuer die wiederkehrenden Kompetenz-Disclosures ausschliesslich sofortige Sichtbarkeit plus kurze zentrale Opacity-Bestaetigung; Dialog-Fades, Hoehenanimationen und verschachtelte Listenanimationen bleiben ausgeschlossen. Es gibt keine Screen-Uebergaenge, Feder-/Bounce-Effekte, Geometrieanimationen oder blockierende Animationen.
+Bewusst statisch bleiben `EmptyState`, Tabellen und Tabellenzeilen, grosse Listen, Scrollen, Baumstrukturen, Suchergebnisse, nicht interaktive Karten, Dokument- und PDF-Vorschauen, die komplette Product Shell sowie Dashboard-Flaechen ohne bewussten Kontextwechsel. Kompetenz-Disclosures setzen die Sichtbarkeit weiterhin sofort und verwenden nur kurze zentrale Opacity-Bestaetigung. Es gibt keine vollflaechigen Screen-Uebergaenge, Hoehenanimationen, verschachtelten Listenanimationen oder blockierenden Animationen. Geometrie wird ausschliesslich fuer die kleinen Segment- und Sidebar-Indikatoren animiert; Layout und Inhaltsflaechen bleiben unberuehrt.
 
 ## Component Library V2 - UI Sprint 2
 

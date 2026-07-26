@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from PySide6.QtCore import QEvent, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEasingCurve, QEvent, QRect, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QKeyEvent, QKeySequence, QMouseEvent, QShortcut
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -24,10 +24,17 @@ from src.desktop_app.icons import ICON_SIZE_LARGE, ICON_SIZE_SMALL, load_icon
 from src.desktop_app.motion import (
     animate_feedback,
     animate_opacity,
+    animate_selection,
+    animate_value,
+    install_button_motion,
     install_card_motion,
     stop_motion,
 )
-from src.desktop_app.theme import MOTION_FAST_MS
+from src.desktop_app.theme import (
+    MOTION_FAST_MS,
+    MOTION_SELECTION_MS,
+    MOTION_TOAST_MS,
+)
 from src.desktop_app.theme import set_button_role, set_label_style
 
 
@@ -310,6 +317,14 @@ class SegmentedControl(QFrame):
             self._keys.append(key)
             self._buttons[key] = button
             layout.addWidget(button)
+        self.selection_indicator = QFrame(self)
+        self.selection_indicator.setObjectName("SegmentedControlIndicator")
+        self.selection_indicator.setFixedHeight(2)
+        self.selection_indicator.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents,
+            True,
+        )
+        self.selection_indicator.hide()
         self.button_group.idClicked.connect(self._emit_selection)
         if self._keys:
             self.set_current_key(self._keys[0])
@@ -327,8 +342,9 @@ class SegmentedControl(QFrame):
             raise ValueError(f"Unbekannter Segment-Schlüssel: {key}")
         changed = self.current_key() != key
         self._buttons[key].setChecked(True)
+        self._move_selection_indicator(key, animated=changed and self.isVisible())
         if changed and self.isVisible():
-            animate_feedback(self._buttons[key], key="segment_selection")
+            animate_selection(self._buttons[key], key="segment_selection")
         if emit:
             self.selection_changed.emit(key)
 
@@ -352,11 +368,48 @@ class SegmentedControl(QFrame):
 
     def _emit_selection(self, button_id: int) -> None:
         if 0 <= button_id < len(self._keys):
-            animate_feedback(
-                self._buttons[self._keys[button_id]],
+            key = self._keys[button_id]
+            self._move_selection_indicator(key, animated=self.isVisible())
+            animate_selection(
+                self._buttons[key],
                 key="segment_selection",
             )
-            self.selection_changed.emit(self._keys[button_id])
+            self.selection_changed.emit(key)
+
+    def showEvent(self, event: object) -> None:  # noqa: N802
+        super().showEvent(event)
+        self._move_selection_indicator(self.current_key(), animated=False)
+
+    def resizeEvent(self, event: object) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._move_selection_indicator(self.current_key(), animated=False)
+
+    def _move_selection_indicator(self, key: str, *, animated: bool) -> None:
+        button = self._buttons.get(key)
+        if button is None:
+            self.selection_indicator.hide()
+            return
+        target = QRect(
+            button.x() + 7,
+            max(0, self.height() - 3),
+            max(4, button.width() - 14),
+            2,
+        )
+        if self.selection_indicator.isHidden() or not animated:
+            self.selection_indicator.setGeometry(target)
+            self.selection_indicator.show()
+            self.selection_indicator.raise_()
+            return
+        animate_value(
+            self.selection_indicator,
+            "segment_indicator",
+            self.selection_indicator.geometry(),
+            target,
+            self.selection_indicator.setGeometry,
+            MOTION_SELECTION_MS,
+            QEasingCurve.Type.OutCubic,
+        )
+        self.selection_indicator.raise_()
 
 
 class SearchField(QLineEdit):
@@ -435,6 +488,7 @@ class RatingBadgeButton(QPushButton):
         self.setCheckable(True)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         apply_rating_badge_variant(self, rating_token)
+        install_button_motion(self)
         self.toggled.connect(self._sync_selection_state)
         self._sync_selection_state(False)
 
@@ -459,6 +513,8 @@ class RatingBadgeButton(QPushButton):
         self.setProperty("selected", selected)
         self.style().unpolish(self)
         self.style().polish(self)
+        if selected and self.isVisible():
+            animate_selection(self, key="rating_selection")
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
@@ -661,9 +717,13 @@ class Toast(QFrame):
         was_hidden = self.isHidden()
         stop_motion(self)
         if was_hidden:
-            animate_opacity(self, visible=True)
+            animate_opacity(self, visible=True, duration_ms=MOTION_TOAST_MS)
         else:
-            animate_feedback(self, key="toast_feedback")
+            animate_feedback(
+                self,
+                key="toast_feedback",
+                duration_ms=MOTION_TOAST_MS,
+            )
         self._duration_ms = max(0, duration_ms)
         self._remaining_ms = self._duration_ms
         self.timer.start(self._duration_ms)
@@ -684,7 +744,7 @@ class Toast(QFrame):
     def _dismiss(self) -> None:
         self._remaining_ms = 0
         stop_motion(self)
-        animate_opacity(self, visible=False)
+        animate_opacity(self, visible=False, duration_ms=MOTION_TOAST_MS)
 
     def setText(self, text: str) -> None:  # noqa: N802
         """Keep the former shell status-label call site compatible."""
@@ -734,6 +794,7 @@ def configure_button(button: QPushButton, role: str, accessible_name: str = "") 
     """Apply role, pointer cursor, and optional accessible naming."""
     set_button_role(button, role)
     button.setCursor(Qt.CursorShape.PointingHandCursor)
+    install_button_motion(button)
     if accessible_name:
         button.setAccessibleName(accessible_name)
 

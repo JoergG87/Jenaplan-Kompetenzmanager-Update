@@ -34,6 +34,7 @@ from src.security.session import InMemorySession
 from src.security.startup import SecurityStartState, SecurityStartupDecision
 
 from .components import AppCard, InlineMessage, configure_button
+from .motion import MotionDialog
 from .support_reset import SupportResetDialog
 from .theme import set_label_style
 from src.core.app_preferences import DISPLAY_NAME_MAX_LENGTH, normalize_display_name
@@ -143,7 +144,7 @@ class RecoveryCodesPage(QWidget):
         self.button.setEnabled(checked)
 
 
-class AuthenticationDialog(QDialog):
+class AuthenticationDialog(MotionDialog):
     """Single-purpose auth gate; it never imports or exposes product adapters."""
 
     def __init__(
@@ -748,7 +749,7 @@ class AuthenticationDialog(QDialog):
         super().reject()
 
 
-class PasswordChangeDialog(QDialog):
+class PasswordChangeDialog(MotionDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Passwort ändern")
@@ -799,7 +800,7 @@ class PasswordChangeDialog(QDialog):
         self.accept()
 
 
-class RecoveryCodesConfirmationDialog(QDialog):
+class RecoveryCodesConfirmationDialog(MotionDialog):
     def __init__(self, codes: tuple[str, ...], parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Recovery-Codes sichern")

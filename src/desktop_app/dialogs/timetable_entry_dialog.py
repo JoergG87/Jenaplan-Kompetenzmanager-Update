@@ -21,6 +21,7 @@ from src.desktop_app.dialogs.dialog_buttons import (
 
 from src.application.commands.timetable import SaveTimetableEntryCommand
 from src.desktop_app.components import AppCard, DialogHeader, SectionHeader
+from src.desktop_app.motion import MotionDialog
 from src.desktop_app.view_models.timetable_view_model import (
     TARGET_TYPE_LABELS,
     WEEKDAY_LABELS,
@@ -29,7 +30,7 @@ from src.desktop_app.view_models.timetable_view_model import (
 )
 
 
-class TimetableEntryDialog(QDialog):
+class TimetableEntryDialog(MotionDialog):
     """Collect timetable values without business or persistence logic."""
 
     def __init__(

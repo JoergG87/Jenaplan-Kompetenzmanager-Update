@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Zentrales Motion-System um ruhige Button-, Dialog-, Sidebar-, Segment-,
+  Bewertungs- und Speicherbestätigungs-Mikrointeraktionen erweitert; Bericht
+  und LEG überblenden ausschließlich den neu aktiven lokalen Inhalt.
+- Toast-Ein- und -Ausblendung auf 220 ms vereinheitlicht, interaktive Karten
+  auf 100 ms Hover-Reaktion präzisiert und sämtliche neuen Übergänge an die
+  bestehende Reduced-Motion-Policy gebunden.
+- Tabellen, große Listen, Scrollen, Baumstrukturen, Dokument-/PDF-Vorschauen,
+  komplette Shell-Fenster und Dashboard-Daueranimationen bleiben bewusst
+  statisch.
 - Alle produktinternen Bestätigungsdialoge mit Qt-Standardfragen verwenden
   explizite deutsche Aktionsverben sowie eine sichere Abbrechen-, Enter- und
   Escape-Belegung.

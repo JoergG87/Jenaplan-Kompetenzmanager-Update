@@ -44,7 +44,7 @@ from src.desktop_app.dialogs.dialog_buttons import (
     DialogActionBar,
     configure_save_cancel_buttons,
 )
-from src.desktop_app.motion import animate_feedback
+from src.desktop_app.motion import MotionDialog, animate_feedback
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.observation_view_model import (
     DOCUMENT_TYPE_OPTIONS,
@@ -174,7 +174,7 @@ class ObservationCatalogCompetencyTile(AppCard):
         super().keyPressEvent(event)
 
 
-class NewObservationDialog(QDialog):
+class NewObservationDialog(MotionDialog):
     """Collect and persist an observation draft through the desktop adapter."""
 
     def __init__(
