@@ -248,6 +248,18 @@ die Klartextbegruessung; Stundenplan-, Schueler- und Fachdaten werden dafuer
 nicht gelesen. `AppShell` reicht den Wert weiter, besitzt aber keine
 Profilpersistenz.
 
+Die Dokumentations-Heatmap und die Schuelerliste beziehen ihre bestehende
+Dokumentationsstatusprojektion ueber einen refresh-lokalen
+`StudentDocumentationProjectionBatch`. Der
+`SQLiteStudentDocumentationProjectionRepository` besitzt nur den
+transaktionskonsistenten Read-Snapshot; `StudentDesktopAdapter` bleibt Owner
+der Gruppierung, kanonischen Dokumentationsabdeckung und Sortierprojektion.
+Die vollstaendige Bestätigungsfrische bleibt im Batch fachlich gleich
+projizierbar, beeinflusst aber nicht die Regel, ob eine konkrete Kompetenz
+dokumentiert ist. Screens und Widgets lesen weder Repositories noch SQLite
+direkt. Der Batch fuehrt keine DDL aus und wird nicht ueber den jeweiligen
+Refresh hinaus gehalten.
+
 `OnboardingScreen` besitzt nur sichtbaren Schritt-, Text-, Button- und lokalen
 Fokuszustand. Persistenz gehoert `OnboardingController` und
 `AppPreferencesFile`; Navigation gehoert `AppShell`. Kleine Statuszeilen werden

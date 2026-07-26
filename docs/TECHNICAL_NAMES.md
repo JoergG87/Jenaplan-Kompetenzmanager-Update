@@ -2787,3 +2787,15 @@ veraendern weder Kursfarben, Bewertungsbadges, Dokumentationsabdeckung,
 Feedbackfarben noch Adapter-, ViewModel-, Repository-, SQLite-, Navigations-
 oder Speicherpfade. Unbekannte `DialogHeader.context_role`-Werte werden
 abgelehnt; kleine und administrative Dialoge verwenden den Default `neutral`.
+## Performance-P1 - gebündelte Dokumentationsprojektion
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `StudentDocumentationProjectionBatch` | Unveränderlicher, refresh-lokaler Read-Batch aus aktiven Schülern, Gruppen, Kursen, Katalog, Fachauswahl, aktiven Beobachtungen samt Kompetenz-Snapshots, Bestätigungen und technischer Frische; keine neue Datenquelle und kein globaler Cache | Core Persistence / Desktop Adapter |
+| `SQLiteStudentDocumentationProjectionRepository` | Eng zugeschnittener transaktionskonsistenter SQLite-Read für Schülerliste und Dokumentations-Heatmap; lädt jede benötigte Tabelle höchstens einmal je Refresh und führt weder DDL noch Schemainitialisierung aus | Core Persistence |
+| `project_competency_freshness` | Gemeinsame Qt-freie Faltung bereits geladener Persistenzereignisse in denselben kanonischen Bestätigungsfrischezustand wie der schülerbezogene Einzelread | Core Persistence |
+| `StudentDesktopAdapter.dashboard_documentation_refresh` | Adapterprojektion, die Heatmap und stundenbezogene Kindvorschläge aus genau demselben refresh-lokalen Batch erzeugt | Desktop Adapter |
+
+Diese Namen ändern weder Datenmodell noch Statusregeln. Der Batch lebt nur für
+einen Adapteraufruf; Profil, Bericht und LEG behalten ihre bestehenden
+Einzelprojektionen.

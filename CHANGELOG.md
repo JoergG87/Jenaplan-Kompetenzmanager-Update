@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Schülerliste und Dashboard-Heatmap lesen ihre kanonische
+  Dokumentationsprojektion transaktionskonsistent gebündelt; Abfragen je
+  Schüler oder Beobachtung sowie Schemainitialisierung in reinen
+  Read-Konstruktoren entfallen, ohne Datenmodell-, Index- oder Statusänderung.
 - Neue Beobachtungs-IDs werden im selben serialisierten SQLite-Schreibvorgang
   aus einem schmalen ID-Read vergeben; der vollständige Beobachtungsbestand
   samt Kompetenzbewertungen wird dafür nicht mehr hydriert.

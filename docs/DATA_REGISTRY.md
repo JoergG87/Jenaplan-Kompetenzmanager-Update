@@ -413,6 +413,16 @@ Python schreibt fachliche Daten ausschliesslich ueber Application, Domain, Repos
 
 PySide-Adapter und ViewModels lesen fachliche Daten ueber freigegebene Adapter, Repositories oder Query-Schichten.
 
+Schuelerliste und Dashboard-Heatmap duerfen dieselben registrierten SQLite-
+Quellen innerhalb eines Refreshs ueber
+`SQLiteStudentDocumentationProjectionRepository` gebuendelt lesen. Der Batch
+ist eine kurzlebige Projektion, keine Datenquelle und kein Cache. Er umfasst
+nur aktive Schueler im angeforderten Gruppen-/Kursscope, aktive Beobachtungen,
+deren Kompetenz-Snapshots, Bestaetigungen, Persistenzereignisse, den
+Kompetenzkatalog, die Dokumentationsfachauswahl sowie aktive Gruppen und Kurse.
+Die Abfragen laufen in einem gemeinsamen read-only Snapshot und fuehren keine
+Schema- oder Stammdateninitialisierung aus.
+
 Export-Builder duerfen nur nach ausdruecklicher Freigabe Projektionen aus SQLite erzeugen. Der alte Workbook-Builder ist archiviert.
 
 VBA greift niemals direkt auf fachliche Tabellen oder SQLite zu.

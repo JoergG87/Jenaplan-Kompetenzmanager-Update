@@ -1,5 +1,37 @@
 # Data Lifecycle
 
+## Performance-P1 - konsistenter Dokumentations-Refresh
+
+Schuelerliste und Dashboard-Heatmap oeffnen fuer ihre gemeinsame fachliche
+Basis genau einen kurzlebigen SQLite-Read-Snapshot. Darin werden aktive
+Schueler im angeforderten Scope, aktive Gruppen und Kurse, der
+Kompetenzkatalog, die Dokumentationsfachauswahl, aktive Beobachtungen,
+Kompetenz-Snapshots, Bestaetigungen und Persistenzereignisse gebuendelt
+gelesen. Erst nach Abschluss des Snapshots gruppiert der Desktop-Adapter die
+Daten je Schueler und verwendet unveraendert die kanonische
+Dokumentationsregel: Eine konkrete Kompetenz ist durch mindestens eine aktive
+Beobachtung oder eine Bestaetigung dokumentiert; der Frischezustand
+einschliesslich `confirmation_unknown` aendert diese Abdeckung nicht.
+
+Der Batch wird nach dem Refresh verworfen. Er schreibt nichts, initialisiert
+kein Schema, legt keinen globalen Cache an und veraendert weder Gate-Off-
+Semantik noch Transaktions-, Backup-, Restore-, Bericht- oder LEG-Prozesse.
+
+Verifiziertes Querybudget auf dem macOS-Offscreen-Messpfad vom 26.07.2026:
+
+| Bestand | Projektion | Audit vorher | Batch danach | geladene Projektionszeilen |
+|---|---|---:|---:|---:|
+| 30 Schueler / 300 Beobachtungen | Schuelerliste / Heatmap | je rund 6.365 Statements und 0,34 s | je 9 `SELECT`, 11 Statements und 0,025 / 0,023 s | 1.121 |
+| 300 Schueler / 9.000 Beobachtungen | Schuelerliste / Heatmap | rund 69.605 Statements und 3,51 / 3,53 s | je 9 `SELECT`, 11 Statements und 0,277 / 0,246 s | 18.791 |
+| 1.000 Schueler / 120.000 Beobachtungen | Schuelerliste / Heatmap | Heatmap 322.004 Statements und 13,66 s | je 9 `SELECT`, 11 Statements und 1,745 / 1,803 s | 241.491 |
+
+Die Batch-Nachmessung verwendet den produktiven aktiven Katalog mit 466
+Einträgen. Die beiden größten Reads sind erwartungsgemäß aktive Beobachtungen und deren
+Kompetenz-Snapshots; beim großen Bestand benötigten Laden plus Hydrierung
+jeweils rund 0,46 bis 0,53 s. Das Querybudget ist unabhängig von Schüler- und
+Beobachtungszahl. Der fokussierte gemeinsame Shell-Startpfad blieb bei allen
+drei Beständen bei 71 `SELECT` und ohne DDL; 300 / 9.000 benötigte 0,915 s.
+
 ## P1-Paket 1 - Ereignismigration, Frische und Attachment-Recovery
 
 ### V1-zu-V2-Migration

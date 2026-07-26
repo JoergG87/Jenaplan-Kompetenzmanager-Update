@@ -452,20 +452,25 @@ class AppShell(QMainWindow):
         week = self.timetable_adapter.week_view_model()
         projection = self.timetable_adapter.read_projection(instant)
         occurrence = projection.current or projection.next
-        suggested_students = (
-            self.adapter.list_dashboard_suggested_students(
-                target_type=occurrence.entry.target_type,
-                target_id=occurrence.entry.target_id,
-                subject_id=occurrence.entry.subject_id,
-                subject_label=occurrence.entry.subject_label,
-                at=instant,
+        if occurrence is not None:
+            heatmap, suggested_students = (
+                self.adapter.dashboard_documentation_refresh(
+                    target_type=occurrence.entry.target_type,
+                    target_id=occurrence.entry.target_id,
+                    subject_id=occurrence.entry.subject_id,
+                    subject_label=occurrence.entry.subject_label,
+                    at=instant,
+                )
             )
-            if occurrence is not None
-            else ()
-        )
+        else:
+            heatmap, suggested_students = (
+                self.adapter.dashboard_documentation_refresh(
+                    at=instant,
+                )
+            )
         self.dashboard_screen.set_dashboard(
             projection,
-            self.adapter.dashboard_documentation_heatmap(),
+            heatmap,
             instant,
             not week.is_empty,
             suggested_students,

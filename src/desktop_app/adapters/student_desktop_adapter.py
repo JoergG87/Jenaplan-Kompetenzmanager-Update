@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
+from collections.abc import Mapping
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -85,9 +86,11 @@ from src.core.sqlite_store import (
     SQLitePersistenceEventRepository,
     SQLiteReportDraftRepository,
     SQLiteStudentCompetencyConfirmationRepository,
+    SQLiteStudentDocumentationProjectionRepository,
     SQLiteStudentRepository,
     DocumentRecord,
     StudentCompetencyConfirmationRecord,
+    StudentDocumentationProjectionBatch,
 )
 from src.core.report_draft import ReportDraftRecord, ReportDraftService
 from src.core.learning_report import (
@@ -218,28 +221,37 @@ class StudentDesktopAdapter:
         course_ids: tuple[str, ...] = (),
     ) -> tuple[StudentListItem, ...]:
         """Return students with readable group and course names."""
-        groups = {group.group_id: group.group_name for group in self.list_groups()}
-        course_records = self.list_courses()
+        batch = SQLiteStudentDocumentationProjectionRepository(
+            self.database
+        ).read_batch(
+            group_id=group_id,
+            group_ids=group_ids,
+            course_id=course_id,
+            course_ids=course_ids,
+        )
+        groups = {group.group_id: group.group_name for group in batch.groups}
+        course_records = batch.courses
         courses = {course.course_id: course for course in course_records}
         course_order_by_id = {
             course.course_id: index
             for index, course in enumerate(course_records)
         }
-        students = tuple(
-            student
-            for student in SQLiteStudentRepository(self.database).list_students()
-            if student.active
+        documentation_statuses_by_student = (
+            self._documentation_statuses_by_student(batch)
         )
         loaded_students = tuple(
-            self._student_list_item(student, groups, courses)
-            for student in students
-            if self._matches_filter(
+            self._student_list_item(
                 student,
-                group_id,
-                group_ids,
-                course_id,
-                course_ids,
+                groups,
+                courses,
+                documentation_summary_from_subjects(
+                    documentation_statuses_by_student.get(
+                        student.student_id,
+                        (),
+                    )
+                ),
             )
+            for student in batch.students
         )
         return sort_student_list(loaded_students, course_order_by_id)
 
@@ -297,22 +309,56 @@ class StudentDesktopAdapter:
         self,
     ) -> DashboardDocumentationHeatmapViewModel:
         """Aggregate canonical documentation coverage by group and subject."""
-        students = tuple(
-            student
-            for student in SQLiteStudentRepository(self.database).list_students()
-            if student.active
+        batch = SQLiteStudentDocumentationProjectionRepository(
+            self.database
+        ).read_batch()
+        return self._dashboard_documentation_heatmap_from_batch(batch)
+
+    def dashboard_documentation_refresh(
+        self,
+        *,
+        target_type: str = "",
+        target_id: str = "",
+        subject_id: str = "",
+        subject_label: str = "",
+        at: datetime,
+        limit: int = 5,
+    ) -> tuple[
+        DashboardDocumentationHeatmapViewModel,
+        tuple[DashboardSuggestedStudentViewModel, ...],
+    ]:
+        """Return heatmap and lesson suggestions from one refresh-local batch."""
+        batch = SQLiteStudentDocumentationProjectionRepository(
+            self.database
+        ).read_batch()
+        heatmap = self._dashboard_documentation_heatmap_from_batch(batch)
+        if limit <= 0 or not subject_id:
+            return heatmap, ()
+        target_scope = self._dashboard_target_scope(target_type, target_id)
+        if target_scope is None:
+            return heatmap, ()
+        return (
+            heatmap,
+            self._dashboard_suggestions_from_batch(
+                batch,
+                target_scope=target_scope,
+                subject_id=subject_id,
+                subject_label=subject_label,
+                at=at,
+                limit=limit,
+            ),
         )
-        statuses_by_student = {
-            student.student_id: self.list_documentation_status_for_student(
-                student.student_id
-            )
-            for student in students
-        }
+
+    def _dashboard_documentation_heatmap_from_batch(
+        self,
+        batch: StudentDocumentationProjectionBatch,
+    ) -> DashboardDocumentationHeatmapViewModel:
+        statuses_by_student = self._documentation_statuses_by_student(batch)
         groups: list[DashboardDocumentationGroupViewModel] = []
-        for group in self.list_groups():
+        for group in batch.groups:
             group_students = tuple(
                 student
-                for student in students
+                for student in batch.students
                 if student.group_id == group.group_id
             )
             subject_totals: dict[str, list[object]] = {}
@@ -363,12 +409,37 @@ class StudentDesktopAdapter:
         if target_scope is None:
             return ()
         group_ids, course_ids = target_scope
-        courses = {course.course_id: course for course in self.list_courses()}
+        batch = SQLiteStudentDocumentationProjectionRepository(
+            self.database
+        ).read_batch(
+            group_ids=group_ids,
+            course_ids=course_ids,
+        )
+        return self._dashboard_suggestions_from_batch(
+            batch,
+            target_scope=target_scope,
+            subject_id=subject_id,
+            subject_label=subject_label,
+            at=at,
+            limit=limit,
+        )
+
+    def _dashboard_suggestions_from_batch(
+        self,
+        batch: StudentDocumentationProjectionBatch,
+        *,
+        target_scope: tuple[tuple[str, ...], tuple[str, ...]],
+        subject_id: str,
+        subject_label: str,
+        at: datetime,
+        limit: int,
+    ) -> tuple[DashboardSuggestedStudentViewModel, ...]:
+        group_ids, course_ids = target_scope
+        courses = {course.course_id: course for course in batch.courses}
         students = tuple(
             student
-            for student in SQLiteStudentRepository(self.database).list_students()
-            if student.active
-            and self._matches_filter(
+            for student in batch.students
+            if self._matches_filter(
                 student,
                 None,
                 group_ids,
@@ -383,6 +454,7 @@ class StudentDesktopAdapter:
                 subject_label,
                 at.date(),
                 courses,
+                batch.observations_by_student.get(student.student_id, ()),
             )
             for student in students
         )
@@ -433,12 +505,11 @@ class StudentDesktopAdapter:
         subject_label: str,
         at_date: date,
         courses: dict[str, CourseRecord],
+        observations: tuple[object, ...],
     ) -> DashboardSuggestedStudentViewModel:
         observation_dates = tuple(
             observation_date
-            for observation in SQLiteObservationRepository(
-                self.database
-            ).list_observations_for_student(student.student_id)
+            for observation in observations
             if self._observation_has_dashboard_subject(observation, subject_id)
             for observation_date in (date.fromisoformat(observation.date),)
             if observation_date <= at_date
@@ -1084,15 +1155,36 @@ class StudentDesktopAdapter:
         observations = SQLiteObservationRepository(
             self.database
         ).list_observations_for_student(student_id)
-        confirmations = {
-            confirmation.competency_id: confirmation
-            for confirmation in SQLiteStudentCompetencyConfirmationRepository(
-                self.database
-            ).list_confirmations_for_student(student_id)
-        }
+        confirmations = SQLiteStudentCompetencyConfirmationRepository(
+            self.database
+        ).list_confirmations_for_student(student_id)
         freshness_by_competency = SQLitePersistenceEventRepository(
             self.database
         ).freshness_for_student(student_id)
+        competencies = SQLiteCompetencyRepository(
+            self.database
+        ).list_competencies()
+        return self._competency_status_projection_from_sources(
+            observations=observations,
+            confirmations=confirmations,
+            freshness_by_competency=freshness_by_competency,
+            competencies=competencies,
+            retained_competency_ids=retained_competency_ids,
+        )
+
+    def _competency_status_projection_from_sources(
+        self,
+        *,
+        observations: tuple[object, ...],
+        confirmations: tuple[StudentCompetencyConfirmationRecord, ...],
+        freshness_by_competency: Mapping[str, object],
+        competencies: tuple[object, ...],
+        retained_competency_ids: tuple[str, ...] = (),
+    ) -> tuple[StudentCompetencyStatusViewModel, ...]:
+        confirmations_by_competency = {
+            confirmation.competency_id: confirmation
+            for confirmation in confirmations
+        }
         histories_by_competency: dict[str, list[tuple[object, str, str, str]]] = {}
         for observation in observations:
             for rating in observation.competency_ratings:
@@ -1111,22 +1203,26 @@ class StudentDesktopAdapter:
                     )
         referenced_competency_ids = (
             set(histories_by_competency)
-            | set(confirmations)
-            | {competency_id.strip() for competency_id in retained_competency_ids if competency_id.strip()}
+            | set(confirmations_by_competency)
+            | {
+                competency_id.strip()
+                for competency_id in retained_competency_ids
+                if competency_id.strip()
+            }
         )
-        competencies = {
+        competencies_by_id = {
             competency.competency_id: competency
-            for competency in SQLiteCompetencyRepository(self.database).list_competencies()
+            for competency in competencies
             if (
                 competency.active and competency.catalog_status == "current"
             ) or competency.competency_id in referenced_competency_ids
         }
-        competency_ids = set(competencies) | referenced_competency_ids
+        competency_ids = set(competencies_by_id) | referenced_competency_ids
         statuses = tuple(
             self._competency_status_view_model(
                 tuple(histories_by_competency.get(competency_id, ())),
-                competencies.get(competency_id),
-                confirmations.get(competency_id),
+                competencies_by_id.get(competency_id),
+                confirmations_by_competency.get(competency_id),
                 freshness_by_competency.get(competency_id),
             )
             for competency_id in competency_ids
@@ -1899,6 +1995,7 @@ class StudentDesktopAdapter:
         student: StudentRecord,
         groups: dict[str, str],
         courses: dict[str, CourseRecord],
+        documentation_status: StudentDocumentationSummaryViewModel,
     ) -> StudentListItem:
         course_name, course_color_name, course_color_hex = self._course_context(
             student.course_id,
@@ -1914,7 +2011,7 @@ class StudentDesktopAdapter:
             course_name,
             course_color_name,
             course_color_hex,
-            self._documentation_summary_for_student(student.student_id),
+            documentation_status,
         )
 
     @staticmethod
@@ -2246,6 +2343,47 @@ class StudentDesktopAdapter:
             for competency in self._active_current_competencies()
             if getattr(competency, "subject_id") in documentation_subject_ids
         )
+
+    def _documentation_statuses_by_student(
+        self,
+        batch: StudentDocumentationProjectionBatch,
+    ) -> dict[str, tuple[StudentDocumentationSubjectStatus, ...]]:
+        documentation_subject_ids = set(
+            batch.active_documentation_subject_ids
+        )
+        documentation_competencies = tuple(
+            competency
+            for competency in batch.competencies
+            if competency.active
+            and competency.catalog_status == "current"
+            and competency.subject_id in documentation_subject_ids
+        )
+        statuses_by_student: dict[
+            str,
+            tuple[StudentDocumentationSubjectStatus, ...],
+        ] = {}
+        for student in batch.students:
+            documented_ids = {
+                rating.competency_id
+                for observation in batch.observations_by_student.get(
+                    student.student_id,
+                    (),
+                )
+                for rating in observation.competency_ratings
+            } | {
+                confirmation.competency_id
+                for confirmation in batch.confirmations_by_student.get(
+                    student.student_id,
+                    (),
+                )
+            }
+            statuses_by_student[student.student_id] = (
+                self._documentation_statuses(
+                    documentation_competencies,
+                    documented_ids,
+                )
+            )
+        return statuses_by_student
 
     def _documentation_summary_for_student(
         self,
