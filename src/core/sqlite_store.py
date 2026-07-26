@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import sqlite3
 import uuid
+from collections.abc import Mapping
 from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from types import MappingProxyType
 
 from .database_compatibility import (
     DATABASE_COMPATIBILITY_VERSION,
@@ -17,6 +19,7 @@ from .database_compatibility import (
 )
 from .database_engine import SQLiteConnectionProvider
 from .persistence_events import (
+    CompetencyFreshness,
     PersistenceEventKind,
     PersistenceEventRecord,
     PersistenceOrderingState,
@@ -24,6 +27,7 @@ from .persistence_events import (
     canonical_payload_hash,
     canonical_utc_second,
     migrate_persistence_events,
+    project_competency_freshness,
 )
 
 from .constants import (
@@ -206,6 +210,26 @@ class StudentCompetencyConfirmationRecord:
     confirmed_rating: str
     confirmed_at: str
     note: str = ""
+
+
+@dataclass(frozen=True)
+class StudentDocumentationProjectionBatch:
+    """Refresh-local source rows for student documentation projections."""
+
+    students: tuple[StudentRecord, ...]
+    groups: tuple[GroupRecord, ...]
+    courses: tuple[CourseRecord, ...]
+    competencies: tuple[CompetencyRecord, ...]
+    active_documentation_subject_ids: tuple[str, ...]
+    observations_by_student: Mapping[str, tuple[ObservationRecord, ...]]
+    confirmations_by_student: Mapping[
+        str,
+        tuple[StudentCompetencyConfirmationRecord, ...],
+    ]
+    freshness_by_student: Mapping[
+        str,
+        Mapping[str, CompetencyFreshness],
+    ]
 
 
 @dataclass(frozen=True)
@@ -2102,7 +2126,6 @@ class SQLiteDocumentationSubjectSettingsRepository:
 
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
-        self.database.initialize_schema()
 
     def list_documentation_subject_settings(
         self,
@@ -2209,7 +2232,6 @@ class SQLiteStudentCompetencyConfirmationRepository:
 
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
-        self.database.initialize_schema()
 
     def list_confirmations_for_student(
         self,
@@ -2366,12 +2388,432 @@ class SQLiteStudentCompetencyConfirmationRepository:
         )
 
 
+class SQLiteStudentDocumentationProjectionRepository:
+    """Load the student-list and heatmap source rows in one read snapshot."""
+
+    def __init__(self, database: SQLiteDatabase) -> None:
+        self.database = database
+
+    def read_batch(
+        self,
+        *,
+        group_id: str | None = None,
+        group_ids: tuple[str, ...] = (),
+        course_id: str | None = None,
+        course_ids: tuple[str, ...] = (),
+    ) -> StudentDocumentationProjectionBatch:
+        scope_sql, scope_parameters = self._scope_sql(
+            group_id=group_id,
+            group_ids=group_ids,
+            course_id=course_id,
+            course_ids=course_ids,
+        )
+        with closing(self.database.connect()) as connection:
+            connection.execute("BEGIN")
+            try:
+                students = self._students(
+                    connection,
+                    scope_sql,
+                    scope_parameters,
+                )
+                groups = self._groups(connection)
+                courses = self._courses(connection)
+                competencies = self._competencies(connection)
+                active_documentation_subject_ids = (
+                    self._active_documentation_subject_ids(
+                        connection,
+                        competencies,
+                    )
+                )
+                ratings_by_observation = self._ratings_by_observation(
+                    connection,
+                    scope_sql,
+                    scope_parameters,
+                )
+                observations_by_student = self._observations_by_student(
+                    connection,
+                    scope_sql,
+                    scope_parameters,
+                    ratings_by_observation,
+                )
+                confirmations_by_student = self._confirmations_by_student(
+                    connection,
+                    scope_sql,
+                    scope_parameters,
+                )
+                freshness_by_student = self._freshness_by_student(
+                    connection,
+                    scope_sql,
+                    scope_parameters,
+                )
+                return StudentDocumentationProjectionBatch(
+                    students=students,
+                    groups=groups,
+                    courses=courses,
+                    competencies=competencies,
+                    active_documentation_subject_ids=(
+                        active_documentation_subject_ids
+                    ),
+                    observations_by_student=MappingProxyType(
+                        observations_by_student
+                    ),
+                    confirmations_by_student=MappingProxyType(
+                        confirmations_by_student
+                    ),
+                    freshness_by_student=MappingProxyType(
+                        {
+                            student_id: MappingProxyType(freshness)
+                            for student_id, freshness in (
+                                freshness_by_student.items()
+                            )
+                        }
+                    ),
+                )
+            finally:
+                connection.rollback()
+
+    @staticmethod
+    def _scope_sql(
+        *,
+        group_id: str | None,
+        group_ids: tuple[str, ...],
+        course_id: str | None,
+        course_ids: tuple[str, ...],
+    ) -> tuple[str, tuple[str, ...]]:
+        clauses = ["student.active = 1"]
+        parameters: list[str] = []
+        if group_id:
+            clauses.append("student.group_id = ?")
+            parameters.append(group_id)
+        if group_ids:
+            clauses.append(
+                f"student.group_id IN ({', '.join('?' for _ in group_ids)})"
+            )
+            parameters.extend(group_ids)
+        if course_id:
+            clauses.append("student.course_id = ?")
+            parameters.append(course_id)
+        if course_ids:
+            clauses.append(
+                f"student.course_id IN ({', '.join('?' for _ in course_ids)})"
+            )
+            parameters.extend(course_ids)
+        return " AND ".join(clauses), tuple(parameters)
+
+    @staticmethod
+    def _students(
+        connection: sqlite3.Connection,
+        scope_sql: str,
+        scope_parameters: tuple[str, ...],
+    ) -> tuple[StudentRecord, ...]:
+        rows = connection.execute(
+            f"""
+            SELECT
+                student.student_id,
+                student.first_name,
+                student.last_name,
+                student.group_id,
+                student.course_id,
+                student.student_notes,
+                student.active,
+                student.created_at,
+                student.updated_at,
+                student.archived_at
+            FROM students AS student
+            WHERE {scope_sql}
+            ORDER BY student.student_id
+            """,
+            scope_parameters,
+        ).fetchall()
+        return tuple(_student_from_row(row) for row in rows)
+
+    @staticmethod
+    def _groups(connection: sqlite3.Connection) -> tuple[GroupRecord, ...]:
+        rows = connection.execute(
+            """
+            SELECT group_id, group_name, active
+            FROM groups
+            WHERE active = 1
+            ORDER BY group_id
+            """
+        ).fetchall()
+        return tuple(
+            GroupRecord(row[GROUP_ID], row[GROUP_NAME], bool(row[ACTIVE]))
+            for row in rows
+        )
+
+    @staticmethod
+    def _courses(connection: sqlite3.Connection) -> tuple[CourseRecord, ...]:
+        rows = connection.execute(
+            """
+            SELECT course_id, course_name, color_key, color_hex, active
+            FROM courses
+            WHERE active = 1
+            ORDER BY sort_order, course_id
+            """
+        ).fetchall()
+        return tuple(
+            CourseRecord(
+                row[COURSE_ID],
+                row[COURSE_NAME],
+                (row[COLOR_HEX] or row[COLOR_KEY] or "").lstrip("#"),
+                bool(row[ACTIVE]),
+            )
+            for row in rows
+        )
+
+    @staticmethod
+    def _competencies(
+        connection: sqlite3.Connection,
+    ) -> tuple[CompetencyRecord, ...]:
+        rows = connection.execute(
+            """
+            SELECT
+                competency_id,
+                subject_id,
+                subject_name,
+                subject_full_name,
+                official_subject_name,
+                school_context_name,
+                grade_band,
+                label,
+                description,
+                learning_stage,
+                learning_area,
+                competency_group,
+                source_reference,
+                catalog_status,
+                activation_group_key,
+                sort_order,
+                active,
+                catalog_default_active,
+                is_core_subject
+            FROM competencies
+            ORDER BY sort_order, competency_id
+            """
+        ).fetchall()
+        return tuple(_competency_from_row(row) for row in rows)
+
+    @staticmethod
+    def _active_documentation_subject_ids(
+        connection: sqlite3.Connection,
+        competencies: tuple[CompetencyRecord, ...],
+    ) -> tuple[str, ...]:
+        rows = connection.execute(
+            """
+            SELECT subject_id, active
+            FROM documentation_subject_settings
+            ORDER BY subject_id
+            """
+        ).fetchall()
+        active_catalog_subject_ids = tuple(
+            dict.fromkeys(
+                competency.subject_id
+                for competency in competencies
+                if competency.active
+            )
+        )
+        if not rows:
+            return active_catalog_subject_ids
+        selected = {
+            row["subject_id"]
+            for row in rows
+            if bool(row[ACTIVE])
+        }
+        catalog_order = {
+            subject_id: index
+            for index, subject_id in enumerate(active_catalog_subject_ids)
+        }
+        fallback_index = len(catalog_order)
+        return tuple(
+            sorted(
+                selected,
+                key=lambda subject_id: (
+                    catalog_order.get(subject_id, fallback_index),
+                    subject_id,
+                ),
+            )
+        )
+
+    @staticmethod
+    def _ratings_by_observation(
+        connection: sqlite3.Connection,
+        scope_sql: str,
+        scope_parameters: tuple[str, ...],
+    ) -> dict[str, tuple[ObservationCompetencyRatingRecord, ...]]:
+        rows = connection.execute(
+            f"""
+            SELECT
+                rating.observation_id,
+                rating.competency_id,
+                rating.subject_id,
+                rating.subject_display_name,
+                rating.learning_area,
+                rating.competency_group,
+                rating.competency_text,
+                rating.rating
+            FROM observation_competency_ratings AS rating
+            JOIN observations AS observation
+                ON observation.observation_id = rating.observation_id
+            JOIN students AS student
+                ON student.student_id = observation.student_id
+            WHERE observation.active = 1 AND {scope_sql}
+            ORDER BY rating.observation_id, rating.competency_id
+            """,
+            scope_parameters,
+        ).fetchall()
+        grouped: dict[str, list[ObservationCompetencyRatingRecord]] = {}
+        for row in rows:
+            grouped.setdefault(row["observation_id"], []).append(
+                ObservationCompetencyRatingRecord(
+                    row["competency_id"],
+                    row["subject_id"],
+                    row["subject_display_name"],
+                    row["learning_area"],
+                    row["competency_group"] or "",
+                    row["competency_text"],
+                    row["rating"],
+                )
+            )
+        return {
+            observation_id: tuple(ratings)
+            for observation_id, ratings in grouped.items()
+        }
+
+    @staticmethod
+    def _observations_by_student(
+        connection: sqlite3.Connection,
+        scope_sql: str,
+        scope_parameters: tuple[str, ...],
+        ratings_by_observation: dict[
+            str,
+            tuple[ObservationCompetencyRatingRecord, ...],
+        ],
+    ) -> dict[str, tuple[ObservationRecord, ...]]:
+        rows = connection.execute(
+            f"""
+            SELECT
+                observation.observation_id,
+                observation.student_id,
+                observation.date,
+                observation.subject_id,
+                observation.context,
+                observation.note,
+                observation.active,
+                observation.created_at,
+                observation.updated_at
+            FROM observations AS observation
+            JOIN students AS student
+                ON student.student_id = observation.student_id
+            WHERE observation.active = 1 AND {scope_sql}
+            ORDER BY
+                observation.student_id,
+                observation.date DESC,
+                observation.observation_id DESC
+            """,
+            scope_parameters,
+        ).fetchall()
+        grouped: dict[str, list[ObservationRecord]] = {}
+        for row in rows:
+            grouped.setdefault(row[STUDENT_ID], []).append(
+                ObservationRecord(
+                    row["observation_id"],
+                    row[STUDENT_ID],
+                    row["date"],
+                    row["subject_id"],
+                    row["context"] or "",
+                    row["note"] or "",
+                    bool(row[ACTIVE]),
+                    row[CREATED_AT],
+                    row[UPDATED_AT],
+                    ratings_by_observation.get(row["observation_id"], ()),
+                )
+            )
+        return {
+            student_id: tuple(observations)
+            for student_id, observations in grouped.items()
+        }
+
+    @staticmethod
+    def _confirmations_by_student(
+        connection: sqlite3.Connection,
+        scope_sql: str,
+        scope_parameters: tuple[str, ...],
+    ) -> dict[str, tuple[StudentCompetencyConfirmationRecord, ...]]:
+        rows = connection.execute(
+            f"""
+            SELECT
+                confirmation.student_id,
+                confirmation.competency_id,
+                confirmation.confirmed_rating,
+                confirmation.confirmed_at,
+                confirmation.note
+            FROM student_competency_confirmations AS confirmation
+            JOIN students AS student
+                ON student.student_id = confirmation.student_id
+            WHERE {scope_sql}
+            ORDER BY confirmation.student_id, confirmation.competency_id
+            """,
+            scope_parameters,
+        ).fetchall()
+        grouped: dict[str, list[StudentCompetencyConfirmationRecord]] = {}
+        for row in rows:
+            grouped.setdefault(row[STUDENT_ID], []).append(
+                StudentCompetencyConfirmationRecord(
+                    row[STUDENT_ID],
+                    row["competency_id"],
+                    row["confirmed_rating"],
+                    row["confirmed_at"],
+                    row["note"] or "",
+                )
+            )
+        return {
+            student_id: tuple(confirmations)
+            for student_id, confirmations in grouped.items()
+        }
+
+    @staticmethod
+    def _freshness_by_student(
+        connection: sqlite3.Connection,
+        scope_sql: str,
+        scope_parameters: tuple[str, ...],
+    ) -> dict[str, dict[str, CompetencyFreshness]]:
+        rows = connection.execute(
+            f"""
+            SELECT
+                event.event_sequence,
+                event.operation_token,
+                event.operation_index,
+                event.operation_payload_hash,
+                event.event_kind,
+                event.student_id,
+                event.competency_id,
+                event.observation_id,
+                event.technical_timestamp,
+                event.ordering_state
+            FROM persistence_events AS event
+            JOIN students AS student
+                ON student.student_id = event.student_id
+            WHERE {scope_sql}
+            ORDER BY event.event_sequence
+            """,
+            scope_parameters,
+        ).fetchall()
+        grouped: dict[str, list[PersistenceEventRecord]] = {}
+        for row in rows:
+            event = PersistenceEventRecord(*row)
+            grouped.setdefault(event.student_id, []).append(event)
+        return {
+            student_id: project_competency_freshness(tuple(events))
+            for student_id, events in grouped.items()
+        }
+
+
 class SQLiteMasterDataRepository:
     """Read and write persistent master data in SQLite."""
 
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
-        self.database.ensure_master_data_defaults()
 
     def list_student_groups(self) -> tuple[MasterDataGroupRecord, ...]:
         with closing(self.database.connect()) as connection:

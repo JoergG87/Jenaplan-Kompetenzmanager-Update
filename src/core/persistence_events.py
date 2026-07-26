@@ -64,6 +64,95 @@ class CompetencyFreshness:
         return "confirmed"
 
 
+def project_competency_freshness(
+    events: tuple[PersistenceEventRecord, ...],
+) -> dict[str, CompetencyFreshness]:
+    """Fold already loaded persistence events into canonical freshness states."""
+    grouped: dict[str, list[PersistenceEventRecord]] = {}
+    for event in events:
+        if event.competency_id:
+            grouped.setdefault(event.competency_id, []).append(event)
+    result: dict[str, CompetencyFreshness] = {}
+    observation_kinds = {
+        PersistenceEventKind.OBSERVATION_COMPETENCY_CHANGED.value,
+        PersistenceEventKind.OBSERVATION_DEACTIVATED.value,
+        PersistenceEventKind.HISTORICAL_OBSERVATION_STATE.value,
+    }
+    confirmation_kinds = {
+        PersistenceEventKind.CONFIRMATION_UPSERTED.value,
+        PersistenceEventKind.HISTORICAL_CONFIRMATION_STATE.value,
+    }
+    for competency_id, competency_events in grouped.items():
+        latest_ordered_new = max(
+            (
+                event.event_sequence or 0
+                for event in competency_events
+                if event.ordering_state == PersistenceOrderingState.ORDERED.value
+                and event.event_kind
+                not in {
+                    PersistenceEventKind.HISTORICAL_OBSERVATION_STATE.value,
+                    PersistenceEventKind.HISTORICAL_CONFIRMATION_STATE.value,
+                }
+            ),
+            default=0,
+        )
+        historical_events = tuple(
+            event
+            for event in competency_events
+            if event.event_kind
+            in {
+                PersistenceEventKind.HISTORICAL_OBSERVATION_STATE.value,
+                PersistenceEventKind.HISTORICAL_CONFIRMATION_STATE.value,
+            }
+        )
+        latest_historical_timestamp = max(
+            (
+                event.technical_timestamp
+                for event in historical_events
+                if event.technical_timestamp != LEGACY_UNKNOWN_TIMESTAMP
+            ),
+            default="",
+        )
+        invalid_historical_timestamp = any(
+            event.ordering_state == PersistenceOrderingState.UNKNOWN.value
+            and event.technical_timestamp == LEGACY_UNKNOWN_TIMESTAMP
+            for event in historical_events
+        )
+        latest_historical_group_unknown = bool(
+            latest_historical_timestamp
+            and any(
+                event.ordering_state == PersistenceOrderingState.UNKNOWN.value
+                and event.technical_timestamp == latest_historical_timestamp
+                for event in historical_events
+            )
+        )
+        historical_unknown = latest_ordered_new == 0 and (
+            invalid_historical_timestamp or latest_historical_group_unknown
+        )
+        observation_sequence = max(
+            (
+                event.event_sequence or 0
+                for event in competency_events
+                if event.event_kind in observation_kinds
+            ),
+            default=0,
+        )
+        confirmation_sequence = max(
+            (
+                event.event_sequence or 0
+                for event in competency_events
+                if event.event_kind in confirmation_kinds
+            ),
+            default=0,
+        )
+        result[competency_id] = CompetencyFreshness(
+            observation_sequence or None,
+            confirmation_sequence or None,
+            historical_unknown,
+        )
+    return result
+
+
 PERSISTENCE_EVENTS_SCHEMA_SQL = """
 CREATE TABLE persistence_events (
     event_sequence INTEGER PRIMARY KEY,
@@ -358,95 +447,7 @@ class SQLitePersistenceEventRepository:
         self,
         student_id: str,
     ) -> dict[str, CompetencyFreshness]:
-        events = self.list_for_student(student_id)
-        grouped: dict[str, list[PersistenceEventRecord]] = {}
-        for event in events:
-            if event.competency_id:
-                grouped.setdefault(event.competency_id, []).append(event)
-        result: dict[str, CompetencyFreshness] = {}
-        observation_kinds = {
-            PersistenceEventKind.OBSERVATION_COMPETENCY_CHANGED.value,
-            PersistenceEventKind.OBSERVATION_DEACTIVATED.value,
-            PersistenceEventKind.HISTORICAL_OBSERVATION_STATE.value,
-        }
-        confirmation_kinds = {
-            PersistenceEventKind.CONFIRMATION_UPSERTED.value,
-            PersistenceEventKind.HISTORICAL_CONFIRMATION_STATE.value,
-        }
-        for competency_id, competency_events in grouped.items():
-            latest_ordered_new = max(
-                (
-                    event.event_sequence or 0
-                    for event in competency_events
-                    if event.ordering_state == PersistenceOrderingState.ORDERED.value
-                    and event.event_kind
-                    not in {
-                        PersistenceEventKind.HISTORICAL_OBSERVATION_STATE.value,
-                        PersistenceEventKind.HISTORICAL_CONFIRMATION_STATE.value,
-                    }
-                ),
-                default=0,
-            )
-            historical_events = tuple(
-                event
-                for event in competency_events
-                if event.event_kind
-                in {
-                    PersistenceEventKind.HISTORICAL_OBSERVATION_STATE.value,
-                    PersistenceEventKind.HISTORICAL_CONFIRMATION_STATE.value,
-                }
-            )
-            latest_historical_timestamp = max(
-                (
-                    event.technical_timestamp
-                    for event in historical_events
-                    if event.technical_timestamp != LEGACY_UNKNOWN_TIMESTAMP
-                ),
-                default="",
-            )
-            invalid_historical_timestamp = any(
-                event.ordering_state == PersistenceOrderingState.UNKNOWN.value
-                and event.technical_timestamp == LEGACY_UNKNOWN_TIMESTAMP
-                for event in historical_events
-            )
-            latest_historical_group_unknown = bool(
-                latest_historical_timestamp
-                and any(
-                    event.ordering_state
-                    == PersistenceOrderingState.UNKNOWN.value
-                    and event.technical_timestamp == latest_historical_timestamp
-                    for event in historical_events
-                )
-            )
-            historical_unknown = (
-                latest_ordered_new == 0
-                and (
-                    invalid_historical_timestamp
-                    or latest_historical_group_unknown
-                )
-            )
-            observation_sequence = max(
-                (
-                    event.event_sequence or 0
-                    for event in competency_events
-                    if event.event_kind in observation_kinds
-                ),
-                default=0,
-            )
-            confirmation_sequence = max(
-                (
-                    event.event_sequence or 0
-                    for event in competency_events
-                    if event.event_kind in confirmation_kinds
-                ),
-                default=0,
-            )
-            result[competency_id] = CompetencyFreshness(
-                observation_sequence or None,
-                confirmation_sequence or None,
-                historical_unknown,
-            )
-        return result
+        return project_competency_freshness(self.list_for_student(student_id))
 
 
 def _table_exists(connection: sqlite3.Connection, table_name: str) -> bool:
