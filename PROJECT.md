@@ -1,5 +1,46 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
+
+Security Sprint 11 verbindet die isolierten Foundations aus Sprint 8 bis 10
+ausschließlich in einer markergebundenen temporären Testinstallation. Das
+interne Gate `JKM_SECURITY_INTEGRATION_TEST=1` ist standardmäßig aus, nicht
+über die UI erreichbar und akzeptiert weder den normalen `RuntimePaths`-Root
+noch Pilot-, RC- oder echte Nutzerdaten. Unbekannte Gatewerte und gemischte
+Bestände blockieren ohne SQLite-/SQLCipher-Fallback.
+
+### Verbindliche Integrationsmatrix
+
+| Komponente | heutiger Klartextpfad | neuer verschlüsselter Testpfad | Gate | Fehler / Recovery | Schema | Testnachweis |
+|---|---|---|---|---|---|---|
+| Startup / `RuntimePaths` | normale Rootauflösung und `prepare_runtime_storage` | `SecurityIntegrationGate` plus feste temporäre `SecurityIntegrationPaths` | exakt `1` und zwei Marker | ungültiger Root blockiert vor Mutation | nein | Gate-/Import-/Startup-Isolation |
+| Connection Factory | `SQLiteDatabase` über SQLite-Provider | explizite SQLCipher-Factory mit DMK-geöffnetem Database-Key | nur Integrationsruntime | falscher/fehlender Key, Format oder Integrität blockiert; kein Create-Fallback | `user_version=1101` | Open, falscher Key, Reopen |
+| Auth / DMK | bestehende lokale Authentifizierung | injizierter DMK-Loader erst nach Auth-Erfolg | keine UI-Aktivierung | fehlender/beschädigter Plattformschlüssel blockiert | nein | Passwortwechsel-/Support-Reset-Semantik |
+| Migration / Journal / Lock | keine automatische Produktmigration | geschlossene markierte Testquelle, byte-identische Safety Copy, SQLCipher-Ziel, HMAC-Journal, externer pending/committed Anchor und exklusiver Lock | nur Test-Root | neue Prozess-Recovery, idempotente Phasen, Widerspruch blockiert | Integrationsmetadaten v1 | Fokus- und echte Crash-Subprozesse |
+| Dokumentrepository | `documents.file_path` auf Klartextdatei | unveränderliche `security_document_generations` plus opaque aktive Referenz | nur SQLCipher-Ziel | vorbereitete Generation bleibt inaktiv; alte aktive Generation retained | neue Tabellen / Index | Import, Austausch, Restart, gemischter Zustand |
+| Import / Lesen / Export / Löschen | Kopie in `documents/`, direktes OS-Öffnen, Soft-Delete | Container vor Pointer, zweiphasiger Reader, bewusster No-Clobber-Klartextexport, konservatives Retained | nur Application Adapter | keine erfolgreiche Meldung bei Teilfehler; kein GC | Generation/Lifecycle | Container-, Export- und Crashtests |
+| Backup / Restore | ZIP-v1 und bestehendes Restore-Handoff | Sprint-9-Container für SQLCipher plus verschlüsselte Dokumente; Restore nur in neuen Staging-Root | nur Integrationsadapter | Vollverifikation vor Erfolg; alter Bestand bleibt | nein | Tamper, Crash, Restore-Reopen |
+| Application Services | normale Desktop-Adapter mit Klartext-DB | Qt-freie `SecurityIntegrationRuntime` gegen zentrale Factory | nur Testcode | sanitierte Fehlercodes; keine UI | nutzt v1 | Student-/Dokumentprojektion gegen SQLCipher |
+| Support-Reset / Passwortwechsel | bestehende Auth-Schicht | unverändert; DMK-/Datenkeys bleiben identisch | unabhängig vom Gate | fehlender Plattform-DMK blockiert | nein | explizite Nicht-Rotations-Regression |
+| Nutzerführung | bestehende Dialoge | keine neue UI; ausschließlich technischer Testreport | nicht sichtbar | fail-closed ohne Geheimnisse/Pfade in Logs | nein | UI-/Import-Isolation |
+| Packaging | bestehende Abhängigkeiten | keine Sprint-11-Paketaktivierung | gesperrt | PyNaCl/SQLCipher-Packaging bleibt Release-Gate | nein | `pip check`; kein Build |
+
+### Datenfluss Startup bis Restore
+
+`Gate/Marker prüfen -> Auth bestätigt -> DMK laden -> Database-Key-Envelope
+öffnen -> Locks erwerben -> Klartextquelle und Dokumentinventar binden ->
+byte-identische Safety Copy verifizieren -> separate SQLCipher-Datei ohne
+ATTACH übertragen und reopen -> Dokumentcontainer PREPARED erzeugen ->
+SQLCipher-Referenzen atomar ACTIVE schalten -> verschlüsseltes Backup
+verifizieren -> alle Handles schließen -> SQLCipher und Dokumente frisch
+reopen -> Klartextbestand Retained markieren -> COMPLETED -> optional Backup in
+neuen Restore-Staging-Root extrahieren und vollständig reopen-verifizieren`.
+
+Der Klartextbestand wird nicht ersetzt oder gelöscht. Der Testpfad startet
+seine Application Services direkt gegen den validierten SQLCipher-Bestand.
+Das bestehende ZIP-v1-Backup, normale Dokumentpfade, Produktstartup, Pilot, RC,
+Excel, Packaging und Release bleiben ohne Gate unverändert.
+
 ## Security Sprint 9 - isolierter verschlüsselter Backupcontainer
 
 Der Sprint ergänzt ausschließlich für synthetische Testdaten einen

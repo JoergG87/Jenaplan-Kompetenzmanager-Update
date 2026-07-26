@@ -1,5 +1,20 @@
 # UI Data Mapping
 
+## Security Sprint 11 - keine sichtbare Produktprojektion
+
+Das interne Gate, die Integrationsphasen, Schema-/Key-/Storage-IDs,
+Journal-/Replay-Zustände, Hashes, Pfade, Retained-/Quarantänedetails und
+technischen Fehlercodes werden nicht in PySide projiziert. Es entstehen keine
+neuen Felder, Dialoge, Buttons, Menüpunkte, Startupmeldungen oder
+Einstellungen.
+
+Der bewusste Klartextexport wird in Sprint 11 ausschließlich über den
+Qt-freien Application Adapter getestet. Sein fester Hinweis lautet: `Die
+exportierte Datei liegt außerhalb des verwalteten Speichers unverschlüsselt
+vor.` Eine spätere sichtbare Produktaktion benötigt eine eigene
+Product-Owner-/UX-Freigabe und ein neues Mapping. Normale Dokument-, Backup-,
+Restore-, Passwortwechsel- und Support-Reset-Oberflächen bleiben unverändert.
+
 ## Security Sprint 10 - keine UI-, Startup- oder Dokumentprojektion
 
 Writer, Headerprüfung, Verifier, Reader, Testexport, Rewrap,

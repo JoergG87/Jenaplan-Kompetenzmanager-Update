@@ -1,5 +1,25 @@
 # Technical Naming Registry
 
+## Security Sprint 11 - kontrollierte Testintegration
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `JKM_SECURITY_INTEGRATION_TEST` | Internes, standardmäßig inaktives Gate; ausschließlich der exakte Wert `1` kann zusammen mit einem gültigen markergebundenen Test-Root aktivieren | Security Integration |
+| `SecurityIntegrationGate` | Rein technische Gate- und Test-Root-Prüfung; unbekannte Werte, fehlende Marker, Symlinks, unprivate Roots und Nicht-Temporärpfade blockieren | Security Integration |
+| `SecurityIntegrationPaths` | Feste Rollen für Klartextquelle, byte-identische Sicherung, SQLCipher-Ziel, Dokument-Storage, Export, verschlüsseltes Backup, Restore-Staging, Journal und externen Replay-Anker | Security Integration |
+| `SecurityIntegrationConnectionFactory` | Einzige Datenbank-Öffnungsgrenze des aktivierten Testpfads; Engine und Key sind explizit, bestehende SQLCipher-Dateien werden ohne Create-/SQLite-Fallback geöffnet | Core Persistence / Security Integration |
+| `SQLiteReadOnlyConnectionProvider` | Zentrale Core-Persistence-Grenze für existierende SQLite-Quellen mit `mode=ro`, `immutable=1` und `query_only`; keine Erzeugung und kein Security-Layer-Treiberimport | Core Persistence |
+| `SQLITE_RUNTIME_VERSION` | Vom Core bereitgestellte technische SQLite-Laufzeitversion für verschlüsselte Backup-Metadaten; kein Datenbank- oder Gatezustand | Core Persistence |
+| `SecurityIntegrationSchemaV1` | Nur im SQLCipher-Testziel vorhandene, über `user_version=1101` eindeutig erkennbare Schemaerweiterung für unveränderliche Dokumentgenerationen und Integrationsmetadaten | Core Persistence |
+| `EncryptedDocumentGenerationRecord` | SQLCipher-Datensatz für Document-ID, opaque Storage-ID, Dokument-/Key-Generation, Envelope-Revision, Containerformat, Klartextgröße/-hash, MIME-Typ, Lifecycle und Retained-/Quarantänegrund | Document Persistence |
+| `SecurityDocumentApplicationAdapter` | Qt-freier Adapter für vorbereiteten verschlüsselten Import, atomare Pointer-Umschaltung, kontrolliertes Lesen, bewussten Export, Austausch und konservatives Retained-Verhalten | Application / Documents |
+| `SecurityEncryptedBackupAdapter` | Gate-gebundener Adapter zwischen SQLCipher-/Dokumentinventar und dem Sprint-9-Container; verifiziert vor Erfolg und stellt nur in einen neuen Staging-Root wieder her | Application / Backup |
+| `SecurityIntegrationJournalV1` | Kanonisches HMAC-geschütztes Write-ahead-Journal mit Phasen, Revision, Artefakt- und Dokumentplan sowie sanitisierten Fehlercodes | Security Integration |
+| `SecurityIntegrationReplayAnchorV1` | Vom Integrationsroot getrennte committed/pending HMAC-Autorität für monotone Journalrevision und -digest | Security Infrastructure |
+| `SecurityIntegrationPhase` | Allowlist `PREFLIGHT`, `BACKUP_VERIFIED`, `DATABASE_MIGRATED`, `DOCUMENTS_PREPARED`, `REFERENCES_SWITCHED`, `ENCRYPTED_BACKUP_VERIFIED`, `REOPEN_VERIFIED`, `COMPLETED`, `BLOCKED`, `RECOVERY_REQUIRED` | Security Domain |
+| `SecurityIntegrationOrchestrator` | Gate-gebundene, restartfähige Ablaufsteuerung für eine markierte Klartext-Testinstallation; keine Produktmigration und keine UI | Application / Security Integration |
+| `SecurityIntegrationRuntime` | Qt-freie, frisch geöffnete Application-Service-Komposition gegen den vollständig validierten SQLCipher-Bestand | Application |
+
 ## Vereinfachte Verschlüsselungsarchitektur nach ADR-088
 
 | Technischer Name | Bedeutung | Eigentümer |

@@ -1,5 +1,27 @@
 # Data Registry
 
+## Security Sprint 11 - markergebundene Integrationsquellen
+
+| Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| Integrations-Gate und Test-Root-Marker | exakter Gatewert, feste Markerbytes und private Rootidentität | nur unter System-Temporärwurzel; kein Produkt-`RuntimePaths` | interne Testautorität |
+| markierte Klartext-Testinstallation | bestehende V1-Fachdatenbank und ausschließlich künstliche Dokumentquellen | read-only Quellrolle; nie automatisch verändert oder gelöscht | Testquelle |
+| `MigrationSafetyCopy` | byte-identische Klartextkopie mit Größe, SHA-256 und SQLite-Integritätsbeleg | exklusiv erzeugt und gefsynct; Retained erst nach Abschluss | Test-Recoveryquelle |
+| SQLCipher-Testbestand | vollständig übertragene Fachdaten plus `SecurityIntegrationSchemaV1` | fester Zielpfad, `user_version=1101`, kein Create-Fallback beim Reopen | inaktiver Integrationsbestand |
+| `security_document_generations` | technische Generationen, opaque Storage-/Key-IDs, Versionen, Größe/hash, MIME, Lifecycle und Retained-/Quarantänegrund | ausschließlich SQLCipher; aktive Generation per partiellem Unique-Index | Test-Persistenz |
+| verschlüsselte Dokumentcontainer | Secretstream-Container mit verschlüsseltem Manifest und zufälligem Document-Key-Envelope | nur opaque Dateinamen im verwalteten Storage; kein Klartext | inaktiver Integrationsbestand |
+| `SecurityIntegrationJournalV1` | Crossbinding, Phasen, Dokumentplan, Artefakthashes, Revision und sanitierter Fehlercode | HMAC-authentisiert im Test-Root, atomar und gefsynct | Test-Control-Plane |
+| `SecurityIntegrationReplayAnchorV1` | committed/pending Journalrevision und -digest | außerhalb des replaybaren Integrationsroots, aber innerhalb der temporären Testumgebung | Test-Control-Plane |
+| verschlüsselter Sprint-11-Backupcontainer | SQLCipher-Testbestand und verifizierte Dokumentcontainer | fester privater Backup-Root; vollständig neu verifiziert | inaktiver Integrationsbestand |
+| Restore-Staging | wiederhergestellte SQLCipher-Datei, Dokumentcontainer und Abschlussbeleg | immer neuer Root; keine automatische Live-Umschaltung | Test-Recoverybestand |
+| Retained-Beleg | Hashbindung von Klartextquelle und Safety Copy nach vollständigem Abschluss | Marker; keine physische Löschung oder GC | Test-Evidenz |
+
+Originalnamen, Titel, Notizen, fachliche Zuordnungen und MIME-Typen werden
+nicht in Dateinamen, Journal, Replay-Anker oder Logs geschrieben. Sie bleiben
+in SQLCipher beziehungsweise im verschlüsselten Dokumentmanifest. Produkt-,
+Pilot-, RC-, Excel-, Appcast- und reale Nutzerdaten sind keine
+Sprint-11-Datenquellen.
+
 ## Security Sprint 10 - isolierte synthetische Dokumentquellen
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |

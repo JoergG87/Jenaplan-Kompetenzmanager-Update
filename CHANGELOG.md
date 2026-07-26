@@ -1,5 +1,57 @@
 # CHANGELOG
 
+## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
+
+### Architecture
+
+- Verbindliche Integrationsmatrix und den vollständigen Datenfluss von
+  Gate-/Startupprüfung bis verifiziertem Restore-Staging dokumentiert.
+- Markergebundenen temporären Test-Root, zentrale SQLCipher-Connection-Factory,
+  `SecurityIntegrationSchemaV1`, atomare Dokumentpointer, HMAC-Journal,
+  externen Replay-Anker und restartfähige Phasen als einzige Sprint-11-
+  Integrationsgrenze festgelegt.
+- Produkt-, Pilot-, RC-, UI-, ZIP-v1-, Packaging-, Build-, Appcast-, Release-,
+  Identity-VFS-, Capability-, `ATTACH`- und `sqlcipher_export`-Pfade
+  ausgeschlossen.
+
+### Added
+
+- Kleinsten vollständigen End-to-End-Pfad für markierte
+  Klartext-Testinstallationen hinter `JKM_SECURITY_INTEGRATION_TEST=1`
+  implementiert: Safety Copy, VFS-freier SQLCipher-Transfer, versioniertes
+  Dokumentgenerationsschema, verifizierte Container, atomare Pointer,
+  verschlüsseltes Backup, frischer Reopen und Restore-Staging.
+- HMAC-authentisiertes Journal und getrennten pending/committed Replay-Anker
+  mit explizit evidenzgebundener Übernahme eines verwaisten Migrations-Locks
+  ergänzt; normale Starts übernehmen keinen Stale-Lock automatisch.
+- Qt-freien Application Adapter für kontrolliertes Lesen, bewussten
+  No-Clobber-Klartextexport, idempotentes Vorbereiten einer Ersatzgeneration,
+  atomaren Generationswechsel und explizit aufgeschobenes Löschen ergänzt.
+- Zentrale SQLite-/SQLCipher-Provider um schreibfreie Opens erweitert; der
+  Security-Layer importiert keinen Datenbanktreiber direkt.
+
+### Tests
+
+- 24 Sprint-11-Fokus- und echte Crash-Subprozesstests grün; geprüft sind unter
+  anderem Gate-Off bei vorhandenem Testbestand, Symlink-/Pfadgrenzen,
+  Schlüssel- und Artefaktmanipulation, Klartext im Storage, Konkurrenz,
+  Dokumentaustausch, Export, Backup/Restore sowie idempotente Recovery an
+  jeder Orchestrator-Phasengrenze.
+- 184 Sprint-8–10-Foundationtests sowie 536 relevante Produkt-, Startup-,
+  Support-, Backup-, Restore- und Adaptertests mit 48 Subtests grün.
+- Gesamtsuite: 1619 bestanden, 20 bestehende plattformgebundene Tests
+  übersprungen, 67 Subtests bestanden; `compileall`, `pip check` und
+  `git diff --check` bestanden.
+
+### Boundaries
+
+- Ohne Gate bleibt der Produktpfad unverändert und importiert den
+  Sprint-11-Orchestrator nicht. Keine UI, Produktmigration, Pilot-/RC-
+  Aktivierung, Klartextlöschung, physisches GC, Packaging, Build oder Release.
+- GO ausschließlich für den standardmäßig inaktiven Integrationspfad mit
+  P0 = 0 und P1 = 0. Windows, Packaging, Notarisierung, reale
+  Power-Loss-Abnahme und Produktfreigabe bleiben P2 beziehungsweise NO-GO.
+
 ## Security Sprint 10 - isolierte verschlüsselte Dokumentablage
 
 ### Architecture

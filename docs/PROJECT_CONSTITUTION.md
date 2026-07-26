@@ -1,5 +1,62 @@
 # Project Constitution
 
+## Entwicklungsgrenze Security Sprint 11
+
+Security Sprint 11 darf die Foundations aus Security Sprint 8 bis 10
+ausschließlich hinter dem internen Gate `JKM_SECURITY_INTEGRATION_TEST=1`
+verbinden. Das Gate ist standardmäßig aus, besitzt keine UI und akzeptiert nur
+einen privaten, eigentümergeprüften Test-Root unter der System-Temporärwurzel
+mit festem Integrations- und Klartextquellmarker. Ein fehlender, unbekannter
+oder gemischter Zustand blockiert. Produkt-, Pilot-, RC- und frei gewählte
+Nutzerdatenroots werden abgelehnt.
+
+Ohne Gate bleiben Startup, `RuntimePaths`, Klartext-SQLite, Dokumentimport und
+-öffnung, ZIP-v1-Backup/Restore, Support-Reset, Passwortwechsel und UI
+unverändert. Der Integrationspfad darf keinen stillen Wechsel zwischen SQLite
+und SQLCipher, keine automatische Migration, keine Klartext-Neuerzeugung nach
+einem Öffnungsfehler und keinen Rücksprung in den Klartextbestand ausführen.
+
+Im Testpfad ist eine zentrale Connection Factory die einzige
+Fachdatenbank-Öffnungsgrenze. Sie erhält Engine und Key-Material explizit,
+setzt den SQLCipher-Key vor fachlichem Zugriff, öffnet bestehende Ziele ohne
+Create-Fallback und validiert Engine, Integrität, PRAGMAs sowie das
+Sprint-11-Schema. Der Klartexttransfer bleibt VFS-, `ATTACH`- und
+`sqlcipher_export`-frei.
+
+Dokumente werden zuerst vollständig als verschlüsselte unveränderliche
+Generation erzeugt und verifiziert. Erst danach schaltet genau eine
+SQLCipher-Transaktion alle vorbereiteten Referenzen auf opaque Storage-IDs und
+Generationen um. Originalname und fachliche Metadaten bleiben ausschließlich
+in SQLCipher beziehungsweise im verschlüsselten Manifest. Öffnen erfolgt nur
+über einen kontrollierten Reader; ein Klartextexport ist bewusst, No-Clobber
+und außerhalb des verwalteten Storage. Konservatives Retained-Verhalten bleibt
+Pflicht; physisches GC ist ausgeschlossen.
+
+Die Integrationsmigration verwendet die Phasen `PREFLIGHT`,
+`BACKUP_VERIFIED`, `DATABASE_MIGRATED`, `DOCUMENTS_PREPARED`,
+`REFERENCES_SWITCHED`, `ENCRYPTED_BACKUP_VERIFIED`, `REOPEN_VERIFIED`,
+`COMPLETED`, `BLOCKED` und `RECOVERY_REQUIRED`. Journal und externer
+Replay-Anker sind HMAC-authentisiert, monoton und binden Installation,
+Datenbankkontext, Migration, Schlüsselgenerationen, feste Rollen, relative
+Pfade, Größen und Hashes. Recovery beginnt in einem neuen Prozess, validiert
+alle Artefakte neu und ist idempotent. Klartextquelle und byte-identische
+Sicherheitskopie werden erst am vollständig bestätigten Ende als Retained
+markiert und niemals automatisch gelöscht.
+
+Das verschlüsselte Backup enthält ausschließlich die neu geöffnete
+SQLCipher-Datenbank und verifizierte Dokumentcontainer. Restore schreibt nur
+in einen neuen Staging-Root, validiert Datenbank und Dokumente vollständig und
+aktiviert keinen Produkt-, Pilot- oder RC-Pfad. Support-Reset und
+Passwortwechsel ändern nur Authentifizierungs-/Schutzmetadaten; DMK,
+Database-, Document- und Backup-Keys bleiben unverändert. Fehlende oder
+beschädigte Plattformschlüssel blockieren ohne stille Neuerzeugung.
+
+Pilot, RC, Packaging, Build, Appcast, Release, Windows-Produktfreigabe,
+Identity-VFS, Capability-/Descriptor-Code, Super-Journal, physisches GC,
+sichere SSD-Löschversprechen und die bekannte Exceldatei bleiben
+ausgeschlossen. Aus einem Sprint-11-GO folgt ausschließlich die technische
+Freigabe des standardmäßig inaktiven Testpfads.
+
 ## Entwicklungsgrenze Security Sprint 10
 
 Security Sprint 10 darf ausschließlich eine isolierte Foundation für

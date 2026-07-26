@@ -1,5 +1,90 @@
 # Data Lifecycle
 
+## Security Sprint 11 - kontrollierter Integrations-Lifecycle
+
+### Startup und Gate
+
+1. Ohne `JKM_SECURITY_INTEGRATION_TEST=1` wird kein Sprint-11-Pfad aufgelöst
+   oder importseitig ausgeführt; der bestehende Startup bleibt unverändert.
+2. Mit Gate werden Root, Eigentümer, Modus, Temporärgrenze, Marker,
+   Klartextquellmarker, feste Rollen und Symlinkfreiheit read-only geprüft.
+3. Produkt-, Pilot-, RC-, unmarkierte, gemischte oder bereits widersprüchliche
+   Bestände wechseln nach `BLOCKED`; es gibt keinen Fallback.
+4. Authentifizierung muss abgeschlossen sein. Erst danach liefert der
+   injizierte DMK-Loader denselben aktiven DMK; Passwort und DMK bleiben
+   getrennt.
+5. App-Instanz- und Migrations-Lock werden vor Mutation exklusiv erworben.
+
+### Migration und Recovery
+
+1. `PREFLIGHT` bindet Installation, Datenbankkontext, Migration, DMK- und
+   Database-Key-Generation, Root, Klartextdatenbank sowie jede
+   Dokumentquelle mit sicherem relativem Namen, Größe und SHA-256 in Journal
+   und Replay-Anker.
+2. Die geschlossene, WAL-/SHM-ruhige Quelle wird byte-identisch nach
+   `MigrationSafetyCopy` kopiert, Datei und Verzeichnis werden synchronisiert
+   und beide Bestände read-only auf Hash und SQLite-Integrität verglichen;
+   danach folgt `BACKUP_VERIFIED`.
+3. Eine separate SQLCipher-Datei wird über die zentrale Connection Factory
+   mit gesetztem Key angelegt. Schema und Daten werden ohne `ATTACH` und
+   `sqlcipher_export` übertragen, verglichen, geschlossen und neu geöffnet.
+   Erst danach wird `SecurityIntegrationSchemaV1` transaktional ergänzt und
+   `DATABASE_MIGRATED` bestätigt.
+4. Für jedes registrierte Dokument wird ein zufälliger opaque Storage-ID-Plan
+   vorab journalisiert. Der Container wird als Retained-Datei geschrieben,
+   gefsynct, vollständig verifiziert und No-Clobber veröffentlicht. Der
+   SQLCipher-Generationssatz bleibt `PREPARED`; danach folgt
+   `DOCUMENTS_PREPARED`.
+5. Eine einzige SQLCipher-Transaktion prüft alle vorbereiteten Generationen,
+   setzt sie `ACTIVE`, markiert etwaige Vorgänger `RETAINED` und ersetzt die
+   alten `documents.file_path`-Werte durch opaque Storage-Referenzen. Erst
+   danach folgt `REFERENCES_SWITCHED`.
+6. SQLCipher-Datenbank und alle aktiven verschlüsselten Dokumentcontainer
+   werden in einen neuen verschlüsselten Backupcontainer geschrieben und
+   vollständig verifiziert; danach folgt `ENCRYPTED_BACKUP_VERIFIED`.
+7. Alle Handles werden geschlossen. Ein neuer Factory-Open validiert Key,
+   SQLCipher/SQLite-Integrität, PRAGMAs, Integrationsschema, aktive Pointer und
+   jeden Container; danach folgt `REOPEN_VERIFIED`.
+8. Erst jetzt wird die unveränderte Klartextquelle samt Safety Copy als
+   Retained markiert. `COMPLETED` folgt ausschließlich nach erneuter
+   Gesamtprüfung. Es erfolgt keine physische Löschung.
+
+Vor jeder Phasenpublikation bereitet der externe Replay-Anker die nächste
+Journalrevision vor. Nach atomarer Journalpublikation wird der Anker
+committed. Ein Neustart löst nur exakt passende pending Zustände auf. Jede
+Phase ist wiederholbar: vorhandene Artefakte werden neu verifiziert statt
+überschrieben. Unbekannte, ausgetauschte oder nicht phasengerechte Bestände,
+Anchor-Rückschritt und Crossbinding-Abweichung führen zu `BLOCKED` oder
+`RECOVERY_REQUIRED`.
+
+### Dokumentaktionen
+
+- Import publiziert erst einen vollständig verifizierten Container und
+  aktiviert die Datenbankreferenz erst anschließend transaktional.
+- Kontrolliertes Lesen liefert Klartext nur an einen injizierten Consumer und
+  meldet Erfolg erst nach zweiter vollständiger Final-/EOF-/Hashprüfung.
+- Bewusster Export erzeugt exklusiv eine neue unverschlüsselte Datei im
+  markergebundenen Exportbereich außerhalb des verwalteten Storage und gibt
+  den Schutzverlust als festen Hinweis zurück.
+- Austausch erzeugt eine neue unveränderliche Dokumentgeneration. Die alte
+  aktive Generation bleibt bis zur bestätigten Pointer-Umschaltung nutzbar
+  und wird anschließend nur `RETAINED`.
+- Soft-Löschen und GC bleiben konservativ; es gibt in Sprint 11 keine
+  automatische physische Entfernung.
+
+### Backup, Restore, Passwort und Support-Reset
+
+- Das bestehende ZIP-v1-Backup/Restore bleibt außerhalb des Gates unverändert.
+- Der Integrationsadapter akzeptiert nur das validierte Sprint-11-SQLCipher-
+  Schema und verschlüsselte Dokumentcontainer. Writer und Restore
+  überschreiben kein Ziel.
+- Restore erfolgt in einen neuen Staging-Root. Datenbank-Key, Schema,
+  Integrität, Dokumentcontainer, Hashes und Abschlussbeleg werden vollständig
+  geprüft. Eine Produkt-Live-Umschaltung ist ausgeschlossen.
+- Passwortwechsel und Support-Reset verändern weder DMK noch Database-,
+  Document- oder Backup-Key. Fehlender oder beschädigter Plattform-DMK
+  blockiert; stille Schlüsselerneuerung ist verboten.
+
 ## Security Sprint 10 - isolierter Dokumentcontainer-Lifecycle
 
 ### Neue Dokumentgeneration schreiben

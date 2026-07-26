@@ -1,5 +1,22 @@
 # View Data Ownership
 
+## Security Sprint 11 - Integration ohne neue View
+
+`SecurityIntegrationGate` und `SecurityIntegrationOrchestrator` besitzen die
+rein technische Gate-, Preflight-, Migrations- und Recoverykoordination.
+`SecurityIntegrationConnectionFactory` besitzt Engine-/Key-Open und
+Integritätsvalidierung. `SecurityDocumentApplicationAdapter` besitzt
+Container-/Generationsoperationen und die transaktionale Pointer-Umschaltung.
+`SecurityEncryptedBackupAdapter` besitzt Backupinventar, Containerverifikation
+und Restore-Staging.
+
+Es entsteht keine View, kein ViewModel, kein Dialog, kein sichtbarer Schalter
+und keine normale Startup-Projektion. Die bestehenden Dokument-, Backup- und
+Restoreansichten bleiben außerhalb des Gates unverändert. Widgets besitzen
+keine Gate-, Key-, SQLCipher-, Journal-, Replay-, Container-, Repository-,
+Migrations- oder Dateisystemlogik. Sanitierte technische Testreports sind
+keine Produkt-View.
+
 ## Security Sprint 10 - Foundation ohne View
 
 Core Security besitzt Document-Key-Domain-Separation, eigenes Envelope,

@@ -17,6 +17,39 @@ Keine Produktaktivierung.
   Schutz- und Commitgrenze behandeln.
 
 
+### Security Sprint 11 - Kontrollierte Produktintegration
+
+**Status:** Standardmäßig inaktiver, markergebundener End-to-End-Testpfad
+abgeschlossen; P0 = 0, P1 = 0. Das GO gilt ausschließlich für diesen
+Integrationspfad. Pilot, RC, Packaging und Release bleiben NO-GO.
+
+- [x] Startup-, RuntimePath-, Connection-, Auth-/DMK-, Migration-, Dokument-,
+  Backup-/Restore-, Application-Service-, Support-Reset-, Fehler- und
+  Packaging-Schnitt in einer verbindlichen Matrix festlegen.
+- [x] Internes Gate `JKM_SECURITY_INTEGRATION_TEST=1` standardmäßig inaktiv,
+  ohne UI und ausschließlich für temporäre doppelt markierte Test-Roots
+  implementieren.
+- [x] Zentrale Connection Factory für explizite SQLite-/SQLCipher-Opens ohne
+  Fallback und mit Key-, PRAGMA-, Schema- und Integritätsprüfung integrieren.
+- [x] Versioniertes `SecurityIntegrationSchemaV1` mit unveränderlichen
+  Dokumentgenerationen und atomarem aktiven Pointer implementieren.
+- [x] Restartfähigen Orchestrator mit Safety Copy, HMAC-Journal, externem
+  Replay-Anker, exklusivem Lock und den verbindlichen Sprint-11-Phasen
+  implementieren.
+- [x] Dokumentimport, kontrolliertes Lesen, bewussten Export,
+  Generationsaustausch und konservatives Retained-Verhalten über einen
+  Qt-freien Application Adapter integrieren.
+- [x] Verschlüsseltes Backup und Restore ausschließlich in einen neuen
+  verifizierten Staging-Root integrieren; ZIP-v1 außerhalb des Gates
+  unverändert lassen.
+- [x] Passwortwechsel und Support-Reset als reine Auth-/Schutzänderung ohne
+  DMK-/Datenkeyrotation regressionsprüfen.
+- [x] Gate-Off-, Import-, Startup-, Dokument-, Backup-/Restore-, Crash-,
+  Recovery-, Manipulations-, Pfad-, Konkurrenz- und Gesamtsuite-Gates grün
+  nachweisen.
+- [x] Produktive Pfade, UI, Pilot, RC, Packaging und Release ausdrücklich
+  inaktiv lassen.
+
 ## Security Sprint 9 - Verschlüsseltes Backupformat
 
 **Status:** Isolierte synthetische Foundation abgeschlossen; P0 = 0, P1 = 0,

@@ -1,5 +1,58 @@
 # Architekturentscheidungen
 
+## ADR-092 - Sprint 11 integriert nur in einem markergebundenen Test-Root
+
+**Status:** Angenommen für den standardmäßig inaktiven Security-Sprint-11-
+Integrationspfad; keine Pilot-, RC-, Packaging- oder Releasefreigabe.
+
+Der Standardpfad bleibt Klartext-SQLite plus bestehender Dokument- und
+ZIP-v1-Backup-/Restorelogik. Ausschließlich
+`JKM_SECURITY_INTEGRATION_TEST=1` zusammen mit einem privaten,
+eigentümergeprüften, doppelt markierten Root unter der
+System-Temporärwurzel aktiviert den Integrationspfad. Die Umgebungsvariable ist
+kein dauerhaftes Produktkonzept. Es gibt keine UI, automatische Aktivierung
+oder stille Engineumschaltung.
+
+Im Integrationspfad ist eine zentrale Connection Factory die einzige
+Fachdatenbank-Öffnungsgrenze. SQLCipher-Keying, Engine-/PRAGMA-/Schema- und
+Integritätsprüfung erfolgen vor fachlichem Zugriff; bestehende Ziele werden
+mit `create=False` geöffnet. Falscher oder fehlender Key darf keine
+Klartextdatei erzeugen. Der Transfer bleibt ohne Identity-VFS, Capability-
+Code, `ATTACH` und `sqlcipher_export`.
+
+Die kleinste Schemaerweiterung besteht aus einer eindeutig versionierten
+Integrationsmetadatenzeile und einer historischen
+`security_document_generations`-Tabelle. Sie hält technische Document-ID,
+opaque Storage-ID, Dokument-/Key-Generation, Key-ID, Envelope-Revision,
+Containerformatversion, Klartextgröße/-hash, MIME-Typ, Lifecycle sowie
+Retained-/Quarantänegrund. Originalname und fachliche Metadaten bleiben in der
+verschlüsselten `documents`-Tabelle beziehungsweise im verschlüsselten
+Manifest. Ein partieller Unique-Index erlaubt genau eine aktive Generation je
+Dokument. `user_version=1101` macht den Testbestand rückwärts eindeutig
+erkennbar.
+
+Dokumentcontainer werden vollständig geschrieben und verifiziert, bevor eine
+SQLCipher-Transaktion alle Pointer umstellt. Backup umfasst nur die frisch
+validierte SQLCipher-Datei und verschlüsselte Dokumentcontainer. Restore
+endet in einem neuen vollständig geprüften Staging-Root; eine Produkt-Live-
+Umschaltung bleibt gesperrt.
+
+Ein HMAC-authentisiertes Journal und ein vom Integrationsroot getrennter
+pending/committed Replay-Anker binden IDs, Generationen, feste Rollen, relative
+Pfade, Größen und Hashes. Recovery beginnt in einem neuen Prozess, wiederholt
+nur idempotente Schritte und blockiert unbekannte oder gemischte Zustände.
+Klartextquelle und Safety Copy werden erst nach `REOPEN_VERIFIED` als Retained
+markiert und nicht automatisch gelöscht.
+
+Support-Reset und Passwortwechsel ersetzen weder DMK noch Database-,
+Document- oder Backup-Key. Der bestehende Supportprozess bleibt unverändert.
+Eine fehlende oder beschädigte Plattformschlüsselablage blockiert ohne stille
+Schlüsselerneuerung.
+
+Ein Sprint-11-GO gilt ausschließlich für diesen inaktiven Testpfad. Windows,
+Packaging, Notarisierung, reale Produktmigration, physisches GC und Release
+bleiben NO-GO. Es wird keine rechtliche Compliance-Aussage getroffen.
+
 ## ADR-091 - Eigenes Secretstream-Dokumentformat mit integriertem Envelope
 
 **Status:** Angenommen für den isolierten synthetischen
