@@ -11,7 +11,7 @@ from enum import Enum
 from pathlib import Path
 
 
-DATABASE_COMPATIBILITY_VERSION = 1
+DATABASE_COMPATIBILITY_VERSION = 2
 
 # Registered after calculating the complete canonical schema identity of the
 # c029aff V1 schema. The versioned V1 schema and its known unversioned direct
@@ -22,6 +22,9 @@ V1_COMPATIBILITY_FINGERPRINT = (
 )
 KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT = (
     "cc24b317186c65a47d4e06662115847154ba4772a582b206c099031676597057"
+)
+V2_COMPATIBILITY_FINGERPRINT = (
+    "5c15a6c54dda9e04ff0f4a7cb9361cac7d452c9f7b1e2d68a6843bc5a99e57b2"
 )
 
 
@@ -87,7 +90,7 @@ class DatabaseCompatibilityPolicy:
         fingerprint = schema_identity.fingerprint
         if (
             sqlite_user_version == DATABASE_COMPATIBILITY_VERSION
-            and fingerprint == V1_COMPATIBILITY_FINGERPRINT
+            and fingerprint == V2_COMPATIBILITY_FINGERPRINT
         ):
             return DatabaseCompatibilityResult(
                 status=DatabaseCompatibilityStatus.EXACT,
@@ -96,22 +99,26 @@ class DatabaseCompatibilityPolicy:
                     sqlite_user_version=sqlite_user_version,
                     compatibility_version=DATABASE_COMPATIBILITY_VERSION,
                 ),
-                reason="Die Datenbank entspricht exakt dem registrierten V1-Schema.",
+                reason="Die Datenbank entspricht exakt dem registrierten V2-Schema.",
             )
         if (
-            sqlite_user_version == 0
-            and fingerprint == KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT
+            sqlite_user_version in (0, 1)
+            and fingerprint
+            in {
+                KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT,
+                V1_COMPATIBILITY_FINGERPRINT,
+            }
         ):
             return DatabaseCompatibilityResult(
                 status=DatabaseCompatibilityStatus.MIGRATION_REQUIRED,
                 schema_identity=schema_identity,
                 version=DatabaseVersionInfo(
                     sqlite_user_version=sqlite_user_version,
-                    compatibility_version=DATABASE_COMPATIBILITY_VERSION,
+                    compatibility_version=1,
                 ),
                 reason=(
-                    "Die bekannte unversionierte V1-Vorgaengerstruktur benoetigt "
-                    "eine spaetere kontrollierte Migration."
+                    "Die bekannte V1-Vorgaengerstruktur benoetigt "
+                    "die kontrollierte V2-Migration."
                 ),
             )
         if sqlite_user_version > DATABASE_COMPATIBILITY_VERSION:
@@ -119,7 +126,7 @@ class DatabaseCompatibilityPolicy:
         elif sqlite_user_version == 0:
             reason = "Die unversionierte Datenbankstruktur ist nicht registriert."
         elif sqlite_user_version == DATABASE_COMPATIBILITY_VERSION:
-            reason = "Die deklarierte V1-Datenbank besitzt ein unbekanntes Schema."
+            reason = "Die deklarierte V2-Datenbank besitzt ein unbekanntes Schema."
         else:
             reason = "Die Datenbankversion wird nicht unterstuetzt."
         return DatabaseCompatibilityResult(
@@ -141,7 +148,7 @@ class DatabaseCompatibilityPolicy:
             return result
         if result.version.sqlite_user_version > DATABASE_COMPATIBILITY_VERSION:
             raise UnsupportedDatabaseVersionError(result.reason)
-        if result.version.sqlite_user_version == DATABASE_COMPATIBILITY_VERSION:
+        if result.version.sqlite_user_version in (1, DATABASE_COMPATIBILITY_VERSION):
             raise DatabaseVersionMismatchError(result.reason)
         raise UnknownDatabaseSchemaError(result.reason)
 
@@ -165,6 +172,20 @@ class DatabaseCompatibilityInspector:
                 f"Die Datenbank-Kompatibilitaet konnte nicht gelesen werden: {error}"
             ) from error
         identity = _schema_identity(schema)
+        return self.policy.evaluate(
+            sqlite_user_version=sqlite_user_version,
+            schema_identity=identity,
+        )
+
+    def inspect_connection(
+        self,
+        connection: sqlite3.Connection,
+    ) -> DatabaseCompatibilityResult:
+        """Inspect an already-open SQLite/SQLCipher connection read-only."""
+        sqlite_user_version = int(
+            connection.execute("PRAGMA user_version").fetchone()[0]
+        )
+        identity = _schema_identity(_compatibility_schema(connection))
         return self.policy.evaluate(
             sqlite_user_version=sqlite_user_version,
             schema_identity=identity,

@@ -33,6 +33,7 @@ from src.core.database_engine import (
     SQLCipherConnectionProvider,
     SQLITE_RUNTIME_VERSION,
 )
+from src.core.database_compatibility import DATABASE_COMPATIBILITY_VERSION
 from src.core.sqlite_store import SQLiteDatabase
 from src.security.backup_container import BackupContainerContextV1
 from src.security.data_keys import LoadedDataMasterKey
@@ -988,7 +989,7 @@ class SecurityIntegrationOrchestrator:
             if (
                 len(integrity) != 1
                 or str(integrity[0][0]) != "ok"
-                or version != 1
+                or version != DATABASE_COMPATIBILITY_VERSION
             ):
                 raise SecurityIntegrationError(
                     "security_integration_plaintext_schema_invalid"

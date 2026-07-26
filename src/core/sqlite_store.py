@@ -3,13 +3,28 @@
 from __future__ import annotations
 
 import sqlite3
+import uuid
 from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .database_compatibility import DATABASE_COMPATIBILITY_VERSION
+from .database_compatibility import (
+    DATABASE_COMPATIBILITY_VERSION,
+    DatabaseCompatibilityInspector,
+    DatabaseCompatibilityPolicy,
+    DatabaseCompatibilityStatus,
+)
 from .database_engine import SQLiteConnectionProvider
+from .persistence_events import (
+    PersistenceEventKind,
+    PersistenceEventRecord,
+    PersistenceOrderingState,
+    SQLitePersistenceEventRepository,
+    canonical_payload_hash,
+    canonical_utc_second,
+    migrate_persistence_events,
+)
 
 from .constants import (
     ACTIVE,
@@ -236,10 +251,29 @@ class SQLiteDatabase:
         if not self._initialize_schema:
             return
         with closing(self.connect()) as connection:
-            schema_was_empty = connection.execute(
-                "SELECT 1 FROM sqlite_schema "
-                "WHERE name NOT LIKE 'sqlite_%' LIMIT 1"
-            ).fetchone() is None
+            schema_object_count = int(
+                connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM sqlite_schema
+                    WHERE name NOT LIKE 'sqlite_%'
+                    """
+                ).fetchone()[0]
+            )
+            if schema_object_count:
+                compatibility = DatabaseCompatibilityInspector().inspect_connection(
+                    connection
+                )
+                if compatibility.status is DatabaseCompatibilityStatus.EXACT:
+                    return
+                DatabaseCompatibilityPolicy.require_backup_compatible(compatibility)
+                with connection:
+                    connection.execute("BEGIN IMMEDIATE")
+                    migrate_persistence_events(
+                        connection,
+                        target_user_version=DATABASE_COMPATIBILITY_VERSION,
+                    )
+                return
             with connection:
                 connection.executescript(
                     """
@@ -845,10 +879,10 @@ class SQLiteDatabase:
                 self._ensure_column(connection, "competencies", "is_core_subject", "INTEGER NOT NULL DEFAULT 1")
                 self._ensure_column(connection, "timetable_entries", "deleted_at", "TEXT NOT NULL DEFAULT ''")
                 self._backfill_course_colors(connection)
-                if schema_was_empty:
-                    connection.execute(
-                        f"PRAGMA user_version = {DATABASE_COMPATIBILITY_VERSION}"
-                    )
+                migrate_persistence_events(
+                    connection,
+                    target_user_version=DATABASE_COMPATIBILITY_VERSION,
+                )
 
     def ensure_master_data_defaults(self) -> None:
         """Create default master data only for empty master-data scopes."""
@@ -899,6 +933,13 @@ class SQLiteDatabase:
         self.initialize_schema()
         with closing(self.connect()) as connection:
             with connection:
+                if connection.execute(
+                    "SELECT 1 FROM persistence_events LIMIT 1"
+                ).fetchone() is not None:
+                    raise RuntimeError(
+                        "Seed-Daten koennen nach Persistenzereignissen nur durch "
+                        "einen vollstaendigen Store-Neuaufbau ersetzt werden."
+                    )
                 connection.execute("DELETE FROM learning_conference_drafts")
                 connection.execute("DELETE FROM report_drafts")
                 connection.execute("DELETE FROM observation_competency_ratings")
@@ -1263,11 +1304,19 @@ class SQLiteObservationRepository:
                 return None
             return self._observation_from_row(connection, row)
 
-    def create_observation(self, observation: ObservationRecord) -> ObservationRecord:
+    def create_observation(
+        self,
+        observation: ObservationRecord,
+        *,
+        operation_token: str = "",
+    ) -> ObservationRecord:
         if self.get_observation(observation.observation_id) is not None:
             raise ObservationRepositoryError(
                 f"observation_id existiert bereits: {observation.observation_id}"
             )
+        operation_token = operation_token or uuid.uuid4().hex
+        payload_hash = canonical_payload_hash(_observation_event_payload(observation))
+        technical_timestamp = _required_event_timestamp(observation.updated_at)
         with closing(self.database.connect()) as connection:
             with connection:
                 connection.execute(
@@ -1325,13 +1374,74 @@ class SQLiteObservationRepository:
                         for rating in observation.competency_ratings
                     ),
                 )
+                SQLitePersistenceEventRepository.append(
+                    connection,
+                    PersistenceEventRecord(
+                        None,
+                        operation_token,
+                        0,
+                        payload_hash,
+                        PersistenceEventKind.OBSERVATION_CREATED.value,
+                        observation.student_id,
+                        None,
+                        observation.observation_id,
+                        technical_timestamp,
+                        PersistenceOrderingState.NOT_APPLICABLE.value,
+                    ),
+                )
+                for operation_index, rating in enumerate(
+                    sorted(
+                        observation.competency_ratings,
+                        key=lambda item: item.competency_id,
+                    ),
+                    start=1,
+                ):
+                    SQLitePersistenceEventRepository.append(
+                        connection,
+                        PersistenceEventRecord(
+                            None,
+                            operation_token,
+                            operation_index,
+                            payload_hash,
+                            PersistenceEventKind.OBSERVATION_COMPETENCY_CHANGED.value,
+                            observation.student_id,
+                            rating.competency_id,
+                            observation.observation_id,
+                            technical_timestamp,
+                            PersistenceOrderingState.ORDERED.value,
+                        ),
+                    )
         return observation
 
-    def update_observation(self, observation: ObservationRecord) -> ObservationRecord:
-        if self.get_observation(observation.observation_id) is None:
+    def update_observation(
+        self,
+        observation: ObservationRecord,
+        *,
+        operation_token: str = "",
+    ) -> ObservationRecord:
+        existing = self.get_observation(observation.observation_id)
+        if existing is None:
             raise ObservationRepositoryError(
                 f"observation_id nicht gefunden: {observation.observation_id}"
             )
+        if _observation_business_payload(existing) == _observation_business_payload(
+            observation
+        ):
+            return existing
+        operation_token = operation_token or uuid.uuid4().hex
+        payload_hash = canonical_payload_hash(
+            {
+                "before": _observation_event_payload(existing),
+                "after": _observation_event_payload(observation),
+            }
+        )
+        technical_timestamp = _required_event_timestamp(observation.updated_at)
+        affected_pairs = _affected_observation_pairs(existing, observation)
+        affected_event_kind = (
+            PersistenceEventKind.OBSERVATION_DEACTIVATED.value
+            if existing.active and not observation.active
+            else PersistenceEventKind.OBSERVATION_COMPETENCY_CHANGED.value
+        )
         with closing(self.database.connect()) as connection:
             with connection:
                 connection.execute(
@@ -1393,6 +1503,40 @@ class SQLiteObservationRepository:
                         for rating in observation.competency_ratings
                     ),
                 )
+                SQLitePersistenceEventRepository.append(
+                    connection,
+                    PersistenceEventRecord(
+                        None,
+                        operation_token,
+                        0,
+                        payload_hash,
+                        PersistenceEventKind.OBSERVATION_UPDATED.value,
+                        observation.student_id,
+                        None,
+                        observation.observation_id,
+                        technical_timestamp,
+                        PersistenceOrderingState.NOT_APPLICABLE.value,
+                    ),
+                )
+                for operation_index, (student_id, competency_id) in enumerate(
+                    sorted(affected_pairs),
+                    start=1,
+                ):
+                    SQLitePersistenceEventRepository.append(
+                        connection,
+                        PersistenceEventRecord(
+                            None,
+                            operation_token,
+                            operation_index,
+                            payload_hash,
+                            affected_event_kind,
+                            student_id,
+                            competency_id,
+                            observation.observation_id,
+                            technical_timestamp,
+                            PersistenceOrderingState.ORDERED.value,
+                        ),
+                    )
         return observation
 
     def deactivate_observation(
@@ -1405,6 +1549,8 @@ class SQLiteObservationRepository:
             raise ObservationRepositoryError(
                 f"observation_id nicht gefunden: {observation_id}"
             )
+        if not observation.active:
+            return observation
         inactive_observation = ObservationRecord(
             observation.observation_id,
             observation.student_id,
@@ -1417,6 +1563,14 @@ class SQLiteObservationRepository:
             updated_at,
             observation.competency_ratings,
         )
+        operation_token = uuid.uuid4().hex
+        payload_hash = canonical_payload_hash(
+            {
+                "before": _observation_event_payload(observation),
+                "after": _observation_event_payload(inactive_observation),
+            }
+        )
+        technical_timestamp = _required_event_timestamp(updated_at)
         with closing(self.database.connect()) as connection:
             with connection:
                 connection.execute(
@@ -1427,6 +1581,43 @@ class SQLiteObservationRepository:
                     """,
                     (updated_at, observation_id),
                 )
+                SQLitePersistenceEventRepository.append(
+                    connection,
+                    PersistenceEventRecord(
+                        None,
+                        operation_token,
+                        0,
+                        payload_hash,
+                        PersistenceEventKind.OBSERVATION_UPDATED.value,
+                        observation.student_id,
+                        None,
+                        observation.observation_id,
+                        technical_timestamp,
+                        PersistenceOrderingState.NOT_APPLICABLE.value,
+                    ),
+                )
+                for operation_index, rating in enumerate(
+                    sorted(
+                        observation.competency_ratings,
+                        key=lambda item: item.competency_id,
+                    ),
+                    start=1,
+                ):
+                    SQLitePersistenceEventRepository.append(
+                        connection,
+                        PersistenceEventRecord(
+                            None,
+                            operation_token,
+                            operation_index,
+                            payload_hash,
+                            PersistenceEventKind.OBSERVATION_DEACTIVATED.value,
+                            observation.student_id,
+                            rating.competency_id,
+                            observation.observation_id,
+                            technical_timestamp,
+                            PersistenceOrderingState.ORDERED.value,
+                        ),
+                    )
         return inactive_observation
 
     def _ratings_for(
@@ -2004,10 +2195,58 @@ class SQLiteStudentCompetencyConfirmationRepository:
     def upsert_confirmation(
         self,
         confirmation: StudentCompetencyConfirmationRecord,
+        *,
+        operation_token: str = "",
     ) -> StudentCompetencyConfirmationRecord:
         self._validate_confirmation(confirmation)
+        operation_token = operation_token or uuid.uuid4().hex
+        payload_hash = canonical_payload_hash(
+            {
+                "student_id": confirmation.student_id,
+                "competency_id": confirmation.competency_id,
+                "confirmed_rating": confirmation.confirmed_rating,
+                "confirmed_at": confirmation.confirmed_at,
+                "note": confirmation.note,
+            }
+        )
+        technical_timestamp = _required_event_timestamp(
+            confirmation.confirmed_at
+        )
         with closing(self.database.connect()) as connection:
             with connection:
+                existing_events = connection.execute(
+                    """
+                    SELECT
+                        operation_index,
+                        operation_payload_hash,
+                        event_kind,
+                        student_id,
+                        competency_id,
+                        observation_id,
+                        technical_timestamp,
+                        ordering_state
+                    FROM persistence_events
+                    WHERE operation_token = ?
+                    ORDER BY operation_index
+                    """,
+                    (operation_token,),
+                ).fetchall()
+                if existing_events:
+                    expected = (
+                        0,
+                        payload_hash,
+                        PersistenceEventKind.CONFIRMATION_UPSERTED.value,
+                        confirmation.student_id,
+                        confirmation.competency_id,
+                        None,
+                        technical_timestamp,
+                        PersistenceOrderingState.ORDERED.value,
+                    )
+                    if len(existing_events) != 1 or tuple(existing_events[0]) != expected:
+                        raise ValueError(
+                            "operation_token ist an eine andere Bestaetigung gebunden."
+                        )
+                    return confirmation
                 connection.execute(
                     """
                     INSERT INTO student_competency_confirmations (
@@ -2029,6 +2268,21 @@ class SQLiteStudentCompetencyConfirmationRepository:
                         confirmation.confirmed_rating,
                         confirmation.confirmed_at,
                         confirmation.note,
+                    ),
+                )
+                SQLitePersistenceEventRepository.append(
+                    connection,
+                    PersistenceEventRecord(
+                        None,
+                        operation_token,
+                        0,
+                        payload_hash,
+                        PersistenceEventKind.CONFIRMATION_UPSERTED.value,
+                        confirmation.student_id,
+                        confirmation.competency_id,
+                        None,
+                        technical_timestamp,
+                        PersistenceOrderingState.ORDERED.value,
                     ),
                 )
         return confirmation
@@ -4690,6 +4944,89 @@ def _document_from_row(row: sqlite3.Row) -> DocumentRecord:
         row["note"] or "",
         bool(row[ACTIVE]),
     )
+
+
+def _required_event_timestamp(value: str) -> str:
+    normalized = canonical_utc_second(value)
+    if normalized is None:
+        raise ObservationRepositoryError(
+            "Technischer Ereigniszeitpunkt ist ungueltig."
+        )
+    return normalized
+
+
+def _rating_event_payload(
+    rating: ObservationCompetencyRatingRecord,
+) -> dict[str, object]:
+    return {
+        "competency_id": rating.competency_id,
+        "subject_id": rating.subject_id,
+        "subject_display_name": rating.subject_display_name,
+        "learning_area": rating.learning_area,
+        "competency_group": rating.competency_group,
+        "competency_text": rating.competency_text,
+        "rating": rating.rating,
+    }
+
+
+def _observation_business_payload(
+    observation: ObservationRecord,
+) -> dict[str, object]:
+    return {
+        "observation_id": observation.observation_id,
+        "student_id": observation.student_id,
+        "date": observation.date,
+        "subject_id": observation.subject_id,
+        "context": observation.context,
+        "note": observation.note,
+        "active": observation.active,
+        "ratings": [
+            _rating_event_payload(rating)
+            for rating in sorted(
+                observation.competency_ratings,
+                key=lambda item: item.competency_id,
+            )
+        ],
+    }
+
+
+def _observation_event_payload(
+    observation: ObservationRecord,
+) -> dict[str, object]:
+    return {
+        **_observation_business_payload(observation),
+        "created_at": observation.created_at,
+        "updated_at": observation.updated_at,
+    }
+
+
+def _affected_observation_pairs(
+    before: ObservationRecord,
+    after: ObservationRecord,
+) -> set[tuple[str, str]]:
+    before_ratings = {
+        rating.competency_id: rating.rating
+        for rating in before.competency_ratings
+    }
+    after_ratings = {
+        rating.competency_id: rating.rating
+        for rating in after.competency_ratings
+    }
+    if before.student_id != after.student_id:
+        return {
+            *((before.student_id, competency_id) for competency_id in before_ratings),
+            *((after.student_id, competency_id) for competency_id in after_ratings),
+        }
+    if before.active and not after.active:
+        return {
+            (before.student_id, competency_id)
+            for competency_id in before_ratings
+        }
+    return {
+        (after.student_id, competency_id)
+        for competency_id in set(before_ratings) | set(after_ratings)
+        if before_ratings.get(competency_id) != after_ratings.get(competency_id)
+    }
 
 
 def _document_to_row(document: DocumentRecord) -> tuple[object, ...]:
