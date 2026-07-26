@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, QTimer, Signal, QUrl
-from PySide6.QtGui import QCloseEvent, QDesktopServices
+from PySide6.QtGui import QCloseEvent, QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -1840,6 +1840,11 @@ class AppShell(QMainWindow):
 
     def _show_navigation_index(self, index: int) -> None:
         if index < 0:
+            return
+        # A mouse selection changes the row on press and emits itemClicked on
+        # release. Pointer navigation therefore dispatches from itemClicked;
+        # keyboard and programmatic row changes continue through this path.
+        if QGuiApplication.mouseButtons() != Qt.MouseButton.NoButton:
             return
         self._show_navigation_item(self.navigation.item(index))
 
