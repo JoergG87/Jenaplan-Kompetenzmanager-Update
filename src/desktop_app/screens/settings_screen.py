@@ -291,19 +291,25 @@ class SettingsScreen(QWidget):
         self.touch_id_checkbox.blockSignals(True)
         self.touch_id_checkbox.setChecked(touch_available and touch_id_preferred)
         self.touch_id_checkbox.blockSignals(False)
-        self.touch_id_checkbox.setVisible(touch_available)
-        status_text = {
-            "available": "verfügbar",
-            "not_enrolled": "nicht eingerichtet",
-            "not_available": "nicht verfügbar",
-            "locked_out": "nicht verfügbar",
-            "unsupported": "nicht verfügbar",
-            "error": "nicht verfügbar",
-        }.get(local_authentication, "nicht verfügbar")
+        self.touch_id_checkbox.setVisible(supported)
+        self.touch_id_checkbox.setEnabled(touch_available)
+        if not enabled:
+            status_text = "zuerst gespeicherte Anmeldung aktivieren"
+        elif not secret_available:
+            status_text = "gespeicherte Anmeldung nicht verfügbar"
+        else:
+            status_text = {
+                "available": "verfügbar",
+                "not_enrolled": "nicht eingerichtet",
+                "not_available": "auf diesem Mac nicht verfügbar",
+                "locked_out": "vorübergehend gesperrt",
+                "unsupported": "auf diesem Mac nicht verfügbar",
+                "error": "gerade nicht verfügbar",
+            }.get(local_authentication, "gerade nicht verfügbar")
         if touch_available and touch_id_preferred:
             status_text = "aktiviert"
         self.touch_id_status.setText(f"Touch ID: {status_text}")
-        self.touch_id_status.setVisible(supported and enabled)
+        self.touch_id_status.setVisible(supported)
 
     def set_display_name(self, display_name: str | None) -> None:
         self.display_name_input.setText(display_name or "")

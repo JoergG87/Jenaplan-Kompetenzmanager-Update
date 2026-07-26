@@ -1,5 +1,16 @@
 # UI Data Mapping
 
+## Pilot UX-Hardening 0.3.0 / Build 301
+
+| UI-Feld/Aktion | Quelle | Persistenz | Regel |
+|---|---|---|---|
+| Deutsche Bestätigungsaktion | lokaler `QMessageBox`-Bedienzustand | Nein | Jede Produktbestätigung verwendet einen verständlichen Aktions- und Abbrechen-Text; Escape und Enter führen nicht unbemerkt zur verwerfenden Aktion. |
+| Passwort / Passwortbestätigung | temporärer `QLineEdit`-State | Nein | Qt markiert die Eingabe als verborgen, sensitiv, nicht vorhersagbar und ohne Auto-Großschreibung; Einfügen und explizites Anzeigen bleiben möglich. Ein nativer macOS-Passwortvorschlag ist erst nach echtem Bundle-Test bestätigt. |
+| Touch-ID-Verfügbarkeit | `DeviceCredentialService.status` | Nein | Auf unterstützten Macs bleibt die Option mit einem konkreten Verfügbarkeitsgrund sichtbar. Aktiviert werden kann sie nur mit aktivem Credential, verfügbarem Secret, eingerichteter Touch ID und bestätigtem Passwort. Eine aktivierte Präferenz führt beim Start in den Auth-Dialog statt in die automatische Geräteanmeldung. |
+
+Es entstehen keine neuen Datenquellen, kein Credential-Material in
+`app-preferences.json` und keine neue Fach- oder Security-Persistenz.
+
 ## Security Sprint 12 - Versionsprojektion im Über-Dialog
 
 | UI-Feld | Quelle | Persistenz | Regel |

@@ -230,6 +230,7 @@ def main() -> int:
     from src.desktop_app.security_controller import (
         run_startup_authentication,
         run_startup_device_authentication,
+        should_attempt_startup_device_authentication,
     )
     from src.desktop_app.security_ui import AuthenticationDialog
     from src.desktop_app.support_reset import SupportResetBackupFactory
@@ -277,7 +278,10 @@ def main() -> int:
             except AppPreferencesError:
                 pre_auth_preferences = AppPreferences()
             authentication = None
-            if decision.state is SecurityStartState.LOGIN_REQUIRED:
+            if should_attempt_startup_device_authentication(
+                decision=decision,
+                touch_id_preferred=pre_auth_preferences.touch_id_preferred,
+            ):
                 device_authentication = run_startup_device_authentication(
                     service=security_runtime.service,
                     repository=security_runtime.repository,

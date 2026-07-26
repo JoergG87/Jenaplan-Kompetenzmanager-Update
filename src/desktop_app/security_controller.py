@@ -165,6 +165,16 @@ class StartupAuthenticationResult:
     enrollment_completed: bool
 
 
+def should_attempt_startup_device_authentication(
+    *, decision: SecurityStartupDecision, touch_id_preferred: bool
+) -> bool:
+    """Keep Touch ID reachable instead of bypassing its dialog at startup."""
+    return (
+        decision.state is SecurityStartState.LOGIN_REQUIRED
+        and not touch_id_preferred
+    )
+
+
 def run_startup_device_authentication(
     *, service, repository, device_credentials
 ) -> StartupAuthenticationResult | None:

@@ -45,6 +45,38 @@ APP_LOCK_NOTICE = (
 )
 
 
+def _configure_password_input(field: QLineEdit, *, description: str) -> None:
+    """Apply Qt's public sensitive-input contract without a private Cocoa bridge."""
+    field.setEchoMode(QLineEdit.EchoMode.Password)
+    field.setInputMethodHints(
+        Qt.InputMethodHint.ImhHiddenText
+        | Qt.InputMethodHint.ImhSensitiveData
+        | Qt.InputMethodHint.ImhNoAutoUppercase
+        | Qt.InputMethodHint.ImhNoPredictiveText
+    )
+    field.setAccessibleDescription(description)
+
+
+def _touch_id_unavailable_text(status) -> str:
+    if not status.enabled:
+        return "Touch ID steht nach der ersten Anmeldung mit Passwort zur Verfügung."
+    if not status.secret_available:
+        return "Touch ID ist derzeit nicht verfügbar. Verwende dein Passwort."
+    availability = status.local_authentication
+    if availability is LocalAuthenticationAvailability.NOT_ENROLLED:
+        return "Touch ID ist auf diesem Mac noch nicht eingerichtet. Verwende dein Passwort."
+    if availability is LocalAuthenticationAvailability.LOCKED_OUT:
+        return "Touch ID ist vorübergehend gesperrt. Verwende dein Passwort."
+    if availability in {
+        LocalAuthenticationAvailability.NOT_AVAILABLE,
+        LocalAuthenticationAvailability.UNSUPPORTED,
+    }:
+        return "Touch ID ist auf diesem Mac nicht verfügbar. Verwende dein Passwort."
+    if availability is not LocalAuthenticationAvailability.AVAILABLE:
+        return "Touch ID ist gerade nicht verfügbar. Verwende dein Passwort."
+    return ""
+
+
 class SecurityOperationWorker(QObject):
     succeeded = Signal(object)
     failed = Signal(object)
@@ -205,14 +237,20 @@ class AuthenticationDialog(QDialog):
         set_label_style(self.display_name_hint, "small")
         form.addWidget(self.display_name_hint)
         self.password = QLineEdit()
-        self.password.setEchoMode(QLineEdit.EchoMode.Password)
         self.password.setPlaceholderText("Passwort")
         self.password.setAccessibleName("Passwort")
+        _configure_password_input(
+            self.password,
+            description="Lokales Passwort; die Eingabe wird nicht gespeichert oder vorhergesagt.",
+        )
         form.addWidget(self.password)
         self.password_confirmation = QLineEdit()
-        self.password_confirmation.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_confirmation.setPlaceholderText("Passwort bestätigen")
         self.password_confirmation.setAccessibleName("Passwort bestätigen")
+        _configure_password_input(
+            self.password_confirmation,
+            description="Bestätigung des neuen lokalen Passworts; die Eingabe wird nicht gespeichert oder vorhergesagt.",
+        )
         form.addWidget(self.password_confirmation)
         self.show_password = QCheckBox("Passwort anzeigen")
         self.show_password.toggled.connect(self._toggle_password_visibility)
@@ -251,6 +289,11 @@ class AuthenticationDialog(QDialog):
         self.touch_id_button.clicked.connect(self._submit_touch_id)
         self.touch_id_button.setVisible(False)
         actions.addWidget(self.touch_id_button)
+        self.touch_id_notice = QLabel()
+        self.touch_id_notice.setWordWrap(True)
+        set_label_style(self.touch_id_notice, "small")
+        self.touch_id_notice.setVisible(False)
+        form.addWidget(self.touch_id_notice)
         actions.addStretch(1)
         self.submit_button = QPushButton("Weiter")
         self.submit_button.setDefault(True)
@@ -316,7 +359,10 @@ class AuthenticationDialog(QDialog):
 
     def _show_initial_state(self) -> None:
         state = self.decision.state
+        self.touch_id_button.setVisible(False)
+        self.touch_id_notice.setVisible(False)
         if state in (SecurityStartState.FIRST_RUN, SecurityStartState.LEGACY_ENROLLMENT):
+            self._set_password_semantics(is_new_password=True)
             self.heading.setText("Lokales Konto einrichten")
             self.explanation.setText(
                 "Lege ein Passwort mit mindestens 15 Zeichen fest. "
@@ -335,6 +381,7 @@ class AuthenticationDialog(QDialog):
             SecurityStartState.LOCKED,
             SecurityStartState.RECOVERY_AVAILABLE,
         ):
+            self._set_password_semantics(is_new_password=False)
             self.heading.setText("App entsperren")
             self.explanation.setText("Gib dein lokales Passwort ein.")
             self.submit_button.setText("Entsperren")
@@ -354,13 +401,18 @@ class AuthenticationDialog(QDialog):
             self.remember_device_hint.setVisible(can_remember)
             if self.device_credentials is not None:
                 status = self.device_credentials.status()
-                self.touch_id_button.setVisible(
+                touch_id_available = (
                     status.enabled
                     and status.secret_available
                     and self.touch_id_preferred
                     and status.local_authentication
                     is LocalAuthenticationAvailability.AVAILABLE
                 )
+                self.touch_id_button.setVisible(touch_id_available)
+                notice = _touch_id_unavailable_text(status)
+                if notice:
+                    self.touch_id_notice.setText(notice)
+                    self.touch_id_notice.setVisible(True)
         else:
             self.error_text.setText(
                 "Die Sicherheitsdaten konnten nicht eindeutig geprüft werden. "
@@ -378,6 +430,7 @@ class AuthenticationDialog(QDialog):
             self.codes_page.button.setDefault(False)
 
     def _show_password_reset(self) -> None:
+        self._set_password_semantics(is_new_password=True)
         self.heading.setText("Neues Passwort festlegen")
         self.explanation.setText(
             "Der Zugang wurde wiederhergestellt. Lege jetzt ein neues Passwort fest."
@@ -670,6 +723,19 @@ class AuthenticationDialog(QDialog):
         self.password.setEchoMode(mode)
         self.password_confirmation.setEchoMode(mode)
 
+    def _set_password_semantics(self, *, is_new_password: bool) -> None:
+        if is_new_password:
+            self.password.setAccessibleName("Neues Passwort")
+            self.password.setAccessibleDescription(
+                "Neues lokales Passwort; die Eingabe wird nicht gespeichert oder vorhergesagt."
+            )
+            self.password_confirmation.setAccessibleName("Neues Passwort bestätigen")
+        else:
+            self.password.setAccessibleName("Lokales Passwort")
+            self.password.setAccessibleDescription(
+                "Lokales Passwort; die Eingabe wird nicht gespeichert oder vorhergesagt."
+            )
+
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         if self._operation_busy or not self.allow_cancel:
             event.ignore()
@@ -688,14 +754,26 @@ class PasswordChangeDialog(QDialog):
         self.setWindowTitle("Passwort ändern")
         layout = QVBoxLayout(self)
         self.current = QLineEdit()
-        self.current.setEchoMode(QLineEdit.EchoMode.Password)
         self.current.setPlaceholderText("Aktuelles Passwort")
+        self.current.setAccessibleName("Aktuelles Passwort")
+        _configure_password_input(
+            self.current,
+            description="Aktuelles lokales Passwort; die Eingabe wird nicht gespeichert oder vorhergesagt.",
+        )
         self.replacement = QLineEdit()
-        self.replacement.setEchoMode(QLineEdit.EchoMode.Password)
         self.replacement.setPlaceholderText("Neues Passwort")
+        self.replacement.setAccessibleName("Neues Passwort")
+        _configure_password_input(
+            self.replacement,
+            description="Neues lokales Passwort; die Eingabe wird nicht gespeichert oder vorhergesagt.",
+        )
         self.confirmation = QLineEdit()
-        self.confirmation.setEchoMode(QLineEdit.EchoMode.Password)
         self.confirmation.setPlaceholderText("Neues Passwort bestätigen")
+        self.confirmation.setAccessibleName("Neues Passwort bestätigen")
+        _configure_password_input(
+            self.confirmation,
+            description="Bestätigung des neuen lokalen Passworts; die Eingabe wird nicht gespeichert oder vorhergesagt.",
+        )
         for field in (self.current, self.replacement, self.confirmation):
             layout.addWidget(field)
         show = QCheckBox("Passwörter anzeigen")

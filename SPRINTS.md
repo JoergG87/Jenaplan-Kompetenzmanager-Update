@@ -1,5 +1,20 @@
 # Sprintplanung
 
+## Pilot UX-Hardening 0.3.0 / Build 301
+
+**Status:** Implementierung und technische Abnahme in Arbeit; keine Pilot-,
+Appcast-, Push-, Übergabe- oder Releasefreigabe.
+
+- [x] Qt-Standardbestätigungen read-only inventarisieren und auf explizite
+  deutsche Aktionen mit sicherer Standard-/Escape-Aktion umstellen.
+- [x] Bestehende Passwortfelder mit öffentlicher Qt-Sicherheits- und
+  Accessibility-Semantik härten; native macOS-Autofill-Grenze dokumentieren.
+- [x] Touch-ID-Voraussetzungen verständlich sichtbar machen und
+  Passwort-Fallback sowie explizite Credential-Anlage erhalten.
+- [x] Version `0.3.0` / Build `301` zentralisieren.
+- [ ] Gesamtsuite, Backup-/Restore-Regression und technische Gates abschließen.
+- [ ] Clean-Worktree-Build und reale Paket-/Hardwareabnahme durchführen.
+
 ## Restore-Handoff-P1 - paketierte Worker-Uebernahme
 
 **Status:** Korrektur und reale DMG-Abnahme in Arbeit; keine Pilot-,

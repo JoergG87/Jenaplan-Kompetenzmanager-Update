@@ -1,5 +1,18 @@
 # Technical Naming Registry
 
+## Pilot UX-Hardening 0.3.0 / Build 301
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `create_confirmation_message` | Produktinterne Factory für explizit deutsch beschriftete Bestätigungsaktionen; Abbrechen ist Escape- und Standardaktion | Desktop UI |
+| `QLineEdit.inputMethodHints` für Passwortfelder | Qt-Semantik `ImhHiddenText`, `ImhSensitiveData`, `ImhNoAutoUppercase` und `ImhNoPredictiveText`; keine private Cocoa-Bridge oder gespeicherte Eingabe | Desktop UI |
+| `should_attempt_startup_device_authentication` | Reine Startentscheidung: automatische Geräteanmeldung nur bei Loginpflicht ohne aktivierte Touch-ID-Präferenz | Desktop Security Coordinator |
+
+Die vorhandene Security-Bridge bleibt ausschließlich Eigentümer von Keychain
+und LocalAuthentication. Sie erhält keinen Zugriff auf Qt-Textfelder oder
+private Qt-Cocoa-Objekte. Die sichtbare macOS-Passwortvorschlagsannahme bleibt
+bis zum realen Test des gebauten Bundles offen.
+
 ## Security Sprint 12 - Release-Hardening und Paketabnahme
 
 | Technischer Name | Bedeutung | Eigentümer |

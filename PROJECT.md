@@ -7,7 +7,7 @@ Abnahme des standardmäßig inaktiven Sprint-11-Pfads. Die verbindliche
 Release-/Packaging-Matrix und die jeweils automatisiert, statisch oder real
 erhobene Evidenz stehen in `docs/SECURITY_RELEASE_0_3_0.md`.
 
-`src.version` führt `0.3.0` / Build `300` als gemeinsame Quelle für Bundle,
+`src.version` führt `0.3.0` / Build `301` als gemeinsame Quelle für Bundle,
 Über-Dialog, Updates, Dateinamen und internen Releasebericht. Der normale
 Gate-Off-Pfad bleibt Klartext-SQLite, bestehende Dokumentablage und
 ZIP-v1-Backup/Restore. Nur interne markergebundene Pakettests laden SQLCipher,
@@ -21,6 +21,11 @@ arm64, signiert erst danach und führt Gate-Off-, Gate-On-, Keychain-, Bundle-,
 Artefakt-, Pfad- und Klartextprüfungen vor DMG-Erzeugung aus. SQLCipher
 Community 4.12.0 bleibt ausdrücklich nur die Sprint-11-Testengine; das
 SQLCipher-4.17.0-Produktziel ist nicht freigegeben.
+
+Build `300` bleibt der technisch geprüfte, nicht verteilte Ausgangsstand.
+Build `301` enthält ausschließlich das Pilot-UX-Hardening für deutsche
+Bestätigungen, öffentliche Qt-Passwortsemantik und die verständliche
+Touch-ID-Verfügbarkeitsprojektion.
 
 Windows, Developer ID, Notarisierung, physische Touch ID, vollständiger
 Power-Loss-Nachweis, Produktmigration, Pilotaktivierung, Stable-Appcast und

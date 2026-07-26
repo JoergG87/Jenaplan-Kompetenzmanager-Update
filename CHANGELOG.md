@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Alle produktinternen Bestätigungsdialoge mit Qt-Standardfragen verwenden
+  explizite deutsche Aktionsverben sowie eine sichere Abbrechen-, Enter- und
+  Escape-Belegung.
+- Passwortanlage, Passwortbestätigung, Login und Passwortwechsel verwenden
+  öffentliche sensitive Qt-Eingabehinweise und eindeutige Accessible Names;
+  der native macOS-Passwortvorschlag bleibt bis zum echten Bundle-Test offen.
+- Touch ID bleibt bei fehlendem Credential, Secret, eingerichteter Biometrie
+  oder Verfügbarkeit auf unterstützten Macs mit verständlichem Grund sichtbar;
+  Passwort-Fallback und explizite Credential-Anlage bleiben unverändert.
+- Pilot-Build auf `0.3.0` / Build `301` angehoben. Build `300` wurde nicht
+  verteilt; Appcast, Pilotinstallation, Übergabe und Release bleiben
+  unverändert beziehungsweise ausgeschlossen.
 - Paketierten Restore-Worker erst nach authentisierter Lock-/Handoff-Uebernahme
   als gestartet behandeln; der Worker wartet bis zum vollstaendigen Ende der
   Haupt-App, waehrend fehlende oder sofort fehlschlagende Starts ohne

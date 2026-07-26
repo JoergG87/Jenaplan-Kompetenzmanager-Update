@@ -195,6 +195,11 @@ Schreibaktionen über Application-Ports, aktualisiert den Status aus dem
 kanonischen Security Store und hält Plattformdetails aus Widgets fern.
 `AppShell` bleibt reiner Signal-/Navigationsowner.
 
+Bei fehlender eingerichteter Biometrie, fehlendem Credential oder nicht
+lesbarem Secret projiziert die Unterseite nur einen verständlichen Grund und
+eine deaktivierte Bedienaktion. Sie erzeugt oder repariert kein Credential und
+liest weder Keychain noch Security SQLite direkt.
+
 Der Security Application Service besitzt Credential-Lebenszyklus,
 Epoch-Prüfung, Verifikation und Widerruf. `SQLiteSecurityRepository` besitzt
 Metadaten, der Plattformadapter ausschließlich das Secret. Die Fach-UI, ihre

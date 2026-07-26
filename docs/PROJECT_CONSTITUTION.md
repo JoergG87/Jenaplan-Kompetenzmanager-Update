@@ -1,5 +1,26 @@
 # Project Constitution
 
+## Entwicklungsgrenze Pilot UX-Hardening 0.3.0 / Build 301
+
+Der technisch geprüfte und nicht verteilte Build `300` ist die Basis für
+Build `301`. Zulässig sind ausschließlich deutsche produktinterne
+Bestätigungsaktionen, öffentliche Qt-Sicherheitssemantik für bestehende
+Passwortfelder, verständliche Touch-ID-Verfügbarkeitsprojektionen, fokussierte
+Tests und die konsistente Buildanhebung. Passwortregeln, Recovery,
+Gerätecredential-Lifecycle, Keychain-Secret, Security-Epoch und
+Passwort-Fallback bleiben unverändert.
+
+Die vorhandene native macOS-Security-Bridge bleibt auf Keychain und
+LocalAuthentication begrenzt. Eine private Qt-Cocoa-Kopplung oder ein
+selbstgebauter Passwortvorschlag ist nicht zulässig. Ein sicherer
+macOS-Passwortvorschlag und Touch ID gelten erst im gebauten Bundle auf echter
+geeigneter Hardware als bestätigt.
+
+Gate-Off bleibt der normale SQLite-, Dokument- und ZIP-v1-Pfad. Produkt-
+migration, Verschlüsselungsaktivierung, Backupformat, Restorearchitektur,
+Windows, Appcast, Pilotinstallation, Übergabe und Release bleiben
+ausgeschlossen.
+
 ## Entwicklungsgrenze Security Sprint 12
 
 Security Sprint 12 darf einen internen macOS-arm64-Testbuild `0.3.0` /

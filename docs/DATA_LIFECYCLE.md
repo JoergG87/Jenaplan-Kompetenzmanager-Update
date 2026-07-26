@@ -38,6 +38,16 @@ Die Pakettestbefehle sind keine Startup-, UI-, Produktmigrations- oder
 Recoveryfunktion. Sie dürfen weder normale App-Daten noch Pilotbestände
 adressieren und erzeugen keine produktive Schlüsselablage.
 
+## Pilot UX-Hardening 0.3.0 / Build 301
+
+Bestätigungsdialoge und Passwort-Eingabehinweise verarbeiten ausschließlich
+flüchtigen Widgetzustand. Touch-ID-Verfügbarkeit liest weiterhin nur die
+kanonische Statusprojektion; eine deaktivierte oder nicht verfügbare Option
+verändert weder Credential, Keychain, Passwort, Recovery-Code noch
+Security-Epoch. Ein Passwort wird nur über die bestehenden Authentifizierungs-
+und Passwortwechsel-Services verarbeitet und weder protokolliert noch in
+Zwischenablage, Preferences oder einer neuen Plattformbrücke abgelegt.
+
 ## Security Sprint 11 - kontrollierter Integrations-Lifecycle
 
 ### Startup und Gate
