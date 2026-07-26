@@ -14,6 +14,7 @@
 | `ObservationOperationPhase` | Monotone Allowlist `PREPARED`, `FILES_STAGED`, `FILES_PUBLISHED`, `DATABASE_COMMITTED`, `COMPLETE` | Core Persistence |
 | `operation_token` | Stabiler zufälliger Bezeichner genau eines bewusst ausgelösten schreibenden Gesamtvorgangs; Retry verwendet denselben Wert | Application |
 | `operation_payload_hash` | SHA-256 der kanonischen vollständigen Solloperation; bindet Ereignissatz und Recoveryentscheidung | Core Persistence |
+| `SQLiteObservationRepository._next_observation_id` | Schmaler Read ausschließlich vorhandener `observation_id`-Werte; die Auswahl und das zugehörige Create laufen unter demselben `BEGIN IMMEDIATE` | Core Persistence |
 | `confirmation_unknown` | Kanonischer Live-Projektionszustand für nicht beweisbar geordnete historische Observation-/Confirmation-Gleichstände | Desktop Projection |
 
 `ObservationOperationJournal` schützt gegen Crash, Partial Write und zufällige

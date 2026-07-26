@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Neue Beobachtungs-IDs werden im selben serialisierten SQLite-Schreibvorgang
+  aus einem schmalen ID-Read vergeben; der vollständige Beobachtungsbestand
+  samt Kompetenzbewertungen wird dafür nicht mehr hydriert.
 - Bericht- und LEG-Entwürfe bei vorhandenem Arbeitsstand bewusst auswählen
   lassen: vorhandenen Entwurf öffnen, neuen eigenständigen Entwurf beginnen
   oder ohne Datenänderung abbrechen. Ältere Entwürfe bleiben erreichbar.

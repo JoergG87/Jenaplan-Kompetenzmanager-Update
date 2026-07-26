@@ -6,9 +6,6 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from .constants import ID_SEQUENCE_WIDTH, OBSERVATION_ID_PREFIX
-
-
 OBSERVATION_RATING_KEYS = ("++", "+", "-", "--")
 
 
@@ -155,7 +152,7 @@ class ObservationService:
         self.validator.validate(observation_data, self.valid_student_ids)
         timestamp = self._timestamp()
         observation = ObservationRecord(
-            self._generate_observation_id(),
+            "",
             student_id.strip(),
             date.strip(),
             subject_id.strip(),
@@ -221,18 +218,6 @@ class ObservationService:
             observation_id,
             self._timestamp(),
         )
-
-    def _generate_observation_id(self) -> str:
-        used_ids = {
-            observation.observation_id
-            for observation in self.repository.list_observations()
-        }
-        next_number = 1
-        while True:
-            observation_id = f"{OBSERVATION_ID_PREFIX}-{next_number:0{ID_SEQUENCE_WIDTH}}"
-            if observation_id not in used_ids:
-                return observation_id
-            next_number += 1
 
     def _timestamp(self) -> str:
         return self.now_provider().replace(microsecond=0).isoformat()

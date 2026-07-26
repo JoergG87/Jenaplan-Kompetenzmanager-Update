@@ -45,6 +45,7 @@ from .constants import (
     ID_SEQUENCE_WIDTH,
     LAST_NAME,
     MEDIA_ID_PREFIX,
+    OBSERVATION_ID_PREFIX,
     LEARNING_REPORT_ID_PREFIX,
     LEARNING_REPORT_PDF_ARTIFACT_ID_PREFIX,
     LEARNING_REPORT_REVISION_ID_PREFIX,
@@ -1310,15 +1311,43 @@ class SQLiteObservationRepository:
         *,
         operation_token: str = "",
     ) -> ObservationRecord:
-        if self.get_observation(observation.observation_id) is not None:
-            raise ObservationRepositoryError(
-                f"observation_id existiert bereits: {observation.observation_id}"
-            )
         operation_token = operation_token or uuid.uuid4().hex
-        payload_hash = canonical_payload_hash(_observation_event_payload(observation))
-        technical_timestamp = _required_event_timestamp(observation.updated_at)
         with closing(self.database.connect()) as connection:
-            with connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                if observation.observation_id:
+                    existing = connection.execute(
+                        """
+                        SELECT 1
+                        FROM observations
+                        WHERE observation_id = ?
+                        """,
+                        (observation.observation_id,),
+                    ).fetchone()
+                    if existing is not None:
+                        raise ObservationRepositoryError(
+                            "observation_id existiert bereits: "
+                            f"{observation.observation_id}"
+                        )
+                else:
+                    observation = ObservationRecord(
+                        self._next_observation_id(connection),
+                        observation.student_id,
+                        observation.date,
+                        observation.subject_id,
+                        observation.context,
+                        observation.note,
+                        observation.active,
+                        observation.created_at,
+                        observation.updated_at,
+                        observation.competency_ratings,
+                    )
+                payload_hash = canonical_payload_hash(
+                    _observation_event_payload(observation)
+                )
+                technical_timestamp = _required_event_timestamp(
+                    observation.updated_at
+                )
                 connection.execute(
                     """
                     INSERT INTO observations (
@@ -1411,7 +1440,31 @@ class SQLiteObservationRepository:
                             PersistenceOrderingState.ORDERED.value,
                         ),
                     )
+                connection.execute("COMMIT")
+            except Exception:
+                connection.execute("ROLLBACK")
+                raise
         return observation
+
+    def _next_observation_id(self, connection: sqlite3.Connection) -> str:
+        used_ids = {
+            str(row[0])
+            for row in connection.execute(
+                """
+                SELECT observation_id
+                FROM observations
+                """
+            ).fetchall()
+        }
+        next_number = 1
+        while True:
+            observation_id = (
+                f"{OBSERVATION_ID_PREFIX}-"
+                f"{next_number:0{ID_SEQUENCE_WIDTH}d}"
+            )
+            if observation_id not in used_ids:
+                return observation_id
+            next_number += 1
 
     def update_observation(
         self,
