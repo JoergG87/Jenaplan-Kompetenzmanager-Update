@@ -1,5 +1,27 @@
 # Technical Naming Registry
 
+## P1-Paket 1 - Ereignisordnung und Attachment-Unit-of-Work
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `PersistenceEventRecord` | Append-only Ereigniszeile mit monotoner `event_sequence`, Operation-Bindung, betroffenem Schüler-/Kompetenzpaar und technischer Ordnungssemantik | Core Persistence |
+| `PersistenceEventKind` | Allowlist `observation_created`, `observation_updated`, `observation_competency_changed`, `observation_deactivated`, `confirmation_upserted`, `historical_observation_state`, `historical_confirmation_state` | Core Persistence |
+| `PersistenceOrderingState` | `ordered`, `unknown` oder `not_applicable`; `unknown` darf nie über die technisch vergebene Sequenz fachlich entschieden werden | Core Persistence |
+| `SQLitePersistenceEventRepository` | Append-only Writer und schülerbezogene Read-Projektion der Ereignistabelle | Core Persistence |
+| `ObservationPersistenceUnitOfWork` | Qt-freier Gesamtprozess für Observation, Ratings, Anhänge, Ereignisse, Retry und Recovery | Application / Core Persistence |
+| `ObservationOperationJournal` | Versioniertes kanonisches Crash-/Retry-Journal unter `.observation-staging/<operation_token>/` | Core Persistence |
+| `ObservationWriterLock` | Kernelgebundener exklusiver Advisory Lock auf kontrolliert geöffnetem FD; gemeinsame Sperre für Observation-UoW, Backup und Restore | Core Persistence |
+| `ObservationOperationPhase` | Monotone Allowlist `PREPARED`, `FILES_STAGED`, `FILES_PUBLISHED`, `DATABASE_COMMITTED`, `COMPLETE` | Core Persistence |
+| `operation_token` | Stabiler zufälliger Bezeichner genau eines bewusst ausgelösten schreibenden Gesamtvorgangs; Retry verwendet denselben Wert | Application |
+| `operation_payload_hash` | SHA-256 der kanonischen vollständigen Solloperation; bindet Ereignissatz und Recoveryentscheidung | Core Persistence |
+| `confirmation_unknown` | Kanonischer Live-Projektionszustand für nicht beweisbar geordnete historische Observation-/Confirmation-Gleichstände | Desktop Projection |
+
+`ObservationOperationJournal` schützt gegen Crash, Partial Write und zufällige
+Korruption. Es ist kein authentisiertes Security-Journal und behauptet keinen
+Schutz gegen einen aktiven Manipulator mit denselben lokalen Benutzerrechten.
+`MED-######` und `OBS-######` bleiben unverändert; alle nicht abschließend
+aufgelösten Journalreservierungen blockieren eine Wiedervergabe.
+
 ## Pilot UX-Hardening 0.3.0 / Build 301
 
 | Technischer Name | Bedeutung | Eigentümer |

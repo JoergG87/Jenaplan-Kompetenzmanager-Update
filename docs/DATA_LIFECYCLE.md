@@ -1,5 +1,90 @@
 # Data Lifecycle
 
+## P1-Paket 1 - Ereignismigration, Frische und Attachment-Recovery
+
+### V1-zu-V2-Migration
+
+1. Die bekannte V1-Struktur oder ihr registrierter unversionierter Vorgänger
+   wird unter `BEGIN IMMEDIATE` geprüft.
+2. `persistence_events` wird als einzige neue Tabelle angelegt.
+3. Pro vorhandenem Observation-Rating entsteht ein neutraler
+   `historical_observation_state` aus `observations.updated_at`; pro
+   Bestätigung ein `historical_confirmation_state` aus `confirmed_at`.
+4. Technische Zeiten werden auf UTC-Sekunden normalisiert. Enthält dieselbe
+   `(student_id, competency_id, technical_timestamp)`-Gruppe Observation und
+   Confirmation, bleiben beide `unknown`. Rein observationale Gleichstände
+   erzeugen keine Confirmation-Grenzambiguität.
+5. Nicht parsebare Altzeiten erhalten ausschließlich den Sentinel
+   `0001-01-01T00:00:00Z`; alle historischen Ereignisse des Paars bleiben
+   `unknown`, bis ein neuer `ordered`-Fachvorgang folgt.
+6. Historische Operation-Token und Payload-Hashes werden stabil aus Typ,
+   Source-Primary-Keys und kanonischem Source-Snapshot abgeleitet. Diese IDs
+   entscheiden niemals die fachliche Reihenfolge.
+7. Erst nach vollständigem Backfill wird `user_version = 2` gesetzt. Fehler
+   rollen Tabelle, Ereignisse und Version gemeinsam zurück.
+
+Bestehende IDs und fachliche Zeitfelder bleiben unverändert. V1-Backups werden
+weiter verifiziert und ausschließlich im Restore-Staging nach V2 migriert.
+Eine V1-Anwendung lehnt V2 kontrolliert als neuere Version ab.
+
+### Neue Frischeereignisse
+
+Observation-Create schreibt einen allgemeinen `observation_created`-Anker und
+je Rating ein `observation_competency_changed`. Ein Edit schreibt einen
+`observation_updated`-Anker und nur bei Rating-Hinzufügung, -Entfernung,
+-Wertänderung oder Schülerwechsel Frischeereignisse je altem/neuem Paar.
+`date`, `subject_id`, Kontext, Notiz, Snapshot-Anzeigetexte und Anhänge ändern
+die Bestätigungsfrische nicht. Soft Delete `active 1 -> 0` schreibt
+`observation_deactivated` je Rating; Reaktivierung ist nicht freigegeben.
+Confirmation-Upsert und `confirmation_upserted` liegen in derselben
+Transaktion. Ein exakter No-op mutiert weder Fachzustand noch Ereignisse.
+
+Die Live-Projektion vergleicht die jüngste relevante Observation- und
+Confirmation-Sequenz. Ein historischer Grenzgleichstand projiziert
+`confirmation_unknown` und sichtbar
+`Bestätigungsstand unklar – bitte erneut bestätigen`. Ein neues geordnetes
+Frischeereignis löst den Altzustand eindeutig auf. Evidence bleibt getrennt
+und liest weiterhin nur aktive Beobachtungen.
+
+### Beobachtung plus Anhänge
+
+1. Dialog und Draft halten ein stabiles `operation_token`.
+2. Unter demselben kernelgebundenen Writer-Lock werden vor neuen Operationen
+   unvollständige Journale recovered; beschädigte oder widersprüchliche
+   Journale bleiben als reservierende Evidenz erhalten und blockieren
+   fail-closed.
+3. OBS-/MED-IDs werden aus SQLite plus allen Journal- und Finaldatei-
+   Reservierungen vergeben und vor Nutzung dauerhaft im Journal gebunden.
+4. Jede Quelle wird genau einmal no-follow geöffnet, über denselben FD
+   gehasht und in ein exklusives Stagingziel kopiert; `fstat` vor/nach sowie
+   Staginggröße und -hash müssen übereinstimmen.
+5. Publikation erfolgt im selben Datenroot per exklusivem Hardlink. Ein
+   vorhandenes Ziel ist nur als exakt inode-, größen- und hashgleicher
+   Crash-Retry zulässig.
+6. Danach schreibt genau eine SQLite-Transaktion Observation, Ratings,
+   Ereignisse und neue Dokumentreferenzen; Altanhänge werden erst zuletzt
+   deaktiviert.
+7. Rollback erhält den vorherigen SQLite-Zustand und aktive Altanhänge.
+   Vorpublizierte neue Dateien bleiben journalgebunden und werden beim Retry
+   wiederverwendet.
+8. Nach Crash wird entweder der gebundene Vorherzustand fortgesetzt oder der
+   exakte Sollzustand samt vollständigem Eventsatz als bereits committed
+   erkannt. Jeder andere Zustand blockiert.
+9. Backup und Restore-Staging erwerben denselben Writer-Lock und führen
+   ausstehende Recovery vor Snapshot beziehungsweise Staging aus. Ein
+   widersprüchliches Journal verhindert die Sicherung oder
+   Restore-Vorbereitung.
+
+Die Phasen sind `PREPARED`, `FILES_STAGED`, `FILES_PUBLISHED`,
+`DATABASE_COMMITTED` und `COMPLETE`. `PREPARED` bindet Operation, IDs,
+Sollzustand und Attachment-Intent bereits vor dem ersten Quellenzugriff;
+`FILES_STAGED` ergänzt die verifizierte Byte-Evidenz. Journal und Staginglink
+bleiben als Retrybeleg erhalten; beschädigte Zustände werden nicht umbenannt
+oder automatisch bereinigt, sondern blockieren. Produktiver Restore-Austausch,
+Restore-Staging, Backup und alle MED-Schreiber verwenden denselben
+kernelgebundenen, pro Thread reentranten Writer-Lock. SQLite und Dateisystem
+werden ausdrücklich nicht als gemeinsam atomar beschrieben.
+
 ## Security Sprint 12 - interner Build- und Pakettest-Lifecycle
 
 1. Branch, Referenz-HEAD, Index, gemischten Worktree, geschützte Exceldatei,

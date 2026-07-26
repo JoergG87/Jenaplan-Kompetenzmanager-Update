@@ -1,5 +1,20 @@
 # UI Data Mapping
 
+## P1-Paket 1 - sichtbarer unklarer Bestätigungsstand
+
+| UI-Feld/Aktion | Quelle | Persistenz | Regel |
+|---|---|---|---|
+| Bestätigungsfrische | kanonische `StudentCompetencyStatusViewModel.documentation_state` aus `persistence_events` | Nein | technische Sequenz statt fachlichem Beobachtungsdatum |
+| Historischer Gleichstand | `documentation_state = confirmation_unknown` | Nein | sichtbar exakt `Bestätigungsstand unklar – bitte erneut bestätigen`; weder bestätigt noch sicher neu |
+| Erneut bestätigen | bestehende Bestätigungsaktion mit stabilem Operation-Token | `student_competency_confirmations` + `persistence_events` | neue Confirmation-Sequenz löst `confirmation_unknown` eindeutig auf |
+| Beobachtung speichern | `ObservationDraftViewModel.operation_token` -> `ObservationPersistenceUnitOfWork` | Observation, Ratings, Ereignisse, Dokumentreferenzen | Retry setzt denselben Vorgang fort; keine zweite Beobachtung |
+
+Profil, Kompetenz-Cockpit, Berichtsvorbereitung und LEG übernehmen dieselbe
+kanonische Semantik. Eigene Anzeigechronologien dürfen weiterhin fachliche
+Beobachtungsdaten sortieren, aber niemals die Bestätigungsfrische ableiten.
+Journalphasen, Hashes, Pfade, Inodes und Recoverydetails werden nicht sichtbar
+projiziert.
+
 ## Pilot UX-Hardening 0.3.0 / Build 301
 
 | UI-Feld/Aktion | Quelle | Persistenz | Regel |

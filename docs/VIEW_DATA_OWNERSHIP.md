@@ -1,5 +1,23 @@
 # View Data Ownership
 
+## P1-Paket 1 - kanonische Frischeprojektion ohne Widget-Ownership
+
+`SQLitePersistenceEventRepository` besitzt die technische Ereignislesesicht.
+`StudentDesktopAdapter.list_competency_status_projection_for_student` bleibt
+die einzige kanonische Live-Projektion für Profil, Kompetenz-Cockpit,
+Berichtsvorbereitung und LEG. Sie trennt aktive Evidence von der technischen
+Frischeordnung und projiziert zusätzlich `confirmation_unknown`.
+
+Widgets und Dialoge zeigen nur den gelieferten Zustand und den verbindlichen
+Text `Bestätigungsstand unklar – bitte erneut bestätigen`. Sie vergleichen
+weder Datumsfelder noch Ereignisse und besitzen keine SQLite-, Journal-,
+Lock-, Staging-, Hash-, Dateipublikations- oder Recoverylogik.
+
+`ObservationPersistenceUnitOfWork` besitzt den gesamten schreibenden
+Observation-/Attachment-Prozess. Der Dialog besitzt ausschließlich sein
+flüchtiges, über Retry stabiles `operation_token`. Alte unveränderliche
+Bericht- und LEG-Revisionen werden nicht live neu projiziert oder migriert.
+
 ## Security Sprint 12 - bestehender Über-Dialog und technische Testreports
 
 Der vorhandene `AppInfoDialog` projiziert zusätzlich ausschließlich

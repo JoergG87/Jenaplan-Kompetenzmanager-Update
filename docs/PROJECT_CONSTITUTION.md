@@ -1,5 +1,22 @@
 # Project Constitution
 
+## P1-Paket 1 - technische Persistenzreihenfolge und Beobachtungs-Unit-of-Work
+
+Für die Bestätigungsfrische ist ausschließlich die monotone technische
+Reihenfolge in `persistence_events` maßgeblich. Fachliche Beobachtungsdaten,
+insbesondere `observations.date`, werden weder umgedeutet noch als technische
+Schreibreihenfolge verwendet. Historische Observation-/Confirmation-
+Gleichstände bleiben `unknown`, bis ein neuer geordneter Fachvorgang sie
+auflöst.
+
+Beobachtung, Ratings, frischewirksame Ereignisse und Dokumentreferenzen werden
+innerhalb genau einer SQLite-Transaktion geändert. Physische Anhänge werden
+zuvor in einem kontrollierten externen Staging vorbereitet und no-clobber
+publiziert. SQLite und Dateisystem bilden ausdrücklich keine gemeinsame
+atomare Transaktion; ein versioniertes Journal und ein kernelgebundener
+Writer-Lock besitzen Retry und Recovery. Widgets besitzen weder Ereignis-,
+Repository-, Staging- noch Recoverylogik.
+
 ## Entwicklungsgrenze Pilot UX-Hardening 0.3.0 / Build 301
 
 Der technisch geprüfte und nicht verteilte Build `300` ist die Basis für

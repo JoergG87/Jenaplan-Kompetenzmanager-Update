@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Bestätigungsfrische auf eine monotone append-only Ereignisreihenfolge
+  umgestellt; historische Observation-/Confirmation-Gleichstände bleiben
+  sichtbar unklar, bis bewusst erneut bestätigt wird.
+- Speichern von Beobachtung und Anhängen als idempotenten, crash-fortsetzbaren
+  Unit-of-Work mit kontrolliertem Dateistaging, No-Clobber-Publikation und
+  gemeinsamer SQLite-Transaktion vorbereitet.
+- Datenbank-Kompatibilitätsversion 2 mit transaktionaler V1-Migration und
+  Restore-Staging-Kompatibilität eingeführt; keine allgemeine Indexbereinigung.
 - Zentrales Motion-System um ruhige Button-, Dialog-, Sidebar-, Segment-,
   Bewertungs- und Speicherbestätigungs-Mikrointeraktionen erweitert; Bericht
   und LEG überblenden ausschließlich den neu aktiven lokalen Inhalt.

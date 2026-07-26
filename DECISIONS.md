@@ -3561,3 +3561,45 @@ Pro `LCV` existiert hoechstens eine unveraenderliche `LearningConferencePdfArtif
 Das PDF enthaelt ausschliesslich abgeschlossene Snapshotinhalte: Schuelerkontext, Gespraechsdatum, verantwortliche Lehrkraft, gemeinsame Ziele, Unterstuetzungen, Vereinbarungen, Zustaendigkeiten sowie bewusst ausgewaehlte Kompetenz- und Beobachtungsbelege. Interne Vorbereitung und nicht abgeschlossene Draftinhalte werden nicht adaptiert. Ein erneuter Erzeugungsaufruf verifiziert ein vorhandenes Artefakt und gibt dieselbe Referenz zurueck; Dateien werden nicht ueberschrieben.
 
 Nicht Bestandteil dieser Entscheidung sind Archivierung, Verschluesselung, Renderer-Versionierung, mehrere Artefakte pro Revision, ein Rollenmodell oder eine gemeinsame Bericht-/LEG-Artefaktdomain.
+
+## ADR-089 - Persistenzereignisse ordnen Bestätigungsfrische; Anhänge verwenden einen recoverbaren Unit-of-Work
+
+Status: Angenommen und umgesetzt
+
+Die vorhandenen sekundengenauen Zeitfelder können Observation- und
+Confirmation-Schreibvorgänge innerhalb derselben Sekunde nicht belastbar
+ordnen. Fachliche Datumswerte werden deshalb nicht umgedeutet. Eine minimale
+append-only Tabelle `persistence_events` erhält eine monotone
+`INTEGER PRIMARY KEY`-Sequenz sowie zwingende Operation-, Typ-, Paar-,
+Ordnungs-, CHECK- und Foreign-Key-Felder. Es entstehen keine fachlichen
+Zusatzfelder und keine allgemeine Indexmigration.
+
+Historische Observation-/Confirmation-Gleichstände werden nicht über IDs,
+alphabetische Ordnung oder zufällige Reihenfolge entschieden. Sie projizieren
+`confirmation_unknown`, bis eine neue geordnete Observation-Änderung oder
+Bestätigung eine eindeutige Sequenz erzeugt. Aktive Evidence und technische
+Frische bleiben getrennte Projektionen. Unveränderliche ältere Bericht- und
+LEG-Revisionen bleiben unverändert.
+
+Observation, Ratings, Ereignisse und Dokumentreferenzen werden in einer
+SQLite-Transaktion geschrieben. Neue Dateibytes werden zuvor unter einem
+gemeinsamen kernelgebundenen Writer-Lock kontrolliert gestaged, vollständig
+verifiziert und no-clobber publiziert. Ein versioniertes Journal bindet
+Operation-Token, Vorher-/Sollzustand, reservierte IDs und Dateievidenz.
+SQLite und Dateisystem werden ausdrücklich nicht als gemeinsam atomar
+behandelt; Recovery erkennt nur den gebundenen Vorherzustand oder den exakt
+committeten Sollzustand und blockiert alle Konflikte.
+
+Das Journal schützt gegen Crash, Partial Write und zufällige Korruption, nicht
+gegen aktive Manipulation durch denselben lokalen Benutzer. Journal- und
+Stagingbereinigung, ein zusätzlicher Ereignisindex, Verschlüsselungsaktivierung,
+Build, Pilotrollout und Release bleiben außerhalb dieser Entscheidung.
+
+Query-Gate am 26.07.2026: Die verbindliche Abfrage
+`WHERE student_id = ? ORDER BY event_sequence` verwendet ohne Sekundärindex
+erwartungsgemäß `SCAN persistence_events`. Ein synthetischer deutlich
+überdimensionierter Bestand mit 100.000 Ereignissen für einen Schüler und 500
+Kompetenzen wurde einschließlich Python-Gruppierung in 0,3171 Sekunden
+projiziert. Für den realistischen lokalen Pilotbestand ist dies kein kritischer
+Scan. Ein möglicher Index auf `(student_id, event_sequence)` bleibt deshalb ein
+separater, erneut zu prüfender Vorschlag und wird in P1-Paket 1 nicht angelegt.

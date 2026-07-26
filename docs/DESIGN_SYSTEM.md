@@ -1,5 +1,18 @@
 # Design-System
 
+## P1-Paket 1 - vorsichtige Bestätigungsdarstellung
+
+Ein historisch nicht beweisbar geordneter Bestätigungsstand verwendet keine
+positive oder warnende Ja-/Nein-Ampel. Profil, Cockpit, Bericht und LEG zeigen
+ruhig und textlich eindeutig:
+
+`Bestätigungsstand unklar – bitte erneut bestätigen`
+
+Die vorhandene Bestätigungsaktion bleibt der einzige Auflösungsweg. Der
+unklare Zustand darf nicht als `Bestätigter Stand` gezählt und nicht als
+sicher `Neuere Beobachtungen` formuliert werden. Technische Sequenzen,
+Zeitstempel, Operation-Token, Journal- oder Recoveryzustände bleiben unsichtbar.
+
 ## Sprint 0.2S.1 - Ruhiger Support-Assistent
 
 Der eigenständige Support-Assistent verwendet einen linearen Schrittfluss mit

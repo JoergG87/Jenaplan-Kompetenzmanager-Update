@@ -1,5 +1,41 @@
 # Data Registry
 
+## P1-Paket 1 - persistente Ereignisse und kontrolliertes Attachment-Staging
+
+| Datenquelle | Inhalt | Eigentümer / Regel |
+|---|---|---|
+| SQLite `persistence_events` | monotone technische Ereignisse für Observation-Create/-Edit/-Deaktivierung und Confirmation-Upsert | Append-only Core-Persistenz; keine fachliche Datumsumdeutung |
+| `.observation-staging/.writer.lock` | persistente Lockdatei für einen kernelgebundenen FD-Lock | kein Existenz-/PID-Lock; Datei wird nicht gelöscht oder übernommen |
+| `.observation-staging/<operation_token>/journal.json` | versionierter Vorher-/Sollzustand, reservierte IDs, Quellen- und Stagingidentität, Phase | außerhalb des Backupinventars; retained bis zu separat freigegebenem GC |
+| `.observation-staging/<operation_token>/files/` | exklusiv erzeugte, vollständig gehashte Stagingbytes | keine fachliche Source of Truth; Publikation per exklusivem Hardlink |
+
+```text
+persistence_events(
+  event_sequence INTEGER PRIMARY KEY,
+  operation_token TEXT NOT NULL,
+  operation_index INTEGER NOT NULL CHECK(operation_index >= 0),
+  operation_payload_hash TEXT NOT NULL,
+  event_kind TEXT NOT NULL,
+  student_id TEXT NOT NULL,
+  competency_id TEXT,
+  observation_id TEXT,
+  technical_timestamp TEXT NOT NULL,
+  ordering_state TEXT NOT NULL,
+  UNIQUE(operation_token, operation_index),
+  FOREIGN KEY(student_id) REFERENCES students(student_id),
+  FOREIGN KEY(observation_id) REFERENCES observations(observation_id)
+)
+```
+
+Die Cross-Column-Constraints erzwingen: allgemeine Create-/Update-Anker haben
+keine `competency_id`, aber eine `observation_id` und `not_applicable`;
+kompetenzbezogene Observation-Ereignisse besitzen beide Fach-IDs;
+Confirmation-Ereignisse besitzen eine Kompetenz, aber keine Observation.
+Ein Foreign Key auf `competencies` ist absichtlich ausgeschlossen, weil
+historische Observation-Snapshots auch nach Katalogentfernung auflösbar
+bleiben müssen. Außer Primärschlüssel, notwendigem UNIQUE-Constraint, CHECKs
+und Foreign Keys wird kein Index eingeführt.
+
 ## Security Sprint 12 - interne Build- und Testdaten
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
