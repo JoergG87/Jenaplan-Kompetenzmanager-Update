@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from uuid import uuid4
 
 
 OBSERVATION_CONTEXT_OPTIONS = (
@@ -175,6 +176,7 @@ class ObservationDraftViewModel:
     attachments: tuple[ObservationAttachmentDraft, ...] = ()
     observation_id: str = ""
     is_quick_observation: bool = False
+    operation_token: str = field(default_factory=lambda: uuid4().hex)
 
 
 @dataclass(frozen=True)
@@ -271,6 +273,9 @@ class StudentCompetencyStatusViewModel:
             "observed_unconfirmed": "Durch Beobachtungen dokumentiert",
             "confirmed": "Bestätigter Stand vorhanden",
             "newer_observations": "Neue Beobachtungen seit der Bestätigung",
+            "confirmation_unknown": (
+                "Bestätigungsstand unklar – bitte erneut bestätigen"
+            ),
         }.get(self.documentation_state, self.documentation_state)
 
     @property
@@ -297,6 +302,8 @@ class StudentCompetencyStatusViewModel:
     @property
     def confirmation_status_label(self) -> str:
         """Return proposal and teacher confirmation state."""
+        if self.documentation_state == "confirmation_unknown":
+            return "Bestätigungsstand unklar – bitte erneut bestätigen"
         if not self.confirmed_rating:
             return (
                 f"Vorschlag aus Beobachtungen: {self.rating} · "
@@ -312,10 +319,12 @@ class StudentCompetencyStatusViewModel:
     @property
     def confirmation_meta_label(self) -> str:
         """Return compact confirmation metadata for profile rendering."""
+        if self.documentation_state == "confirmation_unknown":
+            return "Bestätigungsstand unklar – bitte erneut bestätigen"
         if not self.confirmed_at:
             return ""
         confirmed_date = self.confirmed_at[:10]
-        if self.last_observation_date > confirmed_date:
+        if self.has_observations_newer_than_confirmation:
             return (
                 f"von Laura bestätigt am {confirmed_date} · "
                 "neuer Vorschlag aus Beobachtungen vorhanden"

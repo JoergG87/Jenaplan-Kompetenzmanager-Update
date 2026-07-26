@@ -24,6 +24,11 @@ from .database_compatibility import (
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityPolicy,
 )
+from .observation_uow import (
+    ObservationPersistenceUnitOfWork,
+    ObservationWriterLock,
+)
+from .sqlite_store import SQLiteDatabase
 
 
 BACKUP_FORMAT = "jenaplan-kompetenzmanager-backup"
@@ -574,6 +579,14 @@ class BackupService:
         self.verifier = verifier or BackupVerifier()
 
     def create_backup(self) -> BackupResult:
+        observation_uow = ObservationPersistenceUnitOfWork(
+            SQLiteDatabase(self.database_path)
+        )
+        with ObservationWriterLock(observation_uow.staging_root):
+            observation_uow.recover_pending_while_writer_locked()
+            return self._create_backup_locked()
+
+    def _create_backup_locked(self) -> BackupResult:
         created_at = _normalize_utc(self.now())
         final_path = self.target_directory / _backup_filename(created_at)
         temporary_archive: Path | None = None
@@ -1092,7 +1105,7 @@ class BackupVerifier:
         compatibility = _non_negative_int(
             value["compatibility_version"], "compatibility_version"
         )
-        if compatibility != DATABASE_COMPATIBILITY_VERSION:
+        if compatibility not in (1, DATABASE_COMPATIBILITY_VERSION):
             raise BackupFormatError("Die Datenbank-Kompatibilitaetsversion ist unbekannt.")
         return BackupDatabaseInfo(
             archive_path=DATABASE_ARCHIVE_PATH,

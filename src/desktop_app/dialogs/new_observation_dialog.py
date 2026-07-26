@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Callable
+import uuid
 
 from PySide6.QtCore import QDate, QTimer, Qt
 from PySide6.QtGui import QKeyEvent, QMouseEvent, QResizeEvent
@@ -202,6 +203,9 @@ class NewObservationDialog(MotionDialog):
         self.recent_competencies = recent_competencies
         self.prefill_subject_id = prefill_subject_id
         self.prefill_context = prefill_context
+        self.operation_token = (
+            initial_draft.operation_token if initial_draft else uuid.uuid4().hex
+        )
         self.attachment_feedback_label = QLabel("")
         self.competency_rating_entries: dict[str, object] = {}
         self.competency_rating_widgets: dict[str, ObservationRatingSelector] = {}
@@ -1043,6 +1047,7 @@ class NewObservationDialog(MotionDialog):
             attachments=tuple(self.attachment_drafts),
             observation_id=self.initial_draft.observation_id if self.initial_draft else "",
             is_quick_observation=self.quick_observation_checkbox.isChecked(),
+            operation_token=self.operation_token,
         )
 
     def _render_attachments(self) -> None:

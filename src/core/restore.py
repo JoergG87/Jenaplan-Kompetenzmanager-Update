@@ -34,11 +34,18 @@ from .database_compatibility import (
     DATABASE_COMPATIBILITY_VERSION,
     KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT,
     V1_COMPATIBILITY_FINGERPRINT,
+    V2_COMPATIBILITY_FINGERPRINT,
     DatabaseCompatibilityError,
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityPolicy,
     DatabaseCompatibilityStatus,
 )
+from .persistence_events import migrate_persistence_events
+from .observation_uow import (
+    ObservationPersistenceUnitOfWork,
+    ObservationWriterLock,
+)
+from .sqlite_store import SQLiteDatabase
 
 
 _COPY_CHUNK_SIZE = 1024 * 1024
@@ -416,6 +423,29 @@ class RestoreStagingService:
         live_documents: Path,
         restore_id: str | None = None,
     ) -> RestoreStagingResult:
+        live_database = _absolute_without_resolving(Path(live_database))
+        observation_uow = ObservationPersistenceUnitOfWork(
+            SQLiteDatabase(live_database)
+        )
+        with ObservationWriterLock(observation_uow.staging_root):
+            observation_uow.recover_pending_while_writer_locked()
+            return self._prepare_locked(
+                archive_path=archive_path,
+                runtime_root=runtime_root,
+                live_database=live_database,
+                live_documents=live_documents,
+                restore_id=restore_id,
+            )
+
+    def _prepare_locked(
+        self,
+        *,
+        archive_path: Path,
+        runtime_root: Path,
+        live_database: Path,
+        live_documents: Path,
+        restore_id: str | None = None,
+    ) -> RestoreStagingResult:
         """Build one new staging from a fully verified, byte-bound archive."""
         archive_path = Path(archive_path)
         runtime_root = _absolute_without_resolving(Path(runtime_root))
@@ -495,14 +525,23 @@ class RestoreStagingService:
                 DatabaseCompatibilityStatus.MIGRATION_REQUIRED
             )
             if migrated:
-                self._migrate_v0_to_v1(paths.prepared_database, source_rows)
+                self._migrate_v1_to_v2(paths.prepared_database, source_rows)
             else:
                 copied = self.compatibility_inspector.inspect(paths.prepared_database)
                 if copied.status is not DatabaseCompatibilityStatus.EXACT:
                     raise RestoreMigrationError(
                         "Die kopierte V1-Datenbank ist nicht mehr exakt kompatibel."
                     )
-            if _database_rows(paths.prepared_database) != source_rows:
+            prepared_rows = _database_rows(paths.prepared_database)
+            if {
+                key: value
+                for key, value in prepared_rows.items()
+                if key != "persistence_events"
+            } != {
+                key: value
+                for key, value in source_rows.items()
+                if key != "persistence_events"
+            }:
                 raise RestoreMigrationError(
                     "Die Staging-Migration hat fachliche Datenwerte veraendert."
                 )
@@ -682,7 +721,7 @@ class RestoreStagingService:
                 f"Die gebundenen Archivbytes konnten nicht extrahiert werden: {error}"
             ) from error
 
-    def _migrate_v0_to_v1(
+    def _migrate_v1_to_v2(
         self,
         database_path: Path,
         source_rows: dict[str, object],
@@ -690,15 +729,16 @@ class RestoreStagingService:
         before = self.compatibility_inspector.inspect(database_path)
         if (
             before.status is not DatabaseCompatibilityStatus.MIGRATION_REQUIRED
-            or before.version.sqlite_user_version != 0
+            or before.version.sqlite_user_version not in (0, 1)
             or before.schema_identity.fingerprint
             != KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT
         ):
             raise RestoreMigrationError(
-                "Die Staging-Datenbank ist nicht der registrierte V0-Vorgaenger."
+                "Die Staging-Datenbank ist nicht der registrierte V1-Vorgaenger."
             )
         try:
             with closing(sqlite3.connect(database_path, isolation_level=None)) as connection:
+                connection.row_factory = sqlite3.Row
                 connection.execute("PRAGMA foreign_keys = ON")
                 connection.execute("BEGIN IMMEDIATE")
                 try:
@@ -706,7 +746,10 @@ class RestoreStagingService:
                         raise RestoreMigrationError(
                             "Die V0-Datenwerte widersprechen der verifizierten Quelle."
                         )
-                    self._set_v1_user_version(connection)
+                    migrate_persistence_events(
+                        connection,
+                        target_user_version=DATABASE_COMPATIBILITY_VERSION,
+                    )
                     connection.execute("COMMIT")
                 except Exception:
                     connection.execute("ROLLBACK")
@@ -715,23 +758,18 @@ class RestoreStagingService:
             raise
         except sqlite3.Error as error:
             raise RestoreMigrationError(
-                f"Die V0-V1-Staging-Migration ist fehlgeschlagen: {error}"
+                f"Die V1-V2-Staging-Migration ist fehlgeschlagen: {error}"
             ) from error
         after = self.compatibility_inspector.inspect(database_path)
         if (
             after.status is not DatabaseCompatibilityStatus.EXACT
             or after.version.sqlite_user_version != DATABASE_COMPATIBILITY_VERSION
-            or after.schema_identity.fingerprint != V1_COMPATIBILITY_FINGERPRINT
+            or after.schema_identity.fingerprint != V2_COMPATIBILITY_FINGERPRINT
         ):
             raise RestoreMigrationError(
-                "Die migrierte Staging-Datenbank entspricht nicht exakt V1."
+                "Die migrierte Staging-Datenbank entspricht nicht exakt V2."
             )
         _verify_sqlite(database_path, RestoreMigrationError)
-
-    @staticmethod
-    def _set_v1_user_version(connection: sqlite3.Connection) -> None:
-        """Execute the sole registered migration statement as its last step."""
-        connection.execute(f"PRAGMA user_version = {DATABASE_COMPATIBILITY_VERSION}")
 
     def _materialize_managed_files(
         self,
@@ -842,7 +880,7 @@ class RestoreStagingService:
         if (
             result.status is not DatabaseCompatibilityStatus.EXACT
             or result.version.sqlite_user_version != DATABASE_COMPATIBILITY_VERSION
-            or result.schema_identity.fingerprint != V1_COMPATIBILITY_FINGERPRINT
+            or result.schema_identity.fingerprint != V2_COMPATIBILITY_FINGERPRINT
         ):
             raise RestoreCompatibilityError(
                 "Das Prepared-Staging entspricht nicht exakt dem registrierten V1."
@@ -1480,9 +1518,11 @@ def _assert_database_preserved_after_rebase(
     prepared: dict[str, object],
     document_targets: dict[str, str],
 ) -> None:
-    if set(source) != set(prepared):
+    source_tables = set(source) - {"persistence_events"}
+    prepared_tables = set(prepared) - {"persistence_events"}
+    if source_tables != prepared_tables:
         raise RestoreIntegrityError("Tabellenbestand wurde im Prepared-Staging veraendert.")
-    for table in source:
+    for table in source_tables:
         if table != "documents":
             if source[table] != prepared[table]:
                 raise RestoreIntegrityError(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 from datetime import UTC, date, datetime
@@ -16,6 +17,8 @@ from src.application.commands import (
 )
 from src.application.dispatcher import (
     ApplicationCommandDispatcher,
+    ErrorResult,
+    SuccessResult,
     observation_create_handler,
     observation_delete_handler,
     observation_update_handler,
@@ -55,8 +58,14 @@ from src.application.commands.learning_conference import (
 )
 from src.core.observation import (
     ObservationCompetencyRatingRecord,
+    ObservationRecord,
     ObservationService,
     ObservationValidator,
+)
+from src.core.observation_uow import (
+    ensure_durable_directory,
+    ObservationPersistenceUnitOfWork,
+    ObservationWriterLock,
 )
 from src.core.sqlite_store import (
     SQLITE_SPIKE_PATH,
@@ -73,6 +82,7 @@ from src.core.sqlite_store import (
     SQLiteLearningReportPdfArtifactRepository,
     SQLiteMasterDataRepository,
     SQLiteObservationRepository,
+    SQLitePersistenceEventRepository,
     SQLiteReportDraftRepository,
     SQLiteStudentCompetencyConfirmationRepository,
     SQLiteStudentRepository,
@@ -197,6 +207,7 @@ class StudentDesktopAdapter:
             Path(database.path) if database is not None else Path(database_path)
         )
         self.database = database or self._open_database()
+        ObservationPersistenceUnitOfWork(self.database).recover_pending()
 
     def list_students(
         self,
@@ -798,13 +809,36 @@ class StudentDesktopAdapter:
         )
 
     def save_observation(self, draft: ObservationDraftViewModel) -> object:
-        """Persist an observation through the application stack."""
+        """Persist observation and attachments through one recoverable unit."""
         command = self.create_observation_command(draft)
-        result = self._dispatcher().dispatch(command)
-        if getattr(result, "success", False):
-            observation = getattr(result, "value")
-            self._sync_observation_attachments(draft, observation.observation_id)
-        return result
+        try:
+            self._validate_observation_command(command)
+            timestamp = datetime.now(UTC).replace(microsecond=0).isoformat()
+            observation = ObservationRecord(
+                "",
+                command.student_id.strip(),
+                command.date.strip(),
+                command.subject_id.strip(),
+                command.context.strip(),
+                command.note,
+                True,
+                timestamp,
+                timestamp,
+                command.competency_ratings,
+            )
+            saved = ObservationPersistenceUnitOfWork(self.database).save(
+                observation=observation,
+                attachments=draft.attachments,
+                operation_token=draft.operation_token,
+                create=True,
+            )
+            return SuccessResult(command.command_name, saved)
+        except Exception as error:
+            return ErrorResult(
+                command.command_name,
+                str(error),
+                type(error).__name__,
+            )
 
     def create_update_observation_command(
         self,
@@ -823,17 +857,80 @@ class StudentDesktopAdapter:
         )
 
     def update_observation(self, draft: ObservationDraftViewModel) -> object:
-        """Update an existing observation through the application stack."""
+        """Update observation and attachments through one recoverable unit."""
         command = self.create_update_observation_command(draft)
-        result = self._dispatcher().dispatch(command)
-        if getattr(result, "success", False):
-            self._sync_observation_attachments(draft, draft.observation_id)
-        return result
+        try:
+            self._validate_observation_command(command)
+            existing = SQLiteObservationRepository(self.database).get_observation(
+                command.observation_id
+            )
+            if existing is None:
+                raise ValueError(
+                    f"observation_id nicht gefunden: {command.observation_id}"
+                )
+            candidate = ObservationRecord(
+                command.observation_id,
+                command.student_id.strip(),
+                command.date.strip(),
+                command.subject_id.strip(),
+                command.context.strip(),
+                command.note,
+                True,
+                existing.created_at,
+                existing.updated_at,
+                command.competency_ratings,
+            )
+            observation = ObservationRecord(
+                candidate.observation_id,
+                candidate.student_id,
+                candidate.date,
+                candidate.subject_id,
+                candidate.context,
+                candidate.note,
+                candidate.active,
+                candidate.created_at,
+                datetime.now(UTC).replace(microsecond=0).isoformat(),
+                candidate.competency_ratings,
+            )
+            saved = ObservationPersistenceUnitOfWork(self.database).save(
+                observation=observation,
+                attachments=draft.attachments,
+                operation_token=draft.operation_token,
+                create=False,
+            )
+            return SuccessResult(command.command_name, saved)
+        except Exception as error:
+            return ErrorResult(
+                command.command_name,
+                str(error),
+                type(error).__name__,
+            )
 
     def delete_observation(self, observation_id: str) -> object:
         """Soft-delete an observation through the application stack."""
         command = DeleteObservationCommand(observation_id=observation_id)
         return self._dispatcher().dispatch(command)
+
+    def _validate_observation_command(self, command: object) -> None:
+        ObservationValidator().validate(
+            {
+                "student_id": getattr(command, "student_id"),
+                "date": getattr(command, "date"),
+                "subject_id": getattr(command, "subject_id"),
+                "context": getattr(command, "context"),
+                "note": getattr(command, "note"),
+                "competency_ratings": getattr(command, "competency_ratings"),
+                "is_quick_observation": getattr(
+                    command,
+                    "is_quick_observation",
+                    False,
+                ),
+            },
+            (
+                student.student_id
+                for student in SQLiteStudentRepository(self.database).list_students()
+            ),
+        )
 
     def observation_draft_for_edit(
         self,
@@ -993,6 +1090,9 @@ class StudentDesktopAdapter:
                 self.database
             ).list_confirmations_for_student(student_id)
         }
+        freshness_by_competency = SQLitePersistenceEventRepository(
+            self.database
+        ).freshness_for_student(student_id)
         histories_by_competency: dict[str, list[tuple[object, str, str, str]]] = {}
         for observation in observations:
             for rating in observation.competency_ratings:
@@ -1027,6 +1127,7 @@ class StudentDesktopAdapter:
                 tuple(histories_by_competency.get(competency_id, ())),
                 competencies.get(competency_id),
                 confirmations.get(competency_id),
+                freshness_by_competency.get(competency_id),
             )
             for competency_id in competency_ids
         )
@@ -1604,6 +1705,7 @@ class StudentDesktopAdapter:
         competency_id: str,
         confirmed_rating: str,
         note: str = "",
+        operation_token: str = "",
     ) -> StudentCompetencyConfirmationRecord:
         """Persist a teacher-confirmed competency status."""
         confirmation = StudentCompetencyConfirmationRecord(
@@ -1615,36 +1717,10 @@ class StudentDesktopAdapter:
         )
         return SQLiteStudentCompetencyConfirmationRepository(
             self.database
-        ).upsert_confirmation(confirmation)
-
-    def _sync_observation_attachments(
-        self,
-        draft: ObservationDraftViewModel,
-        observation_id: str,
-    ) -> None:
-        repository = self._document_repository()
-        existing_documents = repository.list_documents_for_observation(observation_id)
-        kept_document_ids = {
-            attachment.document_id
-            for attachment in draft.attachments
-            if attachment.document_id
-        }
-        for document in existing_documents:
-            if document.document_id not in kept_document_ids:
-                repository.deactivate_document(document.document_id)
-        for attachment in draft.attachments:
-            if attachment.document_id:
-                continue
-            if not attachment.source_path:
-                continue
-            self._create_document_record(
-                student_id=draft.student_id,
-                source_path=Path(attachment.source_path),
-                document_type=attachment.document_type,
-                title=attachment.title,
-                note=attachment.note,
-                observation_id=observation_id,
-            )
+        ).upsert_confirmation(
+            confirmation,
+            operation_token=operation_token,
+        )
 
     def _create_document_record(
         self,
@@ -1663,30 +1739,53 @@ class StudentDesktopAdapter:
             document_type if document_type in DOCUMENT_TYPE_OPTIONS else "Sonstiges"
         )
         repository = self._document_repository()
-        document_id = repository.next_document_id()
-        original_filename = source_path.name
-        target_path = self._document_target_path(
-            student_id,
-            document_id,
-            original_filename,
-        )
-        target_path.parent.mkdir(parents=True, exist_ok=True)
-        if source_path.resolve() != target_path.resolve():
-            shutil.copy2(source_path, target_path)
-        timestamp = datetime.now(UTC).replace(microsecond=0).isoformat()
-        document = DocumentRecord(
-            document_id=document_id,
-            student_id=student_id,
-            observation_id=observation_id,
-            title=title.strip() or source_path.stem,
-            document_type=document_type,
-            file_path=str(target_path),
-            original_filename=original_filename,
-            created_at=timestamp,
-            note=note.strip(),
-            active=True,
-        )
-        return repository.create_document(document)
+        observation_uow = ObservationPersistenceUnitOfWork(self.database)
+        with ObservationWriterLock(observation_uow.staging_root):
+            observation_uow.recover_pending_while_writer_locked()
+            document_id = observation_uow.reserve_id_while_writer_locked("MED")
+            original_filename = source_path.name
+            target_path = self._document_target_path(
+                student_id,
+                document_id,
+                original_filename,
+            )
+            ensure_durable_directory(target_path.parent)
+            published = False
+            try:
+                if source_path.resolve() != target_path.resolve():
+                    with source_path.open("rb") as source, target_path.open("xb") as target:
+                        shutil.copyfileobj(source, target, length=1024 * 1024)
+                        target.flush()
+                        os.fsync(target.fileno())
+                    published = True
+                    directory_fd = os.open(target_path.parent, os.O_RDONLY)
+                    try:
+                        os.fsync(directory_fd)
+                    finally:
+                        os.close(directory_fd)
+                timestamp = datetime.now(UTC).replace(microsecond=0).isoformat()
+                document = DocumentRecord(
+                    document_id=document_id,
+                    student_id=student_id,
+                    observation_id=observation_id,
+                    title=title.strip() or source_path.stem,
+                    document_type=document_type,
+                    file_path=str(target_path),
+                    original_filename=original_filename,
+                    created_at=timestamp,
+                    note=note.strip(),
+                    active=True,
+                )
+                return repository.create_document(document)
+            except Exception:
+                if published and target_path.is_file() and not target_path.is_symlink():
+                    target_path.unlink()
+                    directory_fd = os.open(target_path.parent, os.O_RDONLY)
+                    try:
+                        os.fsync(directory_fd)
+                    finally:
+                        os.close(directory_fd)
+                raise
 
     def _document_target_path(
         self,
@@ -1924,6 +2023,7 @@ class StudentDesktopAdapter:
         entries_newest_first: tuple[tuple[object, str, str, str], ...],
         competency: object | None,
         confirmation: StudentCompetencyConfirmationRecord | None,
+        freshness: object | None = None,
     ) -> StudentCompetencyStatusViewModel:
         snapshot = entries_newest_first[0][0] if entries_newest_first else None
         evidence = tuple(
@@ -2003,14 +2103,15 @@ class StudentDesktopAdapter:
             observation_count = len(entries_newest_first)
         sort_order = int(getattr(competency, "sort_order", 0))
         observed_proposal = current_rating if entries_newest_first else ""
-        if confirmation is not None and entries_newest_first:
+        freshness_state = str(getattr(freshness, "state", "") or "")
+        if confirmation is not None and freshness_state == "confirmation_unknown":
+            documentation_state = "confirmation_unknown"
+        elif confirmation is not None:
             documentation_state = (
-                "newer_observations"
-                if newest_date > confirmation.confirmed_at[:10]
+                freshness_state
+                if freshness_state in {"confirmed", "newer_observations"}
                 else "confirmed"
             )
-        elif confirmation is not None:
-            documentation_state = "confirmed"
         elif entries_newest_first:
             documentation_state = "observed_unconfirmed"
         else:
@@ -2032,7 +2133,11 @@ class StudentDesktopAdapter:
             rating_history,
             observation_count,
             weighted_score,
-            confirmation.confirmed_rating if confirmation else "",
+            (
+                confirmation.confirmed_rating
+                if confirmation and documentation_state != "confirmation_unknown"
+                else ""
+            ),
             confirmation.confirmed_at if confirmation else "",
             confirmation.note if confirmation else "",
             (
@@ -2059,9 +2164,7 @@ class StudentDesktopAdapter:
             historical,
             competency is None,
             bool(
-                confirmation is not None
-                and entries_newest_first
-                and newest_date > confirmation.confirmed_at[:10]
+                documentation_state == "newer_observations"
             ),
         )
 
@@ -2279,12 +2382,16 @@ class StudentDesktopAdapter:
         self,
         competency: StudentCompetencyStatusViewModel,
     ) -> StudentReportCompetencyViewModel:
-        rating = competency.confirmed_rating or competency.rating
-        source = (
-            "von Laura bestätigt"
-            if competency.confirmed_rating
-            else "aus Beobachtungen abgeleitet"
-        )
+        if competency.documentation_state == "confirmation_unknown":
+            rating = ""
+            source = "Bestätigungsstand unklar – bitte erneut bestätigen"
+        else:
+            rating = competency.confirmed_rating or competency.rating
+            source = (
+                "von Laura bestätigt"
+                if competency.confirmed_rating
+                else "aus Beobachtungen abgeleitet"
+            )
         return StudentReportCompetencyViewModel(
             competency.competency_id,
             competency.competency_label,

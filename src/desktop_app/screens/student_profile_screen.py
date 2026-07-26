@@ -637,6 +637,10 @@ class StudentProfileScreen(QWidget):
             ("Beobachtet, noch nicht bestätigt", "observed_unconfirmed"),
             ("Bestätigter Stand", "confirmed"),
             ("Neuere Beobachtungen nach Bestätigung", "newer_observations"),
+            (
+                "Bestätigungsstand unklar",
+                "confirmation_unknown",
+            ),
         ):
             self.competency_documentation_filter.addItem(label, state)
         self.competency_reset_button = QPushButton("Filter zurücksetzen")

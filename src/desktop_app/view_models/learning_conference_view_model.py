@@ -228,8 +228,12 @@ def build_learning_conference_preparation(
                     if str(getattr(evidence, "observation_date", "")).strip()
                 ),
                 has_current_confirmation=bool(
-                    str(getattr(status, "confirmed_rating", "")).strip()
-                    or str(getattr(status, "confirmed_at", "")).strip()
+                    str(getattr(status, "documentation_state", ""))
+                    != "confirmation_unknown"
+                    and (
+                        str(getattr(status, "confirmed_rating", "")).strip()
+                        or str(getattr(status, "confirmed_at", "")).strip()
+                    )
                 ),
             )
         )
@@ -308,6 +312,7 @@ def _documentation_state_label(value: str) -> str:
         "observed_unconfirmed": "Durch Beobachtungen dokumentiert",
         "confirmed": "Bestätigter Stand vorhanden",
         "newer_observations": "Neue Beobachtungen seit der Bestätigung",
+        "confirmation_unknown": "Bestätigungsstand unklar – bitte erneut bestätigen",
     }.get(value, value)
 
 

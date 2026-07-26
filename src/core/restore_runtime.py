@@ -24,6 +24,10 @@ from .database_compatibility import (
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityStatus,
 )
+from .observation_uow import (
+    ObservationPersistenceUnitOfWork,
+    ObservationWriterLock,
+)
 from .restore import (
     RESTORE_STAGING_DIRECTORY,
     RESTORE_STATE_FILENAME,
@@ -31,6 +35,7 @@ from .restore import (
     RestoreStagingService,
     _validated_restore_id,
 )
+from .sqlite_store import SQLiteDatabase
 
 
 RESTORE_HANDOFF_VERSION = 1
@@ -602,6 +607,30 @@ class ProductiveRestoreService:
         paths, handoff = self.handoff_service.consume(handoff_path, expected_nonce=nonce)
         if lock.runtime_root != paths.runtime_root or lock._file is None:
             raise RestoreLockError("Der Worker haelt nicht den passenden Runtime-Lock.")
+        observation_uow = ObservationPersistenceUnitOfWork(
+            SQLiteDatabase(paths.live_database)
+        )
+        with ObservationWriterLock(observation_uow.staging_root):
+            observation_uow.recover_pending_while_writer_locked()
+            return self._execute_locked(
+                paths=paths,
+                handoff=handoff,
+                lock=lock,
+                restart=restart,
+                worker_started=worker_started,
+                handshake_timeout_seconds=handshake_timeout_seconds,
+            )
+
+    def _execute_locked(
+        self,
+        *,
+        paths: RestoreTransactionPaths,
+        handoff: Mapping[str, object],
+        lock: RuntimeInstanceLock,
+        restart: Callable[[RestoreTransactionPaths, str, RuntimeInstanceLock], bool] | None,
+        worker_started: Callable[[RestoreTransactionPaths], None] | None,
+        handshake_timeout_seconds: float,
+    ) -> RestoreExecutionResult:
         journal = RestoreJournal(paths)
         journal.transition(
             "worker_started",

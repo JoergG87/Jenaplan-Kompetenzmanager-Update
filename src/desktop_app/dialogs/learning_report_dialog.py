@@ -1762,8 +1762,9 @@ class LearningReportDialog(MotionDialog):
         return {
             "undocumented": "Noch nicht dokumentiert",
             "observed_unconfirmed": "Beobachtet, noch nicht bestätigt",
-            "confirmed": "Bestätigter Stand",
-            "newer_observations": "Neue Beobachtungen seit Bestätigung",
+        "confirmed": "Bestätigter Stand",
+        "newer_observations": "Neue Beobachtungen seit Bestätigung",
+        "confirmation_unknown": "Bestätigungsstand unklar – bitte erneut bestätigen",
         }.get(state, state)
 
     @staticmethod
