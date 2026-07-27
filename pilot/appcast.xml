@@ -1,8 +1,21 @@
-<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+<?xml version="1.0" standalone="yes"?>
+<!-- sparkle-sign-warning:
 IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
---><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+-->
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <title>Jenaplan-Kompetenzmanager</title>
+        <item>
+            <title>0.3.0</title>
+            <pubDate>Mon, 27 Jul 2026 23:09:08 +0200</pubDate>
+            <sparkle:minimumUpdateVersion>201</sparkle:minimumUpdateVersion>
+            <sparkle:version>303</sparkle:version>
+            <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <sparkle:releaseNotesLink sparkle:edSignature="dUM5s7wPCE0u5yLlM8g1CE64XbAV0jzxxXR5d1UQpo5MFTsvFJACgijAMdkDiYVQanhOLDFPEJ5xcHLomjroBQ==" sparkle:length="1110">https://joergg87.github.io/Jenaplan-Kompetenzmanager-Update/pilot/Jenaplan-Kompetenzmanager-0.3.0-macOS-arm64.html</sparkle:releaseNotesLink>
+            <enclosure url="https://github.com/JoergG87/Jenaplan-Kompetenzmanager-Update/releases/download/v0.3.0-build303/Jenaplan-Kompetenzmanager-0.3.0-macOS-arm64.dmg" length="58493977" type="application/octet-stream" sparkle:edSignature="R62ZewlfgchpuMpVXMLSS//iCzh+YrcaYQS7oe/8VkYbyaVM9k/NRJj12LMP3OYxqE7uyGR5PTtw2pElOsoiCg=="/>
+        </item>
         <item>
             <title>0.2.2</title>
             <pubDate>Mon, 20 Jul 2026 00:35:16 +0200</pubDate>
@@ -12,10 +25,11 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
             <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
             <sparkle:releaseNotesLink sparkle:edSignature="Qnr2GS/82XrhY6+fLqFIkQCf3Sw3vpCXfC6Rc1eARC+2TuyIDUL9iN2D6+9qrILbG3UGNs+Mzvl4DxGrZ8B9CQ==" sparkle:length="1034">https://joergg87.github.io/Jenaplan-Kompetenzmanager-Update/pilot/Jenaplan-Kompetenzmanager-0.2.2-macOS-arm64.html</sparkle:releaseNotesLink>
-            <enclosure url="https://github.com/JoergG87/Jenaplan-Kompetenzmanager-Update/releases/download/v0.2.2-pilot/Jenaplan-Kompetenzmanager-0.2.2-macOS-arm64.zip" length="53786483" type="application/octet-stream" sparkle:edSignature="2yrXtppOJ0UhTu+4SzFinqU69aa6VALFoO9+MD5MpgC6ZlH+KjpPajIMLP0eUYeSZ9+usMmkKI7ZI/jBRJVfDA=="></enclosure>
+            <enclosure url="https://github.com/JoergG87/Jenaplan-Kompetenzmanager-Update/releases/download/v0.2.2-pilot/Jenaplan-Kompetenzmanager-0.2.2-macOS-arm64.zip" length="53786483" type="application/octet-stream" sparkle:edSignature="2yrXtppOJ0UhTu+4SzFinqU69aa6VALFoO9+MD5MpgC6ZlH+KjpPajIMLP0eUYeSZ9+usMmkKI7ZI/jBRJVfDA=="/>
         </item>
     </channel>
-</rss><!-- sparkle-signatures:
-edSignature: OhsbF2rmyI8jJJ8ral81mgqegztyHBy/ktOC/HN+G20PqwqlvpKAkQ6myA5sfh9JPpUadqw8D7y6vKNbOg3KCw==
-length: 1589
+</rss>
+<!-- sparkle-signatures:
+edSignature: Xu/uPuEZCqUd7tVO1TLV27ZHzwEeGesuBv1IEvblbts6pQnnhpeKPnxHHsOIkq++rd0AcSoxkKnR+F0qb2mWCw==
+length: 2716
 -->

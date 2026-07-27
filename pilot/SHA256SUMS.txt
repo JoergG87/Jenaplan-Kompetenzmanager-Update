@@ -1,3 +1,5 @@
+b52a8b5fb2ff66c06dbb18d2720244f2199f980dcab721e519200f813cbe3028  Jenaplan-Kompetenzmanager-0.3.0-macOS-arm64.dmg
+69698e3e459863618d15dcfdb6e3e32856359d844a697d03dcbf030e9e863d28  Jenaplan-Kompetenzmanager-0.3.0-macOS-arm64.html
 cd0642336c4b67a0f8ed0744d15173831687efc6b08aa639194307040ca998ee  Jenaplan-Kompetenzmanager-0.2.2-macOS-arm64.zip
-36aebf3729ea62b3f5a354655668de45b26530e932d19e5ce95ffa446b96d5b1  appcast.xml
 e36509989fc175243efb78b86ebacf75de4ac5d6678aa45982fd0c08b491c3aa  Jenaplan-Kompetenzmanager-0.2.2-macOS-arm64.html
+62c4fe8af6ed1608be81e3d08438d941661d1db83285d81c07a474c9b4371525  appcast.xml
