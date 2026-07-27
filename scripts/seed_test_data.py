@@ -124,8 +124,9 @@ def seed_test_data(
     database_path: Path = SQLITE_SPIKE_PATH,
     *,
     reset: bool = False,
+    teacher_name: str = "Laura Lernbegleiterin",
 ) -> SeedResult:
-    """Seed the requested database with deterministic Laura-pilot test data."""
+    """Seed the requested database with deterministic, explicitly synthetic data."""
     database_path = Path(database_path)
     documents_root = database_path.parent / "documents"
     if reset:
@@ -139,7 +140,11 @@ def seed_test_data(
     observation_ids = _seed_observations(database, students)
     _seed_confirmations(database)
     document_count = _seed_documents(database, documents_root, observation_ids)
-    workflow_counts = _seed_pilot_workflows(database_path, students)
+    workflow_counts = _seed_pilot_workflows(
+        database_path,
+        students,
+        teacher_name=teacher_name,
+    )
     return SeedResult(
         database_path=database_path,
         student_count=len(students),
@@ -674,6 +679,8 @@ def _seed_documents(
 def _seed_pilot_workflows(
     database_path: Path,
     students: tuple[StudentRecord, ...],
+    *,
+    teacher_name: str,
 ) -> tuple[int, int, int, int]:
     """Add fictional report and LEG states through the productive boundaries."""
     adapter = StudentDesktopAdapter(database_path)
@@ -709,7 +716,7 @@ def _seed_pilot_workflows(
             student_id=focus_student.student_id,
             period_start=date(2025, 8, 1),
             period_end=date(2026, 1, 31),
-            teacher_name="Laura Lernbegleiterin",
+            teacher_name=teacher_name,
             overall_text=(
                 "Amelie arbeitet zunehmend selbstständig und nutzt Rückmeldungen "
                 "sichtbar für ihre nächsten Lernschritte."
@@ -742,7 +749,7 @@ def _seed_pilot_workflows(
     )
     adapter.finalize_learning_report(
         report.report_draft_id,
-        "Laura Lernbegleiterin",
+        teacher_name,
     )
     report = adapter.save_learning_report_draft(
         replace(
@@ -755,7 +762,7 @@ def _seed_pilot_workflows(
     )
     report_status = adapter.finalize_learning_report(
         report.report_draft_id,
-        "Laura Lernbegleiterin",
+        teacher_name,
     )
     adapter.generate_learning_report_pdf(
         report_status.current_revision_id
@@ -781,7 +788,7 @@ def _seed_pilot_workflows(
                 student_id=second_student.student_id,
                 period_start=date(2025, 8, 1),
                 period_end=date(2026, 1, 31),
-                teacher_name="Laura Lernbegleiterin",
+                teacher_name=teacher_name,
                 overall_text="Fiktiver, noch bearbeitbarer Berichtsentwurf.",
                 subjects=tuple(
                     LearningReportSubjectDraftViewModel(
@@ -808,7 +815,7 @@ def _seed_pilot_workflows(
             period_start=date(2025, 8, 1),
             period_end=date(2026, 1, 31),
             conference_date=date(2026, 1, 28),
-            responsible_teacher="Laura Lernbegleiterin",
+            responsible_teacher=teacher_name,
             conversation_entry_text="Ruhiger Einstieg mit einem gelungenen Lernmoment.",
             child_retrospective_text="Ich kann meinen Lernweg immer besser erklären.",
             teacher_perspective_text="Fiktive interne Vorbereitung für den Pilottest.",
@@ -858,7 +865,7 @@ def _seed_pilot_workflows(
                 period_start=date(2025, 8, 1),
                 period_end=date(2026, 1, 31),
                 conference_date=date(2026, 2, 4),
-                responsible_teacher="Laura Lernbegleiterin",
+                responsible_teacher=teacher_name,
                 conversation_entry_text="Fiktiver Gesprächseinstieg.",
                 child_retrospective_text="Das möchte ich im Gespräch ergänzen.",
                 strengths_text="Erste Stärken sind vorbereitet.",
