@@ -7,6 +7,7 @@ import json
 import os
 import sqlite3
 import stat
+import subprocess
 import sys
 from pathlib import Path
 from unittest import mock
@@ -32,6 +33,7 @@ from src.core.restore_runtime import (
     RestoreHandoffError,
     RestoreHandoffService,
     RestoreJournal,
+    RestoreJournalError,
     RestoreLockError,
     RestoreManualRecoveryRequired,
     RestorePreflightError,
@@ -52,6 +54,60 @@ from src.desktop_app.restore_worker import (
 )
 from src.desktop_app.runtime import RuntimePaths, runtime_paths
 from src.desktop_app.view_models.observation_view_model import ObservationAttachmentDraft
+
+
+class _FakeRestartProcess:
+    def __init__(
+        self,
+        *,
+        terminate_stops: bool = True,
+        kill_stops: bool = True,
+        wait_timeouts: int = 0,
+    ) -> None:
+        self.running = True
+        self.returncode: int | None = None
+        self.terminate_stops = terminate_stops
+        self.kill_stops = kill_stops
+        self.wait_timeouts = wait_timeouts
+        self.events: list[str] = []
+        self.on_poll = None
+        self.on_terminate = None
+
+    def finish(self, exit_code: int) -> None:
+        self.running = False
+        self.returncode = exit_code
+
+    def poll(self) -> int | None:
+        self.events.append("poll")
+        if self.on_poll is not None:
+            callback = self.on_poll
+            self.on_poll = None
+            callback()
+        return None if self.running else self.returncode
+
+    def terminate(self) -> None:
+        self.events.append("terminate")
+        if self.on_terminate is not None:
+            callback = self.on_terminate
+            self.on_terminate = None
+            callback()
+        if self.terminate_stops and self.running:
+            self.finish(-15)
+
+    def kill(self) -> None:
+        self.events.append("kill")
+        if self.kill_stops and self.running:
+            self.finish(-9)
+
+    def wait(self, timeout: float) -> int:
+        self.events.append(f"wait:{timeout}")
+        if self.wait_timeouts > 0:
+            self.wait_timeouts -= 1
+            raise subprocess.TimeoutExpired("restart", timeout)
+        if self.running:
+            raise AssertionError("wait called while fake restart process is still running")
+        assert self.returncode is not None
+        return self.returncode
 
 
 def _runtime(root: Path) -> RuntimePaths:
@@ -580,13 +636,17 @@ def test_packaged_restart_uses_bundle_executable_runtime_cwd_and_new_session(
     ), mock.patch.object(
         restore_runtime_module.subprocess,
         "Popen",
-    ) as popen:
-        assert restore_runtime_module._restart_application(
+    ) as popen, mock.patch.dict(
+        os.environ,
+        {"JENAPLAN_APP_DATA_DIR": str(live.root)},
+    ):
+        process = restore_runtime_module._restart_application(
             paths,
             "resume-token",
             lock,
         )
 
+    assert process is popen.return_value
     command = popen.call_args.args[0]
     assert command == [
         str(executable.resolve()),
@@ -598,8 +658,125 @@ def test_packaged_restart_uses_bundle_executable_runtime_cwd_and_new_session(
         str(lock.fileno),
     ]
     assert popen.call_args.kwargs["pass_fds"] == (lock.fileno,)
+    assert popen.call_args.kwargs["close_fds"] is True
     assert popen.call_args.kwargs["cwd"] == live.root.resolve()
     assert popen.call_args.kwargs["start_new_session"] is True
+    assert (
+        popen.call_args.kwargs["env"]["JENAPLAN_APP_DATA_DIR"]
+        == str(live.root)
+    )
+    assert (
+        popen.call_args.kwargs["env"]["PYINSTALLER_RESET_ENVIRONMENT"]
+        == "1"
+    )
+    assert popen.call_args.kwargs["stdin"] is subprocess.DEVNULL
+    assert popen.call_args.kwargs["stdout"] is subprocess.DEVNULL
+    assert popen.call_args.kwargs["stderr"] is subprocess.DEVNULL
+    lock.release()
+
+
+def test_source_restart_does_not_set_pyinstaller_reset_environment(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-SOURCE-RESTART",
+    )
+    paths = restore_transaction_paths(live.root, handoff.restore_id)
+    lock = RuntimeInstanceLock(live.root).acquire()
+
+    with mock.patch.object(
+        restore_runtime_module.sys,
+        "executable",
+        sys.executable,
+    ), mock.patch.object(
+        restore_runtime_module.sys,
+        "frozen",
+        False,
+        create=True,
+    ), mock.patch.object(
+        restore_runtime_module.subprocess,
+        "Popen",
+    ) as popen:
+        process = restore_runtime_module._restart_application(
+            paths,
+            "resume-token",
+            lock,
+        )
+
+    assert process is popen.return_value
+    assert "env" not in popen.call_args.kwargs
+    assert "stdin" not in popen.call_args.kwargs
+    assert "stdout" not in popen.call_args.kwargs
+    assert "stderr" not in popen.call_args.kwargs
+    lock.release()
+
+
+@pytest.mark.parametrize("mode", ("missing", "not_executable"))
+def test_restart_resolution_failures_return_none(
+    tmp_path: Path,
+    mode: str,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        f"RST-RESTART-{mode.upper()}",
+    )
+    executable = tmp_path / "restart-executable"
+    if mode == "not_executable":
+        executable.write_bytes(b"synthetic executable")
+        executable.chmod(0o600)
+    paths = restore_transaction_paths(live.root, handoff.restore_id)
+    lock = RuntimeInstanceLock(live.root).acquire()
+
+    with mock.patch.object(
+        restore_runtime_module.sys,
+        "executable",
+        str(executable),
+    ), mock.patch.object(
+        restore_runtime_module.subprocess,
+        "Popen",
+    ) as popen:
+        result = restore_runtime_module._restart_application(
+            paths,
+            "resume-token",
+            lock,
+        )
+
+    assert result is None
+    popen.assert_not_called()
+    lock.release()
+
+
+@pytest.mark.parametrize(
+    "error",
+    (
+        OSError("synthetic restart failure"),
+        subprocess.SubprocessError("synthetic restart failure"),
+    ),
+)
+def test_restart_popen_failures_return_none(
+    tmp_path: Path,
+    error: Exception,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-RESTART-POPEN-FAILURE",
+    )
+    paths = restore_transaction_paths(live.root, handoff.restore_id)
+    lock = RuntimeInstanceLock(live.root).acquire()
+
+    with mock.patch.object(
+        restore_runtime_module.subprocess,
+        "Popen",
+        side_effect=error,
+    ):
+        result = restore_runtime_module._restart_application(
+            paths,
+            "resume-token",
+            lock,
+        )
+
+    assert result is None
     lock.release()
 
 
@@ -746,6 +923,361 @@ def test_restart_failure_rolls_back_database_and_documents_byte_identically(tmp_
     paths = restore_transaction_paths(live.root, handoff.restore_id)
     assert RestoreJournal(paths).read()["phase"] == "rolled_back"
     assert paths.failed_new.joinpath("kompetenzmanager.sqlite").is_file()
+
+
+def test_restart_process_early_exit_is_journaled_and_rolls_back(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-RESTART-EARLY-EXIT",
+    )
+    before = _live_bytes(live)
+    restart_process = mock.Mock()
+    restart_process.poll.return_value = 17
+
+    with mock.patch.object(
+        restore_runtime_module,
+        "_restart_application",
+        return_value=restart_process,
+    ), RuntimeInstanceLock(live.root) as lock:
+        with pytest.raises(RestoreReplacementError, match="zurueckgerollt"):
+            ProductiveRestoreService().execute(
+                handoff_path=handoff.path,
+                nonce=handoff.nonce,
+                lock=lock,
+            )
+
+    assert _live_bytes(live) == before
+    paths = restore_transaction_paths(live.root, handoff.restore_id)
+    state = RestoreJournal(paths).read()
+    assert state["phase"] == "rolled_back"
+    assert state["restart_handshake"]["status"] == "process_exited_early"
+    assert state["restart_handshake"]["exit_code"] == 17
+
+
+def test_completed_between_phase_check_and_process_exit_wins_without_rollback(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-RESTART-COMPLETED-RACE",
+    )
+    restart_process = _FakeRestartProcess()
+
+    def launch(paths, token, _lock):
+        def confirm_and_exit() -> None:
+            confirm_restore_startup(
+                paths.runtime_root,
+                paths.transaction.name,
+                token,
+            )
+            restart_process.finish(0)
+
+        restart_process.on_poll = confirm_and_exit
+        return restart_process
+
+    with mock.patch.object(
+        restore_runtime_module,
+        "_restart_application",
+        side_effect=launch,
+    ), mock.patch.object(
+        restore_runtime_module,
+        "rollback_restore",
+        wraps=restore_runtime_module.rollback_restore,
+    ) as rollback, RuntimeInstanceLock(live.root) as lock:
+        result = ProductiveRestoreService().execute(
+            handoff_path=handoff.path,
+            nonce=handoff.nonce,
+            lock=lock,
+        )
+
+    assert result.status == "completed"
+    rollback.assert_not_called()
+    assert _student_ids(live.database) == ("STU-NEW001",)
+    state = RestoreJournal(
+        restore_transaction_paths(live.root, handoff.restore_id)
+    ).read()
+    assert state["phase"] == "completed"
+    assert state["restart_handshake"]["status"] == "confirmed"
+    assert restart_process.events == ["poll"]
+
+
+def test_confirmed_handshake_status_is_terminal_without_phase_regression(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-RESTART-CONFIRMED-STATUS",
+    )
+    restart_process = _FakeRestartProcess()
+
+    def launch(paths, _token, _lock):
+        def confirm_status_and_exit() -> None:
+            journal = RestoreJournal(paths)
+            state = journal.read()
+            handshake = dict(state["restart_handshake"])
+            handshake["status"] = "confirmed"
+            journal.transition(
+                "installed_verified",
+                next_step="await_startup_handshake",
+                restart_handshake=handshake,
+            )
+            restart_process.finish(0)
+
+        restart_process.on_poll = confirm_status_and_exit
+        return restart_process
+
+    with mock.patch.object(
+        restore_runtime_module,
+        "_restart_application",
+        side_effect=launch,
+    ), mock.patch.object(
+        restore_runtime_module,
+        "rollback_restore",
+        wraps=restore_runtime_module.rollback_restore,
+    ) as rollback, RuntimeInstanceLock(live.root) as lock:
+        result = ProductiveRestoreService().execute(
+            handoff_path=handoff.path,
+            nonce=handoff.nonce,
+            lock=lock,
+        )
+
+    assert result.status == "completed"
+    rollback.assert_not_called()
+    paths = restore_transaction_paths(live.root, handoff.restore_id)
+    journal = RestoreJournal(paths)
+    state = journal.read()
+    assert state["phase"] == "installed_verified"
+    assert state["restart_handshake"]["status"] == "confirmed"
+    assert recover_interrupted_restore(live.root).status == "normal_start"
+    with pytest.raises(RestoreJournalError, match="endgueltig"):
+        restore_runtime_module.rollback_restore(paths, journal)
+    assert _student_ids(live.database) == ("STU-NEW001",)
+
+
+@pytest.mark.parametrize("kill_fallback", (False, True))
+def test_timeout_reaps_restart_process_before_single_rollback(
+    tmp_path: Path,
+    kill_fallback: bool,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        f"RST-RESTART-TIMEOUT-{int(kill_fallback)}",
+    )
+    before = _live_bytes(live)
+    restart_process = _FakeRestartProcess(
+        terminate_stops=not kill_fallback,
+        wait_timeouts=1 if kill_fallback else 0,
+    )
+    original_rollback = restore_runtime_module.rollback_restore
+    rollback_observations: list[bool] = []
+
+    def rollback_after_process_end(paths, journal) -> None:
+        rollback_observations.append(not restart_process.running)
+        original_rollback(paths, journal)
+
+    with mock.patch.object(
+        restore_runtime_module,
+        "_restart_application",
+        return_value=restart_process,
+    ), mock.patch.object(
+        restore_runtime_module,
+        "rollback_restore",
+        side_effect=rollback_after_process_end,
+    ) as rollback, RuntimeInstanceLock(live.root) as lock:
+        with pytest.raises(RestoreReplacementError, match="zurueckgerollt"):
+            ProductiveRestoreService().execute(
+                handoff_path=handoff.path,
+                nonce=handoff.nonce,
+                lock=lock,
+                handshake_timeout_seconds=0,
+            )
+
+    assert rollback.call_count == 1
+    assert rollback_observations == [True]
+    assert not restart_process.running
+    assert restart_process.events.count("terminate") == 1
+    assert restart_process.events.count("wait:2.0") == (2 if kill_fallback else 1)
+    assert restart_process.events.count("kill") == (1 if kill_fallback else 0)
+    assert _live_bytes(live) == before
+    state = RestoreJournal(
+        restore_transaction_paths(live.root, handoff.restore_id)
+    ).read()
+    assert state["phase"] == "rolled_back"
+    assert state["restart_handshake"]["status"] == "process_exited_early"
+
+
+def test_confirmation_during_timeout_termination_prevents_rollback(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-RESTART-CONFIRM-DURING-TERMINATE",
+    )
+    restart_process = _FakeRestartProcess()
+
+    def launch(paths, token, _lock):
+        restart_process.on_terminate = lambda: confirm_restore_startup(
+            paths.runtime_root,
+            paths.transaction.name,
+            token,
+        )
+        return restart_process
+
+    with mock.patch.object(
+        restore_runtime_module,
+        "_restart_application",
+        side_effect=launch,
+    ), mock.patch.object(
+        restore_runtime_module,
+        "rollback_restore",
+        wraps=restore_runtime_module.rollback_restore,
+    ) as rollback, RuntimeInstanceLock(live.root) as lock:
+        result = ProductiveRestoreService().execute(
+            handoff_path=handoff.path,
+            nonce=handoff.nonce,
+            lock=lock,
+            handshake_timeout_seconds=0,
+        )
+
+    assert result.status == "completed"
+    rollback.assert_not_called()
+    assert restart_process.events.count("terminate") == 1
+    assert restart_process.events.count("wait:2.0") == 1
+    assert restart_process.events.count("kill") == 0
+    assert not restart_process.running
+    assert _student_ids(live.database) == ("STU-NEW001",)
+    state = RestoreJournal(
+        restore_transaction_paths(live.root, handoff.restore_id)
+    ).read()
+    assert state["phase"] == "completed"
+    assert state["restart_handshake"]["status"] == "confirmed"
+
+
+def test_confirmation_during_exception_poll_is_treated_as_success(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-RESTART-CONFIRM-DURING-EXCEPTION",
+    )
+    restart_process = mock.Mock()
+
+    def launch(paths, token, _lock):
+        poll_calls = 0
+
+        def fail_then_confirm() -> None:
+            nonlocal poll_calls
+            poll_calls += 1
+            if poll_calls == 1:
+                raise OSError("synthetic monitor failure")
+            confirm_restore_startup(
+                paths.runtime_root,
+                paths.transaction.name,
+                token,
+            )
+            return None
+
+        restart_process.poll.side_effect = fail_then_confirm
+        return restart_process
+
+    with mock.patch.object(
+        restore_runtime_module,
+        "_restart_application",
+        side_effect=launch,
+    ), mock.patch.object(
+        restore_runtime_module,
+        "rollback_restore",
+        wraps=restore_runtime_module.rollback_restore,
+    ) as rollback, RuntimeInstanceLock(live.root) as lock:
+        result = ProductiveRestoreService().execute(
+            handoff_path=handoff.path,
+            nonce=handoff.nonce,
+            lock=lock,
+        )
+
+    assert result.status == "completed"
+    rollback.assert_not_called()
+    assert restart_process.poll.call_count == 2
+    state = RestoreJournal(
+        restore_transaction_paths(live.root, handoff.restore_id)
+    ).read()
+    assert state["phase"] == "completed"
+    assert state["restart_handshake"]["status"] == "confirmed"
+
+
+def test_irreapable_restart_process_enters_manual_recovery_without_rollback(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-RESTART-IRREAPABLE",
+    )
+    restart_process = _FakeRestartProcess(
+        terminate_stops=False,
+        kill_stops=False,
+        wait_timeouts=2,
+    )
+
+    with mock.patch.object(
+        restore_runtime_module,
+        "_restart_application",
+        return_value=restart_process,
+    ), mock.patch.object(
+        restore_runtime_module,
+        "rollback_restore",
+        wraps=restore_runtime_module.rollback_restore,
+    ) as rollback, RuntimeInstanceLock(live.root) as lock:
+        with pytest.raises(RestoreManualRecoveryRequired, match="nicht sicher beendet"):
+            ProductiveRestoreService().execute(
+                handoff_path=handoff.path,
+                nonce=handoff.nonce,
+                lock=lock,
+                handshake_timeout_seconds=0,
+            )
+
+    rollback.assert_not_called()
+    assert restart_process.running
+    assert restart_process.events.count("terminate") == 1
+    assert restart_process.events.count("kill") == 1
+    assert restart_process.events.count("wait:2.0") == 2
+    state = RestoreJournal(
+        restore_transaction_paths(live.root, handoff.restore_id)
+    ).read()
+    assert state["phase"] == "installed_verified"
+    assert state["restart_handshake"]["status"] == "token_created"
+
+
+def test_completed_restore_rejects_direct_rollback_transition(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(
+        tmp_path,
+        "RST-RESTART-COMPLETED-GUARD",
+    )
+    with RuntimeInstanceLock(live.root) as lock:
+        ProductiveRestoreService().execute(
+            handoff_path=handoff.path,
+            nonce=handoff.nonce,
+            lock=lock,
+            restart=lambda paths, token, _lock: bool(
+                confirm_restore_startup(
+                    paths.runtime_root,
+                    paths.transaction.name,
+                    token,
+                )
+            ),
+        )
+    installed = _live_bytes(live)
+    paths = restore_transaction_paths(live.root, handoff.restore_id)
+    journal = RestoreJournal(paths)
+
+    with pytest.raises(RestoreJournalError, match="endgueltig"):
+        restore_runtime_module.rollback_restore(paths, journal)
+
+    assert _live_bytes(live) == installed
+    assert journal.read()["phase"] == "completed"
 
 
 def test_existing_wal_and_shm_are_checkpointed_journaled_and_retained(tmp_path: Path) -> None:

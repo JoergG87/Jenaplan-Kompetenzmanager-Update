@@ -429,6 +429,10 @@ class RestoreJournal:
 
     def transition(self, phase: str, *, next_step: str, **updates: object) -> dict[str, object]:
         state = self.read()
+        if _restart_is_confirmed(state) and phase != "completed":
+            raise RestoreJournalError(
+                "Ein bestaetigter Restore-Zustand ist endgueltig."
+            )
         state.update(updates)
         state["phase"] = phase
         state["next_step"] = next_step
@@ -632,6 +636,8 @@ class ProductiveRestoreService:
         handshake_timeout_seconds: float,
     ) -> RestoreExecutionResult:
         journal = RestoreJournal(paths)
+        restart_process: subprocess.Popen[bytes] | None = None
+        safety_hash: str | None = None
         journal.transition(
             "worker_started",
             next_step="await_main_app_exit",
@@ -657,17 +663,129 @@ class ProductiveRestoreService:
                 installed_documents=new_documents,
             )
             token = self._create_resume_token(paths)
-            restart = restart or _restart_application
-            if not restart(paths, token, lock):
+            if restart is None:
+                restart_process = _restart_application(paths, token, lock)
+                if restart_process is None:
+                    raise RestoreReplacementError("Der kontrollierte App-Neustart ist fehlgeschlagen.")
+            elif not restart(paths, token, lock):
                 raise RestoreReplacementError("Der kontrollierte App-Neustart ist fehlgeschlagen.")
             deadline = time.monotonic() + handshake_timeout_seconds
-            while time.monotonic() < deadline:
-                phase = str(journal.read().get("phase"))
-                if phase == "completed":
+            while True:
+                state = journal.read()
+                if _restart_is_confirmed(state):
                     return RestoreExecutionResult(paths.transaction.name, "completed", safety_hash)
+                if restart_process is not None:
+                    exit_code = restart_process.poll()
+                    if exit_code is not None:
+                        state = journal.read()
+                        if _restart_is_confirmed(state):
+                            return RestoreExecutionResult(
+                                paths.transaction.name,
+                                "completed",
+                                safety_hash,
+                            )
+                        handshake = dict(state.get("restart_handshake", {}))
+                        handshake.update(
+                            {
+                                "exit_code": exit_code,
+                                "status": "process_exited_early",
+                            }
+                        )
+                        journal.transition(
+                            str(state.get("phase")),
+                            next_step="rollback",
+                            restart_handshake=handshake,
+                        )
+                        raise RestoreReplacementError(
+                            "Der App-Neustartprozess wurde vor dem Startup-Handshake beendet."
+                        )
+                if time.monotonic() >= deadline:
+                    state = journal.read()
+                    if _restart_is_confirmed(state):
+                        return RestoreExecutionResult(
+                            paths.transaction.name,
+                            "completed",
+                            safety_hash,
+                        )
+                    if restart_process is not None:
+                        exit_code = _terminate_and_reap_restart_process(
+                            restart_process
+                        )
+                        state = journal.read()
+                        if _restart_is_confirmed(state):
+                            return RestoreExecutionResult(
+                                paths.transaction.name,
+                                "completed",
+                                safety_hash,
+                            )
+                        handshake = dict(state.get("restart_handshake", {}))
+                        handshake.update(
+                            {
+                                "exit_code": exit_code,
+                                "status": "process_exited_early",
+                            }
+                        )
+                        journal.transition(
+                            str(state.get("phase")),
+                            next_step="rollback",
+                            restart_handshake=handshake,
+                        )
+                    raise RestoreReplacementError(
+                        "Der Startup-Handshake wurde nicht rechtzeitig bestaetigt."
+                    )
                 time.sleep(0.05)
-            raise RestoreReplacementError("Der Startup-Handshake wurde nicht rechtzeitig bestaetigt.")
         except Exception as error:
+            try:
+                terminal_state = journal.read()
+            except RestoreRuntimeError:
+                terminal_state = None
+            if terminal_state is not None and _restart_is_confirmed(terminal_state):
+                if safety_hash is None:
+                    raise RestoreManualRecoveryRequired(
+                        "Der bestaetigte Restore besitzt keinen vollstaendigen Sicherheitsnachweis."
+                    ) from error
+                return RestoreExecutionResult(
+                    paths.transaction.name,
+                    "completed",
+                    safety_hash,
+                )
+            if restart_process is not None:
+                exit_code = restart_process.poll()
+                if exit_code is None:
+                    try:
+                        terminal_state = journal.read()
+                    except RestoreRuntimeError:
+                        terminal_state = None
+                    if (
+                        terminal_state is not None
+                        and _restart_is_confirmed(terminal_state)
+                    ):
+                        if safety_hash is None:
+                            raise RestoreManualRecoveryRequired(
+                                "Der bestaetigte Restore besitzt keinen vollstaendigen Sicherheitsnachweis."
+                            ) from error
+                        return RestoreExecutionResult(
+                            paths.transaction.name,
+                            "completed",
+                            safety_hash,
+                        )
+                    raise RestoreManualRecoveryRequired(
+                        "Der Neustartprozess konnte vor dem Rollback nicht sicher beendet werden."
+                    ) from error
+            try:
+                terminal_state = journal.read()
+            except RestoreRuntimeError:
+                terminal_state = None
+            if terminal_state is not None and _restart_is_confirmed(terminal_state):
+                if safety_hash is None:
+                    raise RestoreManualRecoveryRequired(
+                        "Der bestaetigte Restore besitzt keinen vollstaendigen Sicherheitsnachweis."
+                    ) from error
+                return RestoreExecutionResult(
+                    paths.transaction.name,
+                    "completed",
+                    safety_hash,
+                )
             try:
                 mutation_started = _replacement_has_mutated(paths, journal.read())
             except RestoreRuntimeError as journal_error:
@@ -902,7 +1020,7 @@ def recover_interrupted_restore(runtime_root: Path) -> RestoreRecoveryResult:
         except RestoreRuntimeError as error:
             raise RestoreManualRecoveryRequired("Ein Restore-Journal ist nicht beweisbar.") from error
         phase = str(state.get("phase"))
-        if phase not in _TERMINAL_PHASES:
+        if phase not in _TERMINAL_PHASES and not _restart_is_confirmed(state):
             candidates.append((paths, state))
     if not candidates:
         return RestoreRecoveryResult("normal_start")
@@ -1236,16 +1354,52 @@ def _copy_bound_archive(
         raise RestoreHandoffError("Die Restore-Quelle konnte nicht stabil gebunden werden.") from error
 
 
-def _restart_application(paths: RestoreTransactionPaths, token: str, lock: RuntimeInstanceLock) -> bool:
+def _restart_is_confirmed(state: Mapping[str, object]) -> bool:
+    handshake = state.get("restart_handshake")
+    return state.get("phase") == "completed" or (
+        isinstance(handshake, dict) and handshake.get("status") == "confirmed"
+    )
+
+
+def _terminate_and_reap_restart_process(
+    process: subprocess.Popen[bytes],
+    *,
+    timeout_seconds: float = 2.0,
+) -> int:
+    exit_code = process.poll()
+    if exit_code is not None:
+        return exit_code
+    try:
+        process.terminate()
+    except ProcessLookupError:
+        pass
+    try:
+        return process.wait(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        try:
+            process.kill()
+        except ProcessLookupError:
+            pass
+        return process.wait(timeout=timeout_seconds)
+
+
+def _restart_application(
+    paths: RestoreTransactionPaths,
+    token: str,
+    lock: RuntimeInstanceLock,
+) -> subprocess.Popen[bytes] | None:
     try:
         executable = Path(sys.executable).expanduser().resolve(strict=True)
     except OSError:
-        return False
+        return None
     if not executable.is_file() or not os.access(executable, os.X_OK):
-        return False
-    if getattr(sys, "frozen", False):
+        return None
+    frozen = getattr(sys, "frozen", False)
+    if frozen:
         command = [str(executable)]
         working_directory = paths.runtime_root
+        environment = dict(os.environ)
+        environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
     else:
         command = [str(executable), "-m", "src.desktop_app.main"]
         working_directory = Path(__file__).resolve().parents[2]
@@ -1255,16 +1409,27 @@ def _restart_application(paths: RestoreTransactionPaths, token: str, lock: Runti
         "--restore-lock-fd", str(lock.fileno),
     ])
     try:
-        subprocess.Popen(
+        if frozen:
+            return subprocess.Popen(
+                command,
+                pass_fds=(lock.fileno,),
+                close_fds=True,
+                cwd=working_directory,
+                start_new_session=os.name == "posix",
+                env=environment,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        return subprocess.Popen(
             command,
             pass_fds=(lock.fileno,),
             close_fds=True,
             cwd=working_directory,
             start_new_session=os.name == "posix",
         )
-        return True
     except (OSError, subprocess.SubprocessError):
-        return False
+        return None
 
 
 def _path_role(path: Path, paths: RestoreTransactionPaths) -> str:
