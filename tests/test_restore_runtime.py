@@ -14,6 +14,13 @@ from unittest import mock
 import pytest
 
 from src.core import restore_runtime as restore_runtime_module
+from src.core.observation import ObservationRecord
+from src.core.observation_uow import (
+    ObservationOperationJournal,
+    ObservationPersistenceUnitOfWork,
+    ObservationUnitOfWorkError,
+    ObservationWriterLock,
+)
 from src.application.commands.backup import BackupApplicationService, CreateBackupCommand
 from src.application.commands.restore import (
     CreateRestoreHandoffCommand,
@@ -44,6 +51,7 @@ from src.desktop_app.restore_worker import (
     resolve_restore_worker_launch,
 )
 from src.desktop_app.runtime import RuntimePaths, runtime_paths
+from src.desktop_app.view_models.observation_view_model import ObservationAttachmentDraft
 
 
 def _runtime(root: Path) -> RuntimePaths:
@@ -141,6 +149,40 @@ def _live_bytes(paths: RuntimePaths) -> tuple[bytes, tuple[tuple[str, bytes], ..
 def _student_ids(path: Path) -> tuple[str, ...]:
     with sqlite3.connect(path) as connection:
         return tuple(row[0] for row in connection.execute("SELECT student_id FROM students ORDER BY student_id"))
+
+
+def _files_published_observation(live: RuntimePaths, *, token: str) -> Path:
+    """Create genuine FILES_PUBLISHED evidence without committing its database part."""
+    source = live.root / f"{token}.txt"
+    source.write_text("restore activation boundary", encoding="utf-8")
+    observation = ObservationRecord(
+        "",
+        "STU-OLD001",
+        "2026-07-27",
+        "MAT",
+        "Restore-Grenze",
+        "Pending observation recovery",
+        True,
+        "2026-07-27T12:00:00+00:00",
+        "2026-07-27T12:00:00+00:00",
+        (),
+    )
+    unit = ObservationPersistenceUnitOfWork(SQLiteDatabase(live.database))
+    with mock.patch.object(
+        ObservationPersistenceUnitOfWork,
+        "_commit_database",
+        side_effect=RuntimeError("synthetic interruption after file publication"),
+    ):
+        with pytest.raises(RuntimeError, match="interruption"):
+            unit.save(
+                observation=observation,
+                attachments=(ObservationAttachmentDraft(str(source), "Restore-Anhang"),),
+                operation_token=token,
+                create=True,
+            )
+    journal = ObservationOperationJournal(unit.staging_root / token)
+    assert journal.read()["phase"] == "FILES_PUBLISHED"
+    return journal.path
 
 
 def test_second_app_or_worker_instance_is_rejected(tmp_path: Path) -> None:
@@ -242,6 +284,105 @@ def test_worker_started_is_persisted_before_parent_exit_or_live_mutation(
         restore_transaction_paths(live.root, handoff.restore_id)
     ).read()
     assert state["phase"] == "aborted_before_replacement"
+
+
+def test_productive_restore_recovers_files_published_observation_before_activation(
+    tmp_path: Path,
+) -> None:
+    _source, live, _archive, handoff = _prepared(tmp_path, "RST-OBSERVATION-ACTIVATION")
+    token = "a" * 32
+    journal_path = _files_published_observation(live, token=token)
+    observed: list[str] = []
+
+    def assert_recovered_before_activation(
+        _service: ProductiveRestoreService,
+        *,
+        paths,
+        **_kwargs,
+    ) -> None:
+        depths = getattr(ObservationWriterLock._thread_state, "depths", {})
+        lock_key = str((live.root / ".observation-staging" / ".writer.lock").absolute())
+        assert depths.get(lock_key) == 1
+        assert ObservationOperationJournal(journal_path.parent).read()["phase"] == "COMPLETE"
+        with sqlite3.connect(live.database) as connection:
+            assert connection.execute(
+                "SELECT observation_id, student_id, note FROM observations "
+                "WHERE observation_id = 'OBS-000001'"
+            ).fetchall() == [
+                ("OBS-000001", "STU-OLD001", "Pending observation recovery")
+            ]
+            assert connection.execute(
+                "SELECT document_id, observation_id, title FROM documents "
+                "WHERE observation_id = 'OBS-000001'"
+            ).fetchall() == [("MED-000001", "OBS-000001", "Restore-Anhang")]
+            assert connection.execute(
+                "SELECT operation_index, event_kind, observation_id FROM persistence_events "
+                "WHERE operation_token = ? ORDER BY operation_index",
+                (token,),
+            ).fetchall() == [(0, "observation_created", "OBS-000001")]
+        assert (live.documents / "STU-OLD001" / "MED-000001_" f"{token}.txt").read_text(
+            encoding="utf-8"
+        ) == "restore activation boundary"
+        observed.append(paths.restore_id if hasattr(paths, "restore_id") else paths.transaction.name)
+
+    with RuntimeInstanceLock(live.root) as lock:
+        with mock.patch.object(
+            ProductiveRestoreService,
+            "_execute_locked",
+            autospec=True,
+            side_effect=assert_recovered_before_activation,
+        ):
+            ProductiveRestoreService().execute(
+                handoff_path=handoff.path,
+                nonce=handoff.nonce,
+                lock=lock,
+            )
+
+    assert observed == [handoff.restore_id]
+    ObservationPersistenceUnitOfWork(SQLiteDatabase(live.database)).recover_pending()
+    with sqlite3.connect(live.database) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM observations WHERE observation_id = 'OBS-000001'"
+        ).fetchone()[0] == 1
+        assert connection.execute(
+            "SELECT COUNT(*) FROM documents WHERE observation_id = 'OBS-000001'"
+        ).fetchone()[0] == 1
+        assert connection.execute(
+            "SELECT COUNT(*) FROM persistence_events WHERE operation_token = ?",
+            (token,),
+        ).fetchone()[0] == 1
+
+
+@pytest.mark.parametrize("damage", ("journal", "staging"))
+def test_productive_restore_blocks_before_activation_when_pending_recovery_is_invalid(
+    tmp_path: Path,
+    damage: str,
+) -> None:
+    _source, live, _archive, handoff = _prepared(tmp_path, f"RST-OBSERVATION-{damage}")
+    token = ("b" if damage == "journal" else "c") * 32
+    journal_path = _files_published_observation(live, token=token)
+    database_before = live.database.read_bytes()
+    old_document = live.documents / "STU-OLD001" / "MED-OLD001.txt"
+    old_document_before = old_document.read_bytes()
+    if damage == "journal":
+        journal_path.write_text('{"journal_version": 1}', encoding="utf-8")
+    else:
+        state = ObservationOperationJournal(journal_path.parent).read()
+        staged = journal_path.parent / str(state["new_documents"][0]["staging_relative_path"])
+        staged.unlink()
+
+    with RuntimeInstanceLock(live.root) as lock:
+        with mock.patch.object(ProductiveRestoreService, "_execute_locked", autospec=True) as execute:
+            with pytest.raises(ObservationUnitOfWorkError):
+                ProductiveRestoreService().execute(
+                    handoff_path=handoff.path,
+                    nonce=handoff.nonce,
+                    lock=lock,
+                )
+            execute.assert_not_called()
+
+    assert live.database.read_bytes() == database_before
+    assert old_document.read_bytes() == old_document_before
 
 
 def test_real_source_worker_confirms_takeover_before_parent_exit_and_is_reaped(
