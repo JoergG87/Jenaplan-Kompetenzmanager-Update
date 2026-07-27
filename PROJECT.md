@@ -1,15 +1,16 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
-## Security Sprint 12 - interner 0.3.0-Release-Candidate
+## Releasebasis 0.3.0 / Build 302
 
-Security Sprint 12 härtet ausschließlich Build, Paketlaufzeit und technische
-Abnahme des standardmäßig inaktiven Sprint-11-Pfads. Die verbindliche
-Release-/Packaging-Matrix und die jeweils automatisiert, statisch oder real
-erhobene Evidenz stehen in `docs/SECURITY_RELEASE_0_3_0.md`.
+Build 302 ist der dokumentierte, noch nicht gebaute interne
+macOS-arm64-Releasekandidat. Die verbindliche Produktwahrheit, offene
+Artefaktnachweise und Releasegrenzen stehen in
+`docs/SECURITY_RELEASE_0_3_0.md`; die verständliche Schutzdarstellung in
+`docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
 
-`src.version` führt `0.3.0` / Build `301` als gemeinsame Quelle für Bundle,
-Über-Dialog, Updates, Dateinamen und internen Releasebericht. Der normale
-Gate-Off-Pfad bleibt Klartext-SQLite, bestehende Dokumentablage und
+`src.version` führt `0.3.0` / Build `302` als gemeinsame Quelle für Bundle,
+Über-Dialog, Buildkonfiguration und Dokumentgenerator. Der normale Gate-Off-
+Pfad bleibt lokale SQLite-Datenbank, verwaltete Klartextdokumente und
 ZIP-v1-Backup/Restore. Nur interne markergebundene Pakettests laden SQLCipher,
 PyNaCl/libsodium und den Integrationsorchestrator. Es gibt keine automatische
 Migration, keine UI-Aktivierung und keinen Zugriff auf Pilot- oder
@@ -22,14 +23,16 @@ Artefakt-, Pfad- und Klartextprüfungen vor DMG-Erzeugung aus. SQLCipher
 Community 4.12.0 bleibt ausdrücklich nur die Sprint-11-Testengine; das
 SQLCipher-4.17.0-Produktziel ist nicht freigegeben.
 
-Build `300` bleibt der technisch geprüfte, nicht verteilte Ausgangsstand.
-Build `301` enthält ausschließlich das Pilot-UX-Hardening für deutsche
-Bestätigungen, öffentliche Qt-Passwortsemantik und die verständliche
-Touch-ID-Verfügbarkeitsprojektion.
+Build 300 und Build 301 bleiben historische, nicht verteilte Ausgangsstände.
+Build 302 bündelt die dokumentierte Produktbasis einschließlich
+Performance-Batch, Kursverbundsnapshot, Ereignisordnung,
+Attachment-Unit-of-Work, Entwurfsauswahl, Restore-Worker und UX-Hardening.
+Ein App-, DMG- oder Prüfsummennachweis existiert für Build 302 noch nicht.
 
 Windows, Developer ID, Notarisierung, physische Touch ID, vollständiger
 Power-Loss-Nachweis, Produktmigration, Pilotaktivierung, Stable-Appcast und
-öffentlicher Release bleiben getrennte Gates.
+öffentlicher Release bleiben getrennte Gates. Dieser Dokumentationsstand führt
+keinen Build, Push, Tag, Appcast oder Rollout aus.
 
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 
@@ -339,7 +342,7 @@ Hardened Runtime, Notarisierung/Stapling, signierter HTTPS-Appcast, externer
 privater EdDSA-Schlüssel und der reale Schlüsselbund-/Touch-ID-Übergang von der
 ad-hoc-signierten Pilotbasis nachgewiesen sind. Details regelt ADR-073.
 
-## Produktiver Supportbetrieb ab Sprint 0.2B.6
+## Historischer Ursprung des produktiven Supportbetriebs (Sprint 0.2B.6)
 
 Der vorhandene App- und Security-Vertrag bleibt unverändert. Neu ist ein
 vollständig getrenntes macOS-arm64-Supportpaket mit Finder-Startern für
@@ -350,12 +353,13 @@ Repositorys verschlüsselt als PKCS#8 mit restriktiven Rechten erzeugt.
 
 Die produktive Public-Key-Registry besitzt einen strikt versionierten,
 deterministisch validierten Einbindungsweg für mehrere aktive, rotierende,
-retirierte und widerrufene öffentliche Schlüssel. Version `0.2.2` aktiviert
-nach ausdrücklicher Fingerprintbestätigung ausschließlich den öffentlichen
-Schlüssel `support-2026-b`; privater Schlüssel und Passphrase bleiben extern.
-Rotation und Widerruf erfordern weiterhin einen neuen geprüften App-Release.
+retirierte und widerrufene öffentliche Schlüssel. Die erstmalige Aktivierung
+von `support-2026-b` geschah historisch mit 0.2.2; der dokumentierte
+0.3.0-Stand führt diesen lokalen Support-Reset weiter. Privater Schlüssel und
+Passphrase bleiben extern. Rotation und Widerruf erfordern weiterhin einen
+neuen geprüften App-Release.
 
-## Pilot-Release-Kandidat 0.2.0
+## Historischer Pilot-Release-Kandidat 0.2.0
 
 Version `0.2.0` fasst den implementierten lokalen Security-, Betriebs- und
 Onboardingstand als technisch prüfbaren Pilot-Release-Kandidaten zusammen. Die
@@ -374,7 +378,7 @@ vollständige Aktivierungs-/Widerrufsreise. Developer-ID-Signierung,
 Apple-Notarisierung sowie die reale Keychain-/Touch-ID-Prüfung nach dem Update
 auf Lauras Mac bleiben ebenfalls offen.
 
-## Support-Reset-Ablauf ab Version 0.2B.5
+## Historischer Support-Reset-Ablauf ab Version 0.2B.5
 
 Wenn Passwort und Recovery-Codes nicht mehr verfügbar sind, kann die App eine
 rein technische Reset-Anfrage erzeugen. Sie wird nicht automatisch übertragen
@@ -491,14 +495,21 @@ Der Jenaplan-Kompetenzmanager ist eine lokale Python-/PySide6-Desktop-Anwendung 
 
 Der implementierte Stand nach Sprint 10B und den anschliessenden Schuelerprofil-UX-Korrekturen umfasst die zentralen Arbeitsbereiche fuer Stammdaten, Unterrichtsalltag, Beobachtung, Kompetenzdokumentation, Schuelerprofil, Lernentwicklungsbericht und Lernentwicklungsgespraech. Unveraenderliche Bericht- und LEG-Revisionen sowie daraus erzeugte PDF-Artefakte sind produktiv umgesetzt.
 
-Das Projekt befindet sich in der **Produktreifephase**. Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit, Dokumentationsqualitaet, Betriebsentscheidungen und Release-Vorbereitung. Lauras installierte Ausgangsversion ist `0.2.1`; `0.2.2` / Build `202` ist das erste beaufsichtigte Sparkle-Pilotupdate. Daraus folgt noch keine allgemeine Produktrelease-, reale Pilotabnahme- oder App-Store-Entscheidung.
+Das Projekt befindet sich in der **Produktreifephase**. Der dokumentierte
+Stand ist Version `0.3.0` / Build `302` mit lokaler Anmeldung, Keychain,
+optionalem Touch ID, Sperre, Support-Reset, ZIP-v1-Backup/Restore,
+Restore-Worker, Bericht-/LEG-Entwurfsauswahl, Revisionen und PDF-Ausgaben.
+Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit,
+Dokumentationsqualität, Betriebsentscheidungen und Release-Vorbereitung. Ein
+Buildartefakt, eine reale Pilotabnahme oder App-Store-Entscheidung folgt daraus
+nicht.
 
 Excel/VBA ist eine historische Vorstufe. Die damalige Workbook-Linie wird unter `legacy/excel/` als Referenz erhalten, ist aber weder Zielplattform noch aktiver Produktpfad. Historische Workbook-Versionen wie `v0.4` und fruehere Ausgabedateien sind keine aktuellen Hauptartefakte.
 
-## Nächste Phase nach Version 0.2
+## Nächste Phase nach Version 0.3.0
 
 Die unmittelbar nächste Phase ist der beaufsichtigte Pilottest des
-Release-Kandidaten 0.2 und die Behebung ausschließlich tatsächlich beobachteter
+Release-Kandidaten 0.3.0 und die Behebung ausschließlich tatsächlich beobachteter
 pilotkritischer Fehler. Pilottestpunkte sind Validierungen und noch keine
 automatisch beschlossenen Funktionsänderungen.
 
@@ -603,7 +614,10 @@ signiertes oder ad-hoc signiertes App-Bundle
 -> SQLite, Dokumente, Exporte, Backups und Logs ausserhalb der App
 ```
 
-Der Apple-Silicon-Pilotbuild wird reproduzierbar mit PyInstaller erzeugt und setzt macOS 13 voraus. Die Standardvariante enthaelt keine Schuelerdaten. Laura beginnt mit der manuell installierten Version `0.2.1`; `0.2.2` wird als erstes beaufsichtigtes Folgeupdate über den festen Sparkle-Pilotkanal installiert. Stable bleibt deaktiviert.
+Ein späterer Apple-Silicon-Build wird reproduzierbar mit PyInstaller erzeugt
+und setzt macOS 13 voraus. Die Übergabevariante enthält keine Schülerdaten.
+Version 0.3.0 / Build 302 ist noch nicht gebaut; Stable bleibt deaktiviert und
+eine Update-/Appcast-Aktivierung ist kein Bestandteil der Dokumentationsbasis.
 
 ### Architekturprinzipien
 

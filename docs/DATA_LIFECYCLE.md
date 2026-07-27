@@ -155,7 +155,7 @@ Die Pakettestbefehle sind keine Startup-, UI-, Produktmigrations- oder
 Recoveryfunktion. Sie dürfen weder normale App-Daten noch Pilotbestände
 adressieren und erzeugen keine produktive Schlüsselablage.
 
-## Pilot UX-Hardening 0.3.0 / Build 301
+## Releasebasis 0.3.0 / Build 302
 
 Bestätigungsdialoge und Passwort-Eingabehinweise verarbeiten ausschließlich
 flüchtigen Widgetzustand. Touch-ID-Verfügbarkeit liest weiterhin nur die
@@ -731,7 +731,7 @@ ungespeicherte Arbeitsstände verschieben Installation und Relaunch. Ein Fehler
 vor dem atomaren Austausch lässt App und Runtime unverändert; ein Fehler beim
 nächsten Start darf keine stille Datenreparatur auslösen.
 
-Version `0.2.2` bleibt fach- und security-schemaidentisch zu `0.2.1`. Der
+Historisch blieb Version `0.2.2` fach- und security-schemaidentisch zu `0.2.1`. Der
 Security Store besitzt seinen bestehenden kontrollierten Migrationsvertrag;
 für die fachliche SQLite existiert noch kein allgemeiner Update-Migrations- und
 Rollbackvertrag. Ein späteres schemaänderndes Update benötigt deshalb vorab

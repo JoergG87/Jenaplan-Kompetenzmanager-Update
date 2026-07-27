@@ -17,10 +17,10 @@ atomare Transaktion; ein versioniertes Journal und ein kernelgebundener
 Writer-Lock besitzen Retry und Recovery. Widgets besitzen weder Ereignis-,
 Repository-, Staging- noch Recoverylogik.
 
-## Entwicklungsgrenze Pilot UX-Hardening 0.3.0 / Build 301
+## Entwicklungsgrenze Releasebasis 0.3.0 / Build 302
 
-Der technisch geprüfte und nicht verteilte Build `300` ist die Basis für
-Build `301`. Zulässig sind ausschließlich deutsche produktinterne
+Die technisch geprüften und nicht verteilten Builds 300 und 301 sind historische
+Ausgangsstände für Build 302. Zulässig sind ausschließlich deutsche produktinterne
 Bestätigungsaktionen, öffentliche Qt-Sicherheitssemantik für bestehende
 Passwortfelder, verständliche Touch-ID-Verfügbarkeitsprojektionen, fokussierte
 Tests und die konsistente Buildanhebung. Passwortregeln, Recovery,
@@ -36,7 +36,8 @@ geeigneter Hardware als bestätigt.
 Gate-Off bleibt der normale SQLite-, Dokument- und ZIP-v1-Pfad. Produkt-
 migration, Verschlüsselungsaktivierung, Backupformat, Restorearchitektur,
 Windows, Appcast, Pilotinstallation, Übergabe und Release bleiben
-ausgeschlossen.
+ausgeschlossen. Der Dokumentationsstand darf kein App- oder DMG-Artefakt
+behaupten.
 
 ## Entwicklungsgrenze Security Sprint 12
 
@@ -423,7 +424,7 @@ Das lokale technische Audit enthält nur Zeitpunkt, Request-ID, Key-ID und
 Aktion; niemals Token, Passphrase, privaten Schlüssel, Nonce, fachliche Daten
 oder lokale Quellpfade.
 
-## Release-Grenze Version 0.2.2
+## Historische Release-Grenze Version 0.2.2
 
 Der technisch umgesetzte Stand darf als leerer macOS-arm64-Pilot-
 Release-Kandidat `0.2.2` gebaut und ausschließlich als beaufsichtigtes

@@ -20,9 +20,9 @@ Alle Phasen bleiben den pädagogischen Leitlinien untergeordnet:
 - Es gibt keine automatische Benotung oder automatische Leistungsbewertung.
 - Datenhaltung bleibt lokal, nachvollziehbar und verantwortbar.
 
-## Phase 0 - Produktgrundlage bis Version 0.2 abgeschlossen
+## Phase 0 - Produktgrundlage bis Version 0.3.0 abgeschlossen
 
-Der Pilot-Release-Kandidat 0.2 umfasst die lokale PySide6-/SQLite-Anwendung mit
+Der interne Releasekandidat 0.3.0 umfasst die lokale PySide6-/SQLite-Anwendung mit
 Lehrplankatalog, Einzel- und Schnellbeobachtung für ein Kind, Schülerprofilen,
 Kompetenz- und Dokumentationsprojektionen, Lernentwicklungsberichten,
 Lernentwicklungsgesprächen, unveränderlichen Revisionen und finalen
@@ -34,7 +34,7 @@ macOS-Keychain/Touch ID, gespeicherter Geräteanmeldung, Support-Reset-Workflow,
 Diese Funktionen werden nicht mehr als Zukunftsarbeit geführt. Reale
 Hardware-, Alltags- und Ergonomieprüfung bleibt Teil der nächsten Phase.
 
-## Phase 1 - Pilottest 0.2 und Stabilisierung
+## Phase 1 - interner Pilotstand 0.3.0 und Stabilisierung
 
 Zuerst wird der implementierte Stand unter realen Pilotbedingungen validiert.
 Priorität P0 haben ausschließlich Datenverlust, fehlerhafte Speicherung,
@@ -44,12 +44,11 @@ abgeschnittene Kernaktionen.
 Pilottestwünsche und Komfortideen werden getrennt erfasst. Sie werden nicht
 allein durch ihre Nennung zu beschlossenen Produktänderungen.
 
-Der sichere macOS-Updatepfad ist durch Sprint 0.2U.1/ADR-073 architektonisch
-entschieden. `0.2.0` bleibt unverändert und wird
-Laura nicht installiert. Sie beginnt direkt mit der manuell installierten,
-ad-hoc-signierten `0.2.1` als erster updaterfähiger Basis; `0.2.2` / Build `202`
-ist das erste bewusst angestoßene Sparkle-Pilotupdate. Der spätere Stable-Kanal
-bleibt getrennt und deaktiviert.
+Build 302 ist als ad-hoc-signierter, nicht notarisiert erwarteter
+macOS-arm64-Stand dokumentiert, aber noch nicht gebaut oder übergeben. Es gibt
+keine Windows-Freigabe, keinen öffentlichen Stable-Release und keinen aktiven
+Stable-Appcast. Die historischen 0.2.x-Pilot- und Updatebelege bleiben in den
+Archivabschnitten erhalten und sind keine Freigabe für 0.3.0.
 
 ## Phase 2 - Alltagsdaten effizient einrichten
 
@@ -96,16 +95,15 @@ Analyseflächen benötigen eine eigene Produktentscheidung.
 
 ## Phase 5 - Professioneller Betrieb und Verteilung
 
-Der produktive Support-Reset-Schlüssel und der beaufsichtigte Sparkle-Pilotpfad
-sind mit `0.2.2` umgesetzt. Planungskandidaten bleiben Developer-ID-Signierung
-und Apple-Notarisierung, Stable-Inbetriebnahme, ein erst vor Schemaänderungen zu
-entscheidender Migrationsprozess, Diagnosepaket, Backup-Erinnerung, geregelter
-Gerätewechsel sowie eine spätere Windows-Version mit plattformeigener
-Credential-Anbindung.
+Der produktive Support-Reset ist als lokaler Ausnahmeweg umgesetzt.
+Planungskandidaten bleiben Developer-ID-Signierung und Apple-Notarisierung,
+Stable-Inbetriebnahme, ein erst vor Schemaänderungen zu entscheidender
+Migrationsprozess, Diagnosepaket, Backup-Erinnerung, geregelter Gerätewechsel
+sowie eine spätere Windows-Version mit plattformeigener Credential-Anbindung.
 
-Diese Punkte werden getrennt priorisiert. Der bestehende manuelle App-Austausch
-und das bestehende Backup/Restore bleiben bis zum vollständigen Bestehen der
-Updater-Release-Gates der verbindliche Pilotpfad.
+Diese Punkte werden getrennt priorisiert. Der manuelle DMG-Pfad und das lokale
+Backup/Restore bleiben bis zum vollständigen Bestehen der Update-Release-Gates
+der verbindliche Pilotpfad.
 
 ## Langfristige strategische Optionen
 

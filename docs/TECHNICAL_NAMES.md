@@ -23,7 +23,7 @@ Schutz gegen einen aktiven Manipulator mit denselben lokalen Benutzerrechten.
 `MED-######` und `OBS-######` bleiben unverändert; alle nicht abschließend
 aufgelösten Journalreservierungen blockieren eine Wiedervergabe.
 
-## Pilot UX-Hardening 0.3.0 / Build 301
+## Releasebasis 0.3.0 / Build 302
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|

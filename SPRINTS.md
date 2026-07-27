@@ -1,9 +1,11 @@
 # Sprintplanung
 
-## Pilot UX-Hardening 0.3.0 / Build 301
+## Releasebasis 0.3.0 / Build 302
 
-**Status:** Implementierung und technische Abnahme in Arbeit; keine Pilot-,
-Appcast-, Push-, Übergabe- oder Releasefreigabe.
+**Status:** Dokumentation, Handbuch, Screenshots und zentrale Version sind
+vorbereitet. Der Clean-Build und die reale Paket-/Hardwareabnahme sind bewusst
+nicht Teil dieses Standes; keine Pilot-, Appcast-, Push-, Übergabe- oder
+Releasefreigabe.
 
 - [x] Qt-Standardbestätigungen read-only inventarisieren und auf explizite
   deutsche Aktionen mit sicherer Standard-/Escape-Aktion umstellen.
@@ -11,8 +13,11 @@ Appcast-, Push-, Übergabe- oder Releasefreigabe.
   Accessibility-Semantik härten; native macOS-Autofill-Grenze dokumentieren.
 - [x] Touch-ID-Voraussetzungen verständlich sichtbar machen und
   Passwort-Fallback sowie explizite Credential-Anlage erhalten.
-- [x] Version `0.3.0` / Build `301` zentralisieren.
-- [ ] Gesamtsuite, Backup-/Restore-Regression und technische Gates abschließen.
+- [x] Version `0.3.0` / Build `302` zentralisieren.
+- [x] Alle bestätigten Audit-P1 vor der Releasebasis schließen.
+- [x] Handbuch und Sicherheitsgrenzen für Build 302 konsolidieren.
+- [x] Letzte referenzierte Gesamtsuite dokumentieren: 1.603 Tests und 67
+  Subtests bestanden, Exitcode 0.
 - [ ] Clean-Worktree-Build und reale Paket-/Hardwareabnahme durchführen.
 
 ## Restore-Handoff-P1 - paketierte Worker-Uebernahme
@@ -31,7 +36,7 @@ Appcast- oder Releasefreigabe.
 - [ ] Clean-Build und zweimaligen realen DMG-Restore ohne Restfenster,
   Zombieprozess oder Datenabweichung bestaetigen.
 
-## Security Sprint 12 - Release-Hardening und Packaging-Abnahme
+## Historischer Security Sprint 12 - Release-Hardening und Packaging-Abnahme
 
 **Status:** Technische Abnahme mit GO ausschließlich für den internen
 macOS-arm64-Security-RC abgeschlossen; kein Commit, keine Veröffentlichung und

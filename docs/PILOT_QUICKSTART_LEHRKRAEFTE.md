@@ -1,43 +1,33 @@
 # Schnellstart für Lehrkräfte
 
-## In zehn Schritten starten
-
-Pilotversion {{PILOT_VERSION}}
+Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 1. DMG öffnen, die App nach `Programme` ziehen und von dort starten.
-2. Beim ersten Start das lokale Konto mit einem Passwort anlegen.
-3. Die einmalig angezeigten Recovery-Codes sicher aufbewahren.
-4. Mit dem lokalen Passwort anmelden.
-5. Auf Wunsch unter `Einstellungen > Sicherheit` die gespeicherte Anmeldung und
-   auf einem unterstützten Mac Touch ID aktivieren. Das Passwort bleibt Fallback.
-6. Die geführten `Ersten Schritte` durchführen oder bewusst überspringen.
-7. Zuerst die leere Anwendung prüfen. Danach im letzten Pilot-Schritt der
-   `Ersten Schritte` bewusst den vorhandenen Restore-Weg öffnen.
-8. `Laura-Testdaten-0.2.1.jkmbackup` selbst auswählen, Vorschau
-   prüfen und Wiederherstellung bestätigen.
-9. Fächer, Stundenplan, Stammgruppen, Kurse und Kinder prüfen und anschließend
-   die erste Beobachtung erfassen.
-10. Unter `Einstellungen > Datensicherung` ein Backup erstellen und prüfen.
+2. Beim ersten Start Passwort festlegen, bestätigen und Recovery-Codes sicher
+   aufbewahren.
+3. Mit Passwort anmelden; gespeicherte Anmeldung oder Touch ID nur optional
+   aktivieren. Das Passwort bleibt verfügbar.
+4. Unter `Stammdaten` Stammgruppen, Kurse und bei Bedarf Kursverbünde pflegen.
+5. Schüler anlegen oder ein Schülerprofil öffnen.
+6. Dashboard und Stundenplan für den Unterrichtstag prüfen.
+7. Beobachtung erfassen, Kontext und Kompetenzen prüfen und bewusst speichern.
+8. Kompetenz-Cockpit und Bestätigungsstände im Schülerprofil nutzen.
+9. Für Bericht oder LEG vorhandenen Entwurf öffnen oder bewusst einen neuen
+   eigenständigen Entwurf beginnen. Abbrechen erzeugt keine Daten.
+10. Unter `Einstellungen > Datensicherung` ein geprüftes lokales Backup
+    erstellen.
 
-Hilfe zur Installation, Recovery und Wiederherstellung steht im
-Benutzerhandbuch. `Erste Schritte` kann in `Einstellungen` erneut geöffnet
-werden.
+## Wichtige Grenzen
 
-Primäraktionen sind einheitlich hervorgehoben. Beobachtung, Bericht und LEG
-haben unterscheidbare Arbeitsbereichskontexte; wählen Sie Aktionen dennoch
-immer nach ihrer Beschriftung, nicht allein nach der Farbe.
+- Die App arbeitet lokal, ohne Cloud und ohne KI.
+- Die App-Sperre ersetzt keine Fachdatenverschlüsselung.
+- Backup und Restore verwenden im Produktpfad ZIP-v1; Restore wird erst nach
+  Vorschau und ausdrücklicher Bestätigung über einen separaten Worker gestartet.
+- Finale oder frei exportierte PDFs liegen außerhalb der App als Dateien vor
+  und müssen sicher weitergegeben werden.
+- Der interne macOS-Build ist ad-hoc signiert und nicht notarisiert. Es gibt
+  keine Windows-Freigabe, keinen Stable-Appcast und keine automatische
+  Updateinstallation.
 
-<!-- pagebreak -->
-
-## Wichtige Pilotgrenzen
-
-- Die App speichert lokal und überträgt keine Daten automatisch in eine Cloud.
-- Die automatische Sperre bleibt auch bei gespeicherter Anmeldung aktiv.
-- Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
-  FileVault wird empfohlen.
-- Der produktive Support-Reset ist ab Version `0.2.2` als betreuter Ausnahmeweg
-  nach Kontakt mit dem Support freigeschaltet.
-- Pilotupdates werden nur unter `Einstellungen > Updates` bewusst gestartet;
-  es gibt keine unbeaufsichtigte Prüfung oder Installation.
-- Der Release-Kandidat ist ad hoc signiert und nicht notarisiert. Reale
-  Sleep/Wake- und Touch-ID-Abnahmen bleiben offen.
+Weitere Hinweise stehen im Benutzerhandbuch und in
+`SICHERHEIT_UND_VERSCHLUESSELUNG.md`.

@@ -6,6 +6,19 @@ SQLite ist die lokale produktive Datenbasis. Excel-/VBA-Artefakte aus der fruehe
 
 Die vollständige Projektdokumentation befindet sich in `PROJECT.md`. Dauerhafte Architekturentscheidungen befinden sich in `DECISIONS.md`.
 
+## Aktueller Dokumentstand
+
+Der dokumentierte interne Releasekandidat ist Version `0.3.0` / Build `302` für
+macOS auf Apple Silicon. Ein Clean-Build, DMG, Prüfsummenmanifest, Push, Tag,
+Appcast, Pilotübergabe und öffentlicher Release sind damit **nicht** behauptet
+oder ausgelöst. Der normale Produktpfad ist lokal, ohne Cloud und ohne
+KI-Funktion; die Verschlüsselungsintegration bleibt standardmäßig deaktiviert.
+
+Für die Bedienung gelten das
+`docs/user_manual/USER_MANUAL_SOURCE.md` und das daraus erzeugte
+`docs/user_manual/Jenaplan-Kompetenzmanager-0.3.0-Build-302-Benutzerhandbuch.pdf`.
+Die Schutzgrenzen beschreibt `docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
+
 ## Projektziel
 
 Ziel des Projekts ist der Aufbau einer modernen, ruhigen und wartbaren Desktop-App fuer paedagogische Kompetenzdokumentation.
@@ -72,12 +85,12 @@ pip install -r requirements.txt
 
 ## PySide-App starten
 
-### Installiertes macOS-Pilotpaket
+### Installiertes macOS-Paket
 
-Der eigenständige Apple-Silicon-Pilotbuild wird als
+Ein späterer eigenständiger Apple-Silicon-Build wird als
 `Jenaplan-Kompetenzmanager.app` und Drag-and-drop-DMG erzeugt. Er benötigt auf
 dem Ziel-Mac weder Python noch Terminal, Repository oder Entwicklungsumgebung.
-Installation, Gatekeeper, Datenpfad und Update sind in
+Installation, Gatekeeper und Datenpfad sind in
 `docs/PILOT_INSTALLATION_MACOS.md` beschrieben; das technische Backup in
 `docs/PILOT_BACKUP.md`. Die kurze Lehrkraftanleitung liegt unter
 `docs/PILOT_INSTALLATION_LEHRKRAFT.md`, das Benutzerhandbuch unter
@@ -91,7 +104,7 @@ scripts/build_macos_pilot.sh --data-mode laura
 ```
 
 `empty` erzeugt die leere technische Smoke-Test-Variante mit eigenem Dateinamen.
-`laura` erzeugt die Lehrkraft-Pilotübergabe mit 24 ausdrücklich fiktiven Kindern,
+`laura` erzeugt eine ausschließlich synthetische Fachtestvariante mit 24 fiktiven Kindern,
 Stammdaten, Stundenplan, Beobachtungen, Bericht-/LEG-Drafts, Revisionen und
 finalen Beispiel-PDFs. Der Build schreibt seine Variante in
 `pilot_build_info.json` im App-Bundle und übernimmt niemals
@@ -108,6 +121,7 @@ Die App verwendet im installierten Betrieb ausschließlich:
 ```
 
 Der Entwicklerstart verwendet weiterhin den bisherigen Projektpfad unter `data/`.
+Er ist kein Installationsweg für Lehrkräfte oder technische Betreuung.
 
 ### Entwicklerstart
 
@@ -142,9 +156,10 @@ QT_QPA_PLATFORM=offscreen python3 -c 'from src.desktop_app.main import main; pri
 
 Der alte Excel-Workbook-Build ist archiviert und kein Pflichtcheck mehr. `python3 build.py` gehoert nur noch zu ausdruecklichen Legacy-/Exportauftraegen innerhalb von `legacy/excel/`.
 
-## Testdaten fuer Laura-Pilottest
+## Synthetische Testdaten für Entwicklung und Dokumentation
 
-Die aktuelle lokale SQLite-Datenbank kann fuer den Laura-Pilottest mit kuenstlichen Testdaten befuellt werden:
+Eine ausdrücklich lokale Entwicklungsdatenbank kann mit künstlichen Testdaten
+befüllt werden:
 
 ```bash
 python3 scripts/seed_test_data.py
@@ -160,7 +175,12 @@ python3 scripts/seed_test_data.py --reset
 
 `--reset` loescht die lokale Testdatenbank und die Demo-Dateien unter `data/documents/` kontrolliert neu. Es werden nur kuenstliche Namen und harmlose Platzhalterdateien erzeugt.
 
-Die Testdaten bilden einen rund achtmonatigen Nutzungsstand von September bis Juli ab. Sie enthalten 24 kuenstliche Kinder in vier Stammgruppen, drei Kurse, drei Kursverbuende, 25 Unterrichtsstunden einer vollstaendigen Woche und Kompetenzdokumentationen in allen aktiven Katalogfaechern. Unterschiedliche Dokumentationsdichten, aktuelle und aeltere Beobachtungen, eindeutige Schnellbeobachtungen, ein Soft Delete, bestaetigte Kompetenzstaende und Demo-Dokumente ermoeglichen realistische Leer-, Priorisierungs-, Profil- und Berichtstests.
+Die Testdaten bilden einen rund achtmonatigen Nutzungsstand von September bis
+Juli ab. Sie enthalten 24 künstliche Kinder in vier Stammgruppen, drei Kurse,
+drei Kursverbünde, 25 Unterrichtsstunden einer vollständigen Woche und
+Kompetenzdokumentationen in allen aktiven Katalogfächern. Sie dürfen niemals
+gegen einen vorhandenen fachlichen Bestand oder für eine Übergabe an Lehrkräfte
+verwendet werden.
 
 Pilottest-Checkliste:
 

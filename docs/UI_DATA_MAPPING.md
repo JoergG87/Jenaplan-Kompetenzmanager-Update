@@ -15,7 +15,7 @@ Beobachtungsdaten sortieren, aber niemals die Bestätigungsfrische ableiten.
 Journalphasen, Hashes, Pfade, Inodes und Recoverydetails werden nicht sichtbar
 projiziert.
 
-## Pilot UX-Hardening 0.3.0 / Build 301
+## Releasebasis 0.3.0 / Build 302
 
 | UI-Feld/Aktion | Quelle | Persistenz | Regel |
 |---|---|---|---|

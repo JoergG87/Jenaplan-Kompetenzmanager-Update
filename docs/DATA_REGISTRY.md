@@ -42,7 +42,7 @@ und Foreign Keys wird kein Index eingeführt.
 |---|---|---|---|
 | `requirements-macos-build.txt` | exakt gepinnte macOS-Buildabhängigkeiten einschließlich PyNaCl 1.6.2 und sqlcipher3 0.6.2 | Repository; keine Schlüssel oder Nutzerdaten | Build-Source-of-Truth |
 | interner Gate-Off-Buildroot | Venv, PyInstaller-Zwischenstand, Frameworks und generierte Dokumente | ausschließlich freigegebener Build- oder System-Temporärroot; kein Nutzerroot | verwerfbares Buildartefakt |
-| internes 0.3.0-App-Bundle | arm64-Code, Ressourcen, öffentliche Updatekonfiguration und Lizenztexte | internes Testartefakt; keine Datenbanken, Backups, Container, Schlüssel oder Exceldateien | nicht veröffentlicht |
+| vorgesehenes internes 0.3.0-App-Bundle / Build 302 | arm64-Code, Ressourcen, Updatekonfiguration und Lizenztexte | erst nach späterem Clean-Build ein internes Testartefakt; keine Datenbanken, Backups, Container, Schlüssel oder Exceldateien | aktuell nicht gebaut oder veröffentlicht |
 | Paket-Integrationsroot | synthetische SQLite-Quelle, Safety Copy, SQLCipher-Ziel, Dokument-/Backupcontainer, Journal, Replay-Anker und Restore-Staging | privater doppelt markierter System-Temporärroot | interner Gate-On-Testbestand |
 | Paket-Keychain-Root | ausschließlich künstlicher Security Store und DMK-Keysetmetadaten | privater markergebundener System-Temporärroot | interner Keychain-Testbestand |
 | macOS-Keychain-Testeintrag | zufälliger 256-Bit-DMK unter dem getrennten DMK-Service und zufälligen Test-IDs | realer lokaler Keychain; am Testende explizit widerrufen und gelöscht | flüchtige Abnahmeevidenz |
@@ -267,7 +267,7 @@ Registry-Format 1 verlangt `not_after`; `9999-12-31T23:59:59Z` bedeutet hier
 kein bewusst terminiertes Ablaufdatum. Rotation oder Widerruf bleiben jederzeit
 per geprüftem App-Release möglich.
 
-## Sprint 0.2R - Release-Ausgaben
+## Historischer Sprint 0.2R - Release-Ausgaben
 
 DMG, kanonisch gebaute PDFs, Release-Hinweise, Prüfsummen, Release-Inventar,
 Laura-Testmappe, die beiden Pilot-ZIPs und das synthetische Laura-Testdatenbackup
