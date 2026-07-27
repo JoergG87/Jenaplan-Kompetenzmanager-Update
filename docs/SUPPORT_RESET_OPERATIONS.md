@@ -36,6 +36,8 @@ Vor Verwendung `SHA256SUMS.txt` im entpackten Paket prüfen. Die `.command` muss
 zusammen mit dem Ordner `bin` bleiben; sie bestimmt ihren eigenen Ort und ist
 nicht vom aktuellen Terminalverzeichnis abhängig.
 
+<!-- pagebreak -->
+
 ## Einmalige Schlüsselbereitstellung
 
 1. Einen ausschließlich dafür vorgesehenen, durch FileVault und ein geschütztes
@@ -140,11 +142,12 @@ aus der betroffenen App.
 
 ## Verlust, Widerruf und Kompromittierung
 
-Bei Verlust der Passphrase ist der Schlüssel nicht wiederherstellbar; einen
-neuen Schlüssel provisionieren und per App-Update rotieren. Bei Verlust des
-privaten Schlüssels, Verdacht auf Kopie, unbefugten Zugriff oder Passphrase-
-Offenlegung den Schlüssel sofort organisatorisch sperren, in der Registry
-`revoked` setzen, ein App-Update bereitstellen und einen neuen Schlüssel mit
-neuer `key_id` provisionieren. Bestehende Tokens bleiben durch kurze Laufzeit,
-Anfragebindung und Einmaligkeit begrenzt, dürfen aber nicht als sicher behandelt
-werden. Es gibt keinen unsignierten Notfallcode und kein Masterkennwort.
+1. Bei Verlust der Passphrase ist der Schlüssel nicht wiederherstellbar; einen
+   neuen Schlüssel provisionieren und per App-Update rotieren.
+2. Bei Verlust des privaten Schlüssels, Verdacht auf Kopie, unbefugten Zugriff
+   oder Passphrase-Offenlegung den Schlüssel sofort organisatorisch sperren,
+   in der Registry `revoked` setzen, ein App-Update bereitstellen und einen
+   neuen Schlüssel mit neuer `key_id` provisionieren.
+3. Bestehende Tokens bleiben durch kurze Laufzeit, Anfragebindung und
+   Einmaligkeit begrenzt, dürfen aber nicht als sicher behandelt werden. Es
+   gibt keinen unsignierten Notfallcode und kein Masterkennwort.

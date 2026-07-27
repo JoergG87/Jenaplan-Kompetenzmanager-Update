@@ -6,9 +6,10 @@ DMG übergeben; dieses Dokument belegt selbst kein bereits erzeugtes DMG.
 
 ## 1. Voraussetzungen
 
-- Mac mit Apple-Prozessor (M1 oder neuer) und macOS 13 oder neuer;
-- ungefähr 300 MB freier Speicherplatz für App und erste lokale Daten;
-- die vereinbarte DMG-Datei des Jenaplan-Kompetenzmanagers.
+> [!VORAUSSETZUNG]
+> - Mac mit Apple-Prozessor (M1 oder neuer) und macOS 13 oder neuer;
+> - ungefähr 300 MB freier Speicherplatz für App und erste lokale Daten;
+> - die vereinbarte DMG-Datei des Jenaplan-Kompetenzmanagers.
 
 Die App arbeitet lokal. Sie überträgt keine Fachdaten in eine Cloud und nutzt
 keine KI-Funktion.
@@ -37,8 +38,9 @@ ersten Start warnen.
 4. Falls macOS weiter blockiert, unter `Systemeinstellungen > Datenschutz &
    Sicherheit` nur für diese App `Dennoch öffnen` wählen.
 
-Gatekeeper niemals global deaktivieren. Es werden keine Apple-Zugangsdaten,
-Zertifikate oder Kennwörter mitgeliefert.
+> [!WARNUNG]
+> Gatekeeper niemals global deaktivieren. Es werden keine Apple-Zugangsdaten,
+> Zertifikate oder Kennwörter mitgeliefert.
 
 ## 4. Erster Start und lokale Anmeldung
 
@@ -73,11 +75,12 @@ Zugang zu Fachdaten.
 
 ## 6. Bekannte Grenzen
 
-- keine Windows-Freigabe und kein öffentlicher Stable-Release;
-- keine Notarisierung und kein Developer-ID-Nachweis;
-- keine Cloud-Synchronisation oder KI-Funktion;
-- keine automatische Produktmigration oder aktive Fachdatenverschlüsselung;
-- keine automatische Update-, Download- oder Installationsaktion.
+> [!HINWEIS]
+> - keine Windows-Freigabe und kein öffentlicher Stable-Release;
+> - keine Notarisierung und kein Developer-ID-Nachweis;
+> - keine Cloud-Synchronisation oder KI-Funktion;
+> - keine automatische Produktmigration oder aktive Fachdatenverschlüsselung;
+> - keine automatische Update-, Download- oder Installationsaktion.
 
 Das ausführliche Benutzerhandbuch und
 `SICHERHEIT_UND_VERSCHLUESSELUNG.md` beschreiben Bedienung, Schutzgrenzen und
