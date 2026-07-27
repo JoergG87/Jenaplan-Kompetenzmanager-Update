@@ -149,6 +149,7 @@ python3 -m venv "$VENV"
 
 "$VENV/bin/python" scripts/build_pilot_documents.py \
     --version "$VERSION" \
+    --build-version "$BUILD_VERSION" \
     --pilot-commit "$GIT_COMMIT" \
     --output-dir "$DIST_ROOT" \
     --installation-source docs/PILOT_INSTALLATION_LEHRKRAFT.md \

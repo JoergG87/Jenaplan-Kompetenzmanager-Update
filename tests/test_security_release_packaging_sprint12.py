@@ -43,7 +43,7 @@ def _snapshot(root: Path) -> dict[str, str]:
 
 def test_030_release_versions_and_security_dependencies_are_pinned() -> None:
     assert APP_VERSION == "0.3.0"
-    assert APP_BUILD_VERSION == "301"
+    assert APP_BUILD_VERSION == "302"
     requirements = Path("requirements-macos-build.txt").read_text(
         encoding="utf-8"
     )
