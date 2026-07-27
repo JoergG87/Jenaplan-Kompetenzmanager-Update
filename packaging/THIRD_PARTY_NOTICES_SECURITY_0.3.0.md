@@ -1,6 +1,6 @@
-# Drittanbieterhinweise – interner Security-RC 0.3.0
+# Drittanbieterhinweise – vorgesehener interner Security-RC 0.3.0 / Build 302
 
-Der interne macOS-arm64-Testbuild enthält zusätzlich zum bisherigen
+Ein späterer interner macOS-arm64-Testbuild kann zusätzlich zum bisherigen
 Anwendungsbundle die nachstehenden Laufzeiten für den standardmäßig
 deaktivierten, markergebundenen Security-Integrationstest:
 
@@ -19,6 +19,7 @@ PySide6/Shiboken6/Qt, PyInstaller, ReportLab, Pillow und Sparkle bleiben
 Bestandteile des bisherigen Buildvertrags. Sparkles Lizenztext wird weiterhin
 separat mit dem offiziellen, hashgeprüften Framework gebündelt.
 
-Dieser Hinweis ist keine Freigabe einer produktiven Verschlüsselung. Der
+Dieser Hinweis dokumentiert keine bereits erzeugte DMG oder Freigabe einer
+produktiven Verschlüsselung. Der
 SQLCipher-4.17.0-Produktzielstand, Windows-Paketierung, Developer-ID-Signierung
 und Apple-Notarisierung bleiben getrennte Gates.

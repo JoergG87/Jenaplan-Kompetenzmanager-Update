@@ -17,13 +17,15 @@ Supportprotokolle kopiert werden.
 
 ## Supportpaket
 
-Das Paket `Jenaplan-Kompetenzmanager-0.2.2-Support-Reset-macOS.zip` wird separat
-mit `scripts/build_macos_support_reset_package.sh` gebaut. Es enthält zwei
+Ein späteres Paket für Version `0.3.0` / Build `302` wird separat mit
+`scripts/build_macos_support_reset_package.sh` gebaut. Dieser
+Dokumentationsstand erzeugt kein Supportpaket, keine Prüfsumme und keine
+Übergabe. Das Paket enthält zwei
 Finder-Starter, eigenständige arm64-Laufzeiten, diese Anleitung, eine
 ausschließlich strukturelle Public-Key-Registry-Vorlage, Versionsangaben und
-Prüfsummen. Es enthält weder App noch DMG, Laura-Daten, Datenbanken, Backups,
+Prüfsummen. Es enthält weder App noch DMG, synthetische Testdaten, Datenbanken, Backups,
 Anfragen, Tokens, Recovery-Codes, Test- oder Privatschlüssel. Es ist niemals
-Bestandteil eines Pilot- oder Laura-Pakets.
+Bestandteil eines Pilot- oder Testdatenpakets.
 
 Die enthaltenen arm64-Executables benötigen auf dem Support-Mac keine separat
 installierte Python-Laufzeit. Der optionale direkte Start der versionierten
@@ -59,8 +61,8 @@ Klartext-Private-Key und keine Standardpassphrase.
 
 ## Manuelle Produktivaktivierung
 
-Version `0.2.2` aktiviert nach ausdrücklicher Product-Owner-Bestätigung den
-öffentlichen Schlüssel `support-2026-b` in
+Der produktive 0.3.0-Stand führt nach ausdrücklicher Product-Owner-Bestätigung
+den öffentlichen Schlüssel `support-2026-b` in
 `src/security/infrastructure/product_support_keys.py`. Der bestätigte
 SHA-256-Fingerprint lautet
 `76e619df93483de9313d5bf592fc852c88f1ba7ac5261018801c0fcd5e96be77`.

@@ -19,7 +19,7 @@ nicht im Bundle oder Supportpaket enthalten.
    `.jkmresetrequest` bewusst auswählen. Es gibt keine automatische Suche.
 3. Anwendung, Benutzername-Hinweis, gekürzte Installationskennung,
    Anfragezeit, Ablaufzeit und Status `Gültig` prüfen.
-4. Einen menschlichen Installationsnamen wie `Laura MacBook` eintragen und den
+4. Einen menschlichen Installationsnamen wie `Mara Beispiel-Mac` eintragen und den
    lesbaren Anfragecode telefonisch abgleichen. Name und Anfragecode sind nur
    Zuordnungshilfen; die Sicherheit bleibt an die technische UUID gebunden.
 5. Prüfen, dass `support-2026-b`, Status `aktiv` und der erwartete gekürzte
