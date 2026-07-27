@@ -23,13 +23,16 @@ Schutz gegen einen aktiven Manipulator mit denselben lokalen Benutzerrechten.
 `MED-######` und `OBS-######` bleiben unverändert; alle nicht abschließend
 aufgelösten Journalreservierungen blockieren eine Wiedervergabe.
 
-## Releasebasis 0.3.0 / Build 302
+## Releasebasis 0.3.0 / Build 303
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
 | `create_confirmation_message` | Produktinterne Factory für explizit deutsch beschriftete Bestätigungsaktionen; Abbrechen ist Escape- und Standardaktion | Desktop UI |
 | `QLineEdit.inputMethodHints` für Passwortfelder | Qt-Semantik `ImhHiddenText`, `ImhSensitiveData`, `ImhNoAutoUppercase` und `ImhNoPredictiveText`; keine private Cocoa-Bridge oder gespeicherte Eingabe | Desktop UI |
 | `should_attempt_startup_device_authentication` | Reine Startentscheidung: automatische Geräteanmeldung nur bei Loginpflicht ohne aktivierte Touch-ID-Präferenz | Desktop Security Coordinator |
+| `PYINSTALLER_RESET_ENVIRONMENT` | Öffentliche PyInstaller-Steuerung mit Wert `1` ausschließlich für die neue frozen App-Instanz nach Restore; der Restore-Worker selbst bleibt Worker derselben Instanz | Core Restore Runtime |
+| `process_exited_early` | Technischer `restart_handshake.status`, wenn der gestartete App-Prozess vor bestätigtem Startup-Handshake endet | Core Restore Runtime |
+| `restart_handshake.exit_code` | Nichtfachlicher Prozess-Exitcode für den frühen Neustartfehler; enthält weder Token noch Kommandozeile | Core Restore Runtime |
 
 Die vorhandene Security-Bridge bleibt ausschließlich Eigentümer von Keychain
 und LocalAuthentication. Sie erhält keinen Zugriff auf Qt-Textfelder oder

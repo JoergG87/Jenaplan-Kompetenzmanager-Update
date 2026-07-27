@@ -42,9 +42,12 @@
 - Touch ID bleibt bei fehlendem Credential, Secret, eingerichteter Biometrie
   oder Verfügbarkeit auf unterstützten Macs mit verständlichem Grund sichtbar;
   Passwort-Fallback und explizite Credential-Anlage bleiben unverändert.
-- Zentrale Version auf `0.3.0` / Build `302` angehoben. Build 300 und Build
-  301 wurden nicht verteilt; für Build 302 existiert in diesem Stand noch kein
-  App-, DMG-, Appcast- oder Releaseartefakt.
+- Zentrale Version auf `0.3.0` / Build `303` angehoben. Der paketierte
+  Restore-Neustart startet eine neue, unabhängige PyInstaller-Instanz mit
+  gültigen Standardkanälen und erkennt einen vor dem Startup-Handshake
+  beendeten Kindprozess samt Exitcode. Builds 300 bis 302 wurden nicht
+  verteilt; für Build 303 existiert in diesem Stand noch kein Appcast- oder
+  Releaseartefakt.
 - Benutzerhandbuch, aktuelle ausschließlich synthetische Screenshots,
   Sicherheitsdokumentation und interne Releasebasis auf den produktiven
   Gate-Off-Pfad, Restore-Worker, Entwurfsauswahl und UX-Hardening ausgerichtet.

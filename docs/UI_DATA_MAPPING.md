@@ -15,7 +15,7 @@ Beobachtungsdaten sortieren, aber niemals die Bestätigungsfrische ableiten.
 Journalphasen, Hashes, Pfade, Inodes und Recoverydetails werden nicht sichtbar
 projiziert.
 
-## Releasebasis 0.3.0 / Build 302
+## Releasebasis 0.3.0 / Build 303
 
 | UI-Feld/Aktion | Quelle | Persistenz | Regel |
 |---|---|---|---|

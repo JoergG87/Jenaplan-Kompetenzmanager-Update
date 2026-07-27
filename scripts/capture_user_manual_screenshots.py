@@ -364,8 +364,8 @@ def main() -> int:
         default=ROOT / "docs" / "user_manual" / "screenshots",
     )
     args = parser.parse_args()
-    if APP_VERSION != "0.3.0" or APP_BUILD_VERSION != "302":
-        raise RuntimeError("Der Screenshotgenerator erwartet Version 0.3.0 / Build 302.")
+    if APP_VERSION != "0.3.0" or APP_BUILD_VERSION != "303":
+        raise RuntimeError("Der Screenshotgenerator erwartet Version 0.3.0 / Build 303.")
     for path in capture(args.output):
         print(path)
     return 0

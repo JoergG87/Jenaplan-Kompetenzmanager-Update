@@ -1,4 +1,4 @@
-# Datensicherung im lokalen macOS-Stand 0.3.0 / Build 302
+# Datensicherung im lokalen macOS-Stand 0.3.0 / Build 303
 
 Die App erstellt unter `Einstellungen > Datensicherung` ein fachliches
 ZIP-v1-Backup mit SQLite-sicherer Datenbankkopie und den von der App

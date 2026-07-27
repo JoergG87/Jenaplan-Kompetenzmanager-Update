@@ -1,8 +1,8 @@
 # Sicherheit und Verschlüsselung
 
 Stand: 27. Juli 2026  
-Geltung: Produktversion 0.3.0, Build 302  
-Status: vorbereiteter GitHub-Pre-Release/Pilot, kein Stable-Release
+Geltung: Produktversion 0.3.0, Build 303
+Status: Release-Vorbereitungsstand, kein GitHub-Pre-Release und kein Stable-Release
 
 Dieses Dokument beschreibt den tatsächlich aktiven Schutzstand und die bewusst
 noch nicht aktivierte Verschlüsselungsintegration. Es ist keine
@@ -17,10 +17,10 @@ keine KI-Dienste ein. Schülerdaten, Beobachtungen, Anhänge, Berichte,
 Lernentwicklungsgespräche und PDF-Ausgaben haben deshalb einen hohen
 Schutzbedarf.
 
-Der für 0.3.0 / Build 302 vorgesehene GitHub-Pre-Release/Pilot für macOS ist
-ad-hoc signiert und nicht notarisiert. Es gibt keine Windows-Freigabe, keinen
-Stable-Release und keinen Stable-Appcast. Ein konkretes DMG, seine Prüfsumme
-und der zugehörige Buildcommit werden ausschließlich aus dem Clean-Build als
+Ein späterer GitHub-Pre-Release/Pilot für 0.3.0 / Build 303 auf macOS wird
+ad-hoc signiert und nicht notarisiert sein. Es gibt keine Windows-Freigabe,
+keinen Stable-Release und keinen Stable-Appcast. Ein konkretes DMG, seine
+Prüfsumme und der zugehörige Buildcommit werden ausschließlich aus dem Clean-Build als
 Releaseartefakte nachgewiesen.
 
 ## 2. Heute aktiv geschützt
@@ -215,7 +215,7 @@ erhält durch einen Support-Reset keinen Zugang zu den fachlichen Daten.
 
 ## 9. Plattform- und Releasegrenzen
 
-Für 0.3.0 / Build 302 gilt:
+Für 0.3.0 / Build 303 gilt:
 
 - ad-hoc signiert;
 - nicht notarisiert;
@@ -233,7 +233,7 @@ Für 0.3.0 / Build 302 gilt:
 ## 10. Offene Schritte
 
 Folgende Arbeiten sind bewusst nicht Teil dieses Dokumentations- und
-Build-302-Vorbereitungsstands:
+Build-303-Vorbereitungsstands:
 
 - kontrollierte Produktmigration bestehender Fachdaten;
 - Pilotaktivierung und Abnahme der Verschlüsselung;

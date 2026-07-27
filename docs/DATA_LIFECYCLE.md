@@ -155,7 +155,7 @@ Die Pakettestbefehle sind keine Startup-, UI-, Produktmigrations- oder
 Recoveryfunktion. Sie dürfen weder normale App-Daten noch Pilotbestände
 adressieren und erzeugen keine produktive Schlüsselablage.
 
-## Releasebasis 0.3.0 / Build 302
+## Releasebasis 0.3.0 / Build 303
 
 Bestätigungsdialoge und Passwort-Eingabehinweise verarbeiten ausschließlich
 flüchtigen Widgetzustand. Touch-ID-Verfügbarkeit liest weiterhin nur die
@@ -164,6 +164,14 @@ verändert weder Credential, Keychain, Passwort, Recovery-Code noch
 Security-Epoch. Ein Passwort wird nur über die bestehenden Authentifizierungs-
 und Passwortwechsel-Services verarbeitet und weder protokolliert noch in
 Zwischenablage, Preferences oder einer neuen Plattformbrücke abgelegt.
+
+Der paketierte Restore-Neustart startet `sys.executable` als neue unabhängige
+PyInstaller-Instanz. Nur dieses Kind erhält
+`PYINSTALLER_RESET_ENVIRONMENT=1`; Standard-Ein- und -Ausgaben sind gültig an
+`DEVNULL` gebunden. Der Runtime-Lock-FD bleibt der einzige zusätzlich
+vererbte Deskriptor. Endet das Kind vor dem bestätigten Startup-Handshake,
+wird sein Exitcode im bestehenden technischen Handshake-Zustand erfasst und
+der vorhandene vollständige Rollback ausgeführt.
 
 ## Security Sprint 11 - kontrollierter Integrations-Lifecycle
 

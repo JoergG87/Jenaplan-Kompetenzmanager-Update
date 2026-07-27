@@ -1,4 +1,4 @@
-# Release- und Sicherheitsbasis 0.3.0 / Build 302
+# Release- und Sicherheitsbasis 0.3.0 / Build 303
 
 Stand: 27. Juli 2026  
 Branch: `spike/python-gui`  
@@ -21,7 +21,7 @@ Release- und Abnahmegrenze.
 
 ## 2. Dokumentierte Produktwahrheit
 
-| Punkt | Stand für Build 302 |
+| Punkt | Stand für Build 303 |
 |---|---|
 | Version / Plattform | 0.3.0, macOS auf Apple Silicon (arm64), mindestens macOS 13 |
 | Produktform | lokale Desktop-App, vorgesehene DMG-Installation |
@@ -58,7 +58,7 @@ Backupcontainer, DMK-/Keyset-Trennung sowie Migrations- und Recoverygrenzen.
 Der Integrationspfad ist jedoch standardmäßig deaktiviert, nicht über die UI
 zugänglich und auf markierte synthetische Testroots beschränkt.
 
-Für Build 302 gilt daher ausdrücklich:
+Für Build 303 gilt daher ausdrücklich:
 
 - keine automatische SQLCipher-Migration bestehender Fachdaten;
 - keine verschlüsselte Produkt-Dokumentablage;
@@ -74,7 +74,7 @@ Backupschlüssel der nur vorbereiteten Verschlüsselungsarchitektur.
 ## 5. Referenzabnahme
 
 Die vorliegende Referenzabnahme bestätigt alle Audit-P1 als geschlossen und
-meldet für die letzte Gesamtsuite 1.603 bestandene Tests, 67 bestandene
+meldet für die letzte Gesamtsuite 1.617 bestandene Tests, 67 bestandene
 Subtests und Exitcode 0. Diese Gesamtsuite wird in diesem reinen
 Dokumentationsauftrag nicht erneut ausgeführt.
 
@@ -88,7 +88,7 @@ Buildnachweis.
 ## 6. Noch offene Release-Gates
 
 1. Clean-Build aus sauberem Worktree sowie Bundle-, DMG-, Architektur- und
-   Prüfsummennachweis für Build 302.
+   Prüfsummennachweis für Build 303.
 2. Reale macOS-/Hardwareprüfung: Gatekeeper, Keychain, Touch ID,
    Sleep/Wake und Restore-Worker ohne Restfenster.
 3. Developer ID, Apple-Notarisierung und eine getrennte Entscheidung über

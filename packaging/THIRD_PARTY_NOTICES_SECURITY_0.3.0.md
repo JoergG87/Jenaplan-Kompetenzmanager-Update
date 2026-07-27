@@ -1,4 +1,4 @@
-# Drittanbieterhinweise – vorgesehener interner Security-RC 0.3.0 / Build 302
+# Drittanbieterhinweise – interner Release-Vorbereitungsstand 0.3.0 / Build 303
 
 Ein späterer interner macOS-arm64-Testbuild kann zusätzlich zum bisherigen
 Anwendungsbundle die nachstehenden Laufzeiten für den standardmäßig

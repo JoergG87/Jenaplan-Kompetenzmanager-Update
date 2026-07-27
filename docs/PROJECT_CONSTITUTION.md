@@ -17,15 +17,16 @@ atomare Transaktion; ein versioniertes Journal und ein kernelgebundener
 Writer-Lock besitzen Retry und Recovery. Widgets besitzen weder Ereignis-,
 Repository-, Staging- noch Recoverylogik.
 
-## Entwicklungsgrenze Releasebasis 0.3.0 / Build 302
+## Entwicklungsgrenze Releasebasis 0.3.0 / Build 303
 
-Die technisch geprüften und nicht verteilten Builds 300 und 301 sind historische
-Ausgangsstände für Build 302. Zulässig sind ausschließlich deutsche produktinterne
-Bestätigungsaktionen, öffentliche Qt-Sicherheitssemantik für bestehende
-Passwortfelder, verständliche Touch-ID-Verfügbarkeitsprojektionen, fokussierte
-Tests und die konsistente Buildanhebung. Passwortregeln, Recovery,
-Gerätecredential-Lifecycle, Keychain-Secret, Security-Epoch und
-Passwort-Fallback bleiben unverändert.
+Die technisch geprüften und nicht verteilten Builds 300 bis 302 sind
+historische Ausgangsstände für Build 303. Zulässig ist ausschließlich die
+Korrektur des paketierten Restore-Neustarts: eine unabhängige
+PyInstaller-Instanz, gültige Standardkanäle, frühe technische
+Exitcode-Diagnose, fokussierte Tests und die konsistente Buildanhebung.
+Passwortregeln, Recovery, Gerätecredential-Lifecycle, Keychain-Secret,
+Security-Epoch, Passwort-Fallback und alle fachlichen Funktionen bleiben
+unverändert.
 
 Die vorhandene native macOS-Security-Bridge bleibt auf Keychain und
 LocalAuthentication begrenzt. Eine private Qt-Cocoa-Kopplung oder ein

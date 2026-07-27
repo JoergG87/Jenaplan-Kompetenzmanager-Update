@@ -8,16 +8,21 @@ Die vollständige Projektdokumentation befindet sich in `PROJECT.md`. Dauerhafte
 
 ## Aktueller Dokumentstand
 
-Der dokumentierte interne Releasekandidat ist Version `0.3.0` / Build `302` für
-macOS auf Apple Silicon. Ein Clean-Build, DMG, Prüfsummenmanifest, Push, Tag,
-Appcast, Pilotübergabe und öffentlicher Release sind damit **nicht** behauptet
-oder ausgelöst. Der normale Produktpfad ist lokal, ohne Cloud und ohne
-KI-Funktion; die Verschlüsselungsintegration bleibt standardmäßig deaktiviert.
+Der dokumentierte Release-Vorbereitungsstand ist Version `0.3.0` / Build `303`
+für macOS auf Apple Silicon. Der Restore-Neustartfix ist committed; ein finaler
+Clean-Build 303 steht noch aus. Ein DMG, Prüfsummenmanifest, Push, Tag, Appcast,
+Pilotübergabe und öffentlicher Release sind damit **nicht** behauptet oder
+ausgelöst. Der normale Produktpfad ist lokal, ohne Cloud und ohne KI-Funktion;
+die Verschlüsselungsintegration bleibt standardmäßig deaktiviert. Ein späterer
+macOS-Build ist ad-hoc signiert und nicht notarisiert; Windows ist nicht
+freigegeben.
 
 Für die Bedienung gelten das
 `docs/user_manual/USER_MANUAL_SOURCE.md` und das daraus erzeugte
 `docs/user_manual/Jenaplan-Kompetenzmanager-0.3.0-Build-302-Benutzerhandbuch.pdf`.
-Die Schutzgrenzen beschreibt `docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
+Dieses vorhandene Build-302-PDF bleibt ein historisches Artefakt und wird nicht
+als Build 303 umbenannt. Die Schutzgrenzen beschreibt
+`docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
 
 ## Projektziel
 

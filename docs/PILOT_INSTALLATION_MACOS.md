@@ -1,16 +1,16 @@
-# macOS-Installation und Buildvorbereitung 0.3.0 / Build 302
+# macOS-Installation und Buildvorbereitung 0.3.0 / Build 303
 
 ## Status
 
-Diese Unterlage beschreibt den für einen kontrollierten GitHub-Pre-Release/
-Pilot vorgesehenen macOS-arm64-Stand. Clean-Build, DMG,
-Prüfsummenmanifest und Signaturnachweis werden vor der Übergabe als
-Releaseartefakte nachgewiesen. Build 300 und Build 301 sind nicht verteilte
-historische Vorstände.
+Diese Unterlage beschreibt den macOS-arm64-Vorbereitungsstand vor einem
+kontrollierten GitHub-Pre-Release/Pilot. Clean-Build, DMG,
+Prüfsummenmanifest und Signaturnachweis werden vor einer Übergabe als
+Releaseartefakte nachgewiesen. Builds 300 bis 302 sind nicht verteilte
+historische Vorstände; Build 303 ist noch kein Release Candidate.
 
 | Punkt | Vorgabe |
 |---|---|
-| Produkt | Jenaplan-Kompetenzmanager 0.3.0 / Build 302 |
+| Produkt | Jenaplan-Kompetenzmanager 0.3.0 / Build 303 |
 | Architektur | Apple Silicon (arm64) |
 | Mindestplattform | macOS 13 |
 | Übergabeform | GitHub-Pre-Release/Pilot mit Drag-and-drop-DMG |

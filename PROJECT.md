@@ -1,14 +1,15 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
-## Releasebasis 0.3.0 / Build 302
+## Releasevorbereitung 0.3.0 / Build 303
 
-Build 302 ist der für einen kontrollierten GitHub-Pre-Release/Pilot
-vorbereitete macOS-arm64-Releasekandidat. Die verbindliche Produktwahrheit, offene
+Build 303 ist ein dokumentierter macOS-arm64-Vorbereitungsstand, kein
+Release Candidate und kein verteiltetes Artefakt. Der race-freie
+Restore-Neustartfix ist committed. Die verbindliche Produktwahrheit, offene
 Artefaktnachweise und Releasegrenzen stehen in
 `docs/SECURITY_RELEASE_0_3_0.md`; die verständliche Schutzdarstellung in
 `docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
 
-`src.version` führt `0.3.0` / Build `302` als gemeinsame Quelle für Bundle,
+`src.version` führt `0.3.0` / Build `303` als gemeinsame Quelle für Bundle,
 Über-Dialog, Buildkonfiguration und Dokumentgenerator. Der normale Gate-Off-
 Pfad bleibt lokale SQLite-Datenbank, verwaltete Klartextdokumente und
 ZIP-v1-Backup/Restore. Nur interne markergebundene Pakettests laden SQLCipher,
@@ -23,12 +24,12 @@ Artefakt-, Pfad- und Klartextprüfungen vor DMG-Erzeugung aus. SQLCipher
 Community 4.12.0 bleibt ausdrücklich nur die Sprint-11-Testengine; das
 SQLCipher-4.17.0-Produktziel ist nicht freigegeben.
 
-Build 300 und Build 301 bleiben historische, nicht verteilte Ausgangsstände.
-Build 302 bündelt die dokumentierte Produktbasis einschließlich
+Builds 300 bis 302 bleiben historische, nicht verteilte Ausgangsstände.
+Build 303 bündelt die dokumentierte Produktbasis einschließlich
 Performance-Batch, Kursverbundsnapshot, Ereignisordnung,
 Attachment-Unit-of-Work, Entwurfsauswahl, Restore-Worker und UX-Hardening.
 Der immutabel nachweisende App-, DMG- und Prüfsummenstand wird ausschließlich
-aus dem später festgestellten Clean-Build-Commit erzeugt und im Release-
+aus dem noch ausstehenden finalen Clean-Build-Commit erzeugt und im Release-
 Inventar festgehalten.
 
 Windows, Developer ID, Notarisierung, physische Touch ID, vollständiger
@@ -499,7 +500,7 @@ Der Jenaplan-Kompetenzmanager ist eine lokale Python-/PySide6-Desktop-Anwendung 
 Der implementierte Stand nach Sprint 10B und den anschliessenden Schuelerprofil-UX-Korrekturen umfasst die zentralen Arbeitsbereiche fuer Stammdaten, Unterrichtsalltag, Beobachtung, Kompetenzdokumentation, Schuelerprofil, Lernentwicklungsbericht und Lernentwicklungsgespraech. Unveraenderliche Bericht- und LEG-Revisionen sowie daraus erzeugte PDF-Artefakte sind produktiv umgesetzt.
 
 Das Projekt befindet sich in der **Produktreifephase**. Der dokumentierte
-Stand ist Version `0.3.0` / Build `302` mit lokaler Anmeldung, Keychain,
+Stand ist Version `0.3.0` / Build `303` mit lokaler Anmeldung, Keychain,
 optionalem Touch ID, Sperre, Support-Reset, ZIP-v1-Backup/Restore,
 Restore-Worker, Bericht-/LEG-Entwurfsauswahl, Revisionen und PDF-Ausgaben.
 Der Schwerpunkt liegt auf Konsistenz, Barrierearmut, Pilotierbarkeit,
@@ -619,9 +620,10 @@ signiertes oder ad-hoc signiertes App-Bundle
 
 Ein späterer Apple-Silicon-Build wird reproduzierbar mit PyInstaller erzeugt
 und setzt macOS 13 voraus. Die Übergabevariante enthält keine Schülerdaten.
-Version 0.3.0 / Build 302 ist für die kontrollierte GitHub-Pre-Release-/Pilot-
-Übergabe vorbereitet. Stable bleibt deaktiviert; eine Update-/Appcast-
-Aktivierung ist kein Bestandteil dieser Übergabe.
+Version 0.3.0 / Build 303 ist ein Release-Vorbereitungsstand; der finale
+Clean-Build vor einer kontrollierten GitHub-Pre-Release-/Pilot-Übergabe steht
+noch aus. Stable bleibt deaktiviert; eine Update-/Appcast-Aktivierung ist kein
+Bestandteil dieser Übergabe.
 
 ### Architekturprinzipien
 

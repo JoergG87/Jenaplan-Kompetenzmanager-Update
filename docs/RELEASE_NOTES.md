@@ -1,12 +1,12 @@
-# Jenaplan-Kompetenzmanager 0.3.0 / Build 302
+# Jenaplan-Kompetenzmanager 0.3.0 / Build 303
 
 ## Status dieser Release Notes
 
-Dies sind die Release Notes für den vorbereiteten macOS-arm64-
-GitHub-Pre-Release/Pilot. Clean-Build, DMG, Prüfsummenmanifest und der
-vollständige Buildcommit werden vor der Übergabe als unveränderliche
-Releaseartefakte nachgewiesen. Build 300 und Build 301 sind überholte, nicht
-verteilte Vorstände.
+Dies sind die Release Notes für den macOS-arm64-Vorbereitungsstand, nicht für
+einen Release Candidate oder GitHub-Pre-Release. Clean-Build, DMG,
+Prüfsummenmanifest und der vollständige Buildcommit werden vor einer Übergabe
+als unveränderliche Releaseartefakte nachgewiesen. Builds 300 bis 302 sind
+überholte, nicht verteilte Vorstände.
 
 ## Produktumfang
 
@@ -47,9 +47,9 @@ von tausenden Einzelabfragen.
 
 ## Schutz- und Releasegrenzen
 
-Der GitHub-Pre-Release/Pilot ist ad-hoc signiert und nicht notarisiert.
-Windows ist nicht freigegeben; es gibt keinen Stable-Release und keinen
-Stable-Appcast. Developer ID und Notarisierung bleiben offen.
+Ein späterer GitHub-Pre-Release/Pilot wird ad-hoc signiert und nicht
+notarisiert sein. Windows ist nicht freigegeben; es gibt keinen Stable-Release
+und keinen Stable-Appcast. Developer ID und Notarisierung bleiben offen.
 
 Die App-Sperre ist keine Verschlüsselung der Fachdaten, verwalteten Dokumente
 oder ZIP-v1-Backups. SQLCipher, verschlüsselte Dokumentcontainer und ein
@@ -65,7 +65,7 @@ Bedienabläufe mit ausschließlich synthetischen Screenshots.
 ## Referenzabnahme und offene Gates
 
 Laut der vorliegenden Referenzabnahme sind alle bestätigten Audit-P1 geschlossen
-und die letzte Gesamtsuite mit 1.603 Tests sowie 67 Subtests bei Exitcode 0
+und die letzte Gesamtsuite mit 1.617 Tests sowie 67 Subtests bei Exitcode 0
 bestanden. Sie wurde für diesen reinen Dokumentationsauftrag nicht erneut
 ausgeführt.
 

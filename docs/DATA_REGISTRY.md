@@ -42,7 +42,7 @@ und Foreign Keys wird kein Index eingeführt.
 |---|---|---|---|
 | `requirements-macos-build.txt` | exakt gepinnte macOS-Buildabhängigkeiten einschließlich PyNaCl 1.6.2 und sqlcipher3 0.6.2 | Repository; keine Schlüssel oder Nutzerdaten | Build-Source-of-Truth |
 | interner Gate-Off-Buildroot | Venv, PyInstaller-Zwischenstand, Frameworks und generierte Dokumente | ausschließlich freigegebener Build- oder System-Temporärroot; kein Nutzerroot | verwerfbares Buildartefakt |
-| 0.3.0-App-Bundle / Build 302 | arm64-Code, Ressourcen, Updatekonfiguration und Lizenztexte | Clean-Build-Artefakt für den kontrollierten GitHub-Pre-Release/Pilot; keine Datenbanken, Backups, Container, Schlüssel oder Exceldateien | Nachweis über Release-Inventar und Prüfsummen vor Übergabe |
+| 0.3.0-App-Bundle / Build 303 | arm64-Code, Ressourcen, Updatekonfiguration und Lizenztexte | separates technisches Validierungsartefakt für den korrigierten Restore-Neustart; keine Datenbanken, Backups, Container, Schlüssel oder Exceldateien | Nachweis über Build-Inventar und Prüfsummen; keine Übergabe- oder Releasefreigabe |
 | Paket-Integrationsroot | synthetische SQLite-Quelle, Safety Copy, SQLCipher-Ziel, Dokument-/Backupcontainer, Journal, Replay-Anker und Restore-Staging | privater doppelt markierter System-Temporärroot | interner Gate-On-Testbestand |
 | Paket-Keychain-Root | ausschließlich künstlicher Security Store und DMK-Keysetmetadaten | privater markergebundener System-Temporärroot | interner Keychain-Testbestand |
 | macOS-Keychain-Testeintrag | zufälliger 256-Bit-DMK unter dem getrennten DMK-Service und zufälligen Test-IDs | realer lokaler Keychain; am Testende explizit widerrufen und gelöscht | flüchtige Abnahmeevidenz |

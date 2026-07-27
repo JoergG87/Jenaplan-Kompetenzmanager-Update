@@ -1,11 +1,12 @@
 # Sprintplanung
 
-## Releasebasis 0.3.0 / Build 302
+## Releasevorbereitung 0.3.0 / Build 303
 
-**Status:** Dokumentation, Handbuch, Screenshots und zentrale Version sind für
-einen kontrollierten GitHub-Pre-Release/Pilot vorbereitet. Clean-Build und
-reale Paket-/Hardwareabnahme bleiben verbindliche Freigabegates; kein
-Stable-Appcast und kein automatischer Pilotrollout.
+**Status:** Version, Dokumentation, Handbuch und Screenshots sind auf den
+Vorbereitungsstand Build 303 ausgerichtet. Der Restore-Neustartfix ist
+committed. Der finale Clean-Build und die reale Paket-/Hardwareabnahme stehen
+noch aus; es gibt keinen Release Candidate, kein Stable-Appcast und keinen
+automatischen Pilotrollout.
 
 - [x] Qt-Standardbestätigungen read-only inventarisieren und auf explizite
   deutsche Aktionen mit sicherer Standard-/Escape-Aktion umstellen.
@@ -13,10 +14,10 @@ Stable-Appcast und kein automatischer Pilotrollout.
   Accessibility-Semantik härten; native macOS-Autofill-Grenze dokumentieren.
 - [x] Touch-ID-Voraussetzungen verständlich sichtbar machen und
   Passwort-Fallback sowie explizite Credential-Anlage erhalten.
-- [x] Version `0.3.0` / Build `302` zentralisieren.
+- [x] Version `0.3.0` / Build `303` zentralisieren.
 - [x] Alle bestätigten Audit-P1 vor der Releasebasis schließen.
-- [x] Handbuch und Sicherheitsgrenzen für Build 302 konsolidieren.
-- [x] Letzte referenzierte Gesamtsuite dokumentieren: 1.603 Tests und 67
+- [x] Handbuch und Sicherheitsgrenzen für Build 303 konsolidieren.
+- [x] Letzte referenzierte Gesamtsuite dokumentieren: 1.617 Tests und 67
   Subtests bestanden, Exitcode 0.
 - [ ] Clean-Worktree-Build und reale Paket-/Hardwareabnahme durchführen.
 

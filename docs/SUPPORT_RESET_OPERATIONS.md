@@ -17,7 +17,7 @@ Supportprotokolle kopiert werden.
 
 ## Supportpaket
 
-Ein späteres Paket für Version `0.3.0` / Build `302` wird separat mit
+Ein späteres Paket für Version `0.3.0` / Build `303` wird separat mit
 `scripts/build_macos_support_reset_package.sh` gebaut. Dieser
 Dokumentationsstand erzeugt kein Supportpaket, keine Prüfsumme und keine
 Übergabe. Das Paket enthält zwei
