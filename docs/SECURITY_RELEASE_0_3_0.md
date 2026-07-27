@@ -2,17 +2,18 @@
 
 Stand: 27. Juli 2026  
 Branch: `spike/python-gui`  
-Ausgangs-HEAD: `0a58dbee78742bc5fd134e28fa4516132293f0e4`  
-Entscheidung: **NO-GO für Buildartefakt, Übergabe und Release; GO nur für die
-Dokumentationsbasis und die zentrale Versionierung.**
+Buildreferenz: wird vor dem Clean-Build als vollständiger Commit im Release-
+Inventar festgehalten.  
+Entscheidung: **NO-GO für Übergabe und GitHub-Pre-Release, bis der Clean-Build
+und alle Paket- und DMG-Gates nachgewiesen sind.**
 
 ## 1. Zweck und Geltung
 
 Dieses Dokument trennt die dokumentierte Produktbasis von einem späteren
-Buildnachweis. Es belegt weder ein erzeugtes DMG noch eine Signatur,
-Prüfsumme, einen Produkt-Commit, eine Pilotübergabe oder einen veröffentlichten
-Updatefeed. Diese Artefakte werden erst nach einem späteren Clean-Build
-ergänzt.
+Buildnachweis. Es belegt weder ein erzeugtes DMG noch eine Signatur, Prüfsumme
+oder den Buildcommit. Diese unveränderlichen Nachweise entstehen erst aus dem
+Clean-Build und werden zusammen mit dem kontrollierten GitHub-Pre-Release/Pilot
+veröffentlicht. Ein Updatefeed wird dabei nicht aktiviert.
 
 Die verbindliche nutzerverständliche Beschreibung steht in
 `SICHERHEIT_UND_VERSCHLUESSELUNG.md`; dieses Dokument ist die interne
@@ -96,5 +97,6 @@ Buildnachweis.
    verifizierbarem Backup, Rückfallweg und echter Nutzerführung.
 5. Windows/DPAPI und reale Power-Loss-Abnahme.
 
-Bis zu diesen Gates gilt: kein Build, keine Übergabe, kein Push, kein Tag, kein
-Appcast, kein Pilotrollout und kein öffentlicher Release.
+Bis zu diesen Gates gilt: keine Übergabe, kein Tag, kein GitHub-Pre-Release,
+kein Appcast und kein Pilotrollout. Der vorgesehene Veröffentlichungsweg ist
+ein GitHub-Pre-Release/Pilot, niemals ein Stable-Release.

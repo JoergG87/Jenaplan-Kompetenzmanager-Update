@@ -2,20 +2,21 @@
 
 ## Status
 
-Diese Unterlage beschreibt den vorgesehenen internen macOS-arm64-Stand. Ein
-Clean-Build, DMG, Prüfsummenmanifest, Signaturnachweis oder eine Übergabe wurde
-mit dem Dokumentationsstand noch nicht erzeugt. Build 300 und Build 301 sind
-nicht verteilte historische Vorstände.
+Diese Unterlage beschreibt den für einen kontrollierten GitHub-Pre-Release/
+Pilot vorgesehenen macOS-arm64-Stand. Clean-Build, DMG,
+Prüfsummenmanifest und Signaturnachweis werden vor der Übergabe als
+Releaseartefakte nachgewiesen. Build 300 und Build 301 sind nicht verteilte
+historische Vorstände.
 
 | Punkt | Vorgabe |
 |---|---|
 | Produkt | Jenaplan-Kompetenzmanager 0.3.0 / Build 302 |
 | Architektur | Apple Silicon (arm64) |
 | Mindestplattform | macOS 13 |
-| Übergabeform | späteres Drag-and-drop-DMG |
+| Übergabeform | GitHub-Pre-Release/Pilot mit Drag-and-drop-DMG |
 | Signatur | ad-hoc signiert, nicht notarisiert |
 | Datenmodus für eine Übergabe | `release`, ohne Schüler-, Pilot- oder Runtime-Daten |
-| Freigabe | kein Windows, kein öffentlicher Release, kein Stable-Appcast |
+| Freigabe | kein Windows, kein Stable-Release, kein Stable-Appcast |
 
 ## Erwarteter Installationsweg
 

@@ -2,11 +2,11 @@
 
 ## Status dieser Release Notes
 
-Dies sind die Release Notes für den vorbereiteten internen
-macOS-arm64-Releasekandidaten. Ein Clean-Build, DMG, Prüfsummenmanifest,
-Pilotübergabe, Push, Tag, Appcast oder öffentlicher Release wurde mit diesem
-Dokumentstand nicht durchgeführt. Build 300 und Build 301 sind überholte,
-nicht verteilte Vorstände.
+Dies sind die Release Notes für den vorbereiteten macOS-arm64-
+GitHub-Pre-Release/Pilot. Clean-Build, DMG, Prüfsummenmanifest und der
+vollständige Buildcommit werden vor der Übergabe als unveränderliche
+Releaseartefakte nachgewiesen. Build 300 und Build 301 sind überholte, nicht
+verteilte Vorstände.
 
 ## Produktumfang
 
@@ -47,9 +47,9 @@ von tausenden Einzelabfragen.
 
 ## Schutz- und Releasegrenzen
 
-Der erwartete interne Build ist ad-hoc signiert und nicht notarisiert.
-Windows ist nicht freigegeben; es gibt keinen öffentlichen Stable-Release und
-keinen Stable-Appcast. Developer ID und Notarisierung bleiben offen.
+Der GitHub-Pre-Release/Pilot ist ad-hoc signiert und nicht notarisiert.
+Windows ist nicht freigegeben; es gibt keinen Stable-Release und keinen
+Stable-Appcast. Developer ID und Notarisierung bleiben offen.
 
 Die App-Sperre ist keine Verschlüsselung der Fachdaten, verwalteten Dokumente
 oder ZIP-v1-Backups. SQLCipher, verschlüsselte Dokumentcontainer und ein

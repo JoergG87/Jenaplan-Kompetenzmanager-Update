@@ -2,8 +2,8 @@
 
 ## Releasebasis 0.3.0 / Build 302
 
-Build 302 ist der dokumentierte, noch nicht gebaute interne
-macOS-arm64-Releasekandidat. Die verbindliche Produktwahrheit, offene
+Build 302 ist der für einen kontrollierten GitHub-Pre-Release/Pilot
+vorbereitete macOS-arm64-Releasekandidat. Die verbindliche Produktwahrheit, offene
 Artefaktnachweise und Releasegrenzen stehen in
 `docs/SECURITY_RELEASE_0_3_0.md`; die verständliche Schutzdarstellung in
 `docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
@@ -27,12 +27,15 @@ Build 300 und Build 301 bleiben historische, nicht verteilte Ausgangsstände.
 Build 302 bündelt die dokumentierte Produktbasis einschließlich
 Performance-Batch, Kursverbundsnapshot, Ereignisordnung,
 Attachment-Unit-of-Work, Entwurfsauswahl, Restore-Worker und UX-Hardening.
-Ein App-, DMG- oder Prüfsummennachweis existiert für Build 302 noch nicht.
+Der immutabel nachweisende App-, DMG- und Prüfsummenstand wird ausschließlich
+aus dem später festgestellten Clean-Build-Commit erzeugt und im Release-
+Inventar festgehalten.
 
 Windows, Developer ID, Notarisierung, physische Touch ID, vollständiger
-Power-Loss-Nachweis, Produktmigration, Pilotaktivierung, Stable-Appcast und
-öffentlicher Release bleiben getrennte Gates. Dieser Dokumentationsstand führt
-keinen Build, Push, Tag, Appcast oder Rollout aus.
+Power-Loss-Nachweis, Produktmigration, Pilotaktivierung und Stable-Appcast
+bleiben getrennte Gates. Der GitHub-Pre-Release/Pilot erfolgt erst nach
+Clean-Build und vollständiger Paketabnahme; es gibt keinen Stable-Appcast und
+keinen automatischen Pilotrollout.
 
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 
@@ -616,8 +619,9 @@ signiertes oder ad-hoc signiertes App-Bundle
 
 Ein späterer Apple-Silicon-Build wird reproduzierbar mit PyInstaller erzeugt
 und setzt macOS 13 voraus. Die Übergabevariante enthält keine Schülerdaten.
-Version 0.3.0 / Build 302 ist noch nicht gebaut; Stable bleibt deaktiviert und
-eine Update-/Appcast-Aktivierung ist kein Bestandteil der Dokumentationsbasis.
+Version 0.3.0 / Build 302 ist für die kontrollierte GitHub-Pre-Release-/Pilot-
+Übergabe vorbereitet. Stable bleibt deaktiviert; eine Update-/Appcast-
+Aktivierung ist kein Bestandteil dieser Übergabe.
 
 ### Architekturprinzipien
 

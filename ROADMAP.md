@@ -44,10 +44,10 @@ abgeschnittene Kernaktionen.
 Pilottestwünsche und Komfortideen werden getrennt erfasst. Sie werden nicht
 allein durch ihre Nennung zu beschlossenen Produktänderungen.
 
-Build 302 ist als ad-hoc-signierter, nicht notarisiert erwarteter
-macOS-arm64-Stand dokumentiert, aber noch nicht gebaut oder übergeben. Es gibt
-keine Windows-Freigabe, keinen öffentlichen Stable-Release und keinen aktiven
-Stable-Appcast. Die historischen 0.2.x-Pilot- und Updatebelege bleiben in den
+Build 302 ist als ad-hoc-signierter, nicht notarisiert erwarteter macOS-arm64-
+GitHub-Pre-Release/Pilot dokumentiert. Es gibt keine Windows-Freigabe, keinen
+Stable-Release, keinen aktiven Stable-Appcast und keinen automatischen
+Pilotrollout. Die historischen 0.2.x-Pilot- und Updatebelege bleiben in den
 Archivabschnitten erhalten und sind keine Freigabe für 0.3.0.
 
 ## Phase 2 - Alltagsdaten effizient einrichten

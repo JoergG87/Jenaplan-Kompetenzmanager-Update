@@ -2,10 +2,10 @@
 
 ## Releasebasis 0.3.0 / Build 302
 
-**Status:** Dokumentation, Handbuch, Screenshots und zentrale Version sind
-vorbereitet. Der Clean-Build und die reale Paket-/Hardwareabnahme sind bewusst
-nicht Teil dieses Standes; keine Pilot-, Appcast-, Push-, Übergabe- oder
-Releasefreigabe.
+**Status:** Dokumentation, Handbuch, Screenshots und zentrale Version sind für
+einen kontrollierten GitHub-Pre-Release/Pilot vorbereitet. Clean-Build und
+reale Paket-/Hardwareabnahme bleiben verbindliche Freigabegates; kein
+Stable-Appcast und kein automatischer Pilotrollout.
 
 - [x] Qt-Standardbestätigungen read-only inventarisieren und auf explizite
   deutsche Aktionen mit sicherer Standard-/Escape-Aktion umstellen.

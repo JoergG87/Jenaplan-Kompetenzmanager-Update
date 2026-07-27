@@ -1,8 +1,8 @@
 # Sicherheit und Verschlüsselung
 
 Stand: 27. Juli 2026  
-Geltung: Produktversion 0.3.0, vorbereiteter Build 302  
-Status: interne Pilot- und Releasevorbereitung, kein öffentlicher Release
+Geltung: Produktversion 0.3.0, Build 302  
+Status: vorbereiteter GitHub-Pre-Release/Pilot, kein Stable-Release
 
 Dieses Dokument beschreibt den tatsächlich aktiven Schutzstand und die bewusst
 noch nicht aktivierte Verschlüsselungsintegration. Es ist keine
@@ -17,11 +17,11 @@ keine KI-Dienste ein. Schülerdaten, Beobachtungen, Anhänge, Berichte,
 Lernentwicklungsgespräche und PDF-Ausgaben haben deshalb einen hohen
 Schutzbedarf.
 
-Der für 0.3.0 / Build 302 vorgesehene interne macOS-Build wird ad-hoc signiert
-und nicht notarisiert. Es gibt keine Windows-Freigabe, keinen öffentlichen
-Stable-Release und keinen Stable-Appcast. Ein konkretes DMG, eine Prüfsumme und
-der zugehörige Produkt-Commit entstehen erst beim späteren Clean-Build; sie
-werden hier nicht vorweggenommen.
+Der für 0.3.0 / Build 302 vorgesehene GitHub-Pre-Release/Pilot für macOS ist
+ad-hoc signiert und nicht notarisiert. Es gibt keine Windows-Freigabe, keinen
+Stable-Release und keinen Stable-Appcast. Ein konkretes DMG, seine Prüfsumme
+und der zugehörige Buildcommit werden ausschließlich aus dem Clean-Build als
+Releaseartefakte nachgewiesen.
 
 ## 2. Heute aktiv geschützt
 
@@ -50,7 +50,7 @@ verwalteter Dokumente oder ZIP-v1-Backups.
 
 ### Signierung und Updates
 
-Der erwartete interne macOS-Build wird ad-hoc signiert. Das hilft bei der
+Der GitHub-Pre-Release/Pilot für macOS wird ad-hoc signiert. Das hilft bei der
 Integritätszuordnung des erzeugten Artefakts, ersetzt aber weder Developer ID
 noch Apple-Notarisierung. Es ist kein öffentlicher Updatekanal aktiv. Signierte
 Updateartefakte werden deshalb nicht als aktive Schutzfunktion für den
@@ -222,9 +222,8 @@ Für 0.3.0 / Build 302 gilt:
 - Apple Developer ID und Notarisierung offen;
 - macOS arm64 als Zielplattform;
 - Windows ungeprüft, kein DPAPI-Produktpfad;
-- keine öffentliche Stable-Freigabe;
-- kein Stable-Appcast;
-- keine Aussage über einen bereits erzeugten Build-302-Datenträger.
+- GitHub-Pre-Release/Pilot, keine Stable-Freigabe;
+- kein Stable-Appcast und kein automatischer Pilotrollout.
 
 > [!WARNUNG]
 > Gatekeeper-Hinweise werden ausschließlich über den kontrollierten macOS-Weg
