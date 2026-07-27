@@ -30,6 +30,8 @@ Die Schülerliste, das Dashboard und Kursverbünde lesen ihre Projektionen
 gebündelt. Dadurch bleibt der Alltag auch bei größeren lokalen Beständen frei
 von tausenden Einzelabfragen.
 
+<!-- pagebreak -->
+
 ## Datenintegrität und Bedienung
 
 - Beobachtung und Anhänge werden als kontrollierter Gesamtvorgang gespeichert:

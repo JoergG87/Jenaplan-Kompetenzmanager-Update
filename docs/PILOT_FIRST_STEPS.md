@@ -24,17 +24,18 @@ Beobachtungen, Testdaten oder Backups automatisch an.
 
 ## Sicherheit im Alltag
 
-- Die App sperrt nach der gewählten Inaktivitätszeit und nach dem Ruhezustand.
-- Touch ID ist optional; das Passwort bleibt der Fallback.
-- App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
-  Verwenden Sie ein geschütztes macOS-Benutzerkonto und FileVault nach
-  Schulvorgabe.
-- Support-Reset ist ein lokaler, betreuter Ausnahmeweg, wenn weder Passwort
-  noch Recovery-Codes verfügbar sind.
-- ZIP-v1-Backups liegen lokal. Vor Update oder Gerätewechsel zusätzlich ein
-  geprüftes externes Backup vorhalten.
-- Der spätere interne Build ist ad-hoc signiert und nicht notarisiert; es gibt
-  keine automatische Update- oder Appcast-Aktion.
+> [!SICHERHEIT]
+> - Die App sperrt nach der gewählten Inaktivitätszeit und nach dem Ruhezustand.
+> - Touch ID ist optional; das Passwort bleibt der Fallback.
+> - App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
+>   Verwenden Sie ein geschütztes macOS-Benutzerkonto und FileVault nach
+>   Schulvorgabe.
+> - Support-Reset ist ein lokaler, betreuter Ausnahmeweg, wenn weder Passwort
+>   noch Recovery-Codes verfügbar sind.
+> - ZIP-v1-Backups liegen lokal. Vor Update oder Gerätewechsel zusätzlich ein
+>   geprüftes externes Backup vorhalten.
+> - Der spätere interne Build ist ad-hoc signiert und nicht notarisiert; es gibt
+>   keine automatische Update- oder Appcast-Aktion.
 
 Für den vollständigen Ablauf zu Bericht, LEG, Restore und Sicherheit das
 Benutzerhandbuch verwenden.

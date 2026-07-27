@@ -59,8 +59,10 @@ Der vorgesehene interne Build wird ad-hoc signiert und nicht notarisiert. macOS 
 ersten Start deshalb warnen. Schließen Sie dann den Hinweis, klicken Sie im
 Finder bei gedrückter Control-Taste auf die App und wählen Sie Öffnen. Falls
 macOS weiterhin blockiert, wählen Sie in Systemeinstellungen > Datenschutz &
-Sicherheit nur für diese App Dennoch öffnen. Deaktivieren Sie Gatekeeper niemals
-global.
+Sicherheit nur für diese App Dennoch öffnen.
+
+> [!WARNUNG]
+> Deaktivieren Sie Gatekeeper niemals global.
 
 Zum Beenden verwenden Sie Jenaplan-Kompetenzmanager beenden oder schließen Sie
 das Hauptfenster. Laufende Sicherungen, Wiederherstellungen und Support-Resets
@@ -321,10 +323,11 @@ Sicherung vor einer Wiederherstellung oder einem Update nochmals geprüft werden
 
 ![Datensicherung](screenshots/20_backup.png)
 
-Der aktuelle Produktpfad verwendet das lokale ZIP-v1-Format. Ein Backup ist
-kein Cloud-Dienst und keine Verschlüsselung. Bewahren Sie zusätzlich eine
-externe, schulisch geregelte Sicherung auf - insbesondere vor Updates oder
-Gerätewechseln.
+> [!KONTROLLE]
+> Der aktuelle Produktpfad verwendet das lokale ZIP-v1-Format. Ein Backup ist
+> kein Cloud-Dienst und keine Verschlüsselung. Bewahren Sie zusätzlich eine
+> externe, schulisch geregelte Sicherung auf - insbesondere vor Updates oder
+> Gerätewechseln.
 
 ### Restore-Vorschau und ausdrückliche Bestätigung
 
@@ -343,11 +346,12 @@ alten App offen.
 
 ![Neustarthinweis vor der Wiederherstellung](screenshots/22_restore_neustart.png)
 
-Nach dem Neustart melden Sie sich erneut an und prüfen Schüler, Beobachtungen,
-Dokumente sowie Berichts- und LEG-Daten. Kann der Worker nicht sicher gestartet
-werden, zeigt die App eine Fehlermeldung; der bisherige aktive Bestand bleibt
-unverändert. Brechen Sie niemals durch Ausschalten oder gewaltsames Beenden ab,
-wenn ein Restore läuft.
+> [!FEHLERBEHEBUNG]
+> Nach dem Neustart melden Sie sich erneut an und prüfen Schüler, Beobachtungen,
+> Dokumente sowie Berichts- und LEG-Daten. Kann der Worker nicht sicher gestartet
+> werden, zeigt die App eine Fehlermeldung; der bisherige aktive Bestand bleibt
+> unverändert. Brechen Sie niemals durch Ausschalten oder gewaltsames Beenden ab,
+> wenn ein Restore läuft.
 
 Der Restore übernimmt keine Zugangsdaten, Recovery-Codes, gespeicherte Anmeldung
 oder Touch-ID-Einstellung. Diese Sicherheitsdaten bleiben getrennt.
@@ -401,17 +405,19 @@ auch wenn ein aktueller Katalogbezug später nicht mehr auswählbar ist.
 
 ## 15. Sicherheit, Datenschutz und lokale Datenhaltung
 
-Die App überträgt keine Fachdaten in eine Cloud und nutzt keine KI. Aktuell aktiv
-sind lokales Passwort, Keychain-gestützte Komfortanmeldung, optionales Touch ID,
-automatische Sperre, Passwort-Fallback, Support-Reset sowie geprüftes lokales
-Backup und Restore.
+> [!SICHERHEIT]
+> Die App überträgt keine Fachdaten in eine Cloud und nutzt keine KI. Aktuell aktiv
+> sind lokales Passwort, Keychain-gestützte Komfortanmeldung, optionales Touch ID,
+> automatische Sperre, Passwort-Fallback, Support-Reset sowie geprüftes lokales
+> Backup und Restore.
 
-Die App-Sperre ist nicht dasselbe wie eine Verschlüsselung der fachlichen
-Datenbank, Dokumente oder ZIP-v1-Backups. Die Foundations für SQLCipher,
-verschlüsselte Dokumentcontainer und verschlüsselte Backups sind implementiert
-und getestet, aber in diesem Pilotstand standardmäßig deaktiviert. Bestehende
-Pilot- und Produktdaten werden nicht automatisch migriert und keine
-Verschlüsselung wird still aktiviert.
+> [!HINWEIS]
+> Die App-Sperre ist nicht dasselbe wie eine Verschlüsselung der fachlichen
+> Datenbank, Dokumente oder ZIP-v1-Backups. Die Foundations für SQLCipher,
+> verschlüsselte Dokumentcontainer und verschlüsselte Backups sind implementiert
+> und getestet, aber in diesem Pilotstand standardmäßig deaktiviert. Bestehende
+> Pilot- und Produktdaten werden nicht automatisch migriert und keine
+> Verschlüsselung wird still aktiviert.
 
 Finale und frei exportierte PDFs liegen außerhalb der App grundsätzlich als
 Dateien vor. Behandeln Sie sie wie andere vertrauliche Schulunterlagen. Das
