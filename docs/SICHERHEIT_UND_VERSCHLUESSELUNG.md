@@ -27,21 +27,22 @@ werden hier nicht vorweggenommen.
 
 Im normalen Produktpfad sind folgende Schutzfunktionen aktiv:
 
-- lokales Passwort mit erster Passwortanlage, Bestätigung und
-  Passwortänderung;
-- Recovery-Codes als erster Wiederherstellungsweg;
-- optionales Gerätecredential im macOS-Schlüsselbund für die Komfortanmeldung;
-- optionales Touch ID bei erfüllten Voraussetzungen;
-- sichtbare Gründe, wenn Touch ID nicht eingerichtet, nicht verfügbar oder
-  vorübergehend gesperrt ist;
-- immer verfügbarer Passwort-Fallback;
-- automatische App-Sperre nach Inaktivität oder Ruhezustand sowie
-  Jetzt sperren;
-- betreuter Support-Reset mit zeitlich begrenztem, installationsgebundenem
-  Code und vorherigem Sicherheitsbackup;
-- geprüfter lokaler ZIP-v1-Backup- und Restorepfad;
-- getrennte lokale Runtime-Bereiche, restriktive Dateirechte und kein
-  Zugriff auf den fachlichen Bestand vor erfolgreicher Anmeldung.
+> [!SICHERHEIT]
+> - lokales Passwort mit erster Passwortanlage, Bestätigung und
+>   Passwortänderung;
+> - Recovery-Codes als erster Wiederherstellungsweg;
+> - optionales Gerätecredential im macOS-Schlüsselbund für die Komfortanmeldung;
+> - optionales Touch ID bei erfüllten Voraussetzungen;
+> - sichtbare Gründe, wenn Touch ID nicht eingerichtet, nicht verfügbar oder
+>   vorübergehend gesperrt ist;
+> - immer verfügbarer Passwort-Fallback;
+> - automatische App-Sperre nach Inaktivität oder Ruhezustand sowie
+>   Jetzt sperren;
+> - betreuter Support-Reset mit zeitlich begrenztem, installationsgebundenem
+>   Code und vorherigem Sicherheitsbackup;
+> - geprüfter lokaler ZIP-v1-Backup- und Restorepfad;
+> - getrennte lokale Runtime-Bereiche, restriktive Dateirechte und kein
+>   Zugriff auf den fachlichen Bestand vor erfolgreicher Anmeldung.
 
 Die App-Sperre schützt die Oberfläche vor unbefugter Nutzung im laufenden
 Alltag. Sie ist ausdrücklich keine Verschlüsselung der fachlichen Datenbank,
@@ -84,18 +85,19 @@ Migrations- und Recoverykonzepte.
 Diese Foundations sind im Produktstand 0.3.0 jedoch **nicht** standardmäßig
 aktiv:
 
-- Der normale Pfad verwendet weiterhin SQLite, die bestehende lokale
-  Dokumentablage und ZIP-v1-Backups.
-- Das Security-Integrationsgate ist standardmäßig aus und besitzt keine
-  Nutzeroberfläche.
-- Es akzeptiert ausschließlich besonders markierte technische Testroots, nicht
-  normale Datenroots, Pilotbestände oder Produktdaten.
-- Bestehende Pilot- und Produktdaten werden nicht automatisch zu SQLCipher
-  migriert.
-- Dokumente und produktive Backups werden nicht still in verschlüsselte
-  Container überführt.
-- Eine aktive Produktdatenverschlüsselung wird weder behauptet noch
-  automatisch aktiviert.
+> [!HINWEIS]
+> - Der normale Pfad verwendet weiterhin SQLite, die bestehende lokale
+>   Dokumentablage und ZIP-v1-Backups.
+> - Das Security-Integrationsgate ist standardmäßig aus und besitzt keine
+>   Nutzeroberfläche.
+> - Es akzeptiert ausschließlich besonders markierte technische Testroots, nicht
+>   normale Datenroots, Pilotbestände oder Produktdaten.
+> - Bestehende Pilot- und Produktdaten werden nicht automatisch zu SQLCipher
+>   migriert.
+> - Dokumente und produktive Backups werden nicht still in verschlüsselte
+>   Container überführt.
+> - Eine aktive Produktdatenverschlüsselung wird weder behauptet noch
+>   automatisch aktiviert.
 
 Die vorhandenen Container und der Migrationscode sind damit ein getesteter
 Vorbereitungsstand, keine Nutzerfunktion. Kontrollierte Produktmigration,
@@ -152,11 +154,12 @@ eine Fehlermeldung an.
 
 ### Grenzen
 
-ZIP-v1 ist lokal und nicht als verschlüsselter Backupcontainer deklariert.
-Ein verschlüsseltes Backup-v2 existiert nur als nicht aktivierte Foundation.
-Schulen sollen daher zusätzlich externe, schulisch geregelte Sicherungen
-vorhalten - insbesondere vor Updates, Migrationen, Gerätewechseln oder
-Supportmaßnahmen.
+> [!WARNUNG]
+> ZIP-v1 ist lokal und nicht als verschlüsselter Backupcontainer deklariert.
+> Ein verschlüsseltes Backup-v2 existiert nur als nicht aktivierte Foundation.
+> Schulen sollen daher zusätzlich externe, schulisch geregelte Sicherungen
+> vorhalten - insbesondere vor Updates, Migrationen, Gerätewechseln oder
+> Supportmaßnahmen.
 
 ## 7. Bedrohungsmodell
 
@@ -205,10 +208,6 @@ den sicheren Betrieb:
 - Keine Schülerdaten in Screenshots, Testdaten, Tickets oder frei zugängliche
   Ablagen übernehmen.
 - Exportierte und finale PDFs nur über sichere schulische Wege weitergeben.
-- Verlust eines Geräts, unerwartete Passwort- oder Reset-Ereignisse und
-  Verdacht auf Manipulation unverzüglich melden.
-- Datenbereiche nicht manuell verschieben, löschen oder mit Fremdwerkzeugen
-  bearbeiten, solange ein Backup, Restore oder Support-Reset läuft.
 
 Technische Betreuung unterstützt bei Installationsfreigabe, Recovery und
 Sicherungsstrategie. Sie kennt nicht automatisch das Lehrkraftpasswort und
@@ -227,9 +226,10 @@ Für 0.3.0 / Build 302 gilt:
 - kein Stable-Appcast;
 - keine Aussage über einen bereits erzeugten Build-302-Datenträger.
 
-Gatekeeper-Hinweise werden ausschließlich über den kontrollierten macOS-Weg
-für die konkrete interne App freigegeben. Gatekeeper darf nicht global
-deaktiviert werden.
+> [!WARNUNG]
+> Gatekeeper-Hinweise werden ausschließlich über den kontrollierten macOS-Weg
+> für die konkrete interne App freigegeben. Gatekeeper darf nicht global
+> deaktiviert werden.
 
 ## 10. Offene Schritte
 
@@ -248,3 +248,10 @@ Build-302-Vorbereitungsstands:
 Bis zu diesen Nachweisen sind die Datenverschlüsselungsfoundations keine aktive
 Produktfunktion und der Stand ist nicht als vollständig sicher oder
 datenschutzrechtlich vollständig freigegeben zu verstehen.
+
+### Bei Verdacht oder Datenverlust
+
+1. Verlust eines Geräts, unerwartete Passwort- oder Reset-Ereignisse und
+   Verdacht auf Manipulation unverzüglich melden.
+2. Datenbereiche nicht manuell verschieben, löschen oder mit Fremdwerkzeugen
+   bearbeiten, solange ein Backup, Restore oder Support-Reset läuft.
