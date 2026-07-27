@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Aktive Kursverbünde samt Stammgruppen- und Kurszuordnungen sind Teil des
+  transaktionskonsistenten Schüler-/Dashboard-Projektionssnapshots; die
+  Dashboard-Auflösung liest nach dem Batch keine zweite Verbindung und ihr
+  Querybudget bleibt unabhängig von der Kursverbundanzahl konstant.
 - Schülerliste und Dashboard-Heatmap lesen ihre kanonische
   Dokumentationsprojektion transaktionskonsistent gebündelt; Abfragen je
   Schüler oder Beobachtung sowie Schemainitialisierung in reinen

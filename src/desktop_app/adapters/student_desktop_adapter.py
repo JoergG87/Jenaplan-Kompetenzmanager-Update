@@ -81,7 +81,6 @@ from src.core.sqlite_store import (
     SQLiteLearningConferenceRepository,
     SQLiteLearningReportRepository,
     SQLiteLearningReportPdfArtifactRepository,
-    SQLiteMasterDataRepository,
     SQLiteObservationRepository,
     SQLitePersistenceEventRepository,
     SQLiteReportDraftRepository,
@@ -334,7 +333,11 @@ class StudentDesktopAdapter:
         heatmap = self._dashboard_documentation_heatmap_from_batch(batch)
         if limit <= 0 or not subject_id:
             return heatmap, ()
-        target_scope = self._dashboard_target_scope(target_type, target_id)
+        target_scope = self._dashboard_target_scope_from_batch(
+            batch,
+            target_type,
+            target_id,
+        )
         if target_scope is None:
             return heatmap, ()
         return (
@@ -405,16 +408,16 @@ class StudentDesktopAdapter:
         """Return neutral, date-based documentation suggestions for one lesson."""
         if limit <= 0 or not subject_id:
             return ()
-        target_scope = self._dashboard_target_scope(target_type, target_id)
-        if target_scope is None:
-            return ()
-        group_ids, course_ids = target_scope
         batch = SQLiteStudentDocumentationProjectionRepository(
             self.database
-        ).read_batch(
-            group_ids=group_ids,
-            course_ids=course_ids,
+        ).read_batch()
+        target_scope = self._dashboard_target_scope_from_batch(
+            batch,
+            target_type,
+            target_id,
         )
+        if target_scope is None:
+            return ()
         return self._dashboard_suggestions_from_batch(
             batch,
             target_scope=target_scope,
@@ -470,8 +473,9 @@ class StudentDesktopAdapter:
             )[:limit]
         )
 
-    def _dashboard_target_scope(
+    def _dashboard_target_scope_from_batch(
         self,
+        batch: StudentDocumentationProjectionBatch,
         target_type: str,
         target_id: str,
     ) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
@@ -484,10 +488,8 @@ class StudentDesktopAdapter:
         course_group = next(
             (
                 item
-                for item in SQLiteMasterDataRepository(
-                    self.database
-                ).list_course_groups()
-                if item.active and item.course_group_id == target_id
+                for item in batch.course_groups
+                if item.course_group_id == target_id
             ),
             None,
         )

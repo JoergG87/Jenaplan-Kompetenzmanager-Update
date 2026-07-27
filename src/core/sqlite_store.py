@@ -219,6 +219,7 @@ class StudentDocumentationProjectionBatch:
     students: tuple[StudentRecord, ...]
     groups: tuple[GroupRecord, ...]
     courses: tuple[CourseRecord, ...]
+    course_groups: tuple[MasterDataCourseGroupRecord, ...]
     competencies: tuple[CompetencyRecord, ...]
     active_documentation_subject_ids: tuple[str, ...]
     observations_by_student: Mapping[str, tuple[ObservationRecord, ...]]
@@ -2418,6 +2419,7 @@ class SQLiteStudentDocumentationProjectionRepository:
                 )
                 groups = self._groups(connection)
                 courses = self._courses(connection)
+                course_groups = self._course_groups(connection)
                 competencies = self._competencies(connection)
                 active_documentation_subject_ids = (
                     self._active_documentation_subject_ids(
@@ -2450,6 +2452,7 @@ class SQLiteStudentDocumentationProjectionRepository:
                     students=students,
                     groups=groups,
                     courses=courses,
+                    course_groups=course_groups,
                     competencies=competencies,
                     active_documentation_subject_ids=(
                         active_documentation_subject_ids
@@ -2561,6 +2564,84 @@ class SQLiteStudentDocumentationProjectionRepository:
             )
             for row in rows
         )
+
+    @staticmethod
+    def _course_groups(
+        connection: sqlite3.Connection,
+    ) -> tuple[MasterDataCourseGroupRecord, ...]:
+        rows = connection.execute(
+            """
+            SELECT course_group_id, name, active, sort_order
+            FROM course_groups
+            WHERE active = 1
+            ORDER BY sort_order, course_group_id
+            """
+        ).fetchall()
+        group_ids_by_course_group = (
+            SQLiteStudentDocumentationProjectionRepository
+            ._course_group_student_group_ids(connection)
+        )
+        course_ids_by_course_group = (
+            SQLiteStudentDocumentationProjectionRepository
+            ._course_group_course_ids(connection)
+        )
+        return tuple(
+            MasterDataCourseGroupRecord(
+                row["course_group_id"],
+                row["name"],
+                group_ids_by_course_group.get(row["course_group_id"], ()),
+                course_ids_by_course_group.get(row["course_group_id"], ()),
+                bool(row[ACTIVE]),
+                int(row["sort_order"]),
+            )
+            for row in rows
+        )
+
+    @staticmethod
+    def _course_group_student_group_ids(
+        connection: sqlite3.Connection,
+    ) -> dict[str, tuple[str, ...]]:
+        rows = connection.execute(
+            """
+            SELECT relation.course_group_id, relation.student_group_id
+            FROM course_group_student_groups AS relation
+            JOIN course_groups AS course_group
+                ON course_group.course_group_id = relation.course_group_id
+            WHERE course_group.active = 1
+            ORDER BY relation.course_group_id, relation.student_group_id
+            """
+        ).fetchall()
+        grouped: dict[str, list[str]] = {}
+        for row in rows:
+            grouped.setdefault(row["course_group_id"], []).append(
+                row["student_group_id"]
+            )
+        return {
+            course_group_id: tuple(group_ids)
+            for course_group_id, group_ids in grouped.items()
+        }
+
+    @staticmethod
+    def _course_group_course_ids(
+        connection: sqlite3.Connection,
+    ) -> dict[str, tuple[str, ...]]:
+        rows = connection.execute(
+            """
+            SELECT relation.course_group_id, relation.course_id
+            FROM course_group_courses AS relation
+            JOIN course_groups AS course_group
+                ON course_group.course_group_id = relation.course_group_id
+            WHERE course_group.active = 1
+            ORDER BY relation.course_group_id, relation.course_id
+            """
+        ).fetchall()
+        grouped: dict[str, list[str]] = {}
+        for row in rows:
+            grouped.setdefault(row["course_group_id"], []).append(row[COURSE_ID])
+        return {
+            course_group_id: tuple(course_ids)
+            for course_group_id, course_ids in grouped.items()
+        }
 
     @staticmethod
     def _competencies(

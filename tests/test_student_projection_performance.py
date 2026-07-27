@@ -15,6 +15,9 @@ from src.core.persistence_events import (
 )
 from src.core.records import seed_reference_data
 from src.core.sqlite_store import (
+    MasterDataCourseGroupRecord,
+    MasterDataCourseRecord,
+    MasterDataGroupRecord,
     SQLiteCompetencyRepository,
     SQLiteDatabase,
     SQLiteDocumentationSubjectSettingsRepository,
@@ -43,6 +46,7 @@ class CountingConnectionProvider:
     def __init__(self) -> None:
         self.base = SQLiteConnectionProvider()
         self.statements: list[str] = []
+        self.on_statement: Callable[[str], None] | None = None
 
     def connect(
         self,
@@ -56,7 +60,12 @@ class CountingConnectionProvider:
             create=create,
             key_material=key_material,
         )
-        connection.set_trace_callback(self.statements.append)
+        def trace(statement: str) -> None:
+            self.statements.append(statement)
+            if self.on_statement is not None:
+                self.on_statement(statement)
+
+        connection.set_trace_callback(trace)
         return connection
 
     def reset(self) -> None:
@@ -307,6 +316,47 @@ def _count_statements(
     return len(normalized), selects, normalized
 
 
+def _upsert_course_group(
+    database: SQLiteDatabase,
+    *,
+    course_group_id: str,
+    group_ids: tuple[str, ...] = (),
+    course_ids: tuple[str, ...] = (),
+    active: bool = True,
+    sort_order: int = 0,
+) -> None:
+    SQLiteMasterDataRepository(database).update_course_group(
+        MasterDataCourseGroupRecord(
+            course_group_id,
+            course_group_id,
+            group_ids,
+            course_ids,
+            active,
+            sort_order,
+        )
+    )
+
+
+def _clear_course_groups(database: SQLiteDatabase) -> None:
+    with closing(database.connect()) as connection:
+        with connection:
+            connection.execute("DELETE FROM course_group_courses")
+            connection.execute("DELETE FROM course_group_student_groups")
+            connection.execute("DELETE FROM course_groups")
+
+
+def _course_group_scope(
+    adapter: StudentDesktopAdapter,
+    database: SQLiteDatabase,
+    course_group_id: str,
+) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
+    return adapter._dashboard_target_scope_from_batch(
+        SQLiteStudentDocumentationProjectionRepository(database).read_batch(),
+        "course_group",
+        course_group_id,
+    )
+
+
 def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> None:
     provider = CountingConnectionProvider()
     database = _database_with_catalog(
@@ -325,6 +375,78 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
         lambda: adapter.dashboard_documentation_refresh(
             target_type="group",
             target_id=seed_reference_data().groups[0].group_id,
+            subject_id="deutsch",
+            subject_label="Deutsch",
+            at=datetime(2026, 7, 13, 8, 15),
+        ),
+    )
+    _clear_course_groups(database)
+    no_course_group_budget = _count_statements(
+        provider,
+        lambda: adapter.dashboard_documentation_refresh(
+            target_type="course_group",
+            target_id="course-group-missing",
+            subject_id="deutsch",
+            subject_label="Deutsch",
+            at=datetime(2026, 7, 13, 8, 15),
+        ),
+    )
+    group_id = seed_reference_data().groups[0].group_id
+    course_ids = tuple(course.course_id for course in seed_reference_data().courses)
+    _upsert_course_group(
+        database,
+        course_group_id="course-group-one",
+        group_ids=(group_id,),
+        course_ids=course_ids,
+    )
+    one_course_group_budget = _count_statements(
+        provider,
+        lambda: adapter.dashboard_documentation_refresh(
+            target_type="course_group",
+            target_id="course-group-one",
+            subject_id="deutsch",
+            subject_label="Deutsch",
+            at=datetime(2026, 7, 13, 8, 15),
+        ),
+    )
+    master_data = SQLiteMasterDataRepository(database)
+    relation_group_ids = [group_id]
+    relation_course_ids = list(course_ids)
+    for index in range(10):
+        relation_group_id = f"GRP-BUDGET-{index:02d}"
+        relation_course_id = f"CRS-BUDGET-{index:02d}"
+        master_data.upsert_student_group(
+            MasterDataGroupRecord(
+                relation_group_id,
+                relation_group_id,
+                True,
+                index + 1,
+            )
+        )
+        master_data.upsert_course(
+            MasterDataCourseRecord(
+                relation_course_id,
+                relation_course_id,
+                "",
+                "",
+                True,
+                index + 3,
+            )
+        )
+        relation_group_ids.append(relation_group_id)
+        relation_course_ids.append(relation_course_id)
+        _upsert_course_group(
+            database,
+            course_group_id=f"course-group-{index + 2:02d}",
+            group_ids=tuple(relation_group_ids),
+            course_ids=tuple(relation_course_ids),
+            sort_order=index + 2,
+        )
+    many_course_groups_budget = _count_statements(
+        provider,
+        lambda: adapter.dashboard_documentation_refresh(
+            target_type="course_group",
+            target_id="course-group-11",
             subject_id="deutsch",
             subject_label="Deutsch",
             at=datetime(2026, 7, 13, 8, 15),
@@ -384,15 +506,21 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
         adapter.dashboard_documentation_heatmap,
     )
 
-    assert student_budget[:2] == (11, 9)
-    assert heatmap_budget[:2] == (11, 9)
-    assert dashboard_refresh_budget[:2] == (11, 9)
+    assert student_budget[:2] == (14, 12)
+    assert heatmap_budget[:2] == (14, 12)
+    assert dashboard_refresh_budget[:2] == (14, 12)
+    assert no_course_group_budget[:2] == (14, 12)
+    assert one_course_group_budget[:2] == (14, 12)
+    assert many_course_groups_budget[:2] == (14, 12)
     assert loaded_student_budget[:2] == student_budget[:2]
     assert loaded_heatmap_budget[:2] == heatmap_budget[:2]
     for statements in (
         student_budget[2],
         heatmap_budget[2],
         dashboard_refresh_budget[2],
+        no_course_group_budget[2],
+        one_course_group_budget[2],
+        many_course_groups_budget[2],
         loaded_student_budget[2],
         loaded_heatmap_budget[2],
     ):
@@ -401,6 +529,149 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
             for statement in statements
             for token in ("CREATE TABLE", "ALTER TABLE", "DROP TABLE")
         )
+
+
+def test_course_group_snapshot_preserves_existing_filter_semantics(
+    tmp_path: Path,
+) -> None:
+    database = _database_with_catalog(tmp_path / "course-groups.sqlite")
+    adapter = StudentDesktopAdapter(database=database)
+    _clear_course_groups(database)
+    group_id = seed_reference_data().groups[0].group_id
+    course_ids = tuple(course.course_id for course in seed_reference_data().courses)
+    _upsert_course_group(
+        database,
+        course_group_id="course-group-groups-only",
+        group_ids=(group_id,),
+        sort_order=2,
+    )
+    _upsert_course_group(
+        database,
+        course_group_id="course-group-courses-only",
+        course_ids=(course_ids[0],),
+        sort_order=1,
+    )
+    _upsert_course_group(
+        database,
+        course_group_id="course-group-both",
+        group_ids=(group_id,),
+        course_ids=(course_ids[0],),
+        sort_order=3,
+    )
+    _upsert_course_group(
+        database,
+        course_group_id="course-group-empty",
+        sort_order=4,
+    )
+    _upsert_course_group(
+        database,
+        course_group_id="course-group-inactive",
+        group_ids=(group_id,),
+        course_ids=(course_ids[0],),
+        active=False,
+        sort_order=5,
+    )
+
+    batch = SQLiteStudentDocumentationProjectionRepository(database).read_batch()
+    assert tuple(item.course_group_id for item in batch.course_groups) == (
+        "course-group-courses-only",
+        "course-group-groups-only",
+        "course-group-both",
+        "course-group-empty",
+    )
+    assert adapter._dashboard_target_scope_from_batch(
+        batch, "course_group", "course-group-groups-only"
+    ) == ((group_id,), ())
+    assert adapter._dashboard_target_scope_from_batch(
+        batch, "course_group", "course-group-courses-only"
+    ) == ((), (course_ids[0],))
+    assert adapter._dashboard_target_scope_from_batch(
+        batch, "course_group", "course-group-both"
+    ) == ((group_id,), (course_ids[0],))
+    assert adapter._dashboard_target_scope_from_batch(
+        batch, "course_group", "course-group-empty"
+    ) == ((), ())
+    assert adapter._dashboard_target_scope_from_batch(
+        batch, "course_group", "course-group-missing"
+    ) is None
+    assert adapter._dashboard_target_scope_from_batch(
+        batch, "course_group", "course-group-inactive"
+    ) is None
+
+    with closing(database.connect()) as connection:
+        with connection:
+            connection.execute(
+                "UPDATE groups SET active = 0 WHERE group_id = ?", (group_id,)
+            )
+    assert _course_group_scope(
+        adapter, database, "course-group-groups-only"
+    ) == ((group_id,), ())
+
+    heatmap, suggestions = adapter.dashboard_documentation_refresh(
+        target_type="course_group",
+        target_id="course-group-both",
+        subject_id="deutsch",
+        subject_label="Deutsch",
+        at=datetime(2026, 7, 13, 8, 15),
+        limit=100,
+    )
+    expected_student_ids = tuple(
+        student.student_id
+        for student in SQLiteStudentDocumentationProjectionRepository(
+            database
+        ).read_batch().students
+        if student.group_id == group_id and student.course_id == course_ids[0]
+    )
+    assert heatmap == adapter.dashboard_documentation_heatmap()
+    assert {item.student_id for item in suggestions} == set(expected_student_ids)
+
+
+def test_course_group_refresh_uses_one_snapshot_without_follow_up_read(
+    tmp_path: Path,
+) -> None:
+    provider = CountingConnectionProvider()
+    database = _database_with_catalog(
+        tmp_path / "course-group-snapshot.sqlite",
+        provider=provider,
+    )
+    group_id = seed_reference_data().groups[0].group_id
+    _upsert_course_group(
+        database,
+        course_group_id="course-group-snapshot",
+        group_ids=(group_id,),
+    )
+    with closing(database.connect()) as connection:
+        connection.execute("PRAGMA journal_mode = WAL")
+    mutated = False
+
+    def mutate_after_student_read(statement: str) -> None:
+        nonlocal mutated
+        if mutated or "FROM groups" not in statement:
+            return
+        mutated = True
+        with closing(sqlite3.connect(database.path)) as writer:
+            writer.execute(
+                "UPDATE course_groups SET active = 0 WHERE course_group_id = ?",
+                ("course-group-snapshot",),
+            )
+            writer.commit()
+
+    provider.on_statement = mutate_after_student_read
+    adapter = StudentDesktopAdapter(database=database)
+    heatmap, suggestions = adapter.dashboard_documentation_refresh(
+        target_type="course_group",
+        target_id="course-group-snapshot",
+        subject_id="deutsch",
+        subject_label="Deutsch",
+        at=datetime(2026, 7, 13, 8, 15),
+        limit=100,
+    )
+    provider.on_statement = None
+
+    assert mutated
+    assert heatmap == adapter.dashboard_documentation_heatmap()
+    assert suggestions
+    assert _course_group_scope(adapter, database, "course-group-snapshot") is None
 
 
 def test_read_repository_constructors_do_not_initialize_schema() -> None:
