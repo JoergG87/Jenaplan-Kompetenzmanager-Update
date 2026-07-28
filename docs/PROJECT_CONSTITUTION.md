@@ -1,5 +1,25 @@
 # Project Constitution
 
+## Entwicklungsübersichten projizieren Dokumentation, keine pädagogischen Entscheidungen
+
+Unterstützende Entwicklungsübersichten dürfen ausschließlich vorhandene,
+kanonische Dokumentation in einer flüchtigen Anzeigeprojektion
+zusammenführen. Sie dürfen weder pädagogische Relevanz, Priorität, Stärke,
+Defizit, Förderbedarf, Trend, Entwicklungsrichtung noch Zielerreichung
+ableiten. Fehlende Dokumentation ist kein negativer Status.
+
+Zeitraumbezogene Aussagen benötigen ihren ausdrücklich beschlossenen
+fachlichen Zeitraum. Technische Persistenz-, Wiederanlauf- und
+Frischeereignisse sind keine pädagogische Historie. Ein aktueller
+Bestätigungsstand darf nur aus der dafür kanonischen Fachprojektion stammen;
+eine nicht vorhandene Bestätigungskette wird nicht rekonstruiert. Historische
+Kompetenzen bleiben aus Zählern und Diagrammen des aktuellen Bestands
+ausgeschlossen.
+
+Bericht und Lernentwicklungsgespräch bleiben getrennte fachliche Aggregate.
+Eine gemeinsame Darstellung ist ausschließlich eine Displaykomposition und
+begründet weder gemeinsame Persistenz noch einen gemeinsamen Lifecycle.
+
 ## Pilot-Releaseautomation
 
 Die lokale Pilot-Releaseautomation ist ein rein technischer, terminalbasierter

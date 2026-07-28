@@ -1,5 +1,33 @@
 # Data Registry
 
+## Phase 2 Entwicklungsübersicht - ausschließlich vorhandene Lesequellen
+
+**Status:** Zielvertrag beschlossen, nicht implementiert. Es entsteht keine
+neue Datenquelle, Tabelle, Relation, materialisierte Sicht oder gespeicherte
+Timeline.
+
+| Datenquelle / Rolle | Zulässiger Phase-2-Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| eindeutig gewählter RPD | `period_start`, `period_end` und vorhandener Draftstatus | vorhandener RPD-Application-/Repository-Pfad | einziger inklusiver Zeitraumvertrag und Berichtarbeitsstand; kein Draft-Ereignis |
+| zugehörige RPT-/RPV-Lesesicht | jede gültige finalisierte Berichtrevision mit stabiler Revisionsidentität und `finalized_at` ausschließlich des gewählten RPD | vorhandener getrennter Bericht-Revisionspfad | einzige Phase-2-Quelle für Bericht-Abschlussereignisse |
+| bestehende LCD-Liste | getrennte LEG-Status- und Navigationswerte | vorhandener LEG-Application-/Repository-Pfad | kanonischer LEG-Arbeitsstand; kein Draft-Ereignis |
+| bestehende LCF-/LCV-Lesesicht | jedes tatsächlich durchgeführte beziehungsweise fachlich abgeschlossene LEG mit stabiler Abschluss-/Revisionsidentität und `completed_at` | vorhandener LEG-Revisionspfad | einzige Phase-2-Quelle für LEG-Abschlussereignisse |
+| aktive Beobachtungslesesicht | `observation_id`, `observations.date`, primäres Fach, vorhandene Kompetenz- und Fachzuordnungen | vorhandener Beobachtungslesepfad; read-only | kanonische Beobachtungsquelle |
+| vorhandene Zuordnungen aktiver Beobachtungen | Paar `(observation_id, competency_id)` und vorhandene `subject_id` | bestehende Beobachtung-Kompetenz-Zuordnung; keine automatische Ergänzung | einzige Quelle für `Kompetenz dokumentiert` |
+| kanonische Kompetenzstatusprojektion | aktiv/historisch, `catalog_status`, aktuell sicherer `confirmed_rating`, `confirmed_at`, `documentation_state` | vorhandene Kompetenzstatusprojektion; read-only | einzige Quelle für aktuellen Kompetenz- und Bestätigungsstand |
+
+Ausdrücklich keine Phase-2-Timeline-Quellen sind
+`StudentProfileDashboardViewModel.orientation_changes`,
+`persistence_events`, deren technische Sequenzen und Zeitstempel,
+RPD-Relationstabellen als Ersatz für Beobachtungen sowie aktuelle Inhalte aus
+unveränderlichen Bericht- oder LEG-Revisionssnapshots.
+`persistence_events` darf ausschließlich innerhalb der kanonischen
+Kompetenzstatusprojektion die technische Frische des aktuellen
+Bestätigungsstands absichern.
+Draft-Öffnen, Draft-Speichern, `updated_at`, technische Bearbeitungs- oder
+Verwaltungszeitpunkte und bloße Zwischenstände sind keine fachlichen
+Phase-2-Timeline-Quellen.
+
 ## Berichte-Übersicht 0.3.1 / Paket 1 - bestehende Lesequellen
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |

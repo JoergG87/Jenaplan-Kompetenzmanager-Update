@@ -1,5 +1,88 @@
 # Architekturentscheidungen
 
+## ADR-094 - Phase-2-Entwicklungsübersicht ist eine rein lesende Dokumentationsprojektion
+
+**Status:** Angenommen als Zielarchitektur; nicht implementiert.
+
+Die Phase-2-Entwicklungsübersicht verwendet ausschließlich vorhandene
+kanonische Lesequellen: den eindeutig gewählten RPD und seine Berichtpfade,
+die getrennten LEG-Pfade, aktive Beobachtungen mit vorhandenen
+Kompetenzzuordnungen sowie die kanonische Projektion des aktuellen
+Kompetenz- und Bestätigungsstands. Sie führt keine Tabelle, Migration,
+gespeicherte Timeline, neue fachliche Datenquelle oder neue Statuslogik ein.
+
+`period_start` und `period_end` des eindeutig gewählten RPD bilden den einzigen
+inklusiven Zeitraumvertrag. Schuljahr, Halbjahr, Kalenderjahr, Tagesdatum,
+LEG-Zeitraum oder andere RPD sind keine Fallbacks. Fehlende oder ungültige
+Datumswerte werden nicht ersetzt; betroffene Inhalte bleiben aus der
+Zeitraumprojektion ausgeschlossen und führen zu einem neutralen
+Unvollständigkeitszustand.
+
+Die flüchtige Ereignisprojektion verwendet vorhandene stabile Identitäten.
+Eine Beobachtung wird global über `observation_id` dedupliziert.
+`Kompetenz dokumentiert` entsteht ausschließlich je vorhandener Zuordnung
+`(observation_id, competency_id)`. Eine Schnellbeobachtung ohne Zuordnung
+bleibt eine Beobachtung und erzeugt kein Kompetenzereignis.
+
+Die Timeline nimmt innerhalb des RPD-Zeitraums jede gültige finalisierte
+Berichtrevision und jedes tatsächlich durchgeführte beziehungsweise fachlich
+abgeschlossene LEG auf. Draft-Öffnen, Draft-Speichern, `updated_at`, technische
+Bearbeitungs- oder Verwaltungszeitpunkte und Zwischenstände ohne fachlichen
+Abschluss sind keine Timeline-Ereignisse. Der Zielumfang beträgt 15
+Ereignisse. Liegen weniger als 15 verpflichtende Bericht-/LEG-Ereignisse vor,
+wird die Timeline mit den zeitlich neuesten zulässigen Beobachtungs-,
+Kompetenzdokumentations- und aktuellen sicheren Bestätigungsereignissen
+aufgefüllt. Liegen mehr als 15 gültige Bericht-/LEG-Abschlussereignisse vor,
+bleiben alle enthalten; 15 ist für Dokumentereignisse keine Obergrenze.
+
+Ergänzende Ereignisse werden ausschließlich nach fachlichem Zeitpunkt und bei
+Zeitgleichheit nach stabiler technischer Quellidentität in aufsteigender
+lexikografischer Reihenfolge ausgewählt. Die gesamte ausgewählte Menge wird
+anschließend chronologisch vom ältesten zum neuesten Ereignis geordnet; bei
+identischem fachlichem Zeitpunkt gilt erneut die aufsteigende lexikografische
+Quellidentität. Diese Auswahl ist unabhängig von Rating, Fach, Ereignistyp
+außerhalb der verpflichtenden Bericht-/LEG-Aufnahmeregel, Wichtigkeit, Stärke,
+Defizit, Förderbedarf, pädagogischer Relevanz oder automatischer Priorität.
+
+Bestätigungen stammen ausschließlich aus dem aktuell gespeicherten, kanonisch
+sicheren Stand einer aktiven, nicht historischen Kompetenz.
+`confirmation_unknown` ist kein sicherer Bestätigungsstand. Eine historische
+Bestätigungskette wird nicht rekonstruiert. `persistence_events` bleibt die
+technische Grundlage für Frische und Wiederanlauf gemäß ADR-089, ist aber
+keine pädagogische Timeline-Quelle. Rating, Ratingwechsel,
+Bestätigungsfrische, Trend und Entwicklungsrichtung sind keine
+Ereignisinhalte.
+
+Fachbezogene Dokumentationsmengen werden als Mengen stabiler Kompetenz- und
+Beobachtungsidentitäten im RPD-Zeitraum gebildet. Sie besitzen keinen
+curricularen Nenner, keine Prozent- oder x/y-Semantik und keine
+Bewertungsbedeutung. Historische Kompetenzen zählen nicht zum aktuellen
+Kompetenzbestand; zugehörige reale Beobachtungen bleiben nach ihrem eigenen
+Identitätsvertrag lesbar.
+
+`StudentDesktopAdapter.report_overview_for_student` bleibt die
+Kompositionsgrenze. Repositories und Application Services behalten ihre
+bestehenden fachlichen Zuständigkeiten. Die reine ViewModel-Projektion besitzt
+Filterung, Datumsnormalisierung, Deduplizierung, deterministische Auswahl,
+Chronologie und displayfertige neutrale Zustände und liefert die vollständige
+ausgewählte Timeline-Liste. Das Widget besitzt keine Zeitraum-, Ereignis-,
+Zähl-, Bestätigungs-, Historien- oder Relevanzentscheidung. Es rendert die
+Liste horizontal scrollbar, startet am neuesten Ende und ermöglicht bewusstes
+Scrollen zu älteren Ereignissen. Ungefähr zwei, vier oder fünf gleichzeitig
+sichtbare Karten sind ausschließlich Viewportzustände und keine
+Inhaltsauswahl; automatisches Karussell und automatische Bewegung sind
+ausgeschlossen.
+
+Bericht und LEG bleiben nach ADR-050 sowie ADR-052 bis ADR-057 getrennte
+Aggregate, Repositories, Application Services, Revisionen, Lifecycle- und
+Integritätsverträge. Ihre gemeinsame Anzeige ist ausschließlich eine
+Displaykomposition. ADR-051 bleibt für Schnellbeobachtungen ohne automatische
+Kompetenzzuordnung verbindlich; ADR-089 bleibt technische Wahrheit für
+Persistenzreihenfolge und Wiederanlauf.
+
+Diese Entscheidung enthält keine Freigabe für Implementierung, Datenmodell,
+Migration, Tests, Build, Packaging oder Release.
+
 ## ADR-093 - Security-Funktionen werden im Bundle nur über doppelt gegatete interne Smokes geprüft
 
 **Status:** Angenommen für Security Sprint 12 und den internen

@@ -1,5 +1,54 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Berichte-Übersicht - implementierter Stand und beschlossenes Zielbild
+
+### Implementiert: Paket 1
+
+Paket 1 stellt die getrennten vorhandenen Bericht- und LEG-Zustände, den
+eindeutig gewählten RPD-Zeitraum, konkrete nächste Schritte, eine gemeinsame
+read-only Anzeigehistorie und die Navigation in den vorhandenen
+Berichtarbeitsraum bereit. Die fachlichen Aggregate und Schreibprozesse
+bleiben getrennt.
+
+### Implementiert: Paket 1.1
+
+Paket 1.1 verdichtet die vorhandene Übersicht visuell. Es zeigt auf Basis der
+Paket-1-Projektionen eine platzbegrenzte Meilensteinleiste und kompakte
+Fachkarten. Dieser umgesetzte Zwischenstand verwendet weiterhin die
+Paket-1-Semantik mit `documented_count/current_count`, Screen-eigener
+Inhaltsbegrenzung und `orientation_changes`. Er ist deshalb ausdrücklich
+nicht Phase-2-konform.
+
+### Beschlossen, aber nicht implementiert: Phase 2 Entwicklungsübersicht
+
+Phase 2 ist als Zielarchitektur und UX-Vertrag beschlossen. Dauerhafte Source
+of Truth sind die zuständigen Governance-Dokumente: Architektur in
+`DECISIONS.md`, technische Begriffe in `docs/TECHNICAL_NAMES.md`,
+Datenquellen in `docs/DATA_REGISTRY.md`, Projektionsablauf in
+`docs/DATA_LIFECYCLE.md`, View-Verantwortung in
+`docs/VIEW_DATA_OWNERSHIP.md`, sichtbare Felder in
+`docs/UI_DATA_MAPPING.md` und UX in `docs/DESIGN_SYSTEM.md`.
+
+Die Phase-2-Entwicklungsübersicht verwendet ausschließlich den inklusiven
+Zeitraum des eindeutig gewählten RPD. Sie zeigt neutrale
+Dokumentationsereignisse einschließlich Bericht und LEG, bildet
+`Kompetenz dokumentiert` nur aus einer vorhandenen Zuordnung
+`(observation_id, competency_id)`, zählt Schnellbeobachtungen ohne solche
+Zuordnung nur als Beobachtung und verwendet ausschließlich den aktuellen
+sicheren Bestätigungsstand. `persistence_events` und
+`orientation_changes` sind keine Timeline-Quellen.
+
+Fachkarten zeigen absolute Dokumentationsmengen ohne Nenner, x/y-Semantik,
+Prozentwert oder Bewertung. Historische Kompetenzen bleiben aus aktuellen
+Zählern ausgeschlossen. Bericht und LEG bleiben getrennte Aggregate und
+werden nur displayseitig gemeinsam angezeigt. Die Timeline ist
+ereignisorientiert und enthält weder Trend, Entwicklungsrichtung,
+pädagogische Priorisierung noch Stärke-, Defizit- oder Förderlogik.
+
+Diese Governance-Integration ändert keinen Code, kein Datenmodell und keine
+Persistenz. Phase 2 bleibt für Implementierung, Migration, Test, Build,
+Packaging und Release gesperrt.
+
 ## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1
 
 Paket 1 ersetzt die bisherige vorbereitende Berichtsvorschau im Register

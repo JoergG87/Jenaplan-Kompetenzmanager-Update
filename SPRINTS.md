@@ -1,5 +1,49 @@
 # Sprintplanung
 
+## Phase 2 Entwicklungsübersicht - Governance integriert, Umsetzung gesperrt
+
+**Status:** Produkt-, Architektur- und UX-Ziel beschlossen und in die
+bestehenden Governance-Dokumente integriert; nicht implementiert. Keine
+Implementierungs-, Datenmodell-, Migrations-, Test-, Build-, Packaging- oder
+Releasefreigabe.
+
+- [x] Ereignisorientierte, nicht pädagogisch priorisierte Timeline festlegen.
+- [x] Ausschließlich den inklusiven Zeitraum des eindeutig gewählten RPD
+  festlegen.
+- [x] Vorhandene Bericht-, LEG-, Beobachtungs-, Kompetenzzuordnungs- und
+  kanonische Kompetenzstatusprojektionen als einzige Lesequellen festlegen.
+- [x] `persistence_events` und `orientation_changes` als Timeline-Quellen
+  ausschließen.
+- [x] Schnellbeobachtungs-, Fach-/Globaldeduplizierungs-, aktuellen
+  Bestätigungs- und Historienausschlussvertrag festlegen.
+- [x] Absolute Fachkartendarstellung ohne Nenner, x/y, Prozent oder Bewertung
+  festlegen.
+- [x] Architektur, technische Namen, Datenquellen, Lifecycle, Ownership,
+  UI-Mapping und Design-System in ihren zuständigen Sources of Truth
+  fortschreiben.
+- [ ] Gesonderten technischen Entwurf und Umsetzungsauftrag durch den Product
+  Owner freigeben.
+- [ ] Phase 2 implementieren.
+- [ ] Fokussierte Regressionen, Gesamtsuite, Build, Packaging und reale
+  UX-Abnahme in später ausdrücklich freigegebenem Umfang durchführen.
+
+## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1.1
+
+**Status:** Implementiert; visueller Paket-1-Zwischenstand, nicht
+Phase-2-konform.
+
+- [x] Vorhandene Übersicht auf höchstens vier zunächst sichtbare Fachkarten
+  verdichten und weitere Fächer bewusst aufklappbar halten.
+- [x] Platzbegrenzte Meilensteinleiste aus vorhandenen Paket-1-Bericht-/LEG-
+  und Bestätigungsprojektionen darstellen.
+- [x] Eindeutige LEG-Aktionen und kompakte vorhandene Fachnavigation
+  bereitstellen.
+- [x] Bestehende Paket-1-Zähler und Kreisdiagrammsemantik unverändert
+  weiterverwenden.
+- [x] Keine Phase-2-Konformität behaupten: RPD-Zeitraumfilter für alle
+  Timeline-/Fachwerte, neue Ereignisidentitäten, absolute Segmente,
+  Deduplizierung und ViewModel-eigene Inhaltsauswahl sind nicht umgesetzt.
+
 ## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1
 
 **Status:** Paket 1 implementiert und fokussiert getestet; keine

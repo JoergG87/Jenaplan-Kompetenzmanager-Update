@@ -1,5 +1,46 @@
 # UI Data Mapping
 
+## Phase 2 Entwicklungsübersicht - beschlossen, nicht implementiert
+
+| Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |
+|---|---|---|---|
+| Berichtszeitraum | `period_start` / `period_end` des eindeutig gewählten RPD | Nein | einziger inklusiver Zeitraum; ohne eindeutigen RPD keine inhaltliche Phase-2-Anzeige; keine Schuljahres- oder Kalenderjahresannahme |
+| Timeline | `ReportOverviewViewModel.timeline_events` | Nein | vollständige ausgewählte Liste mit Zielumfang `15`; alle gültigen Bericht-/LEG-Abschlussereignisse bleiben auch oberhalb von 15 enthalten; nach der Auswahl chronologisch vom ältesten zum neuesten Ereignis; keine Trend-, Rang-, Relevanz- oder Entwicklungsdarstellung |
+| Timeline-Ereignistyp | `ReportOverviewTimelineEventViewModel` aus vorhandener stabiler Quellidentität und vorhandenem fachlichem Zeitpunkt | Nein | ausschließlich `Bericht dokumentiert`, `LEG dokumentiert`, `Beobachtung dokumentiert`, `Kompetenz dokumentiert` oder `Kompetenz bestätigt`; Bericht nur aus gültiger finalisierter Revision, LEG nur aus tatsächlichem fachlichem Abschluss; Draft- und `updated_at`-Zustände sind keine Ereignisse |
+| Timeline-Viewport | vollständige `ReportOverviewViewModel.timeline_events` | Nein | horizontal scrollbar; abhängig von der Breite ungefähr `2`, `4` oder `5` Karten gleichzeitig sichtbar, aber keine Inhalts- oder Projektionsgrenze; Start am neuesten Ende, bewusstes Scrollen zu älteren Ereignissen; kein automatisches Karussell und keine automatische Bewegung |
+| Timeline-Kontext | vorhandenes Fach, vorhandener Kompetenztext, neutrale Dokumentart oder Revisionsbezeichnung | Nein | kein Rating, Vorher/Nachher, Statusrichtung, Stärke, Defizit, Priorität oder qualitative Gewichtung |
+| Zugängliche Timeline-Beschriftung | displayfertiger Ereignistext | Nein | vollständiges Datum, Ereignistyp und vorhandener neutraler Kontext; Monatskürzel allein reichen nicht |
+| Leere Timeline | keine geeigneten Ereignisse im RPD-Zeitraum | Nein | `Im gewählten Berichtszeitraum sind keine Dokumentationsereignisse vorhanden.` |
+| Unvollständig lesbare Dokumentation | `ReportOverviewProjectionWarningViewModel` | Nein | `Dokumentationsdaten konnten nicht vollständig gelesen werden.`; keine Ersatzannahme |
+| Dokumentierte Kompetenzen je Fach | `ReportOverviewSubjectDocumentationViewModel` | Nein | `<n> Kompetenzen dokumentiert`; eindeutige aktuelle `competency_id` im RPD-Zeitraum; kein Nenner, `von`, `/`, Prozent, Sollwert oder Restmenge |
+| Beobachtungen je Fach | `ReportOverviewSubjectDocumentationViewModel` | Nein | `<n> Beobachtungen im Berichtszeitraum`; je Fach deduplizierte `observation_id`; Schnellbeobachtung zählt ohne Kompetenzzuordnung nur hier |
+| Fachkartenreihenfolge | bestehende neutrale kanonische Fachreihenfolge | Nein | niemals anhand der Dokumentationsmenge umsortieren; keine Sortierung nach Beobachtungsanzahl, Kompetenzanzahl, Bestätigungsstand, Aktualität, Rating oder vermeintlicher Wichtigkeit |
+| Belegstatus | vorhandene Beobachtungsmenge der Fachkarte | Nein | `Belege vorhanden`, wenn mindestens eine Beobachtung vorhanden ist; keine Qualitätsaussage |
+| Absolute Dokumentationssegmente | eindeutige aktuelle dokumentierte `competency_id` der Fachkarte | Nein | genau ein gleich breites neutrales Segment je Kompetenz; keine Restspur, Normalisierung, Schwelle, Bewertungsfarbe, Prozent- oder x/y-Semantik; bei null nur neutraler Text |
+| Zugängliche Fachkartenbeschriftung | Fachname und absolute Kompetenzmenge | Nein | `<Fach>: <n> Kompetenzen dokumentiert` |
+| Aktueller Bestätigungsstand | kanonische aktuelle sichere Kompetenzstatusprojektion | Nein | `aktuell bestätigter Stand vorhanden`; kein Rating, keine Anzahl, Historienrekonstruktion, Zielerreichung oder Abschluss |
+| Bericht-/LEG-/Belegnavigation | vorhandene Student-, Draft-, Revisions-, Fach-, Beobachtungs- oder Kompetenz-ID | Nein | öffnet ausschließlich vorhandene Ziele; keine automatische Auswahl oder Inhaltserzeugung |
+
+Sind weniger als 15 verpflichtende Bericht-/LEG-Abschlussereignisse vorhanden,
+wählt das ViewModel ausschließlich die zeitlich neuesten zulässigen
+Beobachtungs-, Kompetenzdokumentations- und sicheren Bestätigungsereignisse
+bis zum Zielumfang aus. Bei identischem fachlichem Zeitpunkt gilt die
+aufsteigende lexikografische Quellidentität. Das Widget trifft keine
+Inhaltsauswahl und entfernt oder priorisiert keine gelieferten Ereignisse.
+
+Historische Kompetenzen werden in Phase 2 weder als aktueller Zählwert noch als
+Segment dargestellt. Eine historische Darstellung ist keine aktuell
+implementierte Phase-2-Funktion und mit diesem Vertrag weder zur Darstellung
+noch zur Aufnahme in aktuelle Zähler freigegeben. Falls eine solche
+Darstellung später separat freigegeben wird, muss sie gleichzeitig die beiden
+sichtbaren Klarstellungen `Historisch dokumentiert` und
+`Nicht aktueller Bestand` enthalten. Dies ist ausschließlich der verbindliche
+Neutralitätsvertrag für diesen bedingten späteren Fall und keine
+Funktionsfreigabe. `documented_count/current_count`,
+`StudentProfileDashboardViewModel.orientation_changes` und technische
+`persistence_events` bleiben ausschließlich Teil des dokumentierten
+Paket-1-/anderen Produktkontexts und sind keine Phase-2-UI-Quelle.
+
 ## Berichte-Übersicht 0.3.1 / Paket 1
 
 | UI-Feld/Aktion | Quelle | Persistenz | Regel |

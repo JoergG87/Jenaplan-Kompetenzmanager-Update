@@ -1,5 +1,46 @@
 # View Data Ownership
 
+## Phase 2 Entwicklungsübersicht - beschlossen, nicht implementiert
+
+`StudentDesktopAdapter.report_overview_for_student` bleibt die einzige
+Desktop-Kompositionsgrenze. Er bestimmt den eindeutig gewählten RPD, hält
+Bericht und LEG beim Lesen getrennt und übergibt ausschließlich vorhandene
+RPD-, Bericht-, LEG-, Beobachtungs- und kanonische Kompetenzstatuswerte an die
+reine Phase-2-ViewModel-Projektion. Repositories und Application Services
+behalten ihre bestehenden fachlichen Zuständigkeiten.
+
+Die ViewModel-Projektion besitzt RPD-Zeitraumfilter, Datumsnormalisierung,
+Ereignisidentitäten, die vollständige Aufnahme aller gültigen Bericht- und
+LEG-Abschlussereignisse, die rein zeitliche Ergänzung bis zum Zielumfang 15,
+die chronologische Gesamtordnung, Fach- und Globaldeduplizierung, aktuelle
+Kompetenz- und Beobachtungsmengen, den Ausschluss historischer Kompetenzen
+sowie displayfertige neutrale Texte, Accessible Names, Leer- und
+Lesewarnzustände. Sie liefert dem Widget genau eine vollständige ausgewählte
+Timeline-Liste. Sie erzeugt keine pädagogische Relevanz, Bewertung,
+Priorisierung, Stärke, Defizit, Trend oder Entwicklungsrichtung.
+
+`StudentProfileScreen` besitzt ausschließlich Rendering, Fokus,
+horizontale Scrollposition, Responsive Layout und bewusstes Auf-/Zuklappen. Es
+rendert die vollständige gelieferte Timeline-Liste in einer horizontal
+scrollbaren Darstellung und positioniert sie beim Öffnen am neuesten Ende.
+Abhängig von der verfügbaren Breite sind ungefähr `2`, `4` oder `5`
+Ereigniskarten gleichzeitig sichtbar; diese Werte sind weder Inhaltsgrenze
+noch ViewModel-Auswahlgröße oder Begrenzung der Ereignisprojektion. Das Widget
+filtert, sortiert, entfernt, priorisiert, dedupliziert und zählt keine Inhalte,
+greift nicht auf `orientation_changes` zu und verwendet keinen curricularen
+Nenner. Es ermöglicht ausschließlich das bewusste Scrollen zu älteren
+enthaltenen Ereignissen; automatisches Karussell und automatische Bewegung
+sind unzulässig.
+
+Die Shell besitzt ausschließlich die Navigation mit vorhandenen Student-,
+Draft-, Revisions-, Fach-, Beobachtungs- und Kompetenz-IDs. Sie berechnet
+weder Zeitraum noch Ereignisse, Zähler, Bestätigungsstand oder historische
+Zugehörigkeit.
+
+Eine gemeinsame Timeline ist keine gemeinsame Bericht-/LEG-Domain. RPD/RPT/RPV
+und LCD/LCF/LCV behalten getrennte Aggregate, Repositories, Application
+Services, Integritätsprüfungen, Revisionen, Statusbegriffe und Lifecycle.
+
 ## Berichte-Übersicht 0.3.1 / Paket 1
 
 `StudentDesktopAdapter.report_overview_for_student` besitzt die

@@ -2,7 +2,18 @@
 
 ## Unreleased
 
-- Berichte-Übersicht visuell verdichtet: höchstens vier Fächer vor bewusster
+- Den beschlossenen, noch nicht implementierten Phase-2-Architektur- und
+  UX-Stand der Entwicklungsübersicht in die bestehenden Governance-Sources-
+  of-Truth integriert. ADR-094 hält die rein lesende RPD-, Ereignis-,
+  Deduplizierungs-, Bestätigungs- und Bericht-/LEG-Architektur fest;
+  Technical Naming Registry, Data Registry, Data Lifecycle, View Ownership,
+  UI-Mapping und Design-System enthalten ihre jeweils zuständigen Verträge.
+  Paket 1 und Paket 1.1 bleiben als implementierter, nicht
+  Phase-2-konformer Stand getrennt dokumentiert. Der Architektur-/UX-Vertrag
+  und der Product-Decision-Freeze bleiben Herkunfts- und Abnahmenachweise,
+  aber keine konkurrierende Governance-Quelle. Keine Code-, Datenmodell-,
+  Migrations-, Test-, Build-, Packaging- oder Releaseänderung.
+- Paket 1.1 der Berichte-Übersicht visuell verdichtet: höchstens vier Fächer vor bewusster
   Erweiterung, platzbegrenzte Meilensteine aus vorhandenen Bericht-/LEG- und
   Bestätigungsereignissen, eindeutige LEG-Aktionen sowie Entfernung der
   redundanten unteren Arbeitsraumkarten. Die Fachkacheln zeigen vorhandene

@@ -1,5 +1,62 @@
 # Design-System
 
+## Phase 2 Entwicklungsübersicht - neutrale Dokumentationsdarstellung
+
+**Status:** UX-Vertrag beschlossen, nicht implementiert.
+
+Die Timeline zeigt ausschließlich vorhandene Dokumentationsereignisse im
+gewählten RPD-Berichtszeitraum. Sie wird als horizontal scrollbare Liste
+gerendert und startet beim Öffnen am neuesten Ende. Abhängig von der
+verfügbaren Breite sind ungefähr zwei, vier oder fünf Ereigniskarten
+gleichzeitig sichtbar. Diese Werte beschreiben ausschließlich den Viewport und
+sind weder Inhaltsgrenze noch Auswahlgröße oder Begrenzung der
+Ereignisprojektion. Ältere enthaltene Ereignisse bleiben durch bewusstes
+horizontales Scrollen erreichbar. Automatisches Karussell und automatische
+Bewegung sind unzulässig.
+
+Die vollständige gelieferte Liste besitzt grundsätzlich den Zielumfang 15;
+alle gültigen Bericht-/LEG-Abschlussereignisse bleiben auch bei mehr als 15
+Einträgen sichtbar. Das Widget entfernt, priorisiert oder sortiert keine
+Ereignisse. Jede Karte trägt ein vollständiges Datum, einen sachlichen
+Ereignistyp und nur vorhandenen neutralen Kontext. Bericht und LEG bleiben als
+Dokumenttypen erkennbar.
+
+Fachkarten zeigen absolute Dokumentationsmengen. Der Phase-2-Balken besteht
+aus genau einem gleich breiten neutralen Segment je dokumentierter aktueller
+Kompetenz im RPD-Zeitraum. Es gibt keine ungefüllte Restspur, keinen
+fachbezogenen oder gemeinsamen Nenner, keine Normalisierung, Schwelle,
+Ampelstufe, Qualitätsfarbe, Prozentangabe oder Animation. Viele Segmente dürfen
+ruhig umbrechen; sie werden nicht abgeschnitten oder zu einer Qualitätsstufe
+verdichtet. Bei null bleibt nur der neutrale absolute Text sichtbar. Die
+Bewertungsfarben `--` bis `++` sind für diese Darstellung unzulässig.
+
+Fachkarten bleiben in der bestehenden neutralen kanonischen Fachreihenfolge.
+Sie werden weder nach Beobachtungs- oder Kompetenzanzahl, Bestätigungsstand,
+Aktualität, Rating, vermeintlicher Wichtigkeit noch nach einer anderen
+Dokumentationsmenge umsortiert. Mehr Dokumentation verändert weder die
+Position einer Fachkarte noch ihre visuelle Gewichtung.
+
+Die erlaubte Sprache beschreibt ausschließlich Vorhandenes, beispielsweise
+`Beobachtung dokumentiert`, `Kompetenz dokumentiert`,
+`Kompetenz bestätigt`, `<n> Kompetenzen dokumentiert`,
+`<n> Beobachtungen im Berichtszeitraum`, `Belege vorhanden` und
+`aktuell bestätigter Stand vorhanden`. Der zugängliche Text nennt dieselben
+absoluten Mengen und beschreibt Länge oder Fläche nie als Status, Niveau oder
+Bewertung.
+
+Unzulässig sind x/y- und Prozentsemantik, Soll- oder Restmengen,
+Fortschritt, Verbesserung, Verschlechterung, Entwicklungskurve,
+Trendpfeil, Vorher-/Nachher-Vergleich, Stärke, Schwerpunkt, Defizit,
+Förderbedarf, Empfehlung, Priorität, Wichtigkeit, Auffälligkeit, Rangfolge
+oder Formulierungen wie `wenig dokumentiert` und `viel dokumentiert`.
+Fehlende Dokumentation wird weder hervorgehoben noch als
+Handlungsaufforderung formuliert.
+
+Historische Kompetenzen erscheinen nicht in aktuellen Zählern oder Segmenten.
+Schnellbeobachtungen erhalten ohne vorhandene Kompetenzzuordnung keine
+Kompetenzdarstellung. Der sichtbare aktuelle Bestätigungsstand enthält weder
+Rating noch rekonstruierte Historie, Abschluss- oder Zielerreichungsdeutung.
+
 ## P1-Paket 1 - vorsichtige Bestätigungsdarstellung
 
 Ein historisch nicht beweisbar geordneter Bestätigungsstand verwendet keine

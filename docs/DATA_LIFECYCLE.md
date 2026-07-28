@@ -1,5 +1,111 @@
 # Data Lifecycle
 
+## Phase 2 Entwicklungsübersicht - rein lesender Projektionsablauf
+
+**Status:** Zielvertrag beschlossen, nicht implementiert. Der Ablauf schreibt
+nichts und ergänzt weder Persistenz noch Migration oder Recovery.
+
+1. Die Projektion setzt genau einen bewusst gewählten RPD voraus und verwendet
+   dessen `period_start` und `period_end` inklusiv. Ohne eindeutigen RPD
+   entsteht keine inhaltliche Phase-2-Projektion. Schuljahr, Halbjahr,
+   Kalenderjahr, Tagesdatum, LEG-Zeitraum und andere RPD sind keine Fallbacks.
+2. Der Desktop-Adapter liest Bericht, LEG, aktive Beobachtungen und den
+   kanonischen Kompetenzstatus über ihre vorhandenen getrennten Pfade.
+   Bericht und LEG werden erst in der flüchtigen Displayprojektion
+   zusammengeführt.
+3. Ereignisdaten stammen ausschließlich aus ihren vorhandenen Fachwerten:
+   `observations.date`, dem Datum der zugeordneten Beobachtung,
+   `confirmed_at` des aktuellen sicheren Bestätigungsstands,
+   `finalized_at` einer gültigen finalisierten Berichtrevision sowie
+   `completed_at` eines tatsächlich durchgeführten beziehungsweise fachlich
+   abgeschlossenen LEG. Zeitzonenbehaftete Werte werden lokal normalisiert;
+   naive historische Werte behalten ihren gespeicherten lokalen Kalenderwert.
+4. Ungültige oder fehlende Datumswerte erhalten keinen Ersatzwert. Der
+   betroffene Inhalt bleibt aus Timeline und Zeitraumzählern ausgeschlossen;
+   die Displayprojektion liefert zusätzlich einen neutralen unvollständigen
+   Zustand.
+5. `Beobachtung dokumentiert` entsteht global einmal je `observation_id`.
+   `Kompetenz dokumentiert` entsteht einmal je vorhandener Zuordnung
+   `(observation_id, competency_id)`. Eine Schnellbeobachtung ohne Zuordnung
+   bleibt eine Beobachtung. Historische oder nicht aktuelle Kompetenzen
+   erzeugen kein aktuelles Kompetenz-Dokumentationsereignis.
+   `Kompetenz bestätigt` entsteht höchstens einmal je Paar
+   `(student_id, competency_id)` aus dem aktuellen sicheren Stand.
+6. Die verpflichtende Dokumentereignismenge enthält innerhalb des eindeutig
+   gewählten RPD-Zeitraums jede gültige finalisierte Berichtrevision und jedes
+   tatsächlich durchgeführte beziehungsweise fachlich abgeschlossene LEG.
+   Bericht und LEG behalten dabei ihre vorhandenen getrennten
+   Revisionsidentitäten und fachlichen Abschlusszeitpunkte. `Draft geöffnet`,
+   `Draft gespeichert`, `updated_at`, technische Bearbeitungs- oder
+   Verwaltungszeitpunkte und bloße Zwischenstände ohne fachlichen Abschluss
+   erzeugen kein Phase-2-Timeline-Ereignis. Dokumentereignisse werden nicht
+   wegen einer Ziel- oder Viewportgröße entfernt; liegen mehr als 15 gültige
+   Bericht-/LEG-Abschlussereignisse vor, bleiben alle enthalten.
+7. Die Timeline besitzt einen Zielumfang von 15 Ereignissen. Enthält die
+   verpflichtende Dokumentereignismenge weniger als 15 Ereignisse, ergänzt die
+   ViewModel-Projektion genau so viele der zeitlich neuesten zulässigen
+   Beobachtungs-, Kompetenzdokumentations- und Bestätigungsereignisse, wie zum
+   Erreichen von 15 noch fehlen. Zulässig sind ausschließlich aktive
+   Beobachtungen, vorhandene Zuordnungen
+   `(observation_id, competency_id)` und der aktuell vorhandene sichere
+   Bestätigungsstand mit fachlichem Datum im RPD-Zeitraum. Reichen die
+   zulässigen ergänzenden Ereignisse nicht aus, bleibt die Timeline kürzer; es
+   entstehen keine künstlichen Ereignisse. Bei mindestens 15 verpflichtenden
+   Dokumentereignissen wird nichts zu deren Begrenzung entfernt.
+
+   Für die Auswahl ergänzender Ereignisse gilt: fachlich neuerer Zeitpunkt
+   zuerst; bei identischem fachlichem Zeitpunkt entscheidet ausschließlich die
+   stabile technische Quellidentität in aufsteigender lexikografischer
+   Reihenfolge. Nach Abschluss der Inhaltsauswahl wird die gesamte ausgewählte
+   Ereignismenge chronologisch vom ältesten zum neuesten Ereignis sortiert.
+   Auch in dieser Anzeigeordnung entscheidet bei identischem fachlichem
+   Zeitpunkt die stabile technische Quellidentität aufsteigend und
+   lexikografisch. Zusammengesetzte Identitäten werden in ihrer bereits
+   dokumentierten Komponentenreihenfolge komponentenweise verglichen. Auswahl
+   und Anzeigeordnung sind deterministisch und unabhängig von Rating, Fach,
+   Ereignistyp außerhalb der verpflichtenden Bericht-/LEG-Aufnahmeregel,
+   Wichtigkeit, Stärke, Defizit, Förderbedarf, pädagogischer Relevanz oder
+   automatischer Priorität.
+8. Je Fach werden zwei unabhängige Identitätsmengen gebildet: aktuelle
+   dokumentierte `competency_id` und vorhandene `observation_id` im
+   RPD-Zeitraum. Eine aktive, aktuelle Kompetenz gehört zur ersten Menge,
+   wenn mindestens eine aktive Beobachtungszuordnung im RPD-Zeitraum oder ein
+   aktueller sicherer Bestätigungsstand mit `confirmed_at` im RPD-Zeitraum
+   vorhanden ist. Mehrfachbeobachtungen und Bestätigung derselben Kompetenz
+   erhöhen den Kompetenzzähler nicht mehrfach.
+
+   Für die Fachmenge einer aktiven Beobachtung gilt:
+
+   - Existiert mindestens eine vorhandene Zuordnung
+     `(observation_id, competency_id)`, entsteht die Fachmenge aus allen
+     vorhandenen fachlichen `subject_id` der zugeordneten Kompetenzen
+     beziehungsweise Ratings. Jede `subject_id` kommt in dieser Menge
+     höchstens einmal vor; dieselbe `observation_id` zählt innerhalb derselben
+     Fachkarte höchstens einmal. Die Beobachtung darf in mehreren tatsächlich
+     betroffenen Fachkarten erscheinen, bleibt global aber dieselbe, allein
+     über `observation_id` identifizierte Beobachtung.
+     `observations.subject_id` ist in diesem Fall kein Fallback.
+   - Existiert keine Kompetenzzuordnung, wird ausschließlich die stabile
+     `observations.subject_id` verwendet. Daraus wird keine Kompetenz
+     abgeleitet; die Beobachtung zählt nur als Beobachtung. Fehlende
+     Fachzuordnungen werden weder geraten noch aus Anzeigenamen, Textinhalten
+     oder UI-Beschriftungen erzeugt.
+   - `cross_subject` ist keine eigenständige Fachkarte. Es erzeugt weder eine
+     zusätzliche Fachkarte noch einen künstlichen Fachzähler und ersetzt keine
+     fehlende konkrete Fachzuordnung. Fachkarten werden ausschließlich
+     tatsächlich vorhandenen fachlichen `subject_id` zugeordnet.
+
+   Historische Kompetenzen zählen nicht zum aktuellen Kompetenzbestand, machen
+   ihre realen Beobachtungen aber nicht unsichtbar.
+9. Eine Bestätigung zählt nur aus dem aktuellen kanonisch sicheren Stand
+   einer aktiven, nicht historischen Kompetenz mit gültigem `confirmed_at` im
+   RPD-Zeitraum. `confirmation_unknown` zählt nicht.
+   `newer_observations` rekonstruiert keine Bestätigungskette und hebt den
+   vorhandenen aktuellen Stand nicht auf.
+10. Nach Navigation oder Refresh wird die gesamte flüchtige Projektion aus den
+    vorhandenen Quellen neu gebildet. Es gibt keinen Phase-2-Cache,
+    Timeline-Writer oder neuen Schreibprozess.
+
 ## Berichte-Übersicht 0.3.1 / Paket 1 lesen und navigieren
 
 1. Das Schülerprofil fragt die Paket-1-Übersicht über

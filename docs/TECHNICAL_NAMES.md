@@ -1,5 +1,24 @@
 # Technical Naming Registry
 
+## Phase 2 Entwicklungsübersicht - beschlossen, nicht implementiert
+
+Die folgenden Namen sind für den späteren Phase-2-Umsetzungsauftrag
+registriert. Ihre Registrierung behauptet weder vorhandenen Code noch eine
+Implementierungsfreigabe.
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `ReportOverviewTimelineEventViewModel` | Flüchtiges displayfertiges Dokumentationsereignis mit vorhandenem Ereignistyp, normalisiertem fachlichem Zeitpunkt, stabiler Quellidentität, neutralem Text und optional vorhandenem Navigationsziel; keine Persistenz und keine pädagogische Bewertung | Desktop ViewModel |
+| `ReportOverviewSubjectDocumentationViewModel` | RPD-zeitraumbezogene, je Fach deduplizierte Mengen aktueller dokumentierter Kompetenzen und vorhandener Beobachtungen; ohne Nenner, Prozent- oder Qualitätssemantik | Desktop ViewModel |
+| `ReportOverviewProjectionWarningViewModel` | Flüchtiger neutraler Anzeigezustand für unvollständig lesbare Phase-2-Dokumentationsdaten; keine Fehlerkorrektur oder Ersatzannahme | Desktop ViewModel |
+| `ReportOverviewViewModel.timeline_events` | Vollständige ausgewählte und deterministisch geordnete Phase-2-Timeline-Liste: alle gültigen Bericht-/LEG-Abschlussereignisse sowie bei weniger als 15 Dokumentereignissen die rein zeitliche Ergänzung bis zum Zielumfang 15; keine Viewport-, Relevanz- oder Prioritätsauswahl | Desktop ViewModel |
+
+`LearningReportSubjectViewModel.current_count` bleibt ein vorhandener
+Paket-1-/Berichtvorbereitungsname, ist aber kein Bestandteil des
+Phase-2-Fachkartenvertrags. `StudentProfileDashboardViewModel.orientation_changes`
+bleibt eine vorhandene Profilprojektion und ist keine
+Phase-2-Timeline-Projektion.
+
 ## Berichte-Übersicht 0.3.1 / Paket 1
 
 | Technischer Name | Bedeutung | Eigentümer |
