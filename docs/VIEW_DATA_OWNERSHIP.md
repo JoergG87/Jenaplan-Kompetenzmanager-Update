@@ -1,5 +1,13 @@
 # View Data Ownership
 
+## Pilot-Releaseautomation - technischer Prozess ohne View
+
+`ReleasePilot` besitzt ausschließlich die technische Orchestrierung und
+sanitierte Terminalausgabe. Es entsteht keine View, kein ViewModel und kein
+Desktop-Adapter. PySide-Widgets, Produktservices und SQLite-Repositories
+besitzen keine Release-, GitHub-, Appcast-, Signatur-, Manifest- oder
+Buildlogik.
+
 ## P1-Paket 1 - kanonische Frischeprojektion ohne Widget-Ownership
 
 `SQLitePersistenceEventRepository` besitzt die technische Ereignislesesicht.

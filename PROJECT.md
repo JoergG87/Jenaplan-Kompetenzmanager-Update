@@ -1,9 +1,33 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
-## Releasevorbereitung 0.3.0 / Build 303
+## Pilot-Releaseautomation
 
-Build 303 ist ein dokumentierter macOS-arm64-Vorbereitungsstand, kein
-Release Candidate und kein verteiltetes Artefakt. Der race-freie
+Der mit Build 303 nachgewiesene lokale Pilot-Releaseprozess ist als
+terminale, wiederaufnehmbare Automation umgesetzt. Build 303 ist seit
+27. Juli 2026 die unveränderliche veröffentlichte Referenz: GitHub-Pre-Release
+`v0.3.0-build303`, Quellcommit
+`07c20a3764405bc1f535eb33efe809519dd8316b` und aktiver Pilot-Appcast. Stable
+bleibt deaktiviert.
+
+`scripts/release_pilot.py` trennt Inspect, Prepare, detached Clean-Build,
+Paketprüfung, GitHub-Draft/Assetverifikation, Appcast-Publikation und
+öffentliche Endverifikation. Das monotone Manifest ermöglicht sichere
+Wiederaufnahme ohne Neubau nach späteren Netzwerk- oder
+Authentifizierungsfehlern. Version und Build werden nie automatisch geändert;
+Veröffentlichungen benötigen getrennte explizite Gates. Architektur,
+Sicherheitsgrenzen und Betrieb stehen in `docs/RELEASE_AUTOMATION.md`.
+
+Die Automation verändert weder Produktlogik noch SQLite-Datenmodell, UI,
+Backup-/Restoreformat oder Verschlüsselungsstatus. Sie enthält keine Secrets,
+liest keinen privaten Sparkle-Schlüssel und kann Stable weder erzeugen noch
+aktivieren.
+
+## Historischer Vorbereitungsstand 0.3.0 / Build 303
+
+Der folgende Abschnitt hält den dokumentierten Stand vor der späteren
+Veröffentlichung fest. Build 303 war zu diesem Zeitpunkt ein
+macOS-arm64-Vorbereitungsstand, kein Release Candidate und kein verteiltetes
+Artefakt. Der race-freie
 Restore-Neustartfix ist committed. Die verbindliche Produktwahrheit, offene
 Artefaktnachweise und Releasegrenzen stehen in
 `docs/SECURITY_RELEASE_0_3_0.md`; die verständliche Schutzdarstellung in

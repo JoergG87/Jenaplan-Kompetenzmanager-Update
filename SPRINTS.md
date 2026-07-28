@@ -1,11 +1,35 @@
 # Sprintplanung
 
-## Releasevorbereitung 0.3.0 / Build 303
+## Pilot-Releaseautomation
 
-**Status:** Version, Dokumentation, Handbuch und Screenshots sind auf den
-Vorbereitungsstand Build 303 ausgerichtet. Der Restore-Neustartfix ist
-committed. Der finale Clean-Build und die reale Paket-/Hardwareabnahme stehen
-noch aus; es gibt keinen Release Candidate, kein Stable-Appcast und keinen
+**Status:** Lokal implementiert und fokussiert getestet. Build 303 ist die
+read-only veröffentlichte Referenz; es wurde durch diesen Sprint weder neu
+gebaut noch verändert oder erneut veröffentlicht. Stable bleibt deaktiviert.
+
+- [x] Kanonische nicht geheime Releasekonfiguration ergänzen.
+- [x] Monotones lokales und sanitisiertes Manifest mit Wiederaufnahme
+  implementieren.
+- [x] Detached Clean-Build und getrennte paketbezogene Gates orchestrieren.
+- [x] Draft-Pre-Release, exakten Asset-Rückdownload und Hashvergleich
+  implementieren.
+- [x] Pilot-Appcast mit erlaubtem Einzelstaging und Stable-Schutz
+  implementieren.
+- [x] Öffentliche Endverifikation einschließlich Ed25519-Signaturen
+  implementieren.
+- [x] Build-303-Metadaten read-only als Regressionsreferenz prüfen.
+- [x] Dry-run ohne Build, Tag, Release, Appcast oder Sparkle-Privatmaterial
+  bereitstellen.
+- [ ] Ersten zukünftigen Build erst nach separater Versions-/Buildentscheidung,
+  Gesamtsuite und expliziten Veröffentlichungsgates mit der Automation
+  durchführen.
+
+## Historische Releasevorbereitung 0.3.0 / Build 303
+
+**Historischer Status vor Veröffentlichung:** Version, Dokumentation, Handbuch
+und Screenshots waren auf den Vorbereitungsstand Build 303 ausgerichtet. Der
+Restore-Neustartfix war
+committed. Der finale Clean-Build und die reale Paket-/Hardwareabnahme standen
+noch aus; es gab keinen Release Candidate, kein Stable-Appcast und keinen
 automatischen Pilotrollout.
 
 - [x] Qt-Standardbestätigungen read-only inventarisieren und auf explizite

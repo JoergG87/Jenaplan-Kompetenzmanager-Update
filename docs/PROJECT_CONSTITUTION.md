@@ -1,5 +1,24 @@
 # Project Constitution
 
+## Pilot-Releaseautomation
+
+Die lokale Pilot-Releaseautomation ist ein rein technischer, terminalbasierter
+Release-Application-Service außerhalb von Produktstartup, PySide, SQLite,
+Fachlogik und Runtime-Daten. Sie darf ausschließlich einen bereits fachlich
+und durch die Gesamtsuite freigegebenen, sauberen Commit reproduzierbar in
+einem detached Worktree bauen, paketbezogen prüfen und nach zwei expliziten
+Veröffentlichungsgates als GitHub-Pre-Release und im Pilot-Appcast
+veröffentlichen.
+
+Version und Build werden nicht durch die Automation geändert. Das lokale
+Manifest ist die monotone Wiederaufnahme- und Assetidentitätsquelle;
+öffentliche Metadaten werden vor dem Appcast-Commit erneut heruntergeladen und
+gegen Größe, SHA-256, Commit und Signaturen geprüft. Stable, Force-Push,
+pauschales Staging, Produktdaten, private Schlüssel und automatische
+Keychain-Änderungen sind ausgeschlossen. Build 303 bleibt eine unveränderliche
+veröffentlichte read-only Referenz und darf nicht erneut veröffentlicht
+werden.
+
 ## P1-Paket 1 - technische Persistenzreihenfolge und Beobachtungs-Unit-of-Work
 
 Für die Bestätigungsfrische ist ausschließlich die monotone technische

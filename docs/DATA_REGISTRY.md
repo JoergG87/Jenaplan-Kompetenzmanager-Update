@@ -1,5 +1,23 @@
 # Data Registry
 
+## Pilot-Releaseautomation
+
+| Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| `release/release_config.toml` | nicht geheime Produkt-, Repository-, Pilotfeed-, Asset- und Gatekonfiguration | committed; keine Tokens, Passwörter, privaten Schlüssel, Keychain-Inhalte oder privaten Pfade | kanonische Releasekonfiguration |
+| `src/version.py` am Manifest-Commit | sichtbare Version und technische Buildnummer | read-only; Änderung ausschließlich als vorheriger separater Commit | kanonische Versionsquelle |
+| `release-manifest.local.json` | Commit, Branch, Laufpfade, Laufzeitversionen, Assets, Größen, SHA-256, Gates, Remote-IDs und Phasen | ignorierter Release-Output; Modus 600; keine Fach- oder Produktpersistenz | lokale Wiederaufnahmequelle |
+| `release-manifest.json` | sanitierte Projektion des lokalen Manifests | ignorierter Release-Output; keine privaten absoluten Pfade oder Secrets | veröffentlichbare technische Variante |
+| detached Release-Worktree und frischer Buildroot | exakter Manifest-Commit, Venv, PyInstaller- und DMG-Zwischenstände | restriktiver temporärer Root; keine Pilot- oder Produktdaten | technische Laufzeitdaten |
+| GitHub-Pre-Release | DMG, Dokumentations-ZIP, Prüfsummen und Inventar | öffentlich nach Draft-Download-/Hashprüfung; kein Stable-/Latest-Release | Pilot-Release |
+| `pilot/appcast.xml` und Pilot-Release-Notes | signierter Updateeintrag, ältere Pilotbuilds und öffentliche Downloadmetadaten | Update-Repository; ausschließlich einzeln erlaubte Pilotdateien | Pilotkanal |
+| Sparkle-Keychain-Account | bestehendes privates Ed25519-Signiermaterial | bleibt im lokalen macOS-Keychain; wird weder gelesen noch serialisiert | externe geheime Releasequelle |
+
+Build 303 ist die unveränderliche veröffentlichte Regressionsquelle. Seine
+öffentlichen Release- und Appcast-Metadaten werden read-only geprüft; lokale
+Buildartefakte, echte Schülerdatenbanken, Backups und Runtime-Daten sind keine
+Quelle der Automation.
+
 ## P1-Paket 1 - persistente Ereignisse und kontrolliertes Attachment-Staging
 
 | Datenquelle | Inhalt | Eigentümer / Regel |

@@ -1,5 +1,14 @@
 # UI Data Mapping
 
+## Pilot-Releaseautomation - keine Produktprojektion
+
+Releasekonfiguration, Manifest, Phasen, Assethashes, GitHub-/Appcast-Zustände,
+Signaturen, Fehlerdetails und Veröffentlichungsfreigaben werden nicht in
+PySide, Einstellungen, Über-Dialog oder Startup projiziert. Die Automation ist
+ausschließlich terminalbasiert und ergänzt keine UI-Felder, Aktionen oder
+Persistenz. Die bestehende sichtbare Version-/Buildprojektion bleibt direkt an
+`src.version` gebunden.
+
 ## P1-Paket 1 - sichtbarer unklarer Bestätigungsstand
 
 | UI-Feld/Aktion | Quelle | Persistenz | Regel |

@@ -1,5 +1,20 @@
 # Technical Naming Registry
 
+## Pilot-Releaseautomation
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `ReleaseConfig` | Validierte kanonische Projektion der ausschließlich nicht geheimen Werte aus `release/release_config.toml`; Stable muss `false` sein | Release Automation |
+| `ReleasePilot` | Terminalbasierter Application Service für Inspect, Prepare, Build, Paketprüfung, GitHub, Appcast und öffentliche Verifikation | Release Automation |
+| `release-manifest.local.json` | Ignoriertes lokales, atomar geschriebenes Wiederaufnahme- und Assetidentitätsmanifest mit privaten Laufpfaden | Release Automation |
+| `release-manifest.json` | Sanitierte Manifestvariante ohne private absolute Pfade oder Secrets | Release Automation |
+| `release/release_state.json` | Ignorierter lokaler Zeiger auf den aktuellen Releaselauf; keine fachliche oder Security-Persistenz | Release Automation |
+| `PHASES` | Monotone Allowlist `inspected`, `prepared`, `built`, `package_verified`, `github_draft_created`, `github_assets_verified`, `github_published`, `appcast_prepared`, `appcast_published`, `remote_verified` | Release Automation |
+| `package_verified` | Alle konfigurierten Gates sind am exakten DMG bestanden; keine Aussage über die vorherige fachliche Gesamtsuite oder reale Hardwareabnahme | Release QA |
+| `JENAPLAN_SPARKLE_ROOT` | Ausschließlich lokaler Pfad zur verifizierten Sparkle-Distribution; kein Schlüsselpfad und keine persistierte Konfiguration | Release Operations |
+| `--approve-github-publish` | Explizites Orchestratorgate für Tag, Draft und GitHub-Pre-Release | Release Operations |
+| `--approve-appcast-publish` | Zusätzliches explizites Gate für Signatur, Pilot-Appcast-Commit und Remoteverifikation | Release Operations |
+
 ## P1-Paket 1 - Ereignisordnung und Attachment-Unit-of-Work
 
 | Technischer Name | Bedeutung | Eigentümer |

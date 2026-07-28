@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Wiederaufnehmbare lokale Pilot-Releaseautomation mit kanonischer nicht
+  geheimer Konfiguration, detached Clean-Build, manifestgebundenen Assets,
+  getrennten Paketgates, GitHub-Draft-/Rückdownloadprüfung, signierter
+  Pilot-Appcast-Publikation, öffentlicher Endverifikation, Dry-run und
+  Stable-Schutz ergänzt.
+- Build 303 als unveränderliche veröffentlichte read-only Referenz für Tag,
+  Pre-Release, Assetmetadaten und Pilot-Appcast dokumentiert; historische
+  Vorbereitungsnachweise bleiben als damaliger Stand gekennzeichnet.
 - Aktive Kursverbünde samt Stammgruppen- und Kurszuordnungen sind Teil des
   transaktionskonsistenten Schüler-/Dashboard-Projektionssnapshots; die
   Dashboard-Auflösung liest nach dem Batch keine zweite Verbindung und ihr

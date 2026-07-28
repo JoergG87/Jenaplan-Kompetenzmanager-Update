@@ -1,5 +1,42 @@
 # Data Lifecycle
 
+## Pilot-Releaseautomation
+
+1. `inspect` bindet sauberen Branch, HEAD, Remote, zentrale Version,
+   `gh`-Status, öffentlichen Pilot-Appcast, Tag-/Releasefreiheit und
+   deaktivierten Stable-Kanal read-only.
+2. `prepare` erzeugt atomar lokales und sanitisiertes Manifest. Version und
+   Build müssen bereits im Manifest-Commit stehen und höher als der aktuelle
+   Pilotbuild sein.
+3. `build` checkt exakt den Manifest-Commit detached in einen privaten
+   temporären Worktree aus. Ein frisches Venv installiert ausschließlich
+   committed Pins; alte Build- und Dist-Wurzeln werden nicht übernommen.
+4. DMG, Dokumentations-ZIP, Prüfsummen, Inventar und lokale Release Notes
+   werden mit Größe und SHA-256 an das Manifest gebunden. Ein Buildfehler
+   setzt nur die Phase `built` auf `failed`.
+5. `package-test` mountet das DMG read-only und prüft Metadaten, arm64,
+   Codesign, native Laufzeiten, Sparkle, App-Start, verbotene Artefakte,
+   private Pfade, Pilotfeed und Stable-Sperre. Der Restore-Smoke ist getrennt.
+6. `publish-github` pusht ohne Force, erzeugt einen annotierten Tag und zuerst
+   ein Draft-Pre-Release. Alle exakt erlaubten Assets werden erneut
+   heruntergeladen und gegen Manifestgröße und SHA-256 geprüft, bevor der
+   Draft als nicht-Latest Pre-Release veröffentlicht wird.
+7. `publish-appcast` lädt das veröffentlichte DMG erneut, verifiziert seine
+   Identität und lässt es über den bestehenden Keychain-Account signieren.
+   Nur neuer Pilot-Appcast und Release-Notes-Seite werden einzeln gestaged.
+   Stable bleibt bytegleich beziehungsweise nicht vorhanden.
+8. `verify` liest ausschließlich öffentliche GitHub-, Asset-, Release-Notes-
+   und Feedzustände. Tagziel, Hashes, Version, Build, Architektur,
+   Mindest-macOS und Ed25519-Signaturen müssen übereinstimmen, bevor
+   `remote_verified` gesetzt wird.
+
+Jede Phase benötigt vollständig bestätigte Vorgänger. Ein exakter vorhandener
+Zustand darf idempotent fortgesetzt, ein abweichender Zustand niemals
+überschrieben werden. Ein GitHub-Ausfall nach Build oder Appcast-Ausfall nach
+GitHub-Veröffentlichung invalidiert keine zuvor bestätigte Phase. Private
+Schlüssel, GitHub-Tokens, Passwörter und Produktdaten werden nicht in Manifest,
+Logs, Argumentlisten oder Releaseausgabe übernommen.
+
 ## Performance-P1 - konsistenter Dokumentations-Refresh
 
 Schuelerliste und Dashboard-Heatmap oeffnen fuer ihre gemeinsame fachliche
