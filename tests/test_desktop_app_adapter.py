@@ -5593,6 +5593,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             ),
         )
 
+        label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
         self.assertIn("8 / 20", label_texts)
         self.assertIn("Bestätigter Stand", label_texts)

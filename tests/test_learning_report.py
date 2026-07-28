@@ -12,7 +12,7 @@ from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QDate, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -32,6 +32,7 @@ from src.desktop_app import shell
 from src.desktop_app.dialogs.learning_report_dialog import (
     LearningReportDialog,
     LearningReportDraftSelectionDialog,
+    LearningReportPeriodSelectionDialog,
 )
 from src.desktop_app.components import SegmentedControl
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
@@ -127,9 +128,34 @@ class LearningReportTest(unittest.TestCase):
     def test_shell_always_offers_existing_or_new_report_selection(self) -> None:
         source = inspect.getsource(shell.AppShell.open_learning_report_dialog)
 
-        self.assertIn("if drafts:", source)
+        self.assertIn("elif len(drafts) == 1:", source)
+        self.assertIn("elif drafts:", source)
         self.assertIn("LearningReportDraftSelectionDialog.choose", source)
+        self.assertIn("LearningReportPeriodSelectionDialog.choose", source)
         self.assertNotIn("drafts[0] if drafts else None", source)
+
+    def test_new_report_period_selection_requires_explicit_valid_dates(self) -> None:
+        dialog = LearningReportPeriodSelectionDialog()
+
+        self.assertEqual(dialog.start_input.specialValueText(), "Bitte wählen")
+        self.assertEqual(dialog.end_input.specialValueText(), "Bitte wählen")
+        dialog._accept_selected_period()
+        self.assertEqual(
+            dialog.validation_message.text(),
+            "Bitte wähle Beginn und Ende des Berichtszeitraums aus.",
+        )
+        dialog.start_input.setDate(QDate(2026, 2, 1))
+        dialog.end_input.setDate(QDate(2026, 2, 1))
+        dialog._accept_selected_period()
+        self.assertEqual(
+            dialog.validation_message.text(),
+            "Das Ende des Berichtszeitraums muss nach dem Beginn liegen.",
+        )
+        dialog.end_input.setDate(QDate(2026, 7, 31))
+        dialog._accept_selected_period()
+
+        self.assertEqual(dialog.selected_period, (date(2026, 2, 1), date(2026, 7, 31)))
+        self.assertEqual(dialog.result(), dialog.DialogCode.Accepted)
 
     def test_report_draft_selection_lists_periods_and_allows_new_or_cancel(self) -> None:
         first = LearningReportDraftViewModel(

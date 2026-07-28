@@ -18,6 +18,8 @@ Versionserhöhung und keine Build-/Releaseaktion.
   Beobachtungsschwerpunkte anzeigen.
 - [x] Paket-1-Fokus- und betroffene Regressionstests ausführen: 181 Tests und
   8 Subtests bestanden; keine Gesamtsuite.
+- [x] Abschließenden P1-Fokus nach vereinheitlichter Zeitraumwahl ausführen:
+  49 Tests bestanden; kein Build und keine Gesamtsuite.
 - [x] Gesamtsuite, Build, Push, Tag, Release und Appcast ausdrücklich nicht
   ausgeführt.
 

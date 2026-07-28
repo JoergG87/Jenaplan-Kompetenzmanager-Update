@@ -6,6 +6,7 @@ import os
 import inspect
 import unittest
 from datetime import date
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -18,6 +19,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QTreeWidget,
+    QWidget,
 )
 
 from src.core.learning_conference import (
@@ -347,7 +349,19 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         )
 
         self.assertEqual(no_leg.learning_conference_status.state, "no_draft")
+        self.assertEqual(
+            no_leg.learning_conference_status.primary_action.label,
+            "LEG beginnen",
+        )
+        self.assertIn(
+            "LEG beginnen",
+            [step.action.label for step in no_leg.next_steps],
+        )
         self.assertEqual(draft_only.learning_conference_status.state, "draft")
+        self.assertEqual(
+            draft_only.learning_conference_status.primary_action.label,
+            "LEG öffnen",
+        )
         self.assertEqual(completed.learning_conference_status.state, "completed")
         self.assertEqual(
             completed.learning_conference_status.status_label,
@@ -615,13 +629,13 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         screen.report_draft_requested.connect(
             lambda *values: requested.append(tuple(values))
         )
+        screen.show()
+        self.app.processEvents()
         button = next(
             item
             for item in screen.findChildren(QPushButton)
             if item.objectName() == "ReportOverviewPrepareSubject_math"
         )
-        screen.show()
-        self.app.processEvents()
         button.setFocus()
 
         QTest.keyClick(button, Qt.Key.Key_Space)
@@ -629,6 +643,163 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         self.assertEqual(requested, [("STU-1", "", "math", "")])
         self.assertTrue(
             button.focusPolicy() & Qt.FocusPolicy.TabFocus
+        )
+        screen.close()
+
+    def test_subject_overview_shows_four_then_all_in_existing_order(self) -> None:
+        preparation = LearningReportPreparationViewModel(
+            "STU-1",
+            "Mara Beispiel",
+            "Sonnenbogen",
+            tuple(
+                LearningReportSubjectViewModel(
+                    f"subject-{index}",
+                    f"Fach {index}",
+                    (
+                        SimpleNamespace(
+                            documentation_state="confirmed",
+                            selectable=True,
+                        ),
+                        SimpleNamespace(
+                            documentation_state="undocumented",
+                            selectable=True,
+                        ),
+                    ),
+                    (SimpleNamespace(), SimpleNamespace()),
+                )
+                for index in range(1, 7)
+            ),
+        )
+        overview = build_report_overview((), {}, (), {}, preparation)
+        screen = self._screen(overview)
+        screen.show()
+        screen.resize(1400, 900)
+        self.app.processEvents()
+
+        def subject_buttons() -> list[QPushButton]:
+            return [
+                button
+                for button in screen.findChildren(QPushButton)
+                if button.objectName().startswith("ReportOverviewPrepareSubject_")
+            ]
+
+        self.assertEqual(
+            [button.objectName() for button in subject_buttons()],
+            [
+                "ReportOverviewPrepareSubject_subject-1",
+                "ReportOverviewPrepareSubject_subject-2",
+                "ReportOverviewPrepareSubject_subject-3",
+                "ReportOverviewPrepareSubject_subject-4",
+            ],
+        )
+        toggle = next(
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.objectName() == "ReportOverviewSubjectsToggle"
+        )
+        self.assertEqual(toggle.text(), "Alle anzeigen (6)")
+        first_tile = next(
+            widget
+            for widget in screen.findChildren(QWidget)
+            if (
+                widget.objectName() == "ReportOverviewSubjectTile"
+                and any(
+                    label.text() == "Fach 1"
+                    for label in widget.findChildren(QLabel)
+                )
+            )
+        )
+        first_tile_text = " ".join(
+            label.text() for label in first_tile.findChildren(QLabel)
+        )
+        documentation_ring = next(
+            widget
+            for widget in first_tile.findChildren(QWidget)
+            if widget.objectName() == "ReportOverviewSubjectDocumentationRing"
+        )
+        self.assertIn("1 / 2 Kompetenzen dokumentiert", first_tile_text)
+        self.assertIn("2 Beobachtungen", first_tile_text)
+        self.assertEqual(
+            documentation_ring.accessibleName(),
+            "Fach 1: 1 von 2 Kompetenzen dokumentiert",
+        )
+
+        QTest.mouseClick(toggle, Qt.MouseButton.LeftButton)
+        self.app.processEvents()
+
+        self.assertEqual(len(subject_buttons()), 6)
+        expanded_toggle = next(
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.objectName() == "ReportOverviewSubjectsToggle"
+        )
+        self.assertEqual(expanded_toggle.text(), "Weniger anzeigen")
+        screen.close()
+
+    def test_milestones_are_capacity_limited_and_include_real_confirmation(
+        self,
+    ) -> None:
+        draft = self._report_draft("RPD-1")
+        revisions = tuple(
+            self._report_revision(
+                number,
+                (
+                    FINALIZED_REVISION_STATUS
+                    if number == 6
+                    else REPORT_SUPERSEDED_REVISION_STATUS
+                ),
+            )
+            for number in range(1, 7)
+        )
+        overview = self._overview(
+            report_drafts=(draft,),
+            report_states={
+                "RPD-1": self._report_state(
+                    current=revisions[-1],
+                    revisions=revisions,
+                )
+            },
+        )
+        screen = self._screen(overview)
+        screen.current_profile_dashboard = SimpleNamespace(
+            orientation_changes=(
+                SimpleNamespace(
+                    competency_label="Uhrzeiten ablesen",
+                    triggering_event=SimpleNamespace(
+                        source="confirmation",
+                        event_date=date(2099, 7, 28),
+                    ),
+                ),
+            )
+        )
+        screen.show()
+        screen.resize(1400, 900)
+        screen.set_report_overview(overview)
+        self.app.processEvents()
+
+        track = next(
+            widget
+            for widget in screen.findChildren(QWidget)
+            if widget.objectName() == "ReportOverviewMilestoneTrack"
+        )
+        milestone_icons = [
+            button
+            for button in track.findChildren(QPushButton)
+            if button.objectName() == "ReportOverviewMilestoneIcon"
+        ]
+        labels = " ".join(
+            label.text() for label in track.findChildren(QLabel)
+        )
+
+        self.assertEqual(len(milestone_icons), 4)
+        self.assertIn("Kompetenz bestätigt", labels)
+        self.assertIn("Uhrzeiten ablesen", labels)
+        self.assertIn("Jul", labels)
+        self.assertNotIn("28.07.2099", labels)
+        self.assertNotIn("Kompetenz abgeschlossen", labels)
+        self.assertGreaterEqual(
+            len({button.icon().cacheKey() for button in milestone_icons}),
+            2,
         )
         screen.close()
 
@@ -648,20 +819,32 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         self.assertEqual(dialog.selected_competency_ids, before)
         dialog.close()
 
-    def test_report_page_reflows_at_small_width_and_keeps_wide_workspace(self) -> None:
+    def test_report_page_reflows_through_three_two_and_one_columns(self) -> None:
         screen = self._screen(self._overview())
         screen.show()
         screen.resize(1000, 760)
         self.app.processEvents()
-        compact_index = screen.report_overview_grid.indexOf(
-            screen.workspace_boundary_card
-        )
-        _row, compact_column, _row_span, compact_span = (
-            screen.report_overview_grid.getItemPosition(compact_index)
-        )
+        two_column_positions = {
+            card.objectName(): screen.report_overview_grid.getItemPosition(
+                screen.report_overview_grid.indexOf(card)
+            )
+            for card in screen._report_overview_cards
+        }
+        self.assertEqual(screen._report_overview_columns, 2)
+
+        screen.resize(800, 760)
+        self.app.processEvents()
+        one_column_positions = {
+            card.objectName(): screen.report_overview_grid.getItemPosition(
+                screen.report_overview_grid.indexOf(card)
+            )
+            for card in screen._report_overview_cards
+        }
+        self.assertEqual(screen._report_overview_columns, 1)
+
         screen.resize(1400, 900)
         self.app.processEvents()
-        positions = {
+        wide_positions = {
             card.objectName(): screen.report_overview_grid.getItemPosition(
                 screen.report_overview_grid.indexOf(card)
             )
@@ -676,43 +859,55 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 screen.history_card,
             )
         }
-        wide_index = screen.report_overview_grid.indexOf(
-            screen.workspace_boundary_card
-        )
-        wide_row, wide_column, _wide_row_span, wide_span = (
-            screen.report_overview_grid.getItemPosition(wide_index)
-        )
-
-        self.assertEqual((compact_column, compact_span), (0, 1))
+        self.assertEqual(screen._report_overview_columns, 3)
         self.assertEqual(
-            positions["ReportOverviewReportStatusCard"][:2],
+            [position[:2] for position in two_column_positions.values()],
+            [
+                (0, 0),
+                (0, 1),
+                (1, 0),
+                (1, 1),
+                (2, 0),
+                (2, 1),
+                (3, 0),
+                (3, 1),
+            ],
+        )
+        self.assertEqual(
+            [position[:2] for position in one_column_positions.values()],
+            [(row, 0) for row in range(8)],
+        )
+        self.assertEqual(
+            wide_positions["ReportOverviewReportStatusCard"][:2],
             (0, 0),
         )
         self.assertEqual(
-            positions["ReportOverviewLearningConferenceStatusCard"][:2],
+            wide_positions["ReportOverviewLearningConferenceStatusCard"][:2],
             (0, 1),
         )
         self.assertEqual(
-            positions["ReportOverviewNextStepsCard"][:2],
+            wide_positions["ReportOverviewNextStepsCard"][:2],
             (0, 2),
         )
         self.assertEqual(
-            positions["ReportOverviewTimelineCard"],
-            (1, 0, 1, 2),
+            wide_positions["ReportOverviewTimelineCard"],
+            (1, 0, 1, 1),
         )
         self.assertEqual(
-            positions["ReportOverviewSubjectsCard"][:2],
-            (1, 2),
+            wide_positions["ReportOverviewSubjectsCard"],
+            (1, 1, 1, 2),
         )
         self.assertEqual(
             {
-                positions["ReportOverviewStrengthsCard"][0],
-                positions["ReportOverviewWatchCard"][0],
-                positions["ReportOverviewHistoryCard"][0],
+                wide_positions["ReportOverviewStrengthsCard"][0],
+                wide_positions["ReportOverviewWatchCard"][0],
+                wide_positions["ReportOverviewHistoryCard"][0],
             },
             {2},
         )
-        self.assertEqual((wide_row, wide_column, wide_span), (3, 1, 2))
+        self.assertFalse(hasattr(screen, "competency_selection_card"))
+        self.assertFalse(hasattr(screen, "workspace_boundary_card"))
+        self.assertTrue(all(card.isVisible() for card in screen._report_overview_cards))
         report_scroll = screen.profile_tabs.widget(3)
         self.assertIsInstance(report_scroll, QScrollArea)
         self.assertEqual(
@@ -823,6 +1018,157 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             )
         leg_shell.show_student_profile.assert_called_once_with("STU-1")
 
+    def test_report_without_drafts_requires_period_and_passes_it_transiently(
+        self,
+    ) -> None:
+        report_shell = Mock()
+        report_shell.adapter.list_learning_report_drafts_for_student.return_value = ()
+        report_shell.adapter.learning_report_preparation_for_student.return_value = (
+            self.preparation
+        )
+        report_shell._selected_report_draft_ids = {"STU-1": "RPD-STALE"}
+        dialog = self._fake_workspace_dialog()
+        selected_period = (date(2026, 2, 1), date(2026, 7, 31))
+
+        with (
+            patch.object(
+                shell.LearningReportPeriodSelectionDialog,
+                "choose",
+                return_value=(True, selected_period),
+            ) as choose_period,
+            patch.object(
+                shell,
+                "LearningReportDialog",
+                return_value=dialog,
+            ) as create_dialog,
+            patch.object(shell, "exec_maximized_workspace"),
+        ):
+            shell.AppShell.open_learning_report_dialog(
+                report_shell,
+                "STU-1",
+                subject_id="math",
+            )
+
+        choose_period.assert_called_once_with(report_shell)
+        create_dialog.assert_called_once_with(
+            self.preparation,
+            report_shell,
+            None,
+            None,
+            selected_period,
+        )
+        self.assertNotIn("STU-1", report_shell._selected_report_draft_ids)
+        dialog.focus_evidence_subject.assert_called_once_with("math")
+        report_shell.show_student_profile.assert_called_once_with("STU-1")
+
+    def test_new_report_from_multiple_drafts_also_requires_period(self) -> None:
+        first = self._report_draft("RPD-1")
+        second = self._report_draft("RPD-2")
+        report_shell = Mock()
+        report_shell.adapter.list_learning_report_drafts_for_student.return_value = (
+            first,
+            second,
+        )
+        report_shell.adapter.learning_report_preparation_for_student.return_value = (
+            self.preparation
+        )
+        report_shell._selected_report_draft_ids = {"STU-1": "RPD-1"}
+        dialog = self._fake_workspace_dialog()
+        selected_period = (date(2026, 8, 1), date(2027, 1, 31))
+
+        with (
+            patch.object(
+                shell.LearningReportDraftSelectionDialog,
+                "choose",
+                return_value=(True, None),
+            ) as choose_draft,
+            patch.object(
+                shell.LearningReportPeriodSelectionDialog,
+                "choose",
+                return_value=(True, selected_period),
+            ) as choose_period,
+            patch.object(
+                shell,
+                "LearningReportDialog",
+                return_value=dialog,
+            ) as create_dialog,
+            patch.object(shell, "exec_maximized_workspace"),
+        ):
+            shell.AppShell.open_learning_report_dialog(report_shell, "STU-1")
+
+        choose_draft.assert_called_once()
+        choose_period.assert_called_once_with(report_shell)
+        create_dialog.assert_called_once_with(
+            self.preparation,
+            report_shell,
+            None,
+            None,
+            selected_period,
+        )
+        self.assertNotIn("STU-1", report_shell._selected_report_draft_ids)
+        report_shell.show_student_profile.assert_called_once_with("STU-1")
+
+    def test_new_report_period_cancel_stops_before_preparation(self) -> None:
+        report_shell = Mock()
+        report_shell.adapter.list_learning_report_drafts_for_student.return_value = ()
+        report_shell._selected_report_draft_ids = {}
+
+        with (
+            patch.object(
+                shell.LearningReportPeriodSelectionDialog,
+                "choose",
+                return_value=(False, None),
+            ) as choose_period,
+            patch.object(shell, "LearningReportDialog") as create_dialog,
+        ):
+            shell.AppShell.open_learning_report_dialog(report_shell, "STU-1")
+
+        choose_period.assert_called_once_with(report_shell)
+        report_shell.adapter.learning_report_preparation_for_student.assert_not_called()
+        create_dialog.assert_not_called()
+        report_shell.show_student_profile.assert_not_called()
+
+    def test_single_report_draft_opens_without_period_selection(self) -> None:
+        report = self._report_draft("RPD-1")
+        report_shell = Mock()
+        report_shell.adapter.list_learning_report_drafts_for_student.return_value = (
+            report,
+        )
+        report_shell.adapter.learning_report_preparation_for_student.return_value = (
+            self.preparation
+        )
+        report_shell.adapter.learning_report_revision_status.return_value = Mock()
+        report_shell._selected_report_draft_ids = {}
+        dialog = self._fake_workspace_dialog()
+
+        with (
+            patch.object(
+                shell.LearningReportPeriodSelectionDialog,
+                "choose",
+            ) as choose_period,
+            patch.object(
+                shell,
+                "LearningReportDialog",
+                return_value=dialog,
+            ) as create_dialog,
+            patch.object(shell, "exec_maximized_workspace"),
+        ):
+            shell.AppShell.open_learning_report_dialog(report_shell, "STU-1")
+
+        choose_period.assert_not_called()
+        create_dialog.assert_called_once_with(
+            self.preparation,
+            report_shell,
+            report,
+            report_shell.adapter.learning_report_revision_status.return_value,
+            None,
+        )
+        self.assertEqual(
+            report_shell._selected_report_draft_ids["STU-1"],
+            "RPD-1",
+        )
+        report_shell.show_student_profile.assert_called_once_with("STU-1")
+
     def test_multiple_draft_subject_route_selects_then_focuses_exact_subject(
         self,
     ) -> None:
@@ -846,6 +1192,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 "choose",
                 return_value=(True, second),
             ) as choose,
+            patch.object(
+                shell.LearningReportPeriodSelectionDialog,
+                "choose",
+            ) as choose_period,
             patch.object(shell, "LearningReportDialog", return_value=dialog),
             patch.object(shell, "exec_maximized_workspace"),
         ):
@@ -856,6 +1206,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             )
 
         choose.assert_called_once()
+        choose_period.assert_not_called()
         self.assertEqual(
             report_shell._selected_report_draft_ids["STU-1"],
             "RPD-2",

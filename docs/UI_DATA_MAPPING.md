@@ -7,13 +7,14 @@
 | Berichtstatus | RPD-Liste + getrennte RPT-/RPV-Revisionsprojektion | Nein | kein, eindeutig, mehrdeutig, geändert, finalisiert oder Integritätsfehler; niemals im Widget berechnet |
 | Berichtszeitraum | `report_drafts.period_start` / `period_end` des eindeutig gewählten RPD | Nein | einzige Zeitgrundlage; keine Schuljahresbehauptung und keine inhaltliche Projektion ohne eindeutigen RPD |
 | Berichtaktion | Anzahl eindeutiger RPD + bestehende Shell-Aktionen | Nein | `Bericht erstellen`, `Bericht öffnen` oder `Bericht auswählen`; mehrere Drafts werden nie still aktiviert |
-| LEG-Status | LCD-Liste + getrennte LCF-/LCV-Revisionsprojektion | Nein | keine Berichtsdaten; bei Mehrdeutigkeit `LEG auswählen` |
+| LEG-Status | LCD-Liste + getrennte LCF-/LCV-Revisionsprojektion | Nein | ohne Draft `LEG beginnen`, mit eindeutigem Draft `LEG öffnen`, bei Mehrdeutigkeit `LEG auswählen`; keine Berichtsdaten |
 | Nächste Schritte | bestehende Draft-/Revisionszustände und vorhandene Navigation | Nein | ausschließlich konkrete Aktionen; keine Empfehlung, Priorisierung oder automatische Auswahl |
 | Bericht-/LEG-Historie | getrennte RPD-/RPV- und LCD-/LCV-Leseprojektionen | Nein | gemeinsames Display mit sichtbarem Dokumenttyp; technische IDs verborgen |
-| Fachübersicht | vorhandene `LearningReportPreparationViewModel.subjects` | Nein | Fachname und Sprunganker; keine neuen oder erfundenen Zählwerte |
-| `Bericht vorbereiten` | `subject_id` + eindeutiger RPD-Zustand | Nein | bei keinem Draft Erstellungsweg, bei mehreren Auswahl, sonst vorhandenen Editor auf `Kompetenzen & Belege`/Fach fokussieren; keine Kompetenzübernahme |
-| Zeitleiste / Stärken / Im Blick behalten | keine Paket-1-Datenquelle | Nein | klarer neutraler Leerzustand; keine Schwellen, Scores, Kandidaten oder Pädagogiklogik |
-| Berichtarbeitsraum-Grenze | vorhandener `LearningReportDialog` | bestehender Draftpfad erst nach bewusster Aktion | kein zweiter Editor; Paket 1 navigiert in Speichern, Revisionen, Vorschau und PDF des bestehenden Arbeitsraums |
+| Fachübersicht | vorhandene `LearningReportPreparationViewModel.subjects` mit `documented_count`, `current_count` und fachbezogenen Evidence-Zeilen | Nein | zunächst höchstens vier Fächer in vorhandener Reihenfolge, alle weiteren nur nach lokaler bewusster Erweiterung; neutrales Kreisdiagramm wie im Schülerprofil, Kompetenz- und Beobachtungsanzahl sowie Sprunganker; keine qualitative Bewertung, Empfehlung oder Auswahl |
+| `Bericht vorbereiten` | `subject_id` + eindeutiger RPD-Zustand | Nein | jeder neue Draft verlangt unabhängig von vorhandenen Drafts zuerst eine bewusste, nicht persistente Zeitraumauswahl; bei einem Draft direkt, bei mehreren nach Wahl eines vorhandenen Drafts oder zusätzlicher Zeitraumwahl für `Neuer Entwurf` in den vorhandenen Editor auf `Kompetenzen & Belege`/Fach fokussieren; keine Kompetenzübernahme |
+| Meilensteinleiste | vorhandene Bericht-/LEG-Historieneinträge + reale datierte Bestätigungsereignisse aus `StudentProfileDashboardViewModel.orientation_changes` | Nein | zeitlich geordnet und abhängig vom verfügbaren Platz auf die neuesten Einträge begrenzt; sichtbare Monatskürzel, verbundene Marker und vorhandene typspezifische Icons; `Kompetenz bestätigt` ist kein Kompetenzabschluss; keine Zeitleistenberechnung |
+| Stärken / Im Blick behalten | keine Paket-1-Datenquelle | Nein | klarer neutraler Leerzustand; keine Schwellen, Scores, Kandidaten oder Pädagogiklogik |
+| Berichtarbeitsraum-Grenze | vorhandener `LearningReportDialog` | bestehender Draftpfad erst nach bewusster Aktion | kein zweiter Editor; keine eigene untere Übersichtskarte mehr |
 
 ## Pilot-Releaseautomation - keine Produktprojektion
 

@@ -10,9 +10,10 @@
 | `LearningConferenceStatusCardViewModel` | Ausschließlich aus vorhandenen LCD-/LCF-/LCV-Lesesichten gebildete LEG-Statuskarte | Desktop ViewModel |
 | `ReportNextStepViewModel` | Konkreter Navigationsverweis auf eine bereits vorhandene Bericht-/LEG-Aktion ohne pädagogische Empfehlung oder automatische Priorisierung | Desktop ViewModel |
 | `ReportHistoryItemViewModel` | Gemeinsame read-only Anzeigezeile für getrennt gelesene Bericht- oder LEG-Drafts und -Revisionen | Desktop ViewModel |
-| `ReportSubjectEntryViewModel` | Neutrale Fachzeile mit technischem `subject_id`-Navigationsziel und ohne neue Zähl- oder Bedeutungslogik | Desktop ViewModel |
+| `ReportSubjectEntryViewModel` | Neutrale Fachkachel mit technischem `subject_id`, sichtbarem Fachnamen, bereits kanonischen Dokumentations-/Beobachtungszahlen und vorhandenem Bericht-Sprunganker; keine qualitative Bewertung und kein Kompetenzstatus | Desktop ViewModel |
 | `StudentDesktopAdapter.report_overview_for_student` | Einzige Desktop-Kompositionsgrenze für die Paket-1-Übersicht; hält Bericht- und LEG-Application-Queries getrennt | Desktop Adapter |
 | `LearningReportDialog.focus_evidence_subject` | Kontrollierte Navigationsgrenze zum bestehenden Bereich `Kompetenzen & Belege`; setzt Fachfilter und sichtbaren Tastaturfokus, übernimmt aber keine Kompetenz | Desktop UI |
+| `LearningReportPeriodSelectionDialog` | Nicht persistente Pflichtauswahl von Beginn und Ende vor dem Öffnen eines neuen Berichtsentwurfs; keine fachliche Zeitquelle und keine Kompetenzübernahme | Desktop UI |
 | `ReportOverview*` | Objektname-Familie der Paket-1-Karten, Zeitraumprojektion und Fachsprunganker; keine Daten- oder Statusquelle | Desktop UI |
 | `_selected_report_draft_ids` / `_selected_learning_conference_draft_ids` | Rein flüchtige Shell-Navigationserinnerung einer ausdrücklich getroffenen Auswahl; keine automatische Wahl und keine Persistenz | Desktop Shell |
 | `AppShell.open_learning_report_revision` / `AppShell.open_learning_conference_revision` | Gemeinsame direkte Navigationsgrenzen zu den bestehenden unveränderlichen RPV-/LCV-Leseansichten | Desktop Shell |

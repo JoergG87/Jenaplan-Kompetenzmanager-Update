@@ -169,6 +169,91 @@ class LearningReportDraftSelectionDialog(MotionDialog):
         return accepted, dialog.selected_draft
 
 
+class LearningReportPeriodSelectionDialog(MotionDialog):
+    """Collect an explicit reporting period before opening a new draft."""
+
+    _UNSELECTED_DATE = QDate(1900, 1, 1)
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("LearningReportPeriodSelectionDialog")
+        self.setWindowTitle("Berichtszeitraum auswählen")
+        self.setMinimumSize(520, 300)
+        self.selected_period: tuple[date, date] | None = None
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(14)
+        layout.addWidget(
+            DialogHeader(
+                "Berichtszeitraum festlegen",
+                "Lernentwicklungsbericht",
+                "Wähle den Zeitraum bewusst aus, bevor du den Bericht vorbereitest.",
+                icon_name="report",
+                context_role="report",
+            )
+        )
+        self.start_input = self._date_input("Beginn des Berichtszeitraums")
+        self.end_input = self._date_input("Ende des Berichtszeitraums")
+        fields = QGridLayout()
+        fields.setHorizontalSpacing(18)
+        fields.setVerticalSpacing(8)
+        fields.addWidget(_selection_label("Zeitraum von", "body"), 0, 0)
+        fields.addWidget(_selection_label("Zeitraum bis", "body"), 0, 1)
+        fields.addWidget(self.start_input, 1, 0)
+        fields.addWidget(self.end_input, 1, 1)
+        layout.addLayout(fields)
+        self.validation_message = _selection_label("", "small")
+        self.validation_message.setObjectName("LearningReportPeriodSelectionMessage")
+        layout.addWidget(self.validation_message)
+        actions = QHBoxLayout()
+        cancel_button = QPushButton("Abbrechen")
+        continue_button = QPushButton("Weiter")
+        configure_button(cancel_button, "quiet", "Zeitraumauswahl abbrechen")
+        configure_button(continue_button, "primary", "Gewählten Berichtszeitraum übernehmen")
+        cancel_button.clicked.connect(self.reject)
+        continue_button.clicked.connect(self._accept_selected_period)
+        actions.addWidget(cancel_button)
+        actions.addStretch(1)
+        actions.addWidget(continue_button)
+        layout.addLayout(actions)
+
+    def _date_input(self, accessible_name: str) -> QDateEdit:
+        editor = QDateEdit(self._UNSELECTED_DATE)
+        editor.setMinimumDate(self._UNSELECTED_DATE)
+        editor.setSpecialValueText("Bitte wählen")
+        editor.setCalendarPopup(True)
+        editor.setDisplayFormat("dd.MM.yyyy")
+        editor.setAccessibleName(accessible_name)
+        return editor
+
+    def _accept_selected_period(self) -> None:
+        start = self._selected_date(self.start_input)
+        end = self._selected_date(self.end_input)
+        if start is None or end is None:
+            self.validation_message.setText(
+                "Bitte wähle Beginn und Ende des Berichtszeitraums aus."
+            )
+            return
+        if end <= start:
+            self.validation_message.setText(
+                "Das Ende des Berichtszeitraums muss nach dem Beginn liegen."
+            )
+            return
+        self.selected_period = (start, end)
+        self.accept()
+
+    def _selected_date(self, editor: QDateEdit) -> date | None:
+        value = editor.date()
+        return None if value == self._UNSELECTED_DATE else value.toPython()
+
+    @classmethod
+    def choose(cls, parent: QWidget) -> tuple[bool, tuple[date, date] | None]:
+        dialog = cls(parent)
+        accepted = dialog.exec() == QDialog.DialogCode.Accepted
+        return accepted, dialog.selected_period
+
+
 class LearningReportDialog(MotionDialog):
     """Edit, persist, preview and export one report draft through explicit signals."""
 
@@ -184,10 +269,12 @@ class LearningReportDialog(MotionDialog):
         parent: QWidget | None = None,
         initial_draft: LearningReportDraftViewModel | None = None,
         revision_status: LearningReportRevisionStatusViewModel | None = None,
+        initial_period: tuple[date, date] | None = None,
     ) -> None:
         super().__init__(parent)
         self.preparation = preparation
         self._saved_draft = initial_draft
+        self._initial_period = initial_period
         self._revision_status = revision_status or LearningReportRevisionStatusViewModel(
             "not_finalized",
             "Entwurf",
@@ -527,8 +614,16 @@ class LearningReportDialog(MotionDialog):
         )
         layout.addWidget(self._field("Verantwortliche Lehrkraft", self.teacher_input), 2, 1)
         today = date.today()
-        period_start = self._saved_draft.period_start if self._saved_draft else date(today.year, 1, 1)
-        period_end = self._saved_draft.period_end if self._saved_draft else date(today.year, 12, 31)
+        period_start = (
+            self._saved_draft.period_start
+            if self._saved_draft
+            else self._initial_period[0] if self._initial_period else date(today.year, 1, 1)
+        )
+        period_end = (
+            self._saved_draft.period_end
+            if self._saved_draft
+            else self._initial_period[1] if self._initial_period else date(today.year, 12, 31)
+        )
         self.period_start = QDateEdit(QDate(period_start.year, period_start.month, period_start.day))
         self.period_end = QDateEdit(QDate(period_end.year, period_end.month, period_end.day))
         for editor in (self.period_start, self.period_end):

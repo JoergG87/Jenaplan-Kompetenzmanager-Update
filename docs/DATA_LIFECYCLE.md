@@ -15,13 +15,23 @@
 4. Drafts und Revisionen werden erst im ViewModel als gemeinsame read-only
    Anzeigeliste nach letzter relevanter Aktivität sortiert. Ihre fachlichen
    Aggregate und Repositories bleiben getrennt.
-5. Eine Kartenaktion übergibt ausschließlich technische Student-, Draft-,
+5. Die kompakte Meilensteinanzeige verwendet aus dieser Anzeigeliste nur die
+   neuesten, in den verfügbaren Platz passenden Bericht-/LEG-Ereignisse und
+   ergänzt reale datierte Kompetenzbestätigungen aus der bereits vorhandenen
+   Profilprojektion. Sie begrenzt ausschließlich die Sichtbarkeit, berechnet
+   keine Entwicklung und deutet eine Bestätigung nicht als Kompetenzabschluss.
+6. Eine Kartenaktion übergibt ausschließlich technische Student-, Draft-,
    Revisions- oder Fach-IDs an die Shell. Bei Mehrdeutigkeit öffnet sie die
    bestehende Auswahl; es gibt keine automatische Entwurfsaktivierung.
-6. `Bericht vorbereiten` öffnet den einzigen bestehenden Berichteditor,
-   aktiviert dort `Kompetenzen & Belege`, setzt den vorhandenen Fachfilter und
-   sichtbaren Fokus. Es wird keine Kompetenz ausgewählt oder gespeichert.
-7. Nach Schließen des Bericht- oder LEG-Arbeitsraums liest das Schülerprofil
+7. Jeder neue RPD öffnet unabhängig von bereits vorhandenen RPD zuerst eine
+   nicht persistente Zeitraumauswahl; erst nach der bewussten gültigen Auswahl
+   öffnet sich der einzige bestehende Berichteditor. Mit genau einem RPD öffnet
+   er diesen direkt, bei mehreren RPD entweder nach der bewussten Wahl eines
+   vorhandenen RPD oder nach zusätzlicher Zeitraumwahl für `Neuer Entwurf`.
+   Danach aktiviert `Bericht vorbereiten` `Kompetenzen & Belege`, setzt den
+   vorhandenen Fachfilter und sichtbaren Fokus. Es wird keine Kompetenz
+   ausgewählt oder gespeichert.
+8. Nach Schließen des Bericht- oder LEG-Arbeitsraums liest das Schülerprofil
    alle Paket-1-Projektionen erneut. Speichern, Zeitraumwechsel, Finalisierung
    und Abschluss bleiben dadurch konsistent sichtbar.
 

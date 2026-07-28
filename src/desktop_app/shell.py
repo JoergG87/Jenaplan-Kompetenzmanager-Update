@@ -57,6 +57,7 @@ from src.desktop_app.dialogs.master_data_dialog import (
 from src.desktop_app.dialogs.learning_report_dialog import (
     LearningReportDialog,
     LearningReportDraftSelectionDialog,
+    LearningReportPeriodSelectionDialog,
     LearningReportRevisionDialog,
 )
 from src.desktop_app.dialogs.learning_conference_dialog import (
@@ -1263,6 +1264,7 @@ class AppShell(QMainWindow):
             )
             return
         initial_draft = None
+        initial_period = None
         if report_draft_id:
             initial_draft = next(
                 (
@@ -1278,6 +1280,9 @@ class AppShell(QMainWindow):
                 )
                 return
             self._selected_report_draft_ids[student_id] = report_draft_id
+        elif len(drafts) == 1:
+            initial_draft = next(iter(drafts))
+            self._selected_report_draft_ids[student_id] = initial_draft.report_draft_id
         elif drafts:
             accepted, initial_draft = LearningReportDraftSelectionDialog.choose(
                 drafts,
@@ -1289,8 +1294,13 @@ class AppShell(QMainWindow):
                 self._selected_report_draft_ids[student_id] = (
                     initial_draft.report_draft_id
                 )
-        else:
+        if initial_draft is None:
             self._selected_report_draft_ids.pop(student_id, None)
+            accepted, initial_period = LearningReportPeriodSelectionDialog.choose(
+                self,
+            )
+            if not accepted or initial_period is None:
+                return
         preparation = self.adapter.learning_report_preparation_for_student(
             student_id,
             retained_competency_ids=(
@@ -1312,6 +1322,7 @@ class AppShell(QMainWindow):
             self,
             initial_draft,
             revision_status,
+            initial_period,
         )
         if subject_id:
             dialog.focus_evidence_subject(subject_id)

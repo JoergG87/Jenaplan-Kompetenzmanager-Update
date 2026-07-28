@@ -91,6 +91,9 @@ class ReportSubjectEntryViewModel:
     subject_id: str
     subject_name: str
     action: ReportOverviewActionViewModel
+    documented_count: int = 0
+    current_count: int = 0
+    observation_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -113,6 +116,10 @@ class ReportOverviewViewModel:
 def empty_report_overview() -> ReportOverviewViewModel:
     """Return the safe profile state before adapter data is available."""
     create = ReportOverviewActionViewModel("create_report", "Bericht erstellen")
+    begin_learning_conference = ReportOverviewActionViewModel(
+        "select_learning_conference",
+        "LEG beginnen",
+    )
     return ReportOverviewViewModel(
         report_status=ReportStatusCardViewModel(
             "no_draft",
@@ -130,13 +137,18 @@ def empty_report_overview() -> ReportOverviewViewModel:
             "Keine Revision",
             "Noch keine Änderung",
             "Für dieses Kind ist noch kein LEG-Arbeitsstand vorhanden.",
-            None,
+            begin_learning_conference,
         ),
         next_steps=(
             ReportNextStepViewModel(
                 "Bericht erstellen",
                 "Öffnet den bestehenden Erstellungsweg.",
                 create,
+            ),
+            ReportNextStepViewModel(
+                "LEG beginnen",
+                "Öffnet den bestehenden, getrennten LEG-Arbeitsraum.",
+                begin_learning_conference,
             ),
         ),
         history=(),
@@ -214,6 +226,9 @@ def build_report_overview(
                 selected_report.report_draft_id if selected_report else "",
                 subject.subject_id,
             ),
+            subject.documented_count,
+            subject.current_count,
+            len(subject.evidence),
         )
         for subject in (preparation.subjects if preparation is not None else ())
     )
@@ -614,7 +629,17 @@ def _next_steps(
             "Öffnet die bestehende Auswahl ohne Berichtsdaten zu verwenden.",
             action,
         ))
-    elif learning_conference_drafts:
+    elif not learning_conference_drafts:
+        action = ReportOverviewActionViewModel(
+            "select_learning_conference",
+            "LEG beginnen",
+        )
+        result.append(ReportNextStepViewModel(
+            action.label,
+            "Öffnet den bestehenden, getrennten LEG-Arbeitsraum.",
+            action,
+        ))
+    else:
         if (
             len(learning_conference_drafts) > 1
             and selected_learning_conference is None

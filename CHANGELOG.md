@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Berichte-Übersicht visuell verdichtet: höchstens vier Fächer vor bewusster
+  Erweiterung, platzbegrenzte Meilensteine aus vorhandenen Bericht-/LEG- und
+  Bestätigungsereignissen, eindeutige LEG-Aktionen sowie Entfernung der
+  redundanten unteren Arbeitsraumkarten. Die Fachkacheln zeigen vorhandene
+  neutrale Dokumentations- und Beobachtungszahlen mit denselben Kreisdiagrammen
+  wie das Schülerprofil und ohne Qualitätsbadge; die
+  Meilensteine verwenden Monatskürzel, eine verbindende Linie und
+  typspezifische Icons. Kompetenzbestätigung bleibt ausdrücklich von einem
+  nicht vorhandenen Kompetenzabschluss getrennt.
+- Jeder neue Berichtsentwurf verlangt nun unabhängig von bereits vorhandenen
+  Entwürfen eine bewusste, nicht persistente Zeitraumwahl, bevor sich der
+  bestehende Berichtarbeitsraum öffnet.
 - Berichte-Übersicht im Schülerprofil für Paket 1 vorbereitet: getrennte
   Bericht-/LEG-Statuskarten, eindeutiger RPD-Zeitraum, sichere Mehrfachauswahl,
   gemeinsame read-only Historienanzeige, konkrete nächste Schritte und

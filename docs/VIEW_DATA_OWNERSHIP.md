@@ -12,7 +12,21 @@ sortiert die gemeinsame Historienanzeige.
 `StudentProfileScreen` besitzt nur Widget-, Scroll-, Fokus- und
 Responsive-State. Es berechnet weder Draft-/Revisions-/Abschlussstatus noch
 Zeitraumgültigkeit, Integrität, nächste Schritte oder fachliche Zählwerte. Ohne
-eindeutigen RPD zeigt es keinen inhaltlichen Berichtstand.
+eindeutigen RPD zeigt es keinen inhaltlichen Berichtstand. Für die
+Meilensteinleiste darf es bereits displayfertige Bericht-/LEG-Historieneinträge
+und reale Bestätigungsereignisse aus dem vorhandenen Profildashboard zeitlich
+anordnen und rein nach verfügbarem Platz begrenzen. Es leitet daraus weder
+Kompetenzabschluss noch Entwicklung, Stärke, Priorität oder Empfehlung ab.
+
+Die Fachübersicht behält die Reihenfolge der vorhandenen
+`LearningReportPreparationViewModel.subjects`. Der Screen zeigt zunächst
+höchstens vier Fächer und erweitert nur nach bewusster lokaler Aktion; diese
+Sichtbarkeit ist keine Auswahl und wird nicht persistiert. Dokumentierte und
+aktuelle Kompetenzanzahl sowie Beobachtungsanzahl werden unverändert aus dieser
+bereits kanonischen Berichtsvorbereitung übernommen. Das wiederverwendete
+Kreisdiagramm aus dem Schülerprofil visualisiert
+ausschließlich das neutrale Zahlenverhältnis; der Screen erzeugt daraus weder
+Dokumentationsurteil noch Empfehlung.
 
 Die Shell besitzt die technische Navigation über `student_id`,
 `report_draft_id`, `learning_conference_draft_id`, Revisions-ID und
@@ -25,6 +39,10 @@ Fachfokusgrenze setzt nur vorhandene Navigation, Scrollziel und Tastaturfokus.
 Die gemeinsame Historienkarte ist keine gemeinsame Domain. Bericht und LEG
 behalten eigene Repositories, Aggregate, Statusverträge, Snapshots,
 Revisionen, Abschlussbegriffe und PDF-Artefakte.
+
+Die früheren unteren Karten `Kompetenzauswahl` und `Berichtarbeitsraum` sind
+keine eigene View oder Ownership-Grenze und werden nicht mehr in der Übersicht
+gerendert. `LearningReportDialog` bleibt unverändert der einzige Editor.
 
 ## Pilot-Releaseautomation - technischer Prozess ohne View
 
