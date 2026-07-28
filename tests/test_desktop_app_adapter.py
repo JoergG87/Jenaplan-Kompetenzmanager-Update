@@ -5494,7 +5494,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertIsNotNone(app)
 
-    def test_student_profile_renders_report_preview(self) -> None:
+    def test_student_profile_replaces_live_preview_with_report_overview(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
         screen.set_student(
@@ -5551,21 +5551,15 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
-        self.assertIn("Berichtsvorschau", label_texts)
-        self.assertIn("Deutsch", label_texts)
-        self.assertIn("Aktueller Stand", label_texts)
+        self.assertIn("Lernentwicklung im Berichtszeitraum", label_texts)
+        self.assertIn("Bericht", label_texts)
+        self.assertIn("Lernentwicklungsgespräch (LEG)", label_texts)
+        self.assertIn("Nächste Schritte", label_texts)
         self.assertIn("Stärken", label_texts)
-        self.assertIn("Entwicklung", label_texts)
-        self.assertIn("Unterstützungsbedarf", label_texts)
-        self.assertIn("Beispielbeobachtungen", label_texts)
-        self.assertIn(
-            "Mit Texten und Medien umgehen · "
-            "Aktueller Stand: + erreicht · von Laura bestätigt",
-            label_texts,
-        )
-        self.assertIn("Mit Texten und Medien umgehen · Stabil beobachtet: +", label_texts)
-        self.assertIn("2026-07-03 · Leseübung · Liest einen bekannten Text.", label_texts)
-        self.assertIn("+ Mit Texten und Medien umgehen", label_texts)
+        self.assertIn("Im Blick behalten", label_texts)
+        self.assertIn("Berichte & LEG (Übersicht)", label_texts)
+        self.assertNotIn("Aktueller Stand", label_texts)
+        self.assertNotIn("Mit Texten und Medien umgehen", label_texts)
         self.assertIsNotNone(app)
 
     def test_student_profile_renders_compact_documentation_status(self) -> None:
@@ -5599,7 +5593,6 @@ class DesktopAppAdapterTest(unittest.TestCase):
             ),
         )
 
-        label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
         self.assertIn("8 / 20", label_texts)
         self.assertIn("Bestätigter Stand", label_texts)
@@ -6204,7 +6197,6 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         screen.copy_report_text_to_clipboard()
         clipboard_text = QApplication.clipboard().text()
-        label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
         self.assertIn("Schüler: Emma Müller", clipboard_text)
         self.assertIn("Erstellt am:", clipboard_text)
@@ -6214,7 +6206,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "Aktueller Stand: + erreicht · von Laura bestätigt",
             clipboard_text,
         )
-        self.assertIn("Bericht wurde kopiert.", label_texts)
+        self.assertEqual(screen.report_feedback_label.text(), "Bericht wurde kopiert.")
         self.assertIsNotNone(app)
 
     def test_student_profile_exports_report_text_file(self) -> None:
