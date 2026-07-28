@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Berichte-Übersicht im Schülerprofil für Paket 1 vorbereitet: getrennte
+  Bericht-/LEG-Statuskarten, eindeutiger RPD-Zeitraum, sichere Mehrfachauswahl,
+  gemeinsame read-only Historienanzeige, konkrete nächste Schritte und
+  Fachsprunganker zum einzigen bestehenden Berichtarbeitsraum.
+- Zeitleiste, Stärken- und Beobachtungsschwerpunktflächen bleiben neutrale
+  Leerzustände; keine neue Persistenz, Kompetenzlogik, automatische
+  Entwurfswahl oder Schuljahressemantik ergänzt.
 - Wiederaufnehmbare lokale Pilot-Releaseautomation mit kanonischer nicht
   geheimer Konfiguration, detached Clean-Build, manifestgebundenen Assets,
   getrennten Paketgates, GitHub-Draft-/Rückdownloadprüfung, signierter

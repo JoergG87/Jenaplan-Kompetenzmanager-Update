@@ -1,5 +1,32 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1
+
+Paket 1 ersetzt die bisherige vorbereitende Berichtsvorschau im Register
+`Bericht` des Schülerprofils durch eine vertikal scrollbare, read-only
+orchestrierte Übersicht. Sie zeigt Bericht-, LEG- und nächste Statusschritte,
+den ausschließlich aus einem eindeutig gewählten RPD stammenden
+Berichtszeitraum, eine gemeinsame Anzeigehistorie und Fachsprunganker.
+
+Bericht und LEG bleiben technisch und fachlich getrennt. Ihre vorhandenen
+Draft-, Revisions-, Abschluss- und Integritätsprojektionen werden erst im
+Desktop-Adapter zu einer displayfertigen Übersicht zusammengesetzt. Bei
+mehreren Berichtsentwürfen oder LEG-Arbeitsständen wird niemals automatisch
+gewählt; `Zuletzt bearbeitet` beeinflusst nur die Reihenfolge der bestehenden
+Auswahl.
+
+Der bestehende `LearningReportDialog` bleibt in Paket 1 der einzige
+Berichteditor. Die Übersicht öffnet ihn über eine kontrollierte
+Navigationsgrenze und kann dort den vorhandenen Bereich
+`Kompetenzen & Belege` sowie ein Fach fokussieren. Eine Einbettung als
+gemeinsamer `LearningReportWorkspace` bleibt einem späteren Paket vorbehalten;
+Editorzustand, Speichern, Revisionen, Vorschau und PDF-Funktionen werden nicht
+dupliziert.
+
+Zeitleiste, Stärken-/Watch-Kandidaten, neue Kompetenzlogik, neue Persistenz,
+Migration und Schuljahresmodell gehören nicht zu Paket 1. Die entsprechenden
+Flächen sind neutrale, klar bezeichnete Leerzustände.
+
 ## Pilot-Releaseautomation
 
 Der mit Build 303 nachgewiesene lokale Pilot-Releaseprozess ist als

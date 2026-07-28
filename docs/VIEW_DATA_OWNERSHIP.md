@@ -1,5 +1,31 @@
 # View Data Ownership
 
+## Berichte-Übersicht 0.3.1 / Paket 1
+
+`StudentDesktopAdapter.report_overview_for_student` besitzt die
+Kompositionsgrenze. Er fragt Berichtsdrafts und Berichtrevisionen sowie
+LEG-Drafts und LEG-Revisionen über ihre jeweils vorhandenen getrennten
+Application Services ab. `ReportOverviewViewModel` normalisiert diese
+Ergebnisse ausschließlich für die Anzeige, markiert Integritätsfehler und
+sortiert die gemeinsame Historienanzeige.
+
+`StudentProfileScreen` besitzt nur Widget-, Scroll-, Fokus- und
+Responsive-State. Es berechnet weder Draft-/Revisions-/Abschlussstatus noch
+Zeitraumgültigkeit, Integrität, nächste Schritte oder fachliche Zählwerte. Ohne
+eindeutigen RPD zeigt es keinen inhaltlichen Berichtstand.
+
+Die Shell besitzt die technische Navigation über `student_id`,
+`report_draft_id`, `learning_conference_draft_id`, Revisions-ID und
+`subject_id`. Mehrdeutige Draftzustände führen zwingend in die vorhandene
+Auswahl. Eine ausdrücklich gewählte Draft-ID bleibt nur als flüchtiger
+Shell-Navigationszustand erhalten und wird weder persistiert noch aus
+`updated_at` abgeleitet. Der `LearningReportDialog` bleibt der einzige Editor; seine neue
+Fachfokusgrenze setzt nur vorhandene Navigation, Scrollziel und Tastaturfokus.
+
+Die gemeinsame Historienkarte ist keine gemeinsame Domain. Bericht und LEG
+behalten eigene Repositories, Aggregate, Statusverträge, Snapshots,
+Revisionen, Abschlussbegriffe und PDF-Artefakte.
+
 ## Pilot-Releaseautomation - technischer Prozess ohne View
 
 `ReleasePilot` besitzt ausschließlich die technische Orchestrierung und

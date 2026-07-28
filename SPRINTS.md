@@ -1,5 +1,26 @@
 # Sprintplanung
 
+## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1
+
+**Status:** Paket 1 implementiert und fokussiert getestet; keine
+Versionserhöhung und keine Build-/Releaseaktion.
+
+- [x] Fachliche Ownership und bestehende RPD-/RPV- sowie LCD-/LCV-Projektionen
+  geprüft.
+- [x] Drei displayfertige Statuskarten für Bericht, LEG und nächste Schritte
+  umsetzen.
+- [x] Eindeutigen RPD-Berichtszeitraum ohne Schuljahresannahme projizieren.
+- [x] Mehrdeutige Entwurfswahl ohne stille Aktivierung erhalten.
+- [x] Bericht- und LEG-Historie nur in einer gemeinsamen Displayprojektion
+  zusammenführen.
+- [x] Fachsprunganker an den bestehenden Berichtarbeitsraum anbinden.
+- [x] Neutrale Paket-2-Leerzustände für Zeitleiste, Stärken und
+  Beobachtungsschwerpunkte anzeigen.
+- [x] Paket-1-Fokus- und betroffene Regressionstests ausführen: 181 Tests und
+  8 Subtests bestanden; keine Gesamtsuite.
+- [x] Gesamtsuite, Build, Push, Tag, Release und Appcast ausdrücklich nicht
+  ausgeführt.
+
 ## Pilot-Releaseautomation
 
 **Status:** Lokal implementiert und fokussiert getestet. Build 303 ist die

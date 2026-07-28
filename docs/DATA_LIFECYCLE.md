@@ -1,5 +1,35 @@
 # Data Lifecycle
 
+## Berichte-Übersicht 0.3.1 / Paket 1 lesen und navigieren
+
+1. Das Schülerprofil fragt die Paket-1-Übersicht über
+   `StudentDesktopAdapter.report_overview_for_student(student_id)` an.
+2. Der Adapter liest RPD und RPT/RPV über die vorhandenen Bericht-Application-
+   Services sowie LCD und LCF/LCV separat über die vorhandenen LEG-Application-
+   Services.
+3. Bei genau einem RPD wird dessen Start- und Enddatum als einzige
+   Berichtszeitgrundlage projiziert. Bei mehreren RPD bleibt die Übersicht
+   leer, bis die Lehrkraft einen Entwurf ausdrücklich wählt; diese Auswahl wird
+   nur für die laufende Shell-Sitzung behalten und kann bewusst gewechselt
+   werden. Ohne Auswahl entsteht keine inhaltlich gemischte Übersicht.
+4. Drafts und Revisionen werden erst im ViewModel als gemeinsame read-only
+   Anzeigeliste nach letzter relevanter Aktivität sortiert. Ihre fachlichen
+   Aggregate und Repositories bleiben getrennt.
+5. Eine Kartenaktion übergibt ausschließlich technische Student-, Draft-,
+   Revisions- oder Fach-IDs an die Shell. Bei Mehrdeutigkeit öffnet sie die
+   bestehende Auswahl; es gibt keine automatische Entwurfsaktivierung.
+6. `Bericht vorbereiten` öffnet den einzigen bestehenden Berichteditor,
+   aktiviert dort `Kompetenzen & Belege`, setzt den vorhandenen Fachfilter und
+   sichtbaren Fokus. Es wird keine Kompetenz ausgewählt oder gespeichert.
+7. Nach Schließen des Bericht- oder LEG-Arbeitsraums liest das Schülerprofil
+   alle Paket-1-Projektionen erneut. Speichern, Zeitraumwechsel, Finalisierung
+   und Abschluss bleiben dadurch konsistent sichtbar.
+
+Dieser Prozess ist vollständig lesend, bis die Lehrkraft in einem bereits
+dokumentierten bestehenden Arbeitsraum eine dortige Schreibaktion bewusst
+auslöst. Paket 1 ergänzt keinen Schreibprozess, keine Tabelle, keine Migration,
+keinen Cache und keinen Recoverypfad.
+
 ## Pilot-Releaseautomation
 
 1. `inspect` bindet sauberen Branch, HEAD, Remote, zentrale Version,

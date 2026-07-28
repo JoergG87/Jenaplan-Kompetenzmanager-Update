@@ -1,5 +1,20 @@
 # Data Registry
 
+## Berichte-Übersicht 0.3.1 / Paket 1 - bestehende Lesequellen
+
+| Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| bestehende RPD-Liste | Zeitraum, Draftstatus, Erstellung und letzte Änderung | `report_drafts`; read-only über vorhandenen Application-/Repository-Pfad | kanonischer Berichtarbeitsstand |
+| bestehende RPT-/RPV-Lesesicht | aktuelle Revision, Änderung seit Revision, Historie und Snapshotintegrität | `learning_reports` / `learning_report_revisions`; getrennt vom Draft | kanonischer finalisierter Berichtstand |
+| bestehende LCD-Liste | LEG-Zeitraum, Gesprächsdatum, Draftstatus und letzte Änderung | `learning_conference_drafts`; read-only über vorhandenen Application-/Repository-Pfad | kanonischer LEG-Arbeitsstand |
+| bestehende LCF-/LCV-Lesesicht | Abschluss, aktuelle Revision, Änderung seit Abschluss, Historie und Snapshotintegrität | `learning_conferences` / `learning_conference_revisions`; getrennt vom Draft | kanonischer abgeschlossener LEG-Stand |
+| kanonische Berichtsvorbereitung | sichere vorhandene Fach-IDs und sichtbare Fachnamen | vorhandene Kompetenz-/Beobachtungsprojektion; keine neue Zähl- oder Statuslogik | read-only Fachnavigation |
+| `ReportOverviewViewModel` | gemeinsame Anzeigeordnung der getrennten Quellen | flüchtige Displayprojektion; keine Datenquelle, kein Cache, keine Persistenz | Paket-1-UI |
+
+Bericht und LEG werden weder in Domain noch Repository vereinigt. Technische
+IDs bleiben Navigationsschlüssel und werden in der Übersicht nicht als
+fachlicher Inhalt angezeigt.
+
 ## Pilot-Releaseautomation
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
