@@ -167,6 +167,8 @@ class AppShell(QMainWindow):
         self.pending_observation_subject_id = ""
         self.pending_observation_subject_label = ""
         self.pending_observation_target_label = ""
+        self._selected_report_draft_ids: dict[str, str] = {}
+        self._selected_learning_conference_draft_ids: dict[str, str] = {}
         self.setWindowTitle("Jenaplan Kompetenzmanager")
         self.setMinimumSize(1100, 720)
         self.resize(1400, 900)
@@ -353,6 +355,18 @@ class AppShell(QMainWindow):
         )
         self.student_profile_screen.learning_conference_requested.connect(
             self.open_learning_conference_dialog
+        )
+        self.student_profile_screen.report_draft_requested.connect(
+            self.open_learning_report_dialog
+        )
+        self.student_profile_screen.learning_conference_draft_requested.connect(
+            self.open_learning_conference_dialog
+        )
+        self.student_profile_screen.report_revision_requested.connect(
+            self.open_learning_report_revision
+        )
+        self.student_profile_screen.learning_conference_revision_requested.connect(
+            self.open_learning_conference_revision
         )
         self.master_data_screen.group_add_requested.connect(self.open_new_group_dialog)
         self.master_data_screen.group_rename_requested.connect(
@@ -1191,22 +1205,34 @@ class AppShell(QMainWindow):
         profile = self.adapter.get_student_profile(student_id)
         observations = self.adapter.list_observations_for_student(student_id)
         competency_groups = self.adapter.list_competency_overview_for_student(student_id)
-        report_preview = self.adapter.get_report_preview_for_student(student_id)
         documentation_statuses = self.adapter.list_documentation_status_for_student(student_id)
         documents = self.adapter.list_documents_for_student(student_id)
         competency_cockpit = self.adapter.competency_cockpit_for_student(student_id)
         profile_dashboard = self.adapter.student_profile_dashboard_for_student(
             student_id
         )
+        report_overview = self.adapter.report_overview_for_student(
+            student_id,
+            selected_report_draft_id=(
+                self._selected_report_draft_ids.get(student_id, "")
+            ),
+            selected_learning_conference_draft_id=(
+                self._selected_learning_conference_draft_ids.get(
+                    student_id,
+                    "",
+                )
+            ),
+        )
         self.student_profile_screen.set_student(
             profile,
             observations,
             competency_groups,
-            report_preview,
+            None,
             documentation_statuses,
             documents,
             competency_cockpit,
             profile_dashboard,
+            report_overview,
         )
         self._show_screen("profile")
 
@@ -1216,17 +1242,55 @@ class AppShell(QMainWindow):
         dialog.student_created.connect(self.handle_student_created)
         dialog.exec()
 
-    def open_learning_report_dialog(self, student_id: str) -> None:
+    def open_learning_report_dialog(
+        self,
+        student_id: str,
+        report_draft_id: str = "",
+        subject_id: str = "",
+        workspace_key: str = "",
+    ) -> None:
         """Choose an existing report draft or start a deliberate new one."""
-        drafts = self.adapter.list_learning_report_drafts_for_student(student_id)
+        try:
+            drafts = self.adapter.list_learning_report_drafts_for_student(
+                student_id
+            )
+        except Exception:
+            QMessageBox.warning(
+                self,
+                "Berichtstände nicht lesbar",
+                "Die vorhandenen Berichtstände konnten nicht sicher geladen werden. "
+                "Es wurde kein Entwurf geöffnet oder verändert.",
+            )
+            return
         initial_draft = None
-        if drafts:
+        if report_draft_id:
+            initial_draft = next(
+                (
+                    draft
+                    for draft in drafts
+                    if draft.report_draft_id == report_draft_id
+                ),
+                None,
+            )
+            if initial_draft is None:
+                self.status_label.setText(
+                    "Der ausgewählte Berichtsentwurf ist nicht verfügbar."
+                )
+                return
+            self._selected_report_draft_ids[student_id] = report_draft_id
+        elif drafts:
             accepted, initial_draft = LearningReportDraftSelectionDialog.choose(
                 drafts,
                 self,
             )
             if not accepted:
                 return
+            if initial_draft is not None:
+                self._selected_report_draft_ids[student_id] = (
+                    initial_draft.report_draft_id
+                )
+        else:
+            self._selected_report_draft_ids.pop(student_id, None)
         preparation = self.adapter.learning_report_preparation_for_student(
             student_id,
             retained_competency_ids=(
@@ -1249,6 +1313,10 @@ class AppShell(QMainWindow):
             initial_draft,
             revision_status,
         )
+        if subject_id:
+            dialog.focus_evidence_subject(subject_id)
+        elif workspace_key:
+            dialog.show_workspace(workspace_key)
 
         def persist_draft(draft: object, *, finalizing: bool = False) -> object | None:
             try:
@@ -1267,6 +1335,7 @@ class AppShell(QMainWindow):
                 )
                 return None
             dialog.apply_saved_draft(saved)
+            self._selected_report_draft_ids[student_id] = saved.report_draft_id
             dialog.apply_revision_status(
                 self.adapter.learning_report_revision_status(
                     saved.report_draft_id
@@ -1326,67 +1395,10 @@ class AppShell(QMainWindow):
             )
 
         def open_revision(learning_report_revision_id: str) -> None:
-            try:
-                revision = self.adapter.load_learning_report_revision(
-                    learning_report_revision_id
-                )
-            except ReportFinalizationError:
-                QMessageBox.warning(
-                    dialog,
-                    "Finale Fassung konnte nicht geöffnet werden",
-                    "Der gespeicherte Snapshot konnte nicht verifiziert werden. "
-                    "Aktuelle Schüler- oder Berichtsdaten wurden nicht als Ersatz geladen.",
-                )
-                return
-            except Exception:
-                QMessageBox.warning(
-                    dialog,
-                    "Finale Fassung konnte nicht geöffnet werden",
-                    "Ein unerwarteter technischer Fehler ist aufgetreten.",
-                )
-                return
-            if revision is None:
-                dialog.show_finalization_error(
-                    "Die ausgewählte Berichtrevision ist nicht verfügbar."
-                )
-                return
-            artifact = None
-            artifact_error = ""
-            try:
-                artifact = self.adapter.load_learning_report_pdf_artifact(
-                    learning_report_revision_id
-                )
-            except Exception as error:
-                artifact_error = self.adapter.learning_report_pdf_error_message(error)
-            revision_dialog = LearningReportRevisionDialog(
-                revision,
+            self.open_learning_report_revision(
+                learning_report_revision_id,
                 dialog,
-                artifact,
             )
-            if artifact_error:
-                revision_dialog.show_pdf_error(artifact_error)
-
-            def generate_final_pdf(revision_id: str) -> None:
-                try:
-                    generated = self.adapter.generate_learning_report_pdf(revision_id)
-                except LearningReportPdfError as error:
-                    revision_dialog.show_pdf_error(
-                        self.adapter.learning_report_pdf_error_message(error)
-                    )
-                    return
-                except Exception:
-                    revision_dialog.show_pdf_error(
-                        "Das finale PDF konnte wegen eines technischen Fehlers "
-                        "nicht erstellt werden."
-                    )
-                    return
-                revision_dialog.apply_pdf_artifact(generated)
-                self.status_label.setText(
-                    f"Finales PDF erstellt: {generated.file_name}"
-                )
-
-            revision_dialog.pdf_requested.connect(generate_final_pdf)
-            revision_dialog.exec()
 
         dialog.save_requested.connect(save_draft)
         dialog.finalization_requested.connect(request_finalization)
@@ -1394,18 +1406,129 @@ class AppShell(QMainWindow):
         dialog.revision_open_requested.connect(open_revision)
         dialog.pdf_requested.connect(self.export_learning_report_pdf)
         exec_maximized_workspace(dialog, self)
+        self.show_student_profile(student_id)
 
-    def open_learning_conference_dialog(self, student_id: str) -> None:
+    def open_learning_report_revision(
+        self,
+        learning_report_revision_id: str,
+        parent: QWidget | None = None,
+    ) -> None:
+        """Open one immutable report revision from any existing navigation."""
+        dialog_parent = parent or self
+        try:
+            revision = self.adapter.load_learning_report_revision(
+                learning_report_revision_id
+            )
+        except ReportFinalizationError:
+            QMessageBox.warning(
+                dialog_parent,
+                "Finale Fassung konnte nicht geöffnet werden",
+                "Der gespeicherte Snapshot konnte nicht verifiziert werden. "
+                "Aktuelle Schüler- oder Berichtsdaten wurden nicht als Ersatz geladen.",
+            )
+            return
+        except Exception:
+            QMessageBox.warning(
+                dialog_parent,
+                "Finale Fassung konnte nicht geöffnet werden",
+                "Ein unerwarteter technischer Fehler ist aufgetreten.",
+            )
+            return
+        if revision is None:
+            QMessageBox.warning(
+                dialog_parent,
+                "Finale Fassung konnte nicht geöffnet werden",
+                "Die ausgewählte Berichtrevision ist nicht verfügbar.",
+            )
+            return
+        artifact = None
+        artifact_error = ""
+        try:
+            artifact = self.adapter.load_learning_report_pdf_artifact(
+                learning_report_revision_id
+            )
+        except Exception as error:
+            artifact_error = self.adapter.learning_report_pdf_error_message(error)
+        revision_dialog = LearningReportRevisionDialog(
+            revision,
+            dialog_parent,
+            artifact,
+        )
+        if artifact_error:
+            revision_dialog.show_pdf_error(artifact_error)
+
+        def generate_final_pdf(revision_id: str) -> None:
+            try:
+                generated = self.adapter.generate_learning_report_pdf(revision_id)
+            except LearningReportPdfError as error:
+                revision_dialog.show_pdf_error(
+                    self.adapter.learning_report_pdf_error_message(error)
+                )
+                return
+            except Exception:
+                revision_dialog.show_pdf_error(
+                    "Das finale PDF konnte wegen eines technischen Fehlers "
+                    "nicht erstellt werden."
+                )
+                return
+            revision_dialog.apply_pdf_artifact(generated)
+            self.status_label.setText(
+                f"Finales PDF erstellt: {generated.file_name}"
+            )
+
+        revision_dialog.pdf_requested.connect(generate_final_pdf)
+        revision_dialog.exec()
+
+    def open_learning_conference_dialog(
+        self,
+        student_id: str,
+        learning_conference_draft_id: str = "",
+    ) -> None:
         """Choose an existing LEG draft or start an independent new one."""
-        drafts = self.adapter.list_learning_conference_drafts_for_student(student_id)
+        try:
+            drafts = self.adapter.list_learning_conference_drafts_for_student(
+                student_id
+            )
+        except Exception:
+            QMessageBox.warning(
+                self,
+                "LEG-Stände nicht lesbar",
+                "Die vorhandenen LEG-Stände konnten nicht sicher geladen werden. "
+                "Es wurde kein Arbeitsstand geöffnet oder verändert.",
+            )
+            return
         initial_draft = None
-        if drafts:
+        if learning_conference_draft_id:
+            initial_draft = next(
+                (
+                    draft
+                    for draft in drafts
+                    if draft.learning_conference_draft_id
+                    == learning_conference_draft_id
+                ),
+                None,
+            )
+            if initial_draft is None:
+                self.status_label.setText(
+                    "Der ausgewählte LEG-Arbeitsstand ist nicht verfügbar."
+                )
+                return
+            self._selected_learning_conference_draft_ids[student_id] = (
+                learning_conference_draft_id
+            )
+        elif drafts:
             accepted, initial_draft = LearningConferenceDraftSelectionDialog.choose(
                 drafts,
                 self,
             )
             if not accepted:
                 return
+            if initial_draft is not None:
+                self._selected_learning_conference_draft_ids[student_id] = (
+                    initial_draft.learning_conference_draft_id
+                )
+        else:
+            self._selected_learning_conference_draft_ids.pop(student_id, None)
         preparation = self.adapter.learning_conference_preparation_for_student(
             student_id,
             retained_competency_ids=(
@@ -1439,6 +1562,9 @@ class AppShell(QMainWindow):
                 dialog.show_save_error(str(error))
                 return
             dialog.apply_saved_draft(saved)
+            self._selected_learning_conference_draft_ids[student_id] = (
+                saved.learning_conference_draft_id
+            )
             refresh_revision_status()
             self.status_label.setText("Lernentwicklungsgespräch-Entwurf gespeichert.")
 
@@ -1456,62 +1582,85 @@ class AppShell(QMainWindow):
             self.status_label.setText("Lernentwicklungsgespräch abgeschlossen.")
 
         def open_revision(learning_conference_revision_id: str) -> None:
-            try:
-                revision = self.adapter.load_learning_conference_revision(
-                    learning_conference_revision_id
-                )
-            except LearningConferenceCompletionError as error:
-                dialog.show_completion_error(
-                    build_learning_conference_completion_error(error)
-                )
-                return
-            artifact = None
-            artifact_error = ""
-            try:
-                artifact = self.adapter.load_learning_conference_pdf_artifact(
-                    learning_conference_revision_id
-                )
-            except Exception as error:
-                artifact_error = self.adapter.learning_conference_pdf_error_message(
-                    error
-                )
-            revision_dialog = LearningConferenceRevisionDialog(
-                revision,
+            self.open_learning_conference_revision(
+                learning_conference_revision_id,
                 dialog,
-                artifact,
             )
-            if artifact_error:
-                revision_dialog.show_pdf_error(artifact_error)
-
-            def generate_final_pdf(revision_id: str) -> None:
-                try:
-                    generated = self.adapter.generate_learning_conference_pdf(
-                        revision_id
-                    )
-                except LearningConferencePdfError as error:
-                    revision_dialog.show_pdf_error(
-                        self.adapter.learning_conference_pdf_error_message(error)
-                    )
-                    return
-                except Exception:
-                    revision_dialog.show_pdf_error(
-                        "Das finale LEG-PDF konnte wegen eines technischen Fehlers "
-                        "nicht erstellt werden."
-                    )
-                    return
-                revision_dialog.apply_pdf_artifact(generated)
-                self.status_label.setText(
-                    f"Finales LEG-PDF erstellt: {generated.file_name}"
-                )
-
-            revision_dialog.pdf_requested.connect(generate_final_pdf)
-            revision_dialog.exec()
 
         dialog.save_requested.connect(save_draft)
         dialog.completion_requested.connect(complete_conference)
         dialog.revision_open_requested.connect(open_revision)
         refresh_revision_status()
         exec_maximized_workspace(dialog, self)
+        self.show_student_profile(student_id)
+
+    def open_learning_conference_revision(
+        self,
+        learning_conference_revision_id: str,
+        parent: QWidget | None = None,
+    ) -> None:
+        """Open one immutable LEG revision from any existing navigation."""
+        dialog_parent = parent or self
+        try:
+            revision = self.adapter.load_learning_conference_revision(
+                learning_conference_revision_id
+            )
+        except LearningConferenceCompletionError as error:
+            visible = build_learning_conference_completion_error(error)
+            QMessageBox.warning(
+                dialog_parent,
+                "LEG-Abschluss konnte nicht geöffnet werden",
+                visible.message,
+            )
+            return
+        except Exception:
+            QMessageBox.warning(
+                dialog_parent,
+                "LEG-Abschluss konnte nicht geöffnet werden",
+                "Ein unerwarteter technischer Fehler ist aufgetreten.",
+            )
+            return
+        artifact = None
+        artifact_error = ""
+        try:
+            artifact = self.adapter.load_learning_conference_pdf_artifact(
+                learning_conference_revision_id
+            )
+        except Exception as error:
+            artifact_error = self.adapter.learning_conference_pdf_error_message(
+                error
+            )
+        revision_dialog = LearningConferenceRevisionDialog(
+            revision,
+            dialog_parent,
+            artifact,
+        )
+        if artifact_error:
+            revision_dialog.show_pdf_error(artifact_error)
+
+        def generate_final_pdf(revision_id: str) -> None:
+            try:
+                generated = self.adapter.generate_learning_conference_pdf(
+                    revision_id
+                )
+            except LearningConferencePdfError as error:
+                revision_dialog.show_pdf_error(
+                    self.adapter.learning_conference_pdf_error_message(error)
+                )
+                return
+            except Exception:
+                revision_dialog.show_pdf_error(
+                    "Das finale LEG-PDF konnte wegen eines technischen Fehlers "
+                    "nicht erstellt werden."
+                )
+                return
+            revision_dialog.apply_pdf_artifact(generated)
+            self.status_label.setText(
+                f"Finales LEG-PDF erstellt: {generated.file_name}"
+            )
+
+        revision_dialog.pdf_requested.connect(generate_final_pdf)
+        revision_dialog.exec()
 
     def export_learning_report_pdf(self, output_model: object) -> None:
         """Hand a complete neutral output model to the unchanged PDF renderer."""

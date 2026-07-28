@@ -51,6 +51,15 @@ from src.desktop_app.view_models.student_view_model import (
     empty_student_profile_dashboard,
     format_student_report_preview_text,
 )
+from src.desktop_app.view_models.report_overview_view_model import (
+    LearningConferenceStatusCardViewModel,
+    ReportHistoryItemViewModel,
+    ReportNextStepViewModel,
+    ReportOverviewActionViewModel,
+    ReportOverviewViewModel,
+    ReportStatusCardViewModel,
+    empty_report_overview,
+)
 from src.desktop_app.view_models.observation_view_model import (
     ObservationListItem,
     StudentCompetencyCockpitLearningAreaViewModel,
@@ -125,6 +134,10 @@ class StudentProfileScreen(QWidget):
     competency_confirmation_requested = Signal(str, str, str, str)
     report_requested = Signal(str)
     learning_conference_requested = Signal(str)
+    report_draft_requested = Signal(str, str, str, str)
+    learning_conference_draft_requested = Signal(str, str)
+    report_revision_requested = Signal(str)
+    learning_conference_revision_requested = Signal(str)
 
     def __init__(self, export_directory: Path | None = None) -> None:
         super().__init__()
@@ -155,6 +168,7 @@ class StudentProfileScreen(QWidget):
         self.current_observations: tuple[ObservationListItem, ...] = ()
         self.current_documents: tuple[StudentDocumentViewModel, ...] = ()
         self.current_report_preview: StudentReportPreviewViewModel | None = None
+        self.current_report_overview = empty_report_overview()
         self.current_competency_cockpit: StudentCompetencyCockpitViewModel | None = None
         self.current_profile_dashboard = empty_student_profile_dashboard()
         self.show_all_observations = False
@@ -307,11 +321,18 @@ class StudentProfileScreen(QWidget):
         compact = self.width() < 1200
         if compact != getattr(self, "_overview_compact", None):
             self._apply_overview_card_layout(compact=compact)
+        report_compact = self.width() < 1180
+        if report_compact != getattr(self, "_report_overview_compact", None):
+            self._report_overview_compact = report_compact
+            self._apply_report_overview_layout(compact=report_compact)
 
     def _scrollable_tab(self, content: QWidget) -> QScrollArea:
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        scroll_area.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
 
         wrapper = QWidget()
         wrapper_layout = QVBoxLayout(wrapper)
@@ -720,23 +741,187 @@ class StudentProfileScreen(QWidget):
         section = QWidget()
         layout = QVBoxLayout(section)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
-        title_label = QLabel("Berichtsvorschau")
-        set_label_style(title_label, "section_title")
+        layout.setSpacing(16)
+        layout.addWidget(SectionHeader(
+            "Lernentwicklung im Berichtszeitraum",
+            "Status, Zeitraum, Historie und vorhandene Arbeitsräume auf einen Blick.",
+        ))
+        self.report_period_summary = QLabel("Kein Berichtszeitraum gewählt")
+        self.report_period_summary.setObjectName("ReportOverviewPeriod")
+        self.report_period_summary.setWordWrap(True)
+        self.report_period_summary.setAccessibleName(
+            "Ausgewählter Berichtszeitraum"
+        )
+        set_label_style(self.report_period_summary, "body")
+        layout.addWidget(self.report_period_summary)
+
+        self.report_overview_grid = QGridLayout()
+        self.report_overview_grid.setContentsMargins(0, 0, 0, 0)
+        self.report_overview_grid.setHorizontalSpacing(16)
+        self.report_overview_grid.setVerticalSpacing(16)
+
+        self.report_status_card, self.report_status_layout = (
+            self._report_overview_card(
+                "Bericht",
+                "Gewählter Berichtarbeitsstand",
+                "ReportOverviewReportStatusCard",
+            )
+        )
+        (
+            self.learning_conference_status_card,
+            self.learning_conference_status_layout,
+        ) = self._report_overview_card(
+            "Lernentwicklungsgespräch (LEG)",
+            "Getrennter LEG-Arbeitsstand",
+            "ReportOverviewLearningConferenceStatusCard",
+        )
+        self.next_steps_card, self.next_steps_layout = self._report_overview_card(
+            "Nächste Schritte",
+            "Nur vorhandene konkrete Aktionen",
+            "ReportOverviewNextStepsCard",
+        )
+        self.timeline_card, timeline_layout = self._report_overview_card(
+            "Lernentwicklung im Berichtszeitraum",
+            "Zeitraumgebundene Übersicht",
+            "ReportOverviewTimelineCard",
+        )
+        timeline_layout.addWidget(EmptyState(
+            "Eine zeitraumgebundene Darstellung ist hier noch nicht verfügbar. "
+            "Es wird keine Entwicklungslinie automatisch berechnet.",
+            title="Noch keine Zeitleiste",
+        ))
+        self.subjects_card, self.report_subjects_layout = self._report_overview_card(
+            "Fachübersicht",
+            "Direkter Sprung in die bestehende Berichtswerkstatt",
+            "ReportOverviewSubjectsCard",
+        )
+        self.strengths_card, strengths_layout = self._report_overview_card(
+            "Stärken",
+            "Noch nicht befüllte Übersicht",
+            "ReportOverviewStrengthsCard",
+        )
+        strengths_layout.addWidget(EmptyState(
+            "Stärken werden nicht automatisch abgeleitet.",
+            title="Noch keine Stärkenlogik",
+        ))
+        self.watch_card, watch_layout = self._report_overview_card(
+            "Im Blick behalten",
+            "Noch nicht befüllte Übersicht",
+            "ReportOverviewWatchCard",
+        )
+        watch_layout.addWidget(EmptyState(
+            "Es werden keine pädagogischen Empfehlungen oder Schwellenwerte erzeugt.",
+            title="Keine automatische Priorisierung",
+        ))
+        self.history_card, self.report_history_layout = self._report_overview_card(
+            "Berichte & LEG (Übersicht)",
+            "Gemeinsame Anzeige, getrennte fachliche Quellen",
+            "ReportOverviewHistoryCard",
+        )
+        (
+            self.competency_selection_card,
+            self.report_competency_selection_layout,
+        ) = self._report_overview_card(
+            "Kompetenzauswahl",
+            "Bewusste Auswahl im bestehenden Berichtarbeitsraum",
+            "ReportOverviewCompetencySelectionCard",
+        )
+        self.workspace_boundary_card, self.report_workspace_layout = (
+            self._report_overview_card(
+                "Berichtarbeitsraum",
+                "Einziger bestehender Editor für Entwurf, Vorschau und Revisionen",
+                "ReportOverviewWorkspaceCard",
+            )
+        )
+        self._report_overview_cards = (
+            self.report_status_card,
+            self.learning_conference_status_card,
+            self.next_steps_card,
+            self.timeline_card,
+            self.subjects_card,
+            self.strengths_card,
+            self.watch_card,
+            self.history_card,
+            self.competency_selection_card,
+            self.workspace_boundary_card,
+        )
+        layout.addLayout(self.report_overview_grid)
+        self._apply_report_overview_layout(compact=False)
+
+        # The former live preparation remains available to existing copy/export
+        # helpers but is no longer a visible competing report surface.
         self.report_preview_container = QWidget()
         self.report_preview_layout = QVBoxLayout(self.report_preview_container)
         self.report_preview_layout.setContentsMargins(0, 0, 0, 0)
         self.report_preview_layout.setSpacing(8)
+        self.report_preview_container.hide()
         set_label_style(self.report_empty_label, "body")
         set_label_style(self.report_feedback_label, "subtle")
         self.report_copy_button.clicked.connect(self.copy_report_text_to_clipboard)
         self.report_export_button.clicked.connect(self.export_report_text)
         self.report_create_button.clicked.connect(self._request_learning_report)
-        layout.addWidget(title_label)
-        layout.addLayout(self._report_action_row())
-        layout.addWidget(self.report_feedback_label)
-        layout.addWidget(self.report_preview_container)
+        self.set_report_overview(empty_report_overview())
         return section
+
+    def _report_overview_card(
+        self,
+        title: str,
+        subtitle: str,
+        object_name: str,
+    ) -> tuple[QFrame, QVBoxLayout]:
+        card = self._card()
+        card.setObjectName(object_name)
+        card.setMinimumHeight(190)
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 16, 18, 18)
+        layout.setSpacing(10)
+        layout.addWidget(SectionHeader(title, subtitle))
+        body = QVBoxLayout()
+        body.setContentsMargins(0, 0, 0, 0)
+        body.setSpacing(9)
+        layout.addLayout(body)
+        layout.addStretch(1)
+        return card, body
+
+    def _apply_report_overview_layout(self, *, compact: bool) -> None:
+        if not hasattr(self, "report_overview_grid"):
+            return
+        while self.report_overview_grid.count():
+            self.report_overview_grid.takeAt(0)
+        if compact:
+            for row, card in enumerate(self._report_overview_cards):
+                self.report_overview_grid.addWidget(card, row, 0)
+            self.report_overview_grid.setColumnStretch(0, 1)
+            self.report_overview_grid.setColumnStretch(1, 0)
+            self.report_overview_grid.setColumnStretch(2, 0)
+            return
+        self.report_overview_grid.addWidget(self.report_status_card, 0, 0)
+        self.report_overview_grid.addWidget(
+            self.learning_conference_status_card,
+            0,
+            1,
+        )
+        self.report_overview_grid.addWidget(self.next_steps_card, 0, 2)
+        self.report_overview_grid.addWidget(self.timeline_card, 1, 0, 1, 2)
+        self.report_overview_grid.addWidget(self.subjects_card, 1, 2)
+        self.report_overview_grid.addWidget(self.strengths_card, 2, 0)
+        self.report_overview_grid.addWidget(self.watch_card, 2, 1)
+        self.report_overview_grid.addWidget(self.history_card, 2, 2)
+        self.report_overview_grid.addWidget(
+            self.competency_selection_card,
+            3,
+            0,
+        )
+        self.report_overview_grid.addWidget(
+            self.workspace_boundary_card,
+            3,
+            1,
+            1,
+            2,
+        )
+        self.report_overview_grid.setColumnStretch(0, 1)
+        self.report_overview_grid.setColumnStretch(1, 1)
+        self.report_overview_grid.setColumnStretch(2, 1)
 
     def _report_action_row(self) -> QHBoxLayout:
         actions = QHBoxLayout()
@@ -1079,6 +1264,7 @@ class StudentProfileScreen(QWidget):
         documents: tuple[StudentDocumentViewModel, ...] = (),
         competency_cockpit: StudentCompetencyCockpitViewModel | None = None,
         profile_dashboard: StudentProfileDashboardViewModel | None = None,
+        report_overview: ReportOverviewViewModel | None = None,
     ) -> None:
         """Render selected student or empty state."""
         previous_student_id = (
@@ -1111,6 +1297,7 @@ class StudentProfileScreen(QWidget):
             self.set_observations(())
             self.set_competency_cockpit(None)
             self.set_report_preview(None)
+            self.set_report_overview(None)
             self.set_documents(())
             self._render_profile_overview(
                 None,
@@ -1140,6 +1327,7 @@ class StudentProfileScreen(QWidget):
         )
         self.set_competency_cockpit(competency_cockpit)
         self.set_report_preview(report_preview)
+        self.set_report_overview(report_overview)
         self.set_documents(documents)
 
         if not should_reset_tab and 0 <= previous_tab_index < self.profile_tabs.count():
@@ -2225,6 +2413,315 @@ class StudentProfileScreen(QWidget):
             self.show_all_observations = True
             self.apply_observation_filters()
         self.profile_tabs.setCurrentIndex(1)
+
+    def set_report_overview(
+        self,
+        overview: ReportOverviewViewModel | None,
+    ) -> None:
+        """Render the display-ready Paket-1 projection without recalculation."""
+        self.current_report_overview = overview or empty_report_overview()
+        current = self.current_report_overview
+        self.report_period_summary.setText(current.report_period_label)
+        self.report_period_summary.setAccessibleDescription(
+            (
+                f"Beginn {current.report_period_start_label}, "
+                f"Ende {current.report_period_end_label}"
+                if current.report_content_available
+                else "Kein eindeutiger Berichtsentwurf ausgewählt"
+            )
+        )
+        self._render_report_status_card(
+            self.report_status_layout,
+            self.report_status_card,
+            current.report_status,
+        )
+        self._render_report_status_card(
+            self.learning_conference_status_layout,
+            self.learning_conference_status_card,
+            current.learning_conference_status,
+        )
+        self._render_report_next_steps(current.next_steps)
+        self._render_report_subjects(current)
+        self._render_report_history(current.history)
+        self._render_report_workspace_boundary(current)
+        self._update_report_tab_order()
+
+    def _update_report_tab_order(self) -> None:
+        """Keep keyboard traversal aligned with the visible card reading order."""
+        ordered_buttons: list[QPushButton] = []
+        for card in self._report_overview_cards:
+            ordered_buttons.extend(card.findChildren(QPushButton))
+        for previous, following in zip(ordered_buttons, ordered_buttons[1:]):
+            QWidget.setTabOrder(previous, following)
+
+    def _render_report_status_card(
+        self,
+        layout: QVBoxLayout,
+        card: QFrame,
+        status: ReportStatusCardViewModel | LearningConferenceStatusCardViewModel,
+    ) -> None:
+        self._clear_layout(layout)
+        tone = {
+            "finalized": "success",
+            "completed": "success",
+            "integrity_error": "error",
+            "draft_changed": "warning",
+            "multiple_drafts": "info",
+        }.get(status.state, "neutral")
+        badge = StatusBadge(status.status_label, tone=tone)
+        badge.setAccessibleName(f"Status: {status.status_label}")
+        layout.addWidget(badge, 0, Qt.AlignmentFlag.AlignLeft)
+        for label, value in (
+            ("Zeitraum", status.period_label),
+            ("Revision", status.revision_label),
+            ("Letzte Änderung", status.last_changed_label),
+        ):
+            detail = QLabel(f"{label}: {value}")
+            detail.setWordWrap(True)
+            set_label_style(detail, "small")
+            layout.addWidget(detail)
+        hint = QLabel(status.hint_text)
+        hint.setWordWrap(True)
+        set_label_style(hint, "subtle")
+        layout.addWidget(hint)
+        if status.primary_action is not None:
+            layout.addWidget(
+                self._report_action_button(status.primary_action, role="secondary"),
+                0,
+                Qt.AlignmentFlag.AlignLeft,
+            )
+        card.setAccessibleName(
+            ". ".join(
+                (
+                    status.status_label,
+                    status.period_label,
+                    status.revision_label,
+                    status.last_changed_label,
+                )
+            )
+        )
+
+    def _render_report_next_steps(
+        self,
+        steps: tuple[ReportNextStepViewModel, ...],
+    ) -> None:
+        self._clear_layout(self.next_steps_layout)
+        if not steps:
+            self.next_steps_layout.addWidget(EmptyState(
+                "Aus den vorhandenen fachlichen Zuständen ergibt sich aktuell "
+                "keine weitere Aktion.",
+                title="Kein offener Schritt",
+            ))
+            return
+        for step in steps:
+            row = QWidget()
+            row_layout = QVBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 6)
+            row_layout.setSpacing(4)
+            title = QLabel(step.title)
+            title.setWordWrap(True)
+            set_label_style(title, "card_title")
+            detail = QLabel(step.detail)
+            detail.setWordWrap(True)
+            set_label_style(detail, "subtle")
+            row_layout.addWidget(title)
+            row_layout.addWidget(detail)
+            row_layout.addWidget(
+                self._report_action_button(step.action, role="quiet"),
+                0,
+                Qt.AlignmentFlag.AlignLeft,
+            )
+            self.next_steps_layout.addWidget(row)
+
+    def _render_report_subjects(self, overview: ReportOverviewViewModel) -> None:
+        self._clear_layout(self.report_subjects_layout)
+        if not overview.subjects:
+            self.report_subjects_layout.addWidget(EmptyState(
+                "Es sind keine sicheren Fachnamen für die Berichtsvorbereitung verfügbar.",
+                title="Keine Fachübersicht",
+            ))
+            return
+        for subject in overview.subjects:
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 2, 0, 2)
+            row_layout.setSpacing(8)
+            label = QLabel(subject.subject_name)
+            label.setWordWrap(True)
+            set_label_style(label, "body")
+            button = self._report_action_button(subject.action, role="link")
+            button.setObjectName(
+                f"ReportOverviewPrepareSubject_{subject.subject_id}"
+            )
+            button.setAccessibleName(
+                f"Bericht für {subject.subject_name} vorbereiten"
+            )
+            row_layout.addWidget(label, 1)
+            row_layout.addWidget(button)
+            self.report_subjects_layout.addWidget(row)
+
+    def _render_report_history(
+        self,
+        history: tuple[ReportHistoryItemViewModel, ...],
+    ) -> None:
+        self._clear_layout(self.report_history_layout)
+        if not history:
+            self.report_history_layout.addWidget(EmptyState(
+                "Noch keine Bericht- oder LEG-Arbeitsstände vorhanden.",
+                title="Keine Historie",
+            ))
+            return
+        for item in history:
+            row = AppCard("soft")
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(12, 10, 12, 10)
+            row_layout.setSpacing(10)
+            text = QVBoxLayout()
+            text.setSpacing(2)
+            title = QLabel(f"{item.document_type} · {item.version_label}")
+            title.setWordWrap(True)
+            set_label_style(title, "card_title")
+            period = QLabel(item.period_label)
+            period.setWordWrap(True)
+            set_label_style(period, "small")
+            status = QLabel(f"{item.status_label} · {item.activity_label}")
+            status.setWordWrap(True)
+            set_label_style(status, "subtle")
+            text.addWidget(title)
+            text.addWidget(period)
+            text.addWidget(status)
+            row_layout.addLayout(text, 1)
+            open_button = self._report_action_button(item.action, role="quiet")
+            open_button.setAccessibleName(
+                f"{item.document_type} {item.version_label} öffnen, "
+                f"{item.period_label}, {item.status_label}"
+            )
+            row_layout.addWidget(open_button)
+            row.setAccessibleName(
+                f"{item.document_type}. {item.version_label}. {item.period_label}. "
+                f"{item.status_label}. {item.activity_label}."
+            )
+            self.report_history_layout.addWidget(row)
+
+    def _render_report_workspace_boundary(
+        self,
+        overview: ReportOverviewViewModel,
+    ) -> None:
+        self._clear_layout(self.report_competency_selection_layout)
+        self._clear_layout(self.report_workspace_layout)
+        if overview.report_content_available:
+            selection_text = QLabel(
+                f"Gewählter Zeitraum: {overview.report_period_label}\n"
+                "Kompetenzen werden ausschließlich im vorhandenen Arbeitsraum "
+                "bewusst ausgewählt."
+            )
+            selection_text.setWordWrap(True)
+            set_label_style(selection_text, "body")
+            self.report_competency_selection_layout.addWidget(selection_text)
+            self.report_competency_selection_layout.addWidget(QLabel(
+                "Keine Kompetenz wird automatisch übernommen."
+            ))
+        else:
+            self.report_competency_selection_layout.addWidget(EmptyState(
+                "Wähle oder erstelle zuerst einen Berichtsentwurf. Ohne eindeutigen "
+                "Berichtsentwurf wird keine inhaltliche Übersicht angezeigt.",
+                title="Kein eindeutiger Berichtsentwurf",
+            ))
+        self.report_competency_selection_layout.addWidget(
+            self._report_action_button(
+                overview.workspace_action,
+                role="secondary",
+            ),
+            0,
+            Qt.AlignmentFlag.AlignLeft,
+        )
+
+        if overview.report_content_available:
+            workspace_text = QLabel(
+                "Der bestehende Berichtarbeitsraum öffnet als einziges "
+                "Arbeitsfenster. Dirty-State, Entwurf speichern, Vorschau, "
+                "Revisionen und PDF-Funktionen bleiben dort gebündelt."
+            )
+        else:
+            workspace_text = QLabel(
+                "Der Berichtarbeitsraum wird erst nach Erstellen oder bewusster "
+                "Auswahl eines Entwurfs geöffnet."
+            )
+        workspace_text.setWordWrap(True)
+        set_label_style(workspace_text, "body")
+        self.report_workspace_layout.addWidget(workspace_text)
+        boundary = QLabel(
+            "Der Arbeitsraum öffnet sich in einem eigenen Fenster und bündelt "
+            "dort alle Bearbeitungs- und Ausgabeaktionen."
+        )
+        boundary.setWordWrap(True)
+        set_label_style(boundary, "subtle")
+        self.report_workspace_layout.addWidget(boundary)
+        self.report_workspace_layout.addWidget(
+            self._report_action_button(
+                overview.workspace_action,
+                role="primary" if overview.report_content_available else "secondary",
+            ),
+            0,
+            Qt.AlignmentFlag.AlignLeft,
+        )
+
+    def _report_action_button(
+        self,
+        action: ReportOverviewActionViewModel,
+        *,
+        role: str,
+    ) -> QPushButton:
+        button = QPushButton(action.label)
+        configure_button(button, role, action.label)
+        button.clicked.connect(
+            lambda _checked=False, selected=action: (
+                self._dispatch_report_overview_action(selected)
+            )
+        )
+        return button
+
+    def _dispatch_report_overview_action(
+        self,
+        action: ReportOverviewActionViewModel,
+    ) -> None:
+        if self.current_student is None:
+            return
+        student_id = self.current_student.student_id
+        if action.action_key in {"create_report", "select_report"}:
+            self.report_requested.emit(student_id)
+        elif action.action_key == "open_report":
+            self.report_draft_requested.emit(
+                student_id,
+                action.target_id,
+                "",
+                "",
+            )
+        elif action.action_key == "finalize_report":
+            self.report_draft_requested.emit(
+                student_id,
+                action.target_id,
+                "",
+                "revisions",
+            )
+        elif action.action_key == "prepare_subject":
+            self.report_draft_requested.emit(
+                student_id,
+                action.target_id,
+                action.subject_id,
+                "",
+            )
+        elif action.action_key == "select_learning_conference":
+            self.learning_conference_requested.emit(student_id)
+        elif action.action_key == "open_learning_conference":
+            self.learning_conference_draft_requested.emit(
+                student_id,
+                action.target_id,
+            )
+        elif action.action_key == "open_report_revision":
+            self.report_revision_requested.emit(action.target_id)
+        elif action.action_key == "open_learning_conference_revision":
+            self.learning_conference_revision_requested.emit(action.target_id)
 
     def set_report_preview(
         self,

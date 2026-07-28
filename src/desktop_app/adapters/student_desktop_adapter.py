@@ -175,6 +175,10 @@ from src.desktop_app.view_models.learning_conference_view_model import (
     build_learning_conference_revision_status,
     build_learning_conference_revision_view_model,
 )
+from src.desktop_app.view_models.report_overview_view_model import (
+    ReportOverviewViewModel,
+    build_report_overview,
+)
 from src.desktop_app.view_models.student_view_model import (
     DashboardDocumentationCellViewModel,
     DashboardDocumentationGroupViewModel,
@@ -1325,6 +1329,123 @@ class StudentDesktopAdapter:
             source.student,
             source.competency_statuses,
             source.observations,
+        )
+
+    def report_overview_for_student(
+        self,
+        student_id: str,
+        *,
+        selected_report_draft_id: str = "",
+        selected_learning_conference_draft_id: str = "",
+    ) -> ReportOverviewViewModel:
+        """Compose Paket-1 display state from separate report and LEG reads."""
+        report_list_error = None
+        try:
+            report_drafts = self.list_learning_report_drafts_for_student(
+                student_id
+            )
+        except Exception as error:
+            report_drafts = ()
+            report_list_error = error
+        learning_conference_list_error = None
+        try:
+            learning_conference_drafts = (
+                self.list_learning_conference_drafts_for_student(student_id)
+            )
+        except Exception as error:
+            learning_conference_drafts = ()
+            learning_conference_list_error = error
+        report_revision_service = self._report_revision_application_service()
+        report_states = {}
+        report_revision_errors: set[str] = set()
+        for draft in report_drafts:
+            try:
+                state = report_revision_service.state_for_draft(
+                    draft.report_draft_id
+                )
+                for revision in state.revisions:
+                    try:
+                        report_revision_service.snapshot_payload(
+                            revision.learning_report_revision_id
+                        )
+                    except Exception:
+                        report_revision_errors.add(
+                            revision.learning_report_revision_id
+                        )
+                report_states[draft.report_draft_id] = state
+            except Exception as error:
+                report_states[draft.report_draft_id] = error
+        _completion, learning_conference_revision_service = (
+            self._learning_conference_revision_services()
+        )
+        learning_conference_states = {}
+        learning_conference_revision_periods: dict[
+            str,
+            tuple[str, str, str],
+        ] = {}
+        learning_conference_revision_errors: set[str] = set()
+        for draft in learning_conference_drafts:
+            try:
+                state = learning_conference_revision_service.state_for_draft(
+                    GetLearningConferenceRevisionStateQuery(
+                        draft.learning_conference_draft_id
+                    )
+                )
+                for revision in state.revisions:
+                    try:
+                        verified = learning_conference_revision_service.get_revision(
+                            GetLearningConferenceRevisionQuery(
+                                revision.learning_conference_revision_id
+                            )
+                        )
+                        period = verified.snapshot.get("period")
+                        if not isinstance(period, dict):
+                            raise ValueError("LEG-Zeitraum fehlt im Snapshot.")
+                        start = str(period.get("start", ""))
+                        end = str(period.get("end", ""))
+                        if bool(start) != bool(end):
+                            raise ValueError("LEG-Zeitraum ist unvollständig.")
+                        if start and end:
+                            date.fromisoformat(start)
+                            date.fromisoformat(end)
+                        conference_date = str(
+                            verified.snapshot.get("conference_date", "")
+                        )
+                        if conference_date:
+                            date.fromisoformat(conference_date)
+                        learning_conference_revision_periods[
+                            revision.learning_conference_revision_id
+                        ] = (start, end, conference_date)
+                    except Exception:
+                        learning_conference_revision_errors.add(
+                            revision.learning_conference_revision_id
+                        )
+                learning_conference_states[
+                    draft.learning_conference_draft_id
+                ] = state
+            except Exception as error:
+                learning_conference_states[
+                    draft.learning_conference_draft_id
+                ] = error
+        return build_report_overview(
+            report_drafts,
+            report_states,
+            learning_conference_drafts,
+            learning_conference_states,
+            self.learning_report_preparation_for_student(student_id),
+            report_list_error=report_list_error,
+            learning_conference_list_error=learning_conference_list_error,
+            report_revision_errors=frozenset(report_revision_errors),
+            learning_conference_revision_periods=(
+                learning_conference_revision_periods
+            ),
+            learning_conference_revision_errors=frozenset(
+                learning_conference_revision_errors
+            ),
+            selected_report_draft_id=selected_report_draft_id,
+            selected_learning_conference_draft_id=(
+                selected_learning_conference_draft_id
+            ),
         )
 
     def save_learning_report_draft(

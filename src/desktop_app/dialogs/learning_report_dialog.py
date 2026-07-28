@@ -215,6 +215,9 @@ class LearningReportDialog(MotionDialog):
         }
         self.subject_widgets: dict[str, dict[str, object]] = {}
         self._evidence_checks: dict[str, dict[str, QCheckBox]] = {}
+        self._evidence_scrolls: dict[str, QScrollArea] = {}
+        self._evidence_subject_buttons: dict[str, QPushButton] = {}
+        self.finalize_button: QPushButton | None = None
         self._preview_timer = QTimer(self)
         self._preview_timer.setSingleShot(True)
         self._preview_timer.setInterval(120)
@@ -390,6 +393,7 @@ class LearningReportDialog(MotionDialog):
                 lambda _checked=False, target=index: self._set_evidence_section(target)
             )
             self.evidence_navigation_group.addButton(button)
+            self._evidence_subject_buttons[subject.subject_id] = button
             sidebar_layout.addWidget(button)
             self.evidence_stack.addWidget(self._subject_evidence_editor(subject))
         sidebar_layout.addStretch(1)
@@ -416,6 +420,39 @@ class LearningReportDialog(MotionDialog):
             index,
             key="report_evidence_section",
         )
+
+    def show_workspace(self, key: str) -> None:
+        """Open one existing workspace section without changing draft state."""
+        if key not in {"writing", "evidence", "preview", "revisions"}:
+            return
+        self.workspace_navigation.set_current_key(key)
+        self._set_workspace(key)
+        if key == "revisions" and self.finalize_button is not None:
+            QTimer.singleShot(0, self.finalize_button.setFocus)
+
+    def focus_evidence_subject(self, subject_id: str) -> bool:
+        """Focus the existing competency area without selecting a competency."""
+        subject_ids = tuple(
+            subject.subject_id for subject in self.preparation.subjects
+        )
+        if subject_id not in subject_ids:
+            return False
+        index = subject_ids.index(subject_id)
+        self.show_workspace("evidence")
+        button = self._evidence_subject_buttons[subject_id]
+        button.setChecked(True)
+        self._set_evidence_section(index)
+        tree = self.subject_widgets.get(subject_id, {}).get("tree")
+        scroll = self._evidence_scrolls.get(subject_id)
+        if not isinstance(tree, QTreeWidget) or scroll is None:
+            return False
+
+        def focus_target() -> None:
+            scroll.ensureWidgetVisible(tree, 20, 20)
+            tree.setFocus(Qt.FocusReason.ShortcutFocusReason)
+
+        QTimer.singleShot(0, focus_target)
+        return True
 
     def _action_bar(self) -> QFrame:
         bar = QFrame()
@@ -714,7 +751,9 @@ class LearningReportDialog(MotionDialog):
         for checkbox in chart_checks.values():
             checkbox.toggled.connect(self._schedule_preview)
         self._render_evidence(subject)
-        return self._scroll_page(content)
+        scroll = self._scroll_page(content)
+        self._evidence_scrolls[subject.subject_id] = scroll
+        return scroll
 
     def _closing_editor(self) -> QScrollArea:
         content, layout = self._page_canvas()
@@ -752,6 +791,7 @@ class LearningReportDialog(MotionDialog):
             return
         self._clear_layout(self.revision_context_layout)
         status = self._revision_status
+        self.finalize_button = None
         card = AppCard("soft")
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(20, 18, 20, 18)
@@ -795,6 +835,7 @@ class LearningReportDialog(MotionDialog):
             finalize.setObjectName("LearningReportFinalizeButton")
             configure_button(finalize, "secondary")
             finalize.clicked.connect(self._request_finalization)
+            self.finalize_button = finalize
             actions.addWidget(finalize)
         elif status.state == "draft_changed":
             open_current = QPushButton("Letzte finale Fassung öffnen")
@@ -806,6 +847,7 @@ class LearningReportDialog(MotionDialog):
             finalize.setObjectName("LearningReportFinalizeButton")
             configure_button(finalize, "secondary")
             finalize.clicked.connect(self._request_finalization)
+            self.finalize_button = finalize
             actions.addWidget(open_current)
             actions.addWidget(finalize)
         else:
