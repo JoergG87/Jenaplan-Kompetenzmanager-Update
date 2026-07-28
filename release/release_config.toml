@@ -1,0 +1,78 @@
+schema_version = 1
+product_name = "Jenaplan-Kompetenzmanager"
+bundle_id = "de.jenaplan.kompetenzmanager"
+minimum_macos = "13.0"
+architecture = "arm64"
+source_branch = "spike/python-gui"
+github_repository = "JoergG87/Jenaplan-Kompetenzmanager-Update"
+pilot_appcast_repository = "JoergG87/Jenaplan-Kompetenzmanager-Update"
+pilot_appcast_branch = "main"
+pilot_appcast_path = "pilot/appcast.xml"
+pilot_feed_url = "https://joergg87.github.io/Jenaplan-Kompetenzmanager-Update/pilot/appcast.xml"
+pilot_pages_prefix = "https://joergg87.github.io/Jenaplan-Kompetenzmanager-Update/pilot/"
+stable_enabled = false
+sparkle_public_key_file = "packaging/sparkle_pilot_public_key.txt"
+sparkle_keychain_account = "de.jenaplan.kompetenzmanager.pilot"
+sparkle_root_environment = "JENAPLAN_SPARKLE_ROOT"
+build_script = "scripts/build_macos_pilot.sh"
+build_requirements = "requirements-macos-build.txt"
+release_notes_source = "docs/RELEASE_NOTES.md"
+output_root = "release/output"
+restore_smoke_required = false
+
+asset_patterns = [
+  "Jenaplan-Kompetenzmanager-{version}-macOS-arm64.dmg",
+  "Jenaplan-Kompetenzmanager-{version}-Dokumentation.zip",
+  "SHA256SUMS-{version}-Build-{build}.txt",
+  "RELEASE_INVENTORY-{version}-Build-{build}.txt",
+]
+
+documentation_sources = [
+  "docs/PILOT_INSTALLATION_LEHRKRAFT.md",
+  "docs/user_manual/USER_MANUAL_SOURCE.md",
+  "docs/PILOT_FIRST_STEPS.md",
+  "docs/PILOT_QUICKSTART_LEHRKRAEFTE.md",
+  "docs/PILOT_BACKUP.md",
+  "docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md",
+  "docs/RELEASE_NOTES.md",
+]
+
+package_gates = [
+  "hdiutil_verify",
+  "bundle_metadata",
+  "arm64_only",
+  "codesign_deep_strict",
+  "native_libraries",
+  "sparkle_version",
+  "app_start_smoke",
+  "forbidden_artifacts",
+  "developer_paths",
+  "pilot_feed",
+  "stable_disabled",
+]
+
+[reference_release]
+version = "0.3.0"
+build = 303
+source_commit = "07c20a3764405bc1f535eb33efe809519dd8316b"
+tag = "v0.3.0-build303"
+
+[[reference_release.assets]]
+name = "Jenaplan-Kompetenzmanager-0.3.0-Dokumentation.zip"
+size = 2787970
+sha256 = "66046e9fedf4e00c04ff3aece0e112fd3cef23fa4766461813e5b5a69854f018"
+
+[[reference_release.assets]]
+name = "Jenaplan-Kompetenzmanager-0.3.0-macOS-arm64.dmg"
+size = 58493977
+sha256 = "b52a8b5fb2ff66c06dbb18d2720244f2199f980dcab721e519200f813cbe3028"
+
+[[reference_release.assets]]
+name = "RELEASE_INVENTORY-0.3.0-Build-303.txt"
+size = 4557
+sha256 = "54e2f8cfea2468e93113c1432d489b23eaabbdd50106007fe024bb98c81bf204"
+
+[[reference_release.assets]]
+name = "SHA256SUMS-0.3.0-Build-303.txt"
+size = 334
+sha256 = "e50143c36f25a959a08cc751cc1291cb26c1bf1b3905401395d0991de20325d3"

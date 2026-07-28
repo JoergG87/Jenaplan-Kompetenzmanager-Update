@@ -6,6 +6,7 @@ cd "$ROOT"
 
 DATA_MODE="empty"
 BUILD_LAURA_PACKAGE="0"
+DEFER_PACKAGE_TESTS="0"
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --data-mode)
@@ -16,6 +17,10 @@ while [ "$#" -gt 0 ]; do
             BUILD_LAURA_PACKAGE="1"
             shift
             ;;
+        --defer-package-tests)
+            DEFER_PACKAGE_TESTS="1"
+            shift
+            ;;
         *)
             echo "Unbekannte Option: $1" >&2
             exit 2
@@ -24,7 +29,7 @@ while [ "$#" -gt 0 ]; do
 done
 if { [ "$DATA_MODE" != "empty" ] && [ "$DATA_MODE" != "laura" ] && [ "$DATA_MODE" != "release" ]; } \
     || { [ "$BUILD_LAURA_PACKAGE" = "1" ] && [ "$DATA_MODE" != "release" ]; }; then
-    echo "Aufruf: scripts/build_macos_pilot.sh [--data-mode empty|laura|release] [--with-laura-package]" >&2
+    echo "Aufruf: scripts/build_macos_pilot.sh [--data-mode empty|laura|release] [--with-laura-package] [--defer-package-tests]" >&2
     exit 2
 fi
 
@@ -250,19 +255,21 @@ if [ ! -f "$APP_PATH/Contents/Resources/third_party_licenses/Sparkle-LICENSE.txt
     echo "Abbruch: Der Sparkle-Lizenzhinweis fehlt im App-Bundle." >&2
     exit 1
 fi
-"$VENV/bin/python" scripts/audit_macos_app_bundle.py \
-    "$APP_PATH" \
-    --expected-version "$VERSION" \
-    --expected-build "$BUILD_VERSION"
-"$VENV/bin/python" scripts/smoke_test_macos_app.py \
-    "$APP_PATH" \
-    --expected-data-mode "$DATA_MODE"
-"$VENV/bin/python" scripts/smoke_test_packaged_restore_worker.py \
-    "$APP_PATH"
-"$VENV/bin/python" scripts/smoke_test_macos_security_integration.py \
-    "$APP_PATH"
-"$VENV/bin/python" scripts/smoke_test_macos_keychain.py \
-    "$APP_PATH"
+if [ "$DEFER_PACKAGE_TESTS" = "0" ]; then
+    "$VENV/bin/python" scripts/audit_macos_app_bundle.py \
+        "$APP_PATH" \
+        --expected-version "$VERSION" \
+        --expected-build "$BUILD_VERSION"
+    "$VENV/bin/python" scripts/smoke_test_macos_app.py \
+        "$APP_PATH" \
+        --expected-data-mode "$DATA_MODE"
+    "$VENV/bin/python" scripts/smoke_test_packaged_restore_worker.py \
+        "$APP_PATH"
+    "$VENV/bin/python" scripts/smoke_test_macos_security_integration.py \
+        "$APP_PATH"
+    "$VENV/bin/python" scripts/smoke_test_macos_keychain.py \
+        "$APP_PATH"
+fi
 
 mkdir -p "$DMG_STAGE"
 ditto "$APP_PATH" "$DMG_STAGE/$APP_NAME.app"

@@ -22,6 +22,8 @@ env/
 .venv-macos-build/
 build/
 dist/
+/release/output/
+/release/release_state.json
 *.dmg
 *.dmg.sha256
 *.app/
