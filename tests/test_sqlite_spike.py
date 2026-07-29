@@ -17,6 +17,10 @@ from src.core.constants import (
     OBSERVATION_ID_PREFIX,
     STUDENT_ID_PREFIX,
 )
+from src.core.database_compatibility import (
+    DatabaseCompatibilityInspector,
+    DatabaseCompatibilityStatus,
+)
 from src.core.observation import (
     ObservationCompetencyRatingRecord,
     ObservationRecord,
@@ -122,12 +126,15 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("student_id", student_columns)
         self.assertIn("first_name", student_columns)
         self.assertIn("last_name", student_columns)
-        self.assertIn("group_id", student_columns)
-        self.assertIn("course_id", student_columns)
+        self.assertIn("notes", student_columns)
+        self.assertNotIn("group_id", student_columns)
+        self.assertNotIn("course_id", student_columns)
+        self.assertNotIn("student_notes", student_columns)
         self.assertIn("sort_order", group_columns)
         self.assertIn("color_name", course_columns)
         self.assertIn("color_hex", course_columns)
         self.assertIn("sort_order", course_columns)
+        self.assertIn("year_level", course_columns)
         self.assertIn("competency_id", competency_columns)
         self.assertIn("subject_id", competency_columns)
         self.assertIn("subject_name", competency_columns)
@@ -155,8 +162,7 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertIn("subject_id", documentation_subject_setting_columns)
         self.assertIn("active", documentation_subject_setting_columns)
         self.assertIn("updated_at", documentation_subject_setting_columns)
-        self.assertIn(("group_id", "groups", "group_id"), student_foreign_keys)
-        self.assertIn(("course_id", "courses", "course_id"), student_foreign_keys)
+        self.assertEqual(student_foreign_keys, set())
         self.assertIn(("student_id", "students", "student_id"), confirmation_foreign_keys)
         self.assertIn(("competency_id", "competencies", "competency_id"), confirmation_foreign_keys)
         self.assertIn(("student_id", "students", "student_id"), document_foreign_keys)
@@ -212,6 +218,23 @@ class SQLiteSpikeTest(unittest.TestCase):
                     )
                     connection.execute(
                         """
+                        INSERT INTO school_years(
+                            school_year_id, label, start_date, end_date,
+                            status, created_at, closed_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, NULL)
+                        """,
+                        (
+                            "SY-TEST-2025-26",
+                            "2025/26",
+                            "2025-08-01",
+                            "2026-07-31",
+                            "current",
+                            "2025-07-01T08:00:00+00:00",
+                        ),
+                    )
+                    connection.execute(
+                        """
                         INSERT INTO courses (
                             course_id,
                             course_name,
@@ -219,9 +242,10 @@ class SQLiteSpikeTest(unittest.TestCase):
                             color_name,
                             color_hex,
                             sort_order,
-                            active
+                            active,
+                            year_level
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             f"{COURSE_ID_PREFIX}-000001",
@@ -231,6 +255,7 @@ class SQLiteSpikeTest(unittest.TestCase):
                             "#2563EB",
                             0,
                             1,
+                            1,
                         ),
                     )
                     connection.execute(
@@ -239,27 +264,52 @@ class SQLiteSpikeTest(unittest.TestCase):
                             student_id,
                             first_name,
                             last_name,
-                            group_id,
-                            course_id,
-                            student_notes,
+                            notes,
                             active,
                             created_at,
                             updated_at,
                             archived_at
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             f"{STUDENT_ID_PREFIX}-000001",
                             "Mila",
                             "Neumann",
-                            f"{GROUP_ID_PREFIX}-000001",
-                            f"{COURSE_ID_PREFIX}-000001",
                             "",
                             1,
                             "2026-07-04",
                             "2026-07-04",
                             None,
+                        ),
+                    )
+                    connection.execute(
+                        """
+                        INSERT INTO student_school_year_assignments(
+                            assignment_id,
+                            student_id,
+                            school_year_id,
+                            group_id,
+                            course_id,
+                            assignment_status,
+                            valid_from,
+                            valid_to,
+                            created_at,
+                            updated_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            "ASG-TEST-001",
+                            f"{STUDENT_ID_PREFIX}-000001",
+                            "SY-TEST-2025-26",
+                            f"{GROUP_ID_PREFIX}-000001",
+                            f"{COURSE_ID_PREFIX}-000001",
+                            "enrolled",
+                            "2025-08-01",
+                            "2026-07-31",
+                            "2026-07-04",
+                            "2026-07-04",
                         ),
                     )
                     connection.execute(
@@ -361,10 +411,80 @@ class SQLiteSpikeTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
             result = seed_test_data(database_path)
+            compatibility = DatabaseCompatibilityInspector().inspect(database_path)
 
             with closing(sqlite3.connect(database_path)) as connection:
+                student_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(students)"
+                    ).fetchall()
+                }
                 student_count = connection.execute(
                     "SELECT COUNT(*) FROM students"
+                ).fetchone()[0]
+                student_ids = tuple(
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT student_id FROM students ORDER BY student_id"
+                    ).fetchall()
+                )
+                school_year = connection.execute(
+                    """
+                    SELECT
+                        school_year_id, label, start_date, end_date, status
+                    FROM school_years
+                    """
+                ).fetchone()
+                course_year_levels = connection.execute(
+                    """
+                    SELECT course_id, year_level
+                    FROM courses
+                    WHERE active = 1
+                    ORDER BY sort_order, course_id
+                    """
+                ).fetchall()
+                assignment_count = connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM student_school_year_assignments
+                    WHERE assignment_status = 'enrolled'
+                    """
+                ).fetchone()[0]
+                assignment_ids = tuple(
+                    row[0]
+                    for row in connection.execute(
+                        """
+                        SELECT assignment_id
+                        FROM student_school_year_assignments
+                        ORDER BY assignment_id
+                        """
+                    ).fetchall()
+                )
+                invalid_assignment_cardinality_count = connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM (
+                        SELECT
+                            student.student_id,
+                            COUNT(assignment.assignment_id) AS assignment_count
+                        FROM students AS student
+                        LEFT JOIN student_school_year_assignments AS assignment
+                            ON assignment.student_id = student.student_id
+                           AND assignment.school_year_id = ?
+                           AND assignment.assignment_status = 'enrolled'
+                           AND assignment.valid_from = ?
+                           AND assignment.valid_to = ?
+                        WHERE student.active = 1
+                        GROUP BY student.student_id
+                        HAVING COUNT(assignment.assignment_id) <> 1
+                    )
+                    """,
+                    (
+                        school_year[0],
+                        school_year[2],
+                        school_year[3],
+                    ),
                 ).fetchone()[0]
                 group_count = connection.execute(
                     "SELECT COUNT(*) FROM groups WHERE active = 1"
@@ -375,6 +495,14 @@ class SQLiteSpikeTest(unittest.TestCase):
                 course_group_count = connection.execute(
                     "SELECT COUNT(*) FROM course_groups WHERE active = 1"
                 ).fetchone()[0]
+                course_group_relation_counts = (
+                    connection.execute(
+                        "SELECT COUNT(*) FROM course_group_student_groups"
+                    ).fetchone()[0],
+                    connection.execute(
+                        "SELECT COUNT(*) FROM course_group_courses"
+                    ).fetchone()[0],
+                )
                 timetable_count = connection.execute(
                     "SELECT COUNT(*) FROM timetable_entries WHERE active = 1"
                 ).fetchone()[0]
@@ -447,10 +575,56 @@ class SQLiteSpikeTest(unittest.TestCase):
             document_files = tuple((Path(temp_dir) / "documents").rglob("*.txt"))
 
         self.assertEqual(result.student_count, 24)
+        self.assertIs(compatibility.status, DatabaseCompatibilityStatus.EXACT)
+        self.assertEqual(
+            student_columns,
+            {
+                "student_id",
+                "first_name",
+                "last_name",
+                "notes",
+                "active",
+                "created_at",
+                "updated_at",
+                "archived_at",
+            },
+        )
         self.assertEqual(student_count, 24)
+        self.assertEqual(
+            student_ids,
+            tuple(
+                f"{STUDENT_ID_PREFIX}-{index:06d}"
+                for index in range(1, 25)
+            ),
+        )
+        self.assertEqual(
+            school_year,
+            (
+                "SY-TEST-2025-26",
+                "2025/26",
+                "2025-08-01",
+                "2026-07-31",
+                "current",
+            ),
+        )
+        self.assertEqual(
+            course_year_levels,
+            [
+                (f"{COURSE_ID_PREFIX}-000001", 1),
+                (f"{COURSE_ID_PREFIX}-000002", 2),
+                (f"{COURSE_ID_PREFIX}-000003", 3),
+            ],
+        )
+        self.assertEqual(assignment_count, 24)
+        self.assertEqual(
+            assignment_ids,
+            tuple(f"ASG-TEST-{index:06d}" for index in range(1, 25)),
+        )
+        self.assertEqual(invalid_assignment_cardinality_count, 0)
         self.assertEqual(group_count, 4)
         self.assertEqual(course_count, 3)
         self.assertEqual(course_group_count, 3)
+        self.assertEqual(course_group_relation_counts, (6, 8))
         self.assertEqual(result.timetable_count, 25)
         self.assertEqual(timetable_count, 25)
         self.assertEqual(timetable_target_types, {"group", "course", "course_group"})
@@ -464,6 +638,10 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertGreaterEqual(longest_rating_history, 3)
         self.assertEqual(blob_columns, set())
         self.assertGreaterEqual(len(document_files), 3)
+        self.assertEqual(result.report_draft_count, 2)
+        self.assertEqual(result.report_revision_count, 2)
+        self.assertEqual(result.conference_draft_count, 2)
+        self.assertEqual(result.conference_revision_count, 2)
 
     def test_seed_test_data_requires_reset_for_existing_data(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -576,9 +754,10 @@ class SQLiteSpikeTest(unittest.TestCase):
                             color_name,
                             color_hex,
                             sort_order,
-                            active
+                            active,
+                            year_level
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             f"{COURSE_ID_PREFIX}-999999",
@@ -587,6 +766,7 @@ class SQLiteSpikeTest(unittest.TestCase):
                             "Gelb",
                             "#EAB308",
                             0,
+                            1,
                             1,
                         ),
                     )

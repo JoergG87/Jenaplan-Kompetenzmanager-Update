@@ -5,7 +5,8 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
-from datetime import datetime
+from dataclasses import replace
+from datetime import date, datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,6 +17,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QFrame, QLabel, QPushButton, QScrollArea
 
 from src.application.commands.timetable import SaveTimetableEntryCommand
+from src.core.records import seed_reference_data
 from src.core.sqlite_store import SQLiteCompetencyRepository, SQLiteDatabase
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
@@ -48,13 +50,18 @@ class DashboardTest(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.database_path = Path(self.temp_dir.name) / "dashboard.sqlite"
         database = SQLiteDatabase(self.database_path)
-        database.initialize_schema()
-        database.ensure_master_data_defaults()
+        reference = seed_reference_data()
+        database.replace_seed_data(
+            replace(reference, students=(), assignments=())
+        )
         SQLiteCompetencyRepository(database).ensure_catalog_defaults(
             CurriculumDesktopAdapter().list_entries()
         )
         self.adapter = TimetableDesktopAdapter(database)
-        self.student_adapter = StudentDesktopAdapter(self.database_path)
+        self.student_adapter = StudentDesktopAdapter(
+            self.database_path,
+            today_provider=lambda: date(2026, 7, 13),
+        )
         self.master_data_adapter = MasterDataDesktopAdapter(self.student_adapter)
         week = self.adapter.week_view_model()
         self.subject = week.subjects[0]
@@ -324,7 +331,10 @@ class DashboardTest(unittest.TestCase):
             "Berta", "Kurs",
             group_id=other_group.item_id,
         )
-        other_course = self.master_data_adapter.add_course("Anderer Kurs")
+        other_course = self.master_data_adapter.add_course(
+            "Anderer Kurs",
+            year_level=1,
+        )
         course_peer = self._add_student(
             "Carla", "Gruppe",
             course_id=other_course.item_id,

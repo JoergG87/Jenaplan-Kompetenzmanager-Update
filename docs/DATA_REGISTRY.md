@@ -3,16 +3,16 @@
 ## V3-only Produktdatenquellen
 
 **Status:** Direkte Final-V3-Schemaquelle, synthetischer temporärer
-Testdatenpfad, zentrale Assignment-API und SJ-2E-Umstellung der produktiven
-Membership-Reader sind lokal implementiert. Writerumstellung und
-Runtime-Freigabe sind nicht Bestandteil von SJ-2E und bleiben offen.
+Testdatenpfad, zentrale Assignment-API, SJ-2E-Umstellung der produktiven
+Membership-Reader und SJ-2F-Umstellung der produktiven Writer sind lokal
+implementiert. Die Runtime-Freigabe bleibt offen.
 
 | Quelle | Fachliche Bedeutung | Owner | Nicht zulässige Ersatzquelle |
 |---|---|---|---|
 | `school_years` | einzige Schuljahreswahrheit mit geplantem, aktuellem oder geschlossenem Status | School-Year Domain / `SchoolYearRepository` | Systemdatum, Label, Seedkonstante, Beobachtungsdaten |
 | `student_school_year_assignments` | einzige aktuelle und historische Kurs-/Stammgruppenzuordnung | Assignment Domain / `SchoolYearAssignmentQueryService` | Schülerfelder, UI-Auswahl, Kursname, letzte bekannte Zuordnung ohne Datum |
-| `courses.year_level` | bestätigte stabile Kursstufe 1, 2 oder 3 | Course Repository | Name, Farbe, Sortierung, Listenposition |
-| V3-`students` | Schülerstammdaten sowie Aktiv-/Archivstatus ohne Membershipfelder | Student Repository | V2-`StudentRecord.group_id/course_id` |
+| `courses.year_level` | bewusst gewählte stabile Kursstufe 1, 2 oder 3 | Course Repository | Name, Farbe, Sortierung, Listenposition |
+| V3-`students` | Schülerstammdaten sowie Aktiv-/Archivstatus ohne Membershipfelder | `V3StudentRepository` und getrennte Student-Lifecycles | V2-`StudentRecord.group_id/course_id`, generischer Student-Membershipwrite |
 | `CurrentMembershipReadSnapshot` | flüchtige aktuelle Mitgliedermenge und zentral berechnete Zähler für genau ein `current`-Schuljahr und einen expliziten `as_of`-Tag einschließlich `CURRENT_SCHOOL_YEAR_MISSING`-/`AMBIGUOUS`-Diagnostik | `SchoolYearAssignmentReadSession` | V2-Schülerfelder, Python-Nachzählung, Widgetfilter, Systemdatum |
 | `AssignmentReferenceRequest` | flüchtiger Batchauftrag aus `request_key`, `student_id` und fachlichem `reference_date` | `SchoolYearAssignmentReadSession` | aktuelles Schuljahr, Systemdatum, Last-known oder Dokumenterstellungszeit als Ersatzdatum |
 | `school_year_transitions` | unveränderlicher Beleg eines echten committed Schuljahreswechsels | School-Year Transition Service | Initialanlage, Startup, Bootstrap, Migration |
@@ -59,7 +59,8 @@ Final-V3-Schemaquelle auf und erzeugt deterministisch:
 IDs und Zeitpunkte sind stabil. Namen sind ersichtlich synthetisch. Der
 Builder liest, migriert oder überschreibt keine vorhandene Datenbank und ist
 nicht an den lokalen Standarddatenpfad gebunden. Insbesondere wird Lauras
-bestehender Testbestand nicht automatisch ersetzt.
+bestehender Testbestand nicht automatisch ersetzt. Die frühere testlokale
+V2-Membershipfixture ist keine registrierte Testquelle mehr.
 
 ## Historische Membershipauflösung
 
@@ -121,8 +122,34 @@ V2-`students.group_id/course_id` ersetzt. `request_key` korreliert Ergebnis
 und Quellrecord, ist aber keine fachliche Identität oder persistierte
 Datenquelle. Dieser Leservertrag erzeugt keine Tabelle, Migration,
 Materialisierung oder Runtime-Aktivierung. Bis zur gesonderten
-Writerumstellung und Runtime-Aktivierung bleibt
+Runtime-Aktivierung bleibt
 `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` verbindlich.
+
+## SJ-2F-Quellenvertrag für produktive Writer
+
+Die produktiven Schreibpfade verwenden ausschließlich folgende Quellen und
+Grenzen:
+
+| Vorgang | Persistierte Quellen | Owner | Ausdrücklich keine Quelle oder Nebenwirkung |
+|---|---|---|---|
+| Schüleranlage | V3-`students`, aktuelles `school_years`, initiales `student_school_year_assignments` | `CreateStudentWithInitialEnrollment` | V2-Membershipfelder, Teilcommit, implizites Schuljahr |
+| Stammdatenänderung | V3-`students` | `UpdateStudentMasterData` | Kurs, Stammgruppe, Schuljahr, Intervall oder Assignmentstatus |
+| Einzelwechsel | bisheriges und neues `student_school_year_assignments` am expliziten Stichtag | `ChangeStudentMembership` | generischer Studentupdate, Mehrkindwechsel, historische Korrektur |
+| Austritt | `student_school_year_assignments` | `ExitStudentFromSchoolYear` | Archivierung oder V3-Studentmutation |
+| Archivierung | V3-`students` nach aktueller Assignmentprüfung | `ArchiveStudent` | `exited`-Erzeugung oder Assignmentmutation |
+| Kursstammdaten | `courses` einschließlich `year_level` | `SQLiteMasterDataRepository` | Ableitung der Stufe aus Name, Farbe, Sortierung oder Listenposition |
+| Stammgruppenstammdaten | `groups` | `SQLiteMasterDataRepository` | versteckte Membership-Neuzuordnung oder Ersatzgruppe |
+
+Die Deaktivierung eines Kurses oder einer Stammgruppe benötigt einen
+expliziten `as_of`-Tag. Ein aktuelles oder zukünftiges `enrolled`-Assignment
+blockiert den Stammdatenwrite atomar; rein historische Assignments bleiben
+lesbar und werden nicht verändert. Mehrere Kurse dürfen dieselbe
+`year_level` besitzen.
+
+Diese Writerumstellung aktiviert weder die normale Runtime noch den
+Schuljahreswechsel- oder Mehrkindwechselpfad. Sie migriert keine echten oder
+synthetischen Altbestände und liest keine lokale Produktdatenbank als
+Testquelle.
 
 ## Echte Schuljahreswechsel
 

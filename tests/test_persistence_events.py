@@ -35,24 +35,51 @@ def _database(path: Path) -> SQLiteDatabase:
     database.initialize_schema()
     with database.connect() as connection:
         connection.execute(
+            """
+            INSERT OR IGNORE INTO school_years(
+                school_year_id, label, start_date, end_date,
+                status, created_at, closed_at
+            ) VALUES (
+                'SY-TEST-2025-26', '2025/26', '2025-08-01', '2026-07-31',
+                'current', '2025-07-01T08:00:00+00:00', NULL
+            )
+            """
+        )
+        connection.execute(
             "INSERT OR IGNORE INTO groups VALUES ('GRP-001', 'Gruppe', 0, 1)"
         )
         connection.execute(
             """
             INSERT OR IGNORE INTO courses (
                 course_id, course_name, color_key, color_name, color_hex,
-                sort_order, active
-            ) VALUES ('CRS-001', 'Kurs', NULL, '', '', 0, 1)
+                sort_order, active, year_level
+            ) VALUES ('CRS-001', 'Kurs', NULL, '', '', 0, 1, 1)
             """
         )
         connection.execute(
             """
             INSERT OR IGNORE INTO students (
-                student_id, first_name, last_name, group_id, course_id,
-                student_notes, active, created_at, updated_at, archived_at
-            ) VALUES (?, 'Ada', 'Test', 'GRP-001', 'CRS-001', '', 1, ?, ?, NULL)
+                student_id, first_name, last_name, notes,
+                active, created_at, updated_at, archived_at
+            ) VALUES (?, 'Ada', 'Test', '', 1, ?, ?, NULL)
             """,
             (STUDENT_ID, "2026-07-01T08:00:00+00:00", "2026-07-01T08:00:00+00:00"),
+        )
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO student_school_year_assignments(
+                assignment_id, student_id, school_year_id, group_id, course_id,
+                assignment_status, valid_from, valid_to, created_at, updated_at
+            ) VALUES (
+                'ASG-TEST-001', ?, 'SY-TEST-2025-26', 'GRP-001', 'CRS-001',
+                'enrolled', '2025-08-01', '2026-07-31', ?, ?
+            )
+            """,
+            (
+                STUDENT_ID,
+                "2026-07-01T08:00:00+00:00",
+                "2026-07-01T08:00:00+00:00",
+            ),
         )
         connection.execute(
             """
@@ -284,12 +311,27 @@ def test_relevant_change_without_remaining_old_student_evidence_stays_newer(
             connection.execute(
                 """
                 INSERT INTO students (
-                    student_id, first_name, last_name, group_id, course_id,
-                    student_notes, active, created_at, updated_at, archived_at
+                    student_id, first_name, last_name, notes,
+                    active, created_at, updated_at, archived_at
                 ) VALUES (
-                    'STU-000002', 'Berta', 'Test', 'GRP-001', 'CRS-001', '',
-                    1, '2026-07-01T08:00:00+00:00',
+                    'STU-000002', 'Berta', 'Test', '', 1,
+                    '2026-07-01T08:00:00+00:00',
                     '2026-07-01T08:00:00+00:00', NULL
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO student_school_year_assignments(
+                    assignment_id, student_id, school_year_id,
+                    group_id, course_id, assignment_status,
+                    valid_from, valid_to, created_at, updated_at
+                ) VALUES (
+                    'ASG-TEST-002', 'STU-000002', 'SY-TEST-2025-26',
+                    'GRP-001', 'CRS-001', 'enrolled',
+                    '2025-08-01', '2026-07-31',
+                    '2026-07-01T08:00:00+00:00',
+                    '2026-07-01T08:00:00+00:00'
                 )
                 """
             )

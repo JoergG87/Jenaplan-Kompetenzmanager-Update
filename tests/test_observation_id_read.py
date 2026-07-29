@@ -58,6 +58,17 @@ def _database(
     with database.connect() as connection:
         connection.execute(
             """
+            INSERT INTO school_years(
+                school_year_id, label, start_date, end_date,
+                status, created_at, closed_at
+            ) VALUES (
+                'SY-TEST-2025-26', '2025/26', '2025-08-01', '2026-07-31',
+                'current', '2025-07-01T08:00:00+00:00', NULL
+            )
+            """
+        )
+        connection.execute(
+            """
             INSERT INTO groups (group_id, group_name, sort_order, active)
             VALUES ('GRP-001', 'Gruppe 1', 1, 1)
             """
@@ -66,22 +77,47 @@ def _database(
             """
             INSERT INTO courses (
                 course_id, course_name, color_key, color_name, color_hex,
-                sort_order, active
+                sort_order, active, year_level
             )
-            VALUES ('CRS-001', 'Kurs 1', NULL, '', '', 1, 1)
+            VALUES ('CRS-001', 'Kurs 1', NULL, '', '', 1, 1, 1)
             """
         )
         connection.executemany(
             """
             INSERT INTO students (
-                student_id, first_name, last_name, group_id, course_id,
-                student_notes, active, created_at, updated_at, archived_at
+                student_id, first_name, last_name, notes,
+                active, created_at, updated_at, archived_at
             )
-            VALUES (?, ?, 'Test', 'GRP-001', 'CRS-001', '', 1, ?, ?, NULL)
+            VALUES (?, ?, 'Test', '', 1, ?, ?, NULL)
             """,
             (
                 (STUDENT_A, "Ada", "2026-07-26T08:00:00+00:00", "2026-07-26T08:00:00+00:00"),
                 (STUDENT_B, "Berta", "2026-07-26T08:00:00+00:00", "2026-07-26T08:00:00+00:00"),
+            ),
+        )
+        connection.executemany(
+            """
+            INSERT INTO student_school_year_assignments(
+                assignment_id, student_id, school_year_id, group_id, course_id,
+                assignment_status, valid_from, valid_to, created_at, updated_at
+            ) VALUES (
+                ?, ?, 'SY-TEST-2025-26', 'GRP-001', 'CRS-001', 'enrolled',
+                '2025-08-01', '2026-07-31', ?, ?
+            )
+            """,
+            (
+                (
+                    "ASG-TEST-001",
+                    STUDENT_A,
+                    "2026-07-26T08:00:00+00:00",
+                    "2026-07-26T08:00:00+00:00",
+                ),
+                (
+                    "ASG-TEST-002",
+                    STUDENT_B,
+                    "2026-07-26T08:00:00+00:00",
+                    "2026-07-26T08:00:00+00:00",
+                ),
             ),
         )
     return database
@@ -177,11 +213,13 @@ def test_database_failure_does_not_return_or_persist_an_observation(
     tmp_path: Path,
 ) -> None:
     database = _database(tmp_path / "failure.sqlite")
-    with database.connect() as connection:
-        connection.execute("DELETE FROM students WHERE student_id = ?", (STUDENT_A,))
+    missing_student_id = "STU-MISSING"
 
     with pytest.raises(sqlite3.IntegrityError):
-        _create(_service(database, student_ids=(STUDENT_A,)))
+        _create(
+            _service(database, student_ids=(missing_student_id,)),
+            student_id=missing_student_id,
+        )
 
     with database.connect() as connection:
         assert connection.execute("SELECT COUNT(*) FROM observations").fetchone()[0] == 0

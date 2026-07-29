@@ -28,6 +28,7 @@ from src.desktop_app.backup_restore_operations import (
     BackupRestoreOperationType,
     BackupRestoreProgressPhase,
 )
+from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.runtime import runtime_paths
 from src.desktop_app.screens.settings_screen import SettingsScreen
 from src.desktop_app.shell import AppShell
@@ -329,6 +330,20 @@ class TestBackupRestoreShellLifecycle:
             paths.logs,
         ):
             directory.mkdir(parents=True, exist_ok=True)
+        database = SQLiteDatabase(paths.database)
+        database.initialize_schema()
+        with database.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO school_years(
+                    school_year_id, label, start_date, end_date,
+                    status, created_at, closed_at
+                ) VALUES (
+                    'SY-TEST-2025-26', '2025/26', '2025-08-01', '2026-07-31',
+                    'current', '2025-07-01T08:00:00+00:00', NULL
+                )
+                """
+            )
         return AppShell(paths.database, paths=paths)
 
     def test_backup_creation_returns_immediately_and_updates_status_on_success(

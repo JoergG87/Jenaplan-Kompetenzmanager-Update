@@ -14,6 +14,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
+from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.shell import AppShell
 
 
@@ -24,7 +25,22 @@ class SidebarNavigationSignalTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.shell = AppShell(Path(self.temp_dir.name) / "sidebar.sqlite")
+        database_path = Path(self.temp_dir.name) / "sidebar.sqlite"
+        database = SQLiteDatabase(database_path)
+        database.initialize_schema()
+        with database.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO school_years(
+                    school_year_id, label, start_date, end_date,
+                    status, created_at, closed_at
+                ) VALUES (
+                    'SY-TEST-2025-26', '2025/26', '2025-08-01', '2026-07-31',
+                    'current', '2025-07-01T08:00:00+00:00', NULL
+                )
+                """
+            )
+        self.shell = AppShell(database_path)
         self.shell.show()
         self.app.processEvents()
 
@@ -140,4 +156,3 @@ class SidebarNavigationSignalTest(unittest.TestCase):
             self.app.processEvents()
 
         self.assertEqual(refresh_students.call_count, 2)
-

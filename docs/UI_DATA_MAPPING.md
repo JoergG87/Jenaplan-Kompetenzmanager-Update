@@ -2,14 +2,15 @@
 
 ## V3-only Startup und geplanter Schuljahresassistent
 
-**Status:** Keine neue produktive View durch den Architecture Cleanup.
-Runtime-Aktivierung und Schuljahreswechsel-UI bleiben gesperrt.
+**Status:** SJ-2F ergänzt produktive Final-V3-Writer in vorhandenen
+Schüler- und Stammdatenviews. Runtime-Aktivierung,
+Schuljahreswechsel-Assistent und Mehrkindwechsel bleiben gesperrt.
 
 Der Datenbankstart zeigt keinen V2-Bootstrap, keine V2-Migrationsvorschau und
 keine Auswahl zur Übernahme alter Testdaten. Ein erkanntes finales Schema
 stoppt nach der abgeschlossenen SJ-2E-Leserumstellung weiterhin bis zur
-gesonderten Writerumstellung und Runtime-Aktivierung vor der Shell mit einem
-technischen, nicht irreführenden Zwischenzustand. Unbekannte oder beschädigte
+gesonderten Runtime-Aktivierung vor der Shell mit einem technischen, nicht
+irreführenden Zwischenzustand. Unbekannte oder beschädigte
 Schemata führen fail-closed in die bestehende kontrollierte Recoverygrenze.
 
 Eine fehlende Datenbank darf nur im autorisierten First Run direkt als
@@ -36,6 +37,26 @@ Synthetische Initialdaten sind keine UI-Projektion. IDs, Zeitpunkte und
 Fixtures werden ausschließlich im Testpfad erzeugt und niemals als
 Produktdaten oder Pilotbestand dargestellt.
 
+## SJ-2F Writer-Mapping
+
+| Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |
+|---|---|---|---|
+| aktuelles Schuljahr bei Schüleranlage | eindeutiges `school_years.status = current` aus `SchoolYearRepository` | Nein | sichtbar, keine implizite Auswahl; fehlt oder passt es nicht zum Operationstag, beginnt kein Write |
+| Vorname, Nachname und Notiz | Benutzereingabe | V3-`students` | Anlage und Stammdatenbearbeitung enthalten keine Membershipfelder |
+| Stammgruppe und Kurs bei Schüleranlage | aktive Stammdatenauswahl | initiales `student_school_year_assignments` | gemeinsam mit dem V3-Schüler atomar; kein Schüler ohne gültiges initiales Assignment |
+| Stammgruppe und Kurs beim Stammdatenbearbeiten | aktuelle `CurrentStudentMembershipProjection` | Nein | nur Anzeige; Änderung ausschließlich über den getrennten Einzelwechsel |
+| Wechselstichtag | bewusste Datumsauswahl in `StudentMembershipChangeDialog` | `student_school_year_assignments` | altes Intervall endet am Vortag, neues beginnt am Stichtag; `NO_CHANGE` mutiert nichts |
+| Zielkurs und optionale Zielstammgruppe | aktive Kurs-/Gruppenstammdaten plus aktuelle Zuordnung | `student_school_year_assignments` | Vorschau und bewusste Bestätigung für genau ein Kind; kein Mehrkindwechsel |
+| Austritt | expliziter Stichtag in `StudentExitDialog` | `student_school_year_assignments` | erzeugt `exited` ohne Kurs und Gruppe; archiviert nicht |
+| Archivieren | getrennte Aktion | V3-`students` | erzeugt kein `exited`, verändert kein Assignment und wird bei aktueller Einschreibung blockiert |
+| Kursstufe | bewusste Auswahl `Stufe 1`, `Stufe 2` oder `Stufe 3` | `courses.year_level` | Pflichtfeld; keine Ableitung aus Kursname, Farbe, Sortierung oder Listenposition; gleiche Stufe für mehrere Kurse zulässig |
+| Kurs-/Stammgruppenstatus | Stammdatenaktion mit explizitem Operationstag | `courses.active` / `groups.active` | aktuelle oder zukünftige `enrolled`-Referenz blockiert Deaktivierung; keine automatische Umbuchung, historische Assignments bleiben lesbar |
+
+Die Dialoge zeigen fachliche Fehlermeldungen, keine SQL-Fehler, IDs oder
+internen Pfade. Die Writerumstellung hebt die
+`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`-Sperre nicht auf. Die manuelle
+macOS-Prüfung dieser UI-Abläufe ist noch offen.
+
 ## SJ-2E Assignment-Read-Mapping
 
 **Status:** Verbindlicher, lokal implementierter Vertrag der produktiven
@@ -60,7 +81,7 @@ die übrigen Daten des Requests. Die Session besitzt keine
 Transaktionssteuerung. Finalisierte Revisionen und PDFs werden nicht live neu
 aufgelöst. Dieses Mapping führt keine neue Tabelle, Migration, Persistenz oder
 Runtime-Freigabe ein; `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt bis zur
-gesonderten Writerumstellung und Runtime-Aktivierung verbindlich.
+gesonderten Runtime-Aktivierung verbindlich.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 
@@ -534,15 +555,24 @@ Regel:
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| Vorname | `QLineEdit` -> `student.create.first_name` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | Pflichtfeld, keine technische Identitaet |
-| Nachname | `QLineEdit` -> `student.create.last_name` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | Pflichtfeld |
-| Stammgruppe | `MasterDataViewModel.groups` aus SQLite `groups` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_groups` / SQLite `groups` | Dropdown, kein Freitext; nur persistente Stammgruppen koennen fuer `student.create` gespeichert werden |
-| Kurs | `MasterDataViewModel.courses` aus SQLite `courses` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_courses` / SQLite `courses` | Dropdown, kein Freitext; nur persistente Kurse koennen fuer `student.create` gespeichert werden |
-| Notiz | `QTextEdit` -> `student.create.student_notes` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_students` | optional |
+| Vorname | `QLineEdit` -> `StudentDesktopAdapter.save_new_student/save_existing_student` | Eingabe | Ja | V3-`students.first_name` | Pflichtfeld, keine technische Identitaet |
+| Nachname | `QLineEdit` -> `StudentDesktopAdapter.save_new_student/save_existing_student` | Eingabe | Ja | V3-`students.last_name` | Pflichtfeld |
+| Notiz | `QTextEdit` -> `StudentDesktopAdapter.save_new_student/save_existing_student` | Eingabe | Ja | V3-`students.notes` | optional; Stammdatenwrite verändert keine Membership |
+| aktuelles Schuljahr | `StudentDesktopAdapter.current_school_year()` | Anzeige | Nein | `school_years` | bei Anlage eindeutig erforderlich; keine Seed-, Label- oder Systemdatumsannahme |
+| Stammgruppe bei Anlage | aktive Gruppen aus SQLite `groups` | Eingabe | Ja | initiales `student_school_year_assignments.group_id` | Dropdown, kein Freitext; gemeinsam mit dem Schüler atomar gespeichert |
+| Kurs bei Anlage | aktive Kurse aus SQLite `courses` | Eingabe | Ja | initiales `student_school_year_assignments.course_id` | Dropdown, kein Freitext; Kurs benötigt gültige `year_level` |
+| aktuelle Zuordnung beim Bearbeiten | `CurrentStudentMembershipProjection` | Anzeige | Nein | `student_school_year_assignments` | nicht über `save_existing_student` änderbar |
+| Zuordnung ändern | `StudentMembershipChangeDialog` | Eingabe / Vorschau | Ja | `student_school_year_assignments` | expliziter Stichtag und bewusste Bestätigung; eigener Einzelkind-Lifecycle |
+| Austritt | `StudentExitDialog` | Eingabe / Bestätigung | Ja | `student_school_year_assignments` | eigener Lifecycle; keine Archivierung |
+| Archivieren | getrennte Aktion | Eingabe / Bestätigung | Ja | V3-`students` | bei aktueller Einschreibung blockiert; keine Assignmentmutation |
 
 Regel:
 
-Der PySide-Schuelerdialog ist der aktive Eingabepfad fuer `student.create`. Er sammelt Eingaben, validiert UI-nah und nutzt den Desktop Adapter sowie Application-/Domain-/Repository-Schichten. Qt Widgets schreiben nicht direkt in SQLite.
+Der PySide-Schuelerdialog ist der aktive Final-V3-Eingabepfad. Er sammelt
+Eingaben, validiert UI-nah und nutzt den Desktop Adapter sowie getrennte
+Application-/Domain-/Repository-Lifecycles. Qt Widgets schreiben nicht direkt
+in SQLite. Schülerstammdaten und Membership werden nicht über ein
+gemeinsames generisches Update verändert.
 
 ## PySide6 Schueleruebersicht
 
@@ -587,14 +617,14 @@ Datenquelle, berechnet keine Membership und besitzt keinen Schreibprozess.
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | Stammgruppenliste | SQLite `groups.group_name` ueber `MasterDataDesktopAdapter` | Anzeige | Nein | SQLite `groups` / `data_groups` | Stammgruppen sind eigenstaendige Stammdaten |
-| Kursliste | SQLite `courses.course_name` ueber `MasterDataDesktopAdapter` | Anzeige | Nein | SQLite `courses` / `data_courses` | Kurse sind eigenstaendige Stammdaten |
+| Kursliste | SQLite `courses.course_name` und `courses.year_level` ueber `MasterDataDesktopAdapter` | Anzeige | Nein | SQLite `courses` / `data_courses` | Kurse sind eigenstaendige Stammdaten; Kursstufe wird als `Stufe 1`, `Stufe 2` oder `Stufe 3` angezeigt |
 | Kursfarbe | SQLite `courses.color_name` + `courses.color_hex` | Anzeige / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `courses` / `data_courses` | persistenter Farbwert am Kurs; Schuelerfarbe wird daraus abgeleitet |
 | Kursverbund | `MasterDataViewModel.course_groups` aus SQLite `course_groups` | Anzeige / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `course_groups` | definiert Name, ausgewaehlte Stammgruppen und ausgewaehlte Kurse |
 | Neuer Kursverbund | `CourseGroupDialog` -> `MasterDataDesktopAdapter.add_course_group()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `course_groups` + Relationen | nutzt Name, Stammgruppen-Checkboxen und Kurs-Checkboxen; doppelte Namen werden abgefangen |
 | Kursverbund bearbeiten | `CourseGroupDialog` -> `MasterDataDesktopAdapter.update_course_group()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `course_groups` + Relationen | Checkbox-Auswahl fuer Stammgruppen und Kurse; Kursfilter bleibt Kurs plus Stammgruppen des Kursverbunds |
 | Neue Stammgruppe | `MasterDataDesktopAdapter.add_group()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `groups` / `data_groups` | erzeugt persistente Stammgruppe, keine automatische Schuelerzuordnung |
-| Neuer Kurs | `MasterDataDesktopAdapter.add_course()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `courses` / `data_courses` | erzeugt persistenten Kurs inklusive Kursfarbe |
-| Umbenennen | `MasterDataDesktopAdapter.rename_*()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `groups` / `courses` | `group_id` und `course_id` bleiben fachlich massgeblich; Schueler-Umbuchung folgt separat |
+| Neuer Kurs | `MasterDataDesktopAdapter.add_course()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `courses` / `data_courses` | erzeugt persistenten Kurs inklusive Kursfarbe und bewusst gewählter Pflicht-`year_level`; mehrere Kurse derselben Stufe zulässig |
+| Bearbeiten/Deaktivieren | `MasterDataDesktopAdapter.rename_*()` -> `SQLiteMasterDataRepository` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `groups` / `courses` | IDs bleiben maßgeblich; keine Schülerumbuchung. Deaktivierung benötigt einen expliziten Stichtag und wird bei aktuellen oder zukünftigen `enrolled`-Referenzen blockiert; historische Referenzen bleiben lesbar |
 
 ## Kompetenzansicht
 

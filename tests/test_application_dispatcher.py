@@ -3,77 +3,41 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import dataclass
 
-from src.application.commands import CreateStudentCommand
 from src.application.dispatcher import (
     ApplicationCommandDispatcher,
     ErrorResult,
     SuccessResult,
-    student_create_handler,
 )
 
 
-class FakeStudentService:
-    """Capture student service calls for dispatcher tests."""
+@dataclass(frozen=True)
+class ExampleCommand:
+    value: str
+    command_name: str = "example.run"
 
-    def __init__(self) -> None:
-        self.calls: list[dict[str, str]] = []
-
-    def create_student(
-        self,
-        first_name: str,
-        last_name: str,
-        group_id: str,
-        course_id: str,
-        student_notes: str = "",
-    ) -> dict[str, str]:
-        payload = {
-            "first_name": first_name,
-            "last_name": last_name,
-            "group_id": group_id,
-            "course_id": course_id,
-            "student_notes": student_notes,
-        }
-        self.calls.append(payload)
-        return payload
 
 
 class ApplicationCommandDispatcherTest(unittest.TestCase):
-    def test_dispatches_student_create_to_registered_service_handler(self) -> None:
-        service = FakeStudentService()
+    def test_dispatches_registered_command(self) -> None:
         dispatcher = ApplicationCommandDispatcher()
-        dispatcher.register("student.create", student_create_handler(service))
+        dispatcher.register("example.run", lambda command: command.value.upper())
 
-        result = dispatcher.dispatch(
-            CreateStudentCommand(
-                first_name="Jule",
-                last_name="Schneider",
-                group_id="GRP-000001",
-                course_id="CRS-000001",
-                student_notes="Liest gern.",
-            )
-        )
+        result = dispatcher.dispatch(ExampleCommand("wert"))
 
         self.assertIsInstance(result, SuccessResult)
-        self.assertEqual(result.value["first_name"], "Jule")
-        self.assertEqual(service.calls[0]["last_name"], "Schneider")
-        self.assertEqual(dispatcher.registered_commands(), ("student.create",))
+        self.assertEqual(result.value, "WERT")
+        self.assertEqual(dispatcher.registered_commands(), ("example.run",))
 
     def test_rejects_unknown_command(self) -> None:
         dispatcher = ApplicationCommandDispatcher()
 
-        result = dispatcher.dispatch(
-            CreateStudentCommand(
-                first_name="Jule",
-                last_name="Schneider",
-                group_id="GRP-000001",
-                course_id="CRS-000001",
-            )
-        )
+        result = dispatcher.dispatch(ExampleCommand("wert"))
 
         self.assertIsInstance(result, ErrorResult)
         self.assertFalse(result.success)
-        self.assertEqual(result.command_name, "student.create")
+        self.assertEqual(result.command_name, "example.run")
 
 
 if __name__ == "__main__":

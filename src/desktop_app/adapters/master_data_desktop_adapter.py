@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 from src.core.sqlite_store import (
     DEFAULT_COURSE_GROUP_ID,
     MasterDataCourseGroupRecord,
@@ -19,6 +21,7 @@ from src.desktop_app.view_models.master_data_view_model import (
     MasterDataViewModel,
     course_color_name,
     normalize_master_data_name,
+    validate_course_year_level,
 )
 
 
@@ -60,9 +63,11 @@ class MasterDataDesktopAdapter:
         self,
         name: str,
         color_hex: str = "",
+        year_level: int | None = None,
     ) -> MasterDataItemViewModel:
         """Persist a new course."""
         normalized_name = normalize_master_data_name(name)
+        validated_year_level = validate_course_year_level(year_level)
         selected_color_hex = color_hex or "#2563EB"
         record = MasterDataCourseRecord(
             self.repository.next_course_id(),
@@ -71,22 +76,34 @@ class MasterDataDesktopAdapter:
             selected_color_hex,
             True,
             len(self.courses),
+            validated_year_level,
         )
         self.repository.upsert_course(record)
         self._append_course_to_default_course_group(record.course_id)
         self._reload()
         return self.courses[record.course_id]
 
-    def rename_group(self, group_id: str, name: str) -> MasterDataItemViewModel:
-        """Persist a group rename."""
+    def rename_group(
+        self,
+        group_id: str,
+        name: str,
+        *,
+        active: bool | None = None,
+        as_of: date | None = None,
+    ) -> MasterDataItemViewModel:
+        """Persist a group master-data change without changing membership."""
         item = self.groups[group_id]
+        selected_active = item.is_active if active is None else bool(active)
         record = MasterDataGroupRecord(
             group_id,
             normalize_master_data_name(name),
-            item.is_persistent,
+            selected_active,
             self._group_sort_order(group_id),
         )
-        self.repository.upsert_student_group(record)
+        self.repository.upsert_student_group(
+            record,
+            as_of=as_of if not selected_active else None,
+        )
         self._reload()
         return self.groups[group_id]
 
@@ -95,19 +112,31 @@ class MasterDataDesktopAdapter:
         course_id: str,
         name: str,
         color_hex: str | None = None,
+        *,
+        year_level: int | None = None,
+        active: bool | None = None,
+        as_of: date | None = None,
     ) -> MasterDataItemViewModel:
-        """Persist a course rename and color change."""
+        """Persist course master data without changing membership."""
         item = self.courses[course_id]
         selected_color_hex = color_hex or item.color_hex
+        selected_year_level = validate_course_year_level(
+            item.year_level if year_level is None else year_level
+        )
+        selected_active = item.is_active if active is None else bool(active)
         record = MasterDataCourseRecord(
             course_id,
             normalize_master_data_name(name),
             course_color_name(selected_color_hex),
             selected_color_hex,
-            item.is_persistent,
+            selected_active,
             self._course_sort_order(course_id),
+            selected_year_level,
         )
-        self.repository.upsert_course(record)
+        self.repository.upsert_course(
+            record,
+            as_of=as_of if not selected_active else None,
+        )
         self._reload()
         return self.courses[course_id]
 
@@ -165,9 +194,9 @@ class MasterDataDesktopAdapter:
                 group.group_id,
                 group.group_name,
                 True,
+                is_active=group.active,
             )
             for group in self.repository.list_student_groups()
-            if group.active
         }
         self.courses = {
             course.course_id: MasterDataItemViewModel(
@@ -176,9 +205,10 @@ class MasterDataDesktopAdapter:
                 True,
                 course.color_name,
                 course.color_hex,
+                course.year_level,
+                course.active,
             )
             for course in self.repository.list_courses()
-            if course.active
         }
         self.course_groups = {
             course_group.course_group_id: CourseGroupViewModel(

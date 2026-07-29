@@ -25,14 +25,16 @@ from src.core.sqlite_store import (
     SQLiteLearningReportRepository,
 )
 from tests.helpers.synthetic_v3 import (
+    SYNTHETIC_LEG_DRAFT_ID,
+    SYNTHETIC_REPORT_DRAFT_ID,
     SYNTHETIC_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
     create_synthetic_v3_database,
 )
 
 
-REPORT_DRAFT_ID = "RPD-TEST-001"
-LEG_DRAFT_ID = "LCD-TEST-001"
+REPORT_DRAFT_ID = SYNTHETIC_REPORT_DRAFT_ID
+LEG_DRAFT_ID = SYNTHETIC_LEG_DRAFT_ID
 STUDENT_ID = SYNTHETIC_STUDENT_IDS[0]
 SWITCH_DATE = date(2026, 2, 1)
 NOW = datetime(2026, 7, 20, 9, 0, tzinfo=UTC)
@@ -56,14 +58,13 @@ def v3_report_leg_database(tmp_path: Path) -> tuple[Path, SQLiteDatabase]:
     with sqlite3.connect(path) as connection:
         connection.execute(
             """
-            INSERT INTO report_draft_subjects(
-                report_draft_id, subject_id, strengths_text,
-                development_text, support_needs_text, next_goals_text
-            ) VALUES (?, 'SUB-TEST-DE', ?, '', '', '')
+            UPDATE report_draft_subjects
+            SET strengths_text = ?
+            WHERE report_draft_id = ? AND subject_id = 'SUB-TEST-DE'
             """,
             (
-                REPORT_DRAFT_ID,
                 "Synthetischer, bewusst verantworteter Fachtext.",
+                REPORT_DRAFT_ID,
             ),
         )
         connection.execute(

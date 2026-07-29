@@ -6,13 +6,16 @@ import argparse
 import shutil
 import sys
 from dataclasses import dataclass, replace
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from src.application.school_year_assignment import (  # noqa: E402
+    CreateStudentWithInitialEnrollment,
+)
 from src.core.constants import (  # noqa: E402
     COURSE_ID_PREFIX,
     GROUP_ID_PREFIX,
@@ -28,19 +31,22 @@ from src.core.sqlite_store import (  # noqa: E402
     SQLITE_SPIKE_PATH,
     DocumentRecord,
     MasterDataCourseGroupRecord,
-    MasterDataCourseRecord,
-    MasterDataGroupRecord,
     SQLiteCompetencyRepository,
     SQLiteDatabase,
     SQLiteDocumentRepository,
     SQLiteMasterDataRepository,
     SQLiteObservationRepository,
     SQLiteStudentCompetencyConfirmationRepository,
-    SQLiteStudentRepository,
     SQLiteTimetableRepository,
     StudentCompetencyConfirmationRecord,
 )
-from src.core.records import StudentRecord  # noqa: E402
+from src.core.records import (  # noqa: E402
+    CourseRecord,
+    GroupRecord,
+    ReferenceData,
+    seed_reference_data,
+)
+from src.core.school_year import V3Student  # noqa: E402
 from src.desktop_app.adapters.curriculum_desktop_adapter import (  # noqa: E402
     CurriculumDesktopAdapter,
 )
@@ -80,9 +86,9 @@ class SeedResult:
 
 
 COURSES = (
-    ("Kurs 1", "Blau", "#2563EB"),
-    ("Kurs 2", "Gruen", "#16A34A"),
-    ("Kurs 3", "Orange", "#F97316"),
+    ("Kurs 1", "Blau", "#2563EB", 1),
+    ("Kurs 2", "Gruen", "#16A34A", 2),
+    ("Kurs 3", "Orange", "#F97316", 3),
 )
 
 GROUPS = (
@@ -119,7 +125,7 @@ STUDENTS = (
     ("Max", "Brandt", 3, 2),
 )
 
-SEED_MEMBERSHIP_AS_OF = date(2026, 7, 4)
+SEED_TIMESTAMP = datetime(2025, 7, 1, 8, 0, tzinfo=UTC)
 
 
 def seed_test_data(
@@ -133,10 +139,11 @@ def seed_test_data(
     documents_root = database_path.parent / "documents"
     if reset:
         _reset_runtime_data(database_path, documents_root)
+    database_path.parent.mkdir(parents=True, exist_ok=True)
     database = SQLiteDatabase(database_path)
+    _seed_final_v3_foundation(database)
     _initialize_catalog(database)
-    _guard_existing_data(database, reset=reset)
-    _seed_master_data(database)
+    _seed_course_groups(database)
     _seed_timetable(database)
     students = _seed_students(database)
     observation_ids = _seed_observations(database, students)
@@ -167,59 +174,55 @@ def _reset_runtime_data(database_path: Path, documents_root: Path) -> None:
 
 
 def _initialize_catalog(database: SQLiteDatabase) -> None:
-    database.initialize_schema()
     SQLiteCompetencyRepository(database).ensure_catalog_defaults(
         CurriculumDesktopAdapter().list_entries()
     )
 
 
-def _guard_existing_data(database: SQLiteDatabase, *, reset: bool) -> None:
-    if reset:
-        return
-    student_repository = SQLiteStudentRepository(
-        database,
-        as_of=SEED_MEMBERSHIP_AS_OF,
-    )
-    student_count = len(student_repository.list_students())
-    observation_count = len(SQLiteObservationRepository(database).list_observations())
-    document_count = sum(
-        1
-        for student in student_repository.list_students()
-        for _document in SQLiteDocumentRepository(database).list_documents_for_student(
-            student.student_id
-        )
-    )
-    timetable_count = len(SQLiteTimetableRepository(database).list_entries())
-    if any((student_count, observation_count, document_count, timetable_count)):
+def _seed_final_v3_foundation(database: SQLiteDatabase) -> None:
+    try:
+        database.replace_seed_data(_pilot_reference_data())
+    except RuntimeError as error:
         raise SeedDataError(
-            "Die Datenbank enthaelt bereits Schueler, Beobachtungen, Dokumente "
-            "oder Stundenplaneintraege. "
+            "Die Datenbank ist nicht vollstaendig leer. "
             "Nutze --reset fuer ein bewusstes frisches Testsystem."
-        )
+        ) from error
 
 
-def _seed_master_data(database: SQLiteDatabase) -> None:
-    repository = SQLiteMasterDataRepository(database)
-    for index, (group_name, sort_order) in enumerate(GROUPS, start=1):
-        repository.upsert_student_group(
-            MasterDataGroupRecord(
+def _pilot_reference_data() -> ReferenceData:
+    reference = seed_reference_data()
+    return replace(
+        reference,
+        students=(),
+        groups=tuple(
+            GroupRecord(
                 f"{GROUP_ID_PREFIX}-{index:06d}",
                 group_name,
                 True,
-                sort_order,
             )
-        )
-    for index, (course_name, color_name, color_hex) in enumerate(COURSES, start=1):
-        repository.upsert_course(
-            MasterDataCourseRecord(
+            for index, (group_name, _sort_order) in enumerate(GROUPS, start=1)
+        ),
+        courses=tuple(
+            CourseRecord(
                 f"{COURSE_ID_PREFIX}-{index:06d}",
                 course_name,
-                color_name,
                 color_hex,
                 True,
-                index - 1,
+                year_level,
             )
-        )
+            for index, (
+                course_name,
+                _color_name,
+                color_hex,
+                year_level,
+            ) in enumerate(COURSES, start=1)
+        ),
+        assignments=(),
+    )
+
+
+def _seed_course_groups(database: SQLiteDatabase) -> None:
+    repository = SQLiteMasterDataRepository(database)
     repository.update_course_group(
         MasterDataCourseGroupRecord(
             "course-group-default",
@@ -322,36 +325,39 @@ def _seed_timetable(database: SQLiteDatabase) -> None:
             )
 
 
-def _seed_students(database: SQLiteDatabase) -> tuple[StudentRecord, ...]:
-    repository = SQLiteStudentRepository(
-        database,
-        as_of=SEED_MEMBERSHIP_AS_OF,
-    )
-    students: list[StudentRecord] = []
-    timestamp = "2026-07-04T09:00:00+00:00"
+def _seed_students(database: SQLiteDatabase) -> tuple[V3Student, ...]:
+    reference = seed_reference_data()
+    students: list[V3Student] = []
     for index, (first_name, last_name, group_index, course_index) in enumerate(
         STUDENTS, start=1
     ):
-        student = StudentRecord(
-            f"{STUDENT_ID_PREFIX}-{index:06d}",
-            first_name,
-            last_name,
-            f"{GROUP_ID_PREFIX}-{group_index + 1:06d}",
-            f"{COURSE_ID_PREFIX}-{course_index + 1:06d}",
-            "Kuenstlicher Datensatz fuer einen realistischen Acht-Monats-Test.",
-            True,
-            timestamp,
-            timestamp,
-            None,
+        student_id = f"{STUDENT_ID_PREFIX}-{index:06d}"
+        assignment_id = f"ASG-TEST-{index:06d}"
+        result = CreateStudentWithInitialEnrollment(
+            database.connect,
+            student_id_factory=lambda value=student_id: value,
+            assignment_id_factory=lambda value=assignment_id: value,
+            now_provider=lambda: SEED_TIMESTAMP,
+        ).execute(
+            first_name=first_name,
+            last_name=last_name,
+            notes=(
+                "Kuenstlicher Datensatz fuer einen realistischen "
+                "Acht-Monats-Test."
+            ),
+            school_year_id=reference.school_year.school_year_id,
+            valid_from=reference.school_year.start_date,
+            valid_to=reference.school_year.end_date,
+            group_id=f"{GROUP_ID_PREFIX}-{group_index + 1:06d}",
+            course_id=f"{COURSE_ID_PREFIX}-{course_index + 1:06d}",
         )
-        repository.create_student(student)
-        students.append(student)
+        students.append(result.student)
     return tuple(students)
 
 
 def _seed_observations(
     database: SQLiteDatabase,
-    students: tuple[StudentRecord, ...],
+    students: tuple[V3Student, ...],
 ) -> tuple[str, ...]:
     repository = SQLiteObservationRepository(database)
     service = ObservationService(
@@ -475,7 +481,7 @@ def _seed_observations(
 def _seed_all_subject_history(
     database: SQLiteDatabase,
     service: ObservationService,
-    students: tuple[StudentRecord, ...],
+    students: tuple[V3Student, ...],
 ) -> tuple[str, ...]:
     competencies_by_subject: dict[str, list[object]] = {}
     for competency in SQLiteCompetencyRepository(database).list_competencies():
@@ -687,7 +693,7 @@ def _seed_documents(
 
 def _seed_pilot_workflows(
     database_path: Path,
-    students: tuple[StudentRecord, ...],
+    students: tuple[V3Student, ...],
     *,
     teacher_name: str,
 ) -> tuple[int, int, int, int]:

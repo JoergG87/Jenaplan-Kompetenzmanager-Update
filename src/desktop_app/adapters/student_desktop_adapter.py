@@ -11,10 +11,8 @@ from pathlib import Path
 
 from src.application.commands import (
     CreateObservationCommand,
-    CreateStudentCommand,
     DeleteObservationCommand,
     UpdateObservationCommand,
-    UpdateStudentCommand,
 )
 from src.application.dispatcher import (
     ApplicationCommandDispatcher,
@@ -23,8 +21,14 @@ from src.application.dispatcher import (
     observation_create_handler,
     observation_delete_handler,
     observation_update_handler,
-    student_create_handler,
-    student_update_handler,
+)
+from src.application.school_year_assignment import (
+    ArchiveStudent,
+    AssignmentApplicationError,
+    ChangeStudentMembership,
+    CreateStudentWithInitialEnrollment,
+    ExitStudentFromSchoolYear,
+    UpdateStudentMasterData,
 )
 from src.application.commands.report import (
     CreateLearningReportDraftCommand,
@@ -86,7 +90,6 @@ from src.core.sqlite_store import (
     SQLiteReportDraftRepository,
     SQLiteStudentCompetencyConfirmationRepository,
     SQLiteStudentDocumentationProjectionRepository,
-    SQLiteStudentRepository,
     DocumentRecord,
     StudentCompetencyConfirmationRecord,
     StudentDocumentationProjectionBatch,
@@ -120,8 +123,13 @@ from src.core.school_year import (
     CurrentStudentMembershipProjection,
     V3Student,
 )
-from src.core.student import StudentService, StudentValidator
-from src.core.records import CourseRecord, GroupRecord, StudentRecord
+from src.core.sqlite_school_year_assignment import (
+    SchoolYearAssignmentReadSession,
+    SchoolYearAssignmentRepositoryError,
+    SchoolYearRepository,
+    V3StudentRepository,
+)
+from src.core.records import CourseRecord, GroupRecord
 from src.desktop_app.adapters.curriculum_desktop_adapter import (
     CurriculumDesktopAdapter,
     DOCUMENTATION_SUBJECT_PREFERRED_ORDER,
@@ -215,12 +223,16 @@ class StudentDesktopAdapter:
         *,
         database: SQLiteDatabase | None = None,
         today_provider: Callable[[], date] | None = None,
+        now_provider: Callable[[], datetime] | None = None,
     ) -> None:
         self.database_path = (
             Path(database.path) if database is not None else Path(database_path)
         )
         self.database = database or self._open_database()
         self._today_provider = today_provider or date.today
+        self._now_provider = now_provider or (
+            lambda: datetime.now().astimezone()
+        )
         ObservationPersistenceUnitOfWork(self.database).recover_pending()
 
     def list_students(
@@ -363,12 +375,10 @@ class StudentDesktopAdapter:
             membership_blocking,
         )
 
-    def student_record_for_edit(self, student_id: str) -> StudentRecord | None:
-        """Return the persisted student record for edit dialogs."""
-        return SQLiteStudentRepository(
-            self.database,
-            as_of=self._today(),
-        ).get_student_by_id(student_id)
+    def student_record_for_edit(self, student_id: str) -> V3Student | None:
+        """Return only V3 master data for the edit dialog."""
+        with self.database.connect() as connection:
+            return V3StudentRepository(connection).get_by_id(student_id)
 
     def list_group_summaries(self) -> tuple[GroupSummaryViewModel, ...]:
         """Return group cards for the app overview."""
@@ -847,23 +857,34 @@ class StudentDesktopAdapter:
         """Map visible course names to stable course IDs."""
         return {course.course_name: course.course_id for course in self.list_courses()}
 
-    def create_student_command(
+    def current_school_year(self):
+        """Return the single centrally registered current school year."""
+        with self.database.connect() as connection:
+            try:
+                return SchoolYearRepository(connection).require_current()
+            except SchoolYearAssignmentRepositoryError:
+                return None
+
+    def operation_date(self) -> date:
+        """Return the adapter-owned explicit date for one UI operation."""
+        return self._today()
+
+    def current_membership_for_student(
         self,
+        student_id: str,
         *,
-        first_name: str,
-        last_name: str,
-        group_id: str,
-        course_id: str,
-        student_notes: str = "",
-    ) -> CreateStudentCommand:
-        """Create a student command from GUI input state."""
-        return CreateStudentCommand(
-            first_name=first_name,
-            last_name=last_name,
-            group_id=group_id,
-            course_id=course_id,
-            student_notes=student_notes,
-        )
+        as_of: date | None = None,
+    ) -> CurrentStudentMembershipProjection:
+        """Resolve one membership at the explicit or adapter-owned reference day."""
+        reference = self._today() if as_of is None else as_of
+        with self.database.connect() as connection:
+            connection.execute("BEGIN")
+            try:
+                return SchoolYearAssignmentReadSession(
+                    connection
+                ).current_membership(student_id, as_of=reference)
+            finally:
+                connection.rollback()
 
     def save_new_student(
         self,
@@ -874,35 +895,38 @@ class StudentDesktopAdapter:
         course_id: str,
         student_notes: str = "",
     ) -> object:
-        """Persist a new student through the existing application stack."""
-        command = self.create_student_command(
-            first_name=first_name,
-            last_name=last_name,
-            group_id=group_id,
-            course_id=course_id,
-            student_notes=student_notes,
-        )
-        return self._dispatcher().dispatch(command)
-
-    def update_student_command(
-        self,
-        *,
-        student_id: str,
-        first_name: str,
-        last_name: str,
-        group_id: str,
-        course_id: str,
-        student_notes: str = "",
-    ) -> UpdateStudentCommand:
-        """Create a student update command from GUI input state."""
-        return UpdateStudentCommand(
-            student_id=student_id,
-            first_name=first_name,
-            last_name=last_name,
-            group_id=group_id,
-            course_id=course_id,
-            student_notes=student_notes,
-        )
+        """Create V3 master data and its initial assignment atomically."""
+        current = self.current_school_year()
+        if current is None:
+            return ErrorResult(
+                "student.create",
+                "Es ist kein aktuelles Schuljahr festgelegt.",
+                AssignmentApplicationError.__name__,
+            )
+        effective = self._today()
+        if not current.start_date <= effective <= current.end_date:
+            return ErrorResult(
+                "student.create",
+                "Das aktuelle Schuljahr umfasst den heutigen Tag nicht.",
+                AssignmentApplicationError.__name__,
+            )
+        try:
+            created = CreateStudentWithInitialEnrollment(
+                self.database.connect,
+                now_provider=self._now,
+            ).execute(
+                first_name=first_name,
+                last_name=last_name,
+                notes=student_notes,
+                school_year_id=current.school_year_id,
+                valid_from=effective,
+                valid_to=current.end_date,
+                group_id=group_id,
+                course_id=course_id,
+            )
+            return SuccessResult("student.create", created.student)
+        except Exception as error:
+            return self._student_lifecycle_error("student.create", error)
 
     def save_existing_student(
         self,
@@ -910,20 +934,136 @@ class StudentDesktopAdapter:
         student_id: str,
         first_name: str,
         last_name: str,
-        group_id: str,
-        course_id: str,
         student_notes: str = "",
     ) -> object:
-        """Persist edited student data through the existing application stack."""
-        command = self.update_student_command(
-            student_id=student_id,
-            first_name=first_name,
-            last_name=last_name,
-            group_id=group_id,
-            course_id=course_id,
-            student_notes=student_notes,
+        """Persist only V3 student master data; never change membership."""
+        try:
+            updated = UpdateStudentMasterData(
+                self.database.connect,
+                now_provider=self._now,
+            ).execute(
+                student_id,
+                first_name=first_name,
+                last_name=last_name,
+                notes=student_notes,
+            )
+            return SuccessResult("student.update_master_data", updated)
+        except Exception as error:
+            return self._student_lifecycle_error(
+                "student.update_master_data",
+                error,
+            )
+
+    def change_student_membership(
+        self,
+        student_id: str,
+        *,
+        effective_on: date,
+        group_id: str | None,
+        course_id: str,
+    ) -> object:
+        """Apply one explicit dated V3 membership change atomically."""
+        try:
+            changed = ChangeStudentMembership(
+                self.database.connect,
+                now_provider=self._now,
+            ).execute(
+                student_id,
+                effective_on=effective_on,
+                group_id=group_id,
+                course_id=course_id,
+            )
+            return SuccessResult("student.membership.change", changed)
+        except Exception as error:
+            return self._student_lifecycle_error(
+                "student.membership.change",
+                error,
+            )
+
+    def exit_student_from_school_year(
+        self,
+        student_id: str,
+        *,
+        effective_on: date,
+    ) -> object:
+        """End enrollment without archiving the student."""
+        try:
+            exited = ExitStudentFromSchoolYear(
+                self.database.connect,
+                now_provider=self._now,
+            ).execute(student_id, effective_on=effective_on)
+            return SuccessResult("student.membership.exit", exited)
+        except Exception as error:
+            return self._student_lifecycle_error(
+                "student.membership.exit",
+                error,
+            )
+
+    def archive_student_master_data(self, student_id: str) -> object:
+        """Archive master data without changing an assignment."""
+        reference = self._today()
+        try:
+            archived = ArchiveStudent(
+                self.database.connect,
+                now_provider=self._now,
+            ).execute(
+                student_id,
+                as_of=reference,
+            )
+            return SuccessResult("student.archive", archived)
+        except Exception as error:
+            return self._student_lifecycle_error("student.archive", error)
+
+    @staticmethod
+    def _student_lifecycle_error(
+        command_name: str,
+        error: Exception,
+    ) -> ErrorResult:
+        code = str(getattr(error, "code", ""))
+        messages = {
+            "student_first_name_invalid": "Bitte einen Vornamen eingeben.",
+            "student_last_name_invalid": "Bitte einen Nachnamen eingeben.",
+            "current_school_year_missing": (
+                "Es ist kein aktuelles Schuljahr festgelegt."
+            ),
+            "current_school_year_ambiguous": (
+                "Das aktuelle Schuljahr ist nicht eindeutig."
+            ),
+            "group_invalid": "Die gewählte Stammgruppe ist nicht verfügbar.",
+            "group_inactive": "Die gewählte Stammgruppe ist nicht aktiv.",
+            "course_invalid": "Der gewählte Kurs ist nicht verfügbar.",
+            "course_inactive": "Der gewählte Kurs ist nicht aktiv.",
+            "course_year_level_invalid": (
+                "Für den gewählten Kurs fehlt eine gültige Kursstufe."
+            ),
+            "assignment_missing": "Für dieses Kind fehlt die aktuelle Zuordnung.",
+            "assignment_ambiguous": (
+                "Die aktuelle Zuordnung dieses Kindes ist nicht eindeutig."
+            ),
+            "membership_change_on_first_interval_day": (
+                "Am ersten Tag der bestehenden Zuordnung ist kein Wechsel möglich."
+            ),
+            "membership_exit_on_first_interval_day": (
+                "Am ersten Tag der bestehenden Zuordnung ist kein Austritt möglich."
+            ),
+            "active_enrollment_blocks_archive": (
+                "Vor der Archivierung muss die Einschreibung bewusst beendet werden."
+            ),
+            "archive_timestamp_precedes_student_update": (
+                "Die Archivierung wurde zum Schutz neuerer Stammdaten blockiert."
+            ),
+            "student_missing_or_archived": (
+                "Das Kind ist nicht verfügbar oder bereits archiviert."
+            ),
+        }
+        return ErrorResult(
+            command_name,
+            messages.get(
+                code,
+                "Die Änderung konnte nicht vollständig gespeichert werden.",
+            ),
+            type(error).__name__,
         )
-        return self._dispatcher().dispatch(command)
 
     def create_observation_command(
         self,
@@ -2389,20 +2529,7 @@ class StudentDesktopAdapter:
         )
 
     def _dispatcher(self) -> ApplicationCommandDispatcher:
-        as_of = self._today()
-        student_repository = SQLiteStudentRepository(
-            self.database,
-            as_of=as_of,
-        )
         observation_repository = SQLiteObservationRepository(self.database)
-        group_ids = tuple(group.group_id for group in self.list_groups())
-        course_ids = tuple(course.course_id for course in self.list_courses())
-        student_service = StudentService(
-            student_repository,
-            StudentValidator(),
-            group_ids,
-            course_ids,
-        )
         observation_service = ObservationService(
             observation_repository,
             ObservationValidator(),
@@ -2412,8 +2539,6 @@ class StudentDesktopAdapter:
             ),
         )
         dispatcher = ApplicationCommandDispatcher()
-        dispatcher.register("student.create", student_create_handler(student_service))
-        dispatcher.register("student.update", student_update_handler(student_service))
         dispatcher.register(
             "observation.create",
             observation_create_handler(observation_service),
@@ -2441,6 +2566,14 @@ class StudentDesktopAdapter:
         value = self._today_provider()
         if type(value) is not date:
             raise TypeError("today_provider muss ein Datum liefern.")
+        return value
+
+    def _now(self) -> datetime:
+        value = self._now_provider()
+        if not isinstance(value, datetime):
+            raise TypeError("now_provider muss einen Zeitpunkt liefern.")
+        if value.tzinfo is None or value.utcoffset() is None:
+            value = value.astimezone()
         return value
 
     def _documentation_subject_sort_key(

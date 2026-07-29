@@ -417,14 +417,15 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
             )
         )
         master_data.upsert_course(
-            MasterDataCourseRecord(
-                relation_course_id,
-                relation_course_id,
-                "",
-                "",
-                True,
-                index + 3,
-            )
+                MasterDataCourseRecord(
+                    relation_course_id,
+                    relation_course_id,
+                    "",
+                    "",
+                    True,
+                    index + 3,
+                    (index % 3) + 1,
+                )
         )
         relation_group_ids.append(relation_group_id)
         relation_course_ids.append(relation_course_id)
@@ -503,9 +504,9 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
     assert loaded_student_budget[:2] == student_budget[:2]
     assert loaded_heatmap_budget[:2] == heatmap_budget[:2]
     assert student_budget[0] <= 17
-    assert student_budget[1] <= 13
+    assert student_budget[1] <= 14
     assert dashboard_refresh_budget[0] <= 18
-    assert dashboard_refresh_budget[1] <= 14
+    assert dashboard_refresh_budget[1] <= 15
     assert no_course_group_budget[:2] == one_course_group_budget[:2]
     assert no_course_group_budget[:2] == many_course_groups_budget[:2]
     assert no_course_group_budget[0] <= 20

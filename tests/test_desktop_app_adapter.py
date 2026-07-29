@@ -7,9 +7,9 @@ import importlib
 import os
 import tempfile
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from unittest import mock
-from dataclasses import fields
+from dataclasses import fields, replace
 from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -35,14 +35,15 @@ from PySide6.QtWidgets import (
 
 from src.application.commands import (
     CreateObservationCommand,
-    CreateStudentCommand,
     UpdateObservationCommand,
 )
 from src.application.dispatcher import SuccessResult
 from src.core.constants import COURSE_ID_PREFIX, GROUP_ID_PREFIX, STUDENT_ID_PREFIX
 from src.core.observation import ObservationCompetencyRatingRecord, ObservationRecord
+from src.core.records import seed_reference_data
 from src.core.sqlite_store import (
     SQLiteCompetencyRepository,
+    SQLiteDatabase,
     SQLiteDocumentRepository,
     SQLiteObservationRepository,
     SQLiteStudentRepository,
@@ -140,6 +141,15 @@ from src.desktop_app.view_models.student_view_model import (
 )
 
 
+def _create_empty_final_v3_database(database_path: Path) -> SQLiteDatabase:
+    database = SQLiteDatabase(database_path)
+    reference = seed_reference_data()
+    database.replace_seed_data(
+        replace(reference, students=(), assignments=())
+    )
+    return database
+
+
 class DesktopAppAdapterTest(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -152,23 +162,6 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
 
-    def test_adapter_creates_create_student_command(self) -> None:
-        command = self.adapter.create_student_command(
-            first_name="Jule",
-            last_name="Schneider",
-            group_id=f"{GROUP_ID_PREFIX}-000001",
-            course_id=f"{COURSE_ID_PREFIX}-000001",
-            student_notes="Liest gern.",
-        )
-
-        self.assertIsInstance(command, CreateStudentCommand)
-        self.assertEqual(command.command_name, "student.create")
-        self.assertEqual(command.first_name, "Jule")
-        self.assertEqual(command.last_name, "Schneider")
-        self.assertEqual(command.group_id, f"{GROUP_ID_PREFIX}-000001")
-        self.assertEqual(command.course_id, f"{COURSE_ID_PREFIX}-000001")
-        self.assertEqual(command.student_notes, "Liest gern.")
-
     def test_save_new_student_uses_application_stack(self) -> None:
         result = self.adapter.save_new_student(
             first_name="Jule",
@@ -180,7 +173,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIsInstance(result, SuccessResult)
         student = result.value
-        self.assertEqual(student.student_id, f"{STUDENT_ID_PREFIX}-000029")
+        self.assertTrue(student.student_id.startswith("STD-"))
 
         stored_student = SQLiteStudentRepository(
             self.database,
@@ -2652,6 +2645,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_new_app_database_starts_without_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            _create_empty_final_v3_database(database_path)
             adapter = StudentDesktopAdapter(database_path)
 
             self.assertTrue(database_path.exists())
@@ -2668,6 +2662,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_new_student_persists_after_adapter_reinitialization(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            _create_empty_final_v3_database(database_path)
             adapter = StudentDesktopAdapter(database_path)
 
             result = adapter.save_new_student(
@@ -2694,7 +2689,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 course_id=f"{COURSE_ID_PREFIX}-000001",
             )
 
-        self.assertEqual(result.value.student_id, f"{STUDENT_ID_PREFIX}-000001")
+        self.assertTrue(result.value.student_id.startswith("STD-"))
         self.assertEqual(len(students), 1)
         self.assertEqual(students[0].first_name, "Mila")
         self.assertEqual(students[0].last_name, "Neumann")
@@ -2717,6 +2712,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_reopening_existing_database_does_not_add_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            _create_empty_final_v3_database(database_path)
             adapter = StudentDesktopAdapter(database_path)
             result = adapter.save_new_student(
                 first_name="Oskar",
@@ -2790,6 +2786,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_student_adapter_sorts_all_students_by_course_order_and_name(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
+            _create_empty_final_v3_database(database_path)
             adapter = StudentDesktopAdapter(database_path)
             adapter.save_new_student(
                 first_name="Zara",
@@ -3026,7 +3023,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_master_data_adapter_persists_new_groups_and_courses(self) -> None:
         group = self.master_data_adapter.add_group("Eulen")
-        course = self.master_data_adapter.add_course("Kurs 4", "#9333EA")
+        course = self.master_data_adapter.add_course("Kurs 4", "#9333EA", 1)
         reloaded_adapter = MasterDataDesktopAdapter(StudentDesktopAdapter(self.database_path))
         view_model = reloaded_adapter.view_model()
 
@@ -3037,6 +3034,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(course.name, "Kurs 4")
         self.assertEqual(course.color_name, "Lila")
         self.assertEqual(course.color_hex, "#9333EA")
+        self.assertEqual(course.year_level, 1)
         self.assertTrue(course.is_persistent)
         self.assertIn("Eulen", {item.name for item in view_model.groups})
         self.assertIn("Kurs 4", {item.name for item in view_model.courses})
@@ -3050,12 +3048,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
     def test_master_data_adapter_persists_yellow_course_color(self) -> None:
-        course = self.master_data_adapter.add_course("Kurs Gelb", "#EAB308")
+        course = self.master_data_adapter.add_course("Kurs Gelb", "#EAB308", 2)
         reloaded_adapter = MasterDataDesktopAdapter(StudentDesktopAdapter(self.database_path))
         reloaded_course = reloaded_adapter.courses[course.item_id]
 
         self.assertEqual(reloaded_course.color_name, "Gelb")
         self.assertEqual(reloaded_course.color_hex, "#EAB308")
+        self.assertEqual(reloaded_course.year_level, 2)
 
     def test_master_data_adapter_persists_renames(self) -> None:
         group = self.master_data_adapter.rename_group(
@@ -3226,7 +3225,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         dialog_source = inspect.getsource(master_data_dialog)
         shell_source = inspect.getsource(shell.AppShell.open_new_course_dialog)
 
-        self.assertIn('("Kurs", "Kursfarbe", "Status", "")', source)
+        self.assertIn(
+            '("Kurs", "Kursstufe", "Kursfarbe", "Status", "")',
+            source,
+        )
         self.assertIn("self._course_color_cell(item)", source)
         self.assertIn("CourseBadge(item.color_name, item.color_hex)", source)
         self.assertIn("dient zur Orientierung und Zugehörigkeit", source)
@@ -3234,8 +3236,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn('QTableWidgetItem(f"●', source)
         self.assertIn("COURSE_COLOR_OPTIONS", dialog_source)
         self.assertIn('form.addRow("Farbe", self.color_select)', dialog_source)
+        self.assertIn(
+            'form.addRow("Kursstufe", self.year_level_select)',
+            dialog_source,
+        )
         self.assertIn("include_color=True", shell_source)
+        self.assertIn("include_year_level=True", shell_source)
         self.assertIn("dialog.color_hex()", shell_source)
+        self.assertIn("dialog.year_level()", shell_source)
 
     def test_student_list_items_include_course_color(self) -> None:
         students = self.adapter.list_students()
@@ -3354,27 +3362,57 @@ class DesktopAppAdapterTest(unittest.TestCase):
                         student_id,
                         first_name,
                         last_name,
-                        group_id,
-                        course_id,
-                        student_notes,
+                        notes,
                         active,
                         created_at,
                         updated_at,
                         archived_at
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         f"{STUDENT_ID_PREFIX}-999999",
                         "Test",
                         "Fuchs",
-                        f"{GROUP_ID_PREFIX}-000002",
-                        f"{COURSE_ID_PREFIX}-000001",
                         "",
                         1,
                         "2026-07-02",
                         "2026-07-02",
                         None,
+                    ),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO student_school_year_assignments(
+                        assignment_id,
+                        student_id,
+                        school_year_id,
+                        group_id,
+                        course_id,
+                        assignment_status,
+                        valid_from,
+                        valid_to,
+                        created_at,
+                        updated_at
+                    )
+                    SELECT
+                        'ASG-999999',
+                        ?,
+                        school_year_id,
+                        ?,
+                        ?,
+                        'enrolled',
+                        start_date,
+                        end_date,
+                        '2026-07-02',
+                        '2026-07-02'
+                    FROM school_years
+                    WHERE status = 'current'
+                    """,
+                    (
+                        f"{STUDENT_ID_PREFIX}-999999",
+                        f"{GROUP_ID_PREFIX}-000002",
+                        f"{COURSE_ID_PREFIX}-000001",
                     ),
                 )
 
@@ -3433,10 +3471,17 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn("MasterDataDesktopAdapter", source)
         self.assertIn("self.master_data_adapter.view_model()", source)
-        self.assertIn("self.group_items = {group.item_id: group", source)
-        self.assertIn("self.course_items = {course.item_id: course", source)
+        self.assertIn("master_data.active_groups", source)
+        self.assertIn("master_data.active_courses", source)
+        self.assertIn(
+            "self.current_school_year = self.adapter.current_school_year()",
+            source,
+        )
         self.assertIn("self._populate_master_data_select(", source)
         self.assertIn("select.addItem(item.name, item.item_id)", source)
+        self.assertIn("master_data_payload = {", source)
+        self.assertIn("result = self.adapter.save_existing_student(", source)
+        self.assertIn("layout.addWidget(self._membership_card())", source)
         self.assertIn("NewStudentDialog(self.adapter, self.master_data_adapter)", shell_source)
 
     def test_new_student_dialog_uses_required_dropdown_placeholders(self) -> None:
@@ -7126,6 +7171,102 @@ class DesktopAppAdapterTest(unittest.TestCase):
         window.close()
         self.assertIsNotNone(app)
 
+    def test_shell_blocks_student_areas_when_current_school_year_is_missing(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        database_path = Path(self.temp_dir.name) / "missing-current.sqlite"
+        database = _create_empty_final_v3_database(database_path)
+        with database.connect() as connection:
+            with connection:
+                connection.execute(
+                    """
+                    UPDATE school_years
+                    SET status = 'closed',
+                        closed_at = '2026-07-31T18:00:00+00:00'
+                    """
+                )
+
+        window = shell.AppShell(
+            database_path,
+            now_provider=lambda: datetime(2026, 7, 29, 9, 0),
+        )
+
+        self.assertEqual(window.students_screen.students, ())
+        self.assertEqual(
+            window.status_label.text(),
+            shell.SCHOOL_YEAR_BLOCK_MESSAGE,
+        )
+        window.refresh_dashboard()
+        self.assertEqual(
+            window.status_label.text(),
+            shell.SCHOOL_YEAR_BLOCK_MESSAGE,
+        )
+        window.close()
+        self.assertIsNotNone(app)
+
+    def test_shell_blocks_student_areas_when_current_assignment_is_ambiguous(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        window = shell.AppShell(
+            self.database_path,
+            now_provider=lambda: datetime(2026, 7, 29, 9, 0),
+        )
+        with mock.patch.object(
+            window.adapter,
+            "list_students",
+            side_effect=student_desktop_adapter.SchoolYearAssignmentRepositoryError(
+                "assignment_ambiguous"
+            ),
+        ):
+            window.refresh_students()
+
+        self.assertEqual(window.students_screen.students, ())
+        self.assertEqual(
+            window.status_label.text(),
+            shell.ASSIGNMENT_BLOCK_MESSAGE,
+        )
+        window.close()
+        self.assertIsNotNone(app)
+
+    def test_school_year_block_clears_stale_dashboard_actions(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        database_path = Path(self.temp_dir.name) / "blocked-dashboard.sqlite"
+        database = _create_empty_final_v3_database(database_path)
+        window = shell.AppShell(
+            database_path,
+            now_provider=lambda: datetime(2026, 7, 29, 9, 0),
+        )
+        stale_action = QPushButton("Kinder anzeigen")
+        window.dashboard_screen.hero_layout.addWidget(stale_action)
+        window.dashboard_screen._hero_occurrence = object()
+        window.dashboard_screen.header_observation_button.setVisible(True)
+        with database.connect() as connection:
+            with connection:
+                connection.execute(
+                    """
+                    UPDATE school_years
+                    SET status = 'closed',
+                        closed_at = '2026-07-31T18:00:00+00:00'
+                    """
+                )
+
+        window.refresh_dashboard()
+        app.processEvents()
+
+        self.assertIsNone(window.dashboard_screen._hero_occurrence)
+        self.assertFalse(
+            window.dashboard_screen.header_observation_button.isVisible()
+        )
+        self.assertIsNone(stale_action.parent())
+        self.assertEqual(
+            window.status_label.text(),
+            shell.SCHOOL_YEAR_BLOCK_MESSAGE,
+        )
+        window.close()
+        self.assertIsNotNone(app)
+
     def test_student_workspace_keeps_filtered_navigation_origin(self) -> None:
         app = QApplication.instance() or QApplication([])
         workspace = students_workspace.StudentsWorkspace()
@@ -7446,6 +7587,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                         True,
                         "Blau",
                         "#2563EB",
+                        1,
                     ),
                 ),
                 (
@@ -7468,6 +7610,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertEqual(
             tuple(
+                screen.course_table.horizontalHeaderItem(index).text()
+                for index in range(screen.course_table.columnCount())
+            ),
+            ("Kurs", "Kursstufe", "Kursfarbe", "Status", ""),
+        )
+        self.assertEqual(
+            tuple(
                 screen.course_group_table.horizontalHeaderItem(index).text()
                 for index in range(screen.course_group_table.columnCount())
             ),
@@ -7480,7 +7629,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
             screen.group_table.cellWidget(0, 1).accessibleName(),
         )
 
-        color_cell = screen.course_table.cellWidget(0, 1)
+        self.assertEqual(screen.course_table.item(0, 1).text(), "Stufe 1")
+        color_cell = screen.course_table.cellWidget(0, 2)
         color_badge = color_cell.findChild(components.CourseBadge)
         self.assertIsNotNone(color_badge)
         self.assertEqual(color_badge.label.text(), "Blau")

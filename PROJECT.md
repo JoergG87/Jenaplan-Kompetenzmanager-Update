@@ -2,9 +2,9 @@
 
 ## V3-only Produktschema und Architecture Cleanup
 
-**Status:** Governance, technischer V3-only-Cleanup, zentrale Assignment-API
-und SJ-2E-Leserumstellung lokal implementiert. Die Umstellung produktiver
-Writer sowie die Runtime-Freigabe sind noch nicht umgesetzt.
+**Status:** Governance, technischer V3-only-Cleanup, zentrale Assignment-API,
+SJ-2E-Leserumstellung und SJ-2F-Writerumstellung sind lokal implementiert.
+Die Runtime-Freigabe ist weiterhin nicht umgesetzt.
 
 V3 ist das erste und einzige Produktschema. Es enthält `school_years`,
 datierte `student_school_year_assignments`, `courses.year_level`,
@@ -54,9 +54,31 @@ LEG-Snapshotbildung einschließlich Assignmentauflösung und persistierendem
 Revisionsschritt liegt jeweils in derselben Transaktion. Bestehende
 Revisionen, Hashes und PDF-Artefakte werden nicht neu aufgelöst.
 
-Weiterhin nicht umgesetzt oder freigegeben sind die produktive
-Writer-Umstellung, der Schuljahreswechsel-Assistent, unterjährige
-Sammelwechsel, Runtime-Aktivierung, Build, Packaging und Release.
+SJ-2F stellt die produktiven Schüler-, Kurs- und Stammgruppen-Writer auf
+Final-V3 um. Schüleranlage schreibt V3-Stammdaten und initiales
+`enrolled`-Assignment atomar. Stammdatenänderung, datierter Einzelwechsel,
+Austritt und Archivierung bleiben getrennte Lifecycles; Austritt archiviert
+nicht, Archivierung verändert keine Assignments und wird bei aktueller
+Einschreibung blockiert. Der bisherige generische V2-Schülercommand und die
+testlokale Legacy-Membershipfixture sind entfernt.
+
+Kurse verlangen eine bewusst gewählte stabile `year_level` von 1, 2 oder 3;
+mehrere Kurse derselben Stufe bleiben zulässig. Kurs oder Stammgruppe dürfen
+an einem expliziten Stichtag nicht deaktiviert werden, solange aktuelle oder
+zukünftige `enrolled`-Assignments darauf verweisen. Historische Assignments
+bleiben unverändert lesbar; Stammdatenwrites buchen kein Kind um.
+
+Der synthetische Entwicklungs-/Testdatenpfad erzeugt ausschließlich frische
+deterministische Final-V3-Daten mit current-Schuljahr `2025/26`,
+Kursstufen, V3-Schülerstammdaten und vollständigen Assignments. Er migriert
+oder überschreibt keine vorhandene Datenbank und verwendet keine echten
+Nutzerdaten.
+
+Weiterhin nicht umgesetzt oder freigegeben sind der
+Schuljahreswechsel-Assistent, unterjährige Mehrkind-/Sammelwechsel,
+Runtime-Aktivierung, Build, Packaging und Release. Die manuelle Prüfung der
+neuen Schüler-, Wechsel-, Austritts- und Kursstufenoberflächen auf macOS ist
+noch offen.
 
 ## Schuljahresmodell und echte Wechsel
 

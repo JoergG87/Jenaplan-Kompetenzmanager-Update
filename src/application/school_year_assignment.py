@@ -624,7 +624,15 @@ class ArchiveStudent:
                 raise AssignmentApplicationError(
                     "active_enrollment_blocks_archive"
                 )
-            return V3StudentRepository(connection).archive(
+            students = V3StudentRepository(connection)
+            student = students.get_by_id(student_id)
+            if student is None:
+                raise AssignmentApplicationError("student_missing_or_archived")
+            if timestamp < student.updated_at:
+                raise AssignmentApplicationError(
+                    "archive_timestamp_precedes_student_update"
+                )
+            return students.archive(
                 student_id,
                 timestamp,
             )

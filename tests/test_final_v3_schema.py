@@ -18,6 +18,10 @@ from src.core.final_v3_schema import (
     FinalV3SchemaInitializer,
 )
 from tests.helpers.synthetic_v3 import (
+    SYNTHETIC_COURSE_GROUP_ID,
+    SYNTHETIC_DOCUMENT_IDS,
+    SYNTHETIC_LEG_DRAFT_ID,
+    SYNTHETIC_REPORT_DRAFT_ID,
     SYNTHETIC_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
     create_synthetic_v3_database,
@@ -285,19 +289,61 @@ def test_synthetic_seed_is_complete_and_deterministic(tmp_path: Path) -> None:
         "SELECT * FROM courses ORDER BY course_id",
         "SELECT * FROM groups ORDER BY group_id",
         "SELECT * FROM students ORDER BY student_id",
+        "SELECT * FROM course_groups ORDER BY course_group_id",
+        """
+        SELECT * FROM course_group_student_groups
+        ORDER BY course_group_id, student_group_id
+        """,
+        """
+        SELECT * FROM course_group_courses
+        ORDER BY course_group_id, course_id
+        """,
         """
         SELECT * FROM student_school_year_assignments
         ORDER BY assignment_id
         """,
         "SELECT * FROM observations ORDER BY observation_id",
+        "SELECT * FROM documents ORDER BY document_id",
         """
         SELECT * FROM student_competency_confirmations
         ORDER BY student_id, competency_id
         """,
         "SELECT * FROM report_drafts ORDER BY report_draft_id",
         """
+        SELECT * FROM report_draft_subjects
+        ORDER BY report_draft_id, subject_id
+        """,
+        """
+        SELECT * FROM report_draft_competencies
+        ORDER BY report_draft_id, competency_id
+        """,
+        """
+        SELECT * FROM report_draft_observations
+        ORDER BY report_draft_id, observation_id
+        """,
+        """
+        SELECT * FROM report_draft_charts
+        ORDER BY report_draft_id, subject_id, chart_type
+        """,
+        """
         SELECT * FROM learning_conference_drafts
         ORDER BY learning_conference_draft_id
+        """,
+        """
+        SELECT * FROM learning_conference_draft_subjects
+        ORDER BY learning_conference_draft_id, subject_id
+        """,
+        """
+        SELECT * FROM learning_conference_draft_cross_topics
+        ORDER BY learning_conference_draft_id, cross_topic_key
+        """,
+        """
+        SELECT * FROM learning_conference_draft_competencies
+        ORDER BY learning_conference_draft_id, competency_id
+        """,
+        """
+        SELECT * FROM learning_conference_draft_observations
+        ORDER BY learning_conference_draft_id, observation_id
         """,
     )
 
@@ -322,3 +368,115 @@ def test_synthetic_seed_is_complete_and_deterministic(tmp_path: Path) -> None:
         assert left.execute(
             "SELECT year_level FROM courses ORDER BY year_level"
         ).fetchall() == [(1,), (2,), (3,)]
+
+
+def test_synthetic_seed_has_only_final_v3_membership_shape(tmp_path: Path) -> None:
+    path = create_synthetic_v3_database(tmp_path / "shape-seed.sqlite")
+    compatibility = DatabaseCompatibilityInspector().inspect(path)
+
+    with _connect(path) as connection:
+        student_columns = {
+            str(row[1])
+            for row in connection.execute("PRAGMA table_info(students)")
+        }
+        current_school_year = connection.execute(
+            """
+            SELECT school_year_id, label, start_date, end_date, status
+            FROM school_years
+            WHERE status = 'current'
+            """
+        ).fetchall()
+
+    assert "group_id" not in student_columns
+    assert "course_id" not in student_columns
+    assert "student_notes" not in student_columns
+    assert "notes" in student_columns
+    assert compatibility.status is DatabaseCompatibilityStatus.EXACT
+    assert compatibility.schema_identity.fingerprint == FINAL_SCHEMA_FINGERPRINT
+    assert current_school_year == [
+        (
+            SYNTHETIC_SCHOOL_YEAR_ID,
+            "2025/26",
+            "2025-08-01",
+            "2026-07-31",
+            "current",
+        )
+    ]
+
+
+def test_synthetic_seed_covers_scopes_documents_and_workflows(
+    tmp_path: Path,
+) -> None:
+    path = create_synthetic_v3_database(tmp_path / "coverage.sqlite")
+
+    with _connect(path) as connection:
+        course_group_relations = connection.execute(
+            """
+            SELECT student_group_id, course_id
+            FROM course_group_student_groups
+            CROSS JOIN course_group_courses USING (course_group_id)
+            WHERE course_group_id = ?
+            ORDER BY student_group_id, course_id
+            """,
+            (SYNTHETIC_COURSE_GROUP_ID,),
+        ).fetchall()
+        documents = connection.execute(
+            """
+            SELECT document_id, student_id, observation_id, active
+            FROM documents
+            ORDER BY document_id
+            """
+        ).fetchall()
+        report_relations = connection.execute(
+            """
+            SELECT
+                (SELECT COUNT(*) FROM report_draft_subjects
+                 WHERE report_draft_id = ?),
+                (SELECT COUNT(*) FROM report_draft_competencies
+                 WHERE report_draft_id = ?),
+                (SELECT COUNT(*) FROM report_draft_observations
+                 WHERE report_draft_id = ?),
+                (SELECT COUNT(*) FROM report_draft_charts
+                 WHERE report_draft_id = ?)
+            """,
+            (SYNTHETIC_REPORT_DRAFT_ID,) * 4,
+        ).fetchone()
+        leg_relations = connection.execute(
+            """
+            SELECT
+                (SELECT COUNT(*) FROM learning_conference_draft_subjects
+                 WHERE learning_conference_draft_id = ?),
+                (SELECT COUNT(*) FROM learning_conference_draft_cross_topics
+                 WHERE learning_conference_draft_id = ?),
+                (SELECT COUNT(*) FROM learning_conference_draft_competencies
+                 WHERE learning_conference_draft_id = ?),
+                (SELECT COUNT(*) FROM learning_conference_draft_observations
+                 WHERE learning_conference_draft_id = ?)
+            """,
+            (SYNTHETIC_LEG_DRAFT_ID,) * 4,
+        ).fetchone()
+
+    assert course_group_relations == [
+        ("GRP-TEST-A", "CRS-TEST-1"),
+        ("GRP-TEST-A", "CRS-TEST-2"),
+        ("GRP-TEST-A", "CRS-TEST-3"),
+        ("GRP-TEST-B", "CRS-TEST-1"),
+        ("GRP-TEST-B", "CRS-TEST-2"),
+        ("GRP-TEST-B", "CRS-TEST-3"),
+    ]
+    assert documents == [
+        (
+            SYNTHETIC_DOCUMENT_IDS[0],
+            SYNTHETIC_STUDENT_IDS[0],
+            "OBS-TEST-001",
+            1,
+        ),
+        (
+            SYNTHETIC_DOCUMENT_IDS[1],
+            SYNTHETIC_STUDENT_IDS[1],
+            None,
+            1,
+        ),
+    ]
+    assert report_relations == (1, 1, 1, 1)
+    assert leg_relations == (1, 1, 1, 1)

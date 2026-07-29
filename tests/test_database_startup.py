@@ -19,7 +19,6 @@ from src.core.database_startup import (
     DatabaseStartupState,
 )
 from src.core.final_v3_schema import initialize_final_v3_schema
-from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.main import _coordinate_product_database_startup
 from src.desktop_app.runtime import prepare_runtime_storage, runtime_paths
 
@@ -58,7 +57,9 @@ def test_exact_final_schema_is_recognized_but_runtime_remains_blocked(
 
 def test_legacy_development_schema_has_no_product_route(tmp_path: Path) -> None:
     path = tmp_path / "legacy.sqlite"
-    SQLiteDatabase(path).initialize_schema()
+    with sqlite3.connect(path) as connection:
+        connection.execute("CREATE TABLE legacy_student(value TEXT)")
+        connection.execute("PRAGMA user_version = 2")
 
     detection = DatabaseStartupResolver().resolve(path)
     decision = DatabaseStartupCoordinator().coordinate(

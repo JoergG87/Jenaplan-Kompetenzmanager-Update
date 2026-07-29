@@ -9,10 +9,17 @@ from src.core.final_v3_schema import FinalV3SchemaInitializer
 
 
 SYNTHETIC_SCHOOL_YEAR_ID = "SY-TEST-2025-26"
+SYNTHETIC_COURSE_GROUP_ID = "CG-TEST-CORE"
+SYNTHETIC_REPORT_DRAFT_ID = "RPD-TEST-001"
+SYNTHETIC_LEG_DRAFT_ID = "LCD-TEST-001"
 SYNTHETIC_STUDENT_IDS = (
     "STD-TEST-001",
     "STD-TEST-002",
     "STD-TEST-003",
+)
+SYNTHETIC_DOCUMENT_IDS = (
+    "DOC-TEST-001",
+    "DOC-TEST-002",
 )
 
 
@@ -179,6 +186,40 @@ def _seed_connection(connection: sqlite3.Connection) -> None:
     )
     connection.execute(
         """
+        INSERT INTO course_groups(
+            course_group_id, name, sort_order, active
+        ) VALUES (?, ?, ?, 1)
+        """,
+        (
+            SYNTHETIC_COURSE_GROUP_ID,
+            "Synthetischer Kursverbund",
+            1,
+        ),
+    )
+    connection.executemany(
+        """
+        INSERT INTO course_group_student_groups(
+            course_group_id, student_group_id
+        ) VALUES (?, ?)
+        """,
+        (
+            (SYNTHETIC_COURSE_GROUP_ID, "GRP-TEST-A"),
+            (SYNTHETIC_COURSE_GROUP_ID, "GRP-TEST-B"),
+        ),
+    )
+    connection.executemany(
+        """
+        INSERT INTO course_group_courses(course_group_id, course_id)
+        VALUES (?, ?)
+        """,
+        (
+            (SYNTHETIC_COURSE_GROUP_ID, "CRS-TEST-1"),
+            (SYNTHETIC_COURSE_GROUP_ID, "CRS-TEST-2"),
+            (SYNTHETIC_COURSE_GROUP_ID, "CRS-TEST-3"),
+        ),
+    )
+    connection.execute(
+        """
         INSERT INTO competencies(
             competency_id, subject_id, subject_name, subject_full_name,
             official_subject_name, school_context_name, grade_band,
@@ -261,6 +302,38 @@ def _seed_connection(connection: sqlite3.Connection) -> None:
             "Nur Testdaten.",
         ),
     )
+    connection.executemany(
+        """
+        INSERT INTO documents(
+            document_id, student_id, observation_id, title, document_type,
+            file_path, original_filename, created_at, note, active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        """,
+        (
+            (
+                SYNTHETIC_DOCUMENT_IDS[0],
+                SYNTHETIC_STUDENT_IDS[0],
+                "OBS-TEST-001",
+                "Synthetischer Beobachtungsbeleg",
+                "Testbeleg",
+                "synthetic-documents/DOC-TEST-001.txt",
+                "synthetischer-beobachtungsbeleg.txt",
+                "2025-10-15T10:05:00+00:00",
+                "Nur deterministische Testmetadaten.",
+            ),
+            (
+                SYNTHETIC_DOCUMENT_IDS[1],
+                SYNTHETIC_STUDENT_IDS[1],
+                None,
+                "Synthetischer freier Beleg",
+                "Testbeleg",
+                "synthetic-documents/DOC-TEST-002.txt",
+                "synthetischer-freier-beleg.txt",
+                "2025-11-01T09:00:00+00:00",
+                "Kein fachliches Referenzdatum.",
+            ),
+        ),
+    )
     connection.execute(
         """
         INSERT INTO report_drafts(
@@ -270,7 +343,7 @@ def _seed_connection(connection: sqlite3.Connection) -> None:
         ) VALUES (?, ?, 'learning_development', ?, ?, 'draft', ?, ?, ?, ?)
         """,
         (
-            "RPD-TEST-001",
+            SYNTHETIC_REPORT_DRAFT_ID,
             SYNTHETIC_STUDENT_IDS[0],
             "2025-08-01",
             "2026-01-31",
@@ -282,6 +355,46 @@ def _seed_connection(connection: sqlite3.Connection) -> None:
     )
     connection.execute(
         """
+        INSERT INTO report_draft_subjects(
+            report_draft_id, subject_id, strengths_text,
+            development_text, support_needs_text, next_goals_text
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            SYNTHETIC_REPORT_DRAFT_ID,
+            "SUB-TEST-DE",
+            "Synthetischer Stärkentext.",
+            "Synthetischer Entwicklungstext.",
+            "",
+            "Synthetisches nächstes Ziel.",
+        ),
+    )
+    connection.execute(
+        """
+        INSERT INTO report_draft_competencies(
+            report_draft_id, competency_id
+        ) VALUES (?, ?)
+        """,
+        (SYNTHETIC_REPORT_DRAFT_ID, "CMP-TEST-001"),
+    )
+    connection.execute(
+        """
+        INSERT INTO report_draft_observations(
+            report_draft_id, observation_id
+        ) VALUES (?, ?)
+        """,
+        (SYNTHETIC_REPORT_DRAFT_ID, "OBS-TEST-001"),
+    )
+    connection.execute(
+        """
+        INSERT INTO report_draft_charts(
+            report_draft_id, subject_id, chart_type
+        ) VALUES (?, ?, 'documentation_coverage')
+        """,
+        (SYNTHETIC_REPORT_DRAFT_ID, "SUB-TEST-DE"),
+    )
+    connection.execute(
+        """
         INSERT INTO learning_conference_drafts(
             learning_conference_draft_id, student_id, period_start,
             period_end, conference_date, status, responsible_teacher,
@@ -289,7 +402,7 @@ def _seed_connection(connection: sqlite3.Connection) -> None:
         ) VALUES (?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?)
         """,
         (
-            "LCD-TEST-001",
+            SYNTHETIC_LEG_DRAFT_ID,
             SYNTHETIC_STUDENT_IDS[0],
             "2025-08-01",
             "2026-01-31",
@@ -299,6 +412,38 @@ def _seed_connection(connection: sqlite3.Connection) -> None:
             "2026-02-01T08:00:00+00:00",
             "2026-02-01T08:00:00+00:00",
         ),
+    )
+    connection.execute(
+        """
+        INSERT INTO learning_conference_draft_subjects(
+            learning_conference_draft_id, subject_id
+        ) VALUES (?, ?)
+        """,
+        (SYNTHETIC_LEG_DRAFT_ID, "SUB-TEST-DE"),
+    )
+    connection.execute(
+        """
+        INSERT INTO learning_conference_draft_cross_topics(
+            learning_conference_draft_id, cross_topic_key
+        ) VALUES (?, 'learning_organization')
+        """,
+        (SYNTHETIC_LEG_DRAFT_ID,),
+    )
+    connection.execute(
+        """
+        INSERT INTO learning_conference_draft_competencies(
+            learning_conference_draft_id, competency_id
+        ) VALUES (?, ?)
+        """,
+        (SYNTHETIC_LEG_DRAFT_ID, "CMP-TEST-001"),
+    )
+    connection.execute(
+        """
+        INSERT INTO learning_conference_draft_observations(
+            learning_conference_draft_id, observation_id
+        ) VALUES (?, ?)
+        """,
+        (SYNTHETIC_LEG_DRAFT_ID, "OBS-TEST-001"),
     )
     connection.commit()
 

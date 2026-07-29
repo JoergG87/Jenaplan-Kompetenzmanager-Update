@@ -6,14 +6,11 @@ from .observation import (
     DeleteObservationCommand,
     UpdateObservationCommand,
 )
-from .student import CreateStudentCommand, UpdateStudentCommand
 
 __all__ = [
     "CreateBackupCommand",
     "CreateObservationCommand",
     "DeleteObservationCommand",
     "UpdateObservationCommand",
-    "CreateStudentCommand",
-    "UpdateStudentCommand",
     "VerifyBackupQuery",
 ]

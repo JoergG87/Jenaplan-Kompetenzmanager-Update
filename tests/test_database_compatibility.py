@@ -20,7 +20,6 @@ from src.core.database_compatibility import (
     UnsupportedDatabaseVersionError,
 )
 from src.core.final_v3_schema import FinalV3SchemaInitializer
-from src.core.sqlite_store import SQLiteDatabase
 
 
 def test_exact_final_schema_is_the_only_compatible_database(
@@ -38,11 +37,13 @@ def test_exact_final_schema_is_the_only_compatible_database(
     assert DatabaseCompatibilityPolicy.require_backup_compatible(result) is result
 
 
-def test_synthetic_legacy_development_schema_is_not_product_compatible(
+def test_unknown_development_schema_is_not_product_compatible(
     tmp_path: Path,
 ) -> None:
-    path = tmp_path / "legacy-development.sqlite"
-    SQLiteDatabase(path).initialize_schema()
+    path = tmp_path / "unknown-development.sqlite"
+    with sqlite3.connect(path) as connection:
+        connection.execute("CREATE TABLE legacy_student(value TEXT)")
+        connection.execute("PRAGMA user_version = 2")
 
     result = DatabaseCompatibilityInspector().inspect(path)
 

@@ -352,6 +352,18 @@ def _shell_with_onboarding(tmp_path: Path, preferences: AppPreferences):
     paths = runtime_paths(root)
     database = SQLiteDatabase(paths.database)
     database.initialize_schema()
+    with database.connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO school_years(
+                school_year_id, label, start_date, end_date,
+                status, created_at, closed_at
+            ) VALUES (
+                'SY-TEST-2025-26', '2025/26', '2025-08-01', '2026-07-31',
+                'current', '2025-07-01T08:00:00+00:00', NULL
+            )
+            """
+        )
     database.ensure_master_data_defaults()
     SQLiteCompetencyRepository(database).ensure_catalog_defaults(
         CurriculumDesktopAdapter(database=database).list_entries()

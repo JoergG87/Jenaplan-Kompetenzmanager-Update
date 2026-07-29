@@ -25,10 +25,12 @@ from src.desktop_app.view_models.master_data_view_model import (
     COURSE_GROUP_EMPTY_COURSES_MESSAGE,
     COURSE_GROUP_EMPTY_GROUPS_MESSAGE,
     COURSE_COLOR_OPTIONS,
+    COURSE_YEAR_LEVEL_REQUIRED_MESSAGE,
     MASTER_DATA_EMPTY_NAME_MESSAGE,
     CourseGroupViewModel,
     MasterDataItemViewModel,
     normalize_master_data_name,
+    validate_course_year_level,
 )
 
 
@@ -42,18 +44,40 @@ class MasterDataNameDialog(MotionDialog):
         *,
         include_color: bool = False,
         initial_color_hex: str = "",
+        include_year_level: bool = False,
+        initial_year_level: int | None = None,
+        include_active: bool = False,
+        initial_active: bool = True,
     ) -> None:
         super().__init__()
         self.setWindowTitle(title)
         self.setModal(True)
         self.setMinimumWidth(460)
-        self.resize(500, 340 if not include_color else 410)
+        self.resize(
+            500,
+            340
+            + (70 if include_color else 0)
+            + (70 if include_year_level else 0)
+            + (50 if include_active else 0),
+        )
         self.name_input = QLineEdit(initial_name)
         self.name_input.setAccessibleName("Bezeichnung")
         self.include_color = include_color
+        self.include_year_level = include_year_level
+        self.include_active = include_active
         self.color_select = QComboBox()
         self.color_select.setAccessibleName("Kursfarbe")
         self._populate_colors(initial_color_hex)
+        self.year_level_select = QComboBox()
+        self.year_level_select.setAccessibleName("Kursstufe")
+        self.year_level_select.addItem("Bitte auswählen", None)
+        for year_level in (1, 2, 3):
+            self.year_level_select.addItem(f"Stufe {year_level}", year_level)
+        if initial_year_level in (1, 2, 3):
+            self.year_level_select.setCurrentIndex(int(initial_year_level))
+        self.active_checkbox = QCheckBox("Aktiv")
+        self.active_checkbox.setAccessibleName("Stammdatensatz ist aktiv")
+        self.active_checkbox.setChecked(initial_active)
         self._build()
 
     def _build(self) -> None:
@@ -79,6 +103,10 @@ class MasterDataNameDialog(MotionDialog):
         form.addRow("Name", self.name_input)
         if self.include_color:
             form.addRow("Farbe", self.color_select)
+        if self.include_year_level:
+            form.addRow("Kursstufe", self.year_level_select)
+        if self.include_active:
+            form.addRow("Status", self.active_checkbox)
         card_layout.addLayout(form)
         layout.addWidget(card, 1)
         self.validation_message = InlineMessage()
@@ -103,6 +131,14 @@ class MasterDataNameDialog(MotionDialog):
         """Return the selected course color."""
         return str(self.color_select.currentData() or COURSE_COLOR_OPTIONS[0][1])
 
+    def year_level(self) -> int:
+        """Return the consciously selected final-V3 course level."""
+        return validate_course_year_level(self.year_level_select.currentData())
+
+    def is_active(self) -> bool:
+        """Return the explicit master-data activity choice."""
+        return self.active_checkbox.isChecked()
+
     def save(self) -> None:
         """Close only when the name is not empty."""
         try:
@@ -113,6 +149,15 @@ class MasterDataNameDialog(MotionDialog):
                 tone="error",
             )
             return
+        if self.include_year_level:
+            try:
+                self.year_level()
+            except ValueError:
+                self.validation_message.set_message(
+                    COURSE_YEAR_LEVEL_REQUIRED_MESSAGE,
+                    tone="error",
+                )
+                return
         self.validation_message.set_message("")
         self.accept()
 

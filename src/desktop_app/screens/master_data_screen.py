@@ -68,7 +68,7 @@ class MasterDataScreen(QWidget):
         self.course_group_empty_state_label = self.course_group_empty_state.label
         self.group_table = QTableWidget(0, 3)
         self.group_table.setAccessibleName("Stammgruppen verwalten")
-        self.course_table = QTableWidget(0, 4)
+        self.course_table = QTableWidget(0, 5)
         self.course_table.setAccessibleName("Kurse verwalten")
         self.course_group_table = QTableWidget(0, 3)
         self.course_group_table.setAccessibleName("Kursverbünde verwalten")
@@ -260,12 +260,14 @@ class MasterDataScreen(QWidget):
             table.setItem(row_index, 0, name_item)
 
             status_cell = QWidget()
-            status_cell.setAccessibleName(f"Status: {item.status_label}")
+            status_cell.setAccessibleName(
+                f"Status: {item.status_label} · {item.activity_label}"
+            )
             status_layout = QHBoxLayout(status_cell)
             status_layout.setContentsMargins(10, 0, 6, 0)
             status_badge = StatusBadge(
-                item.status_label,
-                tone="info" if item.is_persistent else "warning",
+                item.activity_label,
+                tone="info" if item.is_active else "neutral",
             )
             status_layout.addWidget(status_badge, 0, Qt.AlignmentFlag.AlignLeft)
             status_layout.addStretch(1)
@@ -277,7 +279,7 @@ class MasterDataScreen(QWidget):
                 "quiet",
                 f"Stammgruppe {item.name} bearbeiten",
             )
-            rename_button.setToolTip(f"Stammgruppe {item.name} umbenennen")
+            rename_button.setToolTip(f"Stammgruppe {item.name} bearbeiten")
             rename_button.setMinimumWidth(96)
             rename_button.clicked.connect(
                 lambda _checked=False, item_id=item.item_id: rename_handler(item_id)
@@ -291,15 +293,19 @@ class MasterDataScreen(QWidget):
         rename_handler: object,
     ) -> None:
         table.clearContents()
-        table.setHorizontalHeaderLabels(("Kurs", "Kursfarbe", "Status", ""))
+        table.setHorizontalHeaderLabels(
+            ("Kurs", "Kursstufe", "Kursfarbe", "Status", "")
+        )
         table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
         table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
         table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
-        table.setColumnWidth(1, 154)
-        table.setColumnWidth(2, 126)
-        table.setColumnWidth(3, 116)
-        action_header = table.horizontalHeaderItem(3)
+        table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        table.setColumnWidth(1, 112)
+        table.setColumnWidth(2, 154)
+        table.setColumnWidth(3, 126)
+        table.setColumnWidth(4, 116)
+        action_header = table.horizontalHeaderItem(4)
         action_header.setData(Qt.ItemDataRole.AccessibleTextRole, "Bearbeiten")
         action_header.setToolTip("Bearbeiten")
         table.setRowCount(len(items))
@@ -311,19 +317,27 @@ class MasterDataScreen(QWidget):
             name_item.setToolTip(item.name)
             name_item.setData(Qt.ItemDataRole.AccessibleTextRole, item.name)
             table.setItem(row_index, 0, name_item)
-            table.setCellWidget(row_index, 1, self._course_color_cell(item))
+            year_level_item = QTableWidgetItem(item.year_level_label)
+            year_level_item.setData(
+                Qt.ItemDataRole.AccessibleTextRole,
+                item.year_level_label,
+            )
+            table.setItem(row_index, 1, year_level_item)
+            table.setCellWidget(row_index, 2, self._course_color_cell(item))
 
             status_cell = QWidget()
-            status_cell.setAccessibleName(f"Status: {item.status_label}")
+            status_cell.setAccessibleName(
+                f"Status: {item.status_label} · {item.activity_label}"
+            )
             status_layout = QHBoxLayout(status_cell)
             status_layout.setContentsMargins(10, 0, 6, 0)
             status_badge = StatusBadge(
-                item.status_label,
-                tone="info" if item.is_persistent else "warning",
+                item.activity_label,
+                tone="info" if item.is_active else "neutral",
             )
             status_layout.addWidget(status_badge, 0, Qt.AlignmentFlag.AlignLeft)
             status_layout.addStretch(1)
-            table.setCellWidget(row_index, 2, status_cell)
+            table.setCellWidget(row_index, 3, status_cell)
 
             rename_button = QPushButton("Bearbeiten")
             configure_button(
@@ -331,12 +345,12 @@ class MasterDataScreen(QWidget):
                 "quiet",
                 f"Kurs {item.name} bearbeiten",
             )
-            rename_button.setToolTip(f"Kurs {item.name} umbenennen")
+            rename_button.setToolTip(f"Kurs {item.name} bearbeiten")
             rename_button.setMinimumWidth(96)
             rename_button.clicked.connect(
                 lambda _checked=False, item_id=item.item_id: rename_handler(item_id)
             )
-            table.setCellWidget(row_index, 3, rename_button)
+            table.setCellWidget(row_index, 4, rename_button)
 
     def _render_course_group_table(
         self,

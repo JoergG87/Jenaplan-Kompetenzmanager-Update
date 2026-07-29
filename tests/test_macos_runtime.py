@@ -300,8 +300,46 @@ class MacosRuntimeTest(unittest.TestCase):
             )
             database = laura / INITIAL_DATA_DIRECTORY / DATABASE_FILENAME
             with sqlite3.connect(database) as connection:
+                student_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(students)"
+                    ).fetchall()
+                }
+                self.assertNotIn("group_id", student_columns)
+                self.assertNotIn("course_id", student_columns)
+                self.assertEqual(
+                    connection.execute(
+                        """
+                        SELECT label, status
+                        FROM school_years
+                        """
+                    ).fetchone(),
+                    ("2025/26", "current"),
+                )
+                self.assertEqual(
+                    connection.execute(
+                        """
+                        SELECT year_level
+                        FROM courses
+                        WHERE active = 1
+                        ORDER BY sort_order, course_id
+                        """
+                    ).fetchall(),
+                    [(1,), (2,), (3,)],
+                )
                 self.assertEqual(
                     connection.execute("SELECT COUNT(*) FROM students").fetchone()[0],
+                    24,
+                )
+                self.assertEqual(
+                    connection.execute(
+                        """
+                        SELECT COUNT(*)
+                        FROM student_school_year_assignments
+                        WHERE assignment_status = 'enrolled'
+                        """
+                    ).fetchone()[0],
                     24,
                 )
                 self.assertEqual(

@@ -3,17 +3,17 @@
 ## V3-only Datenbankinitialisierung
 
 **Status:** V3-only-Schema-, Startup-, Compatibility-, Backup-/Restore-,
-synthetischer Testdaten-Cleanup und isolierte Assignment-API lokal
-implementiert. Der SJ-2E-Lifecycle der produktiven Membership-Reader ist
-lokal umgesetzt. Writerumstellung und Runtime-Freigabe sind nicht Bestandteil
-von SJ-2E und bleiben offen.
+synthetischer Testdaten-Cleanup und Assignment-API lokal implementiert. Der
+SJ-2E-Lifecycle der produktiven Membership-Reader und der
+SJ-2F-Lifecycle der produktiven Writer sind lokal umgesetzt. Die
+Runtime-Freigabe bleibt offen.
 
 1. Der Startup-Resolver prüft Pfad, WAL-/SHM-Sidecars, Restorezustand,
    `user_version` und vollständigen Schemafingerprint read-only.
 2. Exaktes Final-V3 wird erkannt. Nach der abgeschlossenen
-   SJ-2E-Leserumstellung stoppt der Coordinator bis zur gesonderten
-   Writerumstellung und Runtime-Aktivierung weiterhin vor fachlicher Runtime
-   und Shell mit
+   SJ-2E-Leser- und SJ-2F-Writerumstellung stoppt der Coordinator bis zur
+   gesonderten Runtime-Aktivierung weiterhin vor fachlicher Runtime und Shell
+   mit
    `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`.
 3. Fehlt die Datei in einem autorisierten First Run, fordert der Coordinator
    eine direkte Final-V3-Erzeugung an. Die Schemaquelle erstellt kein
@@ -92,7 +92,7 @@ Mehrere passende Intervalle ergeben immer `AMBIGUOUS`; kein Treffer ergibt
 Schuljahresabfragen erzeugt. `last_known_membership` ist ein eigener
 historischer Read und niemals Fallback einer anderen Methode.
 
-Die isolierten V3-Lifecycles besitzen jeweils eine äußere
+Die produktiv verdrahteten V3-Lifecycles besitzen jeweils eine äußere
 `BEGIN IMMEDIATE`-Transaktion. Repositories mit übergebener Connection
 beginnen, committen, rollen zurück und schließen nicht selbst:
 
@@ -115,8 +115,9 @@ beginnen, committen, rollen zurück und schließen nicht selbst:
 
 Frühere fachliche Records behalten ihren historischen Kontext. Ein später
 archiviertes Kind bleibt an historischen Treffertagen auflösbar. Produktive
-Membership-Reader verwenden den beschriebenen Assignment-Read-Lifecycle.
-Produktive Membership-Writer, Sammelwechsel und Schuljahreswechsel bleiben
+Membership-Reader verwenden den beschriebenen Assignment-Read-Lifecycle;
+produktive Einzelkind-Writer verwenden seit SJ-2F die getrennten
+V3-Lifecycles. Sammel-/Mehrkindwechsel und Schuljahreswechsel bleiben
 gesonderte spätere Vorgänge.
 
 Ein echter Schuljahreswechsel prüft Vorschau und Quellen, erstellt ein
@@ -126,6 +127,34 @@ Assignmenterzeugung und Transition-Beleg in einer atomaren Transaktion aus.
 `from_school_year_id` und `to_school_year_id` referenzieren vorhandene
 Schuljahre. Rollback, Idempotenz und Historie bleiben verbindlich. Dieser
 Lifecycle ist noch nicht implementiert.
+
+## SJ-2F-Lifecycle für produktive Writer
+
+1. `StudentDesktopAdapter.save_new_student` löst das eindeutige aktuelle
+   Schuljahr über `SchoolYearRepository` auf und übergibt V3-Stammdaten,
+   Stammgruppe, Kurs und den expliziten Gültigkeitszeitraum gemeinsam an
+   `CreateStudentWithInitialEnrollment`. Fehlt oder passt das aktuelle
+   Schuljahr nicht, beginnt kein Write. Scheitert das Assignment, wird auch
+   der Schülerdatensatz zurückgerollt.
+2. `StudentDesktopAdapter.save_existing_student` ruft ausschließlich
+   `UpdateStudentMasterData` auf. Kurs, Stammgruppe, Schuljahr,
+   Assignmentintervall und Status sind keine Parameter dieses Pfads.
+3. `StudentMembershipChangeDialog` zeigt aktuelle Zuordnung, expliziten
+   Stichtag, Zielkurs, optionale neue Stammgruppe und Vorschau. Erst die
+   bewusste Bestätigung ruft `ChangeStudentMembership` für genau ein Kind auf.
+   `NO_CHANGE` verändert keinen Datensatz.
+4. `StudentExitDialog` ruft getrennt `ExitStudentFromSchoolYear` auf.
+   Archivierung verwendet getrennt `ArchiveStudent`; beide Vorgänge werden
+   nicht automatisch kombiniert.
+5. Kursanlage und -bearbeitung verlangen eine bewusst gewählte
+   `year_level` 1, 2 oder 3. Kurs- und Stammgruppendeaktivierung benötigen
+   einen expliziten Stichtag und werden bei aktuellen oder zukünftigen
+   `enrolled`-Assignments vor dem Stammdatenwrite blockiert. Historische
+   Assignments bleiben unverändert.
+
+Keiner dieser Abläufe aktiviert die reguläre V3-Runtime. Der
+Schuljahreswechsel-Assistent und der Mehrkindwechsel sind keine Variante
+dieses Einzelkind-Lifecycles und bleiben offen.
 
 ## SJ-2E-Lifecycle für produktive Assignment-Reader
 
@@ -176,8 +205,9 @@ Final-V3-Runtime noch einen Writer:
    weder finalisierte Revisionen noch PDFs.
 
 Dieser Vertrag ist mit SJ-2E lokal umgesetzt.
-`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt bis zur gesonderten
-Writerumstellung und Runtime-Aktivierung unverändert.
+`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt trotz der mit SJ-2F
+abgeschlossenen Writerumstellung bis zur gesonderten Runtime-Aktivierung
+unverändert.
 
 ## Phase 2 Berichte-Übersicht - rein lesender Projektionsablauf
 
@@ -1810,56 +1840,39 @@ Regel: Anlegen und Aendern validieren Zeitbereich, Referenzen und aktive Uebersc
 
 Start: Lehrkraft oder Verwaltung legt einen neuen Schueler an.
 
-Schreibprozess: Schuelerverwaltung, spaeter freizugeben.
+Schreibprozess: atomare V3-Schueleranlage mit initialer Einschreibung.
 
 Primaerer UI-Einstieg: PySide-Dialog `Neuer Schüler`.
 
-Status: Produktiver Schreibpfad bis SQLite ist ueber den PySide-Adapter umgesetzt. Beim produktiven App-Start werden Schema, Stammdaten und Kursverbund-Defaults initialisiert, aber keine Demo-Schueler erzeugt. Excel-Projection-Refresh ist archivierter Legacy-Altstand und kein Zielpfad fuer neue UI-Funktionalitaet.
-
-Freigegebener PySide-Pfad:
+Lokal implementierter PySide-Pfad:
 
 ```text
 PySide6 GUI
--> Desktop Adapter
--> ApplicationCommandDispatcher
--> CreateStudentCommand
--> StudentService
--> SQLiteStudentRepository
--> SQLite
+-> StudentDesktopAdapter.save_new_student
+-> CreateStudentWithInitialEnrollment
+-> V3StudentRepository + StudentSchoolYearAssignmentRepository
+-> SQLite students + student_school_year_assignments
 ```
-
-Legacy-Excel-Pfad:
-
-Der fruehere Feature-1.4-Pfad ueber `dlg_neuer_schueler`, VBA Adapter und Python CLI/Bridge bleibt als historischer Architekturstand dokumentiert. Er wird nicht fuer neue Features, UI oder Smoke-Tests weiterverfolgt.
-
-Nach erfolgreichem `student.create` wird die PySide-Ansicht aus SQLite aktualisiert. Ein spaeterer Datei- oder Excel-Export braucht einen separaten freigegebenen Exportprozess.
-
-Die GUI sammelt Eingaben und erzeugt Commands, enthaelt aber keine Businesslogik und schreibt nicht direkt aus Widgets in SQLite.
-
-Der Excel/VBA-Runtime-Adapter wird nicht weiter ausgebaut. Excel liegt nur noch als historischer Altstand unter `legacy/excel/`.
 
 Betroffene Datenquellen:
 
-- `students` in SQLite als fachliche Source of Truth
-- `data_students` als historische Excel-/Exportprojektion
-- spaeter optional `data_media` fuer Schuelerdokumente
+- V3-`students` fuer Stammdaten
+- eindeutiges aktuelles `school_years`
+- `student_school_year_assignments` fuer die initiale Einschreibung
 
 Erforderliche IDs:
 
 - neuer `student_id`
+- vorhandene `school_year_id`
 - bestehender `group_id`
 - bestehender `course_id`
-- optional neue `media_id` je Dokument
 
-Automatisch profitierende Ansichten:
-
-- Stammgruppenuebersicht
-- Kursuebersicht
-- Schuelerprofil
-- Beobachtungsdialog
-- Berichte
-
-Regel: Neue Stammgruppen oder Kurse werden dabei nicht automatisch angelegt. `student_id`, `group_id` und `course_id` bleiben die technische Zuordnung; sichtbare Namen werden aus den persistenten Stammdaten aufgeloest. Optionale Dokumente werden erst nach erfolgreicher Erzeugung der `student_id` referenziert. Dateien werden nicht in Excel eingebettet. Bei Fehlern bleibt der PySide-Dialog geoeffnet und SQLite unveraendert. Demo-/Seed-Schueler duerfen nur ueber explizite Test- oder Legacy-Seed-Pfade erzeugt werden und ueberschreiben keine produktiven Nutzerdaten.
+Regel: Stammdaten und initiales `enrolled`-Assignment committen gemeinsam
+oder gar nicht. Das aktuelle Schuljahr wird zentral aufgeloest und nicht
+implizit aus Systemdatum oder Seedwert angenommen. Der V3-Schuelerdatensatz
+enthaelt keine Membershipfelder. Synthetische Schüler entstehen nur in
+expliziten neuen Final-V3-Testdatenbanken; vorhandene lokale Daten werden
+nicht ersetzt.
 
 ## Dokument oder Medium hinzufuegen
 
@@ -1901,50 +1914,41 @@ Regel: SQLite speichert nur Metadaten und keine Datei-BLOBs. Die Datei wird in d
 
 Start: Schueler soll nicht mehr aktiv in Ansichten erscheinen.
 
-Schreibprozess: Schuelerverwaltung, spaeter freizugeben.
+Schreibprozess: `StudentDesktopAdapter.archive_student_master_data` über
+`ArchiveStudent`.
 
 Betroffene Datenquellen:
 
-- `data_students`
+- V3-`students`
+- `student_school_year_assignments` ausschließlich zur fail-closed Prüfung
 
 Erforderliche IDs:
 
 - `student_id`
+- expliziter `as_of`-Tag
 
-Automatisch profitierende Ansichten:
-
-- Stammgruppenuebersicht
-- Kursuebersicht
-- Berichte
-- Dashboards
-
-Regel: Archivierung setzt `active = FALSE` und `archived_at` auf einen Zeitstempel. Historische Daten bleiben vollständig erhalten. Beobachtungen bleiben über `student_id` gültig.
+Regel: Archivierung ändert kein Assignment und erzeugt kein `exited`.
+Bei aktueller Einschreibung wird sie blockiert. Historische Daten und
+Beobachtungen bleiben über `student_id` gültig.
 
 ## Schueler aendern
 
-Start: Stammdaten oder Zuordnungen eines bestehenden Schuelers werden korrigiert.
+Start: Stammdaten eines bestehenden Schuelers werden korrigiert.
 
-Schreibprozess: Schuelerverwaltung, spaeter freizugeben.
+Schreibprozess: `StudentDesktopAdapter.save_existing_student` über
+`UpdateStudentMasterData`.
 
 Betroffene Datenquellen:
 
-- `data_students`
+- V3-`students`
 
 Erforderliche IDs:
 
 - bestehender `student_id`
-- gueltiger `group_id`
-- gueltiger `course_id`
 
-Automatisch profitierende Ansichten:
-
-- Stammgruppenuebersicht
-- Kursuebersicht
-- Schuelerprofil
-- Berichte
-- Dashboards
-
-Regel: `student_id` bleibt erhalten. Historische Beobachtungen bleiben ueber `student_id` gueltig. UI-Projektionen aktualisieren sich aus `data_students`.
+Regel: Dieser Pfad ändert ausschließlich Vorname, Nachname und Notiz.
+Zuordnungen werden nur über den getrennten datierten Einzelwechsel geändert.
+`student_id` und sämtliche Assignments bleiben erhalten.
 
 ## Stammgruppe anlegen
 
@@ -2005,7 +2009,11 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Berichte
 
-Regel: `group_id` bleibt erhalten. Schuelerreferenzen bleiben gueltig. Umbenennen schreibt nur den Namen und loest keine Schueler-Umbuchung aus.
+Regel: `group_id` bleibt erhalten. Umbenennen schreibt nur den Namen und
+loest keine Schueler-Umbuchung aus. Deaktivierung benötigt einen expliziten
+Stichtag und wird blockiert, solange aktuelle oder zukünftige
+`enrolled`-Assignments die Gruppe referenzieren. Historische Referenzen
+bleiben lesbar.
 
 ## Kurs anlegen
 
@@ -2030,6 +2038,7 @@ Betroffene Datenquellen:
 Erforderliche IDs:
 
 - neuer `course_id`
+- bewusst gewählte `year_level` 1, 2 oder 3
 
 Automatisch profitierende Ansichten:
 
@@ -2038,7 +2047,11 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Berichte
 
-Regel: Kursfarbe wird mit Name und Hex-Wert am Kurs gespeichert und nicht an einzelnen Schuelern. Neue Kurse werden dem Default-Kursverbund hinzugefuegt, damit sie in der kursverbundbezogenen Uebersicht sichtbar bleiben.
+Regel: `year_level` wird nicht aus Name, Farbe, Sortierung oder Listenposition
+abgeleitet; mehrere Kurse derselben Stufe sind zulässig. Kursfarbe wird mit
+Name und Hex-Wert am Kurs gespeichert und nicht an einzelnen Schuelern. Neue
+Kurse werden dem Default-Kursverbund hinzugefuegt, damit sie in der
+kursverbundbezogenen Uebersicht sichtbar bleiben.
 
 ## Kurs aendern
 
@@ -2062,7 +2075,11 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Berichte
 
-Regel: `course_id` bleibt erhalten. Schuelerkartenfarbe aktualisiert sich aus `course_id` und `courses.color_hex`.
+Regel: `course_id` bleibt erhalten; `year_level` muss weiterhin 1, 2 oder 3
+sein. Deaktivierung benötigt einen expliziten Stichtag und wird bei aktuellen
+oder zukünftigen `enrolled`-Assignments blockiert. Historische Assignments
+bleiben unverändert und lesbar. Schuelerkartenfarbe aktualisiert sich aus
+`course_id` und `courses.color_hex`.
 
 ## Kursverbund anlegen oder aendern
 

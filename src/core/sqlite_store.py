@@ -14,8 +14,10 @@ from types import MappingProxyType
 from .database_compatibility import (
     DatabaseCompatibilityError,
     DatabaseCompatibilityInspector,
+    DatabaseCompatibilityStatus,
 )
 from .database_engine import SQLiteConnectionProvider
+from .final_v3_schema import FinalV3SchemaInitializer
 from .school_year import (
     AssignmentAtDateProjection,
     AssignmentResolutionStatus,
@@ -35,7 +37,6 @@ from .persistence_events import (
     SQLitePersistenceEventRepository,
     canonical_payload_hash,
     canonical_utc_second,
-    migrate_persistence_events,
     project_competency_freshness,
 )
 
@@ -67,15 +68,10 @@ from .constants import (
     LEARNING_CONFERENCE_REVISION_ID_PREFIX,
     REPORT_DRAFT_ID_PREFIX,
     STUDENT_ID,
-    STUDENT_NOTES,
     UPDATED_AT,
 )
 
 
-_LEGACY_DEVELOPMENT_SCHEMA_VERSION = 2
-_LEGACY_DEVELOPMENT_SCHEMA_FINGERPRINT = (
-    "5c15a6c54dda9e04ff0f4a7cb9361cac7d452c9f7b1e2d68a6843bc5a99e57b2"
-)
 from .observation import (
     ObservationCompetencyRatingRecord,
     ObservationRecord,
@@ -128,11 +124,11 @@ from .learning_report_pdf import (
     LearningReportPdfArtifactRecord,
     LearningReportPdfError,
 )
-from .student import StudentRepositoryError
 from .records import (
     CourseRecord,
     GroupRecord,
     ReferenceData,
+    SEED_TIMESTAMP,
     StudentRecord,
     seed_reference_data,
 )
@@ -170,6 +166,11 @@ class MasterDataCourseRecord:
     color_hex: str
     active: bool
     sort_order: int = 0
+    year_level: int | None = None
+
+    def __post_init__(self) -> None:
+        if type(self.year_level) is not int or self.year_level not in (1, 2, 3):
+            raise ValueError("Kursstufe muss 1, 2 oder 3 sein.")
 
 
 @dataclass(frozen=True)
@@ -285,7 +286,7 @@ class SQLiteDatabase:
         create: bool = True,
         initialize_schema: bool = True,
     ) -> None:
-        self.path = path
+        self.path = Path(path)
         self._connection_provider = (
             connection_provider or SQLiteConnectionProvider()
         )
@@ -299,645 +300,24 @@ class SQLiteDatabase:
         )
 
     def initialize_schema(self) -> None:
+        """Create or accept only the exact registered Final-V3 schema."""
         if not self._initialize_schema:
             return
-        with closing(self.connect()) as connection:
-            schema_object_count = int(
-                connection.execute(
-                    """
-                    SELECT COUNT(*)
-                    FROM sqlite_schema
-                    WHERE name NOT LIKE 'sqlite_%'
-                    """
-                ).fetchone()[0]
-            )
-            if schema_object_count:
-                identity = (
-                    DatabaseCompatibilityInspector
-                    .schema_identity_for_connection(connection)
-                )
-                version = int(
-                    connection.execute("PRAGMA user_version").fetchone()[0]
-                )
-                if (
-                    version == _LEGACY_DEVELOPMENT_SCHEMA_VERSION
-                    and identity.fingerprint
-                    == _LEGACY_DEVELOPMENT_SCHEMA_FINGERPRINT
-                ):
-                    return
+        if not self.path.exists() and not self.path.is_symlink():
+            if not self._create:
                 raise DatabaseCompatibilityError(
-                    "Die vorhandene Entwicklungsdatenbank besitzt kein "
-                    "unterstütztes Testschema."
+                    "Die Final-V3-Datenbank fehlt am ausdrücklich geöffneten Ziel."
                 )
-            with connection:
-                connection.executescript(
-                    """
-                    BEGIN IMMEDIATE;
-
-                    CREATE TABLE IF NOT EXISTS groups (
-                        group_id TEXT PRIMARY KEY,
-                        group_name TEXT NOT NULL,
-                        sort_order INTEGER NOT NULL DEFAULT 0,
-                        active INTEGER NOT NULL CHECK (active IN (0, 1))
-                    );
-
-                    CREATE TABLE IF NOT EXISTS courses (
-                        course_id TEXT PRIMARY KEY,
-                        course_name TEXT NOT NULL,
-                        color_key TEXT,
-                        color_name TEXT NOT NULL DEFAULT '',
-                        color_hex TEXT NOT NULL DEFAULT '',
-                        sort_order INTEGER NOT NULL DEFAULT 0,
-                        active INTEGER NOT NULL CHECK (active IN (0, 1))
-                    );
-
-                    CREATE TABLE IF NOT EXISTS students (
-                        student_id TEXT PRIMARY KEY,
-                        first_name TEXT NOT NULL,
-                        last_name TEXT NOT NULL,
-                        group_id TEXT NOT NULL,
-                        course_id TEXT NOT NULL,
-                        student_notes TEXT,
-                        active INTEGER NOT NULL CHECK (active IN (0, 1)),
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL,
-                        archived_at TEXT,
-                        FOREIGN KEY (group_id) REFERENCES groups(group_id),
-                        FOREIGN KEY (course_id) REFERENCES courses(course_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS observations (
-                        observation_id TEXT PRIMARY KEY,
-                        student_id TEXT NOT NULL,
-                        date TEXT NOT NULL,
-                        subject_id TEXT NOT NULL,
-                        context TEXT,
-                        note TEXT,
-                        active INTEGER NOT NULL CHECK (active IN (0, 1)) DEFAULT 1,
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL,
-                        FOREIGN KEY (student_id) REFERENCES students(student_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS competencies (
-                        competency_id TEXT PRIMARY KEY,
-                        subject_id TEXT NOT NULL,
-                        subject_name TEXT NOT NULL,
-                        subject_full_name TEXT NOT NULL DEFAULT '',
-                        official_subject_name TEXT NOT NULL DEFAULT '',
-                        school_context_name TEXT NOT NULL DEFAULT '',
-                        grade_band TEXT NOT NULL DEFAULT '',
-                        label TEXT NOT NULL,
-                        description TEXT NOT NULL,
-                        learning_stage TEXT NOT NULL DEFAULT 'cross_stage'
-                            CHECK (learning_stage IN ('stage_1_3', 'stage_4', 'cross_stage')),
-                        learning_area TEXT NOT NULL,
-                        competency_group TEXT,
-                        source_reference TEXT NOT NULL DEFAULT '',
-                        catalog_status TEXT NOT NULL DEFAULT 'current'
-                            CHECK (catalog_status IN ('current', 'legacy')),
-                        activation_group_key TEXT NOT NULL DEFAULT '',
-                        sort_order INTEGER NOT NULL DEFAULT 0,
-                        active INTEGER NOT NULL CHECK (active IN (0, 1)),
-                        catalog_default_active INTEGER NOT NULL CHECK (catalog_default_active IN (0, 1)) DEFAULT 1,
-                        is_core_subject INTEGER NOT NULL CHECK (is_core_subject IN (0, 1)) DEFAULT 1
-                    );
-
-                    CREATE TABLE IF NOT EXISTS observation_competency_ratings (
-                        observation_id TEXT NOT NULL,
-                        competency_id TEXT NOT NULL,
-                        subject_id TEXT NOT NULL,
-                        subject_display_name TEXT NOT NULL,
-                        learning_area TEXT NOT NULL,
-                        competency_group TEXT,
-                        competency_text TEXT NOT NULL,
-                        rating TEXT NOT NULL CHECK (rating IN ('++', '+', '-', '--')),
-                        PRIMARY KEY (observation_id, competency_id),
-                        FOREIGN KEY (observation_id)
-                            REFERENCES observations(observation_id)
-                            ON DELETE CASCADE
-                    );
-
-                    CREATE TABLE IF NOT EXISTS student_competency_confirmations (
-                        student_id TEXT NOT NULL,
-                        competency_id TEXT NOT NULL,
-                        confirmed_rating TEXT NOT NULL CHECK (confirmed_rating IN ('++', '+', '-', '--')),
-                        confirmed_at TEXT NOT NULL,
-                        note TEXT,
-                        PRIMARY KEY (student_id, competency_id),
-                        FOREIGN KEY (student_id) REFERENCES students(student_id),
-                        FOREIGN KEY (competency_id) REFERENCES competencies(competency_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS documents (
-                        document_id TEXT PRIMARY KEY,
-                        student_id TEXT NOT NULL,
-                        observation_id TEXT,
-                        title TEXT NOT NULL,
-                        document_type TEXT NOT NULL,
-                        file_path TEXT NOT NULL,
-                        original_filename TEXT NOT NULL,
-                        created_at TEXT NOT NULL,
-                        note TEXT,
-                        active INTEGER NOT NULL CHECK (active IN (0, 1)) DEFAULT 1,
-                        FOREIGN KEY (student_id) REFERENCES students(student_id),
-                        FOREIGN KEY (observation_id) REFERENCES observations(observation_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS course_groups (
-                        course_group_id TEXT PRIMARY KEY,
-                        name TEXT NOT NULL UNIQUE,
-                        sort_order INTEGER NOT NULL DEFAULT 0,
-                        active INTEGER NOT NULL CHECK (active IN (0, 1))
-                    );
-
-                    CREATE TABLE IF NOT EXISTS course_group_student_groups (
-                        course_group_id TEXT NOT NULL,
-                        student_group_id TEXT NOT NULL,
-                        PRIMARY KEY (course_group_id, student_group_id),
-                        FOREIGN KEY (course_group_id) REFERENCES course_groups(course_group_id),
-                        FOREIGN KEY (student_group_id) REFERENCES groups(group_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS course_group_courses (
-                        course_group_id TEXT NOT NULL,
-                        course_id TEXT NOT NULL,
-                        PRIMARY KEY (course_group_id, course_id),
-                        FOREIGN KEY (course_group_id) REFERENCES course_groups(course_group_id),
-                        FOREIGN KEY (course_id) REFERENCES courses(course_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS documentation_subject_settings (
-                        subject_id TEXT PRIMARY KEY,
-                        active INTEGER NOT NULL CHECK (active IN (0, 1)),
-                        updated_at TEXT NOT NULL
-                    );
-
-                    CREATE TABLE IF NOT EXISTS timetable_entries (
-                        timetable_entry_id TEXT PRIMARY KEY,
-                        weekday INTEGER NOT NULL CHECK (weekday BETWEEN 1 AND 5),
-                        start_time TEXT NOT NULL,
-                        end_time TEXT NOT NULL,
-                        subject_id TEXT NOT NULL,
-                        target_type TEXT NOT NULL CHECK (
-                            target_type IN ('group', 'course', 'course_group')
-                        ),
-                        target_id TEXT NOT NULL,
-                        room TEXT NOT NULL DEFAULT '',
-                        active INTEGER NOT NULL CHECK (active IN (0, 1)),
-                        sort_order INTEGER NOT NULL DEFAULT 0,
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL,
-                        deleted_at TEXT NOT NULL DEFAULT ''
-                    );
-
-                    CREATE TABLE IF NOT EXISTS report_drafts (
-                        report_draft_id TEXT PRIMARY KEY,
-                        student_id TEXT NOT NULL,
-                        report_type TEXT NOT NULL CHECK (report_type = 'learning_development'),
-                        period_start TEXT NOT NULL,
-                        period_end TEXT NOT NULL,
-                        status TEXT NOT NULL CHECK (status = 'draft'),
-                        teacher_name TEXT NOT NULL DEFAULT '',
-                        overall_text TEXT NOT NULL DEFAULT '',
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL,
-                        FOREIGN KEY (student_id) REFERENCES students(student_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS report_draft_subjects (
-                        report_draft_id TEXT NOT NULL,
-                        subject_id TEXT NOT NULL,
-                        strengths_text TEXT NOT NULL DEFAULT '',
-                        development_text TEXT NOT NULL DEFAULT '',
-                        support_needs_text TEXT NOT NULL DEFAULT '',
-                        next_goals_text TEXT NOT NULL DEFAULT '',
-                        PRIMARY KEY (report_draft_id, subject_id),
-                        FOREIGN KEY (report_draft_id)
-                            REFERENCES report_drafts(report_draft_id)
-                            ON DELETE CASCADE
-                    );
-
-                    CREATE TABLE IF NOT EXISTS report_draft_competencies (
-                        report_draft_id TEXT NOT NULL,
-                        competency_id TEXT NOT NULL,
-                        PRIMARY KEY (report_draft_id, competency_id),
-                        FOREIGN KEY (report_draft_id)
-                            REFERENCES report_drafts(report_draft_id)
-                            ON DELETE CASCADE,
-                        FOREIGN KEY (competency_id) REFERENCES competencies(competency_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS report_draft_observations (
-                        report_draft_id TEXT NOT NULL,
-                        observation_id TEXT NOT NULL,
-                        PRIMARY KEY (report_draft_id, observation_id),
-                        FOREIGN KEY (report_draft_id)
-                            REFERENCES report_drafts(report_draft_id)
-                            ON DELETE CASCADE,
-                        FOREIGN KEY (observation_id) REFERENCES observations(observation_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS report_draft_charts (
-                        report_draft_id TEXT NOT NULL,
-                        subject_id TEXT NOT NULL,
-                        chart_type TEXT NOT NULL CHECK (
-                            chart_type IN (
-                                'documentation_coverage',
-                                'competency_timeline',
-                                'observation_timeline'
-                            )
-                        ),
-                        PRIMARY KEY (report_draft_id, subject_id, chart_type),
-                        FOREIGN KEY (report_draft_id)
-                            REFERENCES report_drafts(report_draft_id)
-                            ON DELETE CASCADE
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_reports (
-                        learning_report_id TEXT PRIMARY KEY,
-                        source_report_draft_id TEXT NOT NULL UNIQUE,
-                        student_id TEXT NOT NULL,
-                        report_type TEXT NOT NULL,
-                        period_start TEXT NOT NULL,
-                        period_end TEXT NOT NULL,
-                        created_at TEXT NOT NULL,
-                        FOREIGN KEY (source_report_draft_id)
-                            REFERENCES report_drafts(report_draft_id),
-                        FOREIGN KEY (student_id) REFERENCES students(student_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_report_revisions (
-                        learning_report_revision_id TEXT PRIMARY KEY,
-                        learning_report_id TEXT NOT NULL,
-                        revision_number INTEGER NOT NULL CHECK (revision_number > 0),
-                        status TEXT NOT NULL CHECK (
-                            status IN ('finalized', 'superseded')
-                        ),
-                        snapshot_schema_version INTEGER NOT NULL CHECK (
-                            snapshot_schema_version > 0
-                        ),
-                        snapshot_json TEXT NOT NULL,
-                        snapshot_sha256 TEXT NOT NULL CHECK (
-                            length(snapshot_sha256) = 64
-                        ),
-                        finalized_at TEXT NOT NULL,
-                        finalized_by_display_name TEXT NOT NULL CHECK (
-                            length(trim(finalized_by_display_name)) > 0
-                        ),
-                        superseded_at TEXT,
-                        UNIQUE (learning_report_id, revision_number),
-                        CHECK (
-                            (status = 'finalized' AND superseded_at IS NULL)
-                            OR
-                            (status = 'superseded' AND superseded_at IS NOT NULL)
-                        ),
-                        FOREIGN KEY (learning_report_id)
-                            REFERENCES learning_reports(learning_report_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_report_pdf_artifacts (
-                        learning_report_pdf_artifact_id TEXT PRIMARY KEY,
-                        learning_report_revision_id TEXT NOT NULL UNIQUE,
-                        relative_file_path TEXT NOT NULL UNIQUE,
-                        mime_type TEXT NOT NULL CHECK (mime_type = 'application/pdf'),
-                        file_size_bytes INTEGER NOT NULL CHECK (file_size_bytes > 0),
-                        snapshot_sha256 TEXT NOT NULL CHECK (
-                            length(snapshot_sha256) = 64
-                        ),
-                        pdf_sha256 TEXT NOT NULL CHECK (length(pdf_sha256) = 64),
-                        created_at TEXT NOT NULL,
-                        FOREIGN KEY (learning_report_revision_id)
-                            REFERENCES learning_report_revisions(
-                                learning_report_revision_id
-                            )
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_conference_drafts (
-                        learning_conference_draft_id TEXT PRIMARY KEY,
-                        student_id TEXT NOT NULL,
-                        period_start TEXT NOT NULL DEFAULT '',
-                        period_end TEXT NOT NULL DEFAULT '',
-                        conference_date TEXT NOT NULL DEFAULT '',
-                        status TEXT NOT NULL CHECK (status = 'draft'),
-                        responsible_teacher TEXT NOT NULL DEFAULT '',
-                        conversation_entry_text TEXT NOT NULL DEFAULT '',
-                        child_retrospective_text TEXT NOT NULL DEFAULT '',
-                        teacher_perspective_text TEXT NOT NULL DEFAULT '',
-                        strengths_text TEXT NOT NULL DEFAULT '',
-                        development_fields_text TEXT NOT NULL DEFAULT '',
-                        prepared_goals_text TEXT NOT NULL DEFAULT '',
-                        prepared_support_text TEXT NOT NULL DEFAULT '',
-                        prepared_agreements_text TEXT NOT NULL DEFAULT '',
-                        agreed_goals_text TEXT NOT NULL DEFAULT '',
-                        agreed_support_text TEXT NOT NULL DEFAULT '',
-                        agreed_agreements_text TEXT NOT NULL DEFAULT '',
-                        responsibilities_text TEXT NOT NULL DEFAULT '',
-                        next_review_date TEXT NOT NULL DEFAULT '',
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL,
-                        FOREIGN KEY (student_id) REFERENCES students(student_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_conferences (
-                        learning_conference_id TEXT PRIMARY KEY,
-                        source_learning_conference_draft_id TEXT NOT NULL UNIQUE,
-                        student_id TEXT NOT NULL,
-                        created_at TEXT NOT NULL,
-                        FOREIGN KEY (source_learning_conference_draft_id)
-                            REFERENCES learning_conference_drafts(
-                                learning_conference_draft_id
-                            ),
-                        FOREIGN KEY (student_id) REFERENCES students(student_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_conference_revisions (
-                        learning_conference_revision_id TEXT PRIMARY KEY,
-                        learning_conference_id TEXT NOT NULL,
-                        revision_number INTEGER NOT NULL CHECK (revision_number > 0),
-                        status TEXT NOT NULL CHECK (
-                            status IN ('completed', 'superseded')
-                        ),
-                        snapshot_schema_version INTEGER NOT NULL CHECK (
-                            snapshot_schema_version > 0
-                        ),
-                        snapshot_json TEXT NOT NULL,
-                        snapshot_sha256 TEXT NOT NULL CHECK (
-                            length(snapshot_sha256) = 64
-                        ),
-                        completed_at TEXT NOT NULL,
-                        completed_by_display_name TEXT NOT NULL CHECK (
-                            length(trim(completed_by_display_name)) > 0
-                        ),
-                        superseded_at TEXT,
-                        UNIQUE (learning_conference_id, revision_number),
-                        CHECK (
-                            (status = 'completed' AND superseded_at IS NULL)
-                            OR
-                            (status = 'superseded' AND superseded_at IS NOT NULL)
-                        ),
-                        FOREIGN KEY (learning_conference_id)
-                            REFERENCES learning_conferences(learning_conference_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_conference_pdf_artifacts (
-                        learning_conference_pdf_artifact_id TEXT PRIMARY KEY,
-                        learning_conference_revision_id TEXT NOT NULL UNIQUE,
-                        relative_file_path TEXT NOT NULL UNIQUE,
-                        mime_type TEXT NOT NULL CHECK (mime_type = 'application/pdf'),
-                        file_size_bytes INTEGER NOT NULL CHECK (file_size_bytes > 0),
-                        snapshot_sha256 TEXT NOT NULL CHECK (
-                            length(snapshot_sha256) = 64
-                        ),
-                        pdf_sha256 TEXT NOT NULL CHECK (length(pdf_sha256) = 64),
-                        created_at TEXT NOT NULL,
-                        FOREIGN KEY (learning_conference_revision_id)
-                            REFERENCES learning_conference_revisions(
-                                learning_conference_revision_id
-                            )
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_conference_draft_subjects (
-                        learning_conference_draft_id TEXT NOT NULL,
-                        subject_id TEXT NOT NULL,
-                        PRIMARY KEY (learning_conference_draft_id, subject_id),
-                        FOREIGN KEY (learning_conference_draft_id)
-                            REFERENCES learning_conference_drafts(learning_conference_draft_id)
-                            ON DELETE CASCADE
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_conference_draft_cross_topics (
-                        learning_conference_draft_id TEXT NOT NULL,
-                        cross_topic_key TEXT NOT NULL CHECK (
-                            cross_topic_key IN (
-                                'work_habits',
-                                'social_behavior',
-                                'independence',
-                                'learning_organization'
-                            )
-                        ),
-                        PRIMARY KEY (learning_conference_draft_id, cross_topic_key),
-                        FOREIGN KEY (learning_conference_draft_id)
-                            REFERENCES learning_conference_drafts(learning_conference_draft_id)
-                            ON DELETE CASCADE
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_conference_draft_competencies (
-                        learning_conference_draft_id TEXT NOT NULL,
-                        competency_id TEXT NOT NULL,
-                        PRIMARY KEY (learning_conference_draft_id, competency_id),
-                        FOREIGN KEY (learning_conference_draft_id)
-                            REFERENCES learning_conference_drafts(learning_conference_draft_id)
-                            ON DELETE CASCADE,
-                        FOREIGN KEY (competency_id) REFERENCES competencies(competency_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_conference_draft_observations (
-                        learning_conference_draft_id TEXT NOT NULL,
-                        observation_id TEXT NOT NULL,
-                        PRIMARY KEY (learning_conference_draft_id, observation_id),
-                        FOREIGN KEY (learning_conference_draft_id)
-                            REFERENCES learning_conference_drafts(learning_conference_draft_id)
-                            ON DELETE CASCADE,
-                        FOREIGN KEY (observation_id) REFERENCES observations(observation_id)
-                    );
-
-                    CREATE TABLE IF NOT EXISTS learning_conference_draft_charts (
-                        learning_conference_draft_id TEXT NOT NULL,
-                        chart_type TEXT NOT NULL CHECK (
-                            chart_type IN (
-                                'documentation_coverage',
-                                'competency_timeline',
-                                'observation_timeline'
-                            )
-                        ),
-                        PRIMARY KEY (learning_conference_draft_id, chart_type),
-                        FOREIGN KEY (learning_conference_draft_id)
-                            REFERENCES learning_conference_drafts(learning_conference_draft_id)
-                            ON DELETE CASCADE
-                    );
-
-                    CREATE INDEX IF NOT EXISTS idx_groups_name
-                        ON groups(group_name);
-                    CREATE INDEX IF NOT EXISTS idx_courses_name
-                        ON courses(course_name);
-                    CREATE INDEX IF NOT EXISTS idx_observations_student_date
-                        ON observations(student_id, date);
-                    CREATE INDEX IF NOT EXISTS idx_competencies_subject_sort
-                        ON competencies(subject_id, sort_order);
-                    CREATE INDEX IF NOT EXISTS idx_observation_ratings_competency
-                        ON observation_competency_ratings(competency_id);
-                    CREATE INDEX IF NOT EXISTS idx_competency_confirmations_student
-                        ON student_competency_confirmations(student_id);
-                    CREATE INDEX IF NOT EXISTS idx_competency_confirmations_competency
-                        ON student_competency_confirmations(competency_id);
-                    CREATE INDEX IF NOT EXISTS idx_documents_student
-                        ON documents(student_id, active, created_at);
-                    CREATE INDEX IF NOT EXISTS idx_documents_observation
-                        ON documents(observation_id, active, created_at);
-                    CREATE INDEX IF NOT EXISTS idx_course_groups_name
-                        ON course_groups(name);
-                    CREATE INDEX IF NOT EXISTS idx_course_group_student_groups_group
-                        ON course_group_student_groups(student_group_id);
-                    CREATE INDEX IF NOT EXISTS idx_course_group_courses_course
-                        ON course_group_courses(course_id);
-                    CREATE INDEX IF NOT EXISTS idx_documentation_subject_settings_active
-                        ON documentation_subject_settings(active, subject_id);
-                    CREATE INDEX IF NOT EXISTS idx_timetable_entries_week_time
-                        ON timetable_entries(weekday, start_time, end_time, sort_order);
-                    CREATE INDEX IF NOT EXISTS idx_report_drafts_student_updated
-                        ON report_drafts(student_id, updated_at DESC);
-                    CREATE INDEX IF NOT EXISTS idx_report_draft_competencies_competency
-                        ON report_draft_competencies(competency_id);
-                    CREATE INDEX IF NOT EXISTS idx_report_draft_observations_observation
-                        ON report_draft_observations(observation_id);
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_learning_report_current_revision
-                        ON learning_report_revisions(learning_report_id)
-                        WHERE status = 'finalized';
-                    CREATE INDEX IF NOT EXISTS idx_learning_report_revisions_report_number
-                        ON learning_report_revisions(learning_report_id, revision_number);
-                    CREATE INDEX IF NOT EXISTS idx_learning_report_pdf_artifacts_revision
-                        ON learning_report_pdf_artifacts(learning_report_revision_id);
-                    CREATE INDEX IF NOT EXISTS idx_learning_conference_drafts_student_updated
-                        ON learning_conference_drafts(student_id, updated_at DESC);
-                    CREATE INDEX IF NOT EXISTS idx_learning_conference_draft_competencies
-                        ON learning_conference_draft_competencies(competency_id);
-                    CREATE INDEX IF NOT EXISTS idx_learning_conference_draft_observations
-                        ON learning_conference_draft_observations(observation_id);
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_learning_conference_current_revision
-                        ON learning_conference_revisions(learning_conference_id)
-                        WHERE status = 'completed';
-                    CREATE INDEX IF NOT EXISTS idx_learning_conference_revisions_number
-                        ON learning_conference_revisions(
-                            learning_conference_id,
-                            revision_number
-                        );
-                    CREATE INDEX IF NOT EXISTS idx_learning_conference_pdf_artifacts_revision
-                        ON learning_conference_pdf_artifacts(
-                            learning_conference_revision_id
-                        );
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_report_revisions_immutable_update
-                    BEFORE UPDATE ON learning_report_revisions
-                    WHEN NOT (
-                        OLD.status = 'finalized'
-                        AND NEW.status = 'superseded'
-                        AND OLD.superseded_at IS NULL
-                        AND NEW.superseded_at IS NOT NULL
-                        AND NEW.learning_report_revision_id IS OLD.learning_report_revision_id
-                        AND NEW.learning_report_id IS OLD.learning_report_id
-                        AND NEW.revision_number IS OLD.revision_number
-                        AND NEW.snapshot_schema_version IS OLD.snapshot_schema_version
-                        AND NEW.snapshot_json IS OLD.snapshot_json
-                        AND NEW.snapshot_sha256 IS OLD.snapshot_sha256
-                        AND NEW.finalized_at IS OLD.finalized_at
-                        AND NEW.finalized_by_display_name IS OLD.finalized_by_display_name
-                    )
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning report revisions are immutable');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_report_revisions_immutable_delete
-                    BEFORE DELETE ON learning_report_revisions
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning report revisions cannot be deleted');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_reports_immutable_update
-                    BEFORE UPDATE ON learning_reports
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning reports are immutable');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_reports_immutable_delete
-                    BEFORE DELETE ON learning_reports
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning reports cannot be deleted');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_report_pdf_artifacts_immutable_update
-                    BEFORE UPDATE ON learning_report_pdf_artifacts
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning report PDF artifacts are immutable');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_report_pdf_artifacts_immutable_delete
-                    BEFORE DELETE ON learning_report_pdf_artifacts
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning report PDF artifacts cannot be deleted');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_conference_revisions_immutable_update
-                    BEFORE UPDATE ON learning_conference_revisions
-                    WHEN NOT (
-                        OLD.status = 'completed'
-                        AND NEW.status = 'superseded'
-                        AND OLD.superseded_at IS NULL
-                        AND NEW.superseded_at IS NOT NULL
-                        AND NEW.learning_conference_revision_id IS OLD.learning_conference_revision_id
-                        AND NEW.learning_conference_id IS OLD.learning_conference_id
-                        AND NEW.revision_number IS OLD.revision_number
-                        AND NEW.snapshot_schema_version IS OLD.snapshot_schema_version
-                        AND NEW.snapshot_json IS OLD.snapshot_json
-                        AND NEW.snapshot_sha256 IS OLD.snapshot_sha256
-                        AND NEW.completed_at IS OLD.completed_at
-                        AND NEW.completed_by_display_name IS OLD.completed_by_display_name
-                    )
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning conference revisions are immutable');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_conference_revisions_immutable_delete
-                    BEFORE DELETE ON learning_conference_revisions
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning conference revisions cannot be deleted');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_conferences_immutable_update
-                    BEFORE UPDATE ON learning_conferences
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning conferences are immutable');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_conferences_immutable_delete
-                    BEFORE DELETE ON learning_conferences
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning conferences cannot be deleted');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_conference_pdf_artifacts_immutable_update
-                    BEFORE UPDATE ON learning_conference_pdf_artifacts
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning conference PDF artifacts are immutable');
-                    END;
-
-                    CREATE TRIGGER IF NOT EXISTS trg_learning_conference_pdf_artifacts_immutable_delete
-                    BEFORE DELETE ON learning_conference_pdf_artifacts
-                    BEGIN
-                        SELECT RAISE(ABORT, 'learning conference PDF artifacts cannot be deleted');
-                    END;
-                    """
-                )
-                self._ensure_column(connection, "groups", "sort_order", "INTEGER NOT NULL DEFAULT 0")
-                self._ensure_column(connection, "courses", "color_name", "TEXT NOT NULL DEFAULT ''")
-                self._ensure_column(connection, "courses", "color_hex", "TEXT NOT NULL DEFAULT ''")
-                self._ensure_column(connection, "courses", "sort_order", "INTEGER NOT NULL DEFAULT 0")
-                self._ensure_column(connection, "competencies", "subject_full_name", "TEXT NOT NULL DEFAULT ''")
-                self._ensure_column(connection, "competencies", "official_subject_name", "TEXT NOT NULL DEFAULT ''")
-                self._ensure_column(connection, "competencies", "school_context_name", "TEXT NOT NULL DEFAULT ''")
-                self._ensure_column(connection, "competencies", "grade_band", "TEXT NOT NULL DEFAULT ''")
-                self._ensure_column(connection, "competencies", "learning_stage", "TEXT NOT NULL DEFAULT 'cross_stage'")
-                self._ensure_column(connection, "competencies", "source_reference", "TEXT NOT NULL DEFAULT ''")
-                self._ensure_column(connection, "competencies", "catalog_status", "TEXT NOT NULL DEFAULT 'current'")
-                self._ensure_column(connection, "competencies", "activation_group_key", "TEXT NOT NULL DEFAULT ''")
-                self._ensure_column(connection, "competencies", "catalog_default_active", "INTEGER NOT NULL DEFAULT 1")
-                self._ensure_column(connection, "competencies", "is_core_subject", "INTEGER NOT NULL DEFAULT 1")
-                self._ensure_column(connection, "timetable_entries", "deleted_at", "TEXT NOT NULL DEFAULT ''")
-                self._backfill_course_colors(connection)
-                migrate_persistence_events(
-                    connection,
-                    target_user_version=_LEGACY_DEVELOPMENT_SCHEMA_VERSION,
-                )
+            FinalV3SchemaInitializer(
+                connection_provider=self._connection_provider
+            ).initialize(self.path)
+            return
+        with closing(self.connect()) as connection:
+            result = DatabaseCompatibilityInspector().inspect_connection(
+                connection
+            )
+            if result.status is not DatabaseCompatibilityStatus.EXACT:
+                raise DatabaseCompatibilityError(result.reason)
 
     def ensure_master_data_defaults(self) -> None:
         """Create default master data only for empty master-data scopes."""
@@ -973,9 +353,10 @@ class SQLiteDatabase:
                             color_name,
                             color_hex,
                             sort_order,
-                            active
+                            active,
+                            year_level
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             _course_seed_row(course, index)
@@ -985,30 +366,48 @@ class SQLiteDatabase:
                 self._ensure_default_course_group(connection)
 
     def replace_seed_data(self, data: ReferenceData) -> None:
+        """Populate one empty exact Final-V3 database with deterministic data."""
         self.initialize_schema()
         with closing(self.connect()) as connection:
-            with connection:
+            table_names = tuple(
+                str(row["name"])
+                for row in connection.execute(
+                    """
+                    SELECT name
+                    FROM sqlite_schema
+                    WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
+                    ORDER BY name
+                    """
+                ).fetchall()
+            )
+            for table_name in table_names:
+                quoted_name = table_name.replace('"', '""')
                 if connection.execute(
-                    "SELECT 1 FROM persistence_events LIMIT 1"
+                    f'SELECT 1 FROM "{quoted_name}" LIMIT 1'
                 ).fetchone() is not None:
                     raise RuntimeError(
-                        "Seed-Daten koennen nach Persistenzereignissen nur durch "
-                        "einen vollstaendigen Store-Neuaufbau ersetzt werden."
+                        "Synthetische Final-V3-Daten duerfen nur in eine "
+                        "vollstaendig leere Datenbank geschrieben werden."
                     )
-                connection.execute("DELETE FROM learning_conference_drafts")
-                connection.execute("DELETE FROM report_drafts")
-                connection.execute("DELETE FROM observation_competency_ratings")
-                connection.execute("DELETE FROM documents")
-                connection.execute("DELETE FROM observations")
-                connection.execute("DELETE FROM student_competency_confirmations")
-                connection.execute("DELETE FROM documentation_subject_settings")
-                connection.execute("DELETE FROM timetable_entries")
-                connection.execute("DELETE FROM course_group_courses")
-                connection.execute("DELETE FROM course_group_student_groups")
-                connection.execute("DELETE FROM course_groups")
-                connection.execute("DELETE FROM students")
-                connection.execute("DELETE FROM groups")
-                connection.execute("DELETE FROM courses")
+            with connection:
+                connection.execute("BEGIN IMMEDIATE")
+                school_year = data.school_year
+                connection.execute(
+                    """
+                    INSERT INTO school_years(
+                        school_year_id, label, start_date, end_date,
+                        status, created_at, closed_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, NULL)
+                    """,
+                    (
+                        school_year.school_year_id,
+                        school_year.label,
+                        school_year.start_date.isoformat(),
+                        school_year.end_date.isoformat(),
+                        school_year.status.value,
+                        SEED_TIMESTAMP,
+                    ),
+                )
                 connection.executemany(
                     """
                     INSERT INTO groups (group_id, group_name, sort_order, active)
@@ -1028,9 +427,10 @@ class SQLiteDatabase:
                         color_name,
                         color_hex,
                         sort_order,
-                        active
+                        active,
+                        year_level
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         _course_seed_row(course, index)
@@ -1043,70 +443,65 @@ class SQLiteDatabase:
                         student_id,
                         first_name,
                         last_name,
-                        group_id,
-                        course_id,
-                        student_notes,
+                        notes,
                         active,
                         created_at,
                         updated_at,
                         archived_at
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         (
                             student.student_id,
                             student.first_name,
                             student.last_name,
-                            student.group_id,
-                            student.course_id,
-                            student.student_notes,
+                            student.notes,
                             int(student.active),
-                            student.created_at,
-                            student.updated_at,
-                            student.archived_at,
+                            student.created_at.isoformat(),
+                            student.updated_at.isoformat(),
+                            (
+                                student.archived_at.isoformat()
+                                if student.archived_at is not None
+                                else None
+                            ),
                         )
                         for student in data.students
                     ),
                 )
+                connection.executemany(
+                    """
+                    INSERT INTO student_school_year_assignments(
+                        assignment_id,
+                        student_id,
+                        school_year_id,
+                        group_id,
+                        course_id,
+                        assignment_status,
+                        valid_from,
+                        valid_to,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        (
+                            assignment_id,
+                            assignment.student_id,
+                            assignment.school_year_id,
+                            assignment.group_id,
+                            assignment.course_id,
+                            assignment.assignment_status.value,
+                            assignment.valid_from.isoformat(),
+                            assignment.valid_to.isoformat(),
+                            SEED_TIMESTAMP,
+                            SEED_TIMESTAMP,
+                        )
+                        for assignment_id, assignment in data.assignments
+                    ),
+                )
                 self._ensure_default_course_group(connection)
-
-    def _ensure_column(
-        self,
-        connection: sqlite3.Connection,
-        table_name: str,
-        column_name: str,
-        declaration: str,
-    ) -> None:
-        columns = {
-            row["name"]
-            for row in connection.execute(f"PRAGMA table_info({table_name})").fetchall()
-        }
-        if column_name not in columns:
-            connection.execute(
-                f"ALTER TABLE {table_name} ADD COLUMN {column_name} {declaration}"
-            )
-
-    def _backfill_course_colors(self, connection: sqlite3.Connection) -> None:
-        rows = connection.execute(
-            """
-            SELECT course_id, color_key, color_name, color_hex
-            FROM courses
-            ORDER BY sort_order, course_id
-            """
-        ).fetchall()
-        for index, row in enumerate(rows):
-            if row[COLOR_NAME] and row[COLOR_HEX]:
-                continue
-            color_name, color_hex = _course_color_from_key(row[COLOR_KEY] or "", index)
-            connection.execute(
-                """
-                UPDATE courses
-                SET color_name = ?, color_hex = ?, color_key = ?
-                WHERE course_id = ?
-                """,
-                (color_name, color_hex, color_hex, row[COURSE_ID]),
-            )
 
     def _ensure_default_course_group(self, connection: sqlite3.Connection) -> None:
         course_group_count = connection.execute(
@@ -1162,7 +557,7 @@ class SQLiteDatabase:
 
 
 class SQLiteStudentRepository:
-    """Read and write student records in SQLite."""
+    """Read V3 students with their resolved membership projection."""
 
     def __init__(self, database: SQLiteDatabase, *, as_of: date) -> None:
         self.database = database
@@ -1209,69 +604,6 @@ class SQLiteStudentRepository:
                 return _student_record_from_v3(student, membership)
             finally:
                 connection.rollback()
-
-    def create_student(self, student: StudentRecord) -> StudentRecord:
-        if self.get_student_by_id(student.student_id) is not None:
-            raise StudentRepositoryError(f"student_id existiert bereits: {student.student_id}")
-        with closing(self.database.connect()) as connection:
-            with connection:
-                connection.execute(
-                    """
-                    INSERT INTO students (
-                        student_id,
-                        first_name,
-                        last_name,
-                        group_id,
-                        course_id,
-                        student_notes,
-                        active,
-                        created_at,
-                        updated_at,
-                        archived_at
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    _student_to_row(student),
-                )
-        return student
-
-    def update_student(self, student: StudentRecord) -> StudentRecord:
-        if self.get_student_by_id(student.student_id) is None:
-            raise StudentRepositoryError(f"student_id nicht gefunden: {student.student_id}")
-        with closing(self.database.connect()) as connection:
-            with connection:
-                connection.execute(
-                    """
-                    UPDATE students
-                    SET
-                        first_name = ?,
-                        last_name = ?,
-                        group_id = ?,
-                        course_id = ?,
-                        student_notes = ?,
-                        active = ?,
-                        created_at = ?,
-                        updated_at = ?,
-                        archived_at = ?
-                    WHERE student_id = ?
-                    """,
-                    (
-                        student.first_name,
-                        student.last_name,
-                        student.group_id,
-                        student.course_id,
-                        student.student_notes,
-                        int(student.active),
-                        student.created_at,
-                        student.updated_at,
-                        student.archived_at,
-                        student.student_id,
-                    ),
-                )
-        return student
-
-    def archive_student(self, student: StudentRecord) -> StudentRecord:
-        return self.update_student(student)
 
 
 class SQLiteObservationRepository:
@@ -2005,7 +1337,9 @@ class SQLiteCourseRepository:
         with closing(self.database.connect()) as connection:
             rows = connection.execute(
                 """
-                SELECT course_id, course_name, color_key, color_hex, active
+                SELECT
+                    course_id, course_name, color_key, color_hex, active,
+                    year_level
                 FROM courses
                 ORDER BY sort_order, course_id
                 """
@@ -2016,6 +1350,7 @@ class SQLiteCourseRepository:
                 row[COURSE_NAME],
                 (row[COLOR_HEX] or row[COLOR_KEY] or "").lstrip("#"),
                 bool(row[ACTIVE]),
+                int(row["year_level"]),
             )
             for row in rows
         )
@@ -2623,7 +1958,9 @@ class SQLiteStudentDocumentationProjectionRepository:
     def _courses(connection: sqlite3.Connection) -> tuple[CourseRecord, ...]:
         rows = connection.execute(
             """
-            SELECT course_id, course_name, color_key, color_hex, active
+            SELECT
+                course_id, course_name, color_key, color_hex, active,
+                year_level
             FROM courses
             WHERE active = 1
             ORDER BY sort_order, course_id
@@ -2635,6 +1972,7 @@ class SQLiteStudentDocumentationProjectionRepository:
                 row[COURSE_NAME],
                 (row[COLOR_HEX] or row[COLOR_KEY] or "").lstrip("#"),
                 bool(row[ACTIVE]),
+                int(row["year_level"]),
             )
             for row in rows
         )
@@ -2989,9 +2327,29 @@ class SQLiteMasterDataRepository:
             for row in rows
         )
 
-    def upsert_student_group(self, group: MasterDataGroupRecord) -> MasterDataGroupRecord:
+    def upsert_student_group(
+        self,
+        group: MasterDataGroupRecord,
+        *,
+        as_of: date | None = None,
+    ) -> MasterDataGroupRecord:
         with closing(self.database.connect()) as connection:
-            with connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                persisted = connection.execute(
+                    "SELECT active FROM groups WHERE group_id = ?",
+                    (group.group_id,),
+                ).fetchone()
+                is_deactivation = not group.active and (
+                    persisted is None or bool(persisted[ACTIVE])
+                )
+                if is_deactivation:
+                    self._validate_deactivation_reference_date(as_of)
+                    self._reject_referenced_group_deactivation(
+                        connection,
+                        group.group_id,
+                        as_of,
+                    )
                 connection.execute(
                     """
                     INSERT INTO groups (group_id, group_name, sort_order, active)
@@ -3008,6 +2366,10 @@ class SQLiteMasterDataRepository:
                         int(group.active),
                     ),
                 )
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
         return group
 
     def list_courses(self) -> tuple[MasterDataCourseRecord, ...]:
@@ -3020,7 +2382,8 @@ class SQLiteMasterDataRepository:
                     color_name,
                     color_hex,
                     active,
-                    sort_order
+                    sort_order,
+                    year_level
                 FROM courses
                 ORDER BY sort_order, course_id
                 """
@@ -3033,13 +2396,34 @@ class SQLiteMasterDataRepository:
                 row[COLOR_HEX],
                 bool(row[ACTIVE]),
                 int(row["sort_order"]),
+                int(row["year_level"]),
             )
             for row in rows
         )
 
-    def upsert_course(self, course: MasterDataCourseRecord) -> MasterDataCourseRecord:
+    def upsert_course(
+        self,
+        course: MasterDataCourseRecord,
+        *,
+        as_of: date | None = None,
+    ) -> MasterDataCourseRecord:
         with closing(self.database.connect()) as connection:
-            with connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                persisted = connection.execute(
+                    "SELECT active FROM courses WHERE course_id = ?",
+                    (course.course_id,),
+                ).fetchone()
+                is_deactivation = not course.active and (
+                    persisted is None or bool(persisted[ACTIVE])
+                )
+                if is_deactivation:
+                    self._validate_deactivation_reference_date(as_of)
+                    self._reject_referenced_course_deactivation(
+                        connection,
+                        course.course_id,
+                        as_of,
+                    )
                 connection.execute(
                     """
                     INSERT INTO courses (
@@ -3049,16 +2433,18 @@ class SQLiteMasterDataRepository:
                         color_name,
                         color_hex,
                         sort_order,
-                        active
+                        active,
+                        year_level
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(course_id) DO UPDATE SET
                         course_name = excluded.course_name,
                         color_key = excluded.color_key,
                         color_name = excluded.color_name,
                         color_hex = excluded.color_hex,
                         sort_order = excluded.sort_order,
-                        active = excluded.active
+                        active = excluded.active,
+                        year_level = excluded.year_level
                     """,
                     (
                         course.course_id,
@@ -3068,9 +2454,65 @@ class SQLiteMasterDataRepository:
                         course.color_hex,
                         course.sort_order,
                         int(course.active),
+                        course.year_level,
                     ),
                 )
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
         return course
+
+    @staticmethod
+    def _validate_deactivation_reference_date(as_of: date | None) -> None:
+        if type(as_of) is not date:
+            raise ValueError(
+                "Für die Deaktivierung ist ein ausdrücklicher Stichtag erforderlich."
+            )
+
+    @staticmethod
+    def _reject_referenced_group_deactivation(
+        connection: sqlite3.Connection,
+        group_id: str,
+        as_of: date,
+    ) -> None:
+        if connection.execute(
+            """
+            SELECT 1
+            FROM student_school_year_assignments
+            WHERE group_id = ?
+              AND assignment_status = 'enrolled'
+              AND valid_to >= ?
+            LIMIT 1
+            """,
+            (group_id, as_of.isoformat()),
+        ).fetchone() is not None:
+            raise ValueError(
+                "Die Stammgruppe wird in einer aktuellen oder zukünftigen "
+                "Einschreibung verwendet und kann nicht deaktiviert werden."
+            )
+
+    @staticmethod
+    def _reject_referenced_course_deactivation(
+        connection: sqlite3.Connection,
+        course_id: str,
+        as_of: date,
+    ) -> None:
+        if connection.execute(
+            """
+            SELECT 1
+            FROM student_school_year_assignments
+            WHERE course_id = ?
+              AND assignment_status = 'enrolled'
+              AND valid_to >= ?
+            LIMIT 1
+            """,
+            (course_id, as_of.isoformat()),
+        ).fetchone() is not None:
+            raise ValueError(
+                "Der Kurs wird in einer aktuellen oder zukünftigen "
+                "Einschreibung verwendet und kann nicht deaktiviert werden."
+            )
 
     def list_course_groups(self) -> tuple[MasterDataCourseGroupRecord, ...]:
         with closing(self.database.connect()) as connection:
@@ -5698,6 +5140,7 @@ def _course_seed_row(course: CourseRecord, index: int) -> tuple[object, ...]:
         color_hex,
         index,
         int(course.active),
+        course.year_level,
     )
 
 
@@ -5888,21 +5331,6 @@ def _require_leg_assignment(
         LearningConferenceCompletionErrorCode.ASSIGNMENT_MISSING,
         "Am Gesprächsdatum besteht keine eindeutige Kurs- und "
         "Stammgruppenzuordnung.",
-    )
-
-
-def _student_to_row(student: StudentRecord) -> tuple[object, ...]:
-    return (
-        student.student_id,
-        student.first_name,
-        student.last_name,
-        student.group_id,
-        student.course_id,
-        student.student_notes,
-        int(student.active),
-        student.created_at,
-        student.updated_at,
-        student.archived_at,
     )
 
 

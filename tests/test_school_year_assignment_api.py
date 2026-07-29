@@ -727,6 +727,56 @@ def test_create_rejects_invalid_membership_references(
         )
 
 
+@pytest.mark.parametrize(
+    ("table_name", "id_column", "record_id", "expected_code"),
+    (
+        ("groups", "group_id", "GRP-TEST-A", "group_invalid"),
+        ("courses", "course_id", "CRS-TEST-1", "course_invalid"),
+    ),
+)
+def test_create_rejects_inactive_membership_references(
+    v3_database: Path,
+    table_name: str,
+    id_column: str,
+    record_id: str,
+    expected_code: str,
+) -> None:
+    with sqlite3.connect(v3_database) as connection:
+        connection.execute(
+            f"UPDATE {table_name} SET active = 0 WHERE {id_column} = ?",
+            (record_id,),
+        )
+    command = CreateStudentWithInitialEnrollment(
+        _factory(v3_database),
+        student_id_factory=lambda: "STD-INACTIVE-REFERENCE",
+        assignment_id_factory=lambda: "ASG-INACTIVE-REFERENCE",
+        now_provider=lambda: NOW,
+    )
+    with pytest.raises(AssignmentApplicationError) as captured:
+        command.execute(
+            first_name="Ada",
+            last_name="Beispiel",
+            notes="",
+            school_year_id=SYNTHETIC_SCHOOL_YEAR_ID,
+            valid_from=date(2026, 2, 1),
+            valid_to=date(2026, 7, 31),
+            group_id="GRP-TEST-A",
+            course_id="CRS-TEST-1",
+        )
+    assert captured.value.code == expected_code
+    with sqlite3.connect(v3_database) as connection:
+        assert (
+            connection.execute(
+                """
+                SELECT count(*)
+                FROM students
+                WHERE student_id = 'STD-INACTIVE-REFERENCE'
+                """
+            ).fetchone()[0]
+            == 0
+        )
+
+
 def test_create_rejects_course_without_valid_year_level(
     v3_database: Path,
 ) -> None:
@@ -1052,6 +1102,38 @@ def test_archive_without_active_enrollment_changes_no_assignment(
     assert archived.active is False
     assert archived.archived_at is not None
     assert _assignment_rows(v3_database, SYNTHETIC_STUDENT_IDS[0]) == before
+
+
+def test_archive_rejects_timestamp_before_latest_master_data_update(
+    v3_database: Path,
+) -> None:
+    with sqlite3.connect(v3_database) as connection:
+        connection.execute(
+            """
+            UPDATE students
+            SET updated_at = '2026-08-01T15:00:00+00:00'
+            WHERE student_id = ?
+            """,
+            (SYNTHETIC_STUDENT_IDS[0],),
+        )
+    with pytest.raises(AssignmentApplicationError) as captured:
+        ArchiveStudent(
+            _factory(v3_database),
+            now_provider=lambda: datetime(2026, 8, 1, 9, 0, tzinfo=UTC),
+        ).execute(
+            SYNTHETIC_STUDENT_IDS[0],
+            as_of=date(2026, 8, 1),
+        )
+    assert captured.value.code == "archive_timestamp_precedes_student_update"
+    with sqlite3.connect(v3_database) as connection:
+        assert connection.execute(
+            """
+            SELECT active, archived_at
+            FROM students
+            WHERE student_id = ?
+            """,
+            (SYNTHETIC_STUDENT_IDS[0],),
+        ).fetchone() == (1, None)
 
 
 def test_archive_rejects_mismatched_reference_and_archive_day(

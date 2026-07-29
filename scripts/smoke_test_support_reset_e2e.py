@@ -273,22 +273,58 @@ def _drive_command(
 def _seed_synthetic_business_data(database: Path) -> None:
     with sqlite3.connect(database) as connection:
         connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute(
+            """
+            INSERT INTO school_years(
+                school_year_id, label, start_date, end_date, status,
+                created_at, closed_at
+            ) VALUES (
+                'school-year-e2e', '2025/26', '2025-08-01', '2026-07-31',
+                'current', '2026-07-19T12:00:00+00:00', NULL
+            )
+            """
+        )
         connection.execute("INSERT INTO groups VALUES ('group-e2e', 'Testgruppe', 1, 1)")
         connection.execute(
-            "INSERT INTO courses VALUES ('course-e2e', 'Testkurs', NULL, '', '', 1, 1)"
+            """
+            INSERT INTO courses(
+                course_id, course_name, color_key, color_name, color_hex,
+                sort_order, active, year_level
+            ) VALUES (
+                'course-e2e', 'Testkurs', NULL, '', '', 1, 1, 1
+            )
+            """
         )
         connection.execute(
-            "INSERT INTO students VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, NULL)",
+            """
+            INSERT INTO students(
+                student_id, first_name, last_name, notes, active,
+                created_at, updated_at, archived_at
+            ) VALUES (?, ?, ?, ?, 1, ?, ?, NULL)
+            """,
             (
                 "student-e2e",
                 "Synthetisch",
                 "Testkind",
-                "group-e2e",
-                "course-e2e",
                 "Nur künstliche E2E-Daten",
-                "2026-07-19T12:00:00Z",
-                "2026-07-19T12:00:00Z",
+                "2026-07-19T12:00:00+00:00",
+                "2026-07-19T12:00:00+00:00",
             ),
+        )
+        connection.execute(
+            """
+            INSERT INTO student_school_year_assignments(
+                assignment_id, student_id, school_year_id, group_id,
+                course_id, assignment_status, valid_from, valid_to,
+                created_at, updated_at
+            ) VALUES (
+                'assignment-e2e', 'student-e2e', 'school-year-e2e',
+                'group-e2e', 'course-e2e', 'enrolled',
+                '2025-08-01', '2026-07-31',
+                '2026-07-19T12:00:00+00:00',
+                '2026-07-19T12:00:00+00:00'
+            )
+            """
         )
         connection.commit()
 
@@ -297,8 +333,21 @@ def _business_snapshot(database: Path) -> tuple[tuple[object, ...], ...]:
     with sqlite3.connect(database) as connection:
         return tuple(
             connection.execute(
-                "SELECT student_id, first_name, last_name, group_id, course_id, student_notes, active "
-                "FROM students ORDER BY student_id"
+                """
+                SELECT
+                    student.student_id,
+                    student.first_name,
+                    student.last_name,
+                    assignment.group_id,
+                    assignment.course_id,
+                    student.notes,
+                    student.active
+                FROM students AS student
+                JOIN student_school_year_assignments AS assignment
+                    ON assignment.student_id = student.student_id
+                   AND assignment.assignment_status = 'enrolled'
+                ORDER BY student.student_id
+                """
             ).fetchall()
         )
 

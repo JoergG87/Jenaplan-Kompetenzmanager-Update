@@ -32,6 +32,9 @@ from src.core.app_preferences import (
 )
 from src.core.onboarding import OnboardingController, OnboardingSession
 from src.core.sqlite_store import SQLITE_SPIKE_PATH
+from src.core.sqlite_school_year_assignment import (
+    SchoolYearAssignmentRepositoryError,
+)
 from src.core.learning_report import ReportFinalizationError
 from src.core.learning_report_pdf import LearningReportPdfError
 from src.core.learning_conference import LearningConferenceCompletionError
@@ -101,6 +104,16 @@ from src.desktop_app.view_models.learning_conference_view_model import (
 from src.desktop_app.window_policy import exec_maximized_workspace
 
 
+SCHOOL_YEAR_BLOCK_MESSAGE = (
+    "Kein eindeutiges aktuelles Schuljahr: "
+    "Schülerbezogene Bereiche bleiben gesperrt."
+)
+ASSIGNMENT_BLOCK_MESSAGE = (
+    "Aktuelle Schülerzuordnungen sind nicht eindeutig: "
+    "Schülerbezogene Bereiche bleiben gesperrt."
+)
+
+
 class AppShell(QMainWindow):
     """Product shell for the local teacher-facing desktop application."""
 
@@ -130,6 +143,7 @@ class AppShell(QMainWindow):
         self.adapter = StudentDesktopAdapter(
             database_path,
             today_provider=lambda: self.now_provider().date(),
+            now_provider=self.now_provider,
         )
         self.exports_directory = self.adapter.database_path.parent / "exports"
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
@@ -458,34 +472,67 @@ class AppShell(QMainWindow):
 
     def refresh_overview(self) -> None:
         """Refresh the overview from the current master-data scope."""
+        if self.adapter.current_school_year() is None:
+            self.students_workspace.set_master_data(
+                self.master_data_adapter.view_model(),
+                (),
+            )
+            self.dashboard_screen.set_membership_blocked(
+                SCHOOL_YEAR_BLOCK_MESSAGE
+            )
+            self.status_label.setText(SCHOOL_YEAR_BLOCK_MESSAGE)
+            return
+        try:
+            group_summaries = self.adapter.list_group_summaries()
+        except SchoolYearAssignmentRepositoryError as error:
+            message = self._membership_block_message(error)
+            self.students_workspace.set_master_data(
+                self.master_data_adapter.view_model(),
+                (),
+            )
+            self.dashboard_screen.set_membership_blocked(message)
+            self.status_label.setText(message)
+            return
         self.students_workspace.set_master_data(
             self.master_data_adapter.view_model(),
-            self.adapter.list_group_summaries(),
+            group_summaries,
         )
         self.refresh_dashboard()
 
     def refresh_dashboard(self, at: datetime | None = None) -> None:
         """Refresh time-sensitive dashboard reads for one explicit instant."""
+        if self.adapter.current_school_year() is None:
+            self.dashboard_screen.set_membership_blocked(
+                SCHOOL_YEAR_BLOCK_MESSAGE
+            )
+            self.status_label.setText(SCHOOL_YEAR_BLOCK_MESSAGE)
+            return
         instant = at or self.now_provider()
         week = self.timetable_adapter.week_view_model()
         projection = self.timetable_adapter.read_projection(instant)
         occurrence = projection.current or projection.next
-        if occurrence is not None:
-            heatmap, suggested_students = (
-                self.adapter.dashboard_documentation_refresh(
-                    target_type=occurrence.entry.target_type,
-                    target_id=occurrence.entry.target_id,
-                    subject_id=occurrence.entry.subject_id,
-                    subject_label=occurrence.entry.subject_label,
-                    at=instant,
+        try:
+            if occurrence is not None:
+                heatmap, suggested_students = (
+                    self.adapter.dashboard_documentation_refresh(
+                        target_type=occurrence.entry.target_type,
+                        target_id=occurrence.entry.target_id,
+                        subject_id=occurrence.entry.subject_id,
+                        subject_label=occurrence.entry.subject_label,
+                        at=instant,
+                    )
                 )
-            )
-        else:
-            heatmap, suggested_students = (
-                self.adapter.dashboard_documentation_refresh(
-                    at=instant,
+            else:
+                heatmap, suggested_students = (
+                    self.adapter.dashboard_documentation_refresh(
+                        at=instant,
+                    )
                 )
-            )
+        except SchoolYearAssignmentRepositoryError as error:
+            message = self._membership_block_message(error)
+            self.dashboard_screen.set_membership_blocked(message)
+            self.status_label.setText(message)
+            return
         self.dashboard_screen.set_dashboard(
             projection,
             heatmap,
@@ -550,6 +597,17 @@ class AppShell(QMainWindow):
 
     def refresh_students(self) -> None:
         """Refresh student rows for the current filter."""
+        if self.adapter.current_school_year() is None:
+            self.students_screen.set_students(
+                (),
+                group_filter_name="Aktuelle Zuordnung nicht verfügbar",
+                show_back_button=False,
+            )
+            self.dashboard_screen.set_membership_blocked(
+                SCHOOL_YEAR_BLOCK_MESSAGE
+            )
+            self.status_label.setText(SCHOOL_YEAR_BLOCK_MESSAGE)
+            return
         filter_label = "Alle Schüler"
         if self.selected_group_id:
             groups = {group.group_id: group.group_name for group in self.adapter.list_groups()}
@@ -572,11 +630,22 @@ class AppShell(QMainWindow):
                 filter_label = "Kursverbund nicht verfügbar"
         elif self.selected_course_id:
             filter_label = f"Kurs: {self._course_name(self.selected_course_id)}"
-        students = self.adapter.list_students(
-            group_id=self.selected_group_id,
-            course_id=self.selected_course_id,
-            course_group_id=self.selected_course_group_id,
-        )
+        try:
+            students = self.adapter.list_students(
+                group_id=self.selected_group_id,
+                course_id=self.selected_course_id,
+                course_group_id=self.selected_course_group_id,
+            )
+        except SchoolYearAssignmentRepositoryError as error:
+            message = self._membership_block_message(error)
+            self.students_screen.set_students(
+                (),
+                group_filter_name="Aktuelle Zuordnung nicht verfügbar",
+                show_back_button=False,
+            )
+            self.dashboard_screen.set_membership_blocked(message)
+            self.status_label.setText(message)
+            return
         self.students_screen.set_students(
             students,
             group_filter_name=filter_label,
@@ -587,6 +656,14 @@ class AppShell(QMainWindow):
             self.status_label.setText(f"{shown_count} von {len(students)} Schülern angezeigt")
         else:
             self.status_label.setText(f"{len(students)} Schüler angezeigt")
+
+    @staticmethod
+    def _membership_block_message(
+        error: SchoolYearAssignmentRepositoryError,
+    ) -> str:
+        if error.code == "assignment_ambiguous":
+            return ASSIGNMENT_BLOCK_MESSAGE
+        return SCHOOL_YEAR_BLOCK_MESSAGE
 
     def refresh_master_data(self) -> None:
         """Refresh the master-data light screen from the adapter draft."""
@@ -1951,38 +2028,71 @@ class AppShell(QMainWindow):
 
     def open_new_course_dialog(self) -> None:
         """Open the persistent new-course dialog."""
-        dialog = MasterDataNameDialog("Neuer Kurs", include_color=True)
+        dialog = MasterDataNameDialog(
+            "Neuer Kurs",
+            include_color=True,
+            include_year_level=True,
+        )
         if dialog.exec():
-            self.master_data_adapter.add_course(dialog.name(), dialog.color_hex())
+            self.master_data_adapter.add_course(
+                dialog.name(),
+                dialog.color_hex(),
+                dialog.year_level(),
+            )
             self.refresh_master_data()
             self.status_label.setText("Kurs wurde gespeichert.")
 
     def open_rename_group_dialog(self, group_id: str) -> None:
         """Open the persistent rename dialog for a group."""
         item = self.master_data_adapter.groups[group_id]
-        dialog = MasterDataNameDialog("Stammgruppe umbenennen", item.name)
+        dialog = MasterDataNameDialog(
+            "Stammgruppe bearbeiten",
+            item.name,
+            include_active=True,
+            initial_active=item.is_active,
+        )
         if dialog.exec():
-            self.master_data_adapter.rename_group(group_id, dialog.name())
+            try:
+                self.master_data_adapter.rename_group(
+                    group_id,
+                    dialog.name(),
+                    active=dialog.is_active(),
+                    as_of=self.adapter.operation_date(),
+                )
+            except ValueError as error:
+                QMessageBox.warning(self, "Stammgruppe", str(error))
+                return
             self.refresh_master_data()
-            self.status_label.setText("Stammgruppe wurde umbenannt.")
+            self.status_label.setText("Stammgruppe wurde gespeichert.")
 
     def open_rename_course_dialog(self, course_id: str) -> None:
         """Open the persistent rename dialog for a course."""
         item = self.master_data_adapter.courses[course_id]
         dialog = MasterDataNameDialog(
-            "Kurs umbenennen",
+            "Kurs bearbeiten",
             item.name,
             include_color=True,
             initial_color_hex=item.color_hex,
+            include_year_level=True,
+            initial_year_level=item.year_level,
+            include_active=True,
+            initial_active=item.is_active,
         )
         if dialog.exec():
-            self.master_data_adapter.rename_course(
-                course_id,
-                dialog.name(),
-                dialog.color_hex(),
-            )
+            try:
+                self.master_data_adapter.rename_course(
+                    course_id,
+                    dialog.name(),
+                    dialog.color_hex(),
+                    year_level=dialog.year_level(),
+                    active=dialog.is_active(),
+                    as_of=self.adapter.operation_date(),
+                )
+            except ValueError as error:
+                QMessageBox.warning(self, "Kurs", str(error))
+                return
             self.refresh_master_data()
-            self.status_label.setText("Kurs wurde umbenannt.")
+            self.status_label.setText("Kurs wurde gespeichert.")
 
     def open_new_course_group_dialog(self) -> None:
         """Open the persistent dialog for a new course group."""

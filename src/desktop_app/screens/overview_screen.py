@@ -222,6 +222,20 @@ class OverviewScreen(QWidget):
         self._render_heatmap(heatmap)
         self._render_matching_children(projection, suggested_students)
 
+    def set_membership_blocked(self, message: str) -> None:
+        """Clear stale student actions and render one neutral blocking state."""
+        self._hero_occurrence = None
+        self.header_observation_button.setVisible(False)
+        self._clear_layout(self.hero_layout)
+        self._clear_layout(self.today_layout)
+        self._clear_layout(self.heatmap_layout)
+        self._clear_layout(self.matching_children_layout)
+        blocked = QLabel(message)
+        blocked.setWordWrap(True)
+        blocked.setAccessibleName("Schülerbezogene Bereiche gesperrt")
+        set_label_style(blocked, "muted")
+        self.hero_layout.addWidget(blocked)
+
     def _render_hero(
         self,
         projection: TimetableReadProjectionViewModel,

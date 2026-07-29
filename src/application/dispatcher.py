@@ -77,37 +77,6 @@ class ApplicationCommandDispatcher:
         raise CommandDispatchError("Command muss ein command_name-Attribut besitzen.")
 
 
-def student_create_handler(service: Any) -> Callable[[object], object]:
-    """Create a handler that delegates `student.create` to StudentService."""
-
-    def handle(command: object) -> object:
-        return service.create_student(
-            first_name=getattr(command, "first_name"),
-            last_name=getattr(command, "last_name"),
-            group_id=getattr(command, "group_id"),
-            course_id=getattr(command, "course_id"),
-            student_notes=getattr(command, "student_notes", ""),
-        )
-
-    return handle
-
-
-def student_update_handler(service: Any) -> Callable[[object], object]:
-    """Create a handler that delegates `student.update` to StudentService."""
-
-    def handle(command: object) -> object:
-        return service.update_student(
-            student_id=getattr(command, "student_id"),
-            first_name=getattr(command, "first_name"),
-            last_name=getattr(command, "last_name"),
-            group_id=getattr(command, "group_id"),
-            course_id=getattr(command, "course_id"),
-            student_notes=getattr(command, "student_notes", ""),
-        )
-
-    return handle
-
-
 def observation_create_handler(service: Any) -> Callable[[object], object]:
     """Create a handler that delegates `observation.create` to ObservationService."""
 

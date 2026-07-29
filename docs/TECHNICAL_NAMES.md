@@ -2,9 +2,9 @@
 
 ## V3-only Schema-, Startup- und Testnamen
 
-**Status:** V3-only-Cleanup, zentrale Assignment-API und SJ-2E-Umstellung der
-produktiven Membership-Reader sind lokal implementiert. Writerumstellung und
-Runtime-Freigabe sind nicht Bestandteil von SJ-2E und bleiben offen.
+**Status:** V3-only-Cleanup, zentrale Assignment-API, SJ-2E-Umstellung der
+produktiven Membership-Reader und SJ-2F-Umstellung der produktiven Writer sind
+lokal implementiert. Die Runtime-Freigabe bleibt offen.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
@@ -16,7 +16,7 @@ Runtime-Freigabe sind nicht Bestandteil von SJ-2E und bleiben offen.
 | `DatabaseStartupCoordinator` | kontrollierte Disposition vor jeder fachlichen Runtime-Vorbereitung | Core Database Startup |
 | `DATABASE_NOT_FOUND` | am geprüften Produktpfad existiert keine Datenbankdatei | Core Database Startup |
 | `V3_INITIALIZATION_REQUIRED` | eine autorisierte Neuanlage muss direkt Final-V3 erzeugen und anschließend neu prüfen | Core Database Startup |
-| `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` | exaktes Final-V3 ist vorhanden; die Runtime bleibt nach der abgeschlossenen SJ-2E-Leserumstellung bis zur gesonderten Writerumstellung und Runtime-Aktivierung gesperrt | Core Database Startup |
+| `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` | exaktes Final-V3 ist vorhanden; die Runtime bleibt trotz abgeschlossener SJ-2E-Leser- und SJ-2F-Writerumstellung bis zur gesonderten Runtime-Aktivierung gesperrt | Core Database Startup |
 | `SCHEMA_UNSUPPORTED` | vorhandenes Schema entspricht nicht exakt dem finalen registrierten Schema | Core Database Startup |
 | `RECOVERY_REQUIRED` | unlesbarer, beschädigter, unsicherer oder Restore-seitig nicht abgeschlossener Zustand | Core Database Startup |
 
@@ -52,6 +52,9 @@ Bootstrap-Transition-Typen.
 | `ChangeStudentMembership` | atomare Kürzung und Folgezuordnung eines einzelnen Kindes an einem expliziten Stichtag; unverändertes Ziel liefert `NO_CHANGE` | Application Assignment Lifecycle |
 | `ExitStudentFromSchoolYear` | atomare Kürzung und Anlage eines `exited`-Intervalls ohne Gruppe, Kurs oder Archivierung | Application Assignment Lifecycle |
 | `ArchiveStudent` | getrennte Stammdatenarchivierung nach fail-closed Prüfung auf aktive Einschreibung am expliziten `as_of`-Tag | Application Student Lifecycle |
+| `StudentMembershipChangeDialog` | PySide-Dialog für Vorschau und bewusste Bestätigung genau eines datierten Kurs-/Stammgruppenwechsels eines Kindes | Desktop UI |
+| `StudentExitDialog` | PySide-Dialog für den getrennten datierten Austritt eines Kindes aus dem aktuellen Schuljahr | Desktop UI |
+| `COURSE_YEAR_LEVEL_REQUIRED_MESSAGE` | sichtbare Validierung für eine fehlende bewusste Kursstufenauswahl | Desktop ViewModel |
 | `school_years` | einzige persistierte Schuljahresquelle | Core SQLite Schema |
 | `student_school_year_assignments` | einzige persistierte aktuelle und historische Mitgliedschaftsquelle | Core SQLite Schema |
 | `school_year_transitions` | unveränderlicher Erfolgsbeleg ausschließlich eines echten Schuljahreswechsels mit vorhandener Ausgangs-ID | Core SQLite Schema |
@@ -68,14 +71,24 @@ erfolgt. Ein historisch passendes Assignment bleibt auch für ein später
 archiviertes Kind als `ENROLLED` oder `EXITED` auflösbar;
 `STUDENT_ARCHIVED` ersetzt keinen historischen Treffer.
 
+SJ-2F verdrahtet die registrierten Student-Lifecycles als produktive
+Schreibgrenzen. Ein normaler Stammdatenwrite besitzt keine Kurs-, Gruppen-,
+Schuljahres-, Intervall- oder Statusparameter. Einzelwechsel, Austritt und
+Archivierung verwenden jeweils ihren eigenen Namen und ihre eigene
+Transaktion; ein Mehrkindwechsel oder Schuljahreswechsel ist unter keinem
+dieser Namen freigegeben. `SQLiteStudentRepository` bleibt ausschließlich
+eine V3-lesende Kompatibilitätsprojektion und besitzt keine produktiven
+Schreibmethoden.
+
 Ein `AssignmentReferenceRequest` verwendet für einen Bericht ausschließlich
 dessen `period_end`, für ein LEG ausschließlich dessen `conference_date` und
 für eine Beobachtung ausschließlich `observations.date`. Ein freies Dokument
 ohne fachliches Referenzdatum erzeugt keine Anfrage und bleibt hinsichtlich
 der Zuordnung neutral. Weder V2-Schülerfelder noch eine aktuelle oder letzte
 bekannte Zuordnung sind Ersatzquellen. Diese Namen definieren keine
-Runtime-Aktivierung; `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt bis zur
-gesonderten Writerumstellung und Runtime-Aktivierung unverändert.
+Runtime-Aktivierung; `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt trotz
+abgeschlossener Leser- und Writerumstellung bis zur gesonderten
+Runtime-Aktivierung unverändert.
 
 `school_year_transitions.from_school_year_id` bezeichnet stets ein wirklich
 vorhandenes Ausgangsschuljahr und darf nicht leer sein. Eine initiale
@@ -1362,11 +1375,11 @@ Beispiele:
 | Name | Zweck | Status |
 | --- | --- | --- |
 | `src/core/records.py` | Aktive leichte Dataclasses und deterministische Referenzdaten ohne Excel-Abhaengigkeit | aktiv |
-| `StudentRecord` | Dataclass fuer Schueler-Referenzdaten und SQLite-Seed-Pfade | aktiv |
+| `StudentRecord` | read-only Kompatibilitaetsprojektion aus V3-Schuelerstammdaten und explizit aufgeloester Membership; kein Writer- oder Seedmodell | aktiv |
 | `GroupRecord` | Dataclass fuer Stammgruppen-Referenzdaten | aktiv |
-| `CourseRecord` | Dataclass fuer Kurs-Referenzdaten | aktiv |
-| `ReferenceData` | Container fuer aktive Referenzdaten ohne Workbook-Bezug | aktiv |
-| `seed_reference_data()` | Erzeugt deterministische Referenz-Stammdaten und Demo-Schueler fuer explizite Seed-/Testpfade | aktiv |
+| `CourseRecord` | Dataclass fuer Kurs-Referenzdaten mit verbindlicher `year_level` 1, 2 oder 3 | aktiv |
+| `ReferenceData` | Container fuer aktive Final-V3-Referenzdaten einschließlich Schuljahr und Assignments ohne Workbook-Bezug | aktiv |
+| `seed_reference_data()` | Erzeugt deterministische Final-V3-Referenzdaten fuer explizite neue Seed-/Testpfade | aktiv |
 
 Regel: Aktive Referenzdaten duerfen keine `openpyxl`- oder Workbook-Abhaengigkeit einfuehren.
 
@@ -1463,6 +1476,7 @@ Registrierte Python-Spike-Komponenten:
 - `ObservationValidationError`
 - `ObservationRepositoryError`
 - `create_sqlite_seed_database(path)`
+- `SQLiteDatabase.replace_seed_data(reference_data)`
 - `SeedDataError`
 - `SeedResult`
 - `seed_test_data(database_path, reset)`
@@ -1470,7 +1484,10 @@ Registrierte Python-Spike-Komponenten:
 - `_seed_timetable(database)`
 - `_seed_all_subject_history(database, service, students)`
 
-Regel: `create_sqlite_seed_database(path)` ist ein expliziter Seed-/Testpfad. Der produktive PySide-App-Start nutzt diesen Pfad nicht, damit keine Demo-Schueler erzeugt oder Nutzerdaten ueberschrieben werden.
+Regel: `create_sqlite_seed_database(path)` ist ein expliziter Final-V3-
+Seed-/Testpfad für ein neues Ziel. Der produktive PySide-App-Start nutzt
+diesen Pfad nicht, damit keine synthetischen Schüler erzeugt, keine
+vorhandene Datenbank ersetzt und keine Nutzerdaten migriert werden.
 
 Registrierte SQLite-/Stammdaten-Konstanten:
 
@@ -1485,9 +1502,9 @@ Registrierte Stammdaten-Repository-Methoden:
 
 - `SQLiteDatabase.ensure_master_data_defaults()`
 - `SQLiteMasterDataRepository.list_student_groups()`
-- `SQLiteMasterDataRepository.upsert_student_group(group)`
+- `SQLiteMasterDataRepository.upsert_student_group(group, as_of=None)`
 - `SQLiteMasterDataRepository.list_courses()`
-- `SQLiteMasterDataRepository.upsert_course(course)`
+- `SQLiteMasterDataRepository.upsert_course(course, as_of=None)`
 - `SQLiteMasterDataRepository.list_course_groups()`
 - `SQLiteMasterDataRepository.update_course_group(course_group)`
 - `SQLiteMasterDataRepository.get_course_group_relations(course_group_id)`
@@ -1531,7 +1548,6 @@ Registrierte interne QS-Skripte fuer den Kompetenzkatalog:
 Registrierte Python-Module:
 
 - `src/application/dispatcher.py`
-- `src/application/commands/student.py`
 - `src/application/commands/observation.py`
 - `src/application/commands/report.py`
 
@@ -1542,21 +1558,23 @@ Registrierte Python-Klassen und Funktionen:
 - `CommandHandler`
 - `SuccessResult`
 - `ErrorResult`
-- `CreateStudentCommand`
 - `CreateObservationCommand`
 - `UpdateObservationCommand`
 - `DeleteObservationCommand`
-- `student_create_handler(service)`
 - `observation_create_handler(service)`
 - `observation_update_handler(service)`
 - `observation_delete_handler(service)`
 
 Registrierte Command-Namen:
 
-- `student.create`
 - `observation.create`
 - `observation.update`
 - `observation.delete`
+
+Seit SJ-2F sind `src/application/commands/student.py`,
+`CreateStudentCommand` und `student_create_handler` keine registrierten
+Produktnamen mehr. Die Student-Writer verwenden die getrennten
+V3-Lifecycles aus dem Schuljahres- und Assignmentregister.
 
 ## Desktop-App
 

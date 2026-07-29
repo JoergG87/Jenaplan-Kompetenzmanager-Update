@@ -9,11 +9,12 @@ Final-V3-Schemaquelle besitzt nur die autorisierte Neuanlage und vollständige
 Verifikation. Kein Widget und kein Adapter erkennt, migriert oder repariert
 Datenbankschemata.
 
-Der SJ-2E-Ownershipvertrag für produktive Membership-Reader ist lokal im
-Produktcode umgesetzt. Produktive Views konsumieren die Assignment-API über
-Application-, Repository- und Adaptergrenzen. Da Writerumstellung und
-Runtime-Aktivierung gesondert ausstehen, führt ein erkanntes finales Schema
-weiterhin kontrolliert zu
+Der SJ-2E-Ownershipvertrag für produktive Membership-Reader und der
+SJ-2F-Ownershipvertrag für produktive Writer sind lokal im Produktcode
+umgesetzt. Produktive Views konsumieren die Assignment-API über
+Application-, Repository- und Adaptergrenzen. Da die Runtime-Aktivierung
+gesondert aussteht, führt ein erkanntes finales Schema weiterhin kontrolliert
+zu
 `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`. Es gibt keine
 V2-Bootstrap-View, keine V2-Migrationsvorschau und keine sichtbare
 V2-Restoreauswahl.
@@ -27,6 +28,12 @@ V2-Restoreauswahl.
 | aktuelle Mitgliedschaft und Mitgliederlisten | current-Schuljahr plus einmalig gesetzter `as_of`-Tag; optionale Gruppe, Kurs oder Kursverbund als Schnittmenge seiner Gruppen und Kurse | `CurrentMembershipReadSnapshot` aus `SchoolYearAssignmentReadSession` | Systemdatum, N+1, Python-Nachzählung, Widgetfilterung von Intervallen |
 | zusammengesetzter Bildschirm-Read | Assignment-, Stammdaten-, Dokumentations- und Beobachtungsprojektionen auf derselben aufrufereigenen Connection und im selben Read-Snapshot | aufrufender Application-/Desktop-Adapter plus `SchoolYearAssignmentReadSession` | zweite Connection, Session-eigene Transaktionssteuerung, Query je Unterwidget |
 | historische Schuljahres-/Last-known-Abfrage | explizite Schuljahr-ID und Referenzdatum beziehungsweise expliziter Last-known-Aufruf | `SchoolYearAssignmentQueryService.membership_in_school_year` / `last_known_membership` | Jahresende als Ersatzdatum, Last-known als automatischer Fallback |
+| Schüleranlage | bewusst eingegebene Stammdaten, eindeutiges current-Schuljahr, Gruppe, Kurs und explizites Gültigkeitsintervall | `StudentDesktopAdapter` und `CreateStudentWithInitialEnrollment` | Widget-SQL, Teilcommit, V2-Membershipfelder, implizites Schuljahr |
+| Schülerstammdaten ändern | Vorname, Nachname und Notiz | `StudentDesktopAdapter` und `UpdateStudentMasterData` | Kurs, Stammgruppe, Schuljahr, Assignmentintervall oder -status |
+| Einzelkind-Zuordnung ändern | aktuelle Assignmentprojektion, expliziter Stichtag, Zielkurs und optionale Zielgruppe | `StudentMembershipChangeDialog`, `StudentDesktopAdapter` und `ChangeStudentMembership` | generischer Studentupdate, Mehrkindwechsel, historische Korrektur |
+| Austritt | expliziter Stichtag und eindeutiges aktuelles Assignment | `StudentExitDialog`, `StudentDesktopAdapter` und `ExitStudentFromSchoolYear` | Archivierung oder Änderung der Stammdaten |
+| Archivierung | V3-Schülerstammdaten und aktive Einschreibungsprüfung am expliziten Stichtag | `StudentDesktopAdapter` und `ArchiveStudent` | `exited` erzeugen, Assignment verändern, aktive Einschreibung übergehen |
+| Kurs-/Stammgruppendeaktivierung | Stammdaten plus aktuelle und zukünftige `enrolled`-Referenzen am expliziten Stichtag | `MasterDataDesktopAdapter` und `SQLiteMasterDataRepository` | versteckte Umbuchung, Ersatzgruppe/-kurs, historische Assignmentmutation |
 | Kursfortschreibung | `courses.year_level` | späterer School-Year Transition Service | Kursname, Farbe, Sortierung |
 | echter Wechselbeleg | vorhandene Ausgangs-/Zieljahre und committed Wechselplan | späterer School-Year Transition Service | Initialanlage, Bootstrap oder Migration |
 
@@ -39,6 +46,13 @@ V2-Schülerfelder sind keine Fallbacks. Diese produktive Leserumstellung ist
 lokal erfolgt. Finalisierte Revisionen und PDFs werden nicht neu
 aufgelöst. Widgets komponieren ausschließlich displayfertige ViewModels und
 enthalten keine Repository- oder Intervalllogik.
+
+Die Writer-Dialoge besitzen ausschließlich Eingabe, Vorschau, bewusste
+Bestätigung und Fehlerdarstellung. Atomizität, Intervallregeln,
+Eindeutigkeitsprüfung, Deaktivierungsschutz und Rollback gehören den
+Application-/Repositorygrenzen. `courses.year_level` ist Stammdatenquelle und
+wird im Kursdialog bewusst gewählt; sie wird nicht durch Widgetreihenfolge
+oder Kursname abgeleitet.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 
@@ -538,15 +552,14 @@ Sie darf keine Businesslogik enthalten, keine fachlichen IDs erzeugen und nicht 
 
 Die macOS-Laufzeitvorbereitung liegt vor dem Aufbau der Views. Sie projiziert keine fachlichen Inhalte, sondern stellt ausschliesslich den getrennten lokalen Benutzerpfad bereit. Pfadfehler werden vor dem Start der Arbeitsansichten verstaendlich gemeldet. Views kennen weder Bundlepfad, Startdatenvariante, Backupordner noch Signierungsstatus.
 
-Der validierte Schreibpfad lautet:
+Die SJ-2F-Schreibpfade für Schüler lauten:
 
 ```text
 PySide6 GUI
--> Desktop Adapter
--> ApplicationCommandDispatcher
--> StudentService
--> SQLiteStudentRepository
--> SQLite
+-> StudentDesktopAdapter
+-> getrennter V3-Application-Lifecycle
+-> V3StudentRepository und/oder StudentSchoolYearAssignmentRepository
+-> SQLite students und/oder student_school_year_assignments
 ```
 
 Excel liegt nur noch als archivierter Legacy-Altstand unter `legacy/excel/`.
@@ -689,13 +702,22 @@ UI-Projektionen:
 
 - Stammgruppenliste
 - Kursliste
+- bewusst gewählte Kursstufe 1, 2 oder 3
 - Kursfarben
+- Aktiv-/Inaktivstatus
 - Kursverbundliste
 - Bearbeiten-Dialog fuer Kursverbund-Name, Stammgruppen-Auswahl und Kurs-Auswahl
 
 Regel:
 
-Kursverbuende werden persistent in SQLite bearbeitet. Ein Kursverbund definiert, welche Stammgruppen und Kurse in der kursverbundbezogenen Kursuebersicht erscheinen. Die Bearbeitung bucht keine Schueler um und veraendert keine Beobachtungsdaten.
+Kursverbuende werden persistent in SQLite bearbeitet. Ein Kursverbund
+definiert, welche Stammgruppen und Kurse in der kursverbundbezogenen
+Kursuebersicht erscheinen. Kursstufe und Stammdatenstatus gehören dem
+`SQLiteMasterDataRepository`; die View validiert oder verändert keine
+Assignments. Deaktivierung wird bei aktuellen oder zukünftigen
+Einschreibungsreferenzen blockiert, historische Referenzen bleiben
+unverändert. Die Bearbeitung bucht keine Schueler um und veraendert keine
+Beobachtungsdaten.
 
 ## Legacy: Projection Refresh durch VBA
 

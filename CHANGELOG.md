@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- SJ-2F stellt sämtliche produktiven Schüler-, Kurs- und
+  Stammgruppen-Schreibpfade auf Final-V3 um. Schüleranlage persistiert
+  V3-Stammdaten und initiales `enrolled`-Assignment in einer Transaktion;
+  Stammdatenbearbeitung, datierter Einzelwechsel, Austritt und Archivierung
+  verwenden getrennte Lifecycles. Austritt archiviert nicht, Archivierung
+  ändert kein Assignment und wird bei aktueller Einschreibung blockiert. Die
+  generischen V2-Schülercommands, produktiven Writes auf
+  `students.group_id/course_id` und die testlokale
+  Legacy-Membershipfixture sind entfernt. Kurse verlangen eine bewusst
+  gewählte `year_level` 1, 2 oder 3; Kurs- und
+  Stammgruppendeaktivierung wird bei aktuellen oder zukünftigen
+  `enrolled`-Assignments ohne Membershipmutation blockiert. Der normale
+  synthetische Entwicklungs-/Testdatenpfad erzeugt deterministisch eine
+  frische Final-V3-Datenbank mit current-Schuljahr `2025/26`, Kursstufen,
+  V3-Schülern und vollständigen Assignments; es wurden weder echte Daten
+  migriert noch vorhandene lokale Datenbanken überschrieben. Nach drei
+  begrenzten Fixzyklen bestanden 82 fokussierte
+  Final-V3-Schema-/Assignment-/MasterData-/Produktwriter-Tests sowie die
+  vollständige Gesamtsuite mit 1808 Tests und 71 Subtests; ein bestehender
+  umgebungsgebundener Test blieb übersprungen. `compileall`, Importisolation,
+  Writer-/Legacy-Suchgate und `git diff --check` waren grün. Die manuelle
+  macOS-UI-Prüfung steht noch aus. Die Runtime bleibt
+  `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`; Schuljahreswechsel-Assistent und
+  Mehrkindwechsel bleiben offen.
 - SJ-2E stellt sämtliche produktiven Kurs- und Stammgruppen-Lesepfade auf die
   zentrale V3-Assignment-API um. Schülerlisten und -profil, Gruppen, Kurse,
   Kursverbünde, Dashboard, Beobachtungsbearbeitung, Berichtsvorbereitung und

@@ -2,9 +2,10 @@
 
 ## V3-only Architecture Cleanup
 
-**Status:** Governance, technischer Cleanup, zentrale Assignment-API und
-SJ-2E-Leserumstellung lokal implementiert. Produktive V3-Runtime,
-Schuljahreswechsel, Build, Packaging und Release bleiben gesperrt.
+**Status:** Governance, technischer Cleanup, zentrale Assignment-API,
+SJ-2E-Leserumstellung und SJ-2F-Writerumstellung lokal implementiert.
+Produktive V3-Runtime, Schuljahreswechsel, Build, Packaging und Release
+bleiben gesperrt.
 
 - [x] PO-Entscheidung festhalten: Es existieren keine produktiven V2-Daten.
 - [x] ADR-096 als Teil-Supersession der V2-Cutover-Annahmen aus ADR-095
@@ -32,10 +33,40 @@ Schuljahreswechsel, Build, Packaging und Release bleiben gesperrt.
   V3-Schülerstammdaten umstellen; aktuelle Screens verwenden einen expliziten
   Snapshot-Zeitpunkt, Beobachtung `observations.date`, Bericht `period_end`
   und LEG `conference_date`.
-- [ ] Produktive Writer in einem späteren Paket auf Assignments und
-  V3-Schülerstammdaten umstellen.
+- [x] Produktive Schüler-, Kurs- und Stammgruppen-Writer in SJ-2F auf
+  Assignments und V3-Schülerstammdaten umstellen.
 - [ ] Echten Schuljahreswechsel und unterjährige Sammelwechsel gesondert
   implementieren und real abnehmen.
+
+## SJ-2F - Final-V3-Writer und synthetische Entwicklungsdaten
+
+**Status:** Lokal implementiert und automatisiert vollständig geprüft. Die
+manuelle macOS-UI-Prüfung steht noch aus. Die normale Shell bleibt
+`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`.
+
+- [x] Schüleranlage atomar auf `CreateStudentWithInitialEnrollment` umstellen.
+- [x] Stammdatenbearbeitung von datierter Membershipänderung trennen.
+- [x] Einzelwechsel, Austritt und Archivierung als getrennte V3-Lifecycles
+  verdrahten; kein Mehrkindwechsel.
+- [x] Generische V2-Schülercommands und produktive V2-Membershipwrites
+  entfernen.
+- [x] Testlokale Legacy-Membershipfixture entfernen.
+- [x] `courses.year_level` für Anlage und Bearbeitung verpflichtend machen;
+  mehrere Kurse derselben Stufe zulassen.
+- [x] Deaktivierung von Kursen und Stammgruppen bei aktuellen oder zukünftigen
+  Einschreibungen fail-closed blockieren; historische Assignments nicht
+  verändern.
+- [x] Normalen synthetischen Entwicklungs-/Testdatenpfad direkt und
+  deterministisch auf Final-V3 umstellen.
+- [x] Keine Migration, keine echten Daten und keine automatische Änderung
+  eines vorhandenen lokalen Datenbestands ausführen.
+- [x] Runtime-Sperre und getrennten späteren Aktivierungsauftrag erhalten.
+- [ ] Schuljahreswechsel-Assistent separat implementieren.
+- [ ] Mehrkind-/Sammelwechsel separat implementieren.
+- [ ] Neue Dialoge und Stammdatenoberflächen manuell auf macOS prüfen.
+- [x] Gesamtsuite mit 1808 Tests und 71 Subtests, Compileall,
+  Importisolation, Abschluss-Suchgate und Diff-Check ausführen; ein
+  umgebungsgebundener Test blieb übersprungen.
 
 ## Verbindlich erhaltene Schuljahresarbeit
 
