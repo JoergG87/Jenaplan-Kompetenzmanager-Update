@@ -34,8 +34,8 @@ Registrierte Felder und Werte:
 | `updated_at` | technischer Änderungszeitpunkt eines Assignments |
 | `year_level` | stabile fachliche Kursstufe; ausschließlich Integer `1`, `2` oder `3` |
 | `transition_id` | stabile technische Identität eines committed Schuljahreswechsels |
-| `from_school_year_id` | geschlossenes Ausgangsschuljahr |
-| `to_school_year_id` | aktiviertes Zielschuljahr |
+| `from_school_year_id` | geschlossenes Ausgangsschuljahr; ausschließlich beim erstmaligen V2→V3-Bootstrap `NULL`, weil kein fachliches Ausgangsschuljahr existiert |
+| `to_school_year_id` | beim Bootstrap das bewusst bestätigte Initialschuljahr, sonst das aktivierte Zielschuljahr |
 | `operation_token` | idempotente Identität eines Ausführungsaufrufs |
 | `plan_sha256` | SHA-256 des kanonischen, vollständig validierten Wechselplans |
 | `backup_sha256` | SHA-256 des unmittelbar vor der Mutation verifizierten Sicherheitsbackups |
@@ -49,6 +49,10 @@ Identitätsbedeutung. Nach dem V2→V3-Cutover sind
 Mitgliedschaftsfelder mehr. Die gleichnamigen Fremdschlüssel innerhalb von
 `student_school_year_assignments` referenzieren die weiterhin bestehenden
 Stammdaten `groups` und `courses`.
+
+Das `NULL` in `from_school_year_id` bezeichnet ausschließlich den
+Bootstrap-Übergang und ist kein Platzhalter für ein unbekanntes oder
+künstliches Vorgängerschuljahr.
 
 `courses.year_level` darf ausschließlich bewusst gesetzt und validiert werden.
 `course_name`, sichtbarer Anzeigename, `sort_order` und Listenposition sind

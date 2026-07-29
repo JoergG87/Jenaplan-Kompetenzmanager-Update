@@ -32,6 +32,13 @@ Security-Domain bleibt Owner des Passwort-Step-ups, ihrer Drosselung und
 generischen Fehlermeldung. Der bestehende Restorepfad bleibt alleiniger Owner
 einer Wiederherstellung. Widgets dürfen keinen dieser Vorgänge nachbilden.
 
+Der Bootstrap-Use-Case besitzt die einzige temporäre read-only Ownership über
+`students.group_id` und `students.course_id` als V2-Cutoverquelle. Nach
+erfolgreichem V3-Cutover besitzt kein produktiver Adapter, Application
+Service, Repository, ViewModel oder Widget einen Read- oder Writepfad auf
+diese Legacyfelder. Alle produktiven Mitgliedschaftsprojektionen stammen dann
+ausschließlich aus `student_school_year_assignments`.
+
 Die spätere Assistentenprojektion liefert pro Kind mindestens:
 
 - stabile `student_id` und displayfertigen Namen;

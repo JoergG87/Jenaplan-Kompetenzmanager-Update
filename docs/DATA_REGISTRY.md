@@ -23,6 +23,12 @@ Best-Effort-Synchronisierung sind unzulässig. Vor dem Cutover bleibt V2 der
 tatsächlich implementierte Produktstand; die geplanten Quellen dürfen nicht
 als vorhanden behauptet werden.
 
+Während der atomaren Migration dürfen die V2-Felder technisch noch vorhanden
+sein und ausschließlich read-only als Cutoverquelle dienen. Nach dem Commit
+sind sie weder Source of Truth noch zulässige Quelle oder Senke eines
+produktiven Read- oder Writepfads. Die Assignmentprojektion ist dann die
+alleinige fachliche Wahrheit.
+
 ### V2-Legacyquelle und vollständige Klassifizierung
 
 Für den kontrollierten Cutover ist jeder vorhandene V2-`StudentRecord` genau
@@ -173,7 +179,14 @@ school_year_transitions(
 
 Verbindliche Invarianten:
 
-- restriktive Fremdschlüssel auf Ausgangs- und Zielschuljahr;
+- `from_school_year_id` ist ausschließlich beim erstmaligen
+  V2→V3-Bootstrap `NULL`, weil noch kein fachliches Ausgangsschuljahr
+  existiert; sonst restriktiver Fremdschlüssel auf ein wirklich vorhandenes
+  Ausgangsschuljahr;
+- `to_school_year_id` referenziert beim Bootstrap das bewusst bestätigte
+  Initialschuljahr und sonst das regulär aktivierte Zielschuljahr;
+- ein künstliches Vorgängerschuljahr ist unzulässig;
+- restriktiver Fremdschlüssel auf das Zielschuljahr;
 - eindeutiges `transition_id` und eindeutiges Zielschuljahr;
 - `operation_token` und `plan_sha256` belegen den idempotenten Aufruf;
 - `backup_sha256` belegt das unmittelbar vorher erstellte und verifizierte
@@ -187,6 +200,18 @@ Verbindliche Invarianten:
 
 Eine `school_year_transition_items`-Tabelle ist für die erste Umsetzung nicht
 vorgesehen und nicht als Datenquelle registriert.
+
+### Kompatibilitäts- und Restoregrenze für V1, V2 und V3
+
+V1 bleibt ausschließlich ein registrierter historischer
+Kompatibilitätsstand, der kontrolliert im Restore-Staging nach V2 überführt
+werden kann. Dieser Schritt setzt keinen V2→V3-Cutover fort. V2 wird weder
+beim normalen Öffnen noch nach einem Restore automatisch migriert; ein
+wiederhergestellter V2-Bestand führt erneut in den kontrollierten Bootstrap.
+Ein wiederhergestellter, vollständig kompatibler V3-Bestand startet regulär.
+Die weiter unten dokumentierten V1-Verträge beschreiben ihre jeweilige
+historische Releasebasis und begründen keinen abweichenden Bootstrap- oder
+Fallbackpfad.
 
 ### Historische Lesequellen
 

@@ -22,7 +22,9 @@ gesonderter Umsetzungs- und Migrationsauftrag vorliegt.
 
 Eine erkannte V2-Datenbank startet keine reguläre V3-Fachoberfläche. Der
 kontrollierte Initialisierungs-/Migrationsmodus zeigt vor jedem Schreiben alle
-vorhandenen Schüler genau einmal.
+vorhandenen Schüler genau einmal. Das gilt auch nach einem V2-Restore; V2 wird
+nicht automatisch migriert. Ein kompatibler V3-Restore startet dagegen
+regulär.
 
 | Sichtbares Feld / Zustand | Quelle | Persistenz | Verbindliche Regel |
 |---|---|---|---|
@@ -126,7 +128,8 @@ Die weiter unten dokumentierten V2- und Legacy-Zeilen mit
 `data_students.group_id/course_id` beschreiben ausschließlich den heute
 implementierten Altstand. Der V2→V3-Cutover muss diese aktiven
 Produktmappings ersetzen; sie sind danach weder Fallback noch zweite Source of
-Truth.
+Truth. Kein produktiver Readpfad verwendet und kein produktiver Writepfad
+verändert sie nach dem erfolgreichen Cutover.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 

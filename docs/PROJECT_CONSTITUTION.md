@@ -13,7 +13,7 @@ Für das spätere produktive V3 gelten folgende unverhandelbare Regeln:
 - `student_school_year_assignments` ist die einzige gespeicherte Wahrheit für
   Kurs- und Stammgruppenzuordnungen;
 - `students.group_id` und `students.course_id` werden nach dem Cutover nicht
-  parallel gepflegt;
+  gelesen, geschrieben oder parallel gepflegt;
 - Mitgliedschaften sind inklusive, nicht überlappende Intervalle innerhalb
   genau eines Schuljahres;
 - aktuelle und historische Views sind Projektionen anhand eines ausdrücklich
@@ -38,6 +38,20 @@ erneute Quellenprüfung, exklusive Instanz-/Maintenance-Grenze und eine einzige
 atomare Transaktion mit vollständigem Rollback. Eine Migration beim normalen
 Datenbanköffnen, eine automatische Aktivierung durch das Systemdatum und ein
 In-place-Downgrade sind ausgeschlossen.
+
+Der erstmalige V2→V3-Cutover besitzt kein fachliches Ausgangsschuljahr.
+Sein Wechselbeleg setzt daher `from_school_year_id = NULL` und
+`to_school_year_id` auf das bewusst bestätigte Initialschuljahr. Ein
+künstliches Vorgängerschuljahr ist verboten. Die V2-Legacyfelder dürfen nur
+während der Migration technisch fortbestehen und read-only als Cutoverquelle
+dienen. Nach dem Commit ist die Assignmentprojektion die alleinige fachliche
+Wahrheit; produktive Read- und Writepfade auf
+`students.group_id/course_id` sind ausgeschlossen.
+
+V2 wird weder beim normalen Öffnen noch nach einem Restore automatisch nach V3
+migriert. Ein V2-Restore führt in den kontrollierten Bootstrap, ein
+kompatibler V3-Restore startet regulär. Historische V1→V2-
+Kompatibilitätsverträge dürfen diese Grenze nicht überspringen.
 
 Die finale Aktivierung verlangt ein Passwort-Step-up über die bestehende
 Security-Domain einschließlich ihrer Drosselung und generischen

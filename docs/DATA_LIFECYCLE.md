@@ -13,8 +13,8 @@ gestarteter, blockierbarer Cutover:
 
 1. Eine erkannte V2-Datenbank in einen kontrollierten
    V2-Initialisierungs-/Migrationsmodus überführen. Vor abgeschlossenem Cutover
-   startet keine reguläre V3-Fachnutzung. Die konkrete technische
-   Bootstrap-Umsetzung gehört erst zum späteren SJ-2-Entwurf.
+   startet keine reguläre V3-Fachnutzung. SJ-2 konkretisiert diesen
+   Bootstrap technisch; umgesetzt oder freigegeben ist er dadurch noch nicht.
 2. V2-Struktur, `user_version`, Schemafingerprint und vollständigen Quellbestand
    read-only prüfen.
 3. Initialschuljahr ausdrücklich festlegen. Für den Pilotbestand dürfen
@@ -43,8 +43,12 @@ gestarteter, blockierbarer Cutover:
 10. Sämtliche produktiven Mitgliedschaftslese- und -schreibpfade auf
    `student_school_year_assignments` umstellen. Es entsteht keine laufende
    Synchronisierung mit `students.group_id/course_id`.
-11. Neue `user_version` und neuen Schemafingerprint schreiben.
-12. Vor Erfolg `integrity_check` und `foreign_key_check` ausführen und nur den
+11. Den Bootstrap-Beleg in `school_year_transitions` mit
+    `from_school_year_id = NULL` und dem bewusst bestätigten Initialschuljahr
+    als `to_school_year_id` schreiben. Es wird kein künstliches
+    Vorgängerschuljahr angelegt.
+12. Neue `user_version` und neuen Schemafingerprint schreiben.
+13. Vor Erfolg `integrity_check` und `foreign_key_check` ausführen und nur den
     vollständig konsistenten Zustand committen; sonst vollständig
     zurückrollen.
 
@@ -53,10 +57,18 @@ zugeordnet. SCHOOL_YEAR-Seedkonstante, Systemdatum, Beobachtungsdaten und
 Kursnamen sind keine Initialisierungsquellen. Finalisierte Bericht-/LEG-
 Revisionen und PDFs werden nicht migriert oder neu erzeugt.
 
-Es gibt keinen In-place-Downgrade. Rückfall bedeutet vollständigen Restore des
-verifizierten V2-Backups über den vorhandenen sicheren Restorepfad und Start
-mit einem kompatiblen V2-Appstand. Eine abgebrochene Vorschau schreibt nichts;
-ein Fehler vor Commit lässt V2 unverändert.
+Während dieser Transaktion dürfen `students.group_id` und
+`students.course_id` technisch noch existieren und read-only als V2-Quelle
+verwendet werden. Mit erfolgreichem Commit endet die Mischphase: Kein
+produktiver Readpfad verwendet und kein produktiver Writepfad verändert diese
+Felder; ausschließlich die Assignmentprojektion ist fachliche Wahrheit.
+
+Es gibt keinen In-place-Downgrade. V2 wird weder beim normalen Öffnen noch nach
+einem Restore automatisch nach V3 migriert. Ein V2-Restore führt erneut in den
+kontrollierten Bootstrap; ein V3-Restore startet regulär. Rückfall bedeutet
+vollständigen Restore des verifizierten V2-Backups über den vorhandenen
+sicheren Restorepfad. Eine abgebrochene Vorschau schreibt nichts; ein Fehler
+vor Commit lässt V2 unverändert.
 
 ### Klassifizierung aktiver, archivierter und unklarer V2-Schüler
 
@@ -565,7 +577,10 @@ drei Beständen bei 71 `SELECT` und ohne DDL; 300 / 9.000 benötigte 0,915 s.
 
 Bestehende IDs und fachliche Zeitfelder bleiben unverändert. V1-Backups werden
 weiter verifiziert und ausschließlich im Restore-Staging nach V2 migriert.
-Eine V1-Anwendung lehnt V2 kontrolliert als neuere Version ab.
+Diese kontrollierte V1→V2-Stagingmigration setzt niemals automatisch den
+V2→V3-Cutover fort. Der wiederhergestellte V2-Stand führt in den
+kontrollierten Bootstrap; erst ein bereits kompatibler V3-Restore startet
+regulär. Eine V1-Anwendung lehnt V2 kontrolliert als neuere Version ab.
 
 ### Neue Frischeereignisse
 

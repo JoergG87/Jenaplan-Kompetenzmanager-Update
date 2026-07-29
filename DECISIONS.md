@@ -162,6 +162,14 @@ erste Umsetzung ist keine `school_year_transition_items`-Tabelle vorgesehen.
 Eine solche Tabelle bedarf eines neuen, zwingenden technischen Nachweises und
 einer gesonderten Architekturentscheidung.
 
+Der erstmalige V2→V3-Cutover ist der einzige Bootstrap-Übergang. Zu diesem
+Zeitpunkt existiert kein fachliches Ausgangsschuljahr. Sein Wechselbeleg
+verwendet deshalb verbindlich `from_school_year_id = NULL` und als
+`to_school_year_id` das bewusst bestätigte Initialschuljahr. Ein künstlich
+erzeugtes Vorgängerschuljahr ist unzulässig. Jeder spätere reguläre
+Schuljahreswechsel besitzt dagegen ein wirklich vorhandenes, geschlossenes
+Ausgangsschuljahr.
+
 ### Historischer Kontext
 
 Die Assignmentauflösung verwendet ausschließlich folgende fachliche
@@ -250,15 +258,29 @@ Teil von SJ-1.
 Eine einzige atomare Migrationstransaktion übernimmt die bestehenden Kurs- und
 Stammgruppenwerte aktiver Kinder als volle Initialintervalle und die sicher
 bestimmbaren letzten Zuordnungen archivierter Kinder als historische
-Teilintervalle. Sie stellt sämtliche produktiven Lese- und Schreibpfade auf
-Assignments um. Daten vor dem Beginn bleiben unzugeordnet.
+Teilintervalle. Sie schreibt den Bootstrap-Wechselbeleg mit
+`from_school_year_id = NULL` und dem bewusst bestätigten Initialschuljahr als
+`to_school_year_id`. Daten vor dem Beginn bleiben unzugeordnet; ein
+künstliches Vorgängerschuljahr wird weder angelegt noch abgeleitet.
+
+Während der atomaren Migration dürfen die alten V2-Spalten
+`students.group_id` und `students.course_id` technisch noch existieren und als
+read-only Cutoverquelle dienen. Nach erfolgreichem V3-Cutover endet diese
+Mischphase vollständig: Die Felder sind keine Source of Truth, kein
+produktiver Readpfad verwendet sie und kein produktiver Writepfad verändert
+sie. Ausschließlich die Assignmentprojektion ist dann fachliche Wahrheit.
+Fallbackreads, Doppelpflege und Best-Effort-Synchronisierung bleiben
+unzulässig.
 
 Der Cutover aktualisiert `user_version` und Schemafingerprint und endet nur
 nach erfolgreichem `integrity_check` und `foreign_key_check`. Es gibt keinen
-In-place-Downgrade. Rückfall bedeutet Restore des verifizierten V2-Backups mit
-einem dafür geeigneten V2-Appstand. Vor Implementierungsfreigabe müssen
-Migration, Abbruch, Wiederanlauf, Backupnachweis und Rückfall technisch
-nachgewiesen sein.
+In-place-Downgrade. V2 wird weder beim normalen Datenbanköffnen noch nach einem
+Restore automatisch nach V3 migriert. Ein wiederhergestellter V2-Stand führt
+erneut in den kontrollierten Bootstrap; ein wiederhergestellter V3-Stand
+startet regulär. Rückfall auf den vor dem Cutover gesicherten V2-Stand erfolgt
+ausschließlich über den vorhandenen sicheren Restorepfad. Vor
+Implementierungsfreigabe müssen Migration, Abbruch, Wiederanlauf,
+Backupnachweis und Rückfall technisch nachgewiesen sein.
 
 ### Aufbewahrung und Freigabegrenzen
 
