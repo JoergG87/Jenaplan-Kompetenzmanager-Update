@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -54,6 +54,7 @@ from src.desktop_app.view_models.learning_report_view_model import (
 from src.desktop_app.view_models.report_overview_view_model import (
     ReportOverviewActionViewModel,
     ReportOverviewSubjectDocumentationViewModel,
+    ReportOverviewTimelineEventViewModel,
     build_report_overview,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
@@ -918,29 +919,19 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         )
         screen.close()
 
-    def test_milestones_are_capacity_limited_and_include_real_confirmation(
+    def test_timeline_renders_every_event_and_supports_controlled_scrolling(
         self,
     ) -> None:
-        draft = self._report_draft("RPD-1")
-        revisions = tuple(
-            self._report_revision(
-                number,
-                (
-                    FINALIZED_REVISION_STATUS
-                    if number == 6
-                    else REPORT_SUPERSEDED_REVISION_STATUS
-                ),
-            )
-            for number in range(1, 7)
+        events = tuple(
+            self._timeline_event(index)
+            for index in range(1, 19)
         )
-        overview = self._overview(
-            report_drafts=(draft,),
-            report_states={
-                "RPD-1": self._report_state(
-                    current=revisions[-1],
-                    revisions=revisions,
-                )
-            },
+        overview = replace(
+            self._overview(
+                report_drafts=(self._report_draft("RPD-1"),),
+                report_states={"RPD-1": self._report_state()},
+            ),
+            timeline_events=events,
         )
         screen = self._screen(overview)
         screen.current_profile_dashboard = SimpleNamespace(
@@ -962,27 +953,310 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         track = next(
             widget
             for widget in screen.findChildren(QWidget)
-            if widget.objectName() == "ReportOverviewMilestoneTrack"
+            if widget.objectName() == "ReportOverviewTimelineTrack"
         )
-        milestone_icons = [
-            button
-            for button in track.findChildren(QPushButton)
-            if button.objectName() == "ReportOverviewMilestoneIcon"
+        cards = [
+            card
+            for card in track.findChildren(QWidget)
+            if card.objectName() == "ReportOverviewTimelineEventCard"
         ]
         labels = " ".join(
             label.text() for label in track.findChildren(QLabel)
         )
+        scroll = screen.report_timeline_scroll
+        bar = scroll.horizontalScrollBar()
 
-        self.assertEqual(len(milestone_icons), 4)
-        self.assertIn("Kompetenz bestätigt", labels)
-        self.assertIn("Uhrzeiten ablesen", labels)
-        self.assertIn("Jul", labels)
-        self.assertNotIn("28.07.2099", labels)
-        self.assertNotIn("Kompetenz abgeschlossen", labels)
-        self.assertGreaterEqual(
-            len({button.icon().cacheKey() for button in milestone_icons}),
-            2,
+        self.assertEqual(len(cards), 18)
+        self.assertIn("01.01.2026", labels)
+        self.assertIn("18.01.2026", labels)
+        self.assertNotIn("Uhrzeiten ablesen", labels)
+        self.assertEqual(
+            scroll.horizontalScrollBarPolicy(),
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOn,
         )
+        self.assertEqual(bar.value(), bar.maximum())
+        self.assertGreater(bar.maximum(), 0)
+        self.assertFalse(screen.report_timeline_right_button.isEnabled())
+        self.assertTrue(screen.report_timeline_left_button.isEnabled())
+
+        QTest.keyClick(scroll, Qt.Key.Key_Home)
+        self.assertEqual(bar.value(), bar.minimum())
+        self.assertFalse(screen.report_timeline_left_button.isEnabled())
+        QTest.keyClick(scroll, Qt.Key.Key_Right)
+        self.assertGreater(bar.value(), bar.minimum())
+        QTest.keyClick(scroll, Qt.Key.Key_End)
+        self.assertEqual(bar.value(), bar.maximum())
+        screen.report_timeline_left_button.click()
+        self.assertLess(bar.value(), bar.maximum())
+        screen.report_timeline_right_button.click()
+        self.assertGreaterEqual(bar.value(), bar.maximum() - bar.pageStep())
+
+        for width, expected_capacity in ((800, 2), (1000, 4), (1400, 5)):
+            screen.resize(width, 760)
+            self.app.processEvents()
+            scroll = screen.report_timeline_scroll
+            cards = [
+                card
+                for card in screen.report_timeline_track.findChildren(QWidget)
+                if card.objectName() == "ReportOverviewTimelineEventCard"
+            ]
+            visible_capacity = (
+                scroll.viewport().width() / cards[0].width()
+            )
+            self.assertAlmostEqual(
+                visible_capacity,
+                expected_capacity,
+                delta=0.75,
+            )
+            self.assertEqual(len(cards), 18)
+        screen.close()
+
+    def test_timeline_handles_zero_one_under_and_exact_target_counts(
+        self,
+    ) -> None:
+        base = self._overview(
+            report_drafts=(self._report_draft("RPD-1"),),
+            report_states={"RPD-1": self._report_state()},
+        )
+        for event_count in (0, 1, 14, 15):
+            with self.subTest(event_count=event_count):
+                overview = replace(
+                    base,
+                    timeline_events=tuple(
+                        self._timeline_event(index)
+                        for index in range(1, event_count + 1)
+                    ),
+                )
+                screen = self._screen(overview)
+                screen.show()
+                self.app.processEvents()
+                cards = screen.findChildren(
+                    QWidget,
+                    "ReportOverviewTimelineEventCard",
+                )
+                self.assertEqual(len(cards), event_count)
+                if event_count == 0:
+                    labels = " ".join(
+                        label.text()
+                        for label in screen.timeline_card.findChildren(QLabel)
+                    )
+                    self.assertIn(
+                        "Keine Dokumentationsereignisse im Zeitraum",
+                        labels,
+                    )
+                else:
+                    self.assertIsNotNone(screen.report_timeline_scroll)
+                screen.close()
+
+    def test_timeline_keeps_anchor_on_resize_and_refresh(self) -> None:
+        events = tuple(
+            self._timeline_event(index)
+            for index in range(1, 13)
+        )
+        overview = replace(
+            self._overview(
+                report_drafts=(self._report_draft("RPD-1"),),
+                report_states={"RPD-1": self._report_state()},
+            ),
+            timeline_events=events,
+        )
+        screen = self._screen(overview)
+        screen.show()
+        screen.resize(1400, 900)
+        self.app.processEvents()
+        cards = [
+            card
+            for card in screen.report_timeline_track.findChildren(QWidget)
+            if card.objectName() == "ReportOverviewTimelineEventCard"
+        ]
+        anchor_card = cards[5]
+        anchor_identity = tuple(
+            anchor_card.property("source_identity")
+        )
+        screen.report_timeline_scroll.horizontalScrollBar().setValue(
+            anchor_card.x()
+        )
+
+        screen.resize(1000, 760)
+        self.app.processEvents()
+
+        self.assertEqual(
+            screen._capture_report_timeline_state()[1],
+            anchor_identity,
+        )
+        older = ReportOverviewTimelineEventViewModel(
+            "observation",
+            ("observation", "OBS-OLDER"),
+            date(2025, 12, 31),
+            "31.12.2025",
+            "Beobachtung dokumentiert",
+            "Vorhandener Kontext",
+            "31.12.2025 · Beobachtung dokumentiert · Vorhandener Kontext",
+            ReportOverviewActionViewModel(
+                "show_observation",
+                "Beobachtung öffnen",
+                "OBS-OLDER",
+            ),
+        )
+        refreshed = replace(
+            overview,
+            timeline_events=(older, *events),
+        )
+        screen.set_report_overview(refreshed)
+        self.app.processEvents()
+
+        self.assertEqual(
+            screen._capture_report_timeline_state()[1],
+            anchor_identity,
+        )
+        self.assertEqual(
+            len(screen.report_timeline_track.findChildren(
+                QWidget,
+                "ReportOverviewTimelineEventCard",
+            )),
+            13,
+        )
+        screen.report_timeline_scroll.horizontalScrollBar().setValue(
+            screen.report_timeline_scroll.horizontalScrollBar().maximum()
+        )
+        screen.resize(1400, 900)
+        self.app.processEvents()
+        self.assertEqual(
+            screen.report_timeline_scroll.horizontalScrollBar().value(),
+            screen.report_timeline_scroll.horizontalScrollBar().maximum(),
+        )
+        screen.close()
+
+    def test_timeline_navigation_uses_only_supplied_stable_ids(self) -> None:
+        events = (
+            self._timeline_event(
+                1,
+                event_type="observation",
+                action=ReportOverviewActionViewModel(
+                    "show_observation",
+                    "Beobachtung öffnen",
+                    "OBS-STABLE",
+                ),
+            ),
+            self._timeline_event(
+                2,
+                event_type="report",
+                action=ReportOverviewActionViewModel(
+                    "open_report_revision",
+                    "Bericht öffnen",
+                    "RPV-STABLE",
+                ),
+            ),
+            self._timeline_event(
+                3,
+                event_type="learning_conference",
+                action=ReportOverviewActionViewModel(
+                    "open_learning_conference_revision",
+                    "LEG öffnen",
+                    "LCV-STABLE",
+                ),
+            ),
+            self._timeline_event(
+                4,
+                event_type="confirmation",
+                action=ReportOverviewActionViewModel(
+                    "show_competency",
+                    "Kompetenzbereich öffnen",
+                    "CMP-STABLE",
+                ),
+            ),
+        )
+        overview = replace(
+            self._overview(
+                report_drafts=(self._report_draft("RPD-1"),),
+                report_states={"RPD-1": self._report_state()},
+            ),
+            timeline_events=events,
+        )
+        screen = self._screen(overview)
+        report_ids: list[str] = []
+        leg_ids: list[str] = []
+        screen.report_revision_requested.connect(report_ids.append)
+        screen.learning_conference_revision_requested.connect(leg_ids.append)
+        screen.show()
+        self.app.processEvents()
+        cards = {
+            tuple(card.property("source_identity")): card
+            for card in screen.report_timeline_track.findChildren(QWidget)
+            if card.objectName() == "ReportOverviewTimelineEventCard"
+        }
+
+        cards[events[0].source_identity].findChild(
+            QPushButton,
+            "ReportOverviewTimelineEventAction",
+        ).click()
+        self.assertEqual(screen.profile_tabs.currentIndex(), 1)
+        self.assertEqual(screen._focused_observation_id, "OBS-STABLE")
+        cards[events[1].source_identity].findChild(
+            QPushButton,
+            "ReportOverviewTimelineEventAction",
+        ).click()
+        cards[events[2].source_identity].findChild(
+            QPushButton,
+            "ReportOverviewTimelineEventAction",
+        ).click()
+        cards[events[3].source_identity].findChild(
+            QPushButton,
+            "ReportOverviewTimelineEventAction",
+        ).click()
+
+        self.assertEqual(report_ids, ["RPV-STABLE"])
+        self.assertEqual(leg_ids, ["LCV-STABLE"])
+        self.assertEqual(screen.profile_tabs.currentIndex(), 2)
+        self.assertTrue(all(
+            card.accessibleName()
+            for card in cards.values()
+        ))
+        self.assertTrue(
+            screen.report_timeline_scroll.accessibleName()
+        )
+        screen.close()
+
+    def test_timeline_wheel_preserves_outer_vertical_scroll_contract(
+        self,
+    ) -> None:
+        overview = replace(
+            self._overview(
+                report_drafts=(self._report_draft("RPD-1"),),
+                report_states={"RPD-1": self._report_state()},
+            ),
+            timeline_events=tuple(
+                self._timeline_event(index)
+                for index in range(1, 8)
+            ),
+        )
+        screen = self._screen(overview)
+        screen.show()
+        self.app.processEvents()
+        scroll = screen.report_timeline_scroll
+        bar = scroll.horizontalScrollBar()
+        bar.setValue(bar.maximum() // 2)
+        original_value = bar.value()
+        vertical_event = Mock()
+        vertical_event.pixelDelta.return_value = QPoint(0, 120)
+        vertical_event.angleDelta.return_value = QPoint(0, 120)
+        vertical_event.modifiers.return_value = (
+            Qt.KeyboardModifier.NoModifier
+        )
+
+        scroll.wheelEvent(vertical_event)
+
+        vertical_event.ignore.assert_called_once()
+        self.assertEqual(bar.value(), original_value)
+        shifted_event = Mock()
+        shifted_event.pixelDelta.return_value = QPoint(0, 120)
+        shifted_event.angleDelta.return_value = QPoint(0, 120)
+        shifted_event.modifiers.return_value = (
+            Qt.KeyboardModifier.ShiftModifier
+        )
+        scroll.wheelEvent(shifted_event)
+        shifted_event.accept.assert_called_once()
+        self.assertLess(bar.value(), original_value)
         screen.close()
 
     def test_subject_anchor_focuses_existing_tree_without_checking_items(self) -> None:
@@ -1048,11 +1322,11 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 (0, 0),
                 (0, 1),
                 (1, 0),
-                (1, 1),
                 (2, 0),
-                (2, 1),
                 (3, 0),
-                (3, 1),
+                (4, 0),
+                (4, 1),
+                (1, 1),
             ],
         )
         self.assertEqual(
@@ -1073,11 +1347,11 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         )
         self.assertEqual(
             wide_positions["ReportOverviewTimelineCard"],
-            (1, 0, 1, 1),
+            (1, 0, 1, 3),
         )
         self.assertEqual(
             wide_positions["ReportOverviewSubjectsCard"],
-            (1, 1, 1, 2),
+            (2, 0, 1, 3),
         )
         self.assertEqual(
             {
@@ -1085,7 +1359,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 wide_positions["ReportOverviewWatchCard"][0],
                 wide_positions["ReportOverviewHistoryCard"][0],
             },
-            {2},
+            {3},
         )
         self.assertFalse(hasattr(screen, "competency_selection_card"))
         self.assertFalse(hasattr(screen, "workspace_boundary_card"))
@@ -1612,6 +1886,48 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 "RPD-1",
                 subject_id,
             ),
+        )
+
+    @staticmethod
+    def _timeline_event(
+        index: int,
+        *,
+        event_type: str = "observation",
+        action: ReportOverviewActionViewModel | None = None,
+    ) -> ReportOverviewTimelineEventViewModel:
+        occurred_on = date(2026, 1, index)
+        source_id = f"{event_type.upper()}-{index:02d}"
+        identity_type = {
+            "learning_conference": "learning_conference",
+            "confirmation": "confirmation",
+            "report": "report",
+        }.get(event_type, "observation")
+        source_identity = (
+            ("confirmation", "STU-1", source_id)
+            if event_type == "confirmation"
+            else (identity_type, source_id)
+        )
+        title = {
+            "report": "Bericht abgeschlossen",
+            "learning_conference": "LEG durchgeführt",
+            "confirmation": "Kompetenz bestätigt",
+        }.get(event_type, "Beobachtung dokumentiert")
+        resolved_action = action or ReportOverviewActionViewModel(
+            "show_observation",
+            "Beobachtung öffnen",
+            source_id,
+        )
+        date_label = occurred_on.strftime("%d.%m.%Y")
+        detail = f"Vorhandener Kontext {index}"
+        return ReportOverviewTimelineEventViewModel(
+            event_type,
+            source_identity,
+            occurred_on,
+            date_label,
+            title,
+            detail,
+            f"{date_label} · {title} · {detail}",
+            resolved_action,
         )
 
     def _report_draft(

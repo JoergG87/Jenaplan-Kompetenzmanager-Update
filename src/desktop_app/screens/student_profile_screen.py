@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QRectF, QSize, Qt, QUrl, Signal
+from PySide6.QtCore import QRectF, QSize, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QColor, QDesktopServices, QPainter, QPen
 from PySide6.QtWidgets import (
     QApplication,
@@ -58,6 +58,7 @@ from src.desktop_app.view_models.report_overview_view_model import (
     ReportNextStepViewModel,
     ReportOverviewActionViewModel,
     ReportOverviewSubjectDocumentationViewModel,
+    ReportOverviewTimelineEventViewModel,
     ReportOverviewViewModel,
     ReportStatusCardViewModel,
     empty_report_overview,
@@ -138,6 +139,60 @@ class DocumentationRing(QWidget):
         )
 
 
+class ReportTimelineScrollArea(QScrollArea):
+    """Horizontal timeline viewport with keyboard and trackpad support."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setObjectName("ReportOverviewTimelineScrollArea")
+        self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setWidgetResizable(False)
+        self.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+        )
+        self.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAccessibleName(
+            "Dokumentations-Timeline horizontal scrollen"
+        )
+
+    def wheelEvent(self, event: object) -> None:  # noqa: N802 - Qt API
+        pixel_delta = event.pixelDelta()
+        angle_delta = event.angleDelta()
+        horizontal_delta = pixel_delta.x() or angle_delta.x()
+        shifted_vertical_delta = (
+            pixel_delta.y() or angle_delta.y()
+            if event.modifiers() & Qt.KeyboardModifier.ShiftModifier
+            else 0
+        )
+        delta = horizontal_delta or shifted_vertical_delta
+        if delta:
+            bar = self.horizontalScrollBar()
+            bar.setValue(bar.value() - delta)
+            event.accept()
+            return
+        # Ordinary vertical scrolling belongs to the outer profile viewport.
+        event.ignore()
+
+    def keyPressEvent(self, event: object) -> None:  # noqa: N802 - Qt API
+        bar = self.horizontalScrollBar()
+        step = max(40, bar.pageStep() // 2)
+        if event.key() == Qt.Key.Key_Left:
+            bar.setValue(bar.value() - step)
+        elif event.key() == Qt.Key.Key_Right:
+            bar.setValue(bar.value() + step)
+        elif event.key() == Qt.Key.Key_Home:
+            bar.setValue(bar.minimum())
+        elif event.key() == Qt.Key.Key_End:
+            bar.setValue(bar.maximum())
+        else:
+            super().keyPressEvent(event)
+            return
+        event.accept()
+
+
 class StudentProfileScreen(QWidget):
     student_edit_requested = Signal(str)
     """Lightweight read-only student profile."""
@@ -192,6 +247,11 @@ class StudentProfileScreen(QWidget):
         self.current_profile_dashboard = empty_student_profile_dashboard()
         self.show_all_observations = False
         self._report_subjects_expanded = False
+        self._report_timeline_initialized = False
+        self.report_timeline_scroll: ReportTimelineScrollArea | None = None
+        self.report_timeline_track: QWidget | None = None
+        self.report_timeline_left_button: QPushButton | None = None
+        self.report_timeline_right_button: QPushButton | None = None
         self._focused_observation_id = ""
         self._competency_expanded_keys: set[str] = set()
         self._profile_scroll_positions: dict[int, int] = {}
@@ -762,8 +822,8 @@ class StudentProfileScreen(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(16)
         layout.addWidget(SectionHeader(
-            "Lernentwicklung im Berichtszeitraum",
-            "Status, Zeitraum, Historie und vorhandene Arbeitsräume auf einen Blick.",
+            "Berichtsvorbereitung im Berichtszeitraum",
+            "Vorhandene Dokumentation, Status und getrennte Arbeitsräume auf einen Blick.",
         ))
         self.report_period_summary = QLabel("Kein Berichtszeitraum gewählt")
         self.report_period_summary.setObjectName("ReportOverviewPeriod")
@@ -800,8 +860,8 @@ class StudentProfileScreen(QWidget):
             "ReportOverviewNextStepsCard",
         )
         self.timeline_card, self.report_timeline_layout = self._report_overview_card(
-            "Lernentwicklung · Meilensteine",
-            "Reale Bericht-, LEG- und Bestätigungsereignisse",
+            "Dokumentations-Timeline",
+            "Reale Dokumentations- und Dokumentereignisse",
             "ReportOverviewTimelineCard",
         )
         self.subjects_card, self.report_subjects_layout = self._report_overview_card(
@@ -935,13 +995,50 @@ class StudentProfileScreen(QWidget):
                     alignment=Qt.AlignmentFlag.AlignTop,
                 )
         elif columns == 2:
-            for index, card in enumerate(self._report_overview_cards):
-                self.report_overview_grid.addWidget(
-                    card,
-                    index // 2,
-                    index % 2,
-                    alignment=Qt.AlignmentFlag.AlignTop,
-                )
+            self.report_overview_grid.addWidget(
+                self.report_status_card,
+                0,
+                0,
+            )
+            self.report_overview_grid.addWidget(
+                self.learning_conference_status_card,
+                0,
+                1,
+            )
+            self.report_overview_grid.addWidget(
+                self.next_steps_card,
+                1,
+                0,
+            )
+            self.report_overview_grid.addWidget(
+                self.history_card,
+                1,
+                1,
+            )
+            self.report_overview_grid.addWidget(
+                self.timeline_card,
+                2,
+                0,
+                1,
+                2,
+            )
+            self.report_overview_grid.addWidget(
+                self.subjects_card,
+                3,
+                0,
+                1,
+                2,
+            )
+            self.report_overview_grid.addWidget(
+                self.strengths_card,
+                4,
+                0,
+            )
+            self.report_overview_grid.addWidget(
+                self.watch_card,
+                4,
+                1,
+            )
         else:
             self.report_overview_grid.addWidget(self.report_status_card, 0, 0)
             self.report_overview_grid.addWidget(
@@ -950,14 +1047,28 @@ class StudentProfileScreen(QWidget):
                 1,
             )
             self.report_overview_grid.addWidget(self.next_steps_card, 0, 2)
-            self.report_overview_grid.addWidget(self.timeline_card, 1, 0)
-            self.report_overview_grid.addWidget(self.subjects_card, 1, 1, 1, 2)
-            self.report_overview_grid.addWidget(self.strengths_card, 2, 0)
-            self.report_overview_grid.addWidget(self.watch_card, 2, 1)
-            self.report_overview_grid.addWidget(self.history_card, 2, 2)
+            self.report_overview_grid.addWidget(
+                self.timeline_card,
+                1,
+                0,
+                1,
+                3,
+            )
+            self.report_overview_grid.addWidget(
+                self.subjects_card,
+                2,
+                0,
+                1,
+                3,
+            )
+            self.report_overview_grid.addWidget(self.strengths_card, 3, 0)
+            self.report_overview_grid.addWidget(self.watch_card, 3, 1)
+            self.report_overview_grid.addWidget(self.history_card, 3, 2)
         if hasattr(self, "current_report_overview"):
             self._render_report_subjects(self.current_report_overview)
-            self._render_report_milestones(self.current_report_overview.history)
+            self._render_report_timeline(
+                self.current_report_overview.timeline_events
+            )
             self._update_report_tab_order()
 
     def _report_action_row(self) -> QHBoxLayout:
@@ -1325,6 +1436,7 @@ class StudentProfileScreen(QWidget):
             self.profile_tabs.setCurrentIndex(0)
             self._competency_expanded_keys.clear()
             self._report_subjects_expanded = False
+            self._report_timeline_initialized = False
             self.reset_competency_cockpit_filters()
 
         if student is None:
@@ -2480,7 +2592,7 @@ class StudentProfileScreen(QWidget):
         )
         self._render_report_next_steps(current.next_steps)
         self._render_report_subjects(current)
-        self._render_report_milestones(current.history)
+        self._render_report_timeline(current.timeline_events)
         self._render_report_history(current.history)
         self._update_report_tab_order()
 
@@ -2755,186 +2867,241 @@ class StudentProfileScreen(QWidget):
         self._render_report_subjects(self.current_report_overview)
         self._update_report_tab_order()
 
-    def _render_report_milestones(
+    def _render_report_timeline(
         self,
-        history: tuple[ReportHistoryItemViewModel, ...],
+        events: tuple[ReportOverviewTimelineEventViewModel, ...],
     ) -> None:
+        previous_at_end, previous_anchor, previous_value = (
+            self._capture_report_timeline_state()
+        )
         self._clear_layout(self.report_timeline_layout)
-        milestones: list[
-            tuple[
-                str,
-                str,
-                str,
-                str,
-                str,
-                ReportOverviewActionViewModel | None,
-            ]
-        ] = []
-        titles = {
-            "open_report": "Berichtsentwurf",
-            "open_report_revision": "Bericht abgeschlossen",
-            "open_learning_conference": "LEG-Entwurf",
-            "open_learning_conference_revision": "LEG abgeschlossen",
-        }
-        for item in history:
-            milestones.append((
-                item.activity_sort_key,
-                item.document_type,
-                titles.get(
-                    item.action.action_key,
-                    f"{item.document_type} · {item.version_label}",
-                ),
-                self._report_milestone_month_label(item.activity_sort_key),
-                item.version_label,
-                item.action,
-            ))
-        for change in self.current_profile_dashboard.orientation_changes:
-            event = change.triggering_event
-            if event.source != "confirmation":
-                continue
-            milestones.append((
-                f"{event.event_date.isoformat()}T00:00:00",
-                "Kompetenz",
-                "Kompetenz bestätigt",
-                self._report_milestone_month_label(event.event_date.isoformat()),
-                change.competency_label,
-                None,
-            ))
-        milestones.sort(key=lambda item: item[0], reverse=True)
-        if not milestones:
+        self.report_timeline_scroll = None
+        self.report_timeline_track = None
+        self.report_timeline_left_button = None
+        self.report_timeline_right_button = None
+        if not events:
+            self._report_timeline_initialized = False
             self.report_timeline_layout.addWidget(
                 self._report_compact_empty_state(
-                    "Bericht-, LEG- und bestätigte Kompetenzstände erscheinen "
-                    "hier erst nach einem realen Ereignis.",
-                    title="Noch keine Meilensteine",
+                    "Vorhandene Beobachtungen, abgeschlossene Dokumente und "
+                    "sichere Bestätigungsstände erscheinen hier im gewählten "
+                    "Berichtszeitraum.",
+                    title="Keine Dokumentationsereignisse im Zeitraum",
                 )
             )
             return
-        approximate_card_width = self.width() / max(
-            1,
-            getattr(self, "_report_overview_columns", 3),
+        controls = QWidget()
+        controls.setObjectName("ReportOverviewTimelineControls")
+        controls_layout = QHBoxLayout(controls)
+        controls_layout.setContentsMargins(0, 0, 0, 0)
+        controls_layout.setSpacing(7)
+        left_button = QPushButton("‹")
+        left_button.setObjectName("ReportOverviewTimelinePrevious")
+        left_button.setAccessibleName(
+            "Zu älteren Dokumentationsereignissen scrollen"
         )
-        visible_limit = max(2, min(5, int(approximate_card_width // 105)))
-        visible = milestones[:visible_limit]
+        left_button.setToolTip(
+            "Zu älteren Dokumentationsereignissen scrollen"
+        )
+        left_button.setFixedWidth(32)
+        configure_button(left_button, "quiet")
+        right_button = QPushButton("›")
+        right_button.setObjectName("ReportOverviewTimelineNext")
+        right_button.setAccessibleName(
+            "Zu neueren Dokumentationsereignissen scrollen"
+        )
+        right_button.setToolTip(
+            "Zu neueren Dokumentationsereignissen scrollen"
+        )
+        right_button.setFixedWidth(32)
+        configure_button(right_button, "quiet")
+        scroll = ReportTimelineScrollArea()
+        scroll.setMinimumHeight(188)
         track = QWidget()
-        track.setObjectName("ReportOverviewMilestoneTrack")
-        track_layout = QGridLayout(track)
+        track.setObjectName("ReportOverviewTimelineTrack")
+        track_layout = QHBoxLayout(track)
         track_layout.setContentsMargins(0, 0, 0, 0)
-        track_layout.setHorizontalSpacing(6)
-        track_layout.setVerticalSpacing(3)
-        line = QFrame()
-        line.setObjectName("ReportOverviewMilestoneLine")
-        line.setFixedHeight(2)
-        line.setStyleSheet(
-            "background-color: #B9CEDB; border: 0;"
-        )
-        track_layout.addWidget(
-            line,
-            1,
-            0,
-            1,
-            len(visible),
-            Qt.AlignmentFlag.AlignVCenter,
-        )
+        track_layout.setSpacing(8)
+        card_width = self._report_timeline_card_width()
         icon_styles = {
-            "Bericht": ("report", "#E7F1FB", "#2F78B7"),
-            "LEG": ("conference", "#F0EAFE", "#7959C7"),
-            "Kompetenz": ("student-record", "#E4F4EF", "#23866F"),
+            "report": "report",
+            "learning_conference": "conference",
+            "observation": "observation",
+            "confirmation": "student-record",
         }
-        for column, (
-            _sort_key,
-            category,
-            title_text,
-            month_text,
-            context_text,
-            action,
-        ) in enumerate(visible):
-            icon_name, background, border = icon_styles.get(
-                category,
-                ("info", "#EEF3F6", "#7B93A3"),
+        for event in events:
+            event_card = AppCard("soft")
+            event_card.setObjectName("ReportOverviewTimelineEventCard")
+            event_card.setProperty(
+                "source_identity",
+                event.source_identity,
             )
-            month = QLabel(month_text)
-            month.setObjectName("ReportOverviewMilestoneMonth")
-            month.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            set_label_style(month, "small")
-            marker = QPushButton()
-            marker.setObjectName("ReportOverviewMilestoneIcon")
-            marker.setFixedSize(34, 34)
-            marker.setIcon(load_icon(icon_name))
-            marker.setIconSize(QSize(18, 18))
-            marker.setAccessibleName(
-                f"{category}: {title_text} öffnen"
+            event_card.setFixedWidth(card_width)
+            event_card.setMinimumHeight(158)
+            event_card.setAccessibleName(event.accessible_name)
+            event_layout = QVBoxLayout(event_card)
+            event_layout.setContentsMargins(11, 10, 11, 10)
+            event_layout.setSpacing(6)
+            event_header = QHBoxLayout()
+            event_header.setSpacing(7)
+            marker = QLabel()
+            marker.setObjectName("ReportOverviewTimelineEventIcon")
+            marker.setPixmap(
+                load_icon(
+                    icon_styles.get(event.event_type, "info")
+                ).pixmap(QSize(18, 18))
             )
-            marker.setToolTip(f"{title_text} · {context_text}")
-            marker.setStyleSheet(
-                "QPushButton#ReportOverviewMilestoneIcon {"
-                f"background-color: {background};"
-                f"border: 1px solid {border};"
-                "border-radius: 17px;"
-                "padding: 0;"
-                "}"
-                "QPushButton#ReportOverviewMilestoneIcon:hover {"
-                "background-color: #FFFFFF;"
-                "}"
-                "QPushButton#ReportOverviewMilestoneIcon:focus {"
-                f"border: 2px solid {border};"
-                "}"
-            )
-            title = QLabel(title_text)
-            title.setObjectName("ReportOverviewMilestoneTitle")
+            marker.setFixedSize(28, 28)
+            marker.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            date_label = QLabel(event.date_label)
+            date_label.setObjectName("ReportOverviewTimelineEventDate")
+            set_label_style(date_label, "small")
+            event_header.addWidget(marker)
+            event_header.addWidget(date_label)
+            event_header.addStretch(1)
+            title = QLabel(event.title)
+            title.setObjectName("ReportOverviewTimelineEventTitle")
             title.setWordWrap(True)
-            title.setAlignment(Qt.AlignmentFlag.AlignCenter)
             set_label_style(title, "card_title")
-            context = QLabel(context_text)
-            context.setObjectName("ReportOverviewMilestoneContext")
-            context.setWordWrap(True)
-            context.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            set_label_style(context, "subtle")
-            if action is not None:
-                marker.clicked.connect(
-                    lambda _checked=False, selected=action: (
-                        self._dispatch_report_overview_action(selected)
-                    )
+            detail = QLabel(event.detail_text)
+            detail.setObjectName("ReportOverviewTimelineEventDetail")
+            detail.setWordWrap(True)
+            set_label_style(detail, "subtle")
+            event_layout.addLayout(event_header)
+            event_layout.addWidget(title)
+            event_layout.addWidget(detail)
+            event_layout.addStretch(1)
+            if event.action is not None:
+                action_button = self._report_action_button(
+                    event.action,
+                    role="quiet",
+                )
+                action_button.setObjectName(
+                    "ReportOverviewTimelineEventAction"
+                )
+                action_button.setAccessibleName(
+                    event.accessible_name
+                )
+                event_layout.addWidget(
+                    action_button,
+                    0,
+                    Qt.AlignmentFlag.AlignLeft,
+                )
+            track_layout.addWidget(event_card)
+        track.adjustSize()
+        track.setMinimumSize(track.sizeHint())
+        scroll.setWidget(track)
+        bar = scroll.horizontalScrollBar()
+        left_button.clicked.connect(
+            lambda _checked=False: (
+                bar.setValue(bar.value() - bar.pageStep())
+            )
+        )
+        right_button.clicked.connect(
+            lambda _checked=False: (
+                bar.setValue(bar.value() + bar.pageStep())
+            )
+        )
+        bar.rangeChanged.connect(
+            lambda _minimum, _maximum: (
+                self._update_report_timeline_controls()
+            )
+        )
+        bar.valueChanged.connect(
+            lambda _value: self._update_report_timeline_controls()
+        )
+        controls_layout.addWidget(left_button)
+        controls_layout.addWidget(scroll, 1)
+        controls_layout.addWidget(right_button)
+        self.report_timeline_layout.addWidget(controls)
+        self.report_timeline_scroll = scroll
+        self.report_timeline_track = track
+        self.report_timeline_left_button = left_button
+        self.report_timeline_right_button = right_button
+        first_render = not getattr(
+            self,
+            "_report_timeline_initialized",
+            False,
+        )
+
+        def restore_position() -> None:
+            if self.report_timeline_scroll is not scroll:
+                return
+            current_bar = scroll.horizontalScrollBar()
+            if first_render or previous_at_end:
+                current_bar.setValue(current_bar.maximum())
+            elif previous_anchor:
+                anchored_card = next(
+                    (
+                        card
+                        for card in track.findChildren(QFrame)
+                        if (
+                            card.objectName()
+                            == "ReportOverviewTimelineEventCard"
+                            and tuple(
+                                card.property("source_identity") or ()
+                            ) == previous_anchor
+                        )
+                    ),
+                    None,
+                )
+                current_bar.setValue(
+                    anchored_card.x()
+                    if anchored_card is not None
+                    else previous_value
                 )
             else:
-                marker.clicked.connect(
-                    lambda _checked=False: (
-                        self._select_profile_section("competencies")
-                    )
-                )
-            track_layout.addWidget(month, 0, column)
-            track_layout.addWidget(
-                marker,
-                1,
-                column,
-                Qt.AlignmentFlag.AlignCenter,
-            )
-            track_layout.addWidget(title, 2, column)
-            track_layout.addWidget(context, 3, column)
-            track_layout.setColumnStretch(column, 1)
-        self.report_timeline_layout.addWidget(track)
+                current_bar.setValue(previous_value)
+            self._report_timeline_initialized = True
+            self._update_report_timeline_controls()
 
-    @staticmethod
-    def _report_milestone_month_label(value: str) -> str:
-        months = (
-            "Jan",
-            "Feb",
-            "Mär",
-            "Apr",
-            "Mai",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Okt",
-            "Nov",
-            "Dez",
+        QTimer.singleShot(0, restore_position)
+
+    def _capture_report_timeline_state(
+        self,
+    ) -> tuple[bool, tuple[str, ...], int]:
+        scroll = getattr(self, "report_timeline_scroll", None)
+        track = getattr(self, "report_timeline_track", None)
+        if not isinstance(scroll, QScrollArea) or track is None:
+            return False, (), 0
+        bar = scroll.horizontalScrollBar()
+        at_end = bar.value() >= max(bar.minimum(), bar.maximum() - 2)
+        anchor = ()
+        cards = tuple(
+            card
+            for card in track.findChildren(QFrame)
+            if card.objectName() == "ReportOverviewTimelineEventCard"
         )
-        try:
-            month = int(value[5:7])
-        except (TypeError, ValueError):
-            return "—"
-        return months[month - 1] if 1 <= month <= 12 else "—"
+        for card in cards:
+            if card.x() + card.width() >= bar.value():
+                anchor = tuple(card.property("source_identity") or ())
+                break
+        return at_end, anchor, bar.value()
+
+    def _report_timeline_card_width(self) -> int:
+        capacity = (
+            5
+            if self.width() >= 1280
+            else 4
+            if self.width() >= 960
+            else 2
+        )
+        available_width = max(360, self.width() - 150)
+        return max(140, int((available_width - (capacity - 1) * 8) / capacity))
+
+    def _update_report_timeline_controls(self) -> None:
+        scroll = getattr(self, "report_timeline_scroll", None)
+        left_button = getattr(self, "report_timeline_left_button", None)
+        right_button = getattr(self, "report_timeline_right_button", None)
+        if (
+            not isinstance(scroll, QScrollArea)
+            or left_button is None
+            or right_button is None
+        ):
+            return
+        bar = scroll.horizontalScrollBar()
+        left_button.setEnabled(bar.value() > bar.minimum())
+        right_button.setEnabled(bar.value() < bar.maximum())
 
     def _render_report_history(
         self,
@@ -3031,6 +3198,10 @@ class StudentProfileScreen(QWidget):
             )
             if subject_index >= 0:
                 self.competency_subject_filter.setCurrentIndex(subject_index)
+        elif action.action_key == "show_observation":
+            self._show_observations_tab(action.target_id)
+        elif action.action_key == "show_competency":
+            self._select_profile_section("competencies")
         elif action.action_key == "select_learning_conference":
             self.learning_conference_requested.emit(student_id)
         elif action.action_key == "open_learning_conference":
