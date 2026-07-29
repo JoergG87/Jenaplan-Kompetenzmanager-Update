@@ -18,9 +18,17 @@ Bewegung sind unzulässig.
 Die vollständige gelieferte Liste besitzt grundsätzlich den Zielumfang 15;
 alle gültigen Bericht-/LEG-Abschlussereignisse bleiben auch bei mehr als 15
 Einträgen sichtbar. Das Widget entfernt, priorisiert oder sortiert keine
-Ereignisse. Jede Karte trägt ein vollständiges Datum, einen sachlichen
+Ereignisse. Jedes Ereignis trägt ein vollständiges Datum, einen sachlichen
 Ereignistyp und nur vorhandenen neutralen Kontext. Bericht und LEG bleiben als
 Dokumenttypen erkennbar.
+
+Die sichtbare Timeline verwendet die ruhige verbundene Meilensteinachse der
+vorherigen Berichte-Übersicht: ein kompakter runder Ereignismarker je
+geliefertem Ereignis, vollständiges Datum sowie zentrierter Titel und
+vorhandener Kontext. Große voneinander getrennte Inhaltskarten sind für diesen
+Bereich nicht vorgesehen. Die Achse ist ausschließlich Formsprache; sie
+verbindet keine fachlichen Entwicklungsstufen und erzeugt keine
+Verlaufsinterpretation.
 
 Der Berichtsbereich unterstützt die Auswahl vorhandener Belege für einen
 Bericht. Er ist keine zusätzliche Lernentwicklungsdarstellung und dupliziert

@@ -2894,73 +2894,109 @@ class StudentProfileScreen(QWidget):
         track = QWidget()
         track.setObjectName("ReportOverviewTimelineTrack")
         track_layout = QHBoxLayout(track)
-        track_layout.setContentsMargins(0, 0, 0, 0)
-        track_layout.setSpacing(8)
+        track_layout.setContentsMargins(8, 0, 8, 0)
+        track_layout.setSpacing(0)
         card_width = self._report_timeline_card_width()
         icon_styles = {
-            "report": "report",
-            "learning_conference": "conference",
-            "observation": "observation",
-            "confirmation": "student-record",
+            "report": ("report", "#E7F1FB", "#2F78B7"),
+            "learning_conference": ("conference", "#F0EAFE", "#7959C7"),
+            "observation": ("observation", "#EAF5F5", "#278D91"),
+            "confirmation": ("student-record", "#E4F4EF", "#23866F"),
         }
-        for event in events:
-            event_card = AppCard("soft")
+        for index, event in enumerate(events):
+            event_card = QWidget()
             event_card.setObjectName("ReportOverviewTimelineEventCard")
             event_card.setProperty(
                 "source_identity",
                 event.source_identity,
             )
             event_card.setFixedWidth(card_width)
-            event_card.setMinimumHeight(158)
+            event_card.setMinimumHeight(148)
             event_card.setAccessibleName(event.accessible_name)
             event_layout = QVBoxLayout(event_card)
-            event_layout.setContentsMargins(11, 10, 11, 10)
-            event_layout.setSpacing(6)
-            event_header = QHBoxLayout()
-            event_header.setSpacing(7)
-            marker = QLabel()
-            marker.setObjectName("ReportOverviewTimelineEventIcon")
-            marker.setPixmap(
-                load_icon(
-                    icon_styles.get(event.event_type, "info")
-                ).pixmap(QSize(18, 18))
-            )
-            marker.setFixedSize(28, 28)
-            marker.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            event_layout.setContentsMargins(0, 6, 0, 4)
+            event_layout.setSpacing(4)
             date_label = QLabel(event.date_label)
             date_label.setObjectName("ReportOverviewTimelineEventDate")
+            date_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             set_label_style(date_label, "small")
-            event_header.addWidget(marker)
-            event_header.addWidget(date_label)
-            event_header.addStretch(1)
+            event_layout.addWidget(date_label)
+
+            axis = QHBoxLayout()
+            axis.setContentsMargins(0, 0, 0, 0)
+            axis.setSpacing(0)
+            left_connector = QFrame()
+            left_connector.setObjectName(
+                "ReportOverviewTimelineConnector"
+            )
+            left_connector.setFixedHeight(2)
+            left_connector.setProperty("edge", index == 0)
+            right_connector = QFrame()
+            right_connector.setObjectName(
+                "ReportOverviewTimelineConnector"
+            )
+            right_connector.setFixedHeight(2)
+            right_connector.setProperty(
+                "edge",
+                index == len(events) - 1,
+            )
+            marker = QPushButton()
+            marker.setObjectName("ReportOverviewTimelineEventAction")
+            marker.setFixedSize(36, 36)
+            icon_name, background, border = icon_styles.get(
+                event.event_type,
+                ("info", "#EEF3F6", "#7B93A3"),
+            )
+            marker.setIcon(load_icon(icon_name))
+            marker.setIconSize(QSize(18, 18))
+            marker.setAccessibleName(event.accessible_name)
+            marker.setToolTip(
+                f"{event.date_label} · {event.title} · {event.detail_text}"
+            )
+            marker.setStyleSheet(
+                "QPushButton#ReportOverviewTimelineEventAction {"
+                f"background-color: {background};"
+                f"border: 1px solid {border};"
+                "border-radius: 18px;"
+                "padding: 0;"
+                "}"
+                "QPushButton#ReportOverviewTimelineEventAction:hover {"
+                "background-color: #FFFFFF;"
+                "}"
+                "QPushButton#ReportOverviewTimelineEventAction:focus {"
+                f"border: 2px solid {border};"
+                "}"
+                "QPushButton#ReportOverviewTimelineEventAction:disabled {"
+                f"background-color: {background};"
+                f"border: 1px solid {border};"
+                "}"
+            )
+            if event.action is not None:
+                marker.clicked.connect(
+                    lambda _checked=False, selected=event.action: (
+                        self._dispatch_report_overview_action(selected)
+                    )
+                )
+            else:
+                marker.setEnabled(False)
+            axis.addWidget(left_connector, 1)
+            axis.addWidget(marker)
+            axis.addWidget(right_connector, 1)
+            event_layout.addLayout(axis)
+
             title = QLabel(event.title)
             title.setObjectName("ReportOverviewTimelineEventTitle")
             title.setWordWrap(True)
+            title.setAlignment(Qt.AlignmentFlag.AlignCenter)
             set_label_style(title, "card_title")
             detail = QLabel(event.detail_text)
             detail.setObjectName("ReportOverviewTimelineEventDetail")
             detail.setWordWrap(True)
+            detail.setAlignment(Qt.AlignmentFlag.AlignCenter)
             set_label_style(detail, "subtle")
-            event_layout.addLayout(event_header)
             event_layout.addWidget(title)
             event_layout.addWidget(detail)
             event_layout.addStretch(1)
-            if event.action is not None:
-                action_button = self._report_action_button(
-                    event.action,
-                    role="quiet",
-                )
-                action_button.setObjectName(
-                    "ReportOverviewTimelineEventAction"
-                )
-                action_button.setAccessibleName(
-                    event.accessible_name
-                )
-                event_layout.addWidget(
-                    action_button,
-                    0,
-                    Qt.AlignmentFlag.AlignLeft,
-                )
             track_layout.addWidget(event_card)
         track.adjustSize()
         track.setMinimumSize(track.sizeHint())
@@ -3008,7 +3044,7 @@ class StudentProfileScreen(QWidget):
                 anchored_card = next(
                     (
                         card
-                        for card in track.findChildren(QFrame)
+                        for card in track.findChildren(QWidget)
                         if (
                             card.objectName()
                             == "ReportOverviewTimelineEventCard"
@@ -3043,11 +3079,11 @@ class StudentProfileScreen(QWidget):
         anchor = ()
         cards = tuple(
             card
-            for card in track.findChildren(QFrame)
+            for card in track.findChildren(QWidget)
             if card.objectName() == "ReportOverviewTimelineEventCard"
         )
         for card in cards:
-            if card.x() + card.width() >= bar.value():
+            if card.x() + card.width() > bar.value():
                 anchor = tuple(card.property("source_identity") or ())
                 break
         return at_end, anchor, bar.value()

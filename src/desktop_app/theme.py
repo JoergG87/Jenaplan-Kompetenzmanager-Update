@@ -1109,13 +1109,12 @@ QFrame#ReportOverviewCompetencySegment {{
     border: none;
     border-radius: 3px;
 }}
-QFrame#ReportOverviewTimelineEventCard {{
-    border-color: #C9DCE5;
+QFrame#ReportOverviewTimelineConnector {{
+    background-color: #B9CEDB;
+    border: none;
 }}
-QLabel#ReportOverviewTimelineEventIcon {{
-    background-color: #EAF5F5;
-    border: 1px solid #BFDCDC;
-    border-radius: 7px;
+QFrame#ReportOverviewTimelineConnector[edge="true"] {{
+    background-color: transparent;
 }}
 QPushButton#ReportOverviewTimelinePrevious,
 QPushButton#ReportOverviewTimelineNext {{

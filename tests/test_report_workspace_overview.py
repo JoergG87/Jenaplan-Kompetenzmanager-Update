@@ -960,6 +960,15 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             for card in track.findChildren(QWidget)
             if card.objectName() == "ReportOverviewTimelineEventCard"
         ]
+        markers = track.findChildren(
+            QPushButton,
+            "ReportOverviewTimelineEventAction",
+        )
+        connectors = [
+            widget
+            for widget in track.findChildren(QWidget)
+            if widget.objectName() == "ReportOverviewTimelineConnector"
+        ]
         labels = " ".join(
             label.text() for label in track.findChildren(QLabel)
         )
@@ -967,6 +976,8 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         bar = scroll.horizontalScrollBar()
 
         self.assertEqual(len(cards), 18)
+        self.assertEqual(len(markers), 18)
+        self.assertEqual(len(connectors), 36)
         self.assertIn("01.01.2026", labels)
         self.assertIn("18.01.2026", labels)
         self.assertNotIn("Uhrzeiten ablesen", labels)

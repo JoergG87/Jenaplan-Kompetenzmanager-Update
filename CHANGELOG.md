@@ -8,8 +8,11 @@
   inklusive Zeitraumfilterung und getrennte hashverifizierte Bericht-/LEG-
   Batchreads. Die UI zeigt absolute Fachsegmente ohne Nenner oder Restspur,
   kleine fachbezogene Orientierungssymbole und die vollständige chronologische
-  Timeline horizontal mit 2/4/5-Viewport, Scrollbar, Steuerbuttons,
-  Tastaturbedienung und stabiler ID-Navigation. Die früheren neutralen
+  Timeline horizontal mit verbundener Meilensteinachse, kompakten runden
+  Ereignismarkern, 2/4/5-Viewport, Scrollbar, Steuerbuttons,
+  Tastaturbedienung und stabiler ID-Navigation. Die großen voneinander
+  getrennten Timeline-Inhaltskarten wurden zugunsten der ruhigeren
+  Paket-1-Formsprache wieder entfernt. Die früheren neutralen
   Platzhalterkarten `Stärken` und `Im Blick behalten` entfallen im
   Berichtsbereich vollständig. Keine neue Tabelle, Migration, Schreiblogik
   oder Persistenz. Reale macOS-Trackpad- und VoiceOver-Abnahme, Build,
