@@ -1,6 +1,6 @@
 # Data Registry
 
-## Phase 2 Entwicklungsübersicht - ausschließlich vorhandene Lesequellen
+## Phase 2 Berichte-Übersicht - ausschließlich vorhandene Lesequellen
 
 **Status:** Zielvertrag beschlossen, nicht implementiert. Es entsteht keine
 neue Datenquelle, Tabelle, Relation, materialisierte Sicht oder gespeicherte
@@ -9,11 +9,11 @@ Timeline.
 | Datenquelle / Rolle | Zulässiger Phase-2-Inhalt | Persistenz / Grenze | Status |
 |---|---|---|---|
 | eindeutig gewählter RPD | `period_start`, `period_end` und vorhandener Draftstatus | vorhandener RPD-Application-/Repository-Pfad | einziger inklusiver Zeitraumvertrag und Berichtarbeitsstand; kein Draft-Ereignis |
-| zugehörige RPT-/RPV-Lesesicht | jede gültige finalisierte Berichtrevision mit stabiler Revisionsidentität und `finalized_at` ausschließlich des gewählten RPD | vorhandener getrennter Bericht-Revisionspfad | einzige Phase-2-Quelle für Bericht-Abschlussereignisse |
+| bestehende RPT-/RPV-Lesesicht des Schülers | abgeschlossenes Berichtaggregat; neueste gültige, hashverifizierte Revision mit unveränderter `report_draft_id`, Revisions-ID und `finalized_at` | vorhandener getrennter Bericht-Revisionspfad; Zeitraumfilter ausschließlich gegen die Grenzen des ausgewählten RPD | höchstens ein Bericht-Timeline-Ereignis je `report_draft_id`; frühere Revisionen nur Revisionshistorie |
 | bestehende LCD-Liste | getrennte LEG-Status- und Navigationswerte | vorhandener LEG-Application-/Repository-Pfad | kanonischer LEG-Arbeitsstand; kein Draft-Ereignis |
-| bestehende LCF-/LCV-Lesesicht | jedes tatsächlich durchgeführte beziehungsweise fachlich abgeschlossene LEG mit stabiler Abschluss-/Revisionsidentität und `completed_at` | vorhandener LEG-Revisionspfad | einzige Phase-2-Quelle für LEG-Abschlussereignisse |
+| bestehende LCF-/LCV-Lesesicht | tatsächlich durchgeführtes und fachlich abgeschlossenes LEG-Aggregat; neueste gültige, hashverifizierte Revision mit unveränderter `learning_conference_draft_id` und Revisions-ID | vorhandener LEG-Revisionspfad | höchstens ein LEG-Timeline-Ereignis je `learning_conference_draft_id`; fachliches Datum `conference_date`, `completed_at` nur Lifecycle |
 | aktive Beobachtungslesesicht | `observation_id`, `observations.date`, primäres Fach, vorhandene Kompetenz- und Fachzuordnungen | vorhandener Beobachtungslesepfad; read-only | kanonische Beobachtungsquelle |
-| vorhandene Zuordnungen aktiver Beobachtungen | Paar `(observation_id, competency_id)` und vorhandene `subject_id` | bestehende Beobachtung-Kompetenz-Zuordnung; keine automatische Ergänzung | einzige Quelle für `Kompetenz dokumentiert` |
+| vorhandene Zuordnungen aktiver Beobachtungen | Paar `(observation_id, competency_id)` und vorhandene `subject_id` | bestehende Beobachtung-Kompetenz-Zuordnung; keine automatische Ergänzung | Quelle für Fachkarten, Segmente, Belegdetails, Fachzuordnung und Deduplizierung; kein eigenes Timeline-Ereignis |
 | kanonische Kompetenzstatusprojektion | aktiv/historisch, `catalog_status`, aktuell sicherer `confirmed_rating`, `confirmed_at`, `documentation_state` | vorhandene Kompetenzstatusprojektion; read-only | einzige Quelle für aktuellen Kompetenz- und Bestätigungsstand |
 
 Ausdrücklich keine Phase-2-Timeline-Quellen sind
@@ -21,6 +21,10 @@ Ausdrücklich keine Phase-2-Timeline-Quellen sind
 `persistence_events`, deren technische Sequenzen und Zeitstempel,
 RPD-Relationstabellen als Ersatz für Beobachtungen sowie aktuelle Inhalte aus
 unveränderlichen Bericht- oder LEG-Revisionssnapshots.
+Einzige Ausnahme für ein LEG-Timeline-Ereignis ist das fachliche
+`conference_date` aus dem hashverifizierten Snapshot der neuesten gültigen
+LCV. Andere Snapshotinhalte sind weder Live-Dokumentationsquelle noch
+Timeline-Ereignis.
 `persistence_events` darf ausschließlich innerhalb der kanonischen
 Kompetenzstatusprojektion die technische Frische des aktuellen
 Bestätigungsstands absichern.

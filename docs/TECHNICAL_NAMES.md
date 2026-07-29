@@ -1,17 +1,25 @@
 # Technical Naming Registry
 
-## Phase 2 Entwicklungsübersicht - beschlossen, nicht implementiert
+## Phase 2 Berichte-Übersicht - beschlossen, nicht implementiert
 
-Die folgenden Namen sind für den späteren Phase-2-Umsetzungsauftrag
-registriert. Ihre Registrierung behauptet weder vorhandenen Code noch eine
-Implementierungsfreigabe.
+Die folgenden Namen sind für den freigegebenen Phase-2-Umsetzungsauftrag
+registriert. Vor der technischen Umsetzung behauptet ihre Registrierung noch
+keinen vorhandenen Code.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
-| `ReportOverviewTimelineEventViewModel` | Flüchtiges displayfertiges Dokumentationsereignis mit vorhandenem Ereignistyp, normalisiertem fachlichem Zeitpunkt, stabiler Quellidentität, neutralem Text und optional vorhandenem Navigationsziel; keine Persistenz und keine pädagogische Bewertung | Desktop ViewModel |
+| `ReportOverviewTimelineEventViewModel` | Flüchtiges displayfertiges Dokumentationsereignis mit vorhandenem Ereignistyp, normalisiertem fachlichem Zeitpunkt, stabiler Quellidentität, neutralem Text und optional vorhandenem Navigationsziel; zulässige Identitäten sind `("observation", observation_id)`, `("report", report_draft_id)`, `("learning_conference", learning_conference_draft_id)` und `("confirmation", student_id, competency_id)`; keine Persistenz und keine pädagogische Bewertung | Desktop ViewModel |
 | `ReportOverviewSubjectDocumentationViewModel` | RPD-zeitraumbezogene, je Fach deduplizierte Mengen aktueller dokumentierter Kompetenzen und vorhandener Beobachtungen; ohne Nenner, Prozent- oder Qualitätssemantik | Desktop ViewModel |
 | `ReportOverviewProjectionWarningViewModel` | Flüchtiger neutraler Anzeigezustand für unvollständig lesbare Phase-2-Dokumentationsdaten; keine Fehlerkorrektur oder Ersatzannahme | Desktop ViewModel |
 | `ReportOverviewViewModel.timeline_events` | Vollständige ausgewählte und deterministisch geordnete Phase-2-Timeline-Liste: alle gültigen Bericht-/LEG-Abschlussereignisse sowie bei weniger als 15 Dokumentereignissen die rein zeitliche Ergänzung bis zum Zielumfang 15; keine Viewport-, Relevanz- oder Prioritätsauswahl | Desktop ViewModel |
+
+Kompetenzzuordnungen `(observation_id, competency_id)` bleiben Grundlage für
+Fachkarten, Segmente, Belegdetails, Fachzuordnung und Deduplizierung. Sie
+erzeugen keinen eigenen `ReportOverviewTimelineEventViewModel`. Bericht und
+LEG verwenden die jeweilige Draft-ID als Aggregatidentität und die neueste
+gültige, hashverifizierte Revision ausschließlich als sichtbaren Stand und
+Navigationsziel. Das LEG-Timeline-Datum ist `conference_date`;
+`completed_at` bleibt technischer Lifecyclezeitpunkt.
 
 `LearningReportSubjectViewModel.current_count` bleibt ein vorhandener
 Paket-1-/Berichtvorbereitungsname, ist aber kein Bestandteil des

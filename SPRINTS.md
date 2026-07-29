@@ -1,31 +1,46 @@
 # Sprintplanung
 
-## Phase 2 Entwicklungsübersicht - Governance integriert, Umsetzung gesperrt
+## Phase 2 Berichte-Übersicht - Umsetzung freigegeben, noch nicht implementiert
 
 **Status:** Produkt-, Architektur- und UX-Ziel beschlossen und in die
-bestehenden Governance-Dokumente integriert; nicht implementiert. Keine
-Implementierungs-, Datenmodell-, Migrations-, Test-, Build-, Packaging- oder
+bestehenden Governance-Dokumente integriert; noch nicht implementiert. Der
+Product Owner hat am 29. Juli 2026 ausschließlich die kontrollierte lokale
+Umsetzung und Prüfung der Pakete 2A.1, 2A.2, 2B und 2C freigegeben. Keine
+Datenmodell-, Migrations-, Build-, Packaging-, Push-, Tag- oder
 Releasefreigabe.
 
 - [x] Ereignisorientierte, nicht pädagogisch priorisierte Timeline festlegen.
 - [x] Ausschließlich den inklusiven Zeitraum des eindeutig gewählten RPD
   festlegen.
 - [x] Vorhandene Bericht-, LEG-, Beobachtungs-, Kompetenzzuordnungs- und
-  kanonische Kompetenzstatusprojektionen als einzige Lesequellen festlegen.
+  kanonische Kompetenzstatusprojektionen als einzige Lesequellen festlegen;
+  Kompetenzzuordnungen erzeugen keine eigenen Timeline-Karten.
 - [x] `persistence_events` und `orientation_changes` als Timeline-Quellen
   ausschließen.
 - [x] Schnellbeobachtungs-, Fach-/Globaldeduplizierungs-, aktuellen
   Bestätigungs- und Historienausschlussvertrag festlegen.
 - [x] Absolute Fachkartendarstellung ohne Nenner, x/y, Prozent oder Bewertung
   festlegen.
+- [x] Je aktivem `observation_id`, abgeschlossenem `report_draft_id`,
+  abgeschlossenem `learning_conference_draft_id` und aktuellem sicheren
+  Bestätigungsstand höchstens ein Timeline-Ereignis festlegen.
+- [x] Neueste gültige, hashverifizierte Revision nur als Navigationsziel und
+  sichtbaren Aggregatstand festlegen; technische Revisionen bleiben
+  ausschließlich in ihren Revisionshistorien.
+- [x] `finalized_at` als Berichtzeitpunkt und `conference_date` als
+  LEG-Zeitpunkt festlegen; `completed_at` bleibt technischer Lifecyclewert.
+- [x] Berichtsbereich als Belegübersicht ohne neue Entwicklungsanalyse,
+  Themenverlauf, Drill-down, automatische Zusammenfassung oder Formulierung
+  festlegen.
 - [x] Architektur, technische Namen, Datenquellen, Lifecycle, Ownership,
   UI-Mapping und Design-System in ihren zuständigen Sources of Truth
   fortschreiben.
-- [ ] Gesonderten technischen Entwurf und Umsetzungsauftrag durch den Product
+- [x] Gesonderten technischen Entwurf und Umsetzungsauftrag durch den Product
   Owner freigeben.
 - [ ] Phase 2 implementieren.
-- [ ] Fokussierte Regressionen, Gesamtsuite, Build, Packaging und reale
-  UX-Abnahme in später ausdrücklich freigegebenem Umfang durchführen.
+- [ ] Fokussierte Regressionen und Gesamtsuite ausführen.
+- [ ] Build, Packaging und reale UX-Abnahme in später ausdrücklich
+  freigegebenem Umfang durchführen.
 
 ## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1.1
 

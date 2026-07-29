@@ -1,39 +1,78 @@
 # Architekturentscheidungen
 
-## ADR-094 - Phase-2-Entwicklungsübersicht ist eine rein lesende Dokumentationsprojektion
+## ADR-094 - Phase-2-Berichte-Übersicht ist eine rein lesende Belegprojektion
 
 **Status:** Angenommen als Zielarchitektur; nicht implementiert.
 
-Die Phase-2-Entwicklungsübersicht verwendet ausschließlich vorhandene
-kanonische Lesequellen: den eindeutig gewählten RPD und seine Berichtpfade,
-die getrennten LEG-Pfade, aktive Beobachtungen mit vorhandenen
-Kompetenzzuordnungen sowie die kanonische Projektion des aktuellen
-Kompetenz- und Bestätigungsstands. Sie führt keine Tabelle, Migration,
-gespeicherte Timeline, neue fachliche Datenquelle oder neue Statuslogik ein.
+Die Phase-2-Berichte-Übersicht unterstützt die Berichtsvorbereitung, indem sie
+vorhandene Beobachtungen, Belege und reale Dokumentereignisse im gewählten
+Berichtszeitraum neutral zusammenführt. Sie ist keine Entwicklungsanalyse und
+erzeugt weder einen Themenverlauf noch einen Kompetenzentwicklungs-Drill-down,
+eine automatische Entwicklungszusammenfassung oder eine automatische
+Berichtsformulierung. Der bestehende Profilbereich `Überblick` bleibt
+Eigentümer der kompakten Lernentwicklungsdarstellung; `Kompetenzen` bleibt
+Eigentümer der detaillierten Kompetenz- und Belegansicht.
+
+Die Oberfläche darf unterstützen, aber niemals pädagogische Entscheidungen
+treffen. Stärke, Schwäche, Defizit, Förderbedarf, Trend, Wichtigkeit,
+pädagogische Relevanz und automatische Priorität werden weder abgeleitet noch
+sichtbar behauptet.
+
+Die Projektion verwendet ausschließlich vorhandene kanonische Lesequellen:
+den eindeutig gewählten RPD als alleinige Zeitraumquelle, die getrennten
+Bericht- und LEG-Pfade des Schülers, aktive Beobachtungen mit vorhandenen
+Kompetenzzuordnungen sowie die kanonische Projektion des aktuellen Kompetenz-
+und Bestätigungsstands. Sie führt keine Tabelle, Migration, gespeicherte
+Timeline, neue fachliche Datenquelle oder neue Statuslogik ein.
 
 `period_start` und `period_end` des eindeutig gewählten RPD bilden den einzigen
 inklusiven Zeitraumvertrag. Schuljahr, Halbjahr, Kalenderjahr, Tagesdatum,
 LEG-Zeitraum oder andere RPD sind keine Fallbacks. Fehlende oder ungültige
 Datumswerte werden nicht ersetzt; betroffene Inhalte bleiben aus der
 Zeitraumprojektion ausgeschlossen und führen zu einem neutralen
-Unvollständigkeitszustand.
+Unvollständigkeitszustand. Ohne eine bewusst getroffene, weiterhin gültige
+Auswahl entsteht keine Phase-2-Projektion; weder ein einzelner vorhandener RPD
+noch eine veraltete Auswahl wird automatisch ersetzt oder aktiviert.
 
-Die flüchtige Ereignisprojektion verwendet vorhandene stabile Identitäten.
-Eine Beobachtung wird global über `observation_id` dedupliziert.
-`Kompetenz dokumentiert` entsteht ausschließlich je vorhandener Zuordnung
-`(observation_id, competency_id)`. Eine Schnellbeobachtung ohne Zuordnung
-bleibt eine Beobachtung und erzeugt kein Kompetenzereignis.
+Die flüchtige Ereignisprojektion verwendet ausschließlich folgende stabile
+Identitäten:
 
-Die Timeline nimmt innerhalb des RPD-Zeitraums jede gültige finalisierte
-Berichtrevision und jedes tatsächlich durchgeführte beziehungsweise fachlich
-abgeschlossene LEG auf. Draft-Öffnen, Draft-Speichern, `updated_at`, technische
-Bearbeitungs- oder Verwaltungszeitpunkte und Zwischenstände ohne fachlichen
-Abschluss sind keine Timeline-Ereignisse. Der Zielumfang beträgt 15
+- eine aktive Beobachtung höchstens einmal als
+  `("observation", observation_id)`;
+- ein fachlich abgeschlossenes Berichtaggregat höchstens einmal als
+  `("report", report_draft_id)`;
+- ein tatsächlich durchgeführtes und fachlich abgeschlossenes LEG-Aggregat
+  höchstens einmal als
+  `("learning_conference", learning_conference_draft_id)`;
+- den aktuell vorhandenen sicheren Bestätigungsstand höchstens einmal als
+  `("confirmation", student_id, competency_id)`.
+
+Vorhandene Paare `(observation_id, competency_id)` bleiben Grundlage für
+Fachkartenzählung, Kompetenzsegmente, Belegdetails, Fachzuordnung und
+Deduplizierung. Sie erzeugen keine eigenen Timeline-Ereignisse. Eine
+Schnellbeobachtung ohne Zuordnung bleibt eine Beobachtung und erzeugt keine
+dokumentierte Kompetenz.
+
+Für ein Berichtaggregat wird ausschließlich die neueste gültige,
+hashverifizierte Revision als sichtbarer Stand und Navigationsziel verwendet;
+deren `finalized_at` ist der fachliche Timeline-Zeitpunkt. Frühere technische
+Revisionen bleiben in der Revisionshistorie und erzeugen keine zusätzlichen
+Timeline-Karten. Für ein LEG-Aggregat wird ebenfalls ausschließlich die
+neueste gültige, hashverifizierte Revision als Navigationsziel verwendet. Das
+fachliche Timeline-Datum ist `conference_date`; `completed_at` bleibt ein
+technischer Lifecycle-Zeitpunkt. Frühere LEG-Revisionen bleiben in der
+LEG-Revisionshistorie.
+
+Draft-Öffnen, Draft-Speichern, `updated_at`, technische Bearbeitungs- oder
+Verwaltungszeitpunkte, Zwischenstände, Revisionen als solche,
+`orientation_changes`, `persistence_events`, Hashes, Sequenzen und
+Operation-Token sind keine Timeline-Ereignisse. Der Zielumfang beträgt 15
 Ereignisse. Liegen weniger als 15 verpflichtende Bericht-/LEG-Ereignisse vor,
-wird die Timeline mit den zeitlich neuesten zulässigen Beobachtungs-,
-Kompetenzdokumentations- und aktuellen sicheren Bestätigungsereignissen
-aufgefüllt. Liegen mehr als 15 gültige Bericht-/LEG-Abschlussereignisse vor,
-bleiben alle enthalten; 15 ist für Dokumentereignisse keine Obergrenze.
+wird die Timeline mit den zeitlich neuesten zulässigen Beobachtungs- und
+aktuellen sicheren Bestätigungsereignissen aufgefüllt. Liegen mindestens 15
+gültige Bericht-/LEG-Aggregatereignisse vor, bleiben alle enthalten und es
+werden keine ergänzenden Ereignisse aufgenommen; 15 ist für Dokumentereignisse
+keine Obergrenze.
 
 Ergänzende Ereignisse werden ausschließlich nach fachlichem Zeitpunkt und bei
 Zeitgleichheit nach stabiler technischer Quellidentität in aufsteigender
@@ -55,10 +94,15 @@ Ereignisinhalte.
 
 Fachbezogene Dokumentationsmengen werden als Mengen stabiler Kompetenz- und
 Beobachtungsidentitäten im RPD-Zeitraum gebildet. Sie besitzen keinen
-curricularen Nenner, keine Prozent- oder x/y-Semantik und keine
-Bewertungsbedeutung. Historische Kompetenzen zählen nicht zum aktuellen
-Kompetenzbestand; zugehörige reale Beobachtungen bleiben nach ihrem eigenen
-Identitätsvertrag lesbar.
+curricularen Nenner, keine Restspur, Prozent- oder x/y-Semantik,
+Normalisierung, Schwelle oder Bewertungsbedeutung. Mit vorhandenen
+Kompetenzzuordnungen entsteht die Fachmenge ausschließlich aus deren
+tatsächlichen `subject_id`; `observations.subject_id` ist dann kein Fallback.
+Ohne Zuordnung wird ausschließlich `observations.subject_id` verwendet.
+`cross_subject` erzeugt keine Fachkarte. Historische oder deaktivierte
+Kompetenzen zählen nicht zum aktuellen Kompetenzbestand und erzeugen kein
+aktuelles Bestätigungsereignis; zugehörige reale aktive Beobachtungen bleiben
+nach ihrem eigenen Identitätsvertrag lesbar.
 
 `StudentDesktopAdapter.report_overview_for_student` bleibt die
 Kompositionsgrenze. Repositories und Application Services behalten ihre
@@ -80,8 +124,10 @@ Displaykomposition. ADR-051 bleibt für Schnellbeobachtungen ohne automatische
 Kompetenzzuordnung verbindlich; ADR-089 bleibt technische Wahrheit für
 Persistenzreihenfolge und Wiederanlauf.
 
-Diese Entscheidung enthält keine Freigabe für Implementierung, Datenmodell,
-Migration, Tests, Build, Packaging oder Release.
+Der gesonderte Product-Owner-Auftrag vom 29. Juli 2026 gibt ausschließlich die
+kontrollierte lokale Umsetzung und Prüfung der Pakete 2A.1, 2A.2, 2B und 2C
+frei. Datenmodelländerung, Migration, Build, Packaging, Push, Tag und Release
+bleiben ausgeschlossen.
 
 ## ADR-093 - Security-Funktionen werden im Bundle nur über doppelt gegatete interne Smokes geprüft
 

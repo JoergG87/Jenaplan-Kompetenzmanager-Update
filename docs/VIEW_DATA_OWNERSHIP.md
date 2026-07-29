@@ -1,6 +1,6 @@
 # View Data Ownership
 
-## Phase 2 Entwicklungsübersicht - beschlossen, nicht implementiert
+## Phase 2 Berichte-Übersicht - beschlossen, nicht implementiert
 
 `StudentDesktopAdapter.report_overview_for_student` bleibt die einzige
 Desktop-Kompositionsgrenze. Er bestimmt den eindeutig gewählten RPD, hält
@@ -9,9 +9,17 @@ RPD-, Bericht-, LEG-, Beobachtungs- und kanonische Kompetenzstatuswerte an die
 reine Phase-2-ViewModel-Projektion. Repositories und Application Services
 behalten ihre bestehenden fachlichen Zuständigkeiten.
 
+Der Adapter friert den ausgewählten RPD-Zeitraum einmal ein, verifiziert die
+neueste gültige Bericht- beziehungsweise LEG-Revision je Aggregat, reicht
+stabile IDs unverändert weiter und klassifiziert Quellenfehler neutral.
+Live-Dokumentation wird möglichst in einem SQLite-Read-Snapshot gelesen. Ein
+Fehler einer Quelle darf weiterhin gültige getrennte Dokumentereignisse nicht
+entfernen.
+
 Die ViewModel-Projektion besitzt RPD-Zeitraumfilter, Datumsnormalisierung,
-Ereignisidentitäten, die vollständige Aufnahme aller gültigen Bericht- und
-LEG-Abschlussereignisse, die rein zeitliche Ergänzung bis zum Zielumfang 15,
+Ereignisidentitäten, je Aggregat höchstens ein gültiges Bericht- und
+LEG-Abschlussereignis, die rein zeitliche Ergänzung mit Beobachtungen und
+aktuellen sicheren Bestätigungen bis zum Zielumfang 15,
 die chronologische Gesamtordnung, Fach- und Globaldeduplizierung, aktuelle
 Kompetenz- und Beobachtungsmengen, den Ausschluss historischer Kompetenzen
 sowie displayfertige neutrale Texte, Accessible Names, Leer- und
@@ -32,12 +40,23 @@ Nenner. Es ermöglicht ausschließlich das bewusste Scrollen zu älteren
 enthaltenen Ereignissen; automatisches Karussell und automatische Bewegung
 sind unzulässig.
 
+Die horizontale Bedienung umfasst Trackpad, Scrollbar, sichtbare
+Links-/Rechtssteuerung und Tastatur mit sichtbarem Fokus und Accessible Names.
+Normales vertikales Scrollen bleibt Eigentum der äußeren Profilscrollfläche.
+Bei Resize wird die Position möglichst erhalten; war die Timeline am neuesten
+Ende, bleibt sie dort. Bei Refresh verwendet das Widget eine stabile
+gelieferte Ereignisidentität als Anker und trifft keine neue Inhaltsauswahl.
+
 Die Shell besitzt ausschließlich die Navigation mit vorhandenen Student-,
 Draft-, Revisions-, Fach-, Beobachtungs- und Kompetenz-IDs. Sie berechnet
 weder Zeitraum noch Ereignisse, Zähler, Bestätigungsstand oder historische
 Zugehörigkeit.
 
-Eine gemeinsame Timeline ist keine gemeinsame Bericht-/LEG-Domain. RPD/RPT/RPV
+Der Berichtsbereich ist eine neutrale Belegübersicht im gewählten
+Berichtszeitraum und keine Entwicklungsanalyse. `Überblick` bleibt Eigentümer
+der kompakten Lernentwicklungsdarstellung; `Kompetenzen` bleibt Eigentümer der
+detaillierten Kompetenz- und Belegansicht. Eine gemeinsame Timeline ist keine
+gemeinsame Bericht-/LEG-Domain. RPD/RPT/RPV
 und LCD/LCF/LCV behalten getrennte Aggregate, Repositories, Application
 Services, Integritätsprüfungen, Revisionen, Statusbegriffe und Lifecycle.
 

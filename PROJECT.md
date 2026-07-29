@@ -19,7 +19,7 @@ Paket-1-Semantik mit `documented_count/current_count`, Screen-eigener
 Inhaltsbegrenzung und `orientation_changes`. Er ist deshalb ausdrücklich
 nicht Phase-2-konform.
 
-### Beschlossen, aber nicht implementiert: Phase 2 Entwicklungsübersicht
+### Beschlossen, aber nicht implementiert: Phase 2 Berichte-Übersicht
 
 Phase 2 ist als Zielarchitektur und UX-Vertrag beschlossen. Dauerhafte Source
 of Truth sind die zuständigen Governance-Dokumente: Architektur in
@@ -29,14 +29,27 @@ Datenquellen in `docs/DATA_REGISTRY.md`, Projektionsablauf in
 `docs/VIEW_DATA_OWNERSHIP.md`, sichtbare Felder in
 `docs/UI_DATA_MAPPING.md` und UX in `docs/DESIGN_SYSTEM.md`.
 
-Die Phase-2-Entwicklungsübersicht verwendet ausschließlich den inklusiven
-Zeitraum des eindeutig gewählten RPD. Sie zeigt neutrale
-Dokumentationsereignisse einschließlich Bericht und LEG, bildet
-`Kompetenz dokumentiert` nur aus einer vorhandenen Zuordnung
-`(observation_id, competency_id)`, zählt Schnellbeobachtungen ohne solche
-Zuordnung nur als Beobachtung und verwendet ausschließlich den aktuellen
-sicheren Bestätigungsstand. `persistence_events` und
-`orientation_changes` sind keine Timeline-Quellen.
+Der Berichtsbereich beantwortet ausschließlich, welche vorhandenen
+Beobachtungen und Belege Laura für den Bericht verwenden kann. Er ist
+Berichtsvorbereitung und Dokumentationsübersicht im gewählten
+Berichtszeitraum, keine zusätzliche Entwicklungsanalyse. Der Profilbereich
+`Überblick` bleibt Eigentümer der kompakten Lernentwicklungsdarstellung;
+`Kompetenzen` bleibt Eigentümer der detaillierten Kompetenz- und Belegansicht.
+Phase 2 führt deshalb weder einen neuen Themenverlauf noch einen
+Kompetenzentwicklungs-Drill-down, eine dritte Lernentwicklungsdarstellung,
+eine automatische Entwicklungszusammenfassung oder eine automatische
+Berichtsformulierung ein.
+
+Die Phase-2-Berichte-Übersicht verwendet ausschließlich den inklusiven
+Zeitraum des eindeutig gewählten RPD. Sie zeigt pro aktivem
+`observation_id`, abgeschlossenem `report_draft_id`, abgeschlossenem
+`learning_conference_draft_id` und aktuellem sicheren
+`(student_id, competency_id)`-Bestätigungsstand höchstens ein neutrales
+Timeline-Ereignis. Kompetenzzuordnungen bleiben Fachkarten- und
+Beleggrundlage, erzeugen aber keine eigenen Timeline-Karten.
+`persistence_events` und `orientation_changes` sind keine Timeline-Quellen.
+Berichte verwenden `finalized_at` der neuesten gültigen, hashverifizierten
+Revision; LEG verwendet `conference_date`, nicht `completed_at`.
 
 Fachkarten zeigen absolute Dokumentationsmengen ohne Nenner, x/y-Semantik,
 Prozentwert oder Bewertung. Historische Kompetenzen bleiben aus aktuellen
@@ -46,8 +59,9 @@ ereignisorientiert und enthält weder Trend, Entwicklungsrichtung,
 pädagogische Priorisierung noch Stärke-, Defizit- oder Förderlogik.
 
 Diese Governance-Integration ändert keinen Code, kein Datenmodell und keine
-Persistenz. Phase 2 bleibt für Implementierung, Migration, Test, Build,
-Packaging und Release gesperrt.
+Persistenz. Der gesonderte Product-Owner-Auftrag vom 29. Juli 2026 gibt die
+kontrollierte lokale Umsetzung und Prüfung der Pakete 2A.1, 2A.2, 2B und 2C
+frei. Migration, Build, Packaging, Push, Tag und Release bleiben gesperrt.
 
 ## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1
 

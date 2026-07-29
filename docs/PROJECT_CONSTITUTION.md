@@ -1,12 +1,23 @@
 # Project Constitution
 
-## Entwicklungsübersichten projizieren Dokumentation, keine pädagogischen Entscheidungen
+## Die Oberfläche unterstützt, entscheidet aber nicht pädagogisch
 
-Unterstützende Entwicklungsübersichten dürfen ausschließlich vorhandene,
-kanonische Dokumentation in einer flüchtigen Anzeigeprojektion
-zusammenführen. Sie dürfen weder pädagogische Relevanz, Priorität, Stärke,
-Defizit, Förderbedarf, Trend, Entwicklungsrichtung noch Zielerreichung
-ableiten. Fehlende Dokumentation ist kein negativer Status.
+Die Oberfläche darf unterstützen, aber niemals pädagogische Entscheidungen
+treffen. Sie darf ausschließlich vorhandene, kanonische Dokumentation in
+einer flüchtigen Anzeigeprojektion zusammenführen und weder pädagogische
+Relevanz, Priorität, Stärke, Schwäche, Defizit, Förderbedarf, Trend,
+Entwicklungsrichtung noch Zielerreichung ableiten. Fehlende Dokumentation ist
+kein negativer Status.
+
+Im Schülerprofil besitzt `Überblick` die kompakte
+Lernentwicklungsdarstellung. `Kompetenzen` besitzt die detaillierte Kompetenz-
+und Belegansicht. `Berichte` besitzt ausschließlich die Berichtsvorbereitung
+und neutrale Übersicht vorhandener Beobachtungen und Belege im bewusst
+gewählten Berichtszeitraum. Der Berichtsbereich ist keine zusätzliche
+Entwicklungsanalyse und erzeugt weder Themenverlauf,
+Kompetenzentwicklungs-Drill-down, dritte Lernentwicklungsdarstellung,
+automatische Entwicklungszusammenfassung noch automatische
+Berichtsformulierung.
 
 Zeitraumbezogene Aussagen benötigen ihren ausdrücklich beschlossenen
 fachlichen Zeitraum. Technische Persistenz-, Wiederanlauf- und

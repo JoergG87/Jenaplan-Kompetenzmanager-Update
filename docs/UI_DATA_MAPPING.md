@@ -1,14 +1,17 @@
 # UI Data Mapping
 
-## Phase 2 Entwicklungsübersicht - beschlossen, nicht implementiert
+## Phase 2 Berichte-Übersicht - beschlossen, nicht implementiert
 
 | Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |
 |---|---|---|---|
 | Berichtszeitraum | `period_start` / `period_end` des eindeutig gewählten RPD | Nein | einziger inklusiver Zeitraum; ohne eindeutigen RPD keine inhaltliche Phase-2-Anzeige; keine Schuljahres- oder Kalenderjahresannahme |
 | Timeline | `ReportOverviewViewModel.timeline_events` | Nein | vollständige ausgewählte Liste mit Zielumfang `15`; alle gültigen Bericht-/LEG-Abschlussereignisse bleiben auch oberhalb von 15 enthalten; nach der Auswahl chronologisch vom ältesten zum neuesten Ereignis; keine Trend-, Rang-, Relevanz- oder Entwicklungsdarstellung |
-| Timeline-Ereignistyp | `ReportOverviewTimelineEventViewModel` aus vorhandener stabiler Quellidentität und vorhandenem fachlichem Zeitpunkt | Nein | ausschließlich `Bericht dokumentiert`, `LEG dokumentiert`, `Beobachtung dokumentiert`, `Kompetenz dokumentiert` oder `Kompetenz bestätigt`; Bericht nur aus gültiger finalisierter Revision, LEG nur aus tatsächlichem fachlichem Abschluss; Draft- und `updated_at`-Zustände sind keine Ereignisse |
+| Timeline-Ereignistyp | `ReportOverviewTimelineEventViewModel` aus vorhandener stabiler Quellidentität und vorhandenem fachlichem Zeitpunkt | Nein | ausschließlich `Bericht abgeschlossen`, `LEG durchgeführt`, `Beobachtung dokumentiert` oder `Kompetenz bestätigt`; eine Beobachtung, ein Berichtaggregat und ein LEG-Aggregat höchstens einmal; Berichtdatum ist `finalized_at`, LEG-Datum ist `conference_date`; Kompetenzzuordnungen und technische Revisionen erzeugen keine eigenen Karten |
 | Timeline-Viewport | vollständige `ReportOverviewViewModel.timeline_events` | Nein | horizontal scrollbar; abhängig von der Breite ungefähr `2`, `4` oder `5` Karten gleichzeitig sichtbar, aber keine Inhalts- oder Projektionsgrenze; Start am neuesten Ende, bewusstes Scrollen zu älteren Ereignissen; kein automatisches Karussell und keine automatische Bewegung |
-| Timeline-Kontext | vorhandenes Fach, vorhandener Kompetenztext, neutrale Dokumentart oder Revisionsbezeichnung | Nein | kein Rating, Vorher/Nachher, Statusrichtung, Stärke, Defizit, Priorität oder qualitative Gewichtung |
+| Timeline-Steuerung | horizontale Scrollposition und stabile gelieferte Ereignisidentität | Nein | Trackpad, horizontale Scrollbar, sichtbare Links-/Rechtsaktionen und Tastatur; Accessible Names und sichtbarer Fokus; Resize erhält die Position möglichst, Refresh verwendet eine stabile Ereignisidentität als Anker; äußeres vertikales Profilscrolling bleibt bedienbar |
+| Kontext einer Beobachtungskarte | vorhandenes Fach, Zuordnungsanzahl, Kompetenzbereich, Thema und kurzer vorhandener Kontext | Nein | nur vorhandene strukturierte Werte; keine Ableitung aus Freitext, Anzeigenamen, Rating oder vermuteter Relevanz; kein einzelner Kompetenztext und keine eigene Zuordnungskarte |
+| Kontext einer Bestätigungskarte | vorhandene aktuelle `competency_id` mit kanonischem Kompetenztext | Nein | ausschließlich aktueller sicherer Bestätigungsstand; kein Rating, keine historische Kette und keine Kompetenzinterpretation |
+| Kontext einer Dokumentkarte | neutrale Bericht- beziehungsweise LEG-Dokumentart | Nein | keine technische Revisionsbezeichnung, Revisionskarte oder Revisionsgewichtung |
 | Zugängliche Timeline-Beschriftung | displayfertiger Ereignistext | Nein | vollständiges Datum, Ereignistyp und vorhandener neutraler Kontext; Monatskürzel allein reichen nicht |
 | Leere Timeline | keine geeigneten Ereignisse im RPD-Zeitraum | Nein | `Im gewählten Berichtszeitraum sind keine Dokumentationsereignisse vorhanden.` |
 | Unvollständig lesbare Dokumentation | `ReportOverviewProjectionWarningViewModel` | Nein | `Dokumentationsdaten konnten nicht vollständig gelesen werden.`; keine Ersatzannahme |
@@ -23,7 +26,7 @@
 
 Sind weniger als 15 verpflichtende Bericht-/LEG-Abschlussereignisse vorhanden,
 wählt das ViewModel ausschließlich die zeitlich neuesten zulässigen
-Beobachtungs-, Kompetenzdokumentations- und sicheren Bestätigungsereignisse
+Beobachtungs- und sicheren Bestätigungsereignisse
 bis zum Zielumfang aus. Bei identischem fachlichem Zeitpunkt gilt die
 aufsteigende lexikografische Quellidentität. Das Widget trifft keine
 Inhaltsauswahl und entfernt oder priorisiert keine gelieferten Ereignisse.

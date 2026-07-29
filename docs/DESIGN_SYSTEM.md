@@ -1,6 +1,6 @@
 # Design-System
 
-## Phase 2 Entwicklungsübersicht - neutrale Dokumentationsdarstellung
+## Phase 2 Berichte-Übersicht - neutrale Belegdarstellung
 
 **Status:** UX-Vertrag beschlossen, nicht implementiert.
 
@@ -20,6 +20,22 @@ Einträgen sichtbar. Das Widget entfernt, priorisiert oder sortiert keine
 Ereignisse. Jede Karte trägt ein vollständiges Datum, einen sachlichen
 Ereignistyp und nur vorhandenen neutralen Kontext. Bericht und LEG bleiben als
 Dokumenttypen erkennbar.
+
+Der Berichtsbereich unterstützt die Auswahl vorhandener Belege für einen
+Bericht. Er ist keine zusätzliche Lernentwicklungsdarstellung und dupliziert
+weder den Profilbereich `Überblick` noch die Detailansicht `Kompetenzen`.
+Eine Beobachtung, ein Berichtaggregat und ein LEG-Aggregat erscheinen jeweils
+höchstens einmal. Kompetenzzuordnungen und technische Revisionen erscheinen
+nicht als eigene Karten.
+
+Die Timeline ist über Trackpad, horizontale Scrollbar, sichtbare Links-/Rechts-
+steuerung und Tastatur bedienbar. Scrollfläche und Steuerungen besitzen
+verständliche Accessible Names und sichtbaren Fokus. Shift+Mausrad darf nur
+bei stabiler technischer Umsetzung horizontal scrollen; normales vertikales
+Scrollen blockiert die äußere Profilscrollfläche nicht. Bei Resize bleibt die
+Position möglichst erhalten und ein zuvor erreichtes neuestes Ende bleibt am
+Ende. Bei Refresh dient eine stabile Ereignisidentität als Anker. Es gibt kein
+automatisches Nachscrollen.
 
 Fachkarten zeigen absolute Dokumentationsmengen. Der Phase-2-Balken besteht
 aus genau einem gleich breiten neutralen Segment je dokumentierter aktueller

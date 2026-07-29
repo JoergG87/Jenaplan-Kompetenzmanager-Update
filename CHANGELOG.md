@@ -3,11 +3,17 @@
 ## Unreleased
 
 - Den beschlossenen, noch nicht implementierten Phase-2-Architektur- und
-  UX-Stand der Entwicklungsübersicht in die bestehenden Governance-Sources-
-  of-Truth integriert. ADR-094 hält die rein lesende RPD-, Ereignis-,
-  Deduplizierungs-, Bestätigungs- und Bericht-/LEG-Architektur fest;
-  Technical Naming Registry, Data Registry, Data Lifecycle, View Ownership,
-  UI-Mapping und Design-System enthalten ihre jeweils zuständigen Verträge.
+  UX-Stand der Berichte-Übersicht in die bestehenden Governance-Sources-
+  of-Truth integriert und an den finalen Belegworkflow angeglichen. ADR-094
+  hält die rein lesende RPD-, Ereignis-, Aggregat-, Deduplizierungs-,
+  Bestätigungs- und getrennte Bericht-/LEG-Architektur fest; Technical Naming
+  Registry, Data Registry, Data Lifecycle, View Ownership, UI-Mapping und
+  Design-System enthalten ihre jeweils zuständigen Verträge. Eine Beobachtung,
+  ein Berichtaggregat und ein LEG-Aggregat erzeugen jeweils höchstens eine
+  Timeline-Karte; Kompetenzzuordnungen erzeugen keine eigenen Timeline-Karten.
+  LEG verwendet `conference_date`, technische Revisionen bleiben in ihren
+  Revisionshistorien. Der Berichtsbereich bleibt eine neutrale Belegübersicht
+  und keine Entwicklungsanalyse.
   Paket 1 und Paket 1.1 bleiben als implementierter, nicht
   Phase-2-konformer Stand getrennt dokumentiert. Der Architektur-/UX-Vertrag
   und der Product-Decision-Freeze bleiben Herkunfts- und Abnahmenachweise,

@@ -1,6 +1,6 @@
 # Data Lifecycle
 
-## Phase 2 Entwicklungsübersicht - rein lesender Projektionsablauf
+## Phase 2 Berichte-Übersicht - rein lesender Projektionsablauf
 
 **Status:** Zielvertrag beschlossen, nicht implementiert. Der Ablauf schreibt
 nichts und ergänzt weder Persistenz noch Migration oder Recovery.
@@ -9,33 +9,46 @@ nichts und ergänzt weder Persistenz noch Migration oder Recovery.
    dessen `period_start` und `period_end` inklusiv. Ohne eindeutigen RPD
    entsteht keine inhaltliche Phase-2-Projektion. Schuljahr, Halbjahr,
    Kalenderjahr, Tagesdatum, LEG-Zeitraum und andere RPD sind keine Fallbacks.
-2. Der Desktop-Adapter liest Bericht, LEG, aktive Beobachtungen und den
-   kanonischen Kompetenzstatus über ihre vorhandenen getrennten Pfade.
-   Bericht und LEG werden erst in der flüchtigen Displayprojektion
-   zusammengeführt.
+   Auch ein einzelner vorhandener RPD wird nicht automatisch gewählt; eine
+   fehlende oder veraltete bewusste Auswahl bleibt neutral.
+2. Der Desktop-Adapter friert `period_start` und `period_end` des ausgewählten
+   RPD einmal ein. Er liest die Bericht- und LEG-Aggregate des Schülers über
+   ihre getrennten Pfade, verifiziert je Aggregat die neueste gültige Revision
+   und liest aktive Beobachtungen, Zuordnungen sowie den kanonischen
+   Kompetenzstatus möglichst in einem SQLite-Read-Snapshot. Quellenfehler
+   werden neutral isoliert; ein defekter Zweig leert keine weiterhin gültige
+   Teilprojektion. Bericht und LEG werden erst in der flüchtigen
+   Displayprojektion zusammengeführt.
 3. Ereignisdaten stammen ausschließlich aus ihren vorhandenen Fachwerten:
-   `observations.date`, dem Datum der zugeordneten Beobachtung,
-   `confirmed_at` des aktuellen sicheren Bestätigungsstands,
-   `finalized_at` einer gültigen finalisierten Berichtrevision sowie
-   `completed_at` eines tatsächlich durchgeführten beziehungsweise fachlich
-   abgeschlossenen LEG. Zeitzonenbehaftete Werte werden lokal normalisiert;
-   naive historische Werte behalten ihren gespeicherten lokalen Kalenderwert.
+   `observations.date`, `confirmed_at` des aktuellen sicheren
+   Bestätigungsstands, `finalized_at` der neuesten gültigen,
+   hashverifizierten Revision eines abgeschlossenen Berichtaggregats sowie
+   `conference_date` eines tatsächlich durchgeführten und fachlich
+   abgeschlossenen LEG-Aggregats. `completed_at` bleibt ausschließlich
+   technischer Lifecyclezeitpunkt. Zeitzonenbehaftete Werte werden lokal
+   normalisiert; naive historische Werte behalten ihren gespeicherten lokalen
+   Kalenderwert.
 4. Ungültige oder fehlende Datumswerte erhalten keinen Ersatzwert. Der
    betroffene Inhalt bleibt aus Timeline und Zeitraumzählern ausgeschlossen;
    die Displayprojektion liefert zusätzlich einen neutralen unvollständigen
    Zustand.
-5. `Beobachtung dokumentiert` entsteht global einmal je `observation_id`.
-   `Kompetenz dokumentiert` entsteht einmal je vorhandener Zuordnung
-   `(observation_id, competency_id)`. Eine Schnellbeobachtung ohne Zuordnung
-   bleibt eine Beobachtung. Historische oder nicht aktuelle Kompetenzen
-   erzeugen kein aktuelles Kompetenz-Dokumentationsereignis.
+5. `Beobachtung dokumentiert` entsteht global höchstens einmal je
+   `observation_id`. Vorhandene Zuordnungen
+   `(observation_id, competency_id)` liefern neutrale
+   Beobachtungskartendetails, Fachkartenmengen, Segmente, Belegdetails,
+   Fachzuordnung und Deduplizierung, aber keine eigenen Timeline-Ereignisse.
+   Eine Schnellbeobachtung ohne Zuordnung bleibt eine Beobachtung.
    `Kompetenz bestätigt` entsteht höchstens einmal je Paar
    `(student_id, competency_id)` aus dem aktuellen sicheren Stand.
 6. Die verpflichtende Dokumentereignismenge enthält innerhalb des eindeutig
-   gewählten RPD-Zeitraums jede gültige finalisierte Berichtrevision und jedes
-   tatsächlich durchgeführte beziehungsweise fachlich abgeschlossene LEG.
-   Bericht und LEG behalten dabei ihre vorhandenen getrennten
-   Revisionsidentitäten und fachlichen Abschlusszeitpunkte. `Draft geöffnet`,
+   gewählten RPD-Zeitraums je fachlich abgeschlossenem Berichtaggregat
+   höchstens ein Ereignis mit Identität `("report", report_draft_id)` und je
+   tatsächlich durchgeführtem und fachlich abgeschlossenem LEG-Aggregat
+   höchstens ein Ereignis mit Identität
+   `("learning_conference", learning_conference_draft_id)`. Die jeweils
+   neueste gültige, hashverifizierte Revision liefert ausschließlich sichtbaren
+   Stand und Navigationsziel; frühere Revisionen bleiben in ihrer getrennten
+   Revisionshistorie. `Draft geöffnet`,
    `Draft gespeichert`, `updated_at`, technische Bearbeitungs- oder
    Verwaltungszeitpunkte und bloße Zwischenstände ohne fachlichen Abschluss
    erzeugen kein Phase-2-Timeline-Ereignis. Dokumentereignisse werden nicht
@@ -44,11 +57,10 @@ nichts und ergänzt weder Persistenz noch Migration oder Recovery.
 7. Die Timeline besitzt einen Zielumfang von 15 Ereignissen. Enthält die
    verpflichtende Dokumentereignismenge weniger als 15 Ereignisse, ergänzt die
    ViewModel-Projektion genau so viele der zeitlich neuesten zulässigen
-   Beobachtungs-, Kompetenzdokumentations- und Bestätigungsereignisse, wie zum
-   Erreichen von 15 noch fehlen. Zulässig sind ausschließlich aktive
-   Beobachtungen, vorhandene Zuordnungen
-   `(observation_id, competency_id)` und der aktuell vorhandene sichere
-   Bestätigungsstand mit fachlichem Datum im RPD-Zeitraum. Reichen die
+   Beobachtungs- und Bestätigungsereignisse, wie zum Erreichen von 15 noch
+   fehlen. Zulässig sind ausschließlich aktive Beobachtungen und der aktuell
+   vorhandene sichere Bestätigungsstand mit fachlichem Datum im
+   RPD-Zeitraum. Reichen die
    zulässigen ergänzenden Ereignisse nicht aus, bleibt die Timeline kürzer; es
    entstehen keine künstlichen Ereignisse. Bei mindestens 15 verpflichtenden
    Dokumentereignissen wird nichts zu deren Begrenzung entfernt.
@@ -69,10 +81,11 @@ nichts und ergänzt weder Persistenz noch Migration oder Recovery.
 8. Je Fach werden zwei unabhängige Identitätsmengen gebildet: aktuelle
    dokumentierte `competency_id` und vorhandene `observation_id` im
    RPD-Zeitraum. Eine aktive, aktuelle Kompetenz gehört zur ersten Menge,
-   wenn mindestens eine aktive Beobachtungszuordnung im RPD-Zeitraum oder ein
-   aktueller sicherer Bestätigungsstand mit `confirmed_at` im RPD-Zeitraum
-   vorhanden ist. Mehrfachbeobachtungen und Bestätigung derselben Kompetenz
-   erhöhen den Kompetenzzähler nicht mehrfach.
+   wenn mindestens eine aktive Beobachtungszuordnung im RPD-Zeitraum
+   vorhanden ist. Mehrfachbeobachtungen derselben Kompetenz erhöhen den
+   Kompetenzzähler nicht mehrfach. Eine Bestätigung derselben Kompetenz
+   erzeugt weder ein zusätzliches Segment noch ohne Beobachtungszuordnung eine
+   dokumentierte Kompetenz.
 
    Für die Fachmenge einer aktiven Beobachtung gilt:
 
