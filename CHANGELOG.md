@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- SJ-2B als isoliertes V3-Zielschema und explizite V2→V3-Migrationsengine
+  ergänzt. Das Ziel enthält `school_years`, datierte
+  `student_school_year_assignments`, unveränderliche
+  `school_year_transitions`, bestätigtes `courses.year_level` und
+  V3-`students` ohne Legacy-Mitgliedschaftsspalten. Planformat v2 bindet den
+  vollständigen kanonisch gehashten Quellzustand; unveränderliche
+  `VerifiedBackupEvidence` ist verpflichtende Eingabe, die Engine erzeugt
+  selbst kein Backup. Der exakte Zielfingerprint ist
+  `640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1`.
+  Atomare Migration, vollständiger Pre-Commit-Rollback, committed
+  Post-Commit-Recoveryzustände, Reopen-Verifikation und injizierte Failpoints
+  wurden ausschließlich auf synthetischen temporären SQLite- und
+  SQLCipher-Datenbanken geprüft. 120 fokussierte Tests, 237
+  V2-Regressionsprüfungen mit 8 Subtests und die Gesamtsuite mit 1838 Tests
+  und 71 Subtests waren grün; ein umgebungsgebundener read-only
+  Build-303-Referenztest blieb erwartungsgemäß übersprungen. Normaler Startup,
+  aktive
+  Kompatibilitätsversion und Runtime bleiben V2; es gibt keinen Bootstrap,
+  keine UI, keine automatische oder reale Migration und keine
+  Produktaktivierung.
 - SJ-2A als reine, SQLite- und Qt-freie Core-Domain ergänzt:
   `SchoolYear`, inklusive `StudentMembershipAssignment`,
   vollständige V2-Schülerklassifikation mit getrennten Warncodes,

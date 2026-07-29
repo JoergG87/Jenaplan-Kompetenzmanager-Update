@@ -1,5 +1,87 @@
 # Data Registry
 
+## SJ-2B - isoliert implementiertes V3-Zielschema
+
+**Status:** Ausschließlich innerhalb der expliziten V2→V3-Migrations- und
+Schemaprüfgrenze implementiert. Die normale Anwendung, ihre
+Kompatibilitätsversion und ihre produktiven Lese-/Schreibpfade bleiben V2.
+Es gibt keinen Startup-Hook, keine automatische Migration und keine reguläre
+V3-Shell.
+
+Das vollständige V3-Schema besteht aus allen unverändert erhaltenen
+V2-Schemaobjekten sowie:
+
+- `school_years`;
+- `student_school_year_assignments`;
+- `school_year_transitions`;
+- dem Pflichtfeld `courses.year_level` ohne Default und mit echtem
+  INTEGER-Speichertyp `1`, `2` oder `3`;
+- der kontrolliert neu aufgebauten Tabelle `students` mit ausschließlich
+  `student_id`, `first_name`, `last_name`, `notes`, `active`, `created_at`,
+  `updated_at` und `archived_at`.
+
+`students.group_id`, `students.course_id` und `students.student_notes`
+existieren im committed V3-Zielschema nicht. Der Wert von
+`students.student_notes` wird werttreu nach `students.notes` übernommen.
+Sämtliche vorhandenen Child-Fremdschlüssel auf `student_id` bleiben
+restriktiv erhalten. `courses` behält alle vorhandenen IDs, Namen, Farben,
+Sortierungen und Aktivwerte werttreu; allein das bestätigte Planmapping setzt
+`year_level`.
+
+Zusätzliche beziehungsweise beim Rebuild wiederhergestellte Indizes:
+
+- `idx_school_years_one_current`;
+- `idx_school_years_date_range`;
+- `idx_school_years_status_start`;
+- `idx_assignments_student_year_interval`;
+- `idx_assignments_student_interval`;
+- `idx_assignments_year_status_student`;
+- `idx_assignments_year_group_interval`;
+- `idx_assignments_year_course_interval`;
+- `idx_assignments_last_known`;
+- `idx_courses_name`.
+
+Zusätzliche Trigger:
+
+- `trg_school_years_no_overlap_insert`;
+- `trg_school_years_no_overlap_update`;
+- `trg_school_years_status_transition`;
+- `trg_school_years_closed_immutable`;
+- `trg_school_years_dates_guard`;
+- `trg_school_years_no_delete`;
+- `trg_assignments_within_school_year_insert`;
+- `trg_assignments_within_school_year_update`;
+- `trg_assignments_no_overlap_insert`;
+- `trg_assignments_no_overlap_update`;
+- `trg_assignments_update_guard`;
+- `trg_assignments_no_delete`;
+- `trg_school_year_transitions_no_update`;
+- `trg_school_year_transitions_no_delete`.
+
+Die Assignment-Fremdschlüssel auf `students`, `school_years`, `groups` und
+`courses` sowie die Transition-Fremdschlüssel auf Ausgangs- und Zielschuljahr
+verwenden `ON UPDATE RESTRICT` und `ON DELETE RESTRICT`. Alle bestehenden
+Child-Fremdschlüssel auf `students.student_id` und
+`course_group_courses.course_id` bleiben beim Parent-Rebuild erhalten.
+
+Der mechanisch aus dem vollständigen finalen Schema einschließlich
+Tabellenspalten, `table_xinfo`, Fremdschlüsseln, expliziten Indizes und
+Triggern berechnete exakte V3-Fingerprint ist:
+
+`640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1`.
+
+`VerifiedBackupEvidence` ist eine unveränderliche technische Eingabe, keine
+neue fachliche Datenquelle und kein Backupservice. Die Engine erstellt,
+findet, löscht oder restauriert kein Backup. Der Nachweis enthält nur
+`backup_sha256`, `source_state_sha256`, `source_schema_fingerprint`,
+`verified_at` und optional eine sichere technische `backup_id`; insbesondere
+keinen Dateipfad, kein Passwort, keinen Namen und keinen Freitext.
+
+`school_year_transitions.result_counts_json` wird im Domain-/Application-Layer
+kanonisch validiert. SJ-2B setzt keinen SQLite-JSON1-`CHECK`, weil die
+Verfügbarkeit nicht für jeden unterstützten Provider als Produktvertrag
+nachgewiesen ist.
+
 ## SJ-1 - geplante V3-Datenquellen für Schuljahre und Mitgliedschaften
 
 **Status:** Verbindlicher Datenmodellvertrag nach ADR-095, noch nicht

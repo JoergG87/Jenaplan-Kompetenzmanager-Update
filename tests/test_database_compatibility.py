@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 import sqlite3
 from pathlib import Path
 from unittest import mock
@@ -251,16 +250,12 @@ def test_sqlite_internal_structures_and_sequence_values_are_excluded(
     assert "sqlite_autoindex" not in canonical
 
 
-def test_known_pilot_database_is_migrated_to_v2(tmp_path: Path) -> None:
-    source = Path("data/kompetenzmanager.sqlite")
-    if not source.is_file():
-        pytest.skip("Keine lokale Pilotdatenbank vorhanden.")
-    copied = tmp_path / source.name
-    shutil.copy2(source, copied)
-    SQLiteDatabase(copied).initialize_schema()
-    after = _user_version(copied)
+def test_synthetic_v1_database_is_migrated_to_v2(tmp_path: Path) -> None:
+    database = _v1_database(tmp_path / "synthetic-v1.sqlite")
+    SQLiteDatabase(database).initialize_schema()
+    after = _user_version(database)
     assert after == 2
-    with sqlite3.connect(copied) as connection:
+    with sqlite3.connect(database) as connection:
         assert connection.execute(
             "SELECT 1 FROM sqlite_schema WHERE name = 'persistence_events'"
         ).fetchone()

@@ -1,5 +1,44 @@
 # Technical Naming Registry
 
+## SJ-2B - isolierte V2→V3-Migrationsgrenze
+
+**Status:** Für die isolierte, explizit aufgerufene Migration registriert.
+Diese Namen aktivieren weder den normalen Startup-Pfad noch eine V3-Runtime,
+UI, Bootstrap-Zustandsmaschine oder automatische Migration.
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `TARGET_V3_DATABASE_VERSION` | Getrennte Zielversion `3` ausschließlich für die isolierte Migration und Schemaprüfung; `DATABASE_COMPATIBILITY_VERSION` bleibt `2` | Core School-Year Migration |
+| `V3_SCHEMA_FINGERPRINT` | Exakter kanonischer Fingerprint `640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1` des vollständigen V3-Zielschemas | Core School-Year Migration |
+| `SCHOOL_YEAR_MIGRATION_ENGINE_FORMAT_VERSION` | Version der deterministischen Source-State- und Migrationsengine-Semantik | Core School-Year Migration |
+| `VerifiedBackupEvidence` | Unveränderlicher technischer Nachweis eines außerhalb der Engine erzeugten und verifizierten Backups; enthält Hashbindung, Verifikationszeitpunkt und optional sichere technische ID, aber keinen Pfad, kein Passwort und keinen Fachfreitext | Core School-Year Migration |
+| `SchoolYearMigrationErrorCode` | Stabile, nicht lokalisierte technische Fehlercodes der isolierten Migration | Core School-Year Migration |
+| `SchoolYearMigrationError` | Sanitized Fehlergrenze ohne Namen, Notizen, Beobachtungs-, Bericht- oder LEG-Inhalte; unterscheidet `committed=False`, `committed=True` und den technisch unbestimmten Recoveryzustand `committed=None` | Core School-Year Migration |
+| `SchoolYearMigrationFailpoint` | Ausschließlich per Dependency Injection aktivierbare Testpunkte; keine Umgebungsvariable und keine Dateikonfiguration | Core School-Year Migration |
+| `SchoolYearMigrationResult` | Verifiziertes Post-Reopen-Ergebnis einer committed V3-Migration | Core School-Year Migration |
+| `SchoolYearV2ToV3MigrationEngine` | Qt- und UI-freie Engine, die ausschließlich eine explizit übergebene Connection-Factory, einen validierten Plan, Operation-Token, Backupnachweis und erwartete Fingerprints verwendet | Core School-Year Migration |
+| `calculate_v2_source_state_sha256` | Kanonischer Digest aus V2-Schema, relevanten Counts und per Feld gehashten Schüler-, Gruppen- und Kurswerten sowie bestätigtem Initialjahr, Kursstufen, Plan- und Engineformat | Core School-Year Migration |
+| `verify_v3_schema` | Reine Prüfung eines bereits geöffneten V3-Bestands gegen Zielversion, exakten Fingerprint und Schema-Invarianten | Core School-Year Migration |
+
+`SchoolYearInitializationPlan` verwendet ab SJ-2B ausdrücklich Planformat v2.
+Gegenüber v1 ergänzt der kanonische Payload `source_state_sha256`. Ein
+v1-Payload wird nicht still mit geänderter Hashsemantik weiterverwendet.
+Namen und Notizen gelangen weder als Klartext in Source-State-Payload,
+Planlogs noch Wechselbelege; fachlich relevante Werte werden zunächst
+feldweise gehasht und nur diese Digests kanonisch zusammengeführt.
+
+Registrierte Fehlercodes:
+
+`V2_SCHEMA_MISMATCH`, `SOURCE_STATE_MISMATCH`,
+`BACKUP_EVIDENCE_MISSING`, `BACKUP_EVIDENCE_MISMATCH`,
+`INITIALIZATION_PLAN_BLOCKED`, `COURSE_LEVEL_MAPPING_INCOMPLETE`,
+`STUDENT_CLASSIFICATION_MISMATCH`, `ASSIGNMENT_PLAN_MISMATCH`,
+`V3_SCHEMA_CREATE_FAILED`, `COURSE_REBUILD_FAILED`,
+`STUDENT_REBUILD_FAILED`, `V3_FINGERPRINT_MISMATCH`,
+`FOREIGN_KEY_CHECK_FAILED`, `INTEGRITY_CHECK_FAILED`,
+`CIPHER_INTEGRITY_CHECK_FAILED`, `TRANSITION_RECEIPT_CONFLICT`,
+`MIGRATION_ROLLED_BACK` und `POST_COMMIT_VERIFICATION_FAILED`.
+
 ## SJ-2A - implementierte reine Initialisierungsdomain
 
 **Status:** Lokal implementiert. Die Namen bezeichnen ausschließlich
@@ -18,7 +57,7 @@ Tabelle, Spalte, Repository, Migration, Startup-Pfad, ViewModel noch UI ein.
 | `SchoolYearInitializationPreview` | Vollständige read-only Klassifikationen, Assignmentvorschläge und Blocker aller übergebenen V2-Schüler | Core School-Year Domain |
 | `CourseYearLevelConfirmation` | Bewusst bestätigte vorhandene `course_id` mit stabiler Stufe 1, 2 oder 3 | Core School-Year Domain |
 | `SchoolYearSchemaInformation` | Explizit übergebene SQLite-`user_version` und SHA-256-Schemaidentität für Quelle oder Ziel | Core School-Year Domain |
-| `SchoolYearInitializationPlan` | Validierter kanonischer Planformat-v1-Payload mit berechnetem `plan_sha256`; keine Persistenz | Core School-Year Domain |
+| `SchoolYearInitializationPlan` | In SJ-2A eingeführter validierter kanonischer Plan; seit der ausdrücklich versionierten SJ-2B-Erweiterung Planformat v2 mit `source_state_sha256` und berechnetem `plan_sha256`; keine Persistenz | Core School-Year Domain |
 | `classify_v2_student` | Reine genau einmalige Klassifikation eines V2-`StudentRecord` aus Initialjahr und bekannten Referenz-IDs | Core School-Year Domain |
 | `build_school_year_initialization_preview` | Reine vollständige und deterministisch geordnete V2-Bestandsvorschau | Core School-Year Domain |
 | `build_school_year_initialization_plan` | Reine validierte Planerstellung ohne Repository- oder Systemzugriff | Core School-Year Domain |

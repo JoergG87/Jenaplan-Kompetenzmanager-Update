@@ -1,5 +1,52 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## SJ-2B - isoliertes V3-Zielschema und V2→V3-Migrationsengine
+
+**Status:** Lokal implementiert und fokussiert automatisiert geprüft.
+Produktive Aktivierung, Bootstrap, UI, reale Migration, Build, Packaging und
+Release bleiben ausdrücklich gesperrt.
+
+SJ-2B implementiert das vollständige V3-Zielschema innerhalb einer
+expliziten, Qt-freien Migrationsgrenze: `school_years`, datierte
+`student_school_year_assignments`, unveränderliche
+`school_year_transitions`, `courses.year_level` und den kontrollierten
+`students`-Rebuild ohne `group_id/course_id`. Der exakte vollständige
+Schemafingerprint lautet
+`640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1`.
+
+`SchoolYearV2ToV3MigrationEngine` verwendet ausschließlich eine injizierte
+Connection-Factory, einen validierten Planformat-v2-Payload, einen bestätigten
+Operation-Token, verpflichtende unveränderliche `VerifiedBackupEvidence` und
+explizite Quell-/Zielfingerprints. Die Engine erzeugt kein Backup, sucht keine
+Datenbank und öffnet keine UI. Source-State bindet vollständiges V2-Schema,
+alle nicht internen Tabelleninhalte ausschließlich über kanonische
+Wertdigests und Counts sowie Initialjahr, Kursstufen, Plan- und Engineformat.
+
+Der Cutover läuft in einer atomaren `BEGIN IMMEDIATE`-Transaktion mit
+geprüftem `foreign_keys=OFF`, kontrolliertem Course-/Student-Rebuild,
+Assignments, Bootstrapbeleg, `user_version=3`, exaktem Fingerprint und
+Integritätsprüfungen. Jeder Pre-Commit-Failpoint rollt vollständig auf V2
+zurück. Nach Commit wird die FK-deaktivierte Verbindung geschlossen; eine
+neue Providerverbindung verifiziert V3 vollständig. Post-Commit-Failpoints
+werden als committed Recoveryzustand klassifiziert und nie in-place
+zurückgerollt.
+
+Die normale Runtime bleibt unverändert V2:
+`DATABASE_COMPATIBILITY_VERSION = 2`, `initialize_schema()` ruft die Engine
+nicht auf, und weder `DatabaseCompatibilityInspector`,
+`StudentDesktopAdapter`, `AppShell` noch `main.py` importieren oder starten
+sie. Eine V2-Datenbank startet weiterhin wie zuvor; eine V3-Datenbank wird vor
+SJ-2C vom normalen V2-Kompatibilitätspfad fail-closed abgelehnt.
+
+Automatisiert geprüft wurden 120 fokussierte SJ-2B-Tests, 237 fokussierte
+V2-/Backup-/Restore-/Student-/Bericht-/LEG-/Startup-Regressionstests mit
+8 Subtests sowie die vollständige Suite mit 1838 bestandenen Tests und
+71 bestandenen Subtests. Ein ausdrücklich umgebungsgebundener read-only
+Build-303-Referenztest blieb erwartungsgemäß übersprungen. SQLCipher war
+verfügbar und wurde mit verschlüsseltem temporärem Bestand,
+Engine-eigenen Cipher-Integritätsprüfungen und ohne Klartextfallback
+ausgeführt. Compileall und Qt-freie Importisolation waren grün.
+
 ## SJ-2A - reine Initialisierungsdomain für das V3-Schuljahresmodell
 
 **Status:** Lokal implementiert und fokussiert automatisiert geprüft. Keine
@@ -20,6 +67,9 @@ normalisiert Unicode nach NFC, sortiert JSON-Schlüssel und verwendet
 explizite locale-unabhängige Arrayordnungen sowie ISO-Daten.
 `plan_sha256` ist der SHA-256 über exakt diesen Payload. Der Hash ist ein
 flüchtiger Nachweis; SJ-2A persistiert weder Plan noch Hash.
+SJ-2B erweitert diesen Vertrag ausdrücklich versioniert auf Planformat v2
+mit `source_state_sha256`; die historische v1-Hashsemantik wurde nicht still
+verändert.
 
 ## SJ-1 - Governance- und Architekturvertrag für den Schuljahreswechsel
 

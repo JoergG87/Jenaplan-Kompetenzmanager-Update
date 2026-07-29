@@ -202,6 +202,14 @@ class DatabaseCompatibilityInspector:
                 f"Der Datenbank-Fingerprint konnte nicht gelesen werden: {error}"
             ) from error
 
+    @staticmethod
+    def schema_identity_for_connection(
+        connection: sqlite3.Connection,
+    ) -> DatabaseSchemaIdentity:
+        """Return the canonical schema identity for an existing connection."""
+
+        return _schema_identity(_compatibility_schema(connection))
+
 
 def _schema_identity(schema: dict[str, object]) -> DatabaseSchemaIdentity:
     canonical = _canonical_json_bytes(schema)

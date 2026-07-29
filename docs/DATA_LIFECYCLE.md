@@ -1,5 +1,64 @@
 # Data Lifecycle
 
+## SJ-2B - isolierter V2→V3-Migrationslauf
+
+**Status:** Technische Migrations- und Testgrenze ohne Startup-, UI-,
+Bootstrap-, Passwort-, Maintenance- oder Runtime-Aktivierung. Sie verarbeitet
+ausschließlich den Bestand einer explizit injizierten Connection-Factory.
+
+Verpflichtende Eingaben sind ein validierter
+`SchoolYearInitializationPlan` im Planformat v2, ein bestätigter
+`operation_token`, unveränderliche `VerifiedBackupEvidence`, erwarteter
+V2- und V3-Fingerprint und optional ein ausschließlich injizierter
+Test-Failpoint-Hook. Die Engine sucht keine Datenbank und erzeugt kein Backup.
+
+Vor dem ersten DDL-Statement prüft sie V2-`user_version`, V2-Fingerprint,
+kanonischen Source-State, die identische Bindung des Backupnachweises,
+Initialjahr und Status, Blockerfreiheit, vollständige eindeutige
+Schülerklassifikation, Assignmentgleichheit, vollständiges exaktes
+Kursstufenmapping sowie `integrity_check` und `foreign_key_check`. Eine
+Abweichung beendet den Lauf vor `BEGIN` und ohne Schemaänderung mit stabilem
+technischem Fehlercode.
+
+Der Schreiblauf setzt `foreign_keys=OFF` vor der Transaktion, prüft den
+tatsächlichen Wert und startet `BEGIN IMMEDIATE`. Innerhalb genau dieser
+Transaktion werden Quelle und Source-State erneut geprüft, V3-Objekte
+angelegt, Initialjahr geschrieben, `courses` werttreu mit bestätigtem
+`year_level` neu aufgebaut, alle V2-Schüler erneut fail-closed klassifiziert,
+Assignments exakt gegen den Plan geschrieben, `students` ohne die
+Legacy-Mitgliedschaftsspalten neu aufgebaut, Indizes/Trigger/FKs geprüft,
+der Bootstrapbeleg mit `from_school_year_id=NULL` geschrieben,
+`user_version=3`, Ziel-Fingerprint sowie Integrity-, Foreign-Key- und bei
+SQLCipher Cipher-Integrität geprüft und erst danach committed.
+`executescript()`, `VACUUM`, Journalmoduswechsel und In-place-Downgrade sind
+ausgeschlossen.
+
+Jeder Fehler vor Commit führt zum vollständigen Rollback und Schließen der
+Verbindung; der V2-Zustand bleibt erneut prüfbar. Nach Commit wird die
+FK-deaktivierte Verbindung niemals wiederverwendet. Eine neue
+Providerverbindung muss `foreign_keys=ON`, Zielversion und exakten
+Fingerprint, genau ein aktuelles Schuljahr, Bootstrapbeleg, Counts sowie alle
+Integritätsprüfungen bestätigen. Fehler oder injizierte Failpoints nach
+Commit werden als committed Post-Commit-/Recoveryzustand klassifiziert und
+lösen keinen In-place-Rollback aus.
+Wenn ein Provider beim Commit einen Fehler meldet, wird über eine neue
+Verbindung entweder der vollständige V3-Beleg erkannt oder der vollständige
+V2-Rollback nachgewiesen. Kann wegen eines Reopen-/Providerfehlers keiner der
+beiden Zustände bewiesen werden, meldet die Engine ausdrücklich einen
+unbestimmten Recoveryzustand und behauptet weder Commit noch Rollback.
+
+Source-State ist ein SHA-256 über Schemaidentität, `user_version`, Counts und
+kanonisch sortierte, per Feld gebildete Wertdigests jeder nicht internen
+V2-Tabelle sowie bestätigtes Initialjahr, Kursstufenmapping, Planformat und
+Engineformat. UI-Reihenfolgen und lokalisierte Texte sind ausgeschlossen.
+Namen, Notizen, Pfade und Revisionspayloads erscheinen niemals im Klartext im
+Plan, Log oder Transitionbeleg.
+
+SJ-2B migriert ausschließlich neu erzeugte synthetische temporäre
+Testdatenbanken. Der normale App-Start und `initialize_schema()` bleiben V2;
+die produktive Bootstrap-Orchestrierung und Aktivierung gehören in ein
+späteres, gesondert freizugebendes Paket.
+
 ## SJ-1 - Schuljahre, Assignments und Übergänge
 
 **Status:** Verbindlicher Ziel-Lifecycle nach ADR-095, noch nicht

@@ -14,7 +14,7 @@ import unicodedata
 from .records import StudentRecord
 
 
-SCHOOL_YEAR_INITIALIZATION_PLAN_FORMAT_VERSION = 1
+SCHOOL_YEAR_INITIALIZATION_PLAN_FORMAT_VERSION = 2
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
@@ -293,12 +293,18 @@ class SchoolYearInitializationPlan:
     blockers: tuple[StudentMigrationBlocker, ...]
     source_schema: SchoolYearSchemaInformation
     target_schema: SchoolYearSchemaInformation
+    source_state_sha256: str
 
     def __post_init__(self) -> None:
         if self.format_version != SCHOOL_YEAR_INITIALIZATION_PLAN_FORMAT_VERSION:
             raise SchoolYearDomainError(
                 "school_year_initialization_plan_format_unsupported"
             )
+        if (
+            not isinstance(self.source_state_sha256, str)
+            or _SHA256_PATTERN.fullmatch(self.source_state_sha256) is None
+        ):
+            raise SchoolYearDomainError("source_state_sha256_invalid")
         course_levels = tuple(
             sorted(
                 self.confirmed_course_year_levels,
@@ -386,6 +392,7 @@ class SchoolYearInitializationPlan:
             },
             "format_version": self.format_version,
             "source_schema": _schema_dict(self.source_schema),
+            "source_state_sha256": self.source_state_sha256,
             "student_classifications": [
                 {
                     "classification": classification.classification.value,
@@ -572,6 +579,7 @@ def build_school_year_initialization_plan(
     preview: SchoolYearInitializationPreview,
     source_schema: SchoolYearSchemaInformation,
     target_schema: SchoolYearSchemaInformation,
+    source_state_sha256: str,
 ) -> SchoolYearInitializationPlan:
     """Create the validated canonical plan without reading or writing storage."""
 
@@ -584,6 +592,7 @@ def build_school_year_initialization_plan(
         blockers=preview.blockers,
         source_schema=source_schema,
         target_schema=target_schema,
+        source_state_sha256=source_state_sha256,
     )
 
 

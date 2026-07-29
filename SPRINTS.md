@@ -1,5 +1,49 @@
 # Sprintplanung
 
+## SJ-2B - isoliertes V3-Schema und Migrationsengine
+
+**Status:** Lokal implementiert; fokussierte Schema-, Migrations-,
+Rollback-, Provider- und V2-Regressionsgates, Gesamtsuite, Compile- und
+Importisolation sowie das abschließende Diff-Gate sind grün. Produktive
+Aktivierung und Release bleiben gesperrt.
+
+- [x] Planformat v2 mit verpflichtender `source_state_sha256`-Bindung
+  ausdrücklich versioniert.
+- [x] Vollständiges isoliertes V3-Zielschema mit exaktem Fingerprint
+  `640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1`
+  implementiert.
+- [x] `school_years`, `student_school_year_assignments`,
+  `school_year_transitions`, `courses.year_level` und V3-`students`
+  einschließlich Constraints, Indizes, Triggern und restriktiven FKs
+  implementiert.
+- [x] Unveränderliche `VerifiedBackupEvidence` als verpflichtende Eingabe
+  implementiert; die Engine erstellt selbst kein Backup.
+- [x] Source-State über vollständiges V2-Schema, alle nicht internen
+  Tabellen-Counts und per Feld gebildete Wertdigests sowie Plan- und
+  Enginewerte implementiert.
+- [x] Explizite atomare Transaktion, Course-/Student-Rebuild,
+  Bootstrapbeleg, Zielversion, Fingerprint und Integritätsprüfungen
+  implementiert.
+- [x] Alle registrierten Pre-Commit-Failpoints mit vollständigem V2-Rollback
+  und beide Post-Commit-/Reopen-Zustände geprüft.
+- [x] Standard-SQLite vollständig geprüft.
+- [x] Repository-SQLCipher-Provider verfügbar und ohne Klartextfallback
+  erfolgreich geprüft.
+- [x] Fokussierte SJ-2B-Suite: 120 Tests bestanden.
+- [x] Fokussierte V2-/Backup-/Restore-/Student-/Bericht-/LEG-/
+  Startup-Regression: 237 Tests und 8 Subtests bestanden.
+- [x] Vollständige Testsuite ausführen: 1838 Tests und 71 Subtests bestanden;
+  ein umgebungsgebundener read-only Build-303-Referenztest erwartungsgemäß
+  übersprungen.
+- [x] Python-Compileall und Qt-freie Importisolation ausführen.
+- [x] Abschließendes Diff-Gate ausführen.
+- [ ] Produktiven Bootstrap-Assistenten und Startup-Zustandsmaschine in einem
+  separaten SJ-2C-Auftrag entscheiden und implementieren.
+- [ ] Produktive Membership-Read-/Write-APIs und reguläre V3-Shell gesondert
+  freigeben.
+- [ ] Reale Backup-/Restore- und produktive Migrationsabnahme durchführen.
+- [ ] Runtime-V3-Aktivierung, Build, Packaging und Release freigeben.
+
 ## SJ-2A - Domain, Klassifikation und kanonischer Initialisierungsplan
 
 **Status:** Lokal implementiert und fokussiert geprüft. Keine Datenbank-,

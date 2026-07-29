@@ -111,6 +111,7 @@ def _plan(
         preview=preview,
         source_schema=SchoolYearSchemaInformation(2, "a" * 64),
         target_schema=SchoolYearSchemaInformation(3, "b" * 64),
+        source_state_sha256="c" * 64,
     )
 
 
@@ -425,6 +426,15 @@ def test_changed_input_has_different_hash() -> None:
 
     assert first.canonical_bytes() != changed.canonical_bytes()
     assert first.plan_sha256 != changed.plan_sha256
+
+
+def test_plan_format_two_binds_source_state_sha256() -> None:
+    first = _plan()
+    changed = replace(first, source_state_sha256="d" * 64)
+
+    assert first.format_version == 2
+    assert first.canonical_dict()["source_state_sha256"] == "c" * 64
+    assert changed.plan_sha256 != first.plan_sha256
 
 
 def test_canonical_serialization_normalizes_unicode_to_nfc() -> None:
