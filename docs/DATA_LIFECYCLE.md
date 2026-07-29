@@ -4,13 +4,16 @@
 
 **Status:** V3-only-Schema-, Startup-, Compatibility-, Backup-/Restore-,
 synthetischer Testdaten-Cleanup und isolierte Assignment-API lokal
-implementiert. Die produktive Leser-/Writerumstellung bleibt offen.
+implementiert. Der SJ-2E-Lifecycle der produktiven Membership-Reader ist
+lokal umgesetzt. Writerumstellung und Runtime-Freigabe sind nicht Bestandteil
+von SJ-2E und bleiben offen.
 
 1. Der Startup-Resolver prüft Pfad, WAL-/SHM-Sidecars, Restorezustand,
    `user_version` und vollständigen Schemafingerprint read-only.
-2. Exaktes Final-V3 wird erkannt. Solange die produktiven Leser und Writer noch
-   nicht vollständig umgestellt sind, stoppt der Coordinator vor fachlicher
-   Runtime und Shell mit
+2. Exaktes Final-V3 wird erkannt. Nach der abgeschlossenen
+   SJ-2E-Leserumstellung stoppt der Coordinator bis zur gesonderten
+   Writerumstellung und Runtime-Aktivierung weiterhin vor fachlicher Runtime
+   und Shell mit
    `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`.
 3. Fehlt die Datei in einem autorisierten First Run, fordert der Coordinator
    eine direkte Final-V3-Erzeugung an. Die Schemaquelle erstellt kein
@@ -79,11 +82,12 @@ historische Reads erhalten ihr fachliches Datum ausdrücklich vom Aufrufer.
 Kein Repository setzt automatisch das Systemdatum ein oder wählt bei mehreren
 Treffern still einen Datensatz.
 
-Der `SchoolYearAssignmentQueryService` besitzt pro Request genau einen
-konsistenten SQLite-Read-Snapshot. Batchauflösung erfolgt set-basiert; Gruppe,
+Zusammengesetzte produktive Reads verwenden pro Request genau eine
+`SchoolYearAssignmentReadSession` auf der Connection und im konsistenten
+SQLite-Read-Snapshot des Aufrufers. Batchauflösung erfolgt set-basiert; Gruppe,
 Kurs und Kursverbund werden ohne Einzelquery je Kind gefiltert. Der
-Kursverbundscope ist die Schnittmenge aus seinen Stammgruppen und Kursen. Mehrere
-passende Intervalle ergeben immer `AMBIGUOUS`; kein Treffer ergibt
+Kursverbundscope ist die Schnittmenge aus seinen Stammgruppen und Kursen.
+Mehrere passende Intervalle ergeben immer `AMBIGUOUS`; kein Treffer ergibt
 `NO_ASSIGNMENT`. `CURRENT_SCHOOL_YEAR_MISSING` wird nur durch aktuelle
 Schuljahresabfragen erzeugt. `last_known_membership` ist ein eigener
 historischer Read und niemals Fallback einer anderen Methode.
@@ -111,8 +115,9 @@ beginnen, committen, rollen zurück und schließen nicht selbst:
 
 Frühere fachliche Records behalten ihren historischen Kontext. Ein später
 archiviertes Kind bleibt an historischen Treffertagen auflösbar. Produktive
-Leser und Writer verwenden diese Lifecycles noch nicht; Sammelwechsel und
-Schuljahreswechsel bleiben gesonderte spätere Vorgänge.
+Membership-Reader verwenden den beschriebenen Assignment-Read-Lifecycle.
+Produktive Membership-Writer, Sammelwechsel und Schuljahreswechsel bleiben
+gesonderte spätere Vorgänge.
 
 Ein echter Schuljahreswechsel prüft Vorschau und Quellen, erstellt ein
 verifiziertes Backup, aktiviert Maintenance, verlangt Step-up und Bestätigung
@@ -121,6 +126,58 @@ Assignmenterzeugung und Transition-Beleg in einer atomaren Transaktion aus.
 `from_school_year_id` und `to_school_year_id` referenzieren vorhandene
 Schuljahre. Rollback, Idempotenz und Historie bleiben verbindlich. Dieser
 Lifecycle ist noch nicht implementiert.
+
+## SJ-2E-Lifecycle für produktive Assignment-Reader
+
+Der implementierte SJ-2E-Readerablauf ist rein lesend und aktiviert weder die
+Final-V3-Runtime noch einen Writer:
+
+1. Der aufrufende Bildschirm- oder Application-Request bestimmt seinen
+   aktuellen `as_of`-Kalendertag genau einmal. Ein Dashboard verwendet dabei
+   denselben injizierten Zeitpunkt für Stundenplan und aktuelle
+   Mitgliedschaften. Systemdatum innerhalb von Repository, Adapter, ViewModel
+   oder Widget ist unzulässig.
+2. Der Aufrufer öffnet genau einen SQLite-Read-Snapshot beziehungsweise eine
+   Read-Transaktion und erzeugt darauf genau eine
+   `SchoolYearAssignmentReadSession`. Die Session übernimmt weder Beginn,
+   Commit, Rollback, Close noch eine zweite Connection.
+3. Die Session löst das eindeutige `current`-Schuljahr, die aktuellen
+   `ENROLLED`-Mitglieder,
+   `CURRENT_SCHOOL_YEAR_MISSING`-/`AMBIGUOUS`-Diagnostik und alle für
+   den Request erforderlichen Gruppen-, Kurs- und Kursverbundzähler gemeinsam
+   als `CurrentMembershipReadSnapshot` auf. Kursverbünde werden als
+   Schnittmenge ihrer registrierten Gruppen und Kurse mit den aktuellen
+   Assignments ausgewertet.
+4. Schülerliste, Stammgruppen-/Kurs-/Kursverbundfilter, Dashboard-Heatmap,
+   passende Kinder, Onboardingstatus und weitere aktuelle Leser konsumieren
+   ausschließlich diesen Snapshot. Dokumentations-, Beobachtungs- und
+   Stammdatenprojektionen des Requests werden auf derselben Connection und im
+   selben Snapshot gelesen. Weder Python-Nachzählung noch Abfrage je Kind oder
+   Unterwidget ist zulässig.
+5. `EXITED`, `NO_ASSIGNMENT` und archivierte Schüler werden aus aktuellen
+   Listen und Zählern ausgeschlossen. Ein Einzelprofil darf diese Zustände
+   neutral anzeigen. Fehlendes `current`-Schuljahr oder `AMBIGUOUS` blockiert
+   die aktuelle fachliche View; beides wird weder zu einer leeren Liste noch
+   zu Nullzählungen normalisiert. Technische IDs sind keine sichtbaren
+   Ersatzbezeichnungen.
+6. Historische Quellen werden set-basiert als
+   `AssignmentReferenceRequest(request_key, student_id, reference_date)`
+   übergeben. Für Berichte ist ausschließlich `period_end`, für LEG
+   ausschließlich `conference_date` und für Beobachtungen ausschließlich
+   `observations.date` das Referenzdatum. Der Ergebnisbezug erfolgt über den
+   unveränderten `request_key`.
+7. Ein freies Dokument ohne fachliches Referenzdatum bleibt bezüglich
+   Stammgruppe und Kurs neutral und erzeugt keinen
+   `AssignmentReferenceRequest`. Ein fehlendes oder ungültiges Referenzdatum
+   wird nicht durch current, `last_known_membership`, Systemdatum,
+   Erstellungszeitpunkt oder V2-Schülerfelder ersetzt.
+8. Nach vollständiger Projektion beendet der Aufrufer seinen Read-Snapshot.
+   Der Ablauf schreibt keine Daten, erzeugt keine Migration und verändert
+   weder finalisierte Revisionen noch PDFs.
+
+Dieser Vertrag ist mit SJ-2E lokal umgesetzt.
+`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt bis zur gesonderten
+Writerumstellung und Runtime-Aktivierung unverändert.
 
 ## Phase 2 Berichte-Übersicht - rein lesender Projektionsablauf
 
@@ -1920,7 +1977,11 @@ Automatisch profitierende Ansichten:
 - Schuelerprofil
 - Schuelerverwaltung
 
-Regel: Schueler werden erst durch `students.group_id` einer Stammgruppe zugeordnet. Neue Stammgruppen werden dem Default-Kursverbund hinzugefuegt, damit sie in der kursverbundbezogenen Uebersicht sichtbar bleiben.
+Regel: Schueler werden einer Stammgruppe ausschließlich durch ein datiertes
+`student_school_year_assignments.group_id` zugeordnet. Das Anlegen einer
+Stammgruppe erzeugt oder verändert kein Assignment. Eine
+Kursverbundzuordnung ist eine getrennte Stammdatendefinition und keine
+Schülermitgliedschaft.
 
 ## Stammgruppe aendern
 

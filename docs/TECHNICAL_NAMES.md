@@ -2,9 +2,9 @@
 
 ## V3-only Schema-, Startup- und Testnamen
 
-**Status:** V3-only-Cleanup und isolierte zentrale Assignment-API lokal
-implementiert. Die produktive Leser-/Writerumstellung und Runtime-Freigabe
-sind noch nicht umgesetzt.
+**Status:** V3-only-Cleanup, zentrale Assignment-API und SJ-2E-Umstellung der
+produktiven Membership-Reader sind lokal implementiert. Writerumstellung und
+Runtime-Freigabe sind nicht Bestandteil von SJ-2E und bleiben offen.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
@@ -16,7 +16,7 @@ sind noch nicht umgesetzt.
 | `DatabaseStartupCoordinator` | kontrollierte Disposition vor jeder fachlichen Runtime-Vorbereitung | Core Database Startup |
 | `DATABASE_NOT_FOUND` | am geprüften Produktpfad existiert keine Datenbankdatei | Core Database Startup |
 | `V3_INITIALIZATION_REQUIRED` | eine autorisierte Neuanlage muss direkt Final-V3 erzeugen und anschließend neu prüfen | Core Database Startup |
-| `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` | exaktes Final-V3 ist vorhanden, die aktuelle V2-gebundene Shell bleibt bis zur Leser-/Writerumstellung gesperrt | Core Database Startup |
+| `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` | exaktes Final-V3 ist vorhanden; die Runtime bleibt nach der abgeschlossenen SJ-2E-Leserumstellung bis zur gesonderten Writerumstellung und Runtime-Aktivierung gesperrt | Core Database Startup |
 | `SCHEMA_UNSUPPORTED` | vorhandenes Schema entspricht nicht exakt dem finalen registrierten Schema | Core Database Startup |
 | `RECOVERY_REQUIRED` | unlesbarer, beschädigter, unsicherer oder Restore-seitig nicht abgeschlossener Zustand | Core Database Startup |
 
@@ -39,10 +39,13 @@ Bootstrap-Transition-Typen.
 | `AssignmentResolutionStatus` | neutrale eindeutige Auflösung als `ENROLLED`, `EXITED`, `NO_ASSIGNMENT`, `CURRENT_SCHOOL_YEAR_MISSING`, `AMBIGUOUS` oder `STUDENT_ARCHIVED` | Application Assignment Read |
 | `AssignmentAtDateProjection` | Qt-freie Zuordnungsprojektion eines Kindes am expliziten fachlichen Datum einschließlich neutralem Status und Accessible Name | Application Assignment Read |
 | `CurrentStudentMembershipProjection` | Qt-freie aktuelle Schuljahresprojektion am einmalig vom Aufrufer gesetzten `as_of`-Tag | Application Assignment Read |
+| `AssignmentReferenceRequest` | Unveränderlicher Batchauftrag mit genau `request_key`, `student_id` und `reference_date`; bindet eine fachliche Quelle an ihr explizites Referenzdatum, ohne selbst Membership zu behaupten | Application Assignment Read |
+| `CurrentMembershipReadSnapshot` | Unveränderliche aktuelle Lesesicht auf genau ein `current`-Schuljahr und genau einen `as_of`-Tag; enthält ausschließlich aktuelle `ENROLLED`-Mitglieder, `CURRENT_SCHOOL_YEAR_MISSING`-/`AMBIGUOUS`-Diagnostik und zentral berechnete Gruppen-, Kurs- und Kursverbundzähler | Application Assignment Read |
 | `SchoolYearRepository` | Connection-gebundener SQLite-Read auf `school_years`; öffnet und steuert keine Transaktion | Core Assignment Persistence |
 | `StudentSchoolYearAssignmentRepository` | Connection-gebundene set-basierte SQLite-Reads und atomar orchestrierbare Writes auf Assignments | Core Assignment Persistence |
 | `V3StudentRepository` | Connection-gebundene Persistenz ausschließlich der V3-Schülerstammdaten | Core Student Persistence |
-| `SchoolYearAssignmentQueryService` | zentrale Qt-freie Read-Snapshot-, Datums-, Eindeutigkeits-, Batch- und Statusgrenze | Application Assignment Read |
+| `SchoolYearAssignmentReadSession` | Connection-gebundene zentrale Assignment-API innerhalb eines vom Aufrufer besessenen SQLite-Read-Snapshots beziehungsweise einer vom Aufrufer besessenen Transaktion; öffnet, committet, rollt nicht zurück und schließt nicht selbst | Application Assignment Read |
+| `SchoolYearAssignmentQueryService` | zentrale Qt-freie Datums-, Eindeutigkeits-, Batch- und Statusgrenze; delegiert zusammengesetzte produktive Reads an eine `SchoolYearAssignmentReadSession` | Application Assignment Read |
 | `CreateStudentWithInitialEnrollment` | atomare Anlage von V3-Schülerstammdaten und initialem `enrolled`-Assignment | Application Student Lifecycle |
 | `UpdateStudentMasterData` | atomare Änderung ausschließlich von Name, Notiz und technischen Stammdatenzeitpunkten | Application Student Lifecycle |
 | `EnrollStudent` | atomare Anlage eines expliziten, überschneidungsfreien `enrolled`-Intervalls | Application Assignment Lifecycle |
@@ -58,10 +61,21 @@ Bootstrap-Transition-Typen.
 Ein V3-Schüler besitzt ausschließlich Stammdaten sowie Aktiv-/Archivstatus;
 `group_id` und `course_id` sind keine Schülerfelder. Aktuelle und
 historische Membershipprojektionen werden aus Assignments gelesen.
-Die zentrale API ist noch an keinen produktiven Screen oder Adapter
-angeschlossen. Ein historisch passendes Assignment bleibt auch für ein später
+Der SJ-2E-Vertrag schließt produktive Reader über
+`SchoolYearAssignmentReadSession` an denselben aufrufereigenen Read-Snapshot
+wie ihre übrigen Bildschirmprojektionen an; diese Codeumsetzung ist lokal
+erfolgt. Ein historisch passendes Assignment bleibt auch für ein später
 archiviertes Kind als `ENROLLED` oder `EXITED` auflösbar;
 `STUDENT_ARCHIVED` ersetzt keinen historischen Treffer.
+
+Ein `AssignmentReferenceRequest` verwendet für einen Bericht ausschließlich
+dessen `period_end`, für ein LEG ausschließlich dessen `conference_date` und
+für eine Beobachtung ausschließlich `observations.date`. Ein freies Dokument
+ohne fachliches Referenzdatum erzeugt keine Anfrage und bleibt hinsichtlich
+der Zuordnung neutral. Weder V2-Schülerfelder noch eine aktuelle oder letzte
+bekannte Zuordnung sind Ersatzquellen. Diese Namen definieren keine
+Runtime-Aktivierung; `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt bis zur
+gesonderten Writerumstellung und Runtime-Aktivierung unverändert.
 
 `school_year_transitions.from_school_year_id` bezeichnet stets ein wirklich
 vorhandenes Ausgangsschuljahr und darf nicht leer sein. Eine initiale
@@ -89,7 +103,7 @@ UI-Verhalten; es gibt keine neue Persistenz, Tabelle oder Migration.
 | `LearningConferenceRepository.list_revision_histories_for_student` | Schülerbezogener Read für alle LEG-Aggregate und Revisionen ohne Abfrage je Revision | Core LEG Port |
 | `LearningReportRevisionReadService.verify_revision` | Öffentliche read-only Verifikationsgrenze für eine bereits gelesene Berichtrevision | Application Report Read |
 | `LearningConferenceRevisionReadService.verify_revision` | Öffentliche read-only Verifikationsgrenze für eine bereits gelesene LEG-Revision | Application LEG Read |
-| `SQLiteStudentDocumentationProjectionRepository.read_batch` | Schülerbezogener konsistenter SQLite-Read-Snapshot für aktive Beobachtungen, Zuordnungen, aktuelle Kompetenzen, sichere Bestätigungsstände, Fächer und vorhandene Frischeinformation | Core Projection Persistence |
+| `SQLiteStudentDocumentationProjectionRepository.read_batch` | Schülerbezogener Batchread für aktive Beobachtungen, Zuordnungen, aktuelle Kompetenzen, sichere Bestätigungsstände, Fächer und vorhandene Frischeinformation; SJ-2E bindet ihn an die aufrufereigene Connection und denselben konsistenten SQLite-Read-Snapshot wie die Assignment-Session | Core Projection Persistence |
 | `ReportTimelineScrollArea` | Ausschließlich darstellungsbezogene horizontale Scrollfläche für die vollständig gelieferte Timeline; verwaltet Wheel-/Tastaturbedienung, nicht aber Auswahl, Ordnung oder Fachlogik | Desktop UI |
 | `REPORT_SUBJECT_SYMBOLS` | UI-only Zuordnung kleiner neutraler Fachsymbole zu vorhandenen stabilen `subject_id`; unbekannte Fächer erhalten einen neutralen Punkt, Symbole sind weder Diagramm noch Bewertung | Desktop UI |
 

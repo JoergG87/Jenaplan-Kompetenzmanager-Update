@@ -1672,6 +1672,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         )
         report_shell.adapter.learning_report_preparation_for_student.assert_called_once_with(
             "STU-1",
+            period_end=second.period_end,
             retained_competency_ids=second.competency_ids,
         )
         dialog.focus_evidence_subject.assert_called_once_with("math")

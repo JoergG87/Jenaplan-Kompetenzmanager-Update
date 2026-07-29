@@ -604,15 +604,40 @@ class LearningReportDialog(MotionDialog):
         layout.addWidget(title, 0, 0, 1, 2)
         layout.addWidget(self._read_only_field("Schülername", self.preparation.student_name), 1, 0)
         layout.addWidget(
-            self._read_only_field("Stammgruppe", self.preparation.group_name or "–"),
+            self._read_only_field(
+                "Stammgruppe",
+                self.preparation.group_name
+                or self.preparation.membership_status_label
+                or "–",
+            ),
             1,
             1,
         )
-        layout.addWidget(self._read_only_field("Berichtsart", "Lernentwicklungsbericht"), 2, 0)
+        layout.addWidget(
+            self._read_only_field(
+                "Kurs",
+                self.preparation.course_name
+                or self.preparation.membership_status_label
+                or "–",
+            ),
+            2,
+            0,
+        )
+        layout.addWidget(
+            self._read_only_field("Berichtsart", "Lernentwicklungsbericht"),
+            2,
+            1,
+        )
         self.teacher_input = QLineEdit(
             self._saved_draft.teacher_name if self._saved_draft else ""
         )
-        layout.addWidget(self._field("Verantwortliche Lehrkraft", self.teacher_input), 2, 1)
+        layout.addWidget(
+            self._field("Verantwortliche Lehrkraft", self.teacher_input),
+            3,
+            0,
+            1,
+            2,
+        )
         today = date.today()
         period_start = (
             self._saved_draft.period_start
@@ -1565,6 +1590,7 @@ class LearningReportDialog(MotionDialog):
         for row, (key, value) in enumerate(
             (
                 ("STAMMGRUPPE", self.preparation.group_name or "–"),
+                ("KURS", self.preparation.course_name or "–"),
                 ("ZEITRAUM", f"{self.period_start.text()} – {self.period_end.text()}"),
                 ("BERICHTSART", "Lernentwicklungsbericht"),
                 ("VERANTWORTLICHE LEHRKRAFT", self.teacher_input.text().strip() or "Noch offen"),
@@ -1967,6 +1993,7 @@ class LearningReportDialog(MotionDialog):
             period = "Zeitraum offen"
         self.header_context.setText(
             f"Stammgruppe {self.preparation.group_name or '–'}  ·  "
+            f"Kurs {self.preparation.course_name or '–'}  ·  "
             f"Lernentwicklungsbericht  ·  {period}  ·  "
             f"Verantwortlich: {teacher or 'noch offen'}"
         )

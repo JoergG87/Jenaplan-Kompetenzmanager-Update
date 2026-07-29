@@ -692,7 +692,10 @@ class LearningConferenceDialog(MotionDialog):
         layout.setSpacing(8)
         group_course = " · ".join(
             value for value in (self.preparation.group_name, self.preparation.course_name) if value
-        ) or "Stammgruppe und Kurs offen"
+        ) or (
+            self.preparation.membership_status_label
+            or "Stammgruppe und Kurs offen"
+        )
         self.page_header = DialogHeader(
             "Lernentwicklungsgespräch",
             f"{self.preparation.student_name} · {group_course}",

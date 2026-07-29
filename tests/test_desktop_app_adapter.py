@@ -182,10 +182,21 @@ class DesktopAppAdapterTest(unittest.TestCase):
         student = result.value
         self.assertEqual(student.student_id, f"{STUDENT_ID_PREFIX}-000029")
 
-        stored_student = SQLiteStudentRepository(self.database).get_student_by_id(student.student_id)
+        stored_student = SQLiteStudentRepository(
+            self.database,
+            as_of=date(2026, 7, 13),
+        ).get_student_by_id(student.student_id)
         self.assertIsNotNone(stored_student)
         self.assertEqual(stored_student.first_name, "Jule")
-        self.assertEqual(len(SQLiteStudentRepository(self.database).list_students()), 29)
+        self.assertEqual(
+            len(
+                SQLiteStudentRepository(
+                    self.database,
+                    as_of=date(2026, 7, 13),
+                ).list_students()
+            ),
+            29,
+        )
 
     def test_adapter_creates_create_observation_command(self) -> None:
         draft = self._sample_observation_draft()
@@ -3493,7 +3504,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         screen = student_profile_screen.StudentProfileScreen()
         screen.set_student(profile)
-        self.assertEqual(screen.meta_label.text(), f"Stammgruppe {profile.group_name}")
+        self.assertEqual(
+            screen.meta_label.text(),
+            f"Aktuelle Zuordnung · Stammgruppe {profile.group_name}",
+        )
         self.assertEqual(screen.course_badge.label.text(), profile.course_name)
         self.assertEqual(
             screen.course_badge.property("courseColorHex"),

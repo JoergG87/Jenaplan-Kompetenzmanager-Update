@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from src.application.commands import CreateStudentCommand
@@ -69,12 +69,23 @@ class StudentCreateCommandSQLiteTest(unittest.TestCase):
         self.assertTrue(student.active)
         self.assertIsNone(student.archived_at)
 
-        stored_student = SQLiteStudentRepository(self.database).get_student_by_id(student.student_id)
+        stored_student = SQLiteStudentRepository(
+            self.database,
+            as_of=date(2026, 7, 13),
+        ).get_student_by_id(student.student_id)
         self.assertIsNotNone(stored_student)
         self.assertEqual(stored_student.first_name, "Jule")
         self.assertEqual(stored_student.last_name, "Schneider")
         self.assertEqual(stored_student.student_notes, "Liest gern.")
-        self.assertEqual(len(SQLiteStudentRepository(self.database).list_students()), 29)
+        self.assertEqual(
+            len(
+                SQLiteStudentRepository(
+                    self.database,
+                    as_of=date(2026, 7, 13),
+                ).list_students()
+            ),
+            29,
+        )
 
     def test_missing_first_name_returns_error_result(self) -> None:
         result = self._dispatcher().dispatch(
@@ -128,7 +139,10 @@ class StudentCreateCommandSQLiteTest(unittest.TestCase):
         self,
         service_type: type[StudentService] = StudentService,
     ) -> ApplicationCommandDispatcher:
-        student_repository = SQLiteStudentRepository(self.database)
+        student_repository = SQLiteStudentRepository(
+            self.database,
+            as_of=date(2026, 7, 13),
+        )
         group_ids = tuple(group.group_id for group in SQLiteGroupRepository(self.database).list_groups())
         course_ids = tuple(course.course_id for course in SQLiteCourseRepository(self.database).list_courses())
         service = service_type(

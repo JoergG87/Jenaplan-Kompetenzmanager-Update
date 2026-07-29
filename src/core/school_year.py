@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum
@@ -177,6 +178,51 @@ class CurrentStudentMembershipProjection:
     course_id: str | None
     course_name: str | None
     year_level: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class AssignmentReferenceRequest:
+    """One caller-owned historical lookup identity and fachliches date."""
+
+    request_key: str
+    student_id: str
+    reference_date: date
+
+    def __post_init__(self) -> None:
+        _require_identifier(
+            self.request_key,
+            "assignment_reference_key_invalid",
+        )
+        _require_identifier(
+            self.student_id,
+            "assignment_reference_student_id_invalid",
+        )
+        _require_date(
+            self.reference_date,
+            "assignment_reference_date_invalid",
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CurrentMembershipReadSnapshot:
+    """Current memberships plus diagnostics from one consistent read snapshot."""
+
+    current_school_year_id: str | None
+    current_school_year_label: str | None
+    as_of: date
+    memberships: tuple[CurrentStudentMembershipProjection, ...]
+    ambiguous_student_ids: tuple[str, ...]
+    current_school_year_missing: bool
+    group_counts: Mapping[str, int]
+    course_counts: Mapping[str, int]
+
+    @property
+    def blocking_error_code(self) -> str | None:
+        if self.current_school_year_missing:
+            return "CURRENT_SCHOOL_YEAR_MISSING"
+        if self.ambiguous_student_ids:
+            return "ASSIGNMENT_AMBIGUOUS"
+        return None
 
 
 def _require_identifier(value: object, code: str) -> None:

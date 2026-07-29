@@ -2,8 +2,8 @@
 
 ## V3-only Architecture Cleanup
 
-**Status:** Governance, technischer Cleanup und isolierte zentrale
-Assignment-API lokal implementiert. Produktive V3-Runtime,
+**Status:** Governance, technischer Cleanup, zentrale Assignment-API und
+SJ-2E-Leserumstellung lokal implementiert. Produktive V3-Runtime,
 Schuljahreswechsel, Build, Packaging und Release bleiben gesperrt.
 
 - [x] PO-Entscheidung festhalten: Es existieren keine produktiven V2-Daten.
@@ -28,7 +28,11 @@ Schuljahreswechsel, Build, Packaging und Release bleiben gesperrt.
 - [x] Fokussierte Tests und die vollständige Gesamtsuite ausführen.
 - [x] Compileall, Importisolation und
   `git diff --check` ausführen.
-- [ ] Produktive Leser und Writer in einem späteren Paket auf Assignments und
+- [x] Produktive Membership-Leser in SJ-2E auf Assignments und
+  V3-Schülerstammdaten umstellen; aktuelle Screens verwenden einen expliziten
+  Snapshot-Zeitpunkt, Beobachtung `observations.date`, Bericht `period_end`
+  und LEG `conference_date`.
+- [ ] Produktive Writer in einem späteren Paket auf Assignments und
   V3-Schülerstammdaten umstellen.
 - [ ] Echten Schuljahreswechsel und unterjährige Sammelwechsel gesondert
   implementieren und real abnehmen.
@@ -44,6 +48,12 @@ Schuljahreswechsel, Build, Packaging und Release bleiben gesperrt.
   und Übergangshistorie für echte spätere Schuljahreswechsel vorgeschrieben.
 - [x] Zentrale Assignment-Read-API und getrennte V3-Schülercommands
   implementieren.
+- [x] Aktuelle Listen, Profil, Gruppen/Kurse/Kursverbünde, Dashboard sowie
+  historische Beobachtungs-, Bericht- und LEG-Leser auf die zentrale API
+  umstellen; Counts und 1/10/100-Batches bleiben konstant.
+- [x] Berichtfinalisierung und LEG-Abschluss lösen Zuordnung und Stammdaten
+  innerhalb derselben Revisions-/Abschlusstransaktion auf; vorhandene
+  Snapshots und PDFs bleiben unverändert.
 - [ ] Reguläre V3-Runtime freigeben.
 
 ## Phase 2 Berichte-Übersicht - lokal implementiert

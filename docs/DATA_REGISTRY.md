@@ -3,8 +3,9 @@
 ## V3-only Produktdatenquellen
 
 **Status:** Direkte Final-V3-Schemaquelle, synthetischer temporärer
-Testdatenpfad und zentrale isolierte Assignment-API lokal implementiert. Die
-produktive Leser-/Writerumstellung ist noch nicht umgesetzt.
+Testdatenpfad, zentrale Assignment-API und SJ-2E-Umstellung der produktiven
+Membership-Reader sind lokal implementiert. Writerumstellung und
+Runtime-Freigabe sind nicht Bestandteil von SJ-2E und bleiben offen.
 
 | Quelle | Fachliche Bedeutung | Owner | Nicht zulässige Ersatzquelle |
 |---|---|---|---|
@@ -12,6 +13,8 @@ produktive Leser-/Writerumstellung ist noch nicht umgesetzt.
 | `student_school_year_assignments` | einzige aktuelle und historische Kurs-/Stammgruppenzuordnung | Assignment Domain / `SchoolYearAssignmentQueryService` | Schülerfelder, UI-Auswahl, Kursname, letzte bekannte Zuordnung ohne Datum |
 | `courses.year_level` | bestätigte stabile Kursstufe 1, 2 oder 3 | Course Repository | Name, Farbe, Sortierung, Listenposition |
 | V3-`students` | Schülerstammdaten sowie Aktiv-/Archivstatus ohne Membershipfelder | Student Repository | V2-`StudentRecord.group_id/course_id` |
+| `CurrentMembershipReadSnapshot` | flüchtige aktuelle Mitgliedermenge und zentral berechnete Zähler für genau ein `current`-Schuljahr und einen expliziten `as_of`-Tag einschließlich `CURRENT_SCHOOL_YEAR_MISSING`-/`AMBIGUOUS`-Diagnostik | `SchoolYearAssignmentReadSession` | V2-Schülerfelder, Python-Nachzählung, Widgetfilter, Systemdatum |
+| `AssignmentReferenceRequest` | flüchtiger Batchauftrag aus `request_key`, `student_id` und fachlichem `reference_date` | `SchoolYearAssignmentReadSession` | aktuelles Schuljahr, Systemdatum, Last-known oder Dokumenterstellungszeit als Ersatzdatum |
 | `school_year_transitions` | unveränderlicher Beleg eines echten committed Schuljahreswechsels | School-Year Transition Service | Initialanlage, Startup, Bootstrap, Migration |
 | kanonische Schemaidentität | vollständiger Final-V3-Fingerprint und Objektinventar | Database Compatibility | nur `user_version`, Teilinventar oder Tabellenzahl |
 | Backupmanifest und Datenbankkopie | verifizierter Sicherheitsstand des exakten finalen Schemas | Backup / Restore | V2-Cutover-Evidence oder unregistriertes Schema |
@@ -69,6 +72,57 @@ verantwortlich. Ohne belastbare zeitliche Semantik entsteht keine
 Zuordnungsbehauptung. Es gibt weder Systemdatums- noch Last-known-Fallback;
 `last_known_membership` ist eine eigene ausdrücklich aufgerufene Abfrage.
 Finalisierte Revisionen und PDFs werden nicht neu aufgelöst oder verändert.
+
+## SJ-2E-Quellenvertrag für produktive Assignment-Reader
+
+`SchoolYearAssignmentReadSession` ist die einzige connection-gebundene
+Kompositionsgrenze für Assignment-Reads innerhalb eines vom Aufrufer
+besessenen SQLite-Read-Snapshots beziehungsweise einer vom Aufrufer besessenen
+Transaktion. Sie liest ausschließlich aus `school_years`,
+`student_school_year_assignments`, V3-`students`, `groups`, `courses` sowie
+für einen ausdrücklich angeforderten Kursverbund aus
+`course_group_student_groups` und `course_group_courses`. Sie übernimmt weder
+Transaktionsbeginn noch Commit, Rollback oder Connection-Lebensdauer.
+
+`CurrentMembershipReadSnapshot` wird einmal je Bildschirm- oder
+Kompositionsrequest für genau ein `current`-Schuljahr und genau einen vom
+Aufrufer gesetzten `as_of`-Tag gebildet. Seine Mitgliedermenge enthält
+ausschließlich aktive, nicht archivierte Schüler mit eindeutigem
+`ENROLLED`-Assignment am Stichtag. `EXITED`, `NO_ASSIGNMENT` und archivierte
+Schüler erscheinen nicht in aktuellen Listen oder aktuellen Zählern.
+Fehlendes `current`-Schuljahr und mehrdeutige aktuelle Assignments sind
+Diagnostik und dürfen nicht als leere Mitgliedermenge oder Nullzählung
+erscheinen. Gruppen-, Kurs- und Kursverbundzähler werden zentral aus demselben
+Snapshot berechnet; Python-Nachzählungen und Einzelabfragen je Kind sind keine
+zulässige Datenquelle. Der Kursverbund ist die Schnittmenge seiner
+registrierten Stammgruppen- und Kursrelationen mit den aktuellen Assignments.
+
+Profil- und Einzelkontexte verwenden innerhalb derselben
+`SchoolYearAssignmentReadSession` die vorhandene
+`CurrentStudentMembershipProjection`. `EXITED`, `NO_ASSIGNMENT` und
+`STUDENT_ARCHIVED` bleiben neutrale explizite Zustände; fehlendes
+`current`-Schuljahr und `AMBIGUOUS` blockieren eine aktuelle
+Zuordnungsbehauptung. Technische Gruppen- oder Kurs-IDs sind kein sichtbarer
+Fallback.
+
+Historische Batchauflösung erhält ausschließlich
+`AssignmentReferenceRequest`-Werte:
+
+- Bericht: `reference_date = period_end` des fachlich maßgeblichen RPD;
+- LEG: `reference_date = conference_date` des fachlich maßgeblichen LEG;
+- Beobachtung: `reference_date = observations.date`;
+- freies Dokument ohne fachliches Referenzdatum: keine
+  `AssignmentReferenceRequest` und eine neutrale Anzeige ohne
+  Zuordnungsbehauptung.
+
+Ein fehlendes oder ungültiges Referenzdatum wird nicht durch aktuelle
+Membership, `last_known_membership`, Systemdatum, technischen Zeitstempel oder
+V2-`students.group_id/course_id` ersetzt. `request_key` korreliert Ergebnis
+und Quellrecord, ist aber keine fachliche Identität oder persistierte
+Datenquelle. Dieser Leservertrag erzeugt keine Tabelle, Migration,
+Materialisierung oder Runtime-Aktivierung. Bis zur gesonderten
+Writerumstellung und Runtime-Aktivierung bleibt
+`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` verbindlich.
 
 ## Echte Schuljahreswechsel
 

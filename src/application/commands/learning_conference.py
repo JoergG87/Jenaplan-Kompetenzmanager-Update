@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
+from datetime import date
 
 from src.core.learning_conference_draft import (
     LearningConferenceDraftRecord,
@@ -135,6 +136,7 @@ class PrepareLearningConferenceQuery:
     """Request the existing Live data needed for one LEG preparation."""
 
     student_id: str
+    conference_date: date | None
 
 
 @dataclass(frozen=True)
@@ -151,7 +153,7 @@ class LearningConferenceApplicationService:
 
     def __init__(
         self,
-        student_loader: Callable[[str], object | None],
+        student_loader: Callable[[str, date | None], object | None],
         competency_status_loader: Callable[[str], tuple[object, ...]],
         observation_loader: Callable[[str], tuple[object, ...]],
     ) -> None:
@@ -166,7 +168,7 @@ class LearningConferenceApplicationService:
         student_id = query.student_id.strip()
         if not student_id:
             return None
-        student = self.student_loader(student_id)
+        student = self.student_loader(student_id, query.conference_date)
         if student is None:
             return None
         return LearningConferenceSourceData(

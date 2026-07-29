@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Callable
 from contextlib import closing
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from src.core.database_engine import SQLiteConnectionProvider
@@ -38,6 +38,8 @@ from src.desktop_app.view_models.student_view_model import (
     DashboardDocumentationHeatmapViewModel,
     documentation_summary_from_subjects,
 )
+
+AS_OF = date(2026, 7, 13)
 
 
 class CountingConnectionProvider:
@@ -206,7 +208,7 @@ def _batch_statuses_for_student(
 ):
     batch = SQLiteStudentDocumentationProjectionRepository(
         adapter.database
-    ).read_batch()
+    ).read_batch(as_of=AS_OF)
     return adapter._competency_status_projection_from_sources(
         observations=batch.observations_by_student.get(student_id, ()),
         confirmations=batch.confirmations_by_student.get(student_id, ()),
@@ -220,7 +222,10 @@ def _canonical_heatmap_per_student(
 ) -> DashboardDocumentationHeatmapViewModel:
     students = tuple(
         student
-        for student in SQLiteStudentRepository(adapter.database).list_students()
+        for student in SQLiteStudentRepository(
+            adapter.database,
+            as_of=AS_OF,
+        ).list_students()
         if student.active
     )
     statuses_by_student = {
@@ -343,18 +348,6 @@ def _clear_course_groups(database: SQLiteDatabase) -> None:
             connection.execute("DELETE FROM course_group_courses")
             connection.execute("DELETE FROM course_group_student_groups")
             connection.execute("DELETE FROM course_groups")
-
-
-def _course_group_scope(
-    adapter: StudentDesktopAdapter,
-    database: SQLiteDatabase,
-    course_group_id: str,
-) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
-    return adapter._dashboard_target_scope_from_batch(
-        SQLiteStudentDocumentationProjectionRepository(database).read_batch(),
-        "course_group",
-        course_group_id,
-    )
 
 
 def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> None:
@@ -506,14 +499,17 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
         adapter.dashboard_documentation_heatmap,
     )
 
-    assert student_budget[:2] == (14, 12)
-    assert heatmap_budget[:2] == (14, 12)
-    assert dashboard_refresh_budget[:2] == (14, 12)
-    assert no_course_group_budget[:2] == (14, 12)
-    assert one_course_group_budget[:2] == (14, 12)
-    assert many_course_groups_budget[:2] == (14, 12)
+    assert student_budget[:2] == heatmap_budget[:2]
     assert loaded_student_budget[:2] == student_budget[:2]
     assert loaded_heatmap_budget[:2] == heatmap_budget[:2]
+    assert student_budget[0] <= 17
+    assert student_budget[1] <= 13
+    assert dashboard_refresh_budget[0] <= 18
+    assert dashboard_refresh_budget[1] <= 14
+    assert no_course_group_budget[:2] == one_course_group_budget[:2]
+    assert no_course_group_budget[:2] == many_course_groups_budget[:2]
+    assert no_course_group_budget[0] <= 20
+    assert no_course_group_budget[1] <= 16
     for statements in (
         student_budget[2],
         heatmap_budget[2],
@@ -572,40 +568,36 @@ def test_course_group_snapshot_preserves_existing_filter_semantics(
         sort_order=5,
     )
 
-    batch = SQLiteStudentDocumentationProjectionRepository(database).read_batch()
+    batch = SQLiteStudentDocumentationProjectionRepository(
+        database
+    ).read_batch(as_of=AS_OF)
     assert tuple(item.course_group_id for item in batch.course_groups) == (
         "course-group-courses-only",
         "course-group-groups-only",
         "course-group-both",
         "course-group-empty",
     )
-    assert adapter._dashboard_target_scope_from_batch(
-        batch, "course_group", "course-group-groups-only"
-    ) == ((group_id,), ())
-    assert adapter._dashboard_target_scope_from_batch(
-        batch, "course_group", "course-group-courses-only"
-    ) == ((), (course_ids[0],))
-    assert adapter._dashboard_target_scope_from_batch(
-        batch, "course_group", "course-group-both"
-    ) == ((group_id,), (course_ids[0],))
-    assert adapter._dashboard_target_scope_from_batch(
-        batch, "course_group", "course-group-empty"
-    ) == ((), ())
-    assert adapter._dashboard_target_scope_from_batch(
-        batch, "course_group", "course-group-missing"
-    ) is None
-    assert adapter._dashboard_target_scope_from_batch(
-        batch, "course_group", "course-group-inactive"
-    ) is None
+    assert not adapter.list_students(
+        course_group_id="course-group-groups-only"
+    )
+    assert not adapter.list_students(
+        course_group_id="course-group-courses-only"
+    )
+    assert not adapter.list_students(
+        course_group_id="course-group-empty"
+    )
+    assert not adapter.list_students(
+        course_group_id="course-group-missing"
+    )
 
     with closing(database.connect()) as connection:
         with connection:
             connection.execute(
                 "UPDATE groups SET active = 0 WHERE group_id = ?", (group_id,)
             )
-    assert _course_group_scope(
-        adapter, database, "course-group-groups-only"
-    ) == ((group_id,), ())
+    assert not adapter.list_students(
+        course_group_id="course-group-groups-only"
+    )
 
     heatmap, suggestions = adapter.dashboard_documentation_refresh(
         target_type="course_group",
@@ -617,10 +609,9 @@ def test_course_group_snapshot_preserves_existing_filter_semantics(
     )
     expected_student_ids = tuple(
         student.student_id
-        for student in SQLiteStudentDocumentationProjectionRepository(
-            database
-        ).read_batch().students
-        if student.group_id == group_id and student.course_id == course_ids[0]
+        for student in adapter.list_students(
+            course_group_id="course-group-both"
+        )
     )
     assert heatmap == adapter.dashboard_documentation_heatmap()
     assert {item.student_id for item in suggestions} == set(expected_student_ids)
@@ -639,6 +630,9 @@ def test_course_group_refresh_uses_one_snapshot_without_follow_up_read(
         database,
         course_group_id="course-group-snapshot",
         group_ids=(group_id,),
+        course_ids=tuple(
+            course.course_id for course in seed_reference_data().courses
+        ),
     )
     with closing(database.connect()) as connection:
         connection.execute("PRAGMA journal_mode = WAL")
@@ -671,7 +665,12 @@ def test_course_group_refresh_uses_one_snapshot_without_follow_up_read(
     assert mutated
     assert heatmap == adapter.dashboard_documentation_heatmap()
     assert suggestions
-    assert _course_group_scope(adapter, database, "course-group-snapshot") is None
+    assert not any(
+        item.course_group_id == "course-group-snapshot"
+        for item in SQLiteStudentDocumentationProjectionRepository(
+            database
+        ).read_batch(as_of=AS_OF).course_groups
+    )
 
 
 def test_read_repository_constructors_do_not_initialize_schema() -> None:

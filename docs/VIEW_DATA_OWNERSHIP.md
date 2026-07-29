@@ -9,9 +9,11 @@ Final-V3-Schemaquelle besitzt nur die autorisierte Neuanlage und vollständige
 Verifikation. Kein Widget und kein Adapter erkennt, migriert oder repariert
 Datenbankschemata.
 
-Bis alle produktiven Leser und Writer auf V3 umgestellt sind, konsumiert keine
-produktive View die neue Assignment-API. Ein erkanntes finales Schema führt
-deshalb kontrolliert zu
+Der SJ-2E-Ownershipvertrag für produktive Membership-Reader ist lokal im
+Produktcode umgesetzt. Produktive Views konsumieren die Assignment-API über
+Application-, Repository- und Adaptergrenzen. Da Writerumstellung und
+Runtime-Aktivierung gesondert ausstehen, führt ein erkanntes finales Schema
+weiterhin kontrolliert zu
 `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`. Es gibt keine
 V2-Bootstrap-View, keine V2-Migrationsvorschau und keine sichtbare
 V2-Restoreauswahl.
@@ -21,17 +23,22 @@ V2-Restoreauswahl.
 | Datenbank-Startupstatus | read-only Pfad-, Restore- und vollständige Schemaidentität | Core Startup | Widgetentscheidung, Teilfingerprint, automatische Migration |
 | direkte V3-Neuanlage | autorisierter leerer Zielpfad und finales DDL | Core Schema Initializer | bestehende Datei ersetzen, V2-Zwischenschema, Transition-Beleg |
 | Schuljahresliste/-status | `school_years` | `SchoolYearRepository` und aufrufender Application Service | Systemdatum oder Label als Statusquelle |
-| Zuordnung an einem Datum | `student_school_year_assignments`, V3-`students`, `school_years`, Gruppen und Kurse plus explizites Fachdatum | `SchoolYearAssignmentQueryService.assignment_at_date` / `assignments_at_dates` | `students.group_id/course_id`, Widgetlogik, stiller Fallback |
-| aktuelle Mitgliedschaft und Mitgliederlisten | current-Schuljahr plus einmalig gesetzter `as_of`-Tag; optionale Gruppe, Kurs oder Kursverbund als Schnittmenge seiner Gruppen und Kurse | `SchoolYearAssignmentQueryService.current_membership` / `current_memberships` | Systemdatum, N+1, Widgetfilterung von Intervallen |
+| Zuordnung an einem Datum | `student_school_year_assignments`, V3-`students`, `school_years`, Gruppen und Kurse plus `AssignmentReferenceRequest` mit explizitem Fachdatum | `SchoolYearAssignmentReadSession` über bestehende datierte Assignment-Projektionen | `students.group_id/course_id`, current- oder Last-known-Fallback, Widgetlogik |
+| aktuelle Mitgliedschaft und Mitgliederlisten | current-Schuljahr plus einmalig gesetzter `as_of`-Tag; optionale Gruppe, Kurs oder Kursverbund als Schnittmenge seiner Gruppen und Kurse | `CurrentMembershipReadSnapshot` aus `SchoolYearAssignmentReadSession` | Systemdatum, N+1, Python-Nachzählung, Widgetfilterung von Intervallen |
+| zusammengesetzter Bildschirm-Read | Assignment-, Stammdaten-, Dokumentations- und Beobachtungsprojektionen auf derselben aufrufereigenen Connection und im selben Read-Snapshot | aufrufender Application-/Desktop-Adapter plus `SchoolYearAssignmentReadSession` | zweite Connection, Session-eigene Transaktionssteuerung, Query je Unterwidget |
 | historische Schuljahres-/Last-known-Abfrage | explizite Schuljahr-ID und Referenzdatum beziehungsweise expliziter Last-known-Aufruf | `SchoolYearAssignmentQueryService.membership_in_school_year` / `last_known_membership` | Jahresende als Ersatzdatum, Last-known als automatischer Fallback |
 | Kursfortschreibung | `courses.year_level` | späterer School-Year Transition Service | Kursname, Farbe, Sortierung |
 | echter Wechselbeleg | vorhandene Ausgangs-/Zieljahre und committed Wechselplan | späterer School-Year Transition Service | Initialanlage, Bootstrap oder Migration |
 
-Beobachtung, Bestätigung, Bericht und LEG können ihren bereits vorhandenen
-fachlichen Referenzzeitpunkt an dieselbe Assignment-Auflösungsgrenze liefern.
-Diese produktive Leserumstellung ist noch nicht erfolgt. Finalisierte
-Revisionen und PDFs werden nicht neu aufgelöst. Widgets komponieren später nur
-displayfertige ViewModels und enthalten keine Repository- oder Intervalllogik.
+Beobachtung, Bericht und LEG liefern ihren vorhandenen fachlichen
+Referenzzeitpunkt als `AssignmentReferenceRequest`: `observations.date`,
+`period_end` beziehungsweise `conference_date`. Ein freies Dokument ohne
+fachliches Referenzdatum bleibt neutral und erzeugt keine
+Zuordnungsbehauptung. Current, `last_known_membership`, Systemdatum und
+V2-Schülerfelder sind keine Fallbacks. Diese produktive Leserumstellung ist
+lokal erfolgt. Finalisierte Revisionen und PDFs werden nicht neu
+aufgelöst. Widgets komponieren ausschließlich displayfertige ViewModels und
+enthalten keine Repository- oder Intervalllogik.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 
@@ -407,23 +414,29 @@ nicht gelesen. `AppShell` reicht den Wert weiter, besitzt aber keine
 Profilpersistenz.
 
 Die Dokumentations-Heatmap und die Schuelerliste beziehen ihre bestehende
-Dokumentationsstatusprojektion ueber einen refresh-lokalen
-`StudentDocumentationProjectionBatch`. Der
-`SQLiteStudentDocumentationProjectionRepository` besitzt nur den
-transaktionskonsistenten Read-Snapshot; `StudentDesktopAdapter` bleibt Owner
-der Gruppierung, kanonischen Dokumentationsabdeckung und Sortierprojektion.
-Die vollstaendige Bestätigungsfrische bleibt im Batch fachlich gleich
-projizierbar, beeinflusst aber nicht die Regel, ob eine konkrete Kompetenz
-dokumentiert ist. Screens und Widgets lesen weder Repositories noch SQLite
-direkt. Der Batch fuehrt keine DDL aus und wird nicht ueber den jeweiligen
-Refresh hinaus gehalten.
+Dokumentationsstatusprojektion für die Mitglieder eines refresh-lokalen
+`CurrentMembershipReadSnapshot`. Assignment- und Dokumentationsreads werden
+durch den aufrufenden Adapter auf derselben Connection und im selben
+transaktionskonsistenten Read-Snapshot komponiert; weder
+`SQLiteStudentDocumentationProjectionRepository` noch
+`SchoolYearAssignmentReadSession` besitzt die Transaktionssteuerung.
+`StudentDesktopAdapter` bleibt Owner der Gruppierung, kanonischen
+Dokumentationsabdeckung und Sortierprojektion, zählt Mitgliedschaften aber
+nicht in Python nach. Die vollstaendige Bestätigungsfrische bleibt fachlich
+gleich projizierbar, beeinflusst aber nicht die Regel, ob eine konkrete
+Kompetenz dokumentiert ist. Screens und Widgets lesen weder Repositories noch
+SQLite direkt. Die Projektionen führen keine DDL aus und werden nicht ueber
+den jeweiligen Refresh hinaus gehalten.
 
 `OnboardingScreen` besitzt nur sichtbaren Schritt-, Text-, Button- und lokalen
 Fokuszustand. Persistenz gehoert `OnboardingController` und
 `AppPreferencesFile`; Navigation gehoert `AppShell`. Kleine Statuszeilen werden
 aus bestehenden Adapter-/ViewModel-Projektionen als aggregierte Ja/Nein-Werte
-uebergeben. Die View liest keine SQLite-Daten direkt, zeigt keine Schuelernamen
-und schreibt keine fachlichen Daten.
+uebergeben. Der Kinderstatus verwendet den `CurrentMembershipReadSnapshot`;
+aktuelle `ENROLLED`-Mitglieder ergeben eingerichtet, ein fachlich leerer
+aktueller Bestand offen und `CURRENT_SCHOOL_YEAR_MISSING` beziehungsweise
+`AMBIGUOUS` nicht geprüft. Die View liest keine SQLite-Daten direkt, zeigt
+keine Schuelernamen und schreibt keine fachlichen Daten.
 
 `SecurityUiCoordinator` besitzt den rein technischen sichtbaren Lock-State. Er
 versteckt bei Sperre alle fachlichen Top-Level-Fenster und zeigt eine vollstaendig
@@ -591,9 +604,9 @@ Die Einstellungen duerfen keine Fachdefinitionen oder Stammdatenkopien speichern
 Liest:
 
 - `timetable_entries` ueber die kanonische zeitpunktparametrisierte Stundenplanprojektion
-- `data_groups`
-- `data_courses`
-- `data_students` fuer vorhandene Schuelerzahlen je Stammgruppe
+- `groups` und `courses` als sichtbare Stammdaten
+- `CurrentMembershipReadSnapshot` für aktuelle Zielmitgliedschaften und
+  zentral berechnete Schülerzahlen je Stammgruppe, Kurs und Kursverbund
 - `course_groups`
 - `course_group_student_groups`
 - `course_group_courses`
@@ -614,17 +627,43 @@ UI-Projektionen:
 
 Regel:
 
-`Heute` ist eine reine Lese- und Navigationsoberflaeche. Der technische Screen und Schluessel `dashboard` bleiben erhalten. Die Ansicht zeigt den aktuellen Stammdaten-Scope der PySide-App, verwaltet weder Stammdaten noch Stundenplan und schreibt nicht direkt in SQLite. Aktuell, naechste und heutige Stunde stammen ausschliesslich aus `TimetableDesktopAdapter.read_projection(at)`. Zeitstatus wird beim Oeffnen beziehungsweise Aktivieren und hoechstens minuetlich neu gelesen. Die Heatmap zaehlt je Stammgruppe und Fach nur Kinder, deren bestehende kanonische Fachprojektion mindestens eine dokumentierte Kompetenz ausweist; sie zeigt keine Ratings, Scores oder automatischen Entwicklungsurteile. Ihre neutralen Blau-Grau-Abstufungen codieren ausschliesslich Dokumentationsabdeckung und keine Ampelbewertung.
+`Heute` ist eine reine Lese- und Navigationsoberflaeche. Der technische Screen und Schluessel `dashboard` bleiben erhalten. Die Ansicht zeigt den aktuellen Stammdaten-Scope der PySide-App, verwaltet weder Stammdaten noch Stundenplan und schreibt nicht direkt in SQLite. Aktuell, naechste und heutige Stunde stammen ausschliesslich aus `TimetableDesktopAdapter.read_projection(at)`. Derselbe einmalig injizierte Zeitpunkt liefert den `as_of`-Tag für die aktuelle Mitgliedschaft. Zeitstatus wird beim Oeffnen beziehungsweise Aktivieren und hoechstens minuetlich neu gelesen. Assignment-, Dokumentations- und Beobachtungsprojektionen eines Refreshs werden über genau eine `SchoolYearAssignmentReadSession` auf derselben aufrufereigenen Connection und im selben Read-Snapshot komponiert. Die Heatmap zaehlt je Stammgruppe und Fach nur aktuelle `ENROLLED`-Kinder, deren bestehende kanonische Fachprojektion mindestens eine dokumentierte Kompetenz ausweist; ihre Nenner stammen aus den zentral berechneten Counts des `CurrentMembershipReadSnapshot`. Sie zeigt keine Ratings, Scores oder automatischen Entwicklungsurteile. Ihre neutralen Blau-Grau-Abstufungen codieren ausschliesslich Dokumentationsabdeckung und keine Ampelbewertung. Fehlendes current-Schuljahr oder mehrdeutige aktuelle Assignments blockieren die fachliche Projektion und werden nicht als leere Liste oder Nullzählung angezeigt.
 
-Die direkte Kursansicht im Schueler-Arbeitsraum filtert appweit nach der ausgewaehlten `course_id`. Die getrennte Kursverbundansicht bleibt kursverbundbezogen und schraenkt ihren Kursfilter weiterhin zusaetzlich auf die Stammgruppen des ausgewaehlten Kursverbunds ein.
+Die direkte Kursansicht im Schueler-Arbeitsraum filtert den
+`CurrentMembershipReadSnapshot` nach der ausgewaehlten `course_id`. Die
+getrennte Kursverbundansicht bleibt kursverbundbezogen und verwendet die
+zentrale Schnittmenge aus den registrierten Stammgruppen und Kursen des
+Kursverbunds mit den aktuellen Assignments; der Screen expandiert oder
+filtert diese Intervalle nicht selbst.
 
 UX-Regel UI Sprint 1: `Heute` und `Schüler` sind die beiden globalen Arbeitsziele. Die Dashboard-Projektionen erscheinen ausschliesslich in einer grossen Hero-Karte, einer horizontalen Tages-Timeline, einer kompakten Stammgruppe-mal-Fach-Matrix und der Karte fuer passenden Unterrichtskontext. Allgemeine Stammgruppen- und Kursverbundkarten gehoeren lokal in den Schueler-Arbeitsraum.
 
-Regel Sprint 8B.3: `Passende Kinder für diese Stunde` liest aktive Kinder aus der zur Stunde gehoerenden Stammgruppe, dem Kurs oder Kursverbund sowie deren aktive Beobachtungen. Es werden hoechstens fuenf Kinder als transparente Dokumentationshilfe projiziert. Reihenfolge und Hinweis beruhen ausschliesslich auf dem Vorhandensein und Datum einer aktiven Beobachtung mit eindeutigem Fachbezug; Ratings, Kompetenzstatus, Leistungswerte und paedagogische Urteile werden nicht gelesen oder berechnet. Der Screen rendert diese Projektion nur und startet `Beobachten` ueber den bestehenden Beobachtungsdialog.
+Regel Sprint 8B.3: `Passende Kinder für diese Stunde` liest ausschließlich
+aktuelle `ENROLLED`-Kinder aus dem `CurrentMembershipReadSnapshot` für die zur
+Stunde gehörende Stammgruppe, den Kurs oder den Kursverbund sowie deren aktive
+Beobachtungen aus demselben Read-Snapshot. Es werden hoechstens fuenf Kinder
+als transparente Dokumentationshilfe projiziert. Reihenfolge und Hinweis
+beruhen ausschliesslich auf dem Vorhandensein und Datum einer aktiven
+Beobachtung mit eindeutigem Fachbezug; Ratings, Kompetenzstatus,
+Leistungswerte und paedagogische Urteile werden nicht gelesen oder berechnet.
+Der Screen rendert diese Projektion nur und startet `Beobachten` ueber den
+bestehenden Beobachtungsdialog.
 
 ## PySide6 Schueler-Arbeitsraum
 
-Liest die bestehenden Projektionen aus `groups`, `courses`, `students`, `course_groups`, `course_group_student_groups` und `course_group_courses`. Schreibt nichts direkt. `StudentsWorkspace` komponiert die lokalen Segmente `Stammgruppen`, `Kurse`, `Kursverbünde` und `Alle Schüler`, ohne eine neue Datenquelle zu besitzen. Stammgruppenkarten, direkte Kurskarten, Schuelerzahlen, Kursverbuende, Kurszugriffe, Listenfilter und Profilnavigation verwenden ausschliesslich die bestehenden technischen IDs. Ein einfacher Klick auf eine Nicht-Aktionszelle, Enter oder die sekundäre Profilaktion navigiert per `student_id`; eingebettete Zeilenaktionen bleiben davon getrennt. Dashboard-Daten und Stundenplanprojektionen werden in diesem Arbeitsraum nicht gelesen.
+Liest V3-`students` ausschließlich für Schülerstammdaten, `groups`, `courses`,
+`course_groups`, `course_group_student_groups` und `course_group_courses` für
+Stammdatendefinitionen sowie genau einen `CurrentMembershipReadSnapshot` für
+aktuelle Mitgliedermengen und zentral berechnete Zähler. Schreibt nichts
+direkt. `StudentsWorkspace` komponiert die lokalen Segmente `Stammgruppen`,
+`Kurse`, `Kursverbünde` und `Alle Schüler`, ohne eine neue Datenquelle zu
+besitzen. Stammgruppenkarten, direkte Kurskarten, Schuelerzahlen,
+Kursverbuende, Kurszugriffe, Listenfilter und Profilnavigation verwenden
+ausschliesslich die bestehenden technischen IDs. Ein einfacher Klick auf eine
+Nicht-Aktionszelle, Enter oder die sekundäre Profilaktion navigiert per
+`student_id`; eingebettete Zeilenaktionen bleiben davon getrennt.
+Dashboard-Daten und Stundenplanprojektionen werden in diesem Arbeitsraum nicht
+gelesen.
 
 Der Workspace darf nur lokale Segment-, Drill-down-, Such-, Fokus- und Auswahlzustaende halten. Kursname und Kursfarbe werden in Schuelerliste und Profilkopf ausschliesslich aus der bestehenden Kursprojektion als `CourseBadge` dargestellt. Beobachtung, Kompetenz, Bericht und LEG bleiben im vorhandenen Schuelerprofilkontext und verwenden ihre bereits dokumentierten Lese- und Schreibpfade. Der Workspace berechnet weder Mitgliedschaften noch Dokumentationsstatus und greift nicht direkt auf SQLite zu.
 
@@ -678,9 +717,10 @@ Der Projection Builder bleibt Eigentuemer der Projektion.
 
 Liest:
 
-- `data_students`
-- `data_groups`
-- `data_courses`
+- V3-`students` für Name, Aktiv-/Archivstatus und `student_id`
+- `groups` und `courses` für sichtbare Stammdaten
+- `CurrentMembershipReadSnapshot` für aktuelle Stammgruppenmitglieder und
+  zentral berechnete Schülerzahlen
 
 Schreibt:
 
@@ -701,15 +741,20 @@ UI-Projektionen:
 
 Regel:
 
-Die Stammgruppenuebersicht ist Auswahl- und Navigationsansicht. Sie verwaltet keine Schuelerdaten.
+Die Stammgruppenuebersicht ist Auswahl- und Navigationsansicht. Sie verwaltet
+keine Schuelerdaten. Sie zeigt ausschließlich aktuelle `ENROLLED`-Mitglieder
+am einmalig gesetzten `as_of`-Tag; `EXITED`, `NO_ASSIGNMENT` und archivierte
+Schüler erscheinen nicht. Fehlendes current-Schuljahr oder `AMBIGUOUS`
+blockiert die Projektion. Sie zählt nicht in Python und löst Assignments nicht
+je Kind auf.
 
 ## Kursuebersicht
 
 Liest:
 
-- `data_students`
-- `data_courses`
-- `data_groups`
+- V3-`students` für Name, Aktiv-/Archivstatus und `student_id`
+- `groups` und `courses` für sichtbare Stammdaten
+- `CurrentMembershipReadSnapshot` für aktuelle Kursmitglieder
 
 Schreibt:
 
@@ -728,15 +773,22 @@ UI-Projektionen:
 
 Regel:
 
-Die Kursuebersicht ist eine Projektion derselben Schuelerdaten wie die Stammgruppenuebersicht.
+Die Kursuebersicht ist eine Projektion derselben aktuellen
+`CurrentMembershipReadSnapshot`-Daten wie die Stammgruppenuebersicht. Ein
+Kursverbundfilter wird zentral als Schnittmenge seiner registrierten
+Stammgruppen und Kurse mit aktuellen Assignments aufgelöst; Widgets und
+ViewModels filtern keine Assignmentintervalle.
 
 ## Schuelerprofil
 
 Liest:
 
-- `data_students`
-- `data_groups`
-- `data_courses`
+- V3-`students` für Name, Notiz, Aktiv-/Archivstatus und `student_id`
+- `CurrentStudentMembershipProjection` aus der
+  `SchoolYearAssignmentReadSession` für den einmalig gesetzten aktuellen
+  `as_of`-Tag
+- `groups` und `courses` ausschließlich als über die zentrale
+  Assignmentprojektion aufgelöste sichtbare Stammdaten
 - `data_observations`
 - `data_observation_competencies`
 - `data_competencies`
@@ -775,7 +827,63 @@ UI-Projektionen:
 
 Regel:
 
-Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene Schreibprozesse. Es schreibt selbst keine fachlichen Daten und greift nicht direkt auf SQLite zu. Das Variante-A-Arbeitsprofil wird im Adapter ueber `build_student_profile_dashboard(...)` ausschließlich aus der kanonischen Kompetenzstatusprojektion und der bestehenden Dokumentationsstatusprojektion komponiert. Die Orientierungskarte beruecksichtigt nur reale Beobachtungen und die vorhandene aktuelle Bestaetigung bis zum uebergebenen Stichtag. Eine Kompetenz qualifiziert sich nur mit mindestens zwei realen Ereignissen und einem tatsaechlichen Wechsel zwischen zwei aufeinanderfolgenden dokumentierten Statuswerten. Sie zeigt hoechstens drei Treffer, sortiert nach juengster Statusaenderung und danach curricularer Reihenfolge; historische Snapshot-Texte bleiben lesbar, ohne historische Kompetenzen fuer neue Auswahl zu reaktivieren. Der Screen rendert diese fertige Projektion und berechnet weder Statuswechsel noch Counts. Ohne aktive Filter begrenzt die UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den Beobachtungsverlauf und nicht auf das Kompetenz-Cockpit. Die zentrale Leseprojektion `StudentDesktopAdapter.list_competency_status_projection_for_student(student_id)` erzeugt genau eine Statuszeile je aktiver `current`-Kompetenz sowie je historisch referenzierter Kompetenz. Sie trennt Beobachtungsvorschlag, Bestaetigung und chronologische aktive Nachweise; Soft Deletes bleiben ausgeschlossen. Sprint 6C gruppiert ausschließlich diese kanonischen Zeilen als Fach -> Kompetenzbereich -> Thema -> Kompetenz und aggregiert dokumentiert/gesamt, ohne einen zweiten Kompetenzstatus zu berechnen. Die lokalen Cockpit-Filter beschraenken nur sichtbare aktive Zeilen; sie kombinieren Fach mit dem kanonischen Dokumentationszustand, mutieren keine Daten und behalten die Fortschrittswerte aus dem vollstaendigen aktiven Zielbestand. Alle Cockpit-Ebenen starten geschlossen; der Aufklappzustand bleibt lokal je geoeffnetem Schueler und wird beim Filtern fuer weiterhin sichtbare Ebenen erhalten. Historische Zeilen werden separat unter `Historisch dokumentiert` dargestellt und nicht mit aktiven Zielen gefiltert. Kompetenzstand-Vorschlaege werden aus aktiven Beobachtungen und SQLite `competencies` abgeleitet. Bestaetigte Kompetenzstaende sind paedagogische Entscheidungen und liegen separat in `student_competency_confirmations`. Der Dokumentationsstand ist eine abgeleitete Auswertung aus aktivem `current`-Kompetenzkatalog, aktiven Beobachtungen, bestaetigten Kompetenzstaenden und `documentation_subject_settings`; er zaehlt konkrete Kompetenz-IDs je Fach und Kompetenzbereich, speichert nichts und ist keine Bewertung. Nicht dokumentationsrelevante Faecher zaehlen nicht als offen, bleiben aber in Beobachtungsverlauf, Kompetenz-Cockpit und Berichtsvorschau sichtbar, wenn echte Beobachtungen oder bestaetigte Kompetenzstaende vorliegen. Dokumente und Medien werden aus SQLite `documents` gelesen; Dateien liegen im Dateisystem und werden bei vorhandener `file_path` ueber das Betriebssystem geoeffnet. Die Berichtsvorschau ist eine abgeleitete Struktur aus bestaetigten Staenden, Vorschlaegen und aktiven Beobachtungsbelegen; sie speichert keine Berichtsdaten und erzeugt keine finalen Zeugnisformulierungen. Kopieren und einfacher Textdatei-Export sind Ausgabeaktionen, keine fachliche Persistenz.
+Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene
+Schreibprozesse. Es schreibt selbst keine fachlichen Daten und greift nicht
+direkt auf SQLite zu. Der aktuelle Profilkopf zeigt bei `ENROLLED` die zentral
+aufgelöste Stammgruppe und den Kurs, bei `EXITED` den neutralen Zustand
+`Im aktuellen Schuljahr ausgeschieden`, bei `NO_ASSIGNMENT` `Keine aktuelle
+Zuordnung` und bei `STUDENT_ARCHIVED` einen neutralen nicht aktuellen Zustand.
+Fehlendes current-Schuljahr oder `AMBIGUOUS` blockiert die aktuelle
+Zuordnungsanzeige. Technische Gruppen- oder Kurs-IDs und V2-Schülerfelder sind
+keine sichtbaren Fallbacks.
+
+Das Variante-A-Arbeitsprofil wird im Adapter ueber
+`build_student_profile_dashboard(...)` ausschließlich aus der kanonischen
+Kompetenzstatusprojektion und der bestehenden Dokumentationsstatusprojektion
+komponiert. Die Orientierungskarte beruecksichtigt nur reale Beobachtungen und
+die vorhandene aktuelle Bestaetigung bis zum uebergebenen Stichtag. Eine
+Kompetenz qualifiziert sich nur mit mindestens zwei realen Ereignissen und
+einem tatsaechlichen Wechsel zwischen zwei aufeinanderfolgenden dokumentierten
+Statuswerten. Sie zeigt hoechstens drei Treffer, sortiert nach juengster
+Statusaenderung und danach curricularer Reihenfolge; historische
+Snapshot-Texte bleiben lesbar, ohne historische Kompetenzen fuer neue Auswahl
+zu reaktivieren. Der Screen rendert diese fertige Projektion und berechnet
+weder Statuswechsel noch Counts. Ohne aktive Filter begrenzt die
+UI-Projektion den Beobachtungsverlauf auf drei neueste Karten; lokale
+Beobachtungsfilter wirken auf alle Beobachtungen, aber nur auf den
+Beobachtungsverlauf und nicht auf das Kompetenz-Cockpit. Die zentrale
+Leseprojektion
+`StudentDesktopAdapter.list_competency_status_projection_for_student(student_id)`
+erzeugt genau eine Statuszeile je aktiver `current`-Kompetenz sowie je
+historisch referenzierter Kompetenz. Sie trennt Beobachtungsvorschlag,
+Bestaetigung und chronologische aktive Nachweise; Soft Deletes bleiben
+ausgeschlossen. Sprint 6C gruppiert ausschließlich diese kanonischen Zeilen
+als Fach -> Kompetenzbereich -> Thema -> Kompetenz und aggregiert
+dokumentiert/gesamt, ohne einen zweiten Kompetenzstatus zu berechnen. Die
+lokalen Cockpit-Filter beschraenken nur sichtbare aktive Zeilen; sie
+kombinieren Fach mit dem kanonischen Dokumentationszustand, mutieren keine
+Daten und behalten die Fortschrittswerte aus dem vollstaendigen aktiven
+Zielbestand. Alle Cockpit-Ebenen starten geschlossen; der Aufklappzustand
+bleibt lokal je geoeffnetem Schueler und wird beim Filtern fuer weiterhin
+sichtbare Ebenen erhalten. Historische Zeilen werden separat unter
+`Historisch dokumentiert` dargestellt und nicht mit aktiven Zielen gefiltert.
+Kompetenzstand-Vorschlaege werden aus aktiven Beobachtungen und SQLite
+`competencies` abgeleitet. Bestaetigte Kompetenzstaende sind paedagogische
+Entscheidungen und liegen separat in `student_competency_confirmations`. Der
+Dokumentationsstand ist eine abgeleitete Auswertung aus aktivem
+`current`-Kompetenzkatalog, aktiven Beobachtungen, bestaetigten
+Kompetenzstaenden und `documentation_subject_settings`; er zaehlt konkrete
+Kompetenz-IDs je Fach und Kompetenzbereich, speichert nichts und ist keine
+Bewertung. Nicht dokumentationsrelevante Faecher zaehlen nicht als offen,
+bleiben aber in Beobachtungsverlauf, Kompetenz-Cockpit und Berichtsvorschau
+sichtbar, wenn echte Beobachtungen oder bestaetigte Kompetenzstaende
+vorliegen. Dokumente und Medien werden aus SQLite `documents` gelesen; Dateien
+liegen im Dateisystem und werden bei vorhandener `file_path` ueber das
+Betriebssystem geoeffnet. Die Berichtsvorschau ist eine abgeleitete Struktur
+aus bestaetigten Staenden, Vorschlaegen und aktiven Beobachtungsbelegen; sie
+speichert keine Berichtsdaten und erzeugt keine finalen Zeugnisformulierungen.
+Kopieren und einfacher Textdatei-Export sind Ausgabeaktionen, keine fachliche
+Persistenz.
 
 ## Schuelerverwaltung / PySide-Dialog `Neuer Schüler`
 
@@ -811,7 +919,11 @@ Der PySide-Dialog `Neuer Schüler` ist der aktive Eingabepfad fuer fachliche Sch
 
 Liest:
 
-- `data_students`
+- neue Beobachtung: V3-`students` und aktuelle `ENROLLED`-Mitgliedschaft aus
+  `CurrentMembershipReadSnapshot`
+- bestehende Beobachtung: V3-`students` über die gespeicherte `student_id` und
+  datierte Zuordnung über
+  `AssignmentReferenceRequest(observation_id, student_id, observations.date)`
 - `data_subjects`
 - `data_competencies`
 - `documentation_subject_settings` fuer die Fachauswahl neuer Beobachtungen
@@ -852,7 +964,25 @@ UI-Projektionen:
 
 Regel:
 
-Der Beobachtungsdialog ist der freigegebene Schreibprozess fuer Erfassung und Bearbeitung von Beobachtungen. Die produktive Drei-Zonen-Arbeitsflaeche rendert ausschliesslich die Adapterprojektion; der Dialog baut keine eigene Fallback-Hierarchie aus Katalogdaten. Neue Beobachtungen bieten in der Fachauswahl nur dokumentationsrelevante aktive Faecher und im Katalog nur aktive `current`-Kompetenzen an. Bei Bearbeitung wird eine bestehende `observation_id` geladen; ein inzwischen nicht dokumentationsrelevantes Bestandsfach sowie bereits bewertete `legacy`- oder inaktive Kompetenzen bleiben sichtbar und werden nicht automatisch ersetzt. Speichern ersetzt die Kompetenzbewertungen atomar. Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden. Die sichtbare Kompetenzstruktur lautet Fach -> Kompetenzbereich -> Thema -> Kompetenz und nutzt bestehende Felder: `subject_id` / `subject_name`, `learning_area`, `competency_group`, `description` / `competency_text`.
+Der Beobachtungsdialog ist der freigegebene Schreibprozess fuer Erfassung und
+Bearbeitung von Beobachtungen. Die produktive Drei-Zonen-Arbeitsflaeche
+rendert ausschliesslich die Adapterprojektion; der Dialog baut keine eigene
+Fallback-Hierarchie aus Katalogdaten. Eine neue Beobachtung bietet nur
+aktuelle `ENROLLED`-Kinder aus dem einmalig gesetzten
+`CurrentMembershipReadSnapshot` an. Bei Bearbeitung bleiben die gespeicherte
+`student_id` und `observations.date` fachlicher Kontext; die historische
+Zuordnung wird ausschließlich an diesem Datum aufgelöst und niemals durch
+current, Last-known oder V2-Schülerfelder ersetzt. Neue Beobachtungen bieten
+in der Fachauswahl nur dokumentationsrelevante aktive Faecher und im Katalog
+nur aktive `current`-Kompetenzen an. Bei Bearbeitung wird eine bestehende
+`observation_id` geladen; ein inzwischen nicht dokumentationsrelevantes
+Bestandsfach sowie bereits bewertete `legacy`- oder inaktive Kompetenzen
+bleiben sichtbar und werden nicht automatisch ersetzt. Speichern ersetzt die
+Kompetenzbewertungen atomar. Kompetenzen muessen im Beobachtungsdialog
+zwingend mitgedacht werden. Die sichtbare Kompetenzstruktur lautet Fach ->
+Kompetenzbereich -> Thema -> Kompetenz und nutzt bestehende Felder:
+`subject_id` / `subject_name`, `learning_area`, `competency_group`,
+`description` / `competency_text`.
 
 Sprint 3C stellt diese Struktur als additive ViewModel-/Adapterprojektion bereit. Sprint 3D rendert die Kompetenzauswahl hierarchisch. Sprint 5C uebernimmt die freigegebene Drei-Zonen-UX produktiv: Neu-Erfassung startet vollstaendig geschlossen, Bearbeitung oeffnet ausschliesslich Zweige mit bereits bewerteten Kompetenzen, und Auswahl sowie Einzelbewertungen bleiben bei Fachwechsel oder Einklappen erhalten. Sprint 5D filtert diese bestehende Projektion ausschließlich lokal im Dialog; Suche und Treffer-Öffnung verändern weder Auswahl noch Bewertung oder Persistenz und das Löschen der Suche stellt den Aufklappzustand vor der Suche wieder her. Sprint 5E ergänzt darunter eine reine Adapterprojektion der zuletzt verwendeten Kompetenzen; die Dialogauswahl ändert deren Reihenfolge oder Inhalt nicht.
 
@@ -867,7 +997,8 @@ Liest:
 - `data_subjects`
 - `data_observation_competencies`
 - `data_observations`
-- `data_students`
+- V3-`students` für Namen und stabile `student_id`; gegebenenfalls datierte
+  Assignmentprojektion zum fachlichen Beobachtungsdatum
 
 Schreibt:
 
@@ -894,9 +1025,10 @@ Die Kompetenzansicht ist Auswertung und Navigation. Sie schreibt keine fachliche
 
 Liest:
 
-- `data_students`: Schuelerkontext fuer Auswertung
-- `data_groups`: Gruppierung nach Stammgruppe
-- `data_courses`: Gruppierung nach Kurs
+- V3-`students`: Schuelerstammdaten fuer Auswertung
+- `CurrentMembershipReadSnapshot`: aktuelle Zielmitgliedschaften und zentral
+  berechnete Gruppen-, Kurs- und Kursverbundzähler
+- `groups` und `courses`: sichtbare Stammdaten
 - `data_subjects`: fachliche Gruppierung
 - `data_competencies`: Kompetenzstruktur
 - `data_observations`: Beobachtungsbasis
@@ -924,15 +1056,20 @@ UI-Projektionen:
 
 Regel:
 
-Dashboards duerfen keine eigenen Schatteninformationen speichern.
+Dashboards duerfen keine eigenen Schatteninformationen speichern. Aktuelle
+Dashboardprojektionen verwenden einmalig gesetztes `as_of` und dieselbe
+`SchoolYearAssignmentReadSession` wie ihre übrigen Daten. Historische
+Belegkontexte verwenden ausschließlich ihr fachliches Referenzdatum. Python-
+Nachzählung, Query je Kind, V2-Schülerfelder sowie current- oder
+Last-known-Fallback sind unzulässig.
 
 ## Berichte
 
 Liest:
 
-- `data_students`
-- `data_groups`
-- `data_courses`
+- V3-`students`
+- `groups` und `courses` über datierte Assignmentprojektionen aus
+  `AssignmentReferenceRequest`
 - `data_subjects`
 - `data_competencies`
 - `data_observations`
@@ -966,6 +1103,14 @@ UI-Projektionen:
 Regel:
 
 Die bestehende Berichtsvorschau ist eine Live-Auswertungsprojektion. Sie speichert keine fachlichen Ergebnisdaten. Sie darf bestaetigte Kompetenzstaende, klar getrennte berechnete Vorschlaege und aktive Beobachtungen strukturieren sowie als einfachen Text kopieren oder exportieren. Sie erzeugt keine fertigen paedagogischen Aussagen, keine finalen Zeugnisformulierungen und keinen PDF-/Word-Export.
+
+Der Berichtskontext löst Stammgruppe und Kurs ausschließlich am `period_end`
+des fachlich maßgeblichen RPD auf. LEG verwendet ausschließlich
+`conference_date`, Beobachtungsbelege ausschließlich `observations.date`.
+Freie Dokumente ohne fachliches Referenzdatum bleiben neutral. Current,
+`last_known_membership`, technische Zeitpunkte und V2-Schülerfelder sind
+keine Fallbacks; finalisierte Revisionen und PDFs werden nicht live neu
+aufgelöst.
 
 Sprint 7F.1 ergaenzt einen persistenten, weiter bearbeitbaren Berichtsentwurf. Die Berichtswerkstatt liest und schreibt ihn ausschliesslich ueber ViewModel, Application Layer und `SQLiteReportDraftRepository`. Gespeichert werden Dokumentkontext, manuelle Gesamt- und Fachtexte sowie bewusste Fach-, Kompetenz-, Beobachtungs- und Diagrammreferenzen. Kompetenzzustaende stammen weiterhin ausschliesslich aus der kanonischen Sprint-6-Projektion; Kompetenz- und Beobachtungsinhalte werden nicht in den Entwurf kopiert. Aktive `current`-Kompetenzen sind fuer neue Auswahl vorgesehen. Beim Wiedereroeffnen werden gespeicherte Kompetenz-IDs als `retained_competency_ids` an dieselbe Projektion uebergeben, sodass spaeter deaktivierte oder historische Referenzen gekennzeichnet ausgewaehlt bleiben, ohne erneut angeboten zu werden. Gespeicherte, spaeter soft-geloeschte Beobachtungs-IDs bleiben als nicht verfuegbare Referenzen sichtbar und werden nur durch ausdrueckliche Abwahl entfernt; Inhalte werden nicht rekonstruiert. Der Entwurf ist keine finale Berichtsdomain und besitzt weder Freigabe, Versionierung, Archivierung noch eingefrorene Ausgabe.
 

@@ -183,6 +183,9 @@ class StudentDetailViewModel:
     active: bool
     course_color_name: str = ""
     course_color_hex: str = ""
+    resolution_status: str = "enrolled"
+    status_label: str = ""
+    membership_blocking: bool = False
 
 
 @dataclass(frozen=True)

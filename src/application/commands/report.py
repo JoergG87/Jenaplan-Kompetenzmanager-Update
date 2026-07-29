@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
 
 from src.core.learning_report import (
     LearningReportFinalizationPreview,
@@ -252,6 +253,7 @@ class PrepareLearningReportQuery:
     """Request the source data needed for one transient report draft."""
 
     student_id: str
+    period_end: date
 
 
 @dataclass(frozen=True)
@@ -268,7 +270,7 @@ class LearningReportApplicationService:
 
     def __init__(
         self,
-        student_loader: Callable[[str], object | None],
+        student_loader: Callable[[str, date], object | None],
         competency_status_loader: Callable[[str], tuple[object, ...]],
         observation_loader: Callable[[str], tuple[object, ...]],
     ) -> None:
@@ -283,7 +285,7 @@ class LearningReportApplicationService:
         student_id = query.student_id.strip()
         if not student_id:
             return None
-        student = self.student_loader(student_id)
+        student = self.student_loader(student_id, query.period_end)
         if student is None:
             return None
         return LearningReportSourceData(

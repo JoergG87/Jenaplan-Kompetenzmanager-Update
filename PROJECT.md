@@ -2,8 +2,8 @@
 
 ## V3-only Produktschema und Architecture Cleanup
 
-**Status:** Governance, technischer V3-only-Cleanup und zentrale isolierte
-Assignment-API lokal implementiert. Die Umstellung produktiver Leser und
+**Status:** Governance, technischer V3-only-Cleanup, zentrale Assignment-API
+und SJ-2E-Leserumstellung lokal implementiert. Die Umstellung produktiver
 Writer sowie die Runtime-Freigabe sind noch nicht umgesetzt.
 
 V3 ist das erste und einzige Produktschema. Es enthält `school_years`,
@@ -29,9 +29,8 @@ bleibt bestehen.
 
 Startup-Ziel ist: exaktes finales Schema erkennen, eine fehlende Datenbank nur
 im autorisierten First-Run-/Testkontext direkt als V3 erzeugen und unbekannte
-oder beschädigte Schemata fail-closed ablehnen. Solange aktuelle produktive
-Leser noch V2-Mitgliedschaftsfelder erwarten, bleibt die Shell im ausdrücklich
-benannten Zwischenzustand
+oder beschädigte Schemata fail-closed ablehnen. Bis zur gesonderten Writer-
+und Runtime-Freigabe bleibt die Shell im ausdrücklich benannten Zwischenzustand
 `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` gesperrt.
 
 Implementiert sind die Qt-freien, Connection-gebundenen
@@ -43,9 +42,21 @@ Einschreibung, unterjährigen Wechsel, Austritt und Archivierung. Alle
 Referenzdaten sind explizit; Batchreads sind set-basiert; Mehrdeutigkeit und
 fehlende Zuordnung bleiben sichtbare Zustände.
 
-Weiterhin nicht umgesetzt oder freigegeben sind die flächendeckende
-produktive Leser-/Writer-Umstellung, der Schuljahreswechsel-Assistent,
-unterjährige Sammelwechsel, Runtime-Aktivierung, Build, Packaging und Release.
+SJ-2E stellt die produktiven Membership-Leser für Schülerlisten und -profil,
+Gruppen, Kurse, Kursverbünde, Dashboard, Beobachtungsbearbeitung,
+Berichtsvorbereitung und -finalisierung sowie LEG-Vorbereitung und -Abschluss
+auf diese API um. Aktuelle Ansichten bestimmen genau ein explizites `as_of`
+pro Read-Snapshot; historische Auflösung verwendet `observations.date`,
+`period_end` beziehungsweise `conference_date`. Connection-gebundene
+`SchoolYearAssignmentReadSession`-Komposition, zentrale Counts und
+set-basierte Batchabfragen verhindern V2-Fallbacks und N+1-Reads. Report- und
+LEG-Snapshotbildung einschließlich Assignmentauflösung und persistierendem
+Revisionsschritt liegt jeweils in derselben Transaktion. Bestehende
+Revisionen, Hashes und PDF-Artefakte werden nicht neu aufgelöst.
+
+Weiterhin nicht umgesetzt oder freigegeben sind die produktive
+Writer-Umstellung, der Schuljahreswechsel-Assistent, unterjährige
+Sammelwechsel, Runtime-Aktivierung, Build, Packaging und Release.
 
 ## Schuljahresmodell und echte Wechsel
 

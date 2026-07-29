@@ -13,7 +13,9 @@ from typing import Iterator, TypeVar
 
 from src.core.school_year import (
     AssignmentAtDateProjection,
+    AssignmentReferenceRequest,
     AssignmentResolutionStatus,
+    CurrentMembershipReadSnapshot,
     CurrentStudentMembershipProjection,
     SchoolYear,
     StudentAssignmentStatus,
@@ -24,6 +26,7 @@ from src.core.sqlite_school_year_assignment import (
     AssignmentSource,
     SchoolYearAssignmentRepositoryError,
     SchoolYearRepository,
+    SchoolYearAssignmentReadSession,
     StoredStudentSchoolYearAssignment,
     StudentSchoolYearAssignmentRepository,
     V3StudentRepository,
@@ -74,32 +77,34 @@ class SchoolYearAssignmentQueryService:
         reference_date: date,
     ) -> AssignmentAtDateProjection:
         reference = _require_reference_date(reference_date)
-        with _read_snapshot(self._connection_factory) as connection:
-            sources = StudentSchoolYearAssignmentRepository(
-                connection
-            ).get_assignment_at_date(student_id, reference)
-            return _resolve_projection(student_id, reference, sources)
+        with self.read_session() as session:
+            return session.assignment_at_date(student_id, reference)
 
     def assignments_at_dates(
         self,
         student_dates: Mapping[str, date],
     ) -> tuple[AssignmentAtDateProjection, ...]:
-        requested = tuple(
-            (student_id, _require_reference_date(reference_date))
+        requested = {
+            student_id: _require_reference_date(reference_date)
             for student_id, reference_date in student_dates.items()
-        )
-        with _read_snapshot(self._connection_factory) as connection:
-            sources = StudentSchoolYearAssignmentRepository(
-                connection
-            ).list_assignments_at_dates(requested)
-            return tuple(
-                _resolve_projection(
-                    student_id,
-                    reference_date,
-                    sources.get(student_id, ()),
-                )
-                for student_id, reference_date in requested
+        }
+        with self.read_session() as session:
+            return session.assignments_at_dates(requested)
+
+    def assignments_for_references(
+        self,
+        references: Sequence[AssignmentReferenceRequest],
+    ) -> dict[str, AssignmentAtDateProjection]:
+        requested = tuple(
+            AssignmentReferenceRequest(
+                reference.request_key,
+                reference.student_id,
+                _require_reference_date(reference.reference_date),
             )
+            for reference in references
+        )
+        with self.read_session() as session:
+            return session.assignments_for_references(requested)
 
     def current_membership(
         self,
@@ -107,7 +112,9 @@ class SchoolYearAssignmentQueryService:
         *,
         as_of: date,
     ) -> CurrentStudentMembershipProjection:
-        return self.current_memberships((student_id,), as_of=as_of)[0]
+        reference = _require_reference_date(as_of)
+        with self.read_session() as session:
+            return session.current_membership(student_id, as_of=reference)
 
     def current_memberships(
         self,
@@ -115,80 +122,43 @@ class SchoolYearAssignmentQueryService:
         *,
         as_of: date,
         group_id: str | None = None,
+        group_ids: Sequence[str] = (),
         course_id: str | None = None,
+        course_ids: Sequence[str] = (),
         course_group_id: str | None = None,
     ) -> tuple[CurrentStudentMembershipProjection, ...]:
         reference = _require_reference_date(as_of)
-        identifiers = (
-            tuple(dict.fromkeys(student_ids))
-            if student_ids is not None
-            else None
-        )
-        with _read_snapshot(self._connection_factory) as connection:
-            current = SchoolYearRepository(connection).get_current()
-            if current is None:
-                if identifiers is None:
-                    return ()
-                students = V3StudentRepository(connection).list_by_ids(identifiers)
-                return tuple(
-                    _missing_current_membership(
-                        student_id,
-                        reference,
-                        students.get(student_id),
-                    )
-                    for student_id in identifiers
-                )
-            sources = StudentSchoolYearAssignmentRepository(
-                connection
-            ).list_current_memberships(
-                current.school_year_id,
-                reference,
-                student_ids=identifiers,
+        with self.read_session() as session:
+            return session.current_memberships(
+                student_ids,
+                as_of=reference,
                 group_id=group_id,
+                group_ids=group_ids,
                 course_id=course_id,
+                course_ids=course_ids,
                 course_group_id=course_group_id,
             )
-            grouped: dict[str, list[AssignmentSource]] = {}
-            for source in sources:
-                grouped.setdefault(source.student_id, []).append(source)
-            order = (
-                identifiers
-                if identifiers is not None
-                else tuple(grouped)
+
+    def current_membership_snapshot(
+        self,
+        *,
+        as_of: date,
+        group_id: str | None = None,
+        group_ids: Sequence[str] = (),
+        course_id: str | None = None,
+        course_ids: Sequence[str] = (),
+        course_group_id: str | None = None,
+    ) -> CurrentMembershipReadSnapshot:
+        reference = _require_reference_date(as_of)
+        with self.read_session() as session:
+            return session.current_membership_snapshot(
+                as_of=reference,
+                group_id=group_id,
+                group_ids=group_ids,
+                course_id=course_id,
+                course_ids=course_ids,
+                course_group_id=course_group_id,
             )
-            projections = tuple(
-                _current_projection(
-                    current,
-                    reference,
-                    _resolve_projection(
-                        student_id,
-                        reference,
-                        grouped.get(student_id, ()),
-                    ),
-                )
-                for student_id in order
-            )
-            if identifiers is None or any(
-                value is not None
-                for value in (group_id, course_id, course_group_id)
-            ):
-                projections = tuple(
-                    projection
-                    for projection in projections
-                    if (
-                        projection.resolution_status
-                        is AssignmentResolutionStatus.ENROLLED
-                        and (
-                            group_id is None
-                            or projection.group_id == group_id
-                        )
-                        and (
-                            course_id is None
-                            or projection.course_id == course_id
-                        )
-                    )
-                )
-            return projections
 
     def membership_in_school_year(
         self,
@@ -198,24 +168,15 @@ class SchoolYearAssignmentQueryService:
         reference_date: date,
     ) -> AssignmentAtDateProjection:
         reference = _require_reference_date(reference_date)
-        with _read_snapshot(self._connection_factory) as connection:
-            school_year = SchoolYearRepository(connection).get_by_id(
-                school_year_id
-            )
-            if school_year is None:
-                raise AssignmentApplicationError("school_year_missing")
-            if not school_year.start_date <= reference <= school_year.end_date:
-                raise AssignmentApplicationError(
-                    "reference_date_outside_school_year"
+        try:
+            with self.read_session() as session:
+                return session.membership_in_school_year(
+                    student_id,
+                    school_year_id,
+                    reference_date=reference,
                 )
-            sources = StudentSchoolYearAssignmentRepository(
-                connection
-            ).get_assignment_at_date(
-                student_id,
-                reference,
-                school_year_id=school_year_id,
-            )
-            return _resolve_projection(student_id, reference, sources)
+        except SchoolYearAssignmentRepositoryError as error:
+            raise AssignmentApplicationError(error.code) from None
 
     def last_known_membership(
         self,
@@ -224,11 +185,11 @@ class SchoolYearAssignmentQueryService:
         reference_date: date,
     ) -> AssignmentAtDateProjection:
         reference = _require_reference_date(reference_date)
-        with _read_snapshot(self._connection_factory) as connection:
-            sources = StudentSchoolYearAssignmentRepository(
-                connection
-            ).get_last_known(student_id, reference)
-            return _resolve_projection(student_id, reference, sources)
+        with self.read_session() as session:
+            return session.last_known_membership(
+                student_id,
+                reference_date=reference,
+            )
 
     def count_current_by_group(
         self,
@@ -236,13 +197,11 @@ class SchoolYearAssignmentQueryService:
         as_of: date,
     ) -> dict[str, int]:
         reference = _require_reference_date(as_of)
-        with _read_snapshot(self._connection_factory) as connection:
-            current = SchoolYearRepository(connection).get_current()
-            if current is None:
-                return {}
-            return StudentSchoolYearAssignmentRepository(
-                connection
-            ).count_current_by_group(current.school_year_id, reference)
+        try:
+            with self.read_session() as session:
+                return session.count_current_by_group(as_of=reference)
+        except SchoolYearAssignmentRepositoryError as error:
+            raise AssignmentApplicationError(error.code) from None
 
     def count_current_by_course(
         self,
@@ -250,13 +209,18 @@ class SchoolYearAssignmentQueryService:
         as_of: date,
     ) -> dict[str, int]:
         reference = _require_reference_date(as_of)
+        try:
+            with self.read_session() as session:
+                return session.count_current_by_course(as_of=reference)
+        except SchoolYearAssignmentRepositoryError as error:
+            raise AssignmentApplicationError(error.code) from None
+
+    @contextmanager
+    def read_session(self) -> Iterator[SchoolYearAssignmentReadSession]:
+        """Open one transaction-bound session for a composed product read."""
+
         with _read_snapshot(self._connection_factory) as connection:
-            current = SchoolYearRepository(connection).get_current()
-            if current is None:
-                return {}
-            return StudentSchoolYearAssignmentRepository(
-                connection
-            ).count_current_by_course(current.school_year_id, reference)
+            yield SchoolYearAssignmentReadSession(connection)
 
 
 class CreateStudentWithInitialEnrollment:
@@ -715,170 +679,6 @@ def _write_transaction(
         raise AssignmentApplicationError(failure_code) from None
     finally:
         connection.close()
-
-
-def _resolve_projection(
-    student_id: str,
-    reference_date: date,
-    sources: Sequence[AssignmentSource],
-) -> AssignmentAtDateProjection:
-    matched = tuple(
-        source for source in sources if source.assignment_id is not None
-    )
-    base = sources[0] if sources else None
-    student_active = base.student_active if base is not None else False
-    archived_at = base.student_archived_at if base is not None else None
-    student_archived = archived_at is not None or not student_active
-    if len(matched) > 1:
-        return _empty_projection(
-            student_id,
-            reference_date,
-            AssignmentResolutionStatus.AMBIGUOUS,
-            student_active,
-            student_archived,
-        )
-    if len(matched) == 1:
-        source = matched[0]
-        assert source.assignment_status is not None
-        status = (
-            AssignmentResolutionStatus.ENROLLED
-            if source.assignment_status is StudentAssignmentStatus.ENROLLED
-            else AssignmentResolutionStatus.EXITED
-        )
-        accessible_name = _accessible_assignment_name(status, source)
-        return AssignmentAtDateProjection(
-            student_id=student_id,
-            reference_date=reference_date,
-            resolution_status=status,
-            school_year_id=source.school_year_id,
-            school_year_label=source.school_year_label,
-            assignment_id=source.assignment_id,
-            assignment_status=source.assignment_status,
-            valid_from=source.valid_from,
-            valid_to=source.valid_to,
-            group_id=source.group_id,
-            group_name=source.group_name,
-            course_id=source.course_id,
-            course_name=source.course_name,
-            year_level=source.year_level,
-            student_active=student_active,
-            student_archived=student_archived,
-            visible_status_key=status.value,
-            accessible_name=accessible_name,
-        )
-    status = AssignmentResolutionStatus.NO_ASSIGNMENT
-    if (
-        archived_at is not None
-        and archived_at.date() <= reference_date
-    ):
-        status = AssignmentResolutionStatus.STUDENT_ARCHIVED
-    return _empty_projection(
-        student_id,
-        reference_date,
-        status,
-        student_active,
-        student_archived,
-    )
-
-
-def _empty_projection(
-    student_id: str,
-    reference_date: date,
-    status: AssignmentResolutionStatus,
-    student_active: bool,
-    student_archived: bool,
-) -> AssignmentAtDateProjection:
-    accessible_names = {
-        AssignmentResolutionStatus.NO_ASSIGNMENT: "Keine Zuordnung vorhanden",
-        AssignmentResolutionStatus.CURRENT_SCHOOL_YEAR_MISSING: (
-            "Kein aktuelles Schuljahr festgelegt"
-        ),
-        AssignmentResolutionStatus.AMBIGUOUS: "Zuordnung nicht eindeutig",
-        AssignmentResolutionStatus.STUDENT_ARCHIVED: "Kind ist archiviert",
-    }
-    return AssignmentAtDateProjection(
-        student_id=student_id,
-        reference_date=reference_date,
-        resolution_status=status,
-        school_year_id=None,
-        school_year_label=None,
-        assignment_id=None,
-        assignment_status=None,
-        valid_from=None,
-        valid_to=None,
-        group_id=None,
-        group_name=None,
-        course_id=None,
-        course_name=None,
-        year_level=None,
-        student_active=student_active,
-        student_archived=student_archived,
-        visible_status_key=status.value,
-        accessible_name=accessible_names[status],
-    )
-
-
-def _accessible_assignment_name(
-    status: AssignmentResolutionStatus,
-    source: AssignmentSource,
-) -> str:
-    year = source.school_year_label or "Schuljahr unbekannt"
-    if status is AssignmentResolutionStatus.EXITED:
-        return f"{year}, ausgeschieden"
-    group = source.group_name or "Stammgruppe unbekannt"
-    course = source.course_name or "Kurs unbekannt"
-    level = (
-        f"Stufe {source.year_level}"
-        if source.year_level is not None
-        else "Stufe unbekannt"
-    )
-    return f"{year}, eingeschrieben, {group}, {course}, {level}"
-
-
-def _current_projection(
-    current: SchoolYear,
-    as_of: date,
-    resolved: AssignmentAtDateProjection,
-) -> CurrentStudentMembershipProjection:
-    return CurrentStudentMembershipProjection(
-        current_school_year_id=current.school_year_id,
-        current_school_year_label=current.label,
-        as_of=as_of,
-        student_id=resolved.student_id,
-        student_active=resolved.student_active,
-        student_archived=resolved.student_archived,
-        resolution_status=resolved.resolution_status,
-        group_id=resolved.group_id,
-        group_name=resolved.group_name,
-        course_id=resolved.course_id,
-        course_name=resolved.course_name,
-        year_level=resolved.year_level,
-    )
-
-
-def _missing_current_membership(
-    student_id: str,
-    as_of: date,
-    student: V3Student | None,
-) -> CurrentStudentMembershipProjection:
-    return CurrentStudentMembershipProjection(
-        current_school_year_id=None,
-        current_school_year_label=None,
-        as_of=as_of,
-        student_id=student_id,
-        student_active=student.active if student is not None else False,
-        student_archived=(
-            student.archived_at is not None if student is not None else False
-        ),
-        resolution_status=(
-            AssignmentResolutionStatus.CURRENT_SCHOOL_YEAR_MISSING
-        ),
-        group_id=None,
-        group_name=None,
-        course_id=None,
-        course_name=None,
-        year_level=None,
-    )
 
 
 def _require_unique_enrolled(

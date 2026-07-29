@@ -28,6 +28,9 @@ class LearningConferenceCompletionErrorCode(str, Enum):
     DRAFT_NOT_FOUND = "draft_not_found"
     DRAFT_CHANGED = "draft_changed"
     STUDENT_MISSING = "student_missing"
+    ASSIGNMENT_MISSING = "assignment_missing"
+    ASSIGNMENT_AMBIGUOUS = "assignment_ambiguous"
+    ASSIGNMENT_EXITED = "assignment_exited"
     CONFERENCE_DATE_MISSING = "conference_date_missing"
     CONFERENCE_DATE_INVALID = "conference_date_invalid"
     RESPONSIBLE_TEACHER_MISSING = "responsible_teacher_missing"
@@ -197,6 +200,8 @@ class LearningConferenceVerifiedRevision:
 
 
 class LearningConferenceRepository(Protocol):
+    def completion_transaction(self): ...
+
     def load_completion_source(
         self,
         learning_conference_draft_id: str,
@@ -499,16 +504,19 @@ class LearningConferenceCompletionService:
         *,
         learning_conference_draft_id: str,
     ) -> LearningConferenceCompletionResult:
-        source, snapshot_json, snapshot_sha256 = self.build_candidate(
-            learning_conference_draft_id
-        )
-        return self.repository.save_completed_revision(
-            source,
-            snapshot_json=snapshot_json,
-            snapshot_sha256=snapshot_sha256,
-            completed_at=self._timestamp(),
-            completed_by_display_name=source.draft.responsible_teacher,
-        )
+        with self.repository.completion_transaction():
+            source, snapshot_json, snapshot_sha256 = self.build_candidate(
+                learning_conference_draft_id
+            )
+            return self.repository.save_completed_revision(
+                source,
+                snapshot_json=snapshot_json,
+                snapshot_sha256=snapshot_sha256,
+                completed_at=self._timestamp(),
+                completed_by_display_name=(
+                    source.draft.responsible_teacher
+                ),
+            )
 
     def _timestamp(self) -> str:
         return self.now().astimezone(UTC).replace(microsecond=0).isoformat()

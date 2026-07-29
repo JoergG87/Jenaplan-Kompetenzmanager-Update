@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+- SJ-2E stellt sämtliche produktiven Kurs- und Stammgruppen-Lesepfade auf die
+  zentrale V3-Assignment-API um. Schülerlisten und -profil, Gruppen, Kurse,
+  Kursverbünde, Dashboard, Beobachtungsbearbeitung, Berichtsvorbereitung und
+  -finalisierung sowie LEG-Vorbereitung und -Abschluss verwenden explizite
+  Snapshot- beziehungsweise Referenzdaten; `observations.date`, `period_end`
+  und `conference_date` werden nicht durch heutige oder letzte bekannte
+  Zuordnung ersetzt. `CurrentMembershipReadSnapshot` liefert zentrale Counts
+  und blockierende Current-Year-/Mehrdeutigkeitsdiagnostik;
+  `AssignmentReferenceRequest` unterstützt wiederholte Kinder an
+  unterschiedlichen Stichtagen in einer Batchabfrage. Report- und
+  LEG-Snapshot samt historischer Gruppe/Kurs entstehen jeweils innerhalb
+  derselben Transaktion; bestehende Revisionen, Hashes und PDF-Artefakte
+  bleiben unverändert. Produktive V2-Membershipreads und N+1-Auflösung sind
+  entfernt. Ausschließlich bestehende synthetische V2-Writerregressionen
+  verwenden einen ausdrücklich testlokalen Projektions-Double; alle neuen
+  Daten- und Produktlesetests erzeugen temporäre Final-V3-Datenbanken. 163
+  fokussierte SJ-2E-/betroffene Tests sowie die Gesamtsuite mit 1788 Tests und
+  71 Subtests waren grün; ein vorhandener umgebungsgebundener Test blieb
+  übersprungen. Compileall, Importisolation und `git diff --check` waren grün.
+  Die normale Shell bleibt
+  `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`; Writerumstellung,
+  Schuljahreswechsel-Assistent, Sammelwechsel, Build, Packaging und Release
+  bleiben gesperrt.
 - Zentrale Qt-freie V3-Assignment-API ergänzt: Connection-gebundene
   Schuljahres-, Assignment- und V3-Schüler-Repositories, konsistente
   Read-Snapshots, explizite Datums- und Schuljahresauflösung, set-basierte

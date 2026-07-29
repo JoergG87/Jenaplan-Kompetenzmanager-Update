@@ -5,9 +5,9 @@ from __future__ import annotations
 import sqlite3
 import uuid
 from collections.abc import Mapping
-from contextlib import closing
+from contextlib import closing, contextmanager
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from types import MappingProxyType
 
@@ -16,6 +16,17 @@ from .database_compatibility import (
     DatabaseCompatibilityInspector,
 )
 from .database_engine import SQLiteConnectionProvider
+from .school_year import (
+    AssignmentAtDateProjection,
+    AssignmentResolutionStatus,
+    CurrentStudentMembershipProjection,
+    V3Student,
+)
+from .sqlite_school_year_assignment import (
+    SchoolYearAssignmentReadSession,
+    SchoolYearAssignmentRepositoryError,
+    V3StudentRepository,
+)
 from .persistence_events import (
     CompetencyFreshness,
     PersistenceEventKind,
@@ -222,7 +233,15 @@ class StudentCompetencyConfirmationRecord:
 class StudentDocumentationProjectionBatch:
     """Refresh-local source rows for student documentation projections."""
 
-    students: tuple[StudentRecord, ...]
+    as_of: date
+    students: tuple[V3Student, ...]
+    memberships_by_student: Mapping[
+        str,
+        CurrentStudentMembershipProjection | AssignmentAtDateProjection,
+    ]
+    group_counts: Mapping[str, int]
+    course_counts: Mapping[str, int]
+    target_student_ids: tuple[str, ...]
     groups: tuple[GroupRecord, ...]
     courses: tuple[CourseRecord, ...]
     course_groups: tuple[MasterDataCourseGroupRecord, ...]
@@ -1145,56 +1164,51 @@ class SQLiteDatabase:
 class SQLiteStudentRepository:
     """Read and write student records in SQLite."""
 
-    def __init__(self, database: SQLiteDatabase) -> None:
+    def __init__(self, database: SQLiteDatabase, *, as_of: date) -> None:
         self.database = database
+        self.as_of = as_of
 
     def list_students(self) -> tuple[StudentRecord, ...]:
         with closing(self.database.connect()) as connection:
-            rows = connection.execute(
-                """
-                SELECT
-                    student_id,
-                    first_name,
-                    last_name,
-                    group_id,
-                    course_id,
-                    student_notes,
-                    active,
-                    created_at,
-                    updated_at,
-                    archived_at
-                FROM students
-                ORDER BY student_id
-                """
-            ).fetchall()
-        return tuple(_student_from_row(row) for row in rows)
+            connection.execute("BEGIN")
+            try:
+                students = V3StudentRepository(connection).list_all()
+                memberships = SchoolYearAssignmentReadSession(
+                    connection
+                ).current_memberships(
+                    tuple(student.student_id for student in students),
+                    as_of=self.as_of,
+                )
+                membership_by_student = {
+                    membership.student_id: membership
+                    for membership in memberships
+                }
+                return tuple(
+                    _student_record_from_v3(
+                        student,
+                        membership_by_student.get(student.student_id),
+                    )
+                    for student in students
+                )
+            finally:
+                connection.rollback()
 
     def get_student(self, student_id: str) -> StudentRecord | None:
         return self.get_student_by_id(student_id)
 
     def get_student_by_id(self, student_id: str) -> StudentRecord | None:
         with closing(self.database.connect()) as connection:
-            row = connection.execute(
-                """
-                SELECT
-                    student_id,
-                    first_name,
-                    last_name,
-                    group_id,
-                    course_id,
-                    student_notes,
-                    active,
-                    created_at,
-                    updated_at,
-                    archived_at
-                FROM students
-                WHERE student_id = ?
-                """,
-                (student_id,),
-            ).fetchone()
-        if row is None:
-            return None
-        return _student_from_row(row)
+            connection.execute("BEGIN")
+            try:
+                student = V3StudentRepository(connection).get_by_id(student_id)
+                if student is None:
+                    return None
+                membership = SchoolYearAssignmentReadSession(
+                    connection
+                ).current_membership(student_id, as_of=self.as_of)
+                return _student_record_from_v3(student, membership)
+            finally:
+                connection.rollback()
 
     def create_student(self, student: StudentRecord) -> StudentRecord:
         if self.get_student_by_id(student.student_id) is not None:
@@ -2408,27 +2422,102 @@ class SQLiteStudentDocumentationProjectionRepository:
     def read_batch(
         self,
         *,
+        as_of: date,
         student_id: str | None = None,
         group_id: str | None = None,
         group_ids: tuple[str, ...] = (),
         course_id: str | None = None,
         course_ids: tuple[str, ...] = (),
+        course_group_id: str | None = None,
+        target_group_id: str | None = None,
+        target_course_id: str | None = None,
+        target_course_group_id: str | None = None,
+        historical_membership: bool = False,
+        include_membership: bool = True,
     ) -> StudentDocumentationProjectionBatch:
-        scope_sql, scope_parameters = self._scope_sql(
-            student_id=student_id,
-            group_id=group_id,
-            group_ids=group_ids,
-            course_id=course_id,
-            course_ids=course_ids,
-        )
         with closing(self.database.connect()) as connection:
             connection.execute("BEGIN")
             try:
-                students = self._students(
-                    connection,
-                    scope_sql,
-                    scope_parameters,
+                assignments = SchoolYearAssignmentReadSession(connection)
+                if student_id is not None:
+                    if not include_membership:
+                        memberships: tuple[
+                            CurrentStudentMembershipProjection
+                            | AssignmentAtDateProjection,
+                            ...,
+                        ] = ()
+                    elif historical_membership:
+                        memberships = (
+                            assignments.assignment_at_date(
+                                student_id,
+                                as_of,
+                            ),
+                        )
+                    else:
+                        memberships = (
+                            assignments.current_membership(
+                                student_id,
+                                as_of=as_of,
+                            ),
+                        )
+                    group_counts: Mapping[str, int] = MappingProxyType({})
+                    course_counts: Mapping[str, int] = MappingProxyType({})
+                else:
+                    membership_snapshot = (
+                        assignments.current_membership_snapshot(
+                            as_of=as_of,
+                            group_id=group_id,
+                            group_ids=group_ids,
+                            course_id=course_id,
+                            course_ids=course_ids,
+                            course_group_id=course_group_id,
+                        )
+                    )
+                    self._require_current_membership_snapshot(
+                        membership_snapshot
+                    )
+                    memberships = membership_snapshot.memberships
+                    group_counts = membership_snapshot.group_counts
+                    course_counts = membership_snapshot.course_counts
+                membership_by_student = {
+                    membership.student_id: membership
+                    for membership in memberships
+                }
+                student_ids = (
+                    (student_id,)
+                    if student_id is not None
+                    else tuple(membership_by_student)
                 )
+                student_by_id = V3StudentRepository(connection).list_by_ids(
+                    student_ids
+                )
+                students = tuple(
+                    student_by_id[student_id]
+                    for student_id in student_ids
+                    if student_id in student_by_id
+                )
+                scope_sql, scope_parameters = self._student_scope_sql(
+                    student_ids
+                )
+                target_student_ids = student_ids
+                if any(
+                    (
+                        target_group_id is not None,
+                        target_course_id is not None,
+                        target_course_group_id is not None,
+                    )
+                ):
+                    target_snapshot = assignments.current_membership_snapshot(
+                        as_of=as_of,
+                        group_id=target_group_id,
+                        course_id=target_course_id,
+                        course_group_id=target_course_group_id,
+                    )
+                    self._require_current_membership_snapshot(target_snapshot)
+                    target_student_ids = tuple(
+                        membership.student_id
+                        for membership in target_snapshot.memberships
+                    )
                 groups = self._groups(connection)
                 courses = self._courses(connection)
                 course_groups = self._course_groups(connection)
@@ -2461,7 +2550,14 @@ class SQLiteStudentDocumentationProjectionRepository:
                     scope_parameters,
                 )
                 return StudentDocumentationProjectionBatch(
+                    as_of=as_of,
                     students=students,
+                    memberships_by_student=MappingProxyType(
+                        membership_by_student
+                    ),
+                    group_counts=group_counts,
+                    course_counts=course_counts,
+                    target_student_ids=target_student_ids,
                     groups=groups,
                     courses=courses,
                     course_groups=course_groups,
@@ -2488,63 +2584,25 @@ class SQLiteStudentDocumentationProjectionRepository:
                 connection.rollback()
 
     @staticmethod
-    def _scope_sql(
-        *,
-        student_id: str | None,
-        group_id: str | None,
-        group_ids: tuple[str, ...],
-        course_id: str | None,
-        course_ids: tuple[str, ...],
+    def _student_scope_sql(
+        student_ids: tuple[str, ...],
     ) -> tuple[str, tuple[str, ...]]:
-        clauses = ["student.active = 1"]
-        parameters: list[str] = []
-        if student_id:
-            clauses.append("student.student_id = ?")
-            parameters.append(student_id)
-        if group_id:
-            clauses.append("student.group_id = ?")
-            parameters.append(group_id)
-        if group_ids:
-            clauses.append(
-                f"student.group_id IN ({', '.join('?' for _ in group_ids)})"
-            )
-            parameters.extend(group_ids)
-        if course_id:
-            clauses.append("student.course_id = ?")
-            parameters.append(course_id)
-        if course_ids:
-            clauses.append(
-                f"student.course_id IN ({', '.join('?' for _ in course_ids)})"
-            )
-            parameters.extend(course_ids)
-        return " AND ".join(clauses), tuple(parameters)
+        if not student_ids:
+            return "0 = 1", ()
+        placeholders = ", ".join("?" for _ in student_ids)
+        return f"student.student_id IN ({placeholders})", student_ids
 
     @staticmethod
-    def _students(
-        connection: sqlite3.Connection,
-        scope_sql: str,
-        scope_parameters: tuple[str, ...],
-    ) -> tuple[StudentRecord, ...]:
-        rows = connection.execute(
-            f"""
-            SELECT
-                student.student_id,
-                student.first_name,
-                student.last_name,
-                student.group_id,
-                student.course_id,
-                student.student_notes,
-                student.active,
-                student.created_at,
-                student.updated_at,
-                student.archived_at
-            FROM students AS student
-            WHERE {scope_sql}
-            ORDER BY student.student_id
-            """,
-            scope_parameters,
-        ).fetchall()
-        return tuple(_student_from_row(row) for row in rows)
+    def _require_current_membership_snapshot(snapshot: object) -> None:
+        error_code = getattr(snapshot, "blocking_error_code", None)
+        if error_code == "CURRENT_SCHOOL_YEAR_MISSING":
+            raise SchoolYearAssignmentRepositoryError(
+                "current_school_year_missing"
+            )
+        if error_code == "ASSIGNMENT_AMBIGUOUS":
+            raise SchoolYearAssignmentRepositoryError(
+                "assignment_ambiguous"
+            )
 
     @staticmethod
     def _groups(connection: sqlite3.Connection) -> tuple[GroupRecord, ...]:
@@ -3301,17 +3359,27 @@ class SQLiteLearningConferenceDraftRepository:
         learning_conference_draft_id: str,
     ) -> LearningConferenceDraftRecord | None:
         with closing(self.database.connect()) as connection:
-            row = connection.execute(
-                f"""
-                SELECT {', '.join(self._draft_columns())}
-                FROM learning_conference_drafts
-                WHERE learning_conference_draft_id = ?
-                """,
-                (learning_conference_draft_id,),
-            ).fetchone()
-            if row is None:
-                return None
-            return self._record_from_row(connection, row)
+            return self.get_learning_conference_draft_in_connection(
+                connection,
+                learning_conference_draft_id,
+            )
+
+    def get_learning_conference_draft_in_connection(
+        self,
+        connection: sqlite3.Connection,
+        learning_conference_draft_id: str,
+    ) -> LearningConferenceDraftRecord | None:
+        row = connection.execute(
+            f"""
+            SELECT {', '.join(self._draft_columns())}
+            FROM learning_conference_drafts
+            WHERE learning_conference_draft_id = ?
+            """,
+            (learning_conference_draft_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._record_from_row(connection, row)
 
     def list_learning_conference_drafts_for_student(
         self,
@@ -3554,46 +3622,85 @@ class SQLiteLearningConferenceRepository:
 
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
+        self._completion_connection: sqlite3.Connection | None = None
+
+    @contextmanager
+    def completion_transaction(self):
+        """Own LCD resolution, snapshot build and LCV write atomically."""
+
+        if self._completion_connection is not None:
+            raise LearningConferenceCompletionError(
+                LearningConferenceCompletionErrorCode.PERSISTENCE_FAILED,
+                "Eine LEG-Abschlusstransaktion ist bereits aktiv.",
+            )
+        connection = self.database.connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            self._completion_connection = connection
+            yield
+            connection.commit()
+        except Exception:
+            if connection.in_transaction:
+                connection.rollback()
+            raise
+        finally:
+            self._completion_connection = None
+            connection.close()
+
+    @contextmanager
+    def _source_connection(self):
+        if self._completion_connection is not None:
+            yield self._completion_connection
+            return
+        with closing(self.database.connect()) as connection:
+            connection.execute("BEGIN")
+            try:
+                yield connection
+            finally:
+                if connection.in_transaction:
+                    connection.rollback()
 
     def load_completion_source(
         self,
         learning_conference_draft_id: str,
     ) -> LearningConferenceCompletionSource | None:
-        draft = SQLiteLearningConferenceDraftRepository(
-            self.database
-        ).get_learning_conference_draft(learning_conference_draft_id)
-        if draft is None:
-            return None
-        selected_subject_ids = set(draft.subject_ids)
-        with closing(self.database.connect()) as connection:
-            student_row = connection.execute(
-                """
-                SELECT
-                    s.student_id,
-                    s.first_name,
-                    s.last_name,
-                    s.group_id,
-                    COALESCE(g.group_name, '') AS group_name,
-                    s.course_id,
-                    COALESCE(c.course_name, '') AS course_name
-                FROM students s
-                LEFT JOIN groups g ON g.group_id = s.group_id
-                LEFT JOIN courses c ON c.course_id = s.course_id
-                WHERE s.student_id = ?
-                """,
-                (draft.student_id,),
-            ).fetchone()
+        with self._source_connection() as connection:
+            draft = SQLiteLearningConferenceDraftRepository(
+                self.database
+            ).get_learning_conference_draft_in_connection(
+                connection,
+                learning_conference_draft_id,
+            )
+            if draft is None:
+                return None
+            selected_subject_ids = set(draft.subject_ids)
+            reference_date = _require_leg_conference_date(
+                draft.conference_date
+            )
+            assignment = SchoolYearAssignmentReadSession(
+                connection
+            ).assignment_at_date(draft.student_id, reference_date)
+            _require_leg_assignment(assignment)
+            student_master = V3StudentRepository(connection).get_by_id(
+                draft.student_id
+            )
             student = (
                 LearningConferenceStudentSource(
-                    student_row["student_id"],
-                    student_row["first_name"],
-                    student_row["last_name"],
-                    student_row["group_id"],
-                    student_row["group_name"],
-                    student_row["course_id"],
-                    student_row["course_name"],
+                    student_master.student_id,
+                    student_master.first_name,
+                    student_master.last_name,
+                    assignment.group_id or "",
+                    assignment.group_name or "",
+                    assignment.course_id or "",
+                    assignment.course_name or "",
                 )
-                if student_row is not None
+                if (
+                    student_master is not None
+                    and assignment.group_id is not None
+                    and assignment.group_name is not None
+                    and assignment.course_id is not None
+                    and assignment.course_name is not None
+                )
                 else None
             )
 
@@ -3771,9 +3878,16 @@ class SQLiteLearningConferenceRepository:
         completed_at: str,
         completed_by_display_name: str,
     ) -> LearningConferenceCompletionResult:
-        connection = self.database.connect()
+        owns_transaction = self._completion_connection is None
+        connection = (
+            self.database.connect()
+            if owns_transaction
+            else self._completion_connection
+        )
+        assert connection is not None
         try:
-            connection.execute("BEGIN IMMEDIATE")
+            if owns_transaction:
+                connection.execute("BEGIN IMMEDIATE")
             current_draft = connection.execute(
                 """
                 SELECT updated_at
@@ -3852,7 +3966,8 @@ class SQLiteLearningConferenceRepository:
                 and current_row["snapshot_sha256"] == snapshot_sha256
                 and current_row["snapshot_json"] == snapshot_json
             ):
-                connection.commit()
+                if owns_transaction:
+                    connection.commit()
                 return LearningConferenceCompletionResult(
                     conference,
                     self._revision_from_row(current_row),
@@ -3900,25 +4015,29 @@ class SQLiteLearningConferenceRepository:
                 superseded_at=None,
             )
             self._insert_revision(connection, revision)
-            connection.commit()
+            if owns_transaction:
+                connection.commit()
             return LearningConferenceCompletionResult(conference, revision, True)
         except sqlite3.Error as error:
-            connection.rollback()
+            if owns_transaction and connection.in_transaction:
+                connection.rollback()
             raise LearningConferenceCompletionError(
                 LearningConferenceCompletionErrorCode.PERSISTENCE_FAILED,
                 f"LEG-Revision konnte nicht gespeichert werden: {error}",
             ) from error
         except Exception:
-            connection.rollback()
+            if owns_transaction and connection.in_transaction:
+                connection.rollback()
             raise
         finally:
-            connection.close()
+            if owns_transaction:
+                connection.close()
 
     def get_conference_for_source_draft(
         self,
         learning_conference_draft_id: str,
     ) -> LearningConferenceRecord | None:
-        with closing(self.database.connect()) as connection:
+        with self._source_connection() as connection:
             row = connection.execute(
                 """
                 SELECT learning_conference_id, source_learning_conference_draft_id,
@@ -4202,27 +4321,37 @@ class SQLiteReportDraftRepository:
 
     def get_report_draft(self, report_draft_id: str) -> ReportDraftRecord | None:
         with closing(self.database.connect()) as connection:
-            row = connection.execute(
-                """
-                SELECT
-                    report_draft_id,
-                    student_id,
-                    report_type,
-                    period_start,
-                    period_end,
-                    status,
-                    teacher_name,
-                    overall_text,
-                    created_at,
-                    updated_at
-                FROM report_drafts
-                WHERE report_draft_id = ?
-                """,
-                (report_draft_id,),
-            ).fetchone()
-            if row is None:
-                return None
-            return self._record_from_row(connection, row)
+            return self.get_report_draft_in_connection(
+                connection,
+                report_draft_id,
+            )
+
+    def get_report_draft_in_connection(
+        self,
+        connection: sqlite3.Connection,
+        report_draft_id: str,
+    ) -> ReportDraftRecord | None:
+        row = connection.execute(
+            """
+            SELECT
+                report_draft_id,
+                student_id,
+                report_type,
+                period_start,
+                period_end,
+                status,
+                teacher_name,
+                overall_text,
+                created_at,
+                updated_at
+            FROM report_drafts
+            WHERE report_draft_id = ?
+            """,
+            (report_draft_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._record_from_row(connection, row)
 
     def list_report_drafts_for_student(
         self,
@@ -4573,46 +4702,81 @@ class SQLiteLearningReportRepository:
 
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
+        self._finalization_connection: sqlite3.Connection | None = None
+
+    @contextmanager
+    def finalization_transaction(self):
+        """Own source resolution, snapshot build and revision write atomically."""
+
+        if self._finalization_connection is not None:
+            raise ReportFinalizationError(
+                "Eine Berichtfinalisierungstransaktion ist bereits aktiv."
+            )
+        connection = self.database.connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            self._finalization_connection = connection
+            yield
+            connection.commit()
+        except Exception:
+            if connection.in_transaction:
+                connection.rollback()
+            raise
+        finally:
+            self._finalization_connection = None
+            connection.close()
+
+    @contextmanager
+    def _source_connection(self):
+        if self._finalization_connection is not None:
+            yield self._finalization_connection
+            return
+        with closing(self.database.connect()) as connection:
+            connection.execute("BEGIN")
+            try:
+                yield connection
+            finally:
+                if connection.in_transaction:
+                    connection.rollback()
 
     def load_finalization_source(
         self,
         report_draft_id: str,
     ) -> LearningReportFinalizationSource | None:
-        draft = SQLiteReportDraftRepository(self.database).get_report_draft(
-            report_draft_id
-        )
-        if draft is None:
-            return None
-        selected_subject_ids = {subject.subject_id for subject in draft.subjects}
-        with closing(self.database.connect()) as connection:
-            student_row = connection.execute(
-                """
-                SELECT
-                    s.student_id,
-                    s.first_name,
-                    s.last_name,
-                    s.group_id,
-                    COALESCE(g.group_name, '') AS group_name,
-                    s.course_id,
-                    COALESCE(c.course_name, '') AS course_name
-                FROM students s
-                LEFT JOIN groups g ON g.group_id = s.group_id
-                LEFT JOIN courses c ON c.course_id = s.course_id
-                WHERE s.student_id = ?
-                """,
-                (draft.student_id,),
-            ).fetchone()
+        with self._source_connection() as connection:
+            draft = SQLiteReportDraftRepository(
+                self.database
+            ).get_report_draft_in_connection(connection, report_draft_id)
+            if draft is None:
+                return None
+            selected_subject_ids = {
+                subject.subject_id for subject in draft.subjects
+            }
+            reference_date = _require_report_period_end(draft.period_end)
+            assignment = SchoolYearAssignmentReadSession(
+                connection
+            ).assignment_at_date(draft.student_id, reference_date)
+            _require_report_assignment(assignment)
+            student_master = V3StudentRepository(connection).get_by_id(
+                draft.student_id
+            )
             student = (
                 LearningReportStudentSource(
-                    student_row["student_id"],
-                    student_row["first_name"],
-                    student_row["last_name"],
-                    student_row["group_id"],
-                    student_row["group_name"],
-                    student_row["course_id"],
-                    student_row["course_name"],
+                    student_master.student_id,
+                    student_master.first_name,
+                    student_master.last_name,
+                    assignment.group_id or "",
+                    assignment.group_name or "",
+                    assignment.course_id or "",
+                    assignment.course_name or "",
                 )
-                if student_row is not None
+                if (
+                    student_master is not None
+                    and assignment.group_id is not None
+                    and assignment.group_name is not None
+                    and assignment.course_id is not None
+                    and assignment.course_name is not None
+                )
                 else None
             )
 
@@ -4812,9 +4976,16 @@ class SQLiteLearningReportRepository:
         finalized_at: str,
         finalized_by_display_name: str,
     ) -> LearningReportFinalizationResult:
-        connection = self.database.connect()
+        owns_transaction = self._finalization_connection is None
+        connection = (
+            self.database.connect()
+            if owns_transaction
+            else self._finalization_connection
+        )
+        assert connection is not None
         try:
-            connection.execute("BEGIN IMMEDIATE")
+            if owns_transaction:
+                connection.execute("BEGIN IMMEDIATE")
             current_draft = connection.execute(
                 """
                 SELECT updated_at
@@ -4948,24 +5119,28 @@ class SQLiteLearningReportRepository:
                 superseded_at=None,
             )
             self._insert_revision(connection, revision)
-            connection.commit()
+            if owns_transaction:
+                connection.commit()
             return LearningReportFinalizationResult(report, revision)
         except sqlite3.Error as error:
-            connection.rollback()
+            if owns_transaction and connection.in_transaction:
+                connection.rollback()
             raise ReportFinalizationError(
                 f"Berichtrevision konnte nicht gespeichert werden: {error}"
             ) from error
         except Exception:
-            connection.rollback()
+            if owns_transaction and connection.in_transaction:
+                connection.rollback()
             raise
         finally:
-            connection.close()
+            if owns_transaction:
+                connection.close()
 
     def get_report_for_source_draft(
         self,
         report_draft_id: str,
     ) -> LearningReportRecord | None:
-        with closing(self.database.connect()) as connection:
+        with self._source_connection() as connection:
             row = connection.execute(
                 """
                 SELECT
@@ -5593,18 +5768,126 @@ def _competency_from_row(row: sqlite3.Row) -> CompetencyRecord:
     )
 
 
-def _student_from_row(row: sqlite3.Row) -> StudentRecord:
+def _student_record_from_v3(
+    student: V3Student,
+    membership: CurrentStudentMembershipProjection | None,
+) -> StudentRecord:
+    enrolled = (
+        membership is not None
+        and membership.resolution_status is AssignmentResolutionStatus.ENROLLED
+    )
     return StudentRecord(
-        row[STUDENT_ID],
-        row[FIRST_NAME],
-        row[LAST_NAME],
-        row[GROUP_ID],
-        row[COURSE_ID],
-        row[STUDENT_NOTES] or "",
-        bool(row[ACTIVE]),
-        row[CREATED_AT],
-        row[UPDATED_AT],
-        row[ARCHIVED_AT],
+        student.student_id,
+        student.first_name,
+        student.last_name,
+        membership.group_id if enrolled and membership.group_id is not None else "",
+        (
+            membership.course_id
+            if enrolled and membership.course_id is not None
+            else ""
+        ),
+        student.notes,
+        student.active,
+        student.created_at.isoformat(),
+        student.updated_at.isoformat(),
+        (
+            student.archived_at.isoformat()
+            if student.archived_at is not None
+            else None
+        ),
+    )
+
+
+def _require_report_period_end(value: str) -> date:
+    try:
+        return date.fromisoformat(value)
+    except (TypeError, ValueError) as error:
+        raise ReportFinalizationError(
+            "Berichtszeitraum muss ein gültiges period_end enthalten."
+        ) from error
+
+
+def _require_leg_conference_date(value: str) -> date:
+    if not value:
+        raise LearningConferenceCompletionError(
+            LearningConferenceCompletionErrorCode.CONFERENCE_DATE_MISSING,
+            "Für den Abschluss ist ein Gesprächsdatum erforderlich.",
+        )
+    try:
+        return date.fromisoformat(value)
+    except (TypeError, ValueError) as error:
+        raise LearningConferenceCompletionError(
+            LearningConferenceCompletionErrorCode.CONFERENCE_DATE_INVALID,
+            "Das Gesprächsdatum ist ungültig.",
+        ) from error
+
+
+def _require_report_assignment(
+    assignment: AssignmentAtDateProjection,
+) -> None:
+    if (
+        assignment.resolution_status
+        is AssignmentResolutionStatus.ENROLLED
+    ):
+        if all(
+            (
+                assignment.group_id,
+                assignment.group_name,
+                assignment.course_id,
+                assignment.course_name,
+            )
+        ):
+            return
+        raise ReportFinalizationError(
+            "Die historische Kurs- oder Stammgruppenbezeichnung ist nicht "
+            "vollständig auflösbar."
+        )
+    if (
+        assignment.resolution_status
+        is AssignmentResolutionStatus.AMBIGUOUS
+    ):
+        raise ReportFinalizationError(
+            "Die Zuordnung am Ende des Berichtszeitraums ist nicht eindeutig."
+        )
+    raise ReportFinalizationError(
+        "Am Ende des Berichtszeitraums besteht keine eindeutige "
+        "eingeschriebene Kurs- und Stammgruppenzuordnung."
+    )
+
+
+def _require_leg_assignment(
+    assignment: AssignmentAtDateProjection,
+) -> None:
+    status = assignment.resolution_status
+    if status is AssignmentResolutionStatus.ENROLLED:
+        if all(
+            (
+                assignment.group_id,
+                assignment.group_name,
+                assignment.course_id,
+                assignment.course_name,
+            )
+        ):
+            return
+        raise LearningConferenceCompletionError(
+            LearningConferenceCompletionErrorCode.ASSIGNMENT_MISSING,
+            "Die historische Kurs- oder Stammgruppenbezeichnung ist nicht "
+            "vollständig auflösbar.",
+        )
+    if status is AssignmentResolutionStatus.AMBIGUOUS:
+        raise LearningConferenceCompletionError(
+            LearningConferenceCompletionErrorCode.ASSIGNMENT_AMBIGUOUS,
+            "Die Zuordnung am Gesprächsdatum ist nicht eindeutig.",
+        )
+    if status is AssignmentResolutionStatus.EXITED:
+        raise LearningConferenceCompletionError(
+            LearningConferenceCompletionErrorCode.ASSIGNMENT_EXITED,
+            "Am Gesprächsdatum besteht keine eingeschriebene Zuordnung.",
+        )
+    raise LearningConferenceCompletionError(
+        LearningConferenceCompletionErrorCode.ASSIGNMENT_MISSING,
+        "Am Gesprächsdatum besteht keine eindeutige Kurs- und "
+        "Stammgruppenzuordnung.",
     )
 
 

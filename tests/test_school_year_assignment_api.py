@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import fields
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 import sqlite3
 
@@ -22,6 +22,7 @@ from src.application.school_year_assignment import (
 )
 from src.core.final_v3_schema import FinalV3SchemaInitializer
 from src.core.school_year import (
+    AssignmentReferenceRequest,
     AssignmentResolutionStatus,
     StudentAssignmentStatus,
     V3Student,
@@ -188,10 +189,9 @@ def test_ambiguous_matches_are_never_silently_selected(
     assert [item.student_id for item in current_group] == [
         SYNTHETIC_STUDENT_IDS[1]
     ]
-    assert service.count_current_by_group(as_of=AS_OF) == {
-        "GRP-TEST-A": 1,
-        "GRP-TEST-B": 1,
-    }
+    with pytest.raises(AssignmentApplicationError) as captured:
+        service.count_current_by_group(as_of=AS_OF)
+    assert captured.value.code == "assignment_ambiguous"
 
 
 def test_archived_student_remains_historically_resolvable(
@@ -329,6 +329,83 @@ def test_current_counts_are_assignment_based(v3_database: Path) -> None:
     }
 
 
+def test_current_membership_snapshot_reports_missing_current_school_year(
+    v3_database: Path,
+) -> None:
+    with sqlite3.connect(v3_database) as connection:
+        connection.execute(
+            """
+            UPDATE school_years
+            SET status = 'closed', closed_at = ?
+            WHERE school_year_id = ?
+            """,
+            (NOW.isoformat(), SYNTHETIC_SCHOOL_YEAR_ID),
+        )
+
+    snapshot = SchoolYearAssignmentQueryService(
+        _factory(v3_database)
+    ).current_membership_snapshot(as_of=AS_OF)
+
+    assert snapshot.current_school_year_missing is True
+    assert snapshot.current_school_year_id is None
+    assert snapshot.current_school_year_label is None
+    assert snapshot.memberships == ()
+    assert snapshot.ambiguous_student_ids == ()
+    assert dict(snapshot.group_counts) == {}
+    assert dict(snapshot.course_counts) == {}
+    assert snapshot.blocking_error_code == "CURRENT_SCHOOL_YEAR_MISSING"
+
+
+def test_current_membership_snapshot_excludes_non_enrolled_and_counts_once(
+    v3_database: Path,
+) -> None:
+    ExitStudentFromSchoolYear(
+        _factory(v3_database),
+        assignment_id_factory=lambda: "ASG-SNAPSHOT-EXIT",
+        now_provider=lambda: NOW,
+    ).execute(SYNTHETIC_STUDENT_IDS[1], effective_on=AS_OF)
+    with sqlite3.connect(v3_database) as connection:
+        connection.execute("DROP TRIGGER trg_assignments_no_overlap_insert")
+        connection.execute(
+            """
+            INSERT INTO student_school_year_assignments(
+                assignment_id, student_id, school_year_id, group_id,
+                course_id, assignment_status, valid_from, valid_to,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, 'enrolled', ?, ?, ?, ?)
+            """,
+            (
+                "ASG-SNAPSHOT-AMBIGUOUS",
+                SYNTHETIC_STUDENT_IDS[0],
+                SYNTHETIC_SCHOOL_YEAR_ID,
+                "GRP-TEST-B",
+                "CRS-TEST-2",
+                "2025-12-01",
+                "2026-02-01",
+                NOW.isoformat(),
+                NOW.isoformat(),
+            ),
+        )
+
+    snapshot = SchoolYearAssignmentQueryService(
+        _factory(v3_database)
+    ).current_membership_snapshot(as_of=AS_OF)
+
+    assert snapshot.current_school_year_missing is False
+    assert snapshot.current_school_year_id == SYNTHETIC_SCHOOL_YEAR_ID
+    assert snapshot.ambiguous_student_ids == (SYNTHETIC_STUDENT_IDS[0],)
+    assert snapshot.blocking_error_code == "ASSIGNMENT_AMBIGUOUS"
+    assert [item.student_id for item in snapshot.memberships] == [
+        SYNTHETIC_STUDENT_IDS[2]
+    ]
+    assert all(
+        item.resolution_status is AssignmentResolutionStatus.ENROLLED
+        for item in snapshot.memberships
+    )
+    assert dict(snapshot.group_counts) == {"GRP-TEST-B": 1}
+    assert dict(snapshot.course_counts) == {"CRS-TEST-3": 1}
+
+
 class _CountingFactory:
     def __init__(self, path: Path) -> None:
         self.path = path
@@ -346,6 +423,41 @@ class _CountingFactory:
             statement.lstrip().upper().startswith(("SELECT", "WITH"))
             for statement in self.statements
         )
+
+
+@pytest.mark.parametrize("reference_count", (1, 10, 100))
+def test_reference_batch_supports_repeated_student_with_one_select(
+    v3_database: Path,
+    reference_count: int,
+) -> None:
+    references = tuple(
+        AssignmentReferenceRequest(
+            request_key=f"RPD-{number:03}",
+            student_id=SYNTHETIC_STUDENT_IDS[0],
+            reference_date=date(2025, 8, 1) + timedelta(days=number),
+        )
+        for number in range(reference_count)
+    )
+    factory = _CountingFactory(v3_database)
+
+    resolved = SchoolYearAssignmentQueryService(
+        factory
+    ).assignments_for_references(references)
+
+    assert tuple(resolved) == tuple(
+        reference.request_key for reference in references
+    )
+    assert all(
+        projection.student_id == SYNTHETIC_STUDENT_IDS[0]
+        and projection.reference_date == reference.reference_date
+        and projection.resolution_status
+        is AssignmentResolutionStatus.ENROLLED
+        for reference, projection in (
+            (reference, resolved[reference.request_key])
+            for reference in references
+        )
+    )
+    assert factory.query_count == 1
 
 
 def _bulk_database(path: Path, count: int) -> tuple[Path, tuple[str, ...]]:

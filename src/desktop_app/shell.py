@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, QTimer, Signal, QUrl
@@ -127,7 +127,10 @@ class AppShell(QMainWindow):
         super().__init__()
         self.now_provider = now_provider
         self.display_name: str | None = None
-        self.adapter = StudentDesktopAdapter(database_path)
+        self.adapter = StudentDesktopAdapter(
+            database_path,
+            today_provider=lambda: self.now_provider().date(),
+        )
         self.exports_directory = self.adapter.database_path.parent / "exports"
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
         self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)
@@ -548,32 +551,31 @@ class AppShell(QMainWindow):
     def refresh_students(self) -> None:
         """Refresh student rows for the current filter."""
         filter_label = "Alle Schüler"
-        group_ids: tuple[str, ...] = ()
-        course_ids: tuple[str, ...] = ()
         if self.selected_group_id:
             groups = {group.group_id: group.group_name for group in self.adapter.list_groups()}
-            filter_label = f"Stammgruppe: {groups.get(self.selected_group_id, self.selected_group_id)}"
+            filter_label = (
+                "Stammgruppe: "
+                f"{groups.get(self.selected_group_id, 'nicht verfügbar')}"
+            )
         elif self.selected_course_group_id and self.selected_course_id:
             course_group = self._selected_course_group()
             course_name = self._course_name(self.selected_course_id)
             if course_group is not None:
-                group_ids = course_group.selected_group_ids
                 filter_label = f"{course_group.name} · {course_name}"
             else:
                 filter_label = f"Kurs: {course_name}"
         elif self.selected_course_group_id:
             course_group = self._selected_course_group()
             if course_group is not None:
-                group_ids = course_group.selected_group_ids
-                course_ids = course_group.selected_course_ids
                 filter_label = f"Kursverbund: {course_group.name}"
+            else:
+                filter_label = "Kursverbund nicht verfügbar"
         elif self.selected_course_id:
             filter_label = f"Kurs: {self._course_name(self.selected_course_id)}"
         students = self.adapter.list_students(
             group_id=self.selected_group_id,
-            group_ids=group_ids,
             course_id=self.selected_course_id,
-            course_ids=course_ids,
+            course_group_id=self.selected_course_group_id,
         )
         self.students_screen.set_students(
             students,
@@ -1303,6 +1305,11 @@ class AppShell(QMainWindow):
                 return
         preparation = self.adapter.learning_report_preparation_for_student(
             student_id,
+            period_end=(
+                initial_draft.period_end
+                if initial_draft is not None
+                else initial_period[1]
+            ),
             retained_competency_ids=(
                 initial_draft.competency_ids if initial_draft is not None else ()
             ),
@@ -1542,6 +1549,11 @@ class AppShell(QMainWindow):
             self._selected_learning_conference_draft_ids.pop(student_id, None)
         preparation = self.adapter.learning_conference_preparation_for_student(
             student_id,
+            conference_date=(
+                initial_draft.conference_date
+                if initial_draft is not None
+                else None
+            ),
             retained_competency_ids=(
                 initial_draft.competency_ids if initial_draft is not None else ()
             ),
@@ -1718,6 +1730,12 @@ class AppShell(QMainWindow):
 
     def open_new_observation_dialog(self, student: StudentDetailViewModel) -> None:
         """Open the persistent observation dialog and refresh after success."""
+        if student.resolution_status != "enrolled" or not student.active:
+            self.status_label.setText(
+                student.status_label
+                or "Für dieses Kind kann aktuell keine Beobachtung erfasst werden."
+            )
+            return
         prefill = self._pending_timetable_observation_draft(student)
         dialog = NewObservationDialog(
             student,
@@ -1751,6 +1769,12 @@ class AppShell(QMainWindow):
         student = self.adapter.get_student_profile(student_id)
         if student is None:
             self.status_label.setText("Schülerprofil wurde nicht gefunden.")
+            return
+        if student.resolution_status != "enrolled" or not student.active:
+            self.status_label.setText(
+                student.status_label
+                or "Für dieses Kind kann aktuell keine Beobachtung erfasst werden."
+            )
             return
         prefill = self._pending_timetable_observation_draft(student)
         dialog = NewObservationDialog(
@@ -1787,7 +1811,18 @@ class AppShell(QMainWindow):
         if draft is None:
             self.status_label.setText("Beobachtung wurde nicht gefunden.")
             return
-        student = self.adapter.get_student_profile(draft.student_id)
+        try:
+            reference_date = date.fromisoformat(draft.date_text)
+        except ValueError:
+            self.status_label.setText(
+                "Das Beobachtungsdatum ist ungültig; "
+                "die Zuordnung kann nicht sicher angezeigt werden."
+            )
+            return
+        student = self.adapter.get_student_profile(
+            draft.student_id,
+            reference_date=reference_date,
+        )
         if student is None:
             self.status_label.setText("Schülerprofil wurde nicht gefunden.")
             return
@@ -2042,7 +2077,7 @@ class AppShell(QMainWindow):
         for course in self.master_data_adapter.view_model().courses:
             if course.item_id == course_id:
                 return course.name
-        return course_id
+        return "Kurs nicht verfügbar"
 
     def _has_active_student_filter(self) -> bool:
         return bool(

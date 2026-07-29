@@ -30,6 +30,7 @@ from src.desktop_app.components import (
     CourseBadge,
     EmptyState,
     FilterBar,
+    InlineMessage,
     PageHeader,
     SearchField,
     SectionHeader,
@@ -226,6 +227,7 @@ class StudentProfileScreen(QWidget):
         self.meta_label.setObjectName("StudentProfileContextBadge")
         self.course_badge = CourseBadge()
         self.course_badge.hide()
+        self.membership_message = InlineMessage()
         self.action_feedback_label = QLabel("")
         self.overview_recent_layout = QVBoxLayout()
         self.observation_empty_label = QLabel("")
@@ -324,6 +326,7 @@ class StudentProfileScreen(QWidget):
         identity_row.addWidget(self.profile_avatar)
         identity_row.addWidget(self.profile_page_header, 1)
         profile_header_layout.addLayout(identity_row)
+        profile_header_layout.addWidget(self.membership_message)
         layout.addWidget(profile_header_surface)
 
         self.profile_navigation = SegmentedControl((
@@ -380,19 +383,47 @@ class StudentProfileScreen(QWidget):
         if self.current_student is None:
             subtitle = ""
             self.course_badge.hide()
+            self.membership_message.set_message("")
+            self.profile_primary_action.setEnabled(False)
         else:
-            subtitle = f"Stammgruppe {self.current_student.group_name}"
-            self.course_badge.set_course(
-                self.current_student.course_name,
-                self.current_student.course_color_hex,
+            subtitle = " · ".join(
+                part
+                for part in (
+                    "Aktuelle Zuordnung",
+                    (
+                        f"Stammgruppe {self.current_student.group_name}"
+                        if self.current_student.group_name
+                        else ""
+                    ),
+                    self.current_student.status_label,
+                )
+                if part
             )
-            self.course_badge.show()
+            if self.current_student.course_name:
+                self.course_badge.set_course(
+                    self.current_student.course_name,
+                    self.current_student.course_color_hex,
+                )
+                self.course_badge.show()
+            else:
+                self.course_badge.hide()
+            if self.current_student.membership_blocking:
+                self.membership_message.set_message(
+                    self.current_student.status_label,
+                    tone="error",
+                )
+            else:
+                self.membership_message.set_message("")
+            self.profile_primary_action.setEnabled(
+                self.current_student.active
+                and self.current_student.resolution_status == "enrolled"
+            )
         self.meta_label.setText(subtitle)
         context_width = (
             min(480, self.meta_label.fontMetrics().horizontalAdvance(subtitle) + 80)
             if subtitle else 0
         )
-        self.meta_label.setMinimumWidth(context_width)
+        self.meta_label.setMinimumWidth(0)
         self.meta_label.setMaximumWidth(context_width or 16777215)
         self.meta_label.setVisible(bool(subtitle))
 
@@ -1110,6 +1141,15 @@ class StudentProfileScreen(QWidget):
     def _request_new_observation(self) -> None:
         if self.current_student is None:
             self._show_placeholder_message(PROFILE_ACTION_MESSAGES["observation"])
+            return
+        if (
+            not self.current_student.active
+            or self.current_student.resolution_status != "enrolled"
+        ):
+            self._show_placeholder_message(
+                self.current_student.status_label
+                or "Für dieses Kind kann aktuell keine Beobachtung erfasst werden."
+            )
             return
         self.observation_requested.emit(self.current_student)
 

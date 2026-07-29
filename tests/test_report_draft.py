@@ -256,6 +256,7 @@ class ReportDraftPersistenceTest(unittest.TestCase):
         loaded = self.adapter.load_learning_report_draft(saved.report_draft_id)
         preparation = self.adapter.learning_report_preparation_for_student(
             self.student.student_id,
+            period_end=loaded.period_end,
             retained_competency_ids=loaded.competency_ids,
         )
         retained = next(

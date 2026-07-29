@@ -104,6 +104,8 @@ class LearningConferencePreparationViewModel:
     cross_topics: tuple[LearningConferenceCrossTopicViewModel, ...]
     evidence: tuple[LearningConferenceEvidenceViewModel, ...]
     course_name: str = ""
+    membership_status_label: str = ""
+    membership_blocking: bool = False
 
 
 @dataclass(frozen=True)
@@ -292,6 +294,12 @@ def build_learning_conference_preparation(
         ),
         evidence=evidence,
         course_name=str(getattr(student, "course_name", "")),
+        membership_status_label=str(
+            getattr(student, "status_label", "")
+        ),
+        membership_blocking=bool(
+            getattr(student, "membership_blocking", False)
+        ),
     )
 
 
@@ -420,6 +428,9 @@ def build_learning_conference_completion_error(
 ) -> LearningConferenceCompletionErrorViewModel:
     phase_by_code = {
         LearningConferenceCompletionErrorCode.STUDENT_MISSING: "goal",
+        LearningConferenceCompletionErrorCode.ASSIGNMENT_MISSING: "goal",
+        LearningConferenceCompletionErrorCode.ASSIGNMENT_AMBIGUOUS: "goal",
+        LearningConferenceCompletionErrorCode.ASSIGNMENT_EXITED: "goal",
         LearningConferenceCompletionErrorCode.CONFERENCE_DATE_MISSING: "goal",
         LearningConferenceCompletionErrorCode.CONFERENCE_DATE_INVALID: "goal",
         LearningConferenceCompletionErrorCode.RESPONSIBLE_TEACHER_MISSING: "goal",

@@ -199,6 +199,7 @@ class ReportRevisionProductTest(unittest.TestCase):
         )
         preparation = self.adapter.learning_report_preparation_for_student(
             self.student.student_id,
+            period_end=self.saved.period_end,
             retained_competency_ids=self.saved.competency_ids,
         )
         dialog = LearningReportDialog(preparation, initial_draft=self.saved)
@@ -377,6 +378,7 @@ class ReportRevisionProductTest(unittest.TestCase):
     def test_finalization_does_not_emit_pdf_request(self) -> None:
         preparation = self.adapter.learning_report_preparation_for_student(
             self.student.student_id,
+            period_end=self.saved.period_end,
             retained_competency_ids=self.saved.competency_ids,
         )
         dialog = LearningReportDialog(preparation, initial_draft=self.saved)
@@ -397,6 +399,7 @@ class ReportRevisionProductTest(unittest.TestCase):
         )
         preparation = self.adapter.learning_report_preparation_for_student(
             self.student.student_id,
+            period_end=self.saved.period_end,
             retained_competency_ids=self.saved.competency_ids,
         )
         revision = self.adapter.load_learning_report_revision(
@@ -428,6 +431,7 @@ class ReportRevisionProductTest(unittest.TestCase):
     def test_workspace_header_exposes_student_context_and_all_revision_states(self) -> None:
         preparation = self.adapter.learning_report_preparation_for_student(
             self.student.student_id,
+            period_end=self.saved.period_end,
             retained_competency_ids=self.saved.competency_ids,
         )
         draft_dialog = LearningReportDialog(
@@ -481,6 +485,7 @@ class ReportRevisionProductTest(unittest.TestCase):
     def test_workspace_actions_have_accessible_names_and_one_finalization_action(self) -> None:
         preparation = self.adapter.learning_report_preparation_for_student(
             self.student.student_id,
+            period_end=self.saved.period_end,
             retained_competency_ids=self.saved.competency_ids,
         )
         dialog = LearningReportDialog(

@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -114,6 +114,12 @@ from src.core.learning_conference_pdf import (
     LearningConferencePdfOutputModelBuilder,
     LearningConferencePdfService,
 )
+from src.core.school_year import (
+    AssignmentAtDateProjection,
+    AssignmentResolutionStatus,
+    CurrentStudentMembershipProjection,
+    V3Student,
+)
 from src.core.student import StudentService, StudentValidator
 from src.core.records import CourseRecord, GroupRecord, StudentRecord
 from src.desktop_app.adapters.curriculum_desktop_adapter import (
@@ -208,11 +214,13 @@ class StudentDesktopAdapter:
         database_path: Path = SQLITE_SPIKE_PATH,
         *,
         database: SQLiteDatabase | None = None,
+        today_provider: Callable[[], date] | None = None,
     ) -> None:
         self.database_path = (
             Path(database.path) if database is not None else Path(database_path)
         )
         self.database = database or self._open_database()
+        self._today_provider = today_provider or date.today
         ObservationPersistenceUnitOfWork(self.database).recover_pending()
 
     def list_students(
@@ -222,17 +230,20 @@ class StudentDesktopAdapter:
         group_ids: tuple[str, ...] = (),
         course_id: str | None = None,
         course_ids: tuple[str, ...] = (),
+        course_group_id: str | None = None,
     ) -> tuple[StudentListItem, ...]:
         """Return students with readable group and course names."""
+        as_of = self._today()
         batch = SQLiteStudentDocumentationProjectionRepository(
             self.database
         ).read_batch(
+            as_of=as_of,
             group_id=group_id,
             group_ids=group_ids,
             course_id=course_id,
             course_ids=course_ids,
+            course_group_id=course_group_id,
         )
-        groups = {group.group_id: group.group_name for group in batch.groups}
         course_records = batch.courses
         courses = {course.course_id: course for course in course_records}
         course_order_by_id = {
@@ -245,7 +256,7 @@ class StudentDesktopAdapter:
         loaded_students = tuple(
             self._student_list_item(
                 student,
-                groups,
+                batch.memberships_by_student[student.student_id],
                 courses,
                 documentation_summary_from_subjects(
                     documentation_statuses_by_student.get(
@@ -258,54 +269,119 @@ class StudentDesktopAdapter:
         )
         return sort_student_list(loaded_students, course_order_by_id)
 
-    def get_student_profile(self, student_id: str) -> StudentDetailViewModel | None:
+    def get_student_profile(
+        self,
+        student_id: str,
+        *,
+        reference_date: date | None = None,
+    ) -> StudentDetailViewModel | None:
         """Return a light profile view model for one student."""
-        student = SQLiteStudentRepository(self.database).get_student_by_id(student_id)
+        as_of = reference_date if reference_date is not None else self._today()
+        batch = SQLiteStudentDocumentationProjectionRepository(
+            self.database
+        ).read_batch(
+            as_of=as_of,
+            student_id=student_id,
+            historical_membership=reference_date is not None,
+        )
+        return self._student_profile_from_batch(
+            batch,
+            student_id,
+            historical=reference_date is not None,
+        )
+
+    def _student_profile_from_batch(
+        self,
+        batch: StudentDocumentationProjectionBatch,
+        student_id: str,
+        *,
+        historical: bool,
+        neutral_without_membership: bool = False,
+    ) -> StudentDetailViewModel | None:
+        student = next(
+            (
+                candidate
+                for candidate in batch.students
+                if candidate.student_id == student_id
+            ),
+            None,
+        )
+        membership = batch.memberships_by_student.get(student_id)
         if student is None:
             return None
-        groups = {group.group_id: group.group_name for group in self.list_groups()}
-        courses = {course.course_id: course for course in self.list_courses()}
-        course_name, course_color_name, course_color_hex = self._course_context(
-            student.course_id,
-            courses,
+        if neutral_without_membership:
+            return StudentDetailViewModel(
+                student_id=student.student_id,
+                display_name=f"{student.first_name} {student.last_name}",
+                group_name="",
+                course_name="",
+                student_notes=student.notes,
+                active=student.active,
+                resolution_status=(
+                    AssignmentResolutionStatus.NO_ASSIGNMENT.value
+                ),
+                status_label="Zuordnung noch nicht aufgelöst",
+                membership_blocking=False,
+            )
+        if membership is None:
+            return None
+        courses = {course.course_id: course for course in batch.courses}
+        course_name, course_color_name, course_color_hex = (
+            self._course_context(
+                membership.course_id,
+                courses,
+                membership.course_name or "",
+            )
+            if membership.course_id is not None
+            else ("", "", "")
+        )
+        resolution_status = membership.resolution_status
+        if (
+            not historical
+            and membership.student_archived
+        ):
+            resolution_status = AssignmentResolutionStatus.STUDENT_ARCHIVED
+        status_label, membership_blocking = self._membership_status(
+            resolution_status,
+            historical=historical,
         )
         return StudentDetailViewModel(
             student.student_id,
             f"{student.first_name} {student.last_name}",
-            groups.get(student.group_id, student.group_id),
+            self._membership_group_name(
+                membership,
+                status_label=status_label,
+                historical=historical,
+            ),
             course_name,
-            student.student_notes,
+            student.notes,
             student.active,
             course_color_name,
             course_color_hex,
+            resolution_status.value,
+            status_label,
+            membership_blocking,
         )
 
     def student_record_for_edit(self, student_id: str) -> StudentRecord | None:
         """Return the persisted student record for edit dialogs."""
-        return SQLiteStudentRepository(self.database).get_student_by_id(student_id)
+        return SQLiteStudentRepository(
+            self.database,
+            as_of=self._today(),
+        ).get_student_by_id(student_id)
 
     def list_group_summaries(self) -> tuple[GroupSummaryViewModel, ...]:
         """Return group cards for the app overview."""
-        students = tuple(
-            student
-            for student in SQLiteStudentRepository(self.database).list_students()
-            if student.active
-        )
-        active_counts = {
-            group.group_id: sum(
-                1
-                for student in students
-                if student.group_id == group.group_id and student.active
-            )
-            for group in self.list_groups()
-        }
+        batch = SQLiteStudentDocumentationProjectionRepository(
+            self.database
+        ).read_batch(as_of=self._today())
         return tuple(
             GroupSummaryViewModel(
                 group.group_id,
                 group.group_name,
-                active_counts.get(group.group_id, 0),
+                batch.group_counts.get(group.group_id, 0),
             )
-            for group in self.list_groups()
+            for group in batch.groups
         )
 
     def dashboard_documentation_heatmap(
@@ -314,7 +390,7 @@ class StudentDesktopAdapter:
         """Aggregate canonical documentation coverage by group and subject."""
         batch = SQLiteStudentDocumentationProjectionRepository(
             self.database
-        ).read_batch()
+        ).read_batch(as_of=self._today())
         return self._dashboard_documentation_heatmap_from_batch(batch)
 
     def dashboard_documentation_refresh(
@@ -331,27 +407,30 @@ class StudentDesktopAdapter:
         tuple[DashboardSuggestedStudentViewModel, ...],
     ]:
         """Return heatmap and lesson suggestions from one refresh-local batch."""
+        as_of = at.date()
         batch = SQLiteStudentDocumentationProjectionRepository(
             self.database
-        ).read_batch()
+        ).read_batch(
+            as_of=as_of,
+            target_group_id=target_id if target_type == "group" else None,
+            target_course_id=target_id if target_type == "course" else None,
+            target_course_group_id=(
+                target_id if target_type == "course_group" else None
+            ),
+        )
         heatmap = self._dashboard_documentation_heatmap_from_batch(batch)
         if limit <= 0 or not subject_id:
             return heatmap, ()
-        target_scope = self._dashboard_target_scope_from_batch(
-            batch,
-            target_type,
-            target_id,
-        )
-        if target_scope is None:
+        if target_type not in {"group", "course", "course_group"}:
             return heatmap, ()
         return (
             heatmap,
             self._dashboard_suggestions_from_batch(
                 batch,
-                target_scope=target_scope,
+                target_student_ids=batch.target_student_ids,
                 subject_id=subject_id,
                 subject_label=subject_label,
-                at=at,
+                at_date=as_of,
                 limit=limit,
             ),
         )
@@ -366,7 +445,10 @@ class StudentDesktopAdapter:
             group_students = tuple(
                 student
                 for student in batch.students
-                if student.group_id == group.group_id
+                if (
+                    batch.memberships_by_student[student.student_id].group_id
+                    == group.group_id
+                )
             )
             subject_totals: dict[str, list[object]] = {}
             for student in group_students:
@@ -412,22 +494,25 @@ class StudentDesktopAdapter:
         """Return neutral, date-based documentation suggestions for one lesson."""
         if limit <= 0 or not subject_id:
             return ()
+        as_of = at.date()
         batch = SQLiteStudentDocumentationProjectionRepository(
             self.database
-        ).read_batch()
-        target_scope = self._dashboard_target_scope_from_batch(
-            batch,
-            target_type,
-            target_id,
+        ).read_batch(
+            as_of=as_of,
+            target_group_id=target_id if target_type == "group" else None,
+            target_course_id=target_id if target_type == "course" else None,
+            target_course_group_id=(
+                target_id if target_type == "course_group" else None
+            ),
         )
-        if target_scope is None:
+        if target_type not in {"group", "course", "course_group"}:
             return ()
         return self._dashboard_suggestions_from_batch(
             batch,
-            target_scope=target_scope,
+            target_student_ids=batch.target_student_ids,
             subject_id=subject_id,
             subject_label=subject_label,
-            at=at,
+            at_date=as_of,
             limit=limit,
         )
 
@@ -435,31 +520,26 @@ class StudentDesktopAdapter:
         self,
         batch: StudentDocumentationProjectionBatch,
         *,
-        target_scope: tuple[tuple[str, ...], tuple[str, ...]],
+        target_student_ids: tuple[str, ...],
         subject_id: str,
         subject_label: str,
-        at: datetime,
+        at_date: date,
         limit: int,
     ) -> tuple[DashboardSuggestedStudentViewModel, ...]:
-        group_ids, course_ids = target_scope
         courses = {course.course_id: course for course in batch.courses}
+        target_student_id_set = frozenset(target_student_ids)
         students = tuple(
             student
             for student in batch.students
-            if self._matches_filter(
-                student,
-                None,
-                group_ids,
-                None,
-                course_ids,
-            )
+            if student.student_id in target_student_id_set
         )
         suggestions = tuple(
             self._dashboard_suggestion_for_student(
                 student,
+                batch.memberships_by_student[student.student_id],
                 subject_id,
                 subject_label,
-                at.date(),
+                at_date,
                 courses,
                 batch.observations_by_student.get(student.student_id, ()),
             )
@@ -469,7 +549,7 @@ class StudentDesktopAdapter:
             sorted(
                 suggestions,
                 key=lambda item: (
-                    self._dashboard_suggestion_priority(item, at.date()),
+                    self._dashboard_suggestion_priority(item, at_date),
                     item.last_documentation_date or date.min,
                     item.display_name.casefold(),
                     item.student_id,
@@ -477,36 +557,10 @@ class StudentDesktopAdapter:
             )[:limit]
         )
 
-    def _dashboard_target_scope_from_batch(
-        self,
-        batch: StudentDocumentationProjectionBatch,
-        target_type: str,
-        target_id: str,
-    ) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
-        if target_type == "group":
-            return (target_id,), ()
-        if target_type == "course":
-            return (), (target_id,)
-        if target_type != "course_group":
-            return None
-        course_group = next(
-            (
-                item
-                for item in batch.course_groups
-                if item.course_group_id == target_id
-            ),
-            None,
-        )
-        if course_group is None:
-            return None
-        return (
-            course_group.selected_group_ids,
-            course_group.selected_course_ids,
-        )
-
     def _dashboard_suggestion_for_student(
         self,
-        student: StudentRecord,
+        student: V3Student,
+        membership: CurrentStudentMembershipProjection,
         subject_id: str,
         subject_label: str,
         at_date: date,
@@ -522,8 +576,9 @@ class StudentDesktopAdapter:
         )
         display_name = f"{student.first_name} {student.last_name}"
         course_name, course_color_name, course_color_hex = self._course_context(
-            student.course_id,
+            membership.course_id or "",
             courses,
+            membership.course_name or "",
         )
         if not observation_dates:
             return DashboardSuggestedStudentViewModel(
@@ -1005,7 +1060,7 @@ class StudentDesktopAdapter:
             },
             (
                 student.student_id
-                for student in SQLiteStudentRepository(self.database).list_students()
+                for student in self.list_students()
             ),
         )
 
@@ -1019,10 +1074,23 @@ class StudentDesktopAdapter:
         )
         if observation is None or not observation.active:
             return None
-        student = self.get_student_profile(observation.student_id)
+        try:
+            reference_date = date.fromisoformat(observation.date)
+        except ValueError:
+            reference_date = None
+        student = (
+            self.get_student_profile(
+                observation.student_id,
+                reference_date=reference_date,
+            )
+            if reference_date is not None
+            else None
+        )
         return ObservationDraftViewModel(
             student_id=observation.student_id,
-            student_name=student.display_name if student else observation.student_id,
+            student_name=(
+                student.display_name if student else "Kind nicht verfügbar"
+            ),
             date_text=observation.date,
             subject_id=observation.subject_id,
             subject_display_name=self._subject_display_name(observation),
@@ -1312,17 +1380,36 @@ class StudentDesktopAdapter:
         self,
         student_id: str,
         *,
+        period_end: date,
         retained_competency_ids: tuple[str, ...] = (),
     ) -> LearningReportPreparationViewModel | None:
         """Prepare a transient report selection from the canonical status projection."""
+        batch = SQLiteStudentDocumentationProjectionRepository(
+            self.database
+        ).read_batch(
+            as_of=period_end,
+            student_id=student_id,
+            historical_membership=True,
+        )
+        student = self._student_profile_from_batch(
+            batch,
+            student_id,
+            historical=True,
+        )
+        statuses = self._competency_status_projection_from_batch(
+            batch,
+            student_id,
+            retained_competency_ids=retained_competency_ids,
+        )
+        observations = self._observation_list_items_from_batch(
+            batch,
+            student_id,
+        )
         source = LearningReportApplicationService(
-            self.get_student_profile,
-            lambda selected_student_id: self.list_competency_status_projection_for_student(
-                selected_student_id,
-                retained_competency_ids=retained_competency_ids,
-            ),
-            self.list_observations_for_student,
-        ).execute(PrepareLearningReportQuery(student_id))
+            lambda _student_id, _reference_date: student,
+            lambda _student_id: statuses,
+            lambda _student_id: observations,
+        ).execute(PrepareLearningReportQuery(student_id, period_end))
         if source is None:
             return None
         return build_learning_report_preparation(
@@ -1408,17 +1495,39 @@ class StudentDesktopAdapter:
         ] = ()
         phase2_confirmations: tuple[Mapping[str, object], ...] = ()
         phase2_subjects: tuple[Mapping[str, object], ...] = ()
+        phase2_preparation: LearningReportPreparationViewModel | None = None
         phase2_source_errors: list[str] = []
         if selected_report is not None:
             try:
                 batch = SQLiteStudentDocumentationProjectionRepository(
                     self.database
-                ).read_batch(student_id=student_id)
+                ).read_batch(
+                    as_of=selected_report.period_end,
+                    student_id=student_id,
+                    historical_membership=True,
+                )
                 (
                     phase2_observations,
                     phase2_confirmations,
                     phase2_subjects,
                 ) = self._phase2_live_evidence_sources(batch, student_id)
+                student = self._student_profile_from_batch(
+                    batch,
+                    student_id,
+                    historical=True,
+                )
+                if student is not None:
+                    phase2_preparation = build_learning_report_preparation(
+                        student,
+                        self._competency_status_projection_from_batch(
+                            batch,
+                            student_id,
+                        ),
+                        self._observation_list_items_from_batch(
+                            batch,
+                            student_id,
+                        ),
+                    )
             except Exception:
                 phase2_source_errors.append("live_documentation")
             try:
@@ -1509,7 +1618,7 @@ class StudentDesktopAdapter:
             report_states,
             learning_conference_drafts,
             learning_conference_states,
-            self.learning_report_preparation_for_student(student_id),
+            phase2_preparation,
             report_list_error=report_list_error,
             learning_conference_list_error=learning_conference_list_error,
             report_revision_errors=frozenset(report_revision_errors),
@@ -1885,17 +1994,39 @@ class StudentDesktopAdapter:
         self,
         student_id: str,
         *,
+        conference_date: date | None = None,
         retained_competency_ids: tuple[str, ...] = (),
     ) -> LearningConferencePreparationViewModel | None:
         """Prepare LEG selection from existing canonical Live projections."""
+        as_of = conference_date if conference_date is not None else self._today()
+        batch = SQLiteStudentDocumentationProjectionRepository(
+            self.database
+        ).read_batch(
+            as_of=as_of,
+            student_id=student_id,
+            historical_membership=conference_date is not None,
+            include_membership=conference_date is not None,
+        )
+        student = self._student_profile_from_batch(
+            batch,
+            student_id,
+            historical=conference_date is not None,
+            neutral_without_membership=conference_date is None,
+        )
+        statuses = self._competency_status_projection_from_batch(
+            batch,
+            student_id,
+            retained_competency_ids=retained_competency_ids,
+        )
+        observations = self._observation_list_items_from_batch(
+            batch,
+            student_id,
+        )
         source = LearningConferenceApplicationService(
-            self.get_student_profile,
-            lambda selected_student_id: self.list_competency_status_projection_for_student(
-                selected_student_id,
-                retained_competency_ids=retained_competency_ids,
-            ),
-            self.list_observations_for_student,
-        ).execute(PrepareLearningConferenceQuery(student_id))
+            lambda _student_id, _reference_date: student,
+            lambda _student_id: statuses,
+            lambda _student_id: observations,
+        ).execute(PrepareLearningConferenceQuery(student_id, conference_date))
         if source is None:
             return None
         return build_learning_conference_preparation(
@@ -2258,7 +2389,11 @@ class StudentDesktopAdapter:
         )
 
     def _dispatcher(self) -> ApplicationCommandDispatcher:
-        student_repository = SQLiteStudentRepository(self.database)
+        as_of = self._today()
+        student_repository = SQLiteStudentRepository(
+            self.database,
+            as_of=as_of,
+        )
         observation_repository = SQLiteObservationRepository(self.database)
         group_ids = tuple(group.group_id for group in self.list_groups())
         course_ids = tuple(course.course_id for course in self.list_courses())
@@ -2271,7 +2406,10 @@ class StudentDesktopAdapter:
         observation_service = ObservationService(
             observation_repository,
             ObservationValidator(),
-            tuple(student.student_id for student in student_repository.list_students()),
+            tuple(
+                student.student_id
+                for student in self.list_students()
+            ),
         )
         dispatcher = ApplicationCommandDispatcher()
         dispatcher.register("student.create", student_create_handler(student_service))
@@ -2299,6 +2437,12 @@ class StudentDesktopAdapter:
         )
         return database
 
+    def _today(self) -> date:
+        value = self._today_provider()
+        if type(value) is not date:
+            raise TypeError("today_provider muss ein Datum liefern.")
+        return value
+
     def _documentation_subject_sort_key(
         self,
         subject_id: str,
@@ -2318,22 +2462,23 @@ class StudentDesktopAdapter:
 
     def _student_list_item(
         self,
-        student: StudentRecord,
-        groups: dict[str, str],
+        student: V3Student,
+        membership: CurrentStudentMembershipProjection,
         courses: dict[str, CourseRecord],
         documentation_status: StudentDocumentationSummaryViewModel,
     ) -> StudentListItem:
         course_name, course_color_name, course_color_hex = self._course_context(
-            student.course_id,
+            membership.course_id or "",
             courses,
+            membership.course_name or "",
         )
         return StudentListItem(
             student.student_id,
             student.first_name,
             student.last_name,
-            student.group_id,
-            groups.get(student.group_id, student.group_id),
-            student.course_id,
+            membership.group_id or "",
+            membership.group_name or "Stammgruppe nicht verfügbar",
+            membership.course_id or "",
             course_name,
             course_color_name,
             course_color_hex,
@@ -2344,35 +2489,85 @@ class StudentDesktopAdapter:
     def _course_context(
         course_id: str,
         courses: dict[str, CourseRecord],
+        course_name: str = "",
     ) -> tuple[str, str, str]:
         """Resolve one existing course to the shared display context."""
         course = courses.get(course_id)
         if course is None:
-            return course_id, "", ""
+            return course_name or "Kurs nicht verfügbar", "", ""
         course_index = tuple(courses).index(course.course_id)
         color_name, color_hex = course_color_from_key(
             course.color_key,
             course_index,
         )
-        return course.course_name, color_name, color_hex
+        return course_name or course.course_name, color_name, color_hex
 
-    def _matches_filter(
-        self,
-        student: StudentRecord,
-        group_id: str | None,
-        group_ids: tuple[str, ...],
-        course_id: str | None,
-        course_ids: tuple[str, ...],
-    ) -> bool:
-        if group_id and student.group_id != group_id:
-            return False
-        if group_ids and student.group_id not in group_ids:
-            return False
-        if course_id and student.course_id != course_id:
-            return False
-        if course_ids and student.course_id not in course_ids:
-            return False
-        return True
+    @staticmethod
+    def _membership_group_name(
+        membership: CurrentStudentMembershipProjection | AssignmentAtDateProjection,
+        *,
+        status_label: str,
+        historical: bool,
+    ) -> str:
+        if membership.group_name:
+            return membership.group_name
+        if historical and status_label:
+            return status_label
+        if membership.resolution_status in {
+            AssignmentResolutionStatus.ENROLLED,
+            AssignmentResolutionStatus.EXITED,
+        }:
+            return "Stammgruppe nicht verfügbar"
+        return ""
+
+    @staticmethod
+    def _membership_status(
+        status: AssignmentResolutionStatus,
+        *,
+        historical: bool = False,
+    ) -> tuple[str, bool]:
+        if historical:
+            labels = {
+                AssignmentResolutionStatus.ENROLLED: "",
+                AssignmentResolutionStatus.EXITED: (
+                    "Am Beobachtungsdatum ausgeschieden"
+                ),
+                AssignmentResolutionStatus.NO_ASSIGNMENT: (
+                    "Keine Zuordnung am Beobachtungsdatum"
+                ),
+                AssignmentResolutionStatus.CURRENT_SCHOOL_YEAR_MISSING: (
+                    "Kein aktuelles Schuljahr festgelegt"
+                ),
+                AssignmentResolutionStatus.AMBIGUOUS: (
+                    "Zuordnung am Beobachtungsdatum nicht eindeutig"
+                ),
+                AssignmentResolutionStatus.STUDENT_ARCHIVED: "Kind ist archiviert",
+            }
+        else:
+            labels = {
+                AssignmentResolutionStatus.ENROLLED: "",
+                AssignmentResolutionStatus.EXITED: (
+                    "Im aktuellen Schuljahr ausgeschieden"
+                ),
+                AssignmentResolutionStatus.NO_ASSIGNMENT: (
+                    "Keine aktuelle Zuordnung"
+                ),
+                AssignmentResolutionStatus.CURRENT_SCHOOL_YEAR_MISSING: (
+                    "Kein aktuelles Schuljahr festgelegt"
+                ),
+                AssignmentResolutionStatus.AMBIGUOUS: (
+                    "Aktuelle Zuordnung nicht eindeutig"
+                ),
+                AssignmentResolutionStatus.STUDENT_ARCHIVED: "Kind ist archiviert",
+            }
+        return (
+            labels[status],
+            status
+            in {
+                AssignmentResolutionStatus.AMBIGUOUS,
+                AssignmentResolutionStatus.CURRENT_SCHOOL_YEAR_MISSING,
+            },
+        )
 
     def _subject_display_name(self, observation: object) -> str:
         subjects = self._subjects_from_ratings(
@@ -2668,6 +2863,60 @@ class StudentDesktopAdapter:
             competency
             for competency in self._active_current_competencies()
             if getattr(competency, "subject_id") in documentation_subject_ids
+        )
+
+    def _competency_status_projection_from_batch(
+        self,
+        batch: StudentDocumentationProjectionBatch,
+        student_id: str,
+        *,
+        retained_competency_ids: tuple[str, ...] = (),
+    ) -> tuple[StudentCompetencyStatusViewModel, ...]:
+        return self._competency_status_projection_from_sources(
+            observations=batch.observations_by_student.get(student_id, ()),
+            confirmations=batch.confirmations_by_student.get(student_id, ()),
+            freshness_by_competency=batch.freshness_by_student.get(
+                student_id,
+                {},
+            ),
+            competencies=batch.competencies,
+            retained_competency_ids=retained_competency_ids,
+        )
+
+    def _observation_list_items_from_batch(
+        self,
+        batch: StudentDocumentationProjectionBatch,
+        student_id: str,
+    ) -> tuple[ObservationListItem, ...]:
+        return tuple(
+            ObservationListItem(
+                observation.observation_id,
+                observation.student_id,
+                observation.date,
+                self._subject_display_name(observation),
+                observation.context,
+                observation.note,
+                tuple(
+                    ObservationRatingViewModel(
+                        rating.competency_id,
+                        rating.subject_display_name,
+                        rating.learning_area,
+                        rating.competency_group,
+                        rating.competency_text,
+                        rating.rating,
+                    )
+                    for rating in observation.competency_ratings
+                ),
+                (),
+                (
+                    not observation.competency_ratings
+                    and bool(observation.note.strip())
+                ),
+            )
+            for observation in batch.observations_by_student.get(
+                student_id,
+                (),
+            )
         )
 
     def _documentation_statuses_by_student(

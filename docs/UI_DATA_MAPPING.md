@@ -7,7 +7,8 @@ Runtime-Aktivierung und Schuljahreswechsel-UI bleiben gesperrt.
 
 Der Datenbankstart zeigt keinen V2-Bootstrap, keine V2-Migrationsvorschau und
 keine Auswahl zur Übernahme alter Testdaten. Ein erkanntes finales Schema
-stoppt bis zur vollständigen Leser-/Writerumstellung vor der Shell mit einem
+stoppt nach der abgeschlossenen SJ-2E-Leserumstellung weiterhin bis zur
+gesonderten Writerumstellung und Runtime-Aktivierung vor der Shell mit einem
 technischen, nicht irreführenden Zwischenzustand. Unbekannte oder beschädigte
 Schemata führen fail-closed in die bestehende kontrollierte Recoverygrenze.
 
@@ -34,6 +35,32 @@ Seine fachlichen UI-Felder bleiben:
 Synthetische Initialdaten sind keine UI-Projektion. IDs, Zeitpunkte und
 Fixtures werden ausschließlich im Testpfad erzeugt und niemals als
 Produktdaten oder Pilotbestand dargestellt.
+
+## SJ-2E Assignment-Read-Mapping
+
+**Status:** Verbindlicher, lokal implementierter Vertrag der produktiven
+Membership-Reader. Die Runtime-Aktivierung ist nicht Bestandteil von SJ-2E.
+
+| Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |
+|---|---|---|---|
+| aktueller `as_of`-Tag | einmalig vom aufrufenden Bildschirm- oder Application-Request gesetzter Kalendertag | Nein | derselbe Tag gilt für den vollständigen aktuellen Bildschirm-Read; Repository, Adapter, ViewModel und Widget bestimmen kein eigenes Systemdatum |
+| aktuelle Schülerliste | `CurrentMembershipReadSnapshot` aus `SchoolYearAssignmentReadSession` | Nein | ausschließlich aktive, nicht archivierte `ENROLLED`-Mitglieder des eindeutigen current-Schuljahres; keine V2-Schülerfelder und keine Abfrage je Kind |
+| aktuelle Stammgruppen-, Kurs- und Kursverbundzähler | zentral berechnete Counts aus demselben `CurrentMembershipReadSnapshot` | Nein | keine Python-Nachzählung; Kursverbund ist die Schnittmenge seiner registrierten Stammgruppen und Kurse mit aktuellen Assignments |
+| aktuelle Profilzuordnung | `CurrentStudentMembershipProjection` aus derselben `SchoolYearAssignmentReadSession` | Nein | `ENROLLED` zeigt Gruppe und Kurs; `EXITED` zeigt `Im aktuellen Schuljahr ausgeschieden`; `NO_ASSIGNMENT` zeigt `Keine aktuelle Zuordnung`; `STUDENT_ARCHIVED` zeigt neutral, dass das Kind nicht aktuell ist |
+| Current-Year-Integritätszustand | `CURRENT_SCHOOL_YEAR_MISSING`-/`AMBIGUOUS`-Diagnostik derselben Session | Nein | fehlendes current-Schuljahr oder `AMBIGUOUS` blockiert die aktuelle fachliche Anzeige; keine leere Liste, Nullzählung, technische ID oder Ersatzzuordnung |
+| historische Zuordnung eines Berichts | `AssignmentReferenceRequest(request_key, student_id, period_end)` | Nein | ausschließlich `period_end` des fachlich maßgeblichen RPD; kein current-, Last-known-, Systemdatums- oder V2-Fallback |
+| historische Zuordnung eines LEG | `AssignmentReferenceRequest(request_key, student_id, conference_date)` | Nein | ausschließlich `conference_date` des fachlich maßgeblichen LEG; kein current-, Last-known-, Systemdatums- oder V2-Fallback |
+| historische Zuordnung einer Beobachtung | `AssignmentReferenceRequest(request_key, student_id, observations.date)` | Nein | ausschließlich das gespeicherte Beobachtungsdatum; kein current-, Last-known-, Systemdatums- oder V2-Fallback |
+| freies Dokument ohne fachliches Referenzdatum | keine `AssignmentReferenceRequest` | Nein | Zuordnung bleibt neutral; Dateizeit, Uploadzeit, current und Last-known sind keine Ersatzquelle |
+
+Alle zusammengesetzten Schüler-, Dashboard-, Onboarding-, Beobachtungs-,
+Bericht- und LEG-Reads verwenden ihre `SchoolYearAssignmentReadSession` auf
+derselben aufrufereigenen Connection und im selben SQLite-Read-Snapshot wie
+die übrigen Daten des Requests. Die Session besitzt keine
+Transaktionssteuerung. Finalisierte Revisionen und PDFs werden nicht live neu
+aufgelöst. Dieses Mapping führt keine neue Tabelle, Migration, Persistenz oder
+Runtime-Freigabe ein; `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt bis zur
+gesonderten Writerumstellung und Runtime-Aktivierung verbindlich.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 
@@ -389,7 +416,7 @@ Spalten:
 | Aktueller Schritt | `OnboardingController` aus `AppPreferences.onboarding_current_step` | Anzeige/Navigation | Ja, nur lokale Praeferenz | `app-preferences.json` | Schritte 1 bis 5; App-Ende oder Navigationssprung behalten den Schritt |
 | Willkommen mit Namen | `AppPreferences.display_name` | Anzeige | Nein | `app-preferences.json` | optional, Plain Text, kein Security-Attribut |
 | Zweck- und Datenschutzhinweis | konstanter Produkttext | Anzeige | Nein | keine fachliche Datenquelle | nennt lokale Datenhaltung und die Grenze: App-Sperre ist keine Verschluesselung |
-| Status Arbeitsgrundlage | bestehende Adapter-/ViewModel-Projektionen fuer Faecher, Stundenplan, Stammdaten und Kinder | Anzeige | Nein | vorhandene fachliche Datenquellen, nur aggregiert | `Bereits eingerichtet`, `Noch offen` oder `Nicht geprüft`; keine Namen, Scores, Prozentwerte oder Blockade |
+| Status Arbeitsgrundlage | bestehende Adapter-/ViewModel-Projektionen fuer Faecher, Stundenplan und Stammdaten; Kinderstatus aus `CurrentMembershipReadSnapshot` | Anzeige | Nein | vorhandene fachliche Datenquellen, nur aggregiert | aktuelle `ENROLLED`-Mitglieder ergeben `Bereits eingerichtet`, ein fachlich leerer aktueller Bestand `Noch offen`, `CURRENT_SCHOOL_YEAR_MISSING` oder `AMBIGUOUS` `Nicht geprüft`; keine Namen, Scores, Prozentwerte, V2-Zählung oder erfundene Null |
 | Zielbuttons | bestehende Shell-/Settings-Routen | Navigation | Nein | keine neue fachliche Datenquelle | navigiert nur zu vorhandenen Seiten; fehlendes Ziel zeigt ruhige Rueckmeldung |
 | Weiter/Zurück | `OnboardingController` | lokale Navigation | Ja, nur lokale Praeferenz | `app-preferences.json` | Enter aktiviert Weiter beziehungsweise Abschliessen |
 | Erste Schritte überspringen | Bestätigung -> `OnboardingController.dismiss` | lokale Praeferenz | Ja | `app-preferences.json` | vollständiger Buttontext; `Weiter ansehen` bleibt blaue Default-/Escape-Aktion; Enter oder Escape ueberspringen nicht unbemerkt |
@@ -429,8 +456,8 @@ UX-Status UI Sprint 1: sichtbarer Hauptnavigationspunkt `Heute`; der technische 
 | Heutiger Stundenplan | `TimetableDesktopAdapter.read_projection(at).today` | Anzeige / Navigation | Nein | SQLite `timetable_entries` | horizontale Timeline aus aktiven Stundenkarten; aktuelle Stunde anhand `.current` mit `JETZT` markiert, vergangene anhand des expliziten Zeitpunkts dezent; deaktivierte und geloeschte Eintraege erscheinen nicht |
 | Unterrichtsziel-Navigation | `TimetableEntryViewModel.target_type` + `target_id` | Navigation | Nein | `groups`, `courses`, `course_groups` | technische ID oeffnet den passenden bestehenden Schuelerkontext; Namen sind nur Anzeige |
 | Stundenplanbasierte Beobachtung | `subject_id`, `subject_label`, `target_type`, `target_id`, `target_label` der kanonischen Stunde | Navigation / Eingabe | Ja (erst im bestehenden Beobachtungsprozess) | `timetable_entries` + bestehender Beobachtungspfad | Dashboard navigiert zur Kindauswahl; danach oeffnet derselbe `NewObservationDialog` mit Fach und Unterrichtskontext fluechtig vorbelegt; keine Speicherung im Dashboard |
-| Dokumentations-Heatmap | kanonische `StudentDocumentationSubjectStatus.documented_count` aus einem refresh-lokalen `StudentDocumentationProjectionBatch`, als Anzahl Kinder mit mindestens einer dokumentierten Kompetenz je aktiver Stammgruppe und Fach aggregiert | Auswertung | Nein | `competencies`, `observations`, `observation_competency_ratings`, `student_competency_confirmations`, `persistence_events`, `documentation_subject_settings` | reine Dokumentationsabdeckung `Kinder dokumentiert / Kinder der Stammgruppe`; ein transaktionskonsistenter Batch je Refresh, keine Abfrage je Kind oder Beobachtung; neutrale Blauabstufung, keine Ratings, Leistungsscores, Rangliste oder Entwicklungsurteile |
-| Passende Kinder fuer diese Stunde | aktive Zielmitgliedschaft aus `students.group_id` / `students.course_id` und bei Kursverbund dessen bestehende Gruppen-/Kursrelationen + `courses.course_name` / `courses.color_hex` + aktive `observations.date` mit eindeutigem Bezug zu `timetable_entries.subject_id` | Anzeige / Navigation | Nein | `students`, `courses`, `course_group_student_groups`, `course_group_courses`, `observations`, `observation_competency_ratings` | maximal fuenf; Kurszugehoerigkeit als dezentes `CourseBadge`; keine Fachbeobachtung zuerst, danach aelteste letzte Fachbeobachtung, kuerzlich dokumentiert und heute dokumentiert; Gleichstand alphabetisch; keine Ratings oder Kompetenzstatus |
+| Dokumentations-Heatmap | kanonische `StudentDocumentationSubjectStatus.documented_count` für die aktuellen Mitglieder aus einem refresh-lokalen `CurrentMembershipReadSnapshot` und der Dokumentationsprojektion desselben Read-Snapshots | Auswertung | Nein | `student_school_year_assignments`, V3-`students`, `competencies`, `observations`, `observation_competency_ratings`, `student_competency_confirmations`, `persistence_events`, `documentation_subject_settings` | reine Dokumentationsabdeckung `Kinder dokumentiert / Kinder der Stammgruppe`; Nenner aus zentral berechneten Counts, ein aufrufereigener transaktionskonsistenter Snapshot je Refresh, keine Abfrage je Kind oder Beobachtung und keine Python-Nachzählung; neutrale Blauabstufung, keine Ratings, Leistungsscores, Rangliste oder Entwicklungsurteile |
+| Passende Kinder fuer diese Stunde | aktuelle Zielmitgliedschaft aus `CurrentMembershipReadSnapshot` mit Gruppen-, Kurs- oder Kursverbundfilter + `courses.course_name` / `courses.color_hex` + aktive `observations.date` mit eindeutigem Bezug zu `timetable_entries.subject_id` aus demselben Read-Snapshot | Anzeige / Navigation | Nein | `student_school_year_assignments`, V3-`students`, `courses`, `course_group_student_groups`, `course_group_courses`, `observations`, `observation_competency_ratings` | maximal fuenf aktuelle `ENROLLED`-Kinder; Kursverbund zentral als Schnittmenge, Kurszugehoerigkeit als dezentes `CourseBadge`; keine Fachbeobachtung zuerst, danach aelteste letzte Fachbeobachtung, kuerzlich dokumentiert und heute dokumentiert; Gleichstand alphabetisch; keine Ratings oder Kompetenzstatus |
 | Beobachten beim vorgeschlagenen Kind | `DashboardSuggestedStudentViewModel.student_id` + Fach und Zielkontext der hervorgehobenen Stunde | Navigation / Eingabe | Ja (erst im bestehenden Beobachtungsprozess) | `students`, `timetable_entries`, `observations` | oeffnet direkt denselben `NewObservationDialog` fuer das Kind und belegt Fach sowie Unterrichtskontext fluechtig vor |
 
 ## Stammgruppenuebersicht
@@ -438,34 +465,34 @@ UX-Status UI Sprint 1: sichtbarer Hauptnavigationspunkt `Heute`; der technische 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | Stammgruppenueberschrift | `data_groups.group_name` | Anzeige | Nein | `data_groups` | aktuelle Stammgruppe nach `group_id` |
-| Schuelername auf Karte | `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | Anzeige, keine technische Identitaet |
-| Initialen auf Karte | `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | abgeleitete Anzeige |
-| Kurs auf Schuelerkarte | `data_students.course_id` -> `data_courses.course_name` | Anzeige | Nein | `data_courses` | Stammgruppe wird auf Karten nicht erneut angezeigt |
-| Kartenfarbe | `data_students.course_id` -> `data_courses.color_key` / UI-Defaultfarbe im PySide6-Scope | Anzeige | Nein | `data_courses` | farbliche Projektion der Kurszuordnung, keine Schuelerfarbe |
-| Suche | `data_students.first_name`, `data_students.last_name`, `display_name` | Filter | Nein | `data_students` | Namen dienen nur Suche und Anzeige |
-| Navigations-ID | `data_students.student_id` | Navigation | Nein | `data_students` | einzige technische Identitaet fuer Schueler |
+| Schuelername auf Karte | V3-`students.first_name` + `students.last_name` für ein Mitglied des `CurrentMembershipReadSnapshot` | Anzeige | Nein | V3-`students` | Anzeige, keine technische Identitaet |
+| Initialen auf Karte | V3-`students.first_name` + `students.last_name` | Anzeige | Nein | V3-`students` | abgeleitete Anzeige |
+| Kurs auf Schuelerkarte | `CurrentStudentMembershipProjection.course_id` -> `courses.course_name` | Anzeige | Nein | `student_school_year_assignments` / `courses` | ausschließlich aktuelle `ENROLLED`-Zuordnung am einmalig gesetzten `as_of`-Tag; Stammgruppe wird auf Karten nicht erneut angezeigt |
+| Kartenfarbe | `CurrentStudentMembershipProjection.course_id` -> `courses.color_hex` / UI-Defaultfarbe im PySide6-Scope | Anzeige | Nein | `student_school_year_assignments` / `courses` | farbliche Projektion der aktuellen Kurszuordnung, keine Schuelerfarbe und kein technischer ID-Fallback |
+| Suche | V3-`students.first_name`, `students.last_name`, `display_name` aus der bereits geladenen aktuellen Projektion | Filter | Nein | V3-`students` | Namen dienen nur Suche und Anzeige; keine neue SQLite- oder Assignmentabfrage |
+| Navigations-ID | V3-`students.student_id` | Navigation | Nein | V3-`students` | einzige technische Identitaet fuer Schueler |
 | Neuer Schueler | keine fachliche Datenquelle | Navigation | Nein | keine | oeffnet in der Hauptanwendung den PySide-Dialog `Neuer Schüler`; historischer `dlg_neuer_schueler`-Pfad bleibt Legacy |
-| Neue Beobachtung | `data_students.student_id` | Navigation | Geplant | `data_students` | startet spaeter zentralen Beobachtungsdialog |
+| Neue Beobachtung | `student_id` eines aktuellen `ENROLLED`-Mitglieds aus `CurrentMembershipReadSnapshot` | Navigation | Geplant | V3-`students` / `student_school_year_assignments` | startet spaeter zentralen Beobachtungsdialog; keine Neuauswahl aus EXITED-, unzugeordneten oder archivierten Kindern |
 
 ## Kursuebersicht
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | Kursueberschrift | `data_courses.course_name` | Anzeige | Nein | `data_courses` | aktuelle Kursauswahl nach `course_id` |
-| Schuelername auf Karte | `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | Anzeige |
-| Stammgruppe auf Karte | `data_students.group_id` -> `data_groups.group_name` | Anzeige | Nein | `data_groups` | Kursuebersicht zeigt Stammgruppe je Schueler |
-| Kartenfarbe | `data_students.course_id` -> `data_courses.color_key` | Anzeige | Nein | `data_courses` | konsistent zur Kurszuordnung |
-| Suche | `data_students.first_name`, `data_students.last_name`, `display_name` | Filter | Nein | `data_students` | filtert Projektion |
-| Navigations-ID | `data_students.student_id` | Navigation | Nein | `data_students` | oeffnet Schuelerprofil |
+| Schuelername auf Karte | V3-`students.first_name` + `students.last_name` für ein Mitglied des `CurrentMembershipReadSnapshot` | Anzeige | Nein | V3-`students` | Anzeige |
+| Stammgruppe auf Karte | `CurrentStudentMembershipProjection.group_id` -> `groups.group_name` | Anzeige | Nein | `student_school_year_assignments` / `groups` | Kursuebersicht zeigt die aktuelle Stammgruppe je `ENROLLED`-Schueler |
+| Kartenfarbe | `CurrentStudentMembershipProjection.course_id` -> `courses.color_hex` | Anzeige | Nein | `student_school_year_assignments` / `courses` | konsistent zur aktuellen Kurszuordnung, keine technische ID als Ersatztext |
+| Suche | V3-`students.first_name`, `students.last_name`, `display_name` aus der bereits geladenen aktuellen Projektion | Filter | Nein | V3-`students` | filtert nur die geladene Projektion |
+| Navigations-ID | V3-`students.student_id` | Navigation | Nein | V3-`students` | oeffnet Schuelerprofil |
 
 ## Schuelerprofil
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| Profilkopf | `data_students.student_id` | Navigation | Nein | `data_students` | Profil wird technisch ueber `student_id` geoeffnet |
-| Schuelername | `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | Anzeige |
-| Stammgruppe | `data_students.group_id` -> `data_groups.group_name` | Anzeige | Nein | `data_groups` | organisatorische Zugehoerigkeit |
-| Kurs | `data_students.course_id` -> `data_courses.course_name` + `data_courses.color_hex` | Anzeige | Nein | `data_courses` | organisatorische Zugehoerigkeit als `CourseBadge` im Profilkopf; Text bleibt sichtbar, Farbe ist weder Status noch Bewertung |
+| Profilkopf | V3-`students.student_id` | Navigation | Nein | V3-`students` | Profil wird technisch ueber `student_id` geoeffnet |
+| Schuelername | V3-`students.first_name` + `students.last_name` | Anzeige | Nein | V3-`students` | Anzeige |
+| Stammgruppe | `CurrentStudentMembershipProjection` aus `SchoolYearAssignmentReadSession` -> `groups.group_name` | Anzeige | Nein | `student_school_year_assignments` / `groups` | aktuelle organisatorische Zugehoerigkeit bei `ENROLLED`; `EXITED`, `NO_ASSIGNMENT` und `STUDENT_ARCHIVED` werden neutral angezeigt, `CURRENT_SCHOOL_YEAR_MISSING` und `AMBIGUOUS` blockieren |
+| Kurs | `CurrentStudentMembershipProjection` aus `SchoolYearAssignmentReadSession` -> `courses.course_name` + `courses.color_hex` | Anzeige | Nein | `student_school_year_assignments` / `courses` | aktuelle Zugehoerigkeit bei `ENROLLED` als `CourseBadge`; Text bleibt sichtbar, Farbe ist weder Status noch Bewertung; keine V2- oder technische-ID-Ersatzanzeige |
 | Dokumentationsring im Profilkopf | `StudentDocumentationSubjectStatus.learning_area_statuses` aus der kanonischen Dokumentationsstatusprojektion | Auswertung | Nein | `data_competencies` / `data_observation_competencies` / `student_competency_confirmations` / `documentation_subject_settings` | zeigt Lernbereiche mit mindestens einer dokumentierten konkreten Kompetenz im Verhältnis zu allen aktiven dokumentationsrelevanten Lernbereichen; keine Prozentzahl, Leistungs- oder Ampelsemantik |
 | Orientierungskarte im Arbeitsprofil | `StudentProfileDashboardViewModel.orientation_changes` aus kanonischen `StudentCompetencyStatusViewModel.evidence` und vorhandener aktueller Bestätigung | Auswertung / Navigation | Nein | `data_observations` / `data_observation_competencies` / `student_competency_confirmations` / `data_competencies` | höchstens drei konkrete Kompetenzen mit mindestens zwei realen Ereignissen und mindestens einem tatsächlichen Statuswechsel bis zum Stichtag; neueste Änderung zuerst, bei Gleichstand curriculare Reihenfolge. Jede kompakte Karte zeigt Kompetenz, Fach/Thema, `Ausgangslage`, `Aktueller dokumentierter Stand` und genau den datierten auslösenden Beleg. Die Tokens `--`, `-`, `+`, `++` bleiben immer textlich benannte pädagogische Dokumentationsstände; Pastell-Badges und Pfeil dienen nur der Orientierung. Die gesamte Karte navigiert bei Beobachtungsbeleg zur bestehenden Beobachtung, sonst zur bestehenden Kompetenzansicht; historische Referenz nur als ruhiges Badge. Keine Scores, Prozentwerte, Noten, Rankings, Mittelwerte, Lerngeschwindigkeit, Interpolation oder automatische Trendinterpretation |
 | Kompetenzkarte im Arbeitsprofil | `StudentProfileDashboardViewModel.documentation_summary`, `.confirmed_documented_count` und `.observed_only_count` | Auswertung / Navigation | Nein | kanonische Kompetenzstatus- und Dokumentationsstatusprojektion | zeigt Dokumentationsumfang und Herkunft; Bestätigung und Beobachtung bleiben getrennt, alle Counts sind Dokumentations- und keine Leistungswerte; öffnet nur das bestehende Kompetenz-Cockpit |
@@ -475,7 +502,7 @@ UX-Status UI Sprint 1: sichtbarer Hauptnavigationspunkt `Heute`; der technische 
 | Beobachtungsfilter Fach | `ObservationListItem.subject_display_name` | Filter | Nein | `data_observations` | filtert nur den Beobachtungsverlauf; Optionen `Alle`, vorhandene Fachlabels und `Fächerübergreifend`, wenn vorhanden |
 | Beobachtungsfilter Bewertung | `ObservationRatingViewModel.rating` | Filter | Nein | `data_observation_competencies` | filtert nur den Beobachtungsverlauf nach Beobachtungen mit mindestens einer passenden Kompetenzbewertung |
 | Beobachtungssuche | `ObservationListItem.context`, `ObservationListItem.note`, `ObservationRatingViewModel.learning_area`, `competency_group`, `competency_text` | Filter | Nein | `data_observations` / `data_observation_competencies` | lokale Textsuche auf vorhandenen ViewModel-Daten; keine SQLite-Abfrage; Sprint-3A-Mapping: `learning_area` = Kompetenzbereich, `competency_group` = Thema, `competency_text` = Kompetenz |
-| Dokumentationsstatus in Schuelerlisten | `StudentDocumentationProjectionBatch` aus SQLite `competencies`, aktiven `data_observations`, `student_competency_confirmations`, `persistence_events` und `documentation_subject_settings` | Auswertung | Nein | `data_competencies` / `data_observation_competencies` / `student_competency_confirmations` / `persistence_events` / `documentation_subject_settings` | kompakte Summary je Schueler; ein transaktionskonsistenter Batch im angeforderten Gruppen-/Kursscope, keine Abfrage je Kind oder Beobachtung; konkrete aktive Kompetenzen zaehlen, nicht dokumentationsrelevante Faecher zaehlen nicht als offen |
+| Dokumentationsstatus in Schuelerlisten | Dokumentationsprojektion für die Mitglieder des `CurrentMembershipReadSnapshot` aus SQLite `competencies`, aktiven `data_observations`, `student_competency_confirmations`, `persistence_events` und `documentation_subject_settings` | Auswertung | Nein | `student_school_year_assignments` / V3-`students` / `data_competencies` / `data_observation_competencies` / `student_competency_confirmations` / `persistence_events` / `documentation_subject_settings` | kompakte Summary je aktuellem `ENROLLED`-Schueler; Assignment- und Dokumentationsdaten auf derselben Connection und im selben transaktionskonsistenten Snapshot, keine Abfrage je Kind oder Beobachtung; konkrete aktive Kompetenzen zaehlen, nicht dokumentationsrelevante Faecher zaehlen nicht als offen |
 | Schnellbeobachtung in Schuelerlisten | `StudentListItem.student_id` -> `NewObservationDialog` | Navigation / Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | kompakte Zeilenaktion `Beobachten`; oeffnet bestehenden Beobachtungsdialog fuer genau diesen Schueler; Speichern laeuft ueber Adapter/Service/Repository |
 | Dokumentationsstand im Schuelerprofil | SQLite `competencies` + aktive `data_observations` + `student_competency_confirmations` + `documentation_subject_settings` | Auswertung | Nein | `data_competencies` / `data_observation_competencies` / `student_competency_confirmations` / `documentation_subject_settings` | kuenftige Sprint-3-Zielregel: konkrete aktive Kompetenzen zaehlen, Anzeige darf nach Fach -> Kompetenzbereich -> Thema aggregiert bleiben, z. B. `Mathematik -> Groessen & Messen -> Zeit: 2/6 Kompetenzen beobachtet`; Standardansicht kompakt, Fachdetails per `Details anzeigen`; Soft Deletes ausgeschlossen; Bestaetigungen zaehlen als dokumentiert |
 | Kompetenz-Cockpit | kanonische `StudentCompetencyStatusViewModel`-Zeilen aus `StudentDesktopAdapter.list_competency_status_projection_for_student(student_id)` | Anzeige / Navigation | Nein | `data_competencies` / `data_observation_competencies` / `student_competency_confirmations` | rein lesende Hierarchie Fach -> Kompetenzbereich -> Thema -> Kompetenz; Fach-, Bereichs-, Themen- und Kompetenzkarten verwenden jeweils ihre gesamte sichtbare Flaeche sowie Enter/Leertaste fuer denselben lokalen Disclosure-State wie der vorhandene `Öffnen`-Button. Lokale Suche sowie Fach-, Dokumentations- und Klassenstufenfilter schraenken nur sichtbare aktive Karten und Zeilen ein. `Passende Kompetenzen` zeigt `stage_1_3` und `cross_stage`, `Klassenstufe 4` zeigt `stage_4` und `cross_stage`, `Alle Kompetenzen` den gesamten aktiven aktuellen Zielbestand. `Dokumentiert` umfasst aktive Beobachtung oder Bestaetigung, `Noch nicht dokumentiert` weder, `Beobachtet, noch nicht bestätigt` nutzt `observed_unconfirmed`, `Bestätigter Stand` umfasst `confirmed` und `newer_observations`, der letzte Filter nur `newer_observations`. Fach- und Kompetenzbereich zeigen weiterhin dokumentiert/gesamt und neutrale Fortschrittsbalken aus dem vollstaendigen aktiven Zielbestand; alle Ebenen starten geschlossen und behalten ihren Aufklappzustand lokal. Historische Zeilen bleiben separat unter `Historisch dokumentiert` und werden nicht gefiltert. Kompetenzdetails zeigen den kanonischen Dokumentationszustand, bei vorhandener Bestätigung deren Bewertung, Datum und Notiz, einen klar getrennten Vorschlag aus Beobachtungen sowie aktive eindeutige Nachweise neueste zuerst. Nachweise verwenden die bestehende `observation_id` zur Navigation in den vorhandenen Profilreiter und zum bestehenden Bearbeitungspfad; keine Statusberechnung oder zusätzliche Datenabfrage im Screen |
@@ -483,7 +510,7 @@ UX-Status UI Sprint 1: sichtbarer Hauptnavigationspunkt `Heute`; der technische 
 | Bestaetigter Kompetenzstand | `student_competency_confirmations.confirmed_rating` nach `student_id` + `competency_id` | Anzeige / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `student_competency_confirmations` | paedagogische Entscheidung der Lehrkraft; ueberschreibt keine Beobachtungen und aendert den Vorschlag nicht automatisch |
 | Berichtsvorschau | bestaetigter Kompetenzstand oder berechneter Vorschlag + aktive `data_observations` | Auswertung | Nein | `data_observation_competencies` / `student_competency_confirmations` / `data_observations` | strukturierte Berichtsvorbereitung nach Fach; zeigt den aktuellen Kompetenzstand je relevanter Kompetenz mit Quelle, bevorzugt bestaetigte Staende vor berechneten Vorschlaegen; Entwicklung wird getrennt aus chronologischen aktiven Beobachtungen abgeleitet und formuliert Einzelbeobachtung, stabile Verlaeufe, positive Entwicklung, Rueckschritt oder wechselnde Beobachtungslage; Soft Deletes ausgeschlossen; echte Beobachtungen und bestaetigte Kompetenzstaende bleiben sichtbar, auch wenn ein Fach nicht dokumentationsrelevant ist; kann als Text kopiert oder als einfache Textdatei exportiert werden; keine KI-Textgenerierung, keine finalen Zeugnisformulierungen, keine gespeicherte Berichtsdatenhaltung |
 | Dokumente & Medien | SQLite `documents` nach `student_id` | Anzeige / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `documents` + Dateisystem `data/documents/<student_id>/` | zeigt alle aktiven Schuelerdokumente neueste oben; Dateien werden geoeffnet, wenn `file_path` vorhanden ist; Entfernen setzt `documents.active = 0` und loescht keine physische Datei; SQLite speichert keine BLOBs |
-| Neue Beobachtung | `data_students.student_id` | Navigation | Ja (ueber freigegebenen Prozess) | `data_observations` | startet zentralen Beobachtungsdialog und speichert ueber Adapter/Service/Repository |
+| Neue Beobachtung | `student_id` eines aktuellen `ENROLLED`-Mitglieds aus `CurrentMembershipReadSnapshot` | Navigation | Ja (ueber freigegebenen Prozess) | V3-`students` / `student_school_year_assignments` / `data_observations` | startet zentralen Beobachtungsdialog und speichert ueber Adapter/Service/Repository; der Editpfad einer bestehenden Beobachtung behält deren gespeicherte `student_id` |
 | Beobachtung bearbeiten | `data_observations.observation_id` | Navigation / Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | oeffnet bestehenden Beobachtungsdatensatz im Dialog; Speichern ersetzt die Kompetenzbewertungen atomar |
 | Beobachtung loeschen | `data_observations.observation_id` | Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | Soft Delete ueber `observations.active = 0`; aktive Profil- und Kompetenzuebersichten blenden die Beobachtung aus |
 
@@ -521,29 +548,39 @@ Der PySide-Schuelerdialog ist der aktive Eingabepfad fuer `student.create`. Er s
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| Name | `StudentListItem.display_name` aus `data_students.first_name` + `data_students.last_name` | Anzeige | Nein | `data_students` | Anzeige, keine technische Identitaet |
-| Kursbadge | `StudentListItem.course_name` + `StudentListItem.course_color_hex` aus SQLite-Kursstammdaten | Anzeige | Nein | `data_courses` / SQLite `courses` | dezentes `CourseBadge` in eigener Kurs-Spalte; Kursname bleibt sichtbar, keine Zeilenfaerbung und keine Status-, Leistungs- oder Entwicklungssemantik |
-| Sortierung | `StudentDesktopAdapter.list_students()` + `sort_student_list()` | Anzeige | Nein | `data_students`, `data_courses` | zuerst Kursreihenfolge aus Stammdaten, dann alphabetisch nach Schuelername; Schueler ohne bekannten aktiven Kurs stehen am Ende |
+| Name | `StudentListItem.display_name` aus V3-`students.first_name` + `students.last_name` für ein Mitglied des `CurrentMembershipReadSnapshot` | Anzeige | Nein | V3-`students` | Anzeige, keine technische Identitaet; aktuelle Liste enthält ausschließlich aktive, nicht archivierte `ENROLLED`-Mitglieder |
+| Kursbadge | `CurrentStudentMembershipProjection.course_name` + `.course_color_hex` | Anzeige | Nein | `student_school_year_assignments` / SQLite `courses` | dezentes `CourseBadge` in eigener Kurs-Spalte; Kursname bleibt sichtbar, keine technische ID, Zeilenfaerbung und keine Status-, Leistungs- oder Entwicklungssemantik |
+| Sortierung | aktuelle Mitglieder aus `CurrentMembershipReadSnapshot` + `sort_student_list()` | Anzeige | Nein | `student_school_year_assignments`, V3-`students`, `courses` | zuerst Kursreihenfolge aus Stammdaten, dann alphabetisch nach Schuelername; keine Python-Membershipfilterung und keine Zuordnungsabfrage je Kind |
 | aktiver Filterhinweis | Shell-Filterstate aus Stammgruppe, Kurs oder Kursverbund/Kurs | Anzeige | Nein | keine fachliche Datenquelle | `FilterBar` zeigt den aktiven Kontext als `FilterChip`; Reset erscheint nur bei gefilterter Liste und kehrt zur lokalen Auswahl zurueck; keine Speicherung |
 | Zurueck zur Auswahl | temporaerer Shell- und `StudentsWorkspace`-State | Navigation | Nein | keine fachliche Datenquelle | erscheint in gefilterten Stammgruppen-/Kurs-/Kursverbund-Schuelerlisten, setzt den Filter zurueck und kehrt lokal zum ausloesenden Segment zurueck |
-| Profil oeffnen | `StudentListItem.student_id` | Navigation | Nein | `data_students` | einfacher Klick auf eine Nicht-Aktionszelle, Enter oder die sekundäre Zeilenaktion `Profil öffnen` navigiert genau einmal; eingebettete Aktionen bleiben davon getrennt; Namen bleiben reine Anzeige |
+| Profil oeffnen | `StudentListItem.student_id` | Navigation | Nein | V3-`students` | einfacher Klick auf eine Nicht-Aktionszelle, Enter oder die sekundäre Zeilenaktion `Profil öffnen` navigiert genau einmal; eingebettete Aktionen bleiben davon getrennt; Namen bleiben reine Anzeige |
 | Schnellbeobachtung | `StudentListItem.student_id` -> `NewObservationDialog` | Navigation / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `observations` / `observation_competency_ratings` | kompakte Zeilenaktion; nutzt denselben Beobachtungsdialog wie das Schuelerprofil und aktualisiert Liste und Dokumentationsstatus nach Speichern |
 
-Regel: Die Schueleruebersicht liest persistente Schueler ueber `StudentDesktopAdapter` aus SQLite. Ein leerer produktiver Start zeigt die leere Liste und erzeugt keine Demo-Schueler.
+Regel: Die Schueleruebersicht liest die aktuelle Mitgliedermenge über den
+`CurrentMembershipReadSnapshot` aus einer
+`SchoolYearAssignmentReadSession`. `EXITED`, `NO_ASSIGNMENT` und archivierte
+Schüler erscheinen nicht. Fehlendes current-Schuljahr oder `AMBIGUOUS`
+blockiert die fachliche Ansicht und wird nicht als leere Liste dargestellt.
+Ein fachlich leerer aktueller Bestand zeigt die leere Liste und erzeugt keine
+Demo-Schueler.
 
 ## Lokale Schuelerprojektionen `Stammgruppen`, `Kurse` und `Kursverbünde`
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | Stammgruppenliste | `MasterDataViewModel.groups` aus SQLite `groups` | Anzeige | Nein | `data_groups` / SQLite `groups` | zeigt alle persistent aktiven Stammgruppen |
-| Schueleranzahl je Stammgruppe | `GroupSummaryViewModel.active_student_count` aus bestehendem Adapter | Anzeige | Nein | `data_students` | nur wenn fuer die Stammgruppe sauber verfuegbar |
+| Schueleranzahl je Stammgruppe | zentral berechneter Gruppen-Count aus `CurrentMembershipReadSnapshot` | Anzeige | Nein | `student_school_year_assignments` / V3-`students` | nur aktuelle aktive, nicht archivierte `ENROLLED`-Mitglieder; keine Python-Nachzählung; `CURRENT_SCHOOL_YEAR_MISSING` oder `AMBIGUOUS` blockiert |
 | Direkte Kursliste | `MasterDataViewModel.courses` aus SQLite `courses` | Anzeige / Filter | Nein | `data_courses` / SQLite `courses` | zeigt persistente aktive Kurse in vorhandener Stammdatenreihenfolge und uebergibt `course_id` an die bestehende Schuelerprojektion |
 | Kursverbund | `MasterDataViewModel.course_groups` aus SQLite `course_groups` + Relationen | Anzeige / Filter | Nein | SQLite `course_groups`, `course_group_student_groups`, `course_group_courses` | definiert, welche Stammgruppen gemeinsam Mathe-/Deutsch-Kurse bilden |
 | Kursliste im Kursverbund | `CourseGroupViewModel.selected_course_ids` -> `MasterDataViewModel.courses` | Anzeige / Filter | Nein | `data_courses` | Kursuebersicht ist kursverbundbezogen, nicht global ueber alle Stammgruppen |
 | Kursmarker | `MasterDataItemViewModel.color_hex` | Anzeige | Nein | `data_courses` | nur kleiner Marker, keine Zeilenfaerbung |
-| Kursverbund-Kursfilter | `course_id` + `CourseGroupViewModel.selected_group_ids` | Filter | Nein | `data_students` | zeigt nur Schueler mit Kurs und Stammgruppe im ausgewaehlten Kursverbund |
+| Kursverbund-Kursfilter | `course_id` + `course_group_id` gegen `CurrentMembershipReadSnapshot` | Filter | Nein | `student_school_year_assignments`, `course_group_student_groups`, `course_group_courses` | zentrale Schnittmenge der registrierten Stammgruppen und Kurse des Kursverbunds mit aktuellen `ENROLLED`-Assignments; kein Python- oder Widgetfilter auf Membershipintervallen |
 
-Regel: Alle drei Projektionen werden innerhalb von `StudentsWorkspace` angezeigt und sind keine eigenen globalen Navigationsziele. Sie lesen und filtern unveraendert ueber vorhandene Adapter/ViewModels; der Workspace erzeugt keine fachliche Datenquelle und keinen Schreibprozess.
+Regel: Alle drei Projektionen werden innerhalb von `StudentsWorkspace`
+angezeigt und sind keine eigenen globalen Navigationsziele. Sie lesen aktuelle
+Mitgliedschaften und Counts ausschließlich aus demselben
+`CurrentMembershipReadSnapshot`; der Workspace erzeugt keine fachliche
+Datenquelle, berechnet keine Membership und besitzt keinen Schreibprozess.
 
 ## PySide6 Stammdaten
 
@@ -573,7 +610,7 @@ Regel: Alle drei Projektionen werden innerhalb von `StudentsWorkspace` angezeigt
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| ausgewaehlter Schueler | `student_id` aus Navigation -> `data_students` | Anzeige | Nein | `data_students` | Namen werden nicht als technische Identitaet verwendet |
+| ausgewaehlter Schueler | neue Beobachtung: `student_id` aus dem aktuellen `CurrentMembershipReadSnapshot`; Bearbeitung: gespeicherte `observations.student_id` -> V3-`students` | Anzeige | Nein | V3-`students` / `student_school_year_assignments` / `observations` | Namen werden nicht als technische Identitaet verwendet; beim Edit bleibt der bestehende Schülerbezug erhalten |
 | Fachauswahl | SQLite `competencies.subject_id` / `subject_name` + `documentation_subject_settings` | Eingabe | Nein | Kompetenzverwaltung / Lehrplanpflege + `documentation_subject_settings` | neue Beobachtungen bieten nur dokumentationsrelevante aktive Faecher an; App-Anzeigename `EPU`, kein App-Fach `Sachunterricht`; bei Bearbeitung bleibt das gespeicherte Fach sichtbar, auch wenn es inzwischen nicht dokumentationsrelevant ist |
 | Kompetenzauswahl | SQLite `competencies`, befuellt aus `data/curriculum_catalog_v1.csv` | Eingabe | Ja | `data_observation_competencies` | Drei-Zonen-Dialog mit separat scrollbarer Auswahl und separat scrollbarem Katalog; die Adapterprojektion traegt das vorhandene `learning_stage` fuer die lokalen Ansichten `Passende Kompetenzen`, `Klassenstufe 4` und `Alle Kompetenzen`. Neue Beobachtungen bieten nur `catalog_status = current` und `active = 1` an; jede Kompetenz hat `competency_id`, Fach, Kompetenzbereich, Thema, konkrete Kompetenz und lesbares Kurzlabel; ausgewaehlte Kompetenzbewertungen koennen aus mehreren Faechern stammen; beim Bearbeiten bleiben bereits bewertete `legacy`- oder inaktive Kompetenzen mit historischem Text sichtbar, bewertbar und entfernbar. Suche, Filter und Collapse veraendern weder Auswahl noch Einzelbewertung |
 | Schnellauswahl | aktive SQLite `observations` + `observation_competency_ratings` -> aktive `current`-Zeilen aus `competencies` | Anzeige / Eingabe | Nein | `observations` / `observation_competency_ratings` / `competencies` | Adapterprojektion je Schueler und aktuell gewaehltem Fach: hoechstens vier eindeutige Kompetenzen, neueste zuerst; Legacy- und inaktive Kompetenzen ausgeschlossen; ohne Eintraege oder bei aktivem Suchtext ausgeblendet; Klick fuegt nur zur bestehenden Auswahl hinzu und speichert nichts eigenstaendig |
@@ -588,7 +625,7 @@ Regel: Alle drei Projektionen werden innerhalb von `StudentsWorkspace` angezeigt
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
-| Schuelerinformationen | `data_students` + `data_groups` + `data_courses` | Anzeige | Nein | `data_students` | gemeinsame Stammdaten |
+| Schuelerinformationen | V3-`students` plus datierte Assignmentauflösung aus `AssignmentReferenceRequest` und sichtbare `groups` / `courses` | Anzeige | Nein | V3-`students` / `student_school_year_assignments` / `groups` / `courses` | Bericht zeigt Stammgruppe und Kurs am `period_end`; LEG zeigt beide am `conference_date` und bleibt ohne Gesprächsdatum ausdrücklich „Zuordnung noch nicht aufgelöst“; Beobachtung verwendet `observations.date`; freies Dokument ohne Referenzdatum bleibt neutral; keine V2-, current- oder Last-known-Ersatzzuordnung |
 | Beobachtungsbasis | `data_observations` | Auswertung | Nie | `data_observations` | Beobachtung ist Source of Truth |
 | Kompetenzdaten | `data_observation_competencies` + `data_competencies` | Auswertung | Nie | `data_observation_competencies` | abgeleitete Auswertung |
 | bestehende Berichtsvorschau im Schuelerprofil | `student_competency_confirmations`, berechnete Kompetenzvorschlaege und aktive Beobachtungen | Auswertung | Nie | SQLite / `data_observations` | bestehende vorbereitende Struktur, kein gespeicherter Bericht und keine KI-Textgenerierung |

@@ -119,6 +119,8 @@ STUDENTS = (
     ("Max", "Brandt", 3, 2),
 )
 
+SEED_MEMBERSHIP_AS_OF = date(2026, 7, 4)
+
 
 def seed_test_data(
     database_path: Path = SQLITE_SPIKE_PATH,
@@ -174,11 +176,15 @@ def _initialize_catalog(database: SQLiteDatabase) -> None:
 def _guard_existing_data(database: SQLiteDatabase, *, reset: bool) -> None:
     if reset:
         return
-    student_count = len(SQLiteStudentRepository(database).list_students())
+    student_repository = SQLiteStudentRepository(
+        database,
+        as_of=SEED_MEMBERSHIP_AS_OF,
+    )
+    student_count = len(student_repository.list_students())
     observation_count = len(SQLiteObservationRepository(database).list_observations())
     document_count = sum(
         1
-        for student in SQLiteStudentRepository(database).list_students()
+        for student in student_repository.list_students()
         for _document in SQLiteDocumentRepository(database).list_documents_for_student(
             student.student_id
         )
@@ -317,7 +323,10 @@ def _seed_timetable(database: SQLiteDatabase) -> None:
 
 
 def _seed_students(database: SQLiteDatabase) -> tuple[StudentRecord, ...]:
-    repository = SQLiteStudentRepository(database)
+    repository = SQLiteStudentRepository(
+        database,
+        as_of=SEED_MEMBERSHIP_AS_OF,
+    )
     students: list[StudentRecord] = []
     timestamp = "2026-07-04T09:00:00+00:00"
     for index, (first_name, last_name, group_index, course_index) in enumerate(

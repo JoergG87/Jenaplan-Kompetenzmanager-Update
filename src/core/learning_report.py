@@ -180,6 +180,8 @@ class LearningReportFinalizationSource:
 class LearningReportRepository(Protocol):
     """Persistence and source-resolution boundary for report finalization."""
 
+    def finalization_transaction(self): ...
+
     def load_finalization_source(
         self,
         report_draft_id: str,
@@ -555,32 +557,40 @@ class ReportFinalizationService:
         normalized_draft_id = report_draft_id.strip()
         if not normalized_draft_id:
             raise ReportFinalizationError("report_draft_id darf nicht leer sein.")
-        source = self.repository.load_finalization_source(normalized_draft_id)
-        if source is None:
-            raise ReportFinalizationError(
-                f"report_draft_id nicht gefunden: {normalized_draft_id}"
-            )
-        existing_report = self.repository.get_report_for_source_draft(
-            normalized_draft_id
-        )
-        if existing_report is not None:
-            self._validate_aggregate_identity(existing_report, source.draft)
-        self.validator.validate(source, finalized_by_display_name)
         finalized_at = self._timestamp()
-        snapshot = self.snapshot_builder.build(
-            source,
-            responsible_display_name=finalized_by_display_name,
-            snapshot_created_at=finalized_at,
-        )
-        canonical_json = canonical_snapshot_json(snapshot)
-        digest = snapshot_sha256(canonical_json)
-        return self.repository.save_finalized_revision(
-            source,
-            snapshot_json=canonical_json,
-            snapshot_sha256=digest,
-            finalized_at=finalized_at,
-            finalized_by_display_name=finalized_by_display_name.strip(),
-        )
+        with self.repository.finalization_transaction():
+            source = self.repository.load_finalization_source(
+                normalized_draft_id
+            )
+            if source is None:
+                raise ReportFinalizationError(
+                    f"report_draft_id nicht gefunden: {normalized_draft_id}"
+                )
+            existing_report = self.repository.get_report_for_source_draft(
+                normalized_draft_id
+            )
+            if existing_report is not None:
+                self._validate_aggregate_identity(
+                    existing_report,
+                    source.draft,
+                )
+            self.validator.validate(source, finalized_by_display_name)
+            snapshot = self.snapshot_builder.build(
+                source,
+                responsible_display_name=finalized_by_display_name,
+                snapshot_created_at=finalized_at,
+            )
+            canonical_json = canonical_snapshot_json(snapshot)
+            digest = snapshot_sha256(canonical_json)
+            return self.repository.save_finalized_revision(
+                source,
+                snapshot_json=canonical_json,
+                snapshot_sha256=digest,
+                finalized_at=finalized_at,
+                finalized_by_display_name=(
+                    finalized_by_display_name.strip()
+                ),
+            )
 
     def prepare(
         self,

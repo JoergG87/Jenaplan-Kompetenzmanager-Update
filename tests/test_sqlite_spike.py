@@ -6,6 +6,7 @@ import sqlite3
 import tempfile
 import unittest
 from contextlib import closing
+from datetime import date
 from pathlib import Path
 
 from src.core.constants import (
@@ -510,7 +511,10 @@ class SQLiteSpikeTest(unittest.TestCase):
     def test_repositories_read_seed_records_from_sqlite(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database = create_sqlite_seed_database(Path(temp_dir) / "kompetenzmanager.sqlite")
-            students = SQLiteStudentRepository(database).list_students()
+            students = SQLiteStudentRepository(
+                database,
+                as_of=date(2026, 7, 13),
+            ).list_students()
             groups = SQLiteGroupRepository(database).list_groups()
             courses = SQLiteCourseRepository(database).list_courses()
 
@@ -616,7 +620,10 @@ class SQLiteSpikeTest(unittest.TestCase):
             database = SQLiteDatabase(database_path)
             database.ensure_master_data_defaults()
 
-            students = SQLiteStudentRepository(database).list_students()
+            students = SQLiteStudentRepository(
+                database,
+                as_of=date(2026, 7, 13),
+            ).list_students()
             groups = SQLiteGroupRepository(database).list_groups()
             courses = SQLiteCourseRepository(database).list_courses()
 

@@ -118,6 +118,9 @@ class LearningReportPreparationViewModel:
     student_name: str
     group_name: str
     subjects: tuple[LearningReportSubjectViewModel, ...]
+    course_name: str = ""
+    membership_status_label: str = ""
+    membership_blocking: bool = False
 
 
 @dataclass(frozen=True)
@@ -920,6 +923,13 @@ def build_learning_report_preparation(
         student_name=str(getattr(student, "display_name", "")),
         group_name=str(getattr(student, "group_name", "")),
         subjects=subjects,
+        course_name=str(getattr(student, "course_name", "")),
+        membership_status_label=str(
+            getattr(student, "status_label", "")
+        ),
+        membership_blocking=bool(
+            getattr(student, "membership_blocking", False)
+        ),
     )
 
 

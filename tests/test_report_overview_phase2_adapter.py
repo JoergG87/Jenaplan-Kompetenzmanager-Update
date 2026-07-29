@@ -376,7 +376,11 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
         provider.statements.clear()
         live_batch = SQLiteStudentDocumentationProjectionRepository(
             traced_database
-        ).read_batch(student_id=self.student.student_id)
+        ).read_batch(
+            as_of=self.report_draft.period_end,
+            student_id=self.student.student_id,
+            historical_membership=True,
+        )
         live_statements = tuple(provider.statements)
 
         self.assertEqual(len(report_histories), 1)
