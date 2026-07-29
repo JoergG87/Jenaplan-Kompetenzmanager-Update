@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- ADR-096 legt V3 als erstes und einziges Produktschema fest. Es existieren
+  keine produktiven V2-Daten; bisherige V2-Bestände sind ausschließlich
+  synthetische Entwicklungsdaten und werden nicht migriert. Die in den
+  nachfolgenden historischen SJ-1-/SJ-2A-/SJ-2B-/SJ-2C-Einträgen beschriebenen
+  V2-Cutover-, Bootstrap- und V2-Restore-Annahmen sind damit verworfen.
+  School-Year-/Assignment-Datenhoheit und die Sicherheitsgrenzen für echte
+  spätere Schuljahreswechsel bleiben bestehen. Dieser Governance-Schritt
+  beschließt das Produktschema; technischer Cleanup, produktive Leserumstellung
+  und Runtime-Freigabe sind noch nicht umgesetzt.
 - SJ-2C als Qt-freie, read-only Datenbank-Startup- und
   Bootstrap-Routinggrenze ergänzt. Nach Restore und Authentifizierung, aber
   vor fachlicher Runtime-Vorbereitung, Shell, Adaptern, Schemainitialisierung

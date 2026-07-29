@@ -1,69 +1,54 @@
 # Project Constitution
 
-## SJ-1 - Verfassungsgrenzen für Schuljahre und Mitgliedschaften
+## V3-only Verfassungsgrenzen für Schuljahre und Mitgliedschaften
 
-ADR-095 ist der verbindliche Zielvertrag; SJ-1 ist ausschließlich Governance
-und Architektur. Das bestehende V2-Produkt bleibt technisch unverändert, bis
-ein gesonderter Product-Owner-Auftrag Schema, Migration, Implementierung,
-Tests und Release freigibt.
+V3 ist das erste und einzige Produktschema. Es gibt keine produktiven
+V2-Daten, keine V2→V3-Produktmigration, keinen V2-Bootstrap-Assistenten,
+keinen V2-Produktrestore und keine dauerhafte V2-Kompatibilitätszusage.
+Bisherige V2-Bestände sind ausschließlich synthetische Entwicklungsdaten und
+dürfen für Tests verworfen sowie direkt als frische V3-Bestände neu erzeugt
+werden. Echte Nutzerdaten dürfen erst nach vollständiger Implementierung,
+Prüfung und ausdrücklicher V3-Freigabe verwendet werden.
 
-Für das spätere produktive V3 gelten folgende unverhandelbare Regeln:
+Für das finale Schema gelten unverhandelbar:
 
 - `school_years` ist die einzige gespeicherte Wahrheit für Schuljahre;
 - `student_school_year_assignments` ist die einzige gespeicherte Wahrheit für
-  Kurs- und Stammgruppenzuordnungen;
-- `students.group_id` und `students.course_id` werden nach dem Cutover nicht
-  gelesen, geschrieben oder parallel gepflegt;
-- Mitgliedschaften sind inklusive, nicht überlappende Intervalle innerhalb
-  genau eines Schuljahres;
-- aktuelle und historische Views sind Projektionen anhand eines ausdrücklich
-  festgelegten fachlichen Referenzzeitpunkts;
-- `courses.year_level` ist eine stabile fachliche Stufe 1, 2 oder 3 und wird
-  niemals aus sichtbaren Namen, Sortierung oder Position abgeleitet;
-- Kurs-, Stammgruppen- und Schuljahreswechsel laufen ausschließlich über
-  Application Services und Repositories; Widgets besitzen keine
-  Assignment-, Historien-, Transaktions-, Backup- oder Authentifizierungslogik;
-- Bericht und LEG bleiben getrennte Aggregate und verwenden `period_end`
-  beziehungsweise `conference_date`;
-- finalisierte Revisionen und PDFs bleiben unverändert und werden nicht gegen
-  spätere Assignments neu aufgelöst;
-- `assignment_status = exited` ist keine Archivierung; `students.active` und
-  der bestehende Archivvertrag bleiben getrennt;
-- weder Schuljahreswechsel noch Aufbewahrung erzeugen automatische physische
-  Löschung.
+  aktuelle und historische Kurs- und Stammgruppenzuordnungen;
+- `students` enthält weder `group_id` noch `course_id`;
+- `courses.year_level` ist die einzige Fortschreibungsquelle für die
+  fachlichen Stufen 1, 2 und 3;
+- jedes Assignment liegt vollständig in seinem Schuljahr und überschneidet
+  kein anderes Intervall desselben Kindes;
+- `enrolled` verlangt Gruppe und Kurs, `exited` besitzt beides nicht;
+- das Systemdatum aktiviert oder schließt niemals ein Schuljahr und wird nie
+  still als fachliches Referenzdatum verwendet;
+- unbekannte, beschädigte oder nicht exakt passende Schemata werden
+  fail-closed abgelehnt.
 
-Jeder V2→V3-Cutover und jeder produktive Schuljahreswechsel benötigt vor der
-Mutation ein verifiziertes Sicherheitsbackup, eine vollständige Vorschau,
-erneute Quellenprüfung, exklusive Instanz-/Maintenance-Grenze und eine einzige
-atomare Transaktion mit vollständigem Rollback. Eine Migration beim normalen
-Datenbanköffnen, eine automatische Aktivierung durch das Systemdatum und ein
-In-place-Downgrade sind ausgeschlossen.
+Eine fehlende Datenbank darf nur in einem kontrollierten autorisierten
+First-Run- oder temporären Testkontext direkt als vollständiges V3-Schema
+erzeugt werden. Solange produktive Leser noch V2-Mitgliedschaftsfelder
+erwarten, darf das erkannte finale Schema die normale Shell nicht freigeben.
+Der Zwischenzustand muss dies ohne V2-Bootstrap-Sprache ausdrücklich benennen.
 
-Der erstmalige V2→V3-Cutover besitzt kein fachliches Ausgangsschuljahr.
-Sein Wechselbeleg setzt daher `from_school_year_id = NULL` und
-`to_school_year_id` auf das bewusst bestätigte Initialschuljahr. Ein
-künstliches Vorgängerschuljahr ist verboten. Die V2-Legacyfelder dürfen nur
-während der Migration technisch fortbestehen und read-only als Cutoverquelle
-dienen. Nach dem Commit ist die Assignmentprojektion die alleinige fachliche
-Wahrheit; produktive Read- und Writepfade auf
-`students.group_id/course_id` sind ausgeschlossen.
+`school_year_transitions` dokumentiert nur echte spätere
+Schuljahreswechsel. Ausgangs- und Zielschuljahr existieren dabei fachlich und
+technisch; `from_school_year_id` ist niemals leer. Eine Initialanlage ist
+kein Schuljahreswechsel und erzeugt keinen Übergangsbeleg.
 
-V2 wird weder beim normalen Öffnen noch nach einem Restore automatisch nach V3
-migriert. Ein V2-Restore führt in den kontrollierten Bootstrap, ein
-kompatibler V3-Restore startet regulär. Historische V1→V2-
-Kompatibilitätsverträge dürfen diese Grenze nicht überspringen.
+Aktuelle und historische Zuordnungen werden ausschließlich an expliziten
+fachlichen Referenzzeitpunkten aufgelöst. Finalisierte Bericht- und
+LEG-Revisionen sowie PDFs bleiben unveränderliche Ausgabestände.
+Archivierung, schuljahresbezogener Austritt, unterjähriger Wechsel und
+physische Löschung bleiben getrennte Vorgänge.
 
-Die finale Aktivierung verlangt ein Passwort-Step-up über die bestehende
-Security-Domain einschließlich ihrer Drosselung und generischen
-Fehlermeldung. Gerätecredential und Touch ID sind nicht Teil der ersten
-Freigabe. Restore bleibt Eigentum des vorhandenen sicheren Restorepfads.
-
-Historische Auflösung muss fachlich korrekt möglich sein, auch wenn die erste
-UI noch nicht überall einen Schuljahresfilter anbietet. Die erste produktive
-Umsetzung ist erst vollständig, wenn Schülerlisten, Schülerprofilkopf, Kurs-
-und Stammgruppenansichten, Dashboard, Kursverbünde, Berichtsvorbereitung und
--finalisierung sowie LEG-Vorbereitung und -Abschluss keine aktuelle
-Mitgliedschaft mehr aus `students.group_id/course_id` beziehen.
+Für jeden echten späteren Schuljahreswechsel bleiben vollständige Vorschau,
+verifiziertes Sicherheitsbackup, Maintenance-Gate, erneute Quellenprüfung,
+Passwort-Step-up, explizite Bestätigung, atomare Transaktion, Rollback,
+Idempotenz, Integritätsprüfung und Übergangshistorie zwingend. Der Architecture
+Cleanup setzt diese Produktfunktion nicht um und schwächt ihre
+Sicherheitsgrenzen nicht.
 
 ## Die Oberfläche unterstützt, entscheidet aber nicht pädagogisch
 

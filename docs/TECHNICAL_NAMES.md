@@ -1,191 +1,59 @@
 # Technical Naming Registry
 
-## SJ-2C - kontrollierter Datenbank-Startup
+## V3-only Schema-, Startup- und Testnamen
 
-**Status:** Für die read-only Startup-Erkennung und die kontrollierte
-Routinggrenze registriert. Diese Namen starten weder die isolierte
-V2→V3-Migrationsengine noch einen Bootstrap-Assistenten, eine V3-Fachruntime
-oder einen Default-Writer.
-
-| Technischer Name | Bedeutung | Eigentümer |
-|---|---|---|
-| `REGISTERED_V3_SCHEMA_VERSION` | Neutral registrierte V3-Zielversion `3`; ändert die aktive `DATABASE_COMPATIBILITY_VERSION = 2` nicht | Core Database Compatibility |
-| `REGISTERED_V3_SCHEMA_FINGERPRINT` | Neutral registrierter vollständiger V3-Schemafingerprint für die reine Startup-Erkennung; kein V3-Runtimefreigabesignal | Core Database Compatibility |
-| `DatabaseStartupState` | Ausschließlich `DATABASE_NOT_FOUND`, `V2_MIGRATION_REQUIRED`, `V2_BOOTSTRAP_READY`, `V3_READY`, `SCHEMA_UNSUPPORTED` oder `RECOVERY_REQUIRED` | Core Database Startup |
-| `DatabaseStartupDetection` | Unveränderliches read-only Erkennungsergebnis aus Restoregrenze, Dateiexistenz, `user_version` und registriertem Schemafingerprint | Core Database Startup |
-| `DatabaseStartupDecision` | Unveränderliche Coordinator-Entscheidung mit erkanntem und effektivem Zustand sowie getrennten Freigaben für Runtime und einmalige, durch den Security-First-Run autorisierte Neuprüfung | Core Database Startup |
-| `DatabaseStartupResolver` | Reiner Resolver für eine vorhandene Datenbank; erkennt V2/V3 getrennt von der aktiven V2-Kompatibilitätspolitik und schreibt niemals | Core Database Startup |
-| `DatabaseStartupCoordinator` | Qt-freie Startup-Orchestrierung nach Restore und Authentifizierung; blockiert Shell, Adapter, Schemainitialisierung und Defaults bis zur ausdrücklich zulässigen Disposition | Core Database Startup |
-
-`V2_MIGRATION_REQUIRED` bedeutet ausschließlich: Eine exakt registrierte
-V2-Datenbank benötigt vor einer späteren V3-Fachnutzung den kontrollierten
-Cutover. Der Coordinator überführt diesen technischen Befund in
-`V2_BOOTSTRAP_READY`; dies bestätigt nur das sichere Routing in den künftigen
-Bootstrapmodus, nicht einen vollständigen oder ausführbaren Migrationsplan.
-
-`V3_READY` bestätigt ausschließlich Version und vollständigen
-Schemafingerprint. SJ-2C besitzt keine V3-Runtimefreigabe, weil die bestehenden
-Adapter und Repositories weiterhin die V2-Legacyfelder verwenden. Ein späterer
-Auftrag muss die vollständige Runtimekompatibilität nachweisen und die
-Coordinator-Entscheidung bewusst ändern; ein bloßer Konfigurationswert oder
-Boolean kann V3 in SJ-2C nicht freigeben.
-
-`new_database_initialization_allowed` ist ausschließlich die flüchtige
-Übergabe der bereits bestimmten `SecurityStartState.FIRST_RUN`-Autorität.
-Fehlt eine Datenbank bei einer bestehenden oder nicht beweisbar neuen
-Installation, wird keine leere Ersatzdatenbank erzeugt, sondern
-`RECOVERY_REQUIRED` entschieden.
-
-## SJ-2B - isolierte V2→V3-Migrationsgrenze
-
-**Status:** Für die isolierte, explizit aufgerufene Migration registriert.
-Diese Namen aktivieren weder den normalen Startup-Pfad noch eine V3-Runtime,
-UI, Bootstrap-Zustandsmaschine oder automatische Migration.
+**Status:** Verbindlich durch ADR-096 registriert. Die Namen beschreiben den
+Zielvertrag; der technische Cleanup und die produktive Runtime-Freigabe sind
+noch nicht vollständig umgesetzt.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
-| `TARGET_V3_DATABASE_VERSION` | Getrennte Zielversion `3` ausschließlich für die isolierte Migration und Schemaprüfung; `DATABASE_COMPATIBILITY_VERSION` bleibt `2` | Core School-Year Migration |
-| `V3_SCHEMA_FINGERPRINT` | Exakter kanonischer Fingerprint `640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1` des vollständigen V3-Zielschemas | Core School-Year Migration |
-| `SCHOOL_YEAR_MIGRATION_ENGINE_FORMAT_VERSION` | Version der deterministischen Source-State- und Migrationsengine-Semantik | Core School-Year Migration |
-| `VerifiedBackupEvidence` | Unveränderlicher technischer Nachweis eines außerhalb der Engine erzeugten und verifizierten Backups; enthält Hashbindung, Verifikationszeitpunkt und optional sichere technische ID, aber keinen Pfad, kein Passwort und keinen Fachfreitext | Core School-Year Migration |
-| `SchoolYearMigrationErrorCode` | Stabile, nicht lokalisierte technische Fehlercodes der isolierten Migration | Core School-Year Migration |
-| `SchoolYearMigrationError` | Sanitized Fehlergrenze ohne Namen, Notizen, Beobachtungs-, Bericht- oder LEG-Inhalte; unterscheidet `committed=False`, `committed=True` und den technisch unbestimmten Recoveryzustand `committed=None` | Core School-Year Migration |
-| `SchoolYearMigrationFailpoint` | Ausschließlich per Dependency Injection aktivierbare Testpunkte; keine Umgebungsvariable und keine Dateikonfiguration | Core School-Year Migration |
-| `SchoolYearMigrationResult` | Verifiziertes Post-Reopen-Ergebnis einer committed V3-Migration | Core School-Year Migration |
-| `SchoolYearV2ToV3MigrationEngine` | Qt- und UI-freie Engine, die ausschließlich eine explizit übergebene Connection-Factory, einen validierten Plan, Operation-Token, Backupnachweis und erwartete Fingerprints verwendet | Core School-Year Migration |
-| `calculate_v2_source_state_sha256` | Kanonischer Digest aus V2-Schema, relevanten Counts und per Feld gehashten Schüler-, Gruppen- und Kurswerten sowie bestätigtem Initialjahr, Kursstufen, Plan- und Engineformat | Core School-Year Migration |
-| `verify_v3_schema` | Reine Prüfung eines bereits geöffneten V3-Bestands gegen Zielversion, exakten Fingerprint und Schema-Invarianten | Core School-Year Migration |
+| `FINAL_SCHEMA_VERSION` | einzige unterstützte Produktschemaversion `3` | Core Database Compatibility |
+| `FINAL_SCHEMA_FINGERPRINT` | vollständiger kanonischer Fingerprint des direkten finalen Schemas | Core Database Compatibility |
+| `FinalV3SchemaInitializer` | Qt-freie direkte Erzeugung und Verifikation einer neuen vollständigen V3-Datenbank; keine Migration | Core SQLite Schema |
+| `SyntheticV3SeedBuilder` | ausschließlich testseitige deterministische Befüllung einer frisch erzeugten temporären Final-V3-Datenbank | Test Support |
+| `DatabaseStartupResolver` | read-only Klassifizierung als fehlend, exakt final, unbekannt oder Recovery erforderlich | Core Database Startup |
+| `DatabaseStartupCoordinator` | kontrollierte Disposition vor jeder fachlichen Runtime-Vorbereitung | Core Database Startup |
+| `DATABASE_NOT_FOUND` | am geprüften Produktpfad existiert keine Datenbankdatei | Core Database Startup |
+| `V3_INITIALIZATION_REQUIRED` | eine autorisierte Neuanlage muss direkt Final-V3 erzeugen und anschließend neu prüfen | Core Database Startup |
+| `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` | exaktes Final-V3 ist vorhanden, die aktuelle V2-gebundene Shell bleibt bis zur Leser-/Writerumstellung gesperrt | Core Database Startup |
+| `SCHEMA_UNSUPPORTED` | vorhandenes Schema entspricht nicht exakt dem finalen registrierten Schema | Core Database Startup |
+| `RECOVERY_REQUIRED` | unlesbarer, beschädigter, unsicherer oder Restore-seitig nicht abgeschlossener Zustand | Core Database Startup |
 
-`SchoolYearInitializationPlan` verwendet ab SJ-2B ausdrücklich Planformat v2.
-Gegenüber v1 ergänzt der kanonische Payload `source_state_sha256`. Ein
-v1-Payload wird nicht still mit geänderter Hashsemantik weiterverwendet.
-Namen und Notizen gelangen weder als Klartext in Source-State-Payload,
-Planlogs noch Wechselbelege; fachlich relevante Werte werden zunächst
-feldweise gehasht und nur diese Digests kanonisch zusammengeführt.
+Nicht mehr registrierte Produktnamen sind
+`SchoolYearV2ToV3MigrationEngine`, `VerifiedBackupEvidence`,
+`V2_MIGRATION_REQUIRED`, `V2_BOOTSTRAP_READY`,
+`V2_READY_FOR_BACKUP`, `V2_READY_FOR_CUTOVER` sowie alle
+V2-Klassifikations-, Cutover-Plan-, Failpoint- und
+Bootstrap-Transition-Typen.
 
-Registrierte Fehlercodes:
-
-`V2_SCHEMA_MISMATCH`, `SOURCE_STATE_MISMATCH`,
-`BACKUP_EVIDENCE_MISSING`, `BACKUP_EVIDENCE_MISMATCH`,
-`INITIALIZATION_PLAN_BLOCKED`, `COURSE_LEVEL_MAPPING_INCOMPLETE`,
-`STUDENT_CLASSIFICATION_MISMATCH`, `ASSIGNMENT_PLAN_MISMATCH`,
-`V3_SCHEMA_CREATE_FAILED`, `COURSE_REBUILD_FAILED`,
-`STUDENT_REBUILD_FAILED`, `V3_FINGERPRINT_MISMATCH`,
-`FOREIGN_KEY_CHECK_FAILED`, `INTEGRITY_CHECK_FAILED`,
-`CIPHER_INTEGRITY_CHECK_FAILED`, `TRANSITION_RECEIPT_CONFLICT`,
-`MIGRATION_ROLLED_BACK` und `POST_COMMIT_VERIFICATION_FAILED`.
-
-## SJ-2A - implementierte reine Initialisierungsdomain
-
-**Status:** Lokal implementiert. Die Namen bezeichnen ausschließlich
-SQLite- und Qt-freie Core-Werte und reine Funktionen. Sie führen weder
-Tabelle, Spalte, Repository, Migration, Startup-Pfad, ViewModel noch UI ein.
+## Schuljahres- und Assignmentnamen
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
-| `SchoolYear` | Bewusst übergebene technische Schuljahresidentität mit Label, inklusivem `start_date`/`end_date` und validiertem Status | Core School-Year Domain |
-| `SchoolYearStatus` | Ausschließlich `planned`, `current` oder `closed` | Core School-Year Domain |
-| `StudentMembershipAssignment` | Validiertes inklusives Initialassignment mit `enrolled`- beziehungsweise `exited`-Semantik | Core School-Year Domain |
-| `StudentAssignmentStatus` | Ausschließlich `enrolled` oder `exited` | Core School-Year Domain |
-| `StudentMigrationClassification` | Genau eine der fünf registrierten V2-Migrationshauptkategorien je übergebenem `StudentRecord` | Core School-Year Domain |
-| `StudentMigrationWarningCode` | Getrennter stabiler technischer Sekundärbefund ohne zweite Hauptklassifikation | Core School-Year Domain |
-| `StudentMigrationClassificationRecord` | Technische `student_id`, eine Hauptkategorie und kanonisch geordnete Warncodes; keine Namen oder UI-Texte | Core School-Year Domain |
-| `SchoolYearInitializationPreview` | Vollständige read-only Klassifikationen, Assignmentvorschläge und Blocker aller übergebenen V2-Schüler | Core School-Year Domain |
-| `CourseYearLevelConfirmation` | Bewusst bestätigte vorhandene `course_id` mit stabiler Stufe 1, 2 oder 3 | Core School-Year Domain |
-| `SchoolYearSchemaInformation` | Explizit übergebene SQLite-`user_version` und SHA-256-Schemaidentität für Quelle oder Ziel | Core School-Year Domain |
-| `SchoolYearInitializationPlan` | In SJ-2A eingeführter validierter kanonischer Plan; seit der ausdrücklich versionierten SJ-2B-Erweiterung Planformat v2 mit `source_state_sha256` und berechnetem `plan_sha256`; keine Persistenz | Core School-Year Domain |
-| `classify_v2_student` | Reine genau einmalige Klassifikation eines V2-`StudentRecord` aus Initialjahr und bekannten Referenz-IDs | Core School-Year Domain |
-| `build_school_year_initialization_preview` | Reine vollständige und deterministisch geordnete V2-Bestandsvorschau | Core School-Year Domain |
-| `build_school_year_initialization_plan` | Reine validierte Planerstellung ohne Repository- oder Systemzugriff | Core School-Year Domain |
+| `SchoolYear` | validiertes Schuljahr mit technischer ID, Label, inklusivem Datumsbereich und Status | Core School-Year Domain |
+| `SchoolYearStatus` | ausschließlich `planned`, `current` oder `closed` | Core School-Year Domain |
+| `StudentMembershipAssignment` | datiertes inklusives Kurs-/Stammgruppenintervall eines Kindes innerhalb eines Schuljahres | Core Assignment Domain |
+| `StudentAssignmentStatus` | ausschließlich `enrolled` oder `exited` | Core Assignment Domain |
+| `school_years` | einzige persistierte Schuljahresquelle | Core SQLite Schema |
+| `student_school_year_assignments` | einzige persistierte aktuelle und historische Mitgliedschaftsquelle | Core SQLite Schema |
+| `school_year_transitions` | unveränderlicher Erfolgsbeleg ausschließlich eines echten Schuljahreswechsels mit vorhandener Ausgangs-ID | Core SQLite Schema |
+| `courses.year_level` | stabile fachliche Kursstufe 1, 2 oder 3 | Core SQLite Schema |
+| `AssignmentReferenceDate` | vom Aufrufer ausdrücklich übergebener fachlicher Auflösungszeitpunkt | Application Assignment Read |
 
-`plan_sha256` ist der SHA-256 über die UTF-8-Bytes des vollständigen
-kanonischen Planpayloads ohne das Hashfeld selbst. Alle Strings werden vor der
-Serialisierung nach Unicode NFC normalisiert, JSON-Schlüssel lexikalisch
-sortiert und Arrays durch explizite technische ID-/Datumsordnungen stabil
-gebildet. Schüler-, Stammgruppen- und Kursnamen, Freitexte und UI-Texte sind
-nicht Teil des Payloads.
+Ein V3-Schüler besitzt ausschließlich Stammdaten sowie Aktiv-/Archivstatus;
+`group_id` und `course_id` sind keine Schülerfelder. Aktuelle und
+historische Membershipprojektionen werden aus Assignments gelesen.
+Repository-, Query- und Commandnamen für die nächste Assignment-API werden
+erst mit deren gesonderter Implementierung verbindlich ergänzt.
 
-## SJ-1 - geplante technische Namen für Schuljahre und Assignments
+`school_year_transitions.from_school_year_id` bezeichnet stets ein wirklich
+vorhandenes Ausgangsschuljahr und darf nicht leer sein. Eine initiale
+V3-Erzeugung ist kein Transitionstyp und besitzt keinen Beleg.
 
-**Status:** Verbindlich für die V3-Zielarchitektur nach ADR-095, noch nicht
-implementiert. Die Registrierung führt weder Tabelle noch Spalte, Migration,
-Service, ViewModel oder UI-Code ein.
-
-Geplante SQLite-Tabellen:
-
-- `school_years`
-- `student_school_year_assignments`
-- `school_year_transitions`
-
-`school_year_transition_items` ist für die erste Umsetzung ausdrücklich nicht
-registriert. Eine spätere Einführung verlangt den Nachweis einer zwingenden
-technischen Notwendigkeit und eine neue Architekturentscheidung.
-
-Registrierte Felder und Werte:
-
-| Technischer Name | Verbindliche Bedeutung |
-|---|---|
-| `school_year_id` | stabile technische Identität eines Schuljahres |
-| `label` | bewusst bestätigte sichtbare Bezeichnung, keine Datumsquelle |
-| `start_date` | inklusiver fachlicher Beginn eines Schuljahres |
-| `end_date` | inklusives fachliches Ende eines Schuljahres |
-| `status` | bei `school_years` ausschließlich `planned`, `current` oder `closed` |
-| `created_at` | technischer Erzeugungszeitpunkt |
-| `closed_at` | technischer Abschlusszeitpunkt eines geschlossenen Schuljahres |
-| `assignment_id` | stabile technische Identität eines datierten Assignments |
-| `assignment_status` | ausschließlich `enrolled` oder `exited` |
-| `valid_from` | inklusiver Beginn des Assignments |
-| `valid_to` | inklusives Ende des Assignments |
-| `updated_at` | technischer Änderungszeitpunkt eines Assignments |
-| `year_level` | stabile fachliche Kursstufe; ausschließlich Integer `1`, `2` oder `3` |
-| `transition_id` | stabile technische Identität eines committed Schuljahreswechsels |
-| `from_school_year_id` | geschlossenes Ausgangsschuljahr; ausschließlich beim erstmaligen V2→V3-Bootstrap `NULL`, weil kein fachliches Ausgangsschuljahr existiert |
-| `to_school_year_id` | beim Bootstrap das bewusst bestätigte Initialschuljahr, sonst das aktivierte Zielschuljahr |
-| `operation_token` | idempotente Identität eines Ausführungsaufrufs |
-| `plan_sha256` | SHA-256 des kanonischen, vollständig validierten Wechselplans |
-| `backup_sha256` | SHA-256 des unmittelbar vor der Mutation verifizierten Sicherheitsbackups |
-| `result_counts_json` | kanonische Ergebniszahlen des committed Wechsels, keine Item-Historie |
-| `completed_at` | technischer Commit-/Abschlusszeitpunkt des Wechsels |
-| `target_status` | ausschließlich flüchtiger Plan-/UI-Wert `enrolled`, `exited` oder `unresolved`; keine zusätzliche Mitgliedschaftswahrheit |
-
-Bestehende Namen `student_id`, `group_id` und `course_id` behalten ihre stabile
-Identitätsbedeutung. Nach dem V2→V3-Cutover sind
-`students.group_id` und `students.course_id` keine zulässigen produktiven
-Mitgliedschaftsfelder mehr. Die gleichnamigen Fremdschlüssel innerhalb von
-`student_school_year_assignments` referenzieren die weiterhin bestehenden
-Stammdaten `groups` und `courses`.
-
-Das `NULL` in `from_school_year_id` bezeichnet ausschließlich den
-Bootstrap-Übergang und ist kein Platzhalter für ein unbekanntes oder
-künstliches Vorgängerschuljahr.
-
-`courses.year_level` darf ausschließlich bewusst gesetzt und validiert werden.
-`course_name`, sichtbarer Anzeigename, `sort_order` und Listenposition sind
-keine Aliasse, Fallbacks oder Ableitungsquellen für `year_level`.
-
-Fachliche Referenzzeitpunkte bleiben die vorhandenen Namen
-`observations.date`, `confirmed_at`, `period_end` und `conference_date`.
-`completed_at`, `finalized_at`, `created_at`, `updated_at` und das Systemdatum
-ersetzen keinen dieser fachlichen Referenzzeitpunkte.
-
-Sichtbare Begriffe:
-
-| Sichtbarer Begriff | Technischer Bezug |
-|---|---|
-| Schuljahr | `school_years` / `school_year_id` |
-| Aktuelles Schuljahr | genau ein Datensatz mit `status = current` |
-| Eingeschrieben | `assignment_status = enrolled` |
-| Ausgeschieden | `assignment_status = exited` |
-| Ungelöst | flüchtiger `target_status = unresolved`; blockiert die Ausführung |
-| Kurs 3 wiederholen | `target_status = enrolled` mit derselben vorhandenen `course_id` der `year_level = 3` |
-| Anderer vorhandener Kurs | `target_status = enrolled` mit bewusst gewählter vorhandener `course_id` |
-| Sicherheitsbackup | vorhandener verifizierter Backuppfad; Beleg im Wechsel über `backup_sha256` |
-
-SJ-1 registrierte noch keine konkreten Klassen-, Service-, Command-,
-Repository- oder ViewModel-Namen. Die vorstehende SJ-2A-Registrierung ergänzt
-ausschließlich die inzwischen freigegebene reine Domain- und Planbasis;
-Application Services, Commands, Repositories, ViewModels und UI bleiben
-weiterhin unregistriert und nicht implementiert.
+Versionsnamen anderer Verträge bleiben unberührt: Insbesondere bezeichnen
+Backupformat-v1, Security-Store-v2/v3 und kryptografische Formatversionen
+keine Datenbankschemaversion.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 

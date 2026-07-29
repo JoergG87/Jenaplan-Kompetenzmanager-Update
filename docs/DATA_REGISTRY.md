@@ -1,347 +1,77 @@
 # Data Registry
 
-## SJ-2C - flüchtige Datenbank-Startup-Erkennung
+## V3-only Produktdatenquellen
 
-**Status:** Read-only technische Projektion ohne neue Tabelle, Datei,
-Persistenz, Fachquelle oder V3-Produktaktivierung.
+**Status:** Durch ADR-096 verbindlich beschlossen. Der technische Cleanup und
+die produktive Leser-/Writerumstellung sind noch nicht vollständig umgesetzt.
 
-Der `DatabaseStartupResolver` liest ausschließlich die Existenz und Art des
-bereits bestimmten Datenbankpfads sowie über den vorhandenen read-only
-Fingerprintmechanismus SQLite-`PRAGMA user_version`, vollständige
-Schemaidentität und Objektanzahl. Er liest keine Schüler-, Assignment-,
-Kursstufen-, Beobachtungs-, Bericht-, LEG- oder Dokumentinhalte.
-
-Vor der Fingerprintprüfung blockiert jeder vorhandene
-`kompetenzmanager.sqlite-wal`- oder `kompetenzmanager.sqlite-shm`-Sidecar den
-Startup als `RECOVERY_REQUIRED`. Der bestehende Produktprovider verwendet
-DELETE-Journaling; der immutable read-only Fingerprint darf deshalb keinen
-möglicherweise relevanten WAL-Zustand ignorieren.
-
-Die neutral registrierten Werte `REGISTERED_V3_SCHEMA_VERSION = 3` und
-`REGISTERED_V3_SCHEMA_FINGERPRINT =
-640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1`
-erlauben nur die exakte V3-Schemaerkennung. Sie ändern weder
-`DATABASE_COMPATIBILITY_VERSION = 2` noch die V2-gebundenen Backup-, Restore-,
-`initialize_schema()`- oder Runtimeverträge. Die bestehende
-`DatabaseCompatibilityPolicy.EXACT`-Semantik bleibt ausschließlich V2.
-
-`DatabaseStartupDetection` und `DatabaseStartupDecision` sind flüchtige,
-unveränderliche technische Zustandsobjekte. Sie werden weder in SQLite noch in
-einer Sidecar-, Journal-, Log- oder Einstellungsdatei persistiert. Pfade,
-Personennamen, Notizen und fachliche Inhalte sind kein Bestandteil dieser
-Objekte.
-
-## SJ-2B - isoliert implementiertes V3-Zielschema
-
-**Status:** Ausschließlich innerhalb der expliziten V2→V3-Migrations- und
-Schemaprüfgrenze implementiert. Die normale Anwendung, ihre
-Kompatibilitätsversion und ihre produktiven Lese-/Schreibpfade bleiben V2.
-Es gibt keinen Startup-Hook, keine automatische Migration und keine reguläre
-V3-Shell.
-
-Das vollständige V3-Schema besteht aus allen unverändert erhaltenen
-V2-Schemaobjekten sowie:
-
-- `school_years`;
-- `student_school_year_assignments`;
-- `school_year_transitions`;
-- dem Pflichtfeld `courses.year_level` ohne Default und mit echtem
-  INTEGER-Speichertyp `1`, `2` oder `3`;
-- der kontrolliert neu aufgebauten Tabelle `students` mit ausschließlich
-  `student_id`, `first_name`, `last_name`, `notes`, `active`, `created_at`,
-  `updated_at` und `archived_at`.
-
-`students.group_id`, `students.course_id` und `students.student_notes`
-existieren im committed V3-Zielschema nicht. Der Wert von
-`students.student_notes` wird werttreu nach `students.notes` übernommen.
-Sämtliche vorhandenen Child-Fremdschlüssel auf `student_id` bleiben
-restriktiv erhalten. `courses` behält alle vorhandenen IDs, Namen, Farben,
-Sortierungen und Aktivwerte werttreu; allein das bestätigte Planmapping setzt
-`year_level`.
-
-Zusätzliche beziehungsweise beim Rebuild wiederhergestellte Indizes:
-
-- `idx_school_years_one_current`;
-- `idx_school_years_date_range`;
-- `idx_school_years_status_start`;
-- `idx_assignments_student_year_interval`;
-- `idx_assignments_student_interval`;
-- `idx_assignments_year_status_student`;
-- `idx_assignments_year_group_interval`;
-- `idx_assignments_year_course_interval`;
-- `idx_assignments_last_known`;
-- `idx_courses_name`.
-
-Zusätzliche Trigger:
-
-- `trg_school_years_no_overlap_insert`;
-- `trg_school_years_no_overlap_update`;
-- `trg_school_years_status_transition`;
-- `trg_school_years_closed_immutable`;
-- `trg_school_years_dates_guard`;
-- `trg_school_years_no_delete`;
-- `trg_assignments_within_school_year_insert`;
-- `trg_assignments_within_school_year_update`;
-- `trg_assignments_no_overlap_insert`;
-- `trg_assignments_no_overlap_update`;
-- `trg_assignments_update_guard`;
-- `trg_assignments_no_delete`;
-- `trg_school_year_transitions_no_update`;
-- `trg_school_year_transitions_no_delete`.
-
-Die Assignment-Fremdschlüssel auf `students`, `school_years`, `groups` und
-`courses` sowie die Transition-Fremdschlüssel auf Ausgangs- und Zielschuljahr
-verwenden `ON UPDATE RESTRICT` und `ON DELETE RESTRICT`. Alle bestehenden
-Child-Fremdschlüssel auf `students.student_id` und
-`course_group_courses.course_id` bleiben beim Parent-Rebuild erhalten.
-
-Der mechanisch aus dem vollständigen finalen Schema einschließlich
-Tabellenspalten, `table_xinfo`, Fremdschlüsseln, expliziten Indizes und
-Triggern berechnete exakte V3-Fingerprint ist:
-
-`640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1`.
-
-`VerifiedBackupEvidence` ist eine unveränderliche technische Eingabe, keine
-neue fachliche Datenquelle und kein Backupservice. Die Engine erstellt,
-findet, löscht oder restauriert kein Backup. Der Nachweis enthält nur
-`backup_sha256`, `source_state_sha256`, `source_schema_fingerprint`,
-`verified_at` und optional eine sichere technische `backup_id`; insbesondere
-keinen Dateipfad, kein Passwort, keinen Namen und keinen Freitext.
-
-`school_year_transitions.result_counts_json` wird im Domain-/Application-Layer
-kanonisch validiert. SJ-2B setzt keinen SQLite-JSON1-`CHECK`, weil die
-Verfügbarkeit nicht für jeden unterstützten Provider als Produktvertrag
-nachgewiesen ist.
-
-## SJ-1 - geplante V3-Datenquellen für Schuljahre und Mitgliedschaften
-
-**Status:** Verbindlicher Datenmodellvertrag nach ADR-095, noch nicht
-implementiert. V2 bleibt bis zu einem ausdrücklich freigegebenen atomaren
-Cutover unverändert. Diese Registrierung ist keine Schemaänderung und keine
-Migration.
-
-### Datenhoheit
-
-| Geplante Quelle | Fachliche Wahrheit | Schreibowner | Löschgrenze |
+| Quelle | Fachliche Bedeutung | Owner | Nicht zulässige Ersatzquelle |
 |---|---|---|---|
-| `school_years` | Schuljahresidentität, inklusiver Datumsbereich und Lifecycle-Status | späterer School-Year-Application-Service über Repository | kein produktiver Delete-Pfad |
-| `student_school_year_assignments` | einzige datierte Kurs- und Stammgruppenzuordnung eines Kindes | späterer Assignment-/Transition-Application-Service über Repository | restriktive Fremdschlüssel; kein kaskadierender fachlicher Delete |
-| `courses.year_level` | stabile fachliche Kursstufe 1, 2 oder 3 | kontrollierte Stammdatenpflege beziehungsweise bestätigter Cutover | keine Namens-, Sortier- oder Positionsableitung |
-| `school_year_transitions` | idempotenter Beleg eines committed Schuljahreswechsels | ausschließlich atomarer Transition-Service | kein produktiver Delete-Pfad |
+| `school_years` | einzige Schuljahreswahrheit mit geplantem, aktuellem oder geschlossenem Status | School-Year Domain / Repository | Systemdatum, Label, Seedkonstante, Beobachtungsdaten |
+| `student_school_year_assignments` | einzige aktuelle und historische Kurs-/Stammgruppenzuordnung | Assignment Domain / spätere zentrale Read-API | Schülerfelder, UI-Auswahl, Kursname, letzte bekannte Zuordnung ohne Datum |
+| `courses.year_level` | bestätigte stabile Kursstufe 1, 2 oder 3 | Course Repository | Name, Farbe, Sortierung, Listenposition |
+| V3-`students` | Schülerstammdaten sowie Aktiv-/Archivstatus ohne Membershipfelder | Student Repository | V2-`StudentRecord.group_id/course_id` |
+| `school_year_transitions` | unveränderlicher Beleg eines echten committed Schuljahreswechsels | School-Year Transition Service | Initialanlage, Startup, Bootstrap, Migration |
+| kanonische Schemaidentität | vollständiger Final-V3-Fingerprint und Objektinventar | Database Compatibility | nur `user_version`, Teilinventar oder Tabellenzahl |
+| Backupmanifest und Datenbankkopie | verifizierter Sicherheitsstand des exakten finalen Schemas | Backup / Restore | V2-Cutover-Evidence oder unregistriertes Schema |
 
-Nach erfolgreichem V2→V3-Cutover ersetzen Assignments die heute in V2
-gespeicherten `students.group_id` und `students.course_id` vollständig als
-Mitgliedschaftswahrheit. Dauerhafte Doppelpflege, Fallbackreads und
-Best-Effort-Synchronisierung sind unzulässig. Vor dem Cutover bleibt V2 der
-tatsächlich implementierte Produktstand; die geplanten Quellen dürfen nicht
-als vorhanden behauptet werden.
+V3 ist das erste Produktschema. V2-Daten besitzen keine Produktdatenhoheit,
+keinen Restore- und keinen Migrationsvertrag. Bekannte oder unbekannte ältere
+Schemata werden im Produktpfad nicht übernommen. Das unabhängige
+Backupformat-v1 bleibt ein Containervertrag und ist keine alte
+Datenbankschemaversion.
 
-Während der atomaren Migration dürfen die V2-Felder technisch noch vorhanden
-sein und ausschließlich read-only als Cutoverquelle dienen. Nach dem Commit
-sind sie weder Source of Truth noch zulässige Quelle oder Senke eines
-produktiven Read- oder Writepfads. Die Assignmentprojektion ist dann die
-alleinige fachliche Wahrheit.
+## Direkte Final-V3-Schemaquelle
 
-### V2-Legacyquelle und vollständige Klassifizierung
+Das vollständige Produktschema wird aus genau einer Qt-freien DDL-Quelle
+direkt in einer neuen Datenbank erzeugt. Diese Quelle besitzt
+`school_years`, `student_school_year_assignments`,
+`courses.year_level NOT NULL`, V3-`students` ohne
+`group_id/course_id`, `school_year_transitions` mit nichtleerem
+`from_school_year_id` sowie alle übrigen Fachtabellen, Constraints, Trigger
+und Indizes. Eine Migration, ein Zwischen-V2-Schema und ein
+Bootstrap-Transition-Beleg sind unzulässig.
 
-Für den kontrollierten Cutover ist jeder vorhandene V2-`StudentRecord` genau
-einmalige read-only Migrationsquelle. Gelesen werden mindestens `student_id`,
-`group_id`, `course_id`, `active` und `archived_at`. Diese Felder bleiben keine
-zweite V3-Wahrheit; sie werden ausschließlich für Vorschau, bewusste Klärung
-und atomare Übernahme verwendet.
+Die Compatibility-Grenze akzeptiert als Produktdatenbank nur die exakte
+registrierte Final-V3-Identität. Eine leere, teilweise erzeugte, unbekannte
+oder beschädigte Datei wird nicht repariert oder ergänzt, sondern
+fail-closed behandelt.
 
-Die Vorschau ordnet jeden Datensatz genau einer Kategorie zu:
+## Synthetische V3-Testdaten
 
-| Kategorie | Verbindliche V3-Behandlung |
-|---|---|
-| aktiv und eindeutig migrierbar | `enrolled` vom `start_date` bis `end_date` des Initialjahres |
-| archiviert und historisch eindeutig migrierbar | historisches `enrolled` vom `start_date` bis zum Vortag des lokalen Archivdatums; danach kein Assignment |
-| inaktiv oder archiviert, aber zeitlich nicht eindeutig migrierbar | ungelöst und blockierend |
-| ungültige oder fehlende Kurs-/Gruppenzuordnung | ungelöst und blockierend |
-| widersprüchlicher Aktiv-/Archivzustand | ungelöst und blockierend |
+`SyntheticV3SeedBuilder` ist ausschließlich eine Testquelle. Er erhält einen
+expliziten temporären, noch nicht vorhandenen Zielpfad, ruft die direkte
+Final-V3-Schemaquelle auf und erzeugt deterministisch:
 
-Die Primärkategorie wird in dieser festen fail-closed Reihenfolge bestimmt:
-widersprüchlicher Aktiv-/Archivzustand, ungültige oder fehlende
-Kurs-/Gruppenzuordnung, aktiv eindeutig, archiviert historisch eindeutig,
-zuletzt zeitlich nicht eindeutig. Zusätzliche Fehler werden nicht verworfen,
-sondern als weitere Blocker/Warnungen am selben Datensatz geführt. Dadurch
-bleibt die Klassifikation genau einmalig, ohne Mehrfachfehler zu verstecken.
+- Schuljahr `2025/26` vom `2025-08-01` bis `2026-07-31` mit Status
+  `current`;
+- drei Kurse mit `year_level` 1, 2 und 3;
+- synthetische Stammgruppen;
+- synthetische Schülerstammdaten ohne Membershipfelder;
+- vollständige `enrolled`-Assignments;
+- nur soweit für Regressionen erforderlich synthetische Beobachtungen,
+  Bestätigungen, Berichts- und LEG-Daten.
 
-Die Summe aller Kategorien muss exakt der Anzahl aller gelesenen
-V2-`StudentRecord`s entsprechen. Es gibt keinen stillen Filter nach `active`
-und keinen Defaultfall, der einen Schüler auslässt.
+IDs und Zeitpunkte sind stabil. Namen sind ersichtlich synthetisch. Der
+Builder liest, migriert oder überschreibt keine vorhandene Datenbank und ist
+nicht an den lokalen Standarddatenpfad gebunden. Insbesondere wird Lauras
+bestehender Testbestand nicht automatisch ersetzt.
 
-Für einen historisch eindeutig migrierbaren archivierten Schüler müssen
-`active = false`, ein sicher lesbares `archived_at` sowie gültige bestehende
-`group_id` und `course_id` vorliegen. Zeitzonenbehaftete Archivzeitpunkte
-werden lokal zum Kalenderdatum normalisiert; naive historische Werte behalten
-ihren gespeicherten lokalen Kalendertag. Das Archivdatum gilt als erster Tag
-ohne Zuordnung. `valid_to` ist daher der Vortag. Nur
-`start_date < lokales Archivdatum <= end_date` erzeugt ein nichtleeres
-historisches Intervall. Alle anderen Archivdaten sind ungelöst und
-blockierend.
+## Historische Membershipauflösung
 
-Archivierung erzeugt kein `exited`-Assignment, reaktiviert das Kind nicht und
-erzeugt nach dem Archivdatum kein aktuelles Assignment. `exited` bleibt
-ausschließlich ein schuljahresbezogener Zielstatus. Entfernen oder
-Nichtweiterverwenden von `students.group_id/course_id` ist erst zulässig, wenn
-die bekannte V2-Zuordnung als aktives oder historisches Assignment erhalten
-oder der Fall bewusst nach einem gesondert freigegebenen neutralen
-Legacyvertrag geklärt ist.
+Die spätere zentrale Assignment-Read-API verwendet ausschließlich ein
+explizites fachliches Datum. Beobachtung, Bestätigung, Bericht, LEG und
+Beobachtungsdokument liefern jeweils ihren dokumentierten Referenzzeitpunkt.
+Ohne belastbare zeitliche Semantik entsteht keine Zuordnungsbehauptung.
+Finalisierte Revisionen und PDFs werden nicht neu aufgelöst oder verändert.
 
-Unzulässige Migrationsquellen sind Beobachtungsdaten, Berichtzeiträume,
-LEG-Daten, Dokumentdaten, Kursnamen, Sortierreihenfolgen und Systemdatum.
-Finalisierte Bericht-/LEG-Revisionen und PDFs bleiben unverändert; nicht
-finalisierte historische Records werden später ausschließlich über ihre
-verbindlichen fachlichen Referenzzeitpunkte aufgelöst. Kein `StudentRecord`
-wird physisch gelöscht, automatisch reaktiviert, automatisch archiviert oder
-automatisch als ausgetreten interpretiert.
+## Echte Schuljahreswechsel
 
-### `school_years`
-
-```text
-school_years(
-  school_year_id,
-  label,
-  start_date,
-  end_date,
-  status,       -- planned | current | closed
-  created_at,
-  closed_at
-)
-```
-
-Verbindliche Invarianten:
-
-- stabile eindeutige `school_year_id`;
-- nicht leeres `label`, aber keine fachliche Ableitung aus dem Label;
-- geschlossener Bereich mit `start_date <= end_date`;
-- keine zeitliche Überlappung zwischen Schuljahren;
-- im produktiv initialisierten V3-Bestand genau ein `status = current`;
-- `closed_at` ist für `closed` gesetzt und sonst leer;
-- kein produktiver physischer Löschpfad.
-
-Für den Pilotbestand darf der Assistent `2025/26`, `2025-08-01` bis
-`2026-07-31` vorausfüllen, muss alle drei Werte aber bewusst bestätigen
-lassen. Andere Installationen erhalten diese Werte nicht ungeprüft.
-SCHOOL_YEAR-Seedkonstante, Systemdatum, Kursnamen und Beobachtungsdaten sind
-keine Quellen. Die bestehenden aktuellen Kurs- und Stammgruppenwerte aktiver
-Pilotkinder bilden Initialintervalle vom `2025-08-01` bis `2026-07-31`.
-Daten vor dem bestätigten Beginn werden nicht künstlich einem Schuljahr
-zugeordnet.
-
-### `student_school_year_assignments`
-
-```text
-student_school_year_assignments(
-  assignment_id,
-  student_id,
-  school_year_id,
-  group_id,
-  course_id,
-  assignment_status,  -- enrolled | exited
-  valid_from,
-  valid_to,
-  created_at,
-  updated_at
-)
-```
-
-Verbindliche Invarianten:
-
-- stabile eindeutige `assignment_id`;
-- restriktive Fremdschlüssel auf `students`, `school_years`, `groups` und
-  `courses`;
-- geschlossener Bereich mit `valid_from <= valid_to`;
-- vollständige Lage innerhalb von `school_years.start_date/end_date`;
-- keine Überschneidung mit einem anderen Assignment desselben Kindes;
-- `enrolled` verlangt vorhandene `group_id` und `course_id`;
-- `exited` hat keine `group_id` und keine `course_id` und behauptet damit
-  keine aktuelle Kurs- oder Stammgruppenmitgliedschaft;
-- ein echter Wechsel erzeugt angrenzende, nicht überlappende Intervalle:
-  altes `valid_to` am Vortag, neues `valid_from` am Stichtag.
-
-Ein `exited`-Assignment ist keine Archivierung und keine Datenlöschung.
-`students.active`, `students.archived_at` und der bestehende Archiv-Lifecycle
-bleiben eine getrennte Source of Truth. Historische Records bleiben über
-`student_id` und ihren fachlichen Referenzzeitpunkt erhalten.
-
-### `courses.year_level`
-
-`courses` erhält den stabilen Pflichtwert `year_level` mit exakt `1`, `2` oder
-`3`. Kurse bleiben schuljahresübergreifende Stammdaten und werden nicht je
-Schuljahr erzeugt, aktiviert oder deaktiviert. Die Pilotzuordnung von Kurs 1,
-Kurs 2 und Kurs 3 wird vor dem Cutover bewusst bestätigt. `course_name`,
-Anzeigename, `sort_order` und Listenposition sind unzulässige
-Ableitungsquellen.
-
-### `school_year_transitions`
-
-```text
-school_year_transitions(
-  transition_id,
-  from_school_year_id,
-  to_school_year_id,
-  operation_token,
-  plan_sha256,
-  backup_sha256,
-  result_counts_json,
-  completed_at
-)
-```
-
-Verbindliche Invarianten:
-
-- `from_school_year_id` ist ausschließlich beim erstmaligen
-  V2→V3-Bootstrap `NULL`, weil noch kein fachliches Ausgangsschuljahr
-  existiert; sonst restriktiver Fremdschlüssel auf ein wirklich vorhandenes
-  Ausgangsschuljahr;
-- `to_school_year_id` referenziert beim Bootstrap das bewusst bestätigte
-  Initialschuljahr und sonst das regulär aktivierte Zielschuljahr;
-- ein künstliches Vorgängerschuljahr ist unzulässig;
-- restriktiver Fremdschlüssel auf das Zielschuljahr;
-- eindeutiges `transition_id` und eindeutiges Zielschuljahr;
-- `operation_token` und `plan_sha256` belegen den idempotenten Aufruf;
-- `backup_sha256` belegt das unmittelbar vorher erstellte und verifizierte
-  Sicherheitsbackup;
-- `result_counts_json` enthält kanonische Ergebniszahlen, keine zweite
-  Assignment- oder Item-Wahrheit;
-- derselbe Plan liefert den bestehenden Erfolg, ein anderer Plan für dasselbe
-  Zielschuljahr wird abgelehnt;
-- der Beleg wird in derselben Transaktion wie Schuljahrstatus und Assignments
-  geschrieben.
-
-Eine `school_year_transition_items`-Tabelle ist für die erste Umsetzung nicht
-vorgesehen und nicht als Datenquelle registriert.
-
-### Kompatibilitäts- und Restoregrenze für V1, V2 und V3
-
-V1 bleibt ausschließlich ein registrierter historischer
-Kompatibilitätsstand, der kontrolliert im Restore-Staging nach V2 überführt
-werden kann. Dieser Schritt setzt keinen V2→V3-Cutover fort. V2 wird weder
-beim normalen Öffnen noch nach einem Restore automatisch migriert; ein
-wiederhergestellter V2-Bestand führt erneut in den kontrollierten Bootstrap.
-Ein wiederhergestellter, vollständig kompatibler V3-Bestand startet regulär.
-Die weiter unten dokumentierten V1-Verträge beschreiben ihre jeweilige
-historische Releasebasis und begründen keinen abweichenden Bootstrap- oder
-Fallbackpfad.
-
-### Historische Lesequellen
-
-Assignments werden ausschließlich anhand des fachlichen Zeitpunkts gelesen:
-
-| Record | Referenzzeitpunkt | Regel |
-|---|---|---|
-| `observations` | `observations.date` | damals gültiges Assignment |
-| `student_competency_confirmations` | `confirmed_at` | damals gültiges Assignment |
-| Berichtsentwurf/-finalisierung | `period_end` | Kontext am Periodenende, auch bei später Finalisierung |
-| LEG-Entwurf/-Abschluss | `conference_date` | Kontext am Gesprächsdatum |
-| `documents` mit `observation_id` | Datum der referenzierten Beobachtung | keine technische Dateizeit verwenden |
-| freies `documents` ohne belastbares Fachdatum | keines | neutral, keine automatische Zuordnung |
-
-Finale Bericht-/LEG-Revisionen und PDF-Artefakte sind eingefrorene
-Ausgabemodelle. Sie lesen keine späteren Assignmentwerte, werden im Cutover
-nicht geändert und nicht neu erzeugt.
+Ein Übergangsbeleg referenziert immer ein vorhandenes Ausgangs- und
+Zielschuljahr. Plan, Backup, Operation-Token, Ergebniszahlen und
+Abschlusszeitpunkt gehören zur späteren echten Wechseltransaktion.
+Synthetische Initialanlage, Datenbankstart und Schemaerzeugung schreiben
+keinen `school_year_transitions`-Datensatz.
 
 ## Phase 2 Berichte-Übersicht - ausschließlich vorhandene Lesequellen
 

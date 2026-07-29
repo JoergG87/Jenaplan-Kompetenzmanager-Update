@@ -1,135 +1,39 @@
 # UI Data Mapping
 
-## SJ-1 - geplanter Assistent unter Einstellungen → Schuljahre
+## V3-only Startup und geplanter Schuljahresassistent
 
-**Status:** Verbindliches UI-Datenmapping nach ADR-095, noch nicht
-implementiert. Die UI schreibt weder Schema noch Produktdaten, solange kein
-gesonderter Umsetzungs- und Migrationsauftrag vorliegt.
+**Status:** Keine neue produktive View durch den Architecture Cleanup.
+Runtime-Aktivierung und Schuljahreswechsel-UI bleiben gesperrt.
 
-### Initialisierung und Schuljahr
+Der Datenbankstart zeigt keinen V2-Bootstrap, keine V2-Migrationsvorschau und
+keine Auswahl zur Übernahme alter Testdaten. Ein erkanntes finales Schema
+stoppt bis zur vollständigen Leser-/Writerumstellung vor der Shell mit einem
+technischen, nicht irreführenden Zwischenzustand. Unbekannte oder beschädigte
+Schemata führen fail-closed in die bestehende kontrollierte Recoverygrenze.
 
-| Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |
+Eine fehlende Datenbank darf nur im autorisierten First Run direkt als
+Final-V3 erzeugt werden. Der technische Cleanup ergänzt dafür keinen
+produktiven Assistenten und überschreibt keine vorhandene lokale
+Testdatenbank.
+
+Der spätere Assistent unter `Einstellungen → Schuljahre` betrifft
+ausschließlich einen echten Wechsel zwischen zwei vorhandenen Schuljahren.
+Seine fachlichen UI-Felder bleiben:
+
+| UI-Feld/Aktion | Quelle | Persistenz | Regel |
 |---|---|---|---|
-| Schuljahre | Navigation `Einstellungen` | Nein | eigener bewusster Einstieg; keine automatische Anzeige durch Systemdatum |
-| Bezeichnung | flüchtiger Plan `label` | erst bei späterer bestätigter Ausführung | Pilotvorbelegung `2025/26` muss bestätigt werden; andere Installationen übernehmen sie nicht ungeprüft |
-| Beginn | flüchtiger Plan `start_date` | erst bei späterer bestätigter Ausführung | Pilotvorbelegung `2025-08-01`; keine Ableitung aus Seed, Systemdatum, Kursnamen oder Beobachtungen |
-| Ende | flüchtiger Plan `end_date` | erst bei späterer bestätigter Ausführung | Pilotvorbelegung `2026-07-31`; Bereich inklusiv und ohne Überlappung |
-| Kursstufe | bestätigte `courses.year_level`-Vorschau | erst im V2→V3-Cutover | ausschließlich 1, 2 oder 3; Kurs 1/2/3 im Pilot bewusst bestätigen |
-| Sicherheitsprüfung | displayfertige Read-only-Vorprüfung | Nein | offene Schreiber, Editoren, Quellenfehler und Rückdatierungsblocker sichtbar |
-| Sicherheitsbackup | vorhandener Backup-/Verifikationsservice | Backup-Artefakt, später `backup_sha256` im Wechselbeleg | kein Fortfahren ohne verifizierten Nachweis |
+| Ausgangsschuljahr | vorhandenes eindeutiges `school_years.status = current` | Nein | niemals leer, nicht aus Systemdatum ableiten |
+| Zielschuljahr | vorhandenes geplantes Schuljahr mit Label und Datumsbereich | erst bei atomarer Aktivierung | kein automatischer Statuswechsel |
+| bisherige Zuordnung | Assignment am Ende des Ausgangsjahres | Nein | keine Schüler-Membershipfelder |
+| Zielkursvorschlag | bestätigtes `courses.year_level` | nur im flüchtigen Plan | Stufe 3 bleibt ungelöst; keine Namens-/Sortierableitung |
+| Zielstammgruppe | bisherige Stammgruppe oder bewusste Änderung | nur im flüchtigen Plan | keine versteckte Änderung |
+| Zielstatus | fortführen, wiederholen, anderer Kurs, ausgeschieden oder ungelöst | nur im flüchtigen Plan | Austritt ist keine Archivierung |
+| Backupstatus | verifizierter Sicherheitsbackupnachweis des finalen Schemas | technischer Nachweis | keine V2-Cutover-Evidence |
+| verbindlich aktivieren | validierter vollständiger Plan, Step-up und Bestätigung | eine atomare Transaktion | Ausgangsjahr schließen, Zieljahr aktivieren, Assignments und echten Transition-Beleg schreiben |
 
-### V2-Initialisierungs- und Migrationsvorschau
-
-Eine erkannte V2-Datenbank startet keine reguläre V3-Fachoberfläche. Der
-kontrollierte Initialisierungs-/Migrationsmodus zeigt vor jedem Schreiben alle
-vorhandenen Schüler genau einmal. Das gilt auch nach einem V2-Restore; V2 wird
-nicht automatisch migriert. Ein kompatibler V3-Restore startet dagegen
-regulär.
-
-| Sichtbares Feld / Zustand | Quelle | Persistenz | Verbindliche Regel |
-|---|---|---|---|
-| Kind | V2-`StudentRecord.student_id` und Name | Nein | jede Quell-ID genau einmal |
-| Aktiv-/Archivzustand | V2-`active` und `archived_at` | Nein | keine automatische Reparatur oder Umdeutung |
-| Letzte bekannte Stammgruppe | V2-`group_id` + vorhandene `groups` | Nein | ungültige oder fehlende Referenz blockiert |
-| Letzter bekannter Kurs | V2-`course_id` + vorhandene `courses` | Nein | ungültige oder fehlende Referenz blockiert |
-| Lokales Archivdatum | sicher geparstes und lokal normalisiertes `archived_at` | Nein | erster Tag ohne Zuordnung; naive Werte behalten ihren gespeicherten lokalen Kalendertag |
-| Klassifikation | vollständige Migrationsprojektion | Nein | genau eine der fünf registrierten Kategorien |
-| Geplantes historisches Intervall | `start_date` bis `local_date(archived_at) - 1 Tag` | Nein | nur für historisch eindeutig migrierbare archivierte Schüler |
-| Blocker | displayfertige Validierungsprojektion | Nein | keine Schätzung; Cutover bleibt gesperrt |
-
-Die Klassifikationen lauten sichtbar:
-
-- `Aktiv – eindeutig migrierbar`;
-- `Archiviert – historisch eindeutig migrierbar`;
-- `Inaktiv/archiviert – Zeitraum ungeklärt`;
-- `Kurs- oder Stammgruppenzuordnung ungültig`;
-- `Aktiv-/Archivzustand widersprüchlich`.
-
-Die Primärklassifikation folgt der in ADR-095 registrierten fail-closed
-Priorität und erscheint genau einmal pro Kind. Weitere gleichzeitig erkannte
-Probleme stehen vollständig in `Blocker/Warnungen`; sie erzeugen keine zweite
-Zeile und werden nicht durch die Primärkategorie verdeckt.
-
-Eine Zusammenfassung zeigt V2-Gesamtzahl, Anzahl je Kategorie und verbleibende
-Blocker. Die Summe der Kategorien muss der V2-Gesamtzahl entsprechen.
-`Archiviert – historisch eindeutig migrierbar` erzeugt nur ein historisches
-`enrolled`-Intervall bis zum Vortag des Archivdatums. Es bedeutet weder
-`Ausgeschieden` noch Reaktivierung. Ein Archivdatum am oder vor dem Beginn,
-nach dem Ende oder ohne sicher lesbaren Wert bleibt blockierend.
-
-Die Vorschau bietet keine automatische Herleitung aus Beobachtungen,
-Berichten, LEG, Dokumenten, Kursnamen, Sortierung oder Systemdatum. Ein
-neutraler Legacyfall darf erst nach gesonderter Product-Owner-Freigabe als
-bewusste Lösung angeboten werden; SJ-1 enthält keine solche Freigabe.
-
-### Vollständige Kindliste
-
-| Spalte | Quelle der geplanten Assistentenprojektion | Bearbeitung | Regel |
-|---|---|---|---|
-| Kind | stabile `student_id`, displayfertiger Name | Nein | technische ID bleibt intern, stabile Zeilenidentität |
-| Bisheriges Schuljahr | Quellassignment + `school_years.label` | Nein | am Ende des alten Schuljahres eindeutig aufgelöst |
-| Bisherige Stammgruppe | Quellassignment + `groups` | Nein | damalige Assignmentprojektion |
-| Bisheriger Kurs | Quellassignment + `courses` | Nein | zeigt Namen; Fortschreibung liest nur `year_level` |
-| Neues Schuljahr | flüchtiger Zielplan + `school_years.label` | Nein innerhalb der Kindzeile | identisches Ziel des gesamten Plans |
-| Neue Stammgruppe | flüchtiger Zielplan + vorhandene `groups` | Ja | standardmäßig unverändert; vorhandene Stammgruppe |
-| Neuer Kurs | flüchtiger Zielplan + vorhandene `courses` | Ja | Stufe 1→2, 2→3; Stufe 3 nie automatisch |
-| Zielstatus | flüchtiger `target_status` | Ja | `enrolled`, `exited` oder `unresolved`; `unresolved` blockiert |
-| Warnungen | displayfertige Validierungsprojektion | Nein | vollständig, textlich und nicht nur durch Farbe |
-
-Für Kurs 3 zeigt die Zielbearbeitung ausdrücklich `Ausgeschieden`,
-`Kurs 3 wiederholen`, `Anderer vorhandener Kurs` und `Ungelöst`.
-`Ausgeschieden` erzeugt später `assignment_status = exited`, archiviert das
-Kind aber nicht. Wiederholen und anderer vorhandener Kurs erzeugen einen
-eindeutigen `enrolled`-Zielplan.
-
-`Kurs 3 wiederholen` behält dieselbe vorhandene `course_id` der Stufe 3.
-`Anderer vorhandener Kurs` verlangt demgegenüber eine bewusst gewählte andere
-vorhandene `course_id`.
-
-### Aktionen und Zustände
-
-| Sichtbare Funktion / Aktion | Wirkung | Persistenz | Schutz |
-|---|---|---|---|
-| Filter | schränkt nur die sichtbaren Zeilen ein | Nein | verdeckte Kinder bleiben im vollständigen Plan und in der Validierung |
-| Nur ungelöst | zeigt ausschließlich blockierende Zielzeilen | Nein | trifft keine automatische Entscheidung |
-| Mehrfachauswahl | wählt sichtbare Kinder bewusst aus | Nein | Auswahlstatus eindeutig und tastaturbedienbar |
-| Zielkurs ändern | setzt einen vorhandenen Zielkurs für die Auswahl | Nein bis Ausführung | keine Anlage oder Namensableitung |
-| Zielstammgruppe ändern | setzt eine vorhandene Zielstammgruppe für die Auswahl | Nein bis Ausführung | ausdrücklich möglich; Standard bleibt unverändert |
-| Individuelle Korrektur | bearbeitet genau eine Zielzeile | Nein bis Ausführung | alle Felder bleiben danach sichtbar |
-| Validieren | prüft den vollständigen Plan ohne Schreiben | Nein | erster Blocker und Gesamtzahl ungelöster Fälle sichtbar |
-| Zusammenfassung | zeigt Quelle, Ziel, Kinder-, Austritts-, Wiederholungs-, Kurswechsel-, Gruppenwechsel- und Warnzahlen | Nein | Werte stammen aus kanonischem Plan |
-| App-Passwort | bestehender Passwort-Step-up | Nein | Drosselung und generische Fehlermeldung; kein Touch-ID-/Credential-Fallback in erster Freigabe |
-| Ich habe alle Zuordnungen geprüft. | explizite nicht vorbelegte Bestätigung | Nein | Voraussetzung der Primäraktion |
-| Schuljahr `<Ziel>` verbindlich aktivieren | atomarer Transition-Use-Case | später genau eine Transaktion | konkretes Zieljahr im Aktionsnamen; keine Enter-Zufallsauslösung |
-| Ergebnis | vorhandener idempotenter Wechselbeleg und displayfertige Ergebniszahlen | Nein zusätzlich | wiederholter identischer Aufruf zeigt vorhandenen Erfolg |
-
-Der Assistent führt in dieser Reihenfolge: neues Schuljahr festlegen;
-Sicherheitsprüfung und Backup; Vorschlag erzeugen; vollständige Kindliste;
-Sonderfälle bearbeiten; Validierung ohne Schreiben; Zusammenfassung; Passwort
-und explizite Bestätigung; atomare Ausführung; Ergebnis.
-
-### Andere Produktansichten
-
-| UI-Bereich | Spätere Mitgliedschaftsquelle | Referenzzeitpunkt / Regel |
-|---|---|---|
-| Schülerlisten | aktuelle Assignmentprojektion | genau ein `current`-Schuljahr; `exited` ausblenden |
-| Schülerprofilkopf | aktuelle Assignmentprojektion | keine `students.group_id/course_id`-Anzeige nach Cutover |
-| Kurs- und Stammgruppenansichten | aktuelle Assignmentprojektion | nur `enrolled` |
-| Dashboard und Kursverbünde | aktuelle Assignmentprojektion | transaktionskonsistente Projektion |
-| Berichtsvorbereitung und -finalisierung | Assignment am `period_end` | alter Draft bleibt historisch korrekt |
-| LEG-Vorbereitung und -Abschluss | Assignment am `conference_date` | unabhängig von `completed_at` |
-| Beobachtungen | Assignment an `observations.date` | frühere Zuordnung bleibt erhalten |
-| Kompetenzbestätigung | Assignment an `confirmed_at` | kein technischer Zeitstempel-Fallback |
-| freie Dokumente ohne Fachdatum | keine automatische Quelle | neutral anzeigen |
-| finalisierte Revisionen und PDFs | eingefrorener Snapshot | niemals erneut auflösen oder verändern |
-
-Die weiter unten dokumentierten V2- und Legacy-Zeilen mit
-`students.group_id/course_id` beziehungsweise
-`data_students.group_id/course_id` beschreiben ausschließlich den heute
-implementierten Altstand. Der V2→V3-Cutover muss diese aktiven
-Produktmappings ersetzen; sie sind danach weder Fallback noch zweite Source of
-Truth. Kein produktiver Readpfad verwendet und kein produktiver Writepfad
-verändert sie nach dem erfolgreichen Cutover.
+Synthetische Initialdaten sind keine UI-Projektion. IDs, Zeitpunkte und
+Fixtures werden ausschließlich im Testpfad erzeugt und niemals als
+Produktdaten oder Pilotbestand dargestellt.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 

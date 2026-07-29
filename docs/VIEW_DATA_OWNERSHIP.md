@@ -1,95 +1,34 @@
 # View Data Ownership
 
-## SJ-2C - Ownership der Startup-Entscheidung
+## V3-only Ownership für Startup, Schuljahre und Assignments
 
-SJ-2C führt keine neue View und keinen Bootstrap-Assistenten ein. Der
-Qt-freie `DatabaseStartupCoordinator` besitzt ausschließlich die flüchtige
-technische Routingentscheidung vor der Product Shell. `AppShell`,
-`StudentDesktopAdapter`, Widgets und künftige Bootstrap-Views erkennen,
-klassifizieren oder migrieren Datenbankschemata nicht selbst.
+Der `DatabaseStartupResolver` besitzt ausschließlich die read-only
+Schemaerkennung. Der `DatabaseStartupCoordinator` besitzt die
+Runtime-Disposition vor Shell, Adaptern und fachlichen Writern. Die direkte
+Final-V3-Schemaquelle besitzt nur die autorisierte Neuanlage und vollständige
+Verifikation. Kein Widget und kein Adapter erkennt, migriert oder repariert
+Datenbankschemata.
 
-`V2_BOOTSTRAP_READY` ist nur die Übergabegrenze an einen späteren,
-gesondert freizugebenden Bootstrap-Use-Case. Es besitzt keine Schüler-,
-Assignment-, Kursstufen-, Backup-, Passwort-, Migrations- oder
-Transaktionsprojektion. `V3_READY` besitzt in SJ-2C grundsätzlich keine
-Shellfreigabe.
+Bis alle produktiven Leser und Writer auf V3 umgestellt sind, existiert keine
+produktive V3-View. Ein erkanntes finales Schema führt deshalb kontrolliert zu
+`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`. Es gibt keine
+V2-Bootstrap-View, keine V2-Migrationsvorschau und keine sichtbare
+V2-Restoreauswahl.
 
-## SJ-1 - geplante Ownership für Schuljahre und Assignments
+| Projektion / Vorgang | Fachliche Quellen | Owner | Nicht erlaubt |
+|---|---|---|---|
+| Datenbank-Startupstatus | read-only Pfad-, Restore- und vollständige Schemaidentität | Core Startup | Widgetentscheidung, Teilfingerprint, automatische Migration |
+| direkte V3-Neuanlage | autorisierter leerer Zielpfad und finales DDL | Core Schema Initializer | bestehende Datei ersetzen, V2-Zwischenschema, Transition-Beleg |
+| Schuljahresliste/-status | `school_years` | spätere School-Year Application-Grenze | Systemdatum oder Label als Statusquelle |
+| aktuelle/historische Mitgliedschaft | `student_school_year_assignments` plus explizites Fachdatum | spätere zentrale Assignment-Read-API | `students.group_id/course_id`, Widgetlogik, stiller Fallback |
+| Kursfortschreibung | `courses.year_level` | späterer School-Year Transition Service | Kursname, Farbe, Sortierung |
+| echter Wechselbeleg | vorhandene Ausgangs-/Zieljahre und committed Wechselplan | späterer School-Year Transition Service | Initialanlage, Bootstrap oder Migration |
 
-**Status:** Verbindliche Zielownership nach ADR-095, noch nicht implementiert.
-Die folgenden Grenzen autorisieren keine neue View, Persistenz oder Migration.
-
-Die künftige Einstellungsseite `Schuljahre` besitzt ausschließlich Navigation,
-Anzeige und den Einstieg in bewusst ausgelöste Application-Use-Cases. Der
-Schuljahresassistent besitzt temporären Schritt-, Filter-, Auswahl-,
-Bearbeitungs-, Fokus- und Bestätigungszustand. Weder Einstellungsseite noch
-Assistent lesen Repositories oder SQLite direkt und enthalten keine
-Intervall-, Fortschreibungs-, Historien-, Backup-, Hash-, Transaktions-,
-Idempotenz- oder Authentifizierungslogik.
-
-Der spätere School-Year-/Assignment-Application-Layer besitzt:
-
-- Initialjahres- und `year_level`-Vorschau;
-- kanonische Assignmentprojektion zu einem expliziten Referenzdatum;
-- Fortschreibungsvorschläge ausschließlich aus `courses.year_level`;
-- vollständige Planvalidierung und kanonischen Plan-Hash;
-- atomaren unterjährigen Kurs-/Stammgruppen-Sammelwechsel;
-- Maintenance-Orchestrierung und atomaren Schuljahreswechsel;
-- Idempotenzprüfung gegen `school_year_transitions`;
-- displayfertige Ergebniszahlen und neutrale Blocker.
-
-Repositories besitzen ausschließlich die registrierte Persistenz für
-`school_years`, `student_school_year_assignments`, `courses.year_level` und
-`school_year_transitions`. Der bestehende Backup-Application-Service bleibt
-Owner von Erstellung und Verifikation des Sicherheitsbackups. Die bestehende
-Security-Domain bleibt Owner des Passwort-Step-ups, ihrer Drosselung und
-generischen Fehlermeldung. Der bestehende Restorepfad bleibt alleiniger Owner
-einer Wiederherstellung. Widgets dürfen keinen dieser Vorgänge nachbilden.
-
-Der Bootstrap-Use-Case besitzt die einzige temporäre read-only Ownership über
-`students.group_id` und `students.course_id` als V2-Cutoverquelle. Nach
-erfolgreichem V3-Cutover besitzt kein produktiver Adapter, Application
-Service, Repository, ViewModel oder Widget einen Read- oder Writepfad auf
-diese Legacyfelder. Alle produktiven Mitgliedschaftsprojektionen stammen dann
-ausschließlich aus `student_school_year_assignments`.
-
-Die spätere Assistentenprojektion liefert pro Kind mindestens:
-
-- stabile `student_id` und displayfertigen Namen;
-- bisheriges und neues `school_year_id` samt sichtbarem Label;
-- bisherige und neue `group_id` samt sichtbarem Namen;
-- bisherige und neue `course_id` samt sichtbarem Namen;
-- flüchtigen eindeutigen `target_status`;
-- vollständige displayfertige Warnungen und Blocker.
-
-Filter, `Nur ungelöst`, Mehrfachauswahl und Sammelaktionen verändern
-ausschließlich den flüchtigen Plan. Verdeckte Zeilen bleiben Teil der
-Vollständigkeitsvalidierung; Filtern darf keine Entscheidung treffen oder ein
-Kind aus dem Plan entfernen. Die View sortiert, vervollständigt oder
-entscheidet keine Ziele selbst.
-
-Für Schülerlisten, Schülerprofilkopf, Kursansichten, Stammgruppenansichten,
-Dashboard und Kursverbünde liefert der Adapter später ausschließlich die
-kanonische aktuelle Assignmentprojektion des genau einen aktuellen
-Schuljahres. `assignment_status = exited` wird aus aktuellen Listen
-ausgeschlossen, bleibt in ausdrücklich historischen Projektionen auffindbar.
-`students.active` bleibt eine getrennte Archivierungsquelle.
-
-Berichtsvorbereitung und Berichtfinalisierung beziehen den
-Assignmentkontext am `period_end`; LEG-Vorbereitung und LEG-Abschluss am
-`conference_date`. Beobachtungs- und Bestätigungsprojektionen verwenden
-`observations.date` beziehungsweise `confirmed_at`. Ein Dokument mit
-Beobachtungsbezug verwendet das Beobachtungsdatum; ein freies Dokument ohne
-belastbares Fachdatum erhält keinen automatisch aufgelösten
-Schuljahreskontext.
-
-Bericht und LEG bleiben getrennte Domain-, Repository-, Revisions- und
-View-Owner. Ihre finalisierten Snapshots und PDFs werden von späteren
-Assignmentprojektionen nicht erneut gelesen oder verändert. Widgets berechnen
-keine historische Zugehörigkeit aus technischen Zeitstempeln. Ein frei
-wählbarer Schuljahresfilter in jeder Ansicht ist nicht Voraussetzung der
-ersten Umsetzung; der Adapter-/Application-Layer muss die fachlich korrekte
-historische Auflösung dennoch bereitstellen.
+Beobachtung, Bestätigung, Bericht, LEG und Beobachtungsdokument liefern später
+ihren bereits vorhandenen fachlichen Referenzzeitpunkt an dieselbe
+Assignment-Auflösungsgrenze. Finalisierte Revisionen und PDFs werden nicht neu
+aufgelöst. Widgets komponieren nur displayfertige ViewModels und enthalten
+keine Repository- oder Intervalllogik.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 

@@ -1,159 +1,59 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
-## SJ-2C - kontrollierter Datenbank-Startup
+## V3-only Produktschema und Architecture Cleanup
 
-**Status:** Startup-Erkennung und Bootstrap-Routing lokal implementiert.
-Produktive Migration, Bootstrap-Assistent, Assignment-Reads,
-V3-Fachruntime, Build, Packaging und Release bleiben gesperrt.
+**Status:** Produktschema durch ADR-096 beschlossen. Die Governance ist auf
+V3-only korrigiert; der technische Cleanup, die Umstellung produktiver Leser
+und die Runtime-Freigabe sind zu diesem Stand noch nicht umgesetzt.
 
-Ein neuer Qt-freier `DatabaseStartupCoordinator` entscheidet nach
-Restore-Recovery, Pfadermittlung und erfolgreicher Authentifizierung, aber vor
-fachlicher Runtime-Vorbereitung, Shell, Adaptern, `initialize_schema()` und
-Default-Writern. Der Resolver inspiziert vorhandene Datenbanken ausschließlich
-read-only anhand `user_version` und vollständigem Schemafingerprint.
+V3 ist das erste und einzige Produktschema. Es enthält `school_years`,
+datierte `student_school_year_assignments`, `courses.year_level`,
+`students` ohne `group_id` und `course_id` sowie
+`school_year_transitions` ausschließlich für echte spätere
+Schuljahreswechsel. Aktuelle und historische Mitgliedschaften werden nur am
+expliziten fachlichen Referenzdatum aus Assignments aufgelöst.
 
-Exaktes V2 wird als `V2_MIGRATION_REQUIRED` erkannt und kontrolliert nach
-`V2_BOOTSTRAP_READY` geroutet; dies startet keine Migration und bestätigt
-keinen fachlichen Migrationsplan. Exaktes V3 wird als `V3_READY` erkannt,
-besitzt in SJ-2C aber keinen Freigabemechanismus für die heutige V2-gebundene
-Runtime. Unbekannte Schemata werden als `SCHEMA_UNSUPPORTED`, unlesbare oder
-unsichere Zustände als `RECOVERY_REQUIRED` blockiert.
+Es existieren keine produktiven V2-Daten. Vorhandene V2-Bestände sind
+synthetische Entwicklungsdaten, werden nicht migriert und dürfen für Tests
+durch frisch erzeugte deterministische V3-Bestände ersetzt werden. Echte
+Nutzerdaten werden erst nach vollständiger V3-Implementierung, Prüfung und
+Freigabe verwendet. Es gibt keinen V2-Cutover, keinen V2-Bootstrap-Assistenten,
+keinen V2-Produktrestore und keine dauerhafte V2-Kompatibilitätszusage.
 
-`DATABASE_COMPATIBILITY_VERSION` bleibt `2`. Die bestehende V2-Policy für
-Schemainitialisierung, Backup und Restore wird nicht auf V3 geöffnet. Ein
-echter First Run darf den vorhandenen V2-Neuanlagepfad weiterhin nutzen; nach
-einer möglichen Installation von Initialdaten wird jedoch zwingend erneut
-klassifiziert, sodass eine installierte V2-Datenbank die Bootstrapgrenze nicht
-umgeht. Die Erlaubnis gilt nur für denselben, durch
-`SecurityStartState.FIRST_RUN` nachgewiesenen Lauf. Fehlt die Datenbank bei
-einer bestehenden Installation oder liegen SQLite-WAL-/SHM-Sidecars vor, wird
-statt einer leeren Ersatzdatenbank `RECOVERY_REQUIRED` entschieden.
+Der technische Cleanup überführt das bisher in der isolierten
+Migrationsengine enthaltene finale DDL in eine direkte V3-Schemaquelle und
+entfernt danach Engine, Klassifizierung, Cutover-Plan, Backup-Evidence,
+Failpoints und V2-Startupzustände. Compatibility, Backup und Restore werden
+auf das exakte finale Schema begrenzt. Das Backupformat-v1 bleibt davon
+unabhängig bestehen.
 
-## SJ-2B - isoliertes V3-Zielschema und V2→V3-Migrationsengine
+Startup-Ziel ist: exaktes finales Schema erkennen, eine fehlende Datenbank nur
+im autorisierten First-Run-/Testkontext direkt als V3 erzeugen und unbekannte
+oder beschädigte Schemata fail-closed ablehnen. Solange aktuelle produktive
+Leser noch V2-Mitgliedschaftsfelder erwarten, bleibt die Shell im ausdrücklich
+benannten Zwischenzustand
+`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` gesperrt.
 
-**Status:** Lokal implementiert und fokussiert automatisiert geprüft.
-Produktive Aktivierung, Bootstrap, UI, reale Migration, Build, Packaging und
-Release bleiben ausdrücklich gesperrt.
+Weiterhin nicht umgesetzt oder freigegeben sind die zentrale
+Assignment-Read-API, V3-Schülercommands, die flächendeckende Leser-/Writer-
+Umstellung, der Schuljahreswechsel-Assistent, unterjährige Sammelwechsel,
+Runtime-Aktivierung, Build, Packaging und Release.
 
-SJ-2B implementiert das vollständige V3-Zielschema innerhalb einer
-expliziten, Qt-freien Migrationsgrenze: `school_years`, datierte
-`student_school_year_assignments`, unveränderliche
-`school_year_transitions`, `courses.year_level` und den kontrollierten
-`students`-Rebuild ohne `group_id/course_id`. Der exakte vollständige
-Schemafingerprint lautet
-`640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1`.
+## Schuljahresmodell und echte Wechsel
 
-`SchoolYearV2ToV3MigrationEngine` verwendet ausschließlich eine injizierte
-Connection-Factory, einen validierten Planformat-v2-Payload, einen bestätigten
-Operation-Token, verpflichtende unveränderliche `VerifiedBackupEvidence` und
-explizite Quell-/Zielfingerprints. Die Engine erzeugt kein Backup, sucht keine
-Datenbank und öffnet keine UI. Source-State bindet vollständiges V2-Schema,
-alle nicht internen Tabelleninhalte ausschließlich über kanonische
-Wertdigests und Counts sowie Initialjahr, Kursstufen, Plan- und Engineformat.
+Die Domainmodelle `SchoolYear` und
+`StudentMembershipAssignment`, ihre Datums- und Intervallinvarianten sowie
+die Datenhoheit aus ADR-095 bleiben verbindlich. Ein echter späterer
+Schuljahreswechsel führt von einem vorhandenen current-Schuljahr zu einem
+vorhandenen geplanten Schuljahr. Sein `school_year_transitions`-Beleg besitzt
+immer ein vorhandenes Ausgangs- und Zielschuljahr; eine Bootstrap-Transition
+mit leerer Ausgangs-ID ist ausgeschlossen.
 
-Der Cutover läuft in einer atomaren `BEGIN IMMEDIATE`-Transaktion mit
-geprüftem `foreign_keys=OFF`, kontrolliertem Course-/Student-Rebuild,
-Assignments, Bootstrapbeleg, `user_version=3`, exaktem Fingerprint und
-Integritätsprüfungen. Jeder Pre-Commit-Failpoint rollt vollständig auf V2
-zurück. Nach Commit wird die FK-deaktivierte Verbindung geschlossen; eine
-neue Providerverbindung verifiziert V3 vollständig. Post-Commit-Failpoints
-werden als committed Recoveryzustand klassifiziert und nie in-place
-zurückgerollt.
-
-Die normale Runtime bleibt unverändert V2:
-`DATABASE_COMPATIBILITY_VERSION = 2`, `initialize_schema()` ruft die Engine
-nicht auf, und weder `DatabaseCompatibilityInspector`,
-`StudentDesktopAdapter`, `AppShell` noch `main.py` importieren oder starten
-sie. Eine V2-Datenbank startet weiterhin wie zuvor; eine V3-Datenbank wird vor
-SJ-2C vom normalen V2-Kompatibilitätspfad fail-closed abgelehnt.
-
-Automatisiert geprüft wurden 120 fokussierte SJ-2B-Tests, 237 fokussierte
-V2-/Backup-/Restore-/Student-/Bericht-/LEG-/Startup-Regressionstests mit
-8 Subtests sowie die vollständige Suite mit 1838 bestandenen Tests und
-71 bestandenen Subtests. Ein ausdrücklich umgebungsgebundener read-only
-Build-303-Referenztest blieb erwartungsgemäß übersprungen. SQLCipher war
-verfügbar und wurde mit verschlüsseltem temporärem Bestand,
-Engine-eigenen Cipher-Integritätsprüfungen und ohne Klartextfallback
-ausgeführt. Compileall und Qt-freie Importisolation waren grün.
-
-## SJ-2A - reine Initialisierungsdomain für das V3-Schuljahresmodell
-
-**Status:** Lokal implementiert und fokussiert automatisiert geprüft. Keine
-Schemaänderung, Migration, Persistenz, produktive Aktivierung oder Änderung
-eines V2-Lese-/Schreibpfads.
-
-SJ-2A stellt ausschließlich die SQLite- und Qt-freie Domainbasis bereit:
-validierte Schuljahre und inklusive Mitgliedschaftsintervalle, die
-vollständige fail-closed Klassifikation vorhandener V2-`StudentRecord`s, eine
-read-only Vorschau, bestätigte Kursstufen sowie einen kanonischen
-Initialisierungsplan. Beobachtungen, Berichte, LEG, Dokumente, Kursnamen und
-Systemdatum sind keine Klassifikations- oder Schätzquellen.
-
-Der Plan enthält ausschließlich stabile technische Identitäten, bestätigte
-Fachwerte, Klassifikationen, Warncodes, Assignmentvorschläge, Blocker und
-Quell-/Ziel-Schemainformationen. Seine kanonische UTF-8-Serialisierung
-normalisiert Unicode nach NFC, sortiert JSON-Schlüssel und verwendet
-explizite locale-unabhängige Arrayordnungen sowie ISO-Daten.
-`plan_sha256` ist der SHA-256 über exakt diesen Payload. Der Hash ist ein
-flüchtiger Nachweis; SJ-2A persistiert weder Plan noch Hash.
-SJ-2B erweitert diesen Vertrag ausdrücklich versioniert auf Planformat v2
-mit `source_state_sha256`; die historische v1-Hashsemantik wurde nicht still
-verändert.
-
-## SJ-1 - Governance- und Architekturvertrag für den Schuljahreswechsel
-
-**Status:** Product-, Discovery- und Architecture-Gate abgeschlossen.
-ADR-095 und die zuständigen Governance-Registries beschreiben die verbindliche
-Zielarchitektur. Noch nicht implementiert; keine Schemaänderung, Migration,
-Test-, Build-, Packaging- oder Releasefreigabe.
-
-Schuljahre werden künftig ausschließlich in `school_years`, Kurs- und
-Stammgruppenzuordnungen ausschließlich als datierte Intervalle in
-`student_school_year_assignments` geführt. Nach dem kontrollierten V2→V3-
-Cutover sind `students.group_id` und `students.course_id` keine produktive
-Mitgliedschaftswahrheit mehr. Kurse 1, 2 und 3 bleiben dauerhafte Stammdaten;
-ihre Fortschreibung verwendet ausschließlich das bewusst bestätigte
-`courses.year_level` mit den Werten 1, 2 oder 3.
-
-Der Schuljahreswechsel ist ein expliziter Assistent unter
-`Einstellungen → Schuljahre`. Er zeigt die vollständige Kindliste, lässt alle
-Vorschläge bearbeiten, hält Stufe 3 ungelöst, blockiert unvollständige Pläne
-und führt erst nach verifiziertem Backup, erneuter Quellenprüfung,
-Passwort-Step-up und expliziter Bestätigung eine einzige atomare Transaktion
-aus. `school_year_transitions` belegt den committed, idempotenten Erfolg. Es
-gibt keine automatische Aktivierung durch das Systemdatum, Archivierung,
-physische Löschung oder Cloudabhängigkeit.
-
-Historische Zuordnung wird am fachlichen Referenzzeitpunkt aufgelöst:
-Beobachtung `observations.date`, Bestätigung `confirmed_at`, Bericht
-`period_end`, LEG `conference_date` und Beobachtungsdokument am
-Beobachtungsdatum. Freie Dokumente ohne belastbares fachliches Datum bleiben
-neutral. Finalisierte Bericht- und LEG-Revisionen sowie PDFs sind
-unveränderliche Ausgabestände und werden weder neu aufgelöst noch migriert
-oder neu erzeugt.
-
-Unterjährige Kurs- und Stammgruppenwechsel sind ein eigener atomarer
-Sammel-Lifecycle mit gemeinsamem Stichtag. Ein Austritt beendet ausschließlich
-die aktuelle schuljahresbezogene Einschreibung; der bestehende
-Archivierungsvertrag bleibt davon getrennt.
-
-Der erwartete V2→V3-Cutover ist dokumentiert, aber weiterhin gesperrt. Er
-verlangt eine bewusste Initialjahres- und `year_level`-Festlegung, ein
-verifiziertes V2-Backup und die genau einmalige Klassifikation jedes
-vorhandenen `StudentRecord`. Aktive eindeutige Fälle erhalten volle
-Initialintervalle; archivierte eindeutige Fälle behalten ihre letzte bekannte
-Zuordnung als historisches `enrolled`-Intervall bis zum Vortag des lokalen
-Archivdatums. Archivierung wird nicht als Austritt interpretiert. Unklare,
-ungültige oder widersprüchliche Fälle blockieren.
-
-Eine erkannte V2-Datenbank darf beim normalen Öffnen nicht automatisch
-migriert werden und vor abgeschlossenem Cutover keine reguläre V3-Fachnutzung
-starten. Erst der kontrollierte V2-Initialisierungs-/Migrationsmodus ermöglicht
-Initialjahr, Kursstufenbestätigung, vollständige Vorschau, Backup und atomaren
-Cutover. Die Migration stellt sämtliche Mitgliedschaftspfade um, schreibt neue
-Kompatibilitätsidentität und endet mit SQLite-Integritätsprüfungen. Rückfall
-erfolgt ausschließlich über das V2-Backup und einen geeigneten V2-Appstand;
-ein In-place-Downgrade ist ausgeschlossen.
+Vorschau, verifiziertes Sicherheitsbackup, Maintenance-Gate, erneute
+Quellenprüfung, Passwort-Step-up, atomare Transaktion, Rollback, Idempotenz,
+Historie und unveränderliche finale Bericht-/LEG-Artefakte bleiben für diesen
+späteren Produktprozess erforderlich. Diese Sicherheitsfunktionen sind durch
+den Architecture Cleanup nicht als implementiert zu verstehen.
 
 ## Berichte-Übersicht - implementierte Phase 2
 

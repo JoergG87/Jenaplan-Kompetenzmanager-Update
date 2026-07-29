@@ -1,163 +1,49 @@
 # Sprintplanung
 
-## SJ-2C - kontrollierter Datenbank-Startup
+## V3-only Architecture Cleanup
 
-**Status:** Startup-Erkennung und kontrolliertes Bootstrap-Routing lokal
-implementiert; produktive Migration und V3-Fachruntime bleiben gesperrt.
+**Status:** Governance beschlossen; technischer Cleanup folgt in einem
+getrennten Commit. Produktive V3-Runtime, Assignment-API, Schuljahreswechsel,
+Build, Packaging und Release bleiben gesperrt.
 
-- [x] Früheste sichere Einbindung nach Restore und Authentifizierung sowie vor
-  Runtime-Vorbereitung, Shell, Adaptern und Datenbank-Writern festgelegt.
-- [x] Reine Zustände `DATABASE_NOT_FOUND`, `V2_MIGRATION_REQUIRED`,
-  `V2_BOOTSTRAP_READY`, `V3_READY`, `SCHEMA_UNSUPPORTED` und
-  `RECOVERY_REQUIRED` implementiert.
-- [x] V2/V3 anhand registrierter Version und vollständigem Fingerprint
-  read-only getrennt erkannt.
-- [x] Aktive `DATABASE_COMPATIBILITY_VERSION = 2` und bestehende
-  Backup-/Restore-/Schemainitialisierungsgrenze unverändert gelassen.
-- [x] Normale Shell, Adapter, `initialize_schema()`, Master-Data- und
-  Catalog-Defaults für V2-Bootstrap blockiert.
-- [x] First-Run-Neuanlage erhalten und mögliche Initialdaten nach
-  Runtime-Vorbereitung erneut klassifiziert; fehlende Datenbanken bestehender
-  Installationen und vorhandene WAL-/SHM-Sidecars fail-closed blockiert.
-- [x] V3 erkannt, aber wegen weiterhin V2-gebundener Runtimepfade nicht für die
-  normale Shell freigegeben.
-- [x] Keine automatische Migration und kein Import der isolierten
-  Migrationsengine im Startup.
-- [x] Fokussierte SJ-2C-Startup-Suite: 34 Tests bestanden.
-- [x] Vollständige Regression: 1872 Tests und 71 Subtests bestanden; ein
-  umgebungsgebundener read-only Build-303-Referenztest erwartungsgemäß
-  übersprungen.
-- [x] Unabhängiger Technical- und Governance-Review ohne verbleibende Findings.
-- [ ] Bootstrap-Assistent, Preview, Backup-Step-up und bewusste
-  Migrationsausführung in gesondertem Auftrag implementieren.
-- [ ] Assignment-Reads und reguläre V3-Runtime gesondert freigeben.
-- [ ] Reale Migration, Build, Packaging und Release gesondert abnehmen.
+- [x] PO-Entscheidung festhalten: Es existieren keine produktiven V2-Daten.
+- [x] ADR-096 als Teil-Supersession der V2-Cutover-Annahmen aus ADR-095
+  beschließen.
+- [x] V3 als erstes und einziges Produktschema festlegen.
+- [x] Synthetische V2-Entwicklungsdaten als verwerfbar und direkt neu als V3
+  erzeugbar klassifizieren.
+- [x] V2-Migration, V2-Bootstrap, V2-Produktrestore und dauerhafte
+  V2-Kompatibilitätszusage aus dem Produktvertrag entfernen.
+- [ ] Finales V3-DDL, Fingerprint, Constraints, Trigger und Indizes in eine
+  direkte Schemaquelle überführen.
+- [ ] `school_year_transitions.from_school_year_id` für echte Wechsel
+  verpflichtend machen und Bootstrap-Transition entfernen.
+- [ ] Compatibility, Backup und Restore auf exakt Final-V3 begrenzen.
+- [ ] Startup auf fehlend/exakt final/unbekannt-beschädigt vereinfachen und die
+  Shell bis zur Leserumstellung mit
+  `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` sperren.
+- [ ] Deterministische synthetische V3-Testdaten ausschließlich in temporären
+  Datenbanken direkt erzeugen.
+- [ ] V2-Cutover-Code und seine exklusiven Tests entfernen.
+- [ ] Fokussierte Tests, Compileall, Importisolation, Gesamtsuite und
+  `git diff --check` ausführen.
+- [ ] Produktive Leser und Writer in einem späteren Paket auf Assignments und
+  V3-Schülerstammdaten umstellen.
+- [ ] Echten Schuljahreswechsel und unterjährige Sammelwechsel gesondert
+  implementieren und real abnehmen.
 
-## SJ-2B - isoliertes V3-Schema und Migrationsengine
+## Verbindlich erhaltene Schuljahresarbeit
 
-**Status:** Lokal implementiert; fokussierte Schema-, Migrations-,
-Rollback-, Provider- und V2-Regressionsgates, Gesamtsuite, Compile- und
-Importisolation sowie das abschließende Diff-Gate sind grün. Produktive
-Aktivierung und Release bleiben gesperrt.
-
-- [x] Planformat v2 mit verpflichtender `source_state_sha256`-Bindung
-  ausdrücklich versioniert.
-- [x] Vollständiges isoliertes V3-Zielschema mit exaktem Fingerprint
-  `640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1`
-  implementiert.
-- [x] `school_years`, `student_school_year_assignments`,
-  `school_year_transitions`, `courses.year_level` und V3-`students`
-  einschließlich Constraints, Indizes, Triggern und restriktiven FKs
-  implementiert.
-- [x] Unveränderliche `VerifiedBackupEvidence` als verpflichtende Eingabe
-  implementiert; die Engine erstellt selbst kein Backup.
-- [x] Source-State über vollständiges V2-Schema, alle nicht internen
-  Tabellen-Counts und per Feld gebildete Wertdigests sowie Plan- und
-  Enginewerte implementiert.
-- [x] Explizite atomare Transaktion, Course-/Student-Rebuild,
-  Bootstrapbeleg, Zielversion, Fingerprint und Integritätsprüfungen
-  implementiert.
-- [x] Alle registrierten Pre-Commit-Failpoints mit vollständigem V2-Rollback
-  und beide Post-Commit-/Reopen-Zustände geprüft.
-- [x] Standard-SQLite vollständig geprüft.
-- [x] Repository-SQLCipher-Provider verfügbar und ohne Klartextfallback
-  erfolgreich geprüft.
-- [x] Fokussierte SJ-2B-Suite: 120 Tests bestanden.
-- [x] Fokussierte V2-/Backup-/Restore-/Student-/Bericht-/LEG-/
-  Startup-Regression: 237 Tests und 8 Subtests bestanden.
-- [x] Vollständige Testsuite ausführen: 1838 Tests und 71 Subtests bestanden;
-  ein umgebungsgebundener read-only Build-303-Referenztest erwartungsgemäß
-  übersprungen.
-- [x] Python-Compileall und Qt-freie Importisolation ausführen.
-- [x] Abschließendes Diff-Gate ausführen.
-- [ ] Produktiven Bootstrap-Assistenten auf Basis der in SJ-2C implementierten
-  Startup-Zustandsmaschine in einem separaten Auftrag implementieren.
-- [ ] Produktive Membership-Read-/Write-APIs und reguläre V3-Shell gesondert
-  freigeben.
-- [ ] Reale Backup-/Restore- und produktive Migrationsabnahme durchführen.
-- [ ] Runtime-V3-Aktivierung, Build, Packaging und Release freigeben.
-
-## SJ-2A - Domain, Klassifikation und kanonischer Initialisierungsplan
-
-**Status:** Lokal implementiert und fokussiert geprüft. Keine Datenbank-,
-Schema-, Migrations-, Startup-, Bootstrap-UI- oder V2-Produktpfadänderung.
-
-- [x] `SchoolYear` mit bewusst übergebenem Label, inklusivem Zeitraum und
-  registrierten Statuswerten implementiert.
-- [x] `StudentMembershipAssignment` mit inklusiven Intervallen sowie getrennten
-  Regeln für `enrolled` und `exited` implementiert.
-- [x] Jeden übergebenen V2-`StudentRecord` deterministisch genau einmal in eine
-  der fünf Hauptkategorien klassifiziert.
-- [x] Sekundäre Warncodes getrennt von der fail-closed Primärkategorie erhalten.
-- [x] Aktive volle und archivierte begrenzte Initialassignments ohne Schätzung
-  aus Beobachtungen, Berichten, LEG, Dokumenten, Namen oder Systemdatum
-  vorgeschlagen.
-- [x] Vollständige read-only Vorschau und kanonischen
-  `SchoolYearInitializationPlan` mit Kursstufen, Blockern und
-  Schemainformationen implementiert.
-- [x] UTF-8-, NFC-, JSON-Key-, Array- und ISO-Datumskanonisierung sowie
-  deterministischen `plan_sha256` implementiert.
-- [x] Fokussierte Domain-, Klassifikations-, Grenz-, Keine-Schätzung- und
-  Determinismustests ergänzt.
-- [ ] Datenbankschema V3 und Migration bleiben einem späteren freigegebenen
-  Paket vorbehalten.
-- [ ] Startup-/Bootstrap-Integration und produktive Aktivierung bleiben einem
-  späteren freigegebenen Paket vorbehalten.
-
-## SJ-1 - Governance und Architektur des Schuljahreswechsels
-
-**Status:** Dokumentationsphase abgeschlossen; Product-, Datenmodell-,
-Lifecycle-, Historien-, Sicherheits- und UX-Zielvertrag in ADR-095 und den
-zuständigen Governance-Dokumenten festgehalten. Nicht implementiert. Migration,
-Tests, Build, Packaging und Release bleiben ausdrücklich gesperrt.
-
-- [x] `school_years` als einzige zukünftige Schuljahres-Source-of-Truth
-  festlegen.
-- [x] `student_school_year_assignments` als einzige zukünftige Kurs- und
-  Stammgruppen-Source-of-Truth mit nicht überlappenden, schuljahresgebundenen
-  Intervallen festlegen.
-- [x] Dauerhafte Doppelpflege über `students.group_id/course_id` nach dem
-  V2→V3-Cutover ausschließen.
-- [x] `courses.year_level` als stabile, bewusst bestätigte Stufe 1, 2 oder 3
-  ohne Namens-, Sortier- oder Positionsableitung festlegen.
-- [x] Pilot-Initialjahr `2025/26`, `2025-08-01` bis `2026-07-31` ausschließlich
-  als bestätigungspflichtige Vorbelegung festlegen.
-- [x] Jeden vorhandenen V2-`StudentRecord` genau einmal als aktiv eindeutig,
-  archiviert historisch eindeutig, zeitlich ungeklärt, referenziell ungültig
-  oder im Aktiv-/Archivzustand widersprüchlich klassifizieren.
-- [x] Lokales `archived_at`-Datum als ersten Tag ohne Zuordnung festlegen und
-  die letzte bekannte Zuordnung archivierter eindeutiger Fälle als
-  historisches `enrolled`-Intervall bis zum Vortag erhalten.
-- [x] Archivierung von `exited`, Reaktivierung und automatischer Archivierung
-  trennen; unklare Legacyfälle ohne Schätzung als Cutover-Blocker festlegen.
-- [x] Kontrollierten V2-Initialisierungs-/Migrationsmodus vor jeder regulären
-  V3-Fachnutzung als SJ-2-Bootstrapgrenze festlegen.
-- [x] Schuljahreswechsel, Kurs-3-Sonderfälle, Austritt und separate
-  Archivierung fachlich festlegen.
-- [x] Unterjährigen Kurs-/Stammgruppen-Sammelwechsel als eigenen atomaren
-  Lifecycle festlegen.
-- [x] Referenzzeitpunkte, neutrale freie Dokumente und Unveränderlichkeit
-  finaler Bericht-/LEG-Revisionen und PDFs festlegen.
-- [x] Rückdatierung mit vollständiger Lücken- und Klassifikationsprüfung
-  festlegen.
-- [x] Maintenance, verifiziertes Backup, Plan-Hash, `BEGIN IMMEDIATE`,
-  Wechselbeleg, Idempotenz, Rollback und vorhandenen Restorepfad festlegen.
-- [x] Verpflichtendes Passwort-Step-up und ausdrückliche Zuordnungsbestätigung
-  festlegen; Gerätecredential aus der ersten Freigabe ausschließen.
-- [x] Zehnstufigen Assistenten, vollständige editierbare Kindliste,
-  Sammelaktionen, Filter, Tastatur- und Accessibility-Vertrag dokumentieren.
-- [x] Erwarteten V2→V3-Cutover und V2-Backup-Rückfall dokumentieren.
-- [x] Keine Aufbewahrungsfrist erfinden und keine automatische physische
-  Löschung vorsehen.
-- [ ] Technischen Detailentwurf und Umsetzungsauftrag gesondert freigeben.
-- [ ] Schema V3 und Migration implementieren.
-- [ ] Sämtliche aktuellen Mitgliedschaftslese- und -schreibpfade auf
-  Assignments umstellen.
-- [ ] Automatisierte Migrations-, Transaktions-, Idempotenz-, Crash-,
-  Historien-, Security- und UI-Tests implementieren und ausführen.
-- [ ] Reale Backup-/Restore-, Update-, Passwort-Step-up-, Accessibility- und
-  UX-Prüfungen durchführen.
-- [ ] Build, Packaging, Migration produktiver Daten und Release freigeben.
+- [x] `SchoolYear`- und Assignment-Domain mit inklusiven Datumsintervallen.
+- [x] `school_years` und `student_school_year_assignments` als einzige
+  fachliche Sources of Truth beschlossen.
+- [x] Historische Auflösung anhand expliziter fachlicher Referenzzeitpunkte
+  beschlossen.
+- [x] Vorschau, Backup, Maintenance, atomare Transaktion, Rollback, Idempotenz
+  und Übergangshistorie für echte spätere Schuljahreswechsel vorgeschrieben.
+- [ ] Zentrale Assignment-Read-API und getrennte V3-Schülercommands
+  implementieren.
+- [ ] Reguläre V3-Runtime freigeben.
 
 ## Phase 2 Berichte-Übersicht - lokal implementiert
 
