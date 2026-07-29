@@ -1,5 +1,60 @@
 # Sprintplanung
 
+## SJ-1 - Governance und Architektur des Schuljahreswechsels
+
+**Status:** Dokumentationsphase abgeschlossen; Product-, Datenmodell-,
+Lifecycle-, Historien-, Sicherheits- und UX-Zielvertrag in ADR-095 und den
+zuständigen Governance-Dokumenten festgehalten. Nicht implementiert. Migration,
+Tests, Build, Packaging und Release bleiben ausdrücklich gesperrt.
+
+- [x] `school_years` als einzige zukünftige Schuljahres-Source-of-Truth
+  festlegen.
+- [x] `student_school_year_assignments` als einzige zukünftige Kurs- und
+  Stammgruppen-Source-of-Truth mit nicht überlappenden, schuljahresgebundenen
+  Intervallen festlegen.
+- [x] Dauerhafte Doppelpflege über `students.group_id/course_id` nach dem
+  V2→V3-Cutover ausschließen.
+- [x] `courses.year_level` als stabile, bewusst bestätigte Stufe 1, 2 oder 3
+  ohne Namens-, Sortier- oder Positionsableitung festlegen.
+- [x] Pilot-Initialjahr `2025/26`, `2025-08-01` bis `2026-07-31` ausschließlich
+  als bestätigungspflichtige Vorbelegung festlegen.
+- [x] Jeden vorhandenen V2-`StudentRecord` genau einmal als aktiv eindeutig,
+  archiviert historisch eindeutig, zeitlich ungeklärt, referenziell ungültig
+  oder im Aktiv-/Archivzustand widersprüchlich klassifizieren.
+- [x] Lokales `archived_at`-Datum als ersten Tag ohne Zuordnung festlegen und
+  die letzte bekannte Zuordnung archivierter eindeutiger Fälle als
+  historisches `enrolled`-Intervall bis zum Vortag erhalten.
+- [x] Archivierung von `exited`, Reaktivierung und automatischer Archivierung
+  trennen; unklare Legacyfälle ohne Schätzung als Cutover-Blocker festlegen.
+- [x] Kontrollierten V2-Initialisierungs-/Migrationsmodus vor jeder regulären
+  V3-Fachnutzung als SJ-2-Bootstrapgrenze festlegen.
+- [x] Schuljahreswechsel, Kurs-3-Sonderfälle, Austritt und separate
+  Archivierung fachlich festlegen.
+- [x] Unterjährigen Kurs-/Stammgruppen-Sammelwechsel als eigenen atomaren
+  Lifecycle festlegen.
+- [x] Referenzzeitpunkte, neutrale freie Dokumente und Unveränderlichkeit
+  finaler Bericht-/LEG-Revisionen und PDFs festlegen.
+- [x] Rückdatierung mit vollständiger Lücken- und Klassifikationsprüfung
+  festlegen.
+- [x] Maintenance, verifiziertes Backup, Plan-Hash, `BEGIN IMMEDIATE`,
+  Wechselbeleg, Idempotenz, Rollback und vorhandenen Restorepfad festlegen.
+- [x] Verpflichtendes Passwort-Step-up und ausdrückliche Zuordnungsbestätigung
+  festlegen; Gerätecredential aus der ersten Freigabe ausschließen.
+- [x] Zehnstufigen Assistenten, vollständige editierbare Kindliste,
+  Sammelaktionen, Filter, Tastatur- und Accessibility-Vertrag dokumentieren.
+- [x] Erwarteten V2→V3-Cutover und V2-Backup-Rückfall dokumentieren.
+- [x] Keine Aufbewahrungsfrist erfinden und keine automatische physische
+  Löschung vorsehen.
+- [ ] Technischen Detailentwurf und Umsetzungsauftrag gesondert freigeben.
+- [ ] Schema V3 und Migration implementieren.
+- [ ] Sämtliche aktuellen Mitgliedschaftslese- und -schreibpfade auf
+  Assignments umstellen.
+- [ ] Automatisierte Migrations-, Transaktions-, Idempotenz-, Crash-,
+  Historien-, Security- und UI-Tests implementieren und ausführen.
+- [ ] Reale Backup-/Restore-, Update-, Passwort-Step-up-, Accessibility- und
+  UX-Prüfungen durchführen.
+- [ ] Build, Packaging, Migration produktiver Daten und Release freigeben.
+
 ## Phase 2 Berichte-Übersicht - lokal implementiert
 
 **Status:** Pakete 2A.1, 2A.2, 2B und 2C lokal implementiert und fokussiert

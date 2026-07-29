@@ -1,5 +1,109 @@
 # Design-System
 
+## SJ-1 - UX-Vertrag für den Schuljahresassistenten
+
+**Status:** Verbindlicher Zielvertrag, noch nicht implementiert. Widget-,
+Pixel- und konkrete Layoutentscheidungen bleiben dem späteren UX-/Technical-
+Design vorbehalten; die folgende Informations-, Interaktions- und
+Accessibility-Semantik ist verbindlich.
+
+Der Einstieg lautet `Einstellungen → Schuljahre`. Der Assistent ist ein
+ruhiger, linearer Arbeitsraum mit zehn sichtbaren Phasen:
+
+1. Neues Schuljahr festlegen.
+2. Sicherheitsprüfung und Backup.
+3. Vorschlag erzeugen.
+4. Vollständige Kindliste.
+5. Sonderfälle bearbeiten.
+6. Validierung ohne Schreiben.
+7. Zusammenfassung.
+8. Passwort und explizite Bestätigung.
+9. Atomare Ausführung.
+10. Ergebnis.
+
+Die Phasenanzeige unterscheidet `aktuell`, `geprüft` und `blockiert` textlich;
+Farbe unterstützt nur. Ein späterer Schritt darf keine noch offene
+Entscheidung verdecken. Zurücknavigation vor der atomaren Ausführung bleibt
+möglich und verändert nur den flüchtigen Plan. Während der kritischen
+Ausführung ist Schließen blockiert; es werden keine erfundenen Prozentwerte
+gezeigt.
+
+Die dominante Arbeitsfläche ist die vollständige Kindliste mit den Spalten
+Kind, bisheriges Schuljahr, bisherige Stammgruppe, bisheriger Kurs, neues
+Schuljahr, neue Stammgruppe, neuer Kurs, Zielstatus und Warnungen. Alle
+Vorschläge sind sichtbar und editierbar. Filter und `Nur ungelöst` reduzieren
+nur die Darstellung; ein klarer Ergebnistext nennt weiterhin Gesamtzahl,
+sichtbare Zahl und Zahl ungelöster Kinder. Es gibt keine versteckten
+Standardentscheidungen, automatisch entfernten Zeilen oder allein durch
+Sortierung behauptete Priorität.
+
+Mehrfachauswahl unterstützt die bewusste Sammeländerung von Zielkurs und
+Zielstammgruppe. Die Aktion benennt Anzahl und Ziel vor der Übernahme in den
+flüchtigen Plan. Stammgruppe bleibt ohne ausdrückliche Änderung unverändert.
+Individuelle Änderungen bleiben danach sichtbar. Kursfarben dürfen wie bisher
+organisatorisch unterstützen, aber weder Fortschreibung, Gültigkeit, Warnung
+noch Leistung ausdrücken.
+
+Stufe 3 wird immer mit `Ungelöst` vorgeschlagen und benötigt eine bewusste
+Auswahl aus `Ausgeschieden`, `Kurs 3 wiederholen`, `Anderer vorhandener Kurs`
+oder `Ungelöst`. `Ausgeschieden` wird verständlich als Ende der aktuellen
+Einschreibung erklärt und niemals als Archivierung oder Löschung bezeichnet.
+
+Validierungsfehler erscheinen in einer zusammenfassenden `InlineMessage` und
+direkt textlich an der betroffenen Zeile. Nach Validierung erhält der erste
+Blocker Fokus; `Nur ungelöst` ist als nächste ruhige Aktion erreichbar.
+Warnungen, Auswahl, bearbeitete Werte und Zielstatus dürfen nie ausschließlich
+durch Farbe, Icon, Position oder Tooltip vermittelt werden.
+
+Die Zusammenfassung nennt mindestens Ausgangs- und Zielschuljahr, Zahl aller
+Kinder, fortgeschriebene Kurse, Wiederholungen, andere Kursziele,
+Stammgruppenänderungen, Austritte und verbleibende Blocker. Backupstatus,
+Quellenfrische und Rückdatierungsprüfung werden in verständlicher Sprache
+gezeigt; Hashes, lokale Pfade und technische Tokens bleiben außerhalb der
+normalen Oberfläche.
+
+Die finale Schutzstufe besitzt ein sensitives Passwortfeld mit eindeutigem
+Accessible Name, bestehender Drosselung und generischer Fehlermeldung. Die
+nicht vorbelegte Bestätigung lautet `Ich habe alle Zuordnungen geprüft.`. Die
+Primäraktion benennt das konkrete Ziel, beispielsweise
+`Schuljahr 2026/27 verbindlich aktivieren`. Touch ID beziehungsweise
+Gerätecredential erscheint in der ersten Freigabe nicht als Alternative.
+Escape oder Schließen bricht vor Beginn der atomaren Ausführung ohne Schreiben
+ab; Enter löst die irreversible Primäraktion nicht aus einem Tabelleneditor,
+Passwortfeld oder Bestätigungskästchen beiläufig aus.
+
+### Tastatur und Accessibility
+
+- Die Schrittfolge, Filter, Tabelle, Mehrfachauswahl, Sammelaktionen,
+  Einzelbearbeitung, Validierung, Zusammenfassung, Passwort, Bestätigung und
+  Primäraktion liegen in einer nachvollziehbaren Tab-Reihenfolge.
+- `Ctrl/Cmd+F` fokussiert den lokalen Filter. Escape leert zuerst einen
+  befüllten Filter und bricht danach nur gemäß sicherem Dialogvertrag ab.
+- Tabellenzeilen und editierbare Zellen sind per Tastatur erreichbar.
+  Pfeiltasten navigieren innerhalb der Tabelle; Leertaste schaltet eine
+  fokussierte Auswahl, Enter öffnet die eindeutige Zeilenbearbeitung.
+- Mehrfachauswahl und Bulk-Aktionen nennen im Accessible Name die ausgewählte
+  Kinderzahl. Fokus kehrt nach einer Sammeländerung sinnvoll in die Liste
+  zurück.
+- Jede Zeile besitzt eine zugängliche Gesamtbeschreibung mit Kind, bisherigem
+  und neuem Kontext, Zielstatus und Warnungen. Spaltenheader bleiben für
+  Screenreader zugeordnet.
+- Status, Warnung, Auswahl und Fehler besitzen sichtbaren Text sowie
+  Accessible Name beziehungsweise Description; keine Information ist nur
+  farblich oder nur im Tooltip verfügbar.
+- Die vollständige Kindliste bleibt bei Vergrößerung und hoher Textskalierung
+  bedienbar. Kopf, Validierungsstatus und notwendige Aktionen bleiben
+  erreichbar; unvermeidbarer Tabellenscroll darf keinen horizontalen
+  Gesamtscroll des Assistenten erzeugen.
+- Der Ergebniszustand erhält Fokus und nennt Erfolg oder sanitisierten Fehler,
+  Ergebniszahlen und den sicheren nächsten Schritt. Technische
+  Operation-Token, Hashes und Pfade werden nicht vorgelesen.
+
+Vor Produktfreigabe sind Tastaturlauf, hohe Textskalierung, sichtbarer Fokus,
+Kontrast, Screenreader-/VoiceOver-Ausgabe, Fehlerfokus und reale Bedienung des
+vollständigen Assistenten separat abzunehmen. Automatisierte Qt-Tests ersetzen
+diese reale Accessibility- und UX-Prüfung nicht.
+
 ## Phase 2 Berichte-Übersicht - neutrale Belegdarstellung
 
 **Status:** lokal implementiert und automatisiert im Qt-Offscreen-Modus

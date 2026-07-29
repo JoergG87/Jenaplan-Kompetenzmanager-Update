@@ -1,5 +1,311 @@
 # Data Lifecycle
 
+## SJ-1 - Schuljahre, Assignments und Übergänge
+
+**Status:** Verbindlicher Ziel-Lifecycle nach ADR-095, noch nicht
+implementiert. Kein nachfolgender Ablauf ist in V2 freigegeben oder
+ausführbar; SJ-1 ändert weder Schema noch Produktdaten.
+
+### Initialschuljahr und V2→V3-Cutover
+
+Die Migration startet nie beim normalen Datenbanköffnen. Sie ist ein bewusst
+gestarteter, blockierbarer Cutover:
+
+1. Eine erkannte V2-Datenbank in einen kontrollierten
+   V2-Initialisierungs-/Migrationsmodus überführen. Vor abgeschlossenem Cutover
+   startet keine reguläre V3-Fachnutzung. Die konkrete technische
+   Bootstrap-Umsetzung gehört erst zum späteren SJ-2-Entwurf.
+2. V2-Struktur, `user_version`, Schemafingerprint und vollständigen Quellbestand
+   read-only prüfen.
+3. Initialschuljahr ausdrücklich festlegen. Für den Pilotbestand dürfen
+   `2025/26`, `2025-08-01` und `2026-07-31` vorausgefüllt werden, müssen aber
+   bewusst bestätigt werden. Andere Installationen erhalten keine ungeprüfte
+   Pilotannahme.
+4. Die fachliche `year_level`-Zuordnung aller vorhandenen Kurse bewusst prüfen
+   und für Kurs 1, Kurs 2 und Kurs 3 bestätigen. Name, Anzeige, `sort_order`
+   und Listenposition werden nicht ausgewertet.
+5. Jeden vorhandenen `StudentRecord` genau einmal klassifizieren und eine
+   vollständige Vorschau einschließlich aktiver, archivierter, inaktiver,
+   ungültiger und widersprüchlicher Fälle zeigen.
+6. Ein vollständiges, verifiziertes V2-Sicherheitsbackup erstellen und seinen
+   SHA-256-Nachweis für den Rückfall festhalten.
+7. Die geplanten aktiven und historischen Assignments vollständig anzeigen.
+   Inkonsistente, fehlende, zeitlich mehrdeutige oder außerhalb des
+   bestätigten Schuljahres liegende Fälle blockieren.
+8. Quellen unmittelbar vor der Mutation erneut prüfen und sicherstellen, dass
+   keine produktive Schreiboperation oder zweite Instanz aktiv ist.
+9. In genau einer atomaren Migrationstransaktion V3-Schema und
+   `courses.year_level` schreiben, `school_years` anlegen und die bestehenden
+   aktuellen Kurs-/Stammgruppenwerte aktiver Schüler als Initialintervalle
+   vom bestätigten `start_date` bis zum bestätigten `end_date` übernehmen.
+   Historisch eindeutig migrierbare archivierte Schüler erhalten ihr
+   begrenztes historisches `enrolled`-Intervall.
+10. Sämtliche produktiven Mitgliedschaftslese- und -schreibpfade auf
+   `student_school_year_assignments` umstellen. Es entsteht keine laufende
+   Synchronisierung mit `students.group_id/course_id`.
+11. Neue `user_version` und neuen Schemafingerprint schreiben.
+12. Vor Erfolg `integrity_check` und `foreign_key_check` ausführen und nur den
+    vollständig konsistenten Zustand committen; sonst vollständig
+    zurückrollen.
+
+Daten vor `school_years.start_date` werden weder umdatiert noch künstlich
+zugeordnet. SCHOOL_YEAR-Seedkonstante, Systemdatum, Beobachtungsdaten und
+Kursnamen sind keine Initialisierungsquellen. Finalisierte Bericht-/LEG-
+Revisionen und PDFs werden nicht migriert oder neu erzeugt.
+
+Es gibt keinen In-place-Downgrade. Rückfall bedeutet vollständigen Restore des
+verifizierten V2-Backups über den vorhandenen sicheren Restorepfad und Start
+mit einem kompatiblen V2-Appstand. Eine abgebrochene Vorschau schreibt nichts;
+ein Fehler vor Commit lässt V2 unverändert.
+
+### Klassifizierung aktiver, archivierter und unklarer V2-Schüler
+
+Die Migrationsvorschau liest jeden vorhandenen `StudentRecord` unabhängig von
+seinem Aktivstatus und ordnet ihn genau einmal einer der fünf registrierten
+Kategorien zu. Die Summe der Kategorien muss mit der V2-Quellanzahl
+übereinstimmen; eine Abweichung blockiert.
+
+Die Primärklassifikation verwendet deterministisch dieselbe Priorität:
+zuerst widersprüchlicher Aktiv-/Archivzustand, danach ungültige oder fehlende
+Kurs-/Gruppenreferenz, danach aktiv eindeutig, danach archiviert historisch
+eindeutig und zuletzt zeitlich nicht eindeutig. Weitere gleichzeitig erkannte
+Fehler bleiben als zusätzliche Warnungen sichtbar. Kein Record wird mehrfach
+gezählt oder wegen eines Sekundärfehlers ausgelassen.
+
+Aktiv und eindeutig migrierbar ist ausschließlich `active = true` ohne
+gesetztes `archived_at` sowie mit gültiger vorhandener `group_id` und
+`course_id`. Das geplante `enrolled`-Assignment reicht vom `start_date` bis
+zum `end_date` des Initialjahres.
+
+Archiviert und historisch eindeutig migrierbar ist ausschließlich
+`active = false` mit sicher lesbarem `archived_at`, gültiger vorhandener
+`group_id` und `course_id` sowie sicher bestimmbarem, nichtleerem Zeitraum im
+Initialjahr. Ein zeitzonenbehafteter Archivzeitpunkt wird lokal zum
+Kalenderdatum normalisiert; ein naiver historischer Wert behält seinen
+gespeicherten lokalen Kalendertag. Dieses lokale Archivdatum ist der erste Tag
+ohne Zuordnung:
+
+```text
+valid_from = school_year.start_date
+valid_to   = local_date(archived_at) - 1 Kalendertag
+```
+
+Damit muss `start_date < local_date(archived_at) <= end_date` gelten. Es
+entsteht genau ein historisches `enrolled`-Assignment und kein Assignment ab
+dem Archivdatum. Es entsteht insbesondere kein `exited`-Assignment, keine
+Reaktivierung und keine neue Archivierungsentscheidung.
+
+Ungelöst und blockierend bleiben mindestens:
+
+- archiviert ohne sicher verwendbares `archived_at`;
+- inaktiv ohne eindeutigen Archivstatus;
+- lokales Archivdatum am oder vor dem Beginn beziehungsweise nach dem Ende des
+  Initialjahres;
+- fehlende oder ungültige `group_id` oder `course_id`;
+- `active = true` mit gesetztem `archived_at` und jede andere
+  widersprüchliche Aktiv-/Archivkombination;
+- jeder nicht sicher bestimmbare historische Zeitraum.
+
+Beobachtungen, Berichtzeiträume, LEG-, Dokumentdaten, Kursnamen,
+Sortierreihenfolgen und Systemdatum dürfen weder Lücken schließen noch eine
+Zuordnung schätzen. Jeder ungelöste Fall blockiert den Cutover bis zur
+bewussten Klärung oder bis zu einem gesondert freigegebenen neutralen
+Legacyvertrag. Ein solcher neutraler Vertrag ist in SJ-1 nicht freigegeben.
+
+Die Vorschau und der Cutover löschen keinen Schüler, reaktivieren oder
+archivieren niemanden automatisch und erhalten jede sicher bekannte letzte
+Kurs-/Stammgruppenzuordnung vor dem Wegfall von
+`students.group_id/course_id`. Finalisierte Bericht-/LEG-Revisionen und PDFs
+bleiben unverändert. Nicht finalisierte historische Records verwenden später
+ihren jeweiligen verbindlichen fachlichen Referenzzeitpunkt.
+
+### Assignmentauflösung
+
+Ein `enrolled`-Assignment ist ein inklusives Intervall mit vorhandener
+`group_id` und `course_id`, vollständig innerhalb genau eines Schuljahres.
+Intervalle desselben Kindes dürfen sich nicht überschneiden. Für einen
+fachlichen Record wird genau das Assignment gewählt, dessen
+`valid_from <= reference_date <= valid_to` gilt. Kein Treffer bleibt ein
+neutraler unzugeordneter historischer Zustand; mehrere Treffer sind eine
+verletzte Invariante und blockieren die betroffene produktive Verarbeitung.
+
+Verbindliche Referenzzeitpunkte:
+
+- Beobachtung: `observations.date`;
+- Kompetenzbestätigung: `confirmed_at`;
+- Bericht: `period_end`;
+- LEG: `conference_date`;
+- Dokument mit Beobachtungsbezug: `observations.date` der referenzierten
+  Beobachtung;
+- freies Dokument ohne belastbares Fachdatum: kein automatischer Kontext.
+
+Technische Erzeugungs-, Änderungs-, Abschluss- oder Dateizeitpunkte sind keine
+Fallbacks. Ein alter Berichtsentwurf, der nach dem Schuljahreswechsel
+finalisiert wird, erhält Kurs und Stammgruppe am `period_end`. Ein LEG erhält
+sie am `conference_date`.
+
+Finalisierte Bericht- und LEG-Revisionen sowie PDF-Artefakte bleiben
+unverändert. Ihre Snapshots werden nach einem Assignmentwechsel nicht erneut
+aufgelöst, nicht migriert und nicht neu erzeugt. Bericht und LEG behalten
+getrennte Aggregate, Repositories, Revisionen, Integritätsprüfung und
+Lifecycle.
+
+### Unterjähriger echter Kurs- oder Stammgruppenwechsel
+
+Ein echter Wechsel ist eine stichtagsbezogene Veränderung, keine
+rückwirkende Reparatur:
+
+1. Kind, aktuelles Assignment, gemeinsamer Stichtag und vorhandenen Zielkurs
+   beziehungsweise vorhandene Zielstammgruppe validieren.
+2. Prüfen, dass der Stichtag innerhalb desselben Schuljahres liegt und ein
+   eindeutiges bisheriges `enrolled`-Assignment schneidet.
+3. In einer atomaren Transaktion das alte `valid_to` auf den Kalendertag vor
+   dem Stichtag setzen.
+4. Ein neues `enrolled`-Assignment mit `valid_from = Stichtag` und bisherigem
+   Schuljahresbezug anlegen. Nicht geänderte Kurs- oder Stammgruppenwerte
+   werden übernommen.
+5. Überschneidungs-, Vollständigkeits- und Fremdschlüsselinvarianten erneut
+   prüfen und committen oder vollständig zurückrollen.
+
+Frühere Beobachtungen, Bestätigungen, Berichte, LEG und fachlich datierte
+Dokumente bleiben anhand ihres Referenzzeitpunkts beim damals gültigen
+Intervall. Eine administrative rückwirkende Korrektur ist ein ausdrücklich
+getrennter späterer Lifecycle mit eigenem Prüf-, Berechtigungs- und
+Auditvertrag; der normale Wechsel darf dafür nicht zweckentfremdet werden.
+
+### Atomarer Kurs-/Stammgruppen-Sammelwechsel
+
+Der Sammelwechsel innerhalb eines Schuljahres ist ein eigener
+Application-Service-Lifecycle und kein Schuljahreswechsel:
+
+1. Mehrere Kinder bewusst auswählen.
+2. Einen gemeinsamen Stichtag und genau einen vorhandenen Zielkurs festlegen.
+3. Die Stammgruppe standardmäßig unverändert lassen oder eine ausdrückliche
+   gemeinsame Zielstammgruppe wählen.
+4. Für alle Kinder Quellassignment, Schuljahr, Stichtag, Zielstammdaten,
+   Überschneidungsfreiheit und Ergebnisintervalle vollständig vorab
+   validieren.
+5. Eine einzige atomare Transaktion starten, alle bisherigen Intervalle am
+   Vortag beenden und alle neuen Intervalle am Stichtag beginnen.
+6. Nur den vollständigen Sammelerfolg committen; bei einem Fehler alle
+   Änderungen zurückrollen.
+
+Eine Schleife aus einzelnen `student.update`-Transaktionen ist unzulässig.
+Neue Kurse oder Stammgruppen werden durch den Lifecycle nicht automatisch
+angelegt. Eine reine Stammgruppen-Sammeländerung ist mit demselben
+Transaktionsvertrag ausdrücklich möglich.
+
+### Schuljahreswechsel planen
+
+Der Assistent arbeitet zunächst vollständig read-only:
+
+1. Zielschuljahr mit Label, `start_date` und `end_date` festlegen.
+2. Quellen, Instanzzustand, offene Editoren und Backupfähigkeit vorprüfen.
+3. Für am Ende des alten Schuljahres `enrolled` Kinder Vorschläge ausschließlich
+   aus `courses.year_level` erzeugen: 1 → 2, 2 → 3, 3 → `unresolved`.
+4. Stammgruppe standardmäßig unverändert projizieren.
+5. Vollständige Kindliste einschließlich aller Vorschläge, Warnungen und
+   ungelösten Fälle bereitstellen.
+6. Individuelle und explizite Sammeländerungen am flüchtigen Plan anwenden,
+   ohne Assignments zu schreiben.
+7. Für Stufe 3 ausschließlich `ausgeschieden`, `Kurs 3 wiederholen`, `anderer
+   vorhandener Kurs` oder `ungelöst` zulassen.
+8. Plan vollständig validieren. Jedes am alten Jahresende eingeschriebene
+   beziehungsweise aktive Kind braucht einen eindeutigen Zielstatus.
+9. Kanonische Zusammenfassung und Ergebniszahlen bilden.
+
+`unresolved`, fehlende Stammdaten, überlappende oder außerhalb des Zieljahres
+liegende Intervalle, ungeklärte Rückdatierungsfälle und zwischenzeitlich
+geänderte Quellen blockieren. Vorschläge sind nie versteckt und werden nie
+allein durch das Systemdatum wirksam. Es gibt keine automatische Archivierung.
+
+### Rückdatierte Aktivierung
+
+Liegt `to_school_year.start_date` vor dem tatsächlichen Ausführungszeitpunkt,
+prüft der Plan lückenlos den gesamten Bereich vom Startdatum bis zur
+Ausführung:
+
+- Beobachtungen nach `observations.date`;
+- Kompetenzbestätigungen nach `confirmed_at`;
+- Berichtsentwürfe anhand eines eindeutigen `period_end`;
+- LEG-Entwürfe anhand eines eindeutigen `conference_date`;
+- Beobachtungsdokumente anhand des Beobachtungsdatums;
+- freie Dokumente ohne sichere Semantik neutral und ohne automatische
+  Zuordnung;
+- finale Revisionen und PDFs unverändert.
+
+Es werden keine fachlichen Daten verschoben oder umdatiert. Entwürfe ohne
+eindeutigen Schuljahreskontext und andere nicht eindeutig klassifizierbare,
+implementierungsrelevante Fälle blockieren. Das Systemdatum plant, aktiviert
+oder repariert kein Schuljahr automatisch.
+
+### Maintenance, Backup, Step-up und atomare Ausführung
+
+Nach einer erfolgreichen read-only Validierung gilt exakt diese
+Ausführungsreihenfolge:
+
+1. Anwendungsweiten Maintenance-Modus aktivieren.
+2. Neue produktive Schreiboperationen blockieren und
+   `RuntimeInstanceLock` weiterverwenden; eine zweite App-Instanz ist
+   unzulässig.
+3. Jeden offenen ungespeicherten Editor sichtbar auflösen: bewusst speichern,
+   bewusst verwerfen oder den Schuljahreswechsel abbrechen. Es gibt kein
+   stilles Verwerfen.
+4. Über den vorhandenen Backuppfad ein Sicherheitsbackup erstellen und vor
+   Fortsetzung vollständig verifizieren.
+5. Aus dem vollständigen kanonischen Plan `plan_sha256` bilden und
+   `backup_sha256` binden.
+6. Alle Quellschuljahre, Assignments, Kinder, Kurse, Stammgruppen, Entwürfe und
+   Blocker unmittelbar vor dem Schreiben erneut prüfen.
+7. Erneute Eingabe des App-Passworts verlangen. Bestehende Drosselung und
+   generische Fehlermeldung wiederverwenden; Touch ID und Gerätecredential
+   sind kein Fallback der ersten Freigabe.
+8. Nicht vorbelegte Bestätigung `Ich habe alle Zuordnungen geprüft.` verlangen
+   und die zieljahresbezogene Aktion ausdrücklich auslösen.
+9. `BEGIN IMMEDIATE` starten.
+10. Altes Schuljahr auf `closed` setzen und `closed_at` schreiben.
+11. Zielschuljahr auf `current` setzen.
+12. Alle neuen `enrolled`- beziehungsweise `exited`-Assignments schreiben.
+13. Den idempotenten `school_year_transitions`-Beleg mit Plan-, Backup- und
+    Ergebnisnachweis schreiben.
+14. Vollständig committen oder vollständig zurückrollen.
+
+Ein identischer Wiederholungsaufruf liefert den bereits gespeicherten Erfolg.
+Ein anderer Plan für dasselbe Zielschuljahr wird abgelehnt. Crash vor Commit
+führt zum SQLite-Rollback; Crash nach Commit ist über den Wechselbeleg
+erkennbar. Restore erfolgt ausschließlich über den vorhandenen sicheren
+Restorepfad. Der Ablauf nutzt weder Cloud, Netzwerk noch Telemetrie.
+
+### Austritt, Archivierung und Aufbewahrung
+
+`assignment_status = exited` beendet die aktuelle Einschreibung. Das Kind
+erscheint nicht in aktuellen Schüler-, Kurs- oder Stammgruppenlisten, bleibt
+aber historisch auffindbar; alle fachlichen Daten bleiben erhalten.
+
+Archivierung ist ein separater bewusster Vorgang über den bestehenden
+`students.active`-/`archived_at`-Vertrag. Austritt darf Archivierung weder
+auslösen noch ersetzen. Es gibt keine automatische physische Löschung von
+Kindern, Dokumenten, historischen Daten oder Backups. Aufbewahrungsfristen
+bleiben einem späteren Betriebs- und Datenschutzvertrag vorbehalten.
+
+### Pflichtscope der ersten späteren Umsetzung
+
+Vor einer produktiven V3-Freigabe müssen Schülerlisten, Schülerprofilkopf,
+Kursansichten, Stammgruppenansichten, Dashboard, Kursverbünde,
+Berichtsvorbereitung, Berichtfinalisierung, LEG-Vorbereitung und LEG-Abschluss
+ihre aktuelle Mitgliedschaft ausschließlich aus der Assignmentprojektion
+beziehen. Historische Auflösung muss korrekt verfügbar sein, auch wenn nicht
+jede Ansicht sofort einen frei wählbaren Schuljahresfilter erhält. Neue
+historische Dashboard- oder Analyseoberflächen und eine automatische
+Zuordnung freier Legacydokumente sind nicht Teil dieses Pflichtscopes.
+
+Alle produktiven Schreibpfade werden ebenfalls umgestellt. Nach dem Cutover
+erzeugt ein neu eingeschriebenes Kind sein `students`-Objekt und das
+`enrolled`-Assignment des aktuellen Schuljahres in einem fachlich atomaren
+Use-Case; Kurs- oder Stammgruppenänderungen schreiben ausschließlich
+Assignments. Kein Pfad schreibt oder synchronisiert danach
+`students.group_id/course_id`.
+
 ## Phase 2 Berichte-Übersicht - rein lesender Projektionsablauf
 
 **Status:** lokal implementiert. Der Ablauf schreibt nichts und ergänzt weder

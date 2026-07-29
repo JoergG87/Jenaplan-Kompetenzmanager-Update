@@ -1,5 +1,210 @@
 # Data Registry
 
+## SJ-1 - geplante V3-Datenquellen für Schuljahre und Mitgliedschaften
+
+**Status:** Verbindlicher Datenmodellvertrag nach ADR-095, noch nicht
+implementiert. V2 bleibt bis zu einem ausdrücklich freigegebenen atomaren
+Cutover unverändert. Diese Registrierung ist keine Schemaänderung und keine
+Migration.
+
+### Datenhoheit
+
+| Geplante Quelle | Fachliche Wahrheit | Schreibowner | Löschgrenze |
+|---|---|---|---|
+| `school_years` | Schuljahresidentität, inklusiver Datumsbereich und Lifecycle-Status | späterer School-Year-Application-Service über Repository | kein produktiver Delete-Pfad |
+| `student_school_year_assignments` | einzige datierte Kurs- und Stammgruppenzuordnung eines Kindes | späterer Assignment-/Transition-Application-Service über Repository | restriktive Fremdschlüssel; kein kaskadierender fachlicher Delete |
+| `courses.year_level` | stabile fachliche Kursstufe 1, 2 oder 3 | kontrollierte Stammdatenpflege beziehungsweise bestätigter Cutover | keine Namens-, Sortier- oder Positionsableitung |
+| `school_year_transitions` | idempotenter Beleg eines committed Schuljahreswechsels | ausschließlich atomarer Transition-Service | kein produktiver Delete-Pfad |
+
+Nach erfolgreichem V2→V3-Cutover ersetzen Assignments die heute in V2
+gespeicherten `students.group_id` und `students.course_id` vollständig als
+Mitgliedschaftswahrheit. Dauerhafte Doppelpflege, Fallbackreads und
+Best-Effort-Synchronisierung sind unzulässig. Vor dem Cutover bleibt V2 der
+tatsächlich implementierte Produktstand; die geplanten Quellen dürfen nicht
+als vorhanden behauptet werden.
+
+### V2-Legacyquelle und vollständige Klassifizierung
+
+Für den kontrollierten Cutover ist jeder vorhandene V2-`StudentRecord` genau
+einmalige read-only Migrationsquelle. Gelesen werden mindestens `student_id`,
+`group_id`, `course_id`, `active` und `archived_at`. Diese Felder bleiben keine
+zweite V3-Wahrheit; sie werden ausschließlich für Vorschau, bewusste Klärung
+und atomare Übernahme verwendet.
+
+Die Vorschau ordnet jeden Datensatz genau einer Kategorie zu:
+
+| Kategorie | Verbindliche V3-Behandlung |
+|---|---|
+| aktiv und eindeutig migrierbar | `enrolled` vom `start_date` bis `end_date` des Initialjahres |
+| archiviert und historisch eindeutig migrierbar | historisches `enrolled` vom `start_date` bis zum Vortag des lokalen Archivdatums; danach kein Assignment |
+| inaktiv oder archiviert, aber zeitlich nicht eindeutig migrierbar | ungelöst und blockierend |
+| ungültige oder fehlende Kurs-/Gruppenzuordnung | ungelöst und blockierend |
+| widersprüchlicher Aktiv-/Archivzustand | ungelöst und blockierend |
+
+Die Primärkategorie wird in dieser festen fail-closed Reihenfolge bestimmt:
+widersprüchlicher Aktiv-/Archivzustand, ungültige oder fehlende
+Kurs-/Gruppenzuordnung, aktiv eindeutig, archiviert historisch eindeutig,
+zuletzt zeitlich nicht eindeutig. Zusätzliche Fehler werden nicht verworfen,
+sondern als weitere Blocker/Warnungen am selben Datensatz geführt. Dadurch
+bleibt die Klassifikation genau einmalig, ohne Mehrfachfehler zu verstecken.
+
+Die Summe aller Kategorien muss exakt der Anzahl aller gelesenen
+V2-`StudentRecord`s entsprechen. Es gibt keinen stillen Filter nach `active`
+und keinen Defaultfall, der einen Schüler auslässt.
+
+Für einen historisch eindeutig migrierbaren archivierten Schüler müssen
+`active = false`, ein sicher lesbares `archived_at` sowie gültige bestehende
+`group_id` und `course_id` vorliegen. Zeitzonenbehaftete Archivzeitpunkte
+werden lokal zum Kalenderdatum normalisiert; naive historische Werte behalten
+ihren gespeicherten lokalen Kalendertag. Das Archivdatum gilt als erster Tag
+ohne Zuordnung. `valid_to` ist daher der Vortag. Nur
+`start_date < lokales Archivdatum <= end_date` erzeugt ein nichtleeres
+historisches Intervall. Alle anderen Archivdaten sind ungelöst und
+blockierend.
+
+Archivierung erzeugt kein `exited`-Assignment, reaktiviert das Kind nicht und
+erzeugt nach dem Archivdatum kein aktuelles Assignment. `exited` bleibt
+ausschließlich ein schuljahresbezogener Zielstatus. Entfernen oder
+Nichtweiterverwenden von `students.group_id/course_id` ist erst zulässig, wenn
+die bekannte V2-Zuordnung als aktives oder historisches Assignment erhalten
+oder der Fall bewusst nach einem gesondert freigegebenen neutralen
+Legacyvertrag geklärt ist.
+
+Unzulässige Migrationsquellen sind Beobachtungsdaten, Berichtzeiträume,
+LEG-Daten, Dokumentdaten, Kursnamen, Sortierreihenfolgen und Systemdatum.
+Finalisierte Bericht-/LEG-Revisionen und PDFs bleiben unverändert; nicht
+finalisierte historische Records werden später ausschließlich über ihre
+verbindlichen fachlichen Referenzzeitpunkte aufgelöst. Kein `StudentRecord`
+wird physisch gelöscht, automatisch reaktiviert, automatisch archiviert oder
+automatisch als ausgetreten interpretiert.
+
+### `school_years`
+
+```text
+school_years(
+  school_year_id,
+  label,
+  start_date,
+  end_date,
+  status,       -- planned | current | closed
+  created_at,
+  closed_at
+)
+```
+
+Verbindliche Invarianten:
+
+- stabile eindeutige `school_year_id`;
+- nicht leeres `label`, aber keine fachliche Ableitung aus dem Label;
+- geschlossener Bereich mit `start_date <= end_date`;
+- keine zeitliche Überlappung zwischen Schuljahren;
+- im produktiv initialisierten V3-Bestand genau ein `status = current`;
+- `closed_at` ist für `closed` gesetzt und sonst leer;
+- kein produktiver physischer Löschpfad.
+
+Für den Pilotbestand darf der Assistent `2025/26`, `2025-08-01` bis
+`2026-07-31` vorausfüllen, muss alle drei Werte aber bewusst bestätigen
+lassen. Andere Installationen erhalten diese Werte nicht ungeprüft.
+SCHOOL_YEAR-Seedkonstante, Systemdatum, Kursnamen und Beobachtungsdaten sind
+keine Quellen. Die bestehenden aktuellen Kurs- und Stammgruppenwerte aktiver
+Pilotkinder bilden Initialintervalle vom `2025-08-01` bis `2026-07-31`.
+Daten vor dem bestätigten Beginn werden nicht künstlich einem Schuljahr
+zugeordnet.
+
+### `student_school_year_assignments`
+
+```text
+student_school_year_assignments(
+  assignment_id,
+  student_id,
+  school_year_id,
+  group_id,
+  course_id,
+  assignment_status,  -- enrolled | exited
+  valid_from,
+  valid_to,
+  created_at,
+  updated_at
+)
+```
+
+Verbindliche Invarianten:
+
+- stabile eindeutige `assignment_id`;
+- restriktive Fremdschlüssel auf `students`, `school_years`, `groups` und
+  `courses`;
+- geschlossener Bereich mit `valid_from <= valid_to`;
+- vollständige Lage innerhalb von `school_years.start_date/end_date`;
+- keine Überschneidung mit einem anderen Assignment desselben Kindes;
+- `enrolled` verlangt vorhandene `group_id` und `course_id`;
+- `exited` hat keine `group_id` und keine `course_id` und behauptet damit
+  keine aktuelle Kurs- oder Stammgruppenmitgliedschaft;
+- ein echter Wechsel erzeugt angrenzende, nicht überlappende Intervalle:
+  altes `valid_to` am Vortag, neues `valid_from` am Stichtag.
+
+Ein `exited`-Assignment ist keine Archivierung und keine Datenlöschung.
+`students.active`, `students.archived_at` und der bestehende Archiv-Lifecycle
+bleiben eine getrennte Source of Truth. Historische Records bleiben über
+`student_id` und ihren fachlichen Referenzzeitpunkt erhalten.
+
+### `courses.year_level`
+
+`courses` erhält den stabilen Pflichtwert `year_level` mit exakt `1`, `2` oder
+`3`. Kurse bleiben schuljahresübergreifende Stammdaten und werden nicht je
+Schuljahr erzeugt, aktiviert oder deaktiviert. Die Pilotzuordnung von Kurs 1,
+Kurs 2 und Kurs 3 wird vor dem Cutover bewusst bestätigt. `course_name`,
+Anzeigename, `sort_order` und Listenposition sind unzulässige
+Ableitungsquellen.
+
+### `school_year_transitions`
+
+```text
+school_year_transitions(
+  transition_id,
+  from_school_year_id,
+  to_school_year_id,
+  operation_token,
+  plan_sha256,
+  backup_sha256,
+  result_counts_json,
+  completed_at
+)
+```
+
+Verbindliche Invarianten:
+
+- restriktive Fremdschlüssel auf Ausgangs- und Zielschuljahr;
+- eindeutiges `transition_id` und eindeutiges Zielschuljahr;
+- `operation_token` und `plan_sha256` belegen den idempotenten Aufruf;
+- `backup_sha256` belegt das unmittelbar vorher erstellte und verifizierte
+  Sicherheitsbackup;
+- `result_counts_json` enthält kanonische Ergebniszahlen, keine zweite
+  Assignment- oder Item-Wahrheit;
+- derselbe Plan liefert den bestehenden Erfolg, ein anderer Plan für dasselbe
+  Zielschuljahr wird abgelehnt;
+- der Beleg wird in derselben Transaktion wie Schuljahrstatus und Assignments
+  geschrieben.
+
+Eine `school_year_transition_items`-Tabelle ist für die erste Umsetzung nicht
+vorgesehen und nicht als Datenquelle registriert.
+
+### Historische Lesequellen
+
+Assignments werden ausschließlich anhand des fachlichen Zeitpunkts gelesen:
+
+| Record | Referenzzeitpunkt | Regel |
+|---|---|---|
+| `observations` | `observations.date` | damals gültiges Assignment |
+| `student_competency_confirmations` | `confirmed_at` | damals gültiges Assignment |
+| Berichtsentwurf/-finalisierung | `period_end` | Kontext am Periodenende, auch bei später Finalisierung |
+| LEG-Entwurf/-Abschluss | `conference_date` | Kontext am Gesprächsdatum |
+| `documents` mit `observation_id` | Datum der referenzierten Beobachtung | keine technische Dateizeit verwenden |
+| freies `documents` ohne belastbares Fachdatum | keines | neutral, keine automatische Zuordnung |
+
+Finale Bericht-/LEG-Revisionen und PDF-Artefakte sind eingefrorene
+Ausgabemodelle. Sie lesen keine späteren Assignmentwerte, werden im Cutover
+nicht geändert und nicht neu erzeugt.
+
 ## Phase 2 Berichte-Übersicht - ausschließlich vorhandene Lesequellen
 
 **Status:** lokal implementierter Lesepfad. Es entstand keine neue

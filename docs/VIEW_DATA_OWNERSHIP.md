@@ -1,5 +1,75 @@
 # View Data Ownership
 
+## SJ-1 - geplante Ownership für Schuljahre und Assignments
+
+**Status:** Verbindliche Zielownership nach ADR-095, noch nicht implementiert.
+Die folgenden Grenzen autorisieren keine neue View, Persistenz oder Migration.
+
+Die künftige Einstellungsseite `Schuljahre` besitzt ausschließlich Navigation,
+Anzeige und den Einstieg in bewusst ausgelöste Application-Use-Cases. Der
+Schuljahresassistent besitzt temporären Schritt-, Filter-, Auswahl-,
+Bearbeitungs-, Fokus- und Bestätigungszustand. Weder Einstellungsseite noch
+Assistent lesen Repositories oder SQLite direkt und enthalten keine
+Intervall-, Fortschreibungs-, Historien-, Backup-, Hash-, Transaktions-,
+Idempotenz- oder Authentifizierungslogik.
+
+Der spätere School-Year-/Assignment-Application-Layer besitzt:
+
+- Initialjahres- und `year_level`-Vorschau;
+- kanonische Assignmentprojektion zu einem expliziten Referenzdatum;
+- Fortschreibungsvorschläge ausschließlich aus `courses.year_level`;
+- vollständige Planvalidierung und kanonischen Plan-Hash;
+- atomaren unterjährigen Kurs-/Stammgruppen-Sammelwechsel;
+- Maintenance-Orchestrierung und atomaren Schuljahreswechsel;
+- Idempotenzprüfung gegen `school_year_transitions`;
+- displayfertige Ergebniszahlen und neutrale Blocker.
+
+Repositories besitzen ausschließlich die registrierte Persistenz für
+`school_years`, `student_school_year_assignments`, `courses.year_level` und
+`school_year_transitions`. Der bestehende Backup-Application-Service bleibt
+Owner von Erstellung und Verifikation des Sicherheitsbackups. Die bestehende
+Security-Domain bleibt Owner des Passwort-Step-ups, ihrer Drosselung und
+generischen Fehlermeldung. Der bestehende Restorepfad bleibt alleiniger Owner
+einer Wiederherstellung. Widgets dürfen keinen dieser Vorgänge nachbilden.
+
+Die spätere Assistentenprojektion liefert pro Kind mindestens:
+
+- stabile `student_id` und displayfertigen Namen;
+- bisheriges und neues `school_year_id` samt sichtbarem Label;
+- bisherige und neue `group_id` samt sichtbarem Namen;
+- bisherige und neue `course_id` samt sichtbarem Namen;
+- flüchtigen eindeutigen `target_status`;
+- vollständige displayfertige Warnungen und Blocker.
+
+Filter, `Nur ungelöst`, Mehrfachauswahl und Sammelaktionen verändern
+ausschließlich den flüchtigen Plan. Verdeckte Zeilen bleiben Teil der
+Vollständigkeitsvalidierung; Filtern darf keine Entscheidung treffen oder ein
+Kind aus dem Plan entfernen. Die View sortiert, vervollständigt oder
+entscheidet keine Ziele selbst.
+
+Für Schülerlisten, Schülerprofilkopf, Kursansichten, Stammgruppenansichten,
+Dashboard und Kursverbünde liefert der Adapter später ausschließlich die
+kanonische aktuelle Assignmentprojektion des genau einen aktuellen
+Schuljahres. `assignment_status = exited` wird aus aktuellen Listen
+ausgeschlossen, bleibt in ausdrücklich historischen Projektionen auffindbar.
+`students.active` bleibt eine getrennte Archivierungsquelle.
+
+Berichtsvorbereitung und Berichtfinalisierung beziehen den
+Assignmentkontext am `period_end`; LEG-Vorbereitung und LEG-Abschluss am
+`conference_date`. Beobachtungs- und Bestätigungsprojektionen verwenden
+`observations.date` beziehungsweise `confirmed_at`. Ein Dokument mit
+Beobachtungsbezug verwendet das Beobachtungsdatum; ein freies Dokument ohne
+belastbares Fachdatum erhält keinen automatisch aufgelösten
+Schuljahreskontext.
+
+Bericht und LEG bleiben getrennte Domain-, Repository-, Revisions- und
+View-Owner. Ihre finalisierten Snapshots und PDFs werden von späteren
+Assignmentprojektionen nicht erneut gelesen oder verändert. Widgets berechnen
+keine historische Zugehörigkeit aus technischen Zeitstempeln. Ein frei
+wählbarer Schuljahresfilter in jeder Ansicht ist nicht Voraussetzung der
+ersten Umsetzung; der Adapter-/Application-Layer muss die fachlich korrekte
+historische Auflösung dennoch bereitstellen.
+
 ## Phase 2 Berichte-Übersicht - implementiert
 
 `StudentDesktopAdapter.report_overview_for_student` bleibt die einzige

@@ -1,5 +1,81 @@
 # Technical Naming Registry
 
+## SJ-1 - geplante technische Namen für Schuljahre und Assignments
+
+**Status:** Verbindlich für die V3-Zielarchitektur nach ADR-095, noch nicht
+implementiert. Die Registrierung führt weder Tabelle noch Spalte, Migration,
+Service, ViewModel oder UI-Code ein.
+
+Geplante SQLite-Tabellen:
+
+- `school_years`
+- `student_school_year_assignments`
+- `school_year_transitions`
+
+`school_year_transition_items` ist für die erste Umsetzung ausdrücklich nicht
+registriert. Eine spätere Einführung verlangt den Nachweis einer zwingenden
+technischen Notwendigkeit und eine neue Architekturentscheidung.
+
+Registrierte Felder und Werte:
+
+| Technischer Name | Verbindliche Bedeutung |
+|---|---|
+| `school_year_id` | stabile technische Identität eines Schuljahres |
+| `label` | bewusst bestätigte sichtbare Bezeichnung, keine Datumsquelle |
+| `start_date` | inklusiver fachlicher Beginn eines Schuljahres |
+| `end_date` | inklusives fachliches Ende eines Schuljahres |
+| `status` | bei `school_years` ausschließlich `planned`, `current` oder `closed` |
+| `created_at` | technischer Erzeugungszeitpunkt |
+| `closed_at` | technischer Abschlusszeitpunkt eines geschlossenen Schuljahres |
+| `assignment_id` | stabile technische Identität eines datierten Assignments |
+| `assignment_status` | ausschließlich `enrolled` oder `exited` |
+| `valid_from` | inklusiver Beginn des Assignments |
+| `valid_to` | inklusives Ende des Assignments |
+| `updated_at` | technischer Änderungszeitpunkt eines Assignments |
+| `year_level` | stabile fachliche Kursstufe; ausschließlich Integer `1`, `2` oder `3` |
+| `transition_id` | stabile technische Identität eines committed Schuljahreswechsels |
+| `from_school_year_id` | geschlossenes Ausgangsschuljahr |
+| `to_school_year_id` | aktiviertes Zielschuljahr |
+| `operation_token` | idempotente Identität eines Ausführungsaufrufs |
+| `plan_sha256` | SHA-256 des kanonischen, vollständig validierten Wechselplans |
+| `backup_sha256` | SHA-256 des unmittelbar vor der Mutation verifizierten Sicherheitsbackups |
+| `result_counts_json` | kanonische Ergebniszahlen des committed Wechsels, keine Item-Historie |
+| `completed_at` | technischer Commit-/Abschlusszeitpunkt des Wechsels |
+| `target_status` | ausschließlich flüchtiger Plan-/UI-Wert `enrolled`, `exited` oder `unresolved`; keine zusätzliche Mitgliedschaftswahrheit |
+
+Bestehende Namen `student_id`, `group_id` und `course_id` behalten ihre stabile
+Identitätsbedeutung. Nach dem V2→V3-Cutover sind
+`students.group_id` und `students.course_id` keine zulässigen produktiven
+Mitgliedschaftsfelder mehr. Die gleichnamigen Fremdschlüssel innerhalb von
+`student_school_year_assignments` referenzieren die weiterhin bestehenden
+Stammdaten `groups` und `courses`.
+
+`courses.year_level` darf ausschließlich bewusst gesetzt und validiert werden.
+`course_name`, sichtbarer Anzeigename, `sort_order` und Listenposition sind
+keine Aliasse, Fallbacks oder Ableitungsquellen für `year_level`.
+
+Fachliche Referenzzeitpunkte bleiben die vorhandenen Namen
+`observations.date`, `confirmed_at`, `period_end` und `conference_date`.
+`completed_at`, `finalized_at`, `created_at`, `updated_at` und das Systemdatum
+ersetzen keinen dieser fachlichen Referenzzeitpunkte.
+
+Sichtbare Begriffe:
+
+| Sichtbarer Begriff | Technischer Bezug |
+|---|---|
+| Schuljahr | `school_years` / `school_year_id` |
+| Aktuelles Schuljahr | genau ein Datensatz mit `status = current` |
+| Eingeschrieben | `assignment_status = enrolled` |
+| Ausgeschieden | `assignment_status = exited` |
+| Ungelöst | flüchtiger `target_status = unresolved`; blockiert die Ausführung |
+| Kurs 3 wiederholen | `target_status = enrolled` mit derselben vorhandenen `course_id` der `year_level = 3` |
+| Anderer vorhandener Kurs | `target_status = enrolled` mit bewusst gewählter vorhandener `course_id` |
+| Sicherheitsbackup | vorhandener verifizierter Backuppfad; Beleg im Wechsel über `backup_sha256` |
+
+Noch nicht werden konkrete Klassen-, Service-, Command-, Repository- oder
+ViewModel-Namen registriert. Diese Namen gehören in den späteren technischen
+Entwurf und dürfen nicht durch SJ-1 vorweggenommen werden.
+
 ## Phase 2 Berichte-Übersicht - implementiert
 
 Die folgenden Namen sind für die lokal implementierte Phase-2-Projektion

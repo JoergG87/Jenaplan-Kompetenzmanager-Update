@@ -1,5 +1,60 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## SJ-1 - Governance- und Architekturvertrag für den Schuljahreswechsel
+
+**Status:** Product-, Discovery- und Architecture-Gate abgeschlossen.
+ADR-095 und die zuständigen Governance-Registries beschreiben die verbindliche
+Zielarchitektur. Noch nicht implementiert; keine Schemaänderung, Migration,
+Test-, Build-, Packaging- oder Releasefreigabe.
+
+Schuljahre werden künftig ausschließlich in `school_years`, Kurs- und
+Stammgruppenzuordnungen ausschließlich als datierte Intervalle in
+`student_school_year_assignments` geführt. Nach dem kontrollierten V2→V3-
+Cutover sind `students.group_id` und `students.course_id` keine produktive
+Mitgliedschaftswahrheit mehr. Kurse 1, 2 und 3 bleiben dauerhafte Stammdaten;
+ihre Fortschreibung verwendet ausschließlich das bewusst bestätigte
+`courses.year_level` mit den Werten 1, 2 oder 3.
+
+Der Schuljahreswechsel ist ein expliziter Assistent unter
+`Einstellungen → Schuljahre`. Er zeigt die vollständige Kindliste, lässt alle
+Vorschläge bearbeiten, hält Stufe 3 ungelöst, blockiert unvollständige Pläne
+und führt erst nach verifiziertem Backup, erneuter Quellenprüfung,
+Passwort-Step-up und expliziter Bestätigung eine einzige atomare Transaktion
+aus. `school_year_transitions` belegt den committed, idempotenten Erfolg. Es
+gibt keine automatische Aktivierung durch das Systemdatum, Archivierung,
+physische Löschung oder Cloudabhängigkeit.
+
+Historische Zuordnung wird am fachlichen Referenzzeitpunkt aufgelöst:
+Beobachtung `observations.date`, Bestätigung `confirmed_at`, Bericht
+`period_end`, LEG `conference_date` und Beobachtungsdokument am
+Beobachtungsdatum. Freie Dokumente ohne belastbares fachliches Datum bleiben
+neutral. Finalisierte Bericht- und LEG-Revisionen sowie PDFs sind
+unveränderliche Ausgabestände und werden weder neu aufgelöst noch migriert
+oder neu erzeugt.
+
+Unterjährige Kurs- und Stammgruppenwechsel sind ein eigener atomarer
+Sammel-Lifecycle mit gemeinsamem Stichtag. Ein Austritt beendet ausschließlich
+die aktuelle schuljahresbezogene Einschreibung; der bestehende
+Archivierungsvertrag bleibt davon getrennt.
+
+Der erwartete V2→V3-Cutover ist dokumentiert, aber weiterhin gesperrt. Er
+verlangt eine bewusste Initialjahres- und `year_level`-Festlegung, ein
+verifiziertes V2-Backup und die genau einmalige Klassifikation jedes
+vorhandenen `StudentRecord`. Aktive eindeutige Fälle erhalten volle
+Initialintervalle; archivierte eindeutige Fälle behalten ihre letzte bekannte
+Zuordnung als historisches `enrolled`-Intervall bis zum Vortag des lokalen
+Archivdatums. Archivierung wird nicht als Austritt interpretiert. Unklare,
+ungültige oder widersprüchliche Fälle blockieren.
+
+Eine erkannte V2-Datenbank darf beim normalen Öffnen nicht automatisch
+migriert werden und vor abgeschlossenem Cutover keine reguläre V3-Fachnutzung
+starten. Erst der kontrollierte V2-Initialisierungs-/Migrationsmodus ermöglicht
+Initialjahr, Kursstufenbestätigung, vollständige Vorschau, Backup und atomaren
+Cutover. Die Migration stellt sämtliche Mitgliedschaftspfade um, schreibt neue
+Kompatibilitätsidentität und endet mit SQLite-Integritätsprüfungen. Rückfall
+erfolgt ausschließlich über das V2-Backup und einen geeigneten V2-Appstand;
+ein In-place-Downgrade ist ausgeschlossen.
+
 ## Berichte-Übersicht - implementierte Phase 2
 
 ### Historische Basis: Paket 1 und Paket 1.1

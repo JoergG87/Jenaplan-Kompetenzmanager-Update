@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- SJ-1-Governance- und Architekturvertrag für den Schuljahreswechsel
+  dokumentiert. ADR-095 legt `school_years` und datierte
+  `student_school_year_assignments` als einzige zukünftige Sources of Truth,
+  stabile `courses.year_level`, unterjährige Intervalle, Schuljahreswechsel,
+  separaten Kurs-/Stammgruppen-Sammelwechsel, Austritt ohne Archivierung,
+  fachliche Historienzeitpunkte, unveränderliche Bericht-/LEG-Revisionen,
+  Maintenance, Backup, Passwort-Step-up, Idempotenz, Rollback und den
+  erwarteten V2→V3-Cutover fest. Die zuständigen Registries enthalten
+  Datenmodell-, Lifecycle-, Ownership-, UI- und Accessibility-Verträge.
+  Bestehende Pilotwerte für `2025/26` bleiben ausschließlich
+  bestätigungspflichtige Vorbelegung. Keine Code-, Schema-, Migrations-, Test-,
+  Build-, Packaging- oder Releaseänderung. Die letzte bekannte
+  Legacy-Governance-Lücke ist geschlossen: Jeder V2-`StudentRecord` wird genau
+  einmal klassifiziert; aktive eindeutige Fälle erhalten volle
+  Initialintervalle, archivierte eindeutige Fälle ein historisches
+  `enrolled`-Intervall bis zum Vortag des lokal normalisierten
+  `archived_at`-Datums. Archivierung wird nicht als Austritt gedeutet;
+  zeitlich unklare, ungültige und widersprüchliche Fälle blockieren. Erkannte
+  V2-Bestände bleiben bis zum kontrollierten Initialisierungs-/Migrationsmodus
+  von regulärer V3-Fachnutzung getrennt.
 - Phase 2 der Berichte-Übersicht lokal implementiert: deterministische
   RPD-Projektion, ein Ereignis je Beobachtung beziehungsweise abgeschlossenem
   Bericht-/LEG-Aggregat, aktueller sicherer Bestätigungsstand, Zielumfang 15,

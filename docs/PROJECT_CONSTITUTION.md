@@ -1,5 +1,56 @@
 # Project Constitution
 
+## SJ-1 - Verfassungsgrenzen für Schuljahre und Mitgliedschaften
+
+ADR-095 ist der verbindliche Zielvertrag; SJ-1 ist ausschließlich Governance
+und Architektur. Das bestehende V2-Produkt bleibt technisch unverändert, bis
+ein gesonderter Product-Owner-Auftrag Schema, Migration, Implementierung,
+Tests und Release freigibt.
+
+Für das spätere produktive V3 gelten folgende unverhandelbare Regeln:
+
+- `school_years` ist die einzige gespeicherte Wahrheit für Schuljahre;
+- `student_school_year_assignments` ist die einzige gespeicherte Wahrheit für
+  Kurs- und Stammgruppenzuordnungen;
+- `students.group_id` und `students.course_id` werden nach dem Cutover nicht
+  parallel gepflegt;
+- Mitgliedschaften sind inklusive, nicht überlappende Intervalle innerhalb
+  genau eines Schuljahres;
+- aktuelle und historische Views sind Projektionen anhand eines ausdrücklich
+  festgelegten fachlichen Referenzzeitpunkts;
+- `courses.year_level` ist eine stabile fachliche Stufe 1, 2 oder 3 und wird
+  niemals aus sichtbaren Namen, Sortierung oder Position abgeleitet;
+- Kurs-, Stammgruppen- und Schuljahreswechsel laufen ausschließlich über
+  Application Services und Repositories; Widgets besitzen keine
+  Assignment-, Historien-, Transaktions-, Backup- oder Authentifizierungslogik;
+- Bericht und LEG bleiben getrennte Aggregate und verwenden `period_end`
+  beziehungsweise `conference_date`;
+- finalisierte Revisionen und PDFs bleiben unverändert und werden nicht gegen
+  spätere Assignments neu aufgelöst;
+- `assignment_status = exited` ist keine Archivierung; `students.active` und
+  der bestehende Archivvertrag bleiben getrennt;
+- weder Schuljahreswechsel noch Aufbewahrung erzeugen automatische physische
+  Löschung.
+
+Jeder V2→V3-Cutover und jeder produktive Schuljahreswechsel benötigt vor der
+Mutation ein verifiziertes Sicherheitsbackup, eine vollständige Vorschau,
+erneute Quellenprüfung, exklusive Instanz-/Maintenance-Grenze und eine einzige
+atomare Transaktion mit vollständigem Rollback. Eine Migration beim normalen
+Datenbanköffnen, eine automatische Aktivierung durch das Systemdatum und ein
+In-place-Downgrade sind ausgeschlossen.
+
+Die finale Aktivierung verlangt ein Passwort-Step-up über die bestehende
+Security-Domain einschließlich ihrer Drosselung und generischen
+Fehlermeldung. Gerätecredential und Touch ID sind nicht Teil der ersten
+Freigabe. Restore bleibt Eigentum des vorhandenen sicheren Restorepfads.
+
+Historische Auflösung muss fachlich korrekt möglich sein, auch wenn die erste
+UI noch nicht überall einen Schuljahresfilter anbietet. Die erste produktive
+Umsetzung ist erst vollständig, wenn Schülerlisten, Schülerprofilkopf, Kurs-
+und Stammgruppenansichten, Dashboard, Kursverbünde, Berichtsvorbereitung und
+-finalisierung sowie LEG-Vorbereitung und -Abschluss keine aktuelle
+Mitgliedschaft mehr aus `students.group_id/course_id` beziehen.
+
 ## Die Oberfläche unterstützt, entscheidet aber nicht pädagogisch
 
 Die Oberfläche darf unterstützen, aber niemals pädagogische Entscheidungen
