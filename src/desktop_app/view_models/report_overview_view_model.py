@@ -1,4 +1,4 @@
-"""Display-ready Paket-1 projection for the student report overview."""
+"""Display-ready report overview projections without UI or persistence logic."""
 
 from __future__ import annotations
 
@@ -24,6 +24,10 @@ from src.desktop_app.view_models.learning_report_view_model import (
 )
 
 DraftViewModel = TypeVar("DraftViewModel")
+_UNSET = object()
+_CURRENTLY_UNAVAILABLE_CATALOG_STATUSES = frozenset(
+    {"historical", "inactive", "deactivated", "retired", "deleted", "archived"}
+)
 
 
 @dataclass(frozen=True)
@@ -97,8 +101,48 @@ class ReportSubjectEntryViewModel:
 
 
 @dataclass(frozen=True)
+class ReportOverviewTimelineEventViewModel:
+    """One neutral, display-ready Phase-2 documentation event."""
+
+    event_type: str
+    source_identity: tuple[str, ...]
+    occurred_on: date
+    date_label: str
+    title: str
+    detail_text: str
+    accessible_name: str
+    action: ReportOverviewActionViewModel | None = None
+
+
+@dataclass(frozen=True)
+class ReportOverviewSubjectDocumentationViewModel:
+    """Absolute current documentation identities for one canonical subject."""
+
+    subject_id: str
+    subject_name: str
+    competency_ids: tuple[str, ...]
+    observation_ids: tuple[str, ...]
+    competency_count_text: str
+    observation_count_text: str
+    accessible_name: str
+    evidence_action: ReportOverviewActionViewModel
+    prepare_action: ReportOverviewActionViewModel
+
+
+@dataclass(frozen=True)
+class ReportOverviewProjectionWarningViewModel:
+    """Neutral display state for one incomplete Phase-2 source projection."""
+
+    warning_key: str
+    text: str = "Dokumentationsdaten konnten nicht vollständig gelesen werden."
+    accessible_name: str = (
+        "Hinweis: Dokumentationsdaten konnten nicht vollständig gelesen werden."
+    )
+
+
+@dataclass(frozen=True)
 class ReportOverviewViewModel:
-    """Complete display projection for package 1 of the report overview."""
+    """Complete display projection for the report overview."""
 
     report_status: ReportStatusCardViewModel
     learning_conference_status: LearningConferenceStatusCardViewModel
@@ -111,6 +155,15 @@ class ReportOverviewViewModel:
     report_period_end_label: str
     report_content_available: bool
     workspace_action: ReportOverviewActionViewModel
+    timeline_events: tuple[ReportOverviewTimelineEventViewModel, ...] = ()
+    subject_documentation: tuple[
+        ReportOverviewSubjectDocumentationViewModel,
+        ...,
+    ] = ()
+    projection_warnings: tuple[
+        ReportOverviewProjectionWarningViewModel,
+        ...,
+    ] = ()
 
 
 def empty_report_overview() -> ReportOverviewViewModel:
@@ -182,6 +235,14 @@ def build_report_overview(
     learning_conference_revision_errors: frozenset[str] = frozenset(),
     selected_report_draft_id: str = "",
     selected_learning_conference_draft_id: str = "",
+    phase2_period_start: object = _UNSET,
+    phase2_period_end: object = _UNSET,
+    phase2_observations: Sequence[Mapping[str, object]] = (),
+    phase2_report_revisions: Sequence[Mapping[str, object]] = (),
+    phase2_learning_conference_revisions: Sequence[Mapping[str, object]] = (),
+    phase2_confirmations: Sequence[Mapping[str, object]] = (),
+    phase2_subjects: Sequence[Mapping[str, object]] = (),
+    phase2_source_errors: Sequence[str] = (),
 ) -> ReportOverviewViewModel:
     """Compose existing report and LEG reads only at the display boundary."""
     report_drafts = tuple(report_drafts)
@@ -195,6 +256,11 @@ def build_report_overview(
         learning_conference_drafts,
         selected_learning_conference_draft_id,
         "learning_conference_draft_id",
+    )
+    phase2_selected_report = _strict_selected_draft(
+        report_drafts,
+        selected_report_draft_id,
+        "report_draft_id",
     )
     report_status = (
         _unreadable_report_status()
@@ -267,6 +333,42 @@ def build_report_overview(
             "Bericht öffnen",
             selected_report.report_draft_id,
         )
+    phase2_timeline: tuple[ReportOverviewTimelineEventViewModel, ...] = ()
+    phase2_subject_documentation: tuple[
+        ReportOverviewSubjectDocumentationViewModel,
+        ...,
+    ] = ()
+    phase2_warnings: tuple[ReportOverviewProjectionWarningViewModel, ...] = ()
+    if phase2_selected_report is not None:
+        resolved_phase2_start = (
+            phase2_selected_report.period_start
+            if phase2_period_start is _UNSET
+            else phase2_period_start
+        )
+        resolved_phase2_end = (
+            phase2_selected_report.period_end
+            if phase2_period_end is _UNSET
+            else phase2_period_end
+        )
+        (
+            phase2_timeline,
+            phase2_subject_documentation,
+            phase2_warnings,
+        ) = _phase2_evidence_projection(
+            resolved_phase2_start,
+            resolved_phase2_end,
+            observations=phase2_observations,
+            report_revisions=phase2_report_revisions,
+            learning_conference_revisions=(
+                phase2_learning_conference_revisions
+            ),
+            confirmations=phase2_confirmations,
+            subjects=phase2_subjects,
+            source_errors=phase2_source_errors,
+            selected_report_draft_id=(
+                phase2_selected_report.report_draft_id
+            ),
+        )
     return ReportOverviewViewModel(
         report_status=report_status,
         learning_conference_status=learning_conference_status,
@@ -281,6 +383,9 @@ def build_report_overview(
         report_period_end_label=period_end_label,
         report_content_available=selected_report is not None,
         workspace_action=workspace_action,
+        timeline_events=phase2_timeline,
+        subject_documentation=phase2_subject_documentation,
+        projection_warnings=phase2_warnings,
     )
 
 
@@ -798,6 +903,606 @@ def _history(
     )
 
 
+def _phase2_evidence_projection(
+    period_start_value: object,
+    period_end_value: object,
+    *,
+    observations: Sequence[Mapping[str, object]],
+    report_revisions: Sequence[Mapping[str, object]],
+    learning_conference_revisions: Sequence[Mapping[str, object]],
+    confirmations: Sequence[Mapping[str, object]],
+    subjects: Sequence[Mapping[str, object]],
+    source_errors: Sequence[str],
+    selected_report_draft_id: str,
+) -> tuple[
+    tuple[ReportOverviewTimelineEventViewModel, ...],
+    tuple[ReportOverviewSubjectDocumentationViewModel, ...],
+    tuple[ReportOverviewProjectionWarningViewModel, ...],
+]:
+    """Build the deterministic Phase-2 display projection from read-only rows."""
+    warning_keys = {
+        f"source:{value.strip()}"
+        for value in source_errors
+        if isinstance(value, str) and value.strip()
+    }
+    period_start = _phase2_local_date(period_start_value)
+    period_end = _phase2_local_date(period_end_value)
+    if period_start is None:
+        warning_keys.add("period_start_invalid")
+    if period_end is None:
+        warning_keys.add("period_end_invalid")
+    if (
+        period_start is not None
+        and period_end is not None
+        and period_end < period_start
+    ):
+        warning_keys.add("period_end_before_start")
+    if (
+        period_start is None
+        or period_end is None
+        or period_end < period_start
+    ):
+        return (), (), _phase2_warnings(warning_keys)
+
+    canonical_subjects = _phase2_canonical_subjects(subjects)
+    subject_names = {
+        subject_id: subject_name
+        for subject_id, subject_name in canonical_subjects
+    }
+    subject_order = {
+        subject_id: index
+        for index, (subject_id, _subject_name) in enumerate(canonical_subjects)
+    }
+    competency_ids_by_subject: dict[str, set[str]] = {
+        subject_id: set()
+        for subject_id, _subject_name in canonical_subjects
+    }
+    observation_ids_by_subject: dict[str, set[str]] = {
+        subject_id: set()
+        for subject_id, _subject_name in canonical_subjects
+    }
+    observation_events: list[ReportOverviewTimelineEventViewModel] = []
+
+    for observation in observations:
+        observation_id = _phase2_text(observation.get("observation_id"))
+        if not observation_id or observation.get("active", True) is False:
+            continue
+        observed_on = _phase2_local_date(
+            observation.get("observed_on", observation.get("date"))
+        )
+        if observed_on is None:
+            warning_keys.add(f"observation_date_invalid:{observation_id}")
+            continue
+        if not _phase2_in_period(observed_on, period_start, period_end):
+            continue
+
+        assignments = _phase2_mapping_rows(observation.get("assignments", ()))
+        assigned_subject_ids = {
+            _phase2_text(assignment.get("subject_id"))
+            for assignment in assignments
+        }
+        assigned_subject_ids.discard("")
+        assigned_subject_ids.discard("cross_subject")
+        if assignments:
+            observation_subject_ids = assigned_subject_ids
+        else:
+            fallback_subject_id = _phase2_text(observation.get("subject_id"))
+            observation_subject_ids = (
+                {fallback_subject_id}
+                if fallback_subject_id and fallback_subject_id != "cross_subject"
+                else set()
+            )
+
+        for subject_id in observation_subject_ids:
+            if subject_id in observation_ids_by_subject:
+                observation_ids_by_subject[subject_id].add(observation_id)
+
+        assigned_competency_ids = {
+            _phase2_text(assignment.get("competency_id"))
+            for assignment in assignments
+            if _phase2_text(assignment.get("competency_id"))
+        }
+        for assignment in assignments:
+            competency_id = _phase2_text(assignment.get("competency_id"))
+            subject_id = _phase2_text(assignment.get("subject_id"))
+            if (
+                competency_id
+                and subject_id in competency_ids_by_subject
+                and _phase2_is_current_competency(assignment)
+            ):
+                competency_ids_by_subject[subject_id].add(competency_id)
+
+        event_subject_names = tuple(
+            subject_names[subject_id]
+            for subject_id in sorted(
+                observation_subject_ids,
+                key=lambda item: (subject_order.get(item, len(subject_order)), item),
+            )
+            if subject_id in subject_names
+        )
+        detail_parts: list[str] = []
+        if event_subject_names:
+            detail_parts.append(", ".join(event_subject_names))
+        assignment_count = len(assigned_competency_ids)
+        detail_parts.append(
+            (
+                "1 Kompetenz zugeordnet"
+                if assignment_count == 1
+                else f"{assignment_count} Kompetenzen zugeordnet"
+            )
+        )
+        for field in ("competency_area", "topic", "context"):
+            value = _phase2_short_existing_text(observation.get(field))
+            if value:
+                detail_parts.append(value)
+        observation_events.append(
+            _phase2_event(
+                event_type="observation",
+                source_identity=("observation", observation_id),
+                occurred_on=observed_on,
+                title="Beobachtung dokumentiert",
+                detail_text=" · ".join(detail_parts),
+                action=ReportOverviewActionViewModel(
+                    "show_observation",
+                    "Beobachtung öffnen",
+                    observation_id,
+                ),
+            )
+        )
+
+    report_events = _phase2_report_events(
+        report_revisions,
+        period_start,
+        period_end,
+        warning_keys,
+    )
+    learning_conference_events = _phase2_learning_conference_events(
+        learning_conference_revisions,
+        period_start,
+        period_end,
+        warning_keys,
+    )
+    confirmation_events = _phase2_confirmation_events(
+        confirmations,
+        period_start,
+        period_end,
+        warning_keys,
+    )
+
+    document_events = _phase2_deduplicate_events(
+        (*report_events, *learning_conference_events)
+    )
+    supplementary_events = _phase2_deduplicate_events(
+        (*observation_events, *confirmation_events)
+    )
+    if len(document_events) >= 15:
+        selected_events = document_events
+    else:
+        remaining_capacity = 15 - len(document_events)
+        newest_supplementary = tuple(
+            sorted(
+                supplementary_events,
+                key=lambda event: (
+                    -event.occurred_on.toordinal(),
+                    event.source_identity,
+                ),
+            )[:remaining_capacity]
+        )
+        selected_events = (*document_events, *newest_supplementary)
+    timeline_events = tuple(
+        sorted(
+            selected_events,
+            key=lambda event: (
+                event.occurred_on,
+                event.source_identity,
+            ),
+        )
+    )
+
+    subject_documentation = tuple(
+        _phase2_subject_documentation(
+            subject_id,
+            subject_name,
+            competency_ids_by_subject[subject_id],
+            observation_ids_by_subject[subject_id],
+            selected_report_draft_id,
+        )
+        for subject_id, subject_name in canonical_subjects
+    )
+    return (
+        timeline_events,
+        subject_documentation,
+        _phase2_warnings(warning_keys),
+    )
+
+
+def _phase2_report_events(
+    revisions: Sequence[Mapping[str, object]],
+    period_start: date,
+    period_end: date,
+    warning_keys: set[str],
+) -> tuple[ReportOverviewTimelineEventViewModel, ...]:
+    grouped: dict[str, list[Mapping[str, object]]] = {}
+    for revision in revisions:
+        report_draft_id = _phase2_text(revision.get("report_draft_id"))
+        if not report_draft_id or not _phase2_is_completed_revision(
+            revision,
+            completion_key="is_finalized",
+            completed_statuses={"finalized", "superseded"},
+        ):
+            continue
+        if revision.get("hash_valid") is not True:
+            warning_keys.add(f"report_revision_invalid:{report_draft_id}")
+            continue
+        grouped.setdefault(report_draft_id, []).append(revision)
+
+    result: list[ReportOverviewTimelineEventViewModel] = []
+    for report_draft_id, candidates in grouped.items():
+        revision = max(
+            candidates,
+            key=lambda item: _phase2_revision_key(
+                item,
+                "learning_report_revision_id",
+            ),
+        )
+        revision_id = _phase2_text(
+            revision.get("learning_report_revision_id")
+        )
+        finalized_on = _phase2_local_date(revision.get("finalized_at"))
+        if finalized_on is None:
+            warning_keys.add(f"report_date_invalid:{report_draft_id}")
+            continue
+        if not _phase2_in_period(finalized_on, period_start, period_end):
+            continue
+        result.append(
+            _phase2_event(
+                event_type="report",
+                source_identity=("report", report_draft_id),
+                occurred_on=finalized_on,
+                title="Bericht abgeschlossen",
+                detail_text="Finalisierter Bericht",
+                action=(
+                    ReportOverviewActionViewModel(
+                        "open_report_revision",
+                        "Bericht öffnen",
+                        revision_id,
+                    )
+                    if revision_id
+                    else None
+                ),
+            )
+        )
+    return tuple(result)
+
+
+def _phase2_learning_conference_events(
+    revisions: Sequence[Mapping[str, object]],
+    period_start: date,
+    period_end: date,
+    warning_keys: set[str],
+) -> tuple[ReportOverviewTimelineEventViewModel, ...]:
+    grouped: dict[str, list[Mapping[str, object]]] = {}
+    for revision in revisions:
+        draft_id = _phase2_text(
+            revision.get("learning_conference_draft_id")
+        )
+        if not draft_id or not _phase2_is_completed_revision(
+            revision,
+            completion_key="is_completed",
+            completed_statuses={"completed", "superseded"},
+        ):
+            continue
+        if revision.get("hash_valid") is not True:
+            warning_keys.add(f"learning_conference_revision_invalid:{draft_id}")
+            continue
+        grouped.setdefault(draft_id, []).append(revision)
+
+    result: list[ReportOverviewTimelineEventViewModel] = []
+    for draft_id, candidates in grouped.items():
+        revision = max(
+            candidates,
+            key=lambda item: _phase2_revision_key(
+                item,
+                "learning_conference_revision_id",
+            ),
+        )
+        revision_id = _phase2_text(
+            revision.get("learning_conference_revision_id")
+        )
+        conference_on = _phase2_local_date(revision.get("conference_date"))
+        if conference_on is None:
+            warning_keys.add(f"learning_conference_date_invalid:{draft_id}")
+            continue
+        if not _phase2_in_period(conference_on, period_start, period_end):
+            continue
+        result.append(
+            _phase2_event(
+                event_type="learning_conference",
+                source_identity=("learning_conference", draft_id),
+                occurred_on=conference_on,
+                title="LEG durchgeführt",
+                detail_text="Lernentwicklungsgespräch",
+                action=(
+                    ReportOverviewActionViewModel(
+                        "open_learning_conference_revision",
+                        "LEG öffnen",
+                        revision_id,
+                    )
+                    if revision_id
+                    else None
+                ),
+            )
+        )
+    return tuple(result)
+
+
+def _phase2_confirmation_events(
+    confirmations: Sequence[Mapping[str, object]],
+    period_start: date,
+    period_end: date,
+    warning_keys: set[str],
+) -> tuple[ReportOverviewTimelineEventViewModel, ...]:
+    result: list[ReportOverviewTimelineEventViewModel] = []
+    for confirmation in confirmations:
+        student_id = _phase2_text(confirmation.get("student_id"))
+        competency_id = _phase2_text(confirmation.get("competency_id"))
+        if (
+            not student_id
+            or not competency_id
+            or not _phase2_is_current_competency(confirmation)
+            or not _phase2_is_safe_confirmation(confirmation)
+        ):
+            continue
+        confirmed_on = _phase2_local_date(confirmation.get("confirmed_at"))
+        if confirmed_on is None:
+            warning_keys.add(
+                f"confirmation_date_invalid:{student_id}:{competency_id}"
+            )
+            continue
+        if not _phase2_in_period(confirmed_on, period_start, period_end):
+            continue
+        competency_text = _phase2_short_existing_text(
+            confirmation.get("competency_text")
+        )
+        result.append(
+            _phase2_event(
+                event_type="confirmation",
+                source_identity=(
+                    "confirmation",
+                    student_id,
+                    competency_id,
+                ),
+                occurred_on=confirmed_on,
+                title="Kompetenz bestätigt",
+                detail_text=(
+                    competency_text
+                    or "Aktueller sicherer Bestätigungsstand"
+                ),
+                action=ReportOverviewActionViewModel(
+                    "show_competency",
+                    "Kompetenzbereich öffnen",
+                    competency_id,
+                ),
+            )
+        )
+    return tuple(result)
+
+
+def _phase2_subject_documentation(
+    subject_id: str,
+    subject_name: str,
+    competency_ids: set[str],
+    observation_ids: set[str],
+    selected_report_draft_id: str,
+) -> ReportOverviewSubjectDocumentationViewModel:
+    sorted_competency_ids = tuple(sorted(competency_ids))
+    sorted_observation_ids = tuple(sorted(observation_ids))
+    competency_count = len(sorted_competency_ids)
+    observation_count = len(sorted_observation_ids)
+    return ReportOverviewSubjectDocumentationViewModel(
+        subject_id=subject_id,
+        subject_name=subject_name,
+        competency_ids=sorted_competency_ids,
+        observation_ids=sorted_observation_ids,
+        competency_count_text=(
+            f"{competency_count} "
+            f"{'Kompetenz' if competency_count == 1 else 'Kompetenzen'} "
+            "dokumentiert"
+        ),
+        observation_count_text=(
+            f"{observation_count} "
+            f"{'Beobachtung' if observation_count == 1 else 'Beobachtungen'} "
+            "im Berichtszeitraum"
+        ),
+        accessible_name=(
+            f"{subject_name}: {competency_count} "
+            f"{'Kompetenz' if competency_count == 1 else 'Kompetenzen'} "
+            "dokumentiert"
+        ),
+        evidence_action=ReportOverviewActionViewModel(
+            "show_subject_evidence",
+            "Belege ansehen",
+            subject_id,
+            subject_id,
+        ),
+        prepare_action=ReportOverviewActionViewModel(
+            "prepare_subject",
+            "Bericht vorbereiten",
+            selected_report_draft_id,
+            subject_id,
+        ),
+    )
+
+
+def _phase2_event(
+    *,
+    event_type: str,
+    source_identity: tuple[str, ...],
+    occurred_on: date,
+    title: str,
+    detail_text: str,
+    action: ReportOverviewActionViewModel | None,
+) -> ReportOverviewTimelineEventViewModel:
+    date_label = _date_label(occurred_on)
+    accessible_name = " · ".join(
+        value
+        for value in (date_label, title, detail_text)
+        if value
+    )
+    return ReportOverviewTimelineEventViewModel(
+        event_type=event_type,
+        source_identity=source_identity,
+        occurred_on=occurred_on,
+        date_label=date_label,
+        title=title,
+        detail_text=detail_text,
+        accessible_name=accessible_name,
+        action=action,
+    )
+
+
+def _phase2_deduplicate_events(
+    events: Sequence[ReportOverviewTimelineEventViewModel],
+) -> tuple[ReportOverviewTimelineEventViewModel, ...]:
+    by_identity: dict[
+        tuple[str, ...],
+        ReportOverviewTimelineEventViewModel,
+    ] = {}
+    for event in events:
+        existing = by_identity.get(event.source_identity)
+        if existing is None or (
+            event.occurred_on,
+            event.detail_text,
+            event.title,
+        ) > (
+            existing.occurred_on,
+            existing.detail_text,
+            existing.title,
+        ):
+            by_identity[event.source_identity] = event
+    return tuple(by_identity.values())
+
+
+def _phase2_canonical_subjects(
+    subjects: Sequence[Mapping[str, object]],
+) -> tuple[tuple[str, str], ...]:
+    result: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for subject in subjects:
+        subject_id = _phase2_text(subject.get("subject_id"))
+        subject_name = _phase2_text(subject.get("subject_name"))
+        if (
+            not subject_id
+            or not subject_name
+            or subject_id == "cross_subject"
+            or subject.get("active", True) is False
+            or subject_id in seen
+        ):
+            continue
+        seen.add(subject_id)
+        result.append((subject_id, subject_name))
+    return tuple(result)
+
+
+def _phase2_mapping_rows(value: object) -> tuple[Mapping[str, object], ...]:
+    if isinstance(value, Sequence) and not isinstance(
+        value,
+        (str, bytes, bytearray),
+    ):
+        return tuple(item for item in value if isinstance(item, Mapping))
+    return ()
+
+
+def _phase2_is_current_competency(row: Mapping[str, object]) -> bool:
+    if row.get("active", True) is False or row.get("historical") is True:
+        return False
+    catalog_status = _phase2_text(row.get("catalog_status")).lower()
+    return catalog_status not in _CURRENTLY_UNAVAILABLE_CATALOG_STATUSES
+
+
+def _phase2_is_safe_confirmation(row: Mapping[str, object]) -> bool:
+    explicit = row.get("confirmation_safe")
+    if explicit is not None:
+        return explicit is True
+    state = _phase2_text(row.get("documentation_state")).lower()
+    return state not in {
+        "",
+        "undocumented",
+        "unknown",
+        "confirmation_unknown",
+    }
+
+
+def _phase2_is_completed_revision(
+    row: Mapping[str, object],
+    *,
+    completion_key: str,
+    completed_statuses: set[str],
+) -> bool:
+    if completion_key in row:
+        return row.get(completion_key) is True
+    return _phase2_text(row.get("status")).lower() in completed_statuses
+
+
+def _phase2_revision_key(
+    row: Mapping[str, object],
+    revision_id_key: str,
+) -> tuple[int, str]:
+    value = row.get("revision_number", 0)
+    try:
+        revision_number = int(value)
+    except (TypeError, ValueError):
+        revision_number = 0
+    return revision_number, _phase2_text(row.get(revision_id_key))
+
+
+def _phase2_local_date(value: object) -> date | None:
+    if isinstance(value, datetime):
+        return value.astimezone().date() if value.tzinfo is not None else value.date()
+    if isinstance(value, date):
+        return value
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip()
+    if not normalized:
+        return None
+    try:
+        return date.fromisoformat(normalized)
+    except ValueError:
+        pass
+    try:
+        parsed = datetime.fromisoformat(normalized.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed.astimezone().date() if parsed.tzinfo is not None else parsed.date()
+
+
+def _phase2_in_period(value: date, period_start: date, period_end: date) -> bool:
+    return period_start <= value <= period_end
+
+
+def _phase2_text(value: object) -> str:
+    return value.strip() if isinstance(value, str) else ""
+
+
+def _phase2_short_existing_text(value: object) -> str:
+    if not isinstance(value, str):
+        return ""
+    normalized = " ".join(value.split())
+    if len(normalized) <= 120:
+        return normalized
+    return f"{normalized[:117].rstrip()}…"
+
+
+def _phase2_warnings(
+    warning_keys: set[str],
+) -> tuple[ReportOverviewProjectionWarningViewModel, ...]:
+    return tuple(
+        ReportOverviewProjectionWarningViewModel(warning_key)
+        for warning_key in sorted(warning_keys)
+    )
+
+
 def _period_label(start: date, end: date) -> str:
     return f"{_date_label(start)} bis {_date_label(end)}"
 
@@ -878,3 +1583,20 @@ def _selected_draft(
             None,
         )
     return drafts[0] if len(drafts) == 1 else None
+
+
+def _strict_selected_draft(
+    drafts: Sequence[DraftViewModel],
+    selected_id: str,
+    id_attribute: str,
+) -> DraftViewModel | None:
+    if not selected_id:
+        return None
+    return next(
+        (
+            draft
+            for draft in drafts
+            if str(getattr(draft, id_attribute, "")) == selected_id
+        ),
+        None,
+    )
