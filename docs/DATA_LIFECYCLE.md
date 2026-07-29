@@ -2,8 +2,8 @@
 
 ## Phase 2 Berichte-Übersicht - rein lesender Projektionsablauf
 
-**Status:** Zielvertrag beschlossen, nicht implementiert. Der Ablauf schreibt
-nichts und ergänzt weder Persistenz noch Migration oder Recovery.
+**Status:** lokal implementiert. Der Ablauf schreibt nichts und ergänzt weder
+Persistenz noch Migration oder Recovery.
 
 1. Die Projektion setzt genau einen bewusst gewählten RPD voraus und verwendet
    dessen `period_start` und `period_end` inklusiv. Ohne eindeutigen RPD
@@ -12,13 +12,15 @@ nichts und ergänzt weder Persistenz noch Migration oder Recovery.
    Auch ein einzelner vorhandener RPD wird nicht automatisch gewählt; eine
    fehlende oder veraltete bewusste Auswahl bleibt neutral.
 2. Der Desktop-Adapter friert `period_start` und `period_end` des ausgewählten
-   RPD einmal ein. Er liest die Bericht- und LEG-Aggregate des Schülers über
-   ihre getrennten Pfade, verifiziert je Aggregat die neueste gültige Revision
-   und liest aktive Beobachtungen, Zuordnungen sowie den kanonischen
-   Kompetenzstatus möglichst in einem SQLite-Read-Snapshot. Quellenfehler
-   werden neutral isoliert; ein defekter Zweig leert keine weiterhin gültige
-   Teilprojektion. Bericht und LEG werden erst in der flüchtigen
-   Displayprojektion zusammengeführt.
+   RPD einmal ein. Er liest aktive Beobachtungen, Zuordnungen sowie den
+   kanonischen Kompetenzstatus über
+   `SQLiteStudentDocumentationProjectionRepository.read_batch` in einem
+   SQLite-Read-Snapshot. Bericht- und LEG-Aggregate liest er über getrennte
+   schülerbezogene Revisionshistorien-Batches und verifiziert danach je
+   Aggregat die neueste gültige Revision im vorhandenen Domain-Service.
+   Quellenfehler werden neutral isoliert; ein defekter Zweig leert keine
+   weiterhin gültige Teilprojektion. Bericht und LEG werden erst in der
+   flüchtigen Displayprojektion zusammengeführt.
 3. Ereignisdaten stammen ausschließlich aus ihren vorhandenen Fachwerten:
    `observations.date`, `confirmed_at` des aktuellen sicheren
    Bestätigungsstands, `finalized_at` der neuesten gültigen,
@@ -120,6 +122,10 @@ nichts und ergänzt weder Persistenz noch Migration oder Recovery.
     Timeline-Writer oder neuen Schreibprozess.
 
 ## Berichte-Übersicht 0.3.1 / Paket 1 lesen und navigieren
+
+Der folgende Ablauf ist die historische Paket-1-Basis. Seine
+platzbegrenzte Meilensteinanzeige und die Profil-Orientierungsquelle sind im
+Berichtsbereich durch den vorstehenden Phase-2-Ablauf ersetzt.
 
 1. Das Schülerprofil fragt die Paket-1-Übersicht über
    `StudentDesktopAdapter.report_overview_for_student(student_id)` an.

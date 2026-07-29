@@ -2,8 +2,8 @@
 
 ## Phase 2 Berichte-Übersicht - ausschließlich vorhandene Lesequellen
 
-**Status:** Zielvertrag beschlossen, nicht implementiert. Es entsteht keine
-neue Datenquelle, Tabelle, Relation, materialisierte Sicht oder gespeicherte
+**Status:** lokal implementierter Lesepfad. Es entstand keine neue
+Datenquelle, Tabelle, Relation, materialisierte Sicht oder gespeicherte
 Timeline.
 
 | Datenquelle / Rolle | Zulässiger Phase-2-Inhalt | Persistenz / Grenze | Status |
@@ -32,7 +32,18 @@ Draft-Öffnen, Draft-Speichern, `updated_at`, technische Bearbeitungs- oder
 Verwaltungszeitpunkte und bloße Zwischenstände sind keine fachlichen
 Phase-2-Timeline-Quellen.
 
+Die technische Umsetzung liest die Live-Dokumentation eines Schülers über
+`SQLiteStudentDocumentationProjectionRepository.read_batch` in einem
+SQLite-Read-Snapshot. Bericht- und LEG-Revisionshistorien werden weiterhin
+getrennt und jeweils mit einer schülerbezogenen JOIN-Abfrage gelesen; die
+vorhandenen Domain-Services verifizieren danach die bereits geladenen
+Revisionen. Ein Quellenfehler wird neutral als Teilprojektion behandelt und
+löscht nicht automatisch gültige Ergebnisse der anderen Quellen.
+
 ## Berichte-Übersicht 0.3.1 / Paket 1 - bestehende Lesequellen
+
+Dieser Abschnitt beschreibt die historische Paket-1-Basis. Die
+Orientierungsereignisse sind seit Phase 2 keine Quelle des Berichtsbereichs.
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
 |---|---|---|---|

@@ -1,8 +1,8 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
-## Berichte-Übersicht - implementierter Stand und beschlossenes Zielbild
+## Berichte-Übersicht - implementierte Phase 2
 
-### Implementiert: Paket 1
+### Historische Basis: Paket 1 und Paket 1.1
 
 Paket 1 stellt die getrennten vorhandenen Bericht- und LEG-Zustände, den
 eindeutig gewählten RPD-Zeitraum, konkrete nächste Schritte, eine gemeinsame
@@ -10,19 +10,17 @@ read-only Anzeigehistorie und die Navigation in den vorhandenen
 Berichtarbeitsraum bereit. Die fachlichen Aggregate und Schreibprozesse
 bleiben getrennt.
 
-### Implementiert: Paket 1.1
-
 Paket 1.1 verdichtet die vorhandene Übersicht visuell. Es zeigt auf Basis der
 Paket-1-Projektionen eine platzbegrenzte Meilensteinleiste und kompakte
-Fachkarten. Dieser umgesetzte Zwischenstand verwendet weiterhin die
+Fachkarten. Dieser historische Zwischenstand verwendete die
 Paket-1-Semantik mit `documented_count/current_count`, Screen-eigener
-Inhaltsbegrenzung und `orientation_changes`. Er ist deshalb ausdrücklich
-nicht Phase-2-konform.
+Inhaltsbegrenzung und `orientation_changes`; Phase 2 hat diese Semantik im
+Berichtsbereich vollständig ersetzt.
 
-### Beschlossen, aber nicht implementiert: Phase 2 Berichte-Übersicht
+### Implementiert: Pakete 2A.1, 2A.2, 2B und 2C
 
-Phase 2 ist als Zielarchitektur und UX-Vertrag beschlossen. Dauerhafte Source
-of Truth sind die zuständigen Governance-Dokumente: Architektur in
+Phase 2 ist als rein lesende Berichtsvorbereitung implementiert. Dauerhafte
+Source of Truth sind die zuständigen Governance-Dokumente: Architektur in
 `DECISIONS.md`, technische Begriffe in `docs/TECHNICAL_NAMES.md`,
 Datenquellen in `docs/DATA_REGISTRY.md`, Projektionsablauf in
 `docs/DATA_LIFECYCLE.md`, View-Verantwortung in
@@ -52,16 +50,22 @@ Berichte verwenden `finalized_at` der neuesten gültigen, hashverifizierten
 Revision; LEG verwendet `conference_date`, nicht `completed_at`.
 
 Fachkarten zeigen absolute Dokumentationsmengen ohne Nenner, x/y-Semantik,
-Prozentwert oder Bewertung. Historische Kompetenzen bleiben aus aktuellen
+Prozentwert, Restspur oder Bewertung. Kleine fachbezogene Symbole unterstützen
+die Orientierung, ohne eine fachliche Wertung oder ein Diagramm zu bilden.
+Historische Kompetenzen bleiben aus aktuellen
 Zählern ausgeschlossen. Bericht und LEG bleiben getrennte Aggregate und
 werden nur displayseitig gemeinsam angezeigt. Die Timeline ist
 ereignisorientiert und enthält weder Trend, Entwicklungsrichtung,
 pädagogische Priorisierung noch Stärke-, Defizit- oder Förderlogik.
 
-Diese Governance-Integration ändert keinen Code, kein Datenmodell und keine
-Persistenz. Der gesonderte Product-Owner-Auftrag vom 29. Juli 2026 gibt die
-kontrollierte lokale Umsetzung und Prüfung der Pakete 2A.1, 2A.2, 2B und 2C
-frei. Migration, Build, Packaging, Push, Tag und Release bleiben gesperrt.
+Die Implementierung ergänzt reine ViewModel-Projektionen, schülerbezogene
+SQLite-Read-Snapshots, getrennte Batch-Lesepfade für Bericht- und
+LEG-Revisionen, absolute Fachkarten und die horizontale
+Dokumentations-Timeline. Sie ergänzt keine Tabelle, Migration, Schreiblogik
+oder Persistenz. Automatisierte Offscreen-Tests prüfen die 2/4/5-Viewport-
+Kapazitäten, Scrollsteuerung, Tastatur, Ankererhalt und ID-Navigation. Reale
+macOS-Trackpad- und VoiceOver-Abnahme bleibt offen. Build, Packaging, Push,
+Tag und Release wurden nicht ausgeführt.
 
 ## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1
 

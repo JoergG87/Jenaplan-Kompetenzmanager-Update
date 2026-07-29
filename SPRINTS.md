@@ -1,13 +1,11 @@
 # Sprintplanung
 
-## Phase 2 Berichte-Übersicht - Umsetzung freigegeben, noch nicht implementiert
+## Phase 2 Berichte-Übersicht - lokal implementiert
 
-**Status:** Produkt-, Architektur- und UX-Ziel beschlossen und in die
-bestehenden Governance-Dokumente integriert; noch nicht implementiert. Der
-Product Owner hat am 29. Juli 2026 ausschließlich die kontrollierte lokale
-Umsetzung und Prüfung der Pakete 2A.1, 2A.2, 2B und 2C freigegeben. Keine
-Datenmodell-, Migrations-, Build-, Packaging-, Push-, Tag- oder
-Releasefreigabe.
+**Status:** Pakete 2A.1, 2A.2, 2B und 2C lokal implementiert und fokussiert
+geprüft. Keine Datenmodell- oder Migrationsänderung. Reale macOS-Trackpad- und
+VoiceOver-Abnahme sowie Build, Packaging, Push, Tag und Release bleiben offen
+beziehungsweise nicht freigegeben.
 
 - [x] Ereignisorientierte, nicht pädagogisch priorisierte Timeline festlegen.
 - [x] Ausschließlich den inklusiven Zeitraum des eindeutig gewählten RPD
@@ -37,9 +35,17 @@ Releasefreigabe.
   fortschreiben.
 - [x] Gesonderten technischen Entwurf und Umsetzungsauftrag durch den Product
   Owner freigeben.
-- [ ] Phase 2 implementieren.
-- [ ] Fokussierte Regressionen und Gesamtsuite ausführen.
-- [ ] Build, Packaging und reale UX-Abnahme in später ausdrücklich
+- [x] Reine deterministische ViewModel-Projektion implementieren.
+- [x] Schülerbezogenen Live-Read-Snapshot und getrennte batchweise Bericht-/
+  LEG-Revisionsquellen integrieren.
+- [x] Absolute Fachkarten ohne Nenner oder Restspur sowie kleine neutrale
+  Fachsymbole implementieren.
+- [x] Vollständige horizontale Timeline mit 2/4/5-Viewport, Scrollbar,
+  Steuerbuttons, Tastatur und stabiler ID-Navigation implementieren.
+- [x] Phase 2 implementieren.
+- [x] Fokussierte Regressionen der Pakete 2A.1 bis 2C ausführen.
+- [ ] Gesamtsuite im finalen technischen Quality Gate ausführen.
+- [ ] Build, Packaging und reale macOS-/VoiceOver-UX-Abnahme in später ausdrücklich
   freigegebenem Umfang durchführen.
 
 ## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1.1

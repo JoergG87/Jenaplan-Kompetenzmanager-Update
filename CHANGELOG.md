@@ -2,7 +2,18 @@
 
 ## Unreleased
 
-- Den beschlossenen, noch nicht implementierten Phase-2-Architektur- und
+- Phase 2 der Berichte-Übersicht lokal implementiert: deterministische
+  RPD-Projektion, ein Ereignis je Beobachtung beziehungsweise abgeschlossenem
+  Bericht-/LEG-Aggregat, aktueller sicherer Bestätigungsstand, Zielumfang 15,
+  inklusive Zeitraumfilterung und getrennte hashverifizierte Bericht-/LEG-
+  Batchreads. Die UI zeigt absolute Fachsegmente ohne Nenner oder Restspur,
+  kleine fachbezogene Orientierungssymbole und die vollständige chronologische
+  Timeline horizontal mit 2/4/5-Viewport, Scrollbar, Steuerbuttons,
+  Tastaturbedienung und stabiler ID-Navigation. Keine neue Tabelle, Migration,
+  Schreiblogik oder Persistenz. Reale macOS-Trackpad- und VoiceOver-Abnahme,
+  Build, Packaging, Push, Tag und Release bleiben offen beziehungsweise wurden
+  nicht ausgeführt.
+- Den vor der technischen Umsetzung beschlossenen Phase-2-Architektur- und
   UX-Stand der Berichte-Übersicht in die bestehenden Governance-Sources-
   of-Truth integriert und an den finalen Belegworkflow angeglichen. ADR-094
   hält die rein lesende RPD-, Ereignis-, Aggregat-, Deduplizierungs-,
@@ -17,8 +28,9 @@
   Paket 1 und Paket 1.1 bleiben als implementierter, nicht
   Phase-2-konformer Stand getrennt dokumentiert. Der Architektur-/UX-Vertrag
   und der Product-Decision-Freeze bleiben Herkunfts- und Abnahmenachweise,
-  aber keine konkurrierende Governance-Quelle. Keine Code-, Datenmodell-,
-  Migrations-, Test-, Build-, Packaging- oder Releaseänderung.
+  aber keine konkurrierende Governance-Quelle. Dieser getrennte
+  Governance-Basisstand enthielt noch keine Code-, Datenmodell-, Migrations-,
+  Test-, Build-, Packaging- oder Releaseänderung.
 - Paket 1.1 der Berichte-Übersicht visuell verdichtet: höchstens vier Fächer vor bewusster
   Erweiterung, platzbegrenzte Meilensteine aus vorhandenen Bericht-/LEG- und
   Bestätigungsereignissen, eindeutige LEG-Aktionen sowie Entfernung der

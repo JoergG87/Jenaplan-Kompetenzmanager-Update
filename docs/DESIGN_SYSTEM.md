@@ -2,7 +2,8 @@
 
 ## Phase 2 Berichte-Übersicht - neutrale Belegdarstellung
 
-**Status:** UX-Vertrag beschlossen, nicht implementiert.
+**Status:** lokal implementiert und automatisiert im Qt-Offscreen-Modus
+geprüft. Reale macOS-Trackpad- und VoiceOver-Abnahme bleiben offen.
 
 Die Timeline zeigt ausschließlich vorhandene Dokumentationsereignisse im
 gewählten RPD-Berichtszeitraum. Sie wird als horizontal scrollbare Liste
@@ -46,6 +47,13 @@ ruhig umbrechen; sie werden nicht abgeschnitten oder zu einer Qualitätsstufe
 verdichtet. Bei null bleibt nur der neutrale absolute Text sichtbar. Die
 Bewertungsfarben `--` bis `++` sind für diese Darstellung unzulässig.
 
+Da die Fachkarte kein Diagramm mehr zeigt, erhält sie ein kleines
+fachspezifisches Textsymbol. Das Symbol ist eine ruhige Orientierungshilfe,
+kein Logo, kein Datenwert und keine Bewertung. Es wird ausschließlich aus der
+vorhandenen `subject_id` gewählt; für unbekannte Fächer erscheint ein neutraler
+Punkt. Fachname, Zählertexte und Accessible Name tragen die Bedeutung
+unabhängig vom Symbol.
+
 Fachkarten bleiben in der bestehenden neutralen kanonischen Fachreihenfolge.
 Sie werden weder nach Beobachtungs- oder Kompetenzanzahl, Bestätigungsstand,
 Aktualität, Rating, vermeintlicher Wichtigkeit noch nach einer anderen
@@ -55,7 +63,7 @@ Position einer Fachkarte noch ihre visuelle Gewichtung.
 Die erlaubte Sprache beschreibt ausschließlich Vorhandenes, beispielsweise
 `Beobachtung dokumentiert`, `Kompetenz dokumentiert`,
 `Kompetenz bestätigt`, `<n> Kompetenzen dokumentiert`,
-`<n> Beobachtungen im Berichtszeitraum`, `Belege vorhanden` und
+`<n> Beobachtungen im Berichtszeitraum`, `Belege ansehen` und
 `aktuell bestätigter Stand vorhanden`. Der zugängliche Text nennt dieselben
 absoluten Mengen und beschreibt Länge oder Fläche nie als Status, Niveau oder
 Bewertung.

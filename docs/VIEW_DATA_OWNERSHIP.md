@@ -1,6 +1,6 @@
 # View Data Ownership
 
-## Phase 2 Berichte-Übersicht - beschlossen, nicht implementiert
+## Phase 2 Berichte-Übersicht - implementiert
 
 `StudentDesktopAdapter.report_overview_for_student` bleibt die einzige
 Desktop-Kompositionsgrenze. Er bestimmt den eindeutig gewählten RPD, hält
@@ -40,6 +40,12 @@ Nenner. Es ermöglicht ausschließlich das bewusste Scrollen zu älteren
 enthaltenen Ereignissen; automatisches Karussell und automatische Bewegung
 sind unzulässig.
 
+Die kleinen Fachsymbole sind eine rein darstellungsbezogene, neutrale
+UI-Zuordnung aus der bereits vorhandenen `subject_id`. Sie ersetzen ein
+Diagramm, erzeugen keine neue Fachzuordnung und transportieren weder Menge,
+Status noch Bewertung. Für unbekannte Fach-IDs verwendet der Screen einen
+neutralen Punkt.
+
 Die horizontale Bedienung umfasst Trackpad, Scrollbar, sichtbare
 Links-/Rechtssteuerung und Tastatur mit sichtbarem Fokus und Accessible Names.
 Normales vertikales Scrollen bleibt Eigentum der äußeren Profilscrollfläche.
@@ -59,8 +65,15 @@ detaillierten Kompetenz- und Belegansicht. Eine gemeinsame Timeline ist keine
 gemeinsame Bericht-/LEG-Domain. RPD/RPT/RPV
 und LCD/LCF/LCV behalten getrennte Aggregate, Repositories, Application
 Services, Integritätsprüfungen, Revisionen, Statusbegriffe und Lifecycle.
+Die automatisierten Offscreen-Prüfungen decken Rendering, Navigation,
+Tastatur- und Scrollvertrag ab; eine reale macOS-Trackpad- und
+VoiceOver-Abnahme bleibt separat offen.
 
 ## Berichte-Übersicht 0.3.1 / Paket 1
+
+Dieser Abschnitt ist die historische Eigentumsbasis von Paket 1. Seine
+Meilenstein- und Nennerdarstellung ist im sichtbaren Berichtsbereich durch den
+vorstehenden Phase-2-Vertrag ersetzt.
 
 `StudentDesktopAdapter.report_overview_for_student` besitzt die
 Kompositionsgrenze. Er fragt Berichtsdrafts und Berichtrevisionen sowie

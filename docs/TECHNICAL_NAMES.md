@@ -1,10 +1,10 @@
 # Technical Naming Registry
 
-## Phase 2 Berichte-Übersicht - beschlossen, nicht implementiert
+## Phase 2 Berichte-Übersicht - implementiert
 
-Die folgenden Namen sind für den freigegebenen Phase-2-Umsetzungsauftrag
-registriert. Vor der technischen Umsetzung behauptet ihre Registrierung noch
-keinen vorhandenen Code.
+Die folgenden Namen sind für die lokal implementierte Phase-2-Projektion
+registriert. Sie ergänzen ausschließlich Lesepfade, flüchtige Projektionen und
+UI-Verhalten; es gibt keine neue Persistenz, Tabelle oder Migration.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
@@ -12,6 +12,15 @@ keinen vorhandenen Code.
 | `ReportOverviewSubjectDocumentationViewModel` | RPD-zeitraumbezogene, je Fach deduplizierte Mengen aktueller dokumentierter Kompetenzen und vorhandener Beobachtungen; ohne Nenner, Prozent- oder Qualitätssemantik | Desktop ViewModel |
 | `ReportOverviewProjectionWarningViewModel` | Flüchtiger neutraler Anzeigezustand für unvollständig lesbare Phase-2-Dokumentationsdaten; keine Fehlerkorrektur oder Ersatzannahme | Desktop ViewModel |
 | `ReportOverviewViewModel.timeline_events` | Vollständige ausgewählte und deterministisch geordnete Phase-2-Timeline-Liste: alle gültigen Bericht-/LEG-Abschlussereignisse sowie bei weniger als 15 Dokumentereignissen die rein zeitliche Ergänzung bis zum Zielumfang 15; keine Viewport-, Relevanz- oder Prioritätsauswahl | Desktop ViewModel |
+| `LearningReportRevisionHistory` | In einem Batch gelesene Bericht-Draft-ID mit allen vorhandenen unveränderlichen Revisionen; Verifikation und Auswahl des neuesten gültigen Stands erfolgen anschließend im bestehenden Domain-Service | Core Report Domain |
+| `LearningConferenceRevisionHistory` | In einem Batch gelesene LEG-Draft-ID mit allen vorhandenen unveränderlichen Revisionen; Verifikation und Auswahl des neuesten gültigen Stands erfolgen anschließend im bestehenden Domain-Service | Core LEG Domain |
+| `LearningReportRepository.list_revision_histories_for_student` | Schülerbezogener Read für alle Berichtaggregate und Revisionen ohne Abfrage je Revision | Core Report Port |
+| `LearningConferenceRepository.list_revision_histories_for_student` | Schülerbezogener Read für alle LEG-Aggregate und Revisionen ohne Abfrage je Revision | Core LEG Port |
+| `LearningReportRevisionReadService.verify_revision` | Öffentliche read-only Verifikationsgrenze für eine bereits gelesene Berichtrevision | Application Report Read |
+| `LearningConferenceRevisionReadService.verify_revision` | Öffentliche read-only Verifikationsgrenze für eine bereits gelesene LEG-Revision | Application LEG Read |
+| `SQLiteStudentDocumentationProjectionRepository.read_batch` | Schülerbezogener konsistenter SQLite-Read-Snapshot für aktive Beobachtungen, Zuordnungen, aktuelle Kompetenzen, sichere Bestätigungsstände, Fächer und vorhandene Frischeinformation | Core Projection Persistence |
+| `ReportTimelineScrollArea` | Ausschließlich darstellungsbezogene horizontale Scrollfläche für die vollständig gelieferte Timeline; verwaltet Wheel-/Tastaturbedienung, nicht aber Auswahl, Ordnung oder Fachlogik | Desktop UI |
+| `REPORT_SUBJECT_SYMBOLS` | UI-only Zuordnung kleiner neutraler Fachsymbole zu vorhandenen stabilen `subject_id`; unbekannte Fächer erhalten einen neutralen Punkt, Symbole sind weder Diagramm noch Bewertung | Desktop UI |
 
 Kompetenzzuordnungen `(observation_id, competency_id)` bleiben Grundlage für
 Fachkarten, Segmente, Belegdetails, Fachzuordnung und Deduplizierung. Sie
@@ -28,6 +37,10 @@ bleibt eine vorhandene Profilprojektion und ist keine
 Phase-2-Timeline-Projektion.
 
 ## Berichte-Übersicht 0.3.1 / Paket 1
+
+Dieser Abschnitt dokumentiert die historische Paket-1-Basis. Für die sichtbare
+Phase-2-Fachkarten- und Timeline-Darstellung gilt der vorstehende
+Phase-2-Vertrag.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|

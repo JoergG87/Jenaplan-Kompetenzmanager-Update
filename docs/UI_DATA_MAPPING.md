@@ -1,6 +1,6 @@
 # UI Data Mapping
 
-## Phase 2 Berichte-Übersicht - beschlossen, nicht implementiert
+## Phase 2 Berichte-Übersicht - implementiert
 
 | Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |
 |---|---|---|---|
@@ -13,12 +13,13 @@
 | Kontext einer Bestätigungskarte | vorhandene aktuelle `competency_id` mit kanonischem Kompetenztext | Nein | ausschließlich aktueller sicherer Bestätigungsstand; kein Rating, keine historische Kette und keine Kompetenzinterpretation |
 | Kontext einer Dokumentkarte | neutrale Bericht- beziehungsweise LEG-Dokumentart | Nein | keine technische Revisionsbezeichnung, Revisionskarte oder Revisionsgewichtung |
 | Zugängliche Timeline-Beschriftung | displayfertiger Ereignistext | Nein | vollständiges Datum, Ereignistyp und vorhandener neutraler Kontext; Monatskürzel allein reichen nicht |
-| Leere Timeline | keine geeigneten Ereignisse im RPD-Zeitraum | Nein | `Im gewählten Berichtszeitraum sind keine Dokumentationsereignisse vorhanden.` |
+| Leere Timeline | keine geeigneten Ereignisse im RPD-Zeitraum | Nein | Titel `Keine Dokumentationsereignisse im Zeitraum` mit neutralem Hinweis auf die zulässigen vorhandenen Quellen |
 | Unvollständig lesbare Dokumentation | `ReportOverviewProjectionWarningViewModel` | Nein | `Dokumentationsdaten konnten nicht vollständig gelesen werden.`; keine Ersatzannahme |
+| Kleines Fachsymbol | vorhandene stabile `subject_id` über `REPORT_SUBJECT_SYMBOLS` | Nein | neutrale UI-Hilfe anstelle eines Diagramms; unbekannte Fächer erhalten `•`; keine Fachableitung, Menge, Bewertung oder Statusaussage |
 | Dokumentierte Kompetenzen je Fach | `ReportOverviewSubjectDocumentationViewModel` | Nein | `<n> Kompetenzen dokumentiert`; eindeutige aktuelle `competency_id` im RPD-Zeitraum; kein Nenner, `von`, `/`, Prozent, Sollwert oder Restmenge |
 | Beobachtungen je Fach | `ReportOverviewSubjectDocumentationViewModel` | Nein | `<n> Beobachtungen im Berichtszeitraum`; je Fach deduplizierte `observation_id`; Schnellbeobachtung zählt ohne Kompetenzzuordnung nur hier |
 | Fachkartenreihenfolge | bestehende neutrale kanonische Fachreihenfolge | Nein | niemals anhand der Dokumentationsmenge umsortieren; keine Sortierung nach Beobachtungsanzahl, Kompetenzanzahl, Bestätigungsstand, Aktualität, Rating oder vermeintlicher Wichtigkeit |
-| Belegstatus | vorhandene Beobachtungsmenge der Fachkarte | Nein | `Belege vorhanden`, wenn mindestens eine Beobachtung vorhanden ist; keine Qualitätsaussage |
+| Belegnavigation | displayfertige `evidence_action` mit vorhandener `subject_id` | Nein | `Belege ansehen`; keine automatische Auswahl, Qualitätsaussage oder Rekonstruktion aus sichtbarem Fachtext |
 | Absolute Dokumentationssegmente | eindeutige aktuelle dokumentierte `competency_id` der Fachkarte | Nein | genau ein gleich breites neutrales Segment je Kompetenz; keine Restspur, Normalisierung, Schwelle, Bewertungsfarbe, Prozent- oder x/y-Semantik; bei null nur neutraler Text |
 | Zugängliche Fachkartenbeschriftung | Fachname und absolute Kompetenzmenge | Nein | `<Fach>: <n> Kompetenzen dokumentiert` |
 | Aktueller Bestätigungsstand | kanonische aktuelle sichere Kompetenzstatusprojektion | Nein | `aktuell bestätigter Stand vorhanden`; kein Rating, keine Anzahl, Historienrekonstruktion, Zielerreichung oder Abschluss |
@@ -45,6 +46,10 @@ Funktionsfreigabe. `documented_count/current_count`,
 Paket-1-/anderen Produktkontexts und sind keine Phase-2-UI-Quelle.
 
 ## Berichte-Übersicht 0.3.1 / Paket 1
+
+Die folgende Tabelle dokumentiert die historische Paket-1-Basis. Die dortige
+Meilenstein- und Ringdarstellung ist im sichtbaren Berichtsbereich durch das
+vorstehende Phase-2-Mapping ersetzt.
 
 | UI-Feld/Aktion | Quelle | Persistenz | Regel |
 |---|---|---|---|
