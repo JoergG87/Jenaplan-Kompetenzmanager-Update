@@ -871,24 +871,6 @@ class StudentProfileScreen(QWidget):
         )
         self.timeline_card.setMinimumHeight(235)
         self.subjects_card.setMinimumHeight(235)
-        self.strengths_card, strengths_layout = self._report_overview_card(
-            "Stärken",
-            "",
-            "ReportOverviewStrengthsCard",
-        )
-        strengths_layout.addWidget(self._report_compact_empty_state(
-            "Stärken werden nicht automatisch abgeleitet.",
-            title="Noch keine Stärkenlogik",
-        ))
-        self.watch_card, watch_layout = self._report_overview_card(
-            "Im Blick behalten",
-            "",
-            "ReportOverviewWatchCard",
-        )
-        watch_layout.addWidget(self._report_compact_empty_state(
-            "Es werden keine pädagogischen Empfehlungen oder Schwellenwerte erzeugt.",
-            title="Keine automatische Priorisierung",
-        ))
         self.history_card, self.report_history_layout = self._report_overview_card(
             "Berichte & LEG (Übersicht)",
             "Gemeinsame Anzeige, getrennte fachliche Quellen",
@@ -900,8 +882,6 @@ class StudentProfileScreen(QWidget):
             self.next_steps_card,
             self.timeline_card,
             self.subjects_card,
-            self.strengths_card,
-            self.watch_card,
             self.history_card,
         )
         layout.addLayout(self.report_overview_grid)
@@ -1029,16 +1009,6 @@ class StudentProfileScreen(QWidget):
                 1,
                 2,
             )
-            self.report_overview_grid.addWidget(
-                self.strengths_card,
-                4,
-                0,
-            )
-            self.report_overview_grid.addWidget(
-                self.watch_card,
-                4,
-                1,
-            )
         else:
             self.report_overview_grid.addWidget(self.report_status_card, 0, 0)
             self.report_overview_grid.addWidget(
@@ -1061,9 +1031,13 @@ class StudentProfileScreen(QWidget):
                 1,
                 3,
             )
-            self.report_overview_grid.addWidget(self.strengths_card, 3, 0)
-            self.report_overview_grid.addWidget(self.watch_card, 3, 1)
-            self.report_overview_grid.addWidget(self.history_card, 3, 2)
+            self.report_overview_grid.addWidget(
+                self.history_card,
+                3,
+                0,
+                1,
+                3,
+            )
         if hasattr(self, "current_report_overview"):
             self._render_report_subjects(self.current_report_overview)
             self._render_report_timeline(

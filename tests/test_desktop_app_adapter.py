@@ -4917,9 +4917,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("self.show_student_profile(student.student_id)", source)
         self.assertIn('self.status_label.setText("Beobachtung wurde gespeichert.")', source)
         self.assertIn("list_competency_overview_for_student(student_id)", profile_source)
-        self.assertIn("get_report_preview_for_student(student_id)", profile_source)
         self.assertIn("list_documentation_status_for_student(student_id)", profile_source)
-        self.assertIn("report_preview", profile_source)
+        self.assertIn("report_overview_for_student(", profile_source)
+        self.assertIn("selected_report_draft_id=", profile_source)
+        self.assertIn("selected_learning_conference_draft_id=", profile_source)
+        self.assertNotIn("get_report_preview_for_student(student_id)", profile_source)
 
     def test_shell_opens_quick_observation_from_student_list(self) -> None:
         shell_source = inspect.getsource(shell.AppShell)
@@ -5551,12 +5553,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         label_texts = [label.text() for label in screen.findChildren(QLabel)]
 
-        self.assertIn("Lernentwicklung im Berichtszeitraum", label_texts)
+        self.assertIn("Berichtsvorbereitung im Berichtszeitraum", label_texts)
         self.assertIn("Bericht", label_texts)
         self.assertIn("Lernentwicklungsgespräch (LEG)", label_texts)
         self.assertIn("Nächste Schritte", label_texts)
-        self.assertIn("Stärken", label_texts)
-        self.assertIn("Im Blick behalten", label_texts)
+        self.assertIn("Dokumentations-Timeline", label_texts)
+        self.assertIn("Fachübersicht", label_texts)
+        self.assertNotIn("Stärken", label_texts)
+        self.assertNotIn("Im Blick behalten", label_texts)
         self.assertIn("Berichte & LEG (Übersicht)", label_texts)
         self.assertNotIn("Aktueller Stand", label_texts)
         self.assertNotIn("Mit Texten und Medien umgehen", label_texts)

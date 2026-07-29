@@ -9,10 +9,12 @@
   Batchreads. Die UI zeigt absolute Fachsegmente ohne Nenner oder Restspur,
   kleine fachbezogene Orientierungssymbole und die vollständige chronologische
   Timeline horizontal mit 2/4/5-Viewport, Scrollbar, Steuerbuttons,
-  Tastaturbedienung und stabiler ID-Navigation. Keine neue Tabelle, Migration,
-  Schreiblogik oder Persistenz. Reale macOS-Trackpad- und VoiceOver-Abnahme,
-  Build, Packaging, Push, Tag und Release bleiben offen beziehungsweise wurden
-  nicht ausgeführt.
+  Tastaturbedienung und stabiler ID-Navigation. Die früheren neutralen
+  Platzhalterkarten `Stärken` und `Im Blick behalten` entfallen im
+  Berichtsbereich vollständig. Keine neue Tabelle, Migration, Schreiblogik
+  oder Persistenz. Reale macOS-Trackpad- und VoiceOver-Abnahme, Build,
+  Packaging, Push, Tag und Release bleiben offen beziehungsweise wurden nicht
+  ausgeführt.
 - Den vor der technischen Umsetzung beschlossenen Phase-2-Architektur- und
   UX-Stand der Berichte-Übersicht in die bestehenden Governance-Sources-
   of-Truth integriert und an den finalen Belegworkflow angeglichen. ADR-094

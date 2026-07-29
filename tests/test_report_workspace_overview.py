@@ -1310,8 +1310,6 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 screen.next_steps_card,
                 screen.timeline_card,
                 screen.subjects_card,
-                screen.strengths_card,
-                screen.watch_card,
                 screen.history_card,
             )
         }
@@ -1324,14 +1322,12 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 (1, 0),
                 (2, 0),
                 (3, 0),
-                (4, 0),
-                (4, 1),
                 (1, 1),
             ],
         )
         self.assertEqual(
             [position[:2] for position in one_column_positions.values()],
-            [(row, 0) for row in range(8)],
+            [(row, 0) for row in range(6)],
         )
         self.assertEqual(
             wide_positions["ReportOverviewReportStatusCard"][:2],
@@ -1354,12 +1350,8 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             (2, 0, 1, 3),
         )
         self.assertEqual(
-            {
-                wide_positions["ReportOverviewStrengthsCard"][0],
-                wide_positions["ReportOverviewWatchCard"][0],
-                wide_positions["ReportOverviewHistoryCard"][0],
-            },
-            {3},
+            wide_positions["ReportOverviewHistoryCard"],
+            (3, 0, 1, 3),
         )
         self.assertFalse(hasattr(screen, "competency_selection_card"))
         self.assertFalse(hasattr(screen, "workspace_boundary_card"))
