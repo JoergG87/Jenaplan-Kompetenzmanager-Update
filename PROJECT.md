@@ -1,5 +1,34 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## SJ-2C - kontrollierter Datenbank-Startup
+
+**Status:** Startup-Erkennung und Bootstrap-Routing lokal implementiert.
+Produktive Migration, Bootstrap-Assistent, Assignment-Reads,
+V3-Fachruntime, Build, Packaging und Release bleiben gesperrt.
+
+Ein neuer Qt-freier `DatabaseStartupCoordinator` entscheidet nach
+Restore-Recovery, Pfadermittlung und erfolgreicher Authentifizierung, aber vor
+fachlicher Runtime-Vorbereitung, Shell, Adaptern, `initialize_schema()` und
+Default-Writern. Der Resolver inspiziert vorhandene Datenbanken ausschließlich
+read-only anhand `user_version` und vollständigem Schemafingerprint.
+
+Exaktes V2 wird als `V2_MIGRATION_REQUIRED` erkannt und kontrolliert nach
+`V2_BOOTSTRAP_READY` geroutet; dies startet keine Migration und bestätigt
+keinen fachlichen Migrationsplan. Exaktes V3 wird als `V3_READY` erkannt,
+besitzt in SJ-2C aber keinen Freigabemechanismus für die heutige V2-gebundene
+Runtime. Unbekannte Schemata werden als `SCHEMA_UNSUPPORTED`, unlesbare oder
+unsichere Zustände als `RECOVERY_REQUIRED` blockiert.
+
+`DATABASE_COMPATIBILITY_VERSION` bleibt `2`. Die bestehende V2-Policy für
+Schemainitialisierung, Backup und Restore wird nicht auf V3 geöffnet. Ein
+echter First Run darf den vorhandenen V2-Neuanlagepfad weiterhin nutzen; nach
+einer möglichen Installation von Initialdaten wird jedoch zwingend erneut
+klassifiziert, sodass eine installierte V2-Datenbank die Bootstrapgrenze nicht
+umgeht. Die Erlaubnis gilt nur für denselben, durch
+`SecurityStartState.FIRST_RUN` nachgewiesenen Lauf. Fehlt die Datenbank bei
+einer bestehenden Installation oder liegen SQLite-WAL-/SHM-Sidecars vor, wird
+statt einer leeren Ersatzdatenbank `RECOVERY_REQUIRED` entschieden.
+
 ## SJ-2B - isoliertes V3-Zielschema und V2→V3-Migrationsengine
 
 **Status:** Lokal implementiert und fokussiert automatisiert geprüft.

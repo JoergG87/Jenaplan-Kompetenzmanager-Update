@@ -1,5 +1,36 @@
 # Data Registry
 
+## SJ-2C - flüchtige Datenbank-Startup-Erkennung
+
+**Status:** Read-only technische Projektion ohne neue Tabelle, Datei,
+Persistenz, Fachquelle oder V3-Produktaktivierung.
+
+Der `DatabaseStartupResolver` liest ausschließlich die Existenz und Art des
+bereits bestimmten Datenbankpfads sowie über den vorhandenen read-only
+Fingerprintmechanismus SQLite-`PRAGMA user_version`, vollständige
+Schemaidentität und Objektanzahl. Er liest keine Schüler-, Assignment-,
+Kursstufen-, Beobachtungs-, Bericht-, LEG- oder Dokumentinhalte.
+
+Vor der Fingerprintprüfung blockiert jeder vorhandene
+`kompetenzmanager.sqlite-wal`- oder `kompetenzmanager.sqlite-shm`-Sidecar den
+Startup als `RECOVERY_REQUIRED`. Der bestehende Produktprovider verwendet
+DELETE-Journaling; der immutable read-only Fingerprint darf deshalb keinen
+möglicherweise relevanten WAL-Zustand ignorieren.
+
+Die neutral registrierten Werte `REGISTERED_V3_SCHEMA_VERSION = 3` und
+`REGISTERED_V3_SCHEMA_FINGERPRINT =
+640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1`
+erlauben nur die exakte V3-Schemaerkennung. Sie ändern weder
+`DATABASE_COMPATIBILITY_VERSION = 2` noch die V2-gebundenen Backup-, Restore-,
+`initialize_schema()`- oder Runtimeverträge. Die bestehende
+`DatabaseCompatibilityPolicy.EXACT`-Semantik bleibt ausschließlich V2.
+
+`DatabaseStartupDetection` und `DatabaseStartupDecision` sind flüchtige,
+unveränderliche technische Zustandsobjekte. Sie werden weder in SQLite noch in
+einer Sidecar-, Journal-, Log- oder Einstellungsdatei persistiert. Pfade,
+Personennamen, Notizen und fachliche Inhalte sind kein Bestandteil dieser
+Objekte.
+
 ## SJ-2B - isoliert implementiertes V3-Zielschema
 
 **Status:** Ausschließlich innerhalb der expliziten V2→V3-Migrations- und

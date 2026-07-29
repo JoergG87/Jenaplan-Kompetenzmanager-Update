@@ -17,7 +17,11 @@ import re
 import sqlite3
 from typing import Any
 
-from .database_compatibility import DatabaseCompatibilityInspector
+from .database_compatibility import (
+    REGISTERED_V3_SCHEMA_FINGERPRINT,
+    REGISTERED_V3_SCHEMA_VERSION,
+    DatabaseCompatibilityInspector,
+)
 from .database_engine import DatabaseEngine
 from .records import StudentRecord
 from .school_year import (
@@ -30,12 +34,10 @@ from .school_year import (
 )
 
 
-TARGET_V3_DATABASE_VERSION = 3
+TARGET_V3_DATABASE_VERSION = REGISTERED_V3_SCHEMA_VERSION
 SCHOOL_YEAR_MIGRATION_ENGINE_FORMAT_VERSION = 1
 
-V3_SCHEMA_FINGERPRINT = (
-    "640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1"
-)
+V3_SCHEMA_FINGERPRINT = REGISTERED_V3_SCHEMA_FINGERPRINT
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _SAFE_BACKUP_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")

@@ -1,5 +1,41 @@
 # Technical Naming Registry
 
+## SJ-2C - kontrollierter Datenbank-Startup
+
+**Status:** Für die read-only Startup-Erkennung und die kontrollierte
+Routinggrenze registriert. Diese Namen starten weder die isolierte
+V2→V3-Migrationsengine noch einen Bootstrap-Assistenten, eine V3-Fachruntime
+oder einen Default-Writer.
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `REGISTERED_V3_SCHEMA_VERSION` | Neutral registrierte V3-Zielversion `3`; ändert die aktive `DATABASE_COMPATIBILITY_VERSION = 2` nicht | Core Database Compatibility |
+| `REGISTERED_V3_SCHEMA_FINGERPRINT` | Neutral registrierter vollständiger V3-Schemafingerprint für die reine Startup-Erkennung; kein V3-Runtimefreigabesignal | Core Database Compatibility |
+| `DatabaseStartupState` | Ausschließlich `DATABASE_NOT_FOUND`, `V2_MIGRATION_REQUIRED`, `V2_BOOTSTRAP_READY`, `V3_READY`, `SCHEMA_UNSUPPORTED` oder `RECOVERY_REQUIRED` | Core Database Startup |
+| `DatabaseStartupDetection` | Unveränderliches read-only Erkennungsergebnis aus Restoregrenze, Dateiexistenz, `user_version` und registriertem Schemafingerprint | Core Database Startup |
+| `DatabaseStartupDecision` | Unveränderliche Coordinator-Entscheidung mit erkanntem und effektivem Zustand sowie getrennten Freigaben für Runtime und einmalige, durch den Security-First-Run autorisierte Neuprüfung | Core Database Startup |
+| `DatabaseStartupResolver` | Reiner Resolver für eine vorhandene Datenbank; erkennt V2/V3 getrennt von der aktiven V2-Kompatibilitätspolitik und schreibt niemals | Core Database Startup |
+| `DatabaseStartupCoordinator` | Qt-freie Startup-Orchestrierung nach Restore und Authentifizierung; blockiert Shell, Adapter, Schemainitialisierung und Defaults bis zur ausdrücklich zulässigen Disposition | Core Database Startup |
+
+`V2_MIGRATION_REQUIRED` bedeutet ausschließlich: Eine exakt registrierte
+V2-Datenbank benötigt vor einer späteren V3-Fachnutzung den kontrollierten
+Cutover. Der Coordinator überführt diesen technischen Befund in
+`V2_BOOTSTRAP_READY`; dies bestätigt nur das sichere Routing in den künftigen
+Bootstrapmodus, nicht einen vollständigen oder ausführbaren Migrationsplan.
+
+`V3_READY` bestätigt ausschließlich Version und vollständigen
+Schemafingerprint. SJ-2C besitzt keine V3-Runtimefreigabe, weil die bestehenden
+Adapter und Repositories weiterhin die V2-Legacyfelder verwenden. Ein späterer
+Auftrag muss die vollständige Runtimekompatibilität nachweisen und die
+Coordinator-Entscheidung bewusst ändern; ein bloßer Konfigurationswert oder
+Boolean kann V3 in SJ-2C nicht freigeben.
+
+`new_database_initialization_allowed` ist ausschließlich die flüchtige
+Übergabe der bereits bestimmten `SecurityStartState.FIRST_RUN`-Autorität.
+Fehlt eine Datenbank bei einer bestehenden oder nicht beweisbar neuen
+Installation, wird keine leere Ersatzdatenbank erzeugt, sondern
+`RECOVERY_REQUIRED` entschieden.
+
 ## SJ-2B - isolierte V2→V3-Migrationsgrenze
 
 **Status:** Für die isolierte, explizit aufgerufene Migration registriert.

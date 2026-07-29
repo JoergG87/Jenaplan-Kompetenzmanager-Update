@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- SJ-2C als Qt-freie, read-only Datenbank-Startup- und
+  Bootstrap-Routinggrenze ergänzt. Nach Restore und Authentifizierung, aber
+  vor fachlicher Runtime-Vorbereitung, Shell, Adaptern, Schemainitialisierung
+  und Default-Writern werden fehlende, exakte V2-, exakte V3-, unbekannte und
+  Recoveryzustände getrennt klassifiziert. Exaktes V2 wird ohne Schreibzugriff
+  in `V2_BOOTSTRAP_READY` geroutet; exaktes V3 wird erkannt, bleibt wegen der
+  V2-gebundenen Runtimepfade aber gesperrt. Ein echter First Run behält die
+  bestehende V2-Neuanlage, während installierte Initialdaten vor der Shell
+  erneut klassifiziert werden. Die Neuanlage ist an
+  `SecurityStartState.FIRST_RUN` gebunden; eine fehlende Datenbank in einer
+  bestehenden Installation sowie vorhandene WAL-/SHM-Sidecars führen
+  fail-closed zu `RECOVERY_REQUIRED`. `DATABASE_COMPATIBILITY_VERSION` bleibt `2`;
+  es gibt keine automatische Migration, keine Änderung einer vorhandenen
+  produktiven V2-Datenbank, keinen Bootstrap-Assistenten und keine
+  V3-Fachaktivierung. 34 fokussierte SJ-2C-Tests sowie die Gesamtsuite mit
+  1872 Tests und 71 Subtests waren grün; ein umgebungsgebundener read-only
+  Build-303-Referenztest blieb erwartungsgemäß übersprungen. Unabhängiger
+  Technical- und Governance-Review ergab keine verbleibenden Findings.
 - SJ-2B als isoliertes V3-Zielschema und explizite V2→V3-Migrationsengine
   ergänzt. Das Ziel enthält `school_years`, datierte
   `student_school_year_assignments`, unveränderliche

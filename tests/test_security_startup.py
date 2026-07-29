@@ -169,9 +169,17 @@ def test_productive_start_order_keeps_product_runtime_and_shell_after_auth() -> 
     restore = source.index("recover_interrupted_restore(data_root)")
     security_paths = source.index("prepare_security_runtime_storage(data_root=data_root)")
     auth = source.index("run_startup_authentication(")
-    product_runtime = source.index("prepare_runtime_storage(data_root=data_root)")
+    database_startup = source.index("_coordinate_product_database_startup(")
+    product_runtime = source.index("prepare_storage=prepare_runtime_storage")
     shell = source.index("JenaplanDesktopApp(paths.database")
-    assert restore < security_paths < auth < product_runtime < shell
+    assert (
+        restore
+        < security_paths
+        < auth
+        < database_startup
+        <= product_runtime
+        < shell
+    )
     assert source.index("--restore-worker") < restore
     assert "DISABLE_AUTH" not in source
 

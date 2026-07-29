@@ -1,5 +1,64 @@
 # Data Lifecycle
 
+## SJ-2C - kontrollierter Datenbank-Startup
+
+**Status:** Read-only Erkennung und Routinggrenze ohne produktive Migration,
+Bootstrap-UI, V3-Fachnutzung oder Schreibzugriff auf einen vorhandenen
+V2-/V3-Bestand. Die bestehende V2-Neuanlage beim echten First Run bleibt
+erhalten.
+
+Die Startreihenfolge ist verbindlich:
+
+1. Restore-Worker dispatchen, Runtime-Pfad und exklusiven Runtime-Lock
+   bestimmen und den vorhandenen Restore-Recovery-/Resume-Lifecycle
+   vollständig ausführen.
+2. Security-Storage prüfen und die vorhandene Authentifizierung erfolgreich
+   abschließen.
+3. Aus `runtime_paths(data_root)` ausschließlich die Datenbankpfadprojektion
+   bilden; vorhandene Runtime-Verzeichnisse oder Initialdaten werden noch
+   nicht vorbereitet.
+4. Den abgeschlossenen Restorestatus und die Datenbank read-only durch den
+   `DatabaseStartupCoordinator` klassifizieren.
+5. Exaktes V2 wird zunächst als `V2_MIGRATION_REQUIRED` erkannt und
+   ausschließlich in `V2_BOOTSTRAP_READY` geroutet. Es starten weder normale
+   Shell noch Adapter, Schemainitialisierung, Default-Writer, Pending-Recovery
+   oder Migrationsengine.
+6. Exaktes V3 wird als `V3_READY` erkannt. SJ-2C besitzt keinen
+   Freigabemechanismus für die normale V3-Runtime; sie bleibt immer gesperrt.
+7. Nur wenn beim normalen Start wirklich keine Datenbankdatei existiert und
+   die Security-Zustandsmaschine denselben Lauf als
+   `SecurityStartState.FIRST_RUN` autorisiert hat, darf der vorhandene
+   First-Run-Pfad einmal `prepare_runtime_storage()` ausführen. Danach wird
+   zwingend erneut klassifiziert. Eine dadurch installierte
+   V2-Initialdatenbank führt in `V2_BOOTSTRAP_READY` und niemals direkt in die
+   Shell. Fehlt die Datenbank weiterhin, darf nur in diesem nachgewiesenen
+   First Run die bestehende V2-Neuanlage folgen. Bei einem vorhandenen
+   Security-Konto, Legacybestand, verwaisten Dokumenten oder sonst nicht
+   beweisbar neuer Installation führt eine fehlende Datenbank zu
+   `RECOVERY_REQUIRED`.
+8. Erst nach einer ausdrücklichen Runtimefreigabe dürfen Runtime-Logging,
+   `JenaplanDesktopApp`, `AppShell` und `StudentDesktopAdapter` entstehen.
+
+Als abgeschlossene Restorezustände dürfen ausschließlich `normal_start`,
+`completed`, `rolled_back` und `aborted_before_replacement` zur anschließenden
+Datenbankprüfung weitergehen. Der Coordinator klassifiziert jeden ihm
+übergebenen offenen oder unbekannten Restorestatus sowie eine nach
+Restore/Rollback fehlende Datenbank als `RECOVERY_REQUIRED`. Im produktiven
+Startpfad beendet der bereits vorgelagerte Restore-Recovery-Lifecycle einen
+Restorefehler weiterhin vor Authentifizierung und Coordinator; er darf weder
+übersprungen noch durch eine zweite Recovery-Ausführung ersetzt werden.
+
+Eine vorhandene leere Datei ist kein First Run. Unlesbare, beschädigte,
+verlinkte oder nicht reguläre Datenbankpfade führen zu `RECOVERY_REQUIRED`;
+lesbare, aber nicht exakt registrierte Version-/Fingerprint-Paare zu
+`SCHEMA_UNSUPPORTED`. Die bestehende V1→V2-Automatik darf diese neue
+V2→V3-Startupgrenze nicht umgehen.
+
+Vor der immutable read-only Schemaerkennung müssen vorhandene SQLite-`-wal`-
+oder `-shm`-Sidecars fail-closed zu `RECOVERY_REQUIRED` führen. Ein
+möglicherweise neuerer Schema- oder Datenzustand im WAL darf nicht durch die
+Basisdatei-Klassifikation übergangen werden.
+
 ## SJ-2B - isolierter V2→V3-Migrationslauf
 
 **Status:** Technische Migrations- und Testgrenze ohne Startup-, UI-,

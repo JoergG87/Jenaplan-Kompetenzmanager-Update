@@ -1,5 +1,19 @@
 # View Data Ownership
 
+## SJ-2C - Ownership der Startup-Entscheidung
+
+SJ-2C führt keine neue View und keinen Bootstrap-Assistenten ein. Der
+Qt-freie `DatabaseStartupCoordinator` besitzt ausschließlich die flüchtige
+technische Routingentscheidung vor der Product Shell. `AppShell`,
+`StudentDesktopAdapter`, Widgets und künftige Bootstrap-Views erkennen,
+klassifizieren oder migrieren Datenbankschemata nicht selbst.
+
+`V2_BOOTSTRAP_READY` ist nur die Übergabegrenze an einen späteren,
+gesondert freizugebenden Bootstrap-Use-Case. Es besitzt keine Schüler-,
+Assignment-, Kursstufen-, Backup-, Passwort-, Migrations- oder
+Transaktionsprojektion. `V3_READY` besitzt in SJ-2C grundsätzlich keine
+Shellfreigabe.
+
 ## SJ-1 - geplante Ownership für Schuljahre und Assignments
 
 **Status:** Verbindliche Zielownership nach ADR-095, noch nicht implementiert.

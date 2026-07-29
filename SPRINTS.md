@@ -1,5 +1,38 @@
 # Sprintplanung
 
+## SJ-2C - kontrollierter Datenbank-Startup
+
+**Status:** Startup-Erkennung und kontrolliertes Bootstrap-Routing lokal
+implementiert; produktive Migration und V3-Fachruntime bleiben gesperrt.
+
+- [x] Früheste sichere Einbindung nach Restore und Authentifizierung sowie vor
+  Runtime-Vorbereitung, Shell, Adaptern und Datenbank-Writern festgelegt.
+- [x] Reine Zustände `DATABASE_NOT_FOUND`, `V2_MIGRATION_REQUIRED`,
+  `V2_BOOTSTRAP_READY`, `V3_READY`, `SCHEMA_UNSUPPORTED` und
+  `RECOVERY_REQUIRED` implementiert.
+- [x] V2/V3 anhand registrierter Version und vollständigem Fingerprint
+  read-only getrennt erkannt.
+- [x] Aktive `DATABASE_COMPATIBILITY_VERSION = 2` und bestehende
+  Backup-/Restore-/Schemainitialisierungsgrenze unverändert gelassen.
+- [x] Normale Shell, Adapter, `initialize_schema()`, Master-Data- und
+  Catalog-Defaults für V2-Bootstrap blockiert.
+- [x] First-Run-Neuanlage erhalten und mögliche Initialdaten nach
+  Runtime-Vorbereitung erneut klassifiziert; fehlende Datenbanken bestehender
+  Installationen und vorhandene WAL-/SHM-Sidecars fail-closed blockiert.
+- [x] V3 erkannt, aber wegen weiterhin V2-gebundener Runtimepfade nicht für die
+  normale Shell freigegeben.
+- [x] Keine automatische Migration und kein Import der isolierten
+  Migrationsengine im Startup.
+- [x] Fokussierte SJ-2C-Startup-Suite: 34 Tests bestanden.
+- [x] Vollständige Regression: 1872 Tests und 71 Subtests bestanden; ein
+  umgebungsgebundener read-only Build-303-Referenztest erwartungsgemäß
+  übersprungen.
+- [x] Unabhängiger Technical- und Governance-Review ohne verbleibende Findings.
+- [ ] Bootstrap-Assistent, Preview, Backup-Step-up und bewusste
+  Migrationsausführung in gesondertem Auftrag implementieren.
+- [ ] Assignment-Reads und reguläre V3-Runtime gesondert freigeben.
+- [ ] Reale Migration, Build, Packaging und Release gesondert abnehmen.
+
 ## SJ-2B - isoliertes V3-Schema und Migrationsengine
 
 **Status:** Lokal implementiert; fokussierte Schema-, Migrations-,
@@ -37,8 +70,8 @@ Aktivierung und Release bleiben gesperrt.
   übersprungen.
 - [x] Python-Compileall und Qt-freie Importisolation ausführen.
 - [x] Abschließendes Diff-Gate ausführen.
-- [ ] Produktiven Bootstrap-Assistenten und Startup-Zustandsmaschine in einem
-  separaten SJ-2C-Auftrag entscheiden und implementieren.
+- [ ] Produktiven Bootstrap-Assistenten auf Basis der in SJ-2C implementierten
+  Startup-Zustandsmaschine in einem separaten Auftrag implementieren.
 - [ ] Produktive Membership-Read-/Write-APIs und reguläre V3-Shell gesondert
   freigeben.
 - [ ] Reale Backup-/Restore- und produktive Migrationsabnahme durchführen.

@@ -12,6 +12,10 @@ from pathlib import Path
 
 
 DATABASE_COMPATIBILITY_VERSION = 2
+REGISTERED_V3_SCHEMA_VERSION = 3
+REGISTERED_V3_SCHEMA_FINGERPRINT = (
+    "640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1"
+)
 
 # Registered after calculating the complete canonical schema identity of the
 # c029aff V1 schema. The versioned V1 schema and its known unversioned direct

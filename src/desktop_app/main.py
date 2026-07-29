@@ -11,10 +11,14 @@ import tempfile
 from dataclasses import replace
 from datetime import date
 from pathlib import Path
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING, Callable, Mapping
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
+    from src.core.database_startup import (
+        DatabaseStartupCoordinator,
+        DatabaseStartupDecision,
+    )
     from src.desktop_app.app import JenaplanDesktopApp
 
 # Kept as a patchable sentinel for pre-existing startup-isolation tests. Qt is
@@ -36,6 +40,7 @@ from src.desktop_app.runtime import (
     prepare_security_runtime_storage,
     prepare_runtime_storage,
     resource_path,
+    runtime_paths,
 )
 from src.version import APP_VERSION
 
@@ -111,6 +116,60 @@ def _argument_value(arguments: list[str], name: str) -> str | None:
     value = arguments[index + 1]
     del arguments[index : index + 2]
     return value
+
+
+def _coordinate_product_database_startup(
+    *,
+    data_root: Path,
+    restore_status: str,
+    coordinator: DatabaseStartupCoordinator,
+    prepare_storage: Callable[..., RuntimePaths],
+    new_database_initialization_allowed: bool,
+) -> tuple[RuntimePaths, DatabaseStartupDecision]:
+    """Gate product runtime preparation behind the read-only DB decision."""
+
+    paths = runtime_paths(data_root)
+    decision = coordinator.coordinate(
+        paths.database,
+        restore_status=restore_status,
+        new_database_initialization_allowed=(
+            new_database_initialization_allowed
+        ),
+    )
+    if decision.rescan_after_runtime_storage_preparation:
+        paths = prepare_storage(data_root=data_root)
+        decision = coordinator.coordinate(
+            paths.database,
+            restore_status=restore_status,
+            runtime_storage_prepared=True,
+            new_database_initialization_allowed=(
+                new_database_initialization_allowed
+            ),
+        )
+    elif decision.normal_runtime_allowed:
+        paths = prepare_storage(data_root=data_root)
+    return paths, decision
+
+
+def _new_database_initialization_candidate(
+    data_root: Path,
+    *,
+    runtime_lock_path: Path,
+) -> bool:
+    """Accept only a runtime root with no pre-existing product artifacts."""
+
+    try:
+        root = Path(data_root).resolve(strict=True)
+        lock_path = Path(runtime_lock_path).resolve(strict=False)
+        entries = tuple(root.iterdir())
+        return (
+            len(entries) == 1
+            and entries[0] == lock_path
+            and entries[0].is_file()
+            and not entries[0].is_symlink()
+        )
+    except OSError:
+        return False
 
 
 def main() -> int:
@@ -190,22 +249,37 @@ def main() -> int:
     )
 
     lock = RuntimeInstanceLock(data_root, inherited_fd=inherited_lock_fd)
+    restore_status = "normal_start"
+    new_database_initialization_candidate = False
     try:
         lock.acquire()
+        new_database_initialization_candidate = (
+            _new_database_initialization_candidate(
+                data_root,
+                runtime_lock_path=lock.path,
+            )
+        )
         if resume_restore_id is not None and resume_token is not None:
-            confirm_restore_startup(data_root, resume_restore_id, resume_token)
+            restore_result = confirm_restore_startup(
+                data_root,
+                resume_restore_id,
+                resume_token,
+            )
+            restore_status = restore_result.status
         else:
             recovery = recover_interrupted_restore(data_root)
+            restore_status = recovery.status
             if recovery.status == "resume_required":
                 if recovery.restore_id is None or recovery.resume_token is None:
                     raise RestoreManualRecoveryRequired(
                         "Der Resume-Zustand ist unvollstaendig."
                     )
-                confirm_restore_startup(
+                restore_result = confirm_restore_startup(
                     data_root,
                     recovery.restore_id,
                     recovery.resume_token,
                 )
+                restore_status = restore_result.status
     except (RestoreManualRecoveryRequired, RestoreRuntimeError) as error:
         lock.release()
         print(
@@ -262,7 +336,7 @@ def main() -> int:
             ),
         )
         security_state = security_runtime.service.security_store_state()
-        decision = SecurityStartupResolver().resolve(
+        security_decision = SecurityStartupResolver().resolve(
             security_state,
             legacy_installation_present=legacy_installation_present(security_paths),
         )
@@ -270,7 +344,7 @@ def main() -> int:
             session = _isolated_packaged_smoke_session(
                 security_runtime.service,
                 security_runtime.repository,
-                decision,
+                security_decision,
             )
         else:
             try:
@@ -279,7 +353,7 @@ def main() -> int:
                 pre_auth_preferences = AppPreferences()
             authentication = None
             if should_attempt_startup_device_authentication(
-                decision=decision,
+                decision=security_decision,
                 touch_id_preferred=pre_auth_preferences.touch_id_preferred,
             ):
                 device_authentication = run_startup_device_authentication(
@@ -295,7 +369,7 @@ def main() -> int:
                 authentication = run_startup_authentication(
                     service=security_runtime.service,
                     repository=security_runtime.repository,
-                    decision=decision,
+                    decision=security_decision,
                     device_credentials=security_runtime.device_credentials,
                     touch_id_preferred=pre_auth_preferences.touch_id_preferred,
                     support_reset=security_runtime.support_reset,
@@ -324,14 +398,14 @@ def main() -> int:
         logging.getLogger("jenaplan.security").error(
             "fatal_security_error error_class=%s", type(error).__name__
         )
-        decision = SecurityStartupDecision(
+        security_decision = SecurityStartupDecision(
             SecurityStartState.FATAL_SECURITY_ERROR,
             "SEC-FATAL_SECURITY_ERROR",
         )
         AuthenticationDialog(
             service=None,
             repository=None,
-            decision=decision,
+            decision=security_decision,
         ).exec()
         discard_pre_auth_security_logging(security_event_buffer)
         lock.release()
@@ -342,7 +416,28 @@ def main() -> int:
             preferences = security_runtime.preferences.load()
         except AppPreferencesError:
             preferences = AppPreferences()
-        paths = prepare_runtime_storage(data_root=data_root)
+        from src.core.database_startup import DatabaseStartupCoordinator
+
+        paths, database_startup = _coordinate_product_database_startup(
+            data_root=data_root,
+            restore_status=restore_status,
+            coordinator=DatabaseStartupCoordinator(),
+            prepare_storage=prepare_runtime_storage,
+            new_database_initialization_allowed=(
+                new_database_initialization_candidate
+                and security_decision.state is SecurityStartState.FIRST_RUN
+            ),
+        )
+        if not database_startup.normal_runtime_allowed:
+            print(
+                "App-Start kontrolliert angehalten: "
+                f"{database_startup.state.value} "
+                f"({database_startup.reason_code}).",
+                file=sys.stderr,
+            )
+            discard_pre_auth_security_logging(security_event_buffer)
+            lock.release()
+            return 4
         configure_runtime_logging(paths)
         flush_pre_auth_security_logging(security_event_buffer)
         from src.desktop_app.app import JenaplanDesktopApp
