@@ -25,20 +25,18 @@ from src.application.commands.restore import (
 )
 from src.core.backup import SQLiteBackupEngine
 from src.core.database_compatibility import DatabaseCompatibilityStatus
-from src.core.persistence_events import SQLitePersistenceEventRepository
+from src.core.final_v3_schema import FinalV3SchemaInitializer
 from src.core.restore import (
     RestoreCompatibilityError,
     RestoreError,
     RestoreFormatError,
     RestoreIntegrityError,
-    RestoreMigrationError,
     RestoreMaterializationError,
     RestoreStagingError,
     RestoreStagingService,
     RestoreStateError,
     RestoreVerifier,
 )
-from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.runtime import RuntimePaths, runtime_paths
 
 
@@ -55,7 +53,7 @@ def _runtime(tmp_path: Path) -> RuntimePaths:
         paths.logs,
     ):
         directory.mkdir(parents=True, exist_ok=True)
-    SQLiteDatabase(paths.database).initialize_schema()
+    FinalV3SchemaInitializer().initialize(paths.database)
     return paths
 
 
@@ -67,13 +65,29 @@ def _insert_personal_data(paths: RuntimePaths, *, managed_file: bool = False) ->
         )
         connection.execute(
             "INSERT INTO courses "
-            "(course_id, course_name, color_key, color_name, color_hex, sort_order, active) "
-            "VALUES ('CRS-000001', 'Geheimer Kurs', NULL, 'Blau', '#0000ff', 0, 1)"
+            "(course_id, course_name, color_key, color_name, color_hex, "
+            "sort_order, active, year_level) "
+            "VALUES ('CRS-000001', 'Geheimer Kurs', NULL, 'Blau', "
+            "'#0000ff', 0, 1, 1)"
         )
         connection.execute(
-            "INSERT INTO students VALUES "
-            "('STU-000001', 'Klara', 'Geheim', 'GRP-000001', 'CRS-000001', "
-            "'Private Notiz', 1, '2026-01-01', '2026-01-01', NULL)"
+            "INSERT INTO school_years VALUES "
+            "('SY-2025-26', '2025/26', '2025-08-01', '2026-07-31', "
+            "'current', '2025-07-01T00:00:00+00:00', NULL)"
+        )
+        connection.execute(
+            "INSERT INTO students "
+            "(student_id, first_name, last_name, notes, active, created_at, "
+            "updated_at, archived_at) VALUES "
+            "('STU-000001', 'Klara', 'Geheim', 'Private Notiz', 1, "
+            "'2026-01-01', '2026-01-01', NULL)"
+        )
+        connection.execute(
+            "INSERT INTO student_school_year_assignments VALUES "
+            "('ASG-000001', 'STU-000001', 'SY-2025-26', 'GRP-000001', "
+            "'CRS-000001', 'enrolled', '2025-08-01', '2026-07-31', "
+            "'2025-07-01T00:00:00+00:00', "
+            "'2025-07-01T00:00:00+00:00')"
         )
         connection.execute(
             "INSERT INTO observations VALUES "
@@ -108,52 +122,6 @@ def _create_backup(paths: RuntimePaths) -> Path:
         )
     )
     return result.path
-
-
-def _set_v1_schema(paths: RuntimePaths, *, user_version: int = 1) -> None:
-    with sqlite3.connect(paths.database) as connection:
-        connection.execute("DROP TABLE persistence_events")
-        connection.execute(f"PRAGMA user_version = {user_version}")
-
-
-def _insert_historical_freshness_tie(paths: RuntimePaths) -> None:
-    with sqlite3.connect(paths.database) as connection:
-        connection.execute(
-            """
-            INSERT INTO competencies (
-                competency_id, subject_id, subject_name, subject_full_name,
-                official_subject_name, school_context_name, grade_band, label,
-                description, learning_stage, learning_area, competency_group,
-                source_reference, catalog_status, activation_group_key,
-                sort_order, active, catalog_default_active, is_core_subject
-            ) VALUES (
-                'CMP-RESTORE-001', 'MAT', 'Mathematik', '', '', '', '',
-                'Zahlen', 'Zahlen', 'cross_stage', 'Zahlen', 'Grundlagen',
-                '', 'current', '', 0, 1, 1, 1
-            )
-            """
-        )
-        connection.execute(
-            """
-            INSERT INTO observation_competency_ratings (
-                observation_id, competency_id, subject_id, subject_display_name,
-                learning_area, competency_group, competency_text, rating
-            ) VALUES (
-                'OBS-000001', 'CMP-RESTORE-001', 'MAT', 'Mathematik',
-                'Zahlen', 'Grundlagen', 'Zahlen', '+'
-            )
-            """
-        )
-        connection.execute(
-            """
-            INSERT INTO student_competency_confirmations (
-                student_id, competency_id, confirmed_rating, confirmed_at, note
-            ) VALUES (
-                'STU-000001', 'CMP-RESTORE-001', '+',
-                '2026-01-02T00:00:00+00:00', ''
-            )
-            """
-        )
 
 
 def _zip_payload(path: Path) -> dict[str, bytes]:
@@ -324,30 +292,16 @@ def _add_final_pdfs(paths: RuntimePaths) -> tuple[Path, Path]:
     return report_path, conference_path
 
 
-def test_valid_v1_backup_produces_exact_preview(tmp_path: Path) -> None:
+def test_valid_final_v3_backup_produces_exact_preview(tmp_path: Path) -> None:
     paths = _runtime(tmp_path)
     _insert_personal_data(paths)
     backup = _create_backup(paths)
     result = RestoreVerifier().verify(backup)
     assert result.compatibility.status is DatabaseCompatibilityStatus.EXACT
     assert result.preview.compatibility_status is DatabaseCompatibilityStatus.EXACT
-    assert result.preview.sqlite_user_version == 2
+    assert result.preview.sqlite_user_version == 3
     assert result.preview.students_count == 1
     assert result.preview.observations_count == 1
-
-
-def test_known_v0_backup_is_migration_required_and_old_format_remains_verifiable(
-    tmp_path: Path,
-) -> None:
-    paths = _runtime(tmp_path)
-    _set_v1_schema(paths, user_version=0)
-    backup = _create_backup(paths)
-    result = RestoreApplicationService().verify(VerifyRestoreBackupQuery(backup))
-    assert result.compatibility.status is (
-        DatabaseCompatibilityStatus.MIGRATION_REQUIRED
-    )
-    assert result.preview.sqlite_user_version == 0
-    assert result.preview.database_compatibility_version == 1
 
 
 def test_manipulated_manifest_is_rejected(tmp_path: Path) -> None:
@@ -512,7 +466,7 @@ def test_restore_verification_never_changes_live_data(tmp_path: Path) -> None:
     assert _live_state(paths) == before
 
 
-def test_valid_v1_backup_is_prepared_with_rebased_managed_document(
+def test_valid_final_v3_backup_is_prepared_with_rebased_managed_document(
     tmp_path: Path,
 ) -> None:
     paths = _runtime(tmp_path)
@@ -521,9 +475,9 @@ def test_valid_v1_backup_is_prepared_with_rebased_managed_document(
     before = _live_state(paths)
     service = RestoreApplicationService(now=lambda: FIXED_NOW)
     result = service.prepare_staging(
-        PrepareRestoreStagingCommand(backup, paths, "RST-TEST-V1")
+        PrepareRestoreStagingCommand(backup, paths, "RST-TEST-V3")
     )
-    staging = paths.root / "restore-staging" / "RST-TEST-V1"
+    staging = paths.root / "restore-staging" / "RST-TEST-V3"
     prepared_database = staging / "prepared" / "kompetenzmanager.sqlite"
     prepared_file = (
         staging
@@ -534,8 +488,7 @@ def test_valid_v1_backup_is_prepared_with_rebased_managed_document(
         / "MED-000001.txt"
     )
     assert result.status == "completed"
-    assert result.migrated is False
-    assert _user_version(prepared_database) == 2
+    assert _user_version(prepared_database) == 3
     assert prepared_file.read_bytes() == b"private managed bytes"
     with sqlite3.connect(prepared_database) as connection:
         rebased = connection.execute(
@@ -551,97 +504,6 @@ def test_valid_v1_backup_is_prepared_with_rebased_managed_document(
     for forbidden in ("Klara", "Geheim", "Kindname", str(paths.documents)):
         assert forbidden not in state_text
     assert _live_state(paths) == before
-
-
-def test_known_v0_is_migrated_only_in_staging_and_rows_remain_identical(
-    tmp_path: Path,
-) -> None:
-    paths = _runtime(tmp_path)
-    _insert_personal_data(paths, managed_file=True)
-    _set_v1_schema(paths, user_version=0)
-    backup = _create_backup(paths)
-    before = _live_state(paths)
-    result = RestoreApplicationService(now=lambda: FIXED_NOW).prepare_staging(
-        PrepareRestoreStagingCommand(backup, paths, "RST-TEST-V0")
-    )
-    staging = paths.root / "restore-staging" / "RST-TEST-V0"
-    source_database = staging / "source" / "database" / "kompetenzmanager.sqlite"
-    prepared_database = staging / "prepared" / "kompetenzmanager.sqlite"
-    assert result.migrated is True
-    assert _user_version(source_database) == 0
-    assert _user_version(prepared_database) == 2
-    assert _user_version(paths.database) == 0
-    with sqlite3.connect(source_database) as source, sqlite3.connect(
-        prepared_database
-    ) as prepared:
-        source_observation = source.execute(
-            "SELECT * FROM observations"
-        ).fetchall()
-        prepared_observation = prepared.execute(
-            "SELECT * FROM observations"
-        ).fetchall()
-    assert source_observation == prepared_observation
-    assert _live_state(paths) == before
-
-
-def test_v1_backup_restore_backfills_historical_unknown_freshness(
-    tmp_path: Path,
-) -> None:
-    paths = _runtime(tmp_path)
-    _insert_personal_data(paths)
-    _insert_historical_freshness_tie(paths)
-    _set_v1_schema(paths, user_version=1)
-    backup = _create_backup(paths)
-
-    result = RestoreApplicationService(now=lambda: FIXED_NOW).prepare_staging(
-        PrepareRestoreStagingCommand(backup, paths, "RST-V1-EVENT-BACKFILL")
-    )
-    prepared_database = (
-        paths.root
-        / "restore-staging"
-        / "RST-V1-EVENT-BACKFILL"
-        / "prepared"
-        / "kompetenzmanager.sqlite"
-    )
-
-    assert result.migrated is True
-    assert _user_version(prepared_database) == 2
-    freshness = SQLitePersistenceEventRepository(
-        SQLiteDatabase(prepared_database)
-    ).freshness_for_student("STU-000001")
-    assert freshness["CMP-RESTORE-001"].state == "confirmation_unknown"
-    with sqlite3.connect(prepared_database) as connection:
-        assert connection.execute(
-            """
-            SELECT COUNT(*)
-            FROM persistence_events
-            WHERE competency_id = 'CMP-RESTORE-001'
-              AND ordering_state = 'unknown'
-            """
-        ).fetchone()[0] == 2
-
-
-def test_migration_failure_rolls_back_prepared_database_and_marks_failed(
-    tmp_path: Path,
-) -> None:
-    paths = _runtime(tmp_path)
-    _insert_personal_data(paths)
-    _set_v1_schema(paths, user_version=0)
-    backup = _create_backup(paths)
-    service = RestoreApplicationService(now=lambda: FIXED_NOW)
-    with mock.patch(
-        "src.core.restore.migrate_persistence_events",
-        side_effect=sqlite3.OperationalError("simulierter Migrationsfehler"),
-    ):
-        with pytest.raises(RestoreMigrationError):
-            service.prepare_staging(
-                PrepareRestoreStagingCommand(backup, paths, "RST-FAIL-MIGRATION")
-            )
-    staging = paths.root / "restore-staging" / "RST-FAIL-MIGRATION"
-    assert _user_version(staging / "prepared" / "kompetenzmanager.sqlite") == 0
-    state = json.loads((staging / "staging-state.json").read_text(encoding="utf-8"))
-    assert state["phase"] == "failed"
-    assert _user_version(paths.database) == 0
 
 
 def test_external_reference_is_byte_identical_and_never_materialized(

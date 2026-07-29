@@ -19,6 +19,7 @@ from argon2.low_level import Type
 import pytest
 
 from src.application.commands.backup import BackupApplicationService, CreateBackupCommand
+from src.core.final_v3_schema import FinalV3SchemaInitializer
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.runtime import prepare_runtime_storage, runtime_paths
 from src.security.application import SecurityApplicationService
@@ -576,7 +577,7 @@ def test_backup_archive_explicitly_excludes_security_directory_and_sidecars(
     paths = runtime_paths(tmp_path / "runtime")
     for directory in (paths.root, paths.documents, paths.exports, paths.backups, paths.logs):
         directory.mkdir(parents=True, exist_ok=True)
-    SQLiteDatabase(paths.database).initialize_schema()
+    FinalV3SchemaInitializer().initialize(paths.database)
     service, _repository, _clock, result = enroll(paths.root)
     for suffix in ("-wal", "-shm", "-journal"):
         Path(f"{paths.security_database}{suffix}").write_bytes(b"security-sidecar-sentinel")

@@ -43,6 +43,7 @@ from src.core.restore_runtime import (
     recover_interrupted_restore,
     restore_transaction_paths,
 )
+from src.core.final_v3_schema import FinalV3SchemaInitializer
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app import main as desktop_main
 from src.desktop_app import restore_worker
@@ -114,7 +115,7 @@ def _runtime(root: Path) -> RuntimePaths:
     paths = runtime_paths(root)
     for directory in (paths.root, paths.documents, paths.exports, paths.backups, paths.logs):
         directory.mkdir(parents=True, exist_ok=True)
-    SQLiteDatabase(paths.database).initialize_schema()
+    FinalV3SchemaInitializer().initialize(paths.database)
     return paths
 
 
@@ -127,13 +128,34 @@ def _insert_data(paths: RuntimePaths, prefix: str, *, managed: bool = False) -> 
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("INSERT INTO groups VALUES (?, ?, 0, 1)", (group_id, f"Group {prefix}"))
         connection.execute(
-            "INSERT INTO courses (course_id, course_name, color_key, color_name, color_hex, sort_order, active) "
-            "VALUES (?, ?, NULL, '', '', 0, 1)",
+            "INSERT INTO courses (course_id, course_name, color_key, color_name, "
+            "color_hex, sort_order, active, year_level) "
+            "VALUES (?, ?, NULL, '', '', 0, 1, 1)",
             (course_id, f"Course {prefix}"),
         )
         connection.execute(
-            "INSERT INTO students VALUES (?, ?, ?, ?, ?, '', 1, '2026-01-01', '2026-01-01', NULL)",
-            (student_id, f"First {prefix}", f"Last {prefix}", group_id, course_id),
+            "INSERT INTO school_years VALUES (?, '2025/26', '2025-08-01', "
+            "'2026-07-31', 'current', '2025-07-01', NULL)",
+            (f"SY-{prefix}",),
+        )
+        connection.execute(
+            "INSERT INTO students "
+            "(student_id, first_name, last_name, notes, active, created_at, "
+            "updated_at, archived_at) VALUES "
+            "(?, ?, ?, '', 1, '2026-01-01', '2026-01-01', NULL)",
+            (student_id, f"First {prefix}", f"Last {prefix}"),
+        )
+        connection.execute(
+            "INSERT INTO student_school_year_assignments VALUES "
+            "(?, ?, ?, ?, ?, 'enrolled', '2025-08-01', '2026-07-31', "
+            "'2025-07-01', '2025-07-01')",
+            (
+                f"ASG-{prefix}",
+                student_id,
+                f"SY-{prefix}",
+                group_id,
+                course_id,
+            ),
         )
         connection.execute(
             "INSERT INTO observations VALUES (?, ?, '2026-01-02', 'MAT', '', '', 1, '2026-01-02', '2026-01-02')",
@@ -162,12 +184,6 @@ def _backup(paths: RuntimePaths) -> Path:
             source_tree_state="clean",
         )
     ).path
-
-
-def _set_v1_schema(paths: RuntimePaths, *, user_version: int = 1) -> None:
-    with sqlite3.connect(paths.database) as connection:
-        connection.execute("DROP TABLE persistence_events")
-        connection.execute(f"PRAGMA user_version = {user_version}")
 
 
 def _prepared(tmp_path: Path, restore_id: str = "RST-RUNTIME"):
@@ -802,7 +818,9 @@ def test_free_runtime_target_projection_is_rejected(tmp_path: Path) -> None:
         )
 
 
-def test_successful_v1_restore_completes_only_after_startup_handshake(tmp_path: Path) -> None:
+def test_successful_final_v3_restore_completes_only_after_startup_handshake(
+    tmp_path: Path,
+) -> None:
     _source, live, _archive, handoff = _prepared(tmp_path)
     with RuntimeInstanceLock(live.root) as lock:
         result = ProductiveRestoreService().execute(
@@ -852,33 +870,7 @@ def test_productive_restore_leaves_security_store_marker_and_sidecars_byte_ident
     assert not tuple(transaction.rglob("enrollment.marker"))
 
 
-def test_successful_prepared_v1_to_v2_restore_keeps_rows_and_installs_v2(tmp_path: Path) -> None:
-    source = _runtime(tmp_path / "source-v0")
-    _insert_data(source, "V00001", managed=True)
-    _set_v1_schema(source, user_version=0)
-    archive = _backup(source)
-    live = _runtime(tmp_path / "live-v0")
-    service = RestoreApplicationService()
-    restore_id = "RST-V0-V1"
-    service.prepare_staging(PrepareRestoreStagingCommand(archive, live, restore_id))
-    handoff = service.create_handoff(
-        CreateRestoreHandoffCommand(archive, restore_id, live, "0.1.2", "a39345a", "clean")
-    )
-    with RuntimeInstanceLock(live.root) as lock:
-        ProductiveRestoreService().execute(
-            handoff_path=handoff.path,
-            nonce=handoff.nonce,
-            lock=lock,
-            restart=lambda paths, token, _lock: bool(
-                confirm_restore_startup(paths.runtime_root, paths.transaction.name, token)
-            ),
-        )
-    with sqlite3.connect(live.database) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
-        assert connection.execute("SELECT student_id FROM students").fetchall() == [("STU-V00001",)]
-
-
-@pytest.mark.parametrize("documents_state", ["missing", "empty"])
+@pytest.mark.parametrize("documents_state", ("missing", "empty"))
 def test_missing_and_empty_old_documents_are_distinct_and_restore_succeeds(
     tmp_path: Path,
     documents_state: str,

@@ -12,10 +12,8 @@ from pathlib import Path
 from types import MappingProxyType
 
 from .database_compatibility import (
-    DATABASE_COMPATIBILITY_VERSION,
+    DatabaseCompatibilityError,
     DatabaseCompatibilityInspector,
-    DatabaseCompatibilityPolicy,
-    DatabaseCompatibilityStatus,
 )
 from .database_engine import SQLiteConnectionProvider
 from .persistence_events import (
@@ -60,6 +58,12 @@ from .constants import (
     STUDENT_ID,
     STUDENT_NOTES,
     UPDATED_AT,
+)
+
+
+_LEGACY_DEVELOPMENT_SCHEMA_VERSION = 2
+_LEGACY_DEVELOPMENT_SCHEMA_FINGERPRINT = (
+    "5c15a6c54dda9e04ff0f4a7cb9361cac7d452c9f7b1e2d68a6843bc5a99e57b2"
 )
 from .observation import (
     ObservationCompetencyRatingRecord,
@@ -289,19 +293,23 @@ class SQLiteDatabase:
                 ).fetchone()[0]
             )
             if schema_object_count:
-                compatibility = DatabaseCompatibilityInspector().inspect_connection(
-                    connection
+                identity = (
+                    DatabaseCompatibilityInspector
+                    .schema_identity_for_connection(connection)
                 )
-                if compatibility.status is DatabaseCompatibilityStatus.EXACT:
+                version = int(
+                    connection.execute("PRAGMA user_version").fetchone()[0]
+                )
+                if (
+                    version == _LEGACY_DEVELOPMENT_SCHEMA_VERSION
+                    and identity.fingerprint
+                    == _LEGACY_DEVELOPMENT_SCHEMA_FINGERPRINT
+                ):
                     return
-                DatabaseCompatibilityPolicy.require_backup_compatible(compatibility)
-                with connection:
-                    connection.execute("BEGIN IMMEDIATE")
-                    migrate_persistence_events(
-                        connection,
-                        target_user_version=DATABASE_COMPATIBILITY_VERSION,
-                    )
-                return
+                raise DatabaseCompatibilityError(
+                    "Die vorhandene Entwicklungsdatenbank besitzt kein "
+                    "unterstütztes Testschema."
+                )
             with connection:
                 connection.executescript(
                     """
@@ -909,7 +917,7 @@ class SQLiteDatabase:
                 self._backfill_course_colors(connection)
                 migrate_persistence_events(
                     connection,
-                    target_user_version=DATABASE_COMPATIBILITY_VERSION,
+                    target_user_version=_LEGACY_DEVELOPMENT_SCHEMA_VERSION,
                 )
 
     def ensure_master_data_defaults(self) -> None:

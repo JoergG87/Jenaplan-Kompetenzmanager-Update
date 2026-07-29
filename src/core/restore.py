@@ -31,16 +31,13 @@ from .backup import (
     SQLiteBackupEngine,
 )
 from .database_compatibility import (
-    DATABASE_COMPATIBILITY_VERSION,
-    KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT,
-    V1_COMPATIBILITY_FINGERPRINT,
-    V2_COMPATIBILITY_FINGERPRINT,
+    FINAL_SCHEMA_FINGERPRINT,
+    FINAL_SCHEMA_VERSION,
     DatabaseCompatibilityError,
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityPolicy,
     DatabaseCompatibilityStatus,
 )
-from .persistence_events import migrate_persistence_events
 from .observation_uow import (
     ObservationPersistenceUnitOfWork,
     ObservationWriterLock,
@@ -131,7 +128,6 @@ class RestoreStagingResult:
     source_compatibility: RestoreCompatibility
     target_compatibility: RestoreCompatibility
     preview: RestorePreview
-    migrated: bool
     managed_files_count: int
 
 
@@ -180,10 +176,6 @@ class RestoreStagingError(RestoreError):
 
 class RestoreStateError(RestoreStagingError):
     """Raised for collisions, unknown phases, or unbound staging state."""
-
-
-class RestoreMigrationError(RestoreStagingError):
-    """Raised when the registered staging-only V0 to V1 migration fails."""
 
 
 class RestoreMaterializationError(RestoreStagingError):
@@ -521,29 +513,15 @@ class RestoreStagingService:
                 expected_sha256=manifest.database.sha256,
                 allowed_root=paths.prepared,
             )
-            migrated = compatibility.status is (
-                DatabaseCompatibilityStatus.MIGRATION_REQUIRED
-            )
-            if migrated:
-                self._migrate_v1_to_v2(paths.prepared_database, source_rows)
-            else:
-                copied = self.compatibility_inspector.inspect(paths.prepared_database)
-                if copied.status is not DatabaseCompatibilityStatus.EXACT:
-                    raise RestoreMigrationError(
-                        "Die kopierte V1-Datenbank ist nicht mehr exakt kompatibel."
-                    )
+            copied = self.compatibility_inspector.inspect(paths.prepared_database)
+            if copied.status is not DatabaseCompatibilityStatus.EXACT:
+                raise RestoreCompatibilityError(
+                    "Die kopierte Datenbank entspricht nicht mehr exakt Final-V3."
+                )
             prepared_rows = _database_rows(paths.prepared_database)
-            if {
-                key: value
-                for key, value in prepared_rows.items()
-                if key != "persistence_events"
-            } != {
-                key: value
-                for key, value in source_rows.items()
-                if key != "persistence_events"
-            }:
-                raise RestoreMigrationError(
-                    "Die Staging-Migration hat fachliche Datenwerte veraendert."
+            if prepared_rows != source_rows:
+                raise RestoreIntegrityError(
+                    "Die Staging-Kopie hat Datenbankwerte veraendert."
                 )
             state = self._set_phase(state, "database_prepared")
             _write_staging_state(paths.state, state)
@@ -578,7 +556,6 @@ class RestoreStagingService:
                 source_compatibility=compatibility,
                 target_compatibility=target_compatibility,
                 preview=verified_preview,
-                migrated=migrated,
                 managed_files_count=len(manifest.managed_files),
             )
         except Exception as error:
@@ -628,10 +605,7 @@ class RestoreStagingService:
             live_documents=_absolute_without_resolving(Path(live_documents)),
             source_preview=source_preview,
         )
-        if source_compatibility.status not in {
-            DatabaseCompatibilityStatus.EXACT,
-            DatabaseCompatibilityStatus.MIGRATION_REQUIRED,
-        }:
+        if source_compatibility.status is not DatabaseCompatibilityStatus.EXACT:
             raise RestoreCompatibilityError(
                 "Die Source-Kompatibilitaet des Stagings ist unbekannt."
             )
@@ -720,56 +694,6 @@ class RestoreStagingService:
             raise RestoreIntegrityError(
                 f"Die gebundenen Archivbytes konnten nicht extrahiert werden: {error}"
             ) from error
-
-    def _migrate_v1_to_v2(
-        self,
-        database_path: Path,
-        source_rows: dict[str, object],
-    ) -> None:
-        before = self.compatibility_inspector.inspect(database_path)
-        if (
-            before.status is not DatabaseCompatibilityStatus.MIGRATION_REQUIRED
-            or before.version.sqlite_user_version not in (0, 1)
-            or before.schema_identity.fingerprint
-            != KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT
-        ):
-            raise RestoreMigrationError(
-                "Die Staging-Datenbank ist nicht der registrierte V1-Vorgaenger."
-            )
-        try:
-            with closing(sqlite3.connect(database_path, isolation_level=None)) as connection:
-                connection.row_factory = sqlite3.Row
-                connection.execute("PRAGMA foreign_keys = ON")
-                connection.execute("BEGIN IMMEDIATE")
-                try:
-                    if _database_rows_from_connection(connection) != source_rows:
-                        raise RestoreMigrationError(
-                            "Die V0-Datenwerte widersprechen der verifizierten Quelle."
-                        )
-                    migrate_persistence_events(
-                        connection,
-                        target_user_version=DATABASE_COMPATIBILITY_VERSION,
-                    )
-                    connection.execute("COMMIT")
-                except Exception:
-                    connection.execute("ROLLBACK")
-                    raise
-        except RestoreError:
-            raise
-        except sqlite3.Error as error:
-            raise RestoreMigrationError(
-                f"Die V1-V2-Staging-Migration ist fehlgeschlagen: {error}"
-            ) from error
-        after = self.compatibility_inspector.inspect(database_path)
-        if (
-            after.status is not DatabaseCompatibilityStatus.EXACT
-            or after.version.sqlite_user_version != DATABASE_COMPATIBILITY_VERSION
-            or after.schema_identity.fingerprint != V2_COMPATIBILITY_FINGERPRINT
-        ):
-            raise RestoreMigrationError(
-                "Die migrierte Staging-Datenbank entspricht nicht exakt V2."
-            )
-        _verify_sqlite(database_path, RestoreMigrationError)
 
     def _materialize_managed_files(
         self,
@@ -879,11 +803,11 @@ class RestoreStagingService:
         result = self.compatibility_inspector.inspect(paths.prepared_database)
         if (
             result.status is not DatabaseCompatibilityStatus.EXACT
-            or result.version.sqlite_user_version != DATABASE_COMPATIBILITY_VERSION
-            or result.schema_identity.fingerprint != V2_COMPATIBILITY_FINGERPRINT
+            or result.version.sqlite_user_version != FINAL_SCHEMA_VERSION
+            or result.schema_identity.fingerprint != FINAL_SCHEMA_FINGERPRINT
         ):
             raise RestoreCompatibilityError(
-                "Das Prepared-Staging entspricht nicht exakt dem registrierten V1."
+                "Das Prepared-Staging entspricht nicht exakt Final-V3."
             )
         source_rows = _database_rows(paths.source_database)
         prepared_rows = _database_rows(paths.prepared_database)
@@ -915,7 +839,7 @@ class RestoreStagingService:
         )
         compatibility = RestoreCompatibility(
             status=result.status,
-            database_compatibility_version=DATABASE_COMPATIBILITY_VERSION,
+            database_compatibility_version=FINAL_SCHEMA_VERSION,
             sqlite_user_version=result.version.sqlite_user_version,
             schema_fingerprint=result.schema_identity.fingerprint,
         )
@@ -923,8 +847,8 @@ class RestoreStagingService:
             created_at=source_preview.created_at,
             app_version=source_preview.app_version,
             backup_format_version=source_preview.backup_format_version,
-            database_compatibility_version=DATABASE_COMPATIBILITY_VERSION,
-            sqlite_user_version=DATABASE_COMPATIBILITY_VERSION,
+            database_compatibility_version=FINAL_SCHEMA_VERSION,
+            sqlite_user_version=FINAL_SCHEMA_VERSION,
             compatibility_status=DatabaseCompatibilityStatus.EXACT,
             students_count=counts.students,
             observations_count=counts.observations,
@@ -962,7 +886,7 @@ class RestoreStagingService:
             "restore_id": restore_id,
             "source_user_version": compatibility.sqlite_user_version,
             "staging_state_version": 1,
-            "target_user_version": DATABASE_COMPATIBILITY_VERSION,
+            "target_user_version": FINAL_SCHEMA_VERSION,
             "timestamps": {
                 "created_at": timestamp,
                 "updated_at": timestamp,
@@ -1685,7 +1609,7 @@ def _assert_state_matches_source(
         or state.get("database_compatibility_status")
         != compatibility.status.value
         or state.get("source_user_version") != compatibility.sqlite_user_version
-        or state.get("target_user_version") != DATABASE_COMPATIBILITY_VERSION
+        or state.get("target_user_version") != FINAL_SCHEMA_VERSION
         or state.get("staging_state_version") != 1
         or state.get("counts") != expected_counts
     ):

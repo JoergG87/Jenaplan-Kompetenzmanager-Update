@@ -40,7 +40,7 @@ from src.core.database_compatibility import (
     UnknownDatabaseSchemaError,
     UnsupportedDatabaseVersionError,
 )
-from src.core.sqlite_store import SQLiteDatabase
+from src.core.final_v3_schema import FinalV3SchemaInitializer
 from src.desktop_app.runtime import RuntimePaths, runtime_paths
 
 
@@ -57,7 +57,7 @@ def _runtime(tmp_path: Path) -> RuntimePaths:
         paths.logs,
     ):
         directory.mkdir(parents=True, exist_ok=True)
-    SQLiteDatabase(paths.database).initialize_schema()
+    FinalV3SchemaInitializer().initialize(paths.database)
     return paths
 
 
@@ -87,14 +87,29 @@ def _insert_base_data(paths: RuntimePaths) -> None:
         connection.execute("INSERT INTO groups VALUES ('GRP-000001', 'Eulen', 0, 1)")
         connection.execute(
             "INSERT INTO courses "
-            "(course_id, course_name, color_key, color_name, color_hex, sort_order, active) "
-            "VALUES ('CRS-000001', 'Kurs 1', NULL, 'Blau', '#0000ff', 0, 1)"
+            "(course_id, course_name, color_key, color_name, color_hex, "
+            "sort_order, active, year_level) "
+            "VALUES ('CRS-000001', 'Kurs 1', NULL, 'Blau', '#0000ff', 0, 1, 1)"
         )
         connection.execute(
-            "INSERT INTO students VALUES "
-            "('STU-000001', 'Fiktiv', 'Kind', 'GRP-000001', 'CRS-000001', "
-            "NULL, 1, '2026-01-01T00:00:00+00:00', "
+            "INSERT INTO school_years VALUES "
+            "('SY-2025-26', '2025/26', '2025-08-01', '2026-07-31', "
+            "'current', '2025-07-01T00:00:00+00:00', NULL)"
+        )
+        connection.execute(
+            "INSERT INTO students "
+            "(student_id, first_name, last_name, notes, active, created_at, "
+            "updated_at, archived_at) VALUES "
+            "('STU-000001', 'Fiktiv', 'Kind', NULL, 1, "
+            "'2026-01-01T00:00:00+00:00', "
             "'2026-01-01T00:00:00+00:00', NULL)"
+        )
+        connection.execute(
+            "INSERT INTO student_school_year_assignments VALUES "
+            "('ASG-000001', 'STU-000001', 'SY-2025-26', 'GRP-000001', "
+            "'CRS-000001', 'enrolled', '2025-08-01', '2026-07-31', "
+            "'2025-07-01T00:00:00+00:00', "
+            "'2025-07-01T00:00:00+00:00')"
         )
         connection.execute(
             "INSERT INTO observations VALUES "

@@ -2,8 +2,9 @@
 
 ## V3-only Produktdatenquellen
 
-**Status:** Durch ADR-096 verbindlich beschlossen. Der technische Cleanup und
-die produktive Leser-/Writerumstellung sind noch nicht vollständig umgesetzt.
+**Status:** Direkte Final-V3-Schemaquelle und synthetischer temporärer
+Testdatenpfad lokal implementiert. Die produktive Leser-/Writerumstellung ist
+noch nicht umgesetzt.
 
 | Quelle | Fachliche Bedeutung | Owner | Nicht zulässige Ersatzquelle |
 |---|---|---|---|

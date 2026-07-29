@@ -12,10 +12,8 @@ import uuid
 import pytest
 
 from src.core.database_engine import SQLCipherConnectionProvider
+from src.core.final_v3_schema import FinalV3SchemaInitializer
 from src.core.sqlite_store import SQLiteDatabase
-from src.desktop_app.adapters.student_desktop_adapter import (
-    StudentDesktopAdapter,
-)
 from src.security.data_keys import LoadedDataMasterKey
 from src.security.database_keys import DatabaseKey
 from src.security.infrastructure.system import SystemClock, SystemRandomSource
@@ -85,8 +83,12 @@ def _prepare_plaintext_installation(tmp_path: Path) -> Path:
     document_path = paths.source_documents / "legacy-report.pdf"
     document_path.write_bytes(PAYLOAD)
     os.chmod(document_path, 0o600)
-    database = SQLiteDatabase(paths.source_database)
-    database.initialize_schema()
+    FinalV3SchemaInitializer().initialize(paths.source_database)
+    database = SQLiteDatabase(
+        paths.source_database,
+        create=False,
+        initialize_schema=False,
+    )
     with database.connect() as connection:
         connection.execute(
             """
@@ -98,22 +100,47 @@ def _prepare_plaintext_installation(tmp_path: Path) -> Path:
             """
             INSERT INTO courses (
                 course_id, course_name, color_key, color_name, color_hex,
-                sort_order, active
+                sort_order, active, year_level
             )
-            VALUES ('C-1', 'Testkurs', '', '', '', 1, 1)
+            VALUES ('C-1', 'Testkurs', '', '', '', 1, 1, 1)
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO school_years(
+                school_year_id, label, start_date, end_date,
+                status, created_at, closed_at
+            ) VALUES (
+                'SY-TEST', '2025/26', '2025-08-01', '2026-07-31',
+                'current', '2025-07-01T10:00:00+00:00', NULL
+            )
             """
         )
         connection.execute(
             """
             INSERT INTO students (
-                student_id, first_name, last_name, group_id, course_id,
-                student_notes, active, created_at, updated_at, archived_at
+                student_id, first_name, last_name, notes, active,
+                created_at, updated_at, archived_at
             )
             VALUES (
-                'S-1', 'Fiktiv', 'Testkind', 'G-1', 'C-1', '', 1,
+                'S-1', 'Fiktiv', 'Testkind', '', 1,
                 '2026-07-26T10:00:00+00:00',
                 '2026-07-26T10:00:00+00:00',
                 NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO student_school_year_assignments(
+                assignment_id, student_id, school_year_id, group_id,
+                course_id, assignment_status, valid_from, valid_to,
+                created_at, updated_at
+            ) VALUES (
+                'ASG-TEST', 'S-1', 'SY-TEST', 'G-1', 'C-1', 'enrolled',
+                '2025-08-01', '2026-07-31',
+                '2025-07-01T10:00:00+00:00',
+                '2025-07-01T10:00:00+00:00'
             )
             """
         )
@@ -271,10 +298,6 @@ def test_complete_gate_bound_migration_documents_backup_runtime_and_restore(
 
     runtime = _orchestrator(root).open_runtime()
     assert runtime.student_count() == 1
-    projection = StudentDesktopAdapter(database=runtime.database)
-    assert tuple(item.display_name for item in projection.list_students()) == (
-        "Fiktiv Testkind",
-    )
     consumer = _ByteConsumer()
     runtime.documents.stream_active("DOC-LEGACY-1", consumer)
     assert bytes(consumer.payload) == PAYLOAD

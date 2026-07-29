@@ -18,6 +18,7 @@ from typing import Mapping
 
 from src.core.database_engine import SQLCipherConnectionProvider
 from src.core.sqlite_store import SQLiteDatabase
+from src.core.final_v3_schema import FinalV3SchemaInitializer
 from src.security.data_keys import LoadedDataMasterKey
 from src.security.database_keys import DatabaseKey
 from src.security.infrastructure.system import SystemClock, SystemRandomSource
@@ -236,8 +237,12 @@ def _create_plaintext_installation(root: Path) -> None:
     document_path = paths.source_documents / "synthetic-report.pdf"
     document_path.write_bytes(SYNTHETIC_DOCUMENT_PAYLOAD)
     os.chmod(document_path, 0o600)
-    database = SQLiteDatabase(paths.source_database)
-    database.initialize_schema()
+    FinalV3SchemaInitializer().initialize(paths.source_database)
+    database = SQLiteDatabase(
+        paths.source_database,
+        create=False,
+        initialize_schema=False,
+    )
     with database.connect() as connection:
         connection.execute(
             """
@@ -249,25 +254,51 @@ def _create_plaintext_installation(root: Path) -> None:
             """
             INSERT INTO courses (
                 course_id, course_name, color_key, color_name, color_hex,
-                sort_order, active
+                sort_order, active, year_level
             )
             VALUES (
-                'C-SYNTHETIC', 'Synthetischer Testkurs', '', '', '', 1, 1
+                'C-SYNTHETIC', 'Synthetischer Testkurs', '', '', '', 1, 1, 1
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO school_years(
+                school_year_id, label, start_date, end_date,
+                status, created_at, closed_at
+            ) VALUES (
+                'SY-SYNTHETIC', '2025/26', '2025-08-01', '2026-07-31',
+                'current', '2025-07-01T10:00:00+00:00', NULL
             )
             """
         )
         connection.execute(
             """
             INSERT INTO students (
-                student_id, first_name, last_name, group_id, course_id,
-                student_notes, active, created_at, updated_at, archived_at
+                student_id, first_name, last_name, notes, active,
+                created_at, updated_at, archived_at
             )
             VALUES (
                 'S-SYNTHETIC', 'Fiktiv', 'Pakettest',
-                'G-SYNTHETIC', 'C-SYNTHETIC', '', 1,
+                '', 1,
                 '2026-07-26T10:00:00+00:00',
                 '2026-07-26T10:00:00+00:00',
                 NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO student_school_year_assignments(
+                assignment_id, student_id, school_year_id, group_id,
+                course_id, assignment_status, valid_from, valid_to,
+                created_at, updated_at
+            ) VALUES (
+                'ASG-SYNTHETIC', 'S-SYNTHETIC', 'SY-SYNTHETIC',
+                'G-SYNTHETIC', 'C-SYNTHETIC', 'enrolled',
+                '2025-08-01', '2026-07-31',
+                '2025-07-01T10:00:00+00:00',
+                '2025-07-01T10:00:00+00:00'
             )
             """
         )

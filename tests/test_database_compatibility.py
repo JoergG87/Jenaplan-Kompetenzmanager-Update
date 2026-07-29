@@ -1,261 +1,104 @@
-"""Focused tests for the SQLite database compatibility contract."""
+"""Tests for the single final-schema compatibility policy."""
 
 from __future__ import annotations
 
-import json
-import sqlite3
 from pathlib import Path
-from unittest import mock
+import sqlite3
 
 import pytest
 
-import src.core.database_compatibility as compatibility_module
 from src.core.database_compatibility import (
-    DATABASE_COMPATIBILITY_VERSION,
-    KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT,
-    V1_COMPATIBILITY_FINGERPRINT,
-    V2_COMPATIBILITY_FINGERPRINT,
+    FINAL_SCHEMA_FINGERPRINT,
+    FINAL_SCHEMA_VERSION,
+    DatabaseCompatibilityError,
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityPolicy,
     DatabaseCompatibilityStatus,
+    DatabaseSchemaIdentity,
     DatabaseVersionMismatchError,
     UnknownDatabaseSchemaError,
     UnsupportedDatabaseVersionError,
 )
+from src.core.final_v3_schema import FinalV3SchemaInitializer
 from src.core.sqlite_store import SQLiteDatabase
 
 
-def _v1_database(path: Path) -> Path:
-    SQLiteDatabase(path).initialize_schema()
-    with sqlite3.connect(path) as connection:
-        connection.execute("DROP TABLE persistence_events")
-        connection.execute("PRAGMA user_version = 1")
-    return path
-
-
-def _v2_database(path: Path) -> Path:
-    SQLiteDatabase(path).initialize_schema()
-    return path
-
-
-def _user_version(path: Path) -> int:
-    with sqlite3.connect(path) as connection:
-        return int(connection.execute("PRAGMA user_version").fetchone()[0])
-
-
-def _set_user_version(path: Path, value: int) -> None:
-    with sqlite3.connect(path) as connection:
-        connection.execute(f"PRAGMA user_version = {value}")
-
-
-def test_new_empty_database_receives_user_version_two(tmp_path: Path) -> None:
-    database = _v2_database(tmp_path / "new.sqlite")
-    assert _user_version(database) == DATABASE_COMPATIBILITY_VERSION == 2
-
-
-def test_v2_schema_with_unversioned_metadata_is_rejected_unchanged(
+def test_exact_final_schema_is_the_only_compatible_database(
     tmp_path: Path,
 ) -> None:
-    database = _v2_database(tmp_path / "existing.sqlite")
-    _set_user_version(database, 0)
-    before = database.read_bytes()
-    with pytest.raises(UnknownDatabaseSchemaError):
-        SQLiteDatabase(database).initialize_schema()
-    assert _user_version(database) == 0
-    assert database.read_bytes() == before
+    path = tmp_path / "final.sqlite"
+    FinalV3SchemaInitializer().initialize(path)
 
+    result = DatabaseCompatibilityInspector().inspect(path)
 
-def test_newer_live_database_is_rejected_before_any_schema_mutation(
-    tmp_path: Path,
-) -> None:
-    database = _v2_database(tmp_path / "newer.sqlite")
-    _set_user_version(database, DATABASE_COMPATIBILITY_VERSION + 1)
-    before = database.read_bytes()
-    with pytest.raises(UnsupportedDatabaseVersionError):
-        SQLiteDatabase(database).initialize_schema()
-    assert database.read_bytes() == before
-
-
-def test_unknown_live_schema_is_rejected_before_any_schema_mutation(
-    tmp_path: Path,
-) -> None:
-    database = tmp_path / "unknown.sqlite"
-    with sqlite3.connect(database) as connection:
-        connection.execute("CREATE TABLE foreign_product (value TEXT)")
-    before = database.read_bytes()
-    with pytest.raises(UnknownDatabaseSchemaError):
-        SQLiteDatabase(database).initialize_schema()
-    assert database.read_bytes() == before
-
-
-def test_schema_and_user_version_are_rolled_back_together(tmp_path: Path) -> None:
-    database = tmp_path / "rollback.sqlite"
-    with mock.patch.object(
-        SQLiteDatabase,
-        "_backfill_course_colors",
-        side_effect=RuntimeError("simulierter Schemafehler"),
-    ):
-        with pytest.raises(RuntimeError, match="Schemafehler"):
-            SQLiteDatabase(database).initialize_schema()
-    with sqlite3.connect(database) as connection:
-        user_version = connection.execute("PRAGMA user_version").fetchone()[0]
-        objects = connection.execute(
-            "SELECT name FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'"
-        ).fetchall()
-    assert user_version == 0
-    assert objects == []
-
-
-def test_exact_v2_is_accepted(tmp_path: Path) -> None:
-    result = DatabaseCompatibilityInspector().inspect(
-        _v2_database(tmp_path / "exact.sqlite")
-    )
     assert result.status is DatabaseCompatibilityStatus.EXACT
-    assert result.version.compatibility_version == 2
-    assert result.schema_identity.fingerprint == V2_COMPATIBILITY_FINGERPRINT
+    assert result.version.sqlite_user_version == FINAL_SCHEMA_VERSION == 3
+    assert result.version.compatibility_version == FINAL_SCHEMA_VERSION
+    assert result.schema_identity.fingerprint == FINAL_SCHEMA_FINGERPRINT
+    assert DatabaseCompatibilityPolicy.require_backup_compatible(result) is result
 
 
-def test_known_unversioned_predecessor_requires_migration(tmp_path: Path) -> None:
-    database = _v1_database(tmp_path / "predecessor.sqlite")
-    _set_user_version(database, 0)
-    result = DatabaseCompatibilityInspector().inspect(database)
-    assert result.status is DatabaseCompatibilityStatus.MIGRATION_REQUIRED
-    assert result.schema_identity.fingerprint == (
-        KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT
-    )
-
-
-@pytest.mark.parametrize("user_version", (0, 1))
-def test_unknown_v0_and_v1_schema_are_incompatible(
+def test_synthetic_legacy_development_schema_is_not_product_compatible(
     tmp_path: Path,
-    user_version: int,
 ) -> None:
-    database = _v1_database(tmp_path / f"unknown-{user_version}.sqlite")
-    with sqlite3.connect(database) as connection:
-        connection.execute("CREATE TABLE unknown_extension (value TEXT)")
-        connection.execute(f"PRAGMA user_version = {user_version}")
-    result = DatabaseCompatibilityInspector().inspect(database)
+    path = tmp_path / "legacy-development.sqlite"
+    SQLiteDatabase(path).initialize_schema()
+
+    result = DatabaseCompatibilityInspector().inspect(path)
+
     assert result.status is DatabaseCompatibilityStatus.INCOMPATIBLE
-    error = (
-        UnknownDatabaseSchemaError
-        if user_version == 0
-        else DatabaseVersionMismatchError
-    )
-    with pytest.raises(error):
+    assert result.version.compatibility_version is None
+    with pytest.raises(UnknownDatabaseSchemaError):
         DatabaseCompatibilityPolicy.require_backup_compatible(result)
 
 
-def test_newer_database_version_is_incompatible(tmp_path: Path) -> None:
-    database = _v2_database(tmp_path / "newer.sqlite")
-    _set_user_version(database, 3)
-    result = DatabaseCompatibilityInspector().inspect(database)
+def test_same_version_with_unknown_schema_fails_closed(tmp_path: Path) -> None:
+    path = tmp_path / "unknown.sqlite"
+    with sqlite3.connect(path) as connection:
+        connection.execute("CREATE TABLE unexpected(value TEXT)")
+        connection.execute(f"PRAGMA user_version = {FINAL_SCHEMA_VERSION}")
+
+    result = DatabaseCompatibilityInspector().inspect(path)
+
     assert result.status is DatabaseCompatibilityStatus.INCOMPATIBLE
-    with pytest.raises(UnsupportedDatabaseVersionError, match="neuer"):
+    with pytest.raises(DatabaseVersionMismatchError):
         DatabaseCompatibilityPolicy.require_backup_compatible(result)
 
 
-def test_app_version_does_not_influence_database_compatibility(
-    tmp_path: Path,
-) -> None:
-    database = _v2_database(tmp_path / "independent.sqlite")
-    before = DatabaseCompatibilityInspector().inspect(database)
-    application_versions = ("0.1.2", "99.42.7", "unknown")
-    after = tuple(DatabaseCompatibilityInspector().inspect(database) for _ in application_versions)
-    assert all(result == before for result in after)
+def test_future_version_is_rejected() -> None:
+    identity = DatabaseSchemaIdentity("f" * 64, 1)
+    result = DatabaseCompatibilityPolicy().evaluate(
+        sqlite_user_version=FINAL_SCHEMA_VERSION + 1,
+        schema_identity=identity,
+    )
+
+    with pytest.raises(UnsupportedDatabaseVersionError):
+        DatabaseCompatibilityPolicy.require_backup_compatible(result)
 
 
-@pytest.mark.parametrize(
-    ("first_sql", "second_sql"),
-    (
-        (
-            "CREATE TABLE items (value INTEGER CHECK (value > 0))",
-            "CREATE TABLE items (value INTEGER CHECK (value >= 0))",
-        ),
-        (
-            "CREATE TABLE items (value TEXT); "
-            "CREATE TRIGGER trg_items AFTER INSERT ON items BEGIN "
-            "UPDATE items SET value = upper(value); END",
-            "CREATE TABLE items (value TEXT); "
-            "CREATE TRIGGER trg_items AFTER INSERT ON items BEGIN "
-            "UPDATE items SET value = lower(value); END",
-        ),
-        (
-            "CREATE TABLE items (value TEXT); "
-            "CREATE VIEW visible_items AS SELECT value FROM items",
-            "CREATE TABLE items (value TEXT); "
-            "CREATE VIEW visible_items AS SELECT value FROM items WHERE value <> ''",
-        ),
-        (
-            "CREATE TABLE items (value INTEGER NOT NULL DEFAULT 1)",
-            "CREATE TABLE items (value INTEGER NOT NULL DEFAULT 2)",
-        ),
-        (
-            "CREATE TABLE items (item_id TEXT, active INTEGER); "
-            "CREATE INDEX idx_items_active ON items(item_id) WHERE active = 1",
-            "CREATE TABLE items (item_id TEXT, active INTEGER); "
-            "CREATE INDEX idx_items_active ON items(item_id) WHERE active = 0",
-        ),
-    ),
-)
-def test_compatibility_fingerprint_detects_schema_details(
-    tmp_path: Path,
-    first_sql: str,
-    second_sql: str,
-) -> None:
-    fingerprints: list[str] = []
-    for index, schema_sql in enumerate((first_sql, second_sql)):
-        database = tmp_path / f"detail-{index}.sqlite"
-        with sqlite3.connect(database) as connection:
-            connection.executescript(schema_sql)
-        fingerprints.append(
-            DatabaseCompatibilityInspector.schema_identity(database).fingerprint
-        )
-    assert fingerprints[0] != fingerprints[1]
+def test_unversioned_unknown_schema_is_rejected() -> None:
+    result = DatabaseCompatibilityPolicy().evaluate(
+        sqlite_user_version=0,
+        schema_identity=DatabaseSchemaIdentity("e" * 64, 1),
+    )
+
+    assert result.status is DatabaseCompatibilityStatus.INCOMPATIBLE
+    with pytest.raises(UnknownDatabaseSchemaError):
+        DatabaseCompatibilityPolicy.require_backup_compatible(result)
 
 
-def test_identical_schema_has_identical_fingerprint(tmp_path: Path) -> None:
-    fingerprints: list[str] = []
-    for index in range(2):
-        database = tmp_path / f"same-{index}.sqlite"
-        with sqlite3.connect(database) as connection:
-            connection.executescript(
-                "CREATE TABLE parent (id TEXT PRIMARY KEY);"
-                "CREATE TABLE child (id TEXT PRIMARY KEY, parent_id TEXT NOT NULL, "
-                "FOREIGN KEY (parent_id) REFERENCES parent(id));"
-                "CREATE INDEX idx_child_parent ON child(parent_id);"
-            )
-        fingerprints.append(
-            DatabaseCompatibilityInspector.schema_identity(database).fingerprint
-        )
-    assert fingerprints[0] == fingerprints[1]
+def test_inspector_is_read_only(tmp_path: Path) -> None:
+    path = tmp_path / "readonly.sqlite"
+    FinalV3SchemaInitializer().initialize(path)
+    before = path.read_bytes()
+
+    DatabaseCompatibilityInspector().inspect(path)
+
+    assert path.read_bytes() == before
+    assert not Path(f"{path}-wal").exists()
+    assert not Path(f"{path}-shm").exists()
 
 
-def test_sqlite_internal_structures_and_sequence_values_are_excluded(
-    tmp_path: Path,
-) -> None:
-    database = tmp_path / "internal.sqlite"
-    with sqlite3.connect(database) as connection:
-        connection.executescript(
-            "CREATE TABLE items (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT UNIQUE);"
-            "INSERT INTO items (code) VALUES ('one');"
-        )
-        before_structure = compatibility_module._compatibility_schema(connection)
-        before = DatabaseCompatibilityInspector.schema_identity(database).fingerprint
-        connection.execute("INSERT INTO items (code) VALUES ('two')")
-        connection.execute("DELETE FROM items")
-    after = DatabaseCompatibilityInspector.schema_identity(database).fingerprint
-    canonical = json.dumps(before_structure, sort_keys=True)
-    assert before == after
-    assert "sqlite_sequence" not in canonical
-    assert "sqlite_autoindex" not in canonical
-
-
-def test_synthetic_v1_database_is_migrated_to_v2(tmp_path: Path) -> None:
-    database = _v1_database(tmp_path / "synthetic-v1.sqlite")
-    SQLiteDatabase(database).initialize_schema()
-    after = _user_version(database)
-    assert after == 2
-    with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT 1 FROM sqlite_schema WHERE name = 'persistence_events'"
-        ).fetchone()
+def test_missing_database_raises_controlled_error(tmp_path: Path) -> None:
+    with pytest.raises(DatabaseCompatibilityError):
+        DatabaseCompatibilityInspector().inspect(tmp_path / "missing.sqlite")

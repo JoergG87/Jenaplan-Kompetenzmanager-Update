@@ -124,6 +124,7 @@ def _coordinate_product_database_startup(
     restore_status: str,
     coordinator: DatabaseStartupCoordinator,
     prepare_storage: Callable[..., RuntimePaths],
+    initialize_final_schema: Callable[[Path], None],
     new_database_initialization_allowed: bool,
 ) -> tuple[RuntimePaths, DatabaseStartupDecision]:
     """Gate product runtime preparation behind the read-only DB decision."""
@@ -136,12 +137,12 @@ def _coordinate_product_database_startup(
             new_database_initialization_allowed
         ),
     )
-    if decision.rescan_after_runtime_storage_preparation:
+    if decision.final_schema_initialization_required:
         paths = prepare_storage(data_root=data_root)
+        initialize_final_schema(paths.database)
         decision = coordinator.coordinate(
             paths.database,
             restore_status=restore_status,
-            runtime_storage_prepared=True,
             new_database_initialization_allowed=(
                 new_database_initialization_allowed
             ),
@@ -417,12 +418,14 @@ def main() -> int:
         except AppPreferencesError:
             preferences = AppPreferences()
         from src.core.database_startup import DatabaseStartupCoordinator
+        from src.core.final_v3_schema import initialize_final_v3_schema
 
         paths, database_startup = _coordinate_product_database_startup(
             data_root=data_root,
             restore_status=restore_status,
             coordinator=DatabaseStartupCoordinator(),
             prepare_storage=prepare_runtime_storage,
+            initialize_final_schema=initialize_final_v3_schema,
             new_database_initialization_allowed=(
                 new_database_initialization_candidate
                 and security_decision.state is SecurityStartState.FIRST_RUN

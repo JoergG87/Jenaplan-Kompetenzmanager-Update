@@ -1,4 +1,4 @@
-"""Read-only database startup classification and runtime admission."""
+"""Read-only final-schema startup classification and runtime admission."""
 
 from __future__ import annotations
 
@@ -8,10 +8,8 @@ from pathlib import Path
 import stat
 
 from .database_compatibility import (
-    DATABASE_COMPATIBILITY_VERSION,
-    REGISTERED_V3_SCHEMA_FINGERPRINT,
-    REGISTERED_V3_SCHEMA_VERSION,
-    V2_COMPATIBILITY_FINGERPRINT,
+    FINAL_SCHEMA_FINGERPRINT,
+    FINAL_SCHEMA_VERSION,
     DatabaseCompatibilityError,
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityStatus,
@@ -32,9 +30,10 @@ class DatabaseStartupState(str, Enum):
     """Controlled states before any product database runtime is opened."""
 
     DATABASE_NOT_FOUND = "DATABASE_NOT_FOUND"
-    V2_MIGRATION_REQUIRED = "V2_MIGRATION_REQUIRED"
-    V2_BOOTSTRAP_READY = "V2_BOOTSTRAP_READY"
-    V3_READY = "V3_READY"
+    V3_INITIALIZATION_REQUIRED = "V3_INITIALIZATION_REQUIRED"
+    V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED = (
+        "V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED"
+    )
     SCHEMA_UNSUPPORTED = "SCHEMA_UNSUPPORTED"
     RECOVERY_REQUIRED = "RECOVERY_REQUIRED"
 
@@ -58,16 +57,13 @@ class DatabaseStartupDecision:
     state: DatabaseStartupState
     reason_code: str
     normal_runtime_allowed: bool
-    rescan_after_runtime_storage_preparation: bool
+    final_schema_initialization_required: bool
     sqlite_user_version: int | None = None
     schema_fingerprint: str | None = None
     schema_object_count: int | None = None
 
     def __post_init__(self) -> None:
-        if (
-            self.normal_runtime_allowed
-            and self.rescan_after_runtime_storage_preparation
-        ):
+        if self.normal_runtime_allowed and self.final_schema_initialization_required:
             raise ValueError("database_startup_disposition_conflict")
 
 
@@ -81,7 +77,7 @@ class DatabaseStartupResolver:
         self._inspector = inspector or DatabaseCompatibilityInspector()
 
     def resolve(self, database_path: Path) -> DatabaseStartupDetection:
-        """Return the registered database state using read-only inspection."""
+        """Return the registered final-schema state using read-only inspection."""
 
         database_path = Path(database_path)
         for sidecar in (
@@ -99,6 +95,7 @@ class DatabaseStartupResolver:
             return _recovery_detection(
                 "DB-START-SQLITE-SIDECAR-RECOVERY-REQUIRED"
             )
+
         try:
             metadata = database_path.lstat()
         except FileNotFoundError:
@@ -120,23 +117,12 @@ class DatabaseStartupResolver:
         identity = compatibility.schema_identity
         if (
             compatibility.status is DatabaseCompatibilityStatus.EXACT
-            and version == DATABASE_COMPATIBILITY_VERSION
-            and identity.fingerprint == V2_COMPATIBILITY_FINGERPRINT
+            and version == FINAL_SCHEMA_VERSION
+            and identity.fingerprint == FINAL_SCHEMA_FINGERPRINT
         ):
             return DatabaseStartupDetection(
-                DatabaseStartupState.V2_MIGRATION_REQUIRED,
-                "DB-START-V2-MIGRATION-REQUIRED",
-                version,
-                identity.fingerprint,
-                identity.object_count,
-            )
-        if (
-            version == REGISTERED_V3_SCHEMA_VERSION
-            and identity.fingerprint == REGISTERED_V3_SCHEMA_FINGERPRINT
-        ):
-            return DatabaseStartupDetection(
-                DatabaseStartupState.V3_READY,
-                "DB-START-V3-READY",
+                DatabaseStartupState.V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED,
+                "DB-START-V3-SCHEMA-READY-RUNTIME-NOT-MIGRATED",
                 version,
                 identity.fingerprint,
                 identity.object_count,
@@ -172,10 +158,9 @@ class DatabaseStartupCoordinator:
         database_path: Path,
         *,
         restore_status: str,
-        runtime_storage_prepared: bool = False,
         new_database_initialization_allowed: bool = False,
     ) -> DatabaseStartupDecision:
-        """Decide whether product runtime preparation may continue."""
+        """Decide whether direct final-schema creation is required."""
 
         if restore_status not in _SAFE_RESTORE_STATUSES:
             return _decision_from_detection(
@@ -199,26 +184,9 @@ class DatabaseStartupCoordinator:
                 )
             return _decision_from_detection(
                 detection,
-                normal_runtime_allowed=runtime_storage_prepared,
-                rescan_after_runtime_storage_preparation=(
-                    not runtime_storage_prepared
-                ),
-                reason_code=(
-                    "DB-START-NEW-V2-RUNTIME-ALLOWED"
-                    if runtime_storage_prepared
-                    else detection.reason_code
-                ),
-            )
-        if detection.state is DatabaseStartupState.V2_MIGRATION_REQUIRED:
-            return _decision_from_detection(
-                detection,
-                state=DatabaseStartupState.V2_BOOTSTRAP_READY,
-                reason_code="DB-START-V2-BOOTSTRAP-READY",
-            )
-        if detection.state is DatabaseStartupState.V3_READY:
-            return _decision_from_detection(
-                detection,
-                reason_code="DB-START-V3-RUNTIME-NOT-COMPATIBLE",
+                state=DatabaseStartupState.V3_INITIALIZATION_REQUIRED,
+                reason_code="DB-START-V3-INITIALIZATION-REQUIRED",
+                final_schema_initialization_required=True,
             )
         return _decision_from_detection(detection)
 
@@ -236,15 +204,15 @@ def _decision_from_detection(
     state: DatabaseStartupState | None = None,
     reason_code: str | None = None,
     normal_runtime_allowed: bool = False,
-    rescan_after_runtime_storage_preparation: bool = False,
+    final_schema_initialization_required: bool = False,
 ) -> DatabaseStartupDecision:
     return DatabaseStartupDecision(
         detected_state=detection.state,
         state=detection.state if state is None else state,
         reason_code=detection.reason_code if reason_code is None else reason_code,
         normal_runtime_allowed=normal_runtime_allowed,
-        rescan_after_runtime_storage_preparation=(
-            rescan_after_runtime_storage_preparation
+        final_schema_initialization_required=(
+            final_schema_initialization_required
         ),
         sqlite_user_version=detection.sqlite_user_version,
         schema_fingerprint=detection.schema_fingerprint,

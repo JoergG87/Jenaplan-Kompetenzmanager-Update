@@ -2,8 +2,9 @@
 
 ## V3-only Datenbankinitialisierung
 
-**Status:** Zielvertrag beschlossen; technischer Cleanup noch nicht
-vollständig umgesetzt.
+**Status:** V3-only-Schema-, Startup-, Compatibility-, Backup-/Restore- und
+synthetischer Testdaten-Cleanup lokal implementiert. Die produktive
+Leser-/Writerumstellung bleibt offen.
 
 1. Der Startup-Resolver prüft Pfad, WAL-/SHM-Sidecars, Restorezustand,
    `user_version` und vollständigen Schemafingerprint read-only.

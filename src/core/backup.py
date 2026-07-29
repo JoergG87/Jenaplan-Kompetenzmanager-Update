@@ -20,7 +20,7 @@ from pathlib import Path, PurePosixPath
 from typing import Callable, Mapping
 
 from .database_compatibility import (
-    DATABASE_COMPATIBILITY_VERSION,
+    FINAL_SCHEMA_VERSION,
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityPolicy,
 )
@@ -1105,7 +1105,7 @@ class BackupVerifier:
         compatibility = _non_negative_int(
             value["compatibility_version"], "compatibility_version"
         )
-        if compatibility not in (1, DATABASE_COMPATIBILITY_VERSION):
+        if compatibility != FINAL_SCHEMA_VERSION:
             raise BackupFormatError("Die Datenbank-Kompatibilitaetsversion ist unbekannt.")
         return BackupDatabaseInfo(
             archive_path=DATABASE_ARCHIVE_PATH,

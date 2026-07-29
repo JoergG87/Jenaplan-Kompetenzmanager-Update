@@ -2,9 +2,8 @@
 
 ## V3-only Schema-, Startup- und Testnamen
 
-**Status:** Verbindlich durch ADR-096 registriert. Die Namen beschreiben den
-Zielvertrag; der technische Cleanup und die produktive Runtime-Freigabe sind
-noch nicht vollständig umgesetzt.
+**Status:** V3-only-Cleanup lokal implementiert. Die produktive
+Leser-/Writerumstellung und Runtime-Freigabe sind noch nicht umgesetzt.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|

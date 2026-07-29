@@ -2,9 +2,9 @@
 
 ## V3-only Architecture Cleanup
 
-**Status:** Governance beschlossen; technischer Cleanup folgt in einem
-getrennten Commit. Produktive V3-Runtime, Assignment-API, Schuljahreswechsel,
-Build, Packaging und Release bleiben gesperrt.
+**Status:** Governance und technischer Cleanup lokal implementiert.
+Produktive V3-Runtime, Assignment-API, Schuljahreswechsel, Build, Packaging
+und Release bleiben gesperrt.
 
 - [x] PO-Entscheidung festhalten: Es existieren keine produktiven V2-Daten.
 - [x] ADR-096 als Teil-Supersession der V2-Cutover-Annahmen aus ADR-095
@@ -14,18 +14,19 @@ Build, Packaging und Release bleiben gesperrt.
   erzeugbar klassifizieren.
 - [x] V2-Migration, V2-Bootstrap, V2-Produktrestore und dauerhafte
   V2-Kompatibilitätszusage aus dem Produktvertrag entfernen.
-- [ ] Finales V3-DDL, Fingerprint, Constraints, Trigger und Indizes in eine
+- [x] Finales V3-DDL, Fingerprint, Constraints, Trigger und Indizes in eine
   direkte Schemaquelle überführen.
-- [ ] `school_year_transitions.from_school_year_id` für echte Wechsel
+- [x] `school_year_transitions.from_school_year_id` für echte Wechsel
   verpflichtend machen und Bootstrap-Transition entfernen.
-- [ ] Compatibility, Backup und Restore auf exakt Final-V3 begrenzen.
-- [ ] Startup auf fehlend/exakt final/unbekannt-beschädigt vereinfachen und die
+- [x] Compatibility, Backup und Restore auf exakt Final-V3 begrenzen.
+- [x] Startup auf fehlend/exakt final/unbekannt-beschädigt vereinfachen und die
   Shell bis zur Leserumstellung mit
   `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` sperren.
-- [ ] Deterministische synthetische V3-Testdaten ausschließlich in temporären
+- [x] Deterministische synthetische V3-Testdaten ausschließlich in temporären
   Datenbanken direkt erzeugen.
-- [ ] V2-Cutover-Code und seine exklusiven Tests entfernen.
-- [ ] Fokussierte Tests, Compileall, Importisolation, Gesamtsuite und
+- [x] V2-Cutover-Code und seine exklusiven Tests entfernen.
+- [x] Fokussierte Tests und die vollständige Gesamtsuite ausführen.
+- [x] Compileall, Importisolation und
   `git diff --check` ausführen.
 - [ ] Produktive Leser und Writer in einem späteren Paket auf Assignments und
   V3-Schülerstammdaten umstellen.

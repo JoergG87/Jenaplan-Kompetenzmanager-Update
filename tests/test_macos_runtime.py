@@ -39,137 +39,6 @@ from src.desktop_app.runtime import (
 
 
 class MacosRuntimeTest(unittest.TestCase):
-    def test_release_packages_separate_empty_and_laura_testdata_handoffs(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            inputs = root / "inputs"
-            inputs.mkdir()
-            files = {
-                "dmg": inputs / "Jenaplan-Kompetenzmanager-0.2.0-macOS-arm64.dmg",
-                "manual": inputs / "manual.pdf",
-                "first": inputs / "first.pdf",
-                "quick": inputs / "quick.pdf",
-                "installation": inputs / "installation.pdf",
-                "backup": inputs / "backup.pdf",
-                "workbook": inputs / "Pilottest_Laura_Schuelerprofil_Variante_A.xlsx",
-                "notes": inputs / "RELEASE_NOTES.md",
-                "inventory": inputs / "RELEASE_INVENTORY-0.2.0.txt",
-            }
-            for name, path in files.items():
-                path.write_bytes(f"test-{name}".encode())
-            pilot_backup, _seed = build_laura_testdata_backup(
-                output_directory=inputs,
-                version="0.2.0",
-                build_commit="e48436d2249ac108246d77a817e141e15611ab0f",
-                source_tree_state="dirty",
-            )
-
-            empty_root, empty_zip = build_package(
-                output_root=root / "dist",
-                version="0.2.0",
-                architecture="arm64",
-                dmg=files["dmg"],
-                first_steps_pdf=files["first"],
-                manual_pdf=files["manual"],
-                quickstart_pdf=files["quick"],
-                installation_pdf=files["installation"],
-                backup_guide_pdf=files["backup"],
-                pilot_workbook=files["workbook"],
-                release_notes=files["notes"],
-                release_inventory=files["inventory"],
-                variant="empty",
-            )
-            laura_root, laura_zip = build_package(
-                output_root=root / "dist",
-                version="0.2.0",
-                architecture="arm64",
-                dmg=files["dmg"],
-                first_steps_pdf=files["first"],
-                manual_pdf=files["manual"],
-                quickstart_pdf=files["quick"],
-                installation_pdf=files["installation"],
-                backup_guide_pdf=files["backup"],
-                pilot_workbook=files["workbook"],
-                release_notes=files["notes"],
-                release_inventory=files["inventory"],
-                variant="laura_testdata",
-                pilot_backup=pilot_backup,
-            )
-
-            self.assertTrue(empty_zip.is_file())
-            self.assertTrue(laura_zip.is_file())
-            self.assertEqual(
-                {path.name for path in empty_root.iterdir()},
-                {
-                    "README.txt",
-                    "Jenaplan-Kompetenzmanager-0.2.0-macOS-arm64.dmg",
-                    "Jenaplan-Kompetenzmanager-0.2.0-Benutzerhandbuch.pdf",
-                    "Jenaplan-Kompetenzmanager-0.2.0-Erste-Schritte.pdf",
-                    "Jenaplan-Kompetenzmanager-0.2.0-Schnellstart.pdf",
-                    "Jenaplan-Kompetenzmanager-0.2.0-Installationsanleitung.pdf",
-                    "Jenaplan-Kompetenzmanager-0.2.0-Backup-Anleitung.pdf",
-                    "Pilottest_Laura_Schuelerprofil_Variante_A.xlsx",
-                    "RELEASE_NOTES.md",
-                    "SHA256SUMS-0.2.0.txt",
-                    "RELEASE_INVENTORY-0.2.0.txt",
-                },
-            )
-            self.assertEqual(
-                {path.name for path in laura_root.iterdir()},
-                {path.name for path in empty_root.iterdir()}
-                | {"Laura-Testdaten-0.2.0.jkmbackup"},
-            )
-            self.assertNotIn("jkmbackup", (empty_root / "README.txt").read_text())
-            self.assertIn(
-                "normalen Restore-Weg",
-                (laura_root / "README.txt").read_text(),
-            )
-            self.assertEqual(
-                (empty_root / files["dmg"].name).read_bytes(),
-                (laura_root / files["dmg"].name).read_bytes(),
-            )
-            with zipfile.ZipFile(empty_zip) as archive:
-                self.assertIsNone(archive.testzip())
-                empty_names = archive.namelist()
-            with zipfile.ZipFile(laura_zip) as archive:
-                self.assertIsNone(archive.testzip())
-                laura_names = archive.namelist()
-            self.assertEqual(len(empty_names), 11)
-            self.assertEqual(len(laura_names), 12)
-            self.assertFalse(any("__MACOSX" in name for name in (*empty_names, *laura_names)))
-
-    def test_laura_testdata_backup_uses_official_restore_contract(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            backup, seed = build_laura_testdata_backup(
-                output_directory=Path(temp),
-                version="0.2.0",
-                build_commit="e48436d2249ac108246d77a817e141e15611ab0f",
-                source_tree_state="dirty",
-            )
-            verified = RestoreApplicationService().verify(
-                VerifyRestoreBackupQuery(backup)
-            )
-
-            self.assertEqual(backup.name, "Laura-Testdaten-0.2.0.jkmbackup")
-            self.assertEqual(verified.preview.students_count, seed.student_count)
-            self.assertEqual(
-                verified.preview.observations_count,
-                seed.observation_count,
-            )
-            self.assertEqual(
-                verified.preview.learning_report_revisions_count,
-                seed.report_revision_count,
-            )
-            self.assertEqual(
-                verified.preview.learning_conference_revisions_count,
-                seed.conference_revision_count,
-            )
-            with zipfile.ZipFile(backup) as archive:
-                names = tuple(archive.namelist())
-            self.assertEqual(names[0], "manifest.json")
-            self.assertIn("database/kompetenzmanager.sqlite", names)
-            self.assertFalse(any("security" in name.casefold() for name in names))
-
     def test_developer_and_packaged_data_roots_are_separate(self) -> None:
         self.assertEqual(
             application_data_root(packaged=False, environ={}),
@@ -364,56 +233,25 @@ class MacosRuntimeTest(unittest.TestCase):
             self.assertTrue(paths.backups.is_dir())
             self.assertTrue(paths.logs.is_dir())
 
-    def test_initial_pilot_data_is_copied_once_and_document_paths_are_rebased(self) -> None:
+    def test_packaged_initial_database_is_not_installed_by_runtime(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             base = Path(temp)
             root = base / "user-data"
             initial = base / "resources" / INITIAL_DATA_DIRECTORY
             initial.mkdir(parents=True)
-            initial_document = initial / "documents" / "STU-000001" / "demo.txt"
-            initial_document.parent.mkdir(parents=True)
-            initial_document.write_text("fiktiv", encoding="utf-8")
             initial_database = initial / DATABASE_FILENAME
-            with sqlite3.connect(initial_database) as connection:
-                connection.execute(
-                    "CREATE TABLE documents (document_id TEXT PRIMARY KEY, file_path TEXT NOT NULL)"
-                )
-                connection.execute(
-                    "INSERT INTO documents VALUES (?, ?)",
-                    (
-                        "MED-000001",
-                        f"{INITIAL_PATH_TOKEN}/documents/STU-000001/demo.txt",
-                    ),
-                )
+            initial_database.write_bytes(b"synthetic predecessor bytes")
 
             paths = prepare_runtime_storage(
                 data_root=root,
                 resource_root_path=base / "resources",
             )
-            with sqlite3.connect(paths.database) as connection:
-                stored_path = connection.execute(
-                    "SELECT file_path FROM documents WHERE document_id = ?",
-                    ("MED-000001",),
-                ).fetchone()[0]
 
+            self.assertFalse(paths.database.exists())
             self.assertEqual(
-                stored_path,
-                str(root / "documents" / "STU-000001" / "demo.txt"),
+                initial_database.read_bytes(),
+                b"synthetic predecessor bytes",
             )
-            self.assertEqual(
-                (root / "documents" / "STU-000001" / "demo.txt").read_text(
-                    encoding="utf-8"
-                ),
-                "fiktiv",
-            )
-
-            paths.database.write_bytes(b"existing-user-database")
-            prepare_runtime_storage(
-                data_root=root,
-                resource_root_path=base / "resources",
-            )
-            self.assertEqual(paths.database.read_bytes(), b"existing-user-database")
-
     def test_empty_and_laura_build_payloads_are_strictly_separated(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

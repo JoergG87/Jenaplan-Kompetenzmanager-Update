@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- V3-only Architecture Cleanup technisch umgesetzt: Das vollständige finale
+  Schema wird ohne Vorgängerschema direkt durch `FinalV3SchemaInitializer`
+  erzeugt und mit `user_version = 3`, vollständigem Fingerprint
+  `d75b803552ba961bff5578ec0853c1d0a2d035845db6a7b624b1528cf546e731`,
+  Integritäts- und Fremdschlüsselprüfung verifiziert.
+  `school_year_transitions.from_school_year_id` ist für echte Wechsel
+  verpflichtend; Initialanlagen schreiben keinen Übergangsbeleg. Die
+  V2→V3-Engine, Cutover-Evidence, Klassifizierung, Failpoints,
+  V2-Startupzustände und V1/V2-Restoremigration sind entfernt. Compatibility,
+  Backup und Restore akzeptieren ausschließlich Final-V3; Backupformat-v1
+  bleibt als unabhängiger Containervertrag bestehen. Der neue temporäre
+  Testdatenpfad erzeugt deterministisch Schuljahr 2025/26, Kursstufen 1–3,
+  Gruppen, V3-Schüler, vollständige Assignments sowie synthetische
+  Beobachtungs-, Bestätigungs-, Berichts- und LEG-Daten. Die normale Shell
+  bleibt bis zur Leser-/Writerumstellung mit
+  `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` gesperrt.
 - ADR-096 legt V3 als erstes und einziges Produktschema fest. Es existieren
   keine produktiven V2-Daten; bisherige V2-Bestände sind ausschließlich
   synthetische Entwicklungsdaten und werden nicht migriert. Die in den

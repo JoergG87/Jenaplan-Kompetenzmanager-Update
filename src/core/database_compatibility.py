@@ -1,4 +1,4 @@
-"""Read-only SQLite schema identity and database compatibility policy."""
+"""Read-only identity and compatibility for the final product schema."""
 
 from __future__ import annotations
 
@@ -11,24 +11,9 @@ from enum import Enum
 from pathlib import Path
 
 
-DATABASE_COMPATIBILITY_VERSION = 2
-REGISTERED_V3_SCHEMA_VERSION = 3
-REGISTERED_V3_SCHEMA_FINGERPRINT = (
-    "640a10a76b292eca3a2ba47255711db87e27d4eaa1580fcc58086035cb8d6cd1"
-)
-
-# Registered after calculating the complete canonical schema identity of the
-# c029aff V1 schema. The versioned V1 schema and its known unversioned direct
-# predecessor intentionally have the same schema identity; user_version is the
-# differentiating version metadata.
-V1_COMPATIBILITY_FINGERPRINT = (
-    "cc24b317186c65a47d4e06662115847154ba4772a582b206c099031676597057"
-)
-KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT = (
-    "cc24b317186c65a47d4e06662115847154ba4772a582b206c099031676597057"
-)
-V2_COMPATIBILITY_FINGERPRINT = (
-    "5c15a6c54dda9e04ff0f4a7cb9361cac7d452c9f7b1e2d68a6843bc5a99e57b2"
+FINAL_SCHEMA_VERSION = 3
+FINAL_SCHEMA_FINGERPRINT = (
+    "d75b803552ba961bff5578ec0853c1d0a2d035845db6a7b624b1528cf546e731"
 )
 
 
@@ -36,7 +21,6 @@ class DatabaseCompatibilityStatus(str, Enum):
     """Compatibility classification for one inspected database."""
 
     EXACT = "exact"
-    MIGRATION_REQUIRED = "migration_required"
     INCOMPATIBLE = "incompatible"
 
 
@@ -83,7 +67,7 @@ class DatabaseVersionMismatchError(DatabaseCompatibilityError):
 
 
 class DatabaseCompatibilityPolicy:
-    """Classify version metadata together with a complete schema identity."""
+    """Accept exactly one registered final product schema."""
 
     def evaluate(
         self,
@@ -91,48 +75,26 @@ class DatabaseCompatibilityPolicy:
         sqlite_user_version: int,
         schema_identity: DatabaseSchemaIdentity,
     ) -> DatabaseCompatibilityResult:
-        fingerprint = schema_identity.fingerprint
         if (
-            sqlite_user_version == DATABASE_COMPATIBILITY_VERSION
-            and fingerprint == V2_COMPATIBILITY_FINGERPRINT
+            sqlite_user_version == FINAL_SCHEMA_VERSION
+            and schema_identity.fingerprint == FINAL_SCHEMA_FINGERPRINT
         ):
             return DatabaseCompatibilityResult(
                 status=DatabaseCompatibilityStatus.EXACT,
                 schema_identity=schema_identity,
                 version=DatabaseVersionInfo(
                     sqlite_user_version=sqlite_user_version,
-                    compatibility_version=DATABASE_COMPATIBILITY_VERSION,
+                    compatibility_version=FINAL_SCHEMA_VERSION,
                 ),
-                reason="Die Datenbank entspricht exakt dem registrierten V2-Schema.",
+                reason="Die Datenbank entspricht exakt dem finalen Produktschema.",
             )
-        if (
-            sqlite_user_version in (0, 1)
-            and fingerprint
-            in {
-                KNOWN_UNVERSIONED_V1_PREDECESSOR_FINGERPRINT,
-                V1_COMPATIBILITY_FINGERPRINT,
-            }
-        ):
-            return DatabaseCompatibilityResult(
-                status=DatabaseCompatibilityStatus.MIGRATION_REQUIRED,
-                schema_identity=schema_identity,
-                version=DatabaseVersionInfo(
-                    sqlite_user_version=sqlite_user_version,
-                    compatibility_version=1,
-                ),
-                reason=(
-                    "Die bekannte V1-Vorgaengerstruktur benoetigt "
-                    "die kontrollierte V2-Migration."
-                ),
-            )
-        if sqlite_user_version > DATABASE_COMPATIBILITY_VERSION:
-            reason = "Die Datenbankversion ist neuer als diese Anwendung unterstuetzt."
-        elif sqlite_user_version == 0:
-            reason = "Die unversionierte Datenbankstruktur ist nicht registriert."
-        elif sqlite_user_version == DATABASE_COMPATIBILITY_VERSION:
-            reason = "Die deklarierte V2-Datenbank besitzt ein unbekanntes Schema."
+
+        if sqlite_user_version > FINAL_SCHEMA_VERSION:
+            reason = "Die Datenbankversion ist neuer als diese Anwendung unterstützt."
+        elif sqlite_user_version == FINAL_SCHEMA_VERSION:
+            reason = "Die deklarierte finale Datenbank besitzt ein unbekanntes Schema."
         else:
-            reason = "Die Datenbankversion wird nicht unterstuetzt."
+            reason = "Die Datenbank entspricht nicht dem finalen Produktschema."
         return DatabaseCompatibilityResult(
             status=DatabaseCompatibilityStatus.INCOMPATIBLE,
             schema_identity=schema_identity,
@@ -147,15 +109,15 @@ class DatabaseCompatibilityPolicy:
     def require_backup_compatible(
         result: DatabaseCompatibilityResult,
     ) -> DatabaseCompatibilityResult:
-        """Accept exact V1 and its registered unversioned predecessor only."""
-        if result.status is not DatabaseCompatibilityStatus.INCOMPATIBLE:
+        """Accept only an exact final-schema database for backup or restore."""
+
+        if result.status is DatabaseCompatibilityStatus.EXACT:
             return result
-        if result.version.sqlite_user_version > DATABASE_COMPATIBILITY_VERSION:
+        if result.version.sqlite_user_version > FINAL_SCHEMA_VERSION:
             raise UnsupportedDatabaseVersionError(result.reason)
-        if result.version.sqlite_user_version in (1, DATABASE_COMPATIBILITY_VERSION):
+        if result.version.sqlite_user_version == FINAL_SCHEMA_VERSION:
             raise DatabaseVersionMismatchError(result.reason)
         raise UnknownDatabaseSchemaError(result.reason)
-
 
 class DatabaseCompatibilityInspector:
     """Inspect SQLite compatibility without changing the database."""

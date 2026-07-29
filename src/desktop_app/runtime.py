@@ -5,8 +5,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import shutil
-import sqlite3
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -24,6 +22,8 @@ SECURITY_DATABASE_FILENAME = "security.sqlite"
 ENROLLMENT_MARKER_FILENAME = "enrollment.marker"
 APP_PREFERENCES_FILENAME = "app-preferences.json"
 BUILD_INFO_FILENAME = "pilot_build_info.json"
+# Retained only as historical packaging metadata. Runtime startup no longer
+# installs a packaged predecessor database.
 INITIAL_DATA_DIRECTORY = "pilot_initial"
 INITIAL_PATH_TOKEN = "__PILOT_DATA_ROOT__"
 DEVELOPMENT_DATA_ROOT = Path("data")
@@ -124,15 +124,12 @@ def prepare_runtime_storage(
     data_root: Path | None = None,
     resource_root_path: Path | None = None,
 ) -> RuntimePaths:
-    """Create mutable directories and install optional initial data exactly once."""
+    """Create mutable directories without installing a predecessor database."""
     paths = runtime_paths(data_root)
-    resources = resource_root() if resource_root_path is None else Path(resource_root_path)
+    del resource_root_path
     try:
         paths.root.mkdir(parents=True, exist_ok=True)
         _assert_directory(paths.root)
-        initial_database = resources / INITIAL_DATA_DIRECTORY / DATABASE_FILENAME
-        if not paths.database.exists() and initial_database.is_file():
-            _install_initial_data(paths, initial_database)
         for directory in (
             paths.documents,
             paths.exports,
@@ -144,7 +141,7 @@ def prepare_runtime_storage(
         _verify_writable(paths.root)
     except RuntimeStorageError:
         raise
-    except (OSError, sqlite3.Error) as error:
+    except OSError as error:
         raise RuntimeStorageError(
             f"Der lokale Datenordner konnte nicht vorbereitet werden: {paths.root}"
         ) from error
@@ -171,69 +168,6 @@ def prepare_security_runtime_storage(*, data_root: Path | None = None) -> Runtim
             "Die technische Sicherheitsablage konnte nicht vorbereitet werden."
         ) from error
     return paths
-
-
-def _install_initial_data(paths: RuntimePaths, initial_database: Path) -> None:
-    """Copy an explicitly packaged initial database without replacing user data."""
-    initial_documents = initial_database.parent / "documents"
-    if paths.database.exists():
-        return
-    if initial_documents.is_dir() and paths.documents.exists() and any(
-        paths.documents.iterdir()
-    ):
-        raise RuntimeStorageError(
-            "Die Startdaten wurden nicht eingerichtet, weil bereits lokale "
-            f"Dokumente vorhanden sind: {paths.documents}"
-        )
-
-    with tempfile.TemporaryDirectory(prefix="pilot-first-start-", dir=paths.root) as temp:
-        staged_database = Path(temp) / DATABASE_FILENAME
-        shutil.copy2(initial_database, staged_database)
-        _rebase_initial_document_paths(staged_database, paths.root)
-        if initial_documents.is_dir():
-            paths.documents.mkdir(parents=True, exist_ok=True)
-            for source in initial_documents.rglob("*"):
-                relative = source.relative_to(initial_documents)
-                target = paths.documents / relative
-                if source.is_dir():
-                    target.mkdir(parents=True, exist_ok=True)
-                    continue
-                if target.exists():
-                    raise RuntimeStorageError(
-                        "Eine vorhandene lokale Datei verhindert die sichere "
-                        f"Einrichtung der Startdaten: {target}"
-                    )
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source, target)
-        if paths.database.exists():
-            raise RuntimeStorageError(
-                "Die Benutzerdatenbank wurde während der Ersteinrichtung angelegt "
-                "und deshalb nicht ersetzt."
-            )
-        staged_database.replace(paths.database)
-
-
-def _rebase_initial_document_paths(database_path: Path, data_root: Path) -> None:
-    """Materialize paths in a newly copied, explicitly fictional demo database."""
-    with sqlite3.connect(database_path) as connection:
-        table = connection.execute(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'documents'"
-        ).fetchone()
-        if table is None:
-            return
-        rows = connection.execute(
-            "SELECT document_id, file_path FROM documents"
-        ).fetchall()
-        for document_id, file_path in rows:
-            prefix = f"{INITIAL_PATH_TOKEN}/"
-            if not isinstance(file_path, str) or not file_path.startswith(prefix):
-                continue
-            relative = Path(file_path[len(prefix) :])
-            connection.execute(
-                "UPDATE documents SET file_path = ? WHERE document_id = ?",
-                (str(data_root / relative), document_id),
-            )
-        connection.commit()
 
 
 def _assert_directory(path: Path) -> None:

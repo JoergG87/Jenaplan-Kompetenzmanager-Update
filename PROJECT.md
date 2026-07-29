@@ -2,9 +2,9 @@
 
 ## V3-only Produktschema und Architecture Cleanup
 
-**Status:** Produktschema durch ADR-096 beschlossen. Die Governance ist auf
-V3-only korrigiert; der technische Cleanup, die Umstellung produktiver Leser
-und die Runtime-Freigabe sind zu diesem Stand noch nicht umgesetzt.
+**Status:** Governance und technischer V3-only-Cleanup lokal implementiert.
+Die Umstellung produktiver Leser und Writer sowie die Runtime-Freigabe sind
+noch nicht umgesetzt.
 
 V3 ist das erste und einzige Produktschema. Es enthält `school_years`,
 datierte `student_school_year_assignments`, `courses.year_level`,
@@ -20,12 +20,12 @@ Nutzerdaten werden erst nach vollständiger V3-Implementierung, Prüfung und
 Freigabe verwendet. Es gibt keinen V2-Cutover, keinen V2-Bootstrap-Assistenten,
 keinen V2-Produktrestore und keine dauerhafte V2-Kompatibilitätszusage.
 
-Der technische Cleanup überführt das bisher in der isolierten
-Migrationsengine enthaltene finale DDL in eine direkte V3-Schemaquelle und
-entfernt danach Engine, Klassifizierung, Cutover-Plan, Backup-Evidence,
-Failpoints und V2-Startupzustände. Compatibility, Backup und Restore werden
-auf das exakte finale Schema begrenzt. Das Backupformat-v1 bleibt davon
-unabhängig bestehen.
+Der technische Cleanup hat das bisher in der isolierten Migrationsengine
+enthaltene finale DDL in `FinalV3SchemaInitializer` überführt und Engine,
+Klassifizierung, Cutover-Plan, Backup-Evidence, Failpoints und
+V2-Startupzustände entfernt. Compatibility, Backup und Restore akzeptieren
+ausschließlich das exakte finale Schema. Das unabhängige Backupformat-v1
+bleibt bestehen.
 
 Startup-Ziel ist: exaktes finales Schema erkennen, eine fehlende Datenbank nur
 im autorisierten First-Run-/Testkontext direkt als V3 erzeugen und unbekannte

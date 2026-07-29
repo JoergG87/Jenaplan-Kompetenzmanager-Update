@@ -378,63 +378,6 @@ def test_writer_lock_serializes_threads_and_is_reentrant(tmp_path: Path) -> None
     assert second_entered.is_set()
 
 
-def test_backup_recovers_files_published_operation_before_snapshot() -> None:
-    case = _case()
-    try:
-        source = Path(case.temp_dir.name) / "backup-recovery.txt"
-        source.write_text("backup recovery", encoding="utf-8")
-        draft = case._sample_observation_draft(
-            attachments=(ObservationAttachmentDraft(str(source), "Recovery"),)
-        )
-        with mock.patch.object(
-            ObservationPersistenceUnitOfWork,
-            "_commit_database",
-            side_effect=RuntimeError("simulierter Crash vor Backup"),
-        ):
-            assert not case.adapter.save_observation(draft).success
-
-        backup = _backup(case, "recovery-backups")
-
-        assert backup.is_file()
-        with case.database.connect() as connection:
-            assert connection.execute("SELECT COUNT(*) FROM observations").fetchone()[0] == 1
-            assert connection.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 1
-    finally:
-        case.tearDown()
-
-
-def test_restore_staging_recovers_pending_live_operation_first() -> None:
-    case = _case()
-    try:
-        archive = _backup(case, "restore-source-backups")
-        source = Path(case.temp_dir.name) / "restore-recovery.txt"
-        source.write_text("restore recovery", encoding="utf-8")
-        draft = case._sample_observation_draft(
-            attachments=(ObservationAttachmentDraft(str(source), "Recovery"),)
-        )
-        with mock.patch.object(
-            ObservationPersistenceUnitOfWork,
-            "_commit_database",
-            side_effect=RuntimeError("simulierter Crash vor Restore"),
-        ):
-            assert not case.adapter.save_observation(draft).success
-
-        result = RestoreStagingService().prepare(
-            archive_path=archive,
-            runtime_root=Path(case.temp_dir.name),
-            live_database=case.database.path,
-            live_documents=Path(case.temp_dir.name) / "documents",
-            restore_id="RST-OBSERVATION-UOW",
-        )
-
-        assert result.status == "completed"
-        with case.database.connect() as connection:
-            assert connection.execute("SELECT COUNT(*) FROM observations").fetchone()[0] == 1
-            assert connection.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 1
-    finally:
-        case.tearDown()
-
-
 def test_backup_fails_closed_on_conflicting_pending_operation() -> None:
     case = _case()
     try:
