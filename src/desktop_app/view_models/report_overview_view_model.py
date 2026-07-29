@@ -247,7 +247,7 @@ def build_report_overview(
     """Compose existing report and LEG reads only at the display boundary."""
     report_drafts = tuple(report_drafts)
     learning_conference_drafts = tuple(learning_conference_drafts)
-    selected_report = _selected_draft(
+    selected_report = _strict_selected_draft(
         report_drafts,
         selected_report_draft_id,
         "report_draft_id",
@@ -397,10 +397,14 @@ def _report_status_card(
 ) -> ReportStatusCardViewModel:
     if not drafts:
         return empty_report_overview().report_status
-    if len(drafts) > 1 and selected is None:
+    if selected is None:
         return ReportStatusCardViewModel(
             "multiple_drafts",
-            f"{len(drafts)} Entwürfe vorhanden",
+            (
+                f"{len(drafts)} Entwürfe vorhanden"
+                if len(drafts) > 1
+                else "Entwurf vorhanden"
+            ),
             "Berichtszeitraum erst nach Auswahl",
             "Keine Revision gewählt",
             _latest_update_label(item.updated_at for item in drafts),
@@ -675,7 +679,7 @@ def _next_steps(
             "Öffnet den bestehenden Zeitraum- und Erstellungsweg.",
             action,
         ))
-    elif len(report_drafts) > 1 and selected_report is None:
+    elif selected_report is None:
         action = ReportOverviewActionViewModel("select_report", "Bericht auswählen")
         result.append(ReportNextStepViewModel(
             action.label,

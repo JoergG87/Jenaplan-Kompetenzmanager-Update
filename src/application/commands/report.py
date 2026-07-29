@@ -9,6 +9,7 @@ from src.core.learning_report import (
     LearningReportFinalizationPreview,
     LearningReportFinalizationResult,
     LearningReportRevisionReadService,
+    LearningReportRevisionHistory,
     LearningReportRevisionRecord,
     LearningReportRevisionState,
     LearningReportRecord,
@@ -82,6 +83,18 @@ class ReportRevisionApplicationService:
         report_draft_id: str,
     ) -> tuple[LearningReportRevisionRecord, ...]:
         return self.read_service.revision_history_for_draft(report_draft_id)
+
+    def revision_histories_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningReportRevisionHistory, ...]:
+        return self.read_service.revision_histories_for_student(student_id)
+
+    def verify_revision(
+        self,
+        revision: LearningReportRevisionRecord,
+    ) -> dict[str, object]:
+        return self.read_service.verify_revision(revision)
 
     def revision_by_id(
         self,

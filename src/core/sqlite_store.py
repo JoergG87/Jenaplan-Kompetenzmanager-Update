@@ -84,6 +84,7 @@ from .learning_conference import (
     LearningConferenceObservationRatingSource,
     LearningConferenceObservationSource,
     LearningConferenceRecord,
+    LearningConferenceRevisionHistory,
     LearningConferenceRevisionRecord,
     LearningConferenceStudentSource,
     LearningConferenceSubjectSource,
@@ -102,6 +103,7 @@ from .learning_report import (
     LearningReportFinalizationSource,
     LearningReportObservationSource,
     LearningReportRecord,
+    LearningReportRevisionHistory,
     LearningReportRevisionRecord,
     LearningReportStudentSource,
     LearningReportSubjectSource,
@@ -2398,12 +2400,14 @@ class SQLiteStudentDocumentationProjectionRepository:
     def read_batch(
         self,
         *,
+        student_id: str | None = None,
         group_id: str | None = None,
         group_ids: tuple[str, ...] = (),
         course_id: str | None = None,
         course_ids: tuple[str, ...] = (),
     ) -> StudentDocumentationProjectionBatch:
         scope_sql, scope_parameters = self._scope_sql(
+            student_id=student_id,
             group_id=group_id,
             group_ids=group_ids,
             course_id=course_id,
@@ -2478,6 +2482,7 @@ class SQLiteStudentDocumentationProjectionRepository:
     @staticmethod
     def _scope_sql(
         *,
+        student_id: str | None,
         group_id: str | None,
         group_ids: tuple[str, ...],
         course_id: str | None,
@@ -2485,6 +2490,9 @@ class SQLiteStudentDocumentationProjectionRepository:
     ) -> tuple[str, tuple[str, ...]]:
         clauses = ["student.active = 1"]
         parameters: list[str] = []
+        if student_id:
+            clauses.append("student.student_id = ?")
+            parameters.append(student_id)
         if group_id:
             clauses.append("student.group_id = ?")
             parameters.append(group_id)
@@ -3951,6 +3959,55 @@ class SQLiteLearningConferenceRepository:
             ).fetchone()
         return self._revision_from_row(row) if row is not None else None
 
+    def list_revision_histories_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningConferenceRevisionHistory, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    conference.learning_conference_id,
+                    conference.source_learning_conference_draft_id,
+                    conference.student_id,
+                    conference.created_at,
+                    revision.learning_conference_revision_id,
+                    revision.revision_number,
+                    revision.status,
+                    revision.snapshot_schema_version,
+                    revision.snapshot_json,
+                    revision.snapshot_sha256,
+                    revision.completed_at,
+                    revision.completed_by_display_name,
+                    revision.superseded_at
+                FROM learning_conferences AS conference
+                JOIN learning_conference_revisions AS revision
+                  ON revision.learning_conference_id =
+                     conference.learning_conference_id
+                WHERE conference.student_id = ?
+                ORDER BY
+                    conference.source_learning_conference_draft_id,
+                    revision.revision_number DESC,
+                    revision.learning_conference_revision_id
+                """,
+                (student_id,),
+            ).fetchall()
+        histories: dict[
+            str,
+            tuple[LearningConferenceRecord, list[LearningConferenceRevisionRecord]],
+        ] = {}
+        for row in rows:
+            conference = self._conference_from_row(row)
+            _existing, revisions = histories.setdefault(
+                conference.learning_conference_id,
+                (conference, []),
+            )
+            revisions.append(self._revision_from_row(row))
+        return tuple(
+            LearningConferenceRevisionHistory(conference, tuple(revisions))
+            for conference, revisions in histories.values()
+        )
+
     def _subject_name(
         self,
         connection: sqlite3.Connection,
@@ -4990,6 +5047,57 @@ class SQLiteLearningReportRepository:
                 (learning_report_revision_id,),
             ).fetchone()
         return self._revision_from_row(row) if row is not None else None
+
+    def list_revision_histories_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningReportRevisionHistory, ...]:
+        with closing(self.database.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    report.learning_report_id,
+                    report.source_report_draft_id,
+                    report.student_id,
+                    report.report_type,
+                    report.period_start,
+                    report.period_end,
+                    report.created_at,
+                    revision.learning_report_revision_id,
+                    revision.revision_number,
+                    revision.status,
+                    revision.snapshot_schema_version,
+                    revision.snapshot_json,
+                    revision.snapshot_sha256,
+                    revision.finalized_at,
+                    revision.finalized_by_display_name,
+                    revision.superseded_at
+                FROM learning_reports AS report
+                JOIN learning_report_revisions AS revision
+                  ON revision.learning_report_id = report.learning_report_id
+                WHERE report.student_id = ?
+                ORDER BY
+                    report.source_report_draft_id,
+                    revision.revision_number DESC,
+                    revision.learning_report_revision_id
+                """,
+                (student_id,),
+            ).fetchall()
+        histories: dict[
+            str,
+            tuple[LearningReportRecord, list[LearningReportRevisionRecord]],
+        ] = {}
+        for row in rows:
+            report = self._report_from_row(row)
+            _existing, revisions = histories.setdefault(
+                report.learning_report_id,
+                (report, []),
+            )
+            revisions.append(self._revision_from_row(row))
+        return tuple(
+            LearningReportRevisionHistory(report, tuple(revisions))
+            for report, revisions in histories.values()
+        )
 
     def _competency_evidence(
         self,

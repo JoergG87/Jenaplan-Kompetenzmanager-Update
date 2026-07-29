@@ -14,6 +14,8 @@ from src.core.learning_conference import (
     LearningConferenceCompletionResult,
     LearningConferenceCompletionService,
     LearningConferenceRevisionReadService,
+    LearningConferenceRevisionHistory,
+    LearningConferenceRevisionRecord,
     LearningConferenceRevisionState,
     LearningConferenceVerifiedRevision,
 )
@@ -232,6 +234,18 @@ class LearningConferenceRevisionApplicationService:
         return self.read_service.load_verified_revision(
             query.learning_conference_revision_id
         )
+
+    def revision_histories_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningConferenceRevisionHistory, ...]:
+        return self.read_service.revision_histories_for_student(student_id)
+
+    def verify_revision(
+        self,
+        revision: LearningConferenceRevisionRecord,
+    ) -> dict[str, object]:
+        return self.read_service.verify_revision(revision)
 
 
 @dataclass(frozen=True)

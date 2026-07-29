@@ -86,6 +86,14 @@ class LearningConferenceRevisionRecord:
 
 
 @dataclass(frozen=True)
+class LearningConferenceRevisionHistory:
+    """One stable LEG aggregate with all immutable revisions."""
+
+    conference: LearningConferenceRecord
+    revisions: tuple[LearningConferenceRevisionRecord, ...]
+
+
+@dataclass(frozen=True)
 class LearningConferenceCompletionResult:
     """Aggregate and current revision returned by one completion command."""
 
@@ -218,6 +226,11 @@ class LearningConferenceRepository(Protocol):
         self,
         learning_conference_revision_id: str,
     ) -> LearningConferenceRevisionRecord | None: ...
+
+    def list_revision_histories_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningConferenceRevisionHistory, ...]: ...
 
 
 class LearningConferenceCompletionValidator:
@@ -526,8 +539,24 @@ class LearningConferenceRevisionReadService:
                 LearningConferenceCompletionErrorCode.REVISION_NOT_FOUND,
                 "LEG-Revision wurde nicht gefunden.",
             )
-        snapshot = self._verify_snapshot(revision)
+        snapshot = self.verify_revision(revision)
         return LearningConferenceVerifiedRevision(revision, snapshot)
+
+    def revision_histories_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningConferenceRevisionHistory, ...]:
+        """Load every LEG history for one student in one repository read."""
+        return self.repository.list_revision_histories_for_student(
+            student_id.strip()
+        )
+
+    def verify_revision(
+        self,
+        revision: LearningConferenceRevisionRecord,
+    ) -> dict[str, object]:
+        """Verify one already loaded immutable LEG snapshot."""
+        return self._verify_snapshot(revision)
 
     def state_for_draft(
         self,
@@ -546,7 +575,7 @@ class LearningConferenceRevisionReadService:
         hash_valid = current is not None
         if current is not None:
             try:
-                self._verify_snapshot(current)
+                self.verify_revision(current)
             except LearningConferenceCompletionError:
                 hash_valid = False
         try:

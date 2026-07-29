@@ -1355,6 +1355,17 @@ class StudentDesktopAdapter:
         except Exception as error:
             learning_conference_drafts = ()
             learning_conference_list_error = error
+        selected_report = next(
+            (
+                draft
+                for draft in report_drafts
+                if (
+                    selected_report_draft_id
+                    and draft.report_draft_id == selected_report_draft_id
+                )
+            ),
+            None,
+        )
         report_revision_service = self._report_revision_application_service()
         report_states = {}
         report_revision_errors: set[str] = set()
@@ -1363,15 +1374,6 @@ class StudentDesktopAdapter:
                 state = report_revision_service.state_for_draft(
                     draft.report_draft_id
                 )
-                for revision in state.revisions:
-                    try:
-                        report_revision_service.snapshot_payload(
-                            revision.learning_report_revision_id
-                        )
-                    except Exception:
-                        report_revision_errors.add(
-                            revision.learning_report_revision_id
-                        )
                 report_states[draft.report_draft_id] = state
             except Exception as error:
                 report_states[draft.report_draft_id] = error
@@ -1391,35 +1393,6 @@ class StudentDesktopAdapter:
                         draft.learning_conference_draft_id
                     )
                 )
-                for revision in state.revisions:
-                    try:
-                        verified = learning_conference_revision_service.get_revision(
-                            GetLearningConferenceRevisionQuery(
-                                revision.learning_conference_revision_id
-                            )
-                        )
-                        period = verified.snapshot.get("period")
-                        if not isinstance(period, dict):
-                            raise ValueError("LEG-Zeitraum fehlt im Snapshot.")
-                        start = str(period.get("start", ""))
-                        end = str(period.get("end", ""))
-                        if bool(start) != bool(end):
-                            raise ValueError("LEG-Zeitraum ist unvollständig.")
-                        if start and end:
-                            date.fromisoformat(start)
-                            date.fromisoformat(end)
-                        conference_date = str(
-                            verified.snapshot.get("conference_date", "")
-                        )
-                        if conference_date:
-                            date.fromisoformat(conference_date)
-                        learning_conference_revision_periods[
-                            revision.learning_conference_revision_id
-                        ] = (start, end, conference_date)
-                    except Exception:
-                        learning_conference_revision_errors.add(
-                            revision.learning_conference_revision_id
-                        )
                 learning_conference_states[
                     draft.learning_conference_draft_id
                 ] = state
@@ -1427,6 +1400,110 @@ class StudentDesktopAdapter:
                 learning_conference_states[
                     draft.learning_conference_draft_id
                 ] = error
+        phase2_observations: tuple[Mapping[str, object], ...] = ()
+        phase2_report_revisions: tuple[Mapping[str, object], ...] = ()
+        phase2_learning_conference_revisions: tuple[
+            Mapping[str, object],
+            ...,
+        ] = ()
+        phase2_confirmations: tuple[Mapping[str, object], ...] = ()
+        phase2_subjects: tuple[Mapping[str, object], ...] = ()
+        phase2_source_errors: list[str] = []
+        if selected_report is not None:
+            try:
+                batch = SQLiteStudentDocumentationProjectionRepository(
+                    self.database
+                ).read_batch(student_id=student_id)
+                (
+                    phase2_observations,
+                    phase2_confirmations,
+                    phase2_subjects,
+                ) = self._phase2_live_evidence_sources(batch, student_id)
+            except Exception:
+                phase2_source_errors.append("live_documentation")
+            try:
+                report_histories = (
+                    report_revision_service.revision_histories_for_student(
+                        student_id
+                    )
+                )
+                report_rows: list[Mapping[str, object]] = []
+                for history in report_histories:
+                    for revision in history.revisions:
+                        try:
+                            report_revision_service.verify_revision(revision)
+                            hash_valid = True
+                        except Exception:
+                            hash_valid = False
+                            report_revision_errors.add(
+                                revision.learning_report_revision_id
+                            )
+                        report_rows.append({
+                            "report_draft_id": (
+                                history.report.source_report_draft_id
+                            ),
+                            "learning_report_revision_id": (
+                                revision.learning_report_revision_id
+                            ),
+                            "revision_number": revision.revision_number,
+                            "status": revision.status,
+                            "finalized_at": revision.finalized_at,
+                            "hash_valid": hash_valid,
+                        })
+                phase2_report_revisions = tuple(report_rows)
+            except Exception:
+                phase2_source_errors.append("report_revisions")
+            try:
+                learning_conference_histories = (
+                    learning_conference_revision_service
+                    .revision_histories_for_student(student_id)
+                )
+                learning_conference_rows: list[Mapping[str, object]] = []
+                for history in learning_conference_histories:
+                    for revision in history.revisions:
+                        snapshot: Mapping[str, object] = {}
+                        try:
+                            snapshot = (
+                                learning_conference_revision_service
+                                .verify_revision(revision)
+                            )
+                            hash_valid = True
+                        except Exception:
+                            hash_valid = False
+                            learning_conference_revision_errors.add(
+                                revision.learning_conference_revision_id
+                            )
+                        period = snapshot.get("period")
+                        start = ""
+                        end = ""
+                        if isinstance(period, Mapping):
+                            start = str(period.get("start", ""))
+                            end = str(period.get("end", ""))
+                        conference_date = str(
+                            snapshot.get("conference_date", "")
+                        )
+                        if hash_valid:
+                            learning_conference_revision_periods[
+                                revision.learning_conference_revision_id
+                            ] = (start, end, conference_date)
+                        learning_conference_rows.append({
+                            "learning_conference_draft_id": (
+                                history.conference
+                                .source_learning_conference_draft_id
+                            ),
+                            "learning_conference_revision_id": (
+                                revision.learning_conference_revision_id
+                            ),
+                            "revision_number": revision.revision_number,
+                            "status": revision.status,
+                            "conference_date": conference_date,
+                            "hash_valid": hash_valid,
+                        })
+                phase2_learning_conference_revisions = tuple(
+                    learning_conference_rows
+                )
+            except Exception:
+                phase2_source_errors.append("learning_conference_revisions")
         return build_report_overview(
             report_drafts,
             report_states,
@@ -1446,7 +1523,133 @@ class StudentDesktopAdapter:
             selected_learning_conference_draft_id=(
                 selected_learning_conference_draft_id
             ),
+            phase2_period_start=(
+                selected_report.period_start if selected_report else None
+            ),
+            phase2_period_end=(
+                selected_report.period_end if selected_report else None
+            ),
+            phase2_observations=phase2_observations,
+            phase2_report_revisions=phase2_report_revisions,
+            phase2_learning_conference_revisions=(
+                phase2_learning_conference_revisions
+            ),
+            phase2_confirmations=phase2_confirmations,
+            phase2_subjects=phase2_subjects,
+            phase2_source_errors=tuple(phase2_source_errors),
         )
+
+    def _phase2_live_evidence_sources(
+        self,
+        batch: StudentDocumentationProjectionBatch,
+        student_id: str,
+    ) -> tuple[
+        tuple[Mapping[str, object], ...],
+        tuple[Mapping[str, object], ...],
+        tuple[Mapping[str, object], ...],
+    ]:
+        """Translate one consistent live snapshot into pure projection rows."""
+        competencies_by_id = {
+            competency.competency_id: competency
+            for competency in batch.competencies
+        }
+        observations = tuple(
+            {
+                "observation_id": observation.observation_id,
+                "observed_on": observation.date,
+                "subject_id": observation.subject_id,
+                "context": observation.context,
+                "active": observation.active,
+                "assignments": tuple(
+                    {
+                        "competency_id": rating.competency_id,
+                        "subject_id": rating.subject_id,
+                        "active": bool(
+                            competencies_by_id.get(rating.competency_id)
+                            and competencies_by_id[rating.competency_id].active
+                        ),
+                        "catalog_status": getattr(
+                            competencies_by_id.get(rating.competency_id),
+                            "catalog_status",
+                            "missing",
+                        ),
+                        "historical": not bool(
+                            competencies_by_id.get(rating.competency_id)
+                            and competencies_by_id[rating.competency_id].active
+                            and competencies_by_id[
+                                rating.competency_id
+                            ].catalog_status == "current"
+                        ),
+                    }
+                    for rating in observation.competency_ratings
+                ),
+                "competency_area": ", ".join(dict.fromkeys(
+                    rating.learning_area.strip()
+                    for rating in observation.competency_ratings
+                    if rating.learning_area.strip()
+                )),
+                "topic": ", ".join(dict.fromkeys(
+                    rating.competency_group.strip()
+                    for rating in observation.competency_ratings
+                    if rating.competency_group.strip()
+                )),
+            }
+            for observation in batch.observations_by_student.get(
+                student_id,
+                (),
+            )
+        )
+        statuses = self._competency_status_projection_from_sources(
+            observations=batch.observations_by_student.get(student_id, ()),
+            confirmations=batch.confirmations_by_student.get(student_id, ()),
+            freshness_by_competency=batch.freshness_by_student.get(
+                student_id,
+                {},
+            ),
+            competencies=batch.competencies,
+        )
+        confirmations = tuple(
+            {
+                "student_id": student_id,
+                "competency_id": status.competency_id,
+                "competency_text": status.competency_text,
+                "confirmed_at": status.confirmed_at,
+                "documentation_state": status.documentation_state,
+                "confirmation_safe": (
+                    bool(status.confirmed_at)
+                    and status.documentation_state != "confirmation_unknown"
+                ),
+                "active": status.is_active,
+                "catalog_status": status.catalog_status,
+                "historical": status.historical,
+            }
+            for status in statuses
+            if status.confirmed_at
+        )
+        active_subject_ids = set(
+            batch.active_documentation_subject_ids
+        )
+        subjects_by_id: dict[str, str] = {}
+        for competency in batch.competencies:
+            if (
+                competency.subject_id in active_subject_ids
+                and competency.active
+                and competency.catalog_status == "current"
+            ):
+                subjects_by_id.setdefault(
+                    competency.subject_id,
+                    competency.subject_name,
+                )
+        subjects = tuple(
+            {
+                "subject_id": subject_id,
+                "subject_name": subjects_by_id[subject_id],
+                "active": True,
+            }
+            for subject_id in batch.active_documentation_subject_ids
+            if subject_id in subjects_by_id
+        )
+        return observations, confirmations, subjects
 
     def save_learning_report_draft(
         self,

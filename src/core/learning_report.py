@@ -52,6 +52,14 @@ class LearningReportRevisionRecord:
 
 
 @dataclass(frozen=True)
+class LearningReportRevisionHistory:
+    """One stable report aggregate with all immutable revisions."""
+
+    report: LearningReportRecord
+    revisions: tuple[LearningReportRevisionRecord, ...]
+
+
+@dataclass(frozen=True)
 class LearningReportFinalizationResult:
     """Aggregate and newly created revision returned by one finalization."""
 
@@ -206,6 +214,11 @@ class LearningReportRepository(Protocol):
         self,
         learning_report_revision_id: str,
     ) -> LearningReportRevisionRecord | None: ...
+
+    def list_revision_histories_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningReportRevisionHistory, ...]: ...
 
 
 class LearningReportFinalizationValidator:
@@ -715,6 +728,36 @@ class LearningReportRevisionReadService:
         """Verify the stored SHA-256 against the exact stored snapshot bytes."""
         return snapshot_sha256(revision.snapshot_json) == revision.snapshot_sha256
 
+    def revision_histories_for_student(
+        self,
+        student_id: str,
+    ) -> tuple[LearningReportRevisionHistory, ...]:
+        """Load every report history for one student in one repository read."""
+        return self.repository.list_revision_histories_for_student(
+            student_id.strip()
+        )
+
+    def verify_revision(
+        self,
+        revision: LearningReportRevisionRecord,
+    ) -> dict[str, object]:
+        """Verify and decode one already loaded immutable revision."""
+        if not self.snapshot_hash_valid(revision):
+            raise ReportFinalizationError(
+                "Der gespeicherte Snapshot-Hash der Berichtrevision ist ungültig."
+            )
+        try:
+            payload = json.loads(revision.snapshot_json)
+        except json.JSONDecodeError as error:
+            raise ReportFinalizationError(
+                "Der gespeicherte Bericht-Snapshot ist nicht lesbar."
+            ) from error
+        if not isinstance(payload, dict):
+            raise ReportFinalizationError(
+                "Der gespeicherte Bericht-Snapshot besitzt kein gültiges Format."
+            )
+        return payload
+
     def state_for_draft(self, report_draft_id: str) -> LearningReportRevisionState:
         """Return current/history status and deterministic draft-change state."""
         normalized_draft_id = report_draft_id.strip()
@@ -780,18 +823,4 @@ class LearningReportRevisionReadService:
         revision = self.revision_by_id(learning_report_revision_id)
         if revision is None:
             return None
-        if not self.snapshot_hash_valid(revision):
-            raise ReportFinalizationError(
-                "Der gespeicherte Snapshot-Hash der Berichtrevision ist ungültig."
-            )
-        try:
-            payload = json.loads(revision.snapshot_json)
-        except json.JSONDecodeError as error:
-            raise ReportFinalizationError(
-                "Der gespeicherte Bericht-Snapshot ist nicht lesbar."
-            ) from error
-        if not isinstance(payload, dict):
-            raise ReportFinalizationError(
-                "Der gespeicherte Bericht-Snapshot besitzt kein gültiges Format."
-            )
-        return revision, payload
+        return revision, self.verify_revision(revision)
