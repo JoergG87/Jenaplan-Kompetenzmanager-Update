@@ -139,6 +139,7 @@ from src.desktop_app.view_models.student_view_model import (
     format_student_report_preview_text,
     sort_student_list,
 )
+from tests.helpers.synthetic_v3 import create_synthetic_v3_database
 
 
 def _create_empty_final_v3_database(database_path: Path) -> SQLiteDatabase:
@@ -7168,6 +7169,31 @@ class DesktopAppAdapterTest(unittest.TestCase):
         window.students_workspace.segmented_control.set_current_key("all", emit=True)
         self.assertEqual(window.students_workspace.current_content_key(), "all")
         self.assertFalse(window._has_active_student_filter())
+        window.close()
+        self.assertIsNotNone(app)
+
+    def test_shell_initial_refresh_reads_synthetic_final_v3_runtime(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        database_path = Path(self.temp_dir.name) / "synthetic-runtime.sqlite"
+        create_synthetic_v3_database(database_path)
+
+        window = shell.AppShell(
+            database_path,
+            now_provider=lambda: datetime(2026, 7, 29, 9, 0),
+        )
+
+        self.assertEqual(len(window.students_screen.students), 3)
+        self.assertEqual(len(window.master_data_adapter.groups), 2)
+        self.assertEqual(len(window.master_data_adapter.courses), 3)
+        self.assertNotEqual(
+            window.status_label.text(),
+            shell.SCHOOL_YEAR_BLOCK_MESSAGE,
+        )
+        window.refresh_dashboard()
+        self.assertNotEqual(
+            window.status_label.text(),
+            shell.SCHOOL_YEAR_BLOCK_MESSAGE,
+        )
         window.close()
         self.assertIsNotNone(app)
 

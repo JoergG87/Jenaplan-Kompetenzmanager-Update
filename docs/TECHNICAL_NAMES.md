@@ -3,8 +3,8 @@
 ## V3-only Schema-, Startup- und Testnamen
 
 **Status:** V3-only-Cleanup, zentrale Assignment-API, SJ-2E-Umstellung der
-produktiven Membership-Reader und SJ-2F-Umstellung der produktiven Writer sind
-lokal implementiert. Die Runtime-Freigabe bleibt offen.
+produktiven Membership-Reader, SJ-2F-Umstellung der produktiven Writer und
+Final-V3-Runtime-Aktivierung sind lokal implementiert.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
@@ -16,7 +16,7 @@ lokal implementiert. Die Runtime-Freigabe bleibt offen.
 | `DatabaseStartupCoordinator` | kontrollierte Disposition vor jeder fachlichen Runtime-Vorbereitung | Core Database Startup |
 | `DATABASE_NOT_FOUND` | am geprüften Produktpfad existiert keine Datenbankdatei | Core Database Startup |
 | `V3_INITIALIZATION_REQUIRED` | eine autorisierte Neuanlage muss direkt Final-V3 erzeugen und anschließend neu prüfen | Core Database Startup |
-| `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` | exaktes Final-V3 ist vorhanden; die Runtime bleibt trotz abgeschlossener SJ-2E-Leser- und SJ-2F-Writerumstellung bis zur gesonderten Runtime-Aktivierung gesperrt | Core Database Startup |
+| `V3_SCHEMA_READY` | exaktes Final-V3 ist vollständig verifiziert und für die normale Runtime zugelassen | Core Database Startup |
 | `SCHEMA_UNSUPPORTED` | vorhandenes Schema entspricht nicht exakt dem finalen registrierten Schema | Core Database Startup |
 | `RECOVERY_REQUIRED` | unlesbarer, beschädigter, unsicherer oder Restore-seitig nicht abgeschlossener Zustand | Core Database Startup |
 
@@ -85,10 +85,9 @@ dessen `period_end`, für ein LEG ausschließlich dessen `conference_date` und
 für eine Beobachtung ausschließlich `observations.date`. Ein freies Dokument
 ohne fachliches Referenzdatum erzeugt keine Anfrage und bleibt hinsichtlich
 der Zuordnung neutral. Weder V2-Schülerfelder noch eine aktuelle oder letzte
-bekannte Zuordnung sind Ersatzquellen. Diese Namen definieren keine
-Runtime-Aktivierung; `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt trotz
-abgeschlossener Leser- und Writerumstellung bis zur gesonderten
-Runtime-Aktivierung unverändert.
+bekannte Zuordnung sind Ersatzquellen. `V3_SCHEMA_READY` aktiviert nur die
+technische Runtime für die exakte Schemaidentität. Es erzeugt kein Schuljahr
+und ändert keinen Reader-, Writer- oder Assignmentvertrag.
 
 `school_year_transitions.from_school_year_id` bezeichnet stets ein wirklich
 vorhandenes Ausgangsschuljahr und darf nicht leer sein. Eine initiale

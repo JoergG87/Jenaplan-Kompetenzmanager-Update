@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Die normale Runtime lässt ausschließlich ein vollständig verifiziertes
+  Final-V3 als `V3_SCHEMA_READY` zu. Unbekannte, beschädigte oder unsichere
+  Schemata, WAL-/SHM-Sidecars, offene Restorezustände und fehlende
+  Datenbanken außerhalb eines autorisierten First Runs bleiben fail-closed.
+  Nach erfolgreichem Gate öffnet die Composition Root die vorhandene
+  Datenbank ohne Create-Fallback; ein Verschwinden zwischen Gate und
+  Shell-Konstruktion erzeugt keinen Ersatzbestand. Ein autorisierter First Run
+  erzeugt nur das Final-V3-Schema und kein Schuljahr. Fehlt ein eindeutiges
+  `current`-Schuljahr, startet die Runtime technisch und sperrt die
+  schülerbezogenen Bereiche fachlich. Der isolierte Packaged Smoke behandelt
+  diesen leeren Zustand kontrolliert. Restorediagnosen benennen das geprüfte
+  Final-V3 korrekt. Es wurden keine Migration, echten Daten,
+  Schuljahreswechsel- oder Mehrkindwechselfunktionen ergänzt. Die manuelle
+  macOS-Abnahme bleibt offen. 400 fokussierte
+  Startup-/Security-/Restore-/Runtime-/Shell-Tests und 48 Subtests sowie die
+  vollständige Gesamtsuite mit 1811 Tests und 71 Subtests bestanden; ein
+  umgebungsgebundener Test blieb übersprungen. Ein einmaliger unveränderter
+  Security-Parallelitätstest mit SQLite-Lock bestand isoliert und im
+  abschließenden vollständigen Wiederholungslauf.
 - SJ-2F stellt sämtliche produktiven Schüler-, Kurs- und
   Stammgruppen-Schreibpfade auf Final-V3 um. Schüleranlage persistiert
   V3-Stammdaten und initiales `enrolled`-Assignment in einer Transaktion;

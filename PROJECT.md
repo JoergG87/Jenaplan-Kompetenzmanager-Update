@@ -3,8 +3,8 @@
 ## V3-only Produktschema und Architecture Cleanup
 
 **Status:** Governance, technischer V3-only-Cleanup, zentrale Assignment-API,
-SJ-2E-Leserumstellung und SJ-2F-Writerumstellung sind lokal implementiert.
-Die Runtime-Freigabe ist weiterhin nicht umgesetzt.
+SJ-2E-Leserumstellung, SJ-2F-Writerumstellung und die Final-V3-Runtime-
+Aktivierung sind lokal implementiert. Die manuelle macOS-Abnahme bleibt offen.
 
 V3 ist das erste und einzige Produktschema. Es enthält `school_years`,
 datierte `student_school_year_assignments`, `courses.year_level`,
@@ -29,9 +29,15 @@ bleibt bestehen.
 
 Startup-Ziel ist: exaktes finales Schema erkennen, eine fehlende Datenbank nur
 im autorisierten First-Run-/Testkontext direkt als V3 erzeugen und unbekannte
-oder beschädigte Schemata fail-closed ablehnen. Bis zur gesonderten Writer-
-und Runtime-Freigabe bleibt die Shell im ausdrücklich benannten Zwischenzustand
-`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` gesperrt.
+oder beschädigte Schemata fail-closed ablehnen. Exakt verifiziertes Final-V3
+wird als `V3_SCHEMA_READY` für die normale Runtime zugelassen. Nach diesem
+Gate öffnet die Composition Root die vorhandene Datenbank ausschließlich ohne
+Create-Fallback; verschwindet sie, stoppt der Start fail-closed.
+
+Ein autorisierter First Run erzeugt ausschließlich das vollständige
+Final-V3-Schema und prüft es erneut. Er erzeugt kein Schuljahr. Fehlt ein
+eindeutiges `current`-Schuljahr, startet die technische Runtime, während die
+schülerbezogenen Bereiche fachlich gesperrt bleiben.
 
 Implementiert sind die Qt-freien, Connection-gebundenen
 `SchoolYearRepository`- und
@@ -76,9 +82,9 @@ Nutzerdaten.
 
 Weiterhin nicht umgesetzt oder freigegeben sind der
 Schuljahreswechsel-Assistent, unterjährige Mehrkind-/Sammelwechsel,
-Runtime-Aktivierung, Build, Packaging und Release. Die manuelle Prüfung der
+Build, Packaging und Release. Die manuelle Prüfung der Runtime sowie der
 neuen Schüler-, Wechsel-, Austritts- und Kursstufenoberflächen auf macOS ist
-noch offen.
+noch offen. Es wurden keine Migration und keine echten Daten verwendet.
 
 ## Schuljahresmodell und echte Wechsel
 

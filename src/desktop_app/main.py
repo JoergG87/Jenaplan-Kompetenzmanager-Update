@@ -446,7 +446,12 @@ def main() -> int:
         from src.desktop_app.app import JenaplanDesktopApp
         from src.desktop_app.security_controller import SecurityUiCoordinator
 
-        window = JenaplanDesktopApp(paths.database, paths=paths, runtime_lock=lock)
+        window = JenaplanDesktopApp(
+            paths.database,
+            paths=paths,
+            runtime_lock=lock,
+            database_create_allowed=False,
+        )
         window.security_coordinator = SecurityUiCoordinator(
             app=app,
             shell=window,
@@ -624,7 +629,12 @@ def _run_packaged_smoke(
         == b"synthetic packaged document probe\n"
     )
     document_probe.unlink()
-    student_count = len(window.adapter.list_students())
+    current_school_year = window.adapter.current_school_year()
+    student_count = (
+        len(window.adapter.list_students())
+        if current_school_year is not None
+        else 0
+    )
     competency_count = len(window.curriculum_adapter.list_entries())
     payload = {
         "app_version": APP_VERSION,
@@ -637,6 +647,9 @@ def _run_packaged_smoke(
         "document_access_verified": document_access_verified,
         "document_probe_removed": not document_probe.exists(),
         "login_authenticated": login_authenticated,
+        "school_year_state": (
+            "current" if current_school_year is not None else "missing"
+        ),
         "pdf_exists": pdf_path.is_file(),
         "restore": {
             "archive_verified": (

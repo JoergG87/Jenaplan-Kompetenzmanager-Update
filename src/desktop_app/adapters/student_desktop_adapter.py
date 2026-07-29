@@ -222,13 +222,16 @@ class StudentDesktopAdapter:
         database_path: Path = SQLITE_SPIKE_PATH,
         *,
         database: SQLiteDatabase | None = None,
+        database_create_allowed: bool = True,
         today_provider: Callable[[], date] | None = None,
         now_provider: Callable[[], datetime] | None = None,
     ) -> None:
         self.database_path = (
             Path(database.path) if database is not None else Path(database_path)
         )
-        self.database = database or self._open_database()
+        self.database = database or self._open_database(
+            create=database_create_allowed
+        )
         self._today_provider = today_provider or date.today
         self._now_provider = now_provider or (
             lambda: datetime.now().astimezone()
@@ -2553,8 +2556,8 @@ class StudentDesktopAdapter:
         )
         return dispatcher
 
-    def _open_database(self) -> SQLiteDatabase:
-        database = SQLiteDatabase(self.database_path)
+    def _open_database(self, *, create: bool) -> SQLiteDatabase:
+        database = SQLiteDatabase(self.database_path, create=create)
         database.initialize_schema()
         database.ensure_master_data_defaults()
         SQLiteCompetencyRepository(database).ensure_catalog_defaults(

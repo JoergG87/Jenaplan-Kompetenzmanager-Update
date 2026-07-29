@@ -171,7 +171,7 @@ def test_productive_start_order_keeps_product_runtime_and_shell_after_auth() -> 
     auth = source.index("run_startup_authentication(")
     database_startup = source.index("_coordinate_product_database_startup(")
     product_runtime = source.index("prepare_storage=prepare_runtime_storage")
-    shell = source.index("JenaplanDesktopApp(paths.database")
+    shell = source.index("window = JenaplanDesktopApp(")
     assert (
         restore
         < security_paths
@@ -182,6 +182,7 @@ def test_productive_start_order_keeps_product_runtime_and_shell_after_auth() -> 
     )
     assert source.index("--restore-worker") < restore
     assert "DISABLE_AUTH" not in source
+    assert "database_create_allowed=False" in source
 
 
 def test_startup_device_authentication_does_not_bypass_touch_id_preference() -> None:

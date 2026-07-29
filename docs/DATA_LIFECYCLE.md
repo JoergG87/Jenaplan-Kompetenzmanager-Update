@@ -5,29 +5,29 @@
 **Status:** V3-only-Schema-, Startup-, Compatibility-, Backup-/Restore-,
 synthetischer Testdaten-Cleanup und Assignment-API lokal implementiert. Der
 SJ-2E-Lifecycle der produktiven Membership-Reader und der
-SJ-2F-Lifecycle der produktiven Writer sind lokal umgesetzt. Die
-Runtime-Freigabe bleibt offen.
+SJ-2F-Lifecycle der produktiven Writer sind lokal umgesetzt. Exakt
+verifiziertes Final-V3 ist für die normale Runtime lokal freigegeben; die
+manuelle macOS-Abnahme bleibt offen.
 
 1. Der Startup-Resolver prüft Pfad, WAL-/SHM-Sidecars, Restorezustand,
    `user_version` und vollständigen Schemafingerprint read-only.
-2. Exaktes Final-V3 wird erkannt. Nach der abgeschlossenen
-   SJ-2E-Leser- und SJ-2F-Writerumstellung stoppt der Coordinator bis zur
-   gesonderten Runtime-Aktivierung weiterhin vor fachlicher Runtime und Shell
-   mit
-   `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`.
+2. Exaktes Final-V3 wird erkannt und als `V3_SCHEMA_READY` ausschließlich für
+   die normale Runtime zugelassen.
 3. Fehlt die Datei in einem autorisierten First Run, fordert der Coordinator
    eine direkte Final-V3-Erzeugung an. Die Schemaquelle erstellt kein
    Zwischen-V2, migriert keine Daten und schreibt keinen Übergangsbeleg.
 4. Nach der Erzeugung wird die Datenbank neu geöffnet und vollständig
-   verifiziert. Bis zur Runtimeumstellung gilt weiterhin der ehrliche
-   Zwischenzustand.
+   verifiziert. Erst der anschließende Zustand `V3_SCHEMA_READY` lässt die
+   Runtime zu. Die Composition Root öffnet sie danach mit `create=False`.
 5. Fehlt die Datei außerhalb des autorisierten First Runs oder ist ein
    vorhandenes Schema leer, unbekannt, beschädigt, unsicher oder in einem
    unvollständigen Restorezustand, wird fail-closed gestoppt.
 
 Es gibt keinen V2-Startupzustand, keine V2-Bootstrapmeldung, keine automatische
 oder manuelle V2-Datenübernahme und keine Installation synthetischer
-V2-Initialdaten als Produktpfad.
+V2-Initialdaten als Produktpfad. Die autorisierte direkte Neuanlage erzeugt
+kein Schuljahr. Fehlt ein eindeutiges `current`-Schuljahr, bleibt dies nach
+technischem Runtime-Start ein fachlicher Sperrzustand.
 
 ## Direkte Final-V3-Schemaerzeugung
 
@@ -152,14 +152,15 @@ Lifecycle ist noch nicht implementiert.
    `enrolled`-Assignments vor dem Stammdatenwrite blockiert. Historische
    Assignments bleiben unverändert.
 
-Keiner dieser Abläufe aktiviert die reguläre V3-Runtime. Der
+Keiner dieser Abläufe besitzt die Runtime-Disposition. Die gesonderte
+Startup-Aktivierung ändert diese Writer nicht. Der
 Schuljahreswechsel-Assistent und der Mehrkindwechsel sind keine Variante
 dieses Einzelkind-Lifecycles und bleiben offen.
 
 ## SJ-2E-Lifecycle für produktive Assignment-Reader
 
-Der implementierte SJ-2E-Readerablauf ist rein lesend und aktiviert weder die
-Final-V3-Runtime noch einen Writer:
+Der implementierte SJ-2E-Readerablauf ist rein lesend und besitzt weder die
+Final-V3-Runtime-Disposition noch einen Writer:
 
 1. Der aufrufende Bildschirm- oder Application-Request bestimmt seinen
    aktuellen `as_of`-Kalendertag genau einmal. Ein Dashboard verwendet dabei
@@ -204,10 +205,9 @@ Final-V3-Runtime noch einen Writer:
    Der Ablauf schreibt keine Daten, erzeugt keine Migration und verändert
    weder finalisierte Revisionen noch PDFs.
 
-Dieser Vertrag ist mit SJ-2E lokal umgesetzt.
-`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt trotz der mit SJ-2F
-abgeschlossenen Writerumstellung bis zur gesonderten Runtime-Aktivierung
-unverändert.
+Dieser Vertrag ist mit SJ-2E lokal umgesetzt. Die gesonderte
+`V3_SCHEMA_READY`-Disposition lässt das exakt verifizierte Schema starten,
+ohne diesen Readervertrag oder fachliche Sperrzustände zu verändern.
 
 ## Phase 2 Berichte-Übersicht - rein lesender Projektionsablauf
 

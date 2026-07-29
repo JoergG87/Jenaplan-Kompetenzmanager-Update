@@ -3,20 +3,23 @@
 ## V3-only Startup und geplanter Schuljahresassistent
 
 **Status:** SJ-2F ergänzt produktive Final-V3-Writer in vorhandenen
-Schüler- und Stammdatenviews. Runtime-Aktivierung,
-Schuljahreswechsel-Assistent und Mehrkindwechsel bleiben gesperrt.
+Schüler- und Stammdatenviews. Exakt verifiziertes Final-V3 ist für die
+technische Runtime lokal aktiviert; Schuljahreswechsel-Assistent und
+Mehrkindwechsel bleiben gesperrt.
 
 Der Datenbankstart zeigt keinen V2-Bootstrap, keine V2-Migrationsvorschau und
-keine Auswahl zur Übernahme alter Testdaten. Ein erkanntes finales Schema
-stoppt nach der abgeschlossenen SJ-2E-Leserumstellung weiterhin bis zur
-gesonderten Runtime-Aktivierung vor der Shell mit einem technischen, nicht
-irreführenden Zwischenzustand. Unbekannte oder beschädigte
-Schemata führen fail-closed in die bestehende kontrollierte Recoverygrenze.
+keine Auswahl zur Übernahme alter Testdaten. Ein erkanntes, vollständig
+verifiziertes Final-V3 erreicht als `V3_SCHEMA_READY` die normale Runtime.
+Unbekannte oder beschädigte Schemata führen fail-closed in die bestehende
+kontrollierte Recoverygrenze.
 
 Eine fehlende Datenbank darf nur im autorisierten First Run direkt als
-Final-V3 erzeugt werden. Der technische Cleanup ergänzt dafür keinen
-produktiven Assistenten und überschreibt keine vorhandene lokale
-Testdatenbank.
+Final-V3 erzeugt werden. Sie wird anschließend erneut vollständig geprüft und
+von der Composition Root nur mit `create=False` geöffnet. Der First Run
+erzeugt kein Schuljahr. Fehlt ein eindeutiges `current`-Schuljahr, startet die
+Runtime technisch, während die schülerbezogenen Bereiche mit dem vorhandenen
+fachlichen Sperrzustand blockiert bleiben. Synthetische Daten sind kein
+Produktdefault.
 
 Der spätere Assistent unter `Einstellungen → Schuljahre` betrifft
 ausschließlich einen echten Wechsel zwischen zwei vorhandenen Schuljahren.
@@ -53,9 +56,8 @@ Produktdaten oder Pilotbestand dargestellt.
 | Kurs-/Stammgruppenstatus | Stammdatenaktion mit explizitem Operationstag | `courses.active` / `groups.active` | aktuelle oder zukünftige `enrolled`-Referenz blockiert Deaktivierung; keine automatische Umbuchung, historische Assignments bleiben lesbar |
 
 Die Dialoge zeigen fachliche Fehlermeldungen, keine SQL-Fehler, IDs oder
-internen Pfade. Die Writerumstellung hebt die
-`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`-Sperre nicht auf. Die manuelle
-macOS-Prüfung dieser UI-Abläufe ist noch offen.
+internen Pfade. Die technische Runtime-Aktivierung ändert diese Writer nicht.
+Die manuelle macOS-Prüfung dieser UI-Abläufe ist noch offen.
 
 ## SJ-2E Assignment-Read-Mapping
 
@@ -79,9 +81,9 @@ Bericht- und LEG-Reads verwenden ihre `SchoolYearAssignmentReadSession` auf
 derselben aufrufereigenen Connection und im selben SQLite-Read-Snapshot wie
 die übrigen Daten des Requests. Die Session besitzt keine
 Transaktionssteuerung. Finalisierte Revisionen und PDFs werden nicht live neu
-aufgelöst. Dieses Mapping führt keine neue Tabelle, Migration, Persistenz oder
-Runtime-Freigabe ein; `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` bleibt bis zur
-gesonderten Runtime-Aktivierung verbindlich.
+aufgelöst. Dieses Mapping führt keine neue Tabelle, Migration oder Persistenz
+ein. Die getrennte `V3_SCHEMA_READY`-Disposition verändert die fachlichen
+Reader- und Sperrverträge nicht.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 

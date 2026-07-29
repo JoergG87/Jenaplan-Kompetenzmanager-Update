@@ -20,6 +20,7 @@ class JenaplanDesktopApp(AppShell):
         paths: RuntimePaths | None = None,
         runtime_lock: RuntimeInstanceLock | None = None,
         update_service: UpdateApplicationService | None = None,
+        database_create_allowed: bool = False,
     ) -> None:
         database = database_path or default_database_path()
         super().__init__(
@@ -27,4 +28,5 @@ class JenaplanDesktopApp(AppShell):
             paths=paths or runtime_paths(database.parent),
             runtime_lock=runtime_lock,
             update_service=update_service,
+            database_create_allowed=database_create_allowed,
         )

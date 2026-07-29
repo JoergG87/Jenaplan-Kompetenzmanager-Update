@@ -941,7 +941,9 @@ class ProductiveRestoreService:
         )
         result = self.compatibility_inspector.inspect(paths.live_database)
         if result.status is not DatabaseCompatibilityStatus.EXACT:
-            raise RestoreReplacementError("Die installierte Datenbank ist nicht exakt V1-kompatibel.")
+            raise RestoreReplacementError(
+                "Die installierte Datenbank entspricht nicht exakt Final-V3."
+            )
         _verify_sqlite_read_only(paths.live_database)
         if (
             documents.get("kind") != "directory"
@@ -992,7 +994,9 @@ def confirm_restore_startup(runtime_root: Path, restore_id: str, token: str) -> 
         raise RestoreReplacementError("Die Live-Datenbank widerspricht dem installierten Zustand.")
     result = DatabaseCompatibilityInspector().inspect(paths.live_database)
     if result.status is not DatabaseCompatibilityStatus.EXACT:
-        raise RestoreReplacementError("Die Live-Datenbank ist beim Startup nicht exakt V1.")
+        raise RestoreReplacementError(
+            "Die Live-Datenbank entspricht beim Startup nicht exakt Final-V3."
+        )
     _verify_sqlite_read_only(paths.live_database)
     expected_documents = state.get("installed_documents")
     if not isinstance(expected_documents, dict) or _tree_evidence(paths.live_documents) != expected_documents:

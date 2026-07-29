@@ -12,10 +12,10 @@ Datenbankschemata.
 Der SJ-2E-Ownershipvertrag für produktive Membership-Reader und der
 SJ-2F-Ownershipvertrag für produktive Writer sind lokal im Produktcode
 umgesetzt. Produktive Views konsumieren die Assignment-API über
-Application-, Repository- und Adaptergrenzen. Da die Runtime-Aktivierung
-gesondert aussteht, führt ein erkanntes finales Schema weiterhin kontrolliert
-zu
-`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`. Es gibt keine
+Application-, Repository- und Adaptergrenzen. Ein erkanntes und vollständig
+verifiziertes finales Schema führt zu `V3_SCHEMA_READY` und darf die normale
+Runtime erreichen. Nach dem Gate öffnet die Composition Root die vorhandene
+Datenbank ohne Create-Fallback. Es gibt keine
 V2-Bootstrap-View, keine V2-Migrationsvorschau und keine sichtbare
 V2-Restoreauswahl.
 
@@ -23,6 +23,7 @@ V2-Restoreauswahl.
 |---|---|---|---|
 | Datenbank-Startupstatus | read-only Pfad-, Restore- und vollständige Schemaidentität | Core Startup | Widgetentscheidung, Teilfingerprint, automatische Migration |
 | direkte V3-Neuanlage | autorisierter leerer Zielpfad und finales DDL | Core Schema Initializer | bestehende Datei ersetzen, V2-Zwischenschema, Transition-Beleg |
+| zugelassene Runtime-Datenbank | zuvor vollständig verifizierte Final-V3-Datei | Desktop Composition Root mit `create=False` | stille Neuanlage nach dem Startup-Gate |
 | Schuljahresliste/-status | `school_years` | `SchoolYearRepository` und aufrufender Application Service | Systemdatum oder Label als Statusquelle |
 | Zuordnung an einem Datum | `student_school_year_assignments`, V3-`students`, `school_years`, Gruppen und Kurse plus `AssignmentReferenceRequest` mit explizitem Fachdatum | `SchoolYearAssignmentReadSession` über bestehende datierte Assignment-Projektionen | `students.group_id/course_id`, current- oder Last-known-Fallback, Widgetlogik |
 | aktuelle Mitgliedschaft und Mitgliederlisten | current-Schuljahr plus einmalig gesetzter `as_of`-Tag; optionale Gruppe, Kurs oder Kursverbund als Schnittmenge seiner Gruppen und Kurse | `CurrentMembershipReadSnapshot` aus `SchoolYearAssignmentReadSession` | Systemdatum, N+1, Python-Nachzählung, Widgetfilterung von Intervallen |

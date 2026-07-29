@@ -12,6 +12,7 @@ import pytest
 from src.core.database_compatibility import (
     FINAL_SCHEMA_FINGERPRINT,
     FINAL_SCHEMA_VERSION,
+    DatabaseCompatibilityError,
 )
 from src.core.database_startup import (
     DatabaseStartupCoordinator,
@@ -20,6 +21,7 @@ from src.core.database_startup import (
 )
 from src.core.final_v3_schema import initialize_final_v3_schema
 from src.desktop_app.main import _coordinate_product_database_startup
+from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.runtime import prepare_runtime_storage, runtime_paths
 
 
@@ -32,7 +34,7 @@ def test_missing_database_is_detected_without_creating_it(tmp_path: Path) -> Non
     assert not path.exists()
 
 
-def test_exact_final_schema_is_recognized_but_runtime_remains_blocked(
+def test_exact_final_schema_is_recognized_and_runtime_is_allowed(
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "final.sqlite"
@@ -44,12 +46,12 @@ def test_exact_final_schema_is_recognized_but_runtime_remains_blocked(
         restore_status="normal_start",
     )
 
-    expected = DatabaseStartupState.V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED
+    expected = DatabaseStartupState.V3_SCHEMA_READY
     assert detection.state is expected
     assert decision.state is expected
     assert decision.sqlite_user_version == FINAL_SCHEMA_VERSION
     assert decision.schema_fingerprint == FINAL_SCHEMA_FINGERPRINT
-    assert decision.normal_runtime_allowed is False
+    assert decision.normal_runtime_allowed is True
     assert decision.final_schema_initialization_required is False
     assert "V2" not in decision.reason_code
     assert "BOOTSTRAP" not in decision.reason_code
@@ -118,9 +120,9 @@ def test_main_startup_boundary_creates_final_schema_then_rescans(
     assert paths.database.exists()
     assert (
         decision.state
-        is DatabaseStartupState.V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED
+        is DatabaseStartupState.V3_SCHEMA_READY
     )
-    assert decision.normal_runtime_allowed is False
+    assert decision.normal_runtime_allowed is True
 
 
 def test_main_startup_boundary_does_not_replace_existing_unknown_database(
@@ -145,6 +147,30 @@ def test_main_startup_boundary_does_not_replace_existing_unknown_database(
     assert decision.state is DatabaseStartupState.RECOVERY_REQUIRED
     assert calls == []
     assert database.read_bytes() == before
+
+
+def test_admitted_database_disappearance_never_creates_a_replacement(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "admitted.sqlite"
+    initialize_final_v3_schema(path)
+    decision = DatabaseStartupCoordinator().coordinate(
+        path,
+        restore_status="normal_start",
+    )
+    assert decision.normal_runtime_allowed is True
+
+    path.unlink()
+
+    with pytest.raises(
+        DatabaseCompatibilityError,
+        match="Final-V3-Datenbank fehlt",
+    ):
+        StudentDesktopAdapter(
+            path,
+            database_create_allowed=False,
+        )
+    assert not path.exists()
 
 
 @pytest.mark.parametrize(

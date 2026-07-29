@@ -838,6 +838,14 @@ def test_successful_final_v3_restore_completes_only_after_startup_handshake(
     assert state["restart_handshake"]["status"] == "confirmed"
 
 
+def test_restore_runtime_diagnostics_name_only_final_v3_product_schema() -> None:
+    source = inspect.getsource(restore_runtime_module)
+
+    assert "exakt V1" not in source
+    assert "V1-kompatibel" not in source
+    assert "V2-kompatibel" not in source
+
+
 def test_productive_restore_leaves_security_store_marker_and_sidecars_byte_identical(
     tmp_path: Path,
 ) -> None:

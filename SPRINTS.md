@@ -3,9 +3,9 @@
 ## V3-only Architecture Cleanup
 
 **Status:** Governance, technischer Cleanup, zentrale Assignment-API,
-SJ-2E-Leserumstellung und SJ-2F-Writerumstellung lokal implementiert.
-Produktive V3-Runtime, Schuljahreswechsel, Build, Packaging und Release
-bleiben gesperrt.
+SJ-2E-Leserumstellung, SJ-2F-Writerumstellung und Final-V3-Runtime-
+Aktivierung lokal implementiert. Schuljahreswechsel, Mehrkindwechsel, Build,
+Packaging und Release bleiben gesperrt; die manuelle macOS-Abnahme ist offen.
 
 - [x] PO-Entscheidung festhalten: Es existieren keine produktiven V2-Daten.
 - [x] ADR-096 als Teil-Supersession der V2-Cutover-Annahmen aus ADR-095
@@ -35,14 +35,23 @@ bleiben gesperrt.
   und LEG `conference_date`.
 - [x] Produktive Schüler-, Kurs- und Stammgruppen-Writer in SJ-2F auf
   Assignments und V3-Schülerstammdaten umstellen.
+- [x] Exakt verifiziertes Final-V3 als `V3_SCHEMA_READY` für die normale
+  Runtime zulassen und die Composition Root danach auf `create=False`
+  begrenzen.
+- [x] Autorisierten First Run ohne automatische Schuljahresanlage technisch
+  starten; fehlendes `current`-Schuljahr bleibt fachlich blockierend.
+- [x] 400 fokussierte Startup-/Security-/Restore-/Runtime-/Shell-Tests mit
+  48 Subtests sowie die vollständige Gesamtsuite mit 1811 Tests und
+  71 Subtests ausführen; ein umgebungsgebundener Test blieb übersprungen.
+- [ ] Final-V3-Runtime und fachliche Sperrzustände manuell auf macOS prüfen.
 - [ ] Echten Schuljahreswechsel und unterjährige Sammelwechsel gesondert
   implementieren und real abnehmen.
 
 ## SJ-2F - Final-V3-Writer und synthetische Entwicklungsdaten
 
 **Status:** Lokal implementiert und automatisiert vollständig geprüft. Die
-manuelle macOS-UI-Prüfung steht noch aus. Die normale Shell bleibt
-`V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`.
+nachfolgende Runtime-Aktivierung lässt Final-V3 inzwischen technisch starten;
+die manuelle macOS-UI-Prüfung steht weiterhin aus.
 
 - [x] Schüleranlage atomar auf `CreateStudentWithInitialEnrollment` umstellen.
 - [x] Stammdatenbearbeitung von datierter Membershipänderung trennen.
@@ -60,7 +69,7 @@ manuelle macOS-UI-Prüfung steht noch aus. Die normale Shell bleibt
   deterministisch auf Final-V3 umstellen.
 - [x] Keine Migration, keine echten Daten und keine automatische Änderung
   eines vorhandenen lokalen Datenbestands ausführen.
-- [x] Runtime-Sperre und getrennten späteren Aktivierungsauftrag erhalten.
+- [x] Runtime-Sperre bis zum getrennten späteren Aktivierungsauftrag erhalten.
 - [ ] Schuljahreswechsel-Assistent separat implementieren.
 - [ ] Mehrkind-/Sammelwechsel separat implementieren.
 - [ ] Neue Dialoge und Stammdatenoberflächen manuell auf macOS prüfen.
@@ -85,7 +94,7 @@ manuelle macOS-UI-Prüfung steht noch aus. Die normale Shell bleibt
 - [x] Berichtfinalisierung und LEG-Abschluss lösen Zuordnung und Stammdaten
   innerhalb derselben Revisions-/Abschlusstransaktion auf; vorhandene
   Snapshots und PDFs bleiben unverändert.
-- [ ] Reguläre V3-Runtime freigeben.
+- [x] Reguläre V3-Runtime für exakt verifiziertes Final-V3 freigeben.
 
 ## Phase 2 Berichte-Übersicht - lokal implementiert
 

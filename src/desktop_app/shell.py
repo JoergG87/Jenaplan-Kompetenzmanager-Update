@@ -136,12 +136,14 @@ class AppShell(QMainWindow):
         paths: RuntimePaths | None = None,
         runtime_lock: RuntimeInstanceLock | None = None,
         update_service: UpdateApplicationService | None = None,
+        database_create_allowed: bool = False,
     ) -> None:
         super().__init__()
         self.now_provider = now_provider
         self.display_name: str | None = None
         self.adapter = StudentDesktopAdapter(
             database_path,
+            database_create_allowed=database_create_allowed,
             today_provider=lambda: self.now_provider().date(),
             now_provider=self.now_provider,
         )

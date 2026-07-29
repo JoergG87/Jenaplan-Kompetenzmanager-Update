@@ -31,9 +31,7 @@ class DatabaseStartupState(str, Enum):
 
     DATABASE_NOT_FOUND = "DATABASE_NOT_FOUND"
     V3_INITIALIZATION_REQUIRED = "V3_INITIALIZATION_REQUIRED"
-    V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED = (
-        "V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED"
-    )
+    V3_SCHEMA_READY = "V3_SCHEMA_READY"
     SCHEMA_UNSUPPORTED = "SCHEMA_UNSUPPORTED"
     RECOVERY_REQUIRED = "RECOVERY_REQUIRED"
 
@@ -121,8 +119,8 @@ class DatabaseStartupResolver:
             and identity.fingerprint == FINAL_SCHEMA_FINGERPRINT
         ):
             return DatabaseStartupDetection(
-                DatabaseStartupState.V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED,
-                "DB-START-V3-SCHEMA-READY-RUNTIME-NOT-MIGRATED",
+                DatabaseStartupState.V3_SCHEMA_READY,
+                "DB-START-V3-SCHEMA-READY",
                 version,
                 identity.fingerprint,
                 identity.object_count,
@@ -187,6 +185,11 @@ class DatabaseStartupCoordinator:
                 state=DatabaseStartupState.V3_INITIALIZATION_REQUIRED,
                 reason_code="DB-START-V3-INITIALIZATION-REQUIRED",
                 final_schema_initialization_required=True,
+            )
+        if detection.state is DatabaseStartupState.V3_SCHEMA_READY:
+            return _decision_from_detection(
+                detection,
+                normal_runtime_allowed=True,
             )
         return _decision_from_detection(detection)
 
