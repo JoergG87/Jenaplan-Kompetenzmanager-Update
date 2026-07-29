@@ -1,5 +1,26 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## SJ-2A - reine Initialisierungsdomain für das V3-Schuljahresmodell
+
+**Status:** Lokal implementiert und fokussiert automatisiert geprüft. Keine
+Schemaänderung, Migration, Persistenz, produktive Aktivierung oder Änderung
+eines V2-Lese-/Schreibpfads.
+
+SJ-2A stellt ausschließlich die SQLite- und Qt-freie Domainbasis bereit:
+validierte Schuljahre und inklusive Mitgliedschaftsintervalle, die
+vollständige fail-closed Klassifikation vorhandener V2-`StudentRecord`s, eine
+read-only Vorschau, bestätigte Kursstufen sowie einen kanonischen
+Initialisierungsplan. Beobachtungen, Berichte, LEG, Dokumente, Kursnamen und
+Systemdatum sind keine Klassifikations- oder Schätzquellen.
+
+Der Plan enthält ausschließlich stabile technische Identitäten, bestätigte
+Fachwerte, Klassifikationen, Warncodes, Assignmentvorschläge, Blocker und
+Quell-/Ziel-Schemainformationen. Seine kanonische UTF-8-Serialisierung
+normalisiert Unicode nach NFC, sortiert JSON-Schlüssel und verwendet
+explizite locale-unabhängige Arrayordnungen sowie ISO-Daten.
+`plan_sha256` ist der SHA-256 über exakt diesen Payload. Der Hash ist ein
+flüchtiger Nachweis; SJ-2A persistiert weder Plan noch Hash.
+
 ## SJ-1 - Governance- und Architekturvertrag für den Schuljahreswechsel
 
 **Status:** Product-, Discovery- und Architecture-Gate abgeschlossen.

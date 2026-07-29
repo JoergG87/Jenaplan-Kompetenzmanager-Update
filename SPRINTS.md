@@ -1,5 +1,32 @@
 # Sprintplanung
 
+## SJ-2A - Domain, Klassifikation und kanonischer Initialisierungsplan
+
+**Status:** Lokal implementiert und fokussiert geprüft. Keine Datenbank-,
+Schema-, Migrations-, Startup-, Bootstrap-UI- oder V2-Produktpfadänderung.
+
+- [x] `SchoolYear` mit bewusst übergebenem Label, inklusivem Zeitraum und
+  registrierten Statuswerten implementiert.
+- [x] `StudentMembershipAssignment` mit inklusiven Intervallen sowie getrennten
+  Regeln für `enrolled` und `exited` implementiert.
+- [x] Jeden übergebenen V2-`StudentRecord` deterministisch genau einmal in eine
+  der fünf Hauptkategorien klassifiziert.
+- [x] Sekundäre Warncodes getrennt von der fail-closed Primärkategorie erhalten.
+- [x] Aktive volle und archivierte begrenzte Initialassignments ohne Schätzung
+  aus Beobachtungen, Berichten, LEG, Dokumenten, Namen oder Systemdatum
+  vorgeschlagen.
+- [x] Vollständige read-only Vorschau und kanonischen
+  `SchoolYearInitializationPlan` mit Kursstufen, Blockern und
+  Schemainformationen implementiert.
+- [x] UTF-8-, NFC-, JSON-Key-, Array- und ISO-Datumskanonisierung sowie
+  deterministischen `plan_sha256` implementiert.
+- [x] Fokussierte Domain-, Klassifikations-, Grenz-, Keine-Schätzung- und
+  Determinismustests ergänzt.
+- [ ] Datenbankschema V3 und Migration bleiben einem späteren freigegebenen
+  Paket vorbehalten.
+- [ ] Startup-/Bootstrap-Integration und produktive Aktivierung bleiben einem
+  späteren freigegebenen Paket vorbehalten.
+
 ## SJ-1 - Governance und Architektur des Schuljahreswechsels
 
 **Status:** Dokumentationsphase abgeschlossen; Product-, Datenmodell-,

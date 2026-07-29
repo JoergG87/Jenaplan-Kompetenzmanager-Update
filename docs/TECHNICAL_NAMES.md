@@ -1,5 +1,35 @@
 # Technical Naming Registry
 
+## SJ-2A - implementierte reine Initialisierungsdomain
+
+**Status:** Lokal implementiert. Die Namen bezeichnen ausschließlich
+SQLite- und Qt-freie Core-Werte und reine Funktionen. Sie führen weder
+Tabelle, Spalte, Repository, Migration, Startup-Pfad, ViewModel noch UI ein.
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `SchoolYear` | Bewusst übergebene technische Schuljahresidentität mit Label, inklusivem `start_date`/`end_date` und validiertem Status | Core School-Year Domain |
+| `SchoolYearStatus` | Ausschließlich `planned`, `current` oder `closed` | Core School-Year Domain |
+| `StudentMembershipAssignment` | Validiertes inklusives Initialassignment mit `enrolled`- beziehungsweise `exited`-Semantik | Core School-Year Domain |
+| `StudentAssignmentStatus` | Ausschließlich `enrolled` oder `exited` | Core School-Year Domain |
+| `StudentMigrationClassification` | Genau eine der fünf registrierten V2-Migrationshauptkategorien je übergebenem `StudentRecord` | Core School-Year Domain |
+| `StudentMigrationWarningCode` | Getrennter stabiler technischer Sekundärbefund ohne zweite Hauptklassifikation | Core School-Year Domain |
+| `StudentMigrationClassificationRecord` | Technische `student_id`, eine Hauptkategorie und kanonisch geordnete Warncodes; keine Namen oder UI-Texte | Core School-Year Domain |
+| `SchoolYearInitializationPreview` | Vollständige read-only Klassifikationen, Assignmentvorschläge und Blocker aller übergebenen V2-Schüler | Core School-Year Domain |
+| `CourseYearLevelConfirmation` | Bewusst bestätigte vorhandene `course_id` mit stabiler Stufe 1, 2 oder 3 | Core School-Year Domain |
+| `SchoolYearSchemaInformation` | Explizit übergebene SQLite-`user_version` und SHA-256-Schemaidentität für Quelle oder Ziel | Core School-Year Domain |
+| `SchoolYearInitializationPlan` | Validierter kanonischer Planformat-v1-Payload mit berechnetem `plan_sha256`; keine Persistenz | Core School-Year Domain |
+| `classify_v2_student` | Reine genau einmalige Klassifikation eines V2-`StudentRecord` aus Initialjahr und bekannten Referenz-IDs | Core School-Year Domain |
+| `build_school_year_initialization_preview` | Reine vollständige und deterministisch geordnete V2-Bestandsvorschau | Core School-Year Domain |
+| `build_school_year_initialization_plan` | Reine validierte Planerstellung ohne Repository- oder Systemzugriff | Core School-Year Domain |
+
+`plan_sha256` ist der SHA-256 über die UTF-8-Bytes des vollständigen
+kanonischen Planpayloads ohne das Hashfeld selbst. Alle Strings werden vor der
+Serialisierung nach Unicode NFC normalisiert, JSON-Schlüssel lexikalisch
+sortiert und Arrays durch explizite technische ID-/Datumsordnungen stabil
+gebildet. Schüler-, Stammgruppen- und Kursnamen, Freitexte und UI-Texte sind
+nicht Teil des Payloads.
+
 ## SJ-1 - geplante technische Namen für Schuljahre und Assignments
 
 **Status:** Verbindlich für die V3-Zielarchitektur nach ADR-095, noch nicht
@@ -76,9 +106,11 @@ Sichtbare Begriffe:
 | Anderer vorhandener Kurs | `target_status = enrolled` mit bewusst gewählter vorhandener `course_id` |
 | Sicherheitsbackup | vorhandener verifizierter Backuppfad; Beleg im Wechsel über `backup_sha256` |
 
-Noch nicht werden konkrete Klassen-, Service-, Command-, Repository- oder
-ViewModel-Namen registriert. Diese Namen gehören in den späteren technischen
-Entwurf und dürfen nicht durch SJ-1 vorweggenommen werden.
+SJ-1 registrierte noch keine konkreten Klassen-, Service-, Command-,
+Repository- oder ViewModel-Namen. Die vorstehende SJ-2A-Registrierung ergänzt
+ausschließlich die inzwischen freigegebene reine Domain- und Planbasis;
+Application Services, Commands, Repositories, ViewModels und UI bleiben
+weiterhin unregistriert und nicht implementiert.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 

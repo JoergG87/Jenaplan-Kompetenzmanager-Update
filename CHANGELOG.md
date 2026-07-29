@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- SJ-2A als reine, SQLite- und Qt-freie Core-Domain ergänzt:
+  `SchoolYear`, inklusive `StudentMembershipAssignment`,
+  vollständige V2-Schülerklassifikation mit getrennten Warncodes,
+  read-only Initialisierungsvorschau, bestätigte Kursstufen,
+  Quell-/Ziel-Schemainformationen und kanonischer
+  `SchoolYearInitializationPlan`. Die Planserialisierung verwendet UTF-8,
+  Unicode NFC, sortierte JSON-Schlüssel, explizit stabile Arrayreihenfolgen
+  und ISO-Daten; `plan_sha256` hasht exakt diesen Payload. Es entstanden keine
+  Tabelle, Migration, Schema-, Startup-, UI- oder V2-Produktpfadänderung.
 - SJ-1-Governance- und Architekturvertrag für den Schuljahreswechsel
   dokumentiert. ADR-095 legt `school_years` und datierte
   `student_school_year_assignments` als einzige zukünftige Sources of Truth,
