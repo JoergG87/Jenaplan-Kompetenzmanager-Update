@@ -1104,6 +1104,29 @@ QFrame#CompetencyCockpitCompetencyRow[interactive="true"][pressed="true"] {{
     background-color: #E7F0FA;
     border-color: #6C9FD3;
 }}
+QFrame#ReportOverviewCompetencySegment {{
+    background-color: #7BBFC0;
+    border: none;
+    border-radius: 3px;
+}}
+QLabel#ReportOverviewSubjectSymbol {{
+    min-width: 23px;
+    min-height: 23px;
+    max-width: 23px;
+    max-height: 23px;
+    background-color: #EAF5F5;
+    color: {COLOR_NAVY};
+    border: 1px solid #BFDCDC;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+}}
+QLabel#ReportOverviewProjectionWarning {{
+    background-color: #FFF8E8;
+    border: 1px solid #E8D3A2;
+    border-radius: 7px;
+    padding: 7px 9px;
+}}
 QPushButton#CompetencyCockpitCompetencyButton {{
     text-align: left;
     padding: 7px 9px;

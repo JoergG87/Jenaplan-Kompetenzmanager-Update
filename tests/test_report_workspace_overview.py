@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import inspect
 import unittest
+from dataclasses import replace
 from datetime import date
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -51,6 +52,8 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportSubjectViewModel,
 )
 from src.desktop_app.view_models.report_overview_view_model import (
+    ReportOverviewActionViewModel,
+    ReportOverviewSubjectDocumentationViewModel,
     build_report_overview,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
@@ -161,7 +164,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             for subject in overview.subjects
         ))
 
-    def test_stale_selection_falls_back_only_when_one_draft_remains(self) -> None:
+    def test_stale_report_selection_is_not_automatically_replaced(self) -> None:
         report = self._report_draft("RPD-REMAINING")
         leg = self._leg_draft("LCD-REMAINING")
 
@@ -177,9 +180,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
 
         self.assertEqual(
             overview.selected_report_draft_id,
-            "RPD-REMAINING",
+            "",
         )
-        self.assertEqual(overview.report_status.state, "draft_without_revision")
+        self.assertEqual(overview.report_status.state, "multiple_drafts")
+        self.assertFalse(overview.report_content_available)
         self.assertEqual(overview.learning_conference_status.state, "draft")
 
     def test_report_revision_zero_one_and_n_states_are_display_ready(self) -> None:
@@ -556,6 +560,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 "LCV-1": ("2026-02-01", "2026-07-31", "2026-07-20"),
             },
             learning_conference_revision_errors=frozenset({"LCV-1"}),
+            selected_report_draft_id="RPD-1",
         )
         revision_rows = {
             (item.document_type, item.version_label): item
@@ -624,7 +629,21 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         self.assertEqual(draft.competency_ids, ())
 
     def test_subject_anchor_is_keyboard_reachable(self) -> None:
-        screen = self._screen(self._overview())
+        overview = replace(
+            self._overview(
+                report_drafts=(self._report_draft("RPD-1"),),
+                report_states={"RPD-1": self._report_state()},
+            ),
+            subject_documentation=(
+                self._subject_documentation(
+                    "math",
+                    "Mathematik",
+                    ("CMP-MATH-1",),
+                    ("OBS-MATH-1",),
+                ),
+            ),
+        )
+        screen = self._screen(overview)
         requested: list[tuple[str, str, str, str]] = []
         screen.report_draft_requested.connect(
             lambda *values: requested.append(tuple(values))
@@ -640,37 +659,60 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
 
         QTest.keyClick(button, Qt.Key.Key_Space)
 
-        self.assertEqual(requested, [("STU-1", "", "math", "")])
+        self.assertEqual(requested, [("STU-1", "RPD-1", "math", "")])
         self.assertTrue(
             button.focusPolicy() & Qt.FocusPolicy.TabFocus
         )
         screen.close()
 
     def test_subject_overview_shows_four_then_all_in_existing_order(self) -> None:
-        preparation = LearningReportPreparationViewModel(
-            "STU-1",
-            "Mara Beispiel",
-            "Sonnenbogen",
-            tuple(
-                LearningReportSubjectViewModel(
+        subject_documentation = tuple(
+            ReportOverviewSubjectDocumentationViewModel(
+                subject_id=f"subject-{index}",
+                subject_name=f"Fach {index}",
+                competency_ids=tuple(
+                    f"CMP-{index}-{competency}"
+                    for competency in range(index)
+                ),
+                observation_ids=tuple(
+                    f"OBS-{index}-{observation}"
+                    for observation in range(2 if index == 1 else 1)
+                ),
+                competency_count_text=(
+                    f"{index} "
+                    f"{'Kompetenz' if index == 1 else 'Kompetenzen'} "
+                    "dokumentiert"
+                ),
+                observation_count_text=(
+                    "2 Beobachtungen im Berichtszeitraum"
+                    if index == 1
+                    else "1 Beobachtung im Berichtszeitraum"
+                ),
+                accessible_name=(
+                    f"Fach {index}: {index} Kompetenzen dokumentiert"
+                ),
+                evidence_action=ReportOverviewActionViewModel(
+                    "show_subject_evidence",
+                    "Belege ansehen",
                     f"subject-{index}",
-                    f"Fach {index}",
-                    (
-                        SimpleNamespace(
-                            documentation_state="confirmed",
-                            selectable=True,
-                        ),
-                        SimpleNamespace(
-                            documentation_state="undocumented",
-                            selectable=True,
-                        ),
-                    ),
-                    (SimpleNamespace(), SimpleNamespace()),
-                )
-                for index in range(1, 7)
-            ),
+                    f"subject-{index}",
+                ),
+                prepare_action=ReportOverviewActionViewModel(
+                    "prepare_subject",
+                    "Bericht vorbereiten",
+                    "RPD-1",
+                    f"subject-{index}",
+                ),
+            )
+            for index in range(1, 7)
         )
-        overview = build_report_overview((), {}, (), {}, preparation)
+        overview = replace(
+            self._overview(
+                report_drafts=(self._report_draft("RPD-1"),),
+                report_states={"RPD-1": self._report_state()},
+            ),
+            subject_documentation=subject_documentation,
+        )
         screen = self._screen(overview)
         screen.show()
         screen.resize(1400, 900)
@@ -712,16 +754,27 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         first_tile_text = " ".join(
             label.text() for label in first_tile.findChildren(QLabel)
         )
-        documentation_ring = next(
+        segments = [
             widget
             for widget in first_tile.findChildren(QWidget)
-            if widget.objectName() == "ReportOverviewSubjectDocumentationRing"
+            if widget.objectName() == "ReportOverviewCompetencySegment"
+        ]
+        self.assertIn("1 Kompetenz dokumentiert", first_tile_text)
+        self.assertIn(
+            "2 Beobachtungen im Berichtszeitraum",
+            first_tile_text,
         )
-        self.assertIn("1 / 2 Kompetenzen dokumentiert", first_tile_text)
-        self.assertIn("2 Beobachtungen", first_tile_text)
+        self.assertEqual(len(segments), 1)
+        self.assertFalse(any(
+            widget.objectName() == "ReportOverviewSubjectDocumentationRing"
+            for widget in first_tile.findChildren(QWidget)
+        ))
+        self.assertNotIn("/", first_tile_text)
+        self.assertNotIn(" von ", first_tile_text)
+        self.assertNotIn("%", first_tile_text)
         self.assertEqual(
-            documentation_ring.accessibleName(),
-            "Fach 1: 1 von 2 Kompetenzen dokumentiert",
+            first_tile.accessibleName(),
+            "Fach 1: 1 Kompetenzen dokumentiert",
         )
 
         QTest.mouseClick(toggle, Qt.MouseButton.LeftButton)
@@ -734,6 +787,135 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             if button.objectName() == "ReportOverviewSubjectsToggle"
         )
         self.assertEqual(expanded_toggle.text(), "Weniger anzeigen")
+        screen.close()
+
+    def test_subject_cards_render_zero_one_and_many_absolute_segments(self) -> None:
+        overview = replace(
+            self._overview(
+                report_drafts=(self._report_draft("RPD-1"),),
+                report_states={"RPD-1": self._report_state()},
+            ),
+            subject_documentation=(
+                self._subject_documentation("math", "Mathematik", (), ()),
+                self._subject_documentation(
+                    "german",
+                    "Deutsch",
+                    ("CMP-DE-1",),
+                    ("OBS-DE-1",),
+                ),
+                self._subject_documentation(
+                    "musik",
+                    "Musik",
+                    tuple(f"CMP-MU-{index}" for index in range(13)),
+                    ("OBS-MU-1",),
+                ),
+                self._subject_documentation(
+                    "unknown",
+                    "Weiteres Fach",
+                    ("CMP-X-1",),
+                    (),
+                ),
+            ),
+        )
+        screen = self._screen(overview)
+        screen.show()
+        screen.resize(1400, 900)
+        self.app.processEvents()
+
+        # Subject identity is intentionally carried by the child symbol,
+        # while the tile exposes only display-ready text and actions.
+        tiles = {}
+        for tile in screen.findChildren(QWidget):
+            if tile.objectName() != "ReportOverviewSubjectTile":
+                continue
+            symbol = next(
+                child
+                for child in tile.findChildren(QLabel)
+                if child.objectName() == "ReportOverviewSubjectSymbol"
+            )
+            tiles[str(symbol.property("subject_id"))] = tile
+
+        self.assertEqual(
+            len(tiles["math"].findChildren(
+                QWidget,
+                "ReportOverviewCompetencySegment",
+            )),
+            0,
+        )
+        self.assertEqual(
+            len(tiles["german"].findChildren(
+                QWidget,
+                "ReportOverviewCompetencySegment",
+            )),
+            1,
+        )
+        music_segments = tiles["musik"].findChildren(
+            QWidget,
+            "ReportOverviewCompetencySegment",
+        )
+        self.assertEqual(len(music_segments), 13)
+        segment_container = next(
+            child
+            for child in tiles["musik"].findChildren(QWidget)
+            if child.objectName() == "ReportOverviewCompetencySegments"
+        )
+        segment_rows = {
+            segment_container.layout().getItemPosition(index)[0]
+            for index in range(segment_container.layout().count())
+        }
+        self.assertGreater(len(segment_rows), 1)
+        symbols = {
+            subject_id: next(
+                child.text()
+                for child in tile.findChildren(QLabel)
+                if child.objectName() == "ReportOverviewSubjectSymbol"
+            )
+            for subject_id, tile in tiles.items()
+        }
+        self.assertEqual(symbols["math"], "∑")
+        self.assertEqual(symbols["german"], "Aa")
+        self.assertEqual(symbols["musik"], "♫")
+        self.assertEqual(symbols["unknown"], "•")
+        labels = " ".join(
+            label.text()
+            for tile in tiles.values()
+            for label in tile.findChildren(QLabel)
+        )
+        self.assertNotIn("/", labels)
+        self.assertNotIn(" von ", labels)
+        self.assertNotIn("%", labels)
+
+        grid = next(
+            child
+            for child in screen.findChildren(QWidget)
+            if child.objectName() == "ReportOverviewSubjectGrid"
+        ).layout()
+        self.assertEqual(
+            [grid.getItemPosition(index)[:2] for index in range(4)],
+            [(0, 0), (0, 1), (0, 2), (0, 3)],
+        )
+        screen.resize(1000, 760)
+        self.app.processEvents()
+        grid = next(
+            child
+            for child in screen.findChildren(QWidget)
+            if child.objectName() == "ReportOverviewSubjectGrid"
+        ).layout()
+        self.assertEqual(
+            [grid.getItemPosition(index)[:2] for index in range(4)],
+            [(0, 0), (0, 1), (1, 0), (1, 1)],
+        )
+        screen.resize(800, 760)
+        self.app.processEvents()
+        grid = next(
+            child
+            for child in screen.findChildren(QWidget)
+            if child.objectName() == "ReportOverviewSubjectGrid"
+        ).layout()
+        self.assertEqual(
+            [grid.getItemPosition(index)[:2] for index in range(4)],
+            [(0, 0), (1, 0), (2, 0), (3, 0)],
+        )
         screen.close()
 
     def test_milestones_are_capacity_limited_and_include_real_confirmation(
@@ -1261,7 +1443,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             return_value=self.preparation
         )
 
-        overview = adapter.report_overview_for_student("STU-1")
+        overview = adapter.report_overview_for_student(
+            "STU-1",
+            selected_report_draft_id="RPD-1",
+        )
 
         report_service.state_for_draft.assert_called_once_with("RPD-1")
         leg_service.state_for_draft.assert_called_once()
@@ -1279,6 +1464,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         report_state = self._report_state(
             current=report_revision,
             revisions=(report_revision,),
+            hash_valid=False,
         )
         leg = self._leg_draft("LCD-1")
         leg_revision = self._leg_revision(
@@ -1288,6 +1474,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         leg_state = self._leg_state(
             current=leg_revision,
             revisions=(leg_revision,),
+            hash_valid=False,
         )
         adapter = StudentDesktopAdapter.__new__(StudentDesktopAdapter)
         adapter.list_learning_report_drafts_for_student = Mock(
@@ -1298,15 +1485,11 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         )
         report_service = Mock()
         report_service.state_for_draft.return_value = report_state
-        report_service.snapshot_payload.side_effect = ValueError(
-            "bad report snapshot"
-        )
         adapter._report_revision_application_service = Mock(
             return_value=report_service
         )
         leg_service = Mock()
         leg_service.state_for_draft.return_value = leg_state
-        leg_service.get_revision.side_effect = ValueError("bad LEG snapshot")
         adapter._learning_conference_revision_services = Mock(
             return_value=(Mock(), leg_service)
         )
@@ -1314,7 +1497,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             return_value=self.preparation
         )
 
-        overview = adapter.report_overview_for_student("STU-1")
+        overview = adapter.report_overview_for_student(
+            "STU-1",
+            selected_report_draft_id="RPD-1",
+        )
         revision_rows = {
             (item.document_type, item.version_label): item
             for item in overview.history
@@ -1378,6 +1564,54 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             leg_drafts,
             leg_states or {},
             self.preparation,
+            selected_report_draft_id=(
+                report_drafts[0].report_draft_id
+                if len(report_drafts) == 1
+                else ""
+            ),
+        )
+
+    @staticmethod
+    def _subject_documentation(
+        subject_id: str,
+        subject_name: str,
+        competency_ids: tuple[str, ...],
+        observation_ids: tuple[str, ...],
+    ) -> ReportOverviewSubjectDocumentationViewModel:
+        competency_count = len(competency_ids)
+        observation_count = len(observation_ids)
+        return ReportOverviewSubjectDocumentationViewModel(
+            subject_id=subject_id,
+            subject_name=subject_name,
+            competency_ids=competency_ids,
+            observation_ids=observation_ids,
+            competency_count_text=(
+                f"{competency_count} "
+                f"{'Kompetenz' if competency_count == 1 else 'Kompetenzen'} "
+                "dokumentiert"
+            ),
+            observation_count_text=(
+                f"{observation_count} "
+                f"{'Beobachtung' if observation_count == 1 else 'Beobachtungen'} "
+                "im Berichtszeitraum"
+            ),
+            accessible_name=(
+                f"{subject_name}: {competency_count} "
+                f"{'Kompetenz' if competency_count == 1 else 'Kompetenzen'} "
+                "dokumentiert"
+            ),
+            evidence_action=ReportOverviewActionViewModel(
+                "show_subject_evidence",
+                "Belege ansehen",
+                subject_id,
+                subject_id,
+            ),
+            prepare_action=ReportOverviewActionViewModel(
+                "prepare_subject",
+                "Bericht vorbereiten",
+                "RPD-1",
+                subject_id,
+            ),
         )
 
     def _report_draft(

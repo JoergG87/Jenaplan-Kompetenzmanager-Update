@@ -57,6 +57,7 @@ from src.desktop_app.view_models.report_overview_view_model import (
     ReportHistoryItemViewModel,
     ReportNextStepViewModel,
     ReportOverviewActionViewModel,
+    ReportOverviewSubjectDocumentationViewModel,
     ReportOverviewViewModel,
     ReportStatusCardViewModel,
     empty_report_overview,
@@ -71,6 +72,23 @@ from src.desktop_app.view_models.observation_view_model import (
     StudentCompetencySubjectGroup,
 )
 from src.desktop_app.theme import COLOR_NAVY, COLOR_TURQUOISE, set_label_style
+
+
+REPORT_SUBJECT_SYMBOLS = {
+    "deutsch": "Aa",
+    "german": "Aa",
+    "mathematik": "∑",
+    "math": "∑",
+    "epu": "⌁",
+    "musik": "♫",
+    "kunst": "◈",
+    "sport": "●",
+    "sozialkompetenz": "◎",
+    "ethik": "⚖",
+    "religion": "✦",
+    "werken": "⌘",
+    "schulgarten": "♧",
+}
 
 
 class DocumentationRing(QWidget):
@@ -2566,16 +2584,33 @@ class StudentProfileScreen(QWidget):
 
     def _render_report_subjects(self, overview: ReportOverviewViewModel) -> None:
         self._clear_layout(self.report_subjects_layout)
-        if not overview.subjects:
+        for warning in overview.projection_warnings:
+            warning_label = QLabel(warning.text)
+            warning_label.setObjectName("ReportOverviewProjectionWarning")
+            warning_label.setWordWrap(True)
+            warning_label.setAccessibleName(warning.accessible_name)
+            set_label_style(warning_label, "subtle")
+            self.report_subjects_layout.addWidget(warning_label)
+        if not overview.subject_documentation:
             self.report_subjects_layout.addWidget(self._report_compact_empty_state(
-                "Es sind keine sicheren Fachnamen für die Berichtsvorbereitung verfügbar.",
-                title="Keine Fachübersicht",
+                (
+                    "Wähle zuerst bewusst einen Berichtsentwurf mit eindeutigem "
+                    "Berichtszeitraum aus."
+                    if not overview.report_content_available
+                    else "Im gewählten Berichtszeitraum sind keine vorhandenen "
+                    "Fachbelege dokumentiert."
+                ),
+                title=(
+                    "Kein Berichtszeitraum ausgewählt"
+                    if not overview.report_content_available
+                    else "Keine Berichtgrundlagen im Zeitraum"
+                ),
             ))
             return
         subjects = (
-            overview.subjects
+            overview.subject_documentation
             if self._report_subjects_expanded
-            else overview.subjects[:4]
+            else overview.subject_documentation[:4]
         )
         tile_container = QWidget()
         tile_container.setObjectName("ReportOverviewSubjectGrid")
@@ -2595,54 +2630,64 @@ class StudentProfileScreen(QWidget):
             row_layout = QVBoxLayout(tile)
             row_layout.setContentsMargins(10, 9, 10, 9)
             row_layout.setSpacing(6)
+            subject_header = QHBoxLayout()
+            subject_header.setContentsMargins(0, 0, 0, 0)
+            subject_header.setSpacing(7)
+            subject_symbol = QLabel(
+                REPORT_SUBJECT_SYMBOLS.get(subject.subject_id, "•")
+            )
+            subject_symbol.setObjectName("ReportOverviewSubjectSymbol")
+            subject_symbol.setProperty("subject_id", subject.subject_id)
+            subject_symbol.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            subject_symbol.setAccessibleName(
+                f"Fachsymbol {subject.subject_name}"
+            )
             label = QLabel(subject.subject_name)
             label.setWordWrap(True)
             set_label_style(label, "card_title")
-            coverage = QHBoxLayout()
-            coverage.setContentsMargins(0, 0, 0, 0)
-            coverage.setSpacing(9)
-            documentation_ring = DocumentationRing(48)
-            documentation_ring.setObjectName(
-                "ReportOverviewSubjectDocumentationRing"
-            )
-            documentation_ring.set_counts(
-                subject.documented_count,
-                subject.current_count,
-            )
-            documentation_ring.setAccessibleName(
-                f"{subject.subject_name}: {subject.documented_count} von "
-                f"{subject.current_count} Kompetenzen dokumentiert"
-            )
-            competency_count = QLabel(
-                f"{subject.documented_count} / {subject.current_count} "
-                "Kompetenzen dokumentiert"
-            )
+            subject_header.addWidget(subject_symbol)
+            subject_header.addWidget(label, 1)
+            competency_count = QLabel(subject.competency_count_text)
+            competency_count.setObjectName("ReportOverviewCompetencyCount")
             competency_count.setWordWrap(True)
             set_label_style(competency_count, "small")
-            observation_label = (
-                "1 Beobachtung"
-                if subject.observation_count == 1
-                else f"{subject.observation_count} Beobachtungen"
-            )
-            observations = QLabel(observation_label)
+            observations = QLabel(subject.observation_count_text)
+            observations.setObjectName("ReportOverviewObservationCount")
             set_label_style(observations, "subtle")
-            coverage_text = QVBoxLayout()
-            coverage_text.setSpacing(3)
-            coverage_text.addWidget(competency_count)
-            coverage_text.addWidget(observations)
-            coverage.addWidget(documentation_ring, 0)
-            coverage.addLayout(coverage_text, 1)
-            button = self._report_action_button(subject.action, role="link")
-            button.setObjectName(
+            segment_grid = self._report_competency_segments(subject)
+            actions = QHBoxLayout()
+            actions.setContentsMargins(0, 0, 0, 0)
+            actions.setSpacing(8)
+            evidence_button = self._report_action_button(
+                subject.evidence_action,
+                role="quiet",
+            )
+            evidence_button.setObjectName(
+                f"ReportOverviewEvidenceSubject_{subject.subject_id}"
+            )
+            evidence_button.setAccessibleName(
+                f"Belege für {subject.subject_name} ansehen"
+            )
+            prepare_button = self._report_action_button(
+                subject.prepare_action,
+                role="link",
+            )
+            prepare_button.setObjectName(
                 f"ReportOverviewPrepareSubject_{subject.subject_id}"
             )
-            button.setAccessibleName(
+            prepare_button.setAccessibleName(
                 f"Bericht für {subject.subject_name} vorbereiten"
             )
-            row_layout.addWidget(label)
-            row_layout.addLayout(coverage)
+            row_layout.addLayout(subject_header)
+            row_layout.addWidget(segment_grid)
+            row_layout.addWidget(competency_count)
+            row_layout.addWidget(observations)
             row_layout.addStretch(1)
-            row_layout.addWidget(button, 0, Qt.AlignmentFlag.AlignLeft)
+            actions.addWidget(evidence_button)
+            actions.addWidget(prepare_button)
+            actions.addStretch(1)
+            row_layout.addLayout(actions)
+            tile.setAccessibleName(subject.accessible_name)
             tile_layout.addWidget(
                 tile,
                 index // tile_columns,
@@ -2651,7 +2696,7 @@ class StudentProfileScreen(QWidget):
         for column in range(tile_columns):
             tile_layout.setColumnStretch(column, 1)
         self.report_subjects_layout.addWidget(tile_container)
-        if len(overview.subjects) > 4:
+        if len(overview.subject_documentation) > 4:
             toggle_container = QWidget()
             toggle_row = QHBoxLayout(toggle_container)
             toggle_row.setContentsMargins(0, 0, 0, 0)
@@ -2659,7 +2704,7 @@ class StudentProfileScreen(QWidget):
             toggle = QPushButton(
                 "Weniger anzeigen"
                 if self._report_subjects_expanded
-                else f"Alle anzeigen ({len(overview.subjects)})"
+                else f"Alle anzeigen ({len(overview.subject_documentation)})"
             )
             toggle.setObjectName("ReportOverviewSubjectsToggle")
             configure_button(
@@ -2674,6 +2719,36 @@ class StudentProfileScreen(QWidget):
             toggle.clicked.connect(self._toggle_report_subjects)
             toggle_row.addWidget(toggle)
             self.report_subjects_layout.addWidget(toggle_container)
+
+    def _report_competency_segments(
+        self,
+        subject: ReportOverviewSubjectDocumentationViewModel,
+    ) -> QWidget:
+        """Render exactly one neutral segment per supplied competency identity."""
+        container = QWidget()
+        container.setObjectName("ReportOverviewCompetencySegments")
+        container.setAccessibleName(subject.accessible_name)
+        segment_layout = QGridLayout(container)
+        segment_layout.setContentsMargins(0, 2, 0, 2)
+        segment_layout.setHorizontalSpacing(4)
+        segment_layout.setVerticalSpacing(4)
+        segments_per_row = {
+            3: 8,
+            2: 6,
+            1: 4,
+        }.get(getattr(self, "_report_overview_columns", 3), 8)
+        for index, competency_id in enumerate(subject.competency_ids):
+            segment = QFrame()
+            segment.setObjectName("ReportOverviewCompetencySegment")
+            segment.setProperty("competency_id", competency_id)
+            segment.setFixedSize(18, 8)
+            segment_layout.addWidget(
+                segment,
+                index // segments_per_row,
+                index % segments_per_row,
+            )
+        segment_layout.setColumnStretch(segments_per_row, 1)
+        return container
 
     def _toggle_report_subjects(self) -> None:
         self._report_subjects_expanded = not self._report_subjects_expanded
@@ -2948,6 +3023,14 @@ class StudentProfileScreen(QWidget):
                 action.subject_id,
                 "",
             )
+        elif action.action_key == "show_subject_evidence":
+            self._select_profile_section("competencies")
+            subject_id = action.subject_id or action.target_id
+            subject_index = self.competency_subject_filter.findData(
+                subject_id
+            )
+            if subject_index >= 0:
+                self.competency_subject_filter.setCurrentIndex(subject_index)
         elif action.action_key == "select_learning_conference":
             self.learning_conference_requested.emit(student_id)
         elif action.action_key == "open_learning_conference":
