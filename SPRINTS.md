@@ -44,7 +44,9 @@ beziehungsweise nicht freigegeben.
   Steuerbuttons, Tastatur und stabiler ID-Navigation implementieren.
 - [x] Phase 2 implementieren.
 - [x] Fokussierte Regressionen der Pakete 2A.1 bis 2C ausführen.
-- [ ] Gesamtsuite im finalen technischen Quality Gate ausführen.
+- [x] Gesamtsuite im finalen technischen Quality Gate nach einem gezielten
+  Fixzyklus ausführen: 1718 Tests und 71 Subtests bestanden, 1 Test
+  übersprungen.
 - [ ] Build, Packaging und reale macOS-/VoiceOver-UX-Abnahme in später ausdrücklich
   freigegebenem Umfang durchführen.
 
