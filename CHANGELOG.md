@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Zentrale Qt-freie V3-Assignment-API ergänzt: Connection-gebundene
+  Schuljahres-, Assignment- und V3-Schüler-Repositories, konsistente
+  Read-Snapshots, explizite Datums- und Schuljahresauflösung, set-basierte
+  Batchabfragen für 1/10/100 Kinder, Gruppen-, Kurs- und Kursverbundfilter
+  sowie neutrale Auflösungszustände ohne Systemdatums- oder
+  Last-known-Fallback. Das V3-Schülermodell enthält keine Membershipfelder.
+  Anlage mit initialer Einschreibung, Stammdatenänderung, Einzeleinschreibung,
+  unterjähriger Einzelwechsel, Austritt und Archivierung besitzen getrennte
+  atomare Lifecycles; Austritt archiviert nicht, Archivierung verändert kein
+  Assignment. Produktive Leser, Runtime, Schuljahreswechsel-UI, Build und
+  Release bleiben gesperrt.
 - V3-only Architecture Cleanup technisch umgesetzt: Das vollständige finale
   Schema wird ohne Vorgängerschema direkt durch `FinalV3SchemaInitializer`
   erzeugt und mit `user_version = 3`, vollständigem Fingerprint

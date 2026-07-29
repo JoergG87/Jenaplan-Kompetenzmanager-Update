@@ -9,8 +9,9 @@ Final-V3-Schemaquelle besitzt nur die autorisierte Neuanlage und vollständige
 Verifikation. Kein Widget und kein Adapter erkennt, migriert oder repariert
 Datenbankschemata.
 
-Bis alle produktiven Leser und Writer auf V3 umgestellt sind, existiert keine
-produktive V3-View. Ein erkanntes finales Schema führt deshalb kontrolliert zu
+Bis alle produktiven Leser und Writer auf V3 umgestellt sind, konsumiert keine
+produktive View die neue Assignment-API. Ein erkanntes finales Schema führt
+deshalb kontrolliert zu
 `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED`. Es gibt keine
 V2-Bootstrap-View, keine V2-Migrationsvorschau und keine sichtbare
 V2-Restoreauswahl.
@@ -19,16 +20,18 @@ V2-Restoreauswahl.
 |---|---|---|---|
 | Datenbank-Startupstatus | read-only Pfad-, Restore- und vollständige Schemaidentität | Core Startup | Widgetentscheidung, Teilfingerprint, automatische Migration |
 | direkte V3-Neuanlage | autorisierter leerer Zielpfad und finales DDL | Core Schema Initializer | bestehende Datei ersetzen, V2-Zwischenschema, Transition-Beleg |
-| Schuljahresliste/-status | `school_years` | spätere School-Year Application-Grenze | Systemdatum oder Label als Statusquelle |
-| aktuelle/historische Mitgliedschaft | `student_school_year_assignments` plus explizites Fachdatum | spätere zentrale Assignment-Read-API | `students.group_id/course_id`, Widgetlogik, stiller Fallback |
+| Schuljahresliste/-status | `school_years` | `SchoolYearRepository` und aufrufender Application Service | Systemdatum oder Label als Statusquelle |
+| Zuordnung an einem Datum | `student_school_year_assignments`, V3-`students`, `school_years`, Gruppen und Kurse plus explizites Fachdatum | `SchoolYearAssignmentQueryService.assignment_at_date` / `assignments_at_dates` | `students.group_id/course_id`, Widgetlogik, stiller Fallback |
+| aktuelle Mitgliedschaft und Mitgliederlisten | current-Schuljahr plus einmalig gesetzter `as_of`-Tag; optionale Gruppe, Kurs oder Kursverbund als Schnittmenge seiner Gruppen und Kurse | `SchoolYearAssignmentQueryService.current_membership` / `current_memberships` | Systemdatum, N+1, Widgetfilterung von Intervallen |
+| historische Schuljahres-/Last-known-Abfrage | explizite Schuljahr-ID und Referenzdatum beziehungsweise expliziter Last-known-Aufruf | `SchoolYearAssignmentQueryService.membership_in_school_year` / `last_known_membership` | Jahresende als Ersatzdatum, Last-known als automatischer Fallback |
 | Kursfortschreibung | `courses.year_level` | späterer School-Year Transition Service | Kursname, Farbe, Sortierung |
 | echter Wechselbeleg | vorhandene Ausgangs-/Zieljahre und committed Wechselplan | späterer School-Year Transition Service | Initialanlage, Bootstrap oder Migration |
 
-Beobachtung, Bestätigung, Bericht, LEG und Beobachtungsdokument liefern später
-ihren bereits vorhandenen fachlichen Referenzzeitpunkt an dieselbe
-Assignment-Auflösungsgrenze. Finalisierte Revisionen und PDFs werden nicht neu
-aufgelöst. Widgets komponieren nur displayfertige ViewModels und enthalten
-keine Repository- oder Intervalllogik.
+Beobachtung, Bestätigung, Bericht und LEG können ihren bereits vorhandenen
+fachlichen Referenzzeitpunkt an dieselbe Assignment-Auflösungsgrenze liefern.
+Diese produktive Leserumstellung ist noch nicht erfolgt. Finalisierte
+Revisionen und PDFs werden nicht neu aufgelöst. Widgets komponieren später nur
+displayfertige ViewModels und enthalten keine Repository- oder Intervalllogik.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 

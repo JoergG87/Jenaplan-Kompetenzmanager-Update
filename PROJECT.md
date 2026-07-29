@@ -2,9 +2,9 @@
 
 ## V3-only Produktschema und Architecture Cleanup
 
-**Status:** Governance und technischer V3-only-Cleanup lokal implementiert.
-Die Umstellung produktiver Leser und Writer sowie die Runtime-Freigabe sind
-noch nicht umgesetzt.
+**Status:** Governance, technischer V3-only-Cleanup und zentrale isolierte
+Assignment-API lokal implementiert. Die Umstellung produktiver Leser und
+Writer sowie die Runtime-Freigabe sind noch nicht umgesetzt.
 
 V3 ist das erste und einzige Produktschema. Es enthält `school_years`,
 datierte `student_school_year_assignments`, `courses.year_level`,
@@ -34,10 +34,18 @@ Leser noch V2-Mitgliedschaftsfelder erwarten, bleibt die Shell im ausdrücklich
 benannten Zwischenzustand
 `V3_SCHEMA_READY_BUT_RUNTIME_NOT_MIGRATED` gesperrt.
 
-Weiterhin nicht umgesetzt oder freigegeben sind die zentrale
-Assignment-Read-API, V3-Schülercommands, die flächendeckende Leser-/Writer-
-Umstellung, der Schuljahreswechsel-Assistent, unterjährige Sammelwechsel,
-Runtime-Aktivierung, Build, Packaging und Release.
+Implementiert sind die Qt-freien, Connection-gebundenen
+`SchoolYearRepository`- und
+`StudentSchoolYearAssignmentRepository`-Grenzen, der konsistente
+`SchoolYearAssignmentQueryService`, das Membership-freie `V3Student`-Modell
+und die isolierten Einzelkind-Lifecycles für Anlage, Stammdatenänderung,
+Einschreibung, unterjährigen Wechsel, Austritt und Archivierung. Alle
+Referenzdaten sind explizit; Batchreads sind set-basiert; Mehrdeutigkeit und
+fehlende Zuordnung bleiben sichtbare Zustände.
+
+Weiterhin nicht umgesetzt oder freigegeben sind die flächendeckende
+produktive Leser-/Writer-Umstellung, der Schuljahreswechsel-Assistent,
+unterjährige Sammelwechsel, Runtime-Aktivierung, Build, Packaging und Release.
 
 ## Schuljahresmodell und echte Wechsel
 

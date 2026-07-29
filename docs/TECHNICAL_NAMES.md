@@ -2,8 +2,9 @@
 
 ## V3-only Schema-, Startup- und Testnamen
 
-**Status:** V3-only-Cleanup lokal implementiert. Die produktive
-Leser-/Writerumstellung und Runtime-Freigabe sind noch nicht umgesetzt.
+**Status:** V3-only-Cleanup und isolierte zentrale Assignment-API lokal
+implementiert. Die produktive Leser-/Writerumstellung und Runtime-Freigabe
+sind noch nicht umgesetzt.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
@@ -34,6 +35,20 @@ Bootstrap-Transition-Typen.
 | `SchoolYearStatus` | ausschließlich `planned`, `current` oder `closed` | Core School-Year Domain |
 | `StudentMembershipAssignment` | datiertes inklusives Kurs-/Stammgruppenintervall eines Kindes innerhalb eines Schuljahres | Core Assignment Domain |
 | `StudentAssignmentStatus` | ausschließlich `enrolled` oder `exited` | Core Assignment Domain |
+| `V3Student` | Schülerstammdaten ohne Membershipfelder: ID, Name, Notiz, Aktiv-/Archivstatus und technische Zeitpunkte | Core Student Domain |
+| `AssignmentResolutionStatus` | neutrale eindeutige Auflösung als `ENROLLED`, `EXITED`, `NO_ASSIGNMENT`, `CURRENT_SCHOOL_YEAR_MISSING`, `AMBIGUOUS` oder `STUDENT_ARCHIVED` | Application Assignment Read |
+| `AssignmentAtDateProjection` | Qt-freie Zuordnungsprojektion eines Kindes am expliziten fachlichen Datum einschließlich neutralem Status und Accessible Name | Application Assignment Read |
+| `CurrentStudentMembershipProjection` | Qt-freie aktuelle Schuljahresprojektion am einmalig vom Aufrufer gesetzten `as_of`-Tag | Application Assignment Read |
+| `SchoolYearRepository` | Connection-gebundener SQLite-Read auf `school_years`; öffnet und steuert keine Transaktion | Core Assignment Persistence |
+| `StudentSchoolYearAssignmentRepository` | Connection-gebundene set-basierte SQLite-Reads und atomar orchestrierbare Writes auf Assignments | Core Assignment Persistence |
+| `V3StudentRepository` | Connection-gebundene Persistenz ausschließlich der V3-Schülerstammdaten | Core Student Persistence |
+| `SchoolYearAssignmentQueryService` | zentrale Qt-freie Read-Snapshot-, Datums-, Eindeutigkeits-, Batch- und Statusgrenze | Application Assignment Read |
+| `CreateStudentWithInitialEnrollment` | atomare Anlage von V3-Schülerstammdaten und initialem `enrolled`-Assignment | Application Student Lifecycle |
+| `UpdateStudentMasterData` | atomare Änderung ausschließlich von Name, Notiz und technischen Stammdatenzeitpunkten | Application Student Lifecycle |
+| `EnrollStudent` | atomare Anlage eines expliziten, überschneidungsfreien `enrolled`-Intervalls | Application Assignment Lifecycle |
+| `ChangeStudentMembership` | atomare Kürzung und Folgezuordnung eines einzelnen Kindes an einem expliziten Stichtag; unverändertes Ziel liefert `NO_CHANGE` | Application Assignment Lifecycle |
+| `ExitStudentFromSchoolYear` | atomare Kürzung und Anlage eines `exited`-Intervalls ohne Gruppe, Kurs oder Archivierung | Application Assignment Lifecycle |
+| `ArchiveStudent` | getrennte Stammdatenarchivierung nach fail-closed Prüfung auf aktive Einschreibung am expliziten `as_of`-Tag | Application Student Lifecycle |
 | `school_years` | einzige persistierte Schuljahresquelle | Core SQLite Schema |
 | `student_school_year_assignments` | einzige persistierte aktuelle und historische Mitgliedschaftsquelle | Core SQLite Schema |
 | `school_year_transitions` | unveränderlicher Erfolgsbeleg ausschließlich eines echten Schuljahreswechsels mit vorhandener Ausgangs-ID | Core SQLite Schema |
@@ -43,8 +58,10 @@ Bootstrap-Transition-Typen.
 Ein V3-Schüler besitzt ausschließlich Stammdaten sowie Aktiv-/Archivstatus;
 `group_id` und `course_id` sind keine Schülerfelder. Aktuelle und
 historische Membershipprojektionen werden aus Assignments gelesen.
-Repository-, Query- und Commandnamen für die nächste Assignment-API werden
-erst mit deren gesonderter Implementierung verbindlich ergänzt.
+Die zentrale API ist noch an keinen produktiven Screen oder Adapter
+angeschlossen. Ein historisch passendes Assignment bleibt auch für ein später
+archiviertes Kind als `ENROLLED` oder `EXITED` auflösbar;
+`STUDENT_ARCHIVED` ersetzt keinen historischen Treffer.
 
 `school_year_transitions.from_school_year_id` bezeichnet stets ein wirklich
 vorhandenes Ausgangsschuljahr und darf nicht leer sein. Eine initiale

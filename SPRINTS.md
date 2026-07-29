@@ -2,9 +2,9 @@
 
 ## V3-only Architecture Cleanup
 
-**Status:** Governance und technischer Cleanup lokal implementiert.
-Produktive V3-Runtime, Assignment-API, Schuljahreswechsel, Build, Packaging
-und Release bleiben gesperrt.
+**Status:** Governance, technischer Cleanup und isolierte zentrale
+Assignment-API lokal implementiert. Produktive V3-Runtime,
+Schuljahreswechsel, Build, Packaging und Release bleiben gesperrt.
 
 - [x] PO-Entscheidung festhalten: Es existieren keine produktiven V2-Daten.
 - [x] ADR-096 als Teil-Supersession der V2-Cutover-Annahmen aus ADR-095
@@ -42,7 +42,7 @@ und Release bleiben gesperrt.
   beschlossen.
 - [x] Vorschau, Backup, Maintenance, atomare Transaktion, Rollback, Idempotenz
   und Übergangshistorie für echte spätere Schuljahreswechsel vorgeschrieben.
-- [ ] Zentrale Assignment-Read-API und getrennte V3-Schülercommands
+- [x] Zentrale Assignment-Read-API und getrennte V3-Schülercommands
   implementieren.
 - [ ] Reguläre V3-Runtime freigeben.
 

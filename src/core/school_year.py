@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 
 
@@ -28,6 +28,17 @@ class StudentAssignmentStatus(str, Enum):
 
     ENROLLED = "enrolled"
     EXITED = "exited"
+
+
+class AssignmentResolutionStatus(str, Enum):
+    """Neutral outcome of resolving one student membership."""
+
+    ENROLLED = "enrolled"
+    EXITED = "exited"
+    NO_ASSIGNMENT = "no_assignment"
+    CURRENT_SCHOOL_YEAR_MISSING = "current_school_year_missing"
+    AMBIGUOUS = "ambiguous"
+    STUDENT_ARCHIVED = "student_archived"
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,6 +104,81 @@ class StudentMembershipAssignment:
             raise SchoolYearDomainError("exited_assignment_has_membership")
 
 
+@dataclass(frozen=True, slots=True)
+class V3Student:
+    """V3 student master data without current or historical membership fields."""
+
+    student_id: str
+    first_name: str
+    last_name: str
+    notes: str
+    active: bool
+    created_at: datetime
+    updated_at: datetime
+    archived_at: datetime | None
+
+    def __post_init__(self) -> None:
+        _require_identifier(self.student_id, "student_id_invalid")
+        _require_text(self.first_name, "student_first_name_invalid")
+        _require_text(self.last_name, "student_last_name_invalid")
+        if not isinstance(self.notes, str):
+            raise SchoolYearDomainError("student_notes_invalid")
+        if not isinstance(self.active, bool):
+            raise SchoolYearDomainError("student_active_invalid")
+        _require_datetime(self.created_at, "student_created_at_invalid")
+        _require_datetime(self.updated_at, "student_updated_at_invalid")
+        if self.updated_at < self.created_at:
+            raise SchoolYearDomainError("student_timestamps_invalid")
+        if self.archived_at is not None:
+            _require_datetime(self.archived_at, "student_archived_at_invalid")
+        if self.active and self.archived_at is not None:
+            raise SchoolYearDomainError("active_student_archived")
+        if not self.active and self.archived_at is None:
+            raise SchoolYearDomainError("inactive_student_not_archived")
+
+
+@dataclass(frozen=True, slots=True)
+class AssignmentAtDateProjection:
+    """Display-independent assignment resolution at one explicit date."""
+
+    student_id: str
+    reference_date: date
+    resolution_status: AssignmentResolutionStatus
+    school_year_id: str | None
+    school_year_label: str | None
+    assignment_id: str | None
+    assignment_status: StudentAssignmentStatus | None
+    valid_from: date | None
+    valid_to: date | None
+    group_id: str | None
+    group_name: str | None
+    course_id: str | None
+    course_name: str | None
+    year_level: int | None
+    student_active: bool
+    student_archived: bool
+    visible_status_key: str
+    accessible_name: str
+
+
+@dataclass(frozen=True, slots=True)
+class CurrentStudentMembershipProjection:
+    """Current-school-year membership resolved at one caller-owned date."""
+
+    current_school_year_id: str | None
+    current_school_year_label: str | None
+    as_of: date
+    student_id: str
+    student_active: bool
+    student_archived: bool
+    resolution_status: AssignmentResolutionStatus
+    group_id: str | None
+    group_name: str | None
+    course_id: str | None
+    course_name: str | None
+    year_level: int | None
+
+
 def _require_identifier(value: object, code: str) -> None:
     if not isinstance(value, str) or not value.strip():
         raise SchoolYearDomainError(code)
@@ -105,6 +191,11 @@ def _require_text(value: object, code: str) -> None:
 
 def _require_date(value: object, code: str) -> None:
     if not isinstance(value, date):
+        raise SchoolYearDomainError(code)
+
+
+def _require_datetime(value: object, code: str) -> None:
+    if not isinstance(value, datetime):
         raise SchoolYearDomainError(code)
 
 

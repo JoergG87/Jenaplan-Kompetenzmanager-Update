@@ -2,9 +2,9 @@
 
 ## V3-only Datenbankinitialisierung
 
-**Status:** V3-only-Schema-, Startup-, Compatibility-, Backup-/Restore- und
-synthetischer Testdaten-Cleanup lokal implementiert. Die produktive
-Leser-/Writerumstellung bleibt offen.
+**Status:** V3-only-Schema-, Startup-, Compatibility-, Backup-/Restore-,
+synthetischer Testdaten-Cleanup und isolierte Assignment-API lokal
+implementiert. Die produktive Leser-/Writerumstellung bleibt offen.
 
 1. Der Startup-Resolver prüft Pfad, WAL-/SHM-Sidecars, Restorezustand,
    `user_version` und vollständigen Schemafingerprint read-only.
@@ -79,10 +79,40 @@ historische Reads erhalten ihr fachliches Datum ausdrücklich vom Aufrufer.
 Kein Repository setzt automatisch das Systemdatum ein oder wählt bei mehreren
 Treffern still einen Datensatz.
 
-Ein unterjähriger Wechsel kürzt das bisherige Intervall am Tag vor dem
-gemeinsamen Stichtag und legt das Folgeintervall ab dem Stichtag an. Frühere
-fachliche Records behalten ihren historischen Kontext. Austritt und
-Archivierung bleiben getrennt.
+Der `SchoolYearAssignmentQueryService` besitzt pro Request genau einen
+konsistenten SQLite-Read-Snapshot. Batchauflösung erfolgt set-basiert; Gruppe,
+Kurs und Kursverbund werden ohne Einzelquery je Kind gefiltert. Der
+Kursverbundscope ist die Schnittmenge aus seinen Stammgruppen und Kursen. Mehrere
+passende Intervalle ergeben immer `AMBIGUOUS`; kein Treffer ergibt
+`NO_ASSIGNMENT`. `CURRENT_SCHOOL_YEAR_MISSING` wird nur durch aktuelle
+Schuljahresabfragen erzeugt. `last_known_membership` ist ein eigener
+historischer Read und niemals Fallback einer anderen Methode.
+
+Die isolierten V3-Lifecycles besitzen jeweils eine äußere
+`BEGIN IMMEDIATE`-Transaktion. Repositories mit übergebener Connection
+beginnen, committen, rollen zurück und schließen nicht selbst:
+
+1. `CreateStudentWithInitialEnrollment` schreibt Stammdaten und initiales
+   `enrolled`-Assignment gemeinsam oder gar nicht.
+2. `UpdateStudentMasterData` ändert ausschließlich Name und Notiz; Assignments
+   bleiben unangetastet.
+3. `EnrollStudent` verlangt Schuljahr, Zeitraum, Gruppe und Kurs explizit und
+   blockiert Überschneidungen.
+4. `ChangeStudentMembership` kürzt das bisherige Intervall am Tag vor dem
+   Stichtag und legt das Folgeintervall ab dem Stichtag an. Ohne ausdrückliche
+   Stammgruppenänderung bleibt die Stammgruppe erhalten; derselbe Zielzustand
+   liefert `NO_CHANGE`.
+5. `ExitStudentFromSchoolYear` erzeugt ein `exited`-Intervall ohne Gruppe und
+   Kurs und archiviert das Kind nicht.
+6. `ArchiveStudent` ändert kein Assignment, erzeugt kein `exited` und
+   blockiert bei aktiver Einschreibung am expliziten `as_of`-Tag. Dieser Tag
+   muss dem Kalendertag des gespeicherten technischen Archivzeitpunkts
+   entsprechen.
+
+Frühere fachliche Records behalten ihren historischen Kontext. Ein später
+archiviertes Kind bleibt an historischen Treffertagen auflösbar. Produktive
+Leser und Writer verwenden diese Lifecycles noch nicht; Sammelwechsel und
+Schuljahreswechsel bleiben gesonderte spätere Vorgänge.
 
 Ein echter Schuljahreswechsel prüft Vorschau und Quellen, erstellt ein
 verifiziertes Backup, aktiviert Maintenance, verlangt Step-up und Bestätigung

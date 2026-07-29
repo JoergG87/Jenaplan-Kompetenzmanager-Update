@@ -2,14 +2,14 @@
 
 ## V3-only Produktdatenquellen
 
-**Status:** Direkte Final-V3-Schemaquelle und synthetischer temporärer
-Testdatenpfad lokal implementiert. Die produktive Leser-/Writerumstellung ist
-noch nicht umgesetzt.
+**Status:** Direkte Final-V3-Schemaquelle, synthetischer temporärer
+Testdatenpfad und zentrale isolierte Assignment-API lokal implementiert. Die
+produktive Leser-/Writerumstellung ist noch nicht umgesetzt.
 
 | Quelle | Fachliche Bedeutung | Owner | Nicht zulässige Ersatzquelle |
 |---|---|---|---|
-| `school_years` | einzige Schuljahreswahrheit mit geplantem, aktuellem oder geschlossenem Status | School-Year Domain / Repository | Systemdatum, Label, Seedkonstante, Beobachtungsdaten |
-| `student_school_year_assignments` | einzige aktuelle und historische Kurs-/Stammgruppenzuordnung | Assignment Domain / spätere zentrale Read-API | Schülerfelder, UI-Auswahl, Kursname, letzte bekannte Zuordnung ohne Datum |
+| `school_years` | einzige Schuljahreswahrheit mit geplantem, aktuellem oder geschlossenem Status | School-Year Domain / `SchoolYearRepository` | Systemdatum, Label, Seedkonstante, Beobachtungsdaten |
+| `student_school_year_assignments` | einzige aktuelle und historische Kurs-/Stammgruppenzuordnung | Assignment Domain / `SchoolYearAssignmentQueryService` | Schülerfelder, UI-Auswahl, Kursname, letzte bekannte Zuordnung ohne Datum |
 | `courses.year_level` | bestätigte stabile Kursstufe 1, 2 oder 3 | Course Repository | Name, Farbe, Sortierung, Listenposition |
 | V3-`students` | Schülerstammdaten sowie Aktiv-/Archivstatus ohne Membershipfelder | Student Repository | V2-`StudentRecord.group_id/course_id` |
 | `school_year_transitions` | unveränderlicher Beleg eines echten committed Schuljahreswechsels | School-Year Transition Service | Initialanlage, Startup, Bootstrap, Migration |
@@ -60,10 +60,14 @@ bestehender Testbestand nicht automatisch ersetzt.
 
 ## Historische Membershipauflösung
 
-Die spätere zentrale Assignment-Read-API verwendet ausschließlich ein
-explizites fachliches Datum. Beobachtung, Bestätigung, Bericht, LEG und
-Beobachtungsdokument liefern jeweils ihren dokumentierten Referenzzeitpunkt.
-Ohne belastbare zeitliche Semantik entsteht keine Zuordnungsbehauptung.
+Der `SchoolYearAssignmentQueryService` verwendet ausschließlich ein explizites
+fachliches Datum. Maßgeblich sind `observations.date` für Beobachtungen,
+der Kalendertag von `confirmed_at` für Bestätigungen, `period_end` für
+Berichte und `conference_date` für LEG. Die Aufrufer bleiben für eine
+explizite, zeitzonenbewusste Ableitung eines Timestamps auf `date`
+verantwortlich. Ohne belastbare zeitliche Semantik entsteht keine
+Zuordnungsbehauptung. Es gibt weder Systemdatums- noch Last-known-Fallback;
+`last_known_membership` ist eine eigene ausdrücklich aufgerufene Abfrage.
 Finalisierte Revisionen und PDFs werden nicht neu aufgelöst oder verändert.
 
 ## Echte Schuljahreswechsel
