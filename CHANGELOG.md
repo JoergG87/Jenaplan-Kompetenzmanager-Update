@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Unter `Einstellungen → Schuljahre` ist jetzt der minimale Preview-only-
+  Einstieg für den Schuljahreswechsel verfügbar. Die Unterseite zeigt das
+  aktuelle Schuljahr und nimmt Bezeichnung, Beginn und Ende des neuen
+  Schuljahres zugänglich per Tastatur und mit Accessible Names entgegen. Der
+  vorhandene Read-Service validiert die Angaben und erzeugt Preview,
+  Kurs-/Gruppenoptionen und den flüchtigen Plan aus demselben
+  `query_only`-Snapshot; anschließend öffnet sich der bestehende
+  Vorschau-/Bearbeitungsdialog. Ungültige Jahresdaten erscheinen neutral.
+  Schließen verwirft alles. Es gibt weiterhin keine Ausführung, kein Backup,
+  keine Passwortabfrage, kein Maintenance-Gate, keinen Write und keinen
+  Transition-Beleg.
 - Der bestätigte Restore-Handoff beendet die alte PySide-App jetzt über einen
   idempotenten, dialogfreien Shutdown statt über eine einzelne
   `QApplication.quit()`-Anforderung. Nach der ausdrücklichen

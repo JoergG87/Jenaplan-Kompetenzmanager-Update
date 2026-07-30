@@ -89,6 +89,7 @@ def test_settings_updates_page_is_one_local_destination() -> None:
         "backup_restore",
         "security",
         "updates",
+        "school_years",
     }
     screen.show_page("updates")
     assert screen.current_page == "updates"

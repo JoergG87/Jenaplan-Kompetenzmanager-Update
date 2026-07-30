@@ -4,6 +4,7 @@ from dataclasses import replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 import sqlite3
+from unittest.mock import patch
 
 import pytest
 
@@ -11,6 +12,7 @@ from src.application.school_year_transition_preview import (
     SchoolYearTransitionPreviewProjector,
     SchoolYearTransitionPreviewService,
 )
+from src.application.school_year_transition_plan import SchoolYearTransitionPlan
 from src.core.school_year import (
     SchoolYear,
     SchoolYearStatus,
@@ -153,6 +155,81 @@ def test_courses_advance_only_by_canonical_year_level() -> None:
     assert preview.repeater_count == 0
     assert preview.unresolved_count == 1
     assert preview.executable is False
+
+
+def test_preview_plan_receives_preview_and_options_from_one_service_snapshot(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "preview-plan.sqlite"
+    create_synthetic_v3_database(database_path)
+    connection_count = 0
+    write_actions: list[int] = []
+    write_codes = {
+        sqlite3.SQLITE_INSERT,
+        sqlite3.SQLITE_UPDATE,
+        sqlite3.SQLITE_DELETE,
+    }
+
+    def connect() -> sqlite3.Connection:
+        nonlocal connection_count
+        connection_count += 1
+        connection = sqlite3.connect(database_path)
+        connection.row_factory = sqlite3.Row
+
+        def authorize(
+            action: int,
+            _argument_1: str | None,
+            _argument_2: str | None,
+            _database: str | None,
+            _trigger: str | None,
+        ) -> int:
+            if action in write_codes:
+                write_actions.append(action)
+            return sqlite3.SQLITE_OK
+
+        connection.set_authorizer(authorize)
+        return connection
+
+    service = SchoolYearTransitionPreviewService(connect)
+    captured: dict[str, object] = {}
+    original = SchoolYearTransitionPlan.from_preview
+
+    def capture(
+        preview,
+        *,
+        courses,
+        groups,
+    ):
+        captured["preview"] = preview
+        captured["courses"] = courses
+        captured["groups"] = groups
+        return original(preview, courses=courses, groups=groups)
+
+    with patch.object(
+        SchoolYearTransitionPlan,
+        "from_preview",
+        side_effect=capture,
+    ) as build_plan:
+        plan = service.preview_plan(
+            label="2026/27",
+            start_date=date(2026, 8, 1),
+            end_date=date(2027, 7, 31),
+        )
+
+    build_plan.assert_called_once()
+    assert connection_count == 1
+    assert write_actions == []
+    preview = captured["preview"]
+    assert preview.planned_school_year.label == plan.planned_school_year_label
+    assert tuple(item.student_id for item in preview.items) == tuple(
+        item.student_id for item in plan.items
+    )
+    assert tuple(course.course_id for course in captured["courses"]) == tuple(
+        course.course_id for course in plan.available_courses
+    )
+    assert tuple(group.group_id for group in captured["groups"]) == tuple(
+        group.group_id for group in plan.available_groups
+    )
 
 
 def test_student_display_name_uses_v3_master_data_and_keeps_stable_id() -> None:

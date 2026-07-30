@@ -4,9 +4,10 @@
 
 **Status:** Domain-/Application-Projektion, isolierte SJ-3B.1-Qt-Vorschau,
 displayfähige Namen, flüchtiges SJ-3B.2a-Planmodell und individuelle
-SJ-3B.2b-Qt-Bearbeitung sind lokal implementiert. Ausführung, Backup,
-Authentifizierung, Aktivierung, Shell-/Settings-Integration und
-Mehrkindwechsel bleiben gesperrt.
+SJ-3B.2b-Qt-Bearbeitung, flüchtige SJ-3B.3-Sammelbearbeitung sowie der
+minimale Preview-only-Einstieg unter `Einstellungen → Schuljahre` sind lokal
+implementiert. Ausführung, Backup, Maintenance-Gate, Authentifizierung,
+Aktivierung und unterjährige Mehrkindwechsel bleiben gesperrt.
 
 - [x] Geplantes Zieljahr auf Überlappung, strikte Nachfolge und Lückenlosigkeit
   prüfen.
@@ -30,6 +31,9 @@ Mehrkindwechsel bleiben gesperrt.
   Ungelöst-Entscheidungen.
 - [x] SJ-3B.2b bearbeitet den flüchtigen Plan individuell je Kind, verwendet
   nur dessen aktive Optionen und aktualisiert Status sowie Zähler ohne Write.
+- [x] Einstellungen zeigt das aktuelle Schuljahr, validiert flüchtige
+  Zieljahresangaben über den bestehenden Read-Service und öffnet den
+  vorhandenen Dialog mit einem Plan aus demselben `query_only`-Snapshot.
 - [ ] Schuljahreswechsel-Ausführung mit Backup, Maintenance, Step-up,
   erneuter Quellenprüfung und atomarer Transition separat implementieren.
 

@@ -4,8 +4,9 @@
 
 **Status:** SJ-2F ergänzt produktive Final-V3-Writer in vorhandenen
 Schüler- und Stammdatenviews. Exakt verifiziertes Final-V3 ist für die
-technische Runtime lokal aktiviert; Schuljahreswechsel-Assistent und
-Mehrkindwechsel bleiben gesperrt.
+technische Runtime lokal aktiviert. Der minimale Preview-only-Einstieg unter
+`Einstellungen → Schuljahre` ist integriert; Ausführung und Mehrkindwechsel
+bleiben gesperrt.
 
 Der Datenbankstart zeigt keinen V2-Bootstrap, keine V2-Migrationsvorschau und
 keine Auswahl zur Übernahme alter Testdaten. Ein erkanntes, vollständig
@@ -21,20 +22,32 @@ Runtime technisch, während die schülerbezogenen Bereiche mit dem vorhandenen
 fachlichen Sperrzustand blockiert bleiben. Synthetische Daten sind kein
 Produktdefault.
 
-Der spätere Assistent unter `Einstellungen → Schuljahre` betrifft
-ausschließlich einen echten Wechsel zwischen zwei vorhandenen Schuljahren.
-Seine fachlichen UI-Felder bleiben:
+Der Einstieg unter `Einstellungen → Schuljahre` bereitet ausschließlich die
+flüchtige Vorschau eines echten späteren Wechsels vor. Das Zielschuljahr wird
+in diesem Zwischenstand noch nicht gespeichert oder aktiviert. Seine
+fachlichen UI-Felder bleiben:
 
 | UI-Feld/Aktion | Quelle | Persistenz | Regel |
 |---|---|---|---|
 | Ausgangsschuljahr | vorhandenes eindeutiges `school_years.status = current` | Nein | niemals leer, nicht aus Systemdatum ableiten |
-| Zielschuljahr | vorhandenes geplantes Schuljahr mit Label und Datumsbereich | erst bei atomarer Aktivierung | kein automatischer Statuswechsel |
+| Zielschuljahr | bewusst eingegebene flüchtige Bezeichnung sowie Beginn und Ende | Nein | Validierung ausschließlich über die vorhandene Preview-Logik; kein automatischer Statuswechsel |
 | bisherige Zuordnung | Assignment am Ende des Ausgangsjahres | Nein | keine Schüler-Membershipfelder |
 | Zielkursvorschlag | bestätigtes `courses.year_level` | nur im flüchtigen Plan | Stufe 3 bleibt ungelöst; keine Namens-/Sortierableitung |
 | Zielstammgruppe | bisherige Stammgruppe oder bewusste Änderung | nur im flüchtigen Plan | keine versteckte Änderung |
 | Zielstatus | fortführen, wiederholen, anderer Kurs, ausgeschieden oder ungelöst | nur im flüchtigen Plan | Austritt ist keine Archivierung |
 | Backupstatus | verifizierter Sicherheitsbackupnachweis des finalen Schemas | technischer Nachweis | keine V2-Cutover-Evidence |
 | verbindlich aktivieren | validierter vollständiger Plan, Step-up und Bestätigung | eine atomare Transaktion | Ausgangsjahr schließen, Zieljahr aktivieren, Assignments und echten Transition-Beleg schreiben |
+
+Die minimale Settings-Integration besitzt aktuell:
+
+| Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |
+|---|---|---|---|
+| Navigation `Schuljahre` | lokale Settings-Navigation | Nein | per Maus, Return, Enter und Leertaste erreichbar |
+| aktuelles Schuljahr | eindeutiges `SchoolYearRepository.require_current()` über den bestehenden Desktop-Read | Nein | Label und Zeitraum anzeigen; fehlt die Eindeutigkeit, bleibt die Vorbereitung deaktiviert |
+| Bezeichnung, Beginn, Ende | bewusste Settings-Eingabe | Nein | Accessible Names; Datumsvorgaben nur aus dem aktuellen Schuljahr, nie aus dem Systemdatum |
+| Schuljahreswechsel vorbereiten | Eingaben plus `SchoolYearTransitionPreviewService` | Nein | Preview und flüchtiger Plan entstehen aus demselben `query_only`-Snapshot |
+| neutraler Eingabefehler | vorhandene globale Zieljahres-Issues der Preview | Nein | keine technischen Codes, SQL-Texte oder Pfade zeigen |
+| vorhandenen Vorschau-/Bearbeitungsdialog öffnen | `SchoolYearTransitionPlan` | Nein | Schließen verwirft den Plan; keine Ausführung, kein Backup, kein Step-up, kein Maintenance-Gate und kein Transition-Beleg |
 
 SJ-3B.1 implementiert davon ausschließlich die rein lesende Vorschau:
 
@@ -76,7 +89,7 @@ individuell bearbeitbar dar:
 | Zeilenauswahl und Auswahlzähler | stabile `student_id` im flüchtigen Dialogzustand | Nein | einzeln oder alle sichtbaren; Status zusätzlich als Checkboxtext und Accessible Name, nicht nur farblich; verdeckte Auswahl bleibt erhalten und sichtbar gezählt |
 | Sammel-Zielkurs / -Zielstammgruppe | ausgewählte sichtbare `student_id` plus ausschließlich aktive `SchoolYearTransitionPlan.available_courses` / `available_groups` | Nein | deaktiviert ohne sichtbare Auswahl; mehrere Kinder verlangen Bestätigung; jede Aktion erzeugt einen neuen Plan und lässt nicht ausgewählte oder verdeckte Kinder unverändert |
 | Sammel-ausgeschieden / -ungelöst | ausgewählte sichtbare `student_id` | Nein | ausgeschieden entfernt Zielkurs und Zielgruppe; ungelöst entfernt den Zielkurs; Kurs-3-Fälle werden ausschließlich durch bewusste Kurs-3-Auswahl gelöst |
-| Schließen | Dialogzustand | Nein | globale Aktionen bleiben Schließen plus Sammelbearbeitung; keine Ausführung, Speicherung, Shell-/Settings-Integration, Backup oder Authentifizierung |
+| Schließen | Dialogzustand | Nein | globale Aktionen bleiben Schließen plus Sammelbearbeitung; keine Ausführung, Speicherung, Backup oder Authentifizierung |
 
 Synthetische Initialdaten sind keine UI-Projektion. IDs, Zeitpunkte und
 Fixtures werden ausschließlich im Testpfad erzeugt und niemals als

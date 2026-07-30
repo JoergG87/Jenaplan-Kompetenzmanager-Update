@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from datetime import date, timedelta
+
+from PySide6.QtCore import QDate, Qt, Signal
 from PySide6.QtGui import QKeySequence, QKeyEvent
 from PySide6.QtWidgets import (
     QCheckBox, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QPushButton, QScrollArea,
-    QComboBox, QLineEdit, QProgressBar, QStackedWidget, QTabBar, QVBoxLayout, QWidget,
+    QComboBox, QDateEdit, QFormLayout, QLineEdit, QProgressBar, QStackedWidget,
+    QTabBar, QVBoxLayout, QWidget,
 )
 
 from src.core.app_preferences import DISPLAY_NAME_MAX_LENGTH
@@ -97,6 +100,7 @@ class SettingsScreen(QWidget):
     touch_id_preference_changed = Signal(bool)
     update_check_requested = Signal()
     updates_page_opened = Signal()
+    school_year_transition_preview_requested = Signal(str, object, object)
 
     def __init__(self) -> None:
         super().__init__()
@@ -118,6 +122,7 @@ class SettingsScreen(QWidget):
         self.operation_active = False
         self.restore_preview: RestorePreviewViewModel | None = None
         self.detail_back_buttons: dict[str, QPushButton] = {}
+        self._school_year_signature: tuple[str, date, date] | None = None
         self._build()
 
     def _build(self) -> None:
@@ -130,6 +135,13 @@ class SettingsScreen(QWidget):
         self.pages.addWidget(self._detail_page("backup_restore", "Datensicherung", self._backup_restore_card()))
         self.pages.addWidget(self._detail_page("security", "Sicherheit", self._security_card()))
         self.pages.addWidget(self._detail_page("updates", "Updates", self._updates_card()))
+        self.pages.addWidget(
+            self._detail_page(
+                "school_years",
+                "Schuljahre",
+                self._school_years_card(),
+            )
+        )
         outer.addWidget(self.pages)
 
     def _scroll_page(self, content: QWidget) -> QWidget:
@@ -150,6 +162,11 @@ class SettingsScreen(QWidget):
             "backup_restore": SettingsNavigationCard("backup_restore", "Datensicherung", "Backup erstellen und wiederherstellen"),
             "security": SettingsNavigationCard("security", "Sicherheit", "Passwortschutz und automatische Sperre"),
             "updates": SettingsNavigationCard("updates", "Updates", "Pilotversion bewusst aktualisieren"),
+            "school_years": SettingsNavigationCard(
+                "school_years",
+                "Schuljahre",
+                "Aktuelles Schuljahr und Wechselvorschau",
+            ),
         }
         for card in self.settings_cards.values():
             card.activated.connect(self.show_page)
@@ -197,10 +214,18 @@ class SettingsScreen(QWidget):
         return self._scroll_page(content)
 
     def show_page(self, key: str) -> None:
-        if self.operation_active or key not in {"timetable", "documentation_subjects", "backup_restore", "security", "updates"}:
+        page_indexes = {
+            "timetable": 1,
+            "documentation_subjects": 2,
+            "backup_restore": 3,
+            "security": 4,
+            "updates": 5,
+            "school_years": 6,
+        }
+        if self.operation_active or key not in page_indexes:
             return
         self.current_page = key
-        self.pages.setCurrentIndex({"timetable": 1, "documentation_subjects": 2, "backup_restore": 3, "security": 4, "updates": 5}[key])
+        self.pages.setCurrentIndex(page_indexes[key])
         if key == "backup_restore":
             self.backup_restore_page_opened.emit()
         elif key == "updates":
@@ -236,6 +261,67 @@ class SettingsScreen(QWidget):
         self.set_documentation_subjects(view_model.documentation_subjects)
         selected = sum(item.selected for item in view_model.documentation_subjects)
         self.settings_cards["documentation_subjects"].status.setText(f"{selected} von {len(view_model.documentation_subjects)} Fächern aktiv")
+
+    def set_current_school_year(
+        self,
+        label: str | None,
+        start_date: date | None,
+        end_date: date | None,
+    ) -> None:
+        """Show the current persisted year and initialize only transient input."""
+        if (
+            label is None
+            or start_date is None
+            or end_date is None
+        ):
+            text = "Nicht eindeutig verfügbar"
+            self.current_school_year_label.setText(text)
+            self.current_school_year_label.setAccessibleName(
+                f"Aktuelles Schuljahr: {text}"
+            )
+            self.settings_cards["school_years"].status.setText(text)
+            self.school_year_transition_button.setEnabled(False)
+            return
+
+        period = (
+            f"{label} · {start_date.strftime('%d.%m.%Y')} bis "
+            f"{end_date.strftime('%d.%m.%Y')}"
+        )
+        self.current_school_year_label.setText(period)
+        self.current_school_year_label.setAccessibleName(
+            f"Aktuelles Schuljahr: {period}"
+        )
+        self.settings_cards["school_years"].status.setText(label)
+        self.school_year_transition_button.setEnabled(True)
+        signature = (label, start_date, end_date)
+        if signature == self._school_year_signature:
+            return
+        self._school_year_signature = signature
+        target_start = end_date + timedelta(days=1)
+        try:
+            following_start = target_start.replace(
+                year=target_start.year + 1
+            )
+        except ValueError:
+            following_start = target_start.replace(
+                year=target_start.year + 1,
+                month=3,
+                day=1,
+            )
+        target_end = following_start - timedelta(days=1)
+        self.new_school_year_start.setDate(
+            QDate(target_start.year, target_start.month, target_start.day)
+        )
+        self.new_school_year_end.setDate(
+            QDate(target_end.year, target_end.month, target_end.day)
+        )
+
+    def show_school_year_transition_error(self, text: str) -> None:
+        self.school_year_transition_message.set_message(text, tone="error")
+        self.school_year_transition_message.setFocus()
+
+    def clear_school_year_transition_error(self) -> None:
+        self.school_year_transition_message.set_message("")
 
     def set_timetable(self, week: TimetableWeekViewModel) -> None:
         self.timetable_week = week
@@ -397,6 +483,99 @@ class SettingsScreen(QWidget):
         layout.addWidget(help_label); header = QHBoxLayout(); header.addWidget(self.timetable_tabs, 1); header.addWidget(self.timetable_add_button); layout.addLayout(header)
         set_label_style(self.timetable_empty_label, "muted"); self.timetable_empty_label.setObjectName("TimetableEmptyState"); layout.addWidget(self.timetable_empty_label); layout.addLayout(self.timetable_day_layout)
         return card
+
+    def _school_years_card(self) -> QFrame:
+        card = create_card()
+        card.setObjectName("SchoolYearSettingsSection")
+        layout = QVBoxLayout(card)
+
+        current_title = QLabel("Aktuelles Schuljahr")
+        set_label_style(current_title, "section_title")
+        layout.addWidget(current_title)
+        self.current_school_year_label = QLabel("Nicht eindeutig verfügbar")
+        self.current_school_year_label.setObjectName("CurrentSchoolYear")
+        self.current_school_year_label.setAccessibleName(
+            "Aktuelles Schuljahr: Nicht eindeutig verfügbar"
+        )
+        layout.addWidget(self.current_school_year_label)
+
+        prepare_title = QLabel("Neues Schuljahr")
+        set_label_style(prepare_title, "section_title")
+        layout.addWidget(prepare_title)
+        help_label = QLabel(
+            "Die Angaben werden nur für eine Vorschau verwendet. "
+            "Beim Schließen wird nichts gespeichert oder ausgeführt."
+        )
+        help_label.setWordWrap(True)
+        set_label_style(help_label, "muted")
+        layout.addWidget(help_label)
+
+        form = QFormLayout()
+        self.new_school_year_label = QLineEdit()
+        self.new_school_year_label.setObjectName("NewSchoolYearLabel")
+        self.new_school_year_label.setAccessibleName(
+            "Bezeichnung des neuen Schuljahres"
+        )
+        self.new_school_year_label.setPlaceholderText("Zum Beispiel 2026/27")
+        form.addRow("Bezeichnung", self.new_school_year_label)
+
+        self.new_school_year_start = QDateEdit()
+        self.new_school_year_start.setObjectName("NewSchoolYearStart")
+        self.new_school_year_start.setAccessibleName(
+            "Beginn des neuen Schuljahres"
+        )
+        self.new_school_year_start.setCalendarPopup(True)
+        self.new_school_year_start.setDisplayFormat("dd.MM.yyyy")
+        form.addRow("Beginn", self.new_school_year_start)
+
+        self.new_school_year_end = QDateEdit()
+        self.new_school_year_end.setObjectName("NewSchoolYearEnd")
+        self.new_school_year_end.setAccessibleName(
+            "Ende des neuen Schuljahres"
+        )
+        self.new_school_year_end.setCalendarPopup(True)
+        self.new_school_year_end.setDisplayFormat("dd.MM.yyyy")
+        form.addRow("Ende", self.new_school_year_end)
+        layout.addLayout(form)
+
+        self.school_year_transition_message = InlineMessage()
+        self.school_year_transition_message.setObjectName(
+            "SchoolYearTransitionMessage"
+        )
+        self.school_year_transition_message.setFocusPolicy(
+            Qt.FocusPolicy.StrongFocus
+        )
+        layout.addWidget(self.school_year_transition_message)
+
+        self.school_year_transition_button = QPushButton(
+            "Schuljahreswechsel vorbereiten"
+        )
+        self.school_year_transition_button.setObjectName(
+            "PrepareSchoolYearTransition"
+        )
+        configure_button(
+            self.school_year_transition_button,
+            "primary",
+            "Schuljahreswechsel als flüchtige Vorschau vorbereiten",
+        )
+        self.school_year_transition_button.setEnabled(False)
+        self.school_year_transition_button.clicked.connect(
+            self._emit_school_year_transition_preview
+        )
+        layout.addWidget(
+            self.school_year_transition_button,
+            0,
+            Qt.AlignmentFlag.AlignLeft,
+        )
+        return card
+
+    def _emit_school_year_transition_preview(self) -> None:
+        self.clear_school_year_transition_error()
+        self.school_year_transition_preview_requested.emit(
+            self.new_school_year_label.text(),
+            self.new_school_year_start.date().toPython(),
+            self.new_school_year_end.date().toPython(),
+        )
 
     def _backup_restore_card(self) -> QFrame:
         card = create_card(); card.setObjectName("BackupRestoreSettingsSection"); layout = QVBoxLayout(card)

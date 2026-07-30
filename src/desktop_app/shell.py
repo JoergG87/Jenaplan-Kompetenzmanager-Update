@@ -35,6 +35,9 @@ from src.core.sqlite_store import SQLITE_SPIKE_PATH
 from src.core.sqlite_school_year_assignment import (
     SchoolYearAssignmentRepositoryError,
 )
+from src.application.school_year_transition_preview import (
+    SchoolYearTransitionPreviewService,
+)
 from src.core.learning_report import ReportFinalizationError
 from src.core.learning_report_pdf import LearningReportPdfError
 from src.core.learning_conference import LearningConferenceCompletionError
@@ -70,6 +73,9 @@ from src.desktop_app.dialogs.learning_conference_dialog import (
 )
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
+from src.desktop_app.dialogs.school_year_transition_preview_dialog import (
+    SchoolYearTransitionPreviewDialog,
+)
 from src.desktop_app.dialogs.timetable_entry_dialog import TimetableEntryDialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.icons import ICON_SIZE_MEDIUM, load_icon
@@ -111,6 +117,16 @@ SCHOOL_YEAR_BLOCK_MESSAGE = (
 ASSIGNMENT_BLOCK_MESSAGE = (
     "Aktuelle Schülerzuordnungen sind nicht eindeutig: "
     "Schülerbezogene Bereiche bleiben gesperrt."
+)
+INVALID_TARGET_SCHOOL_YEAR_ISSUES = frozenset(
+    {
+        "NEW_SCHOOL_YEAR_DATE_INVALID",
+        "NEW_SCHOOL_YEAR_DATE_RANGE_INVALID",
+        "NEW_SCHOOL_YEAR_LABEL_INVALID",
+        "NEW_SCHOOL_YEAR_NOT_AFTER_CURRENT",
+        "NEW_SCHOOL_YEAR_OVERLAP",
+        "SCHOOL_YEAR_GAP",
+    }
 )
 
 
@@ -432,6 +448,9 @@ class AppShell(QMainWindow):
         )
         self.settings_screen.updates_page_opened.connect(self.refresh_update_status)
         self.settings_screen.update_check_requested.connect(self.check_for_updates)
+        self.settings_screen.school_year_transition_preview_requested.connect(
+            self.open_school_year_transition_preview
+        )
         self.settings_screen.onboarding_requested.connect(self.open_onboarding_from_settings)
         self.settings_screen.lock_requested.connect(self.lock_requested)
         self.settings_screen.password_change_requested.connect(
@@ -682,6 +701,59 @@ class AppShell(QMainWindow):
         """Refresh settings from SQLite-backed adapter data."""
         self.settings_screen.set_settings(self.adapter.settings_view_model())
         self.settings_screen.set_timetable(self.timetable_adapter.week_view_model())
+        current_school_year = self.adapter.current_school_year()
+        self.settings_screen.set_current_school_year(
+            (
+                current_school_year.label
+                if current_school_year is not None
+                else None
+            ),
+            (
+                current_school_year.start_date
+                if current_school_year is not None
+                else None
+            ),
+            (
+                current_school_year.end_date
+                if current_school_year is not None
+                else None
+            ),
+        )
+
+    def open_school_year_transition_preview(
+        self,
+        label: str,
+        start_date: date,
+        end_date: date,
+    ) -> None:
+        """Open only the transient plan produced by the read-only service."""
+        self.settings_screen.clear_school_year_transition_error()
+        try:
+            plan = SchoolYearTransitionPreviewService(
+                self.adapter.database.connect
+            ).preview_plan(
+                label=label,
+                start_date=start_date,
+                end_date=end_date,
+            )
+        except Exception:
+            self.settings_screen.show_school_year_transition_error(
+                "Die Vorschau konnte mit diesen Angaben nicht erstellt werden."
+            )
+            return
+
+        if any(
+            issue.code in INVALID_TARGET_SCHOOL_YEAR_ISSUES
+            for issue in plan.original_validation_issues
+        ):
+            self.settings_screen.show_school_year_transition_error(
+                "Das neue Schuljahr konnte mit diesen Angaben nicht "
+                "vorbereitet werden. Bitte Bezeichnung, Beginn und Ende prüfen."
+            )
+            return
+
+        dialog = SchoolYearTransitionPreviewDialog(plan, self)
+        exec_maximized_workspace(dialog, self)
 
     def refresh_update_status(self) -> None:
         """Project native update state without exposing Sparkle to the view."""

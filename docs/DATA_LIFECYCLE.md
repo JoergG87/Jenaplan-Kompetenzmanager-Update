@@ -215,6 +215,22 @@ Write-, Backup-, Authentifizierungs- oder Ausführungslifecycle hinzu.
 Die spätere Ausführung benötigt weiterhin den vollständigen getrennten
 Schutzlifecycle.
 
+Der integrierte Preview-only-Einstieg ergänzt davor ausschließlich diesen
+flüchtigen UI-Ablauf:
+
+1. `Einstellungen → Schuljahre` zeigt das bereits gelesene eindeutige
+   current-Schuljahr.
+2. Bezeichnung, Beginn und Ende des neuen Schuljahres werden nur im Widget
+   gehalten und an den vorhandenen Read-Service übergeben.
+3. Der Service erzeugt Preview und Planoptionen im selben `query_only`-
+   Snapshot; aus Preview und diesen Quellen entsteht genau ein flüchtiger
+   `SchoolYearTransitionPlan`.
+4. Globale Zieljahres-Issues führen zu einer neutralen Inline-Fehlermeldung.
+   Andernfalls öffnet die Shell den vorhandenen Bearbeitungsdialog.
+5. Schließen verwirft den Dialogzustand. Es folgt weder Refresh noch Backup,
+   Passwortabfrage, Maintenance-Gate, Datenbankwrite, Ausführung oder
+   Transition-Beleg.
+
 ## SJ-2E-Lifecycle für produktive Assignment-Reader
 
 Der implementierte SJ-2E-Readerablauf ist rein lesend und besitzt weder die

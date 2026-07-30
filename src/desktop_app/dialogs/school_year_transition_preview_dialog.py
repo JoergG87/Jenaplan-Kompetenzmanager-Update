@@ -56,8 +56,12 @@ TABLE_HEADERS = (
 class SchoolYearTransitionPreviewDialog(MotionDialog):
     """Edit one transient plan without repositories, writes, or execution."""
 
-    def __init__(self, plan: SchoolYearTransitionPlan) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        plan: SchoolYearTransitionPlan,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
         self.plan = plan
         self.view_model = SchoolYearTransitionPreviewViewModel.from_plan(plan)
         self.setWindowTitle("Schuljahreswechsel-Vorschau")

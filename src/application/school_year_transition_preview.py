@@ -8,6 +8,7 @@ from contextlib import closing
 from datetime import date, timedelta
 import sqlite3
 
+from src.application.school_year_transition_plan import SchoolYearTransitionPlan
 from src.core.school_year import (
     SchoolYear,
     SchoolYearStatus,
@@ -275,6 +276,42 @@ class SchoolYearTransitionPreviewService:
         start_date: date,
         end_date: date,
     ) -> SchoolYearTransitionPreview:
+        preview, _ = self._preview_with_sources(
+            label=label,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        return preview
+
+    def preview_plan(
+        self,
+        *,
+        label: str,
+        start_date: date,
+        end_date: date,
+    ) -> SchoolYearTransitionPlan:
+        """Build one transient plan from the same read-only source snapshot."""
+        preview, sources = self._preview_with_sources(
+            label=label,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        return SchoolYearTransitionPlan.from_preview(
+            preview,
+            courses=sources.courses,
+            groups=sources.groups,
+        )
+
+    def _preview_with_sources(
+        self,
+        *,
+        label: str,
+        start_date: date,
+        end_date: date,
+    ) -> tuple[
+        SchoolYearTransitionPreview,
+        SchoolYearTransitionPreviewSources,
+    ]:
         planned = PlannedSchoolYear(label, start_date, end_date)
         with closing(self._connection_factory()) as connection:
             connection.execute("PRAGMA query_only = ON")
@@ -298,9 +335,12 @@ class SchoolYearTransitionPreviewService:
             if connection.total_changes != before_changes:
                 raise RuntimeError("school_year_transition_preview_wrote_data")
             connection.rollback()
-        return self._projector.project(
-            planned_school_year=planned,
-            sources=sources,
+        return (
+            self._projector.project(
+                planned_school_year=planned,
+                sources=sources,
+            ),
+            sources,
         )
 
 

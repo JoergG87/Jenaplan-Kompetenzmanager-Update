@@ -4,10 +4,12 @@
 
 **Status:** Verbindlicher Zielvertrag. SJ-3B.1 setzt die isolierte Vorschau
 um, SJ-3B.2a das rein flüchtige Planmodell und SJ-3B.2b dessen individuelle
-Qt-Bearbeitung im vorhandenen Dialog. Assistentenintegration, Schutzstufen,
-Sammelbearbeitung und Ausführung bleiben offen. Die folgende Informations-,
-Interaktions- und Accessibility-Semantik bleibt für den vollständigen
-Assistenten verbindlich.
+Qt-Bearbeitung im vorhandenen Dialog. Der minimale Einstieg unter
+`Einstellungen → Schuljahre` mit aktuellem Schuljahr, flüchtigen
+Zieljahresangaben und Preview-only-Dialog ist integriert. Backup,
+Passwort-Step-up, Maintenance-Gate, Schreiben, Transition-Beleg und
+Ausführung bleiben offen. Die folgende Informations-, Interaktions- und
+Accessibility-Semantik bleibt für den vollständigen Assistenten verbindlich.
 
 SJ-3B.1 zeigt den vorhandenen Preview-Kopf und jedes vorhandene Item genau
 einmal in unveränderter Reihenfolge. Die Tabelle ist nicht editierbar und bei
@@ -37,6 +39,14 @@ ruhiger, linearer Arbeitsraum mit zehn sichtbaren Phasen:
 8. Passwort und explizite Bestätigung.
 9. Atomare Ausführung.
 10. Ergebnis.
+
+Im aktuell integrierten Preview-only-Zwischenstand ist ausschließlich Phase 1
+als Settings-Unterseite und anschließend die vorhandene flüchtige
+Vorschau-/Planbearbeitung erreichbar. Bezeichnung, Beginn und Ende besitzen
+sichtbare Labels und Accessible Names. Ungültige Zieljahresangaben werden über
+die vorhandene Preview-Validierung neutral in einer fokussierbaren
+`InlineMessage` abgelehnt. Es existiert keine Ausführungs-, Backup-,
+Authentifizierungs- oder Speicheraktion.
 
 Die Phasenanzeige unterscheidet `aktuell`, `geprüft` und `blockiert` textlich;
 Farbe unterstützt nur. Ein späterer Schritt darf keine noch offene

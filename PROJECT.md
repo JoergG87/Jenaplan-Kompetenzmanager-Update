@@ -91,8 +91,7 @@ Authentifizierung, Backup- oder Mehrkindwechselfunktion.
 
 SJ-3B.1 ergänzt einen isolierten rein lesenden PySide-Dialog. Er zeigt Kopf,
 Zähler und jedes vorhandene Preview-Item unverändert, erlaubt nur Schließen
-und besitzt weder Repository-/Write-Aufruf noch Ausführungsmöglichkeit. Eine
-breite Settings-/Shell-Integration ist nicht erfolgt.
+und besitzt weder Repository-/Write-Aufruf noch Ausführungsmöglichkeit.
 
 SJ-3B.2a ergänzt in der Preview den ausschließlich aus V3-Schülerstammdaten
 aufgelösten Anzeigenamen bei stabiler `student_id`. Ein fehlender referenzierter
@@ -108,12 +107,19 @@ Jede bewusste Auswahl erzeugt eine neue Planinstanz; Planstatus und Zähler
 werden daraus neu projiziert. Global ist weiterhin ausschließlich Schließen
 zulässig.
 
-Weiterhin nicht umgesetzt oder freigegeben sind Shell-/Settings-Integration,
-Planpersistenz, die spätere Ausführung des Wechsels, Backup,
-Authentifizierung, unterjährige Mehrkind-/Sammelwechsel, Build, Packaging und
-Release. Die manuelle Prüfung der Runtime sowie der neuen Schüler-, Wechsel-,
-Austritts-, Kursstufen- und Schuljahreswechseloberflächen auf macOS ist noch
-offen. Es wurden keine Migration und keine echten Daten verwendet.
+SJ-3B.3 ergänzt ausschließlich flüchtige Filter, stabile Auswahl und
+Sammelbearbeitung im vorhandenen Dialog. Der minimale Einstieg
+`Einstellungen → Schuljahre` zeigt das aktuelle Schuljahr, nimmt Bezeichnung,
+Beginn und Ende des Zieljahres entgegen und öffnet nach der vorhandenen
+Preview-Validierung diesen Dialog mit einem Plan aus demselben
+`query_only`-Snapshot. Ungültige Jahresdaten bleiben neutral sichtbar.
+
+Weiterhin nicht umgesetzt oder freigegeben sind Planpersistenz, die spätere
+Ausführung des Wechsels, Backup, Maintenance-Gate, Authentifizierung,
+unterjährige Mehrkindwechsel, Build, Packaging und Release. Die manuelle
+Prüfung der Runtime sowie der neuen Schüler-, Wechsel-, Austritts-,
+Kursstufen- und Schuljahreswechseloberflächen auf macOS ist noch offen. Es
+wurden keine Migration und keine echten Daten verwendet.
 
 ## Schuljahresmodell und echte Wechsel
 

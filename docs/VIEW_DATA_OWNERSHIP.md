@@ -37,6 +37,7 @@ V2-Restoreauswahl.
 | Kurs-/Stammgruppendeaktivierung | Stammdaten plus aktuelle und zukünftige `enrolled`-Referenzen am expliziten Stichtag | `MasterDataDesktopAdapter` und `SQLiteMasterDataRepository` | versteckte Umbuchung, Ersatzgruppe/-kurs, historische Assignmentmutation |
 | Kursfortschreibung | `courses.year_level` | späterer School-Year Transition Service | Kursname, Farbe, Sortierung |
 | SJ-3A-Schuljahreswechsel-Vorschau | alle V3-Schüler, genau ein current-Schuljahr, Assignments an dessen Ende, vorhandene Schuljahre sowie Gruppen und Kurse mit `active`/`year_level` | `SchoolYearTransitionPreviewService` und `SchoolYearTransitionPreviewProjector` | Kindfilter, Systemdatum, Kursname/-sortierung, zweite Connection, Write, UI-Entscheidung oder stille Zielauswahl |
+| Settings-Einstieg Schuljahre | eindeutiges aktuelles Schuljahr sowie bewusst eingegebene flüchtige Zieljahresdaten | `AppShell` als Composition Root und `SettingsScreen` als reine Eingabe-/Anzeigegrenze | Widget-Repositoryzugriff, zweite Connection für Planoptionen, Persistenz, Backup, Authentifizierung, Maintenance-Gate oder Ausführung |
 | SJ-3B.1-Previewdialog | unveränderte Reihenfolge, Zähler, Zielstatus und Issues genau einer vorhandenen `SchoolYearTransitionPreview` | `SchoolYearTransitionPreviewViewModel` und `SchoolYearTransitionPreviewDialog` | Repository-/Serviceaufruf im Widget, Neuberechnung, Sortierung, Bearbeitung, Backup, Authentifizierung oder Ausführung |
 | SJ-3B.2a-Planmodell | vorhandene Preview sowie explizite aktive Kurs- und Gruppenoptionen | `SchoolYearTransitionPlan` | Qt, Repositoryzugriff, Persistenz, automatische Entscheidung, Backup, Authentifizierung oder Ausführung |
 | SJ-3B.2b-individuelle Planbearbeitung | aktueller flüchtiger `SchoolYearTransitionPlan` mit dessen kopierten Anzeige-Metadaten, aktiven Optionen, Validierung und Zählern | `SchoolYearTransitionPreviewViewModel` und `SchoolYearTransitionPreviewDialog` | Preview-Mutation, Widget-Fachlogik, Repository-/Servicezugriff, automatische Auswahl, Mehrfachauswahl, Sammeländerung, Write, Backup, Authentifizierung oder Ausführung |
@@ -67,6 +68,14 @@ Optionen, Validierung und Zähler stammen aus Plan und ViewModel, ohne
 Vorschlags- oder Validierungslogik im Widget zu duplizieren.
 Persistenz, Backup, Authentifizierung, Aktivierung und Transition-Beleg
 besitzen weder Repository noch Service in SJ-3A.
+
+Die minimale Settings-Integration übergibt Bezeichnung, Beginn und Ende an
+den bestehenden `SchoolYearTransitionPreviewService`. Dieser erzeugt Preview
+und `SchoolYearTransitionPlan` aus denselben bereits gelesenen Kurs- und
+Gruppenquellen im einen `query_only`-Snapshot. Die Shell prüft ausschließlich
+die vorhandenen globalen Zieljahres-Issues, zeigt dafür neutralen UI-Text und
+öffnet sonst den vorhandenen Dialog. Das Schließen löst keinen Refresh und
+keinen fachlichen oder technischen Write aus.
 
 Die Writer-Dialoge besitzen ausschließlich Eingabe, Vorschau, bewusste
 Bestätigung und Fehlerdarstellung. Atomizität, Intervallregeln,
