@@ -124,3 +124,4 @@ class SchoolYearTransitionPreviewSources:
     memberships: tuple[SchoolYearTransitionMembership, ...]
     courses: tuple[SchoolYearTransitionCourse, ...]
     groups: tuple[SchoolYearTransitionGroup, ...]
+    source_sha256: str = ""

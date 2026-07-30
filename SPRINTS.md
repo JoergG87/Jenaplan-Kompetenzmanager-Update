@@ -6,8 +6,10 @@
 displayfähige Namen, flüchtiges SJ-3B.2a-Planmodell und individuelle
 SJ-3B.2b-Qt-Bearbeitung, flüchtige SJ-3B.3-Sammelbearbeitung sowie der
 minimale Preview-only-Einstieg unter `Einstellungen → Schuljahre` sind lokal
-implementiert. Ausführung, Backup, Maintenance-Gate, Authentifizierung,
-Aktivierung und unterjährige Mehrkindwechsel bleiben gesperrt.
+implementiert. Die isolierte atomare SJ-3C.2-Ausführungslogik ist ausschließlich
+für temporäre synthetische Final-V3-Datenbanken implementiert. Produkt-
+Ausführung, Backup, Maintenance-Gate, Authentifizierung, UI-Aktivierung und
+unterjährige Mehrkindwechsel bleiben gesperrt.
 
 - [x] Geplantes Zieljahr auf Überlappung, strikte Nachfolge und Lückenlosigkeit
   prüfen.
@@ -34,8 +36,12 @@ Aktivierung und unterjährige Mehrkindwechsel bleiben gesperrt.
 - [x] Einstellungen zeigt das aktuelle Schuljahr, validiert flüchtige
   Zieljahresangaben über den bestehenden Read-Service und öffnet den
   vorhandenen Dialog mit einem Plan aus demselben `query_only`-Snapshot.
-- [ ] Schuljahreswechsel-Ausführung mit Backup, Maintenance, Step-up,
-  erneuter Quellenprüfung und atomarer Transition separat implementieren.
+- [x] SJ-3C.2 führt einen vollständig gelösten source- und hashgebundenen Plan
+  auf temporärer synthetischer Final-V3-Datenbank mit `BEGIN IMMEDIATE`,
+  Revalidierung, genau einem Zielassignment je Kind, technischem Beleg,
+  Idempotenz, Integritätsprüfung und vollständigem Rollback atomar aus.
+- [ ] Produkt-Ausführung mit verifiziertem Backup, Maintenance, Step-up,
+  Bestätigung sowie UI-/Runtime-Verdrahtung separat implementieren.
 
 ## V3-only Architecture Cleanup
 

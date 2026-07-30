@@ -4,7 +4,8 @@
 
 **Status:** V3-only-Cleanup, zentrale Assignment-API, SJ-2E-Umstellung der
 produktiven Membership-Reader, SJ-2F-Umstellung der produktiven Writer und
-Final-V3-Runtime-Aktivierung sind lokal implementiert.
+Final-V3-Runtime-Aktivierung sowie die isolierte synthetische
+SJ-3C.2-Ausführung sind lokal implementiert.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
@@ -58,6 +59,15 @@ Bootstrap-Transition-Typen.
 | `SchoolYearTransitionPlanCounts` | deterministische Zähler ausschließlich aus dem aktuellen flüchtigen Plan | Application School-Year Transition Plan |
 | `SchoolYearTransitionPlanValidation` | vollständiges deterministisches Prüfergebnis des flüchtigen Plans ohne Ausführungsfreigabe | Application School-Year Transition Plan |
 | `SchoolYearTransitionPlanError` | Ablehnung einer ungültigen flüchtigen Bearbeitungsanforderung ohne Seiteneffekt | Application School-Year Transition Plan |
+| `school_year_transition_plan_sha256` | kanonischer SHA-256 ausschließlich über technische Plan-, Entscheidungs- und Quellenwerte; Anzeigenamen und darstellende Kurs-/Gruppennamen sind ausgeschlossen | Application School-Year Transition Execution |
+| `SchoolYearTransitionExecutionCounts` | deterministische technische Ergebniszahlen des atomaren Wechsels | Application School-Year Transition Execution |
+| `SchoolYearTransitionExecutionResult` | unveränderliche Rückgabe eines neu committed oder idempotent wiedergefundenen Transitionbelegs | Application School-Year Transition Execution |
+| `SchoolYearTransitionExecutionError` | fail-closed Ablehnung vor oder innerhalb der atomaren Ausführungsgrenze mit stabilem technischen Code | Application School-Year Transition Execution |
+| `ExecuteSchoolYearTransition` | Qt-freier SJ-3C.2-Application-Service für reine Planprüfung, `BEGIN IMMEDIATE`, Quellenrevalidierung, atomare Writes, Beleg, Integritätsprüfung und Rollback; noch ohne Produktverdrahtung | Application School-Year Transition Execution |
+| `SchoolYearTransitionExecutionRepository` | Connection-gebundene Schreib- und Prüfgrenze innerhalb der vom Application Service besessenen Transaktion; öffnet, committet, rollt nicht zurück und schließt nicht selbst | Core School-Year Transition Persistence |
+| `StoredSchoolYearTransition` | unveränderliche technische Projektion eines vorhandenen `school_year_transitions`-Belegs | Core School-Year Transition Persistence |
+| `SchoolYearTransitionRepositoryError` | fail-closed Fehlercode der Transition-Schreibgrenze | Core School-Year Transition Persistence |
+| `NO_BACKUP_EVIDENCE_SHA256` | reservierter 64-stelliger Null-Sentinel ausschließlich für das nicht produktverdrahtete SJ-3C.2-Testpaket auf temporären synthetischen Final-V3-Datenbanken; kein Backupnachweis | Core School-Year Transition Persistence |
 | `SchoolYearRepository` | Connection-gebundener SQLite-Read auf `school_years`; öffnet und steuert keine Transaktion | Core Assignment Persistence |
 | `StudentSchoolYearAssignmentRepository` | Connection-gebundene set-basierte SQLite-Reads und atomar orchestrierbare Writes auf Assignments | Core Assignment Persistence |
 | `V3StudentRepository` | Connection-gebundene Persistenz ausschließlich der V3-Schülerstammdaten | Core Student Persistence |

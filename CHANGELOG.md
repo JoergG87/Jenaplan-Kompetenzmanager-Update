@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- SJ-3C.2 ergänzt die isolierte Qt-freie atomare Ausführungsgrenze für einen
+  vollständig gelösten Schuljahreswechselplan auf ausschließlich temporären
+  synthetischen Final-V3-Datenbanken. Plan und technische Quellen werden
+  kanonisch per SHA-256 gebunden und vor jedem Write innerhalb genau einer
+  `BEGIN IMMEDIATE`-Transaktion erneut geprüft. Ausgangsjahr, neues
+  current-Zieljahr, genau ein `enrolled`- oder `exited`-Assignment je Kind und
+  der unveränderliche technische Transitionbeleg werden gemeinsam committed;
+  Counts, Constraints, `integrity_check` und `foreign_key_check` laufen vor
+  Commit. Identischer Token und Plan liefern idempotent den vorhandenen Beleg,
+  abweichende Retries sowie Fehler an jedem Schreibschritt werden ohne
+  Teilumstellung abgelehnt beziehungsweise vollständig zurückgerollt.
+  Historische Assignments und Fachrecords bleiben unverändert. Anzeigenamen
+  gelangen weder in Plan-Hash noch Beleg. Das Paket besitzt bewusst keine UI-,
+  Backup-, Authentifizierungs- oder Maintenance-Integration und ist nicht für
+  reale Datenbanken verdrahtet; der reservierte Null-Sentinel im synthetischen
+  Testbeleg ist ausdrücklich kein Backupnachweis.
 - Unter `Einstellungen → Schuljahre` ist jetzt der minimale Preview-only-
   Einstieg für den Schuljahreswechsel verfügbar. Die Unterseite zeigt das
   aktuelle Schuljahr und nimmt Bezeichnung, Beginn und Ende des neuen

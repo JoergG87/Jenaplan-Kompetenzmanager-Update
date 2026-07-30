@@ -199,11 +199,18 @@ def test_preview_plan_receives_preview_and_options_from_one_service_snapshot(
         *,
         courses,
         groups,
+        source_sha256,
     ):
         captured["preview"] = preview
         captured["courses"] = courses
         captured["groups"] = groups
-        return original(preview, courses=courses, groups=groups)
+        captured["source_sha256"] = source_sha256
+        return original(
+            preview,
+            courses=courses,
+            groups=groups,
+            source_sha256=source_sha256,
+        )
 
     with patch.object(
         SchoolYearTransitionPlan,
@@ -230,6 +237,8 @@ def test_preview_plan_receives_preview_and_options_from_one_service_snapshot(
     assert tuple(group.group_id for group in captured["groups"]) == tuple(
         group.group_id for group in plan.available_groups
     )
+    assert captured["source_sha256"] == plan.source_sha256
+    assert len(plan.source_sha256) == 64
 
 
 def test_student_display_name_uses_v3_master_data_and_keeps_stable_id() -> None:

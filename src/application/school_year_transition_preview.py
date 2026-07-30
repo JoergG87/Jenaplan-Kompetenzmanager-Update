@@ -300,6 +300,7 @@ class SchoolYearTransitionPreviewService:
             preview,
             courses=sources.courses,
             groups=sources.groups,
+            source_sha256=sources.source_sha256,
         )
 
     def _preview_with_sources(

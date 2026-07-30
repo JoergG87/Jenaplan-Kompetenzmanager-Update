@@ -4,7 +4,8 @@
 
 **Status:** Governance, technischer V3-only-Cleanup, zentrale Assignment-API,
 SJ-2E-Leserumstellung, SJ-2F-Writerumstellung und die Final-V3-Runtime-
-Aktivierung sind lokal implementiert. Die manuelle macOS-Abnahme bleibt offen.
+Aktivierung sowie die isolierte synthetische SJ-3C.2-Ausführung sind lokal
+implementiert. Die manuelle macOS-Abnahme bleibt offen.
 
 V3 ist das erste und einzige Produktschema. Es enthält `school_years`,
 datierte `student_school_year_assignments`, `courses.year_level`,
@@ -114,22 +115,37 @@ Beginn und Ende des Zieljahres entgegen und öffnet nach der vorhandenen
 Preview-Validierung diesen Dialog mit einem Plan aus demselben
 `query_only`-Snapshot. Ungültige Jahresdaten bleiben neutral sichtbar.
 
-Weiterhin nicht umgesetzt oder freigegeben sind Planpersistenz, die spätere
-Ausführung des Wechsels, Backup, Maintenance-Gate, Authentifizierung,
-unterjährige Mehrkindwechsel, Build, Packaging und Release. Die manuelle
-Prüfung der Runtime sowie der neuen Schüler-, Wechsel-, Austritts-,
-Kursstufen- und Schuljahreswechseloberflächen auf macOS ist noch offen. Es
-wurden keine Migration und keine echten Daten verwendet.
+SJ-3C.2 ergänzt die isolierte Qt-freie atomare Ausführungslogik auf
+temporären synthetischen Final-V3-Datenbanken. Der unveränderliche Plan trägt
+einen technischen Quellenfingerabdruck; sein kanonischer Plan-Hash enthält
+keine Anzeigenamen. Nach `BEGIN IMMEDIATE` werden Quellen, current- und
+Zieljahr, Assignments sowie Kurs-/Gruppenreferenzen erneut geprüft. Der
+Service schließt das Ausgangsjahr, legt das Zieljahr als current an, schreibt
+genau ein Zielassignment je Kind sowie den technischen Beleg und prüft Counts,
+Constraints, Integrität und Foreign Keys vor Commit. Identische Retries sind
+idempotent; jede Abweichung oder jeder Schreibfehler wird abgelehnt
+beziehungsweise vollständig zurückgerollt.
+
+Weiterhin nicht umgesetzt oder freigegeben sind Planpersistenz,
+Ausführungs-UI und Runtime-Verdrahtung, ein verifiziertes Backup,
+Maintenance-Gate, Authentifizierung, unterjährige Mehrkindwechsel, Build,
+Packaging und Release. Der SJ-3C.2-Testbeleg verwendet deshalb ausschließlich
+auf synthetischen Daten den reservierten Null-Sentinel und stellt keinen
+Backupnachweis dar. Die manuelle Prüfung der Runtime sowie der neuen Schüler-,
+Wechsel-, Austritts-, Kursstufen- und Schuljahreswechseloberflächen auf macOS
+ist noch offen. Es wurden keine Migration und keine echten Daten verwendet.
 
 ## Schuljahresmodell und echte Wechsel
 
 Die Domainmodelle `SchoolYear` und
 `StudentMembershipAssignment`, ihre Datums- und Intervallinvarianten sowie
 die Datenhoheit aus ADR-095 bleiben verbindlich. Ein echter späterer
-Schuljahreswechsel führt von einem vorhandenen current-Schuljahr zu einem
-vorhandenen geplanten Schuljahr. Sein `school_year_transitions`-Beleg besitzt
-immer ein vorhandenes Ausgangs- und Zielschuljahr; eine Bootstrap-Transition
-mit leerer Ausgangs-ID ist ausgeschlossen.
+Schuljahreswechsel führt von einem vorhandenen current-Schuljahr zu bewusst
+festgelegten flüchtigen Zieljahresdaten. Das Zieljahr wird erst innerhalb der
+atomaren Wechseltransaktion neu und als current angelegt. Sein
+`school_year_transitions`-Beleg besitzt nach dem Commit immer ein vorhandenes
+Ausgangs- und Zielschuljahr; eine Bootstrap-Transition mit leerer Ausgangs-ID
+ist ausgeschlossen.
 
 Vorschau, verifiziertes Sicherheitsbackup, Maintenance-Gate, erneute
 Quellenprüfung, Passwort-Step-up, atomare Transaktion, Rollback, Idempotenz,

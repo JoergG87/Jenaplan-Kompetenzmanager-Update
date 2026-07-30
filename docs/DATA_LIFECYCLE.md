@@ -5,7 +5,8 @@
 **Status:** V3-only-Schema-, Startup-, Compatibility-, Backup-/Restore-,
 synthetischer Testdaten-Cleanup und Assignment-API lokal implementiert. Der
 SJ-2E-Lifecycle der produktiven Membership-Reader und der
-SJ-2F-Lifecycle der produktiven Writer sind lokal umgesetzt. Exakt
+SJ-2F-Lifecycle der produktiven Writer sowie die isolierte synthetische
+SJ-3C.2-Ausführung sind lokal umgesetzt. Exakt
 verifiziertes Final-V3 ist für die normale Runtime lokal freigegeben; die
 manuelle macOS-Abnahme bleibt offen.
 
@@ -212,8 +213,40 @@ sämtliche Datenbanken bleiben unverändert; Validierung und Zähler werden aus
 der neuen Instanz neu projiziert. SJ-3B.3 fügt weiterhin keinen Repository-,
 Write-, Backup-, Authentifizierungs- oder Ausführungslifecycle hinzu.
 
-Die spätere Ausführung benötigt weiterhin den vollständigen getrennten
-Schutzlifecycle.
+SJ-3C.2 ergänzt isoliert die atomare Application-/Repository-Ausführungsgrenze
+für ausschließlich temporäre synthetische Final-V3-Datenbanken:
+
+1. Vor dem Öffnen einer Write-Connection verlangt der Service einen
+   vollständig gelösten unveränderlichen Plan ohne aktuelle globale oder
+   kindbezogene Blocker und vergleicht dessen kanonischen technischen
+   SHA-256 mit dem erwarteten Wert.
+2. Die Connection aktiviert Foreign Keys und beginnt genau eine
+   `BEGIN IMMEDIATE`-Transaktion.
+3. Ein vorhandener Beleg mit demselben `operation_token`, Plan-Hash und
+   deterministischer Zieljahres-ID liefert unverändert das vorhandene Ergebnis.
+   Abweichender Token-/Plan- oder Zieljahrgebrauch wird fail-closed abgelehnt.
+4. Vor dem ersten Write werden der vollständige Quellenfingerabdruck, das
+   eindeutige current-Schuljahr, die Abwesenheit eines kollidierenden
+   Zieljahres, alle Zielgruppen/-kurse und erneut der Plan-Hash geprüft.
+5. Das Ausgangsjahr wird geschlossen, das neue Zieljahr als `current`
+   angelegt und je stabiler `student_id` genau ein vollständiges Zielassignment
+   für den gesamten Zielzeitraum geschrieben. `enrolled` besitzt Gruppe und
+   Kurs; `exited` besitzt beides nicht und archiviert nicht.
+6. Der unveränderliche Beleg enthält ausschließlich technische IDs, Plan-Hash,
+   technischen Backupwert, kanonische Ergebniszähler und Abschlusszeitpunkt.
+   Anzeigenamen und darstellende Kurs-/Gruppennamen werden weder gehasht noch
+   belegt.
+7. Vor Commit werden Zielzahlen, genau-ein-Assignment-je-Kind,
+   Schuljahresstatus, Belegzahl, `integrity_check` und `foreign_key_check`
+   geprüft. Jeder Fehler rollt Schuljahre, Assignments und Beleg vollständig
+   zurück.
+
+Der technische Backupwert ist in diesem ausdrücklich backupfreien,
+nicht produktverdrahteten Testpaket der reservierte 64-stellige Null-Sentinel.
+Er ist kein Backupnachweis. Der vollständige Produktwechsel benötigt weiterhin
+verifiziertes Backup, Maintenance-Gate, Passwort-Step-up, explizite
+Bestätigung und UI-/Runtime-Integration; keine dieser Schutzstufen wird durch
+SJ-3C.2 ersetzt oder freigegeben.
 
 Der integrierte Preview-only-Einstieg ergänzt davor ausschließlich diesen
 flüchtigen UI-Ablauf:

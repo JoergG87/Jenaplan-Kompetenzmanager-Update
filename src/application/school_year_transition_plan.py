@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from enum import Enum
+import hashlib
+import json
 from typing import TypeVar
 
 from src.core.school_year_transition import (
@@ -135,6 +137,8 @@ class SchoolYearTransitionPlan:
         SchoolYearTransitionValidationIssue,
         ...,
     ]
+    current_school_year_id: str | None
+    source_sha256: str
 
     @classmethod
     def from_preview(
@@ -143,6 +147,7 @@ class SchoolYearTransitionPlan:
         *,
         courses: tuple[SchoolYearTransitionCourse, ...],
         groups: tuple[SchoolYearTransitionGroup, ...],
+        source_sha256: str = "",
     ) -> "SchoolYearTransitionPlan":
         """Copy one preview without mutating or reordering it."""
         available_courses = _active_courses(courses)
@@ -162,6 +167,12 @@ class SchoolYearTransitionPlan:
             available_courses=available_courses,
             available_groups=available_groups,
             original_validation_issues=preview.validation_issues,
+            current_school_year_id=(
+                preview.current_school_year.school_year_id
+                if preview.current_school_year is not None
+                else None
+            ),
+            source_sha256=source_sha256,
         )
 
     def accept_proposed_course(
@@ -521,6 +532,93 @@ class SchoolYearTransitionPlan:
         if not selected_ids <= known_ids:
             raise SchoolYearTransitionPlanError("plan_student_not_found")
         return selected_ids
+
+
+def school_year_transition_plan_sha256(
+    plan: SchoolYearTransitionPlan,
+) -> str:
+    """Hash only canonical technical plan data, never display names."""
+
+    payload = {
+        "schema_version": 1,
+        "current_school_year": {
+            "school_year_id": plan.current_school_year_id,
+            "label": plan.current_school_year_label,
+        },
+        "planned_school_year": {
+            "label": plan.planned_school_year_label,
+            "start_date": _canonical_value(
+                plan.planned_school_year_start_date
+            ),
+            "end_date": _canonical_value(plan.planned_school_year_end_date),
+        },
+        "source_sha256": plan.source_sha256,
+        "items": [
+            {
+                "student_id": item.student_id,
+                "current_group_id": item.current_group_id,
+                "current_course_id": item.current_course_id,
+                "current_year_level": item.current_year_level,
+                "target_group_id": item.target_group_id,
+                "target_course_id": item.target_course_id,
+                "target_status": item.target_status.value,
+                "original_warning_codes": list(item.original_warning_codes),
+                "original_blocker_codes": list(item.original_blocker_codes),
+                "resolved": item.resolved,
+                "edited": item.edited,
+                "course_decision": item.course_decision.value,
+                "group_decision": item.group_decision.value,
+                "original_proposed_group_id": (
+                    item.original_proposed_group_id
+                ),
+                "original_proposed_course_id": (
+                    item.original_proposed_course_id
+                ),
+                "original_target_status": item.original_target_status.value,
+                "original_current_year_level": (
+                    item.original_current_year_level
+                ),
+            }
+            for item in plan.items
+        ],
+        "available_courses": [
+            {
+                "course_id": course.course_id,
+                "active": course.active,
+                "year_level": course.year_level,
+            }
+            for course in plan.available_courses
+        ],
+        "available_groups": [
+            {
+                "group_id": group.group_id,
+                "active": group.active,
+            }
+            for group in plan.available_groups
+        ],
+        "original_validation_issues": [
+            {
+                "student_id": issue.student_id,
+                "code": issue.code,
+                "severity": issue.severity.value,
+            }
+            for issue in plan.original_validation_issues
+        ],
+    }
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _canonical_value(value: object) -> object:
+    isoformat = getattr(value, "isoformat", None)
+    if callable(isoformat):
+        return isoformat()
+    return value
 
 
 _NON_DECISION_BLOCKERS = frozenset(

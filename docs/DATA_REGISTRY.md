@@ -4,8 +4,9 @@
 
 **Status:** Direkte Final-V3-Schemaquelle, synthetischer temporärer
 Testdatenpfad, zentrale Assignment-API, SJ-2E-Umstellung der produktiven
-Membership-Reader und SJ-2F-Umstellung der produktiven Writer sind lokal
-implementiert. Die Runtime-Freigabe bleibt offen.
+Membership-Reader, SJ-2F-Umstellung der produktiven Writer und die isolierte
+synthetische SJ-3C.2-Ausführung sind lokal implementiert. Die
+Produkt-Ausführungsfreigabe bleibt offen.
 
 | Quelle | Fachliche Bedeutung | Owner | Nicht zulässige Ersatzquelle |
 |---|---|---|---|
@@ -16,6 +17,7 @@ implementiert. Die Runtime-Freigabe bleibt offen.
 | `CurrentMembershipReadSnapshot` | flüchtige aktuelle Mitgliedermenge und zentral berechnete Zähler für genau ein `current`-Schuljahr und einen expliziten `as_of`-Tag einschließlich `CURRENT_SCHOOL_YEAR_MISSING`-/`AMBIGUOUS`-Diagnostik | `SchoolYearAssignmentReadSession` | V2-Schülerfelder, Python-Nachzählung, Widgetfilter, Systemdatum |
 | `AssignmentReferenceRequest` | flüchtiger Batchauftrag aus `request_key`, `student_id` und fachlichem `reference_date` | `SchoolYearAssignmentReadSession` | aktuelles Schuljahr, Systemdatum, Last-known oder Dokumenterstellungszeit als Ersatzdatum |
 | `SchoolYearTransitionPlan` | rein flüchtige bearbeitbare Kopie einer vorhandenen Preview mit expliziten aktiven Kurs-/Gruppenoptionen | Application School-Year Transition Plan | SQLite, Widgetzustand, implizite Auswahl, Systemdatum oder Persistenz |
+| `SchoolYearTransitionPlan.source_sha256` | flüchtiger kanonischer Fingerabdruck aller technischen Final-V3-Quellen, die den Plan und seine spätere Ausführbarkeit bestimmen | `SchoolYearTransitionPreviewRepository` / `ExecuteSchoolYearTransition` | Anzeigenamen, UI-Zustand, Systemdatum oder nachträglich neu gelesene Ersatzwerte |
 | `school_year_transitions` | unveränderlicher Beleg eines echten committed Schuljahreswechsels | School-Year Transition Service | Initialanlage, Startup, Bootstrap, Migration |
 | kanonische Schemaidentität | vollständiger Final-V3-Fingerprint und Objektinventar | Database Compatibility | nur `user_version`, Teilinventar oder Tabellenzahl |
 | Backupmanifest und Datenbankkopie | verifizierter Sicherheitsstand des exakten finalen Schemas | Backup / Restore | V2-Cutover-Evidence oder unregistriertes Schema |
@@ -156,9 +158,22 @@ Testquelle.
 
 Ein Übergangsbeleg referenziert immer ein vorhandenes Ausgangs- und
 Zielschuljahr. Plan, Backup, Operation-Token, Ergebniszahlen und
-Abschlusszeitpunkt gehören zur späteren echten Wechseltransaktion.
+Abschlusszeitpunkt gehören zur vollständigen echten Wechseltransaktion.
 Synthetische Initialanlage, Datenbankstart und Schemaerzeugung schreiben
 keinen `school_year_transitions`-Datensatz.
+
+SJ-3C.2 implementiert davon ausschließlich die Qt-freie atomare
+Application-/Repository-Grenze auf frisch erzeugten temporären synthetischen
+Final-V3-Datenbanken. Der Quellenfingerabdruck umfasst technische
+Schuljahreswerte, Aktiv-/Archivstatus der Kinder, vollständige Assignments
+sowie aktive und fachliche Kurs-/Gruppenwerte; Anzeigenamen sind keine
+Hashquelle. Der Beleg enthält nur technische IDs, Hashes, Zähler und
+Zeitpunkte. Weil dieses kleine Paket ausdrücklich kein Backup erzeugt oder
+integriert, trägt sein ausschließlich synthetischer Testbeleg den reservierten
+64-stelligen Null-Sentinel in `backup_sha256`. Dieser Wert ist kein
+Backupnachweis und darf niemals einen Produktwechsel freigeben. Runtime,
+UI, Maintenance-Gate, Authentifizierung und echte Datenbanken bleiben ohne
+Ausführungsverdrahtung.
 
 ## Phase 2 Berichte-Übersicht - ausschließlich vorhandene Lesequellen
 

@@ -6,7 +6,8 @@
 Schüler- und Stammdatenviews. Exakt verifiziertes Final-V3 ist für die
 technische Runtime lokal aktiviert. Der minimale Preview-only-Einstieg unter
 `Einstellungen → Schuljahre` ist integriert; Ausführung und Mehrkindwechsel
-bleiben gesperrt.
+bleiben in der UI gesperrt. Die isolierte synthetische SJ-3C.2-Transaktion ist
+nicht an Qt oder Runtime angebunden.
 
 Der Datenbankstart zeigt keinen V2-Bootstrap, keine V2-Migrationsvorschau und
 keine Auswahl zur Übernahme alter Testdaten. Ein erkanntes, vollständig
@@ -26,6 +27,10 @@ Der Einstieg unter `Einstellungen → Schuljahre` bereitet ausschließlich die
 flüchtige Vorschau eines echten späteren Wechsels vor. Das Zielschuljahr wird
 in diesem Zwischenstand noch nicht gespeichert oder aktiviert. Seine
 fachlichen UI-Felder bleiben:
+
+Die isolierte SJ-3C.2-Application-/Repository-Transaktion auf temporären
+synthetischen Final-V3-Datenbanken ist nicht an diese Oberfläche angebunden
+und ergänzt weder Feld noch Aktion.
 
 | UI-Feld/Aktion | Quelle | Persistenz | Regel |
 |---|---|---|---|

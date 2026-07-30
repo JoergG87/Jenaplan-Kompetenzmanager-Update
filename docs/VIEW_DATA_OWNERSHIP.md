@@ -42,7 +42,7 @@ V2-Restoreauswahl.
 | SJ-3B.2a-Planmodell | vorhandene Preview sowie explizite aktive Kurs- und Gruppenoptionen | `SchoolYearTransitionPlan` | Qt, Repositoryzugriff, Persistenz, automatische Entscheidung, Backup, Authentifizierung oder Ausführung |
 | SJ-3B.2b-individuelle Planbearbeitung | aktueller flüchtiger `SchoolYearTransitionPlan` mit dessen kopierten Anzeige-Metadaten, aktiven Optionen, Validierung und Zählern | `SchoolYearTransitionPreviewViewModel` und `SchoolYearTransitionPreviewDialog` | Preview-Mutation, Widget-Fachlogik, Repository-/Servicezugriff, automatische Auswahl, Mehrfachauswahl, Sammeländerung, Write, Backup, Authentifizierung oder Ausführung |
 | SJ-3B.3-Filter und Sammelbearbeitung | aktueller flüchtiger `SchoolYearTransitionPlan`, kombinierte ViewModel-Filter sowie explizite stabile Auswahl-IDs; Sammelziele ausschließlich aus den aktiven Planoptionen | `SchoolYearTransitionPreviewViewModel`, `SchoolYearTransitionPreviewDialog` und `SchoolYearTransitionPlan` | Preview-Mutation, automatische Auswahl, Änderung verdeckter ausgewählter Zeilen, Widget-Repositoryzugriff, Write, Backup, Authentifizierung oder Ausführung |
-| echter Wechselbeleg | vorhandene Ausgangs-/Zieljahre und committed Wechselplan | späterer School-Year Transition Service | Initialanlage, Bootstrap oder Migration |
+| isolierter SJ-3C.2-Wechselbeleg | vollständig gelöster source-gebundener Plan, Operation-Token und erwarteter Plan-Hash auf temporärer synthetischer Final-V3-Datenbank | `ExecuteSchoolYearTransition` und `SchoolYearTransitionExecutionRepository` | Widget-/Adapterwrite, Anzeigenamen im Beleg, Initialanlage, Bootstrap, Migration, reales Produktziel oder Freigabe ohne Backup |
 
 Beobachtung, Bericht und LEG liefern ihren vorhandenen fachlichen
 Referenzzeitpunkt als `AssignmentReferenceRequest`: `observations.date`,
@@ -66,8 +66,11 @@ SJ-3B.2b bearbeitet diesen Plan ausschließlich über dessen vorhandene
 Einzelmethoden. Das Widget hält nur die jeweils neue flüchtige Instanz;
 Optionen, Validierung und Zähler stammen aus Plan und ViewModel, ohne
 Vorschlags- oder Validierungslogik im Widget zu duplizieren.
-Persistenz, Backup, Authentifizierung, Aktivierung und Transition-Beleg
-besitzen weder Repository noch Service in SJ-3A.
+SJ-3A und die UI besitzen weiterhin keine Persistenz oder Ausführungsaktion.
+SJ-3C.2 besitzt getrennt davon ausschließlich die Qt-freie atomare
+Application-/Repository-Grenze für temporäre synthetische Final-V3-
+Datenbanken. Backup, Authentifizierung, Maintenance und Produktaktivierung
+sind nicht verdrahtet.
 
 Die minimale Settings-Integration übergibt Bezeichnung, Beginn und Ende an
 den bestehenden `SchoolYearTransitionPreviewService`. Dieser erzeugt Preview

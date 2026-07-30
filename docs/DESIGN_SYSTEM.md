@@ -7,9 +7,11 @@ um, SJ-3B.2a das rein flüchtige Planmodell und SJ-3B.2b dessen individuelle
 Qt-Bearbeitung im vorhandenen Dialog. Der minimale Einstieg unter
 `Einstellungen → Schuljahre` mit aktuellem Schuljahr, flüchtigen
 Zieljahresangaben und Preview-only-Dialog ist integriert. Backup,
-Passwort-Step-up, Maintenance-Gate, Schreiben, Transition-Beleg und
-Ausführung bleiben offen. Die folgende Informations-, Interaktions- und
-Accessibility-Semantik bleibt für den vollständigen Assistenten verbindlich.
+Passwort-Step-up, Maintenance-Gate und UI-/Runtime-Ausführung bleiben offen.
+Die isolierte Qt-freie SJ-3C.2-Transaktion auf temporären synthetischen
+Final-V3-Datenbanken fügt keine sichtbare Aktion hinzu. Die folgende
+Informations-, Interaktions- und Accessibility-Semantik bleibt für den
+vollständigen Assistenten verbindlich.
 
 SJ-3B.1 zeigt den vorhandenen Preview-Kopf und jedes vorhandene Item genau
 einmal in unveränderter Reihenfolge. Die Tabelle ist nicht editierbar und bei

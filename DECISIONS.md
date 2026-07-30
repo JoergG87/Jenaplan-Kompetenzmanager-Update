@@ -101,10 +101,13 @@ LEG-Revisionen sowie PDFs bleiben unveränderlich.
 ### Echte Schuljahreswechsel
 
 Ein Schuljahreswechsel führt von einem vorhandenen aktuellen Schuljahr zu
-einem vorhandenen geplanten Schuljahr. Kursvorschläge verwenden ausschließlich
-`courses.year_level`; Stufe 3 bleibt bis zu einer bewussten Entscheidung
-ungelöst. Stammgruppen bleiben ohne ausdrückliche Änderung unverändert.
-Austritt, Archivierung und physische Löschung bleiben getrennte Vorgänge.
+einem bewusst festgelegten Zielschuljahr. Dessen Daten bleiben vor der
+atomaren Ausführung flüchtiger Planbestand und werden erst innerhalb der
+Wechseltransaktion als neues `current`-Schuljahr angelegt. Kursvorschläge
+verwenden ausschließlich `courses.year_level`; Stufe 3 bleibt bis zu einer
+bewussten Entscheidung ungelöst. Stammgruppen bleiben ohne ausdrückliche
+Änderung unverändert. Austritt, Archivierung und physische Löschung bleiben
+getrennte Vorgänge.
 
 `school_year_transitions` belegt nur einen erfolgreich committed echten
 Wechsel. Der Beleg enthält vorhandene Ausgangs- und Zielschuljahr-IDs, einen
