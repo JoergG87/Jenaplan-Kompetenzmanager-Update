@@ -200,6 +200,18 @@ Auswahlfelds erzeugt keine Entscheidung. Der Dialog liest kein Repository und
 besitzt weder SQLite, Backup, Authentifizierung, Planpersistenz,
 Sammeländerung noch Ausführung.
 
+SJ-3B.3 hält Filter und stabile `student_id`-Auswahl ausschließlich im
+Dialogzustand. Filter sind kombinierbar und erzeugen weder Auswahl noch
+Planänderung. Eine Sammelaktion verwendet nur die im aktuellen Filter
+sichtbaren ausgewählten IDs und genau eine aktive Kurs- oder Gruppenoption des
+Plans; verdeckte ausgewählte Kinder bleiben unverändert. Für Zielkurs,
+Zielstammgruppe, ausgeschieden oder bewusst ungelöst entsteht jeweils eine
+neue unveränderliche Planinstanz. Mehrere betroffene Kinder verlangen vorher
+eine Bestätigung. Die ursprüngliche Preview, alle nicht ausgewählten Items und
+sämtliche Datenbanken bleiben unverändert; Validierung und Zähler werden aus
+der neuen Instanz neu projiziert. SJ-3B.3 fügt weiterhin keinen Repository-,
+Write-, Backup-, Authentifizierungs- oder Ausführungslifecycle hinzu.
+
 Die spätere Ausführung benötigt weiterhin den vollständigen getrennten
 Schutzlifecycle.
 

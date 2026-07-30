@@ -72,7 +72,11 @@ individuell bearbeitbar dar:
 | Warnungen und Blocker | ursprüngliche Preview-Issues plus aktuelle `SchoolYearTransitionPlanValidation` | Nein | ursprünglicher und aktueller Zustand textlich unterscheidbar; nie nur farblich |
 | Planstatus und Zähler | `SchoolYearTransitionPlan.validate()` | Nein | nach jeder neuen Planinstanz vollständig neu projizieren |
 | Auswahlfelder | darstellungsfertige ViewModel-Optionen | Nein | nur bewusste Aktivierung ändert den Plan; Öffnen und Wiederbefüllen bleiben folgenlos |
-| Schließen | Dialogzustand | Nein | einzige globale Aktion; keine Mehrfachauswahl, Sammeländerung, Ausführung, Speicherung, Shell-/Settings-Integration, Backup oder Authentifizierung |
+| kombinierbare Filter | aktueller `SchoolYearTransitionPreviewViewModel` | Nein | alle, nur ungelöst, bisheriger Kurs, Zielkurs, bisherige Stammgruppe und Zielstammgruppe; Filterwechsel selektiert nichts und ändert den Plan nicht |
+| Zeilenauswahl und Auswahlzähler | stabile `student_id` im flüchtigen Dialogzustand | Nein | einzeln oder alle sichtbaren; Status zusätzlich als Checkboxtext und Accessible Name, nicht nur farblich; verdeckte Auswahl bleibt erhalten und sichtbar gezählt |
+| Sammel-Zielkurs / -Zielstammgruppe | ausgewählte sichtbare `student_id` plus ausschließlich aktive `SchoolYearTransitionPlan.available_courses` / `available_groups` | Nein | deaktiviert ohne sichtbare Auswahl; mehrere Kinder verlangen Bestätigung; jede Aktion erzeugt einen neuen Plan und lässt nicht ausgewählte oder verdeckte Kinder unverändert |
+| Sammel-ausgeschieden / -ungelöst | ausgewählte sichtbare `student_id` | Nein | ausgeschieden entfernt Zielkurs und Zielgruppe; ungelöst entfernt den Zielkurs; Kurs-3-Fälle werden ausschließlich durch bewusste Kurs-3-Auswahl gelöst |
+| Schließen | Dialogzustand | Nein | globale Aktionen bleiben Schließen plus Sammelbearbeitung; keine Ausführung, Speicherung, Shell-/Settings-Integration, Backup oder Authentifizierung |
 
 Synthetische Initialdaten sind keine UI-Projektion. IDs, Zeitpunkte und
 Fixtures werden ausschließlich im Testpfad erzeugt und niemals als

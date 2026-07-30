@@ -148,6 +148,7 @@ def test_initial_plan_copies_preview_without_mutating_or_reordering_it() -> None
     assert plan.planned_school_year_start_date == date(2026, 8, 1)
     assert _item(plan, "S-1").current_group_id == "G-A"
     assert _item(plan, "S-1").current_group_name == "Gruppe A"
+    assert _item(plan, "S-1").current_course_id == "C-1"
     assert _item(plan, "S-1").current_course_name == "C-1"
     assert _item(plan, "S-1").current_year_level == 1
 
@@ -354,6 +355,68 @@ def test_only_existing_active_options_can_be_selected() -> None:
         match="repeat_decision_requires_year_level_three_source",
     ):
         plan.repeat_year_level_three("S-1", "C-3")
+
+
+def test_bulk_edits_create_one_new_plan_and_preserve_unselected_items() -> None:
+    initial = _plan()
+    unchanged = _item(initial, "S-2")
+
+    course_plan = initial.set_target_course_for_students(("S-1",), "C-2-B")
+    assert course_plan is not initial
+    assert _item(course_plan, "S-1").target_course_id == "C-2-B"
+    assert _item(course_plan, "S-2") == unchanged
+
+    group_plan = course_plan.set_target_group_for_students(
+        ("S-1", "S-2"),
+        "G-B",
+    )
+    assert group_plan is not course_plan
+    assert _item(group_plan, "S-1").target_group_id == "G-B"
+    assert _item(group_plan, "S-2").target_group_id == "G-B"
+    assert _item(group_plan, "S-3").target_group_id == "G-A"
+
+    exited_plan = group_plan.mark_students_exited(("S-1",))
+    exited = _item(exited_plan, "S-1")
+    assert exited.target_course_id is None
+    assert exited.target_group_id is None
+
+    unresolved_plan = exited_plan.leave_students_unresolved(("S-2",))
+    unresolved = _item(unresolved_plan, "S-2")
+    assert unresolved.target_course_id is None
+    assert unresolved.target_group_id == "G-B"
+    assert unresolved.target_status is (
+        SchoolYearTransitionPlanTargetStatus.UNRESOLVED
+    )
+
+
+def test_bulk_course_three_and_active_option_rules_are_fail_closed() -> None:
+    plan = _plan()
+    repeated_plan = plan.set_target_course_for_students(("S-3",), "C-3")
+    repeated = _item(repeated_plan, "S-3")
+    assert repeated.target_status is (
+        SchoolYearTransitionPlanTargetStatus.REPEAT_YEAR_LEVEL_THREE
+    )
+
+    with pytest.raises(
+        SchoolYearTransitionPlanError,
+        match="repeat_course_must_have_year_level_three",
+    ):
+        plan.set_target_course_for_students(("S-3",), "C-2")
+    with pytest.raises(
+        SchoolYearTransitionPlanError,
+        match="active_plan_course_not_found",
+    ):
+        plan.set_target_course_for_students(("S-1",), "C-INACTIVE")
+    with pytest.raises(
+        SchoolYearTransitionPlanError,
+        match="active_plan_group_not_found",
+    ):
+        plan.set_target_group_for_students(("S-1",), "G-MISSING")
+    with pytest.raises(
+        SchoolYearTransitionPlanError,
+        match="plan_student_not_found",
+    ):
+        plan.mark_students_exited(("S-MISSING",))
 
 
 def test_global_preview_issues_remain_auditable_and_block_completeness() -> None:

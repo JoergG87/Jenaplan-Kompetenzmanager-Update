@@ -80,11 +80,15 @@ class SchoolYearTransitionPreviewRowViewModel:
 
     student_id: str
     child_label: str
+    current_group_id: str | None
     current_group_label: str
+    current_course_id: str | None
     current_course_label: str
     current_year_level_label: str
     target_status_label: str
+    target_group_id: str | None
     target_group_label: str
+    target_course_id: str | None
     target_course_label: str
     warnings_label: str
     resolved: bool
@@ -177,6 +181,38 @@ class SchoolYearTransitionPreviewViewModel:
             global_issues_label=" ".join(global_issues),
         )
 
+    def filtered_rows(
+        self,
+        *,
+        unresolved_only: bool = False,
+        current_course_id: str | None = None,
+        target_course_id: str | None = None,
+        current_group_id: str | None = None,
+        target_group_id: str | None = None,
+    ) -> tuple[SchoolYearTransitionPreviewRowViewModel, ...]:
+        """Combine transient display filters without changing plan order."""
+        return tuple(
+            row
+            for row in self.rows
+            if (not unresolved_only or not row.resolved)
+            and (
+                current_course_id is None
+                or row.current_course_id == current_course_id
+            )
+            and (
+                target_course_id is None
+                or row.target_course_id == target_course_id
+            )
+            and (
+                current_group_id is None
+                or row.current_group_id == current_group_id
+            )
+            and (
+                target_group_id is None
+                or row.target_group_id == target_group_id
+            )
+        )
+
 
 def apply_course_choice(
     plan: SchoolYearTransitionPlan,
@@ -253,11 +289,15 @@ def _row_from_item(
     return SchoolYearTransitionPreviewRowViewModel(
         student_id=item.student_id,
         child_label=item.student_display_name,
+        current_group_id=item.current_group_id,
         current_group_label=current_group_label,
+        current_course_id=item.current_course_id,
         current_course_label=current_course_label,
         current_year_level_label=current_year_level_label,
         target_status_label=target_status_label,
+        target_group_id=item.target_group_id,
         target_group_label=target_group_label,
+        target_course_id=item.target_course_id,
         target_course_label=target_course_label,
         warnings_label=warnings_label,
         resolved=item.resolved,

@@ -65,6 +65,7 @@ class SchoolYearTransitionPlanItem:
     student_display_name: str
     current_group_id: str | None
     current_group_name: str | None
+    current_course_id: str | None
     current_course_name: str | None
     current_year_level: int | None
     target_group_id: str | None
@@ -330,6 +331,83 @@ class SchoolYearTransitionPlan:
         )
         return self._replace(_with_resolution(updated))
 
+    def set_target_course_for_students(
+        self,
+        student_ids: tuple[str, ...],
+        course_id: str,
+    ) -> "SchoolYearTransitionPlan":
+        """Set one active target course for an explicit stable-ID selection."""
+        selected_ids = self._selected_ids(student_ids)
+        course = self._course(course_id)
+        updated_items = tuple(
+            (
+                _set_target_course(item, course)
+                if item.student_id in selected_ids
+                else item
+            )
+            for item in self.items
+        )
+        return replace(self, items=updated_items)
+
+    def set_target_group_for_students(
+        self,
+        student_ids: tuple[str, ...],
+        group_id: str,
+    ) -> "SchoolYearTransitionPlan":
+        """Set one active target group for an explicit stable-ID selection."""
+        selected_ids = self._selected_ids(student_ids)
+        group = self._group(group_id)
+        selected_items = tuple(
+            item for item in self.items if item.student_id in selected_ids
+        )
+        for item in selected_items:
+            _require_group_applicable(item)
+        updated_items = tuple(
+            (
+                _set_target_group(item, group)
+                if item.student_id in selected_ids
+                else item
+            )
+            for item in self.items
+        )
+        return replace(self, items=updated_items)
+
+    def mark_students_exited(
+        self,
+        student_ids: tuple[str, ...],
+    ) -> "SchoolYearTransitionPlan":
+        """Mark only an explicit stable-ID selection as exited."""
+        selected_ids = self._selected_ids(student_ids)
+        return replace(
+            self,
+            items=tuple(
+                (
+                    _mark_exited(item)
+                    if item.student_id in selected_ids
+                    else item
+                )
+                for item in self.items
+            ),
+        )
+
+    def leave_students_unresolved(
+        self,
+        student_ids: tuple[str, ...],
+    ) -> "SchoolYearTransitionPlan":
+        """Leave only an explicit stable-ID selection consciously unresolved."""
+        selected_ids = self._selected_ids(student_ids)
+        return replace(
+            self,
+            items=tuple(
+                (
+                    _leave_unresolved(item)
+                    if item.student_id in selected_ids
+                    else item
+                )
+                for item in self.items
+            ),
+        )
+
     def validate(self) -> SchoolYearTransitionPlanValidation:
         """Return deterministic structural validation and counts."""
         global_issues = tuple(
@@ -431,6 +509,19 @@ class SchoolYearTransitionPlan:
             ),
         )
 
+    def _selected_ids(self, student_ids: tuple[str, ...]) -> frozenset[str]:
+        selected_ids = frozenset(student_ids)
+        if not selected_ids:
+            raise SchoolYearTransitionPlanError("plan_selection_empty")
+        if len(selected_ids) != len(student_ids):
+            raise SchoolYearTransitionPlanError(
+                "plan_selection_contains_duplicates"
+            )
+        known_ids = {item.student_id for item in self.items}
+        if not selected_ids <= known_ids:
+            raise SchoolYearTransitionPlanError("plan_student_not_found")
+        return selected_ids
+
 
 _NON_DECISION_BLOCKERS = frozenset(
     {
@@ -485,6 +576,7 @@ def _plan_item(
         student_display_name=item.student_display_name,
         current_group_id=item.current_group_id,
         current_group_name=item.current_group_name,
+        current_course_id=item.current_course_id,
         current_course_name=item.current_course_name,
         current_year_level=item.current_year_level,
         target_group_id=item.proposed_group_id,
@@ -517,6 +609,104 @@ def _with_resolution(
     item: SchoolYearTransitionPlanItem,
 ) -> SchoolYearTransitionPlanItem:
     return replace(item, resolved=not _item_issue_codes(item))
+
+
+def _set_target_course(
+    item: SchoolYearTransitionPlanItem,
+    course: SchoolYearTransitionCourse,
+) -> SchoolYearTransitionPlanItem:
+    if item.original_current_year_level == 3:
+        if course.year_level != 3:
+            raise SchoolYearTransitionPlanError(
+                "repeat_course_must_have_year_level_three"
+            )
+        updated = replace(
+            item,
+            target_course_id=course.course_id,
+            target_course_name=course.course_name,
+            target_status=(
+                SchoolYearTransitionPlanTargetStatus.REPEAT_YEAR_LEVEL_THREE
+            ),
+            course_decision=(
+                SchoolYearTransitionCourseDecision.REPEAT_YEAR_LEVEL_THREE
+            ),
+            edited=True,
+        )
+        return _with_resolution(updated)
+    if course.course_id == item.original_proposed_course_id:
+        updated = replace(
+            item,
+            target_course_id=course.course_id,
+            target_course_name=course.course_name,
+            target_status=_plan_target_status(item.original_target_status),
+            course_decision=(
+                SchoolYearTransitionCourseDecision.ACCEPT_PROPOSAL
+            ),
+            edited=True,
+        )
+        return _with_resolution(updated)
+    updated = replace(
+        item,
+        target_course_id=course.course_id,
+        target_course_name=course.course_name,
+        target_status=SchoolYearTransitionPlanTargetStatus.OTHER_COURSE,
+        course_decision=SchoolYearTransitionCourseDecision.SELECT_OTHER_COURSE,
+        edited=True,
+    )
+    return _with_resolution(updated)
+
+
+def _set_target_group(
+    item: SchoolYearTransitionPlanItem,
+    group: SchoolYearTransitionGroup,
+) -> SchoolYearTransitionPlanItem:
+    if group.group_id == item.original_proposed_group_id:
+        decision = SchoolYearTransitionGroupDecision.KEEP_PROPOSAL
+    elif group.group_id == item.current_group_id:
+        decision = SchoolYearTransitionGroupDecision.KEEP_CURRENT_GROUP
+    else:
+        decision = SchoolYearTransitionGroupDecision.SELECT_OTHER_GROUP
+    return _with_resolution(
+        replace(
+            item,
+            target_group_id=group.group_id,
+            target_group_name=group.group_name,
+            group_decision=decision,
+            edited=True,
+        )
+    )
+
+
+def _mark_exited(
+    item: SchoolYearTransitionPlanItem,
+) -> SchoolYearTransitionPlanItem:
+    return _with_resolution(
+        replace(
+            item,
+            target_group_id=None,
+            target_group_name=None,
+            target_course_id=None,
+            target_course_name=None,
+            target_status=SchoolYearTransitionPlanTargetStatus.EXITED,
+            course_decision=SchoolYearTransitionCourseDecision.EXITED,
+            group_decision=SchoolYearTransitionGroupDecision.NOT_APPLICABLE,
+            edited=True,
+        )
+    )
+
+
+def _leave_unresolved(
+    item: SchoolYearTransitionPlanItem,
+) -> SchoolYearTransitionPlanItem:
+    return replace(
+        item,
+        target_course_id=None,
+        target_course_name=None,
+        target_status=SchoolYearTransitionPlanTargetStatus.UNRESOLVED,
+        course_decision=SchoolYearTransitionCourseDecision.LEAVE_UNRESOLVED,
+        edited=True,
+        resolved=False,
+    )
 
 
 def _require_group_applicable(

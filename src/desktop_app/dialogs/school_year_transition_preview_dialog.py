@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import partial
 
 from PySide6.QtCore import Qt
@@ -10,8 +11,12 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialogButtonBox,
     QFormLayout,
+    QGridLayout,
     QHeaderView,
+    QHBoxLayout,
     QLabel,
+    QMessageBox,
+    QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -36,6 +41,7 @@ from src.desktop_app.view_models.school_year_transition_preview_view_model impor
 
 
 TABLE_HEADERS = (
+    "Auswahl",
     "Kind",
     "Bisherige Stammgruppe",
     "Bisheriger Kurs",
@@ -63,6 +69,9 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.table.setObjectName("SchoolYearTransitionPreviewTable")
         self.table.setAccessibleName("Flüchtiger Plan je Kind")
         self._decision_controls: list[QComboBox] = []
+        self._selected_student_ids: set[str] = set()
+        self._visible_student_ids: tuple[str, ...] = ()
+        self._populating_table = False
         self._build()
 
     def _build(self) -> None:
@@ -84,6 +93,8 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             )
         )
         layout.addWidget(self._summary_card())
+        layout.addWidget(self._filter_card())
+        layout.addWidget(self._bulk_card())
 
         self.status_message = InlineMessage()
         self.status_message.setObjectName("SchoolYearTransitionPreviewStatus")
@@ -91,6 +102,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         layout.addWidget(self.status_message)
 
         self._configure_table()
+        self.table.itemChanged.connect(self._selection_item_changed)
         layout.addWidget(self.table, 1)
 
         self.buttons = QDialogButtonBox(
@@ -145,6 +157,218 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             form.addRow(field_name, value_label)
         return card
 
+    def _filter_card(self) -> AppCard:
+        card = AppCard("soft")
+        card.setObjectName("SchoolYearTransitionFilters")
+        card.setAccessibleName("Filter für Kinder im flüchtigen Plan")
+        grid = QGridLayout(card)
+        grid.setContentsMargins(18, 14, 18, 14)
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(8)
+
+        self.unresolved_filter = self._filter_combo(
+            "Statusfilter",
+            (("Alle Kinder", False), ("Nur ungelöst", True)),
+        )
+        self.current_course_filter = self._filter_combo(
+            "Filter bisheriger Kurs",
+            (
+                ("Alle bisherigen Kurse", None),
+                *self._current_course_filter_options(),
+            ),
+        )
+        self.target_course_filter = self._filter_combo(
+            "Filter Zielkurs",
+            (
+                ("Alle Zielkurse", None),
+                *((course.course_name, course.course_id)
+                  for course in self.plan.available_courses),
+            ),
+        )
+        self.current_group_filter = self._filter_combo(
+            "Filter bisherige Stammgruppe",
+            (
+                ("Alle bisherigen Stammgruppen", None),
+                *self._current_group_filter_options(),
+            ),
+        )
+        self.target_group_filter = self._filter_combo(
+            "Filter Zielstammgruppe",
+            (
+                ("Alle Zielstammgruppen", None),
+                *((group.group_name, group.group_id)
+                  for group in self.plan.available_groups),
+            ),
+        )
+        filters = (
+            ("Status", self.unresolved_filter),
+            ("Bisheriger Kurs", self.current_course_filter),
+            ("Zielkurs", self.target_course_filter),
+            ("Bisherige Stammgruppe", self.current_group_filter),
+            ("Zielstammgruppe", self.target_group_filter),
+        )
+        for column, (label, combo) in enumerate(filters):
+            grid.addWidget(QLabel(label), 0, column)
+            grid.addWidget(combo, 1, column)
+
+        self.reset_filters_button = QPushButton("Alle Filter zurücksetzen")
+        self.reset_filters_button.setObjectName(
+            "SchoolYearTransitionResetFilters"
+        )
+        configure_button(
+            self.reset_filters_button,
+            "secondary",
+            "Alle Filter zurücksetzen",
+        )
+        self.reset_filters_button.clicked.connect(self._reset_filters)
+        grid.addWidget(self.reset_filters_button, 1, len(filters))
+        for combo in (
+            self.unresolved_filter,
+            self.current_course_filter,
+            self.target_course_filter,
+            self.current_group_filter,
+            self.target_group_filter,
+        ):
+            combo.currentIndexChanged.connect(self._filter_changed)
+        return card
+
+    def _bulk_card(self) -> AppCard:
+        card = AppCard("soft")
+        card.setObjectName("SchoolYearTransitionBulkActions")
+        card.setAccessibleName("Auswahl und Sammelbearbeitung")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 14, 18, 14)
+        layout.setSpacing(8)
+
+        selection_row = QHBoxLayout()
+        self.selected_count_label = QLabel("0 Kinder ausgewählt")
+        self.selected_count_label.setObjectName(
+            "SchoolYearTransitionSelectedCount"
+        )
+        self.selected_count_label.setAccessibleName(
+            "0 Kinder ausgewählt"
+        )
+        selection_row.addWidget(self.selected_count_label)
+        selection_row.addStretch(1)
+        self.select_visible_button = QPushButton("Alle sichtbaren auswählen")
+        configure_button(
+            self.select_visible_button,
+            "secondary",
+            "Alle sichtbaren Kinder auswählen",
+        )
+        self.select_visible_button.clicked.connect(self._select_all_visible)
+        selection_row.addWidget(self.select_visible_button)
+        self.clear_selection_button = QPushButton("Auswahl aufheben")
+        configure_button(
+            self.clear_selection_button,
+            "secondary",
+            "Auswahl aller Kinder aufheben",
+        )
+        self.clear_selection_button.clicked.connect(self._clear_selection)
+        selection_row.addWidget(self.clear_selection_button)
+        layout.addLayout(selection_row)
+
+        actions = QHBoxLayout()
+        self.bulk_course_combo = self._filter_combo(
+            "Zielkurs für ausgewählte sichtbare Kinder",
+            (
+                ("Zielkurs wählen", None),
+                *((course.course_name, course.course_id)
+                  for course in self.plan.available_courses),
+            ),
+        )
+        actions.addWidget(self.bulk_course_combo)
+        self.bulk_course_button = QPushButton("Zielkurs setzen")
+        configure_button(
+            self.bulk_course_button,
+            "primary",
+            "Zielkurs für ausgewählte sichtbare Kinder setzen",
+        )
+        self.bulk_course_button.clicked.connect(self._bulk_set_course)
+        actions.addWidget(self.bulk_course_button)
+
+        self.bulk_group_combo = self._filter_combo(
+            "Zielstammgruppe für ausgewählte sichtbare Kinder",
+            (
+                ("Zielstammgruppe wählen", None),
+                *((group.group_name, group.group_id)
+                  for group in self.plan.available_groups),
+            ),
+        )
+        actions.addWidget(self.bulk_group_combo)
+        self.bulk_group_button = QPushButton("Zielstammgruppe setzen")
+        configure_button(
+            self.bulk_group_button,
+            "primary",
+            "Zielstammgruppe für ausgewählte sichtbare Kinder setzen",
+        )
+        self.bulk_group_button.clicked.connect(self._bulk_set_group)
+        actions.addWidget(self.bulk_group_button)
+
+        self.bulk_exited_button = QPushButton("Als ausgeschieden markieren")
+        configure_button(
+            self.bulk_exited_button,
+            "secondary",
+            "Ausgewählte sichtbare Kinder als ausgeschieden markieren",
+        )
+        self.bulk_exited_button.clicked.connect(self._bulk_mark_exited)
+        actions.addWidget(self.bulk_exited_button)
+        self.bulk_unresolved_button = QPushButton("Bewusst ungelöst setzen")
+        configure_button(
+            self.bulk_unresolved_button,
+            "secondary",
+            "Ausgewählte sichtbare Kinder bewusst ungelöst setzen",
+        )
+        self.bulk_unresolved_button.clicked.connect(
+            self._bulk_leave_unresolved
+        )
+        actions.addWidget(self.bulk_unresolved_button)
+        layout.addLayout(actions)
+        self._bulk_action_widgets = (
+            self.bulk_course_combo,
+            self.bulk_course_button,
+            self.bulk_group_combo,
+            self.bulk_group_button,
+            self.bulk_exited_button,
+            self.bulk_unresolved_button,
+        )
+        self._update_selection_status()
+        return card
+
+    @staticmethod
+    def _filter_combo(
+        accessible_name: str,
+        options: tuple[tuple[str, object], ...],
+    ) -> QComboBox:
+        combo = QComboBox()
+        combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        combo.setAccessibleName(accessible_name)
+        for label, value in options:
+            combo.addItem(label, value)
+        return combo
+
+    def _current_course_filter_options(
+        self,
+    ) -> tuple[tuple[str, str], ...]:
+        options = {
+            (item.current_course_name, item.current_course_id)
+            for item in self.plan.items
+            if item.current_course_id is not None
+            and item.current_course_name is not None
+        }
+        return tuple(sorted(options, key=lambda option: (option[0], option[1])))
+
+    def _current_group_filter_options(
+        self,
+    ) -> tuple[tuple[str, str], ...]:
+        options = {
+            (item.current_group_name, item.current_group_id)
+            for item in self.plan.items
+            if item.current_group_id is not None
+            and item.current_group_name is not None
+        }
+        return tuple(sorted(options, key=lambda option: (option[0], option[1])))
+
     def _configure_table(self) -> None:
         self.table.setHorizontalHeaderLabels(TABLE_HEADERS)
         for column, header in enumerate(TABLE_HEADERS):
@@ -176,7 +400,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                 column,
                 QHeaderView.ResizeMode.Interactive,
             )
-        widths = (180, 180, 155, 145, 215, 245, 180, 390)
+        widths = (145, 180, 180, 155, 145, 215, 245, 180, 390)
         for column, width in enumerate(widths):
             self.table.setColumnWidth(column, width)
 
@@ -216,6 +440,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             focus_student_id=focus_student_id,
             focus_kind=focus_kind,
         )
+        self._update_selection_status()
 
     def _update_status_message(self) -> None:
         status_text = (
@@ -239,17 +464,29 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         focus_student_id: str | None,
         focus_kind: str,
     ) -> None:
+        visible_rows = self.view_model.filtered_rows(
+            unresolved_only=bool(self.unresolved_filter.currentData()),
+            current_course_id=self.current_course_filter.currentData(),
+            target_course_id=self.target_course_filter.currentData(),
+            current_group_id=self.current_group_filter.currentData(),
+            target_group_id=self.target_group_filter.currentData(),
+        )
+        self._visible_student_ids = tuple(
+            row.student_id for row in visible_rows
+        )
+        self._populating_table = True
         self.table.clearContents()
-        self.table.setRowCount(len(self.view_model.rows))
+        self.table.setRowCount(len(visible_rows))
         self._decision_controls = []
         focus_target: QComboBox | None = None
-        for row_index, row in enumerate(self.view_model.rows):
+        for row_index, row in enumerate(visible_rows):
             course_combo, group_combo = self._populate_row(row_index, row)
             if row.student_id == focus_student_id:
                 focus_target = (
                     group_combo if focus_kind == "group" else course_combo
                 )
-        if self.view_model.rows:
+        self._populating_table = False
+        if visible_rows:
             self.table.setCurrentCell(0, 0)
         self._configure_tab_order()
         if focus_target is not None:
@@ -260,6 +497,34 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         row_index: int,
         row: SchoolYearTransitionPreviewRowViewModel,
     ) -> tuple[QComboBox, QComboBox | None]:
+        selection_item = QTableWidgetItem()
+        selection_item.setFlags(
+            Qt.ItemFlag.ItemIsEnabled
+            | Qt.ItemFlag.ItemIsSelectable
+            | Qt.ItemFlag.ItemIsUserCheckable
+        )
+        is_selected = row.student_id in self._selected_student_ids
+        selection_item.setCheckState(
+            Qt.CheckState.Checked
+            if is_selected
+            else Qt.CheckState.Unchecked
+        )
+        selection_item.setText(
+            "Ausgewählt" if is_selected else "Nicht ausgewählt"
+        )
+        selection_item.setData(Qt.ItemDataRole.UserRole, row.student_id)
+        selection_item.setData(
+            Qt.ItemDataRole.AccessibleTextRole,
+            (
+                f"{row.child_label}: "
+                f"{'ausgewählt' if is_selected else 'nicht ausgewählt'}"
+            ),
+        )
+        selection_item.setData(
+            Qt.ItemDataRole.AccessibleDescriptionRole,
+            row.accessible_description,
+        )
+        self.table.setItem(row_index, 0, selection_item)
         values = (
             row.child_label,
             row.current_group_label,
@@ -270,7 +535,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             row.target_course_label,
             row.warnings_label,
         )
-        for column, value in enumerate(values):
+        for column, value in enumerate(values, start=1):
             item = QTableWidgetItem(value)
             item.setData(Qt.ItemDataRole.AccessibleTextRole, value)
             item.setData(
@@ -296,7 +561,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                 course_combo,
             )
         )
-        self.table.setCellWidget(row_index, 4, course_combo)
+        self.table.setCellWidget(row_index, 5, course_combo)
         self._decision_controls.append(course_combo)
 
         group_combo: QComboBox | None = None
@@ -316,7 +581,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                     group_combo,
                 )
             )
-            self.table.setCellWidget(row_index, 5, group_combo)
+            self.table.setCellWidget(row_index, 6, group_combo)
             self._decision_controls.append(group_combo)
         return course_combo, group_combo
 
@@ -340,6 +605,177 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             )
         combo.setCurrentIndex(0)
         return combo
+
+    def _filter_changed(self, _index: int) -> None:
+        self._populate_table(focus_student_id=None, focus_kind="course")
+        self._update_selection_status()
+
+    def _reset_filters(self) -> None:
+        filters = (
+            self.unresolved_filter,
+            self.current_course_filter,
+            self.target_course_filter,
+            self.current_group_filter,
+            self.target_group_filter,
+        )
+        for combo in filters:
+            combo.blockSignals(True)
+            combo.setCurrentIndex(0)
+            combo.blockSignals(False)
+        self._populate_table(focus_student_id=None, focus_kind="course")
+        self._update_selection_status()
+
+    def _selection_item_changed(self, item: QTableWidgetItem) -> None:
+        if self._populating_table or item.column() != 0:
+            return
+        student_id = item.data(Qt.ItemDataRole.UserRole)
+        if not isinstance(student_id, str):
+            return
+        is_selected = item.checkState() == Qt.CheckState.Checked
+        if is_selected:
+            self._selected_student_ids.add(student_id)
+        else:
+            self._selected_student_ids.discard(student_id)
+        item.setText("Ausgewählt" if is_selected else "Nicht ausgewählt")
+        item.setData(
+            Qt.ItemDataRole.AccessibleTextRole,
+            (
+                f"{self._student_label(student_id)}: "
+                f"{'ausgewählt' if is_selected else 'nicht ausgewählt'}"
+            ),
+        )
+        self._update_selection_status()
+
+    def _student_label(self, student_id: str) -> str:
+        return next(
+            row.child_label
+            for row in self.view_model.rows
+            if row.student_id == student_id
+        )
+
+    def _select_all_visible(self) -> None:
+        self._selected_student_ids.update(self._visible_student_ids)
+        self._populate_table(focus_student_id=None, focus_kind="course")
+        self._update_selection_status()
+
+    def _clear_selection(self) -> None:
+        self._selected_student_ids.clear()
+        self._populate_table(focus_student_id=None, focus_kind="course")
+        self._update_selection_status()
+
+    def _visible_selected_student_ids(self) -> tuple[str, ...]:
+        return tuple(
+            student_id
+            for student_id in self._visible_student_ids
+            if student_id in self._selected_student_ids
+        )
+
+    def _update_selection_status(self) -> None:
+        total_count = len(self._selected_student_ids)
+        visible_count = len(self._visible_selected_student_ids())
+        text = (
+            "1 Kind ausgewählt"
+            if total_count == 1
+            else f"{total_count} Kinder ausgewählt"
+        )
+        if visible_count != total_count:
+            text = f"{text}, davon {visible_count} im aktuellen Filter sichtbar"
+        self.selected_count_label.setText(text)
+        self.selected_count_label.setAccessibleName(text)
+        has_visible_selection = visible_count > 0
+        for widget in self._bulk_action_widgets:
+            widget.setEnabled(has_visible_selection)
+        self.clear_selection_button.setEnabled(total_count > 0)
+        self.select_visible_button.setEnabled(
+            bool(self._visible_student_ids)
+            and visible_count < len(self._visible_student_ids)
+        )
+
+    def _bulk_set_course(self) -> None:
+        course_id = self.bulk_course_combo.currentData()
+        if not isinstance(course_id, str):
+            self._show_choice_error()
+            return
+        self._apply_bulk_change(
+            "den Zielkurs setzen",
+            lambda student_ids: self.plan.set_target_course_for_students(
+                student_ids,
+                course_id,
+            ),
+            focus_kind="course",
+        )
+
+    def _bulk_set_group(self) -> None:
+        group_id = self.bulk_group_combo.currentData()
+        if not isinstance(group_id, str):
+            self._show_choice_error()
+            return
+        self._apply_bulk_change(
+            "die Zielstammgruppe setzen",
+            lambda student_ids: self.plan.set_target_group_for_students(
+                student_ids,
+                group_id,
+            ),
+            focus_kind="group",
+        )
+
+    def _bulk_mark_exited(self) -> None:
+        self._apply_bulk_change(
+            "als ausgeschieden markieren",
+            self.plan.mark_students_exited,
+            focus_kind="course",
+        )
+
+    def _bulk_leave_unresolved(self) -> None:
+        self._apply_bulk_change(
+            "bewusst ungelöst setzen",
+            self.plan.leave_students_unresolved,
+            focus_kind="course",
+        )
+
+    def _apply_bulk_change(
+        self,
+        description: str,
+        change: Callable[[tuple[str, ...]], SchoolYearTransitionPlan],
+        *,
+        focus_kind: str,
+    ) -> None:
+        student_ids = self._visible_selected_student_ids()
+        if not student_ids:
+            return
+        if len(student_ids) > 1 and not self._confirm_bulk_change(
+            len(student_ids),
+            description,
+        ):
+            return
+        try:
+            self.plan = change(student_ids)
+        except (SchoolYearTransitionPlanError, ValueError):
+            self._show_choice_error()
+            return
+        self._refresh_from_plan(
+            focus_student_id=student_ids[0],
+            focus_kind=focus_kind,
+        )
+
+    def _confirm_bulk_change(
+        self,
+        count: int,
+        description: str,
+    ) -> bool:
+        result = QMessageBox.question(
+            self,
+            "Sammeländerung bestätigen",
+            (
+                f"Möchten Sie {count} ausgewählte, im aktuellen Filter "
+                f"sichtbare Kinder {description}? "
+                "Die Änderung bleibt flüchtig."
+            ),
+            QMessageBox.StandardButton.Yes
+            | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        return result == QMessageBox.StandardButton.Yes
 
     def _course_choice_activated(
         self,
@@ -401,7 +837,24 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         )
 
     def _configure_tab_order(self) -> None:
-        controls: list[QWidget] = [self.table, *self._decision_controls]
+        controls: list[QWidget] = [
+            self.unresolved_filter,
+            self.current_course_filter,
+            self.target_course_filter,
+            self.current_group_filter,
+            self.target_group_filter,
+            self.reset_filters_button,
+            self.select_visible_button,
+            self.clear_selection_button,
+            self.bulk_course_combo,
+            self.bulk_course_button,
+            self.bulk_group_combo,
+            self.bulk_group_button,
+            self.bulk_exited_button,
+            self.bulk_unresolved_button,
+            self.table,
+            *self._decision_controls,
+        ]
         if self.close_button is not None:
             controls.append(self.close_button)
         for current, following in zip(controls, controls[1:], strict=False):

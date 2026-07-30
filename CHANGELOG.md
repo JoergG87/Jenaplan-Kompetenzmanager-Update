@@ -78,6 +78,20 @@
   nichts. Global bleibt nur Schließen; es gibt keine Mehrfachauswahl,
   Sammelaktion, Datenbankwrites, Repositoryaufrufe, Shell-/Settings-
   Integration, Ausführung, Backup oder Authentifizierung.
+- SJ-3B.3 ergänzt den bestehenden Dialog um kombinierbare Filter für ungelöste
+  Kinder sowie bisherigen und geplanten Kurs beziehungsweise bisherige und
+  geplante Stammgruppe. Sichtbare Zeilen können einzeln oder vollständig
+  ausgewählt werden; ein Filterwechsel entscheidet und selektiert nichts.
+  Verdeckte ausgewählte Kinder bleiben erkennbar ausgewählt, werden aber von
+  einer Sammeländerung im aktuellen Filter nicht unbeabsichtigt erfasst.
+  Zielkurs, Zielstammgruppe, ausgeschieden und bewusst ungelöst werden für die
+  ausgewählten sichtbaren Kinder ausschließlich über einen neuen flüchtigen
+  Plan übernommen. Mehrkindänderungen verlangen eine Bestätigung, Kursstufe 3
+  bleibt bis zur bewussten Kurs-3-Auswahl ungelöst und ausgeschieden entfernt
+  Kurs und Stammgruppe. Zähler, textlicher Gesamtstatus und sichtbarer
+  Auswahlstand aktualisieren sich unmittelbar. Es gibt weiterhin keine
+  Datenbankwrites, Repositoryaufrufe, Shell-/Settings-Integration,
+  Ausführung, Backup oder Authentifizierung.
 - Die normale Runtime lässt ausschließlich ein vollständig verifiziertes
   Final-V3 als `V3_SCHEMA_READY` zu. Unbekannte, beschädigte oder unsichere
   Schemata, WAL-/SHM-Sidecars, offene Restorezustände und fehlende
