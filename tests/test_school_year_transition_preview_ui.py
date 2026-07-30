@@ -1,12 +1,11 @@
-"""Focused UI checks for the read-only SJ-3B.1 preview dialog."""
+"""Focused UI checks for the editable SJ-3B.2b transition plan dialog."""
 
 from __future__ import annotations
 
 import os
 import sqlite3
 import unittest
-from dataclasses import replace
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import mock
@@ -17,11 +16,18 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
-    QAbstractItemView,
+    QAbstractButton,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
 )
 
+from src.application.school_year_transition_plan import (
+    SchoolYearTransitionCourseDecision,
+    SchoolYearTransitionGroupDecision,
+    SchoolYearTransitionPlan,
+    SchoolYearTransitionPlanTargetStatus,
+)
 from src.application.school_year_transition_preview import (
     SchoolYearTransitionPreviewProjector,
     SchoolYearTransitionPreviewService,
@@ -39,8 +45,20 @@ from src.core.school_year_transition import (
     SchoolYearTransitionMembership,
     SchoolYearTransitionPreviewSources,
 )
+from src.core.sqlite_school_year_transition import (
+    SchoolYearTransitionPreviewRepository,
+)
 from src.desktop_app.dialogs.school_year_transition_preview_dialog import (
     SchoolYearTransitionPreviewDialog,
+)
+from src.desktop_app.view_models.school_year_transition_preview_view_model import (
+    ACCEPT_PROPOSAL,
+    KEEP_CURRENT_GROUP,
+    LEAVE_UNRESOLVED,
+    MARK_EXITED,
+    REPEAT_YEAR_LEVEL_THREE,
+    SELECT_OTHER_COURSE,
+    SELECT_OTHER_GROUP,
 )
 from tests.helpers.synthetic_v3 import create_synthetic_v3_database
 
@@ -57,79 +75,120 @@ PLANNED = PlannedSchoolYear(
     date(2026, 8, 1),
     date(2027, 7, 31),
 )
+COURSES = (
+    SchoolYearTransitionCourse("C-1", "Kurs 1", True, 1),
+    SchoolYearTransitionCourse("C-2", "Kurs 2", True, 2),
+    SchoolYearTransitionCourse("C-2-B", "Kurs 2B", True, 2),
+    SchoolYearTransitionCourse("C-3", "Kurs 3", True, 3),
+)
+GROUPS = (
+    SchoolYearTransitionGroup("G-A", "Gruppe A", True),
+    SchoolYearTransitionGroup("G-B", "Gruppe B", True),
+)
 
 
-def _student(
-    student_id: str,
-    *,
-    archived: bool = False,
-) -> V3Student:
-    from datetime import datetime
-
-    timestamp = datetime(2026, 1, 1, 12, 0)
+def _student(student_id: str) -> V3Student:
+    timestamp = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
     return V3Student(
         student_id=student_id,
         first_name="Test",
         last_name=student_id,
         notes="",
-        active=not archived,
+        active=True,
         created_at=timestamp,
         updated_at=timestamp,
-        archived_at=timestamp if archived else None,
+        archived_at=None,
     )
 
 
 def _membership(
     student_id: str,
     course_id: str,
-    *,
-    status: StudentAssignmentStatus = StudentAssignmentStatus.ENROLLED,
 ) -> SchoolYearTransitionMembership:
     return SchoolYearTransitionMembership(
         student_id=student_id,
         school_year_id=CURRENT.school_year_id,
-        group_id="G-A" if status is StudentAssignmentStatus.ENROLLED else None,
-        group_name="Gruppe A" if status is StudentAssignmentStatus.ENROLLED else None,
-        course_id=course_id if status is StudentAssignmentStatus.ENROLLED else None,
-        course_name=(
-            f"Kurs {course_id[-1]}"
-            if status is StudentAssignmentStatus.ENROLLED
-            else None
-        ),
-        assignment_status=status,
-    )
-
-
-def _sources(
-    *,
-    students: tuple[V3Student, ...] = (),
-    memberships: tuple[SchoolYearTransitionMembership, ...] = (),
-    courses: tuple[SchoolYearTransitionCourse, ...] | None = None,
-) -> SchoolYearTransitionPreviewSources:
-    return SchoolYearTransitionPreviewSources(
-        school_years=(CURRENT,),
-        students=students,
-        memberships=memberships,
-        courses=(
-            courses
-            if courses is not None
-            else (
-                SchoolYearTransitionCourse("C-1", "Kurs 1", True, 1),
-                SchoolYearTransitionCourse("C-2", "Kurs 2", True, 2),
-                SchoolYearTransitionCourse("C-3", "Kurs 3", True, 3),
-            )
-        ),
-        groups=(SchoolYearTransitionGroup("G-A", "Gruppe A", True),),
+        group_id="G-A",
+        group_name="Gruppe A",
+        course_id=course_id,
+        course_name=f"Kurs {course_id.removeprefix('C-')}",
+        assignment_status=StudentAssignmentStatus.ENROLLED,
     )
 
 
 def _preview(
-    sources: SchoolYearTransitionPreviewSources,
+    *,
+    students: tuple[V3Student, ...] | None = None,
+    memberships: tuple[SchoolYearTransitionMembership, ...] | None = None,
+    courses: tuple[SchoolYearTransitionCourse, ...] | None = None,
 ):
+    preview_students = students or (
+        _student("S-1"),
+        _student("S-2"),
+        _student("S-3"),
+    )
+    preview_memberships = memberships or (
+        _membership("S-1", "C-1"),
+        _membership("S-2", "C-2"),
+        _membership("S-3", "C-3"),
+    )
+    sources = SchoolYearTransitionPreviewSources(
+        school_years=(CURRENT,),
+        students=preview_students,
+        memberships=preview_memberships,
+        courses=courses or (COURSES[0], COURSES[1], COURSES[3]),
+        groups=GROUPS,
+    )
     return SchoolYearTransitionPreviewProjector().project(
         planned_school_year=PLANNED,
         sources=sources,
     )
+
+
+def _plan(preview=None) -> SchoolYearTransitionPlan:
+    return SchoolYearTransitionPlan.from_preview(
+        preview or _preview(),
+        courses=COURSES,
+        groups=GROUPS,
+    )
+
+
+def _plan_item(plan: SchoolYearTransitionPlan, student_id: str):
+    return next(item for item in plan.items if item.student_id == student_id)
+
+
+def _row(dialog: SchoolYearTransitionPreviewDialog, student_id: str) -> int:
+    return next(
+        index
+        for index, item in enumerate(dialog.view_model.rows)
+        if item.student_id == student_id
+    )
+
+
+def _combo(
+    dialog: SchoolYearTransitionPreviewDialog,
+    student_id: str,
+    column: int,
+) -> QComboBox:
+    widget = dialog.table.cellWidget(_row(dialog, student_id), column)
+    if not isinstance(widget, QComboBox):
+        raise AssertionError("Expected decision combo")
+    return widget
+
+
+def _choose(
+    combo: QComboBox,
+    action: str,
+    option_id: str | None = None,
+) -> None:
+    selection = (action, option_id)
+    index = next(
+        index
+        for index in range(combo.count())
+        if combo.itemData(index) == selection
+    )
+    combo.setCurrentIndex(index)
+    combo.activated.emit(index)
 
 
 class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
@@ -142,147 +201,280 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
             if isinstance(widget, SchoolYearTransitionPreviewDialog):
                 widget.close()
 
-    def test_empty_preview_is_complete_and_has_no_rows(self) -> None:
-        dialog = SchoolYearTransitionPreviewDialog(_preview(_sources()))
+    def test_student_name_is_visible_instead_of_student_id(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
 
-        self.assertEqual(dialog.view_model.status_label, "Vorschau vollständig")
-        self.assertEqual(dialog.table.rowCount(), 0)
-        self.assertEqual(dialog.summary_labels["Kinder gesamt"].text(), "0")
-
-    def test_complete_preview_shows_counts_and_stable_item_order(self) -> None:
-        sources = _sources(
-            students=(_student("S-2"), _student("S-1")),
-            memberships=(
-                _membership("S-2", "C-2"),
-                _membership("S-1", "C-1"),
-            ),
-        )
-        dialog = SchoolYearTransitionPreviewDialog(_preview(sources))
-
-        self.assertEqual(dialog.view_model.status_label, "Vorschau vollständig")
-        self.assertEqual(dialog.table.item(0, 0).text(), "S-1")
-        self.assertEqual(dialog.table.item(1, 0).text(), "S-2")
-        self.assertEqual(dialog.summary_labels["Wechsel 1 → 2"].text(), "1")
-        self.assertEqual(dialog.summary_labels["Wechsel 2 → 3"].text(), "1")
-
-    def test_course_three_is_visibly_unresolved_without_color_dependency(self) -> None:
-        sources = _sources(
-            students=(_student("S-3"),),
-            memberships=(_membership("S-3", "C-3"),),
-        )
-        dialog = SchoolYearTransitionPreviewDialog(_preview(sources))
-
-        self.assertEqual(dialog.table.item(0, 6).text(), "Ungelöst")
-        self.assertIn("Kursstufe 3", dialog.table.item(0, 7).text())
+        first_row = _row(dialog, "S-1")
+        self.assertEqual(dialog.table.item(first_row, 0).text(), "Test S-1")
+        self.assertNotEqual(dialog.table.item(first_row, 0).text(), "S-1")
         self.assertEqual(
-            dialog.table.item(0, 6).data(Qt.ItemDataRole.UserRole),
-            "unresolved",
+            _plan_item(dialog.plan, "S-1").student_id,
+            "S-1",
         )
 
-    def test_multiple_warnings_are_all_visible(self) -> None:
-        sources = _sources(
-            students=(_student("S-X", archived=True),),
-            memberships=(),
-        )
-        dialog = SchoolYearTransitionPreviewDialog(_preview(sources))
+    def test_proposal_and_alternative_course_create_new_plans(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+        initial_plan = dialog.plan
 
-        warnings = dialog.table.item(0, 7).text()
-        self.assertIn("archiviert", warnings)
-        self.assertIn("Zuordnung fehlt", warnings)
-
-    def test_archived_and_exited_children_remain_visible(self) -> None:
-        sources = _sources(
-            students=(_student("S-A", archived=True), _student("S-E")),
-            memberships=(
-                _membership(
-                    "S-E",
-                    "C-1",
-                    status=StudentAssignmentStatus.EXITED,
-                ),
-            ),
+        _choose(_combo(dialog, "S-1", 4), ACCEPT_PROPOSAL)
+        accepted_plan = dialog.plan
+        accepted = _plan_item(accepted_plan, "S-1")
+        self.assertIsNot(accepted_plan, initial_plan)
+        self.assertEqual(accepted.target_course_name, "Kurs 2")
+        self.assertIs(
+            accepted.course_decision,
+            SchoolYearTransitionCourseDecision.ACCEPT_PROPOSAL,
         )
-        dialog = SchoolYearTransitionPreviewDialog(_preview(sources))
+
+        _choose(
+            _combo(dialog, "S-1", 4),
+            SELECT_OTHER_COURSE,
+            "C-2-B",
+        )
+        changed = _plan_item(dialog.plan, "S-1")
+        self.assertIsNot(dialog.plan, accepted_plan)
+        self.assertEqual(changed.target_course_name, "Kurs 2B")
+        self.assertIs(
+            changed.target_status,
+            SchoolYearTransitionPlanTargetStatus.OTHER_COURSE,
+        )
+
+    def test_course_three_repeat_is_a_conscious_selection(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
 
         self.assertEqual(
-            tuple(dialog.table.item(row, 0).text() for row in range(2)),
-            ("S-A", "S-E"),
+            _plan_item(dialog.plan, "S-3").target_status,
+            SchoolYearTransitionPlanTargetStatus.UNRESOLVED,
         )
-        self.assertIn("archiviert", dialog.table.item(0, 7).text())
-        self.assertIn("ausgeschieden", dialog.table.item(1, 7).text())
-
-    def test_every_preview_item_is_shown_exactly_once(self) -> None:
-        students = tuple(_student(f"S-{number:02}") for number in range(18, 0, -1))
-        memberships = tuple(
-            _membership(student.student_id, "C-1")
-            for student in students
+        _choose(
+            _combo(dialog, "S-3", 4),
+            REPEAT_YEAR_LEVEL_THREE,
+            "C-3",
         )
-        preview = _preview(_sources(students=students, memberships=memberships))
-        dialog = SchoolYearTransitionPreviewDialog(preview)
 
-        visible_ids = tuple(
-            dialog.table.item(row, 0).text()
-            for row in range(dialog.table.rowCount())
+        repeated = _plan_item(dialog.plan, "S-3")
+        self.assertIs(
+            repeated.target_status,
+            SchoolYearTransitionPlanTargetStatus.REPEAT_YEAR_LEVEL_THREE,
         )
-        self.assertEqual(visible_ids, tuple(item.student_id for item in preview.items))
-        self.assertEqual(len(visible_ids), len(set(visible_ids)))
+        self.assertEqual(
+            dialog.summary_labels["Kurs 3 wiederholen"].text(),
+            "1",
+        )
 
-    def test_view_model_preserves_a_caller_supplied_item_order(self) -> None:
+    def test_group_can_be_kept_or_changed_individually(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+
+        _choose(_combo(dialog, "S-1", 5), KEEP_CURRENT_GROUP)
+        kept = _plan_item(dialog.plan, "S-1")
+        self.assertIs(
+            kept.group_decision,
+            SchoolYearTransitionGroupDecision.KEEP_CURRENT_GROUP,
+        )
+
+        _choose(
+            _combo(dialog, "S-1", 5),
+            SELECT_OTHER_GROUP,
+            "G-B",
+        )
+        changed = _plan_item(dialog.plan, "S-1")
+        self.assertEqual(changed.target_group_name, "Gruppe B")
+        self.assertIs(
+            changed.group_decision,
+            SchoolYearTransitionGroupDecision.SELECT_OTHER_GROUP,
+        )
+
+    def test_current_group_can_be_kept_when_current_course_is_invalid(
+        self,
+    ) -> None:
         preview = _preview(
-            _sources(
-                students=(_student("S-1"), _student("S-2"), _student("S-3")),
-                memberships=(
-                    _membership("S-1", "C-1"),
-                    _membership("S-2", "C-1"),
-                    _membership("S-3", "C-1"),
-                ),
+            students=(_student("S-X"),),
+            memberships=(_membership("S-X", "C-1"),),
+            courses=(COURSES[1], COURSES[3]),
+        )
+        self.assertIsNone(preview.items[0].proposed_group_id)
+        dialog = SchoolYearTransitionPreviewDialog(_plan(preview))
+
+        group_combo = _combo(dialog, "S-X", 5)
+        self.assertTrue(
+            any(
+                group_combo.itemData(index) == (KEEP_CURRENT_GROUP, None)
+                for index in range(group_combo.count())
             )
         )
-        reordered = replace(
-            preview,
-            items=(preview.items[2], preview.items[0], preview.items[1]),
+        self.assertFalse(
+            any(
+                group_combo.itemData(index)
+                == (SELECT_OTHER_GROUP, "G-A")
+                for index in range(group_combo.count())
+            )
         )
-        dialog = SchoolYearTransitionPreviewDialog(reordered)
+        _choose(group_combo, KEEP_CURRENT_GROUP)
+
+        kept = _plan_item(dialog.plan, "S-X")
+        self.assertEqual(kept.target_group_id, "G-A")
+        self.assertIs(
+            kept.group_decision,
+            SchoolYearTransitionGroupDecision.KEEP_CURRENT_GROUP,
+        )
+
+    def test_exited_has_no_target_course_or_group(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+
+        _choose(_combo(dialog, "S-2", 4), MARK_EXITED)
+        row = _row(dialog, "S-2")
+        exited = _plan_item(dialog.plan, "S-2")
+
+        self.assertIs(
+            exited.target_status,
+            SchoolYearTransitionPlanTargetStatus.EXITED,
+        )
+        self.assertIsNone(exited.target_group_id)
+        self.assertIsNone(exited.target_course_id)
+        self.assertEqual(dialog.table.item(row, 5).text(), "—")
+        self.assertEqual(dialog.table.item(row, 6).text(), "—")
+        self.assertIsNone(dialog.table.cellWidget(row, 5))
+        self.assertEqual(dialog.summary_labels["Ausgeschieden"].text(), "1")
+
+    def test_consciously_unresolved_remains_textually_blocking(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+
+        _choose(_combo(dialog, "S-1", 4), LEAVE_UNRESOLVED)
+        row = _row(dialog, "S-1")
+
+        self.assertEqual(dialog.table.item(row, 4).text(), "Ungelöst")
+        self.assertIn(
+            "bewusst ungelöst",
+            dialog.table.item(row, 7).text(),
+        )
+        self.assertIn(
+            "Entscheidungen erforderlich",
+            dialog.status_message.label.text(),
+        )
+
+    def test_counts_and_status_refresh_after_every_change(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+        self.assertEqual(dialog.summary_labels["Ungelöst"].text(), "1")
+        self.assertEqual(
+            dialog.summary_labels["Individuell bearbeitet"].text(),
+            "0",
+        )
+
+        _choose(
+            _combo(dialog, "S-3", 4),
+            REPEAT_YEAR_LEVEL_THREE,
+            "C-3",
+        )
+
+        self.assertEqual(dialog.summary_labels["Ungelöst"].text(), "0")
+        self.assertEqual(
+            dialog.summary_labels["Individuell bearbeitet"].text(),
+            "1",
+        )
+        self.assertIn(
+            "Plan vollständig",
+            dialog.status_message.label.text(),
+        )
+
+    def test_original_preview_and_initial_plan_remain_unchanged(self) -> None:
+        preview = _preview()
+        original_preview = preview
+        initial_plan = _plan(preview)
+        dialog = SchoolYearTransitionPreviewDialog(initial_plan)
+
+        _choose(_combo(dialog, "S-2", 4), MARK_EXITED)
+
+        self.assertEqual(preview, original_preview)
+        self.assertIs(
+            _plan_item(initial_plan, "S-2").target_status,
+            SchoolYearTransitionPlanTargetStatus.ADVANCE_2_TO_3,
+        )
+        self.assertIs(
+            _plan_item(dialog.plan, "S-2").target_status,
+            SchoolYearTransitionPlanTargetStatus.EXITED,
+        )
+
+    def test_widget_edits_do_not_call_sqlite_or_change_database(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = create_synthetic_v3_database(
+                Path(directory) / "preview-ui.sqlite"
+            )
+
+            def snapshot() -> tuple[str, ...]:
+                with sqlite3.connect(path) as connection:
+                    return tuple(connection.iterdump())
+
+            def connect() -> sqlite3.Connection:
+                connection = sqlite3.connect(path)
+                connection.row_factory = sqlite3.Row
+                return connection
+
+            before = snapshot()
+            preview = SchoolYearTransitionPreviewService(connect).preview(
+                label="2026/27",
+                start_date=date(2026, 8, 1),
+                end_date=date(2027, 7, 31),
+            )
+            plan = SchoolYearTransitionPlan.from_preview(
+                preview,
+                courses=COURSES,
+                groups=GROUPS,
+            )
+            with mock.patch(
+                "sqlite3.connect",
+                side_effect=AssertionError("Widget must not open SQLite"),
+            ), mock.patch.object(
+                SchoolYearTransitionPreviewService,
+                "preview",
+                side_effect=AssertionError(
+                    "Widget must not call the preview service"
+                ),
+            ), mock.patch.object(
+                SchoolYearTransitionPreviewRepository,
+                "read_sources",
+                side_effect=AssertionError(
+                    "Widget must not call the preview repository"
+                ),
+            ):
+                dialog = SchoolYearTransitionPreviewDialog(plan)
+                student_id = dialog.plan.items[0].student_id
+                _choose(
+                    _combo(dialog, student_id, 4),
+                    MARK_EXITED,
+                )
+            self.assertEqual(snapshot(), before)
+
+    def test_keyboard_accessibility_and_dropdown_opening_are_safe(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+        dialog.show()
+        self.app.processEvents()
+
+        course_combo = _combo(dialog, "S-1", 4)
+        group_combo = _combo(dialog, "S-1", 5)
+        original_plan = dialog.plan
+        course_combo.showPopup()
+        self.app.processEvents()
+        course_combo.hidePopup()
+        self.app.processEvents()
+        self.assertIs(dialog.plan, original_plan)
 
         self.assertEqual(
-            tuple(
-                dialog.table.item(row, 0).text()
-                for row in range(dialog.table.rowCount())
-            ),
-            ("S-3", "S-1", "S-2"),
+            dialog.accessibleName(),
+            "Schuljahreswechsel-Vorschau bearbeiten",
         )
-
-    def test_small_window_keeps_horizontal_and_vertical_scrolling(self) -> None:
-        students = tuple(_student(f"S-{number:02}") for number in range(20))
-        memberships = tuple(
-            _membership(student.student_id, "C-1")
-            for student in students
+        self.assertEqual(
+            dialog.table.accessibleName(),
+            "Flüchtiger Plan je Kind",
         )
-        dialog = SchoolYearTransitionPreviewDialog(
-            _preview(_sources(students=students, memberships=memberships))
-        )
-        dialog.resize(520, 360)
-        dialog.show()
-        self.app.processEvents()
-
-        self.assertGreater(dialog.table.horizontalScrollBar().maximum(), 0)
-        self.assertGreater(dialog.table.verticalScrollBar().maximum(), 0)
-        self.assertTrue(dialog.table.horizontalScrollBar().isVisible())
-        self.assertTrue(dialog.table.verticalScrollBar().isVisible())
-
-    def test_keyboard_and_accessible_names_are_complete(self) -> None:
-        sources = _sources(
-            students=(_student("S-1"),),
-            memberships=(_membership("S-1", "C-1"),),
-        )
-        dialog = SchoolYearTransitionPreviewDialog(_preview(sources))
-        dialog.show()
-        self.app.processEvents()
-
-        self.assertEqual(dialog.accessibleName(), "Schuljahreswechsel-Vorschau")
-        self.assertEqual(dialog.table.accessibleName(), "Vorschau je Kind")
         self.assertTrue(dialog.status_message.accessibleName())
+        self.assertIn("Test S-1", course_combo.accessibleName())
+        self.assertIn("Test S-1", group_combo.accessibleName())
+        self.assertTrue(course_combo.accessibleDescription())
         self.assertTrue(
-            all(label.accessibleName() for label in dialog.summary_labels.values())
+            all(
+                label.accessibleName()
+                for label in dialog.summary_labels.values()
+            )
         )
         for column in range(dialog.table.columnCount()):
             self.assertTrue(
@@ -295,110 +487,54 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
                     Qt.ItemDataRole.AccessibleDescriptionRole
                 )
             )
-        dialog.table.setFocus()
-        QTest.keyClick(dialog.table, Qt.Key.Key_Right)
-        self.assertEqual(dialog.table.currentColumn(), 1)
 
-        close_button = dialog.findChild(QDialogButtonBox).button(
-            QDialogButtonBox.StandardButton.Close
+        dialog.activateWindow()
+        course_combo.setFocus(Qt.FocusReason.TabFocusReason)
+        self.app.processEvents()
+        self.assertIs(QApplication.focusWidget(), course_combo)
+        QTest.keyClick(course_combo, Qt.Key.Key_Tab)
+        self.app.processEvents()
+        self.assertIs(QApplication.focusWidget(), group_combo)
+
+        self.assertIsNotNone(dialog.close_button)
+        self.assertEqual(
+            dialog.close_button.accessibleName(),
+            "Vorschau schließen",
         )
-        self.assertIsNotNone(close_button)
-        self.assertEqual(close_button.accessibleName(), "Vorschau schließen")
         QTest.keyClick(dialog, Qt.Key.Key_Escape)
         self.assertEqual(dialog.result(), QDialog.DialogCode.Rejected)
 
-    def test_widget_has_no_repository_or_write_call(self) -> None:
-        sources = _sources(
-            students=(_student("S-1"),),
-            memberships=(_membership("S-1", "C-1"),),
+    def test_long_lists_scroll_and_no_bulk_or_execution_action_exists(self) -> None:
+        students = tuple(_student(f"S-{number:02}") for number in range(24))
+        memberships = tuple(
+            _membership(student.student_id, "C-1")
+            for student in students
         )
-        with mock.patch(
-            "sqlite3.connect",
-            side_effect=AssertionError("Widget must not open SQLite"),
-        ):
-            dialog = SchoolYearTransitionPreviewDialog(_preview(sources))
+        dialog = SchoolYearTransitionPreviewDialog(
+            _plan(_preview(students=students, memberships=memberships))
+        )
+        dialog.resize(520, 360)
+        dialog.show()
+        self.app.processEvents()
 
+        self.assertGreater(dialog.table.horizontalScrollBar().maximum(), 0)
+        self.assertGreater(dialog.table.verticalScrollBar().maximum(), 0)
+        self.assertTrue(dialog.table.horizontalScrollBar().isVisible())
+        self.assertTrue(dialog.table.verticalScrollBar().isVisible())
         self.assertEqual(
-            dialog.table.editTriggers(),
-            QAbstractItemView.EditTrigger.NoEditTriggers,
+            dialog.table.selectionMode(),
+            dialog.table.SelectionMode.SingleSelection,
         )
         self.assertEqual(
-            dialog.findChildren(QDialogButtonBox)[0].standardButtons(),
+            dialog.buttons.standardButtons(),
             QDialogButtonBox.StandardButton.Close,
         )
-
-    def test_opening_widget_does_not_change_database(self) -> None:
-        with TemporaryDirectory() as directory:
-            path = create_synthetic_v3_database(
-                Path(directory) / "preview-ui.sqlite"
-            )
-
-            def snapshot() -> tuple[str, ...]:
-                with sqlite3.connect(path) as connection:
-                    return tuple(connection.iterdump())
-
-            before = snapshot()
-
-            def connect() -> sqlite3.Connection:
-                connection = sqlite3.connect(path)
-                connection.row_factory = sqlite3.Row
-                return connection
-
-            preview = SchoolYearTransitionPreviewService(connect).preview(
-                label="2026/27",
-                start_date=date(2026, 8, 1),
-                end_date=date(2027, 7, 31),
-            )
-            dialog = SchoolYearTransitionPreviewDialog(preview)
-            dialog.show()
-            self.app.processEvents()
-            dialog.close()
-
-            self.assertEqual(snapshot(), before)
-
-    def test_invalid_preview_period_remains_visible_without_crashing(self) -> None:
-        invalid_planned = PlannedSchoolYear(
-            "2026/27",
-            "kein Datum",  # type: ignore[arg-type]
-            None,  # type: ignore[arg-type]
+        button_texts = tuple(
+            button.text()
+            for button in dialog.findChildren(QAbstractButton)
         )
-        preview = SchoolYearTransitionPreviewProjector().project(
-            planned_school_year=invalid_planned,
-            sources=_sources(),
-        )
-        dialog = SchoolYearTransitionPreviewDialog(preview)
-
-        self.assertEqual(dialog.summary_labels["Zeitraum"].text(), "Nicht verfügbar")
-        self.assertIn(
-            "Zeitraum des neuen Schuljahres ist ungültig",
-            dialog.status_message.label.text(),
-        )
-
-    def test_mapping_uses_preview_counts_without_recalculation(self) -> None:
-        preview = _preview(
-            _sources(
-                students=(_student("S-1"),),
-                memberships=(_membership("S-1", "C-1"),),
-            )
-        )
-        altered_counts = replace(
-            preview,
-            student_count=91,
-            advance_1_to_2_count=81,
-            advance_2_to_3_count=71,
-            unresolved_count=61,
-            executable=False,
-        )
-        dialog = SchoolYearTransitionPreviewDialog(altered_counts)
-
-        self.assertEqual(dialog.summary_labels["Kinder gesamt"].text(), "91")
-        self.assertEqual(dialog.summary_labels["Wechsel 1 → 2"].text(), "81")
-        self.assertEqual(dialog.summary_labels["Wechsel 2 → 3"].text(), "71")
-        self.assertEqual(dialog.summary_labels["Ungelöst"].text(), "61")
-        self.assertEqual(
-            dialog.view_model.status_label,
-            "Entscheidungen erforderlich",
-        )
+        self.assertNotIn("Ausführen", button_texts)
+        self.assertFalse(any("Alle" in text for text in button_texts))
 
 
 if __name__ == "__main__":

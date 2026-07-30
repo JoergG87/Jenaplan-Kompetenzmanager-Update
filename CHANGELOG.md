@@ -67,6 +67,17 @@
   rein flüchtig ab. Ursprüngliche Issues bleiben erhalten; deterministische
   Validierung und Zähler führen weder Qt-, Repository-, SQLite-, Backup-,
   Authentifizierungs-, Persistenz- noch Ausführungslogik aus.
+- SJ-3B.2b stellt den flüchtigen Schuljahreswechsel-Plan im vorhandenen
+  Vorschau-Dialog individuell je Kind dar. Sichtbar sind Schülername,
+  bisherige Stammgruppe, Kurs und Kursstufe sowie Zielstatus, Zielgruppe,
+  Zielkurs und textliche Warnungen oder Blocker. Vorschlag, anderer aktiver
+  Kurs, Kurs-3-Wiederholung, unveränderte oder andere aktive Stammgruppe,
+  Austritt und bewusst ungelöst werden ausschließlich über die vorhandenen
+  Planmethoden als neue unveränderliche Instanz übernommen; Planstatus und
+  Zähler aktualisieren sich danach. Das Öffnen eines Auswahlfelds entscheidet
+  nichts. Global bleibt nur Schließen; es gibt keine Mehrfachauswahl,
+  Sammelaktion, Datenbankwrites, Repositoryaufrufe, Shell-/Settings-
+  Integration, Ausführung, Backup oder Authentifizierung.
 - Die normale Runtime lässt ausschließlich ein vollständig verifiziertes
   Final-V3 als `V3_SCHEMA_READY` zu. Unbekannte, beschädigte oder unsichere
   Schemata, WAL-/SHM-Sidecars, offene Restorezustände und fehlende

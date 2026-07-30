@@ -60,6 +60,20 @@ Application-Planmodell:
 | bearbeitet / unverändert | flüchtiger Entscheidungszustand | Nein | jede Bearbeitung liefert eine neue Planinstanz |
 | Validierung und Zähler | aktueller flüchtiger Plan | Nein | deterministisch; keine Ausführungsfreigabe |
 
+SJ-3B.2b stellt diesen flüchtigen Plan im vorhandenen Vorschau-Dialog
+individuell bearbeitbar dar:
+
+| Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |
+|---|---|---|---|
+| Schülername und bisherige Zuordnung | kopierte Anzeige-Metadaten des jeweiligen `SchoolYearTransitionPlanItem` | Nein | Name statt technischer ID; `student_id` bleibt unsichtbare stabile Identität |
+| Zielstatus | aktueller `SchoolYearTransitionPlanItem.target_status` | Nein | Vorschlag übernehmen, anderer aktiver Kurs, Kurs 3 wiederholen, ausgeschieden oder bewusst ungelöst ausschließlich über Planmethoden |
+| Zielstammgruppe | kopierte bisherige Gruppen-ID plus aktuelle Zielgruppe und `SchoolYearTransitionPlan.available_groups` | Nein | eine weiterhin aktive bisherige Gruppe auch ohne automatischen Gruppenvorschlag bewusst unverändert lassen oder andere aktive Gruppe wählen; bei ausgeschieden leer |
+| Zielkurs | aktueller Zielkurs plus `SchoolYearTransitionPlan.available_courses` | Nein | keine Option außerhalb des Plans; bei ausgeschieden und ungelöst leer |
+| Warnungen und Blocker | ursprüngliche Preview-Issues plus aktuelle `SchoolYearTransitionPlanValidation` | Nein | ursprünglicher und aktueller Zustand textlich unterscheidbar; nie nur farblich |
+| Planstatus und Zähler | `SchoolYearTransitionPlan.validate()` | Nein | nach jeder neuen Planinstanz vollständig neu projizieren |
+| Auswahlfelder | darstellungsfertige ViewModel-Optionen | Nein | nur bewusste Aktivierung ändert den Plan; Öffnen und Wiederbefüllen bleiben folgenlos |
+| Schließen | Dialogzustand | Nein | einzige globale Aktion; keine Mehrfachauswahl, Sammeländerung, Ausführung, Speicherung, Shell-/Settings-Integration, Backup oder Authentifizierung |
+
 Synthetische Initialdaten sind keine UI-Projektion. IDs, Zeitpunkte und
 Fixtures werden ausschließlich im Testpfad erzeugt und niemals als
 Produktdaten oder Pilotbestand dargestellt.

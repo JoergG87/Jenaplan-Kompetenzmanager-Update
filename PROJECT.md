@@ -101,12 +101,19 @@ Application-Planmodell erlaubt nur rein flüchtige bewusste Kurs-, Stammgruppen-
 Wiederholungs-, Austritts- und Ungelöst-Entscheidungen. Preview, Datenbank und
 ursprüngliche Issues bleiben unverändert.
 
-Weiterhin nicht umgesetzt oder freigegeben sind die editierbare Qt-
-Schuljahreswechsel-UI, Planpersistenz, die spätere Ausführung des Wechsels,
-unterjährige Mehrkind-/Sammelwechsel, Build, Packaging und Release. Die
-manuelle Prüfung der Runtime sowie der neuen Schüler-, Wechsel-, Austritts-
-und Kursstufenoberflächen auf macOS ist noch offen. Es wurden keine Migration
-und keine echten Daten verwendet.
+SJ-3B.2b stellt genau diesen flüchtigen Plan im vorhandenen Vorschau-Dialog
+individuell je Kind bearbeitbar dar. Schülername, bisherige Zuordnung,
+Zielstatus, Zielgruppe, Zielkurs sowie Warnungen und Blocker bleiben sichtbar.
+Jede bewusste Auswahl erzeugt eine neue Planinstanz; Planstatus und Zähler
+werden daraus neu projiziert. Global ist weiterhin ausschließlich Schließen
+zulässig.
+
+Weiterhin nicht umgesetzt oder freigegeben sind Shell-/Settings-Integration,
+Planpersistenz, die spätere Ausführung des Wechsels, Backup,
+Authentifizierung, unterjährige Mehrkind-/Sammelwechsel, Build, Packaging und
+Release. Die manuelle Prüfung der Runtime sowie der neuen Schüler-, Wechsel-,
+Austritts-, Kursstufen- und Schuljahreswechseloberflächen auf macOS ist noch
+offen. Es wurden keine Migration und keine echten Daten verwendet.
 
 ## Schuljahresmodell und echte Wechsel
 

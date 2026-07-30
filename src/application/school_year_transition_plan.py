@@ -1,4 +1,4 @@
-"""Pure, transient editing model for a later school-year transition UI."""
+"""Pure, transient editing model for the school-year transition preview UI."""
 
 from __future__ import annotations
 
@@ -52,6 +52,7 @@ class SchoolYearTransitionGroupDecision(str, Enum):
 
     UNCHANGED = "unchanged"
     KEEP_PROPOSAL = "keep_proposal"
+    KEEP_CURRENT_GROUP = "keep_current_group"
     SELECT_OTHER_GROUP = "select_other_group"
     NOT_APPLICABLE = "not_applicable"
 
@@ -62,6 +63,10 @@ class SchoolYearTransitionPlanItem:
 
     student_id: str
     student_display_name: str
+    current_group_id: str | None
+    current_group_name: str | None
+    current_course_name: str | None
+    current_year_level: int | None
     target_group_id: str | None
     target_group_name: str | None
     target_course_id: str | None
@@ -118,6 +123,10 @@ class SchoolYearTransitionPlanValidation:
 class SchoolYearTransitionPlan:
     """Immutable aggregate whose edits never touch repositories or SQLite."""
 
+    current_school_year_label: str
+    planned_school_year_label: str
+    planned_school_year_start_date: object
+    planned_school_year_end_date: object
     items: tuple[SchoolYearTransitionPlanItem, ...]
     available_courses: tuple[SchoolYearTransitionCourse, ...]
     available_groups: tuple[SchoolYearTransitionGroup, ...]
@@ -138,6 +147,16 @@ class SchoolYearTransitionPlan:
         available_courses = _active_courses(courses)
         available_groups = _active_groups(groups)
         return cls(
+            current_school_year_label=(
+                preview.current_school_year.label
+                if preview.current_school_year is not None
+                else "Nicht eindeutig verfügbar"
+            ),
+            planned_school_year_label=preview.planned_school_year.label,
+            planned_school_year_start_date=(
+                preview.planned_school_year.start_date
+            ),
+            planned_school_year_end_date=preview.planned_school_year.end_date,
             items=tuple(_plan_item(item) for item in preview.items),
             available_courses=available_courses,
             available_groups=available_groups,
@@ -264,6 +283,27 @@ class SchoolYearTransitionPlan:
             target_group_id=group.group_id,
             target_group_name=group.group_name,
             group_decision=SchoolYearTransitionGroupDecision.KEEP_PROPOSAL,
+            edited=True,
+        )
+        return self._replace(_with_resolution(updated))
+
+    def keep_current_group(
+        self,
+        student_id: str,
+    ) -> "SchoolYearTransitionPlan":
+        """Consciously retain the current active group."""
+        item = self._item(student_id)
+        _require_group_applicable(item)
+        if item.current_group_id is None:
+            raise SchoolYearTransitionPlanError("current_group_missing")
+        group = self._group(item.current_group_id)
+        updated = replace(
+            item,
+            target_group_id=group.group_id,
+            target_group_name=group.group_name,
+            group_decision=(
+                SchoolYearTransitionGroupDecision.KEEP_CURRENT_GROUP
+            ),
             edited=True,
         )
         return self._replace(_with_resolution(updated))
@@ -443,6 +483,10 @@ def _plan_item(
     return SchoolYearTransitionPlanItem(
         student_id=item.student_id,
         student_display_name=item.student_display_name,
+        current_group_id=item.current_group_id,
+        current_group_name=item.current_group_name,
+        current_course_name=item.current_course_name,
+        current_year_level=item.current_year_level,
         target_group_id=item.proposed_group_id,
         target_group_name=item.proposed_group_name,
         target_course_id=item.proposed_course_id,

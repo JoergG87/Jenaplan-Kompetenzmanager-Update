@@ -143,6 +143,13 @@ def test_initial_plan_copies_preview_without_mutating_or_reordering_it() -> None
     assert _item(plan, "S-1").edited is False
     assert _item(edited, "S-1").edited is True
     assert _item(plan, "S-1").target_course_id == "C-2"
+    assert plan.current_school_year_label == "2025/26"
+    assert plan.planned_school_year_label == "2026/27"
+    assert plan.planned_school_year_start_date == date(2026, 8, 1)
+    assert _item(plan, "S-1").current_group_id == "G-A"
+    assert _item(plan, "S-1").current_group_name == "Gruppe A"
+    assert _item(plan, "S-1").current_course_name == "C-1"
+    assert _item(plan, "S-1").current_year_level == 1
 
 
 def test_plan_preserves_a_caller_supplied_preview_item_order() -> None:
@@ -223,6 +230,36 @@ def test_proposed_group_can_be_consciously_retained() -> None:
         SchoolYearTransitionGroupDecision.KEEP_PROPOSAL
     )
     assert retained.edited is True
+
+
+def test_current_active_group_can_be_kept_without_a_group_proposal() -> None:
+    preview = _preview()
+    without_group_proposal = replace(
+        preview,
+        items=(
+            replace(
+                preview.items[0],
+                proposed_group_id=None,
+                proposed_group_name=None,
+                resolved=False,
+            ),
+            *preview.items[1:],
+        ),
+    )
+    plan = SchoolYearTransitionPlan.from_preview(
+        without_group_proposal,
+        courses=COURSES,
+        groups=GROUPS,
+    )
+
+    kept = _item(plan.keep_current_group("S-1"), "S-1")
+
+    assert kept.target_group_id == "G-A"
+    assert kept.target_group_name == "Gruppe A"
+    assert kept.group_decision is (
+        SchoolYearTransitionGroupDecision.KEEP_CURRENT_GROUP
+    )
+    assert kept.edited is True
 
 
 def test_course_three_remains_unresolved_until_a_conscious_choice() -> None:

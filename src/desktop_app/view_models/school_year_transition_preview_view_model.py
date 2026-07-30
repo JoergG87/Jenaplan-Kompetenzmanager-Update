@@ -1,23 +1,36 @@
-"""Display-only Qt mapping for the SJ-3B.1 transition preview."""
+"""Qt-free display mapping for the transient school-year transition plan."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
 
-from src.core.school_year_transition import (
-    SchoolYearTransitionPreview,
-    SchoolYearTransitionPreviewItem,
-    SchoolYearTransitionTargetStatus,
+from src.application.school_year_transition_plan import (
+    SchoolYearTransitionPlan,
+    SchoolYearTransitionPlanItem,
+    SchoolYearTransitionPlanTargetStatus,
 )
 
 
 EMPTY_VALUE = "—"
 
+ACCEPT_PROPOSAL = "accept_proposal"
+SELECT_OTHER_COURSE = "select_other_course"
+REPEAT_YEAR_LEVEL_THREE = "repeat_year_level_three"
+MARK_EXITED = "mark_exited"
+LEAVE_UNRESOLVED = "leave_unresolved"
+KEEP_CURRENT_GROUP = "keep_current_group"
+SELECT_OTHER_GROUP = "select_other_group"
+
 _TARGET_STATUS_LABELS = {
-    SchoolYearTransitionTargetStatus.ADVANCE_1_TO_2: "Wechsel 1 → 2",
-    SchoolYearTransitionTargetStatus.ADVANCE_2_TO_3: "Wechsel 2 → 3",
-    SchoolYearTransitionTargetStatus.UNRESOLVED: "Ungelöst",
+    SchoolYearTransitionPlanTargetStatus.ADVANCE_1_TO_2: "Wechsel 1 → 2",
+    SchoolYearTransitionPlanTargetStatus.ADVANCE_2_TO_3: "Wechsel 2 → 3",
+    SchoolYearTransitionPlanTargetStatus.OTHER_COURSE: "Anderer Kurs",
+    SchoolYearTransitionPlanTargetStatus.REPEAT_YEAR_LEVEL_THREE: (
+        "Kurs 3 wiederholen"
+    ),
+    SchoolYearTransitionPlanTargetStatus.EXITED: "Ausgeschieden",
+    SchoolYearTransitionPlanTargetStatus.UNRESOLVED: "Ungelöst",
 }
 
 _ISSUE_LABELS = {
@@ -37,91 +50,127 @@ _ISSUE_LABELS = {
         "Das neue Schuljahr liegt nicht nach dem aktuellen Schuljahr."
     ),
     "NEW_SCHOOL_YEAR_OVERLAP": "Das neue Schuljahr überschneidet ein vorhandenes.",
+    "PLAN_TARGET_COURSE_MISSING": "Im Plan fehlt ein Zielkurs.",
+    "PLAN_TARGET_GROUP_MISSING": "Im Plan fehlt eine Zielstammgruppe.",
+    "PLAN_TARGET_UNRESOLVED": "Der Zielstand bleibt bewusst ungelöst.",
     "SCHOOL_YEAR_GAP": "Zwischen den Schuljahren besteht eine Lücke.",
     "STUDENT_ARCHIVED": "Kind ist archiviert.",
     "STUDENT_EXITED": "Kind ist ausgeschieden.",
+    "STUDENT_MASTER_DATA_MISSING": "Schülerstammdaten fehlen.",
     "TARGET_COURSE_AMBIGUOUS": "Zielkurs ist nicht eindeutig.",
     "TARGET_COURSE_MISSING": "Passender Zielkurs fehlt.",
     "YEAR_LEVEL_THREE_SELECTION_REQUIRED": (
-        "Für Kursstufe 3 ist eine spätere Entscheidung erforderlich."
+        "Für Kursstufe 3 ist eine bewusste Entscheidung erforderlich."
     ),
 }
 
 
 @dataclass(frozen=True, slots=True)
+class SchoolYearTransitionDecisionOptionViewModel:
+    """One explicit user choice offered by the transient plan."""
+
+    action: str
+    option_id: str | None
+    label: str
+
+
+@dataclass(frozen=True, slots=True)
 class SchoolYearTransitionPreviewRowViewModel:
-    """One display-ready row in unchanged preview order."""
+    """One display-ready row in unchanged plan order."""
 
     student_id: str
     child_label: str
     current_group_label: str
     current_course_label: str
     current_year_level_label: str
-    proposed_group_label: str
-    proposed_course_label: str
     target_status_label: str
+    target_group_label: str
+    target_course_label: str
     warnings_label: str
     resolved: bool
+    exited: bool
     accessible_description: str
+    course_choices: tuple[SchoolYearTransitionDecisionOptionViewModel, ...]
+    group_choices: tuple[SchoolYearTransitionDecisionOptionViewModel, ...]
 
 
 @dataclass(frozen=True, slots=True)
 class SchoolYearTransitionPreviewViewModel:
-    """Complete display mapping of one existing transition preview."""
+    """Complete display mapping of one current transient transition plan."""
 
     current_school_year_label: str
     planned_school_year_label: str
     period_label: str
     student_count: int
+    resolved_count: int
     advance_1_to_2_count: int
     advance_2_to_3_count: int
+    other_course_count: int
+    repeat_year_level_three_count: int
+    exited_count: int
     unresolved_count: int
+    edited_count: int
     status_label: str
     status_description: str
     rows: tuple[SchoolYearTransitionPreviewRowViewModel, ...]
     global_issues_label: str
 
     @classmethod
-    def from_preview(
+    def from_plan(
         cls,
-        preview: SchoolYearTransitionPreview,
+        plan: SchoolYearTransitionPlan,
     ) -> "SchoolYearTransitionPreviewViewModel":
-        """Map only existing projection values without reordering or validation."""
-        rows = tuple(_row_from_item(item) for item in preview.items)
-        complete = preview.executable
+        """Map only the current immutable plan and its own validation."""
+        validation = plan.validate()
+        counts = validation.counts
+        item_issue_codes = {
+            item.student_id: tuple(
+                issue.code
+                for issue in validation.issues
+                if issue.student_id == item.student_id
+            )
+            for item in plan.items
+        }
+        rows = tuple(
+            _row_from_item(plan, item, item_issue_codes[item.student_id])
+            for item in plan.items
+        )
         status_label = (
-            "Vorschau vollständig"
-            if complete
+            "Plan vollständig"
+            if validation.complete
             else "Entscheidungen erforderlich"
         )
         status_description = (
-            "Alle Vorschläge sind vollständig."
-            if complete
+            "Alle Zielstände sind im flüchtigen Plan vollständig."
+            if validation.complete
             else (
-                f"{preview.unresolved_count} von {preview.student_count} "
-                "Kindern sind noch ungelöst."
+                f"{counts.unresolved_count} von {counts.student_count} "
+                "Kindern sind noch ungelöst oder blockiert."
             )
         )
         global_issues = tuple(
             _issue_label(issue.code)
-            for issue in preview.validation_issues
+            for issue in validation.issues
             if issue.student_id is None
         )
         return cls(
-            current_school_year_label=(
-                preview.current_school_year.label
-                if preview.current_school_year is not None
-                else "Nicht eindeutig verfügbar"
-            ),
-            planned_school_year_label=preview.planned_school_year.label,
+            current_school_year_label=plan.current_school_year_label,
+            planned_school_year_label=plan.planned_school_year_label,
             period_label=_period_label(
-                preview.planned_school_year.start_date,
-                preview.planned_school_year.end_date,
+                plan.planned_school_year_start_date,
+                plan.planned_school_year_end_date,
             ),
-            student_count=preview.student_count,
-            advance_1_to_2_count=preview.advance_1_to_2_count,
-            advance_2_to_3_count=preview.advance_2_to_3_count,
-            unresolved_count=preview.unresolved_count,
+            student_count=counts.student_count,
+            resolved_count=counts.resolved_count,
+            advance_1_to_2_count=counts.advance_1_to_2_count,
+            advance_2_to_3_count=counts.advance_2_to_3_count,
+            other_course_count=counts.other_course_count,
+            repeat_year_level_three_count=(
+                counts.repeat_year_level_three_count
+            ),
+            exited_count=counts.exited_count,
+            unresolved_count=counts.unresolved_count,
+            edited_count=counts.edited_count,
             status_label=status_label,
             status_description=status_description,
             rows=rows,
@@ -129,44 +178,184 @@ class SchoolYearTransitionPreviewViewModel:
         )
 
 
+def apply_course_choice(
+    plan: SchoolYearTransitionPlan,
+    *,
+    student_id: str,
+    action: str,
+    option_id: str | None,
+) -> SchoolYearTransitionPlan:
+    """Delegate one explicit UI choice to the immutable plan model."""
+    if action == ACCEPT_PROPOSAL:
+        return plan.accept_proposed_course(student_id)
+    if action == SELECT_OTHER_COURSE and option_id is not None:
+        return plan.select_other_course(student_id, option_id)
+    if action == REPEAT_YEAR_LEVEL_THREE and option_id is not None:
+        return plan.repeat_year_level_three(student_id, option_id)
+    if action == MARK_EXITED:
+        return plan.mark_exited(student_id)
+    if action == LEAVE_UNRESOLVED:
+        return plan.leave_unresolved(student_id)
+    raise ValueError("unknown_course_choice")
+
+
+def apply_group_choice(
+    plan: SchoolYearTransitionPlan,
+    *,
+    student_id: str,
+    action: str,
+    option_id: str | None,
+) -> SchoolYearTransitionPlan:
+    """Delegate one explicit UI group choice to the immutable plan model."""
+    if action == KEEP_CURRENT_GROUP:
+        return plan.keep_current_group(student_id)
+    if action == SELECT_OTHER_GROUP and option_id is not None:
+        return plan.select_other_group(student_id, option_id)
+    raise ValueError("unknown_group_choice")
+
+
 def _row_from_item(
-    item: SchoolYearTransitionPreviewItem,
+    plan: SchoolYearTransitionPlan,
+    item: SchoolYearTransitionPlanItem,
+    plan_issue_codes: tuple[str, ...],
 ) -> SchoolYearTransitionPreviewRowViewModel:
-    issue_codes = tuple(dict.fromkeys(item.warning_codes + item.blocker_codes))
-    warnings_label = (
-        " ".join(_issue_label(code) for code in issue_codes)
-        if issue_codes
-        else "Keine"
+    original_codes = tuple(
+        dict.fromkeys(
+            item.original_warning_codes + item.original_blocker_codes
+        )
     )
+    original_issues = tuple(
+        f"Aus Vorschau: {_issue_label(code)}" for code in original_codes
+    )
+    current_issues = tuple(
+        f"Aktueller Plan: {_issue_label(code)}"
+        for code in plan_issue_codes
+        if code not in original_codes
+    )
+    issue_labels = original_issues + current_issues
+    warnings_label = " ".join(issue_labels) if issue_labels else "Keine"
     target_status_label = _TARGET_STATUS_LABELS[item.target_status]
     current_group_label = item.current_group_name or EMPTY_VALUE
     current_course_label = item.current_course_name or EMPTY_VALUE
     current_year_level_label = _year_level_label(item.current_year_level)
-    proposed_group_label = item.proposed_group_name or EMPTY_VALUE
-    proposed_course_label = item.proposed_course_name or EMPTY_VALUE
+    target_group_label = item.target_group_name or EMPTY_VALUE
+    target_course_label = item.target_course_name or EMPTY_VALUE
     accessible_description = (
-        f"Kind {item.student_id}. "
+        f"Kind {item.student_display_name}. "
         f"Bisherige Stammgruppe {current_group_label}. "
         f"Bisheriger Kurs {current_course_label}. "
         f"Bisherige Kursstufe {current_year_level_label}. "
-        f"Vorgeschlagene Stammgruppe {proposed_group_label}. "
-        f"Vorgeschlagener Kurs {proposed_course_label}. "
         f"Zielstatus {target_status_label}. "
-        f"Warnungen {warnings_label}"
+        f"Zielstammgruppe {target_group_label}. "
+        f"Zielkurs {target_course_label}. "
+        f"Warnungen und Blocker {warnings_label}"
     )
     return SchoolYearTransitionPreviewRowViewModel(
         student_id=item.student_id,
-        child_label=item.student_id,
+        child_label=item.student_display_name,
         current_group_label=current_group_label,
         current_course_label=current_course_label,
         current_year_level_label=current_year_level_label,
-        proposed_group_label=proposed_group_label,
-        proposed_course_label=proposed_course_label,
         target_status_label=target_status_label,
+        target_group_label=target_group_label,
+        target_course_label=target_course_label,
         warnings_label=warnings_label,
         resolved=item.resolved,
+        exited=(
+            item.target_status is SchoolYearTransitionPlanTargetStatus.EXITED
+        ),
         accessible_description=accessible_description,
+        course_choices=_course_choices(plan, item),
+        group_choices=_group_choices(plan, item),
     )
+
+
+def _course_choices(
+    plan: SchoolYearTransitionPlan,
+    item: SchoolYearTransitionPlanItem,
+) -> tuple[SchoolYearTransitionDecisionOptionViewModel, ...]:
+    choices: list[SchoolYearTransitionDecisionOptionViewModel] = []
+    if item.original_proposed_course_id is not None:
+        choices.append(
+            SchoolYearTransitionDecisionOptionViewModel(
+                ACCEPT_PROPOSAL,
+                None,
+                (
+                    "Vorschlag übernehmen: "
+                    f"{item.original_proposed_course_name}"
+                ),
+            )
+        )
+    choices.extend(
+        SchoolYearTransitionDecisionOptionViewModel(
+            SELECT_OTHER_COURSE,
+            course.course_id,
+            f"Anderen aktiven Kurs wählen: {course.course_name}",
+        )
+        for course in plan.available_courses
+        if course.course_id != item.original_proposed_course_id
+    )
+    if item.original_current_year_level == 3:
+        choices.extend(
+            SchoolYearTransitionDecisionOptionViewModel(
+                REPEAT_YEAR_LEVEL_THREE,
+                course.course_id,
+                f"Kurs 3 wiederholen: {course.course_name}",
+            )
+            for course in plan.available_courses
+            if course.year_level == 3
+        )
+    choices.extend(
+        (
+            SchoolYearTransitionDecisionOptionViewModel(
+                MARK_EXITED,
+                None,
+                "Als ausgeschieden markieren",
+            ),
+            SchoolYearTransitionDecisionOptionViewModel(
+                LEAVE_UNRESOLVED,
+                None,
+                "Bewusst ungelöst lassen",
+            ),
+        )
+    )
+    return tuple(choices)
+
+
+def _group_choices(
+    plan: SchoolYearTransitionPlan,
+    item: SchoolYearTransitionPlanItem,
+) -> tuple[SchoolYearTransitionDecisionOptionViewModel, ...]:
+    if item.target_status is SchoolYearTransitionPlanTargetStatus.EXITED:
+        return ()
+    choices: list[SchoolYearTransitionDecisionOptionViewModel] = []
+    active_group_ids = {
+        group.group_id for group in plan.available_groups
+    }
+    if (
+        item.current_group_id is not None
+        and item.current_group_id in active_group_ids
+    ):
+        choices.append(
+            SchoolYearTransitionDecisionOptionViewModel(
+                KEEP_CURRENT_GROUP,
+                None,
+                (
+                    "Stammgruppe unverändert lassen: "
+                    f"{item.current_group_name}"
+                ),
+            )
+        )
+    choices.extend(
+        SchoolYearTransitionDecisionOptionViewModel(
+            SELECT_OTHER_GROUP,
+            group.group_id,
+            f"Andere aktive Stammgruppe wählen: {group.group_name}",
+        )
+        for group in plan.available_groups
+        if group.group_id != item.current_group_id
+    )
+    return tuple(choices)
 
 
 def _issue_label(code: str) -> str:

@@ -39,6 +39,7 @@ V2-Restoreauswahl.
 | SJ-3A-Schuljahreswechsel-Vorschau | alle V3-Schüler, genau ein current-Schuljahr, Assignments an dessen Ende, vorhandene Schuljahre sowie Gruppen und Kurse mit `active`/`year_level` | `SchoolYearTransitionPreviewService` und `SchoolYearTransitionPreviewProjector` | Kindfilter, Systemdatum, Kursname/-sortierung, zweite Connection, Write, UI-Entscheidung oder stille Zielauswahl |
 | SJ-3B.1-Previewdialog | unveränderte Reihenfolge, Zähler, Zielstatus und Issues genau einer vorhandenen `SchoolYearTransitionPreview` | `SchoolYearTransitionPreviewViewModel` und `SchoolYearTransitionPreviewDialog` | Repository-/Serviceaufruf im Widget, Neuberechnung, Sortierung, Bearbeitung, Backup, Authentifizierung oder Ausführung |
 | SJ-3B.2a-Planmodell | vorhandene Preview sowie explizite aktive Kurs- und Gruppenoptionen | `SchoolYearTransitionPlan` | Qt, Repositoryzugriff, Persistenz, automatische Entscheidung, Backup, Authentifizierung oder Ausführung |
+| SJ-3B.2b-individuelle Planbearbeitung | aktueller flüchtiger `SchoolYearTransitionPlan` mit dessen kopierten Anzeige-Metadaten, aktiven Optionen, Validierung und Zählern | `SchoolYearTransitionPreviewViewModel` und `SchoolYearTransitionPreviewDialog` | Preview-Mutation, Widget-Fachlogik, Repository-/Servicezugriff, automatische Auswahl, Mehrfachauswahl, Sammeländerung, Write, Backup, Authentifizierung oder Ausführung |
 | echter Wechselbeleg | vorhandene Ausgangs-/Zieljahre und committed Wechselplan | späterer School-Year Transition Service | Initialanlage, Bootstrap oder Migration |
 
 Beobachtung, Bericht und LEG liefern ihren vorhandenen fachlichen
@@ -59,8 +60,10 @@ und Gesamtzähler. Der Anzeigename stammt ausschließlich aus den über
 `student_id` aufgelösten V3-Schülerstammdaten; ein fehlender Datensatz bleibt
 als neutraler Blocker sichtbar. SJ-3B.1 stellt die Projektion ausschließlich
 lesend dar. SJ-3B.2a besitzt nur das unveränderliche flüchtige Planmodell.
-Eine spätere Qt-UI darf diesen Plan bearbeiten, aber keine Vorschlags- oder
-Validierungslogik duplizieren.
+SJ-3B.2b bearbeitet diesen Plan ausschließlich über dessen vorhandene
+Einzelmethoden. Das Widget hält nur die jeweils neue flüchtige Instanz;
+Optionen, Validierung und Zähler stammen aus Plan und ViewModel, ohne
+Vorschlags- oder Validierungslogik im Widget zu duplizieren.
 Persistenz, Backup, Authentifizierung, Aktivierung und Transition-Beleg
 besitzen weder Repository noch Service in SJ-3A.
 

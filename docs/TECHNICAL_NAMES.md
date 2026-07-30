@@ -46,13 +46,14 @@ Bootstrap-Transition-Typen.
 | `SchoolYearTransitionValidationIssue` | Stabil codierter globaler oder kindbezogener Warn-/Blockerzustand der SJ-3A-Vorschau | School-Year Transition Domain |
 | `SchoolYearTransitionPreviewService` | Connection-gebundene Qt-freie Read-Komposition aller SJ-3A-Quellen in einem SQLite-Read-Snapshot; setzt `query_only` und führt keine Writes aus | Application School-Year Transition Preview |
 | `SchoolYearTransitionPreviewProjector` | SQLite-freier deterministischer Vorschlags- und Validierungsalgorithmus für SJ-3A | Application School-Year Transition Preview |
-| `SchoolYearTransitionPreviewViewModel` | Qt-freies SJ-3B.1-Anzeigemapping genau einer vorhandenen Preview ohne Neuberechnung oder Sortierung | Desktop ViewModel |
-| `SchoolYearTransitionPreviewDialog` | isolierter rein lesender PySide-Dialog für genau eine vorhandene Preview; besitzt nur Schließen und keine Ausführungsaktion | Desktop UI |
+| `SchoolYearTransitionPreviewViewModel` | Qt-freies SJ-3B.2b-Anzeigemapping des aktuellen flüchtigen Plans mit dessen Validierung, Zählern, sichtbaren Issues und ausschließlich planbasierten Einzeloptionen | Desktop ViewModel |
+| `SchoolYearTransitionPreviewDialog` | isolierter PySide-Dialog zur individuellen Bearbeitung genau eines flüchtigen Plans; besitzt global nur Schließen und keine Persistenz- oder Ausführungsaktion | Desktop UI |
+| `SchoolYearTransitionDecisionOptionViewModel` | darstellungsfertige bewusste Einzeloption aus den aktiven Kurs-/Gruppenoptionen des flüchtigen Plans; öffnet oder selektiert nichts automatisch | Desktop ViewModel |
 | `SchoolYearTransitionPlan` | unveränderlicher rein flüchtiger SJ-3B.2a-Plan aus Preview und expliziten aktiven Kurs-/Gruppenoptionen; jede Bearbeitung liefert eine neue Instanz | Application School-Year Transition Plan |
-| `SchoolYearTransitionPlanItem` | flüchtiger Zielstand genau einer stabilen `student_id` mit Anzeigename, Zielgruppe/-kurs, Zielstatus, ursprünglichen Issues, Auflösungs- und Bearbeitungskennzeichen | Application School-Year Transition Plan |
+| `SchoolYearTransitionPlanItem` | flüchtiger Zielstand genau einer stabilen `student_id` mit Anzeigename, kopierter bisheriger Zuordnung, Zielgruppe/-kurs, Zielstatus, ursprünglichen Issues, Auflösungs- und Bearbeitungskennzeichen | Application School-Year Transition Plan |
 | `SchoolYearTransitionPlanTargetStatus` | flüchtiger Zielstatus `ADVANCE_1_TO_2`, `ADVANCE_2_TO_3`, `OTHER_COURSE`, `REPEAT_YEAR_LEVEL_THREE`, `EXITED` oder `UNRESOLVED` | Application School-Year Transition Plan |
 | `SchoolYearTransitionCourseDecision` | bewusst protokollierte flüchtige Kursentscheidung oder unveränderter Vorschlag | Application School-Year Transition Plan |
-| `SchoolYearTransitionGroupDecision` | bewusst protokollierte flüchtige Stammgruppenentscheidung oder unveränderter Vorschlag | Application School-Year Transition Plan |
+| `SchoolYearTransitionGroupDecision` | bewusst protokollierte flüchtige Stammgruppenentscheidung, insbesondere aktuelle Gruppe beibehalten, Vorschlag behalten oder andere aktive Gruppe wählen | Application School-Year Transition Plan |
 | `SchoolYearTransitionPlanValidationIssue` | deterministischer globaler oder kindbezogener Strukturfehler des flüchtigen Plans | Application School-Year Transition Plan |
 | `SchoolYearTransitionPlanCounts` | deterministische Zähler ausschließlich aus dem aktuellen flüchtigen Plan | Application School-Year Transition Plan |
 | `SchoolYearTransitionPlanValidation` | vollständiges deterministisches Prüfergebnis des flüchtigen Plans ohne Ausführungsfreigabe | Application School-Year Transition Plan |

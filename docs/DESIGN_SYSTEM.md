@@ -2,17 +2,27 @@
 
 ## SJ-1 - UX-Vertrag für den Schuljahresassistenten
 
-**Status:** Verbindlicher Zielvertrag. SJ-3B.1 setzt ausschließlich eine
-isolierte rein lesende Vorschau um; SJ-3B.2a ergänzt nur das rein flüchtige
-editierbare Planmodell. Qt-Bearbeitung, Assistentenintegration, Schutzstufen
-und Ausführung bleiben offen. Die folgende Informations-, Interaktions- und
-Accessibility-Semantik bleibt für den vollständigen Assistenten verbindlich.
+**Status:** Verbindlicher Zielvertrag. SJ-3B.1 setzt die isolierte Vorschau
+um, SJ-3B.2a das rein flüchtige Planmodell und SJ-3B.2b dessen individuelle
+Qt-Bearbeitung im vorhandenen Dialog. Assistentenintegration, Schutzstufen,
+Sammelbearbeitung und Ausführung bleiben offen. Die folgende Informations-,
+Interaktions- und Accessibility-Semantik bleibt für den vollständigen
+Assistenten verbindlich.
 
 SJ-3B.1 zeigt den vorhandenen Preview-Kopf und jedes vorhandene Item genau
 einmal in unveränderter Reihenfolge. Die Tabelle ist nicht editierbar und bei
 kleinem Fenster horizontal und vertikal scrollbar. `Ungelöst`, Zielstatus und
 Warnungen sind sichtbarer Text mit Accessible Names beziehungsweise
 Descriptions. Der Dialog besitzt ausschließlich `Schließen`.
+
+SJ-3B.2b ersetzt die vorgeschlagenen Zielspalten durch einzeln fokussierbare
+Auswahlfelder je Kind. Zielstatus, Zielstammgruppe und Zielkurs zeigen immer
+den aktuellen flüchtigen Planstand. Das Öffnen eines Auswahlfelds, Fokus oder
+Tab-Navigation trifft keine Entscheidung; erst die bewusste Aktivierung einer
+benannten Option erzeugt eine neue Planinstanz. Ausgeschiedene Kinder zeigen
+weder Zielgruppe noch Zielkurs. Ursprüngliche Hinweise und aktuelle Blocker
+bleiben textlich unterscheidbar. Es gibt weder Checkboxen noch
+Mehrfachauswahl, Sammelaktion oder Ausführungsschaltfläche.
 
 Der Einstieg lautet `Einstellungen → Schuljahre`. Der Assistent ist ein
 ruhiger, linearer Arbeitsraum mit zehn sichtbaren Phasen:

@@ -192,8 +192,13 @@ Jede bewusste Kurs-, Stammgruppen-, Wiederholungs-, Austritts- oder
 Ungelöst-Entscheidung liefert eine neue Planinstanz. Die ursprünglichen
 Preview-Issues bleiben auditierbar; `student_id` bleibt Identität.
 Planvalidierung und Zähler lesen ausschließlich diese flüchtige Instanz.
-Qt, Repository, SQLite, Backup, Authentifizierung, Planpersistenz und
-Ausführung sind nicht beteiligt.
+SJ-3B.2b stellt genau diesen Plan im vorhandenen Vorschau-Dialog individuell
+je Kind dar. Eine bewusste Auswahl ruft ausschließlich die passende
+Planmethode auf, ersetzt den Dialogzustand durch die neue Planinstanz und
+projiziert Status sowie Zähler neu. Das Öffnen oder Wiederbefüllen eines
+Auswahlfelds erzeugt keine Entscheidung. Der Dialog liest kein Repository und
+besitzt weder SQLite, Backup, Authentifizierung, Planpersistenz,
+Sammeländerung noch Ausführung.
 
 Die spätere Ausführung benötigt weiterhin den vollständigen getrennten
 Schutzlifecycle.

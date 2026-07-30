@@ -2,10 +2,11 @@
 
 ## SJ-3A - rein lesende Schuljahreswechsel-Vorschau
 
-**Status:** Domain-/Application-Projektion, isolierte rein lesende
-SJ-3B.1-Qt-Vorschau sowie displayfähige Namen und flüchtiges SJ-3B.2a-
-Planmodell sind lokal implementiert. Editierbare Qt-UI, Ausführung, Backup,
-Authentifizierung, Aktivierung und Mehrkindwechsel bleiben gesperrt.
+**Status:** Domain-/Application-Projektion, isolierte SJ-3B.1-Qt-Vorschau,
+displayfähige Namen, flüchtiges SJ-3B.2a-Planmodell und individuelle
+SJ-3B.2b-Qt-Bearbeitung sind lokal implementiert. Ausführung, Backup,
+Authentifizierung, Aktivierung, Shell-/Settings-Integration und
+Mehrkindwechsel bleiben gesperrt.
 
 - [x] Geplantes Zieljahr auf Überlappung, strikte Nachfolge und Lückenlosigkeit
   prüfen.
@@ -27,7 +28,8 @@ Authentifizierung, Aktivierung und Mehrkindwechsel bleiben gesperrt.
 - [x] SJ-3B.2a ergänzt V3-Anzeigenamen und einen unveränderlichen flüchtigen
   Plan mit bewussten Kurs-, Stammgruppen-, Wiederholungs-, Austritts- und
   Ungelöst-Entscheidungen.
-- [ ] Qt-Bearbeitung des flüchtigen Plans separat implementieren.
+- [x] SJ-3B.2b bearbeitet den flüchtigen Plan individuell je Kind, verwendet
+  nur dessen aktive Optionen und aktualisiert Status sowie Zähler ohne Write.
 - [ ] Schuljahreswechsel-Ausführung mit Backup, Maintenance, Step-up,
   erneuter Quellenprüfung und atomarer Transition separat implementieren.
 
