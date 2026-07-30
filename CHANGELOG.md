@@ -58,6 +58,15 @@
   besitzt keine Kurs-/Stammgruppenwahl, Checkbox, Repository-, Write-,
   Backup-, Authentifizierungs- oder Ausführungsaktion. Settings-/Shell-
   Integration und der editierbare flüchtige Plan bleiben SJ-3B.2.
+- SJ-3B.2a ergänzt `SchoolYearTransitionPreviewItem` um den ausschließlich aus
+  V3-Schülerstammdaten aufgelösten Anzeigenamen bei stabiler `student_id`.
+  Fehlende referenzierte Stammdaten bleiben als `Name nicht verfügbar` und
+  Blocker sichtbar. Ein neues unveränderliches Application-Planmodell bildet
+  Vorschlag übernehmen, anderen aktiven Kurs, Kurs 3 wiederholen,
+  ausgeschieden, ungelöst sowie unveränderte oder andere aktive Stammgruppe
+  rein flüchtig ab. Ursprüngliche Issues bleiben erhalten; deterministische
+  Validierung und Zähler führen weder Qt-, Repository-, SQLite-, Backup-,
+  Authentifizierungs-, Persistenz- noch Ausführungslogik aus.
 - Die normale Runtime lässt ausschließlich ein vollständig verifiziertes
   Final-V3 als `V3_SCHEMA_READY` zu. Unbekannte, beschädigte oder unsichere
   Schemata, WAL-/SHM-Sidecars, offene Restorezustände und fehlende

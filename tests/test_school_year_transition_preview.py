@@ -155,6 +155,44 @@ def test_courses_advance_only_by_canonical_year_level() -> None:
     assert preview.executable is False
 
 
+def test_student_display_name_uses_v3_master_data_and_keeps_stable_id() -> None:
+    named_student = V3Student(
+        student_id="STABLE-ID",
+        first_name="Mara",
+        last_name="Sommer",
+        notes="",
+        active=True,
+        created_at=STAMP,
+        updated_at=STAMP,
+        archived_at=None,
+    )
+    sources = _sources(
+        students=(named_student,),
+        memberships=(_membership("STABLE-ID", "C-1"),),
+    )
+
+    item = _project(sources).items[0]
+
+    assert item.student_id == "STABLE-ID"
+    assert item.student_display_name == "Mara Sommer"
+
+
+def test_missing_student_master_data_is_neutral_and_never_shows_id_as_name() -> None:
+    sources = _sources(
+        students=(),
+        memberships=(_membership("ORPHAN-STUDENT-ID", "C-1"),),
+    )
+
+    preview = _project(sources)
+
+    assert preview.student_count == 1
+    assert preview.items[0].student_id == "ORPHAN-STUDENT-ID"
+    assert preview.items[0].student_display_name == "Name nicht verfügbar"
+    assert preview.items[0].student_display_name != preview.items[0].student_id
+    assert "STUDENT_MASTER_DATA_MISSING" in preview.items[0].blocker_codes
+    assert preview.items[0].resolved is False
+
+
 def test_multiple_target_courses_require_conscious_selection() -> None:
     sources = _sources(
         courses=_sources().courses
@@ -434,5 +472,10 @@ def test_sqlite_preview_uses_no_write_statement(tmp_path: Path) -> None:
             ).fetchone()[0],
         )
     assert preview.student_count == 3
+    assert tuple(item.student_display_name for item in preview.items) == (
+        "Testkind Eins",
+        "Testkind Zwei",
+        "Testkind Drei",
+    )
     assert counts_after == counts_before
     assert write_actions == []

@@ -3,10 +3,10 @@
 ## SJ-1 - UX-Vertrag für den Schuljahresassistenten
 
 **Status:** Verbindlicher Zielvertrag. SJ-3B.1 setzt ausschließlich eine
-isolierte rein lesende Vorschau um; editierbarer Plan, Assistentenintegration,
-Schutzstufen und Ausführung bleiben offen. Die folgende Informations-,
-Interaktions- und Accessibility-Semantik bleibt für den vollständigen
-Assistenten verbindlich.
+isolierte rein lesende Vorschau um; SJ-3B.2a ergänzt nur das rein flüchtige
+editierbare Planmodell. Qt-Bearbeitung, Assistentenintegration, Schutzstufen
+und Ausführung bleiben offen. Die folgende Informations-, Interaktions- und
+Accessibility-Semantik bleibt für den vollständigen Assistenten verbindlich.
 
 SJ-3B.1 zeigt den vorhandenen Preview-Kopf und jedes vorhandene Item genau
 einmal in unveränderter Reihenfolge. Die Tabelle ist nicht editierbar und bei

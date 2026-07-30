@@ -184,8 +184,18 @@ Schuljahr, Assignment, Plan noch Transition-Beleg:
 Ausführungsfreigabe. SJ-3A enthält kein Backup, Maintenance-Gate,
 Authentifizierung, Aktivierung, Assignmentwrite und keinen Mehrkindwechsel.
 Der rein lesende SJ-3B.1-Dialog fügt keinen Lifecycle hinzu und besitzt nur
-Schließen. Editierbarer flüchtiger Plan und Entscheidungen bleiben SJ-3B.2;
-die spätere Ausführung benötigt weiterhin den vollständigen getrennten
+Schließen.
+
+SJ-3B.2a erzeugt aus der unveränderten Preview und explizit übergebenen
+aktiven Kurs-/Gruppenoptionen einen rein flüchtigen unveränderlichen Plan.
+Jede bewusste Kurs-, Stammgruppen-, Wiederholungs-, Austritts- oder
+Ungelöst-Entscheidung liefert eine neue Planinstanz. Die ursprünglichen
+Preview-Issues bleiben auditierbar; `student_id` bleibt Identität.
+Planvalidierung und Zähler lesen ausschließlich diese flüchtige Instanz.
+Qt, Repository, SQLite, Backup, Authentifizierung, Planpersistenz und
+Ausführung sind nicht beteiligt.
+
+Die spätere Ausführung benötigt weiterhin den vollständigen getrennten
 Schutzlifecycle.
 
 ## SJ-2E-Lifecycle für produktive Assignment-Reader

@@ -48,6 +48,15 @@ Bootstrap-Transition-Typen.
 | `SchoolYearTransitionPreviewProjector` | SQLite-freier deterministischer Vorschlags- und Validierungsalgorithmus für SJ-3A | Application School-Year Transition Preview |
 | `SchoolYearTransitionPreviewViewModel` | Qt-freies SJ-3B.1-Anzeigemapping genau einer vorhandenen Preview ohne Neuberechnung oder Sortierung | Desktop ViewModel |
 | `SchoolYearTransitionPreviewDialog` | isolierter rein lesender PySide-Dialog für genau eine vorhandene Preview; besitzt nur Schließen und keine Ausführungsaktion | Desktop UI |
+| `SchoolYearTransitionPlan` | unveränderlicher rein flüchtiger SJ-3B.2a-Plan aus Preview und expliziten aktiven Kurs-/Gruppenoptionen; jede Bearbeitung liefert eine neue Instanz | Application School-Year Transition Plan |
+| `SchoolYearTransitionPlanItem` | flüchtiger Zielstand genau einer stabilen `student_id` mit Anzeigename, Zielgruppe/-kurs, Zielstatus, ursprünglichen Issues, Auflösungs- und Bearbeitungskennzeichen | Application School-Year Transition Plan |
+| `SchoolYearTransitionPlanTargetStatus` | flüchtiger Zielstatus `ADVANCE_1_TO_2`, `ADVANCE_2_TO_3`, `OTHER_COURSE`, `REPEAT_YEAR_LEVEL_THREE`, `EXITED` oder `UNRESOLVED` | Application School-Year Transition Plan |
+| `SchoolYearTransitionCourseDecision` | bewusst protokollierte flüchtige Kursentscheidung oder unveränderter Vorschlag | Application School-Year Transition Plan |
+| `SchoolYearTransitionGroupDecision` | bewusst protokollierte flüchtige Stammgruppenentscheidung oder unveränderter Vorschlag | Application School-Year Transition Plan |
+| `SchoolYearTransitionPlanValidationIssue` | deterministischer globaler oder kindbezogener Strukturfehler des flüchtigen Plans | Application School-Year Transition Plan |
+| `SchoolYearTransitionPlanCounts` | deterministische Zähler ausschließlich aus dem aktuellen flüchtigen Plan | Application School-Year Transition Plan |
+| `SchoolYearTransitionPlanValidation` | vollständiges deterministisches Prüfergebnis des flüchtigen Plans ohne Ausführungsfreigabe | Application School-Year Transition Plan |
+| `SchoolYearTransitionPlanError` | Ablehnung einer ungültigen flüchtigen Bearbeitungsanforderung ohne Seiteneffekt | Application School-Year Transition Plan |
 | `SchoolYearRepository` | Connection-gebundener SQLite-Read auf `school_years`; öffnet und steuert keine Transaktion | Core Assignment Persistence |
 | `StudentSchoolYearAssignmentRepository` | Connection-gebundene set-basierte SQLite-Reads und atomar orchestrierbare Writes auf Assignments | Core Assignment Persistence |
 | `V3StudentRepository` | Connection-gebundene Persistenz ausschließlich der V3-Schülerstammdaten | Core Student Persistence |

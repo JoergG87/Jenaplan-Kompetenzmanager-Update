@@ -94,8 +94,15 @@ Zähler und jedes vorhandene Preview-Item unverändert, erlaubt nur Schließen
 und besitzt weder Repository-/Write-Aufruf noch Ausführungsmöglichkeit. Eine
 breite Settings-/Shell-Integration ist nicht erfolgt.
 
-Weiterhin nicht umgesetzt oder freigegeben sind die editierbare
-Schuljahreswechsel-UI SJ-3B.2, die spätere Ausführung des Wechsels,
+SJ-3B.2a ergänzt in der Preview den ausschließlich aus V3-Schülerstammdaten
+aufgelösten Anzeigenamen bei stabiler `student_id`. Ein fehlender referenzierter
+Stammdatensatz bleibt neutral sichtbar und blockierend. Das neue unveränderliche
+Application-Planmodell erlaubt nur rein flüchtige bewusste Kurs-, Stammgruppen-,
+Wiederholungs-, Austritts- und Ungelöst-Entscheidungen. Preview, Datenbank und
+ursprüngliche Issues bleiben unverändert.
+
+Weiterhin nicht umgesetzt oder freigegeben sind die editierbare Qt-
+Schuljahreswechsel-UI, Planpersistenz, die spätere Ausführung des Wechsels,
 unterjährige Mehrkind-/Sammelwechsel, Build, Packaging und Release. Die
 manuelle Prüfung der Runtime sowie der neuen Schüler-, Wechsel-, Austritts-
 und Kursstufenoberflächen auf macOS ist noch offen. Es wurden keine Migration

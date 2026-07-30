@@ -42,10 +42,23 @@ SJ-3B.1 implementiert davon ausschließlich die rein lesende Vorschau:
 |---|---|---|---|
 | Kopf mit Ausgangs-/Zieljahr, Zielzeitraum und Zählern | vorhandene `SchoolYearTransitionPreview` | Nein | Zähler nicht im Widget nachberechnen |
 | Status | `SchoolYearTransitionPreview.executable` und vorhandene Issue-Texte | Nein | nur `Vorschau vollständig` oder `Entscheidungen erforderlich`; keine Ausführungsfreigabe |
-| vollständige Kindtabelle | `SchoolYearTransitionPreview.items` | Nein | jedes Item genau einmal und in vorhandener Reihenfolge; `student_id` ist der einzige in SJ-3A enthaltene Kindbezeichner |
+| vollständige Kindtabelle | `SchoolYearTransitionPreview.items` | Nein | jedes Item genau einmal und in vorhandener Reihenfolge; `student_id` ist der einzige in SJ-3B.1 aktuell verwendete Kindbezeichner |
 | bisherige und vorgeschlagene Zuordnung | Felder des jeweiligen `SchoolYearTransitionPreviewItem` | Nein | keine zweite Datenquelle und keine fachliche Neuberechnung |
 | Zielstatus und Warnungen | `target_status`, `warning_codes`, `blocker_codes` | Nein | ungelöst und alle Issues als sichtbarer Text, nicht nur farblich |
 | Schließen | Dialogzustand | Nein | einzige Aktion; kein Refresh, Write, Backup, Step-up oder Ausführungsbutton |
+
+SJ-3B.2a ergänzt noch keine Qt-Bearbeitung, sondern nur das flüchtige
+Application-Planmodell:
+
+| Planfeld / Entscheidung | Quelle | Persistenz | Verbindliche Regel |
+|---|---|---|---|
+| Kind für die spätere Qt-Abbildung | `student_id` plus `student_display_name` der Preview | Nein | ID bleibt Identität; fehlender V3-Datensatz liefert neutral `Name nicht verfügbar`; SJ-3B.2a ändert noch kein Qt-Mapping |
+| Ausgangsvorschlag | vorhandenes `SchoolYearTransitionPreviewItem` | Nein | Preview und ursprüngliche Issues bleiben unverändert |
+| Kursentscheidung | explizite aktive Kursoptionen | Nein | Vorschlag übernehmen, anderen vorhandenen Kurs wählen, Kurs 3 wiederholen oder ungelöst lassen; keine Automatik |
+| Stammgruppenentscheidung | explizite aktive Gruppenoptionen | Nein | Vorschlag bewusst behalten oder andere vorhandene Gruppe wählen |
+| ausgeschieden | bewusste Planentscheidung | Nein | besitzt weder Kurs- noch Gruppenanspruch; ist keine Archivierung |
+| bearbeitet / unverändert | flüchtiger Entscheidungszustand | Nein | jede Bearbeitung liefert eine neue Planinstanz |
+| Validierung und Zähler | aktueller flüchtiger Plan | Nein | deterministisch; keine Ausführungsfreigabe |
 
 Synthetische Initialdaten sind keine UI-Projektion. IDs, Zeitpunkte und
 Fixtures werden ausschließlich im Testpfad erzeugt und niemals als

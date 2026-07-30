@@ -76,9 +76,10 @@ class SchoolYearTransitionValidationIssue:
 
 @dataclass(frozen=True, slots=True)
 class SchoolYearTransitionPreviewItem:
-    """Complete read-only proposal for exactly one V3 student."""
+    """Complete read-only proposal for one stable student identity."""
 
     student_id: str
+    student_display_name: str
     current_school_year_id: str | None
     current_school_year_label: str | None
     current_group_id: str | None

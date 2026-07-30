@@ -74,14 +74,22 @@ class SchoolYearTransitionPreviewProjector:
             for year_level in (1, 2, 3)
         }
 
+        students_by_id = {
+            student.student_id: student
+            for student in sources.students
+        }
+        student_ids = tuple(
+            sorted(set(students_by_id) | set(memberships_by_student))
+        )
         items = tuple(
             self._project_student(
-                student=student,
+                student_id=student_id,
+                student=students_by_id.get(student_id),
                 current=current,
                 planned_school_year=planned_school_year,
                 memberships=tuple(
                     sorted(
-                        memberships_by_student.get(student.student_id, ()),
+                        memberships_by_student.get(student_id, ()),
                         key=_membership_sort_key,
                     )
                 ),
@@ -89,10 +97,7 @@ class SchoolYearTransitionPreviewProjector:
                 groups_by_id=groups_by_id,
                 target_courses=target_courses,
             )
-            for student in sorted(
-                sources.students,
-                key=lambda candidate: candidate.student_id,
-            )
+            for student_id in student_ids
         )
         item_issues = tuple(
             SchoolYearTransitionValidationIssue(code, _BLOCKER, item.student_id)
@@ -130,7 +135,8 @@ class SchoolYearTransitionPreviewProjector:
     def _project_student(
         self,
         *,
-        student: V3Student,
+        student_id: str,
+        student: V3Student | None,
         current: SchoolYear | None,
         planned_school_year: PlannedSchoolYear,
         memberships: tuple[SchoolYearTransitionMembership, ...],
@@ -159,7 +165,12 @@ class SchoolYearTransitionPreviewProjector:
 
         if current is None:
             blockers.append("CURRENT_SCHOOL_YEAR_UNAVAILABLE")
-        student_archived = not student.active or student.archived_at is not None
+        if student is None:
+            blockers.append("STUDENT_MASTER_DATA_MISSING")
+        student_archived = (
+            student is not None
+            and (not student.active or student.archived_at is not None)
+        )
         if student_archived:
             blockers.append("STUDENT_ARCHIVED")
         if len(memberships) == 0:
@@ -222,7 +233,8 @@ class SchoolYearTransitionPreviewProjector:
 
         blocker_codes = tuple(dict.fromkeys(blockers))
         return SchoolYearTransitionPreviewItem(
-            student_id=student.student_id,
+            student_id=student_id,
+            student_display_name=_student_display_name(student),
             current_school_year_id=(
                 current.school_year_id if current is not None else None
             ),
@@ -375,6 +387,12 @@ def _validate_school_years(
 
 def _valid_year_level(value: object) -> bool:
     return type(value) is int and value in (1, 2, 3)
+
+
+def _student_display_name(student: V3Student | None) -> str:
+    if student is None:
+        return "Name nicht verfügbar"
+    return f"{student.first_name.strip()} {student.last_name.strip()}"
 
 
 def _membership_sort_key(
