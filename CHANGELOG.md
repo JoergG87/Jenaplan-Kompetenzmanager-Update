@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Berichtrevisionen bleiben nach dem Öffnen aus Schülerprofil oder
+  Berichtswerkstatt stabil in ihrer schreibgeschützten historischen Ansicht.
+  Der Revisionsdialog wird ohne verschachtelten modalen Eventloop über seine
+  stabile Revisions-ID gehalten; allgemeine Profil- oder Berichtrefreshs
+  ersetzen ihn nicht. Entwurf, Snapshot, Persistenz und PDF-Inhalt bleiben
+  unverändert.
 - Der normale App-Schluss entfernt jetzt alle sichtbaren Produktfenster und
   beendet den Hauptprozess kontrolliert. Eine nicht eingebettete
   `Alle Schüler`-Hinweisfläche war fälschlich ein eigenständiges

@@ -189,6 +189,11 @@ class AppShell(QMainWindow):
         self.pending_observation_target_label = ""
         self._selected_report_draft_ids: dict[str, str] = {}
         self._selected_learning_conference_draft_ids: dict[str, str] = {}
+        self._active_learning_report_revision_id = ""
+        self._active_learning_report_revision_student_id = ""
+        self._active_learning_report_revision_dialog: (
+            LearningReportRevisionDialog | None
+        ) = None
         self.setWindowTitle("Jenaplan Kompetenzmanager")
         self.setMinimumSize(1100, 720)
         self.resize(1400, 900)
@@ -1284,6 +1289,13 @@ class AppShell(QMainWindow):
 
     def show_student_profile(self, student_id: str) -> None:
         """Open light profile for selected student."""
+        active_revision = self._active_learning_report_revision_dialog
+        if (
+            active_revision is not None
+            and self._active_learning_report_revision_student_id
+            and self._active_learning_report_revision_student_id != student_id
+        ):
+            active_revision.reject()
         profile = self.adapter.get_student_profile(student_id)
         observations = self.adapter.list_observations_for_student(student_id)
         competency_groups = self.adapter.list_competency_overview_for_student(student_id)
@@ -1511,6 +1523,11 @@ class AppShell(QMainWindow):
         parent: QWidget | None = None,
     ) -> None:
         """Open one immutable report revision from any existing navigation."""
+        active_dialog = self._active_learning_report_revision_dialog
+        if active_dialog is not None and active_dialog.isVisible():
+            active_dialog.raise_()
+            active_dialog.activateWindow()
+            return
         dialog_parent = parent or self
         try:
             revision = self.adapter.load_learning_report_revision(
@@ -1551,6 +1568,10 @@ class AppShell(QMainWindow):
             dialog_parent,
             artifact,
         )
+        revision_dialog.setAttribute(
+            Qt.WidgetAttribute.WA_DeleteOnClose,
+            True,
+        )
         if artifact_error:
             revision_dialog.show_pdf_error(artifact_error)
 
@@ -1574,7 +1595,33 @@ class AppShell(QMainWindow):
             )
 
         revision_dialog.pdf_requested.connect(generate_final_pdf)
-        revision_dialog.exec()
+        self._active_learning_report_revision_id = (
+            revision.learning_report_revision_id
+        )
+        self._active_learning_report_revision_student_id = (
+            dialog_parent.preparation.student_id
+            if isinstance(dialog_parent, LearningReportDialog)
+            else (
+                self.student_profile_screen.current_student.student_id
+                if self.student_profile_screen.current_student is not None
+                else ""
+            )
+        )
+        self._active_learning_report_revision_dialog = revision_dialog
+
+        def clear_revision_mode(*_args: object) -> None:
+            if self._active_learning_report_revision_dialog is revision_dialog:
+                self._active_learning_report_revision_id = ""
+                self._active_learning_report_revision_student_id = ""
+                self._active_learning_report_revision_dialog = None
+
+        def finish_revision_mode(*_args: object) -> None:
+            clear_revision_mode()
+            revision_dialog.deleteLater()
+
+        revision_dialog.finished.connect(finish_revision_mode)
+        revision_dialog.destroyed.connect(clear_revision_mode)
+        revision_dialog.open()
 
     def open_learning_conference_dialog(
         self,
