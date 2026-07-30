@@ -38,6 +38,18 @@
   kontrolliert per `deleteLater()` zerstört, ohne als Hilfsfenster zu
   verbleiben. Fachlogik, Datenmodell, Restore-Reihenfolge und
   Neustartprotokoll bleiben unverändert.
+- SJ-3A ergänzt die rein lesende, Qt-freie Vorschau für einen
+  Schuljahreswechsel. Ein connection-gebundener `query_only`-Snapshot liest
+  alle V3-Kinder, ihre Assignmentkandidaten am Ende des eindeutigen
+  current-Schuljahres sowie vorhandene Schuljahre, Gruppen und Kurse.
+  Fortschreibung erfolgt ausschließlich über `courses.year_level`: 1→2 und
+  2→3 werden nur bei genau einem aktiven Zielkurs vorgeschlagen, Stufe 3
+  bleibt ungelöst, eine gültige aktive Stammgruppe unverändert. Archivierte,
+  ausgeschiedene, fehlende, mehrdeutige oder ungültig zugeordnete Kinder
+  bleiben vollständig sichtbar und blockierend. Zieljahresüberlappung und
+  -lücke blockieren die Gesamtprojektion. Es gibt keine UI, Datenbankwrites,
+  Planpersistenz, Aktivierung, Authentifizierung, Backup- oder
+  Mehrkindwechselfunktion; SJ-3B bleibt separat.
 - Die normale Runtime lässt ausschließlich ein vollständig verifiziertes
   Final-V3 als `V3_SCHEMA_READY` zu. Unbekannte, beschädigte oder unsichere
   Schemata, WAL-/SHM-Sidecars, offene Restorezustände und fehlende

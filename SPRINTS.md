@@ -1,5 +1,30 @@
 # Sprintplanung
 
+## SJ-3A - rein lesende Schuljahreswechsel-Vorschau
+
+**Status:** Domain-/Application-Projektion lokal implementiert. SJ-3B-UI,
+Ausführung, Backup, Authentifizierung, Aktivierung und Mehrkindwechsel bleiben
+gesperrt.
+
+- [x] Geplantes Zieljahr auf Überlappung, strikte Nachfolge und Lückenlosigkeit
+  prüfen.
+- [x] Genau ein current-Schuljahr und dessen inklusives Ende als expliziten
+  Assignment-Stichtag verwenden.
+- [x] Alle V3-Kinder vollständig und stabil nach `student_id` projizieren.
+- [x] Archivierte, ausgeschiedene, fehlende, mehrdeutige und ungültige
+  Ausgangsdaten sichtbar und ungelöst erhalten.
+- [x] Ausschließlich `courses.year_level` für eindeutige aktive Vorschläge
+  1→2 und 2→3 verwenden; Stufe 3 bleibt ungelöst.
+- [x] Gültige aktive Stammgruppe unverändert als editierbaren späteren
+  Vorschlag erhalten.
+- [x] Gesamtzähler, Warn-/Blockercodes und fail-closed `executable`
+  bereitstellen.
+- [x] Connection-gebundene Quellenlesung mit `query_only` und ohne DML
+  implementieren.
+- [ ] SJ-3B-UI zur Bearbeitung der Vorschau separat implementieren.
+- [ ] Schuljahreswechsel-Ausführung mit Backup, Maintenance, Step-up,
+  erneuter Quellenprüfung und atomarer Transition separat implementieren.
+
 ## V3-only Architecture Cleanup
 
 **Status:** Governance, technischer Cleanup, zentrale Assignment-API,

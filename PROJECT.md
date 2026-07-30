@@ -80,11 +80,21 @@ Kursstufen, V3-Schülerstammdaten und vollständigen Assignments. Er migriert
 oder überschreibt keine vorhandene Datenbank und verwendet keine echten
 Nutzerdaten.
 
-Weiterhin nicht umgesetzt oder freigegeben sind der
-Schuljahreswechsel-Assistent, unterjährige Mehrkind-/Sammelwechsel,
-Build, Packaging und Release. Die manuelle Prüfung der Runtime sowie der
-neuen Schüler-, Wechsel-, Austritts- und Kursstufenoberflächen auf macOS ist
-noch offen. Es wurden keine Migration und keine echten Daten verwendet.
+SJ-3A implementiert ausschließlich die Qt-freie, rein lesende
+Schuljahreswechsel-Vorschau. Sie prüft Zieljahresdaten, liest jedes V3-Kind
+und dessen Assignmentkandidaten am Ende des eindeutigen current-Schuljahres,
+übernimmt eine gültige aktive Stammgruppe unverändert und schlägt anhand
+`courses.year_level` nur bei genau einem aktiven Zielkurs 1→2 oder 2→3 vor.
+Alle ausgeschlossenen oder uneindeutigen Fälle bleiben sichtbar und
+`UNRESOLVED`. Es gibt keine UI, Persistenz, Aktivierung, Authentifizierung,
+Backup- oder Mehrkindwechselfunktion.
+
+Weiterhin nicht umgesetzt oder freigegeben sind die editierbare
+Schuljahreswechsel-UI SJ-3B, die spätere Ausführung des Wechsels,
+unterjährige Mehrkind-/Sammelwechsel, Build, Packaging und Release. Die
+manuelle Prüfung der Runtime sowie der neuen Schüler-, Wechsel-, Austritts-
+und Kursstufenoberflächen auf macOS ist noch offen. Es wurden keine Migration
+und keine echten Daten verwendet.
 
 ## Schuljahresmodell und echte Wechsel
 
@@ -100,7 +110,7 @@ Vorschau, verifiziertes Sicherheitsbackup, Maintenance-Gate, erneute
 Quellenprüfung, Passwort-Step-up, atomare Transaktion, Rollback, Idempotenz,
 Historie und unveränderliche finale Bericht-/LEG-Artefakte bleiben für diesen
 späteren Produktprozess erforderlich. Diese Sicherheitsfunktionen sind durch
-den Architecture Cleanup nicht als implementiert zu verstehen.
+SJ-3A oder den Architecture Cleanup nicht als implementiert zu verstehen.
 
 ## Berichte-Übersicht - implementierte Phase 2
 

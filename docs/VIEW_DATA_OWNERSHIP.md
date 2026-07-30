@@ -36,6 +36,7 @@ V2-Restoreauswahl.
 | Archivierung | V3-Schülerstammdaten und aktive Einschreibungsprüfung am expliziten Stichtag | `StudentDesktopAdapter` und `ArchiveStudent` | `exited` erzeugen, Assignment verändern, aktive Einschreibung übergehen |
 | Kurs-/Stammgruppendeaktivierung | Stammdaten plus aktuelle und zukünftige `enrolled`-Referenzen am expliziten Stichtag | `MasterDataDesktopAdapter` und `SQLiteMasterDataRepository` | versteckte Umbuchung, Ersatzgruppe/-kurs, historische Assignmentmutation |
 | Kursfortschreibung | `courses.year_level` | späterer School-Year Transition Service | Kursname, Farbe, Sortierung |
+| SJ-3A-Schuljahreswechsel-Vorschau | alle V3-Schüler, genau ein current-Schuljahr, Assignments an dessen Ende, vorhandene Schuljahre sowie Gruppen und Kurse mit `active`/`year_level` | `SchoolYearTransitionPreviewService` und `SchoolYearTransitionPreviewProjector` | Kindfilter, Systemdatum, Kursname/-sortierung, zweite Connection, Write, UI-Entscheidung oder stille Zielauswahl |
 | echter Wechselbeleg | vorhandene Ausgangs-/Zieljahre und committed Wechselplan | späterer School-Year Transition Service | Initialanlage, Bootstrap oder Migration |
 
 Beobachtung, Bericht und LEG liefern ihren vorhandenen fachlichen
@@ -47,6 +48,15 @@ V2-Schülerfelder sind keine Fallbacks. Diese produktive Leserumstellung ist
 lokal erfolgt. Finalisierte Revisionen und PDFs werden nicht neu
 aufgelöst. Widgets komponieren ausschließlich displayfertige ViewModels und
 enthalten keine Repository- oder Intervalllogik.
+
+SJ-3A besitzt ausschließlich die vollständige Domain-/Application-Projektion.
+Der connection-gebundene Preview-Repository liest alle Quellen im selben
+`query_only`-Snapshot; der SQLite-freie Projektor besitzt Kalenderprüfung,
+Eindeutigkeitsauflösung, Stufenfortschreibung, Blockercodes, stabile Sortierung
+und Gesamtzähler. Eine spätere SJ-3B-UI darf diese Projektion darstellen und
+bearbeiten, aber keine Vorschlags- oder Validierungslogik duplizieren.
+Persistenz, Backup, Authentifizierung, Aktivierung und Transition-Beleg
+besitzen weder Repository noch Service in SJ-3A.
 
 Die Writer-Dialoge besitzen ausschließlich Eingabe, Vorschau, bewusste
 Bestätigung und Fehlerdarstellung. Atomizität, Intervallregeln,

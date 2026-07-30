@@ -157,6 +157,35 @@ Startup-Aktivierung ändert diese Writer nicht. Der
 Schuljahreswechsel-Assistent und der Mehrkindwechsel sind keine Variante
 dieses Einzelkind-Lifecycles und bleiben offen.
 
+## SJ-3A-Lifecycle der rein lesenden Schuljahreswechsel-Vorschau
+
+SJ-3A liest genau einen konsistenten SQLite-Snapshot und schreibt weder
+Schuljahr, Assignment, Plan noch Transition-Beleg:
+
+1. Alle `school_years`, alle V3-Schüler, aktive und inaktive Gruppen und Kurse
+   sowie deren kanonische `courses.year_level` werden vollständig gelesen.
+2. Genau ein `current`-Schuljahr wird verlangt. Für jedes V3-Kind werden alle
+   Assignment-Kandidaten am inklusiven Ende dieses Schuljahres gelesen.
+3. Die geplanten Zieljahresdaten werden gegen alle vorhandenen Schuljahre
+   sowie auf strikte Nachfolge und lückenlosen Beginn geprüft.
+4. Der reine Projektor erzeugt stabil nach `student_id` sortiert genau ein
+   Item je V3-Kind. Archivierte, ausgeschiedene, fehlende, mehrdeutige und
+   ungültig referenzierte Fälle bleiben sichtbar und ungelöst.
+5. Eine aktive gültige Stufe 1 beziehungsweise 2 erhält nur dann einen
+   Kursvorschlag, wenn genau ein aktiver Kurs der Stufe 2 beziehungsweise 3
+   existiert. Die Stammgruppe bleibt nur bei gültiger aktiver Referenz
+   unverändert vorgeschlagen. Stufe 3 bleibt bis zu einer späteren bewussten
+   Auswahl ungelöst.
+6. Die Connection läuft mit `PRAGMA query_only = ON`; die Komposition prüft,
+   dass sich `total_changes` nicht erhöht, und beendet den Read-Snapshot per
+   Rollback.
+
+`executable` ist eine reine Validierungsprojektion und keine
+Ausführungsfreigabe. SJ-3A enthält kein Backup, Maintenance-Gate,
+Authentifizierung, Aktivierung, Assignmentwrite und keinen Mehrkindwechsel.
+Die editierbare UI-Vorschau bleibt SJ-3B; die spätere Ausführung benötigt
+weiterhin den vollständigen getrennten Schutzlifecycle.
+
 ## SJ-2E-Lifecycle für produktive Assignment-Reader
 
 Der implementierte SJ-2E-Readerablauf ist rein lesend und besitzt weder die

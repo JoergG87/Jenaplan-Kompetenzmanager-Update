@@ -41,6 +41,11 @@ Bootstrap-Transition-Typen.
 | `CurrentStudentMembershipProjection` | Qt-freie aktuelle Schuljahresprojektion am einmalig vom Aufrufer gesetzten `as_of`-Tag | Application Assignment Read |
 | `AssignmentReferenceRequest` | Unveränderlicher Batchauftrag mit genau `request_key`, `student_id` und `reference_date`; bindet eine fachliche Quelle an ihr explizites Referenzdatum, ohne selbst Membership zu behaupten | Application Assignment Read |
 | `CurrentMembershipReadSnapshot` | Unveränderliche aktuelle Lesesicht auf genau ein `current`-Schuljahr und genau einen `as_of`-Tag; enthält ausschließlich aktuelle `ENROLLED`-Mitglieder, `CURRENT_SCHOOL_YEAR_MISSING`-/`AMBIGUOUS`-Diagnostik und zentral berechnete Gruppen-, Kurs- und Kursverbundzähler | Application Assignment Read |
+| `SchoolYearTransitionPreview` | Vollständige deterministische SJ-3A-Gesamtprojektion aller V3-Kinder mit Zählern, globalen Validierungsissues und `executable`; rein lesend, ohne Aktivierung oder Planpersistenz | Application School-Year Transition Preview |
+| `SchoolYearTransitionPreviewItem` | Flüchtiger Vorschlag genau eines Kindes mit bisheriger Zuordnung, unveränderter Stammgruppenvorgabe, ausschließlich aus `courses.year_level` abgeleitetem Kursziel und sichtbaren Warn-/Blockercodes | Application School-Year Transition Preview |
+| `SchoolYearTransitionValidationIssue` | Stabil codierter globaler oder kindbezogener Warn-/Blockerzustand der SJ-3A-Vorschau | School-Year Transition Domain |
+| `SchoolYearTransitionPreviewService` | Connection-gebundene Qt-freie Read-Komposition aller SJ-3A-Quellen in einem SQLite-Read-Snapshot; setzt `query_only` und führt keine Writes aus | Application School-Year Transition Preview |
+| `SchoolYearTransitionPreviewProjector` | SQLite-freier deterministischer Vorschlags- und Validierungsalgorithmus für SJ-3A | Application School-Year Transition Preview |
 | `SchoolYearRepository` | Connection-gebundener SQLite-Read auf `school_years`; öffnet und steuert keine Transaktion | Core Assignment Persistence |
 | `StudentSchoolYearAssignmentRepository` | Connection-gebundene set-basierte SQLite-Reads und atomar orchestrierbare Writes auf Assignments | Core Assignment Persistence |
 | `V3StudentRepository` | Connection-gebundene Persistenz ausschließlich der V3-Schülerstammdaten | Core Student Persistence |
@@ -92,6 +97,15 @@ und ändert keinen Reader-, Writer- oder Assignmentvertrag.
 `school_year_transitions.from_school_year_id` bezeichnet stets ein wirklich
 vorhandenes Ausgangsschuljahr und darf nicht leer sein. Eine initiale
 V3-Erzeugung ist kein Transitionstyp und besitzt keinen Beleg.
+
+SJ-3A verwendet das Ende des eindeutigen `current`-Schuljahres als expliziten
+Assignment-Stichtag und projiziert ausnahmslos jedes V3-Kind. Stufe 1 wird nur
+bei genau einem aktiven Stufe-2-Kurs vorgeschlagen, Stufe 2 entsprechend nur
+bei genau einem aktiven Stufe-3-Kurs. Stufe 3, fehlende oder mehrdeutige
+Zielkurse sowie nicht eindeutige oder ungültige Ausgangsdaten bleiben
+`UNRESOLVED`. Name, Sortierung und Farbe eines Kurses sind keine
+Ableitungsquellen. `executable` ist nur bei null ungelösten Items und null
+Blockern wahr; SJ-3A besitzt trotzdem keinen Execute- oder Writerpfad.
 
 Versionsnamen anderer Verträge bleiben unberührt: Insbesondere bezeichnen
 Backupformat-v1, Security-Store-v2/v3 und kryptografische Formatversionen
