@@ -1,7 +1,8 @@
 """Atomic execution of one fully resolved transient school-year plan.
 
-This isolated SJ-3C.2 service is intentionally not wired into Qt, runtime
-maintenance, authentication, or backup orchestration.
+This isolated service requires an ACTIVE school-year maintenance capability
+but remains intentionally unwired from Qt, the product shell, authentication,
+or backup orchestration.
 """
 
 from __future__ import annotations
@@ -23,6 +24,12 @@ from src.application.school_year_transition_plan import (
 from src.core.school_year import (
     StudentAssignmentStatus,
     StudentMembershipAssignment,
+)
+from src.core.maintenance_gate import (
+    MaintenanceCapability,
+    MaintenanceCapabilityError,
+    MaintenanceGate,
+    MaintenancePurpose,
 )
 from src.core.sqlite_school_year_transition import (
     SchoolYearTransitionExecutionRepository,
@@ -88,10 +95,12 @@ class ExecuteSchoolYearTransition:
         self,
         connection_factory: ConnectionFactory,
         *,
+        maintenance_gate: MaintenanceGate,
         now_provider: TimestampProvider | None = None,
         repository_factory: RepositoryFactory | None = None,
     ) -> None:
         self._connection_factory = connection_factory
+        self._maintenance_gate = maintenance_gate
         self._now_provider = now_provider or (lambda: datetime.now(UTC))
         self._repository_factory = (
             repository_factory or SchoolYearTransitionExecutionRepository
@@ -103,6 +112,8 @@ class ExecuteSchoolYearTransition:
         plan: SchoolYearTransitionPlan,
         operation_token: str,
         expected_plan_sha256: str,
+        maintenance_capability: MaintenanceCapability,
+        maintenance_owner_id: str,
     ) -> SchoolYearTransitionExecutionResult:
         token = _require_identifier(
             operation_token,
@@ -120,6 +131,31 @@ class ExecuteSchoolYearTransition:
             )
         target_id = _target_school_year_id(plan)
 
+        try:
+            with self._maintenance_gate.exclusive_writer(
+                maintenance_capability,
+                owner_id=maintenance_owner_id,
+                purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
+            ):
+                return self._execute_authorized(
+                    plan=plan,
+                    token=token,
+                    plan_hash=plan_hash,
+                    expected_hash=expected_hash,
+                    target_id=target_id,
+                )
+        except MaintenanceCapabilityError as error:
+            raise SchoolYearTransitionExecutionError(error.code) from None
+
+    def _execute_authorized(
+        self,
+        *,
+        plan: SchoolYearTransitionPlan,
+        token: str,
+        plan_hash: str,
+        expected_hash: str,
+        target_id: str,
+    ) -> SchoolYearTransitionExecutionResult:
         connection = self._connection_factory()
         try:
             connection.row_factory = sqlite3.Row

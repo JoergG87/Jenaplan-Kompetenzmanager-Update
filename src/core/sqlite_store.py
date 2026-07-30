@@ -18,6 +18,10 @@ from .database_compatibility import (
 )
 from .database_engine import SQLiteConnectionProvider
 from .final_v3_schema import FinalV3SchemaInitializer
+from .maintenance_gate import (
+    MaintenanceGate,
+    MaintenanceGuardedConnection,
+)
 from .school_year import (
     AssignmentAtDateProjection,
     AssignmentResolutionStatus,
@@ -285,6 +289,7 @@ class SQLiteDatabase:
         connection_provider=None,
         create: bool = True,
         initialize_schema: bool = True,
+        maintenance_gate: MaintenanceGate | None = None,
     ) -> None:
         self.path = Path(path)
         self._connection_provider = (
@@ -292,11 +297,15 @@ class SQLiteDatabase:
         )
         self._create = bool(create)
         self._initialize_schema = bool(initialize_schema)
+        self.maintenance_gate = maintenance_gate or MaintenanceGate()
 
     def connect(self) -> sqlite3.Connection:
-        return self._connection_provider.connect(
-            self.path,
-            create=self._create,
+        return MaintenanceGuardedConnection(
+            self._connection_provider.connect(
+                self.path,
+                create=self._create,
+            ),
+            self.maintenance_gate,
         )
 
     def initialize_schema(self) -> None:

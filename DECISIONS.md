@@ -1,5 +1,45 @@
 # Architekturentscheidungen
 
+## ADR-097 - Produktive Writer drainen über ein zentrales In-Process-Maintenance-Gate
+
+**Status:** Angenommen und mit SJ-3C.3 lokal implementiert. Produktive
+Ausführung des Schuljahreswechsels, Backup, Authentifizierung und UI bleiben
+offen.
+
+### Entscheidung
+
+Die Composition Root besitzt genau ein Qt-freies `MaintenanceGate`. Jede
+produktive fachliche SQLite-Connection wird durch dieselbe Gateinstanz
+geschützt. Neue Writer erhalten ausschließlich in `NORMAL` eine reentrante
+`WriterLease`. Der Wechsel nach `MAINTENANCE_PENDING` ist nicht blockierend:
+ab dann beginnen keine neuen Writer, während bereits zugelassene
+mehrstufige Datei-/Datenbankaggregate ihre Folgeschritte kontrolliert
+abschließen dürfen. `MAINTENANCE_ACTIVE` ist ausschließlich bei Writerzahl
+null zulässig.
+
+Der Maintenancebesitz wird durch eine nicht fälschbare
+`MaintenanceCapability` an Owner und Zweck gebunden. Nur eine ACTIVE
+Capability mit Zweck `SCHOOL_YEAR_TRANSITION` autorisiert die isolierte
+Transition-Transaktion. Backup/Restore besitzt den davon getrennten
+reservierten Zweck `BACKUP_RESTORE` und wird in SJ-3C.3 nicht an das Gate
+angeschlossen. Ein unklarer interner Zustand wechselt fail-closed nach
+`RECOVERY_REQUIRED`; dieser Zustand lässt weder Writer noch normale
+Gatefreigabe zu.
+
+Die äußere Lease umfasst bei Beobachtungsanhängen, Dokumentimport,
+Berichts-/LEG-PDF und mehrstufigen Stammdatenwrites den vollständigen
+Produktvorgang. Die gemeinsame Connection-Grenze schützt zusätzlich jeden
+fachlichen SQLite-Write. Reads bleiben in allen Gatezuständen zulässig. Das
+Gate selbst persistiert nichts und pumpt oder besitzt keinen Qt-Eventloop.
+
+### Grenzen
+
+SJ-3C.3 startet keinen Backupworkflow, fragt kein Passwort ab, ergänzt keinen
+Ausführungsbutton und verdrahtet `ExecuteSchoolYearTransition` nicht in Shell
+oder Settings. Securitydaten, Apppräferenzen, Support-Reset, Updatezustand
+und bewusste Exporte sind keine schuljahreskonsistenzrelevanten Fachwriter
+und bleiben ohne neue Auth-/Security-Integration außerhalb dieses Gates.
+
 ## ADR-096 - V3 ist das erste und einzige Produktschema
 
 **Status:** Angenommen. Diese Entscheidung ersetzt die V2-Cutover-,

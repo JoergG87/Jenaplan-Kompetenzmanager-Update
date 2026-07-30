@@ -72,6 +72,7 @@ from src.core.observation_uow import (
     ObservationPersistenceUnitOfWork,
     ObservationWriterLock,
 )
+from src.core.maintenance_gate import product_writer
 from src.core.sqlite_store import (
     SQLITE_SPIKE_PATH,
     SQLiteCourseRepository,
@@ -707,6 +708,7 @@ class StudentDesktopAdapter:
             )
         )
 
+    @product_writer
     def save_active_documentation_subjects(
         self,
         subject_ids: tuple[str, ...],
@@ -889,6 +891,7 @@ class StudentDesktopAdapter:
             finally:
                 connection.rollback()
 
+    @product_writer
     def save_new_student(
         self,
         *,
@@ -931,6 +934,7 @@ class StudentDesktopAdapter:
         except Exception as error:
             return self._student_lifecycle_error("student.create", error)
 
+    @product_writer
     def save_existing_student(
         self,
         *,
@@ -957,6 +961,7 @@ class StudentDesktopAdapter:
                 error,
             )
 
+    @product_writer
     def change_student_membership(
         self,
         student_id: str,
@@ -983,6 +988,7 @@ class StudentDesktopAdapter:
                 error,
             )
 
+    @product_writer
     def exit_student_from_school_year(
         self,
         student_id: str,
@@ -1002,6 +1008,7 @@ class StudentDesktopAdapter:
                 error,
             )
 
+    @product_writer
     def archive_student_master_data(self, student_id: str) -> object:
         """Archive master data without changing an assignment."""
         reference = self._today()
@@ -1083,6 +1090,7 @@ class StudentDesktopAdapter:
             is_quick_observation=draft.is_quick_observation,
         )
 
+    @product_writer
     def save_observation(self, draft: ObservationDraftViewModel) -> object:
         """Persist observation and attachments through one recoverable unit."""
         command = self.create_observation_command(draft)
@@ -1131,6 +1139,7 @@ class StudentDesktopAdapter:
             is_quick_observation=draft.is_quick_observation,
         )
 
+    @product_writer
     def update_observation(self, draft: ObservationDraftViewModel) -> object:
         """Update observation and attachments through one recoverable unit."""
         command = self.create_update_observation_command(draft)
@@ -1181,6 +1190,7 @@ class StudentDesktopAdapter:
                 type(error).__name__,
             )
 
+    @product_writer
     def delete_observation(self, observation_id: str) -> object:
         """Soft-delete an observation through the application stack."""
         command = DeleteObservationCommand(observation_id=observation_id)
@@ -1319,6 +1329,7 @@ class StudentDesktopAdapter:
             )
         )
 
+    @product_writer
     def add_student_document(
         self,
         *,
@@ -1340,6 +1351,7 @@ class StudentDesktopAdapter:
         )
         return self._document_view_model(document)
 
+    @product_writer
     def remove_document(self, document_id: str) -> None:
         """Soft-delete one document or media metadata row."""
         self._document_repository().deactivate_document(document_id)
@@ -1903,6 +1915,7 @@ class StudentDesktopAdapter:
         )
         return observations, confirmations, subjects
 
+    @product_writer
     def save_learning_report_draft(
         self,
         draft: LearningReportDraftViewModel,
@@ -1976,6 +1989,7 @@ class StudentDesktopAdapter:
         )
         return build_learning_report_finalization_preview(preview)
 
+    @product_writer
     def finalize_learning_report(
         self,
         report_draft_id: str,
@@ -2003,6 +2017,7 @@ class StudentDesktopAdapter:
         revision, payload = loaded
         return build_learning_report_revision_view_model(revision, payload)
 
+    @product_writer
     def generate_learning_report_pdf(
         self,
         learning_report_revision_id: str,
@@ -2178,6 +2193,7 @@ class StudentDesktopAdapter:
             source.observations,
         )
 
+    @product_writer
     def save_learning_conference_draft(
         self,
         draft: LearningConferenceDraftViewModel,
@@ -2270,6 +2286,7 @@ class StudentDesktopAdapter:
             unavailable_observation_ids=repository.unavailable_observation_ids(record),
         )
 
+    @product_writer
     def complete_learning_conference(
         self,
         learning_conference_draft_id: str,
@@ -2313,6 +2330,7 @@ class StudentDesktopAdapter:
         )
         return build_learning_conference_revision_view_model(verified)
 
+    @product_writer
     def generate_learning_conference_pdf(
         self,
         learning_conference_revision_id: str,
@@ -2394,6 +2412,7 @@ class StudentDesktopAdapter:
             ),
         )
 
+    @product_writer
     def save_competency_confirmation(
         self,
         *,

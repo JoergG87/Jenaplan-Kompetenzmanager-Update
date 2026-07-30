@@ -13,6 +13,7 @@ from src.core.database_engine import (
     DatabaseEngineConfigurationError,
     SQLiteConnectionProvider,
 )
+from src.core.maintenance_gate import MaintenanceGuardedConnection
 from src.core.sqlite_store import SQLiteDatabase
 
 
@@ -21,7 +22,7 @@ def test_standard_sqlite_remains_the_explicit_default(tmp_path: Path) -> None:
     database_path = tmp_path / "ordinary.sqlite"
     database = SQLiteDatabase(database_path)
     with closing(database.connect()) as connection:
-        assert isinstance(connection, sqlite3.Connection)
+        assert isinstance(connection, MaintenanceGuardedConnection)
         assert connection.row_factory is sqlite3.Row
         assert connection.execute("PRAGMA foreign_keys").fetchone()[0] == 1
         connection.execute("CREATE TABLE sample(value TEXT NOT NULL)")

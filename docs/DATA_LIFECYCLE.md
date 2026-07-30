@@ -6,7 +6,7 @@
 synthetischer Testdaten-Cleanup und Assignment-API lokal implementiert. Der
 SJ-2E-Lifecycle der produktiven Membership-Reader und der
 SJ-2F-Lifecycle der produktiven Writer sowie die isolierte synthetische
-SJ-3C.2-Ausführung sind lokal umgesetzt. Exakt
+SJ-3C.2-Ausführung und das SJ-3C.3-Maintenance-Gate sind lokal umgesetzt. Exakt
 verifiziertes Final-V3 ist für die normale Runtime lokal freigegeben; die
 manuelle macOS-Abnahme bleibt offen.
 
@@ -29,6 +29,40 @@ oder manuelle V2-Datenübernahme und keine Installation synthetischer
 V2-Initialdaten als Produktpfad. Die autorisierte direkte Neuanlage erzeugt
 kein Schuljahr. Fehlt ein eindeutiges `current`-Schuljahr, bleibt dies nach
 technischem Runtime-Start ein fachlicher Sperrzustand.
+
+## SJ-3C.3 Maintenance- und Writer-Drain-Lifecycle
+
+Das anwendungsweite Gate besitzt ausschließlich den flüchtigen
+In-Process-Lifecycle:
+
+1. In `NORMAL` erhält ein neuer produktiver Fachwrite eine reentrante
+   `WriterLease`. Datei- und SQLite-Folgeschritte desselben bereits
+   zugelassenen Vorgangs verwenden diese Lease weiter.
+2. Der Maintenanceowner fordert mit Owner-ID und Zweck eine nicht fälschbare
+   Capability an. Das Gate wechselt sofort und ohne Warten nach
+   `MAINTENANCE_PENDING`.
+3. Ab `PENDING` scheitern neue Writer unmittelbar. Reads bleiben erlaubt.
+   Bereits laufende Writer dürfen vollständig committen oder kontrolliert
+   abbrechen und geben danach ihre Lease genau einmal frei.
+4. Nur dieselbe Owner-Capability darf nach Writerzahl null nach
+   `MAINTENANCE_ACTIVE` wechseln. Ein falscher Owner oder Zweck erhält keine
+   exklusive Berechtigung.
+5. Ein sauberer Abbruch aus `PENDING` oder `ACTIVE` gibt das Gate wieder nach
+   `NORMAL` frei. Ein unklarer interner Zustand führt fail-closed nach
+   `RECOVERY_REQUIRED`; dort bleiben Writer und normale Freigabe gesperrt.
+
+Die äußere Lease beginnt vor Dateistaging, Dokumentkopie, PDF-Publikation
+oder dem ersten Teilwrite einer mehrstufigen Stammdatenoperation. Zusätzlich
+fordert jede schreibende Transaktion an der gemeinsamen
+`MaintenanceGuardedConnection` Writerzulassung an. Das Gate allein öffnet
+keine Connection und verändert weder Datenbank noch Dokumente.
+
+`ExecuteSchoolYearTransition` akzeptiert nur eine ACTIVE Capability mit dem
+Zweck `SCHOOL_YEAR_TRANSITION` und passender Owner-ID, bleibt jedoch ohne
+Aufruf aus Shell oder Settings. `BACKUP_RESTORE` ist ein getrennter
+Capabilityzweck; Backup- und Restoreservices werden in SJ-3C.3 weder
+gestartet noch integriert. Es gibt keine UI-, Passwort-, Step-up- oder
+Ausführungsaktion.
 
 ## Direkte Final-V3-Schemaerzeugung
 

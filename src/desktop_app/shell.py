@@ -163,6 +163,7 @@ class AppShell(QMainWindow):
             today_provider=lambda: self.now_provider().date(),
             now_provider=self.now_provider,
         )
+        self.maintenance_gate = self.adapter.database.maintenance_gate
         self.exports_directory = self.adapter.database_path.parent / "exports"
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
         self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)

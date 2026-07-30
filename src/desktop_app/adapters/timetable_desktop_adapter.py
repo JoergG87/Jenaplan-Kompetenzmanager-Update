@@ -8,6 +8,7 @@ from src.application.commands.timetable import (
     SaveTimetableEntryCommand,
     TimetableApplicationService,
 )
+from src.core.maintenance_gate import product_writer
 from src.core.sqlite_store import (
     SQLiteCompetencyRepository,
     SQLiteDatabase,
@@ -66,10 +67,12 @@ class TimetableDesktopAdapter:
             targets_by_type=self._target_options(),
         )
 
+    @product_writer
     def save_entry(self, command: SaveTimetableEntryCommand) -> TimetableEntryViewModel:
         """Create or update one validated entry."""
         return self._entry_view_model(self.application_service.save(command))
 
+    @product_writer
     def set_entry_active(
         self,
         timetable_entry_id: str,
@@ -94,6 +97,7 @@ class TimetableDesktopAdapter:
             )
         )
 
+    @product_writer
     def delete_entry(self, timetable_entry_id: str) -> None:
         """Delete the explicitly selected timetable entry."""
         self.application_service.delete(timetable_entry_id)

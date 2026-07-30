@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from src.core.maintenance_gate import product_writer
 from src.core.sqlite_store import (
     DEFAULT_COURSE_GROUP_ID,
     MasterDataCourseGroupRecord,
@@ -30,6 +31,7 @@ class MasterDataDesktopAdapter:
 
     def __init__(self, student_adapter: StudentDesktopAdapter) -> None:
         self.student_adapter = student_adapter
+        self.database = student_adapter.database
         self.repository = SQLiteMasterDataRepository(student_adapter.database)
         self.groups: dict[str, MasterDataItemViewModel] = {}
         self.courses: dict[str, MasterDataItemViewModel] = {}
@@ -45,6 +47,7 @@ class MasterDataDesktopAdapter:
             course_groups=tuple(self.course_groups.values()),
         )
 
+    @product_writer
     def add_group(self, name: str) -> MasterDataItemViewModel:
         """Persist a new group."""
         normalized_name = normalize_master_data_name(name)
@@ -59,6 +62,7 @@ class MasterDataDesktopAdapter:
         self._reload()
         return self.groups[record.group_id]
 
+    @product_writer
     def add_course(
         self,
         name: str,
@@ -83,6 +87,7 @@ class MasterDataDesktopAdapter:
         self._reload()
         return self.courses[record.course_id]
 
+    @product_writer
     def rename_group(
         self,
         group_id: str,
@@ -107,6 +112,7 @@ class MasterDataDesktopAdapter:
         self._reload()
         return self.groups[group_id]
 
+    @product_writer
     def rename_course(
         self,
         course_id: str,
@@ -140,6 +146,7 @@ class MasterDataDesktopAdapter:
         self._reload()
         return self.courses[course_id]
 
+    @product_writer
     def update_course_group(
         self,
         course_group_id: str,
@@ -173,6 +180,7 @@ class MasterDataDesktopAdapter:
         self._reload()
         return self.course_groups[course_group_id]
 
+    @product_writer
     def add_course_group(
         self,
         name: str,

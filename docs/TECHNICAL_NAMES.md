@@ -4,8 +4,9 @@
 
 **Status:** V3-only-Cleanup, zentrale Assignment-API, SJ-2E-Umstellung der
 produktiven Membership-Reader, SJ-2F-Umstellung der produktiven Writer und
-Final-V3-Runtime-Aktivierung sowie die isolierte synthetische
-SJ-3C.2-Ausführung sind lokal implementiert.
+Final-V3-Runtime-Aktivierung, die isolierte synthetische
+SJ-3C.2-Ausführung und das anwendungsweite SJ-3C.3-Maintenance-Gate sind
+lokal implementiert.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
@@ -20,6 +21,12 @@ SJ-3C.2-Ausführung sind lokal implementiert.
 | `V3_SCHEMA_READY` | exaktes Final-V3 ist vollständig verifiziert und für die normale Runtime zugelassen | Core Database Startup |
 | `SCHEMA_UNSUPPORTED` | vorhandenes Schema entspricht nicht exakt dem finalen registrierten Schema | Core Database Startup |
 | `RECOVERY_REQUIRED` | unlesbarer, beschädigter, unsicherer oder Restore-seitig nicht abgeschlossener Zustand | Core Database Startup |
+| `MaintenanceGate` | zentrale Qt-freie In-Process-Grenze für Writerzulassung, Drain und exklusiven Maintenancebesitz | Core Runtime |
+| `MaintenanceState` | ausschließlich `NORMAL`, `MAINTENANCE_PENDING`, `MAINTENANCE_ACTIVE` oder `RECOVERY_REQUIRED` | Core Runtime |
+| `WriterLease` | reentrante, genau einmal freizugebende Zulassung eines vor `PENDING` begonnenen Produktwrites | Core Runtime |
+| `MaintenanceCapability` | nicht fälschbare In-Process-Besitzberechtigung für genau einen Owner und Maintenancezweck | Core Runtime |
+| `MaintenancePurpose` | trennt `SCHOOL_YEAR_TRANSITION` ausdrücklich von `BACKUP_RESTORE` | Core Runtime |
+| `MaintenanceGuardedConnection` | gemeinsame produktive Connection-Grenze, die jede schreibende SQLite-Transaktion genau einmal am Gate anmeldet | Core SQLite Runtime |
 
 Nicht mehr registrierte Produktnamen sind
 `SchoolYearV2ToV3MigrationEngine`, `VerifiedBackupEvidence`,
@@ -63,7 +70,7 @@ Bootstrap-Transition-Typen.
 | `SchoolYearTransitionExecutionCounts` | deterministische technische Ergebniszahlen des atomaren Wechsels | Application School-Year Transition Execution |
 | `SchoolYearTransitionExecutionResult` | unveränderliche Rückgabe eines neu committed oder idempotent wiedergefundenen Transitionbelegs | Application School-Year Transition Execution |
 | `SchoolYearTransitionExecutionError` | fail-closed Ablehnung vor oder innerhalb der atomaren Ausführungsgrenze mit stabilem technischen Code | Application School-Year Transition Execution |
-| `ExecuteSchoolYearTransition` | Qt-freier SJ-3C.2-Application-Service für reine Planprüfung, `BEGIN IMMEDIATE`, Quellenrevalidierung, atomare Writes, Beleg, Integritätsprüfung und Rollback; noch ohne Produktverdrahtung | Application School-Year Transition Execution |
+| `ExecuteSchoolYearTransition` | Qt-freier Application-Service für Planprüfung, `BEGIN IMMEDIATE`, Quellenrevalidierung, atomare Writes, Beleg, Integritätsprüfung und Rollback; verlangt eine ACTIVE Owner-Capability mit Zweck `SCHOOL_YEAR_TRANSITION`, bleibt aber ohne Produktverdrahtung | Application School-Year Transition Execution |
 | `SchoolYearTransitionExecutionRepository` | Connection-gebundene Schreib- und Prüfgrenze innerhalb der vom Application Service besessenen Transaktion; öffnet, committet, rollt nicht zurück und schließt nicht selbst | Core School-Year Transition Persistence |
 | `StoredSchoolYearTransition` | unveränderliche technische Projektion eines vorhandenen `school_year_transitions`-Belegs | Core School-Year Transition Persistence |
 | `SchoolYearTransitionRepositoryError` | fail-closed Fehlercode der Transition-Schreibgrenze | Core School-Year Transition Persistence |

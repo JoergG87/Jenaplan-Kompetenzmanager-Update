@@ -24,6 +24,10 @@ from src.core.sqlite_school_year_transition import (
     NO_BACKUP_EVIDENCE_SHA256,
     SchoolYearTransitionExecutionRepository,
 )
+from src.core.maintenance_gate import (
+    MaintenanceGate,
+    MaintenancePurpose,
+)
 from tests.helpers.synthetic_v3 import (
     SYNTHETIC_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
@@ -33,6 +37,7 @@ from tests.helpers.synthetic_v3 import (
 
 NOW = datetime(2026, 7, 15, 10, 30, tzinfo=UTC)
 TOKEN = "sj-3c2-operation-001"
+MAINTENANCE_OWNER = "school-year-transition-test"
 
 
 def _factory(path: Path):
@@ -65,14 +70,28 @@ def _resolved_plan(path: Path):
     )
 
 
+def _active_maintenance():
+    gate = MaintenanceGate()
+    capability = gate.request_maintenance(
+        owner_id=MAINTENANCE_OWNER,
+        purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
+    )
+    assert gate.activate(capability, owner_id=MAINTENANCE_OWNER)
+    return gate, capability
+
+
 def _execute(path: Path, plan, token: str = TOKEN):
+    gate, capability = _active_maintenance()
     return ExecuteSchoolYearTransition(
         _factory(path),
+        maintenance_gate=gate,
         now_provider=lambda: NOW,
     ).execute(
         plan=plan,
         operation_token=token,
         expected_plan_sha256=school_year_transition_plan_sha256(plan),
+        maintenance_capability=capability,
+        maintenance_owner_id=MAINTENANCE_OWNER,
     )
 
 
@@ -238,15 +257,45 @@ def test_unresolved_plan_is_rejected_before_begin(v3_database: Path) -> None:
         opened = True
         raise AssertionError("connection must not be opened")
 
+    gate, capability = _active_maintenance()
     with pytest.raises(SchoolYearTransitionExecutionError) as captured:
-        ExecuteSchoolYearTransition(forbidden_connection).execute(
+        ExecuteSchoolYearTransition(
+            forbidden_connection,
+            maintenance_gate=gate,
+        ).execute(
             plan=unresolved,
             operation_token=TOKEN,
             expected_plan_sha256=school_year_transition_plan_sha256(unresolved),
+            maintenance_capability=capability,
+            maintenance_owner_id=MAINTENANCE_OWNER,
         )
 
     assert captured.value.code == "transition_plan_not_fully_resolved"
     assert opened is False
+
+
+def test_transition_execution_rejects_wrong_maintenance_owner_before_write(
+    v3_database: Path,
+) -> None:
+    plan = _resolved_plan(v3_database)
+    before = _database_state(v3_database)
+    gate, capability = _active_maintenance()
+
+    with pytest.raises(SchoolYearTransitionExecutionError) as captured:
+        ExecuteSchoolYearTransition(
+            _factory(v3_database),
+            maintenance_gate=gate,
+            now_provider=lambda: NOW,
+        ).execute(
+            plan=plan,
+            operation_token=TOKEN,
+            expected_plan_sha256=school_year_transition_plan_sha256(plan),
+            maintenance_capability=capability,
+            maintenance_owner_id="different-owner",
+        )
+
+    assert captured.value.code == "maintenance_capability_owner_mismatch"
+    assert _database_state(v3_database) == before
 
 
 def test_changed_assignment_makes_plan_stale(v3_database: Path) -> None:
@@ -333,9 +382,11 @@ def test_failure_at_every_write_step_and_final_check_rolls_back_completely(
     plan = _resolved_plan(v3_database)
     before = _database_state(v3_database)
 
+    gate, capability = _active_maintenance()
     with pytest.raises(SchoolYearTransitionExecutionError) as captured:
         ExecuteSchoolYearTransition(
             _factory(v3_database),
+            maintenance_gate=gate,
             now_provider=lambda: NOW,
             repository_factory=lambda connection: _FailingRepository(
                 connection,
@@ -345,6 +396,8 @@ def test_failure_at_every_write_step_and_final_check_rolls_back_completely(
             plan=plan,
             operation_token=TOKEN,
             expected_plan_sha256=school_year_transition_plan_sha256(plan),
+            maintenance_capability=capability,
+            maintenance_owner_id=MAINTENANCE_OWNER,
         )
 
     assert captured.value.code == "transition_execution_failed"

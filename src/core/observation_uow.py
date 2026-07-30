@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Iterable
 
 from .observation import ObservationCompetencyRatingRecord, ObservationRecord
+from .maintenance_gate import product_writer
 from .persistence_events import (
     PersistenceEventKind,
     PersistenceEventRecord,
@@ -235,6 +236,7 @@ class ObservationPersistenceUnitOfWork:
         self.documents_root = self.data_root / "documents"
         self.staging_root = self.data_root / ".observation-staging"
 
+    @product_writer
     def save(
         self,
         *,
@@ -275,10 +277,12 @@ class ObservationPersistenceUnitOfWork:
             self._continue(journal, state)
             return _observation_from_payload(state["target_observation"])
 
+    @product_writer
     def recover_pending(self) -> None:
         with ObservationWriterLock(self.staging_root):
             self._recover_incomplete(except_token=None)
 
+    @product_writer
     def recover_pending_while_writer_locked(self) -> None:
         """Continue pending work while the caller owns the shared writer lock."""
         self._recover_incomplete(except_token=None)
@@ -870,6 +874,7 @@ class ObservationPersistenceUnitOfWork:
             number += 1
         return f"{prefix}-{number:06d}"
 
+    @product_writer
     def reserve_id_while_writer_locked(self, prefix: str) -> str:
         """Reserve an OBS/MED identifier while the shared lock is held."""
         if prefix not in {"OBS", "MED"}:

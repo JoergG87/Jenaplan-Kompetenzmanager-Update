@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- SJ-3C.3 ergänzt ein zentrales Qt-freies In-Process-Maintenance-Gate mit
+  `NORMAL`, `MAINTENANCE_PENDING`, `MAINTENANCE_ACTIVE` und
+  `RECOVERY_REQUIRED`. Ab `PENDING` werden neue fachliche Writer an der
+  gemeinsamen produktiven Connection-Grenze blockiert; bereits zugelassene
+  reentrante Datei-/Datenbankaggregate dürfen kontrolliert abschließen und
+  `ACTIVE` wird erst nach vollständigem Drain erreichbar. Schüler- und
+  Assignmentwrites, Gruppen/Kurse/Kursgruppen, Beobachtungen samt Anhängen,
+  Bestätigungen, Dokumente, Berichts- und LEG-Drafts/Abschlüsse/PDFs,
+  Stundenplan sowie fachliche Dokumentationseinstellungen sind geschützt.
+  Der isolierte Transition-Service verlangt zusätzlich die ACTIVE
+  Owner-Capability für den Zweck `SCHOOL_YEAR_TRANSITION`. Backup/Restore
+  bleiben durch den getrennten Zweck `BACKUP_RESTORE` abgegrenzt und
+  unverdrahtet; UI, Backupworkflow, Step-up-Authentifizierung,
+  Ausführungsbutton und produktiver Transition-Aufruf wurden nicht ergänzt.
 - SJ-3C.2 ergänzt die isolierte Qt-freie atomare Ausführungsgrenze für einen
   vollständig gelösten Schuljahreswechselplan auf ausschließlich temporären
   synthetischen Final-V3-Datenbanken. Plan und technische Quellen werden

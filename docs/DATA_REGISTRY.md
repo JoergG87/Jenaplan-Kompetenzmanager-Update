@@ -5,7 +5,8 @@
 **Status:** Direkte Final-V3-Schemaquelle, synthetischer temporärer
 Testdatenpfad, zentrale Assignment-API, SJ-2E-Umstellung der produktiven
 Membership-Reader, SJ-2F-Umstellung der produktiven Writer und die isolierte
-synthetische SJ-3C.2-Ausführung sind lokal implementiert. Die
+synthetische SJ-3C.2-Ausführung und das anwendungsweite
+SJ-3C.3-Maintenance-Gate sind lokal implementiert. Die
 Produkt-Ausführungsfreigabe bleibt offen.
 
 | Quelle | Fachliche Bedeutung | Owner | Nicht zulässige Ersatzquelle |
@@ -21,6 +22,14 @@ Produkt-Ausführungsfreigabe bleibt offen.
 | `school_year_transitions` | unveränderlicher Beleg eines echten committed Schuljahreswechsels | School-Year Transition Service | Initialanlage, Startup, Bootstrap, Migration |
 | kanonische Schemaidentität | vollständiger Final-V3-Fingerprint und Objektinventar | Database Compatibility | nur `user_version`, Teilinventar oder Tabellenzahl |
 | Backupmanifest und Datenbankkopie | verifizierter Sicherheitsstand des exakten finalen Schemas | Backup / Restore | V2-Cutover-Evidence oder unregistriertes Schema |
+| `MaintenanceGate`-Prozesszustand | ausschließlich flüchtige Writerzulassung, Drainstand und Owner-Capability; keine Fachdatenquelle | Core Runtime | UI-Disable, SQLite-Tabelle, Systemdatum, Backupstatus |
+
+Der Gatezustand wird nicht persistiert und verändert allein weder Final-V3
+noch Dokumente. Ein unklarer Laufzeitzustand wird ausschließlich
+fail-closed als `RECOVERY_REQUIRED` behandelt. Backup und Restore verwenden
+nicht die normale `WriterLease`; ihr reservierter Zweck
+`BACKUP_RESTORE` ist vom Schuljahreswechselvertrag getrennt und in SJ-3C.3
+nicht produktiv verdrahtet.
 
 V3 ist das erste Produktschema. V2-Daten besitzen keine Produktdatenhoheit,
 keinen Restore- und keinen Migrationsvertrag. Bekannte oder unbekannte ältere
