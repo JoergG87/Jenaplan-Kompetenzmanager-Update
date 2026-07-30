@@ -183,8 +183,10 @@ Schuljahr, Assignment, Plan noch Transition-Beleg:
 `executable` ist eine reine Validierungsprojektion und keine
 Ausführungsfreigabe. SJ-3A enthält kein Backup, Maintenance-Gate,
 Authentifizierung, Aktivierung, Assignmentwrite und keinen Mehrkindwechsel.
-Die editierbare UI-Vorschau bleibt SJ-3B; die spätere Ausführung benötigt
-weiterhin den vollständigen getrennten Schutzlifecycle.
+Der rein lesende SJ-3B.1-Dialog fügt keinen Lifecycle hinzu und besitzt nur
+Schließen. Editierbarer flüchtiger Plan und Entscheidungen bleiben SJ-3B.2;
+die spätere Ausführung benötigt weiterhin den vollständigen getrennten
+Schutzlifecycle.
 
 ## SJ-2E-Lifecycle für produktive Assignment-Reader
 

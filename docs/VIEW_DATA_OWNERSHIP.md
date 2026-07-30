@@ -37,6 +37,7 @@ V2-Restoreauswahl.
 | Kurs-/Stammgruppendeaktivierung | Stammdaten plus aktuelle und zukünftige `enrolled`-Referenzen am expliziten Stichtag | `MasterDataDesktopAdapter` und `SQLiteMasterDataRepository` | versteckte Umbuchung, Ersatzgruppe/-kurs, historische Assignmentmutation |
 | Kursfortschreibung | `courses.year_level` | späterer School-Year Transition Service | Kursname, Farbe, Sortierung |
 | SJ-3A-Schuljahreswechsel-Vorschau | alle V3-Schüler, genau ein current-Schuljahr, Assignments an dessen Ende, vorhandene Schuljahre sowie Gruppen und Kurse mit `active`/`year_level` | `SchoolYearTransitionPreviewService` und `SchoolYearTransitionPreviewProjector` | Kindfilter, Systemdatum, Kursname/-sortierung, zweite Connection, Write, UI-Entscheidung oder stille Zielauswahl |
+| SJ-3B.1-Previewdialog | unveränderte Reihenfolge, Zähler, Zielstatus und Issues genau einer vorhandenen `SchoolYearTransitionPreview` | `SchoolYearTransitionPreviewViewModel` und `SchoolYearTransitionPreviewDialog` | Repository-/Serviceaufruf im Widget, Neuberechnung, Sortierung, Bearbeitung, Backup, Authentifizierung oder Ausführung |
 | echter Wechselbeleg | vorhandene Ausgangs-/Zieljahre und committed Wechselplan | späterer School-Year Transition Service | Initialanlage, Bootstrap oder Migration |
 
 Beobachtung, Bericht und LEG liefern ihren vorhandenen fachlichen
@@ -53,8 +54,9 @@ SJ-3A besitzt ausschließlich die vollständige Domain-/Application-Projektion.
 Der connection-gebundene Preview-Repository liest alle Quellen im selben
 `query_only`-Snapshot; der SQLite-freie Projektor besitzt Kalenderprüfung,
 Eindeutigkeitsauflösung, Stufenfortschreibung, Blockercodes, stabile Sortierung
-und Gesamtzähler. Eine spätere SJ-3B-UI darf diese Projektion darstellen und
-bearbeiten, aber keine Vorschlags- oder Validierungslogik duplizieren.
+und Gesamtzähler. SJ-3B.1 stellt die Projektion ausschließlich lesend dar.
+Eine spätere SJ-3B.2-UI darf einen getrennten flüchtigen Plan bearbeiten,
+aber keine Vorschlags- oder Validierungslogik duplizieren.
 Persistenz, Backup, Authentifizierung, Aktivierung und Transition-Beleg
 besitzen weder Repository noch Service in SJ-3A.
 

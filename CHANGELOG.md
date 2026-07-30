@@ -47,9 +47,17 @@
   bleibt ungelöst, eine gültige aktive Stammgruppe unverändert. Archivierte,
   ausgeschiedene, fehlende, mehrdeutige oder ungültig zugeordnete Kinder
   bleiben vollständig sichtbar und blockierend. Zieljahresüberlappung und
-  -lücke blockieren die Gesamtprojektion. Es gibt keine UI, Datenbankwrites,
-  Planpersistenz, Aktivierung, Authentifizierung, Backup- oder
-  Mehrkindwechselfunktion; SJ-3B bleibt separat.
+  -lücke blockieren die Gesamtprojektion. SJ-3A selbst enthält keine UI,
+  Datenbankwrites, Planpersistenz, Aktivierung, Authentifizierung, Backup-
+  oder Mehrkindwechselfunktion.
+- SJ-3B.1 zeigt die vorhandene Schuljahreswechsel-Preview in einem isolierten
+  rein lesenden PySide-Dialog. Kopf, Zähler, Zielstatus, Warnungen und jedes
+  Preview-Item werden ohne Neuberechnung oder Sortierung dargestellt.
+  `Ungelöst` bleibt als Text sichtbar; Tabelle, Zellen, Status und Schließen
+  besitzen zugängliche Namen beziehungsweise Beschreibungen. Der Dialog
+  besitzt keine Kurs-/Stammgruppenwahl, Checkbox, Repository-, Write-,
+  Backup-, Authentifizierungs- oder Ausführungsaktion. Settings-/Shell-
+  Integration und der editierbare flüchtige Plan bleiben SJ-3B.2.
 - Die normale Runtime lässt ausschließlich ein vollständig verifiziertes
   Final-V3 als `V3_SCHEMA_READY` zu. Unbekannte, beschädigte oder unsichere
   Schemata, WAL-/SHM-Sidecars, offene Restorezustände und fehlende

@@ -46,6 +46,8 @@ Bootstrap-Transition-Typen.
 | `SchoolYearTransitionValidationIssue` | Stabil codierter globaler oder kindbezogener Warn-/Blockerzustand der SJ-3A-Vorschau | School-Year Transition Domain |
 | `SchoolYearTransitionPreviewService` | Connection-gebundene Qt-freie Read-Komposition aller SJ-3A-Quellen in einem SQLite-Read-Snapshot; setzt `query_only` und führt keine Writes aus | Application School-Year Transition Preview |
 | `SchoolYearTransitionPreviewProjector` | SQLite-freier deterministischer Vorschlags- und Validierungsalgorithmus für SJ-3A | Application School-Year Transition Preview |
+| `SchoolYearTransitionPreviewViewModel` | Qt-freies SJ-3B.1-Anzeigemapping genau einer vorhandenen Preview ohne Neuberechnung oder Sortierung | Desktop ViewModel |
+| `SchoolYearTransitionPreviewDialog` | isolierter rein lesender PySide-Dialog für genau eine vorhandene Preview; besitzt nur Schließen und keine Ausführungsaktion | Desktop UI |
 | `SchoolYearRepository` | Connection-gebundener SQLite-Read auf `school_years`; öffnet und steuert keine Transaktion | Core Assignment Persistence |
 | `StudentSchoolYearAssignmentRepository` | Connection-gebundene set-basierte SQLite-Reads und atomar orchestrierbare Writes auf Assignments | Core Assignment Persistence |
 | `V3StudentRepository` | Connection-gebundene Persistenz ausschließlich der V3-Schülerstammdaten | Core Student Persistence |

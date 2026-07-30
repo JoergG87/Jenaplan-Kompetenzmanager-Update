@@ -2,9 +2,9 @@
 
 ## SJ-3A - rein lesende Schuljahreswechsel-Vorschau
 
-**Status:** Domain-/Application-Projektion lokal implementiert. SJ-3B-UI,
-Ausführung, Backup, Authentifizierung, Aktivierung und Mehrkindwechsel bleiben
-gesperrt.
+**Status:** Domain-/Application-Projektion und isolierte rein lesende
+SJ-3B.1-Qt-Vorschau lokal implementiert. Editierbare SJ-3B.2-UI, Ausführung,
+Backup, Authentifizierung, Aktivierung und Mehrkindwechsel bleiben gesperrt.
 
 - [x] Geplantes Zieljahr auf Überlappung, strikte Nachfolge und Lückenlosigkeit
   prüfen.
@@ -21,7 +21,9 @@ gesperrt.
   bereitstellen.
 - [x] Connection-gebundene Quellenlesung mit `query_only` und ohne DML
   implementieren.
-- [ ] SJ-3B-UI zur Bearbeitung der Vorschau separat implementieren.
+- [x] SJ-3B.1-Qt-Dialog zeigt Kopf, Zähler und alle Preview-Items rein lesend
+  und unverändert; einzige Aktion ist Schließen.
+- [ ] SJ-3B.2-UI zur Bearbeitung eines flüchtigen Plans separat implementieren.
 - [ ] Schuljahreswechsel-Ausführung mit Backup, Maintenance, Step-up,
   erneuter Quellenprüfung und atomarer Transition separat implementieren.
 

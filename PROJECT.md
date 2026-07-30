@@ -86,11 +86,16 @@ und dessen Assignmentkandidaten am Ende des eindeutigen current-Schuljahres,
 übernimmt eine gültige aktive Stammgruppe unverändert und schlägt anhand
 `courses.year_level` nur bei genau einem aktiven Zielkurs 1→2 oder 2→3 vor.
 Alle ausgeschlossenen oder uneindeutigen Fälle bleiben sichtbar und
-`UNRESOLVED`. Es gibt keine UI, Persistenz, Aktivierung, Authentifizierung,
-Backup- oder Mehrkindwechselfunktion.
+`UNRESOLVED`. SJ-3A selbst enthält keine UI, Persistenz, Aktivierung,
+Authentifizierung, Backup- oder Mehrkindwechselfunktion.
+
+SJ-3B.1 ergänzt einen isolierten rein lesenden PySide-Dialog. Er zeigt Kopf,
+Zähler und jedes vorhandene Preview-Item unverändert, erlaubt nur Schließen
+und besitzt weder Repository-/Write-Aufruf noch Ausführungsmöglichkeit. Eine
+breite Settings-/Shell-Integration ist nicht erfolgt.
 
 Weiterhin nicht umgesetzt oder freigegeben sind die editierbare
-Schuljahreswechsel-UI SJ-3B, die spätere Ausführung des Wechsels,
+Schuljahreswechsel-UI SJ-3B.2, die spätere Ausführung des Wechsels,
 unterjährige Mehrkind-/Sammelwechsel, Build, Packaging und Release. Die
 manuelle Prüfung der Runtime sowie der neuen Schüler-, Wechsel-, Austritts-
 und Kursstufenoberflächen auf macOS ist noch offen. Es wurden keine Migration

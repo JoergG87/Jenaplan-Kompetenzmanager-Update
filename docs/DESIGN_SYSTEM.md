@@ -2,10 +2,17 @@
 
 ## SJ-1 - UX-Vertrag für den Schuljahresassistenten
 
-**Status:** Verbindlicher Zielvertrag, noch nicht implementiert. Widget-,
-Pixel- und konkrete Layoutentscheidungen bleiben dem späteren UX-/Technical-
-Design vorbehalten; die folgende Informations-, Interaktions- und
-Accessibility-Semantik ist verbindlich.
+**Status:** Verbindlicher Zielvertrag. SJ-3B.1 setzt ausschließlich eine
+isolierte rein lesende Vorschau um; editierbarer Plan, Assistentenintegration,
+Schutzstufen und Ausführung bleiben offen. Die folgende Informations-,
+Interaktions- und Accessibility-Semantik bleibt für den vollständigen
+Assistenten verbindlich.
+
+SJ-3B.1 zeigt den vorhandenen Preview-Kopf und jedes vorhandene Item genau
+einmal in unveränderter Reihenfolge. Die Tabelle ist nicht editierbar und bei
+kleinem Fenster horizontal und vertikal scrollbar. `Ungelöst`, Zielstatus und
+Warnungen sind sichtbarer Text mit Accessible Names beziehungsweise
+Descriptions. Der Dialog besitzt ausschließlich `Schließen`.
 
 Der Einstieg lautet `Einstellungen → Schuljahre`. Der Assistent ist ein
 ruhiger, linearer Arbeitsraum mit zehn sichtbaren Phasen:
