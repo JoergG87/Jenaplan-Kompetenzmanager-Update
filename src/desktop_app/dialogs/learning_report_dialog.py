@@ -2050,7 +2050,6 @@ class LearningReportDialog(MotionDialog):
             widget = item.widget()
             child_layout = item.layout()
             if widget is not None:
-                widget.setParent(None)
                 widget.deleteLater()
             elif child_layout is not None:
                 cls._clear_layout(child_layout)  # type: ignore[arg-type]

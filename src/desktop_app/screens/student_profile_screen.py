@@ -5,7 +5,16 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QRectF, QSize, Qt, QTimer, QUrl, Signal
+from PySide6.QtCore import (
+    QCoreApplication,
+    QEvent,
+    QRectF,
+    QSize,
+    Qt,
+    QTimer,
+    QUrl,
+    Signal,
+)
 from PySide6.QtGui import QColor, QDesktopServices, QPainter, QPen
 from PySide6.QtWidgets import (
     QApplication,
@@ -228,17 +237,17 @@ class StudentProfileScreen(QWidget):
         self.course_badge = CourseBadge()
         self.course_badge.hide()
         self.membership_message = InlineMessage()
-        self.action_feedback_label = QLabel("")
+        self.action_feedback_label = QLabel("", self)
         self.overview_recent_layout = QVBoxLayout()
-        self.observation_empty_label = QLabel("")
-        self.competency_empty_label = QLabel("")
-        self.documents_empty_label = QLabel("")
-        self.documents_feedback_label = QLabel("")
-        self.report_empty_label = QLabel("")
-        self.report_feedback_label = QLabel("")
-        self.report_copy_button = QPushButton("Bericht kopieren")
-        self.report_export_button = QPushButton("Als Text exportieren")
-        self.report_create_button = QPushButton("Bericht erstellen")
+        self.observation_empty_label = QLabel("", self)
+        self.competency_empty_label = QLabel("", self)
+        self.documents_empty_label = QLabel("", self)
+        self.documents_feedback_label = QLabel("", self)
+        self.report_empty_label = QLabel("", self)
+        self.report_feedback_label = QLabel("", self)
+        self.report_copy_button = QPushButton("Bericht kopieren", self)
+        self.report_export_button = QPushButton("Als Text exportieren", self)
+        self.report_create_button = QPushButton("Bericht erstellen", self)
         self.report_copy_button.setEnabled(False)
         self.report_export_button.setEnabled(False)
         self.current_observations: tuple[ObservationListItem, ...] = ()
@@ -918,13 +927,8 @@ class StudentProfileScreen(QWidget):
         layout.addLayout(self.report_overview_grid)
         self._apply_report_overview_layout(columns=3)
 
-        # The former live preparation remains available to existing copy/export
-        # helpers but is no longer a visible competing report surface.
-        self.report_preview_container = QWidget()
-        self.report_preview_layout = QVBoxLayout(self.report_preview_container)
-        self.report_preview_layout.setContentsMargins(0, 0, 0, 0)
-        self.report_preview_layout.setSpacing(8)
-        self.report_preview_container.hide()
+        # The former live preparation remains available as a ViewModel to the
+        # existing copy/export helpers, without retaining a hidden widget tree.
         set_label_style(self.report_empty_label, "body")
         set_label_style(self.report_feedback_label, "subtle")
         self.report_copy_button.clicked.connect(self.copy_report_text_to_clipboard)
@@ -3268,20 +3272,12 @@ class StudentProfileScreen(QWidget):
         self,
         report_preview: StudentReportPreviewViewModel | None,
     ) -> None:
-        """Render the derived report preparation for the current profile."""
+        """Retain the derived report preparation for copy/export helpers."""
         self.current_report_preview = report_preview
         has_report_text = self.current_student is not None and report_preview is not None
         self.report_copy_button.setEnabled(has_report_text)
         self.report_export_button.setEnabled(has_report_text)
         self.report_feedback_label.setText("")
-        self._clear_layout(self.report_preview_layout)
-        if report_preview is None or not report_preview.has_content:
-            self.report_preview_layout.addWidget(self._empty_report_preview_card())
-            return
-        for section in report_preview.subject_sections:
-            self.report_preview_layout.addWidget(
-                self._report_subject_card(section)
-            )
 
     def _empty_report_preview_card(self) -> QFrame:
         card = self._card()
@@ -3550,3 +3546,8 @@ class StudentProfileScreen(QWidget):
             widget = layout_item.widget()
             if widget is not None:
                 widget.setParent(None)
+                widget.deleteLater()
+                QCoreApplication.sendPostedEvents(
+                    widget,
+                    QEvent.Type.DeferredDelete,
+                )

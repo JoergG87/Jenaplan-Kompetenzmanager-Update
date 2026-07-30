@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Der normale App-Schluss entfernt jetzt alle sichtbaren Produktfenster und
+  beendet den Hauptprozess kontrolliert. Eine nicht eingebettete
+  `Alle Schüler`-Hinweisfläche war fälschlich ein eigenständiges
+  Qt-Top-Level-Fenster und hielt dadurch `lastWindowClosed` sowie den
+  Restore-Worker-Handoff offen. Die ungenutzte Hinweisfläche wurde entfernt;
+  weitere dauerhaft vorgehaltene, nicht sichtbare Profil-Hilfswidgets besitzen
+  nun den Schülerprofil- beziehungsweise Berichtsbereich als expliziten
+  Qt-Owner; ausgetauschte Profil- und Berichtsvorschau-Karten werden
+  kontrolliert per `deleteLater()` zerstört, ohne als Hilfsfenster zu
+  verbleiben. Fachlogik, Datenmodell, Restore-Reihenfolge und
+  Neustartprotokoll bleiben unverändert.
 - Die normale Runtime lässt ausschließlich ein vollständig verifiziertes
   Final-V3 als `V3_SCHEMA_READY` zu. Unbekannte, beschädigte oder unsichere
   Schemata, WAL-/SHM-Sidecars, offene Restorezustände und fehlende

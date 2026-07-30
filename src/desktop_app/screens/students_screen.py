@@ -22,7 +22,6 @@ from src.desktop_app.components import (
     CourseBadge,
     EmptyState,
     FilterBar,
-    InlineMessage,
     PageHeader,
     SearchField,
     configure_button,
@@ -56,8 +55,6 @@ class StudentsScreen(QWidget):
         super().__init__()
         self.students: tuple[StudentListItem, ...] = ()
         self.filtered_students: tuple[StudentListItem, ...] = ()
-        self.filter_message = InlineMessage()
-        self.group_filter_label = self.filter_message.label
         self.empty_state = EmptyState()
         self.empty_state_label = self.empty_state.label
         self.search_input = SearchField(STUDENT_SEARCH_PLACEHOLDER)
@@ -153,7 +150,6 @@ class StudentsScreen(QWidget):
     ) -> None:
         """Replace student rows."""
         self.students = students
-        self.filter_message.set_message(group_filter_name or "Alle Schüler")
         self.filter_bar.set_context_filter(
             group_filter_name,
             show_back_button,
