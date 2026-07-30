@@ -29,6 +29,7 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportChartSelectionViewModel,
     LearningReportDraftViewModel,
     LearningReportSubjectDraftViewModel,
+    build_learning_report_revision_view_model,
 )
 
 
@@ -119,7 +120,7 @@ class LearningReportPdfTest(unittest.TestCase):
         page_texts = tuple(page.extract_text() or "" for page in reader.pages)
         text = "\n".join(page_texts)
 
-        self.assertIn(revision_id, text)
+        self.assertNotIn(revision_id, text)
         self.assertIn(self.student.display_name, text)
         self.assertIn("Manuell verfasster pädagogischer Gesamtblick.", text)
         self.assertIn(self.competency.description, text)
@@ -150,6 +151,73 @@ class LearningReportPdfTest(unittest.TestCase):
             "Nachträglich geänderter Drafttext".encode("utf-8"),
             first_bytes,
         )
+
+    def test_operational_observation_change_does_not_change_revision_pdf(self) -> None:
+        revision_id = self._finalize()
+        original_note = self.observation.note
+        changed_note = "Nachträglich geänderter operativer Beobachtungstext."
+        SQLiteObservationRepository(self.adapter.database).update_observation(
+            replace(self.observation, note=changed_note)
+        )
+
+        artifact = self.adapter.generate_learning_report_pdf(revision_id)
+        text = "\n".join(
+            page.extract_text() or ""
+            for page in PdfReader(artifact.file_path).pages
+        )
+
+        self.assertIn(original_note, text)
+        self.assertNotIn(changed_note, text)
+
+    def test_cross_subject_snapshot_evidence_is_rendered_only_once(self) -> None:
+        revision_id = self._finalize()
+        repository = SQLiteLearningReportRepository(self.adapter.database)
+        revision = repository.get_revision(revision_id)
+        payload = json.loads(revision.snapshot_json)
+        second_competency = next(
+            item
+            for item in SQLiteCompetencyRepository(
+                self.adapter.database
+            ).list_competencies()
+            if item.subject_id != self.competency.subject_id
+            and item.active
+            and item.catalog_status == "current"
+        )
+        payload["subjects"].append(
+            {
+                "subject_id": second_competency.subject_id,
+                "subject_name": second_competency.subject_name,
+            }
+        )
+        payload["manual_texts"]["subjects"].append(
+            {
+                "subject_id": second_competency.subject_id,
+                "strengths_text": "",
+                "development_text": "",
+                "support_needs_text": "",
+                "next_goals_text": "",
+            }
+        )
+        payload["observations"][0]["matched_subject_ids"].append(
+            second_competency.subject_id
+        )
+
+        view_model = build_learning_report_revision_view_model(revision, payload)
+        observation_ids = tuple(
+            observation.observation_id
+            for subject in view_model.subjects
+            for observation in subject.observations
+        )
+        evidence_rows = tuple(
+            row
+            for page in view_model.output_model.pages
+            for block in page.blocks
+            if getattr(block, "headers", ()) == ("Datum", "Kontext", "Inhalt")
+            for row in block.rows
+        )
+
+        self.assertEqual(observation_ids, (self.observation.observation_id,))
+        self.assertEqual(len(evidence_rows), 1)
 
     def test_pdf_sha256_is_stable_and_generation_is_idempotent(self) -> None:
         revision_id = self._finalize()

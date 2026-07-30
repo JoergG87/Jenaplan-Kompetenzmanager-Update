@@ -240,6 +240,14 @@ class LearningReportDraft:
 
 
 @dataclass(frozen=True)
+class LearningReportSelectedEvidenceViewModel:
+    """One selected observation assigned once to its first report subject."""
+
+    subject_id: str
+    evidence: LearningReportEvidenceViewModel
+
+
+@dataclass(frozen=True)
 class LearningReportRevisionHistoryItemViewModel:
     """Compact metadata for one read-only historical revision row."""
 
@@ -470,6 +478,7 @@ def build_learning_report_revision_view_model(
     observations = _mapping_items(payload.get("observations"))
     charts = _mapping_items(payload.get("charts"))
     subjects: list[LearningReportRevisionSubjectViewModel] = []
+    assigned_observation_ids: set[str] = set()
     for subject in _mapping_items(payload.get("subjects")):
         subject_id = str(subject.get("subject_id", ""))
         texts = subject_texts.get(subject_id, {})
@@ -495,6 +504,10 @@ def build_learning_report_revision_view_model(
             if subject_id in {
                 str(value) for value in item.get("matched_subject_ids", [])
             }
+            and str(item.get("observation_id", "")) not in assigned_observation_ids
+        )
+        assigned_observation_ids.update(
+            item.observation_id for item in subject_observations
         )
         subject_charts = tuple(
             _revision_chart_view_model(item)
@@ -673,7 +686,6 @@ def _build_revision_output_model(
                         ("Stammgruppe", metadata.group_name),
                         ("Zeitraum", metadata.period),
                         ("Revision", str(revision.revision_number)),
-                        ("Revisions-ID", revision.learning_report_revision_id),
                         ("Finalisiert von", metadata.teacher_name),
                         ("Finalisiert am", _timestamp_label(revision.finalized_at)),
                     )
@@ -717,7 +729,11 @@ def _build_revision_output_model(
             TableBlock(
                 headers=("Datum", "Kontext", "Inhalt"),
                 rows=tuple(
-                    (_date_label(item.observed_on), item.context, item.content)
+                    (
+                        _date_label(item.observed_on),
+                        item.context,
+                        item.content or "Keine Notiz",
+                    )
                     for item in subject.observations
                 ),
                 column_weights=(0.18, 0.24, 0.58),
@@ -942,7 +958,6 @@ def build_report_output_model(
         raise ValueError("Das Ende des Berichtszeitraums muss nach dem Beginn liegen.")
     subject_ids = set(draft.selected_subject_ids)
     competency_ids = set(draft.selected_competency_ids)
-    observation_ids = set(draft.selected_observation_ids)
     subject_texts = {item.subject_id: item for item in draft.subject_texts}
     chart_types_by_subject: dict[str, set[str]] = {}
     for selection in draft.chart_selections:
@@ -958,15 +973,7 @@ def build_report_output_model(
         for competency in subject.competencies
         if competency.competency_id in competency_ids
     )
-    selected_evidence = _unique_evidence(
-        evidence
-        for subject in subjects
-        for evidence in subject.evidence
-        if (
-            evidence.observation_id in observation_ids
-            and draft.period_start <= evidence.observed_on <= draft.period_end
-        )
-    )
+    selected_evidence = build_selected_report_evidence(preparation, draft)
 
     metadata = DocumentMetadata(
         document_title=draft.report_type,
@@ -992,9 +999,9 @@ def build_report_output_model(
                 if competency.subject_id == subject.subject_id
             ),
             selected_evidence=tuple(
-                evidence
-                for evidence in selected_evidence
-                if evidence in subject.evidence
+                selection.evidence
+                for selection in selected_evidence
+                if selection.subject_id == subject.subject_id
             ),
             selected_chart_types=chart_types_by_subject.get(subject.subject_id, set()),
             period_start=draft.period_start,
@@ -1087,7 +1094,7 @@ def _subject_output_page(
                 (
                     item.observed_on.strftime("%d.%m.%Y"),
                     item.context,
-                    item.note,
+                    item.note or "Keine Notiz",
                 )
                 for item in selected_evidence
             ),
@@ -1218,15 +1225,13 @@ def _unavailable_evidence_blocks(
         SpacerBlock(8),
         HeadingBlock("Nicht mehr verfügbare Beobachtungsbelege", level=2),
         ParagraphBlock(
-            "Die gespeicherten Referenzen bleiben erhalten; Inhalte werden nicht rekonstruiert."
-        ),
-        TableBlock(
-            headers=("Referenz", "Status"),
-            rows=tuple(
-                (observation_id, "Nicht mehr verfügbar")
-                for observation_id in unavailable_ids
-            ),
-            column_weights=(0.35, 0.65),
+            (
+                f"{len(unavailable_ids)} bewusst ausgewählte "
+                f"Beobachtungsbeleg{'e' if len(unavailable_ids) != 1 else ''} "
+                f"{'ist' if len(unavailable_ids) == 1 else 'sind'} nicht mehr "
+                "verfügbar. Die gespeicherten Bezüge bleiben "
+                "erhalten; Inhalte werden nicht rekonstruiert."
+            )
         ),
     )
 
@@ -1241,10 +1246,40 @@ def _parse_date(value: object) -> date | None:
         return None
 
 
-def _unique_evidence(
-    evidence: object,
-) -> tuple[LearningReportEvidenceViewModel, ...]:
-    unique: dict[str, LearningReportEvidenceViewModel] = {}
-    for item in evidence:
-        unique.setdefault(item.observation_id, item)
-    return tuple(sorted(unique.values(), key=lambda item: item.observed_on))
+def build_selected_report_evidence(
+    preparation: LearningReportPreparationViewModel,
+    draft: LearningReportDraft,
+) -> tuple[LearningReportSelectedEvidenceViewModel, ...]:
+    """Resolve every deliberate selection once in the same order as the preview."""
+    selected_subject_ids = set(draft.selected_subject_ids)
+    selected_observation_ids = set(draft.selected_observation_ids)
+    unavailable_observation_ids = set(draft.unavailable_observation_ids)
+    assigned_observation_ids: set[str] = set()
+    selections: list[LearningReportSelectedEvidenceViewModel] = []
+    for subject in preparation.subjects:
+        if subject.subject_id not in selected_subject_ids:
+            continue
+        for evidence in subject.evidence:
+            if (
+                evidence.observation_id not in selected_observation_ids
+                or evidence.observation_id in assigned_observation_ids
+            ):
+                continue
+            selections.append(
+                LearningReportSelectedEvidenceViewModel(
+                    subject.subject_id,
+                    evidence,
+                )
+            )
+            assigned_observation_ids.add(evidence.observation_id)
+    unresolved = (
+        selected_observation_ids
+        - unavailable_observation_ids
+        - assigned_observation_ids
+    )
+    if unresolved:
+        raise ValueError(
+            "Ausgewählte Beobachtungsbelege konnten nicht vollständig für die "
+            "Vorschau und PDF-Ausgabe aufgelöst werden."
+        )
+    return tuple(selections)

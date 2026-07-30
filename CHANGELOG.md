@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Bewusst ausgewählte Beobachtungsbelege werden in Berichtsvorschau und
+  Entwurfs-PDF jetzt aus derselben vollständigen ViewModel-Projektion
+  übernommen. Der PDF-Pfad verwirft keine gespeicherte Auswahl mehr wegen
+  eines abweichenden zusätzlichen Zeitraumfilters; fachübergreifende Belege
+  erscheinen genau einmal, die sichtbare Reihenfolge bleibt stabil und lange
+  Notizen werden vollständig ausgegeben. Nicht ausgewählte Belege bleiben
+  ausgeschlossen; nicht mehr auflösbare gespeicherte Bezüge
+  werden kontrolliert und ohne sichtbare technische ID benannt. Historische
+  Revisionen bleiben ausschließlich snapshotbasiert und deduplizieren
+  fachübergreifend eingefrorene Belege ohne Änderung von Datenmodell,
+  Snapshotformat oder allgemeiner PDF-Gestaltung.
 - Der Entwurfs-PDF-Export aus der Berichtswerkstatt verwendet den geöffneten
   Arbeitsdialog jetzt als Owner für Dateiauswahl und Fehlermeldung und
   vermeidet den nativen verschachtelten macOS-Sheet-Eventloop. Erfolg, Abbruch

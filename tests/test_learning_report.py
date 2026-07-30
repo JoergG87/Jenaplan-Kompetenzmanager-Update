@@ -12,6 +12,7 @@ from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from pypdf import PdfReader
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
@@ -45,6 +46,7 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportPreparationViewModel,
     LearningReportSubjectDraftViewModel,
     LearningReportSubjectViewModel,
+    build_selected_report_evidence,
     build_report_output_model,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
@@ -351,6 +353,173 @@ class LearningReportTest(unittest.TestCase):
         self.assertEqual(subject_table.rows[0][2], "Volle Stunden ablesen")
         self.assertNotIn("Historische Sammelkompetenz Zeit", str(subject_table.rows))
 
+    def test_preview_and_pdf_keep_all_selected_evidence_once_in_identical_order(
+        self,
+    ) -> None:
+        long_note = (
+            "LANGER-BELEG vollständig erhalten. "
+            + "Die Beobachtung beschreibt eine längere konkrete Lernhandlung. " * 6
+        )
+        german_competency = self.preparation.subjects[0].competencies[0]
+        math_competency = self.preparation.subjects[1].competencies[0]
+        shared = LearningReportEvidenceViewModel(
+            "OBS-SHARED",
+            date(2026, 7, 13),
+            "Fächerübergreifend",
+            "Projekt",
+            "GETEILTER-BELEG",
+            (german_competency.competency_id, math_competency.competency_id),
+        )
+        german_evidence = (
+            LearningReportEvidenceViewModel(
+                "OBS-DE-2",
+                date(2026, 7, 14),
+                "Deutsch",
+                "Lesekreis",
+                "DEUTSCH-ZWEI",
+                (german_competency.competency_id,),
+            ),
+            shared,
+            LearningReportEvidenceViewModel(
+                "OBS-DE-1",
+                date(2026, 7, 12),
+                "Deutsch",
+                "Sachtext",
+                long_note,
+                (german_competency.competency_id,),
+            ),
+        )
+        math_evidence = (
+            shared,
+            LearningReportEvidenceViewModel(
+                "OBS-MA-2",
+                date(2026, 7, 11),
+                "Mathematik",
+                "Lernzeit",
+                "",
+                (math_competency.competency_id,),
+            ),
+            LearningReportEvidenceViewModel(
+                "OBS-MA-1",
+                date(2026, 6, 22),
+                "Mathematik",
+                "Präsentation",
+                "MATHE-EINS",
+                (math_competency.competency_id,),
+            ),
+            LearningReportEvidenceViewModel(
+                "OBS-NOT-SELECTED",
+                date(2026, 6, 20),
+                "Mathematik",
+                "Nicht gewählt",
+                "NICHT-AUSGEWÄHLT",
+                (math_competency.competency_id,),
+            ),
+        )
+        preparation = LearningReportPreparationViewModel(
+            self.preparation.student_id,
+            self.preparation.student_name,
+            self.preparation.group_name,
+            (
+                LearningReportSubjectViewModel(
+                    "german",
+                    "Deutsch",
+                    (german_competency,),
+                    german_evidence,
+                ),
+                LearningReportSubjectViewModel(
+                    "math",
+                    "Mathematik",
+                    (math_competency,),
+                    math_evidence,
+                ),
+            ),
+        )
+        selected_ids = (
+            "OBS-DE-1",
+            "OBS-DE-2",
+            "OBS-SHARED",
+            "OBS-MA-1",
+            "OBS-MA-2",
+        )
+        draft = LearningReportDraft(
+            date(2025, 8, 1),
+            date(2026, 1, 31),
+            "Laura Lernbegleiterin",
+            "Manueller Gesamtblick.",
+            "",
+            "",
+            ("german", "math"),
+            (),
+            selected_ids,
+        )
+
+        projection = build_selected_report_evidence(preparation, draft)
+        output = build_report_output_model(preparation, draft)
+        evidence_rows = tuple(
+            row
+            for page in output.pages
+            for block in page.blocks
+            if isinstance(block, TableBlock)
+            and block.headers == ("Datum", "Kontext", "Notiz")
+            for row in block.rows
+        )
+        initial = LearningReportDraftViewModel(
+            student_id=preparation.student_id,
+            period_start=draft.period_start,
+            period_end=draft.period_end,
+            subjects=(
+                LearningReportSubjectDraftViewModel("german"),
+                LearningReportSubjectDraftViewModel("math"),
+            ),
+            observation_ids=selected_ids,
+            report_draft_id="RPD-EVIDENCE-TEST",
+        )
+        dialog = LearningReportDialog(preparation, initial_draft=initial)
+        dialog.update_preview()
+        preview_text = "\n".join(
+            label.text() for label in dialog.findChildren(QLabel)
+        )
+
+        self.assertEqual(
+            tuple(item.evidence.observation_id for item in projection),
+            ("OBS-DE-2", "OBS-SHARED", "OBS-DE-1", "OBS-MA-2", "OBS-MA-1"),
+        )
+        self.assertEqual(
+            tuple(row[2] for row in evidence_rows),
+            (
+                "DEUTSCH-ZWEI",
+                "GETEILTER-BELEG",
+                long_note,
+                "Keine Notiz",
+                "MATHE-EINS",
+            ),
+        )
+        expected_preview_order = (
+            preview_text.index("DEUTSCH-ZWEI"),
+            preview_text.index("GETEILTER-BELEG"),
+            preview_text.index("LANGER-BELEG"),
+            preview_text.index("Keine Notiz"),
+            preview_text.index("MATHE-EINS"),
+        )
+        self.assertEqual(expected_preview_order, tuple(sorted(expected_preview_order)))
+
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "five-selected-evidence.pdf"
+            PdfRenderer().render(output, target)
+            pdf_text = "\n".join(
+                page.extract_text() or "" for page in PdfReader(target).pages
+            )
+
+        for marker in (
+            "DEUTSCH-ZWEI",
+            "GETEILTER-BELEG",
+            "LANGER-BELEG",
+            "MATHE-EINS",
+        ):
+            self.assertEqual(pdf_text.count(marker), 1)
+        self.assertNotIn("NICHT-AUSGEWÄHLT", pdf_text)
+
     def test_retained_historical_competency_is_visible_selected_and_removable(self) -> None:
         initial = LearningReportDraftViewModel(
             student_id="STU-000001",
@@ -421,10 +590,6 @@ class LearningReportTest(unittest.TestCase):
         subject_table = next(
             block for block in output.pages[2].blocks if isinstance(block, TableBlock)
         )
-        unavailable_table = next(
-            block for block in output.pages[-1].blocks
-            if isinstance(block, TableBlock)
-        )
         initial = LearningReportDraftViewModel(
             student_id="STU-000001",
             period_start=draft.period_start,
@@ -440,13 +605,39 @@ class LearningReportTest(unittest.TestCase):
         preview_text = " ".join(
             label.text() for label in dialog.findChildren(QLabel)
         )
+        output_text = " ".join(
+            block.text
+            for block in output.pages[-1].blocks
+            if hasattr(block, "text")
+        )
 
         self.assertIn("historisch ausgewählt", str(subject_table.rows))
-        self.assertEqual(
-            unavailable_table.rows,
-            (("OBS-MISSING", "Nicht mehr verfügbar"),),
+        self.assertIn("1 bewusst ausgewählte Beobachtungsbeleg", output_text)
+        self.assertNotIn("OBS-MISSING", output_text)
+        self.assertIn(
+            "Gespeicherter Beobachtungsbeleg 1 · nicht mehr verfügbar",
+            preview_text,
         )
-        self.assertIn("OBS-MISSING · nicht mehr verfügbar", preview_text)
+        self.assertNotIn("OBS-MISSING", preview_text)
+
+    def test_unresolved_selected_evidence_fails_controlled_without_export(self) -> None:
+        draft = LearningReportDraft(
+            date(2026, 1, 1),
+            date(2026, 12, 31),
+            "Laura Lernbegleiterin",
+            "Manueller Gesamtblick.",
+            "",
+            "",
+            ("math",),
+            (),
+            ("OBS-UNRESOLVED",),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "nicht vollständig.*aufgelöst",
+        ):
+            build_report_output_model(self.preparation, draft)
 
     def test_saved_draft_loads_and_emits_complete_manual_state(self) -> None:
         initial = LearningReportDraftViewModel(

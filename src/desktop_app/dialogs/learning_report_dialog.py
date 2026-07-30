@@ -62,6 +62,7 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportPdfArtifactViewModel,
     LearningReportSubjectDraftViewModel,
     LearningReportSubjectViewModel,
+    build_selected_report_evidence,
     build_report_output_model,
 )
 
@@ -1696,9 +1697,12 @@ class LearningReportDialog(MotionDialog):
             item.setWordWrap(True)
             layout.addWidget(item)
         evidence = tuple(
-            item
-            for item in self._visible_evidence_for_subject(subject)
-            if item.observation_id in self.selected_observation_ids
+            selection.evidence
+            for selection in build_selected_report_evidence(
+                self.preparation,
+                self.report_draft(),
+            )
+            if selection.subject_id == subject.subject_id
         )
         title = QLabel("Bewusst ausgewählte Beobachtungsbelege")
         set_label_style(title, "section_title")
@@ -1810,9 +1814,11 @@ class LearningReportDialog(MotionDialog):
                     "Die gespeicherten Referenzen bleiben erhalten; Inhalte werden nicht rekonstruiert."
                 )
             )
-            for observation_id in selected_unavailable:
+            for index, _observation_id in enumerate(selected_unavailable, 1):
                 layout.addWidget(
-                    self._small_label(f"{observation_id} · nicht mehr verfügbar")
+                    self._small_label(
+                        f"Gespeicherter Beobachtungsbeleg {index} · nicht mehr verfügbar"
+                    )
                 )
             layout.addSpacing(12)
         layout.addWidget(
@@ -1834,12 +1840,15 @@ class LearningReportDialog(MotionDialog):
         layout.addWidget(title)
         layout.addWidget(
             self._small_label(
-                "Nur die gespeicherte ID bleibt sichtbar. Es werden keine Inhalte rekonstruiert."
+                "Die gespeicherten Bezüge bleiben erhalten. Es werden keine Inhalte rekonstruiert."
             )
         )
-        for observation_id in sorted(self._unavailable_observation_ids):
+        for index, observation_id in enumerate(
+            sorted(self._unavailable_observation_ids),
+            1,
+        ):
             check = QCheckBox(
-                f"{observation_id} · gespeicherten Bezug beibehalten"
+                f"Nicht verfügbaren Beobachtungsbeleg {index} beibehalten"
             )
             check.setObjectName(
                 f"LearningReportUnavailableEvidence_{observation_id}"
