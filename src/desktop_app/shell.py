@@ -1513,7 +1513,12 @@ class AppShell(QMainWindow):
         dialog.finalization_requested.connect(request_finalization)
         dialog.finalize_confirmed.connect(finalize_report)
         dialog.revision_open_requested.connect(open_revision)
-        dialog.pdf_requested.connect(self.export_learning_report_pdf)
+        dialog.pdf_requested.connect(
+            lambda output_model: self.export_learning_report_pdf(
+                output_model,
+                parent=dialog,
+            )
+        )
         exec_maximized_workspace(dialog, self)
         self.show_student_profile(student_id)
 
@@ -1811,16 +1816,23 @@ class AppShell(QMainWindow):
         revision_dialog.pdf_requested.connect(generate_final_pdf)
         revision_dialog.exec()
 
-    def export_learning_report_pdf(self, output_model: object) -> None:
+    def export_learning_report_pdf(
+        self,
+        output_model: object,
+        *,
+        parent: QWidget | None = None,
+    ) -> None:
         """Hand a complete neutral output model to the unchanged PDF renderer."""
+        dialog_parent = parent or self
         metadata = getattr(output_model, "metadata", None)
         student_name = str(getattr(metadata, "student_name", "Lernentwicklungsbericht"))
         safe_name = "_".join(student_name.split()) or "Lernentwicklungsbericht"
         target_path, _selected_filter = QFileDialog.getSaveFileName(
-            self,
+            dialog_parent,
             "Lernentwicklungsbericht als PDF speichern",
             str(self.exports_directory / f"Lernentwicklungsbericht_{safe_name}.pdf"),
             "PDF-Datei (*.pdf)",
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
         if not target_path:
             return
@@ -1830,7 +1842,7 @@ class AppShell(QMainWindow):
             rendered_path = PdfRenderer().render(output_model, Path(target_path))
         except Exception as error:  # pragma: no cover - platform/reportlab feedback
             QMessageBox.warning(
-                self,
+                dialog_parent,
                 "PDF konnte nicht erstellt werden",
                 str(error),
             )

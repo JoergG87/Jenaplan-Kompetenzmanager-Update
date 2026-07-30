@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Der Entwurfs-PDF-Export aus der Berichtswerkstatt verwendet den geöffneten
+  Arbeitsdialog jetzt als Owner für Dateiauswahl und Fehlermeldung und
+  vermeidet den nativen verschachtelten macOS-Sheet-Eventloop. Erfolg, Abbruch
+  und Exportfehler beenden dadurch nicht mehr den modalen Werkstatt-Lifecycle;
+  ungespeicherte Gesamt- und Fachtexte, Belegauswahl, Dirty-State, aktiver
+  Arbeitsbereich und Scrollposition bleiben erhalten. Der Export speichert
+  keinen Draft, erzeugt keine Revision und verändert weder PDF-Inhalt noch
+  Berichtsdatenmodell oder Snapshotformat.
 - Berichtrevisionen bleiben nach dem Öffnen aus Schülerprofil oder
   Berichtswerkstatt stabil in ihrer schreibgeschützten historischen Ansicht.
   Der Revisionsdialog wird ohne verschachtelten modalen Eventloop über seine
