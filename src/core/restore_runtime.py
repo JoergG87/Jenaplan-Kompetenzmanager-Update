@@ -611,17 +611,46 @@ class ProductiveRestoreService:
         paths, handoff = self.handoff_service.consume(handoff_path, expected_nonce=nonce)
         if lock.runtime_root != paths.runtime_root or lock._file is None:
             raise RestoreLockError("Der Worker haelt nicht den passenden Runtime-Lock.")
+        journal = RestoreJournal(paths)
+        journal.transition(
+            "worker_started",
+            next_step="await_main_app_exit",
+        )
+        try:
+            if worker_started is not None:
+                worker_started(paths)
+        except Exception as error:
+            journal.transition(
+                "aborted_before_replacement",
+                next_step="none",
+                error_class=type(error).__name__,
+            )
+            if isinstance(error, RestorePreflightError):
+                raise
+            raise RestorePreflightError(
+                "Der Restore wurde vor dem Ende der Haupt-App abgebrochen."
+            ) from error
+
         observation_uow = ObservationPersistenceUnitOfWork(
             SQLiteDatabase(paths.live_database)
         )
         with ObservationWriterLock(observation_uow.staging_root):
-            observation_uow.recover_pending_while_writer_locked()
+            try:
+                observation_uow.recover_pending_while_writer_locked()
+            except Exception as error:
+                journal.transition(
+                    "aborted_before_replacement",
+                    next_step="none",
+                    error_class=type(error).__name__,
+                )
+                raise RestorePreflightError(
+                    "Der Restore wurde vor dem Live-Austausch abgebrochen."
+                ) from error
             return self._execute_locked(
                 paths=paths,
                 handoff=handoff,
                 lock=lock,
                 restart=restart,
-                worker_started=worker_started,
                 handshake_timeout_seconds=handshake_timeout_seconds,
             )
 
@@ -632,19 +661,12 @@ class ProductiveRestoreService:
         handoff: Mapping[str, object],
         lock: RuntimeInstanceLock,
         restart: Callable[[RestoreTransactionPaths, str, RuntimeInstanceLock], bool] | None,
-        worker_started: Callable[[RestoreTransactionPaths], None] | None,
         handshake_timeout_seconds: float,
     ) -> RestoreExecutionResult:
         journal = RestoreJournal(paths)
         restart_process: subprocess.Popen[bytes] | None = None
         safety_hash: str | None = None
-        journal.transition(
-            "worker_started",
-            next_step="await_main_app_exit",
-        )
         try:
-            if worker_started is not None:
-                worker_started(paths)
             journal.transition("maintenance", next_step="verify_preflight")
             safety_hash = self._preflight(paths, handoff, journal)
             journal.transition("preflight_verified", next_step="move_live_database")

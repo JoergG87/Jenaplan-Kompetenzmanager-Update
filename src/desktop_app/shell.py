@@ -179,6 +179,7 @@ class AppShell(QMainWindow):
         self._restore_worker_process: RestoreWorkerProcess | None = None
         self._restore_worker_start_attempted = False
         self._restore_confirmed = False
+        self._restore_shutdown_in_progress = False
         self._backup_status_loaded = False
         self.onboarding_controller: OnboardingController | None = None
         self.selected_group_id: str | None = None
@@ -913,7 +914,7 @@ class AppShell(QMainWindow):
         message, confirm = create_confirmation_message(
             self,
             "Wiederherstellung starten",
-            "Der aktuelle lokale Datenbestand wird ersetzt. Vorher wird automatisch ein Sicherheitsbackup erstellt. Die App wird anschließend neu gestartet.\n\nWiederherstellung jetzt starten?",
+            "Der aktuelle lokale Datenbestand wird ersetzt. Vorher wird automatisch ein Sicherheitsbackup erstellt. Nicht gespeicherte Änderungen in geöffneten Arbeitsfenstern werden verworfen. Die App wird anschließend neu gestartet.\n\nWiederherstellung jetzt starten?",
             confirm_text="Wiederherstellen",
         )
         message.exec()
@@ -1051,11 +1052,37 @@ class AppShell(QMainWindow):
         except Exception:
             self._show_restore_workflow_error()
             return
+        self._close_restore_workspaces()
+        self._restore_shutdown_in_progress = True
         self.restore_handoff_started.emit()
         application = QApplication.instance()
         if application is None:
             self.close()
         else:
+            for widget in application.topLevelWidgets():
+                widget.hide()
+            QTimer.singleShot(0, self._finish_restore_shutdown)
+
+    def _close_restore_workspaces(self) -> None:
+        """Unwind every dialog loop after the explicit restore confirmation."""
+        application = QApplication.instance()
+        if application is None:
+            return
+        for widget in tuple(application.topLevelWidgets()):
+            if widget is self:
+                continue
+            if isinstance(widget, QDialog):
+                widget.done(QDialog.DialogCode.Rejected)
+            else:
+                widget.hide()
+
+    def _finish_restore_shutdown(self) -> None:
+        """Close the shell normally after nested dialog stacks have unwound."""
+        if not self._restore_shutdown_in_progress:
+            return
+        application = QApplication.instance()
+        self.close()
+        if application is not None:
             application.quit()
 
     def _show_restore_workflow_error(self) -> None:

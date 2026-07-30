@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Der bestätigte Restore-Handoff beendet die alte PySide-App jetzt über einen
+  idempotenten, dialogfreien Shutdown statt über eine einzelne
+  `QApplication.quit()`-Anforderung. Nach der ausdrücklichen
+  Restore-Bestätigung werden noch offene Workspace-Eventloops kontrolliert
+  beendet, alle Top-Level-Fenster verborgen, der normale Shell-`closeEvent`
+  ausgeführt und erst danach der App-Eventloop verlassen. Dadurch hält weder
+  eine versteckte Berichtswerkstatt noch ein nachgelagerter UI-Refresh den
+  Parent-Lebensdauerkanal offen; der Restore-Worker kann ohne manuelles
+  Fensterschließen fortfahren. Der Worker bestätigt `worker_started` und
+  wartet nun außerdem vor Observation-Writer-Lock, Recovery, Preflight oder
+  Live-Zugriff auf das vollständige Ende des alten Prozesses. Backupformat,
+  Restore-Inhalte, Final-V3-Datenmodell, SQLite-/SQLCipher-, Security-,
+  Keychain- und Support-Reset-Verträge bleiben unverändert.
 - Bewusst ausgewählte Beobachtungsbelege werden in Berichtsvorschau und
   Entwurfs-PDF jetzt aus derselben vollständigen ViewModel-Projektion
   übernommen. Der PDF-Pfad verwirft keine gespeicherte Auswahl mehr wegen

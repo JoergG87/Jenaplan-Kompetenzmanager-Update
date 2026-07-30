@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 import subprocess
 import sys
+from types import SimpleNamespace
+from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QThread, QTimer
-from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QWidget
 from shiboken6 import isValid
 
 from src.core.sqlite_store import SQLiteDatabase
@@ -119,6 +122,88 @@ def test_normal_close_ends_the_application_process(tmp_path: Path) -> None:
     assert completed.returncode == 0, (
         f"process did not exit after the shell closed: {completed.stderr}"
     )
+
+
+def _restore_shutdown_probe_main(root: str, lifetime_fd: int) -> None:
+    """Exercise restore shutdown from inside a nested workspace event loop."""
+    app = QApplication(sys.argv)
+    shell = _shell(Path(root))
+    shell.show()
+    workspace = QDialog(shell)
+    events: list[str] = []
+    workspace.finished.connect(lambda _result: events.append("workspace_finished"))
+    app.lastWindowClosed.connect(lambda: events.append("last_window_closed"))
+    app.aboutToQuit.connect(lambda: events.append("about_to_quit"))
+    preview = SimpleNamespace(restore_id="RST-NESTED-SHUTDOWN")
+    handoff = SimpleNamespace(path=Path("handoff.json"), nonce="nonce")
+    started = SimpleNamespace(process=object(), parent_lifetime_fd=lifetime_fd)
+
+    def enter_workspace() -> None:
+        QTimer.singleShot(0, lambda: shell._launch_verified_restore(preview))
+        workspace.exec()
+        events.append("workspace_unwound")
+        shell.show()
+
+    with mock.patch.object(
+        shell.backup_restore_adapter,
+        "create_restore_handoff",
+        return_value=handoff,
+    ), mock.patch.object(
+        shell.backup_restore_adapter,
+        "launch_prepared_restore",
+        return_value=started,
+    ):
+        QTimer.singleShot(0, enter_workspace)
+        QTimer.singleShot(2_000, lambda: app.exit(91))
+        exit_code = app.exec()
+
+    events.append("app_exec_returned")
+    visible = [widget for widget in app.topLevelWidgets() if widget.isVisible()]
+    running_threads = [
+        thread for thread in shell.findChildren(QThread) if thread.isRunning()
+    ]
+    print(json.dumps(events), flush=True)
+    if visible or running_threads:
+        raise SystemExit(92)
+    raise SystemExit(exit_code)
+
+
+def test_restore_shutdown_unwinds_nested_workspace_and_closes_parent_lifetime_fd(
+    tmp_path: Path,
+) -> None:
+    probe_root = tmp_path / "restore-process-runtime"
+    read_fd, write_fd = os.pipe()
+    command = (
+        "from tests.test_app_close_lifecycle import _restore_shutdown_probe_main; "
+        "_restore_shutdown_probe_main(__import__('sys').argv[1], "
+        "int(__import__('sys').argv[2]))"
+    )
+    environment = os.environ.copy()
+    environment["QT_QPA_PLATFORM"] = "offscreen"
+    environment["PYTHONPATH"] = str(Path(__file__).resolve().parents[1])
+    process = subprocess.Popen(
+        [sys.executable, "-c", command, str(probe_root), str(write_fd)],
+        cwd=Path(__file__).resolve().parents[1],
+        env=environment,
+        pass_fds=(write_fd,),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    os.close(write_fd)
+    try:
+        stdout, stderr = process.communicate(timeout=10)
+        assert process.returncode == 0, (
+            f"restore shutdown did not finish cleanly: {stderr}"
+        )
+        assert os.read(read_fd, 1) == b""
+    finally:
+        os.close(read_fd)
+
+    events = json.loads(stdout.strip().splitlines()[-1])
+    assert events.index("workspace_finished") < events.index("workspace_unwound")
+    assert events.index("workspace_unwound") < events.index("about_to_quit")
+    assert events.index("about_to_quit") < events.index("app_exec_returned")
 
 
 def test_report_preview_cleanup_keeps_cards_owned_until_deferred_delete() -> None:

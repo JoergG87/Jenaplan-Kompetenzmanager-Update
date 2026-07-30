@@ -385,6 +385,9 @@ class SecurityUiCoordinator(QObject):
     @Slot()
     def _restore_handoff_started(self) -> None:
         """Let confirmed restore shutdown finish even behind the lock."""
+        self.poll_timer.stop()
+        self.wake_monitor.timer.stop()
+        self._hidden_windows = []
         if self._lock_dialog is not None:
             self._lock_dialog.allow_cancel = True
             self._lock_dialog.reject()

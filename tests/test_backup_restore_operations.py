@@ -12,7 +12,7 @@ from unittest import mock
 
 from PySide6.QtCore import QEvent, QEventLoop, QTimer
 from PySide6.QtGui import QCloseEvent
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QDialog
 
 from src.application.commands.backup import CreateBackupCommand, VerifyBackupQuery
 from src.application.commands.restore import (
@@ -440,6 +440,8 @@ class TestBackupRestoreShellLifecycle:
             started = SimpleNamespace(process=object(), parent_lifetime_fd=9)
             application = QApplication.instance()
             assert application is not None
+            workspace = QDialog(window)
+            workspace.show()
             with mock.patch.object(
                 window.backup_restore_adapter,
                 "create_restore_handoff",
@@ -456,12 +458,16 @@ class TestBackupRestoreShellLifecycle:
                     BackupRestoreOperationType.VERIFY_PREPARED_RESTORE,
                     SimpleNamespace(restore_id="RST-123"),
                 )
+                assert workspace.result() == QDialog.DialogCode.Rejected
+                assert not workspace.isVisible()
+                assert not window.isVisible()
+                application.processEvents()
 
             create_handoff.assert_called_once_with(preview)
             launch.assert_called_once_with(handoff)
             assert window._restore_worker_process is started
             quit_application.assert_called_once_with()
-            close.assert_not_called()
+            close.assert_called_once_with()
 
     def test_restore_worker_start_error_keeps_app_open_and_clears_preview(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -484,6 +490,8 @@ class TestBackupRestoreShellLifecycle:
             handoff = SimpleNamespace(path=Path("handoff.json"), nonce="nonce")
             application = QApplication.instance()
             assert application is not None
+            workspace = QDialog(window)
+            workspace.show()
             with mock.patch.object(
                 window.backup_restore_adapter,
                 "create_restore_handoff",
@@ -503,6 +511,8 @@ class TestBackupRestoreShellLifecycle:
             launch.assert_called_once_with(handoff)
             close.assert_not_called()
             quit_application.assert_not_called()
+            assert workspace.isVisible()
             assert window.settings_screen.restore_preview is None
             assert "/private" not in window.settings_screen.restore_message.label.text()
+            workspace.done(QDialog.DialogCode.Rejected)
             window.close()

@@ -342,13 +342,18 @@ def test_worker_started_is_persisted_before_parent_exit_or_live_mutation(
         raise OSError("synthetic parent-lifetime failure")
 
     with RuntimeInstanceLock(live.root) as lock:
-        with pytest.raises(RestorePreflightError):
-            ProductiveRestoreService().execute(
-                handoff_path=handoff.path,
-                nonce=handoff.nonce,
-                lock=lock,
-                worker_started=reject_parent_exit,
-            )
+        with mock.patch.object(
+            ObservationPersistenceUnitOfWork,
+            "recover_pending_while_writer_locked",
+        ) as recover_observations:
+            with pytest.raises(RestorePreflightError):
+                ProductiveRestoreService().execute(
+                    handoff_path=handoff.path,
+                    nonce=handoff.nonce,
+                    lock=lock,
+                    worker_started=reject_parent_exit,
+                )
+            recover_observations.assert_not_called()
 
     assert observed == ["worker_started"]
     assert _live_bytes(live) == before
@@ -368,13 +373,14 @@ def test_productive_restore_recovers_files_published_observation_before_activati
 
     def assert_recovered_before_activation(
         _service: ProductiveRestoreService,
-        *,
         paths,
-        **_kwargs,
-    ) -> None:
+        _handoff,
+        journal,
+    ) -> str:
         depths = getattr(ObservationWriterLock._thread_state, "depths", {})
         lock_key = str((live.root / ".observation-staging" / ".writer.lock").absolute())
         assert depths.get(lock_key) == 1
+        assert journal.read()["phase"] == "maintenance"
         assert ObservationOperationJournal(journal_path.parent).read()["phase"] == "COMPLETE"
         with sqlite3.connect(live.database) as connection:
             assert connection.execute(
@@ -396,19 +402,21 @@ def test_productive_restore_recovers_files_published_observation_before_activati
             encoding="utf-8"
         ) == "restore activation boundary"
         observed.append(paths.restore_id if hasattr(paths, "restore_id") else paths.transaction.name)
+        raise RestorePreflightError("synthetic activation boundary")
 
     with RuntimeInstanceLock(live.root) as lock:
         with mock.patch.object(
             ProductiveRestoreService,
-            "_execute_locked",
+            "_preflight",
             autospec=True,
             side_effect=assert_recovered_before_activation,
         ):
-            ProductiveRestoreService().execute(
-                handoff_path=handoff.path,
-                nonce=handoff.nonce,
-                lock=lock,
-            )
+            with pytest.raises(RestorePreflightError):
+                ProductiveRestoreService().execute(
+                    handoff_path=handoff.path,
+                    nonce=handoff.nonce,
+                    lock=lock,
+                )
 
     assert observed == [handoff.restore_id]
     ObservationPersistenceUnitOfWork(SQLiteDatabase(live.database)).recover_pending()
@@ -444,14 +452,15 @@ def test_productive_restore_blocks_before_activation_when_pending_recovery_is_in
         staged.unlink()
 
     with RuntimeInstanceLock(live.root) as lock:
-        with mock.patch.object(ProductiveRestoreService, "_execute_locked", autospec=True) as execute:
-            with pytest.raises(ObservationUnitOfWorkError):
+        with mock.patch.object(ProductiveRestoreService, "_preflight", autospec=True) as preflight:
+            with pytest.raises(RestorePreflightError) as raised:
                 ProductiveRestoreService().execute(
                     handoff_path=handoff.path,
                     nonce=handoff.nonce,
                     lock=lock,
                 )
-            execute.assert_not_called()
+            preflight.assert_not_called()
+            assert isinstance(raised.value.__cause__, ObservationUnitOfWorkError)
 
     assert live.database.read_bytes() == database_before
     assert old_document.read_bytes() == old_document_before
@@ -836,6 +845,66 @@ def test_successful_final_v3_restore_completes_only_after_startup_handshake(
     state = RestoreJournal(restore_transaction_paths(live.root, handoff.restore_id)).read()
     assert state["phase"] == "completed"
     assert state["restart_handshake"]["status"] == "confirmed"
+
+
+def test_two_complete_restores_run_consecutively_on_one_runtime(
+    tmp_path: Path,
+) -> None:
+    source_one = _runtime(tmp_path / "source-one")
+    _insert_data(source_one, "FIRST", managed=True)
+    archive_one = _backup(source_one)
+    live = _runtime(tmp_path / "live")
+    _insert_data(live, "OLD", managed=True)
+    service = RestoreApplicationService()
+
+    def complete_restore(archive: Path, restore_id: str) -> None:
+        service.prepare_staging(
+            PrepareRestoreStagingCommand(archive, live, restore_id)
+        )
+        handoff = service.create_handoff(
+            CreateRestoreHandoffCommand(
+                archive,
+                restore_id,
+                live,
+                "0.1.2",
+                "a39345a",
+                "clean",
+            )
+        )
+        with RuntimeInstanceLock(live.root) as lock:
+            result = ProductiveRestoreService().execute(
+                handoff_path=handoff.path,
+                nonce=handoff.nonce,
+                lock=lock,
+                restart=lambda paths, token, _lock: bool(
+                    confirm_restore_startup(
+                        paths.runtime_root,
+                        paths.transaction.name,
+                        token,
+                    )
+                ),
+            )
+        assert result.status == "completed"
+        state = RestoreJournal(
+            restore_transaction_paths(live.root, restore_id)
+        ).read()
+        assert state["phase"] == "completed"
+        assert state["restart_handshake"]["status"] == "confirmed"
+        with sqlite3.connect(live.database) as connection:
+            assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
+            assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+
+    complete_restore(archive_one, "RST-CONSECUTIVE-ONE")
+    assert _student_ids(live.database) == ("STU-FIRST",)
+
+    source_two = _runtime(tmp_path / "source-two")
+    _insert_data(source_two, "SECOND", managed=True)
+    archive_two = _backup(source_two)
+    complete_restore(archive_two, "RST-CONSECUTIVE-TWO")
+
+    assert _student_ids(live.database) == ("STU-SECOND",)
+    assert not tuple(live.root.glob("kompetenzmanager.sqlite-wal"))
+    assert not tuple(live.root.glob("kompetenzmanager.sqlite-shm"))
 
 
 def test_restore_runtime_diagnostics_name_only_final_v3_product_schema() -> None:
