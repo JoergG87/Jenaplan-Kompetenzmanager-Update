@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Die Schuljahreswechsel-Vorschau öffnet auf macOS ohne verschachtelten
+  `QDialog.exec()`-Eventloop und wird nach jedem Schließen kontrolliert
+  freigegeben. Individuelle Entscheidungen verwenden stabile, tastatur- und
+  screenreaderzugängliche Auswahlfelder außerhalb der Accessibility-exponierten
+  Tabelle; der Plan bleibt flüchtig und die Datenbank bis zur bewussten
+  Aktivierung unverändert.
 - Berichtswerkstatt und LEG-Workspace heben jetzt genau den aktiven lokalen
   Bereich beziehungsweise die aktive Phase mit der zentralen hellblauen
   Auswahlflaeche, kraeftiger Typografie, Rahmen und Auswahlmarker hervor.

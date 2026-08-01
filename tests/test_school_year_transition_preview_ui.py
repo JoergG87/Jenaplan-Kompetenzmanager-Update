@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
 )
+from shiboken6 import isValid
 
 from src.application.school_year_transition_plan import (
     SchoolYearTransitionCourseDecision,
@@ -174,10 +175,12 @@ def _combo(
     student_id: str,
     column: int,
 ) -> QComboBox:
-    widget = dialog.table.cellWidget(_row(dialog, student_id), column + 1)
-    if not isinstance(widget, QComboBox):
-        raise AssertionError("Expected decision combo")
-    return widget
+    _set_combo_data(dialog.individual_student_combo, student_id)
+    if column == 4:
+        return dialog.individual_course_combo
+    if column == 5:
+        return dialog.individual_group_combo
+    raise AssertionError("Expected course or group decision combo")
 
 
 def _choose(
@@ -193,6 +196,9 @@ def _choose(
     )
     combo.setCurrentIndex(index)
     combo.activated.emit(index)
+    app = QApplication.instance()
+    if app is not None:
+        app.processEvents()
 
 
 def _select(
@@ -281,6 +287,32 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
             "1",
         )
 
+    def test_course_three_editor_remains_stable_during_refresh(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+        old_combo = _combo(dialog, "S-3", 4)
+
+        selection = (REPEAT_YEAR_LEVEL_THREE, "C-3")
+        index = next(
+            index
+            for index in range(old_combo.count())
+            if old_combo.itemData(index) == selection
+        )
+        old_combo.setCurrentIndex(index)
+        old_combo.activated.emit(index)
+
+        self.app.processEvents()
+
+        new_combo = _combo(dialog, "S-3", 4)
+        self.assertIs(new_combo, old_combo)
+        self.assertTrue(new_combo.accessibleName())
+        self.assertTrue(new_combo.accessibleDescription())
+        self.assertTrue(isValid(old_combo))
+        self.assertFalse(dialog._retired_tables)
+        self.assertEqual(
+            dialog.summary_labels["Kurs 3 wiederholen"].text(),
+            "1",
+        )
+
     def test_group_can_be_kept_or_changed_individually(self) -> None:
         dialog = SchoolYearTransitionPreviewDialog(_plan())
 
@@ -353,6 +385,9 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
         self.assertEqual(dialog.table.item(row, 6).text(), "—")
         self.assertEqual(dialog.table.item(row, 7).text(), "—")
         self.assertIsNone(dialog.table.cellWidget(row, 6))
+        self.assertFalse(
+            bool(dialog.table.item(row, 6).flags() & Qt.ItemFlag.ItemIsEditable)
+        )
         self.assertEqual(dialog.summary_labels["Ausgeschieden"].text(), "1")
 
     def test_consciously_unresolved_remains_textually_blocking(self) -> None:
@@ -685,13 +720,13 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
         self.app.processEvents()
 
         course_combo = _combo(dialog, "S-1", 4)
-        group_combo = _combo(dialog, "S-1", 5)
         original_plan = dialog.plan
         course_combo.showPopup()
         self.app.processEvents()
         course_combo.hidePopup()
         self.app.processEvents()
         self.assertIs(dialog.plan, original_plan)
+        group_combo = _combo(dialog, "S-1", 5)
 
         self.assertEqual(
             dialog.accessibleName(),
@@ -741,7 +776,8 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
         self.app.processEvents()
         self.assertIs(QApplication.focusWidget(), group_combo)
 
-        dialog.table.setCurrentCell(_row(dialog, "S-1"), 0)
+        row = _row(dialog, "S-1")
+        dialog.table.setCurrentCell(row, 0)
         dialog.table.setFocus(Qt.FocusReason.TabFocusReason)
         QTest.keyClick(dialog.table, Qt.Key.Key_Space)
         self.app.processEvents()

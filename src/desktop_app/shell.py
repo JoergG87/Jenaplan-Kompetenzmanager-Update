@@ -120,7 +120,10 @@ from src.desktop_app.view_models.master_data_view_model import CourseGroupViewMo
 from src.desktop_app.view_models.learning_conference_view_model import (
     build_learning_conference_completion_error,
 )
-from src.desktop_app.window_policy import exec_maximized_workspace
+from src.desktop_app.window_policy import (
+    exec_maximized_workspace,
+    prepare_maximized_workspace,
+)
 
 
 SCHOOL_YEAR_BLOCK_MESSAGE = (
@@ -219,6 +222,9 @@ class AppShell(QMainWindow):
         ) = None
         self._active_school_year_transition_controller: (
             SchoolYearTransitionActivationController | None
+        ) = None
+        self._active_school_year_transition_dialog: (
+            SchoolYearTransitionPreviewDialog | None
         ) = None
         self.onboarding_controller: OnboardingController | None = None
         self.selected_group_id: str | None = None
@@ -786,6 +792,10 @@ class AppShell(QMainWindow):
         end_date: date,
     ) -> None:
         """Open only the transient plan produced by the read-only service."""
+        if self._active_school_year_transition_dialog is not None:
+            self._active_school_year_transition_dialog.raise_()
+            self._active_school_year_transition_dialog.activateWindow()
+            return
         self.settings_screen.clear_school_year_transition_error()
         try:
             plan = SchoolYearTransitionPreviewService(
@@ -828,8 +838,20 @@ class AppShell(QMainWindow):
             self,
             activation_controller=controller,
         )
-        exec_maximized_workspace(dialog, self)
+        self._active_school_year_transition_dialog = dialog
+        dialog.finished.connect(self._school_year_transition_preview_finished)
+        prepare_maximized_workspace(dialog, self)
+        dialog.showMaximized()
+
+    def _school_year_transition_preview_finished(self, _result: int) -> None:
+        dialog = self._active_school_year_transition_dialog
+        controller = self._active_school_year_transition_controller
+        self._active_school_year_transition_dialog = None
         self._active_school_year_transition_controller = None
+        if dialog is not None:
+            dialog.deleteLater()
+        if controller is not None and not controller.is_busy:
+            controller.deleteLater()
 
     def refresh_update_status(self) -> None:
         """Project native update state without exposing Sparkle to the view."""

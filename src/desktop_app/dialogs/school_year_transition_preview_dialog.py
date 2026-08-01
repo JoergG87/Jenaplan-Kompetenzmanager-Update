@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from functools import partial
-
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QCloseEvent, QKeyEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -62,7 +60,6 @@ TABLE_HEADERS = (
     "Warnungen / Blocker",
 )
 
-
 class SchoolYearTransitionPreviewDialog(MotionDialog):
     """Edit one transient plan and project its composed activation workflow."""
 
@@ -85,7 +82,8 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.table = QTableWidget(0, len(TABLE_HEADERS))
         self.table.setObjectName("SchoolYearTransitionPreviewTable")
         self.table.setAccessibleName("Flüchtiger Plan je Kind")
-        self._decision_controls: list[QComboBox] = []
+        self._retired_tables: list[QTableWidget] = []
+        self._table_populated = False
         self._selected_student_ids: set[str] = set()
         self._visible_student_ids: tuple[str, ...] = ()
         self._populating_table = False
@@ -99,6 +97,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
+        self._dialog_layout = layout
         layout.setContentsMargins(24, 22, 24, 20)
         layout.setSpacing(14)
         layout.addWidget(
@@ -123,6 +122,8 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.status_message.setObjectName("SchoolYearTransitionPreviewStatus")
         self.status_message.setAccessibleName("Status des flüchtigen Plans")
         layout.addWidget(self.status_message)
+
+        layout.addWidget(self._individual_edit_card())
 
         self._configure_table()
         self.table.itemChanged.connect(self._selection_item_changed)
@@ -442,6 +443,42 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self._update_selection_status()
         return card
 
+    def _individual_edit_card(self) -> AppCard:
+        card = AppCard("soft")
+        card.setObjectName("SchoolYearTransitionIndividualEdit")
+        card.setAccessibleName("Individuelle Planbearbeitung")
+        layout = QHBoxLayout(card)
+        layout.setContentsMargins(18, 14, 18, 14)
+        layout.setSpacing(12)
+
+        self.individual_student_combo = self._filter_combo(
+            "Kind für individuelle Planbearbeitung",
+            tuple(
+                (row.child_label, row.student_id)
+                for row in self.view_model.rows
+            ),
+        )
+        self.individual_student_combo.currentIndexChanged.connect(
+            self._individual_student_changed
+        )
+        layout.addWidget(self.individual_student_combo)
+
+        self.individual_course_combo = QComboBox()
+        self.individual_course_combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.individual_course_combo.activated.connect(
+            self._individual_course_activated
+        )
+        layout.addWidget(self.individual_course_combo)
+
+        self.individual_group_combo = QComboBox()
+        self.individual_group_combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.individual_group_combo.activated.connect(
+            self._individual_group_activated
+        )
+        layout.addWidget(self.individual_group_combo)
+        self._refresh_individual_editors()
+        return card
+
     @staticmethod
     def _filter_combo(
         accessible_name: str,
@@ -475,6 +512,95 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             and item.current_group_name is not None
         }
         return tuple(sorted(options, key=lambda option: (option[0], option[1])))
+
+    def _refresh_individual_editors(
+        self,
+        student_id: str | None = None,
+    ) -> None:
+        if not self.view_model.rows:
+            self.individual_course_combo.setEnabled(False)
+            self.individual_group_combo.setEnabled(False)
+            return
+        selected_student_id = student_id
+        if selected_student_id is None:
+            current_data = self.individual_student_combo.currentData()
+            if isinstance(current_data, str):
+                selected_student_id = current_data
+        row = next(
+            (
+                candidate
+                for candidate in self.view_model.rows
+                if candidate.student_id == selected_student_id
+            ),
+            self.view_model.rows[0],
+        )
+        student_index = self.individual_student_combo.findData(row.student_id)
+        self.individual_student_combo.blockSignals(True)
+        self.individual_student_combo.setCurrentIndex(student_index)
+        self.individual_student_combo.blockSignals(False)
+        self._populate_individual_combo(
+            self.individual_course_combo,
+            current_label=row.target_status_label,
+            choices=row.course_choices,
+            accessible_name=f"Zielentscheidung für {row.child_label}",
+            accessible_description=row.accessible_description,
+            enabled=True,
+        )
+        self._populate_individual_combo(
+            self.individual_group_combo,
+            current_label=row.target_group_label,
+            choices=row.group_choices,
+            accessible_name=f"Zielstammgruppe für {row.child_label}",
+            accessible_description=row.accessible_description,
+            enabled=not row.exited,
+        )
+
+    @staticmethod
+    def _populate_individual_combo(
+        combo: QComboBox,
+        *,
+        current_label: str,
+        choices: tuple[SchoolYearTransitionDecisionOptionViewModel, ...],
+        accessible_name: str,
+        accessible_description: str,
+        enabled: bool,
+    ) -> None:
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItem(current_label, None)
+        for choice in choices:
+            combo.addItem(choice.label, (choice.action, choice.option_id))
+        combo.setCurrentIndex(0)
+        combo.setAccessibleName(accessible_name)
+        combo.setAccessibleDescription(accessible_description)
+        combo.setEnabled(enabled)
+        combo.blockSignals(False)
+
+    def _individual_student_changed(self, _index: int) -> None:
+        student_id = self.individual_student_combo.currentData()
+        self._refresh_individual_editors(
+            student_id if isinstance(student_id, str) else None
+        )
+
+    def _individual_course_activated(self, index: int) -> None:
+        student_id = self.individual_student_combo.currentData()
+        selection = self.individual_course_combo.itemData(index)
+        if not isinstance(student_id, str) or selection is None:
+            return
+        QTimer.singleShot(
+            0,
+            lambda: self._apply_course_selection(student_id, selection),
+        )
+
+    def _individual_group_activated(self, index: int) -> None:
+        student_id = self.individual_student_combo.currentData()
+        selection = self.individual_group_combo.itemData(index)
+        if not isinstance(student_id, str) or selection is None:
+            return
+        QTimer.singleShot(
+            0,
+            lambda: self._apply_group_selection(student_id, selection),
+        )
 
     def _configure_table(self) -> None:
         self.table.setHorizontalHeaderLabels(TABLE_HEADERS)
@@ -517,6 +643,15 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         focus_student_id: str | None = None,
         focus_kind: str = "course",
     ) -> None:
+        self._refresh_projection()
+        self._populate_table(
+            focus_student_id=focus_student_id,
+            focus_kind=focus_kind,
+        )
+        self._refresh_individual_editors(focus_student_id)
+        self._update_selection_status()
+
+    def _refresh_projection(self) -> None:
         self.view_model = SchoolYearTransitionPreviewViewModel.from_plan(
             self.plan
         )
@@ -546,11 +681,6 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             label.setText(value)
             label.setAccessibleName(f"{field_name}: {value}")
         self._update_status_message()
-        self._populate_table(
-            focus_student_id=focus_student_id,
-            focus_kind=focus_kind,
-        )
-        self._update_selection_status()
         self.activate_button.setText(
             "Schuljahr "
             f"{self.view_model.planned_school_year_label} "
@@ -558,6 +688,47 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         )
         self.activate_button.setAccessibleName(self.activate_button.text())
         self._update_activation_availability()
+
+    def _refresh_individual_row(
+        self,
+        student_id: str,
+    ) -> None:
+        """Refresh one edited row without replacing exposed native AX objects."""
+        self._refresh_projection()
+        row_view_model = next(
+            row for row in self.view_model.rows if row.student_id == student_id
+        )
+        row_index = next(
+            row
+            for row in range(self.table.rowCount())
+            if self.table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+            == student_id
+        )
+        values = (
+            row_view_model.child_label,
+            row_view_model.current_group_label,
+            row_view_model.current_course_label,
+            row_view_model.current_year_level_label,
+            row_view_model.target_status_label,
+            row_view_model.target_group_label,
+            row_view_model.target_course_label,
+            row_view_model.warnings_label,
+        )
+        for column, value in enumerate(values, start=1):
+            item = self.table.item(row_index, column)
+            item.setText(value)
+            item.setData(Qt.ItemDataRole.AccessibleTextRole, value)
+            item.setData(
+                Qt.ItemDataRole.AccessibleDescriptionRole,
+                row_view_model.accessible_description,
+            )
+            item.setData(
+                Qt.ItemDataRole.UserRole,
+                None if row_view_model.resolved else "unresolved",
+            )
+        self._refresh_individual_editors(student_id)
+        self._invalidate_confirmation()
+        self._update_selection_status()
 
     def _update_activation_availability(self, *_args: object) -> None:
         validation = self.plan.validate()
@@ -804,28 +975,36 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             row.student_id for row in visible_rows
         )
         self._populating_table = True
+        if self._table_populated:
+            self._replace_table()
+        else:
+            self._table_populated = True
         self.table.clearContents()
         self.table.setRowCount(len(visible_rows))
-        self._decision_controls = []
-        focus_target: QComboBox | None = None
         for row_index, row in enumerate(visible_rows):
-            course_combo, group_combo = self._populate_row(row_index, row)
-            if row.student_id == focus_student_id:
-                focus_target = (
-                    group_combo if focus_kind == "group" else course_combo
-                )
+            self._populate_row(row_index, row)
         self._populating_table = False
-        if visible_rows:
-            self.table.setCurrentCell(0, 0)
         self._configure_tab_order()
-        if focus_target is not None:
-            focus_target.setFocus(Qt.FocusReason.OtherFocusReason)
+
+    def _replace_table(self) -> None:
+        """Retire one exposed native table without invalidating its AX objects."""
+        previous = self.table
+        replacement = QTableWidget(0, len(TABLE_HEADERS))
+        replacement.setObjectName("SchoolYearTransitionPreviewTable")
+        replacement.setAccessibleName("Flüchtiger Plan je Kind")
+        self.table = replacement
+        self._configure_table()
+        self.table.itemChanged.connect(self._selection_item_changed)
+        self._dialog_layout.replaceWidget(previous, self.table)
+        previous.hide()
+        previous.setParent(self)
+        self._retired_tables.append(previous)
 
     def _populate_row(
         self,
         row_index: int,
         row: SchoolYearTransitionPreviewRowViewModel,
-    ) -> tuple[QComboBox, QComboBox | None]:
+    ) -> None:
         selection_item = QTableWidgetItem()
         selection_item.setFlags(
             Qt.ItemFlag.ItemIsEnabled
@@ -866,6 +1045,9 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         )
         for column, value in enumerate(values, start=1):
             item = QTableWidgetItem(value)
+            item.setFlags(
+                Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+            )
             item.setData(Qt.ItemDataRole.AccessibleTextRole, value)
             item.setData(
                 Qt.ItemDataRole.AccessibleDescriptionRole,
@@ -874,66 +1056,6 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             if not row.resolved:
                 item.setData(Qt.ItemDataRole.UserRole, "unresolved")
             self.table.setItem(row_index, column, item)
-
-        course_combo = self._decision_combo(
-            current_label=row.target_status_label,
-            choices=row.course_choices,
-            accessible_name=(
-                f"Zielentscheidung für {row.child_label}"
-            ),
-            accessible_description=row.accessible_description,
-        )
-        course_combo.activated.connect(
-            partial(
-                self._course_choice_activated,
-                row.student_id,
-                course_combo,
-            )
-        )
-        self.table.setCellWidget(row_index, 5, course_combo)
-        self._decision_controls.append(course_combo)
-
-        group_combo: QComboBox | None = None
-        if not row.exited:
-            group_combo = self._decision_combo(
-                current_label=row.target_group_label,
-                choices=row.group_choices,
-                accessible_name=(
-                    f"Zielstammgruppe für {row.child_label}"
-                ),
-                accessible_description=row.accessible_description,
-            )
-            group_combo.activated.connect(
-                partial(
-                    self._group_choice_activated,
-                    row.student_id,
-                    group_combo,
-                )
-            )
-            self.table.setCellWidget(row_index, 6, group_combo)
-            self._decision_controls.append(group_combo)
-        return course_combo, group_combo
-
-    @staticmethod
-    def _decision_combo(
-        *,
-        current_label: str,
-        choices: tuple[SchoolYearTransitionDecisionOptionViewModel, ...],
-        accessible_name: str,
-        accessible_description: str,
-    ) -> QComboBox:
-        combo = QComboBox()
-        combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        combo.setAccessibleName(accessible_name)
-        combo.setAccessibleDescription(accessible_description)
-        combo.addItem(current_label, None)
-        for choice in choices:
-            combo.addItem(
-                choice.label,
-                (choice.action, choice.option_id),
-            )
-        combo.setCurrentIndex(0)
-        return combo
 
     def _filter_changed(self, _index: int) -> None:
         self._populate_table(focus_student_id=None, focus_kind="course")
@@ -1107,15 +1229,11 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         )
         return result == QMessageBox.StandardButton.Yes
 
-    def _course_choice_activated(
+    def _apply_course_selection(
         self,
         student_id: str,
-        combo: QComboBox,
-        index: int,
+        selection: tuple[str, str | None],
     ) -> None:
-        selection = combo.itemData(index)
-        if selection is None:
-            return
         action, option_id = selection
         try:
             self.plan = apply_course_choice(
@@ -1127,21 +1245,13 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         except (SchoolYearTransitionPlanError, ValueError):
             self._show_choice_error()
             return
-        self._invalidate_confirmation()
-        self._refresh_from_plan(
-            focus_student_id=student_id,
-            focus_kind="course",
-        )
+        self._refresh_individual_row(student_id)
 
-    def _group_choice_activated(
+    def _apply_group_selection(
         self,
         student_id: str,
-        combo: QComboBox,
-        index: int,
+        selection: tuple[str, str | None],
     ) -> None:
-        selection = combo.itemData(index)
-        if selection is None:
-            return
         action, option_id = selection
         try:
             self.plan = apply_group_choice(
@@ -1153,11 +1263,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         except (SchoolYearTransitionPlanError, ValueError):
             self._show_choice_error()
             return
-        self._invalidate_confirmation()
-        self._refresh_from_plan(
-            focus_student_id=student_id,
-            focus_kind="group",
-        )
+        self._refresh_individual_row(student_id)
 
     def _show_choice_error(self) -> None:
         self.status_message.set_message(
@@ -1184,8 +1290,9 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             self.bulk_group_button,
             self.bulk_exited_button,
             self.bulk_unresolved_button,
-            self.table,
-            *self._decision_controls,
+            self.individual_student_combo,
+            self.individual_course_combo,
+            self.individual_group_combo,
             self.confirmation_checkbox,
             self.password_field,
             self.activate_button,

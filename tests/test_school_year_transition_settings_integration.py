@@ -7,9 +7,13 @@ from pathlib import Path
 import sqlite3
 from unittest.mock import patch
 
-from PySide6.QtCore import QEventLoop, QTimer
+from PySide6.QtCore import QCoreApplication, QEvent, QEventLoop, QTimer
 from PySide6.QtWidgets import QApplication, QPushButton
+from shiboken6 import isValid
 
+from src.desktop_app.dialogs.school_year_transition_preview_dialog import (
+    SchoolYearTransitionPreviewDialog,
+)
 from src.desktop_app.shell import AppShell
 from src.security.application import AuthenticationResult
 from src.security.domain import AuthenticationStatus
@@ -46,8 +50,9 @@ def test_valid_settings_input_opens_transient_dialog_without_side_effects(
     )
     opened_plans = []
 
-    def inspect_dialog(dialog, owner) -> int:
+    def inspect_dialog(dialog, owner) -> None:
         assert owner is shell
+        assert dialog.parentWidget() is shell
         opened_plans.append(dialog.plan)
         button_texts = tuple(
             button.text().casefold()
@@ -55,8 +60,7 @@ def test_valid_settings_input_opens_transient_dialog_without_side_effects(
         )
         assert any("verbindlich aktivieren" in text for text in button_texts)
         assert not dialog.activate_button.isEnabled()
-        dialog.reject()
-        return 0
+        QTimer.singleShot(0, dialog.reject)
 
     with (
         patch.object(
@@ -64,7 +68,7 @@ def test_valid_settings_input_opens_transient_dialog_without_side_effects(
             "start",
         ) as backup_or_restore_start,
         patch(
-            "src.desktop_app.shell.exec_maximized_workspace",
+            "src.desktop_app.shell.prepare_maximized_workspace",
             side_effect=inspect_dialog,
         ) as execute_dialog,
     ):
@@ -73,6 +77,7 @@ def test_valid_settings_input_opens_transient_dialog_without_side_effects(
             date(2026, 8, 1),
             date(2027, 7, 31),
         )
+        app.processEvents()
 
     after = _database_snapshot(database_path)
     assert execute_dialog.call_count == 1
@@ -107,31 +112,35 @@ def test_confirmed_settings_activation_changes_only_temporary_database(
     before = _database_snapshot(database_path)
     opened = []
 
-    def activate(dialog, owner) -> int:
+    def activate(dialog, owner) -> None:
         assert owner is shell
+        assert dialog.parentWidget() is shell
         opened.append(dialog)
-        dialog.plan = dialog.plan.repeat_year_level_three(
-            "STD-TEST-003",
-            "CRS-TEST-3",
-        )
-        dialog._refresh_from_plan()
-        dialog.confirmation_checkbox.setChecked(True)
-        dialog.password_field.setText("synthetisches Testpasswort")
-        dialog.activate_button.click()
-        loop = QEventLoop()
-        dialog.activation_controller.finished.connect(loop.quit)
-        QTimer.singleShot(60_000, loop.quit)
-        if dialog.activation_controller.is_busy:
-            loop.exec()
-        assert not dialog.activation_controller.is_busy, (
-            dialog.execution_status.label.text()
-        )
-        assert "verbindlich aktiviert" in dialog.execution_status.label.text()
-        dialog.close_button.click()
-        return 0
+
+        def run_activation() -> None:
+            dialog.plan = dialog.plan.repeat_year_level_three(
+                "STD-TEST-003",
+                "CRS-TEST-3",
+            )
+            dialog._refresh_from_plan()
+            dialog.confirmation_checkbox.setChecked(True)
+            dialog.password_field.setText("synthetisches Testpasswort")
+            dialog.activate_button.click()
+            loop = QEventLoop()
+            dialog.activation_controller.finished.connect(loop.quit)
+            QTimer.singleShot(60_000, loop.quit)
+            if dialog.activation_controller.is_busy:
+                loop.exec()
+            assert not dialog.activation_controller.is_busy, (
+                dialog.execution_status.label.text()
+            )
+            assert "verbindlich aktiviert" in dialog.execution_status.label.text()
+            dialog.close_button.click()
+
+        QTimer.singleShot(0, run_activation)
 
     with patch(
-        "src.desktop_app.shell.exec_maximized_workspace",
+        "src.desktop_app.shell.prepare_maximized_workspace",
         side_effect=activate,
     ):
         shell.open_school_year_transition_preview(
@@ -139,6 +148,7 @@ def test_confirmed_settings_activation_changes_only_temporary_database(
             date(2026, 8, 1),
             date(2027, 7, 31),
         )
+        app.processEvents()
 
     assert len(opened) == 1
     assert "2026/27" in shell.settings_screen.current_school_year_label.text()
@@ -172,7 +182,7 @@ def test_invalid_year_dates_show_neutral_error_and_do_not_open_dialog(
     before = _database_snapshot(database_path)
 
     with patch(
-        "src.desktop_app.shell.exec_maximized_workspace"
+        "src.desktop_app.shell.prepare_maximized_workspace",
     ) as execute_dialog:
         shell.open_school_year_transition_preview(
             "2026/27",
@@ -186,5 +196,48 @@ def test_invalid_year_dates_show_neutral_error_and_do_not_open_dialog(
     assert "NEW_SCHOOL_YEAR" not in message.label.text()
     assert message.accessibleName() == message.label.text()
     assert before == _database_snapshot(database_path)
+    shell.close()
+    app.processEvents()
+
+
+def test_preview_reopens_five_times_without_nested_exec_or_retained_dialogs(
+    tmp_path: Path,
+) -> None:
+    app = QApplication.instance() or QApplication([])
+    database_path = tmp_path / "settings-transition-reopen.sqlite"
+    create_synthetic_v3_database(database_path)
+    shell = AppShell(database_path)
+    before = _database_snapshot(database_path)
+    dialogs: list[SchoolYearTransitionPreviewDialog] = []
+
+    with patch.object(
+        SchoolYearTransitionPreviewDialog,
+        "exec",
+        side_effect=AssertionError("Preview must not enter a nested event loop"),
+    ):
+        for _index in range(5):
+            shell.open_school_year_transition_preview(
+                "2026/27",
+                date(2026, 8, 1),
+                date(2027, 7, 31),
+            )
+            dialog = shell._active_school_year_transition_dialog
+            assert isinstance(dialog, SchoolYearTransitionPreviewDialog)
+            assert dialog.isModal()
+            assert not dialog.activate_button.isEnabled()
+            dialogs.append(dialog)
+            dialog.reject()
+            QCoreApplication.sendPostedEvents(
+                None,
+                QEvent.Type.DeferredDelete,
+            )
+            app.processEvents()
+            assert shell._active_school_year_transition_dialog is None
+            assert shell._active_school_year_transition_controller is None
+            assert not isValid(dialog)
+
+    assert _database_snapshot(database_path) == before
+    assert not shell.findChildren(SchoolYearTransitionPreviewDialog)
+    assert all(not isValid(dialog) for dialog in dialogs)
     shell.close()
     app.processEvents()
