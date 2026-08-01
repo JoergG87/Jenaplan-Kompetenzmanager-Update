@@ -7,9 +7,10 @@ displayfähige Namen, flüchtiges SJ-3B.2a-Planmodell und individuelle
 SJ-3B.2b-Qt-Bearbeitung, flüchtige SJ-3B.3-Sammelbearbeitung sowie der
 minimale Preview-only-Einstieg unter `Einstellungen → Schuljahre` sind lokal
 implementiert. Die isolierte atomare SJ-3C.2-Ausführungslogik ist ausschließlich
-für temporäre synthetische Final-V3-Datenbanken implementiert. Produkt-
-Ausführung, Backup, Maintenance-Gate, Authentifizierung, UI-Aktivierung und
-unterjährige Mehrkindwechsel bleiben gesperrt.
+für temporäre synthetische Final-V3-Datenbanken implementiert. SJ-3C.3 schützt
+alle produktiven Writer; SJ-3C.4 bindet die isolierte Ausführung an ein
+verifiziertes Backup und kontrollierte Maintenance-Freigabe. Passwort-Step-up,
+UI-/Shell-Aktivierung und unterjährige Mehrkindwechsel bleiben gesperrt.
 
 - [x] Geplantes Zieljahr auf Überlappung, strikte Nachfolge und Lückenlosigkeit
   prüfen.
@@ -40,8 +41,13 @@ unterjährige Mehrkindwechsel bleiben gesperrt.
   auf temporärer synthetischer Final-V3-Datenbank mit `BEGIN IMMEDIATE`,
   Revalidierung, genau einem Zielassignment je Kind, technischem Beleg,
   Idempotenz, Integritätsprüfung und vollständigem Rollback atomar aus.
-- [ ] Produkt-Ausführung mit verifiziertem Backup, Maintenance, Step-up,
-  Bestätigung sowie UI-/Runtime-Verdrahtung separat implementieren.
+- [x] SJ-3C.4 verlangt vor jedem neuen Transitionwrite eine passende
+  `SCHOOL_YEAR_TRANSITION`-Capability, vollständigen Writer-Drain und ein
+  veröffentlichtes, nochmals verifiziertes sowie quell-/schemagebundenes
+  Backup; echter Backuphash, sicherer Abbruch und `RECOVERY_REQUIRED` sind
+  fokussiert geprüft.
+- [ ] Passwort-Step-up, explizite Bestätigung sowie UI-/Shell-Verdrahtung
+  separat implementieren.
 
 ## V3-only Architecture Cleanup
 

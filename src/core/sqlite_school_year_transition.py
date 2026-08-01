@@ -29,9 +29,6 @@ from .sqlite_school_year_assignment import (
 )
 
 
-NO_BACKUP_EVIDENCE_SHA256 = "0" * 64
-
-
 class SchoolYearTransitionRepositoryError(RuntimeError):
     """Fail closed at the transition persistence boundary."""
 
@@ -47,6 +44,7 @@ class StoredSchoolYearTransition:
     to_school_year_id: str
     operation_token: str
     plan_sha256: str
+    backup_sha256: str
     result_counts_json: str
     completed_at: datetime
 
@@ -152,7 +150,8 @@ class SchoolYearTransitionExecutionRepository:
             """
             SELECT
                 transition_id, from_school_year_id, to_school_year_id,
-                operation_token, plan_sha256, result_counts_json, completed_at
+                operation_token, plan_sha256, backup_sha256,
+                result_counts_json, completed_at
             FROM school_year_transitions
             WHERE operation_token = ?
             """,
@@ -168,7 +167,8 @@ class SchoolYearTransitionExecutionRepository:
             """
             SELECT
                 transition_id, from_school_year_id, to_school_year_id,
-                operation_token, plan_sha256, result_counts_json, completed_at
+                operation_token, plan_sha256, backup_sha256,
+                result_counts_json, completed_at
             FROM school_year_transitions
             WHERE to_school_year_id = ?
             """,
@@ -322,9 +322,22 @@ class SchoolYearTransitionExecutionRepository:
         to_school_year_id: str,
         operation_token: str,
         plan_sha256: str,
+        backup_sha256: str,
         result_counts_json: str,
         completed_at: datetime,
     ) -> StoredSchoolYearTransition:
+        if (
+            not isinstance(backup_sha256, str)
+            or len(backup_sha256) != 64
+            or any(
+                character not in "0123456789abcdef"
+                for character in backup_sha256
+            )
+            or backup_sha256 == "0" * 64
+        ):
+            raise SchoolYearTransitionRepositoryError(
+                "transition_backup_sha256_invalid"
+            )
         self.connection.execute(
             """
             INSERT INTO school_year_transitions(
@@ -339,7 +352,7 @@ class SchoolYearTransitionExecutionRepository:
                 to_school_year_id,
                 operation_token,
                 plan_sha256,
-                NO_BACKUP_EVIDENCE_SHA256,
+                backup_sha256,
                 result_counts_json,
                 completed_at.isoformat(),
             ),
@@ -513,6 +526,7 @@ def _stored_transition(row: sqlite3.Row) -> StoredSchoolYearTransition:
         to_school_year_id=str(row["to_school_year_id"]),
         operation_token=str(row["operation_token"]),
         plan_sha256=str(row["plan_sha256"]),
+        backup_sha256=str(row["backup_sha256"]),
         result_counts_json=str(row["result_counts_json"]),
         completed_at=datetime.fromisoformat(str(row["completed_at"])),
     )

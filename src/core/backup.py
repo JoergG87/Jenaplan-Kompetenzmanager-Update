@@ -578,12 +578,21 @@ class BackupService:
         self.sqlite_engine = sqlite_engine or SQLiteBackupEngine()
         self.verifier = verifier or BackupVerifier()
 
-    def create_backup(self) -> BackupResult:
+    def create_backup(
+        self,
+        *,
+        recover_pending_observations: bool = True,
+    ) -> BackupResult:
         observation_uow = ObservationPersistenceUnitOfWork(
             SQLiteDatabase(self.database_path)
         )
         with ObservationWriterLock(observation_uow.staging_root):
-            observation_uow.recover_pending_while_writer_locked()
+            if recover_pending_observations:
+                observation_uow.recover_pending_while_writer_locked()
+            elif observation_uow.has_pending_recovery_while_writer_locked():
+                raise BackupBusyError(
+                    "Offene Beobachtungs-Recovery blockiert das Jahreswechsel-Backup."
+                )
             return self._create_backup_locked()
 
     def _create_backup_locked(self) -> BackupResult:

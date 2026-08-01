@@ -60,6 +60,21 @@ class BackupApplicationService:
         self.verifier = verifier or BackupVerifier()
 
     def create(self, command: CreateBackupCommand) -> BackupResult:
+        return self._create(command, recover_pending_observations=True)
+
+    def create_without_observation_recovery(
+        self,
+        command: CreateBackupCommand,
+    ) -> BackupResult:
+        """Create a backup that must not perform recovery-side writes."""
+        return self._create(command, recover_pending_observations=False)
+
+    def _create(
+        self,
+        command: CreateBackupCommand,
+        *,
+        recover_pending_observations: bool,
+    ) -> BackupResult:
         paths = command.runtime_paths
         if Path(command.database_path) != Path(paths.database):
             raise ValueError(
@@ -76,7 +91,9 @@ class BackupApplicationService:
             now=self.now,
             sqlite_engine=self.sqlite_engine,
             verifier=self.verifier,
-        ).create_backup()
+        ).create_backup(
+            recover_pending_observations=recover_pending_observations
+        )
 
     def verify(self, query: VerifyBackupQuery) -> BackupVerificationResult:
         return self.verifier.verify_backup(query.path)

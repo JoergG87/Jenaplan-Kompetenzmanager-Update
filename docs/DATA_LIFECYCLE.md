@@ -6,9 +6,10 @@
 synthetischer Testdaten-Cleanup und Assignment-API lokal implementiert. Der
 SJ-2E-Lifecycle der produktiven Membership-Reader und der
 SJ-2F-Lifecycle der produktiven Writer sowie die isolierte synthetische
-SJ-3C.2-Ausführung und das SJ-3C.3-Maintenance-Gate sind lokal umgesetzt. Exakt
-verifiziertes Final-V3 ist für die normale Runtime lokal freigegeben; die
-manuelle macOS-Abnahme bleibt offen.
+SJ-3C.2-Ausführung, das SJ-3C.3-Maintenance-Gate und die verpflichtende
+SJ-3C.4-Backupbindung sind lokal umgesetzt. Exakt verifiziertes Final-V3 ist
+für die normale Runtime lokal freigegeben; Passwort-Step-up, UI-/Shell-
+Ausführung und die manuelle macOS-Abnahme bleiben offen.
 
 1. Der Startup-Resolver prüft Pfad, WAL-/SHM-Sidecars, Restorezustand,
    `user_version` und vollständigen Schemafingerprint read-only.
@@ -57,12 +58,35 @@ fordert jede schreibende Transaktion an der gemeinsamen
 `MaintenanceGuardedConnection` Writerzulassung an. Das Gate allein öffnet
 keine Connection und verändert weder Datenbank noch Dokumente.
 
-`ExecuteSchoolYearTransition` akzeptiert nur eine ACTIVE Capability mit dem
-Zweck `SCHOOL_YEAR_TRANSITION` und passender Owner-ID, bleibt jedoch ohne
-Aufruf aus Shell oder Settings. `BACKUP_RESTORE` ist ein getrennter
-Capabilityzweck; Backup- und Restoreservices werden in SJ-3C.3 weder
-gestartet noch integriert. Es gibt keine UI-, Passwort-, Step-up- oder
-Ausführungsaktion.
+`ExecuteSchoolYearTransition` akzeptiert nur eine PENDING Capability mit dem
+Zweck `SCHOOL_YEAR_TRANSITION` und passender Owner-ID, aktiviert sie erst nach
+Writerzahl null und gibt sie nach sicherem Abschluss oder Abbruch kontrolliert
+frei. `BACKUP_RESTORE` ist ein getrennter Capabilityzweck. Es gibt weiterhin
+keine UI-, Passwort-, Step-up- oder Shell-Ausführungsaktion.
+
+## SJ-3C.4 verpflichtende Backupbindung
+
+1. Der Owner fordert `SCHOOL_YEAR_TRANSITION` an; das Gate steht PENDING und
+   blockiert neue Writer.
+2. Erst nach vollständigem Drain aktiviert der Execution-Service das Gate.
+3. Unter ACTIVE liest er den kanonischen Transition-Quellenhash. Eine offene
+   Observation-Recovery blockiert den Lauf, weil sie vor dem Pflichtbackup
+   Datei- oder Datenbankwrites nachholen könnte. Ohne offenen Recoveryzustand
+   erstellt der vorhandene Backup-Service ein normales `.jkmbackup` ohne
+   Recovery-Writes und verifiziert die veröffentlichten Bytes nochmals.
+4. Der Nachweis enthält eine kryptografisch zufällige technische Backup-ID,
+   echten Archiv-SHA-256, Quellen-SHA-256, exakten Final-V3-Fingerprint und
+   zeitzonenbewussten Verifikationszeitpunkt. Der Null-Hash ist unzulässig.
+5. Der Quellenhash und der Final-V3-Fingerprint werden aus der isoliert
+   verifizierten Backup-Datenbank selbst berechnet. Quellen, Planhash,
+   current-/Zieljahr und aktive Referenzen werden danach erneut geprüft. Jede
+   Abweichung verwirft die Passung; ein späterer Versuch benötigt ein neues
+   Backup und eine neue Bestätigung.
+6. Erst danach beginnt `BEGIN IMMEDIATE`. Der echte Archivhash wird gemeinsam
+   mit Schuljahren, Assignments und Transitionbeleg committed.
+7. Ein Fehler vor eindeutigem Commit wird vollständig zurückgerollt und gibt
+   das Gate nach NORMAL frei. Ein uneindeutiger Commit-, Rollback-, Close- oder
+   Freigabezustand setzt `RECOVERY_REQUIRED` und bleibt fail-closed.
 
 ## Direkte Final-V3-Schemaerzeugung
 
@@ -275,12 +299,11 @@ für ausschließlich temporäre synthetische Final-V3-Datenbanken:
    geprüft. Jeder Fehler rollt Schuljahre, Assignments und Beleg vollständig
    zurück.
 
-Der technische Backupwert ist in diesem ausdrücklich backupfreien,
-nicht produktverdrahteten Testpaket der reservierte 64-stellige Null-Sentinel.
-Er ist kein Backupnachweis. Der vollständige Produktwechsel benötigt weiterhin
-verifiziertes Backup, Maintenance-Gate, Passwort-Step-up, explizite
-Bestätigung und UI-/Runtime-Integration; keine dieser Schutzstufen wird durch
-SJ-3C.2 ersetzt oder freigegeben.
+SJ-3C.4 ersetzt den früheren backupfreien Testpfad: Der technische Backupwert
+ist jetzt verpflichtend der echte SHA-256 des unmittelbar zuvor erstellten und
+erneut verifizierten Archivs; der Null-Sentinel wird im ausführbaren Pfad
+abgelehnt. Der vollständige UI-Produktwechsel benötigt weiterhin
+Passwort-Step-up, explizite Bestätigung und UI-/Shell-Integration.
 
 Der integrierte Preview-only-Einstieg ergänzt davor ausschließlich diesen
 flüchtigen UI-Ablauf:

@@ -5,8 +5,8 @@
 **Status:** V3-only-Cleanup, zentrale Assignment-API, SJ-2E-Umstellung der
 produktiven Membership-Reader, SJ-2F-Umstellung der produktiven Writer und
 Final-V3-Runtime-Aktivierung, die isolierte synthetische
-SJ-3C.2-Ausführung und das anwendungsweite SJ-3C.3-Maintenance-Gate sind
-lokal implementiert.
+SJ-3C.2-Ausführung, das anwendungsweite SJ-3C.3-Maintenance-Gate und die
+verpflichtende SJ-3C.4-Backupbindung sind lokal implementiert.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
@@ -70,11 +70,12 @@ Bootstrap-Transition-Typen.
 | `SchoolYearTransitionExecutionCounts` | deterministische technische Ergebniszahlen des atomaren Wechsels | Application School-Year Transition Execution |
 | `SchoolYearTransitionExecutionResult` | unveränderliche Rückgabe eines neu committed oder idempotent wiedergefundenen Transitionbelegs | Application School-Year Transition Execution |
 | `SchoolYearTransitionExecutionError` | fail-closed Ablehnung vor oder innerhalb der atomaren Ausführungsgrenze mit stabilem technischen Code | Application School-Year Transition Execution |
-| `ExecuteSchoolYearTransition` | Qt-freier Application-Service für Planprüfung, `BEGIN IMMEDIATE`, Quellenrevalidierung, atomare Writes, Beleg, Integritätsprüfung und Rollback; verlangt eine ACTIVE Owner-Capability mit Zweck `SCHOOL_YEAR_TRANSITION`, bleibt aber ohne Produktverdrahtung | Application School-Year Transition Execution |
+| `ExecuteSchoolYearTransition` | Qt-freier Application-Service für PENDING→ACTIVE-Aktivierung, Writer-Drain, verpflichtendes verifiziertes Backup, erneute Plan-/Quellenprüfung, `BEGIN IMMEDIATE`, atomare Writes, Beleg, Integritätsprüfung, Rollback und kontrollierte Gatefreigabe; verlangt eine Owner-Capability mit Zweck `SCHOOL_YEAR_TRANSITION`, bleibt aber ohne UI-/Shell-Produktverdrahtung | Application School-Year Transition Execution |
+| `SchoolYearTransitionBackupEvidence` | unveränderlicher SJ-3C.4-Nachweis aus sicherer technischer Backup-ID, echtem Archiv-SHA-256, gebundenem Quellen-SHA-256, Final-V3-Schemafingerprint und zeitzonenbewusstem Verifikationszeitpunkt | Application School-Year Transition Backup |
+| `VerifiedSchoolYearTransitionBackupAdapter` | Qt-freie Verbindung zum vorhandenen Backup-Application-Service; blockiert offene Observation-Recovery, erstellt ein normales Backup ohne Recovery-Writes, verifiziert die veröffentlichten Bytes erneut und berechnet Quellen- sowie Schemaidentität aus der isoliert verifizierten Backup-Datenbank selbst | Application School-Year Transition Backup |
 | `SchoolYearTransitionExecutionRepository` | Connection-gebundene Schreib- und Prüfgrenze innerhalb der vom Application Service besessenen Transaktion; öffnet, committet, rollt nicht zurück und schließt nicht selbst | Core School-Year Transition Persistence |
 | `StoredSchoolYearTransition` | unveränderliche technische Projektion eines vorhandenen `school_year_transitions`-Belegs | Core School-Year Transition Persistence |
 | `SchoolYearTransitionRepositoryError` | fail-closed Fehlercode der Transition-Schreibgrenze | Core School-Year Transition Persistence |
-| `NO_BACKUP_EVIDENCE_SHA256` | reservierter 64-stelliger Null-Sentinel ausschließlich für das nicht produktverdrahtete SJ-3C.2-Testpaket auf temporären synthetischen Final-V3-Datenbanken; kein Backupnachweis | Core School-Year Transition Persistence |
 | `SchoolYearRepository` | Connection-gebundener SQLite-Read auf `school_years`; öffnet und steuert keine Transaktion | Core Assignment Persistence |
 | `StudentSchoolYearAssignmentRepository` | Connection-gebundene set-basierte SQLite-Reads und atomar orchestrierbare Writes auf Assignments | Core Assignment Persistence |
 | `V3StudentRepository` | Connection-gebundene Persistenz ausschließlich der V3-Schülerstammdaten | Core Student Persistence |

@@ -126,12 +126,20 @@ Constraints, Integrität und Foreign Keys vor Commit. Identische Retries sind
 idempotent; jede Abweichung oder jeder Schreibfehler wird abgelehnt
 beziehungsweise vollständig zurückgerollt.
 
+SJ-3C.4 verbindet die isolierte atomare Ausführung jetzt mit dem vorhandenen
+Backup-Service und dem Maintenance-Gate. Ein neuer Lauf benötigt eine echte
+`SCHOOL_YEAR_TRANSITION`-Capability, vollständigen Writer-Drain und ein
+veröffentlichtes, erneut verifiziertes Backup des unveränderten Quellenstands.
+Der Nachweis bindet sichere technische Backup-ID, echten Archivhash,
+Quellenhash, Final-V3-Fingerprint und Verifikationszeitpunkt; der persistierte
+Transitionbeleg trägt den echten Archivhash. Sichere Fehler rollen vollständig
+zurück und geben das Gate frei, uneindeutige Zustände bleiben
+`RECOVERY_REQUIRED`.
+
 Weiterhin nicht umgesetzt oder freigegeben sind Planpersistenz,
-Ausführungs-UI und Runtime-Verdrahtung, ein verifiziertes Backup,
-Maintenance-Gate, Authentifizierung, unterjährige Mehrkindwechsel, Build,
-Packaging und Release. Der SJ-3C.2-Testbeleg verwendet deshalb ausschließlich
-auf synthetischen Daten den reservierten Null-Sentinel und stellt keinen
-Backupnachweis dar. Die manuelle Prüfung der Runtime sowie der neuen Schüler-,
+Ausführungs-UI und Runtime-/Shell-Verdrahtung, Passwort-Step-up,
+Authentifizierung, unterjährige Mehrkindwechsel, Build, Packaging und Release.
+Die manuelle Prüfung der Runtime sowie der neuen Schüler-,
 Wechsel-, Austritts-, Kursstufen- und Schuljahreswechseloberflächen auf macOS
 ist noch offen. Es wurden keine Migration und keine echten Daten verwendet.
 

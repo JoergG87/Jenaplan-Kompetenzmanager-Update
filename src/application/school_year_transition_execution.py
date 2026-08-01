@@ -1,8 +1,8 @@
 """Atomic execution of one fully resolved transient school-year plan.
 
-This isolated service requires an ACTIVE school-year maintenance capability
-but remains intentionally unwired from Qt, the product shell, authentication,
-or backup orchestration.
+This isolated service owns the maintenance activation, verified backup,
+source revalidation, atomic transition, and controlled gate release.  It
+remains intentionally unwired from Qt, the product shell, or authentication.
 """
 
 from __future__ import annotations
@@ -15,6 +15,9 @@ import json
 import sqlite3
 from typing import Protocol
 
+from src.application.commands.school_year_transition_backup import (
+    SchoolYearTransitionBackupEvidence,
+)
 from src.application.school_year_transition_plan import (
     SchoolYearTransitionCourseDecision,
     SchoolYearTransitionPlan,
@@ -29,8 +32,11 @@ from src.core.maintenance_gate import (
     MaintenanceCapability,
     MaintenanceCapabilityError,
     MaintenanceGate,
+    MaintenanceGateError,
     MaintenancePurpose,
+    MaintenanceState,
 )
+from src.core.database_compatibility import FINAL_SCHEMA_FINGERPRINT
 from src.core.sqlite_school_year_transition import (
     SchoolYearTransitionExecutionRepository,
     SchoolYearTransitionRepositoryError,
@@ -69,6 +75,7 @@ class SchoolYearTransitionExecutionResult:
     to_school_year_id: str
     operation_token: str
     plan_sha256: str
+    backup_sha256: str
     counts: SchoolYearTransitionExecutionCounts
     completed_at: datetime
 
@@ -88,6 +95,10 @@ class _ExecutionRepository(Protocol):
 RepositoryFactory = Callable[[sqlite3.Connection], _ExecutionRepository]
 
 
+class _TransitionBackupService(Protocol):
+    def create_and_verify(self) -> SchoolYearTransitionBackupEvidence: ...
+
+
 class ExecuteSchoolYearTransition:
     """Execute one source-bound plan in exactly one immediate transaction."""
 
@@ -96,11 +107,13 @@ class ExecuteSchoolYearTransition:
         connection_factory: ConnectionFactory,
         *,
         maintenance_gate: MaintenanceGate,
+        backup_service: _TransitionBackupService | None,
         now_provider: TimestampProvider | None = None,
         repository_factory: RepositoryFactory | None = None,
     ) -> None:
         self._connection_factory = connection_factory
         self._maintenance_gate = maintenance_gate
+        self._backup_service = backup_service
         self._now_provider = now_provider or (lambda: datetime.now(UTC))
         self._repository_factory = (
             repository_factory or SchoolYearTransitionExecutionRepository
@@ -131,21 +144,190 @@ class ExecuteSchoolYearTransition:
             )
         target_id = _target_school_year_id(plan)
 
+        owns_maintenance = False
         try:
+            if self._maintenance_gate.state is not MaintenanceState.MAINTENANCE_PENDING:
+                raise SchoolYearTransitionExecutionError(
+                    "transition_maintenance_not_pending"
+                )
+            if not self._maintenance_gate.activate(
+                maintenance_capability,
+                owner_id=maintenance_owner_id,
+            ):
+                owns_maintenance = True
+                raise SchoolYearTransitionExecutionError(
+                    "transition_writers_not_drained"
+                )
+            owns_maintenance = True
             with self._maintenance_gate.exclusive_writer(
                 maintenance_capability,
                 owner_id=maintenance_owner_id,
                 purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
             ):
-                return self._execute_authorized(
-                    plan=plan,
+                existing = self._read_existing_receipt(
                     token=token,
                     plan_hash=plan_hash,
-                    expected_hash=expected_hash,
                     target_id=target_id,
                 )
+                if existing is not None:
+                    result = _result_from_stored(existing)
+                else:
+                    result = self._execute_new_transition(
+                        plan=plan,
+                        token=token,
+                        plan_hash=plan_hash,
+                        expected_hash=expected_hash,
+                        target_id=target_id,
+                    )
+            self._release_maintenance(
+                maintenance_capability,
+                maintenance_owner_id,
+            )
+            owns_maintenance = False
+            return result
         except MaintenanceCapabilityError as error:
             raise SchoolYearTransitionExecutionError(error.code) from None
+        except MaintenanceGateError:
+            self._maintenance_gate.mark_recovery_required()
+            raise SchoolYearTransitionExecutionError(
+                "transition_recovery_required"
+            ) from None
+        finally:
+            if owns_maintenance and self._maintenance_gate.state in {
+                MaintenanceState.MAINTENANCE_PENDING,
+                MaintenanceState.MAINTENANCE_ACTIVE,
+            }:
+                self._release_maintenance(
+                    maintenance_capability,
+                    maintenance_owner_id,
+                )
+
+    def _execute_new_transition(
+        self,
+        *,
+        plan: SchoolYearTransitionPlan,
+        token: str,
+        plan_hash: str,
+        expected_hash: str,
+        target_id: str,
+    ) -> SchoolYearTransitionExecutionResult:
+        source_state_sha256 = self._read_source_state()
+        if source_state_sha256 != plan.source_sha256:
+            raise SchoolYearTransitionExecutionError(
+                "transition_sources_changed"
+            )
+        evidence = self._create_backup_evidence(
+        )
+        _validate_backup_evidence(
+            evidence,
+            expected_source_state_sha256=source_state_sha256,
+            validated_at=self._now_provider(),
+        )
+        if school_year_transition_plan_sha256(plan) != expected_hash:
+            raise SchoolYearTransitionExecutionError(
+                "transition_plan_sha256_mismatch"
+            )
+        return self._execute_authorized(
+            plan=plan,
+            token=token,
+            plan_hash=plan_hash,
+            expected_hash=expected_hash,
+            target_id=target_id,
+            backup_evidence=evidence,
+        )
+
+    def _read_existing_receipt(
+        self,
+        *,
+        token: str,
+        plan_hash: str,
+        target_id: str,
+    ) -> StoredSchoolYearTransition | None:
+        connection = self._connection_factory()
+        try:
+            connection.row_factory = sqlite3.Row
+            connection.execute("PRAGMA query_only = ON")
+            repository = self._repository_factory(connection)
+            existing = repository.find_by_operation_token(token)
+            if existing is not None:
+                if (
+                    existing.plan_sha256 == plan_hash
+                    and existing.to_school_year_id == target_id
+                ):
+                    return existing
+                raise SchoolYearTransitionExecutionError(
+                    "transition_operation_token_conflict"
+                )
+            if repository.find_by_target_school_year_id(target_id) is not None:
+                raise SchoolYearTransitionExecutionError(
+                    "transition_target_school_year_conflict"
+                )
+            return None
+        except SchoolYearTransitionExecutionError:
+            raise
+        except (sqlite3.Error, ValueError, TypeError):
+            raise SchoolYearTransitionExecutionError(
+                "transition_receipt_read_failed"
+            ) from None
+        finally:
+            try:
+                connection.close()
+            except sqlite3.Error:
+                raise SchoolYearTransitionExecutionError(
+                    "transition_receipt_read_failed"
+                ) from None
+
+    def _read_source_state(self) -> str:
+        connection = self._connection_factory()
+        try:
+            connection.row_factory = sqlite3.Row
+            connection.execute("PRAGMA query_only = ON")
+            return self._repository_factory(connection).source_sha256()
+        except (sqlite3.Error, ValueError, TypeError):
+            raise SchoolYearTransitionExecutionError(
+                "transition_source_read_failed"
+            ) from None
+        finally:
+            try:
+                connection.close()
+            except sqlite3.Error:
+                raise SchoolYearTransitionExecutionError(
+                    "transition_source_read_failed"
+                ) from None
+
+    def _create_backup_evidence(
+        self,
+    ) -> SchoolYearTransitionBackupEvidence:
+        if self._backup_service is None:
+            raise SchoolYearTransitionExecutionError(
+                "transition_backup_evidence_missing"
+            )
+        try:
+            evidence = self._backup_service.create_and_verify()
+        except SchoolYearTransitionExecutionError:
+            raise
+        except Exception:
+            raise SchoolYearTransitionExecutionError(
+                "transition_backup_failed"
+            ) from None
+        if evidence is None:
+            raise SchoolYearTransitionExecutionError(
+                "transition_backup_evidence_missing"
+            )
+        return evidence
+
+    def _release_maintenance(
+        self,
+        capability: MaintenanceCapability,
+        owner_id: str,
+    ) -> None:
+        try:
+            self._maintenance_gate.abort(capability, owner_id=owner_id)
+        except MaintenanceGateError:
+            self._maintenance_gate.mark_recovery_required()
+            raise SchoolYearTransitionExecutionError(
+                "transition_recovery_required"
+            ) from None
 
     def _execute_authorized(
         self,
@@ -155,8 +337,10 @@ class ExecuteSchoolYearTransition:
         plan_hash: str,
         expected_hash: str,
         target_id: str,
+        backup_evidence: SchoolYearTransitionBackupEvidence,
     ) -> SchoolYearTransitionExecutionResult:
         connection = self._connection_factory()
+        commit_attempted = False
         try:
             connection.row_factory = sqlite3.Row
             connection.execute("PRAGMA foreign_keys = ON")
@@ -168,6 +352,8 @@ class ExecuteSchoolYearTransition:
                 if (
                     existing.plan_sha256 == plan_hash
                     and existing.to_school_year_id == target_id
+                    and existing.backup_sha256
+                    == backup_evidence.backup_sha256
                 ):
                     connection.rollback()
                     return _result_from_stored(existing)
@@ -186,6 +372,12 @@ class ExecuteSchoolYearTransition:
                 plan=plan,
                 target_school_year_id=target_id,
             )
+            if repository.source_sha256() != (
+                backup_evidence.source_state_sha256
+            ):
+                raise SchoolYearTransitionExecutionError(
+                    "transition_backup_source_state_mismatch"
+                )
             if school_year_transition_plan_sha256(plan) != expected_hash:
                 raise SchoolYearTransitionExecutionError(
                     "transition_plan_sha256_mismatch"
@@ -231,6 +423,7 @@ class ExecuteSchoolYearTransition:
                 to_school_year_id=target_id,
                 operation_token=token,
                 plan_sha256=plan_hash,
+                backup_sha256=backup_evidence.backup_sha256,
                 result_counts_json=result_counts_json,
                 completed_at=completed_at,
             )
@@ -244,24 +437,49 @@ class ExecuteSchoolYearTransition:
                 expected_exited_count=counts.exited_count,
                 operation_token=token,
             )
+            result = _result_from_stored(stored)
+            commit_attempted = True
             connection.commit()
-            return _result_from_stored(stored)
+            commit_attempted = False
+            return result
         except SchoolYearTransitionExecutionError:
-            if connection.in_transaction:
-                connection.rollback()
+            self._rollback_or_recovery(connection, commit_attempted)
             raise
         except SchoolYearTransitionRepositoryError as error:
-            if connection.in_transaction:
-                connection.rollback()
+            self._rollback_or_recovery(connection, commit_attempted)
             raise SchoolYearTransitionExecutionError(error.code) from None
         except (sqlite3.Error, ValueError, TypeError):
-            if connection.in_transaction:
-                connection.rollback()
+            self._rollback_or_recovery(connection, commit_attempted)
+            if self._maintenance_gate.state is MaintenanceState.RECOVERY_REQUIRED:
+                raise SchoolYearTransitionExecutionError(
+                    "transition_recovery_required"
+                ) from None
             raise SchoolYearTransitionExecutionError(
                 "transition_execution_failed"
             ) from None
         finally:
-            connection.close()
+            try:
+                connection.close()
+            except sqlite3.Error:
+                self._maintenance_gate.mark_recovery_required()
+                raise SchoolYearTransitionExecutionError(
+                    "transition_recovery_required"
+                ) from None
+
+    def _rollback_or_recovery(
+        self,
+        connection: sqlite3.Connection,
+        commit_attempted: bool,
+    ) -> None:
+        if commit_attempted:
+            self._maintenance_gate.mark_recovery_required()
+            return
+        if not connection.in_transaction:
+            return
+        try:
+            connection.rollback()
+        except sqlite3.Error:
+            self._maintenance_gate.mark_recovery_required()
 
 
 def _validate_executable_plan(plan: SchoolYearTransitionPlan) -> None:
@@ -466,6 +684,7 @@ def _result_from_stored(
         to_school_year_id=stored.to_school_year_id,
         operation_token=stored.operation_token,
         plan_sha256=stored.plan_sha256,
+        backup_sha256=_require_real_backup_sha256(stored.backup_sha256),
         counts=counts,
         completed_at=stored.completed_at,
     )
@@ -513,6 +732,68 @@ def _require_sha256(value: object, code: str) -> str:
     ):
         raise SchoolYearTransitionExecutionError(code)
     return value
+
+
+def _require_real_backup_sha256(value: object) -> str:
+    result = _require_sha256(value, "transition_backup_sha256_invalid")
+    if result == "0" * 64:
+        raise SchoolYearTransitionExecutionError(
+            "transition_backup_sha256_invalid"
+        )
+    return result
+
+
+def _validate_backup_evidence(
+    evidence: object,
+    *,
+    expected_source_state_sha256: str,
+    validated_at: datetime,
+) -> None:
+    if not isinstance(evidence, SchoolYearTransitionBackupEvidence):
+        raise SchoolYearTransitionExecutionError(
+            "transition_backup_evidence_invalid"
+        )
+    backup_id = evidence.backup_id
+    if (
+        not isinstance(backup_id, str)
+        or not backup_id.startswith("SYB-")
+        or len(backup_id) != 36
+        or any(character not in "0123456789abcdef" for character in backup_id[4:])
+    ):
+        raise SchoolYearTransitionExecutionError(
+            "transition_backup_id_invalid"
+        )
+    _require_real_backup_sha256(evidence.backup_sha256)
+    _require_sha256(
+        evidence.source_state_sha256,
+        "transition_backup_source_state_invalid",
+    )
+    if evidence.source_state_sha256 != expected_source_state_sha256:
+        raise SchoolYearTransitionExecutionError(
+            "transition_backup_source_state_mismatch"
+        )
+    _require_sha256(
+        evidence.source_schema_fingerprint,
+        "transition_backup_schema_fingerprint_invalid",
+    )
+    if evidence.source_schema_fingerprint != FINAL_SCHEMA_FINGERPRINT:
+        raise SchoolYearTransitionExecutionError(
+            "transition_backup_schema_fingerprint_mismatch"
+        )
+    verified_at = _require_evidence_timestamp(evidence.verified_at)
+    validation_time = _require_timestamp(validated_at)
+    if verified_at > validation_time:
+        raise SchoolYearTransitionExecutionError(
+            "transition_backup_verified_at_invalid"
+        )
+
+
+def _require_evidence_timestamp(value: object) -> datetime:
+    if not isinstance(value, datetime) or value.tzinfo is None:
+        raise SchoolYearTransitionExecutionError(
+            "transition_backup_verified_at_invalid"
+        )
+    return value.astimezone(UTC)
 
 
 def _require_timestamp(value: object) -> datetime:

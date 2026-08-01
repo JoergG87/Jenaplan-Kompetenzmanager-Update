@@ -5,9 +5,9 @@
 **Status:** Direkte Final-V3-Schemaquelle, synthetischer temporärer
 Testdatenpfad, zentrale Assignment-API, SJ-2E-Umstellung der produktiven
 Membership-Reader, SJ-2F-Umstellung der produktiven Writer und die isolierte
-synthetische SJ-3C.2-Ausführung und das anwendungsweite
-SJ-3C.3-Maintenance-Gate sind lokal implementiert. Die
-Produkt-Ausführungsfreigabe bleibt offen.
+synthetische SJ-3C.2-Ausführung, das anwendungsweite SJ-3C.3-Maintenance-Gate
+und die verpflichtende SJ-3C.4-Backupbindung sind lokal implementiert.
+Passwort-Step-up und UI-/Shell-Ausführung bleiben offen.
 
 | Quelle | Fachliche Bedeutung | Owner | Nicht zulässige Ersatzquelle |
 |---|---|---|---|
@@ -22,14 +22,17 @@ Produkt-Ausführungsfreigabe bleibt offen.
 | `school_year_transitions` | unveränderlicher Beleg eines echten committed Schuljahreswechsels | School-Year Transition Service | Initialanlage, Startup, Bootstrap, Migration |
 | kanonische Schemaidentität | vollständiger Final-V3-Fingerprint und Objektinventar | Database Compatibility | nur `user_version`, Teilinventar oder Tabellenzahl |
 | Backupmanifest und Datenbankkopie | verifizierter Sicherheitsstand des exakten finalen Schemas | Backup / Restore | V2-Cutover-Evidence oder unregistriertes Schema |
+| `SchoolYearTransitionBackupEvidence` | flüchtiger unveränderlicher Nachweis genau des unter ACTIVE und nach Writer-Drain verifizierten Jahreswechselbackups; der echte Archivhash wird im Transitionbeleg persistiert | Application School-Year Transition Backup / `school_year_transitions.backup_sha256` | Null-Sentinel, Dateiname, UI-Status, ungeprüftes Backupresultat oder Backup eines anderen Quellenstands |
 | `MaintenanceGate`-Prozesszustand | ausschließlich flüchtige Writerzulassung, Drainstand und Owner-Capability; keine Fachdatenquelle | Core Runtime | UI-Disable, SQLite-Tabelle, Systemdatum, Backupstatus |
 
 Der Gatezustand wird nicht persistiert und verändert allein weder Final-V3
 noch Dokumente. Ein unklarer Laufzeitzustand wird ausschließlich
 fail-closed als `RECOVERY_REQUIRED` behandelt. Backup und Restore verwenden
-nicht die normale `WriterLease`; ihr reservierter Zweck
-`BACKUP_RESTORE` ist vom Schuljahreswechselvertrag getrennt und in SJ-3C.3
-nicht produktiv verdrahtet.
+nicht die normale `WriterLease`; ihr reservierter Zweck `BACKUP_RESTORE`
+bleibt vom Schuljahreswechselvertrag getrennt. SJ-3C.4 ruft den vorhandenen
+Backup-Service ausschließlich innerhalb der exklusiven
+`SCHOOL_YEAR_TRANSITION`-Operation auf und erteilt ihm keine eigenständige
+Maintenance-Capability.
 
 V3 ist das erste Produktschema. V2-Daten besitzen keine Produktdatenhoheit,
 keinen Restore- und keinen Migrationsvertrag. Bekannte oder unbekannte ältere
@@ -171,18 +174,17 @@ Abschlusszeitpunkt gehören zur vollständigen echten Wechseltransaktion.
 Synthetische Initialanlage, Datenbankstart und Schemaerzeugung schreiben
 keinen `school_year_transitions`-Datensatz.
 
-SJ-3C.2 implementiert davon ausschließlich die Qt-freie atomare
-Application-/Repository-Grenze auf frisch erzeugten temporären synthetischen
-Final-V3-Datenbanken. Der Quellenfingerabdruck umfasst technische
+Die seit SJ-3C.2 vorhandene Qt-freie atomare Application-/Repository-Grenze
+bleibt auf frisch erzeugten temporären synthetischen Final-V3-Datenbanken
+geprüft. Der Quellenfingerabdruck umfasst technische
 Schuljahreswerte, Aktiv-/Archivstatus der Kinder, vollständige Assignments
 sowie aktive und fachliche Kurs-/Gruppenwerte; Anzeigenamen sind keine
 Hashquelle. Der Beleg enthält nur technische IDs, Hashes, Zähler und
-Zeitpunkte. Weil dieses kleine Paket ausdrücklich kein Backup erzeugt oder
-integriert, trägt sein ausschließlich synthetischer Testbeleg den reservierten
-64-stelligen Null-Sentinel in `backup_sha256`. Dieser Wert ist kein
-Backupnachweis und darf niemals einen Produktwechsel freigeben. Runtime,
-UI, Maintenance-Gate, Authentifizierung und echte Datenbanken bleiben ohne
-Ausführungsverdrahtung.
+Zeitpunkte. SJ-3C.4 entfernt den früheren synthetischen Null-Sentinel aus dem
+ausführbaren Pfad: Jeder neue Beleg erhält ausschließlich den echten Hash des
+unmittelbar zuvor vollständig verifizierten und quellgebundenen Backups.
+Runtime-/Shell-/UI-Aufruf, Authentifizierung und echte lokale Datenbanken
+bleiben ohne Ausführungsverdrahtung.
 
 ## Phase 2 Berichte-Übersicht - ausschließlich vorhandene Lesequellen
 

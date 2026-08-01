@@ -287,6 +287,15 @@ class ObservationPersistenceUnitOfWork:
         """Continue pending work while the caller owns the shared writer lock."""
         self._recover_incomplete(except_token=None)
 
+    def has_pending_recovery_while_writer_locked(self) -> bool:
+        """Report any operation directory without mutating recovery state."""
+        if not self.staging_root.exists():
+            return False
+        return any(
+            child.name != ".writer.lock"
+            for child in self.staging_root.iterdir()
+        )
+
     def is_exact_noop(
         self,
         *,

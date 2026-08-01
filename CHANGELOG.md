@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- SJ-3C.4 bindet die atomare Schuljahreswechsel-Ausführung verpflichtend an
+  ein vollständig verifiziertes `.jkmbackup` des gedrainten Ausgangsstands.
+  Der Qt-freie Service aktiviert ausschließlich eine passende
+  `SCHOOL_YEAR_TRANSITION`-Capability aus `MAINTENANCE_PENDING`, erstellt und
+  verifiziert das Backup unter `MAINTENANCE_ACTIVE`, bindet sichere Backup-ID,
+  echten Archiv-Hash, Quellenhash, Final-V3-Schemafingerprint und
+  Verifikationszeitpunkt und prüft Quellen sowie Plan danach erneut. Erst dann
+  beginnt die atomare Transition; der Beleg speichert den echten Backup-Hash.
+  Der Quellenhash wird aus der isoliert verifizierten Backup-Datenbank selbst
+  berechnet; eine offene Observation-Recovery blockiert den Lauf, statt vor
+  dem Pflichtbackup noch Datei- oder Datenbankwrites nachzuholen.
+  Sichere Abbrüche rollen vollständig zurück und geben das Gate nach `NORMAL`
+  frei; ein uneindeutiger Zustand bleibt fail-closed in `RECOVERY_REQUIRED`.
+  Null-Sentinel, UI-/Shell-Ausführung, Passwort-Step-up, Build und Release sind
+  nicht Bestandteil dieses Pakets.
 - SJ-3C.3 ergänzt ein zentrales Qt-freies In-Process-Maintenance-Gate mit
   `NORMAL`, `MAINTENANCE_PENDING`, `MAINTENANCE_ACTIVE` und
   `RECOVERY_REQUIRED`. Ab `PENDING` werden neue fachliche Writer an der
@@ -11,11 +26,11 @@
   Assignmentwrites, Gruppen/Kurse/Kursgruppen, Beobachtungen samt Anhängen,
   Bestätigungen, Dokumente, Berichts- und LEG-Drafts/Abschlüsse/PDFs,
   Stundenplan sowie fachliche Dokumentationseinstellungen sind geschützt.
-  Der isolierte Transition-Service verlangt zusätzlich die ACTIVE
-  Owner-Capability für den Zweck `SCHOOL_YEAR_TRANSITION`. Backup/Restore
-  bleiben durch den getrennten Zweck `BACKUP_RESTORE` abgegrenzt und
-  unverdrahtet; UI, Backupworkflow, Step-up-Authentifizierung,
-  Ausführungsbutton und produktiver Transition-Aufruf wurden nicht ergänzt.
+  In diesem Zwischenstand verlangte der isolierte Transition-Service zusätzlich
+  die ACTIVE Owner-Capability für den Zweck `SCHOOL_YEAR_TRANSITION`, während
+  Backup/Restore noch unverdrahtet blieben. SJ-3C.4 ergänzt darauf aufbauend
+  die Backupbindung und kontrollierte Gatefreigabe; UI, Step-up-Authentifizierung,
+  Ausführungsbutton und produktiver Shell-Aufruf wurden nicht ergänzt.
 - SJ-3C.2 ergänzt die isolierte Qt-freie atomare Ausführungsgrenze für einen
   vollständig gelösten Schuljahreswechselplan auf ausschließlich temporären
   synthetischen Final-V3-Datenbanken. Plan und technische Quellen werden
@@ -28,10 +43,10 @@
   abweichende Retries sowie Fehler an jedem Schreibschritt werden ohne
   Teilumstellung abgelehnt beziehungsweise vollständig zurückgerollt.
   Historische Assignments und Fachrecords bleiben unverändert. Anzeigenamen
-  gelangen weder in Plan-Hash noch Beleg. Das Paket besitzt bewusst keine UI-,
-  Backup-, Authentifizierungs- oder Maintenance-Integration und ist nicht für
-  reale Datenbanken verdrahtet; der reservierte Null-Sentinel im synthetischen
-  Testbeleg ist ausdrücklich kein Backupnachweis.
+  gelangen weder in Plan-Hash noch Beleg. Dieser historische Zwischenstand
+  besaß bewusst keine UI-, Backup-, Authentifizierungs- oder Maintenance-
+  Integration und nutzte einen reservierten Null-Sentinel; SJ-3C.4 ersetzt
+  diesen Sentinel im ausführbaren Pfad durch den echten Backup-Hash.
 - Unter `Einstellungen → Schuljahre` ist jetzt der minimale Preview-only-
   Einstieg für den Schuljahreswechsel verfügbar. Die Unterseite zeigt das
   aktuelle Schuljahr und nimmt Bezeichnung, Beginn und Ende des neuen
