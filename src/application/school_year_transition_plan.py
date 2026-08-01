@@ -109,6 +109,7 @@ class SchoolYearTransitionPlanCounts:
     other_course_count: int
     repeat_year_level_three_count: int
     exited_count: int
+    group_change_count: int
     unresolved_count: int
     edited_count: int
 
@@ -462,6 +463,13 @@ class SchoolYearTransitionPlan:
             exited_count=_count_status(
                 self.items,
                 SchoolYearTransitionPlanTargetStatus.EXITED,
+            ),
+            group_change_count=sum(
+                item.resolved
+                and item.target_status
+                is not SchoolYearTransitionPlanTargetStatus.EXITED
+                and item.current_group_id != item.target_group_id
+                for item in self.items
             ),
             unresolved_count=sum(not item.resolved for item in self.items),
             edited_count=sum(item.edited for item in self.items),

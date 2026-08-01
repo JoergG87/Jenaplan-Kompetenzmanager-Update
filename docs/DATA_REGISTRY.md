@@ -7,7 +7,8 @@ Testdatenpfad, zentrale Assignment-API, SJ-2E-Umstellung der produktiven
 Membership-Reader, SJ-2F-Umstellung der produktiven Writer und die isolierte
 synthetische SJ-3C.2-Ausführung, das anwendungsweite SJ-3C.3-Maintenance-Gate
 und die verpflichtende SJ-3C.4-Backupbindung sind lokal implementiert.
-Passwort-Step-up und UI-/Shell-Ausführung bleiben offen.
+SJ-3C.5-Passwort-Step-up und SJ-3C.6-UI-/Shell-Ausführung sind lokal
+verdrahtet; die manuelle macOS-Abnahme bleibt offen.
 
 | Quelle | Fachliche Bedeutung | Owner | Nicht zulässige Ersatzquelle |
 |---|---|---|---|
@@ -62,12 +63,12 @@ fail-closed behandelt.
 expliziten temporären, noch nicht vorhandenen Zielpfad, ruft die direkte
 Final-V3-Schemaquelle auf und erzeugt deterministisch:
 
-- Schuljahr `2025/26` vom `2025-08-01` bis `2026-07-31` mit Status
-  `current`;
+- Schuljahr `2025/26` vom `2025-08-01` bis `2026-07-31` mit Status `closed`;
+- genau ein current-Schuljahr `2026/27` vom `2026-08-01` bis `2027-07-31`;
 - drei Kurse mit `year_level` 1, 2 und 3;
 - synthetische Stammgruppen;
 - synthetische Schülerstammdaten ohne Membershipfelder;
-- vollständige `enrolled`-Assignments;
+- vollständige historische und aktuelle `enrolled`-Assignments;
 - nur soweit für Regressionen erforderlich synthetische Beobachtungen,
   Bestätigungen, Berichts- und LEG-Daten.
 
@@ -183,8 +184,9 @@ Hashquelle. Der Beleg enthält nur technische IDs, Hashes, Zähler und
 Zeitpunkte. SJ-3C.4 entfernt den früheren synthetischen Null-Sentinel aus dem
 ausführbaren Pfad: Jeder neue Beleg erhält ausschließlich den echten Hash des
 unmittelbar zuvor vollständig verifizierten und quellgebundenen Backups.
-Runtime-/Shell-/UI-Aufruf, Authentifizierung und echte lokale Datenbanken
-bleiben ohne Ausführungsverdrahtung.
+SJ-3C.6 verdrahtet Runtime-/Shell-/UI-Aufruf und Authentifizierung mit dem
+bestehenden Executor. Persistierte Datenquellen, Backupformat und
+Transitionbeleg bleiben unverändert.
 
 ## Phase 2 Berichte-Übersicht - ausschließlich vorhandene Lesequellen
 

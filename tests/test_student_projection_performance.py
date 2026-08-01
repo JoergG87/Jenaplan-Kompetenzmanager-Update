@@ -39,7 +39,7 @@ from src.desktop_app.view_models.student_view_model import (
     documentation_summary_from_subjects,
 )
 
-AS_OF = date(2026, 7, 13)
+AS_OF = date(2026, 8, 13)
 
 
 class CountingConnectionProvider:
@@ -288,7 +288,7 @@ def test_batch_matches_canonical_status_and_student_summary(tmp_path: Path) -> N
         student_id=student_id,
         competency_id=competency_id,
     )
-    adapter = StudentDesktopAdapter(database=database)
+    adapter = StudentDesktopAdapter(database=database, today_provider=lambda: AS_OF)
 
     canonical = adapter.list_competency_status_projection_for_student(student_id)
     batched = _batch_statuses_for_student(adapter, student_id)
@@ -370,7 +370,7 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
             target_id=seed_reference_data().groups[0].group_id,
             subject_id="deutsch",
             subject_label="Deutsch",
-            at=datetime(2026, 7, 13, 8, 15),
+            at=datetime(2026, 8, 13, 8, 15),
         ),
     )
     _clear_course_groups(database)
@@ -381,7 +381,7 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
             target_id="course-group-missing",
             subject_id="deutsch",
             subject_label="Deutsch",
-            at=datetime(2026, 7, 13, 8, 15),
+            at=datetime(2026, 8, 13, 8, 15),
         ),
     )
     group_id = seed_reference_data().groups[0].group_id
@@ -399,7 +399,7 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
             target_id="course-group-one",
             subject_id="deutsch",
             subject_label="Deutsch",
-            at=datetime(2026, 7, 13, 8, 15),
+            at=datetime(2026, 8, 13, 8, 15),
         ),
     )
     master_data = SQLiteMasterDataRepository(database)
@@ -443,7 +443,7 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
             target_id="course-group-11",
             subject_id="deutsch",
             subject_label="Deutsch",
-            at=datetime(2026, 7, 13, 8, 15),
+            at=datetime(2026, 8, 13, 8, 15),
         ),
     )
 
@@ -605,7 +605,7 @@ def test_course_group_snapshot_preserves_existing_filter_semantics(
         target_id="course-group-both",
         subject_id="deutsch",
         subject_label="Deutsch",
-        at=datetime(2026, 7, 13, 8, 15),
+        at=datetime(2026, 8, 13, 8, 15),
         limit=100,
     )
     expected_student_ids = tuple(
@@ -658,7 +658,7 @@ def test_course_group_refresh_uses_one_snapshot_without_follow_up_read(
         target_id="course-group-snapshot",
         subject_id="deutsch",
         subject_label="Deutsch",
-        at=datetime(2026, 7, 13, 8, 15),
+        at=datetime(2026, 8, 13, 8, 15),
         limit=100,
     )
     provider.on_statement = None

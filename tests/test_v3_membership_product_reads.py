@@ -14,13 +14,15 @@ from src.desktop_app.adapters.student_desktop_adapter import (
     StudentDesktopAdapter,
 )
 from tests.helpers.synthetic_v3 import (
+    SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
     SYNTHETIC_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
     create_synthetic_v3_database,
 )
 
 
-AS_OF = date(2026, 1, 15)
+AS_OF = date(2027, 1, 15)
+PERF_AS_OF = date(2026, 1, 15)
 
 
 class _CountingConnectionProvider:
@@ -287,10 +289,10 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
                 SYNTHETIC_SCHOOL_YEAR_ID,
                 "GRP-TEST-B",
                 "CRS-TEST-2",
-                "2025-12-01",
-                "2026-02-01",
-                "2026-01-01T08:00:00+00:00",
-                "2026-01-01T08:00:00+00:00",
+                "2026-12-01",
+                "2027-02-01",
+                "2027-01-01T08:00:00+00:00",
+                "2027-01-01T08:00:00+00:00",
             ),
         )
     ambiguous = _adapter(ambiguous_path).get_student_profile(
@@ -361,7 +363,7 @@ def test_dashboard_uses_one_as_of_and_batch_target_student_ids(
             type(self).date_call_count += 1
             return super().date()
 
-    at = CountingDateTime(2026, 1, 15, 9, 0, tzinfo=UTC)
+    at = CountingDateTime(2027, 1, 15, 9, 0, tzinfo=UTC)
     heatmap, suggestions = adapter.dashboard_documentation_refresh(
         target_type="course_group",
         target_id="CG-PRODUCT",
@@ -393,9 +395,9 @@ def test_observation_edit_context_resolves_at_observation_date(
             """
             UPDATE student_school_year_assignments
             SET valid_to = '2025-10-31'
-            WHERE student_id = ?
+            WHERE student_id = ? AND school_year_id = ?
             """,
-            (SYNTHETIC_STUDENT_IDS[0],),
+            (SYNTHETIC_STUDENT_IDS[0], SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID),
         )
         connection.execute(
             """
@@ -408,7 +410,7 @@ def test_observation_edit_context_resolves_at_observation_date(
             (
                 "ASG-PRODUCT-LATER",
                 SYNTHETIC_STUDENT_IDS[0],
-                SYNTHETIC_SCHOOL_YEAR_ID,
+                SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
                 "GRP-TEST-B",
                 "CRS-TEST-2",
                 "2025-11-01",
@@ -449,8 +451,8 @@ def test_observation_edit_context_resolves_at_observation_date(
     assert historical_leg_preparation is not None
     assert neutral_leg_preparation is not None
     assert (current.group_name, current.course_name) == (
-        "Testgruppe B",
-        "Testkurs 2",
+        "Testgruppe A",
+        "Testkurs 1",
     )
     assert (historical.group_name, historical.course_name) == (
         "Testgruppe A",
@@ -474,7 +476,7 @@ def test_missing_active_course_never_leaks_the_technical_id(
     path = create_synthetic_v3_database(tmp_path / "inactive-course.sqlite")
     with sqlite3.connect(path) as connection:
         connection.execute(
-            "UPDATE courses SET active = 0 WHERE course_id = 'CRS-TEST-1'"
+        "UPDATE courses SET active = 0 WHERE course_id = 'CRS-TEST-1'"
         )
     adapter = _adapter(path)
 
@@ -505,7 +507,7 @@ def test_composed_product_query_budgets_are_constant_for_1_10_100_students(
         )
         adapter = StudentDesktopAdapter(
             database=database,
-            today_provider=lambda: AS_OF,
+            today_provider=lambda: PERF_AS_OF,
         )
         student_id = "STD-PERF-000"
         counts_by_size[student_count] = {
@@ -532,7 +534,7 @@ def test_composed_product_query_budgets_are_constant_for_1_10_100_students(
             "report_preparation": provider.select_count(
                 lambda: adapter.learning_report_preparation_for_student(
                     student_id,
-                    period_end=AS_OF,
+                    period_end=PERF_AS_OF,
                 )
             ),
         }

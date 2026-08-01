@@ -52,6 +52,7 @@ from src.core.sqlite_school_year_transition import (
 
 ConnectionFactory = Callable[[], sqlite3.Connection]
 TimestampProvider = Callable[[], datetime]
+ProgressCallback = Callable[[str], None]
 
 
 class SchoolYearTransitionExecutionError(RuntimeError):
@@ -135,6 +136,7 @@ class ExecuteSchoolYearTransition:
         expected_plan_sha256: str,
         step_up_authorization: SchoolYearTransitionStepUpAuthorization,
         maintenance_owner_id: str,
+        progress_callback: ProgressCallback | None = None,
     ) -> SchoolYearTransitionExecutionResult:
         owns_maintenance = False
         maintenance_capability: MaintenanceCapability | None = None
@@ -159,6 +161,7 @@ class ExecuteSchoolYearTransition:
                 plan=plan,
                 purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
             )
+            _report_progress(progress_callback, "writers_draining")
             maintenance_capability = self._maintenance_gate.request_maintenance(
                 owner_id=maintenance_owner_id,
                 purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
@@ -190,6 +193,7 @@ class ExecuteSchoolYearTransition:
                         plan_hash=plan_hash,
                         expected_hash=expected_hash,
                         target_id=target_id,
+                        progress_callback=progress_callback,
                     )
             self._release_maintenance(
                 maintenance_capability,
@@ -200,6 +204,10 @@ class ExecuteSchoolYearTransition:
         except SchoolYearTransitionStepUpError as error:
             raise SchoolYearTransitionExecutionError(error.code) from None
         except MaintenanceCapabilityError as error:
+            if self._maintenance_gate.state is MaintenanceState.RECOVERY_REQUIRED:
+                raise SchoolYearTransitionExecutionError(
+                    "transition_recovery_required"
+                ) from None
             raise SchoolYearTransitionExecutionError(error.code) from None
         except MaintenanceGateError:
             self._maintenance_gate.mark_recovery_required()
@@ -229,14 +237,15 @@ class ExecuteSchoolYearTransition:
         plan_hash: str,
         expected_hash: str,
         target_id: str,
+        progress_callback: ProgressCallback | None,
     ) -> SchoolYearTransitionExecutionResult:
         source_state_sha256 = self._read_source_state()
         if source_state_sha256 != plan.source_sha256:
             raise SchoolYearTransitionExecutionError(
                 "transition_sources_changed"
             )
-        evidence = self._create_backup_evidence(
-        )
+        _report_progress(progress_callback, "backup_creating")
+        evidence = self._create_backup_evidence()
         _validate_backup_evidence(
             evidence,
             expected_source_state_sha256=source_state_sha256,
@@ -246,6 +255,7 @@ class ExecuteSchoolYearTransition:
             raise SchoolYearTransitionExecutionError(
                 "transition_plan_sha256_mismatch"
             )
+        _report_progress(progress_callback, "assignments_checking")
         return self._execute_authorized(
             plan=plan,
             token=token,
@@ -253,6 +263,7 @@ class ExecuteSchoolYearTransition:
             expected_hash=expected_hash,
             target_id=target_id,
             backup_evidence=evidence,
+            progress_callback=progress_callback,
         )
 
     def _read_existing_receipt(
@@ -357,6 +368,7 @@ class ExecuteSchoolYearTransition:
         expected_hash: str,
         target_id: str,
         backup_evidence: SchoolYearTransitionBackupEvidence,
+        progress_callback: ProgressCallback | None,
     ) -> SchoolYearTransitionExecutionResult:
         connection = self._connection_factory()
         commit_attempted = False
@@ -402,6 +414,7 @@ class ExecuteSchoolYearTransition:
                     "transition_plan_sha256_mismatch"
                 )
 
+            _report_progress(progress_callback, "school_year_activating")
             completed_at = _require_timestamp(self._now_provider())
             counts = _execution_counts(plan)
             result_counts_json = _counts_json(counts)
@@ -446,6 +459,7 @@ class ExecuteSchoolYearTransition:
                 result_counts_json=result_counts_json,
                 completed_at=completed_at,
             )
+            _report_progress(progress_callback, "completion_checking")
             repository.verify_written_result(
                 from_school_year_id=plan.current_school_year_id,
                 to_school_year_id=target_id,
@@ -499,6 +513,14 @@ class ExecuteSchoolYearTransition:
             connection.rollback()
         except sqlite3.Error:
             self._maintenance_gate.mark_recovery_required()
+
+
+def _report_progress(
+    callback: ProgressCallback | None,
+    phase: str,
+) -> None:
+    if callback is not None:
+        callback(phase)
 
 
 def _validate_executable_plan(plan: SchoolYearTransitionPlan) -> None:

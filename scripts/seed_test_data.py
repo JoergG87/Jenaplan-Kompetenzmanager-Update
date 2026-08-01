@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
 
 from src.application.school_year_assignment import (  # noqa: E402
     CreateStudentWithInitialEnrollment,
+    EnrollStudent,
 )
 from src.core.constants import (  # noqa: E402
     COURSE_ID_PREFIX,
@@ -332,7 +333,7 @@ def _seed_students(database: SQLiteDatabase) -> tuple[V3Student, ...]:
         STUDENTS, start=1
     ):
         student_id = f"{STUDENT_ID_PREFIX}-{index:06d}"
-        assignment_id = f"ASG-TEST-{index:06d}"
+        assignment_id = f"ASG-TEST-2026-{index:06d}"
         result = CreateStudentWithInitialEnrollment(
             database.connect,
             student_id_factory=lambda value=student_id: value,
@@ -348,6 +349,21 @@ def _seed_students(database: SQLiteDatabase) -> tuple[V3Student, ...]:
             school_year_id=reference.school_year.school_year_id,
             valid_from=reference.school_year.start_date,
             valid_to=reference.school_year.end_date,
+            group_id=f"{GROUP_ID_PREFIX}-{group_index + 1:06d}",
+            course_id=f"{COURSE_ID_PREFIX}-{course_index + 1:06d}",
+        )
+        historical_year = reference.historical_school_years[0]
+        EnrollStudent(
+            database.connect,
+            assignment_id_factory=lambda value=(
+                f"ASG-TEST-{index:06d}"
+            ): value,
+            now_provider=lambda: SEED_TIMESTAMP,
+        ).execute(
+            student_id,
+            school_year_id=historical_year.school_year_id,
+            valid_from=historical_year.start_date,
+            valid_to=historical_year.end_date,
             group_id=f"{GROUP_ID_PREFIX}-{group_index + 1:06d}",
             course_id=f"{COURSE_ID_PREFIX}-{course_index + 1:06d}",
         )

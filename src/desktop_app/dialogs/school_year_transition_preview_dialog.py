@@ -1,4 +1,4 @@
-"""Editable Qt dialog for the transient SJ-3B.2b transition plan."""
+"""Editable transition plan with the guarded SJ-3C.6 activation stage."""
 
 from __future__ import annotations
 
@@ -6,8 +6,10 @@ from collections.abc import Callable
 from functools import partial
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QCloseEvent, QKeyEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QCheckBox,
     QComboBox,
     QDialogButtonBox,
     QFormLayout,
@@ -15,6 +17,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QPushButton,
     QTableWidget,
@@ -27,9 +30,16 @@ from src.application.school_year_transition_plan import (
     SchoolYearTransitionPlan,
     SchoolYearTransitionPlanError,
 )
+from src.application.school_year_transition_execution import (
+    SchoolYearTransitionExecutionResult,
+)
 from src.desktop_app.components import AppCard, DialogHeader, InlineMessage
 from src.desktop_app.components import configure_button
 from src.desktop_app.motion import MotionDialog
+from src.desktop_app.school_year_transition_activation import (
+    SchoolYearTransitionActivationController,
+    SchoolYearTransitionActivationErrorInfo,
+)
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.school_year_transition_preview_view_model import (
     SchoolYearTransitionDecisionOptionViewModel,
@@ -54,12 +64,15 @@ TABLE_HEADERS = (
 
 
 class SchoolYearTransitionPreviewDialog(MotionDialog):
-    """Edit one transient plan without repositories, writes, or execution."""
+    """Edit one transient plan and project its composed activation workflow."""
 
     def __init__(
         self,
         plan: SchoolYearTransitionPlan,
         parent: QWidget | None = None,
+        *,
+        activation_controller: SchoolYearTransitionActivationController
+        | None = None,
     ) -> None:
         super().__init__(parent)
         self.plan = plan
@@ -76,6 +89,12 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self._selected_student_ids: set[str] = set()
         self._visible_student_ids: tuple[str, ...] = ()
         self._populating_table = False
+        self.activation_controller = activation_controller
+        self._activation_running = False
+        self._critical_execution_started = False
+        self._terminal_state = False
+        self._recovery_required = False
+        self._controlled_close_allowed = False
         self._build()
 
     def _build(self) -> None:
@@ -90,8 +109,8 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                     f"{self.view_model.planned_school_year_label}"
                 ),
                 (
-                    "Individuelle Änderungen bleiben flüchtig. "
-                    "Es werden keine Daten gespeichert oder ausgeführt."
+                    "Prüfen Sie alle Zuordnungen. Erst die finale "
+                    "Bestätigung aktiviert das neue Schuljahr."
                 ),
                 icon_name="info",
             )
@@ -108,6 +127,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self._configure_table()
         self.table.itemChanged.connect(self._selection_item_changed)
         layout.addWidget(self.table, 1)
+        layout.addWidget(self._activation_card())
 
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Close
@@ -119,17 +139,99 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         )
         if self.close_button is not None:
             self.close_button.setText("Schließen")
-            self.close_button.setDefault(True)
-            self.close_button.setAutoDefault(True)
-            self.close_button.setShortcut("Esc")
+            self.close_button.setDefault(False)
+            self.close_button.setAutoDefault(False)
             configure_button(
                 self.close_button,
                 "secondary",
                 "Vorschau schließen",
             )
-        self.buttons.rejected.connect(self.reject)
+        self.buttons.rejected.connect(self._request_close)
         layout.addWidget(self.buttons)
+        if self.activation_controller is not None:
+            self.activation_controller.progress.connect(
+                self._show_execution_progress
+            )
+            self.activation_controller.succeeded.connect(
+                self._show_execution_success
+            )
+            self.activation_controller.failed.connect(
+                self._show_execution_failure
+            )
+            self.activation_controller.finished.connect(
+                self._activation_finished
+            )
         self._refresh_from_plan()
+
+    def _activation_card(self) -> AppCard:
+        card = AppCard("soft")
+        card.setObjectName("SchoolYearTransitionActivation")
+        card.setAccessibleName("Verbindliche Aktivierung des Schuljahres")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 14, 18, 14)
+        layout.setSpacing(8)
+
+        title = QLabel("Verbindliche Aktivierung")
+        set_label_style(title, "section_title")
+        layout.addWidget(title)
+        self.confirmation_checkbox = QCheckBox(
+            "Ich habe alle Zuordnungen geprüft"
+        )
+        self.confirmation_checkbox.setAccessibleName(
+            "Bestätigung: Ich habe alle Zuordnungen geprüft"
+        )
+        self.confirmation_checkbox.toggled.connect(
+            self._update_activation_availability
+        )
+        layout.addWidget(self.confirmation_checkbox)
+
+        password_row = QFormLayout()
+        self.password_field = QLineEdit()
+        self.password_field.setEchoMode(QLineEdit.EchoMode.Password)
+        self.password_field.setAccessibleName(
+            "App-Passwort zur Aktivierung erneut eingeben"
+        )
+        self.password_field.setPlaceholderText("App-Passwort")
+        self.password_field.textChanged.connect(
+            self._update_activation_availability
+        )
+        password_row.addRow("App-Passwort erneut eingeben", self.password_field)
+        layout.addLayout(password_row)
+
+        self.activate_button = QPushButton()
+        self.activate_button.setObjectName("SchoolYearTransitionActivate")
+        self.activate_button.setDefault(False)
+        self.activate_button.setAutoDefault(False)
+        configure_button(
+            self.activate_button,
+            "primary",
+            "Neues Schuljahr verbindlich aktivieren",
+        )
+        self.activate_button.clicked.connect(self._start_activation)
+        layout.addWidget(self.activate_button)
+
+        self.execution_status = InlineMessage()
+        self.execution_status.setObjectName(
+            "SchoolYearTransitionExecutionStatus"
+        )
+        self.execution_status.setAccessibleName(
+            "Status der verbindlichen Aktivierung"
+        )
+        layout.addWidget(self.execution_status)
+
+        self.progress_labels: dict[str, QLabel] = {}
+        for phase, text in (
+            ("writers_draining", "Schreibvorgänge werden beendet"),
+            ("backup_creating", "Sicherheitsbackup wird erstellt"),
+            ("assignments_checking", "Zuordnungen werden geprüft"),
+            ("school_year_activating", "Schuljahr wird aktiviert"),
+            ("completion_checking", "Abschluss wird geprüft"),
+        ):
+            label = QLabel(text)
+            label.setAccessibleName(f"Ausstehend: {text}")
+            self.progress_labels[phase] = label
+            layout.addWidget(label)
+        return card
 
     def _summary_card(self) -> AppCard:
         card = AppCard("soft")
@@ -150,6 +252,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             "Anderer Kurs",
             "Kurs 3 wiederholen",
             "Ausgeschieden",
+            "Stammgruppenänderungen",
             "Ungelöst",
             "Individuell bearbeitet",
         )
@@ -432,6 +535,9 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                 self.view_model.repeat_year_level_three_count
             ),
             "Ausgeschieden": str(self.view_model.exited_count),
+            "Stammgruppenänderungen": str(
+                self.view_model.group_change_count
+            ),
             "Ungelöst": str(self.view_model.unresolved_count),
             "Individuell bearbeitet": str(self.view_model.edited_count),
         }
@@ -445,6 +551,225 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             focus_kind=focus_kind,
         )
         self._update_selection_status()
+        self.activate_button.setText(
+            "Schuljahr "
+            f"{self.view_model.planned_school_year_label} "
+            "verbindlich aktivieren"
+        )
+        self.activate_button.setAccessibleName(self.activate_button.text())
+        self._update_activation_availability()
+
+    def _update_activation_availability(self, *_args: object) -> None:
+        validation = self.plan.validate()
+        executable = (
+            self.activation_controller is not None
+            and validation.complete
+            and validation.counts.unresolved_count == 0
+            and all(item.resolved for item in self.plan.items)
+            and self.confirmation_checkbox.isChecked()
+            and bool(self.password_field.text())
+            and not self._activation_running
+            and not self._terminal_state
+        )
+        self.activate_button.setEnabled(executable)
+
+    def _invalidate_confirmation(self) -> None:
+        if hasattr(self, "confirmation_checkbox"):
+            self.confirmation_checkbox.setChecked(False)
+            self.password_field.clear()
+
+    def _start_activation(self) -> None:
+        if self._activation_running or self._terminal_state:
+            return
+        validation = self.plan.validate()
+        if (
+            self.activation_controller is None
+            or not validation.complete
+            or validation.counts.unresolved_count != 0
+            or any(not item.resolved for item in self.plan.items)
+            or not self.confirmation_checkbox.isChecked()
+            or not self.password_field.text()
+        ):
+            self._update_activation_availability()
+            return
+        self._activation_running = True
+        self._set_editing_enabled(False)
+        self.execution_status.set_message(
+            "Das App-Passwort wird geprüft.",
+            tone="info",
+        )
+        password = self.password_field.text()
+        self.password_field.clear()
+        if not self.activation_controller.start(
+            plan=self.plan,
+            password=password,
+        ):
+            self._activation_running = False
+            self._set_editing_enabled(True)
+            self._update_activation_availability()
+
+    def _show_execution_progress(self, phase: str) -> None:
+        label = self.progress_labels.get(phase)
+        if label is None:
+            return
+        self._critical_execution_started = True
+        text = label.text()
+        label.setText(f"Aktuell: {text}")
+        label.setAccessibleName(f"Aktuell: {text}")
+        self.execution_status.set_message(text, tone="info")
+
+    def _show_execution_success(self, result: object) -> None:
+        if not isinstance(result, SchoolYearTransitionExecutionResult):
+            self._show_execution_failure(
+                SchoolYearTransitionActivationErrorInfo(
+                    "transition_execution_failed"
+                )
+            )
+            return
+        self._terminal_state = True
+        self._controlled_close_allowed = True
+        counts = result.counts
+        self.execution_status.set_message(
+            (
+                f"Schuljahr {self.view_model.planned_school_year_label} "
+                "wurde verbindlich aktiviert. Das Sicherheitsbackup wurde "
+                "erfolgreich bestätigt und der Schuljahreswechsel vollständig "
+                "abgeschlossen. "
+                f"{counts.advance_1_to_2_count} Wechsel 1 → 2, "
+                f"{counts.advance_2_to_3_count} Wechsel 2 → 3, "
+                f"{counts.repeat_year_level_three_count} Wiederholer, "
+                f"{counts.exited_count} ausgeschieden und "
+                f"{counts.group_change_count} Stammgruppenänderungen; "
+                "0 ungelöst."
+            ),
+            tone="success",
+        )
+        self.close_button.setText("Fertig")
+        self.close_button.setAccessibleName(
+            "Erfolgreiche Aktivierung abschließen"
+        )
+
+    def _show_execution_failure(self, error: object) -> None:
+        info = (
+            error
+            if isinstance(error, SchoolYearTransitionActivationErrorInfo)
+            else SchoolYearTransitionActivationErrorInfo(
+                "transition_execution_failed"
+            )
+        )
+        code = info.code
+        if code == "password_invalid":
+            text = (
+                "Das App-Passwort ist nicht richtig. Es wurden keine "
+                "Änderungen begonnen."
+            )
+            terminal = False
+        elif code == "password_throttled":
+            wait = max(1, info.retry_after_seconds)
+            text = (
+                "Die Passwortprüfung ist vorübergehend gesperrt. "
+                f"Bitte in {wait} Sekunden erneut versuchen."
+            )
+            terminal = False
+        elif code == "password_check_unavailable":
+            text = "Das App-Passwort kann derzeit nicht geprüft werden."
+            terminal = True
+        elif _requires_new_preview(code):
+            text = (
+                "Die Zuordnungen haben sich seit der Vorschau geändert. "
+                "Bitte schließen Sie den Dialog und erstellen Sie eine neue "
+                "Vorschau."
+            )
+            terminal = True
+        elif code == "transition_recovery_required":
+            text = (
+                "Der Vorgang konnte nicht sicher abgeschlossen werden. "
+                "Die App bleibt für weitere Schreibvorgänge gesperrt, bis die "
+                "Wiederherstellung geprüft wurde."
+            )
+            terminal = True
+            self._recovery_required = True
+        elif _is_backup_failure(code):
+            text = (
+                "Das Sicherheitsbackup konnte nicht vollständig erstellt und "
+                "bestätigt werden. Die Daten wurden nicht geändert."
+            )
+            terminal = True
+        else:
+            text = (
+                "Das Schuljahr konnte nicht aktiviert werden. Begonnene "
+                "Änderungen wurden sicher zurückgenommen."
+            )
+            terminal = True
+        self._terminal_state = terminal
+        self._controlled_close_allowed = terminal
+        self.execution_status.set_message(text, tone="error")
+        if not terminal:
+            self.confirmation_checkbox.setChecked(False)
+            self.password_field.clear()
+
+    def _activation_finished(self) -> None:
+        self._activation_running = False
+        if self._terminal_state:
+            self.close_button.setEnabled(not self._recovery_required)
+            if self._recovery_required:
+                self.close_button.setText("App bleibt gesperrt")
+                self.close_button.setAccessibleName(
+                    "Wiederherstellung muss zuerst geprüft werden"
+                )
+        else:
+            self._set_editing_enabled(True)
+            self._update_selection_status()
+            self.password_field.setFocus(Qt.FocusReason.OtherFocusReason)
+        self._update_activation_availability()
+
+    def _set_editing_enabled(self, enabled: bool) -> None:
+        for widget in (
+            self.table,
+            self.unresolved_filter,
+            self.current_course_filter,
+            self.target_course_filter,
+            self.current_group_filter,
+            self.target_group_filter,
+            self.reset_filters_button,
+            self.select_visible_button,
+            self.clear_selection_button,
+            *self._bulk_action_widgets,
+            self.confirmation_checkbox,
+            self.password_field,
+        ):
+            widget.setEnabled(enabled)
+        self.close_button.setEnabled(enabled and not self._activation_running)
+
+    def _request_close(self) -> None:
+        if self._activation_running:
+            return
+        if self._critical_execution_started and not self._controlled_close_allowed:
+            return
+        super().reject()
+
+    def reject(self) -> None:
+        self._request_close()
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        if self._activation_running:
+            event.ignore()
+            return
+        if self._critical_execution_started and not self._controlled_close_allowed:
+            event.ignore()
+            return
+        event.accept()
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() in {Qt.Key.Key_Return, Qt.Key.Key_Enter}:
+            event.accept()
+            return
+        if event.key() == Qt.Key.Key_Escape:
+            if not self._critical_execution_started and not self._activation_running:
+                self._request_close()
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def _update_status_message(self) -> None:
         status_text = (
@@ -757,6 +1082,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         except (SchoolYearTransitionPlanError, ValueError):
             self._show_choice_error()
             return
+        self._invalidate_confirmation()
         self._refresh_from_plan(
             focus_student_id=student_ids[0],
             focus_kind=focus_kind,
@@ -801,6 +1127,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         except (SchoolYearTransitionPlanError, ValueError):
             self._show_choice_error()
             return
+        self._invalidate_confirmation()
         self._refresh_from_plan(
             focus_student_id=student_id,
             focus_kind="course",
@@ -826,6 +1153,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         except (SchoolYearTransitionPlanError, ValueError):
             self._show_choice_error()
             return
+        self._invalidate_confirmation()
         self._refresh_from_plan(
             focus_student_id=student_id,
             focus_kind="group",
@@ -858,8 +1186,29 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             self.bulk_unresolved_button,
             self.table,
             *self._decision_controls,
+            self.confirmation_checkbox,
+            self.password_field,
+            self.activate_button,
         ]
         if self.close_button is not None:
             controls.append(self.close_button)
         for current, following in zip(controls, controls[1:], strict=False):
             QWidget.setTabOrder(current, following)
+
+
+def _requires_new_preview(code: str) -> bool:
+    return code in {
+        "transition_sources_changed",
+        "transition_current_school_year_changed",
+        "transition_target_school_year_changed",
+        "transition_plan_sha256_mismatch",
+        "transition_step_up_plan_mismatch",
+        "transition_backup_source_state_mismatch",
+    }
+
+
+def _is_backup_failure(code: str) -> bool:
+    return code.startswith("transition_backup_") or code in {
+        "transition_backup_failed",
+        "transition_backup_evidence_missing",
+    }

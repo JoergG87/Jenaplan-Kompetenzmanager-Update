@@ -60,7 +60,7 @@ class DashboardTest(unittest.TestCase):
         self.adapter = TimetableDesktopAdapter(database)
         self.student_adapter = StudentDesktopAdapter(
             self.database_path,
-            today_provider=lambda: date(2026, 7, 13),
+            today_provider=lambda: date(2026, 8, 3),
         )
         self.master_data_adapter = MasterDataDesktopAdapter(self.student_adapter)
         week = self.adapter.week_view_model()
@@ -106,11 +106,11 @@ class DashboardTest(unittest.TestCase):
         screen = OverviewScreen()
 
         cases = (
-            (datetime(2026, 7, 13, 7, 30), "Als Nächstes · heute", 0),
-            (datetime(2026, 7, 13, 8, 15), "Jetzt", 1),
-            (datetime(2026, 7, 13, 9, 0), "Als Nächstes · heute", 0),
-            (datetime(2026, 7, 13, 11, 0), "Nächster Unterrichtskontext", 0),
-            (datetime(2026, 7, 19, 12, 0), "Nächster Unterrichtskontext", 0),
+            (datetime(2026, 8, 3, 7, 30), "Als Nächstes · heute", 0),
+            (datetime(2026, 8, 3, 8, 15), "Jetzt", 1),
+            (datetime(2026, 8, 3, 9, 0), "Als Nächstes · heute", 0),
+            (datetime(2026, 8, 3, 11, 0), "Nächster Unterrichtskontext", 0),
+            (datetime(2026, 8, 9, 12, 0), "Nächster Unterrichtskontext", 0),
         )
         for at, expected_status, current_count in cases:
             with self.subTest(at=at):
@@ -126,7 +126,7 @@ class DashboardTest(unittest.TestCase):
                 )
                 self.assertEqual(len(current_cards), current_count)
 
-        at = datetime(2026, 7, 13, 9, 0)
+        at = datetime(2026, 8, 3, 9, 0)
         screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, True)
         target_requests: list[tuple[str, str]] = []
         screen.timetable_target_selected.connect(
@@ -147,10 +147,10 @@ class DashboardTest(unittest.TestCase):
         empty_database.initialize_schema()
         empty_screen.set_dashboard(
             TimetableDesktopAdapter(empty_database).read_projection(
-                datetime(2026, 7, 13, 8, 0)
+            datetime(2026, 8, 3, 8, 0)
             ),
             DashboardDocumentationHeatmapViewModel(()),
-            datetime(2026, 7, 13, 8, 0),
+            datetime(2026, 8, 3, 8, 0),
             False,
         )
         labels = tuple(label.text() for label in empty_screen.findChildren(QLabel))
@@ -170,13 +170,13 @@ class DashboardTest(unittest.TestCase):
     def test_disabled_entries_are_absent_and_today_marks_past_lessons(self) -> None:
         self._save(1, "09:00", "09:45", active=False)
         screen = OverviewScreen()
-        at = datetime(2026, 7, 13, 10, 0)
+        at = datetime(2026, 8, 3, 10, 0)
         screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, True)
         labels = tuple(label.text() for label in screen.findChildren(QLabel))
         self.assertIn("Keine aktive Stunde geplant", labels)
 
         self._save(1, "08:00", "08:45")
-        at = datetime(2026, 7, 13, 10, 0)
+        at = datetime(2026, 8, 3, 10, 0)
         screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, True)
 
         cards = screen.findChildren(DashboardLessonCard)
@@ -191,10 +191,10 @@ class DashboardTest(unittest.TestCase):
         screen = OverviewScreen()
 
         cases = (
-            (datetime(2026, 7, 13, 8, 15), ("08:00",)),
-            (datetime(2026, 7, 13, 10, 0), ("10:00",)),
-            (datetime(2026, 7, 13, 9, 0), ()),
-            (datetime(2026, 7, 13, 10, 45), ()),
+            (datetime(2026, 8, 3, 8, 15), ("08:00",)),
+            (datetime(2026, 8, 3, 10, 0), ("10:00",)),
+            (datetime(2026, 8, 3, 9, 0), ()),
+            (datetime(2026, 8, 3, 10, 45), ()),
         )
         for at, expected_highlighted_times in cases:
             with self.subTest(at=at):
@@ -214,7 +214,7 @@ class DashboardTest(unittest.TestCase):
     def test_hero_timeline_scales_at_supported_desktop_sizes(self) -> None:
         self._save(1, "08:00", "08:45")
         screen = OverviewScreen()
-        at = datetime(2026, 7, 13, 8, 15)
+        at = datetime(2026, 8, 3, 8, 15)
         screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, True)
 
         for width, height in ((1180, 760), (1400, 900)):
@@ -232,7 +232,7 @@ class DashboardTest(unittest.TestCase):
     def test_heatmap_is_documentation_only_and_dashboard_scales_down(self) -> None:
         screen = OverviewScreen()
         screen.resize(620, 650)
-        at = datetime(2026, 7, 13, 7, 30)
+        at = datetime(2026, 8, 3, 7, 30)
         screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, False)
 
         labels = tuple(label.text() for label in screen.findChildren(QLabel))
@@ -254,7 +254,7 @@ class DashboardTest(unittest.TestCase):
         self.assertIn("background-color: #4F7599", theme.APP_STYLESHEET)
 
     def test_shell_navigates_all_target_types_and_builds_observation_prefill(self) -> None:
-        instant = datetime(2026, 7, 13, 8, 15)
+        instant = datetime(2026, 8, 3, 8, 15)
         shell = AppShell(self.database_path, now_provider=lambda: instant)
         week = shell.timetable_adapter.week_view_model()
         targets = {
@@ -351,7 +351,7 @@ class DashboardTest(unittest.TestCase):
                 (inactive.student_id,),
             )
             connection.commit()
-        at = datetime(2026, 7, 13, 8, 15)
+        at = datetime(2026, 8, 3, 8, 15)
 
         group_ids = self._suggestion_ids("group", self.group.item_id, at)
         course_ids = self._suggestion_ids("course", self.course.item_id, at)
@@ -369,27 +369,27 @@ class DashboardTest(unittest.TestCase):
             name: self._add_student(name, "Beispiel")
             for name in ("Anna", "Berta", "Carla", "Dora", "Emil", "Frieda", "Greta")
         }
-        self._add_observation(students["Berta"].student_id, "2026-06-25")
+        self._add_observation(students["Berta"].student_id, "2026-07-16")
         self._add_observation(
             students["Carla"].student_id,
-            "2026-07-11",
+            "2026-08-01",
             quick=True,
             rating="--",
         )
         self._add_observation(
-            students["Dora"].student_id, "2026-07-13", rating="--"
+            students["Dora"].student_id, "2026-08-03", rating="--"
         )
-        deleted = self._add_observation(students["Emil"].student_id, "2026-07-01")
+        deleted = self._add_observation(students["Emil"].student_id, "2026-07-20")
         self.student_adapter.delete_observation(deleted)
         self._add_observation(
             students["Frieda"].student_id,
-            "2026-07-10",
+            "2026-07-31",
             quick=True,
             subject_id="cross_subject",
         )
         self._add_observation(
             students["Greta"].student_id,
-            "2026-07-12",
+            "2026-08-02",
             competency=self.other_competency,
             subject_id=self.other_subject.item_id,
         )
@@ -397,8 +397,8 @@ class DashboardTest(unittest.TestCase):
         foreign = self._add_student(
             "Hanna", "Fremd", group_id=foreign_group.item_id
         )
-        self._add_observation(foreign.student_id, "2026-06-01")
-        at = datetime(2026, 7, 13, 8, 15)
+        self._add_observation(foreign.student_id, "2026-07-01")
+        at = datetime(2026, 8, 3, 8, 15)
 
         all_suggestions = self.student_adapter.list_dashboard_suggested_students(
             target_type="group",
@@ -431,7 +431,7 @@ class DashboardTest(unittest.TestCase):
     def test_matching_children_rows_emit_direct_observation_and_empty_state(self) -> None:
         student = self._add_student("Mara", "Beispiel")
         self._save(1, "08:00", "08:45")
-        at = datetime(2026, 7, 13, 8, 15)
+        at = datetime(2026, 8, 3, 8, 15)
         projection = self.adapter.read_projection(at)
         suggestions = self.student_adapter.list_dashboard_suggested_students(
             target_type="group",
@@ -483,7 +483,7 @@ class DashboardTest(unittest.TestCase):
 
     def test_shell_opens_direct_suggestion_with_lesson_prefill(self) -> None:
         student = self._add_student("Mara", "Direkt")
-        instant = datetime(2026, 7, 13, 8, 15)
+        instant = datetime(2026, 8, 3, 8, 15)
         shell = AppShell(self.database_path, now_provider=lambda: instant)
         with (
             patch("src.desktop_app.shell.NewObservationDialog") as dialog_type,

@@ -39,8 +39,9 @@ from tests.helpers.synthetic_v3 import (
 )
 
 
-AS_OF = date(2026, 1, 15)
-NOW = datetime(2026, 1, 15, 9, 0, tzinfo=UTC)
+AS_OF = date(2027, 1, 15)
+NOW = datetime(2027, 1, 15, 9, 0, tzinfo=UTC)
+HISTORICAL_AS_OF = date(2026, 1, 15)
 
 
 def _factory(path: Path):
@@ -84,7 +85,11 @@ def test_school_year_repository_contract_has_no_hidden_transaction(
         current = repository.require_current()
         assert repository.get_by_id(current.school_year_id) == current
         assert repository.get_current() == current
-        assert repository.list_all() == (current,)
+        assert repository.list_all()[-1] == current
+        assert tuple(item.status.value for item in repository.list_all()) == (
+            "closed",
+            "current",
+        )
         assert not connection.in_transaction
     finally:
         connection.close()
@@ -114,8 +119,10 @@ def test_school_year_require_current_fails_closed(v3_database: Path) -> None:
     (
         (date(2025, 8, 1), AssignmentResolutionStatus.ENROLLED),
         (date(2026, 7, 31), AssignmentResolutionStatus.ENROLLED),
+        (date(2026, 8, 1), AssignmentResolutionStatus.ENROLLED),
+        (date(2027, 7, 31), AssignmentResolutionStatus.ENROLLED),
         (date(2025, 7, 31), AssignmentResolutionStatus.NO_ASSIGNMENT),
-        (date(2026, 8, 1), AssignmentResolutionStatus.NO_ASSIGNMENT),
+        (date(2027, 8, 1), AssignmentResolutionStatus.NO_ASSIGNMENT),
     ),
 )
 def test_assignment_resolution_uses_inclusive_boundaries_without_fallback(
@@ -170,8 +177,8 @@ def test_ambiguous_matches_are_never_silently_selected(
                 SYNTHETIC_SCHOOL_YEAR_ID,
                 "GRP-TEST-B",
                 "CRS-TEST-2",
-                "2025-12-01",
-                "2026-02-01",
+                "2026-12-01",
+                "2027-02-01",
                 NOW.isoformat(),
                 NOW.isoformat(),
             ),
@@ -205,8 +212,8 @@ def test_archived_student_remains_historically_resolvable(
             WHERE student_id = ?
             """,
             (
-                "2026-08-05T09:00:00+00:00",
-                "2026-08-05T09:00:00+00:00",
+                "2027-08-05T09:00:00+00:00",
+                "2027-08-05T09:00:00+00:00",
                 SYNTHETIC_STUDENT_IDS[0],
             ),
         )
@@ -217,7 +224,7 @@ def test_archived_student_remains_historically_resolvable(
     )
     after_archive = service.assignment_at_date(
         SYNTHETIC_STUDENT_IDS[0],
-        date(2026, 8, 6),
+        date(2027, 8, 6),
     )
     assert historical.resolution_status is AssignmentResolutionStatus.ENROLLED
     assert historical.student_archived is True
@@ -259,14 +266,14 @@ def test_membership_in_school_year_requires_date_inside_requested_year(
         service.membership_in_school_year(
             SYNTHETIC_STUDENT_IDS[0],
             SYNTHETIC_SCHOOL_YEAR_ID,
-            reference_date=date(2026, 8, 1),
+            reference_date=date(2027, 8, 1),
         )
     assert captured.value.code == "reference_date_outside_school_year"
 
 
 def test_last_known_is_only_used_by_explicit_method(v3_database: Path) -> None:
     service = SchoolYearAssignmentQueryService(_factory(v3_database))
-    reference = date(2026, 8, 1)
+    reference = date(2027, 8, 1)
     regular = service.assignment_at_date(SYNTHETIC_STUDENT_IDS[0], reference)
     historical = service.last_known_membership(
         SYNTHETIC_STUDENT_IDS[0],
@@ -274,7 +281,7 @@ def test_last_known_is_only_used_by_explicit_method(v3_database: Path) -> None:
     )
     assert regular.resolution_status is AssignmentResolutionStatus.NO_ASSIGNMENT
     assert historical.resolution_status is AssignmentResolutionStatus.ENROLLED
-    assert historical.valid_to == date(2026, 7, 31)
+    assert historical.valid_to == date(2027, 7, 31)
 
 
 def test_current_group_course_and_course_group_members(v3_database: Path) -> None:
@@ -380,8 +387,8 @@ def test_current_membership_snapshot_excludes_non_enrolled_and_counts_once(
                 SYNTHETIC_SCHOOL_YEAR_ID,
                 "GRP-TEST-B",
                 "CRS-TEST-2",
-                "2025-12-01",
-                "2026-02-01",
+                "2026-12-01",
+                "2027-02-01",
                 NOW.isoformat(),
                 NOW.isoformat(),
             ),
@@ -535,7 +542,7 @@ def test_batch_assignment_query_count_is_constant(
     )
     factory = _CountingFactory(path)
     result = SchoolYearAssignmentQueryService(factory).assignments_at_dates(
-        {student_id: AS_OF for student_id in student_ids}
+        {student_id: HISTORICAL_AS_OF for student_id in student_ids}
     )
     assert [item.student_id for item in result] == list(student_ids)
     assert all(
@@ -557,7 +564,7 @@ def test_current_membership_batch_query_count_is_constant(
     factory = _CountingFactory(path)
     result = SchoolYearAssignmentQueryService(factory).current_memberships(
         student_ids,
-        as_of=AS_OF,
+        as_of=HISTORICAL_AS_OF,
         group_id="GRP-BULK",
         course_id="CRS-BULK",
     )
@@ -639,7 +646,7 @@ def test_actual_assignment_queries_use_registered_indexes(
     last_known_factory = _CountingFactory(v3_database)
     SchoolYearAssignmentQueryService(last_known_factory).last_known_membership(
         SYNTHETIC_STUDENT_IDS[0],
-        reference_date=date(2026, 8, 1),
+        reference_date=date(2027, 8, 1),
     )
     last_known_query = next(
         statement
@@ -678,8 +685,8 @@ def test_create_student_and_initial_enrollment_are_atomic(
         last_name="Beispiel",
         notes="Neu",
         school_year_id=SYNTHETIC_SCHOOL_YEAR_ID,
-        valid_from=date(2026, 2, 1),
-        valid_to=date(2026, 7, 31),
+        valid_from=date(2026, 8, 1),
+        valid_to=date(2027, 7, 31),
         group_id="GRP-TEST-A",
         course_id="CRS-TEST-1",
     )
@@ -712,8 +719,8 @@ def test_create_rejects_invalid_membership_references(
             last_name="Beispiel",
             notes="",
             school_year_id=SYNTHETIC_SCHOOL_YEAR_ID,
-            valid_from=date(2026, 2, 1),
-            valid_to=date(2026, 7, 31),
+            valid_from=date(2026, 8, 1),
+            valid_to=date(2027, 7, 31),
             group_id=group_id,
             course_id=course_id,
         )
@@ -758,8 +765,8 @@ def test_create_rejects_inactive_membership_references(
             last_name="Beispiel",
             notes="",
             school_year_id=SYNTHETIC_SCHOOL_YEAR_ID,
-            valid_from=date(2026, 2, 1),
-            valid_to=date(2026, 7, 31),
+            valid_from=date(2026, 8, 1),
+            valid_to=date(2027, 7, 31),
             group_id="GRP-TEST-A",
             course_id="CRS-TEST-1",
         )
@@ -797,8 +804,8 @@ def test_create_rejects_course_without_valid_year_level(
             last_name="Beispiel",
             notes="",
             school_year_id=SYNTHETIC_SCHOOL_YEAR_ID,
-            valid_from=date(2026, 2, 1),
-            valid_to=date(2026, 7, 31),
+            valid_from=date(2026, 8, 1),
+            valid_to=date(2027, 7, 31),
             group_id="GRP-TEST-A",
             course_id="CRS-TEST-1",
         )
@@ -830,8 +837,8 @@ def test_create_rolls_back_student_when_assignment_insert_fails(
             last_name="Rollback",
             notes="",
             school_year_id=SYNTHETIC_SCHOOL_YEAR_ID,
-            valid_from=date(2026, 2, 1),
-            valid_to=date(2026, 7, 31),
+            valid_from=date(2026, 8, 1),
+            valid_to=date(2027, 7, 31),
             group_id="GRP-TEST-A",
             course_id="CRS-TEST-1",
         )
@@ -858,7 +865,7 @@ def test_enroll_student_uses_explicit_interval_and_rejects_overlap(
             SYNTHETIC_STUDENT_IDS[0],
             school_year_id=SYNTHETIC_SCHOOL_YEAR_ID,
             valid_from=AS_OF,
-            valid_to=date(2026, 3, 1),
+            valid_to=date(2027, 3, 1),
             group_id="GRP-TEST-A",
             course_id="CRS-TEST-1",
         )
@@ -875,7 +882,7 @@ def test_enroll_student_succeeds_in_explicit_later_school_year(
                 school_year_id, label, start_date, end_date,
                 status, created_at, closed_at
             ) VALUES (
-                'SY-TEST-2026-27', '2026/27', '2026-08-01', '2027-07-31',
+                'SY-TEST-2027-28', '2027/28', '2027-08-01', '2028-07-31',
                 'planned', ?, NULL
             )
             """,
@@ -887,14 +894,14 @@ def test_enroll_student_succeeds_in_explicit_later_school_year(
         now_provider=lambda: NOW,
     ).execute(
         SYNTHETIC_STUDENT_IDS[0],
-        school_year_id="SY-TEST-2026-27",
-        valid_from=date(2026, 8, 1),
-        valid_to=date(2027, 7, 31),
+        school_year_id="SY-TEST-2027-28",
+        valid_from=date(2027, 8, 1),
+        valid_to=date(2028, 7, 31),
         group_id="GRP-TEST-A",
         course_id="CRS-TEST-2",
     )
     assert stored.assignment_id == "ASG-LATER-YEAR"
-    assert stored.membership.school_year_id == "SY-TEST-2026-27"
+    assert stored.membership.school_year_id == "SY-TEST-2027-28"
     connection = _factory(v3_database)()
     try:
         repository = StudentSchoolYearAssignmentRepository(connection)
@@ -954,8 +961,8 @@ def test_change_membership_supports_course_group_or_both(
     assert result.assignment.membership.group_id == expected_group
     assert result.assignment.membership.course_id == expected_course
     rows = _assignment_rows(v3_database, SYNTHETIC_STUDENT_IDS[0])
-    assert rows[0][7] == "2026-01-14"
-    assert rows[1][6] == "2026-01-15"
+    assert rows[1][7] == "2027-01-14"
+    assert rows[2][6] == "2027-01-15"
 
 
 def test_change_membership_returns_no_change_without_write(
@@ -986,7 +993,7 @@ def test_change_membership_blocks_first_interval_day(
             now_provider=lambda: NOW,
         ).execute(
             SYNTHETIC_STUDENT_IDS[0],
-            effective_on=date(2025, 8, 1),
+            effective_on=date(2026, 8, 1),
             course_id="CRS-TEST-2",
         )
     assert captured.value.code == "membership_change_on_first_interval_day"
@@ -999,12 +1006,12 @@ def test_change_membership_allows_last_interval_day(v3_database: Path) -> None:
         now_provider=lambda: NOW,
     ).execute(
         SYNTHETIC_STUDENT_IDS[0],
-        effective_on=date(2026, 7, 31),
+        effective_on=date(2027, 7, 31),
         course_id="CRS-TEST-2",
     )
     assert result.assignment is not None
-    assert result.assignment.membership.valid_from == date(2026, 7, 31)
-    assert result.assignment.membership.valid_to == date(2026, 7, 31)
+    assert result.assignment.membership.valid_from == date(2027, 7, 31)
+    assert result.assignment.membership.valid_to == date(2027, 7, 31)
 
 
 def test_change_rolls_back_shortening_when_replacement_insert_fails(
@@ -1094,10 +1101,10 @@ def test_archive_without_active_enrollment_changes_no_assignment(
     before = _assignment_rows(v3_database, SYNTHETIC_STUDENT_IDS[0])
     archived = ArchiveStudent(
         _factory(v3_database),
-        now_provider=lambda: datetime(2026, 8, 1, 9, 0, tzinfo=UTC),
+        now_provider=lambda: datetime(2027, 8, 1, 9, 0, tzinfo=UTC),
     ).execute(
         SYNTHETIC_STUDENT_IDS[0],
-        as_of=date(2026, 8, 1),
+        as_of=date(2027, 8, 1),
     )
     assert archived.active is False
     assert archived.archived_at is not None
@@ -1111,7 +1118,7 @@ def test_archive_rejects_timestamp_before_latest_master_data_update(
         connection.execute(
             """
             UPDATE students
-            SET updated_at = '2026-08-01T15:00:00+00:00'
+            SET updated_at = '2027-08-01T15:00:00+00:00'
             WHERE student_id = ?
             """,
             (SYNTHETIC_STUDENT_IDS[0],),
@@ -1119,10 +1126,10 @@ def test_archive_rejects_timestamp_before_latest_master_data_update(
     with pytest.raises(AssignmentApplicationError) as captured:
         ArchiveStudent(
             _factory(v3_database),
-            now_provider=lambda: datetime(2026, 8, 1, 9, 0, tzinfo=UTC),
+            now_provider=lambda: datetime(2027, 8, 1, 9, 0, tzinfo=UTC),
         ).execute(
             SYNTHETIC_STUDENT_IDS[0],
-            as_of=date(2026, 8, 1),
+                as_of=date(2027, 8, 1),
         )
     assert captured.value.code == "archive_timestamp_precedes_student_update"
     with sqlite3.connect(v3_database) as connection:
@@ -1143,10 +1150,10 @@ def test_archive_rejects_mismatched_reference_and_archive_day(
     with pytest.raises(AssignmentApplicationError) as captured:
         ArchiveStudent(
             _factory(v3_database),
-            now_provider=lambda: datetime(2026, 8, 2, 9, 0, tzinfo=UTC),
+            now_provider=lambda: datetime(2027, 8, 2, 9, 0, tzinfo=UTC),
         ).execute(
             SYNTHETIC_STUDENT_IDS[0],
-            as_of=date(2026, 8, 1),
+            as_of=date(2027, 8, 1),
         )
     assert (
         captured.value.code

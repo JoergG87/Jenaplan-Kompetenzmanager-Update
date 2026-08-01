@@ -43,6 +43,7 @@ V2-Restoreauswahl.
 | SJ-3B.2b-individuelle Planbearbeitung | aktueller flüchtiger `SchoolYearTransitionPlan` mit dessen kopierten Anzeige-Metadaten, aktiven Optionen, Validierung und Zählern | `SchoolYearTransitionPreviewViewModel` und `SchoolYearTransitionPreviewDialog` | Preview-Mutation, Widget-Fachlogik, Repository-/Servicezugriff, automatische Auswahl, Mehrfachauswahl, Sammeländerung, Write, Backup, Authentifizierung oder Ausführung |
 | SJ-3B.3-Filter und Sammelbearbeitung | aktueller flüchtiger `SchoolYearTransitionPlan`, kombinierte ViewModel-Filter sowie explizite stabile Auswahl-IDs; Sammelziele ausschließlich aus den aktiven Planoptionen | `SchoolYearTransitionPreviewViewModel`, `SchoolYearTransitionPreviewDialog` und `SchoolYearTransitionPlan` | Preview-Mutation, automatische Auswahl, Änderung verdeckter ausgewählter Zeilen, Widget-Repositoryzugriff, Write, Backup, Authentifizierung oder Ausführung |
 | isolierter SJ-3C.2-Wechselbeleg | vollständig gelöster source-gebundener Plan, Operation-Token und erwarteter Plan-Hash auf temporärer synthetischer Final-V3-Datenbank | `ExecuteSchoolYearTransition` und `SchoolYearTransitionExecutionRepository` | Widget-/Adapterwrite, Anzeigenamen im Beleg, Initialanlage, Bootstrap, Migration, reales Produktziel oder Freigabe ohne Backup |
+| SJ-3C.6-Aktivierung | vollständig gelöster flüchtiger Plan, Prüfbestätigung, Passwort-Step-up und sanitisiertes Phasen-/Ergebnisprotokoll | `AppShell` als Composition Root, `SchoolYearTransitionActivationController` als Workergrenze und `ExecuteSchoolYearTransition` als fachlicher Owner | Widget-Aufruf einzelner Backendstufen, UI-Hashing, technische IDs/Pfade/Exceptions, Doppelausführung oder Fortsetzung bei `RECOVERY_REQUIRED` |
 
 Beobachtung, Bericht und LEG liefern ihren vorhandenen fachlichen
 Referenzzeitpunkt als `AssignmentReferenceRequest`: `observations.date`,
@@ -66,11 +67,11 @@ SJ-3B.2b bearbeitet diesen Plan ausschließlich über dessen vorhandene
 Einzelmethoden. Das Widget hält nur die jeweils neue flüchtige Instanz;
 Optionen, Validierung und Zähler stammen aus Plan und ViewModel, ohne
 Vorschlags- oder Validierungslogik im Widget zu duplizieren.
-SJ-3A und die UI besitzen weiterhin keine Persistenz oder Ausführungsaktion.
-SJ-3C.2 besitzt getrennt davon ausschließlich die Qt-freie atomare
-Application-/Repository-Grenze für temporäre synthetische Final-V3-
-Datenbanken. Backup, Authentifizierung, Maintenance und Produktaktivierung
-sind nicht verdrahtet.
+SJ-3C.6 übergibt den vollständig gelösten Plan nach Checkbox und Passwort an
+eine eigene Workergrenze. Diese konsumiert Step-up und ruft ausschließlich den
+bestehenden Executor auf; Phasen-, Ergebnis- und Fehlerprojektion bleiben im
+Dialog. Das Widget besitzt weiterhin weder Repository-, Backup-, Maintenance-
+noch Transitionslogik.
 
 Die minimale Settings-Integration übergibt Bezeichnung, Beginn und Ende an
 den bestehenden `SchoolYearTransitionPreviewService`. Dieser erzeugt Preview

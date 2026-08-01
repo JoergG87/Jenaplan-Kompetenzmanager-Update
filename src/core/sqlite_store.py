@@ -131,6 +131,7 @@ from .learning_report_pdf import (
 from .records import (
     CourseRecord,
     GroupRecord,
+    HISTORICAL_SCHOOL_YEAR_CLOSED_AT,
     ReferenceData,
     SEED_TIMESTAMP,
     StudentRecord,
@@ -400,21 +401,28 @@ class SQLiteDatabase:
                     )
             with connection:
                 connection.execute("BEGIN IMMEDIATE")
-                school_year = data.school_year
-                connection.execute(
+                connection.executemany(
                     """
                     INSERT INTO school_years(
                         school_year_id, label, start_date, end_date,
                         status, created_at, closed_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, NULL)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (
-                        school_year.school_year_id,
-                        school_year.label,
-                        school_year.start_date.isoformat(),
-                        school_year.end_date.isoformat(),
-                        school_year.status.value,
-                        SEED_TIMESTAMP,
+                    tuple(
+                        (
+                            school_year.school_year_id,
+                            school_year.label,
+                            school_year.start_date.isoformat(),
+                            school_year.end_date.isoformat(),
+                            school_year.status.value,
+                            SEED_TIMESTAMP,
+                            (
+                                HISTORICAL_SCHOOL_YEAR_CLOSED_AT
+                                if school_year.status.value == "closed"
+                                else None
+                            ),
+                        )
+                        for school_year in data.school_years
                     ),
                 )
                 connection.executemany(

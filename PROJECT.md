@@ -76,10 +76,11 @@ zukünftige `enrolled`-Assignments darauf verweisen. Historische Assignments
 bleiben unverändert lesbar; Stammdatenwrites buchen kein Kind um.
 
 Der synthetische Entwicklungs-/Testdatenpfad erzeugt ausschließlich frische
-deterministische Final-V3-Daten mit current-Schuljahr `2025/26`,
-Kursstufen, V3-Schülerstammdaten und vollständigen Assignments. Er migriert
-oder überschreibt keine vorhandene Datenbank und verwendet keine echten
-Nutzerdaten.
+deterministische Final-V3-Daten mit geschlossenem Schuljahr `2025/26`,
+erhaltenen historischen Assignments und genau einem current-Schuljahr
+`2026/27` samt vollständigen aktuellen Assignments. Kursstufen,
+V3-Schülerstammdaten und Stammgruppen bleiben konsistent. Der Pfad migriert
+oder überschreibt keine vorhandene Datenbank und verwendet keine echten Daten.
 
 SJ-3A implementiert ausschließlich die Qt-freie, rein lesende
 Schuljahreswechsel-Vorschau. Sie prüft Zieljahresdaten, liest jedes V3-Kind
@@ -146,8 +147,14 @@ falscher Zweck, Wiederverwendung und Abbruch bleiben vollständig vor
 Maintenance und fachlichen Writes. Die Autorisierung enthält keine
 Credentialdaten und wird nicht persistiert.
 
+SJ-3C.6 verdrahtet diese bestehende Kette in der Settings-Oberfläche. Der
+vollständig gelöste Plan verlangt Prüfcheckbox, App-Passwort und die
+zielbenannte Aktivierung. Ein Desktop-Worker hält den Eventloop frei,
+verhindert Doppelstarts und sperrt Dialog sowie App-Schließen während des
+kritischen Laufs. Erfolg bestätigt Backup und Transition, zeigt
+Ergebniszahlen und lädt die App-Daten neu; Fehler bleiben neutral.
+
 Weiterhin nicht umgesetzt oder freigegeben sind Planpersistenz,
-Ausführungs-UI und Runtime-/Shell-Verdrahtung, explizite UI-Bestätigung,
 Touch-ID-Freigabe, unterjährige Mehrkindwechsel, Build, Packaging und Release.
 Die manuelle Prüfung der Runtime sowie der neuen Schüler-,
 Wechsel-, Austritts-, Kursstufen- und Schuljahreswechseloberflächen auf macOS
@@ -165,12 +172,11 @@ atomaren Wechseltransaktion neu und als current angelegt. Sein
 Ausgangs- und Zielschuljahr; eine Bootstrap-Transition mit leerer Ausgangs-ID
 ist ausgeschlossen.
 
-Vorschau, Passwort-Step-up, Maintenance-Gate, verifiziertes Sicherheitsbackup,
+Vorschau, Passwort-Step-up, explizite UI-Bestätigung, Maintenance-Gate, verifiziertes Sicherheitsbackup,
 erneute Quellenprüfung, atomare Transaktion, Rollback, Idempotenz,
 Historie und unveränderliche finale Bericht-/LEG-Artefakte bleiben für diesen
-späteren Produktprozess erforderlich. Die technische Step-up-Grenze ist
-implementiert; UI-Bestätigung und produktive Ausführungsverdrahtung bleiben
-offen.
+Produktprozess erforderlich und bis zur UI-Ausführung lokal verdrahtet. Die
+manuelle macOS-Abnahme bleibt offen.
 
 ## Berichte-Übersicht - implementierte Phase 2
 

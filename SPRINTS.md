@@ -10,8 +10,8 @@ implementiert. Die isolierte atomare SJ-3C.2-Ausführungslogik ist ausschließli
 für temporäre synthetische Final-V3-Datenbanken implementiert. SJ-3C.3 schützt
 alle produktiven Writer; SJ-3C.4 bindet die isolierte Ausführung an ein
 verifiziertes Backup und kontrollierte Maintenance-Freigabe. SJ-3C.5 setzt die
-verpflichtende Passwort-Step-up-Grenze davor. Explizite UI-Bestätigung,
-UI-/Shell-Aktivierung und unterjährige Mehrkindwechsel bleiben gesperrt.
+verpflichtende Passwort-Step-up-Grenze davor. SJ-3C.6 verdrahtet die finale
+UI-Bestätigung und Aktivierung. Unterjährige Mehrkindwechsel bleiben gesperrt.
 
 - [x] Geplantes Zieljahr auf Überlappung, strikte Nachfolge und Lückenlosigkeit
   prüfen.
@@ -51,7 +51,10 @@ UI-/Shell-Aktivierung und unterjährige Mehrkindwechsel bleiben gesperrt.
   App-Passwortprüfung und verlangt vor Maintenance eine kurzlebige,
   planhash- und zweckgebundene Einmal-Autorisierung; Fehler, Drosselung,
   Ablauf, Abbruch und Wiederverwendung bleiben ohne geschützten Seiteneffekt.
-- [ ] Explizite Bestätigung sowie UI-/Shell-Verdrahtung separat implementieren.
+- [x] SJ-3C.6 ergänzt Zusammenfassung, Prüfcheckbox, Passwortfeld,
+  ausdrückliche Zielaktion, Worker-/Schließsperre, neutrale Status- und
+  Fehlerprojektion, Erfolgszahlen sowie App-Datenreload.
+- [ ] SJ-3C.6 auf realem macOS mit Tastatur und VoiceOver manuell abnehmen.
 
 ## V3-only Architecture Cleanup
 
@@ -120,6 +123,9 @@ die manuelle macOS-UI-Prüfung steht weiterhin aus.
   verändern.
 - [x] Normalen synthetischen Entwicklungs-/Testdatenpfad direkt und
   deterministisch auf Final-V3 umstellen.
+- [x] Synthetischen Stichtag auf geschlossenes `2025/26` plus eindeutiges
+  current `2026/27` fortschreiben; historische und aktuelle Assignments
+  vollständig erhalten und Testuhren explizit setzen.
 - [x] Keine Migration, keine echten Daten und keine automatische Änderung
   eines vorhandenen lokalen Datenbestands ausführen.
 - [x] Runtime-Sperre bis zum getrennten späteren Aktivierungsauftrag erhalten.

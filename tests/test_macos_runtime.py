@@ -313,9 +313,10 @@ class MacosRuntimeTest(unittest.TestCase):
                         """
                         SELECT label, status
                         FROM school_years
+                        ORDER BY start_date
                         """
-                    ).fetchone(),
-                    ("2025/26", "current"),
+                    ).fetchall(),
+                    [("2025/26", "closed"), ("2026/27", "current")],
                 )
                 self.assertEqual(
                     connection.execute(
@@ -336,8 +337,11 @@ class MacosRuntimeTest(unittest.TestCase):
                     connection.execute(
                         """
                         SELECT COUNT(*)
-                        FROM student_school_year_assignments
-                        WHERE assignment_status = 'enrolled'
+                        FROM student_school_year_assignments AS assignment
+                        JOIN school_years AS school_year
+                          ON school_year.school_year_id = assignment.school_year_id
+                        WHERE assignment.assignment_status = 'enrolled'
+                          AND school_year.status = 'current'
                         """
                     ).fetchone()[0],
                     24,

@@ -190,6 +190,7 @@ def test_settings_exposes_recovery_action_without_support_reset_navigation_area(
         "documentation_subjects",
         "backup_restore",
         "security",
+        "school_years",
         "updates",
     }
     spy = QSignalSpy(screen.support_reset_requested)

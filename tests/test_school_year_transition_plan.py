@@ -35,7 +35,10 @@ from src.core.school_year_transition import (
     SchoolYearTransitionPreviewSources,
     SchoolYearTransitionValidationIssue,
 )
-from tests.helpers.synthetic_v3 import create_synthetic_v3_database
+from tests.helpers.synthetic_v3 import create_pre_transition_v3_database
+
+
+create_synthetic_v3_database = create_pre_transition_v3_database
 
 
 CURRENT = SchoolYear(

@@ -6,7 +6,7 @@ import sqlite3
 import tempfile
 import unittest
 from dataclasses import replace
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -56,12 +56,33 @@ class _TracingConnectionProvider:
         return connection
 
 
+class _FixedDateTime(datetime):
+    @classmethod
+    def now(cls, tz=None):  # type: ignore[no-untyped-def]
+        fixed = cls(2026, 7, 31, 10, 0, tzinfo=UTC)
+        return fixed if tz is not None else fixed.replace(tzinfo=None)
+
+
 class ReportOverviewPhase2AdapterTest(unittest.TestCase):
     def setUp(self) -> None:
+        for target in (
+            "src.core.learning_conference.datetime",
+            "src.core.learning_report.datetime",
+            "src.desktop_app.adapters.student_desktop_adapter.datetime",
+        ):
+            clock_patcher = patch(target, _FixedDateTime)
+            clock_patcher.start()
+            self.addCleanup(clock_patcher.stop)
         self.temp_dir = tempfile.TemporaryDirectory()
         self.database_path = Path(self.temp_dir.name) / "phase2.sqlite"
         create_sqlite_seed_database(self.database_path)
-        self.adapter = StudentDesktopAdapter(self.database_path)
+        self.adapter = StudentDesktopAdapter(
+            self.database_path,
+            today_provider=lambda: date(2026, 8, 1),
+            now_provider=lambda: _FixedDateTime(
+                2026, 7, 31, 10, 0, tzinfo=UTC
+            ),
+        )
         self.student = self.adapter.list_students()[0]
         self.competency = next(
             item

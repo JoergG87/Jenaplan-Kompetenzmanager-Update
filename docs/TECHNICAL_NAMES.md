@@ -56,7 +56,7 @@ Bootstrap-Transition-Typen.
 | `SchoolYearTransitionPreviewService` | Connection-gebundene Qt-freie Read-Komposition aller SJ-3A-Quellen in einem SQLite-Read-Snapshot; setzt `query_only` und führt keine Writes aus | Application School-Year Transition Preview |
 | `SchoolYearTransitionPreviewProjector` | SQLite-freier deterministischer Vorschlags- und Validierungsalgorithmus für SJ-3A | Application School-Year Transition Preview |
 | `SchoolYearTransitionPreviewViewModel` | Qt-freies SJ-3B-Anzeigemapping des aktuellen flüchtigen Plans mit Validierung, Zählern, sichtbaren Issues, planbasierten Einzeloptionen und kombinierbarer Zeilenfilterung | Desktop ViewModel |
-| `SchoolYearTransitionPreviewDialog` | isolierter PySide-Dialog zur individuellen und sichtbarkeitsgebundenen Sammelbearbeitung genau eines flüchtigen Plans; besitzt keine Persistenz- oder Ausführungsaktion | Desktop UI |
+| `SchoolYearTransitionPreviewDialog` | PySide-Dialog zur individuellen und sichtbarkeitsgebundenen Sammelbearbeitung sowie zur finalen geschützten Bestätigung, Phasen-, Ergebnis- und Fehlerprojektion; besitzt keine Backend-Fachlogik | Desktop UI |
 | `SchoolYearTransitionDecisionOptionViewModel` | darstellungsfertige bewusste Einzeloption aus den aktiven Kurs-/Gruppenoptionen des flüchtigen Plans; öffnet oder selektiert nichts automatisch | Desktop ViewModel |
 | `SchoolYearTransitionPlan` | unveränderlicher rein flüchtiger SJ-3B-Plan aus Preview und expliziten aktiven Kurs-/Gruppenoptionen; jede Einzel- oder Sammelbearbeitung über stabile `student_id`-Identitäten liefert eine neue Instanz | Application School-Year Transition Plan |
 | `SchoolYearTransitionPlanItem` | flüchtiger Zielstand genau einer stabilen `student_id` mit Anzeigename, kopierter bisheriger Zuordnung, Zielgruppe/-kurs, Zielstatus, ursprünglichen Issues, Auflösungs- und Bearbeitungskennzeichen | Application School-Year Transition Plan |
@@ -71,7 +71,10 @@ Bootstrap-Transition-Typen.
 | `SchoolYearTransitionExecutionCounts` | deterministische technische Ergebniszahlen des atomaren Wechsels | Application School-Year Transition Execution |
 | `SchoolYearTransitionExecutionResult` | unveränderliche Rückgabe eines neu committed oder idempotent wiedergefundenen Transitionbelegs | Application School-Year Transition Execution |
 | `SchoolYearTransitionExecutionError` | fail-closed Ablehnung vor oder innerhalb der atomaren Ausführungsgrenze mit stabilem technischen Code | Application School-Year Transition Execution |
-| `ExecuteSchoolYearTransition` | Qt-freier Application-Service für einmaligen Step-up-Verbrauch vor Maintenance-Anforderung, PENDING→ACTIVE-Aktivierung, Writer-Drain, verpflichtendes verifiziertes Backup, erneute Plan-/Quellenprüfung, `BEGIN IMMEDIATE`, atomare Writes, Beleg, Integritätsprüfung, Rollback und kontrollierte Gatefreigabe; bleibt ohne UI-/Shell-Produktverdrahtung | Application School-Year Transition Execution |
+| `ExecuteSchoolYearTransition` | Qt-freier Application-Service für einmaligen Step-up-Verbrauch vor Maintenance-Anforderung, PENDING→ACTIVE-Aktivierung, Writer-Drain, verpflichtendes verifiziertes Backup, erneute Plan-/Quellenprüfung, `BEGIN IMMEDIATE`, atomare Writes, Beleg, Integritätsprüfung, Rollback, kontrollierte Gatefreigabe und optionale private Phasencodes | Application School-Year Transition Execution |
+| `SchoolYearTransitionActivationController` | Desktop-eigene QThread-Lifecyclegrenze für genau einen Step-up-/Executor-Lauf mit Doppeltstartschutz und main-thread-sicherem Phasen-, Erfolgs- und Fehlerergebnis | Desktop Composition |
+| `SchoolYearTransitionActivationWorker` | widgetfreie Worker-Komposition aus vorhandenem Passwort-Step-up und bestehendem Executor; erzeugt nur flüchtige technische Laufidentitäten | Desktop Composition |
+| `SchoolYearTransitionActivationErrorInfo` | credential- und detailfreier Fehlercode für die neutrale UI-Projektion | Desktop Composition |
 | `SchoolYearTransitionBackupEvidence` | unveränderlicher SJ-3C.4-Nachweis aus sicherer technischer Backup-ID, echtem Archiv-SHA-256, gebundenem Quellen-SHA-256, Final-V3-Schemafingerprint und zeitzonenbewusstem Verifikationszeitpunkt | Application School-Year Transition Backup |
 | `VerifiedSchoolYearTransitionBackupAdapter` | Qt-freie Verbindung zum vorhandenen Backup-Application-Service; blockiert offene Observation-Recovery, erstellt ein normales Backup ohne Recovery-Writes, verifiziert die veröffentlichten Bytes erneut und berechnet Quellen- sowie Schemaidentität aus der isoliert verifizierten Backup-Datenbank selbst | Application School-Year Transition Backup |
 | `SchoolYearTransitionStepUpService` | Qt-freie SJ-3C.5-Grenze zur vorhandenen App-Passwortprüfung sowie zur Ausgabe, einmaligen Prüfung und Verwerfung einer flüchtigen plan- und zweckgebundenen Autorisierung | Application School-Year Transition Step-up |
@@ -1426,7 +1429,7 @@ Beispiele:
 | `StudentRecord` | read-only Kompatibilitaetsprojektion aus V3-Schuelerstammdaten und explizit aufgeloester Membership; kein Writer- oder Seedmodell | aktiv |
 | `GroupRecord` | Dataclass fuer Stammgruppen-Referenzdaten | aktiv |
 | `CourseRecord` | Dataclass fuer Kurs-Referenzdaten mit verbindlicher `year_level` 1, 2 oder 3 | aktiv |
-| `ReferenceData` | Container fuer aktive Final-V3-Referenzdaten einschließlich Schuljahr und Assignments ohne Workbook-Bezug | aktiv |
+| `ReferenceData` | Container fuer aktive Final-V3-Referenzdaten einschließlich historischer und aktueller Schuljahre sowie Assignments ohne Workbook-Bezug | aktiv |
 | `seed_reference_data()` | Erzeugt deterministische Final-V3-Referenzdaten fuer explizite neue Seed-/Testpfade | aktiv |
 
 Regel: Aktive Referenzdaten duerfen keine `openpyxl`- oder Workbook-Abhaengigkeit einfuehren.

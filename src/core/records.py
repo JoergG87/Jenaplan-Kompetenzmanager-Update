@@ -21,10 +21,15 @@ from .school_year import (
 
 DEFAULT_GROUP_ID = f"{GROUP_ID_PREFIX}-000001"
 DEFAULT_STUDENT_ID = f"{STUDENT_ID_PREFIX}-000001"
-SCHOOL_YEAR_ID = "SY-TEST-2025-26"
-SCHOOL_YEAR = "2025/26"
-SCHOOL_YEAR_START = date(2025, 8, 1)
-SCHOOL_YEAR_END = date(2026, 7, 31)
+HISTORICAL_SCHOOL_YEAR_ID = "SY-TEST-2025-26"
+HISTORICAL_SCHOOL_YEAR = "2025/26"
+HISTORICAL_SCHOOL_YEAR_START = date(2025, 8, 1)
+HISTORICAL_SCHOOL_YEAR_END = date(2026, 7, 31)
+HISTORICAL_SCHOOL_YEAR_CLOSED_AT = "2026-07-31T18:00:00+00:00"
+SCHOOL_YEAR_ID = "SY-TEST-2026-27"
+SCHOOL_YEAR = "2026/27"
+SCHOOL_YEAR_START = date(2026, 8, 1)
+SCHOOL_YEAR_END = date(2027, 7, 31)
 SEED_TIMESTAMP = "2025-07-01T08:00:00+00:00"
 
 
@@ -72,9 +77,16 @@ class ReferenceData:
     groups: tuple[GroupRecord, ...]
     courses: tuple[CourseRecord, ...]
     school_year: SchoolYear
+    historical_school_years: tuple[SchoolYear, ...]
     assignments: tuple[tuple[str, StudentMembershipAssignment], ...]
     default_group_id: str = DEFAULT_GROUP_ID
     default_student_id: str = DEFAULT_STUDENT_ID
+
+    @property
+    def school_years(self) -> tuple[SchoolYear, ...]:
+        """Return historical years followed by the single current year."""
+
+        return (*self.historical_school_years, self.school_year)
 
 
 def seed_reference_data() -> ReferenceData:
@@ -114,6 +126,15 @@ def seed_reference_data() -> ReferenceData:
             SCHOOL_YEAR_START,
             SCHOOL_YEAR_END,
             SchoolYearStatus.CURRENT,
+        ),
+        historical_school_years=(
+            SchoolYear(
+                HISTORICAL_SCHOOL_YEAR_ID,
+                HISTORICAL_SCHOOL_YEAR,
+                HISTORICAL_SCHOOL_YEAR_START,
+                HISTORICAL_SCHOOL_YEAR_END,
+                SchoolYearStatus.CLOSED,
+            ),
         ),
         assignments=_assignment_records(students),
     )
@@ -172,9 +193,27 @@ def _student_records() -> tuple[V3Student, ...]:
 def _assignment_records(
     students: tuple[V3Student, ...],
 ) -> tuple[tuple[str, StudentMembershipAssignment], ...]:
-    return tuple(
+    historical = tuple(
         (
             f"ASG-TEST-{assignment_number:06}",
+            StudentMembershipAssignment(
+                student_id=student.student_id,
+                school_year_id=HISTORICAL_SCHOOL_YEAR_ID,
+                group_id=DEFAULT_GROUP_ID,
+                course_id=(
+                    f"{COURSE_ID_PREFIX}-"
+                    f"{((assignment_number - 1) % 3) + 1:06}"
+                ),
+                assignment_status=StudentAssignmentStatus.ENROLLED,
+                valid_from=HISTORICAL_SCHOOL_YEAR_START,
+                valid_to=HISTORICAL_SCHOOL_YEAR_END,
+            ),
+        )
+        for assignment_number, student in enumerate(students, start=1)
+    )
+    current = tuple(
+        (
+            f"ASG-TEST-2026-{assignment_number:06}",
             StudentMembershipAssignment(
                 student_id=student.student_id,
                 school_year_id=SCHOOL_YEAR_ID,
@@ -190,3 +229,4 @@ def _assignment_records(
         )
         for assignment_number, student in enumerate(students, start=1)
     )
+    return historical + current

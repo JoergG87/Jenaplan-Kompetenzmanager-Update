@@ -47,12 +47,14 @@ from src.desktop_app.runtime import runtime_paths
 from src.security.application import AuthenticationResult
 from src.security.domain import AuthenticationStatus
 from tests.helpers.synthetic_v3 import (
-    SYNTHETIC_SCHOOL_YEAR_ID,
+    SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
-    create_synthetic_v3_database,
+    create_pre_transition_v3_database,
 )
 
 
+SYNTHETIC_SCHOOL_YEAR_ID = SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID
+create_synthetic_v3_database = create_pre_transition_v3_database
 NOW = datetime(2026, 7, 15, 10, 30, tzinfo=UTC)
 TOKEN = "sj-3c2-operation-001"
 MAINTENANCE_OWNER = "school-year-transition-test"
@@ -903,6 +905,37 @@ def test_ambiguous_commit_marks_recovery_required(v3_database: Path) -> None:
     assert gate.state is MaintenanceState.RECOVERY_REQUIRED
     with pytest.raises(MaintenanceWriterBlockedError):
         gate.begin_writer()
+
+
+def test_preexisting_recovery_state_is_normalized_for_blocking_ui(
+    v3_database: Path,
+) -> None:
+    plan = _resolved_plan(v3_database)
+    before = _database_state(v3_database)
+    gate = MaintenanceGate()
+    gate.mark_recovery_required()
+    step_up_service, authorization = _step_up(plan)
+
+    with pytest.raises(SchoolYearTransitionExecutionError) as captured:
+        ExecuteSchoolYearTransition(
+            _factory(v3_database),
+            maintenance_gate=gate,
+            step_up_service=step_up_service,
+            backup_service=_VerifiedBackupService(
+                source_state_sha256=plan.source_sha256
+            ),
+            now_provider=lambda: NOW,
+        ).execute(
+            plan=plan,
+            operation_token=TOKEN,
+            expected_plan_sha256=school_year_transition_plan_sha256(plan),
+            step_up_authorization=authorization,
+            maintenance_owner_id=MAINTENANCE_OWNER,
+        )
+
+    assert captured.value.code == "transition_recovery_required"
+    assert gate.state is MaintenanceState.RECOVERY_REQUIRED
+    assert _database_state(v3_database) == before
 
 
 def test_receipt_and_identical_retry_are_idempotent(v3_database: Path) -> None:

@@ -60,7 +60,10 @@ from src.desktop_app.view_models.school_year_transition_preview_view_model impor
     SELECT_OTHER_COURSE,
     SELECT_OTHER_GROUP,
 )
-from tests.helpers.synthetic_v3 import create_synthetic_v3_database
+from tests.helpers.synthetic_v3 import create_pre_transition_v3_database
+
+
+create_synthetic_v3_database = create_pre_transition_v3_database
 
 
 CURRENT = SchoolYear(

@@ -9,8 +9,8 @@ SJ-2F-Lifecycle der produktiven Writer sowie die isolierte synthetische
 SJ-3C.2-Ausführung, das SJ-3C.3-Maintenance-Gate und die verpflichtende
 SJ-3C.4-Backupbindung und SJ-3C.5-Passwort-Step-up-Grenze sind lokal umgesetzt.
 Exakt verifiziertes Final-V3 ist für die normale Runtime lokal freigegeben;
-UI-/Shell-Ausführung, explizite Bestätigung und die manuelle macOS-Abnahme
-bleiben offen.
+SJ-3C.6-UI-/Shell-Ausführung und explizite Bestätigung sind lokal umgesetzt;
+die manuelle macOS-Abnahme bleibt offen.
 
 1. Der Startup-Resolver prüft Pfad, WAL-/SHM-Sidecars, Restorezustand,
    `user_version` und vollständigen Schemafingerprint read-only.
@@ -112,6 +112,23 @@ keine UI-, Bestätigungs- oder Shell-Ausführungsaktion.
    noch in Logs, Backupnachweis, Transitionbeleg oder Ergebnis. Touch ID und
    Gerätecredential werden nicht aufgerufen und sind kein Fallback.
 
+## SJ-3C.6 UI-Aktivierung
+
+1. Nur ein vollständig gelöster Plan aktiviert Prüfcheckbox, Passwortfeld und
+   die zielbenannte finale Aktion gemeinsam.
+2. Ein Desktop-Worker ruft zuerst den vorhandenen Step-up-Service und nur bei
+   Erfolg den unveränderten Executor auf. Falsche Passwörter starten weder
+   Maintenance noch Backup.
+3. Der Executor meldet darstellbare Phasencodes für Writer-Drain, Backup,
+   Zuordnungsprüfung, Aktivierung und Abschlussprüfung. Das Widget besitzt
+   keine Maintenance-, Backup-, Repository- oder Transitionslogik.
+4. Während des Worker-Laufs sind Doppelstart, Escape, Dialog- und App-Schließen
+   gesperrt. Erfolg lädt die produktiven Projektionen neu und wird erst nach
+   Executor-Rückgabe angezeigt.
+5. Backupfehler ändern keine Fachdaten; veraltete Quellen verlangen eine neue
+   Vorschau; sichere Fehler zeigen den Rollback neutral. `RECOVERY_REQUIRED`
+   bleibt fail-closed und erlaubt keine normale Fortsetzung.
+
 ## Direkte Final-V3-Schemaerzeugung
 
 Die Schemaquelle akzeptiert ausschließlich ein ausdrücklich bestimmtes neues
@@ -131,12 +148,12 @@ Der Testdatenbuilder arbeitet nur auf einem expliziten temporären,
 nicht vorhandenen Datenbankpfad:
 
 1. vollständiges Final-V3 direkt erzeugen;
-2. deterministisches current-Schuljahr `2025/26` mit
-   `2025-08-01` bis `2026-07-31` anlegen;
+2. `2025/26` mit `2025-08-01` bis `2026-07-31` geschlossen und `2026/27`
+   mit `2026-08-01` bis `2027-07-31` als einziges current-Schuljahr anlegen;
 3. deterministische Stammgruppen und Kurse der Stufen 1, 2 und 3 anlegen;
 4. synthetische Schülerstammdaten ohne Membershipfelder anlegen;
-5. für jeden eingeschriebenen Testschüler ein vollständiges
-   `enrolled`-Assignment anlegen;
+5. für jeden eingeschriebenen Testschüler das historische und ein eindeutiges
+   aktuelles `enrolled`-Assignment vollständig anlegen;
 6. notwendige synthetische Beobachtungs-, Bestätigungs-, Bericht- und
    LEG-Regressionsdaten ergänzen;
 7. Constraints, Zuordnungsabdeckung und Determinismus prüfen.
@@ -210,8 +227,8 @@ erneut und führt Schließen des Ausgangsjahres, Aktivieren des Zieljahres,
 Assignmenterzeugung und Transition-Beleg in einer atomaren Transaktion aus.
 `from_school_year_id` und `to_school_year_id` referenzieren vorhandene
 Schuljahre. Rollback, Idempotenz und Historie bleiben verbindlich. Dieser
-Lifecycle ist backendseitig bis einschließlich Step-up implementiert; die
-explizite Bestätigung und UI-/Shell-Ausführung bleiben offen.
+Lifecycle ist einschließlich expliziter Bestätigung und UI-/Shell-Ausführung
+lokal implementiert; die manuelle macOS-Abnahme bleibt offen.
 
 ## SJ-2F-Lifecycle für produktive Writer
 

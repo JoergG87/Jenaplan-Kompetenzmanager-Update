@@ -429,13 +429,17 @@ class SQLiteSpikeTest(unittest.TestCase):
                         "SELECT student_id FROM students ORDER BY student_id"
                     ).fetchall()
                 )
-                school_year = connection.execute(
+                school_years = connection.execute(
                     """
                     SELECT
                         school_year_id, label, start_date, end_date, status
                     FROM school_years
+                    ORDER BY start_date
                     """
-                ).fetchone()
+                ).fetchall()
+                current_school_year = next(
+                    row for row in school_years if row[4] == "current"
+                )
                 course_year_levels = connection.execute(
                     """
                     SELECT course_id, year_level
@@ -481,9 +485,9 @@ class SQLiteSpikeTest(unittest.TestCase):
                     )
                     """,
                     (
-                        school_year[0],
-                        school_year[2],
-                        school_year[3],
+                        current_school_year[0],
+                        current_school_year[2],
+                        current_school_year[3],
                     ),
                 ).fetchone()[0]
                 group_count = connection.execute(
@@ -598,14 +602,23 @@ class SQLiteSpikeTest(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            school_year,
-            (
-                "SY-TEST-2025-26",
-                "2025/26",
-                "2025-08-01",
-                "2026-07-31",
-                "current",
-            ),
+            school_years,
+            [
+                (
+                    "SY-TEST-2025-26",
+                    "2025/26",
+                    "2025-08-01",
+                    "2026-07-31",
+                    "closed",
+                ),
+                (
+                    "SY-TEST-2026-27",
+                    "2026/27",
+                    "2026-08-01",
+                    "2027-07-31",
+                    "current",
+                ),
+            ],
         )
         self.assertEqual(
             course_year_levels,
@@ -615,10 +628,15 @@ class SQLiteSpikeTest(unittest.TestCase):
                 (f"{COURSE_ID_PREFIX}-000003", 3),
             ],
         )
-        self.assertEqual(assignment_count, 24)
+        self.assertEqual(assignment_count, 48)
         self.assertEqual(
             assignment_ids,
-            tuple(f"ASG-TEST-{index:06d}" for index in range(1, 25)),
+            (
+                tuple(f"ASG-TEST-{index:06d}" for index in range(1, 25))
+                + tuple(
+                    f"ASG-TEST-2026-{index:06d}" for index in range(1, 25)
+                )
+            ),
         )
         self.assertEqual(invalid_assignment_cardinality_count, 0)
         self.assertEqual(group_count, 4)

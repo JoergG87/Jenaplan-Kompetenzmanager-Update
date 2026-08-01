@@ -182,7 +182,7 @@ def test_only_historical_assignments_allow_deactivation_without_membership_write
             False,
             group.sort_order,
         ),
-        as_of=date(2026, 8, 1),
+        as_of=date(2027, 8, 1),
     )
     repository.upsert_course(
         MasterDataCourseRecord(
@@ -194,7 +194,7 @@ def test_only_historical_assignments_allow_deactivation_without_membership_write
             course.sort_order,
             course.year_level,
         ),
-        as_of=date(2026, 8, 1),
+        as_of=date(2027, 8, 1),
     )
 
     assert _assignment_rows(final_v3_database) == assignments_before

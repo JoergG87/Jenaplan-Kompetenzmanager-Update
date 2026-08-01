@@ -21,7 +21,10 @@ from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapt
 from src.desktop_app.dialogs.new_student_dialog import (
     StudentMembershipChangeDialog,
 )
-from tests.helpers.synthetic_v3 import create_synthetic_v3_database
+from tests.helpers.synthetic_v3 import create_pre_transition_v3_database
+
+
+create_synthetic_v3_database = create_pre_transition_v3_database
 
 
 AS_OF = date(2026, 1, 15)

@@ -26,15 +26,17 @@ from src.core.sqlite_store import (
 )
 from tests.helpers.synthetic_v3 import (
     SYNTHETIC_LEG_DRAFT_ID,
+    SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
     SYNTHETIC_REPORT_DRAFT_ID,
-    SYNTHETIC_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
-    create_synthetic_v3_database,
+    create_pre_transition_v3_database,
 )
 
 
 REPORT_DRAFT_ID = SYNTHETIC_REPORT_DRAFT_ID
 LEG_DRAFT_ID = SYNTHETIC_LEG_DRAFT_ID
+SYNTHETIC_SCHOOL_YEAR_ID = SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID
+create_synthetic_v3_database = create_pre_transition_v3_database
 STUDENT_ID = SYNTHETIC_STUDENT_IDS[0]
 SWITCH_DATE = date(2026, 2, 1)
 NOW = datetime(2026, 7, 20, 9, 0, tzinfo=UTC)

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Der synthetische Final-V3-Standardbestand führt `2025/26` jetzt geschlossen
+  mit unveränderten historischen Assignments und genau ein `current`-Schuljahr
+  `2026/27` mit vollständigen, eindeutigen `enrolled`-Assignments. Historische
+  Beobachtungs-, Bestätigungs-, Berichts- und LEG-Referenzdaten bleiben
+  unverändert; Transitiontests verwenden eine ausdrückliche
+  2025/26-Pre-Transition-Fixture statt des Wandkalenders.
+- SJ-3C.6 ergänzt die finale UI-Schutzstufe mit vollständiger Zusammenfassung,
+  bewusster Prüfbestätigung, erneutem App-Passwort und zielbenannter
+  Aktivierungsaktion. Ein Desktop-Worker verdrahtet den bestehenden Step-up-,
+  Maintenance-, Backup- und Transition-Workflow, verhindert Doppelstarts und
+  sperrt Dialog sowie App-Schließen während des kritischen Laufs. Erfolg lädt
+  die App-Daten neu; Passwort-, Backup-, Frische-, Rollback- und
+  `RECOVERY_REQUIRED`-Fehler bleiben ohne IDs, Hashes, Pfade oder Exceptions.
+  Touch ID, Mehrkindwechsel, Build und Release bleiben ausgeschlossen.
 - SJ-3C.5 ergänzt vor jedem Schuljahreswechsel eine verpflichtende Qt-freie
   Passwort-Step-up-Grenze. Erst ein vollständig gelöster Plan wird mit der
   vorhandenen `SecurityApplicationService.authenticate_password`-Prüfung

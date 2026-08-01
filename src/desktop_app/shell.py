@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, QTimer, Signal, QUrl
@@ -37,6 +37,16 @@ from src.core.sqlite_school_year_assignment import (
 )
 from src.application.school_year_transition_preview import (
     SchoolYearTransitionPreviewService,
+)
+from src.application.commands.backup import CreateBackupCommand
+from src.application.commands.school_year_transition_backup import (
+    VerifiedSchoolYearTransitionBackupAdapter,
+)
+from src.application.school_year_transition_execution import (
+    ExecuteSchoolYearTransition,
+)
+from src.application.school_year_transition_step_up import (
+    SchoolYearTransitionStepUpService,
 )
 from src.core.learning_report import ReportFinalizationError
 from src.core.learning_report_pdf import LearningReportPdfError
@@ -75,6 +85,9 @@ from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
 from src.desktop_app.dialogs.school_year_transition_preview_dialog import (
     SchoolYearTransitionPreviewDialog,
+)
+from src.desktop_app.school_year_transition_activation import (
+    SchoolYearTransitionActivationController,
 )
 from src.desktop_app.dialogs.timetable_entry_dialog import TimetableEntryDialog
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
@@ -198,6 +211,15 @@ class AppShell(QMainWindow):
         self._restore_confirmed = False
         self._restore_shutdown_in_progress = False
         self._backup_status_loaded = False
+        self._school_year_transition_step_up: (
+            SchoolYearTransitionStepUpService | None
+        ) = None
+        self._school_year_transition_executor: (
+            ExecuteSchoolYearTransition | None
+        ) = None
+        self._active_school_year_transition_controller: (
+            SchoolYearTransitionActivationController | None
+        ) = None
         self.onboarding_controller: OnboardingController | None = None
         self.selected_group_id: str | None = None
         self.selected_course_group_id: str | None = None
@@ -578,13 +600,49 @@ class AppShell(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         """Stop shell-owned timers before the Qt window is released."""
-        if self.backup_restore_operations.is_busy:
+        transition_busy = (
+            self._active_school_year_transition_controller is not None
+            and self._active_school_year_transition_controller.is_busy
+        )
+        if self.backup_restore_operations.is_busy or transition_busy:
             event.ignore()
             self.settings_screen.show_close_blocked()
             return
         self.dashboard_refresh_timer.stop()
         self.status_label.timer.stop()
         super().closeEvent(event)
+
+    def configure_school_year_transition_activation(
+        self,
+        security_service: object,
+    ) -> None:
+        """Attach the authenticated product services after security startup."""
+        step_up = SchoolYearTransitionStepUpService(
+            security_service,
+            now_provider=lambda: datetime.now(UTC),
+        )
+        backup = VerifiedSchoolYearTransitionBackupAdapter(
+            service=self.backup_restore_adapter.backup_service,
+            command=CreateBackupCommand(
+                database_path=self.runtime_paths.database,
+                runtime_paths=self.runtime_paths,
+                target_path=self.runtime_paths.backups,
+                app_version=self.backup_restore_adapter.app_version,
+                build_commit=self.backup_restore_adapter.build_commit,
+                source_tree_state=(
+                    self.backup_restore_adapter.source_tree_state
+                ),
+            ),
+            now_provider=lambda: datetime.now(UTC),
+        )
+        self._school_year_transition_step_up = step_up
+        self._school_year_transition_executor = ExecuteSchoolYearTransition(
+            self.adapter.database.connect,
+            maintenance_gate=self.maintenance_gate,
+            step_up_service=step_up,
+            backup_service=backup,
+            now_provider=lambda: datetime.now(UTC),
+        )
 
     def configure_onboarding(
         self,
@@ -753,8 +811,25 @@ class AppShell(QMainWindow):
             )
             return
 
-        dialog = SchoolYearTransitionPreviewDialog(plan, self)
+        controller = None
+        if (
+            self._school_year_transition_step_up is not None
+            and self._school_year_transition_executor is not None
+        ):
+            controller = SchoolYearTransitionActivationController(
+                step_up_service=self._school_year_transition_step_up,
+                executor=self._school_year_transition_executor,
+                parent=self,
+            )
+            controller.succeeded.connect(lambda _result: self.refresh_all())
+            self._active_school_year_transition_controller = controller
+        dialog = SchoolYearTransitionPreviewDialog(
+            plan,
+            self,
+            activation_controller=controller,
+        )
         exec_maximized_workspace(dialog, self)
+        self._active_school_year_transition_controller = None
 
     def refresh_update_status(self) -> None:
         """Project native update state without exposing Sparkle to the view."""

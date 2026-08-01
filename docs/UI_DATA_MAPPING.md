@@ -4,10 +4,9 @@
 
 **Status:** SJ-2F ergänzt produktive Final-V3-Writer in vorhandenen
 Schüler- und Stammdatenviews. Exakt verifiziertes Final-V3 ist für die
-technische Runtime lokal aktiviert. Der minimale Preview-only-Einstieg unter
-`Einstellungen → Schuljahre` ist integriert; Ausführung und Mehrkindwechsel
-bleiben in der UI gesperrt. Die isolierte synthetische SJ-3C.2-Transaktion ist
-nicht an Qt oder Runtime angebunden.
+technische Runtime lokal aktiviert. `Einstellungen → Schuljahre` ist
+einschließlich der geschützten SJ-3C.6-Ausführung integriert;
+Mehrkindwechsel außerhalb dieses Vorgangs bleibt in der UI gesperrt.
 
 Der Datenbankstart zeigt keinen V2-Bootstrap, keine V2-Migrationsvorschau und
 keine Auswahl zur Übernahme alter Testdaten. Ein erkanntes, vollständig
@@ -95,6 +94,17 @@ individuell bearbeitbar dar:
 | Sammel-Zielkurs / -Zielstammgruppe | ausgewählte sichtbare `student_id` plus ausschließlich aktive `SchoolYearTransitionPlan.available_courses` / `available_groups` | Nein | deaktiviert ohne sichtbare Auswahl; mehrere Kinder verlangen Bestätigung; jede Aktion erzeugt einen neuen Plan und lässt nicht ausgewählte oder verdeckte Kinder unverändert |
 | Sammel-ausgeschieden / -ungelöst | ausgewählte sichtbare `student_id` | Nein | ausgeschieden entfernt Zielkurs und Zielgruppe; ungelöst entfernt den Zielkurs; Kurs-3-Fälle werden ausschließlich durch bewusste Kurs-3-Auswahl gelöst |
 | Schließen | Dialogzustand | Nein | globale Aktionen bleiben Schließen plus Sammelbearbeitung; keine Ausführung, Speicherung, Backup oder Authentifizierung |
+
+SJ-3C.6 ergänzt die finale Schutz- und Ergebnisstufe:
+
+| Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |
+|---|---|---|---|
+| Ausgangs-/Zieljahr und Ergebniszahlen | vorhandener Plan beziehungsweise `SchoolYearTransitionExecutionResult` | Nein | einschließlich 1→2, 2→3, Wiederholer, ausgeschieden, Stammgruppenänderungen und ungelöst; keine Widget-Nachzählung |
+| `Ich habe alle Zuordnungen geprüft` | bewusste, nicht vorbelegte Eingabe | Nein | wird nach jeder Planänderung verworfen |
+| App-Passwort | vorhandener `SchoolYearTransitionStepUpService` | Nein | sensitiv; falscher Wert erreicht Maintenance und Backup nicht |
+| `Schuljahr <Label> verbindlich aktivieren` | vollständiger Plan plus Checkbox und Passwort | bestehende atomare Transition | kein Default-/AutoDefault; Enter und Doppelklick starten nicht |
+| fünf Statusschritte | Phasencodes des bestehenden Executors | Nein | neutraler Text ohne Prozentbehauptung oder technische Details |
+| Erfolg / Fehler | sanitisiertes Worker-Ergebnis | Nein | Backup und Transition bestätigen, neue Vorschau oder Recovery verlangen; keine IDs, Hashes, Pfade oder Exceptions |
 
 Synthetische Initialdaten sind keine UI-Projektion. IDs, Zeitpunkte und
 Fixtures werden ausschließlich im Testpfad erzeugt und niemals als

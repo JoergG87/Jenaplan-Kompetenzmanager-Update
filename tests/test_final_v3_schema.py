@@ -20,6 +20,7 @@ from src.core.final_v3_schema import (
 from tests.helpers.synthetic_v3 import (
     SYNTHETIC_COURSE_GROUP_ID,
     SYNTHETIC_DOCUMENT_IDS,
+    SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
     SYNTHETIC_LEG_DRAFT_ID,
     SYNTHETIC_REPORT_DRAFT_ID,
     SYNTHETIC_SCHOOL_YEAR_ID,
@@ -238,11 +239,11 @@ def test_transition_receipts_are_immutable(tmp_path: Path) -> None:
             ) VALUES (?, ?, ?, ?, 'planned', ?, NULL)
             """,
             (
-                "SY-TEST-2026-27",
-                "2026/27",
-                "2026-08-01",
-                "2027-07-31",
-                "2026-06-01T08:00:00+00:00",
+                    "SY-TEST-2027-28",
+                    "2027/28",
+                    "2027-08-01",
+                    "2028-07-31",
+                    "2027-06-01T08:00:00+00:00",
             ),
         )
         connection.execute(
@@ -256,12 +257,12 @@ def test_transition_receipts_are_immutable(tmp_path: Path) -> None:
             (
                 "TRN-TEST-001",
                 SYNTHETIC_SCHOOL_YEAR_ID,
-                "SY-TEST-2026-27",
+                "SY-TEST-2027-28",
                 "token-001",
                 "a" * 64,
                 "b" * 64,
                 "{}",
-                "2026-07-31T12:00:00+00:00",
+                "2027-07-31T12:00:00+00:00",
             ),
         )
         with pytest.raises(sqlite3.IntegrityError):
@@ -359,8 +360,8 @@ def test_synthetic_seed_is_complete_and_deterministic(tmp_path: Path) -> None:
                 WHERE assignment.student_id = student.student_id
                   AND assignment.school_year_id = ?
                   AND assignment.assignment_status = 'enrolled'
-                  AND assignment.valid_from = '2025-08-01'
-                  AND assignment.valid_to = '2026-07-31'
+                  AND assignment.valid_from = '2026-08-01'
+                  AND assignment.valid_to = '2027-07-31'
             )
             """,
             (SYNTHETIC_SCHOOL_YEAR_ID,),
@@ -396,12 +397,26 @@ def test_synthetic_seed_has_only_final_v3_membership_shape(tmp_path: Path) -> No
     assert current_school_year == [
         (
             SYNTHETIC_SCHOOL_YEAR_ID,
-            "2025/26",
-            "2025-08-01",
-            "2026-07-31",
+            "2026/27",
+            "2026-08-01",
+            "2027-07-31",
             "current",
         )
     ]
+    with _connect(path) as connection:
+        assert connection.execute(
+            """
+            SELECT label, start_date, end_date, status
+            FROM school_years
+            WHERE school_year_id = ?
+            """,
+            (SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,),
+        ).fetchone() == (
+            "2025/26",
+            "2025-08-01",
+            "2026-07-31",
+            "closed",
+        )
 
 
 def test_synthetic_seed_covers_scopes_documents_and_workflows(

@@ -112,6 +112,7 @@ class SchoolYearTransitionPreviewViewModel:
     other_course_count: int
     repeat_year_level_three_count: int
     exited_count: int
+    group_change_count: int
     unresolved_count: int
     edited_count: int
     status_label: str
@@ -173,6 +174,7 @@ class SchoolYearTransitionPreviewViewModel:
                 counts.repeat_year_level_three_count
             ),
             exited_count=counts.exited_count,
+            group_change_count=counts.group_change_count,
             unresolved_count=counts.unresolved_count,
             edited_count=counts.edited_count,
             status_label=status_label,

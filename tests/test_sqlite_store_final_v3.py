@@ -12,7 +12,13 @@ from src.core.database_compatibility import (
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityStatus,
 )
-from src.core.records import SCHOOL_YEAR_END, SCHOOL_YEAR_START, seed_reference_data
+from src.core.records import (
+    HISTORICAL_SCHOOL_YEAR_END,
+    HISTORICAL_SCHOOL_YEAR_START,
+    SCHOOL_YEAR_END,
+    SCHOOL_YEAR_START,
+    seed_reference_data,
+)
 from src.core.sqlite_store import (
     SQLiteDatabase,
     SQLiteStudentRepository,
@@ -93,6 +99,13 @@ def test_seed_database_contains_complete_deterministic_final_v3_memberships(
         (
             "SY-TEST-2025-26",
             "2025/26",
+            HISTORICAL_SCHOOL_YEAR_START.isoformat(),
+            HISTORICAL_SCHOOL_YEAR_END.isoformat(),
+            "closed",
+        ),
+        (
+            "SY-TEST-2026-27",
+            "2026/27",
             SCHOOL_YEAR_START.isoformat(),
             SCHOOL_YEAR_END.isoformat(),
             "current",
@@ -100,10 +113,10 @@ def test_seed_database_contains_complete_deterministic_final_v3_memberships(
     )
     assert tuple(row[-1] for row in courses) == (1, 2, 3)
     assert len(students) == 28
-    assert len(assignments) == len(students)
+    assert len(assignments) == 2 * len(students)
     assert all(row[5] == "enrolled" for row in assignments)
-    assert all(row[6] == SCHOOL_YEAR_START.isoformat() for row in assignments)
-    assert all(row[7] == SCHOOL_YEAR_END.isoformat() for row in assignments)
+    assert sum(row[2] == "SY-TEST-2025-26" for row in assignments) == len(students)
+    assert sum(row[2] == "SY-TEST-2026-27" for row in assignments) == len(students)
     assert transitions == ()
 
 
@@ -120,7 +133,7 @@ def test_seed_data_refuses_to_overwrite_existing_final_v3_rows(
             connection.execute(
                 "SELECT count(*) FROM student_school_year_assignments"
             ).fetchone()[0]
-            == 28
+            == 56
         )
 
 

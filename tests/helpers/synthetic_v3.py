@@ -8,7 +8,8 @@ import sqlite3
 from src.core.final_v3_schema import FinalV3SchemaInitializer
 
 
-SYNTHETIC_SCHOOL_YEAR_ID = "SY-TEST-2025-26"
+SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID = "SY-TEST-2025-26"
+SYNTHETIC_SCHOOL_YEAR_ID = "SY-TEST-2026-27"
 SYNTHETIC_COURSE_GROUP_ID = "CG-TEST-CORE"
 SYNTHETIC_REPORT_DRAFT_ID = "RPD-TEST-001"
 SYNTHETIC_LEG_DRAFT_ID = "LCD-TEST-001"
@@ -38,26 +39,50 @@ class SyntheticV3SeedBuilder:
             _seed_connection(connection)
 
 
-def _seed_connection(connection: sqlite3.Connection) -> None:
+def _seed_connection(
+    connection: sqlite3.Connection,
+    *,
+    include_current_2026_27: bool = True,
+) -> None:
     """Insert the deterministic fixture in one transaction."""
 
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute("BEGIN IMMEDIATE")
-    connection.execute(
+    historical_status = "closed" if include_current_2026_27 else "current"
+    historical_closed_at = (
+        "2026-07-31T18:00:00+00:00" if include_current_2026_27 else None
+    )
+    school_year_rows = [
+        (
+            SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
+            "2025/26",
+            "2025-08-01",
+            "2026-07-31",
+            historical_status,
+            "2025-07-01T08:00:00+00:00",
+            historical_closed_at,
+        )
+    ]
+    if include_current_2026_27:
+        school_year_rows.append(
+            (
+                SYNTHETIC_SCHOOL_YEAR_ID,
+                "2026/27",
+                "2026-08-01",
+                "2027-07-31",
+                "current",
+                "2026-07-01T08:00:00+00:00",
+                None,
+            )
+        )
+    connection.executemany(
         """
         INSERT INTO school_years(
             school_year_id, label, start_date, end_date,
             status, created_at, closed_at
-        ) VALUES (?, ?, ?, ?, ?, ?, NULL)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (
-            SYNTHETIC_SCHOOL_YEAR_ID,
-            "2025/26",
-            "2025-08-01",
-            "2026-07-31",
-            "current",
-            "2025-07-01T08:00:00+00:00",
-        ),
+        school_year_rows,
     )
     connection.executemany(
         """
@@ -152,7 +177,7 @@ def _seed_connection(connection: sqlite3.Connection) -> None:
             (
                 "ASG-TEST-001",
                 SYNTHETIC_STUDENT_IDS[0],
-                SYNTHETIC_SCHOOL_YEAR_ID,
+                SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
                 "GRP-TEST-A",
                 "CRS-TEST-1",
                 "2025-08-01",
@@ -163,7 +188,7 @@ def _seed_connection(connection: sqlite3.Connection) -> None:
             (
                 "ASG-TEST-002",
                 SYNTHETIC_STUDENT_IDS[1],
-                SYNTHETIC_SCHOOL_YEAR_ID,
+                SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
                 "GRP-TEST-A",
                 "CRS-TEST-2",
                 "2025-08-01",
@@ -174,7 +199,7 @@ def _seed_connection(connection: sqlite3.Connection) -> None:
             (
                 "ASG-TEST-003",
                 SYNTHETIC_STUDENT_IDS[2],
-                SYNTHETIC_SCHOOL_YEAR_ID,
+                SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
                 "GRP-TEST-B",
                 "CRS-TEST-3",
                 "2025-08-01",
@@ -184,6 +209,51 @@ def _seed_connection(connection: sqlite3.Connection) -> None:
             ),
         ),
     )
+    if include_current_2026_27:
+        connection.executemany(
+            """
+            INSERT INTO student_school_year_assignments(
+                assignment_id, student_id, school_year_id, group_id,
+                course_id, assignment_status, valid_from, valid_to,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, 'enrolled', ?, ?, ?, ?)
+            """,
+            (
+            (
+                "ASG-TEST-2026-001",
+                SYNTHETIC_STUDENT_IDS[0],
+                SYNTHETIC_SCHOOL_YEAR_ID,
+                "GRP-TEST-A",
+                "CRS-TEST-1",
+                "2026-08-01",
+                "2027-07-31",
+                "2026-07-01T09:10:00+00:00",
+                "2026-07-01T09:10:00+00:00",
+            ),
+            (
+                "ASG-TEST-2026-002",
+                SYNTHETIC_STUDENT_IDS[1],
+                SYNTHETIC_SCHOOL_YEAR_ID,
+                "GRP-TEST-A",
+                "CRS-TEST-2",
+                "2026-08-01",
+                "2027-07-31",
+                "2026-07-01T09:20:00+00:00",
+                "2026-07-01T09:20:00+00:00",
+            ),
+            (
+                "ASG-TEST-2026-003",
+                SYNTHETIC_STUDENT_IDS[2],
+                SYNTHETIC_SCHOOL_YEAR_ID,
+                "GRP-TEST-B",
+                "CRS-TEST-3",
+                "2026-08-01",
+                "2027-07-31",
+                "2026-07-01T09:30:00+00:00",
+                "2026-07-01T09:30:00+00:00",
+            ),
+            ),
+        )
     connection.execute(
         """
         INSERT INTO course_groups(
@@ -452,3 +522,13 @@ def create_synthetic_v3_database(database_path: Path) -> Path:
     """Create a fresh complete V3 database and deterministic fictional rows."""
 
     return SyntheticV3SeedBuilder().create(database_path)
+
+
+def create_pre_transition_v3_database(database_path: Path) -> Path:
+    """Create the explicit 2025/26-current fixture for transition tests."""
+
+    path = Path(database_path)
+    FinalV3SchemaInitializer().initialize(path)
+    with sqlite3.connect(path) as connection:
+        _seed_connection(connection, include_current_2026_27=False)
+    return path

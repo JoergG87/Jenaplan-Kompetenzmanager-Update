@@ -466,6 +466,9 @@ def main() -> int:
             support_reset=security_runtime.support_reset,
             support_reset_backup_factory=support_reset_backup_factory,
         )
+        window.configure_school_year_transition_activation(
+            security_runtime.service
+        )
         window.configure_onboarding(
             preferences_file=security_runtime.preferences,
             preferences=preferences,

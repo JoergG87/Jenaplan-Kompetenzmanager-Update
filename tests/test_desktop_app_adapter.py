@@ -7179,7 +7179,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         window = shell.AppShell(
             database_path,
-            now_provider=lambda: datetime(2026, 7, 29, 9, 0),
+            now_provider=lambda: datetime(2026, 8, 3, 9, 0),
         )
 
         self.assertEqual(len(window.students_screen.students), 3)
@@ -7209,13 +7209,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     """
                     UPDATE school_years
                     SET status = 'closed',
-                        closed_at = '2026-07-31T18:00:00+00:00'
+                        closed_at = '2026-08-03T18:00:00+00:00'
+                    WHERE status = 'current'
                     """
                 )
 
         window = shell.AppShell(
             database_path,
-            now_provider=lambda: datetime(2026, 7, 29, 9, 0),
+            now_provider=lambda: datetime(2026, 8, 3, 9, 0),
         )
 
         self.assertEqual(window.students_screen.students, ())
@@ -7237,7 +7238,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         app = QApplication.instance() or QApplication([])
         window = shell.AppShell(
             self.database_path,
-            now_provider=lambda: datetime(2026, 7, 29, 9, 0),
+            now_provider=lambda: datetime(2026, 8, 3, 9, 0),
         )
         with mock.patch.object(
             window.adapter,
@@ -7262,7 +7263,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         database = _create_empty_final_v3_database(database_path)
         window = shell.AppShell(
             database_path,
-            now_provider=lambda: datetime(2026, 7, 29, 9, 0),
+            now_provider=lambda: datetime(2026, 8, 3, 9, 0),
         )
         stale_action = QPushButton("Kinder anzeigen")
         window.dashboard_screen.hero_layout.addWidget(stale_action)
@@ -7274,7 +7275,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     """
                     UPDATE school_years
                     SET status = 'closed',
-                        closed_at = '2026-07-31T18:00:00+00:00'
+                        closed_at = '2026-08-03T18:00:00+00:00'
+                    WHERE status = 'current'
                     """
                 )
 
