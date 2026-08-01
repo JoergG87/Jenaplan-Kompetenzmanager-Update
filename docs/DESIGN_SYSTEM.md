@@ -299,7 +299,11 @@ zulaessig; grosse Arbeitsflaechen bleiben neutral und opak.
 `report`, `learning_conference` und `neutral`. Beobachtung wird durch Teal, LEG
 durch Green und Bericht durch Orange unterschieden. Die Rolle darf nur in
 Iconflaeche, duenne Akzentlinie, sehr heller Kopfflaeche, lokaler aktiver
-Navigation oder kleinen Kontextdetails erscheinen. Sie bezeichnet weder
+Navigation oder kleinen Kontextdetails erscheinen. Berichtswerkstatt und LEG
+verwenden fuer ihre lokale aktive Navigation die zentrale helle
+Blue-Auswahlflaeche und Brand Blue als Marker; der Beobachtungskontext behaelt
+seine Teal-Auswahlflaeche innerhalb desselben Strukturmusters. Hover bleibt
+neutral und der globale Fokusrahmen Brand Teal. Die Kontextrolle bezeichnet weder
 Status noch Bewertung, Leistung, Prioritaet, Erfolg oder Fehler. Titel, Icon und
 sichtbarer Kontext tragen die Bedeutung auch ohne Farbe. Kleine CRUD-,
 Stammdaten-, Stundenplan-, Schueler- und App-Info-Dialoge bleiben neutral.
@@ -512,6 +516,13 @@ Premium UI Sprint 2 fuehrt keine neue Motion ein. Vorhandene `InlineMessage`-, `
 Der Lernentwicklungsgespraech-Draft verwendet `PageHeader`, `StatusBadge`, `SectionHeader`, `AppCard`, `SearchField`, `FilterBar`, `InlineMessage`, `Toast` und zentrale Buttonrollen als einen zusammenhaengenden kindbezogenen Workspace. Kopf, lokale Phasenleiste und Aktionsleiste bleiben ausserhalb des dominanten Phasen-Scrollbereichs. Die linke Leiste zeigt alle sechs vollstaendigen Phasentitel und genau einen textlich markierten aktuellen Schritt.
 
 Phasenstatus ist neutraler lokaler UI-State: `Aktuell`, `Inhalt vorhanden` und `Noch leer`. Haken, Prozentwerte, Ampelfarben, Leistungsdarstellung und Abschlussbegriffe sind unzulaessig. Der aktive Eintrag wird durch Flaeche, Schriftgewicht, linken Marker und Statustext vermittelt, nie allein durch Farbe. Pfeil hoch/runter sowie Home/End navigieren die Leiste nach Qt-Konvention.
+
+Die aktive Phase verwendet dieselbe zentrale helle Blue-Auswahlflaeche und
+Brand-Blue-Markierung wie die Berichtswerkstatt sowie dasselbe strukturelle
+Aktivmuster wie die Beobachtungsnavigation. `Inhalt vorhanden` bleibt
+bei inaktiven Phasen eine ruhige textliche Unterzeile; `Noch leer` bleibt ohne
+Akzent. Die gruene LEG-Kontextfarbe bleibt auf Kopf und kleine Kontextdetails
+begrenzt und erhaelt keine Abschluss- oder Erfolgsbedeutung.
 
 Die drei Inhaltsrollen bleiben auch ohne Farbe eindeutig. `Nur für die Vorbereitung` nutzt eine ruhige `AppCard[soft]`, `Im Gespräch bearbeiten` eine normale Schreibflaeche und `Im Entwurf als Vereinbarung festgehalten` sparsam `AppCard[accent]`. Rollenlabel, SectionHeader, Hilfetext, Einrueckung und Typografie verhindern, dass interne Vorbereitung wie eine gemeinsame Vereinbarung wirkt. Alle mehrzeiligen LEG-Editoren besitzen rollen- und phasenbezogene Accessible Names.
 
@@ -978,6 +989,12 @@ Die Kartenfarbe wird aus der Kurszuordnung abgeleitet. Die konkrete Farbwelt ble
 Die Berichtswerkstatt verwendet `PageHeader`, `SegmentedControl`, `SectionHeader`, `AppCard`, `StatusBadge`, `InlineMessage`, `EmptyState`, `Toast` und zentrale Buttonrollen. Der Kopf verbindet Kind- und Berichtskontext mit einem kompakten Statusbadge. `Entwurf` verwendet einen ruhigen Info-Ton, `Entwurf geändert` einen zurueckhaltenden Warnhinweis und `Finalisiert · Revision X` den positiven Statuston ohne Erfolgsinszenierung.
 
 Die lokale Vier-Bereich-Navigation ordnet `Schreiben`, `Kompetenzen & Belege`, `Vorschau` und `Revisionen` gleichwertig als Arbeitsschritte unterhalb des Berichtskontexts. Fachlisten sind jeweils nur lokale Untergliederungen des Schreib- beziehungsweise Auswahlbereichs. Die dauerhaft sichtbare untere Aktionsleiste enthaelt genau eine primaere Draftaktion. Die mehrseitige Vorschau liegt auf einer neutralen Dokumentflaeche und nennt immer ihre Draftquelle.
+
+Genau ein Bereich verwendet die zentrale helle Blue-Auswahlflaeche, kraeftigere
+Typografie, Rahmen und den vorhandenen Auswahlindikator des `SegmentedControl`.
+Inaktive Bereiche bleiben neutral; Hover, Fokus und Disabled-State stammen aus
+der zentralen Komponentenbibliothek. Der orange Berichtskontext bleibt im Kopf
+sichtbar, ist aber kein Navigations- oder Statuszustand.
 
 `Entwurf speichern` bleibt die primaere Draftaktion. `Bericht finalisieren` beziehungsweise `Neue Revision finalisieren` steht raeumlich getrennt im Finalisierungsstatus und verwendet eine serioese sekundaere Aktion. Erst der Bestaetigungsdialog verwendet fuer die explizite irreversible Bestaetigung die primaere Buttonrolle. Irreversibilitaet wird durch Text und erforderliche Checkbox vermittelt, nicht durch aggressive rote Gestaltung.
 

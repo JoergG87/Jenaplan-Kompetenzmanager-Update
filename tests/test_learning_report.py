@@ -14,6 +14,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from pypdf import PdfReader
 from PySide6.QtCore import QDate, Qt
+from PySide6.QtGui import QAccessible
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -211,24 +212,44 @@ class LearningReportTest(unittest.TestCase):
             [button.text() for button in dialog.navigation_group.buttons()],
             ["Gesamttext", "Deutsch", "Mathematik"],
         )
+        navigation_buttons = dialog.workspace_navigation.findChildren(
+            type(dialog.save_button)
+        )
         self.assertEqual(
-            [button.accessibleName() for button in dialog.workspace_navigation.findChildren(type(dialog.save_button))],
+            [button.accessibleName() for button in navigation_buttons],
             ["Schreiben", "Kompetenzen & Belege", "Vorschau", "Revisionen"],
         )
-        writing_button = next(
-            button
-            for button in dialog.workspace_navigation.findChildren(type(dialog.save_button))
-            if button.accessibleName() == "Schreiben"
-        )
+        self.assertEqual(sum(button.isChecked() for button in navigation_buttons), 1)
+        writing_button = navigation_buttons[0]
+        writing_accessible = QAccessible.queryAccessibleInterface(writing_button)
+        self.assertEqual(writing_accessible.role(), QAccessible.Role.CheckBox)
+        self.assertTrue(writing_accessible.state().checked)
+        self.assertEqual(writing_button.focusPolicy(), Qt.FocusPolicy.StrongFocus)
+
         QTest.keyClick(writing_button, Qt.Key.Key_Right)
         self.assertEqual(dialog.workspace_navigation.current_key(), "evidence")
 
-        dialog.workspace_navigation.set_current_key("evidence", emit=True)
-        self.assertEqual(dialog.mode_stack.currentIndex(), 1)
-        dialog.workspace_navigation.set_current_key("preview", emit=True)
-        self.assertEqual(dialog.mode_stack.currentIndex(), 2)
-        dialog.workspace_navigation.set_current_key("revisions", emit=True)
-        self.assertEqual(dialog.mode_stack.currentIndex(), 3)
+        initial_draft = dialog.report_draft_view_model()
+        for expected_index, key in enumerate(
+            ("writing", "evidence", "preview", "revisions")
+        ):
+            dialog.workspace_navigation.set_current_key(key, emit=True)
+            self.assertEqual(dialog.mode_stack.currentIndex(), expected_index)
+            self.assertEqual(
+                sum(button.isChecked() for button in navigation_buttons),
+                1,
+            )
+            active = next(button for button in navigation_buttons if button.isChecked())
+            self.assertEqual(
+                active.accessibleName(),
+                ("Schreiben", "Kompetenzen & Belege", "Vorschau", "Revisionen")[
+                    expected_index
+                ],
+            )
+            self.assertTrue(
+                QAccessible.queryAccessibleInterface(active).state().checked
+            )
+        self.assertEqual(dialog.report_draft_view_model(), initial_draft)
 
     def test_writing_and_evidence_are_visually_separate_but_keep_shared_state(self) -> None:
         dialog = LearningReportDialog(self.preparation)

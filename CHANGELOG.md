@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Berichtswerkstatt und LEG-Workspace heben jetzt genau den aktiven lokalen
+  Bereich beziehungsweise die aktive Phase mit der zentralen hellblauen
+  Auswahlflaeche, kraeftiger Typografie, Rahmen und Auswahlmarker hervor.
+  Inaktive Eintraege bleiben neutral; die LEG-Hinweise `Inhalt vorhanden` und
+  `Noch leer`, Bericht-/LEG-Status, Tastatursteuerung, Fokus, Reduced Motion,
+  Navigation, Drafts, Revisionen und Persistenz bleiben getrennt und
+  unveraendert.
 - Der synthetische Final-V3-Standardbestand führt `2025/26` jetzt geschlossen
   mit unveränderten historischen Assignments und genau ein `current`-Schuljahr
   `2026/27` mit vollständigen, eindeutigen `enrolled`-Assignments. Historische

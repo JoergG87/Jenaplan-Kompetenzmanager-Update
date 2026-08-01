@@ -11,6 +11,7 @@ from datetime import date
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QAccessible
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton, QTextEdit
 
@@ -261,12 +262,40 @@ class LearningConferenceUiTest(unittest.TestCase):
             ("goal", "strengths", "development", "goals", "evidence", "agreements"),
         )
         self.assertIn("Aktuell", dialog.phase_navigation.button_for("goal").text())
+        phase_buttons = [
+            dialog.phase_navigation.button_for(key)
+            for key, _title, _description in PHASES
+        ]
+        self.assertEqual(sum(button.isChecked() for button in phase_buttons), 1)
+        self.assertTrue(dialog.phase_navigation.button_for("goal").property("phaseCurrent"))
+        goal_accessible = QAccessible.queryAccessibleInterface(
+            dialog.phase_navigation.button_for("goal")
+        )
+        self.assertEqual(goal_accessible.role(), QAccessible.Role.CheckBox)
+        self.assertTrue(goal_accessible.state().checked)
         for key in ("strengths", "development", "goals", "evidence", "agreements"):
-            self.assertIn("Noch leer", dialog.phase_navigation.button_for(key).text())
+            button = dialog.phase_navigation.button_for(key)
+            self.assertIn("Noch leer", button.text())
+            self.assertFalse(button.property("phaseCurrent"))
+            self.assertEqual(button.focusPolicy(), Qt.FocusPolicy.StrongFocus)
         dialog.text_inputs["strengths_text"].setPlainText("Ruhige Stärke")
         self.assertIn("Inhalt vorhanden", dialog.phase_navigation.button_for("strengths").text())
         dialog.set_active_phase("strengths", focus=False)
         self.assertIn("Aktuell", dialog.phase_navigation.button_for("strengths").text())
+        self.assertIn("Noch leer", dialog.phase_navigation.button_for("goal").text())
+        self.assertEqual(sum(button.isChecked() for button in phase_buttons), 1)
+        self.assertFalse(dialog.phase_navigation.button_for("goal").property("phaseCurrent"))
+        self.assertTrue(dialog.phase_navigation.button_for("strengths").property("phaseCurrent"))
+        strengths_accessible = QAccessible.queryAccessibleInterface(
+            dialog.phase_navigation.button_for("strengths")
+        )
+        self.assertTrue(strengths_accessible.state().checked)
+        self.assertFalse(goal_accessible.state().checked)
+        dialog.set_active_phase("goal", focus=False)
+        self.assertIn(
+            "Inhalt vorhanden",
+            dialog.phase_navigation.button_for("strengths").text(),
+        )
 
     def test_exactly_one_phase_stays_visible_and_interactive_across_navigation(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)

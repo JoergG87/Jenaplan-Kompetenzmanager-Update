@@ -70,9 +70,19 @@ class BrandThemeTests(unittest.TestCase):
             "learning_conference",
         ):
             self.assertIn(f'QFrame[dialogContext="{context_role}"]', stylesheet)
-        self.assertIn('QDialog[dialogContext="report"]', stylesheet)
         self.assertIn('QDialog[dialogContext="observation"]', stylesheet)
         self.assertIn('QPushButton[phaseCurrent="true"]', stylesheet)
+        self.assertIn(f"background-color: {theme.LIGHT_BLUE};", stylesheet)
+        self.assertIn(f"border-left: 4px solid {theme.BRAND_BLUE};", stylesheet)
+        self.assertNotIn(
+            'QDialog[dialogContext="report"] '
+            'QPushButton#SegmentedControlButton:checked',
+            stylesheet,
+        )
+        self.assertIn(
+            'QPushButton#SegmentedControlButton:checked:disabled',
+            stylesheet,
+        )
         self.assertIn(f"background-color: {theme.BRAND_BLUE};", stylesheet)
         self.assertIn(f"border: 2px solid {theme.COLOR_FOCUS};", stylesheet)
 

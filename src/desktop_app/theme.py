@@ -651,10 +651,10 @@ QPushButton[phaseCurrent="false"]:hover {{
 }}
 QPushButton[phaseCurrent="true"] {{
     min-height: 72px;
-    background-color: {LIGHT_GREEN};
+    background-color: {LIGHT_BLUE};
     color: {COLOR_NAVY};
-    border: 1px solid #B8D7B1;
-    border-left: 4px solid {BRAND_GREEN};
+    border: 1px solid #9FB9CE;
+    border-left: 4px solid {BRAND_BLUE};
     border-radius: 9px;
     padding: 7px 9px 7px 7px;
     text-align: left;
@@ -892,13 +892,19 @@ QPushButton#SegmentedControlButton:checked {{
     color: {COLOR_NAVY};
     font-weight: 650;
 }}
+QPushButton#SegmentedControlButton:focus {{
+    border: 2px solid {COLOR_FOCUS};
+    padding: 7px 14px;
+}}
 QDialog[dialogContext="observation"] QPushButton#SegmentedControlButton:checked {{
     background-color: {LIGHT_TEAL};
     border-color: #8FC7C5;
 }}
-QDialog[dialogContext="report"] QPushButton#SegmentedControlButton:checked {{
-    background-color: {LIGHT_ORANGE};
-    border-color: #E0B581;
+QPushButton#SegmentedControlButton:disabled,
+QPushButton#SegmentedControlButton:checked:disabled {{
+    color: #94A3B8;
+    background-color: #EEF3F7;
+    border-color: #E3EAF0;
 }}
 QWidget#StudentProfilePageHeader {{
     background-color: transparent;
