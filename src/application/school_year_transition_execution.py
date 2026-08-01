@@ -1,8 +1,9 @@
 """Atomic execution of one fully resolved transient school-year plan.
 
-This isolated service owns the maintenance activation, verified backup,
-source revalidation, atomic transition, and controlled gate release.  It
-remains intentionally unwired from Qt, the product shell, or authentication.
+This isolated service owns the password-authorized maintenance request,
+maintenance activation, verified backup, source revalidation, atomic
+transition, and controlled gate release.  It remains intentionally unwired
+from Qt or the product shell.
 """
 
 from __future__ import annotations
@@ -23,6 +24,11 @@ from src.application.school_year_transition_plan import (
     SchoolYearTransitionPlan,
     SchoolYearTransitionPlanTargetStatus,
     school_year_transition_plan_sha256,
+)
+from src.application.school_year_transition_step_up import (
+    SchoolYearTransitionStepUpAuthorization,
+    SchoolYearTransitionStepUpError,
+    SchoolYearTransitionStepUpService,
 )
 from src.core.school_year import (
     StudentAssignmentStatus,
@@ -107,12 +113,14 @@ class ExecuteSchoolYearTransition:
         connection_factory: ConnectionFactory,
         *,
         maintenance_gate: MaintenanceGate,
+        step_up_service: SchoolYearTransitionStepUpService,
         backup_service: _TransitionBackupService | None,
         now_provider: TimestampProvider | None = None,
         repository_factory: RepositoryFactory | None = None,
     ) -> None:
         self._connection_factory = connection_factory
         self._maintenance_gate = maintenance_gate
+        self._step_up_service = step_up_service
         self._backup_service = backup_service
         self._now_provider = now_provider or (lambda: datetime.now(UTC))
         self._repository_factory = (
@@ -125,40 +133,44 @@ class ExecuteSchoolYearTransition:
         plan: SchoolYearTransitionPlan,
         operation_token: str,
         expected_plan_sha256: str,
-        maintenance_capability: MaintenanceCapability,
+        step_up_authorization: SchoolYearTransitionStepUpAuthorization,
         maintenance_owner_id: str,
     ) -> SchoolYearTransitionExecutionResult:
-        token = _require_identifier(
-            operation_token,
-            "transition_operation_token_invalid",
-        )
-        expected_hash = _require_sha256(
-            expected_plan_sha256,
-            "transition_expected_plan_sha256_invalid",
-        )
-        _validate_executable_plan(plan)
-        plan_hash = school_year_transition_plan_sha256(plan)
-        if plan_hash != expected_hash:
-            raise SchoolYearTransitionExecutionError(
-                "transition_plan_sha256_mismatch"
-            )
-        target_id = _target_school_year_id(plan)
-
         owns_maintenance = False
+        maintenance_capability: MaintenanceCapability | None = None
         try:
-            if self._maintenance_gate.state is not MaintenanceState.MAINTENANCE_PENDING:
+            token = _require_identifier(
+                operation_token,
+                "transition_operation_token_invalid",
+            )
+            expected_hash = _require_sha256(
+                expected_plan_sha256,
+                "transition_expected_plan_sha256_invalid",
+            )
+            _validate_executable_plan(plan)
+            plan_hash = school_year_transition_plan_sha256(plan)
+            if plan_hash != expected_hash:
                 raise SchoolYearTransitionExecutionError(
-                    "transition_maintenance_not_pending"
+                    "transition_plan_sha256_mismatch"
                 )
+            target_id = _target_school_year_id(plan)
+            self._step_up_service.consume(
+                step_up_authorization,
+                plan=plan,
+                purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
+            )
+            maintenance_capability = self._maintenance_gate.request_maintenance(
+                owner_id=maintenance_owner_id,
+                purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
+            )
+            owns_maintenance = True
             if not self._maintenance_gate.activate(
                 maintenance_capability,
                 owner_id=maintenance_owner_id,
             ):
-                owns_maintenance = True
                 raise SchoolYearTransitionExecutionError(
                     "transition_writers_not_drained"
                 )
-            owns_maintenance = True
             with self._maintenance_gate.exclusive_writer(
                 maintenance_capability,
                 owner_id=maintenance_owner_id,
@@ -185,6 +197,8 @@ class ExecuteSchoolYearTransition:
             )
             owns_maintenance = False
             return result
+        except SchoolYearTransitionStepUpError as error:
+            raise SchoolYearTransitionExecutionError(error.code) from None
         except MaintenanceCapabilityError as error:
             raise SchoolYearTransitionExecutionError(error.code) from None
         except MaintenanceGateError:
@@ -193,10 +207,15 @@ class ExecuteSchoolYearTransition:
                 "transition_recovery_required"
             ) from None
         finally:
-            if owns_maintenance and self._maintenance_gate.state in {
-                MaintenanceState.MAINTENANCE_PENDING,
-                MaintenanceState.MAINTENANCE_ACTIVE,
-            }:
+            self._step_up_service.discard(step_up_authorization)
+            if (
+                owns_maintenance
+                and maintenance_capability is not None
+                and self._maintenance_gate.state in {
+                    MaintenanceState.MAINTENANCE_PENDING,
+                    MaintenanceState.MAINTENANCE_ACTIVE,
+                }
+            ):
                 self._release_maintenance(
                     maintenance_capability,
                     maintenance_owner_id,

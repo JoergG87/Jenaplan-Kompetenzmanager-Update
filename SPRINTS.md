@@ -9,7 +9,8 @@ minimale Preview-only-Einstieg unter `Einstellungen → Schuljahre` sind lokal
 implementiert. Die isolierte atomare SJ-3C.2-Ausführungslogik ist ausschließlich
 für temporäre synthetische Final-V3-Datenbanken implementiert. SJ-3C.3 schützt
 alle produktiven Writer; SJ-3C.4 bindet die isolierte Ausführung an ein
-verifiziertes Backup und kontrollierte Maintenance-Freigabe. Passwort-Step-up,
+verifiziertes Backup und kontrollierte Maintenance-Freigabe. SJ-3C.5 setzt die
+verpflichtende Passwort-Step-up-Grenze davor. Explizite UI-Bestätigung,
 UI-/Shell-Aktivierung und unterjährige Mehrkindwechsel bleiben gesperrt.
 
 - [x] Geplantes Zieljahr auf Überlappung, strikte Nachfolge und Lückenlosigkeit
@@ -46,8 +47,11 @@ UI-/Shell-Aktivierung und unterjährige Mehrkindwechsel bleiben gesperrt.
   veröffentlichtes, nochmals verifiziertes sowie quell-/schemagebundenes
   Backup; echter Backuphash, sicherer Abbruch und `RECOVERY_REQUIRED` sind
   fokussiert geprüft.
-- [ ] Passwort-Step-up, explizite Bestätigung sowie UI-/Shell-Verdrahtung
-  separat implementieren.
+- [x] SJ-3C.5 authentifiziert den vollständig gelösten Plan mit der vorhandenen
+  App-Passwortprüfung und verlangt vor Maintenance eine kurzlebige,
+  planhash- und zweckgebundene Einmal-Autorisierung; Fehler, Drosselung,
+  Ablauf, Abbruch und Wiederverwendung bleiben ohne geschützten Seiteneffekt.
+- [ ] Explizite Bestätigung sowie UI-/Shell-Verdrahtung separat implementieren.
 
 ## V3-only Architecture Cleanup
 

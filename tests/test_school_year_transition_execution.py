@@ -29,6 +29,9 @@ from src.application.school_year_transition_plan import (
 from src.application.school_year_transition_preview import (
     SchoolYearTransitionPreviewService,
 )
+from src.application.school_year_transition_step_up import (
+    SchoolYearTransitionStepUpService,
+)
 from src.core.database_compatibility import FINAL_SCHEMA_FINGERPRINT
 from src.core.sqlite_school_year_transition import (
     SchoolYearTransitionExecutionRepository,
@@ -41,6 +44,8 @@ from src.core.maintenance_gate import (
     MaintenanceWriterBlockedError,
 )
 from src.desktop_app.runtime import runtime_paths
+from src.security.application import AuthenticationResult
+from src.security.domain import AuthenticationStatus
 from tests.helpers.synthetic_v3 import (
     SYNTHETIC_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
@@ -53,6 +58,12 @@ TOKEN = "sj-3c2-operation-001"
 MAINTENANCE_OWNER = "school-year-transition-test"
 BACKUP_SHA256 = "b" * 64
 BACKUP_ID = "SYB-0123456789abcdef0123456789abcdef"
+AUTHORIZATION_ID = "SYA-0123456789abcdef0123456789abcdef"
+
+
+class _SuccessfulPasswordService:
+    def authenticate_password(self, password: str) -> AuthenticationResult:
+        return AuthenticationResult(AuthenticationStatus.AUTHENTICATED)
 
 
 class _VerifiedBackupService:
@@ -118,20 +129,24 @@ def _resolved_plan(path: Path):
     )
 
 
-def _active_maintenance():
-    gate = MaintenanceGate()
-    capability = gate.request_maintenance(
-        owner_id=MAINTENANCE_OWNER,
-        purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
+def _step_up(plan):
+    service = SchoolYearTransitionStepUpService(
+        _SuccessfulPasswordService(),
+        now_provider=lambda: NOW,
+        authorization_id_provider=lambda: AUTHORIZATION_ID,
     )
-    return gate, capability
+    result = service.authenticate(plan=plan, password="test-password")
+    assert result.authorization is not None
+    return service, result.authorization
 
 
 def _execute(path: Path, plan, token: str = TOKEN):
-    gate, capability = _active_maintenance()
+    gate = MaintenanceGate()
+    step_up_service, authorization = _step_up(plan)
     return ExecuteSchoolYearTransition(
         _factory(path),
         maintenance_gate=gate,
+        step_up_service=step_up_service,
         backup_service=_VerifiedBackupService(
             source_state_sha256=plan.source_sha256
         ),
@@ -140,7 +155,7 @@ def _execute(path: Path, plan, token: str = TOKEN):
         plan=plan,
         operation_token=token,
         expected_plan_sha256=school_year_transition_plan_sha256(plan),
-        maintenance_capability=capability,
+        step_up_authorization=authorization,
         maintenance_owner_id=MAINTENANCE_OWNER,
     )
 
@@ -224,6 +239,7 @@ def test_successful_transition_writes_1_to_2_2_to_3_and_level_3_repeater(
 
     result = _execute(v3_database, plan)
 
+    assert "test-password" not in repr(result)
     assert result.from_school_year_id == SYNTHETIC_SCHOOL_YEAR_ID
     assert result.counts.student_count == 3
     assert result.counts.enrolled_count == 3
@@ -437,11 +453,13 @@ def test_unresolved_plan_is_rejected_before_begin(v3_database: Path) -> None:
         opened = True
         raise AssertionError("connection must not be opened")
 
-    gate, capability = _active_maintenance()
+    gate = MaintenanceGate()
+    step_up_service, authorization = _step_up(_resolved_plan(v3_database))
     with pytest.raises(SchoolYearTransitionExecutionError) as captured:
         ExecuteSchoolYearTransition(
             forbidden_connection,
             maintenance_gate=gate,
+            step_up_service=step_up_service,
             backup_service=_VerifiedBackupService(
                 source_state_sha256=unresolved.source_sha256
             ),
@@ -449,7 +467,7 @@ def test_unresolved_plan_is_rejected_before_begin(v3_database: Path) -> None:
             plan=unresolved,
             operation_token=TOKEN,
             expected_plan_sha256=school_year_transition_plan_sha256(unresolved),
-            maintenance_capability=capability,
+            step_up_authorization=authorization,
             maintenance_owner_id=MAINTENANCE_OWNER,
         )
 
@@ -457,31 +475,31 @@ def test_unresolved_plan_is_rejected_before_begin(v3_database: Path) -> None:
     assert opened is False
 
 
-def test_transition_execution_rejects_wrong_maintenance_owner_before_write(
+def test_transition_requests_maintenance_only_after_step_up(
     v3_database: Path,
 ) -> None:
     plan = _resolved_plan(v3_database)
-    before = _database_state(v3_database)
-    gate, capability = _active_maintenance()
+    gate = MaintenanceGate()
+    step_up_service, authorization = _step_up(plan)
 
-    with pytest.raises(SchoolYearTransitionExecutionError) as captured:
-        ExecuteSchoolYearTransition(
-            _factory(v3_database),
-            maintenance_gate=gate,
-            backup_service=_VerifiedBackupService(
-                source_state_sha256=plan.source_sha256
-            ),
-            now_provider=lambda: NOW,
-        ).execute(
-            plan=plan,
-            operation_token=TOKEN,
-            expected_plan_sha256=school_year_transition_plan_sha256(plan),
-            maintenance_capability=capability,
-            maintenance_owner_id="different-owner",
-        )
+    ExecuteSchoolYearTransition(
+        _factory(v3_database),
+        maintenance_gate=gate,
+        step_up_service=step_up_service,
+        backup_service=_VerifiedBackupService(
+            source_state_sha256=plan.source_sha256
+        ),
+        now_provider=lambda: NOW,
+    ).execute(
+        plan=plan,
+        operation_token=TOKEN,
+        expected_plan_sha256=school_year_transition_plan_sha256(plan),
+        step_up_authorization=authorization,
+        maintenance_owner_id="different-owner",
+    )
 
-    assert captured.value.code == "maintenance_capability_owner_mismatch"
-    assert _database_state(v3_database) == before
+    assert authorization.consumed is True
+    assert gate.state is MaintenanceState.NORMAL
 
 
 def _execute_with_backup_service(path: Path, plan, backup_service, *, gate=None):
@@ -491,13 +509,11 @@ def _execute_with_backup_service(path: Path, plan, backup_service, *, gate=None)
     ):
         backup_service.source_state_sha256 = plan.source_sha256
     gate = gate or MaintenanceGate()
-    capability = gate.request_maintenance(
-        owner_id=MAINTENANCE_OWNER,
-        purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
-    )
+    step_up_service, authorization = _step_up(plan)
     service = ExecuteSchoolYearTransition(
         _factory(path),
         maintenance_gate=gate,
+        step_up_service=step_up_service,
         backup_service=backup_service,
         now_provider=lambda: NOW,
     )
@@ -505,7 +521,7 @@ def _execute_with_backup_service(path: Path, plan, backup_service, *, gate=None)
         plan=plan,
         operation_token=TOKEN,
         expected_plan_sha256=school_year_transition_plan_sha256(plan),
-        maintenance_capability=capability,
+        step_up_authorization=authorization,
         maintenance_owner_id=MAINTENANCE_OWNER,
     )
 
@@ -706,15 +722,18 @@ def test_backup_restore_capability_cannot_execute_transition(
     plan = _resolved_plan(v3_database)
     before = _database_state(v3_database)
     gate = MaintenanceGate()
-    capability = gate.request_maintenance(
-        owner_id=MAINTENANCE_OWNER,
-        purpose=MaintenancePurpose.BACKUP_RESTORE,
+    step_up_service, authorization = _step_up(plan)
+    object.__setattr__(
+        authorization,
+        "purpose",
+        MaintenancePurpose.BACKUP_RESTORE,
     )
 
     with pytest.raises(SchoolYearTransitionExecutionError) as captured:
         ExecuteSchoolYearTransition(
             _factory(v3_database),
             maintenance_gate=gate,
+            step_up_service=step_up_service,
             backup_service=_VerifiedBackupService(
                 source_state_sha256=plan.source_sha256
             ),
@@ -722,11 +741,11 @@ def test_backup_restore_capability_cannot_execute_transition(
             plan=plan,
             operation_token=TOKEN,
             expected_plan_sha256=school_year_transition_plan_sha256(plan),
-            maintenance_capability=capability,
+            step_up_authorization=authorization,
             maintenance_owner_id=MAINTENANCE_OWNER,
         )
 
-    assert captured.value.code == "maintenance_capability_purpose_mismatch"
+    assert captured.value.code == "transition_step_up_purpose_invalid"
     assert _database_state(v3_database) == before
     assert gate.state is MaintenanceState.NORMAL
 
@@ -815,11 +834,13 @@ def test_failure_at_every_write_step_and_final_check_rolls_back_completely(
     plan = _resolved_plan(v3_database)
     before = _database_state(v3_database)
 
-    gate, capability = _active_maintenance()
+    gate = MaintenanceGate()
+    step_up_service, authorization = _step_up(plan)
     with pytest.raises(SchoolYearTransitionExecutionError) as captured:
         ExecuteSchoolYearTransition(
             _factory(v3_database),
             maintenance_gate=gate,
+            step_up_service=step_up_service,
             backup_service=_VerifiedBackupService(
                 source_state_sha256=plan.source_sha256
             ),
@@ -832,7 +853,7 @@ def test_failure_at_every_write_step_and_final_check_rolls_back_completely(
             plan=plan,
             operation_token=TOKEN,
             expected_plan_sha256=school_year_transition_plan_sha256(plan),
-            maintenance_capability=capability,
+            step_up_authorization=authorization,
             maintenance_owner_id=MAINTENANCE_OWNER,
         )
 
@@ -849,7 +870,8 @@ class _AmbiguousCommitConnection(sqlite3.Connection):
 
 def test_ambiguous_commit_marks_recovery_required(v3_database: Path) -> None:
     plan = _resolved_plan(v3_database)
-    gate, capability = _active_maintenance()
+    gate = MaintenanceGate()
+    step_up_service, authorization = _step_up(plan)
 
     def ambiguous_factory() -> sqlite3.Connection:
         connection = sqlite3.connect(
@@ -864,6 +886,7 @@ def test_ambiguous_commit_marks_recovery_required(v3_database: Path) -> None:
         ExecuteSchoolYearTransition(
             ambiguous_factory,
             maintenance_gate=gate,
+            step_up_service=step_up_service,
             backup_service=_VerifiedBackupService(
                 source_state_sha256=plan.source_sha256
             ),
@@ -872,7 +895,7 @@ def test_ambiguous_commit_marks_recovery_required(v3_database: Path) -> None:
             plan=plan,
             operation_token=TOKEN,
             expected_plan_sha256=school_year_transition_plan_sha256(plan),
-            maintenance_capability=capability,
+            step_up_authorization=authorization,
             maintenance_owner_id=MAINTENANCE_OWNER,
         )
 

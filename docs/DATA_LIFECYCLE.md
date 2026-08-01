@@ -7,9 +7,10 @@ synthetischer Testdaten-Cleanup und Assignment-API lokal implementiert. Der
 SJ-2E-Lifecycle der produktiven Membership-Reader und der
 SJ-2F-Lifecycle der produktiven Writer sowie die isolierte synthetische
 SJ-3C.2-Ausführung, das SJ-3C.3-Maintenance-Gate und die verpflichtende
-SJ-3C.4-Backupbindung sind lokal umgesetzt. Exakt verifiziertes Final-V3 ist
-für die normale Runtime lokal freigegeben; Passwort-Step-up, UI-/Shell-
-Ausführung und die manuelle macOS-Abnahme bleiben offen.
+SJ-3C.4-Backupbindung und SJ-3C.5-Passwort-Step-up-Grenze sind lokal umgesetzt.
+Exakt verifiziertes Final-V3 ist für die normale Runtime lokal freigegeben;
+UI-/Shell-Ausführung, explizite Bestätigung und die manuelle macOS-Abnahme
+bleiben offen.
 
 1. Der Startup-Resolver prüft Pfad, WAL-/SHM-Sidecars, Restorezustand,
    `user_version` und vollständigen Schemafingerprint read-only.
@@ -58,11 +59,12 @@ fordert jede schreibende Transaktion an der gemeinsamen
 `MaintenanceGuardedConnection` Writerzulassung an. Das Gate allein öffnet
 keine Connection und verändert weder Datenbank noch Dokumente.
 
-`ExecuteSchoolYearTransition` akzeptiert nur eine PENDING Capability mit dem
-Zweck `SCHOOL_YEAR_TRANSITION` und passender Owner-ID, aktiviert sie erst nach
+`ExecuteSchoolYearTransition` fordert erst nach Verbrauch einer gültigen
+SJ-3C.5-Autorisierung selbst eine Capability mit dem Zweck
+`SCHOOL_YEAR_TRANSITION` und passender Owner-ID an, aktiviert sie erst nach
 Writerzahl null und gibt sie nach sicherem Abschluss oder Abbruch kontrolliert
 frei. `BACKUP_RESTORE` ist ein getrennter Capabilityzweck. Es gibt weiterhin
-keine UI-, Passwort-, Step-up- oder Shell-Ausführungsaktion.
+keine UI-, Bestätigungs- oder Shell-Ausführungsaktion.
 
 ## SJ-3C.4 verpflichtende Backupbindung
 
@@ -87,6 +89,28 @@ keine UI-, Passwort-, Step-up- oder Shell-Ausführungsaktion.
 7. Ein Fehler vor eindeutigem Commit wird vollständig zurückgerollt und gibt
    das Gate nach NORMAL frei. Ein uneindeutiger Commit-, Rollback-, Close- oder
    Freigabezustand setzt `RECOVERY_REQUIRED` und bleibt fail-closed.
+
+## SJ-3C.5 verpflichtende Passwort-Step-up-Grenze
+
+1. Ausschließlich ein vollständig gelöster flüchtiger Plan erreicht die
+   vorhandene `SecurityApplicationService.authenticate_password`-Prüfung.
+   Leere und falsche Werte, generische Statuscodes und Wartezeiten folgen
+   unverändert deren bestehender Fehler- und Drosselungssemantik.
+2. Nur `AUTHENTICATED` erzeugt eine nicht persistente Autorisierung. Sie trägt
+   Zweck `SCHOOL_YEAR_TRANSITION`, Erzeugungs- und Ablaufzeitpunkt, eine
+   zufällige technische ID, den exakten Planhash und den Verbrauchsstatus.
+   Ihre Standardgültigkeit beträgt zwei Minuten und kann technisch nie über
+   fünf Minuten erweitert werden.
+3. Der Executor prüft und verbraucht die Autorisierung genau einmal, bevor er
+   `MAINTENANCE_PENDING` anfordert. Erst danach folgen Writer-Drain, Backup,
+   erneute Quellen-/Planprüfung und Transition.
+4. Ablauf, falscher Zweck, fremder Plan, Wiederverwendung, Fehler oder Abbruch
+   verwerfen die Autorisierung. Eine Autorisierung eines anderen
+   Step-up-Service wird nicht akzeptiert. Restore und Support-Reset können sie
+   nicht verwenden.
+5. Passwort, Hash und Credential gelangen weder in Plan oder Autorisierung
+   noch in Logs, Backupnachweis, Transitionbeleg oder Ergebnis. Touch ID und
+   Gerätecredential werden nicht aufgerufen und sind kein Fallback.
 
 ## Direkte Final-V3-Schemaerzeugung
 
@@ -179,13 +203,15 @@ produktive Einzelkind-Writer verwenden seit SJ-2F die getrennten
 V3-Lifecycles. Sammel-/Mehrkindwechsel und Schuljahreswechsel bleiben
 gesonderte spätere Vorgänge.
 
-Ein echter Schuljahreswechsel prüft Vorschau und Quellen, erstellt ein
-verifiziertes Backup, aktiviert Maintenance, verlangt Step-up und Bestätigung
-und führt Schließen des Ausgangsjahres, Aktivieren des Zieljahres,
+Ein echter Schuljahreswechsel verlangt nach vollständig gelöstem Plan und der
+späteren expliziten Bestätigung das Passwort-Step-up, aktiviert erst danach
+Maintenance, draint Writer, erstellt und verifiziert das Backup, prüft Quellen
+erneut und führt Schließen des Ausgangsjahres, Aktivieren des Zieljahres,
 Assignmenterzeugung und Transition-Beleg in einer atomaren Transaktion aus.
 `from_school_year_id` und `to_school_year_id` referenzieren vorhandene
 Schuljahre. Rollback, Idempotenz und Historie bleiben verbindlich. Dieser
-Lifecycle ist noch nicht implementiert.
+Lifecycle ist backendseitig bis einschließlich Step-up implementiert; die
+explizite Bestätigung und UI-/Shell-Ausführung bleiben offen.
 
 ## SJ-2F-Lifecycle für produktive Writer
 
@@ -302,8 +328,9 @@ für ausschließlich temporäre synthetische Final-V3-Datenbanken:
 SJ-3C.4 ersetzt den früheren backupfreien Testpfad: Der technische Backupwert
 ist jetzt verpflichtend der echte SHA-256 des unmittelbar zuvor erstellten und
 erneut verifizierten Archivs; der Null-Sentinel wird im ausführbaren Pfad
-abgelehnt. Der vollständige UI-Produktwechsel benötigt weiterhin
-Passwort-Step-up, explizite Bestätigung und UI-/Shell-Integration.
+abgelehnt. SJ-3C.5 ergänzt die technische Passwort-Step-up-Grenze; der
+vollständige UI-Produktwechsel benötigt weiterhin explizite Bestätigung und
+UI-/Shell-Integration.
 
 Der integrierte Preview-only-Einstieg ergänzt davor ausschließlich diesen
 flüchtigen UI-Ablauf:

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- SJ-3C.5 ergänzt vor jedem Schuljahreswechsel eine verpflichtende Qt-freie
+  Passwort-Step-up-Grenze. Erst ein vollständig gelöster Plan wird mit der
+  vorhandenen `SecurityApplicationService.authenticate_password`-Prüfung
+  authentifiziert; deren bestehende generische Status- und
+  Drosselungssemantik bleibt unverändert. Ein Erfolg erzeugt ausschließlich
+  im Prozess eine höchstens zwei Minuten gültige, an Planhash und Zweck
+  `SCHOOL_YEAR_TRANSITION` gebundene Einmal-Autorisierung. Der Executor
+  verbraucht sie vor `MAINTENANCE_PENDING`; Fehler, Ablauf, Abbruch und jeder
+  Verbrauchsversuch verwerfen sie. Passwort- oder Credentialdaten gelangen
+  weder in Autorisierung, Plan, Backupnachweis, Transitionbeleg noch Ergebnis.
+  UI-/Shell-Ausführung, Bestätigungsaktion, Touch ID, Build und Release bleiben
+  ausgeschlossen.
 - SJ-3C.4 bindet die atomare Schuljahreswechsel-Ausführung verpflichtend an
   ein vollständig verifiziertes `.jkmbackup` des gedrainten Ausgangsstands.
   Der Qt-freie Service aktiviert ausschließlich eine passende
@@ -15,8 +27,8 @@
   dem Pflichtbackup noch Datei- oder Datenbankwrites nachzuholen.
   Sichere Abbrüche rollen vollständig zurück und geben das Gate nach `NORMAL`
   frei; ein uneindeutiger Zustand bleibt fail-closed in `RECOVERY_REQUIRED`.
-  Null-Sentinel, UI-/Shell-Ausführung, Passwort-Step-up, Build und Release sind
-  nicht Bestandteil dieses Pakets.
+  Null-Sentinel, UI-/Shell-Ausführung, Build und Release sind nicht Bestandteil
+  dieses Pakets; SJ-3C.5 ergänzt anschließend die Passwort-Step-up-Grenze.
 - SJ-3C.3 ergänzt ein zentrales Qt-freies In-Process-Maintenance-Gate mit
   `NORMAL`, `MAINTENANCE_PENDING`, `MAINTENANCE_ACTIVE` und
   `RECOVERY_REQUIRED`. Ab `PENDING` werden neue fachliche Writer an der
@@ -29,8 +41,9 @@
   In diesem Zwischenstand verlangte der isolierte Transition-Service zusätzlich
   die ACTIVE Owner-Capability für den Zweck `SCHOOL_YEAR_TRANSITION`, während
   Backup/Restore noch unverdrahtet blieben. SJ-3C.4 ergänzt darauf aufbauend
-  die Backupbindung und kontrollierte Gatefreigabe; UI, Step-up-Authentifizierung,
-  Ausführungsbutton und produktiver Shell-Aufruf wurden nicht ergänzt.
+  die Backupbindung und kontrollierte Gatefreigabe; SJ-3C.5 ergänzt danach die
+  technische Step-up-Authentifizierung. UI, Ausführungsbutton und produktiver
+  Shell-Aufruf wurden nicht ergänzt.
 - SJ-3C.2 ergänzt die isolierte Qt-freie atomare Ausführungsgrenze für einen
   vollständig gelösten Schuljahreswechselplan auf ausschließlich temporären
   synthetischen Final-V3-Datenbanken. Plan und technische Quellen werden

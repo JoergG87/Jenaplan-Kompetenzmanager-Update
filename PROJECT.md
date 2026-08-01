@@ -136,9 +136,19 @@ Transitionbeleg trägt den echten Archivhash. Sichere Fehler rollen vollständig
 zurück und geben das Gate frei, uneindeutige Zustände bleiben
 `RECOVERY_REQUIRED`.
 
+SJ-3C.5 setzt unmittelbar vor diese geschützte Backendkette die vorhandene
+App-Passwortprüfung. Nur ein vollständig gelöster Plan kann eine flüchtige,
+kurzlebige, planhashgebundene Einmal-Autorisierung für
+`SCHOOL_YEAR_TRANSITION` erhalten. Der Executor verbraucht sie, bevor er
+Maintenance anfordert; erst danach folgen Writer-Drain, Backup und atomare
+Transition. Fehlgeschlagene oder gedrosselte Authentifizierung, Ablauf,
+falscher Zweck, Wiederverwendung und Abbruch bleiben vollständig vor
+Maintenance und fachlichen Writes. Die Autorisierung enthält keine
+Credentialdaten und wird nicht persistiert.
+
 Weiterhin nicht umgesetzt oder freigegeben sind Planpersistenz,
-Ausführungs-UI und Runtime-/Shell-Verdrahtung, Passwort-Step-up,
-Authentifizierung, unterjährige Mehrkindwechsel, Build, Packaging und Release.
+Ausführungs-UI und Runtime-/Shell-Verdrahtung, explizite UI-Bestätigung,
+Touch-ID-Freigabe, unterjährige Mehrkindwechsel, Build, Packaging und Release.
 Die manuelle Prüfung der Runtime sowie der neuen Schüler-,
 Wechsel-, Austritts-, Kursstufen- und Schuljahreswechseloberflächen auf macOS
 ist noch offen. Es wurden keine Migration und keine echten Daten verwendet.
@@ -155,11 +165,12 @@ atomaren Wechseltransaktion neu und als current angelegt. Sein
 Ausgangs- und Zielschuljahr; eine Bootstrap-Transition mit leerer Ausgangs-ID
 ist ausgeschlossen.
 
-Vorschau, verifiziertes Sicherheitsbackup, Maintenance-Gate, erneute
-Quellenprüfung, Passwort-Step-up, atomare Transaktion, Rollback, Idempotenz,
+Vorschau, Passwort-Step-up, Maintenance-Gate, verifiziertes Sicherheitsbackup,
+erneute Quellenprüfung, atomare Transaktion, Rollback, Idempotenz,
 Historie und unveränderliche finale Bericht-/LEG-Artefakte bleiben für diesen
-späteren Produktprozess erforderlich. Diese Sicherheitsfunktionen sind durch
-SJ-3A oder den Architecture Cleanup nicht als implementiert zu verstehen.
+späteren Produktprozess erforderlich. Die technische Step-up-Grenze ist
+implementiert; UI-Bestätigung und produktive Ausführungsverdrahtung bleiben
+offen.
 
 ## Berichte-Übersicht - implementierte Phase 2
 
