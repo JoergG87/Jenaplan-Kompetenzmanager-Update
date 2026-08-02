@@ -5,9 +5,9 @@ from __future__ import annotations
 import unittest
 from datetime import date
 
-from PySide6.QtCore import QDate, Qt
+from PySide6.QtCore import QDate, QEvent, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLabel, QScrollArea
 
 from src.desktop_app.screens.settings_screen import SettingsScreen
 from src.desktop_app.view_models.backup_restore_view_model import RestorePreviewViewModel
@@ -45,6 +45,120 @@ class SettingsNavigationTest(unittest.TestCase):
             card.setFocus()
             QTest.keyClick(card, key)
             self.assertEqual(screen.current_page, "school_years")
+
+    def test_cursor_contract_is_reinitialized_on_stationary_detail_navigation(
+        self,
+    ) -> None:
+        screen = SettingsScreen()
+        screen.resize(900, 700)
+        screen.show()
+        self.app.processEvents()
+        card = screen.settings_cards["school_years"]
+        card_position = card.rect().center()
+        global_position = card.mapToGlobal(card_position)
+
+        QTest.mouseMove(card, card_position)
+        self.assertEqual(
+            card.cursor().shape(),
+            Qt.CursorShape.PointingHandCursor,
+        )
+        QTest.mouseClick(
+            card,
+            Qt.MouseButton.LeftButton,
+            pos=card_position,
+        )
+        self.app.processEvents()
+
+        detail_scroll = screen.pages.currentWidget()
+        self.assertIsInstance(detail_scroll, QScrollArea)
+        detail_content = detail_scroll.widget()
+        self.assertEqual(
+            detail_content.cursor().shape(),
+            Qt.CursorShape.ArrowCursor,
+        )
+        self.assertTrue(
+            detail_content.testAttribute(Qt.WidgetAttribute.WA_SetCursor)
+        )
+        self.assertEqual(
+            detail_scroll.viewport().cursor().shape(),
+            Qt.CursorShape.ArrowCursor,
+        )
+        widget_under_stationary_pointer = QApplication.widgetAt(global_position)
+        self.assertIsNotNone(widget_under_stationary_pointer)
+        self.assertTrue(
+            detail_content is widget_under_stationary_pointer
+            or detail_content.isAncestorOf(widget_under_stationary_pointer)
+        )
+        self.assertEqual(
+            widget_under_stationary_pointer.cursor().shape(),
+            Qt.CursorShape.ArrowCursor,
+        )
+
+        title = next(
+            label
+            for label in detail_content.findChildren(QLabel)
+            if label.text() == "Schuljahre"
+        )
+        self.assertEqual(title.cursor().shape(), Qt.CursorShape.ArrowCursor)
+        self.assertEqual(
+            screen.school_year_transition_button.cursor().shape(),
+            Qt.CursorShape.PointingHandCursor,
+        )
+        self.assertIsNone(QApplication.overrideCursor())
+        screen.close()
+
+    def test_cursor_contract_survives_back_other_detail_and_app_activation(
+        self,
+    ) -> None:
+        screen = SettingsScreen()
+        accessible_names = {
+            key: card.accessibleName()
+            for key, card in screen.settings_cards.items()
+        }
+
+        for key in ("school_years", "documentation_subjects"):
+            screen.show_page(key)
+            detail_scroll = screen.pages.currentWidget()
+            self.assertEqual(
+                detail_scroll.widget().cursor().shape(),
+                Qt.CursorShape.ArrowCursor,
+            )
+            self.assertEqual(
+                screen.detail_back_buttons[key].cursor().shape(),
+                Qt.CursorShape.PointingHandCursor,
+            )
+
+        QApplication.sendEvent(
+            screen,
+            QEvent(QEvent.Type.ApplicationDeactivate),
+        )
+        QApplication.sendEvent(
+            screen,
+            QEvent(QEvent.Type.ApplicationActivate),
+        )
+        self.assertEqual(
+            screen.pages.currentWidget().widget().cursor().shape(),
+            Qt.CursorShape.ArrowCursor,
+        )
+        self.assertIsNone(QApplication.overrideCursor())
+
+        screen.show_overview()
+        overview_scroll = screen.pages.currentWidget()
+        self.assertEqual(
+            overview_scroll.widget().cursor().shape(),
+            Qt.CursorShape.ArrowCursor,
+        )
+        self.assertEqual(
+            screen.settings_cards["school_years"].cursor().shape(),
+            Qt.CursorShape.PointingHandCursor,
+        )
+        self.assertEqual(
+            accessible_names,
+            {
+                key: card.accessibleName()
+                for key, card in screen.settings_cards.items()
+            },
+        )
 
     def test_school_year_page_shows_current_year_and_emits_accessible_input(
         self,

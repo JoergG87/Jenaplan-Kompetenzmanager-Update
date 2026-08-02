@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Passive Flächen der Einstellungsübersicht und ihrer Detailseiten setzen beim
+  Seitenwechsel wieder zuverlässig den Pfeilcursor, auch wenn der Mauszeiger
+  stationär bleibt. Interaktive Karten und Buttons behalten ihren Handcursor.
+
 - Ausgewählte interaktive Karten behalten ihren blauen Auswahlzustand und
   zeigen den Tastaturfokus zugleich mit dem zentralen teal Fokusrahmen.
   Hover, gedrückter und deaktivierter Zustand verdecken den Fokus nicht

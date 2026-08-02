@@ -152,6 +152,15 @@ class SettingsScreen(QWidget):
         scroll.setWidget(content)
         return scroll
 
+    def _initialize_current_page_cursor(self) -> None:
+        scroll = self.pages.currentWidget()
+        if not isinstance(scroll, QScrollArea):
+            return
+        scroll.viewport().setCursor(Qt.CursorShape.ArrowCursor)
+        content = scroll.widget()
+        if content is not None:
+            content.setCursor(Qt.CursorShape.ArrowCursor)
+
     def _overview_page(self) -> QWidget:
         content = QWidget()
         layout = QVBoxLayout(content)
@@ -226,6 +235,7 @@ class SettingsScreen(QWidget):
             return
         self.current_page = key
         self.pages.setCurrentIndex(page_indexes[key])
+        self._initialize_current_page_cursor()
         if key == "backup_restore":
             self.backup_restore_page_opened.emit()
         elif key == "updates":
@@ -236,6 +246,7 @@ class SettingsScreen(QWidget):
             return
         self.current_page = "overview"
         self.pages.setCurrentIndex(0)
+        self._initialize_current_page_cursor()
 
     def reset_navigation(self) -> None:
         """Open settings predictably at its orientation-only overview."""
