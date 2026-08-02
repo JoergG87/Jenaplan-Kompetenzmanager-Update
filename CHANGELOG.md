@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Der Info-Button der Dashboard-Übersicht `Dokumentation im Überblick` öffnet
+  nun per Maus, Enter und Leertaste eine sichtbare, schließbare und
+  fokussierte Dokumentationshilfe. Sie erklärt den tatsächlichen aktuellen
+  Zuordnungskontext und den nicht auf ein Schuljahr begrenzten Belegumfang,
+  bleibt auch in kleinen Fenstern erreichbar und nimmt ausdrücklich keine
+  Leistungs-, Entwicklungs-, Stärken-, Schwächen- oder Zielerreichungsdeutung
+  vor.
+
 - Beim Bearbeiten bestehender Beobachtungen bleiben nicht mehr registrierte
   oder leere gespeicherte Kontextwerte sichtbar neutral gekennzeichnet und
   werden ohne bewusste Neuauswahl unverändert gespeichert. Neue Beobachtungen

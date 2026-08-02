@@ -7658,6 +7658,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         icon_button = components.IconButton("info", "Dokumentationshilfe")
         self.assertEqual(icon_button.accessibleName(), "Dokumentationshilfe")
         self.assertTrue(icon_button.toolTip())
+        icon_activations: list[bool] = []
+        icon_button.clicked.connect(lambda: icon_activations.append(True))
+        for key in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
+            QTest.keyClick(icon_button, key)
+        self.assertEqual(icon_activations, [True, True, True])
         self.assertEqual(filter_bar.accessibleName(), "Suche und aktive Filter")
         self.assertIsNotNone(app)
 

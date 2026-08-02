@@ -94,6 +94,14 @@ class IconButton(QPushButton):
         self.setToolTip(tooltip or accessible_name)
         configure_button(self, "quiet", accessible_name)
 
+    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
+        """Activate compact icon actions consistently outside dialogs."""
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self.click()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
 
 class SectionHeader(QWidget):
     """Reusable title, explanation, help, and action row."""

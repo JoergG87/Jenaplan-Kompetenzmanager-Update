@@ -5,10 +5,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import datetime
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QKeyEvent, QMouseEvent, QPalette
 from PySide6.QtWidgets import (
     QFrame,
+    QDialogButtonBox,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -21,10 +22,12 @@ from PySide6.QtWidgets import (
 from src.desktop_app.components import (
     AppCard,
     CourseBadge,
+    DialogHeader,
     PageHeader,
     SectionHeader,
     configure_button,
 )
+from src.desktop_app.motion import MotionDialog
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.master_data_view_model import (
     CourseGroupViewModel,
@@ -49,6 +52,19 @@ OVERVIEW_GROUP_EMPTY_STATE = (
 )
 OVERVIEW_COURSE_EMPTY_STATE = (
     "Noch keine Kurse angelegt. Lege sie unter „Stammdaten“ an."
+)
+DASHBOARD_DOCUMENTATION_HELP_TITLE = "Hilfe zu Dokumentation im Überblick"
+DASHBOARD_DOCUMENTATION_HELP_TEXT = (
+    "Die Übersicht zeigt für die am aktuellen Dashboard-Tag im aktuellen "
+    "Schuljahr aktiv zugeordneten Kinder je Stammgruppe und "
+    "dokumentationsrelevantem Fach, bei wie vielen mindestens eine Kompetenz "
+    "dokumentiert ist. Berücksichtigt werden alle vorhandenen aktiven "
+    "Beobachtungen mit Kompetenzzuordnung sowie Kompetenzbestätigungen; diese "
+    "Dokumentationen sind nicht auf das aktuelle Schuljahr oder einen eigenen "
+    "Zeitraum begrenzt. Die Abstufungen beschreiben ausschließlich den Umfang "
+    "vorhandener Dokumentation. Sie bewerten weder Leistung noch "
+    "Lernentwicklung und erlauben keine Aussage über Stärken, Schwächen oder "
+    "Zielerreichung."
 )
 
 
@@ -146,6 +162,8 @@ class OverviewScreen(QWidget):
         self.heatmap_layout = QVBoxLayout()
         self.matching_children_layout = QVBoxLayout()
         self._hero_occurrence: TimetableOccurrenceViewModel | None = None
+        self._documentation_help_dialog: MotionDialog | None = None
+        self.documentation_help_button: QPushButton | None = None
         self._build()
 
     def _build(self) -> None:
@@ -588,16 +606,120 @@ class OverviewScreen(QWidget):
                 "Dokumentation im Überblick": "Neutrale Abdeckung je Stammgruppe und Fach · keine Leistung",
             }
             help_text = (
-                "Die Abstufungen zeigen ausschließlich, wie viel dokumentiert wurde. "
-                "Sie bewerten weder Leistung noch Lernentwicklung."
+                DASHBOARD_DOCUMENTATION_HELP_TEXT
                 if object_name == "DashboardHeatmap"
                 else ""
             )
-            layout.addWidget(
-                SectionHeader(title, descriptions.get(title, ""), help_text)
-            )
+            header = SectionHeader(title, descriptions.get(title, ""), help_text)
+            layout.addWidget(header)
+            if object_name == "DashboardHeatmap" and header.help_button is not None:
+                self.documentation_help_button = header.help_button
+                header.help_button.clicked.connect(
+                    self._open_documentation_help
+                )
         layout.addLayout(content_layout)
         return card
+
+    def _open_documentation_help(self) -> None:
+        """Open the existing compact information-dialog pattern for the heatmap."""
+        active_dialog = self._documentation_help_dialog
+        if active_dialog is not None and active_dialog.isVisible():
+            active_dialog.raise_()
+            active_dialog.activateWindow()
+            close_button = active_dialog.findChild(
+                QPushButton,
+                "DashboardDocumentationHelpCloseButton",
+            )
+            if close_button is not None:
+                close_button.setFocus(Qt.FocusReason.OtherFocusReason)
+            return
+
+        return_button = self.documentation_help_button
+        dialog = MotionDialog(self)
+        dialog.setObjectName("DashboardDocumentationHelpDialog")
+        dialog.setWindowTitle(DASHBOARD_DOCUMENTATION_HELP_TITLE)
+        dialog.setAccessibleName(DASHBOARD_DOCUMENTATION_HELP_TITLE)
+        dialog.setModal(True)
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        dialog.setMinimumSize(300, 220)
+        host = self.window()
+        dialog.resize(
+            min(560, max(320, host.width() - 80)),
+            min(360, max(240, host.height() - 80)),
+        )
+
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(14)
+        layout.addWidget(
+            DialogHeader(
+                "Dokumentation im Überblick",
+                "Dokumentationshilfe",
+                icon_name="info",
+            )
+        )
+
+        help_scroll = QScrollArea()
+        help_scroll.setObjectName("DashboardDocumentationHelpScroll")
+        help_scroll.setWidgetResizable(True)
+        help_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        help_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        help_content = QWidget()
+        help_layout = QVBoxLayout(help_content)
+        help_layout.setContentsMargins(0, 0, 8, 0)
+        help_text = QLabel(DASHBOARD_DOCUMENTATION_HELP_TEXT)
+        help_text.setObjectName("DashboardDocumentationHelpText")
+        help_text.setWordWrap(True)
+        help_text.setAccessibleName(
+            f"Erklärung zur Dokumentationsübersicht. {DASHBOARD_DOCUMENTATION_HELP_TEXT}"
+        )
+        set_label_style(help_text, "body")
+        help_layout.addWidget(help_text)
+        help_layout.addStretch(1)
+        help_scroll.setWidget(help_content)
+        layout.addWidget(help_scroll, 1)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.setObjectName("DialogActionBar")
+        close_button = buttons.button(QDialogButtonBox.StandardButton.Close)
+        if close_button is not None:
+            close_button.setObjectName("DashboardDocumentationHelpCloseButton")
+            close_button.setText("Schließen")
+            close_button.setDefault(True)
+            configure_button(
+                close_button,
+                "secondary",
+                "Dokumentationshilfe schließen",
+            )
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+
+        def finish_help(_result: int) -> None:
+            if self._documentation_help_dialog is dialog:
+                self._documentation_help_dialog = None
+
+            def restore_focus() -> None:
+                if return_button is None:
+                    return
+                try:
+                    if return_button.isVisible() and return_button.isEnabled():
+                        return_button.window().activateWindow()
+                        return_button.setFocus(Qt.FocusReason.OtherFocusReason)
+                except RuntimeError:
+                    pass
+
+            QTimer.singleShot(0, restore_focus)
+
+        dialog.finished.connect(finish_help)
+        self._documentation_help_dialog = dialog
+        dialog.open()
+        if close_button is not None:
+            QTimer.singleShot(
+                0,
+                lambda: close_button.setFocus(Qt.FocusReason.OtherFocusReason),
+            )
 
     @staticmethod
     def _clear_layout(layout: object) -> None:

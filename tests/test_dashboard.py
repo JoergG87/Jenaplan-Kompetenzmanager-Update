@@ -12,9 +12,16 @@ from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QFrame, QLabel, QPushButton, QScrollArea
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QFrame,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+)
 
 from src.application.commands.timetable import SaveTimetableEntryCommand
 from src.core.records import seed_reference_data
@@ -24,7 +31,12 @@ from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDeskt
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
 from src.desktop_app.components import CourseBadge
-from src.desktop_app.screens.overview_screen import DashboardLessonCard, OverviewScreen
+from src.desktop_app.screens.overview_screen import (
+    DASHBOARD_DOCUMENTATION_HELP_TEXT,
+    DASHBOARD_DOCUMENTATION_HELP_TITLE,
+    DashboardLessonCard,
+    OverviewScreen,
+)
 from src.desktop_app.shell import AppShell
 from src.desktop_app import theme
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
@@ -252,6 +264,116 @@ class DashboardTest(unittest.TestCase):
         self.assertIn("keine Leistungsbewertung", cells[0].accessibleName())
         self.assertNotIn("QLabel#DashboardHeatmapMarker", theme.APP_STYLESHEET)
         self.assertIn("background-color: #4F7599", theme.APP_STYLESHEET)
+
+    def test_documentation_help_supports_pointer_keyboard_focus_and_reopening(
+        self,
+    ) -> None:
+        screen = OverviewScreen()
+        screen.resize(420, 320)
+        at = datetime(2026, 8, 3, 7, 30)
+        screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, False)
+        screen.show()
+        self.app.processEvents()
+
+        button = screen.documentation_help_button
+        self.assertIsNotNone(button)
+        assert button is not None
+        self.assertEqual(button.accessibleName(), DASHBOARD_DOCUMENTATION_HELP_TITLE)
+        self.assertEqual(button.toolTip(), DASHBOARD_DOCUMENTATION_HELP_TEXT)
+        original_cell = screen.findChild(QFrame, "DashboardHeatmapCell")
+        original_occurrence = screen._hero_occurrence
+        database_before = self.database_path.read_bytes()
+        target_requests: list[tuple[str, str]] = []
+        observation_requests: list[tuple[str, ...]] = []
+        screen.timetable_target_selected.connect(
+            lambda *values: target_requests.append(tuple(values))
+        )
+        screen.timetable_observation_requested.connect(
+            lambda *values: observation_requests.append(tuple(values))
+        )
+
+        activations = (
+            ("mouse", None),
+            ("return", Qt.Key.Key_Return),
+            ("enter", Qt.Key.Key_Enter),
+            ("space", Qt.Key.Key_Space),
+        )
+        for index, (label, key) in enumerate(activations):
+            with self.subTest(activation=label):
+                button.setFocus()
+                if key is None:
+                    QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+                else:
+                    QTest.keyClick(button, key)
+                self.app.processEvents()
+
+                dialog = next(
+                    (
+                        widget
+                        for widget in QApplication.topLevelWidgets()
+                        if widget.objectName() == "DashboardDocumentationHelpDialog"
+                        and widget.isVisible()
+                    ),
+                    None,
+                )
+                self.assertIsInstance(dialog, QDialog)
+                assert isinstance(dialog, QDialog)
+                self.assertEqual(dialog.accessibleName(), DASHBOARD_DOCUMENTATION_HELP_TITLE)
+                self.assertLessEqual(dialog.width(), screen.width())
+                self.assertLessEqual(dialog.height(), screen.height())
+                help_scroll = dialog.findChild(
+                    QScrollArea,
+                    "DashboardDocumentationHelpScroll",
+                )
+                self.assertIsNotNone(help_scroll)
+                self.assertTrue(help_scroll.widgetResizable())
+                help_text = dialog.findChild(
+                    QLabel,
+                    "DashboardDocumentationHelpText",
+                )
+                self.assertIsNotNone(help_text)
+                assert help_text is not None
+                self.assertEqual(help_text.text(), DASHBOARD_DOCUMENTATION_HELP_TEXT)
+                self.assertIn("aktuellen Dashboard-Tag", help_text.text())
+                self.assertIn("nicht auf das aktuelle Schuljahr", help_text.text())
+                self.assertIn("Beobachtungen mit Kompetenzzuordnung", help_text.text())
+                self.assertIn("Kompetenzbestätigungen", help_text.text())
+                self.assertIn("Stärken, Schwächen oder Zielerreichung", help_text.text())
+                self.assertTrue(help_text.accessibleName())
+                close_button = dialog.findChild(
+                    QPushButton,
+                    "DashboardDocumentationHelpCloseButton",
+                )
+                self.assertIsNotNone(close_button)
+                assert close_button is not None
+                self.assertEqual(
+                    close_button.accessibleName(),
+                    "Dokumentationshilfe schließen",
+                )
+                self.assertIs(self.app.focusWidget(), close_button)
+
+                if index == 1:
+                    QTest.keyClick(close_button, Qt.Key.Key_Escape)
+                else:
+                    QTest.mouseClick(close_button, Qt.MouseButton.LeftButton)
+                self.app.processEvents()
+                QApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+                QTest.qWait(1)
+                self.app.processEvents()
+                self.assertIs(self.app.focusWidget(), button)
+                self.assertFalse(
+                    any(
+                        widget.objectName() == "DashboardDocumentationHelpDialog"
+                        for widget in QApplication.topLevelWidgets()
+                    )
+                )
+
+        self.assertIs(screen.findChild(QFrame, "DashboardHeatmapCell"), original_cell)
+        self.assertIs(screen._hero_occurrence, original_occurrence)
+        self.assertEqual(self.database_path.read_bytes(), database_before)
+        self.assertEqual(target_requests, [])
+        self.assertEqual(observation_requests, [])
+        screen.close()
 
     def test_shell_navigates_all_target_types_and_builds_observation_prefill(self) -> None:
         instant = datetime(2026, 8, 3, 8, 15)
