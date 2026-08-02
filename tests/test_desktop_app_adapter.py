@@ -4035,6 +4035,106 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("CMP-000020", dialog.competency_rating_entries)
         self.assertTrue(dialog.competency_catalog_tiles["CMP-000020"].is_selected())
 
+    def test_observation_dialog_keeps_current_context_selected(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy(
+            self._sample_observation_draft(context="Einzelgespräch")
+        )
+
+        self.assertEqual(dialog.context_select.currentText(), "Einzelgespräch")
+        self.assertEqual(dialog.create_draft().context, "Einzelgespräch")
+
+    def test_observation_dialog_keeps_legacy_and_empty_contexts_without_fallback(
+        self,
+    ) -> None:
+        for stored_context, visible_label in (
+            ("Partnerarbeit", "Partnerarbeit · Nicht mehr verfügbar"),
+            ("", "Kein Kontext gespeichert · Nicht mehr verfügbar"),
+        ):
+            with self.subTest(stored_context=stored_context):
+                dialog = self._observation_dialog_with_hierarchy(
+                    self._sample_observation_draft(context=stored_context)
+                )
+
+                self.assertEqual(dialog.context_select.currentText(), visible_label)
+                self.assertEqual(dialog.create_draft().context, stored_context)
+                self.assertNotEqual(
+                    dialog.context_select.currentText(),
+                    OBSERVATION_CONTEXT_OPTIONS[0],
+                )
+                self.assertEqual(
+                    dialog.context_select.accessibleName(),
+                    "Beobachtungskontext",
+                )
+
+    def test_observation_dialog_legacy_context_can_be_changed_by_keyboard(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy(
+            self._sample_observation_draft(context="Partnerarbeit")
+        )
+
+        dialog.context_select.setFocus()
+        QTest.keyClick(dialog.context_select, Qt.Key.Key_Home)
+
+        self.assertEqual(
+            dialog.create_draft().context,
+            OBSERVATION_CONTEXT_OPTIONS[0],
+        )
+
+    def test_new_observation_dialog_only_lists_registered_contexts(self) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+
+        self.assertEqual(
+            tuple(
+                dialog.context_select.itemText(index)
+                for index in range(dialog.context_select.count())
+            ),
+            OBSERVATION_CONTEXT_OPTIONS,
+        )
+        self.assertNotIn("Partnerarbeit", (
+            dialog.context_select.itemText(index)
+            for index in range(dialog.context_select.count())
+        ))
+
+    def test_edit_save_preserves_legacy_context_and_all_other_observation_fields(
+        self,
+    ) -> None:
+        original = self._sample_observation_draft(context="Partnerarbeit")
+        self.adapter.save_observation(original)
+        loaded = self.adapter.observation_draft_for_edit("OBS-000001")
+        self.assertIsNotNone(loaded)
+        if loaded is None:
+            raise AssertionError("Expected persisted observation draft")
+        dialog = self._observation_dialog_with_hierarchy(loaded)
+
+        result = self.adapter.update_observation(dialog.create_draft())
+        unchanged = self.adapter.observation_draft_for_edit("OBS-000001")
+
+        self.assertIsInstance(result, SuccessResult)
+        self.assertIsNotNone(unchanged)
+        if unchanged is None:
+            raise AssertionError("Expected updated observation draft")
+        self.assertEqual(unchanged.context, "Partnerarbeit")
+        self.assertEqual(unchanged.date_text, original.date_text)
+        self.assertEqual(unchanged.subject_id, original.subject_id)
+        self.assertEqual(unchanged.note, original.note)
+        self.assertEqual(unchanged.competency_ratings, original.competency_ratings)
+        self.assertEqual(unchanged.attachments, original.attachments)
+
+        dialog = self._observation_dialog_with_hierarchy(unchanged)
+        dialog.context_select.setCurrentText("Präsentation")
+        changed_result = self.adapter.update_observation(dialog.create_draft())
+        changed = self.adapter.observation_draft_for_edit("OBS-000001")
+
+        self.assertIsInstance(changed_result, SuccessResult)
+        self.assertIsNotNone(changed)
+        if changed is None:
+            raise AssertionError("Expected deliberately updated observation draft")
+        self.assertEqual(changed.context, "Präsentation")
+        self.assertEqual(changed.date_text, original.date_text)
+        self.assertEqual(changed.subject_id, original.subject_id)
+        self.assertEqual(changed.note, original.note)
+        self.assertEqual(changed.competency_ratings, original.competency_ratings)
+        self.assertEqual(changed.attachments, original.attachments)
+
     def test_observation_dialog_uses_scalable_three_zone_workspace(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
 

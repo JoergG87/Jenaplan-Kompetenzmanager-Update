@@ -1031,12 +1031,17 @@ class NewObservationDialog(MotionDialog):
 
     def create_draft(self) -> ObservationDraftViewModel:
         """Return the UI draft."""
+        stored_context = self.context_select.currentData()
         return ObservationDraftViewModel(
             student_id=self.student.student_id,
             student_name=self.student.display_name,
             date_text=self.date_input.date().toString("yyyy-MM-dd"),
             competency_ratings=self._selected_competency_ratings(),
-            context=self.context_select.currentText(),
+            context=(
+                self.context_select.currentText()
+                if stored_context is None
+                else str(stored_context)
+            ),
             note=self.note_input.toPlainText(),
             subject_id=str(self.subject_select.currentData() or ""),
             subject_display_name=self.subject_select.currentText(),
@@ -1249,8 +1254,14 @@ class NewObservationDialog(MotionDialog):
             self.date_input.setDate(date)
         self.note_input.setPlainText(self.initial_draft.note)
         context_index = self.context_select.findText(self.initial_draft.context)
-        if context_index >= 0:
-            self.context_select.setCurrentIndex(context_index)
+        if context_index < 0:
+            context_label = self.initial_draft.context or "Kein Kontext gespeichert"
+            self.context_select.addItem(
+                f"{context_label} · Nicht mehr verfügbar",
+                self.initial_draft.context,
+            )
+            context_index = self.context_select.count() - 1
+        self.context_select.setCurrentIndex(context_index)
         visible_subject = self._initial_visible_subject()
         subject_index = self.subject_select.findData(visible_subject)
         if subject_index >= 0:

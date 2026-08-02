@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Beim Bearbeiten bestehender Beobachtungen bleiben nicht mehr registrierte
+  oder leere gespeicherte Kontextwerte sichtbar neutral gekennzeichnet und
+  werden ohne bewusste Neuauswahl unverändert gespeichert. Neue Beobachtungen
+  bieten weiterhin nur die aktuell registrierten Kontexte an.
+
 - LEG-Bereiche lassen sich wieder zuverlässig auf- und zuklappen, weil der
   vorhandene zentrale Disclosure-Feedback-Helper im Workspace sicher verfügbar
   ist. Tastatursteuerung, Accessibility, Inhalte und Persistenz bleiben
