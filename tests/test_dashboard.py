@@ -35,6 +35,7 @@ from src.desktop_app.screens.overview_screen import (
     DASHBOARD_DOCUMENTATION_HELP_TEXT,
     DASHBOARD_DOCUMENTATION_HELP_TITLE,
     DashboardLessonCard,
+    DashboardMatchingStudentAction,
     OverviewScreen,
 )
 from src.desktop_app.shell import AppShell
@@ -49,6 +50,7 @@ from src.desktop_app.view_models.student_view_model import (
     DashboardDocumentationCellViewModel,
     DashboardDocumentationGroupViewModel,
     DashboardDocumentationHeatmapViewModel,
+    DashboardSuggestedStudentViewModel,
     StudentDetailViewModel,
 )
 
@@ -592,16 +594,142 @@ class DashboardTest(unittest.TestCase):
                 for button in screen.findChildren(QPushButton)
             )
         )
-
         empty = OverviewScreen()
         empty.set_dashboard(projection, self.heatmap, at, True, ())
         labels = tuple(label.text() for label in empty.findChildren(QLabel))
         self.assertTrue(
-            any(
-                "keine aktiven Kinder zugeordnet" in text
-                for text in labels
-            )
+            any("keine aktiven Kinder zugeordnet" in text for text in labels)
         )
+
+    def test_matching_child_profile_action_is_id_based_keyboard_accessible_and_separate(
+        self,
+    ) -> None:
+        self._save(1, "08:00", "08:45")
+        at = datetime(2026, 8, 3, 8, 15)
+        projection = self.adapter.read_projection(at)
+        suggestions = (
+            DashboardSuggestedStudentViewModel(
+                "STU-SAME-1",
+                "Mia Beispiel mit einem außergewöhnlich langen Schülernamen",
+                "Noch keine Dokumentation in Mathematik",
+                course_name="Kurs 1",
+                course_color_hex="#4F7599",
+            ),
+            DashboardSuggestedStudentViewModel(
+                "STU-SAME-2",
+                "Mia Beispiel mit einem außergewöhnlich langen Schülernamen",
+                "Ein sehr langes Schülerlabel mit zusätzlichem Dokumentationshinweis, "
+                "das auch in einem kleinen Fenster vollständig bedienbar bleibt",
+                course_name="Kurs 1",
+                course_color_hex="#4F7599",
+            ),
+        )
+        screen = OverviewScreen()
+        screen.resize(420, 520)
+        profile_requests: list[str] = []
+        observation_requests: list[tuple[str, str, str, str]] = []
+        screen.timetable_student_profile_requested.connect(profile_requests.append)
+        screen.timetable_student_observation_requested.connect(
+            lambda *values: observation_requests.append(tuple(values))
+        )
+        database_before = self.database_path.read_bytes()
+        top_levels_before = set(QApplication.topLevelWidgets())
+        screen.set_dashboard(
+            projection,
+            DashboardDocumentationHeatmapViewModel(()),
+            at,
+            True,
+            suggestions,
+        )
+        screen.show()
+        self.app.processEvents()
+
+        actions = screen.findChildren(DashboardMatchingStudentAction)
+        names = screen.findChildren(QLabel, "DashboardMatchingStudentName")
+        observe_buttons = [
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.text() == "Beobachten"
+        ]
+        self.assertEqual(len(actions), 2)
+        self.assertEqual(len(names), 2)
+        self.assertEqual(len(observe_buttons), 2)
+        self.assertEqual(
+            tuple(action.accessibleName() for action in actions),
+            (
+                "Schülerprofil von Mia Beispiel mit einem außergewöhnlich langen Schülernamen öffnen",
+                "Schülerprofil von Mia Beispiel mit einem außergewöhnlich langen Schülernamen öffnen",
+            ),
+        )
+        self.assertEqual(
+            tuple(button.accessibleName() for button in observe_buttons),
+            (
+                "Neue Beobachtung für Mia Beispiel mit einem außergewöhnlich langen Schülernamen",
+                "Neue Beobachtung für Mia Beispiel mit einem außergewöhnlich langen Schülernamen",
+            ),
+        )
+
+        QTest.mouseClick(actions[0], Qt.MouseButton.LeftButton)
+        QTest.mouseClick(names[1], Qt.MouseButton.LeftButton)
+        for key in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
+            actions[0].setFocus()
+            QTest.keyClick(actions[0], key)
+        self.assertEqual(
+            profile_requests,
+            ["STU-SAME-1", "STU-SAME-2", "STU-SAME-1", "STU-SAME-1", "STU-SAME-1"],
+        )
+        self.assertEqual(observation_requests, [])
+
+        actions[0].setFocus()
+        QTest.keyClick(actions[0], Qt.Key.Key_Tab)
+        self.assertIs(self.app.focusWidget(), observe_buttons[0])
+        observe_buttons[1].click()
+        self.assertEqual(profile_requests[-1], "STU-SAME-1")
+        self.assertEqual(
+            observation_requests,
+            [
+                (
+                    "STU-SAME-2",
+                    self.subject.item_id,
+                    self.subject.label,
+                    self.group.label,
+                )
+            ],
+        )
+        self.assertEqual(self.database_path.read_bytes(), database_before)
+        scroll = screen.findChild(QScrollArea, "DashboardScrollArea")
+        self.assertEqual(scroll.horizontalScrollBar().maximum(), 0)
+        self.assertTrue(names[1].wordWrap())
+        self.app.processEvents()
+        self.assertEqual(set(QApplication.topLevelWidgets()) - top_levels_before, set())
+        screen.close()
+
+    def test_dashboard_profile_signal_reuses_shell_student_profile_route(self) -> None:
+        student = self._add_student("Mara", "Profil")
+        shell = AppShell(
+            self.database_path,
+            now_provider=lambda: datetime(2026, 8, 3, 8, 15),
+        )
+        database_before = self.database_path.read_bytes()
+        top_levels_before = set(QApplication.topLevelWidgets())
+
+        for _attempt in range(2):
+            shell.dashboard_screen.timetable_student_profile_requested.emit(
+                student.student_id
+            )
+
+        self.assertIs(shell.stack.currentWidget(), shell.student_profile_screen)
+        self.assertIsNotNone(shell.student_profile_screen.current_student)
+        self.assertEqual(
+            shell.student_profile_screen.current_student.student_id,
+            student.student_id,
+        )
+        self.assertEqual(self.database_path.read_bytes(), database_before)
+        self.assertEqual(
+            set(QApplication.topLevelWidgets()) - top_levels_before,
+            set(),
+        )
+        shell.close()
 
     def test_shell_opens_direct_suggestion_with_lesson_prefill(self) -> None:
         student = self._add_student("Mara", "Direkt")

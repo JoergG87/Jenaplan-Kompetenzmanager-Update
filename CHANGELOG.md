@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Im Dashboard öffnet der große, per Maus, Enter und Leertaste bedienbare
+  Hauptbereich eines passenden Kindes jetzt dessen Schülerprofil über die
+  stabile `student_id`. Der getrennte Button `Beobachten` behält unverändert
+  Fach- und Stundenkontext; beide Aktionen besitzen eindeutige Accessible
+  Names und lösen einander nicht aus.
+
 - Der Info-Button der Dashboard-Übersicht `Dokumentation im Überblick` öffnet
   nun per Maus, Enter und Leertaste eine sichtbare, schließbare und
   fokussierte Dokumentationshilfe. Sie erklärt den tatsächlichen aktuellen

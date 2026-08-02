@@ -378,6 +378,9 @@ class AppShell(QMainWindow):
         self.dashboard_screen.timetable_student_observation_requested.connect(
             self.open_dashboard_observation
         )
+        self.dashboard_screen.timetable_student_profile_requested.connect(
+            self.show_student_profile
+        )
         self.dashboard_screen.settings_timetable_requested.connect(
             self.show_timetable_settings
         )

@@ -147,12 +147,67 @@ class DashboardLessonCard(AppCard):
         super().keyPressEvent(event)
 
 
+class DashboardMatchingStudentAction(AppCard):
+    """Large profile action kept separate from the observation action."""
+
+    def __init__(
+        self,
+        student: DashboardSuggestedStudentViewModel,
+        activate: Callable[[], None],
+    ) -> None:
+        super().__init__("interactive", interactive=True)
+        self._activate = activate
+        self.setObjectName("DashboardMatchingStudentProfileAction")
+        self.setAccessibleName(
+            f"Schülerprofil von {student.display_name} öffnen"
+        )
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(4)
+        identity = QHBoxLayout()
+        identity.setSpacing(8)
+        name = QLabel(student.display_name)
+        name.setObjectName("DashboardMatchingStudentName")
+        name.setWordWrap(True)
+        name.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        set_label_style(name, "card_title")
+        identity.addWidget(name)
+        course_badge = CourseBadge(student.course_name, student.course_color_hex)
+        course_badge.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        identity.addWidget(course_badge)
+        identity.addStretch(1)
+        hint = QLabel(student.documentation_hint)
+        hint.setWordWrap(True)
+        hint.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        set_label_style(hint, "muted")
+        layout.addLayout(identity)
+        layout.addWidget(hint)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # noqa: N802
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.set_pressed(False)
+            self._activate()
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
+            self.set_pressed(True)
+            self._activate()
+            self.set_pressed(False)
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+
 class OverviewScreen(QWidget):
     """Read-only dashboard with timetable and calm navigation."""
 
     timetable_target_selected = Signal(str, str)
     timetable_observation_requested = Signal(str, str, str, str, str)
     timetable_student_observation_requested = Signal(str, str, str, str)
+    timetable_student_profile_requested = Signal(str)
     settings_timetable_requested = Signal()
 
     def __init__(self) -> None:
@@ -528,22 +583,15 @@ class OverviewScreen(QWidget):
             row = QFrame()
             row.setObjectName("DashboardMatchingChildRow")
             layout = QHBoxLayout(row)
-            layout.setContentsMargins(12, 8, 12, 8)
-            labels = QVBoxLayout()
-            identity = QHBoxLayout()
-            identity.setSpacing(8)
-            name = QLabel(student.display_name)
-            set_label_style(name, "card_title")
-            identity.addWidget(name)
-            identity.addWidget(
-                CourseBadge(student.course_name, student.course_color_hex)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(8)
+            profile_action = DashboardMatchingStudentAction(
+                student,
+                lambda student_id=student.student_id: (
+                    self.timetable_student_profile_requested.emit(student_id)
+                ),
             )
-            identity.addStretch(1)
-            hint = QLabel(student.documentation_hint)
-            set_label_style(hint, "muted")
-            labels.addLayout(identity)
-            labels.addWidget(hint)
-            layout.addLayout(labels, 1)
+            layout.addWidget(profile_action, 1)
             observe = QPushButton("Beobachten")
             configure_button(
                 observe,
@@ -560,6 +608,7 @@ class OverviewScreen(QWidget):
                 )
             )
             layout.addWidget(observe)
+            QWidget.setTabOrder(profile_action, observe)
             self.matching_children_layout.addWidget(row)
         footer = QHBoxLayout()
         footer.addStretch(1)
