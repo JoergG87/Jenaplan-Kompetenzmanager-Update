@@ -13,7 +13,7 @@ from unittest import mock
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from pypdf import PdfReader
-from PySide6.QtCore import QDate, Qt
+from PySide6.QtCore import QDate, QEvent, Qt
 from PySide6.QtGui import QAccessible
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QTextEdit,
     QTreeWidget,
+    QWidget,
 )
 
 from prototypes.pdf_engine.output_models import ChartBlock, ReportOutputModel, TableBlock
@@ -204,8 +205,12 @@ class LearningReportTest(unittest.TestCase):
     def test_workspace_uses_four_calm_sections_and_subject_navigation(self) -> None:
         dialog = LearningReportDialog(self.preparation)
 
-        self.assertEqual(len(dialog.findChildren(QStackedWidget)), 3)
-        self.assertGreaterEqual(len(dialog.findChildren(QButtonGroup)), 3)
+        self.assertEqual(len(dialog.findChildren(QStackedWidget)), 2)
+        self.assertEqual(
+            {key for key, built in dialog.workspace_built.items() if built},
+            {"writing"},
+        )
+        self.assertFalse(any(dialog.editor_subject_built.values()))
         self.assertIsInstance(dialog.workspace_navigation, SegmentedControl)
         self.assertEqual(dialog.workspace_navigation.current_key(), "writing")
         self.assertEqual(
@@ -251,8 +256,132 @@ class LearningReportTest(unittest.TestCase):
             )
         self.assertEqual(dialog.report_draft_view_model(), initial_draft)
 
+    def test_lazy_workspaces_and_subjects_build_once_and_reuse_widgets(self) -> None:
+        dialog = LearningReportDialog(self.preparation)
+
+        for key in ("evidence", "preview", "revisions"):
+            self.assertEqual(
+                dialog.workspace_pages[key].findChildren(QWidget),
+                [],
+            )
+
+        dialog._set_editor_section(2)
+        math_text = dialog.subject_widgets["math"]["texts"]["strengths"]
+        math_editor_children = len(
+            dialog.editor_subject_pages["math"].findChildren(QWidget)
+        )
+        dialog._set_editor_section(0)
+        dialog._set_editor_section(2)
+
+        self.assertIs(
+            dialog.subject_widgets["math"]["texts"]["strengths"],
+            math_text,
+        )
+        self.assertEqual(
+            len(dialog.editor_subject_pages["math"].findChildren(QWidget)),
+            math_editor_children,
+        )
+
+        dialog.show_workspace("evidence")
+        german_tree = dialog.subject_widgets["german"]["tree"]
+        evidence_children = len(
+            dialog.evidence_subject_pages["german"].findChildren(QWidget)
+        )
+        dialog.show_workspace("writing")
+        dialog.show_workspace("evidence")
+
+        self.assertIs(dialog.subject_widgets["german"]["tree"], german_tree)
+        self.assertEqual(
+            len(dialog.evidence_subject_pages["german"].findChildren(QWidget)),
+            evidence_children,
+        )
+
+    def test_unopened_subjects_preserve_saved_texts_charts_and_references(self) -> None:
+        initial = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            teacher_name="Laura Lernbegleiterin",
+            overall_text="Gespeicherter Gesamtblick.",
+            subjects=(
+                LearningReportSubjectDraftViewModel(
+                    "math",
+                    "Gespeicherte Stärke.",
+                    "Gespeicherte Entwicklung.",
+                    "Gespeicherter Unterstützungsbedarf.",
+                    "Gespeichertes Ziel.",
+                ),
+            ),
+            competency_ids=("CMP-000001",),
+            observation_ids=("OBS-000001",),
+            chart_selections=(
+                LearningReportChartSelectionViewModel(
+                    "math", "documentation_coverage"
+                ),
+            ),
+            report_draft_id="RPD-000001",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+
+        current = dialog.report_draft_view_model()
+
+        self.assertEqual(current, initial)
+        self.assertFalse(any(dialog.editor_subject_built.values()))
+        self.assertFalse(dialog.workspace_built["evidence"])
+        self.assertFalse(dialog.workspace_built["preview"])
+
+    def test_period_change_does_not_build_evidence_before_first_activation(self) -> None:
+        dialog = LearningReportDialog(self.preparation)
+
+        dialog.period_start.setDate(QDate(2026, 2, 1))
+        self.app.processEvents()
+
+        self.assertFalse(dialog.workspace_built["evidence"])
+        self.assertFalse(any(dialog.evidence_subject_built.values()))
+        dialog.show_workspace("evidence")
+        self.assertTrue(dialog.evidence_subject_built["german"])
+        self.assertEqual(dialog.period_start.date(), QDate(2026, 2, 1))
+
+    def test_revision_summary_is_complete_without_opening_preview_and_stays_current(self) -> None:
+        dialog = LearningReportDialog(self.preparation)
+
+        dialog.show_workspace("revisions")
+
+        self.assertEqual(
+            dialog.closing_summary.text(),
+            "0 Fachabschnitte · 0 Kompetenzen · 0 Beobachtungsbelege",
+        )
+        self.assertFalse(dialog.workspace_built["preview"])
+        dialog.show_workspace("evidence")
+        dialog.subject_widgets["german"]["include"].setChecked(True)
+        self.assertEqual(
+            dialog.closing_summary.text(),
+            "1 Fachabschnitte · 0 Kompetenzen · 0 Beobachtungsbelege",
+        )
+        self.assertFalse(dialog.workspace_built["preview"])
+
+    def test_twenty_report_open_close_cycles_leave_no_top_level_workspace(self) -> None:
+        baseline_top_levels = len(QApplication.topLevelWidgets())
+
+        for _ in range(20):
+            dialog = LearningReportDialog(self.preparation)
+            dialog.show()
+            self.app.processEvents()
+            dialog.close()
+            dialog.deleteLater()
+            self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            self.app.processEvents()
+            self.assertNotIn(dialog, QApplication.topLevelWidgets())
+
+        self.assertLessEqual(
+            len(QApplication.topLevelWidgets()),
+            baseline_top_levels,
+        )
+
     def test_writing_and_evidence_are_visually_separate_but_keep_shared_state(self) -> None:
         dialog = LearningReportDialog(self.preparation)
+        dialog._set_editor_section(1)
+        dialog.show_workspace("evidence")
         german = dialog.subject_widgets["german"]
 
         self.assertIsInstance(german["texts"]["strengths"], QTextEdit)
@@ -277,7 +406,7 @@ class LearningReportTest(unittest.TestCase):
     def test_preview_is_explicitly_draft_and_reports_unsaved_source_state(self) -> None:
         dialog = LearningReportDialog(self.preparation)
         dialog.overall_input.setPlainText("Noch nicht gespeicherter Text")
-        dialog.update_preview()
+        dialog.show_workspace("preview")
 
         self.assertIn("Vorschau des aktuellen Entwurfs", dialog.preview_status.text())
         self.assertIn("noch nicht gespeicherte Änderungen", dialog.preview_status.text())
@@ -317,6 +446,8 @@ class LearningReportTest(unittest.TestCase):
 
     def test_subject_filter_preserves_selection_and_historical_visibility(self) -> None:
         dialog = LearningReportDialog(self.preparation)
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
         widgets = dialog.subject_widgets["math"]
         include = widgets["include"]
         tree = widgets["tree"]
@@ -342,6 +473,8 @@ class LearningReportTest(unittest.TestCase):
 
     def test_observation_selection_is_deliberate(self) -> None:
         dialog = LearningReportDialog(self.preparation)
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
         widgets = dialog.subject_widgets["math"]
         widgets["include"].setChecked(True)
         root = widgets["tree"].topLevelItem(0)
@@ -497,7 +630,7 @@ class LearningReportTest(unittest.TestCase):
             report_draft_id="RPD-EVIDENCE-TEST",
         )
         dialog = LearningReportDialog(preparation, initial_draft=initial)
-        dialog.update_preview()
+        dialog.show_workspace("preview")
         preview_text = "\n".join(
             label.text() for label in dialog.findChildren(QLabel)
         )
@@ -551,6 +684,8 @@ class LearningReportTest(unittest.TestCase):
             report_draft_id="RPD-000001",
         )
         dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
         tree = dialog.subject_widgets["math"]["tree"]
         retained_item = next(
             item
@@ -577,6 +712,7 @@ class LearningReportTest(unittest.TestCase):
             unavailable_observation_ids=("OBS-MISSING",),
         )
         dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+        dialog.show_workspace("evidence")
         unavailable_check = next(
             check
             for check in dialog.findChildren(QCheckBox)
@@ -622,7 +758,7 @@ class LearningReportTest(unittest.TestCase):
             report_draft_id="RPD-000001",
         )
         dialog = LearningReportDialog(self.preparation, initial_draft=initial)
-        dialog.update_preview()
+        dialog.show_workspace("preview")
         preview_text = " ".join(
             label.text() for label in dialog.findChildren(QLabel)
         )
@@ -686,6 +822,7 @@ class LearningReportTest(unittest.TestCase):
             report_draft_id="RPD-000001",
         )
         dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+        dialog._set_editor_section(2)
         texts = dialog.subject_widgets["math"]["texts"]
 
         self.assertEqual(dialog.teacher_input.text(), "Laura Lernbegleiterin")

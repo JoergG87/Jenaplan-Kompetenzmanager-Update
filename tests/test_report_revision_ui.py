@@ -502,6 +502,7 @@ class ReportRevisionProductTest(unittest.TestCase):
             initial_draft=self.saved,
             revision_status=changed,
         )
+        changed_dialog.show_workspace("revisions")
         self.assertEqual(changed_dialog.header_status_badge.text(), "Entwurf geändert")
         visible_hints = " ".join(
             label.text() for label in changed_dialog.findChildren(QLabel)
@@ -521,6 +522,7 @@ class ReportRevisionProductTest(unittest.TestCase):
                 self.saved.report_draft_id
             ),
         )
+        dialog.show_workspace("revisions")
         buttons = dialog.findChildren(QPushButton)
         finalization_buttons = [
             button for button in buttons if "finalisieren" in button.text().lower()

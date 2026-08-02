@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Die Berichtswerkstatt baut beim Öffnen nur noch die sichtbare
+  Schreibgrundseite auf. Weitere Werkstatt- und Fachseiten entstehen jeweils
+  einmal bei ihrer ersten Aktivierung und werden danach wiederverwendet;
+  Vorschau und Revisionshistorie werden nur nach relevanten Änderungen neu
+  gerendert. Der große Arbeitsdialog öffnet ohne verschachtelte Qt-Eventloop.
+  Gespeicherte Drafttexte, Auswahlreferenzen und Diagramme bleiben auch ohne
+  vorheriges Öffnen der zugehörigen Seiten vollständig erhalten.
+
 - Der LEG-Dialog baut beim Öffnen nur noch die initial sichtbare Phase auf.
   Die fünf weiteren Gesprächsphasen entstehen jeweils einmal bei ihrer ersten
   Aktivierung; die Kompetenzbereiche in Phase 5 werden zusätzlich erst beim

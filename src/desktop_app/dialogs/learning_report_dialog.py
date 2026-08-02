@@ -305,6 +305,27 @@ class LearningReportDialog(MotionDialog):
         self._evidence_checks: dict[str, dict[str, QCheckBox]] = {}
         self._evidence_scrolls: dict[str, QScrollArea] = {}
         self._evidence_subject_buttons: dict[str, QPushButton] = {}
+        self.workspace_pages: dict[str, QWidget] = {}
+        self.workspace_built = {
+            key: False for key in ("writing", "evidence", "preview", "revisions")
+        }
+        self._workspace_builders = {
+            "writing": self._editor_screen,
+            "evidence": self._evidence_screen,
+            "preview": self._preview_screen,
+            "revisions": self._closing_editor,
+        }
+        self.editor_subject_pages: dict[str, QWidget] = {}
+        self.editor_subject_built = {
+            subject.subject_id: False for subject in preparation.subjects
+        }
+        self.evidence_subject_pages: dict[str, QWidget] = {}
+        self.evidence_subject_built = {
+            subject.subject_id: False for subject in preparation.subjects
+        }
+        self._pending_evidence_subject_index: int | None = None
+        self._preview_stale = True
+        self._revision_stale = True
         self.finalize_button: QPushButton | None = None
         self._preview_timer = QTimer(self)
         self._preview_timer.setSingleShot(True)
@@ -320,7 +341,6 @@ class LearningReportDialog(MotionDialog):
         self._build()
         self._connect_live_preview()
         self._ui_ready = True
-        self.update_preview()
         self._refresh_workspace_context()
 
     def _build(self) -> None:
@@ -352,12 +372,26 @@ class LearningReportDialog(MotionDialog):
 
         self.mode_stack = QStackedWidget()
         self.mode_stack.setObjectName("LearningReportWorkspaceStack")
-        self.mode_stack.addWidget(self._editor_screen())
-        self.mode_stack.addWidget(self._evidence_screen())
-        self.mode_stack.addWidget(self._preview_screen())
-        self.mode_stack.addWidget(self._closing_editor())
+        for key in ("writing", "evidence", "preview", "revisions"):
+            page = QWidget()
+            page.setObjectName(f"LearningReportWorkspaceContainer_{key}")
+            page.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            page.setAccessibleName(
+                {
+                    "writing": "Schreiben",
+                    "evidence": "Kompetenzen und Belege",
+                    "preview": "Vorschau",
+                    "revisions": "Revisionen",
+                }[key]
+            )
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(0, 0, 0, 0)
+            self.workspace_pages[key] = page
+            self.mode_stack.addWidget(page)
         root.addWidget(self.mode_stack, 1)
         root.addWidget(self._action_bar())
+        self._ensure_workspace_built("writing")
+        self.mode_stack.setCurrentWidget(self.workspace_pages["writing"])
 
     def _top_bar(self) -> QFrame:
         bar = QFrame()
@@ -399,6 +433,8 @@ class LearningReportDialog(MotionDialog):
     def _set_workspace(self, key: str) -> None:
         indexes = {"writing": 0, "evidence": 1, "preview": 2, "revisions": 3}
         index = indexes.get(key, 0)
+        key = ("writing", "evidence", "preview", "revisions")[index]
+        self._ensure_workspace_built(key)
         animate_stack_transition(
             self.mode_stack,
             index,
@@ -406,8 +442,17 @@ class LearningReportDialog(MotionDialog):
         )
         if index == 2:
             self.update_preview()
-        if index == 3:
+        if index == 3 and self._revision_stale:
             self._render_revision_context()
+
+    def _ensure_workspace_built(self, key: str) -> None:
+        if self.workspace_built[key]:
+            return
+        page_layout = self.workspace_pages[key].layout()
+        if page_layout is None:
+            raise RuntimeError(f"Berichtswerkstatt-Seitencontainer ohne Layout: {key}")
+        page_layout.addWidget(self._workspace_builders[key]())
+        self.workspace_built[key] = True
 
     def _editor_screen(self) -> QWidget:
         screen = QWidget()
@@ -418,7 +463,15 @@ class LearningReportDialog(MotionDialog):
         self.editor_stack = QStackedWidget()
         self.editor_stack.addWidget(self._overview_editor())
         for subject in self.preparation.subjects:
-            self.editor_stack.addWidget(self._subject_editor(subject))
+            page = QWidget()
+            page.setObjectName(
+                f"LearningReportEditorSubjectContainer_{subject.subject_id}"
+            )
+            page.setAccessibleName(f"Fachtext {subject.subject_name}")
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(0, 0, 0, 0)
+            self.editor_subject_pages[subject.subject_id] = page
+            self.editor_stack.addWidget(page)
         layout.addWidget(self.editor_stack, 1)
         return screen
 
@@ -483,7 +536,17 @@ class LearningReportDialog(MotionDialog):
             self.evidence_navigation_group.addButton(button)
             self._evidence_subject_buttons[subject.subject_id] = button
             sidebar_layout.addWidget(button)
-            self.evidence_stack.addWidget(self._subject_evidence_editor(subject))
+            page = QWidget()
+            page.setObjectName(
+                f"LearningReportEvidenceSubjectContainer_{subject.subject_id}"
+            )
+            page.setAccessibleName(
+                f"Kompetenzen und Belege für {subject.subject_name}"
+            )
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(0, 0, 0, 0)
+            self.evidence_subject_pages[subject.subject_id] = page
+            self.evidence_stack.addWidget(page)
         sidebar_layout.addStretch(1)
         sidebar_layout.addWidget(
             InlineMessage(
@@ -493,9 +556,15 @@ class LearningReportDialog(MotionDialog):
         )
         layout.addWidget(sidebar)
         layout.addWidget(self.evidence_stack, 1)
+        if self.preparation.subjects:
+            initial_index = self._pending_evidence_subject_index or 0
+            self._ensure_evidence_subject_built(initial_index)
+            self.evidence_stack.setCurrentIndex(initial_index)
         return screen
 
     def _set_editor_section(self, index: int) -> None:
+        if index > 0:
+            self._ensure_editor_subject_built(index)
         animate_stack_transition(
             self.editor_stack,
             index,
@@ -503,11 +572,40 @@ class LearningReportDialog(MotionDialog):
         )
 
     def _set_evidence_section(self, index: int) -> None:
+        self._ensure_evidence_subject_built(index)
         animate_stack_transition(
             self.evidence_stack,
             index,
             key="report_evidence_section",
         )
+
+    def _ensure_editor_subject_built(self, index: int) -> None:
+        if index <= 0 or index > len(self.preparation.subjects):
+            return
+        subject = self.preparation.subjects[index - 1]
+        if self.editor_subject_built[subject.subject_id]:
+            return
+        page_layout = self.editor_subject_pages[subject.subject_id].layout()
+        if page_layout is None:
+            raise RuntimeError(
+                f"Bericht-Fachtextcontainer ohne Layout: {subject.subject_id}"
+            )
+        page_layout.addWidget(self._subject_editor(subject))
+        self.editor_subject_built[subject.subject_id] = True
+
+    def _ensure_evidence_subject_built(self, index: int) -> None:
+        if index < 0 or index >= len(self.preparation.subjects):
+            return
+        subject = self.preparation.subjects[index]
+        if self.evidence_subject_built[subject.subject_id]:
+            return
+        page_layout = self.evidence_subject_pages[subject.subject_id].layout()
+        if page_layout is None:
+            raise RuntimeError(
+                f"Bericht-Belegcontainer ohne Layout: {subject.subject_id}"
+            )
+        page_layout.addWidget(self._subject_evidence_editor(subject))
+        self.evidence_subject_built[subject.subject_id] = True
 
     def show_workspace(self, key: str) -> None:
         """Open one existing workspace section without changing draft state."""
@@ -526,7 +624,11 @@ class LearningReportDialog(MotionDialog):
         if subject_id not in subject_ids:
             return False
         index = subject_ids.index(subject_id)
-        self.show_workspace("evidence")
+        self._pending_evidence_subject_index = index
+        try:
+            self.show_workspace("evidence")
+        finally:
+            self._pending_evidence_subject_index = None
         button = self._evidence_subject_buttons[subject_id]
         button.setChecked(True)
         self._set_evidence_section(index)
@@ -536,10 +638,12 @@ class LearningReportDialog(MotionDialog):
             return False
 
         def focus_target() -> None:
+            self.activateWindow()
             scroll.ensureWidgetVisible(tree, 20, 20)
             tree.setFocus(Qt.FocusReason.ShortcutFocusReason)
 
-        QTimer.singleShot(0, focus_target)
+        focus_target()
+        QTimer.singleShot(0, lambda: QTimer.singleShot(0, focus_target))
         return True
 
     def _action_bar(self) -> QFrame:
@@ -869,8 +973,12 @@ class LearningReportDialog(MotionDialog):
                 subject_id, item, column
             )
         )
-        for checkbox in chart_checks.values():
-            checkbox.toggled.connect(self._schedule_preview)
+        for chart_type, checkbox in chart_checks.items():
+            checkbox.toggled.connect(
+                lambda checked, subject_id=subject.subject_id, selected_type=chart_type: (
+                    self._toggle_chart(subject_id, selected_type, checked)
+                )
+            )
         self._render_evidence(subject)
         scroll = self._scroll_page(content)
         self._evidence_scrolls[subject.subject_id] = scroll
@@ -905,11 +1013,13 @@ class LearningReportDialog(MotionDialog):
         set_label_style(self.closing_summary, "body")
         summary_layout.addWidget(self.closing_summary)
         layout.addWidget(summary)
+        self._refresh_closing_summary()
         return self._scroll_page(content)
 
     def _render_revision_context(self) -> None:
         if not hasattr(self, "revision_context_layout"):
             return
+        self._revision_stale = False
         self._clear_layout(self.revision_context_layout)
         status = self._revision_status
         self.finalize_button = None
@@ -1246,6 +1356,14 @@ class LearningReportDialog(MotionDialog):
             self.selected_observation_ids.discard(observation_id)
         self._schedule_preview()
 
+    def _toggle_chart(self, subject_id: str, chart_type: str, checked: bool) -> None:
+        selection = (subject_id, chart_type)
+        if checked:
+            self._selected_charts.add(selection)
+        else:
+            self._selected_charts.discard(selection)
+        self._schedule_preview()
+
     def _period_changed(self) -> None:
         for subject in self.preparation.subjects:
             self._render_evidence(subject)
@@ -1258,22 +1376,9 @@ class LearningReportDialog(MotionDialog):
         for subject in self.preparation.subjects:
             if subject.subject_id not in self.selected_subject_ids:
                 continue
-            widgets = self.subject_widgets[subject.subject_id]
-            texts = widgets["texts"]
-            charts = widgets["charts"]
-            if not isinstance(texts, dict) or not isinstance(charts, dict):
-                continue
-            subjects.append(
-                LearningReportSubjectDraftViewModel(
-                    subject.subject_id,
-                    self._edit_text(texts.get("strengths")),
-                    self._edit_text(texts.get("development")),
-                    self._edit_text(texts.get("support")),
-                    self._edit_text(texts.get("goals")),
-                )
-            )
-            for chart_type, checkbox in charts.items():
-                if isinstance(checkbox, QCheckBox) and checkbox.isChecked():
+            subjects.append(self._subject_draft_state(subject.subject_id))
+            for available_subject_id, chart_type in sorted(self._selected_charts):
+                if available_subject_id == subject.subject_id:
                     chart_selections.append(
                         LearningReportChartSelectionViewModel(subject.subject_id, chart_type)
                     )
@@ -1324,6 +1429,7 @@ class LearningReportDialog(MotionDialog):
     def apply_saved_draft(self, saved: LearningReportDraftViewModel) -> None:
         self._saved_draft = saved
         self._dirty = False
+        self._preview_stale = True
         self.draft_status.setText(self._draft_status_text())
         self.draft_status.setToolTip(saved.report_draft_id)
         self.save_button.setText("Entwurf gespeichert")
@@ -1341,9 +1447,12 @@ class LearningReportDialog(MotionDialog):
         finalized: bool = False,
     ) -> None:
         self._revision_status = status
-        self.finalization_message.set_message("")
+        self._revision_stale = True
+        if hasattr(self, "finalization_message"):
+            self.finalization_message.set_message("")
         self.workspace_message.set_message("")
-        self._render_revision_context()
+        if self.workspace_built["revisions"]:
+            self._render_revision_context()
         self._refresh_workspace_context()
         if finalized:
             self.toast.show_message(
@@ -1352,6 +1461,7 @@ class LearningReportDialog(MotionDialog):
             )
 
     def show_finalization_error(self, message: str) -> None:
+        self._ensure_workspace_built("revisions")
         self.finalization_message.set_message(message, tone="error")
         self.workspace_message.set_message(message, tone="error")
         self._set_mode(3)
@@ -1546,7 +1656,9 @@ class LearningReportDialog(MotionDialog):
         return True
 
     def update_preview(self) -> None:
-        if not hasattr(self, "preview_layout"):
+        if not self.workspace_built["preview"] or not hasattr(self, "preview_layout"):
+            return
+        if not self._preview_stale:
             return
         self._clear_layout(self.preview_layout)
         pages = [self._cover_preview_page(), self._overview_preview_page()]
@@ -1568,12 +1680,8 @@ class LearningReportDialog(MotionDialog):
         self.preview_status.setText(
             f"Vorschau des aktuellen Entwurfs · {source_status} · {len(pages)} Seiten"
         )
-        if hasattr(self, "closing_summary"):
-            self.closing_summary.setText(
-                f"{len(self.selected_subject_ids)} Fachabschnitte · "
-                f"{len(self.selected_competency_ids)} Kompetenzen · "
-                f"{len(self.selected_observation_ids)} Beobachtungsbelege"
-            )
+        self._refresh_closing_summary()
+        self._preview_stale = False
 
     def _cover_preview_page(self) -> QFrame:
         page, layout = self._paper_page("Lernentwicklungsbericht")
@@ -1649,29 +1757,27 @@ class LearningReportDialog(MotionDialog):
         heading = QLabel(subject.subject_name)
         set_label_style(heading, "screen_title")
         layout.addWidget(heading)
-        widgets = self.subject_widgets[subject.subject_id]
-        texts = widgets["texts"]
-        if isinstance(texts, dict):
-            grid = QGridLayout()
-            grid.setHorizontalSpacing(24)
-            grid.setVerticalSpacing(16)
-            for index, (title, key) in enumerate(
-                (
-                    ("Lernentwicklung", "development"),
-                    ("Stärken", "strengths"),
-                    ("Unterstützungsbedarf", "support"),
-                    ("Nächste Ziele", "goals"),
-                )
-            ):
-                block = QVBoxLayout()
-                label = QLabel(title)
-                set_label_style(label, "card_title")
-                block.addWidget(label)
-                body = QLabel(self._edit_text(texts.get(key)) or "Noch kein Text eingetragen.")
-                body.setWordWrap(True)
-                block.addWidget(body)
-                grid.addLayout(block, index // 2, index % 2)
-            layout.addLayout(grid)
+        subject_draft = self._subject_draft_state(subject.subject_id)
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(24)
+        grid.setVerticalSpacing(16)
+        for index, (title, text) in enumerate(
+            (
+                ("Lernentwicklung", subject_draft.development_text),
+                ("Stärken", subject_draft.strengths_text),
+                ("Unterstützungsbedarf", subject_draft.support_needs_text),
+                ("Nächste Ziele", subject_draft.next_goals_text),
+            )
+        ):
+            block = QVBoxLayout()
+            label = QLabel(title)
+            set_label_style(label, "card_title")
+            block.addWidget(label)
+            body = QLabel(text or "Noch kein Text eingetragen.")
+            body.setWordWrap(True)
+            block.addWidget(body)
+            grid.addLayout(block, index // 2, index % 2)
+        layout.addLayout(grid)
         selected = tuple(
             competency
             for competency in subject.competencies
@@ -1718,14 +1824,11 @@ class LearningReportDialog(MotionDialog):
             )
             body.setWordWrap(True)
             layout.addWidget(self._document_block(body))
-        charts = widgets["charts"]
-        selected_chart_types = []
-        if isinstance(charts, dict):
-            selected_chart_types = [
-                chart_type
-                for chart_type, checkbox in charts.items()
-                if isinstance(checkbox, QCheckBox) and checkbox.isChecked()
-            ]
+        selected_chart_types = [
+            chart_type
+            for subject_id, chart_type in sorted(self._selected_charts)
+            if subject_id == subject.subject_id
+        ]
         title = QLabel("Entwicklungsdarstellungen")
         set_label_style(title, "section_title")
         layout.addWidget(title)
@@ -1785,15 +1888,13 @@ class LearningReportDialog(MotionDialog):
         for subject in self.preparation.subjects:
             if subject.subject_id not in self.selected_subject_ids:
                 continue
-            texts = self.subject_widgets[subject.subject_id]["texts"]
-            if not isinstance(texts, dict):
-                continue
+            subject_draft = self._subject_draft_state(subject.subject_id)
             title = QLabel(subject.subject_name)
             set_label_style(title, "section_title")
             layout.addWidget(title)
             body = QLabel(
-                self._edit_text(texts.get("goals"))
-                or self._edit_text(texts.get("support"))
+                subject_draft.next_goals_text
+                or subject_draft.support_needs_text
                 or "Noch kein nächster Schritt eingetragen."
             )
             body.setWordWrap(True)
@@ -1978,12 +2079,44 @@ class LearningReportDialog(MotionDialog):
             None,
         )
 
+    def _subject_draft_state(
+        self, subject_id: str
+    ) -> LearningReportSubjectDraftViewModel:
+        texts = self.subject_widgets.get(subject_id, {}).get("texts")
+        if isinstance(texts, dict):
+            return LearningReportSubjectDraftViewModel(
+                subject_id,
+                self._edit_text(texts.get("strengths")),
+                self._edit_text(texts.get("development")),
+                self._edit_text(texts.get("support")),
+                self._edit_text(texts.get("goals")),
+            )
+        return self._subject_texts.get(
+            subject_id,
+            LearningReportSubjectDraftViewModel(subject_id),
+        )
+
     def _schedule_preview(self, *_args: object) -> None:
         if self._ui_ready:
             self._dirty = True
             self.draft_status.setText(self._draft_status_text())
             self._refresh_workspace_context()
-        self._preview_timer.start()
+        self._preview_stale = True
+        self._refresh_closing_summary()
+        if (
+            self.workspace_built["preview"]
+            and self.workspace_navigation.current_key() == "preview"
+        ):
+            self._preview_timer.start()
+
+    def _refresh_closing_summary(self) -> None:
+        if not hasattr(self, "closing_summary"):
+            return
+        self.closing_summary.setText(
+            f"{len(self.selected_subject_ids)} Fachabschnitte · "
+            f"{len(self.selected_competency_ids)} Kompetenzen · "
+            f"{len(self.selected_observation_ids)} Beobachtungsbelege"
+        )
 
     def _draft_status_text(self) -> str:
         if self._dirty:

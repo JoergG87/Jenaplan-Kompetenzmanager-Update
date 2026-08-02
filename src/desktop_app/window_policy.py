@@ -56,3 +56,10 @@ def exec_maximized_workspace(dialog: QDialog, owner: QWidget | None) -> int:
     prepare_maximized_workspace(dialog, owner)
     dialog.showMaximized()
     return int(dialog.exec())
+
+
+def open_maximized_workspace(dialog: QDialog, owner: QWidget | None) -> None:
+    """Show a window-modal workspace maximized without a nested event loop."""
+    prepare_maximized_workspace(dialog, owner)
+    dialog.setWindowModality(Qt.WindowModality.WindowModal)
+    dialog.showMaximized()

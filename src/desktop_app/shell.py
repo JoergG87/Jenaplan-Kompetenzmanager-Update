@@ -122,6 +122,7 @@ from src.desktop_app.view_models.learning_conference_view_model import (
 )
 from src.desktop_app.window_policy import (
     exec_maximized_workspace,
+    open_maximized_workspace,
     prepare_maximized_workspace,
 )
 
@@ -316,6 +317,7 @@ class AppShell(QMainWindow):
         self.pending_observation_target_label = ""
         self._selected_report_draft_ids: dict[str, str] = {}
         self._selected_learning_conference_draft_ids: dict[str, str] = {}
+        self._active_learning_report_dialog: LearningReportDialog | None = None
         self._active_learning_report_revision_id = ""
         self._active_learning_report_revision_student_id = ""
         self._active_learning_report_revision_dialog: (
@@ -1632,6 +1634,11 @@ class AppShell(QMainWindow):
         workspace_key: str = "",
     ) -> None:
         """Choose an existing report draft or start a deliberate new one."""
+        active_dialog = getattr(self, "_active_learning_report_dialog", None)
+        if isinstance(active_dialog, QDialog) and active_dialog.isVisible():
+            active_dialog.raise_()
+            active_dialog.activateWindow()
+            return
         try:
             drafts = self.adapter.list_learning_report_drafts_for_student(
                 student_id
@@ -1807,8 +1814,20 @@ class AppShell(QMainWindow):
                 parent=dialog,
             )
         )
-        exec_maximized_workspace(dialog, self)
-        self.show_student_profile(student_id)
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        self._active_learning_report_dialog = dialog
+
+        def clear_active_report(*_args: object) -> None:
+            if self._active_learning_report_dialog is dialog:
+                self._active_learning_report_dialog = None
+
+        def finish_report_workspace(*_args: object) -> None:
+            clear_active_report()
+            self.show_student_profile(student_id)
+
+        dialog.finished.connect(finish_report_workspace)
+        dialog.destroyed.connect(clear_active_report)
+        open_maximized_workspace(dialog, self)
 
     def open_learning_report_revision(
         self,

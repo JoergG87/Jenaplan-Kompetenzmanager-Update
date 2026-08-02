@@ -74,12 +74,20 @@ def _make_unsaved_preview_state(
         )
     )
     subject_id = fixture.competency.subject_id
+    subject_index = next(
+        index
+        for index, subject in enumerate(workspace.preparation.subjects)
+        if subject.subject_id == subject_id
+    )
+    workspace._set_editor_section(subject_index + 1)
     subject_texts = workspace.subject_widgets[subject_id]["texts"]
     subject_texts["strengths"].setPlainText("Ungespeicherter Fachtext.")
+    workspace.show_workspace("evidence")
+    workspace._set_evidence_section(subject_index)
     evidence = workspace._evidence_checks[subject_id][fixture.observation.observation_id]
     evidence.setChecked(False)
     workspace.show_workspace("preview")
-    workspace.update_preview()
+    workspace.show_workspace("preview")
     app.processEvents()
     QTest.qWait(workspace._preview_timer.interval() + 20)
     app.processEvents()
@@ -104,7 +112,9 @@ def _state(workspace: LearningReportDialog) -> tuple[object, ...]:
         workspace.workspace_navigation.current_key(),
         workspace.mode_stack.currentIndex(),
         workspace.editor_stack.currentIndex(),
-        workspace.evidence_stack.currentIndex(),
+        workspace.evidence_stack.currentIndex()
+        if workspace.workspace_built["evidence"]
+        else -1,
         preview_scroll.verticalScrollBar().value(),
     )
 
@@ -341,7 +351,7 @@ def test_shell_wires_export_to_the_concrete_open_workspace(tmp_path) -> None:
         assert kwargs["options"] == QFileDialog.Option.DontUseNativeDialog
         return str(target), "PDF-Datei (*.pdf)"
 
-    def execute_workspace(workspace, owner):
+    def open_workspace(workspace, owner):
         assert owner is shell
         workspaces.append(workspace)
         workspace.show_workspace("preview")
@@ -351,13 +361,12 @@ def test_shell_wires_export_to_the_concrete_open_workspace(tmp_path) -> None:
         app.processEvents()
         assert workspace.isVisible()
         workspace.accept()
-        return int(workspace.DialogCode.Accepted)
 
     try:
         with (
             patch(
-                "src.desktop_app.shell.exec_maximized_workspace",
-                side_effect=execute_workspace,
+                "src.desktop_app.shell.open_maximized_workspace",
+                side_effect=open_workspace,
             ),
             patch.object(QFileDialog, "getSaveFileName", side_effect=choose_target),
             patch.object(PdfRenderer, "render", return_value=target),

@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QEvent, QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -49,6 +49,7 @@ from src.desktop_app.view_models.learning_conference_view_model import (
 from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportDraftViewModel,
     LearningReportPreparationViewModel,
+    LearningReportRevisionStatusViewModel,
     LearningReportSubjectViewModel,
 )
 from src.desktop_app.view_models.report_overview_view_model import (
@@ -1441,13 +1442,14 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         report_dialog = self._fake_workspace_dialog()
         with (
             patch.object(shell, "LearningReportDialog", return_value=report_dialog),
-            patch.object(shell, "exec_maximized_workspace"),
+            patch.object(shell, "open_maximized_workspace"),
         ):
             shell.AppShell.open_learning_report_dialog(
                 report_shell,
                 "STU-1",
                 "RPD-1",
             )
+        report_dialog.finished.connect.call_args.args[0](0)
         report_shell.show_student_profile.assert_called_once_with("STU-1")
 
         leg = self._leg_draft("LCD-1")
@@ -1477,6 +1479,71 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             )
         leg_shell.show_student_profile.assert_called_once_with("STU-1")
 
+    def test_async_report_shell_releases_and_reopens_five_workspaces(self) -> None:
+        report = self._report_draft("RPD-1")
+        owner = QWidget()
+        owner.adapter = Mock()
+        owner.adapter.list_learning_report_drafts_for_student.return_value = (report,)
+        owner.adapter.learning_report_preparation_for_student.return_value = self.preparation
+        owner.adapter.learning_report_revision_status.return_value = (
+            LearningReportRevisionStatusViewModel(
+                "not_finalized",
+                "Entwurf",
+                "Für diesen Bericht existiert noch keine unveränderliche Fassung.",
+            )
+        )
+        owner._selected_report_draft_ids = {}
+        owner._active_learning_report_dialog = None
+        owner.show_student_profile = Mock()
+        owner.open_learning_report_revision = Mock()
+        owner.export_learning_report_pdf = Mock()
+
+        def show_workspace(dialog: LearningReportDialog, parent: QWidget) -> None:
+            self.assertIs(parent, owner)
+            dialog.show()
+            self.app.processEvents()
+
+        with patch.object(
+            shell,
+            "open_maximized_workspace",
+            side_effect=show_workspace,
+        ):
+            for cycle in range(5):
+                shell.AppShell.open_learning_report_dialog(
+                    owner,
+                    "STU-1",
+                    "RPD-1",
+                )
+                dialog = owner._active_learning_report_dialog
+                self.assertIsInstance(dialog, LearningReportDialog)
+                self.assertTrue(dialog.isVisible())
+                self.assertEqual(
+                    dialog.report_draft_view_model().report_draft_id,
+                    "RPD-1",
+                )
+                if cycle == 0:
+                    shell.AppShell.open_learning_report_dialog(
+                        owner,
+                        "STU-OTHER",
+                        "RPD-OTHER",
+                    )
+                    self.assertIs(owner._active_learning_report_dialog, dialog)
+                    self.assertEqual(
+                        dialog.report_draft_view_model().report_draft_id,
+                        "RPD-1",
+                    )
+                dialog.reject()
+                self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+                self.app.processEvents()
+                self.assertIsNone(owner._active_learning_report_dialog)
+                self.assertNotIn(dialog, QApplication.topLevelWidgets())
+
+        self.assertEqual(
+            [entry.args for entry in owner.show_student_profile.call_args_list],
+            [("STU-1",)] * 5,
+        )
+        owner.close()
+
     def test_report_without_drafts_requires_period_and_passes_it_transiently(
         self,
     ) -> None:
@@ -1500,13 +1567,14 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 "LearningReportDialog",
                 return_value=dialog,
             ) as create_dialog,
-            patch.object(shell, "exec_maximized_workspace"),
+            patch.object(shell, "open_maximized_workspace"),
         ):
             shell.AppShell.open_learning_report_dialog(
                 report_shell,
                 "STU-1",
                 subject_id="math",
             )
+        dialog.finished.connect.call_args.args[0](0)
 
         choose_period.assert_called_once_with(report_shell)
         create_dialog.assert_called_once_with(
@@ -1551,9 +1619,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 "LearningReportDialog",
                 return_value=dialog,
             ) as create_dialog,
-            patch.object(shell, "exec_maximized_workspace"),
+            patch.object(shell, "open_maximized_workspace"),
         ):
             shell.AppShell.open_learning_report_dialog(report_shell, "STU-1")
+        dialog.finished.connect.call_args.args[0](0)
 
         choose_draft.assert_called_once()
         choose_period.assert_called_once_with(report_shell)
@@ -1610,9 +1679,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 "LearningReportDialog",
                 return_value=dialog,
             ) as create_dialog,
-            patch.object(shell, "exec_maximized_workspace"),
+            patch.object(shell, "open_maximized_workspace"),
         ):
             shell.AppShell.open_learning_report_dialog(report_shell, "STU-1")
+        dialog.finished.connect.call_args.args[0](0)
 
         choose_period.assert_not_called()
         create_dialog.assert_called_once_with(
@@ -1656,13 +1726,14 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 "choose",
             ) as choose_period,
             patch.object(shell, "LearningReportDialog", return_value=dialog),
-            patch.object(shell, "exec_maximized_workspace"),
+            patch.object(shell, "open_maximized_workspace"),
         ):
             shell.AppShell.open_learning_report_dialog(
                 report_shell,
                 "STU-1",
                 subject_id="math",
             )
+        dialog.finished.connect.call_args.args[0](0)
 
         choose.assert_called_once()
         choose_period.assert_not_called()

@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QApplication, QDialog, QWidget
 from src.desktop_app.shell import AppShell
 from src.desktop_app.window_policy import (
     exec_maximized_workspace,
+    open_maximized_workspace,
     prepare_maximized_workspace,
     workspace_screen,
 )
@@ -73,6 +74,24 @@ def test_workspace_policy_executes_repeated_windows_maximized() -> None:
     owner.close()
 
 
+def test_workspace_policy_opens_report_without_nested_event_loop() -> None:
+    app = _app()
+    owner = QWidget()
+    owner.show()
+    app.processEvents()
+    dialog = QDialog(owner)
+
+    open_maximized_workspace(dialog, owner)
+    app.processEvents()
+
+    assert dialog.isVisible()
+    assert dialog.isModal()
+    assert dialog.windowModality() == Qt.WindowModality.WindowModal
+    assert dialog.windowState() & Qt.WindowState.WindowMaximized
+    dialog.close()
+    owner.close()
+
+
 def test_shell_routes_observation_report_and_leg_through_central_policy() -> None:
     report_source = inspect.getsource(AppShell.open_learning_report_dialog)
     leg_source = inspect.getsource(AppShell.open_learning_conference_dialog)
@@ -85,7 +104,8 @@ def test_shell_routes_observation_report_and_leg_through_central_policy() -> Non
         )
     )
 
-    assert "exec_maximized_workspace(dialog, self)" in report_source
+    assert "open_maximized_workspace(dialog, self)" in report_source
+    assert "exec_maximized_workspace(dialog, self)" not in report_source
     assert "exec_maximized_workspace(dialog, self)" in leg_source
     assert observation_sources.count("exec_maximized_workspace(dialog, self)") == 3
     assert observation_sources.count("parent=self") == 3
