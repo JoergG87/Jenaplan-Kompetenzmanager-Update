@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QCloseEvent, QKeyEvent
+from PySide6.QtCore import QEvent, QTimer, Qt
+from PySide6.QtGui import QCloseEvent, QKeyEvent, QResizeEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QComboBox,
     QDialogButtonBox,
+    QFrame,
     QFormLayout,
     QGridLayout,
     QHeaderView,
@@ -18,6 +19,10 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QSplitter,
+    QTabWidget,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -31,7 +36,12 @@ from src.application.school_year_transition_plan import (
 from src.application.school_year_transition_execution import (
     SchoolYearTransitionExecutionResult,
 )
-from src.desktop_app.components import AppCard, DialogHeader, InlineMessage
+from src.desktop_app.components import (
+    AppCard,
+    DialogHeader,
+    InlineMessage,
+    SectionHeader,
+)
 from src.desktop_app.components import configure_button
 from src.desktop_app.motion import MotionDialog
 from src.desktop_app.school_year_transition_activation import (
@@ -40,6 +50,8 @@ from src.desktop_app.school_year_transition_activation import (
 )
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.school_year_transition_preview_view_model import (
+    LEAVE_UNRESOLVED,
+    MARK_EXITED,
     SchoolYearTransitionDecisionOptionViewModel,
     SchoolYearTransitionPreviewRowViewModel,
     SchoolYearTransitionPreviewViewModel,
@@ -53,12 +65,16 @@ TABLE_HEADERS = (
     "Kind",
     "Bisherige Stammgruppe",
     "Bisheriger Kurs",
-    "Bisherige Kursstufe",
     "Zielstatus",
     "Zielstammgruppe",
     "Zielkurs",
     "Warnungen / Blocker",
 )
+
+MAX_COMBO_POPUP_OPTIONS = 18
+MAX_COMBO_POPUP_WIDTH = 640
+COMBO_POPUP_STYLE_ALLOWANCE = 24
+
 
 class SchoolYearTransitionPreviewDialog(MotionDialog):
     """Edit one transient plan and project its composed activation workflow."""
@@ -74,14 +90,14 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         super().__init__(parent)
         self.plan = plan
         self.view_model = SchoolYearTransitionPreviewViewModel.from_plan(plan)
-        self.setWindowTitle("Schuljahreswechsel-Vorschau")
-        self.setAccessibleName("Schuljahreswechsel-Vorschau bearbeiten")
+        self.setWindowTitle("Schuljahreswechsel")
+        self.setAccessibleName("Schuljahreswechsel bearbeiten")
         self.setModal(True)
         self.setMinimumSize(520, 360)
         self.resize(1320, 720)
         self.table = QTableWidget(0, len(TABLE_HEADERS))
         self.table.setObjectName("SchoolYearTransitionPreviewTable")
-        self.table.setAccessibleName("Flüchtiger Plan je Kind")
+        self.table.setAccessibleName("Kindliste für den Schuljahreswechsel")
         self._retired_tables: list[QTableWidget] = []
         self._table_populated = False
         self._selected_student_ids: set[str] = set()
@@ -93,6 +109,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self._terminal_state = False
         self._recovery_required = False
         self._controlled_close_allowed = False
+        self._responsive_compact = False
         self._build()
 
     @property
@@ -112,35 +129,140 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self._dialog_layout = layout
         layout.setContentsMargins(24, 22, 24, 20)
         layout.setSpacing(14)
-        layout.addWidget(
-            DialogHeader(
-                "Schuljahreswechsel-Vorschau",
-                (
-                    f"{self.view_model.current_school_year_label} → "
-                    f"{self.view_model.planned_school_year_label}"
-                ),
-                (
-                    "Prüfen Sie alle Zuordnungen. Erst die finale "
-                    "Bestätigung aktiviert das neue Schuljahr."
-                ),
-                icon_name="info",
-            )
+        header = DialogHeader(
+            "Schuljahreswechsel",
+            (
+                f"{self.view_model.current_school_year_label} → "
+                f"{self.view_model.planned_school_year_label}"
+            ),
+            (
+                "Zuerst offene Zuordnungen klären, anschließend das neue "
+                "Schuljahr bewusst aktivieren."
+            ),
+            icon_name="info",
         )
-        layout.addWidget(self._summary_card())
-        layout.addWidget(self._filter_card())
-        layout.addWidget(self._bulk_card())
+        self.header_status_label = QLabel()
+        self.header_status_label.setObjectName(
+            "SchoolYearTransitionHeaderStatus"
+        )
+        self.header_status_label.setAccessibleName(
+            "Status des Schuljahreswechsels"
+        )
+        set_label_style(self.header_status_label, "field_label")
+        header.add_action(self.header_status_label)
+        self.dialog_header = header
+        layout.addWidget(header)
+
+        self._create_summary_labels()
+        self.workflow_tabs = QTabWidget()
+        self.workflow_tabs.setObjectName("SchoolYearTransitionWorkflow")
+        self.workflow_tabs.setAccessibleName(
+            "Schritte des Schuljahreswechsels"
+        )
+
+        self.work_page = QWidget()
+        work_layout = QVBoxLayout(self.work_page)
+        work_layout.setContentsMargins(0, 12, 0, 0)
+        work_layout.setSpacing(10)
+        self.summary_card = self._summary_card()
+        work_layout.addWidget(self.summary_card)
+        work_layout.addWidget(self._filter_card())
 
         self.status_message = InlineMessage()
         self.status_message.setObjectName("SchoolYearTransitionPreviewStatus")
-        self.status_message.setAccessibleName("Status des flüchtigen Plans")
-        layout.addWidget(self.status_message)
+        self.status_message.setAccessibleName("Status der Zuordnungsprüfung")
+        self.status_message.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        work_layout.addWidget(self.status_message)
+        work_layout.addWidget(self._bulk_card())
 
-        layout.addWidget(self._individual_edit_card())
+        self.work_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.work_splitter.setObjectName("SchoolYearTransitionWorkArea")
+        self.work_splitter.setAccessibleName(
+            "Kindliste und ausgewählte Zuordnung"
+        )
 
         self._configure_table()
         self.table.itemChanged.connect(self._selection_item_changed)
-        layout.addWidget(self.table, 1)
-        layout.addWidget(self._activation_card())
+        self.table.itemSelectionChanged.connect(self._table_row_changed)
+        self.table.itemActivated.connect(self._table_item_activated)
+        self.table.installEventFilter(self)
+        table_card = AppCard("default")
+        table_card.setObjectName("SchoolYearTransitionStudentList")
+        table_layout = QVBoxLayout(table_card)
+        table_layout.setContentsMargins(14, 12, 14, 12)
+        table_layout.setSpacing(8)
+        table_layout.addWidget(
+            SectionHeader(
+                "Kinder und Zuordnungen",
+                "Die Liste startet bei den noch offenen Fällen.",
+            )
+        )
+        self.visible_count_label = QLabel()
+        self.visible_count_label.setObjectName(
+            "SchoolYearTransitionVisibleCount"
+        )
+        self.visible_count_label.setAccessibleName(
+            "Anzahl sichtbarer Kinder"
+        )
+        set_label_style(self.visible_count_label, "muted")
+        table_layout.addWidget(self.visible_count_label)
+        self.table_empty_label = QLabel()
+        self.table_empty_label.setObjectName(
+            "SchoolYearTransitionEmptyState"
+        )
+        self.table_empty_label.setWordWrap(True)
+        self.table_empty_label.setAccessibleName(
+            "Leerzustand der Kindliste"
+        )
+        set_label_style(self.table_empty_label, "muted")
+        table_layout.addWidget(self.table_empty_label)
+        self._table_layout = table_layout
+        table_layout.addWidget(self.table, 1)
+        table_card.setMinimumWidth(360)
+
+        self.individual_edit_card = self._individual_edit_card()
+        self.individual_edit_card.setMinimumWidth(280)
+        self.work_splitter.addWidget(table_card)
+        self.work_splitter.addWidget(self.individual_edit_card)
+        self.work_splitter.setStretchFactor(0, 3)
+        self.work_splitter.setStretchFactor(1, 1)
+        self.work_splitter.setSizes((920, 320))
+        work_layout.addWidget(self.work_splitter, 1)
+        self.work_scroll = QScrollArea()
+        self.work_scroll.setObjectName("SchoolYearTransitionWorkScroll")
+        self.work_scroll.setAccessibleName("Zuordnungen prüfen")
+        self.work_scroll.setWidgetResizable(True)
+        self.work_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.work_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.work_scroll.setWidget(self.work_page)
+        self.workflow_tabs.addTab(
+            self.work_scroll,
+            "1  Zuordnungen prüfen",
+        )
+
+        activation_scroll = QScrollArea()
+        activation_scroll.setObjectName("SchoolYearTransitionActivationScroll")
+        activation_scroll.setWidgetResizable(True)
+        activation_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        activation_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        activation_content = QWidget()
+        activation_layout = QVBoxLayout(activation_content)
+        activation_layout.setContentsMargins(4, 12, 4, 4)
+        activation_layout.setSpacing(12)
+        activation_layout.addWidget(self._activation_summary_card())
+        activation_layout.addWidget(self._activation_card())
+        activation_layout.addStretch(1)
+        activation_scroll.setWidget(activation_content)
+        self.activation_page = activation_scroll
+        self.workflow_tabs.addTab(
+            self.activation_page,
+            "2  Prüfen und aktivieren",
+        )
+        layout.addWidget(self.workflow_tabs, 1)
 
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Close
@@ -175,9 +297,14 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                 self._activation_finished
             )
         self._refresh_from_plan()
+        self._apply_responsive_layout()
 
     def _activation_card(self) -> AppCard:
-        card = AppCard("soft")
+        card = AppCard("default")
+        card.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Maximum,
+        )
         card.setObjectName("SchoolYearTransitionActivation")
         card.setAccessibleName("Verbindliche Aktivierung des Schuljahres")
         layout = QVBoxLayout(card)
@@ -187,6 +314,13 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         title = QLabel("Verbindliche Aktivierung")
         set_label_style(title, "section_title")
         layout.addWidget(title)
+        explanation = QLabel(
+            "Dieser letzte Schritt schreibt den geprüften Plan verbindlich. "
+            "Bis zum Klick auf die Aktivierung wird nichts gespeichert."
+        )
+        explanation.setWordWrap(True)
+        set_label_style(explanation, "muted")
+        layout.addWidget(explanation)
         self.confirmation_checkbox = QCheckBox(
             "Ich habe alle Zuordnungen geprüft"
         )
@@ -199,6 +333,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         layout.addWidget(self.confirmation_checkbox)
 
         password_row = QFormLayout()
+        password_row.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         self.password_field = QLineEdit()
         self.password_field.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_field.setAccessibleName(
@@ -232,6 +367,10 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         )
         layout.addWidget(self.execution_status)
 
+        self.progress_panel = QWidget()
+        progress_layout = QVBoxLayout(self.progress_panel)
+        progress_layout.setContentsMargins(0, 4, 0, 0)
+        progress_layout.setSpacing(5)
         self.progress_labels: dict[str, QLabel] = {}
         for phase, text in (
             ("writers_draining", "Schreibvorgänge werden beendet"),
@@ -243,17 +382,12 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             label = QLabel(text)
             label.setAccessibleName(f"Ausstehend: {text}")
             self.progress_labels[phase] = label
-            layout.addWidget(label)
+            progress_layout.addWidget(label)
+        self.progress_panel.setVisible(False)
+        layout.addWidget(self.progress_panel)
         return card
 
-    def _summary_card(self) -> AppCard:
-        card = AppCard("soft")
-        card.setObjectName("SchoolYearTransitionPreviewSummary")
-        card.setAccessibleName("Zusammenfassung des flüchtigen Plans")
-        form = QFormLayout(card)
-        form.setContentsMargins(18, 14, 18, 14)
-        form.setHorizontalSpacing(24)
-        form.setVerticalSpacing(6)
+    def _create_summary_labels(self) -> None:
         field_names = (
             "Aktuelles Schuljahr",
             "Geplantes neues Schuljahr",
@@ -262,34 +396,101 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             "Gelöst",
             "Wechsel 1 → 2",
             "Wechsel 2 → 3",
-            "Anderer Kurs",
+            "Individuelle Kurswahl",
             "Kurs 3 wiederholen",
             "Ausgeschieden",
             "Stammgruppenänderungen",
             "Ungelöst",
             "Individuell bearbeitet",
         )
-        self.summary_labels: dict[str, QLabel] = {}
+        self.summary_labels = {}
+        self.activation_summary_labels = {}
         for field_name in field_names:
             value_label = QLabel()
             set_label_style(value_label, "body")
             self.summary_labels[field_name] = value_label
+            activation_value = QLabel()
+            set_label_style(activation_value, "body")
+            self.activation_summary_labels[field_name] = activation_value
+
+    def _summary_card(self) -> AppCard:
+        card = AppCard("soft")
+        card.setObjectName("SchoolYearTransitionPreviewSummary")
+        card.setAccessibleName("Kompakte Zusammenfassung des flüchtigen Plans")
+        self.summary_grid = QGridLayout(card)
+        self.summary_grid.setContentsMargins(14, 10, 14, 10)
+        self.summary_grid.setHorizontalSpacing(18)
+        self.summary_grid.setVerticalSpacing(8)
+        compact_fields = (
+            "Wechsel 1 → 2",
+            "Wechsel 2 → 3",
+            "Ungelöst",
+            "Ausgeschieden",
+            "Stammgruppenänderungen",
+        )
+        self.summary_metrics: list[QWidget] = []
+        for field_name in compact_fields:
+            metric = QWidget()
+            metric.setObjectName("SchoolYearTransitionMetric")
+            metric_layout = QVBoxLayout(metric)
+            metric_layout.setContentsMargins(4, 0, 4, 0)
+            metric_layout.setSpacing(1)
+            value_label = self.summary_labels[field_name]
+            set_label_style(value_label, "section_title")
+            field_label = QLabel(field_name)
+            field_label.setWordWrap(True)
+            set_label_style(field_label, "field_label")
+            metric_layout.addWidget(value_label)
+            metric_layout.addWidget(field_label)
+            self.summary_metrics.append(metric)
+            self.summary_grid.addWidget(metric, 0, len(self.summary_metrics) - 1)
+        return card
+
+    def _activation_summary_card(self) -> AppCard:
+        card = AppCard("soft")
+        card.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Maximum,
+        )
+        card.setObjectName("SchoolYearTransitionFinalSummary")
+        card.setAccessibleName("Abschließende Zusammenfassung des Plans")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 14, 18, 14)
+        layout.setSpacing(10)
+        title = QLabel("Abschließende Zusammenfassung")
+        set_label_style(title, "section_title")
+        layout.addWidget(title)
+        description = QLabel(
+            "Prüfen Sie diese Zahlen, bevor Sie das neue Schuljahr aktivieren."
+        )
+        description.setWordWrap(True)
+        set_label_style(description, "muted")
+        layout.addWidget(description)
+        form = QFormLayout()
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        form.setHorizontalSpacing(24)
+        form.setVerticalSpacing(6)
+        for field_name, value_label in self.activation_summary_labels.items():
             form.addRow(field_name, value_label)
+        layout.addLayout(form)
         return card
 
     def _filter_card(self) -> AppCard:
         card = AppCard("soft")
         card.setObjectName("SchoolYearTransitionFilters")
         card.setAccessibleName("Filter für Kinder im flüchtigen Plan")
-        grid = QGridLayout(card)
-        grid.setContentsMargins(18, 14, 18, 14)
-        grid.setHorizontalSpacing(12)
-        grid.setVerticalSpacing(8)
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setSpacing(8)
 
         self.unresolved_filter = self._filter_combo(
             "Statusfilter",
             (("Alle Kinder", False), ("Nur ungelöst", True)),
         )
+        if self.view_model.unresolved_count:
+            self.unresolved_filter.setCurrentIndex(
+                self.unresolved_filter.findData(True)
+            )
         self.current_course_filter = self._filter_combo(
             "Filter bisheriger Kurs",
             (
@@ -320,18 +521,30 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                   for group in self.plan.available_groups),
             ),
         )
-        filters = (
-            ("Status", self.unresolved_filter),
-            ("Bisheriger Kurs", self.current_course_filter),
-            ("Zielkurs", self.target_course_filter),
-            ("Bisherige Stammgruppe", self.current_group_filter),
-            ("Zielstammgruppe", self.target_group_filter),
+        self.filter_primary_grid = QGridLayout()
+        self.filter_primary_grid.setHorizontalSpacing(8)
+        self.filter_primary_grid.setVerticalSpacing(8)
+        self.filter_status_label = QLabel("Ansicht")
+        set_label_style(self.filter_status_label, "field_label")
+        self.filter_primary_grid.addWidget(self.filter_status_label, 0, 0)
+        self.filter_primary_grid.addWidget(self.unresolved_filter, 0, 1)
+        self.filter_primary_grid.setColumnStretch(2, 1)
+        self.more_filters_button = QPushButton("Weitere Filter")
+        self.more_filters_button.setCheckable(True)
+        self.more_filters_button.setObjectName(
+            "SchoolYearTransitionMoreFilters"
         )
-        for column, (label, combo) in enumerate(filters):
-            grid.addWidget(QLabel(label), 0, column)
-            grid.addWidget(combo, 1, column)
+        configure_button(
+            self.more_filters_button,
+            "secondary",
+            "Weitere Filter für Kurs und Stammgruppe anzeigen",
+        )
+        self.more_filters_button.toggled.connect(
+            self._toggle_advanced_filters
+        )
+        self.filter_primary_grid.addWidget(self.more_filters_button, 1, 0)
 
-        self.reset_filters_button = QPushButton("Alle Filter zurücksetzen")
+        self.reset_filters_button = QPushButton("Filter zurücksetzen")
         self.reset_filters_button.setObjectName(
             "SchoolYearTransitionResetFilters"
         )
@@ -341,7 +554,36 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             "Alle Filter zurücksetzen",
         )
         self.reset_filters_button.clicked.connect(self._reset_filters)
-        grid.addWidget(self.reset_filters_button, 1, len(filters))
+        self.filter_primary_grid.addWidget(self.reset_filters_button, 1, 1)
+        layout.addLayout(self.filter_primary_grid)
+
+        self.advanced_filters_widget = QWidget()
+        self.advanced_filters_widget.setObjectName(
+            "SchoolYearTransitionAdvancedFilters"
+        )
+        self.advanced_filters_grid = QGridLayout(
+            self.advanced_filters_widget
+        )
+        self.advanced_filters_grid.setContentsMargins(0, 4, 0, 0)
+        self.advanced_filters_grid.setHorizontalSpacing(12)
+        self.advanced_filters_grid.setVerticalSpacing(6)
+        filters = (
+            ("Bisheriger Kurs", self.current_course_filter),
+            ("Zielkurs", self.target_course_filter),
+            ("Bisherige Stammgruppe", self.current_group_filter),
+            ("Zielstammgruppe", self.target_group_filter),
+        )
+        self.advanced_filter_fields: list[tuple[QLabel, QComboBox]] = []
+        for index, (label, combo) in enumerate(filters):
+            field_label = QLabel(label)
+            set_label_style(field_label, "field_label")
+            self.advanced_filter_fields.append((field_label, combo))
+            row = (index // 2) * 2
+            column = index % 2
+            self.advanced_filters_grid.addWidget(field_label, row, column)
+            self.advanced_filters_grid.addWidget(combo, row + 1, column)
+        self.advanced_filters_widget.setVisible(False)
+        layout.addWidget(self.advanced_filters_widget)
         for combo in (
             self.unresolved_filter,
             self.current_course_filter,
@@ -352,6 +594,17 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             combo.currentIndexChanged.connect(self._filter_changed)
         return card
 
+    def _toggle_advanced_filters(self, visible: bool) -> None:
+        self.advanced_filters_widget.setVisible(visible)
+        self.more_filters_button.setText(
+            "Weniger Filter" if visible else "Weitere Filter"
+        )
+        self.more_filters_button.setAccessibleName(
+            "Weitere Filter ausblenden"
+            if visible
+            else "Weitere Filter für Kurs und Stammgruppe anzeigen"
+        )
+
     def _bulk_card(self) -> AppCard:
         card = AppCard("soft")
         card.setObjectName("SchoolYearTransitionBulkActions")
@@ -360,7 +613,9 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         layout.setContentsMargins(18, 14, 18, 14)
         layout.setSpacing(8)
 
-        selection_row = QHBoxLayout()
+        self.selection_grid = QGridLayout()
+        self.selection_grid.setHorizontalSpacing(8)
+        self.selection_grid.setVerticalSpacing(8)
         self.selected_count_label = QLabel("0 Kinder ausgewählt")
         self.selected_count_label.setObjectName(
             "SchoolYearTransitionSelectedCount"
@@ -368,8 +623,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.selected_count_label.setAccessibleName(
             "0 Kinder ausgewählt"
         )
-        selection_row.addWidget(self.selected_count_label)
-        selection_row.addStretch(1)
+        self.selection_grid.addWidget(self.selected_count_label, 0, 0, 1, 2)
         self.select_visible_button = QPushButton("Alle sichtbaren auswählen")
         configure_button(
             self.select_visible_button,
@@ -377,7 +631,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             "Alle sichtbaren Kinder auswählen",
         )
         self.select_visible_button.clicked.connect(self._select_all_visible)
-        selection_row.addWidget(self.select_visible_button)
+        self.selection_grid.addWidget(self.select_visible_button, 1, 0)
         self.clear_selection_button = QPushButton("Auswahl aufheben")
         configure_button(
             self.clear_selection_button,
@@ -385,10 +639,20 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             "Auswahl aller Kinder aufheben",
         )
         self.clear_selection_button.clicked.connect(self._clear_selection)
-        selection_row.addWidget(self.clear_selection_button)
-        layout.addLayout(selection_row)
+        self.selection_grid.addWidget(self.clear_selection_button, 1, 1)
+        layout.addLayout(self.selection_grid)
 
-        actions = QHBoxLayout()
+        self.bulk_actions_panel = QWidget()
+        self.bulk_actions_panel.setObjectName(
+            "SchoolYearTransitionBulkActionPanel"
+        )
+        self.bulk_actions_panel.setAccessibleName(
+            "Sammelaktionen für die aktuelle Auswahl"
+        )
+        self.bulk_actions_grid = QGridLayout(self.bulk_actions_panel)
+        self.bulk_actions_grid.setContentsMargins(0, 4, 0, 0)
+        self.bulk_actions_grid.setHorizontalSpacing(8)
+        self.bulk_actions_grid.setVerticalSpacing(8)
         self.bulk_course_combo = self._filter_combo(
             "Zielkurs für ausgewählte sichtbare Kinder",
             (
@@ -397,15 +661,15 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                   for course in self.plan.available_courses),
             ),
         )
-        actions.addWidget(self.bulk_course_combo)
+        self._configure_bulk_choice(self.bulk_course_combo)
         self.bulk_course_button = QPushButton("Zielkurs setzen")
         configure_button(
             self.bulk_course_button,
-            "primary",
+            "secondary",
             "Zielkurs für ausgewählte sichtbare Kinder setzen",
         )
         self.bulk_course_button.clicked.connect(self._bulk_set_course)
-        actions.addWidget(self.bulk_course_button)
+        self.bulk_course_button.setMaximumWidth(220)
 
         self.bulk_group_combo = self._filter_combo(
             "Zielstammgruppe für ausgewählte sichtbare Kinder",
@@ -415,15 +679,15 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                   for group in self.plan.available_groups),
             ),
         )
-        actions.addWidget(self.bulk_group_combo)
+        self._configure_bulk_choice(self.bulk_group_combo)
         self.bulk_group_button = QPushButton("Zielstammgruppe setzen")
         configure_button(
             self.bulk_group_button,
-            "primary",
+            "secondary",
             "Zielstammgruppe für ausgewählte sichtbare Kinder setzen",
         )
         self.bulk_group_button.clicked.connect(self._bulk_set_group)
-        actions.addWidget(self.bulk_group_button)
+        self.bulk_group_button.setMaximumWidth(220)
 
         self.bulk_exited_button = QPushButton("Als ausgeschieden markieren")
         configure_button(
@@ -432,7 +696,6 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             "Ausgewählte sichtbare Kinder als ausgeschieden markieren",
         )
         self.bulk_exited_button.clicked.connect(self._bulk_mark_exited)
-        actions.addWidget(self.bulk_exited_button)
         self.bulk_unresolved_button = QPushButton("Bewusst ungelöst setzen")
         configure_button(
             self.bulk_unresolved_button,
@@ -442,8 +705,16 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.bulk_unresolved_button.clicked.connect(
             self._bulk_leave_unresolved
         )
-        actions.addWidget(self.bulk_unresolved_button)
-        layout.addLayout(actions)
+        self.bulk_actions_grid.addWidget(self.bulk_course_combo, 0, 1)
+        self.bulk_actions_grid.addWidget(self.bulk_course_button, 0, 2)
+        self.bulk_actions_grid.addWidget(self.bulk_group_combo, 1, 1)
+        self.bulk_actions_grid.addWidget(self.bulk_group_button, 1, 2)
+        self.bulk_actions_grid.addWidget(self.bulk_exited_button, 2, 1)
+        self.bulk_actions_grid.addWidget(self.bulk_unresolved_button, 2, 2)
+        self.bulk_actions_grid.setColumnStretch(0, 1)
+        self.bulk_actions_grid.setColumnStretch(3, 1)
+        self.bulk_actions_panel.setVisible(False)
+        layout.addWidget(self.bulk_actions_panel)
         self._bulk_action_widgets = (
             self.bulk_course_combo,
             self.bulk_course_button,
@@ -456,12 +727,23 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         return card
 
     def _individual_edit_card(self) -> AppCard:
-        card = AppCard("soft")
+        card = AppCard("default")
         card.setObjectName("SchoolYearTransitionIndividualEdit")
         card.setAccessibleName("Individuelle Planbearbeitung")
-        layout = QHBoxLayout(card)
+        card.setSizePolicy(
+            QSizePolicy.Policy.Preferred,
+            QSizePolicy.Policy.Expanding,
+        )
+        layout = QVBoxLayout(card)
         layout.setContentsMargins(18, 14, 18, 14)
-        layout.setSpacing(12)
+        layout.setSpacing(10)
+
+        layout.addWidget(
+            SectionHeader(
+                "Ausgewähltes Kind",
+                "Entscheidungen werden erst durch eine bewusste Auswahl geändert.",
+            )
+        )
 
         self.individual_student_combo = self._filter_combo(
             "Kind für individuelle Planbearbeitung",
@@ -473,21 +755,58 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.individual_student_combo.currentIndexChanged.connect(
             self._individual_student_changed
         )
-        layout.addWidget(self.individual_student_combo)
 
         self.individual_course_combo = QComboBox()
         self.individual_course_combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self._configure_choice_combo(self.individual_course_combo)
         self.individual_course_combo.activated.connect(
             self._individual_course_activated
         )
-        layout.addWidget(self.individual_course_combo)
 
         self.individual_group_combo = QComboBox()
         self.individual_group_combo.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self._configure_choice_combo(self.individual_group_combo)
         self.individual_group_combo.activated.connect(
             self._individual_group_activated
         )
-        layout.addWidget(self.individual_group_combo)
+        form = QFormLayout()
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
+        form.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
+        )
+        form.setVerticalSpacing(10)
+        form.addRow("Kind", self.individual_student_combo)
+        form.addRow("Zielkurs", self.individual_course_combo)
+        form.addRow("Zielstammgruppe", self.individual_group_combo)
+        layout.addLayout(form)
+
+        status_label = QLabel("Weitere Entscheidung")
+        set_label_style(status_label, "field_label")
+        layout.addWidget(status_label)
+        status_actions = QHBoxLayout()
+        status_actions.setSpacing(8)
+        self.individual_exited_button = QPushButton("Ausgeschieden")
+        configure_button(
+            self.individual_exited_button,
+            "secondary",
+            "Ausgewähltes Kind als ausgeschieden markieren",
+        )
+        self.individual_exited_button.clicked.connect(
+            lambda: self._apply_individual_status(MARK_EXITED)
+        )
+        status_actions.addWidget(self.individual_exited_button)
+        self.individual_unresolved_button = QPushButton("Ungelöst")
+        configure_button(
+            self.individual_unresolved_button,
+            "secondary",
+            "Ausgewähltes Kind bewusst ungelöst lassen",
+        )
+        self.individual_unresolved_button.clicked.connect(
+            lambda: self._apply_individual_status(LEAVE_UNRESOLVED)
+        )
+        status_actions.addWidget(self.individual_unresolved_button)
+        layout.addLayout(status_actions)
+        layout.addStretch(1)
         self._refresh_individual_editors()
         return card
 
@@ -501,7 +820,59 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         combo.setAccessibleName(accessible_name)
         for label, value in options:
             combo.addItem(label, value)
+        SchoolYearTransitionPreviewDialog._configure_choice_combo(combo)
         return combo
+
+    @staticmethod
+    def _configure_bulk_choice(combo: QComboBox) -> None:
+        combo.setMaximumWidth(440)
+        combo.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
+
+    @staticmethod
+    def _configure_choice_combo(combo: QComboBox) -> None:
+        """Keep the field calm while exposing complete choices in its popup."""
+        combo.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
+        labels = tuple(combo.itemText(index) for index in range(combo.count()))
+        longest_label_length = max((len(label) for label in labels), default=16)
+        combo.setMinimumContentsLength(
+            min(max(longest_label_length, 14), 22)
+        )
+        combo.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
+        )
+        if not labels:
+            return
+        visible_options = min(len(labels), MAX_COMBO_POPUP_OPTIONS)
+        combo.setMaxVisibleItems(visible_options)
+        popup = combo.view()
+        row_height = max(
+            popup.sizeHintForRow(0),
+            combo.fontMetrics().height() + 12,
+            28,
+        )
+        popup_height = visible_options * row_height + 2 * popup.frameWidth()
+        popup.setMinimumHeight(popup_height)
+        popup.setMaximumHeight(popup_height)
+        popup_width = min(
+            max(
+                combo.fontMetrics().horizontalAdvance(label)
+                for label in labels
+            )
+            + 56,
+            MAX_COMBO_POPUP_WIDTH,
+        )
+        popup.setMinimumWidth(
+            max(
+                combo.sizeHint().width() + COMBO_POPUP_STYLE_ALLOWANCE,
+                popup_width,
+            )
+        )
 
     def _current_course_filter_options(
         self,
@@ -552,9 +923,18 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.individual_student_combo.blockSignals(False)
         self._populate_individual_combo(
             self.individual_course_combo,
-            current_label=row.target_status_label,
-            choices=row.course_choices,
-            accessible_name=f"Zielentscheidung für {row.child_label}",
+            current_label=(
+                row.target_status_label
+                if row.target_status_label.startswith("Verbleibt in ")
+                or row.target_course_id is None
+                else row.target_course_label
+            ),
+            choices=tuple(
+                choice
+                for choice in row.course_choices
+                if choice.action not in {MARK_EXITED, LEAVE_UNRESOLVED}
+            ),
+            accessible_name=f"Zielkurs für {row.child_label}",
             accessible_description=row.accessible_description,
             enabled=True,
         )
@@ -581,11 +961,14 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         combo.clear()
         combo.addItem(current_label, None)
         for choice in choices:
+            if choice.label == current_label:
+                continue
             combo.addItem(choice.label, (choice.action, choice.option_id))
         combo.setCurrentIndex(0)
         combo.setAccessibleName(accessible_name)
         combo.setAccessibleDescription(accessible_description)
         combo.setEnabled(enabled)
+        SchoolYearTransitionPreviewDialog._configure_choice_combo(combo)
         combo.blockSignals(False)
 
     def _individual_student_changed(self, _index: int) -> None:
@@ -593,6 +976,15 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self._refresh_individual_editors(
             student_id if isinstance(student_id, str) else None
         )
+        if isinstance(student_id, str):
+            for row_index in range(self.table.rowCount()):
+                item = self.table.item(row_index, 0)
+                if (
+                    item is not None
+                    and item.data(Qt.ItemDataRole.UserRole) == student_id
+                ):
+                    self.table.selectRow(row_index)
+                    break
 
     def _individual_course_activated(self, index: int) -> None:
         student_id = self.individual_student_combo.currentData()
@@ -613,6 +1005,12 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             0,
             lambda: self._apply_group_selection(student_id, selection),
         )
+
+    def _apply_individual_status(self, action: str) -> None:
+        student_id = self.individual_student_combo.currentData()
+        if not isinstance(student_id, str):
+            return
+        self._apply_course_selection(student_id, (action, None))
 
     def _configure_table(self) -> None:
         self.table.setHorizontalHeaderLabels(TABLE_HEADERS)
@@ -645,7 +1043,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                 column,
                 QHeaderView.ResizeMode.Interactive,
             )
-        widths = (145, 180, 180, 155, 145, 215, 245, 180, 390)
+        widths = (145, 180, 180, 155, 215, 245, 180, 390)
         for column, width in enumerate(widths):
             self.table.setColumnWidth(column, width)
 
@@ -677,7 +1075,9 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             "Gelöst": str(self.view_model.resolved_count),
             "Wechsel 1 → 2": str(self.view_model.advance_1_to_2_count),
             "Wechsel 2 → 3": str(self.view_model.advance_2_to_3_count),
-            "Anderer Kurs": str(self.view_model.other_course_count),
+            "Individuelle Kurswahl": str(
+                self.view_model.other_course_count
+            ),
             "Kurs 3 wiederholen": str(
                 self.view_model.repeat_year_level_three_count
             ),
@@ -689,9 +1089,28 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             "Individuell bearbeitet": str(self.view_model.edited_count),
         }
         for field_name, value in values.items():
-            label = self.summary_labels[field_name]
-            label.setText(value)
-            label.setAccessibleName(f"{field_name}: {value}")
+            for labels in (
+                self.summary_labels,
+                self.activation_summary_labels,
+            ):
+                label = labels[field_name]
+                label.setText(value)
+                label.setAccessibleName(f"{field_name}: {value}")
+        self.header_status_label.setText(self.view_model.status_label)
+        self.header_status_label.setAccessibleName(
+            f"Status des Schuljahreswechsels: {self.view_model.status_label}"
+        )
+        self.workflow_tabs.setTabText(
+            1,
+            (
+                "2  Prüfen und aktivieren"
+                if self.view_model.unresolved_count == 0
+                else (
+                    "2  Abschluss · "
+                    f"noch {self.view_model.unresolved_count} offen"
+                )
+            ),
+        )
         self._update_status_message()
         self.activate_button.setText(
             "Schuljahr "
@@ -711,16 +1130,23 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             row for row in self.view_model.rows if row.student_id == student_id
         )
         row_index = next(
-            row
-            for row in range(self.table.rowCount())
-            if self.table.item(row, 0).data(Qt.ItemDataRole.UserRole)
-            == student_id
+            (
+                row
+                for row in range(self.table.rowCount())
+                if self.table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+                == student_id
+            ),
+            None,
         )
+        if row_index is None:
+            self._refresh_individual_editors(student_id)
+            self._invalidate_confirmation()
+            self._update_selection_status()
+            return
         values = (
             row_view_model.child_label,
             row_view_model.current_group_label,
             row_view_model.current_course_label,
-            row_view_model.current_year_level_label,
             row_view_model.target_status_label,
             row_view_model.target_group_label,
             row_view_model.target_course_label,
@@ -776,7 +1202,13 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             self._update_activation_availability()
             return
         self._activation_running = True
+        self.workflow_tabs.setCurrentWidget(self.activation_page)
+        self.progress_panel.setVisible(True)
         self._set_editing_enabled(False)
+        # Safety-critical progress appears immediately. Avoid a transient
+        # graphics effect while the activation page becomes visible; native
+        # Qt may otherwise outlive the dialog during rapid lifecycle tests.
+        self.execution_status.setVisible(True)
         self.execution_status.set_message(
             "Das App-Passwort wird geprüft.",
             tone="info",
@@ -915,9 +1347,12 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             self.current_group_filter,
             self.target_group_filter,
             self.reset_filters_button,
+            self.more_filters_button,
             self.select_visible_button,
             self.clear_selection_button,
             *self._bulk_action_widgets,
+            self.individual_exited_button,
+            self.individual_unresolved_button,
             self.confirmation_checkbox,
             self.password_field,
         ):
@@ -949,11 +1384,31 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             event.accept()
             return
         if event.key() == Qt.Key.Key_Escape:
+            if self._has_active_filters():
+                self._reset_filters()
+                self.unresolved_filter.setFocus(
+                    Qt.FocusReason.ShortcutFocusReason
+                )
+                event.accept()
+                return
             if not self.close_blocked:
                 self._request_close()
             event.accept()
             return
         super().keyPressEvent(event)
+
+    def eventFilter(self, watched: object, event: QEvent) -> bool:  # noqa: N802
+        if (
+            watched is self.table
+            and event.type() == QEvent.Type.KeyPress
+            and isinstance(event, QKeyEvent)
+            and event.key() in {Qt.Key.Key_Return, Qt.Key.Key_Enter}
+        ):
+            current_item = self.table.currentItem()
+            if current_item is not None:
+                self._table_item_activated(current_item)
+            return True
+        return super().eventFilter(watched, event)
 
     def _update_status_message(self) -> None:
         status_text = (
@@ -962,6 +1417,9 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         )
         if self.view_model.global_issues_label:
             status_text = f"{status_text} {self.view_model.global_issues_label}"
+        # Keep this persistent status free of short-lived graphics effects.
+        # Repeated native dialog lifecycles must not retain opacity objects.
+        self.status_message.setVisible(True)
         self.status_message.set_message(
             status_text,
             tone=(
@@ -997,6 +1455,42 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         for row_index, row in enumerate(visible_rows):
             self._populate_row(row_index, row)
         self._populating_table = False
+        visible_count = len(visible_rows)
+        total_count = self.view_model.student_count
+        unresolved_count = self.view_model.unresolved_count
+        self.visible_count_label.setText(
+            f"{visible_count} von {total_count} Kindern sichtbar · "
+            f"{unresolved_count} ungelöst"
+        )
+        self.visible_count_label.setAccessibleName(
+            self.visible_count_label.text()
+        )
+        self.table_empty_label.setText(
+            (
+                "Alle Zuordnungen sind gelöst. Wechseln Sie zu „Alle Kinder“, "
+                "um die vollständige Liste zu prüfen."
+                if bool(self.unresolved_filter.currentData())
+                and unresolved_count == 0
+                else "Keine Kinder entsprechen den gewählten Filtern."
+            )
+        )
+        self.table_empty_label.setVisible(visible_count == 0)
+        self.table.setVisible(visible_count > 0)
+        selected_row = 0
+        if focus_student_id is not None:
+            selected_row = next(
+                (
+                    index
+                    for index, row in enumerate(visible_rows)
+                    if row.student_id == focus_student_id
+                ),
+                0,
+            )
+        if visible_rows:
+            self.table.selectRow(selected_row)
+            self._refresh_individual_editors(
+                visible_rows[selected_row].student_id
+            )
         self._configure_tab_order()
 
     def _replace_table(self) -> None:
@@ -1004,11 +1498,14 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         previous = self.table
         replacement = QTableWidget(0, len(TABLE_HEADERS))
         replacement.setObjectName("SchoolYearTransitionPreviewTable")
-        replacement.setAccessibleName("Flüchtiger Plan je Kind")
+        replacement.setAccessibleName("Kindliste für den Schuljahreswechsel")
         self.table = replacement
         self._configure_table()
         self.table.itemChanged.connect(self._selection_item_changed)
-        self._dialog_layout.replaceWidget(previous, self.table)
+        self.table.itemSelectionChanged.connect(self._table_row_changed)
+        self.table.itemActivated.connect(self._table_item_activated)
+        self.table.installEventFilter(self)
+        self._table_layout.replaceWidget(previous, self.table)
         previous.hide()
         previous.setParent(self)
         self._retired_tables.append(previous)
@@ -1050,7 +1547,6 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             row.child_label,
             row.current_group_label,
             row.current_course_label,
-            row.current_year_level_label,
             row.target_status_label,
             row.target_group_label,
             row.target_course_label,
@@ -1073,6 +1569,39 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
     def _filter_changed(self, _index: int) -> None:
         self._populate_table(focus_student_id=None, focus_kind="course")
         self._update_selection_status()
+
+    def _table_row_changed(self) -> None:
+        if self._populating_table or self.table.currentRow() < 0:
+            return
+        item = self.table.item(self.table.currentRow(), 0)
+        if item is None:
+            return
+        student_id = item.data(Qt.ItemDataRole.UserRole)
+        if isinstance(student_id, str):
+            self._refresh_individual_editors(student_id)
+
+    def _table_item_activated(self, item: QTableWidgetItem) -> None:
+        student_id = self.table.item(item.row(), 0).data(
+            Qt.ItemDataRole.UserRole
+        )
+        if not isinstance(student_id, str):
+            return
+        self._refresh_individual_editors(student_id)
+        self.individual_course_combo.setFocus(
+            Qt.FocusReason.ShortcutFocusReason
+        )
+
+    def _has_active_filters(self) -> bool:
+        return any(
+            combo.currentIndex() != 0
+            for combo in (
+                self.unresolved_filter,
+                self.current_course_filter,
+                self.target_course_filter,
+                self.current_group_filter,
+                self.target_group_filter,
+            )
+        )
 
     def _reset_filters(self) -> None:
         filters = (
@@ -1147,6 +1676,29 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.selected_count_label.setText(text)
         self.selected_count_label.setAccessibleName(text)
         has_visible_selection = visible_count > 0
+        self.bulk_actions_panel.setVisible(has_visible_selection)
+        self.bulk_actions_panel.setAccessibleName(
+            f"Sammelaktionen für {visible_count} sichtbare ausgewählte Kinder"
+        )
+        self.bulk_course_combo.setAccessibleName(
+            f"Zielkurs für {visible_count} sichtbare ausgewählte Kinder"
+        )
+        self.bulk_course_button.setAccessibleName(
+            f"Zielkurs für {visible_count} sichtbare ausgewählte Kinder setzen"
+        )
+        self.bulk_group_combo.setAccessibleName(
+            f"Zielstammgruppe für {visible_count} sichtbare ausgewählte Kinder"
+        )
+        self.bulk_group_button.setAccessibleName(
+            "Zielstammgruppe für "
+            f"{visible_count} sichtbare ausgewählte Kinder setzen"
+        )
+        self.bulk_exited_button.setAccessibleName(
+            f"{visible_count} sichtbare ausgewählte Kinder als ausgeschieden markieren"
+        )
+        self.bulk_unresolved_button.setAccessibleName(
+            f"{visible_count} sichtbare ausgewählte Kinder bewusst ungelöst setzen"
+        )
         for widget in self._bulk_action_widgets:
             widget.setEnabled(has_visible_selection)
         self.clear_selection_button.setEnabled(total_count > 0)
@@ -1234,7 +1786,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             (
                 f"Möchten Sie {count} ausgewählte, im aktuellen Filter "
                 f"sichtbare Kinder {description}? "
-                "Die Änderung bleibt flüchtig."
+                "Gespeichert wird sie erst bei der finalen Aktivierung."
             ),
             QMessageBox.StandardButton.Yes
             | QMessageBox.StandardButton.No,
@@ -1282,7 +1834,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.status_message.set_message(
             (
                 "Die Auswahl konnte nicht übernommen werden. "
-                "Der flüchtige Plan blieb unverändert."
+                "Die vorbereiteten Zuordnungen blieben unverändert."
             ),
             tone="warning",
         )
@@ -1290,11 +1842,13 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
     def _configure_tab_order(self) -> None:
         controls: list[QWidget] = [
             self.unresolved_filter,
+            self.more_filters_button,
             self.current_course_filter,
             self.target_course_filter,
             self.current_group_filter,
             self.target_group_filter,
             self.reset_filters_button,
+            self.more_filters_button,
             self.select_visible_button,
             self.clear_selection_button,
             self.bulk_course_combo,
@@ -1303,9 +1857,12 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             self.bulk_group_button,
             self.bulk_exited_button,
             self.bulk_unresolved_button,
+            self.table,
             self.individual_student_combo,
             self.individual_course_combo,
             self.individual_group_combo,
+            self.individual_exited_button,
+            self.individual_unresolved_button,
             self.confirmation_checkbox,
             self.password_field,
             self.activate_button,
@@ -1314,6 +1871,34 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             controls.append(self.close_button)
         for current, following in zip(controls, controls[1:], strict=False):
             QWidget.setTabOrder(current, following)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._apply_responsive_layout()
+
+    def _apply_responsive_layout(self) -> None:
+        if not hasattr(self, "work_splitter"):
+            return
+        compact = self.width() < 900
+        self._responsive_compact = compact
+        self._dialog_layout.setContentsMargins(
+            12 if compact else 24,
+            12 if compact else 22,
+            12 if compact else 24,
+            12 if compact else 20,
+        )
+        self.work_splitter.setOrientation(
+            Qt.Orientation.Vertical if compact else Qt.Orientation.Horizontal
+        )
+        self.header_status_label.setVisible(not compact)
+        self.dialog_header.description_label.setVisible(not compact)
+        self.summary_card.setVisible(self.height() >= 520)
+        if compact:
+            self.work_page.setMinimumHeight(690)
+            self.work_splitter.setSizes((330, 230))
+        else:
+            self.work_page.setMinimumHeight(0)
+            self.work_splitter.setSizes((920, 320))
 
 
 def _requires_new_preview(code: str) -> bool:

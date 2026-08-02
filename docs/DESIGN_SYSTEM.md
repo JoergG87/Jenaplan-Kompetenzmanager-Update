@@ -26,8 +26,8 @@ weder Zielgruppe noch Zielkurs. Ursprüngliche Hinweise und aktuelle Blocker
 bleiben textlich unterscheidbar. Es gibt weder Checkboxen noch
 Mehrfachauswahl, Sammelaktion oder Ausführungsschaltfläche.
 
-Der Einstieg lautet `Einstellungen → Schuljahre`. Der Assistent ist ein
-ruhiger, linearer Arbeitsraum mit zehn sichtbaren Phasen:
+Der Einstieg lautet `Einstellungen → Schuljahre`. Der fachliche Ablauf enthält
+weiterhin zehn Phasen:
 
 1. Neues Schuljahr festlegen.
 2. Sicherheitsprüfung und Backup.
@@ -40,13 +40,14 @@ ruhiger, linearer Arbeitsraum mit zehn sichtbaren Phasen:
 9. Atomare Ausführung.
 10. Ergebnis.
 
-Im aktuell integrierten Preview-only-Zwischenstand ist ausschließlich Phase 1
-als Settings-Unterseite und anschließend die vorhandene flüchtige
-Vorschau-/Planbearbeitung erreichbar. Bezeichnung, Beginn und Ende besitzen
-sichtbare Labels und Accessible Names. Ungültige Zieljahresangaben werden über
-die vorhandene Preview-Validierung neutral in einer fokussierbaren
-`InlineMessage` abgelehnt. Es existiert keine Ausführungs-, Backup-,
-Authentifizierungs- oder Speicheraktion.
+Die integrierte Oberfläche verdichtet diese fachlichen Phasen ohne neue
+Wizard-Domainlogik in zwei sichtbare Präsentationsschritte. `Zuordnungen
+prüfen` enthält Orientierung, Filter, Kindliste, Einzel- und
+Sammelbearbeitung. `Prüfen und aktivieren` enthält die vollständige
+Zusammenfassung, Prüfcheckbox, Passwort, finale Aktion und das vorhandene
+Ausführungsfeedback. Vor Beginn der atomaren Ausführung kann zwischen beiden
+Schritten gewechselt werden; dieser UI-Zustand schreibt nichts und verändert
+den Plan nicht.
 
 Die Phasenanzeige unterscheidet `aktuell`, `geprüft` und `blockiert` textlich;
 Farbe unterstützt nur. Ein späterer Schritt darf keine noch offene
@@ -55,25 +56,42 @@ möglich und verändert nur den flüchtigen Plan. Während der kritischen
 Ausführung ist Schließen blockiert; es werden keine erfundenen Prozentwerte
 gezeigt.
 
-Die dominante Arbeitsfläche ist die vollständige Kindliste mit den Spalten
+Die dominante Arbeitsfläche ist die Kindliste mit den Spalten
 Kind, bisheriges Schuljahr, bisherige Stammgruppe, bisheriger Kurs, neues
-Schuljahr, neue Stammgruppe, neuer Kurs, Zielstatus und Warnungen. Alle
-Vorschläge sind sichtbar und editierbar. Filter und `Nur ungelöst` reduzieren
-nur die Darstellung; ein klarer Ergebnistext nennt weiterhin Gesamtzahl,
-sichtbare Zahl und Zahl ungelöster Kinder. Es gibt keine versteckten
-Standardentscheidungen, automatisch entfernten Zeilen oder allein durch
-Sortierung behauptete Priorität.
+Schuljahr, neue Stammgruppe, neuer Kurs, Zielstatus und Warnungen. Der Dialog
+startet mit `Nur ungelöst`; `Alle Kinder` stellt die vollständige Planreihenfolge
+jederzeit wieder her. Zusätzliche Kurs- und Stammgruppenfilter bleiben bis zur
+bewussten Anforderung eingeklappt. Ein klarer Ergebnistext nennt weiterhin
+Gesamtzahl, sichtbare Zahl und Zahl ungelöster Kinder. Es gibt keine
+automatisch entfernten Planitems oder allein durch Sortierung behauptete
+Priorität. Die Tabelle bleibt read-only; eine ausgewählte Zeile steuert die
+persistent außerhalb der Tabelle liegenden, accessibility-sicheren
+Einzelentscheidungen.
 
 Mehrfachauswahl unterstützt die bewusste Sammeländerung von Zielkurs und
 Zielstammgruppe. Die Aktion benennt Anzahl und Ziel vor der Übernahme in den
-flüchtigen Plan. Stammgruppe bleibt ohne ausdrückliche Änderung unverändert.
-Individuelle Änderungen bleiben danach sichtbar. Kursfarben dürfen wie bisher
-organisatorisch unterstützen, aber weder Fortschreibung, Gültigkeit, Warnung
-noch Leistung ausdrücken.
+flüchtigen Plan. Ohne sichtbare Auswahl bleiben die Sammelaktionen vollständig
+ausgeblendet; Auswahlzähler, `Alle sichtbaren auswählen` und `Auswahl aufheben`
+bleiben als ruhige Vorbereitung sichtbar. Stammgruppe bleibt ohne
+ausdrückliche Änderung unverändert. Individuelle Änderungen bleiben danach
+sichtbar. Kursfarben dürfen wie bisher organisatorisch unterstützen, aber
+weder Fortschreibung, Gültigkeit, Warnung noch Leistung ausdrücken.
 
 Stufe 3 wird immer mit `Ungelöst` vorgeschlagen und benötigt eine bewusste
-Auswahl aus `Ausgeschieden`, `Kurs 3 wiederholen`, `Anderer vorhandener Kurs`
-oder `Ungelöst`. `Ausgeschieden` wird verständlich als Ende der aktuellen
+Auswahl aus `Ausgeschieden`, `Verbleibt in <Kurs>`, einem vorhandenen Zielkurs
+oder `Ungelöst`. Das Kursfeld enthält ausschließlich Kursnamen sowie
+`Verbleibt in <Kurs>` statt technischer Entscheidungsformulierungen; nach der
+Auswahl bleibt der konkrete Kursname im als `Zielkurs` bezeichneten Feld
+sichtbar und wird nicht zusätzlich als wählbare Option wiederholt.
+Bei einem ungelösten Kurs-3-Fall erscheint der aktuelle Kurs ausschließlich
+als `Verbleibt in <Kurs>` und nicht zusätzlich als generische Kursoption.
+`Ausgeschieden` und `Ungelöst` stehen getrennt als sekundäre Statusaktionen bereit.
+Die Zielstammgruppe folgt demselben Muster: Das Feld zeigt die aktuelle Wahl,
+die Optionsliste ausschließlich andere Gruppennamen ohne technische Präfixe.
+Der Zielstatus nennt bei einem Stufenwechsel die tatsächliche Richtung, etwa
+`Wechsel 1 → 3` oder `Wechsel 3 → 2`; identischer Kurs und Kurswechsel
+innerhalb derselben Stufe bleiben davon eindeutig unterschieden.
+`Ausgeschieden` wird verständlich als Ende der aktuellen
 Einschreibung erklärt und niemals als Archivierung oder Löschung bezeichnet.
 
 Validierungsfehler erscheinen in einer zusammenfassenden `InlineMessage` und
@@ -88,6 +106,15 @@ Stammgruppenänderungen, Austritte und verbleibende Blocker. Backupstatus,
 Quellenfrische und Rückdatierungsprüfung werden in verständlicher Sprache
 gezeigt; Hashes, lokale Pfade und technische Tokens bleiben außerhalb der
 normalen Oberfläche.
+
+Im Arbeitsbereich zeigen fünf kompakte Kennzahlen ausschließlich Wechsel
+1→2, Wechsel 2→3, ungelöst, ausgeschieden und Stammgruppenänderungen. Die
+vollständige Zusammenfassung steht im getrennten letzten Schritt. Unterhalb
+von 900 Pixeln Breite werden Kindliste und externe Einzelbearbeitung
+untereinander angeordnet; der Arbeitsbereich ist vertikal scrollbar und
+erzeugt keinen horizontalen Gesamtscroll. Bei sehr geringer Höhe kann die
+kompakte Kennzahlenkarte entfallen, weil dieselben Werte im Abschluss
+vollständig erreichbar bleiben.
 
 Die finale Schutzstufe besitzt ein sensitives Passwortfeld mit eindeutigem
 Accessible Name, bestehender Drosselung und generischer Fehlermeldung. Die
@@ -104,8 +131,9 @@ Passwortfeld oder Bestätigungskästchen beiläufig aus.
 - Die Schrittfolge, Filter, Tabelle, Mehrfachauswahl, Sammelaktionen,
   Einzelbearbeitung, Validierung, Zusammenfassung, Passwort, Bestätigung und
   Primäraktion liegen in einer nachvollziehbaren Tab-Reihenfolge.
-- `Ctrl/Cmd+F` fokussiert den lokalen Filter. Escape leert zuerst einen
-  befüllten Filter und bricht danach nur gemäß sicherem Dialogvertrag ab.
+- Die Filter liegen ohne ein irreführendes Suchkürzel in der sichtbaren
+  Tab-Reihenfolge. Escape setzt zuerst einen abweichenden Filter zurück und
+  bricht danach nur gemäß sicherem Dialogvertrag ab.
 - Tabellenzeilen und editierbare Zellen sind per Tastatur erreichbar.
   Pfeiltasten navigieren innerhalb der Tabelle; Leertaste schaltet eine
   fokussierte Auswahl, Enter öffnet die eindeutige Zeilenbearbeitung.

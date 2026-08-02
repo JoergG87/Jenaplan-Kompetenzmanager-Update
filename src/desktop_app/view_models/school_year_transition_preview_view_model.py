@@ -25,7 +25,7 @@ SELECT_OTHER_GROUP = "select_other_group"
 _TARGET_STATUS_LABELS = {
     SchoolYearTransitionPlanTargetStatus.ADVANCE_1_TO_2: "Wechsel 1 → 2",
     SchoolYearTransitionPlanTargetStatus.ADVANCE_2_TO_3: "Wechsel 2 → 3",
-    SchoolYearTransitionPlanTargetStatus.OTHER_COURSE: "Anderer Kurs",
+    SchoolYearTransitionPlanTargetStatus.OTHER_COURSE: "Individuelle Kurswahl",
     SchoolYearTransitionPlanTargetStatus.REPEAT_YEAR_LEVEL_THREE: (
         "Kurs 3 wiederholen"
     ),
@@ -272,12 +272,16 @@ def _row_from_item(
     )
     issue_labels = original_issues + current_issues
     warnings_label = " ".join(issue_labels) if issue_labels else "Keine"
-    target_status_label = _TARGET_STATUS_LABELS[item.target_status]
     current_group_label = item.current_group_name or EMPTY_VALUE
     current_course_label = item.current_course_name or EMPTY_VALUE
     current_year_level_label = _year_level_label(item.current_year_level)
     target_group_label = item.target_group_name or EMPTY_VALUE
     target_course_label = item.target_course_name or EMPTY_VALUE
+    target_status_label = _target_status_label(
+        plan,
+        item,
+        target_course_label,
+    )
     accessible_description = (
         f"Kind {item.student_display_name}. "
         f"Bisherige Stammgruppe {current_group_label}. "
@@ -322,27 +326,32 @@ def _course_choices(
             SchoolYearTransitionDecisionOptionViewModel(
                 ACCEPT_PROPOSAL,
                 None,
-                (
-                    "Vorschlag übernehmen: "
-                    f"{item.original_proposed_course_name}"
-                ),
+                str(item.original_proposed_course_name),
             )
         )
     choices.extend(
         SchoolYearTransitionDecisionOptionViewModel(
             SELECT_OTHER_COURSE,
             course.course_id,
-            f"Anderen aktiven Kurs wählen: {course.course_name}",
+            course.course_name,
         )
         for course in plan.available_courses
         if course.course_id != item.original_proposed_course_id
+        and not (
+            item.original_current_year_level == 3
+            and course.course_id == item.current_course_id
+        )
     )
     if item.original_current_year_level == 3:
         choices.extend(
             SchoolYearTransitionDecisionOptionViewModel(
                 REPEAT_YEAR_LEVEL_THREE,
                 course.course_id,
-                f"Kurs 3 wiederholen: {course.course_name}",
+                (
+                    f"Verbleibt in {course.course_name}"
+                    if course.course_id == item.current_course_id
+                    else course.course_name
+                ),
             )
             for course in plan.available_courses
             if course.year_level == 3
@@ -352,12 +361,12 @@ def _course_choices(
             SchoolYearTransitionDecisionOptionViewModel(
                 MARK_EXITED,
                 None,
-                "Als ausgeschieden markieren",
+                "Ausgeschieden",
             ),
             SchoolYearTransitionDecisionOptionViewModel(
                 LEAVE_UNRESOLVED,
                 None,
-                "Bewusst ungelöst lassen",
+                "Ungelöst",
             ),
         )
     )
@@ -382,17 +391,14 @@ def _group_choices(
             SchoolYearTransitionDecisionOptionViewModel(
                 KEEP_CURRENT_GROUP,
                 None,
-                (
-                    "Stammgruppe unverändert lassen: "
-                    f"{item.current_group_name}"
-                ),
+                str(item.current_group_name),
             )
         )
     choices.extend(
         SchoolYearTransitionDecisionOptionViewModel(
             SELECT_OTHER_GROUP,
             group.group_id,
-            f"Andere aktive Stammgruppe wählen: {group.group_name}",
+            group.group_name,
         )
         for group in plan.available_groups
         if group.group_id != item.current_group_id
@@ -406,6 +412,33 @@ def _issue_label(code: str) -> str:
 
 def _year_level_label(year_level: int | None) -> str:
     return f"Stufe {year_level}" if year_level is not None else EMPTY_VALUE
+
+
+def _target_status_label(
+    plan: SchoolYearTransitionPlan,
+    item: SchoolYearTransitionPlanItem,
+    target_course_label: str,
+) -> str:
+    if item.target_status in {
+        SchoolYearTransitionPlanTargetStatus.OTHER_COURSE,
+        SchoolYearTransitionPlanTargetStatus.REPEAT_YEAR_LEVEL_THREE,
+    } and item.target_course_id is not None:
+        if item.target_course_id == item.current_course_id:
+            return f"Verbleibt in {target_course_label}"
+        target_year_level = next(
+            (
+                course.year_level
+                for course in plan.available_courses
+                if course.course_id == item.target_course_id
+            ),
+            None,
+        )
+        if item.current_year_level is not None and target_year_level is not None:
+            if item.current_year_level == target_year_level:
+                return f"Kurswechsel innerhalb Stufe {target_year_level}"
+            return f"Wechsel {item.current_year_level} → {target_year_level}"
+        return target_course_label
+    return _TARGET_STATUS_LABELS[item.target_status]
 
 
 def _period_label(start_date: object, end_date: object) -> str:

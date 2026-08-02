@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+- Die Oberfläche des Schuljahreswechsels führt jetzt in zwei klar getrennten
+  Schritten durch Zuordnungsprüfung und verbindliche Aktivierung. Sie startet
+  ruhig bei den ungelösten Fällen, zeigt fünf kompakte Kennzahlen, blendet
+  weitere Filter und Sammelaktionen erst bei Bedarf ein und hält die
+  vollständige Kindliste über `Alle Kinder` erreichbar. Der Abschluss besitzt
+  eine eigene scrollbare Zusammenfassung; kleine Fenster ordnen Liste und
+  externen Detailbereich untereinander an. Die rein technische Kursstufe wird
+  nicht mehr als eigene Tabellenspalte wiederholt; Auswahlfelder entsprechen
+  der appweiten Feldlogik und öffnen ihre vorhandenen Optionen ausreichend
+  breit und hoch. Kursentscheidungen zeigen kompakte Kursnamen; nach einer
+  individuellen Wahl bleibt der konkrete Zielkurs statt einer technischen
+  Sammelbezeichnung sichtbar, ohne in der Optionsliste doppelt aufzutauchen.
+  Beim ungelösten Kurs-3-Fall bleibt für den aktuellen Kurs ausschließlich die
+  eindeutige Option `Verbleibt in <Kurs>` sichtbar.
+  Die Sammelauswahl steht als kompakter, mittiger Block in der Karte. Auch die
+  Zielstammgruppe zeigt den aktuellen Wert nur einmal und listet ausschließlich
+  andere Gruppennamen ohne technische Präfixe. Der Zielstatus nennt für jede
+  tatsächliche Stufenbewegung die konkrete Richtung, beispielsweise `1 → 3`
+  oder `3 → 2`. `Ausgeschieden` und `Ungelöst` stehen getrennt vom als
+  `Zielkurs` bezeichneten Kursauswahlfeld als sekundäre Aktionen bereit. Das
+  missverständliche Suchkürzel entfällt,
+  solange keine echte Textsuche Bestandteil des Dialogs ist. Plan-, Backup-,
+  Step-up-,
+  Maintenance-, Ausführungs- und Datenlogik bleiben unverändert.
+
 - Der Schuljahreswechsel-Dialog blockiert ab Start der Aktivierung jetzt alle
   Qt-Schließpfade einschließlich nativer Fenstersteuerung, `reject()`,
   `done()`, Escape und Shell-Schließen. Nach sicherem Fehler oder Erfolg wird

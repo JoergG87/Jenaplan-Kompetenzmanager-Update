@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QCoreApplication, QEvent, QEventLoop, QObject, QTimer, Signal
 from PySide6.QtGui import QCloseEvent
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QPushButton
 from shiboken6 import isValid
 
@@ -22,6 +23,7 @@ from src.application.school_year_transition_preview import (
     SchoolYearTransitionPreviewService,
 )
 from src.desktop_app.shell import AppShell
+from src.desktop_app.theme import MOTION_DIALOG_MS
 from src.security.application import AuthenticationResult
 from src.security.domain import AuthenticationStatus
 from tests.helpers.synthetic_v3 import create_pre_transition_v3_database
@@ -364,6 +366,15 @@ def test_preview_reopens_five_times_without_nested_exec_or_retained_dialogs(
             assert not dialog.activate_button.isEnabled()
             dialogs.append(dialog)
             dialog.reject()
+            if QApplication.platformName().casefold() not in {
+                "offscreen",
+                "minimal",
+            }:
+                for _attempt in range(40):
+                    if not isValid(dialog) or not dialog.isVisible():
+                        break
+                    QTest.qWait(max(25, MOTION_DIALOG_MS // 4))
+                    app.processEvents()
             QCoreApplication.sendPostedEvents(
                 None,
                 QEvent.Type.DeferredDelete,

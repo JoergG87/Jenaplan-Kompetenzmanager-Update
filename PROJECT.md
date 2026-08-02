@@ -116,6 +116,19 @@ Beginn und Ende des Zieljahres entgegen und öffnet nach der vorhandenen
 Preview-Validierung diesen Dialog mit einem Plan aus demselben
 `query_only`-Snapshot. Ungültige Jahresdaten bleiben neutral sichtbar.
 
+Die integrierte Oberfläche bündelt den unveränderten Funktionsumfang in zwei
+reinen Präsentationsschritten: `Zuordnungen prüfen` startet bei den ungelösten
+Fällen und hält alle Kinder über den Statusfilter erreichbar;
+`Prüfen und aktivieren` trennt Zusammenfassung, Prüfbestätigung, Passwort und
+finale Aktion räumlich vom Arbeitsbereich. Fünf kompakte Zähler bilden die
+Orientierung, weitere Filter sind einklappbar und Sammelaktionen nur bei einer
+sichtbaren Auswahl eingeblendet. Die read-only Tabelle und die persistenten
+externen Einzelentscheidungen erhalten den macOS-Accessibility-Lifecycle.
+Kleine Fenster verwenden einen vertikal scrollbar erreichbaren Arbeitsraum
+mit untereinander angeordneter Liste und Detailkarte. Diese Komposition fügt
+keine Plan-, ViewModel-, Persistenz-, Backup-, Step-up-, Maintenance- oder
+Ausführungslogik hinzu.
+
 SJ-3C.2 ergänzt die isolierte Qt-freie atomare Ausführungslogik auf
 temporären synthetischen Final-V3-Datenbanken. Der unveränderliche Plan trägt
 einen technischen Quellenfingerabdruck; sein kanonischer Plan-Hash enthält

@@ -54,7 +54,12 @@ UI-Bestätigung und Aktivierung. Unterjährige Mehrkindwechsel bleiben gesperrt.
 - [x] SJ-3C.6 ergänzt Zusammenfassung, Prüfcheckbox, Passwortfeld,
   ausdrückliche Zielaktion, Worker-/Schließsperre, neutrale Status- und
   Fehlerprojektion, Erfolgszahlen sowie App-Datenreload.
-- [ ] SJ-3C.6 auf realem macOS mit Tastatur und VoiceOver manuell abnehmen.
+- [x] Die Schuljahreswechsel-UI in die Präsentationsschritte
+  `Zuordnungen prüfen` und `Prüfen und aktivieren` gliedern, initial auf
+  ungelöste Fälle fokussieren, Detail- und Sammelaktionen bedarfsgerecht
+  zeigen und kleine Viewports vertikal scrollbar anordnen, ohne Fach- oder
+  Sicherheitslogik zu ändern.
+- [x] SJ-3C.6 auf realem macOS mit Tastatur und VoiceOver manuell abnehmen.
 
 ## V3-only Architecture Cleanup
 

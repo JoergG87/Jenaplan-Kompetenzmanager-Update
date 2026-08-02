@@ -71,8 +71,8 @@ Application-Planmodell:
 |---|---|---|---|
 | Kind für die spätere Qt-Abbildung | `student_id` plus `student_display_name` der Preview | Nein | ID bleibt Identität; fehlender V3-Datensatz liefert neutral `Name nicht verfügbar`; SJ-3B.2a ändert noch kein Qt-Mapping |
 | Ausgangsvorschlag | vorhandenes `SchoolYearTransitionPreviewItem` | Nein | Preview und ursprüngliche Issues bleiben unverändert |
-| Kursentscheidung | explizite aktive Kursoptionen | Nein | Vorschlag übernehmen, anderen vorhandenen Kurs wählen, Kurs 3 wiederholen oder ungelöst lassen; keine Automatik |
-| Stammgruppenentscheidung | explizite aktive Gruppenoptionen | Nein | Vorschlag bewusst behalten oder andere vorhandene Gruppe wählen |
+| Zielkurs | explizite aktive Kursoptionen | Nein | das Auswahlfeld verwendet ausschließlich kompakte Kursnamen sowie `Verbleibt in <Kurs>`; der aktuelle Zielkurs erscheint nur als gewählter Wert und nicht nochmals in der Optionsliste; `Ausgeschieden` und `Ungelöst` bleiben getrennte sekundäre Statusaktionen, technische Planaktion unsichtbar und unverändert, keine Automatik |
+| Zielstammgruppe | explizite aktive Gruppenoptionen | Nein | aktueller Zielwert erscheint nur im Feld; die Optionsliste zeigt ausschließlich andere vorhandene Gruppennamen ohne technische Präfixe |
 | ausgeschieden | bewusste Planentscheidung | Nein | besitzt weder Kurs- noch Gruppenanspruch; ist keine Archivierung |
 | bearbeitet / unverändert | flüchtiger Entscheidungszustand | Nein | jede Bearbeitung liefert eine neue Planinstanz |
 | Validierung und Zähler | aktueller flüchtiger Plan | Nein | deterministisch; keine Ausführungsfreigabe |
@@ -83,14 +83,16 @@ individuell bearbeitbar dar:
 | Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |
 |---|---|---|---|
 | Schülername und bisherige Zuordnung | kopierte Anzeige-Metadaten des jeweiligen `SchoolYearTransitionPlanItem` | Nein | Name statt technischer ID; `student_id` bleibt unsichtbare stabile Identität |
-| Zielstatus | aktueller `SchoolYearTransitionPlanItem.target_status` | Nein | Vorschlag übernehmen, anderer aktiver Kurs, Kurs 3 wiederholen, ausgeschieden oder bewusst ungelöst ausschließlich über Planmethoden |
+| Zielstatus | aktueller `SchoolYearTransitionPlanItem.target_status` plus kanonische Ausgangs- und Zielkursstufe des vorhandenen Plans | Nein | tatsächliche Stufenbewegung als `Wechsel <Ausgang> → <Ziel>`; identischer Kurs als `Verbleibt in <Kurs>`, anderer Kurs derselben Stufe als `Kurswechsel innerhalb Stufe <n>`; ausgeschieden und bewusst ungelöst bleiben textlich sichtbar, ausschließlich vorhandene Planmethoden |
 | Zielstammgruppe | kopierte bisherige Gruppen-ID plus aktuelle Zielgruppe und `SchoolYearTransitionPlan.available_groups` | Nein | eine weiterhin aktive bisherige Gruppe auch ohne automatischen Gruppenvorschlag bewusst unverändert lassen oder andere aktive Gruppe wählen; bei ausgeschieden leer |
 | Zielkurs | aktueller Zielkurs plus `SchoolYearTransitionPlan.available_courses` | Nein | keine Option außerhalb des Plans; bei ausgeschieden und ungelöst leer |
 | Warnungen und Blocker | ursprüngliche Preview-Issues plus aktuelle `SchoolYearTransitionPlanValidation` | Nein | ursprünglicher und aktueller Zustand textlich unterscheidbar; nie nur farblich |
 | Planstatus und Zähler | `SchoolYearTransitionPlan.validate()` | Nein | nach jeder neuen Planinstanz vollständig neu projizieren |
 | Auswahlfelder | darstellungsfertige ViewModel-Optionen | Nein | nur bewusste Aktivierung ändert den Plan; Öffnen und Wiederbefüllen bleiben folgenlos |
+| Präsentationsschritte `Zuordnungen prüfen` / `Prüfen und aktivieren` | flüchtiger Widgetzustand | Nein | reine Informationshierarchie; Schrittwechsel ändert weder Plan noch Ausführungsfreigabe und fügt keine Wizard-Domainlogik hinzu |
+| kompakte Kennzahlen | vorhandene `SchoolYearTransitionPlanCounts` | Nein | ausschließlich 1→2, 2→3, ungelöst, ausgeschieden und Stammgruppenänderungen; vollständige vorhandene Zusammenfassung bleibt im Abschluss erreichbar |
 | kombinierbare Filter | aktueller `SchoolYearTransitionPreviewViewModel` | Nein | alle, nur ungelöst, bisheriger Kurs, Zielkurs, bisherige Stammgruppe und Zielstammgruppe; Filterwechsel selektiert nichts und ändert den Plan nicht |
-| Zeilenauswahl und Auswahlzähler | stabile `student_id` im flüchtigen Dialogzustand | Nein | einzeln oder alle sichtbaren; Status zusätzlich als Checkboxtext und Accessible Name, nicht nur farblich; verdeckte Auswahl bleibt erhalten und sichtbar gezählt |
+| Zeilenauswahl und Auswahlzähler | stabile `student_id` im flüchtigen Dialogzustand | Nein | Startansicht ist `Nur ungelöst`, `Alle Kinder` erreicht jedes Planitem; einzeln oder alle sichtbaren auswählbar; Status zusätzlich als Checkboxtext und Accessible Name, nicht nur farblich; verdeckte Auswahl bleibt erhalten und sichtbar gezählt |
 | Sammel-Zielkurs / -Zielstammgruppe | ausgewählte sichtbare `student_id` plus ausschließlich aktive `SchoolYearTransitionPlan.available_courses` / `available_groups` | Nein | deaktiviert ohne sichtbare Auswahl; mehrere Kinder verlangen Bestätigung; jede Aktion erzeugt einen neuen Plan und lässt nicht ausgewählte oder verdeckte Kinder unverändert |
 | Sammel-ausgeschieden / -ungelöst | ausgewählte sichtbare `student_id` | Nein | ausgeschieden entfernt Zielkurs und Zielgruppe; ungelöst entfernt den Zielkurs; Kurs-3-Fälle werden ausschließlich durch bewusste Kurs-3-Auswahl gelöst |
 | Schließen | Dialogzustand | Nein | globale Aktionen bleiben Schließen plus Sammelbearbeitung; keine Ausführung, Speicherung, Backup oder Authentifizierung |

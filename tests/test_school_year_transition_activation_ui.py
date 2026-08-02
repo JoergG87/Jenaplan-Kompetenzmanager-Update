@@ -20,6 +20,7 @@ from src.desktop_app.school_year_transition_activation import (
     SchoolYearTransitionActivationErrorInfo,
     SchoolYearTransitionActivationWorker,
 )
+from src.desktop_app.theme import MOTION_DIALOG_MS
 from src.application.school_year_transition_step_up import (
     SchoolYearTransitionStepUpResult,
 )
@@ -103,6 +104,19 @@ def _running_dialog() -> tuple[
     return dialog, controller
 
 
+def _finish_native_close(
+    app: QApplication,
+    dialog: SchoolYearTransitionPreviewDialog,
+) -> None:
+    if QApplication.platformName().casefold() not in {"offscreen", "minimal"}:
+        for _attempt in range(40):
+            if not dialog.isVisible():
+                break
+            QTest.qWait(max(25, MOTION_DIALOG_MS // 4))
+            app.processEvents()
+    app.processEvents()
+
+
 def test_unresolved_plan_and_confirmation_inputs_gate_activation() -> None:
     app = QApplication.instance() or QApplication([])
     controller = StubActivationController()
@@ -164,14 +178,27 @@ def test_close_paths_are_allowed_before_activation() -> None:
         elif close_path == "done":
             dialog.done(QDialog.DialogCode.Rejected)
         elif close_path == "close":
-            assert dialog.close()
+            close_result = dialog.close()
+            if QApplication.platformName().casefold() in {
+                "offscreen",
+                "minimal",
+            }:
+                assert close_result
         elif close_path == "escape":
             QTest.keyClick(dialog, Qt.Key.Key_Escape)
         else:
             close_event = QCloseEvent()
             dialog.closeEvent(close_event)
-            assert close_event.isAccepted()
+            if QApplication.platformName().casefold() in {
+                "offscreen",
+                "minimal",
+            }:
+                assert close_event.isAccepted()
+            else:
+                _finish_native_close(app, dialog)
+                assert not dialog.isVisible()
         if close_path != "native":
+            _finish_native_close(app, dialog)
             assert not dialog.isVisible()
     app.processEvents()
 
@@ -201,13 +228,17 @@ def test_safe_failure_and_success_release_close_but_recovery_does_not() -> None:
     safe_controller.progress.emit("backup_creating")
     safe_controller.fail("transition_backup_failed")
     assert not safe_failure.close_blocked
-    assert safe_failure.close()
+    safe_failure.close()
+    _finish_native_close(app, safe_failure)
+    assert not safe_failure.isVisible()
 
     success, success_controller = _running_dialog()
     success_controller.progress.emit("school_year_activating")
     success_controller.complete(_result())
     assert not success.close_blocked
-    assert success.close()
+    success.close()
+    _finish_native_close(app, success)
+    assert not success.isVisible()
 
     recovery, recovery_controller = _running_dialog()
     recovery_controller.progress.emit("completion_checking")

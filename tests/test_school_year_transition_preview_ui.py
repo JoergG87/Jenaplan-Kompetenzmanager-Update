@@ -24,7 +24,6 @@ from PySide6.QtWidgets import (
 from shiboken6 import isValid
 
 from src.application.school_year_transition_plan import (
-    SchoolYearTransitionCourseDecision,
     SchoolYearTransitionGroupDecision,
     SchoolYearTransitionPlan,
     SchoolYearTransitionPlanTargetStatus,
@@ -53,10 +52,7 @@ from src.desktop_app.dialogs.school_year_transition_preview_dialog import (
     SchoolYearTransitionPreviewDialog,
 )
 from src.desktop_app.view_models.school_year_transition_preview_view_model import (
-    ACCEPT_PROPOSAL,
     KEEP_CURRENT_GROUP,
-    LEAVE_UNRESOLVED,
-    MARK_EXITED,
     REPEAT_YEAR_LEVEL_THREE,
     SELECT_OTHER_COURSE,
     SELECT_OTHER_GROUP,
@@ -170,6 +166,10 @@ def _row(dialog: SchoolYearTransitionPreviewDialog, student_id: str) -> int:
     )
 
 
+def _show_all(dialog: SchoolYearTransitionPreviewDialog) -> None:
+    _set_combo_data(dialog.unresolved_filter, False)
+
+
 def _combo(
     dialog: SchoolYearTransitionPreviewDialog,
     student_id: str,
@@ -205,7 +205,12 @@ def _select(
     dialog: SchoolYearTransitionPreviewDialog,
     student_id: str,
 ) -> None:
-    item = dialog.table.item(_row(dialog, student_id), 0)
+    try:
+        row = _row(dialog, student_id)
+    except StopIteration:
+        _show_all(dialog)
+        row = _row(dialog, student_id)
+    item = dialog.table.item(row, 0)
     item.setCheckState(Qt.CheckState.Checked)
 
 
@@ -228,6 +233,7 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
 
     def test_student_name_is_visible_instead_of_student_id(self) -> None:
         dialog = SchoolYearTransitionPreviewDialog(_plan())
+        _show_all(dialog)
 
         first_row = _row(dialog, "S-1")
         self.assertEqual(dialog.table.item(first_row, 1).text(), "Test S-1")
@@ -237,19 +243,20 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
             "S-1",
         )
 
-    def test_proposal_and_alternative_course_create_new_plans(self) -> None:
+    def test_table_does_not_repeat_the_internal_course_year_level(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+
+        headers = tuple(
+            dialog.table.horizontalHeaderItem(column).text()
+            for column in range(dialog.table.columnCount())
+        )
+
+        self.assertNotIn("Bisherige Kursstufe", headers)
+        self.assertEqual(dialog.table.columnCount(), 8)
+
+    def test_alternative_course_creates_a_new_plan(self) -> None:
         dialog = SchoolYearTransitionPreviewDialog(_plan())
         initial_plan = dialog.plan
-
-        _choose(_combo(dialog, "S-1", 4), ACCEPT_PROPOSAL)
-        accepted_plan = dialog.plan
-        accepted = _plan_item(accepted_plan, "S-1")
-        self.assertIsNot(accepted_plan, initial_plan)
-        self.assertEqual(accepted.target_course_name, "Kurs 2")
-        self.assertIs(
-            accepted.course_decision,
-            SchoolYearTransitionCourseDecision.ACCEPT_PROPOSAL,
-        )
 
         _choose(
             _combo(dialog, "S-1", 4),
@@ -257,11 +264,102 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
             "C-2-B",
         )
         changed = _plan_item(dialog.plan, "S-1")
-        self.assertIsNot(dialog.plan, accepted_plan)
+        self.assertIsNot(dialog.plan, initial_plan)
         self.assertEqual(changed.target_course_name, "Kurs 2B")
         self.assertIs(
             changed.target_status,
             SchoolYearTransitionPlanTargetStatus.OTHER_COURSE,
+        )
+        self.assertEqual(
+            dialog.individual_course_combo.currentText(),
+            "Kurs 2B",
+        )
+
+    def test_target_status_names_the_exact_year_level_change(self) -> None:
+        initial_dialog = SchoolYearTransitionPreviewDialog(_plan())
+        _show_all(initial_dialog)
+        self.assertEqual(
+            initial_dialog.table.item(_row(initial_dialog, "S-1"), 4).text(),
+            "Wechsel 1 → 2",
+        )
+        self.assertEqual(
+            initial_dialog.table.item(_row(initial_dialog, "S-2"), 4).text(),
+            "Wechsel 2 → 3",
+        )
+
+        for student_id, course_id, expected in (
+            ("S-1", "C-3", "Wechsel 1 → 3"),
+            ("S-2", "C-1", "Wechsel 2 → 1"),
+            ("S-3", "C-1", "Wechsel 3 → 1"),
+            ("S-3", "C-2", "Wechsel 3 → 2"),
+        ):
+            with self.subTest(student_id=student_id, course_id=course_id):
+                dialog = SchoolYearTransitionPreviewDialog(_plan())
+                _choose(
+                    _combo(dialog, student_id, 4),
+                    SELECT_OTHER_COURSE,
+                    course_id,
+                )
+                _show_all(dialog)
+                self.assertEqual(
+                    dialog.table.item(_row(dialog, student_id), 4).text(),
+                    expected,
+                )
+
+    def test_same_level_course_result_is_described_without_other_course(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+
+        _choose(
+            _combo(dialog, "S-2", 4),
+            SELECT_OTHER_COURSE,
+            "C-2-B",
+        )
+        _show_all(dialog)
+
+        self.assertEqual(
+            dialog.table.item(_row(dialog, "S-2"), 4).text(),
+            "Kurswechsel innerhalb Stufe 2",
+        )
+
+    def test_course_choices_use_compact_course_and_status_labels(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+
+        course_combo = _combo(dialog, "S-1", 4)
+        self.assertEqual(course_combo.currentText(), "Kurs 2")
+        self.assertEqual(
+            {
+                course_combo.itemText(index)
+                for index in range(1, course_combo.count())
+            },
+            {
+                "Kurs 1",
+                "Kurs 2B",
+                "Kurs 3",
+            },
+        )
+        self.assertIn("Zielkurs", course_combo.accessibleName())
+        self.assertNotIn(
+            course_combo.currentText(),
+            {
+                course_combo.itemText(index)
+                for index in range(1, course_combo.count())
+            },
+        )
+        self.assertEqual(dialog.individual_exited_button.text(), "Ausgeschieden")
+        self.assertEqual(dialog.individual_unresolved_button.text(), "Ungelöst")
+        course_three_combo = _combo(dialog, "S-3", 4)
+        course_three_labels = tuple(
+            course_three_combo.itemText(index)
+            for index in range(course_three_combo.count())
+        )
+        self.assertIn("Verbleibt in Kurs 3", course_three_labels)
+        self.assertNotIn("Kurs 3", course_three_labels)
+        self.assertFalse(
+            any(
+                course_three_combo.itemData(index)
+                == (SELECT_OTHER_COURSE, "C-3")
+                for index in range(course_three_combo.count())
+            )
         )
 
     def test_course_three_repeat_is_a_conscious_selection(self) -> None:
@@ -285,6 +383,11 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
         self.assertEqual(
             dialog.summary_labels["Kurs 3 wiederholen"].text(),
             "1",
+        )
+        _show_all(dialog)
+        self.assertEqual(
+            dialog.table.item(_row(dialog, "S-3"), 4).text(),
+            "Verbleibt in Kurs 3",
         )
 
     def test_course_three_editor_remains_stable_during_refresh(self) -> None:
@@ -313,18 +416,21 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
             "1",
         )
 
-    def test_group_can_be_kept_or_changed_individually(self) -> None:
+    def test_current_target_group_is_not_repeated_in_group_choices(self) -> None:
         dialog = SchoolYearTransitionPreviewDialog(_plan())
 
-        _choose(_combo(dialog, "S-1", 5), KEEP_CURRENT_GROUP)
-        kept = _plan_item(dialog.plan, "S-1")
-        self.assertIs(
-            kept.group_decision,
-            SchoolYearTransitionGroupDecision.KEEP_CURRENT_GROUP,
+        group_combo = _combo(dialog, "S-1", 5)
+        self.assertEqual(group_combo.currentText(), "Gruppe A")
+        self.assertEqual(
+            tuple(
+                group_combo.itemText(index)
+                for index in range(1, group_combo.count())
+            ),
+            ("Gruppe B",),
         )
 
         _choose(
-            _combo(dialog, "S-1", 5),
+            group_combo,
             SELECT_OTHER_GROUP,
             "G-B",
         )
@@ -333,6 +439,14 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
         self.assertIs(
             changed.group_decision,
             SchoolYearTransitionGroupDecision.SELECT_OTHER_GROUP,
+        )
+        self.assertEqual(dialog.individual_group_combo.currentText(), "Gruppe B")
+        self.assertNotIn(
+            "Gruppe B",
+            {
+                dialog.individual_group_combo.itemText(index)
+                for index in range(1, dialog.individual_group_combo.count())
+            },
         )
 
     def test_current_group_can_be_kept_when_current_course_is_invalid(
@@ -371,8 +485,10 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
 
     def test_exited_has_no_target_course_or_group(self) -> None:
         dialog = SchoolYearTransitionPreviewDialog(_plan())
+        _show_all(dialog)
 
-        _choose(_combo(dialog, "S-2", 4), MARK_EXITED)
+        _set_combo_data(dialog.individual_student_combo, "S-2")
+        dialog.individual_exited_button.click()
         row = _row(dialog, "S-2")
         exited = _plan_item(dialog.plan, "S-2")
 
@@ -382,24 +498,26 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
         )
         self.assertIsNone(exited.target_group_id)
         self.assertIsNone(exited.target_course_id)
+        self.assertEqual(dialog.table.item(row, 5).text(), "—")
         self.assertEqual(dialog.table.item(row, 6).text(), "—")
-        self.assertEqual(dialog.table.item(row, 7).text(), "—")
-        self.assertIsNone(dialog.table.cellWidget(row, 6))
+        self.assertIsNone(dialog.table.cellWidget(row, 5))
         self.assertFalse(
-            bool(dialog.table.item(row, 6).flags() & Qt.ItemFlag.ItemIsEditable)
+            bool(dialog.table.item(row, 5).flags() & Qt.ItemFlag.ItemIsEditable)
         )
         self.assertEqual(dialog.summary_labels["Ausgeschieden"].text(), "1")
 
     def test_consciously_unresolved_remains_textually_blocking(self) -> None:
         dialog = SchoolYearTransitionPreviewDialog(_plan())
+        _show_all(dialog)
 
-        _choose(_combo(dialog, "S-1", 4), LEAVE_UNRESOLVED)
+        _set_combo_data(dialog.individual_student_combo, "S-1")
+        dialog.individual_unresolved_button.click()
         row = _row(dialog, "S-1")
 
-        self.assertEqual(dialog.table.item(row, 5).text(), "Ungelöst")
+        self.assertEqual(dialog.table.item(row, 4).text(), "Ungelöst")
         self.assertIn(
             "bewusst ungelöst",
-            dialog.table.item(row, 8).text(),
+            dialog.table.item(row, 7).text(),
         )
         self.assertIn(
             "Entscheidungen erforderlich",
@@ -432,7 +550,12 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
 
     def test_filters_work_individually_and_in_combination(self) -> None:
         dialog = SchoolYearTransitionPreviewDialog(_plan())
-        self.assertEqual(dialog.table.rowCount(), 3)
+        self.assertIs(dialog.unresolved_filter.currentData(), True)
+        self.assertEqual(dialog.table.rowCount(), 1)
+        self.assertEqual(
+            dialog.table.item(0, 0).data(Qt.ItemDataRole.UserRole),
+            "S-3",
+        )
 
         _set_combo_data(dialog.unresolved_filter, True)
         self.assertEqual(dialog.table.rowCount(), 1)
@@ -484,6 +607,83 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
         )
         dialog.reset_filters_button.click()
         self.assertEqual(dialog.table.rowCount(), 3)
+
+    def test_workflow_starts_calm_and_focused_on_open_cases(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+        original_plan = dialog.plan
+
+        self.assertEqual(dialog.workflow_tabs.count(), 2)
+        self.assertEqual(dialog.workflow_tabs.currentIndex(), 0)
+        self.assertIn("Zuordnungen prüfen", dialog.workflow_tabs.tabText(0))
+        self.assertIn("noch 1 offen", dialog.workflow_tabs.tabText(1))
+        self.assertIs(dialog.unresolved_filter.currentData(), True)
+        self.assertEqual(dialog.table.rowCount(), 1)
+        self.assertEqual(dialog.individual_student_combo.currentData(), "S-3")
+        self.assertFalse(dialog.advanced_filters_widget.isVisible())
+        self.assertFalse(dialog.bulk_actions_panel.isVisible())
+        self.assertEqual(
+            dialog.visible_count_label.text(),
+            "1 von 3 Kindern sichtbar · 1 ungelöst",
+        )
+
+        dialog.workflow_tabs.setCurrentIndex(1)
+
+        self.assertIs(dialog.plan, original_plan)
+        self.assertIs(
+            dialog.workflow_tabs.currentWidget(),
+            dialog.activation_page,
+        )
+        self.assertFalse(dialog.confirmation_checkbox.isChecked())
+        dialog.workflow_tabs.setCurrentIndex(0)
+
+        _show_all(dialog)
+
+        self.assertEqual(dialog.table.rowCount(), len(dialog.plan.items))
+        self.assertEqual(
+            {
+                dialog.table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+                for row in range(dialog.table.rowCount())
+            },
+            {item.student_id for item in dialog.plan.items},
+        )
+
+    def test_bulk_actions_appear_only_for_a_visible_selection(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+        self.assertTrue(dialog.bulk_actions_panel.isHidden())
+
+        _select(dialog, "S-1")
+
+        self.assertFalse(dialog.bulk_actions_panel.isHidden())
+        self.assertTrue(dialog.bulk_course_button.isEnabled())
+        self.assertEqual(dialog.bulk_course_combo.maximumWidth(), 440)
+        self.assertEqual(dialog.bulk_group_combo.maximumWidth(), 440)
+        self.assertEqual(dialog.bulk_actions_grid.columnStretch(0), 1)
+        self.assertEqual(dialog.bulk_actions_grid.columnStretch(3), 1)
+        dialog.clear_selection_button.click()
+        self.assertTrue(dialog.bulk_actions_panel.isHidden())
+
+    def test_escape_clears_the_active_filter_before_closing(self) -> None:
+        dialog = SchoolYearTransitionPreviewDialog(_plan())
+        dialog.show()
+        self.app.processEvents()
+
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+
+        self.assertTrue(dialog.isVisible())
+        self.assertIs(dialog.unresolved_filter.currentData(), False)
+        self.assertEqual(dialog.table.rowCount(), len(dialog.plan.items))
+
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        if QApplication.platformName().casefold() not in {
+            "offscreen",
+            "minimal",
+        }:
+            for _attempt in range(40):
+                if not dialog.isVisible():
+                    break
+                QTest.qWait(50)
+                self.app.processEvents()
+        self.assertFalse(dialog.isVisible())
 
     def test_individual_and_all_visible_selection_are_explicit(self) -> None:
         dialog = SchoolYearTransitionPreviewDialog(_plan())
@@ -560,7 +760,10 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
             SchoolYearTransitionPlanTargetStatus.OTHER_COURSE,
         )
         self.assertEqual(_plan_item(dialog.plan, "S-2"), unchanged_s2)
-        self.assertEqual(dialog.summary_labels["Anderer Kurs"].text(), "1")
+        self.assertEqual(
+            dialog.summary_labels["Individuelle Kurswahl"].text(),
+            "1",
+        )
         self.assertEqual(
             dialog.summary_labels["Individuell bearbeitet"].text(),
             "1",
@@ -716,11 +919,30 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
 
     def test_keyboard_accessibility_and_dropdown_opening_are_safe(self) -> None:
         dialog = SchoolYearTransitionPreviewDialog(_plan())
+        _show_all(dialog)
         dialog.show()
         self.app.processEvents()
 
         course_combo = _combo(dialog, "S-1", 4)
         original_plan = dialog.plan
+        for combo in (
+            dialog.unresolved_filter,
+            dialog.bulk_course_combo,
+            dialog.bulk_group_combo,
+            course_combo,
+        ):
+            self.assertEqual(
+                combo.maxVisibleItems(),
+                min(combo.count(), 18),
+            )
+            self.assertGreaterEqual(
+                combo.view().minimumHeight(),
+                combo.maxVisibleItems() * 28,
+            )
+            self.assertGreaterEqual(
+                combo.view().minimumWidth(),
+                combo.sizeHint().width(),
+            )
         course_combo.showPopup()
         self.app.processEvents()
         course_combo.hidePopup()
@@ -730,11 +952,11 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
 
         self.assertEqual(
             dialog.accessibleName(),
-            "Schuljahreswechsel-Vorschau bearbeiten",
+            "Schuljahreswechsel bearbeiten",
         )
         self.assertEqual(
             dialog.table.accessibleName(),
-            "Flüchtiger Plan je Kind",
+            "Kindliste für den Schuljahreswechsel",
         )
         self.assertTrue(dialog.status_message.accessibleName())
         self.assertTrue(dialog.selected_count_label.accessibleName())
@@ -769,6 +991,12 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
             )
 
         dialog.activateWindow()
+        dialog.table.setFocus(Qt.FocusReason.TabFocusReason)
+        self.app.processEvents()
+        QTest.keyClick(dialog, Qt.Key.Key_F, Qt.KeyboardModifier.ControlModifier)
+        self.app.processEvents()
+        self.assertIs(QApplication.focusWidget(), dialog.table)
+
         course_combo.setFocus(Qt.FocusReason.TabFocusReason)
         self.app.processEvents()
         self.assertIs(QApplication.focusWidget(), course_combo)
@@ -778,6 +1006,10 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
 
         row = _row(dialog, "S-1")
         dialog.table.setCurrentCell(row, 0)
+        dialog.table.setFocus(Qt.FocusReason.TabFocusReason)
+        QTest.keyClick(dialog.table, Qt.Key.Key_Return)
+        self.app.processEvents()
+        self.assertIs(QApplication.focusWidget(), course_combo)
         dialog.table.setFocus(Qt.FocusReason.TabFocusReason)
         QTest.keyClick(dialog.table, Qt.Key.Key_Space)
         self.app.processEvents()
@@ -808,6 +1040,15 @@ class SchoolYearTransitionPreviewUiTests(unittest.TestCase):
         dialog.show()
         self.app.processEvents()
 
+        self.assertIs(
+            dialog.work_splitter.orientation(),
+            Qt.Orientation.Vertical,
+        )
+        self.assertGreater(
+            dialog.work_scroll.verticalScrollBar().maximum(),
+            0,
+        )
+        self.assertFalse(dialog.dialog_header.description_label.isVisible())
         self.assertGreater(dialog.table.horizontalScrollBar().maximum(), 0)
         self.assertGreater(dialog.table.verticalScrollBar().maximum(), 0)
         self.assertTrue(dialog.table.horizontalScrollBar().isVisible())
