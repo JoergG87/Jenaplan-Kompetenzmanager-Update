@@ -217,6 +217,17 @@ QFrame#AppCard[selected="true"], QFrame[cardVariant][selected="true"] {{
     background-color: #EEF5FF;
     border: 2px solid {COLOR_BLUE};
 }}
+QFrame#AppCard[cardVariant][selected="true"]:focus,
+QFrame[cardVariant][selected="true"]:focus {{
+    background-color: #EEF5FF;
+    border: 2px solid {COLOR_FOCUS};
+    border-left-color: {COLOR_BLUE};
+}}
+QFrame#AppCard[cardVariant][selected="true"]:disabled,
+QFrame[cardVariant][selected="true"]:disabled {{
+    background-color: #F3F6F8;
+    border: 2px solid #E2E8ED;
+}}
 QFrame#AppPanel {{
     background-color: {COLOR_GLASS_SOFT};
     border: 1px solid {COLOR_BORDER};
@@ -1050,6 +1061,17 @@ QFrame#ObservationCatalogCompetencyTile[selected="true"],
 QFrame#ObservationRecentCompetencyChip[selected="true"] {{
     background-color: #F2F7FA;
     border-color: #D9E5EC;
+}}
+QFrame#ObservationCatalogCompetencyTile[selected="true"]:focus,
+QFrame#ObservationRecentCompetencyChip[selected="true"]:focus {{
+    background-color: #EEF5FF;
+    border: 2px solid {COLOR_FOCUS};
+    border-left-color: {COLOR_BLUE};
+}}
+QFrame#ObservationCatalogCompetencyTile[selected="true"]:disabled,
+QFrame#ObservationRecentCompetencyChip[selected="true"]:disabled {{
+    background-color: #F3F6F8;
+    border: 2px solid #E2E8ED;
 }}
 QFrame#ObservationRecentCompetencyChip {{ border-radius: 12px; }}
 QLabel#ObservationHistoricalBadge {{

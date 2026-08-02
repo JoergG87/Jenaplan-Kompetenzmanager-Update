@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Ausgewählte interaktive Karten behalten ihren blauen Auswahlzustand und
+  zeigen den Tastaturfokus zugleich mit dem zentralen teal Fokusrahmen.
+  Hover, gedrückter und deaktivierter Zustand verdecken den Fokus nicht
+  dauerhaft; Bedienlogik, Accessibility, Layout und Daten bleiben unverändert.
+
 - Im Dashboard öffnet der große, per Maus, Enter und Leertaste bedienbare
   Hauptbereich eines passenden Kindes jetzt dessen Schülerprofil über die
   stabile `student_id`. Der getrennte Button `Beobachten` behält unverändert
