@@ -1743,11 +1743,13 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentCompetencyCockpitTopicViewModel`
 - `build_student_competency_cockpit(statuses)`
 - `StudentProfileDashboardViewModel`
+- `StudentProfileProjectionBundle`
 - `StudentProfileOrientationChangeViewModel`
 - `StudentProfileOrientationEventViewModel`
 - `StudentProfileUndocumentedSubjectViewModel`
 - `build_student_profile_dashboard(statuses, documentation_statuses, as_of)`
 - `StudentDesktopAdapter.student_profile_dashboard_for_student(student_id, as_of)`
+- `StudentDesktopAdapter.student_profile_projection_bundle(student_id)`
 - `StudentDocumentationLearningAreaStatus`
 - `SettingsScreen`
 - `SettingsScreen.documentation_subjects_save_requested`
@@ -3021,11 +3023,14 @@ abgelehnt; kleine und administrative Dialoge verwenden den Default `neutral`.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
-| `StudentDocumentationProjectionBatch` | Unveränderlicher, refresh-lokaler Read-Batch aus aktiven Schülern, Gruppen, Kursen, Katalog, Fachauswahl, aktiven Beobachtungen samt Kompetenz-Snapshots, Bestätigungen und technischer Frische; keine neue Datenquelle und kein globaler Cache | Core Persistence / Desktop Adapter |
+| `StudentDocumentationProjectionBatch` | Unveränderlicher, refresh-lokaler Read-Batch aus aktiven Schülern, Gruppen, Kursen, Katalog, Fachauswahl, aktiven Beobachtungen samt Kompetenz-Snapshots, Dokumentmetadaten, Bestätigungen und technischer Frische; keine neue Datenquelle und kein globaler Cache | Core Persistence / Desktop Adapter |
 | `SQLiteStudentDocumentationProjectionRepository` | Eng zugeschnittener transaktionskonsistenter SQLite-Read für Schülerliste und Dokumentations-Heatmap; lädt jede benötigte Tabelle höchstens einmal je Refresh und führt weder DDL noch Schemainitialisierung aus | Core Persistence |
 | `project_competency_freshness` | Gemeinsame Qt-freie Faltung bereits geladener Persistenzereignisse in denselben kanonischen Bestätigungsfrischezustand wie der schülerbezogene Einzelread | Core Persistence |
 | `StudentDesktopAdapter.dashboard_documentation_refresh` | Adapterprojektion, die Heatmap und stundenbezogene Kindvorschläge aus genau demselben refresh-lokalen Batch erzeugt | Desktop Adapter |
+| `StudentProfileProjectionBundle` | Unveränderliche, nur für genau eine Profilnavigation lebende Komposition der bestehenden Profilprojektionen aus einem gemeinsamen Read-Snapshot; kein globaler oder dauerhafter Cache | Desktop ViewModel / Adapter |
+| `StudentDesktopAdapter.student_profile_projection_bundle` | Adaptergrenze, die Profilkopf, Beobachtungen samt Ratings und Belegen, Kompetenzübersicht, Dokumentationsstatus, Dokumente, Cockpit und Profil-Dashboard aus genau einem frischen Batch zusammensetzt | Desktop Adapter |
 
 Diese Namen ändern weder Datenmodell noch Statusregeln. Der Batch lebt nur für
-einen Adapteraufruf; Profil, Bericht und LEG behalten ihre bestehenden
-Einzelprojektionen.
+einen Adapteraufruf. Schülerprofil, Schülerliste und Dashboard dürfen ihn
+jeweils request-lokal als gemeinsame Projektionsbasis verwenden; Bericht und
+LEG behalten ihre getrennten zeitraumbezogenen Reads.

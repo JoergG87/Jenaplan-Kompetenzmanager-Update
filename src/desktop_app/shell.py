@@ -1586,13 +1586,7 @@ class AppShell(QMainWindow):
             and self._active_learning_report_revision_student_id != student_id
         ):
             active_revision.reject()
-        profile = self.adapter.get_student_profile(student_id)
-        observations = self.adapter.list_observations_for_student(student_id)
-        competency_groups = self.adapter.list_competency_overview_for_student(student_id)
-        documentation_statuses = self.adapter.list_documentation_status_for_student(student_id)
-        documents = self.adapter.list_documents_for_student(student_id)
-        competency_cockpit = self.adapter.competency_cockpit_for_student(student_id)
-        profile_dashboard = self.adapter.student_profile_dashboard_for_student(
+        profile_projection = self.adapter.student_profile_projection_bundle(
             student_id
         )
         report_overview = self.adapter.report_overview_for_student(
@@ -1608,14 +1602,14 @@ class AppShell(QMainWindow):
             ),
         )
         self.student_profile_screen.set_student(
-            profile,
-            observations,
-            competency_groups,
+            profile_projection.student,
+            profile_projection.observations,
+            profile_projection.competency_groups,
             None,
-            documentation_statuses,
-            documents,
-            competency_cockpit,
-            profile_dashboard,
+            profile_projection.documentation_statuses,
+            profile_projection.documents,
+            profile_projection.competency_cockpit,
+            profile_projection.profile_dashboard,
             report_overview,
         )
         self._show_screen("profile")

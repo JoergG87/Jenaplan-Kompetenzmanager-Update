@@ -5,8 +5,11 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Callable
 from contextlib import closing
+from dataclasses import FrozenInstanceError
 from datetime import date, datetime
 from pathlib import Path
+
+import pytest
 
 from src.core.database_engine import SQLiteConnectionProvider
 from src.core.persistence_events import (
@@ -202,6 +205,84 @@ def _insert_historical_unknown_state(
             )
 
 
+def _insert_profile_observations(
+    database: SQLiteDatabase,
+    *,
+    student_id: str,
+    count: int,
+    prefix: str = "OBS-PROFILE",
+) -> None:
+    timestamp = "2026-06-01T08:00:00+00:00"
+    with closing(database.connect()) as connection:
+        with connection:
+            connection.executemany(
+                """
+                INSERT INTO observations (
+                    observation_id,
+                    student_id,
+                    date,
+                    subject_id,
+                    context,
+                    note,
+                    active,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, '2026-06-01', 'deutsch', 'Lesezeit',
+                        'Synthetischer Profilbestand', 1, ?, ?)
+                """,
+                (
+                    (f"{prefix}-{index:04d}", student_id, timestamp, timestamp)
+                    for index in range(count)
+                ),
+            )
+            connection.executemany(
+                """
+                INSERT INTO observation_competency_ratings (
+                    observation_id,
+                    competency_id,
+                    subject_id,
+                    subject_display_name,
+                    learning_area,
+                    competency_group,
+                    competency_text,
+                    rating
+                )
+                VALUES (?, 'CMP-000241', 'deutsch', 'Deutsch',
+                        'Leseverstehen', 'Lesen', 'Texte verstehen', '+')
+                """,
+                ((f"{prefix}-{index:04d}",) for index in range(count)),
+            )
+            connection.executemany(
+                """
+                INSERT INTO documents (
+                    document_id,
+                    student_id,
+                    observation_id,
+                    title,
+                    document_type,
+                    file_path,
+                    original_filename,
+                    created_at,
+                    note,
+                    active
+                )
+                VALUES (?, ?, ?, ?, 'Sonstiges', ?, 'beleg.txt', ?, '', 1)
+                """,
+                (
+                    (
+                        f"DOC-{prefix}-{index:04d}",
+                        student_id,
+                        f"{prefix}-{index:04d}",
+                        f"Beleg {index}",
+                        "/private/tmp/synthetic-profile.txt",
+                        timestamp,
+                    )
+                    for index in range(0, count, 3)
+                ),
+            )
+
+
 def _batch_statuses_for_student(
     adapter: StudentDesktopAdapter,
     student_id: str,
@@ -308,6 +389,125 @@ def test_batch_matches_canonical_status_and_student_summary(tmp_path: Path) -> N
         adapter.dashboard_documentation_heatmap()
         == _canonical_heatmap_per_student(adapter)
     )
+
+
+def test_profile_bundle_matches_existing_projections_with_constant_query_budget(
+    tmp_path: Path,
+) -> None:
+    provider = CountingConnectionProvider()
+    database = _database_with_catalog(
+        tmp_path / "profile-bundle.sqlite",
+        provider=provider,
+    )
+    student_id = seed_reference_data().students[0].student_id
+    _insert_profile_observations(
+        database,
+        student_id=student_id,
+        count=1,
+    )
+    adapter = StudentDesktopAdapter(
+        database=database,
+        today_provider=lambda: AS_OF,
+    )
+
+    expected = (
+        adapter.get_student_profile(student_id),
+        adapter.list_observations_for_student(student_id),
+        adapter.list_competency_overview_for_student(student_id),
+        adapter.list_documentation_status_for_student(student_id),
+        adapter.list_documents_for_student(student_id),
+        adapter.competency_cockpit_for_student(student_id),
+        adapter.student_profile_dashboard_for_student(
+            student_id,
+            as_of=AS_OF,
+        ),
+    )
+    one_observation_budget = _count_statements(
+        provider,
+        lambda: adapter.student_profile_projection_bundle(student_id),
+    )
+    bundle = adapter.student_profile_projection_bundle(student_id)
+
+    assert (
+        bundle.student,
+        bundle.observations,
+        bundle.competency_groups,
+        bundle.documentation_statuses,
+        bundle.documents,
+        bundle.competency_cockpit,
+        bundle.profile_dashboard,
+    ) == expected
+    assert len(bundle.observations[0].competency_ratings) == 1
+    assert len(bundle.observations[0].attachments) == 1
+
+    _insert_profile_observations(
+        database,
+        student_id=student_id,
+        count=39,
+        prefix="OBS-PROFILE-MORE",
+    )
+    loaded_budget = _count_statements(
+        provider,
+        lambda: adapter.student_profile_projection_bundle(student_id),
+    )
+
+    assert loaded_budget[:2] == one_observation_budget[:2]
+    assert loaded_budget[0] <= 18
+    assert loaded_budget[1] <= 16
+    assert not any(
+        token in statement.upper()
+        for statement in loaded_budget[2]
+        for token in ("CREATE TABLE", "ALTER TABLE", "DROP TABLE")
+    )
+
+
+def test_profile_bundle_is_fresh_id_stable_and_does_not_mutate_prior_projection(
+    tmp_path: Path,
+) -> None:
+    database = _database_with_catalog(tmp_path / "profile-freshness.sqlite")
+    first_id, second_id = (
+        student.student_id for student in seed_reference_data().students[:2]
+    )
+    with closing(database.connect()) as connection:
+        with connection:
+            connection.execute(
+                "UPDATE students SET first_name = 'Alex', last_name = 'Kind' "
+                "WHERE student_id IN (?, ?)",
+                (first_id, second_id),
+            )
+    _insert_profile_observations(
+        database,
+        student_id=first_id,
+        count=1,
+        prefix="OBS-FIRST",
+    )
+    adapter = StudentDesktopAdapter(
+        database=database,
+        today_provider=lambda: AS_OF,
+    )
+
+    first = adapter.student_profile_projection_bundle(first_id)
+    second = adapter.student_profile_projection_bundle(second_id)
+    _insert_profile_observations(
+        database,
+        student_id=first_id,
+        count=1,
+        prefix="OBS-FIRST-NEW",
+    )
+    refreshed = adapter.student_profile_projection_bundle(first_id)
+
+    assert first.student is not None
+    assert second.student is not None
+    assert refreshed.student is not None
+    assert first.student.display_name == second.student.display_name == "Alex Kind"
+    assert first.student.student_id == first_id
+    assert second.student.student_id == second_id
+    assert len(first.observations) == 1
+    assert len(second.observations) == 0
+    assert len(refreshed.observations) == 2
+    assert len(first.observations) == 1
+    with pytest.raises(FrozenInstanceError):
+        first.student.display_name = "Mutation nicht erlaubt"
 
 
 def _count_statements(

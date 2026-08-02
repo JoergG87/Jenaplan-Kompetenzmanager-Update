@@ -636,6 +636,17 @@ Der Batch wird nach dem Refresh verworfen. Er schreibt nichts, initialisiert
 kein Schema, legt keinen globalen Cache an und veraendert weder Gate-Off-
 Semantik noch Transaktions-, Backup-, Restore-, Bericht- oder LEG-Prozesse.
 
+Beim Öffnen oder Wechseln eines Schülerprofils verwendet der Desktop-Adapter
+denselben kurzlebigen Snapshot zusätzlich für genau dieses Kind. Profilkopf,
+aktuelle Final-V3-Zuordnung, Beobachtungen samt Ratings, Dokumentmetadaten,
+Kompetenzstatus, Dokumentationsstatus, Kompetenz-Cockpit und Profil-Dashboard
+werden daraus ohne weitere Reads derselben Quellen zusammengesetzt. Die
+Dokumentmetadaten werden einmal im Snapshot geladen und sowohl der
+Beobachtungsliste als auch dem Dokumentbereich zugeordnet. Nach `set_student`
+wird die Komposition verworfen; jede spätere Profilnavigation liest neu.
+Bericht und LEG bleiben wegen ihrer eigenen expliziten Zeiträume außerhalb
+dieses Profilvertrags.
+
 Verifiziertes Querybudget auf dem macOS-Offscreen-Messpfad vom 26.07.2026:
 
 | Bestand | Projektion | Audit vorher | Batch danach | geladene Projektionszeilen |

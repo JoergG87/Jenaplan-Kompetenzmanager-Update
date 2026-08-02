@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Das Öffnen und Wechseln von Schülerprofilen lädt Kind, aktuelle
+  Final-V3-Zuordnung, Beobachtungen samt Ratings, Dokumente, Kompetenzen,
+  Bestätigungen und Frischezustände jetzt einmal in einem kurzlebigen
+  Read-Snapshot. Die bestehenden Profilprojektionen werden daraus gemeinsam
+  aufgebaut und bei jeder Navigation frisch gelesen; sichtbare Inhalte,
+  Bericht/LEG, Navigation, Accessibility, Datenmodell und Fachlogik bleiben
+  unverändert.
+
 - Die Berichtswerkstatt baut beim Öffnen nur noch die sichtbare
   Schreibgrundseite auf. Weitere Werkstatt- und Fachseiten entstehen jeweils
   einmal bei ihrer ersten Aktivierung und werden danach wiederverwendet;

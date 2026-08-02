@@ -245,8 +245,13 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
             """,
             (SYNTHETIC_STUDENT_IDS[0],),
         )
-    exited = _adapter(exited_path).get_student_profile(
-        SYNTHETIC_STUDENT_IDS[0]
+    exited_adapter = _adapter(exited_path)
+    exited = exited_adapter.get_student_profile(SYNTHETIC_STUDENT_IDS[0])
+    assert (
+        exited_adapter.student_profile_projection_bundle(
+            SYNTHETIC_STUDENT_IDS[0]
+        ).student
+        == exited
     )
     assert exited is not None
     assert exited.resolution_status == "exited"
@@ -262,8 +267,13 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
             "DELETE FROM student_school_year_assignments WHERE student_id = ?",
             (SYNTHETIC_STUDENT_IDS[0],),
         )
-    missing = _adapter(missing_path).get_student_profile(
-        SYNTHETIC_STUDENT_IDS[0]
+    missing_adapter = _adapter(missing_path)
+    missing = missing_adapter.get_student_profile(SYNTHETIC_STUDENT_IDS[0])
+    assert (
+        missing_adapter.student_profile_projection_bundle(
+            SYNTHETIC_STUDENT_IDS[0]
+        ).student
+        == missing
     )
     assert missing is not None
     assert missing.resolution_status == "no_assignment"
@@ -295,8 +305,15 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
                 "2027-01-01T08:00:00+00:00",
             ),
         )
-    ambiguous = _adapter(ambiguous_path).get_student_profile(
+    ambiguous_adapter = _adapter(ambiguous_path)
+    ambiguous = ambiguous_adapter.get_student_profile(
         SYNTHETIC_STUDENT_IDS[0]
+    )
+    assert (
+        ambiguous_adapter.student_profile_projection_bundle(
+            SYNTHETIC_STUDENT_IDS[0]
+        ).student
+        == ambiguous
     )
     assert ambiguous is not None
     assert ambiguous.resolution_status == "ambiguous"
@@ -318,8 +335,15 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
                 SYNTHETIC_SCHOOL_YEAR_ID,
             ),
         )
-    no_current = _adapter(no_current_path).get_student_profile(
+    no_current_adapter = _adapter(no_current_path)
+    no_current = no_current_adapter.get_student_profile(
         SYNTHETIC_STUDENT_IDS[0]
+    )
+    assert (
+        no_current_adapter.student_profile_projection_bundle(
+            SYNTHETIC_STUDENT_IDS[0]
+        ).student
+        == no_current
     )
     assert no_current is not None
     assert no_current.resolution_status == "current_school_year_missing"
@@ -340,8 +364,15 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
                 SYNTHETIC_STUDENT_IDS[0],
             ),
         )
-    archived = _adapter(archived_path).get_student_profile(
+    archived_adapter = _adapter(archived_path)
+    archived = archived_adapter.get_student_profile(
         SYNTHETIC_STUDENT_IDS[0]
+    )
+    assert (
+        archived_adapter.student_profile_projection_bundle(
+            SYNTHETIC_STUDENT_IDS[0]
+        ).student
+        == archived
     )
     assert archived is not None
     assert archived.resolution_status == "student_archived"
@@ -424,6 +455,9 @@ def test_observation_edit_context_resolves_at_observation_date(
     assert draft is not None
 
     current = adapter.get_student_profile(SYNTHETIC_STUDENT_IDS[0])
+    current_bundle = adapter.student_profile_projection_bundle(
+        SYNTHETIC_STUDENT_IDS[0]
+    )
     historical = adapter.get_student_profile(
         SYNTHETIC_STUDENT_IDS[0],
         reference_date=date.fromisoformat(draft.date_text),
@@ -446,6 +480,7 @@ def test_observation_edit_context_resolves_at_observation_date(
     )
 
     assert current is not None
+    assert current_bundle.student == current
     assert historical is not None
     assert report_preparation is not None
     assert historical_leg_preparation is not None

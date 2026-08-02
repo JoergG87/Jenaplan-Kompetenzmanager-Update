@@ -202,6 +202,7 @@ from src.desktop_app.view_models.student_view_model import (
     GroupSummaryViewModel,
     StudentDetailViewModel,
     StudentProfileDashboardViewModel,
+    StudentProfileProjectionBundle,
     StudentDocumentationSummaryViewModel,
     StudentDocumentViewModel,
     StudentReportDevelopmentViewModel,
@@ -304,6 +305,84 @@ class StudentDesktopAdapter:
             batch,
             student_id,
             historical=reference_date is not None,
+        )
+
+    def student_profile_projection_bundle(
+        self,
+        student_id: str,
+    ) -> StudentProfileProjectionBundle:
+        """Compose one profile navigation from a single read snapshot."""
+        as_of = self._today()
+        batch = SQLiteStudentDocumentationProjectionRepository(
+            self.database
+        ).read_batch(
+            as_of=as_of,
+            student_id=student_id,
+            include_documents=True,
+        )
+        student = self._student_profile_from_batch(
+            batch,
+            student_id,
+            historical=False,
+        )
+        source_documents = batch.documents_by_student.get(student_id, ())
+        documents = tuple(
+            self._document_view_model(document)
+            for document in source_documents
+        )
+        observations = self._observation_list_items_from_batch(
+            batch,
+            student_id,
+            documents=source_documents,
+        )
+        statuses = self._competency_status_projection_from_batch(
+            batch,
+            student_id,
+        )
+        documented_ids = {
+            status.competency_id
+            for status in statuses
+            if status.documentation_state != "undocumented"
+        }
+        active_current_competencies = tuple(
+            competency
+            for competency in batch.competencies
+            if competency.active and competency.catalog_status == "current"
+        )
+        active_documentation_subject_ids = set(
+            batch.active_documentation_subject_ids
+        )
+        documentation_competencies = tuple(
+            competency
+            for competency in active_current_competencies
+            if competency.subject_id in active_documentation_subject_ids
+        )
+        documentation_statuses = self._documentation_statuses(
+            documentation_competencies,
+            documented_ids,
+        )
+        competency_groups = self._group_competency_statuses(
+            tuple(
+                status
+                for status in statuses
+                if status.documentation_state != "undocumented"
+            ),
+            active_current_competencies,
+            documented_ids,
+            active_documentation_subject_ids,
+        )
+        return StudentProfileProjectionBundle(
+            student=student,
+            observations=observations,
+            competency_groups=competency_groups,
+            documentation_statuses=documentation_statuses,
+            documents=documents,
+            competency_cockpit=build_student_competency_cockpit(statuses),
+            profile_dashboard=build_student_profile_dashboard(
+                statuses,
+                documentation_statuses,
+                as_of,
+            ),
         )
 
     def _student_profile_from_batch(
@@ -3042,7 +3121,16 @@ class StudentDesktopAdapter:
         self,
         batch: StudentDocumentationProjectionBatch,
         student_id: str,
+        *,
+        documents: tuple[DocumentRecord, ...] = (),
     ) -> tuple[ObservationListItem, ...]:
+        documents_by_observation: dict[str, list[DocumentRecord]] = {}
+        for document in documents:
+            if document.observation_id:
+                documents_by_observation.setdefault(
+                    document.observation_id,
+                    [],
+                ).append(document)
         return tuple(
             ObservationListItem(
                 observation.observation_id,
@@ -3062,7 +3150,13 @@ class StudentDesktopAdapter:
                     )
                     for rating in observation.competency_ratings
                 ),
-                (),
+                tuple(
+                    self._document_view_model(document)
+                    for document in documents_by_observation.get(
+                        observation.observation_id,
+                        (),
+                    )
+                ),
                 (
                     not observation.competency_ratings
                     and bool(observation.note.strip())

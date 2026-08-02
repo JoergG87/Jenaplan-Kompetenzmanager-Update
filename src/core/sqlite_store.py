@@ -254,6 +254,7 @@ class StudentDocumentationProjectionBatch:
     competencies: tuple[CompetencyRecord, ...]
     active_documentation_subject_ids: tuple[str, ...]
     observations_by_student: Mapping[str, tuple[ObservationRecord, ...]]
+    documents_by_student: Mapping[str, tuple[DocumentRecord, ...]]
     confirmations_by_student: Mapping[
         str,
         tuple[StudentCompetencyConfirmationRecord, ...],
@@ -1786,6 +1787,7 @@ class SQLiteStudentDocumentationProjectionRepository:
         target_course_group_id: str | None = None,
         historical_membership: bool = False,
         include_membership: bool = True,
+        include_documents: bool = False,
     ) -> StudentDocumentationProjectionBatch:
         with closing(self.database.connect()) as connection:
             connection.execute("BEGIN")
@@ -1891,6 +1893,15 @@ class SQLiteStudentDocumentationProjectionRepository:
                     scope_parameters,
                     ratings_by_observation,
                 )
+                documents_by_student = (
+                    self._documents_by_student(
+                        connection,
+                        scope_sql,
+                        scope_parameters,
+                    )
+                    if include_documents
+                    else {}
+                )
                 confirmations_by_student = self._confirmations_by_student(
                     connection,
                     scope_sql,
@@ -1919,6 +1930,9 @@ class SQLiteStudentDocumentationProjectionRepository:
                     ),
                     observations_by_student=MappingProxyType(
                         observations_by_student
+                    ),
+                    documents_by_student=MappingProxyType(
+                        documents_by_student
                     ),
                     confirmations_by_student=MappingProxyType(
                         confirmations_by_student
@@ -2242,6 +2256,46 @@ class SQLiteStudentDocumentationProjectionRepository:
         return {
             student_id: tuple(observations)
             for student_id, observations in grouped.items()
+        }
+
+    @staticmethod
+    def _documents_by_student(
+        connection: sqlite3.Connection,
+        scope_sql: str,
+        scope_parameters: tuple[str, ...],
+    ) -> dict[str, tuple[DocumentRecord, ...]]:
+        rows = connection.execute(
+            f"""
+            SELECT
+                document.document_id,
+                document.student_id,
+                document.observation_id,
+                document.title,
+                document.document_type,
+                document.file_path,
+                document.original_filename,
+                document.created_at,
+                document.note,
+                document.active
+            FROM documents AS document
+            JOIN students AS student
+                ON student.student_id = document.student_id
+            WHERE document.active = 1 AND {scope_sql}
+            ORDER BY
+                document.student_id,
+                document.created_at DESC,
+                document.document_id DESC
+            """,
+            scope_parameters,
+        ).fetchall()
+        grouped: dict[str, list[DocumentRecord]] = {}
+        for row in rows:
+            grouped.setdefault(row[STUDENT_ID], []).append(
+                _document_from_row(row)
+            )
+        return {
+            student_id: tuple(documents)
+            for student_id, documents in grouped.items()
         }
 
     @staticmethod

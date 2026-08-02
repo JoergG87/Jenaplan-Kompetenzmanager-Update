@@ -6,6 +6,10 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from src.desktop_app.view_models.observation_view_model import (
+    ObservationListItem,
+    StudentCompetencyCockpitViewModel,
+    StudentCompetencySubjectGroup,
+    StudentDocumentationSubjectStatus,
     observation_rating_label,
 )
 
@@ -308,6 +312,19 @@ class StudentProfileDashboardViewModel:
     undocumented_count: int
     undocumented_subjects: tuple[StudentProfileUndocumentedSubjectViewModel, ...]
     orientation_changes: tuple[StudentProfileOrientationChangeViewModel, ...]
+
+
+@dataclass(frozen=True)
+class StudentProfileProjectionBundle:
+    """Navigation-local composition of the existing student profile projections."""
+
+    student: StudentDetailViewModel | None
+    observations: tuple[ObservationListItem, ...]
+    competency_groups: tuple[StudentCompetencySubjectGroup, ...]
+    documentation_statuses: tuple[StudentDocumentationSubjectStatus, ...]
+    documents: tuple[StudentDocumentViewModel, ...]
+    competency_cockpit: StudentCompetencyCockpitViewModel
+    profile_dashboard: StudentProfileDashboardViewModel
 
 
 def empty_student_profile_dashboard() -> StudentProfileDashboardViewModel:
