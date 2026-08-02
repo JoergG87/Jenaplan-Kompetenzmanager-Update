@@ -95,6 +95,18 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self._controlled_close_allowed = False
         self._build()
 
+    @property
+    def close_blocked(self) -> bool:
+        """Return whether every normal Qt close path must stay blocked."""
+        return (
+            self._activation_running
+            or self._recovery_required
+            or (
+                self._critical_execution_started
+                and not self._controlled_close_allowed
+            )
+        )
+
     def _build(self) -> None:
         layout = QVBoxLayout(self)
         self._dialog_layout = layout
@@ -913,30 +925,31 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.close_button.setEnabled(enabled and not self._activation_running)
 
     def _request_close(self) -> None:
-        if self._activation_running:
-            return
-        if self._critical_execution_started and not self._controlled_close_allowed:
+        if self.close_blocked:
             return
         super().reject()
 
     def reject(self) -> None:
         self._request_close()
 
+    def done(self, result: int) -> None:
+        """Guard direct QDialog completion as well as reject and close."""
+        if self.close_blocked:
+            return
+        super().done(result)
+
     def closeEvent(self, event: QCloseEvent) -> None:
-        if self._activation_running:
+        if self.close_blocked:
             event.ignore()
             return
-        if self._critical_execution_started and not self._controlled_close_allowed:
-            event.ignore()
-            return
-        event.accept()
+        super().closeEvent(event)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() in {Qt.Key.Key_Return, Qt.Key.Key_Enter}:
             event.accept()
             return
         if event.key() == Qt.Key.Key_Escape:
-            if not self._critical_execution_started and not self._activation_running:
+            if not self.close_blocked:
                 self._request_close()
             event.accept()
             return

@@ -610,7 +610,15 @@ class AppShell(QMainWindow):
             self._active_school_year_transition_controller is not None
             and self._active_school_year_transition_controller.is_busy
         )
-        if self.backup_restore_operations.is_busy or transition_busy:
+        transition_close_blocked = (
+            self._active_school_year_transition_dialog is not None
+            and self._active_school_year_transition_dialog.close_blocked
+        )
+        if (
+            self.backup_restore_operations.is_busy
+            or transition_busy
+            or transition_close_blocked
+        ):
             event.ignore()
             self.settings_screen.show_close_blocked()
             return

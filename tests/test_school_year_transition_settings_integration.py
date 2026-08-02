@@ -7,12 +7,19 @@ from pathlib import Path
 import sqlite3
 from unittest.mock import patch
 
-from PySide6.QtCore import QCoreApplication, QEvent, QEventLoop, QTimer
+from PySide6.QtCore import QCoreApplication, QEvent, QEventLoop, QObject, QTimer, Signal
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QApplication, QPushButton
 from shiboken6 import isValid
 
 from src.desktop_app.dialogs.school_year_transition_preview_dialog import (
     SchoolYearTransitionPreviewDialog,
+)
+from src.desktop_app.school_year_transition_activation import (
+    SchoolYearTransitionActivationErrorInfo,
+)
+from src.application.school_year_transition_preview import (
+    SchoolYearTransitionPreviewService,
 )
 from src.desktop_app.shell import AppShell
 from src.security.application import AuthenticationResult
@@ -21,6 +28,28 @@ from tests.helpers.synthetic_v3 import create_pre_transition_v3_database
 
 
 create_synthetic_v3_database = create_pre_transition_v3_database
+
+
+class _LifecycleActivationController(QObject):
+    progress = Signal(str)
+    succeeded = Signal(object)
+    failed = Signal(object)
+    finished = Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.is_busy = False
+
+    def start(self, **_kwargs: object) -> bool:
+        if self.is_busy:
+            return False
+        self.is_busy = True
+        return True
+
+    def fail(self, code: str) -> None:
+        self.is_busy = False
+        self.failed.emit(SchoolYearTransitionActivationErrorInfo(code))
+        self.finished.emit()
 
 
 def _database_snapshot(database_path: Path) -> tuple[str, ...]:
@@ -97,6 +126,11 @@ class _AcceptingPasswordService:
         return AuthenticationResult(AuthenticationStatus.AUTHENTICATED)
 
 
+class _RejectingPasswordService:
+    def authenticate_password(self, _password: str) -> AuthenticationResult:
+        return AuthenticationResult(AuthenticationStatus.INVALID_CREDENTIALS)
+
+
 def test_confirmed_settings_activation_changes_only_temporary_database(
     tmp_path: Path,
 ) -> None:
@@ -168,6 +202,109 @@ def test_confirmed_settings_activation_changes_only_temporary_database(
         )
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
     assert tuple(tmp_path.glob("backups/*.jkmbackup"))
+    shell.close()
+    app.processEvents()
+
+
+def test_wrong_password_keeps_database_and_backup_unchanged_and_releases_close(
+    tmp_path: Path,
+) -> None:
+    app = QApplication.instance() or QApplication([])
+    database_path = tmp_path / "kompetenzmanager.sqlite"
+    create_synthetic_v3_database(database_path)
+    (tmp_path / "documents").mkdir()
+    backups = tmp_path / "backups"
+    backups.mkdir()
+    shell = AppShell(database_path)
+    shell.configure_school_year_transition_activation(
+        _RejectingPasswordService()
+    )
+    before = _database_snapshot(database_path)
+
+    def reject_password(dialog, _owner) -> None:
+        def run_activation() -> None:
+            dialog.plan = dialog.plan.repeat_year_level_three(
+                "STD-TEST-003",
+                "CRS-TEST-3",
+            )
+            dialog._refresh_from_plan()
+            dialog.confirmation_checkbox.setChecked(True)
+            dialog.password_field.setText("falsches Testpasswort")
+            dialog.activate_button.click()
+            loop = QEventLoop()
+            dialog.activation_controller.finished.connect(loop.quit)
+            QTimer.singleShot(60_000, loop.quit)
+            if dialog.activation_controller.is_busy:
+                loop.exec()
+            assert "keine Änderungen begonnen" in (
+                dialog.execution_status.label.text()
+            )
+            assert not dialog.close_blocked
+            dialog.close_button.click()
+
+        QTimer.singleShot(0, run_activation)
+
+    with patch(
+        "src.desktop_app.shell.prepare_maximized_workspace",
+        side_effect=reject_password,
+    ):
+        shell.open_school_year_transition_preview(
+            "2026/27",
+            date(2026, 8, 1),
+            date(2027, 7, 31),
+        )
+        app.processEvents()
+
+    assert _database_snapshot(database_path) == before
+    assert tuple(backups.iterdir()) == ()
+    shell.close()
+    app.processEvents()
+
+
+def test_shell_close_uses_dialog_guard_during_step_up_and_recovery(
+    tmp_path: Path,
+) -> None:
+    app = QApplication.instance() or QApplication([])
+    database_path = tmp_path / "shell-close.sqlite"
+    create_synthetic_v3_database(database_path)
+    shell = AppShell(database_path)
+    shell.show()
+    plan = SchoolYearTransitionPreviewService(
+        shell.adapter.database.connect
+    ).preview_plan(
+        label="2026/27",
+        start_date=date(2026, 8, 1),
+        end_date=date(2027, 7, 31),
+    ).repeat_year_level_three("STD-TEST-003", "CRS-TEST-3")
+    controller = _LifecycleActivationController()
+    dialog = SchoolYearTransitionPreviewDialog(
+        plan,
+        shell,
+        activation_controller=controller,
+    )
+    shell._active_school_year_transition_dialog = dialog
+    shell._active_school_year_transition_controller = controller
+    dialog.show()
+    dialog.confirmation_checkbox.setChecked(True)
+    dialog.password_field.setText("synthetisches Testpasswort")
+    dialog._start_activation()
+
+    step_up_close = QCloseEvent()
+    shell.closeEvent(step_up_close)
+    assert not step_up_close.isAccepted()
+    assert shell.isVisible()
+    assert dialog.isVisible()
+
+    controller.fail("transition_recovery_required")
+    recovery_close = QCloseEvent()
+    shell.closeEvent(recovery_close)
+    assert not recovery_close.isAccepted()
+    assert shell.isVisible()
+    assert dialog.isVisible()
+
+    shell._active_school_year_transition_dialog = None
+    shell._active_school_year_transition_controller = None
+    dialog.deleteLater()
     shell.close()
     app.processEvents()
 

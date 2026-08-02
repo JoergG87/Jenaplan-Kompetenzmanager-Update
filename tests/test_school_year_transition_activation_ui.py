@@ -87,6 +87,22 @@ def _result() -> SchoolYearTransitionExecutionResult:
     )
 
 
+def _running_dialog() -> tuple[
+    SchoolYearTransitionPreviewDialog,
+    StubActivationController,
+]:
+    controller = StubActivationController()
+    dialog = SchoolYearTransitionPreviewDialog(
+        _resolved_plan(),
+        activation_controller=controller,
+    )
+    dialog.show()
+    dialog.confirmation_checkbox.setChecked(True)
+    dialog.password_field.setText("correct horse battery staple")
+    dialog._start_activation()
+    return dialog, controller
+
+
 def test_unresolved_plan_and_confirmation_inputs_gate_activation() -> None:
     app = QApplication.instance() or QApplication([])
     controller = StubActivationController()
@@ -117,20 +133,16 @@ def test_unresolved_plan_and_confirmation_inputs_gate_activation() -> None:
 
 def test_double_start_close_escape_and_enter_are_guarded() -> None:
     app = QApplication.instance() or QApplication([])
-    controller = StubActivationController()
-    dialog = SchoolYearTransitionPreviewDialog(
-        _resolved_plan(),
-        activation_controller=controller,
-    )
-    dialog.show()
-    dialog.confirmation_checkbox.setChecked(True)
-    dialog.password_field.setText("correct horse battery staple")
-    dialog._start_activation()
+    dialog, controller = _running_dialog()
     dialog._start_activation()
     assert controller.start_count == 1
     assert not dialog.close_button.isEnabled()
+    assert dialog.close_blocked
     dialog.reject()
-    assert dialog.result() == QDialog.DialogCode.Rejected or dialog.isVisible()
+    assert dialog.isVisible()
+    dialog.done(QDialog.DialogCode.Accepted)
+    assert dialog.isVisible()
+    assert not dialog.close()
     assert dialog.isVisible()
     close_event = QCloseEvent()
     dialog.closeEvent(close_event)
@@ -138,6 +150,74 @@ def test_double_start_close_escape_and_enter_are_guarded() -> None:
     QTest.keyClick(dialog, Qt.Key.Key_Return)
     QTest.keyClick(dialog, Qt.Key.Key_Escape)
     assert dialog.isVisible()
+    app.processEvents()
+
+
+def test_close_paths_are_allowed_before_activation() -> None:
+    app = QApplication.instance() or QApplication([])
+    for close_path in ("reject", "done", "close", "escape", "native"):
+        dialog = SchoolYearTransitionPreviewDialog(_resolved_plan())
+        dialog.show()
+        assert not dialog.close_blocked
+        if close_path == "reject":
+            dialog.reject()
+        elif close_path == "done":
+            dialog.done(QDialog.DialogCode.Rejected)
+        elif close_path == "close":
+            assert dialog.close()
+        elif close_path == "escape":
+            QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        else:
+            close_event = QCloseEvent()
+            dialog.closeEvent(close_event)
+            assert close_event.isAccepted()
+        if close_path != "native":
+            assert not dialog.isVisible()
+    app.processEvents()
+
+
+def test_close_paths_stay_blocked_during_backup_and_transition() -> None:
+    app = QApplication.instance() or QApplication([])
+    for phase in ("backup_creating", "school_year_activating"):
+        dialog, controller = _running_dialog()
+        controller.progress.emit(phase)
+        assert dialog.close_blocked
+        dialog.reject()
+        dialog.done(QDialog.DialogCode.Accepted)
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        close_event = QCloseEvent()
+        dialog.closeEvent(close_event)
+        assert not close_event.isAccepted()
+        assert not dialog.close()
+        assert dialog.isVisible()
+        controller.fail("transition_execution_failed")
+        dialog.close()
+    app.processEvents()
+
+
+def test_safe_failure_and_success_release_close_but_recovery_does_not() -> None:
+    app = QApplication.instance() or QApplication([])
+    safe_failure, safe_controller = _running_dialog()
+    safe_controller.progress.emit("backup_creating")
+    safe_controller.fail("transition_backup_failed")
+    assert not safe_failure.close_blocked
+    assert safe_failure.close()
+
+    success, success_controller = _running_dialog()
+    success_controller.progress.emit("school_year_activating")
+    success_controller.complete(_result())
+    assert not success.close_blocked
+    assert success.close()
+
+    recovery, recovery_controller = _running_dialog()
+    recovery_controller.progress.emit("completion_checking")
+    recovery_controller.fail("transition_recovery_required")
+    assert recovery.close_blocked
+    recovery.reject()
+    recovery.done(QDialog.DialogCode.Accepted)
+    assert not recovery.close()
+    QTest.keyClick(recovery, Qt.Key.Key_Escape)
+    assert recovery.isVisible()
     app.processEvents()
 
 

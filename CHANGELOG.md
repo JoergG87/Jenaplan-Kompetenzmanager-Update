@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Der Schuljahreswechsel-Dialog blockiert ab Start der Aktivierung jetzt alle
+  Qt-Schließpfade einschließlich nativer Fenstersteuerung, `reject()`,
+  `done()`, Escape und Shell-Schließen. Nach sicherem Fehler oder Erfolg wird
+  Schließen wieder freigegeben; `RECOVERY_REQUIRED` bleibt fail-closed.
+
 - Die Schuljahreswechsel-Vorschau öffnet auf macOS ohne verschachtelten
   `QDialog.exec()`-Eventloop und wird nach jedem Schließen kontrolliert
   freigegeben. Individuelle Entscheidungen verwenden stabile, tastatur- und
