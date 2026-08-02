@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt, QTimer, Signal, QUrl
+from PySide6.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Signal, QUrl
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import (
     QApplication,
@@ -146,6 +146,87 @@ INVALID_TARGET_SCHOOL_YEAR_ISSUES = frozenset(
 )
 
 
+class _SidebarNavigationList(QListWidget):
+    """Keep the pointer cursor scoped to mouse-activatable sidebar items."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._pointer_position: QPoint | None = None
+        self._pointer_inside = False
+        self._application_active = (
+            QApplication.applicationState()
+            == Qt.ApplicationState.ApplicationActive
+        )
+        self.setMouseTracking(True)
+        self.viewport().setMouseTracking(True)
+        self.verticalScrollBar().valueChanged.connect(self._schedule_cursor_refresh)
+        self.horizontalScrollBar().valueChanged.connect(self._schedule_cursor_refresh)
+        model = self.model()
+        model.rowsInserted.connect(self._schedule_cursor_refresh)
+        model.rowsRemoved.connect(self._schedule_cursor_refresh)
+        model.modelReset.connect(self._schedule_cursor_refresh)
+        model.layoutChanged.connect(self._schedule_cursor_refresh)
+        model.dataChanged.connect(self._schedule_cursor_refresh)
+        QApplication.instance().applicationStateChanged.connect(
+            self._application_state_changed
+        )
+
+    def viewportEvent(self, event: QEvent) -> bool:  # noqa: N802 - Qt API
+        event_type = event.type()
+        if event_type == QEvent.Type.MouseMove:
+            self._pointer_inside = True
+            self._pointer_position = event.position().toPoint()
+        elif event_type == QEvent.Type.Enter:
+            self._pointer_inside = True
+            self._pointer_position = event.position().toPoint()
+        elif event_type in {QEvent.Type.Leave, QEvent.Type.Hide}:
+            self._pointer_inside = False
+            self._pointer_position = None
+
+        handled = super().viewportEvent(event)
+        if event_type in {
+            QEvent.Type.MouseMove,
+            QEvent.Type.Enter,
+            QEvent.Type.Leave,
+            QEvent.Type.Hide,
+        }:
+            self._refresh_cursor()
+        return handled
+
+    def _application_state_changed(self, state: Qt.ApplicationState) -> None:
+        self._application_active = state == Qt.ApplicationState.ApplicationActive
+        if self._application_active:
+            self._schedule_cursor_refresh()
+        else:
+            self.viewport().setCursor(Qt.CursorShape.ArrowCursor)
+
+    def _schedule_cursor_refresh(self, *_args: object) -> None:
+        QTimer.singleShot(0, self._refresh_cursor)
+
+    def _refresh_cursor(self) -> None:
+        position = self._pointer_position
+        item = (
+            self.itemAt(position)
+            if self._pointer_inside
+            and position is not None
+            and self.viewport().rect().contains(position)
+            else None
+        )
+        flags = item.flags() if item is not None else Qt.ItemFlag.NoItemFlags
+        activatable = bool(
+            item is not None
+            and self._application_active
+            and item.data(Qt.ItemDataRole.UserRole)
+            and flags & Qt.ItemFlag.ItemIsEnabled
+            and flags & Qt.ItemFlag.ItemIsSelectable
+        )
+        self.viewport().setCursor(
+            Qt.CursorShape.PointingHandCursor
+            if activatable
+            else Qt.CursorShape.ArrowCursor
+        )
+
+
 class AppShell(QMainWindow):
     """Product shell for the local teacher-facing desktop application."""
 
@@ -275,7 +356,7 @@ class AppShell(QMainWindow):
         brand_subtitle.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         sidebar.addWidget(brand_title)
         sidebar.addWidget(brand_subtitle)
-        self.navigation = QListWidget()
+        self.navigation = _SidebarNavigationList()
         self.navigation.setObjectName("AppNavigation")
         self.navigation.setAccessibleName("Hauptnavigation")
         self.navigation.setAccessibleDescription(
@@ -283,7 +364,6 @@ class AppShell(QMainWindow):
         )
         self.navigation.setIconSize(QSize(ICON_SIZE_MEDIUM, ICON_SIZE_MEDIUM))
         self.navigation.setSpacing(1)
-        self.navigation.viewport().setCursor(Qt.CursorShape.PointingHandCursor)
         current_section = ""
         for item in NAVIGATION_ITEMS:
             if item.section != current_section:
