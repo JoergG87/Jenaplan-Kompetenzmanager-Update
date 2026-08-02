@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- LEG-Bereiche lassen sich wieder zuverlässig auf- und zuklappen, weil der
+  vorhandene zentrale Disclosure-Feedback-Helper im Workspace sicher verfügbar
+  ist. Tastatursteuerung, Accessibility, Inhalte und Persistenz bleiben
+  unverändert.
+
 - Die Oberfläche des Schuljahreswechsels führt jetzt in zwei klar getrennten
   Schritten durch Zuordnungsprüfung und verbindliche Aktivierung. Sie startet
   ruhig bei den ungelösten Fällen, zeigt fünf kompakte Kennzahlen, blendet

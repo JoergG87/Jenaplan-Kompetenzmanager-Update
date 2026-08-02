@@ -23,6 +23,7 @@ from src.desktop_app.dialogs.learning_conference_dialog import (
     ROLE_PREPARATION,
     LearningConferenceDialog,
     LearningConferenceDraftSelectionDialog,
+    _CollapsibleSection,
 )
 from src.desktop_app.motion import set_reduced_motion
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
@@ -253,6 +254,45 @@ class LearningConferenceUiTest(unittest.TestCase):
 
         self.assertEqual(len(emitted), 1)
         self.assertEqual(emitted[0].student_id, "STU-1")
+
+    def test_collapsible_sections_toggle_without_changing_draft(self) -> None:
+        dialog = LearningConferenceDialog(self.preparation)
+        emitted: list[LearningConferenceDraftViewModel] = []
+        dialog.save_requested.connect(emitted.append)
+        original_draft = dialog.draft_view_model()
+        first_content = QLabel("Erster sichtbarer Inhalt")
+        second_content = QLabel("Zweiter sichtbarer Inhalt")
+        first = _CollapsibleSection("Erster Bereich", first_content)
+        second = _CollapsibleSection("Zweiter Bereich", second_content, expanded=True)
+
+        self.assertTrue(first_content.isHidden())
+        self.assertFalse(first.button.isChecked())
+        self.assertFalse(second_content.isHidden())
+        self.assertTrue(second.button.isChecked())
+        self.assertEqual(first.button.accessibleName(), "Erster Bereich")
+        self.assertEqual(first.button.focusPolicy(), Qt.FocusPolicy.TabFocus)
+
+        QTest.keyClick(first.button, Qt.Key.Key_Space)
+        self.app.processEvents()
+        self.assertFalse(first_content.isHidden())
+        self.assertEqual(first_content.text(), "Erster sichtbarer Inhalt")
+        self.assertEqual(first.button.arrowType(), Qt.ArrowType.DownArrow)
+
+        QTest.keyClick(first.button, Qt.Key.Key_Space)
+        self.app.processEvents()
+        self.assertTrue(first_content.isHidden())
+        self.assertEqual(first.button.arrowType(), Qt.ArrowType.RightArrow)
+
+        for _ in range(3):
+            first.button.click()
+        second.button.click()
+        self.app.processEvents()
+        self.assertFalse(first_content.isHidden())
+        self.assertTrue(second_content.isHidden())
+        self.assertTrue(first.button.isChecked())
+        self.assertFalse(second.button.isChecked())
+        self.assertEqual(dialog.draft_view_model(), original_draft)
+        self.assertEqual(emitted, [])
 
     def test_six_phases_have_fixed_order_and_neutral_states(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)

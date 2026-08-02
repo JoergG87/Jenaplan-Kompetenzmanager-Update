@@ -44,6 +44,7 @@ from src.desktop_app.components import (
 )
 from src.desktop_app.motion import (
     MotionDialog,
+    animate_feedback,
     animate_save_confirmation,
     animate_stack_transition,
 )
