@@ -269,7 +269,13 @@ def animate_save_confirmation(button: QPushButton) -> QVariantAnimation | None:
         button.style().unpolish(button)
         button.style().polish(button)
 
-    QTimer.singleShot(520, reset)
+    reset_timer = getattr(button, "_motion_save_confirmation_timer", None)
+    if reset_timer is None:
+        reset_timer = QTimer(button)
+        reset_timer.setSingleShot(True)
+        reset_timer.timeout.connect(reset)
+        setattr(button, "_motion_save_confirmation_timer", reset_timer)
+    reset_timer.start(520)
     return animation
 
 

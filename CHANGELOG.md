@@ -4,10 +4,11 @@
 
 - Der LEG-Dialog baut beim Öffnen nur noch die initial sichtbare Phase auf.
   Die fünf weiteren Gesprächsphasen entstehen jeweils einmal bei ihrer ersten
-  Aktivierung und werden danach innerhalb derselben Dialoginstanz
-  wiederverwendet. Bereits gespeicherte Draftwerte bleiben auch beim Speichern
-  ohne vorheriges Öffnen aller Phasen erhalten; Datenmodell, Projektion,
-  Validierung, Abschluss, Revisionen und PDFs bleiben unverändert.
+  Aktivierung; die Kompetenzbereiche in Phase 5 werden zusätzlich erst beim
+  Aufklappen erzeugt und danach innerhalb derselben Dialoginstanz
+  wiederverwendet. Dadurch sind native Öffnungs- und Renderingzeiten deutlich
+  reduziert. Fachliches und persistentes Verhalten sowie Datenmodell,
+  Projektion, Validierung, Abschluss, Revisionen und PDFs bleiben unverändert.
 
 - Passive Flächen der Einstellungsübersicht und ihrer Detailseiten setzen beim
   Seitenwechsel wieder zuverlässig den Pfeilcursor, auch wenn der Mauszeiger

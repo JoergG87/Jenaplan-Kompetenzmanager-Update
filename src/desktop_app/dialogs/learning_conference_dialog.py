@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from datetime import date, datetime
 import textwrap
 
@@ -47,7 +47,6 @@ from src.desktop_app.motion import (
     MotionDialog,
     animate_feedback,
     animate_save_confirmation,
-    animate_stack_transition,
 )
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.learning_conference_view_model import (
@@ -120,7 +119,16 @@ def _format_saved_at(value: str) -> str:
 class _CollapsibleSection(QWidget):
     """Immediate disclosure with central, reduced-motion-aware feedback."""
 
-    def __init__(self, title: str, content: QWidget, *, expanded: bool = False, indent: int = 0) -> None:
+    def __init__(
+        self,
+        title: str,
+        content: QWidget,
+        *,
+        expanded: bool = False,
+        indent: int = 0,
+        on_expand: Callable[[], None] | None = None,
+        feedback_on_expand: bool = True,
+    ) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(indent, 0, 0, 0)
@@ -135,16 +143,33 @@ class _CollapsibleSection(QWidget):
         self.button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.button.setAccessibleName(title)
         self.content = content
+        self._on_expand = on_expand
+        self._feedback_on_expand = feedback_on_expand
         self.content.setVisible(expanded)
+        self.button.installEventFilter(self)
         self.button.toggled.connect(self._toggle)
         layout.addWidget(self.button)
         layout.addWidget(content)
 
     def _toggle(self, expanded: bool) -> None:
         self.button.setArrowType(Qt.ArrowType.DownArrow if expanded else Qt.ArrowType.RightArrow)
+        if expanded and self._on_expand is not None:
+            self._on_expand()
         self.content.setVisible(expanded)
-        if expanded:
+        if expanded and self._feedback_on_expand:
             animate_feedback(self.content, key="learning_conference_disclosure")
+
+    def eventFilter(self, watched: object, event: QEvent) -> bool:  # noqa: N802
+        if (
+            watched is self.button
+            and event.type() == QEvent.Type.KeyPress
+            and isinstance(event, QKeyEvent)
+            and event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)
+        ):
+            self.button.toggle()
+            event.accept()
+            return True
+        return super().eventFilter(watched, event)
 
 
 class LearningConferencePhaseNavigation(QFrame):
@@ -617,16 +642,25 @@ class LearningConferenceDialog(MotionDialog):
         self.competency_sections: dict[str, _CollapsibleSection] = {}
         self.competency_area_sections: list[tuple[str, tuple[str, ...], _CollapsibleSection]] = []
         self.competency_topic_sections: list[tuple[str, tuple[str, ...], _CollapsibleSection]] = []
+        self._competency_section_specs: dict[
+            str,
+            tuple[str, dict[str, list[LearningConferenceCompetencyViewModel]]],
+        ] = {}
+        self._competency_section_hosts: dict[str, QWidget] = {}
+        self._built_competency_sections: set[str] = set()
         self.competency_empty_by_subject: dict[str, QLabel] = {}
         self.evidence_checks: dict[str, QCheckBox] = {}
         self.evidence_widgets: dict[str, QWidget] = {}
+        self.evidence_sections: dict[str, _CollapsibleSection] = {}
+        self._evidence_section_specs: dict[str, tuple[LearningConferenceEvidenceViewModel, ...]] = {}
+        self._evidence_section_hosts: dict[str, QWidget] = {}
+        self._built_evidence_sections: set[str] = set()
         self.chart_checks: dict[str, QCheckBox] = {}
         self.text_inputs: dict[str, QTextEdit] = {}
         self.phase_pages: dict[str, QWidget] = {}
         self.phase_scroll_areas: dict[str, QScrollArea] = {}
         self.phase_first_focus: dict[str, QWidget] = {}
         self.phase_built = {key: False for key, _title, _description in PHASES}
-        self._phase_build_event_counter = 0
         self._phase_builders = {
             "goal": self._phase_goal,
             "strengths": self._phase_strengths,
@@ -776,13 +810,6 @@ class LearningConferenceDialog(MotionDialog):
         self._connect_phase_updates(key)
         if key == "evidence":
             self._update_filters()
-
-    def _yield_during_evidence_build(self) -> None:
-        self._phase_build_event_counter += 1
-        if self._phase_build_event_counter % 20 == 0:
-            QApplication.processEvents(
-                QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents
-            )
 
     def _phase_shell(self, key: str) -> tuple[QWidget, QVBoxLayout]:
         _phase_key, title, description = next(phase for phase in PHASES if phase[0] == key)
@@ -1034,27 +1061,31 @@ class LearningConferenceDialog(MotionDialog):
             area_layout = QVBoxLayout(area_host)
             area_layout.setContentsMargins(12, 0, 0, 0)
             area_layout.setSpacing(3)
-            for learning_area, topics in grouped.items():
+            for area_index, (learning_area, topics) in enumerate(grouped.items()):
+                section_id = f"{subject.subject_id}:{area_index}"
                 topic_host = QWidget()
+                topic_host.setAutoFillBackground(True)
                 topic_layout = QVBoxLayout(topic_host)
                 topic_layout.setContentsMargins(12, 0, 0, 0)
                 topic_layout.setSpacing(3)
-                for topic, competencies in topics.items():
-                    options = QWidget()
-                    options_layout = QVBoxLayout(options)
-                    options_layout.setContentsMargins(12, 2, 0, 5)
-                    competency_ids = tuple(item.competency_id for item in competencies)
-                    for competency in competencies:
-                        options_layout.addWidget(self._competency_option(competency))
-                        self._yield_during_evidence_build()
-                    topic_section = _CollapsibleSection(topic, options, expanded=True)
-                    self.competency_topic_sections.append((subject.subject_id, competency_ids, topic_section))
-                    topic_layout.addWidget(topic_section)
                 area_ids = tuple(item.competency_id for values in topics.values() for item in values)
-                area_section = _CollapsibleSection(learning_area, topic_host, expanded=True)
+                self._competency_section_specs[section_id] = (subject.subject_id, dict(topics))
+                self._competency_section_hosts[section_id] = topic_host
+                area_section = _CollapsibleSection(
+                    learning_area,
+                    topic_host,
+                    expanded=False,
+                    on_expand=lambda section_id=section_id: self._ensure_competency_section_built(section_id),
+                    feedback_on_expand=False,
+                )
                 self.competency_area_sections.append((subject.subject_id, area_ids, area_section))
                 area_layout.addWidget(area_section)
-            section = _CollapsibleSection(subject.subject_name, area_host, expanded=subject.subject_id in self._selected_subject_ids)
+            section = _CollapsibleSection(
+                subject.subject_name,
+                area_host,
+                expanded=subject.subject_id in self._selected_subject_ids,
+                feedback_on_expand=False,
+            )
             self.competency_sections[subject.subject_id] = section
             layout.addWidget(section)
             empty = _label(
@@ -1065,6 +1096,31 @@ class LearningConferenceDialog(MotionDialog):
             self.competency_empty_by_subject[subject.subject_id] = empty
             layout.addWidget(empty)
         return card
+
+    def _ensure_competency_section_built(self, section_id: str) -> None:
+        if section_id in self._built_competency_sections:
+            return
+        subject_id, topics = self._competency_section_specs[section_id]
+        topic_layout = self._competency_section_hosts[section_id].layout()
+        if topic_layout is None:
+            raise RuntimeError(f"LEG-Kompetenzbereich ohne Layout: {section_id}")
+        for topic, competencies in topics.items():
+            options = QWidget()
+            options_layout = QVBoxLayout(options)
+            options_layout.setContentsMargins(12, 2, 0, 5)
+            competency_ids = tuple(item.competency_id for item in competencies)
+            for competency in competencies:
+                options_layout.addWidget(self._competency_option(competency))
+            topic_section = _CollapsibleSection(
+                topic,
+                options,
+                expanded=True,
+                feedback_on_expand=False,
+            )
+            self.competency_topic_sections.append((subject_id, competency_ids, topic_section))
+            topic_layout.addWidget(topic_section)
+        self._built_competency_sections.add(section_id)
+        self._update_competency_visibility(self._subject_ids())
 
     def _competency_option(self, competency: LearningConferenceCompetencyViewModel) -> QFrame:
         widget = QFrame()
@@ -1080,6 +1136,14 @@ class LearningConferenceDialog(MotionDialog):
         check.setEnabled(competency.selectable or selected)
         if selected and not competency.selectable:
             check.toggled.connect(lambda checked, widget=check: widget.setEnabled(checked))
+        check.toggled.connect(
+            lambda checked, competency_id=competency.competency_id: self._set_competency_selected(
+                competency_id,
+                checked,
+            )
+        )
+        check.toggled.connect(self._draft_changed)
+        check.toggled.connect(self._update_filters)
         self.competency_checks[competency.competency_id] = check
         self.competency_models[competency.competency_id] = competency
         layout.addWidget(check)
@@ -1097,6 +1161,12 @@ class LearningConferenceDialog(MotionDialog):
             layout.addWidget(_label("Historischer Bezug – nicht neu auswählbar.", "subtle"))
         self.competency_widgets[competency.competency_id] = widget
         return widget
+
+    def _set_competency_selected(self, competency_id: str, checked: bool) -> None:
+        if checked:
+            self._selected_competency_ids.add(competency_id)
+        else:
+            self._selected_competency_ids.discard(competency_id)
 
     def _evidence_card(self) -> AppCard:
         card = AppCard("default")
@@ -1119,7 +1189,56 @@ class LearningConferenceDialog(MotionDialog):
             "subtle",
         )
         layout.addWidget(self.evidence_empty)
+        grouped: dict[str, list[LearningConferenceEvidenceViewModel]] = defaultdict(list)
         for evidence in self.preparation.evidence:
+            grouped[evidence.subject_name or "Übergreifend"].append(evidence)
+        for section_index, (subject_name, evidence_items) in enumerate(grouped.items()):
+            section_id = f"evidence:{section_index}"
+            host = QWidget()
+            host.setAutoFillBackground(True)
+            host_layout = QVBoxLayout(host)
+            host_layout.setContentsMargins(12, 2, 0, 5)
+            host_layout.setSpacing(6)
+            self._evidence_section_specs[section_id] = tuple(evidence_items)
+            self._evidence_section_hosts[section_id] = host
+            section = _CollapsibleSection(
+                subject_name,
+                host,
+                expanded=False,
+                on_expand=lambda section_id=section_id: self._ensure_evidence_section_built(section_id),
+                feedback_on_expand=False,
+            )
+            section.setObjectName("LearningConferenceEvidenceSection")
+            self.evidence_sections[section_id] = section
+            layout.addWidget(section)
+        unavailable = self._saved_draft.unavailable_observation_ids if self._saved_draft else ()
+        if unavailable:
+            section_id = "evidence:unavailable"
+            host = QWidget()
+            host.setAutoFillBackground(True)
+            host_layout = QVBoxLayout(host)
+            host_layout.setContentsMargins(12, 2, 0, 5)
+            host_layout.setSpacing(6)
+            section = _CollapsibleSection(
+                "Nicht verfügbare Belege",
+                host,
+                expanded=False,
+                on_expand=lambda: self._ensure_unavailable_evidence_built(section_id),
+                feedback_on_expand=False,
+            )
+            section.setObjectName("LearningConferenceEvidenceSection")
+            self.evidence_sections[section_id] = section
+            self._evidence_section_hosts[section_id] = host
+            layout.addWidget(section)
+        return card
+
+    def _ensure_evidence_section_built(self, section_id: str) -> None:
+        if section_id in self._built_evidence_sections:
+            return
+        layout = self._evidence_section_hosts[section_id].layout()
+        if layout is None:
+            raise RuntimeError(f"LEG-Belegbereich ohne Layout: {section_id}")
+        for evidence in self._evidence_section_specs[section_id]:
             widget = QFrame()
             widget.setObjectName("LearningConferenceSoftBlock")
             block = QVBoxLayout(widget)
@@ -1134,13 +1253,29 @@ class LearningConferenceDialog(MotionDialog):
             check.setAccessibleName(f"Phase 5, Beobachtungsbeleg vom {evidence.date_text} auswählen")
             check.setAccessibleDescription(f"Technische Beobachtungs-ID {evidence.observation_id}")
             check.setChecked(evidence.observation_id in self._selected_observation_ids)
+            check.toggled.connect(
+                lambda checked, observation_id=evidence.observation_id: self._set_observation_selected(
+                    observation_id,
+                    checked,
+                )
+            )
+            check.toggled.connect(self._draft_changed)
+            check.toggled.connect(self._update_evidence_warning)
             block.addWidget(check)
             if evidence.is_quick_observation:
                 block.addWidget(_label("Nur als Textbeleg", "subtle"))
             self.evidence_checks[evidence.observation_id] = check
             self.evidence_widgets[evidence.observation_id] = widget
             layout.addWidget(widget)
-            self._yield_during_evidence_build()
+        self._built_evidence_sections.add(section_id)
+        self._update_evidence_visibility()
+
+    def _ensure_unavailable_evidence_built(self, section_id: str) -> None:
+        if section_id in self._built_evidence_sections:
+            return
+        layout = self._evidence_section_hosts[section_id].layout()
+        if layout is None:
+            raise RuntimeError(f"LEG-Belegbereich ohne Layout: {section_id}")
         unavailable = self._saved_draft.unavailable_observation_ids if self._saved_draft else ()
         for observation_id in unavailable:
             widget = QFrame()
@@ -1152,12 +1287,26 @@ class LearningConferenceDialog(MotionDialog):
             check = QCheckBox("Gespeicherten Bezug beibehalten")
             check.setChecked(True)
             check.setAccessibleName(f"Phase 5, nicht verfügbaren Beleg {observation_id} beibehalten")
+            check.toggled.connect(
+                lambda checked, observation_id=observation_id: self._set_observation_selected(
+                    observation_id,
+                    checked,
+                )
+            )
+            check.toggled.connect(self._draft_changed)
+            check.toggled.connect(self._update_evidence_warning)
             block.addWidget(check)
             self.evidence_checks[observation_id] = check
             self.evidence_widgets[observation_id] = widget
             layout.addWidget(widget)
-            self._yield_during_evidence_build()
-        return card
+        self._built_evidence_sections.add(section_id)
+        self._update_evidence_visibility()
+
+    def _set_observation_selected(self, observation_id: str, checked: bool) -> None:
+        if checked:
+            self._selected_observation_ids.add(observation_id)
+        else:
+            self._selected_observation_ids.discard(observation_id)
 
     def _charts_card(self) -> AppCard:
         card = AppCard("soft")
@@ -1251,12 +1400,9 @@ class LearningConferenceDialog(MotionDialog):
             self.period_end.dateChanged.connect(self._update_filters)
             self.teacher_input.textChanged.connect(self._draft_changed)
         elif key == "evidence":
-            for control in (*self.competency_checks.values(), *self.chart_checks.values()):
+            for control in self.chart_checks.values():
                 control.toggled.connect(self._draft_changed)
                 control.toggled.connect(self._update_filters)
-            for control in self.evidence_checks.values():
-                control.toggled.connect(self._draft_changed)
-                control.toggled.connect(self._update_evidence_warning)
             self.evidence_search.textChanged.connect(self._update_filters)
         elif key == "agreements":
             self.next_review_date.dateChanged.connect(self._draft_changed)
@@ -1326,11 +1472,7 @@ class LearningConferenceDialog(MotionDialog):
         self._ensure_phase_built(key)
         self.phase_navigation.set_current(key)
         active_page = self.phase_pages[key]
-        animate_stack_transition(
-            self.phase_stack,
-            active_page,
-            key="learning_conference_phase",
-        )
+        self.phase_stack.setCurrentWidget(active_page)
         for page in self.phase_pages.values():
             is_active = page is active_page
             page.setEnabled(is_active)
@@ -1368,17 +1510,7 @@ class LearningConferenceDialog(MotionDialog):
             for subject in self.preparation.subjects
             if subject.subject_id in selected_subjects
         }
-        search = self.evidence_search.text().strip().casefold()
-        visible_count = 0
-        for evidence in self.preparation.evidence:
-            matches_subject = evidence.subject_name in selected_labels or bool(set(evidence.competency_ids) & self._competency_ids())
-            haystack = f"{evidence.subject_name} {evidence.context} {evidence.note} {evidence.date_text}".casefold()
-            visible = matches_subject and (not search or search in haystack)
-            self.evidence_widgets[evidence.observation_id].setVisible(visible)
-            visible_count += int(visible)
-        for observation_id in (self._saved_draft.unavailable_observation_ids if self._saved_draft else ()):
-            self.evidence_widgets[observation_id].setVisible(not search or search in observation_id.casefold())
-        self.evidence_empty.setVisible(visible_count == 0 and not (self._saved_draft and self._saved_draft.unavailable_observation_ids))
+        self._update_evidence_visibility(selected_labels)
         self._update_evidence_warning()
         self._refresh_ui_state()
 
@@ -1386,25 +1518,35 @@ class LearningConferenceDialog(MotionDialog):
         period_start, period_end = self._competency_filter_period()
         search = self.evidence_search.text().strip().casefold()
         visible_ids: set[str] = set()
-        for competency_id, competency in self.competency_models.items():
-            selected = self.competency_checks[competency_id].isChecked()
+        visible_by_id: dict[str, bool] = {}
+        for subject in self.preparation.subjects:
+            for competency in subject.competencies:
+                competency_id = competency.competency_id
+                selected = competency_id in self._selected_competency_ids
+                documented = competency.is_documented_in_period(period_start, period_end)
+                matches_search = not search or search in (
+                    f"{competency.subject_name} {competency.learning_area} {competency.competency_group} {competency.competency_text}"
+                ).casefold()
+                visible = (documented or selected) and matches_search
+                visible_by_id[competency_id] = visible
+                if visible:
+                    visible_ids.add(competency_id)
+        for competency_id, widget in self.competency_widgets.items():
+            competency = self.competency_models[competency_id]
+            selected = competency_id in self._selected_competency_ids
             documented = competency.is_documented_in_period(period_start, period_end)
-            matches_search = not search or search in (
-                f"{competency.subject_name} {competency.learning_area} {competency.competency_group} {competency.competency_text}"
-            ).casefold()
-            visible = (documented or selected) and matches_search
-            self.competency_widgets[competency_id].setVisible(visible)
+            widget.setVisible(visible_by_id[competency_id])
             self.competency_filter_notes[competency_id].setVisible(selected and not documented)
-            if visible:
-                visible_ids.add(competency_id)
         for subject_id, competency_ids, section in self.competency_topic_sections:
             section.setVisible(subject_id in selected_subjects and bool(set(competency_ids) & visible_ids))
         for subject_id, competency_ids, section in self.competency_area_sections:
             section.setVisible(subject_id in selected_subjects and bool(set(competency_ids) & visible_ids))
         for subject_id, section in self.competency_sections.items():
             subject_has_visible = any(
-                competency.subject_id == subject_id and competency_id in visible_ids
-                for competency_id, competency in self.competency_models.items()
+                competency.subject_id == subject_id
+                and competency.competency_id in visible_ids
+                for subject in self.preparation.subjects
+                for competency in subject.competencies
             )
             section.setVisible(subject_id in selected_subjects and subject_has_visible)
             self.competency_empty_by_subject[subject_id].setVisible(subject_id in selected_subjects and not subject_has_visible)
@@ -1413,6 +1555,54 @@ class LearningConferenceDialog(MotionDialog):
             self.competency_empty_by_subject[subject_id].setText(
                 f"Für dieses Kind sind in {subject_name}{period_suffix} noch keine kompetenzbezogenen Beobachtungen dokumentiert. Passe bei Bedarf Zeitraum oder Suche an."
             )
+
+    def _update_evidence_visibility(self, selected_labels: set[str] | None = None) -> None:
+        if selected_labels is None:
+            selected_labels = {
+                subject.subject_name
+                for subject in self.preparation.subjects
+                if subject.subject_id in self._subject_ids()
+            }
+        search = self.evidence_search.text().strip().casefold()
+        visible_ids: set[str] = set()
+        section_visible: dict[str, bool] = {}
+        selected_competencies = self._competency_ids()
+        for section_id, evidence_items in self._evidence_section_specs.items():
+            has_visible = False
+            for evidence in evidence_items:
+                matches_subject = evidence.subject_name in selected_labels or bool(
+                    set(evidence.competency_ids) & selected_competencies
+                )
+                haystack = (
+                    f"{evidence.subject_name} {evidence.context} {evidence.note} {evidence.date_text}"
+                ).casefold()
+                visible = matches_subject and (not search or search in haystack)
+                has_visible = has_visible or visible
+                if visible:
+                    visible_ids.add(evidence.observation_id)
+                widget = self.evidence_widgets.get(evidence.observation_id)
+                if widget is not None:
+                    widget.setVisible(visible)
+            section_visible[section_id] = has_visible
+        for section_id, section in self.evidence_sections.items():
+            if section_id == "evidence:unavailable":
+                unavailable = self._saved_draft.unavailable_observation_ids if self._saved_draft else ()
+                has_visible = any(not search or search in item.casefold() for item in unavailable)
+                section.setVisible(has_visible)
+                for observation_id in unavailable:
+                    widget = self.evidence_widgets.get(observation_id)
+                    if widget is not None:
+                        widget.setVisible(not search or search in observation_id.casefold())
+            else:
+                section.setVisible(section_visible.get(section_id, False))
+        unavailable_section = self.evidence_sections.get("evidence:unavailable")
+        unavailable_visible = bool(
+            self._saved_draft
+            and self._saved_draft.unavailable_observation_ids
+            and unavailable_section is not None
+            and not unavailable_section.isHidden()
+        )
+        self.evidence_empty.setVisible(not visible_ids and not unavailable_visible)
 
     def _competency_filter_period(self) -> tuple[date | None, date | None]:
         period_start = self._optional_date_value(self.period_start)
@@ -1610,14 +1800,10 @@ class LearningConferenceDialog(MotionDialog):
         return {key for key, check in self.cross_topic_checks.items() if check.isChecked()}
 
     def _competency_ids(self) -> set[str]:
-        if not self.phase_built["evidence"]:
-            return set(self._selected_competency_ids)
-        return {key for key, check in self.competency_checks.items() if check.isChecked()}
+        return set(self._selected_competency_ids)
 
     def _observation_ids(self) -> set[str]:
-        if not self.phase_built["evidence"]:
-            return set(self._selected_observation_ids)
-        return {key for key, check in self.evidence_checks.items() if check.isChecked()}
+        return set(self._selected_observation_ids)
 
     def _chart_types(self) -> set[str]:
         if not self.phase_built["evidence"]:

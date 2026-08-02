@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -246,6 +247,23 @@ class MotionSystemTest(unittest.TestCase):
         configure_button(other, "primary")
         self.assertIsNone(animate_save_confirmation(other))
         self.assertEqual(getattr(other, "_motion_animations", {}), {})
+
+    def test_save_feedback_timer_is_cancelled_with_deleted_button(self) -> None:
+        button = QPushButton("Speichern")
+        errors: list[BaseException] = []
+        previous_hook = sys.excepthook
+        sys.excepthook = lambda _kind, error, _traceback: errors.append(error)
+        try:
+            animate_save_confirmation(button)
+            self.assertTrue(button._motion_save_confirmation_timer.isActive())
+            button.deleteLater()
+            self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            QTest.qWait(600)
+            self.app.processEvents()
+        finally:
+            sys.excepthook = previous_hook
+
+        self.assertEqual(errors, [])
 
     def test_segment_and_navigation_indicators_move_without_content_animation(self) -> None:
         control = SegmentedControl((("first", "Erste"), ("second", "Zweite")))
