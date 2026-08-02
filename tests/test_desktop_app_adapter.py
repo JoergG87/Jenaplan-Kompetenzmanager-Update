@@ -3285,9 +3285,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "src.desktop_app.screens.students_screen"
         ))
 
-        self.assertIn('"Name", "Kurs", "Dokumentation", "Aktion"', source)
         self.assertIn(
-            "self.table.setCellWidget(row_index, 1, self._course_cell(student))",
+            '"Name", "Stammgruppe", "Kurs", "Dokumentation", "Aktion"',
+            source,
+        )
+        self.assertIn(
+            "self.table.setCellWidget(row_index, 2, self._course_cell(student))",
             source,
         )
         self.assertIn(
@@ -3296,10 +3299,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertNotIn('marker.setObjectName("CourseColorMarker")', source)
         self.assertIn("QHeaderView.ResizeMode.Fixed", source)
-        self.assertIn("self.table.setColumnWidth(1, 150)", source)
-        self.assertIn("self.table.setColumnWidth(3, 250)", source)
-        self.assertNotIn('"Stammgruppe", "Kurs"', source)
-        self.assertNotIn("self.table.setItem(row_index, 1", source)
+        self.assertIn("self.table.setColumnWidth(2, 150)", source)
+        self.assertIn("self.table.setColumnWidth(4, 250)", source)
+        self.assertIn('"Stammgruppe", "Kurs"', source)
+        self.assertIn("self.table.setItem(row_index, 1, group_item)", source)
 
     def test_overview_screen_shows_master_data_groups_and_courses(self) -> None:
         source = inspect.getsource(overview_screen)
@@ -6186,15 +6189,21 @@ class DesktopAppAdapterTest(unittest.TestCase):
             )
         )
 
-        self.assertEqual(screen.table.columnCount(), 4)
-        self.assertEqual(screen.table.horizontalHeaderItem(2).text(), "Dokumentation")
-        self.assertEqual(screen.table.horizontalHeaderItem(3).text(), "Aktion")
+        self.assertEqual(screen.table.columnCount(), 5)
+        self.assertEqual(screen.table.horizontalHeaderItem(1).text(), "Stammgruppe")
+        self.assertEqual(screen.table.item(0, 1).text(), "Gruppe")
         self.assertEqual(
-            screen.table.item(0, 2).text(),
+            screen.table.item(0, 1).data(Qt.ItemDataRole.AccessibleTextRole),
+            "Stammgruppe: Gruppe",
+        )
+        self.assertEqual(screen.table.horizontalHeaderItem(3).text(), "Dokumentation")
+        self.assertEqual(screen.table.horizontalHeaderItem(4).text(), "Aktion")
+        self.assertEqual(
+            screen.table.item(0, 3).text(),
             "1/2 Bereiche · teilweise dokumentiert",
         )
-        self.assertNotIn("Deutsch:", screen.table.item(0, 2).text())
-        action_widget = screen.table.cellWidget(0, 3)
+        self.assertNotIn("Deutsch:", screen.table.item(0, 3).text())
+        action_widget = screen.table.cellWidget(0, 4)
         self.assertIsNotNone(action_widget)
         action_button = action_widget.findChild(QPushButton)
         self.assertIsNotNone(action_button)
@@ -6202,6 +6211,17 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(action_button.toolTip(), "Neue Beobachtung für Anna Muster")
         action_button.click()
         self.assertEqual(observation_student_ids, ["STU-000001"])
+        self.assertIsNotNone(app)
+
+    def test_students_screen_hides_redundant_group_column_for_one_group(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = students_screen.StudentsScreen()
+
+        screen.set_students((), show_group_column=False)
+        self.assertTrue(screen.table.isColumnHidden(1))
+
+        screen.set_students((), show_group_column=True)
+        self.assertFalse(screen.table.isColumnHidden(1))
         self.assertIsNotNone(app)
 
     def test_students_screen_shows_back_button_for_filtered_lists(self) -> None:
@@ -7455,7 +7475,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(opened_student_ids, ["STU-000001"])
 
         opened_student_ids.clear()
-        action_widget = screen.table.cellWidget(0, 3)
+        action_widget = screen.table.cellWidget(0, 4)
         profile_button = next(
             button
             for button in action_widget.findChildren(QPushButton)
@@ -7521,9 +7541,14 @@ class DesktopAppAdapterTest(unittest.TestCase):
         app = QApplication.instance() or QApplication([])
         window = shell.AppShell(self.database_path)
         courses = window.adapter.list_courses()
+        groups = window.adapter.list_groups()
         course_group_snapshot = window.master_data_adapter.view_model().course_groups
 
+        window.show_students_for_group(groups[0].group_id)
+        self.assertTrue(window.students_screen.table.isColumnHidden(1))
+
         window.show_students_for_course(courses[0].course_id)
+        self.assertFalse(window.students_screen.table.isColumnHidden(1))
         first_course_students = window.students_screen.students
         self.assertTrue(first_course_students)
         self.assertTrue(
@@ -7549,6 +7574,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
         window.show_all_students()
+        self.assertFalse(window.students_screen.table.isColumnHidden(1))
         self.assertEqual(
             window.students_screen.students,
             window.adapter.list_students(),

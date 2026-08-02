@@ -835,6 +835,7 @@ class AppShell(QMainWindow):
             students,
             group_filter_name=filter_label,
             show_back_button=self._has_active_student_filter(),
+            show_group_column=self.selected_group_id is None,
         )
         shown_count = len(self.students_screen.filtered_students)
         if self.students_screen.search_text().strip():

@@ -61,7 +61,7 @@ class StudentsScreen(QWidget):
         self.filter_bar = FilterBar(self.search_input)
         self.result_label = QLabel("")
         self.back_to_overview_button = QPushButton("Zurück zur Auswahl")
-        self.table = QTableWidget(0, 4)
+        self.table = QTableWidget(0, 5)
         self._show_header = show_header
         self._last_pointer_activation: tuple[str, float] | None = None
         self._build()
@@ -101,7 +101,7 @@ class StudentsScreen(QWidget):
         layout.addWidget(self.empty_state)
 
         self.table.setHorizontalHeaderLabels(
-            ("Name", "Kurs", "Dokumentation", "Aktion")
+            ("Name", "Stammgruppe", "Kurs", "Dokumentation", "Aktion")
         )
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -124,18 +124,22 @@ class StudentsScreen(QWidget):
         )
         self.table.horizontalHeader().setSectionResizeMode(
             1,
-            QHeaderView.ResizeMode.Fixed,
-        )
-        self.table.horizontalHeader().setSectionResizeMode(
-            2,
             QHeaderView.ResizeMode.Stretch,
         )
         self.table.horizontalHeader().setSectionResizeMode(
-            3,
+            2,
             QHeaderView.ResizeMode.Fixed,
         )
-        self.table.setColumnWidth(1, 150)
-        self.table.setColumnWidth(3, 250)
+        self.table.horizontalHeader().setSectionResizeMode(
+            3,
+            QHeaderView.ResizeMode.Stretch,
+        )
+        self.table.horizontalHeader().setSectionResizeMode(
+            4,
+            QHeaderView.ResizeMode.Fixed,
+        )
+        self.table.setColumnWidth(2, 150)
+        self.table.setColumnWidth(4, 250)
         self.table.cellClicked.connect(self._activate_student_cell)
         self.table.cellDoubleClicked.connect(self._activate_student_cell)
         self.table.installEventFilter(self)
@@ -147,6 +151,7 @@ class StudentsScreen(QWidget):
         *,
         group_filter_name: str = "",
         show_back_button: bool = False,
+        show_group_column: bool = True,
     ) -> None:
         """Replace student rows."""
         self.students = students
@@ -155,6 +160,7 @@ class StudentsScreen(QWidget):
             show_back_button,
         )
         self.back_to_overview_button.setVisible(show_back_button)
+        self.table.setColumnHidden(1, not show_group_column)
         self.apply_search()
 
     def search_text(self) -> str:
@@ -186,7 +192,14 @@ class StudentsScreen(QWidget):
                 f"Schüler {student.display_name}",
             )
             self.table.setItem(row_index, 0, name_item)
-            self.table.setCellWidget(row_index, 1, self._course_cell(student))
+            group_name = student.group_name or "Nicht verfügbar"
+            group_item = QTableWidgetItem(group_name)
+            group_item.setData(
+                Qt.ItemDataRole.AccessibleTextRole,
+                f"Stammgruppe: {group_name}",
+            )
+            self.table.setItem(row_index, 1, group_item)
+            self.table.setCellWidget(row_index, 2, self._course_cell(student))
             documentation_item = QTableWidgetItem(
                 student.documentation_status.list_label
             )
@@ -195,8 +208,8 @@ class StudentsScreen(QWidget):
                 Qt.ItemDataRole.AccessibleTextRole,
                 f"Dokumentation: {student.documentation_status.list_label}",
             )
-            self.table.setItem(row_index, 2, documentation_item)
-            self.table.setCellWidget(row_index, 3, self._observation_action_cell(student))
+            self.table.setItem(row_index, 3, documentation_item)
+            self.table.setCellWidget(row_index, 4, self._observation_action_cell(student))
 
     def _course_cell(self, student: StudentListItem) -> QWidget:
         cell = QWidget()
@@ -261,7 +274,7 @@ class StudentsScreen(QWidget):
         return super().eventFilter(watched, event)
 
     def _activate_student_cell(self, row: int, column: int) -> None:
-        if column == 3 or row >= len(self.filtered_students):
+        if column == 4 or row >= len(self.filtered_students):
             return
         student_id = self.filtered_students[row].student_id
         now = monotonic()
