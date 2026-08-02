@@ -10,10 +10,10 @@ from datetime import date
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, Qt, QTimer
 from PySide6.QtGui import QAccessible
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton, QTextEdit
+from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton, QTextEdit, QWidget
 
 from src.desktop_app import shell
 from src.desktop_app.dialogs.learning_conference_dialog import (
@@ -71,6 +71,8 @@ class LearningConferenceUiTest(unittest.TestCase):
 
     def test_new_draft_collects_all_persistent_content_groups(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
+        for key in ("strengths", "development", "goals", "evidence", "agreements"):
+            dialog.set_active_phase(key, focus=False)
         dialog.subject_checks["math"].setChecked(True)
         dialog.cross_topic_checks["social_behavior"].setChecked(True)
         dialog.competency_checks["CMP-1"].setChecked(True)
@@ -114,12 +116,14 @@ class LearningConferenceUiTest(unittest.TestCase):
         reconstructed = dialog.draft_view_model()
 
         self.assertEqual(reconstructed, draft)
+        dialog.set_active_phase("goals", focus=False)
         self.assertEqual(dialog.text_inputs["prepared_goals_text"].toPlainText(), "Vorbereitetes Ziel")
         self.assertEqual(dialog.text_inputs["agreed_goals_text"].toPlainText(), "Gemeinsam vereinbartes Ziel")
         self.assertIsNot(dialog.text_inputs["prepared_goals_text"], dialog.text_inputs["agreed_goals_text"])
 
     def test_unavailable_observation_is_visible_and_reference_is_preserved(self) -> None:
         dialog = LearningConferenceDialog(self.preparation, initial_draft=self._draft())
+        dialog.set_active_phase("evidence", focus=False)
 
         unavailable = dialog.findChild(QLabel, "LearningConferenceUnavailableEvidence")
         # The marker is a frame; the child search below verifies its calm visible copy.
@@ -130,10 +134,10 @@ class LearningConferenceUiTest(unittest.TestCase):
     def test_evidence_warning_is_soft_and_does_not_change_selection(self) -> None:
         dialog = LearningConferenceDialog(self._preparation(evidence_count=6))
         dialog.subject_checks["math"].setChecked(True)
+        dialog.set_active_phase("evidence", focus=False)
         for check in dialog.evidence_checks.values():
             check.setChecked(True)
 
-        dialog.set_active_phase("evidence", focus=False)
         dialog._update_evidence_warning()
 
         self.assertTrue(dialog.evidence_warning.isVisibleTo(dialog))
@@ -142,6 +146,7 @@ class LearningConferenceUiTest(unittest.TestCase):
 
     def test_canonical_competency_status_is_read_only(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
+        dialog.set_active_phase("evidence", focus=False)
         status_labels = dialog.findChildren(QLabel, "LearningConferenceCanonicalStatus")
 
         self.assertEqual(len(status_labels), 1)
@@ -151,6 +156,7 @@ class LearningConferenceUiTest(unittest.TestCase):
     def test_only_documented_or_confirmed_competencies_are_visible(self) -> None:
         dialog = LearningConferenceDialog(self._filter_preparation())
         dialog.subject_checks["math"].setChecked(True)
+        dialog.set_active_phase("evidence", focus=False)
 
         self.assertFalse(dialog.competency_widgets["CMP-OBS"].isHidden())
         self.assertFalse(dialog.competency_widgets["CMP-CONF"].isHidden())
@@ -159,6 +165,7 @@ class LearningConferenceUiTest(unittest.TestCase):
     def test_complete_period_filters_observation_dates_but_not_confirmation(self) -> None:
         draft = self._draft_for_filter(period_start=date(2026, 2, 1), period_end=date(2026, 4, 30))
         dialog = LearningConferenceDialog(self._filter_preparation(), initial_draft=draft)
+        dialog.set_active_phase("evidence", focus=False)
 
         self.assertFalse(dialog.competency_widgets["CMP-OBS"].isHidden())
         self.assertTrue(dialog.competency_widgets["CMP-LATE"].isHidden())
@@ -167,6 +174,7 @@ class LearningConferenceUiTest(unittest.TestCase):
     def test_missing_period_shows_all_documented_competencies(self) -> None:
         draft = self._draft_for_filter(period_start=None, period_end=None)
         dialog = LearningConferenceDialog(self._filter_preparation(), initial_draft=draft)
+        dialog.set_active_phase("evidence", focus=False)
 
         self.assertFalse(dialog.competency_widgets["CMP-OBS"].isHidden())
         self.assertFalse(dialog.competency_widgets["CMP-LATE"].isHidden())
@@ -188,12 +196,14 @@ class LearningConferenceUiTest(unittest.TestCase):
         )
         dialog = LearningConferenceDialog(preparation)
         dialog.subject_checks["math"].setChecked(True)
+        dialog.set_active_phase("evidence", focus=False)
 
         self.assertTrue(dialog.competency_widgets["CMP-NONE"].isHidden())
 
     def test_empty_hierarchy_branches_are_hidden(self) -> None:
         draft = self._draft_for_filter(period_start=date(2026, 2, 1), period_end=date(2026, 4, 30))
         dialog = LearningConferenceDialog(self._filter_preparation(), initial_draft=draft)
+        dialog.set_active_phase("evidence", focus=False)
 
         late_topics = [
             section for _subject_id, competency_ids, section in dialog.competency_topic_sections
@@ -215,6 +225,7 @@ class LearningConferenceUiTest(unittest.TestCase):
             competency_ids=("CMP-LATE",),
         )
         dialog = LearningConferenceDialog(self._filter_preparation(), initial_draft=draft)
+        dialog.set_active_phase("evidence", focus=False)
 
         self.assertFalse(dialog.competency_widgets["CMP-LATE"].isHidden())
         self.assertTrue(dialog.competency_checks["CMP-LATE"].isChecked())
@@ -230,6 +241,7 @@ class LearningConferenceUiTest(unittest.TestCase):
         dialog = LearningConferenceDialog(self._filter_preparation(), initial_draft=draft)
         dialog.period_start.setDate(dialog.period_start.minimumDate().addDays(1))
         dialog.period_end.setDate(dialog.period_start.minimumDate().addDays(2))
+        dialog.set_active_phase("evidence", focus=False)
 
         self.assertTrue(dialog.competency_checks["CMP-LATE"].isChecked())
         self.assertFalse(dialog.competency_widgets["CMP-LATE"].isHidden())
@@ -239,6 +251,7 @@ class LearningConferenceUiTest(unittest.TestCase):
         preparation = self._filter_preparation()
         dialog = LearningConferenceDialog(preparation)
         dialog.subject_checks["empty"].setChecked(True)
+        dialog.set_active_phase("evidence", focus=False)
 
         empty = dialog.competency_empty_by_subject["empty"]
         self.assertFalse(empty.isHidden())
@@ -318,8 +331,8 @@ class LearningConferenceUiTest(unittest.TestCase):
             self.assertIn("Noch leer", button.text())
             self.assertFalse(button.property("phaseCurrent"))
             self.assertEqual(button.focusPolicy(), Qt.FocusPolicy.StrongFocus)
+        dialog.set_active_phase("strengths", focus=False)
         dialog.text_inputs["strengths_text"].setPlainText("Ruhige Stärke")
-        self.assertIn("Inhalt vorhanden", dialog.phase_navigation.button_for("strengths").text())
         dialog.set_active_phase("strengths", focus=False)
         self.assertIn("Aktuell", dialog.phase_navigation.button_for("strengths").text())
         self.assertIn("Noch leer", dialog.phase_navigation.button_for("goal").text())
@@ -342,6 +355,7 @@ class LearningConferenceUiTest(unittest.TestCase):
         dialog.resize(1180, 760)
         dialog.show()
         self.app.processEvents()
+        dialog.set_active_phase("strengths", focus=False)
         dialog.text_inputs["strengths_text"].setPlainText("Bleibt im Entwurf erhalten")
 
         sequence = ("strengths", "development", "goals", "evidence", "goals", "strengths")
@@ -359,10 +373,12 @@ class LearningConferenceUiTest(unittest.TestCase):
                 self.assertTrue(page.isHidden(), other_key)
                 self.assertFalse(page.isEnabled(), other_key)
             focused = self.app.focusWidget()
-            self.assertTrue(
-                focused is not None
-                and (focused is active_page or active_page.isAncestorOf(focused))
-            )
+            target = dialog.phase_first_focus[key]
+            self.assertTrue(target.isEnabled())
+            self.assertTrue(target.isVisibleTo(dialog))
+            self.assertTrue(active_page.isAncestorOf(target))
+            if focused is not None:
+                self.assertTrue(focused is active_page or active_page.isAncestorOf(focused))
 
         self.assertEqual(
             dialog.text_inputs["strengths_text"].toPlainText(),
@@ -371,6 +387,83 @@ class LearningConferenceUiTest(unittest.TestCase):
         self.assertIsNone(dialog.phase_stack.graphicsEffect())
         dialog._close_choice_provider = lambda _parent: "discard"
         dialog.close()
+
+    def test_only_initial_phase_is_built_until_navigation_requests_another(self) -> None:
+        dialog = LearningConferenceDialog(self.preparation)
+
+        self.assertEqual(
+            {key for key, built in dialog.phase_built.items() if built},
+            {"goal"},
+        )
+        self.assertEqual(set(dialog.phase_scroll_areas), {"goal"})
+        for key in ("strengths", "development", "goals", "evidence", "agreements"):
+            page = dialog.phase_pages[key]
+            self.assertEqual(page.findChildren(QWidget), [])
+            self.assertEqual(page.focusPolicy(), Qt.FocusPolicy.NoFocus)
+
+        dialog.set_active_phase("strengths", focus=False)
+
+        self.assertEqual(
+            {key for key, built in dialog.phase_built.items() if built},
+            {"goal", "strengths"},
+        )
+
+    def test_phase_is_built_once_and_reused_after_back_and_forth_navigation(self) -> None:
+        dialog = LearningConferenceDialog(self.preparation)
+        build_count = 0
+        original_builder = dialog._phase_builders["strengths"]
+
+        def counted_builder() -> QWidget:
+            nonlocal build_count
+            build_count += 1
+            return original_builder()
+
+        dialog._phase_builders["strengths"] = counted_builder
+        dialog.set_active_phase("strengths", focus=False)
+        page = dialog.phase_pages["strengths"]
+        edit = dialog.text_inputs["strengths_text"]
+        edit.setPlainText("Bleibt erhalten")
+        child_count = len(page.findChildren(QWidget))
+
+        dialog.set_active_phase("goal", focus=False)
+        dialog.set_active_phase("strengths", focus=False)
+
+        self.assertEqual(build_count, 1)
+        self.assertIs(dialog.text_inputs["strengths_text"], edit)
+        self.assertEqual(edit.toPlainText(), "Bleibt erhalten")
+        self.assertEqual(len(page.findChildren(QWidget)), child_count)
+
+    def test_large_evidence_phase_yields_to_paint_and_timer_events_while_building(self) -> None:
+        dialog = LearningConferenceDialog(self._preparation(evidence_count=24))
+        timer_fired: list[bool] = []
+        QTimer.singleShot(0, lambda: timer_fired.append(True))
+
+        dialog.set_active_phase("evidence", focus=False)
+
+        self.assertEqual(timer_fired, [True])
+        self.assertTrue(dialog.phase_built["evidence"])
+        self.assertEqual(dialog.validation_message.label.text(), "")
+        self.assertEqual(len(dialog.evidence_checks), 24)
+
+    def test_save_without_opening_all_phases_preserves_existing_draft_values(self) -> None:
+        initial = self._draft()
+        dialog = LearningConferenceDialog(self.preparation, initial_draft=initial)
+        emitted: list[LearningConferenceDraftViewModel] = []
+        dialog.save_requested.connect(emitted.append)
+
+        dialog.teacher_input.setText("Neue Lehrkraft")
+        dialog.save_button.click()
+
+        self.assertEqual(len(emitted), 1)
+        saved = emitted[0]
+        self.assertEqual(saved.responsible_teacher, "Neue Lehrkraft")
+        self.assertEqual(saved.strengths_text, initial.strengths_text)
+        self.assertEqual(saved.agreed_goals_text, initial.agreed_goals_text)
+        self.assertEqual(saved.competency_ids, initial.competency_ids)
+        self.assertEqual(saved.observation_ids, initial.observation_ids)
+        self.assertEqual(saved.next_review_date, initial.next_review_date)
+        self.assertFalse(dialog.phase_built["evidence"])
+        self.assertFalse(dialog.phase_built["agreements"])
 
     def test_existing_navigation_reaches_conversation_editing_roles(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
@@ -385,6 +478,8 @@ class LearningConferenceUiTest(unittest.TestCase):
 
     def test_all_existing_fields_are_assigned_to_the_decided_phases(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
+        for key in ("strengths", "development", "goals", "evidence", "agreements"):
+            dialog.set_active_phase(key, focus=False)
         expected = {
             "conversation_entry_text": "goal",
             "strengths_text": "strengths",
@@ -411,6 +506,8 @@ class LearningConferenceUiTest(unittest.TestCase):
 
     def test_roles_are_textual_and_agreed_goals_are_in_phase_four(self) -> None:
         dialog = LearningConferenceDialog(self.preparation, initial_draft=self._draft())
+        for key in ("strengths", "development", "goals", "agreements"):
+            dialog.set_active_phase(key, focus=False)
         labels = {label.text() for label in dialog.findChildren(QLabel)}
 
         self.assertIn(ROLE_PREPARATION, labels)
@@ -425,6 +522,8 @@ class LearningConferenceUiTest(unittest.TestCase):
 
     def test_evidence_selection_lives_only_in_phase_five_and_summaries_are_read_only(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
+        for key in ("strengths", "development", "goals", "evidence", "agreements"):
+            dialog.set_active_phase(key, focus=False)
 
         for widget in (
             *dialog.competency_checks.values(),
@@ -439,6 +538,8 @@ class LearningConferenceUiTest(unittest.TestCase):
 
     def test_dirty_state_covers_text_date_and_all_reference_selections(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
+        dialog.set_active_phase("strengths", focus=False)
+        dialog.set_active_phase("evidence", focus=False)
         changes = (
             lambda: dialog.text_inputs["strengths_text"].setPlainText("Stärke"),
             lambda: dialog.conference_date.setDate(dialog.conference_date.date().addDays(1)),
@@ -464,6 +565,7 @@ class LearningConferenceUiTest(unittest.TestCase):
         emitted: list[object] = []
         dialog.save_requested.connect(emitted.append)
 
+        dialog.set_active_phase("evidence", focus=False)
         dialog.evidence_search.setText("Zeit")
         dialog.set_active_phase("evidence", focus=False)
         dialog.set_active_phase("goals", focus=False)
@@ -473,6 +575,7 @@ class LearningConferenceUiTest(unittest.TestCase):
 
     def test_successful_save_resets_dirty_state(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
+        dialog.set_active_phase("strengths", focus=False)
         dialog.text_inputs["strengths_text"].setPlainText("Stärke")
         dialog.save_requested.connect(
             lambda draft: dialog.apply_saved_draft(
@@ -494,6 +597,7 @@ class LearningConferenceUiTest(unittest.TestCase):
         continue_dialog = LearningConferenceDialog(self.preparation)
         continue_dialog.show()
         self.app.processEvents()
+        continue_dialog.set_active_phase("strengths", focus=False)
         continue_dialog.text_inputs["strengths_text"].setPlainText("Änderung")
         continue_dialog._close_choice_provider = lambda _parent: "continue"
         continue_dialog.reject()
@@ -505,6 +609,7 @@ class LearningConferenceUiTest(unittest.TestCase):
         save_dialog = LearningConferenceDialog(self.preparation)
         save_dialog.show()
         self.app.processEvents()
+        save_dialog.set_active_phase("strengths", focus=False)
         save_dialog.text_inputs["strengths_text"].setPlainText("Änderung")
         save_dialog.save_requested.connect(
             lambda draft: save_dialog.apply_saved_draft(
@@ -523,6 +628,7 @@ class LearningConferenceUiTest(unittest.TestCase):
         dialog = LearningConferenceDialog(self.preparation)
         dialog.show()
         self.app.processEvents()
+        dialog.set_active_phase("strengths", focus=False)
         dialog.text_inputs["strengths_text"].setPlainText("Änderung")
         dialog._close_choice_provider = lambda _parent: "continue"
 
@@ -537,6 +643,7 @@ class LearningConferenceUiTest(unittest.TestCase):
 
     def test_optional_review_date_starts_and_remains_empty(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
+        dialog.set_active_phase("agreements", focus=False)
 
         self.assertEqual(dialog.next_review_date.date(), dialog.next_review_date.minimumDate())
         self.assertIsNone(dialog.draft_view_model().next_review_date)
@@ -581,6 +688,46 @@ class LearningConferenceUiTest(unittest.TestCase):
             self.assertIn("Phase", dialog.phase_navigation.button_for(key).accessibleName())
         self.assertTrue(all(edit.accessibleName() for edit in dialog.text_inputs.values()))
         dialog.close()
+
+    def test_phase_navigation_activates_with_space_and_enter(self) -> None:
+        dialog = LearningConferenceDialog(self.preparation)
+
+        QTest.keyClick(dialog.phase_navigation.button_for("goals"), Qt.Key.Key_Space)
+        self.assertEqual(dialog.active_phase_key, "goals")
+        QTest.keyClick(dialog.phase_navigation.button_for("agreements"), Qt.Key.Key_Enter)
+        self.assertEqual(dialog.active_phase_key, "agreements")
+        self.assertEqual(sum(dialog.phase_built.values()), 3)
+
+    def test_twenty_open_close_cycles_release_each_dialog_after_deferred_delete(self) -> None:
+        baseline_top_levels = len(QApplication.topLevelWidgets())
+        baseline_widgets = len(QApplication.allWidgets())
+        widget_trend: list[int] = []
+
+        for _ in range(20):
+            dialog = LearningConferenceDialog(
+                self._filter_preparation(),
+                initial_draft=replace(
+                    self._draft_for_filter(period_start=None, period_end=None),
+                    subject_ids=("empty", "math"),
+                ),
+            )
+            dialog.set_active_phase("evidence", focus=False)
+            for _subject_id, _competency_ids, section in dialog.competency_area_sections:
+                section.button.setChecked(True)
+                self.app.processEvents()
+                if self.app.platformName() == "cocoa":
+                    QTest.qWait(180)
+            dialog.show()
+            self.app.processEvents()
+            dialog.close()
+            dialog.deleteLater()
+            self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            self.app.processEvents()
+            self.assertNotIn(dialog, QApplication.topLevelWidgets())
+            widget_trend.append(len(QApplication.allWidgets()))
+
+        self.assertLessEqual(len(QApplication.topLevelWidgets()), baseline_top_levels)
+        self.assertTrue(all(count <= baseline_widgets for count in widget_trend), widget_trend)
 
     def test_phase_and_scroll_state_survive_local_switches(self) -> None:
         dialog = LearningConferenceDialog(self._preparation(evidence_count=24))

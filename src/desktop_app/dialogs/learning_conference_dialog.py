@@ -7,9 +7,10 @@ from collections.abc import Iterable, Sequence
 from datetime import date, datetime
 import textwrap
 
-from PySide6.QtCore import QDate, QEvent, Qt, QTimer, Signal
+from PySide6.QtCore import QDate, QEvent, QEventLoop, Qt, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QKeyEvent, QKeySequence, QResizeEvent
 from PySide6.QtWidgets import (
+    QApplication,
     QButtonGroup,
     QCheckBox,
     QDateEdit,
@@ -624,6 +625,16 @@ class LearningConferenceDialog(MotionDialog):
         self.phase_pages: dict[str, QWidget] = {}
         self.phase_scroll_areas: dict[str, QScrollArea] = {}
         self.phase_first_focus: dict[str, QWidget] = {}
+        self.phase_built = {key: False for key, _title, _description in PHASES}
+        self._phase_build_event_counter = 0
+        self._phase_builders = {
+            "goal": self._phase_goal,
+            "strengths": self._phase_strengths,
+            "development": self._phase_development,
+            "goals": self._phase_goals,
+            "evidence": self._phase_evidence,
+            "agreements": self._phase_agreements,
+        }
         self.evidence_summary_labels: list[QLabel] = []
         self._baseline: LearningConferenceDraftViewModel | None = None
         self._dirty = False
@@ -635,8 +646,6 @@ class LearningConferenceDialog(MotionDialog):
         self.resize(1400, 900)
         self.setMinimumSize(1080, 700)
         self._build()
-        self._connect_updates()
-        self._update_filters()
         self._baseline = self.draft_view_model()
         self._refresh_ui_state()
 
@@ -663,16 +672,15 @@ class LearningConferenceDialog(MotionDialog):
         workspace_layout.addWidget(self.phase_navigation)
         self.phase_stack = QStackedWidget()
         self.phase_stack.setObjectName("LearningConferencePhaseWorkspace")
-        builders = (
-            ("goal", self._phase_goal),
-            ("strengths", self._phase_strengths),
-            ("development", self._phase_development),
-            ("goals", self._phase_goals),
-            ("evidence", self._phase_evidence),
-            ("agreements", self._phase_agreements),
-        )
-        for key, builder in builders:
-            page = self._phase_page(key, builder())
+        for key, _title, _description in PHASES:
+            page = QWidget()
+            page.setObjectName(f"LearningConferencePhaseContainer_{key}")
+            page.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            page.setAccessibleName(
+                next(title for phase_key, title, _description in PHASES if phase_key == key)
+            )
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(0, 0, 0, 0)
             self.phase_pages[key] = page
             self.phase_stack.addWidget(page)
         workspace_layout.addWidget(self.phase_stack, 1)
@@ -683,6 +691,7 @@ class LearningConferenceDialog(MotionDialog):
         root.addWidget(self.validation_message)
         root.addWidget(self._action_bar())
         self.toast = Toast(self)
+        self._ensure_phase_built("goal")
         self.set_active_phase("goal", focus=False)
 
     def _context_header(self) -> QFrame:
@@ -740,6 +749,40 @@ class LearningConferenceDialog(MotionDialog):
         scroll.setWidget(content)
         self.phase_scroll_areas[key] = scroll
         return scroll
+
+    def _ensure_phase_built(self, key: str) -> None:
+        if self.phase_built[key]:
+            return
+        is_evidence_phase = key == "evidence"
+        if is_evidence_phase:
+            self.validation_message.set_message(
+                "Kompetenzen und Belege werden für diese Gesprächsphase vorbereitet …",
+                tone="info",
+            )
+            QApplication.processEvents(
+                QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents
+            )
+        try:
+            content = self._phase_builders[key]()
+        finally:
+            if is_evidence_phase:
+                self.validation_message.set_message("")
+        scroll = self._phase_page(key, content)
+        page_layout = self.phase_pages[key].layout()
+        if page_layout is None:
+            raise RuntimeError(f"LEG-Phasencontainer ohne Layout: {key}")
+        page_layout.addWidget(scroll)
+        self.phase_built[key] = True
+        self._connect_phase_updates(key)
+        if key == "evidence":
+            self._update_filters()
+
+    def _yield_during_evidence_build(self) -> None:
+        self._phase_build_event_counter += 1
+        if self._phase_build_event_counter % 20 == 0:
+            QApplication.processEvents(
+                QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents
+            )
 
     def _phase_shell(self, key: str) -> tuple[QWidget, QVBoxLayout]:
         _phase_key, title, description = next(phase for phase in PHASES if phase[0] == key)
@@ -1003,6 +1046,7 @@ class LearningConferenceDialog(MotionDialog):
                     competency_ids = tuple(item.competency_id for item in competencies)
                     for competency in competencies:
                         options_layout.addWidget(self._competency_option(competency))
+                        self._yield_during_evidence_build()
                     topic_section = _CollapsibleSection(topic, options, expanded=True)
                     self.competency_topic_sections.append((subject.subject_id, competency_ids, topic_section))
                     topic_layout.addWidget(topic_section)
@@ -1023,7 +1067,9 @@ class LearningConferenceDialog(MotionDialog):
         return card
 
     def _competency_option(self, competency: LearningConferenceCompetencyViewModel) -> QFrame:
-        layout = QVBoxLayout()
+        widget = QFrame()
+        widget.setObjectName("LearningConferenceSoftBlock")
+        layout = QVBoxLayout(widget)
         layout.setContentsMargins(12, 9, 12, 10)
         check = QCheckBox(competency.competency_text)
         check.setObjectName(f"LearningConferenceCompetency_{competency.competency_id}")
@@ -1049,7 +1095,6 @@ class LearningConferenceDialog(MotionDialog):
         layout.addWidget(filter_note)
         if competency.historical or not competency.selectable:
             layout.addWidget(_label("Historischer Bezug – nicht neu auswählbar.", "subtle"))
-        widget = _frame(layout, "LearningConferenceSoftBlock")
         self.competency_widgets[competency.competency_id] = widget
         return widget
 
@@ -1075,7 +1120,9 @@ class LearningConferenceDialog(MotionDialog):
         )
         layout.addWidget(self.evidence_empty)
         for evidence in self.preparation.evidence:
-            block = QVBoxLayout()
+            widget = QFrame()
+            widget.setObjectName("LearningConferenceSoftBlock")
+            block = QVBoxLayout(widget)
             block.setContentsMargins(12, 9, 12, 10)
             heading = QHBoxLayout()
             heading.addWidget(_label(evidence.subject_name or "Übergreifend", "card_title"))
@@ -1090,13 +1137,15 @@ class LearningConferenceDialog(MotionDialog):
             block.addWidget(check)
             if evidence.is_quick_observation:
                 block.addWidget(_label("Nur als Textbeleg", "subtle"))
-            widget = _frame(block, "LearningConferenceSoftBlock")
             self.evidence_checks[evidence.observation_id] = check
             self.evidence_widgets[evidence.observation_id] = widget
             layout.addWidget(widget)
+            self._yield_during_evidence_build()
         unavailable = self._saved_draft.unavailable_observation_ids if self._saved_draft else ()
         for observation_id in unavailable:
-            block = QVBoxLayout()
+            widget = QFrame()
+            widget.setObjectName("LearningConferenceUnavailableEvidence")
+            block = QVBoxLayout(widget)
             block.setContentsMargins(12, 9, 12, 10)
             block.addWidget(_label("Beleg nicht mehr verfügbar – gespeicherte Referenz bleibt erhalten", "card_title"))
             block.addWidget(_label(observation_id, "subtle"))
@@ -1105,9 +1154,9 @@ class LearningConferenceDialog(MotionDialog):
             check.setAccessibleName(f"Phase 5, nicht verfügbaren Beleg {observation_id} beibehalten")
             block.addWidget(check)
             self.evidence_checks[observation_id] = check
-            widget = _frame(block, "LearningConferenceUnavailableEvidence")
             self.evidence_widgets[observation_id] = widget
             layout.addWidget(widget)
+            self._yield_during_evidence_build()
         return card
 
     def _charts_card(self) -> AppCard:
@@ -1191,30 +1240,28 @@ class LearningConferenceDialog(MotionDialog):
         layout.addWidget(self.save_button)
         return bar
 
-    def _connect_updates(self) -> None:
-        controls: Iterable[QCheckBox] = (
-            *self.subject_checks.values(),
-            *self.cross_topic_checks.values(),
-            *self.competency_checks.values(),
-            *self.evidence_checks.values(),
-            *self.chart_checks.values(),
-        )
-        for control in controls:
-            control.toggled.connect(self._draft_changed)
-        for control in (*self.subject_checks.values(), *self.cross_topic_checks.values()):
-            control.toggled.connect(self._update_filters)
-        for control in self.competency_checks.values():
-            control.toggled.connect(self._update_filters)
-        for control in self.evidence_checks.values():
-            control.toggled.connect(self._update_evidence_warning)
-        for edit in self.text_inputs.values():
-            edit.textChanged.connect(self._draft_changed)
-        for edit in (self.period_start, self.period_end, self.conference_date, self.next_review_date):
-            edit.dateChanged.connect(self._draft_changed)
-        self.period_start.dateChanged.connect(self._update_filters)
-        self.period_end.dateChanged.connect(self._update_filters)
-        self.teacher_input.textChanged.connect(self._draft_changed)
-        self.evidence_search.textChanged.connect(self._update_filters)
+    def _connect_phase_updates(self, key: str) -> None:
+        if key == "goal":
+            for control in (*self.subject_checks.values(), *self.cross_topic_checks.values()):
+                control.toggled.connect(self._draft_changed)
+                control.toggled.connect(self._update_filters)
+            for edit in (self.period_start, self.period_end, self.conference_date):
+                edit.dateChanged.connect(self._draft_changed)
+            self.period_start.dateChanged.connect(self._update_filters)
+            self.period_end.dateChanged.connect(self._update_filters)
+            self.teacher_input.textChanged.connect(self._draft_changed)
+        elif key == "evidence":
+            for control in (*self.competency_checks.values(), *self.chart_checks.values()):
+                control.toggled.connect(self._draft_changed)
+                control.toggled.connect(self._update_filters)
+            for control in self.evidence_checks.values():
+                control.toggled.connect(self._draft_changed)
+                control.toggled.connect(self._update_evidence_warning)
+            self.evidence_search.textChanged.connect(self._update_filters)
+        elif key == "agreements":
+            self.next_review_date.dateChanged.connect(self._draft_changed)
+        for field_key in self._phase_text_field_keys(key):
+            self.text_inputs[field_key].textChanged.connect(self._draft_changed)
 
     def _draft_changed(self, *_args: object) -> None:
         self._refresh_ui_state()
@@ -1269,13 +1316,14 @@ class LearningConferenceDialog(MotionDialog):
             or self._text("agreed_support_text")
             or self._text("agreed_agreements_text")
             or self._text("responsibilities_text")
-            or self._optional_date_value(self.next_review_date)
+            or self._next_review_date_value()
         )
 
     def set_active_phase(self, key: str, *, focus: bool = True) -> None:
         keys = [phase_key for phase_key, _title, _description in PHASES]
         if key not in keys:
             raise ValueError(f"Unbekannte LEG-Phase: {key}")
+        self._ensure_phase_built(key)
         self.phase_navigation.set_current(key)
         active_page = self.phase_pages[key]
         animate_stack_transition(
@@ -1309,6 +1357,9 @@ class LearningConferenceDialog(MotionDialog):
         self.set_active_phase(keys[target])
 
     def _update_filters(self, *_args: object) -> None:
+        if not self.phase_built["evidence"]:
+            self._refresh_ui_state()
+            return
         selected_subjects = self._subject_ids()
         self.competency_empty.setVisible(not selected_subjects)
         self._update_competency_visibility(selected_subjects)
@@ -1415,7 +1466,7 @@ class LearningConferenceDialog(MotionDialog):
             agreed_support_text=self._text("agreed_support_text"),
             agreed_agreements_text=self._text("agreed_agreements_text"),
             responsibilities_text=self._text("responsibilities_text"),
-            next_review_date=self._optional_date_value(self.next_review_date),
+            next_review_date=self._next_review_date_value(),
             subject_ids=tuple(sorted(self._subject_ids())),
             cross_topic_keys=tuple(sorted(self._cross_topic_keys())),
             competency_ids=tuple(sorted(self._competency_ids())),
@@ -1549,22 +1600,57 @@ class LearningConferenceDialog(MotionDialog):
         super().resizeEvent(event)
 
     def _subject_ids(self) -> set[str]:
+        if not self.phase_built["goal"]:
+            return set(self._selected_subject_ids)
         return {key for key, check in self.subject_checks.items() if check.isChecked()}
 
     def _cross_topic_keys(self) -> set[str]:
+        if not self.phase_built["goal"]:
+            return set(self._selected_cross_topics)
         return {key for key, check in self.cross_topic_checks.items() if check.isChecked()}
 
     def _competency_ids(self) -> set[str]:
+        if not self.phase_built["evidence"]:
+            return set(self._selected_competency_ids)
         return {key for key, check in self.competency_checks.items() if check.isChecked()}
 
     def _observation_ids(self) -> set[str]:
+        if not self.phase_built["evidence"]:
+            return set(self._selected_observation_ids)
         return {key for key, check in self.evidence_checks.items() if check.isChecked()}
 
     def _chart_types(self) -> set[str]:
+        if not self.phase_built["evidence"]:
+            return set(self._selected_chart_types)
         return {key for key, check in self.chart_checks.items() if check.isChecked()}
 
     def _text(self, key: str) -> str:
-        return self.text_inputs[key].toPlainText().strip()
+        edit = self.text_inputs.get(key)
+        if edit is not None:
+            return edit.toPlainText().strip()
+        return (getattr(self._saved_draft, key, "") if self._saved_draft else "").strip()
+
+    def _next_review_date_value(self) -> date | None:
+        if self.phase_built["agreements"]:
+            return self._optional_date_value(self.next_review_date)
+        return self._saved_draft.next_review_date if self._saved_draft else None
+
+    @staticmethod
+    def _phase_text_field_keys(key: str) -> tuple[str, ...]:
+        return {
+            "goal": ("conversation_entry_text",),
+            "strengths": ("strengths_text", "child_retrospective_text"),
+            "development": ("teacher_perspective_text", "development_fields_text"),
+            "goals": ("prepared_goals_text", "agreed_goals_text"),
+            "evidence": (),
+            "agreements": (
+                "prepared_support_text",
+                "prepared_agreements_text",
+                "agreed_support_text",
+                "agreed_agreements_text",
+                "responsibilities_text",
+            ),
+        }[key]
 
     def _selected_area_labels(self) -> tuple[str, ...]:
         labels = [subject.subject_name for subject in self.preparation.subjects if subject.subject_id in self._subject_ids()]
