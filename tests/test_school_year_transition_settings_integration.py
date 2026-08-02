@@ -348,6 +348,7 @@ def test_preview_reopens_five_times_without_nested_exec_or_retained_dialogs(
     shell = AppShell(database_path)
     before = _database_snapshot(database_path)
     dialogs: list[SchoolYearTransitionPreviewDialog] = []
+    summary_label_groups: list[tuple[QObject, ...]] = []
 
     with patch.object(
         SchoolYearTransitionPreviewDialog,
@@ -365,6 +366,15 @@ def test_preview_reopens_five_times_without_nested_exec_or_retained_dialogs(
             assert dialog.isModal()
             assert not dialog.activate_button.isEnabled()
             dialogs.append(dialog)
+            summary_labels = tuple(dialog.summary_labels.values()) + tuple(
+                dialog.activation_summary_labels.values()
+            )
+            assert all(label.parentWidget() is not None for label in summary_labels)
+            assert all(
+                label not in QApplication.topLevelWidgets()
+                for label in summary_labels
+            )
+            summary_label_groups.append(summary_labels)
             dialog.reject()
             if QApplication.platformName().casefold() not in {
                 "offscreen",
@@ -387,5 +397,10 @@ def test_preview_reopens_five_times_without_nested_exec_or_retained_dialogs(
     assert _database_snapshot(database_path) == before
     assert not shell.findChildren(SchoolYearTransitionPreviewDialog)
     assert all(not isValid(dialog) for dialog in dialogs)
+    assert all(
+        not isValid(label)
+        for summary_labels in summary_label_groups
+        for label in summary_labels
+    )
     shell.close()
     app.processEvents()

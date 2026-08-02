@@ -13,18 +13,17 @@ from PySide6.QtWidgets import (
     QFrame,
     QFormLayout,
     QGridLayout,
-    QHeaderView,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
     QSplitter,
     QTabWidget,
-    QTableWidget,
-    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -60,17 +59,6 @@ from src.desktop_app.view_models.school_year_transition_preview_view_model impor
 )
 
 
-TABLE_HEADERS = (
-    "Auswahl",
-    "Kind",
-    "Bisherige Stammgruppe",
-    "Bisheriger Kurs",
-    "Zielstatus",
-    "Zielstammgruppe",
-    "Zielkurs",
-    "Warnungen / Blocker",
-)
-
 MAX_COMBO_POPUP_OPTIONS = 18
 MAX_COMBO_POPUP_WIDTH = 640
 COMBO_POPUP_STYLE_ALLOWANCE = 24
@@ -95,10 +83,10 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.setModal(True)
         self.setMinimumSize(520, 360)
         self.resize(1320, 720)
-        self.table = QTableWidget(0, len(TABLE_HEADERS))
-        self.table.setObjectName("SchoolYearTransitionPreviewTable")
+        self.table = QListWidget()
+        self.table.setObjectName("SchoolYearTransitionPreviewRowList")
         self.table.setAccessibleName("Kindliste für den Schuljahreswechsel")
-        self._retired_tables: list[QTableWidget] = []
+        self._retired_tables: list[QListWidget] = []
         self._table_populated = False
         self._selected_student_ids: set[str] = set()
         self._visible_student_ids: tuple[str, ...] = ()
@@ -181,7 +169,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             "Kindliste und ausgewählte Zuordnung"
         )
 
-        self._configure_table()
+        self._configure_row_list()
         self.table.itemChanged.connect(self._selection_item_changed)
         self.table.itemSelectionChanged.connect(self._table_row_changed)
         self.table.itemActivated.connect(self._table_item_activated)
@@ -406,10 +394,10 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self.summary_labels = {}
         self.activation_summary_labels = {}
         for field_name in field_names:
-            value_label = QLabel()
+            value_label = QLabel(self)
             set_label_style(value_label, "body")
             self.summary_labels[field_name] = value_label
-            activation_value = QLabel()
+            activation_value = QLabel(self)
             set_label_style(activation_value, "body")
             self.activation_summary_labels[field_name] = activation_value
 
@@ -444,6 +432,9 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             metric_layout.addWidget(field_label)
             self.summary_metrics.append(metric)
             self.summary_grid.addWidget(metric, 0, len(self.summary_metrics) - 1)
+        for field_name, value_label in self.summary_labels.items():
+            if field_name not in compact_fields:
+                value_label.hide()
         return card
 
     def _activation_summary_card(self) -> AppCard:
@@ -977,13 +968,16 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             student_id if isinstance(student_id, str) else None
         )
         if isinstance(student_id, str):
-            for row_index in range(self.table.rowCount()):
-                item = self.table.item(row_index, 0)
+            for row_index in range(self.table.count()):
+                item = self.table.item(row_index)
                 if (
                     item is not None
                     and item.data(Qt.ItemDataRole.UserRole) == student_id
                 ):
-                    self.table.selectRow(row_index)
+                    self.table.scrollToItem(
+                        item,
+                        QAbstractItemView.ScrollHint.EnsureVisible,
+                    )
                     break
 
     def _individual_course_activated(self, index: int) -> None:
@@ -1012,40 +1006,21 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             return
         self._apply_course_selection(student_id, (action, None))
 
-    def _configure_table(self) -> None:
-        self.table.setHorizontalHeaderLabels(TABLE_HEADERS)
-        for column, header in enumerate(TABLE_HEADERS):
-            header_item = self.table.horizontalHeaderItem(column)
-            if header_item is not None:
-                header_item.setData(
-                    Qt.ItemDataRole.AccessibleTextRole,
-                    header,
-                )
+    def _configure_row_list(self) -> None:
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setSelectionBehavior(
-            QAbstractItemView.SelectionBehavior.SelectRows
-        )
         self.table.setSelectionMode(
             QAbstractItemView.SelectionMode.SingleSelection
         )
         self.table.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.table.setWordWrap(True)
+        self.table.setTextElideMode(Qt.TextElideMode.ElideNone)
         self.table.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
         )
         self.table.setVerticalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOn
         )
-        self.table.verticalHeader().setVisible(False)
-        self.table.horizontalHeader().setSectionsClickable(False)
-        self.table.horizontalHeader().setHighlightSections(False)
-        for column in range(len(TABLE_HEADERS)):
-            self.table.horizontalHeader().setSectionResizeMode(
-                column,
-                QHeaderView.ResizeMode.Interactive,
-            )
-        widths = (145, 180, 180, 155, 215, 245, 180, 390)
-        for column, width in enumerate(widths):
-            self.table.setColumnWidth(column, width)
+        self.table.setSpacing(4)
 
     def _refresh_from_plan(
         self,
@@ -1132,8 +1107,8 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         row_index = next(
             (
                 row
-                for row in range(self.table.rowCount())
-                if self.table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+                for row in range(self.table.count())
+                if self.table.item(row).data(Qt.ItemDataRole.UserRole)
                 == student_id
             ),
             None,
@@ -1143,27 +1118,8 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             self._invalidate_confirmation()
             self._update_selection_status()
             return
-        values = (
-            row_view_model.child_label,
-            row_view_model.current_group_label,
-            row_view_model.current_course_label,
-            row_view_model.target_status_label,
-            row_view_model.target_group_label,
-            row_view_model.target_course_label,
-            row_view_model.warnings_label,
-        )
-        for column, value in enumerate(values, start=1):
-            item = self.table.item(row_index, column)
-            item.setText(value)
-            item.setData(Qt.ItemDataRole.AccessibleTextRole, value)
-            item.setData(
-                Qt.ItemDataRole.AccessibleDescriptionRole,
-                row_view_model.accessible_description,
-            )
-            item.setData(
-                Qt.ItemDataRole.UserRole,
-                None if row_view_model.resolved else "unresolved",
-            )
+        item = self.table.item(row_index)
+        item.setText(self._row_summary(row_view_model))
         self._refresh_individual_editors(student_id)
         self._invalidate_confirmation()
         self._update_selection_status()
@@ -1450,10 +1406,9 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             self._replace_table()
         else:
             self._table_populated = True
-        self.table.clearContents()
-        self.table.setRowCount(len(visible_rows))
-        for row_index, row in enumerate(visible_rows):
-            self._populate_row(row_index, row)
+        self.table.clear()
+        for row in visible_rows:
+            self._populate_row(row)
         self._populating_table = False
         visible_count = len(visible_rows)
         total_count = self.view_model.student_count
@@ -1487,20 +1442,21 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
                 0,
             )
         if visible_rows:
-            self.table.selectRow(selected_row)
+            self.table.clearSelection()
+            self.table.setCurrentRow(-1)
             self._refresh_individual_editors(
                 visible_rows[selected_row].student_id
             )
         self._configure_tab_order()
 
     def _replace_table(self) -> None:
-        """Retire one exposed native table without invalidating its AX objects."""
+        """Retire one exposed row list without invalidating its AX objects."""
         previous = self.table
-        replacement = QTableWidget(0, len(TABLE_HEADERS))
-        replacement.setObjectName("SchoolYearTransitionPreviewTable")
+        replacement = QListWidget()
+        replacement.setObjectName("SchoolYearTransitionPreviewRowList")
         replacement.setAccessibleName("Kindliste für den Schuljahreswechsel")
         self.table = replacement
-        self._configure_table()
+        self._configure_row_list()
         self.table.itemChanged.connect(self._selection_item_changed)
         self.table.itemSelectionChanged.connect(self._table_row_changed)
         self.table.itemActivated.connect(self._table_item_activated)
@@ -1512,10 +1468,9 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
 
     def _populate_row(
         self,
-        row_index: int,
         row: SchoolYearTransitionPreviewRowViewModel,
     ) -> None:
-        selection_item = QTableWidgetItem()
+        selection_item = QListWidgetItem(self._row_summary(row))
         selection_item.setFlags(
             Qt.ItemFlag.ItemIsEnabled
             | Qt.ItemFlag.ItemIsSelectable
@@ -1527,44 +1482,21 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             if is_selected
             else Qt.CheckState.Unchecked
         )
-        selection_item.setText(
-            "Ausgewählt" if is_selected else "Nicht ausgewählt"
-        )
         selection_item.setData(Qt.ItemDataRole.UserRole, row.student_id)
-        selection_item.setData(
-            Qt.ItemDataRole.AccessibleTextRole,
-            (
-                f"{row.child_label}: "
-                f"{'ausgewählt' if is_selected else 'nicht ausgewählt'}"
-            ),
+        self.table.addItem(selection_item)
+
+    @staticmethod
+    def _row_summary(row: SchoolYearTransitionPreviewRowViewModel) -> str:
+        return (
+            f"{row.child_label}\n"
+            f"Bisher: Stammgruppe {row.current_group_label}, "
+            f"Kurs {row.current_course_label} · "
+            f"{row.current_year_level_label}\n"
+            f"Ziel: {row.target_status_label}, "
+            f"Stammgruppe {row.target_group_label}, "
+            f"Kurs {row.target_course_label}\n"
+            f"Warnungen und Blocker: {row.warnings_label}"
         )
-        selection_item.setData(
-            Qt.ItemDataRole.AccessibleDescriptionRole,
-            row.accessible_description,
-        )
-        self.table.setItem(row_index, 0, selection_item)
-        values = (
-            row.child_label,
-            row.current_group_label,
-            row.current_course_label,
-            row.target_status_label,
-            row.target_group_label,
-            row.target_course_label,
-            row.warnings_label,
-        )
-        for column, value in enumerate(values, start=1):
-            item = QTableWidgetItem(value)
-            item.setFlags(
-                Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-            )
-            item.setData(Qt.ItemDataRole.AccessibleTextRole, value)
-            item.setData(
-                Qt.ItemDataRole.AccessibleDescriptionRole,
-                row.accessible_description,
-            )
-            if not row.resolved:
-                item.setData(Qt.ItemDataRole.UserRole, "unresolved")
-            self.table.setItem(row_index, column, item)
 
     def _filter_changed(self, _index: int) -> None:
         self._populate_table(focus_student_id=None, focus_kind="course")
@@ -1573,15 +1505,15 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
     def _table_row_changed(self) -> None:
         if self._populating_table or self.table.currentRow() < 0:
             return
-        item = self.table.item(self.table.currentRow(), 0)
+        item = self.table.item(self.table.currentRow())
         if item is None:
             return
         student_id = item.data(Qt.ItemDataRole.UserRole)
         if isinstance(student_id, str):
             self._refresh_individual_editors(student_id)
 
-    def _table_item_activated(self, item: QTableWidgetItem) -> None:
-        student_id = self.table.item(item.row(), 0).data(
+    def _table_item_activated(self, item: QListWidgetItem) -> None:
+        student_id = self.table.item(self.table.row(item)).data(
             Qt.ItemDataRole.UserRole
         )
         if not isinstance(student_id, str):
@@ -1618,8 +1550,8 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
         self._populate_table(focus_student_id=None, focus_kind="course")
         self._update_selection_status()
 
-    def _selection_item_changed(self, item: QTableWidgetItem) -> None:
-        if self._populating_table or item.column() != 0:
+    def _selection_item_changed(self, item: QListWidgetItem) -> None:
+        if self._populating_table:
             return
         student_id = item.data(Qt.ItemDataRole.UserRole)
         if not isinstance(student_id, str):
@@ -1629,22 +1561,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             self._selected_student_ids.add(student_id)
         else:
             self._selected_student_ids.discard(student_id)
-        item.setText("Ausgewählt" if is_selected else "Nicht ausgewählt")
-        item.setData(
-            Qt.ItemDataRole.AccessibleTextRole,
-            (
-                f"{self._student_label(student_id)}: "
-                f"{'ausgewählt' if is_selected else 'nicht ausgewählt'}"
-            ),
-        )
         self._update_selection_status()
-
-    def _student_label(self, student_id: str) -> str:
-        return next(
-            row.child_label
-            for row in self.view_model.rows
-            if row.student_id == student_id
-        )
 
     def _select_all_visible(self) -> None:
         self._selected_student_ids.update(self._visible_student_ids)
