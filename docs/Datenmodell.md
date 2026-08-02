@@ -186,6 +186,7 @@ Typische Entstehungssituationen sind:
 - Lernzielkontrolle
 - Präsentation
 - Einzelgespräch
+- Partnerarbeit
 - Gruppenarbeit
 - Leseübung
 - Unterrichtsbeobachtung

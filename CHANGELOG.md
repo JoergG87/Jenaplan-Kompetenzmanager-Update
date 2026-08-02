@@ -54,6 +54,10 @@
   werden ohne bewusste Neuauswahl unverändert gespeichert. Neue Beobachtungen
   bieten weiterhin nur die aktuell registrierten Kontexte an.
 
+- `Partnerarbeit` ist als eigener Beobachtungskontext registriert und kann bei
+  neuen sowie bestehenden Beobachtungen bewusst ausgewählt werden. Freie
+  historische Kontextwerte und der bestehende Speicherpfad bleiben unverändert.
+
 - LEG-Bereiche lassen sich wieder zuverlässig auf- und zuklappen, weil der
   vorhandene zentrale Disclosure-Feedback-Helper im Workspace sicher verfügbar
   ist. Tastatursteuerung, Accessibility, Inhalte und Persistenz bleiben

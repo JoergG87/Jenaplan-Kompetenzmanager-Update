@@ -10,6 +10,7 @@ OBSERVATION_CONTEXT_OPTIONS = (
     "Lernzielkontrolle",
     "Präsentation",
     "Einzelgespräch",
+    "Partnerarbeit",
     "Gruppenarbeit",
     "Leseübung",
 )

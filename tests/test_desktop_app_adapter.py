@@ -4040,17 +4040,17 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_observation_dialog_keeps_current_context_selected(self) -> None:
         dialog = self._observation_dialog_with_hierarchy(
-            self._sample_observation_draft(context="Einzelgespräch")
+            self._sample_observation_draft(context="Partnerarbeit")
         )
 
-        self.assertEqual(dialog.context_select.currentText(), "Einzelgespräch")
-        self.assertEqual(dialog.create_draft().context, "Einzelgespräch")
+        self.assertEqual(dialog.context_select.currentText(), "Partnerarbeit")
+        self.assertEqual(dialog.create_draft().context, "Partnerarbeit")
 
     def test_observation_dialog_keeps_legacy_and_empty_contexts_without_fallback(
         self,
     ) -> None:
         for stored_context, visible_label in (
-            ("Partnerarbeit", "Partnerarbeit · Nicht mehr verfügbar"),
+            ("Freiarbeit", "Freiarbeit · Nicht mehr verfügbar"),
             ("", "Kein Kontext gespeichert · Nicht mehr verfügbar"),
         ):
             with self.subTest(stored_context=stored_context):
@@ -4071,7 +4071,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_observation_dialog_legacy_context_can_be_changed_by_keyboard(self) -> None:
         dialog = self._observation_dialog_with_hierarchy(
-            self._sample_observation_draft(context="Partnerarbeit")
+            self._sample_observation_draft(context="Freiarbeit")
         )
 
         dialog.context_select.setFocus()
@@ -4092,15 +4092,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
             ),
             OBSERVATION_CONTEXT_OPTIONS,
         )
-        self.assertNotIn("Partnerarbeit", (
-            dialog.context_select.itemText(index)
-            for index in range(dialog.context_select.count())
-        ))
+        self.assertIn("Partnerarbeit", OBSERVATION_CONTEXT_OPTIONS)
 
     def test_edit_save_preserves_legacy_context_and_all_other_observation_fields(
         self,
     ) -> None:
-        original = self._sample_observation_draft(context="Partnerarbeit")
+        original = self._sample_observation_draft(context="Freiarbeit")
         self.adapter.save_observation(original)
         loaded = self.adapter.observation_draft_for_edit("OBS-000001")
         self.assertIsNotNone(loaded)
@@ -4115,7 +4112,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIsNotNone(unchanged)
         if unchanged is None:
             raise AssertionError("Expected updated observation draft")
-        self.assertEqual(unchanged.context, "Partnerarbeit")
+        self.assertEqual(unchanged.context, "Freiarbeit")
         self.assertEqual(unchanged.date_text, original.date_text)
         self.assertEqual(unchanged.subject_id, original.subject_id)
         self.assertEqual(unchanged.note, original.note)
@@ -4943,6 +4940,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 "Lernzielkontrolle",
                 "Präsentation",
                 "Einzelgespräch",
+                "Partnerarbeit",
                 "Gruppenarbeit",
                 "Leseübung",
             ),
