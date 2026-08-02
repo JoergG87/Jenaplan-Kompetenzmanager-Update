@@ -12,7 +12,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QCoreApplication, QEvent, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -51,6 +51,7 @@ class ReportRevisionProductTest(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self) -> None:
+        self._revision_dialogs: list[LearningReportRevisionDialog] = []
         self.temp_dir = tempfile.TemporaryDirectory()
         self.database_path = Path(self.temp_dir.name) / "report-revision-ui.sqlite"
         create_sqlite_seed_database(self.database_path)
@@ -91,7 +92,32 @@ class ReportRevisionProductTest(unittest.TestCase):
         self.saved = self.adapter.save_learning_report_draft(self._draft())
 
     def tearDown(self) -> None:
-        self.temp_dir.cleanup()
+        try:
+            for dialog in self._revision_dialogs:
+                dialog.close()
+                dialog.deleteLater()
+            QCoreApplication.sendPostedEvents(
+                None,
+                QEvent.Type.DeferredDelete,
+            )
+            app = QApplication.instance()
+            if app is not None:
+                app.processEvents()
+            top_level_widgets = QApplication.topLevelWidgets()
+            self.assertFalse(
+                any(
+                    widget is dialog
+                    for dialog in self._revision_dialogs
+                    for widget in top_level_widgets
+                )
+            )
+        finally:
+            self.temp_dir.cleanup()
+
+    def _revision_dialog(self, revision: object) -> LearningReportRevisionDialog:
+        dialog = LearningReportRevisionDialog(revision)
+        self._revision_dialogs.append(dialog)
+        return dialog
 
     def test_status_without_and_with_current_revision(self) -> None:
         empty = self.adapter.learning_report_revision_status(
@@ -337,7 +363,7 @@ class ReportRevisionProductTest(unittest.TestCase):
         revision = self.adapter.load_learning_report_revision(
             status.current_revision_id
         )
-        dialog = LearningReportRevisionDialog(revision)
+        dialog = self._revision_dialog(revision)
         actions = {button.text() for button in dialog.findChildren(QPushButton)}
 
         self.assertFalse(dialog.findChildren(QLineEdit))
@@ -370,7 +396,7 @@ class ReportRevisionProductTest(unittest.TestCase):
         )
 
         revision = self.adapter.load_learning_report_revision(first_revision_id)
-        dialog = LearningReportRevisionDialog(revision)
+        dialog = self._revision_dialog(revision)
         actions = {button.text() for button in dialog.findChildren(QPushButton)}
 
         self.assertEqual(actions, {"Zurück"})
@@ -411,7 +437,7 @@ class ReportRevisionProductTest(unittest.TestCase):
             initial_draft=self.saved,
             revision_status=status,
         )
-        final_view = LearningReportRevisionDialog(revision)
+        final_view = self._revision_dialog(revision)
         try:
             for width, height in ((1400, 900), (1280, 800), (1180, 760)):
                 workspace.resize(width, height)
