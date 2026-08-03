@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import gc
 import os
 import tempfile
 import unittest
+import weakref
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,6 +16,7 @@ from PySide6.QtCore import QPoint, QPointF, QEvent, QSize, Qt
 from PySide6.QtGui import QEnterEvent, QMouseEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QAbstractItemView, QApplication, QListWidgetItem
+from shiboken6 import isValid
 
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.shell import AppShell, _SidebarNavigationList
@@ -67,6 +70,20 @@ class SidebarCursorComponentTest(unittest.TestCase):
         self.navigation.close()
         self.app.processEvents()
         self.assertIsNone(QApplication.overrideCursor())
+
+    def test_queued_refresh_does_not_outlive_destroyed_navigation(self) -> None:
+        navigation = _SidebarNavigationList()
+        navigation_ref = weakref.ref(navigation)
+        navigation._schedule_cursor_refresh()
+
+        navigation.deleteLater()
+        self.app.sendPostedEvents(navigation, QEvent.Type.DeferredDelete)
+        self.assertFalse(isValid(navigation))
+        del navigation
+        gc.collect()
+
+        self.app.processEvents()
+        self.assertIsNone(navigation_ref())
 
     def _align_item(self, key: str) -> None:
         item = self.items[key]

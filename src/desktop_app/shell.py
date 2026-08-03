@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import UTC, date, datetime
 from pathlib import Path
+import weakref
 
 from PySide6.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Signal, QUrl
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QGuiApplication
@@ -23,6 +24,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from shiboken6 import isValid
 
 from src.core.app_preferences import (
     AppPreferences,
@@ -202,7 +204,14 @@ class _SidebarNavigationList(QListWidget):
             self.viewport().setCursor(Qt.CursorShape.ArrowCursor)
 
     def _schedule_cursor_refresh(self, *_args: object) -> None:
-        QTimer.singleShot(0, self._refresh_cursor)
+        navigation_ref = weakref.ref(self)
+
+        def refresh_if_valid() -> None:
+            navigation = navigation_ref()
+            if navigation is not None and isValid(navigation):
+                navigation._refresh_cursor()
+
+        QTimer.singleShot(0, refresh_if_valid)
 
     def _refresh_cursor(self) -> None:
         position = self._pointer_position
