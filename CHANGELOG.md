@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Eine getrennte, standardmäßig inaktive macOS-arm64-Buildbasis erzeugt aus
+  hashgebundenen Quellen ein reproduzierbares Python-3.14-Wheel mit
+  `sqlcipher3`-naher DB-API, SQLCipher Community 4.17.0 und CommonCrypto.
+  Zwei frische Buildroots liefern bytegleiche Wheels; ein drittes Test-Venv
+  prüft arm64, Linkage, Version/Provider, Reopen, falschen Schlüssel,
+  Klartextablehnung und Integrität. Das Wheel bleibt temporär. Der bestehende
+  4.12.0-Testpfad, Gate-Off-Produktpfad, Startup, DMK, Migration, UI,
+  App-/DMG-Build und Release bleiben unverändert.
+
 - Die bestehende Dashboard-Hero-Karte zeigt für die zehn tatsächlichen
   Unterrichtsfächer jeweils das freigegebene Fachmotiv am unteren Rand vor der
   rechten Stundenplan-Miniatur. Die Zuordnung verwendet ausschließlich stabile

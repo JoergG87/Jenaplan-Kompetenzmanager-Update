@@ -301,6 +301,23 @@ historische Observation-Snapshots auch nach Katalogentfernung auflösbar
 bleiben müssen. Außer Primärschlüssel, notwendigem UNIQUE-Constraint, CHECKs
 und Foreign Keys wird kein Index eingeführt.
 
+## SQLCipher 4.17 - isolierte macOS-arm64-Buildquellen
+
+| Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| `packaging/sqlcipher_4_17_macos_arm64_sources.json` | exakte Tags, Commits, Archiv-, Amalgamation-, Patch-, Lizenz- und Wheel-SHA-256 sowie Toolchain und Buildflags | Repository; keine Binärdatei und kein Schlüssel | Build-Source-of-Truth für genau Python 3.14.6/macOS arm64 |
+| `requirements-sqlcipher-4.17-build.txt` | hashgebundene Buildwerkzeuge `pip`, `setuptools`, `wheel` und `packaging` | Repository; nur temporäres Build-Venv | getrennt vom 4.12-Test-/App-Buildpfad |
+| verifizierte SQLCipher-/Binding-Archive | SQLCipher 4.17.0 und `sqlcipher3` 0.6.2 | Download beziehungsweise optionaler Offline-Cache; vor Extraktion hashgeprüft; niemals Repositoryinhalt | kontrollierte Buildquelle |
+| Buildroot A/B | Quellkopien, generierte Amalgamation, lokaler Bindingpatch, Build-Venv und Wheel | je ein neuer privater Root ausschließlich unter der macOS-System-Temporärwurzel | verwerfbare Reproduzierbarkeitsevidenz |
+| Test-Venv und Auditroot | installiertes Wheel, entpackte Extension, Linkage-/Architektur- und Smoke-Evidenz | dritter neuer privater System-Temporärroot | technischer Nachweis, kein Produktbestand |
+| temporäres SQLCipher-4.17-Wheel | lokal markiertes `sqlcipher3`-Binding mit statisch eingebettetem SQLCipher und CommonCrypto-Systemlinkage | ausschließlich Buildroot A/B; wird nicht ins Repository, App-Bundle oder DMG kopiert | Buildbasis, nicht aktiviert |
+| Build-/Auditberichte | Quell-, Patch-, Wheelhashes, Architektur, Linkage, Provider, Versionen und Smokeergebnis | ausschließlich jeweiliger temporärer Root | lokale technische Evidenz |
+
+Diese Quellen dürfen weder `RuntimePaths` noch Produkt-, Pilot-, Laura-,
+Security-, Dokument-, Backup-, Appcast- oder Releasebestände lesen. Der
+bestehende `sqlcipher3`-0.6.2-/SQLCipher-4.12.0-Pfad bleibt ausschließlich
+Testengine und separate historische Buildabhängigkeit.
+
 ## Security Sprint 12 - interne Build- und Testdaten
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |

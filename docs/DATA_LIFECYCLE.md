@@ -730,6 +730,43 @@ Restore-Staging, Backup und alle MED-Schreiber verwenden denselben
 kernelgebundenen, pro Thread reentranten Writer-Lock. SQLite und Dateisystem
 werden ausdrücklich nicht als gemeinsam atomar beschrieben.
 
+## SQLCipher 4.17 - isolierter macOS-arm64-Build-Lifecycle
+
+1. Das Skript akzeptiert ausschließlich Darwin/arm64, Python 3.14.6, den
+   gebundenen Apple-Clang- und SDK-Stand sowie einen neuen privaten Root unter
+   der System-Temporärwurzel. Repository-, Runtime- und bestehende Roots
+   werden abgelehnt.
+2. SQLCipher 4.17.0 und `sqlcipher3` 0.6.2 werden per HTTPS geladen oder aus
+   einem expliziten Offline-Cache übernommen. Beide Archive werden vor jeder
+   Extraktion gegen ihre SHA-256 geprüft; unsichere Tar-Einträge blockieren.
+3. Ein neues Build-Venv installiert ausschließlich die vier exakt gepinnten
+   und hashgebundenen Buildtool-Wheels. Conan, Homebrew und eine dynamische
+   OpenSSL-Quelle sind ausgeschlossen.
+4. SQLCipher erzeugt mit festem `SOURCE_DATE_EPOCH`, `PYTHONHASHSEED`, Locale,
+   Deployment Target und Flags seine Amalgamation. Deren C-/Header-Hashes
+   müssen dem Manifest entsprechen.
+5. Nur die temporäre Binding-Kopie erhält die 4.17-Amalgamation, die lokale
+   Version `0.6.2+jkm.sqlcipher4170.1`, `SQLCIPHER_CRYPTO_CC`, feste arm64-
+   Linkflags und die exakten Lizenz-/Notice-Dateien. Jede unerwartete
+   Quell- oder Patchabweichung blockiert.
+6. Das Wheel entsteht ohne Buildisolation oder Netz-Nachladung. Ein zweiter
+   vollständig neuer Buildroot muss identische Quellen, Amalgamation,
+   Patchstände und ein bytegleiches Wheel mit dem manifestierten SHA-256
+   liefern.
+7. Ein dritter neuer Auditroot entpackt das Wheel sicher, verlangt genau eine
+   arm64-Extension, keinen RPATH, keine Entwickler-/Buildpfade und nur
+   `libSystem`, Security.framework und CoreFoundation als dynamische
+   Abhängigkeiten. Die im Wheel enthaltenen vier Lizenz-/Notice-Dateien sind
+   Pflicht.
+8. Ein frisches Test-Venv installiert das Wheel offline und prüft Python,
+   Binding, SQLite, SQLCipher exakt `4.17.0 community`, CommonCrypto samt
+   Provider-Version, verschlüsseltes Erzeugen/Schließen/Wiederöffnen, falschen
+   Schlüssel, Klartext-SQLite, Klartextdatenbank sowie Cipher-, SQLite- und
+   Foreign-Key-Integrität.
+9. Wheel, Venvs, Quellen und Reports bleiben temporär. Keine Stufe kopiert das
+   Wheel in Repository, Produkt-App, DMG oder Startup und keine Stufe erzeugt
+   DMK-, Envelope-, Migrations-, Dokument- oder Backupzustand.
+
 ## Security Sprint 12 - interner Build- und Pakettest-Lifecycle
 
 1. Branch, Referenz-HEAD, Index, gemischten Worktree, geschützte Exceldatei,

@@ -177,8 +177,10 @@ reale Abnahmegrenzen.
 Windows bleibt ohne reale Windows-x64-E2E-Umgebung ungeprüft. Der vorhandene
 DMK-Plattformport bleibt dort absichtlich unsupported; es wird keine
 DPAPI-Freigabe simuliert. SQLCipher Community 4.12.0 ist ausschließlich die
-explizit dokumentierte Sprint-11-Testengine im internen Gate-On-Pfad; der
-kontrollierte SQLCipher-4.17.0-Produktzielstand bleibt offen. Keine
+explizit dokumentierte Sprint-11-Testengine im internen Gate-On-Pfad. Für
+SQLCipher 4.17.0 besteht ausschließlich eine getrennte reproduzierbare
+macOS-arm64-Buildbasis; Produktintegration, Windows-Build und der vollständige
+Produktzielstand bleiben offen. Keine
 Produktmigration, Pilotaktivierung, Recovery-UI, Stable-Appcast-Aktivierung,
 Veröffentlichung oder rechtliche Compliance-Aussage ist zulässig.
 

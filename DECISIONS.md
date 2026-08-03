@@ -932,6 +932,18 @@ dem Produktziel SQLCipher 4.17.0. Für eine spätere Freigabe sind kontrolliert
 aus geprüften Quellen gebaute, hash-gepinnte Wheels gegen exakt SQLCipher
 4.17.0 für macOS arm64 und Windows x64 erforderlich.
 
+Die macOS-arm64-Seite dieses Buildgates ist nun als getrennte, nicht
+produktaktivierte Basis belegt. Der Build erzeugt aus SQLCipher-Tag `v4.17.0`
+(Commit `810db22f575ee7cf94ea96a3e91622b5fcece3dc`) und `sqlcipher3` 0.6.2
+(Commit `14fc2632676b20011e0bba64fdda49763a2dd2ec`) eine lokal eindeutig
+markierte Binding-Version. `SQLCIPHER_CRYPTO_CC`, Security.framework und
+CoreFoundation ersetzen den unkontrollierten Conan-/OpenSSL-Pfad. Python,
+SDK, Compiler, Buildwerkzeuge, Quellen, Amalgamation, temporärer Bindingpatch,
+Lizenztexte und Wheel sind hash- beziehungsweise versionsgebunden. Zwei
+unabhängige Buildroots erzeugten dasselbe arm64-Wheel; Runtime und Linkage
+wurden in einem dritten Venv geprüft. Daraus folgt weder eine Windows-,
+Produkt-, Startup-, Migrations-, Packaging- noch Releasefreigabe.
+
 Geprüfte Alternativen: Ein kontrollierter `sqlcipher3`-Source-Build gegen
 4.17.0 ist das spätere Ziel, benötigt aber eigene Wheel-/SBOM-/CVE-Pflege.
 APSW plus eigener SQLCipher-Build ist technisch möglich, wegen abweichender

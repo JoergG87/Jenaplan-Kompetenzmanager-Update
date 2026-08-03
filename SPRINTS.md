@@ -513,8 +513,10 @@ SQLite bleibt Produktstandard, keine Produktaktivierung.
   und Korruption fail-closed abgedeckt.
 - [x] `sqlcipher3` 0.6.2 / SQLCipher 4.12.0 ausschließlich als getrennten
   Spike geprüft.
-- [ ] Reproduzierbarer SQLCipher-4.17.0-Produktbuild, SBOM/Notices,
-  macOS-/Windows-Packaging, Signierung und Upgradepfad.
+- [x] Reproduzierbare, hashgebundene SQLCipher-4.17.0-macOS-arm64-Buildbasis
+  mit CommonCrypto und Notices getrennt und ohne Produktaktivierung geprüft.
+- [ ] Produkt-/App-Packaging, vollständige SBOM-/CVE-Pflege, Windows x64,
+  Signierung, Notarisierung und Upgradepfad.
 
 ## Security Sprint 2 - Key Foundation
 

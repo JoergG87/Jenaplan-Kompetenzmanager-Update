@@ -261,6 +261,17 @@ und LocalAuthentication. Sie erhält keinen Zugriff auf Qt-Textfelder oder
 private Qt-Cocoa-Objekte. Die sichtbare macOS-Passwortvorschlagsannahme bleibt
 bis zum realen Test des gebauten Bundles offen.
 
+## SQLCipher 4.17 - isolierte macOS-arm64-Buildbasis
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `build_sqlcipher_4_17_macos_arm64.py` | Erzeugt aus hashgebundenen Quellen in genau einem neuen temporären Root die SQLCipher-4.17-Amalgamation und das lokal markierte arm64-Wheel | Security Build |
+| `audit_sqlcipher_4_17_macos_arm64.py` | Vergleicht zwei unabhängige Builds bytegenau und prüft Wheelarchitektur, Linkage, RPATH, Pfadlecks, Lizenzen und das dritte Test-Venv | Packaging QA |
+| `smoke_test_sqlcipher_4_17.py` | Prüft im sauberen Venv Version/Provider, verschlüsseltes Reopen, Wrong-Key-/Klartextablehnung und Integrität mit synthetischen Laufzeitkeys | Security Build QA |
+| `sqlcipher_4_17_macos_arm64_sources.json` | JSON-Vertrag für Quellen, Toolchain, Flags und erwartete SHA-256 | Security Build |
+| `SQLCIPHER_4_17_LOCAL_BINDING_VERSION` | lokal eindeutig markierter abgeleiteter Bindingstand `0.6.2+jkm.sqlcipher4170.1`; kein neuer Importname und keine Produktabhängigkeit | Security Build |
+| `SQLCIPHER_4_17_SOURCE_DATE_EPOCH` | fester reproduzierbarer Wheelzeitpunkt `1783468800` für beide unabhängigen Buildroots | Security Build |
+
 ## Security Sprint 12 - Release-Hardening und Paketabnahme
 
 | Technischer Name | Bedeutung | Eigentümer |

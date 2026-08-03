@@ -1,0 +1,84 @@
+{
+  "format": 1,
+  "target": {
+    "machine": "arm64",
+    "platform": "Darwin",
+    "python": "3.14.6",
+    "macos_deployment_target": "11.0",
+    "macos_sdk": "26.5",
+    "clang_identity": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+    "crypto_provider": "commoncrypto"
+  },
+  "sources": {
+    "sqlcipher": {
+      "version": "4.17.0",
+      "tag": "v4.17.0",
+      "tag_object": "f9788efa8ac4dfed75c03e4756b1666a1d0845da",
+      "commit": "810db22f575ee7cf94ea96a3e91622b5fcece3dc",
+      "archive": "sqlcipher-4.17.0.tar.gz",
+      "url": "https://github.com/sqlcipher/sqlcipher/archive/refs/tags/v4.17.0.tar.gz",
+      "sha256": "79c0e164b9c059e7487bf8f29272f601cca5f3312cc267461f81e349962a5058",
+      "root": "sqlcipher-4.17.0",
+      "license_sha256": "2a2826f6acf46fa650730cf42cbb22a642be33a7ef119c9c4f4bf6daf3bef48e",
+      "sqlite_license_source_sha256": "595e823c2ada6c839679e693bee1f4d7f88e2d34ac99a913ae41e3d43fb10c7d"
+    },
+    "binding": {
+      "name": "sqlcipher3",
+      "version": "0.6.2",
+      "tag": "0.6.2",
+      "commit": "14fc2632676b20011e0bba64fdda49763a2dd2ec",
+      "archive": "sqlcipher3-0.6.2.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/source/s/sqlcipher3/sqlcipher3-0.6.2.tar.gz",
+      "sha256": "a2b675289ba8889f389625a21f3a01f1ff159a551b5b88fba8fd92da0e02380a",
+      "root": "sqlcipher3-0.6.2",
+      "local_version": "0.6.2+jkm.sqlcipher4170.1",
+      "upstream_setup_sha256": "d85d8de35a8fefb45be2169afcca865e5cd933e716af4727025c965cc6082827",
+      "upstream_pyproject_sha256": "29ba9f7387123caf44700982576dd0f0a30daa080c8ae70c94a749501cd76907",
+      "license_sha256": "fa23cf250126548e90008fe92de4ee76d485bfbb3592f5be8aa731775892a960"
+    }
+  },
+  "generated": {
+    "sqlite3_c_sha256": "8adaff6b464052a74e7adaa3cfa2725400f48eca68f47856fa806eaf30bdf2c9",
+    "sqlite3_h_sha256": "e564d0492e7556a8ad2f30c8ec645b5a6abb89f32f7b40465a3032d937596401",
+    "patched_setup_sha256": "255b882010103057a8875b8717e9e92de8b705449c7e44ad715ecf29a57ad48e",
+    "patched_pyproject_sha256": "29afd07d967cc91777178daa04dea4b4c863fad77010db754a26929455f33506",
+    "sqlcipher_license_sha256": "2a2826f6acf46fa650730cf42cbb22a642be33a7ef119c9c4f4bf6daf3bef48e",
+    "sqlite_license_sha256": "9a090bd3f65fa51e759fd6927c53d59bf9bfa31b82e2c1020fdb58a01271abab",
+    "third_party_notice_sha256": "c72b6095985ce224d8f6578fe010af35926f2588458dbfd08a6f5e274844013c",
+    "expected_wheel_sha256": "60e337f882ed8d283529019c7799be09b8f68773fa277f6b7bc86e3722f52fdb"
+  },
+  "build": {
+    "source_date_epoch": 1783468800,
+    "configure_args": [
+      "--with-tempstore=yes",
+      "--disable-shared"
+    ],
+    "cflags": [
+      "-O2",
+      "-g0",
+      "-arch",
+      "arm64",
+      "-mmacosx-version-min=11.0",
+      "-DSQLITE_HAS_CODEC=1",
+      "-DSQLITE_EXTRA_INIT=sqlcipher_extra_init",
+      "-DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown",
+      "-DSQLCIPHER_CRYPTO_CC=1",
+      "-DSQLITE_THREADSAFE=1",
+      "-DSQLITE_TEMP_STORE=2"
+    ],
+    "ldflags": [
+      "-arch",
+      "arm64",
+      "-mmacosx-version-min=11.0",
+      "-framework",
+      "Security",
+      "-framework",
+      "CoreFoundation"
+    ],
+    "allowed_dynamic_dependencies": [
+      "/usr/lib/libSystem.B.dylib",
+      "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+      "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation"
+    ]
+  }
+}

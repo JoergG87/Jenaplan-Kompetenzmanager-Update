@@ -591,8 +591,14 @@ verschlüsselte Datenbanken mit synthetischen Daten und Laufzeitschlüsseln und
 prüft richtiges/falsches Keying, Korruption, Integrität, Transaktionen und die
 Ablehnung durch normales `sqlite3`. Ein eigenständiger macOS-arm64-
 PyInstaller-Prototyp wurde außerhalb der Releasepfade erfolgreich ausgeführt.
-Dieser lokale Nachweis besitzt im Repository noch keinen reproduzierbaren
-SQLCipher-Packagingpfad mit eigener Spec und Manifestkette.
+Dieser damalige lokale Nachweis besaß noch keinen reproduzierbaren
+SQLCipher-Packagingpfad mit eigener Spec und Manifestkette. Für das getrennte
+Produktziel existiert nun eine nicht aktivierte macOS-arm64-
+Buildbasis: Sie bindet SQLCipher 4.17.0 und `sqlcipher3` 0.6.2 an exakte
+Quellhashes, erzeugt eine lokal als `0.6.2+jkm.sqlcipher4170.1` markierte
+CommonCrypto-Extension für Python 3.14.6 zweimal bytegleich und prüft das Wheel
+in einem dritten temporären Venv. Das Wheel ist kein Repositoryartefakt und
+wird von Pilot-, App-, DMG-, Startup- oder Produktpfaden nicht konsumiert.
 
 Für ein späteres Produkt bleibt SQLCipher 4.17.0 aus einem kontrollierten,
 hash-gepinnten macOS-/Windows-Build das Ziel. Produktive Schlüsselhierarchie,
