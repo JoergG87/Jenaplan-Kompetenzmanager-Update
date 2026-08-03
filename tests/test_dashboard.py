@@ -12,7 +12,8 @@ from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QEvent, Qt
+from PySide6.QtCore import QEvent, QPoint, Qt
+from PySide6.QtGui import QPixmap
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -21,6 +22,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
+    QWidget,
 )
 
 from src.application.commands.timetable import SaveTimetableEntryCommand
@@ -31,13 +33,35 @@ from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDeskt
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
 from src.desktop_app.components import CourseBadge
+from src.desktop_app.screens import overview_screen
 from src.desktop_app.screens.overview_screen import (
     DASHBOARD_DOCUMENTATION_HELP_TEXT,
     DASHBOARD_DOCUMENTATION_HELP_TITLE,
+    DASHBOARD_SUBJECT_VIGNETTE_COMPACT_SIZE,
+    DASHBOARD_SUBJECT_VIGNETTE_COMPACT_WIDTH,
+    DASHBOARD_SUBJECT_VIGNETTE_MIN_WIDTH,
+    DASHBOARD_SUBJECT_VIGNETTE_ASSETS,
+    DASHBOARD_SUBJECT_VIGNETTE_SIZE,
     DashboardLessonCard,
     DashboardMatchingStudentAction,
     OverviewScreen,
 )
+
+
+def _opaque_bounds(pixmap: QPixmap) -> tuple[int, int, int, int]:
+    image = pixmap.toImage()
+    left, top = image.width(), image.height()
+    right = bottom = -1
+    for y in range(image.height()):
+        for x in range(image.width()):
+            if image.pixelColor(x, y).alpha() > 0:
+                left = min(left, x)
+                top = min(top, y)
+                right = max(right, x)
+                bottom = max(bottom, y)
+    if right < 0:
+        raise AssertionError("Fachmotiv enthält keine sichtbaren Pixel")
+    return left, top, right, bottom
 from src.desktop_app.shell import AppShell
 from src.desktop_app import theme
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
@@ -80,6 +104,9 @@ class DashboardTest(unittest.TestCase):
         week = self.adapter.week_view_model()
         self.subject = week.subjects[0]
         self.other_subject = week.subjects[1]
+        self.math_subject = next(
+            subject for subject in week.subjects if subject.label == "Mathematik"
+        )
         self.group = week.targets_by_type["group"][0]
         self.course = week.targets_by_type["course"][0]
         self.course_group = week.targets_by_type["course_group"][0]
@@ -216,7 +243,8 @@ class DashboardTest(unittest.TestCase):
                     self.adapter.read_projection(at), self.heatmap, at, True
                 )
                 visual = screen.findChild(QFrame, "DashboardHeroIllustrationSpace")
-                grid = visual.layout().itemAt(0).layout()
+                timeline = visual.findChild(QWidget, "DashboardHeroVisualTimeline")
+                grid = timeline.layout()
                 highlighted_times = tuple(
                     grid.itemAtPosition(row, 0).widget().text()
                     for row in range(grid.rowCount())
@@ -225,13 +253,164 @@ class DashboardTest(unittest.TestCase):
                 )
                 self.assertEqual(highlighted_times, expected_highlighted_times)
 
-    def test_hero_timeline_scales_at_supported_desktop_sizes(self) -> None:
-        self._save(1, "08:00", "08:45")
+    def test_subject_hero_vignettes_cover_catalog_and_are_decorative(self) -> None:
+        expected_subject_ids = {
+            subject.item_id for subject in self.adapter.week_view_model().subjects
+        } - {"sozialkompetenz"}
+        self.assertEqual(set(DASHBOARD_SUBJECT_VIGNETTE_ASSETS), expected_subject_ids)
+        bottom_gaps: list[float] = []
+        for subject_id in expected_subject_ids:
+            with self.subTest(subject_id=subject_id):
+                vignette = OverviewScreen._subject_vignette(subject_id)
+                self.assertIsNotNone(vignette)
+                self.assertEqual(vignette.property("subjectId"), subject_id)
+                self.assertEqual(
+                    (vignette.width(), vignette.height()),
+                    DASHBOARD_SUBJECT_VIGNETTE_SIZE,
+                )
+                self.assertEqual(vignette.focusPolicy(), Qt.FocusPolicy.NoFocus)
+                self.assertEqual(vignette.accessibleName(), "")
+                self.assertEqual(vignette.accessibleDescription(), "")
+                self.assertTrue(
+                    vignette.testAttribute(
+                        Qt.WidgetAttribute.WA_TransparentForMouseEvents
+                    )
+                )
+                image = vignette.findChild(QFrame, "DashboardHeroSubjectImage")
+                self.assertIsNotNone(image)
+                source = QPixmap(image.property("assetPath"))
+                self.assertFalse(source.isNull())
+                self.assertTrue(source.hasAlphaChannel())
+                self.assertGreaterEqual(source.width(), image.width() * 2)
+                self.assertGreaterEqual(source.height(), image.height() * 2)
+                self.assertGreaterEqual(max(image.width(), image.height()), 139)
+                left, top, right, bottom = _opaque_bounds(source)
+                self.assertGreater(left, 0)
+                self.assertGreater(top, 0)
+                self.assertLess(right, source.width() - 1)
+                self.assertLess(bottom, source.height() - 1)
+                bottom_gaps.append(
+                    (source.height() - 1 - bottom)
+                    * image.height()
+                    / source.height()
+                )
+                self.assertEqual(
+                    image.geometry().bottom(),
+                    vignette.rect().bottom(),
+                )
+                self.assertEqual(image.focusPolicy(), Qt.FocusPolicy.NoFocus)
+                self.assertEqual(image.accessibleName(), "")
+                self.assertEqual(image.accessibleDescription(), "")
+                self.assertTrue(
+                    image.testAttribute(
+                        Qt.WidgetAttribute.WA_TransparentForMouseEvents
+                    )
+                )
+        self.assertLessEqual(max(bottom_gaps) - min(bottom_gaps), 1.5)
+        self.assertIsNone(OverviewScreen._subject_vignette("sozialkompetenz"))
+        self.assertIsNone(OverviewScreen._subject_vignette("unbekannt"))
+        with patch.object(
+            overview_screen,
+            "resource_path",
+            return_value=Path(self.temp_dir.name) / "fehlendes-fachmotiv.png",
+        ):
+            self.assertIsNone(OverviewScreen._subject_vignette("mathematik"))
+
+        self._save(
+            1,
+            "08:00",
+            "08:45",
+            subject_id=self.math_subject.item_id,
+        )
         screen = OverviewScreen()
         at = datetime(2026, 8, 3, 8, 15)
         screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, True)
 
-        for width, height in ((1180, 760), (1400, 900)):
+        vignette = screen.findChild(QFrame, "DashboardHeroSubjectVignette")
+        self.assertIsNotNone(vignette)
+        self.assertEqual(vignette.property("subjectId"), "mathematik")
+
+        for width, height in (
+            (DASHBOARD_SUBJECT_VIGNETTE_MIN_WIDTH - 1, 650),
+            (620, 650),
+        ):
+            with self.subTest(width=width, height=height):
+                screen.resize(width, height)
+                screen.show()
+                self.app.processEvents()
+                self.assertFalse(vignette.isVisible())
+                scroll = screen.findChild(QScrollArea, "DashboardScrollArea")
+                self.assertEqual(scroll.horizontalScrollBar().maximum(), 0)
+        screen.close()
+
+    def test_subject_hero_vignette_refreshes_by_stable_subject_id(self) -> None:
+        self._save(
+            1,
+            "08:00",
+            "08:45",
+            subject_id=self.math_subject.item_id,
+        )
+        self._save(
+            1,
+            "10:00",
+            "10:45",
+            subject_id=self.subject.item_id,
+        )
+        screen = OverviewScreen()
+
+        screen.set_dashboard(
+            self.adapter.read_projection(datetime(2026, 8, 3, 8, 15)),
+            self.heatmap,
+            datetime(2026, 8, 3, 8, 15),
+            True,
+        )
+        self.assertEqual(
+            screen.findChild(QFrame, "DashboardHeroSubjectVignette").property(
+                "subjectId"
+            ),
+            self.math_subject.item_id,
+        )
+
+        screen.set_dashboard(
+            self.adapter.read_projection(datetime(2026, 8, 3, 10, 15)),
+            self.heatmap,
+            datetime(2026, 8, 3, 10, 15),
+            True,
+        )
+        self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.app.processEvents()
+        vignettes = screen.findChildren(QFrame, "DashboardHeroSubjectVignette")
+        self.assertEqual(len(vignettes), 1)
+        self.assertEqual(vignettes[0].property("subjectId"), self.subject.item_id)
+
+        with patch.dict(DASHBOARD_SUBJECT_VIGNETTE_ASSETS, {}, clear=True):
+            screen.set_dashboard(
+                self.adapter.read_projection(datetime(2026, 8, 3, 10, 15)),
+                self.heatmap,
+                datetime(2026, 8, 3, 10, 15),
+                True,
+            )
+            self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            self.app.processEvents()
+            self.assertIsNone(
+                screen.findChild(QFrame, "DashboardHeroSubjectVignette")
+            )
+            visual = screen.findChild(QFrame, "DashboardHeroIllustrationSpace")
+            self.assertEqual(visual.geometry().left(), 0)
+        screen.close()
+
+    def test_hero_timeline_scales_at_supported_desktop_sizes(self) -> None:
+        self._save(
+            1,
+            "08:00",
+            "08:45",
+            subject_id=self.math_subject.item_id,
+        )
+        screen = OverviewScreen()
+        at = datetime(2026, 8, 3, 8, 15)
+        screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, True)
+
+        for width, height in ((900, 700), (1180, 760), (1400, 900)):
             with self.subTest(width=width, height=height):
                 screen.resize(width, height)
                 screen.show()
@@ -240,6 +419,32 @@ class DashboardTest(unittest.TestCase):
                 self.assertEqual(scroll.horizontalScrollBar().maximum(), 0)
                 self.assertEqual(
                     len(screen.findChildren(QFrame, "DashboardHeroVisualCurrent")), 1
+                )
+                vignette = screen.findChild(QFrame, "DashboardHeroSubjectVignette")
+                visual = screen.findChild(QFrame, "DashboardHeroIllustrationSpace")
+                timeline = visual.findChild(QWidget, "DashboardHeroVisualTimeline")
+                wrapper = vignette.parentWidget()
+                expected_size = (
+                    DASHBOARD_SUBJECT_VIGNETTE_SIZE
+                    if width >= DASHBOARD_SUBJECT_VIGNETTE_COMPACT_WIDTH
+                    else DASHBOARD_SUBJECT_VIGNETTE_COMPACT_SIZE
+                )
+                self.assertEqual(
+                    (vignette.width(), vignette.height()),
+                    expected_size,
+                )
+                self.assertIs(vignette.parentWidget(), visual.parentWidget())
+                self.assertLess(vignette.geometry().left(), visual.geometry().left())
+                self.assertGreaterEqual(
+                    vignette.geometry().right(), visual.geometry().left()
+                )
+                self.assertLess(
+                    vignette.geometry().right(),
+                    timeline.mapTo(wrapper, QPoint(0, 0)).x(),
+                )
+                self.assertEqual(
+                    vignette.geometry().bottom(),
+                    visual.geometry().bottom(),
                 )
         screen.close()
 
@@ -824,6 +1029,7 @@ class DashboardTest(unittest.TestCase):
         end: str,
         *,
         active: bool = True,
+        subject_id: str | None = None,
     ) -> None:
         self.adapter.save_entry(
             SaveTimetableEntryCommand(
@@ -831,7 +1037,7 @@ class DashboardTest(unittest.TestCase):
                 weekday,
                 start,
                 end,
-                self.subject.item_id,
+                subject_id or self.subject.item_id,
                 "group",
                 self.group.item_id,
                 "Raum 2",
