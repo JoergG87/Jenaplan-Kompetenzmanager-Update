@@ -650,7 +650,8 @@ def _read_snapshot(
 ) -> Iterator[sqlite3.Connection]:
     connection = connection_factory()
     try:
-        connection.row_factory = sqlite3.Row
+        if connection.row_factory is None:
+            connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("BEGIN")
         yield connection
@@ -667,7 +668,8 @@ def _write_transaction(
 ) -> _T:
     connection = connection_factory()
     try:
-        connection.row_factory = sqlite3.Row
+        if connection.row_factory is None:
+            connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("BEGIN IMMEDIATE")
         result = operation(connection)

@@ -106,7 +106,8 @@ def _verified_snapshot_identity(
             uri=True,
         )
         try:
-            connection.row_factory = sqlite3.Row
+            if connection.row_factory is None:
+                connection.row_factory = sqlite3.Row
             connection.execute("PRAGMA query_only = ON")
             source_state = school_year_transition_source_sha256(connection)
         finally:

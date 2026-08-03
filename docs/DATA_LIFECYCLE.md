@@ -827,6 +827,47 @@ Kein Schritt erzeugt oder öffnet eine SQLite-/SQLCipher-/Final-V3-Datenbank,
 übergibt den Database-Key an einen Connection-Provider oder verändert
 Produkt-Startup, UI, Backup/Restore, Migration oder Release.
 
+## Final-V3-SQLCipher-Runtime - gated First Run und Restart
+
+Ohne eigenes exaktes Gate, vorhandenes DMK-Gate, beide feste Marker, privaten
+System-Temporärroot und bestätigte Authentifizierung endet der Ablauf vor
+Keychain-, Provider- oder Datenbankzugriff mit `DISABLED` oder `BLOCKED`.
+
+Beim technischen First Run gilt:
+
+1. Datenbank, Keyset und Envelope müssen gemeinsam fehlen; jede Asymmetrie
+   blockiert vor einer Schlüsselneuerzeugung.
+2. Nur eine zusätzliche explizite First-Run-Bestätigung darf die vorhandene
+   DMK-/Database-Key-Runtime aufrufen. Nur deren im selben Aufruf neu
+   aktivierter zufälliger Database-Key darf die Neuanlage fortsetzen.
+3. Der exakt konfigurierte 4.17-Provider reserviert die neue Datei, keyed sie
+   vor jedem Schemazugriff und erzwingt Klartextheadergröße null.
+4. Das vollständige Final-V3 entsteht innerhalb `BEGIN IMMEDIATE`; erst nach
+   Commit werden Cipherstatus, CommonCrypto, SQLite 3.53.3,
+   `cipher_integrity_check`, `integrity_check`, `foreign_key_check`,
+   `user_version=3` und der vollständige Fingerprint über eine neu aus
+   derselben Factory geöffnete, technisch read-only keyed Connection geprüft.
+5. Erst danach entsteht eine `SQLiteDatabase(create=False)`, deren
+   pfad-/keygebundene Factory unverändert an Repositories und Desktop-Adapter
+   weitergereicht wird.
+
+Beim Restart müssen Datenbank, Keyset und Envelope gemeinsam vorhanden sein.
+Die Key-Runtime lädt DMK und Database-Key ohne Neuerzeugung; die Datenbank wird
+zuerst `mode=ro`, `immutable=1`, `query_only` und keyed geöffnet und vollständig
+geprüft. Erst danach wird der bestehende Bestand über dieselbe Factory
+schreibfähig mit `create=False` komponiert. Direkte `sqlite3`-Pfadinspektion,
+4.12, Klartextfallback, Reparatur und Migration sind unzulässig.
+
+Crashgrenzen bleiben fail-closed: ein Crash vor Dateierzeugung hinterlässt
+Schlüssel ohne DB und blockiert; eine leere, rollbackte oder von Recovery-
+Sidecars begleitete Datei blockiert; ein nach Commit vollständig exaktes
+Schema darf beim Restart ausschließlich nach neuer keyed Vollprüfung geöffnet
+werden. Nach erfolgreicher Prüfung gilt derselbe Restartvertrag. Eine nach
+abgeschlossenem First Run fehlende DB wird nie still ersetzt.
+Alle fünf Crashgrenzen werden in getrennten Prozessen durch abruptes
+`os._exit` geprüft; ein kontrollierter Exception-Rollback gilt nicht als
+Crashnachweis.
+
 ## Security Sprint 12 - interner Build- und Pakettest-Lifecycle
 
 1. Branch, Referenz-HEAD, Index, gemischten Worktree, geschützte Exceldatei,

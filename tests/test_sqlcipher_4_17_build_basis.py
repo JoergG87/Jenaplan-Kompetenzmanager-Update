@@ -16,6 +16,9 @@ from scripts.build_sqlcipher_4_17_macos_arm64 import (
 )
 from scripts.audit_sqlcipher_4_17_macos_arm64 import compare_builds
 from src.core.database_engine import (
+    SQLCIPHER_4_17_BINDING_VERSION,
+    SQLCIPHER_4_17_ENGINE_VERSION,
+    SQLCIPHER_4_17_SQLITE_VERSION,
     SQLCIPHER_PRODUCT_TARGET_VERSION,
     SQLCIPHER_SPIKE_BINDING_VERSION,
     SQLCIPHER_SPIKE_ENGINE_VERSION,
@@ -93,6 +96,9 @@ def test_existing_4_12_test_engine_remains_separate() -> None:
     assert SQLCIPHER_SPIKE_BINDING_VERSION == "0.6.2"
     assert SQLCIPHER_SPIKE_ENGINE_VERSION == "4.12.0 community"
     assert SQLCIPHER_PRODUCT_TARGET_VERSION == "4.17.0"
+    assert SQLCIPHER_4_17_BINDING_VERSION == SQLCIPHER_4_17_LOCAL_BINDING_VERSION
+    assert SQLCIPHER_4_17_ENGINE_VERSION == "4.17.0 community"
+    assert SQLCIPHER_4_17_SQLITE_VERSION == "3.53.3"
     assert (ROOT / "requirements-sqlcipher-spike.txt").read_text().endswith(
         "sqlcipher3==0.6.2\n"
     )

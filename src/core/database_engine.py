@@ -22,6 +22,9 @@ _SQLCIPHER_PAGE_SIZE = 4096
 SQLCIPHER_SPIKE_BINDING_VERSION = "0.6.2"
 SQLCIPHER_SPIKE_ENGINE_VERSION = "4.12.0 community"
 SQLCIPHER_PRODUCT_TARGET_VERSION = "4.17.0"
+SQLCIPHER_4_17_BINDING_VERSION = "0.6.2+jkm.sqlcipher4170.1"
+SQLCIPHER_4_17_ENGINE_VERSION = "4.17.0 community"
+SQLCIPHER_4_17_SQLITE_VERSION = "3.53.3"
 SQLITE_RUNTIME_VERSION = sqlite3.sqlite_version
 
 
@@ -169,6 +172,14 @@ class SQLCipherConnectionProvider:
         self._binding_version_loader = (
             binding_version_loader or _load_sqlcipher_binding_version
         )
+
+    @property
+    def expected_binding_version(self) -> str:
+        return self._expected_binding_version
+
+    @property
+    def expected_engine_version(self) -> str:
+        return self._expected_engine_version
 
     def connect(
         self,

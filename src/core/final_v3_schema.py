@@ -115,19 +115,13 @@ _SCHEMA_STATEMENTS = (
     "CREATE TRIGGER trg_school_year_transitions_no_delete\n    BEFORE DELETE ON school_year_transitions\n    BEGIN\n        SELECT RAISE(ABORT, 'school_year_transition_delete_forbidden');\n    END",
 )
 
-_SCHEMA_SCRIPT = (
-    "BEGIN IMMEDIATE;\n"
-    + ";\n".join(_SCHEMA_STATEMENTS)
-    + f";\nPRAGMA user_version = {FINAL_SCHEMA_VERSION};\nCOMMIT;"
-)
-
 class FinalV3SchemaInitializer:
     """Create one new complete V3 database without a predecessor schema."""
 
     def __init__(self, connection_provider=None) -> None:
         self._connection_provider = connection_provider or SQLiteConnectionProvider()
 
-    def initialize(self, database_path: Path) -> None:
+    def initialize(self, database_path: Path, *, fault_hook=None) -> None:
         path = Path(database_path)
         if path.exists() or path.is_symlink():
             raise FinalV3SchemaError("final_v3_target_must_not_exist")
@@ -140,22 +134,7 @@ class FinalV3SchemaInitializer:
                 self._connection_provider.connect(path, create=True)
             ) as connection:
                 created = True
-                connection.execute("PRAGMA foreign_keys = OFF")
-                connection.executescript(_SCHEMA_SCRIPT)
-                connection.execute("PRAGMA foreign_keys = ON")
-                integrity = connection.execute("PRAGMA integrity_check").fetchone()
-                if integrity is None or str(integrity[0]).lower() != "ok":
-                    raise FinalV3SchemaError("final_v3_integrity_check_failed")
-                if connection.execute("PRAGMA foreign_key_check").fetchone() is not None:
-                    raise FinalV3SchemaError("final_v3_foreign_key_check_failed")
-                identity = DatabaseCompatibilityInspector.schema_identity_for_connection(
-                    connection
-                )
-                version = int(connection.execute("PRAGMA user_version").fetchone()[0])
-                if version != FINAL_SCHEMA_VERSION:
-                    raise FinalV3SchemaError("final_v3_version_mismatch")
-                if identity.fingerprint != FINAL_SCHEMA_FINGERPRINT:
-                    raise FinalV3SchemaError("final_v3_fingerprint_mismatch")
+                self.initialize_connection(connection, fault_hook=fault_hook)
         except (OSError, sqlite3.Error) as error:
             if created:
                 path.unlink(missing_ok=True)
@@ -164,6 +143,57 @@ class FinalV3SchemaInitializer:
             if created:
                 path.unlink(missing_ok=True)
             raise
+
+    @staticmethod
+    def initialize_connection(connection, *, fault_hook=None) -> None:
+        """Initialize an already-open new database in one transaction."""
+
+        try:
+            connection.execute("PRAGMA foreign_keys = OFF")
+            connection.execute("BEGIN IMMEDIATE")
+            fault_index = len(_SCHEMA_STATEMENTS) // 2
+            for index, statement in enumerate(_SCHEMA_STATEMENTS):
+                connection.execute(statement)
+                if fault_hook is not None and index == fault_index:
+                    fault_hook("during_schema_transaction")
+            connection.execute(f"PRAGMA user_version = {FINAL_SCHEMA_VERSION}")
+            connection.commit()
+            if fault_hook is not None:
+                fault_hook("after_schema_commit")
+        except BaseException:
+            try:
+                connection.rollback()
+            except Exception:
+                pass
+            try:
+                connection.execute("PRAGMA foreign_keys = ON")
+            except Exception:
+                pass
+            raise
+
+        try:
+            connection.execute("PRAGMA foreign_keys = ON")
+            foreign_keys_enabled = connection.execute(
+                "PRAGMA foreign_keys"
+            ).fetchone()
+        except Exception:
+            raise FinalV3SchemaError("final_v3_foreign_keys_enable_failed") from None
+        if foreign_keys_enabled is None or int(foreign_keys_enabled[0]) != 1:
+            raise FinalV3SchemaError("final_v3_foreign_keys_enable_failed")
+
+        integrity = connection.execute("PRAGMA integrity_check").fetchone()
+        if integrity is None or str(integrity[0]).lower() != "ok":
+            raise FinalV3SchemaError("final_v3_integrity_check_failed")
+        if connection.execute("PRAGMA foreign_key_check").fetchone() is not None:
+            raise FinalV3SchemaError("final_v3_foreign_key_check_failed")
+        identity = DatabaseCompatibilityInspector.schema_identity_for_connection(
+            connection
+        )
+        version = int(connection.execute("PRAGMA user_version").fetchone()[0])
+        if version != FINAL_SCHEMA_VERSION:
+            raise FinalV3SchemaError("final_v3_version_mismatch")
+        if identity.fingerprint != FINAL_SCHEMA_FINGERPRINT:
+            raise FinalV3SchemaError("final_v3_fingerprint_mismatch")
 
 
 def initialize_final_v3_schema(database_path: Path) -> None:

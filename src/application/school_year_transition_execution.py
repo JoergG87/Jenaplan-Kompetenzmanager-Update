@@ -275,7 +275,8 @@ class ExecuteSchoolYearTransition:
     ) -> StoredSchoolYearTransition | None:
         connection = self._connection_factory()
         try:
-            connection.row_factory = sqlite3.Row
+            if connection.row_factory is None:
+                connection.row_factory = sqlite3.Row
             connection.execute("PRAGMA query_only = ON")
             repository = self._repository_factory(connection)
             existing = repository.find_by_operation_token(token)
@@ -310,7 +311,8 @@ class ExecuteSchoolYearTransition:
     def _read_source_state(self) -> str:
         connection = self._connection_factory()
         try:
-            connection.row_factory = sqlite3.Row
+            if connection.row_factory is None:
+                connection.row_factory = sqlite3.Row
             connection.execute("PRAGMA query_only = ON")
             return self._repository_factory(connection).source_sha256()
         except (sqlite3.Error, ValueError, TypeError):
@@ -373,7 +375,8 @@ class ExecuteSchoolYearTransition:
         connection = self._connection_factory()
         commit_attempted = False
         try:
-            connection.row_factory = sqlite3.Row
+            if connection.row_factory is None:
+                connection.row_factory = sqlite3.Row
             connection.execute("PRAGMA foreign_keys = ON")
             connection.execute("BEGIN IMMEDIATE")
             repository = self._repository_factory(connection)

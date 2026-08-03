@@ -289,6 +289,23 @@ bis zum realen Test des gebauten Bundles offen.
 | `security-key-runtime-v1` | Privates `0700`-Verzeichnis ausschließlich für Keyset- und Envelope-Metadaten | Security Infrastructure |
 | `dmk_database_key_runtime_worker.py` | Separater Testprozess für First Run, Restart und reales namespacetes Keychain-Cleanup | Security Test QA |
 
+## Final-V3-SQLCipher-Runtime - interne technische Namen
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `FinalV3SQLCipherRuntimeGate` | zusätzliche read-only Gateauflösung auf dem vorhandenen privaten DMK-Testroot; verlangt exakten Gatewert und zweiten festen Marker | Security Application Layer |
+| `FinalV3SQLCipherRuntimeCoordinator` | Qt-freie fail-closed Verbindung aus bestätigter Authentifizierung, bestehender DMK-/Database-Key-Runtime, SQLCipher 4.17 und direktem Final-V3 | Security Application Layer |
+| `FinalV3SQLCipherConnectionFactory` | feste Pfad-, Provider- und Database-Key-Bindung für Schema, Inspektion, `SQLiteDatabase`, Repositories und Adapter | Core Persistence / Security Runtime |
+| `KeyedFinalV3CompatibilityInspector` | mutationsfreie Prüfung einer bereits keyed geöffneten Connection auf Cipher, SQLite, Integrität, FK, `user_version` und Final-V3-Fingerprint | Core Database Compatibility |
+| `OpenedFinalV3SQLCipherRuntime` | flüchtiges verifiziertes Ergebnis mit derselben schlüsselgebundenen `SQLiteDatabase` für nachgelagerte Application-Schichten | Security Application Layer |
+| `SQLCIPHER_4_17_BINDING_VERSION` | exaktes lokales Binding `0.6.2+jkm.sqlcipher4170.1` | Core Persistence |
+| `SQLCIPHER_4_17_ENGINE_VERSION` | exakte Engine `4.17.0 community` | Core Persistence |
+| `SQLCIPHER_4_17_SQLITE_VERSION` | exakte eingebettete SQLite-Version `3.53.3` | Core Persistence |
+| `JKM_FINAL_V3_SQLCIPHER_RUNTIME_TEST` | zusätzliches, standardmäßig inaktives internes Gate; nur exakter Wert `1` setzt die Marker-/Rootprüfung fort | Security Test Gate |
+| `.jkm-final-v3-sqlcipher-runtime-test-root` | zweiter fester nicht geheimer Marker auf dem bereits DMK-markergebundenen privaten System-Temporärroot | Security Test Gate |
+| `final-v3-sqlcipher-runtime-v1/final-v3.sqlcipher` | feste ausschließlich technische SQLCipher-4.17-Testdatenbank mit exaktem Final-V3 | Security Test Runtime |
+| `final_v3_sqlcipher_runtime_worker.py` | separater Anwendungssmoke- und Abrissprozess für keyed Restart, stabile Fach-IDs sowie fünf echte `os._exit`-Crashgrenzen | Security Test QA |
+
 ## Security Sprint 12 - Release-Hardening und Paketabnahme
 
 | Technischer Name | Bedeutung | Eigentümer |

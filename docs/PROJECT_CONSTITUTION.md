@@ -181,6 +181,37 @@ besitzt keine Produkt-, Startup-, UI-, Backup/Restore-, Migrations-, Build-,
 Pilot- oder Releaseaktivierung. Ein technisches GO bestätigt ausschließlich
 die standardmäßig inaktive Security-Key-Runtime.
 
+## Entwicklungsgrenze Final-V3-SQLCipher-Runtime
+
+Die vorhandene DMK-/Database-Key-Runtime darf ausschließlich im zusätzlich
+markergebundenen internen Gate `JKM_FINAL_V3_SQLCIPHER_RUNTIME_TEST=1` eine
+frische Final-V3-Datenbank mit SQLCipher `4.17.0 community` verbinden. Das
+DMK-Gate, sein privater System-Temporärroot und sein Marker bleiben zwingend;
+ein zweiter fester Marker, bestätigte Authentifizierung und für eine Neuanlage
+eine explizite technische First-Run-Bestätigung sind zusätzliche Bedingungen.
+Der normale Produktstartup importiert oder aktiviert diesen Pfad nicht.
+Coordinator und Connection-Factory revalidieren Gate, beide Marker, den exakt
+abgeleiteten Pfad und jeden vorhandenen Runtime-Root selbst; ein Symlink oder
+ein vom Gatepfad abweichender Konstruktorpfad blockiert vor Schlüsselzugriff.
+
+Der zufällige Database-Key aus dem aktiven Envelope ist der einzige
+SQLCipher-Key. App-Passwort und DMK werden nicht als Datenbankschlüssel
+verwendet. Schemaerzeugung, keyed Kompatibilitätsprüfung, Repositories und
+Desktop-Adapter verwenden dieselbe pfad- und keygebundene Providerkonfiguration
+mit lokalem Binding `0.6.2+jkm.sqlcipher4170.1`, SQLCipher 4.17.0,
+CommonCrypto und SQLite 3.53.3. Standard-`sqlite3`, SQLCipher 4.12 und ein
+Create-Fallback sind in diesem Gate unzulässig.
+
+Eine neue Datenbank wird nur erzeugt, wenn Datenbank, Keyset und Envelope zu
+Beginn vollständig fehlen, die Authentifizierung bestätigt ist und der
+Database-Key im selben bestätigten technischen First Run neu aktiviert wurde.
+Jede Asymmetrie, Klartext-SQLite, Recovery-Sidecar, falscher Key, unbekannte
+Version, Integritätsfehler oder nicht exaktes Final-V3 blockiert ohne
+Reparatur, Migration oder Neuerzeugung. Ein Crashbestand darf nur nach
+vollständiger keyed Prüfung fortgesetzt werden; andernfalls bleibt er
+fail-closed. Aus einem GO folgt keine Produkt-, Pilot-, Dokument-, Backup-,
+Build- oder Releaseaktivierung.
+
 ## Entwicklungsgrenze Security Sprint 12
 
 Security Sprint 12 darf einen internen macOS-arm64-Testbuild `0.3.0` /

@@ -1,5 +1,42 @@
 # Architekturentscheidungen
 
+## ADR-098 - Final-V3-SQLCipher nutzt eine einzige keyed Providerkomposition
+
+**Status:** Angenommen und ausschließlich im internen markergebundenen Gate
+lokal implementiert. Produktaktivierung, Migration, Dokumentverschlüsselung,
+Backup/Restore, Build und Release bleiben offen.
+
+### Entscheidung
+
+Der vorhandene zufällige Database-Key aus der DMK-/Envelope-Runtime wird im
+zusätzlich markergebundenen technischen First Run an genau einen expliziten
+SQLCipher-4.17-Provider gebunden. Diese Factory ist die gemeinsame
+Öffnungsgrenze für direkte Final-V3-Schemaerzeugung, keyed
+Kompatibilitätsprüfung, `SQLiteDatabase`, Repositories und Desktop-Adapter.
+Standard-`sqlite3`, SQLCipher 4.12, App-Passwort oder DMK als Datenbankschlüssel
+und jeder Create-Fallback sind in diesem Pfad ausgeschlossen.
+
+Eine Neuanlage ist nur bei gemeinsam fehlendem Datenbank-, Keyset- und
+Envelopebestand, bestätigter Authentifizierung, expliziter technischer
+First-Run-Bestätigung und einem im selben Aufruf neu aktivierten Database-Key
+zulässig. Restart verlangt den vollständigen Bestand und prüft die Datenbank
+zuerst read-only keyed auf Cipher-/SQLite-Version, Cipherstatus, Integrität,
+Foreign Keys, `user_version` und vollständigen Final-V3-Fingerprint. Jede
+Asymmetrie und jeder Crashrest blockiert oder wird nur nach vollständiger
+erneuter keyed Prüfung akzeptiert; es gibt keine Reparatur oder Migration.
+Coordinator und Factory sind keine Umgehung des Gates: beide revalidieren den
+markergebundenen Temp-Root und die exakt abgeleiteten Pfade. Die Prüfung nach
+First-Run-Commit erfolgt über eine neue read-only keyed Connection derselben
+Factory; echte Prozessabbrüche belegen die fünf Crashgrenzen.
+
+### Folgen
+
+Das Final-V3-Fachdatenmodell erhält kein Security-Kontextfeld. Der bestehende
+Keyset-/Envelope-`database_context_id` bleibt die technische Kryptobindung.
+Das Gate wird nicht in Shell oder Produkt-Composition-Root importiert und
+öffnet ausschließlich den festen Bestand innerhalb des privaten doppelt
+markierten System-Temporärroots.
+
 ## ADR-097 - Produktive Writer drainen über ein zentrales In-Process-Maintenance-Gate
 
 **Status:** Angenommen und mit SJ-3C.3 lokal implementiert. Produktive

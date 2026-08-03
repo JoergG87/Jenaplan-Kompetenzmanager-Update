@@ -334,6 +334,20 @@ Testroot, Installationsname und Dateiname sind an keiner Schlüsselableitung
 beteiligt. Die Runtime erzeugt oder öffnet keine Final-V3-/SQLite-/SQLCipher-
 Datenbank.
 
+## Final-V3-SQLCipher-Runtime - markergebundene technische Datenquelle
+
+| Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| zweifach markergebundener Runtime-Testroot | vorhandener DMK-Rootmarker plus eigener Final-V3-SQLCipher-Marker | privater eigentümergeprüfter System-Temporärroot; kein `RuntimePaths`-, Pilot- oder Produktroot | ausschließlich Gate-On |
+| `final-v3-sqlcipher-runtime-v1/final-v3.sqlcipher` | direkt verschlüsseltes exaktes Final-V3 mit `user_version=3` und registriertem Schemafingerprint | Modus `0600`; fester technischer Pfad; kein Klartextheader und kein Create-Fallback | inaktiver technischer Testbestand |
+| keyed Kompatibilitätsreport | Cipher-/Provider-/SQLite-Version, `user_version`, Schemafingerprint und Objektzahl | ausschließlich flüchtig; keine Schlüssel, Pfade oder Fachdaten | nach vollständiger read-only Prüfung |
+| schlüsselgebundene `SQLiteDatabase` | dieselbe feste Provider-/Database-Key-Konfiguration für Repository, Desktop-Adapter und ViewModel-Projektion | ausschließlich im aufrufenden technischen Testprozess | keine Produkt-Composition-Root |
+
+Database-Key, DMK und App-Passwort sind keine Datei-, Konfigurations- oder
+Protokolldaten. Der bestehende Keyset-/Envelope-Database-Context bleibt die
+technische Kryptobindung; Final-V3 erhält kein neues Kontextfeld und das
+Fachdatenmodell bleibt unverändert.
+
 ## Security Sprint 12 - interne Build- und Testdaten
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |

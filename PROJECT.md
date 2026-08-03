@@ -347,6 +347,33 @@ bleiben getrennte Gates. Der GitHub-Pre-Release/Pilot erfolgt erst nach
 Clean-Build und vollständiger Paketabnahme; es gibt keinen Stable-Appcast und
 keinen automatischen Pilotrollout.
 
+## Final-V3-SQLCipher-Runtime - interner gated Produktstack-Smoke
+
+Der vorhandene DMK-/Database-Key-Bestand kann nun ausschließlich hinter einem
+zusätzlichen, standardmäßig inaktiven Gate und einem zweiten festen Marker im
+privaten System-Temporärroot mit einer frischen Final-V3-SQLCipher-Datenbank
+verbunden werden. Der Pfad verlangt bestätigte Authentifizierung und bei einer
+Neuanlage eine explizite technische First-Run-Bestätigung. Er verwendet exakt
+das lokale Binding `0.6.2+jkm.sqlcipher4170.1`, SQLCipher
+`4.17.0 community`, CommonCrypto und SQLite `3.53.3`; der getrennte 4.12-Pfad
+und der normale SQLite-Produktdefault bleiben unverändert.
+
+Schemaerzeugung, keyed Kompatibilitätsprüfung und die an Repositories sowie
+Desktop-Adapter übergebene `SQLiteDatabase` teilen dieselbe feste
+Provider-/Database-Key-Konfiguration. Restart öffnet zunächst read-only keyed
+und prüft Cipher, Integrität, Foreign Keys, Final-V3-Version und vollständigen
+Fingerprint. Fehlende oder widersprüchliche Schlüssel-/DB-Bestände,
+Klartext, falsche Keys, unbekannte Versionen, Crashreste und unvollständige
+Schemata blockieren ohne Migration, Reparatur oder stille Neuerzeugung.
+Gate, Marker und exakt abgeleitete Pfade werden an Coordinator und Factory
+erneut geprüft; ein symlinked Runtime-Root wird abgewiesen. Fünf abrupte
+Subprozessabbrüche belegen den Restartvertrag ohne kontrolliertes Unwinding.
+
+Der technische Anwendungssmoke reicht bis zu vorhandenen Repositories,
+`StudentDesktopAdapter`, `MasterDataDesktopAdapter` und einer
+ViewModel-Projektion. Es gibt keine Shell-, UI-, Pilot-, Dokument-,
+Backup/Restore-, Support-Reset-, Build-, DMG- oder Releaseaktivierung.
+
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 
 Security Sprint 11 verbindet die isolierten Foundations aus Sprint 8 bis 10

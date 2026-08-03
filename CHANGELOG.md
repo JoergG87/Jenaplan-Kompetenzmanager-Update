@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Eine zusätzliche, standardmäßig inaktive und zweifach markergebundene
+  `Final-V3-SQLCipher-Runtime` verbindet den vorhandenen zufälligen
+  Database-Key mit dem exakten lokalen SQLCipher-4.17-/CommonCrypto-Provider.
+  Sie erzeugt Final-V3 direkt verschlüsselt, prüft Cipher, SQLite, Integrität,
+  Foreign Keys, Version und vollständigen Schemafingerprint auf einer bereits
+  keyed Connection und reicht dieselbe `SQLiteDatabase` an vorhandene
+  Repositories, Desktop-Adapter und ViewModel-Projektionen weiter. Asymmetrien,
+  Klartext, falsche Keys, Crashreste und fehlende Restartbestände blockieren
+  ohne Reparatur oder Neuerzeugung. Coordinator und Factory revalidieren Root,
+  Marker und Pfadbindung; fünf echte `os._exit`-Subprozessabbrüche prüfen den
+  Crash-/Restartvertrag. Produktstartup, UI, Dokumente,
+  Backup/Restore, Build, Pilot und Release bleiben unverändert.
+
 - Eine neue Qt-freie `DMK-Database-Key-Runtime` verbindet die vorhandenen
   DMK-/Keyset- und HKDF-/AES-GCM-Envelope-Foundations ausschließlich hinter
   einem standardmäßig inaktiven, markergebundenen internen Test-Gate. Ein

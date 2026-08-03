@@ -252,6 +252,20 @@ Metadaten, `MacOSDataMasterKeyStore` den Keychain-Zugriff,
 `FileDatabaseKeyEnvelopeRepository` die authentisierte Registry. Es gibt
 keine View-, ViewModel-, Widget-, Startup- oder fachliche Adapter-Ownership.
 
+## Final-V3-SQLCipher-Runtime - technische Composition ohne View
+
+`FinalV3SQLCipherRuntimeGate` besitzt ausschließlich die zusätzliche
+Marker-/Rootzulassung. `FinalV3SQLCipherRuntimeCoordinator` besitzt
+First-Run-/Restart-Klassifikation und Providerkomposition.
+`KeyedFinalV3CompatibilityInspector` besitzt nur die mutationsfreie Prüfung
+der bereits geöffneten keyed Connection. Nach Erfolg besitzt die zurückgegebene
+`SQLiteDatabase` dieselbe Provider-/Keybindung für vorhandene Repositories und
+Desktop-Adapter; der Anwendungssmoke konsumiert daraus vorhandene ViewModels.
+
+Kein Widget, ViewModel oder Adapter entscheidet über Gate, Schlüssel,
+Neuanlage, Cipher- oder Schemakompatibilität. Es entsteht keine Produkt-
+Composition-Root, Shellverdrahtung oder sichtbare Recoveryführung.
+
 ## Security Sprint 11 - Integration ohne neue View
 
 `SecurityIntegrationGate` und `SecurityIntegrationOrchestrator` besitzen die

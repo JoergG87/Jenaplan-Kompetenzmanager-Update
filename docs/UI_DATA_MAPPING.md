@@ -275,6 +275,16 @@ Dialoge, Buttons, Einstellungen, Startupmeldungen oder Recoveryaktionen. Die
 strukturierte technische Runtimeentscheidung gehört ausschließlich zu
 internen Tests.
 
+## Final-V3-SQLCipher-Runtime - keine UI-Projektion
+
+Zusätzliches Gate, Rootmarker, Authentifizierungsbestätigung, technischer
+First-Run-Status, Cipher-/SQLite-Version, Integritätsstatus und keyed
+Kompatibilitätsreport werden nicht in PySide projiziert. Es entstehen keine
+Felder, Dialoge, Buttons, Einstellungen, Startupmeldungen oder
+Recoveryaktionen. Die vorhandenen Desktop-Adapter und ViewModels werden nur
+im markergebundenen Anwendungssmoke mit der verifizierten `SQLiteDatabase`
+komponiert; ihre sichtbaren Fachverträge bleiben unverändert.
+
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 
 Das interne Gate, die Integrationsphasen, Schema-/Key-/Storage-IDs,
