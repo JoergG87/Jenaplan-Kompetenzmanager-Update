@@ -767,6 +767,66 @@ werden ausdrücklich nicht als gemeinsam atomar beschrieben.
    Wheel in Repository, Produkt-App, DMG oder Startup und keine Stufe erzeugt
    DMK-, Envelope-, Migrations-, Dokument- oder Backupzustand.
 
+## DMK-Database-Key-Runtime - First-Run-, Restart- und Crash-Lifecycle
+
+Ohne `JKM_DMK_DATABASE_KEY_RUNTIME_TEST=1`, exakt gebundenen Root und gültigen
+privaten Marker endet die Auflösung read-only mit `DISABLED` oder `BLOCKED`.
+Gate-Off konstruiert weder Repository noch Keychain-Adapter und erzeugt keine
+Datei. Gate-On arbeitet nur unter `security-key-runtime-v1` im freigegebenen
+System-Temporärroot.
+
+Der echte technische First Run ist ausschließlich bei gemeinsamem Fehlen von
+Keyset-Sidecar und Envelope-Registry zulässig:
+
+1. Das neue Keyset wird mit zufälliger DMK-Key-ID, Generation, Fingerprint und
+   Phase `prepared` als `pending` persistiert. Der DMK selbst bleibt flüchtig.
+2. Derselbe zufällige 32-Byte-DMK wird im getrennten macOS-Keychain-Service
+   publiziert, erneut gelesen und gegen Länge/Fingerprint geprüft. Erst der
+   bestätigte Publish setzt die Phase `dmk_published`.
+3. Eine zufällige technische Database-Context-UUID wird vor der
+   Database-Key-Erzeugung zusammen mit
+   `database_key_generation_started` persistiert.
+4. `DatabaseKeyEnvelopeService` erzeugt einen unabhängigen zufälligen
+   32-Byte-Database-Key, versiegelt ihn über den vorhandenen HKDF-SHA-256-/
+   AES-256-GCM-Vertrag unter dem DMK und publiziert die vollständig
+   HMAC-authentisierte Registry atomar. Die Keyset-Phase wird danach
+   `envelope_published`.
+5. Registry, Context, Envelope-AAD/-Tag, DMK-Bindung und Database-Key-
+   Generation werden erneut geprüft. Erst das aktive Envelope setzt
+   `database_key_active`; erst danach wechselt das Keyset atomar zu `active`.
+
+Restart erzeugt keinen neuen Schlüssel. Ein einziges aktives Keyset lädt den
+passenden DMK aus dem Keychain, prüft ID, Generation und Fingerprint und lädt
+anschließend genau einen aktiven Database-Key unter exakt passendem Context
+und Generation. Unbekannte Versionen/Algorithmen, mehrere aktive Einträge,
+Manipulation, falscher DMK/Context oder beschädigte Metadaten blockieren.
+`access_denied` beim Lesen, temporärer Keychain-Lesefehler und nicht
+verfügbarer Plattformstore bleiben als strukturierte retryfähige Fehler
+erhalten; fehlende oder beschädigte Schlüssel werden nie still ersetzt. Wird
+ein noch nicht publizierter First-Run-DMK bei verweigertem Create verworfen,
+bleibt sein `prepared`-Keyset dagegen fail-closed und wird nicht neu erzeugt.
+
+Die Publishgrenzen verhalten sich deterministisch:
+
+- Crash vor Keychain-Publish: `prepared` plus fehlender DMK blockiert; keine
+  Neuerzeugung und keine automatische Keychain-Löschung.
+- Crash nach Keychain-Publish vor Phasenpersistenz: der exakt gebundene DMK
+  wird gelesen und verifiziert; nur dann wird zu `dmk_published` fortgesetzt.
+- Crash nach bestätigtem `pending`: `dmk_published` darf Context und
+  Database-Key-Erzeugung einmalig beginnen.
+- Crash nach `database_key_generation_started`, aber vor Envelope-Publish:
+  fehlende Registry blockiert, weil der verlorene flüchtige Database-Key nicht
+  rekonstruiert oder ersetzt werden darf.
+- Crash nach Envelope-Publish vor Phasenpersistenz: Registry-HMAC und
+  Envelope-AEAD werden geprüft; exakt dieses Envelope darf aktiviert werden.
+- Crash vor Keyset-Aktivierung: ein bereits aktiver Database-Key erlaubt die
+  Fortsetzung der exakt gebundenen `pending`-Zeile.
+- Crash nach Keyset-Aktivierung: der normale aktive Restartvertrag gilt.
+
+Kein Schritt erzeugt oder öffnet eine SQLite-/SQLCipher-/Final-V3-Datenbank,
+übergibt den Database-Key an einen Connection-Provider oder verändert
+Produkt-Startup, UI, Backup/Restore, Migration oder Release.
+
 ## Security Sprint 12 - interner Build- und Pakettest-Lifecycle
 
 1. Branch, Referenz-HEAD, Index, gemischten Worktree, geschützte Exceldatei,

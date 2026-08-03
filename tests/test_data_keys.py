@@ -135,6 +135,8 @@ def test_provision_creates_256_bit_dmk_and_persists_only_metadata(tmp_path: Path
             "generation",
             "status",
             "fingerprint_sha256",
+            "runtime_phase",
+            "database_context_id",
         )
 
 
@@ -331,7 +333,7 @@ def test_existing_unknown_keyset_store_version_is_rejected_without_migration(
 ) -> None:
     _runtime, _service, key_repository, _key_store, _random = make_environment(tmp_path)
     with sqlite3.connect(key_repository.database_path) as connection:
-        connection.execute("PRAGMA user_version = 2")
+        connection.execute("PRAGMA user_version = 3")
     before = key_repository.database_path.read_bytes()
     reopened = SQLiteDataKeysetRepository(
         key_repository.database_path, PlatformFilePermissionManager()
@@ -442,6 +444,13 @@ def test_macos_keychain_adapter_uses_separate_namespace_and_installation_binding
         )
     bridge.library.create_status = -1
     with pytest.raises(SecurityStoreError, match="data_master_key_create_failed"):
+        adapter.create(
+            installation_id=installation_id,
+            key_id=str(uuid.uuid4()),
+            key_material=material,
+        )
+    bridge.library.create_status = -25308
+    with pytest.raises(SecurityStoreError, match="data_master_key_access_denied"):
         adapter.create(
             installation_id=installation_id,
             key_id=str(uuid.uuid4()),

@@ -266,6 +266,15 @@ Es entstehen keine neuen Datenquellen, kein Credential-Material in
 Gate, SQLCipher-/libsodium-Status, Keychain-Testzustand, Testpfade,
 Architekturen und Paketprüfungen werden nicht in der normalen UI angezeigt.
 
+## DMK-Database-Key-Runtime - keine UI-Projektion
+
+Gate, Keyset-Publishphase, Keychain-Zustand, Database-Context, IDs,
+Generationen, Fingerprints, Envelope, Registry, technische Pfade und
+Fehlercodes werden nicht in PySide projiziert. Es entstehen keine Felder,
+Dialoge, Buttons, Einstellungen, Startupmeldungen oder Recoveryaktionen. Die
+strukturierte technische Runtimeentscheidung gehört ausschließlich zu
+internen Tests.
+
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 
 Das interne Gate, die Integrationsphasen, Schema-/Key-/Storage-IDs,

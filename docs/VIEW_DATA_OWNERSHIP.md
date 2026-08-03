@@ -242,6 +242,16 @@ technische JSON-Testreports an den aufrufenden internen Prüfprozess. Sie sind
 keine Produkt-View, kein ViewModel und keine sichtbare Recoveryführung.
 Widgets besitzen weiterhin keine Security-, Repository- oder Dateisystemlogik.
 
+## DMK-Database-Key-Runtime - Foundation ohne View
+
+`DatabaseKeyRuntime` besitzt ausschließlich die Qt-freie First-Run-, Restart-
+und Publishgrenzen-Orchestrierung. `DataMasterKeyService` besitzt den DMK-
+Lifecycle, `SQLiteDataKeysetRepository` die nicht geheimen Keyset-/Phasen-
+Metadaten, `MacOSDataMasterKeyStore` den Keychain-Zugriff,
+`DatabaseKeyEnvelopeService` HKDF/AES-GCM und
+`FileDatabaseKeyEnvelopeRepository` die authentisierte Registry. Es gibt
+keine View-, ViewModel-, Widget-, Startup- oder fachliche Adapter-Ownership.
+
 ## Security Sprint 11 - Integration ohne neue View
 
 `SecurityIntegrationGate` und `SecurityIntegrationOrchestrator` besitzen die

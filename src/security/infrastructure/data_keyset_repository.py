@@ -8,18 +8,20 @@ from pathlib import Path
 import sqlite3
 import tempfile
 
-from ..data_keys import DataKeyset, DataKeysetStatus
+from ..data_keys import DataKeyset, DataKeysetRuntimePhase, DataKeysetStatus
 from ..domain import SecurityStoreError, validate_uuid4
 from ..ports import FilePermissionManager
 
 
-DATA_KEYSET_STORE_SCHEMA_VERSION = 1
+DATA_KEYSET_STORE_SCHEMA_VERSION = 2
 _SQLITE_APPLICATION_ID = 0x4A4B4D4B
 _EXPECTED_COLUMNS = (
     "key_id",
     "generation",
     "status",
     "fingerprint_sha256",
+    "runtime_phase",
+    "database_context_id",
 )
 _SCHEMA_SQL = """
 CREATE TABLE data_keysets (
@@ -30,6 +32,15 @@ CREATE TABLE data_keysets (
         length(fingerprint_sha256) = 64
         AND fingerprint_sha256 NOT GLOB '*[^0-9a-f]*'
     ),
+    runtime_phase TEXT NOT NULL CHECK (runtime_phase IN (
+        'prepared',
+        'dmk_published',
+        'database_key_generation_started',
+        'envelope_published',
+        'database_key_active',
+        'active'
+    )),
+    database_context_id TEXT,
     UNIQUE (generation)
 ) STRICT;
 
@@ -38,6 +49,19 @@ ON data_keysets(status) WHERE status = 'active';
 CREATE UNIQUE INDEX one_pending_data_keyset
 ON data_keysets(status) WHERE status = 'pending';
 """
+
+_ALLOWED_PENDING_PHASE_TRANSITIONS = {
+    DataKeysetRuntimePhase.PREPARED: DataKeysetRuntimePhase.DMK_PUBLISHED,
+    DataKeysetRuntimePhase.DMK_PUBLISHED: (
+        DataKeysetRuntimePhase.DATABASE_KEY_GENERATION_STARTED
+    ),
+    DataKeysetRuntimePhase.DATABASE_KEY_GENERATION_STARTED: (
+        DataKeysetRuntimePhase.ENVELOPE_PUBLISHED
+    ),
+    DataKeysetRuntimePhase.ENVELOPE_PUBLISHED: (
+        DataKeysetRuntimePhase.DATABASE_KEY_ACTIVE
+    ),
+}
 
 
 class SQLiteDataKeysetRepository:
@@ -53,9 +77,18 @@ class SQLiteDataKeysetRepository:
 
     def initialize(self) -> None:
         self._permissions.prepare_directory(self._database_path.parent)
-        if self._database_path.exists():
+        if self._database_path.exists() or self._database_path.is_symlink():
             self._validate_store()
             return
+        try:
+            temporary_present = any(
+                child.name.startswith(".data-keysets-")
+                for child in self._database_path.parent.iterdir()
+            )
+        except OSError:
+            raise SecurityStoreError("data_keyset_store_directory_unreadable") from None
+        if temporary_present:
+            raise SecurityStoreError("data_keyset_store_temporary_present")
         descriptor, name = tempfile.mkstemp(
             prefix=".data-keysets-", suffix=".sqlite", dir=self._database_path.parent
         )
@@ -143,13 +176,74 @@ class SQLiteDataKeysetRepository:
             if keyset.generation != expected:
                 raise SecurityStoreError("data_keyset_generation_invalid")
             connection.execute(
-                "INSERT INTO data_keysets VALUES (?, ?, 'pending', ?)",
+                "INSERT INTO data_keysets VALUES (?, ?, 'pending', ?, ?, ?)",
                 (
                     keyset.key_id,
                     keyset.generation,
                     keyset.fingerprint_sha256,
+                    keyset.runtime_phase.value,
+                    keyset.database_context_id,
                 ),
             )
+
+    def advance_pending_data_keyset(
+        self,
+        *,
+        key_id: str,
+        expected_phase: DataKeysetRuntimePhase,
+        replacement_phase: DataKeysetRuntimePhase,
+        database_context_id: str | None = None,
+    ) -> DataKeyset:
+        validate_uuid4(key_id)
+        if (
+            not isinstance(expected_phase, DataKeysetRuntimePhase)
+            or not isinstance(replacement_phase, DataKeysetRuntimePhase)
+            or _ALLOWED_PENDING_PHASE_TRANSITIONS.get(expected_phase)
+            is not replacement_phase
+        ):
+            raise SecurityStoreError("data_keyset_phase_transition_invalid")
+        if database_context_id is not None:
+            validate_uuid4(database_context_id)
+        with self._write_connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM data_keysets WHERE key_id = ? AND status = 'pending'",
+                (key_id,),
+            ).fetchone()
+            if row is None:
+                raise SecurityStoreError("pending_data_keyset_missing")
+            current = self._from_row(row)
+            if current.runtime_phase is not expected_phase:
+                raise SecurityStoreError("data_keyset_phase_changed")
+            if replacement_phase is DataKeysetRuntimePhase.DATABASE_KEY_GENERATION_STARTED:
+                if current.database_context_id is not None or database_context_id is None:
+                    raise SecurityStoreError("data_keyset_context_invalid")
+                replacement_context = database_context_id
+            else:
+                if database_context_id is not None:
+                    raise SecurityStoreError("data_keyset_context_invalid")
+                replacement_context = current.database_context_id
+            if replacement_phase in {
+                DataKeysetRuntimePhase.ENVELOPE_PUBLISHED,
+                DataKeysetRuntimePhase.DATABASE_KEY_ACTIVE,
+            } and replacement_context is None:
+                raise SecurityStoreError("data_keyset_context_missing")
+            cursor = connection.execute(
+                "UPDATE data_keysets SET runtime_phase = ?, database_context_id = ? "
+                "WHERE key_id = ? AND status = 'pending' AND runtime_phase = ?",
+                (
+                    replacement_phase.value,
+                    replacement_context,
+                    key_id,
+                    expected_phase.value,
+                ),
+            )
+            if cursor.rowcount != 1:
+                raise SecurityStoreError("data_keyset_phase_changed")
+            updated = connection.execute(
+                "SELECT * FROM data_keysets WHERE key_id = ?", (key_id,)
+            ).fetchone()
+            assert updated is not None
+            return self._from_row(updated)
 
     def activate_data_keyset(self, *, key_id: str) -> DataKeyset:
         validate_uuid4(key_id)
@@ -159,7 +253,7 @@ class SQLiteDataKeysetRepository:
             ).fetchone() is not None:
                 raise SecurityStoreError("active_data_keyset_exists")
             cursor = connection.execute(
-                "UPDATE data_keysets SET status = 'active' "
+                "UPDATE data_keysets SET status = 'active', runtime_phase = 'active' "
                 "WHERE key_id = ? AND status = 'pending'",
                 (key_id,),
             )
@@ -269,6 +363,12 @@ class SQLiteDataKeysetRepository:
             generation=int(row["generation"]),
             status=DataKeysetStatus(row["status"]),
             fingerprint_sha256=str(row["fingerprint_sha256"]),
+            runtime_phase=DataKeysetRuntimePhase(row["runtime_phase"]),
+            database_context_id=(
+                None
+                if row["database_context_id"] is None
+                else str(row["database_context_id"])
+            ),
         )
         SQLiteDataKeysetRepository._validate_value(keyset)
         return keyset
@@ -283,3 +383,21 @@ class SQLiteDataKeysetRepository:
             for character in keyset.fingerprint_sha256
         ):
             raise SecurityStoreError("data_keyset_fingerprint_invalid")
+        if not isinstance(keyset.runtime_phase, DataKeysetRuntimePhase):
+            raise SecurityStoreError("data_keyset_runtime_phase_invalid")
+        if keyset.database_context_id is not None:
+            validate_uuid4(keyset.database_context_id)
+        if keyset.status is DataKeysetStatus.ACTIVE:
+            if keyset.runtime_phase is not DataKeysetRuntimePhase.ACTIVE:
+                raise SecurityStoreError("data_keyset_runtime_phase_invalid")
+        elif (
+            keyset.status is DataKeysetStatus.PENDING
+            and keyset.runtime_phase is DataKeysetRuntimePhase.ACTIVE
+        ):
+            raise SecurityStoreError("data_keyset_runtime_phase_invalid")
+        if keyset.runtime_phase in {
+            DataKeysetRuntimePhase.DATABASE_KEY_GENERATION_STARTED,
+            DataKeysetRuntimePhase.ENVELOPE_PUBLISHED,
+            DataKeysetRuntimePhase.DATABASE_KEY_ACTIVE,
+        } and keyset.database_context_id is None:
+            raise SecurityStoreError("data_keyset_context_missing")

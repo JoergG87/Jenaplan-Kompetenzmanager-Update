@@ -80,6 +80,12 @@ class MacOSDataMasterKeyStore:
             ctypes.memset(buffer, 0, len(key_material))
         if status == _ERR_SEC_DUPLICATE_ITEM:
             raise SecurityStoreError("data_master_key_already_exists")
+        if status in {
+            _ERR_SEC_AUTH_FAILED,
+            _ERR_SEC_INTERACTION_NOT_ALLOWED,
+            _ERR_SEC_USER_CANCELED,
+        }:
+            raise SecurityStoreError("data_master_key_access_denied")
         if status != _ERR_SEC_SUCCESS:
             raise SecurityStoreError("data_master_key_create_failed")
 

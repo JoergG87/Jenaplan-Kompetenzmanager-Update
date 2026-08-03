@@ -349,6 +349,7 @@ class DatabaseKeyEnvelopeService:
         *,
         database_context_id: str,
         generation: int,
+        fault_hook=None,
     ) -> DatabaseKey:
         validate_uuid4(database_context_id)
         _require_positive_int(generation, "database_key_generation_invalid")
@@ -380,6 +381,8 @@ class DatabaseKeyEnvelopeService:
             key_id = self._random.uuid4()
             validate_uuid4(key_id)
             key = DatabaseKey(key_id, generation, bytes(material))
+            if fault_hook is not None:
+                fault_hook("after_database_key_generation")
             envelope = self._seal(
                 dmk,
                 key=key,

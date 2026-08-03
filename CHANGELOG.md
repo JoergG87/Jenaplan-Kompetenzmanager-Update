@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Eine neue Qt-freie `DMK-Database-Key-Runtime` verbindet die vorhandenen
+  DMK-/Keyset- und HKDF-/AES-GCM-Envelope-Foundations ausschließlich hinter
+  einem standardmäßig inaktiven, markergebundenen internen Test-Gate. Ein
+  technischer First Run publiziert zufällige 256-Bit-DMK-/Database-Keys in
+  Keychain beziehungsweise authentisiertem Envelope und aktiviert das Keyset
+  erst nach vollständiger Prüfung; Restart und alle Publishgrenzen sind
+  deterministisch fortsetzbar oder fail-closed. Produkt-Startup, Final-V3,
+  SQLCipher-Datenbanköffnung, UI, Backup/Restore, Migration und Release bleiben
+  unverändert.
+
 - Eine getrennte, standardmäßig inaktive macOS-arm64-Buildbasis erzeugt aus
   hashgebundenen Quellen ein reproduzierbares Python-3.14-Wheel mit
   `sqlcipher3`-naher DB-API, SQLCipher Community 4.17.0 und CommonCrypto.

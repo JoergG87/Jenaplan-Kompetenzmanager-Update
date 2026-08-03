@@ -272,6 +272,23 @@ bis zum realen Test des gebauten Bundles offen.
 | `SQLCIPHER_4_17_LOCAL_BINDING_VERSION` | lokal eindeutig markierter abgeleiteter Bindingstand `0.6.2+jkm.sqlcipher4170.1`; kein neuer Importname und keine Produktabhängigkeit | Security Build |
 | `SQLCIPHER_4_17_SOURCE_DATE_EPOCH` | fester reproduzierbarer Wheelzeitpunkt `1783468800` für beide unabhängigen Buildroots | Security Build |
 
+## DMK-Database-Key-Runtime - interne technische Namen
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `DatabaseKeyRuntime` | Qt-freie, restartfähige Orchestrierung des vorhandenen DMK-/Keyset- und Database-Key-Envelope-Lifecycles; öffnet keine Datenbank | Security Application Layer |
+| `DatabaseKeyRuntimeGate` | Read-only Gateauflösung; standardmäßig `DISABLED`, nur bei exaktem Gatewert, privatem System-Temporärroot und festem Marker aktiv | Security Application Layer |
+| `DatabaseKeyRuntimePaths` | Feste Rollen für technischen Root, Metadatenroot, Keyset-Sidecar und Envelope-Registry; keine Produkt-`RuntimePaths` | Security Application Layer |
+| `LoadedDatabaseKeyRuntime` | Flüchtiges verifiziertes Ergebnis mit DMK-/Database-Key, IDs, Generationen, Context und nicht geheimen Fingerprints; Secretfelder sind repr-geschützt | Security Application Layer |
+| `DatabaseKeyRuntimeDecision` | Strukturierte technische Projektion `DISABLED`, `ACTIVE` oder `BLOCKED` samt sanitiertem Fehlercode, Operation und Retryfähigkeit | Security Application Layer |
+| `DatabaseKeyRuntimeError` | Sanitierter fail-closed Runtimefehler ohne Secret oder lokalen Pfad | Security Application Layer |
+| `DataKeysetRuntimePhase` | Nicht geheime Publishkette `prepared -> dmk_published -> database_key_generation_started -> envelope_published -> database_key_active -> active` | Security Domain |
+| `JKM_DMK_DATABASE_KEY_RUNTIME_TEST` | Internes Gate; ausschließlich der exakte Wert `1` aktiviert die weitere Rootprüfung | Security Test Gate |
+| `JKM_DMK_DATABASE_KEY_RUNTIME_ROOT` | Expliziter absoluter markergebundener privater Testroot unter der System-Temporärwurzel | Security Test Gate |
+| `.jkm-dmk-database-key-runtime-test-root` | Fester nicht geheimer Marker für den ausschließlich technischen Testroot | Security Test Gate |
+| `security-key-runtime-v1` | Privates `0700`-Verzeichnis ausschließlich für Keyset- und Envelope-Metadaten | Security Infrastructure |
+| `dmk_database_key_runtime_worker.py` | Separater Testprozess für First Run, Restart und reales namespacetes Keychain-Cleanup | Security Test QA |
+
 ## Security Sprint 12 - Release-Hardening und Paketabnahme
 
 | Technischer Name | Bedeutung | Eigentümer |

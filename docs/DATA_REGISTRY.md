@@ -318,6 +318,22 @@ Security-, Dokument-, Backup-, Appcast- oder Releasebestände lesen. Der
 bestehende `sqlcipher3`-0.6.2-/SQLCipher-4.12.0-Pfad bleibt ausschließlich
 Testengine und separate historische Buildabhängigkeit.
 
+## DMK-Database-Key-Runtime - isolierte technische Metadaten
+
+| Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| markergebundener Runtime-Testroot | fester nicht geheimer Marker und Unterverzeichnis `security-key-runtime-v1` | privater eigentümergeprüfter System-Temporärroot; `0700`; kein Produktroot | ausschließlich Gate-On |
+| `security-key-runtime-v1/data-keysets.sqlite` | Key-ID, Generation, `pending|active|revoked|failed`, DMK-SHA-256-Fingerprint, nicht geheime Publishphase und stabile technische Database-Context-UUID | technischer Sidecar; Datei/SQLite-Sidecars `0600`; nicht in `security.sqlite`, fachlicher SQLite oder Backup | restartfähige Keyset-Metadaten |
+| `security-key-runtime-v1/database-key-envelopes-v1.json` | vorhandene Registry-Version, Context, High-Water-Mark, HMAC-Parameter/-Tag und AES-256-GCM-geschütztes Database-Key-Envelope | atomare `0600`-Sidecar-Persistenz; keine fachliche Datenquelle und kein Backupbestand | authentisierte Envelope-Registry |
+| macOS-Keychain-Service `de.jenaplan.kompetenzmanager.data-master-key` | genau ein zufälliger 256-Bit-DMK unter technischer Installations-/Key-ID-Bindung | ausschließlich realer lokaler Keychain; kein Datei- oder Fallbackstore | einzige DMK-Persistenz |
+| Laufzeit-DMK, Database-Wrapping-Key, Registry-HMAC-Key und Database-Key | jeweils 32 Byte; DMK/Database-Key zufällig, Domain-Keys über bestehendes HKDF-SHA-256 | ausschließlich flüchtig; repr-geschützt; nie Log, Exception, Datei, Konfiguration oder Backup | Secret-Material |
+
+Die Database-Context-UUID ist ausschließlich ein stabiler technischer
+Kryptokontext und weder Pfad noch fachliche ID. Passwort, Recovery-Code,
+Testroot, Installationsname und Dateiname sind an keiner Schlüsselableitung
+beteiligt. Die Runtime erzeugt oder öffnet keine Final-V3-/SQLite-/SQLCipher-
+Datenbank.
+
 ## Security Sprint 12 - interne Build- und Testdaten
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |

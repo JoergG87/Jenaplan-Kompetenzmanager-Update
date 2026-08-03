@@ -140,6 +140,47 @@ Windows, Appcast, Pilotinstallation, Übergabe und Release bleiben
 ausgeschlossen. Der Dokumentationsstand darf kein App- oder DMG-Artefakt
 behaupten.
 
+## Entwicklungsgrenze DMK-Database-Key-Runtime
+
+Die vorhandenen `DataMasterKeyService`-, Keyset- und Database-Key-Envelope-
+Foundations dürfen ausschließlich hinter dem standardmäßig inaktiven Gate
+`JKM_DMK_DATABASE_KEY_RUNTIME_TEST=1` zu einer Qt-freien technischen Runtime
+verbunden werden. Zusätzlich sind der exakt gebundene Root
+`JKM_DMK_DATABASE_KEY_RUNTIME_ROOT`, ein privater eigentümergeprüfter
+System-Temporärroot mit festem Präfix und der feste Rootmarker Pflicht.
+Der normale Startup importiert oder startet diesen Pfad nicht.
+
+Ein First Run ist nur zulässig, wenn weder Keyset-Sidecar noch Envelope-
+Registry vorhanden sind. Der zufällige 256-Bit-DMK wird ausschließlich unter
+dem getrennten Service
+`de.jenaplan.kompetenzmanager.data-master-key` im macOS-Keychain publiziert.
+Das Keyset bleibt bis zur Erzeugung, Versiegelung, Registry- und Envelope-
+Prüfung des unabhängigen zufälligen 256-Bit-Database-Key `pending`. Erst der
+aktive Database-Key erlaubt die abschließende Keyset-Aktivierung.
+
+Der Sidecar persistiert ausschließlich Key-ID, Generation, Status,
+SHA-256-Fingerprint, nicht geheime Publishphase und stabile technische
+Database-Context-UUID. Die HMAC-authentisierte Registry persistiert nur den
+AES-256-GCM-Envelope und ihre vorhandenen Steuerdaten. DMK, Database-Key,
+Wrapping-/Registry-Key, Passwort, Pfadableitung und fachliche IDs sind in
+Dateien verboten. Metadatenroot und Dateien verwenden `0700` beziehungsweise
+`0600`, liegen außerhalb fachlicher Backups und besitzen keinen Fallbackpfad.
+
+Restart verifiziert Keyset-Kardinalität, DMK-Keychain-Bindung, Fingerprint,
+Database-Context, Generationen, Registry-HMAC und Envelope-AEAD. Vorhandene
+fehlende, beschädigte, unbekannte, manipulierte oder widersprüchliche Bestände
+blockieren ohne stille DMK-/Database-Key-Neuerzeugung und ohne automatische
+Keychain-Löschung. Nur ein bestätigter Keychain-Publish, ein vollständig
+publiziertes Envelope oder ein bereits aktiver Database-Key darf die exakt
+passende `pending`-Kette fortsetzen. Ein nachweislich begonnenes, aber nicht
+publiziertes Database-Key-Envelope blockiert, weil der flüchtige Key nach
+Prozessabbruch nicht rekonstruierbar ist.
+
+Dieser Pfad erzeugt und öffnet keine SQLite-/SQLCipher-/Final-V3-Datenbank und
+besitzt keine Produkt-, Startup-, UI-, Backup/Restore-, Migrations-, Build-,
+Pilot- oder Releaseaktivierung. Ein technisches GO bestätigt ausschließlich
+die standardmäßig inaktive Security-Key-Runtime.
+
 ## Entwicklungsgrenze Security Sprint 12
 
 Security Sprint 12 darf einen internen macOS-arm64-Testbuild `0.3.0` /

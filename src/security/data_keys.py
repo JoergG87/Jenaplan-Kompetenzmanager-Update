@@ -27,6 +27,17 @@ class DataKeysetStatus(str, Enum):
     FAILED = "failed"
 
 
+class DataKeysetRuntimePhase(str, Enum):
+    """Non-secret publish progress for the gated DMK/Database-Key runtime."""
+
+    PREPARED = "prepared"
+    DMK_PUBLISHED = "dmk_published"
+    DATABASE_KEY_GENERATION_STARTED = "database_key_generation_started"
+    ENVELOPE_PUBLISHED = "envelope_published"
+    DATABASE_KEY_ACTIVE = "database_key_active"
+    ACTIVE = "active"
+
+
 class DataMasterKeyStoreStatus(str, Enum):
     SUCCESS = "success"
     NOT_FOUND = "not_found"
@@ -50,6 +61,8 @@ class DataKeyset:
     generation: int
     status: DataKeysetStatus
     fingerprint_sha256: str
+    runtime_phase: DataKeysetRuntimePhase = DataKeysetRuntimePhase.PREPARED
+    database_context_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -204,6 +217,120 @@ class DataMasterKeyService:
             for index in range(len(key_material)):
                 key_material[index] = 0
 
+    def create_pending(self, *, fault_hook=None) -> LoadedDataMasterKey:
+        """Publish a new DMK but deliberately leave its keyset pending.
+
+        This staged path is reserved for the gated combined runtime.  Unlike
+        ``provision()``, it never deletes a possibly correct Keychain value
+        when a later metadata operation fails.
+        """
+
+        account = self._active_account()
+        if self._repository.active_data_keyset() is not None:
+            raise DataMasterKeyLifecycleError("active_data_master_key_exists")
+        if self._repository.pending_data_keysets():
+            raise DataMasterKeyLifecycleError("pending_data_master_key_exists")
+        if not self._key_store.supported:
+            raise DataMasterKeyLifecycleError("data_master_key_store_unsupported")
+
+        key_material = bytearray(self._random.bytes(DATA_MASTER_KEY_BYTES))
+        try:
+            if len(key_material) != DATA_MASTER_KEY_BYTES:
+                raise DataMasterKeyLifecycleError("data_master_key_random_invalid")
+            key_id = self._random.uuid4()
+            validate_uuid4(key_id)
+            keyset = DataKeyset(
+                key_id=key_id,
+                generation=self._repository.next_data_key_generation(),
+                status=DataKeysetStatus.PENDING,
+                fingerprint_sha256=hashlib.sha256(key_material).hexdigest(),
+            )
+            self._repository.prepare_data_keyset(keyset)
+            if fault_hook is not None:
+                fault_hook("before_keychain_publish")
+            try:
+                self._key_store.create(
+                    installation_id=account.installation_id,
+                    key_id=key_id,
+                    key_material=bytes(key_material),
+                )
+            except Exception as error:
+                code = getattr(error, "code", str(error))
+                if code == "data_master_key_access_denied":
+                    raise DataMasterKeyLifecycleError(
+                        "data_master_key_access_denied"
+                    ) from None
+                raise DataMasterKeyLifecycleError(
+                    "data_master_key_store_create_failed"
+                ) from None
+            if fault_hook is not None:
+                fault_hook("after_keychain_publish_before_keyset_persistence")
+            published = self._repository.advance_pending_data_keyset(
+                key_id=key_id,
+                expected_phase=DataKeysetRuntimePhase.PREPARED,
+                replacement_phase=DataKeysetRuntimePhase.DMK_PUBLISHED,
+            )
+            result = self._read(account.installation_id, published)
+            if result.status is not DataMasterKeyStoreStatus.SUCCESS:
+                raise DataMasterKeyLifecycleError(
+                    self._read_failure_code(result.status, pending=True)
+                )
+            assert result.key_material is not None
+            return LoadedDataMasterKey(
+                key_id=published.key_id,
+                generation=published.generation,
+                key_material=result.key_material,
+            )
+        finally:
+            for index in range(len(key_material)):
+                key_material[index] = 0
+
+    def load_pending(self) -> LoadedDataMasterKey:
+        """Load one pending DMK and recover only a confirmed Keychain publish."""
+
+        account = self._active_account()
+        pending = self._repository.pending_data_keysets()
+        if len(pending) != 1:
+            raise DataMasterKeyLifecycleError("pending_data_master_key_cardinality_invalid")
+        keyset = pending[0]
+        result = self._read(account.installation_id, keyset)
+        if result.status is not DataMasterKeyStoreStatus.SUCCESS:
+            raise DataMasterKeyLifecycleError(
+                self._read_failure_code(result.status, pending=True)
+            )
+        assert result.key_material is not None
+        if keyset.runtime_phase is DataKeysetRuntimePhase.PREPARED:
+            keyset = self._repository.advance_pending_data_keyset(
+                key_id=keyset.key_id,
+                expected_phase=DataKeysetRuntimePhase.PREPARED,
+                replacement_phase=DataKeysetRuntimePhase.DMK_PUBLISHED,
+            )
+        return LoadedDataMasterKey(
+            key_id=keyset.key_id,
+            generation=keyset.generation,
+            key_material=result.key_material,
+        )
+
+    def activate_pending(self, *, key_id: str) -> LoadedDataMasterKey:
+        """Activate a previously verified pending DMK without regeneration."""
+
+        account = self._active_account()
+        pending = self._repository.pending_data_keysets()
+        if len(pending) != 1 or pending[0].key_id != key_id:
+            raise DataMasterKeyLifecycleError("pending_data_master_key_missing")
+        result = self._read(account.installation_id, pending[0])
+        if result.status is not DataMasterKeyStoreStatus.SUCCESS:
+            raise DataMasterKeyLifecycleError(
+                self._read_failure_code(result.status, pending=True)
+            )
+        assert result.key_material is not None
+        active = self._repository.activate_data_keyset(key_id=key_id)
+        return LoadedDataMasterKey(
+            key_id=active.key_id,
+            generation=active.generation,
+            key_material=result.key_material,
+        )
+
     def load(self) -> LoadedDataMasterKey:
         account = self._active_account()
         self._recover_pending(account.installation_id)
@@ -259,6 +386,17 @@ class DataMasterKeyService:
 
     def _recover_pending(self, installation_id: str) -> None:
         for keyset in self._repository.pending_data_keysets():
+            if (
+                keyset.database_context_id is not None
+                or keyset.runtime_phase
+                not in {
+                    DataKeysetRuntimePhase.PREPARED,
+                    DataKeysetRuntimePhase.DMK_PUBLISHED,
+                }
+            ):
+                raise DataMasterKeyLifecycleError(
+                    "pending_data_master_key_runtime_incomplete"
+                )
             result = self._read(installation_id, keyset)
             if result.status is DataMasterKeyStoreStatus.SUCCESS:
                 self._repository.activate_data_keyset(
@@ -296,6 +434,30 @@ class DataMasterKeyService:
         if not hashlib.sha256(material).hexdigest() == keyset.fingerprint_sha256:
             return DataMasterKeyReadResult(DataMasterKeyStoreStatus.CORRUPT)
         return result
+
+    @staticmethod
+    def _read_failure_code(
+        status: DataMasterKeyStoreStatus, *, pending: bool
+    ) -> str:
+        if status is DataMasterKeyStoreStatus.ACCESS_DENIED:
+            return "data_master_key_access_denied"
+        if status is DataMasterKeyStoreStatus.UNSUPPORTED:
+            return "data_master_key_store_unsupported"
+        if status is DataMasterKeyStoreStatus.ERROR:
+            return "data_master_key_store_read_failed"
+        if status is DataMasterKeyStoreStatus.NOT_FOUND:
+            return (
+                "pending_data_master_key_not_found"
+                if pending
+                else "data_master_key_not_found"
+            )
+        if status is DataMasterKeyStoreStatus.CORRUPT:
+            return (
+                "pending_data_master_key_corrupt"
+                if pending
+                else "data_master_key_corrupt"
+            )
+        return "data_master_key_store_read_failed"
 
     def _active_account(self):
         account = self._account_loader()

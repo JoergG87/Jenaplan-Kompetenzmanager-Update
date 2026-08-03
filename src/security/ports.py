@@ -21,7 +21,11 @@ from .domain import (
 )
 
 if False:  # pragma: no cover - typing-only imports without a runtime cycle
-    from .data_keys import DataKeyset, DataMasterKeyReadResult
+    from .data_keys import (
+        DataKeyset,
+        DataKeysetRuntimePhase,
+        DataMasterKeyReadResult,
+    )
 
 
 class RandomSource(Protocol):
@@ -102,6 +106,14 @@ class DataKeysetRepository(Protocol):
     def data_keysets_for_cleanup(self) -> tuple["DataKeyset", ...]: ...
     def next_data_key_generation(self) -> int: ...
     def prepare_data_keyset(self, keyset: "DataKeyset") -> None: ...
+    def advance_pending_data_keyset(
+        self,
+        *,
+        key_id: str,
+        expected_phase: "DataKeysetRuntimePhase",
+        replacement_phase: "DataKeysetRuntimePhase",
+        database_context_id: str | None = None,
+    ) -> "DataKeyset": ...
     def activate_data_keyset(self, *, key_id: str) -> "DataKeyset": ...
     def fail_data_keyset(self, *, key_id: str) -> bool: ...
     def revoke_data_keyset(self, *, key_id: str) -> bool: ...
