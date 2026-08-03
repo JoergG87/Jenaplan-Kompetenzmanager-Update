@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Die bestehende Dashboard-Hero-Karte zeigt für die zehn tatsächlichen
+  Unterrichtsfächer jeweils das freigegebene Fachmotiv am unteren Rand vor der
+  rechten Stundenplan-Miniatur. Die Zuordnung verwendet ausschließlich stabile
+  Fach-IDs; unbekannte Fächer, `Sozialkompetenz` und fehlende Assets bleiben
+  ruhig ohne Illustration. Die transparenten HiDPI-PNGs sind dekorativ,
+  fokusneutral und ändern weder Hero-Höhe noch Stundenplan-, Navigations-,
+  Daten- oder Fachlogik.
+
 - Das Öffnen und Wechseln von Schülerprofilen lädt Kind, aktuelle
   Final-V3-Zuordnung, Beobachtungen samt Ratings, Dokumente, Kompetenzen,
   Bestätigungen und Frischezustände jetzt einmal in einem kurzlebigen
