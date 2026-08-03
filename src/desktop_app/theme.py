@@ -286,6 +286,14 @@ QFrame#DashboardHeroVisualCurrent {{
     border-radius: 4px;
     min-height: 24px;
 }}
+QFrame#DashboardHeroSubjectVignette {{
+    background: transparent;
+    border: none;
+}}
+QFrame#DashboardHeroSubjectImage {{
+    background: transparent;
+    border: none;
+}}
 QFrame#DashboardLessonCard {{
     background-color: #FFFFFF;
     border: 1px solid #D7E3EC;

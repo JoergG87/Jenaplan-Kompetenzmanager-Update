@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QKeyEvent, QMouseEvent, QPalette
+from PySide6.QtGui import QColor, QKeyEvent, QMouseEvent, QPalette, QPixmap
 from PySide6.QtWidgets import (
     QFrame,
     QDialogButtonBox,
@@ -28,6 +28,7 @@ from src.desktop_app.components import (
     configure_button,
 )
 from src.desktop_app.motion import MotionDialog
+from src.desktop_app.runtime import resource_path
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.master_data_view_model import (
     CourseGroupViewModel,
@@ -66,6 +67,23 @@ DASHBOARD_DOCUMENTATION_HELP_TEXT = (
     "Lernentwicklung und erlauben keine Aussage über Stärken, Schwächen oder "
     "Zielerreichung."
 )
+DASHBOARD_SUBJECT_VIGNETTE_MIN_WIDTH = 760
+DASHBOARD_SUBJECT_VIGNETTE_COMPACT_WIDTH = 1000
+DASHBOARD_SUBJECT_VIGNETTE_SIZE = (164, 140)
+DASHBOARD_SUBJECT_VIGNETTE_COMPACT_SIZE = (124, 106)
+DASHBOARD_SUBJECT_VIGNETTE_OVERLAP = 22
+DASHBOARD_SUBJECT_VIGNETTE_ASSETS = {
+    "deutsch": "deutsch.png",
+    "mathematik": "mathematik.png",
+    "epu": "epu.png",
+    "musik": "musik.png",
+    "kunst": "kunst.png",
+    "sport": "sport.png",
+    "ethik": "ethik.png",
+    "religion": "religion.png",
+    "werken": "werken.png",
+    "schulgarten": "schulgarten.png",
+}
 
 
 def dashboard_greeting(at: datetime, display_name: str | None = None) -> str:
@@ -219,6 +237,8 @@ class OverviewScreen(QWidget):
         self._hero_occurrence: TimetableOccurrenceViewModel | None = None
         self._documentation_help_dialog: MotionDialog | None = None
         self.documentation_help_button: QPushButton | None = None
+        self._hero_vignette: QFrame | None = None
+        self._hero_vignette_layout: QGridLayout | None = None
         self._build()
 
     def _build(self) -> None:
@@ -290,6 +310,8 @@ class OverviewScreen(QWidget):
         self._clear_layout(self.today_layout)
         self._clear_layout(self.heatmap_layout)
         self._clear_layout(self.matching_children_layout)
+        self._hero_vignette = None
+        self._hero_vignette_layout = None
         self._render_hero(projection, has_timetable_entries, at)
         self._render_today(projection, at)
         self._render_heatmap(heatmap)
@@ -348,9 +370,9 @@ class OverviewScreen(QWidget):
             actions.addStretch(1)
             left_layout.addLayout(actions)
             left_layout.addStretch(1)
-            self.hero_layout.addWidget(left, 3)
+            self.hero_layout.addWidget(left, 1)
             self.hero_layout.addWidget(
-                self._hero_visual(projection.today, projection.current), 2
+                self._hero_visual(projection.today, projection.current, ""), 1
             )
             return
 
@@ -389,9 +411,14 @@ class OverviewScreen(QWidget):
         actions.addStretch(1)
         left_layout.addLayout(actions)
         left_layout.addStretch(1)
-        self.hero_layout.addWidget(left, 3)
+        self.hero_layout.addWidget(left, 1)
         self.hero_layout.addWidget(
-            self._hero_visual(projection.today, projection.current), 2
+            self._hero_visual(
+                projection.today,
+                projection.current,
+                entry.subject_id,
+            ),
+            1,
         )
 
     def _emit_header_observation(self) -> None:
@@ -407,16 +434,28 @@ class OverviewScreen(QWidget):
             entry.target_label,
         )
 
-    @staticmethod
     def _hero_visual(
+        self,
         occurrences: tuple[TimetableOccurrenceViewModel, ...],
         current: TimetableOccurrenceViewModel | None,
-    ) -> QFrame:
+        subject_id: str,
+    ) -> QWidget:
+        wrapper = QWidget()
+        wrapper_layout = QGridLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        wrapper_layout.setHorizontalSpacing(0)
+        wrapper_layout.setColumnMinimumWidth(0, 0)
+        wrapper_layout.setColumnStretch(1, 1)
+
         visual = QFrame()
         visual.setObjectName("DashboardHeroIllustrationSpace")
-        layout = QVBoxLayout(visual)
-        layout.setContentsMargins(24, 18, 24, 18)
-        grid = QGridLayout()
+        layout = QGridLayout(visual)
+        layout.setContentsMargins(24, 18, 12, 18)
+        timeline = QWidget()
+        timeline.setObjectName("DashboardHeroVisualTimeline")
+        timeline.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        grid = QGridLayout(timeline)
+        grid.setContentsMargins(0, 0, 0, 0)
         current_id = current.entry.timetable_entry_id if current is not None else ""
         for row, occurrence in enumerate(occurrences):
             time = QLabel(occurrence.entry.start_time)
@@ -430,8 +469,109 @@ class OverviewScreen(QWidget):
             )
             grid.addWidget(block, row, 1)
         grid.setColumnStretch(1, 1)
-        layout.addLayout(grid)
-        return visual
+        layout.addWidget(timeline, 0, 0)
+        wrapper_layout.addWidget(visual, 0, 1)
+
+        vignette = OverviewScreen._subject_vignette(subject_id)
+        if vignette is not None:
+            wrapper_layout.addWidget(
+                vignette,
+                0,
+                0,
+                1,
+                2,
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom,
+            )
+            self._hero_vignette = vignette
+            self._hero_vignette_layout = wrapper_layout
+            self._update_hero_vignette_visibility()
+        return wrapper
+
+    def _update_hero_vignette_visibility(self) -> None:
+        if self._hero_vignette is None or self._hero_vignette_layout is None:
+            return
+        visible = self.width() >= DASHBOARD_SUBJECT_VIGNETTE_MIN_WIDTH
+        size = (
+            DASHBOARD_SUBJECT_VIGNETTE_SIZE
+            if self.width() >= DASHBOARD_SUBJECT_VIGNETTE_COMPACT_WIDTH
+            else DASHBOARD_SUBJECT_VIGNETTE_COMPACT_SIZE
+        )
+        OverviewScreen._layout_subject_vignette(self._hero_vignette, size)
+        self._hero_vignette.setVisible(visible)
+        self._hero_vignette_layout.setColumnMinimumWidth(
+            0,
+            max(size[0] - DASHBOARD_SUBJECT_VIGNETTE_OVERLAP, 0)
+            if visible
+            else 0,
+        )
+
+    def resizeEvent(self, event: object) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._update_hero_vignette_visibility()
+
+    @staticmethod
+    def _subject_vignette(subject_id: str) -> QFrame | None:
+        file_name = DASHBOARD_SUBJECT_VIGNETTE_ASSETS.get(subject_id)
+        if file_name is None:
+            return None
+        asset_path = resource_path(
+            "assets",
+            "subject_vignettes",
+            file_name,
+        )
+        pixmap = QPixmap(str(asset_path))
+        if pixmap.isNull():
+            return None
+        vignette = QFrame()
+        vignette.setObjectName("DashboardHeroSubjectVignette")
+        vignette.setProperty("subjectId", subject_id)
+        vignette.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        vignette.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        vignette.setAccessibleName("")
+        vignette.setAccessibleDescription("")
+        image = QFrame(vignette)
+        image.setObjectName("DashboardHeroSubjectImage")
+        image.setProperty("assetPath", str(asset_path))
+        image.setProperty("sourceWidth", pixmap.width())
+        image.setProperty("sourceHeight", pixmap.height())
+        image.setStyleSheet(
+            "QFrame#DashboardHeroSubjectImage {"
+            "background: transparent; border: none; "
+            f'border-image: url("{asset_path.as_posix()}") 0 0 0 0 stretch stretch;'
+            "}"
+        )
+        image.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        image.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        image.setAccessibleName("")
+        image.setAccessibleDescription("")
+        OverviewScreen._layout_subject_vignette(
+            vignette,
+            DASHBOARD_SUBJECT_VIGNETTE_SIZE,
+        )
+        return vignette
+
+    @staticmethod
+    def _layout_subject_vignette(
+        vignette: QFrame,
+        size: tuple[int, int],
+    ) -> None:
+        image = vignette.findChild(QFrame, "DashboardHeroSubjectImage")
+        if image is None:
+            return
+        source_width = int(image.property("sourceWidth") or 0)
+        source_height = int(image.property("sourceHeight") or 0)
+        if source_width <= 0 or source_height <= 0:
+            return
+        scale = min(size[0] / source_width, size[1] / source_height)
+        image_width = max(1, round(source_width * scale))
+        image_height = max(1, round(source_height * scale))
+        vignette.setFixedSize(*size)
+        image.setGeometry(
+            (size[0] - image_width) // 2,
+            size[1] - image_height,
+            image_width,
+            image_height,
+        )
 
     def _render_today(
         self,
