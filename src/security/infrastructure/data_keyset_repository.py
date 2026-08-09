@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import os
 from pathlib import Path
 import sqlite3
+import stat
 import tempfile
 
 from ..data_keys import DataKeyset, DataKeysetRuntimePhase, DataKeysetStatus
@@ -122,6 +123,49 @@ class SQLiteDataKeysetRepository:
         except Exception:
             temporary.unlink(missing_ok=True)
             raise
+
+    def create_snapshot(self, target_path: Path) -> Path:
+        """Create one consistent no-clobber snapshot of metadata plus WAL."""
+
+        self._validate_store()
+        target = Path(target_path)
+        if target.exists() or target.is_symlink():
+            raise SecurityStoreError("data_keyset_snapshot_target_exists")
+        self._permissions.prepare_directory(target.parent)
+        descriptor: int | None = None
+        identity: tuple[int, int] | None = None
+        try:
+            flags = os.O_RDWR | os.O_CREAT | os.O_EXCL
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            descriptor = os.open(target, flags, 0o600)
+            status = os.fstat(descriptor)
+            identity = (status.st_dev, status.st_ino)
+            os.close(descriptor)
+            descriptor = None
+            with sqlite3.connect(
+                f"file:{self._database_path.resolve()}?mode=ro", uri=True
+            ) as source:
+                source.execute("PRAGMA query_only = ON")
+                with sqlite3.connect(target, isolation_level=None) as snapshot:
+                    snapshot.execute("PRAGMA journal_mode = DELETE")
+                    snapshot.execute("PRAGMA synchronous = FULL")
+                    source.backup(snapshot)
+            self._permissions.secure_sqlite_files(target)
+            SQLiteDataKeysetRepository(target, self._permissions)._validate_store()
+            with target.open("rb") as stream:
+                os.fsync(stream.fileno())
+            _fsync_directory(target.parent)
+            return target
+        except SecurityStoreError:
+            _unlink_snapshot_if_owned(target, identity)
+            raise
+        except (OSError, sqlite3.Error):
+            _unlink_snapshot_if_owned(target, identity)
+            raise SecurityStoreError("data_keyset_snapshot_failed") from None
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
 
     def active_data_keyset(self) -> DataKeyset | None:
         with self._read_connection() as connection:
@@ -401,3 +445,31 @@ class SQLiteDataKeysetRepository:
             DataKeysetRuntimePhase.DATABASE_KEY_ACTIVE,
         } and keyset.database_context_id is None:
             raise SecurityStoreError("data_keyset_context_missing")
+
+
+def _unlink_snapshot_if_owned(
+    path: Path, identity: tuple[int, int] | None
+) -> None:
+    if identity is None:
+        return
+    try:
+        status = path.lstat()
+        if (
+            not stat.S_ISLNK(status.st_mode)
+            and stat.S_ISREG(status.st_mode)
+            and (status.st_dev, status.st_ino) == identity
+        ):
+            path.unlink()
+    except OSError:
+        return
+
+
+def _fsync_directory(path: Path) -> None:
+    try:
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    except OSError:
+        raise SecurityStoreError("data_keyset_snapshot_failed") from None

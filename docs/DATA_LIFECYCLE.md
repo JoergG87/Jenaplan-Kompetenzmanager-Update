@@ -1006,7 +1006,7 @@ Der freigegebene Pilotweg beginnt ausschließlich mit einer frischen
 verschlüsselten Final-V3-Installation. Bestehende Klartextdokumente und PDFs
 werden nicht migriert oder konvertiert; alte synthetische Testdaten werden
 verworfen und nach Aktivierung neu erzeugt. Vorschau, OS-Öffnung, Export,
-Backup/Restore und Produkt-Default-Aktivierung bleiben außerhalb.
+Produkt-Default-Aktivierung und die Backup-/Restore-UI bleiben außerhalb.
 
 Crash vor Erzeugung hinterlässt keinen Intent. Crash während Write, nach Write
 vor Verifikation oder nach Verifikation vor `PREPARED` erzeugt einen
@@ -1015,6 +1015,49 @@ während Pointerwechsel oder nach transaktionaler Aktivierung vor
 Retained-Markierung rollt auf `ACTIVE` plus exakt passende `PREPARED`-
 Generation zurück und ist nach erneuter Vollverifikation fortsetzbar. Es gibt
 keine stille neue Storage-ID, kein Überschreiben und kein Klartextfallback.
+
+## Verschlüsseltes Final-V3-Pilotbackup und Restore-Staging
+
+Backup ist ein Qt-freier, gate-gebundener Maintenance-Ablauf:
+
+1. Bereits geöffnete Runtime, DMK-/Database-Key-Context, beide SQLCipher-
+   Datenbanken und exakte 4.17-Komposition vollständig prüfen.
+2. Maintenance-Gate und vorhandenen `ObservationWriterLock` erwerben; während
+   des Ablaufs sind Observation-, Dokument- und PDF-Mutationen gesperrt.
+3. Haupt- und Companion-DB über die keyed SQLCipher-Backup-API in private
+   Snapshots schreiben. Keyset-Metadaten einschließlich WAL separat über die
+   SQLite-Backup-API snapshotieren; die geschützte Envelope-Registry kopieren.
+4. Alle Companion-Generationen inventarisieren, jeden `.jkmedoc`-Container
+   vollständig prüfen und die exakt aktive Menge gegen `documents` sowie
+   RPA-/LCA-`managed-document:`-Referenzen der Hauptdatenbank binden.
+5. Ein verschlüsseltes Manifest aus Rollen, Contexts, Key-/Envelope-
+   Generationen, Engine-/Schemaversionen, Größen und SHA-256 bilden. Es enthält
+   weder DMK noch Passwort-, Recovery-, Device- oder Keychain-Secrets.
+6. Mit zufälligem 256-Bit-Backup-Key und eigener Backup-HKDF-Domain den
+   Secretstream-Container exklusiv schreiben. Final-Tag und physisches EOF
+   erzwingen, den fertigen Container vollständig neu verifizieren und erst
+   danach no-clobber als `.jkmebackup` veröffentlichen.
+
+Restore akzeptiert ausschließlich `.jkmebackup` und einen noch nicht
+existierenden privaten Staging-Root. Nach doppelter Containerverifikation
+werden Entries no-clobber materialisiert. Keyset und Envelope-Registry müssen
+mit dem vorhandenen same-installation-DMK exakt denselben Database-Key öffnen.
+Haupt- und Companion-DB werden damit read-only keyed auf Engine, Integrität,
+Schemafingerprint, Installation-/Database-Context und Generationen geprüft.
+Jeder registrierte Dokumentcontainer sowie die exakt aktive Menge werden
+erneut verifiziert. Erst dann wird `RESTORE_READY` gefsynct.
+
+Fehler, Manipulation, Trunkierung, Zusatzdaten, fehlender Final-Tag,
+Inventar-/Context-/Generationsabweichung oder SQLCipher-/Schemafehler erzeugen
+keinen Erfolgsbeleg. Ein fehlgeschlagener Backupversuch veröffentlicht kein
+Ziel und beschädigt kein bestehendes Backup. Ein fehlgeschlagener Restore
+kann Stagingreste hinterlassen, aber niemals `RESTORE_READY`; Retry verwendet
+einen neuen Staging-Root. Es gibt keinen Live-Swap, Rename oder Neustart.
+
+Der Reopen ist bewusst same-installation: Der passende DMK muss im vorhandenen
+Keychain bestehen. Passwortwechsel und Support-Reset verändern ihn nicht.
+DMK-/Geräteverlust ist kein gelöstes Portable-Recovery-Szenario. Es gibt keine
+Klartextmigration und keinen ZIP-v1-Fallback; Gate-Off bleibt unverändert.
 
 ## Security Sprint 12 - interner Build- und Pakettest-Lifecycle
 

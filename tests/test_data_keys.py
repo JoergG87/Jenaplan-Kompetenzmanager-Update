@@ -163,6 +163,39 @@ def test_load_survives_service_restart_and_wrong_binding_is_not_found(tmp_path: 
     ).status is DataMasterKeyStoreStatus.NOT_FOUND
 
 
+def test_keyset_snapshot_includes_wal_and_never_clobbers_target(
+    tmp_path: Path,
+) -> None:
+    _runtime, service, repository, _key_store, _random = make_environment(tmp_path)
+    with sqlite3.connect(repository.database_path) as setup:
+        assert setup.execute("PRAGMA journal_mode = WAL").fetchone()[0] == "wal"
+    reader = sqlite3.connect(repository.database_path)
+    try:
+        reader.execute("BEGIN")
+        reader.execute("SELECT COUNT(*) FROM data_keysets").fetchone()
+        active = service.provision()
+        assert repository.database_path.with_name(
+            repository.database_path.name + "-wal"
+        ).is_file()
+
+        target = tmp_path / "snapshot" / "data-keysets.sqlite"
+        assert repository.create_snapshot(target) == target
+        snapshot = SQLiteDataKeysetRepository(
+            target, PlatformFilePermissionManager()
+        )
+        restored = snapshot.active_data_keyset()
+        assert restored is not None
+        assert restored.key_id == active.key_id
+        assert restored.generation == active.generation
+
+        original = target.read_bytes()
+        with pytest.raises(SecurityStoreError, match="data_keyset_snapshot_target_exists"):
+            repository.create_snapshot(target)
+        assert target.read_bytes() == original
+    finally:
+        reader.close()
+
+
 def test_delete_revokes_metadata_and_removes_platform_secret(tmp_path: Path) -> None:
     _runtime, service, key_repository, key_store, _random = make_environment(tmp_path)
     loaded = service.provision()

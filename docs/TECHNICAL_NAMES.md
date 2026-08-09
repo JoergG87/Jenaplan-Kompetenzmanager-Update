@@ -338,6 +338,19 @@ bis zum realen Test des gebauten Bundles offen.
 | `final_v3_document_generations` | Historische Generationen mit `PREPARED`, `ACTIVE`, `RETAINED` oder `QUARANTINED`; kein physisches GC | Document Persistence |
 | `final_v3_document_runtime_worker.py` | Echter `os._exit`-Nachweis für sieben Container-/Persistenz-/Pointergrenzen im transaktionalen Runtime-Modell; exakte SQLCipher-Komposition separat | Security Test QA |
 
+## Verschlüsseltes Final-V3-Pilotbackup - interne technische Namen
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `FinalV3EncryptedBackupService` | Gate-gebundener Qt-freier Orchestrator für Writer-Lock, keyed Snapshots, Dokumentinventar, `.jkmebackup`, Vollverifikation und Restore-Staging | Application / Security Backup |
+| `FinalV3EncryptedBackupManifestV1` | Striktes verschlüsseltes Crossbinding von Contexts, Generationen, DB-Rollen, Engine-/Schemaversionen, Größen, Hashes und Dokumentinventar | Security Backup Domain |
+| `FinalV3BackupArtifactV1` | Manifesteintrag für Haupt-DB, Companion-DB, Keyset-Metadaten oder Database-Key-Envelope-Registry | Security Backup Domain |
+| `FinalV3BackupDocumentV1` | Manifestbindung genau einer registrierten `.jkmedoc`-Generation einschließlich Lifecycle, Key-/Envelope-Generation, Größe und SHA-256 | Security Backup Domain |
+| `SQLiteDataKeysetRepository.create_snapshot` | Konsistenter no-clobber SQLite-Backup-Snapshot der nicht geheimen Keyset-Metadaten einschließlich WAL | Security Infrastructure |
+| `.jkmebackup` | Ausschließliches verschlüsseltes Backupformat des frischen Gate-On-Final-V3-Piloten | Security Backup |
+| `RESTORE_READY` | Gefsyncter Abschlussbeleg im neuen privaten Staging-Root nach vollständigem keyed Reopen und Crossbinding | Security Restore Staging |
+| `same-installation encrypted restore` | Restoregrenze mit vorhandenem passenden DMK im lokalen Keychain; kein Gerätewechsel-/DMK-Recovery | Security Governance |
+
 ## Security Sprint 12 - Release-Hardening und Paketabnahme
 
 | Technischer Name | Bedeutung | Eigentümer |

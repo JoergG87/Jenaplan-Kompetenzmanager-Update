@@ -2,6 +2,7 @@
 
 from .sprint9_container import (
     BackupSourceFile,
+    EncryptedBackupExtractionResult,
     EncryptedBackupRestoreResult,
     EncryptedBackupVerificationResult,
     SyntheticEncryptedBackupServiceV1,
@@ -9,6 +10,7 @@ from .sprint9_container import (
 
 __all__ = [
     "BackupSourceFile",
+    "EncryptedBackupExtractionResult",
     "EncryptedBackupRestoreResult",
     "EncryptedBackupVerificationResult",
     "SyntheticEncryptedBackupServiceV1",

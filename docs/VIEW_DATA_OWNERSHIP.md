@@ -300,6 +300,20 @@ bereits vollständig gegateten `StudentDesktopAdapter` explizit übernehmen;
 die Shell entscheidet weder Gate noch Schlüssel und aktiviert keinen
 Produktdefault.
 
+## Verschlüsseltes Final-V3-Pilotbackup - technische Ownership ohne View
+
+`FinalV3EncryptedBackupService` besitzt Writer-Lock, Snapshotkoordination,
+Inventar-/Crossbindingprüfung, verschlüsselten Container, Neuverifikation und
+Restore-Staging. SQLCipher-Factories besitzen ausschließlich keyed Open und
+Schema-/Engineprüfung; Document-Runtime und Companion-DB bleiben Owner von
+Generationen und Containern. `SQLiteDataKeysetRepository` besitzt nur den
+konsistenten Metadatensnapshot. Kein Widget oder ViewModel besitzt Schlüssel,
+Manifest, Staging, `RESTORE_READY` oder Live-Austausch.
+
+Die bestehende Backup-/Restore-Oberfläche bleibt vollständig Gate-Off und
+ZIP-v1. Eine spätere Produktaktivierung benötigt eine eigene Composition- und
+UX-Entscheidung; dieses Paket verdrahtet keine View.
+
 ## Security Sprint 11 - Integration ohne neue View
 
 `SecurityIntegrationGate` und `SecurityIntegrationOrchestrator` besitzen die

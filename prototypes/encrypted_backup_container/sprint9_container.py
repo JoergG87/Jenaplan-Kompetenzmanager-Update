@@ -103,6 +103,15 @@ class EncryptedBackupRestoreResult:
     verification: EncryptedBackupVerificationResult
 
 
+@dataclass(frozen=True)
+class EncryptedBackupExtractionResult:
+    """Fully authenticated extraction without product completion state."""
+
+    restore_root: Path
+    entry_paths: Mapping[str, Path]
+    verification: EncryptedBackupVerificationResult
+
+
 @dataclass
 class _BoundSource:
     source: BackupSourceFile
@@ -381,6 +390,138 @@ class SyntheticEncryptedBackupServiceV1:
             context=context,
             consumer=None,
         )
+
+    def verify_path(
+        self,
+        *,
+        container: Path,
+        dmk: LoadedDataMasterKey,
+        context: BackupContainerContextV1,
+    ) -> EncryptedBackupVerificationResult:
+        """Verify one absolute regular container outside the synthetic root.
+
+        The caller owns destination policy. Descriptor binding, final-tag and
+        physical-EOF checks remain identical to :meth:`verify`.
+        """
+
+        path = Path(container)
+        if not path.is_absolute():
+            raise EncryptedBackupError("backup_container_path_invalid")
+        return self._consume(
+            container=path,
+            dmk=dmk,
+            context=context,
+            consumer=None,
+        )
+
+    def extract_to_new_root(
+        self,
+        *,
+        container: Path,
+        restore_root: Path,
+        dmk: LoadedDataMasterKey,
+        context: BackupContainerContextV1,
+    ) -> EncryptedBackupExtractionResult:
+        """Authenticate twice and extract only into a new private root.
+
+        This primitive intentionally writes no completion marker. A higher
+        layer must validate database keys, schemas and crossbindings before it
+        can publish its own staging-ready state.
+        """
+
+        container_path = Path(container)
+        destination = Path(restore_root)
+        if not container_path.is_absolute() or not destination.is_absolute():
+            raise EncryptedBackupError("backup_restore_path_invalid")
+        if destination.name in {"", ".", ".."}:
+            raise EncryptedBackupError("backup_restore_path_invalid")
+        _require_absent(destination, "backup_restore_root_exists")
+        verification = self.verify_path(
+            container=container_path,
+            dmk=dmk,
+            context=context,
+        )
+        restored_bound: list[_BoundSource] = []
+        root_fd: int | None = None
+        consumer: _RestoreConsumer | None = None
+        try:
+            try:
+                os.mkdir(destination, mode=0o700)
+                os.chmod(destination, 0o700)
+            except OSError:
+                raise EncryptedBackupError(
+                    "backup_restore_root_create_failed"
+                ) from None
+            root_status = os.stat(destination, follow_symlinks=False)
+            if (
+                not stat.S_ISDIR(root_status.st_mode)
+                or stat.S_IMODE(root_status.st_mode) & 0o077
+                or (hasattr(os, "getuid") and root_status.st_uid != os.getuid())
+            ):
+                raise EncryptedBackupError("backup_restore_root_changed")
+            root_identity = (root_status.st_dev, root_status.st_ino)
+            self._fault("restore_before_root_open")
+            flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            try:
+                root_fd = os.open(destination, flags)
+            except OSError:
+                raise EncryptedBackupError("backup_restore_root_changed") from None
+            opened_root = os.fstat(root_fd)
+            if (
+                not stat.S_ISDIR(opened_root.st_mode)
+                or (opened_root.st_dev, opened_root.st_ino) != root_identity
+            ):
+                raise EncryptedBackupError("backup_restore_root_changed")
+            consumer = _RestoreConsumer(root_fd=root_fd, fault=self._fault)
+            self._fault("restore_after_root_created")
+            second = self._consume(
+                container=container_path,
+                dmk=dmk,
+                context=context,
+                consumer=consumer,
+            )
+            if second != verification:
+                raise EncryptedBackupError("backup_restore_reverify_mismatch")
+            _require_directory_identity(destination, root_identity)
+            _fsync_fd(root_fd, "backup_restore_directory_fsync_failed")
+            entry_paths: dict[str, Path] = {}
+            for entry in verification.manifest.entries:
+                restored = destination / entry.restore_name
+                restored_item = _bind_source_path(
+                    BackupSourceFile(restored, entry.entry_id, entry.role),
+                    verification.manifest.chunk_size,
+                )
+                restored_bound.append(restored_item)
+                if (
+                    restored_item.size != entry.plaintext_size
+                    or restored_item.sha256 != entry.sha256
+                ):
+                    raise EncryptedBackupError(
+                        "backup_restore_entry_verification_failed"
+                    )
+                entry_paths[entry.entry_id] = restored
+            self._fault("restore_after_extraction_before_reopen")
+            _require_directory_identity(destination, root_identity)
+            for source in restored_bound:
+                _require_bound_source_unchanged(source)
+            return EncryptedBackupExtractionResult(
+                restore_root=destination,
+                entry_paths=entry_paths,
+                verification=verification,
+            )
+        except EncryptedBackupError:
+            raise
+        except Exception:
+            raise EncryptedBackupError("backup_restore_failed") from None
+        finally:
+            if consumer is not None:
+                consumer.close()
+            if root_fd is not None:
+                os.close(root_fd)
+            for source in restored_bound:
+                os.close(source.fd)
 
     def restore(
         self,

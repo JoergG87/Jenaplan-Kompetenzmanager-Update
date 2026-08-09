@@ -376,6 +376,24 @@ Eingangsquelle: Der Pilot beginnt mit einem
 frischen verschlüsselten Final-V3-Bestand; synthetische Testdaten werden nach
 Gate-Aktivierung neu erzeugt und nicht migriert.
 
+## Verschlüsseltes Final-V3-Pilotbackup - Dateninventar
+
+| Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
+|---|---|---|---|
+| Final-V3-Hauptsnapshot | keyed SQLCipher-Backup von `final-v3.sqlcipher` mit exaktem Final-V3-Fingerprint | ausschließlich verschlüsselter Backupentry; keine WAL-/SHM-Dateikopie | `.jkmebackup` Gate-On |
+| Companion-Snapshot | keyed SQLCipher-Backup von `documents-v1.sqlcipher` mit Context und vollständigem Generationeninventar | gemeinsam unter Writer-Lock mit Hauptsnapshot bestimmt | `.jkmebackup` Gate-On |
+| Keyset-Metadatensnapshot | Key-ID, DMK-/Database-Key-Generation, Status, Fingerprint und Database-Context ohne Schlüsselmaterial | SQLite-Backup-API einschließlich WAL; kein `security.sqlite` | same-installation Reopen-Metadaten |
+| Database-Key-Envelope-Registry | authentisierte Envelope-Dateien und nicht geheime Registrybindung | bereits kryptografisch geschützt; kein Klartext-Database-Key | same-installation Reopen-Metadaten |
+| `.jkmedoc`-Inventar | alle Companion-registrierten Generationen mit Document-/Key-/Envelope-Generation, Lifecycle, Größe und SHA-256 | jeder Container als authentisiert verschlüsselter Entry; aktive Teilmenge separat gebunden | vollständiger Retention- und Reopenbestand |
+| `FinalV3EncryptedBackupManifestV1` | Format, Installation-/Database-Context, Engine-/Schema-Versionen, Rollen, Generationen, Größen, Hashes und aktives Inventar | selbst authentisiert verschlüsselt; keine Secrets oder Schülerklartexte | Container-Source-of-Truth |
+| `RESTORE_READY` | Version, Backup-/Manifesthash und verifizierte Inventarzähler | ausschließlich neuer privater Staging-Root; kein Livepfad | Abschlussbeleg nach keyed Vollprüfung |
+
+DMK, App-Passwort, Recovery-Codes, `security.sqlite`, Device-Credential,
+Touch-ID-Zustand, Keychain-Secrets, Logs, UI-Präferenzen und Testartefakte sind
+keine Backupdatenquelle. Historische Klartext- und ZIP-v1-Bestände sind keine
+Eingabe dieses Gate-On-Pfads. Gate-Off bleibt eine getrennte unveränderte
+ZIP-v1-Datenquelle.
+
 ## Security Sprint 12 - interne Build- und Testdaten
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |

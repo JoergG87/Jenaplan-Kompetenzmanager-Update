@@ -403,9 +403,36 @@ Remove deaktiviert fachlich und behält alle Container retained.
 
 Der Pilotweg setzt einen frischen verschlüsselten Final-V3-Bestand voraus.
 Klartextbestände und alte Testdaten werden nicht migriert oder konvertiert;
-Testdaten werden nach Gate-Aktivierung neu erzeugt. Gate-Off, Berichte und
-LEG/PDF bleiben unverbunden. Es gibt keinen Export, OS-Preview,
-Backup/Restore, Produktstartup, Build oder Releasepfad.
+Testdaten werden nach Gate-Aktivierung neu erzeugt. Gate-Off bleibt
+unverändert. Es gibt keinen Export, OS-Preview, Produktstartup, Build oder
+Releasepfad.
+
+## Verschlüsseltes Final-V3-Pilotbackup und Restore-Staging
+
+Der intern gegatete Cipher-Pilotpfad sichert ausschließlich frische
+verschlüsselte Final-V3-Installationen in `.jkmebackup`. Der gemeinsame
+Writer-Lock friert Hauptdatenbank, Companion-DB, aktives Fachinventar und alle
+registrierten Dokumentgenerationen ein. SQLCipher-Backup-Snapshots,
+Keyset-Metadaten, die geschützte Database-Key-Envelope-Registry und sämtliche
+`.jkmedoc`-Container werden durch ein verschlüsseltes Manifest mit Context-,
+Generations-, Rollen-, Versions-, Größen- und Hashbindungen zusammengehalten.
+
+Der Backup-Key ist zufällig und wird unter einem eigenen DMK-abgeleiteten
+Backup-Wrapping-Key geschützt. DMK, Database-Key, Document-Keys,
+`security.sqlite`, Passwort-, Recovery-, Device- und Keychain-Secrets werden
+nicht in den Container geschrieben. Vollständige Secretstream-Verifikation,
+Final-Tag und physisches EOF sind Voraussetzung für die no-clobber
+Veröffentlichung.
+
+Restore schreibt ausschließlich in einen neuen privaten Staging-Root und
+bestätigt erst nach keyed Reopen beider Datenbanken, exakter SQLCipher-4.17-
+und Schemaprüfung, vollständigem Dokumentinventar und Crossbindings
+`RESTORE_READY`. Es gibt keinen Live-Swap. Der Vertrag ist zunächst
+`same-installation encrypted restore`: Der passende DMK muss im vorhandenen
+Keychain existieren; DMK-Verlust und Gerätewechsel sind nicht gelöst.
+Historische Klartext-/ZIP-v1-Bestände werden nicht migriert. Gate-Off behält
+bis zur Produktaktivierung unverändert ZIP-v1; die bestehende Oberfläche ist
+nicht auf den neuen Pfad geschaltet.
 
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 

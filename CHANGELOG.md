@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Der frische verschlüsselte Final-V3-Pilotbestand kann hinter dem bestehenden
+  Security-Gate als `.jkmebackup` gesichert und vollständig in einen neuen
+  privaten Restore-Staging-Root zurückgeführt werden. Keyed Snapshots von
+  Haupt- und Companion-SQLCipher-Datenbank, Keyset-/Envelope-Metadaten sowie
+  alle registrierten `.jkmedoc`-Generationen werden unter Writer-Lock in einem
+  Secretstream-Container gebunden und vor Erfolg erneut vollständig geprüft.
+  Restore endet erst nach keyed Reopen und Crossbinding-Prüfung mit
+  `RESTORE_READY`; Live-Swap, Gerätewechsel-Recovery, Klartextmigration und UI-
+  Aktivierung bleiben ausgeschlossen. Gate-Off verwendet unverändert ZIP-v1.
+
 - Finale Bericht- und LEG-PDF-Artefakte werden hinter dem bestehenden
   internen Final-V3-/DMK-Gate jetzt direkt aus dem ReportLab-Memory-Sink über
   denselben `ManagedDocumentStore` wie Beobachtungsanhänge und allgemeine

@@ -1,5 +1,26 @@
 # Sprintplanung
 
+## Verschlüsseltes Backup - Final-V3-Cipher-Pilot
+
+**Status:** Technischer Gate-On-Pfad für `.jkmebackup` und verifiziertes
+Restore-Staging implementiert. Produktaktivierung und Live-Restore bleiben
+gesperrt.
+
+- [x] Haupt- und Companion-SQLCipher-Datenbank unter Writer-Lock keyed
+  snapshotieren und gemeinsam binden.
+- [x] Alle registrierten `.jkmedoc`-Generationen sichern und die exakt aktive
+  Teilmenge gegen allgemeine Dokumente, Beobachtungsanhänge sowie Bericht/LEG
+  prüfen.
+- [x] Keyset-Metadaten und geschützte Database-Key-Envelope-Registry für den
+  same-installation Reopen aufnehmen, ohne DMK oder andere Secrets zu sichern.
+- [x] Vorhandenen Secretstream-Backupcontainer mit zufälligem Backup-Key,
+  vollständiger Neuverifikation und No-Clobber-Publikation verwenden.
+- [x] Nur in neuen privaten Staging-Root extrahieren und erst nach keyed Reopen,
+  Schema-/Context-/Inventarprüfung `RESTORE_READY` schreiben.
+- [x] Gate-Off ZIP-v1, bestehende UI und Produktstartup unverändert lassen.
+- [ ] Live-Swap, Gerätewechsel-/DMK-Recovery, Produktaktivierung, Build und
+  Release bleiben Folgepakete.
+
 ## SJ-3A - rein lesende Schuljahreswechsel-Vorschau
 
 **Status:** Domain-/Application-Projektion, isolierte SJ-3B.1-Qt-Vorschau,

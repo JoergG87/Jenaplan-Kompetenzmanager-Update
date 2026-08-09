@@ -1,5 +1,56 @@
 # Architekturentscheidungen
 
+## ADR-100 - Cipher-Pilotbackups sind same-installation und enden im Restore-Staging
+
+**Status:** Angenommen und ausschließlich im bestehenden internen
+Final-V3-SQLCipher-Gate lokal implementiert. Keine UI-, Produkt-, Build- oder
+Releaseaktivierung; kein Live-Austausch.
+
+### Entscheidung
+
+Der frische verschlüsselte Final-V3-Pilotbestand verwendet ausschließlich
+`.jkmebackup`. Unter dem vorhandenen Maintenance-Gate und
+`ObservationWriterLock` werden Haupt- und Companion-SQLCipher-Datenbank über
+ihre keyed Backup-API konsistent snapshotiert. Unter demselben eingefrorenen
+Zustand werden alle Companion-registrierten `.jkmedoc`-Generationen gesichert
+und die exakt aktive Teilmenge gegen allgemeine Schülerdokumente,
+Beobachtungsanhänge sowie RPA-/LCA-Referenzen der Hauptdatenbank gebunden.
+
+Das authentisiert verschlüsselte Manifest bindet Installation- und
+Database-Context, Keyset- und Database-Key-Envelope-Generationen ohne
+Schlüsselmaterial, DB-Rollen, Engine-/Schemaversionen, Größen, SHA-256 sowie
+das vollständige Dokumentinventar. Keyset-Metadaten werden einschließlich WAL
+über die SQLite-Backup-API gesnapshotiert; die Envelope-Registry wird als
+bereits kryptografisch geschützte Reopen-Metadaten aufgenommen. `security.sqlite`,
+DMK, App-Passwort, Recovery-Codes, Device-Credential, Touch-ID-Zustand,
+Keychain-Secrets, Logs, UI-Präferenzen und Testartefakte sind ausgeschlossen.
+
+Der vorhandene Backup-Key-Vertrag bleibt zweckgetrennt: DMK → eigene
+Backup-HKDF-Domain → zufälliger 256-Bit-Backup-Key → AES-GCM-Envelope →
+Secretstream XChaCha20-Poly1305. Database-Key, Document-Key und deren
+Wrapping-Keys werden nicht wiederverwendet. Writer und Verifier erzwingen
+No-Clobber, Recordreihenfolge, Final-Tag, physisches EOF und vollständige
+Neuprüfung vor Veröffentlichung.
+
+Restore extrahiert ausschließlich in einen neuen privaten Staging-Root. Erst
+nach keyed Reopen beider SQLCipher-Datenbanken, exakter 4.17-/Schema-/Context-
+Prüfung, vollständiger `.jkmedoc`-Verifikation und allen Crossbindings wird
+`RESTORE_READY` geschrieben. Dieses Paket führt weder Rename noch Live-Swap,
+Neustart oder Produktaktivierung aus.
+
+### Portabilitätsgrenze
+
+Restore ist bewusst ein `same-installation encrypted restore`: Der passende
+DMK muss im vorhandenen Keychain verfügbar sein. Passwortwechsel und
+Support-Reset rotieren ihn nicht und brechen den Reopen deshalb nicht. Verlust
+des DMK oder kompletter Geräteverlust ist kein gelöstes Portable-Recovery-
+Szenario. Es wird kein Passwort- oder Recovery-Code-basierter Ersatzschlüssel
+eingeführt.
+
+Historische Klartextbestände, ZIP-v1-Backups und alte Testdaten werden weder
+migriert noch gelesen. Gate-Off behält bis zu einem späteren
+Produktaktivierungspaket unverändert ZIP-v1.
+
 ## ADR-099 - Dokumentgenerationen nutzen eine kontextgebundene SQLCipher-Companion-DB
 
 **Status:** Angenommen und ausschließlich im bestehenden internen

@@ -307,6 +307,14 @@ Storage-ID, Journal und physischer Container werden nicht sichtbar. Dieses
 Paket ergänzt weder Vorschau noch Öffnen, Export, Pfadauswahl oder eine neue
 UI-Aktion.
 
+## Verschlüsseltes Final-V3-Pilotbackup - keine UI-Projektion
+
+`.jkmebackup`, Backup-Key-Envelope, Manifest, Context-/Generationsbindungen,
+Snapshotphasen, Restore-Staging und `RESTORE_READY` werden in diesem Paket
+nicht in PySide projiziert. Es entstehen keine Felder, Dialoge, Buttons,
+Fortschrittsanzeigen oder Fehlermeldungen. Die vorhandene Backup-/Restore-UI
+bleibt technisch auf Gate-Off ZIP-v1; ein Live-Swap ist nicht erreichbar.
+
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 
 Das interne Gate, die Integrationsphasen, Schema-/Key-/Storage-IDs,

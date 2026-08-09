@@ -250,6 +250,30 @@ vollständiger keyed Prüfung fortgesetzt werden; andernfalls bleibt er
 fail-closed. Aus einem GO folgt keine Produkt-, Pilot-, Dokument-, Backup-,
 Build- oder Releaseaktivierung.
 
+## Entwicklungsgrenze verschlüsseltes Final-V3-Pilotbackup
+
+Der frische verschlüsselte Final-V3-Pilotbestand verwendet hinter demselben
+Security-Gate ausschließlich `.jkmebackup`. Backup erwirbt den vorhandenen
+Writer-Lock, erzeugt keyed SQLCipher-Snapshots von Haupt- und Companion-DB,
+bindet das unter demselben Zustand bestimmte aktive Dokumentinventar und
+sichert alle Companion-registrierten `.jkmedoc`-Generationen. Keyset-
+Metadaten und die geschützte Database-Key-Envelope-Registry dürfen als für den
+Reopen erforderliche technische Metadaten aufgenommen werden; DMK,
+`security.sqlite`, Passwörter, Recovery-Codes und Plattformsecrets niemals.
+
+Restore schreibt ausschließlich in einen neuen privaten Staging-Root. Nur
+nach vollständiger Containerprüfung, keyed Reopen mit exakt SQLCipher 4.17,
+Final-V3-/Companion-Fingerprint und vollständiger Context-/Generations-
+Crossbindingprüfung darf `RESTORE_READY` entstehen. Dieses Paket führt keinen
+Live-Austausch aus.
+
+Die Portabilitätsgrenze lautet `same-installation encrypted restore`: Der
+passende vorhandene DMK im Keychain ist Voraussetzung. Passwortwechsel und
+Support-Reset dürfen diesen DMK nicht rotieren; DMK-Verlust und kompletter
+Geräteverlust bleiben ungelöst. Es gibt keinen unsicheren Passwort- oder
+Recovery-Code-Ersatz. Historische Klartext-/ZIP-v1-Bestände werden nicht
+migriert; Gate-Off behält bis zur Produktaktivierung unverändert ZIP-v1.
+
 ## Entwicklungsgrenze Security Sprint 12
 
 Security Sprint 12 darf einen internen macOS-arm64-Testbuild `0.3.0` /
