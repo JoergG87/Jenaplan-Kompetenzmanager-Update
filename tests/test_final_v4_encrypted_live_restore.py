@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import sqlite3
 import sys
 import uuid
 import inspect
@@ -44,12 +45,56 @@ from src.security.final_v4_live_restore import (
 )
 from src.security import final_v4_live_restore
 from src.security.cipher_product_runtime import open_cipher_product_runtime
+from src.security.infrastructure.data_keyset_repository import (
+    SQLiteDataKeysetRepository,
+)
+from src.security.infrastructure.system import PlatformFilePermissionManager
 from tests.test_final_v4_encrypted_backup import (
     _add_all_document_classes,
     _open_case,
 )
 from tests.test_final_v4_sqlcipher_runtime import requires_exact_417
 from tests.test_final_v3_document_runtime import _Consumer
+
+
+def test_worker_keyset_read_sees_committed_uncheckpointed_wal(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "security-key-runtime-v1" / "data-keysets.sqlite"
+    repository = SQLiteDataKeysetRepository(
+        database,
+        PlatformFilePermissionManager(),
+    )
+    repository.initialize()
+    key_id = str(uuid.uuid4())
+    context_id = str(uuid.uuid4())
+
+    with sqlite3.connect(database, isolation_level=None) as writer:
+        assert writer.execute("PRAGMA journal_mode = WAL").fetchone()[0] == "wal"
+        writer.execute("PRAGMA wal_autocheckpoint = 0")
+        writer.execute("BEGIN IMMEDIATE")
+        writer.execute(
+            "INSERT INTO data_keysets VALUES (?, 1, 'active', ?, 'active', ?)",
+            (key_id, "a" * 64, context_id),
+        )
+        writer.execute("COMMIT")
+        assert database.with_name(f"{database.name}-wal").is_file()
+
+        immutable_uri = f"{database.resolve().as_uri()}?mode=ro&immutable=1"
+        with sqlite3.connect(immutable_uri, uri=True) as immutable:
+            assert immutable.execute(
+                "SELECT COUNT(*) FROM data_keysets WHERE status = 'active'"
+            ).fetchone()[0] == 0
+
+        active = (
+            final_v4_live_restore._read_active_keyset_wal_aware_readonly(
+                database
+            )
+        )
+
+    assert active is not None
+    assert active.key_id == key_id
+    assert active.database_context_id == context_id
 
 
 def _write_excluded_sentinels(root: Path) -> tuple[bytes, bytes]:

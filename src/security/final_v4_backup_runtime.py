@@ -1546,6 +1546,7 @@ def build_final_v4_encrypted_backup_service(
     """Compose backup services from the gate or the ADR-101 product root."""
 
     environment = dict(environ)
+    runtime_scope = None
     if product_root is None:
         gate = FinalV4SQLCipherRuntimeGate()
         decision = gate.resolve(environment)
@@ -1556,8 +1557,11 @@ def build_final_v4_encrypted_backup_service(
         )
     else:
         root = Path(product_root).expanduser().resolve(strict=True)
-        key_paths = DatabaseKeyRuntimePaths.for_root(root)
-        final_paths = FinalV4SQLCipherRuntimePaths.for_key_runtime(key_paths)
+        from src.desktop_app.runtime import runtime_paths
+        from src.security.cipher_product_runtime import CipherProductRuntimeScope
+
+        runtime_scope = CipherProductRuntimeScope(runtime_paths(root))
+        final_paths = runtime_scope.require_paths()
     paths = FinalV3DocumentRuntimePaths.for_final_v4(final_paths)
     if opened_runtime.documents.paths != paths:
         raise FinalV4EncryptedBackupError("final_v4_backup_scope_invalid")
@@ -1601,12 +1605,14 @@ def build_final_v4_encrypted_backup_service(
             paths=final_paths,
             loaded_keys=loaded,
             environ=environment,
+            scope=runtime_scope,
         ),
         document_factory=FinalV3DocumentConnectionFactory(
             provider=provider,
             paths=paths,
             loaded_keys=loaded,
             environ=environment,
+            scope=runtime_scope,
         ),
         provider=provider,
         maintenance_gate=opened_runtime.final_v4.database.maintenance_gate,

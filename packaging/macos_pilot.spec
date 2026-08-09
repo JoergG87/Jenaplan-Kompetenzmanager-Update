@@ -83,6 +83,14 @@ datas = [
         ),
         "third_party_licenses",
     ),
+    (
+        str(
+            PROJECT_ROOT
+            / "packaging"
+            / "THIRD_PARTY_NOTICES_SQLCIPHER_4_17_MACOS.md"
+        ),
+        "third_party_licenses",
+    ),
 ]
 initial_data = PAYLOAD_ROOT / "pilot_initial"
 if initial_data.is_dir():
@@ -115,14 +123,20 @@ a = Analysis(
         "src.security.infrastructure.sqlite_repository",
         "src.security.infrastructure.system",
         "src.security.infrastructure.platform_auth",
-        "src.security.packaged_integration_smoke",
         "src.security.packaged_keychain_smoke",
-        "src.security.integration_gate",
-        "src.security.integration_orchestrator",
-        "src.security.integration_database",
-        "src.security.integration_backup",
+        "scripts.seed_test_data",
         "src.security.document_container",
         "src.security.backup_container",
+        "src.security.cipher_product_runtime",
+        "src.security.database_key_runtime",
+        "src.security.final_v3_document_runtime",
+        "src.security.final_v4_sqlcipher_runtime",
+        "src.security.final_v4_backup_runtime",
+        "src.security.final_v4_live_restore",
+        "src.application.managed_documents",
+        "src.application.managed_pdf_artifacts",
+        "src.application.commands.final_v4_backup_restore",
+        "src.core.managed_document_store",
         "src.updater.application",
         "src.updater.domain",
         "src.updater.infrastructure.sparkle",
@@ -149,6 +163,11 @@ a = Analysis(
         "PySide6.QtQuick",
         "PySide6.QtWebEngineCore",
         "PySide6.QtWebEngineWidgets",
+        "src.security.integration_backup",
+        "src.security.integration_database",
+        "src.security.integration_gate",
+        "src.security.integration_orchestrator",
+        "src.security.packaged_integration_smoke",
     ],
     noarchive=False,
     optimize=1,

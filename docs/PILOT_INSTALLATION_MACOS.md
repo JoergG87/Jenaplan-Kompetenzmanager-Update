@@ -33,19 +33,21 @@ Entwicklungsumgebung. Version und Build werden über `Über die App` geprüft.
 ## Lokale Daten und Sicherheit
 
 Veränderliche Daten liegen getrennt vom App-Bundle in einem lokalen,
-verwalteten App-Bereich. Dieser enthält die fachliche SQLite-Datenbank,
+verwalteten App-Bereich. Dieser enthält die fachliche SQLCipher-Datenbank,
 verwaltete Dokumente, erzeugte Ausgaben, lokale Backups, Einstellungen und
 Security-Store. Absolute Entwicklerpfade gehören nicht in Übergabeunterlagen.
 
 Der neue Pilot-Produktpfad verwendet nach erfolgreicher Authentifizierung eine
-frisch angelegte Final-V3-Datenbank und einen Dokument-Companion mit exakt
+frisch angelegte Final-V4-Datenbank und einen Dokument-Companion mit exakt
 SQLCipher 4.17/CommonCrypto. Verwaltete Anhänge, allgemeine Dokumente und
 finale Bericht-/LEG-PDFs werden als verschlüsselte `.jkmedoc`-Container
 gespeichert. DMK-Material bleibt im macOS-Keychain; der Database-Key liegt nur
 in seinem authentisierten Envelope.
 
-Klartextbestände werden nicht migriert oder geöffnet. ZIP-v1-Backup und
-Restore sind im Cipher-Produktmodus bis zum Folgepaket deaktiviert. Diese
+Klartextbestände werden nicht migriert oder geöffnet. Backup und Restore
+verwenden ausschließlich installationsgebundene `.jkmebackup`, vollständiges
+keyed Staging, Sicherheitsbackup, Worker-Handoff, Rollback und Restart. ZIP-v1
+bleibt im Cipher-Produktmodus gesperrt. Diese
 Unterlage dokumentiert noch keinen neuen Buildnachweis; ein künftiges Bundle
 muss die exakte Cipher-Abhängigkeit und den realen Keychain-/UI-Start separat
 belegen. Die Details stehen in `SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
@@ -62,8 +64,8 @@ scripts/build_macos_pilot.sh --data-mode release
 
 `empty` ist nur ein technischer Smoke-Test ohne Fachdaten. `release` darf
 keine SQLite-Datei, Dokumente, Backups, Schlüssel oder reale Nutzerdaten in das
-Bundle übernehmen. Die optionale Variante `laura` ist eine streng synthetische
-Entwicklungs-/Testvariante und kein Übergabeweg.
+Bundle übernehmen. Synthetische Testdaten entstehen getrennt in einem frischen
+Test-Installationsroot und werden niemals in App oder DMG aufgenommen.
 
 Der Build muss ein isoliertes Venv nutzen, Paketabhängigkeiten prüfen und
 Bundle, Architektur, sichtbare Version/Build, Datenfreiheit, Lizenzhinweise,
@@ -75,7 +77,7 @@ dem Clean-Build in erzeugten Unterlagen erscheinen.
 
 - keine Appcast-Aktualisierung oder automatische Updatefreigabe;
 - keine Developer ID, Notarisierung oder Stapling;
-- keine Produktmigration, Backup-/Restore-Aktivierung oder Buildfreigabe;
+- keine Produktmigration, Gerätewechsel-/DMK-Recovery oder Buildfreigabe;
 - keine Windows-/DPAPI-Abnahme;
 - keine reale Touch-ID-, Sleep/Wake- oder Power-Loss-Abnahme;
 - keine Testdaten, Pilotdatenbanken oder persönlichen Daten im Bundle.

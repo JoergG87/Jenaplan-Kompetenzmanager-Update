@@ -102,9 +102,11 @@ def test_existing_4_12_test_engine_remains_separate() -> None:
     assert (ROOT / "requirements-sqlcipher-spike.txt").read_text().endswith(
         "sqlcipher3==0.6.2\n"
     )
-    assert "sqlcipher3==0.6.2" in (
-        ROOT / "requirements-macos-build.txt"
-    ).read_text()
+    macos_requirements = (ROOT / "requirements-macos-build.txt").read_text()
+    assert "sqlcipher3==0.6.2" not in macos_requirements
+    macos_build = (ROOT / "scripts/build_macos_pilot.sh").read_text()
+    assert "JENAPLAN_SQLCIPHER_417_WHEEL" in macos_build
+    assert "expected_wheel_sha256" in macos_build
 
 
 def test_binding_patch_requires_one_exact_context() -> None:

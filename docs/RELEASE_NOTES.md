@@ -15,7 +15,8 @@ ohne KI-Funktion. Der dokumentierte Stand bietet:
 
 - lokale Anmeldung, Passwortanlage und Passwortwechsel, Recovery-Codes,
   Keychain-gestützte Geräteanmeldung, optionales Touch ID mit sichtbaren
-  Nichtverfügbarkeitsgründen, Passwort-Fallback, Sperre und Support-Reset;
+  Nichtverfügbarkeitsgründen, Passwort-Fallback und Sperre; Support-Reset
+  bleibt im Cipher-Modus kontrolliert blockiert;
 - Dashboard, Stundenplan, Schüler, Stammgruppen, Kurse und Kursverbünde;
 - Beobachtungen, verwaltete Anhänge, Kompetenz-Cockpit und
   Bestätigungsstände;
@@ -23,8 +24,9 @@ ohne KI-Funktion. Der dokumentierte Stand bietet:
   Entwurf, Finalisierung, Revisionen und PDF-Ausgaben;
 - LEG-Entwürfe mit Auswahl, neuem eigenständigem Gespräch, Abschluss,
   Revisionen und PDF-Ausgaben;
-- lokales ZIP-v1-Backup mit Prüfung sowie Restore-Vorschau, ausdrücklicher
-  Bestätigung, separatem Restore-Worker und kontrolliertem Neustart.
+- verschlüsseltes installationsgebundenes `.jkmebackup` mit keyed Prüfung,
+  Restore-Staging, ausdrücklicher Bestätigung, Sicherheitsbackup, separatem
+  Restore-Worker und kontrolliertem Neustart.
 
 Die Schülerliste, das Dashboard und Kursverbünde lesen ihre Projektionen
 gebündelt. Dadurch bleibt der Alltag auch bei größeren lokalen Beständen frei
@@ -51,12 +53,11 @@ Ein späterer GitHub-Pre-Release/Pilot wird ad-hoc signiert und nicht
 notarisiert sein. Windows ist nicht freigegeben; es gibt keinen Stable-Release
 und keinen Stable-Appcast. Developer ID und Notarisierung bleiben offen.
 
-Die App-Sperre ist keine Verschlüsselung der Fachdaten, verwalteten Dokumente
-oder ZIP-v1-Backups. SQLCipher, verschlüsselte Dokumentcontainer und ein
-verschlüsselter Backupcontainer sind implementierte, getestete Foundations,
-aber im normalen Produktpfad standardmäßig deaktiviert. Bestehende Pilot- und
-Produktdaten werden nicht automatisch migriert und es gibt keine stille
-Aktivierung.
+App-Sperre und Verschlüsselung sind getrennte Schutzschichten. Der committed
+Produktpfad verwendet für einen frischen Final-V4-Bestand SQLCipher 4.17,
+verschlüsselte Managed Documents und `.jkmebackup`; ZIP-v1 ist dort gesperrt.
+Bestehende Pilot- und Produktdaten werden nicht migriert. Ein neuer Bundle-,
+Keychain- und Realwelt-Nachweis ist damit noch nicht erbracht.
 
 Details für Lehrkräfte, technische Betreuung und Releaseverantwortliche stehen
 in `SICHERHEIT_UND_VERSCHLUESSELUNG.md`. Das Benutzerhandbuch beschreibt die
@@ -70,5 +71,5 @@ bestanden. Sie wurde für diesen reinen Dokumentationsauftrag nicht erneut
 ausgeführt.
 
 Vor einer Übergabe bleiben insbesondere ein Clean-Build, reale macOS-/Hardware-
-und Restore-Abnahme, Artefaktprüfung, Developer ID/Notarisierung, eine spätere
-kontrollierte Verschlüsselungsmigration und eine reale Power-Loss-Abnahme offen.
+und Restore-Abnahme, Artefaktprüfung, Developer ID/Notarisierung,
+Gerätewechsel-/DMK-Recovery und eine reale Power-Loss-Abnahme offen.

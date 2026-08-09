@@ -27,9 +27,10 @@ while [ "$#" -gt 0 ]; do
             ;;
     esac
 done
-if { [ "$DATA_MODE" != "empty" ] && [ "$DATA_MODE" != "laura" ] && [ "$DATA_MODE" != "release" ]; } \
-    || { [ "$BUILD_LAURA_PACKAGE" = "1" ] && [ "$DATA_MODE" != "release" ]; }; then
-    echo "Aufruf: scripts/build_macos_pilot.sh [--data-mode empty|laura|release] [--with-laura-package] [--defer-package-tests]" >&2
+if { [ "$DATA_MODE" != "empty" ] && [ "$DATA_MODE" != "release" ]; } \
+    || [ "$BUILD_LAURA_PACKAGE" = "1" ]; then
+    echo "Aufruf: scripts/build_macos_pilot.sh [--data-mode empty|release] [--defer-package-tests]" >&2
+    echo "Portable Laura-Testdatenpakete sind im installationsgebundenen Final-V4-Cipher-Modus gesperrt." >&2
     exit 2
 fi
 
@@ -142,6 +143,18 @@ mkdir -p "$BUILD_ROOT" "$DIST_ROOT"
 
 python3 -m venv "$VENV"
 "$VENV/bin/python" -m pip install --disable-pip-version-check -r requirements-macos-build.txt
+SQLCIPHER_417_WHEEL="${JENAPLAN_SQLCIPHER_417_WHEEL:-}"
+if [ -z "$SQLCIPHER_417_WHEEL" ] || [ ! -f "$SQLCIPHER_417_WHEEL" ] || [ -L "$SQLCIPHER_417_WHEEL" ]; then
+    echo "JENAPLAN_SQLCIPHER_417_WHEEL muss auf das auditierte lokale SQLCipher-4.17-Wheel zeigen." >&2
+    exit 2
+fi
+EXPECTED_SQLCIPHER_WHEEL_SHA="$(python3 -c 'import json; print(json.load(open("packaging/sqlcipher_4_17_macos_arm64_sources.json"))["generated"]["expected_wheel_sha256"])')"
+OBSERVED_SQLCIPHER_WHEEL_SHA="$(shasum -a 256 "$SQLCIPHER_417_WHEEL" | awk '{print $1}')"
+if [ "$OBSERVED_SQLCIPHER_WHEEL_SHA" != "$EXPECTED_SQLCIPHER_WHEEL_SHA" ]; then
+    echo "Das SQLCipher-4.17-Wheel stimmt nicht mit dem Buildmanifest überein." >&2
+    exit 2
+fi
+"$VENV/bin/python" -m pip install --disable-pip-version-check --no-index --no-deps "$SQLCIPHER_417_WHEEL"
 "$VENV/bin/python" scripts/audit_macos_security_runtime.py
 
 "$VENV/bin/python" scripts/prepare_macos_pilot_payload.py \
@@ -213,6 +226,12 @@ export DYLD_FRAMEWORK_PATH="$SPARKLE_SOURCE"
 ditto "$PYI_DIST/$APP_NAME.app" "$APP_PATH"
 rm -rf "$APP_PATH/Contents/Frameworks/Sparkle.framework"
 ditto "$SPARKLE_SOURCE/Sparkle.framework" "$APP_PATH/Contents/Frameworks/Sparkle.framework"
+SQLCIPHER_DIRECT_URL="$APP_PATH/Contents/Resources/sqlcipher3-0.6.2+jkm.sqlcipher4170.1.dist-info/direct_url.json"
+if [ ! -f "$SQLCIPHER_DIRECT_URL" ]; then
+    echo "Abbruch: SQLCipher-Buildquellennachweis ist vor der Bundle-Bereinigung nicht eindeutig." >&2
+    exit 1
+fi
+rm -f "$SQLCIPHER_DIRECT_URL"
 "$VENV/bin/python" scripts/thin_macos_bundle_arm64.py "$APP_PATH"
 if { [ "$DATA_MODE" = "empty" ] || [ "$DATA_MODE" = "release" ]; } && find "$APP_PATH" -type f \( -name '*.sqlite' -o -name '*.db' \) -print -quit | grep -q .; then
     echo "Abbruch: Das App-Bundle enthält unerwartet eine Datenbank." >&2
@@ -264,8 +283,6 @@ if [ "$DEFER_PACKAGE_TESTS" = "0" ]; then
         "$APP_PATH" \
         --expected-data-mode "$DATA_MODE"
     "$VENV/bin/python" scripts/smoke_test_packaged_restore_worker.py \
-        "$APP_PATH"
-    "$VENV/bin/python" scripts/smoke_test_macos_security_integration.py \
         "$APP_PATH"
     "$VENV/bin/python" scripts/smoke_test_macos_keychain.py \
         "$APP_PATH"
@@ -375,13 +392,13 @@ BUILD_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     echo "Signierung: $SIGNING_STATUS"
     echo "Notarisierung: nicht durchgeführt"
     echo "Datenmodus: $DATA_MODE (Release-Kandidat ohne Pilot- oder Echtdaten)"
-    echo "Produktiver Support-Reset: freigeschaltet; Public-Key-Registry aktiv"
+    echo "Produktiver Support-Reset im Cipher-Modus: deaktiviert; sichere Backup-Komposition offen"
     echo "Updatekanal: pilot (manuelle Prüfung; keine automatische Installation)"
     echo "Pilot-Appcast: $PILOT_APPCAST_URL"
     echo "Stable-Kanal: deaktiviert"
-    echo "Security-Integrationsgate: standardmäßig deaktiviert; keine UI; nur markergebundener interner Test-Root"
-    echo "Gebündelter Security-Testpfad: sqlcipher3 0.6.2 / SQLCipher Community 4.12.0 / PyNaCl 1.6.2"
-    echo "Produktmigration: nicht aktiviert"
+    echo "Produktdaten: frischer Final-V4-Cipher-Bestand; keine Klartext- oder Altbestandsmigration"
+    echo "Gebündelte Datenbankruntime: sqlcipher3 0.6.2+jkm.sqlcipher4170.1 / SQLCipher 4.17.0 community / SQLite 3.53.3 / CommonCrypto"
+    echo "Backup/Restore: installationsgebundene .jkmebackup-Runtime; kein ZIP-v1 im Cipher-Modus"
     echo "Windows-Freigabe: nicht erteilt"
     echo
     echo "Automatisierter Teststand: siehe Abschlussbericht zum Release-Kandidaten"

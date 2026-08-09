@@ -17,7 +17,8 @@ argon2-cffi==25.1.0
 cryptography==49.0.0
 cffi==2.0.0
 pycparser==3.0
-# Security Sprint 12: only the marker-bound Sprint-11 package test imports
-# these runtimes. Gate-Off continues to use standard-library SQLite.
+# The Final-V4 product build installs the separately built, manifest-hashed
+# SQLCipher 4.17 wheel in scripts/build_macos_pilot.sh.  Keeping the local
+# wheel out of this index-backed requirements file prevents a silent fallback
+# to the stock SQLCipher 4.12 distribution.
 PyNaCl==1.6.2
-sqlcipher3==0.6.2

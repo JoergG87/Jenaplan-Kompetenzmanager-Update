@@ -1,194 +1,75 @@
-"""Start the real packaged restore worker and verify its takeover protocol."""
+"""Exercise the real packaged Final-V4 restore-worker takeover."""
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
-import sqlite3
+from pathlib import Path
 import sys
 import tempfile
-from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.application.commands.backup import (
-    BackupApplicationService,
-    CreateBackupCommand,
-)
-from src.application.commands.restore import (
-    CreateRestoreHandoffCommand,
-    PrepareRestoreStagingCommand,
-    RestoreApplicationService,
-)
-from src.core.restore_runtime import (
-    RestoreJournal,
-    RuntimeInstanceLock,
-    recover_interrupted_restore,
-    restore_transaction_paths,
-)
-from src.core.sqlite_store import SQLiteDatabase
-from src.desktop_app.restore_worker import (
-    launch_restore_worker,
-    resolve_restore_worker_launch,
-)
-from src.desktop_app.runtime import RuntimePaths, runtime_paths
-from src.version import APP_VERSION
+from scripts.smoke_test_macos_app import _run
 
 
 APP_NAME = "Jenaplan-Kompetenzmanager"
-
-
-def _prepare_runtime(root: Path) -> RuntimePaths:
-    paths = runtime_paths(root)
-    for directory in (
-        paths.root,
-        paths.documents,
-        paths.exports,
-        paths.backups,
-        paths.logs,
-    ):
-        directory.mkdir(parents=True, exist_ok=True)
-    SQLiteDatabase(paths.database).initialize_schema()
-    return paths
-
-
-def _insert_marker(paths: RuntimePaths, marker: str) -> None:
-    with sqlite3.connect(paths.database) as connection:
-        connection.execute(
-            "INSERT INTO groups VALUES (?, ?, 0, 1)",
-            (f"GRP-{marker}", f"Gruppe {marker}"),
-        )
-
-
-def _snapshot(paths: RuntimePaths) -> dict[str, str]:
-    result = {
-        "kompetenzmanager.sqlite": hashlib.sha256(
-            paths.database.read_bytes()
-        ).hexdigest()
-    }
-    result.update(
-        {
-            f"documents/{path.relative_to(paths.documents).as_posix()}": (
-                hashlib.sha256(path.read_bytes()).hexdigest()
-            )
-            for path in paths.documents.rglob("*")
-            if path.is_file()
-        }
-    )
-    return result
 
 
 def smoke_test(app_path: Path) -> dict[str, object]:
     app = Path(app_path).expanduser().resolve(strict=True)
     executable = app / "Contents" / "MacOS" / APP_NAME
     if not executable.is_file() or not os.access(executable, os.X_OK):
-        raise RuntimeError("Der gebuendelte Restore-Worker ist nicht ausfuehrbar.")
+        raise RuntimeError("Der gebündelte Restore-Worker ist nicht ausführbar.")
 
     with tempfile.TemporaryDirectory(
-        prefix="jenaplan-packaged-restore-worker-"
+        prefix="jenaplan-packaged-smoke-restore-worker-"
     ) as temporary:
-        root = Path(temporary)
-        source = _prepare_runtime(root / "source")
-        live = _prepare_runtime(root / "live")
-        _insert_marker(source, "SOURCE")
-        _insert_marker(live, "LIVE")
-        before = _snapshot(live)
-
-        archive = BackupApplicationService().create(
-            CreateBackupCommand(
-                database_path=source.database,
-                runtime_paths=source,
-                target_path=source.backups,
-                app_version=APP_VERSION,
-                build_commit="0000000",
-                source_tree_state="clean",
-            )
-        ).path
-        restore_id = "RST-PACKAGED-WORKER-SMOKE"
-        service = RestoreApplicationService()
-        service.prepare_staging(
-            PrepareRestoreStagingCommand(
-                path=archive,
-                runtime_paths=live,
-                restore_id=restore_id,
-            )
-        )
-        handoff = service.create_handoff(
-            CreateRestoreHandoffCommand(
-                path=archive,
-                restore_id=restore_id,
-                runtime_paths=live,
-                app_version=APP_VERSION,
-                build_commit="0000000",
-                source_tree_state="clean",
-            )
-        )
-        plan = resolve_restore_worker_launch(
-            live.root,
-            executable=executable,
-            frozen=True,
-        )
-        lock = RuntimeInstanceLock(live.root).acquire()
-        started = launch_restore_worker(
-            handoff=handoff.path,
-            nonce=handoff.nonce,
-            lock=lock,
-            launch_plan=plan,
-        )
+        data_root = Path(temporary) / "Application Support" / APP_NAME
+        initialized = _run(executable, data_root, "initialize")
         try:
-            if started.process.poll() is not None:
-                raise RuntimeError("Der gebuendelte Restore-Worker lief nicht weiter.")
-            state = RestoreJournal(
-                restore_transaction_paths(live.root, restore_id)
-            ).read()
-            if state.get("phase") != "worker_started":
-                raise RuntimeError(
-                    "Der gebuendelte Restore-Worker bestaetigte die Uebernahme nicht."
-                )
-            if _snapshot(live) != before:
-                raise RuntimeError(
-                    "Der gebuendelte Restore-Worker veraenderte Daten vor Parent-Ende."
-                )
-            if (
-                os.name == "posix"
-                and os.getsid(started.process.pid) != started.process.pid
-            ):
-                raise RuntimeError(
-                    "Der gebuendelte Restore-Worker besitzt keine eigene Prozessgruppe."
-                )
+            worker = _run(executable, data_root, "restore-worker")
+            restarted = _run(executable, data_root, "restart")
         finally:
-            if started.process.poll() is None:
-                started.process.terminate()
-            started.process.wait(timeout=5)
-            os.close(started.parent_lifetime_fd)
+            cleanup = _run(executable, data_root, "cleanup")
 
-        recovery = recover_interrupted_restore(live.root)
-        if recovery.status != "aborted_before_replacement":
-            raise RuntimeError(
-                "Der abgebrochene Pakettest wurde nicht sicher zurueckgenommen."
-            )
-        if _snapshot(live) != before:
-            raise RuntimeError("Der Pakettest veraenderte den Live-Bestand.")
+        restore = worker.get("restore", {})
+        expected_prefix = [str(executable), "--restore-worker"]
+        if (
+            restore.get("backup_suffix") != ".jkmebackup"
+            or restore.get("ready_state") != "RESTORE_READY"
+            or restore.get("worker_phase") != "worker_started"
+            or restore.get("recovery") != "aborted_before_replacement"
+            or restore.get("command_prefix") != expected_prefix
+        ):
+            raise RuntimeError(f"Final-V4-Restore-Worker-Vertrag verletzt: {restore}")
+        stable_fields = (
+            "database_context_id",
+            "database_key_fingerprint_sha256",
+            "dmk_fingerprint_sha256",
+        )
+        if any(initialized[name] != restarted[name] for name in stable_fields):
+            raise RuntimeError("Restore-Worker-Smoke veränderte den Cipher-Kontext.")
+        if cleanup.get("keychain_cleanup") != "ok":
+            raise RuntimeError("Restore-Worker-Smoke räumte den Test-DMK nicht auf.")
         return {
-            "app": str(app),
-            "command_prefix": list(plan.command_prefix),
-            "working_directory_is_runtime_root": (
-                plan.working_directory == live.root.resolve()
-            ),
-            "worker_exit_code": started.process.returncode,
-            "journal_phase": recovery.status,
-            "live_data_unchanged": True,
-            "worker_reaped": started.process.poll() is not None,
+            "backup_suffix": restore["backup_suffix"],
+            "command_prefix": restore["command_prefix"],
+            "context_stable": True,
+            "dmk_stable": True,
+            "keychain_cleanup": "ok",
+            "ready_state": restore["ready_state"],
+            "recovery": restore["recovery"],
+            "worker_phase": restore["worker_phase"],
         }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Smoke-Test fuer den gebuendelten Restore-Worker"
+        description="Smoke-Test für den gebündelten Final-V4-Restore-Worker"
     )
     parser.add_argument("app", type=Path)
     args = parser.parse_args()

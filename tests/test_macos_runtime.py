@@ -167,32 +167,40 @@ class MacosRuntimeTest(unittest.TestCase):
                 environment = kwargs["env"]
                 observed_environment.update(environment)
                 data_root = Path(environment[APP_DATA_DIR_ENV])
-                for name in ("documents", "exports", "backups", "logs"):
+                for name in (
+                    "exports",
+                    "backups",
+                    "logs",
+                    "security",
+                    "security-key-runtime-v1",
+                    "final-v4-sqlcipher-runtime-v1",
+                ):
                     (data_root / name).mkdir(parents=True, exist_ok=True)
-                database = data_root / DATABASE_FILENAME
-                with sqlite3.connect(database) as connection:
-                    connection.execute("CREATE TABLE students (student_id TEXT)")
-                    connection.execute(
-                        "CREATE TABLE learning_report_revisions (revision_id TEXT)"
-                    )
-                    connection.execute(
-                        "CREATE TABLE learning_conference_revisions (revision_id TEXT)"
-                    )
-                (data_root / "exports" / "packaged-app-smoke.pdf").write_bytes(b"pdf")
-                (data_root / "backups" / "smoke.jkmbackup").write_bytes(b"backup")
+                for relative in (
+                    "security/security.sqlite",
+                    "security-key-runtime-v1/data-keysets.sqlite",
+                    "security-key-runtime-v1/database-key-envelopes-v1.json",
+                    "final-v4-sqlcipher-runtime-v1/final-v4.sqlcipher",
+                    "final-v4-sqlcipher-runtime-v1/documents-v1.sqlcipher",
+                ):
+                    (data_root / relative).write_bytes(b"encrypted synthetic bytes")
+                mode = args[0][-1]
                 payload = {
-                    "backup_exists": True,
-                    "backup_verified": True,
                     "build_info": {"data_mode": "empty"},
-                    "document_access_verified": True,
-                    "document_probe_removed": True,
+                    "cipher_provider": "commoncrypto",
+                    "cipher_version": "4.17.0 community",
+                    "database_context_id": "ctx",
+                    "database_key_fingerprint_sha256": "a" * 64,
+                    "dmk_fingerprint_sha256": "b" * 64,
+                    "final_v4": 4,
+                    "first_run": mode == "initialize",
+                    "keychain_cleanup": "ok" if mode == "cleanup" else None,
                     "login_authenticated": True,
+                    "mode": mode,
                     "regular_exit_completed": True,
-                    "restore": {
-                        "archive_verified": True,
-                        "prepared_status": "verified",
-                        "restore_id": "RST-PACKAGED-SMOKE",
-                    },
+                    "school_year": "2026/27",
+                    "sqlite_version": "3.53.3",
+                    "student_count": 0,
                 }
                 return subprocess.CompletedProcess(
                     args=args[0],
@@ -214,7 +222,8 @@ class MacosRuntimeTest(unittest.TestCase):
                 "jenaplan-packaged-smoke-",
                 observed_environment[APP_DATA_DIR_ENV],
             )
-            self.assertEqual(result["backup"]["count"], 1)
+            self.assertTrue(result["restart"]["dmk_stable"])
+            self.assertEqual(result["keychain_cleanup"], "ok")
 
     def test_empty_first_start_creates_all_mutable_directories(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

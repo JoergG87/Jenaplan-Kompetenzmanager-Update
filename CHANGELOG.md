@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- Der vorhandene synthetische Testdatengenerator kann jetzt einen vollständig
+  neuen, systemtemporären Final-V4-Cipher-Testroot über die produktiven
+  Application-/Adapterpfade befüllen. Er überschreibt keine Datenbank und
+  erzeugt 24 eindeutig fiktive Kinder, `inherit`-/`custom`-Fachfälle,
+  Stundenplan, Beobachtungen einschließlich Partnerarbeit, Bewertungen,
+  Bestätigungen, verschlüsselte Anhänge/Dokumente sowie Bericht-/LEG-Entwürfe,
+  Revisionen und verschlüsselte finale PDFs. Restart, `.jkmebackup` und
+  Restore-Staging werden technisch geprüft. Der macOS-Build verlangt nun das
+  manifest-hashgebundene SQLCipher-4.17-Wheel und auditiert 4.17, SQLite 3.53.3,
+  CommonCrypto und die Final-V4-/Backup-/Managed-Document-Paketierung. Der
+  lokale ad-hoc-signierte arm64-Pilotbuild wird zusätzlich über die tatsächlich
+  gebündelte Laufzeit, First Run und Restart, realen Keychain-Lifecycle sowie
+  den Final-V4-Restore-Worker geprüft. Der Worker liest aktive
+  Keyset-Metadaten dabei read-only einschließlich eines bereits committed
+  SQLite-WAL; ein fälschlich leerer Immutable-Snapshot blockiert den sicheren
+  Handoff nicht mehr. Historische Sprint-11-, Klartext- und ZIP-v1-Smokes sind
+  aus diesem Paketpfad entfernt. Push, Release,
+  Notarisierung und Veröffentlichung bleiben ausdrücklich außerhalb dieses
+  technischen Gates.
+
 - Einstellungen → Datensicherung verwendet im normalen Final-V4-Cipher-
   Produktpfad jetzt ausschließlich verschlüsselte `.jkmebackup`. Auswahl,
   Vollverifikation, Restore-Staging, `RESTORE_READY`, bewusste Bestätigung,

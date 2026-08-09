@@ -13,9 +13,11 @@ für macOS auf Apple Silicon. Der Restore-Neustartfix ist committed; ein finaler
 Clean-Build 303 steht noch aus. Ein DMG, Prüfsummenmanifest, Push, Tag, Appcast,
 Pilotübergabe und öffentlicher Release sind damit **nicht** behauptet oder
 ausgelöst. Der normale Produktpfad ist lokal, ohne Cloud und ohne KI-Funktion;
-die Verschlüsselungsintegration bleibt standardmäßig deaktiviert. Ein späterer
-macOS-Build ist ad-hoc signiert und nicht notarisiert; Windows ist nicht
-freigegeben.
+der committed Produktpfad ist eine frische verschlüsselte Final-V4-Installation
+mit SQLCipher 4.17, verschlüsselten Managed Documents und `.jkmebackup`.
+Ein neuer Paket- und Realwelt-Nachweis steht weiterhin aus. Ein späterer
+macOS-Build ist ohne Developer-ID-Nachweis höchstens ad-hoc signiert und nicht
+notarisiert; Windows ist nicht freigegeben.
 
 Für die Bedienung gelten das
 `docs/user_manual/USER_MANUAL_SOURCE.md` und das daraus erzeugte
@@ -105,15 +107,15 @@ Reproduzierbarer Build auf einem Apple-Silicon-Mac:
 
 ```bash
 scripts/build_macos_pilot.sh --data-mode empty
-scripts/build_macos_pilot.sh --data-mode laura
+scripts/build_macos_pilot.sh --data-mode release
 ```
 
 `empty` erzeugt die leere technische Smoke-Test-Variante mit eigenem Dateinamen.
-`laura` erzeugt eine ausschließlich synthetische Fachtestvariante mit 24 fiktiven Kindern,
-Stammdaten, Stundenplan, Beobachtungen, Bericht-/LEG-Drafts, Revisionen und
-finalen Beispiel-PDFs. Der Build schreibt seine Variante in
-`pilot_build_info.json` im App-Bundle und übernimmt niemals
-`data/kompetenzmanager.sqlite` aus dem Entwicklerarbeitsstand.
+`release` bleibt datenfrei. Synthetische Final-V4-Testdaten werden ausschließlich
+in einer getrennten, neuen Testinstallation erzeugt; sie werden weder in das
+Bundle aufgenommen noch als portables Backup ausgegeben. Der Build schreibt
+seine Variante in `pilot_build_info.json` und übernimmt niemals einen lokalen
+Runtime-Bestand aus dem Entwicklerarbeitsstand.
 
 Zusätzlich erzeugt der Build die gebrandete Lehrkraft-Installationsanleitung und
 das Benutzerhandbuch als PDF. Das DMG verwendet ein ruhiges Finder-Layout mit

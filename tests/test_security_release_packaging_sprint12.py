@@ -48,21 +48,38 @@ def test_030_release_versions_and_security_dependencies_are_pinned() -> None:
         encoding="utf-8"
     )
     assert "PyNaCl==1.6.2" in requirements
-    assert "sqlcipher3==0.6.2" in requirements
+    assert "sqlcipher3==0.6.2" not in requirements
     spec = Path("packaging/macos_pilot.spec").read_text(encoding="utf-8")
     for required in (
         '"_cffi_backend"',
         '"nacl._sodium"',
         '"sqlcipher3._sqlite3"',
-        '"src.security.packaged_integration_smoke"',
         '"src.security.packaged_keychain_smoke"',
         '"src.desktop_app.restore_worker"',
+        '"src.security.cipher_product_runtime"',
+        '"src.security.final_v4_backup_runtime"',
+        '"src.security.final_v4_live_restore"',
+        '"src.application.managed_documents"',
+        '"scripts.seed_test_data"',
     ):
         assert required in spec
+    for excluded in (
+        '"src.security.packaged_integration_smoke"',
+        '"src.security.integration_orchestrator"',
+    ):
+        assert excluded in spec
     build_script = Path("scripts/build_macos_pilot.sh").read_text(
         encoding="utf-8"
     )
     assert "scripts/smoke_test_packaged_restore_worker.py" in build_script
+    assert "JENAPLAN_SQLCIPHER_417_WHEEL" in build_script
+    assert "expected_wheel_sha256" in build_script
+    assert "rm -f \"$SQLCIPHER_DIRECT_URL\"" in build_script
+    assert "scripts/smoke_test_macos_security_integration.py" not in build_script
+    restore_worker = Path("src/desktop_app/restore_worker.py").read_text(
+        encoding="utf-8"
+    )
+    assert "WORKER_READY_TIMEOUT_SECONDS = 5.0" in restore_worker
 
 
 @pytest.mark.skipif(
@@ -72,7 +89,9 @@ def test_030_release_versions_and_security_dependencies_are_pinned() -> None:
 def test_current_environment_matches_security_build_runtime() -> None:
     result = audit_environment()
     assert result["versions"] == EXPECTED_VERSIONS
-    assert result["sqlcipher"] == "4.12.0 community"
+    assert result["sqlcipher"] == "4.17.0 community"
+    assert result["sqlite"] == "3.53.3"
+    assert result["sqlcipher_provider"] == "commoncrypto"
 
 
 def test_packaged_gate_on_roundtrip_restart_wrong_key_and_gate_off_stock(

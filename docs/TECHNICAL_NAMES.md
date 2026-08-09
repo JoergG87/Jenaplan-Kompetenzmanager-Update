@@ -42,6 +42,9 @@ lokal implementiert.
 | `FINAL_SCHEMA_FINGERPRINT` | vollständiger kanonischer Fingerprint des direkten finalen Schemas | Core Database Compatibility |
 | `FinalV4SchemaInitializer` | Qt-freie direkte Erzeugung und Verifikation einer neuen vollständigen V4-Datenbank; keine Migration | Core SQLite Schema |
 | `SyntheticV4SeedBuilder` | ausschließlich testseitige deterministische Befüllung einer frisch erzeugten temporären Final-V4-Datenbank | Test Support |
+| `seed_cipher_pilot_test_data` | erweitert den vorhandenen Seed-Workflow über die produktiven Final-V4-Adapter mit ausschließlich synthetischen Fachdaten und verschlüsselten Managed Documents | Pilot Test Support |
+| `build_cipher_pilot_test_root` | erzeugt ohne Reset genau einen neuen systemtemporären, same-installation nutzbaren Cipher-Testroot samt Restart-, `.jkmebackup`- und Restore-Staging-Nachweis | Pilot Test Support |
+| `JENAPLAN_SQLCIPHER_417_WHEEL` | absoluter Buildinput für das lokal reproduzierte und manifest-hashgebundene SQLCipher-4.17-Wheel; kein Index-Fallback | macOS Build |
 | `DatabaseStartupResolver` | read-only Klassifizierung als fehlend, exakt final, unbekannt oder Recovery erforderlich | Core Database Startup |
 | `DatabaseStartupCoordinator` | kontrollierte Disposition vor jeder fachlichen Runtime-Vorbereitung | Core Database Startup |
 | `DATABASE_NOT_FOUND` | am geprüften Produktpfad existiert keine Datenbankdatei | Core Database Startup |
@@ -399,7 +402,7 @@ bis zum realen Test des gebauten Bundles offen.
 | `FinalV4EncryptedRestoreHandoffService` | Erzeugt und konsumiert den einmaligen DMK-authentisierten Cipher-Handoff im vorhandenen Restore-Journalbereich | Security Restore |
 | `FinalV4EncryptedLiveRestoreService` | Cipher-Strategie des vorhandenen `ProductiveRestoreService` für Preflight, gemeinsame Vier-Rollen-Einheit, keyed Reopen und Rollback | Security Restore / Core Restore |
 | `build_final_v4_restore_verifier` | Technische read-only 4.17-Verifier-Komposition aus bestehendem DMK-/Envelope-Kontext und ADR-101-Pfadscope; öffnet keine Produktdatenbankkomposition | Security Restore Recovery |
-| `_read_active_keyset_immutable` | Bootstrap-interner SQLite-Immutable-Read des exakt aktiven Keysets ohne Sidecar, Provisionierung oder Lifecycle-Fortschreibung | Security Restore Recovery |
+| `_read_active_keyset_wal_aware_readonly` | Bootstrap-interner SQLite-Read-only-Snapshot des exakt aktiven Keysets einschließlich bereits committed WAL; ohne Provisionierung oder Lifecycle-Fortschreibung | Security Restore Recovery |
 | `classify_terminal_final_v4_restore_artifacts` | strukturelle fail-closed Zulassung ausschließlich terminaler Cipher-Handoff-/Journalbereiche vor dem normalen Product-Open | Security Restore Recovery |
 | `validate_terminal_final_v4_restore_evidence` | DMK-HMAC-Prüfung terminaler Cipher-Handoffs nach regulärem bestehendem Key-Load | Security Restore Recovery |
 | `classify_active_final_v4_restore_artifacts` | strukturelle Zulassung exakt einer benannten aktiven Cipher-Transaktion nur für ihren Worker nach Parent-EOF; übrige Evidenz muss terminal sein | Security Restore Worker |
@@ -421,15 +424,20 @@ bis zum realen Test des gebauten Bundles offen.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
-| `PACKAGED_SECURITY_INTEGRATION_ARGUMENT` | Interner gefrorener Testeinstieg `--packaged-security-integration-test`; benötigt zusätzlich Paketmarker, exaktes Sprint-11-Gate und gültigen Test-Root | Security Packaging |
-| `PackagedSecurityIntegrationSmoke` | Qt-freier, nur im expliziten Pakettest importierter Ablauf für Migration, Reopen, Restore, Manipulation, falschen Key und echte Crash-Recovery | Security Packaging |
+| `PACKAGED_SECURITY_INTEGRATION_ARGUMENT` | Historischer Sprint-11-Testeinstieg `--packaged-security-integration-test`; im Final-V4-Pilotbundle weder geroutet noch enthalten | Security Packaging |
+| `PackagedSecurityIntegrationSmoke` | Historischer Qt-freier Sprint-11-Testablauf; bleibt als Quelltest erhalten, ist aber aus dem Final-V4-Pilotbundle ausgeschlossen | Security Packaging |
 | `PACKAGED_KEYCHAIN_SMOKE_ARGUMENT` | Interner gefrorener Testeinstieg `--packaged-keychain-smoke` für einen isolierten realen macOS-Keychain-Lifecycle | Security Packaging |
 | `PackagedKeychainSmoke` | Marker- und Temporärroot-gebundene DMK-Provisionierung, Reopen-, Passwortwechsel-, Fehler- und Cleanup-Prüfung ohne Produktdaten | Security Packaging |
+| `PACKAGED_RUNTIME_AUDIT_ARGUMENT` | Interner gefrorener Testeinstieg `--packaged-runtime-audit` für die tatsächlich gebündelte SQLCipher-Bindung, SQLCipher-/SQLite-Version, CommonCrypto-Provider und Cipher-Integrität | Security Packaging |
+| `PACKAGED_SMOKE_ARGUMENT` | Interner gefrorener Final-V4-Testeinstieg `--packaged-smoke-test` mit den Modi `initialize`, `restart`, `restore-worker` und `cleanup`; verwendet ausschließlich einen privaten systemtemporären Smoke-Root | Security Packaging |
+| `PACKAGED_CIPHER_SEED_ARGUMENT` | Interner gefrorener Testeinstieg `--packaged-cipher-seed` für genau einen neuen privaten systemtemporären Final-V4-Cipher-Testbestand ohne Reset oder Überschreiben | Security Packaging |
+| `PACKAGED_CIPHER_SEED_VERIFY_ARGUMENT` | Separater gefrorener Reopen-Einstieg `--packaged-cipher-seed-verify` zur Bestätigung des vorhandenen synthetischen Testbestands, `.jkmebackup` und `RESTORE_READY` | Security Packaging |
+| `verify_cipher_pilot_test_root` | Read-only Reopen-Verifikation eines bereits erzeugten synthetischen Cipher-Pilot-Testroots über produktive Keychain-, DMK-, Database-Key-, SQLCipher-, Backup- und Restore-Staging-Grenzen | Test Data / Security Packaging |
 | `JENAPLAN_MACOS_BUILD_ROOT` | Optionales absolutes internes Buildziel ausschließlich unter freigegebener Build- oder System-Temporärwurzel | Packaging |
 | `JENAPLAN_MACOS_DIST_ROOT` | Optionales absolutes internes Distributionsziel ausschließlich unter freigegebener Dist- oder System-Temporärwurzel | Packaging |
 | `audit_macos_security_runtime.py` | Prüft gepinnte Python-/Krypto-/Qt-/SQLCipher-Laufzeiten und arm64-Verfügbarkeit vor PyInstaller | Packaging QA |
 | `thin_macos_bundle_arm64.py` | Entfernt vor Codesign alle nicht-arm64-Slices aus Mach-O-Dateien des internen Bundles | Packaging QA |
-| `audit_macos_app_bundle.py` | Prüft Bundlemetadaten, arm64-only, native Laufzeiten, Lizenzen und verbotene Artefakte/Pfade | Packaging QA |
+| `audit_macos_app_bundle.py` | Prüft Bundlemetadaten, alle Mach-O-Dateien auf arm64-only, native Abhängigkeiten/RPATHs, exakte SQLCipher-4.17-Laufzeit mit CommonCrypto, Fachvignetten, Lizenzen sowie verbotene Artefakte, Prototypen und lokale Pfade | Packaging QA |
 | `APP_INFO_VERSION` | Sichtbare read-only Projektion `Version <APP_VERSION> · Build <APP_BUILD_VERSION>` im bestehenden Über-Dialog | Desktop UI |
 
 ## Security Sprint 11 - kontrollierte Testintegration

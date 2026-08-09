@@ -1625,7 +1625,7 @@ def _load_existing_key_runtime(
                 envelope_registry=metadata / canonical.envelope_registry.name,
             )
         permissions = PlatformFilePermissionManager()
-        active = _read_active_keyset_immutable(paths.keyset_metadata)
+        active = _read_active_keyset_wal_aware_readonly(paths.keyset_metadata)
         if (
             active is None
             or active.status is not DataKeysetStatus.ACTIVE
@@ -1683,11 +1683,11 @@ def _load_existing_key_runtime(
         ) from None
 
 
-def _read_active_keyset_immutable(path: Path) -> DataKeyset | None:
-    """Read the existing keyset through SQLite immutable mode without sidecars."""
+def _read_active_keyset_wal_aware_readonly(path: Path) -> DataKeyset | None:
+    """Read the committed active keyset, including an existing SQLite WAL."""
 
     database = Path(path).expanduser().resolve(strict=True)
-    uri = f"{database.as_uri()}?mode=ro&immutable=1"
+    uri = f"{database.as_uri()}?mode=ro"
     with sqlite3.connect(uri, uri=True, isolation_level=None) as connection:
         connection.execute("PRAGMA query_only = ON")
         if (

@@ -58,20 +58,21 @@ automatisch.
 
 ## 5. Backup, Restore und Unterstützung
 
-Vor einem Update oder Gerätewechsel ein geprüftes lokales Backup erstellen.
-Der aktuelle Produktpfad verwendet ZIP-v1. Die Restore-Vorschau lesen und
+Vor einem Update ein geprüftes lokales `.jkmebackup` erstellen. Der aktuelle
+Produktpfad verwendet ausschließlich den verschlüsselten Final-V4-Container.
+Die Restore-Vorschau lesen und
 `Wiederherstellung starten` nur bewusst wählen: die App erstellt vorher ein
 Sicherheitsbackup, übergibt an einen separaten Restore-Worker, beendet sich
 vollständig und startet kontrolliert neu. Danach erneut anmelden und
 Fachdaten prüfen.
 
 Startet der Worker nicht, bleibt der bisherige aktive Bestand unverändert. Ein
-Backup ist keine Verschlüsselung; zusätzliches externes, schulisch geregeltes
-Backup bleibt sinnvoll.
+Das Backup ist verschlüsselt, aber an dieselbe Installation und deren DMK
+gebunden. Zusätzliches externes, schulisch geregeltes Backup bleibt sinnvoll;
+ein Gerätewechsel oder DMK-Verlust ist damit nicht gelöst.
 
-Wenn Passwort und Recovery-Codes fehlen, ist der Support-Reset der betreute
-Ausnahmeweg. Er wird nicht automatisch übertragen und gibt dem Support keinen
-Zugang zu Fachdaten.
+Support-Reset bleibt im Cipher-Modus kontrolliert blockiert, solange seine vor
+Authentifizierung nötige sichere Backup-Komposition nicht freigegeben ist.
 
 ## 6. Bekannte Grenzen
 
@@ -79,7 +80,8 @@ Zugang zu Fachdaten.
 > - keine Windows-Freigabe und kein öffentlicher Stable-Release;
 > - keine Notarisierung und kein Developer-ID-Nachweis;
 > - keine Cloud-Synchronisation oder KI-Funktion;
-> - keine automatische Produktmigration oder aktive Fachdatenverschlüsselung;
+> - keine Migration bestehender Klartext- oder Altbestände; ausschließlich ein
+>   frischer verschlüsselter Final-V4-Bestand;
 > - keine automatische Update-, Download- oder Installationsaktion.
 
 Das ausführliche Benutzerhandbuch und

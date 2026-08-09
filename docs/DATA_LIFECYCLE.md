@@ -201,6 +201,21 @@ Der Lauf öffnet, löscht, ersetzt oder migriert keine vorhandene Datenbank. Er
 verwendet keine echten Namen, keine lokalen Nutzerdaten und keine vorhandenen
 Backups.
 
+Der erweiterte Cipher-Pilot-Testlauf besitzt eine strengere Produktnähe. Er
+legt ausschließlich einen noch nicht vorhandenen systemtemporären Root mit
+festem Testpräfix und privaten Rechten an, richtet dort über den normalen
+Security-/DMK-/Database-Key-Pfad eine neue Installation ein und öffnet exakt
+Final V4 mit SQLCipher 4.17. Stammgruppen, Kurse, Kursverbund, 24 eindeutig
+synthetische Schüler, Assignments, `inherit`-/`custom`-Fachfälle,
+Beobachtungen, Bewertungen, Bestätigungen, Stundenplan, Bericht und LEG werden
+über vorhandene Application-/Repository-/Adaptergrenzen geschrieben.
+Klartextquellen für Anhänge und Dokumente liegen nur kurzzeitig außerhalb des
+Runtime-Roots; Managed Documents und finale PDFs entstehen dort ausschließlich
+als verifizierte `.jkmedoc`. Der Lauf prüft Restart, `.jkmebackup` und
+`RESTORE_READY`. Er besitzt weder `reset` noch `force`, akzeptiert keinen
+Produktroot und erzeugt kein portables Testdatenbackup; DMK-Verlust und
+Gerätewechsel bleiben ungelöst.
+
 ## Backup und Restore des finalen Schemas
 
 Backupformat und Datenbankschema bleiben getrennte Verträge. Der bestehende

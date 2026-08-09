@@ -21,11 +21,13 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 > [!HINWEIS]
 > - Die App arbeitet lokal, ohne Cloud und ohne KI.
-> - Die App-Sperre ersetzt keine Fachdatenverschlüsselung.
-> - Backup und Restore verwenden im Produktpfad ZIP-v1; Restore wird erst nach
->   Vorschau und ausdrücklicher Bestätigung über einen separaten Worker gestartet.
-> - Finale oder frei exportierte PDFs liegen außerhalb der App als Dateien vor
->   und müssen sicher weitergegeben werden.
+> - App-Sperre und Final-V4-Verschlüsselung sind getrennte Schutzschichten.
+> - Backup und Restore verwenden ausschließlich installationsgebundene
+>   `.jkmebackup`; Restore wird erst nach keyed Vorschau und ausdrücklicher
+>   Bestätigung über einen separaten Worker gestartet.
+> - Finale verwaltete Bericht-/LEG-Artefakte liegen verschlüsselt im Managed
+>   Document Store. Bewusst frei exportierte Dateien liegen außerhalb der App
+>   im Klartext und müssen sicher weitergegeben werden.
 > - Der interne macOS-Build ist ad-hoc signiert und nicht notarisiert. Es gibt
 >   keine Windows-Freigabe, keinen Stable-Appcast und keine automatische
 >   Updateinstallation.

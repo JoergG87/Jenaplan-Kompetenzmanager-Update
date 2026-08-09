@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
+import os
 import shutil
+import stat
 import sys
+import tempfile
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -64,6 +69,11 @@ from src.desktop_app.view_models.learning_report_view_model import (  # noqa: E4
     LearningReportChartSelectionViewModel,
     LearningReportDraftViewModel,
     LearningReportSubjectDraftViewModel,
+)
+from src.desktop_app.view_models.observation_view_model import (  # noqa: E402
+    ObservationAttachmentDraft,
+    ObservationCompetencyRatingDraft,
+    ObservationDraftViewModel,
 )
 
 
@@ -127,6 +137,8 @@ STUDENTS = (
 )
 
 SEED_TIMESTAMP = datetime(2025, 7, 1, 8, 0, tzinfo=UTC)
+CIPHER_PILOT_TEST_ROOT_PREFIX = "jkm-final-v4-pilot-testdata-"
+CIPHER_PILOT_REFERENCE_DAY = date(2026, 8, 9)
 
 
 def seed_test_data(
@@ -166,6 +178,256 @@ def seed_test_data(
         conference_draft_count=workflow_counts[2],
         conference_revision_count=workflow_counts[3],
     )
+
+
+def seed_cipher_pilot_test_data(opened_runtime, *, source_root: Path) -> SeedResult:
+    """Extend the existing seed workflow through the Final-V4 product adapters."""
+    from src.desktop_app.adapters.master_data_desktop_adapter import (
+        MasterDataDesktopAdapter,
+    )
+    from src.desktop_app.main import _build_cipher_product_student_adapter
+
+    source_root = Path(source_root).resolve(strict=True)
+    if _database_has_seed_data(opened_runtime.database):
+        raise SeedDataError("Der Final-V4-Testbestand ist nicht fachlich leer.")
+    adapter = _build_cipher_product_student_adapter(opened_runtime)
+    adapter._today_provider = lambda: CIPHER_PILOT_REFERENCE_DAY
+    adapter._now_provider = lambda: datetime(2026, 8, 9, 10, 0, tzinfo=UTC)
+    master = MasterDataDesktopAdapter(adapter)
+    groups = tuple(master.add_group(name) for name in ("Pilotgruppe A", "Pilotgruppe B"))
+    courses = tuple(
+        master.add_course(name, color, year_level=level)
+        for name, color, level in (
+            ("Pilotkurs 1", "#2563EB", 1),
+            ("Pilotkurs 2", "#16A34A", 2),
+            ("Pilotkurs 3", "#F97316", 3),
+        )
+    )
+    master.add_course_group(
+        "Pilot-Kursverbund",
+        tuple(item.item_id for item in groups),
+        tuple(item.item_id for item in courses),
+    )
+
+    students = []
+    for index in range(1, 25):
+        created = adapter.save_new_student(
+            first_name="Pilotkind",
+            last_name=f"Testfall-{index:02d}",
+            group_id=groups[(index - 1) % len(groups)].item_id,
+            course_id=courses[(index - 1) % len(courses)].item_id,
+            student_notes="Ausschließlich synthetischer Pilot-Testdatensatz.",
+        )
+        if not getattr(created, "success", False):
+            raise SeedDataError(f"Synthetischer Schüler {index} wurde nicht angelegt.")
+        students.append(created.value)
+
+    subject_options = tuple(
+        option for option in adapter.list_documentation_subject_options() if option.selected
+    )
+    if len(subject_options) < 3:
+        raise SeedDataError("Für die Fachauswahl werden mindestens drei Fächer benötigt.")
+    current_year = adapter.current_school_year()
+    if current_year is None or current_year.label != "2026/27":
+        raise SeedDataError("Der Cipher-Produktpfad hat nicht das Schuljahr 2026/27 erzeugt.")
+    adapter.save_student_documentation_subjects(
+        students[0].student_id, current_year.school_year_id, "inherit", ()
+    )
+    adapter.save_student_documentation_subjects(
+        students[1].student_id,
+        current_year.school_year_id,
+        "custom",
+        tuple(option.subject_id for option in subject_options[:3]),
+    )
+    adapter.save_student_documentation_subjects(
+        students[2].student_id,
+        current_year.school_year_id,
+        "custom",
+        (subject_options[0].subject_id,),
+    )
+
+    competencies = tuple(
+        item
+        for item in SQLiteCompetencyRepository(opened_runtime.database).list_competencies()
+        if item.active and item.catalog_status == "current"
+    )
+    if not competencies:
+        raise SeedDataError("Der Final-V4-Kompetenzkatalog ist leer.")
+    observations = []
+    contexts = ("Partnerarbeit", "Gruppenarbeit", "Lernzielkontrolle", "Präsentation")
+    with tempfile.TemporaryDirectory(prefix="jkm-pilot-seed-sources-") as source_name:
+        sources = Path(source_name)
+        attachment = sources / "synthetischer-beobachtungsanhang.txt"
+        attachment.write_text("Synthetischer verschlüsselter Beobachtungsanhang.\n", encoding="utf-8")
+        general = sources / "synthetisches-schuelerdokument.txt"
+        general.write_text("Synthetisches verschlüsseltes Schülerdokument.\n", encoding="utf-8")
+        for index, student in enumerate(students):
+            competency = competencies[index % len(competencies)]
+            rating = ObservationCompetencyRatingDraft(
+                competency_id=competency.competency_id,
+                subject_key=competency.subject_id,
+                subject_display_name=competency.subject_name,
+                learning_area=competency.learning_area,
+                competency_group=competency.competency_group,
+                competency_text=competency.description,
+                rating=("+", "++", "-")[index % 3],
+            )
+            attachments = (
+                (
+                    ObservationAttachmentDraft(
+                        str(attachment),
+                        "Synthetischer Beobachtungsanhang",
+                        "Arbeitsprobe",
+                        "Nur für den Pilot-Testbestand.",
+                    ),
+                )
+                if index == 0
+                else ()
+            )
+            saved = adapter.save_observation(
+                ObservationDraftViewModel(
+                    student_id=student.student_id,
+                    student_name=f"{student.first_name} {student.last_name}",
+                    date_text=f"2026-08-{2 + index % 7:02d}",
+                    subject_id=competency.subject_id,
+                    subject_display_name=competency.subject_name,
+                    competency_ratings=(rating,),
+                    context=contexts[index % len(contexts)],
+                    note="Synthetische Beobachtung für Dashboard und passende Kinder.",
+                    attachments=attachments,
+                )
+            )
+            if not getattr(saved, "success", False):
+                raise SeedDataError(f"Synthetische Beobachtung {index + 1} fehlgeschlagen.")
+            observations.append(saved.value)
+        adapter.add_student_document(
+            student_id=students[0].student_id,
+            source_path=general,
+            document_type="Sonstiges",
+            title="Synthetisches Schülerdokument",
+            note="Nur für den Pilot-Testbestand.",
+        )
+
+    for index in range(4):
+        adapter.save_competency_confirmation(
+            student_id=students[index].student_id,
+            competency_id=competencies[index].competency_id,
+            confirmed_rating=("+", "++", "-", "+")[index],
+            note="Synthetische Bestätigung für den Pilotcheck.",
+        )
+    _seed_cipher_timetable(opened_runtime.database, groups, courses, competencies)
+    workflow_counts = _seed_cipher_workflows(
+        adapter, tuple(students), tuple(observations), competencies
+    )
+    return SeedResult(
+        database_path=opened_runtime.database.path,
+        student_count=len(students),
+        observation_count=len(observations),
+        document_count=sum(
+            len(adapter.list_documents_for_student(student.student_id))
+            for student in students
+        ),
+        timetable_count=len(SQLiteTimetableRepository(opened_runtime.database).list_entries()),
+        report_draft_count=workflow_counts[0],
+        report_revision_count=workflow_counts[1],
+        conference_draft_count=workflow_counts[2],
+        conference_revision_count=workflow_counts[3],
+    )
+
+
+def _database_has_seed_data(database: SQLiteDatabase) -> bool:
+    with database.connect() as connection:
+        return any(
+            connection.execute(f"SELECT 1 FROM {table} LIMIT 1").fetchone() is not None
+            for table in ("students", "groups", "courses", "observations")
+        )
+
+
+def _seed_cipher_timetable(database, groups, courses, competencies) -> None:
+    adapter = TimetableDesktopAdapter(database)
+    subject_ids = tuple(dict.fromkeys(item.subject_id for item in competencies))
+    for weekday in range(1, 6):
+        for slot in range(2):
+            target_type, target_id = (
+                ("group", groups[(weekday + slot) % len(groups)].item_id)
+                if slot == 0
+                else ("course", courses[(weekday + slot) % len(courses)].item_id)
+            )
+            adapter.save_entry(
+                SaveTimetableEntryCommand(
+                    "",
+                    weekday,
+                    f"{8 + slot:02d}:00",
+                    f"{8 + slot:02d}:45",
+                    subject_ids[(weekday + slot) % len(subject_ids)],
+                    target_type,
+                    target_id,
+                    "Pilotraum",
+                    True,
+                )
+            )
+
+
+def _seed_cipher_workflows(adapter, students, observations, competencies) -> tuple[int, int, int, int]:
+    focus = students[0]
+    second = students[1]
+    focus_observations = tuple(item for item in observations if item.student_id == focus.student_id)
+    second_observations = tuple(item for item in observations if item.student_id == second.student_id)
+    focus_competency = competencies[0]
+    second_competency = competencies[1]
+    final_report = adapter.save_learning_report_draft(
+        LearningReportDraftViewModel(
+            student_id=focus.student_id,
+            period_start=date(2026, 8, 1),
+            period_end=date(2026, 8, 9),
+            teacher_name="Pilot-Lernbegleitung",
+            overall_text="Synthetischer finalisierter Berichtstext.",
+            subjects=(LearningReportSubjectDraftViewModel(focus_competency.subject_id, "Synthetischer Fachtext.", "", "", ""),),
+            competency_ids=(focus_competency.competency_id,),
+            observation_ids=tuple(item.observation_id for item in focus_observations),
+        )
+    )
+    report_status = adapter.finalize_learning_report(final_report.report_draft_id, "Pilot-Lernbegleitung")
+    adapter.generate_learning_report_pdf(report_status.current_revision_id)
+    adapter.save_learning_report_draft(
+        LearningReportDraftViewModel(
+            student_id=second.student_id,
+            period_start=date(2026, 8, 1),
+            period_end=date(2026, 8, 9),
+            teacher_name="Pilot-Lernbegleitung",
+            overall_text="Synthetischer bearbeitbarer Berichtsentwurf.",
+            subjects=(LearningReportSubjectDraftViewModel(second_competency.subject_id, "Synthetischer Entwurf.", "", "", ""),),
+            competency_ids=(second_competency.competency_id,),
+            observation_ids=tuple(item.observation_id for item in second_observations),
+        )
+    )
+    final_leg = adapter.save_learning_conference_draft(
+        LearningConferenceDraftViewModel(
+            student_id=focus.student_id,
+            period_start=date(2026, 8, 1), period_end=date(2026, 8, 9),
+            conference_date=date(2026, 8, 9), responsible_teacher="Pilot-Lernbegleitung",
+            conversation_entry_text="Synthetischer Gesprächseinstieg.",
+            child_retrospective_text="Synthetische Rückschau.", strengths_text="Synthetische Stärke.",
+            development_fields_text="Synthetisches Entwicklungsfeld.",
+            agreed_goals_text="Synthetisches Ziel.", responsibilities_text="Synthetische Zuständigkeit.",
+            subject_ids=(focus_competency.subject_id,), competency_ids=(focus_competency.competency_id,),
+            observation_ids=tuple(item.observation_id for item in focus_observations),
+        )
+    )
+    leg_status = adapter.complete_learning_conference(final_leg.learning_conference_draft_id)
+    completed = next(item for item in leg_status.revisions if item.status == "completed")
+    adapter.generate_learning_conference_pdf(completed.learning_conference_revision_id)
+    adapter.save_learning_conference_draft(
+        LearningConferenceDraftViewModel(
+            student_id=second.student_id,
+            period_start=date(2026, 8, 1), period_end=date(2026, 8, 9), conference_date=date(2026, 8, 9),
+            responsible_teacher="Pilot-Lernbegleitung", conversation_entry_text="Synthetischer LEG-Entwurf.",
+            child_retrospective_text="Synthetische Rückschau.", strengths_text="Synthetische Stärke.",
+            development_fields_text="Synthetisches Entwicklungsfeld.", subject_ids=(second_competency.subject_id,),
+            competency_ids=(second_competency.competency_id,), observation_ids=tuple(item.observation_id for item in second_observations),
+        )
+    )
+    return (2, len(report_status.history), 2, len(leg_status.revisions))
 
 
 def _reset_runtime_data(database_path: Path, documents_root: Path) -> None:
@@ -936,11 +1198,252 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Bestehende Testdatenbank und data/documents kontrolliert neu erzeugen.",
     )
+    parser.add_argument(
+        "--cipher-root",
+        type=Path,
+        help=(
+            "Noch nicht existierender absoluter System-Temporärroot mit Präfix "
+            f"{CIPHER_PILOT_TEST_ROOT_PREFIX}; erzeugt Final V4 ohne Reset."
+        ),
+    )
     return parser.parse_args(argv)
+
+
+def build_cipher_pilot_test_root(root: Path) -> dict[str, object]:
+    """Create one restartable same-installation macOS Cipher test root."""
+    from src.core.database_engine import SQLCipherConnectionProvider
+    from src.desktop_app.runtime import (
+        prepare_cipher_runtime_storage,
+        prepare_security_runtime_storage,
+    )
+    from src.security.cipher_product_runtime import open_cipher_product_runtime
+    from src.security.domain import AuthenticationStatus
+    from src.security.final_v4_backup_runtime import (
+        build_final_v4_encrypted_backup_service,
+    )
+    from src.security.startup import build_security_runtime
+
+    target = _require_fresh_cipher_test_root(root)
+    target.mkdir(mode=0o700)
+    security_paths = prepare_security_runtime_storage(data_root=target)
+    security = build_security_runtime(security_paths)
+    password = _cipher_pilot_password(target)
+    enrollment = security.service.prepare_local_account_enrollment(password)
+    if not security.service.confirm_local_account_enrollment(enrollment.recovery_set_id):
+        raise SeedDataError("Die synthetische Testinstallation wurde nicht aktiviert.")
+    if security.service.authenticate_password(password).status is not AuthenticationStatus.AUTHENTICATED:
+        raise SeedDataError("Die synthetische Testinstallation wurde nicht authentifiziert.")
+    account = security.repository.load_account()
+    provider = SQLCipherConnectionProvider(
+        expected_binding_version="0.6.2+jkm.sqlcipher4170.1",
+        expected_engine_version="4.17.0 community",
+    )
+    opened = open_cipher_product_runtime(
+        paths=security_paths,
+        account_loader=lambda: account,
+        authentication_confirmed=True,
+        first_run_allowed=True,
+        sqlcipher_provider=provider,
+    )
+    seed = seed_cipher_pilot_test_data(opened, source_root=target)
+    restarted = open_cipher_product_runtime(
+        paths=security_paths,
+        account_loader=lambda: account,
+        authentication_confirmed=True,
+        first_run_allowed=False,
+        sqlcipher_provider=provider,
+    )
+    paths = prepare_cipher_runtime_storage(data_root=target)
+    backup_service = build_final_v4_encrypted_backup_service(
+        opened_runtime=restarted.runtime,
+        account_loader=lambda: account,
+        environ=os.environ,
+        sqlcipher_provider=provider,
+        product_root=target,
+    )
+    backup_path = paths.backups / "Pilot-Testbestand-2026-27.jkmebackup"
+    backup = backup_service.create(backup_path)
+    verified = backup_service.verify(backup_path)
+    restore_parent = target / "encrypted-restore-staging"
+    restore_parent.mkdir(mode=0o700)
+    restore = backup_service.restore_staging(
+        backup_path,
+        restore_parent / "pilot-seed-verification",
+    )
+    ready = backup_service.verify_restore_ready(
+        restore.staging_root,
+        expected_container_sha256=verified.container_sha256,
+    )
+    compatibility = restarted.runtime.final_v4.compatibility
+    return {
+        "backup": str(backup.path),
+        "backup_sha256": backup.container_sha256,
+        "cipher_provider": compatibility.cipher_provider,
+        "cipher_version": compatibility.cipher_version,
+        "database": str(paths.final_v4_database),
+        "restore_state": restore.state if ready.ready_path.is_file() else "INVALID",
+        "root": str(target),
+        "sqlite_version": compatibility.sqlite_version,
+        "students": seed.student_count,
+        "observations": seed.observation_count,
+        "documents": seed.document_count,
+        "timetable_entries": seed.timetable_count,
+        "report_drafts": seed.report_draft_count,
+        "report_revisions": seed.report_revision_count,
+        "conference_drafts": seed.conference_draft_count,
+        "conference_revisions": seed.conference_revision_count,
+    }
+
+
+def verify_cipher_pilot_test_root(root: Path) -> dict[str, object]:
+    """Reopen and verify a retained synthetic root in a separate app process."""
+    from src.core.database_engine import SQLCipherConnectionProvider
+    from src.desktop_app.runtime import (
+        prepare_cipher_runtime_storage,
+        prepare_security_runtime_storage,
+    )
+    from src.security.cipher_product_runtime import open_cipher_product_runtime
+    from src.security.domain import AuthenticationStatus
+    from src.security.final_v4_backup_runtime import (
+        build_final_v4_encrypted_backup_service,
+    )
+    from src.security.startup import build_security_runtime
+
+    target = Path(root).expanduser().resolve(strict=True)
+    if (
+        target.parent not in {
+            Path("/private/tmp").resolve(strict=True),
+            Path(tempfile.gettempdir()).resolve(strict=True),
+        }
+        or not target.name.startswith(CIPHER_PILOT_TEST_ROOT_PREFIX)
+        or target.is_symlink()
+    ):
+        raise SeedDataError("Der Cipher-Testroot liegt nicht in der freigegebenen Temporärwurzel.")
+    security_paths = prepare_security_runtime_storage(data_root=target)
+    security = build_security_runtime(security_paths)
+    password = _cipher_pilot_password(target)
+    if security.service.authenticate_password(password).status is not AuthenticationStatus.AUTHENTICATED:
+        raise SeedDataError("Die synthetische Testinstallation wurde nicht authentifiziert.")
+    account = security.repository.load_account()
+    provider = SQLCipherConnectionProvider(
+        expected_binding_version="0.6.2+jkm.sqlcipher4170.1",
+        expected_engine_version="4.17.0 community",
+    )
+    opened = open_cipher_product_runtime(
+        paths=security_paths,
+        account_loader=lambda: account,
+        authentication_confirmed=True,
+        first_run_allowed=False,
+        sqlcipher_provider=provider,
+    )
+    paths = prepare_cipher_runtime_storage(data_root=target)
+    service = build_final_v4_encrypted_backup_service(
+        opened_runtime=opened.runtime,
+        account_loader=lambda: account,
+        environ=os.environ,
+        sqlcipher_provider=provider,
+        product_root=target,
+    )
+    backup_path = paths.backups / "Pilot-Testbestand-2026-27.jkmebackup"
+    verified = service.verify(backup_path)
+    ready = service.verify_restore_ready(
+        target / "encrypted-restore-staging" / "pilot-seed-verification",
+        expected_container_sha256=verified.container_sha256,
+    )
+    preview = service.restore_preview_counts(
+        ready.staging_root,
+        expected_container_sha256=verified.container_sha256,
+    )
+    with opened.database.connect() as connection:
+        counts = {
+            name: int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
+            for name, table in {
+                "conference_drafts": "learning_conference_drafts",
+                "conference_revisions": "learning_conference_revisions",
+                "observations": "observations",
+                "report_drafts": "report_drafts",
+                "report_revisions": "learning_report_revisions",
+                "students": "students",
+                "timetable_entries": "timetable_entries",
+            }.items()
+        }
+    if (
+        counts["students"] != 24
+        or counts["observations"] < 24
+        or counts["timetable_entries"] < 1
+        or counts["report_drafts"] < 1
+        or counts["report_revisions"] < 1
+        or counts["conference_drafts"] < 1
+        or counts["conference_revisions"] < 1
+        or preview.students != 24
+        or preview.managed_documents < 2
+    ):
+        raise SeedDataError("Der synthetische Final-V4-Testbestand ist unvollständig.")
+    compatibility = opened.runtime.final_v4.compatibility
+    return {
+        "backup": str(backup_path),
+        "backup_sha256": verified.container_sha256,
+        "cipher_provider": compatibility.cipher_provider,
+        "cipher_version": compatibility.cipher_version,
+        "database_context_id": opened.database_context_id,
+        "database_key_fingerprint_sha256": opened.database_key_fingerprint_sha256,
+        "dmk_fingerprint_sha256": opened.dmk_fingerprint_sha256,
+        "managed_documents": preview.managed_documents,
+        "restore_state": "RESTORE_READY",
+        "root": str(target),
+        "sqlite_version": compatibility.sqlite_version,
+        **counts,
+    }
+
+
+def _cipher_pilot_password(root: Path) -> str:
+    digest = hashlib.sha256(
+        f"cipher-pilot-test-data:{Path(root).name}".encode("utf-8")
+    ).hexdigest()
+    return f"synthetic-only-{digest}"
+
+
+def _require_fresh_cipher_test_root(root: Path) -> Path:
+    candidate = Path(root).expanduser()
+    if not candidate.is_absolute() or candidate.name.startswith("."):
+        raise SeedDataError("Der Cipher-Testroot muss absolut und eindeutig benannt sein.")
+    if candidate.exists() or candidate.is_symlink():
+        raise SeedDataError("Der Cipher-Testroot muss vollständig neu sein.")
+    parent = candidate.parent.resolve(strict=True)
+    allowed_parents = {
+        Path("/private/tmp").resolve(strict=True),
+        Path(tempfile.gettempdir()).resolve(strict=True),
+    }
+    if parent not in allowed_parents or not candidate.name.startswith(
+        CIPHER_PILOT_TEST_ROOT_PREFIX
+    ):
+        raise SeedDataError("Der Cipher-Testroot liegt nicht in der freigegebenen Temporärwurzel.")
+    parent_status = parent.stat()
+    private_temp_parent = bool(parent_status.st_mode & stat.S_ISVTX)
+    if parent.is_symlink() or (
+        parent_status.st_uid != os.getuid() and not private_temp_parent
+    ):
+        raise SeedDataError("Die Temporärwurzel besitzt keine sichere Identität.")
+    return parent / candidate.name
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv or sys.argv[1:])
+    if args.cipher_root is not None:
+        if args.reset or args.database != SQLITE_SPIKE_PATH:
+            print("Cipher-Testdaten nicht geschrieben: --reset/--database sind unzulässig.")
+            return 2
+        try:
+            result = build_cipher_pilot_test_root(args.cipher_root)
+        except SeedDataError as error:
+            print(f"Cipher-Testdaten nicht geschrieben: {error}")
+            return 1
+        except Exception as error:
+            code = str(getattr(error, "code", "cipher_pilot_seed_failed"))
+            print(f"Cipher-Testdaten nicht geschrieben: {code}")
+            return 1
+        print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
     try:
         result = seed_test_data(args.database, reset=args.reset)
     except SeedDataError as error:

@@ -128,25 +128,16 @@ Fehler bleibt sofort der Passwort-Fallback.
 
 ![Sicherheit und Touch-ID-Status](screenshots/17_sicherheit_touch_id.png)
 
-Gespeicherte Anmeldung widerrufen, eine Passwortänderung, Recovery und ein
-Support-Reset entfernen die Komfortanmeldung. Unter Passwort ändern setzen Sie
+Gespeicherte Anmeldung widerrufen, eine Passwortänderung und Recovery entfernen
+die Komfortanmeldung. Unter Passwort ändern setzen Sie
 nach der Bestätigung des bisherigen Passworts ein neues lokales Passwort.
 
 ### Support-Reset
 
-Sind Passwort und Recovery-Codes nicht verfügbar, wählen Sie Weitere
-Wiederherstellungsmöglichkeiten oder unter Einstellungen > Sicherheit
-Technische Support-Reset-Anfrage erstellen. Die Anfrage wird nicht automatisch
-übertragen und enthält keine Schülerdaten. Der Support kann nach
-organisatorischer Identitätsprüfung einen zeitlich begrenzten,
-installationsgebundenen Reset-Code erstellen.
-
-Die App prüft den Code vor jeder Änderung. Erst die deutlich benannte Aktion
-Sicherheitsbackup erstellen und Passwort zurücksetzen erstellt und prüft ein
-fachliches Sicherheitsbackup. Danach werden Passwort, Recovery-Codes,
-gespeicherte Anmeldung und Touch ID zurückgesetzt. Beim nächsten Start richten
-Sie ein neues Passwort und neue Recovery-Codes ein. Ein Support-Reset gibt dem
-Support keinen Zugang zu fachlichen Daten.
+Support-Reset ist im Final-V4-Cipher-Modus kontrolliert blockiert. Seine vor
+Authentifizierung erforderliche sichere `.jkmebackup`-Komposition ist noch
+nicht freigegeben. Ein Reset-Code, Passwort oder Recovery-Code ersetzt den DMK
+nicht und darf keinen Zugriff auf den verschlüsselten Fachbestand vortäuschen.
 
 <!-- pagebreak -->
 
@@ -324,10 +315,10 @@ Sicherung vor einer Wiederherstellung oder einem Update nochmals geprüft werden
 ![Datensicherung](screenshots/20_backup.png)
 
 > [!KONTROLLE]
-> Der aktuelle Produktpfad verwendet das lokale ZIP-v1-Format. Ein Backup ist
-> kein Cloud-Dienst und keine Verschlüsselung. Bewahren Sie zusätzlich eine
-> externe, schulisch geregelte Sicherung auf - insbesondere vor Updates oder
-> Gerätewechseln.
+> Der aktuelle Produktpfad verwendet ausschließlich das verschlüsselte,
+> authentisierte und installationsgebundene `.jkmebackup`. Bewahren Sie
+> zusätzlich eine externe, schulisch geregelte Sicherung vor Updates auf.
+> Gerätewechsel und DMK-Verlust sind damit nicht gelöst.
 
 ### Restore-Vorschau und ausdrückliche Bestätigung
 
@@ -353,8 +344,9 @@ alten App offen.
 > unverändert. Brechen Sie niemals durch Ausschalten oder gewaltsames Beenden ab,
 > wenn ein Restore läuft.
 
-Der Restore übernimmt keine Zugangsdaten, Recovery-Codes, gespeicherte Anmeldung
-oder Touch-ID-Einstellung. Diese Sicherheitsdaten bleiben getrennt.
+Der same-installation Restore übernimmt keine Zugangsdaten, Recovery-Codes,
+gespeicherte Anmeldung oder Touch-ID-Einstellung. Diese Sicherheitsdaten bleiben
+getrennt; auf einem anderen Gerät ist der Container nicht freigegeben.
 
 ## 13. Stammdaten
 
@@ -408,19 +400,19 @@ auch wenn ein aktueller Katalogbezug später nicht mehr auswählbar ist.
 > [!SICHERHEIT]
 > Die App überträgt keine Fachdaten in eine Cloud und nutzt keine KI. Aktuell aktiv
 > sind lokales Passwort, Keychain-gestützte Komfortanmeldung, optionales Touch ID,
-> automatische Sperre, Passwort-Fallback, Support-Reset sowie geprüftes lokales
-> Backup und Restore.
+> automatische Sperre, Passwort-Fallback sowie verschlüsseltes lokales
+> `.jkmebackup` und same-installation Restore. Support-Reset bleibt blockiert.
 
 > [!HINWEIS]
-> Die App-Sperre ist nicht dasselbe wie eine Verschlüsselung der fachlichen
-> Datenbank, Dokumente oder ZIP-v1-Backups. Die Foundations für SQLCipher,
-> verschlüsselte Dokumentcontainer und verschlüsselte Backups sind implementiert
-> und getestet, aber in diesem Pilotstand standardmäßig deaktiviert. Bestehende
-> Pilot- und Produktdaten werden nicht automatisch migriert und keine
-> Verschlüsselung wird still aktiviert.
+> App-Sperre und Verschlüsselung sind getrennte Schutzschichten. Der committed
+> Produktpfad verwendet für einen frischen Final-V4-Bestand SQLCipher 4.17,
+> verschlüsselte Managed Documents und `.jkmebackup`. Bestehende Klartext-, V3-
+> und Alt-Testdaten werden nicht migriert. Build-, Keychain- und Realweltabnahme
+> bleiben gesonderte Gates.
 
-Finale und frei exportierte PDFs liegen außerhalb der App grundsätzlich als
-Dateien vor. Behandeln Sie sie wie andere vertrauliche Schulunterlagen. Das
+Finale verwaltete Bericht-/LEG-Artefakte liegen als verschlüsselte `.jkmedoc`
+im Managed Document Store. Bewusst frei exportierte PDFs liegen außerhalb der
+App im Klartext. Behandeln Sie sie wie andere vertrauliche Schulunterlagen. Das
 ausführliche Dokument docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md erläutert
 Schutzstand, Grenzen und Verantwortlichkeiten der Schule.
 
@@ -439,9 +431,8 @@ Für Lehrkräfte gilt im Alltag:
 Nicht produktiv aktiviert oder freigegeben sind:
 
 - automatische SQLCipher-Migration bestehender Fachdaten;
-- verschlüsselte Produkt-Dokumentablage;
-- verschlüsselter produktiver Backupcontainer;
-- das Security-Integrationsgate für normale Datenroots;
+- Gerätewechsel- und DMK-Recovery;
+- Support-Reset im Cipher-Modus;
 - automatische Produktmigration und physisches Löschen alter Daten;
 - Windows oder ein DPAPI-Pfad;
 - Developer-ID-Signierung und Apple-Notarisierung;

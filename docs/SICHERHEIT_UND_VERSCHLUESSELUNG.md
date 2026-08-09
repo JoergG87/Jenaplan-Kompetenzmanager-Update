@@ -4,8 +4,8 @@ Stand: 9. August 2026
 Geltung: neuer Cipher-Pilot-Quellstand; noch kein neu gebautes Produktartefakt
 Status: Technische Produktkomposition aktiviert, manuelle und paketierte Abnahme offen
 
-Dieses Dokument beschreibt den tatsächlich aktiven Schutzstand und die bewusst
-noch nicht aktivierte Verschlüsselungsintegration. Es ist keine
+Dieses Dokument beschreibt den tatsächlich aktiven committed Schutzstand und
+die noch offene Build-/Realweltabnahme. Es ist keine
 Datenschutzfreigabe, keine Rechtsberatung und keine Aussage
 „DSGVO-konform“ oder „vollständig sicher“.
 
@@ -38,10 +38,8 @@ Im normalen Produktpfad sind folgende Schutzfunktionen aktiv:
 > - immer verfügbarer Passwort-Fallback;
 > - automatische App-Sperre nach Inaktivität oder Ruhezustand sowie
 >   Jetzt sperren;
-> - betreuter Support-Reset mit zeitlich begrenztem, installationsgebundenem
->   Code; sein bisheriges ZIP-v1-Sicherheitsbackup ist im Cipher-Modus bis zum
->   Folgepaket gesperrt;
-> - exakt SQLCipher 4.17/CommonCrypto für die frische Final-V3-Datenbank und
+> - Support-Reset im Cipher-Modus kontrolliert blockiert;
+> - exakt SQLCipher 4.17/CommonCrypto für die frische Final-V4-Datenbank und
 >   den Dokument-Companion;
 > - verschlüsselte Managed-Document-Container für Anhänge, allgemeine
 >   Schülerdokumente sowie finale Bericht-/LEG-PDFs;
@@ -50,7 +48,8 @@ Im normalen Produktpfad sind folgende Schutzfunktionen aktiv:
 
 Die App-Sperre schützt zusätzlich die Oberfläche vor unbefugter Nutzung im
 laufenden Alltag. Sie ersetzt nicht die separate Datenverschlüsselung. Backup
-und Restore sind im Cipher-Produktmodus derzeit keine freigegebene Funktion.
+und Restore verwenden im Cipher-Produktmodus ausschließlich `.jkmebackup` und
+bleiben auf dieselbe Installation gebunden.
 
 ### Signierung und Updates
 
@@ -64,12 +63,12 @@ normalen Produktbetrieb behauptet.
 
 Die App hält ihre Daten lokal und getrennt vom App-Bundle:
 
-- Die fachliche Final-V3-SQLCipher-Datenbank enthält den fachlichen Bestand.
+- Die fachliche Final-V4-SQLCipher-Datenbank enthält den fachlichen Bestand.
 - Ein keyed SQLCipher-Companion registriert verschlüsselte
   Managed-Document-Container im lokalen App-Datenbereich.
 - Ein separater Security Store enthält Anmelde- und Security-Metadaten.
-- Der lokale Backupbereich ist registriert; Cipher-Backup/-Restore ist bis zum
-  Folgepaket technisch deaktiviert.
+- Der lokale Backupbereich enthält ausschließlich `.jkmebackup`; Restore nutzt
+  keyed Staging, Sicherheitsbackup, Worker-Handoff, Rollback und Restart.
 - Frei exportierte Entwurfs-PDFs und andere bewusst abgelegte Ausgaben liegen
   außerhalb der App und müssen wie vertrauliche Schulunterlagen behandelt
   werden.
@@ -83,7 +82,7 @@ Installationsanleitung verwalten.
 
 Die Security- und Verschlüsselungsfoundations sind implementiert. Der normale
 neue Pilotstart aktiviert davon nach erfolgreicher Authentifizierung die
-frische Final-V3-SQLCipher-Runtime, den keyed Companion und verschlüsselte
+frische Final-V4-SQLCipher-Runtime, den keyed Companion und verschlüsselte
 Dokumentcontainer:
 
 > [!HINWEIS]
@@ -95,11 +94,11 @@ Dokumentcontainer:
 >   migriert.
 > - Bestehende Klartextdokumente werden nicht still in verschlüsselte
 >   Container überführt.
-> - Cipher-Backup/-Restore und der alte ZIP-v1-Pfad bleiben produktiv
->   gesperrt.
+> - Cipher-Backup/-Restore verwenden `.jkmebackup`; der alte ZIP-v1-Pfad bleibt
+>   produktiv gesperrt.
 
-Es gibt absichtlich keine Produktmigration. Reale Keychain-, UI-, Build- und
-Paketabnahme sowie Cipher-Backup/-Restore bleiben gesonderte Freigabegates.
+Es gibt absichtlich keine Produktmigration. Reale Keychain-, UI-, Build-,
+Paket- und Restore-Abnahme bleiben gesonderte Freigabegates.
 
 ## 5. Schlüsselarchitektur in verständlicher Form
 
@@ -111,8 +110,8 @@ unterschiedliche Aufgaben.
 - Der Data Master Key (DMK) liegt als separates Secret im macOS-Schlüsselbund.
 - Ein zufälliger Database-Key liegt nur in einem mit dem DMK authentisierten
   Envelope und öffnet Haupt- sowie Companion-Datenbank.
-- Dokumente erhalten getrennte zufällige Document-Keys; die vorbereitete
-  Backup-Key-Domäne ist noch nicht produktiv aktiviert.
+- Dokumente erhalten getrennte zufällige Document-Keys; `.jkmebackup` verwendet
+  die getrennte Backup-Key-Domäne.
 - Passwortwechsel und Support-Reset ändern das Passwort und die
   Anmeldeinformationen, ersetzen aber nicht den DMK.
 - Schlüssel, Passwörter, Recovery-Codes und vollständige Reset-Codes gehören
@@ -127,23 +126,19 @@ dupliziert diese Details nicht.
 
 ## 6. Backup und Restore
 
-Backup und Restore sind im Cipher-Produktmodus technisch gesperrt. Die
-vorhandenen UI-Aktionen zeigen `Noch nicht verfügbar.`; Restore-Worker,
-Resume, Schuljahreswechsel-Backup und Support-Reset-Backup dürfen ZIP-v1 nicht
-auf den Cipherbestand anwenden. Die vorbereitete `.jkmebackup`-Runtime und der
-verschlüsselte Restore-Stand werden erst in einem Folgepaket produktiv
-komponiert.
+Backup und Restore sind im Cipher-Produktmodus auf `.jkmebackup` aktiviert.
+Vor einem Handoff werden Container, Final V4, Companion und Dokumentgenerationen
+keyed geprüft; `RESTORE_READY`, Sicherheitsbackup, Worker-Handoff, Rollback und
+Restart bleiben zwingend. ZIP-v1 darf den Cipherbestand nie öffnen.
 
-Es gibt in diesem Paket keinen fachlichen Austausch, keine Konvertierung und
-keine Wiederaufnahme eines Restore-Vorgangs.
+Der Restore ist same-installation. Es gibt keinen fachlichen Austausch, keine
+Klartextkonvertierung und keinen Gerätewechselpfad.
 
 ### Grenzen
 
 > [!WARNUNG]
-> ZIP-v1 darf nicht auf den Cipherbestand angewendet werden. Ein
-> verschlüsselter Backupcontainer existiert als noch nicht produktiv
-> aktivierte Foundation. Vor einer Pilotübergabe ist deshalb ein separat
-> freigegebener Cipher-Backup-/Restorepfad erforderlich.
+> ZIP-v1 darf nicht auf den Cipherbestand angewendet werden. `.jkmebackup`
+> ersetzt weder DMK-Recovery noch einen Gerätewechselpfad; beide bleiben offen.
 
 ## 7. Bedrohungsmodell
 
@@ -153,7 +148,7 @@ Die aktivierte lokale Datenverschlüsselung verbessert insbesondere den Schutz
 gegen:
 
 - kopierte Datendateien;
-- kopierte Final-V3-, Companion- und Dokumentcontainerdateien;
+- kopierte Final-V4-, Companion- und Dokumentcontainerdateien;
 - verlorene Geräte;
 - manipulierte oder beschädigte Artefakte;
 - unvollständige oder widersprüchliche Cipher-Runtimezustände beim Startup.
@@ -218,8 +213,8 @@ Für 0.3.0 / Build 303 gilt:
 Folgende Arbeiten sind bewusst nicht Teil dieses Dokumentations- und
 Build-303-Vorbereitungsstands:
 
-- kontrollierte Produktmigration bestehender Fachdaten;
-- Pilotaktivierung und Abnahme der Verschlüsselung;
+- reale Pilot-, Bundle-, Keychain- und Restore-Abnahme der Verschlüsselung;
+- Gerätewechsel- und DMK-Recovery;
 - verständliche Recovery-Nutzerführung für verschlüsselte Bestände;
 - Windows- und DPAPI-Implementierung samt echter E2E-Abnahme;
 - Apple Developer ID, Notarisierung und die zugehörigen
@@ -227,9 +222,8 @@ Build-303-Vorbereitungsstands:
 - reale Power-Loss-Abnahme auf Zielhardware;
 - Freigabe eines öffentlichen Stable-Release.
 
-Bis zu diesen Nachweisen sind die Datenverschlüsselungsfoundations keine aktive
-Produktfunktion und der Stand ist nicht als vollständig sicher oder
-datenschutzrechtlich vollständig freigegeben zu verstehen.
+Bis zu diesen Nachweisen ist der committed Produktpfad nicht als gebautes,
+vollständig sicheres oder datenschutzrechtlich freigegebenes Artefakt zu verstehen.
 
 ### Bei Verdacht oder Datenverlust
 

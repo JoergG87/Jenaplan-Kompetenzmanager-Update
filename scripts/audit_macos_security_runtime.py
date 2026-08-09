@@ -8,6 +8,19 @@ import json
 from pathlib import Path
 import platform
 import subprocess
+import sys
+import tempfile
+
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.core.database_engine import (
+    SQLCIPHER_4_17_BINDING_VERSION,
+    SQLCIPHER_4_17_ENGINE_VERSION,
+    SQLCIPHER_4_17_SQLITE_VERSION,
+)
 
 
 EXPECTED_VERSIONS = {
@@ -16,7 +29,7 @@ EXPECTED_VERSIONS = {
     "PyNaCl": "1.6.2",
     "cryptography": "49.0.0",
     "cffi": "2.0.0",
-    "sqlcipher3": "0.6.2",
+    "sqlcipher3": SQLCIPHER_4_17_BINDING_VERSION,
     "pyinstaller": "6.21.0",
 }
 
@@ -37,15 +50,39 @@ def audit_environment() -> dict[str, object]:
     import shiboken6.Shiboken
     import sqlcipher3
 
-    connection = sqlcipher3.connect(":memory:")
-    try:
-        cipher_version = str(
-            connection.execute("PRAGMA cipher_version").fetchone()[0]
-        )
-    finally:
-        connection.close()
-    if cipher_version != "4.12.0 community":
+    with tempfile.TemporaryDirectory(prefix="jkm-macos-runtime-audit-") as temp_name:
+        database = Path(temp_name) / "runtime-audit.sqlcipher"
+        connection = sqlcipher3.connect(database)
+        try:
+            connection.execute("PRAGMA key = \"x'" + ("00" * 32) + "'\"")
+            connection.execute("CREATE TABLE audit(value TEXT NOT NULL)")
+            connection.execute("INSERT INTO audit VALUES ('synthetic')")
+            connection.commit()
+            cipher_version = str(
+                connection.execute("PRAGMA cipher_version").fetchone()[0]
+            )
+            sqlite_version = str(
+                connection.execute("SELECT sqlite_version()").fetchone()[0]
+            )
+            cipher_provider = str(
+                connection.execute("PRAGMA cipher_provider").fetchone()[0]
+            )
+            cipher_provider_version = str(
+                connection.execute("PRAGMA cipher_provider_version").fetchone()[0]
+            )
+            cipher_integrity = connection.execute(
+                "PRAGMA cipher_integrity_check"
+            ).fetchall()
+        finally:
+            connection.close()
+    if cipher_version != SQLCIPHER_4_17_ENGINE_VERSION:
         raise RuntimeError("Unerwartete SQLCipher-Laufzeit.")
+    if sqlite_version != SQLCIPHER_4_17_SQLITE_VERSION:
+        raise RuntimeError("Unerwartete gebündelte SQLite-Laufzeit.")
+    if cipher_provider != "commoncrypto" or not cipher_provider_version:
+        raise RuntimeError("SQLCipher verwendet nicht CommonCrypto.")
+    if cipher_integrity:
+        raise RuntimeError("SQLCipher-Integritätsprüfung ist fehlgeschlagen.")
 
     native_files = {
         "_cffi_backend": Path(_cffi_backend.__file__).resolve(),
@@ -63,6 +100,10 @@ def audit_environment() -> dict[str, object]:
     return {
         "architectures": architectures,
         "sqlcipher": cipher_version,
+        "sqlcipher_binding": observed["sqlcipher3"],
+        "sqlcipher_provider": cipher_provider,
+        "sqlcipher_provider_version": cipher_provider_version,
+        "sqlite": sqlite_version,
         "versions": observed,
     }
 

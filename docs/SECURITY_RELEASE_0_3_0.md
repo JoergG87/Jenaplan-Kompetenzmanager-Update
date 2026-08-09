@@ -28,8 +28,8 @@ Release- und Abnahmegrenze.
 | Signatur / Notarisierung | für einen internen Build ad-hoc signiert erwartet; nicht notarisiert |
 | Freigabe | kein Windows, kein öffentlicher Stable-Release, kein Stable-Appcast |
 | Datenübertragung | keine Cloud, keine KI-Einbindung |
-| Normaler Datenpfad | lokale SQLite-Fachdaten, verwaltete Dokumente/PDFs, ZIP-v1-Backup und Restore |
-| Bedienung | Authentifizierung, Keychain, optionales Touch ID, Sperre, Support-Reset, Dashboard, Stundenplan, Schüler-/Kursverwaltung, Beobachtungen, Cockpit, Berichte, LEG und PDF-Ausgaben |
+| Normaler Datenpfad | frische Final-V4-SQLCipher-Fachdaten, verschlüsselte Managed Documents/PDFs sowie `.jkmebackup` und same-installation Restore |
+| Bedienung | Authentifizierung, Keychain, optionales Touch ID, Sperre, Dashboard, Stundenplan, Schüler-/Kursverwaltung, Beobachtungen, Cockpit, Berichte, LEG und PDF-Ausgaben; Support-Reset im Cipher-Modus blockiert |
 | Restore | Vorschau und ausdrückliche Bestätigung, separater Worker, vollständiges App-Ende, kontrollierter Neustart; fehlender Worker belässt den aktiven Bestand unverändert |
 
 ## 3. Aktive Schutzgrenzen
@@ -37,33 +37,30 @@ Release- und Abnahmegrenze.
 - Das lokale Passwort, Recovery-Codes und der lokale Security Store schützen
   den Zugang zur App. Eine gespeicherte Geräteanmeldung liegt im macOS-
   Schlüsselbund; Touch ID ist optional und das Passwort bleibt Fallback.
-- Die App sperrt automatisch. Support-Reset ist ein lokal gebundener,
-  beaufsichtigter Ausnahmeweg und ersetzt weder den DMK noch Datenkeys.
-- ZIP-v1-Backups und ihre Restore-Vorschau werden geprüft. Ein Restore wird
-  erst nach erfolgreicher Prüfung und expliziter Bestätigung wirksam.
+- Die App sperrt automatisch. Support-Reset bleibt im Cipher-Modus blockiert.
+- `.jkmebackup` wird keyed geprüft und ist an Installation und DMK gebunden.
+  Ein Restore wird erst nach Staging, Prüfung und expliziter Bestätigung wirksam.
 - Lokale Datenroots und verwaltete Dateien bleiben getrennt vom App-Bundle.
   Freie Exportdateien und PDFs liegen außerhalb der App als Dateien vor und
   müssen organisatorisch geschützt weitergegeben werden.
 
-Diese Grenzen sind keine Aussage „DSGVO-konform“, keine Verschlüsselung aktiver
-Fachdaten und keine Garantie gegen Malware, Keylogger, Screenshots,
+Diese Grenzen sind keine Aussage „DSGVO-konform“ und keine Garantie gegen Malware,
+Keylogger, Screenshots,
 Speicheranalyse, hochprivilegierte lokale Angreifer oder sichere physische
 SSD-Löschung.
 
 ## 4. Verschlüsselungsstatus
 
-Security- und Verschlüsselungsfoundations sind implementiert und getestet:
-SQLCipher-Datenbankpfad, verschlüsselte Dokumentcontainer, verschlüsselter
-Backupcontainer, DMK-/Keyset-Trennung sowie Migrations- und Recoverygrenzen.
-Der Integrationspfad ist jedoch standardmäßig deaktiviert, nicht über die UI
-zugänglich und auf markierte synthetische Testroots beschränkt.
+Der committed Produktpfad aktiviert nach Authentifizierung für eine frische
+Installation SQLCipher 4.17/CommonCrypto, verschlüsselte Managed Documents,
+`.jkmebackup` und same-installation Restore. Ein neuer Build-, Paket- und
+Hardware-Nachweis bleibt davon getrennt.
 
 Für Build 303 gilt daher ausdrücklich:
 
 - keine automatische SQLCipher-Migration bestehender Fachdaten;
-- keine verschlüsselte Produkt-Dokumentablage;
-- kein verschlüsselter produktiver Backupcontainer;
-- kein Security-Integrationsgate für normale Datenroots;
+- verschlüsselte Produkt-Dokumentablage und `.jkmebackup`, aber keine
+  Portabilität bei Gerätewechsel oder DMK-Verlust;
 - keine automatische Produktmigration und kein physisches GC;
 - keine stille Aktivierung, keine Windows-/DPAPI-Freigabe.
 
@@ -93,8 +90,8 @@ Buildnachweis.
    Sleep/Wake und Restore-Worker ohne Restfenster.
 3. Developer ID, Apple-Notarisierung und eine getrennte Entscheidung über
    Update-/Appcast-Aktivierung.
-4. Kontrollierte Produktmigration und Pilotaktivierung der Verschlüsselung mit
-   verifizierbarem Backup, Rückfallweg und echter Nutzerführung.
+4. Reale Bundle-/Keychain-/Cipher-Backup-/Restore-Abnahme sowie Entscheidung
+   zu Gerätewechsel und DMK-Recovery; keine Klartextmigration.
 5. Windows/DPAPI und reale Power-Loss-Abnahme.
 
 Bis zu diesen Gates gilt: keine Übergabe, kein Tag, kein GitHub-Pre-Release,

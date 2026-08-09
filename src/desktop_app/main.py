@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import logging
 import os
-import secrets
 import sys
 import tempfile
 from dataclasses import replace
-from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Mapping
 
@@ -49,10 +48,11 @@ from src.version import APP_VERSION
 PACKAGED_SMOKE_MARKER_ENV = "JENAPLAN_PACKAGED_SMOKE_MARKER"
 PACKAGED_SMOKE_MARKER_VALUE = "isolated-v1"
 PACKAGED_SMOKE_TEMP_PREFIX = "jenaplan-packaged-smoke-"
-PACKAGED_SECURITY_INTEGRATION_ARGUMENT = (
-    "--packaged-security-integration-test"
-)
 PACKAGED_KEYCHAIN_SMOKE_ARGUMENT = "--packaged-keychain-smoke"
+PACKAGED_SMOKE_ARGUMENT = "--packaged-smoke-test"
+PACKAGED_CIPHER_SEED_ARGUMENT = "--packaged-cipher-seed"
+PACKAGED_CIPHER_SEED_VERIFY_ARGUMENT = "--packaged-cipher-seed-verify"
+PACKAGED_RUNTIME_AUDIT_ARGUMENT = "--packaged-runtime-audit"
 
 
 def _validated_packaged_smoke_data_root(
@@ -220,6 +220,9 @@ def _require_authenticated_cipher_context(
 def main() -> int:
     """Start the desktop app."""
     arguments = list(sys.argv)
+    if PACKAGED_RUNTIME_AUDIT_ARGUMENT in arguments:
+        arguments.remove(PACKAGED_RUNTIME_AUDIT_ARGUMENT)
+        return _run_packaged_runtime_audit()
     try:
         packaged_keychain_mode = _argument_value(
             arguments,
@@ -237,23 +240,33 @@ def main() -> int:
             packaged_keychain_mode,
             environ=os.environ,
         )
-    try:
-        packaged_security_mode = _argument_value(
-            arguments,
-            PACKAGED_SECURITY_INTEGRATION_ARGUMENT,
-        )
-    except RuntimeStorageError as error:
-        print(f"Security-Pakettest abgelehnt: {error}", file=sys.stderr)
-        return 2
-    if packaged_security_mode is not None:
-        from src.security.packaged_integration_smoke import (
-            run_packaged_security_integration_smoke,
-        )
+    for argument, verify_only in (
+        (PACKAGED_CIPHER_SEED_ARGUMENT, False),
+        (PACKAGED_CIPHER_SEED_VERIFY_ARGUMENT, True),
+    ):
+        try:
+            cipher_seed_root = _argument_value(arguments, argument)
+        except RuntimeStorageError as error:
+            print(f"Cipher-Testbestand abgelehnt: {error}", file=sys.stderr)
+            return 2
+        if cipher_seed_root is not None:
+            from scripts.seed_test_data import (
+                build_cipher_pilot_test_root,
+                verify_cipher_pilot_test_root,
+            )
 
-        return run_packaged_security_integration_smoke(
-            packaged_security_mode,
-            environ=os.environ,
-        )
+            try:
+                result = (
+                    verify_cipher_pilot_test_root(Path(cipher_seed_root))
+                    if verify_only
+                    else build_cipher_pilot_test_root(Path(cipher_seed_root))
+                )
+            except Exception as error:
+                code = str(getattr(error, "code", "cipher_pilot_seed_failed"))
+                print(f"Cipher-Testbestand blockiert: {code}", file=sys.stderr)
+                return 2
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True), flush=True)
+            return 0
     if "--restore-worker" in arguments:
         from src.desktop_app.restore_worker import (
             RESTORE_MODE_FINAL_V4_ENCRYPTED,
@@ -275,19 +288,18 @@ def main() -> int:
         worker_arguments.remove("--restore-worker")
         return run_restore_worker(worker_arguments)
 
-    packaged_smoke = "--packaged-smoke-test" in arguments
+    try:
+        packaged_smoke_mode = _argument_value(arguments, PACKAGED_SMOKE_ARGUMENT)
+    except RuntimeStorageError as error:
+        print(f"Packaged-App-Smoke abgelehnt: {error}", file=sys.stderr)
+        return 2
+    packaged_smoke = packaged_smoke_mode is not None
     if packaged_smoke:
-        arguments.remove("--packaged-smoke-test")
         try:
             smoke_data_root = _validated_packaged_smoke_data_root()
         except RuntimeStorageError as error:
             print(f"Packaged-App-Smoke abgelehnt: {error}", file=sys.stderr)
             return 2
-        print(
-            "Packaged-App-Smoke abgelehnt: cipher_backup_restore_not_available.",
-            file=sys.stderr,
-        )
-        return 2
     else:
         smoke_data_root = None
 
@@ -419,6 +431,8 @@ def main() -> int:
                 security_runtime.service,
                 security_runtime.repository,
                 security_decision,
+                mode=str(packaged_smoke_mode),
+                data_root=data_root,
             )
         else:
             try:
@@ -636,6 +650,11 @@ def main() -> int:
             app,
             window,
             paths,
+            mode=str(packaged_smoke_mode),
+            product_runtime=product_runtime,
+            security_runtime=security_runtime,
+            backup_application=encrypted_backup_application,
+            restore_application=encrypted_restore_application,
             login_authenticated=session is not None,
         )
         lock.release()
@@ -651,20 +670,28 @@ def _isolated_packaged_smoke_session(
     service,
     repository,
     decision,
+    *,
+    mode: str,
+    data_root: Path,
 ) -> InMemorySession:
     """Automate auth only after the caller proved double smoke isolation."""
     from src.security.domain import AuthenticationStatus
     from src.security.session import InMemorySession
     from src.security.startup import SecurityStartState
 
-    if decision.state is not SecurityStartState.FIRST_RUN:
+    if mode == "initialize" and decision.state is not SecurityStartState.FIRST_RUN:
         raise RuntimeStorageError(
             "Der isolierte Pakettest erwartet eine neue temporaere Sicherheitsablage."
         )
-    password = secrets.token_urlsafe(32)
-    prepared = service.prepare_local_account_enrollment(password)
-    if not service.confirm_local_account_enrollment(prepared.recovery_set_id):
-        raise RuntimeStorageError("Der isolierte Pakettest konnte Auth nicht aktivieren.")
+    if mode != "initialize" and decision.state is not SecurityStartState.LOGIN_REQUIRED:
+        raise RuntimeStorageError(
+            "Der isolierte Pakettest erwartet eine bestehende Sicherheitsablage."
+        )
+    password = _packaged_smoke_password(data_root)
+    if mode == "initialize":
+        prepared = service.prepare_local_account_enrollment(password)
+        if not service.confirm_local_account_enrollment(prepared.recovery_set_id):
+            raise RuntimeStorageError("Der isolierte Pakettest konnte Auth nicht aktivieren.")
     result = service.authenticate_password(password)
     password = ""
     if result.status is not AuthenticationStatus.AUTHENTICATED:
@@ -679,95 +706,38 @@ def _isolated_packaged_smoke_session(
     )
 
 
+def _packaged_smoke_password(data_root: Path) -> str:
+    digest = hashlib.sha256(
+        f"packaged-final-v4:{Path(data_root).name}".encode("utf-8")
+    ).hexdigest()
+    return f"synthetic-only-{digest}"
+
+
 def _run_packaged_smoke(
     app: QApplication,
     window: JenaplanDesktopApp,
     paths: RuntimePaths,
     *,
+    mode: str,
+    product_runtime,
+    security_runtime,
+    backup_application,
+    restore_application,
     login_authenticated: bool,
 ) -> int:
-    """Exercise packaged auth, shell, SQLite, document, backup and restore."""
-    from src.application.commands.backup import (
-        BackupApplicationService,
-        CreateBackupCommand,
-    )
+    """Exercise the frozen Final-V4 runtime without a broad UI automation."""
+    from src.application.commands.backup import CreateBackupCommand
     from src.application.commands.restore import (
-        PrepareRestoreStagingCommand,
-        RestoreApplicationService,
-        VerifyPreparedRestoreQuery,
+        CreateRestoreHandoffCommand,
         VerifyRestoreBackupQuery,
     )
-    from prototypes.pdf_engine.output_models import (
-        DocumentMetadata,
-        HeadingBlock,
-        ParagraphBlock,
-        ReportOutputModel,
-        ReportPage,
-    )
-    from prototypes.pdf_engine.renderer import PdfRenderer
+    from src.core.restore_runtime import RestoreJournal, restore_transaction_paths
+    from src.desktop_app.restore_worker import resolve_restore_worker_launch
+    from src.security.final_v4_live_restore import recover_interrupted_final_v4_restore
 
     window.show()
     app.processEvents()
-    pdf_path = paths.exports / "packaged-app-smoke.pdf"
-    model = ReportOutputModel(
-        metadata=DocumentMetadata(
-            document_title="Paket-Smoke-Test",
-            student_name="Fiktives Testkind",
-            group_name="Testgruppe",
-            period="Pilot",
-            teacher_name="Technischer Test",
-            school_name="Jenaplan",
-            created_on=date.today(),
-            header_text="Jenaplan-Kompetenzmanager",
-            footer_text="Technischer Pakettest",
-        ),
-        pages=(
-            ReportPage(
-                "Smoke",
-                (
-                    HeadingBlock("Paket-Smoke-Test"),
-                    ParagraphBlock("PDF-Laufzeit erfolgreich geladen."),
-                ),
-            ),
-        ),
-    )
-    PdfRenderer().render(model, pdf_path)
     build_info = load_build_info()
-    backup_result = BackupApplicationService().create(
-        CreateBackupCommand(
-            database_path=paths.database,
-            runtime_paths=paths,
-            target_path=paths.backups,
-            app_version=APP_VERSION,
-            build_commit=str(build_info.get("git_commit", "unknown")),
-            source_tree_state=(
-                str(build_info["source_tree_state"])
-                if build_info.get("source_tree_state") is not None
-                else None
-            ),
-        )
-    )
-    restore_service = RestoreApplicationService()
-    restore_verification = restore_service.verify(
-        VerifyRestoreBackupQuery(backup_result.path)
-    )
-    restore_staging = restore_service.prepare_staging(
-        PrepareRestoreStagingCommand(
-            backup_result.path,
-            paths,
-            "RST-PACKAGED-SMOKE",
-        )
-    )
-    prepared_restore = restore_service.verify_prepared(
-        VerifyPreparedRestoreQuery(restore_staging.restore_id, paths)
-    )
-    document_probe = paths.documents / ".packaged-smoke-document-probe"
-    document_probe.write_bytes(b"synthetic packaged document probe\n")
-    document_access_verified = (
-        document_probe.read_bytes()
-        == b"synthetic packaged document probe\n"
-    )
-    document_probe.unlink()
     current_school_year = window.adapter.current_school_year()
     student_count = (
         len(window.adapter.list_students())
@@ -775,39 +745,165 @@ def _run_packaged_smoke(
         else 0
     )
     competency_count = len(window.curriculum_adapter.list_entries())
-    payload = {
+    compatibility = product_runtime.runtime.final_v4.compatibility
+    payload: dict[str, object] = {
         "app_version": APP_VERSION,
-        "backup_exists": backup_result.path.is_file(),
-        "backup_verified": backup_result.verification.path == backup_result.path,
         "build_info": build_info,
+        "cipher_provider": compatibility.cipher_provider,
+        "cipher_version": compatibility.cipher_version,
         "competency_count": competency_count,
+        "database_context_id": product_runtime.database_context_id,
+        "database_key_fingerprint_sha256": product_runtime.database_key_fingerprint_sha256,
         "data_root": str(paths.root),
-        "database_exists": paths.database.is_file(),
-        "document_access_verified": document_access_verified,
-        "document_probe_removed": not document_probe.exists(),
+        "dmk_fingerprint_sha256": product_runtime.dmk_fingerprint_sha256,
+        "final_v4": compatibility.sqlite_user_version,
+        "first_run": product_runtime.first_run,
         "login_authenticated": login_authenticated,
+        "mode": mode,
         "school_year_state": (
             "current" if current_school_year is not None else "missing"
         ),
-        "pdf_exists": pdf_path.is_file(),
-        "restore": {
-            "archive_verified": (
-                restore_verification.path == backup_result.path
-            ),
-            "prepared_status": prepared_restore.status,
-            "restore_id": prepared_restore.restore_id,
-        },
-        "security_integration_imported": any(
-            name == "src.security.integration_orchestrator"
-            or name.startswith("src.security.packaged_integration")
-            for name in sys.modules
+        "school_year": (
+            current_school_year.label if current_school_year is not None else ""
         ),
+        "sqlite_version": compatibility.sqlite_version,
         "student_count": student_count,
         "window_title": window.windowTitle(),
     }
+    if mode == "restore-worker":
+        backup_result = backup_application.create(
+            CreateBackupCommand(
+                database_path=paths.final_v4_database,
+                runtime_paths=paths,
+                target_path=paths.backups,
+                app_version=APP_VERSION,
+                build_commit=str(build_info.get("git_commit", "unknown")),
+                source_tree_state=(
+                    str(build_info["source_tree_state"])
+                    if build_info.get("source_tree_state") is not None
+                    else None
+                ),
+            )
+        )
+        restore = restore_application.verify(
+            VerifyRestoreBackupQuery(backup_result.path)
+        )
+        handoff = restore_application.create_handoff(
+            CreateRestoreHandoffCommand(
+                backup_result.path,
+                restore.restore_id,
+                paths,
+                APP_VERSION,
+                str(build_info.get("git_commit", "unknown")),
+                str(build_info.get("source_tree_state", "dirty")),
+            )
+        )
+        plan = resolve_restore_worker_launch(paths.root)
+        started = restore_application.launch_prepared_restore(handoff)
+        try:
+            state = RestoreJournal(
+                restore_transaction_paths(paths.root, restore.restore_id)
+            ).read()
+            if state.get("phase") != "worker_started":
+                raise RuntimeError("cipher_restore_worker_not_started")
+            payload["restore"] = {
+                "backup_suffix": backup_result.path.suffix,
+                "command_prefix": list(plan.command_prefix),
+                "ready_state": "RESTORE_READY",
+                "worker_phase": state.get("phase"),
+            }
+        finally:
+            if started.process.poll() is None:
+                started.process.terminate()
+            started.process.wait(timeout=5)
+            os.close(started.parent_lifetime_fd)
+        recovery = recover_interrupted_final_v4_restore(runtime_root=paths.root)
+        payload["restore"]["recovery"] = recovery.status
+    elif mode == "cleanup":
+        from src.security.data_keys import DataMasterKeyService
+        from src.security.infrastructure.data_keyset_repository import (
+            SQLiteDataKeysetRepository,
+        )
+        from src.security.infrastructure.data_master_key_store import (
+            build_platform_data_master_key_store,
+        )
+        from src.security.infrastructure.system import (
+            PlatformFilePermissionManager,
+            SystemRandomSource,
+        )
+
+        repository = SQLiteDataKeysetRepository(
+            paths.keyset_metadata,
+            PlatformFilePermissionManager(),
+        )
+        repository.initialize()
+        deleted = DataMasterKeyService(
+            repository=repository,
+            key_store=build_platform_data_master_key_store(),
+            random_source=SystemRandomSource(),
+            account_loader=security_runtime.repository.load_account,
+        ).delete()
+        if not deleted or repository.active_data_keyset() is not None:
+            raise RuntimeStorageError("Final-V4-Pakettest-Keychain-Cleanup fehlgeschlagen.")
+        payload["keychain_cleanup"] = "ok"
+    elif mode not in {"initialize", "restart"}:
+        raise RuntimeStorageError("Unbekannter Final-V4-Pakettestmodus.")
     window.close()
     app.processEvents()
     payload["regular_exit_completed"] = not window.isVisible()
+    print(json.dumps(payload, ensure_ascii=False, sort_keys=True), flush=True)
+    return 0
+
+
+def _run_packaged_runtime_audit() -> int:
+    """Report exact native database versions from the frozen bundle only."""
+    from importlib import metadata
+
+    from src.core.database_engine import (
+        SQLCIPHER_4_17_BINDING_VERSION,
+        SQLCIPHER_4_17_ENGINE_VERSION,
+        SQLCIPHER_4_17_SQLITE_VERSION,
+    )
+
+    if not getattr(sys, "frozen", False):
+        print("Packaged-Runtime-Audit benötigt ein App-Bundle.", file=sys.stderr)
+        return 2
+    import sqlcipher3
+
+    with tempfile.TemporaryDirectory(prefix="jkm-packaged-runtime-audit-") as temp:
+        database = Path(temp) / "audit.sqlcipher"
+        connection = sqlcipher3.connect(database)
+        try:
+            connection.execute("PRAGMA key = \"x'" + ("00" * 32) + "'\"")
+            connection.execute("CREATE TABLE audit(value TEXT NOT NULL)")
+            connection.execute("INSERT INTO audit VALUES ('synthetic')")
+            connection.commit()
+            payload = {
+                "binding": metadata.version("sqlcipher3"),
+                "cipher_provider": str(
+                    connection.execute("PRAGMA cipher_provider").fetchone()[0]
+                ),
+                "cipher_version": str(
+                    connection.execute("PRAGMA cipher_version").fetchone()[0]
+                ),
+                "integrity": connection.execute(
+                    "PRAGMA cipher_integrity_check"
+                ).fetchall(),
+                "sqlite_version": str(
+                    connection.execute("SELECT sqlite_version()").fetchone()[0]
+                ),
+            }
+        finally:
+            connection.close()
+    if payload != {
+        "binding": SQLCIPHER_4_17_BINDING_VERSION,
+        "cipher_provider": "commoncrypto",
+        "cipher_version": SQLCIPHER_4_17_ENGINE_VERSION,
+        "integrity": [],
+        "sqlite_version": SQLCIPHER_4_17_SQLITE_VERSION,
+    }:
+        print("Packaged-Runtime-Audit meldet eine unerwartete Runtime.", file=sys.stderr)
+        return 2
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True), flush=True)
     return 0
 

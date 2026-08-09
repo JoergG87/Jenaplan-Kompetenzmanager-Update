@@ -27,14 +27,14 @@ Beobachtungen, Testdaten oder Backups automatisch an.
 > [!SICHERHEIT]
 > - Die App sperrt nach der gewählten Inaktivitätszeit und nach dem Ruhezustand.
 > - Touch ID ist optional; das Passwort bleibt der Fallback.
-> - App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.
->   Verwenden Sie ein geschütztes macOS-Benutzerkonto und FileVault nach
->   Schulvorgabe.
-> - Support-Reset ist ein lokaler, betreuter Ausnahmeweg, wenn weder Passwort
->   noch Recovery-Codes verfügbar sind.
-> - ZIP-v1-Backups liegen lokal. Vor Update oder Gerätewechsel zusätzlich ein
->   geprüftes externes Backup vorhalten.
-> - Der spätere interne Build ist ad-hoc signiert und nicht notarisiert; es gibt
+> - App-Sperre und Verschlüsselung sind getrennte Schutzschichten. Final-V4-
+>   Datenbank, verwaltete Dokumente und `.jkmebackup` werden separat verschlüsselt;
+>   ein geschütztes macOS-Benutzerkonto und FileVault bleiben erforderlich.
+> - Support-Reset ist im Cipher-Modus kontrolliert blockiert.
+> - `.jkmebackup` ist installationsgebunden. DMK-Verlust oder Gerätewechsel sind
+>   damit nicht gelöst.
+> - Ein späterer interner Build ist ohne abweichenden Artefaktnachweis höchstens
+>   ad-hoc signiert und nicht notarisiert; es gibt
 >   keine automatische Update- oder Appcast-Aktion.
 
 Für den vollständigen Ablauf zu Bericht, LEG, Restore und Sicherheit das
