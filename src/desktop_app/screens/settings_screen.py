@@ -120,6 +120,7 @@ class SettingsScreen(QWidget):
         self.timetable_add_button.clicked.connect(self._emit_timetable_add)
         self.current_page = "overview"
         self.operation_active = False
+        self.backup_restore_available = True
         self.restore_preview: RestorePreviewViewModel | None = None
         self.detail_back_buttons: dict[str, QPushButton] = {}
         self._school_year_signature: tuple[str, date, date] | None = None
@@ -260,6 +261,21 @@ class SettingsScreen(QWidget):
         self.operation_progress.setVisible(active)
         for button in self.detail_back_buttons.values():
             button.setDisabled(active)
+        self._update_backup_restore_actions()
+
+    def set_backup_restore_available(self, available: bool) -> None:
+        """Disable the existing ZIP-v1 controls in Cipher product mode."""
+        self.backup_restore_available = bool(available)
+        if not self.backup_restore_available:
+            message = (
+                "Datensicherung und Wiederherstellung sind in diesem "
+                "Pilotstand noch nicht verfügbar."
+            )
+            self.backup_message.set_message(message, tone="info")
+            self.restore_message.set_message(message, tone="info")
+            self.settings_cards["backup_restore"].status.setText(
+                "Noch nicht verfügbar"
+            )
         self._update_backup_restore_actions()
 
     def show_close_blocked(self) -> None:
@@ -784,15 +800,18 @@ class SettingsScreen(QWidget):
         return card
 
     def _update_backup_restore_actions(self) -> None:
-        self.backup_create_button.setDisabled(self.operation_active)
-        self.backup_verify_button.setDisabled(self.operation_active)
-        self.restore_prepare_button.setDisabled(self.operation_active)
+        disabled = self.operation_active or not self.backup_restore_available
+        self.backup_create_button.setDisabled(disabled)
+        self.backup_verify_button.setDisabled(disabled)
+        self.restore_prepare_button.setDisabled(disabled)
         restore_is_compatible = (
             self.restore_preview is not None
             and self.restore_preview.compatibility_status.lower() != "incompatible"
         )
         self.restore_start_button.setEnabled(
-            not self.operation_active and restore_is_compatible
+            self.backup_restore_available
+            and not self.operation_active
+            and restore_is_compatible
         )
 
     def _timetable_entry_card(self, entry: TimetableEntryViewModel) -> QFrame:

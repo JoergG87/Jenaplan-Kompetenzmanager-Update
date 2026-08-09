@@ -1,5 +1,23 @@
 # Data Registry
 
+## Cipher-Produktrollen und Datenquellen
+
+| Rolle / Quelle | Produktiver Pfad relativ zur Runtime-Root | Owner | Regel |
+|---|---|---|---|
+| Keyset-Metadaten | `security-key-runtime-v1/data-keysets.sqlite` | Database-Key Runtime | keine DMK und kein Database-Key-Material |
+| Database-Key-Envelope-Registry | `security-key-runtime-v1/database-key-envelopes-v1.json` | Database-Key Runtime | authentisierte Envelope-Metadaten; kein Klartextschlüssel |
+| Final-V3-Fachdatenbank | `final-v3-sqlcipher-runtime-v1/final-v3.sqlcipher` | Final-V3 SQLCipher Runtime | ausschließlich exakt SQLCipher 4.17 keyed |
+| Document-Companion | `final-v3-sqlcipher-runtime-v1/documents-v1.sqlcipher` | Final-V3 Document Runtime | derselbe Database-Key und Installation-/Database-Context wie Final-V3 |
+| verschlüsselter Dokumentstorage | `final-v3-sqlcipher-runtime-v1/document-containers-v1/` | `ManagedDocumentStore` | registrierte `.jkmedoc`-Container für Anhänge, allgemeine Dokumente sowie finale Bericht-/LEG-PDFs |
+| Backupbereich | `backups/` | Desktop Runtime | Rolle registriert; Cipher-Backup/-Restore produktiv noch gesperrt |
+
+`RuntimePaths.database` (`kompetenzmanager.sqlite`) und
+`RuntimePaths.documents` (`documents/`) sind nur die kanonischen
+Klartext-Altpfade zur fail-closed Erkennung. Sie sind im Cipher-Produktmodus
+keine Datenquelle. Vorhandene Inhalte werden nicht geöffnet oder verändert.
+DMK-Material liegt ausschließlich im macOS-Keychain und erscheint in keiner
+`RuntimePaths`-Rolle.
+
 ## V3-only Produktdatenquellen
 
 **Status:** Direkte Final-V3-Schemaquelle, synthetischer temporärer

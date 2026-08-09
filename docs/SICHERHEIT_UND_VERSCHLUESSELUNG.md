@@ -1,8 +1,8 @@
 # Sicherheit und Verschlüsselung
 
-Stand: 27. Juli 2026  
-Geltung: Produktversion 0.3.0, Build 303
-Status: Release-Vorbereitungsstand, kein GitHub-Pre-Release und kein Stable-Release
+Stand: 9. August 2026
+Geltung: neuer Cipher-Pilot-Quellstand; noch kein neu gebautes Produktartefakt
+Status: Technische Produktkomposition aktiviert, manuelle und paketierte Abnahme offen
 
 Dieses Dokument beschreibt den tatsächlich aktiven Schutzstand und die bewusst
 noch nicht aktivierte Verschlüsselungsintegration. Es ist keine
@@ -39,14 +39,18 @@ Im normalen Produktpfad sind folgende Schutzfunktionen aktiv:
 > - automatische App-Sperre nach Inaktivität oder Ruhezustand sowie
 >   Jetzt sperren;
 > - betreuter Support-Reset mit zeitlich begrenztem, installationsgebundenem
->   Code und vorherigem Sicherheitsbackup;
-> - geprüfter lokaler ZIP-v1-Backup- und Restorepfad;
+>   Code; sein bisheriges ZIP-v1-Sicherheitsbackup ist im Cipher-Modus bis zum
+>   Folgepaket gesperrt;
+> - exakt SQLCipher 4.17/CommonCrypto für die frische Final-V3-Datenbank und
+>   den Dokument-Companion;
+> - verschlüsselte Managed-Document-Container für Anhänge, allgemeine
+>   Schülerdokumente sowie finale Bericht-/LEG-PDFs;
 > - getrennte lokale Runtime-Bereiche, restriktive Dateirechte und kein
 >   Zugriff auf den fachlichen Bestand vor erfolgreicher Anmeldung.
 
-Die App-Sperre schützt die Oberfläche vor unbefugter Nutzung im laufenden
-Alltag. Sie ist ausdrücklich keine Verschlüsselung der fachlichen Datenbank,
-verwalteter Dokumente oder ZIP-v1-Backups.
+Die App-Sperre schützt zusätzlich die Oberfläche vor unbefugter Nutzung im
+laufenden Alltag. Sie ersetzt nicht die separate Datenverschlüsselung. Backup
+und Restore sind im Cipher-Produktmodus derzeit keine freigegebene Funktion.
 
 ### Signierung und Updates
 
@@ -60,12 +64,12 @@ normalen Produktbetrieb behauptet.
 
 Die App hält ihre Daten lokal und getrennt vom App-Bundle:
 
-- Die fachliche SQLite-Datenbank enthält den fachlichen Bestand.
-- Verwaltete Dokumente und finale Bericht- und LEG-PDFs liegen im lokalen
-  App-Datenbereich.
+- Die fachliche Final-V3-SQLCipher-Datenbank enthält den fachlichen Bestand.
+- Ein keyed SQLCipher-Companion registriert verschlüsselte
+  Managed-Document-Container im lokalen App-Datenbereich.
 - Ein separater Security Store enthält Anmelde- und Security-Metadaten.
-- Lokale Backups werden bewusst an einem von der Lehrkraft gewählten,
-  schulisch freigegebenen Ort angelegt.
+- Der lokale Backupbereich ist registriert; Cipher-Backup/-Restore ist bis zum
+  Folgepaket technisch deaktiviert.
 - Frei exportierte Entwurfs-PDFs und andere bewusst abgelegte Ausgaben liegen
   außerhalb der App und müssen wie vertrauliche Schulunterlagen behandelt
   werden.
@@ -77,32 +81,25 @@ Installationsanleitung verwalten.
 
 ## 4. Verschlüsselungsstatus
 
-Die Security- und Verschlüsselungsfoundations sind implementiert und getestet.
-Dazu gehören SQLCipher für eine Datenbank, verschlüsselte
-Dokumentcontainer, ein verschlüsselter Backupcontainer sowie kontrollierte
-Migrations- und Recoverykonzepte.
-
-Diese Foundations sind im Produktstand 0.3.0 jedoch **nicht** standardmäßig
-aktiv:
+Die Security- und Verschlüsselungsfoundations sind implementiert. Der normale
+neue Pilotstart aktiviert davon nach erfolgreicher Authentifizierung die
+frische Final-V3-SQLCipher-Runtime, den keyed Companion und verschlüsselte
+Dokumentcontainer:
 
 > [!HINWEIS]
-> - Der normale Pfad verwendet weiterhin SQLite, die bestehende lokale
->   Dokumentablage und ZIP-v1-Backups.
-> - Das Security-Integrationsgate ist standardmäßig aus und besitzt keine
->   Nutzeroberfläche.
-> - Es akzeptiert ausschließlich besonders markierte technische Testroots, nicht
->   normale Datenroots, Pilotbestände oder Produktdaten.
+> - Verbindlich sind Binding `0.6.2+jkm.sqlcipher4170.1`, SQLCipher
+>   `4.17.0 community`, SQLite `3.53.3` und CommonCrypto.
+> - Eine andere oder fehlende Engine sowie Standard-SQLite blockieren den
+>   Start fail-closed.
 > - Bestehende Pilot- und Produktdaten werden nicht automatisch zu SQLCipher
 >   migriert.
-> - Dokumente und produktive Backups werden nicht still in verschlüsselte
+> - Bestehende Klartextdokumente werden nicht still in verschlüsselte
 >   Container überführt.
-> - Eine aktive Produktdatenverschlüsselung wird weder behauptet noch
->   automatisch aktiviert.
+> - Cipher-Backup/-Restore und der alte ZIP-v1-Pfad bleiben produktiv
+>   gesperrt.
 
-Die vorhandenen Container und der Migrationscode sind damit ein getesteter
-Vorbereitungsstand, keine Nutzerfunktion. Kontrollierte Produktmigration,
-Pilotaktivierung der Verschlüsselung und eine verständliche
-Recovery-Nutzerführung bleiben offene, gesondert freizugebende Schritte.
+Es gibt absichtlich keine Produktmigration. Reale Keychain-, UI-, Build- und
+Paketabnahme sowie Cipher-Backup/-Restore bleiben gesonderte Freigabegates.
 
 ## 5. Schlüsselarchitektur in verständlicher Form
 
@@ -111,10 +108,11 @@ unterschiedliche Aufgaben.
 
 - Das lokale Passwort authentifiziert die Lehrkraft; es ist nicht der
   Datenbankschlüssel.
-- Ein Plattform-Credential im macOS-Schlüsselbund schützt in der vorbereiteten
-  Architektur den Data Master Key (DMK).
-- Von diesem DMK abgeleitete, getrennte Schlüssel sind für Datenbank,
-  Dokumente und Backups vorgesehen.
+- Der Data Master Key (DMK) liegt als separates Secret im macOS-Schlüsselbund.
+- Ein zufälliger Database-Key liegt nur in einem mit dem DMK authentisierten
+  Envelope und öffnet Haupt- sowie Companion-Datenbank.
+- Dokumente erhalten getrennte zufällige Document-Keys; die vorbereitete
+  Backup-Key-Domäne ist noch nicht produktiv aktiviert.
 - Passwortwechsel und Support-Reset ändern das Passwort und die
   Anmeldeinformationen, ersetzen aber nicht den DMK.
 - Schlüssel, Passwörter, Recovery-Codes und vollständige Reset-Codes gehören
@@ -129,55 +127,40 @@ dupliziert diese Details nicht.
 
 ## 6. Backup und Restore
 
-Der produktive Backup- und Restorepfad verwendet ZIP-v1.
+Backup und Restore sind im Cipher-Produktmodus technisch gesperrt. Die
+vorhandenen UI-Aktionen zeigen `Noch nicht verfügbar.`; Restore-Worker,
+Resume, Schuljahreswechsel-Backup und Support-Reset-Backup dürfen ZIP-v1 nicht
+auf den Cipherbestand anwenden. Die vorbereitete `.jkmebackup`-Runtime und der
+verschlüsselte Restore-Stand werden erst in einem Folgepaket produktiv
+komponiert.
 
-### Backup
-
-Ein Backup wird bewusst ausgelöst, erstellt einen kontrollierten Snapshot und
-wird geprüft. Der Status zeigt, ob eine Sicherung bestätigt werden konnte.
-Ein Backup enthält den fachlichen Bestand und die registrierten verwalteten
-Dateien, aber keine Passwörter, Recovery-Codes, gespeicherte Anmeldung,
-Touch-ID-Einstellung oder Security-Metadaten.
-
-### Restore
-
-Eine Wiederherstellung beginnt mit einer Prüfung und einer datensparsamen
-Vorschau. Erst nach einer klaren Bestätigung wird Restore-Staging vorbereitet
-und nochmals geprüft. Vor dem fachlichen Austausch erzeugt der Ablauf ein
-Sicherheitsbackup.
-
-Ein separater Restore-Worker übernimmt danach den kontrollierten Austausch. Die
-App beendet sich vollständig und startet kontrolliert neu. Anschließend ist eine
-erneute Anmeldung erforderlich. Scheitert die sichere Auflösung oder der Start
-des Workers, bleibt der bisherige aktive Bestand unverändert und die App zeigt
-eine Fehlermeldung an.
+Es gibt in diesem Paket keinen fachlichen Austausch, keine Konvertierung und
+keine Wiederaufnahme eines Restore-Vorgangs.
 
 ### Grenzen
 
 > [!WARNUNG]
-> ZIP-v1 ist lokal und nicht als verschlüsselter Backupcontainer deklariert.
-> Ein verschlüsseltes Backup-v2 existiert nur als nicht aktivierte Foundation.
-> Schulen sollen daher zusätzlich externe, schulisch geregelte Sicherungen
-> vorhalten - insbesondere vor Updates, Migrationen, Gerätewechseln oder
-> Supportmaßnahmen.
+> ZIP-v1 darf nicht auf den Cipherbestand angewendet werden. Ein
+> verschlüsselter Backupcontainer existiert als noch nicht produktiv
+> aktivierte Foundation. Vor einer Pilotübergabe ist deshalb ein separat
+> freigegebener Cipher-Backup-/Restorepfad erforderlich.
 
 ## 7. Bedrohungsmodell
 
-### Gegen welche Risiken dieser Stand vorbereitet ist
+### Gegen welche Risiken dieser Stand schützt
 
-Mit einer später kontrolliert aktivierten Verschlüsselung soll insbesondere
-besser geschützt werden gegen:
+Die aktivierte lokale Datenverschlüsselung verbessert insbesondere den Schutz
+gegen:
 
 - kopierte Datendateien;
-- kopierte Backups;
+- kopierte Final-V3-, Companion- und Dokumentcontainerdateien;
 - verlorene Geräte;
 - manipulierte oder beschädigte Artefakte;
-- unterbrochene Migrationen und Wiederherstellungen.
+- unvollständige oder widersprüchliche Cipher-Runtimezustände beim Startup.
 
-Heute helfen Passwort, App-Sperre, Schlüsselbund, Touch ID, lokale
-Dateirechte, Backupprüfung, Prüfsummen und kontrollierte Restore-Schritte
-gegen Fehlbedienung und gegen einen Teil der unbefugten Nutzung am regulären
-Arbeitsplatz. Sie sind kein Ersatz für aktive Datenverschlüsselung.
+Passwort, App-Sperre, Schlüsselbund, Touch ID und lokale Dateirechte ergänzen
+diesen Schutz. Backup, Restore, Gerätewechsel und DMK-Recovery sind dadurch
+nicht gelöst.
 
 ### Was nicht vollständig abgedeckt ist
 

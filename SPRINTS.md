@@ -1,5 +1,27 @@
 # Sprintplanung
 
+## Cipher-Produktkomposition - frische Final-V3-Installation
+
+**Status:** Normaler Produktstart lokal aktiviert; fokussiertes technisches
+Gate grün. Manuelle macOS-/UI-Abnahme, Build, Packaging und Release bleiben
+offen.
+
+- [x] Erfolgreiche Authentifizierung vor jeder Cipher-Produktkomposition
+  verlangen.
+- [x] DMK, Database-Key-Envelope, Hauptdatenbank, Companion und Dokumentstore
+  in genau einer SQLCipher-4.17-Composition Root öffnen.
+- [x] Frisches Final-V3 direkt verschlüsselt erzeugen und ausschließlich
+  `2026/27` als First-Run-Schuljahr anlegen.
+- [x] Schüler, Gruppen, Kurse, Assignments, Beobachtungen und Testdaten beim
+  First Run leer lassen.
+- [x] Restart ohne stille Neuerzeugung vollständig keyed prüfen.
+- [x] Klartextbestand unverändert und strukturiert fail-closed ablehnen.
+- [x] ZIP-v1-Backup und -Restore im Cipher-Produktmodus technisch sperren.
+- [x] Beobachtungen sowie bestehende verschlüsselte Dokument- und finale
+  PDF-Wege über dieselbe produktive Runtime verifizieren.
+- [ ] Manuelles UI-Gate auf macOS durch Product Owner.
+- [ ] Cipher-Backup/-Restore-Produktaktivierung im Folgepaket.
+
 ## Verschlüsseltes Backup - Final-V3-Cipher-Pilot
 
 **Status:** Technischer Gate-On-Pfad für `.jkmebackup` und verifiziertes

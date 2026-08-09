@@ -37,15 +37,18 @@ verwalteten App-Bereich. Dieser enthält die fachliche SQLite-Datenbank,
 verwaltete Dokumente, erzeugte Ausgaben, lokale Backups, Einstellungen und
 Security-Store. Absolute Entwicklerpfade gehören nicht in Übergabeunterlagen.
 
-Der normale Produktpfad verwendet lokale SQLite-Daten, verwaltete Klartext-
-Dokumente/PDFs sowie ZIP-v1-Backup und Restore. Ein Restore prüft die
-Sicherung, zeigt eine Vorschau, verlangt Bestätigung, startet einen separaten
-Worker und beendet die App vor dem kontrollierten Neustart vollständig.
+Der neue Pilot-Produktpfad verwendet nach erfolgreicher Authentifizierung eine
+frisch angelegte Final-V3-Datenbank und einen Dokument-Companion mit exakt
+SQLCipher 4.17/CommonCrypto. Verwaltete Anhänge, allgemeine Dokumente und
+finale Bericht-/LEG-PDFs werden als verschlüsselte `.jkmedoc`-Container
+gespeichert. DMK-Material bleibt im macOS-Keychain; der Database-Key liegt nur
+in seinem authentisierten Envelope.
 
-Die App-Sperre, Keychain und optionales Touch ID schützen den Zugang zur App;
-sie sind keine Behauptung einer aktiven Verschlüsselung der Fachdaten,
-Dokumente oder ZIP-v1-Backups. Die Details stehen in
-`SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
+Klartextbestände werden nicht migriert oder geöffnet. ZIP-v1-Backup und
+Restore sind im Cipher-Produktmodus bis zum Folgepaket deaktiviert. Diese
+Unterlage dokumentiert noch keinen neuen Buildnachweis; ein künftiges Bundle
+muss die exakte Cipher-Abhängigkeit und den realen Keychain-/UI-Start separat
+belegen. Die Details stehen in `SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
 
 ## Reproduzierbarer späterer Build
 
@@ -72,7 +75,7 @@ dem Clean-Build in erzeugten Unterlagen erscheinen.
 
 - keine Appcast-Aktualisierung oder automatische Updatefreigabe;
 - keine Developer ID, Notarisierung oder Stapling;
-- keine Produktmigration oder Verschlüsselungsaktivierung;
+- keine Produktmigration, Backup-/Restore-Aktivierung oder Buildfreigabe;
 - keine Windows-/DPAPI-Abnahme;
 - keine reale Touch-ID-, Sleep/Wake- oder Power-Loss-Abnahme;
 - keine Testdaten, Pilotdatenbanken oder persönlichen Daten im Bundle.

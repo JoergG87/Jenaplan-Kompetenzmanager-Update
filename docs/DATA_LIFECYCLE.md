@@ -1,5 +1,37 @@
 # Data Lifecycle
 
+## Normaler Cipher-Produktstart
+
+Der Produktstart folgt nach erfolgreicher lokaler Authentifizierung genau
+diesem Lifecycle:
+
+1. Session, Installation, Benutzer und Security-Epoch werden vor jedem
+   Cipher-Write gegeneinander geprüft.
+2. Die kanonischen Klartext-Altpfade und der vollständige Cipher-Artefaktstand
+   werden klassifiziert. Klartext, Teilzustand oder unsichere Pfade stoppen
+   unverändert und ohne Schlüsselprovisionierung.
+3. Binding `0.6.2+jkm.sqlcipher4170.1`, SQLCipher `4.17.0 community`, SQLite
+   `3.53.3`, CommonCrypto und aktive Verschlüsselung werden ohne
+   Standard-SQLite-Fallback geprüft.
+4. Genau eine `DatabaseKeyRuntime` provisioniert beziehungsweise lädt DMK,
+   Keyset und authentisiertes Database-Key-Envelope.
+5. Hauptdatenbank und Companion werden mit demselben geladenen Database-Key,
+   Provider sowie Installation-/Database-Context geöffnet und vollständig
+   keyed verifiziert; danach wird der Managed Document Store geprüft.
+6. Nur beim echten leeren fachlichen First Run wird `2026/27` als aktuelles
+   Schuljahr angelegt. Schüler, Gruppen, Kurse, Assignments, Beobachtungen und
+   Testdaten bleiben leer.
+7. Beim Restart müssen Schlüsselartefakte, Hauptdatenbank, Companion,
+   Dokumentstore und ein widerspruchsfreier abgeschlossener fachlicher First
+   Run vorhanden sein. Fehlendes wird nicht neu erzeugt oder repariert.
+8. Erst danach erhalten Repositorys, Desktop Adapter und Shell dieselbe keyed
+   Runtime.
+
+Die vorhandenen ZIP-v1-Backup-/Restore-, Restore-Worker-, Resume- und
+Schuljahreswechsel-Backup-Einstiege sind im Cipher-Produktmodus blockiert.
+Es gibt in diesem Lifecycle keine Klartextmigration, keinen Restore, keinen
+V2-/ZIP-v1-Import und keine Alt-Testdatenübernahme.
+
 ## V3-only Datenbankinitialisierung
 
 **Status:** V3-only-Schema-, Startup-, Compatibility-, Backup-/Restore-,

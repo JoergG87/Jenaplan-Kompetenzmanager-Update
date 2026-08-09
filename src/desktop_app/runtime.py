@@ -64,6 +64,69 @@ class RuntimePaths:
         """Return the general local app-preferences path outside Security."""
         return self.root / APP_PREFERENCES_FILENAME
 
+    @property
+    def key_runtime_metadata(self) -> Path:
+        """Return the non-secret DMK/Database-Key metadata directory."""
+        from src.security.database_key_runtime import (
+            DMK_DATABASE_KEY_RUNTIME_METADATA_DIRECTORY,
+        )
+
+        return self.root / DMK_DATABASE_KEY_RUNTIME_METADATA_DIRECTORY
+
+    @property
+    def keyset_metadata(self) -> Path:
+        """Return the non-secret keyset metadata database path."""
+        from src.security.database_key_runtime import (
+            DMK_DATABASE_KEY_RUNTIME_KEYSET_FILENAME,
+        )
+
+        return self.key_runtime_metadata / DMK_DATABASE_KEY_RUNTIME_KEYSET_FILENAME
+
+    @property
+    def database_key_envelope_registry(self) -> Path:
+        """Return the authenticated Database-Key envelope registry path."""
+        from src.security.infrastructure.database_key_envelope_repository import (
+            DATABASE_KEY_ENVELOPE_REGISTRY_FILENAME,
+        )
+
+        return self.key_runtime_metadata / DATABASE_KEY_ENVELOPE_REGISTRY_FILENAME
+
+    @property
+    def final_v3_runtime(self) -> Path:
+        """Return the productive encrypted Final-V3 runtime directory."""
+        from src.security.final_v3_sqlcipher_runtime import (
+            FINAL_V3_SQLCIPHER_RUNTIME_DIRECTORY,
+        )
+
+        return self.root / FINAL_V3_SQLCIPHER_RUNTIME_DIRECTORY
+
+    @property
+    def final_v3_database(self) -> Path:
+        """Return the productive Final-V3 SQLCipher database path."""
+        from src.security.final_v3_sqlcipher_runtime import (
+            FINAL_V3_SQLCIPHER_DATABASE_FILENAME,
+        )
+
+        return self.final_v3_runtime / FINAL_V3_SQLCIPHER_DATABASE_FILENAME
+
+    @property
+    def document_companion_database(self) -> Path:
+        """Return the keyed managed-document companion database path."""
+        from src.security.final_v3_document_runtime import (
+            FINAL_V3_DOCUMENT_DATABASE_FILENAME,
+        )
+
+        return self.final_v3_runtime / FINAL_V3_DOCUMENT_DATABASE_FILENAME
+
+    @property
+    def encrypted_document_storage(self) -> Path:
+        """Return the managed encrypted document-container storage path."""
+        from src.security.final_v3_document_runtime import (
+            FINAL_V3_DOCUMENT_CONTAINER_DIRECTORY,
+        )
+
+        return self.final_v3_runtime / FINAL_V3_DOCUMENT_CONTAINER_DIRECTORY
+
 
 def is_packaged_app() -> bool:
     """Return whether Python is running from a frozen application bundle."""
@@ -136,6 +199,25 @@ def prepare_runtime_storage(
             paths.backups,
             paths.logs,
         ):
+            directory.mkdir(parents=True, exist_ok=True)
+            _assert_directory(directory)
+        _verify_writable(paths.root)
+    except RuntimeStorageError:
+        raise
+    except OSError as error:
+        raise RuntimeStorageError(
+            f"Der lokale Datenordner konnte nicht vorbereitet werden: {paths.root}"
+        ) from error
+    return paths
+
+
+def prepare_cipher_runtime_storage(*, data_root: Path | None = None) -> RuntimePaths:
+    """Prepare only non-secret product directories beside the Cipher runtime."""
+    paths = runtime_paths(data_root)
+    try:
+        paths.root.mkdir(parents=True, exist_ok=True)
+        _assert_directory(paths.root)
+        for directory in (paths.exports, paths.backups, paths.logs):
             directory.mkdir(parents=True, exist_ok=True)
             _assert_directory(directory)
         _verify_writable(paths.root)

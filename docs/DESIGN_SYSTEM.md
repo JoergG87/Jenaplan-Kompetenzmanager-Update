@@ -1,5 +1,19 @@
 # Design-System
 
+## Cipher-Produktmodus
+
+Die Aktivierung verwendet ausschließlich vorhandene Oberflächen. Nach der
+Authentifizierung öffnet die App normal; Schlüssel-, Envelope-, Pfad- und
+Engineinformationen bleiben technisch und unsichtbar. Ein Startupfehler wird
+ruhig und sanitisiert dargestellt und bietet keine Migration, automatische
+Reparatur oder Klartextübernahme an.
+
+Backup und Restore sind in diesem Pilotstand keine verfügbare Produktaktion.
+Die vorhandenen Bedienelemente bleiben deaktiviert und verwenden die kurze
+Statusformulierung `Noch nicht verfügbar.`. Der frühere geführte
+Testdaten-Restore wird im Cipher-Produktmodus nicht angeboten. Diese Sperre
+ist eine Verfügbarkeitsprojektion bestehender UI und keine neue Ansicht.
+
 ## SJ-1 - UX-Vertrag für den Schuljahresassistenten
 
 **Status:** Verbindlicher Zielvertrag. SJ-3B.1 setzt die isolierte Vorschau

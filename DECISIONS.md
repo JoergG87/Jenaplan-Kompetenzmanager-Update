@@ -1,5 +1,50 @@
 # Architekturentscheidungen
 
+## ADR-101 - Frische verschlüsselte Final-V3-Installation ist der Pilot-Produktpfad
+
+**Status:** Angenommen und für den normalen Produktstart aktiviert. Build,
+Release und produktives Backup/Restore sind nicht Bestandteil dieser
+Entscheidung.
+
+### Entscheidung
+
+Nach erfolgreicher lokaler Authentifizierung öffnet genau eine Qt-freie
+Produktkomposition den Pilotbestand in dieser Reihenfolge: produktive
+`RuntimePaths`, `DataMasterKeyService`, `DatabaseKeyRuntime`, exakter
+SQLCipher-4.17-Provider, direkt erzeugtes Final-V3, keyed
+Dokument-Companion, verschlüsselter Managed-Document-Storage und anschließend
+dieselbe injizierte `SQLiteDatabase`/`ManagedDocumentStore`-Instanz in
+`StudentDesktopAdapter` und `AppShell`. Widgets, ViewModels und Adapter dürfen
+keinen zweiten ungekeyten Provider erzeugen.
+
+Unterstützt werden ausschließlich ein nachweislich frischer First Run und der
+vollständige Restart genau dieser Installation. Der First Run provisioniert
+den DMK im macOS-Keychain und einen unabhängigen Database-Key im
+authentisierten Envelope, erzeugt beide Datenbanken direkt verschlüsselt und
+legt nach vollständiger keyed Prüfung genau das aktuelle Schuljahr `2026/27`
+an. Schüler, Gruppen, Kurse, Zuordnungen, Beobachtungen und synthetische
+Testdaten bleiben leer; nur der bestehende offizielle Kompetenzkatalog wird
+über seinen regulären Produktadapter geladen.
+
+Restart lädt vorhandenen DMK und Envelope und öffnet Haupt- und Companion-DB
+mit `create=False`. Fehlender DMK, fehlendes oder beschädigtes Envelope,
+fehlende Datenbank, partielle Runtime, falscher Key, Klartextheader,
+Recovery-Sidecar, abweichende Contexts, SQLCipher 4.12, Standard-SQLite oder
+eine andere Engine-/Binding-/SQLite-/Provider-Version blockieren ohne
+Neuerzeugung, Reparatur, Rename, Löschung oder Fallback. Verbindlich sind
+`sqlcipher3 0.6.2+jkm.sqlcipher4170.1`, SQLCipher `4.17.0 community`, SQLite
+`3.53.3` und CommonCrypto.
+
+Es gibt keine SQLite→SQLCipher-, Klartextanhang-, V2-, ZIP-v1-,
+Legacy-Enrollment- oder Testdatenmigration. Ein alter Klartextbestand bleibt
+unverändert und wird mit strukturiertem Startupfehler abgewiesen. Die
+technisch vorbereitete `.jkmebackup`-/Restore-Runtime aus ADR-100 wird in
+diesem Paket nicht produktiv komponiert. Alle bestehenden ZIP-v1-Einstiege,
+der Restore-Worker/Resume, Schuljahreswechsel-Backup und Support-Reset-Backup
+sind im Cipher-Produktmodus blockiert. ADR-098 und ADR-099 bleiben als
+historische Foundation- und Gate-Entscheidungen gültig; ihre damalige
+Nichtaktivierung wird ausschließlich durch diese Produktkomposition abgelöst.
+
 ## ADR-100 - Cipher-Pilotbackups sind same-installation und enden im Restore-Staging
 
 **Status:** Angenommen und ausschließlich im bestehenden internen

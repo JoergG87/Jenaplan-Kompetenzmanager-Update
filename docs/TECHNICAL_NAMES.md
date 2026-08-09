@@ -1,5 +1,26 @@
 # Technical Naming Registry
 
+## Cipher-Produktkomposition
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `CipherProductRuntimeCoordinator` | authentifizierte Composition Root für frischen Cipher-First-Run und vollständigen Restart ohne Migration oder Reparatur | Security Application Composition |
+| `CipherProductRuntimeScope` | bindet die bestehenden Security-Foundation-Pfade exakt an die produktiven `RuntimePaths`-Rollen | Security Application Composition |
+| `OpenedCipherProductRuntime` | geprüfte gemeinsame keyed Haupt-, Dokument- und Schlüsselruntime zur Injektion in Adapter und Shell | Security Application Composition |
+| `CipherProductRuntimeError` | strukturierter sanitisierter Startupfehler mit `CipherProductRuntimeOperation` | Security Application Composition |
+| `FinalV3SQLCipherRuntimeScope` | Pfad-/Markergrenze einer Final-V3-SQLCipher-Komposition | Final-V3 SQLCipher Runtime |
+| `MarkerGatedFinalV3SQLCipherRuntimeScope` | historischer doppelmarker-gesperrter Foundation-Scope außerhalb des Produktpfads | Final-V3 SQLCipher Runtime |
+| `FinalV3DocumentRuntimeCoordinator` | komponiert Companion und Managed Document Store mit bereits geladener gemeinsamer Database-Key-Runtime | Final-V3 Document Runtime |
+| `PILOT_FIRST_RUN_SCHOOL_YEAR_ID` | stabile technische ID für den fachlichen First-Run-Standard `2026/27` dieses Pilotstands | Security Application Composition |
+| `prepare_cipher_runtime_storage` | erzeugt nur Root, Export-, Backup- und Logverzeichnisse; keine Klartext-Dokumentablage | Desktop Runtime |
+| `CipherBackupRestoreUnavailableError` | blockiert sämtliche ZIP-v1-Backup-/Restore-Einstiege im Cipher-Produktmodus | Desktop Backup/Restore Adapter |
+
+Produktive `RuntimePaths`-Rollen sind `key_runtime_metadata`,
+`keyset_metadata`, `database_key_envelope_registry`, `final_v3_runtime`,
+`final_v3_database`, `document_companion_database`,
+`encrypted_document_storage` und `backups`. Sie enthalten keine DMK oder
+Database-Key-Materialien.
+
 ## V3-only Schema-, Startup- und Testnamen
 
 **Status:** V3-only-Cleanup, zentrale Assignment-API, SJ-2E-Umstellung der
@@ -332,7 +353,7 @@ bis zum realen Test des gebauten Bundles offen.
 | `StudentDesktopAdapter.read_encrypted_observation_attachment` | Qt-freie Adapterlesenaht MED-ID → aktive fachliche Beobachtungsreferenz → verifizierter Runtime-Consumer | Desktop Adapter / Documents |
 | `StudentDesktopAdapter.read_managed_student_document` | Qt-freie Adapterlesenaht MED-ID → aktive allgemeine Fachreferenz → verifizierter Runtime-Consumer; kein Klartextziel und keine OS-Öffnung | Desktop Adapter / Documents |
 | `StudentDocumentViewModel.managed_encrypted` | Vom Adapter gesetzte reine Aktionsprojektion für allgemeine Cipher-Dokumente; erlaubt Ersetzen/Entfernen und unterdrückt OS-Öffnung | Desktop Projection |
-| `AppShell.student_adapter` | Optionale explizite Composition-Injektion eines bereits gegateten Adapters; `None` bleibt unverändert der Gate-Off-Produktdefault | Desktop Composition |
+| `AppShell.student_adapter` | Explizite Composition-Injektion eines bereits keyed Adapters; im Cipher-Produktmodus verpflichtend, historischer Gate-Off-Fallback nur außerhalb dieses Modus | Desktop Composition |
 | `FINAL_V3_DOCUMENT_SCHEMA_FINGERPRINT` | Vollständige registrierte Strukturidentität des Companion-Schemas v1 | Core Database Compatibility / Security Runtime |
 | `final_v3_documents.active_generation` | Atomarer SQLCipher-Pointer auf genau eine aktive Generation eines bereits aktivierten technischen Dokuments | Document Persistence |
 | `final_v3_document_generations` | Historische Generationen mit `PREPARED`, `ACTIVE`, `RETAINED` oder `QUARANTINED`; kein physisches GC | Document Persistence |

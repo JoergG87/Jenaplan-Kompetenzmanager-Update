@@ -38,6 +38,7 @@ from src.desktop_app.runtime import (
     flush_pre_auth_security_logging,
     load_build_info,
     prepare_security_runtime_storage,
+    prepare_cipher_runtime_storage,
     prepare_runtime_storage,
     resource_path,
     runtime_paths,
@@ -173,6 +174,49 @@ def _new_database_initialization_candidate(
         return False
 
 
+def _build_cipher_product_student_adapter(product_runtime):
+    """Inject the one keyed product runtime without constructing another DB."""
+    from src.core.sqlite_store import SQLiteCompetencyRepository
+    from src.desktop_app.adapters.student_desktop_adapter import (
+        StudentDesktopAdapter,
+    )
+    from src.desktop_app.adapters.curriculum_desktop_adapter import (
+        CurriculumDesktopAdapter,
+    )
+
+    SQLiteCompetencyRepository(product_runtime.database).ensure_catalog_defaults(
+        CurriculumDesktopAdapter().list_entries()
+    )
+
+    return StudentDesktopAdapter(
+        database=product_runtime.database,
+        database_create_allowed=False,
+        managed_document_store=product_runtime.documents,
+    )
+
+
+def _require_authenticated_cipher_context(
+    *, session, security_state, account, security_epoch: int
+) -> None:
+    """Reject a stale or cross-installation session before any Cipher write."""
+    from src.security.cipher_product_runtime import (
+        CipherProductRuntimeError,
+        CipherProductRuntimeOperation,
+    )
+
+    if (
+        security_state.user_id != session.user_id
+        or security_state.installation_id != session.installation_id
+        or account.user_id != session.user_id
+        or account.installation_id != session.installation_id
+        or session.security_epoch != security_epoch
+    ):
+        raise CipherProductRuntimeError(
+            "cipher_product_session_context_mismatch",
+            operation=CipherProductRuntimeOperation.CLASSIFY,
+        )
+
+
 def main() -> int:
     """Start the desktop app."""
     arguments = list(sys.argv)
@@ -211,10 +255,11 @@ def main() -> int:
             environ=os.environ,
         )
     if "--restore-worker" in arguments:
-        arguments.remove("--restore-worker")
-        from src.desktop_app.restore_worker import run as run_restore_worker
-
-        return run_restore_worker(arguments[1:])
+        print(
+            "App-Start abgelehnt: cipher_backup_restore_not_available.",
+            file=sys.stderr,
+        )
+        return 3
 
     packaged_smoke = "--packaged-smoke-test" in arguments
     if packaged_smoke:
@@ -224,6 +269,11 @@ def main() -> int:
         except RuntimeStorageError as error:
             print(f"Packaged-App-Smoke abgelehnt: {error}", file=sys.stderr)
             return 2
+        print(
+            "Packaged-App-Smoke abgelehnt: cipher_backup_restore_not_available.",
+            file=sys.stderr,
+        )
+        return 2
     else:
         smoke_data_root = None
 
@@ -231,8 +281,10 @@ def main() -> int:
         resume_restore_id = _argument_value(arguments, "--restore-resume")
         resume_token = _argument_value(arguments, "--restore-token")
         inherited_lock_value = _argument_value(arguments, "--restore-lock-fd")
-        if (resume_restore_id is None) != (resume_token is None):
-            raise RuntimeStorageError("Der Restore-Resume-Start ist unvollstaendig.")
+        if resume_restore_id is not None or resume_token is not None:
+            raise RuntimeStorageError("cipher_backup_restore_not_available")
+        if inherited_lock_value is not None:
+            raise RuntimeStorageError("cipher_backup_restore_not_available")
         inherited_lock_fd = (
             None if inherited_lock_value is None else int(inherited_lock_value)
         )
@@ -240,17 +292,14 @@ def main() -> int:
         print(f"App-Start abgelehnt: {error}", file=sys.stderr)
         return 3
 
-    data_root = smoke_data_root or application_data_root()
+    data_root = (smoke_data_root or application_data_root()).expanduser().resolve(
+        strict=False
+    )
     from src.core.restore_runtime import (
-        RestoreManualRecoveryRequired,
-        RestoreRuntimeError,
         RuntimeInstanceLock,
-        confirm_restore_startup,
-        recover_interrupted_restore,
     )
 
     lock = RuntimeInstanceLock(data_root, inherited_fd=inherited_lock_fd)
-    restore_status = "normal_start"
     new_database_initialization_candidate = False
     try:
         lock.acquire()
@@ -260,31 +309,10 @@ def main() -> int:
                 runtime_lock_path=lock.path,
             )
         )
-        if resume_restore_id is not None and resume_token is not None:
-            restore_result = confirm_restore_startup(
-                data_root,
-                resume_restore_id,
-                resume_token,
-            )
-            restore_status = restore_result.status
-        else:
-            recovery = recover_interrupted_restore(data_root)
-            restore_status = recovery.status
-            if recovery.status == "resume_required":
-                if recovery.restore_id is None or recovery.resume_token is None:
-                    raise RestoreManualRecoveryRequired(
-                        "Der Resume-Zustand ist unvollstaendig."
-                    )
-                restore_result = confirm_restore_startup(
-                    data_root,
-                    recovery.restore_id,
-                    recovery.resume_token,
-                )
-                restore_status = restore_result.status
-    except (RestoreManualRecoveryRequired, RestoreRuntimeError) as error:
+    except RuntimeError as error:
         lock.release()
         print(
-            "App-Start wegen eines unsicheren Restore-Zustands abgelehnt: "
+            "App-Start wegen eines unsicheren Runtime-Zustands abgelehnt: "
             f"{error}",
             file=sys.stderr,
         )
@@ -308,7 +336,6 @@ def main() -> int:
         should_attempt_startup_device_authentication,
     )
     from src.desktop_app.security_ui import AuthenticationDialog
-    from src.desktop_app.support_reset import SupportResetBackupFactory
 
     sys.argv[:] = arguments
     app = QApplication(arguments)
@@ -325,17 +352,7 @@ def main() -> int:
     try:
         security_paths = prepare_security_runtime_storage(data_root=data_root)
         security_runtime = build_security_runtime(security_paths)
-        support_build_info = load_build_info()
-        support_reset_backup_factory = SupportResetBackupFactory(
-            paths=security_paths,
-            app_version=APP_VERSION,
-            build_commit=str(support_build_info.get("git_commit", "unknown")),
-            source_tree_state=(
-                str(support_build_info["source_tree_state"])
-                if support_build_info.get("source_tree_state") is not None
-                else None
-            ),
-        )
+        support_reset_backup_factory = None
         security_state = security_runtime.service.security_store_state()
         security_decision = SecurityStartupResolver().resolve(
             security_state,
@@ -417,40 +434,49 @@ def main() -> int:
             preferences = security_runtime.preferences.load()
         except AppPreferencesError:
             preferences = AppPreferences()
-        from src.core.database_startup import DatabaseStartupCoordinator
-        from src.core.final_v3_schema import initialize_final_v3_schema
+        from src.security.cipher_product_runtime import (
+            CipherProductRuntimeError,
+            CipherProductRuntimeOperation,
+            open_cipher_product_runtime,
+        )
 
-        paths, database_startup = _coordinate_product_database_startup(
-            data_root=data_root,
-            restore_status=restore_status,
-            coordinator=DatabaseStartupCoordinator(),
-            prepare_storage=prepare_runtime_storage,
-            initialize_final_schema=initialize_final_v3_schema,
-            new_database_initialization_allowed=(
+        security_state = security_runtime.service.security_store_state()
+        account = security_runtime.repository.load_account()
+        _require_authenticated_cipher_context(
+            session=session,
+            security_state=security_state,
+            account=account,
+            security_epoch=security_runtime.repository.security_epoch(),
+        )
+        product_runtime = open_cipher_product_runtime(
+            paths=security_paths,
+            account_loader=lambda: account,
+            authentication_confirmed=True,
+            first_run_allowed=(
                 new_database_initialization_candidate
                 and security_decision.state is SecurityStartState.FIRST_RUN
             ),
         )
-        if not database_startup.normal_runtime_allowed:
-            print(
-                "App-Start kontrolliert angehalten: "
-                f"{database_startup.state.value} "
-                f"({database_startup.reason_code}).",
-                file=sys.stderr,
+        if product_runtime.installation_id != session.installation_id:
+            raise CipherProductRuntimeError(
+                "cipher_product_session_context_mismatch",
+                operation=CipherProductRuntimeOperation.CLASSIFY,
             )
-            discard_pre_auth_security_logging(security_event_buffer)
-            lock.release()
-            return 4
+        paths = prepare_cipher_runtime_storage(data_root=data_root)
         configure_runtime_logging(paths)
         flush_pre_auth_security_logging(security_event_buffer)
         from src.desktop_app.app import JenaplanDesktopApp
         from src.desktop_app.security_controller import SecurityUiCoordinator
 
+        student_adapter = _build_cipher_product_student_adapter(product_runtime)
+
         window = JenaplanDesktopApp(
-            paths.database,
+            paths.final_v3_database,
             paths=paths,
             runtime_lock=lock,
             database_create_allowed=False,
+            student_adapter=student_adapter,
+            backup_restore_available=False,
         )
         window.security_coordinator = SecurityUiCoordinator(
             app=app,
@@ -466,9 +492,6 @@ def main() -> int:
             support_reset=security_runtime.support_reset,
             support_reset_backup_factory=support_reset_backup_factory,
         )
-        window.configure_school_year_transition_activation(
-            security_runtime.service
-        )
         window.configure_onboarding(
             preferences_file=security_runtime.preferences,
             preferences=preferences,
@@ -483,6 +506,20 @@ def main() -> int:
         )
         lock.release()
         return 1
+    except CipherProductRuntimeError as error:
+        logging.getLogger("jenaplan.security").error(
+            "cipher_product_startup_blocked code=%s operation=%s",
+            error.code,
+            error.operation.value,
+        )
+        QMessageBox.critical(
+            None,
+            "Verschlüsselter Datenbestand nicht verfügbar",
+            "Die verschlüsselte lokale Datenablage konnte nicht sicher geöffnet "
+            f"werden. Technischer Code: {error.code}",
+        )
+        lock.release()
+        return 4
     except Exception as error:  # pragma: no cover - startup/platform feedback
         logging.exception("Die App konnte nicht initialisiert werden.")
         QMessageBox.critical(

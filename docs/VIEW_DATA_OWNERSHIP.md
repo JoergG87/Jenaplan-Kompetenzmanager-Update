@@ -1,5 +1,24 @@
 # View Data Ownership
 
+## Ownership der Cipher-Produktkomposition
+
+`CipherProductRuntimeCoordinator` besitzt die Qt-freie Startup-Komposition
+nach bereits verifizierter Authentifizierung. Er klassifiziert den
+Installationsstand, bindet die produktiven `RuntimePaths`, prüft die exakte
+SQLCipher-Engine, lädt genau eine Database-Key-Runtime und öffnet damit
+Final-V3, Companion und Managed Document Store. Kein Widget, keine Shell und
+kein Desktop Adapter erzeugt im Cipher-Produktpfad eine eigene
+`SQLiteDatabase` oder einen ungekeyten Connection Provider.
+
+`main.py` besitzt ausschließlich die Reihenfolge aus Auth-/Sessionprüfung,
+Cipher-Komposition und Injektion. `StudentDesktopAdapter` besitzt weiterhin
+fachliche Projektionen und Writes, verwendet aber die injizierte keyed
+`SQLiteDatabase` und denselben `ManagedDocumentStore`. `AppShell` komponiert
+die vorhandene UI auf diesen Instanzen. Die Settings-View zeigt nur den
+Verfügbarkeitszustand; sie startet im Cipher-Modus weder ZIP-v1-Backup noch
+Restore. Klartexterkennung, Schlüssel-, Schema-, Context- und
+Integritätsprüfung bleiben außerhalb der Widgets.
+
 ## V3-only Ownership für Startup, Schuljahre und Assignments
 
 Der `DatabaseStartupResolver` besitzt ausschließlich die read-only
@@ -295,10 +314,10 @@ Migrations-, GC- oder Produktstartup-Ownership.
 
 `StudentDocumentViewModel.managed_encrypted` ist ausschließlich eine
 Adapterprojektion für die Aktionswahl: verschlüsselte allgemeine Dokumente
-zeigen `Ersetzen` und `Entfernen`, aber keine OS-Öffnung. `AppShell` darf einen
-bereits vollständig gegateten `StudentDesktopAdapter` explizit übernehmen;
-die Shell entscheidet weder Gate noch Schlüssel und aktiviert keinen
-Produktdefault.
+zeigen `Ersetzen` und `Entfernen`, aber keine OS-Öffnung. `AppShell` übernimmt
+im Cipher-Produktmodus verpflichtend den bereits vollständig keyed
+`StudentDesktopAdapter`; die Shell entscheidet weder Gate noch Schlüssel und
+erzeugt keinen zweiten Provider.
 
 ## Verschlüsseltes Final-V3-Pilotbackup - technische Ownership ohne View
 

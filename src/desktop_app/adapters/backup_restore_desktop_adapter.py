@@ -34,6 +34,15 @@ from src.desktop_app.view_models.backup_restore_view_model import (
 )
 
 
+class CipherBackupRestoreUnavailableError(RuntimeError):
+    """Structured block before any legacy ZIP-v1 service can run."""
+
+    code = "cipher_backup_restore_not_available"
+
+    def __init__(self) -> None:
+        super().__init__(self.code)
+
+
 class BackupRestoreDesktopAdapter:
     """Build technical commands and privacy-minimized desktop projections."""
 
@@ -47,6 +56,7 @@ class BackupRestoreDesktopAdapter:
         lock: RuntimeInstanceLock | None = None,
         backup_service: BackupApplicationService | None = None,
         restore_service: RestoreApplicationService | None = None,
+        enabled: bool = True,
     ) -> None:
         self.paths = runtime_paths
         self.app_version = app_version
@@ -55,11 +65,17 @@ class BackupRestoreDesktopAdapter:
         self.lock = lock
         self.backup_service = backup_service or BackupApplicationService()
         self.restore_service = restore_service or RestoreApplicationService()
+        self.enabled = bool(enabled)
+
+    def _require_available(self) -> None:
+        if not self.enabled:
+            raise CipherBackupRestoreUnavailableError()
 
     def create_backup_operation(
         self,
         target_directory: Path,
     ) -> BackupRestoreOperation:
+        self._require_available()
         return BackupRestoreOperation(
             BackupRestoreOperationType.CREATE_BACKUP,
             CreateBackupCommand(
@@ -73,27 +89,29 @@ class BackupRestoreDesktopAdapter:
         )
 
     def discover_verified_backups_operation(self) -> BackupRestoreOperation:
+        self._require_available()
         candidates = tuple(sorted(self.paths.backups.glob("*.jkmbackup")))
         return BackupRestoreOperation(
             BackupRestoreOperationType.DISCOVER_VERIFIED_BACKUPS,
             DiscoverVerifiedBackupsQuery(candidates),
         )
 
-    @staticmethod
-    def verify_backup_operation(path: Path) -> BackupRestoreOperation:
+    def verify_backup_operation(self, path: Path) -> BackupRestoreOperation:
+        self._require_available()
         return BackupRestoreOperation(
             BackupRestoreOperationType.VERIFY_BACKUP,
             VerifyBackupQuery(Path(path)),
         )
 
-    @staticmethod
-    def verify_restore_operation(path: Path) -> BackupRestoreOperation:
+    def verify_restore_operation(self, path: Path) -> BackupRestoreOperation:
+        self._require_available()
         return BackupRestoreOperation(
             BackupRestoreOperationType.VERIFY_RESTORE_BACKUP,
             VerifyRestoreBackupQuery(Path(path)),
         )
 
     def prepare_restore_operation(self, path: Path) -> BackupRestoreOperation:
+        self._require_available()
         return BackupRestoreOperation(
             BackupRestoreOperationType.PREPARE_RESTORE_STAGING,
             PrepareRestoreStagingCommand(Path(path), self.paths),
@@ -103,6 +121,7 @@ class BackupRestoreDesktopAdapter:
         self,
         restore_id: str,
     ) -> BackupRestoreOperation:
+        self._require_available()
         return BackupRestoreOperation(
             BackupRestoreOperationType.VERIFY_PREPARED_RESTORE,
             VerifyPreparedRestoreQuery(restore_id, self.paths),
@@ -113,6 +132,7 @@ class BackupRestoreDesktopAdapter:
         restore_id: str,
     ) -> BackupRestoreOperation:
         """Expose the existing service for flows that explicitly require it."""
+        self._require_available()
         return BackupRestoreOperation(
             BackupRestoreOperationType.CREATE_RESTORE_SAFETY_BACKUP,
             CreateRestoreSafetyBackupCommand(
@@ -128,6 +148,7 @@ class BackupRestoreDesktopAdapter:
         self,
         preview: RestorePreviewViewModel,
     ) -> RestoreHandoffResult:
+        self._require_available()
         if not preview.restore_id:
             raise RuntimeError("Die Wiederherstellung wurde nicht vorbereitet.")
         return self.restore_service.create_handoff(
@@ -145,6 +166,7 @@ class BackupRestoreDesktopAdapter:
         self,
         handoff: RestoreHandoffResult,
     ) -> RestoreWorkerProcess:
+        self._require_available()
         if self.lock is None:
             raise RuntimeError("Der sichere Wiederherstellungsmodus ist nicht verfügbar.")
         return launch_restore_worker(

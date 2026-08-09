@@ -59,6 +59,8 @@ from .final_v3_sqlcipher_runtime import (
     FinalV3SQLCipherRuntimeError,
     FinalV3SQLCipherRuntimeGate,
     FinalV3SQLCipherRuntimePaths,
+    FinalV3SQLCipherRuntimeScope,
+    MarkerGatedFinalV3SQLCipherRuntimeScope,
     OpenedFinalV3SQLCipherRuntime,
 )
 from .infrastructure.system import (
@@ -269,25 +271,22 @@ class FinalV3DocumentConnectionFactory:
         paths: FinalV3DocumentRuntimePaths,
         loaded_keys: LoadedDatabaseKeyRuntime,
         environ: Mapping[str, str],
+        scope: FinalV3SQLCipherRuntimeScope | None = None,
     ) -> None:
         if (
             provider.expected_binding_version != SQLCIPHER_4_17_BINDING_VERSION
             or provider.expected_engine_version != SQLCIPHER_4_17_ENGINE_VERSION
         ):
             raise _error("document_sqlcipher_provider_invalid")
-        gate = FinalV3SQLCipherRuntimeGate()
-        decision = gate.resolve(environ)
-        if decision.state is not FinalV3SQLCipherRuntimeDecisionState.ACTIVE:
-            raise _error("document_runtime_gate_required")
+        self._scope = scope or MarkerGatedFinalV3SQLCipherRuntimeScope(environ)
         expected = FinalV3DocumentRuntimePaths.for_final_v3(
-            gate.require_paths(environ.get(DMK_DATABASE_KEY_RUNTIME_ROOT_ENV, ""))
+            self._scope.require_paths()
         )
         if paths != expected:
             raise _error("document_runtime_scope_invalid")
         self._provider = provider
         self._paths = paths
         self._loaded = loaded_keys
-        self._environment = dict(environ)
 
     def connect(self, *, create: bool) -> Any:
         self._require_scope()
@@ -308,14 +307,8 @@ class FinalV3DocumentConnectionFactory:
         )
 
     def _require_scope(self) -> None:
-        gate = FinalV3SQLCipherRuntimeGate()
-        decision = gate.resolve(self._environment)
-        if decision.state is not FinalV3SQLCipherRuntimeDecisionState.ACTIVE:
-            raise _error("document_runtime_gate_required")
         expected = FinalV3DocumentRuntimePaths.for_final_v3(
-            gate.require_paths(
-                self._environment.get(DMK_DATABASE_KEY_RUNTIME_ROOT_ENV, "")
-            )
+            self._scope.require_paths()
         )
         if self._paths.database.parent != self._paths.final_v3.runtime_root:
             raise _error("document_runtime_scope_invalid")
@@ -1404,6 +1397,122 @@ class FinalV3DocumentRuntime:
             self._fault_hook(boundary)
 
 
+class FinalV3DocumentRuntimeCoordinator:
+    """Compose one already-keyed Final-V3 runtime with its document runtime."""
+
+    def __init__(
+        self,
+        *,
+        final_v3: OpenedFinalV3SQLCipherRuntime,
+        paths: FinalV3DocumentRuntimePaths,
+        loaded_keys: LoadedDatabaseKeyRuntime,
+        installation_id: str,
+        document_database_create_allowed: bool,
+        provider: SQLCipherConnectionProvider,
+        scope: FinalV3SQLCipherRuntimeScope,
+        environ: Mapping[str, str],
+        source_root: Path | None,
+        random_source: Any,
+        clock: Any,
+        fault_hook=None,
+    ) -> None:
+        self.final_v3 = final_v3
+        self.paths = paths
+        self.loaded_keys = loaded_keys
+        self.installation_id = installation_id
+        self.document_database_create_allowed = bool(
+            document_database_create_allowed
+        )
+        self.provider = provider
+        self.scope = scope
+        self.environment = dict(environ)
+        self.source_root = None if source_root is None else Path(source_root)
+        self.random_source = random_source
+        self.clock = clock
+        self.fault_hook = fault_hook
+
+    def open(self) -> OpenedFinalV3DocumentRuntime:
+        _uuid(self.installation_id, "document_installation_context_invalid")
+        if self.source_root is not None:
+            _require_external_source_root(self.source_root, self.paths)
+        if (
+            self.loaded_keys is not self.final_v3.loaded_keys
+            or self.loaded_keys.database_context_id
+            != self.final_v3.database_context_id
+            or self.loaded_keys.database_key_id != self.final_v3.database_key_id
+            or self.loaded_keys.database_key_generation
+            != self.final_v3.database_key_generation
+        ):
+            raise _error(
+                "document_key_runtime_binding_mismatch",
+                FinalV3DocumentRuntimeOperation.LOAD_KEYS,
+            )
+        factory = FinalV3DocumentConnectionFactory(
+            provider=self.provider,
+            paths=self.paths,
+            loaded_keys=self.loaded_keys,
+            environ=self.environment,
+            scope=self.scope,
+        )
+        database_exists = _path_exists_or_symlink(self.paths.database)
+        _require_no_document_database_sidecars(self.paths.database)
+        if not database_exists:
+            if not self.document_database_create_allowed:
+                raise _error(
+                    "document_database_initialization_required",
+                    FinalV3DocumentRuntimeOperation.LOAD_KEYS,
+                )
+            if _path_exists_or_symlink(self.paths.container_root):
+                raise _error(
+                    "document_storage_without_database",
+                    FinalV3DocumentRuntimeOperation.LOAD_KEYS,
+                )
+            with closing(factory.connect(create=True)) as connection:
+                FinalV3DocumentSchemaV1.initialize(
+                    connection,
+                    installation_id=self.installation_id,
+                    database_context_id=self.loaded_keys.database_context_id,
+                    created_at=_format_utc(self.clock.utc_now()),
+                )
+            PlatformFilePermissionManager().secure_sqlite_files(self.paths.database)
+            _initialize_container_layout(self.paths)
+        else:
+            if self.document_database_create_allowed:
+                raise _error(
+                    "document_database_already_exists",
+                    FinalV3DocumentRuntimeOperation.LOAD_KEYS,
+                )
+            if not _path_exists_or_symlink(self.paths.container_root):
+                raise _error(
+                    "document_storage_missing",
+                    FinalV3DocumentRuntimeOperation.LOAD_KEYS,
+                )
+            _validate_container_layout(self.paths)
+        with closing(factory.connect_read_only()) as connection:
+            FinalV3DocumentSchemaV1.validate(
+                connection,
+                installation_id=self.installation_id,
+                database_context_id=self.loaded_keys.database_context_id,
+            )
+        documents = FinalV3DocumentRuntime(
+            paths=self.paths,
+            factory=factory,
+            loaded_keys=self.loaded_keys,
+            installation_id=self.installation_id,
+            source_root=self.source_root,
+            random_source=self.random_source,
+            clock=self.clock,
+            fault_hook=self.fault_hook,
+        )
+        documents.validate_restart()
+        return OpenedFinalV3DocumentRuntime(
+            final_v3=self.final_v3,
+            documents=documents,
+            database_context_id=self.loaded_keys.database_context_id,
+            installation_id=self.installation_id,
+        )
+
+
 def run_gated_final_v3_document_runtime(
     *,
     account_loader,
@@ -1438,11 +1547,8 @@ def run_gated_final_v3_document_runtime(
         )
     operation = FinalV3DocumentRuntimeOperation.CLASSIFY
     try:
-        paths = FinalV3DocumentRuntimePaths.for_final_v3(
-            gate.require_paths(
-                environment.get(DMK_DATABASE_KEY_RUNTIME_ROOT_ENV, "")
-            )
-        )
+        scope = MarkerGatedFinalV3SQLCipherRuntimeScope(environment)
+        paths = FinalV3DocumentRuntimePaths.for_final_v3(scope.require_paths())
         external_source_root = None if source_root is None else Path(source_root)
         if external_source_root is not None:
             _require_external_source_root(external_source_root, paths)
@@ -1468,77 +1574,26 @@ def run_gated_final_v3_document_runtime(
             sqlcipher_provider=provider,
             fault_hook=fault_hook,
             environ=environment,
+            scope=scope,
         ).open()
         operation = FinalV3DocumentRuntimeOperation.LOAD_KEYS
-        loaded = build_database_key_runtime(
-            paths.final_v3.key_runtime,
-            account_loader=stable_account_loader,
-            key_store=key_store,
-            random_source=random,
-            clock=runtime_clock,
-        ).open_or_create()
-        if (
-            loaded.database_context_id != final_v3.database_context_id
-            or loaded.database_key_id != final_v3.database_key_id
-            or loaded.database_key_generation
-            != final_v3.database_key_generation
-        ):
-            raise _error("document_key_runtime_binding_mismatch", operation)
-        factory = FinalV3DocumentConnectionFactory(
-            provider=provider,
+        opened = FinalV3DocumentRuntimeCoordinator(
+            final_v3=final_v3,
             paths=paths,
-            loaded_keys=loaded,
-            environ=environment,
-        )
-        database_exists = _path_exists_or_symlink(paths.database)
-        _require_no_document_database_sidecars(paths.database)
-        if not database_exists:
-            if not document_database_create_allowed:
-                raise _error("document_database_initialization_required", operation)
-            if _path_exists_or_symlink(paths.container_root):
-                raise _error("document_storage_without_database", operation)
-            operation = FinalV3DocumentRuntimeOperation.INITIALIZE_SCHEMA
-            with closing(factory.connect(create=True)) as connection:
-                FinalV3DocumentSchemaV1.initialize(
-                    connection,
-                    installation_id=installation_id,
-                    database_context_id=loaded.database_context_id,
-                    created_at=_format_utc(runtime_clock.utc_now()),
-                )
-            PlatformFilePermissionManager().secure_sqlite_files(paths.database)
-            _initialize_container_layout(paths)
-        else:
-            if document_database_create_allowed:
-                raise _error("document_database_already_exists", operation)
-            if not _path_exists_or_symlink(paths.container_root):
-                raise _error("document_storage_missing", operation)
-            _validate_container_layout(paths)
-        operation = FinalV3DocumentRuntimeOperation.INSPECT_SCHEMA
-        with closing(factory.connect_read_only()) as connection:
-            FinalV3DocumentSchemaV1.validate(
-                connection,
-                installation_id=installation_id,
-                database_context_id=loaded.database_context_id,
-            )
-        documents = FinalV3DocumentRuntime(
-            paths=paths,
-            factory=factory,
-            loaded_keys=loaded,
             installation_id=installation_id,
+            loaded_keys=final_v3.loaded_keys,
+            document_database_create_allowed=document_database_create_allowed,
+            provider=provider,
+            scope=scope,
+            environ=environment,
             source_root=external_source_root,
             random_source=random,
             clock=runtime_clock,
             fault_hook=fault_hook,
-        )
-        documents.validate_restart()
+        ).open()
         return FinalV3DocumentRuntimeDecision(
             FinalV3DocumentRuntimeDecisionState.ACTIVE,
-            runtime=OpenedFinalV3DocumentRuntime(
-                final_v3=final_v3,
-                documents=documents,
-                database_context_id=loaded.database_context_id,
-                installation_id=installation_id,
-            ),
+            runtime=opened,
         )
     except FinalV3DocumentRuntimeError as error:
         return FinalV3DocumentRuntimeDecision(

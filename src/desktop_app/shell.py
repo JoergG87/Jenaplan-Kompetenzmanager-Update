@@ -58,7 +58,10 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDeskto
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
-from src.desktop_app.adapters.backup_restore_desktop_adapter import BackupRestoreDesktopAdapter
+from src.desktop_app.adapters.backup_restore_desktop_adapter import (
+    BackupRestoreDesktopAdapter,
+    CipherBackupRestoreUnavailableError,
+)
 from src.desktop_app.backup_restore_operations import (
     BackupRestoreOperationErrorInfo,
     BackupRestoreOperationsController,
@@ -261,10 +264,15 @@ class AppShell(QMainWindow):
         update_service: UpdateApplicationService | None = None,
         database_create_allowed: bool = False,
         student_adapter: StudentDesktopAdapter | None = None,
+        backup_restore_available: bool = True,
     ) -> None:
         super().__init__()
         self.now_provider = now_provider
         self.display_name: str | None = None
+        self.runtime_paths = paths or runtime_paths(database_path.parent)
+        self.backup_restore_available = bool(backup_restore_available)
+        if not self.backup_restore_available and student_adapter is None:
+            raise ValueError("cipher_product_student_adapter_required")
         self.adapter = student_adapter or StudentDesktopAdapter(
             database_path,
             database_create_allowed=database_create_allowed,
@@ -272,12 +280,12 @@ class AppShell(QMainWindow):
             now_provider=self.now_provider,
         )
         self.maintenance_gate = self.adapter.database.maintenance_gate
-        self.exports_directory = self.adapter.database_path.parent / "exports"
+        self.exports_directory = self.runtime_paths.exports
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
         self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)
         self.timetable_adapter = TimetableDesktopAdapter(self.adapter.database)
         build_info = load_build_info()
-        self.pilot_testdata_onboarding = (
+        self.pilot_testdata_onboarding = self.backup_restore_available and (
             build_info.get("release_channel") == "pilot"
             and "guided_testdata_restore" in build_info.get("pilot_features", [])
         )
@@ -287,13 +295,13 @@ class AppShell(QMainWindow):
             build_version=APP_BUILD_VERSION,
             channel=UpdateChannel.PILOT,
         )
-        self.runtime_paths = paths or runtime_paths(database_path.parent)
         self.backup_restore_adapter = BackupRestoreDesktopAdapter(
             self.runtime_paths,
             app_version=APP_VERSION,
             build_commit=str(build_info.get("git_commit", "unknown")),
             source_tree_state=(str(build_info["source_tree_state"]) if build_info.get("source_tree_state") is not None else None),
             lock=runtime_lock,
+            enabled=self.backup_restore_available,
         )
         self.backup_restore_operations = BackupRestoreOperationsController(
             backup_service=self.backup_restore_adapter.backup_service,
@@ -435,6 +443,9 @@ class AppShell(QMainWindow):
         )
         self.master_data_screen = MasterDataScreen()
         self.settings_screen = SettingsScreen()
+        self.settings_screen.set_backup_restore_available(
+            self.backup_restore_available
+        )
 
         self.screen_index = {
             "dashboard": self.stack.addWidget(self.dashboard_screen),
@@ -729,6 +740,8 @@ class AppShell(QMainWindow):
         security_service: object,
     ) -> None:
         """Attach the authenticated product services after security startup."""
+        if not self.backup_restore_available:
+            raise CipherBackupRestoreUnavailableError()
         step_up = SchoolYearTransitionStepUpService(
             security_service,
             now_provider=lambda: datetime.now(UTC),
@@ -1142,6 +1155,8 @@ class AppShell(QMainWindow):
         self._show_onboarding_session(session)
 
     def create_backup(self) -> None:
+        if self._block_unavailable_backup_restore():
+            return
         if self.backup_restore_operations.is_busy:
             return
         target = QFileDialog.getExistingDirectory(self, "Backup-Zielordner wählen", str(self.runtime_paths.backups))
@@ -1152,6 +1167,8 @@ class AppShell(QMainWindow):
         )
 
     def _load_backup_status(self) -> None:
+        if self._block_unavailable_backup_restore():
+            return
         if self._backup_status_loaded or self.backup_restore_operations.is_busy:
             return
         self.backup_restore_operations.start(
@@ -1159,6 +1176,8 @@ class AppShell(QMainWindow):
         )
 
     def verify_backup(self) -> None:
+        if self._block_unavailable_backup_restore():
+            return
         if self.backup_restore_operations.is_busy:
             return
         path, _ = QFileDialog.getOpenFileName(self, "Backup prüfen", str(self.runtime_paths.backups), "Jenaplan-Sicherung (*.jkmbackup)")
@@ -1169,6 +1188,8 @@ class AppShell(QMainWindow):
         )
 
     def prepare_restore(self) -> None:
+        if self._block_unavailable_backup_restore():
+            return
         if self.backup_restore_operations.is_busy:
             return
         path, _ = QFileDialog.getOpenFileName(self, "Sicherung wiederherstellen", str(self.runtime_paths.backups), "Jenaplan-Sicherung (*.jkmbackup)")
@@ -1183,6 +1204,8 @@ class AppShell(QMainWindow):
         )
 
     def start_restore(self) -> None:
+        if self._block_unavailable_backup_restore():
+            return
         if self.backup_restore_operations.is_busy:
             return
         preview: RestorePreviewViewModel | None = self.settings_screen.restore_preview
@@ -1207,6 +1230,14 @@ class AppShell(QMainWindow):
                 preview.archive_path
             )
         )
+
+    def _block_unavailable_backup_restore(self) -> bool:
+        if self.backup_restore_available:
+            return False
+        message = "Datensicherung und Wiederherstellung sind noch nicht verfügbar."
+        self.settings_screen.show_backup_error(message)
+        self.settings_screen.show_restore_error(message)
+        return True
 
     def _handle_backup_restore_state(self, state: str) -> None:
         active = state != "idle"

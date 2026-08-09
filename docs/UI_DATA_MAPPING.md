@@ -1,5 +1,23 @@
 # UI Data Mapping
 
+## Cipher-Produktstart und vorhandene Sicherheitsaktionen
+
+Der normale Pilotstart zeigt nach erfolgreicher Authentifizierung die
+vorhandene App auf einer vollständig geprüften keyed Runtime. Beim echten
+First Run stammt das sichtbare aktuelle Schuljahr `2026/27` aus
+`school_years`; es ist kein Widgetdefault. Schüler-, Gruppen-, Kurs- und
+Beobachtungsansichten erhalten einen leeren fachlichen Bestand. Technische
+Schlüssel-IDs, Fingerprints, Envelopes, lokale Pfade und Engine-Details werden
+nicht angezeigt.
+
+Die vorhandenen Backup-/Restore-Schaltflächen sind im Cipher-Produktmodus
+deaktiviert. Jeder dennoch erreichte technische Einstieg liefert den
+strukturierten Zustand `cipher_backup_restore_not_available`; die sichtbare
+ruhige Kurzfassung lautet `Noch nicht verfügbar.`. Es gibt keine neue View,
+keine Migrationsauswahl, keine Alt-Testdatenübernahme und keine
+Klartext-Reparaturaktion. Startupfehler werden ohne Secrets, Pfade oder
+Credentialdetails angezeigt.
+
 ## V3-only Startup und geplanter Schuljahresassistent
 
 **Status:** SJ-2F ergänzt produktive Final-V3-Writer in vorhandenen
@@ -15,12 +33,12 @@ Unbekannte oder beschädigte Schemata führen fail-closed in die bestehende
 kontrollierte Recoverygrenze.
 
 Eine fehlende Datenbank darf nur im autorisierten First Run direkt als
-Final-V3 erzeugt werden. Sie wird anschließend erneut vollständig geprüft und
-von der Composition Root nur mit `create=False` geöffnet. Der First Run
-erzeugt kein Schuljahr. Fehlt ein eindeutiges `current`-Schuljahr, startet die
-Runtime technisch, während die schülerbezogenen Bereiche mit dem vorhandenen
-fachlichen Sperrzustand blockiert bleiben. Synthetische Daten sind kein
-Produktdefault.
+Final-V3-SQLCipher erzeugt werden. Sie und der Companion werden anschließend
+keyed vollständig geprüft und von der Composition Root ohne späteren
+Create-Fallback geöffnet. Der aktuelle Cipher-Produkt-First-Run erzeugt
+ausschließlich das Schuljahr `2026/27`; der ältere schemaisolierte Vertrag
+ohne Schuljahr gilt nicht für den normalen Pilotstart. Synthetische Daten sind
+kein Produktdefault.
 
 Der Einstieg unter `Einstellungen → Schuljahre` bereitet ausschließlich die
 flüchtige Vorschau eines echten späteren Wechsels vor. Das Zielschuljahr wird
@@ -297,9 +315,9 @@ allgemeines Schülerdokument ersetzt `Ersetzen` die bisherige OS-Öffnen-Aktion;
 `Entfernen` bleibt fachlich erhalten. Es entstehen keine PDF-Verknüpfungen,
 Exporte, Vorschauen, neuen QDesktopServices-Aufrufe oder Recoveryanzeigen.
 Der kontrollierte Reader bleibt eine Qt-freie Consumergrenze ohne
-Klartextziel. `AppShell.student_adapter` erlaubt nur die explizite Injektion
-eines bereits gegateten Adapters; der Produktdefault erzeugt weiterhin den
-Gate-Off-Adapter.
+Klartextziel. `AppShell.student_adapter` erlaubt die explizite Injektion des
+bereits keyed Produktadapters. Im Cipher-Produktstart ist diese Injektion
+verpflichtend; ein Gate-Off-Adapter wird dort nicht erzeugt.
 
 Finale RPA-/LCA-PDFs verwenden hinter demselben Gate ausschließlich ihre
 vorhandenen Status- und Erzeugungsaktionen. Managed-Document-ID, Generation,
@@ -313,7 +331,8 @@ UI-Aktion.
 Snapshotphasen, Restore-Staging und `RESTORE_READY` werden in diesem Paket
 nicht in PySide projiziert. Es entstehen keine Felder, Dialoge, Buttons,
 Fortschrittsanzeigen oder Fehlermeldungen. Die vorhandene Backup-/Restore-UI
-bleibt technisch auf Gate-Off ZIP-v1; ein Live-Swap ist nicht erreichbar.
+ist im Cipher-Produktmodus deaktiviert; Gate-Off ZIP-v1 bleibt nur historische
+Foundation und ein Live-Swap ist nicht erreichbar.
 
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 

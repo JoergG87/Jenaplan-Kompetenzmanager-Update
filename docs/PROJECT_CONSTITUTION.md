@@ -1,5 +1,31 @@
 # Project Constitution
 
+## Cipher-Produktpfad des Pilotstands
+
+Für Lauras Pilot ist eine frische verschlüsselte Final-V3-Installation der
+einzige normale Produktpfad. Nach erfolgreicher Authentifizierung besitzt die
+Composition Root genau eine DMK-/Database-Key-Komposition und genau einen
+keyed Connection Provider für Final-V3, Dokument-Companion, Repositories,
+Desktop Adapter und Shell. Verbindlich sind Binding
+`0.6.2+jkm.sqlcipher4170.1`, SQLCipher `4.17.0 community`, SQLite `3.53.3`
+und CommonCrypto. Abweichung oder Fehlen stoppt fail-closed; Standard-SQLite
+ist kein Fallback.
+
+Der echte fachliche First Run legt ausschließlich `2026/27` als aktuelles
+Schuljahr an. Er erzeugt keine Schüler, Gruppen, Kurse, Assignments,
+Beobachtungen oder Testdaten. Es gibt keine produktive Klartextmigration,
+keine Alt-Testdatenübernahme, keinen V2- oder ZIP-v1-Import und kein
+Legacy-Enrollment. Vorhandene Klartext-Fachdaten bleiben unangetastet und
+werden strukturiert abgewiesen. Dokumente werden im Cipher-Pfad ausschließlich
+über den verschlüsselten Managed Document Store gespeichert.
+
+Die vorhandenen ZIP-v1-Backup-/Restoreaktionen bleiben im Cipher-Produktmodus
+bis zum ausdrücklich freigegebenen Folgepaket technisch gesperrt. Diese
+Produktentscheidung aus ADR-101 ersetzt frühere Aussagen, die Klartext-SQLite
+oder ein First Run ohne Schuljahr pauschal als normalen Pilotdefault
+beschrieben; die zugrunde liegenden isolierten Foundation-Verträge bleiben
+historisch und testseitig gültig.
+
 ## V3-only Verfassungsgrenzen für Schuljahre und Mitgliedschaften
 
 V3 ist das erste und einzige Produktschema. Es gibt keine produktiven
@@ -172,11 +198,11 @@ selbstgebauter Passwortvorschlag ist nicht zulässig. Ein sicherer
 macOS-Passwortvorschlag und Touch ID gelten erst im gebauten Bundle auf echter
 geeigneter Hardware als bestätigt.
 
-Gate-Off bleibt der normale SQLite-, Dokument- und ZIP-v1-Pfad. Produkt-
-migration, Verschlüsselungsaktivierung, Backupformat, Restorearchitektur,
-Windows, Appcast, Pilotinstallation, Übergabe und Release bleiben
-ausgeschlossen. Der Dokumentationsstand darf kein App- oder DMG-Artefakt
-behaupten.
+Für den historischen Build-303-Vertrag blieb Gate-Off der SQLite-, Dokument-
+und ZIP-v1-Pfad. ADR-101 ersetzt diese Aussage ausschließlich für den neuen
+Cipher-Produktstart; dessen Backup/Restore, Build, Packaging, Übergabe und
+Release bleiben weiterhin ausgeschlossen. Der Dokumentationsstand darf kein
+neues App- oder DMG-Artefakt behaupten.
 
 ## Entwicklungsgrenze DMK-Database-Key-Runtime
 
@@ -272,7 +298,8 @@ passende vorhandene DMK im Keychain ist Voraussetzung. Passwortwechsel und
 Support-Reset dürfen diesen DMK nicht rotieren; DMK-Verlust und kompletter
 Geräteverlust bleiben ungelöst. Es gibt keinen unsicheren Passwort- oder
 Recovery-Code-Ersatz. Historische Klartext-/ZIP-v1-Bestände werden nicht
-migriert; Gate-Off behält bis zur Produktaktivierung unverändert ZIP-v1.
+migriert. Der frühere Gate-Off-Vertrag behält ZIP-v1 nur als nicht produktiv
+aufrufbare Foundation; ADR-101 sperrt diese Aktionen im Cipher-Produktmodus.
 
 ## Entwicklungsgrenze Security Sprint 12
 

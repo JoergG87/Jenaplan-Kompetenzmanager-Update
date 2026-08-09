@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Der normale Pilotstart verwendet nach erfolgreicher Authentifizierung jetzt
+  eine einzige produktive DMK-/Database-Key-/SQLCipher-4.17-Komposition für
+  ein direkt verschlüsseltes Final-V3, die keyed Dokument-Companion-DB und den
+  verschlüsselten Managed-Document-Storage. Ein echter First Run legt nur das
+  Schuljahr `2026/27` und den regulären Kompetenzkatalog an; Schüler, Gruppen,
+  Kurse, Zuordnungen, Beobachtungen und Testdaten bleiben leer. Restart lädt
+  dieselben Contexts und Keys fail-closed. Klartextbestände werden weder
+  geöffnet noch migriert, repariert, umbenannt, gelöscht oder überschrieben.
+  Beobachtungsanhänge, allgemeine Schülerdokumente sowie finale Bericht- und
+  LEG-PDF-Artefakte verwenden den bestehenden verschlüsselten
+  `ManagedDocumentStore`. ZIP-v1-Backup/Restore, Restore-Worker,
+  Schuljahreswechsel-Backup und Support-Reset-Backup bleiben bis zum
+  Folgepaket im Cipher-Produktmodus gesperrt.
+
 - Der frische verschlüsselte Final-V3-Pilotbestand kann hinter dem bestehenden
   Security-Gate als `.jkmebackup` gesichert und vollständig in einen neuen
   privaten Restore-Staging-Root zurückgeführt werden. Keyed Snapshots von

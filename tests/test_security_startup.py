@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -166,23 +167,82 @@ def test_app_preferences_store_optional_unicode_name_and_validate_contract(
 
 def test_productive_start_order_keeps_product_runtime_and_shell_after_auth() -> None:
     source = inspect.getsource(desktop_main.main)
-    restore = source.index("recover_interrupted_restore(data_root)")
+    restore_block = source.index('if "--restore-worker" in arguments:')
     security_paths = source.index("prepare_security_runtime_storage(data_root=data_root)")
     auth = source.index("run_startup_authentication(")
-    database_startup = source.index("_coordinate_product_database_startup(")
-    product_runtime = source.index("prepare_storage=prepare_runtime_storage")
+    authenticated_context = source.index("_require_authenticated_cipher_context(")
+    product_runtime = source.index("open_cipher_product_runtime(")
+    adapter = source.index("_build_cipher_product_student_adapter(")
     shell = source.index("window = JenaplanDesktopApp(")
     assert (
-        restore
+        restore_block
         < security_paths
         < auth
-        < database_startup
-        <= product_runtime
+        < authenticated_context
+        < product_runtime
+        < adapter
         < shell
     )
-    assert source.index("--restore-worker") < restore
+    assert "recover_interrupted_restore" not in source
+    assert "_coordinate_product_database_startup" not in source
+    assert "cipher_backup_restore_not_available" in source
     assert "DISABLE_AUTH" not in source
     assert "database_create_allowed=False" in source
+    assert "backup_restore_available=False" in source
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("session_user", "other-user"),
+        ("state_installation", "other-installation"),
+        ("account_user", "other-user"),
+        ("account_installation", "other-installation"),
+        ("epoch", 2),
+    ],
+)
+def test_cipher_session_context_is_verified_before_product_runtime(
+    field: str,
+    replacement: object,
+) -> None:
+    session = SimpleNamespace(
+        user_id="user-id", installation_id="installation-id", security_epoch=1
+    )
+    state = SimpleNamespace(user_id="user-id", installation_id="installation-id")
+    account = SimpleNamespace(user_id="user-id", installation_id="installation-id")
+    epoch = 1
+    if field == "session_user":
+        session.user_id = replacement
+    elif field == "state_installation":
+        state.installation_id = replacement
+    elif field == "account_user":
+        account.user_id = replacement
+    elif field == "account_installation":
+        account.installation_id = replacement
+    else:
+        epoch = int(replacement)
+
+    with pytest.raises(RuntimeError, match="cipher_product_session_context_mismatch"):
+        desktop_main._require_authenticated_cipher_context(
+            session=session,
+            security_state=state,
+            account=account,
+            security_epoch=epoch,
+        )
+
+
+def test_cipher_shell_source_blocks_legacy_transition_and_testdata_onboarding() -> None:
+    shell_source = (Path(desktop_main.__file__).parent / "shell.py").read_text()
+    transition = shell_source.index("def configure_school_year_transition_activation(")
+    transition_guard = shell_source.index(
+        "if not self.backup_restore_available:", transition
+    )
+    legacy_backup = shell_source.index("VerifiedSchoolYearTransitionBackupAdapter(", transition)
+    assert transition < transition_guard < legacy_backup
+    assert (
+        "self.pilot_testdata_onboarding = self.backup_restore_available and ("
+        in shell_source
+    )
 
 
 def test_startup_device_authentication_does_not_bypass_touch_id_preference() -> None:

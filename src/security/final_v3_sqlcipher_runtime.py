@@ -13,7 +13,7 @@ from enum import StrEnum
 import os
 from pathlib import Path
 import stat
-from typing import Any, Mapping
+from typing import Any, Mapping, Protocol
 
 from src.core.database_compatibility import (
     FINAL_SCHEMA_FINGERPRINT,
@@ -125,6 +125,7 @@ class OpenedFinalV3SQLCipherRuntime:
     database_key_id: str
     database_key_generation: int
     first_run: bool
+    loaded_keys: LoadedDatabaseKeyRuntime = field(repr=False)
 
 
 @dataclass(frozen=True)
@@ -178,6 +179,31 @@ class FinalV3SQLCipherRuntimeGate:
         return FinalV3SQLCipherRuntimePaths.for_key_runtime(key_paths)
 
 
+class FinalV3SQLCipherRuntimeScope(Protocol):
+    """Revalidatable capability for one exact runtime-path composition."""
+
+    def require_paths(self) -> FinalV3SQLCipherRuntimePaths: ...
+
+
+class MarkerGatedFinalV3SQLCipherRuntimeScope:
+    """Preserve the existing double-marker test scope without product bypass."""
+
+    def __init__(self, environ: Mapping[str, str]) -> None:
+        self._environment = dict(environ)
+
+    def require_paths(self) -> FinalV3SQLCipherRuntimePaths:
+        gate = FinalV3SQLCipherRuntimeGate()
+        decision = gate.resolve(self._environment)
+        if decision.state is not FinalV3SQLCipherRuntimeDecisionState.ACTIVE:
+            raise FinalV3SQLCipherRuntimeError(
+                decision.error_code or "final_v3_sqlcipher_runtime_gate_required",
+                operation=FinalV3SQLCipherRuntimeOperation.CLASSIFY,
+            )
+        return gate.require_paths(
+            self._environment.get(DMK_DATABASE_KEY_RUNTIME_ROOT_ENV, "")
+        )
+
+
 class FinalV3SQLCipherConnectionFactory:
     """Path- and key-bound provider shared by schema, repositories and adapters."""
 
@@ -190,6 +216,7 @@ class FinalV3SQLCipherConnectionFactory:
         paths: FinalV3SQLCipherRuntimePaths,
         loaded_keys: LoadedDatabaseKeyRuntime,
         environ: Mapping[str, str],
+        scope: FinalV3SQLCipherRuntimeScope | None = None,
     ) -> None:
         if (
             provider.expected_binding_version != SQLCIPHER_4_17_BINDING_VERSION
@@ -199,22 +226,20 @@ class FinalV3SQLCipherConnectionFactory:
                 "sqlcipher_417_provider_configuration_invalid",
                 operation=FinalV3SQLCipherRuntimeOperation.CLASSIFY,
             )
-        gate = FinalV3SQLCipherRuntimeGate()
-        decision = gate.resolve(environ)
-        if decision.state is not FinalV3SQLCipherRuntimeDecisionState.ACTIVE:
+        self._scope = scope or MarkerGatedFinalV3SQLCipherRuntimeScope(environ)
+        try:
+            expected_paths = self._scope.require_paths()
+        except FinalV3SQLCipherRuntimeError:
             raise FinalV3SQLCipherRuntimeError(
                 "final_v3_sqlcipher_connection_scope_invalid",
                 operation=FinalV3SQLCipherRuntimeOperation.CLASSIFY,
-            )
-        expected_paths = gate.require_paths(
-            environ.get(DMK_DATABASE_KEY_RUNTIME_ROOT_ENV, "")
-        )
+            ) from None
         if paths != expected_paths:
             raise FinalV3SQLCipherRuntimeError(
                 "final_v3_sqlcipher_connection_scope_invalid",
                 operation=FinalV3SQLCipherRuntimeOperation.CLASSIFY,
             )
-        _require_runtime_scope(paths)
+        _require_runtime_scope(paths, expected_paths=expected_paths)
         self._provider = provider
         self._paths = paths
         self._allowed_path = paths.database
@@ -242,7 +267,8 @@ class FinalV3SQLCipherConnectionFactory:
         )
 
     def _require_scope(self, path: Path, key_material) -> None:
-        _require_runtime_scope(self._paths)
+        expected_paths = self._scope.require_paths()
+        _require_runtime_scope(self._paths, expected_paths=expected_paths)
         if key_material is not None or Path(path) != self._allowed_path:
             raise FinalV3SQLCipherRuntimeError(
                 "final_v3_sqlcipher_connection_scope_invalid",
@@ -347,19 +373,12 @@ class FinalV3SQLCipherRuntimeCoordinator:
         sqlcipher_provider: SQLCipherConnectionProvider | None = None,
         fault_hook=None,
         environ: Mapping[str, str] | None = None,
+        scope: FinalV3SQLCipherRuntimeScope | None = None,
+        loaded_keys: LoadedDatabaseKeyRuntime | None = None,
     ) -> None:
         environment = os.environ if environ is None else environ
-        gate = FinalV3SQLCipherRuntimeGate()
-        gate_decision = gate.resolve(environment)
-        if gate_decision.state is not FinalV3SQLCipherRuntimeDecisionState.ACTIVE:
-            raise FinalV3SQLCipherRuntimeError(
-                gate_decision.error_code
-                or "final_v3_sqlcipher_runtime_gate_required",
-                operation=FinalV3SQLCipherRuntimeOperation.CLASSIFY,
-            )
-        expected_paths = gate.require_paths(
-            environment.get(DMK_DATABASE_KEY_RUNTIME_ROOT_ENV, "")
-        )
+        self._scope = scope or MarkerGatedFinalV3SQLCipherRuntimeScope(environment)
+        expected_paths = self._scope.require_paths()
         if paths != expected_paths:
             raise FinalV3SQLCipherRuntimeError(
                 "final_v3_sqlcipher_runtime_scope_invalid",
@@ -375,6 +394,7 @@ class FinalV3SQLCipherRuntimeCoordinator:
         self._key_store = key_store
         self._random_source = random_source
         self._clock = clock
+        self._loaded_keys = loaded_keys
         self._provider = sqlcipher_provider or SQLCipherConnectionProvider(
             expected_binding_version=SQLCIPHER_4_17_BINDING_VERSION,
             expected_engine_version=SQLCIPHER_4_17_ENGINE_VERSION,
@@ -399,7 +419,8 @@ class FinalV3SQLCipherRuntimeCoordinator:
             ) from None
 
     def _open(self) -> OpenedFinalV3SQLCipherRuntime:
-        _require_runtime_scope(self.paths)
+        expected_paths = self._scope.require_paths()
+        _require_runtime_scope(self.paths, expected_paths=expected_paths)
         if not self._authentication_confirmed:
             raise FinalV3SQLCipherRuntimeError(
                 "authentication_confirmation_required",
@@ -418,7 +439,18 @@ class FinalV3SQLCipherRuntimeCoordinator:
                 "final_v3_sqlcipher_database_without_key_store",
                 operation=FinalV3SQLCipherRuntimeOperation.CLASSIFY,
             )
-        if not database_exists and (keyset_exists or envelope_exists):
+        prepared_product_first_run = bool(
+            self._loaded_keys is not None
+            and self._loaded_keys.first_run
+            and self._technical_first_run_confirmed
+            and keyset_exists
+            and envelope_exists
+        )
+        if (
+            not database_exists
+            and (keyset_exists or envelope_exists)
+            and not prepared_product_first_run
+        ):
             raise FinalV3SQLCipherRuntimeError(
                 "final_v3_sqlcipher_database_missing_with_key_store",
                 operation=FinalV3SQLCipherRuntimeOperation.CLASSIFY,
@@ -432,7 +464,7 @@ class FinalV3SQLCipherRuntimeCoordinator:
             )
 
         self._operation = FinalV3SQLCipherRuntimeOperation.LOAD_KEYS
-        loaded = build_database_key_runtime(
+        loaded = self._loaded_keys or build_database_key_runtime(
             self.paths.key_runtime,
             account_loader=self._account_loader,
             key_store=self._key_store,
@@ -455,6 +487,7 @@ class FinalV3SQLCipherRuntimeCoordinator:
             paths=self.paths,
             loaded_keys=loaded,
             environ=self._environment,
+            scope=self._scope,
         )
         inspector = KeyedFinalV3CompatibilityInspector()
         if database_exists:
@@ -466,7 +499,10 @@ class FinalV3SQLCipherRuntimeCoordinator:
         else:
             permissions = PlatformFilePermissionManager()
             permissions.prepare_directory(self.paths.runtime_root)
-            _require_runtime_scope(self.paths)
+            _require_runtime_scope(
+                self.paths,
+                expected_paths=self._scope.require_paths(),
+            )
             self._operation = FinalV3SQLCipherRuntimeOperation.CREATE_DATABASE
             self._emit("before_database_file_creation")
             with closing(
@@ -501,6 +537,7 @@ class FinalV3SQLCipherRuntimeCoordinator:
             database_key_id=loaded.database_key_id,
             database_key_generation=loaded.database_key_generation,
             first_run=loaded.first_run,
+            loaded_keys=loaded,
         )
 
     def _emit(self, boundary: str) -> None:
@@ -581,8 +618,14 @@ def _path_exists_or_symlink(path: Path) -> bool:
     return path.exists() or path.is_symlink()
 
 
-def _require_runtime_scope(paths: FinalV3SQLCipherRuntimePaths) -> None:
-    expected = FinalV3SQLCipherRuntimeGate.require_paths(str(paths.root))
+def _require_runtime_scope(
+    paths: FinalV3SQLCipherRuntimePaths,
+    *,
+    expected_paths: FinalV3SQLCipherRuntimePaths | None = None,
+) -> None:
+    expected = expected_paths or FinalV3SQLCipherRuntimeGate.require_paths(
+        str(paths.root)
+    )
     if paths != expected:
         raise FinalV3SQLCipherRuntimeError(
             "final_v3_sqlcipher_runtime_scope_invalid",

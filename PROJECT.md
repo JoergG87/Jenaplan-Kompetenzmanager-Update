@@ -1,5 +1,30 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Cipher-Produktkomposition für Lauras Pilot
+
+**Status:** Der normale Produktstart ist für eine frische Installation auf die
+authentifizierte, verschlüsselte Final-V3-Runtime umgestellt. Verbindlich sind
+`sqlcipher3 0.6.2+jkm.sqlcipher4170.1`, SQLCipher `4.17.0 community`, SQLite
+`3.53.3` und CommonCrypto; eine andere oder fehlende Engine stoppt den Start
+ohne Standard-SQLite-Fallback.
+
+Nach erfolgreicher lokaler Authentifizierung lädt oder provisioniert die
+Composition Root genau eine DMK-/Database-Key-Runtime, öffnet Hauptdatenbank,
+Dokument-Companion und Managed Document Store keyed und injiziert dieselbe
+Runtime in Repositories, `StudentDesktopAdapter` und `AppShell`. Ein echter
+fachlicher First Run legt ausschließlich das aktuelle Schuljahr `2026/27`
+an. Schüler, Gruppen, Kurse, Assignments, Beobachtungen und Testdaten bleiben
+leer; der offizielle Kompetenzkatalog wird erst über dieselbe keyed Runtime
+bereitgestellt.
+
+Vorhandene Klartext-Fachdaten und Klartext-Dokumente werden weder geöffnet noch
+migriert, umbenannt, gelöscht oder überschrieben. Ein unvollständiger
+Cipher-Bestand, eine fehlende DMK, ein ungültiges Envelope oder eine fehlende
+Haupt-/Companion-Datenbank werden beim Restart fail-closed abgewiesen. Die
+bestehenden ZIP-v1-Backup-/Restoreaktionen sind im Cipher-Produktmodus bis zum
+Folgepaket technisch gesperrt. Build, Packaging, Release und die manuelle
+macOS-/UI-Abnahme sind nicht Bestandteil dieses Pakets.
+
 ## V3-only Produktschema und Architecture Cleanup
 
 **Status:** Governance, technischer V3-only-Cleanup, zentrale Assignment-API,
@@ -35,10 +60,11 @@ wird als `V3_SCHEMA_READY` für die normale Runtime zugelassen. Nach diesem
 Gate öffnet die Composition Root die vorhandene Datenbank ausschließlich ohne
 Create-Fallback; verschwindet sie, stoppt der Start fail-closed.
 
-Ein autorisierter First Run erzeugt ausschließlich das vollständige
-Final-V3-Schema und prüft es erneut. Er erzeugt kein Schuljahr. Fehlt ein
-eindeutiges `current`-Schuljahr, startet die technische Runtime, während die
-schülerbezogenen Bereiche fachlich gesperrt bleiben.
+Der aktuelle Cipher-Produkt-First-Run erzeugt das vollständige Final-V3-Schema,
+prüft Haupt- und Companion-Datenbank keyed und legt anschließend ausschließlich
+das Schuljahr `2026/27` an. Der frühere schemaisolierte Vertrag ohne Schuljahr
+bleibt nur für historische Core- und Testkontexte bestehen und ist nicht mehr
+der normale Pilotstart.
 
 Implementiert sind die Qt-freien, Connection-gebundenen
 `SchoolYearRepository`- und
@@ -356,7 +382,9 @@ verbunden werden. Der Pfad verlangt bestätigte Authentifizierung und bei einer
 Neuanlage eine explizite technische First-Run-Bestätigung. Er verwendet exakt
 das lokale Binding `0.6.2+jkm.sqlcipher4170.1`, SQLCipher
 `4.17.0 community`, CommonCrypto und SQLite `3.53.3`; der getrennte 4.12-Pfad
-und der normale SQLite-Produktdefault bleiben unverändert.
+und der damalige SQLite-Produktdefault blieben in diesem Foundation-Paket
+unverändert. ADR-101 aktiviert die exakte 4.17-Runtime inzwischen für den
+frischen Pilot-Produktstart.
 
 Schemaerzeugung, keyed Kompatibilitätsprüfung und die an Repositories sowie
 Desktop-Adapter übergebene `SQLiteDatabase` teilen dieselbe feste
@@ -445,7 +473,7 @@ Bestände blockieren ohne SQLite-/SQLCipher-Fallback.
 
 ### Verbindliche Integrationsmatrix
 
-| Komponente | heutiger Klartextpfad | neuer verschlüsselter Testpfad | Gate | Fehler / Recovery | Schema | Testnachweis |
+| Komponente | historischer Klartextpfad | verschlüsselter Sprint-11-Testpfad | Gate | Fehler / Recovery | Schema | Testnachweis |
 |---|---|---|---|---|---|---|
 | Startup / `RuntimePaths` | normale Rootauflösung und `prepare_runtime_storage` | `SecurityIntegrationGate` plus feste temporäre `SecurityIntegrationPaths` | exakt `1` und zwei Marker | ungültiger Root blockiert vor Mutation | nein | Gate-/Import-/Startup-Isolation |
 | Connection Factory | `SQLiteDatabase` über SQLite-Provider | explizite SQLCipher-Factory mit DMK-geöffnetem Database-Key | nur Integrationsruntime | falscher/fehlender Key, Format oder Integrität blockiert; kein Create-Fallback | `user_version=1101` | Open, falscher Key, Reopen |
@@ -454,7 +482,7 @@ Bestände blockieren ohne SQLite-/SQLCipher-Fallback.
 | Dokumentrepository | `documents.file_path` auf Klartextdatei | unveränderliche `security_document_generations` plus opaque aktive Referenz | nur SQLCipher-Ziel | vorbereitete Generation bleibt inaktiv; alte aktive Generation retained | neue Tabellen / Index | Import, Austausch, Restart, gemischter Zustand |
 | Import / Lesen / Export / Löschen | Kopie in `documents/`, direktes OS-Öffnen, Soft-Delete | Container vor Pointer, zweiphasiger Reader, bewusster No-Clobber-Klartextexport, konservatives Retained | nur Application Adapter | keine erfolgreiche Meldung bei Teilfehler; kein GC | Generation/Lifecycle | Container-, Export- und Crashtests |
 | Backup / Restore | ZIP-v1 und bestehendes Restore-Handoff | Sprint-9-Container für SQLCipher plus verschlüsselte Dokumente; Restore nur in neuen Staging-Root | nur Integrationsadapter | Vollverifikation vor Erfolg; alter Bestand bleibt | nein | Tamper, Crash, Restore-Reopen |
-| Application Services | normale Desktop-Adapter mit Klartext-DB | Qt-freie `SecurityIntegrationRuntime` gegen zentrale Factory | nur Testcode | sanitierte Fehlercodes; keine UI | nutzt v1 | Student-/Dokumentprojektion gegen SQLCipher |
+| Application Services | historische Desktop-Adapter mit Klartext-DB | Qt-freie `SecurityIntegrationRuntime` gegen zentrale Factory | nur Testcode | sanitierte Fehlercodes; keine UI | nutzt v1 | Student-/Dokumentprojektion gegen SQLCipher |
 | Support-Reset / Passwortwechsel | bestehende Auth-Schicht | unverändert; DMK-/Datenkeys bleiben identisch | unabhängig vom Gate | fehlender Plattform-DMK blockiert | nein | explizite Nicht-Rotations-Regression |
 | Nutzerführung | bestehende Dialoge | keine neue UI; ausschließlich technischer Testreport | nicht sichtbar | fail-closed ohne Geheimnisse/Pfade in Logs | nein | UI-/Import-Isolation |
 | Packaging | bestehende Abhängigkeiten | keine Sprint-11-Paketaktivierung | gesperrt | PyNaCl/SQLCipher-Packaging bleibt Release-Gate | nein | `pip check`; kein Build |
@@ -472,8 +500,9 @@ neuen Restore-Staging-Root extrahieren und vollständig reopen-verifizieren`.
 
 Der Klartextbestand wird nicht ersetzt oder gelöscht. Der Testpfad startet
 seine Application Services direkt gegen den validierten SQLCipher-Bestand.
-Das bestehende ZIP-v1-Backup, normale Dokumentpfade, Produktstartup, Pilot, RC,
-Excel, Packaging und Release bleiben ohne Gate unverändert.
+Für diesen historischen Sprint-11-Vertrag blieben ZIP-v1-Backup, normale
+Dokumentpfade und Produktstartup unverändert. ADR-101 ersetzt diese Aussage
+für den heutigen Cipher-Produktstart; Packaging und Release bleiben offen.
 
 ## Security Sprint 9 - isolierter verschlüsselter Backupcontainer
 
