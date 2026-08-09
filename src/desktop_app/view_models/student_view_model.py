@@ -802,6 +802,7 @@ class StudentDocumentViewModel:
     original_filename: str
     created_at: str
     note: str = ""
+    managed_encrypted: bool = False
 
     @property
     def display_title(self) -> str:

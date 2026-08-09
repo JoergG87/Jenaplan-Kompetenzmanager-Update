@@ -392,17 +392,20 @@ Reader gibt Klartext nur an einen injizierten Consumer und meldet erst nach
 vollständiger zweiter Final-/EOF-/Hashprüfung Erfolg. Alte Generationen bleiben
 `RETAINED`; physisches Löschen findet nicht statt.
 
-Die Runtime ist ausschließlich für Beobachtungsanhänge optional an
-`ObservationPersistenceUnitOfWork` und `StudentDesktopAdapter` gebunden. Die
+Die Runtime ist über den gemeinsamen `ManagedDocumentStore` sowohl an die
+`ObservationPersistenceUnitOfWork` als auch an den kleinen journalisierten
+`ManagedStudentDocumentService` für allgemeine Schülerdokumente gebunden. Die
 vorhandene MED-ID bleibt Document-ID; Generation und opaque Storage-ID bleiben
-rein physisch. Das Observation-Journal bindet vorherige aktive Generation und
-Prepare-Plan vor dem
-Containerwrite, der Final-V3-Commit schreibt die fachliche Referenz und erst
-danach folgt die idempotente, für alle Anhänge eines Journals atomare
-Companion-Pointerumschaltung. Remove deaktiviert die Referenz und
-behält alle Container retained. Allgemeine Schülerdokumente, Berichte und
+rein physisch. Beide Lifecycle schreiben die fachliche Final-V3-Referenz erst
+nach Vollverifikation und aktivieren danach idempotent den Companion-Pointer.
+Replace behält MED-ID und alten lesbaren Stand bis zum erfolgreichen Wechsel;
+Remove deaktiviert fachlich und behält alle Container retained.
+
+Der Pilotweg setzt einen frischen verschlüsselten Final-V3-Bestand voraus.
+Klartextbestände und alte Testdaten werden nicht migriert oder konvertiert;
+Testdaten werden nach Gate-Aktivierung neu erzeugt. Gate-Off, Berichte und
 LEG/PDF bleiben unverbunden. Es gibt keinen Export, OS-Preview,
-Backup/Restore, Migration, Produktstartup, Build oder Releasepfad.
+Backup/Restore, Produktstartup, Build oder Releasepfad.
 
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 

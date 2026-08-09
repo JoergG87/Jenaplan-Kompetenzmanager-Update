@@ -260,11 +260,12 @@ class AppShell(QMainWindow):
         runtime_lock: RuntimeInstanceLock | None = None,
         update_service: UpdateApplicationService | None = None,
         database_create_allowed: bool = False,
+        student_adapter: StudentDesktopAdapter | None = None,
     ) -> None:
         super().__init__()
         self.now_provider = now_provider
         self.display_name: str | None = None
-        self.adapter = StudentDesktopAdapter(
+        self.adapter = student_adapter or StudentDesktopAdapter(
             database_path,
             database_create_allowed=database_create_allowed,
             today_provider=lambda: self.now_provider().date(),
@@ -508,6 +509,9 @@ class AppShell(QMainWindow):
         )
         self.student_profile_screen.document_add_requested.connect(
             self.open_student_document_dialog
+        )
+        self.student_profile_screen.document_replace_requested.connect(
+            self.replace_student_document
         )
         self.student_profile_screen.document_remove_requested.connect(
             self.remove_student_document
@@ -2340,7 +2344,7 @@ class AppShell(QMainWindow):
                     student_id=student_id,
                     source_path=Path(file_path),
                 )
-            except OSError as error:
+            except Exception as error:
                 QMessageBox.warning(self, "Dokumente & Medien", str(error))
                 return
         self.show_student_profile(student_id)
@@ -2360,9 +2364,34 @@ class AppShell(QMainWindow):
         message.deleteLater()
         if not confirmed:
             return
-        self.adapter.remove_document(document_id)
+        try:
+            self.adapter.remove_document(document_id)
+        except Exception as error:
+            QMessageBox.warning(self, "Dokumente & Medien", str(error))
+            return
         self.show_student_profile(student_id)
         self.status_label.setText("Datei wurde entfernt.")
+
+    def replace_student_document(self, student_id: str, document_id: str) -> None:
+        """Replace one encrypted managed document through the adapter."""
+        file_path, _selected_filter = QFileDialog.getOpenFileName(
+            self,
+            "Datei ersetzen",
+            "",
+            "Alle Dateien (*)",
+        )
+        if not file_path:
+            return
+        try:
+            self.adapter.replace_student_document(
+                document_id=document_id,
+                source_path=Path(file_path),
+            )
+        except Exception as error:
+            QMessageBox.warning(self, "Dokumente & Medien", str(error))
+            return
+        self.show_student_profile(student_id)
+        self.status_label.setText("Datei wurde ersetzt.")
 
     def confirm_competency_status(
         self,

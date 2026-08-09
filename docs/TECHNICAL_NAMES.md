@@ -234,7 +234,11 @@ Phase-2-Vertrag.
 | `ObservationOperationJournal` | Versioniertes kanonisches Crash-/Retry-Journal unter `.observation-staging/<operation_token>/` | Core Persistence |
 | `ObservationWriterLock` | Kernelgebundener exklusiver Advisory Lock auf kontrolliert geöffnetem FD; gemeinsame Sperre für Observation-UoW, Backup und Restore | Core Persistence |
 | `ObservationOperationPhase` | Monotone Allowlist `PREPARED`, `FILES_STAGED`, `FILES_PUBLISHED`, `DATABASE_COMMITTED`, `COMPLETE` | Core Persistence |
-| `EncryptedObservationAttachmentRuntime` | Optionale Qt-freie UoW-Portgrenze für geplantes Prepare, Vollverifikation, idempotente Aktivierung/Deaktivierung und kontrolliertes Lesen ausschließlich von Beobachtungsanhängen | Application / Core Persistence |
+| `ManagedDocumentStore` | Gemeinsame Qt-freie Portgrenze für geplantes Prepare, Vollverifikation, idempotente Aktivierung/Deaktivierung und kontrolliertes Lesen; wird von Beobachtungsanhängen und allgemeinen verwalteten Schülerdokumenten mit derselben Runtimeinstanz genutzt | Application / Core Persistence |
+| `EncryptedObservationAttachmentRuntime` | Kompatibilitätsalias auf `ManagedDocumentStore`; keine zweite Store- oder Securityarchitektur | Application / Core Persistence |
+| `ManagedStudentDocumentService` | Journalisierter fachlicher Application-Lifecycle für Create, Replace, Remove, Retry, Restart und kontrolliertes Lesen allgemeiner Schülerdokumente | Application / Documents |
+| `.managed-document-staging/<operation_token>/managed-document.json` | Privates technisches Retry-Journal ohne Originalname, Pfad oder Schülerzuordnung; bindet MED-ID, Prepare-Plan, Operation und Payload-Hash | Application / Core Persistence |
+| Managed-Document-Phasen | `INTENT`, `REFERENCE_COMMIT_PENDING`, `DATABASE_COMMITTED`, `POINTER_PENDING`, `REFERENCE_COMPENSATION_REQUIRED`, `REFERENCE_COMPENSATED`, `COMPLETE`; jede Vor-Commit-Lücke bleibt restartfähig oder blockiert fail-closed | Application / Core Persistence |
 | `operation_token` | Stabiler zufälliger Bezeichner genau eines bewusst ausgelösten schreibenden Gesamtvorgangs; Retry verwendet denselben Wert | Application |
 | `operation_payload_hash` | SHA-256 der kanonischen vollständigen Solloperation; bindet Ereignissatz und Recoveryentscheidung | Core Persistence |
 | `attachment_intent.storage_mode` | Journalgebundene Allowlist `plaintext` oder `encrypted`; Recovery mit abweichender Runtime blockiert statt zwischen Cipher- und Klartextpfad zu wechseln | Core Persistence |
@@ -319,9 +323,12 @@ bis zum realen Test des gebauten Bundles offen.
 | `FinalV3DocumentGeneration` | Sanitierte technische Projektion aus Document-/Key-Generation, opaque Storage-ID, Envelope-/Formatnachweisen, Größen, Hash, MIME und Lifecycle | Document Persistence |
 | `FinalV3DocumentPreparePlan` | Vor dem Containerwrite journalisierbare Bindung aus fachlicher MED-ID, vorheriger aktiver Generation, erwarteter Zielgeneration und zufälliger opaque Storage-ID | Document Persistence / Observation UoW |
 | `FinalV3DocumentRuntime.plan_prepare` / `verify_prepared` | Read-only Planung vor Quellenzugriff und exakte Vollverifikation einer bereits journalgebundenen `PREPARED`-Generation für Retry/Restart | Application / Documents |
-| `FinalV3DocumentRuntime.apply_journaled_changes` | Idempotente atomare Companion-Transaktion für alle Aktivierungen und Deaktivierungen genau eines Observation-Journals; keine partiellen Pointerzielstände | Application / Documents |
+| `FinalV3DocumentRuntime.apply_journaled_changes` | Idempotente atomare Companion-Transaktion für journalgebundene Aktivierungen und Deaktivierungen von Beobachtungsanhängen oder allgemeinen Schülerdokumenten; keine partiellen Pointerzielstände | Application / Documents |
 | `FinalV3DocumentRuntime.deactivate` | Idempotente fachliche Pointerdeaktivierung; aktive Generation wird `RETAINED`, physischer Container bleibt bestehen | Application / Documents |
 | `StudentDesktopAdapter.read_encrypted_observation_attachment` | Qt-freie Adapterlesenaht MED-ID → aktive fachliche Beobachtungsreferenz → verifizierter Runtime-Consumer | Desktop Adapter / Documents |
+| `StudentDesktopAdapter.read_managed_student_document` | Qt-freie Adapterlesenaht MED-ID → aktive allgemeine Fachreferenz → verifizierter Runtime-Consumer; kein Klartextziel und keine OS-Öffnung | Desktop Adapter / Documents |
+| `StudentDocumentViewModel.managed_encrypted` | Vom Adapter gesetzte reine Aktionsprojektion für allgemeine Cipher-Dokumente; erlaubt Ersetzen/Entfernen und unterdrückt OS-Öffnung | Desktop Projection |
+| `AppShell.student_adapter` | Optionale explizite Composition-Injektion eines bereits gegateten Adapters; `None` bleibt unverändert der Gate-Off-Produktdefault | Desktop Composition |
 | `FINAL_V3_DOCUMENT_SCHEMA_FINGERPRINT` | Vollständige registrierte Strukturidentität des Companion-Schemas v1 | Core Database Compatibility / Security Runtime |
 | `final_v3_documents.active_generation` | Atomarer SQLCipher-Pointer auf genau eine aktive Generation eines bereits aktivierten technischen Dokuments | Document Persistence |
 | `final_v3_document_generations` | Historische Generationen mit `PREPARED`, `ACTIVE`, `RETAINED` oder `QUARANTINED`; kein physisches GC | Document Persistence |

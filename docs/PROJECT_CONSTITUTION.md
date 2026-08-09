@@ -40,11 +40,19 @@ Verschlüsselte Dokumentgenerationen werden vor jedem Pointerwrite vollständig
 verifiziert; alte aktive Generationen bleiben bei Fehlern nutzbar und werden
 nicht automatisch physisch gelöscht. Es gibt keinen Klartextfallback.
 Ausschließlich hinter demselben internen Gate darf die fachlich stabile
-`MED-######`-ID eines Beobachtungsanhangs als Document-ID dienen. Der
-Observation-UoW bindet Generation und opaque Storage-ID vor dem Prepare,
-committet die fachliche Referenz vor der idempotenten Pointeraktivierung und
-schließt erst danach ab. Allgemeine Schülerdokumente sowie Bericht-/LEG-PDFs
-bleiben ausgeschlossen.
+`MED-######`-ID eines Beobachtungsanhangs oder allgemeinen verwalteten
+Schülerdokuments als Document-ID dienen. Beide fachlichen Aufrufer verwenden
+denselben `ManagedDocumentStore`. Der jeweilige journalisierte Application-
+Lifecycle bindet Generation und opaque Storage-ID vor dem Prepare, committet
+die fachliche Referenz vor der idempotenten Pointeraktivierung und schließt
+erst danach ab. Bericht-/LEG-PDFs bleiben ausgeschlossen.
+
+Für den Pilot wird ausschließlich ein frischer verschlüsselter Final-V3-
+Bestand mit neu angelegten Schülern und neu erzeugten Dokumenten unterstützt.
+Es gibt keine produktive Klartextmigration, keine Altbestandskonvertierung und
+keine Kompatibilitätsschicht für alte Testdaten. Nach Aktivierung werden
+Testdaten neu erzeugt; Gate-Off bleibt ohne automatische Konvertierung oder
+Cipher-zu-Klartextfallback unverändert.
 
 `school_year_transitions` dokumentiert nur echte spätere
 Schuljahreswechsel. Ausgangs- und Zielschuljahr existieren dabei fachlich und

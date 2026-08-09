@@ -932,6 +932,53 @@ Storageinventar und jeden registrierten Container.
    kontrolliertes Klartextstaging und No-Clobber-Publikation. Es gibt keinen
    Cipher-zu-Klartextfallback und keine Produkt-Default-Aktivierung.
 
+### Allgemeine verwaltete Schülerdokumente hinter demselben Gate
+
+1. `ManagedStudentDocumentService` und Observation-UoW teilen denselben
+   `ManagedDocumentStore` und denselben Writer-Lock. Ein eigenes technisches
+   Retry-Journal reserviert Operation, MED-ID, Prepare-Plan, Generation und
+   opaque Storage-ID, ohne Originalname, Pfad oder Schülerbezug offenzulegen.
+2. Create liest die externe reguläre Quelle kontrolliert no-follow, bereitet
+   genau eine `.jkmedoc`-Generation vor und verifiziert sie vollständig. Erst
+   danach entsteht in Final-V3 die allgemeine aktive `documents`-Referenz mit
+   `observation_id IS NULL` und leerem `file_path`. Nach der idempotenten
+   Pointeraktivierung wird Erfolg gemeldet. Ein gefangener Pointerfehler
+   entfernt die neu angelegte Fachreferenz kompensierend vollständig; der
+   journalgebundene Prepare-Plan bleibt für denselben Retry reserviert.
+3. Replace behält die MED-ID, bereitet eine neue Generation mit neuer opaque
+   Storage-ID und neuem zufälligem Document-Key vor und schaltet erst nach
+   Vollverifikation um. Bis zum erfolgreichen Pointerwechsel bleiben alte
+   Fachreferenz und alte ACTIVE-Generation lesbar; ein fehlgeschlagener
+   Austausch darf ausschließlich diese journalgebundene Generation streamen.
+4. Remove setzt die allgemeine Fachreferenz inaktiv und schaltet anschließend
+   den Companion-Pointer auf `NULL`; alle Generationen und Container bleiben
+   `RETAINED`. `REFERENCE_COMMIT_PENDING` schließt die Crashgrenze zwischen
+   Fachdeaktivierung und Journalfortschritt. Es gibt weder physisches Löschen
+   noch GC.
+5. Lesen prüft `documents.active=1` und `observation_id IS NULL`, löst danach
+   die aktive Generation über MED-ID auf und streamt ausschließlich an den
+   injizierten Consumer. Erfolg folgt erst auf vollständige Final-/EOF-/Hash-
+   Prüfung; ein permanentes Klartextziel entsteht nicht.
+6. Retry verwendet denselben Operation-Token und exakt denselben Prepare-Plan.
+   Andere ausstehende Vorgänge blockieren fail-closed; es wird weder eine neue
+   MED-ID noch eine neue Generation still erzeugt. Gate-Off bleibt der bisherige
+   Klartextpfad ohne Migration, Konvertierung oder Cipher-Fallback.
+
+Vor jedem Final-V3-Referenzwrite steht dauerhaft
+`REFERENCE_COMMIT_PENDING`. Restart unterscheidet dadurch sicher zwischen
+noch nicht begonnenem Fachwrite und bereits committeter Referenz. Ein
+gefangener Create-Pointerfehler wechselt vor der Kompensation nach
+`REFERENCE_COMPENSATION_REQUIRED`; erst nach vollständigem Entfernen der nie
+erfolgreich aktivierten Fachreferenz gilt `REFERENCE_COMPENSATED`. Replace
+persistiert `POINTER_PENDING` vor dem Companion-Wechsel; ein Restart setzt
+ausschließlich mit demselben gebundenen Plan fort.
+
+Der freigegebene Pilotweg beginnt ausschließlich mit einer frischen
+verschlüsselten Final-V3-Installation. Bestehende Klartextdokumente werden
+nicht migriert oder konvertiert; alte synthetische Testdaten werden verworfen
+und nach Aktivierung neu erzeugt. Bericht-/LEG-PDFs, Vorschau, OS-Öffnung,
+Export, Backup/Restore und Produkt-Default-Aktivierung bleiben außerhalb.
+
 Crash vor Erzeugung hinterlässt keinen Intent. Crash während Write, nach Write
 vor Verifikation oder nach Verifikation vor `PREPARED` erzeugt einen
 unregistrierten Bestand und blockiert fail-closed. Crash nach `PREPARED`,

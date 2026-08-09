@@ -292,10 +292,14 @@ Größen, Hashes, MIME, Lifecycle, Gate-, Schema-, Context-, Pointer- und
 Crashzustände werden nicht in PySide projiziert. Die vorhandenen fachlichen
 Attachment-Drafts und Save-/Edit-/Remove-Aktionen des Beobachtungsdialogs
 bleiben unverändert und werden ausschließlich in der internen Gate-On-
-Komposition anders persistiert. Es entstehen keine neuen Felder, Dialoge,
-Aktionen, PDF-Verknüpfungen, Exporte, Vorschauen, QDesktopServices-Aufrufe oder
-Recoveryanzeigen. Der injizierte Consumer ist eine rein technische Testgrenze
-und kein ViewModel oder Produktviewer.
+Komposition anders persistiert. Für ein als `managed_encrypted` projiziertes
+allgemeines Schülerdokument ersetzt `Ersetzen` die bisherige OS-Öffnen-Aktion;
+`Entfernen` bleibt fachlich erhalten. Es entstehen keine PDF-Verknüpfungen,
+Exporte, Vorschauen, neuen QDesktopServices-Aufrufe oder Recoveryanzeigen.
+Der kontrollierte Reader bleibt eine Qt-freie Consumergrenze ohne
+Klartextziel. `AppShell.student_adapter` erlaubt nur die explizite Injektion
+eines bereits gegateten Adapters; der Produktdefault erzeugt weiterhin den
+Gate-Off-Adapter.
 
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 

@@ -22,6 +22,7 @@ from src.application.dispatcher import (
     observation_delete_handler,
     observation_update_handler,
 )
+from src.application.managed_documents import ManagedStudentDocumentService
 from src.application.school_year_assignment import (
     ArchiveStudent,
     AssignmentApplicationError,
@@ -73,6 +74,7 @@ from src.core.observation_uow import (
     ObservationPersistenceUnitOfWork,
     ObservationWriterLock,
 )
+from src.core.managed_document_store import ManagedDocumentStore
 from src.core.maintenance_gate import product_writer
 from src.core.sqlite_store import (
     SQLITE_SPIKE_PATH,
@@ -231,6 +233,7 @@ class StudentDesktopAdapter:
         encrypted_observation_attachments: (
             EncryptedObservationAttachmentRuntime | None
         ) = None,
+        managed_document_store: ManagedDocumentStore | None = None,
     ) -> None:
         self.database_path = (
             Path(database.path) if database is not None else Path(database_path)
@@ -242,8 +245,28 @@ class StudentDesktopAdapter:
         self._now_provider = now_provider or (
             lambda: datetime.now().astimezone()
         )
-        self._encrypted_observation_attachments = encrypted_observation_attachments
+        if (
+            managed_document_store is not None
+            and encrypted_observation_attachments is not None
+            and managed_document_store is not encrypted_observation_attachments
+        ):
+            raise ValueError("All managed documents must use the same store.")
+        self._managed_document_store = managed_document_store
+        self._encrypted_observation_attachments = (
+            managed_document_store or encrypted_observation_attachments
+        )
+        self._managed_documents = (
+            None
+            if managed_document_store is None
+            else ManagedStudentDocumentService(
+                database=self.database,
+                store=managed_document_store,
+                now_provider=self._now_provider,
+            )
+        )
         self._observation_recovery_suspended = 0
+        if self._managed_documents is not None:
+            self._managed_documents.recover_pending()
         self._observation_uow().recover_pending()
 
     def list_students(
@@ -1444,8 +1467,28 @@ class StudentDesktopAdapter:
         title: str = "",
         note: str = "",
         observation_id: str = "",
+        operation_token: str = "",
     ) -> StudentDocumentViewModel:
-        """Copy a file into the app data folder and persist its metadata."""
+        """Persist one general document through the configured managed path."""
+        if self._managed_documents is not None:
+            if observation_id:
+                raise ValueError(
+                    "Observation attachments use the observation unit of work."
+                )
+            normalized_type = (
+                document_type
+                if document_type in DOCUMENT_TYPE_OPTIONS
+                else "Sonstiges"
+            )
+            document = self._managed_documents.create(
+                student_id=student_id,
+                source_path=source_path,
+                document_type=normalized_type,
+                title=title,
+                note=note,
+                operation_token=operation_token,
+            )
+            return self._document_view_model(document)
         document = self._create_document_record(
             student_id=student_id,
             source_path=source_path,
@@ -1457,9 +1500,50 @@ class StudentDesktopAdapter:
         return self._document_view_model(document)
 
     @product_writer
-    def remove_document(self, document_id: str) -> None:
+    def replace_student_document(
+        self,
+        *,
+        document_id: str,
+        source_path: Path,
+        operation_token: str = "",
+    ) -> StudentDocumentViewModel:
+        """Replace one encrypted general document without changing its MED-ID."""
+        if self._managed_documents is None:
+            raise RuntimeError("Encrypted managed documents are not active.")
+        return self._document_view_model(
+            self._managed_documents.replace(
+                document_id=document_id,
+                source_path=source_path,
+                operation_token=operation_token,
+            )
+        )
+
+    @product_writer
+    def remove_document(
+        self, document_id: str, operation_token: str = ""
+    ) -> None:
         """Soft-delete one document or media metadata row."""
+        if self._managed_documents is not None:
+            self._managed_documents.remove(
+                document_id=document_id,
+                operation_token=operation_token,
+            )
+            return
         self._document_repository().deactivate_document(document_id)
+
+    def read_managed_student_document(
+        self,
+        *,
+        document_id: str,
+        consumer: object,
+    ) -> object:
+        """Stream one active general document to an injected consumer."""
+        if self._managed_documents is None:
+            raise RuntimeError("Encrypted managed documents are not active.")
+        return self._managed_documents.read(
+            document_id=document_id,
+            consumer=consumer,
+        )
 
     def list_competency_overview_for_student(
         self,
@@ -2637,6 +2721,8 @@ class StudentDesktopAdapter:
     def _recover_observation_uow(self) -> None:
         if self._observation_recovery_suspended:
             return
+        if self._managed_documents is not None:
+            self._managed_documents.recover_pending()
         self._observation_uow().recover_pending()
 
     def _document_view_model(self, document: DocumentRecord) -> StudentDocumentViewModel:
@@ -2650,6 +2736,7 @@ class StudentDesktopAdapter:
             document.original_filename,
             document.created_at,
             document.note,
+            self._managed_documents is not None and not document.observation_id,
         )
 
     def _attachment_draft_from_record(

@@ -281,12 +281,22 @@ Containerinventar sowie `prepare`, `activate`, `deactivate`, `read` und
 injizierte Consumer besitzt nur vorläufig empfangene Klartextchunks und muss
 `abort` respektieren.
 
-Der `StudentDesktopAdapter` reicht ausschließlich aktive fachliche
-Beobachtungsreferenzen über MED-ID an diesen Reader weiter. Widgets und
-ViewModels besitzen weiterhin keine Runtime-Ownership. Allgemeine
-Schülerdokumente, Schülerprofilablage, Bericht/LEG und PDF-Services sind keine
-Quelle oder Senke dieser Runtime. Es gibt keine Export-, Preview-, Backup-,
-Restore-, Migrations-, GC- oder Produktstartup-Ownership.
+Der `StudentDesktopAdapter` reicht aktive fachliche Beobachtungsreferenzen und
+aktive allgemeine Schülerdokumentreferenzen über MED-ID an denselben Reader
+weiter. `ManagedStudentDocumentService` besitzt ausschließlich den
+journalisierten fachlichen Create-/Replace-/Remove-/Retry-Lifecycle; die
+Security-, Container- und Pointerlogik bleibt allein im gemeinsamen
+`ManagedDocumentStore`. Widgets und ViewModels besitzen weiterhin keine
+Runtime-Ownership. Bericht/LEG und PDF-Services sind keine Quelle oder Senke
+dieser Runtime. Es gibt keine Export-, Preview-, Backup-, Restore-,
+Migrations-, GC- oder Produktstartup-Ownership.
+
+`StudentDocumentViewModel.managed_encrypted` ist ausschließlich eine
+Adapterprojektion für die Aktionswahl: verschlüsselte allgemeine Dokumente
+zeigen `Ersetzen` und `Entfernen`, aber keine OS-Öffnung. `AppShell` darf einen
+bereits vollständig gegateten `StudentDesktopAdapter` explizit übernehmen;
+die Shell entscheidet weder Gate noch Schlüssel und aktiviert keinen
+Produktdefault.
 
 ## Security Sprint 11 - Integration ohne neue View
 

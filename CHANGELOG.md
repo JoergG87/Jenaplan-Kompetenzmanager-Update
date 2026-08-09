@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Allgemeine verwaltete Schülerdokumente nutzen hinter dem bestehenden
+  internen Final-V3-/DMK-Gate jetzt denselben `ManagedDocumentStore` wie
+  Beobachtungsanhänge. Create, Replace, Remove, Retry, Restart und
+  kontrolliertes Consumer-Streaming halten MED-ID stabil, wechseln pro neuer
+  Generation opaque Storage-ID und Document-Key und speichern im verwalteten
+  Storage ausschließlich `.jkmedoc`-Container. `documents.file_path` bleibt im
+  Cipher-Pfad leer; Gate-Off und die bisherige Klartextablage bleiben
+  unverändert. Ein bereits gegateter Adapter kann explizit in die Shell
+  injiziert werden; verschlüsselte allgemeine Dokumente bieten Ersetzen und
+  Entfernen, aber keine OS-Öffnung. Der Pilot beginnt frisch verschlüsselt:
+  Es gibt keine Klartextmigration oder Alt-Testdatenübernahme, Bericht-/LEG-PDFs,
+  Produktaktivierung, Export und Backup/Restore bleiben ausgeschlossen.
+
 - Beobachtungsanhänge können ausschließlich hinter dem bestehenden internen
   Final-V3-/DMK-Security-Gate über dieselbe `ObservationPersistenceUnitOfWork`
   als verschlüsselte Dokumentgenerationen gespeichert werden. Die fachlich

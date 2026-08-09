@@ -214,6 +214,7 @@ class StudentProfileScreen(QWidget):
     observation_edit_requested = Signal(str)
     observation_delete_requested = Signal(str)
     document_add_requested = Signal(str)
+    document_replace_requested = Signal(str, str)
     document_remove_requested = Signal(str, str)
     competency_confirmation_requested = Signal(str, str, str, str)
     report_requested = Signal(str)
@@ -3350,12 +3351,23 @@ class StudentProfileScreen(QWidget):
         set_label_style(meta, "subtle")
         text_layout.addWidget(title)
         text_layout.addWidget(meta)
-        open_button = QPushButton("Öffnen")
-        open_button.clicked.connect(
-            lambda _checked=False, file_path=document.file_path: (
-                self.open_document_file(file_path)
+        open_button = None
+        replace_button = None
+        if document.managed_encrypted:
+            replace_button = QPushButton("Ersetzen")
+            replace_button.setObjectName("DocumentReplaceButton")
+            replace_button.clicked.connect(
+                lambda _checked=False, document_id=document.document_id: (
+                    self._request_document_replace(document_id)
+                )
             )
-        )
+        else:
+            open_button = QPushButton("Öffnen")
+            open_button.clicked.connect(
+                lambda _checked=False, file_path=document.file_path: (
+                    self.open_document_file(file_path)
+                )
+            )
         remove_button = QPushButton("Entfernen")
         remove_button.setObjectName("DocumentRemoveButton")
         remove_button.clicked.connect(
@@ -3364,14 +3376,26 @@ class StudentProfileScreen(QWidget):
             )
         )
         layout.addWidget(text_block, 1)
-        layout.addWidget(open_button, 0)
+        if open_button is not None:
+            layout.addWidget(open_button, 0)
+        if replace_button is not None:
+            layout.addWidget(replace_button, 0)
         layout.addWidget(remove_button, 0)
-        self._make_clickable_card(
-            row,
-            lambda file_path=document.file_path: self.open_document_file(file_path),
-            "Datei öffnen",
-        )
+        if not document.managed_encrypted:
+            self._make_clickable_card(
+                row,
+                lambda file_path=document.file_path: self.open_document_file(file_path),
+                "Datei öffnen",
+            )
         return row
+
+    def _request_document_replace(self, document_id: str) -> None:
+        if self.current_student is None:
+            return
+        self.document_replace_requested.emit(
+            self.current_student.student_id,
+            document_id,
+        )
 
     def _request_document_remove(self, document_id: str) -> None:
         if self.current_student is None:

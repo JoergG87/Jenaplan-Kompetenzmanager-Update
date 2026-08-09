@@ -3,10 +3,10 @@
 ## ADR-099 - Dokumentgenerationen nutzen eine kontextgebundene SQLCipher-Companion-DB
 
 **Status:** Angenommen und ausschließlich im bestehenden internen
-Final-V3-SQLCipher-Gate lokal implementiert. Produktaktivierung, UI,
-allgemeine Schülerdokumente, PDF-Artefakte, Export, Backup/Restore, Migration,
-Build und Release bleiben ausgeschlossen. Ausschließlich neue und geänderte
-Beobachtungsanhänge sind über den vorhandenen Observation-UoW angebunden.
+Final-V3-SQLCipher-Gate lokal implementiert. Beobachtungsanhänge und neue
+allgemeine verwaltete Schülerdokumente verwenden denselben Store.
+Produktaktivierung, PDF-Artefakte, Export, Backup/Restore, Migration, Build und
+Release bleiben ausgeschlossen.
 
 ### Entscheidung
 
@@ -27,8 +27,9 @@ ein partieller Unique-Index erzwingen genau eine aktive Generation je bereits
 aktiviertem Dokument. Der Dateiname besteht ausschließlich aus Storage-ID und
 `.jkmedoc`; Originalname und fachliche Metadaten liegen nur in SQLCipher und
 im verschlüsselten Manifest, Fachinhalt nur im verschlüsselten Container.
-Für Beobachtungsanhänge ist die technische Document-ID unmittelbar die
-fachlich stabile `MED-######`-ID. UUID4 bleiben für Storage-, Container-,
+Für Beobachtungsanhänge und allgemeine Schülerdokumente ist die technische
+Document-ID unmittelbar die fachlich stabile `MED-######`-ID. UUID4 bleiben
+für Storage-, Container-,
 Document-Key-, Installations- und Database-Context-Identitäten zwingend.
 
 `prepare` veröffentlicht no-clobber einen vollständig verifizierten Container
@@ -49,6 +50,19 @@ gebundenen Aktivierungen und Deaktivierungen eines Journals gemeinsam in einer
 Companion-SQLCipher-Transaktion angewendet. Entfernen deaktiviert die
 fachliche Referenz und setzt den Companion-Pointer auf inaktive retained
 Generationen zurück; Container werden nicht gelöscht.
+
+Allgemeine Schülerdokumente verwenden denselben `ManagedDocumentStore` über
+einen eigenen kleinen fachlichen Application-Service. Dessen Journal enthält
+nur Operation, MED-ID, Prepare-Plan und Hashbindung, während Originalname,
+Titel, Typ, Notiz und Schülerbezug ausschließlich in SQLCipher beziehungsweise
+dem verschlüsselten Manifest liegen. Das vorhandene Final-V3-`documents`-
+Schema trägt den Vertrag mit `observation_id IS NULL` und leerem `file_path`;
+eine parallele Dokumenttabelle entsteht nicht.
+
+Der Pilot startet ausschließlich mit einem frischen verschlüsselten Final-V3-
+Bestand. Es wird keine Klartextmigration, Altbestandskonvertierung oder
+Kompatibilitätsschicht für alte Testdaten implementiert; Testdaten werden nach
+Verschlüsselungsaktivierung neu erzeugt. Gate-Off bleibt unverändert.
 
 ### Folgen
 

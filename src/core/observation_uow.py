@@ -16,7 +16,9 @@ from contextlib import contextmanager
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable, Protocol
+from typing import Iterable
+
+from .managed_document_store import ManagedDocumentStore
 
 from .observation import ObservationCompetencyRatingRecord, ObservationRecord
 from .maintenance_gate import product_writer
@@ -77,29 +79,7 @@ class ObservationOperationConflict(ObservationUnitOfWorkError):
     """Raised when current persistence state matches neither before nor target."""
 
 
-class EncryptedObservationAttachmentRuntime(Protocol):
-    """Small Qt-free port to the gated encrypted document runtime."""
-
-    def plan_prepare(self, *, document_id: str) -> object: ...
-    def prepare(self, **kwargs: object) -> object: ...
-    def verify_prepared(self, *, plan: object) -> object: ...
-    def activate(
-        self, *, document_id: str, document_generation: int | None = None
-    ) -> object: ...
-    def deactivate(self, *, document_id: str) -> object: ...
-    def apply_journaled_changes(
-        self,
-        *,
-        prepared_plans: tuple[object, ...],
-        deactivated_document_ids: tuple[str, ...],
-    ) -> tuple[object, ...]: ...
-    def read(
-        self,
-        *,
-        document_id: str,
-        consumer: object,
-        document_generation: int | None = None,
-    ) -> object: ...
+EncryptedObservationAttachmentRuntime = ManagedDocumentStore
 
 
 def new_operation_token() -> str:
@@ -1171,6 +1151,30 @@ class ObservationPersistenceUnitOfWork:
                     if isinstance(item, dict):
                         used.add(str(item.get("document_id", "")))
             for path in self.staging_root.rglob("*"):
+                match = ID_PATTERN.search(path.name)
+                if match:
+                    used.add(match.group(0))
+        managed_staging_root = self.data_root / ".managed-document-staging"
+        if managed_staging_root.is_symlink():
+            raise ObservationUnitOfWorkError(
+                "Managed-Document-Staging ist ungueltig."
+            )
+        if managed_staging_root.exists():
+            details = managed_staging_root.lstat()
+            if (
+                managed_staging_root.is_symlink()
+                or not stat.S_ISDIR(details.st_mode)
+                or details.st_uid != os.getuid()
+                or stat.S_IMODE(details.st_mode) & 0o077
+            ):
+                raise ObservationUnitOfWorkError(
+                    "Managed-Document-Staging ist ungueltig."
+                )
+            for path in managed_staging_root.rglob("*"):
+                if path.is_symlink():
+                    raise ObservationUnitOfWorkError(
+                        "Managed-Document-Staging enthaelt einen Symlink."
+                    )
                 match = ID_PATTERN.search(path.name)
                 if match:
                     used.add(match.group(0))

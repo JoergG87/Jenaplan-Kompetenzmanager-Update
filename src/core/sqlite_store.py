@@ -1154,6 +1154,85 @@ class SQLiteDocumentRepository:
                 )
         return document
 
+    def get_document(self, document_id: str) -> DocumentRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT document_id, student_id, observation_id, title,
+                       document_type, file_path, original_filename, created_at,
+                       note, active
+                FROM documents WHERE document_id = ?
+                """,
+                (document_id,),
+            ).fetchone()
+        return None if row is None else _document_from_row(row)
+
+    def get_active_general_document(
+        self, document_id: str
+    ) -> DocumentRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT document_id, student_id, observation_id, title,
+                       document_type, file_path, original_filename, created_at,
+                       note, active
+                FROM documents
+                WHERE document_id = ? AND observation_id IS NULL AND active = 1
+                """,
+                (document_id,),
+            ).fetchone()
+        return None if row is None else _document_from_row(row)
+
+    def update_general_document(self, document: DocumentRecord) -> None:
+        with closing(self.database.connect()) as connection:
+            with connection:
+                changed = connection.execute(
+                    """
+                    UPDATE documents
+                    SET title = ?, document_type = ?, file_path = ?,
+                        original_filename = ?, note = ?
+                    WHERE document_id = ? AND observation_id IS NULL
+                      AND active = 1
+                    """,
+                    (
+                        document.title,
+                        document.document_type,
+                        document.file_path,
+                        document.original_filename,
+                        document.note,
+                        document.document_id,
+                    ),
+                ).rowcount
+        if changed != 1:
+            raise LookupError("managed_document_not_found")
+
+    def delete_general_document(self, document_id: str) -> None:
+        with closing(self.database.connect()) as connection:
+            with connection:
+                changed = connection.execute(
+                    """
+                    DELETE FROM documents
+                    WHERE document_id = ? AND observation_id IS NULL
+                    """,
+                    (document_id,),
+                ).rowcount
+        if changed != 1:
+            raise LookupError("managed_document_not_found")
+
+    def deactivate_general_document(self, document_id: str) -> None:
+        with closing(self.database.connect()) as connection:
+            with connection:
+                changed = connection.execute(
+                    """
+                    UPDATE documents SET active = 0
+                    WHERE document_id = ? AND observation_id IS NULL
+                      AND active = 1
+                    """,
+                    (document_id,),
+                ).rowcount
+        if changed != 1:
+            raise LookupError("managed_document_not_found")
+
     def list_documents_for_student(
         self,
         student_id: str,
