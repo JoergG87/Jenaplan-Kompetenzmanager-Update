@@ -8,16 +8,16 @@ from pathlib import Path
 import sqlite3
 
 from src.core.database_engine import SQLiteConnectionProvider
-from src.core.final_v3_schema import FinalV3SchemaInitializer
+from src.core.final_v4_schema import FinalV4SchemaInitializer
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.adapters.student_desktop_adapter import (
     StudentDesktopAdapter,
 )
-from tests.helpers.synthetic_v3 import (
+from tests.helpers.synthetic_v4 import (
     SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
     SYNTHETIC_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
-    create_synthetic_v3_database,
+    create_synthetic_v4_database,
 )
 
 
@@ -95,7 +95,7 @@ def _bulk_product_database(
     student_count: int,
     provider: _CountingConnectionProvider,
 ) -> SQLiteDatabase:
-    FinalV3SchemaInitializer().initialize(path)
+    FinalV4SchemaInitializer().initialize(path)
     timestamp = "2025-07-01T08:00:00+00:00"
     with sqlite3.connect(path) as connection:
         connection.execute("PRAGMA foreign_keys = ON")
@@ -197,7 +197,7 @@ def _bulk_product_database(
 def test_current_lists_counts_and_course_group_scope_use_v3_assignments(
     tmp_path: Path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "current-scopes.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "current-scopes.sqlite")
     _seed_course_group(path)
     adapter = _adapter(path)
 
@@ -232,7 +232,7 @@ def test_current_lists_counts_and_course_group_scope_use_v3_assignments(
 def test_student_profile_exposes_neutral_and_blocking_membership_states(
     tmp_path: Path,
 ) -> None:
-    exited_path = create_synthetic_v3_database(tmp_path / "exited.sqlite")
+    exited_path = create_synthetic_v4_database(tmp_path / "exited.sqlite")
     with sqlite3.connect(exited_path) as connection:
         connection.execute("DROP TRIGGER trg_assignments_update_guard")
         connection.execute(
@@ -258,7 +258,7 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
     assert exited.status_label == "Im aktuellen Schuljahr ausgeschieden"
     assert not exited.membership_blocking
 
-    missing_path = create_synthetic_v3_database(
+    missing_path = create_synthetic_v4_database(
         tmp_path / "no-assignment.sqlite"
     )
     with sqlite3.connect(missing_path) as connection:
@@ -280,7 +280,7 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
     assert missing.status_label == "Keine aktuelle Zuordnung"
     assert not missing.membership_blocking
 
-    ambiguous_path = create_synthetic_v3_database(
+    ambiguous_path = create_synthetic_v4_database(
         tmp_path / "ambiguous.sqlite"
     )
     with sqlite3.connect(ambiguous_path) as connection:
@@ -320,7 +320,7 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
     assert ambiguous.status_label == "Aktuelle Zuordnung nicht eindeutig"
     assert ambiguous.membership_blocking
 
-    no_current_path = create_synthetic_v3_database(
+    no_current_path = create_synthetic_v4_database(
         tmp_path / "no-current.sqlite"
     )
     with sqlite3.connect(no_current_path) as connection:
@@ -350,7 +350,7 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
     assert no_current.status_label == "Kein aktuelles Schuljahr festgelegt"
     assert no_current.membership_blocking
 
-    archived_path = create_synthetic_v3_database(tmp_path / "archived.sqlite")
+    archived_path = create_synthetic_v4_database(tmp_path / "archived.sqlite")
     with sqlite3.connect(archived_path) as connection:
         connection.execute(
             """
@@ -383,7 +383,7 @@ def test_student_profile_exposes_neutral_and_blocking_membership_states(
 def test_dashboard_uses_one_as_of_and_batch_target_student_ids(
     tmp_path: Path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "dashboard.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "dashboard.sqlite")
     _seed_course_group(path)
     adapter = _adapter(path)
 
@@ -420,7 +420,7 @@ def test_dashboard_uses_one_as_of_and_batch_target_student_ids(
 def test_observation_edit_context_resolves_at_observation_date(
     tmp_path: Path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "historical-edit.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "historical-edit.sqlite")
     with sqlite3.connect(path) as connection:
         connection.execute(
             """
@@ -508,7 +508,7 @@ def test_observation_edit_context_resolves_at_observation_date(
 def test_missing_active_course_never_leaks_the_technical_id(
     tmp_path: Path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "inactive-course.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "inactive-course.sqlite")
     with sqlite3.connect(path) as connection:
         connection.execute(
         "UPDATE courses SET active = 0 WHERE course_id = 'CRS-TEST-1'"

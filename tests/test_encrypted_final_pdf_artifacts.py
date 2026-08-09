@@ -20,10 +20,10 @@ from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapt
 from src.security.final_v3_document_runtime import FinalV3DocumentRuntimeError
 from src.security.final_v3_document_runtime import (
     FinalV3DocumentRuntimeDecisionState,
-    run_gated_final_v3_document_runtime,
+    run_gated_final_v4_document_runtime,
 )
 from tests.test_final_v3_document_runtime import _Consumer, _loaded, _reopen, _runtime
-from tests.test_final_v3_sqlcipher_runtime import (
+from tests.test_final_v4_sqlcipher_runtime import (
     MemoryDataMasterKeyStore,
     _account_loader,
     _environment,
@@ -367,7 +367,7 @@ def test_exact_sqlcipher_report_and_conference_restart_read(tmp_path: Path) -> N
         root = _root(tmp_path)
         store = MemoryDataMasterKeyStore()
         account = _account_loader(str(uuid.uuid4()))
-        first = run_gated_final_v3_document_runtime(
+        first = run_gated_final_v4_document_runtime(
             account_loader=account,
             authentication_confirmed=True,
             technical_first_run_confirmed=True,
@@ -378,7 +378,7 @@ def test_exact_sqlcipher_report_and_conference_restart_read(tmp_path: Path) -> N
         )
         assert first.state is FinalV3DocumentRuntimeDecisionState.ACTIVE
         assert first.runtime is not None
-        database = first.runtime.final_v3.database
+        database = first.runtime.final_v4.database
         database.replace_seed_data(seed_reference_data())
         _insert_competencies(
             database,
@@ -418,7 +418,7 @@ def test_exact_sqlcipher_report_and_conference_restart_read(tmp_path: Path) -> N
             conference_revision_id
         )
 
-        restarted = run_gated_final_v3_document_runtime(
+        restarted = run_gated_final_v4_document_runtime(
             account_loader=account,
             authentication_confirmed=True,
             environ=_environment(root),
@@ -428,7 +428,7 @@ def test_exact_sqlcipher_report_and_conference_restart_read(tmp_path: Path) -> N
         assert restarted.state is FinalV3DocumentRuntimeDecisionState.ACTIVE
         assert restarted.runtime is not None
         restarted_adapter = StudentDesktopAdapter(
-            database=restarted.runtime.final_v3.database,
+            database=restarted.runtime.final_v4.database,
             database_create_allowed=False,
             today_provider=lambda: date(2026, 8, 9),
             managed_document_store=restarted.runtime.documents,
@@ -440,7 +440,7 @@ def test_exact_sqlcipher_report_and_conference_restart_read(tmp_path: Path) -> N
             restarted_adapter,
             conference.learning_conference_pdf_artifact_id,
         ).startswith(b"%PDF-")
-        assert not restarted.runtime.final_v3.database.path.read_bytes().startswith(
+        assert not restarted.runtime.final_v4.database.path.read_bytes().startswith(
             b"SQLite format 3\x00"
         )
         assert not restarted.runtime.documents.paths.database.read_bytes().startswith(

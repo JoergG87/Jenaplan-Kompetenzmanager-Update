@@ -3,7 +3,7 @@
 ## Cipher-Produktkomposition für Lauras Pilot
 
 **Status:** Der normale Produktstart ist für eine frische Installation auf die
-authentifizierte, verschlüsselte Final-V3-Runtime umgestellt. Verbindlich sind
+authentifizierte, verschlüsselte Final-V4-Runtime umgestellt. Verbindlich sind
 `sqlcipher3 0.6.2+jkm.sqlcipher4170.1`, SQLCipher `4.17.0 community`, SQLite
 `3.53.3` und CommonCrypto; eine andere oder fehlende Engine stoppt den Start
 ohne Standard-SQLite-Fallback.
@@ -25,14 +25,45 @@ bestehenden ZIP-v1-Backup-/Restoreaktionen sind im Cipher-Produktmodus bis zum
 Folgepaket technisch gesperrt. Build, Packaging, Release und die manuelle
 macOS-/UI-Abnahme sind nicht Bestandteil dieses Pakets.
 
-## V3-only Produktschema und Architecture Cleanup
+## Final-V4-Fachrelevanz für den kommenden Pilot
 
-**Status:** Governance, technischer V3-only-Cleanup, zentrale Assignment-API,
-SJ-2E-Leserumstellung, SJ-2F-Writerumstellung und die Final-V3-Runtime-
+Final V4 ist der neue und einzige fachliche Pilot-Schemavertrag. Frische
+Hauptdatenbanken werden direkt mit `PRAGMA user_version = 4` und dem exakten
+V4-Fingerprint
+`a3a4ec7694daf60fe90a547036f5d7573f4875800a411f923485e76582ea3516`
+erzeugt. Es gibt keinen erhaltenswerten
+fachlichen V3-Klartext- oder V3-Cipher-Bestand: V3 wird weder migriert noch
+importiert, konvertiert, überschrieben oder gelöscht, sondern fail-closed
+abgewiesen. Testdaten entstehen nach Fertigstellung neu; Laura legt ihren
+realen Schülerbestand anschließend selbst an.
+
+Die globale `documentation_subject_settings` bleibt Default. Pro
+`student_id` und `school_year_id` gilt ohne Profil beziehungsweise im Modus
+`inherit` dieser aktuelle globale Default. `custom` speichert eine exakte
+normalisierte Fachmenge, die spätere globale Änderungen nicht verändern.
+Schreiben ist ausschließlich im eindeutigen `current`-Schuljahr zulässig;
+geschlossene und geplante Jahre bleiben read-only. Der Resolver verwendet
+keine Stammgruppe, keinen Kurs, keine Klassenstufe, keine Beobachtungsmenge und
+keinen Kompetenzstand. Fachrelevanz filtert Dokumentationsprojektionen und
+löscht oder deutet keine Beobachtung, Kompetenz, Bewertung oder historische
+Ausgabe um.
+
+Cipher-First-Run, `.jkmebackup`, Restore-Staging, Restore-Worker,
+Bootstrap-Recovery, Rollback und Live-Restore akzeptieren ausschließlich den
+V4-Vertrag. Die eigenständige Dokument-Companion-Schemaversion 1 sowie Key-,
+Envelope- und Verschlüsselungsarchitektur bleiben unverändert. Die fachliche
+UI- und Projektionsintegration folgt getrennt.
+
+## Historische V3-only Grundlage und Architecture Cleanup
+
+**Status:** Durch den Final-V4-Pilotvertrag für die fachliche Schemaidentität
+abgelöst. Weiterhin gültig bleiben zentrale Assignment-API,
+SJ-2E-Leserumstellung, SJ-2F-Writerumstellung und die Final-V4-Runtime-
 Aktivierung sowie die isolierte synthetische SJ-3C.2-Ausführung sind lokal
 implementiert. Die manuelle macOS-Abnahme bleibt offen.
 
-V3 ist das erste und einzige Produktschema. Es enthält `school_years`,
+V3 war der erste vollständige Vorgängervertrag und ist heute nicht mehr als
+Produktschema zugelassen. Seine in Final V4 fortgeführte Grundlage enthält `school_years`,
 datierte `student_school_year_assignments`, `courses.year_level`,
 `students` ohne `group_id` und `course_id` sowie
 `school_year_transitions` ausschließlich für echte spätere
@@ -53,14 +84,14 @@ V2-Startupzustände entfernt. Compatibility, Backup und Restore akzeptieren
 ausschließlich das exakte finale Schema. Das unabhängige Backupformat-v1
 bleibt bestehen.
 
-Startup-Ziel ist: exaktes finales Schema erkennen, eine fehlende Datenbank nur
-im autorisierten First-Run-/Testkontext direkt als V3 erzeugen und unbekannte
-oder beschädigte Schemata fail-closed ablehnen. Exakt verifiziertes Final-V3
-wird als `V3_SCHEMA_READY` für die normale Runtime zugelassen. Nach diesem
-Gate öffnet die Composition Root die vorhandene Datenbank ausschließlich ohne
-Create-Fallback; verschwindet sie, stoppt der Start fail-closed.
+Das damalige V3-Startupziel und `V3_SCHEMA_READY` sind durch den direkten
+Final-V4-First-Run und `V4_SCHEMA_READY` ersetzt. V3 wird nicht mehr zur
+normalen Runtime zugelassen; unbekannte oder beschädigte Schemata bleiben
+fail-closed. Nach dem V4-Gate öffnet die Composition Root die vorhandene
+Datenbank ausschließlich ohne Create-Fallback; verschwindet sie, stoppt der
+Start fail-closed.
 
-Der aktuelle Cipher-Produkt-First-Run erzeugt das vollständige Final-V3-Schema,
+Der aktuelle Cipher-Produkt-First-Run erzeugt das vollständige Final-V4-Schema,
 prüft Haupt- und Companion-Datenbank keyed und legt anschließend ausschließlich
 das Schuljahr `2026/27` an. Der frühere schemaisolierte Vertrag ohne Schuljahr
 bleibt nur für historische Core- und Testkontexte bestehen und ist nicht mehr
@@ -87,8 +118,9 @@ LEG-Snapshotbildung einschließlich Assignmentauflösung und persistierendem
 Revisionsschritt liegt jeweils in derselben Transaktion. Bestehende
 Revisionen, Hashes und PDF-Artefakte werden nicht neu aufgelöst.
 
-SJ-2F stellt die produktiven Schüler-, Kurs- und Stammgruppen-Writer auf
-Final-V3 um. Schüleranlage schreibt V3-Stammdaten und initiales
+SJ-2F stellt die produktiven Schüler-, Kurs- und Stammgruppen-Writer auf die
+in Final V4 fortgeführte V3-Stammdatenform um. Schüleranlage schreibt
+Stammdaten und initiales
 `enrolled`-Assignment atomar. Stammdatenänderung, datierter Einzelwechsel,
 Austritt und Archivierung bleiben getrennte Lifecycles; Austritt archiviert
 nicht, Archivierung verändert keine Assignments und wird bei aktueller
@@ -102,7 +134,7 @@ zukünftige `enrolled`-Assignments darauf verweisen. Historische Assignments
 bleiben unverändert lesbar; Stammdatenwrites buchen kein Kind um.
 
 Der synthetische Entwicklungs-/Testdatenpfad erzeugt ausschließlich frische
-deterministische Final-V3-Daten mit geschlossenem Schuljahr `2025/26`,
+deterministische Final-V4-Daten mit geschlossenem Schuljahr `2025/26`,
 erhaltenen historischen Assignments und genau einem current-Schuljahr
 `2026/27` samt vollständigen aktuellen Assignments. Kursstufen,
 V3-Schülerstammdaten und Stammgruppen bleiben konsistent. Der Pfad migriert
@@ -156,7 +188,7 @@ keine Plan-, ViewModel-, Persistenz-, Backup-, Step-up-, Maintenance- oder
 Ausführungslogik hinzu.
 
 SJ-3C.2 ergänzt die isolierte Qt-freie atomare Ausführungslogik auf
-temporären synthetischen Final-V3-Datenbanken. Der unveränderliche Plan trägt
+temporären synthetischen Final-V4-Datenbanken. Der unveränderliche Plan trägt
 einen technischen Quellenfingerabdruck; sein kanonischer Plan-Hash enthält
 keine Anzeigenamen. Nach `BEGIN IMMEDIATE` werden Quellen, current- und
 Zieljahr, Assignments sowie Kurs-/Gruppenreferenzen erneut geprüft. Der
@@ -171,7 +203,7 @@ Backup-Service und dem Maintenance-Gate. Ein neuer Lauf benötigt eine echte
 `SCHOOL_YEAR_TRANSITION`-Capability, vollständigen Writer-Drain und ein
 veröffentlichtes, erneut verifiziertes Backup des unveränderten Quellenstands.
 Der Nachweis bindet sichere technische Backup-ID, echten Archivhash,
-Quellenhash, Final-V3-Fingerprint und Verifikationszeitpunkt; der persistierte
+Quellenhash, Final-V4-Fingerprint und Verifikationszeitpunkt; der persistierte
 Transitionbeleg trägt den echten Archivhash. Sichere Fehler rollen vollständig
 zurück und geben das Gate frei, uneindeutige Zustände bleiben
 `RECOVERY_REQUIRED`.
@@ -373,11 +405,11 @@ bleiben getrennte Gates. Der GitHub-Pre-Release/Pilot erfolgt erst nach
 Clean-Build und vollständiger Paketabnahme; es gibt keinen Stable-Appcast und
 keinen automatischen Pilotrollout.
 
-## Final-V3-SQLCipher-Runtime - interner gated Produktstack-Smoke
+## Final-V4-SQLCipher-Runtime - interner gated Produktstack-Smoke
 
 Der vorhandene DMK-/Database-Key-Bestand kann nun ausschließlich hinter einem
 zusätzlichen, standardmäßig inaktiven Gate und einem zweiten festen Marker im
-privaten System-Temporärroot mit einer frischen Final-V3-SQLCipher-Datenbank
+privaten System-Temporärroot mit einer frischen Final-V4-SQLCipher-Datenbank
 verbunden werden. Der Pfad verlangt bestätigte Authentifizierung und bei einer
 Neuanlage eine explizite technische First-Run-Bestätigung. Er verwendet exakt
 das lokale Binding `0.6.2+jkm.sqlcipher4170.1`, SQLCipher
@@ -389,7 +421,7 @@ frischen Pilot-Produktstart.
 Schemaerzeugung, keyed Kompatibilitätsprüfung und die an Repositories sowie
 Desktop-Adapter übergebene `SQLiteDatabase` teilen dieselbe feste
 Provider-/Database-Key-Konfiguration. Restart öffnet zunächst read-only keyed
-und prüft Cipher, Integrität, Foreign Keys, Final-V3-Version und vollständigen
+und prüft Cipher, Integrität, Foreign Keys, Final-V4-Version und vollständigen
 Fingerprint. Fehlende oder widersprüchliche Schlüssel-/DB-Bestände,
 Klartext, falsche Keys, unbekannte Versionen, Crashreste und unvollständige
 Schemata blockieren ohne Migration, Reparatur oder stille Neuerzeugung.
@@ -404,12 +436,13 @@ Backup/Restore-, Support-Reset-, Build-, DMG- oder Releaseaktivierung.
 
 ## Final-V3-Dokumentcontainer-Runtime - intern gegatete technische Grenze
 
-Unter exakt demselben DMK-/Final-V3-SQLCipher-Gate kann eine separate
+Unter exakt demselben DMK-/Final-V4-SQLCipher-Gate kann eine separate
 `documents-v1.sqlcipher`-Companion-Datenbank geöffnet werden. Sie besitzt eine
 eigene exakte Schemaidentität und ist an dieselbe Installation, denselben
 Database-Context und denselben vorhandenen Database-Key gebunden. Dadurch
-bleiben `final-v3.sqlcipher`, `user_version=3` und der vollständige
-Final-V3-Hauptfingerprint unverändert.
+bleiben Companion-Schema, Containerformat und deren unabhängiger
+`FinalV3DocumentSchemaV1`-Fingerprint unverändert; die Hauptdatenbank ist
+`final-v4.sqlcipher` mit `user_version=4` und Final-V4-Hauptfingerprint.
 
 Der verwaltete Storage liegt ausschließlich im privaten Runtime-Root und
 akzeptiert als Containerdateien nur `<opaque-storage-id>.jkmedoc`. Der
@@ -424,21 +457,21 @@ Die Runtime ist über den gemeinsamen `ManagedDocumentStore` sowohl an die
 `ObservationPersistenceUnitOfWork` als auch an den kleinen journalisierten
 `ManagedStudentDocumentService` für allgemeine Schülerdokumente gebunden. Die
 vorhandene MED-ID bleibt Document-ID; Generation und opaque Storage-ID bleiben
-rein physisch. Beide Lifecycle schreiben die fachliche Final-V3-Referenz erst
+rein physisch. Beide Lifecycle schreiben die fachliche Final-V4-Referenz erst
 nach Vollverifikation und aktivieren danach idempotent den Companion-Pointer.
 Replace behält MED-ID und alten lesbaren Stand bis zum erfolgreichen Wechsel;
 Remove deaktiviert fachlich und behält alle Container retained.
 
-Der Pilotweg setzt einen frischen verschlüsselten Final-V3-Bestand voraus.
+Der Pilotweg setzt einen frischen verschlüsselten Final-V4-Bestand voraus.
 Klartextbestände und alte Testdaten werden nicht migriert oder konvertiert;
 Testdaten werden nach Gate-Aktivierung neu erzeugt. Gate-Off bleibt
 unverändert. Es gibt keinen Export, OS-Preview, Produktstartup, Build oder
 Releasepfad.
 
-## Verschlüsseltes Final-V3-Pilotbackup und Restore-Staging
+## Verschlüsseltes Final-V4-Pilotbackup und Restore-Staging
 
 Der Cipher-Produktpfad sichert ausschließlich frische
-verschlüsselte Final-V3-Installationen in `.jkmebackup`. Der gemeinsame
+verschlüsselte Final-V4-Installationen in `.jkmebackup`. Der gemeinsame
 Writer-Lock friert Hauptdatenbank, Companion-DB, aktives Fachinventar und alle
 registrierten Dokumentgenerationen ein. SQLCipher-Backup-Snapshots,
 Keyset-Metadaten, die geschützte Database-Key-Envelope-Registry und sämtliche
@@ -463,7 +496,7 @@ Historische Klartext-/ZIP-v1-Bestände werden nicht migriert. Gate-Off behält
 bis zur Produktaktivierung unverändert ZIP-v1; die bestehende Oberfläche ist
 nicht auf den neuen Pfad geschaltet.
 
-## Verschlüsselter Final-V3-Live-Restore - technischer Workerpfad
+## Verschlüsselter Final-V4-Live-Restore - technischer Workerpfad
 
 Ein bereits vollständig verifiziertes `RESTORE_READY` kann auf Basis der
 Cipher-Produktkomposition aus ADR-101 über den vorhandenen Restore-Worker live
@@ -479,7 +512,7 @@ Ausgetauscht werden als eine zusammengehörige Einheit ausschließlich
 Dokumentbestand. Der alte
 Bestand bleibt unter `rollback/`; kein physisches GC findet statt. Erfolg wird
 erst nach frischem keyed Reopen von Haupt- und Companion-DB, vollständigem
-`.jkmedoc`-Inventar, Final-V3-/Companion-Fingerprint und allen Dokument-/RPA-/
+`.jkmedoc`-Inventar, Final-V4-/Companion-Fingerprint und allen Dokument-/RPA-/
 LCA-Crossbindings bestätigt. Ein Fehler rollt beide Komponenten zurück und
 prüft den alten Bestand keyed; ein uneindeutiger Mischzustand wird
 `manual_recovery_required`. Ein Kaltstart stellt vor jedem Product-Open nur

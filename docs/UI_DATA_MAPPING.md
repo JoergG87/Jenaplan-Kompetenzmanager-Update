@@ -18,22 +18,22 @@ keine Migrationsauswahl, keine Alt-Testdatenübernahme und keine
 Klartext-Reparaturaktion. Startupfehler werden ohne Secrets, Pfade oder
 Credentialdetails angezeigt.
 
-## V3-only Startup und geplanter Schuljahresassistent
+## Final-V4-Startup und geplanter Schuljahresassistent
 
-**Status:** SJ-2F ergänzt produktive Final-V3-Writer in vorhandenen
-Schüler- und Stammdatenviews. Exakt verifiziertes Final-V3 ist für die
+**Status:** SJ-2F ergänzt die fortgeführten produktiven Writer in vorhandenen
+Schüler- und Stammdatenviews. Exakt verifiziertes Final-V4 ist für die
 technische Runtime lokal aktiviert. `Einstellungen → Schuljahre` ist
 einschließlich der geschützten SJ-3C.6-Ausführung integriert;
 Mehrkindwechsel außerhalb dieses Vorgangs bleibt in der UI gesperrt.
 
 Der Datenbankstart zeigt keinen V2-Bootstrap, keine V2-Migrationsvorschau und
 keine Auswahl zur Übernahme alter Testdaten. Ein erkanntes, vollständig
-verifiziertes Final-V3 erreicht als `V3_SCHEMA_READY` die normale Runtime.
+verifiziertes Final-V4 erreicht als `V4_SCHEMA_READY` die normale Runtime.
 Unbekannte oder beschädigte Schemata führen fail-closed in die bestehende
 kontrollierte Recoverygrenze.
 
 Eine fehlende Datenbank darf nur im autorisierten First Run direkt als
-Final-V3-SQLCipher erzeugt werden. Sie und der Companion werden anschließend
+Final-V4-SQLCipher erzeugt werden. Sie und der Companion werden anschließend
 keyed vollständig geprüft und von der Composition Root ohne späteren
 Create-Fallback geöffnet. Der aktuelle Cipher-Produkt-First-Run erzeugt
 ausschließlich das Schuljahr `2026/27`; der ältere schemaisolierte Vertrag
@@ -46,7 +46,7 @@ in diesem Zwischenstand noch nicht gespeichert oder aktiviert. Seine
 fachlichen UI-Felder bleiben:
 
 Die isolierte SJ-3C.2-Application-/Repository-Transaktion auf temporären
-synthetischen Final-V3-Datenbanken ist nicht an diese Oberfläche angebunden
+synthetischen Final-V4-Datenbanken ist nicht an diese Oberfläche angebunden
 und ergänzt weder Feld noch Aktion.
 
 | UI-Feld/Aktion | Quelle | Persistenz | Regel |
@@ -172,7 +172,7 @@ derselben aufrufereigenen Connection und im selben SQLite-Read-Snapshot wie
 die übrigen Daten des Requests. Die Session besitzt keine
 Transaktionssteuerung. Finalisierte Revisionen und PDFs werden nicht live neu
 aufgelöst. Dieses Mapping führt keine neue Tabelle, Migration oder Persistenz
-ein. Die getrennte `V3_SCHEMA_READY`-Disposition verändert die fachlichen
+ein. Die getrennte `V4_SCHEMA_READY`-Disposition verändert die fachlichen
 Reader- und Sperrverträge nicht.
 
 ## Phase 2 Berichte-Übersicht - implementiert
@@ -293,7 +293,7 @@ Dialoge, Buttons, Einstellungen, Startupmeldungen oder Recoveryaktionen. Die
 strukturierte technische Runtimeentscheidung gehört ausschließlich zu
 internen Tests.
 
-## Final-V3-SQLCipher-Runtime - keine UI-Projektion
+## Final-V4-SQLCipher-Runtime - keine UI-Projektion
 
 Zusätzliches Gate, Rootmarker, Authentifizierungsbestätigung, technischer
 First-Run-Status, Cipher-/SQLite-Version, Integritätsstatus und keyed
@@ -325,7 +325,7 @@ Storage-ID, Journal und physischer Container werden nicht sichtbar. Dieses
 Paket ergänzt weder Vorschau noch Öffnen, Export, Pfadauswahl oder eine neue
 UI-Aktion.
 
-## Verschlüsseltes Final-V3-Pilotbackup - keine UI-Projektion
+## Verschlüsseltes Final-V4-Pilotbackup - keine UI-Projektion
 
 `.jkmebackup`, Backup-Key-Envelope, Manifest, Context-/Generationsbindungen,
 Snapshotphasen, Restore-Staging und `RESTORE_READY` werden in diesem Paket
@@ -712,7 +712,7 @@ Regel:
 
 Regel:
 
-Der PySide-Schuelerdialog ist der aktive Final-V3-Eingabepfad. Er sammelt
+Der PySide-Schuelerdialog ist der aktive Final-V4-Eingabepfad. Er sammelt
 Eingaben, validiert UI-nah und nutzt den Desktop Adapter sowie getrennte
 Application-/Domain-/Repository-Lifecycles. Qt Widgets schreiben nicht direkt
 in SQLite. Schülerstammdaten und Membership werden nicht über ein

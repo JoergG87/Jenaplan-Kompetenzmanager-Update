@@ -139,14 +139,14 @@ def test_exact_417_product_first_run_is_empty_and_keyed(tmp_path: Path) -> None:
 
     assert opened.first_run is True
     assert opened.installation_id == account.installation_id
-    assert opened.runtime.final_v3.compatibility.cipher_version == (
+    assert opened.runtime.final_v4.compatibility.cipher_version == (
         SQLCIPHER_4_17_ENGINE_VERSION
     )
-    assert opened.runtime.final_v3.compatibility.cipher_provider == "commoncrypto"
-    assert opened.runtime.final_v3.compatibility.sqlite_version == (
+    assert opened.runtime.final_v4.compatibility.cipher_provider == "commoncrypto"
+    assert opened.runtime.final_v4.compatibility.sqlite_version == (
         SQLCIPHER_4_17_SQLITE_VERSION
     )
-    assert opened.database is opened.runtime.final_v3.database
+    assert opened.database is opened.runtime.final_v4.database
     assert opened.documents is opened.runtime.documents
     assert callable(opened.documents.prepare)
     assert callable(opened.documents.read)
@@ -176,11 +176,11 @@ def test_exact_417_product_first_run_is_empty_and_keyed(tmp_path: Path) -> None:
             assert connection.execute(
                 f"SELECT COUNT(*) FROM {table}"
             ).fetchone()[0] == 0
-    assert not paths.final_v3_database.read_bytes().startswith(b"SQLite format 3\x00")
+    assert not paths.final_v4_database.read_bytes().startswith(b"SQLite format 3\x00")
     assert not paths.document_companion_database.read_bytes().startswith(
         b"SQLite format 3\x00"
     )
-    assert b"2026/27" not in paths.final_v3_database.read_bytes()
+    assert b"2026/27" not in paths.final_v4_database.read_bytes()
     assert not paths.database.exists()
     assert not paths.documents.exists()
     assert store.create_calls == 1
@@ -298,7 +298,7 @@ def test_product_adapter_observation_roundtrip_uses_same_runtime(
     rows = restarted_adapter.list_observations_for_student(student.value.student_id)
     assert [row.observation_id for row in rows] == [observation.value.observation_id]
     assert rows[0].note == "Nur verschlüsselt gespeichert"
-    raw = paths.final_v3_database.read_bytes()
+    raw = paths.final_v4_database.read_bytes()
     for plaintext in (
         "Ada",
         "Cipherprodukt",
@@ -329,23 +329,23 @@ def test_plaintext_product_database_is_rejected_unchanged_before_keys(
     assert after == before
     assert store.create_calls == 0
     assert not paths.keyset_metadata.exists()
-    assert not paths.final_v3_database.exists()
+    assert not paths.final_v4_database.exists()
 
 
-def test_plaintext_at_final_v3_product_path_is_rejected_before_keys(
+def test_plaintext_at_final_v4_product_path_is_rejected_before_keys(
     tmp_path: Path,
 ) -> None:
     paths, account, store = _case(tmp_path)
-    paths.final_v3_runtime.mkdir(mode=0o700)
-    with sqlite3.connect(paths.final_v3_database) as connection:
+    paths.final_v4_runtime.mkdir(mode=0o700)
+    with sqlite3.connect(paths.final_v4_database) as connection:
         connection.execute("CREATE TABLE legacy(value TEXT)")
-    before = paths.final_v3_database.read_bytes()
+    before = paths.final_v4_database.read_bytes()
 
     with pytest.raises(CipherProductRuntimeError) as caught:
         _open(paths, account, store, first_run_allowed=False)
 
     assert caught.value.code == "plaintext_product_database_not_supported"
-    assert paths.final_v3_database.read_bytes() == before
+    assert paths.final_v4_database.read_bytes() == before
     assert store.create_calls == 0
 
 
@@ -374,7 +374,7 @@ def test_product_restart_rejects_key_damage_without_regeneration(
 ) -> None:
     paths, account, store = _case(tmp_path)
     _open(paths, account, store, first_run_allowed=True)
-    main_hash = hashlib.sha256(paths.final_v3_database.read_bytes()).hexdigest()
+    main_hash = hashlib.sha256(paths.final_v4_database.read_bytes()).hexdigest()
     companion_hash = hashlib.sha256(
         paths.document_companion_database.read_bytes()
     ).hexdigest()
@@ -397,7 +397,7 @@ def test_product_restart_rejects_key_damage_without_regeneration(
     assert caught.value.code == expected_codes[damage]
     assert caught.value.operation.value == "load_keys"
     assert store.create_calls == 1
-    assert hashlib.sha256(paths.final_v3_database.read_bytes()).hexdigest() == main_hash
+    assert hashlib.sha256(paths.final_v4_database.read_bytes()).hexdigest() == main_hash
     assert (
         hashlib.sha256(paths.document_companion_database.read_bytes()).hexdigest()
         == companion_hash
@@ -413,7 +413,7 @@ def test_completed_runtime_rejects_missing_database_without_recreation(
     paths, account, store = _case(tmp_path)
     _open(paths, account, store, first_run_allowed=True)
     target = (
-        paths.final_v3_database
+        paths.final_v4_database
         if missing == "main"
         else paths.document_companion_database
     )
@@ -447,7 +447,7 @@ def test_sqlcipher_412_configuration_is_rejected_without_product_files(
 
     assert caught.value.code == "sqlcipher_417_provider_configuration_invalid"
     assert store.create_calls == 0
-    assert not paths.final_v3_database.exists()
+    assert not paths.final_v4_database.exists()
 
 
 def test_missing_sqlcipher_never_uses_standard_sqlite(
@@ -485,7 +485,7 @@ def test_missing_sqlcipher_never_uses_standard_sqlite(
     assert caught.value.code == "sqlcipher_unavailable"
     assert caught.value.operation.value == "verify_engine"
     assert store.create_calls == 0
-    assert not paths.final_v3_database.exists()
+    assert not paths.final_v4_database.exists()
     assert not paths.database.exists()
 
 
@@ -500,15 +500,15 @@ def test_runtime_paths_register_cipher_roles_without_creating_them(
         "database_key_envelope_registry": (
             "security-key-runtime-v1/database-key-envelopes-v1.json"
         ),
-        "final_v3_runtime": "final-v3-sqlcipher-runtime-v1",
-        "final_v3_database": (
-            "final-v3-sqlcipher-runtime-v1/final-v3.sqlcipher"
+        "final_v4_runtime": "final-v4-sqlcipher-runtime-v1",
+        "final_v4_database": (
+            "final-v4-sqlcipher-runtime-v1/final-v4.sqlcipher"
         ),
         "document_companion_database": (
-            "final-v3-sqlcipher-runtime-v1/documents-v1.sqlcipher"
+            "final-v4-sqlcipher-runtime-v1/documents-v1.sqlcipher"
         ),
         "encrypted_document_storage": (
-            "final-v3-sqlcipher-runtime-v1/document-containers-v1"
+            "final-v4-sqlcipher-runtime-v1/document-containers-v1"
         ),
         "backups": "backups",
     }

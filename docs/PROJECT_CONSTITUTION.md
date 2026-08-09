@@ -2,10 +2,10 @@
 
 ## Cipher-Produktpfad des Pilotstands
 
-Für Lauras Pilot ist eine frische verschlüsselte Final-V3-Installation der
+Für Lauras Pilot ist eine frische verschlüsselte Final-V4-Installation der
 einzige normale Produktpfad. Nach erfolgreicher Authentifizierung besitzt die
 Composition Root genau eine DMK-/Database-Key-Komposition und genau einen
-keyed Connection Provider für Final-V3, Dokument-Companion, Repositories,
+keyed Connection Provider für Final-V4, Dokument-Companion, Repositories,
 Desktop Adapter und Shell. Verbindlich sind Binding
 `0.6.2+jkm.sqlcipher4170.1`, SQLCipher `4.17.0 community`, SQLite `3.53.3`
 und CommonCrypto. Abweichung oder Fehlen stoppt fail-closed; Standard-SQLite
@@ -21,23 +21,26 @@ werden strukturiert abgewiesen. Dokumente werden im Cipher-Pfad ausschließlich
 
 Die vorhandenen ZIP-v1-Backup-/Restoreaktionen bleiben im Cipher-Produktmodus
 bis zum ausdrücklich freigegebenen Folgepaket technisch gesperrt. Diese
-Produktentscheidung aus ADR-101 ersetzt frühere Aussagen, die Klartext-SQLite
+Produktentscheidung aus ADR-103 ersetzt frühere Aussagen, die Klartext-SQLite
 oder ein First Run ohne Schuljahr pauschal als normalen Pilotdefault
 beschrieben; die zugrunde liegenden isolierten Foundation-Verträge bleiben
 historisch und testseitig gültig.
 
-## V3-only Verfassungsgrenzen für Schuljahre und Mitgliedschaften
+## Final-V4-Verfassungsgrenzen für Schuljahre, Mitgliedschaften und Fachrelevanz
 
-V3 ist das erste und einzige Produktschema. Es gibt keine produktiven
-V2-Daten, keine V2→V3-Produktmigration, keinen V2-Bootstrap-Assistenten,
-keinen V2-Produktrestore und keine dauerhafte V2-Kompatibilitätszusage.
-Bisherige V2-Bestände sind ausschließlich synthetische Entwicklungsdaten und
-dürfen für Tests verworfen sowie direkt als frische V3-Bestände neu erzeugt
-werden. Echte Nutzerdaten dürfen erst nach vollständiger Implementierung,
-Prüfung und ausdrücklicher V3-Freigabe verwendet werden.
+Final V4 ist der erste fachliche Pilotvertrag mit individueller
+Dokumentationsfachauswahl. Es gibt keinen erhaltenswerten fachlichen V3-
+Klartext- oder Cipher-Bestand, keine V3→V4-Migration, keinen V3-Backupimport,
+keine Alt-Testdatenübernahme und keine Legacy-Kompatibilitätsschicht.
+Vorhandene V3-Dateien werden weder verändert noch gelöscht, sondern
+fail-closed abgewiesen. Testdaten werden ausschließlich frisch als V4
+erzeugt; reale Schülerdaten legt Laura anschließend selbst an.
 
 Für das finale Schema gelten unverhandelbar:
 
+- `PRAGMA user_version = 4` und der vollständige Fingerprint
+  `a3a4ec7694daf60fe90a547036f5d7573f4875800a411f923485e76582ea3516`
+  identifizieren ausschließlich Final V4;
 - `school_years` ist die einzige gespeicherte Wahrheit für Schuljahre;
 - `student_school_year_assignments` ist die einzige gespeicherte Wahrheit für
   aktuelle und historische Kurs- und Stammgruppenzuordnungen;
@@ -49,17 +52,23 @@ Für das finale Schema gelten unverhandelbar:
 - `enrolled` verlangt Gruppe und Kurs, `exited` besitzt beides nicht;
 - das Systemdatum aktiviert oder schließt niemals ein Schuljahr und wird nie
   still als fachliches Referenzdatum verwendet;
+- `documentation_subject_settings` bleibt die globale Defaultquelle;
+- pro `student_id` und `school_year_id` gilt `inherit` oder eine exakte,
+  gegenüber globalen Änderungen stabile `custom`-Auswahl;
+- Fachrelevanz wird nicht aus Membership, Stufe, Beobachtungen oder
+  Kompetenzständen abgeleitet und verändert keine historischen Fachdaten;
+- Fachrelevanzwrites sind ausschließlich im `current`-Schuljahr zulässig;
+  geschlossene und geplante Jahre bleiben read-only;
 - unbekannte, beschädigte oder nicht exakt passende Schemata werden
   fail-closed abgelehnt.
 
 Eine fehlende Datenbank darf nur in einem kontrollierten autorisierten
-First-Run- oder temporären Testkontext direkt als vollständiges V3-Schema
-erzeugt werden. Solange produktive Leser noch V2-Mitgliedschaftsfelder
-erwarten, darf das erkannte finale Schema die normale Shell nicht freigeben.
-Der Zwischenzustand muss dies ohne V2-Bootstrap-Sprache ausdrücklich benennen.
+First-Run- oder temporären Testkontext direkt als vollständiges V4-Schema
+erzeugt werden. Nur das vollständig verifizierte Final V4 darf die normale
+Shell freigeben; V3, Teilstände und unbekannte Schemata bleiben fail-closed.
 
 Eine ausschließlich intern gegatete technische SQLCipher-Companion-Datenbank
-darf das Final-V3-Hauptschema nicht erweitern oder dessen exakten Fingerprint
+darf das Final-V4-Hauptschema nicht erweitern oder dessen exakten Fingerprint
 relativieren. Sie benötigt eine eigene feste Schemaidentität, dieselbe stabile
 Installations-/Database-Context-Bindung und eine explizite Neuanlageautorität.
 Verschlüsselte Dokumentgenerationen werden vor jedem Pointerwrite vollständig
@@ -80,7 +89,7 @@ Memory-Sink. Vor der fachlichen Artefaktpersistenz wird die neue
 journalisiert und idempotent. Im verwalteten Runtime-Root entsteht kein
 Klartext-PDF.
 
-Für den Pilot wird ausschließlich ein frischer verschlüsselter Final-V3-
+Für den Pilot wird ausschließlich ein frischer verschlüsselter Final-V4-
 Bestand mit neu angelegten Schülern und neu erzeugten Dokumenten unterstützt.
 Es gibt keine produktive Klartextmigration, keine Altbestandskonvertierung und
 keine Kompatibilitätsschicht für alte Testdaten. Nach Aktivierung werden
@@ -240,16 +249,16 @@ passende `pending`-Kette fortsetzen. Ein nachweislich begonnenes, aber nicht
 publiziertes Database-Key-Envelope blockiert, weil der flüchtige Key nach
 Prozessabbruch nicht rekonstruierbar ist.
 
-Dieser Pfad erzeugt und öffnet keine SQLite-/SQLCipher-/Final-V3-Datenbank und
+Dieser Pfad erzeugt und öffnet keine SQLite-/SQLCipher-/Final-V4-Datenbank und
 besitzt keine Produkt-, Startup-, UI-, Backup/Restore-, Migrations-, Build-,
 Pilot- oder Releaseaktivierung. Ein technisches GO bestätigt ausschließlich
 die standardmäßig inaktive Security-Key-Runtime.
 
-## Entwicklungsgrenze Final-V3-SQLCipher-Runtime
+## Entwicklungsgrenze Final-V4-SQLCipher-Runtime
 
 Die vorhandene DMK-/Database-Key-Runtime darf ausschließlich im zusätzlich
-markergebundenen internen Gate `JKM_FINAL_V3_SQLCIPHER_RUNTIME_TEST=1` eine
-frische Final-V3-Datenbank mit SQLCipher `4.17.0 community` verbinden. Das
+markergebundenen internen Gate `JKM_FINAL_V4_SQLCIPHER_RUNTIME_TEST=1` eine
+frische Final-V4-Datenbank mit SQLCipher `4.17.0 community` verbinden. Das
 DMK-Gate, sein privater System-Temporärroot und sein Marker bleiben zwingend;
 ein zweiter fester Marker, bestätigte Authentifizierung und für eine Neuanlage
 eine explizite technische First-Run-Bestätigung sind zusätzliche Bedingungen.
@@ -270,15 +279,15 @@ Eine neue Datenbank wird nur erzeugt, wenn Datenbank, Keyset und Envelope zu
 Beginn vollständig fehlen, die Authentifizierung bestätigt ist und der
 Database-Key im selben bestätigten technischen First Run neu aktiviert wurde.
 Jede Asymmetrie, Klartext-SQLite, Recovery-Sidecar, falscher Key, unbekannte
-Version, Integritätsfehler oder nicht exaktes Final-V3 blockiert ohne
+Version, Integritätsfehler oder nicht exaktes Final-V4 blockiert ohne
 Reparatur, Migration oder Neuerzeugung. Ein Crashbestand darf nur nach
 vollständiger keyed Prüfung fortgesetzt werden; andernfalls bleibt er
 fail-closed. Aus einem GO folgt keine Produkt-, Pilot-, Dokument-, Backup-,
 Build- oder Releaseaktivierung.
 
-## Entwicklungsgrenze verschlüsseltes Final-V3-Pilotbackup
+## Entwicklungsgrenze verschlüsseltes Final-V4-Pilotbackup
 
-Der frische verschlüsselte Final-V3-Pilotbestand verwendet hinter demselben
+Der frische verschlüsselte Final-V4-Pilotbestand verwendet hinter demselben
 Security-Gate ausschließlich `.jkmebackup`. Backup erwirbt den vorhandenen
 Writer-Lock, erzeugt keyed SQLCipher-Snapshots von Haupt- und Companion-DB,
 bindet das unter demselben Zustand bestimmte aktive Dokumentinventar und
@@ -289,7 +298,7 @@ Reopen erforderliche technische Metadaten aufgenommen werden; DMK,
 
 Restore-Staging schreibt ausschließlich in einen neuen privaten Staging-Root. Nur
 nach vollständiger Containerprüfung, keyed Reopen mit exakt SQLCipher 4.17,
-Final-V3-/Companion-Fingerprint und vollständiger Context-/Generations-
+Final-V4-/Companion-Fingerprint und vollständiger Context-/Generations-
 Crossbindingprüfung darf `RESTORE_READY` entstehen. Es mutiert selbst keinen
 Livebestand.
 
@@ -301,7 +310,7 @@ Recovery-Code-Ersatz. Historische Klartext-/ZIP-v1-Bestände werden nicht
 migriert. Der frühere Gate-Off-Vertrag behält ZIP-v1 nur als nicht produktiv
 aufrufbare Foundation; ADR-101 sperrt diese Aktionen im Cipher-Produktmodus.
 
-## Entwicklungsgrenze verschlüsselter Final-V3-Live-Restore
+## Entwicklungsgrenze verschlüsselter Final-V4-Live-Restore
 
 Nur ein bereits vollständig verifiziertes `RESTORE_READY` derselben
 Installation darf die bestehende Restore-Worker-/Journalgrenze betreten. Vor

@@ -24,19 +24,19 @@ from src.core.sqlite_store import (
     SQLiteLearningConferenceRepository,
     SQLiteLearningReportRepository,
 )
-from tests.helpers.synthetic_v3 import (
+from tests.helpers.synthetic_v4 import (
     SYNTHETIC_LEG_DRAFT_ID,
     SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
     SYNTHETIC_REPORT_DRAFT_ID,
     SYNTHETIC_STUDENT_IDS,
-    create_pre_transition_v3_database,
+    create_pre_transition_v4_database,
 )
 
 
 REPORT_DRAFT_ID = SYNTHETIC_REPORT_DRAFT_ID
 LEG_DRAFT_ID = SYNTHETIC_LEG_DRAFT_ID
 SYNTHETIC_SCHOOL_YEAR_ID = SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID
-create_synthetic_v3_database = create_pre_transition_v3_database
+create_synthetic_v4_database = create_pre_transition_v4_database
 STUDENT_ID = SYNTHETIC_STUDENT_IDS[0]
 SWITCH_DATE = date(2026, 2, 1)
 NOW = datetime(2026, 7, 20, 9, 0, tzinfo=UTC)
@@ -54,7 +54,7 @@ def _connection_factory(path: Path):
 
 @pytest.fixture
 def v3_report_leg_database(tmp_path: Path) -> tuple[Path, SQLiteDatabase]:
-    path = create_synthetic_v3_database(
+    path = create_synthetic_v4_database(
         tmp_path / "v3-report-leg-membership.sqlite"
     )
     with sqlite3.connect(path) as connection:

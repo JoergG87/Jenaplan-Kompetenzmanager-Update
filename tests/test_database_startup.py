@@ -19,7 +19,7 @@ from src.core.database_startup import (
     DatabaseStartupResolver,
     DatabaseStartupState,
 )
-from src.core.final_v3_schema import initialize_final_v3_schema
+from src.core.final_v4_schema import initialize_final_v4_schema
 from src.desktop_app.main import _coordinate_product_database_startup
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.runtime import prepare_runtime_storage, runtime_paths
@@ -38,7 +38,7 @@ def test_exact_final_schema_is_recognized_and_runtime_is_allowed(
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "final.sqlite"
-    initialize_final_v3_schema(path)
+    initialize_final_v4_schema(path)
 
     detection = DatabaseStartupResolver().resolve(path)
     decision = DatabaseStartupCoordinator().coordinate(
@@ -46,7 +46,7 @@ def test_exact_final_schema_is_recognized_and_runtime_is_allowed(
         restore_status="normal_start",
     )
 
-    expected = DatabaseStartupState.V3_SCHEMA_READY
+    expected = DatabaseStartupState.V4_SCHEMA_READY
     assert detection.state is expected
     assert decision.state is expected
     assert decision.sqlite_user_version == FINAL_SCHEMA_VERSION
@@ -95,7 +95,7 @@ def test_missing_database_requires_explicit_initialization_authority(
     )
 
     assert blocked.state is DatabaseStartupState.RECOVERY_REQUIRED
-    assert allowed.state is DatabaseStartupState.V3_INITIALIZATION_REQUIRED
+    assert allowed.state is DatabaseStartupState.V4_INITIALIZATION_REQUIRED
     assert allowed.final_schema_initialization_required is True
     assert allowed.normal_runtime_allowed is False
     assert not path.exists()
@@ -112,7 +112,7 @@ def test_main_startup_boundary_creates_final_schema_then_rescans(
         restore_status="normal_start",
         coordinator=DatabaseStartupCoordinator(),
         prepare_storage=prepare_runtime_storage,
-        initialize_final_schema=initialize_final_v3_schema,
+        initialize_final_schema=initialize_final_v4_schema,
         new_database_initialization_allowed=True,
     )
 
@@ -120,7 +120,7 @@ def test_main_startup_boundary_creates_final_schema_then_rescans(
     assert paths.database.exists()
     assert (
         decision.state
-        is DatabaseStartupState.V3_SCHEMA_READY
+        is DatabaseStartupState.V4_SCHEMA_READY
     )
     assert decision.normal_runtime_allowed is True
 
@@ -153,7 +153,7 @@ def test_admitted_database_disappearance_never_creates_a_replacement(
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "admitted.sqlite"
-    initialize_final_v3_schema(path)
+    initialize_final_v4_schema(path)
     decision = DatabaseStartupCoordinator().coordinate(
         path,
         restore_status="normal_start",
@@ -164,7 +164,7 @@ def test_admitted_database_disappearance_never_creates_a_replacement(
 
     with pytest.raises(
         DatabaseCompatibilityError,
-        match="Final-V3-Datenbank fehlt",
+        match="Final-V4-Datenbank fehlt",
     ):
         StudentDesktopAdapter(
             path,
@@ -182,7 +182,7 @@ def test_incomplete_restore_state_blocks_before_schema_detection(
     restore_status: str,
 ) -> None:
     path = tmp_path / "final.sqlite"
-    initialize_final_v3_schema(path)
+    initialize_final_v4_schema(path)
 
     decision = DatabaseStartupCoordinator().coordinate(
         path,
@@ -229,7 +229,7 @@ def test_sqlite_sidecars_require_recovery(
     suffix: str,
 ) -> None:
     path = tmp_path / "final.sqlite"
-    initialize_final_v3_schema(path)
+    initialize_final_v4_schema(path)
     Path(f"{path}{suffix}").write_bytes(b"synthetic-sidecar")
 
     detection = DatabaseStartupResolver().resolve(path)
@@ -240,7 +240,7 @@ def test_sqlite_sidecars_require_recovery(
 
 def test_symlink_database_path_is_rejected(tmp_path: Path) -> None:
     target = tmp_path / "target.sqlite"
-    initialize_final_v3_schema(target)
+    initialize_final_v4_schema(target)
     link = tmp_path / "link.sqlite"
     link.symlink_to(target)
 

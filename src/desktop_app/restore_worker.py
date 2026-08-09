@@ -42,7 +42,7 @@ WORKER_READY_MESSAGE = b"worker_started\n"
 WORKER_READY_TIMEOUT_SECONDS = 5.0
 WORKER_TERMINATE_TIMEOUT_SECONDS = 2.0
 RESTORE_MODE_ZIP_V1 = "zip_v1"
-RESTORE_MODE_FINAL_V3_ENCRYPTED = "final_v3_encrypted"
+RESTORE_MODE_FINAL_V4_ENCRYPTED = "final_v4_encrypted"
 
 
 class RestoreWorkerLaunchError(RuntimeError):
@@ -284,7 +284,7 @@ def _abort_unconfirmed_restore(
     restore_id: str | None,
     restore_mode: str,
 ) -> None:
-    if restore_mode == RESTORE_MODE_FINAL_V3_ENCRYPTED:
+    if restore_mode == RESTORE_MODE_FINAL_V4_ENCRYPTED:
         if restore_id is None:
             return
         try:
@@ -360,7 +360,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--parent-lifetime-fd", type=int)
     parser.add_argument(
         "--restore-mode",
-        choices=(RESTORE_MODE_ZIP_V1, RESTORE_MODE_FINAL_V3_ENCRYPTED),
+        choices=(RESTORE_MODE_ZIP_V1, RESTORE_MODE_FINAL_V4_ENCRYPTED),
         default=RESTORE_MODE_ZIP_V1,
     )
     return parser
@@ -395,13 +395,13 @@ def run(
         lock = RuntimeInstanceLock(runtime_root, inherited_fd=args.lock_fd)
         lock.acquire()
         try:
-            if args.restore_mode == RESTORE_MODE_FINAL_V3_ENCRYPTED:
+            if args.restore_mode == RESTORE_MODE_FINAL_V4_ENCRYPTED:
                 if encrypted_service_factory is None:
-                    from src.security.final_v3_live_restore import (
-                        build_final_v3_live_restore_worker_service,
+                    from src.security.final_v4_live_restore import (
+                        build_final_v4_live_restore_worker_service,
                     )
 
-                    service = build_final_v3_live_restore_worker_service(
+                    service = build_final_v4_live_restore_worker_service(
                         runtime_root,
                         restore_id=handoff.stem,
                     )

@@ -1,7 +1,7 @@
-"""Internally gated encrypted-document runtime beside Final-V3 SQLCipher.
+"""Internally gated encrypted-document runtime beside Final-V4 SQLCipher.
 
 The runtime is deliberately Qt-free and absent from product startup.  It uses
-the already marker-bound DMK/Database-Key and Final-V3 SQLCipher runtime, an
+the already marker-bound DMK/Database-Key and Final-V4 SQLCipher runtime, an
 exact companion SQLCipher schema, and the existing secretstream container
 engine.  It exposes no plaintext export or operating-system preview.
 """
@@ -53,15 +53,15 @@ from .document_container import (
     EncryptedDocumentError,
 )
 from .domain import validate_uuid4
-from .final_v3_sqlcipher_runtime import (
-    FinalV3SQLCipherRuntimeCoordinator,
-    FinalV3SQLCipherRuntimeDecisionState,
-    FinalV3SQLCipherRuntimeError,
-    FinalV3SQLCipherRuntimeGate,
-    FinalV3SQLCipherRuntimePaths,
-    FinalV3SQLCipherRuntimeScope,
-    MarkerGatedFinalV3SQLCipherRuntimeScope,
-    OpenedFinalV3SQLCipherRuntime,
+from .final_v4_sqlcipher_runtime import (
+    FinalV4SQLCipherRuntimeCoordinator,
+    FinalV4SQLCipherRuntimeDecisionState,
+    FinalV4SQLCipherRuntimeError,
+    FinalV4SQLCipherRuntimeGate,
+    FinalV4SQLCipherRuntimePaths,
+    FinalV4SQLCipherRuntimeScope,
+    MarkerGatedFinalV4SQLCipherRuntimeScope,
+    OpenedFinalV4SQLCipherRuntime,
 )
 from .infrastructure.system import (
     PlatformFilePermissionManager,
@@ -167,7 +167,7 @@ class FinalV3DocumentRuntimeDecisionState(StrEnum):
 
 class FinalV3DocumentRuntimeOperation(StrEnum):
     CLASSIFY = "classify"
-    OPEN_FINAL_V3 = "open_final_v3"
+    OPEN_FINAL_V4 = "open_final_v4"
     LOAD_KEYS = "load_keys"
     INITIALIZE_SCHEMA = "initialize_schema"
     INSPECT_SCHEMA = "inspect_schema"
@@ -194,22 +194,22 @@ class FinalV3DocumentRuntimeError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class FinalV3DocumentRuntimePaths:
-    final_v3: FinalV3SQLCipherRuntimePaths
+    final_v4: FinalV4SQLCipherRuntimePaths
     database: Path
     container_root: Path
     layout_source_root: Path
     storage_root: Path
 
     @classmethod
-    def for_final_v3(
-        cls, final_v3: FinalV3SQLCipherRuntimePaths
+    def for_final_v4(
+        cls, final_v4: FinalV4SQLCipherRuntimePaths
     ) -> "FinalV3DocumentRuntimePaths":
         container_root = (
-            final_v3.runtime_root / FINAL_V3_DOCUMENT_CONTAINER_DIRECTORY
+            final_v4.runtime_root / FINAL_V3_DOCUMENT_CONTAINER_DIRECTORY
         )
         return cls(
-            final_v3=final_v3,
-            database=final_v3.runtime_root / FINAL_V3_DOCUMENT_DATABASE_FILENAME,
+            final_v4=final_v4,
+            database=final_v4.runtime_root / FINAL_V3_DOCUMENT_DATABASE_FILENAME,
             container_root=container_root,
             layout_source_root=container_root / SOURCES_DIRECTORY,
             storage_root=container_root / STORAGE_DIRECTORY,
@@ -245,7 +245,7 @@ class FinalV3DocumentPreparePlan:
 
 @dataclass(frozen=True)
 class OpenedFinalV3DocumentRuntime:
-    final_v3: OpenedFinalV3SQLCipherRuntime
+    final_v4: OpenedFinalV4SQLCipherRuntime
     documents: "FinalV3DocumentRuntime" = field(repr=False)
     database_context_id: str
     installation_id: str
@@ -271,15 +271,15 @@ class FinalV3DocumentConnectionFactory:
         paths: FinalV3DocumentRuntimePaths,
         loaded_keys: LoadedDatabaseKeyRuntime,
         environ: Mapping[str, str],
-        scope: FinalV3SQLCipherRuntimeScope | None = None,
+        scope: FinalV4SQLCipherRuntimeScope | None = None,
     ) -> None:
         if (
             provider.expected_binding_version != SQLCIPHER_4_17_BINDING_VERSION
             or provider.expected_engine_version != SQLCIPHER_4_17_ENGINE_VERSION
         ):
             raise _error("document_sqlcipher_provider_invalid")
-        self._scope = scope or MarkerGatedFinalV3SQLCipherRuntimeScope(environ)
-        expected = FinalV3DocumentRuntimePaths.for_final_v3(
+        self._scope = scope or MarkerGatedFinalV4SQLCipherRuntimeScope(environ)
+        expected = FinalV3DocumentRuntimePaths.for_final_v4(
             self._scope.require_paths()
         )
         if paths != expected:
@@ -307,14 +307,14 @@ class FinalV3DocumentConnectionFactory:
         )
 
     def _require_scope(self) -> None:
-        expected = FinalV3DocumentRuntimePaths.for_final_v3(
+        expected = FinalV3DocumentRuntimePaths.for_final_v4(
             self._scope.require_paths()
         )
-        if self._paths.database.parent != self._paths.final_v3.runtime_root:
+        if self._paths.database.parent != self._paths.final_v4.runtime_root:
             raise _error("document_runtime_scope_invalid")
         if self._paths != expected:
             raise _error("document_runtime_scope_invalid")
-        _require_private_directory(self._paths.final_v3.runtime_root)
+        _require_private_directory(self._paths.final_v4.runtime_root)
 
 
 class FinalV3DocumentSchemaV1:
@@ -1398,25 +1398,25 @@ class FinalV3DocumentRuntime:
 
 
 class FinalV3DocumentRuntimeCoordinator:
-    """Compose one already-keyed Final-V3 runtime with its document runtime."""
+    """Compose one already-keyed Final-V4 runtime with its document runtime."""
 
     def __init__(
         self,
         *,
-        final_v3: OpenedFinalV3SQLCipherRuntime,
+        final_v4: OpenedFinalV4SQLCipherRuntime,
         paths: FinalV3DocumentRuntimePaths,
         loaded_keys: LoadedDatabaseKeyRuntime,
         installation_id: str,
         document_database_create_allowed: bool,
         provider: SQLCipherConnectionProvider,
-        scope: FinalV3SQLCipherRuntimeScope,
+        scope: FinalV4SQLCipherRuntimeScope,
         environ: Mapping[str, str],
         source_root: Path | None,
         random_source: Any,
         clock: Any,
         fault_hook=None,
     ) -> None:
-        self.final_v3 = final_v3
+        self.final_v4 = final_v4
         self.paths = paths
         self.loaded_keys = loaded_keys
         self.installation_id = installation_id
@@ -1436,12 +1436,12 @@ class FinalV3DocumentRuntimeCoordinator:
         if self.source_root is not None:
             _require_external_source_root(self.source_root, self.paths)
         if (
-            self.loaded_keys is not self.final_v3.loaded_keys
+            self.loaded_keys is not self.final_v4.loaded_keys
             or self.loaded_keys.database_context_id
-            != self.final_v3.database_context_id
-            or self.loaded_keys.database_key_id != self.final_v3.database_key_id
+            != self.final_v4.database_context_id
+            or self.loaded_keys.database_key_id != self.final_v4.database_key_id
             or self.loaded_keys.database_key_generation
-            != self.final_v3.database_key_generation
+            != self.final_v4.database_key_generation
         ):
             raise _error(
                 "document_key_runtime_binding_mismatch",
@@ -1506,14 +1506,14 @@ class FinalV3DocumentRuntimeCoordinator:
         )
         documents.validate_restart()
         return OpenedFinalV3DocumentRuntime(
-            final_v3=self.final_v3,
+            final_v4=self.final_v4,
             documents=documents,
             database_context_id=self.loaded_keys.database_context_id,
             installation_id=self.installation_id,
         )
 
 
-def run_gated_final_v3_document_runtime(
+def run_gated_final_v4_document_runtime(
     *,
     account_loader,
     authentication_confirmed: bool,
@@ -1530,13 +1530,13 @@ def run_gated_final_v3_document_runtime(
     """Open only under the existing double marker gate; never fall back."""
 
     environment = dict(os.environ if environ is None else environ)
-    gate = FinalV3SQLCipherRuntimeGate()
+    gate = FinalV4SQLCipherRuntimeGate()
     gate_decision = gate.resolve(environment)
-    if gate_decision.state is not FinalV3SQLCipherRuntimeDecisionState.ACTIVE:
+    if gate_decision.state is not FinalV4SQLCipherRuntimeDecisionState.ACTIVE:
         return FinalV3DocumentRuntimeDecision(
             FinalV3DocumentRuntimeDecisionState.DISABLED
             if gate_decision.state
-            is FinalV3SQLCipherRuntimeDecisionState.DISABLED
+            is FinalV4SQLCipherRuntimeDecisionState.DISABLED
             else FinalV3DocumentRuntimeDecisionState.BLOCKED,
             error_code=gate_decision.error_code,
             error_operation=(
@@ -1547,8 +1547,8 @@ def run_gated_final_v3_document_runtime(
         )
     operation = FinalV3DocumentRuntimeOperation.CLASSIFY
     try:
-        scope = MarkerGatedFinalV3SQLCipherRuntimeScope(environment)
-        paths = FinalV3DocumentRuntimePaths.for_final_v3(scope.require_paths())
+        scope = MarkerGatedFinalV4SQLCipherRuntimeScope(environment)
+        paths = FinalV3DocumentRuntimePaths.for_final_v4(scope.require_paths())
         external_source_root = None if source_root is None else Path(source_root)
         if external_source_root is not None:
             _require_external_source_root(external_source_root, paths)
@@ -1562,9 +1562,9 @@ def run_gated_final_v3_document_runtime(
             expected_binding_version=SQLCIPHER_4_17_BINDING_VERSION,
             expected_engine_version=SQLCIPHER_4_17_ENGINE_VERSION,
         )
-        operation = FinalV3DocumentRuntimeOperation.OPEN_FINAL_V3
-        final_v3 = FinalV3SQLCipherRuntimeCoordinator(
-            paths=paths.final_v3,
+        operation = FinalV3DocumentRuntimeOperation.OPEN_FINAL_V4
+        final_v4 = FinalV4SQLCipherRuntimeCoordinator(
+            paths=paths.final_v4,
             account_loader=stable_account_loader,
             authentication_confirmed=authentication_confirmed,
             technical_first_run_confirmed=technical_first_run_confirmed,
@@ -1578,10 +1578,10 @@ def run_gated_final_v3_document_runtime(
         ).open()
         operation = FinalV3DocumentRuntimeOperation.LOAD_KEYS
         opened = FinalV3DocumentRuntimeCoordinator(
-            final_v3=final_v3,
+            final_v4=final_v4,
             paths=paths,
             installation_id=installation_id,
-            loaded_keys=final_v3.loaded_keys,
+            loaded_keys=final_v4.loaded_keys,
             document_database_create_allowed=document_database_create_allowed,
             provider=provider,
             scope=scope,
@@ -1601,7 +1601,7 @@ def run_gated_final_v3_document_runtime(
             error_code=error.code,
             error_operation=error.operation,
         )
-    except (FinalV3SQLCipherRuntimeError, DatabaseKeyRuntimeError) as error:
+    except (FinalV4SQLCipherRuntimeError, DatabaseKeyRuntimeError) as error:
         return FinalV3DocumentRuntimeDecision(
             FinalV3DocumentRuntimeDecisionState.BLOCKED,
             error_code=str(getattr(error, "code", "document_runtime_failed")),
@@ -1799,7 +1799,7 @@ def _require_external_source_root(
         raise _error("document_source_root_invalid")
     _require_private_directory(source_root)
     source = source_root.resolve()
-    managed = paths.final_v3.root.resolve()
+    managed = paths.final_v4.root.resolve()
     for child, parent in ((source, managed), (managed, source)):
         try:
             child.relative_to(parent)

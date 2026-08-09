@@ -256,7 +256,7 @@ def main() -> int:
         )
     if "--restore-worker" in arguments:
         from src.desktop_app.restore_worker import (
-            RESTORE_MODE_FINAL_V3_ENCRYPTED,
+            RESTORE_MODE_FINAL_V4_ENCRYPTED,
             run as run_restore_worker,
         )
 
@@ -265,7 +265,7 @@ def main() -> int:
             restore_mode = arguments[mode_index + 1]
         except (ValueError, IndexError):
             restore_mode = None
-        if restore_mode != RESTORE_MODE_FINAL_V3_ENCRYPTED:
+        if restore_mode != RESTORE_MODE_FINAL_V4_ENCRYPTED:
             print(
                 "App-Start abgelehnt: cipher_backup_restore_not_available.",
                 file=sys.stderr,
@@ -292,9 +292,9 @@ def main() -> int:
         smoke_data_root = None
 
     try:
-        final_v3_restore_confirm = "--final-v3-restore-confirm" in arguments
-        if final_v3_restore_confirm:
-            arguments.remove("--final-v3-restore-confirm")
+        final_v4_restore_confirm = "--final-v4-restore-confirm" in arguments
+        if final_v4_restore_confirm:
+            arguments.remove("--final-v4-restore-confirm")
             restore_runtime_root = _argument_value(arguments, "--runtime-root")
             restore_confirm_id = _argument_value(arguments, "--restore-id")
             restore_confirm_token = _argument_value(arguments, "--restore-token")
@@ -312,11 +312,11 @@ def main() -> int:
             restore_confirm_token = None
         resume_restore_id = _argument_value(arguments, "--restore-resume")
         resume_token = _argument_value(arguments, "--restore-token")
-        if not final_v3_restore_confirm:
+        if not final_v4_restore_confirm:
             inherited_lock_value = _argument_value(arguments, "--restore-lock-fd")
         if resume_restore_id is not None or resume_token is not None:
             raise RuntimeStorageError("cipher_backup_restore_not_available")
-        if inherited_lock_value is not None and not final_v3_restore_confirm:
+        if inherited_lock_value is not None and not final_v4_restore_confirm:
             raise RuntimeStorageError("cipher_backup_restore_not_available")
         inherited_lock_fd = (
             None if inherited_lock_value is None else int(inherited_lock_value)
@@ -338,23 +338,23 @@ def main() -> int:
     new_database_initialization_candidate = False
     try:
         lock.acquire()
-        from src.security.final_v3_live_restore import (
-            confirm_final_v3_restore_startup,
-            recover_interrupted_final_v3_restore,
+        from src.security.final_v4_live_restore import (
+            confirm_final_v4_restore_startup,
+            recover_interrupted_final_v4_restore,
         )
 
-        if final_v3_restore_confirm:
-            confirm_final_v3_restore_startup(
+        if final_v4_restore_confirm:
+            confirm_final_v4_restore_startup(
                 runtime_root=data_root,
                 restore_id=str(restore_confirm_id),
                 token=str(restore_confirm_token),
             )
         else:
-            recovery = recover_interrupted_final_v3_restore(
+            recovery = recover_interrupted_final_v4_restore(
                 runtime_root=data_root,
             )
             if recovery.status == "resume_required":
-                confirm_final_v3_restore_startup(
+                confirm_final_v4_restore_startup(
                     runtime_root=data_root,
                     restore_id=str(recovery.restore_id),
                     token=str(recovery.resume_token),
@@ -527,7 +527,7 @@ def main() -> int:
         student_adapter = _build_cipher_product_student_adapter(product_runtime)
 
         window = JenaplanDesktopApp(
-            paths.final_v3_database,
+            paths.final_v4_database,
             paths=paths,
             runtime_lock=lock,
             database_create_allowed=False,

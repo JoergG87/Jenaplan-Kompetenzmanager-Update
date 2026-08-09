@@ -25,7 +25,7 @@ from src.application.commands.restore import (
 )
 from src.core.backup import SQLiteBackupEngine
 from src.core.database_compatibility import DatabaseCompatibilityStatus
-from src.core.final_v3_schema import FinalV3SchemaInitializer
+from src.core.final_v4_schema import FinalV4SchemaInitializer
 from src.core.restore import (
     RestoreCompatibilityError,
     RestoreError,
@@ -53,7 +53,7 @@ def _runtime(tmp_path: Path) -> RuntimePaths:
         paths.logs,
     ):
         directory.mkdir(parents=True, exist_ok=True)
-    FinalV3SchemaInitializer().initialize(paths.database)
+    FinalV4SchemaInitializer().initialize(paths.database)
     return paths
 
 
@@ -292,14 +292,14 @@ def _add_final_pdfs(paths: RuntimePaths) -> tuple[Path, Path]:
     return report_path, conference_path
 
 
-def test_valid_final_v3_backup_produces_exact_preview(tmp_path: Path) -> None:
+def test_valid_final_v4_backup_produces_exact_preview(tmp_path: Path) -> None:
     paths = _runtime(tmp_path)
     _insert_personal_data(paths)
     backup = _create_backup(paths)
     result = RestoreVerifier().verify(backup)
     assert result.compatibility.status is DatabaseCompatibilityStatus.EXACT
     assert result.preview.compatibility_status is DatabaseCompatibilityStatus.EXACT
-    assert result.preview.sqlite_user_version == 3
+    assert result.preview.sqlite_user_version == 4
     assert result.preview.students_count == 1
     assert result.preview.observations_count == 1
 
@@ -466,7 +466,7 @@ def test_restore_verification_never_changes_live_data(tmp_path: Path) -> None:
     assert _live_state(paths) == before
 
 
-def test_valid_final_v3_backup_is_prepared_with_rebased_managed_document(
+def test_valid_final_v4_backup_is_prepared_with_rebased_managed_document(
     tmp_path: Path,
 ) -> None:
     paths = _runtime(tmp_path)
@@ -475,9 +475,9 @@ def test_valid_final_v3_backup_is_prepared_with_rebased_managed_document(
     before = _live_state(paths)
     service = RestoreApplicationService(now=lambda: FIXED_NOW)
     result = service.prepare_staging(
-        PrepareRestoreStagingCommand(backup, paths, "RST-TEST-V3")
+        PrepareRestoreStagingCommand(backup, paths, "RST-TEST-V4")
     )
-    staging = paths.root / "restore-staging" / "RST-TEST-V3"
+    staging = paths.root / "restore-staging" / "RST-TEST-V4"
     prepared_database = staging / "prepared" / "kompetenzmanager.sqlite"
     prepared_file = (
         staging
@@ -488,7 +488,7 @@ def test_valid_final_v3_backup_is_prepared_with_rebased_managed_document(
         / "MED-000001.txt"
     )
     assert result.status == "completed"
-    assert _user_version(prepared_database) == 3
+    assert _user_version(prepared_database) == 4
     assert prepared_file.read_bytes() == b"private managed bytes"
     with sqlite3.connect(prepared_database) as connection:
         rebased = connection.execute(
@@ -504,6 +504,33 @@ def test_valid_final_v3_backup_is_prepared_with_rebased_managed_document(
     for forbidden in ("Klara", "Geheim", "Kindname", str(paths.documents)):
         assert forbidden not in state_text
     assert _live_state(paths) == before
+
+
+def test_v3_backup_is_rejected_before_restore_staging_without_live_mutation(
+    tmp_path: Path,
+) -> None:
+    paths = _runtime(tmp_path)
+    _insert_personal_data(paths, managed_file=True)
+    backup = _create_backup(paths)
+    _mutate_archived_database(
+        backup,
+        tmp_path,
+        lambda connection: connection.execute("PRAGMA user_version = 3"),
+    )
+    before = _live_state(paths)
+    staging = paths.root / "restore-staging" / "RST-V3-REJECTED"
+
+    with pytest.raises(RestoreError):
+        RestoreApplicationService(now=lambda: FIXED_NOW).prepare_staging(
+            PrepareRestoreStagingCommand(
+                backup,
+                paths,
+                "RST-V3-REJECTED",
+            )
+        )
+
+    assert _live_state(paths) == before
+    assert not staging.exists()
 
 
 def test_external_reference_is_byte_identical_and_never_materialized(

@@ -23,9 +23,9 @@ from src.desktop_app.view_models.observation_view_model import (
 from src.security.data_keys import DataMasterKeyStoreStatus
 from src.security.database_key_runtime import DatabaseKeyRuntimeGate
 from src.security.domain import AccountStatus
-from src.security.final_v3_sqlcipher_runtime import (
-    FinalV3SQLCipherRuntimeDecisionState,
-    run_gated_final_v3_sqlcipher_runtime,
+from src.security.final_v4_sqlcipher_runtime import (
+    FinalV4SQLCipherRuntimeDecisionState,
+    run_gated_final_v4_sqlcipher_runtime,
 )
 from src.security.infrastructure.data_keyset_repository import (
     SQLiteDataKeysetRepository,
@@ -40,7 +40,7 @@ def _environment(root: Path) -> dict[str, str]:
     return {
         "JKM_DMK_DATABASE_KEY_RUNTIME_TEST": "1",
         "JKM_DMK_DATABASE_KEY_RUNTIME_ROOT": str(root),
-        "JKM_FINAL_V3_SQLCIPHER_RUNTIME_TEST": "1",
+        "JKM_FINAL_V4_SQLCIPHER_RUNTIME_TEST": "1",
     }
 
 
@@ -62,7 +62,7 @@ def _open(
         if boundary == crash_boundary:
             os._exit(97)
 
-    decision = run_gated_final_v3_sqlcipher_runtime(
+    decision = run_gated_final_v4_sqlcipher_runtime(
         account_loader=_account_loader(installation_id),
         authentication_confirmed=True,
         technical_first_run_confirmed=first_run,
@@ -70,7 +70,7 @@ def _open(
         fault_hook=fault_hook if crash_boundary is not None else None,
     )
     if (
-        decision.state is not FinalV3SQLCipherRuntimeDecisionState.ACTIVE
+        decision.state is not FinalV4SQLCipherRuntimeDecisionState.ACTIVE
         or decision.runtime is None
     ):
         print(
@@ -87,7 +87,7 @@ def _open(
 
 
 def _probe(root: Path, installation_id: str) -> dict[str, object]:
-    decision = run_gated_final_v3_sqlcipher_runtime(
+    decision = run_gated_final_v4_sqlcipher_runtime(
         account_loader=_account_loader(installation_id),
         authentication_confirmed=True,
         environ=_environment(root),

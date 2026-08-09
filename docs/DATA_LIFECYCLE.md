@@ -32,37 +32,36 @@ Schuljahreswechsel-Backup-Einstiege sind im Cipher-Produktmodus blockiert.
 Es gibt in diesem Lifecycle keine Klartextmigration, keinen Restore, keinen
 V2-/ZIP-v1-Import und keine Alt-Testdatenübernahme.
 
-## V3-only Datenbankinitialisierung
+## Final-V4-Datenbankinitialisierung
 
-**Status:** V3-only-Schema-, Startup-, Compatibility-, Backup-/Restore-,
+**Status:** Final-V4-Schema-, Startup-, Compatibility-, Backup-/Restore-,
 synthetischer Testdaten-Cleanup und Assignment-API lokal implementiert. Der
 SJ-2E-Lifecycle der produktiven Membership-Reader und der
 SJ-2F-Lifecycle der produktiven Writer sowie die isolierte synthetische
 SJ-3C.2-Ausführung, das SJ-3C.3-Maintenance-Gate und die verpflichtende
 SJ-3C.4-Backupbindung und SJ-3C.5-Passwort-Step-up-Grenze sind lokal umgesetzt.
-Exakt verifiziertes Final-V3 ist für die normale Runtime lokal freigegeben;
+Exakt verifiziertes Final-V4 ist für die normale Runtime lokal freigegeben;
 SJ-3C.6-UI-/Shell-Ausführung und explizite Bestätigung sind lokal umgesetzt;
 die manuelle macOS-Abnahme bleibt offen.
 
 1. Der Startup-Resolver prüft Pfad, WAL-/SHM-Sidecars, Restorezustand,
    `user_version` und vollständigen Schemafingerprint read-only.
-2. Exaktes Final-V3 wird erkannt und als `V3_SCHEMA_READY` ausschließlich für
+2. Exaktes Final-V4 wird erkannt und als `V4_SCHEMA_READY` ausschließlich für
    die normale Runtime zugelassen.
 3. Fehlt die Datei in einem autorisierten First Run, fordert der Coordinator
-   eine direkte Final-V3-Erzeugung an. Die Schemaquelle erstellt kein
-   Zwischen-V2, migriert keine Daten und schreibt keinen Übergangsbeleg.
+   eine direkte Final-V4-Erzeugung an. Die Schemaquelle erstellt kein
+   Zwischen-V3, migriert keine Daten und schreibt keinen Übergangsbeleg.
 4. Nach der Erzeugung wird die Datenbank neu geöffnet und vollständig
-   verifiziert. Erst der anschließende Zustand `V3_SCHEMA_READY` lässt die
+   verifiziert. Erst der anschließende Zustand `V4_SCHEMA_READY` lässt die
    Runtime zu. Die Composition Root öffnet sie danach mit `create=False`.
 5. Fehlt die Datei außerhalb des autorisierten First Runs oder ist ein
    vorhandenes Schema leer, unbekannt, beschädigt, unsicher oder in einem
    unvollständigen Restorezustand, wird fail-closed gestoppt.
 
-Es gibt keinen V2-Startupzustand, keine V2-Bootstrapmeldung, keine automatische
-oder manuelle V2-Datenübernahme und keine Installation synthetischer
-V2-Initialdaten als Produktpfad. Die autorisierte direkte Neuanlage erzeugt
-kein Schuljahr. Fehlt ein eindeutiges `current`-Schuljahr, bleibt dies nach
-technischem Runtime-Start ein fachlicher Sperrzustand.
+Es gibt keinen V3→V4-Startup- oder Migrationszustand, keine automatische oder
+manuelle V3-Datenübernahme und keine Installation alter Testdaten als
+Produktpfad. Der Cipher-First-Run ergänzt nach Schemaerzeugung ausschließlich
+`2026/27`; der Resolver selbst besitzt keinen hartcodierten Jahresdefault.
 
 ## SJ-3C.3 Maintenance- und Writer-Drain-Lifecycle
 
@@ -109,9 +108,9 @@ keine UI-, Bestätigungs- oder Shell-Ausführungsaktion.
    erstellt der vorhandene Backup-Service ein normales `.jkmbackup` ohne
    Recovery-Writes und verifiziert die veröffentlichten Bytes nochmals.
 4. Der Nachweis enthält eine kryptografisch zufällige technische Backup-ID,
-   echten Archiv-SHA-256, Quellen-SHA-256, exakten Final-V3-Fingerprint und
+   echten Archiv-SHA-256, Quellen-SHA-256, exakten Final-V4-Fingerprint und
    zeitzonenbewussten Verifikationszeitpunkt. Der Null-Hash ist unzulässig.
-5. Der Quellenhash und der Final-V3-Fingerprint werden aus der isoliert
+5. Der Quellenhash und der Final-V4-Fingerprint werden aus der isoliert
    verifizierten Backup-Datenbank selbst berechnet. Quellen, Planhash,
    current-/Zieljahr und aktive Referenzen werden danach erneut geprüft. Jede
    Abweichung verwirft die Passung; ein späterer Versuch benötigt ein neues
@@ -161,7 +160,7 @@ keine UI-, Bestätigungs- oder Shell-Ausführungsaktion.
    Vorschau; sichere Fehler zeigen den Rollback neutral. `RECOVERY_REQUIRED`
    bleibt fail-closed und erlaubt keine normale Fortsetzung.
 
-## Direkte Final-V3-Schemaerzeugung
+## Direkte Final-V4-Schemaerzeugung
 
 Die Schemaquelle akzeptiert ausschließlich ein ausdrücklich bestimmtes neues
 Ziel. Sie erzeugt das vollständige Schema atomar, setzt die finale
@@ -174,12 +173,12 @@ keine als kompatibel geltende Teilstruktur.
 `school_year_transitions.from_school_year_id` ist verpflichtend; eine
 Initialanlage ist kein Schuljahreswechsel und erzeugt keine Transition.
 
-## Synthetischer V3-Testdatenlauf
+## Synthetischer V4-Testdatenlauf
 
 Der Testdatenbuilder arbeitet nur auf einem expliziten temporären,
 nicht vorhandenen Datenbankpfad:
 
-1. vollständiges Final-V3 direkt erzeugen;
+1. vollständiges Final-V4 direkt erzeugen;
 2. `2025/26` mit `2025-08-01` bis `2026-07-31` geschlossen und `2026/27`
    mit `2026-08-01` bis `2027-07-31` als einziges current-Schuljahr anlegen;
 3. deterministische Stammgruppen und Kurse der Stufen 1, 2 und 3 anlegen;
@@ -199,8 +198,8 @@ Backups.
 Backupformat und Datenbankschema bleiben getrennte Verträge. Der bestehende
 Backupcontainer, Snapshot-, Integritäts-, Atomizitäts- und
 Manipulationsschutz bleiben erhalten. Als produktive Datenbank akzeptieren
-Backup und Restore ausschließlich die exakte Final-V3-Schemaidentität.
-V2-, unversionierte oder unbekannte Datenbankschemata werden weder migriert
+Backup und Restore ausschließlich die exakte Final-V4-Schemaidentität.
+V3-, unversionierte oder unbekannte Datenbankschemata werden weder migriert
 noch als Produktrestore übernommen.
 
 Ein echter späterer Schuljahreswechsel verlangt vor seinem ersten Write ein
@@ -347,7 +346,7 @@ der neuen Instanz neu projiziert. SJ-3B.3 fügt weiterhin keinen Repository-,
 Write-, Backup-, Authentifizierungs- oder Ausführungslifecycle hinzu.
 
 SJ-3C.2 ergänzt isoliert die atomare Application-/Repository-Ausführungsgrenze
-für ausschließlich temporäre synthetische Final-V3-Datenbanken:
+für ausschließlich temporäre synthetische Final-V4-Datenbanken:
 
 1. Vor dem Öffnen einer Write-Connection verlangt der Service einen
    vollständig gelösten unveränderlichen Plan ohne aktuelle globale oder
@@ -400,7 +399,7 @@ flüchtigen UI-Ablauf:
 ## SJ-2E-Lifecycle für produktive Assignment-Reader
 
 Der implementierte SJ-2E-Readerablauf ist rein lesend und besitzt weder die
-Final-V3-Runtime-Disposition noch einen Writer:
+Final-V4-Runtime-Disposition noch einen Writer:
 
 1. Der aufrufende Bildschirm- oder Application-Request bestimmt seinen
    aktuellen `as_of`-Kalendertag genau einmal. Ein Dashboard verwendet dabei
@@ -670,7 +669,7 @@ Semantik noch Transaktions-, Backup-, Restore-, Bericht- oder LEG-Prozesse.
 
 Beim Öffnen oder Wechseln eines Schülerprofils verwendet der Desktop-Adapter
 denselben kurzlebigen Snapshot zusätzlich für genau dieses Kind. Profilkopf,
-aktuelle Final-V3-Zuordnung, Beobachtungen samt Ratings, Dokumentmetadaten,
+aktuelle Final-V4-Zuordnung, Beobachtungen samt Ratings, Dokumentmetadaten,
 Kompetenzstatus, Dokumentationsstatus, Kompetenz-Cockpit und Profil-Dashboard
 werden daraus ohne weitere Reads derselben Quellen zusammengesetzt. Die
 Dokumentmetadaten werden einmal im Snapshot geladen und sowohl der
@@ -701,7 +700,7 @@ drei Beständen bei 71 `SELECT` und ohne DDL; 300 / 9.000 benötigte 0,915 s.
 Der frühere V1→V2-Backfill synthetischer Entwicklungsdaten ist durch ADR-096
 obsolet. Das finale Schema enthält `persistence_events` direkt. Es gibt keinen
 Produktrestore und keine Schemamigration, die historische V1-/V2-Daten
-übernimmt. Die nachfolgende Ereignissemantik für neu erzeugte Final-V3-Daten
+übernimmt. Die nachfolgende Ereignissemantik für neu erzeugte Final-V4-Daten
 bleibt davon unberührt.
 
 ### Neue Frischeereignisse
@@ -855,11 +854,11 @@ Die Publishgrenzen verhalten sich deterministisch:
   Fortsetzung der exakt gebundenen `pending`-Zeile.
 - Crash nach Keyset-Aktivierung: der normale aktive Restartvertrag gilt.
 
-Kein Schritt erzeugt oder öffnet eine SQLite-/SQLCipher-/Final-V3-Datenbank,
+Kein Schritt erzeugt oder öffnet eine SQLite-/SQLCipher-/Final-V4-Datenbank,
 übergibt den Database-Key an einen Connection-Provider oder verändert
 Produkt-Startup, UI, Backup/Restore, Migration oder Release.
 
-## Final-V3-SQLCipher-Runtime - gated First Run und Restart
+## Final-V4-SQLCipher-Runtime - gated First Run und Restart
 
 Ohne eigenes exaktes Gate, vorhandenes DMK-Gate, beide feste Marker, privaten
 System-Temporärroot und bestätigte Authentifizierung endet der Ablauf vor
@@ -874,10 +873,10 @@ Beim technischen First Run gilt:
    aktivierter zufälliger Database-Key darf die Neuanlage fortsetzen.
 3. Der exakt konfigurierte 4.17-Provider reserviert die neue Datei, keyed sie
    vor jedem Schemazugriff und erzwingt Klartextheadergröße null.
-4. Das vollständige Final-V3 entsteht innerhalb `BEGIN IMMEDIATE`; erst nach
+4. Das vollständige Final-V4 entsteht innerhalb `BEGIN IMMEDIATE`; erst nach
    Commit werden Cipherstatus, CommonCrypto, SQLite 3.53.3,
    `cipher_integrity_check`, `integrity_check`, `foreign_key_check`,
-   `user_version=3` und der vollständige Fingerprint über eine neu aus
+   `user_version=4` und der vollständige Fingerprint über eine neu aus
    derselben Factory geöffnete, technisch read-only keyed Connection geprüft.
 5. Erst danach entsteht eine `SQLiteDatabase(create=False)`, deren
    pfad-/keygebundene Factory unverändert an Repositories und Desktop-Adapter
@@ -903,7 +902,7 @@ Crashnachweis.
 ## Final-V3-Dokumentcontainer-Runtime - Generation, Pointer und Restart
 
 Die Companion-DB darf nur nach vollständiger Öffnung der vorhandenen
-DMK-/Database-Key- und Final-V3-SQLCipher-Runtime angelegt oder geöffnet
+DMK-/Database-Key- und Final-V4-SQLCipher-Runtime angelegt oder geöffnet
 werden. Eine fehlende Companion-DB entsteht nur mit eigener expliziter
 Neuanlagezulassung; ein vorhandener Teilbestand wird nie repariert oder still
 ersetzt. Restart prüft Cipher/Schema/Context, Pointerinvarianten, das vollständige
@@ -939,7 +938,7 @@ Storageinventar und jeden registrierten Container.
    `<storage_id>.jkmedoc`; es wird kein Klartext nach `documents/` publiziert.
 3. Nach vollständiger Containerverifikation und Companion-`PREPARED` bindet
    das Journal zusätzlich Größen, Hashes, MIME und Lifecycle. Erst danach
-   committet eine Final-V3-Transaktion Beobachtung, Ratings, Ereignisse und
+   committet eine Final-V4-Transaktion Beobachtung, Ratings, Ereignisse und
    fachliche `documents`-Referenzen.
 4. Nach dem Fachcommit wendet die Runtime alle exakt journalgebundenen
    Aktivierungen und Deaktivierungen idempotent in einer einzigen Companion-
@@ -951,7 +950,7 @@ Storageinventar und jeden registrierten Container.
    Vorgänger wird erst bei erfolgreicher Umschaltung `RETAINED`. Remove setzt
    `documents.active=0`, deaktiviert den Companion-Pointer und behält alle
    Container `RETAINED`.
-6. Lesen prüft zuerst die aktive fachliche Beobachtungsreferenz in Final-V3,
+6. Lesen prüft zuerst die aktive fachliche Beobachtungsreferenz in Final-V4,
    recovered ausstehende Journale und streamt danach ausschließlich über den
    vorhandenen vollständig verifizierenden Consumerreader. Allgemeine
    Schülerdokumente und PDF-Artefakte werden abgewiesen. Profil-, Edit- und
@@ -972,7 +971,7 @@ Storageinventar und jeden registrierten Container.
    opaque Storage-ID, ohne Originalname, Pfad oder Schülerbezug offenzulegen.
 2. Create liest die externe reguläre Quelle kontrolliert no-follow, bereitet
    genau eine `.jkmedoc`-Generation vor und verifiziert sie vollständig. Erst
-   danach entsteht in Final-V3 die allgemeine aktive `documents`-Referenz mit
+   danach entsteht in Final-V4 die allgemeine aktive `documents`-Referenz mit
    `observation_id IS NULL` und leerem `file_path`. Nach der idempotenten
    Pointeraktivierung wird Erfolg gemeldet. Ein gefangener Pointerfehler
    entfernt die neu angelegte Fachreferenz kompensierend vollständig; der
@@ -996,7 +995,7 @@ Storageinventar und jeden registrierten Container.
    MED-ID noch eine neue Generation still erzeugt. Gate-Off bleibt der bisherige
    Klartextpfad ohne Migration, Konvertierung oder Cipher-Fallback.
 
-Vor jedem Final-V3-Referenzwrite steht dauerhaft
+Vor jedem Final-V4-Referenzwrite steht dauerhaft
 `REFERENCE_COMMIT_PENDING`. Restart unterscheidet dadurch sicher zwischen
 noch nicht begonnenem Fachwrite und bereits committeter Referenz. Ein
 gefangener Create-Pointerfehler wechselt vor der Kompensation nach
@@ -1035,7 +1034,7 @@ ausschließlich mit demselben gebundenen Plan fort.
    diesem Paket kein permanentes Klartextziel, Preview, OS-Öffnen oder Export.
 
 Der freigegebene Pilotweg beginnt ausschließlich mit einer frischen
-verschlüsselten Final-V3-Installation. Bestehende Klartextdokumente und PDFs
+verschlüsselten Final-V4-Installation. Bestehende Klartextdokumente und PDFs
 werden nicht migriert oder konvertiert; alte synthetische Testdaten werden
 verworfen und nach Aktivierung neu erzeugt. Vorschau, OS-Öffnung, Export,
 Produkt-Default-Aktivierung und die Backup-/Restore-UI bleiben außerhalb.
@@ -1048,7 +1047,7 @@ Retained-Markierung rollt auf `ACTIVE` plus exakt passende `PREPARED`-
 Generation zurück und ist nach erneuter Vollverifikation fortsetzbar. Es gibt
 keine stille neue Storage-ID, kein Überschreiben und kein Klartextfallback.
 
-## Verschlüsseltes Final-V3-Pilotbackup und Restore-Staging
+## Verschlüsseltes Final-V4-Pilotbackup und Restore-Staging
 
 Backup ist ein Qt-freier, gate-gebundener Maintenance-Ablauf:
 
@@ -1093,7 +1092,7 @@ Keychain bestehen. Passwortwechsel und Support-Reset verändern ihn nicht.
 DMK-/Geräteverlust ist kein gelöstes Portable-Recovery-Szenario. Es gibt keine
 Klartextmigration und keinen ZIP-v1-Fallback; Gate-Off bleibt unverändert.
 
-## Verschlüsselter Final-V3-Live-Restore
+## Verschlüsselter Final-V4-Live-Restore
 
 Ein gültiges `RESTORE_READY` wird ausschließlich über den vorhandenen
 Restore-Zustandsautomaten aktiviert:
@@ -2387,7 +2386,7 @@ Der Cipher-Modus verwendet exakt denselben Lock-, Handoff-, Parent-EOF-,
 Journal-, Rename-, Rollback- und Resume-Zustandsautomaten. Seine injizierte
 Strategie ersetzt ausschließlich ZIP-v1-Preflight und die vier Gate-Off-
 Komponenten durch das zuvor vollständig verifizierte `.jkmebackup`,
-`RESTORE_READY`, `key_runtime_metadata` und `final_v3_runtime`. Standard-
+`RESTORE_READY`, `key_runtime_metadata` und `final_v4_runtime`. Standard-
 `sqlite3` darf keine Cipher-Datei prüfen; jede Installed-, Restart- und
 Rollbackprüfung erfolgt über die bestehenden SQLCipher-Factories mit dem
 vorhandenen DMK/Database-Key.
@@ -2450,6 +2449,45 @@ Automatisch profitierende Ansichten:
 - Berichtsvorbereitung, falls sie Dokumentationsstatus oder offene Kompetenzen nutzt
 
 Regel: Die Speicherung ersetzt die vollstaendige Auswahl in `documentation_subject_settings`. Wenn keine Settings-Zeilen vorhanden sind, bleibt das bisherige Verhalten erhalten: alle aktiven Katalogfaecher aus `competencies.active = 1` gelten als dokumentationsrelevant. Die Einstellung loescht keine Beobachtungen, veraendert keine Kompetenzdefinitionen und nutzt `competencies.active` nicht als Einstellungsfeld. Nicht dokumentationsrelevante Faecher bleiben in Beobachtungslisten, Kompetenzhistorien und bestaetigten Kompetenzstaenden sichtbar, zaehlen aber nicht als offen im Dokumentationsstand oder in offenen Beobachtungsanlaessen.
+
+## Schülerbezogene Dokumentationsfachkonfiguration pflegen
+
+Start: Ein Qt-freier Application-Aufrufer übergibt ausdrücklich
+`student_id`, `school_year_id` und entweder den Modus oder die vollständige
+Custom-Fachmenge. Eine UI ist in diesem Paket nicht angebunden.
+
+```text
+StudentDocumentationSubjectService
+-> BEGIN IMMEDIATE
+-> SQLiteStudentDocumentationSubjectRepository
+-> student_documentation_subject_profiles
+-> student_documentation_subject_selections
+-> Commit oder vollständiger Rollback
+```
+
+Lifecycle:
+
+1. Schüler und Schuljahr werden in derselben Transaktion fail-closed geprüft.
+2. Nur ein aktiver, nicht archivierter Schüler im exakt `current`-Schuljahr
+   darf geschrieben werden; geplante und geschlossene Jahre sind read-only.
+3. Neue Custom-Fachschlüssel werden gegen aktive kanonische
+   `competencies.subject_id` geprüft. Fachnamen werden nicht gespeichert.
+4. `inherit` besitzt keine Auswahlzeilen. Ohne Profil gilt ebenfalls
+   mutationsfrei `inherit`.
+5. Ein Custom-Replace setzt Profilmodus und exakte, auch bewusst leere
+   Auswahl atomar. Bei identischem Modus und identischer Menge erfolgt kein
+   DML und `updated_at` bleibt unverändert.
+6. Fehler nach Teil-DML rollen Profil und Auswahl vollständig zurück.
+7. Der Resolver liest Profil, Auswahl, globalen Default und Katalogreihenfolge
+   in einem konsistenten Snapshot. Globale Änderungen wirken auf `inherit`,
+   niemals still auf `custom`.
+8. Später inaktive gespeicherte Fächer und geschlossene Schuljahre bleiben
+   lesbar. Beobachtungen, Ratings, Bestätigungen, Kompetenzen, Berichte und LEG
+   werden weder verändert noch gelöscht oder umgedeutet.
+
+Es gibt keine Ableitung aus Stammgruppe, Kurs, Klassenstufe,
+Beobachtungsmenge oder Kompetenzstand. Der Pilotstandard `2026/27` wird nur
+vom First Run erzeugt und ist im Resolver nicht hartcodiert.
 
 ## Stundenplaneintrag pflegen
 
@@ -2515,7 +2553,7 @@ Regel: Stammdaten und initiales `enrolled`-Assignment committen gemeinsam
 oder gar nicht. Das aktuelle Schuljahr wird zentral aufgeloest und nicht
 implizit aus Systemdatum oder Seedwert angenommen. Der V3-Schuelerdatensatz
 enthaelt keine Membershipfelder. Synthetische Schüler entstehen nur in
-expliziten neuen Final-V3-Testdatenbanken; vorhandene lokale Daten werden
+expliziten neuen Final-V4-Testdatenbanken; vorhandene lokale Daten werden
 nicht ersetzt.
 
 ## Dokument oder Medium hinzufuegen

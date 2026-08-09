@@ -46,15 +46,15 @@ from src.core.maintenance_gate import (
 from src.desktop_app.runtime import runtime_paths
 from src.security.application import AuthenticationResult
 from src.security.domain import AuthenticationStatus
-from tests.helpers.synthetic_v3 import (
+from tests.helpers.synthetic_v4 import (
     SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
-    create_pre_transition_v3_database,
+    create_pre_transition_v4_database,
 )
 
 
 SYNTHETIC_SCHOOL_YEAR_ID = SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID
-create_synthetic_v3_database = create_pre_transition_v3_database
+create_synthetic_v4_database = create_pre_transition_v4_database
 NOW = datetime(2026, 7, 15, 10, 30, tzinfo=UTC)
 TOKEN = "sj-3c2-operation-001"
 MAINTENANCE_OWNER = "school-year-transition-test"
@@ -113,7 +113,7 @@ def _factory(path: Path):
 
 @pytest.fixture
 def v3_database(tmp_path: Path) -> Path:
-    return create_synthetic_v3_database(tmp_path / "transition.sqlite")
+    return create_synthetic_v4_database(tmp_path / "transition.sqlite")
 
 
 def _plan(path: Path):
@@ -284,7 +284,7 @@ def test_real_verified_backup_allows_transition_and_binds_receipt(
     paths = runtime_paths(tmp_path / "runtime")
     for directory in (paths.root, paths.documents, paths.backups):
         directory.mkdir(parents=True, exist_ok=True)
-    create_synthetic_v3_database(paths.database)
+    create_synthetic_v4_database(paths.database)
     plan = _resolved_plan(paths.database)
     adapter = VerifiedSchoolYearTransitionBackupAdapter(
         service=BackupApplicationService(now=lambda: NOW),
@@ -340,7 +340,7 @@ def test_backup_of_different_database_cannot_authorize_transition(
     for paths in (source_paths, other_paths):
         for directory in (paths.root, paths.documents, paths.backups):
             directory.mkdir(parents=True, exist_ok=True)
-        create_synthetic_v3_database(paths.database)
+        create_synthetic_v4_database(paths.database)
     with sqlite3.connect(other_paths.database) as connection:
         connection.execute(
             "UPDATE groups SET active = 0 WHERE group_id = 'GRP-TEST-B'"
@@ -379,7 +379,7 @@ def test_pending_observation_recovery_blocks_transition_backup(
     paths = runtime_paths(tmp_path / "runtime")
     for directory in (paths.root, paths.documents, paths.backups):
         directory.mkdir(parents=True, exist_ok=True)
-    create_synthetic_v3_database(paths.database)
+    create_synthetic_v4_database(paths.database)
     pending = paths.root / ".observation-staging" / ("a" * 32)
     pending.mkdir(parents=True)
     plan = _resolved_plan(paths.database)

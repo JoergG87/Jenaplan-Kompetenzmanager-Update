@@ -30,8 +30,8 @@ class DatabaseStartupState(str, Enum):
     """Controlled states before any product database runtime is opened."""
 
     DATABASE_NOT_FOUND = "DATABASE_NOT_FOUND"
-    V3_INITIALIZATION_REQUIRED = "V3_INITIALIZATION_REQUIRED"
-    V3_SCHEMA_READY = "V3_SCHEMA_READY"
+    V4_INITIALIZATION_REQUIRED = "V4_INITIALIZATION_REQUIRED"
+    V4_SCHEMA_READY = "V4_SCHEMA_READY"
     SCHEMA_UNSUPPORTED = "SCHEMA_UNSUPPORTED"
     RECOVERY_REQUIRED = "RECOVERY_REQUIRED"
 
@@ -119,8 +119,8 @@ class DatabaseStartupResolver:
             and identity.fingerprint == FINAL_SCHEMA_FINGERPRINT
         ):
             return DatabaseStartupDetection(
-                DatabaseStartupState.V3_SCHEMA_READY,
-                "DB-START-V3-SCHEMA-READY",
+                DatabaseStartupState.V4_SCHEMA_READY,
+                "DB-START-V4-SCHEMA-READY",
                 version,
                 identity.fingerprint,
                 identity.object_count,
@@ -182,11 +182,11 @@ class DatabaseStartupCoordinator:
                 )
             return _decision_from_detection(
                 detection,
-                state=DatabaseStartupState.V3_INITIALIZATION_REQUIRED,
-                reason_code="DB-START-V3-INITIALIZATION-REQUIRED",
+                state=DatabaseStartupState.V4_INITIALIZATION_REQUIRED,
+                reason_code="DB-START-V4-INITIALIZATION-REQUIRED",
                 final_schema_initialization_required=True,
             )
-        if detection.state is DatabaseStartupState.V3_SCHEMA_READY:
+        if detection.state is DatabaseStartupState.V4_SCHEMA_READY:
             return _decision_from_detection(
                 detection,
                 normal_runtime_allowed=True,

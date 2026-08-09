@@ -13,11 +13,11 @@ from src.core.database_compatibility import (
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityStatus,
 )
-from src.core.final_v3_schema import (
-    FinalV3SchemaError,
-    FinalV3SchemaInitializer,
+from src.core.final_v4_schema import (
+    FinalV4SchemaError,
+    FinalV4SchemaInitializer,
 )
-from tests.helpers.synthetic_v3 import (
+from tests.helpers.synthetic_v4 import (
     SYNTHETIC_COURSE_GROUP_ID,
     SYNTHETIC_DOCUMENT_IDS,
     SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID,
@@ -25,7 +25,7 @@ from tests.helpers.synthetic_v3 import (
     SYNTHETIC_REPORT_DRAFT_ID,
     SYNTHETIC_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
-    create_synthetic_v3_database,
+    create_synthetic_v4_database,
 )
 
 
@@ -38,32 +38,32 @@ def _connect(path: Path) -> sqlite3.Connection:
 def test_direct_initializer_creates_exact_registered_final_schema(
     tmp_path: Path,
 ) -> None:
-    path = tmp_path / "final-v3.sqlite"
+    path = tmp_path / "final-v4.sqlite"
 
-    FinalV3SchemaInitializer().initialize(path)
+    FinalV4SchemaInitializer().initialize(path)
 
     result = DatabaseCompatibilityInspector().inspect(path)
     assert result.status is DatabaseCompatibilityStatus.EXACT
-    assert result.version.sqlite_user_version == FINAL_SCHEMA_VERSION == 3
+    assert result.version.sqlite_user_version == FINAL_SCHEMA_VERSION == 4
     assert result.schema_identity.fingerprint == FINAL_SCHEMA_FINGERPRINT
-    assert result.schema_identity.object_count == 95
+    assert result.schema_identity.object_count == 105
 
 
 def test_direct_initializer_rejects_every_existing_target(tmp_path: Path) -> None:
     path = tmp_path / "existing.sqlite"
     path.write_bytes(b"existing")
 
-    with pytest.raises(FinalV3SchemaError, match="final_v3_target_must_not_exist"):
-        FinalV3SchemaInitializer().initialize(path)
+    with pytest.raises(FinalV4SchemaError, match="final_v4_target_must_not_exist"):
+        FinalV4SchemaInitializer().initialize(path)
 
     assert path.read_bytes() == b"existing"
 
 
-def test_final_schema_has_v3_student_course_and_membership_shape(
+def test_final_schema_has_v4_student_course_and_membership_shape(
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "shape.sqlite"
-    FinalV3SchemaInitializer().initialize(path)
+    FinalV4SchemaInitializer().initialize(path)
 
     with _connect(path) as connection:
         student_columns = {
@@ -95,8 +95,60 @@ def test_final_schema_has_v3_student_course_and_membership_shape(
     }.issubset(assignment_columns)
 
 
+def test_final_v4_has_normalized_student_subject_profiles_and_selections(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "subject-shape.sqlite"
+    FinalV4SchemaInitializer().initialize(path)
+
+    with _connect(path) as connection:
+        profile_columns = {
+            str(row[1]): (int(row[3]), int(row[5]))
+            for row in connection.execute(
+                "PRAGMA table_info(student_documentation_subject_profiles)"
+            )
+        }
+        selection_columns = {
+            str(row[1]): int(row[5])
+            for row in connection.execute(
+                "PRAGMA table_info(student_documentation_subject_selections)"
+            )
+        }
+        profile_fks = {
+            (str(row[2]), str(row[3]), str(row[4]), str(row[5]), str(row[6]))
+            for row in connection.execute(
+                "PRAGMA foreign_key_list(student_documentation_subject_profiles)"
+            )
+        }
+        selection_fks = tuple(
+            connection.execute(
+                "PRAGMA foreign_key_list(student_documentation_subject_selections)"
+            ).fetchall()
+        )
+
+    assert profile_columns == {
+        "student_id": (1, 1),
+        "school_year_id": (1, 2),
+        "mode": (1, 0),
+        "created_at": (1, 0),
+        "updated_at": (1, 0),
+    }
+    assert selection_columns == {
+        "student_id": 1,
+        "school_year_id": 2,
+        "subject_id": 3,
+    }
+    assert ("students", "student_id", "student_id", "RESTRICT", "RESTRICT") in profile_fks
+    assert ("school_years", "school_year_id", "school_year_id", "RESTRICT", "RESTRICT") in profile_fks
+    assert len(selection_fks) == 2
+    assert {str(row[2]) for row in selection_fks} == {
+        "student_documentation_subject_profiles"
+    }
+    assert {str(row[6]) for row in selection_fks} == {"CASCADE"}
+
+
 def test_transition_requires_real_from_school_year(tmp_path: Path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "transition.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "transition.sqlite")
 
     with _connect(path) as connection:
         from_column = next(
@@ -129,7 +181,7 @@ def test_transition_requires_real_from_school_year(tmp_path: Path) -> None:
 
 
 def test_initial_creation_writes_no_transition_receipt(tmp_path: Path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "no-transition.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "no-transition.sqlite")
 
     with _connect(path) as connection:
         assert connection.execute(
@@ -140,7 +192,7 @@ def test_initial_creation_writes_no_transition_receipt(tmp_path: Path) -> None:
 def test_school_year_constraints_reject_second_current_and_overlap(
     tmp_path: Path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "school-years.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "school-years.sqlite")
 
     with _connect(path) as connection:
         with pytest.raises(sqlite3.IntegrityError):
@@ -180,7 +232,7 @@ def test_school_year_constraints_reject_second_current_and_overlap(
 def test_assignment_constraints_reject_outside_and_overlapping_intervals(
     tmp_path: Path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "assignments.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "assignments.sqlite")
 
     with _connect(path) as connection:
         with pytest.raises(sqlite3.IntegrityError):
@@ -228,7 +280,7 @@ def test_assignment_constraints_reject_outside_and_overlapping_intervals(
 
 
 def test_transition_receipts_are_immutable(tmp_path: Path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "immutable.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "immutable.sqlite")
 
     with _connect(path) as connection:
         connection.execute(
@@ -283,8 +335,8 @@ def test_transition_receipts_are_immutable(tmp_path: Path) -> None:
 
 
 def test_synthetic_seed_is_complete_and_deterministic(tmp_path: Path) -> None:
-    first = create_synthetic_v3_database(tmp_path / "first.sqlite")
-    second = create_synthetic_v3_database(tmp_path / "second.sqlite")
+    first = create_synthetic_v4_database(tmp_path / "first.sqlite")
+    second = create_synthetic_v4_database(tmp_path / "second.sqlite")
     queries = (
         "SELECT * FROM school_years ORDER BY school_year_id",
         "SELECT * FROM courses ORDER BY course_id",
@@ -371,8 +423,8 @@ def test_synthetic_seed_is_complete_and_deterministic(tmp_path: Path) -> None:
         ).fetchall() == [(1,), (2,), (3,)]
 
 
-def test_synthetic_seed_has_only_final_v3_membership_shape(tmp_path: Path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "shape-seed.sqlite")
+def test_synthetic_seed_has_only_final_v4_membership_shape(tmp_path: Path) -> None:
+    path = create_synthetic_v4_database(tmp_path / "shape-seed.sqlite")
     compatibility = DatabaseCompatibilityInspector().inspect(path)
 
     with _connect(path) as connection:
@@ -422,7 +474,7 @@ def test_synthetic_seed_has_only_final_v3_membership_shape(tmp_path: Path) -> No
 def test_synthetic_seed_covers_scopes_documents_and_workflows(
     tmp_path: Path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "coverage.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "coverage.sqlite")
 
     with _connect(path) as connection:
         course_group_relations = connection.execute(

@@ -28,11 +28,11 @@ from src.security.final_v3_document_runtime import (
     FinalV3DocumentSchemaV1,
     _initialize_container_layout,
 )
-from src.security.final_v3_sqlcipher_runtime import (
-    FINAL_V3_SQLCIPHER_RUNTIME_GATE_ENV,
-    FINAL_V3_SQLCIPHER_RUNTIME_MARKER,
-    FINAL_V3_SQLCIPHER_RUNTIME_MARKER_BYTES,
-    FinalV3SQLCipherRuntimePaths,
+from src.security.final_v4_sqlcipher_runtime import (
+    FINAL_V4_SQLCIPHER_RUNTIME_GATE_ENV,
+    FINAL_V4_SQLCIPHER_RUNTIME_MARKER,
+    FINAL_V4_SQLCIPHER_RUNTIME_MARKER_BYTES,
+    FinalV4SQLCipherRuntimePaths,
 )
 from src.security.infrastructure.system import SystemClock, SystemRandomSource
 
@@ -64,8 +64,8 @@ class SQLiteFactory:
 def paths_for(base: Path) -> FinalV3DocumentRuntimePaths:
     root = base / f"{DMK_DATABASE_KEY_RUNTIME_ROOT_PREFIX}document-crash"
     key_paths = DatabaseKeyRuntimePaths.for_root(root)
-    return FinalV3DocumentRuntimePaths.for_final_v3(
-        FinalV3SQLCipherRuntimePaths.for_key_runtime(key_paths)
+    return FinalV3DocumentRuntimePaths.for_final_v4(
+        FinalV4SQLCipherRuntimePaths.for_key_runtime(key_paths)
     )
 
 
@@ -109,7 +109,7 @@ def exact_environment(base: Path) -> dict[str, str]:
     return {
         DMK_DATABASE_KEY_RUNTIME_GATE_ENV: "1",
         DMK_DATABASE_KEY_RUNTIME_ROOT_ENV: str(root),
-        FINAL_V3_SQLCIPHER_RUNTIME_GATE_ENV: "1",
+        FINAL_V4_SQLCIPHER_RUNTIME_GATE_ENV: "1",
     }
 
 
@@ -142,7 +142,7 @@ def setup(base: Path) -> None:
     root = base / f"{DMK_DATABASE_KEY_RUNTIME_ROOT_PREFIX}document-crash"
     root.mkdir(mode=0o700)
     paths = paths_for(base)
-    paths.final_v3.runtime_root.mkdir(mode=0o700)
+    paths.final_v4.runtime_root.mkdir(mode=0o700)
     factory = SQLiteFactory(paths.database)
     with factory.connect(create=True) as connection:
         FinalV3DocumentSchemaV1.initialize(
@@ -169,15 +169,15 @@ def setup_exact(base: Path) -> None:
     for name, payload in (
         (DMK_DATABASE_KEY_RUNTIME_MARKER, DMK_DATABASE_KEY_RUNTIME_MARKER_BYTES),
         (
-            FINAL_V3_SQLCIPHER_RUNTIME_MARKER,
-            FINAL_V3_SQLCIPHER_RUNTIME_MARKER_BYTES,
+            FINAL_V4_SQLCIPHER_RUNTIME_MARKER,
+            FINAL_V4_SQLCIPHER_RUNTIME_MARKER_BYTES,
         ),
     ):
         marker = root / name
         marker.write_bytes(payload)
         marker.chmod(0o600)
     paths = paths_for(base)
-    paths.final_v3.runtime_root.mkdir(mode=0o700)
+    paths.final_v4.runtime_root.mkdir(mode=0o700)
     with exact_factory(base).connect(create=True) as connection:
         FinalV3DocumentSchemaV1.initialize(
             connection,

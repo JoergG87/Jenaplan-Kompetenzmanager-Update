@@ -516,7 +516,7 @@ class RestoreStagingService:
             copied = self.compatibility_inspector.inspect(paths.prepared_database)
             if copied.status is not DatabaseCompatibilityStatus.EXACT:
                 raise RestoreCompatibilityError(
-                    "Die kopierte Datenbank entspricht nicht mehr exakt Final-V3."
+                    "Die kopierte Datenbank entspricht nicht mehr exakt Final-V4."
                 )
             prepared_rows = _database_rows(paths.prepared_database)
             if prepared_rows != source_rows:
@@ -807,7 +807,7 @@ class RestoreStagingService:
             or result.schema_identity.fingerprint != FINAL_SCHEMA_FINGERPRINT
         ):
             raise RestoreCompatibilityError(
-                "Das Prepared-Staging entspricht nicht exakt Final-V3."
+                "Das Prepared-Staging entspricht nicht exakt Final-V4."
             )
         source_rows = _database_rows(paths.source_database)
         prepared_rows = _database_rows(paths.prepared_database)

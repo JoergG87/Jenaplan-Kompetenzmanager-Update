@@ -40,7 +40,7 @@ from src.core.database_compatibility import (
     UnknownDatabaseSchemaError,
     UnsupportedDatabaseVersionError,
 )
-from src.core.final_v3_schema import FinalV3SchemaInitializer
+from src.core.final_v4_schema import FinalV4SchemaInitializer
 from src.desktop_app.runtime import RuntimePaths, runtime_paths
 
 
@@ -57,7 +57,7 @@ def _runtime(tmp_path: Path) -> RuntimePaths:
         paths.logs,
     ):
         directory.mkdir(parents=True, exist_ok=True)
-    FinalV3SchemaInitializer().initialize(paths.database)
+    FinalV4SchemaInitializer().initialize(paths.database)
     return paths
 
 
@@ -452,6 +452,19 @@ def test_backup_rejects_newer_sqlite_user_version_without_changing_live_database
     with sqlite3.connect(paths.database) as connection:
         live_user_version = connection.execute("PRAGMA user_version").fetchone()[0]
     assert live_user_version == 37
+    assert not tuple(paths.backups.iterdir())
+
+
+def test_backup_rejects_v3_without_mutation_or_artifact(tmp_path: Path) -> None:
+    paths = _runtime(tmp_path)
+    with sqlite3.connect(paths.database) as connection:
+        connection.execute("PRAGMA user_version = 3")
+    before = paths.database.read_bytes()
+
+    with pytest.raises(UnknownDatabaseSchemaError):
+        _create(paths)
+
+    assert paths.database.read_bytes() == before
     assert not tuple(paths.backups.iterdir())
 
 

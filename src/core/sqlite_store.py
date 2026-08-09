@@ -17,7 +17,7 @@ from .database_compatibility import (
     DatabaseCompatibilityStatus,
 )
 from .database_engine import SQLiteConnectionProvider
-from .final_v3_schema import FinalV3SchemaInitializer
+from .final_v4_schema import FinalV4SchemaInitializer
 from .maintenance_gate import (
     MaintenanceGate,
     MaintenanceGuardedConnection,
@@ -311,15 +311,15 @@ class SQLiteDatabase:
         )
 
     def initialize_schema(self) -> None:
-        """Create or accept only the exact registered Final-V3 schema."""
+        """Create or accept only the exact registered Final-V4 schema."""
         if not self._initialize_schema:
             return
         if not self.path.exists() and not self.path.is_symlink():
             if not self._create:
                 raise DatabaseCompatibilityError(
-                    "Die Final-V3-Datenbank fehlt am ausdrücklich geöffneten Ziel."
+                    "Die Final-V4-Datenbank fehlt am ausdrücklich geöffneten Ziel."
                 )
-            FinalV3SchemaInitializer(
+            FinalV4SchemaInitializer(
                 connection_provider=self._connection_provider
             ).initialize(self.path)
             return
@@ -377,7 +377,7 @@ class SQLiteDatabase:
                 self._ensure_default_course_group(connection)
 
     def replace_seed_data(self, data: ReferenceData) -> None:
-        """Populate one empty exact Final-V3 database with deterministic data."""
+        """Populate one empty exact Final-V4 database with deterministic data."""
         self.initialize_schema()
         with closing(self.connect()) as connection:
             table_names = tuple(
@@ -397,7 +397,7 @@ class SQLiteDatabase:
                     f'SELECT 1 FROM "{quoted_name}" LIMIT 1'
                 ).fetchone() is not None:
                     raise RuntimeError(
-                        "Synthetische Final-V3-Daten duerfen nur in eine "
+                        "Synthetische Final-V4-Daten duerfen nur in eine "
                         "vollstaendig leere Datenbank geschrieben werden."
                     )
             with connection:

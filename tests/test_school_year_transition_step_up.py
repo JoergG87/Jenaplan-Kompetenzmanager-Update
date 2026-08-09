@@ -29,13 +29,13 @@ from src.core.maintenance_gate import (
 )
 from src.security.application import AuthenticationResult
 from src.security.domain import AuthenticationStatus
-from tests.helpers.synthetic_v3 import (
+from tests.helpers.synthetic_v4 import (
     SYNTHETIC_STUDENT_IDS,
-    create_pre_transition_v3_database,
+    create_pre_transition_v4_database,
 )
 
 
-create_synthetic_v3_database = create_pre_transition_v3_database
+create_synthetic_v4_database = create_pre_transition_v4_database
 NOW = datetime(2026, 7, 15, 10, 30, tzinfo=UTC)
 AUTHORIZATION_ID = "SYA-fedcba9876543210fedcba9876543210"
 PASSWORD = "correct horse battery staple"
@@ -90,7 +90,7 @@ def _factory(path: Path):
 
 @pytest.fixture
 def resolved_plan(tmp_path: Path):
-    path = create_synthetic_v3_database(tmp_path / "step-up.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "step-up.sqlite")
     plan = SchoolYearTransitionPreviewService(_factory(path)).preview_plan(
         label="2026/27",
         start_date=date(2026, 8, 1),

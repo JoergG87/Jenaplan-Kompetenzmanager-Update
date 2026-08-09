@@ -21,10 +21,10 @@ from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapt
 from src.desktop_app.dialogs.new_student_dialog import (
     StudentMembershipChangeDialog,
 )
-from tests.helpers.synthetic_v3 import create_pre_transition_v3_database
+from tests.helpers.synthetic_v4 import create_pre_transition_v4_database
 
 
-create_synthetic_v3_database = create_pre_transition_v3_database
+create_synthetic_v4_database = create_pre_transition_v4_database
 
 
 AS_OF = date(2026, 1, 15)
@@ -51,7 +51,7 @@ def _adapter(path, *, as_of: date = AS_OF) -> StudentDesktopAdapter:
 def test_product_create_writes_master_data_and_assignment_atomically(
     tmp_path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "product.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "product.sqlite")
     adapter = _adapter(path)
 
     result = adapter.save_new_student(
@@ -93,7 +93,7 @@ def test_product_create_writes_master_data_and_assignment_atomically(
 def test_product_create_without_current_school_year_writes_nothing(
     tmp_path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "missing-current.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "missing-current.sqlite")
     with sqlite3.connect(path) as connection:
         connection.execute(
             "UPDATE school_years SET status = 'closed', closed_at = ?",
@@ -115,7 +115,7 @@ def test_product_create_without_current_school_year_writes_nothing(
 
 
 def test_master_data_update_never_changes_assignment(tmp_path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "master-data.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "master-data.sqlite")
     adapter = _adapter(path)
     with sqlite3.connect(path) as connection:
         before = connection.execute(
@@ -146,7 +146,7 @@ def test_master_data_update_never_changes_assignment(tmp_path) -> None:
 
 
 def test_product_membership_change_and_no_change(tmp_path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "change.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "change.sqlite")
     adapter = _adapter(path)
 
     changed = adapter.change_student_membership(
@@ -185,7 +185,7 @@ def test_change_preview_resolves_source_at_selected_effective_date(
     tmp_path,
 ) -> None:
     app = QApplication.instance() or QApplication([])
-    path = create_synthetic_v3_database(tmp_path / "planned-change.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "planned-change.sqlite")
     adapter = _adapter(path)
     planned = adapter.change_student_membership(
         "STD-TEST-001",
@@ -213,7 +213,7 @@ def test_change_preview_resolves_source_at_selected_effective_date(
 
 
 def test_exit_and_archive_remain_separate(tmp_path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "exit.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "exit.sqlite")
     adapter = _adapter(path)
 
     blocked = adapter.archive_student_master_data("STD-TEST-001")
@@ -247,7 +247,7 @@ def test_exit_and_archive_remain_separate(tmp_path) -> None:
 def test_archive_timestamp_never_precedes_same_day_master_data_update(
     tmp_path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "archive-time.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "archive-time.sqlite")
     as_of = date(2026, 2, 1)
     adapter = _adapter(path, as_of=as_of)
     exited = adapter.exit_student_from_school_year(
@@ -277,7 +277,7 @@ def test_archive_timestamp_never_precedes_same_day_master_data_update(
 
 
 def test_archive_normalizes_shell_style_naive_now_provider(tmp_path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "archive-local-time.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "archive-local-time.sqlite")
     as_of = date(2026, 2, 1)
     adapter = StudentDesktopAdapter(
         database=SQLiteDatabase(

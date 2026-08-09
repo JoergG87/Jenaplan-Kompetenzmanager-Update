@@ -17,7 +17,7 @@ from tests.helpers.final_v3_document_runtime_worker import (
     open_runtime,
     paths_for,
 )
-from tests.test_final_v3_sqlcipher_runtime import requires_exact_417
+from tests.test_final_v4_sqlcipher_runtime import requires_exact_417
 
 
 class _Consumer:

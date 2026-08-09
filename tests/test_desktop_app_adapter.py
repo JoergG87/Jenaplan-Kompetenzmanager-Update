@@ -139,10 +139,10 @@ from src.desktop_app.view_models.student_view_model import (
     format_student_report_preview_text,
     sort_student_list,
 )
-from tests.helpers.synthetic_v3 import create_synthetic_v3_database
+from tests.helpers.synthetic_v4 import create_synthetic_v4_database
 
 
-def _create_empty_final_v3_database(database_path: Path) -> SQLiteDatabase:
+def _create_empty_final_v4_database(database_path: Path) -> SQLiteDatabase:
     database = SQLiteDatabase(database_path)
     reference = seed_reference_data()
     database.replace_seed_data(
@@ -2646,7 +2646,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_new_app_database_starts_without_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
-            _create_empty_final_v3_database(database_path)
+            _create_empty_final_v4_database(database_path)
             adapter = StudentDesktopAdapter(database_path)
 
             self.assertTrue(database_path.exists())
@@ -2663,7 +2663,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_new_student_persists_after_adapter_reinitialization(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
-            _create_empty_final_v3_database(database_path)
+            _create_empty_final_v4_database(database_path)
             adapter = StudentDesktopAdapter(database_path)
 
             result = adapter.save_new_student(
@@ -2713,7 +2713,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_reopening_existing_database_does_not_add_demo_students(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
-            _create_empty_final_v3_database(database_path)
+            _create_empty_final_v4_database(database_path)
             adapter = StudentDesktopAdapter(database_path)
             result = adapter.save_new_student(
                 first_name="Oskar",
@@ -2787,7 +2787,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_student_adapter_sorts_all_students_by_course_order_and_name(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "kompetenzmanager.sqlite"
-            _create_empty_final_v3_database(database_path)
+            _create_empty_final_v4_database(database_path)
             adapter = StudentDesktopAdapter(database_path)
             adapter.save_new_student(
                 first_name="Zara",
@@ -7291,10 +7291,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         window.close()
         self.assertIsNotNone(app)
 
-    def test_shell_initial_refresh_reads_synthetic_final_v3_runtime(self) -> None:
+    def test_shell_initial_refresh_reads_synthetic_final_v4_runtime(self) -> None:
         app = QApplication.instance() or QApplication([])
         database_path = Path(self.temp_dir.name) / "synthetic-runtime.sqlite"
-        create_synthetic_v3_database(database_path)
+        create_synthetic_v4_database(database_path)
 
         window = shell.AppShell(
             database_path,
@@ -7321,7 +7321,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     ) -> None:
         app = QApplication.instance() or QApplication([])
         database_path = Path(self.temp_dir.name) / "missing-current.sqlite"
-        database = _create_empty_final_v3_database(database_path)
+        database = _create_empty_final_v4_database(database_path)
         with database.connect() as connection:
             with connection:
                 connection.execute(
@@ -7379,7 +7379,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_school_year_block_clears_stale_dashboard_actions(self) -> None:
         app = QApplication.instance() or QApplication([])
         database_path = Path(self.temp_dir.name) / "blocked-dashboard.sqlite"
-        database = _create_empty_final_v3_database(database_path)
+        database = _create_empty_final_v4_database(database_path)
         window = shell.AppShell(
             database_path,
             now_provider=lambda: datetime(2026, 8, 3, 9, 0),

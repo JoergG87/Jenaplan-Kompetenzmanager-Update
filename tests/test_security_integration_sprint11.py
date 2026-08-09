@@ -12,7 +12,7 @@ import uuid
 import pytest
 
 from src.core.database_engine import SQLCipherConnectionProvider
-from src.core.final_v3_schema import FinalV3SchemaInitializer
+from src.core.final_v4_schema import FinalV4SchemaInitializer
 from src.core.sqlite_store import SQLiteDatabase
 from src.security.data_keys import LoadedDataMasterKey
 from src.security.database_keys import DatabaseKey
@@ -83,7 +83,7 @@ def _prepare_plaintext_installation(tmp_path: Path) -> Path:
     document_path = paths.source_documents / "legacy-report.pdf"
     document_path.write_bytes(PAYLOAD)
     os.chmod(document_path, 0o600)
-    FinalV3SchemaInitializer().initialize(paths.source_database)
+    FinalV4SchemaInitializer().initialize(paths.source_database)
     database = SQLiteDatabase(
         paths.source_database,
         create=False,

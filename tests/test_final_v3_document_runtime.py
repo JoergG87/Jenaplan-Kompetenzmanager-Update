@@ -28,11 +28,11 @@ from src.security.final_v3_document_runtime import (
     FinalV3DocumentSchemaV1,
     _initialize_container_layout,
     _require_no_document_database_sidecars,
-    run_gated_final_v3_document_runtime,
+    run_gated_final_v4_document_runtime,
 )
-from src.security.final_v3_sqlcipher_runtime import FinalV3SQLCipherRuntimePaths
+from src.security.final_v4_sqlcipher_runtime import FinalV4SQLCipherRuntimePaths
 from src.security.infrastructure.system import SystemClock, SystemRandomSource
-from tests.test_final_v3_sqlcipher_runtime import (
+from tests.test_final_v4_sqlcipher_runtime import (
     MemoryDataMasterKeyStore,
     _account_loader,
     _environment,
@@ -122,9 +122,9 @@ def _loaded(dmk_material: bytes = DMK_MATERIAL) -> LoadedDatabaseKeyRuntime:
 def _paths(root: Path) -> FinalV3DocumentRuntimePaths:
     root.mkdir(mode=0o700)
     key_paths = DatabaseKeyRuntimePaths.for_root(root)
-    final_paths = FinalV3SQLCipherRuntimePaths.for_key_runtime(key_paths)
+    final_paths = FinalV4SQLCipherRuntimePaths.for_key_runtime(key_paths)
     final_paths.runtime_root.mkdir(mode=0o700)
-    return FinalV3DocumentRuntimePaths.for_final_v3(final_paths)
+    return FinalV3DocumentRuntimePaths.for_final_v4(final_paths)
 
 
 def _runtime(
@@ -612,7 +612,7 @@ def test_gate_off_does_not_touch_account_or_filesystem(tmp_path: Path) -> None:
         touched = True
         raise AssertionError("must not be called")
 
-    decision = run_gated_final_v3_document_runtime(
+    decision = run_gated_final_v4_document_runtime(
         account_loader=account_loader,
         authentication_confirmed=False,
         environ={},
@@ -631,7 +631,7 @@ def test_exact_sqlcipher_composition_create_read_and_restart(
     root = _root(tmp_path)
     store = MemoryDataMasterKeyStore()
     account = _account_loader(str(uuid.uuid4()))
-    first = run_gated_final_v3_document_runtime(
+    first = run_gated_final_v4_document_runtime(
         account_loader=account,
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
@@ -657,7 +657,7 @@ def test_exact_sqlcipher_composition_create_read_and_restart(
         b"SQLite format 3\x00"
     )
 
-    restarted = run_gated_final_v3_document_runtime(
+    restarted = run_gated_final_v4_document_runtime(
         account_loader=account,
         authentication_confirmed=True,
         environ=_environment(root),

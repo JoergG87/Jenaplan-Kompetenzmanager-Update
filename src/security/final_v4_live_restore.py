@@ -1,4 +1,4 @@
-"""Same-installation live restore strategy for the gated Final-V3 runtime.
+"""Same-installation live restore strategy for the gated Final-V4 runtime.
 
 The module plugs Cipher-specific preflight, component replacement, keyed
 verification and rollback into the existing productive restore state machine.
@@ -83,25 +83,25 @@ from src.security.infrastructure.system import (
     SystemClock,
     SystemRandomSource,
 )
-from src.security.final_v3_backup_runtime import (
-    FINAL_V3_BACKUP_MANIFEST_FILENAME,
-    FinalV3EncryptedBackupError,
-    FinalV3EncryptedBackupManifestV1,
-    FinalV3EncryptedBackupService,
-    FinalV3EncryptedSafetyBackup,
+from src.security.final_v4_backup_runtime import (
+    FINAL_V4_BACKUP_MANIFEST_FILENAME,
+    FinalV4EncryptedBackupError,
+    FinalV4EncryptedBackupManifestV1,
+    FinalV4EncryptedBackupService,
+    FinalV4EncryptedSafetyBackup,
 )
 
 
-FINAL_V3_LIVE_RESTORE_KIND = "final_v3_encrypted_same_installation"
-FINAL_V3_LIVE_RESTORE_HANDOFF_VERSION = 1
-FINAL_V3_LIVE_RESTORE_AUTH_PURPOSE = (
-    "jenaplan-kompetenzmanager/final-v3-live-restore-handoff/v1"
+FINAL_V4_LIVE_RESTORE_KIND = "final_v4_encrypted_same_installation"
+FINAL_V4_LIVE_RESTORE_HANDOFF_VERSION = 1
+FINAL_V4_LIVE_RESTORE_AUTH_PURPOSE = (
+    "jenaplan-kompetenzmanager/final-v4-live-restore-handoff/v1"
 )
-FINAL_V3_LIVE_RESTORE_BACKUP_DIRECTORY = "encrypted-restore-safety"
-FINAL_V3_LIVE_RESTORE_STAGING_DIRECTORY = "encrypted-restore-staging"
-FINAL_V3_LIVE_RESTORE_COMPONENTS = (
+FINAL_V4_LIVE_RESTORE_BACKUP_DIRECTORY = "encrypted-restore-safety"
+FINAL_V4_LIVE_RESTORE_STAGING_DIRECTORY = "encrypted-restore-staging"
+FINAL_V4_LIVE_RESTORE_COMPONENTS = (
     "key_runtime_metadata",
-    "final_v3_main_database",
+    "final_v4_main_database",
     "document_companion_database",
     "managed_document_storage",
 )
@@ -109,9 +109,9 @@ _HASH_LENGTH = 64
 
 
 @dataclass(frozen=True, slots=True)
-class FinalV3LiveRestorePreparation:
+class FinalV4LiveRestorePreparation:
     handoff: RestoreHandoffResult
-    safety_backup: FinalV3EncryptedSafetyBackup = field(repr=False)
+    safety_backup: FinalV4EncryptedSafetyBackup = field(repr=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,12 +123,12 @@ class _CipherComponent:
     failed_new: Path
 
 
-class FinalV3EncryptedRestoreHandoffService:
+class FinalV4EncryptedRestoreHandoffService:
     """DMK-authenticated handoff using the existing one-time journal contract."""
 
     def __init__(
         self,
-        backup_service: FinalV3EncryptedBackupService | None = None,
+        backup_service: FinalV4EncryptedBackupService | None = None,
         *,
         runtime_root: Path | None = None,
         loaded_keys: LoadedDatabaseKeyRuntime | None = None,
@@ -137,7 +137,7 @@ class FinalV3EncryptedRestoreHandoffService:
     ) -> None:
         self.backup_service = backup_service
         if backup_service is not None:
-            runtime_root = backup_service.paths.final_v3.key_runtime.root
+            runtime_root = backup_service.paths.final_v4.key_runtime.root
             loaded_keys = backup_service.loaded
             installation_id = backup_service.opened.installation_id
         if runtime_root is None or loaded_keys is None or installation_id is None:
@@ -152,7 +152,7 @@ class FinalV3EncryptedRestoreHandoffService:
         *,
         staging_root: Path,
         expected_container_sha256: str,
-        safety_backup: FinalV3EncryptedSafetyBackup,
+        safety_backup: FinalV4EncryptedSafetyBackup,
         restore_id: str,
         app_version: str,
         build_commit: str,
@@ -169,13 +169,13 @@ class FinalV3EncryptedRestoreHandoffService:
             staging_root,
             expected_container_sha256=expected_container_sha256,
         )
-        if ready.staging_root.parent != root / FINAL_V3_LIVE_RESTORE_STAGING_DIRECTORY:
+        if ready.staging_root.parent != root / FINAL_V4_LIVE_RESTORE_STAGING_DIRECTORY:
             raise RestoreHandoffError("Das Cipher-Restore-Staging ist nicht gebunden.")
         verified_safety = self.backup_service.verify(safety_backup.result.path)
         if verified_safety != safety_backup.result:
             raise RestoreHandoffError("Das Cipher-Sicherheitsbackup ist widerspruechlich.")
         safety_path = verified_safety.path.resolve(strict=True)
-        if safety_path.parent != root / FINAL_V3_LIVE_RESTORE_BACKUP_DIRECTORY:
+        if safety_path.parent != root / FINAL_V4_LIVE_RESTORE_BACKUP_DIRECTORY:
             raise RestoreHandoffError("Das Cipher-Sicherheitsbackup liegt ausserhalb der Zulassung.")
 
         nonce = secrets.token_urlsafe(32)
@@ -189,11 +189,11 @@ class FinalV3EncryptedRestoreHandoffService:
             "excluded_evidence": _excluded_evidence(root),
             "handoff_version": RESTORE_HANDOFF_VERSION,
             "installation_id": ready.manifest.installation_id,
-            "live_restore_handoff_version": FINAL_V3_LIVE_RESTORE_HANDOFF_VERSION,
+            "live_restore_handoff_version": FINAL_V4_LIVE_RESTORE_HANDOFF_VERSION,
             "manifest_sha256": hashlib.sha256(ready.manifest.to_bytes()).hexdigest(),
             "nonce": nonce,
             "restore_id": restore_id,
-            "restore_kind": FINAL_V3_LIVE_RESTORE_KIND,
+            "restore_kind": FINAL_V4_LIVE_RESTORE_KIND,
             "runtime_root": str(root),
             "safety_backup_relative": safety_path.relative_to(root).as_posix(),
             "safety_backup_sha256": verified_safety.container_sha256,
@@ -215,7 +215,7 @@ class FinalV3EncryptedRestoreHandoffService:
                 "rename_intent": None,
                 "restart_handshake": {"attempts": 0, "status": "not_started"},
                 "restore_id": restore_id,
-                "restore_kind": FINAL_V3_LIVE_RESTORE_KIND,
+                "restore_kind": FINAL_V4_LIVE_RESTORE_KIND,
                 "safety_backup_sha256": verified_safety.container_sha256,
             }
         )
@@ -273,8 +273,8 @@ class FinalV3EncryptedRestoreHandoffService:
             set(payload) != required
             or payload.get("handoff_version") != RESTORE_HANDOFF_VERSION
             or payload.get("live_restore_handoff_version")
-            != FINAL_V3_LIVE_RESTORE_HANDOFF_VERSION
-            or payload.get("restore_kind") != FINAL_V3_LIVE_RESTORE_KIND
+            != FINAL_V4_LIVE_RESTORE_HANDOFF_VERSION
+            or payload.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
             or not secrets.compare_digest(str(payload.get("nonce", "")), expected_nonce)
         ):
             raise RestoreHandoffError("Der Cipher-Handoff ist ungueltig.")
@@ -322,7 +322,7 @@ class FinalV3EncryptedRestoreHandoffService:
         loaded = self.loaded_keys
         key = derive_domain_separated_key(
             loaded.dmk,
-            purpose=FINAL_V3_LIVE_RESTORE_AUTH_PURPOSE,
+            purpose=FINAL_V4_LIVE_RESTORE_AUTH_PURPOSE,
             derivation_version=1,
             context={
                 "database_context_id": loaded.database_context_id,
@@ -332,15 +332,15 @@ class FinalV3EncryptedRestoreHandoffService:
         return hmac.new(key, canonical_json(payload), hashlib.sha256).hexdigest()
 
 
-class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
+class FinalV4EncryptedLiveRestoreService(ProductiveRestoreService):
     """Cipher strategy for the existing worker/journal/restart state machine."""
 
     def __init__(
         self,
-        backup_service: FinalV3EncryptedBackupService | None,
+        backup_service: FinalV4EncryptedBackupService | None,
         *,
-        handoff_service: FinalV3EncryptedRestoreHandoffService | None = None,
-        backup_service_factory: Callable[[], FinalV3EncryptedBackupService]
+        handoff_service: FinalV4EncryptedRestoreHandoffService | None = None,
+        backup_service_factory: Callable[[], FinalV4EncryptedBackupService]
         | None = None,
         fault_hook: Callable[[str], None] | None = None,
     ) -> None:
@@ -350,7 +350,7 @@ class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
             raise ValueError("Cipher-Restore-Komposition fehlt.")
         self.backup_service = backup_service
         self._backup_service_factory = backup_service_factory
-        self.cipher_handoff = handoff_service or FinalV3EncryptedRestoreHandoffService(
+        self.cipher_handoff = handoff_service or FinalV4EncryptedRestoreHandoffService(
             backup_service
         )
         self._fault_hook = fault_hook
@@ -362,7 +362,7 @@ class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
             if self._backup_service_factory is None:
                 raise RestorePreflightError("Die Cipher-Runtime ist nicht komponierbar.")
             self.backup_service = self._backup_service_factory()
-        lock_root = self.backup_service.paths.final_v3.runtime_root / ".observation-staging"
+        lock_root = self.backup_service.paths.final_v4.runtime_root / ".observation-staging"
         with ObservationWriterLock(lock_root):
             yield
 
@@ -410,7 +410,7 @@ class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
                 "prepared": _path_evidence(component.prepared),
                 "rollback_path": str(component.rollback),
             }
-        if tuple(component_state) != FINAL_V3_LIVE_RESTORE_COMPONENTS:
+        if tuple(component_state) != FINAL_V4_LIVE_RESTORE_COMPONENTS:
             raise RestorePreflightError("Der Cipher-Komponentenplan ist ungueltig.")
         if len({component.live.stat().st_dev for component in components} | {component.prepared.stat().st_dev for component in components}) != 1:
             raise RestorePreflightError("Cipher-Swap und Staging liegen nicht auf demselben Dateisystem.")
@@ -441,7 +441,7 @@ class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
                 source=component.live,
                 target=component.rollback,
             )
-            if component.role == "final_v3_main_database":
+            if component.role == "final_v4_main_database":
                 self._emit("during_swap")
                 self._emit("between_main_and_companion")
         for component in components:
@@ -560,8 +560,8 @@ class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
         paths: RestoreTransactionPaths,
         staging_root: Path,
     ) -> tuple[_CipherComponent, ...]:
-        live_key = self.backup_service.paths.final_v3.key_runtime.metadata_root
-        live_final = self.backup_service.paths.final_v3.runtime_root
+        live_key = self.backup_service.paths.final_v4.key_runtime.metadata_root
+        live_final = self.backup_service.paths.final_v4.runtime_root
         prepared_key = staging_root / live_key.name
         prepared_final = staging_root / live_final.name
         return (
@@ -573,11 +573,11 @@ class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
                 paths.failed_new / live_key.name,
             ),
             _CipherComponent(
-                "final_v3_main_database",
-                self.backup_service.paths.final_v3.database,
-                prepared_final / self.backup_service.paths.final_v3.database.name,
-                paths.rollback / self.backup_service.paths.final_v3.database.name,
-                paths.failed_new / self.backup_service.paths.final_v3.database.name,
+                "final_v4_main_database",
+                self.backup_service.paths.final_v4.database,
+                prepared_final / self.backup_service.paths.final_v4.database.name,
+                paths.rollback / self.backup_service.paths.final_v4.database.name,
+                paths.failed_new / self.backup_service.paths.final_v4.database.name,
             ),
             _CipherComponent(
                 "document_companion_database",
@@ -601,26 +601,26 @@ class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
 
     def _require_no_sidecars(self, root: Path) -> None:
         for path in (
-            self.backup_service.paths.final_v3.database,
+            self.backup_service.paths.final_v4.database,
             self.backup_service.paths.database,
-            self.backup_service.paths.final_v3.key_runtime.keyset_metadata,
+            self.backup_service.paths.final_v4.key_runtime.keyset_metadata,
         ):
             for suffix in ("-wal", "-shm", "-journal"):
                 sidecar = Path(f"{path}{suffix}")
                 if sidecar.exists() or sidecar.is_symlink():
                     raise RestorePreflightError("Ein Cipher-Sidecar blockiert den Live-Restore.")
-        if self.backup_service.paths.final_v3.key_runtime.root != root:
+        if self.backup_service.paths.final_v4.key_runtime.root != root:
             raise RestorePreflightError("Der Cipher-Runtime-Root ist widerspruechlich.")
 
     def _checkpoint_live_databases(self) -> None:
         connections = (
             lambda: self.backup_service._main_factory.connect(
-                self.backup_service.paths.final_v3.database,
+                self.backup_service.paths.final_v4.database,
                 create=False,
             ),
             lambda: self.backup_service._document_factory.connect(create=False),
             lambda: sqlite3.connect(
-                self.backup_service.paths.final_v3.key_runtime.keyset_metadata,
+                self.backup_service.paths.final_v4.key_runtime.keyset_metadata,
                 timeout=5.0,
             ),
         )
@@ -638,9 +638,9 @@ class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
                 finally:
                     connection.close()
             for path in (
-                self.backup_service.paths.final_v3.database,
+                self.backup_service.paths.final_v4.database,
                 self.backup_service.paths.database,
-                self.backup_service.paths.final_v3.key_runtime.keyset_metadata,
+                self.backup_service.paths.final_v4.key_runtime.keyset_metadata,
             ):
                 for suffix in ("-wal", "-shm"):
                     sidecar = Path(f"{path}{suffix}")
@@ -669,7 +669,7 @@ class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
         except OSError:
             return None
         arguments = [
-            "--final-v3-restore-confirm",
+            "--final-v4-restore-confirm",
             "--runtime-root",
             str(paths.runtime_root),
             "--restore-id",
@@ -708,9 +708,9 @@ class FinalV3EncryptedLiveRestoreService(ProductiveRestoreService):
             return None
 
 
-def prepare_final_v3_live_restore(
+def prepare_final_v4_live_restore(
     *,
-    backup_service: FinalV3EncryptedBackupService,
+    backup_service: FinalV4EncryptedBackupService,
     lock: RuntimeInstanceLock,
     staging_root: Path,
     expected_container_sha256: str,
@@ -718,18 +718,18 @@ def prepare_final_v3_live_restore(
     app_version: str,
     build_commit: str,
     source_tree_state: str | None = None,
-) -> FinalV3LiveRestorePreparation:
+) -> FinalV4LiveRestorePreparation:
     """Freeze writers, create+verify safety backup, then publish the handoff."""
 
-    root = backup_service.paths.final_v3.key_runtime.root.resolve(strict=True)
+    root = backup_service.paths.final_v4.key_runtime.root.resolve(strict=True)
     if lock.runtime_root != root or lock._file is None:
         raise RestorePreflightError("Der Cipher-Livebestand ist nicht instanzgesperrt.")
-    backup_root = root / FINAL_V3_LIVE_RESTORE_BACKUP_DIRECTORY
+    backup_root = root / FINAL_V4_LIVE_RESTORE_BACKUP_DIRECTORY
     backup_root.mkdir(mode=0o700, exist_ok=True)
     safety_path = backup_root / f"safety-{restore_id}.jkmebackup"
     safety = backup_service.create_safety_backup(safety_path)
     try:
-        handoff = FinalV3EncryptedRestoreHandoffService(backup_service).create(
+        handoff = FinalV4EncryptedRestoreHandoffService(backup_service).create(
             staging_root=staging_root,
             expected_container_sha256=expected_container_sha256,
             safety_backup=safety,
@@ -741,19 +741,19 @@ def prepare_final_v3_live_restore(
     except Exception:
         safety.abort()
         raise
-    return FinalV3LiveRestorePreparation(handoff, safety)
+    return FinalV4LiveRestorePreparation(handoff, safety)
 
 
-def launch_prepared_final_v3_restore(
+def launch_prepared_final_v4_restore(
     *,
-    preparation: FinalV3LiveRestorePreparation,
+    preparation: FinalV4LiveRestorePreparation,
     lock: RuntimeInstanceLock,
     launch_plan=None,
 ):
     """Use the established worker takeover and release the freeze fail-closed."""
 
     from src.desktop_app.restore_worker import (
-        RESTORE_MODE_FINAL_V3_ENCRYPTED,
+        RESTORE_MODE_FINAL_V4_ENCRYPTED,
         launch_restore_worker,
     )
 
@@ -763,7 +763,7 @@ def launch_prepared_final_v3_restore(
             nonce=preparation.handoff.nonce,
             lock=lock,
             launch_plan=launch_plan,
-            restore_mode=RESTORE_MODE_FINAL_V3_ENCRYPTED,
+            restore_mode=RESTORE_MODE_FINAL_V4_ENCRYPTED,
         )
     except Exception:
         try:
@@ -786,9 +786,9 @@ def launch_prepared_final_v3_restore(
     return process
 
 
-def confirm_final_v3_restore_startup(
+def confirm_final_v4_restore_startup(
     *,
-    backup_service: FinalV3EncryptedBackupService | None = None,
+    backup_service: FinalV4EncryptedBackupService | None = None,
     runtime_root: Path,
     restore_id: str,
     token: str,
@@ -800,13 +800,13 @@ def confirm_final_v3_restore_startup(
     root = Path(runtime_root).expanduser().resolve(strict=True)
     if (
         backup_service is not None
-        and backup_service.paths.final_v3.key_runtime.root.resolve(strict=True) != root
+        and backup_service.paths.final_v4.key_runtime.root.resolve(strict=True) != root
     ):
         raise RestoreHandoffError("Der Cipher-Restart-Root ist widerspruechlich.")
     paths = restore_transaction_paths(root, restore_id)
     journal = RestoreJournal(paths)
     state = journal.read()
-    if state.get("phase") != "installed_verified" or state.get("restore_kind") != FINAL_V3_LIVE_RESTORE_KIND:
+    if state.get("phase") != "installed_verified" or state.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND:
         raise RestoreJournalError("Der Cipher-Restore erwartet keinen Startup-Handshake.")
     payload = _read_canonical_json(paths.resume_token, RestoreHandoffError)
     if (
@@ -819,7 +819,7 @@ def confirm_final_v3_restore_startup(
         raise RestoreHandoffError("Der Cipher-Resume-Token ist ungueltig.")
     handoff = _read_canonical_json(paths.consumed_handoff, RestoreHandoffError)
     if (
-        handoff.get("restore_kind") != FINAL_V3_LIVE_RESTORE_KIND
+        handoff.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
         or handoff.get("runtime_root") != str(root)
     ):
         raise RestoreHandoffError("Der Cipher-Restart-Handoff ist widerspruechlich.")
@@ -852,10 +852,10 @@ def confirm_final_v3_restore_startup(
     return RestoreRecoveryResult("completed", restore_id)
 
 
-def recover_interrupted_final_v3_restore(
+def recover_interrupted_final_v4_restore(
     *,
     runtime_root: Path,
-    backup_service: FinalV3EncryptedBackupService | None = None,
+    backup_service: FinalV4EncryptedBackupService | None = None,
     account_loader=None,
     key_store=None,
 ) -> RestoreRecoveryResult:
@@ -874,7 +874,7 @@ def recover_interrupted_final_v3_restore(
         paths = restore_transaction_paths(root, child.name)
         state = RestoreJournal(paths).read()
         if (
-            state.get("restore_kind") == FINAL_V3_LIVE_RESTORE_KIND
+            state.get("restore_kind") == FINAL_V4_LIVE_RESTORE_KIND
             and state.get("phase")
             not in {"completed", "rolled_back", "aborted_before_replacement"}
         ):
@@ -961,7 +961,7 @@ def recover_interrupted_final_v3_restore(
                 key_store=key_store,
             )
         else:
-            FinalV3EncryptedLiveRestoreService(backup_service)._rollback(
+            FinalV4EncryptedLiveRestoreService(backup_service)._rollback(
                 paths,
                 journal,
             )
@@ -990,14 +990,14 @@ def recover_interrupted_final_v3_restore(
         ) from error
 
 
-def build_final_v3_live_restore_worker_service(
+def build_final_v4_live_restore_worker_service(
     runtime_root: Path,
     *,
     restore_id: str | None = None,
     account_loader=None,
     key_store=None,
     sqlcipher_provider=None,
-) -> FinalV3EncryptedLiveRestoreService:
+) -> FinalV4EncryptedLiveRestoreService:
     """Compose the worker from the existing ADR-101 Cipher product runtime."""
 
     try:
@@ -1009,8 +1009,8 @@ def build_final_v3_live_restore_worker_service(
         )
         from src.desktop_app.runtime import runtime_paths
         from src.security.cipher_product_runtime import open_cipher_product_runtime
-        from src.security.final_v3_backup_runtime import (
-            build_final_v3_encrypted_backup_service,
+        from src.security.final_v4_backup_runtime import (
+            build_final_v4_encrypted_backup_service,
         )
         from src.security.domain import SECURITY_SCHEMA_VERSION
         from src.security.infrastructure.sqlite_repository import (
@@ -1046,13 +1046,13 @@ def build_final_v3_live_restore_worker_service(
             key_store=key_store,
         )
         account = stable_account_loader()
-        handoff_service = FinalV3EncryptedRestoreHandoffService(
+        handoff_service = FinalV4EncryptedRestoreHandoffService(
             runtime_root=root,
             loaded_keys=loaded,
             installation_id=account.installation_id,
         )
 
-        def open_after_parent_eof() -> FinalV3EncryptedBackupService:
+        def open_after_parent_eof() -> FinalV4EncryptedBackupService:
             product_runtime = open_cipher_product_runtime(
                 paths=product_paths,
                 account_loader=stable_account_loader,
@@ -1062,7 +1062,7 @@ def build_final_v3_live_restore_worker_service(
                 sqlcipher_provider=provider,
                 active_restore_id=restore_id,
             )
-            service = build_final_v3_encrypted_backup_service(
+            service = build_final_v4_encrypted_backup_service(
                 opened_runtime=product_runtime.runtime,
                 account_loader=stable_account_loader,
                 environ=os.environ,
@@ -1070,11 +1070,11 @@ def build_final_v3_live_restore_worker_service(
                 sqlcipher_provider=provider,
                 product_root=root,
             )
-            if service.paths.final_v3.key_runtime.root != root:
+            if service.paths.final_v4.key_runtime.root != root:
                 raise RestorePreflightError("Der Cipher-Worker-Root ist ungueltig.")
             return service
 
-        return FinalV3EncryptedLiveRestoreService(
+        return FinalV4EncryptedLiveRestoreService(
             None,
             handoff_service=handoff_service,
             backup_service_factory=open_after_parent_eof,
@@ -1098,7 +1098,7 @@ def _security_account_loader(root: Path):
     return repository.load_account
 
 
-def classify_terminal_final_v3_restore_artifacts(runtime_root: Path) -> bool:
+def classify_terminal_final_v4_restore_artifacts(runtime_root: Path) -> bool:
     """Return true only for structurally terminal Cipher journal artifacts."""
 
     root = Path(runtime_root)
@@ -1121,7 +1121,7 @@ def classify_terminal_final_v3_restore_artifacts(runtime_root: Path) -> bool:
             paths = restore_transaction_paths(root, child.name)
             state = RestoreJournal(paths).read()
             if (
-                state.get("restore_kind") != FINAL_V3_LIVE_RESTORE_KIND
+                state.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
                 or state.get("phase")
                 not in {"completed", "rolled_back", "aborted_before_replacement"}
             ):
@@ -1147,7 +1147,7 @@ def classify_terminal_final_v3_restore_artifacts(runtime_root: Path) -> bool:
         return False
 
 
-def classify_active_final_v3_restore_artifacts(
+def classify_active_final_v4_restore_artifacts(
     runtime_root: Path,
     *,
     restore_id: str,
@@ -1174,7 +1174,7 @@ def classify_active_final_v3_restore_artifacts(
             state = RestoreJournal(candidate).read()
             if child.name == restore_id:
                 if (
-                    state.get("restore_kind") != FINAL_V3_LIVE_RESTORE_KIND
+                    state.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
                     or state.get("phase")
                     in {
                         "completed",
@@ -1185,7 +1185,7 @@ def classify_active_final_v3_restore_artifacts(
                 ):
                     return False
             elif (
-                state.get("restore_kind") != FINAL_V3_LIVE_RESTORE_KIND
+                state.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
                 or state.get("phase")
                 not in {"completed", "rolled_back", "aborted_before_replacement"}
             ):
@@ -1210,7 +1210,7 @@ def classify_active_final_v3_restore_artifacts(
         return False
 
 
-def validate_terminal_final_v3_restore_evidence(
+def validate_terminal_final_v4_restore_evidence(
     runtime_root: Path,
     *,
     loaded_keys: LoadedDatabaseKeyRuntime,
@@ -1219,12 +1219,12 @@ def validate_terminal_final_v3_restore_evidence(
     """Authenticate terminal Cipher handoffs after the product keys are loaded."""
 
     root = Path(runtime_root).expanduser().resolve(strict=True)
-    if not classify_terminal_final_v3_restore_artifacts(root):
+    if not classify_terminal_final_v4_restore_artifacts(root):
         raise RestoreManualRecoveryRequired("Cipher-Restore-Evidenz ist nicht terminal.")
     transaction_root = root / "restore-transactions"
     if not transaction_root.exists():
         return
-    service = FinalV3EncryptedRestoreHandoffService(
+    service = FinalV4EncryptedRestoreHandoffService(
         runtime_root=root,
         loaded_keys=loaded_keys,
         installation_id=installation_id,
@@ -1240,7 +1240,7 @@ def validate_terminal_final_v3_restore_evidence(
         unsigned = dict(payload)
         observed = str(unsigned.pop("authentication_hmac_sha256", ""))
         if (
-            payload.get("restore_kind") != FINAL_V3_LIVE_RESTORE_KIND
+            payload.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
             or payload.get("runtime_root") != str(root)
             or payload.get("restore_id") != child.name
             or payload.get("installation_id") != installation_id
@@ -1252,7 +1252,7 @@ def validate_terminal_final_v3_restore_evidence(
             )
 
 
-def validate_active_final_v3_restore_evidence(
+def validate_active_final_v4_restore_evidence(
     runtime_root: Path,
     *,
     restore_id: str,
@@ -1262,12 +1262,12 @@ def validate_active_final_v3_restore_evidence(
     """Re-authenticate the one active worker handoff with its existing DMK."""
 
     root = Path(runtime_root).expanduser().resolve(strict=True)
-    if not classify_active_final_v3_restore_artifacts(
+    if not classify_active_final_v4_restore_artifacts(
         root,
         restore_id=restore_id,
     ):
         raise RestoreManualRecoveryRequired("Aktive Cipher-Restore-Evidenz ist ungueltig.")
-    service = FinalV3EncryptedRestoreHandoffService(
+    service = FinalV4EncryptedRestoreHandoffService(
         runtime_root=root,
         loaded_keys=loaded_keys,
         installation_id=installation_id,
@@ -1283,7 +1283,7 @@ def validate_active_final_v3_restore_evidence(
         unsigned = dict(payload)
         observed = str(unsigned.pop("authentication_hmac_sha256", ""))
         if (
-            payload.get("restore_kind") != FINAL_V3_LIVE_RESTORE_KIND
+            payload.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
             or payload.get("runtime_root") != str(root)
             or payload.get("restore_id") != child.name
             or payload.get("installation_id") != installation_id
@@ -1300,11 +1300,11 @@ def _bootstrap_components(
     handoff: Mapping[str, object],
 ) -> tuple[_CipherComponent, ...]:
     from src.security.final_v3_document_runtime import FinalV3DocumentRuntimePaths
-    from src.security.final_v3_sqlcipher_runtime import FinalV3SQLCipherRuntimePaths
+    from src.security.final_v4_sqlcipher_runtime import FinalV4SQLCipherRuntimePaths
 
     key_paths = DatabaseKeyRuntimePaths.for_root(paths.runtime_root)
-    final_paths = FinalV3SQLCipherRuntimePaths.for_key_runtime(key_paths)
-    document_paths = FinalV3DocumentRuntimePaths.for_final_v3(final_paths)
+    final_paths = FinalV4SQLCipherRuntimePaths.for_key_runtime(key_paths)
+    document_paths = FinalV3DocumentRuntimePaths.for_final_v4(final_paths)
     staging_root = _resolve_relative(
         paths.runtime_root,
         str(handoff["staging_root_relative"]),
@@ -1318,7 +1318,7 @@ def _bootstrap_components(
             paths.failed_new / key_paths.metadata_root.name,
         ),
         _CipherComponent(
-            "final_v3_main_database",
+            "final_v4_main_database",
             final_paths.database,
             staging_root / final_paths.runtime_root.name / final_paths.database.name,
             paths.rollback / final_paths.database.name,
@@ -1355,7 +1355,7 @@ def _bootstrap_handoff_context(
     )
     handoff = _read_canonical_json(handoff_path, RestoreHandoffError)
     if (
-        handoff.get("restore_kind") != FINAL_V3_LIVE_RESTORE_KIND
+        handoff.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
         or handoff.get("runtime_root") != str(paths.runtime_root)
         or handoff.get("restore_id") != paths.transaction.name
     ):
@@ -1392,7 +1392,7 @@ def _bootstrap_handoff_context(
                 key_store=key_store,
                 metadata_root=metadata_root,
             )
-            service = FinalV3EncryptedRestoreHandoffService(
+            service = FinalV4EncryptedRestoreHandoffService(
                 runtime_root=paths.runtime_root,
                 loaded_keys=loaded,
                 installation_id=account.installation_id,
@@ -1433,10 +1433,10 @@ def _build_bootstrap_verifier(
     *,
     loaded: LoadedDatabaseKeyRuntime,
     installation_id: str,
-) -> FinalV3EncryptedBackupService:
-    from src.security.final_v3_backup_runtime import build_final_v3_restore_verifier
+) -> FinalV4EncryptedBackupService:
+    from src.security.final_v4_backup_runtime import build_final_v4_restore_verifier
 
-    return build_final_v3_restore_verifier(
+    return build_final_v4_restore_verifier(
         runtime_root=root,
         loaded_keys=loaded,
         installation_id=installation_id,
@@ -1536,7 +1536,7 @@ def _bootstrap_restore_old_runtime(
 
 def run_confirm(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--final-v3-restore-confirm", action="store_true")
+    parser.add_argument("--final-v4-restore-confirm", action="store_true")
     parser.add_argument("--runtime-root", type=Path, required=True)
     parser.add_argument("--restore-id", required=True)
     parser.add_argument("--restore-token", required=True)
@@ -1547,14 +1547,14 @@ def run_confirm(argv: list[str] | None = None) -> int:
             args.runtime_root,
             inherited_fd=args.restore_lock_fd,
         ).acquire()
-        confirm_final_v3_restore_startup(
+        confirm_final_v4_restore_startup(
             runtime_root=args.runtime_root,
             restore_id=args.restore_id,
             token=args.restore_token,
         )
         lock.transfer()
         return 0
-    except (SystemExit, RestoreRuntimeError, FinalV3EncryptedBackupError):
+    except (SystemExit, RestoreRuntimeError, FinalV4EncryptedBackupError):
         return 1
 
 
@@ -1593,12 +1593,12 @@ def _journaled_rename(
     journal.write(state, event=f"rename_completed:{name}")
 
 
-def _read_manifest(staging_root: Path) -> FinalV3EncryptedBackupManifestV1:
+def _read_manifest(staging_root: Path) -> FinalV4EncryptedBackupManifestV1:
     try:
-        return FinalV3EncryptedBackupManifestV1.from_bytes(
-            (staging_root / FINAL_V3_BACKUP_MANIFEST_FILENAME).read_bytes()
+        return FinalV4EncryptedBackupManifestV1.from_bytes(
+            (staging_root / FINAL_V4_BACKUP_MANIFEST_FILENAME).read_bytes()
         )
-    except (OSError, FinalV3EncryptedBackupError):
+    except (OSError, FinalV4EncryptedBackupError):
         raise RestoreReplacementError("Das Cipher-Restore-Manifest ist nicht lesbar.") from None
 
 

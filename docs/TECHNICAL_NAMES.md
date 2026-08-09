@@ -8,39 +8,41 @@
 | `CipherProductRuntimeScope` | bindet die bestehenden Security-Foundation-Pfade exakt an die produktiven `RuntimePaths`-Rollen | Security Application Composition |
 | `OpenedCipherProductRuntime` | geprüfte gemeinsame keyed Haupt-, Dokument- und Schlüsselruntime zur Injektion in Adapter und Shell | Security Application Composition |
 | `CipherProductRuntimeError` | strukturierter sanitisierter Startupfehler mit `CipherProductRuntimeOperation` | Security Application Composition |
-| `FinalV3SQLCipherRuntimeScope` | Pfad-/Markergrenze einer Final-V3-SQLCipher-Komposition | Final-V3 SQLCipher Runtime |
-| `MarkerGatedFinalV3SQLCipherRuntimeScope` | historischer doppelmarker-gesperrter Foundation-Scope außerhalb des Produktpfads | Final-V3 SQLCipher Runtime |
+| `FinalV4SQLCipherRuntimeScope` | Pfad-/Markergrenze einer Final-V4-SQLCipher-Komposition | Final-V4 SQLCipher Runtime |
+| `MarkerGatedFinalV4SQLCipherRuntimeScope` | doppelmarker-gesperrter Foundation-Scope des frischen V4-Produktpfads | Final-V4 SQLCipher Runtime |
 | `FinalV3DocumentRuntimeCoordinator` | komponiert Companion und Managed Document Store mit bereits geladener gemeinsamer Database-Key-Runtime | Final-V3 Document Runtime |
 | `PILOT_FIRST_RUN_SCHOOL_YEAR_ID` | stabile technische ID für den fachlichen First-Run-Standard `2026/27` dieses Pilotstands | Security Application Composition |
 | `prepare_cipher_runtime_storage` | erzeugt nur Root, Export-, Backup- und Logverzeichnisse; keine Klartext-Dokumentablage | Desktop Runtime |
 | `CipherBackupRestoreUnavailableError` | blockiert sämtliche ZIP-v1-Backup-/Restore-Einstiege im Cipher-Produktmodus | Desktop Backup/Restore Adapter |
 
 Produktive `RuntimePaths`-Rollen sind `key_runtime_metadata`,
-`keyset_metadata`, `database_key_envelope_registry`, `final_v3_runtime`,
-`final_v3_database`, `document_companion_database`,
+`keyset_metadata`, `database_key_envelope_registry`, `final_v4_runtime`,
+`final_v4_database`, `document_companion_database`,
 `encrypted_document_storage` und `backups`. Sie enthalten keine DMK oder
 Database-Key-Materialien.
 
-## V3-only Schema-, Startup- und Testnamen
+## Final-V4-Schema-, Startup- und Testnamen
 
-**Status:** V3-only-Cleanup, zentrale Assignment-API, SJ-2E-Umstellung der
+**Status:** Final V4 ist der frische fachliche Pilotvertrag. Die historische
+V3-only-Assignmentgrundlage bleibt fachlich erhalten; es gibt keine
+V3→V4-Migration. Zentrale Assignment-API, SJ-2E-Umstellung der
 produktiven Membership-Reader, SJ-2F-Umstellung der produktiven Writer und
-Final-V3-Runtime-Aktivierung, die isolierte synthetische
+Final-V4-Runtime-Aktivierung, die isolierte synthetische
 SJ-3C.2-Ausführung, das anwendungsweite SJ-3C.3-Maintenance-Gate und die
 verpflichtende SJ-3C.4-Backupbindung und SJ-3C.5-Passwort-Step-up-Grenze sind
 lokal implementiert.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
-| `FINAL_SCHEMA_VERSION` | einzige unterstützte Produktschemaversion `3` | Core Database Compatibility |
+| `FINAL_SCHEMA_VERSION` | einzige unterstützte Produktschemaversion `4` | Core Database Compatibility |
 | `FINAL_SCHEMA_FINGERPRINT` | vollständiger kanonischer Fingerprint des direkten finalen Schemas | Core Database Compatibility |
-| `FinalV3SchemaInitializer` | Qt-freie direkte Erzeugung und Verifikation einer neuen vollständigen V3-Datenbank; keine Migration | Core SQLite Schema |
-| `SyntheticV3SeedBuilder` | ausschließlich testseitige deterministische Befüllung einer frisch erzeugten temporären Final-V3-Datenbank | Test Support |
+| `FinalV4SchemaInitializer` | Qt-freie direkte Erzeugung und Verifikation einer neuen vollständigen V4-Datenbank; keine Migration | Core SQLite Schema |
+| `SyntheticV4SeedBuilder` | ausschließlich testseitige deterministische Befüllung einer frisch erzeugten temporären Final-V4-Datenbank | Test Support |
 | `DatabaseStartupResolver` | read-only Klassifizierung als fehlend, exakt final, unbekannt oder Recovery erforderlich | Core Database Startup |
 | `DatabaseStartupCoordinator` | kontrollierte Disposition vor jeder fachlichen Runtime-Vorbereitung | Core Database Startup |
 | `DATABASE_NOT_FOUND` | am geprüften Produktpfad existiert keine Datenbankdatei | Core Database Startup |
-| `V3_INITIALIZATION_REQUIRED` | eine autorisierte Neuanlage muss direkt Final-V3 erzeugen und anschließend neu prüfen | Core Database Startup |
-| `V3_SCHEMA_READY` | exaktes Final-V3 ist vollständig verifiziert und für die normale Runtime zugelassen | Core Database Startup |
+| `V4_INITIALIZATION_REQUIRED` | eine autorisierte Neuanlage muss direkt Final-V4 erzeugen und anschließend neu prüfen | Core Database Startup |
+| `V4_SCHEMA_READY` | exaktes Final-V4 ist vollständig verifiziert und für die normale Runtime zugelassen | Core Database Startup |
 | `SCHEMA_UNSUPPORTED` | vorhandenes Schema entspricht nicht exakt dem finalen registrierten Schema | Core Database Startup |
 | `RECOVERY_REQUIRED` | unlesbarer, beschädigter, unsicherer oder Restore-seitig nicht abgeschlossener Zustand | Core Database Startup |
 | `MaintenanceGate` | zentrale Qt-freie In-Process-Grenze für Writerzulassung, Drain und exklusiven Maintenancebesitz | Core Runtime |
@@ -49,6 +51,19 @@ lokal implementiert.
 | `MaintenanceCapability` | nicht fälschbare In-Process-Besitzberechtigung für genau einen Owner und Maintenancezweck | Core Runtime |
 | `MaintenancePurpose` | trennt `SCHOOL_YEAR_TRANSITION` ausdrücklich von `BACKUP_RESTORE` | Core Runtime |
 | `MaintenanceGuardedConnection` | gemeinsame produktive Connection-Grenze, die jede schreibende SQLite-Transaktion genau einmal am Gate anmeldet | Core SQLite Runtime |
+
+## Schülerbezogene Dokumentationsfachnamen
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `student_documentation_subject_profiles` | Modus `inherit` oder `custom` je stabiler Schüler-/Schuljahridentität | Core SQLite Schema |
+| `student_documentation_subject_selections` | exakte normalisierte `subject_id`-Menge eines `custom`-Profils | Core SQLite Schema |
+| `DocumentationSubjectMode` | ausschließlich `inherit` oder `custom` | Core Student Subject Domain |
+| `StudentDocumentationSubjectConfiguration` | Qt-freie gespeicherte Konfiguration; fehlendes Profil projiziert `inherit` | Core Student Subject Domain |
+| `SQLiteStudentDocumentationSubjectRepository` | connection-gebundene Profile-, Auswahl-, Katalog- und Defaultpersistenz ohne Transaktionsbesitz | Core SQLite Persistence |
+| `StudentDocumentationSubjectService` | Qt-freie Read-/Write-Transaktionsgrenze für Modus, vollständigen Replace und Resolver | Application Student Subjects |
+| `effective_documentation_subjects` | deterministische effektive Fachmenge aus globalem Default oder exakter Custom-Auswahl | Application Student Subjects |
+| `DocumentationSubjectWriteStatus` | ausschließlich `changed` oder mutationsfreies `no_change` | Core Student Subject Domain |
 
 Nicht mehr registrierte Produktnamen sind
 `SchoolYearV2ToV3MigrationEngine`, `VerifiedBackupEvidence`,
@@ -96,7 +111,7 @@ Bootstrap-Transition-Typen.
 | `SchoolYearTransitionActivationController` | Desktop-eigene QThread-Lifecyclegrenze für genau einen Step-up-/Executor-Lauf mit Doppeltstartschutz und main-thread-sicherem Phasen-, Erfolgs- und Fehlerergebnis | Desktop Composition |
 | `SchoolYearTransitionActivationWorker` | widgetfreie Worker-Komposition aus vorhandenem Passwort-Step-up und bestehendem Executor; erzeugt nur flüchtige technische Laufidentitäten | Desktop Composition |
 | `SchoolYearTransitionActivationErrorInfo` | credential- und detailfreier Fehlercode für die neutrale UI-Projektion | Desktop Composition |
-| `SchoolYearTransitionBackupEvidence` | unveränderlicher SJ-3C.4-Nachweis aus sicherer technischer Backup-ID, echtem Archiv-SHA-256, gebundenem Quellen-SHA-256, Final-V3-Schemafingerprint und zeitzonenbewusstem Verifikationszeitpunkt | Application School-Year Transition Backup |
+| `SchoolYearTransitionBackupEvidence` | unveränderlicher SJ-3C.4-Nachweis aus sicherer technischer Backup-ID, echtem Archiv-SHA-256, gebundenem Quellen-SHA-256, Final-V4-Schemafingerprint und zeitzonenbewusstem Verifikationszeitpunkt | Application School-Year Transition Backup |
 | `VerifiedSchoolYearTransitionBackupAdapter` | Qt-freie Verbindung zum vorhandenen Backup-Application-Service; blockiert offene Observation-Recovery, erstellt ein normales Backup ohne Recovery-Writes, verifiziert die veröffentlichten Bytes erneut und berechnet Quellen- sowie Schemaidentität aus der isoliert verifizierten Backup-Datenbank selbst | Application School-Year Transition Backup |
 | `SchoolYearTransitionStepUpService` | Qt-freie SJ-3C.5-Grenze zur vorhandenen App-Passwortprüfung sowie zur Ausgabe, einmaligen Prüfung und Verwerfung einer flüchtigen plan- und zweckgebundenen Autorisierung | Application School-Year Transition Step-up |
 | `SchoolYearTransitionStepUpAuthorization` | nicht persistente, höchstens zwei Minuten gültige Einmal-Autorisierung mit Zweck `SCHOOL_YEAR_TRANSITION`, Erzeugungs-/Ablaufzeitpunkt, technischer ID, Planhash und Verbrauchsstatus; enthält keine UI- oder Credentialdaten | Application School-Year Transition Step-up |
@@ -316,22 +331,22 @@ bis zum realen Test des gebauten Bundles offen.
 | `security-key-runtime-v1` | Privates `0700`-Verzeichnis ausschließlich für Keyset- und Envelope-Metadaten | Security Infrastructure |
 | `dmk_database_key_runtime_worker.py` | Separater Testprozess für First Run, Restart und reales namespacetes Keychain-Cleanup | Security Test QA |
 
-## Final-V3-SQLCipher-Runtime - interne technische Namen
+## Final-V4-SQLCipher-Runtime - interne technische Namen
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
-| `FinalV3SQLCipherRuntimeGate` | zusätzliche read-only Gateauflösung auf dem vorhandenen privaten DMK-Testroot; verlangt exakten Gatewert und zweiten festen Marker | Security Application Layer |
-| `FinalV3SQLCipherRuntimeCoordinator` | Qt-freie fail-closed Verbindung aus bestätigter Authentifizierung, bestehender DMK-/Database-Key-Runtime, SQLCipher 4.17 und direktem Final-V3 | Security Application Layer |
-| `FinalV3SQLCipherConnectionFactory` | feste Pfad-, Provider- und Database-Key-Bindung für Schema, Inspektion, `SQLiteDatabase`, Repositories und Adapter | Core Persistence / Security Runtime |
-| `KeyedFinalV3CompatibilityInspector` | mutationsfreie Prüfung einer bereits keyed geöffneten Connection auf Cipher, SQLite, Integrität, FK, `user_version` und Final-V3-Fingerprint | Core Database Compatibility |
-| `OpenedFinalV3SQLCipherRuntime` | flüchtiges verifiziertes Ergebnis mit derselben schlüsselgebundenen `SQLiteDatabase` für nachgelagerte Application-Schichten | Security Application Layer |
+| `FinalV4SQLCipherRuntimeGate` | zusätzliche read-only Gateauflösung auf dem vorhandenen privaten DMK-Testroot; verlangt exakten Gatewert und zweiten festen Marker | Security Application Layer |
+| `FinalV4SQLCipherRuntimeCoordinator` | Qt-freie fail-closed Verbindung aus bestätigter Authentifizierung, bestehender DMK-/Database-Key-Runtime, SQLCipher 4.17 und direktem Final-V4 | Security Application Layer |
+| `FinalV4SQLCipherConnectionFactory` | feste Pfad-, Provider- und Database-Key-Bindung für Schema, Inspektion, `SQLiteDatabase`, Repositories und Adapter | Core Persistence / Security Runtime |
+| `KeyedFinalV4CompatibilityInspector` | mutationsfreie Prüfung einer bereits keyed geöffneten Connection auf Cipher, SQLite, Integrität, FK, `user_version` und Final-V4-Fingerprint | Core Database Compatibility |
+| `OpenedFinalV4SQLCipherRuntime` | flüchtiges verifiziertes Ergebnis mit derselben schlüsselgebundenen `SQLiteDatabase` für nachgelagerte Application-Schichten | Security Application Layer |
 | `SQLCIPHER_4_17_BINDING_VERSION` | exaktes lokales Binding `0.6.2+jkm.sqlcipher4170.1` | Core Persistence |
 | `SQLCIPHER_4_17_ENGINE_VERSION` | exakte Engine `4.17.0 community` | Core Persistence |
 | `SQLCIPHER_4_17_SQLITE_VERSION` | exakte eingebettete SQLite-Version `3.53.3` | Core Persistence |
-| `JKM_FINAL_V3_SQLCIPHER_RUNTIME_TEST` | zusätzliches, standardmäßig inaktives internes Gate; nur exakter Wert `1` setzt die Marker-/Rootprüfung fort | Security Test Gate |
-| `.jkm-final-v3-sqlcipher-runtime-test-root` | zweiter fester nicht geheimer Marker auf dem bereits DMK-markergebundenen privaten System-Temporärroot | Security Test Gate |
-| `final-v3-sqlcipher-runtime-v1/final-v3.sqlcipher` | feste ausschließlich technische SQLCipher-4.17-Testdatenbank mit exaktem Final-V3 | Security Test Runtime |
-| `final_v3_sqlcipher_runtime_worker.py` | separater Anwendungssmoke- und Abrissprozess für keyed Restart, stabile Fach-IDs sowie fünf echte `os._exit`-Crashgrenzen | Security Test QA |
+| `JKM_FINAL_V4_SQLCIPHER_RUNTIME_TEST` | zusätzliches, standardmäßig inaktives internes Gate; nur exakter Wert `1` setzt die Marker-/Rootprüfung fort | Security Test Gate |
+| `.jkm-final-v4-sqlcipher-runtime-test-root` | zweiter fester nicht geheimer Marker auf dem bereits DMK-markergebundenen privaten System-Temporärroot | Security Test Gate |
+| `final-v4-sqlcipher-runtime-v1/final-v4.sqlcipher` | feste SQLCipher-4.17-Hauptdatenbank mit exaktem Final-V4 | Security Runtime |
+| `final_v4_sqlcipher_runtime_worker.py` | separater Anwendungssmoke- und Abrissprozess für keyed Restart, stabile Fach-IDs sowie echte `os._exit`-Crashgrenzen | Security Test QA |
 
 ## Final-V3-Dokumentcontainer-Runtime - interne technische Namen
 
@@ -340,7 +355,7 @@ bis zum realen Test des gebauten Bundles offen.
 | `FinalV3DocumentSchemaV1` | Exaktes SQLCipher-Companion-Schema v1 für technische Dokumentpointer und unveränderliche Generationen; bindet Installation und Database-Context | Document Persistence / Security Runtime |
 | `FinalV3DocumentRuntime` | Qt-freie Operationen `prepare`, `activate`, `read` und `replace` ohne Export, Vorschau oder Produktintegration | Application / Documents |
 | `FinalV3DocumentConnectionFactory` | Eigene strikt pfad- und Database-Key-gebundene SQLCipher-Factory für `documents-v1.sqlcipher` | Core Persistence / Security Runtime |
-| `FinalV3DocumentRuntimePaths` | Feste Rollen für Companion-DB, kontrollierte Quelle und verwalteten Container-Storage im Final-V3-Testroot | Security Runtime |
+| `FinalV3DocumentRuntimePaths` | Historisch benannter Companion-v1-Vertrag mit Pfadrollen unter dem aktuellen Final-V4-Hauptruntime-Root | Security Runtime |
 | `FinalV3DocumentGeneration` | Sanitierte technische Projektion aus Document-/Key-Generation, opaque Storage-ID, Envelope-/Formatnachweisen, Größen, Hash, MIME und Lifecycle | Document Persistence |
 | `FinalV3DocumentPreparePlan` | Vor dem Containerwrite journalisierbare Bindung aus fachlicher MED-ID, vorheriger aktiver Generation, erwarteter Zielgeneration und zufälliger opaque Storage-ID | Document Persistence / Observation UoW |
 | `FinalV3DocumentRuntime.plan_prepare` / `verify_prepared` | Read-only Planung vor Quellenzugriff und exakte Vollverifikation einer bereits journalgebundenen `PREPARED`-Generation für Retry/Restart | Application / Documents |
@@ -359,40 +374,40 @@ bis zum realen Test des gebauten Bundles offen.
 | `final_v3_document_generations` | Historische Generationen mit `PREPARED`, `ACTIVE`, `RETAINED` oder `QUARANTINED`; kein physisches GC | Document Persistence |
 | `final_v3_document_runtime_worker.py` | Echter `os._exit`-Nachweis für sieben Container-/Persistenz-/Pointergrenzen im transaktionalen Runtime-Modell; exakte SQLCipher-Komposition separat | Security Test QA |
 
-## Verschlüsseltes Final-V3-Pilotbackup - interne technische Namen
+## Verschlüsseltes Final-V4-Pilotbackup - interne technische Namen
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
-| `FinalV3EncryptedBackupService` | Qt-freier Orchestrator aus geöffnetem Gate- oder ADR-101-Produktbestand für Writer-Lock, keyed Snapshots, Dokumentinventar, `.jkmebackup`, Vollverifikation und Restore-Staging | Application / Security Backup |
-| `FinalV3EncryptedBackupManifestV1` | Striktes verschlüsseltes Crossbinding von Contexts, Generationen, DB-Rollen, Engine-/Schemaversionen, Größen, Hashes und Dokumentinventar | Security Backup Domain |
-| `FinalV3BackupArtifactV1` | Manifesteintrag für Haupt-DB, Companion-DB, Keyset-Metadaten oder Database-Key-Envelope-Registry | Security Backup Domain |
-| `FinalV3BackupDocumentV1` | Manifestbindung genau einer registrierten `.jkmedoc`-Generation einschließlich Lifecycle, Key-/Envelope-Generation, Größe und SHA-256 | Security Backup Domain |
+| `FinalV4EncryptedBackupService` | Qt-freier Orchestrator aus geöffnetem Gate- oder ADR-101-Produktbestand für Writer-Lock, keyed Snapshots, Dokumentinventar, `.jkmebackup`, Vollverifikation und Restore-Staging | Application / Security Backup |
+| `FinalV4EncryptedBackupManifestV1` | Striktes verschlüsseltes V4-Crossbinding von Contexts, Generationen, DB-Rollen, Engine-/Schemaversionen, Größen, Hashes und Dokumentinventar | Security Backup Domain |
+| `FinalV4BackupArtifactV1` | Manifesteintrag für Haupt-DB, Companion-DB, Keyset-Metadaten oder Database-Key-Envelope-Registry | Security Backup Domain |
+| `FinalV4BackupDocumentV1` | Manifestbindung genau einer registrierten `.jkmedoc`-Generation einschließlich Lifecycle, Key-/Envelope-Generation, Größe und SHA-256 | Security Backup Domain |
 | `SQLiteDataKeysetRepository.create_snapshot` | Konsistenter no-clobber SQLite-Backup-Snapshot der nicht geheimen Keyset-Metadaten einschließlich WAL | Security Infrastructure |
-| `.jkmebackup` | Ausschließliches verschlüsseltes Backupformat des frischen Gate-On-Final-V3-Piloten | Security Backup |
+| `.jkmebackup` | Ausschließliches verschlüsseltes Backupformat des frischen Gate-On-Final-V4-Piloten | Security Backup |
 | `RESTORE_READY` | Gefsyncter Abschlussbeleg im neuen privaten Staging-Root nach vollständigem keyed Reopen und Crossbinding | Security Restore Staging |
 | `same-installation encrypted restore` | Restoregrenze mit vorhandenem passenden DMK im lokalen Keychain; kein Gerätewechsel-/DMK-Recovery | Security Governance |
-| `FinalV3RestoreReadyVerification` | Ergebnis der wiederholbaren kanonischen READY-, Manifest-, Keyset-, Envelope-, SQLCipher-, Container- und Crossbindingprüfung | Security Restore |
-| `FinalV3EncryptedSafetyBackup` | Vollständig verifiziertes `.jkmebackup` plus bis zur Workerübergabe gehaltener Maintenance-Freeze | Security Restore |
-| `FinalV3EncryptedRestoreHandoffService` | Erzeugt und konsumiert den einmaligen DMK-authentisierten Cipher-Handoff im vorhandenen Restore-Journalbereich | Security Restore |
-| `FinalV3EncryptedLiveRestoreService` | Cipher-Strategie des vorhandenen `ProductiveRestoreService` für Preflight, gemeinsame Vier-Rollen-Einheit, keyed Reopen und Rollback | Security Restore / Core Restore |
-| `build_final_v3_restore_verifier` | Technische read-only 4.17-Verifier-Komposition aus bestehendem DMK-/Envelope-Kontext und ADR-101-Pfadscope; öffnet keine Produktdatenbankkomposition | Security Restore Recovery |
+| `FinalV4RestoreReadyVerification` | Ergebnis der wiederholbaren kanonischen READY-, Manifest-, Keyset-, Envelope-, SQLCipher-, Container- und Crossbindingprüfung | Security Restore |
+| `FinalV4EncryptedSafetyBackup` | Vollständig verifiziertes `.jkmebackup` plus bis zur Workerübergabe gehaltener Maintenance-Freeze | Security Restore |
+| `FinalV4EncryptedRestoreHandoffService` | Erzeugt und konsumiert den einmaligen DMK-authentisierten Cipher-Handoff im vorhandenen Restore-Journalbereich | Security Restore |
+| `FinalV4EncryptedLiveRestoreService` | Cipher-Strategie des vorhandenen `ProductiveRestoreService` für Preflight, gemeinsame Vier-Rollen-Einheit, keyed Reopen und Rollback | Security Restore / Core Restore |
+| `build_final_v4_restore_verifier` | Technische read-only 4.17-Verifier-Komposition aus bestehendem DMK-/Envelope-Kontext und ADR-101-Pfadscope; öffnet keine Produktdatenbankkomposition | Security Restore Recovery |
 | `_read_active_keyset_immutable` | Bootstrap-interner SQLite-Immutable-Read des exakt aktiven Keysets ohne Sidecar, Provisionierung oder Lifecycle-Fortschreibung | Security Restore Recovery |
-| `classify_terminal_final_v3_restore_artifacts` | strukturelle fail-closed Zulassung ausschließlich terminaler Cipher-Handoff-/Journalbereiche vor dem normalen Product-Open | Security Restore Recovery |
-| `validate_terminal_final_v3_restore_evidence` | DMK-HMAC-Prüfung terminaler Cipher-Handoffs nach regulärem bestehendem Key-Load | Security Restore Recovery |
-| `classify_active_final_v3_restore_artifacts` | strukturelle Zulassung exakt einer benannten aktiven Cipher-Transaktion nur für ihren Worker nach Parent-EOF; übrige Evidenz muss terminal sein | Security Restore Worker |
-| `validate_active_final_v3_restore_evidence` | erneute DMK-HMAC-Prüfung der benannten aktiven Worker-Transaktion und aller retained terminalen Handoffs | Security Restore Worker |
+| `classify_terminal_final_v4_restore_artifacts` | strukturelle fail-closed Zulassung ausschließlich terminaler Cipher-Handoff-/Journalbereiche vor dem normalen Product-Open | Security Restore Recovery |
+| `validate_terminal_final_v4_restore_evidence` | DMK-HMAC-Prüfung terminaler Cipher-Handoffs nach regulärem bestehendem Key-Load | Security Restore Recovery |
+| `classify_active_final_v4_restore_artifacts` | strukturelle Zulassung exakt einer benannten aktiven Cipher-Transaktion nur für ihren Worker nach Parent-EOF; übrige Evidenz muss terminal sein | Security Restore Worker |
+| `validate_active_final_v4_restore_evidence` | erneute DMK-HMAC-Prüfung der benannten aktiven Worker-Transaktion und aller retained terminalen Handoffs | Security Restore Worker |
 | `active_restore_id` | eng gebundene ADR-101-Kompositionsausnahme für genau den bereits DMK-authentisierten Worker nach Parent-EOF; im normalen App-Start immer `None` | Security Restore Worker / Cipher Composition |
-| `recover_interrupted_final_v3_restore` | Restartfähige Prüfung genau eines offenen Cipher-Journals mit Resume, vollständigem Rollback oder `manual_recovery_required` | Security Restore Recovery |
-| `final_v3_encrypted_same_installation` | Persistierter `restore_kind` für den ausschließlich gegateten Cipher-Workerpfad | Security Restore |
-| `final_v3_live_restore_handoff/v1` | Eigene DMK-HKDF-/HMAC-Domäne für Handoffauthentisierung ohne Schlüssel- oder Sitzungsbytes | Security Cryptography |
+| `recover_interrupted_final_v4_restore` | Restartfähige Prüfung genau eines offenen Cipher-Journals mit Resume, vollständigem Rollback oder `manual_recovery_required` | Security Restore Recovery |
+| `final_v4_encrypted_same_installation` | Persistierter `restore_kind` für den ausschließlich gegateten Cipher-Workerpfad | Security Restore |
+| `final_v4_live_restore_handoff/v1` | Eigene DMK-HKDF-/HMAC-Domäne für Handoffauthentisierung ohne Schlüssel- oder Sitzungsbytes | Security Cryptography |
 | `key_runtime_metadata` | Journalisierte Swap-Rolle für `security-key-runtime-v1/` mit Keyset und Database-Key-Envelope-Registry | Security Restore |
-| `final_v3_main_database` | Journalisierte Swap-Rolle der keyed Final-V3-Hauptdatenbank | Security Restore |
+| `final_v4_main_database` | Journalisierte Swap-Rolle der keyed Final-V4-Hauptdatenbank | Security Restore |
 | `document_companion_database` | Journalisierte Swap-Rolle der keyed Dokument-Companion-DB | Security Restore |
 | `managed_document_storage` | Journalisierte Swap-Rolle des vollständigen verschlüsselten `.jkmedoc`-Bestands | Security Restore |
 | `encrypted-restore-safety/` | Retained Zielbereich für das zwingende verschlüsselte Pre-Swap-Sicherheitsbackup | Security Restore |
 | `encrypted-restore-staging/` | Gebundener same-filesystem Bereich für bereits vollständig verifizierte `RESTORE_READY`-Bestände | Security Restore |
-| `--restore-mode final_v3_encrypted` | Expliziter lazy Worker-Dispatch; der argumentlose Default bleibt `zip_v1` | Desktop Restore Worker |
-| `--final-v3-restore-confirm` | Bootstrap-Restart-Handshake im frischen normalen App-Prozess vor `completed`; danach Fortsetzung über Security/Auth und ADR-101-Produktstartup, ohne Backup-/Restore-UI zu aktivieren | Desktop Startup / Security Restore |
+| `--restore-mode final_v4_encrypted` | Expliziter lazy Worker-Dispatch; der argumentlose Default bleibt `zip_v1` | Desktop Restore Worker |
+| `--final-v4-restore-confirm` | Bootstrap-Restart-Handshake im frischen normalen App-Prozess vor `completed`; danach Fortsetzung über Security/Auth und ADR-101-Produktstartup, ohne Backup-/Restore-UI zu aktivieren | Desktop Startup / Security Restore |
 
 ## Security Sprint 12 - Release-Hardening und Paketabnahme
 
@@ -1314,6 +1329,8 @@ Registriert:
 - `student_competency_confirmations`
 - `documents`
 - `documentation_subject_settings`
+- `student_documentation_subject_profiles`
+- `student_documentation_subject_selections`
 - `timetable_entries`
 - `report_drafts`
 - `report_draft_subjects`
@@ -1334,6 +1351,12 @@ Registriert:
 - `learning_conference_pdf_artifacts`
 
 `documentation_subject_settings` speichert ausschliesslich, welche `subject_id` fuer Dokumentations- und Auswertungslogik als dokumentationsrelevant gelten. Die Tabelle ersetzt nicht den Kompetenzkatalog und veraendert `competencies.active` nicht.
+
+`student_documentation_subject_profiles` bindet `inherit` oder `custom`
+ausschließlich an `student_id + school_year_id`.
+`student_documentation_subject_selections` enthält nur bei `custom` die exakte
+normalisierte Fachschlüsselmenge. Beide Tabellen speichern keine Fachnamen,
+keine Membershipableitung und keine Beobachtungs- oder Bewertungsdaten.
 
 Die Tabellen mit Praefix `report_draft_` speichern ausschliesslich den bearbeitbaren Arbeitsentwurf eines Lernentwicklungsberichts. Sie sind keine finale Berichtsdomain, enthalten keine Kompetenzbewertung und frieren keine Kompetenz- oder Beobachtungsinhalte ein.
 
@@ -1562,8 +1585,8 @@ Beispiele:
 | `StudentRecord` | read-only Kompatibilitaetsprojektion aus V3-Schuelerstammdaten und explizit aufgeloester Membership; kein Writer- oder Seedmodell | aktiv |
 | `GroupRecord` | Dataclass fuer Stammgruppen-Referenzdaten | aktiv |
 | `CourseRecord` | Dataclass fuer Kurs-Referenzdaten mit verbindlicher `year_level` 1, 2 oder 3 | aktiv |
-| `ReferenceData` | Container fuer aktive Final-V3-Referenzdaten einschließlich historischer und aktueller Schuljahre sowie Assignments ohne Workbook-Bezug | aktiv |
-| `seed_reference_data()` | Erzeugt deterministische Final-V3-Referenzdaten fuer explizite neue Seed-/Testpfade | aktiv |
+| `ReferenceData` | Container fuer aktive Final-V4-Referenzdaten einschließlich historischer und aktueller Schuljahre sowie Assignments ohne Workbook-Bezug | aktiv |
+| `seed_reference_data()` | Erzeugt deterministische Final-V4-Referenzdaten fuer explizite neue Seed-/Testpfade | aktiv |
 
 Regel: Aktive Referenzdaten duerfen keine `openpyxl`- oder Workbook-Abhaengigkeit einfuehren.
 
@@ -1668,7 +1691,7 @@ Registrierte Python-Spike-Komponenten:
 - `_seed_timetable(database)`
 - `_seed_all_subject_history(database, service, students)`
 
-Regel: `create_sqlite_seed_database(path)` ist ein expliziter Final-V3-
+Regel: `create_sqlite_seed_database(path)` ist ein expliziter Final-V4-
 Seed-/Testpfad für ein neues Ziel. Der produktive PySide-App-Start nutzt
 diesen Pfad nicht, damit keine synthetischen Schüler erzeugt, keine
 vorhandene Datenbank ersetzt und keine Nutzerdaten migriert werden.

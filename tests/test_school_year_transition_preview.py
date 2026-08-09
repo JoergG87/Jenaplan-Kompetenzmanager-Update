@@ -27,10 +27,10 @@ from src.core.school_year_transition import (
     SchoolYearTransitionPreviewSources,
     SchoolYearTransitionTargetStatus,
 )
-from tests.helpers.synthetic_v3 import create_pre_transition_v3_database
+from tests.helpers.synthetic_v4 import create_pre_transition_v4_database
 
 
-create_synthetic_v3_database = create_pre_transition_v3_database
+create_synthetic_v4_database = create_pre_transition_v4_database
 
 
 CURRENT = SchoolYear(
@@ -164,7 +164,7 @@ def test_preview_plan_receives_preview_and_options_from_one_service_snapshot(
     tmp_path: Path,
 ) -> None:
     database_path = tmp_path / "preview-plan.sqlite"
-    create_synthetic_v3_database(database_path)
+    create_synthetic_v4_database(database_path)
     connection_count = 0
     write_actions: list[int] = []
     write_codes = {
@@ -507,7 +507,7 @@ def test_projection_is_deterministic_for_reordered_sources() -> None:
 
 
 def test_sqlite_preview_uses_no_write_statement(tmp_path: Path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "preview.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "preview.sqlite")
     write_actions: list[int] = []
     write_codes = {
         sqlite3.SQLITE_INSERT,

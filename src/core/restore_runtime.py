@@ -993,7 +993,7 @@ class ProductiveRestoreService:
         result = self.compatibility_inspector.inspect(paths.live_database)
         if result.status is not DatabaseCompatibilityStatus.EXACT:
             raise RestoreReplacementError(
-                "Die installierte Datenbank entspricht nicht exakt Final-V3."
+                "Die installierte Datenbank entspricht nicht exakt Final-V4."
             )
         _verify_sqlite_read_only(paths.live_database)
         if (
@@ -1054,7 +1054,7 @@ def confirm_restore_startup(runtime_root: Path, restore_id: str, token: str) -> 
     result = DatabaseCompatibilityInspector().inspect(paths.live_database)
     if result.status is not DatabaseCompatibilityStatus.EXACT:
         raise RestoreReplacementError(
-            "Die Live-Datenbank entspricht beim Startup nicht exakt Final-V3."
+            "Die Live-Datenbank entspricht beim Startup nicht exakt Final-V4."
         )
     _verify_sqlite_read_only(paths.live_database)
     expected_documents = state.get("installed_documents")

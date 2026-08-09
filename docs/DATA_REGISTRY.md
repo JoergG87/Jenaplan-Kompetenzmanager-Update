@@ -6,9 +6,9 @@
 |---|---|---|---|
 | Keyset-Metadaten | `security-key-runtime-v1/data-keysets.sqlite` | Database-Key Runtime | keine DMK und kein Database-Key-Material |
 | Database-Key-Envelope-Registry | `security-key-runtime-v1/database-key-envelopes-v1.json` | Database-Key Runtime | authentisierte Envelope-Metadaten; kein Klartextschlüssel |
-| Final-V3-Fachdatenbank | `final-v3-sqlcipher-runtime-v1/final-v3.sqlcipher` | Final-V3 SQLCipher Runtime | ausschließlich exakt SQLCipher 4.17 keyed |
-| Document-Companion | `final-v3-sqlcipher-runtime-v1/documents-v1.sqlcipher` | Final-V3 Document Runtime | derselbe Database-Key und Installation-/Database-Context wie Final-V3 |
-| verschlüsselter Dokumentstorage | `final-v3-sqlcipher-runtime-v1/document-containers-v1/` | `ManagedDocumentStore` | registrierte `.jkmedoc`-Container für Anhänge, allgemeine Dokumente sowie finale Bericht-/LEG-PDFs |
+| Final-V4-Fachdatenbank | `final-v4-sqlcipher-runtime-v1/final-v4.sqlcipher` | Final-V4 SQLCipher Runtime | ausschließlich exakt SQLCipher 4.17 keyed |
+| Document-Companion | `final-v4-sqlcipher-runtime-v1/documents-v1.sqlcipher` | Final-V3 Document Runtime | derselbe Database-Key und Installation-/Database-Context wie Final-V4; eigenständiges historisches Companion-Schema v1 |
+| verschlüsselter Dokumentstorage | `final-v4-sqlcipher-runtime-v1/document-containers-v1/` | `ManagedDocumentStore` | registrierte `.jkmedoc`-Container für Anhänge, allgemeine Dokumente sowie finale Bericht-/LEG-PDFs |
 | Backupbereich | `backups/` | Desktop Runtime | Rolle registriert; Cipher-Backup/-Restore produktiv noch gesperrt |
 
 `RuntimePaths.database` (`kompetenzmanager.sqlite`) und
@@ -18,9 +18,9 @@ keine Datenquelle. Vorhandene Inhalte werden nicht geöffnet oder verändert.
 DMK-Material liegt ausschließlich im macOS-Keychain und erscheint in keiner
 `RuntimePaths`-Rolle.
 
-## V3-only Produktdatenquellen
+## Final-V4-Produktdatenquellen
 
-**Status:** Direkte Final-V3-Schemaquelle, synthetischer temporärer
+**Status:** Direkte Final-V4-Schemaquelle, synthetischer temporärer
 Testdatenpfad, zentrale Assignment-API, SJ-2E-Umstellung der produktiven
 Membership-Reader, SJ-2F-Umstellung der produktiven Writer und die isolierte
 synthetische SJ-3C.2-Ausführung, das anwendungsweite SJ-3C.3-Maintenance-Gate
@@ -32,19 +32,22 @@ verdrahtet; die manuelle macOS-Abnahme bleibt offen.
 |---|---|---|---|
 | `school_years` | einzige Schuljahreswahrheit mit geplantem, aktuellem oder geschlossenem Status | School-Year Domain / `SchoolYearRepository` | Systemdatum, Label, Seedkonstante, Beobachtungsdaten |
 | `student_school_year_assignments` | einzige aktuelle und historische Kurs-/Stammgruppenzuordnung | Assignment Domain / `SchoolYearAssignmentQueryService` | Schülerfelder, UI-Auswahl, Kursname, letzte bekannte Zuordnung ohne Datum |
+| `documentation_subject_settings` | globale Defaultauswahl der Dokumentationsfächer | Systemeinstellungen | Schülerprofil, Beobachtungsmenge, Katalogaktivierung als Ersatzpersistenz |
+| `student_documentation_subject_profiles` | Modus `inherit` oder `custom` je Schüler und Schuljahr | `StudentDocumentationSubjectService` | lebenslange Schülerauswahl, Gruppe, Kurs, Klassenstufe |
+| `student_documentation_subject_selections` | exakte Fachschlüsselmenge ausschließlich eines `custom`-Profils | `SQLiteStudentDocumentationSubjectRepository` | Fachnamenkopie, zweite Fachquelle, globale Settings als FK-Ziel |
 | `courses.year_level` | bewusst gewählte stabile Kursstufe 1, 2 oder 3 | Course Repository | Name, Farbe, Sortierung, Listenposition |
 | V3-`students` | Schülerstammdaten sowie Aktiv-/Archivstatus ohne Membershipfelder | `V3StudentRepository` und getrennte Student-Lifecycles | V2-`StudentRecord.group_id/course_id`, generischer Student-Membershipwrite |
 | `CurrentMembershipReadSnapshot` | flüchtige aktuelle Mitgliedermenge und zentral berechnete Zähler für genau ein `current`-Schuljahr und einen expliziten `as_of`-Tag einschließlich `CURRENT_SCHOOL_YEAR_MISSING`-/`AMBIGUOUS`-Diagnostik | `SchoolYearAssignmentReadSession` | V2-Schülerfelder, Python-Nachzählung, Widgetfilter, Systemdatum |
 | `AssignmentReferenceRequest` | flüchtiger Batchauftrag aus `request_key`, `student_id` und fachlichem `reference_date` | `SchoolYearAssignmentReadSession` | aktuelles Schuljahr, Systemdatum, Last-known oder Dokumenterstellungszeit als Ersatzdatum |
 | `SchoolYearTransitionPlan` | rein flüchtige bearbeitbare Kopie einer vorhandenen Preview mit expliziten aktiven Kurs-/Gruppenoptionen | Application School-Year Transition Plan | SQLite, Widgetzustand, implizite Auswahl, Systemdatum oder Persistenz |
-| `SchoolYearTransitionPlan.source_sha256` | flüchtiger kanonischer Fingerabdruck aller technischen Final-V3-Quellen, die den Plan und seine spätere Ausführbarkeit bestimmen | `SchoolYearTransitionPreviewRepository` / `ExecuteSchoolYearTransition` | Anzeigenamen, UI-Zustand, Systemdatum oder nachträglich neu gelesene Ersatzwerte |
+| `SchoolYearTransitionPlan.source_sha256` | flüchtiger kanonischer Fingerabdruck aller technischen Final-V4-Quellen, die den Plan und seine spätere Ausführbarkeit bestimmen | `SchoolYearTransitionPreviewRepository` / `ExecuteSchoolYearTransition` | Anzeigenamen, UI-Zustand, Systemdatum oder nachträglich neu gelesene Ersatzwerte |
 | `school_year_transitions` | unveränderlicher Beleg eines echten committed Schuljahreswechsels | School-Year Transition Service | Initialanlage, Startup, Bootstrap, Migration |
-| kanonische Schemaidentität | vollständiger Final-V3-Fingerprint und Objektinventar | Database Compatibility | nur `user_version`, Teilinventar oder Tabellenzahl |
+| kanonische Schemaidentität | vollständiger Final-V4-Fingerprint und Objektinventar | Database Compatibility | nur `user_version`, Teilinventar oder Tabellenzahl |
 | Backupmanifest und Datenbankkopie | verifizierter Sicherheitsstand des exakten finalen Schemas | Backup / Restore | V2-Cutover-Evidence oder unregistriertes Schema |
 | `SchoolYearTransitionBackupEvidence` | flüchtiger unveränderlicher Nachweis genau des unter ACTIVE und nach Writer-Drain verifizierten Jahreswechselbackups; der echte Archivhash wird im Transitionbeleg persistiert | Application School-Year Transition Backup / `school_year_transitions.backup_sha256` | Null-Sentinel, Dateiname, UI-Status, ungeprüftes Backupresultat oder Backup eines anderen Quellenstands |
 | `MaintenanceGate`-Prozesszustand | ausschließlich flüchtige Writerzulassung, Drainstand und Owner-Capability; keine Fachdatenquelle | Core Runtime | UI-Disable, SQLite-Tabelle, Systemdatum, Backupstatus |
 
-Der Gatezustand wird nicht persistiert und verändert allein weder Final-V3
+Der Gatezustand wird nicht persistiert und verändert allein weder Final-V4
 noch Dokumente. Ein unklarer Laufzeitzustand wird ausschließlich
 fail-closed als `RECOVERY_REQUIRED` behandelt. Backup und Restore verwenden
 nicht die normale `WriterLease`; ihr reservierter Zweck `BACKUP_RESTORE`
@@ -53,33 +56,33 @@ Backup-Service ausschließlich innerhalb der exklusiven
 `SCHOOL_YEAR_TRANSITION`-Operation auf und erteilt ihm keine eigenständige
 Maintenance-Capability.
 
-V3 ist das erste Produktschema. V2-Daten besitzen keine Produktdatenhoheit,
-keinen Restore- und keinen Migrationsvertrag. Bekannte oder unbekannte ältere
-Schemata werden im Produktpfad nicht übernommen. Das unabhängige
-Backupformat-v1 bleibt ein Containervertrag und ist keine alte
-Datenbankschemaversion.
+Final V4 ist der neue Pilot-Schemavertrag. V3-Daten besitzen keinen
+Migrations- oder Importvertrag und werden unverändert fail-closed abgewiesen.
+Testdaten werden frisch als V4 erzeugt. Das unabhängige Backupformat bleibt
+ein Containervertrag; seine Pilotmetadaten akzeptieren ausschließlich V4.
 
-## Direkte Final-V3-Schemaquelle
+## Direkte Final-V4-Schemaquelle
 
 Das vollständige Produktschema wird aus genau einer Qt-freien DDL-Quelle
 direkt in einer neuen Datenbank erzeugt. Diese Quelle besitzt
 `school_years`, `student_school_year_assignments`,
 `courses.year_level NOT NULL`, V3-`students` ohne
 `group_id/course_id`, `school_year_transitions` mit nichtleerem
-`from_school_year_id` sowie alle übrigen Fachtabellen, Constraints, Trigger
-und Indizes. Eine Migration, ein Zwischen-V2-Schema und ein
+`from_school_year_id`, die normalisierten Schülerfachprofile/-selections sowie
+alle übrigen Fachtabellen, Constraints, Trigger und Indizes. Eine Migration,
+ein Zwischen-V3-Schema und ein
 Bootstrap-Transition-Beleg sind unzulässig.
 
 Die Compatibility-Grenze akzeptiert als Produktdatenbank nur die exakte
-registrierte Final-V3-Identität. Eine leere, teilweise erzeugte, unbekannte
+registrierte Final-V4-Identität. Eine leere, teilweise erzeugte, unbekannte
 oder beschädigte Datei wird nicht repariert oder ergänzt, sondern
 fail-closed behandelt.
 
-## Synthetische V3-Testdaten
+## Synthetische V4-Testdaten
 
-`SyntheticV3SeedBuilder` ist ausschließlich eine Testquelle. Er erhält einen
+`SyntheticV4SeedBuilder` ist ausschließlich eine Testquelle. Er erhält einen
 expliziten temporären, noch nicht vorhandenen Zielpfad, ruft die direkte
-Final-V3-Schemaquelle auf und erzeugt deterministisch:
+Final-V4-Schemaquelle auf und erzeugt deterministisch:
 
 - Schuljahr `2025/26` vom `2025-08-01` bis `2026-07-31` mit Status `closed`;
 - genau ein current-Schuljahr `2026/27` vom `2026-08-01` bis `2027-07-31`;
@@ -194,7 +197,7 @@ Synthetische Initialanlage, Datenbankstart und Schemaerzeugung schreiben
 keinen `school_year_transitions`-Datensatz.
 
 Die seit SJ-3C.2 vorhandene Qt-freie atomare Application-/Repository-Grenze
-bleibt auf frisch erzeugten temporären synthetischen Final-V3-Datenbanken
+bleibt auf frisch erzeugten temporären synthetischen Final-V4-Datenbanken
 geprüft. Der Quellenfingerabdruck umfasst technische
 Schuljahreswerte, Aktiv-/Archivstatus der Kinder, vollständige Assignments
 sowie aktive und fachliche Kurs-/Gruppenwerte; Anzeigenamen sind keine
@@ -349,28 +352,28 @@ Testengine und separate historische Buildabhängigkeit.
 Die Database-Context-UUID ist ausschließlich ein stabiler technischer
 Kryptokontext und weder Pfad noch fachliche ID. Passwort, Recovery-Code,
 Testroot, Installationsname und Dateiname sind an keiner Schlüsselableitung
-beteiligt. Die Runtime erzeugt oder öffnet keine Final-V3-/SQLite-/SQLCipher-
+beteiligt. Die Runtime erzeugt oder öffnet keine Final-V4-/SQLite-/SQLCipher-
 Datenbank.
 
-## Final-V3-SQLCipher-Runtime - markergebundene technische Datenquelle
+## Final-V4-SQLCipher-Runtime - markergebundene technische Datenquelle
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
 |---|---|---|---|
-| zweifach markergebundener Runtime-Testroot | vorhandener DMK-Rootmarker plus eigener Final-V3-SQLCipher-Marker | privater eigentümergeprüfter System-Temporärroot; kein `RuntimePaths`-, Pilot- oder Produktroot | ausschließlich Gate-On |
-| `final-v3-sqlcipher-runtime-v1/final-v3.sqlcipher` | direkt verschlüsseltes exaktes Final-V3 mit `user_version=3` und registriertem Schemafingerprint | Modus `0600`; fester technischer Pfad; kein Klartextheader und kein Create-Fallback | inaktiver technischer Testbestand |
+| zweifach markergebundener Runtime-Testroot | vorhandener DMK-Rootmarker plus eigener Final-V4-SQLCipher-Marker | privater eigentümergeprüfter System-Temporärroot; kein `RuntimePaths`-, Pilot- oder Produktroot | ausschließlich Gate-On |
+| `final-v4-sqlcipher-runtime-v1/final-v4.sqlcipher` | direkt verschlüsseltes exaktes Final-V4 mit `user_version=4` und registriertem Schemafingerprint | Modus `0600`; fester technischer Pfad; kein Klartextheader und kein Create-Fallback | inaktiver technischer Testbestand |
 | keyed Kompatibilitätsreport | Cipher-/Provider-/SQLite-Version, `user_version`, Schemafingerprint und Objektzahl | ausschließlich flüchtig; keine Schlüssel, Pfade oder Fachdaten | nach vollständiger read-only Prüfung |
 | schlüsselgebundene `SQLiteDatabase` | dieselbe feste Provider-/Database-Key-Konfiguration für Repository, Desktop-Adapter und ViewModel-Projektion | ausschließlich im aufrufenden technischen Testprozess | keine Produkt-Composition-Root |
 
 Database-Key, DMK und App-Passwort sind keine Datei-, Konfigurations- oder
 Protokolldaten. Der bestehende Keyset-/Envelope-Database-Context bleibt die
-technische Kryptobindung; Final-V3 erhält kein neues Kontextfeld und das
-Fachdatenmodell bleibt unverändert.
+technische Kryptobindung; Final-V4 erhält kein Security-Kontextfeld. Die
+neuen Fachrelevanztabellen bleiben davon getrennte fachliche Konfiguration.
 
 ## Final-V3-Dokumentcontainer-Runtime - SQLCipher-Companion und Storage
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
 |---|---|---|---|
-| `documents-v1.sqlcipher` | `application_id`, `user_version=1`, exakte Schemaidentität, Installations-/Database-Context-Bindung und technische Dokumentpointer | gleicher doppelt markergebundener Final-V3-Runtime-Root; eigener fester Pfad; kein SQLite-Fallback | ausschließlich Gate-On |
+| `documents-v1.sqlcipher` | `application_id`, `user_version=1`, exakte Schemaidentität, Installations-/Database-Context-Bindung und technische Dokumentpointer | gleicher doppelt markergebundener Final-V4-Runtime-Root; eigener fester Pfad; kein SQLite-Fallback | ausschließlich Gate-On |
 | `final_v3_documents` | technische Document-ID; bei Beobachtungsanhängen und allgemeinen verwalteten Schülerdokumenten unmittelbar die fachlich stabile `MED-######`-ID, nullable aktiver Generation-Pointer und Erstellungszeit | SQLCipher-Companion; Pointer nur in atomarer Aktivierung/Deaktivierung | Runtime-Persistenz |
 | `final_v3_document_generations` | Generation, opaque Storage-ID, Document-Key-ID/-Generation, Envelope-Revision, Containerformat, Klartext-/Containergröße und -SHA-256, MIME, Lifecycle und Erstellungszeit | SQLCipher-Companion; genau eine `ACTIVE` je Dokument per partiellem Unique-Index | Runtime-Persistenz |
 | `document-containers-v1/storage/<storage_id>.jkmedoc` | technischer Header, geschütztes Document-Key-Envelope und verschlüsseltes Manifest/Ciphertext | privater verwalteter Storage; no-clobber, no-follow, kein Klartext und kein physisches Auto-GC | Runtime-Persistenz |
@@ -379,10 +382,10 @@ Fachdatenmodell bleibt unverändert.
 | Managed-Document-Journalbindung | Operation, MED-ID, vorherige aktive Generation, geplante Generation/Storage-ID und ausschließlich Hashbindung der fachlichen Anfrage; kein Originalname, Pfad, Titel oder Schülerbezug | privates `.managed-document-staging`; steuert Retry/Restart und reserviert MED-ID, ist keine fachliche Source of Truth | ausschließlich Gate-On-allgemeine Schülerdokumente |
 | finale RPA-/LCA-Artefaktreferenz im Cipher-Modus | vorhandene fachliche Artifact-ID und Revisionsbindung; `relative_file_path` enthält ausschließlich die strikt typisierte interne Referenz `managed-document:<UUID>` statt eines Pfads | vorhandene unveränderliche `learning_report_pdf_artifacts` beziehungsweise `learning_conference_pdf_artifacts`; keine neue Tabelle und keine Schemaänderung | ausschließlich Gate-On-finale PDFs |
 | Final-PDF-Journalbindung | Dokumentart, bestehende Artifact-/Revision-ID, opaque Managed-Document-ID, Prepare-Plan, Phase sowie Snapshot-/PDF-Größe und SHA-256; keine PDF-Bytes, Namen, Revisionstexte oder Schülerdaten | privater Unterbereich der vorhandenen `.managed-document-staging`; steuert Retry/Restart, ist keine fachliche Source of Truth | ausschließlich Gate-On-finale PDFs |
-| Final-V3-`documents.file_path` im Cipher-Modus | leerer Nicht-Pfad; die aktive fachliche Referenz ist `documents.document_id`/MED-ID, die physische Auflösung liegt ausschließlich in der Companion-DB | SQLCipher-Hauptdatenbank; niemals Containerpfad oder Storage-ID | Gate-On-Beobachtungsanhänge und allgemeine Schülerdokumente |
+| Final-V4-`documents.file_path` im Cipher-Modus | leerer Nicht-Pfad; die aktive fachliche Referenz ist `documents.document_id`/MED-ID, die physische Auflösung liegt ausschließlich in der Companion-DB | SQLCipher-Hauptdatenbank; niemals Containerpfad oder Storage-ID | Gate-On-Beobachtungsanhänge und allgemeine Schülerdokumente |
 | flüchtiger Document-Key | zufällige 32 Byte je Dokumentgeneration | nur im Writer/Verifier/Reader; im Container ausschließlich AES-GCM-Envelope unter eigenem Document-HKDF-Zweck | Secret-Material |
 
-Originalname und fachliche Metadaten stehen in der Final-V3-SQLCipher-
+Originalname und fachliche Metadaten stehen in der Final-V4-SQLCipher-
 Hauptdatenbank sowie im verschlüsselten Manifest. MIME und
 Größen-/Hashnachweise stehen im verschlüsselten Manifest und zusätzlich in der
 SQLCipher-Companion-DB.
@@ -391,25 +394,25 @@ Finale Bericht-/LEG-PDFs werden ausschließlich aus der verifizierten aktuellen
 RPV beziehungsweise LCV bewusst erzeugt und direkt aus dem binären Renderer-
 Sink als `.jkmedoc` vorbereitet. Ein Klartext-Altbestand ist keine
 Eingangsquelle: Der Pilot beginnt mit einem
-frischen verschlüsselten Final-V3-Bestand; synthetische Testdaten werden nach
+frischen verschlüsselten Final-V4-Bestand; synthetische Testdaten werden nach
 Gate-Aktivierung neu erzeugt und nicht migriert.
 
-## Verschlüsseltes Final-V3-Pilotbackup - Dateninventar
+## Verschlüsseltes Final-V4-Pilotbackup - Dateninventar
 
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
 |---|---|---|---|
-| Final-V3-Hauptsnapshot | keyed SQLCipher-Backup von `final-v3.sqlcipher` mit exaktem Final-V3-Fingerprint | ausschließlich verschlüsselter Backupentry; keine WAL-/SHM-Dateikopie | `.jkmebackup` Gate-On |
+| Final-V4-Hauptsnapshot | keyed SQLCipher-Backup von `final-v4.sqlcipher` mit exaktem Final-V4-Fingerprint | ausschließlich verschlüsselter Backupentry; keine WAL-/SHM-Dateikopie | `.jkmebackup` Gate-On |
 | Companion-Snapshot | keyed SQLCipher-Backup von `documents-v1.sqlcipher` mit Context und vollständigem Generationeninventar | gemeinsam unter Writer-Lock mit Hauptsnapshot bestimmt | `.jkmebackup` Gate-On |
 | Keyset-Metadatensnapshot | Key-ID, DMK-/Database-Key-Generation, Status, Fingerprint und Database-Context ohne Schlüsselmaterial | SQLite-Backup-API einschließlich WAL; kein `security.sqlite` | same-installation Reopen-Metadaten |
 | Database-Key-Envelope-Registry | authentisierte Envelope-Dateien und nicht geheime Registrybindung | bereits kryptografisch geschützt; kein Klartext-Database-Key | same-installation Reopen-Metadaten |
 | `.jkmedoc`-Inventar | alle Companion-registrierten Generationen mit Document-/Key-/Envelope-Generation, Lifecycle, Größe und SHA-256 | jeder Container als authentisiert verschlüsselter Entry; aktive Teilmenge separat gebunden | vollständiger Retention- und Reopenbestand |
-| `FinalV3EncryptedBackupManifestV1` | Format, Installation-/Database-Context, Engine-/Schema-Versionen, Rollen, Generationen, Größen, Hashes und aktives Inventar | selbst authentisiert verschlüsselt; keine Secrets oder Schülerklartexte | Container-Source-of-Truth |
+| `FinalV4EncryptedBackupManifestV1` | Format, Installation-/Database-Context, Engine-/Schema-Versionen, Rollen, Generationen, Größen, Hashes und aktives Inventar | selbst authentisiert verschlüsselt; keine Secrets oder Schülerklartexte | Container-Source-of-Truth |
 | `RESTORE_READY` | Version, Backup-/Manifesthash und verifizierte Inventarzähler | neuer privater Staging-Root; nur als erneut vollständig geprüfte Worker-Eingabe | Abschlussbeleg nach keyed Vollprüfung |
 | Cipher-Live-Handoff | Restore-Kind, One-Time-Nonce, Installation-/Context-, READY-/Manifest- und Safety-Backup-Bindung plus DMK-separierte HMAC | `restore-handoffs/`, Modus `0600`, atomar konsumiert; keine Schlüssel oder Sitzung | same-installation Workersteuerung |
 | Cipher-Restore-Journal | Phasen, Vier-Rollen-Plan für Keymetadaten, Haupt-DB, Companion-DB und Dokumentbestand, Datei-/Tree-Evidenz, Write-ahead-Rename-Intent, ausgeschlossene Pfade und Restart-Handshake | vorhandener `restore-transactions/<restore-id>/`-Vertrag | technische Recovery-Source-of-Truth vor jedem Product-Open |
 | `encrypted-restore-safety/*.jkmebackup` | unmittelbar vor Handoff erstellter und vollständig verifizierter verschlüsselter Live-Snapshot | außerhalb der Swap-Komponenten; retained, kein GC in diesem Paket | zwingende Pre-Swap-Evidenz |
 | `rollback/security-key-runtime-v1/` | alter Keyset-/Envelope-Metadatenbestand | journalisiert retained; bei Rollback nach Live zurückgeführt | Rollback-Evidenz |
-| `rollback/final-v3.sqlcipher`, `rollback/documents-v1.sqlcipher`, `rollback/storage/` | alte Haupt-/Companion-DB und vollständiges `.jkmedoc`-Inventar als getrennt journalisierte Rollen einer Einheit | retained; bei Erfolg nicht gelöscht, bei Rollback vollständig gemeinsam zurückgeführt | Rollback-Evidenz und Crashgrenzen |
+| `rollback/final-v4.sqlcipher`, `rollback/documents-v1.sqlcipher`, `rollback/storage/` | alte Haupt-/Companion-DB und vollständiges `.jkmedoc`-Inventar als getrennt journalisierte Rollen einer Einheit | retained; bei Erfolg nicht gelöscht, bei Rollback vollständig gemeinsam zurückgeführt | Rollback-Evidenz und Crashgrenzen |
 
 DMK, App-Passwort, Recovery-Codes, `security.sqlite`, Device-Credential,
 Touch-ID-Zustand, Keychain-Secrets, Logs, UI-Präferenzen und Testartefakte sind
@@ -897,10 +900,10 @@ Technische, nicht fachliche Runtime-Quellen:
 | `restore-transactions/<restore-id>/failed-new/` | Restore-Rollback | nach Fehler zurueckgenommener neuer Bestand | bei Fehler und manueller Recovery erhalten |
 | `restore-transactions/<restore-id>/resume-token.json` | Restore-Executor | Restore-ID, zufaelliges Token, Erstellungs- und Ablaufzeit | Modus `0600`, einmalig, keine fachlichen Daten |
 
-Für `restore_kind=final_v3_encrypted_same_installation` bleibt derselbe
+Für `restore_kind=final_v4_encrypted_same_installation` bleibt derselbe
 Handoff-/Journal-/Resume-Bereich maßgeblich. An die Stelle der Gate-Off-Rollen
 DB/WAL/SHM/`documents/` treten exakt `key_runtime_metadata` und
-`final_v3_runtime`; `source-backup.jkmbackup` wird nicht als ZIP-v1-Fallback
+`final_v4_runtime`; `source-backup.jkmbackup` wird nicht als ZIP-v1-Fallback
 verwendet. Das zwingende `.jkmebackup` liegt unter
 `encrypted-restore-safety/`, und READY-Staging liegt gebunden unter
 `encrypted-restore-staging/`. Haupt-/Companion-Sidecars müssen nach
@@ -955,6 +958,8 @@ Gepruefte Tabellen:
 | `student_competency_confirmations` | StudentCompetencyConfirmation | keine Workbook-Projektion |
 | `documents` | Document / Media | `data_media` / `tbl_media` |
 | `documentation_subject_settings` | DocumentationSubjectSetting | keine Workbook-Projektion |
+| `student_documentation_subject_profiles` | StudentDocumentationSubjectProfile | keine Workbook-Projektion |
+| `student_documentation_subject_selections` | StudentDocumentationSubjectSelection | keine Workbook-Projektion |
 | `timetable_entries` | TimetableEntry | keine Workbook-Projektion |
 | `learning_conference_drafts` | LearningConferenceDraft | keine Workbook-Projektion |
 | `learning_conference_draft_subjects` | LearningConferenceDraftSubject | keine Workbook-Projektion |
@@ -1112,6 +1117,26 @@ documentation_subject_settings(
   subject_id TEXT PRIMARY KEY,
   active INTEGER NOT NULL CHECK (active IN (0, 1)),
   updated_at TEXT NOT NULL
+)
+
+student_documentation_subject_profiles(
+  student_id TEXT NOT NULL,
+  school_year_id TEXT NOT NULL,
+  mode TEXT NOT NULL CHECK (mode IN ('inherit', 'custom')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY(student_id, school_year_id),
+  FOREIGN KEY(student_id) REFERENCES students(student_id),
+  FOREIGN KEY(school_year_id) REFERENCES school_years(school_year_id)
+)
+
+student_documentation_subject_selections(
+  student_id TEXT NOT NULL,
+  school_year_id TEXT NOT NULL,
+  subject_id TEXT NOT NULL,
+  PRIMARY KEY(student_id, school_year_id, subject_id),
+  FOREIGN KEY(student_id, school_year_id)
+    REFERENCES student_documentation_subject_profiles(student_id, school_year_id)
 )
 
 timetable_entries(
@@ -1305,6 +1330,41 @@ Regeln:
 - `competencies.active` darf nicht fuer diese Dokumentationsauswahl missbraucht werden.
 - Sichtbare Fachnamen werden weiterhin aus `competencies` bzw. dem Katalog abgeleitet.
 - Nicht dokumentationsrelevante Faecher bleiben in Beobachtungslisten, Kompetenzhistorien und bestaetigten Kompetenzstaenden sichtbar, zaehlen aber nicht als offen im Dokumentationsstand oder in offenen Beobachtungsanlaessen.
+
+## student_documentation_subject_profiles und selections
+
+Zweck: Schuljahresbezogene individuelle Dokumentationsfachkonfiguration pro
+Schüler mit eindeutigem Modus `inherit` oder `custom`.
+
+Storage: SQLite `student_documentation_subject_profiles` und
+`student_documentation_subject_selections`.
+
+Owner: `StudentDocumentationSubjectService` und
+`SQLiteStudentDocumentationSubjectRepository`.
+
+Primary Keys:
+
+- Profil: `(student_id, school_year_id)`;
+- Auswahl: `(student_id, school_year_id, subject_id)`.
+
+Foreign Keys:
+
+- Profil auf `students` und `school_years`, jeweils restriktiv;
+- Auswahl als Composite-FK auf das Profil;
+- kein FK für `subject_id`, weil `competencies.subject_id` nicht eindeutig ist
+  und `documentation_subject_settings` keine Fachquelle darstellt.
+
+Regeln:
+
+- kein Profil oder `mode = inherit` löst den aktuellen globalen Default auf;
+- `mode = custom` löst exakt die gespeicherte, auch bewusst leere Auswahl auf;
+- vollständiger Custom-Replace erfolgt atomar und mutationsfrei bei No-op;
+- neue Fachschlüssel müssen im aktiven kanonischen Kompetenzkatalog liegen;
+- später inaktive gespeicherte Fächer bleiben historisch lesbar;
+- Writes sind ausschließlich im `current`-Schuljahr zulässig;
+- Auswahl verändert keine Beobachtung, Kompetenz, Bestätigung, Bewertung,
+  Bericht- oder LEG-Historie;
+- der Resolver verwendet keine Membership-, Kurs-, Gruppen- oder Stufenquelle.
 
 ## timetable_entries
 

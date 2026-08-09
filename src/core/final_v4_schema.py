@@ -1,4 +1,4 @@
-"""Direct creation and verification of the final V3 product schema."""
+"""Direct creation and verification of the final V4 product schema."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from .database_compatibility import (
     DatabaseCompatibilityInspector,
 )
 
-class FinalV3SchemaError(RuntimeError):
+class FinalV4SchemaError(RuntimeError):
     """Reject unsafe targets or incomplete final-schema creation."""
 
 
@@ -28,6 +28,8 @@ _SCHEMA_STATEMENTS = (
     "CREATE TABLE course_group_student_groups (\n                        course_group_id TEXT NOT NULL,\n                        student_group_id TEXT NOT NULL,\n                        PRIMARY KEY (course_group_id, student_group_id),\n                        FOREIGN KEY (course_group_id) REFERENCES course_groups(course_group_id),\n                        FOREIGN KEY (student_group_id) REFERENCES groups(group_id)\n                    )",
     "CREATE TABLE course_group_courses (\n                        course_group_id TEXT NOT NULL,\n                        course_id TEXT NOT NULL,\n                        PRIMARY KEY (course_group_id, course_id),\n                        FOREIGN KEY (course_group_id) REFERENCES course_groups(course_group_id),\n                        FOREIGN KEY (course_id) REFERENCES courses(course_id)\n                    )",
     "CREATE TABLE documentation_subject_settings (\n                        subject_id TEXT PRIMARY KEY,\n                        active INTEGER NOT NULL CHECK (active IN (0, 1)),\n                        updated_at TEXT NOT NULL\n                    )",
+    "CREATE TABLE student_documentation_subject_profiles (\n    student_id TEXT NOT NULL CHECK (length(trim(student_id)) > 0),\n    school_year_id TEXT NOT NULL CHECK (length(trim(school_year_id)) > 0),\n    mode TEXT NOT NULL CHECK (mode IN ('inherit', 'custom')),\n    created_at TEXT NOT NULL CHECK (julianday(created_at) IS NOT NULL),\n    updated_at TEXT NOT NULL CHECK (\n        julianday(updated_at) IS NOT NULL\n        AND julianday(updated_at) >= julianday(created_at)\n    ),\n    PRIMARY KEY (student_id, school_year_id),\n    FOREIGN KEY (student_id) REFERENCES students(student_id)\n        ON UPDATE RESTRICT ON DELETE RESTRICT,\n    FOREIGN KEY (school_year_id) REFERENCES school_years(school_year_id)\n        ON UPDATE RESTRICT ON DELETE RESTRICT\n)",
+    "CREATE TABLE student_documentation_subject_selections (\n    student_id TEXT NOT NULL CHECK (length(trim(student_id)) > 0),\n    school_year_id TEXT NOT NULL CHECK (length(trim(school_year_id)) > 0),\n    subject_id TEXT NOT NULL CHECK (length(trim(subject_id)) > 0),\n    PRIMARY KEY (student_id, school_year_id, subject_id),\n    FOREIGN KEY (student_id, school_year_id)\n        REFERENCES student_documentation_subject_profiles(\n            student_id, school_year_id\n        ) ON UPDATE RESTRICT ON DELETE CASCADE\n)",
     "CREATE TABLE timetable_entries (\n                        timetable_entry_id TEXT PRIMARY KEY,\n                        weekday INTEGER NOT NULL CHECK (weekday BETWEEN 1 AND 5),\n                        start_time TEXT NOT NULL,\n                        end_time TEXT NOT NULL,\n                        subject_id TEXT NOT NULL,\n                        target_type TEXT NOT NULL CHECK (\n                            target_type IN ('group', 'course', 'course_group')\n                        ),\n                        target_id TEXT NOT NULL,\n                        room TEXT NOT NULL DEFAULT '',\n                        active INTEGER NOT NULL CHECK (active IN (0, 1)),\n                        sort_order INTEGER NOT NULL DEFAULT 0,\n                        created_at TEXT NOT NULL,\n                        updated_at TEXT NOT NULL,\n                        deleted_at TEXT NOT NULL DEFAULT ''\n                    )",
     "CREATE TABLE report_drafts (\n                        report_draft_id TEXT PRIMARY KEY,\n                        student_id TEXT NOT NULL,\n                        report_type TEXT NOT NULL CHECK (report_type = 'learning_development'),\n                        period_start TEXT NOT NULL,\n                        period_end TEXT NOT NULL,\n                        status TEXT NOT NULL CHECK (status = 'draft'),\n                        teacher_name TEXT NOT NULL DEFAULT '',\n                        overall_text TEXT NOT NULL DEFAULT '',\n                        created_at TEXT NOT NULL,\n                        updated_at TEXT NOT NULL,\n                        FOREIGN KEY (student_id) REFERENCES students(student_id)\n                    )",
     "CREATE TABLE report_draft_subjects (\n                        report_draft_id TEXT NOT NULL,\n                        subject_id TEXT NOT NULL,\n                        strengths_text TEXT NOT NULL DEFAULT '',\n                        development_text TEXT NOT NULL DEFAULT '',\n                        support_needs_text TEXT NOT NULL DEFAULT '',\n                        next_goals_text TEXT NOT NULL DEFAULT '',\n                        PRIMARY KEY (report_draft_id, subject_id),\n                        FOREIGN KEY (report_draft_id)\n                            REFERENCES report_drafts(report_draft_id)\n                            ON DELETE CASCADE\n                    )",
@@ -64,6 +66,14 @@ _SCHEMA_STATEMENTS = (
     "CREATE INDEX idx_course_group_student_groups_group\n                        ON course_group_student_groups(student_group_id)",
     "CREATE INDEX idx_course_group_courses_course\n                        ON course_group_courses(course_id)",
     "CREATE INDEX idx_documentation_subject_settings_active\n                        ON documentation_subject_settings(active, subject_id)",
+    "CREATE TRIGGER trg_student_documentation_subject_selection_requires_custom\n    BEFORE INSERT ON student_documentation_subject_selections\n    WHEN NOT EXISTS (\n        SELECT 1\n        FROM student_documentation_subject_profiles\n        WHERE student_id = NEW.student_id\n          AND school_year_id = NEW.school_year_id\n          AND mode = 'custom'\n    )\n    BEGIN\n        SELECT RAISE(ABORT, 'documentation_subject_profile_not_custom');\n    END",
+    "CREATE TRIGGER trg_student_documentation_subject_inherit_has_no_selections\n    BEFORE UPDATE OF mode ON student_documentation_subject_profiles\n    WHEN NEW.mode = 'inherit'\n      AND EXISTS (\n          SELECT 1\n          FROM student_documentation_subject_selections\n          WHERE student_id = NEW.student_id\n            AND school_year_id = NEW.school_year_id\n      )\n    BEGIN\n        SELECT RAISE(ABORT, 'documentation_subject_inherit_has_selections');\n    END",
+    "CREATE TRIGGER trg_student_documentation_subject_profile_insert_current\n    BEFORE INSERT ON student_documentation_subject_profiles\n    WHEN NOT EXISTS (\n        SELECT 1 FROM school_years\n        WHERE school_year_id = NEW.school_year_id AND status = 'current'\n    )\n    BEGIN\n        SELECT RAISE(ABORT, 'documentation_subject_school_year_read_only');\n    END",
+    "CREATE TRIGGER trg_student_documentation_subject_profile_update_guard\n    BEFORE UPDATE ON student_documentation_subject_profiles\n    WHEN NOT EXISTS (\n        SELECT 1 FROM school_years\n        WHERE school_year_id = OLD.school_year_id AND status = 'current'\n    )\n    OR NEW.student_id IS NOT OLD.student_id\n    OR NEW.school_year_id IS NOT OLD.school_year_id\n    OR NEW.created_at IS NOT OLD.created_at\n    OR julianday(NEW.updated_at) < julianday(OLD.updated_at)\n    BEGIN\n        SELECT RAISE(ABORT, 'documentation_subject_profile_update_forbidden');\n    END",
+    "CREATE TRIGGER trg_student_documentation_subject_profile_delete_current\n    BEFORE DELETE ON student_documentation_subject_profiles\n    WHEN NOT EXISTS (\n        SELECT 1 FROM school_years\n        WHERE school_year_id = OLD.school_year_id AND status = 'current'\n    )\n    BEGIN\n        SELECT RAISE(ABORT, 'documentation_subject_school_year_read_only');\n    END",
+    "CREATE TRIGGER trg_student_documentation_subject_selection_insert_current\n    BEFORE INSERT ON student_documentation_subject_selections\n    WHEN NOT EXISTS (\n        SELECT 1 FROM school_years\n        WHERE school_year_id = NEW.school_year_id AND status = 'current'\n    )\n    BEGIN\n        SELECT RAISE(ABORT, 'documentation_subject_school_year_read_only');\n    END",
+    "CREATE TRIGGER trg_student_documentation_subject_selection_update_forbidden\n    BEFORE UPDATE ON student_documentation_subject_selections\n    BEGIN\n        SELECT RAISE(ABORT, 'documentation_subject_selection_update_forbidden');\n    END",
+    "CREATE TRIGGER trg_student_documentation_subject_selection_delete_current\n    BEFORE DELETE ON student_documentation_subject_selections\n    WHEN NOT EXISTS (\n        SELECT 1 FROM school_years\n        WHERE school_year_id = OLD.school_year_id AND status = 'current'\n    )\n    BEGIN\n        SELECT RAISE(ABORT, 'documentation_subject_school_year_read_only');\n    END",
     "CREATE INDEX idx_timetable_entries_week_time\n                        ON timetable_entries(weekday, start_time, end_time, sort_order)",
     "CREATE INDEX idx_report_drafts_student_updated\n                        ON report_drafts(student_id, updated_at DESC)",
     "CREATE INDEX idx_report_draft_competencies_competency\n                        ON report_draft_competencies(competency_id)",
@@ -115,8 +125,8 @@ _SCHEMA_STATEMENTS = (
     "CREATE TRIGGER trg_school_year_transitions_no_delete\n    BEFORE DELETE ON school_year_transitions\n    BEGIN\n        SELECT RAISE(ABORT, 'school_year_transition_delete_forbidden');\n    END",
 )
 
-class FinalV3SchemaInitializer:
-    """Create one new complete V3 database without a predecessor schema."""
+class FinalV4SchemaInitializer:
+    """Create one new complete V4 database without a predecessor schema."""
 
     def __init__(self, connection_provider=None) -> None:
         self._connection_provider = connection_provider or SQLiteConnectionProvider()
@@ -124,9 +134,9 @@ class FinalV3SchemaInitializer:
     def initialize(self, database_path: Path, *, fault_hook=None) -> None:
         path = Path(database_path)
         if path.exists() or path.is_symlink():
-            raise FinalV3SchemaError("final_v3_target_must_not_exist")
+            raise FinalV4SchemaError("final_v4_target_must_not_exist")
         if not path.parent.is_dir():
-            raise FinalV3SchemaError("final_v3_parent_missing")
+            raise FinalV4SchemaError("final_v4_parent_missing")
 
         created = False
         try:
@@ -138,7 +148,7 @@ class FinalV3SchemaInitializer:
         except (OSError, sqlite3.Error) as error:
             if created:
                 path.unlink(missing_ok=True)
-            raise FinalV3SchemaError("final_v3_creation_failed") from error
+            raise FinalV4SchemaError("final_v4_creation_failed") from error
         except Exception:
             if created:
                 path.unlink(missing_ok=True)
@@ -177,26 +187,26 @@ class FinalV3SchemaInitializer:
                 "PRAGMA foreign_keys"
             ).fetchone()
         except Exception:
-            raise FinalV3SchemaError("final_v3_foreign_keys_enable_failed") from None
+            raise FinalV4SchemaError("final_v4_foreign_keys_enable_failed") from None
         if foreign_keys_enabled is None or int(foreign_keys_enabled[0]) != 1:
-            raise FinalV3SchemaError("final_v3_foreign_keys_enable_failed")
+            raise FinalV4SchemaError("final_v4_foreign_keys_enable_failed")
 
         integrity = connection.execute("PRAGMA integrity_check").fetchone()
         if integrity is None or str(integrity[0]).lower() != "ok":
-            raise FinalV3SchemaError("final_v3_integrity_check_failed")
+            raise FinalV4SchemaError("final_v4_integrity_check_failed")
         if connection.execute("PRAGMA foreign_key_check").fetchone() is not None:
-            raise FinalV3SchemaError("final_v3_foreign_key_check_failed")
+            raise FinalV4SchemaError("final_v4_foreign_key_check_failed")
         identity = DatabaseCompatibilityInspector.schema_identity_for_connection(
             connection
         )
         version = int(connection.execute("PRAGMA user_version").fetchone()[0])
         if version != FINAL_SCHEMA_VERSION:
-            raise FinalV3SchemaError("final_v3_version_mismatch")
+            raise FinalV4SchemaError("final_v4_version_mismatch")
         if identity.fingerprint != FINAL_SCHEMA_FINGERPRINT:
-            raise FinalV3SchemaError("final_v3_fingerprint_mismatch")
+            raise FinalV4SchemaError("final_v4_fingerprint_mismatch")
 
 
-def initialize_final_v3_schema(database_path: Path) -> None:
+def initialize_final_v4_schema(database_path: Path) -> None:
     """Create one controlled new final-schema database."""
 
-    FinalV3SchemaInitializer().initialize(database_path)
+    FinalV4SchemaInitializer().initialize(database_path)

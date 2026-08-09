@@ -16,6 +16,9 @@ import uuid
 
 import pytest
 
+from src.application.student_documentation_subjects import (
+    StudentDocumentationSubjectService,
+)
 from src.application.dispatcher import SuccessResult
 from src.core.database_compatibility import (
     FINAL_SCHEMA_FINGERPRINT,
@@ -57,16 +60,16 @@ from src.security.database_key_runtime import (
     run_gated_database_key_runtime,
 )
 from src.security.domain import AccountStatus
-from src.security.final_v3_sqlcipher_runtime import (
-    FINAL_V3_SQLCIPHER_RUNTIME_GATE_ENV,
-    FINAL_V3_SQLCIPHER_RUNTIME_MARKER,
-    FINAL_V3_SQLCIPHER_RUNTIME_MARKER_BYTES,
-    FinalV3SQLCipherConnectionFactory,
-    FinalV3SQLCipherRuntimeCoordinator,
-    FinalV3SQLCipherRuntimeDecisionState,
-    FinalV3SQLCipherRuntimePaths,
-    KeyedFinalV3CompatibilityInspector,
-    run_gated_final_v3_sqlcipher_runtime,
+from src.security.final_v4_sqlcipher_runtime import (
+    FINAL_V4_SQLCIPHER_RUNTIME_GATE_ENV,
+    FINAL_V4_SQLCIPHER_RUNTIME_MARKER,
+    FINAL_V4_SQLCIPHER_RUNTIME_MARKER_BYTES,
+    FinalV4SQLCipherConnectionFactory,
+    FinalV4SQLCipherRuntimeCoordinator,
+    FinalV4SQLCipherRuntimeDecisionState,
+    FinalV4SQLCipherRuntimePaths,
+    KeyedFinalV4CompatibilityInspector,
+    run_gated_final_v4_sqlcipher_runtime,
 )
 
 
@@ -103,8 +106,8 @@ def _root(tmp_path: Path) -> Path:
     for name, content in (
         (DMK_DATABASE_KEY_RUNTIME_MARKER, DMK_DATABASE_KEY_RUNTIME_MARKER_BYTES),
         (
-            FINAL_V3_SQLCIPHER_RUNTIME_MARKER,
-            FINAL_V3_SQLCIPHER_RUNTIME_MARKER_BYTES,
+            FINAL_V4_SQLCIPHER_RUNTIME_MARKER,
+            FINAL_V4_SQLCIPHER_RUNTIME_MARKER_BYTES,
         ),
     ):
         marker = root / name
@@ -117,7 +120,7 @@ def _environment(root: Path) -> dict[str, str]:
     return {
         DMK_DATABASE_KEY_RUNTIME_GATE_ENV: "1",
         DMK_DATABASE_KEY_RUNTIME_ROOT_ENV: str(root),
-        FINAL_V3_SQLCIPHER_RUNTIME_GATE_ENV: "1",
+        FINAL_V4_SQLCIPHER_RUNTIME_GATE_ENV: "1",
     }
 
 
@@ -160,13 +163,13 @@ def test_gate_off_does_not_touch_root_or_account(tmp_path: Path) -> None:
         called = True
         raise AssertionError
 
-    decision = run_gated_final_v3_sqlcipher_runtime(
+    decision = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account_loader,
         authentication_confirmed=True,
         environ={DMK_DATABASE_KEY_RUNTIME_ROOT_ENV: str(missing)},
     )
 
-    assert decision.state is FinalV3SQLCipherRuntimeDecisionState.DISABLED
+    assert decision.state is FinalV4SQLCipherRuntimeDecisionState.DISABLED
     assert called is False
     assert not missing.exists()
 
@@ -175,30 +178,30 @@ def test_gate_requires_both_exact_gate_values_and_second_marker(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path)
-    (root / FINAL_V3_SQLCIPHER_RUNTIME_MARKER).unlink()
+    (root / FINAL_V4_SQLCIPHER_RUNTIME_MARKER).unlink()
     environment = _environment(root)
 
-    missing_marker = run_gated_final_v3_sqlcipher_runtime(
+    missing_marker = run_gated_final_v4_sqlcipher_runtime(
         account_loader=lambda: None,
         authentication_confirmed=True,
         environ=environment,
     )
-    wrong_value = run_gated_final_v3_sqlcipher_runtime(
+    wrong_value = run_gated_final_v4_sqlcipher_runtime(
         account_loader=lambda: None,
         authentication_confirmed=True,
-        environ={**environment, FINAL_V3_SQLCIPHER_RUNTIME_GATE_ENV: "yes"},
+        environ={**environment, FINAL_V4_SQLCIPHER_RUNTIME_GATE_ENV: "yes"},
     )
-    missing_key_gate = run_gated_final_v3_sqlcipher_runtime(
+    missing_key_gate = run_gated_final_v4_sqlcipher_runtime(
         account_loader=lambda: None,
         authentication_confirmed=True,
         environ={
             DMK_DATABASE_KEY_RUNTIME_ROOT_ENV: str(root),
-            FINAL_V3_SQLCIPHER_RUNTIME_GATE_ENV: "1",
+            FINAL_V4_SQLCIPHER_RUNTIME_GATE_ENV: "1",
         },
     )
 
-    assert missing_marker.error_code == "final_v3_sqlcipher_runtime_marker_invalid"
-    assert wrong_value.error_code == "final_v3_sqlcipher_runtime_gate_value_invalid"
+    assert missing_marker.error_code == "final_v4_sqlcipher_runtime_marker_invalid"
+    assert wrong_value.error_code == "final_v4_sqlcipher_runtime_gate_value_invalid"
     assert missing_key_gate.error_code == "database_key_runtime_gate_required"
 
 
@@ -207,8 +210,8 @@ def test_direct_runtime_components_reject_paths_outside_gate_scope(
 ) -> None:
     root = _root(tmp_path)
     key_paths = DatabaseKeyRuntimeGate.require_paths(str(root))
-    scoped = FinalV3SQLCipherRuntimePaths.for_key_runtime(key_paths)
-    unscoped = FinalV3SQLCipherRuntimePaths(
+    scoped = FinalV4SQLCipherRuntimePaths.for_key_runtime(key_paths)
+    unscoped = FinalV4SQLCipherRuntimePaths(
         root=scoped.root,
         key_runtime=scoped.key_runtime,
         runtime_root=scoped.runtime_root,
@@ -221,7 +224,7 @@ def test_direct_runtime_components_reject_paths_outside_gate_scope(
     )
 
     with pytest.raises(Exception) as coordinator_error:
-        FinalV3SQLCipherRuntimeCoordinator(
+        FinalV4SQLCipherRuntimeCoordinator(
             paths=unscoped,
             account_loader=_account_loader(str(uuid.uuid4())),
             authentication_confirmed=True,
@@ -230,11 +233,11 @@ def test_direct_runtime_components_reject_paths_outside_gate_scope(
             environ=environment,
         )
     assert getattr(coordinator_error.value, "code", "") == (
-        "final_v3_sqlcipher_runtime_scope_invalid"
+        "final_v4_sqlcipher_runtime_scope_invalid"
     )
 
     with pytest.raises(Exception) as factory_error:
-        FinalV3SQLCipherConnectionFactory(
+        FinalV4SQLCipherConnectionFactory(
             provider=provider,
             paths=unscoped,
             loaded_keys=SimpleNamespace(
@@ -243,10 +246,10 @@ def test_direct_runtime_components_reject_paths_outside_gate_scope(
             environ=environment,
         )
     assert getattr(factory_error.value, "code", "") == (
-        "final_v3_sqlcipher_connection_scope_invalid"
+        "final_v4_sqlcipher_connection_scope_invalid"
     )
 
-    factory = FinalV3SQLCipherConnectionFactory(
+    factory = FinalV4SQLCipherConnectionFactory(
         provider=provider,
         paths=scoped,
         loaded_keys=SimpleNamespace(
@@ -260,7 +263,7 @@ def test_direct_runtime_components_reject_paths_outside_gate_scope(
     with pytest.raises(Exception) as post_open_error:
         factory.connect(scoped.database, create=True)
     assert getattr(post_open_error.value, "code", "") == (
-        "final_v3_sqlcipher_runtime_root_unsafe"
+        "final_v4_sqlcipher_runtime_root_unsafe"
     )
 
 
@@ -270,34 +273,34 @@ def test_runtime_root_symlink_and_orphan_sidecar_block_before_keys(
     symlink_root = _root(tmp_path)
     external = tmp_path / "external-runtime"
     external.mkdir(mode=0o700)
-    (symlink_root / "final-v3-sqlcipher-runtime-v1").symlink_to(
+    (symlink_root / "final-v4-sqlcipher-runtime-v1").symlink_to(
         external,
         target_is_directory=True,
     )
     store = MemoryDataMasterKeyStore()
-    symlinked = run_gated_final_v3_sqlcipher_runtime(
+    symlinked = run_gated_final_v4_sqlcipher_runtime(
         account_loader=_account_loader(str(uuid.uuid4())),
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
         environ=_environment(symlink_root),
         key_store=store,
     )
-    assert symlinked.error_code == "final_v3_sqlcipher_runtime_root_unsafe"
+    assert symlinked.error_code == "final_v4_sqlcipher_runtime_root_unsafe"
     assert store.create_calls == 0
 
     sidecar_root = _root(tmp_path)
-    runtime_root = sidecar_root / "final-v3-sqlcipher-runtime-v1"
+    runtime_root = sidecar_root / "final-v4-sqlcipher-runtime-v1"
     runtime_root.mkdir(mode=0o700)
-    (runtime_root / "final-v3.sqlcipher-journal").write_bytes(b"orphan")
+    (runtime_root / "final-v4.sqlcipher-journal").write_bytes(b"orphan")
     store = MemoryDataMasterKeyStore()
-    sidecar = run_gated_final_v3_sqlcipher_runtime(
+    sidecar = run_gated_final_v4_sqlcipher_runtime(
         account_loader=_account_loader(str(uuid.uuid4())),
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
         environ=_environment(sidecar_root),
         key_store=store,
     )
-    assert sidecar.error_code == "final_v3_sqlcipher_recovery_sidecar_present"
+    assert sidecar.error_code == "final_v4_sqlcipher_recovery_sidecar_present"
     assert store.create_calls == 0
 
 
@@ -308,14 +311,14 @@ def test_auth_and_explicit_first_run_confirmation_precede_key_creation(
     store = MemoryDataMasterKeyStore()
     account = _account_loader(str(uuid.uuid4()))
 
-    unauthenticated = run_gated_final_v3_sqlcipher_runtime(
+    unauthenticated = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=False,
         technical_first_run_confirmed=True,
         environ=_environment(root),
         key_store=store,
     )
-    unconfirmed = run_gated_final_v3_sqlcipher_runtime(
+    unconfirmed = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         technical_first_run_confirmed=False,
@@ -328,7 +331,7 @@ def test_auth_and_explicit_first_run_confirmation_precede_key_creation(
     assert store.create_calls == 0
     assert tuple(root.iterdir()) == (
         root / DMK_DATABASE_KEY_RUNTIME_MARKER,
-        root / FINAL_V3_SQLCIPHER_RUNTIME_MARKER,
+        root / FINAL_V4_SQLCIPHER_RUNTIME_MARKER,
     )
 
 
@@ -336,17 +339,17 @@ def test_database_without_keys_and_keys_without_database_block_before_provider(
     tmp_path: Path,
 ) -> None:
     database_root = _root(tmp_path)
-    runtime_root = database_root / "final-v3-sqlcipher-runtime-v1"
+    runtime_root = database_root / "final-v4-sqlcipher-runtime-v1"
     runtime_root.mkdir(mode=0o700)
-    (runtime_root / "final-v3.sqlcipher").write_bytes(b"SQLite format 3\x00")
-    no_keys = run_gated_final_v3_sqlcipher_runtime(
+    (runtime_root / "final-v4.sqlcipher").write_bytes(b"SQLite format 3\x00")
+    no_keys = run_gated_final_v4_sqlcipher_runtime(
         account_loader=_account_loader(str(uuid.uuid4())),
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
         environ=_environment(database_root),
         key_store=MemoryDataMasterKeyStore(),
     )
-    assert no_keys.error_code == "final_v3_sqlcipher_database_without_key_store"
+    assert no_keys.error_code == "final_v4_sqlcipher_database_without_key_store"
 
     key_root = _root(tmp_path)
     key_store = MemoryDataMasterKeyStore()
@@ -357,7 +360,7 @@ def test_database_without_keys_and_keys_without_database_block_before_provider(
         key_store=key_store,
     )
     assert keys.loaded is not None
-    no_database = run_gated_final_v3_sqlcipher_runtime(
+    no_database = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
@@ -366,7 +369,7 @@ def test_database_without_keys_and_keys_without_database_block_before_provider(
     )
     assert (
         no_database.error_code
-        == "final_v3_sqlcipher_database_missing_with_key_store"
+        == "final_v4_sqlcipher_database_missing_with_key_store"
     )
 
 
@@ -382,12 +385,12 @@ def test_plaintext_database_is_rejected_after_key_inventory_exists(
         key_store=store,
     )
     assert keys.loaded is not None
-    runtime_root = root / "final-v3-sqlcipher-runtime-v1"
+    runtime_root = root / "final-v4-sqlcipher-runtime-v1"
     runtime_root.mkdir(mode=0o700)
-    database = runtime_root / "final-v3.sqlcipher"
+    database = runtime_root / "final-v4.sqlcipher"
     database.write_bytes(b"SQLite format 3\x00" + b"\x00" * 4096)
 
-    decision = run_gated_final_v3_sqlcipher_runtime(
+    decision = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         environ=_environment(root),
@@ -432,7 +435,7 @@ class _InspectorConnection:
 def _exact_compatibility() -> DatabaseCompatibilityResult:
     return DatabaseCompatibilityResult(
         status=DatabaseCompatibilityStatus.EXACT,
-        schema_identity=DatabaseSchemaIdentity(FINAL_SCHEMA_FINGERPRINT, 95),
+        schema_identity=DatabaseSchemaIdentity(FINAL_SCHEMA_FINGERPRINT, 105),
         version=DatabaseVersionInfo(FINAL_SCHEMA_VERSION, FINAL_SCHEMA_VERSION),
         reason="exact",
     )
@@ -450,11 +453,11 @@ def test_keyed_inspector_uses_connection_only_and_rejects_unknown_cipher(
         return _exact_compatibility()
 
     monkeypatch.setattr(
-        "src.security.final_v3_sqlcipher_runtime."
+        "src.security.final_v4_sqlcipher_runtime."
         "DatabaseCompatibilityInspector.inspect_connection",
         inspect_connection,
     )
-    inspector = KeyedFinalV3CompatibilityInspector()
+    inspector = KeyedFinalV4CompatibilityInspector()
     report = inspector.inspect_connection(_InspectorConnection())
     assert report.schema_fingerprint == FINAL_SCHEMA_FINGERPRINT
     assert report.sqlite_user_version == FINAL_SCHEMA_VERSION
@@ -476,14 +479,14 @@ def test_exact_417_first_run_restart_application_stack_and_ciphertext(
     store = MemoryDataMasterKeyStore()
     account = _account_loader(installation_id)
 
-    first = run_gated_final_v3_sqlcipher_runtime(
+    first = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
         environ=_environment(root),
         key_store=store,
     )
-    assert first.state is FinalV3SQLCipherRuntimeDecisionState.ACTIVE
+    assert first.state is FinalV4SQLCipherRuntimeDecisionState.ACTIVE
     assert first.runtime is not None and first.runtime.first_run is True
     database = first.runtime.database
 
@@ -541,13 +544,13 @@ def test_exact_417_first_run_restart_application_stack_and_ciphertext(
     assert profile is not None
     assert profile.student_id == student_id
 
-    restarted = run_gated_final_v3_sqlcipher_runtime(
+    restarted = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         environ=_environment(root),
         key_store=store,
     )
-    assert restarted.state is FinalV3SQLCipherRuntimeDecisionState.ACTIVE
+    assert restarted.state is FinalV4SQLCipherRuntimeDecisionState.ACTIVE
     assert restarted.runtime is not None and restarted.runtime.first_run is False
     restarted_adapter = StudentDesktopAdapter(
         database=restarted.runtime.database,
@@ -591,6 +594,112 @@ def test_exact_417_first_run_restart_application_stack_and_ciphertext(
 
 
 @requires_exact_417
+def test_exact_417_student_subject_service_preserves_keyed_row_factory(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path)
+    store = MemoryDataMasterKeyStore()
+    account = _account_loader(str(uuid.uuid4()))
+    opened = run_gated_final_v4_sqlcipher_runtime(
+        account_loader=account,
+        authentication_confirmed=True,
+        technical_first_run_confirmed=True,
+        environ=_environment(root),
+        key_store=store,
+    )
+    assert opened.runtime is not None
+    database = opened.runtime.database
+    timestamp = datetime(2026, 8, 9, 12, tzinfo=UTC).isoformat()
+    with database.connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            """
+            INSERT INTO school_years(
+                school_year_id, label, start_date, end_date,
+                status, created_at, closed_at
+            ) VALUES ('SY-CIPHER-2026', '2026/27', '2026-08-01',
+                      '2027-07-31', 'current', ?, NULL)
+            """,
+            (timestamp,),
+        )
+        connection.execute(
+            """
+            INSERT INTO students(
+                student_id, first_name, last_name, notes, active,
+                created_at, updated_at, archived_at
+            ) VALUES ('STU-CIPHER', 'Ada', 'Cipherkind', '', 1, ?, ?, NULL)
+            """,
+            (timestamp, timestamp),
+        )
+        connection.execute(
+            """
+            INSERT INTO competencies(
+                competency_id, subject_id, subject_name, subject_full_name,
+                official_subject_name, school_context_name, grade_band,
+                label, description, learning_stage, learning_area,
+                competency_group, source_reference, catalog_status,
+                activation_group_key, sort_order, active,
+                catalog_default_active, is_core_subject
+            ) VALUES ('CMP-CIPHER-DE', 'SUB-CIPHER-DE', 'Deutsch', 'Deutsch',
+                      'Deutsch', 'Test', '1-3', 'Kompetenz Deutsch', 'Test',
+                      'stage_1_3', 'Test', 'Test', 'ACCEPTANCE', 'current',
+                      'ACCEPTANCE', 1, 1, 1, 1)
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO documentation_subject_settings(
+                subject_id, active, updated_at
+            ) VALUES ('SUB-CIPHER-DE', 1, ?)
+            """,
+            (timestamp,),
+        )
+        connection.commit()
+
+    service = StudentDocumentationSubjectService(database.connect)
+
+    assert service.effective_documentation_subjects(
+        'STU-CIPHER', 'SY-CIPHER-2026'
+    ) == ('SUB-CIPHER-DE',)
+    assert service.replace_custom_subjects(
+        'STU-CIPHER', 'SY-CIPHER-2026', ()
+    ).configuration.selected_subject_ids == ()
+
+
+@requires_exact_417
+def test_cipher_runtime_rejects_v3_declaration_without_restart_mutation(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path)
+    store = MemoryDataMasterKeyStore()
+    account = _account_loader(str(uuid.uuid4()))
+    first = run_gated_final_v4_sqlcipher_runtime(
+        account_loader=account,
+        authentication_confirmed=True,
+        technical_first_run_confirmed=True,
+        environ=_environment(root),
+        key_store=store,
+    )
+    assert first.runtime is not None
+    database = first.runtime.database.path
+    with first.runtime.database.connect() as connection:
+        connection.execute("PRAGMA user_version = 3")
+        connection.commit()
+    before = hashlib.sha256(database.read_bytes()).digest()
+
+    restarted = run_gated_final_v4_sqlcipher_runtime(
+        account_loader=account,
+        authentication_confirmed=True,
+        environ=_environment(root),
+        key_store=store,
+    )
+
+    assert restarted.state is FinalV4SQLCipherRuntimeDecisionState.BLOCKED
+    assert restarted.runtime is None
+    assert hashlib.sha256(database.read_bytes()).digest() == before
+
+
+@requires_exact_417
 @pytest.mark.parametrize("damage", ("missing", "ciphertext", "schema"))
 def test_completed_runtime_rejects_missing_corrupt_or_incomplete_database(
     tmp_path: Path,
@@ -599,7 +708,7 @@ def test_completed_runtime_rejects_missing_corrupt_or_incomplete_database(
     root = _root(tmp_path)
     store = MemoryDataMasterKeyStore()
     account = _account_loader(str(uuid.uuid4()))
-    first = run_gated_final_v3_sqlcipher_runtime(
+    first = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
@@ -620,13 +729,13 @@ def test_completed_runtime_rejects_missing_corrupt_or_incomplete_database(
             connection.execute("DROP TABLE documentation_subject_settings")
             connection.commit()
 
-    restarted = run_gated_final_v3_sqlcipher_runtime(
+    restarted = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         environ=_environment(root),
         key_store=store,
     )
-    assert restarted.state is FinalV3SQLCipherRuntimeDecisionState.BLOCKED
+    assert restarted.state is FinalV4SQLCipherRuntimeDecisionState.BLOCKED
     assert restarted.runtime is None
 
 
@@ -640,7 +749,7 @@ def test_completed_runtime_rejects_combined_key_inventory_damage_without_db_writ
     installation_id = str(uuid.uuid4())
     store = MemoryDataMasterKeyStore()
     account = _account_loader(installation_id)
-    first = run_gated_final_v3_sqlcipher_runtime(
+    first = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
@@ -665,14 +774,14 @@ def test_completed_runtime_rejects_combined_key_inventory_damage_without_db_writ
                 (str(uuid.uuid4()),),
             )
 
-    restarted = run_gated_final_v3_sqlcipher_runtime(
+    restarted = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         environ=_environment(root),
         key_store=store,
     )
     after = (database.stat().st_ino, hashlib.sha256(database.read_bytes()).digest())
-    assert restarted.state is FinalV3SQLCipherRuntimeDecisionState.BLOCKED
+    assert restarted.state is FinalV4SQLCipherRuntimeDecisionState.BLOCKED
     assert restarted.runtime is None
     assert after == before
     assert store.create_calls == 1
@@ -686,7 +795,7 @@ def test_coordinator_rejects_wrong_loaded_database_key_without_db_write(
     root = _root(tmp_path)
     store = MemoryDataMasterKeyStore()
     account = _account_loader(str(uuid.uuid4()))
-    first = run_gated_final_v3_sqlcipher_runtime(
+    first = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
@@ -709,34 +818,34 @@ def test_coordinator_rejects_wrong_loaded_database_key_without_db_write(
         ),
     )
     monkeypatch.setattr(
-        "src.security.final_v3_sqlcipher_runtime.build_database_key_runtime",
+        "src.security.final_v4_sqlcipher_runtime.build_database_key_runtime",
         lambda *args, **kwargs: SimpleNamespace(
             open_or_create=lambda: wrong_loaded
         ),
     )
 
-    restarted = run_gated_final_v3_sqlcipher_runtime(
+    restarted = run_gated_final_v4_sqlcipher_runtime(
         account_loader=account,
         authentication_confirmed=True,
         environ=_environment(root),
         key_store=store,
     )
     after = (database.stat().st_ino, hashlib.sha256(database.read_bytes()).digest())
-    assert restarted.state is FinalV3SQLCipherRuntimeDecisionState.BLOCKED
+    assert restarted.state is FinalV4SQLCipherRuntimeDecisionState.BLOCKED
     assert restarted.runtime is None
     assert after == before
 
 
 def test_factory_rejects_the_separate_412_provider(tmp_path: Path) -> None:
     root = _root(tmp_path)
-    paths = FinalV3SQLCipherRuntimePaths.for_key_runtime(
+    paths = FinalV4SQLCipherRuntimePaths.for_key_runtime(
         DatabaseKeyRuntimeGate.require_paths(str(root))
     )
     loaded = SimpleNamespace(
         database_key=SimpleNamespace(key_material=secrets.token_bytes(32))
     )
     with pytest.raises(Exception) as caught:
-        FinalV3SQLCipherConnectionFactory(
+        FinalV4SQLCipherConnectionFactory(
             provider=SQLCipherConnectionProvider(),
             paths=paths,
             loaded_keys=loaded,
@@ -772,7 +881,7 @@ def test_real_process_crash_boundaries_restart_or_block_fail_closed(
     worker = (
         Path(__file__).parent
         / "helpers"
-        / "final_v3_sqlcipher_runtime_worker.py"
+        / "final_v4_sqlcipher_runtime_worker.py"
     )
     repository_root = Path(__file__).parents[1]
 
@@ -795,7 +904,7 @@ def test_real_process_crash_boundaries_restart_or_block_fail_closed(
         )
         return completed, payload
 
-    database = root / "final-v3-sqlcipher-runtime-v1" / "final-v3.sqlcipher"
+    database = root / "final-v4-sqlcipher-runtime-v1" / "final-v4.sqlcipher"
     try:
         crashed, payload = invoke(f"crash:{boundary}")
         assert crashed.returncode == 97, (payload, crashed.stderr)
@@ -834,7 +943,7 @@ def test_new_process_reopens_same_keyed_application_projection(
     worker = (
         Path(__file__).parent
         / "helpers"
-        / "final_v3_sqlcipher_runtime_worker.py"
+        / "final_v4_sqlcipher_runtime_worker.py"
     )
     repository_root = Path(__file__).parents[1]
 

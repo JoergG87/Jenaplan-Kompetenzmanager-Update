@@ -43,7 +43,7 @@ from src.core.restore_runtime import (
     recover_interrupted_restore,
     restore_transaction_paths,
 )
-from src.core.final_v3_schema import FinalV3SchemaInitializer
+from src.core.final_v4_schema import FinalV4SchemaInitializer
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app import main as desktop_main
 from src.desktop_app import restore_worker
@@ -115,7 +115,7 @@ def _runtime(root: Path) -> RuntimePaths:
     paths = runtime_paths(root)
     for directory in (paths.root, paths.documents, paths.exports, paths.backups, paths.logs):
         directory.mkdir(parents=True, exist_ok=True)
-    FinalV3SchemaInitializer().initialize(paths.database)
+    FinalV4SchemaInitializer().initialize(paths.database)
     return paths
 
 
@@ -827,7 +827,7 @@ def test_free_runtime_target_projection_is_rejected(tmp_path: Path) -> None:
         )
 
 
-def test_successful_final_v3_restore_completes_only_after_startup_handshake(
+def test_successful_final_v4_restore_completes_only_after_startup_handshake(
     tmp_path: Path,
 ) -> None:
     _source, live, _archive, handoff = _prepared(tmp_path)
@@ -907,7 +907,7 @@ def test_two_complete_restores_run_consecutively_on_one_runtime(
     assert not tuple(live.root.glob("kompetenzmanager.sqlite-shm"))
 
 
-def test_restore_runtime_diagnostics_name_only_final_v3_product_schema() -> None:
+def test_restore_runtime_diagnostics_name_only_final_v4_product_schema() -> None:
     source = inspect.getsource(restore_runtime_module)
 
     assert "exakt V1" not in source
@@ -1667,7 +1667,7 @@ def test_no_restore_journal_allows_normal_start(tmp_path: Path) -> None:
 
 def test_startup_recovery_is_positioned_before_runtime_qt_and_logging() -> None:
     source = inspect.getsource(desktop_main.main)
-    recovery = source.index("recover_interrupted_final_v3_restore(")
+    recovery = source.index("recover_interrupted_final_v4_restore(")
     assert recovery < source.index("QApplication(arguments)")
     assert recovery < source.index("prepare_cipher_runtime_storage")
     assert recovery < source.index("configure_runtime_logging")
@@ -1695,7 +1695,7 @@ def test_packaged_dispatch_allows_only_explicit_cipher_worker(tmp_path: Path) ->
                 "--nonce",
                 "x",
                 "--restore-mode",
-                restore_worker.RESTORE_MODE_FINAL_V3_ENCRYPTED,
+                restore_worker.RESTORE_MODE_FINAL_V4_ENCRYPTED,
             ],
         ):
             assert desktop_main.main() == 37
@@ -1706,6 +1706,6 @@ def test_packaged_dispatch_allows_only_explicit_cipher_worker(tmp_path: Path) ->
             "--nonce",
             "x",
             "--restore-mode",
-            restore_worker.RESTORE_MODE_FINAL_V3_ENCRYPTED,
+            restore_worker.RESTORE_MODE_FINAL_V4_ENCRYPTED,
         ]
     )

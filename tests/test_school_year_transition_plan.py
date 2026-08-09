@@ -35,10 +35,10 @@ from src.core.school_year_transition import (
     SchoolYearTransitionPreviewSources,
     SchoolYearTransitionValidationIssue,
 )
-from tests.helpers.synthetic_v3 import create_pre_transition_v3_database
+from tests.helpers.synthetic_v4 import create_pre_transition_v4_database
 
 
-create_synthetic_v3_database = create_pre_transition_v3_database
+create_synthetic_v4_database = create_pre_transition_v4_database
 
 
 CURRENT = SchoolYear(
@@ -510,7 +510,7 @@ def test_validation_and_counts_are_deterministic() -> None:
 
 
 def test_transient_edit_does_not_change_sqlite(tmp_path: Path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "plan.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "plan.sqlite")
 
     def snapshot() -> tuple[str, ...]:
         with sqlite3.connect(path) as connection:

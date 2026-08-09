@@ -22,33 +22,33 @@ from src.core.restore_runtime import (
 )
 from src.desktop_app.restore_worker import (
     EXIT_SUCCESS,
-    RESTORE_MODE_FINAL_V3_ENCRYPTED,
+    RESTORE_MODE_FINAL_V4_ENCRYPTED,
     RestoreWorkerLaunchPlan,
 )
 from src.desktop_app import restore_worker
 from src.desktop_app import main as desktop_main
 from src.desktop_app.runtime import runtime_paths
-from src.security.final_v3_backup_runtime import (
-    FINAL_V3_RESTORE_READY_FILENAME,
-    FinalV3EncryptedBackupError,
+from src.security.final_v4_backup_runtime import (
+    FINAL_V4_RESTORE_READY_FILENAME,
+    FinalV4EncryptedBackupError,
 )
 from src.security.backup_container import EncryptedBackupError
-from src.security.final_v3_live_restore import (
-    FINAL_V3_LIVE_RESTORE_BACKUP_DIRECTORY,
-    FINAL_V3_LIVE_RESTORE_STAGING_DIRECTORY,
-    FinalV3EncryptedLiveRestoreService,
-    FinalV3EncryptedRestoreHandoffService,
-    confirm_final_v3_restore_startup,
-    prepare_final_v3_live_restore,
-    recover_interrupted_final_v3_restore,
+from src.security.final_v4_live_restore import (
+    FINAL_V4_LIVE_RESTORE_BACKUP_DIRECTORY,
+    FINAL_V4_LIVE_RESTORE_STAGING_DIRECTORY,
+    FinalV4EncryptedLiveRestoreService,
+    FinalV4EncryptedRestoreHandoffService,
+    confirm_final_v4_restore_startup,
+    prepare_final_v4_live_restore,
+    recover_interrupted_final_v4_restore,
 )
-from src.security import final_v3_live_restore
+from src.security import final_v4_live_restore
 from src.security.cipher_product_runtime import open_cipher_product_runtime
-from tests.test_final_v3_encrypted_backup import (
+from tests.test_final_v4_encrypted_backup import (
     _add_all_document_classes,
     _open_case,
 )
-from tests.test_final_v3_sqlcipher_runtime import requires_exact_417
+from tests.test_final_v4_sqlcipher_runtime import requires_exact_417
 from tests.test_final_v3_document_runtime import _Consumer
 
 
@@ -78,7 +78,7 @@ def _prepare_restore(tmp_path: Path, *, include_bootstrap_context: bool = False)
         provider,
     ) = _open_case(tmp_path)
     payloads = _add_all_document_classes(runtime)
-    with runtime.final_v3.database.connect() as connection:
+    with runtime.final_v4.database.connect() as connection:
         connection.execute(
             """
             INSERT INTO school_years (
@@ -88,18 +88,41 @@ def _prepare_restore(tmp_path: Path, *, include_bootstrap_context: bool = False)
                       '2027-07-31', 'current', '2026-08-09T10:00:00Z', NULL)
             """
         )
+        connection.executemany(
+            """
+            INSERT INTO documentation_subject_settings (
+                subject_id, active, updated_at
+            ) VALUES (?, ?, '2026-08-09T10:00:00Z')
+            """,
+            (("DEU", 1), ("MAT", 0)),
+        )
+        connection.execute(
+            """
+            INSERT INTO student_documentation_subject_profiles (
+                student_id, school_year_id, mode, created_at, updated_at
+            ) VALUES ('STU-000001', 'SY-PILOT-2026-27', 'custom',
+                      '2026-08-09T10:00:00Z', '2026-08-09T10:00:00Z')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO student_documentation_subject_selections (
+                student_id, school_year_id, subject_id
+            ) VALUES ('STU-000001', 'SY-PILOT-2026-27', 'DEU')
+            """
+        )
         connection.commit()
-    root = backup_service.paths.final_v3.key_runtime.root
+    root = backup_service.paths.final_v4.key_runtime.root
     source = tmp_path / "restore-source.jkmebackup"
     source_result = backup_service.create(source)
     restore_id = str(uuid.uuid4())
-    staging_parent = root / FINAL_V3_LIVE_RESTORE_STAGING_DIRECTORY
+    staging_parent = root / FINAL_V4_LIVE_RESTORE_STAGING_DIRECTORY
     staging_parent.mkdir(mode=0o700, exist_ok=True)
     staging = backup_service.restore_staging(
         source,
         staging_parent / restore_id,
     )
-    with runtime.final_v3.database.connect() as connection:
+    with runtime.final_v4.database.connect() as connection:
         connection.execute(
             """
             INSERT INTO students (
@@ -109,10 +132,32 @@ def _prepare_restore(tmp_path: Path, *, include_bootstrap_context: bool = False)
                       '2026-08-09T12:00:00Z', '2026-08-09T12:00:00Z', NULL)
             """
         )
+        connection.execute(
+            """
+            DELETE FROM student_documentation_subject_selections
+            WHERE student_id = 'STU-000001'
+              AND school_year_id = 'SY-PILOT-2026-27'
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO student_documentation_subject_selections (
+                student_id, school_year_id, subject_id
+            ) VALUES ('STU-000001', 'SY-PILOT-2026-27', 'MAT')
+            """
+        )
+        connection.execute(
+            """
+            UPDATE documentation_subject_settings
+            SET active = CASE subject_id WHEN 'DEU' THEN 0 ELSE 1 END,
+                updated_at = '2026-08-09T12:00:00Z'
+            WHERE subject_id IN ('DEU', 'MAT')
+            """
+        )
         connection.commit()
     excluded = _write_excluded_sentinels(root)
     lock = RuntimeInstanceLock(root).acquire()
-    preparation = prepare_final_v3_live_restore(
+    preparation = prepare_final_v4_live_restore(
         backup_service=backup_service,
         lock=lock,
         staging_root=staging.staging_root,
@@ -139,7 +184,7 @@ def _prepare_restore(tmp_path: Path, *, include_bootstrap_context: bool = False)
 
 def _restart_callback(backup_service):
     def restart(paths, token, _lock):
-        result = confirm_final_v3_restore_startup(
+        result = confirm_final_v4_restore_startup(
             backup_service=backup_service,
             runtime_root=paths.runtime_root,
             restore_id=paths.transaction.name,
@@ -169,7 +214,7 @@ def test_successful_live_restore_keeps_safety_rollback_and_excluded_data(
     ) = _prepare_restore(tmp_path, include_bootstrap_context=True)
     dmk_before = dict(key_store.values)
     preparation.safety_backup.transfer_to_worker()
-    service = FinalV3EncryptedLiveRestoreService(backup_service)
+    service = FinalV4EncryptedLiveRestoreService(backup_service)
     result = service.execute(
         handoff_path=preparation.handoff.path,
         nonce=preparation.handoff.nonce,
@@ -179,7 +224,7 @@ def test_successful_live_restore_keeps_safety_rollback_and_excluded_data(
     )
     assert result.status == "completed"
     assert result.safety_backup_sha256 == preparation.safety_backup.result.container_sha256
-    with runtime.final_v3.database.connect() as connection:
+    with runtime.final_v4.database.connect() as connection:
         assert connection.execute(
             "SELECT COUNT(*) FROM students WHERE student_id = 'STU-999999'"
         ).fetchone()[0] == 0
@@ -201,6 +246,26 @@ def test_successful_live_restore_keeps_safety_rollback_and_excluded_data(
             "SELECT COUNT(*) FROM learning_conference_pdf_artifacts "
             "WHERE learning_conference_pdf_artifact_id = 'LCA-000001'"
         ).fetchone()[0] == 1
+        assert connection.execute(
+            "SELECT mode FROM student_documentation_subject_profiles "
+            "WHERE student_id = 'STU-000001' "
+            "AND school_year_id = 'SY-PILOT-2026-27'"
+        ).fetchone()[0] == "custom"
+        assert [
+            row[0]
+            for row in connection.execute(
+                "SELECT subject_id FROM student_documentation_subject_selections "
+                "WHERE student_id = 'STU-000001' "
+                "AND school_year_id = 'SY-PILOT-2026-27' ORDER BY subject_id"
+            ).fetchall()
+        ] == ["DEU"]
+        assert [
+            (row[0], row[1])
+            for row in connection.execute(
+                "SELECT subject_id, active FROM documentation_subject_settings "
+                "WHERE subject_id IN ('DEU', 'MAT') ORDER BY subject_id"
+            ).fetchall()
+        ] == [("DEU", 1), ("MAT", 0)]
     for document_id, payload in payloads.items():
         consumer = _Consumer()
         runtime.documents.read(
@@ -210,14 +275,14 @@ def test_successful_live_restore_keeps_safety_rollback_and_excluded_data(
         assert consumer.started and consumer.finished and consumer.aborted is None
         assert bytes(consumer.payload) == payload
     paths = restore_transaction_paths(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         preparation.handoff.restore_id,
     )
-    assert (paths.rollback / backup_service.paths.final_v3.key_runtime.metadata_root.name).is_dir()
-    assert (paths.rollback / backup_service.paths.final_v3.database.name).is_file()
+    assert (paths.rollback / backup_service.paths.final_v4.key_runtime.metadata_root.name).is_dir()
+    assert (paths.rollback / backup_service.paths.final_v4.database.name).is_file()
     assert (paths.rollback / backup_service.paths.database.name).is_file()
     assert (paths.rollback / backup_service.paths.container_root.name).is_dir()
-    assert preparation.safety_backup.result.path.parent.name == FINAL_V3_LIVE_RESTORE_BACKUP_DIRECTORY
+    assert preparation.safety_backup.result.path.parent.name == FINAL_V4_LIVE_RESTORE_BACKUP_DIRECTORY
     assert backup_service.verify_live_runtime(
         paths.runtime_root,
         manifest=source_result.manifest,
@@ -233,7 +298,7 @@ def test_successful_live_restore_keeps_safety_rollback_and_excluded_data(
         key_store=key_store,
         sqlcipher_provider=provider,
     )
-    assert product_runtime.database is product_runtime.runtime.final_v3.database
+    assert product_runtime.database is product_runtime.runtime.final_v4.database
     assert product_runtime.documents is product_runtime.runtime.documents
     lock.release()
 
@@ -260,7 +325,7 @@ def test_swap_failures_restore_and_keyed_verify_old_live(
         if observed == boundary:
             raise RuntimeError(boundary)
 
-    service = FinalV3EncryptedLiveRestoreService(
+    service = FinalV4EncryptedLiveRestoreService(
         backup_service,
         fault_hook=fail,
     )
@@ -273,13 +338,13 @@ def test_swap_failures_restore_and_keyed_verify_old_live(
             handshake_timeout_seconds=1.0,
         )
     backup_service.verify_live_runtime(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         manifest=preparation.safety_backup.result.manifest,
         enforce_artifact_hashes=False,
     )
-    _assert_excluded(backup_service.paths.final_v3.key_runtime.root, excluded)
+    _assert_excluded(backup_service.paths.final_v4.key_runtime.root, excluded)
     paths = restore_transaction_paths(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         preparation.handoff.restore_id,
     )
     assert RestoreJournal(paths).read()["phase"] == "rolled_back"
@@ -324,7 +389,7 @@ def test_bootstrap_recovery_classifies_every_cipher_swap_crash_boundary(
 
     child = os.fork()
     if child == 0:  # pragma: no cover - asserted through persisted evidence
-        FinalV3EncryptedLiveRestoreService(
+        FinalV4EncryptedLiveRestoreService(
             backup_service,
             fault_hook=crash_process,
         ).execute(
@@ -340,21 +405,21 @@ def test_bootstrap_recovery_classifies_every_cipher_swap_crash_boundary(
     assert waited == child
     assert os.waitstatus_to_exitcode(status) == 97
 
-    recovery = recover_interrupted_final_v3_restore(
-        runtime_root=backup_service.paths.final_v3.key_runtime.root,
+    recovery = recover_interrupted_final_v4_restore(
+        runtime_root=backup_service.paths.final_v4.key_runtime.root,
         account_loader=account_loader,
         key_store=key_store,
     )
     assert recovery.status == expected_status
     assert recovery.restore_id == preparation.handoff.restore_id
 
-    root = backup_service.paths.final_v3.key_runtime.root
+    root = backup_service.paths.final_v4.key_runtime.root
     backup_service.verify_live_runtime(
         root,
         manifest=preparation.safety_backup.result.manifest,
         enforce_artifact_hashes=False,
     )
-    with runtime.final_v3.database.connect() as connection:
+    with runtime.final_v4.database.connect() as connection:
         assert connection.execute(
             "SELECT COUNT(*) FROM students WHERE student_id = 'STU-999999'"
         ).fetchone()[0] == 1
@@ -379,7 +444,7 @@ def test_unclear_mixed_state_requires_manual_recovery(tmp_path: Path) -> None:
     ) = _prepare_restore(tmp_path)
     preparation.safety_backup.transfer_to_worker()
     paths = restore_transaction_paths(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         preparation.handoff.restore_id,
     )
 
@@ -389,7 +454,7 @@ def test_unclear_mixed_state_requires_manual_recovery(tmp_path: Path) -> None:
             conflict.mkdir()
             raise RuntimeError("ambiguous")
 
-    service = FinalV3EncryptedLiveRestoreService(
+    service = FinalV4EncryptedLiveRestoreService(
         backup_service,
         fault_hook=create_conflict,
     )
@@ -425,7 +490,7 @@ def test_bootstrap_recovery_marks_ambiguous_crash_state_for_manual_recovery(
     ) = _prepare_restore(tmp_path, include_bootstrap_context=True)
     preparation.safety_backup.transfer_to_worker()
     paths = restore_transaction_paths(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         preparation.handoff.restore_id,
     )
 
@@ -437,7 +502,7 @@ def test_bootstrap_recovery_marks_ambiguous_crash_state_for_manual_recovery(
             raise SimulatedProcessCrash()
 
     with pytest.raises(SimulatedProcessCrash):
-        FinalV3EncryptedLiveRestoreService(
+        FinalV4EncryptedLiveRestoreService(
             backup_service,
             fault_hook=crash_after_swap,
         ).execute(
@@ -452,7 +517,7 @@ def test_bootstrap_recovery_marks_ambiguous_crash_state_for_manual_recovery(
     ambiguous = paths.failed_new / backup_service.paths.container_root.name
     ambiguous.mkdir()
     with pytest.raises(RestoreManualRecoveryRequired):
-        recover_interrupted_final_v3_restore(
+        recover_interrupted_final_v4_restore(
             runtime_root=paths.runtime_root,
             account_loader=account_loader,
             key_store=key_store,
@@ -477,12 +542,12 @@ def test_keyed_reopen_failure_rolls_back_complete_old_runtime(tmp_path: Path) ->
 
     def corrupt_new_main(observed: str) -> None:
         if observed == "after_swap_before_reopen":
-            database = backup_service.paths.final_v3.database
+            database = backup_service.paths.final_v4.database
             with database.open("r+b") as file:
                 file.seek(0)
                 file.write(b"not-a-valid-sqlcipher-header")
 
-    service = FinalV3EncryptedLiveRestoreService(
+    service = FinalV4EncryptedLiveRestoreService(
         backup_service,
         fault_hook=corrupt_new_main,
     )
@@ -495,11 +560,11 @@ def test_keyed_reopen_failure_rolls_back_complete_old_runtime(tmp_path: Path) ->
             handshake_timeout_seconds=1.0,
         )
     backup_service.verify_live_runtime(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         manifest=preparation.safety_backup.result.manifest,
         enforce_artifact_hashes=False,
     )
-    _assert_excluded(backup_service.paths.final_v3.key_runtime.root, excluded)
+    _assert_excluded(backup_service.paths.final_v4.key_runtime.root, excluded)
     lock.release()
 
 
@@ -522,7 +587,7 @@ def test_error_before_swap_aborts_without_live_replacement(tmp_path: Path) -> No
             raise RuntimeError("before-swap")
 
     with pytest.raises(RestorePreflightError):
-        FinalV3EncryptedLiveRestoreService(
+        FinalV4EncryptedLiveRestoreService(
             backup_service,
             fault_hook=stop_before_swap,
         ).execute(
@@ -533,12 +598,12 @@ def test_error_before_swap_aborts_without_live_replacement(tmp_path: Path) -> No
             handshake_timeout_seconds=1.0,
         )
     backup_service.verify_live_runtime(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         manifest=preparation.safety_backup.result.manifest,
         enforce_artifact_hashes=False,
     )
     paths = restore_transaction_paths(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         preparation.handoff.restore_id,
     )
     assert RestoreJournal(paths).read()["phase"] == "aborted_before_replacement"
@@ -555,9 +620,9 @@ def test_safety_backup_failure_creates_no_handoff_or_live_mutation(
     _add_all_document_classes(runtime)
     source = tmp_path / "source.jkmebackup"
     source_result = backup_service.create(source)
-    root = backup_service.paths.final_v3.key_runtime.root
+    root = backup_service.paths.final_v4.key_runtime.root
     restore_id = str(uuid.uuid4())
-    parent = root / FINAL_V3_LIVE_RESTORE_STAGING_DIRECTORY
+    parent = root / FINAL_V4_LIVE_RESTORE_STAGING_DIRECTORY
     parent.mkdir(mode=0o700)
     staging = backup_service.restore_staging(source, parent / restore_id)
     before = backup_service.verify_live_runtime(
@@ -572,8 +637,8 @@ def test_safety_backup_failure_creates_no_handoff_or_live_mutation(
 
     backup_service._fault_hook = fail_safety
     lock = RuntimeInstanceLock(root).acquire()
-    with pytest.raises((FinalV3EncryptedBackupError, EncryptedBackupError)):
-        prepare_final_v3_live_restore(
+    with pytest.raises((FinalV4EncryptedBackupError, EncryptedBackupError)):
+        prepare_final_v4_live_restore(
             backup_service=backup_service,
             lock=lock,
             staging_root=staging.staging_root,
@@ -586,7 +651,7 @@ def test_safety_backup_failure_creates_no_handoff_or_live_mutation(
     paths = restore_transaction_paths(root, restore_id)
     assert not paths.handoff.exists()
     assert not paths.transaction.exists()
-    assert not (root / FINAL_V3_LIVE_RESTORE_BACKUP_DIRECTORY / f"safety-{restore_id}.jkmebackup").exists()
+    assert not (root / FINAL_V4_LIVE_RESTORE_BACKUP_DIRECTORY / f"safety-{restore_id}.jkmebackup").exists()
     backup_service._fault_hook = None
     assert backup_service.verify_live_runtime(
         root,
@@ -606,9 +671,9 @@ def test_tampered_ready_or_missing_container_stops_before_handoff(
     _add_all_document_classes(runtime)
     source = tmp_path / "source.jkmebackup"
     source_result = backup_service.create(source)
-    root = backup_service.paths.final_v3.key_runtime.root
+    root = backup_service.paths.final_v4.key_runtime.root
     restore_id = str(uuid.uuid4())
-    parent = root / FINAL_V3_LIVE_RESTORE_STAGING_DIRECTORY
+    parent = root / FINAL_V4_LIVE_RESTORE_STAGING_DIRECTORY
     parent.mkdir(mode=0o700)
     staging = backup_service.restore_staging(source, parent / restore_id)
     if damage == "ready":
@@ -627,8 +692,8 @@ def test_tampered_ready_or_missing_container_stops_before_handoff(
         )
         staged_container.unlink()
     lock = RuntimeInstanceLock(root).acquire()
-    with pytest.raises(FinalV3EncryptedBackupError):
-        prepare_final_v3_live_restore(
+    with pytest.raises(FinalV4EncryptedBackupError):
+        prepare_final_v4_live_restore(
             backup_service=backup_service,
             lock=lock,
             staging_root=staging.staging_root,
@@ -640,7 +705,7 @@ def test_tampered_ready_or_missing_container_stops_before_handoff(
         )
     paths = restore_transaction_paths(root, restore_id)
     assert not paths.transaction.exists()
-    assert backup_service.opened.final_v3.database.maintenance_gate.state.value == "NORMAL"
+    assert backup_service.opened.final_v4.database.maintenance_gate.state.value == "NORMAL"
     lock.release()
 
 
@@ -666,7 +731,7 @@ def test_worker_revalidates_restore_ready_after_authenticated_handoff(
     preparation.safety_backup.transfer_to_worker()
 
     with pytest.raises(RestorePreflightError):
-        FinalV3EncryptedLiveRestoreService(backup_service).execute(
+        FinalV4EncryptedLiveRestoreService(backup_service).execute(
             handoff_path=preparation.handoff.path,
             nonce=preparation.handoff.nonce,
             lock=lock,
@@ -675,7 +740,7 @@ def test_worker_revalidates_restore_ready_after_authenticated_handoff(
         )
 
     paths = restore_transaction_paths(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         preparation.handoff.restore_id,
     )
     assert RestoreJournal(paths).read()["phase"] == "aborted_before_replacement"
@@ -708,7 +773,7 @@ def test_wrong_dmk_rejects_authenticated_handoff_before_swap(tmp_path: Path) -> 
         dmk=replace(original_loaded.dmk, key_material=secrets.token_bytes(32)),
     )
     with pytest.raises(RestoreHandoffError):
-        FinalV3EncryptedLiveRestoreService(backup_service).execute(
+        FinalV4EncryptedLiveRestoreService(backup_service).execute(
             handoff_path=preparation.handoff.path,
             nonce=preparation.handoff.nonce,
             lock=lock,
@@ -717,11 +782,11 @@ def test_wrong_dmk_rejects_authenticated_handoff_before_swap(tmp_path: Path) -> 
         )
     backup_service.loaded = original_loaded
     backup_service.verify_live_runtime(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         manifest=preparation.safety_backup.result.manifest,
         enforce_artifact_hashes=False,
     )
-    _assert_excluded(backup_service.paths.final_v3.key_runtime.root, excluded)
+    _assert_excluded(backup_service.paths.final_v4.key_runtime.root, excluded)
     lock.release()
 
 
@@ -739,9 +804,9 @@ def test_worker_command_keeps_zip_default_and_adds_explicit_cipher_mode(
     assert "--restore-mode" not in plan.command(**arguments)
     cipher = plan.command(
         **arguments,
-        restore_mode=RESTORE_MODE_FINAL_V3_ENCRYPTED,
+        restore_mode=RESTORE_MODE_FINAL_V4_ENCRYPTED,
     )
-    assert cipher[-2:] == ["--restore-mode", RESTORE_MODE_FINAL_V3_ENCRYPTED]
+    assert cipher[-2:] == ["--restore-mode", RESTORE_MODE_FINAL_V4_ENCRYPTED]
 
 
 def test_cipher_worker_dispatch_never_falls_back_to_zip_v1(
@@ -775,7 +840,7 @@ def test_cipher_worker_dispatch_never_falls_back_to_zip_v1(
             "--nonce",
             "authenticated-nonce",
             "--restore-mode",
-            RESTORE_MODE_FINAL_V3_ENCRYPTED,
+            RESTORE_MODE_FINAL_V4_ENCRYPTED,
         ],
         encrypted_service_factory=lambda observed_root: (
             CipherService()
@@ -810,7 +875,7 @@ def test_cipher_runtime_is_opened_only_after_worker_started_and_parent_eof(
     def open_cipher_runtime():
         assert events == ["worker_started_parent_eof"]
         opened = open_cipher_product_runtime(
-            paths=runtime_paths(backup_service.paths.final_v3.key_runtime.root),
+            paths=runtime_paths(backup_service.paths.final_v4.key_runtime.root),
             account_loader=account_loader,
             authentication_confirmed=True,
             first_run_allowed=False,
@@ -818,13 +883,13 @@ def test_cipher_runtime_is_opened_only_after_worker_started_and_parent_eof(
             sqlcipher_provider=provider,
             active_restore_id=preparation.handoff.restore_id,
         )
-        assert opened.database is opened.runtime.final_v3.database
+        assert opened.database is opened.runtime.final_v4.database
         events.append("cipher_runtime_opened")
         return backup_service
 
-    service = FinalV3EncryptedLiveRestoreService(
+    service = FinalV4EncryptedLiveRestoreService(
         None,
-        handoff_service=FinalV3EncryptedRestoreHandoffService(backup_service),
+        handoff_service=FinalV4EncryptedRestoreHandoffService(backup_service),
         backup_service_factory=open_cipher_runtime,
     )
 
@@ -861,8 +926,8 @@ def test_source_restart_command_reenters_normal_desktop_main(
         observed["kwargs"] = kwargs
         return sentinel
 
-    monkeypatch.setattr(final_v3_live_restore.subprocess, "Popen", fake_popen)
-    result = FinalV3EncryptedLiveRestoreService._launch_restart(
+    monkeypatch.setattr(final_v4_live_restore.subprocess, "Popen", fake_popen)
+    result = FinalV4EncryptedLiveRestoreService._launch_restart(
         paths,
         "resume-token",
         lock,
@@ -873,7 +938,7 @@ def test_source_restart_command_reenters_normal_desktop_main(
         str(Path(sys.executable).resolve()),
         "-m",
         "src.desktop_app.main",
-        "--final-v3-restore-confirm",
+        "--final-v4-restore-confirm",
     ]
     assert command[command.index("--runtime-root") + 1] == str(root.resolve())
     assert command[command.index("--restore-id") + 1] == paths.transaction.name
@@ -885,7 +950,7 @@ def test_source_restart_command_reenters_normal_desktop_main(
 
 def test_restore_confirm_continues_into_regular_auth_and_product_startup() -> None:
     source = inspect.getsource(desktop_main.main)
-    confirm = source.index("confirm_final_v3_restore_startup(")
+    confirm = source.index("confirm_final_v4_restore_startup(")
     authentication = source.index("run_startup_authentication(")
     product = source.index("open_cipher_product_runtime(")
     application = source.index("JenaplanDesktopApp(")
@@ -917,7 +982,7 @@ def test_real_worker_process_takes_over_after_parent_eof_and_completes_restore(
         os.close(lifetime_write)
         channel = restore_worker._WorkerTakeoverChannel(ready_write, lifetime_read)
         try:
-            result = FinalV3EncryptedLiveRestoreService(backup_service).execute(
+            result = FinalV4EncryptedLiveRestoreService(backup_service).execute(
                 handoff_path=preparation.handoff.path,
                 nonce=preparation.handoff.nonce,
                 lock=lock,
@@ -934,7 +999,7 @@ def test_real_worker_process_takes_over_after_parent_eof_and_completes_restore(
     assert os.read(ready_read, 256) == restore_worker.WORKER_READY_MESSAGE
     os.close(ready_read)
     paths = restore_transaction_paths(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         preparation.handoff.restore_id,
     )
     assert RestoreJournal(paths).read()["phase"] == "worker_started"
@@ -974,7 +1039,7 @@ def test_interrupted_installed_state_resumes_only_after_fresh_keyed_reopen(
         raise SimulatedProcessExit()
 
     with pytest.raises(SimulatedProcessExit):
-        FinalV3EncryptedLiveRestoreService(backup_service).execute(
+        FinalV4EncryptedLiveRestoreService(backup_service).execute(
             handoff_path=preparation.handoff.path,
             nonce=preparation.handoff.nonce,
             lock=lock,
@@ -982,22 +1047,22 @@ def test_interrupted_installed_state_resumes_only_after_fresh_keyed_reopen(
             handshake_timeout_seconds=1.0,
         )
     lock.release()
-    recovery = recover_interrupted_final_v3_restore(
+    recovery = recover_interrupted_final_v4_restore(
         backup_service=backup_service,
-        runtime_root=backup_service.paths.final_v3.key_runtime.root,
+        runtime_root=backup_service.paths.final_v4.key_runtime.root,
     )
     assert recovery.status == "resume_required"
     assert recovery.restore_id == preparation.handoff.restore_id
     assert recovery.resume_token
-    confirmed = confirm_final_v3_restore_startup(
+    confirmed = confirm_final_v4_restore_startup(
         backup_service=backup_service,
-        runtime_root=backup_service.paths.final_v3.key_runtime.root,
+        runtime_root=backup_service.paths.final_v4.key_runtime.root,
         restore_id=recovery.restore_id,
         token=recovery.resume_token,
     )
     assert confirmed.status == "completed"
     backup_service.verify_live_runtime(
-        backup_service.paths.final_v3.key_runtime.root,
+        backup_service.paths.final_v4.key_runtime.root,
         manifest=source_result.manifest,
     )
-    _assert_excluded(backup_service.paths.final_v3.key_runtime.root, excluded)
+    _assert_excluded(backup_service.paths.final_v4.key_runtime.root, excluded)

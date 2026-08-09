@@ -6,7 +6,7 @@
 nach bereits verifizierter Authentifizierung. Er klassifiziert den
 Installationsstand, bindet die produktiven `RuntimePaths`, prüft die exakte
 SQLCipher-Engine, lädt genau eine Database-Key-Runtime und öffnet damit
-Final-V3, Companion und Managed Document Store. Kein Widget, keine Shell und
+Final-V4, Companion und Managed Document Store. Kein Widget, keine Shell und
 kein Desktop Adapter erzeugt im Cipher-Produktpfad eine eigene
 `SQLiteDatabase` oder einen ungekeyten Connection Provider.
 
@@ -19,12 +19,12 @@ Verfügbarkeitszustand; sie startet im Cipher-Modus weder ZIP-v1-Backup noch
 Restore. Klartexterkennung, Schlüssel-, Schema-, Context- und
 Integritätsprüfung bleiben außerhalb der Widgets.
 
-## V3-only Ownership für Startup, Schuljahre und Assignments
+## Final-V4-Ownership für Startup, Schuljahre und Assignments
 
 Der `DatabaseStartupResolver` besitzt ausschließlich die read-only
 Schemaerkennung. Der `DatabaseStartupCoordinator` besitzt die
 Runtime-Disposition vor Shell, Adaptern und fachlichen Writern. Die direkte
-Final-V3-Schemaquelle besitzt nur die autorisierte Neuanlage und vollständige
+Final-V4-Schemaquelle besitzt nur die autorisierte Neuanlage und vollständige
 Verifikation. Kein Widget und kein Adapter erkennt, migriert oder repariert
 Datenbankschemata.
 
@@ -32,7 +32,7 @@ Der SJ-2E-Ownershipvertrag für produktive Membership-Reader und der
 SJ-2F-Ownershipvertrag für produktive Writer sind lokal im Produktcode
 umgesetzt. Produktive Views konsumieren die Assignment-API über
 Application-, Repository- und Adaptergrenzen. Ein erkanntes und vollständig
-verifiziertes finales Schema führt zu `V3_SCHEMA_READY` und darf die normale
+verifiziertes finales Schema führt zu `V4_SCHEMA_READY` und darf die normale
 Runtime erreichen. Nach dem Gate öffnet die Composition Root die vorhandene
 Datenbank ohne Create-Fallback. Es gibt keine
 V2-Bootstrap-View, keine V2-Migrationsvorschau und keine sichtbare
@@ -41,8 +41,8 @@ V2-Restoreauswahl.
 | Projektion / Vorgang | Fachliche Quellen | Owner | Nicht erlaubt |
 |---|---|---|---|
 | Datenbank-Startupstatus | read-only Pfad-, Restore- und vollständige Schemaidentität | Core Startup | Widgetentscheidung, Teilfingerprint, automatische Migration |
-| direkte V3-Neuanlage | autorisierter leerer Zielpfad und finales DDL | Core Schema Initializer | bestehende Datei ersetzen, V2-Zwischenschema, Transition-Beleg |
-| zugelassene Runtime-Datenbank | zuvor vollständig verifizierte Final-V3-Datei | Desktop Composition Root mit `create=False` | stille Neuanlage nach dem Startup-Gate |
+| direkte V4-Neuanlage | autorisierter leerer Zielpfad und finales DDL | Core Schema Initializer | bestehende Datei ersetzen, V2-/V3-Zwischenschema, Transition-Beleg |
+| zugelassene Runtime-Datenbank | zuvor vollständig verifizierte Final-V4-Datei | Desktop Composition Root mit `create=False` | stille Neuanlage nach dem Startup-Gate |
 | Schuljahresliste/-status | `school_years` | `SchoolYearRepository` und aufrufender Application Service | Systemdatum oder Label als Statusquelle |
 | Zuordnung an einem Datum | `student_school_year_assignments`, V3-`students`, `school_years`, Gruppen und Kurse plus `AssignmentReferenceRequest` mit explizitem Fachdatum | `SchoolYearAssignmentReadSession` über bestehende datierte Assignment-Projektionen | `students.group_id/course_id`, current- oder Last-known-Fallback, Widgetlogik |
 | aktuelle Mitgliedschaft und Mitgliederlisten | current-Schuljahr plus einmalig gesetzter `as_of`-Tag; optionale Gruppe, Kurs oder Kursverbund als Schnittmenge seiner Gruppen und Kurse | `CurrentMembershipReadSnapshot` aus `SchoolYearAssignmentReadSession` | Systemdatum, N+1, Python-Nachzählung, Widgetfilterung von Intervallen |
@@ -61,7 +61,7 @@ V2-Restoreauswahl.
 | SJ-3B.2a-Planmodell | vorhandene Preview sowie explizite aktive Kurs- und Gruppenoptionen | `SchoolYearTransitionPlan` | Qt, Repositoryzugriff, Persistenz, automatische Entscheidung, Backup, Authentifizierung oder Ausführung |
 | SJ-3B.2b-individuelle Planbearbeitung | aktueller flüchtiger `SchoolYearTransitionPlan` mit dessen kopierten Anzeige-Metadaten, aktiven Optionen, Validierung und Zählern | `SchoolYearTransitionPreviewViewModel` und `SchoolYearTransitionPreviewDialog` | Preview-Mutation, Widget-Fachlogik, Repository-/Servicezugriff, automatische Auswahl, Mehrfachauswahl, Sammeländerung, Write, Backup, Authentifizierung oder Ausführung |
 | SJ-3B.3-Filter, UI-Schritte und Sammelbearbeitung | aktueller flüchtiger `SchoolYearTransitionPlan`, reine Präsentationsschritte, kombinierte ViewModel-Filter sowie explizite stabile Auswahl-IDs; Sammelziele ausschließlich aus den aktiven Planoptionen | `SchoolYearTransitionPreviewViewModel`, `SchoolYearTransitionPreviewDialog` und `SchoolYearTransitionPlan` | Wizard-Domainlogik, Preview-Mutation, automatische Auswahl, Änderung verdeckter ausgewählter Zeilen, Widget-Repositoryzugriff, Write, Backup, Authentifizierung oder Ausführung |
-| isolierter SJ-3C.2-Wechselbeleg | vollständig gelöster source-gebundener Plan, Operation-Token und erwarteter Plan-Hash auf temporärer synthetischer Final-V3-Datenbank | `ExecuteSchoolYearTransition` und `SchoolYearTransitionExecutionRepository` | Widget-/Adapterwrite, Anzeigenamen im Beleg, Initialanlage, Bootstrap, Migration, reales Produktziel oder Freigabe ohne Backup |
+| isolierter SJ-3C.2-Wechselbeleg | vollständig gelöster source-gebundener Plan, Operation-Token und erwarteter Plan-Hash auf temporärer synthetischer Final-V4-Datenbank | `ExecuteSchoolYearTransition` und `SchoolYearTransitionExecutionRepository` | Widget-/Adapterwrite, Anzeigenamen im Beleg, Initialanlage, Bootstrap, Migration, reales Produktziel oder Freigabe ohne Backup |
 | SJ-3C.6-Aktivierung | vollständig gelöster flüchtiger Plan, Prüfbestätigung, Passwort-Step-up und sanitisiertes Phasen-/Ergebnisprotokoll | `AppShell` als Composition Root, `SchoolYearTransitionActivationController` als Workergrenze und `ExecuteSchoolYearTransition` als fachlicher Owner | Widget-Aufruf einzelner Backendstufen, UI-Hashing, technische IDs/Pfade/Exceptions, Doppelausführung oder Fortsetzung bei `RECOVERY_REQUIRED` |
 
 Beobachtung, Bericht und LEG liefern ihren vorhandenen fachlichen
@@ -250,7 +250,7 @@ Observation-/Attachment-Prozess. Der Dialog besitzt ausschließlich sein
 flüchtiges, über Retry stabiles `operation_token`. Alte unveränderliche
 Bericht- und LEG-Revisionen werden nicht live neu projiziert oder migriert.
 Im internen Cipher-Modus besitzt derselbe UoW zusätzlich die journalgebundene
-Reihenfolge zwischen Final-V3-Fachcommit und Companion-Pointer. Der
+Reihenfolge zwischen Final-V4-Fachcommit und Companion-Pointer. Der
 `EncryptedObservationAttachmentRuntime`-Port besitzt nur Containerprepare,
 Verifikation, Aktivierung/Deaktivierung und Consumerstream; er entscheidet
 weder fachliche Zuordnung noch MED-ID.
@@ -276,12 +276,12 @@ Metadaten, `MacOSDataMasterKeyStore` den Keychain-Zugriff,
 `FileDatabaseKeyEnvelopeRepository` die authentisierte Registry. Es gibt
 keine View-, ViewModel-, Widget-, Startup- oder fachliche Adapter-Ownership.
 
-## Final-V3-SQLCipher-Runtime - technische Composition ohne View
+## Final-V4-SQLCipher-Runtime - technische Composition ohne View
 
-`FinalV3SQLCipherRuntimeGate` besitzt ausschließlich die zusätzliche
-Marker-/Rootzulassung. `FinalV3SQLCipherRuntimeCoordinator` besitzt
+`FinalV4SQLCipherRuntimeGate` besitzt ausschließlich die zusätzliche
+Marker-/Rootzulassung. `FinalV4SQLCipherRuntimeCoordinator` besitzt
 First-Run-/Restart-Klassifikation und Providerkomposition.
-`KeyedFinalV3CompatibilityInspector` besitzt nur die mutationsfreie Prüfung
+`KeyedFinalV4CompatibilityInspector` besitzt nur die mutationsfreie Prüfung
 der bereits geöffneten keyed Connection. Nach Erfolg besitzt die zurückgegebene
 `SQLiteDatabase` dieselbe Provider-/Keybindung für vorhandene Repositories und
 Desktop-Adapter; der Anwendungssmoke konsumiert daraus vorhandene ViewModels.
@@ -319,9 +319,9 @@ im Cipher-Produktmodus verpflichtend den bereits vollständig keyed
 `StudentDesktopAdapter`; die Shell entscheidet weder Gate noch Schlüssel und
 erzeugt keinen zweiten Provider.
 
-## Verschlüsseltes Final-V3-Pilotbackup - technische Ownership ohne View
+## Verschlüsseltes Final-V4-Pilotbackup - technische Ownership ohne View
 
-`FinalV3EncryptedBackupService` besitzt Writer-Lock, Snapshotkoordination,
+`FinalV4EncryptedBackupService` besitzt Writer-Lock, Snapshotkoordination,
 Inventar-/Crossbindingprüfung, verschlüsselten Container, Neuverifikation,
 Restore-Staging und READY-Reverifikation. SQLCipher-Factories besitzen ausschließlich keyed Open und
 Schema-/Engineprüfung; Document-Runtime und Companion-DB bleiben Owner von
@@ -329,10 +329,10 @@ Generationen und Containern. `SQLiteDataKeysetRepository` besitzt nur den
 konsistenten Metadatensnapshot. Kein Widget oder ViewModel besitzt Schlüssel,
 Manifest, Staging, `RESTORE_READY` oder Live-Austausch.
 
-`FinalV3EncryptedRestoreHandoffService` besitzt nur den DMK-authentisierten
+`FinalV4EncryptedRestoreHandoffService` besitzt nur den DMK-authentisierten
 same-installation Handoff. Die Bootstrap-Recovery besitzt ausschließlich die
 vor Product-Open ausgewertete Handoff-/Journal-/Rollen-Evidenz und den
-read-only bestehenden DMK-/Envelope-Kontext. `FinalV3EncryptedLiveRestoreService` besitzt die
+read-only bestehenden DMK-/Envelope-Kontext. `FinalV4EncryptedLiveRestoreService` besitzt die
 Cipher-Strategie des vorhandenen `ProductiveRestoreService`; der bestehende
 Restore-Worker bleibt Owner von Instanz-Lock, Parent-EOF, Journalphasen,
 Write-ahead-Renames, Rollback und Restart-Handshake. Backup-Service und der

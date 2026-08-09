@@ -26,10 +26,10 @@ from src.desktop_app.shell import AppShell
 from src.desktop_app.theme import MOTION_DIALOG_MS
 from src.security.application import AuthenticationResult
 from src.security.domain import AuthenticationStatus
-from tests.helpers.synthetic_v3 import create_pre_transition_v3_database
+from tests.helpers.synthetic_v4 import create_pre_transition_v4_database
 
 
-create_synthetic_v3_database = create_pre_transition_v3_database
+create_synthetic_v4_database = create_pre_transition_v4_database
 
 
 class _LifecycleActivationController(QObject):
@@ -64,7 +64,7 @@ def test_valid_settings_input_opens_transient_dialog_without_side_effects(
 ) -> None:
     app = QApplication.instance() or QApplication([])
     database_path = tmp_path / "settings-transition.sqlite"
-    create_synthetic_v3_database(database_path)
+    create_synthetic_v4_database(database_path)
     shell = AppShell(database_path)
     before = _database_snapshot(database_path)
     password_requests: list[bool] = []
@@ -138,7 +138,7 @@ def test_confirmed_settings_activation_changes_only_temporary_database(
 ) -> None:
     app = QApplication.instance() or QApplication([])
     database_path = tmp_path / "kompetenzmanager.sqlite"
-    create_synthetic_v3_database(database_path)
+    create_synthetic_v4_database(database_path)
     (tmp_path / "documents").mkdir()
     (tmp_path / "backups").mkdir()
     shell = AppShell(database_path)
@@ -213,7 +213,7 @@ def test_wrong_password_keeps_database_and_backup_unchanged_and_releases_close(
 ) -> None:
     app = QApplication.instance() or QApplication([])
     database_path = tmp_path / "kompetenzmanager.sqlite"
-    create_synthetic_v3_database(database_path)
+    create_synthetic_v4_database(database_path)
     (tmp_path / "documents").mkdir()
     backups = tmp_path / "backups"
     backups.mkdir()
@@ -268,7 +268,7 @@ def test_shell_close_uses_dialog_guard_during_step_up_and_recovery(
 ) -> None:
     app = QApplication.instance() or QApplication([])
     database_path = tmp_path / "shell-close.sqlite"
-    create_synthetic_v3_database(database_path)
+    create_synthetic_v4_database(database_path)
     shell = AppShell(database_path)
     shell.show()
     plan = SchoolYearTransitionPreviewService(
@@ -316,7 +316,7 @@ def test_invalid_year_dates_show_neutral_error_and_do_not_open_dialog(
 ) -> None:
     app = QApplication.instance() or QApplication([])
     database_path = tmp_path / "settings-transition-invalid.sqlite"
-    create_synthetic_v3_database(database_path)
+    create_synthetic_v4_database(database_path)
     shell = AppShell(database_path)
     before = _database_snapshot(database_path)
 
@@ -344,7 +344,7 @@ def test_preview_reopens_five_times_without_nested_exec_or_retained_dialogs(
 ) -> None:
     app = QApplication.instance() or QApplication([])
     database_path = tmp_path / "settings-transition-reopen.sqlite"
-    create_synthetic_v3_database(database_path)
+    create_synthetic_v4_database(database_path)
     shell = AppShell(database_path)
     before = _database_snapshot(database_path)
     dialogs: list[SchoolYearTransitionPreviewDialog] = []

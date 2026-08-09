@@ -1,11 +1,11 @@
-"""Deterministic synthetic data for temporary final-V3 test databases."""
+"""Deterministic synthetic data for temporary final-V4 test databases."""
 
 from __future__ import annotations
 
 from pathlib import Path
 import sqlite3
 
-from src.core.final_v3_schema import FinalV3SchemaInitializer
+from src.core.final_v4_schema import FinalV4SchemaInitializer
 
 
 SYNTHETIC_HISTORICAL_SCHOOL_YEAR_ID = "SY-TEST-2025-26"
@@ -24,12 +24,12 @@ SYNTHETIC_DOCUMENT_IDS = (
 )
 
 
-class SyntheticV3SeedBuilder:
-    """Build deterministic fictional rows in one fresh temporary database."""
+class SyntheticV4SeedBuilder:
+    """Build deterministic fictional rows in one fresh temporary V4 database."""
 
     def create(self, database_path: Path) -> Path:
         path = Path(database_path)
-        FinalV3SchemaInitializer().initialize(path)
+        FinalV4SchemaInitializer().initialize(path)
         self._seed(path)
         return path
 
@@ -518,17 +518,17 @@ def _seed_connection(
     connection.commit()
 
 
-def create_synthetic_v3_database(database_path: Path) -> Path:
-    """Create a fresh complete V3 database and deterministic fictional rows."""
+def create_synthetic_v4_database(database_path: Path) -> Path:
+    """Create a fresh complete V4 database and deterministic fictional rows."""
 
-    return SyntheticV3SeedBuilder().create(database_path)
+    return SyntheticV4SeedBuilder().create(database_path)
 
 
-def create_pre_transition_v3_database(database_path: Path) -> Path:
+def create_pre_transition_v4_database(database_path: Path) -> Path:
     """Create the explicit 2025/26-current fixture for transition tests."""
 
     path = Path(database_path)
-    FinalV3SchemaInitializer().initialize(path)
+    FinalV4SchemaInitializer().initialize(path)
     with sqlite3.connect(path) as connection:
         _seed_connection(connection, include_current_2026_27=False)
     return path

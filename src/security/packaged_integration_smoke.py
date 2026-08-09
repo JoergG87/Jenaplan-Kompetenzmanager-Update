@@ -18,7 +18,7 @@ from typing import Mapping
 
 from src.core.database_engine import SQLCipherConnectionProvider
 from src.core.sqlite_store import SQLiteDatabase
-from src.core.final_v3_schema import FinalV3SchemaInitializer
+from src.core.final_v4_schema import FinalV4SchemaInitializer
 from src.security.data_keys import LoadedDataMasterKey
 from src.security.database_keys import DatabaseKey
 from src.security.infrastructure.system import SystemClock, SystemRandomSource
@@ -237,7 +237,7 @@ def _create_plaintext_installation(root: Path) -> None:
     document_path = paths.source_documents / "synthetic-report.pdf"
     document_path.write_bytes(SYNTHETIC_DOCUMENT_PAYLOAD)
     os.chmod(document_path, 0o600)
-    FinalV3SchemaInitializer().initialize(paths.source_database)
+    FinalV4SchemaInitializer().initialize(paths.source_database)
     database = SQLiteDatabase(
         paths.source_database,
         create=False,

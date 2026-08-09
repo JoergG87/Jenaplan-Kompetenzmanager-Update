@@ -1,4 +1,4 @@
-"""Authenticated product composition for a fresh encrypted Final-V3 runtime."""
+"""Authenticated product composition for a fresh encrypted Final-V4 runtime."""
 
 from __future__ import annotations
 
@@ -33,12 +33,12 @@ from .final_v3_document_runtime import (
     FinalV3DocumentRuntimePaths,
     OpenedFinalV3DocumentRuntime,
 )
-from .final_v3_sqlcipher_runtime import (
-    FinalV3SQLCipherRuntimeCoordinator,
-    FinalV3SQLCipherRuntimeError,
-    FinalV3SQLCipherRuntimePaths,
-    FinalV3SQLCipherRuntimeScope,
-    KeyedFinalV3CompatibilityInspector,
+from .final_v4_sqlcipher_runtime import (
+    FinalV4SQLCipherRuntimeCoordinator,
+    FinalV4SQLCipherRuntimeError,
+    FinalV4SQLCipherRuntimePaths,
+    FinalV4SQLCipherRuntimeScope,
+    KeyedFinalV4CompatibilityInspector,
 )
 from .infrastructure.system import SystemClock, SystemRandomSource
 
@@ -57,7 +57,7 @@ class CipherProductRuntimeOperation(StrEnum):
     CLASSIFY = "classify"
     VERIFY_ENGINE = "verify_engine"
     LOAD_KEYS = "load_keys"
-    OPEN_FINAL_V3 = "open_final_v3"
+    OPEN_FINAL_V4 = "open_final_v4"
     OPEN_DOCUMENTS = "open_documents"
     INITIALIZE_SCHOOL_YEAR = "initialize_school_year"
     VERIFY_RUNTIME = "verify_runtime"
@@ -88,10 +88,10 @@ class CipherProductPaths(Protocol):
     def database_key_envelope_registry(self) -> Path: ...
 
     @property
-    def final_v3_runtime(self) -> Path: ...
+    def final_v4_runtime(self) -> Path: ...
 
     @property
-    def final_v3_database(self) -> Path: ...
+    def final_v4_database(self) -> Path: ...
 
     @property
     def document_companion_database(self) -> Path: ...
@@ -117,25 +117,25 @@ class OpenedCipherProductRuntime:
 
     @property
     def database(self):
-        return self.runtime.final_v3.database
+        return self.runtime.final_v4.database
 
     @property
     def documents(self):
         return self.runtime.documents
 
 
-class CipherProductRuntimeScope(FinalV3SQLCipherRuntimeScope):
+class CipherProductRuntimeScope(FinalV4SQLCipherRuntimeScope):
     """Closed scope binding security foundations to productive RuntimePaths."""
 
     def __init__(self, paths: CipherProductPaths) -> None:
         self._paths = paths
         self._root = Path(paths.root)
 
-    def require_paths(self) -> FinalV3SQLCipherRuntimePaths:
+    def require_paths(self) -> FinalV4SQLCipherRuntimePaths:
         root = _require_product_root(self._root)
         key_paths = DatabaseKeyRuntimePaths.for_root(root)
-        expected = FinalV3SQLCipherRuntimePaths.for_key_runtime(key_paths)
-        document_paths = FinalV3DocumentRuntimePaths.for_final_v3(expected)
+        expected = FinalV4SQLCipherRuntimePaths.for_key_runtime(key_paths)
+        document_paths = FinalV3DocumentRuntimePaths.for_final_v4(expected)
         roles = (
             (Path(self._paths.database), root / "kompetenzmanager.sqlite"),
             (Path(self._paths.documents), root / "documents"),
@@ -145,8 +145,8 @@ class CipherProductRuntimeScope(FinalV3SQLCipherRuntimeScope):
                 Path(self._paths.database_key_envelope_registry),
                 key_paths.envelope_registry,
             ),
-            (Path(self._paths.final_v3_runtime), expected.runtime_root),
-            (Path(self._paths.final_v3_database), expected.database),
+            (Path(self._paths.final_v4_runtime), expected.runtime_root),
+            (Path(self._paths.final_v4_database), expected.database),
             (
                 Path(self._paths.document_companion_database),
                 document_paths.database,
@@ -205,7 +205,7 @@ class CipherProductRuntimeCoordinator:
             return self._open()
         except CipherProductRuntimeError:
             raise
-        except (FinalV3SQLCipherRuntimeError, FinalV3DocumentRuntimeError) as error:
+        except (FinalV4SQLCipherRuntimeError, FinalV3DocumentRuntimeError) as error:
             raise CipherProductRuntimeError(
                 str(getattr(error, "code", "cipher_product_runtime_failed")),
                 operation=self.operation,
@@ -233,7 +233,7 @@ class CipherProductRuntimeCoordinator:
                 operation=CipherProductRuntimeOperation.CLASSIFY,
             )
         final_paths = self.scope.require_paths()
-        document_paths = FinalV3DocumentRuntimePaths.for_final_v3(final_paths)
+        document_paths = FinalV3DocumentRuntimePaths.for_final_v4(final_paths)
         first_run = _classify_product_state(
             self.paths,
             final_paths=final_paths,
@@ -268,21 +268,21 @@ class CipherProductRuntimeCoordinator:
         ):
             try:
                 if self.active_restore_id is None:
-                    from .final_v3_live_restore import (
-                        validate_terminal_final_v3_restore_evidence,
+                    from .final_v4_live_restore import (
+                        validate_terminal_final_v4_restore_evidence,
                     )
 
-                    validate_terminal_final_v3_restore_evidence(
+                    validate_terminal_final_v4_restore_evidence(
                         self.paths.root,
                         loaded_keys=loaded,
                         installation_id=installation_id,
                     )
                 else:
-                    from .final_v3_live_restore import (
-                        validate_active_final_v3_restore_evidence,
+                    from .final_v4_live_restore import (
+                        validate_active_final_v4_restore_evidence,
                     )
 
-                    validate_active_final_v3_restore_evidence(
+                    validate_active_final_v4_restore_evidence(
                         self.paths.root,
                         restore_id=self.active_restore_id,
                         loaded_keys=loaded,
@@ -294,8 +294,8 @@ class CipherProductRuntimeCoordinator:
                     operation=CipherProductRuntimeOperation.LOAD_KEYS,
                 ) from None
 
-        self.operation = CipherProductRuntimeOperation.OPEN_FINAL_V3
-        final_v3 = FinalV3SQLCipherRuntimeCoordinator(
+        self.operation = CipherProductRuntimeOperation.OPEN_FINAL_V4
+        final_v4 = FinalV4SQLCipherRuntimeCoordinator(
             paths=final_paths,
             account_loader=stable_account_loader,
             authentication_confirmed=True,
@@ -312,7 +312,7 @@ class CipherProductRuntimeCoordinator:
 
         self.operation = CipherProductRuntimeOperation.OPEN_DOCUMENTS
         opened = FinalV3DocumentRuntimeCoordinator(
-            final_v3=final_v3,
+            final_v4=final_v4,
             paths=document_paths,
             loaded_keys=loaded,
             installation_id=installation_id,
@@ -333,8 +333,8 @@ class CipherProductRuntimeCoordinator:
             _require_completed_fachlicher_first_run(opened)
 
         self.operation = CipherProductRuntimeOperation.VERIFY_RUNTIME
-        with closing(opened.final_v3.database.connect()) as connection:
-            KeyedFinalV3CompatibilityInspector().inspect_connection(connection)
+        with closing(opened.final_v4.database.connect()) as connection:
+            KeyedFinalV4CompatibilityInspector().inspect_connection(connection)
         opened.documents.validate_restart()
         return OpenedCipherProductRuntime(
             runtime=opened,
@@ -360,7 +360,7 @@ def open_cipher_product_runtime(**kwargs) -> OpenedCipherProductRuntime:
 def _classify_product_state(
     paths: CipherProductPaths,
     *,
-    final_paths: FinalV3SQLCipherRuntimePaths,
+    final_paths: FinalV4SQLCipherRuntimePaths,
     document_paths: FinalV3DocumentRuntimePaths,
     first_run_allowed: bool,
     active_restore_id: str | None = None,
@@ -379,19 +379,19 @@ def _classify_product_state(
     if cipher_restore_artifacts_present:
         try:
             if active_restore_id is None:
-                from .final_v3_live_restore import (
-                    classify_terminal_final_v3_restore_artifacts,
+                from .final_v4_live_restore import (
+                    classify_terminal_final_v4_restore_artifacts,
                 )
 
-                valid_restore_state = classify_terminal_final_v3_restore_artifacts(
+                valid_restore_state = classify_terminal_final_v4_restore_artifacts(
                     paths.root
                 )
             else:
-                from .final_v3_live_restore import (
-                    classify_active_final_v3_restore_artifacts,
+                from .final_v4_live_restore import (
+                    classify_active_final_v4_restore_artifacts,
                 )
 
-                valid_restore_state = classify_active_final_v3_restore_artifacts(
+                valid_restore_state = classify_active_final_v4_restore_artifacts(
                     paths.root,
                     restore_id=active_restore_id,
                 )
@@ -520,7 +520,7 @@ def _initialize_first_run_school_year(
     clock: Any,
 ) -> None:
     created_at = _format_utc(clock.utc_now())
-    with closing(runtime.final_v3.database.connect()) as connection:
+    with closing(runtime.final_v4.database.connect()) as connection:
         counts = tuple(
             int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
             for table in (
@@ -559,7 +559,7 @@ def _initialize_first_run_school_year(
 def _require_completed_fachlicher_first_run(
     runtime: OpenedFinalV3DocumentRuntime,
 ) -> None:
-    with closing(runtime.final_v3.database.connect()) as connection:
+    with closing(runtime.final_v4.database.connect()) as connection:
         rows = connection.execute(
             """
             SELECT school_year_id, label, start_date, end_date, status

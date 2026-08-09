@@ -24,12 +24,12 @@ from src.desktop_app.view_models.master_data_view_model import (
     MasterDataItemViewModel,
     MasterDataViewModel,
 )
-from tests.helpers.synthetic_v3 import create_synthetic_v3_database
+from tests.helpers.synthetic_v4 import create_synthetic_v4_database
 
 
 @pytest.fixture
-def final_v3_database(tmp_path):
-    path = create_synthetic_v3_database(tmp_path / "master-data-v3.sqlite")
+def final_v4_database(tmp_path):
+    path = create_synthetic_v4_database(tmp_path / "master-data-v3.sqlite")
     return SQLiteDatabase(
         path,
         create=False,
@@ -60,10 +60,10 @@ def _assignment_rows(database: SQLiteDatabase) -> tuple[tuple[object, ...], ...]
 
 
 def test_course_level_is_required_and_multiple_courses_may_share_it(
-    final_v3_database: SQLiteDatabase,
+    final_v4_database: SQLiteDatabase,
 ) -> None:
     adapter = MasterDataDesktopAdapter(
-        SimpleNamespace(database=final_v3_database)
+        SimpleNamespace(database=final_v4_database)
     )
 
     with pytest.raises(ValueError, match="Kursstufe"):
@@ -76,7 +76,7 @@ def test_course_level_is_required_and_multiple_courses_may_share_it(
 
     assert first.year_level == 2
     assert second.year_level == 2
-    with final_v3_database.connect() as connection:
+    with final_v4_database.connect() as connection:
         stored = connection.execute(
             """
             SELECT course_name, year_level
@@ -102,14 +102,14 @@ def test_course_level_is_required_and_multiple_courses_may_share_it(
     ),
 )
 def test_current_or_future_enrollment_blocks_deactivation_atomically(
-    final_v3_database: SQLiteDatabase,
+    final_v4_database: SQLiteDatabase,
     kind: str,
     item_id: str,
     message_fragment: str,
     as_of: date,
 ) -> None:
-    repository = SQLiteMasterDataRepository(final_v3_database)
-    assignments_before = _assignment_rows(final_v3_database)
+    repository = SQLiteMasterDataRepository(final_v4_database)
+    assignments_before = _assignment_rows(final_v4_database)
 
     if kind == "group":
         current = next(
@@ -148,8 +148,8 @@ def test_current_or_future_enrollment_blocks_deactivation_atomically(
     with pytest.raises(ValueError, match=message_fragment):
         write()
 
-    assert _assignment_rows(final_v3_database) == assignments_before
-    with final_v3_database.connect() as connection:
+    assert _assignment_rows(final_v4_database) == assignments_before
+    with final_v4_database.connect() as connection:
         table = "groups" if kind == "group" else "courses"
         id_column = "group_id" if kind == "group" else "course_id"
         active = connection.execute(
@@ -160,9 +160,9 @@ def test_current_or_future_enrollment_blocks_deactivation_atomically(
 
 
 def test_only_historical_assignments_allow_deactivation_without_membership_write(
-    final_v3_database: SQLiteDatabase,
+    final_v4_database: SQLiteDatabase,
 ) -> None:
-    repository = SQLiteMasterDataRepository(final_v3_database)
+    repository = SQLiteMasterDataRepository(final_v4_database)
     group = next(
         item
         for item in repository.list_student_groups()
@@ -173,7 +173,7 @@ def test_only_historical_assignments_allow_deactivation_without_membership_write
         for item in repository.list_courses()
         if item.course_id == "CRS-TEST-1"
     )
-    assignments_before = _assignment_rows(final_v3_database)
+    assignments_before = _assignment_rows(final_v4_database)
 
     repository.upsert_student_group(
         MasterDataGroupRecord(
@@ -197,8 +197,8 @@ def test_only_historical_assignments_allow_deactivation_without_membership_write
         as_of=date(2027, 8, 1),
     )
 
-    assert _assignment_rows(final_v3_database) == assignments_before
-    with final_v3_database.connect() as connection:
+    assert _assignment_rows(final_v4_database) == assignments_before
+    with final_v4_database.connect() as connection:
         assert connection.execute(
             "SELECT active FROM groups WHERE group_id = 'GRP-TEST-A'"
         ).fetchone()[0] == 0
@@ -216,9 +216,9 @@ def test_only_historical_assignments_allow_deactivation_without_membership_write
 
 
 def test_deactivation_requires_an_explicit_reference_date(
-    final_v3_database: SQLiteDatabase,
+    final_v4_database: SQLiteDatabase,
 ) -> None:
-    repository = SQLiteMasterDataRepository(final_v3_database)
+    repository = SQLiteMasterDataRepository(final_v4_database)
     group = repository.list_student_groups()[0]
 
     with pytest.raises(ValueError, match="Stichtag"):

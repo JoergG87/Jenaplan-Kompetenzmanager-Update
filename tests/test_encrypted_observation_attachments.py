@@ -28,7 +28,7 @@ from src.desktop_app.view_models.observation_view_model import (
 from src.security.final_v3_document_runtime import (
     FinalV3DocumentRuntimeDecisionState,
     FinalV3DocumentRuntimeError,
-    run_gated_final_v3_document_runtime,
+    run_gated_final_v4_document_runtime,
 )
 from tests.test_final_v3_document_runtime import (
     _Consumer,
@@ -36,7 +36,7 @@ from tests.test_final_v3_document_runtime import (
     _reopen,
     _runtime,
 )
-from tests.test_final_v3_sqlcipher_runtime import (
+from tests.test_final_v4_sqlcipher_runtime import (
     MemoryDataMasterKeyStore,
     _account_loader,
     _environment,
@@ -781,7 +781,7 @@ def test_exact_sqlcipher_observation_attachment_create_restart_and_read(
     root = _root(tmp_path)
     store = MemoryDataMasterKeyStore()
     account = _account_loader(str(uuid.uuid4()))
-    first = run_gated_final_v3_document_runtime(
+    first = run_gated_final_v4_document_runtime(
         account_loader=account,
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
@@ -793,7 +793,7 @@ def test_exact_sqlcipher_observation_attachment_create_restart_and_read(
     assert first.state is FinalV3DocumentRuntimeDecisionState.ACTIVE
     assert first.runtime is not None
 
-    database = first.runtime.final_v3.database
+    database = first.runtime.final_v4.database
     with database.connect() as connection:
         with connection:
             SchoolYearTransitionExecutionRepository(
@@ -840,7 +840,7 @@ def test_exact_sqlcipher_observation_attachment_create_restart_and_read(
     assert adapter.save_observation(draft).success
     assert _read(adapter, "MED-000001") == payload
 
-    restarted = run_gated_final_v3_document_runtime(
+    restarted = run_gated_final_v4_document_runtime(
         account_loader=account,
         authentication_confirmed=True,
         environ=_environment(root),
@@ -850,13 +850,13 @@ def test_exact_sqlcipher_observation_attachment_create_restart_and_read(
     assert restarted.state is FinalV3DocumentRuntimeDecisionState.ACTIVE
     assert restarted.runtime is not None
     restarted_adapter = StudentDesktopAdapter(
-        database=restarted.runtime.final_v3.database,
+        database=restarted.runtime.final_v4.database,
         database_create_allowed=False,
         today_provider=lambda: date(2026, 8, 9),
         encrypted_observation_attachments=restarted.runtime.documents,
     )
     assert _read(restarted_adapter, "MED-000001") == payload
-    assert not restarted.runtime.final_v3.database.path.read_bytes().startswith(
+    assert not restarted.runtime.final_v4.database.path.read_bytes().startswith(
         b"SQLite format 3\x00"
     )
     assert not restarted.runtime.documents.paths.database.read_bytes().startswith(

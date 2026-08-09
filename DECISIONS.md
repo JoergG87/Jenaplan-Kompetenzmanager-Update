@@ -1,17 +1,64 @@
 # Architekturentscheidungen
 
-## ADR-101 - Frische verschlüsselte Final-V3-Installation ist der Pilot-Produktpfad
+## ADR-103 - Final V4 ist der frische Pilotvertrag für individuelle Fachrelevanz
 
-**Status:** Angenommen und für den normalen Produktstart aktiviert. Build,
-Release und produktives Backup/Restore sind nicht Bestandteil dieser
-Entscheidung.
+**Status:** Angenommen. Ersetzt die Final-V3-Schemaidentität aus ADR-101 und
+die darauf bezogenen Hauptdatenbank-/Backup-Metadaten aus ADR-100. Die
+eigenständige Dokument-Companion-Schemaversion und Security-Keyarchitektur
+bleiben unverändert.
+
+### Entscheidung
+
+Für Lauras kommenden Pilot existiert kein erhaltenswerter fachlicher
+V3-Klartext- oder V3-Cipher-Bestand. Final V4 wird direkt frisch mit
+`PRAGMA user_version = 4` und dem vollständigen Schemafingerprint
+`a3a4ec7694daf60fe90a547036f5d7573f4875800a411f923485e76582ea3516`
+erzeugt. Es gibt keine V3→V4-Migration, keine
+Alt-Testdatenübernahme, keinen V3-Backupimport und keine automatische
+Konvertierung. Ein vorhandener V3-Bestand bleibt unverändert und wird vom
+V4-Startup, Backup und Restore-Staging fail-closed abgewiesen.
+
+`documentation_subject_settings` bleibt die globale Defaultquelle. Die
+normalisierten Tabellen `student_documentation_subject_profiles` und
+`student_documentation_subject_selections` speichern pro Schüler und
+Schuljahr entweder `inherit` oder eine exakte `custom`-Fachmenge. Kein Profil
+bedeutet ebenfalls `inherit`. `custom` ist einschließlich einer bewusst
+leeren Auswahl vollständig und wird durch spätere globale Änderungen nicht
+stillschweigend verändert. `subject_id` wird beim Schreiben gegen aktive
+kanonische Katalogkompetenzen validiert; Fachnamen werden nicht persistiert
+und `documentation_subject_settings` ist kein FK-Ziel.
+
+Schreiben ist nur für ein aktives, nicht archiviertes Kind im eindeutigen
+`current`-Schuljahr zulässig. Geschlossene und geplante Schuljahre sind
+read-only; vorhandene Konfiguration und später inaktive Katalogfächer bleiben
+historisch auflösbar. Fachrelevanz ist ausschließlich Dokumentations- und
+Filterkonfiguration. Sie verändert oder löscht keine Beobachtung, Kompetenz,
+Bestätigung, Bewertung, Bericht- oder LEG-Historie und wird nicht aus
+Membership, Stufe oder Dokumentationsbestand abgeleitet.
+
+Der produktive SQLCipher-First-Run, verschlüsselte Backup-Manifestvertrag und
+Restore-Staging werden auf V4 fortgeführt. Restore-Worker, Live-Swap, UI und
+allgemeine Migration-Engine sind nicht Bestandteil dieser Entscheidung.
+
+### Folgen
+
+Testdaten werden vollständig als frische V4-Bestände neu erzeugt. Der
+Pilotstandard bleibt `2026/27`, ist aber kein Resolverdefault. Eine spätere
+UI- und Projektionsintegration muss ausschließlich den zentralen Resolver
+verwenden. Ein Downgrade oder eine V3-Übernahme wird nicht angeboten.
+
+## ADR-101 - Frische verschlüsselte Final-V4-Installation ist der Pilot-Produktpfad
+
+**Status:** Angenommen und durch ADR-103 auf die fachliche Final-V4-
+Schemaidentität fortgeschrieben. Die Security-Komposition bleibt verbindlich;
+Build und Release sind nicht Bestandteil dieser Entscheidung.
 
 ### Entscheidung
 
 Nach erfolgreicher lokaler Authentifizierung öffnet genau eine Qt-freie
 Produktkomposition den Pilotbestand in dieser Reihenfolge: produktive
 `RuntimePaths`, `DataMasterKeyService`, `DatabaseKeyRuntime`, exakter
-SQLCipher-4.17-Provider, direkt erzeugtes Final-V3, keyed
+SQLCipher-4.17-Provider, direkt erzeugtes Final-V4, keyed
 Dokument-Companion, verschlüsselter Managed-Document-Storage und anschließend
 dieselbe injizierte `SQLiteDatabase`/`ManagedDocumentStore`-Instanz in
 `StudentDesktopAdapter` und `AppShell`. Widgets, ViewModels und Adapter dürfen
@@ -35,20 +82,20 @@ Neuerzeugung, Reparatur, Rename, Löschung oder Fallback. Verbindlich sind
 `sqlcipher3 0.6.2+jkm.sqlcipher4170.1`, SQLCipher `4.17.0 community`, SQLite
 `3.53.3` und CommonCrypto.
 
-Es gibt keine SQLite→SQLCipher-, Klartextanhang-, V2-, ZIP-v1-,
-Legacy-Enrollment- oder Testdatenmigration. Ein alter Klartextbestand bleibt
-unverändert und wird mit strukturiertem Startupfehler abgewiesen. Die
-technisch vorbereitete `.jkmebackup`-/Restore-Runtime aus ADR-100 wird in
-diesem Paket nicht produktiv komponiert. Alle bestehenden ZIP-v1-Einstiege,
-der Restore-Worker/Resume, Schuljahreswechsel-Backup und Support-Reset-Backup
-sind im Cipher-Produktmodus blockiert. ADR-098 und ADR-099 bleiben als
+Es gibt keine SQLite→SQLCipher-, V3→V4-, Klartextanhang-, V2-, ZIP-v1-,
+Legacy-Enrollment- oder Testdatenmigration. Alte Klartext- und V3-Bestände
+bleiben unverändert und werden mit strukturiertem Startupfehler abgewiesen.
+`.jkmebackup`, Restore-Staging und Live-Restore folgen ausschließlich den
+fortgeschriebenen V4-Verträgen aus ADR-100, ADR-102 und ADR-103. Die sichtbaren
+ZIP-v1-Einstiege, Schuljahreswechsel-Backup und Support-Reset-Backup bleiben
+im Cipher-Produktmodus blockiert. ADR-098 und ADR-099 bleiben als
 historische Foundation- und Gate-Entscheidungen gültig; ihre damalige
 Nichtaktivierung wird ausschließlich durch diese Produktkomposition abgelöst.
 
 ## ADR-102 - RESTORE_READY wird same-installation über den vorhandenen Worker live eingesetzt
 
-**Status:** Angenommen und ausschließlich im bestehenden internen
-Final-V3-SQLCipher-Gate technisch implementiert. Keine UI-, Produktdefault-,
+**Status:** Angenommen und im bestehenden Cipher-Produktpfad auf Final V4
+fortgeschrieben. Keine UI-, Produktdefault-,
 Build- oder Releaseaktivierung.
 
 ### Entscheidung
@@ -109,13 +156,13 @@ späteren Pakets `Verschlüsselungs-Aktivierung`.
 
 ## ADR-100 - Cipher-Pilotbackups sind same-installation und enden im Restore-Staging
 
-**Status:** Angenommen und ausschließlich im bestehenden internen
-Final-V3-SQLCipher-Gate lokal implementiert. Keine UI-, Produkt-, Build- oder
+**Status:** Angenommen und im bestehenden Cipher-Produktpfad ausschließlich
+für Final V4 fortgeschrieben. Keine UI-, Produktdefault-, Build- oder
 Releaseaktivierung; kein Live-Austausch.
 
 ### Entscheidung
 
-Der frische verschlüsselte Final-V3-Pilotbestand verwendet ausschließlich
+Der frische verschlüsselte Final-V4-Pilotbestand verwendet ausschließlich
 `.jkmebackup`. Unter dem vorhandenen Maintenance-Gate und
 `ObservationWriterLock` werden Haupt- und Companion-SQLCipher-Datenbank über
 ihre keyed Backup-API konsistent snapshotiert. Unter demselben eingefrorenen
@@ -161,15 +208,16 @@ Produktaktivierungspaket unverändert ZIP-v1.
 
 ## ADR-099 - Dokumentgenerationen nutzen eine kontextgebundene SQLCipher-Companion-DB
 
-**Status:** Angenommen und ausschließlich im bestehenden internen
-Final-V3-SQLCipher-Gate lokal implementiert. Beobachtungsanhänge und neue
+**Status:** Angenommen und unter dem aktuellen Final-V4-Hauptruntime-Gate
+lokal implementiert. Der historische Companion-v1-Vertrag bleibt unverändert.
+Beobachtungsanhänge und neue
 allgemeine verwaltete Schülerdokumente verwenden denselben Store.
 Produktaktivierung, PDF-Artefakte, Export, Backup/Restore, Migration, Build und
 Release bleiben ausgeschlossen.
 
 ### Entscheidung
 
-Die Dokumentcontainer-Runtime verändert weder das Final-V3-Hauptschema noch
+Die Dokumentcontainer-Runtime verändert weder das Final-V4-Hauptschema noch
 dessen exakten Fingerprint. Sie verwendet im selben doppelt markergebundenen
 privaten Runtime-Root eine eigene SQLCipher-Companion-Datenbank mit
 `application_id`, `user_version=1`, fest registriertem Schemafingerprint und
@@ -199,12 +247,12 @@ injizierten Consumer. Unbekannte Container, Teilbestände, Symlinks,
 Kontextabweichungen und Manipulation blockieren; keine Generation wird still
 neu erzeugt, überschrieben oder physisch gelöscht.
 
-Weil Final-V3-Hauptdatenbank und Companion-DB keine gemeinsame Transaktion
+Weil Final-V4-Hauptdatenbank und Companion-DB keine gemeinsame Transaktion
 besitzen, bindet das vorhandene Observation-Journal vor dem Containerwrite
 den unveränderlichen Cipher-Speichermodus, MED-ID, vorherige aktive Generation,
 geplante Generation und opaque Storage-ID. Eine Recovery ohne dieselbe Runtime blockiert. Nach verifiziertem
 `PREPARED` schreibt die Observation-UoW Beobachtung, Ratings, Ereignisse und
-fachliche Dokumentreferenz atomar in Final-V3. Erst danach werden alle exakt
+fachliche Dokumentreferenz atomar in Final-V4. Erst danach werden alle exakt
 gebundenen Aktivierungen und Deaktivierungen eines Journals gemeinsam in einer
 Companion-SQLCipher-Transaktion angewendet. Entfernen deaktiviert die
 fachliche Referenz und setzt den Companion-Pointer auf inaktive retained
@@ -214,7 +262,7 @@ Allgemeine Schülerdokumente verwenden denselben `ManagedDocumentStore` über
 einen eigenen kleinen fachlichen Application-Service. Dessen Journal enthält
 nur Operation, MED-ID, Prepare-Plan und Hashbindung, während Originalname,
 Titel, Typ, Notiz und Schülerbezug ausschließlich in SQLCipher beziehungsweise
-dem verschlüsselten Manifest liegen. Das vorhandene Final-V3-`documents`-
+dem verschlüsselten Manifest liegen. Das in Final V4 fortgeführte `documents`-
 Schema trägt den Vertrag mit `observation_id IS NULL` und leerem `file_path`;
 eine parallele Dokumenttabelle entsteht nicht.
 

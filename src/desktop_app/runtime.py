@@ -92,22 +92,22 @@ class RuntimePaths:
         return self.key_runtime_metadata / DATABASE_KEY_ENVELOPE_REGISTRY_FILENAME
 
     @property
-    def final_v3_runtime(self) -> Path:
-        """Return the productive encrypted Final-V3 runtime directory."""
-        from src.security.final_v3_sqlcipher_runtime import (
-            FINAL_V3_SQLCIPHER_RUNTIME_DIRECTORY,
+    def final_v4_runtime(self) -> Path:
+        """Return the productive encrypted Final-V4 runtime directory."""
+        from src.security.final_v4_sqlcipher_runtime import (
+            FINAL_V4_SQLCIPHER_RUNTIME_DIRECTORY,
         )
 
-        return self.root / FINAL_V3_SQLCIPHER_RUNTIME_DIRECTORY
+        return self.root / FINAL_V4_SQLCIPHER_RUNTIME_DIRECTORY
 
     @property
-    def final_v3_database(self) -> Path:
-        """Return the productive Final-V3 SQLCipher database path."""
-        from src.security.final_v3_sqlcipher_runtime import (
-            FINAL_V3_SQLCIPHER_DATABASE_FILENAME,
+    def final_v4_database(self) -> Path:
+        """Return the productive Final-V4 SQLCipher database path."""
+        from src.security.final_v4_sqlcipher_runtime import (
+            FINAL_V4_SQLCIPHER_DATABASE_FILENAME,
         )
 
-        return self.final_v3_runtime / FINAL_V3_SQLCIPHER_DATABASE_FILENAME
+        return self.final_v4_runtime / FINAL_V4_SQLCIPHER_DATABASE_FILENAME
 
     @property
     def document_companion_database(self) -> Path:
@@ -116,7 +116,7 @@ class RuntimePaths:
             FINAL_V3_DOCUMENT_DATABASE_FILENAME,
         )
 
-        return self.final_v3_runtime / FINAL_V3_DOCUMENT_DATABASE_FILENAME
+        return self.final_v4_runtime / FINAL_V3_DOCUMENT_DATABASE_FILENAME
 
     @property
     def encrypted_document_storage(self) -> Path:
@@ -125,7 +125,7 @@ class RuntimePaths:
             FINAL_V3_DOCUMENT_CONTAINER_DIRECTORY,
         )
 
-        return self.final_v3_runtime / FINAL_V3_DOCUMENT_CONTAINER_DIRECTORY
+        return self.final_v4_runtime / FINAL_V3_DOCUMENT_CONTAINER_DIRECTORY
 
 
 def is_packaged_app() -> bool:

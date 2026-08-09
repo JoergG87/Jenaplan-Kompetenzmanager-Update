@@ -29,7 +29,7 @@ from src.desktop_app.adapters.student_desktop_adapter import (
 from src.desktop_app.adapters.timetable_desktop_adapter import (
     TimetableDesktopAdapter,
 )
-from tests.helpers.synthetic_v3 import create_synthetic_v3_database
+from tests.helpers.synthetic_v4 import create_synthetic_v4_database
 
 
 OWNER = "school-year-maintenance"
@@ -66,6 +66,8 @@ PRODUCT_TABLES = frozenset(
         "school_year_transitions",
         "school_years",
         "student_competency_confirmations",
+        "student_documentation_subject_profiles",
+        "student_documentation_subject_selections",
         "student_school_year_assignments",
         "students",
         "timetable_entries",
@@ -210,10 +212,10 @@ def test_backup_restore_capability_cannot_authorize_school_year_write() -> None:
     assert captured.value.code == "maintenance_capability_purpose_mismatch"
 
 
-def test_writer_inventory_matches_complete_final_v3_schema(
+def test_writer_inventory_matches_complete_final_v4_schema(
     tmp_path: Path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "inventory.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "inventory.sqlite")
     database = SQLiteDatabase(path, create=False)
 
     with database.connect() as connection:
@@ -239,7 +241,7 @@ def test_each_product_database_writer_scope_is_blocked_at_shared_boundary(
     tmp_path: Path,
     table_name: str,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "product.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "product.sqlite")
     gate = MaintenanceGate()
     database = SQLiteDatabase(path, create=False, maintenance_gate=gate)
     _request(gate)
@@ -250,7 +252,7 @@ def test_each_product_database_writer_scope_is_blocked_at_shared_boundary(
 
 
 def test_reads_remain_allowed_while_pending(tmp_path: Path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "reads.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "reads.sqlite")
     gate = MaintenanceGate()
     database = SQLiteDatabase(path, create=False, maintenance_gate=gate)
     _request(gate)
@@ -367,7 +369,7 @@ assert callbacks == ["responsive", "active"]
 def test_cursor_and_chained_cursor_writes_cannot_bypass_gate(
     tmp_path: Path,
 ) -> None:
-    path = create_synthetic_v3_database(tmp_path / "cursor.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "cursor.sqlite")
     gate = MaintenanceGate()
     database = SQLiteDatabase(path, create=False, maintenance_gate=gate)
     _request(gate)
@@ -387,7 +389,7 @@ def test_cursor_and_chained_cursor_writes_cannot_bypass_gate(
 
 
 def test_gate_state_changes_do_not_modify_database(tmp_path: Path) -> None:
-    path = create_synthetic_v3_database(tmp_path / "unchanged.sqlite")
+    path = create_synthetic_v4_database(tmp_path / "unchanged.sqlite")
     before = hashlib.sha256(path.read_bytes()).digest()
     gate = MaintenanceGate()
     capability = _request(gate)

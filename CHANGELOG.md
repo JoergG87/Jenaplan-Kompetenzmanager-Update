@@ -2,9 +2,27 @@
 
 ## Unreleased
 
+- Final V4 ersetzt für den kommenden Pilot den noch nicht produktiv zu
+  migrierenden fachlichen Final-V3-Vertrag. Frische SQLite- und
+  SQLCipher-Hauptdatenbanken entstehen direkt mit `user_version = 4` und dem
+  exakten V4-Fingerprint; vorhandene V3-Bestände und V3-Backups werden
+  unverändert fail-closed abgewiesen. Es gibt keine V3→V4-Migration, keine
+  Alt-Testdatenübernahme und keine automatische Konvertierung. Der First Run
+  legt weiterhin ausschließlich `2026/27` an. Die neuen normalisierten
+  `student_documentation_subject_profiles` und
+  `student_documentation_subject_selections` speichern pro Schüler und
+  Schuljahr entweder `inherit` oder eine exakte `custom`-Auswahl. Der
+  Qt-freie Resolver verwendet globale Dokumentationsfächer nur für `inherit`;
+  geschlossene Schuljahre sind read-only. Beobachtungen, Kompetenzen,
+  Bewertungen und Berichtshistorie bleiben unverändert. Verschlüsseltes
+  Backup, Restore-Staging, Restore-Worker, Live-Restore und Rollback binden
+  ausschließlich V4; die UI und Security-Keyarchitektur bleiben unverändert. Die
+  Qt-freie Fachrelevanz-Transaktionsgrenze erhält dabei die vom jeweiligen
+  SQLite- oder SQLCipher-Provider konfigurierte kompatible Row-Factory.
+
 - Der normale Pilotstart verwendet nach erfolgreicher Authentifizierung jetzt
   eine einzige produktive DMK-/Database-Key-/SQLCipher-4.17-Komposition für
-  ein direkt verschlüsseltes Final-V3, die keyed Dokument-Companion-DB und den
+  ein direkt verschlüsseltes Final-V4, die keyed Dokument-Companion-DB und den
   verschlüsselten Managed-Document-Storage. Ein echter First Run legt nur das
   Schuljahr `2026/27` und den regulären Kompetenzkatalog an; Schüler, Gruppen,
   Kurse, Zuordnungen, Beobachtungen und Testdaten bleiben leer. Restart lädt
@@ -12,9 +30,9 @@
   geöffnet noch migriert, repariert, umbenannt, gelöscht oder überschrieben.
   Beobachtungsanhänge, allgemeine Schülerdokumente sowie finale Bericht- und
   LEG-PDF-Artefakte verwenden den bestehenden verschlüsselten
-  `ManagedDocumentStore`. ZIP-v1-Backup/Restore, Restore-Worker,
-  Schuljahreswechsel-Backup und Support-Reset-Backup bleiben bis zum
-  Folgepaket im Cipher-Produktmodus gesperrt.
+  `ManagedDocumentStore`. ZIP-v1-Backup/Restore, Schuljahreswechsel-Backup und
+  Support-Reset-Backup bleiben im Cipher-Produktmodus gesperrt; der
+  same-installation Live-Restore verwendet ausschließlich den V4-Vertrag.
 
 - Ein bereits vollständig verifizierter `RESTORE_READY`-Bestand kann auf Basis
   der Cipher-Produktkomposition aus ADR-101 über denselben
@@ -22,7 +40,7 @@
   Rollback und Restart-Handshake live eingesetzt werden. Vor jedem Swap wird
   der aktuelle Livebestand zwingend als neues verschlüsseltes `.jkmebackup`
   gesichert und vollständig neu verifiziert. Der Worker tauscht ausschließlich
-  Keyset-/Envelope-Metadaten und die vollständige Final-V3-Runtime, prüft
+  Keyset-/Envelope-Metadaten und die vollständige Final-V4-Runtime, prüft
   Haupt-/Companion-DB sowie alle `.jkmedoc`-/RPA-/LCA-Crossbindings keyed und
   schließt erst nach frischem Reopen ab. Kaltstart-Recovery rekonstruiert
   einen unterbrochenen Swap vor dem normalen Product-Open ausschließlich aus
@@ -37,7 +55,7 @@
   Produktdefault-Aktivierung; die sichtbare Backup-/Restore-UI bleibt im
   Cipher-Produktmodus gesperrt.
 
-- Der frische verschlüsselte Final-V3-Pilotbestand kann hinter dem bestehenden
+- Der frische verschlüsselte Final-V4-Pilotbestand kann hinter dem bestehenden
   Security-Gate als `.jkmebackup` gesichert und vollständig in einen neuen
   privaten Restore-Staging-Root zurückgeführt werden. Keyed Snapshots von
   Haupt- und Companion-SQLCipher-Datenbank, Keyset-/Envelope-Metadaten sowie

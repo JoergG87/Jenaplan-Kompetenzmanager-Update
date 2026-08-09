@@ -1,6 +1,32 @@
 # Sprintplanung
 
-## Cipher-Produktkomposition - frische Final-V3-Installation
+## Final-V4-Fachrelevanz
+
+**Status:** Datenmodell, Resolver, frischer V4-First-Run sowie V4-exklusive
+Backup-, Restore-Staging-, Worker-, Recovery-, Rollback- und Live-Restore-
+Kompatibilität technisch implementiert. UI- und Projektionsintegration bleiben
+Folgepakete.
+
+- [x] Final V4 mit `user_version = 4` und exaktem Fingerprint registrieren.
+- [x] V3 ohne Mutation fail-closed ablehnen; keine Migration oder
+  Alt-Testdatenübernahme implementieren.
+- [x] Schüler-/Schuljahrprofile mit `inherit` oder `custom` normalisieren.
+- [x] Vollständige Custom-Auswahl atomar ersetzen und No-op ohne Mutation
+  erhalten.
+- [x] Resolver aus globalem Default beziehungsweise exakter Custom-Auswahl
+  deterministisch bilden.
+- [x] Writes auf das aktuelle Schuljahr begrenzen und historische Jahre
+  read-only lesbar halten.
+- [x] Cipher-First-Run, verschlüsseltes Backup-Manifest und Restore-Staging an
+  V4 binden.
+- [x] Restore-Worker, Bootstrap-Recovery, Rollback und Restart ausschließlich
+  gegen die keyed Final-V4-Runtime prüfen.
+- [x] Beobachtungen, Kompetenzen, Bestätigungen und Historien unverändert
+  erhalten.
+- [ ] Schülerprofil, Beobachtung, Cockpit, Dashboard, Berichte und LEG an den
+  Resolver integrieren.
+
+## Cipher-Produktkomposition - frische Final-V4-Installation
 
 **Status:** Normaler Produktstart lokal aktiviert; fokussiertes technisches
 Gate grün. Manuelle macOS-/UI-Abnahme, Build, Packaging und Release bleiben
@@ -10,7 +36,7 @@ offen.
   verlangen.
 - [x] DMK, Database-Key-Envelope, Hauptdatenbank, Companion und Dokumentstore
   in genau einer SQLCipher-4.17-Composition Root öffnen.
-- [x] Frisches Final-V3 direkt verschlüsselt erzeugen und ausschließlich
+- [x] Frisches Final-V4 direkt verschlüsselt erzeugen und ausschließlich
   `2026/27` als First-Run-Schuljahr anlegen.
 - [x] Schüler, Gruppen, Kurse, Assignments, Beobachtungen und Testdaten beim
   First Run leer lassen.
@@ -22,7 +48,7 @@ offen.
 - [ ] Manuelles UI-Gate auf macOS durch Product Owner.
 - [ ] Cipher-Backup/-Restore-Produktaktivierung im Folgepaket.
 
-## Verschlüsseltes Backup - Final-V3-Cipher-Pilot
+## Verschlüsseltes Backup - Final-V4-Cipher-Pilot
 
 **Status:** Technischer Cipher-Produktpfad für `.jkmebackup`, verifiziertes
 Restore-Staging und same-installation Live-Restore über den vorhandenen Worker

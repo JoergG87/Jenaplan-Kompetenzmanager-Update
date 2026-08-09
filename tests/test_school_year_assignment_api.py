@@ -20,7 +20,7 @@ from src.application.school_year_assignment import (
     SchoolYearAssignmentQueryService,
     UpdateStudentMasterData,
 )
-from src.core.final_v3_schema import FinalV3SchemaInitializer
+from src.core.final_v4_schema import FinalV4SchemaInitializer
 from src.core.school_year import (
     AssignmentReferenceRequest,
     AssignmentResolutionStatus,
@@ -32,10 +32,10 @@ from src.core.sqlite_school_year_assignment import (
     SchoolYearRepository,
     StudentSchoolYearAssignmentRepository,
 )
-from tests.helpers.synthetic_v3 import (
+from tests.helpers.synthetic_v4 import (
     SYNTHETIC_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
-    create_synthetic_v3_database,
+    create_synthetic_v4_database,
 )
 
 
@@ -56,7 +56,7 @@ def _factory(path: Path):
 
 @pytest.fixture
 def v3_database(tmp_path: Path) -> Path:
-    return create_synthetic_v3_database(tmp_path / "assignment.sqlite")
+    return create_synthetic_v4_database(tmp_path / "assignment.sqlite")
 
 
 def _assignment_rows(path: Path, student_id: str) -> tuple[tuple[object, ...], ...]:
@@ -468,7 +468,7 @@ def test_reference_batch_supports_repeated_student_with_one_select(
 
 
 def _bulk_database(path: Path, count: int) -> tuple[Path, tuple[str, ...]]:
-    FinalV3SchemaInitializer().initialize(path)
+    FinalV4SchemaInitializer().initialize(path)
     student_ids = tuple(f"STD-BULK-{number:03}" for number in range(count))
     with sqlite3.connect(path) as connection:
         connection.execute("PRAGMA foreign_keys = ON")

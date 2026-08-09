@@ -16,19 +16,31 @@ from src.core.database_engine import (
     SQLCIPHER_4_17_ENGINE_VERSION,
     SQLCipherConnectionProvider,
 )
+from src.core.database_compatibility import (
+    FINAL_SCHEMA_FINGERPRINT,
+    FINAL_SCHEMA_VERSION,
+)
 from src.security.data_keys import LoadedDataMasterKey
-from src.security.final_v3_backup_runtime import (
-    FINAL_V3_BACKUP_MANIFEST_ENTRY_ID,
-    FINAL_V3_RESTORE_READY_FILENAME,
-    FinalV3EncryptedBackupError,
-    FinalV3EncryptedBackupManifestV1,
-    build_final_v3_encrypted_backup_service,
+from src.security.final_v4_backup_runtime import (
+    FINAL_V4_BACKUP_MANIFEST_ENTRY_ID,
+    FINAL_V4_COMPANION_ENTRY_ID,
+    FINAL_V4_ENVELOPE_REGISTRY_ENTRY_ID,
+    FINAL_V4_KEYSET_ENTRY_ID,
+    FINAL_V4_RESTORE_READY_FILENAME,
+    FinalV4BackupArtifactRole,
+    FinalV4BackupArtifactV1,
+    FinalV4EncryptedBackupError,
+    FinalV4EncryptedBackupManifestV1,
+    build_final_v4_encrypted_backup_service,
 )
 from src.security.final_v3_document_runtime import (
+    FINAL_V3_DOCUMENT_APPLICATION_ID,
+    FINAL_V3_DOCUMENT_SCHEMA_FINGERPRINT,
+    FINAL_V3_DOCUMENT_SCHEMA_VERSION,
     FinalV3DocumentRuntimeDecisionState,
-    run_gated_final_v3_document_runtime,
+    run_gated_final_v4_document_runtime,
 )
-from tests.test_final_v3_sqlcipher_runtime import (
+from tests.test_final_v4_sqlcipher_runtime import (
     MemoryDataMasterKeyStore,
     _account_loader,
     _environment,
@@ -52,7 +64,7 @@ def _open_case(tmp_path: Path, *, fault_hook=None):
         expected_binding_version=SQLCIPHER_4_17_BINDING_VERSION,
         expected_engine_version=SQLCIPHER_4_17_ENGINE_VERSION,
     )
-    decision = run_gated_final_v3_document_runtime(
+    decision = run_gated_final_v4_document_runtime(
         account_loader=account_loader,
         authentication_confirmed=True,
         technical_first_run_confirmed=True,
@@ -63,7 +75,7 @@ def _open_case(tmp_path: Path, *, fault_hook=None):
     )
     assert decision.state is FinalV3DocumentRuntimeDecisionState.ACTIVE
     assert decision.runtime is not None
-    service = build_final_v3_encrypted_backup_service(
+    service = build_final_v4_encrypted_backup_service(
         opened_runtime=decision.runtime,
         account_loader=account_loader,
         environ=environment,
@@ -76,7 +88,7 @@ def _open_case(tmp_path: Path, *, fault_hook=None):
 
 def _add_general_document(runtime, *, document_id: str, payload: bytes) -> None:
     _activate_document(runtime, document_id=document_id, payload=payload)
-    with runtime.final_v3.database.connect() as connection:
+    with runtime.final_v4.database.connect() as connection:
         connection.execute("BEGIN IMMEDIATE")
         connection.execute(
             """
@@ -127,7 +139,7 @@ def _add_all_document_classes(runtime) -> dict[str, bytes]:
     timestamp = "2026-08-09T10:00:00Z"
     report_snapshot = hashlib.sha256(b"report-snapshot").hexdigest()
     conference_snapshot = hashlib.sha256(b"conference-snapshot").hexdigest()
-    with runtime.final_v3.database.connect() as connection:
+    with runtime.final_v4.database.connect() as connection:
         connection.execute("BEGIN IMMEDIATE")
         connection.execute(
             """
@@ -255,11 +267,18 @@ def test_create_verify_restart_restore_ready_and_same_installation_metadata(
     assert len(repeated.manifest.documents) == 1
     assert repeated.manifest.database_key_rewrap_revision >= 1
     assert {item.role.value for item in repeated.manifest.artifacts} == {
-        "final_v3_main_database",
+        "final_v4_main_database",
         "document_companion_database",
         "keyset_metadata",
         "database_key_envelope_registry",
     }
+    main_artifact = next(
+        item
+        for item in repeated.manifest.artifacts
+        if item.role.value == "final_v4_main_database"
+    )
+    assert main_artifact.schema_version == FINAL_SCHEMA_VERSION == 4
+    assert main_artifact.schema_fingerprint == FINAL_SCHEMA_FINGERPRINT
     raw = target.read_bytes()
     assert payload not in raw
     assert b"SQLite format 3" not in raw
@@ -267,7 +286,7 @@ def test_create_verify_restart_restore_ready_and_same_installation_metadata(
     assert service.loaded.dmk.key_material not in raw
     assert service.loaded.database_key.key_material not in raw
 
-    restarted = run_gated_final_v3_document_runtime(
+    restarted = run_gated_final_v4_document_runtime(
         account_loader=account_loader,
         authentication_confirmed=True,
         technical_first_run_confirmed=False,
@@ -278,7 +297,7 @@ def test_create_verify_restart_restore_ready_and_same_installation_metadata(
     )
     assert restarted.state is FinalV3DocumentRuntimeDecisionState.ACTIVE
     assert restarted.runtime is not None
-    restarted_service = build_final_v3_encrypted_backup_service(
+    restarted_service = build_final_v4_encrypted_backup_service(
         opened_runtime=restarted.runtime,
         account_loader=account_loader,
         environ=environment,
@@ -293,17 +312,19 @@ def test_create_verify_restart_restore_ready_and_same_installation_metadata(
     assert restored.state == "RESTORE_READY"
     assert restored.active_document_count == 1
     assert restored.total_document_generation_count == 1
-    assert restored.ready_path.name == FINAL_V3_RESTORE_READY_FILENAME
+    assert restored.ready_path.name == FINAL_V4_RESTORE_READY_FILENAME
     assert restored.ready_path.is_file()
     assert restored.staging_root.stat().st_mode & 0o077 == 0
     ready = json.loads(restored.ready_path.read_text(encoding="ascii"))
     assert ready["state"] == "RESTORE_READY"
+    assert ready["database_schema_version"] == FINAL_SCHEMA_VERSION == 4
+    assert ready["database_schema_fingerprint"] == FINAL_SCHEMA_FINGERPRINT
     assert ready["manifest_sha256"] == hashlib.sha256(
         repeated.manifest.to_bytes()
     ).hexdigest()
-    assert runtime.final_v3.database.path.is_file()
+    assert runtime.final_v4.database.path.is_file()
     staged_manifest = (
-        restored.staging_root / "final-v3-backup-manifest-v1.json"
+        restored.staging_root / "final-v4-backup-manifest-v1.json"
     ).read_bytes()
     for secret in (
         service.loaded.dmk.key_material,
@@ -315,6 +336,37 @@ def test_create_verify_restart_restore_ready_and_same_installation_metadata(
     assert b"password" not in staged_manifest.lower()
     assert b"recovery_code" not in staged_manifest.lower()
     assert b"security.sqlite" not in staged_manifest.lower()
+
+
+@requires_exact_417
+def test_authenticated_manifest_with_v3_main_identity_is_rejected(
+    tmp_path: Path,
+) -> None:
+    _runtime, service, *_rest = _open_case(tmp_path)
+    created = service.create(tmp_path / "pilot.jkmebackup")
+    payload = created.manifest.to_payload()
+    main = next(
+        item
+        for item in payload["artifacts"]
+        if item["role"] == "final_v4_main_database"
+    )
+    main["schema_version"] = 3
+    main["schema_fingerprint"] = (
+        "d75b803552ba961bff5578ec0853c1d0a2d035845db6a7b624b1528cf546e731"
+    )
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("ascii")
+
+    with pytest.raises(
+        FinalV4EncryptedBackupError,
+        match="backup_manifest_main_schema_incompatible",
+    ):
+        FinalV4EncryptedBackupManifestV1.from_bytes(encoded)
 
 
 @requires_exact_417
@@ -381,7 +433,7 @@ def test_wrong_dmk_context_existing_targets_and_plaintext_reference_fail_closed(
     created = service.create(target)
     before = target.read_bytes()
 
-    with pytest.raises(FinalV3EncryptedBackupError, match="backup_target_exists"):
+    with pytest.raises(FinalV4EncryptedBackupError, match="backup_target_exists"):
         service.create(target)
     assert target.read_bytes() == before
 
@@ -415,11 +467,11 @@ def test_wrong_dmk_context_existing_targets_and_plaintext_reference_fail_closed(
     existing_staging = tmp_path / "existing-staging"
     existing_staging.mkdir()
     (existing_staging / "sentinel").write_bytes(b"unchanged")
-    with pytest.raises(FinalV3EncryptedBackupError, match="restore_staging_exists"):
+    with pytest.raises(FinalV4EncryptedBackupError, match="restore_staging_exists"):
         service.restore_staging(target, existing_staging)
     assert (existing_staging / "sentinel").read_bytes() == b"unchanged"
 
-    with runtime.final_v3.database.connect() as connection:
+    with runtime.final_v4.database.connect() as connection:
         connection.execute("BEGIN IMMEDIATE")
         connection.execute(
             "UPDATE documents SET file_path = '/tmp/plain.txt' WHERE document_id = ?",
@@ -427,7 +479,7 @@ def test_wrong_dmk_context_existing_targets_and_plaintext_reference_fail_closed(
         )
         connection.commit()
     with pytest.raises(
-        FinalV3EncryptedBackupError,
+        FinalV4EncryptedBackupError,
         match="unexpected_plaintext_document_reference",
     ):
         service.create(tmp_path / "plaintext-rejected.jkmebackup")
@@ -469,14 +521,14 @@ def test_backup_builder_never_recreates_missing_key_metadata(
     runtime, service, key_store, environment, account_loader, provider = _open_case(
         tmp_path
     )
-    keyset = service.paths.final_v3.key_runtime.keyset_metadata
+    keyset = service.paths.final_v4.key_runtime.keyset_metadata
     keyset.unlink()
 
     with pytest.raises(
-        FinalV3EncryptedBackupError,
-        match="final_v3_backup_key_runtime_incomplete",
+        FinalV4EncryptedBackupError,
+        match="final_v4_backup_key_runtime_incomplete",
     ):
-        build_final_v3_encrypted_backup_service(
+        build_final_v4_encrypted_backup_service(
             opened_runtime=runtime,
             account_loader=account_loader,
             environ=environment,
@@ -487,9 +539,9 @@ def test_backup_builder_never_recreates_missing_key_metadata(
 
 
 def replace_service_loaded(service, loaded):
-    from src.security.final_v3_backup_runtime import FinalV3EncryptedBackupService
+    from src.security.final_v4_backup_runtime import FinalV4EncryptedBackupService
 
-    return FinalV3EncryptedBackupService(
+    return FinalV4EncryptedBackupService(
         opened_runtime=service.opened,
         paths=service.paths,
         loaded_keys=loaded,
@@ -525,7 +577,7 @@ def test_backup_fault_boundaries_leave_no_published_target_and_retry(
         nonlocal fired
         if observed == boundary and not fired:
             fired = True
-            raise FinalV3EncryptedBackupError("injected_backup_fault")
+            raise FinalV4EncryptedBackupError("injected_backup_fault")
 
     runtime, failing, key_store, environment, account_loader, provider = _open_case(
         tmp_path, fault_hook=fault
@@ -536,7 +588,7 @@ def test_backup_fault_boundaries_leave_no_published_target_and_retry(
         failing.create(target)
     assert fired
     assert not target.exists()
-    retry = build_final_v3_encrypted_backup_service(
+    retry = build_final_v4_encrypted_backup_service(
         opened_runtime=runtime,
         account_loader=account_loader,
         environ=environment,
@@ -572,9 +624,9 @@ def test_restore_fault_boundaries_never_publish_restore_ready(
         nonlocal fired
         if observed == boundary and not fired:
             fired = True
-            raise FinalV3EncryptedBackupError("injected_restore_fault")
+            raise FinalV4EncryptedBackupError("injected_restore_fault")
 
-    failing = build_final_v3_encrypted_backup_service(
+    failing = build_final_v4_encrypted_backup_service(
         opened_runtime=runtime,
         account_loader=account_loader,
         environ=environment,
@@ -586,7 +638,7 @@ def test_restore_fault_boundaries_never_publish_restore_ready(
     with pytest.raises(Exception):
         failing.restore_staging(target, staging)
     assert fired
-    assert not (staging / FINAL_V3_RESTORE_READY_FILENAME).exists()
+    assert not (staging / FINAL_V4_RESTORE_READY_FILENAME).exists()
     assert service.verify(target).container_sha256 == hashlib.sha256(
         target.read_bytes()
     ).hexdigest()
@@ -605,14 +657,14 @@ def test_gate_off_zip_v1_modules_do_not_import_cipher_backup_runtime() -> None:
         "src/core/restore_runtime.py",
         "src/desktop_app/adapters/backup_restore_desktop_adapter.py",
     ):
-        assert "final_v3_backup_runtime" not in (
+        assert "final_v4_backup_runtime" not in (
             repository / relative
         ).read_text(encoding="utf-8")
     assert BackupService is not None
 
 
 def test_manifest_is_strict_and_contains_no_secret_fields() -> None:
-    source = Path(__file__).resolve().parents[1] / "src/security/final_v3_backup_runtime.py"
+    source = Path(__file__).resolve().parents[1] / "src/security/final_v4_backup_runtime.py"
     text = source.read_text(encoding="utf-8")
     forbidden = (
         '"password"',
@@ -622,4 +674,91 @@ def test_manifest_is_strict_and_contains_no_secret_fields() -> None:
         '"database_key_material"',
     )
     assert not any(value in text for value in forbidden)
-    assert FINAL_V3_BACKUP_MANIFEST_ENTRY_ID.startswith("00000000-")
+    assert FINAL_V4_BACKUP_MANIFEST_ENTRY_ID.startswith("00000000-")
+
+
+def test_manifest_parser_accepts_only_v4_main_schema_metadata() -> None:
+    manifest = _validation_manifest()
+    assert FinalV4EncryptedBackupManifestV1.from_bytes(
+        manifest.to_bytes()
+    ) == manifest
+    payload = manifest.to_payload()
+    main = next(
+        item
+        for item in payload["artifacts"]
+        if item["role"] == "final_v4_main_database"
+    )
+    main["schema_version"] = 3
+    main["schema_fingerprint"] = (
+        "d75b803552ba961bff5578ec0853c1d0a2d035845db6a7b624b1528cf546e731"
+    )
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("ascii")
+
+    with pytest.raises(
+        FinalV4EncryptedBackupError,
+        match="backup_manifest_main_schema_incompatible",
+    ):
+        FinalV4EncryptedBackupManifestV1.from_bytes(encoded)
+
+
+def _validation_manifest() -> FinalV4EncryptedBackupManifestV1:
+    main_id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    artifacts = (
+        FinalV4BackupArtifactV1(
+            main_id,
+            FinalV4BackupArtifactRole.MAIN_DATABASE,
+            "database.sqlcipher",
+            1,
+            "a" * 64,
+            0,
+            FINAL_SCHEMA_VERSION,
+            FINAL_SCHEMA_FINGERPRINT,
+        ),
+        FinalV4BackupArtifactV1(
+            FINAL_V4_COMPANION_ENTRY_ID,
+            FinalV4BackupArtifactRole.DOCUMENT_COMPANION,
+            f"document-{FINAL_V4_COMPANION_ENTRY_ID}.bin",
+            1,
+            "b" * 64,
+            FINAL_V3_DOCUMENT_APPLICATION_ID,
+            FINAL_V3_DOCUMENT_SCHEMA_VERSION,
+            FINAL_V3_DOCUMENT_SCHEMA_FINGERPRINT,
+        ),
+        FinalV4BackupArtifactV1(
+            FINAL_V4_KEYSET_ENTRY_ID,
+            FinalV4BackupArtifactRole.KEYSET_METADATA,
+            f"document-{FINAL_V4_KEYSET_ENTRY_ID}.bin",
+            1,
+            "c" * 64,
+        ),
+        FinalV4BackupArtifactV1(
+            FINAL_V4_ENVELOPE_REGISTRY_ENTRY_ID,
+            FinalV4BackupArtifactRole.DATABASE_KEY_ENVELOPE_REGISTRY,
+            f"document-{FINAL_V4_ENVELOPE_REGISTRY_ENTRY_ID}.bin",
+            1,
+            "d" * 64,
+        ),
+    )
+    return FinalV4EncryptedBackupManifestV1(
+        created_at="2026-08-09T10:30:00Z",
+        installation_id="11111111-1111-4111-8111-111111111111",
+        database_context_id=main_id,
+        dmk_key_id="22222222-2222-4222-8222-222222222222",
+        dmk_generation=1,
+        database_key_id="33333333-3333-4333-8333-333333333333",
+        database_key_generation=1,
+        database_key_rewrap_revision=1,
+        app_version="0.0-test",
+        sqlcipher_binding_version=SQLCIPHER_4_17_BINDING_VERSION,
+        sqlcipher_version=SQLCIPHER_4_17_ENGINE_VERSION,
+        sqlite_version="3.53.3",
+        artifacts=artifacts,
+        documents=(),
+        active_document_ids=(),
+    )

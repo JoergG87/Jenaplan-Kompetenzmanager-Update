@@ -19,7 +19,7 @@ import pytest
 
 from src.application.commands.backup import BackupApplicationService, CreateBackupCommand
 from src.application.commands.security_backup import VerifiedSecurityBackupAdapter
-from src.core.final_v3_schema import FinalV3SchemaInitializer
+from src.core.final_v4_schema import FinalV4SchemaInitializer
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.runtime import runtime_paths
 from src.security.application import SecurityApplicationService
@@ -593,7 +593,7 @@ def test_real_jkmbackup_is_created_verified_and_excludes_security_store(tmp_path
     paths = runtime_paths(root)
     for directory in (paths.root, paths.documents, paths.backups, paths.exports, paths.logs):
         directory.mkdir(parents=True, exist_ok=True)
-    FinalV3SchemaInitializer().initialize(paths.database)
+    FinalV4SchemaInitializer().initialize(paths.database)
     _security, reset, _repository, _clock, private = make_environment(root)
     request = reset.create_request()
     adapter = VerifiedSecurityBackupAdapter(
