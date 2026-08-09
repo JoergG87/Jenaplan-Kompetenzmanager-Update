@@ -128,6 +128,45 @@ def _lifecycle_events(workspace: LearningReportDialog) -> list[str]:
     return events
 
 
+def test_workspace_switch_keeps_exactly_one_page_visible_and_interactive(
+    tmp_path,
+) -> None:
+    app = QApplication.instance() or QApplication([])
+    fixture = _product_fixture()
+    shell = None
+    workspace = None
+    try:
+        app, shell, workspace = _workspace(fixture, tmp_path)
+        sequence = (
+            "evidence",
+            "preview",
+            "revisions",
+            "writing",
+            "preview",
+            "revisions",
+            "evidence",
+            "writing",
+        )
+
+        for key in sequence:
+            workspace.show_workspace(key)
+            app.processEvents()
+            active_page = workspace.workspace_pages[key]
+            assert workspace.mode_stack.currentWidget() is active_page
+            for other_key, page in workspace.workspace_pages.items():
+                is_active = other_key == key
+                assert page.isVisibleTo(workspace) is is_active
+                assert page.isEnabled() is is_active
+                assert page.graphicsEffect() is None
+    finally:
+        if workspace is not None:
+            workspace.accept()
+        if shell is not None:
+            shell.close()
+        app.processEvents()
+        fixture.tearDown()
+
+
 def _close(
     app: QApplication,
     shell: AppShell,

@@ -391,7 +391,7 @@ class LearningReportDialog(MotionDialog):
         root.addWidget(self.mode_stack, 1)
         root.addWidget(self._action_bar())
         self._ensure_workspace_built("writing")
-        self.mode_stack.setCurrentWidget(self.workspace_pages["writing"])
+        self._activate_workspace_page("writing")
 
     def _top_bar(self) -> QFrame:
         bar = QFrame()
@@ -435,15 +435,22 @@ class LearningReportDialog(MotionDialog):
         index = indexes.get(key, 0)
         key = ("writing", "evidence", "preview", "revisions")[index]
         self._ensure_workspace_built(key)
-        animate_stack_transition(
-            self.mode_stack,
-            index,
-            key="report_workspace",
-        )
+        self._activate_workspace_page(key)
         if index == 2:
             self.update_preview()
         if index == 3 and self._revision_stale:
             self._render_revision_context()
+
+    def _activate_workspace_page(self, key: str) -> None:
+        active_page = self.workspace_pages[key]
+        self.mode_stack.setCurrentWidget(active_page)
+        for page in self.workspace_pages.values():
+            is_active = page is active_page
+            page.setGraphicsEffect(None)
+            page.setEnabled(is_active)
+            page.setVisible(is_active)
+        active_page.raise_()
+        self.mode_stack.update()
 
     def _ensure_workspace_built(self, key: str) -> None:
         if self.workspace_built[key]:

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Die Berichtswerkstatt behält ihren Lazy-Build, schaltet beim Wechsel zwischen
+  Schreiben, Kompetenzen und Belegen, Vorschau und Revisionen aber nur noch
+  genau eine effektfreie Seite sichtbar und interaktiv.
+
 - Der vorhandene synthetische Testdatengenerator kann jetzt einen vollständig
   neuen, systemtemporären Final-V4-Cipher-Testroot über die produktiven
   Application-/Adapterpfade befüllen. Er überschreibt keine Datenbank und
