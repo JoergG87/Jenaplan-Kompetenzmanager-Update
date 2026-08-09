@@ -287,11 +287,11 @@ Metadaten und die geschützte Database-Key-Envelope-Registry dürfen als für de
 Reopen erforderliche technische Metadaten aufgenommen werden; DMK,
 `security.sqlite`, Passwörter, Recovery-Codes und Plattformsecrets niemals.
 
-Restore schreibt ausschließlich in einen neuen privaten Staging-Root. Nur
+Restore-Staging schreibt ausschließlich in einen neuen privaten Staging-Root. Nur
 nach vollständiger Containerprüfung, keyed Reopen mit exakt SQLCipher 4.17,
 Final-V3-/Companion-Fingerprint und vollständiger Context-/Generations-
-Crossbindingprüfung darf `RESTORE_READY` entstehen. Dieses Paket führt keinen
-Live-Austausch aus.
+Crossbindingprüfung darf `RESTORE_READY` entstehen. Es mutiert selbst keinen
+Livebestand.
 
 Die Portabilitätsgrenze lautet `same-installation encrypted restore`: Der
 passende vorhandene DMK im Keychain ist Voraussetzung. Passwortwechsel und
@@ -300,6 +300,38 @@ Geräteverlust bleiben ungelöst. Es gibt keinen unsicheren Passwort- oder
 Recovery-Code-Ersatz. Historische Klartext-/ZIP-v1-Bestände werden nicht
 migriert. Der frühere Gate-Off-Vertrag behält ZIP-v1 nur als nicht produktiv
 aufrufbare Foundation; ADR-101 sperrt diese Aktionen im Cipher-Produktmodus.
+
+## Entwicklungsgrenze verschlüsselter Final-V3-Live-Restore
+
+Nur ein bereits vollständig verifiziertes `RESTORE_READY` derselben
+Installation darf die bestehende Restore-Worker-/Journalgrenze betreten. Vor
+dem Worker-Handoff muss der aktuelle Livebestand unter Maintenance- und
+Writer-Lock als neues `.jkmebackup` verschlüsselt gesichert und vollständig
+neu verifiziert sein. Bis dahin ist jeder Live-Rename verboten. Handoff und
+Resume enthalten keine Sitzung und kein Schlüsselmaterial; der Handoff wird
+über eine eigene DMK-separierte Authentisierungsdomäne an Installation,
+Database-Context, READY, Manifest und Safety-Backup gebunden.
+
+Der Worker tauscht ausschließlich Keyset-/Envelope-Metadaten, Haupt-DB,
+Companion-DB und vollständiges `.jkmedoc`-Inventar als eine gemeinsame Einheit
+aus. Er verwendet Parent-EOF, Instanz-Lock,
+Write-ahead-Rename-Intents, `rollback/`, `failed-new/` und den vorhandenen
+Restart-Handshake. Der alte Livebestand und das verschlüsselte Safety-Backup
+bleiben Evidenz; physisches GC ist in diesem Paket verboten.
+
+Ein Restore ist erst nach frischem keyed Reopen beider SQLCipher-Datenbanken,
+vollständiger Container-/Crossbindingprüfung und konsumiertem Resume-Token
+abgeschlossen. Bootstrap-Recovery muss vor jedem Product-Open allein aus
+Security-/Installationskontext, vorhandenem DMK, Handoff, Journal und den
+Live-/Rollback-/Staging-Rollen einen eindeutigen Gesamtbestand herstellen.
+Danach läuft derselbe Prozess über reguläre Authentifizierung und die einzige
+Cipher-Produktkomposition weiter. Jeder Fehler nach Swapbeginn verlangt vollständigen keyed
+Rollback; unbeweisbare Mischzustände werden `manual_recovery_required` und
+dürfen nichts neu erzeugen. `security.sqlite`, DMK/Keychain, Passwort,
+Recovery-Codes, Gerätecredential, Touch ID und AppPreferences werden weder
+restored noch verändert. Die Grenze bleibt same-installation ohne
+Gerätewechsel, DMK-Recovery, Klartext-/V2-/ZIP-v1-Migration oder portable
+Backups. UI, Produktdefault, Build und Release bleiben deaktiviert.
 
 ## Entwicklungsgrenze Security Sprint 12
 

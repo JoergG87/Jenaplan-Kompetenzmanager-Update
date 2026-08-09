@@ -45,6 +45,68 @@ sind im Cipher-Produktmodus blockiert. ADR-098 und ADR-099 bleiben als
 historische Foundation- und Gate-Entscheidungen gültig; ihre damalige
 Nichtaktivierung wird ausschließlich durch diese Produktkomposition abgelöst.
 
+## ADR-102 - RESTORE_READY wird same-installation über den vorhandenen Worker live eingesetzt
+
+**Status:** Angenommen und ausschließlich im bestehenden internen
+Final-V3-SQLCipher-Gate technisch implementiert. Keine UI-, Produktdefault-,
+Build- oder Releaseaktivierung.
+
+### Entscheidung
+
+ADR-100 bleibt für Erzeugung und Vollverifikation von `.jkmebackup` sowie
+Restore-Staging maßgeblich. Ein bereits vollständig verifiziertes
+`RESTORE_READY` darf nun über den vorhandenen Restore-Worker, dessen
+Instanz-Lock, Parent-EOF-Handoff, Write-ahead-Journal, Rollback und
+Restart-Handshake live eingesetzt werden. Der Cipher-Pfad ist eine Strategie
+desselben Zustandsautomaten; er baut keine zweite Restore-Architektur und
+importiert nicht in den Gate-Off-Backup-/Restore-Default.
+
+Vor dem Handoff sperrt das Maintenance-Gate alle fachlichen Writer. Unter
+diesem Freeze wird zwingend ein neues verschlüsseltes `.jkmebackup` des
+aktuellen Livebestands erstellt, vollständig neu verifiziert und außerhalb der
+Swap-Komponenten retained. Scheitert dieser Schritt, entstehen weder Handoff
+noch Live-Mutation. Der Handoff bindet Installation, Database-Context,
+`RESTORE_READY`, Manifest, Safety-Backup und technische Buildidentität und wird
+mit einer eigenen DMK-separierten HMAC-Domäne authentisiert; Schlüsselmaterial
+und Sitzung werden nicht persistiert.
+
+Der Live-Dateisatz besteht aus genau vier gemeinsam zu behandelnden,
+journalisierten Rollen: Keyset-/Database-Key-Envelope-Metadaten,
+Haupt-SQLCipher-DB, Companion-SQLCipher-DB und Dokumentlayout mit sämtlichen
+`.jkmedoc`-Generationen. Nach vollständigem
+App-Ende checkpointet der Worker vorhandene keyed WAL-Zustände, verifiziert
+Safety-Backup und `RESTORE_READY` erneut, hält den alten Livebestand ohne
+physisches GC unter `rollback/`, setzt beide vorbereiteten Komponenten ein und
+prüft den neuen Bestand vollständig keyed. `security.sqlite`, Keychain-DMK,
+Passwort, Recovery-Codes, Gerätecredential, Touch-ID-Zustand und
+`app-preferences.json` sind keine Swap-Komponenten und müssen byteidentisch
+bleiben.
+
+Bootstrap-Recovery läuft vor jedem Product-Open und darf ausschließlich aus
+Security-/Installationskontext, vorhandenem DMK, Handoff, Journal sowie
+Live-/Rollback-/Staging-Rollen einen eindeutigen Bestand herstellen. Erst ein
+frischer normaler App-Prozess, der den vorhandenen DMK lädt, den
+Database-Key-Envelope öffnet, Haupt- und Companion-DB keyed prüft und das
+gesamte Dokumentinventar samt RPA-/LCA-Crossbindings verifiziert, konsumiert
+den Resume-Token und schreibt `completed`. Danach setzt derselbe Prozess die
+reguläre Security-/Auth-Sequenz fort und öffnet nach Anmeldung ausschließlich
+die Cipher-Produktkomposition aus ADR-101. Eine persistente Sitzung wird nicht
+übernommen. Jeder Fehler nach dem
+ersten Rename führt zum vollständigen keyed geprüften Rollback. Kann weder der
+neue noch der alte Gesamtzustand eindeutig bewiesen werden, gilt
+`manual_recovery_required`; es gibt keine automatische Neuerzeugung.
+
+### Grenze
+
+Der Vertrag bleibt `same-installation encrypted restore`: gleicher
+Installation- und Security-Context, vorhandener passender DMK, kein
+Gerätewechsel. DMK-/Geräteverlust bleibt ungelöst; Passwort und Recovery-Code
+sind keine Ersatzschlüssel. Klartext-, V2-, ZIP-v1- und Migrationspfade werden
+nicht in den Cipher-Restore übernommen. Die Cipher-Produktkomposition aus
+ADR-101 bleibt die einzige normale Fachdatenbankkomposition. Die sichtbare
+Backup-/Restore-UI bleibt gesperrt; deren Umschaltung ist Bestandteil des
+späteren Pakets `Verschlüsselungs-Aktivierung`.
+
 ## ADR-100 - Cipher-Pilotbackups sind same-installation und enden im Restore-Staging
 
 **Status:** Angenommen und ausschließlich im bestehenden internen
@@ -81,7 +143,8 @@ Restore extrahiert ausschließlich in einen neuen privaten Staging-Root. Erst
 nach keyed Reopen beider SQLCipher-Datenbanken, exakter 4.17-/Schema-/Context-
 Prüfung, vollständiger `.jkmedoc`-Verifikation und allen Crossbindings wird
 `RESTORE_READY` geschrieben. Dieses Paket führt weder Rename noch Live-Swap,
-Neustart oder Produktaktivierung aus.
+Neustart oder Produktaktivierung aus. Der spätere technische Konsum eines
+bereits fertigen `RESTORE_READY` ist ausschließlich in ADR-102 geregelt.
 
 ### Portabilitätsgrenze
 

@@ -10,6 +10,7 @@ from pathlib import Path
 import select
 import subprocess
 import sys
+from typing import Callable
 
 from src.core.restore_runtime import (
     ProductiveRestoreService,
@@ -40,6 +41,8 @@ EXIT_UNEXPECTED = 50
 WORKER_READY_MESSAGE = b"worker_started\n"
 WORKER_READY_TIMEOUT_SECONDS = 5.0
 WORKER_TERMINATE_TIMEOUT_SECONDS = 2.0
+RESTORE_MODE_ZIP_V1 = "zip_v1"
+RESTORE_MODE_FINAL_V3_ENCRYPTED = "final_v3_encrypted"
 
 
 class RestoreWorkerLaunchError(RuntimeError):
@@ -61,8 +64,9 @@ class RestoreWorkerLaunchPlan:
         lock_fd: int,
         ready_fd: int,
         parent_lifetime_fd: int,
+        restore_mode: str = RESTORE_MODE_ZIP_V1,
     ) -> list[str]:
-        return [
+        command = [
             *self.command_prefix,
             "--handoff",
             str(handoff),
@@ -75,6 +79,9 @@ class RestoreWorkerLaunchPlan:
             "--parent-lifetime-fd",
             str(parent_lifetime_fd),
         ]
+        if restore_mode != RESTORE_MODE_ZIP_V1:
+            command.extend(["--restore-mode", restore_mode])
+        return command
 
 
 @dataclass(frozen=True)
@@ -168,6 +175,7 @@ def launch_restore_worker(
     lock: RuntimeInstanceLock,
     launch_plan: RestoreWorkerLaunchPlan | None = None,
     ready_timeout_seconds: float = WORKER_READY_TIMEOUT_SECONDS,
+    restore_mode: str = RESTORE_MODE_ZIP_V1,
 ) -> RestoreWorkerProcess:
     """Start, authenticate and confirm a worker before transferring the lock."""
     if ready_timeout_seconds <= 0:
@@ -181,7 +189,7 @@ def launch_restore_worker(
             "Restore worker launch resolution failed: error_class=%s",
             type(error).__name__,
         )
-        _abort_unconfirmed_restore(lock)
+        _abort_unconfirmed_restore(lock, None, restore_mode)
         if isinstance(error, RestoreWorkerLaunchError):
             raise
         raise RestoreWorkerLaunchError(
@@ -198,6 +206,7 @@ def launch_restore_worker(
             lock_fd=lock.fileno,
             ready_fd=ready_write_fd,
             parent_lifetime_fd=lifetime_read_fd,
+            restore_mode=restore_mode,
         )
         process = subprocess.Popen(
             command,
@@ -215,7 +224,7 @@ def launch_restore_worker(
         )
         _close_fd(ready_read_fd)
         _close_fd(lifetime_write_fd)
-        _abort_unconfirmed_restore(lock)
+        _abort_unconfirmed_restore(lock, handoff_path.stem, restore_mode)
         raise RestoreWorkerLaunchError(
             "Der Restore-Worker-Prozess konnte nicht gestartet werden."
         ) from error
@@ -246,7 +255,7 @@ def launch_restore_worker(
                 state.get("phase"),
             )
             _close_fd(lifetime_write_fd)
-            _abort_unconfirmed_restore(lock)
+            _abort_unconfirmed_restore(lock, handoff_path.stem, restore_mode)
             raise RestoreWorkerLaunchError(
                 "Der Restore-Worker hat die Uebernahme nicht bestaetigt."
             )
@@ -258,7 +267,7 @@ def launch_restore_worker(
     except Exception as error:
         _terminate_and_reap(process)
         _close_fd(lifetime_write_fd)
-        _abort_unconfirmed_restore(lock)
+        _abort_unconfirmed_restore(lock, handoff_path.stem, restore_mode)
         LOGGER.error(
             "Restore worker takeover check failed: error_class=%s",
             type(error).__name__,
@@ -270,7 +279,32 @@ def launch_restore_worker(
         _close_fd(ready_read_fd)
 
 
-def _abort_unconfirmed_restore(lock: RuntimeInstanceLock) -> None:
+def _abort_unconfirmed_restore(
+    lock: RuntimeInstanceLock,
+    restore_id: str | None,
+    restore_mode: str,
+) -> None:
+    if restore_mode == RESTORE_MODE_FINAL_V3_ENCRYPTED:
+        if restore_id is None:
+            return
+        try:
+            paths = restore_transaction_paths(lock.runtime_root, restore_id)
+            journal = RestoreJournal(paths)
+            state = journal.read()
+            if (
+                state.get("phase") in {"handoff_created", "worker_started"}
+                and not state.get("completed_renames")
+            ):
+                journal.transition(
+                    "aborted_before_replacement",
+                    next_step="none",
+                )
+        except RestoreRuntimeError as error:
+            LOGGER.error(
+                "Cipher restore worker start recovery failed: error_class=%s",
+                type(error).__name__,
+            )
+        return
     try:
         result = recover_interrupted_restore(lock.runtime_root)
     except RestoreRuntimeError as error:
@@ -324,10 +358,20 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--lock-fd", type=int)
     parser.add_argument("--ready-fd", type=int)
     parser.add_argument("--parent-lifetime-fd", type=int)
+    parser.add_argument(
+        "--restore-mode",
+        choices=(RESTORE_MODE_ZIP_V1, RESTORE_MODE_FINAL_V3_ENCRYPTED),
+        default=RESTORE_MODE_ZIP_V1,
+    )
     return parser
 
 
-def run(argv: list[str] | None = None) -> int:
+def run(
+    argv: list[str] | None = None,
+    *,
+    encrypted_service_factory: Callable[[Path], ProductiveRestoreService]
+    | None = None,
+) -> int:
     try:
         args = _parser().parse_args(argv)
     except SystemExit as error:
@@ -351,7 +395,21 @@ def run(argv: list[str] | None = None) -> int:
         lock = RuntimeInstanceLock(runtime_root, inherited_fd=args.lock_fd)
         lock.acquire()
         try:
-            ProductiveRestoreService().execute(
+            if args.restore_mode == RESTORE_MODE_FINAL_V3_ENCRYPTED:
+                if encrypted_service_factory is None:
+                    from src.security.final_v3_live_restore import (
+                        build_final_v3_live_restore_worker_service,
+                    )
+
+                    service = build_final_v3_live_restore_worker_service(
+                        runtime_root,
+                        restore_id=handoff.stem,
+                    )
+                else:
+                    service = encrypted_service_factory(runtime_root)
+            else:
+                service = ProductiveRestoreService()
+            service.execute(
                 handoff_path=args.handoff,
                 nonce=args.nonce,
                 lock=lock,

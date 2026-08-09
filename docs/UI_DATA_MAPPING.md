@@ -331,8 +331,10 @@ UI-Aktion.
 Snapshotphasen, Restore-Staging und `RESTORE_READY` werden in diesem Paket
 nicht in PySide projiziert. Es entstehen keine Felder, Dialoge, Buttons,
 Fortschrittsanzeigen oder Fehlermeldungen. Die vorhandene Backup-/Restore-UI
-ist im Cipher-Produktmodus deaktiviert; Gate-Off ZIP-v1 bleibt nur historische
-Foundation und ein Live-Swap ist nicht erreichbar.
+ist im Cipher-Produktmodus deaktiviert. ZIP-v1 bleibt dort eine historische,
+nicht erreichbare Foundation. Der Cipher-Live-Worker ist über diese UI nicht
+erreichbar; seine sichtbare Produktumschaltung benötigt das spätere Paket
+`Verschlüsselungs-Aktivierung`.
 
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 

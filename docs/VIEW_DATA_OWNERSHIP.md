@@ -322,16 +322,29 @@ erzeugt keinen zweiten Provider.
 ## Verschlüsseltes Final-V3-Pilotbackup - technische Ownership ohne View
 
 `FinalV3EncryptedBackupService` besitzt Writer-Lock, Snapshotkoordination,
-Inventar-/Crossbindingprüfung, verschlüsselten Container, Neuverifikation und
-Restore-Staging. SQLCipher-Factories besitzen ausschließlich keyed Open und
+Inventar-/Crossbindingprüfung, verschlüsselten Container, Neuverifikation,
+Restore-Staging und READY-Reverifikation. SQLCipher-Factories besitzen ausschließlich keyed Open und
 Schema-/Engineprüfung; Document-Runtime und Companion-DB bleiben Owner von
 Generationen und Containern. `SQLiteDataKeysetRepository` besitzt nur den
 konsistenten Metadatensnapshot. Kein Widget oder ViewModel besitzt Schlüssel,
 Manifest, Staging, `RESTORE_READY` oder Live-Austausch.
 
-Die bestehende Backup-/Restore-Oberfläche bleibt vollständig Gate-Off und
-ZIP-v1. Eine spätere Produktaktivierung benötigt eine eigene Composition- und
-UX-Entscheidung; dieses Paket verdrahtet keine View.
+`FinalV3EncryptedRestoreHandoffService` besitzt nur den DMK-authentisierten
+same-installation Handoff. Die Bootstrap-Recovery besitzt ausschließlich die
+vor Product-Open ausgewertete Handoff-/Journal-/Rollen-Evidenz und den
+read-only bestehenden DMK-/Envelope-Kontext. `FinalV3EncryptedLiveRestoreService` besitzt die
+Cipher-Strategie des vorhandenen `ProductiveRestoreService`; der bestehende
+Restore-Worker bleibt Owner von Instanz-Lock, Parent-EOF, Journalphasen,
+Write-ahead-Renames, Rollback und Restart-Handshake. Backup-Service und der
+technische Restore-Verifier besitzen die Safety-, READY-, Installed- und
+Rollback-Reopen-Prüfungen. Nach Auth besitzt allein die Cipher-
+Produktkomposition Fachdatenbank und Document Store. Security Store,
+AppPreferences und Keychain bleiben
+außerhalb der Restore-Ownership.
+
+Die bestehende Backup-/Restore-Oberfläche bleibt im Cipher-Modus vollständig
+gesperrt; ZIP-v1 ist dort nicht erreichbar. Eine spätere sichtbare Aktivierung
+benötigt eine eigene UX-Entscheidung; dieses Paket verdrahtet keine View.
 
 ## Security Sprint 11 - Integration ohne neue View
 

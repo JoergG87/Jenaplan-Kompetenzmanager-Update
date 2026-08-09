@@ -1084,12 +1084,67 @@ Inventar-/Context-/Generationsabweichung oder SQLCipher-/Schemafehler erzeugen
 keinen Erfolgsbeleg. Ein fehlgeschlagener Backupversuch veröffentlicht kein
 Ziel und beschädigt kein bestehendes Backup. Ein fehlgeschlagener Restore
 kann Stagingreste hinterlassen, aber niemals `RESTORE_READY`; Retry verwendet
-einen neuen Staging-Root. Es gibt keinen Live-Swap, Rename oder Neustart.
+einen neuen Staging-Root. Dieser Staging-Ablauf selbst führt keinen Live-Swap,
+Rename oder Neustart aus; der getrennte Konsum folgt ausschließlich dem
+nachstehenden Worker-Lifecycle.
 
 Der Reopen ist bewusst same-installation: Der passende DMK muss im vorhandenen
 Keychain bestehen. Passwortwechsel und Support-Reset verändern ihn nicht.
 DMK-/Geräteverlust ist kein gelöstes Portable-Recovery-Szenario. Es gibt keine
 Klartextmigration und keinen ZIP-v1-Fallback; Gate-Off bleibt unverändert.
+
+## Verschlüsselter Final-V3-Live-Restore
+
+Ein gültiges `RESTORE_READY` wird ausschließlich über den vorhandenen
+Restore-Zustandsautomaten aktiviert:
+
+1. Die App hält den kanonischen Instanz-Lock, fordert Maintenance an und lässt
+   alle fachlichen Writer auslaufen. Unter diesem Freeze erzeugt der vorhandene
+   Cipher-Backup-Service ein neues `.jkmebackup` des aktuellen Livebestands,
+   verifiziert es vollständig und hält Maintenance bis zur Workerübernahme.
+   Jeder Fehler endet ohne Handoff und ohne Live-Rename.
+2. Der Handoff bindet READY, Manifest, Safety-Backup, Installation,
+   Database-Context und Buildidentität kanonisch und authentisiert sie mit der
+   eigenen DMK-separierten HMAC-Domäne. Er enthält weder DMK/Database-Key noch
+   Passwort, Recovery-Code oder Sitzung.
+3. Der vorhandene Worker konsumiert den Handoff einmalig, übernimmt den
+   Instanz-Lock, persistiert `worker_started`, bestätigt die Übernahme über den
+   Ready-FD und wartet auf Parent-EOF. Erst nach vollständigem App-Ende beginnt
+   der Cipher-Preflight.
+4. Der Worker verifiziert Safety-Backup und `RESTORE_READY` erneut vollständig
+   keyed. Haupt-, Companion- und Keyset-WAL werden kontrolliert checkpointed;
+   verbleibende Sidecars blockieren. Security Store und AppPreferences werden
+   als ausgeschlossene Evidenz gebunden.
+5. Das Journal persistiert vor jedem Rename Intent und fsynct Quelle, Ziel und
+   Elternverzeichnisse. Keymetadaten, Haupt-DB, Companion-DB und
+   Dokumentbestand wandern rollenweise nach `rollback/`, danach dieselben vier
+   Prepared-Rollen nach Live. Crashgrenzen vor dem ersten Rename, zwischen den
+   Datenbanken, vor und während des Dokumentbestands sowie vor dem Reopen sind
+   dadurch eindeutig klassifizierbar. Der alte Bestand wird nicht physisch
+   gelöscht.
+6. Der neue Livebestand wird mit dem vorhandenen DMK und Database-Key-Envelope
+   keyed geöffnet. Haupt- und Companion-Fingerprint, Integrität, Foreign Keys,
+   sämtliche registrierten `.jkmedoc`-Generationen, aktive allgemeine
+   Dokumente und Anhänge sowie RPA-/LCA-Crossbindings müssen exakt stimmen.
+7. Erst danach entsteht der kurzlebige Resume-Token. Ein frischer normaler
+   App-Prozess lädt den DMK erneut, wiederholt den vollständigen keyed Reopen,
+   konsumiert den Token atomar und setzt `completed`. Derselbe Prozess setzt
+   anschließend die reguläre Security-/Auth-Sequenz fort und öffnet nach
+   erfolgreicher Anmeldung ausschließlich die Cipher-Produktkomposition aus
+   ADR-101. Keine Sitzung wird übernommen und keine zweite Fachdatenbank
+   komponiert.
+8. Kaltstart-Recovery läuft vor Qt, Auth und Product-Open. Sie verwendet nur
+   Security-/Installationskontext, bestehenden Keychain-DMK, Keyset-/Envelope-
+   Metadaten, DMK-authentisierten Handoff, Journal und Rollen-Evidenz. Jeder
+   Fehler nach Swapbeginn verschiebt den neuen Teilbestand nach
+   `failed-new/`, stellt alle alten Rollen aus `rollback/` wieder her und
+   prüft sie gegen Tree-Evidenz plus keyed Vollruntime. Bei widersprüchlichen
+   Komponenten oder fehlgeschlagenem Reopen wird
+   `manual_recovery_required`; es gibt keine automatische Neuerzeugung.
+
+Der gesamte Vertrag ist same-installation mit vorhandenem Keychain-DMK.
+Gerätewechsel, DMK-Recovery, Klartext-/V2-/ZIP-v1-Migration, portable Backups,
+physisches GC, UI-Umschaltung, Build und Release sind ausgeschlossen.
 
 ## Security Sprint 12 - interner Build- und Pakettest-Lifecycle
 
@@ -2327,6 +2382,15 @@ CreateRestoreHandoffCommand
 -> Startup-Handshake abwarten
 -> completed
 ```
+
+Der Cipher-Modus verwendet exakt denselben Lock-, Handoff-, Parent-EOF-,
+Journal-, Rename-, Rollback- und Resume-Zustandsautomaten. Seine injizierte
+Strategie ersetzt ausschließlich ZIP-v1-Preflight und die vier Gate-Off-
+Komponenten durch das zuvor vollständig verifizierte `.jkmebackup`,
+`RESTORE_READY`, `key_runtime_metadata` und `final_v3_runtime`. Standard-
+`sqlite3` darf keine Cipher-Datei prüfen; jede Installed-, Restart- und
+Rollbackprüfung erfolgt über die bestehenden SQLCipher-Factories mit dem
+vorhandenen DMK/Database-Key.
 
 Kann Executable, Berechtigung, Argumentliste, Arbeitsverzeichnis,
 Lock-Uebergabe oder Ready-Bestaetigung nicht nachgewiesen werden, wird der

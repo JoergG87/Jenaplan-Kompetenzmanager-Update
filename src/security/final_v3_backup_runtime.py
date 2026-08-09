@@ -1,8 +1,9 @@
-"""Encrypted backup and staging-only restore for the gated Final-V3 runtime.
+"""Encrypted backup and verified restore staging for the gated Final-V3 runtime.
 
 The module is deliberately outside the product backup/restore composition.
-It accepts only an already opened Final-V3 cipher runtime, uses the existing
-writer/maintenance gates, and never swaps a staged restore into the live root.
+It accepts only an already opened Final-V3 cipher runtime and uses the existing
+writer/maintenance gates.  Live replacement remains owned by the restore
+worker; this module supplies its mandatory safety freeze and READY verifier.
 """
 
 from __future__ import annotations
@@ -40,6 +41,7 @@ from src.core.database_engine import (
     SQLCipherConnectionProvider,
 )
 from src.core.maintenance_gate import (
+    MaintenanceCapability,
     MaintenanceGate,
     MaintenancePurpose,
     MaintenanceState,
@@ -351,6 +353,41 @@ class FinalV3RestoreStagingResult:
 
 
 @dataclass(frozen=True, slots=True)
+class FinalV3RestoreReadyVerification:
+    staging_root: Path
+    ready_path: Path
+    container_sha256: str
+    manifest: FinalV3EncryptedBackupManifestV1 = field(repr=False)
+    paths: FinalV3DocumentRuntimePaths = field(repr=False)
+    loaded_keys: LoadedDatabaseKeyRuntime = field(repr=False)
+
+
+@dataclass(slots=True)
+class FinalV3EncryptedSafetyBackup:
+    """Verified backup plus the in-process maintenance freeze it established."""
+
+    result: FinalV3EncryptedBackupResult
+    _gate: MaintenanceGate = field(repr=False)
+    _capability: MaintenanceCapability = field(repr=False)
+    _owner_id: str = field(repr=False)
+    _transferred: bool = field(default=False, init=False, repr=False)
+    _released: bool = field(default=False, init=False, repr=False)
+
+    def transfer_to_worker(self) -> None:
+        if self._released:
+            raise FinalV3EncryptedBackupError("safety_backup_freeze_released")
+        self._transferred = True
+
+    def abort(self) -> None:
+        if self._released:
+            return
+        if self._transferred:
+            raise FinalV3EncryptedBackupError("safety_backup_freeze_transferred")
+        self._gate.abort(self._capability, owner_id=self._owner_id)
+        self._released = True
+
+
+@dataclass(frozen=True, slots=True)
 class _MaterializedStaging:
     root: Path
     manifest: FinalV3EncryptedBackupManifestV1
@@ -388,7 +425,7 @@ class FinalV3EncryptedBackupService:
     def __init__(
         self,
         *,
-        opened_runtime: OpenedFinalV3DocumentRuntime,
+        opened_runtime: OpenedFinalV3DocumentRuntime | None,
         paths: FinalV3DocumentRuntimePaths,
         loaded_keys: LoadedDatabaseKeyRuntime,
         main_factory: FinalV3SQLCipherConnectionFactory,
@@ -397,11 +434,23 @@ class FinalV3EncryptedBackupService:
         maintenance_gate: MaintenanceGate,
         random_source: Any,
         clock: Any,
+        installation_id: str | None = None,
         fault_hook: Callable[[str], None] | None = None,
     ) -> None:
-        if opened_runtime.database_context_id != loaded_keys.database_context_id:
+        resolved_installation_id = (
+            opened_runtime.installation_id
+            if opened_runtime is not None
+            else installation_id
+        )
+        if resolved_installation_id is None:
+            raise FinalV3EncryptedBackupError("backup_installation_context_missing")
+        if (
+            opened_runtime is not None
+            and opened_runtime.database_context_id != loaded_keys.database_context_id
+        ):
             raise FinalV3EncryptedBackupError("backup_database_context_mismatch")
         self.opened = opened_runtime
+        self.installation_id = resolved_installation_id
         self.paths = paths
         self.loaded = loaded_keys
         self._main_factory = main_factory
@@ -414,21 +463,49 @@ class FinalV3EncryptedBackupService:
 
     @property
     def context(self) -> BackupContainerContextV1:
-        compatibility = self.opened.final_v3.compatibility
+        compatibility = None if self.opened is None else self.opened.final_v3.compatibility
         return BackupContainerContextV1(
-            installation_id=self.opened.installation_id,
+            installation_id=self.installation_id,
             database_context_id=self.loaded.database_context_id,
             app_version=APP_VERSION,
-            sqlite_version=compatibility.sqlite_version,
-            sqlcipher_version=compatibility.cipher_version,
+            sqlite_version=(
+                SQLCIPHER_4_17_SQLITE_VERSION
+                if compatibility is None
+                else compatibility.sqlite_version
+            ),
+            sqlcipher_version=(
+                SQLCIPHER_4_17_ENGINE_VERSION
+                if compatibility is None
+                else compatibility.cipher_version
+            ),
         )
 
     def create(self, target: Path) -> FinalV3EncryptedBackupResult:
+        result = self._create(target, retain_maintenance=False)
+        if not isinstance(result, FinalV3EncryptedBackupResult):
+            raise FinalV3EncryptedBackupError("encrypted_backup_state_invalid")
+        return result
+
+    def create_safety_backup(self, target: Path) -> FinalV3EncryptedSafetyBackup:
+        """Create+verify a backup and keep normal writers blocked for handoff."""
+
+        result = self._create(target, retain_maintenance=True)
+        if not isinstance(result, FinalV3EncryptedSafetyBackup):
+            raise FinalV3EncryptedBackupError("encrypted_backup_state_invalid")
+        return result
+
+    def _create(
+        self,
+        target: Path,
+        *,
+        retain_maintenance: bool,
+    ) -> FinalV3EncryptedBackupResult | FinalV3EncryptedSafetyBackup:
         destination = _validate_backup_target(target)
         workspace = _new_private_sibling(destination, _WORKSPACE_PREFIX)
         owner_id = f"encrypted-backup:{self._new_uuid()}"
         capability = None
         safe_release = False
+        maintenance_transferred = False
         try:
             _write_exclusive(
                 workspace / SYNTHETIC_BACKUP_TEST_ROOT_MARKER,
@@ -549,13 +626,21 @@ class FinalV3EncryptedBackupService:
                             "backup_published_manifest_mismatch"
                         )
                     self.opened.documents.validate_restart()
+                    if retain_maintenance:
+                        maintenance_transferred = True
+                        return FinalV3EncryptedSafetyBackup(
+                            result=published,
+                            _gate=self._gate,
+                            _capability=capability,
+                            _owner_id=owner_id,
+                        )
                     return published
         except (FinalV3EncryptedBackupError, EncryptedBackupError):
             raise
         except Exception:
             raise FinalV3EncryptedBackupError("encrypted_backup_failed") from None
         finally:
-            if capability is not None:
+            if capability is not None and not maintenance_transferred:
                 try:
                     if safe_release and self._gate.state is not MaintenanceState.RECOVERY_REQUIRED:
                         self._gate.abort(capability, owner_id=owner_id)
@@ -638,6 +723,180 @@ class FinalV3EncryptedBackupService:
             # The private staging root intentionally remains for diagnosis;
             # absence of RESTORE_READY makes it non-activatable.
             raise
+
+    def verify_restore_ready(
+        self,
+        staging_root: Path,
+        *,
+        expected_container_sha256: str,
+    ) -> FinalV3RestoreReadyVerification:
+        """Re-open and fully verify an existing RESTORE_READY tree."""
+
+        if not _SHA256.fullmatch(expected_container_sha256):
+            raise FinalV3EncryptedBackupError("restore_ready_container_hash_invalid")
+        try:
+            root = Path(staging_root).expanduser().resolve(strict=True)
+            metadata = root.lstat()
+        except OSError:
+            raise FinalV3EncryptedBackupError("restore_ready_root_invalid") from None
+        if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+            raise FinalV3EncryptedBackupError("restore_ready_root_invalid")
+        ready_path = root / FINAL_V3_RESTORE_READY_FILENAME
+        try:
+            ready_bytes = _read_regular(ready_path)
+            ready = json.loads(ready_bytes)
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            raise FinalV3EncryptedBackupError("restore_ready_invalid") from None
+        required = {
+            "active_document_count",
+            "container_sha256",
+            "database_context_id",
+            "installation_id",
+            "manifest_sha256",
+            "ready_version",
+            "state",
+            "total_document_generation_count",
+        }
+        if (
+            not isinstance(ready, dict)
+            or set(ready) != required
+            or canonical_json(ready) != ready_bytes
+            or ready.get("ready_version") != FINAL_V3_RESTORE_READY_VERSION
+            or ready.get("state") != "RESTORE_READY"
+            or ready.get("container_sha256") != expected_container_sha256
+        ):
+            raise FinalV3EncryptedBackupError("restore_ready_invalid")
+
+        manifest_path = root / FINAL_V3_BACKUP_MANIFEST_FILENAME
+        manifest = FinalV3EncryptedBackupManifestV1.from_bytes(
+            _read_regular(manifest_path)
+        )
+        self._validate_context(manifest)
+        if (
+            ready.get("installation_id") != manifest.installation_id
+            or ready.get("database_context_id") != manifest.database_context_id
+            or ready.get("manifest_sha256")
+            != hashlib.sha256(manifest.to_bytes()).hexdigest()
+            or ready.get("active_document_count")
+            != len(manifest.active_document_ids)
+            or ready.get("total_document_generation_count")
+            != len(manifest.documents)
+        ):
+            raise FinalV3EncryptedBackupError("restore_ready_crossbinding_invalid")
+
+        materialized = self.verify_live_runtime(root, manifest=manifest)
+        return FinalV3RestoreReadyVerification(
+            staging_root=root,
+            ready_path=ready_path,
+            container_sha256=expected_container_sha256,
+            manifest=manifest,
+            paths=materialized.paths,
+            loaded_keys=materialized.loaded_keys,
+        )
+
+    def verify_live_runtime(
+        self,
+        runtime_root: Path,
+        *,
+        manifest: FinalV3EncryptedBackupManifestV1,
+        enforce_artifact_hashes: bool = True,
+    ) -> _MaterializedStaging:
+        """Keyed full-runtime verification used after swap and during restart."""
+
+        try:
+            root = Path(runtime_root).expanduser().resolve(strict=True)
+            metadata = root.lstat()
+        except OSError:
+            raise FinalV3EncryptedBackupError("restore_runtime_root_invalid") from None
+        if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+            raise FinalV3EncryptedBackupError("restore_runtime_root_invalid")
+        self._validate_context(manifest)
+        key_paths = DatabaseKeyRuntimePaths.for_root(root)
+        final_paths = FinalV3SQLCipherRuntimePaths.for_key_runtime(key_paths)
+        paths = FinalV3DocumentRuntimePaths.for_final_v3(final_paths)
+        artifacts = {item.role: item for item in manifest.artifacts}
+        actual_artifacts = {
+            FinalV3BackupArtifactRole.MAIN_DATABASE: final_paths.database,
+            FinalV3BackupArtifactRole.DOCUMENT_COMPANION: paths.database,
+            FinalV3BackupArtifactRole.KEYSET_METADATA: key_paths.keyset_metadata,
+            FinalV3BackupArtifactRole.DATABASE_KEY_ENVELOPE_REGISTRY:
+                key_paths.envelope_registry,
+        }
+        if set(artifacts) != set(actual_artifacts):
+            raise FinalV3EncryptedBackupError("restore_artifact_inventory_invalid")
+        if enforce_artifact_hashes:
+            for role, path in actual_artifacts.items():
+                try:
+                    size, digest = _file_size_sha256(path)
+                except OSError:
+                    raise FinalV3EncryptedBackupError(
+                        "restore_artifact_changed"
+                    ) from None
+                artifact = artifacts[role]
+                if size != artifact.size or digest != artifact.sha256:
+                    raise FinalV3EncryptedBackupError("restore_artifact_changed")
+
+        staged_loaded = self._validate_key_metadata(
+            key_paths.keyset_metadata,
+            key_paths.envelope_registry,
+            expected=self.loaded,
+        )
+        if (
+            self._database_key_rewrap_revision(
+                key_paths.envelope_registry,
+                expected=staged_loaded,
+            )
+            != manifest.database_key_rewrap_revision
+        ):
+            raise FinalV3EncryptedBackupError(
+                "restore_database_key_envelope_revision_mismatch"
+            )
+        main_report = self._inspect_main(
+            final_paths.database,
+            staged_loaded.database_key.key_material,
+        )
+        if main_report.schema_fingerprint != FINAL_SCHEMA_FINGERPRINT:
+            raise FinalV3EncryptedBackupError("restore_main_schema_mismatch")
+        self._inspect_companion(
+            paths.database,
+            staged_loaded.database_key.key_material,
+        )
+        staged_runtime = FinalV3DocumentRuntime(
+            paths=paths,
+            factory=_StagedDocumentFactory(
+                self._provider,
+                paths.database,
+                staged_loaded.database_key.key_material,
+            ),
+            loaded_keys=staged_loaded,
+            installation_id=manifest.installation_id,
+            source_root=None,
+            random_source=self._random,
+            clock=self._clock,
+        )
+        try:
+            staged_runtime.validate_restart()
+        except Exception:
+            raise FinalV3EncryptedBackupError(
+                "restore_document_runtime_invalid"
+            ) from None
+        observed_records = self._document_records(
+            paths.database,
+            staged_loaded.database_key.key_material,
+        )
+        if (
+            tuple(_document_manifest(record) for record in observed_records)
+            != manifest.documents
+        ):
+            raise FinalV3EncryptedBackupError("restore_document_manifest_mismatch")
+        active_ids = self._validate_crossbindings(
+            final_paths.database,
+            paths.database,
+            staged_loaded.database_key.key_material,
+        )
+        if active_ids != manifest.active_document_ids:
+            raise FinalV3EncryptedBackupError("restore_active_inventory_mismatch")
+        return _MaterializedStaging(root, manifest, paths, staged_loaded)
 
     def _materialize_and_validate(
         self, extraction: EncryptedBackupExtractionResult
@@ -785,7 +1044,7 @@ class FinalV3EncryptedBackupService:
             ) as connection:
                 FinalV3DocumentSchemaV1.validate(
                     connection,
-                    installation_id=self.opened.installation_id,
+                    installation_id=self.installation_id,
                     database_context_id=self.loaded.database_context_id,
                 )
         except Exception:
@@ -945,7 +1204,7 @@ class FinalV3EncryptedBackupService:
                 raise FinalV3EncryptedBackupError("document_container_changed")
         return FinalV3EncryptedBackupManifestV1(
             created_at=_format_utc(self._clock.utc_now()),
-            installation_id=self.opened.installation_id,
+            installation_id=self.installation_id,
             database_context_id=self.loaded.database_context_id,
             dmk_key_id=self.loaded.dmk_key_id,
             dmk_generation=self.loaded.dmk_generation,
@@ -1019,7 +1278,7 @@ class FinalV3EncryptedBackupService:
 
     def _validate_context(self, manifest: FinalV3EncryptedBackupManifestV1) -> None:
         if (
-            manifest.installation_id != self.opened.installation_id
+            manifest.installation_id != self.installation_id
             or manifest.database_context_id != self.loaded.database_context_id
             or manifest.dmk_key_id != self.loaded.dmk_key_id
             or manifest.dmk_generation != self.loaded.dmk_generation
@@ -1186,18 +1445,24 @@ def build_final_v3_encrypted_backup_service(
     random_source=None,
     clock=None,
     sqlcipher_provider: SQLCipherConnectionProvider | None = None,
+    product_root: Path | None = None,
     fault_hook=None,
 ) -> FinalV3EncryptedBackupService:
-    """Compose the backup service only inside the existing Final-V3 gate."""
+    """Compose backup services from the gate or the ADR-101 product root."""
 
     environment = dict(environ)
-    gate = FinalV3SQLCipherRuntimeGate()
-    decision = gate.resolve(environment)
-    if decision.state.value != "ACTIVE":
-        raise FinalV3EncryptedBackupError("final_v3_backup_gate_required")
-    final_paths = gate.require_paths(
-        environment.get("JKM_DMK_DATABASE_KEY_RUNTIME_ROOT", "")
-    )
+    if product_root is None:
+        gate = FinalV3SQLCipherRuntimeGate()
+        decision = gate.resolve(environment)
+        if decision.state.value != "ACTIVE":
+            raise FinalV3EncryptedBackupError("final_v3_backup_gate_required")
+        final_paths = gate.require_paths(
+            environment.get("JKM_DMK_DATABASE_KEY_RUNTIME_ROOT", "")
+        )
+    else:
+        root = Path(product_root).expanduser().resolve(strict=True)
+        key_paths = DatabaseKeyRuntimePaths.for_root(root)
+        final_paths = FinalV3SQLCipherRuntimePaths.for_key_runtime(key_paths)
     paths = FinalV3DocumentRuntimePaths.for_final_v3(final_paths)
     if opened_runtime.documents.paths != paths:
         raise FinalV3EncryptedBackupError("final_v3_backup_scope_invalid")
@@ -1253,6 +1518,57 @@ def build_final_v3_encrypted_backup_service(
         random_source=random,
         clock=runtime_clock,
         fault_hook=fault_hook,
+    )
+
+
+def build_final_v3_restore_verifier(
+    *,
+    runtime_root: Path,
+    loaded_keys: LoadedDatabaseKeyRuntime,
+    installation_id: str,
+    sqlcipher_provider: SQLCipherConnectionProvider | None = None,
+    random_source=None,
+    clock=None,
+) -> FinalV3EncryptedBackupService:
+    """Build a read-only keyed verifier without opening a product runtime."""
+
+    root = Path(runtime_root).expanduser().resolve(strict=True)
+    from src.desktop_app.runtime import runtime_paths
+    from src.security.cipher_product_runtime import CipherProductRuntimeScope
+
+    scope = CipherProductRuntimeScope(runtime_paths(root))
+    key_paths = DatabaseKeyRuntimePaths.for_root(root)
+    final_paths = FinalV3SQLCipherRuntimePaths.for_key_runtime(key_paths)
+    paths = FinalV3DocumentRuntimePaths.for_final_v3(final_paths)
+    provider = sqlcipher_provider or SQLCipherConnectionProvider(
+        expected_binding_version=SQLCIPHER_4_17_BINDING_VERSION,
+        expected_engine_version=SQLCIPHER_4_17_ENGINE_VERSION,
+    )
+    random = random_source or SystemRandomSource()
+    runtime_clock = clock or SystemClock()
+    return FinalV3EncryptedBackupService(
+        opened_runtime=None,
+        paths=paths,
+        loaded_keys=loaded_keys,
+        main_factory=FinalV3SQLCipherConnectionFactory(
+            provider=provider,
+            paths=final_paths,
+            loaded_keys=loaded_keys,
+            environ={},
+            scope=scope,
+        ),
+        document_factory=FinalV3DocumentConnectionFactory(
+            provider=provider,
+            paths=paths,
+            loaded_keys=loaded_keys,
+            environ={},
+            scope=scope,
+        ),
+        provider=provider,
+        maintenance_gate=MaintenanceGate(),
+        random_source=random,
+        clock=runtime_clock,
+        installation_id=installation_id,
     )
 
 

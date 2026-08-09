@@ -16,6 +16,27 @@
   Schuljahreswechsel-Backup und Support-Reset-Backup bleiben bis zum
   Folgepaket im Cipher-Produktmodus gesperrt.
 
+- Ein bereits vollständig verifizierter `RESTORE_READY`-Bestand kann auf Basis
+  der Cipher-Produktkomposition aus ADR-101 über denselben
+  Restore-Worker, Instanz-Lock, Parent-EOF-Handoff, Write-ahead-Journal,
+  Rollback und Restart-Handshake live eingesetzt werden. Vor jedem Swap wird
+  der aktuelle Livebestand zwingend als neues verschlüsseltes `.jkmebackup`
+  gesichert und vollständig neu verifiziert. Der Worker tauscht ausschließlich
+  Keyset-/Envelope-Metadaten und die vollständige Final-V3-Runtime, prüft
+  Haupt-/Companion-DB sowie alle `.jkmedoc`-/RPA-/LCA-Crossbindings keyed und
+  schließt erst nach frischem Reopen ab. Kaltstart-Recovery rekonstruiert
+  einen unterbrochenen Swap vor dem normalen Product-Open ausschließlich aus
+  Security-/Installationskontext, vorhandenem DMK, authentisiertem Handoff,
+  Journal und Rollen-Evidenz. Der Restart bestätigt das Journal und läuft im
+  selben Prozess über Security/Auth und die normale Cipher-Produktkomposition
+  bis zur App weiter. Alter Bestand und Safety-Backup
+  bleiben Evidenz; ein uneindeutiger Mischzustand wird
+  `manual_recovery_required`. Security Store, AppPreferences und DMK bleiben
+  unverändert. Der Vertrag ist same-installation ohne Gerätewechsel,
+  DMK-Recovery, Klartext-/ZIP-v1-Migration, UI-Umschaltung oder
+  Produktdefault-Aktivierung; die sichtbare Backup-/Restore-UI bleibt im
+  Cipher-Produktmodus gesperrt.
+
 - Der frische verschlüsselte Final-V3-Pilotbestand kann hinter dem bestehenden
   Security-Gate als `.jkmebackup` gesichert und vollständig in einen neuen
   privaten Restore-Staging-Root zurückgeführt werden. Keyed Snapshots von

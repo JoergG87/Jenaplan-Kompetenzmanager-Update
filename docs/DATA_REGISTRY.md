@@ -404,13 +404,23 @@ Gate-Aktivierung neu erzeugt und nicht migriert.
 | Database-Key-Envelope-Registry | authentisierte Envelope-Dateien und nicht geheime Registrybindung | bereits kryptografisch geschützt; kein Klartext-Database-Key | same-installation Reopen-Metadaten |
 | `.jkmedoc`-Inventar | alle Companion-registrierten Generationen mit Document-/Key-/Envelope-Generation, Lifecycle, Größe und SHA-256 | jeder Container als authentisiert verschlüsselter Entry; aktive Teilmenge separat gebunden | vollständiger Retention- und Reopenbestand |
 | `FinalV3EncryptedBackupManifestV1` | Format, Installation-/Database-Context, Engine-/Schema-Versionen, Rollen, Generationen, Größen, Hashes und aktives Inventar | selbst authentisiert verschlüsselt; keine Secrets oder Schülerklartexte | Container-Source-of-Truth |
-| `RESTORE_READY` | Version, Backup-/Manifesthash und verifizierte Inventarzähler | ausschließlich neuer privater Staging-Root; kein Livepfad | Abschlussbeleg nach keyed Vollprüfung |
+| `RESTORE_READY` | Version, Backup-/Manifesthash und verifizierte Inventarzähler | neuer privater Staging-Root; nur als erneut vollständig geprüfte Worker-Eingabe | Abschlussbeleg nach keyed Vollprüfung |
+| Cipher-Live-Handoff | Restore-Kind, One-Time-Nonce, Installation-/Context-, READY-/Manifest- und Safety-Backup-Bindung plus DMK-separierte HMAC | `restore-handoffs/`, Modus `0600`, atomar konsumiert; keine Schlüssel oder Sitzung | same-installation Workersteuerung |
+| Cipher-Restore-Journal | Phasen, Vier-Rollen-Plan für Keymetadaten, Haupt-DB, Companion-DB und Dokumentbestand, Datei-/Tree-Evidenz, Write-ahead-Rename-Intent, ausgeschlossene Pfade und Restart-Handshake | vorhandener `restore-transactions/<restore-id>/`-Vertrag | technische Recovery-Source-of-Truth vor jedem Product-Open |
+| `encrypted-restore-safety/*.jkmebackup` | unmittelbar vor Handoff erstellter und vollständig verifizierter verschlüsselter Live-Snapshot | außerhalb der Swap-Komponenten; retained, kein GC in diesem Paket | zwingende Pre-Swap-Evidenz |
+| `rollback/security-key-runtime-v1/` | alter Keyset-/Envelope-Metadatenbestand | journalisiert retained; bei Rollback nach Live zurückgeführt | Rollback-Evidenz |
+| `rollback/final-v3.sqlcipher`, `rollback/documents-v1.sqlcipher`, `rollback/storage/` | alte Haupt-/Companion-DB und vollständiges `.jkmedoc`-Inventar als getrennt journalisierte Rollen einer Einheit | retained; bei Erfolg nicht gelöscht, bei Rollback vollständig gemeinsam zurückgeführt | Rollback-Evidenz und Crashgrenzen |
 
 DMK, App-Passwort, Recovery-Codes, `security.sqlite`, Device-Credential,
 Touch-ID-Zustand, Keychain-Secrets, Logs, UI-Präferenzen und Testartefakte sind
 keine Backupdatenquelle. Historische Klartext- und ZIP-v1-Bestände sind keine
 Eingabe dieses Gate-On-Pfads. Gate-Off bleibt eine getrennte unveränderte
 ZIP-v1-Datenquelle.
+
+`security/security.sqlite`, `app-preferences.json`, Keychain-DMK,
+Passwort-/Recovery-/Device-/Touch-ID-Daten und persistierte Sitzungen sind
+weder Cipher-Backup- noch Live-Swap-Komponenten. Ihre Vorher-/Nachher-Evidenz
+wird geprüft; der Restore darf ihre Bytes nicht verändern.
 
 ## Security Sprint 12 - interne Build- und Testdaten
 
@@ -886,6 +896,16 @@ Technische, nicht fachliche Runtime-Quellen:
 | `restore-transactions/<restore-id>/rollback/` | Restore-Executor | alter DB-, WAL-, SHM- und Documents-Zustand | nie automatisch loeschen; bis bestaetigtem Abschluss erhalten |
 | `restore-transactions/<restore-id>/failed-new/` | Restore-Rollback | nach Fehler zurueckgenommener neuer Bestand | bei Fehler und manueller Recovery erhalten |
 | `restore-transactions/<restore-id>/resume-token.json` | Restore-Executor | Restore-ID, zufaelliges Token, Erstellungs- und Ablaufzeit | Modus `0600`, einmalig, keine fachlichen Daten |
+
+Für `restore_kind=final_v3_encrypted_same_installation` bleibt derselbe
+Handoff-/Journal-/Resume-Bereich maßgeblich. An die Stelle der Gate-Off-Rollen
+DB/WAL/SHM/`documents/` treten exakt `key_runtime_metadata` und
+`final_v3_runtime`; `source-backup.jkmbackup` wird nicht als ZIP-v1-Fallback
+verwendet. Das zwingende `.jkmebackup` liegt unter
+`encrypted-restore-safety/`, und READY-Staging liegt gebunden unter
+`encrypted-restore-staging/`. Haupt-/Companion-Sidecars müssen nach
+vollständigem App-Ende keyed checkpointed und vor dem ersten Rename abwesend
+sein.
 
 Diese Quellen enthalten keine Datenbankinhalte, Namen, Notizen, fachlichen Texte oder frei injizierten fachlichen Pfade. Sie sind technische Beweise und Steuerdaten; SQLite und `documents/` bleiben die fachliche Source of Truth.
 

@@ -49,9 +49,7 @@ PILOT_FIRST_RUN_SCHOOL_YEAR_START = date(2026, 8, 1)
 PILOT_FIRST_RUN_SCHOOL_YEAR_END = date(2027, 7, 31)
 _SQLITE_HEADER = b"SQLite format 3\x00"
 _LEGACY_RESTORE_DIRECTORIES = (
-    "restore-handoffs",
     "restore-staging",
-    "restore-transactions",
 )
 
 
@@ -183,6 +181,7 @@ class CipherProductRuntimeCoordinator:
         random_source=None,
         clock=None,
         sqlcipher_provider: SQLCipherConnectionProvider | None = None,
+        active_restore_id: str | None = None,
         fault_hook=None,
     ) -> None:
         self.paths = paths
@@ -196,6 +195,7 @@ class CipherProductRuntimeCoordinator:
             expected_binding_version=SQLCIPHER_4_17_BINDING_VERSION,
             expected_engine_version=SQLCIPHER_4_17_ENGINE_VERSION,
         )
+        self.active_restore_id = active_restore_id
         self.fault_hook = fault_hook
         self.scope = CipherProductRuntimeScope(paths)
         self.operation = CipherProductRuntimeOperation.CLASSIFY
@@ -239,6 +239,7 @@ class CipherProductRuntimeCoordinator:
             final_paths=final_paths,
             document_paths=document_paths,
             first_run_allowed=self.first_run_allowed,
+            active_restore_id=self.active_restore_id,
         )
         account = self.account_loader()
         installation_id = validate_uuid4(getattr(account, "installation_id", ""))
@@ -261,6 +262,37 @@ class CipherProductRuntimeCoordinator:
                 "cipher_product_key_state_contradictory",
                 operation=CipherProductRuntimeOperation.LOAD_KEYS,
             )
+        if not first_run and any(
+            _path_exists_or_symlink(Path(self.paths.root) / name)
+            for name in ("restore-handoffs", "restore-transactions")
+        ):
+            try:
+                if self.active_restore_id is None:
+                    from .final_v3_live_restore import (
+                        validate_terminal_final_v3_restore_evidence,
+                    )
+
+                    validate_terminal_final_v3_restore_evidence(
+                        self.paths.root,
+                        loaded_keys=loaded,
+                        installation_id=installation_id,
+                    )
+                else:
+                    from .final_v3_live_restore import (
+                        validate_active_final_v3_restore_evidence,
+                    )
+
+                    validate_active_final_v3_restore_evidence(
+                        self.paths.root,
+                        restore_id=self.active_restore_id,
+                        loaded_keys=loaded,
+                        installation_id=installation_id,
+                    )
+            except Exception:
+                raise CipherProductRuntimeError(
+                    "cipher_product_restore_evidence_invalid",
+                    operation=CipherProductRuntimeOperation.LOAD_KEYS,
+                ) from None
 
         self.operation = CipherProductRuntimeOperation.OPEN_FINAL_V3
         final_v3 = FinalV3SQLCipherRuntimeCoordinator(
@@ -331,6 +363,7 @@ def _classify_product_state(
     final_paths: FinalV3SQLCipherRuntimePaths,
     document_paths: FinalV3DocumentRuntimePaths,
     first_run_allowed: bool,
+    active_restore_id: str | None = None,
 ) -> bool:
     _reject_legacy_plaintext(paths)
     for directory_name in _LEGACY_RESTORE_DIRECTORIES:
@@ -339,6 +372,36 @@ def _classify_product_state(
                 "cipher_product_legacy_restore_state_not_supported",
                 operation=CipherProductRuntimeOperation.CLASSIFY,
             )
+    cipher_restore_artifacts_present = any(
+        _path_exists_or_symlink(Path(paths.root) / name)
+        for name in ("restore-handoffs", "restore-transactions")
+    )
+    if cipher_restore_artifacts_present:
+        try:
+            if active_restore_id is None:
+                from .final_v3_live_restore import (
+                    classify_terminal_final_v3_restore_artifacts,
+                )
+
+                valid_restore_state = classify_terminal_final_v3_restore_artifacts(
+                    paths.root
+                )
+            else:
+                from .final_v3_live_restore import (
+                    classify_active_final_v3_restore_artifacts,
+                )
+
+                valid_restore_state = classify_active_final_v3_restore_artifacts(
+                    paths.root,
+                    restore_id=active_restore_id,
+                )
+            if not valid_restore_state:
+                raise RuntimeError
+        except Exception:
+            raise CipherProductRuntimeError(
+                "cipher_product_restore_state_invalid",
+                operation=CipherProductRuntimeOperation.CLASSIFY,
+            ) from None
     main_exists = _regular_file_exists(final_paths.database)
     companion_exists = _regular_file_exists(document_paths.database)
     if main_exists:
@@ -352,6 +415,11 @@ def _classify_product_state(
         companion_exists,
         _directory_exists(document_paths.container_root),
     )
+    if cipher_restore_artifacts_present and not all(artifacts):
+        raise CipherProductRuntimeError(
+            "cipher_product_restore_runtime_incomplete",
+            operation=CipherProductRuntimeOperation.CLASSIFY,
+        )
     if not any(artifacts):
         if not first_run_allowed:
             raise CipherProductRuntimeError(

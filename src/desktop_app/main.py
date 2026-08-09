@@ -255,11 +255,25 @@ def main() -> int:
             environ=os.environ,
         )
     if "--restore-worker" in arguments:
-        print(
-            "App-Start abgelehnt: cipher_backup_restore_not_available.",
-            file=sys.stderr,
+        from src.desktop_app.restore_worker import (
+            RESTORE_MODE_FINAL_V3_ENCRYPTED,
+            run as run_restore_worker,
         )
-        return 3
+
+        try:
+            mode_index = arguments.index("--restore-mode")
+            restore_mode = arguments[mode_index + 1]
+        except (ValueError, IndexError):
+            restore_mode = None
+        if restore_mode != RESTORE_MODE_FINAL_V3_ENCRYPTED:
+            print(
+                "App-Start abgelehnt: cipher_backup_restore_not_available.",
+                file=sys.stderr,
+            )
+            return 3
+        worker_arguments = arguments[1:]
+        worker_arguments.remove("--restore-worker")
+        return run_restore_worker(worker_arguments)
 
     packaged_smoke = "--packaged-smoke-test" in arguments
     if packaged_smoke:
@@ -278,12 +292,31 @@ def main() -> int:
         smoke_data_root = None
 
     try:
+        final_v3_restore_confirm = "--final-v3-restore-confirm" in arguments
+        if final_v3_restore_confirm:
+            arguments.remove("--final-v3-restore-confirm")
+            restore_runtime_root = _argument_value(arguments, "--runtime-root")
+            restore_confirm_id = _argument_value(arguments, "--restore-id")
+            restore_confirm_token = _argument_value(arguments, "--restore-token")
+            inherited_lock_value = _argument_value(arguments, "--restore-lock-fd")
+            if None in (
+                restore_runtime_root,
+                restore_confirm_id,
+                restore_confirm_token,
+                inherited_lock_value,
+            ):
+                raise RuntimeStorageError("cipher_restore_confirm_arguments_incomplete")
+        else:
+            restore_runtime_root = None
+            restore_confirm_id = None
+            restore_confirm_token = None
         resume_restore_id = _argument_value(arguments, "--restore-resume")
         resume_token = _argument_value(arguments, "--restore-token")
-        inherited_lock_value = _argument_value(arguments, "--restore-lock-fd")
+        if not final_v3_restore_confirm:
+            inherited_lock_value = _argument_value(arguments, "--restore-lock-fd")
         if resume_restore_id is not None or resume_token is not None:
             raise RuntimeStorageError("cipher_backup_restore_not_available")
-        if inherited_lock_value is not None:
+        if inherited_lock_value is not None and not final_v3_restore_confirm:
             raise RuntimeStorageError("cipher_backup_restore_not_available")
         inherited_lock_fd = (
             None if inherited_lock_value is None else int(inherited_lock_value)
@@ -292,9 +325,11 @@ def main() -> int:
         print(f"App-Start abgelehnt: {error}", file=sys.stderr)
         return 3
 
-    data_root = (smoke_data_root or application_data_root()).expanduser().resolve(
-        strict=False
-    )
+    data_root = Path(
+        restore_runtime_root
+        if restore_runtime_root is not None
+        else (smoke_data_root or application_data_root())
+    ).expanduser().resolve(strict=False)
     from src.core.restore_runtime import (
         RuntimeInstanceLock,
     )
@@ -303,6 +338,27 @@ def main() -> int:
     new_database_initialization_candidate = False
     try:
         lock.acquire()
+        from src.security.final_v3_live_restore import (
+            confirm_final_v3_restore_startup,
+            recover_interrupted_final_v3_restore,
+        )
+
+        if final_v3_restore_confirm:
+            confirm_final_v3_restore_startup(
+                runtime_root=data_root,
+                restore_id=str(restore_confirm_id),
+                token=str(restore_confirm_token),
+            )
+        else:
+            recovery = recover_interrupted_final_v3_restore(
+                runtime_root=data_root,
+            )
+            if recovery.status == "resume_required":
+                confirm_final_v3_restore_startup(
+                    runtime_root=data_root,
+                    restore_id=str(recovery.restore_id),
+                    token=str(recovery.resume_token),
+                )
         new_database_initialization_candidate = (
             _new_database_initialization_candidate(
                 data_root,

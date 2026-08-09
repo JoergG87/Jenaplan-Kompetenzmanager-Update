@@ -437,7 +437,7 @@ Releasepfad.
 
 ## Verschlüsseltes Final-V3-Pilotbackup und Restore-Staging
 
-Der intern gegatete Cipher-Pilotpfad sichert ausschließlich frische
+Der Cipher-Produktpfad sichert ausschließlich frische
 verschlüsselte Final-V3-Installationen in `.jkmebackup`. Der gemeinsame
 Writer-Lock friert Hauptdatenbank, Companion-DB, aktives Fachinventar und alle
 registrierten Dokumentgenerationen ein. SQLCipher-Backup-Snapshots,
@@ -455,12 +455,45 @@ Veröffentlichung.
 Restore schreibt ausschließlich in einen neuen privaten Staging-Root und
 bestätigt erst nach keyed Reopen beider Datenbanken, exakter SQLCipher-4.17-
 und Schemaprüfung, vollständigem Dokumentinventar und Crossbindings
-`RESTORE_READY`. Es gibt keinen Live-Swap. Der Vertrag ist zunächst
+`RESTORE_READY`. Das Staging selbst führt keinen Live-Swap aus; dessen
+technischer Konsum ist im folgenden Workerpfad getrennt geregelt. Der Vertrag ist
 `same-installation encrypted restore`: Der passende DMK muss im vorhandenen
 Keychain existieren; DMK-Verlust und Gerätewechsel sind nicht gelöst.
 Historische Klartext-/ZIP-v1-Bestände werden nicht migriert. Gate-Off behält
 bis zur Produktaktivierung unverändert ZIP-v1; die bestehende Oberfläche ist
 nicht auf den neuen Pfad geschaltet.
+
+## Verschlüsselter Final-V3-Live-Restore - technischer Workerpfad
+
+Ein bereits vollständig verifiziertes `RESTORE_READY` kann auf Basis der
+Cipher-Produktkomposition aus ADR-101 über den vorhandenen Restore-Worker live
+eingesetzt werden. Vor dem
+Handoff bleibt der Livebestand im Maintenance-Gate eingefroren, bis ein neues
+verschlüsseltes Safety-`.jkmebackup` erstellt und vollständig neu verifiziert
+ist. Der DMK-authentisierte Handoff bindet Safety-Backup, READY, Manifest,
+Installation und Database-Context; der Worker bestätigt Parent-EOF, prüft
+beide Nachweise erneut und verwendet das bestehende Write-ahead-Journal.
+
+Ausgetauscht werden als eine zusammengehörige Einheit ausschließlich
+`security-key-runtime-v1/`, Haupt-DB, Companion-DB und verschlüsselter
+Dokumentbestand. Der alte
+Bestand bleibt unter `rollback/`; kein physisches GC findet statt. Erfolg wird
+erst nach frischem keyed Reopen von Haupt- und Companion-DB, vollständigem
+`.jkmedoc`-Inventar, Final-V3-/Companion-Fingerprint und allen Dokument-/RPA-/
+LCA-Crossbindings bestätigt. Ein Fehler rollt beide Komponenten zurück und
+prüft den alten Bestand keyed; ein uneindeutiger Mischzustand wird
+`manual_recovery_required`. Ein Kaltstart stellt vor jedem Product-Open nur
+aus Security-/Installationskontext, bestehendem DMK, Handoff, Journal sowie
+Live-/Rollback-/Staging-Rollen einen eindeutigen Gesamtbestand her.
+
+`security.sqlite`, Keychain-DMK, Passwort-/Recovery-/Device-/Touch-ID-Daten und
+`app-preferences.json` bleiben unverändert. Der Pfad ist weiterhin ausschließlich
+same-installation; Geräte- oder DMK-Verlust, Klartext-/V2-/ZIP-v1-Migration und
+portable Backups sind ungelöst beziehungsweise ausgeschlossen. Die bestehende
+Restore-UI bleibt im Cipher-Modus gesperrt. Nach erfolgreichem Restore-Commit
+läuft der frische Prozess über den regulären Security-/Auth- und einzigen
+Cipher-Produktstartup weiter; nur die sichtbare Backup-/Restore-Aktivierung
+gehört zum späteren Paket `Verschlüsselungs-Aktivierung`.
 
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 

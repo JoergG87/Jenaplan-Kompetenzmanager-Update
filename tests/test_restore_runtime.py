@@ -1667,13 +1667,13 @@ def test_no_restore_journal_allows_normal_start(tmp_path: Path) -> None:
 
 def test_startup_recovery_is_positioned_before_runtime_qt_and_logging() -> None:
     source = inspect.getsource(desktop_main.main)
-    recovery = source.index("recover_interrupted_restore(data_root)")
+    recovery = source.index("recover_interrupted_final_v3_restore(")
     assert recovery < source.index("QApplication(arguments)")
-    assert recovery < source.index("prepare_runtime_storage")
+    assert recovery < source.index("prepare_cipher_runtime_storage")
     assert recovery < source.index("configure_runtime_logging")
 
 
-def test_developer_and_packaged_worker_dispatch_use_same_productive_service(tmp_path: Path) -> None:
+def test_packaged_dispatch_allows_only_explicit_cipher_worker(tmp_path: Path) -> None:
     missing = tmp_path / "missing.json"
     assert restore_worker.run(["--handoff", str(missing), "--nonce", "x"]) == restore_worker.EXIT_HANDOFF_INVALID
     with mock.patch("src.desktop_app.restore_worker.run", return_value=37) as run:
@@ -1682,5 +1682,30 @@ def test_developer_and_packaged_worker_dispatch_use_same_productive_service(tmp_
             "argv",
             ["app", "--restore-worker", "--handoff", str(missing), "--nonce", "x"],
         ):
+            assert desktop_main.main() == 3
+        run.assert_not_called()
+        with mock.patch.object(
+            desktop_main.sys,
+            "argv",
+            [
+                "app",
+                "--restore-worker",
+                "--handoff",
+                str(missing),
+                "--nonce",
+                "x",
+                "--restore-mode",
+                restore_worker.RESTORE_MODE_FINAL_V3_ENCRYPTED,
+            ],
+        ):
             assert desktop_main.main() == 37
-    run.assert_called_once_with(["--handoff", str(missing), "--nonce", "x"])
+    run.assert_called_once_with(
+        [
+            "--handoff",
+            str(missing),
+            "--nonce",
+            "x",
+            "--restore-mode",
+            restore_worker.RESTORE_MODE_FINAL_V3_ENCRYPTED,
+        ]
+    )

@@ -24,9 +24,9 @@ offen.
 
 ## Verschlüsseltes Backup - Final-V3-Cipher-Pilot
 
-**Status:** Technischer Gate-On-Pfad für `.jkmebackup` und verifiziertes
-Restore-Staging implementiert. Produktaktivierung und Live-Restore bleiben
-gesperrt.
+**Status:** Technischer Cipher-Produktpfad für `.jkmebackup`, verifiziertes
+Restore-Staging und same-installation Live-Restore über den vorhandenen Worker
+implementiert. Die sichtbare Produktaktivierung bleibt gesperrt.
 
 - [x] Haupt- und Companion-SQLCipher-Datenbank unter Writer-Lock keyed
   snapshotieren und gemeinsam binden.
@@ -39,8 +39,21 @@ gesperrt.
   vollständiger Neuverifikation und No-Clobber-Publikation verwenden.
 - [x] Nur in neuen privaten Staging-Root extrahieren und erst nach keyed Reopen,
   Schema-/Context-/Inventarprüfung `RESTORE_READY` schreiben.
-- [x] Gate-Off ZIP-v1, bestehende UI und Produktstartup unverändert lassen.
-- [ ] Live-Swap, Gerätewechsel-/DMK-Recovery, Produktaktivierung, Build und
+- [x] Vor jedem Live-Swap ein neues verschlüsseltes Safety-Backup erstellen,
+  vollständig verifizieren und den Maintenance-Freeze bis zur Workerübernahme
+  halten.
+- [x] `RESTORE_READY` über den vorhandenen Handoff-/Worker-/Journalvertrag als
+  gemeinsame Vier-Rollen-Einheit aus Keymetadaten, Haupt-DB, Companion-DB und
+  Dokumentbestand einsetzen, keyed neu öffnen und bei Fehler vollständig
+  rollbacken.
+- [x] Bootstrap-Recovery vor Product-Open aus DMK-authentisierter Journal- und
+  Rollen-Evidenz sowie Restart-Fortsetzung über reguläres Auth und ADR-101
+  ohne zweite Fachdatenbankkomposition.
+- [x] Security Store, AppPreferences und vorhandenen Keychain-DMK aus Backup,
+  Swap und Sitzungsübernahme ausschließen.
+- [x] ZIP-v1 im Cipher-Modus unerreichbar und bestehende Restore-UI gesperrt
+  lassen.
+- [ ] Gerätewechsel-/DMK-Recovery, sichtbare Produktaktivierung, Build und
   Release bleiben Folgepakete.
 
 ## SJ-3A - rein lesende Schuljahreswechsel-Vorschau

@@ -363,7 +363,7 @@ bis zum realen Test des gebauten Bundles offen.
 
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
-| `FinalV3EncryptedBackupService` | Gate-gebundener Qt-freier Orchestrator für Writer-Lock, keyed Snapshots, Dokumentinventar, `.jkmebackup`, Vollverifikation und Restore-Staging | Application / Security Backup |
+| `FinalV3EncryptedBackupService` | Qt-freier Orchestrator aus geöffnetem Gate- oder ADR-101-Produktbestand für Writer-Lock, keyed Snapshots, Dokumentinventar, `.jkmebackup`, Vollverifikation und Restore-Staging | Application / Security Backup |
 | `FinalV3EncryptedBackupManifestV1` | Striktes verschlüsseltes Crossbinding von Contexts, Generationen, DB-Rollen, Engine-/Schemaversionen, Größen, Hashes und Dokumentinventar | Security Backup Domain |
 | `FinalV3BackupArtifactV1` | Manifesteintrag für Haupt-DB, Companion-DB, Keyset-Metadaten oder Database-Key-Envelope-Registry | Security Backup Domain |
 | `FinalV3BackupDocumentV1` | Manifestbindung genau einer registrierten `.jkmedoc`-Generation einschließlich Lifecycle, Key-/Envelope-Generation, Größe und SHA-256 | Security Backup Domain |
@@ -371,6 +371,28 @@ bis zum realen Test des gebauten Bundles offen.
 | `.jkmebackup` | Ausschließliches verschlüsseltes Backupformat des frischen Gate-On-Final-V3-Piloten | Security Backup |
 | `RESTORE_READY` | Gefsyncter Abschlussbeleg im neuen privaten Staging-Root nach vollständigem keyed Reopen und Crossbinding | Security Restore Staging |
 | `same-installation encrypted restore` | Restoregrenze mit vorhandenem passenden DMK im lokalen Keychain; kein Gerätewechsel-/DMK-Recovery | Security Governance |
+| `FinalV3RestoreReadyVerification` | Ergebnis der wiederholbaren kanonischen READY-, Manifest-, Keyset-, Envelope-, SQLCipher-, Container- und Crossbindingprüfung | Security Restore |
+| `FinalV3EncryptedSafetyBackup` | Vollständig verifiziertes `.jkmebackup` plus bis zur Workerübergabe gehaltener Maintenance-Freeze | Security Restore |
+| `FinalV3EncryptedRestoreHandoffService` | Erzeugt und konsumiert den einmaligen DMK-authentisierten Cipher-Handoff im vorhandenen Restore-Journalbereich | Security Restore |
+| `FinalV3EncryptedLiveRestoreService` | Cipher-Strategie des vorhandenen `ProductiveRestoreService` für Preflight, gemeinsame Vier-Rollen-Einheit, keyed Reopen und Rollback | Security Restore / Core Restore |
+| `build_final_v3_restore_verifier` | Technische read-only 4.17-Verifier-Komposition aus bestehendem DMK-/Envelope-Kontext und ADR-101-Pfadscope; öffnet keine Produktdatenbankkomposition | Security Restore Recovery |
+| `_read_active_keyset_immutable` | Bootstrap-interner SQLite-Immutable-Read des exakt aktiven Keysets ohne Sidecar, Provisionierung oder Lifecycle-Fortschreibung | Security Restore Recovery |
+| `classify_terminal_final_v3_restore_artifacts` | strukturelle fail-closed Zulassung ausschließlich terminaler Cipher-Handoff-/Journalbereiche vor dem normalen Product-Open | Security Restore Recovery |
+| `validate_terminal_final_v3_restore_evidence` | DMK-HMAC-Prüfung terminaler Cipher-Handoffs nach regulärem bestehendem Key-Load | Security Restore Recovery |
+| `classify_active_final_v3_restore_artifacts` | strukturelle Zulassung exakt einer benannten aktiven Cipher-Transaktion nur für ihren Worker nach Parent-EOF; übrige Evidenz muss terminal sein | Security Restore Worker |
+| `validate_active_final_v3_restore_evidence` | erneute DMK-HMAC-Prüfung der benannten aktiven Worker-Transaktion und aller retained terminalen Handoffs | Security Restore Worker |
+| `active_restore_id` | eng gebundene ADR-101-Kompositionsausnahme für genau den bereits DMK-authentisierten Worker nach Parent-EOF; im normalen App-Start immer `None` | Security Restore Worker / Cipher Composition |
+| `recover_interrupted_final_v3_restore` | Restartfähige Prüfung genau eines offenen Cipher-Journals mit Resume, vollständigem Rollback oder `manual_recovery_required` | Security Restore Recovery |
+| `final_v3_encrypted_same_installation` | Persistierter `restore_kind` für den ausschließlich gegateten Cipher-Workerpfad | Security Restore |
+| `final_v3_live_restore_handoff/v1` | Eigene DMK-HKDF-/HMAC-Domäne für Handoffauthentisierung ohne Schlüssel- oder Sitzungsbytes | Security Cryptography |
+| `key_runtime_metadata` | Journalisierte Swap-Rolle für `security-key-runtime-v1/` mit Keyset und Database-Key-Envelope-Registry | Security Restore |
+| `final_v3_main_database` | Journalisierte Swap-Rolle der keyed Final-V3-Hauptdatenbank | Security Restore |
+| `document_companion_database` | Journalisierte Swap-Rolle der keyed Dokument-Companion-DB | Security Restore |
+| `managed_document_storage` | Journalisierte Swap-Rolle des vollständigen verschlüsselten `.jkmedoc`-Bestands | Security Restore |
+| `encrypted-restore-safety/` | Retained Zielbereich für das zwingende verschlüsselte Pre-Swap-Sicherheitsbackup | Security Restore |
+| `encrypted-restore-staging/` | Gebundener same-filesystem Bereich für bereits vollständig verifizierte `RESTORE_READY`-Bestände | Security Restore |
+| `--restore-mode final_v3_encrypted` | Expliziter lazy Worker-Dispatch; der argumentlose Default bleibt `zip_v1` | Desktop Restore Worker |
+| `--final-v3-restore-confirm` | Bootstrap-Restart-Handshake im frischen normalen App-Prozess vor `completed`; danach Fortsetzung über Security/Auth und ADR-101-Produktstartup, ohne Backup-/Restore-UI zu aktivieren | Desktop Startup / Security Restore |
 
 ## Security Sprint 12 - Release-Hardening und Paketabnahme
 

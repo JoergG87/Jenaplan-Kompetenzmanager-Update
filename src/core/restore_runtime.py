@@ -13,7 +13,7 @@ import stat
 import subprocess
 import sys
 import time
-from contextlib import closing
+from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -631,12 +631,9 @@ class ProductiveRestoreService:
                 "Der Restore wurde vor dem Ende der Haupt-App abgebrochen."
             ) from error
 
-        observation_uow = ObservationPersistenceUnitOfWork(
-            SQLiteDatabase(paths.live_database)
-        )
-        with ObservationWriterLock(observation_uow.staging_root):
+        with self._execution_lock(paths):
             try:
-                observation_uow.recover_pending_while_writer_locked()
+                self._recover_pending_writes(paths)
             except Exception as error:
                 journal.transition(
                     "aborted_before_replacement",
@@ -653,6 +650,20 @@ class ProductiveRestoreService:
                 restart=restart,
                 handshake_timeout_seconds=handshake_timeout_seconds,
             )
+
+    @contextmanager
+    def _execution_lock(self, paths: RestoreTransactionPaths):
+        observation_uow = ObservationPersistenceUnitOfWork(
+            SQLiteDatabase(paths.live_database)
+        )
+        with ObservationWriterLock(observation_uow.staging_root):
+            yield
+
+    @staticmethod
+    def _recover_pending_writes(paths: RestoreTransactionPaths) -> None:
+        ObservationPersistenceUnitOfWork(
+            SQLiteDatabase(paths.live_database)
+        ).recover_pending_while_writer_locked()
 
     def _execute_locked(
         self,
@@ -686,7 +697,7 @@ class ProductiveRestoreService:
             )
             token = self._create_resume_token(paths)
             if restart is None:
-                restart_process = _restart_application(paths, token, lock)
+                restart_process = self._launch_restart(paths, token, lock)
                 if restart_process is None:
                     raise RestoreReplacementError("Der kontrollierte App-Neustart ist fehlgeschlagen.")
             elif not restart(paths, token, lock):
@@ -809,7 +820,10 @@ class ProductiveRestoreService:
                     safety_hash,
                 )
             try:
-                mutation_started = _replacement_has_mutated(paths, journal.read())
+                mutation_started = self._replacement_mutated(
+                    paths,
+                    journal.read(),
+                )
             except RestoreRuntimeError as journal_error:
                 try:
                     journal.transition(
@@ -823,7 +837,7 @@ class ProductiveRestoreService:
                     "Der Restore-Zustand ist nach einem Fehler nicht beweisbar."
                 ) from journal_error
             if not mutation_started:
-                self._restore_preflight_bytes(paths)
+                self._restore_preflight_state(paths)
                 journal.transition(
                     "aborted_before_replacement",
                     next_step="none",
@@ -835,7 +849,7 @@ class ProductiveRestoreService:
                     "Der Restore-Preflight wurde ohne Live-Austausch abgebrochen."
                 ) from error
             try:
-                rollback_restore(paths, journal)
+                self._rollback(paths, journal)
             except Exception as rollback_error:
                 journal.transition(
                     "manual_recovery_required",
@@ -846,6 +860,21 @@ class ProductiveRestoreService:
                     "Der Restore und sein automatischer Rollback sind fehlgeschlagen."
                 ) from rollback_error
             raise RestoreReplacementError("Der Restore wurde vollstaendig zurueckgerollt.") from error
+
+    @staticmethod
+    def _replacement_mutated(
+        paths: RestoreTransactionPaths,
+        state: Mapping[str, object],
+    ) -> bool:
+        return _replacement_has_mutated(paths, state)
+
+    @staticmethod
+    def _rollback(paths: RestoreTransactionPaths, journal: RestoreJournal) -> None:
+        rollback_restore(paths, journal)
+
+    @classmethod
+    def _restore_preflight_state(cls, paths: RestoreTransactionPaths) -> None:
+        cls._restore_preflight_bytes(paths)
 
     def _preflight(self, paths: RestoreTransactionPaths, handoff: Mapping[str, object], journal: RestoreJournal) -> str:
         _validate_boundaries(paths)
@@ -993,6 +1022,14 @@ class ProductiveRestoreService:
         handshake.update({"attempts": 1, "status": "token_created"})
         journal.transition("installed_verified", next_step="await_startup_handshake", restart_handshake=handshake)
         return token
+
+    @staticmethod
+    def _launch_restart(
+        paths: RestoreTransactionPaths,
+        token: str,
+        lock: RuntimeInstanceLock,
+    ) -> subprocess.Popen[bytes] | None:
+        return _restart_application(paths, token, lock)
 
 
 def confirm_restore_startup(runtime_root: Path, restore_id: str, token: str) -> RestoreRecoveryResult:
