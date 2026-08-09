@@ -8,6 +8,9 @@ from src.core.restore_runtime import RuntimeInstanceLock
 from src.desktop_app.shell import AppShell
 from src.desktop_app.runtime import RuntimePaths, default_database_path, runtime_paths
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.adapters.backup_restore_desktop_adapter import (
+    BackupRestoreDesktopAdapter,
+)
 from src.updater.application import UpdateApplicationService
 
 
@@ -24,6 +27,7 @@ class JenaplanDesktopApp(AppShell):
         database_create_allowed: bool = False,
         student_adapter: StudentDesktopAdapter | None = None,
         backup_restore_available: bool = True,
+        backup_restore_adapter: BackupRestoreDesktopAdapter | None = None,
     ) -> None:
         database = database_path or default_database_path()
         super().__init__(
@@ -34,4 +38,5 @@ class JenaplanDesktopApp(AppShell):
             database_create_allowed=database_create_allowed,
             student_adapter=student_adapter,
             backup_restore_available=backup_restore_available,
+            backup_restore_adapter=backup_restore_adapter,
         )

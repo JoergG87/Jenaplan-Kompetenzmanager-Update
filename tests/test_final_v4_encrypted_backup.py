@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import UTC, datetime
 import hashlib
 import json
 import os
@@ -15,6 +16,10 @@ from src.core.database_engine import (
     SQLCIPHER_4_17_BINDING_VERSION,
     SQLCIPHER_4_17_ENGINE_VERSION,
     SQLCipherConnectionProvider,
+)
+from src.core.maintenance_gate import MaintenancePurpose
+from src.application.commands.school_year_transition_backup import (
+    VerifiedCipherSchoolYearTransitionBackupAdapter,
 )
 from src.core.database_compatibility import (
     FINAL_SCHEMA_FINGERPRINT,
@@ -245,6 +250,42 @@ def _add_all_document_classes(runtime) -> dict[str, bytes]:
         )
         connection.commit()
     return payloads
+
+
+@requires_exact_417
+def test_school_year_transition_reuses_active_freeze_for_cipher_backup(
+    tmp_path: Path,
+) -> None:
+    runtime, service, _key_store, _environment_value, _loader, _provider = (
+        _open_case(tmp_path)
+    )
+    target_directory = tmp_path / "transition-backups"
+    target_directory.mkdir(mode=0o700)
+    adapter = VerifiedCipherSchoolYearTransitionBackupAdapter(
+        service=service,
+        connection_factory=runtime.final_v4.database.connect,
+        target_directory=target_directory,
+        now_provider=lambda: datetime(2026, 8, 9, 12, tzinfo=UTC),
+    )
+    gate = runtime.final_v4.database.maintenance_gate
+    owner_id = "school-year-transition-test"
+    capability = gate.request_maintenance(
+        owner_id=owner_id,
+        purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
+    )
+    assert gate.activate(capability, owner_id=owner_id)
+    with gate.exclusive_writer(
+        capability,
+        owner_id=owner_id,
+        purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
+    ):
+        evidence = adapter.create_and_verify_during_maintenance()
+    gate.abort(capability, owner_id=owner_id)
+
+    backups = tuple(target_directory.glob("*.jkmebackup"))
+    assert len(backups) == 1
+    assert evidence.backup_sha256 == service.verify(backups[0]).container_sha256
+    assert not tuple(target_directory.glob("*.jkmbackup"))
 
 
 @requires_exact_417

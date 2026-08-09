@@ -57,6 +57,7 @@ class BackupRestoreDesktopAdapter:
         backup_service: BackupApplicationService | None = None,
         restore_service: RestoreApplicationService | None = None,
         enabled: bool = True,
+        backup_extension: str = ".jkmbackup",
     ) -> None:
         self.paths = runtime_paths
         self.app_version = app_version
@@ -66,6 +67,9 @@ class BackupRestoreDesktopAdapter:
         self.backup_service = backup_service or BackupApplicationService()
         self.restore_service = restore_service or RestoreApplicationService()
         self.enabled = bool(enabled)
+        if backup_extension not in {".jkmbackup", ".jkmebackup"}:
+            raise ValueError("backup_extension_invalid")
+        self.backup_extension = backup_extension
 
     def _require_available(self) -> None:
         if not self.enabled:
@@ -90,10 +94,15 @@ class BackupRestoreDesktopAdapter:
 
     def discover_verified_backups_operation(self) -> BackupRestoreOperation:
         self._require_available()
-        candidates = tuple(sorted(self.paths.backups.glob("*.jkmbackup")))
+        candidates = tuple(
+            sorted(self.paths.backups.glob(f"*{self.backup_extension}"))
+        )
         return BackupRestoreOperation(
             BackupRestoreOperationType.DISCOVER_VERIFIED_BACKUPS,
-            DiscoverVerifiedBackupsQuery(candidates),
+            DiscoverVerifiedBackupsQuery(
+                candidates,
+                allowed_suffix=self.backup_extension,
+            ),
         )
 
     def verify_backup_operation(self, path: Path) -> BackupRestoreOperation:
@@ -169,6 +178,13 @@ class BackupRestoreDesktopAdapter:
         self._require_available()
         if self.lock is None:
             raise RuntimeError("Der sichere Wiederherstellungsmodus ist nicht verfügbar.")
+        cipher_launcher = getattr(
+            self.restore_service,
+            "launch_prepared_restore",
+            None,
+        )
+        if cipher_launcher is not None:
+            return cipher_launcher(handoff)
         return launch_restore_worker(
             handoff=handoff.path,
             nonce=handoff.nonce,
@@ -178,10 +194,13 @@ class BackupRestoreDesktopAdapter:
     @staticmethod
     def backup_summary(verified: object) -> BackupSummaryViewModel:
         manifest = verified.manifest
+        size_bytes = getattr(verified, "archive_size_bytes", None)
+        if size_bytes is None:
+            size_bytes = getattr(verified, "container_size")
         return BackupSummaryViewModel(
             created_at=manifest.created_at,
             file_name=verified.path.name,
-            size_bytes=verified.archive_size_bytes,
+            size_bytes=int(size_bytes),
             verified=True,
         )
 
@@ -199,6 +218,7 @@ class BackupRestoreDesktopAdapter:
             result.preview,
             result.compatibility.status.value,
             result.path,
+            restore_id=getattr(result, "restore_id", ""),
         )
 
     @staticmethod

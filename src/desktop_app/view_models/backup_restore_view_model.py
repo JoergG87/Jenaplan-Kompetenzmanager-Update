@@ -32,6 +32,7 @@ class RestorePreviewViewModel:
     external_missing_count: int
     archive_path: Path
     restore_id: str = ""
+    restore_state: str = ""
 
     @classmethod
     def from_preview(cls, preview: object, status: str, path: Path, *, restore_id: str = "") -> "RestorePreviewViewModel":
@@ -48,4 +49,5 @@ class RestorePreviewViewModel:
             external_missing_count=preview.external_missing_count,
             archive_path=Path(path),
             restore_id=restore_id,
+            restore_state=("RESTORE_READY" if restore_id else ""),
         )

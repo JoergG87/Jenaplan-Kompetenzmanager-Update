@@ -522,9 +522,48 @@ def main() -> int:
         configure_runtime_logging(paths)
         flush_pre_auth_security_logging(security_event_buffer)
         from src.desktop_app.app import JenaplanDesktopApp
+        from src.application.commands.final_v4_backup_restore import (
+            FinalV4EncryptedBackupApplicationService,
+            FinalV4EncryptedRestoreApplicationService,
+        )
+        from src.desktop_app.adapters.backup_restore_desktop_adapter import (
+            BackupRestoreDesktopAdapter,
+        )
         from src.desktop_app.security_controller import SecurityUiCoordinator
+        from src.security.final_v4_backup_runtime import (
+            build_final_v4_encrypted_backup_service,
+        )
 
         student_adapter = _build_cipher_product_student_adapter(product_runtime)
+        encrypted_backup_service = build_final_v4_encrypted_backup_service(
+            opened_runtime=product_runtime.runtime,
+            account_loader=lambda: account,
+            environ=os.environ,
+            product_root=data_root,
+        )
+        encrypted_backup_application = FinalV4EncryptedBackupApplicationService(
+            encrypted_backup_service
+        )
+        encrypted_restore_application = FinalV4EncryptedRestoreApplicationService(
+            encrypted_backup_service,
+            lock=lock,
+        )
+        build_info = load_build_info()
+        backup_restore_adapter = BackupRestoreDesktopAdapter(
+            paths,
+            app_version=APP_VERSION,
+            build_commit=str(build_info.get("git_commit", "unknown")),
+            source_tree_state=(
+                str(build_info["source_tree_state"])
+                if build_info.get("source_tree_state") is not None
+                else None
+            ),
+            lock=lock,
+            backup_service=encrypted_backup_application,
+            restore_service=encrypted_restore_application,
+            enabled=True,
+            backup_extension=".jkmebackup",
+        )
 
         window = JenaplanDesktopApp(
             paths.final_v4_database,
@@ -532,7 +571,11 @@ def main() -> int:
             runtime_lock=lock,
             database_create_allowed=False,
             student_adapter=student_adapter,
-            backup_restore_available=False,
+            backup_restore_available=True,
+            backup_restore_adapter=backup_restore_adapter,
+        )
+        window.configure_school_year_transition_activation(
+            security_runtime.service
         )
         window.security_coordinator = SecurityUiCoordinator(
             app=app,

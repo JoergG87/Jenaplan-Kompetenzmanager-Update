@@ -21,9 +21,13 @@ Vorhandene Klartext-Fachdaten und Klartext-Dokumente werden weder geöffnet noch
 migriert, umbenannt, gelöscht oder überschrieben. Ein unvollständiger
 Cipher-Bestand, eine fehlende DMK, ein ungültiges Envelope oder eine fehlende
 Haupt-/Companion-Datenbank werden beim Restart fail-closed abgewiesen. Die
-bestehenden ZIP-v1-Backup-/Restoreaktionen sind im Cipher-Produktmodus bis zum
-Folgepaket technisch gesperrt. Build, Packaging, Release und die manuelle
-macOS-/UI-Abnahme sind nicht Bestandteil dieses Pakets.
+vorhandene Datensicherungsoberfläche verwendet im Cipher-Produktmodus jetzt
+ausschließlich `.jkmebackup`, vollständiges Restore-Staging,
+`RESTORE_READY`, verschlüsseltes Sicherheitsbackup und den bestehenden
+Cipher-Live-Worker. ZIP-v1 und V3 bleiben gesperrt; Support-Reset bleibt ohne
+neue Pre-Auth-Sicherheitsentscheidung kontrolliert blockiert. Build,
+Packaging, Release und die manuelle macOS-/UI-Abnahme sind nicht Bestandteil
+dieses Pakets.
 
 ## Final-V4-Fachrelevanz für den kommenden Pilot
 
@@ -528,10 +532,9 @@ Live-/Rollback-/Staging-Rollen einen eindeutigen Gesamtbestand her.
 `app-preferences.json` bleiben unverändert. Der Pfad ist weiterhin ausschließlich
 same-installation; Geräte- oder DMK-Verlust, Klartext-/V2-/ZIP-v1-Migration und
 portable Backups sind ungelöst beziehungsweise ausgeschlossen. Die bestehende
-Restore-UI bleibt im Cipher-Modus gesperrt. Nach erfolgreichem Restore-Commit
-läuft der frische Prozess über den regulären Security-/Auth- und einzigen
-Cipher-Produktstartup weiter; nur die sichtbare Backup-/Restore-Aktivierung
-gehört zum späteren Paket `Verschlüsselungs-Aktivierung`.
+Restore-UI ist jetzt ausschließlich an diesen Cipher-Vertrag gebunden. Nach
+erfolgreichem Restore-Commit läuft der frische Prozess über den regulären
+Security-/Auth- und einzigen Cipher-Produktstartup weiter.
 
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 

@@ -4,6 +4,7 @@ from contextlib import closing
 from datetime import UTC, date, datetime
 import hashlib
 import importlib.metadata
+import inspect
 import os
 from pathlib import Path
 import sqlite3
@@ -13,6 +14,8 @@ from types import SimpleNamespace
 import uuid
 
 import pytest
+
+import src.desktop_app.main as desktop_main
 
 from src.core.database_engine import (
     SQLCIPHER_4_17_BINDING_VERSION,
@@ -545,6 +548,22 @@ def test_cipher_mode_blocks_zip_v1_adapter_entrypoints(tmp_path: Path) -> None:
         with pytest.raises(CipherBackupRestoreUnavailableError) as caught:
             call()
         assert caught.value.code == "cipher_backup_restore_not_available"
+
+
+def test_product_main_activates_only_encrypted_backup_restore_services() -> None:
+    source = inspect.getsource(desktop_main.main)
+    product_start = source.index("encrypted_backup_service =")
+    product_end = source.index("window.security_coordinator =")
+    product_composition = source[product_start:product_end]
+    assert "build_final_v4_encrypted_backup_service" in product_composition
+    assert "FinalV4EncryptedBackupApplicationService" in product_composition
+    assert "FinalV4EncryptedRestoreApplicationService" in product_composition
+    assert 'backup_extension=".jkmebackup"' in product_composition
+    assert "backup_restore_available=True" in product_composition
+    assert "configure_school_year_transition_activation" in product_composition
+    assert "BackupApplicationService()" not in product_composition
+    assert "RestoreApplicationService()" not in product_composition
+    assert "support_reset_backup_factory = None" in source
 
 
 def test_importing_product_shell_does_not_create_a_database(tmp_path: Path) -> None:

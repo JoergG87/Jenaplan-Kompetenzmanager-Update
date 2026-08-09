@@ -118,6 +118,16 @@ class MaintenanceGate:
             self._local.writer_depth = 1
             return WriterLease(self)
 
+    def begin_existing_maintenance_writer(self) -> WriterLease:
+        """Prove this thread already owns the active exclusive-writer scope."""
+
+        with self._condition:
+            if not self._exclusive_writer_is_authorized():
+                raise MaintenanceCapabilityError(
+                    "maintenance_exclusive_writer_required"
+                )
+            return WriterLease(self, counted=False, tracked=False)
+
     def request_maintenance(
         self,
         *,

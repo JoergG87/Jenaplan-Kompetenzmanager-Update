@@ -8,11 +8,14 @@ Engineinformationen bleiben technisch und unsichtbar. Ein Startupfehler wird
 ruhig und sanitisiert dargestellt und bietet keine Migration, automatische
 Reparatur oder Klartextübernahme an.
 
-Backup und Restore sind in diesem Pilotstand keine verfügbare Produktaktion.
-Die vorhandenen Bedienelemente bleiben deaktiviert und verwenden die kurze
-Statusformulierung `Noch nicht verfügbar.`. Der frühere geführte
-Testdaten-Restore wird im Cipher-Produktmodus nicht angeboten. Diese Sperre
-ist eine Verfügbarkeitsprojektion bestehender UI und keine neue Ansicht.
+Backup und Restore verwenden die vorhandene ruhige Datensicherungsansicht.
+Im Cipher-Produktmodus akzeptieren Dateiauswahl und Status ausschließlich
+`.jkmebackup`; die Vorschau benennt den vollständig vorbereiteten Zustand als
+`Sicher zur Wiederherstellung vorbereitet (RESTORE_READY)`. Fehlertexte
+unterscheiden Erzeugung, Manipulation, Installations-/Schlüsselkontext,
+Staging und Worker-Übergabe, ohne technische IDs, Pfade, Hashes oder
+Exceptions anzuzeigen. Der frühere geführte ZIP-v1-Testdaten-Restore wird im
+Cipher-Produktmodus nicht angeboten.
 
 ## SJ-1 - UX-Vertrag für den Schuljahresassistenten
 

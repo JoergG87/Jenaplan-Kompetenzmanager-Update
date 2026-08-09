@@ -14,10 +14,12 @@ kein Desktop Adapter erzeugt im Cipher-Produktpfad eine eigene
 Cipher-Komposition und Injektion. `StudentDesktopAdapter` besitzt weiterhin
 fachliche Projektionen und Writes, verwendet aber die injizierte keyed
 `SQLiteDatabase` und denselben `ManagedDocumentStore`. `AppShell` komponiert
-die vorhandene UI auf diesen Instanzen. Die Settings-View zeigt nur den
-Verfügbarkeitszustand; sie startet im Cipher-Modus weder ZIP-v1-Backup noch
-Restore. Klartexterkennung, Schlüssel-, Schema-, Context- und
-Integritätsprüfung bleiben außerhalb der Widgets.
+die vorhandene UI auf diesen Instanzen. Die Settings-View projiziert nur
+Status, Vorschau und bewusste Bestätigung. Die injizierten Final-V4-
+Application-Services besitzen `.jkmebackup`, Vollverifikation,
+Restore-Staging, `RESTORE_READY` und Worker-Handoff; ZIP-v1 ist im Cipher-
+Produktpfad nicht erreichbar. Klartexterkennung, Schlüssel-, Schema-,
+Context- und Integritätsprüfung bleiben außerhalb der Widgets.
 
 ## Final-V4-Ownership für Startup, Schuljahre und Assignments
 

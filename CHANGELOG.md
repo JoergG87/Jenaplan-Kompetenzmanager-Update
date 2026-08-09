@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Einstellungen → Datensicherung verwendet im normalen Final-V4-Cipher-
+  Produktpfad jetzt ausschließlich verschlüsselte `.jkmebackup`. Auswahl,
+  Vollverifikation, Restore-Staging, `RESTORE_READY`, bewusste Bestätigung,
+  verschlüsseltes Sicherheitsbackup, Worker-Handoff, Rollback und normaler
+  Restart nutzen die bereits vorhandenen Final-V4-Services. Der
+  Schuljahreswechsel erzeugt sein Pflichtbackup innerhalb derselben aktiven
+  Maintenance-Sperre ebenfalls verschlüsselt. ZIP-v1, V3, Migration und
+  Testdatenrestore bleiben im Cipher-Modus unerreichbar. Support-Reset bleibt
+  mangels separat entschiedener Pre-Auth-Cipher-Komposition kontrolliert
+  blockiert. Build, Release und sichtbare UI-Abnahme sind nicht enthalten.
+
 - Die schuljahresbezogene Final-V4-Fachrelevanz ist im Schülerprofil als
   ruhiger, bewusst zu speichernder Bereich `Fächer für die Dokumentation`
   angebunden. `inherit` projiziert den jeweils aktuellen globalen Default;
@@ -41,9 +52,12 @@
   geöffnet noch migriert, repariert, umbenannt, gelöscht oder überschrieben.
   Beobachtungsanhänge, allgemeine Schülerdokumente sowie finale Bericht- und
   LEG-PDF-Artefakte verwenden den bestehenden verschlüsselten
-  `ManagedDocumentStore`. ZIP-v1-Backup/Restore, Schuljahreswechsel-Backup und
-  Support-Reset-Backup bleiben im Cipher-Produktmodus gesperrt; der
-  same-installation Live-Restore verwendet ausschließlich den V4-Vertrag.
+  `ManagedDocumentStore`. In diesem damaligen Aktivierungsschritt blieben
+  ZIP-v1-Backup/Restore, Schuljahreswechsel-Backup und Support-Reset-Backup im
+  Cipher-Produktmodus gesperrt; die oben dokumentierte spätere Verdrahtung
+  aktiviert `.jkmebackup` und das Schuljahreswechsel-Pflichtbackup, nicht aber
+  Support-Reset. Der same-installation Live-Restore verwendet ausschließlich
+  den V4-Vertrag.
 
 - Ein bereits vollständig verifizierter `RESTORE_READY`-Bestand kann auf Basis
   der Cipher-Produktkomposition aus ADR-101 über denselben
@@ -62,9 +76,10 @@
   bleiben Evidenz; ein uneindeutiger Mischzustand wird
   `manual_recovery_required`. Security Store, AppPreferences und DMK bleiben
   unverändert. Der Vertrag ist same-installation ohne Gerätewechsel,
-  DMK-Recovery, Klartext-/ZIP-v1-Migration, UI-Umschaltung oder
-  Produktdefault-Aktivierung; die sichtbare Backup-/Restore-UI bleibt im
-  Cipher-Produktmodus gesperrt.
+  DMK-Recovery oder Klartext-/ZIP-v1-Migration. UI-Umschaltung und
+  Produktdefault-Aktivierung waren in diesem damaligen Foundation-Paket noch
+  ausgeschlossen und werden erst durch die oben dokumentierte spätere
+  Verdrahtung freigegeben.
 
 - Der frische verschlüsselte Final-V4-Pilotbestand kann hinter dem bestehenden
   Security-Gate als `.jkmebackup` gesichert und vollständig in einen neuen

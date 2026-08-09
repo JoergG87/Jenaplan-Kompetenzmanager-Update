@@ -25,12 +25,20 @@ diesem Lifecycle:
    Dokumentstore und ein widerspruchsfreier abgeschlossener fachlicher First
    Run vorhanden sein. Fehlendes wird nicht neu erzeugt oder repariert.
 8. Erst danach erhalten Repositorys, Desktop Adapter und Shell dieselbe keyed
-   Runtime.
+   Runtime. Die Settings-Aktionen erhalten zusätzlich den vorhandenen
+   `FinalV4EncryptedBackupService`; kein Widget öffnet selbst eine Datenquelle.
+9. Backup veröffentlicht ausschließlich `.jkmebackup`. Restore verifiziert den
+   Container vollständig, erzeugt privates Staging und projiziert erst nach
+   erneuter keyed Prüfung `RESTORE_READY`.
+10. Nach bewusster Bestätigung erzeugt der vorhandene Live-Restore ein neues
+    verschlüsseltes Sicherheitsbackup, veröffentlicht den authentisierten
+    Handoff, beendet die App kontrolliert und lässt den Cipher-Worker Swap,
+    keyed Reopen, Rollbackstatus und normalen Restart übernehmen.
 
-Die vorhandenen ZIP-v1-Backup-/Restore-, Restore-Worker-, Resume- und
-Schuljahreswechsel-Backup-Einstiege sind im Cipher-Produktmodus blockiert.
-Es gibt in diesem Lifecycle keine Klartextmigration, keinen Restore, keinen
-V2-/ZIP-v1-Import und keine Alt-Testdatenübernahme.
+ZIP-v1, V3, Klartextmigration, V2-Import und Alt-Testdatenübernahme bleiben in
+diesem Lifecycle unerreichbar. Schuljahreswechsel verwenden für ihr
+Pflichtbackup denselben Cipher-Service innerhalb der bereits aktiven
+Maintenance-Sperre. Support-Reset bleibt ohne Cipher-Pflichtbackup blockiert.
 
 ## Final-V4-Datenbankinitialisierung
 

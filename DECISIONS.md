@@ -87,15 +87,17 @@ Legacy-Enrollment- oder Testdatenmigration. Alte Klartext- und V3-Bestände
 bleiben unverändert und werden mit strukturiertem Startupfehler abgewiesen.
 `.jkmebackup`, Restore-Staging und Live-Restore folgen ausschließlich den
 fortgeschriebenen V4-Verträgen aus ADR-100, ADR-102 und ADR-103. Die sichtbaren
-ZIP-v1-Einstiege, Schuljahreswechsel-Backup und Support-Reset-Backup bleiben
-im Cipher-Produktmodus blockiert. ADR-098 und ADR-099 bleiben als
+Datensicherungsaktionen und das Schuljahreswechsel-Pflichtbackup verwenden
+jetzt diesen Cipher-Vertrag; ZIP-v1 bleibt unerreichbar. Support-Reset bleibt
+blockiert, solange sein Pre-Auth-Pflichtbackup eine gesonderte
+Sicherheitsentscheidung benötigt. ADR-098 und ADR-099 bleiben als
 historische Foundation- und Gate-Entscheidungen gültig; ihre damalige
 Nichtaktivierung wird ausschließlich durch diese Produktkomposition abgelöst.
 
 ## ADR-102 - RESTORE_READY wird same-installation über den vorhandenen Worker live eingesetzt
 
-**Status:** Angenommen und im bestehenden Cipher-Produktpfad auf Final V4
-fortgeschrieben. Keine UI-, Produktdefault-,
+**Status:** Angenommen, auf Final V4 fortgeschrieben und über die vorhandene
+Datensicherungsoberfläche als normaler Cipher-Produktpfad aktiviert. Keine
 Build- oder Releaseaktivierung.
 
 ### Entscheidung
@@ -150,9 +152,9 @@ Installation- und Security-Context, vorhandener passender DMK, kein
 Gerätewechsel. DMK-/Geräteverlust bleibt ungelöst; Passwort und Recovery-Code
 sind keine Ersatzschlüssel. Klartext-, V2-, ZIP-v1- und Migrationspfade werden
 nicht in den Cipher-Restore übernommen. Die Cipher-Produktkomposition aus
-ADR-101 bleibt die einzige normale Fachdatenbankkomposition. Die sichtbare
-Backup-/Restore-UI bleibt gesperrt; deren Umschaltung ist Bestandteil des
-späteren Pakets `Verschlüsselungs-Aktivierung`.
+ADR-101 bleibt die einzige normale Fachdatenbankkomposition. Die vorhandene
+Backup-/Restore-UI ist durch das spätere Aktivierungspaket ausschließlich auf
+diesen Vertrag verdrahtet; sie führt keinen ZIP-v1- oder Migrationspfad ein.
 
 ## ADR-100 - Cipher-Pilotbackups sind same-installation und enden im Restore-Staging
 

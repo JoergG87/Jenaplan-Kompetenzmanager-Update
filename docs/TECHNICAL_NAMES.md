@@ -14,6 +14,10 @@
 | `PILOT_FIRST_RUN_SCHOOL_YEAR_ID` | stabile technische ID für den fachlichen First-Run-Standard `2026/27` dieses Pilotstands | Security Application Composition |
 | `prepare_cipher_runtime_storage` | erzeugt nur Root, Export-, Backup- und Logverzeichnisse; keine Klartext-Dokumentablage | Desktop Runtime |
 | `CipherBackupRestoreUnavailableError` | blockiert sämtliche ZIP-v1-Backup-/Restore-Einstiege im Cipher-Produktmodus | Desktop Backup/Restore Adapter |
+| `FinalV4EncryptedBackupApplicationService` | übersetzt die vorhandene Desktop-Backupaktion ohne Fallback in genau ein `.jkmebackup` | Backup/Restore Application Layer |
+| `FinalV4EncryptedRestoreApplicationService` | bindet Vollverifikation, `RESTORE_READY`, Preview, Cipher-Handoff und vorhandenen Live-Worker | Backup/Restore Application Layer |
+| `VerifiedCipherSchoolYearTransitionBackupAdapter` | erzeugt das verschlüsselte Pflichtbackup innerhalb der bereits aktiven Schuljahreswechsel-Sperre | School-Year Transition Application Layer |
+| `FinalV4BackupRestoreApplicationError` | sanitisierter endnutzergeeigneter Fehlervertrag ohne Pfade, Hashes oder Exceptions | Backup/Restore Application Layer |
 
 Produktive `RuntimePaths`-Rollen sind `key_runtime_metadata`,
 `keyset_metadata`, `database_key_envelope_registry`, `final_v4_runtime`,

@@ -75,6 +75,28 @@ PRODUCT_TABLES = frozenset(
 )
 
 
+def test_existing_maintenance_writer_requires_same_thread_exclusive_scope() -> None:
+    gate = MaintenanceGate()
+    with pytest.raises(MaintenanceCapabilityError):
+        gate.begin_existing_maintenance_writer()
+
+    capability = gate.request_maintenance(
+        owner_id=OWNER,
+        purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
+    )
+    assert gate.activate(capability, owner_id=OWNER)
+    with pytest.raises(MaintenanceCapabilityError):
+        gate.begin_existing_maintenance_writer()
+    with gate.exclusive_writer(
+        capability,
+        owner_id=OWNER,
+        purpose=MaintenancePurpose.SCHOOL_YEAR_TRANSITION,
+    ):
+        with gate.begin_existing_maintenance_writer():
+            assert gate.state is MaintenanceState.MAINTENANCE_ACTIVE
+    gate.abort(capability, owner_id=OWNER)
+
+
 def _request(gate: MaintenanceGate):
     return gate.request_maintenance(
         owner_id=OWNER,

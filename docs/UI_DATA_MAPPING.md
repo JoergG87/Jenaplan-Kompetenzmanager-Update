@@ -10,13 +10,15 @@ Beobachtungsansichten erhalten einen leeren fachlichen Bestand. Technische
 Schlüssel-IDs, Fingerprints, Envelopes, lokale Pfade und Engine-Details werden
 nicht angezeigt.
 
-Die vorhandenen Backup-/Restore-Schaltflächen sind im Cipher-Produktmodus
-deaktiviert. Jeder dennoch erreichte technische Einstieg liefert den
-strukturierten Zustand `cipher_backup_restore_not_available`; die sichtbare
-ruhige Kurzfassung lautet `Noch nicht verfügbar.`. Es gibt keine neue View,
-keine Migrationsauswahl, keine Alt-Testdatenübernahme und keine
-Klartext-Reparaturaktion. Startupfehler werden ohne Secrets, Pfade oder
-Credentialdetails angezeigt.
+Die vorhandenen Backup-/Restore-Schaltflächen rufen im Cipher-Produktmodus
+ausschließlich `.jkmebackup` auf. Die vorhandene Vorschau wird erst nach
+vollständiger Verify-/Staging-Sequenz mit `RESTORE_READY` freigegeben; die
+bewusste Bestätigung startet Sicherheitsbackup und Cipher-Worker-Handoff.
+Normale UI-Texte zeigen weder Schlüssel-IDs, Pfade, Hashes noch Exceptions.
+ZIP-v1, Migration, Alt-Testdatenübernahme und Klartext-Reparatur bleiben ohne
+sichtbaren Einstieg. Der historische Zustand
+`cipher_backup_restore_not_available` schützt weiterhin ausdrücklich
+deaktivierte Gate-Off-Kompositionen.
 
 ## Final-V4-Startup und geplanter Schuljahresassistent
 
@@ -325,16 +327,16 @@ Storage-ID, Journal und physischer Container werden nicht sichtbar. Dieses
 Paket ergänzt weder Vorschau noch Öffnen, Export, Pfadauswahl oder eine neue
 UI-Aktion.
 
-## Verschlüsseltes Final-V4-Pilotbackup - keine UI-Projektion
+## Verschlüsseltes Final-V4-Pilotbackup - vorhandene UI-Projektion
 
-`.jkmebackup`, Backup-Key-Envelope, Manifest, Context-/Generationsbindungen,
-Snapshotphasen, Restore-Staging und `RESTORE_READY` werden in diesem Paket
-nicht in PySide projiziert. Es entstehen keine Felder, Dialoge, Buttons,
-Fortschrittsanzeigen oder Fehlermeldungen. Die vorhandene Backup-/Restore-UI
-ist im Cipher-Produktmodus deaktiviert. ZIP-v1 bleibt dort eine historische,
-nicht erreichbare Foundation. Der Cipher-Live-Worker ist über diese UI nicht
-erreichbar; seine sichtbare Produktumschaltung benötigt das spätere Paket
-`Verschlüsselungs-Aktivierung`.
+Die vorhandene Datensicherungsseite projiziert im Cipher-Produktmodus
+ausschließlich Erzeugung und Prüfung von `.jkmebackup`, eine
+privacy-minimierte Restore-Vorschau, `RESTORE_READY`, bewusste Bestätigung und
+sanitisierte Fehlerzustände. Backup-Key-Envelope, Manifestdetails, Context-/
+Generationsbindungen, Snapshotphasen, Pfade und Hashes bleiben unsichtbar.
+Der Application Layer besitzt Restore-Staging und Cipher-Live-Worker-Handoff;
+Widgets besitzen keine Security- oder Dateisystemlogik. ZIP-v1 bleibt eine
+historische, nicht erreichbare Foundation.
 
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 

@@ -1,9 +1,9 @@
-"""Encrypted backup and verified restore staging for the gated Final-V4 runtime.
+"""Encrypted backup and verified restore staging for the Final-V4 runtime.
 
-The module is deliberately outside the product backup/restore composition.
-It accepts only an already opened Final-V4 cipher runtime and uses the existing
-writer/maintenance gates.  Live replacement remains owned by the restore
-worker; this module supplies its mandatory safety freeze and READY verifier.
+The service accepts only an already opened Final-V4 cipher runtime and uses
+the existing writer/maintenance gates.  Live replacement remains owned by the
+restore worker; this module supplies its mandatory safety freeze and READY
+verifier for gated tests and the activated same-installation product path.
 """
 
 from __future__ import annotations
@@ -362,6 +362,15 @@ class FinalV4RestoreReadyVerification:
     loaded_keys: LoadedDatabaseKeyRuntime = field(repr=False)
 
 
+@dataclass(frozen=True, slots=True)
+class FinalV4RestorePreviewCounts:
+    students: int
+    observations: int
+    learning_report_revisions: int
+    learning_conference_revisions: int
+    managed_documents: int
+
+
 @dataclass(slots=True)
 class FinalV4EncryptedSafetyBackup:
     """Verified backup plus the in-process maintenance freeze it established."""
@@ -486,6 +495,27 @@ class FinalV4EncryptedBackupService:
             raise FinalV4EncryptedBackupError("encrypted_backup_state_invalid")
         return result
 
+    def create_during_maintenance(
+        self,
+        target: Path,
+    ) -> FinalV4EncryptedBackupResult:
+        """Create while the calling thread already owns the active gate.
+
+        ``MaintenanceGate.begin_existing_maintenance_writer`` is the
+        authorization proof for this exact thread.  This lets the school-year
+        transition reuse its existing freeze without nesting another
+        maintenance capability.
+        """
+
+        result = self._create(
+            target,
+            retain_maintenance=False,
+            existing_maintenance=True,
+        )
+        if not isinstance(result, FinalV4EncryptedBackupResult):
+            raise FinalV4EncryptedBackupError("encrypted_backup_state_invalid")
+        return result
+
     def create_safety_backup(self, target: Path) -> FinalV4EncryptedSafetyBackup:
         """Create+verify a backup and keep normal writers blocked for handoff."""
 
@@ -499,7 +529,12 @@ class FinalV4EncryptedBackupService:
         target: Path,
         *,
         retain_maintenance: bool,
+        existing_maintenance: bool = False,
     ) -> FinalV4EncryptedBackupResult | FinalV4EncryptedSafetyBackup:
+        if retain_maintenance and existing_maintenance:
+            raise FinalV4EncryptedBackupError(
+                "backup_maintenance_transfer_invalid"
+            )
         destination = _validate_backup_target(target)
         workspace = _new_private_sibling(destination, _WORKSPACE_PREFIX)
         owner_id = f"encrypted-backup:{self._new_uuid()}"
@@ -511,19 +546,23 @@ class FinalV4EncryptedBackupService:
                 workspace / SYNTHETIC_BACKUP_TEST_ROOT_MARKER,
                 SYNTHETIC_BACKUP_TEST_ROOT_MARKER_BYTES,
             )
-            capability = self._gate.request_maintenance(
-                owner_id=owner_id,
-                purpose=MaintenancePurpose.BACKUP_RESTORE,
-            )
-            if not self._gate.activate(capability, owner_id=owner_id):
-                raise FinalV4EncryptedBackupError("backup_writers_active")
-            safe_release = True
+            if existing_maintenance:
+                writer_scope = self._gate.begin_existing_maintenance_writer()
+            else:
+                capability = self._gate.request_maintenance(
+                    owner_id=owner_id,
+                    purpose=MaintenancePurpose.BACKUP_RESTORE,
+                )
+                if not self._gate.activate(capability, owner_id=owner_id):
+                    raise FinalV4EncryptedBackupError("backup_writers_active")
+                safe_release = True
+                writer_scope = self._gate.exclusive_writer(
+                    capability,
+                    owner_id=owner_id,
+                    purpose=MaintenancePurpose.BACKUP_RESTORE,
+                )
             lock_root = self.paths.final_v4.runtime_root / ".observation-staging"
-            with self._gate.exclusive_writer(
-                capability,
-                owner_id=owner_id,
-                purpose=MaintenancePurpose.BACKUP_RESTORE,
-            ):
+            with writer_scope:
                 with ObservationWriterLock(lock_root):
                     self._emit("before_snapshot")
                     self.opened.documents.validate_restart()
@@ -799,6 +838,55 @@ class FinalV4EncryptedBackupService:
             manifest=manifest,
             paths=materialized.paths,
             loaded_keys=materialized.loaded_keys,
+        )
+
+    def restore_preview_counts(
+        self,
+        staging_root: Path,
+        *,
+        expected_container_sha256: str,
+    ) -> FinalV4RestorePreviewCounts:
+        """Project privacy-minimized counts from a freshly reverified READY tree."""
+
+        ready = self.verify_restore_ready(
+            staging_root,
+            expected_container_sha256=expected_container_sha256,
+        )
+        connection = self._provider.connect_read_only(
+            ready.paths.final_v4.database,
+            key_material=ready.loaded_keys.database_key.key_material,
+        )
+        try:
+            connection.execute("PRAGMA query_only = ON")
+            table_counts = {
+                table: int(
+                    connection.execute(
+                        f'SELECT COUNT(*) FROM "{table}"'
+                    ).fetchone()[0]
+                )
+                for table in (
+                    "students",
+                    "observations",
+                    "learning_report_revisions",
+                    "learning_conference_revisions",
+                )
+            }
+        except Exception:
+            raise FinalV4EncryptedBackupError(
+                "restore_preview_projection_failed"
+            ) from None
+        finally:
+            connection.close()
+        return FinalV4RestorePreviewCounts(
+            students=table_counts["students"],
+            observations=table_counts["observations"],
+            learning_report_revisions=table_counts[
+                "learning_report_revisions"
+            ],
+            learning_conference_revisions=table_counts[
+                "learning_conference_revisions"
+            ],
+            managed_documents=len(ready.manifest.active_document_ids),
         )
 
     def verify_live_runtime(

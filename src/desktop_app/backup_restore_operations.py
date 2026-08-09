@@ -61,10 +61,13 @@ class DiscoverVerifiedBackupsQuery:
     """Immutable candidate set for the existing settings status projection."""
 
     paths: tuple[Path, ...]
+    allowed_suffix: str = ".jkmbackup"
 
     def __post_init__(self) -> None:
-        if any(path.suffix != ".jkmbackup" for path in self.paths):
-            raise ValueError("Only .jkmbackup candidates may be discovered.")
+        if self.allowed_suffix not in {".jkmbackup", ".jkmebackup"}:
+            raise ValueError("Unsupported backup candidate suffix.")
+        if any(path.suffix != self.allowed_suffix for path in self.paths):
+            raise ValueError("Backup candidates must use the configured suffix.")
 
 
 _PAYLOAD_TYPES: Final = {
@@ -127,6 +130,7 @@ class BackupRestoreOperationErrorInfo:
 
     operation_type: BackupRestoreOperationType
     error_class: str
+    error_code: str = "operation_failed"
 
 
 class BackupRestoreOperationWorker(QObject):
@@ -163,6 +167,7 @@ class BackupRestoreOperationWorker(QObject):
                 BackupRestoreOperationErrorInfo(
                     self.operation.operation_type,
                     type(error).__name__,
+                    str(getattr(error, "code", "operation_failed")),
                 )
             )
         else:

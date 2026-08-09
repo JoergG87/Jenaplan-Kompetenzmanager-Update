@@ -42,6 +42,7 @@ from src.application.school_year_transition_preview import (
 )
 from src.application.commands.backup import CreateBackupCommand
 from src.application.commands.school_year_transition_backup import (
+    VerifiedCipherSchoolYearTransitionBackupAdapter,
     VerifiedSchoolYearTransitionBackupAdapter,
 )
 from src.application.school_year_transition_execution import (
@@ -265,6 +266,7 @@ class AppShell(QMainWindow):
         database_create_allowed: bool = False,
         student_adapter: StudentDesktopAdapter | None = None,
         backup_restore_available: bool = True,
+        backup_restore_adapter: BackupRestoreDesktopAdapter | None = None,
     ) -> None:
         super().__init__()
         self.now_provider = now_provider
@@ -285,9 +287,18 @@ class AppShell(QMainWindow):
         self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)
         self.timetable_adapter = TimetableDesktopAdapter(self.adapter.database)
         build_info = load_build_info()
-        self.pilot_testdata_onboarding = self.backup_restore_available and (
+        selected_backup_extension = (
+            backup_restore_adapter.backup_extension
+            if backup_restore_adapter is not None
+            else ".jkmbackup"
+        )
+        self.pilot_testdata_onboarding = (
+            self.backup_restore_available
+            and selected_backup_extension == ".jkmbackup"
+            and (
             build_info.get("release_channel") == "pilot"
             and "guided_testdata_restore" in build_info.get("pilot_features", [])
+            )
         )
         self.update_service = update_service or UpdateApplicationService(
             build_native_update_adapter(),
@@ -295,13 +306,15 @@ class AppShell(QMainWindow):
             build_version=APP_BUILD_VERSION,
             channel=UpdateChannel.PILOT,
         )
-        self.backup_restore_adapter = BackupRestoreDesktopAdapter(
-            self.runtime_paths,
-            app_version=APP_VERSION,
-            build_commit=str(build_info.get("git_commit", "unknown")),
-            source_tree_state=(str(build_info["source_tree_state"]) if build_info.get("source_tree_state") is not None else None),
-            lock=runtime_lock,
-            enabled=self.backup_restore_available,
+        self.backup_restore_adapter = backup_restore_adapter or (
+            BackupRestoreDesktopAdapter(
+                self.runtime_paths,
+                app_version=APP_VERSION,
+                build_commit=str(build_info.get("git_commit", "unknown")),
+                source_tree_state=(str(build_info["source_tree_state"]) if build_info.get("source_tree_state") is not None else None),
+                lock=runtime_lock,
+                enabled=self.backup_restore_available,
+            )
         )
         self.backup_restore_operations = BackupRestoreOperationsController(
             backup_service=self.backup_restore_adapter.backup_service,
@@ -445,6 +458,9 @@ class AppShell(QMainWindow):
         self.settings_screen = SettingsScreen()
         self.settings_screen.set_backup_restore_available(
             self.backup_restore_available
+        )
+        self.settings_screen.set_cipher_product_mode(
+            self.backup_restore_adapter.backup_extension == ".jkmebackup"
         )
 
         self.screen_index = {
@@ -749,20 +765,35 @@ class AppShell(QMainWindow):
             security_service,
             now_provider=lambda: datetime.now(UTC),
         )
-        backup = VerifiedSchoolYearTransitionBackupAdapter(
-            service=self.backup_restore_adapter.backup_service,
-            command=CreateBackupCommand(
-                database_path=self.runtime_paths.database,
-                runtime_paths=self.runtime_paths,
-                target_path=self.runtime_paths.backups,
-                app_version=self.backup_restore_adapter.app_version,
-                build_commit=self.backup_restore_adapter.build_commit,
-                source_tree_state=(
-                    self.backup_restore_adapter.source_tree_state
+        if self.backup_restore_adapter.backup_extension == ".jkmebackup":
+            cipher_service = getattr(
+                self.backup_restore_adapter.backup_service,
+                "service",
+                None,
+            )
+            if cipher_service is None:
+                raise RuntimeError("cipher_transition_backup_service_missing")
+            backup = VerifiedCipherSchoolYearTransitionBackupAdapter(
+                service=cipher_service,
+                connection_factory=self.adapter.database.connect,
+                target_directory=self.runtime_paths.backups,
+                now_provider=lambda: datetime.now(UTC),
+            )
+        else:
+            backup = VerifiedSchoolYearTransitionBackupAdapter(
+                service=self.backup_restore_adapter.backup_service,
+                command=CreateBackupCommand(
+                    database_path=self.runtime_paths.database,
+                    runtime_paths=self.runtime_paths,
+                    target_path=self.runtime_paths.backups,
+                    app_version=self.backup_restore_adapter.app_version,
+                    build_commit=self.backup_restore_adapter.build_commit,
+                    source_tree_state=(
+                        self.backup_restore_adapter.source_tree_state
+                    ),
                 ),
-            ),
-            now_provider=lambda: datetime.now(UTC),
-        )
+                now_provider=lambda: datetime.now(UTC),
+            )
         self._school_year_transition_step_up = step_up
         self._school_year_transition_executor = ExecuteSchoolYearTransition(
             self.adapter.database.connect,
@@ -1183,7 +1214,13 @@ class AppShell(QMainWindow):
             return
         if self.backup_restore_operations.is_busy:
             return
-        path, _ = QFileDialog.getOpenFileName(self, "Backup prüfen", str(self.runtime_paths.backups), "Jenaplan-Sicherung (*.jkmbackup)")
+        extension = self.backup_restore_adapter.backup_extension
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Backup prüfen",
+            str(self.runtime_paths.backups),
+            f"Jenaplan-Sicherung (*{extension})",
+        )
         if not path:
             return
         self.backup_restore_operations.start(
@@ -1195,7 +1232,13 @@ class AppShell(QMainWindow):
             return
         if self.backup_restore_operations.is_busy:
             return
-        path, _ = QFileDialog.getOpenFileName(self, "Sicherung wiederherstellen", str(self.runtime_paths.backups), "Jenaplan-Sicherung (*.jkmbackup)")
+        extension = self.backup_restore_adapter.backup_extension
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Sicherung wiederherstellen",
+            str(self.runtime_paths.backups),
+            f"Jenaplan-Sicherung (*{extension})",
+        )
         if not path:
             return
         self._prepared_restore_preview = None
@@ -1228,11 +1271,16 @@ class AppShell(QMainWindow):
         self._restore_confirmed = True
         self._prepared_restore_preview = None
         self._restore_worker_start_attempted = False
-        self.backup_restore_operations.start(
-            self.backup_restore_adapter.prepare_restore_operation(
+        operation = (
+            self.backup_restore_adapter.verify_prepared_restore_operation(
+                preview.restore_id
+            )
+            if preview.restore_id
+            else self.backup_restore_adapter.prepare_restore_operation(
                 preview.archive_path
             )
         )
+        self.backup_restore_operations.start(operation)
 
     def _block_unavailable_backup_restore(self) -> bool:
         if self.backup_restore_available:
@@ -1280,8 +1328,9 @@ class AppShell(QMainWindow):
     ) -> None:
         if operation_type is BackupRestoreOperationType.CREATE_BACKUP:
             self._backup_status_loaded = True
+            verified = getattr(result, "verification", result)
             self.settings_screen.show_backup_success(
-                self.backup_restore_adapter.backup_summary(result.verification)
+                self.backup_restore_adapter.backup_summary(verified)
             )
             return
         if operation_type is BackupRestoreOperationType.DISCOVER_VERIFIED_BACKUPS:
@@ -1329,7 +1378,7 @@ class AppShell(QMainWindow):
     def _handle_backup_restore_failure(
         self,
         operation_type: BackupRestoreOperationType,
-        _error_info: BackupRestoreOperationErrorInfo,
+        error_info: BackupRestoreOperationErrorInfo,
     ) -> None:
         if operation_type in {
             BackupRestoreOperationType.VERIFY_RESTORE_BACKUP,
@@ -1342,14 +1391,53 @@ class AppShell(QMainWindow):
                 "Die Sicherung konnte nicht erstellt werden."
             )
         elif operation_type is BackupRestoreOperationType.VERIFY_BACKUP:
+            messages = {
+                "backup_context_mismatch": (
+                    "Die Sicherung gehört nicht zu dieser Installation oder "
+                    "diesem Datenbestand."
+                ),
+                "backup_key_unavailable": (
+                    "Der benötigte lokale Sicherheitsschlüssel ist nicht verfügbar."
+                ),
+                "backup_invalid": (
+                    "Die Sicherung ist ungültig oder wurde verändert."
+                ),
+            }
             self.settings_screen.show_backup_error(
-                "Die ausgewählte Sicherung konnte nicht bestätigt werden."
+                messages.get(
+                    error_info.error_code,
+                    "Die ausgewählte Sicherung konnte nicht bestätigt werden.",
+                )
             )
         elif operation_type is BackupRestoreOperationType.DISCOVER_VERIFIED_BACKUPS:
             self._backup_status_loaded = True
             self.settings_screen.set_backup_status(None)
         else:
-            self._show_restore_workflow_error()
+            messages = {
+                "backup_context_mismatch": (
+                    "Die Sicherung gehört nicht zu dieser Installation oder "
+                    "diesem Datenbestand."
+                ),
+                "backup_key_unavailable": (
+                    "Der benötigte lokale Sicherheitsschlüssel ist nicht verfügbar."
+                ),
+                "backup_invalid": (
+                    "Die Sicherung ist ungültig oder wurde verändert."
+                ),
+                "restore_staging_failed": (
+                    "Die Wiederherstellung konnte nicht sicher vorbereitet werden."
+                ),
+                "restore_ready_invalid": (
+                    "Die vorbereitete Wiederherstellung ist nicht mehr gültig."
+                ),
+                "restore_safety_backup_failed": (
+                    "Das Sicherheitsbackup vor der Wiederherstellung konnte "
+                    "nicht erstellt werden."
+                ),
+            }
+            self._show_restore_workflow_error(
+                messages.get(error_info.error_code)
+            )
 
     def _launch_verified_restore(self, preview: RestorePreviewViewModel) -> None:
         if self._restore_worker_start_attempted:
@@ -1360,8 +1448,20 @@ class AppShell(QMainWindow):
             self._restore_worker_process = (
                 self.backup_restore_adapter.launch_prepared_restore(handoff)
             )
-        except Exception:
-            self._show_restore_workflow_error()
+        except Exception as error:
+            code = str(getattr(error, "code", ""))
+            message = {
+                "worker_handoff_failed": (
+                    "Die sichere Übergabe an die Wiederherstellung ist fehlgeschlagen."
+                ),
+                "worker_takeover_failed": (
+                    "Die Wiederherstellung konnte die App nicht sicher übernehmen."
+                ),
+                "manual_recovery_required": (
+                    "Der Datenbestand benötigt eine manuelle Sicherheitswiederherstellung."
+                ),
+            }.get(code)
+            self._show_restore_workflow_error(message)
             return
         self._close_restore_workspaces()
         self._restore_shutdown_in_progress = True
@@ -1396,13 +1496,13 @@ class AppShell(QMainWindow):
         if application is not None:
             application.quit()
 
-    def _show_restore_workflow_error(self) -> None:
+    def _show_restore_workflow_error(self, message: str | None = None) -> None:
         self._prepared_restore_preview = None
         self._restore_confirmed = False
         self.settings_screen.clear_restore_preview()
         self.settings_screen.show_restore_error(
-            "Die Wiederherstellung konnte nicht sicher gestartet werden. "
-            "Die App bleibt geöffnet; der lokale Datenbestand wurde nicht ersetzt."
+            (message or "Die Wiederherstellung konnte nicht sicher gestartet werden.")
+            + " Die App bleibt geöffnet; der lokale Datenbestand wurde nicht ersetzt."
         )
 
     def open_new_timetable_entry_dialog(self, weekday: int) -> None:

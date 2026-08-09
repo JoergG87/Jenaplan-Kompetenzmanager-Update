@@ -1702,7 +1702,7 @@ def test_empty_document_is_bound_by_one_authenticated_record(
     assert restored.document_paths[0].read_bytes() == b""
 
 
-def test_product_backup_restore_startup_and_identity_vfs_are_not_integrated(
+def test_product_uses_reviewed_final_v4_runtime_without_prototype_or_identity_vfs(
     tmp_path: Path,
 ) -> None:
     environment = _environment(tmp_path)
@@ -1721,7 +1721,11 @@ def test_product_backup_restore_startup_and_identity_vfs_are_not_integrated(
         content = path.read_text(encoding="utf-8")
         assert "encrypted_backup_container" not in content
         assert "backup_container" not in content
-        assert ".jkmebackup" not in content
+        if path.name not in {
+            "main.py",
+            "backup_restore_desktop_adapter.py",
+        }:
+            assert ".jkmebackup" not in content
 
     new_sources = (
         repository_root / "src/security/backup_container.py",

@@ -335,7 +335,16 @@ class ExecuteSchoolYearTransition:
                 "transition_backup_evidence_missing"
             )
         try:
-            evidence = self._backup_service.create_and_verify()
+            during_maintenance = getattr(
+                self._backup_service,
+                "create_and_verify_during_maintenance",
+                None,
+            )
+            evidence = (
+                during_maintenance()
+                if during_maintenance is not None
+                else self._backup_service.create_and_verify()
+            )
         except SchoolYearTransitionExecutionError:
             raise
         except Exception:

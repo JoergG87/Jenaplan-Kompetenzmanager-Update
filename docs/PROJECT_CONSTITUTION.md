@@ -19,12 +19,14 @@ Legacy-Enrollment. Vorhandene Klartext-Fachdaten bleiben unangetastet und
 werden strukturiert abgewiesen. Dokumente werden im Cipher-Pfad ausschließlich
 über den verschlüsselten Managed Document Store gespeichert.
 
-Die vorhandenen ZIP-v1-Backup-/Restoreaktionen bleiben im Cipher-Produktmodus
-bis zum ausdrücklich freigegebenen Folgepaket technisch gesperrt. Diese
-Produktentscheidung aus ADR-103 ersetzt frühere Aussagen, die Klartext-SQLite
-oder ein First Run ohne Schuljahr pauschal als normalen Pilotdefault
-beschrieben; die zugrunde liegenden isolierten Foundation-Verträge bleiben
-historisch und testseitig gültig.
+Backup und Restore verwenden im Cipher-Produktmodus ausschließlich den
+vorhandenen verschlüsselten Final-V4-Vertrag mit `.jkmebackup`, vollständiger
+keyed Verifikation, `RESTORE_READY`, Sicherheitsbackup, Worker-Handoff,
+Rollback und normalem Restart. ZIP-v1, V3, Migration, Gerätewechsel und ein
+Fallback bleiben technisch gesperrt. Die zugrunde liegenden Gate-Off-
+Foundation-Verträge bleiben historisch und testseitig gültig. Support-Reset
+bleibt im Cipher-Modus kontrolliert blockiert, solange seine vor Authentifizierung
+benötigte Backup-Komposition keine gesonderte Sicherheitsentscheidung besitzt.
 
 ## Final-V4-Verfassungsgrenzen für Schuljahre, Mitgliedschaften und Fachrelevanz
 

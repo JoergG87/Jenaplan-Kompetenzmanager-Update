@@ -22,10 +22,12 @@ from src.core.backup import BackupVerificationResult
 from src.core.database_compatibility import (
     DatabaseCompatibilityInspector,
     DatabaseCompatibilityPolicy,
+    FINAL_SCHEMA_FINGERPRINT,
 )
 from src.core.sqlite_school_year_transition import (
     school_year_transition_source_sha256,
 )
+from src.security.final_v4_backup_runtime import FinalV4EncryptedBackupService
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +76,53 @@ class VerifiedSchoolYearTransitionBackupAdapter:
             backup_sha256=final_verification.archive_sha256,
             source_state_sha256=source_state,
             source_schema_fingerprint=source_schema,
+            verified_at=self.now_provider(),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedCipherSchoolYearTransitionBackupAdapter:
+    """Create the mandatory Final-V4 `.jkmebackup` inside the active freeze."""
+
+    service: FinalV4EncryptedBackupService
+    connection_factory: Callable[[], sqlite3.Connection]
+    target_directory: Path
+    now_provider: Callable[[], datetime] = lambda: datetime.now(UTC)
+    backup_id_provider: Callable[[], str] = lambda: (
+        f"SYB-{secrets.token_hex(16)}"
+    )
+
+    def create_and_verify(self) -> SchoolYearTransitionBackupEvidence:
+        raise RuntimeError("transition_cipher_maintenance_required")
+
+    def create_and_verify_during_maintenance(
+        self,
+    ) -> SchoolYearTransitionBackupEvidence:
+        target_root = Path(self.target_directory).expanduser().resolve(strict=True)
+        timestamp = self.now_provider().astimezone(UTC).strftime(
+            "%Y%m%dT%H%M%SZ"
+        )
+        target = (
+            target_root
+            / f"Jenaplan-Kompetenzmanager-Sicherheitsbackup-{timestamp}.jkmebackup"
+        )
+        created = self.service.create_during_maintenance(target)
+        verified = self.service.verify(created.path)
+        if verified != created:
+            raise RuntimeError("transition_backup_verification_mismatch")
+        connection = self.connection_factory()
+        try:
+            if connection.row_factory is None:
+                connection.row_factory = sqlite3.Row
+            connection.execute("PRAGMA query_only = ON")
+            source_state = school_year_transition_source_sha256(connection)
+        finally:
+            connection.close()
+        return SchoolYearTransitionBackupEvidence(
+            backup_id=self.backup_id_provider(),
+            backup_sha256=verified.container_sha256,
+            source_state_sha256=source_state,
+            source_schema_fingerprint=FINAL_SCHEMA_FINGERPRINT,
             verified_at=self.now_provider(),
         )
 

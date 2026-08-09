@@ -278,6 +278,13 @@ class SettingsScreen(QWidget):
             )
         self._update_backup_restore_actions()
 
+    def set_cipher_product_mode(self, active: bool) -> None:
+        if active:
+            self.storage_security_notice.setText(
+                "Datenbank, verwaltete Dokumente und Datensicherungen werden "
+                "lokal verschlüsselt. Die App-Sperre schützt zusätzlich den Zugriff."
+            )
+
     def show_close_blocked(self) -> None:
         self.operation_status_label.setText(
             "Die laufende Datensicherung wird sicher abgeschlossen. "
@@ -459,7 +466,13 @@ class SettingsScreen(QWidget):
         status = {"exact": "Kompatibel", "migration_required": "Migration wird vorbereitet", "incompatible": "Nicht kompatibel"}.get(preview.compatibility_status.lower(), preview.compatibility_status)
         self.restore_preview_label.setText(
             f"Erstellt: {preview.created_at}\nApp-Version: {preview.app_version}\nDatenbank: {status}\n"
-            f"Kinder: {preview.students_count} · Beobachtungen: {preview.observations_count}\n"
+            + (
+                "Status: Sicher zur Wiederherstellung vorbereitet "
+                "(RESTORE_READY)\n"
+                if preview.restore_state == "RESTORE_READY"
+                else ""
+            )
+            + f"Kinder: {preview.students_count} · Beobachtungen: {preview.observations_count}\n"
             f"Berichtrevisionen: {preview.learning_report_revisions_count} · LEG-Revisionen: {preview.learning_conference_revisions_count}\n"
             f"Verwaltete Dateien: {preview.managed_files_count} · Externe Referenzen: {preview.external_references_count} · Fehlend: {preview.external_missing_count}"
         )
@@ -744,6 +757,7 @@ class SettingsScreen(QWidget):
         notice = QLabel(
             "Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups."
         )
+        self.storage_security_notice = notice
         notice.setWordWrap(True)
         set_label_style(notice, "muted")
         layout.addWidget(notice)

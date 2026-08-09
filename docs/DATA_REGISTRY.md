@@ -9,7 +9,9 @@
 | Final-V4-Fachdatenbank | `final-v4-sqlcipher-runtime-v1/final-v4.sqlcipher` | Final-V4 SQLCipher Runtime | ausschließlich exakt SQLCipher 4.17 keyed |
 | Document-Companion | `final-v4-sqlcipher-runtime-v1/documents-v1.sqlcipher` | Final-V3 Document Runtime | derselbe Database-Key und Installation-/Database-Context wie Final-V4; eigenständiges historisches Companion-Schema v1 |
 | verschlüsselter Dokumentstorage | `final-v4-sqlcipher-runtime-v1/document-containers-v1/` | `ManagedDocumentStore` | registrierte `.jkmedoc`-Container für Anhänge, allgemeine Dokumente sowie finale Bericht-/LEG-PDFs |
-| Backupbereich | `backups/` | Desktop Runtime | Rolle registriert; Cipher-Backup/-Restore produktiv noch gesperrt |
+| Backupbereich | `backups/` | Desktop Runtime | produktive Final-V4-Backups und Pflichtbackups ausschließlich als `.jkmebackup`; keine DMK, kein ZIP-v1 |
+| Restore-Staging | `encrypted-restore-staging/<restore-id>/` | Final-V4 Restore Runtime | privates vollständig verifiziertes Staging; erst `RESTORE_READY` ist handofffähig |
+| Restore-Sicherheitsbackup | `encrypted-restore-safety/` | Final-V4 Live Restore | retained `.jkmebackup` des aktuellen Livebestands vor jedem Worker-Handoff |
 
 `RuntimePaths.database` (`kompetenzmanager.sqlite`) und
 `RuntimePaths.documents` (`documents/`) sind nur die kanonischen
