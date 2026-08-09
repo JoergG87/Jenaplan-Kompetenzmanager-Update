@@ -469,9 +469,84 @@ class TestBackupRestoreShellLifecycle:
             quit_application.assert_called_once_with()
             close.assert_called_once_with()
 
+    def test_cipher_restore_confirmation_retains_ready_binding_until_worker_start(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            window = self._window(Path(temporary))
+            preview = RestorePreviewViewModel(
+                "2026-08-09T12:00:00Z",
+                "0.4.0",
+                "exact",
+                3,
+                4,
+                1,
+                1,
+                2,
+                0,
+                0,
+                Path("candidate.jkmebackup"),
+                "RST-FINAL-V4",
+            )
+            window.settings_screen.show_restore_preview(preview)
+            confirm = object()
+            confirmation = mock.Mock()
+            confirmation.clickedButton.return_value = confirm
+            operations: list[BackupRestoreOperation] = []
+
+            with mock.patch(
+                "src.desktop_app.shell.create_confirmation_message",
+                return_value=(confirmation, confirm),
+            ), mock.patch.object(
+                window.backup_restore_operations,
+                "start",
+                side_effect=lambda operation: operations.append(operation) or True,
+            ):
+                window.start_restore()
+
+            assert len(operations) == 1
+            assert (
+                operations[0].operation_type
+                is BackupRestoreOperationType.VERIFY_PREPARED_RESTORE
+            )
+            assert operations[0].payload.restore_id == "RST-FINAL-V4"
+            assert window._prepared_restore_preview is preview
+
+            handoff = SimpleNamespace(
+                path=Path("handoff.json"),
+                nonce="nonce",
+                restore_id="RST-FINAL-V4",
+            )
+            started = SimpleNamespace(process=object(), parent_lifetime_fd=9)
+            with mock.patch.object(
+                window.backup_restore_adapter,
+                "create_restore_handoff",
+                return_value=handoff,
+            ) as create_handoff, mock.patch.object(
+                window.backup_restore_adapter,
+                "launch_prepared_restore",
+                return_value=started,
+            ) as launch, mock.patch.object(
+                window,
+                "_close_restore_workspaces",
+            ), mock.patch(
+                "src.desktop_app.shell.QTimer.singleShot",
+            ):
+                window._handle_backup_restore_success(
+                    BackupRestoreOperationType.VERIFY_PREPARED_RESTORE,
+                    SimpleNamespace(restore_id="RST-FINAL-V4"),
+                )
+
+            create_handoff.assert_called_once_with(preview)
+            launch.assert_called_once_with(handoff)
+            assert window._restore_worker_process is started
+            window._restore_shutdown_in_progress = False
+            window.close()
+
     def test_restore_worker_start_error_keeps_app_open_and_clears_preview(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             window = self._window(Path(temporary))
+            live_before = window.runtime_paths.database.read_bytes()
             preview = RestorePreviewViewModel(
                 "2026-07-17T10:00:00Z",
                 "0.1.2",
@@ -514,5 +589,6 @@ class TestBackupRestoreShellLifecycle:
             assert workspace.isVisible()
             assert window.settings_screen.restore_preview is None
             assert "/private" not in window.settings_screen.restore_message.label.text()
+            assert window.runtime_paths.database.read_bytes() == live_before
             workspace.done(QDialog.DialogCode.Rejected)
             window.close()

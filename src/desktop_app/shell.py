@@ -1269,7 +1269,7 @@ class AppShell(QMainWindow):
         if not confirmed:
             return
         self._restore_confirmed = True
-        self._prepared_restore_preview = None
+        self._prepared_restore_preview = preview if preview.restore_id else None
         self._restore_worker_start_attempted = False
         operation = (
             self.backup_restore_adapter.verify_prepared_restore_operation(

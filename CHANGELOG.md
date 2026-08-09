@@ -6,6 +6,12 @@
   Schreiben, Kompetenzen und Belegen, Vorschau und Revisionen aber nur noch
   genau eine effektfreie Seite sichtbar und interaktiv.
 
+- Der Final-V4-Cipher-Restore behält die bereits vollständig verifizierte
+  `RESTORE_READY`-Bindung bis zur erneuten Prüfung und erreicht dadurch wieder
+  den vorhandenen Sicherheitsbackup-, Handoff- und Workerstart-Pfad. Es gibt
+  weder ZIP-v1-Fallback noch Klartextmigration oder eine Änderung der
+  Recoveryarchitektur.
+
 - Der vorhandene synthetische Testdatengenerator kann jetzt einen vollständig
   neuen, systemtemporären Final-V4-Cipher-Testroot über die produktiven
   Application-/Adapterpfade befüllen. Er überschreibt keine Datenbank und
