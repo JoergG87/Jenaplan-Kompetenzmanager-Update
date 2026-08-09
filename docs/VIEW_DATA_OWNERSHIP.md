@@ -287,8 +287,10 @@ weiter. `ManagedStudentDocumentService` besitzt ausschließlich den
 journalisierten fachlichen Create-/Replace-/Remove-/Retry-Lifecycle; die
 Security-, Container- und Pointerlogik bleibt allein im gemeinsamen
 `ManagedDocumentStore`. Widgets und ViewModels besitzen weiterhin keine
-Runtime-Ownership. Bericht/LEG und PDF-Services sind keine Quelle oder Senke
-dieser Runtime. Es gibt keine Export-, Preview-, Backup-, Restore-,
+Runtime-Ownership. Die vorhandenen Bericht-/LEG-PDF-Services sind hinter dem
+Gate ausschließlich binäre Quellen für `ManagedPdfArtifactLifecycle`; RPA und
+LCA bleiben getrennte fachliche Artefakte und derselbe Store besitzt allein
+Container, Generation und Reader. Es gibt keine Export-, Preview-, Backup-, Restore-,
 Migrations-, GC- oder Produktstartup-Ownership.
 
 `StudentDocumentViewModel.managed_encrypted` ist ausschließlich eine

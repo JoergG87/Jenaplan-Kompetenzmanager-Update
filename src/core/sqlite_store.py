@@ -5083,6 +5083,29 @@ class SQLiteLearningReportPdfArtifactRepository:
             ).fetchone()
         return self._artifact_from_row(row) if row is not None else None
 
+    def get_by_artifact_id(
+        self,
+        learning_report_pdf_artifact_id: str,
+    ) -> LearningReportPdfArtifactRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    learning_report_pdf_artifact_id,
+                    learning_report_revision_id,
+                    relative_file_path,
+                    mime_type,
+                    file_size_bytes,
+                    snapshot_sha256,
+                    pdf_sha256,
+                    created_at
+                FROM learning_report_pdf_artifacts
+                WHERE learning_report_pdf_artifact_id = ?
+                """,
+                (learning_report_pdf_artifact_id,),
+            ).fetchone()
+        return self._artifact_from_row(row) if row is not None else None
+
     def save_artifact(
         self,
         artifact: LearningReportPdfArtifactRecord,
@@ -5201,6 +5224,29 @@ class SQLiteLearningConferencePdfArtifactRepository:
                 WHERE learning_conference_revision_id = ?
                 """,
                 (learning_conference_revision_id,),
+            ).fetchone()
+        return self._artifact_from_row(row) if row is not None else None
+
+    def get_by_artifact_id(
+        self,
+        learning_conference_pdf_artifact_id: str,
+    ) -> LearningConferencePdfArtifactRecord | None:
+        with closing(self.database.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    learning_conference_pdf_artifact_id,
+                    learning_conference_revision_id,
+                    relative_file_path,
+                    mime_type,
+                    file_size_bytes,
+                    snapshot_sha256,
+                    pdf_sha256,
+                    created_at
+                FROM learning_conference_pdf_artifacts
+                WHERE learning_conference_pdf_artifact_id = ?
+                """,
+                (learning_conference_pdf_artifact_id,),
             ).fetchone()
         return self._artifact_from_row(row) if row is not None else None
 

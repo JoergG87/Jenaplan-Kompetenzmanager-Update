@@ -301,6 +301,12 @@ Klartextziel. `AppShell.student_adapter` erlaubt nur die explizite Injektion
 eines bereits gegateten Adapters; der Produktdefault erzeugt weiterhin den
 Gate-Off-Adapter.
 
+Finale RPA-/LCA-PDFs verwenden hinter demselben Gate ausschließlich ihre
+vorhandenen Status- und Erzeugungsaktionen. Managed-Document-ID, Generation,
+Storage-ID, Journal und physischer Container werden nicht sichtbar. Dieses
+Paket ergänzt weder Vorschau noch Öffnen, Export, Pfadauswahl oder eine neue
+UI-Aktion.
+
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 
 Das interne Gate, die Integrationsphasen, Schema-/Key-/Storage-IDs,

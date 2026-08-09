@@ -23,6 +23,7 @@ from src.application.dispatcher import (
     observation_update_handler,
 )
 from src.application.managed_documents import ManagedStudentDocumentService
+from src.application.managed_pdf_artifacts import ManagedPdfArtifactLifecycle
 from src.application.school_year_assignment import (
     ArchiveStudent,
     AssignmentApplicationError,
@@ -105,6 +106,7 @@ from src.core.learning_report import (
     ReportFinalizationService,
 )
 from src.core.learning_report_pdf import (
+    LearningReportPdfArtifactRecord,
     LearningReportPdfError,
     LearningReportPdfService,
 )
@@ -117,6 +119,7 @@ from src.core.learning_conference import (
     LearningConferenceRevisionReadService,
 )
 from src.core.learning_conference_pdf import (
+    LearningConferencePdfArtifactRecord,
     LearningConferencePdfError,
     LearningConferencePdfOutputModelBuilder,
     LearningConferencePdfService,
@@ -234,6 +237,7 @@ class StudentDesktopAdapter:
             EncryptedObservationAttachmentRuntime | None
         ) = None,
         managed_document_store: ManagedDocumentStore | None = None,
+        managed_pdf_fault_hook: Callable[[str], None] | None = None,
     ) -> None:
         self.database_path = (
             Path(database.path) if database is not None else Path(database_path)
@@ -252,6 +256,7 @@ class StudentDesktopAdapter:
         ):
             raise ValueError("All managed documents must use the same store.")
         self._managed_document_store = managed_document_store
+        self._managed_pdf_fault_hook = managed_pdf_fault_hook
         self._encrypted_observation_attachments = (
             managed_document_store or encrypted_observation_attachments
         )
@@ -267,6 +272,8 @@ class StudentDesktopAdapter:
         self._observation_recovery_suspended = 0
         if self._managed_documents is not None:
             self._managed_documents.recover_pending()
+            self._learning_report_managed_pdf_lifecycle().recover_pending()
+            self._learning_conference_managed_pdf_lifecycle().recover_pending()
         self._observation_uow().recover_pending()
 
     def list_students(
@@ -2216,9 +2223,14 @@ class StudentDesktopAdapter:
             GenerateLearningReportPdfCommand(learning_report_revision_id)
         )
         repository = SQLiteLearningReportPdfArtifactRepository(self.database)
+        file_path = (
+            None
+            if artifact.relative_file_path.startswith("managed-document:")
+            else repository.resolve_file_path(artifact.relative_file_path)
+        )
         return build_learning_report_pdf_artifact_view_model(
             artifact,
-            repository.resolve_file_path(artifact.relative_file_path),
+            file_path,
         )
 
     def load_learning_report_pdf_artifact(
@@ -2232,10 +2244,40 @@ class StudentDesktopAdapter:
         if artifact is None:
             return None
         repository = SQLiteLearningReportPdfArtifactRepository(self.database)
+        file_path = (
+            None
+            if artifact.relative_file_path.startswith("managed-document:")
+            else repository.resolve_file_path(artifact.relative_file_path)
+        )
         return build_learning_report_pdf_artifact_view_model(
             artifact,
-            repository.resolve_file_path(artifact.relative_file_path),
+            file_path,
         )
+
+    def read_learning_report_pdf_artifact(
+        self,
+        *,
+        artifact_id: str,
+        consumer: object,
+    ) -> None:
+        """Resolve one RPA identity and deliver verified PDF bytes in memory."""
+        if self._managed_document_store is None:
+            raise LearningReportPdfError(
+                "Verschluesselte PDF-Artefakte sind im Gate-Off-Pfad nicht aktiv."
+            )
+        repository = SQLiteLearningReportPdfArtifactRepository(self.database)
+        artifact = repository.get_by_artifact_id(artifact_id)
+        if artifact is None:
+            raise LearningReportPdfError("PDF-Artefakt nicht gefunden.")
+        loaded = self._learning_report_pdf_application_service().load_for_revision(
+            artifact.learning_report_revision_id
+        )
+        if loaded != artifact:
+            raise LearningReportPdfError("PDF-Artefaktreferenz ist ungueltig.")
+        pdf_bytes = self._learning_report_managed_pdf_lifecycle(
+            repository
+        ).verify_existing(artifact)
+        self._deliver_pdf_bytes(consumer, artifact, pdf_bytes)
 
     def learning_report_pdf_error_message(self, error: Exception) -> str:
         """Translate expected final-PDF failures into calm UI language."""
@@ -2324,8 +2366,47 @@ class StudentDesktopAdapter:
                 payload,
             ).output_model,
             renderer.render,
+            managed_lifecycle=(
+                None
+                if self._managed_document_store is None
+                else self._learning_report_managed_pdf_lifecycle(
+                    artifact_repository
+                )
+            ),
         )
         return LearningReportPdfApplicationService(domain_service)
+
+    def _learning_report_managed_pdf_lifecycle(
+        self,
+        repository: SQLiteLearningReportPdfArtifactRepository | None = None,
+    ) -> ManagedPdfArtifactLifecycle[LearningReportPdfArtifactRecord]:
+        if self._managed_document_store is None:
+            raise ValueError("managed_document_store_required")
+        repository = repository or SQLiteLearningReportPdfArtifactRepository(
+            self.database
+        )
+        return ManagedPdfArtifactLifecycle(
+            database_path=self.database_path,
+            store=self._managed_document_store,
+            artifact_kind="report",
+            next_artifact_id=repository.next_artifact_id,
+            get_for_revision=repository.get_for_revision,
+            save_artifact=repository.save_artifact,
+            build_artifact=lambda value: LearningReportPdfArtifactRecord(
+                value.artifact_id,
+                value.revision_id,
+                value.managed_reference,
+                "application/pdf",
+                value.pdf_size,
+                value.snapshot_sha256,
+                value.pdf_sha256,
+                value.created_at,
+            ),
+            artifact_reference=lambda value: value.relative_file_path,
+            artifact_size=lambda value: value.file_size_bytes,
+            artifact_pdf_sha256=lambda value: value.pdf_sha256,
+            fault_hook=self._managed_pdf_fault_hook,
+        )
 
     def _learning_report_draft_view_model(
         self,
@@ -2529,9 +2610,14 @@ class StudentDesktopAdapter:
             GenerateLearningConferencePdfCommand(learning_conference_revision_id)
         )
         repository = SQLiteLearningConferencePdfArtifactRepository(self.database)
+        file_path = (
+            None
+            if artifact.relative_file_path.startswith("managed-document:")
+            else repository.resolve_file_path(artifact.relative_file_path)
+        )
         return build_learning_conference_pdf_artifact_view_model(
             artifact,
-            repository.resolve_file_path(artifact.relative_file_path),
+            file_path,
         )
 
     def load_learning_conference_pdf_artifact(
@@ -2545,10 +2631,53 @@ class StudentDesktopAdapter:
         if artifact is None:
             return None
         repository = SQLiteLearningConferencePdfArtifactRepository(self.database)
+        file_path = (
+            None
+            if artifact.relative_file_path.startswith("managed-document:")
+            else repository.resolve_file_path(artifact.relative_file_path)
+        )
         return build_learning_conference_pdf_artifact_view_model(
             artifact,
-            repository.resolve_file_path(artifact.relative_file_path),
+            file_path,
         )
+
+    def read_learning_conference_pdf_artifact(
+        self,
+        *,
+        artifact_id: str,
+        consumer: object,
+    ) -> None:
+        """Resolve one LCA identity and deliver verified PDF bytes in memory."""
+        if self._managed_document_store is None:
+            raise LearningConferencePdfError(
+                "Verschluesselte LEG-PDF-Artefakte sind im Gate-Off-Pfad nicht aktiv."
+            )
+        repository = SQLiteLearningConferencePdfArtifactRepository(self.database)
+        artifact = repository.get_by_artifact_id(artifact_id)
+        if artifact is None:
+            raise LearningConferencePdfError("LEG-PDF-Artefakt nicht gefunden.")
+        loaded = self._learning_conference_pdf_application_service().load_for_revision(
+            artifact.learning_conference_revision_id
+        )
+        if loaded != artifact:
+            raise LearningConferencePdfError("LEG-PDF-Artefaktreferenz ist ungueltig.")
+        pdf_bytes = self._learning_conference_managed_pdf_lifecycle(
+            repository
+        ).verify_existing(artifact)
+        self._deliver_pdf_bytes(consumer, artifact, pdf_bytes)
+
+    @staticmethod
+    def _deliver_pdf_bytes(consumer: object, artifact: object, pdf_bytes: bytes) -> None:
+        try:
+            consumer.start(artifact)
+            for offset in range(0, len(pdf_bytes), 64 * 1024):
+                consumer.write(pdf_bytes[offset : offset + 64 * 1024])
+            consumer.finish(artifact)
+        except Exception:
+            try:
+                consumer.abort("managed_pdf_consumer_failed")
+            finally:
+                raise
 
     def learning_conference_pdf_error_message(self, error: Exception) -> str:
         """Translate expected LEG-PDF failures into calm UI language."""
@@ -2580,8 +2709,47 @@ class StudentDesktopAdapter:
             artifact_repository,
             LearningConferencePdfOutputModelBuilder(),
             PdfRenderer().render,
+            managed_lifecycle=(
+                None
+                if self._managed_document_store is None
+                else self._learning_conference_managed_pdf_lifecycle(
+                    artifact_repository
+                )
+            ),
         )
         return LearningConferencePdfApplicationService(domain_service)
+
+    def _learning_conference_managed_pdf_lifecycle(
+        self,
+        repository: SQLiteLearningConferencePdfArtifactRepository | None = None,
+    ) -> ManagedPdfArtifactLifecycle[LearningConferencePdfArtifactRecord]:
+        if self._managed_document_store is None:
+            raise ValueError("managed_document_store_required")
+        repository = repository or SQLiteLearningConferencePdfArtifactRepository(
+            self.database
+        )
+        return ManagedPdfArtifactLifecycle(
+            database_path=self.database_path,
+            store=self._managed_document_store,
+            artifact_kind="learning_conference",
+            next_artifact_id=repository.next_artifact_id,
+            get_for_revision=repository.get_for_revision,
+            save_artifact=repository.save_artifact,
+            build_artifact=lambda value: LearningConferencePdfArtifactRecord(
+                value.artifact_id,
+                value.revision_id,
+                value.managed_reference,
+                "application/pdf",
+                value.pdf_size,
+                value.snapshot_sha256,
+                value.pdf_sha256,
+                value.created_at,
+            ),
+            artifact_reference=lambda value: value.relative_file_path,
+            artifact_size=lambda value: value.file_size_bytes,
+            artifact_pdf_sha256=lambda value: value.pdf_sha256,
+            fault_hook=self._managed_pdf_fault_hook,
+        )
 
     def _learning_conference_revision_services(
         self,

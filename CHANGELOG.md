@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Finale Bericht- und LEG-PDF-Artefakte werden hinter dem bestehenden
+  internen Final-V3-/DMK-Gate jetzt direkt aus dem ReportLab-Memory-Sink über
+  denselben `ManagedDocumentStore` wie Beobachtungsanhänge und allgemeine
+  Schülerdokumente als vollständig verifizierte `.jkmedoc`-Generation
+  gespeichert. RPA-/LCA-ID und Revisionsbindung bleiben fachliche Source of
+  Truth; ein journalisierter Prepare-/Artifact-Commit-/Aktivierungsvertrag
+  hält Retry und Restart idempotent. Im verwalteten Storage entstehen keine
+  `.pdf`-, `.pdf.tmp`- oder `%PDF-`-Klartextartefakte. Der Pilot beginnt mit
+  einem frischen verschlüsselten Final-V3-Bestand; Migration, Produktdefault,
+  Vorschau, Öffnen, Export und Backup/Restore sind nicht Bestandteil.
+
 - Allgemeine verwaltete Schülerdokumente nutzen hinter dem bestehenden
   internen Final-V3-/DMK-Gate jetzt denselben `ManagedDocumentStore` wie
   Beobachtungsanhänge. Create, Replace, Remove, Retry, Restart und
@@ -12,7 +23,7 @@
   unverändert. Ein bereits gegateter Adapter kann explizit in die Shell
   injiziert werden; verschlüsselte allgemeine Dokumente bieten Ersetzen und
   Entfernen, aber keine OS-Öffnung. Der Pilot beginnt frisch verschlüsselt:
-  Es gibt keine Klartextmigration oder Alt-Testdatenübernahme, Bericht-/LEG-PDFs,
+  Es gibt keine Klartextmigration oder Alt-Testdatenübernahme;
   Produktaktivierung, Export und Backup/Restore bleiben ausgeschlossen.
 
 - Beobachtungsanhänge können ausschließlich hinter dem bestehenden internen
@@ -24,8 +35,9 @@
   Consumer-Lesen sind journalgebunden;
   Replace-Fehler erhalten den alten aktiven Container, Remove löscht keine
   Generation. Der Gate-Off-Klartextpfad, allgemeine Schülerdokumente,
-  Bericht-/LEG-PDFs, UI, Export, Vorschau, Backup/Restore, Migration und
-  Produktaktivierung bleiben unverändert.
+  Bericht-/LEG-PDFs bleiben aus diesem Observation-UoW ausgeschlossen; UI,
+  Export, Vorschau, Backup/Restore, Migration und Produktaktivierung bleiben
+  unverändert.
 
 - Eine neue Qt-freie `Final-V3-Dokumentcontainer-Runtime` ergänzt unter dem
   bestehenden doppelt markergebundenen SQLCipher-Gate eine eigene exakt

@@ -2,7 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Callable, Protocol, TypeVar
+
+
+ArtifactT = TypeVar("ArtifactT")
+
+
+class ManagedPdfArtifactError(RuntimeError):
+    """Sanitized fail-closed error for the encrypted PDF lifecycle."""
+
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
 
 
 class ManagedDocumentStore(Protocol):
@@ -11,6 +22,8 @@ class ManagedDocumentStore(Protocol):
     def plan_prepare(self, *, document_id: str) -> object: ...
 
     def prepare(self, **kwargs: object) -> object: ...
+
+    def prepare_bytes(self, **kwargs: object) -> object: ...
 
     def verify_prepared(self, *, plan: object) -> object: ...
 
@@ -34,3 +47,18 @@ class ManagedDocumentStore(Protocol):
         consumer: object,
         document_generation: int | None = None,
     ) -> object: ...
+
+
+class ManagedPdfArtifactLifecyclePort(Protocol[ArtifactT]):
+    """Core-facing port for journaled encrypted final-PDF persistence."""
+
+    def generate(
+        self,
+        *,
+        revision_id: str,
+        snapshot_sha256: str,
+        created_at: str,
+        render_pdf: Callable[[], bytes],
+    ) -> ArtifactT: ...
+
+    def verify_existing(self, artifact: ArtifactT) -> bytes: ...

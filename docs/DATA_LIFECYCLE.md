@@ -973,11 +973,40 @@ erfolgreich aktivierten Fachreferenz gilt `REFERENCE_COMPENSATED`. Replace
 persistiert `POINTER_PENDING` vor dem Companion-Wechsel; ein Restart setzt
 ausschließlich mit demselben gebundenen Plan fort.
 
+### Finale Bericht-/LEG-PDF-Artefakte hinter demselben Gate
+
+1. Ausschließlich die vorhandene bewusste Fachaktion darf die aktuelle
+   verifizierte RPV beziehungsweise LCV an den bestehenden Renderer übergeben.
+   ReportLab schreibt Gate-On direkt in einen binären Memory-Sink; es entsteht
+   weder `.pdf`, `.pdf.tmp` noch eine andere Klartextquelldatei.
+2. `ManagedPdfArtifactLifecycle` reserviert einmalig fachliche Artifact-ID,
+   getrennte opaque Managed-Document-ID, Generation und Storage-ID. Der
+   gerenderte PDF-Stream wird als unveränderliche `.jkmedoc`-Generation
+   vorbereitet und vollständig verifiziert.
+3. Erst nach Vollverifikation persistiert die vorhandene RPA-/LCA-Tabelle die
+   unveränderliche fachliche Referenz atomar. Ihr bisheriges Referenzfeld
+   enthält Gate-On ausschließlich `managed-document:<UUID>`, niemals einen
+   physischen Pfad. Danach aktiviert die Runtime idempotent die exakt gebundene
+   Generation und meldet erst nach erneuter Verifikation Erfolg.
+4. Retry derselben Revision verwendet dasselbe Journal, dieselbe Artifact-ID,
+   Managed-Document-ID und denselben Prepare-Plan. Ein vorhandenes gültiges
+   finales Artefakt wird nur verifiziert und zurückgegeben; es entsteht weder
+   ein zweites RPA/LCA noch eine zweite aktive Generation.
+5. Restart setzt nach fachlichem Artifact-Commit ausschließlich die gebundene
+   Aktivierung fort. Vorherige vollständige PREPARED-Evidenz bleibt gebunden;
+   ein vor Prepare abgebrochener Renderlauf benötigt dieselbe bewusste
+   Fachaktion erneut. Widerspruch, fehlender oder manipulierter Container,
+   falscher DMK/Context und unbekannter Journalzustand blockieren fail-closed.
+6. Lesen löst die bestehende RPA-/LCA-ID in die aktive Managed-Document-
+   Generation auf, verifiziert Container, Größe und SHA-256 vollständig und
+   liefert PDF-Bytes ausschließlich an einen injizierten Consumer. Es gibt in
+   diesem Paket kein permanentes Klartextziel, Preview, OS-Öffnen oder Export.
+
 Der freigegebene Pilotweg beginnt ausschließlich mit einer frischen
-verschlüsselten Final-V3-Installation. Bestehende Klartextdokumente werden
-nicht migriert oder konvertiert; alte synthetische Testdaten werden verworfen
-und nach Aktivierung neu erzeugt. Bericht-/LEG-PDFs, Vorschau, OS-Öffnung,
-Export, Backup/Restore und Produkt-Default-Aktivierung bleiben außerhalb.
+verschlüsselten Final-V3-Installation. Bestehende Klartextdokumente und PDFs
+werden nicht migriert oder konvertiert; alte synthetische Testdaten werden
+verworfen und nach Aktivierung neu erzeugt. Vorschau, OS-Öffnung, Export,
+Backup/Restore und Produkt-Default-Aktivierung bleiben außerhalb.
 
 Crash vor Erzeugung hinterlässt keinen Intent. Crash während Write, nach Write
 vor Verifikation oder nach Verifikation vor `PREPARED` erzeugt einen

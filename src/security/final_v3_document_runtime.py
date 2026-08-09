@@ -648,6 +648,114 @@ class FinalV3DocumentRuntime:
         self._emit("after_prepared_before_activation")
         return self._require_generation(document_id, generation, "PREPARED")
 
+    def prepare_bytes(
+        self,
+        *,
+        document_id: str,
+        source_bytes: bytes,
+        original_filename: str,
+        mime_type: str,
+        plan: FinalV3DocumentPreparePlan | Mapping[str, object] | None = None,
+    ) -> FinalV3DocumentGeneration:
+        """Prepare one generation directly from memory without a plaintext file."""
+        self._operation = FinalV3DocumentRuntimeOperation.PREPARE
+        _document_id(document_id)
+        if not isinstance(source_bytes, bytes) or not source_bytes:
+            raise _error("document_source_bytes_invalid", self._operation)
+        self.validate_restart()
+        if plan is None:
+            plan = self.plan_prepare(document_id=document_id)
+        plan = self._require_prepare_plan(plan, document_id=document_id)
+        existing = self._prepared_for(document_id)
+        if existing is not None:
+            self._verify_record(existing)
+            if (
+                existing.document_generation == plan.document_generation
+                and existing.storage_id == plan.storage_id
+                and existing.plaintext_size == len(source_bytes)
+                and existing.plaintext_sha256
+                == hashlib.sha256(source_bytes).hexdigest()
+            ):
+                return existing
+            raise _error("document_prepared_activation_required", self._operation)
+
+        with closing(self._factory.connect_read_only()) as connection:
+            rows = connection.execute(
+                _GENERATION_SELECT
+                + " WHERE document_id = ? ORDER BY document_generation",
+                (document_id,),
+            ).fetchall()
+        records = tuple(_record_from_row(row) for row in rows)
+        active = tuple(r for r in records if r.lifecycle_status == "ACTIVE")
+        if records and len(active) != 1:
+            raise _error("document_generation_state_invalid", self._operation)
+        previous_active_generation = active[0].document_generation if active else None
+        if plan.previous_active_generation != previous_active_generation:
+            raise _error("document_prepare_plan_conflict", self._operation)
+        generation = records[-1].document_generation + 1 if records else 1
+        if generation != plan.document_generation:
+            raise _error("document_prepare_plan_conflict", self._operation)
+        context = self._context(document_id, generation)
+        self._emit("before_container_creation")
+        try:
+            verification = self._service.create(
+                test_root=self.paths.container_root,
+                source=DocumentSource(
+                    source_name="memory-source.bin",
+                    original_filename=original_filename,
+                    mime_type=mime_type,
+                ),
+                storage_id=plan.storage_id,
+                dmk=self._loaded.dmk,
+                context=context,
+                document_key_generation=generation,
+                source_bytes=source_bytes,
+            )
+        except EncryptedDocumentError as error:
+            raise _error(error.code, self._operation) from None
+        self._emit("after_verification_before_prepared")
+        record = _record_from_verification(verification, "PREPARED")
+        try:
+            with closing(self._factory.connect(create=False)) as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                observed = connection.execute(
+                    _GENERATION_SELECT
+                    + " WHERE document_id = ? ORDER BY document_generation",
+                    (document_id,),
+                ).fetchall()
+                if len(observed) != len(records):
+                    raise _error("document_generation_conflict", self._operation)
+                if not records:
+                    connection.execute(
+                        """
+                        INSERT INTO final_v3_documents (
+                            document_id, active_generation, created_at
+                        ) VALUES (?, NULL, ?)
+                        """,
+                        (document_id, record.created_at),
+                    )
+                connection.execute(
+                    """
+                    INSERT INTO final_v3_document_generations (
+                        document_id, document_generation, storage_id,
+                        document_key_id, document_key_generation,
+                        envelope_revision, container_format,
+                        container_format_version, plaintext_size,
+                        plaintext_sha256, container_size, container_sha256,
+                        mime_type, lifecycle_status, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    _record_values(record),
+                )
+                FinalV3DocumentSchemaV1.validate_pointers(connection)
+                connection.commit()
+        except FinalV3DocumentRuntimeError:
+            raise
+        except Exception:
+            raise _error("document_prepared_persist_failed", self._operation) from None
+        self._emit("after_prepared_before_activation")
+        return self._require_generation(document_id, generation, "PREPARED")
+
     def plan_prepare(self, *, document_id: str) -> FinalV3DocumentPreparePlan:
         self._operation = FinalV3DocumentRuntimeOperation.PREPARE
         _document_id(document_id)

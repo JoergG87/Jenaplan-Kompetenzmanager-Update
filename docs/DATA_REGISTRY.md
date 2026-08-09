@@ -359,6 +359,8 @@ Fachdatenmodell bleibt unverändert.
 | kontrollierte Runtime-Quelle | injizierter Quellname, Originalname und MIME für genau einen Prepare-Lauf | außerhalb des verwalteten Storage; descriptor- und identitätsgebunden gelesen; nicht von der Runtime kopiert | flüchtige Eingabe |
 | Observation-UoW-Journalbindung im Cipher-Modus | operation_token, unveränderlicher Speichermodus `encrypted`, MED-ID, vorherige aktive Generation, geplante Generation/Storage-ID sowie Größen-/Hash-/MIME-/Lifecycle-Evidenz der verifizierten Generation | vorhandenes versioniertes Observation-Journal; steuert Commit, Aktivierung und Restart, ist keine fachliche Source of Truth; Modusabweichung blockiert ohne Fallback | ausschließlich Gate-On-Beobachtungsanhänge |
 | Managed-Document-Journalbindung | Operation, MED-ID, vorherige aktive Generation, geplante Generation/Storage-ID und ausschließlich Hashbindung der fachlichen Anfrage; kein Originalname, Pfad, Titel oder Schülerbezug | privates `.managed-document-staging`; steuert Retry/Restart und reserviert MED-ID, ist keine fachliche Source of Truth | ausschließlich Gate-On-allgemeine Schülerdokumente |
+| finale RPA-/LCA-Artefaktreferenz im Cipher-Modus | vorhandene fachliche Artifact-ID und Revisionsbindung; `relative_file_path` enthält ausschließlich die strikt typisierte interne Referenz `managed-document:<UUID>` statt eines Pfads | vorhandene unveränderliche `learning_report_pdf_artifacts` beziehungsweise `learning_conference_pdf_artifacts`; keine neue Tabelle und keine Schemaänderung | ausschließlich Gate-On-finale PDFs |
+| Final-PDF-Journalbindung | Dokumentart, bestehende Artifact-/Revision-ID, opaque Managed-Document-ID, Prepare-Plan, Phase sowie Snapshot-/PDF-Größe und SHA-256; keine PDF-Bytes, Namen, Revisionstexte oder Schülerdaten | privater Unterbereich der vorhandenen `.managed-document-staging`; steuert Retry/Restart, ist keine fachliche Source of Truth | ausschließlich Gate-On-finale PDFs |
 | Final-V3-`documents.file_path` im Cipher-Modus | leerer Nicht-Pfad; die aktive fachliche Referenz ist `documents.document_id`/MED-ID, die physische Auflösung liegt ausschließlich in der Companion-DB | SQLCipher-Hauptdatenbank; niemals Containerpfad oder Storage-ID | Gate-On-Beobachtungsanhänge und allgemeine Schülerdokumente |
 | flüchtiger Document-Key | zufällige 32 Byte je Dokumentgeneration | nur im Writer/Verifier/Reader; im Container ausschließlich AES-GCM-Envelope unter eigenem Document-HKDF-Zweck | Secret-Material |
 
@@ -367,7 +369,10 @@ Hauptdatenbank sowie im verschlüsselten Manifest. MIME und
 Größen-/Hashnachweise stehen im verschlüsselten Manifest und zusätzlich in der
 SQLCipher-Companion-DB.
 DMK und Document-Key erscheinen nie in Companion-DB, Datei, Log oder Exception.
-Ein Klartext-Altbestand ist keine Eingangsquelle: Der Pilot beginnt mit einem
+Finale Bericht-/LEG-PDFs werden ausschließlich aus der verifizierten aktuellen
+RPV beziehungsweise LCV bewusst erzeugt und direkt aus dem binären Renderer-
+Sink als `.jkmedoc` vorbereitet. Ein Klartext-Altbestand ist keine
+Eingangsquelle: Der Pilot beginnt mit einem
 frischen verschlüsselten Final-V3-Bestand; synthetische Testdaten werden nach
 Gate-Aktivierung neu erzeugt und nicht migriert.
 

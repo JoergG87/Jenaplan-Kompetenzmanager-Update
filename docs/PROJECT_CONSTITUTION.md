@@ -45,7 +45,14 @@ Schülerdokuments als Document-ID dienen. Beide fachlichen Aufrufer verwenden
 denselben `ManagedDocumentStore`. Der jeweilige journalisierte Application-
 Lifecycle bindet Generation und opaque Storage-ID vor dem Prepare, committet
 die fachliche Referenz vor der idempotenten Pointeraktivierung und schließt
-erst danach ab. Bericht-/LEG-PDFs bleiben ausgeschlossen.
+erst danach ab. Dieselbe Grenze gilt hinter dem Gate auch für ausschließlich
+bewusst erzeugte finale Bericht-/LEG-PDF-Artefakte: RPA/LCA bleiben fachliche
+Source of Truth, ihre bestehende Referenz bindet eine getrennte opaque
+Managed-Document-ID, und der Renderer liefert ausschließlich einen binären
+Memory-Sink. Vor der fachlichen Artefaktpersistenz wird die neue
+`.jkmedoc`-Generation vollständig verifiziert; Aktivierung und Restart sind
+journalisiert und idempotent. Im verwalteten Runtime-Root entsteht kein
+Klartext-PDF.
 
 Für den Pilot wird ausschließlich ein frischer verschlüsselter Final-V3-
 Bestand mit neu angelegten Schülern und neu erzeugten Dokumenten unterstützt.

@@ -373,13 +373,13 @@ class LearningReportPdfArtifactViewModel:
 
 def build_learning_report_pdf_artifact_view_model(
     artifact: LearningReportPdfArtifactRecord,
-    file_path: Path,
+    file_path: Path | None,
 ) -> LearningReportPdfArtifactViewModel:
     return LearningReportPdfArtifactViewModel(
         artifact.learning_report_pdf_artifact_id,
         artifact.learning_report_revision_id,
-        str(file_path),
-        file_path.name,
+        "" if file_path is None else str(file_path),
+        "Finales PDF" if file_path is None else file_path.name,
         artifact.file_size_bytes,
         artifact.snapshot_sha256,
         artifact.pdf_sha256,

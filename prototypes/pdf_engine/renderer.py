@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from datetime import date
 from html import escape
+from io import BufferedIOBase, BytesIO
 from pathlib import Path
+from typing import BinaryIO
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -318,11 +320,25 @@ class PdfRenderer:
             ),
         }
 
-    def render(self, model: ReportOutputModel, output_path: str | Path) -> Path:
-        target = Path(output_path)
-        target.parent.mkdir(parents=True, exist_ok=True)
+    def render(
+        self,
+        model: ReportOutputModel,
+        output_path: str | Path | BinaryIO,
+    ) -> Path | BinaryIO:
+        target: Path | BinaryIO
+        if isinstance(output_path, (str, Path)):
+            target = Path(output_path)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            reportlab_target: str | BinaryIO = str(target)
+        elif isinstance(output_path, (BytesIO, BufferedIOBase)) or hasattr(
+            output_path, "write"
+        ):
+            target = output_path
+            reportlab_target = output_path
+        else:
+            raise TypeError("output_path must be a path or binary sink")
         document = BaseDocTemplate(
-            str(target), pagesize=A4, leftMargin=22 * mm, rightMargin=22 * mm,
+            reportlab_target, pagesize=A4, leftMargin=22 * mm, rightMargin=22 * mm,
             topMargin=25 * mm, bottomMargin=20 * mm,
             title=model.metadata.document_title,
             author=model.metadata.school_name,

@@ -6,8 +6,14 @@ import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Protocol
+
+from src.core.managed_document_store import (
+    ManagedPdfArtifactError,
+    ManagedPdfArtifactLifecyclePort,
+)
 
 from .learning_report import (
     FINALIZED_REVISION_STATUS,
@@ -286,8 +292,11 @@ class LearningReportPdfService:
         output_model_builder: Callable[
             [LearningReportRevisionRecord, dict[str, object]], object
         ],
-        renderer: Callable[[object, Path], Path],
+        renderer: Callable[[object, object], object],
         *,
+        managed_lifecycle: (
+            ManagedPdfArtifactLifecyclePort[LearningReportPdfArtifactRecord] | None
+        ) = None,
         validator: LearningReportPdfSnapshotValidator | None = None,
         now: Callable[[], datetime] | None = None,
     ) -> None:
@@ -296,6 +305,7 @@ class LearningReportPdfService:
         self.report_loader = report_loader
         self.output_model_builder = output_model_builder
         self.renderer = renderer
+        self.managed_lifecycle = managed_lifecycle
         self.validator = validator or LearningReportPdfSnapshotValidator()
         self.now = now or (lambda: datetime.now(UTC))
 
@@ -323,6 +333,17 @@ class LearningReportPdfService:
                 "Das Berichtaggregat der ausgewaehlten Revision fehlt."
             )
         self.validator.validate(report, revision, payload)
+
+        if self.managed_lifecycle is not None:
+            try:
+                return self.managed_lifecycle.generate(
+                    revision_id=revision.learning_report_revision_id,
+                    snapshot_sha256=revision.snapshot_sha256,
+                    created_at=self._timestamp(),
+                    render_pdf=lambda: self._render_bytes(revision, payload),
+                )
+            except ManagedPdfArtifactError as error:
+                raise LearningReportPdfError(error.code) from error
 
         existing = self.artifact_repository.get_for_revision(revision_id)
         if existing is not None:
@@ -430,9 +451,17 @@ class LearningReportPdfService:
             raise LearningReportPdfError(
                 "Der Snapshot-Hash des PDF-Artefakts stimmt nicht mit der Revision ueberein."
             )
-        path = self.artifact_repository.resolve_file_path(
-            artifact.relative_file_path
-        )
+        if artifact.relative_file_path.startswith("managed-document:"):
+            if self.managed_lifecycle is None:
+                raise LearningReportPdfError(
+                    "Ein verschluesseltes PDF-Artefakt kann ohne Security-Runtime nicht gelesen werden."
+                )
+            try:
+                self.managed_lifecycle.verify_existing(artifact)
+            except ManagedPdfArtifactError as error:
+                raise LearningReportPdfError(error.code) from error
+            return
+        path = self.artifact_repository.resolve_file_path(artifact.relative_file_path)
         if not path.is_file():
             raise LearningReportPdfError(
                 "Die Datei des registrierten PDF-Artefakts fehlt."
@@ -446,6 +475,25 @@ class LearningReportPdfService:
             raise LearningReportPdfError(
                 "Der SHA-256 des PDF-Artefakts ist ungueltig."
             )
+
+    def _render_bytes(
+        self,
+        revision: LearningReportRevisionRecord,
+        payload: dict[str, object],
+    ) -> bytes:
+        output_model = self.output_model_builder(revision, payload)
+        sink = BytesIO()
+        rendered = self.renderer(output_model, sink)
+        if rendered is not sink:
+            raise LearningReportPdfError(
+                "Der PDF-Renderer hat nicht in den kontrollierten Speicher geschrieben."
+            )
+        pdf_bytes = sink.getvalue()
+        if not pdf_bytes.startswith(b"%PDF-"):
+            raise LearningReportPdfError(
+                "Der PDF-Renderer hat keine gueltige PDF-Datei erzeugt."
+            )
+        return pdf_bytes
 
     def _timestamp(self) -> str:
         value = self.now()

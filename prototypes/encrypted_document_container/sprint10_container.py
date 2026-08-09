@@ -158,6 +158,7 @@ class _BoundSource:
     size: int
     mtime_ns: int
     sha256: str
+    payload: bytes | None = None
 
 
 class _FDReader:
@@ -271,6 +272,7 @@ class SyntheticEncryptedDocumentServiceV1:
         dmk: LoadedDataMasterKey,
         context: DocumentContainerContextV1,
         document_key_generation: int = 1,
+        source_bytes: bytes | None = None,
     ) -> EncryptedDocumentVerificationResult:
         root, source_root, storage_root, _export_root = self._layout(
             test_root, require_source=True
@@ -288,12 +290,28 @@ class SyntheticEncryptedDocumentServiceV1:
             include_rewrap_revision=not self._plain_storage_names,
         )
         _require_absent(storage_root / storage_name, "document_target_exists")
-        bound = _bind_source(
-            source_root,
-            source_name,
-            self._chunk_size,
-            required_prefix=self._required_source_prefix,
-        )
+        if source_bytes is None:
+            bound = _bind_source(
+                source_root,
+                source_name,
+                self._chunk_size,
+                required_prefix=self._required_source_prefix,
+            )
+        else:
+            if not isinstance(source_bytes, bytes):
+                raise EncryptedDocumentError("document_source_bytes_invalid")
+            bound = _BoundSource(
+                fd=-1,
+                directory=source_root,
+                name=source_name,
+                device=0,
+                inode=0,
+                file_size=len(source_bytes),
+                size=len(source_bytes),
+                mtime_ns=0,
+                sha256=hashlib.sha256(source_bytes).hexdigest(),
+                payload=source_bytes,
+            )
         try:
             self._fault("writer_after_source_bound")
             _require_layout_identity(layout_identity)
@@ -448,7 +466,8 @@ class SyntheticEncryptedDocumentServiceV1:
         except Exception:
             raise EncryptedDocumentError("document_writer_failed") from None
         finally:
-            os.close(bound.fd)
+            if bound.fd >= 0:
+                os.close(bound.fd)
 
     def inspect_header(
         self, *, test_root: Path, container: Path
@@ -891,16 +910,22 @@ class SyntheticEncryptedDocumentServiceV1:
             _write_frame(fd, manifest_ciphertext, "document_manifest_write_failed")
             self._fault("writer_after_manifest")
             manifest_hash = hashlib.sha256(manifest_bytes).hexdigest()
-            os.lseek(
-                source.fd,
-                len(self._required_source_prefix or b""),
-                os.SEEK_SET,
-            )
+            if source.payload is None:
+                os.lseek(
+                    source.fd,
+                    len(self._required_source_prefix or b""),
+                    os.SEEK_SET,
+                )
             streamed_hash = hashlib.sha256()
             streamed_size = 0
             for chunk_index in range(manifest.chunk_count):
                 size = expected_chunk_size(manifest, chunk_index)
-                chunk = _read_exact_source(source.fd, size)
+                if source.payload is None:
+                    chunk = _read_exact_source(source.fd, size)
+                else:
+                    chunk = source.payload[streamed_size : streamed_size + size]
+                    if len(chunk) != size:
+                        raise EncryptedDocumentError("document_source_changed")
                 streamed_hash.update(chunk)
                 streamed_size += len(chunk)
                 ciphertext = _push(
@@ -1656,6 +1681,13 @@ def _read_exact_source(fd: int, size: int) -> bytes:
 
 
 def _require_bound_source_unchanged(value: _BoundSource) -> None:
+    if value.payload is not None:
+        if (
+            len(value.payload) != value.size
+            or hashlib.sha256(value.payload).hexdigest() != value.sha256
+        ):
+            raise EncryptedDocumentError("document_source_changed")
+        return
     status = os.fstat(value.fd)
     if (
         not stat.S_ISREG(status.st_mode)

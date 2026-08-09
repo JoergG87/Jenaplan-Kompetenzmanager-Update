@@ -409,13 +409,13 @@ class LearningConferencePdfArtifactViewModel:
 
 def build_learning_conference_pdf_artifact_view_model(
     artifact: LearningConferencePdfArtifactRecord,
-    file_path: Path,
+    file_path: Path | None,
 ) -> LearningConferencePdfArtifactViewModel:
     return LearningConferencePdfArtifactViewModel(
         artifact.learning_conference_pdf_artifact_id,
         artifact.learning_conference_revision_id,
-        str(file_path),
-        file_path.name,
+        "" if file_path is None else str(file_path),
+        "Finales PDF" if file_path is None else file_path.name,
         artifact.file_size_bytes,
         artifact.snapshot_sha256,
         artifact.pdf_sha256,
