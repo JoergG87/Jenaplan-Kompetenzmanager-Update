@@ -68,6 +68,7 @@ from src.core.observation import (
     ObservationValidator,
 )
 from src.core.observation_uow import (
+    EncryptedObservationAttachmentRuntime,
     ensure_durable_directory,
     ObservationPersistenceUnitOfWork,
     ObservationWriterLock,
@@ -227,6 +228,9 @@ class StudentDesktopAdapter:
         database_create_allowed: bool = True,
         today_provider: Callable[[], date] | None = None,
         now_provider: Callable[[], datetime] | None = None,
+        encrypted_observation_attachments: (
+            EncryptedObservationAttachmentRuntime | None
+        ) = None,
     ) -> None:
         self.database_path = (
             Path(database.path) if database is not None else Path(database_path)
@@ -238,7 +242,9 @@ class StudentDesktopAdapter:
         self._now_provider = now_provider or (
             lambda: datetime.now().astimezone()
         )
-        ObservationPersistenceUnitOfWork(self.database).recover_pending()
+        self._encrypted_observation_attachments = encrypted_observation_attachments
+        self._observation_recovery_suspended = 0
+        self._observation_uow().recover_pending()
 
     def list_students(
         self,
@@ -250,6 +256,7 @@ class StudentDesktopAdapter:
         course_group_id: str | None = None,
     ) -> tuple[StudentListItem, ...]:
         """Return students with readable group and course names."""
+        self._recover_observation_uow()
         as_of = self._today()
         batch = SQLiteStudentDocumentationProjectionRepository(
             self.database
@@ -293,6 +300,7 @@ class StudentDesktopAdapter:
         reference_date: date | None = None,
     ) -> StudentDetailViewModel | None:
         """Return a light profile view model for one student."""
+        self._recover_observation_uow()
         as_of = reference_date if reference_date is not None else self._today()
         batch = SQLiteStudentDocumentationProjectionRepository(
             self.database
@@ -312,6 +320,7 @@ class StudentDesktopAdapter:
         student_id: str,
     ) -> StudentProfileProjectionBundle:
         """Compose one profile navigation from a single read snapshot."""
+        self._recover_observation_uow()
         as_of = self._today()
         batch = SQLiteStudentDocumentationProjectionRepository(
             self.database
@@ -1188,7 +1197,7 @@ class StudentDesktopAdapter:
                 timestamp,
                 command.competency_ratings,
             )
-            saved = ObservationPersistenceUnitOfWork(self.database).save(
+            saved = self._observation_uow().save(
                 observation=observation,
                 attachments=draft.attachments,
                 operation_token=draft.operation_token,
@@ -1255,7 +1264,7 @@ class StudentDesktopAdapter:
                 datetime.now(UTC).replace(microsecond=0).isoformat(),
                 candidate.competency_ratings,
             )
-            saved = ObservationPersistenceUnitOfWork(self.database).save(
+            saved = self._observation_uow().save(
                 observation=observation,
                 attachments=draft.attachments,
                 operation_token=draft.operation_token,
@@ -1275,7 +1284,24 @@ class StudentDesktopAdapter:
         command = DeleteObservationCommand(observation_id=observation_id)
         return self._dispatcher().dispatch(command)
 
+    def read_encrypted_observation_attachment(
+        self,
+        *,
+        document_id: str,
+        consumer: object,
+    ) -> object:
+        """Stream an active encrypted observation attachment by its MED-ID."""
+        return self._observation_uow().read_encrypted_attachment(
+            document_id=document_id,
+            consumer=consumer,
+        )
+
     def _validate_observation_command(self, command: object) -> None:
+        self._observation_recovery_suspended += 1
+        try:
+            students = tuple(student.student_id for student in self.list_students())
+        finally:
+            self._observation_recovery_suspended -= 1
         ObservationValidator().validate(
             {
                 "student_id": getattr(command, "student_id"),
@@ -1290,10 +1316,7 @@ class StudentDesktopAdapter:
                     False,
                 ),
             },
-            (
-                student.student_id
-                for student in self.list_students()
-            ),
+            students,
         )
 
     def observation_draft_for_edit(
@@ -1301,6 +1324,7 @@ class StudentDesktopAdapter:
         observation_id: str,
     ) -> ObservationDraftViewModel | None:
         """Return an editable draft for one persisted observation."""
+        self._recover_observation_uow()
         observation = SQLiteObservationRepository(self.database).get_observation(
             observation_id
         )
@@ -1363,6 +1387,7 @@ class StudentDesktopAdapter:
         student_id: str,
     ) -> tuple[ObservationListItem, ...]:
         """Return persisted observations for the profile view."""
+        self._recover_observation_uow()
         observations = SQLiteObservationRepository(
             self.database
         ).list_observations_for_student(student_id)
@@ -1401,6 +1426,7 @@ class StudentDesktopAdapter:
         student_id: str,
     ) -> tuple[StudentDocumentViewModel, ...]:
         """Return active document and media metadata for one student."""
+        self._recover_observation_uow()
         return tuple(
             self._document_view_model(document)
             for document in self._document_repository().list_documents_for_student(
@@ -2601,6 +2627,17 @@ class StudentDesktopAdapter:
 
     def _document_repository(self) -> SQLiteDocumentRepository:
         return SQLiteDocumentRepository(self.database)
+
+    def _observation_uow(self) -> ObservationPersistenceUnitOfWork:
+        return ObservationPersistenceUnitOfWork(
+            self.database,
+            encrypted_attachments=self._encrypted_observation_attachments,
+        )
+
+    def _recover_observation_uow(self) -> None:
+        if self._observation_recovery_suspended:
+            return
+        self._observation_uow().recover_pending()
 
     def _document_view_model(self, document: DocumentRecord) -> StudentDocumentViewModel:
         return StudentDocumentViewModel(

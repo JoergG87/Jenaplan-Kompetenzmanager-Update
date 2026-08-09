@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Beobachtungsanhänge können ausschließlich hinter dem bestehenden internen
+  Final-V3-/DMK-Security-Gate über dieselbe `ObservationPersistenceUnitOfWork`
+  als verschlüsselte Dokumentgenerationen gespeichert werden. Die fachlich
+  stabile MED-ID bleibt erhalten; opaque Storage-ID und unveränderliche
+  Generation bleiben physisch getrennt. Create, Keep, Add, Replace, Remove,
+  Retry, Restart, atomare Mehrfach-Pointerumschaltung und kontrolliertes
+  Consumer-Lesen sind journalgebunden;
+  Replace-Fehler erhalten den alten aktiven Container, Remove löscht keine
+  Generation. Der Gate-Off-Klartextpfad, allgemeine Schülerdokumente,
+  Bericht-/LEG-PDFs, UI, Export, Vorschau, Backup/Restore, Migration und
+  Produktaktivierung bleiben unverändert.
+
 - Eine neue Qt-freie `Final-V3-Dokumentcontainer-Runtime` ergänzt unter dem
   bestehenden doppelt markergebundenen SQLCipher-Gate eine eigene exakt
   versionierte SQLCipher-Companion-Datenbank und einen verwalteten
@@ -13,7 +25,7 @@
   transaktionalen Runtime-Modell, 20 Austauschzyklen sowie Manipulations-,
   Kontext-, Gate- und Klartextprüfungen belegen Restart oder fail-closed
   Blockade; die exakte SQLCipher-4.17-Komposition bleibt ein eigener Gate-Test.
-  UI, Anhänge, Berichts-/LEG-PDF,
+  UI, allgemeine Schülerdokumente, Berichts-/LEG-PDF,
   Export, Vorschau, Backup/Restore, Migration und Produktstartup bleiben
   unverändert.
 

@@ -353,15 +353,18 @@ Fachdatenmodell bleibt unverändert.
 | Datenquelle / Rolle | Inhalt | Persistenz / Grenze | Status |
 |---|---|---|---|
 | `documents-v1.sqlcipher` | `application_id`, `user_version=1`, exakte Schemaidentität, Installations-/Database-Context-Bindung und technische Dokumentpointer | gleicher doppelt markergebundener Final-V3-Runtime-Root; eigener fester Pfad; kein SQLite-Fallback | ausschließlich Gate-On |
-| `final_v3_documents` | technische Document-ID, nullable aktiver Generation-Pointer und Erstellungszeit | SQLCipher-Companion; Pointer nur in atomarer Aktivierung | Runtime-Persistenz |
+| `final_v3_documents` | technische Document-ID; bei Beobachtungsanhängen unmittelbar die fachlich stabile `MED-######`-ID, nullable aktiver Generation-Pointer und Erstellungszeit | SQLCipher-Companion; Pointer nur in atomarer Aktivierung/Deaktivierung | Runtime-Persistenz |
 | `final_v3_document_generations` | Generation, opaque Storage-ID, Document-Key-ID/-Generation, Envelope-Revision, Containerformat, Klartext-/Containergröße und -SHA-256, MIME, Lifecycle und Erstellungszeit | SQLCipher-Companion; genau eine `ACTIVE` je Dokument per partiellem Unique-Index | Runtime-Persistenz |
 | `document-containers-v1/storage/<storage_id>.jkmedoc` | technischer Header, geschütztes Document-Key-Envelope und verschlüsseltes Manifest/Ciphertext | privater verwalteter Storage; no-clobber, no-follow, kein Klartext und kein physisches Auto-GC | Runtime-Persistenz |
 | kontrollierte Runtime-Quelle | injizierter Quellname, Originalname und MIME für genau einen Prepare-Lauf | außerhalb des verwalteten Storage; descriptor- und identitätsgebunden gelesen; nicht von der Runtime kopiert | flüchtige Eingabe |
+| Observation-UoW-Journalbindung im Cipher-Modus | operation_token, unveränderlicher Speichermodus `encrypted`, MED-ID, vorherige aktive Generation, geplante Generation/Storage-ID sowie Größen-/Hash-/MIME-/Lifecycle-Evidenz der verifizierten Generation | vorhandenes versioniertes Observation-Journal; steuert Commit, Aktivierung und Restart, ist keine fachliche Source of Truth; Modusabweichung blockiert ohne Fallback | ausschließlich Gate-On-Beobachtungsanhänge |
+| Final-V3-`documents.file_path` im Cipher-Modus | leerer Nicht-Pfad; die aktive fachliche Referenz ist `documents.document_id`/MED-ID, die physische Auflösung liegt ausschließlich in der Companion-DB | SQLCipher-Hauptdatenbank; niemals Containerpfad oder Storage-ID | ausschließlich Gate-On-Beobachtungsanhänge |
 | flüchtiger Document-Key | zufällige 32 Byte je Dokumentgeneration | nur im Writer/Verifier/Reader; im Container ausschließlich AES-GCM-Envelope unter eigenem Document-HKDF-Zweck | Secret-Material |
 
-Der Originalname steht ausschließlich im verschlüsselten Manifest. MIME und
-Größen-/Hashnachweise stehen im verschlüsselten Manifest und zusätzlich in
-SQLCipher.
+Originalname und fachliche Metadaten stehen in der Final-V3-SQLCipher-
+Hauptdatenbank sowie im verschlüsselten Manifest. MIME und
+Größen-/Hashnachweise stehen im verschlüsselten Manifest und zusätzlich in der
+SQLCipher-Companion-DB.
 DMK und Document-Key erscheinen nie in Companion-DB, Datei, Log oder Exception.
 
 ## Security Sprint 12 - interne Build- und Testdaten

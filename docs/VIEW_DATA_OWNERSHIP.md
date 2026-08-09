@@ -230,6 +230,11 @@ Lock-, Staging-, Hash-, Dateipublikations- oder Recoverylogik.
 Observation-/Attachment-Prozess. Der Dialog besitzt ausschließlich sein
 flüchtiges, über Retry stabiles `operation_token`. Alte unveränderliche
 Bericht- und LEG-Revisionen werden nicht live neu projiziert oder migriert.
+Im internen Cipher-Modus besitzt derselbe UoW zusätzlich die journalgebundene
+Reihenfolge zwischen Final-V3-Fachcommit und Companion-Pointer. Der
+`EncryptedObservationAttachmentRuntime`-Port besitzt nur Containerprepare,
+Verifikation, Aktivierung/Deaktivierung und Consumerstream; er entscheidet
+weder fachliche Zuordnung noch MED-ID.
 
 ## Security Sprint 12 - bestehender Über-Dialog und technische Testreports
 
@@ -271,14 +276,17 @@ Composition-Root, Shellverdrahtung oder sichtbare Recoveryführung.
 `FinalV3DocumentConnectionFactory` besitzt ausschließlich den pfad- und
 Database-Key-gebundenen Companion-DB-Open. `FinalV3DocumentSchemaV1` besitzt
 Schema-, Context- und Pointerprüfung. `FinalV3DocumentRuntime` besitzt
-Containerinventar sowie `prepare`, `activate`, `read` und `replace`; der
+Containerinventar sowie `prepare`, `activate`, `deactivate`, `read` und
+`replace`; der
 injizierte Consumer besitzt nur vorläufig empfangene Klartextchunks und muss
 `abort` respektieren.
 
-Widgets, ViewModels, Desktop-Adapter, fachliche Dokumentrepositories,
-Beobachtungen, Schülerprofil, Bericht/LEG und PDF-Services sind keine Quelle
-oder Senke dieser Runtime. Es gibt keine Export-, Preview-, Backup-, Restore-,
-Migrations-, GC- oder Produktstartup-Ownership.
+Der `StudentDesktopAdapter` reicht ausschließlich aktive fachliche
+Beobachtungsreferenzen über MED-ID an diesen Reader weiter. Widgets und
+ViewModels besitzen weiterhin keine Runtime-Ownership. Allgemeine
+Schülerdokumente, Schülerprofilablage, Bericht/LEG und PDF-Services sind keine
+Quelle oder Senke dieser Runtime. Es gibt keine Export-, Preview-, Backup-,
+Restore-, Migrations-, GC- oder Produktstartup-Ownership.
 
 ## Security Sprint 11 - Integration ohne neue View
 

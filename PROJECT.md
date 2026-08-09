@@ -392,9 +392,17 @@ Reader gibt Klartext nur an einen injizierten Consumer und meldet erst nach
 vollständiger zweiter Final-/EOF-/Hashprüfung Erfolg. Alte Generationen bleiben
 `RETAINED`; physisches Löschen findet nicht statt.
 
-Die Runtime bindet weder `documents`, Beobachtungen, Schülerprofil, Berichte
-noch LEG/PDF an. Es gibt keinen Export, OS-Preview, Backup/Restore, Migration,
-Produktstartup, Build oder Releasepfad.
+Die Runtime ist ausschließlich für Beobachtungsanhänge optional an
+`ObservationPersistenceUnitOfWork` und `StudentDesktopAdapter` gebunden. Die
+vorhandene MED-ID bleibt Document-ID; Generation und opaque Storage-ID bleiben
+rein physisch. Das Observation-Journal bindet vorherige aktive Generation und
+Prepare-Plan vor dem
+Containerwrite, der Final-V3-Commit schreibt die fachliche Referenz und erst
+danach folgt die idempotente, für alle Anhänge eines Journals atomare
+Companion-Pointerumschaltung. Remove deaktiviert die Referenz und
+behält alle Container retained. Allgemeine Schülerdokumente, Berichte und
+LEG/PDF bleiben unverbunden. Es gibt keinen Export, OS-Preview,
+Backup/Restore, Migration, Produktstartup, Build oder Releasepfad.
 
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 

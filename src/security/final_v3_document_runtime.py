@@ -84,6 +84,7 @@ _CONTAINER_NAME = re.compile(
     r"\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-"
     r"[89ab][0-9a-f]{3}-[0-9a-f]{12}\.jkmedoc\Z"
 )
+_MED_DOCUMENT_ID = re.compile(r"\AMED-[0-9]{6}\Z")
 
 
 _SCHEMA_STATEMENTS = (
@@ -172,6 +173,7 @@ class FinalV3DocumentRuntimeOperation(StrEnum):
     ACTIVATE = "activate"
     READ = "read"
     REPLACE = "replace"
+    DEACTIVATE = "deactivate"
 
 
 class FinalV3DocumentRuntimeError(RuntimeError):
@@ -229,6 +231,14 @@ class FinalV3DocumentGeneration:
     mime_type: str
     lifecycle_status: str
     created_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class FinalV3DocumentPreparePlan:
+    document_id: str
+    document_generation: int
+    storage_id: str
+    previous_active_generation: int | None
 
 
 @dataclass(frozen=True)
@@ -427,13 +437,11 @@ class FinalV3DocumentSchemaV1:
                     AND (
                         (SELECT COUNT(*) FROM final_v3_document_generations AS p
                          WHERE p.document_id = d.document_id
-                           AND p.lifecycle_status = 'PREPARED') <> 1
+                           AND p.lifecycle_status = 'PREPARED') > 1
                         OR EXISTS (
                             SELECT 1 FROM final_v3_document_generations AS a
                             WHERE a.document_id = d.document_id
-                              AND a.lifecycle_status IN (
-                                  'ACTIVE', 'RETAINED', 'QUARANTINED'
-                              )
+                              AND a.lifecycle_status = 'ACTIVE'
                         )
                     )
                 ) OR (
@@ -525,22 +533,27 @@ class FinalV3DocumentRuntime:
         self,
         *,
         document_id: str,
-        source_name: str,
+        source_name: str | None = None,
+        source_path: Path | None = None,
         original_filename: str,
         mime_type: str,
+        plan: FinalV3DocumentPreparePlan | Mapping[str, object] | None = None,
     ) -> FinalV3DocumentGeneration:
         self._operation = FinalV3DocumentRuntimeOperation.PREPARE
-        _uuid(document_id, "document_id_invalid")
-        if self.source_root is None:
-            raise _error("document_source_root_required", self._operation)
-        _require_external_source_root(self.source_root, self.paths)
+        _document_id(document_id)
         self.validate_restart()
+        if plan is None:
+            plan = self.plan_prepare(document_id=document_id)
+        plan = self._require_prepare_plan(plan, document_id=document_id)
         existing = self._prepared_for(document_id)
         if existing is not None:
             self._verify_record(existing)
-            raise _error(
-                "document_prepared_activation_required", self._operation
-            )
+            if (
+                existing.document_generation == plan.document_generation
+                and existing.storage_id == plan.storage_id
+            ):
+                return existing
+            raise _error("document_prepared_activation_required", self._operation)
 
         with closing(self._factory.connect_read_only()) as connection:
             rows = connection.execute(
@@ -552,12 +565,33 @@ class FinalV3DocumentRuntime:
         active = tuple(r for r in records if r.lifecycle_status == "ACTIVE")
         if records and len(active) != 1:
             raise _error("document_generation_state_invalid", self._operation)
+        previous_active_generation = (
+            active[0].document_generation if active else None
+        )
+        if plan.previous_active_generation != previous_active_generation:
+            raise _error("document_prepare_plan_conflict", self._operation)
         generation = records[-1].document_generation + 1 if records else 1
-        storage_id = self._new_uuid("document_storage_id_invalid")
+        if generation != plan.document_generation:
+            raise _error("document_prepare_plan_conflict", self._operation)
+        storage_id = plan.storage_id
         context = self._context(document_id, generation)
+        if source_path is not None:
+            if source_name is not None:
+                raise _error("document_source_ambiguous", self._operation)
+            candidate = Path(source_path)
+            if not candidate.is_absolute():
+                raise _error("document_source_path_invalid", self._operation)
+            source_root = candidate.parent
+            source_name = candidate.name
+        else:
+            source_root = self.source_root
+        if source_root is None or source_name is None:
+            raise _error("document_source_root_required", self._operation)
+        _require_external_source_root(source_root, self.paths)
+        service = self._service_for_source_root(source_root)
         self._emit("before_container_creation")
         try:
-            verification = self._service.create(
+            verification = service.create(
                 test_root=self.paths.container_root,
                 source=DocumentSource(
                     source_name=source_name,
@@ -614,11 +648,59 @@ class FinalV3DocumentRuntime:
         self._emit("after_prepared_before_activation")
         return self._require_generation(document_id, generation, "PREPARED")
 
+    def plan_prepare(self, *, document_id: str) -> FinalV3DocumentPreparePlan:
+        self._operation = FinalV3DocumentRuntimeOperation.PREPARE
+        _document_id(document_id)
+        self.validate_restart()
+        existing = self._prepared_for(document_id)
+        if existing is not None:
+            raise _error("document_prepared_activation_required", self._operation)
+        with closing(self._factory.connect_read_only()) as connection:
+            rows = connection.execute(
+                _GENERATION_SELECT
+                + " WHERE document_id = ? ORDER BY document_generation",
+                (document_id,),
+            ).fetchall()
+        records = tuple(_record_from_row(row) for row in rows)
+        active = tuple(r for r in records if r.lifecycle_status == "ACTIVE")
+        if records and len(active) != 1:
+            raise _error("document_generation_state_invalid", self._operation)
+        generation = records[-1].document_generation + 1 if records else 1
+        return FinalV3DocumentPreparePlan(
+            document_id=document_id,
+            document_generation=generation,
+            storage_id=self._new_uuid("document_storage_id_invalid"),
+            previous_active_generation=(
+                active[0].document_generation if active else None
+            ),
+        )
+
+    def verify_prepared(
+        self, *, plan: FinalV3DocumentPreparePlan | Mapping[str, object]
+    ) -> FinalV3DocumentGeneration:
+        self._operation = FinalV3DocumentRuntimeOperation.PREPARE
+        raw_document_id = (
+            plan.document_id
+            if isinstance(plan, FinalV3DocumentPreparePlan)
+            else plan.get("document_id")
+        )
+        plan = self._require_prepare_plan(
+            plan, document_id=str(raw_document_id)
+        )
+        self.validate_restart()
+        record = self._require_generation(
+            plan.document_id, plan.document_generation, "PREPARED"
+        )
+        if record.storage_id != plan.storage_id:
+            raise _error("document_prepare_plan_conflict", self._operation)
+        self._verify_record(record)
+        return record
+
     def activate(
         self, *, document_id: str, document_generation: int | None = None
     ) -> FinalV3DocumentGeneration:
         self._operation = FinalV3DocumentRuntimeOperation.ACTIVATE
-        _uuid(document_id, "document_id_invalid")
+        _document_id(document_id)
         self.validate_restart()
         if document_generation is None:
             pending = self._prepared_for(document_id)
@@ -629,9 +711,14 @@ class FinalV3DocumentRuntime:
             document_generation, bool
         ) or document_generation < 1:
             raise _error("document_generation_invalid", self._operation)
-        prepared = self._require_generation(
-            document_id, document_generation, "PREPARED"
-        )
+        active = self._active_for_optional(document_id)
+        if (
+            active is not None
+            and active.document_generation == document_generation
+        ):
+            self._verify_record(active)
+            return active
+        prepared = self._require_generation(document_id, document_generation, "PREPARED")
         self._verify_record(prepared)
         try:
             with closing(self._factory.connect(create=False)) as connection:
@@ -708,13 +795,202 @@ class FinalV3DocumentRuntime:
             document_id, document_generation, "ACTIVE"
         )
 
+    def apply_journaled_changes(
+        self,
+        *,
+        prepared_plans: tuple[FinalV3DocumentPreparePlan | Mapping[str, object], ...],
+        deactivated_document_ids: tuple[str, ...],
+    ) -> tuple[FinalV3DocumentGeneration, ...]:
+        """Atomically apply every pointer change of one Observation journal."""
+        self._operation = FinalV3DocumentRuntimeOperation.ACTIVATE
+        plans = tuple(
+            self._require_prepare_plan(
+                plan,
+                document_id=str(
+                    plan.document_id
+                    if isinstance(plan, FinalV3DocumentPreparePlan)
+                    else plan.get("document_id")
+                ),
+            )
+            for plan in prepared_plans
+        )
+        activation_ids = tuple(plan.document_id for plan in plans)
+        deactivation_ids = tuple(str(value) for value in deactivated_document_ids)
+        for document_id in deactivation_ids:
+            _document_id(document_id)
+        if (
+            len(set(activation_ids)) != len(activation_ids)
+            or len(set(deactivation_ids)) != len(deactivation_ids)
+            or set(activation_ids) & set(deactivation_ids)
+        ):
+            raise _error("document_activation_plan_invalid", self._operation)
+        self.validate_restart()
+
+        targets: dict[str, FinalV3DocumentGeneration] = {}
+        for plan in plans:
+            active = self._active_for_optional(plan.document_id)
+            if active is not None and active.document_generation == plan.document_generation:
+                self._verify_record(active)
+                if active.storage_id != plan.storage_id:
+                    raise _error("document_prepare_plan_conflict", self._operation)
+                targets[plan.document_id] = active
+                continue
+            prepared = self._require_generation(
+                plan.document_id, plan.document_generation, "PREPARED"
+            )
+            self._verify_record(prepared)
+            if prepared.storage_id != plan.storage_id:
+                raise _error("document_prepare_plan_conflict", self._operation)
+            targets[plan.document_id] = prepared
+        for document_id in deactivation_ids:
+            active = self._active_for_optional(document_id)
+            if active is not None:
+                self._verify_record(active)
+
+        try:
+            with closing(self._factory.connect(create=False)) as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                try:
+                    for plan in plans:
+                        current = connection.execute(
+                            """
+                            SELECT active_generation FROM final_v3_documents
+                            WHERE document_id = ?
+                            """,
+                            (plan.document_id,),
+                        ).fetchone()
+                        target_row = connection.execute(
+                            _GENERATION_SELECT
+                            + " WHERE document_id = ? AND document_generation = ?",
+                            (plan.document_id, plan.document_generation),
+                        ).fetchone()
+                        if current is None or target_row is None:
+                            raise _error("document_prepared_missing", self._operation)
+                        target = _record_from_row(target_row)
+                        if current[0] == plan.document_generation:
+                            if target.lifecycle_status != "ACTIVE":
+                                raise _error("document_pointer_switch_failed", self._operation)
+                            continue
+                        if current[0] != plan.previous_active_generation:
+                            raise _error("document_prepare_plan_conflict", self._operation)
+                        if target.lifecycle_status != "PREPARED":
+                            raise _error("document_prepared_changed", self._operation)
+                        if plan.previous_active_generation is not None:
+                            changed = connection.execute(
+                                """
+                                UPDATE final_v3_document_generations
+                                SET lifecycle_status = 'PREPARED'
+                                WHERE document_id = ? AND document_generation = ?
+                                  AND lifecycle_status = 'ACTIVE'
+                                """,
+                                (plan.document_id, plan.previous_active_generation),
+                            ).rowcount
+                            if changed != 1:
+                                raise _error("document_pointer_switch_failed", self._operation)
+                        self._emit("during_pointer_switch")
+                        activated = connection.execute(
+                            """
+                            UPDATE final_v3_document_generations
+                            SET lifecycle_status = 'ACTIVE'
+                            WHERE document_id = ? AND document_generation = ?
+                              AND lifecycle_status = 'PREPARED'
+                            """,
+                            (plan.document_id, plan.document_generation),
+                        ).rowcount
+                        pointed = connection.execute(
+                            """
+                            UPDATE final_v3_documents SET active_generation = ?
+                            WHERE document_id = ?
+                            """,
+                            (plan.document_generation, plan.document_id),
+                        ).rowcount
+                        if activated != 1 or pointed != 1:
+                            raise _error("document_pointer_switch_failed", self._operation)
+                        if plan.previous_active_generation is not None:
+                            retained = connection.execute(
+                                """
+                                UPDATE final_v3_document_generations
+                                SET lifecycle_status = 'RETAINED'
+                                WHERE document_id = ? AND document_generation = ?
+                                  AND lifecycle_status = 'PREPARED'
+                                """,
+                                (plan.document_id, plan.previous_active_generation),
+                            ).rowcount
+                            if retained != 1:
+                                raise _error("document_retained_mark_failed", self._operation)
+                    for document_id in deactivation_ids:
+                        current = connection.execute(
+                            """
+                            SELECT active_generation FROM final_v3_documents
+                            WHERE document_id = ?
+                            """,
+                            (document_id,),
+                        ).fetchone()
+                        if current is None:
+                            raise _error("document_active_missing", self._operation)
+                        if current[0] is None:
+                            continue
+                        retained = connection.execute(
+                            """
+                            UPDATE final_v3_document_generations
+                            SET lifecycle_status = 'RETAINED'
+                            WHERE document_id = ? AND document_generation = ?
+                              AND lifecycle_status = 'ACTIVE'
+                            """,
+                            (document_id, int(current[0])),
+                        ).rowcount
+                        pointed = connection.execute(
+                            """
+                            UPDATE final_v3_documents SET active_generation = NULL
+                            WHERE document_id = ? AND active_generation = ?
+                            """,
+                            (document_id, int(current[0])),
+                        ).rowcount
+                        if retained != 1 or pointed != 1:
+                            raise _error("document_deactivation_failed", self._operation)
+                    FinalV3DocumentSchemaV1.validate_pointers(connection)
+                    connection.commit()
+                except Exception:
+                    connection.rollback()
+                    raise
+        except FinalV3DocumentRuntimeError:
+            raise
+        except Exception:
+            raise _error("document_activation_failed", self._operation) from None
+        return tuple(
+            self._require_generation(
+                plan.document_id, plan.document_generation, "ACTIVE"
+            )
+            for plan in plans
+        )
+
     def read(
-        self, *, document_id: str, consumer: DocumentChunkConsumer
+        self,
+        *,
+        document_id: str,
+        consumer: DocumentChunkConsumer,
+        document_generation: int | None = None,
     ) -> EncryptedDocumentVerificationResult:
         self._operation = FinalV3DocumentRuntimeOperation.READ
-        _uuid(document_id, "document_id_invalid")
-        self.validate_restart()
+        _document_id(document_id)
+        if document_generation is not None and (
+            not isinstance(document_generation, int)
+            or isinstance(document_generation, bool)
+            or document_generation < 1
+        ):
+            raise _error("document_generation_invalid", self._operation)
+        with closing(self._factory.connect_read_only()) as connection:
+            FinalV3DocumentSchemaV1.validate(
+                connection,
+                installation_id=self._installation_id,
+                database_context_id=self._loaded.database_context_id,
+            )
         active = self._active_for(document_id)
+        if (
+            document_generation is not None
+            and active.document_generation != document_generation
+        ):
+            raise _error("document_active_generation_mismatch", self._operation)
         try:
             result = self._service.stream_verified(
                 test_root=self.paths.container_root,
@@ -751,6 +1027,45 @@ class FinalV3DocumentRuntime:
             document_generation=prepared.document_generation,
         )
 
+    def deactivate(self, *, document_id: str) -> FinalV3DocumentGeneration | None:
+        self._operation = FinalV3DocumentRuntimeOperation.DEACTIVATE
+        _document_id(document_id)
+        self.validate_restart()
+        active = self._active_for_optional(document_id)
+        if active is None:
+            return None
+        self._verify_record(active)
+        try:
+            with closing(self._factory.connect(create=False)) as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                retained = connection.execute(
+                    """
+                    UPDATE final_v3_document_generations
+                    SET lifecycle_status = 'RETAINED'
+                    WHERE document_id = ? AND document_generation = ?
+                      AND lifecycle_status = 'ACTIVE'
+                    """,
+                    (document_id, active.document_generation),
+                ).rowcount
+                pointer = connection.execute(
+                    """
+                    UPDATE final_v3_documents SET active_generation = NULL
+                    WHERE document_id = ? AND active_generation = ?
+                    """,
+                    (document_id, active.document_generation),
+                ).rowcount
+                if retained != 1 or pointer != 1:
+                    raise _error("document_deactivation_failed", self._operation)
+                FinalV3DocumentSchemaV1.validate_pointers(connection)
+                connection.commit()
+        except FinalV3DocumentRuntimeError:
+            raise
+        except Exception:
+            raise _error("document_deactivation_failed", self._operation) from None
+        return self._require_generation(
+            document_id, active.document_generation, "RETAINED"
+        )
+
     def _prepared_for(
         self, document_id: str
     ) -> FinalV3DocumentGeneration | None:
@@ -765,6 +1080,14 @@ class FinalV3DocumentRuntime:
         return None if not rows else _record_from_row(rows[0])
 
     def _active_for(self, document_id: str) -> FinalV3DocumentGeneration:
+        record = self._active_for_optional(document_id)
+        if record is None:
+            raise _error("document_active_missing", self._operation)
+        return record
+
+    def _active_for_optional(
+        self, document_id: str
+    ) -> FinalV3DocumentGeneration | None:
         with closing(self._factory.connect_read_only()) as connection:
             row = connection.execute(
                 _GENERATION_SELECT
@@ -772,8 +1095,80 @@ class FinalV3DocumentRuntime:
                 (document_id,),
             ).fetchone()
         if row is None:
-            raise _error("document_active_missing", self._operation)
+            return None
         return _record_from_row(row)
+
+    def _service_for_source_root(
+        self, source_root: Path
+    ) -> SyntheticEncryptedDocumentServiceV1:
+        return SyntheticEncryptedDocumentServiceV1(
+            random_source=self._random,
+            clock=self._clock,
+            fault_injector=self._container_fault,
+            required_source_prefix=None,
+            plain_storage_names=True,
+            retain_published_hardlink_evidence=False,
+            source_root_override=source_root,
+            direct_visible_write=True,
+            require_export_layout=False,
+        )
+
+    def _require_prepare_plan(
+        self,
+        plan: FinalV3DocumentPreparePlan | Mapping[str, object],
+        *,
+        document_id: str,
+    ) -> FinalV3DocumentPreparePlan:
+        if isinstance(plan, Mapping):
+            try:
+                if set(plan) != {
+                    "document_id",
+                    "document_generation",
+                    "storage_id",
+                    "previous_active_generation",
+                }:
+                    raise ValueError("fields")
+                document_generation = plan["document_generation"]
+                if (
+                    not isinstance(document_generation, int)
+                    or isinstance(document_generation, bool)
+                    or document_generation < 1
+                ):
+                    raise ValueError("document_generation")
+                previous_active_generation = plan["previous_active_generation"]
+                if previous_active_generation is not None and (
+                    not isinstance(previous_active_generation, int)
+                    or isinstance(previous_active_generation, bool)
+                    or previous_active_generation < 1
+                ):
+                    raise ValueError("previous_active_generation")
+                plan = FinalV3DocumentPreparePlan(
+                    document_id=str(plan["document_id"]),
+                    document_generation=document_generation,
+                    storage_id=str(plan["storage_id"]),
+                    previous_active_generation=previous_active_generation,
+                )
+            except Exception:
+                raise _error("document_prepare_plan_invalid", self._operation) from None
+        if not isinstance(plan, FinalV3DocumentPreparePlan):
+            raise _error("document_prepare_plan_invalid", self._operation)
+        _document_id(plan.document_id)
+        if plan.document_id != document_id:
+            raise _error("document_prepare_plan_conflict", self._operation)
+        if (
+            not isinstance(plan.document_generation, int)
+            or isinstance(plan.document_generation, bool)
+            or plan.document_generation < 1
+        ):
+            raise _error("document_prepare_plan_invalid", self._operation)
+        if plan.previous_active_generation is not None and (
+            not isinstance(plan.previous_active_generation, int)
+            or isinstance(plan.previous_active_generation, bool)
+            or plan.previous_active_generation < 1
+        ):
+            raise _error("document_prepare_plan_invalid", self._operation)
+        _uuid(plan.storage_id, "document_storage_id_invalid")
+        return plan
 
     def _require_generation(
         self, document_id: str, generation: int, lifecycle: str
@@ -1091,8 +1486,8 @@ def _record_from_row(row: Any) -> FinalV3DocumentGeneration:
         or not _SHA256.fullmatch(record.container_sha256)
     ):
         raise _error("document_generation_record_invalid")
+    _document_id(record.document_id)
     for value, code in (
-        (record.document_id, "document_id_invalid"),
         (record.storage_id, "document_storage_id_invalid"),
         (record.document_key_id, "document_key_id_invalid"),
     ):
@@ -1255,6 +1650,12 @@ def _uuid(value: object, code: str) -> None:
         validate_uuid4(value)
     except Exception:
         raise _error(code) from None
+
+
+def _document_id(value: object) -> None:
+    if isinstance(value, str) and _MED_DOCUMENT_ID.fullmatch(value):
+        return
+    _uuid(value, "document_id_invalid")
 
 
 def _format_utc(value: Any) -> str:

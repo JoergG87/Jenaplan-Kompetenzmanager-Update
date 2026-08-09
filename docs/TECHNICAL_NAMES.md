@@ -234,8 +234,10 @@ Phase-2-Vertrag.
 | `ObservationOperationJournal` | Versioniertes kanonisches Crash-/Retry-Journal unter `.observation-staging/<operation_token>/` | Core Persistence |
 | `ObservationWriterLock` | Kernelgebundener exklusiver Advisory Lock auf kontrolliert geöffnetem FD; gemeinsame Sperre für Observation-UoW, Backup und Restore | Core Persistence |
 | `ObservationOperationPhase` | Monotone Allowlist `PREPARED`, `FILES_STAGED`, `FILES_PUBLISHED`, `DATABASE_COMMITTED`, `COMPLETE` | Core Persistence |
+| `EncryptedObservationAttachmentRuntime` | Optionale Qt-freie UoW-Portgrenze für geplantes Prepare, Vollverifikation, idempotente Aktivierung/Deaktivierung und kontrolliertes Lesen ausschließlich von Beobachtungsanhängen | Application / Core Persistence |
 | `operation_token` | Stabiler zufälliger Bezeichner genau eines bewusst ausgelösten schreibenden Gesamtvorgangs; Retry verwendet denselben Wert | Application |
 | `operation_payload_hash` | SHA-256 der kanonischen vollständigen Solloperation; bindet Ereignissatz und Recoveryentscheidung | Core Persistence |
+| `attachment_intent.storage_mode` | Journalgebundene Allowlist `plaintext` oder `encrypted`; Recovery mit abweichender Runtime blockiert statt zwischen Cipher- und Klartextpfad zu wechseln | Core Persistence |
 | `SQLiteObservationRepository._next_observation_id` | Schmaler Read ausschließlich vorhandener `observation_id`-Werte; die Auswahl und das zugehörige Create laufen unter demselben `BEGIN IMMEDIATE` | Core Persistence |
 | `confirmation_unknown` | Kanonischer Live-Projektionszustand für nicht beweisbar geordnete historische Observation-/Confirmation-Gleichstände | Desktop Projection |
 
@@ -315,6 +317,11 @@ bis zum realen Test des gebauten Bundles offen.
 | `FinalV3DocumentConnectionFactory` | Eigene strikt pfad- und Database-Key-gebundene SQLCipher-Factory für `documents-v1.sqlcipher` | Core Persistence / Security Runtime |
 | `FinalV3DocumentRuntimePaths` | Feste Rollen für Companion-DB, kontrollierte Quelle und verwalteten Container-Storage im Final-V3-Testroot | Security Runtime |
 | `FinalV3DocumentGeneration` | Sanitierte technische Projektion aus Document-/Key-Generation, opaque Storage-ID, Envelope-/Formatnachweisen, Größen, Hash, MIME und Lifecycle | Document Persistence |
+| `FinalV3DocumentPreparePlan` | Vor dem Containerwrite journalisierbare Bindung aus fachlicher MED-ID, vorheriger aktiver Generation, erwarteter Zielgeneration und zufälliger opaque Storage-ID | Document Persistence / Observation UoW |
+| `FinalV3DocumentRuntime.plan_prepare` / `verify_prepared` | Read-only Planung vor Quellenzugriff und exakte Vollverifikation einer bereits journalgebundenen `PREPARED`-Generation für Retry/Restart | Application / Documents |
+| `FinalV3DocumentRuntime.apply_journaled_changes` | Idempotente atomare Companion-Transaktion für alle Aktivierungen und Deaktivierungen genau eines Observation-Journals; keine partiellen Pointerzielstände | Application / Documents |
+| `FinalV3DocumentRuntime.deactivate` | Idempotente fachliche Pointerdeaktivierung; aktive Generation wird `RETAINED`, physischer Container bleibt bestehen | Application / Documents |
+| `StudentDesktopAdapter.read_encrypted_observation_attachment` | Qt-freie Adapterlesenaht MED-ID → aktive fachliche Beobachtungsreferenz → verifizierter Runtime-Consumer | Desktop Adapter / Documents |
 | `FINAL_V3_DOCUMENT_SCHEMA_FINGERPRINT` | Vollständige registrierte Strukturidentität des Companion-Schemas v1 | Core Database Compatibility / Security Runtime |
 | `final_v3_documents.active_generation` | Atomarer SQLCipher-Pointer auf genau eine aktive Generation eines bereits aktivierten technischen Dokuments | Document Persistence |
 | `final_v3_document_generations` | Historische Generationen mit `PREPARED`, `ACTIVE`, `RETAINED` oder `QUARANTINED`; kein physisches GC | Document Persistence |

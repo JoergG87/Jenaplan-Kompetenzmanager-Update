@@ -39,6 +39,12 @@ Installations-/Database-Context-Bindung und eine explizite Neuanlageautorität.
 Verschlüsselte Dokumentgenerationen werden vor jedem Pointerwrite vollständig
 verifiziert; alte aktive Generationen bleiben bei Fehlern nutzbar und werden
 nicht automatisch physisch gelöscht. Es gibt keinen Klartextfallback.
+Ausschließlich hinter demselben internen Gate darf die fachlich stabile
+`MED-######`-ID eines Beobachtungsanhangs als Document-ID dienen. Der
+Observation-UoW bindet Generation und opaque Storage-ID vor dem Prepare,
+committet die fachliche Referenz vor der idempotenten Pointeraktivierung und
+schließt erst danach ab. Allgemeine Schülerdokumente sowie Bericht-/LEG-PDFs
+bleiben ausgeschlossen.
 
 `school_year_transitions` dokumentiert nur echte spätere
 Schuljahreswechsel. Ausgangs- und Zielschuljahr existieren dabei fachlich und
@@ -124,6 +130,15 @@ publiziert. SQLite und Dateisystem bilden ausdrücklich keine gemeinsame
 atomare Transaktion; ein versioniertes Journal und ein kernelgebundener
 Writer-Lock besitzen Retry und Recovery. Widgets besitzen weder Ereignis-,
 Repository-, Staging- noch Recoverylogik.
+
+Im optionalen Cipher-Modus ersetzt eine vollständig verifizierte
+`PREPARED`-Dokumentgeneration die Klartextpublikation. Das Journal bindet
+MED-ID, vorherige aktive Generation, Zielgeneration, Storage-ID und
+Verifikationsevidenz; nach dem atomaren fachlichen SQLCipher-Commit werden alle
+Prepare-Pointer und entfernten Referenzen eines Journals gemeinsam in einer
+Companion-SQLCipher-Transaktion aktiviert beziehungsweise retained deaktiviert.
+Gate-Off behält exakt die
+vorhandene Klartextpublikation.
 
 ## Entwicklungsgrenze Releasebasis 0.3.0 / Build 303
 

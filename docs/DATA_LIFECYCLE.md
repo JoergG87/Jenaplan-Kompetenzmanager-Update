@@ -894,6 +894,44 @@ Storageinventar und jeden registrierten Container.
 5. `replace` ist ausschließlich `prepare` plus `activate`. Die alte aktive
    Generation bleibt bei jedem Fehler lesbar; kein Schritt löscht Container.
 
+### Beobachtungsanhänge hinter dem internen Gate
+
+1. Derselbe `ObservationWriterLock` und dasselbe Observation-Journal besitzen
+   weiterhin die fachliche Gesamtoperation. Vor dem Quellenzugriff bindet das
+   Journal den unveränderlichen Speichermodus `encrypted`, OBS-/MED-IDs,
+   Sollzustand sowie je neuer oder ersetzter MED-ID die vorherige aktive,
+   geplante Generation und opaque Storage-ID. Ein Restart ohne dieselbe Runtime blockiert und darf
+   niemals in den Klartextpfad wechseln.
+2. Die Runtime öffnet die externe reguläre Quelle no-follow über einen
+   kontrollierten Descriptor. Im verwalteten Storage entsteht ausschließlich
+   `<storage_id>.jkmedoc`; es wird kein Klartext nach `documents/` publiziert.
+3. Nach vollständiger Containerverifikation und Companion-`PREPARED` bindet
+   das Journal zusätzlich Größen, Hashes, MIME und Lifecycle. Erst danach
+   committet eine Final-V3-Transaktion Beobachtung, Ratings, Ereignisse und
+   fachliche `documents`-Referenzen.
+4. Nach dem Fachcommit wendet die Runtime alle exakt journalgebundenen
+   Aktivierungen und Deaktivierungen idempotent in einer einzigen Companion-
+   SQLCipher-Transaktion an. Ein Fehler während einer Mehrfachumschaltung rollt
+   sämtliche Pointeränderungen zurück; ein Crash nach Commit erkennt denselben
+   vollständigen `ACTIVE`-/`RETAINED`-Stand als abgeschlossen.
+5. Edit ohne Attachmentänderung erzeugt keine Generation. Add erhält eine
+   neue MED-ID. Replace behält die MED-ID und erzeugt Generation N+1; der
+   Vorgänger wird erst bei erfolgreicher Umschaltung `RETAINED`. Remove setzt
+   `documents.active=0`, deaktiviert den Companion-Pointer und behält alle
+   Container `RETAINED`.
+6. Lesen prüft zuerst die aktive fachliche Beobachtungsreferenz in Final-V3,
+   recovered ausstehende Journale und streamt danach ausschließlich über den
+   vorhandenen vollständig verifizierenden Consumerreader. Allgemeine
+   Schülerdokumente und PDF-Artefakte werden abgewiesen. Profil-, Edit- und
+   Dokumentprojektionen führen dieselbe Pending-Recovery vor ihrer Abfrage aus
+   oder blockieren fail-closed; ein nach Fachcommit noch nicht vollständig
+   aktivierter Zwischenstand wird nicht projiziert. Scheitert ein Replace, darf
+   die Lesenaht nur die journalgebundene vorherige ACTIVE-Generation streamen;
+   eine bereits partiell aktivierte Zielgeneration blockiert.
+7. Gate-Off verwendet unverändert `FILES_STAGED` und `FILES_PUBLISHED` für
+   kontrolliertes Klartextstaging und No-Clobber-Publikation. Es gibt keinen
+   Cipher-zu-Klartextfallback und keine Produkt-Default-Aktivierung.
+
 Crash vor Erzeugung hinterlässt keinen Intent. Crash während Write, nach Write
 vor Verifikation oder nach Verifikation vor `PREPARED` erzeugt einen
 unregistrierten Bestand und blockiert fail-closed. Crash nach `PREPARED`,

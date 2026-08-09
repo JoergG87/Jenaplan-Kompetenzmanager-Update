@@ -4,8 +4,9 @@
 
 **Status:** Angenommen und ausschließlich im bestehenden internen
 Final-V3-SQLCipher-Gate lokal implementiert. Produktaktivierung, UI,
-fachliche Anhänge, PDF-Artefakte, Export, Backup/Restore, Migration, Build und
-Release bleiben ausgeschlossen.
+allgemeine Schülerdokumente, PDF-Artefakte, Export, Backup/Restore, Migration,
+Build und Release bleiben ausgeschlossen. Ausschließlich neue und geänderte
+Beobachtungsanhänge sind über den vorhandenen Observation-UoW angebunden.
 
 ### Entscheidung
 
@@ -24,7 +25,11 @@ Revision, Containerformat, Größen-/Hashnachweise, MIME-Typ und genau einen
 Lifecycle `PREPARED`, `ACTIVE`, `RETAINED` oder `QUARANTINED`. Ein Pointer und
 ein partieller Unique-Index erzwingen genau eine aktive Generation je bereits
 aktiviertem Dokument. Der Dateiname besteht ausschließlich aus Storage-ID und
-`.jkmedoc`; Originalname und Fachinhalt liegen nur im verschlüsselten Manifest.
+`.jkmedoc`; Originalname und fachliche Metadaten liegen nur in SQLCipher und
+im verschlüsselten Manifest, Fachinhalt nur im verschlüsselten Container.
+Für Beobachtungsanhänge ist die technische Document-ID unmittelbar die
+fachlich stabile `MED-######`-ID. UUID4 bleiben für Storage-, Container-,
+Document-Key-, Installations- und Database-Context-Identitäten zwingend.
 
 `prepare` veröffentlicht no-clobber einen vollständig verifizierten Container
 vor dem `PREPARED`-Write. `activate` verifiziert erneut und schaltet Pointer,
@@ -33,6 +38,17 @@ Transaktion um. `read` besitzt keinen Exportpfad und streamt nur an einen
 injizierten Consumer. Unbekannte Container, Teilbestände, Symlinks,
 Kontextabweichungen und Manipulation blockieren; keine Generation wird still
 neu erzeugt, überschrieben oder physisch gelöscht.
+
+Weil Final-V3-Hauptdatenbank und Companion-DB keine gemeinsame Transaktion
+besitzen, bindet das vorhandene Observation-Journal vor dem Containerwrite
+den unveränderlichen Cipher-Speichermodus, MED-ID, vorherige aktive Generation,
+geplante Generation und opaque Storage-ID. Eine Recovery ohne dieselbe Runtime blockiert. Nach verifiziertem
+`PREPARED` schreibt die Observation-UoW Beobachtung, Ratings, Ereignisse und
+fachliche Dokumentreferenz atomar in Final-V3. Erst danach werden alle exakt
+gebundenen Aktivierungen und Deaktivierungen eines Journals gemeinsam in einer
+Companion-SQLCipher-Transaktion angewendet. Entfernen deaktiviert die
+fachliche Referenz und setzt den Companion-Pointer auf inaktive retained
+Generationen zurück; Container werden nicht gelöscht.
 
 ### Folgen
 

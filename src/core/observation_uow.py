@@ -5,6 +5,7 @@ from __future__ import annotations
 import fcntl
 import hashlib
 import json
+import mimetypes
 import os
 import re
 import sqlite3
@@ -15,7 +16,7 @@ from contextlib import contextmanager
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Protocol
 
 from .observation import ObservationCompetencyRatingRecord, ObservationRecord
 from .maintenance_gate import product_writer
@@ -74,6 +75,31 @@ class ObservationUnitOfWorkError(RuntimeError):
 
 class ObservationOperationConflict(ObservationUnitOfWorkError):
     """Raised when current persistence state matches neither before nor target."""
+
+
+class EncryptedObservationAttachmentRuntime(Protocol):
+    """Small Qt-free port to the gated encrypted document runtime."""
+
+    def plan_prepare(self, *, document_id: str) -> object: ...
+    def prepare(self, **kwargs: object) -> object: ...
+    def verify_prepared(self, *, plan: object) -> object: ...
+    def activate(
+        self, *, document_id: str, document_generation: int | None = None
+    ) -> object: ...
+    def deactivate(self, *, document_id: str) -> object: ...
+    def apply_journaled_changes(
+        self,
+        *,
+        prepared_plans: tuple[object, ...],
+        deactivated_document_ids: tuple[str, ...],
+    ) -> tuple[object, ...]: ...
+    def read(
+        self,
+        *,
+        document_id: str,
+        consumer: object,
+        document_generation: int | None = None,
+    ) -> object: ...
 
 
 def new_operation_token() -> str:
@@ -230,8 +256,14 @@ class ObservationOperationJournal:
 class ObservationPersistenceUnitOfWork:
     """Persist observation, events, and attachment references as one DB unit."""
 
-    def __init__(self, database: SQLiteDatabase) -> None:
+    def __init__(
+        self,
+        database: SQLiteDatabase,
+        *,
+        encrypted_attachments: EncryptedObservationAttachmentRuntime | None = None,
+    ) -> None:
         self.database = database
+        self.encrypted_attachments = encrypted_attachments
         self.data_root = Path(database.path).parent
         self.documents_root = self.data_root / "documents"
         self.staging_root = self.data_root / ".observation-staging"
@@ -296,6 +328,85 @@ class ObservationPersistenceUnitOfWork:
             for child in self.staging_root.iterdir()
         )
 
+    def read_encrypted_attachment(self, *, document_id: str, consumer: object) -> object:
+        """Stream one active observation attachment through the injected runtime."""
+        if self.encrypted_attachments is None:
+            raise ObservationUnitOfWorkError(
+                "Verschluesselter Attachment-Reader ist nicht aktiviert."
+            )
+        with ObservationWriterLock(self.staging_root):
+            previous_active_generation: int | None = None
+            try:
+                self._recover_incomplete(except_token=None)
+            except Exception:
+                previous_active_generation = (
+                    self._pending_replace_active_generation(document_id)
+                )
+                if previous_active_generation is None:
+                    raise
+            with self.database.connect() as connection:
+                row = connection.execute(
+                    """
+                    SELECT document_id FROM documents
+                    WHERE document_id = ? AND observation_id IS NOT NULL
+                      AND active = 1
+                    """,
+                    (document_id,),
+                ).fetchone()
+            if row is None:
+                raise ObservationUnitOfWorkError(
+                    "Aktiver Beobachtungsanhang wurde nicht gefunden."
+                )
+            return self.encrypted_attachments.read(
+                document_id=document_id,
+                consumer=consumer,
+                document_generation=previous_active_generation,
+            )
+
+    def _pending_replace_active_generation(self, document_id: str) -> int | None:
+        """Return only the journal-bound pre-replace ACTIVE generation."""
+        if not self.staging_root.exists():
+            return None
+        pending: list[dict[str, object]] = []
+        for child in sorted(self.staging_root.iterdir(), key=lambda item: item.name):
+            if not child.is_dir() or child.is_symlink():
+                continue
+            journal = ObservationOperationJournal(child)
+            if not journal.path.exists():
+                continue
+            state = journal.read()
+            if state["phase"] != "COMPLETE":
+                pending.append(state)
+        if len(pending) != 1 or not _journal_uses_encrypted_attachments(pending[0]):
+            return None
+        state = pending[0]
+        before = {
+            str(item.get("document_id", "")): item
+            for item in _dict_list(state.get("before_documents"))
+        }.get(document_id)
+        replacements = [
+            item
+            for item in _dict_list(state.get("new_documents"))
+            if item.get("write_action") == "replace"
+            and str(_mapping(item.get("record"))["document_id"]) == document_id
+        ]
+        if (
+            before is None
+            or not before.get("observation_id")
+            or not bool(before.get("active"))
+            or len(replacements) != 1
+        ):
+            return None
+        plan = _mapping(replacements[0].get("encrypted_plan"))
+        previous = plan.get("previous_active_generation")
+        if (
+            not isinstance(previous, int)
+            or isinstance(previous, bool)
+            or previous < 1
+        ):
+            return None
+        return previous
+
     def is_exact_noop(
         self,
         *,
@@ -311,6 +422,11 @@ class ObservationPersistenceUnitOfWork:
         ):
             return False
         requested = tuple(attachments)
+        if self.encrypted_attachments is not None and any(
+            str(getattr(attachment, "source_path", "")).strip()
+            for attachment in requested
+        ):
+            return False
         if any(
             not str(getattr(attachment, "document_id", "")).strip()
             for attachment in requested
@@ -381,26 +497,42 @@ class ObservationPersistenceUnitOfWork:
         new_documents: list[dict[str, object]] = []
         reserved_document_ids: set[str] = set()
         for attachment in attachments:
-            if str(getattr(attachment, "document_id", "")).strip():
-                continue
+            requested_document_id = str(
+                getattr(attachment, "document_id", "")
+            ).strip()
             source_text = str(getattr(attachment, "source_path", "")).strip()
+            replacing = bool(
+                self.encrypted_attachments is not None
+                and requested_document_id
+                and source_text
+            )
+            if requested_document_id and not replacing:
+                continue
             if not source_text:
                 continue
-            document_id = self._reserve_id(
-                "MED",
-                additional_reserved=reserved_document_ids,
-            )
-            reserved_document_ids.add(document_id)
+            if replacing:
+                document_id = requested_document_id
+                existing = existing_by_id[document_id]
+            else:
+                document_id = self._reserve_id(
+                    "MED",
+                    additional_reserved=reserved_document_ids,
+                )
+                reserved_document_ids.add(document_id)
+                existing = None
             source_path = Path(source_text).expanduser()
             staged_path = operation_root / "files" / f"{document_id}.staged"
-            original_filename = source_path.name
+            original_filename = (
+                str(getattr(attachment, "original_filename", "")).strip()
+                or source_path.name
+            )
             safe_filename = _safe_filename(original_filename)
             final_relative_path = (
                 Path("documents")
                 / observation.student_id
                 / f"{document_id}_{safe_filename}"
             )
-            created_at = _event_timestamp()
+            created_at = existing.created_at if existing is not None else _event_timestamp()
             document = DocumentRecord(
                 document_id=document_id,
                 student_id=observation.student_id,
@@ -409,7 +541,11 @@ class ObservationPersistenceUnitOfWork:
                 or source_path.stem,
                 document_type=str(getattr(attachment, "document_type", "")).strip()
                 or "Sonstiges",
-                file_path=str(self.data_root / final_relative_path),
+                file_path=(
+                    ""
+                    if self.encrypted_attachments is not None
+                    else str(self.data_root / final_relative_path)
+                ),
                 original_filename=original_filename,
                 created_at=created_at,
                 note=str(getattr(attachment, "note", "")).strip(),
@@ -417,21 +553,34 @@ class ObservationPersistenceUnitOfWork:
             )
             new_documents.append(
                 {
+                    "write_action": "replace" if replacing else "insert",
                     "record": asdict(document),
                     "source_display_path": str(source_path),
                     "source_evidence": {},
                     "staging_relative_path": str(staged_path.relative_to(operation_root)),
                     "final_relative_path": str(final_relative_path),
+                    "mime_type": _attachment_mime_type(attachment, original_filename),
+                    "encrypted_plan": (
+                        self._encrypted_prepare_plan(document_id)
+                        if self.encrypted_attachments is not None
+                        else {}
+                    ),
                 }
             )
+        replaced_ids = {
+            str(_mapping(item["record"])["document_id"])
+            for item in new_documents
+            if item.get("write_action") == "replace"
+        }
         retained_documents = [
             asdict(existing_by_id[document_id])
-            for document_id in sorted(kept_ids)
+            for document_id in sorted(kept_ids - replaced_ids)
         ]
         removed_ids = sorted(set(existing_by_id) - kept_ids)
-        target_documents = retained_documents + [
-            item["record"] for item in new_documents
-        ]
+        target_documents = sorted(
+            retained_documents + [item["record"] for item in new_documents],
+            key=lambda item: str(_mapping(item)["document_id"]),
+        )
         before_payload = {
             "observation": (
                 _observation_payload(before_observation)
@@ -465,7 +614,14 @@ class ObservationPersistenceUnitOfWork:
             "target_documents": target_documents,
             "new_documents": new_documents,
             "removed_document_ids": removed_ids,
-            "attachment_intent": _attachment_intent(attachments),
+            "attachment_intent": _attachment_intent(
+                attachments,
+                storage_mode=(
+                    "encrypted"
+                    if self.encrypted_attachments is not None
+                    else "plaintext"
+                ),
+            ),
         }
         journal.write(state)
         return state
@@ -475,27 +631,151 @@ class ObservationPersistenceUnitOfWork:
         journal: ObservationOperationJournal,
         state: dict[str, object],
     ) -> None:
+        encrypted_mode = _journal_uses_encrypted_attachments(state)
+        if encrypted_mode != (self.encrypted_attachments is not None):
+            raise ObservationUnitOfWorkError(
+                "Observation-Journal und Attachment-Runtime widersprechen sich."
+            )
         phase = str(state["phase"])
         if phase == "PREPARED":
-            self._stage_files(journal, state)
+            if encrypted_mode:
+                self._prepare_encrypted_files(journal, state)
+            else:
+                self._stage_files(journal, state)
             state = journal.read()
             phase = str(state["phase"])
         if phase == "FILES_STAGED":
-            self._publish_files(journal, state)
+            if encrypted_mode:
+                self._verify_encrypted_files(journal, state)
+            else:
+                self._publish_files(journal, state)
             state = journal.read()
             phase = str(state["phase"])
         if phase == "FILES_PUBLISHED":
-            self._verify_all_published(journal, state)
+            if encrypted_mode:
+                self._verify_all_encrypted_prepared(state)
+            else:
+                self._verify_all_published(journal, state)
             self._commit_database(state)
             self._advance(journal, state, "DATABASE_COMMITTED")
             state = journal.read()
             phase = str(state["phase"])
         if phase == "DATABASE_COMMITTED":
-            self._verify_all_published(journal, state)
+            if encrypted_mode:
+                self._activate_encrypted_files(state)
+            else:
+                self._verify_all_published(journal, state)
             self._verify_target_state(state)
             self._advance(journal, state, "COMPLETE")
         elif phase != "COMPLETE":
             raise ObservationUnitOfWorkError("Observation-Journal ist blockiert.")
+
+    def _encrypted_prepare_plan(self, document_id: str) -> dict[str, object]:
+        if self.encrypted_attachments is None:
+            return {}
+        plan = self.encrypted_attachments.plan_prepare(document_id=document_id)
+        result = {
+            "document_id": str(getattr(plan, "document_id", "")),
+            "document_generation": int(getattr(plan, "document_generation", 0)),
+            "storage_id": str(getattr(plan, "storage_id", "")),
+            "previous_active_generation": getattr(
+                plan, "previous_active_generation", None
+            ),
+        }
+        previous = result["previous_active_generation"]
+        if (
+            result["document_id"] != document_id
+            or result["document_generation"] < 1
+            or (
+                previous is not None
+                and (
+                    not isinstance(previous, int)
+                    or isinstance(previous, bool)
+                    or previous < 1
+                )
+            )
+        ):
+            raise ObservationUnitOfWorkError(
+                "Verschluesselter Attachment-Plan ist ungueltig."
+            )
+        return result
+
+    def _prepare_encrypted_files(
+        self,
+        journal: ObservationOperationJournal,
+        state: dict[str, object],
+    ) -> None:
+        if self.encrypted_attachments is None:
+            raise ObservationUnitOfWorkError("Cipher-Attachment-Runtime fehlt.")
+        prepared_documents: list[dict[str, object]] = []
+        for item in _dict_list(state.get("new_documents")):
+            updated = dict(item)
+            record = _mapping(item["record"])
+            plan = _mapping(item["encrypted_plan"])
+            prepared = self.encrypted_attachments.prepare(
+                document_id=str(record["document_id"]),
+                source_path=Path(str(item["source_display_path"])),
+                original_filename=str(record["original_filename"]),
+                mime_type=str(item["mime_type"]),
+                plan=plan,
+            )
+            updated["encrypted_generation"] = _encrypted_generation_evidence(prepared)
+            _require_encrypted_plan_matches(plan, updated["encrypted_generation"])
+            prepared_documents.append(updated)
+        updated_state = dict(state)
+        updated_state["new_documents"] = prepared_documents
+        updated_state["operation_payload_hash"] = canonical_payload_hash(
+            {
+                "prepared_operation_payload_hash": state["operation_payload_hash"],
+                "new_documents": prepared_documents,
+            }
+        )
+        self._advance(journal, updated_state, "FILES_STAGED")
+
+    def _verify_encrypted_files(
+        self,
+        journal: ObservationOperationJournal,
+        state: dict[str, object],
+    ) -> None:
+        self._verify_all_encrypted_prepared(state)
+        self._advance(journal, state, "FILES_PUBLISHED")
+
+    def _verify_all_encrypted_prepared(self, state: dict[str, object]) -> None:
+        if self.encrypted_attachments is None:
+            raise ObservationUnitOfWorkError("Cipher-Attachment-Runtime fehlt.")
+        for item in _dict_list(state.get("new_documents")):
+            plan = _mapping(item["encrypted_plan"])
+            verified = self.encrypted_attachments.verify_prepared(plan=plan)
+            evidence = _encrypted_generation_evidence(verified)
+            _require_encrypted_plan_matches(plan, evidence)
+            if evidence != _mapping(item["encrypted_generation"]):
+                raise ObservationUnitOfWorkError(
+                    "Verschluesselte Attachment-Generation widerspricht dem Journal."
+                )
+
+    def _activate_encrypted_files(self, state: dict[str, object]) -> None:
+        if self.encrypted_attachments is None:
+            raise ObservationUnitOfWorkError("Cipher-Attachment-Runtime fehlt.")
+        documents = _dict_list(state.get("new_documents"))
+        plans = tuple(_mapping(item["encrypted_plan"]) for item in documents)
+        active_generations = self.encrypted_attachments.apply_journaled_changes(
+            prepared_plans=plans,
+            deactivated_document_ids=tuple(
+                str(value) for value in state.get("removed_document_ids", [])
+            ),
+        )
+        if len(active_generations) != len(documents):
+            raise ObservationUnitOfWorkError(
+                "Aktivierte Attachment-Anzahl widerspricht dem Journal."
+            )
+        for item, active in zip(documents, active_generations, strict=True):
+            evidence = _encrypted_generation_evidence(active)
+            expected = dict(_mapping(item["encrypted_generation"]))
+            expected["lifecycle_status"] = "ACTIVE"
+            if evidence != expected:
+                raise ObservationUnitOfWorkError(
+                    "Aktive Attachment-Generation widerspricht dem Journal."
+                )
 
     def _stage_files(
         self,
@@ -829,7 +1109,28 @@ class ObservationPersistenceUnitOfWork:
         )
         if canonical_payload_hash(requested) != canonical_payload_hash(target):
             raise ObservationOperationConflict("Retry-Nutzlast wurde veraendert.")
-        if _attachment_intent(attachments) != state["attachment_intent"]:
+        expected_intent = _attachment_intent(
+            attachments,
+            storage_mode=(
+                "encrypted"
+                if self.encrypted_attachments is not None
+                else "plaintext"
+            ),
+        )
+        observed_intent = state["attachment_intent"]
+        if isinstance(observed_intent, list):
+            legacy_items = []
+            for item in expected_intent["items"]:
+                legacy_item = dict(_mapping(item))
+                legacy_item.pop("original_filename", None)
+                legacy_items.append(legacy_item)
+            matches = (
+                self.encrypted_attachments is None
+                and legacy_items == observed_intent
+            )
+        else:
+            matches = expected_intent == observed_intent
+        if not matches:
             raise ObservationOperationConflict(
                 "Retry-Anhangsnutzlast wurde veraendert."
             )
@@ -1112,6 +1413,33 @@ class ObservationPersistenceUnitOfWork:
     ) -> None:
         for item in new_documents:
             document = _mapping(item["record"])
+            if item.get("write_action") == "replace":
+                updated = connection.execute(
+                    """
+                    UPDATE documents
+                    SET student_id = ?, observation_id = ?, title = ?,
+                        document_type = ?, file_path = ?, original_filename = ?,
+                        created_at = ?, note = ?, active = ?
+                    WHERE document_id = ? AND active = 1
+                    """,
+                    (
+                        document["student_id"],
+                        document["observation_id"],
+                        document["title"],
+                        document["document_type"],
+                        document["file_path"],
+                        document["original_filename"],
+                        document["created_at"],
+                        document["note"],
+                        int(bool(document["active"])),
+                        document["document_id"],
+                    ),
+                ).rowcount
+                if updated != 1:
+                    raise ObservationOperationConflict(
+                        "Zu ersetzender Anhang wurde parallel veraendert."
+                    )
+                continue
             connection.execute(
                 """
                 INSERT INTO documents (
@@ -1249,7 +1577,11 @@ def _safe_filename(filename: str) -> str:
 
 def _attachment_intent(
     attachments: Iterable[object],
-) -> list[dict[str, str]]:
+    *,
+    storage_mode: str,
+) -> dict[str, object]:
+    if storage_mode not in {"plaintext", "encrypted"}:
+        raise ObservationUnitOfWorkError("Attachment-Speichermodus ist ungueltig.")
     result: list[dict[str, str]] = []
     for attachment in attachments:
         document_id = str(getattr(attachment, "document_id", "")).strip()
@@ -1269,9 +1601,70 @@ def _attachment_intent(
                     or "Sonstiges"
                 ),
                 "note": str(getattr(attachment, "note", "")).strip(),
+                "original_filename": str(
+                    getattr(attachment, "original_filename", "")
+                ).strip(),
             }
         )
+    return {"storage_mode": storage_mode, "items": result}
+
+
+def _journal_uses_encrypted_attachments(state: dict[str, object]) -> bool:
+    intent = state.get("attachment_intent")
+    if isinstance(intent, list):
+        return False
+    if not isinstance(intent, dict) or set(intent) != {"storage_mode", "items"}:
+        raise ObservationUnitOfWorkError(
+            "Observation-Journal-Attachmentmodus ist ungueltig."
+        )
+    if intent["storage_mode"] not in {"plaintext", "encrypted"}:
+        raise ObservationUnitOfWorkError(
+            "Observation-Journal-Attachmentmodus ist ungueltig."
+        )
+    if not isinstance(intent["items"], list):
+        raise ObservationUnitOfWorkError(
+            "Observation-Journal-Attachmentmodus ist ungueltig."
+        )
+    return intent["storage_mode"] == "encrypted"
+
+
+def _attachment_mime_type(attachment: object, original_filename: str) -> str:
+    explicit = str(getattr(attachment, "mime_type", "")).strip().lower()
+    guessed = mimetypes.guess_type(original_filename, strict=False)[0]
+    return explicit or guessed or "application/octet-stream"
+
+
+def _encrypted_generation_evidence(value: object) -> dict[str, object]:
+    fields = (
+        "document_id",
+        "document_generation",
+        "storage_id",
+        "plaintext_size",
+        "plaintext_sha256",
+        "container_size",
+        "container_sha256",
+        "mime_type",
+        "lifecycle_status",
+    )
+    result = {field: getattr(value, field, None) for field in fields}
+    if any(item is None for item in result.values()):
+        raise ObservationUnitOfWorkError(
+            "Verschluesselte Attachment-Evidenz ist unvollstaendig."
+        )
     return result
+
+
+def _require_encrypted_plan_matches(
+    plan: dict[str, object],
+    evidence: dict[str, object],
+) -> None:
+    if any(
+        evidence.get(field) != plan.get(field)
+        for field in ("document_id", "document_generation", "storage_id")
+    ):
+        raise ObservationUnitOfWorkError(
+            "Verschluesselte Attachment-Generation widerspricht dem Plan."
+        )
 
 
 def _stat_identity(value: os.stat_result) -> dict[str, int]:

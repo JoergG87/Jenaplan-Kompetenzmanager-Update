@@ -289,10 +289,13 @@ komponiert; ihre sichtbaren Fachverträge bleiben unverändert.
 
 Document-/Storage-/Key-IDs, Generationen, Envelope-Revision, Containerformat,
 Größen, Hashes, MIME, Lifecycle, Gate-, Schema-, Context-, Pointer- und
-Crashzustände werden nicht in PySide projiziert. Es entstehen keine Felder,
-Dialoge, Aktionen, Anhänge, PDF-Verknüpfungen, Exporte, Vorschauen,
-QDesktopServices-Aufrufe oder Recoveryanzeigen. Der injizierte Consumer ist
-eine rein technische Testgrenze und kein ViewModel oder Produktviewer.
+Crashzustände werden nicht in PySide projiziert. Die vorhandenen fachlichen
+Attachment-Drafts und Save-/Edit-/Remove-Aktionen des Beobachtungsdialogs
+bleiben unverändert und werden ausschließlich in der internen Gate-On-
+Komposition anders persistiert. Es entstehen keine neuen Felder, Dialoge,
+Aktionen, PDF-Verknüpfungen, Exporte, Vorschauen, QDesktopServices-Aufrufe oder
+Recoveryanzeigen. Der injizierte Consumer ist eine rein technische Testgrenze
+und kein ViewModel oder Produktviewer.
 
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 

@@ -61,6 +61,7 @@ _UTC_PATTERN = re.compile(r"\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\Z")
 _SHA256_PATTERN = re.compile(r"\A[0-9a-f]{64}\Z")
 _VERSION_PATTERN = re.compile(r"\A[ -~]{1,160}\Z")
 _MIME_PATTERN = re.compile(r"\A[a-z0-9][a-z0-9.+-]*/[a-z0-9][a-z0-9.+-]*\Z")
+_MED_DOCUMENT_ID_PATTERN = re.compile(r"\AMED-[0-9]{6}\Z")
 
 
 class EncryptedDocumentError(RuntimeError):
@@ -657,14 +658,20 @@ def _validate_context(value: DocumentContainerContextV1) -> None:
     for identifier, code in (
         (value.installation_id, "document_installation_id_invalid"),
         (value.database_context_id, "document_database_context_id_invalid"),
-        (value.document_id, "document_id_invalid"),
     ):
         _uuid(identifier, code)
+    _document_id(value.document_id)
     _positive(value.document_generation, "document_generation_invalid")
     if not isinstance(value.app_format_version, str) or not _VERSION_PATTERN.fullmatch(
         value.app_format_version
     ):
         raise EncryptedDocumentError("document_app_format_version_invalid")
+
+
+def _document_id(value: object) -> None:
+    if isinstance(value, str) and _MED_DOCUMENT_ID_PATTERN.fullmatch(value):
+        return
+    _uuid(value, "document_id_invalid")
 
 
 def _validate_envelope(
