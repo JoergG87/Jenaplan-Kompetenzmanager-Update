@@ -23,6 +23,10 @@ from src.application.dispatcher import (
     observation_update_handler,
 )
 from src.application.managed_documents import ManagedStudentDocumentService
+from src.application.student_documentation_subjects import (
+    StudentDocumentationSubjectService,
+    effective_documentation_subjects,
+)
 from src.application.managed_pdf_artifacts import ManagedPdfArtifactLifecycle
 from src.application.school_year_assignment import (
     ArchiveStudent,
@@ -130,6 +134,7 @@ from src.core.school_year import (
     CurrentStudentMembershipProjection,
     V3Student,
 )
+from src.core.student_documentation_subjects import DocumentationSubjectMode
 from src.core.sqlite_school_year_assignment import (
     SchoolYearAssignmentReadSession,
     SchoolYearAssignmentRepositoryError,
@@ -209,6 +214,8 @@ from src.desktop_app.view_models.student_view_model import (
     StudentDetailViewModel,
     StudentProfileDashboardViewModel,
     StudentProfileProjectionBundle,
+    StudentDocumentationSubjectOptionViewModel,
+    StudentDocumentationSubjectProjectionViewModel,
     StudentDocumentationSummaryViewModel,
     StudentDocumentViewModel,
     StudentReportDevelopmentViewModel,
@@ -388,8 +395,13 @@ class StudentDesktopAdapter:
             for competency in batch.competencies
             if competency.active and competency.catalog_status == "current"
         )
+        documentation_subjects = self._student_documentation_subject_projection_from_batch(
+            batch,
+            student_id,
+            student_is_read_only=(student is None or not student.active),
+        )
         active_documentation_subject_ids = set(
-            batch.active_documentation_subject_ids
+            documentation_subjects.selected_subject_ids
         )
         documentation_competencies = tuple(
             competency
@@ -416,12 +428,16 @@ class StudentDesktopAdapter:
             competency_groups=competency_groups,
             documentation_statuses=documentation_statuses,
             documents=documents,
-            competency_cockpit=build_student_competency_cockpit(statuses),
+            competency_cockpit=build_student_competency_cockpit(
+                statuses,
+                tuple(active_documentation_subject_ids),
+            ),
             profile_dashboard=build_student_profile_dashboard(
                 statuses,
                 documentation_statuses,
                 as_of,
             ),
+            documentation_subjects=documentation_subjects,
         )
 
     def _student_profile_from_batch(
@@ -825,6 +841,105 @@ class StudentDesktopAdapter:
                 ),
             )
         )
+
+    def _student_documentation_subject_projection_from_batch(
+        self,
+        batch: StudentDocumentationProjectionBatch,
+        student_id: str,
+        *,
+        student_is_read_only: bool,
+    ) -> StudentDocumentationSubjectProjectionViewModel:
+        subject_labels: dict[str, str] = {}
+        subject_sort_orders: dict[str, int] = {}
+        known_subject_ids: set[str] = set()
+        catalog_subject_labels: dict[str, str] = {}
+        for competency in batch.competencies:
+            known_subject_ids.add(competency.subject_id)
+            catalog_subject_labels.setdefault(
+                competency.subject_id,
+                competency.subject_name,
+            )
+            if not competency.active:
+                continue
+            subject_labels.setdefault(competency.subject_id, competency.subject_name)
+            subject_sort_orders[competency.subject_id] = min(
+                subject_sort_orders.get(competency.subject_id, competency.sort_order),
+                competency.sort_order,
+            )
+        ordered_subject_ids = tuple(
+            sorted(
+                subject_labels,
+                key=lambda value: self._documentation_subject_sort_key(
+                    value,
+                    subject_labels,
+                    subject_sort_orders,
+                ),
+            )
+        )
+        available = tuple(
+            StudentDocumentationSubjectOptionViewModel(
+                subject_id,
+                subject_labels[subject_id],
+            )
+            for subject_id in ordered_subject_ids
+        )
+        configuration = batch.student_documentation_subject_configurations.get(
+            student_id
+        )
+        if (
+            configuration is None
+            or batch.current_school_year_id is None
+            or batch.current_school_year_label is None
+        ):
+            return StudentDocumentationSubjectProjectionViewModel(
+                "",
+                "Kein aktuelles Schuljahr",
+                DocumentationSubjectMode.INHERIT.value,
+                available,
+                (),
+                True,
+            )
+        selected = effective_documentation_subjects(
+            configuration,
+            batch.active_documentation_subject_ids,
+            known_subject_ids=known_subject_ids,
+        )
+        retained_inactive = tuple(
+            StudentDocumentationSubjectOptionViewModel(
+                subject_id,
+                catalog_subject_labels[subject_id],
+            )
+            for subject_id in selected
+            if subject_id not in subject_labels
+        )
+        return StudentDocumentationSubjectProjectionViewModel(
+            batch.current_school_year_id,
+            batch.current_school_year_label,
+            configuration.mode.value,
+            available,
+            selected,
+            student_is_read_only,
+            retained_inactive,
+        )
+
+    @product_writer
+    def save_student_documentation_subjects(
+        self,
+        student_id: str,
+        school_year_id: str,
+        mode: str,
+        subject_ids: tuple[str, ...],
+    ) -> None:
+        """Persist one complete student/year selection through the application service."""
+        service = self._student_documentation_subject_service()
+        if DocumentationSubjectMode(mode) is DocumentationSubjectMode.INHERIT:
+            service.set_mode(
+                student_id,
+                school_year_id,
+                DocumentationSubjectMode.INHERIT,
+            )
+            return
+        service.replace_custom_subjects(student_id, school_year_id, subject_ids)
 
     @product_writer
     def save_active_documentation_subjects(
@@ -1668,8 +1783,11 @@ class StudentDesktopAdapter:
         student_id: str,
     ) -> StudentCompetencyCockpitViewModel:
         """Group the canonical Sprint-6B status projection for cockpit display."""
+        statuses = self.list_competency_status_projection_for_student(student_id)
+        subject_ids = self._effective_documentation_subject_ids(student_id)
         return build_student_competency_cockpit(
-            self.list_competency_status_projection_for_student(student_id)
+            statuses,
+            tuple(subject_ids),
         )
 
     def list_documentation_status_for_student(
@@ -1684,7 +1802,9 @@ class StudentDesktopAdapter:
             if status.documentation_state != "undocumented"
         }
         return self._documentation_statuses(
-            self._documentation_relevant_competencies(),
+            self._documentation_relevant_competencies(
+                self._effective_documentation_subject_ids(student_id)
+            ),
             documented_ids,
         )
 
@@ -1702,7 +1822,9 @@ class StudentDesktopAdapter:
             if status.documentation_state != "undocumented"
         }
         documentation_statuses = self._documentation_statuses(
-            self._documentation_relevant_competencies(),
+            self._documentation_relevant_competencies(
+                self._effective_documentation_subject_ids(student_id)
+            ),
             documented_ids,
         )
         return build_student_profile_dashboard(
@@ -3383,12 +3505,38 @@ class StudentDesktopAdapter:
             return initial_draft.competency_ratings[0].subject_display_name
         return initial_draft.subject_display_name or initial_draft.subject_id
 
-    def _documentation_relevant_competencies(self) -> tuple[object, ...]:
-        documentation_subject_ids = self._active_documentation_subject_ids()
+    def _documentation_relevant_competencies(
+        self,
+        documentation_subject_ids: set[str] | None = None,
+    ) -> tuple[object, ...]:
+        subject_ids = (
+            self._active_documentation_subject_ids()
+            if documentation_subject_ids is None
+            else documentation_subject_ids
+        )
         return tuple(
             competency
             for competency in self._active_current_competencies()
-            if getattr(competency, "subject_id") in documentation_subject_ids
+            if getattr(competency, "subject_id") in subject_ids
+        )
+
+    def _student_documentation_subject_service(
+        self,
+    ) -> StudentDocumentationSubjectService:
+        return StudentDocumentationSubjectService(
+            self.database.connect,
+            now_provider=self._now_provider,
+        )
+
+    def _effective_documentation_subject_ids(self, student_id: str) -> set[str]:
+        school_year = self.current_school_year()
+        if school_year is None:
+            return set()
+        return set(
+            self._student_documentation_subject_service().effective_documentation_subjects(
+                student_id,
+                school_year.school_year_id,
+            )
         )
 
     def _competency_status_projection_from_batch(

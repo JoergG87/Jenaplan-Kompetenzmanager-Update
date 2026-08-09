@@ -65,16 +65,15 @@ class StudentDocumentationSubjectService:
             repository = SQLiteStudentDocumentationSubjectRepository(connection)
             _require_read_references(repository, student, school_year)
             configuration = repository.configuration(student, school_year)
-            if configuration.mode is DocumentationSubjectMode.CUSTOM:
-                for subject_id in configuration.selected_subject_ids:
-                    if repository.subject_state(subject_id) is None:
-                        raise StudentDocumentationSubjectApplicationError(
-                            "documentation_subject_configuration_invalid"
-                        )
-                return repository.sort_subject_ids(
-                    configuration.selected_subject_ids
-                )
-            return repository.global_documentation_subject_ids()
+            return effective_documentation_subjects(
+                configuration,
+                repository.global_documentation_subject_ids(),
+                known_subject_ids=(
+                    subject_id
+                    for subject_id in configuration.selected_subject_ids
+                    if repository.subject_state(subject_id) is not None
+                ),
+            )
 
     def set_mode(
         self,
@@ -183,6 +182,23 @@ class StudentDocumentationSubjectService:
             )
 
         return _write_transaction(self._connection_factory, operation)
+
+
+def effective_documentation_subjects(
+    configuration: StudentDocumentationSubjectConfiguration,
+    global_subject_ids: Iterable[str],
+    *,
+    known_subject_ids: Iterable[str] | None = None,
+) -> tuple[str, ...]:
+    """Resolve one already ordered snapshot without introducing a second policy."""
+    if configuration.mode is DocumentationSubjectMode.INHERIT:
+        return tuple(global_subject_ids)
+    selected = configuration.selected_subject_ids
+    if known_subject_ids is not None and set(selected) - set(known_subject_ids):
+        raise StudentDocumentationSubjectApplicationError(
+            "documentation_subject_configuration_invalid"
+        )
+    return selected
 
 
 def _validated_ids(student_id: str, school_year_id: str) -> tuple[str, str]:

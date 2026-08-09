@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Die schuljahresbezogene Final-V4-Fachrelevanz ist im Schülerprofil als
+  ruhiger, bewusst zu speichernder Bereich `Fächer für die Dokumentation`
+  angebunden. `inherit` projiziert den jeweils aktuellen globalen Default;
+  `custom` ersetzt die exakte, auch leere Auswahl über den bestehenden
+  `StudentDocumentationSubjectService`. Kompetenz-Cockpit,
+  Dokumentationsstatus, Profilring und `Noch nicht dokumentiert` verwenden für
+  das aktuelle Kind und Schuljahr dieselbe effektive Fachmenge. Bereits
+  dokumentierte Evidenz außerhalb dieser Menge bleibt separat lesbar. Der
+  Profilrefresh bleibt ein transaktionskonsistenter Snapshot; Bericht, LEG,
+  Dashboard-Heatmap, Backup/Restore und Security bleiben unverändert.
+
 - Final V4 ersetzt für den kommenden Pilot den noch nicht produktiv zu
   migrierenden fachlichen Final-V3-Vertrag. Frische SQLite- und
   SQLCipher-Hauptdatenbanken entstehen direkt mit `user_version = 4` und dem

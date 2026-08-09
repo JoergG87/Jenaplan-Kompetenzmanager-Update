@@ -468,15 +468,36 @@ class StudentCompetencyCockpitViewModel:
 
 def build_student_competency_cockpit(
     statuses: tuple[StudentCompetencyStatusViewModel, ...],
+    documentation_subject_ids: tuple[str, ...] | None = None,
 ) -> StudentCompetencyCockpitViewModel:
     """Group canonical Sprint-6B rows without recalculating competency status."""
+    relevant_subject_ids = (
+        None
+        if documentation_subject_ids is None
+        else set(documentation_subject_ids)
+    )
+    current_statuses = tuple(
+        status
+        for status in statuses
+        if not status.historical
+        and (
+            relevant_subject_ids is None
+            or status.subject_id in relevant_subject_ids
+        )
+    )
+    historical_evidence = tuple(
+        status
+        for status in statuses
+        if status.historical
+        or (
+            relevant_subject_ids is not None
+            and status.subject_id not in relevant_subject_ids
+            and status.documentation_state != "undocumented"
+        )
+    )
     return StudentCompetencyCockpitViewModel(
-        _competency_cockpit_subjects(
-            tuple(status for status in statuses if not status.historical)
-        ),
-        _competency_cockpit_subjects(
-            tuple(status for status in statuses if status.historical)
-        ),
+        _competency_cockpit_subjects(current_statuses),
+        _competency_cockpit_subjects(historical_evidence),
     )
 
 

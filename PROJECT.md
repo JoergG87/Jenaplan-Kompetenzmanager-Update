@@ -52,7 +52,12 @@ Cipher-First-Run, `.jkmebackup`, Restore-Staging, Restore-Worker,
 Bootstrap-Recovery, Rollback und Live-Restore akzeptieren ausschließlich den
 V4-Vertrag. Die eigenständige Dokument-Companion-Schemaversion 1 sowie Key-,
 Envelope- und Verschlüsselungsarchitektur bleiben unverändert. Die fachliche
-UI- und Projektionsintegration folgt getrennt.
+UI- und Projektionsintegration ist im Schülerprofil für Kompetenz-Cockpit,
+Dokumentationsstatus, Profilring und neutrale Hinweise auf noch nicht
+dokumentierte Bereiche umgesetzt. Laura kann für das aktuelle Schuljahr
+bewusst zwischen `inherit` und einer exakten individuellen Auswahl wechseln;
+historische Belege bleiben lesbar. Beobachtungsdialog, Dashboard, Berichte und
+LEG folgen weiterhin getrennt.
 
 ## Historische V3-only Grundlage und Architecture Cleanup
 

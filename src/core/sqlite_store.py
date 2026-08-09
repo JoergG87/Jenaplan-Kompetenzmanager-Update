@@ -33,6 +33,12 @@ from .sqlite_school_year_assignment import (
     SchoolYearAssignmentRepositoryError,
     V3StudentRepository,
 )
+from .sqlite_student_documentation_subjects import (
+    SQLiteStudentDocumentationSubjectRepository,
+)
+from .student_documentation_subjects import (
+    StudentDocumentationSubjectConfiguration,
+)
 from .persistence_events import (
     CompetencyFreshness,
     PersistenceEventKind,
@@ -253,6 +259,12 @@ class StudentDocumentationProjectionBatch:
     course_groups: tuple[MasterDataCourseGroupRecord, ...]
     competencies: tuple[CompetencyRecord, ...]
     active_documentation_subject_ids: tuple[str, ...]
+    current_school_year_id: str | None
+    current_school_year_label: str | None
+    student_documentation_subject_configurations: Mapping[
+        str,
+        StudentDocumentationSubjectConfiguration,
+    ]
     observations_by_student: Mapping[str, tuple[ObservationRecord, ...]]
     documents_by_student: Mapping[str, tuple[DocumentRecord, ...]]
     confirmations_by_student: Mapping[
@@ -1961,6 +1973,29 @@ class SQLiteStudentDocumentationProjectionRepository:
                         competencies,
                     )
                 )
+                current_school_year_id = (
+                    getattr(memberships[0], "current_school_year_id", None)
+                    if memberships
+                    else None
+                )
+                current_school_year_label = (
+                    getattr(memberships[0], "current_school_year_label", None)
+                    if memberships
+                    else None
+                )
+                student_subject_configurations: dict[
+                    str,
+                    StudentDocumentationSubjectConfiguration,
+                ] = {}
+                if student_id is not None and current_school_year_id is not None:
+                    student_subject_configurations[student_id] = (
+                        SQLiteStudentDocumentationSubjectRepository(
+                            connection
+                        ).configuration(
+                            student_id,
+                            current_school_year_id,
+                        )
+                    )
                 ratings_by_observation = self._ratings_by_observation(
                     connection,
                     scope_sql,
@@ -2006,6 +2041,11 @@ class SQLiteStudentDocumentationProjectionRepository:
                     competencies=competencies,
                     active_documentation_subject_ids=(
                         active_documentation_subject_ids
+                    ),
+                    current_school_year_id=current_school_year_id,
+                    current_school_year_label=current_school_year_label,
+                    student_documentation_subject_configurations=MappingProxyType(
+                        student_subject_configurations
                     ),
                     observations_by_student=MappingProxyType(
                         observations_by_student

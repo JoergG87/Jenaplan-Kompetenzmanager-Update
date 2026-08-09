@@ -18,6 +18,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor, QDesktopServices, QPainter, QPen
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QFileDialog,
     QFrame,
@@ -28,6 +29,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QPushButton,
     QProgressBar,
+    QRadioButton,
     QScrollArea,
     QTabWidget,
     QVBoxLayout,
@@ -57,6 +59,7 @@ from src.desktop_app.view_models.student_view_model import (
     StudentDetailViewModel,
     StudentDocumentViewModel,
     StudentProfileDashboardViewModel,
+    StudentDocumentationSubjectProjectionViewModel,
     StudentProfileOrientationChangeViewModel,
     StudentReportPreviewViewModel,
     empty_student_profile_dashboard,
@@ -217,6 +220,7 @@ class StudentProfileScreen(QWidget):
     document_replace_requested = Signal(str, str)
     document_remove_requested = Signal(str, str)
     competency_confirmation_requested = Signal(str, str, str, str)
+    documentation_subjects_save_requested = Signal(str, str, str, tuple)
     report_requested = Signal(str)
     learning_conference_requested = Signal(str)
     report_draft_requested = Signal(str, str, str, str)
@@ -257,6 +261,9 @@ class StudentProfileScreen(QWidget):
         self.current_report_overview = empty_report_overview()
         self.current_competency_cockpit: StudentCompetencyCockpitViewModel | None = None
         self.current_profile_dashboard = empty_student_profile_dashboard()
+        self.current_documentation_subjects: (
+            StudentDocumentationSubjectProjectionViewModel | None
+        ) = None
         self.show_all_observations = False
         self._report_subjects_expanded = False
         self._report_timeline_initialized = False
@@ -485,11 +492,192 @@ class StudentProfileScreen(QWidget):
         self.overview_undocumented_card = self._undocumented_card()
         layout.addWidget(self.overview_cards)
         self._apply_overview_card_layout(compact=False)
+        layout.addWidget(self._documentation_subjects_card())
         layout.addWidget(
             self._overview_list_card("Neueste Beobachtungen", self.overview_recent_layout)
         )
         layout.addStretch(1)
         return tab
+
+    def _documentation_subjects_card(self) -> QFrame:
+        card = self._card("soft")
+        card.setObjectName("StudentProfileDocumentationSubjectsCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(15, 12, 15, 12)
+        layout.setSpacing(8)
+        title_row = QHBoxLayout()
+        title = QLabel("Fächer für die Dokumentation")
+        set_label_style(title, "card_title")
+        self.documentation_subject_school_year = QLabel("")
+        set_label_style(self.documentation_subject_school_year, "subtle")
+        title_row.addWidget(title)
+        title_row.addStretch(1)
+        title_row.addWidget(self.documentation_subject_school_year)
+        layout.addLayout(title_row)
+
+        self.documentation_subject_inherit = QRadioButton(
+            "Globale Fachauswahl verwenden",
+            card,
+        )
+        self.documentation_subject_custom = QRadioButton(
+            "Für dieses Kind individuell festlegen",
+            card,
+        )
+        self.documentation_subject_inherit.toggled.connect(
+            self._update_documentation_subject_editability
+        )
+        self.documentation_subject_custom.toggled.connect(
+            self._update_documentation_subject_editability
+        )
+        layout.addWidget(self.documentation_subject_inherit)
+        layout.addWidget(self.documentation_subject_custom)
+
+        self.documentation_subject_options_layout = QVBoxLayout()
+        self.documentation_subject_options_layout.setContentsMargins(20, 0, 0, 0)
+        self.documentation_subject_options_layout.setSpacing(5)
+        self.documentation_subject_checkboxes: dict[str, QCheckBox] = {}
+        layout.addLayout(self.documentation_subject_options_layout)
+
+        help_label = QLabel(
+            "Diese Auswahl legt fest, welche Fächer bei diesem Kind für die "
+            "Dokumentation berücksichtigt werden. Bestehende Beobachtungen "
+            "bleiben erhalten."
+        )
+        help_label.setWordWrap(True)
+        set_label_style(help_label, "small")
+        layout.addWidget(help_label)
+
+        actions = QHBoxLayout()
+        self.documentation_subject_save_button = QPushButton("Speichern")
+        self.documentation_subject_cancel_button = QPushButton("Abbrechen")
+        configure_button(
+            self.documentation_subject_save_button,
+            "primary",
+            "Fächerauswahl für dieses Kind speichern",
+        )
+        configure_button(
+            self.documentation_subject_cancel_button,
+            "quiet",
+            "Änderungen an der Fächerauswahl verwerfen",
+        )
+        self.documentation_subject_save_button.clicked.connect(
+            self._request_documentation_subjects_save
+        )
+        self.documentation_subject_cancel_button.clicked.connect(
+            self._reset_documentation_subject_editor
+        )
+        actions.addWidget(self.documentation_subject_save_button)
+        actions.addWidget(self.documentation_subject_cancel_button)
+        actions.addStretch(1)
+        layout.addLayout(actions)
+        self.documentation_subject_feedback = QLabel("")
+        self.documentation_subject_feedback.setWordWrap(True)
+        set_label_style(self.documentation_subject_feedback, "subtle")
+        layout.addWidget(self.documentation_subject_feedback)
+        return card
+
+    def set_documentation_subjects(
+        self,
+        projection: StudentDocumentationSubjectProjectionViewModel | None,
+    ) -> None:
+        self.current_documentation_subjects = projection
+        self._reset_documentation_subject_editor()
+
+    def _reset_documentation_subject_editor(self) -> None:
+        projection = self.current_documentation_subjects
+        self._clear_layout(self.documentation_subject_options_layout)
+        self.documentation_subject_checkboxes = {}
+        if projection is None:
+            self.documentation_subject_school_year.setText("")
+            self.documentation_subject_inherit.setChecked(True)
+            self.documentation_subject_inherit.setEnabled(False)
+            self.documentation_subject_custom.setEnabled(False)
+            self.documentation_subject_save_button.setEnabled(False)
+            self.documentation_subject_cancel_button.setEnabled(False)
+            self.documentation_subject_feedback.setText("")
+            return
+        self.documentation_subject_school_year.setText(
+            projection.school_year_label
+        )
+        selected = set(projection.selected_subject_ids)
+        for subject in projection.available_subjects:
+            checkbox = QCheckBox(subject.label)
+            checkbox.setChecked(subject.subject_id in selected)
+            self.documentation_subject_checkboxes[subject.subject_id] = checkbox
+            self.documentation_subject_options_layout.addWidget(checkbox)
+        for subject in projection.retained_inactive_subjects:
+            checkbox = QCheckBox(f"{subject.label} (nicht mehr verfügbar)")
+            checkbox.setChecked(True)
+            checkbox.setEnabled(False)
+            checkbox.setAccessibleDescription(
+                "Gespeicherte historische Auswahl; bleibt unverändert erhalten."
+            )
+            self.documentation_subject_options_layout.addWidget(checkbox)
+        is_inherit = projection.mode == "inherit"
+        self.documentation_subject_inherit.setChecked(is_inherit)
+        self.documentation_subject_custom.setChecked(not is_inherit)
+        editable = not projection.is_read_only
+        self.documentation_subject_inherit.setEnabled(editable)
+        self.documentation_subject_custom.setEnabled(editable)
+        self.documentation_subject_save_button.setEnabled(editable)
+        self.documentation_subject_cancel_button.setEnabled(editable)
+        self.documentation_subject_feedback.setText(
+            (
+                "Nur lesbar"
+                if projection.is_read_only
+                else (
+                    "Die individuelle Auswahl enthält ein nicht mehr verfügbares "
+                    "Fach und bleibt unverändert. Ein Wechsel zur globalen "
+                    "Fachauswahl ist weiterhin möglich."
+                    if projection.retained_inactive_subjects
+                    else ""
+                )
+            )
+        )
+        self._update_documentation_subject_editability()
+
+    def _update_documentation_subject_editability(self) -> None:
+        projection = self.current_documentation_subjects
+        editable = bool(
+            projection is not None
+            and not projection.is_read_only
+            and self.documentation_subject_custom.isChecked()
+            and not projection.retained_inactive_subjects
+        )
+        for checkbox in self.documentation_subject_checkboxes.values():
+            checkbox.setEnabled(editable)
+        can_save = bool(
+            projection is not None
+            and not projection.is_read_only
+            and (
+                self.documentation_subject_inherit.isChecked()
+                or not projection.retained_inactive_subjects
+            )
+        )
+        self.documentation_subject_save_button.setEnabled(can_save)
+
+    def _request_documentation_subjects_save(self) -> None:
+        projection = self.current_documentation_subjects
+        if projection is None or projection.is_read_only or not self.current_student:
+            return
+        mode = (
+            "custom" if self.documentation_subject_custom.isChecked() else "inherit"
+        )
+        selected = tuple(
+            subject.subject_id
+            for subject in projection.available_subjects
+            if self.documentation_subject_checkboxes[subject.subject_id].isChecked()
+        )
+        self.documentation_subject_feedback.setText("")
+        self.documentation_subjects_save_requested.emit(
+            self.current_student.student_id,
+            projection.school_year_id,
+            mode,
+            selected,
+        )
+
+    def show_documentation_subjects_error(self, message: str) -> None:
+        self.documentation_subject_feedback.setText(message)
 
     def _orientation_card(self) -> QFrame:
         card = self._card()
@@ -1432,6 +1620,9 @@ class StudentProfileScreen(QWidget):
         competency_cockpit: StudentCompetencyCockpitViewModel | None = None,
         profile_dashboard: StudentProfileDashboardViewModel | None = None,
         report_overview: ReportOverviewViewModel | None = None,
+        documentation_subjects: (
+            StudentDocumentationSubjectProjectionViewModel | None
+        ) = None,
     ) -> None:
         """Render selected student or empty state."""
         previous_student_id = (
@@ -1468,6 +1659,7 @@ class StudentProfileScreen(QWidget):
             self.set_report_preview(None)
             self.set_report_overview(None)
             self.set_documents(())
+            self.set_documentation_subjects(None)
             self._render_profile_overview(
                 None,
                 (),
@@ -1498,6 +1690,7 @@ class StudentProfileScreen(QWidget):
         self.set_report_preview(report_preview)
         self.set_report_overview(report_overview)
         self.set_documents(documents)
+        self.set_documentation_subjects(documentation_subjects)
 
         if not should_reset_tab and 0 <= previous_tab_index < self.profile_tabs.count():
             self.profile_tabs.setCurrentIndex(previous_tab_index)

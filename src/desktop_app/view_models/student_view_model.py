@@ -315,6 +315,30 @@ class StudentProfileDashboardViewModel:
 
 
 @dataclass(frozen=True)
+class StudentDocumentationSubjectOptionViewModel:
+    """One active canonical catalog subject offered in the student profile."""
+
+    subject_id: str
+    label: str
+
+
+@dataclass(frozen=True)
+class StudentDocumentationSubjectProjectionViewModel:
+    """School-year-bound student subject configuration for deliberate editing."""
+
+    school_year_id: str
+    school_year_label: str
+    mode: str
+    available_subjects: tuple[StudentDocumentationSubjectOptionViewModel, ...]
+    selected_subject_ids: tuple[str, ...]
+    is_read_only: bool
+    retained_inactive_subjects: tuple[
+        StudentDocumentationSubjectOptionViewModel,
+        ...,
+    ] = ()
+
+
+@dataclass(frozen=True)
 class StudentProfileProjectionBundle:
     """Navigation-local composition of the existing student profile projections."""
 
@@ -325,6 +349,7 @@ class StudentProfileProjectionBundle:
     documents: tuple[StudentDocumentViewModel, ...]
     competency_cockpit: StudentCompetencyCockpitViewModel
     profile_dashboard: StudentProfileDashboardViewModel
+    documentation_subjects: StudentDocumentationSubjectProjectionViewModel
 
 
 def empty_student_profile_dashboard() -> StudentProfileDashboardViewModel:

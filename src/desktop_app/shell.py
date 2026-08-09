@@ -530,6 +530,9 @@ class AppShell(QMainWindow):
         self.student_profile_screen.competency_confirmation_requested.connect(
             self.confirm_competency_status
         )
+        self.student_profile_screen.documentation_subjects_save_requested.connect(
+            self.save_student_documentation_subjects
+        )
         self.student_profile_screen.report_requested.connect(
             self.open_learning_report_dialog
         )
@@ -1656,8 +1659,35 @@ class AppShell(QMainWindow):
             profile_projection.competency_cockpit,
             profile_projection.profile_dashboard,
             report_overview,
+            profile_projection.documentation_subjects,
         )
         self._show_screen("profile")
+
+    def save_student_documentation_subjects(
+        self,
+        student_id: str,
+        school_year_id: str,
+        mode: str,
+        subject_ids: tuple[str, ...],
+    ) -> None:
+        """Save and immediately reload all student-profile projections."""
+        try:
+            self.adapter.save_student_documentation_subjects(
+                student_id,
+                school_year_id,
+                mode,
+                subject_ids,
+            )
+        except (RuntimeError, ValueError):
+            self.student_profile_screen.show_documentation_subjects_error(
+                "Die Fächerauswahl konnte nicht gespeichert werden. "
+                "Die bisherige Auswahl bleibt erhalten."
+            )
+            return
+        self.show_student_profile(student_id)
+        self.status_label.setText(
+            "Fächer für die Dokumentation wurden gespeichert."
+        )
 
     def open_new_student_dialog(self) -> None:
         """Open the existing new-student dialog and refresh after success."""

@@ -2452,12 +2452,16 @@ Regel: Die Speicherung ersetzt die vollstaendige Auswahl in `documentation_subje
 
 ## Schülerbezogene Dokumentationsfachkonfiguration pflegen
 
-Start: Ein Qt-freier Application-Aufrufer übergibt ausdrücklich
-`student_id`, `school_year_id` und entweder den Modus oder die vollständige
-Custom-Fachmenge. Eine UI ist in diesem Paket nicht angebunden.
+Start: Im Schülerprofil wählt Laura für das angezeigte aktuelle Schuljahr
+bewusst `Globale Fachauswahl verwenden` oder `Für dieses Kind individuell
+festlegen` und löst `Speichern` aus. Das Widget hält nur den lokalen Draft und
+übergibt ausdrücklich `student_id`, `school_year_id`, Modus und die
+vollständige Custom-Fachmenge an den Desktop-Adapter.
 
 ```text
-StudentDocumentationSubjectService
+StudentProfileScreen
+-> StudentDesktopAdapter
+-> StudentDocumentationSubjectService
 -> BEGIN IMMEDIATE
 -> SQLiteStudentDocumentationSubjectRepository
 -> student_documentation_subject_profiles
@@ -2484,6 +2488,15 @@ Lifecycle:
 8. Später inaktive gespeicherte Fächer und geschlossene Schuljahre bleiben
    lesbar. Beobachtungen, Ratings, Bestätigungen, Kompetenzen, Berichte und LEG
    werden weder verändert noch gelöscht oder umgedeutet.
+   Ein später inaktives Custom-Fach wird im Profil mit seinem kanonischen
+   Kataloglabel read-only kenntlich gemacht und bei einem weiteren
+   Custom-Replace nicht still entfernt; der bewusste Wechsel auf `inherit`
+   bleibt möglich.
+9. Erst nach erfolgreichem Commit lädt die Shell das vollständige
+   Schülerprofil-Bundle neu. Kompetenz-Cockpit, Dokumentationsstatus,
+   Profilring und `Noch nicht dokumentiert` erhalten dadurch ohne App-Neustart
+   dieselbe effektive Fachmenge; bei Fehler bleibt der bisherige Bestand und
+   der lokale Draft erhalten.
 
 Es gibt keine Ableitung aus Stammgruppe, Kurs, Klassenstufe,
 Beobachtungsmenge oder Kompetenzstand. Der Pilotstandard `2026/27` wird nur

@@ -955,6 +955,8 @@ Liest:
 - `data_subjects`
 - `student_competency_confirmations`
 - `documentation_subject_settings`
+- `student_documentation_subject_profiles`
+- `student_documentation_subject_selections`
 - SQLite `documents` / `data_media`
 
 Schreibt:
@@ -976,6 +978,9 @@ UI-Projektionen:
 - Beobachtungsverlauf
 - lokale Beobachtungsfilter fuer Fach, Bewertung und Suche
 - Dokumentationsstand aus aktivem Kompetenzkatalog, aktiven Beobachtungen, bestaetigten Kompetenzstaenden und dokumentationsrelevanten Faechern
+- schuljahresbezogene Fachkonfiguration mit `inherit` oder exakter
+  individueller `custom`-Auswahl aus der
+  `StudentDocumentationSubjectProjectionViewModel`
 - Variante-A-Arbeitsprofil als reine `StudentProfileDashboardViewModel`-Komposition aus der kanonischen Kompetenzstatus- und Dokumentationsstatusprojektion: Profilkopf mit Dokumentationsring, Orientierungskarte, Kompetenzkarte und neutraler Karte `Noch nicht dokumentiert`
 - Kompetenz-Cockpit aus der kanonischen Sprint-6B-Statusprojektion mit lokalen Fach- und Dokumentationsfiltern fuer aktive Zeilen sowie separat historischen Kompetenzen
 - Berichtsvorschau aus Kompetenzstaenden und Beobachtungsbelegen
@@ -989,7 +994,9 @@ Regel:
 
 Das Schuelerprofil zeigt Daten eines Schuelers und startet freigegebene
 Schreibprozesse. Es schreibt selbst keine fachlichen Daten und greift nicht
-direkt auf SQLite zu. Der aktuelle Profilkopf zeigt bei `ENROLLED` die zentral
+direkt auf SQLite zu. Die bewusste Fachauswahl läuft ausschließlich über
+`StudentDesktopAdapter` und `StudentDocumentationSubjectService`; Abbrechen
+verwirft nur den lokalen Draft. Der aktuelle Profilkopf zeigt bei `ENROLLED` die zentral
 aufgelöste Stammgruppe und den Kurs, bei `EXITED` den neutralen Zustand
 `Im aktuellen Schuljahr ausgeschieden`, bei `NO_ASSIGNMENT` `Keine aktuelle
 Zuordnung` und bei `STUDENT_ARCHIVED` einen neutralen nicht aktuellen Zustand.
@@ -1023,7 +1030,8 @@ dokumentiert/gesamt, ohne einen zweiten Kompetenzstatus zu berechnen. Die
 lokalen Cockpit-Filter beschraenken nur sichtbare aktive Zeilen; sie
 kombinieren Fach mit dem kanonischen Dokumentationszustand, mutieren keine
 Daten und behalten die Fortschrittswerte aus dem vollstaendigen aktiven
-Zielbestand. Alle Cockpit-Ebenen starten geschlossen; der Aufklappzustand
+Zielbestand innerhalb der effektiven Fachmenge. `Alle Kompetenzen` erweitert
+nur die Klassenstufen, nicht die Fachmenge. Alle Cockpit-Ebenen starten geschlossen; der Aufklappzustand
 bleibt lokal je geoeffnetem Schueler und wird beim Filtern fuer weiterhin
 sichtbare Ebenen erhalten. Historische Zeilen werden separat unter
 `Historisch dokumentiert` dargestellt und nicht mit aktiven Zielen gefiltert.
@@ -1032,7 +1040,8 @@ Kompetenzstand-Vorschlaege werden aus aktiven Beobachtungen und SQLite
 Entscheidungen und liegen separat in `student_competency_confirmations`. Der
 Dokumentationsstand ist eine abgeleitete Auswertung aus aktivem
 `current`-Kompetenzkatalog, aktiven Beobachtungen, bestaetigten
-Kompetenzstaenden und `documentation_subject_settings`; er zaehlt konkrete
+Kompetenzstaenden und der über `StudentDocumentationSubjectService`
+aufgelösten Schüler-/Schuljahrfachmenge; er zaehlt konkrete
 Kompetenz-IDs je Fach und Kompetenzbereich, speichert nichts und ist keine
 Bewertung. Nicht dokumentationsrelevante Faecher zaehlen nicht als offen,
 bleiben aber in Beobachtungsverlauf, Kompetenz-Cockpit und Berichtsvorschau

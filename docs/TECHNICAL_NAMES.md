@@ -64,6 +64,10 @@ lokal implementiert.
 | `StudentDocumentationSubjectService` | Qt-freie Read-/Write-Transaktionsgrenze für Modus, vollständigen Replace und Resolver | Application Student Subjects |
 | `effective_documentation_subjects` | deterministische effektive Fachmenge aus globalem Default oder exakter Custom-Auswahl | Application Student Subjects |
 | `DocumentationSubjectWriteStatus` | ausschließlich `changed` oder mutationsfreies `no_change` | Core Student Subject Domain |
+| `StudentDocumentationSubjectOptionViewModel` | aktives kanonisches Katalogfach mit stabiler `subject_id` und sichtbarem Label für den Profil-Editor | Desktop Student ViewModel |
+| `StudentDocumentationSubjectProjectionViewModel` | schuljahresgebundene Profilprojektion mit Modus, aktivem Katalog, effektiver Auswahl und Read-only-Zustand | Desktop Student ViewModel |
+| `StudentDesktopAdapter.save_student_documentation_subjects` | bewusste vollständige `inherit`-/`custom`-Speichergrenze zum bestehenden Application-Service | Desktop Student Adapter |
+| `StudentProfileScreen.documentation_subjects_save_requested` | UI-Signal mit stabiler Schüler-/Schuljahridentität, Modus und vollständigem Fach-ID-Draft | Desktop Student Profile |
 
 Nicht mehr registrierte Produktnamen sind
 `SchoolYearV2ToV3MigrationEngine`, `VerifiedBackupEvidence`,

@@ -4,7 +4,8 @@
 
 **Status:** Datenmodell, Resolver, frischer V4-First-Run sowie V4-exklusive
 Backup-, Restore-Staging-, Worker-, Recovery-, Rollback- und Live-Restore-
-Kompatibilität technisch implementiert. UI- und Projektionsintegration bleiben
+Kompatibilität technisch implementiert. Die erste Schülerprofil- und
+Projektionsintegration ist umgesetzt; weitere Produktflächen bleiben
 Folgepakete.
 
 - [x] Final V4 mit `user_version = 4` und exaktem Fingerprint registrieren.
@@ -23,8 +24,11 @@ Folgepakete.
   gegen die keyed Final-V4-Runtime prüfen.
 - [x] Beobachtungen, Kompetenzen, Bestätigungen und Historien unverändert
   erhalten.
-- [ ] Schülerprofil, Beobachtung, Cockpit, Dashboard, Berichte und LEG an den
-  Resolver integrieren.
+- [x] Schülerprofil, Kompetenz-Cockpit, Dokumentationsstatus, Profilring und
+  `Noch nicht dokumentiert` an den Resolver anbinden; bewusste
+  `inherit`-/`custom`-Speicherung und unmittelbaren Profilrefresh ergänzen.
+- [ ] Beobachtung, Dashboard, Berichte und LEG in getrennten Folgepaketen an
+  den Resolver integrieren.
 
 ## Cipher-Produktkomposition - frische Final-V4-Installation
 
