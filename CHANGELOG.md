@@ -12,6 +12,9 @@
   weder ZIP-v1-Fallback noch Klartextmigration oder eine Änderung der
   Recoveryarchitektur.
 
+- Manuell gemeldetes Schließen des LEG beim Phasenwechsel aktuell technisch
+  nicht reproduzierbar; erneute Prüfung im nächsten Pilotbuild erforderlich.
+
 - Der vorhandene synthetische Testdatengenerator kann jetzt einen vollständig
   neuen, systemtemporären Final-V4-Cipher-Testroot über die produktiven
   Application-/Adapterpfade befüllen. Er überschreibt keine Datenbank und

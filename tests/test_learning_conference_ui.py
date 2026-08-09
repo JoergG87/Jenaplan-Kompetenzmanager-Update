@@ -13,7 +13,15 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtCore import QEvent, Qt, QTimer
 from PySide6.QtGui import QAccessible
 from PySide6.QtTest import QSignalSpy, QTest
-from PySide6.QtWidgets import QApplication, QCheckBox, QLabel, QPushButton, QTextEdit, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QDialog,
+    QLabel,
+    QPushButton,
+    QTextEdit,
+    QWidget,
+)
 
 from src.desktop_app import shell
 from src.desktop_app.dialogs.learning_conference_dialog import (
@@ -408,6 +416,41 @@ class LearningConferenceUiTest(unittest.TestCase):
             "Bleibt im Entwurf erhalten",
         )
         self.assertIsNone(dialog.phase_stack.graphicsEffect())
+        dialog._close_choice_provider = lambda _parent: "discard"
+        dialog.close()
+
+    def test_phase_button_click_keeps_dialog_and_draft_open_without_side_effects(self) -> None:
+        dialog = LearningConferenceDialog(self.preparation)
+        dialog.show()
+        self.app.processEvents()
+        dialog.text_inputs["conversation_entry_text"].setPlainText(
+            "Bleibt beim Kapitelwechsel erhalten"
+        )
+        accepted = QSignalSpy(dialog.accepted)
+        rejected = QSignalSpy(dialog.rejected)
+        finished = QSignalSpy(dialog.finished)
+        saved = QSignalSpy(dialog.save_requested)
+        completed = QSignalSpy(dialog.completion_requested)
+
+        QTest.mouseClick(
+            dialog.phase_navigation.button_for("strengths"),
+            Qt.MouseButton.LeftButton,
+        )
+        self.app.processEvents()
+
+        self.assertTrue(dialog.isVisible())
+        self.assertEqual(dialog.result(), QDialog.DialogCode.Rejected)
+        self.assertEqual(dialog.active_phase_key, "strengths")
+        self.assertEqual(
+            dialog.text_inputs["conversation_entry_text"].toPlainText(),
+            "Bleibt beim Kapitelwechsel erhalten",
+        )
+        self.assertEqual(accepted.count(), 0)
+        self.assertEqual(rejected.count(), 0)
+        self.assertEqual(finished.count(), 0)
+        self.assertEqual(saved.count(), 0)
+        self.assertEqual(completed.count(), 0)
+
         dialog._close_choice_provider = lambda _parent: "discard"
         dialog.close()
 
