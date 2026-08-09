@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Eine neue Qt-freie `Final-V3-Dokumentcontainer-Runtime` ergänzt unter dem
+  bestehenden doppelt markergebundenen SQLCipher-Gate eine eigene exakt
+  versionierte SQLCipher-Companion-Datenbank und einen verwalteten
+  Containerordner. Jede Dokumentgeneration erhält einen zufälligen
+  Document-Key und eine opaque Storage-ID; vollständige Containerverifikation
+  geht `PREPARED` und der atomaren `ACTIVE`-/`RETAINED`-Umschaltung voraus.
+  Reads streamen ausschließlich an injizierte Consumer und melden Erfolg erst
+  nach Final-, EOF-, Größen- und Hashprüfung. Sieben echte Prozessabbrüche im
+  transaktionalen Runtime-Modell, 20 Austauschzyklen sowie Manipulations-,
+  Kontext-, Gate- und Klartextprüfungen belegen Restart oder fail-closed
+  Blockade; die exakte SQLCipher-4.17-Komposition bleibt ein eigener Gate-Test.
+  UI, Anhänge, Berichts-/LEG-PDF,
+  Export, Vorschau, Backup/Restore, Migration und Produktstartup bleiben
+  unverändert.
+
 - Eine zusätzliche, standardmäßig inaktive und zweifach markergebundene
   `Final-V3-SQLCipher-Runtime` verbindet den vorhandenen zufälligen
   Database-Key mit dem exakten lokalen SQLCipher-4.17-/CommonCrypto-Provider.

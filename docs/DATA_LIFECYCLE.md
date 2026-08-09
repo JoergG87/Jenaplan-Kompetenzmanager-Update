@@ -868,6 +868,40 @@ Alle fünf Crashgrenzen werden in getrennten Prozessen durch abruptes
 `os._exit` geprüft; ein kontrollierter Exception-Rollback gilt nicht als
 Crashnachweis.
 
+## Final-V3-Dokumentcontainer-Runtime - Generation, Pointer und Restart
+
+Die Companion-DB darf nur nach vollständiger Öffnung der vorhandenen
+DMK-/Database-Key- und Final-V3-SQLCipher-Runtime angelegt oder geöffnet
+werden. Eine fehlende Companion-DB entsteht nur mit eigener expliziter
+Neuanlagezulassung; ein vorhandener Teilbestand wird nie repariert oder still
+ersetzt. Restart prüft Cipher/Schema/Context, Pointerinvarianten, das vollständige
+Storageinventar und jeden registrierten Container.
+
+1. `prepare` bindet die reguläre Quelle ohne Symlink, erzeugt zufällige
+   Storage-/Container-/Document-Key-Identitäten und schreibt no-clobber genau
+   `<storage_id>.jkmedoc`.
+2. Writer und Verifier prüfen Envelope, Kontext, Manifest, Reihenfolge,
+   Chunkgrößen, Final-Tag, physisches EOF sowie Klartext-/Containergröße und
+   SHA-256. Erst danach entsteht in SQLCipher `PREPARED`.
+3. `activate` verifiziert die vorbereitete Generation erneut. Innerhalb
+   `BEGIN IMMEDIATE` wechselt der Pointer auf die neue Generation; die neue
+   Generation wird `ACTIVE`, der Vorgänger `RETAINED`. Jeder Fehler vor Commit
+   rollt vollständig auf den alten aktiven Pointer zurück.
+4. `read` lädt nur den SQLCipher-Pointer, verifiziert den Container einmal
+   vollständig vor Consumerstart und streamt ihn ein zweites Mal. `finish`
+   erfolgt erst nach Final-/EOF-/Größen-/Hashprüfung; sonst erhält der Consumer
+   `abort`.
+5. `replace` ist ausschließlich `prepare` plus `activate`. Die alte aktive
+   Generation bleibt bei jedem Fehler lesbar; kein Schritt löscht Container.
+
+Crash vor Erzeugung hinterlässt keinen Intent. Crash während Write, nach Write
+vor Verifikation oder nach Verifikation vor `PREPARED` erzeugt einen
+unregistrierten Bestand und blockiert fail-closed. Crash nach `PREPARED`,
+während Pointerwechsel oder nach transaktionaler Aktivierung vor
+Retained-Markierung rollt auf `ACTIVE` plus exakt passende `PREPARED`-
+Generation zurück und ist nach erneuter Vollverifikation fortsetzbar. Es gibt
+keine stille neue Storage-ID, kein Überschreiben und kein Klartextfallback.
+
 ## Security Sprint 12 - interner Build- und Pakettest-Lifecycle
 
 1. Branch, Referenz-HEAD, Index, gemischten Worktree, geschützte Exceldatei,

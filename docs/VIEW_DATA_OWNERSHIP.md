@@ -266,6 +266,20 @@ Kein Widget, ViewModel oder Adapter entscheidet über Gate, Schlüssel,
 Neuanlage, Cipher- oder Schemakompatibilität. Es entsteht keine Produkt-
 Composition-Root, Shellverdrahtung oder sichtbare Recoveryführung.
 
+## Final-V3-Dokumentcontainer-Runtime - technische Ownership ohne View
+
+`FinalV3DocumentConnectionFactory` besitzt ausschließlich den pfad- und
+Database-Key-gebundenen Companion-DB-Open. `FinalV3DocumentSchemaV1` besitzt
+Schema-, Context- und Pointerprüfung. `FinalV3DocumentRuntime` besitzt
+Containerinventar sowie `prepare`, `activate`, `read` und `replace`; der
+injizierte Consumer besitzt nur vorläufig empfangene Klartextchunks und muss
+`abort` respektieren.
+
+Widgets, ViewModels, Desktop-Adapter, fachliche Dokumentrepositories,
+Beobachtungen, Schülerprofil, Bericht/LEG und PDF-Services sind keine Quelle
+oder Senke dieser Runtime. Es gibt keine Export-, Preview-, Backup-, Restore-,
+Migrations-, GC- oder Produktstartup-Ownership.
+
 ## Security Sprint 11 - Integration ohne neue View
 
 `SecurityIntegrationGate` und `SecurityIntegrationOrchestrator` besitzen die

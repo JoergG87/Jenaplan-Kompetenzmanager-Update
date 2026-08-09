@@ -306,6 +306,20 @@ bis zum realen Test des gebauten Bundles offen.
 | `final-v3-sqlcipher-runtime-v1/final-v3.sqlcipher` | feste ausschließlich technische SQLCipher-4.17-Testdatenbank mit exaktem Final-V3 | Security Test Runtime |
 | `final_v3_sqlcipher_runtime_worker.py` | separater Anwendungssmoke- und Abrissprozess für keyed Restart, stabile Fach-IDs sowie fünf echte `os._exit`-Crashgrenzen | Security Test QA |
 
+## Final-V3-Dokumentcontainer-Runtime - interne technische Namen
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `FinalV3DocumentSchemaV1` | Exaktes SQLCipher-Companion-Schema v1 für technische Dokumentpointer und unveränderliche Generationen; bindet Installation und Database-Context | Document Persistence / Security Runtime |
+| `FinalV3DocumentRuntime` | Qt-freie Operationen `prepare`, `activate`, `read` und `replace` ohne Export, Vorschau oder Produktintegration | Application / Documents |
+| `FinalV3DocumentConnectionFactory` | Eigene strikt pfad- und Database-Key-gebundene SQLCipher-Factory für `documents-v1.sqlcipher` | Core Persistence / Security Runtime |
+| `FinalV3DocumentRuntimePaths` | Feste Rollen für Companion-DB, kontrollierte Quelle und verwalteten Container-Storage im Final-V3-Testroot | Security Runtime |
+| `FinalV3DocumentGeneration` | Sanitierte technische Projektion aus Document-/Key-Generation, opaque Storage-ID, Envelope-/Formatnachweisen, Größen, Hash, MIME und Lifecycle | Document Persistence |
+| `FINAL_V3_DOCUMENT_SCHEMA_FINGERPRINT` | Vollständige registrierte Strukturidentität des Companion-Schemas v1 | Core Database Compatibility / Security Runtime |
+| `final_v3_documents.active_generation` | Atomarer SQLCipher-Pointer auf genau eine aktive Generation eines bereits aktivierten technischen Dokuments | Document Persistence |
+| `final_v3_document_generations` | Historische Generationen mit `PREPARED`, `ACTIVE`, `RETAINED` oder `QUARANTINED`; kein physisches GC | Document Persistence |
+| `final_v3_document_runtime_worker.py` | Echter `os._exit`-Nachweis für sieben Container-/Persistenz-/Pointergrenzen im transaktionalen Runtime-Modell; exakte SQLCipher-Komposition separat | Security Test QA |
+
 ## Security Sprint 12 - Release-Hardening und Paketabnahme
 
 | Technischer Name | Bedeutung | Eigentümer |

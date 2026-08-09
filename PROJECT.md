@@ -374,6 +374,28 @@ Der technische Anwendungssmoke reicht bis zu vorhandenen Repositories,
 ViewModel-Projektion. Es gibt keine Shell-, UI-, Pilot-, Dokument-,
 Backup/Restore-, Support-Reset-, Build-, DMG- oder Releaseaktivierung.
 
+## Final-V3-Dokumentcontainer-Runtime - intern gegatete technische Grenze
+
+Unter exakt demselben DMK-/Final-V3-SQLCipher-Gate kann eine separate
+`documents-v1.sqlcipher`-Companion-Datenbank geöffnet werden. Sie besitzt eine
+eigene exakte Schemaidentität und ist an dieselbe Installation, denselben
+Database-Context und denselben vorhandenen Database-Key gebunden. Dadurch
+bleiben `final-v3.sqlcipher`, `user_version=3` und der vollständige
+Final-V3-Hauptfingerprint unverändert.
+
+Der verwaltete Storage liegt ausschließlich im privaten Runtime-Root und
+akzeptiert als Containerdateien nur `<opaque-storage-id>.jkmedoc`. Der
+Qt-freie Ablauf erzeugt pro Generation einen zufälligen Document-Key, schreibt
+und verifiziert den XChaCha20-Poly1305-Container vollständig, persistiert erst
+danach `PREPARED` und schaltet den aktiven SQLCipher-Pointer atomar um. Der
+Reader gibt Klartext nur an einen injizierten Consumer und meldet erst nach
+vollständiger zweiter Final-/EOF-/Hashprüfung Erfolg. Alte Generationen bleiben
+`RETAINED`; physisches Löschen findet nicht statt.
+
+Die Runtime bindet weder `documents`, Beobachtungen, Schülerprofil, Berichte
+noch LEG/PDF an. Es gibt keinen Export, OS-Preview, Backup/Restore, Migration,
+Produktstartup, Build oder Releasepfad.
+
 ## Security Sprint 11 - kontrollierte Integration hinter inaktivem Gate
 
 Security Sprint 11 verbindet die isolierten Foundations aus Sprint 8 bis 10

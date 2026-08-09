@@ -32,6 +32,14 @@ erzeugt werden. Solange produktive Leser noch V2-Mitgliedschaftsfelder
 erwarten, darf das erkannte finale Schema die normale Shell nicht freigeben.
 Der Zwischenzustand muss dies ohne V2-Bootstrap-Sprache ausdrücklich benennen.
 
+Eine ausschließlich intern gegatete technische SQLCipher-Companion-Datenbank
+darf das Final-V3-Hauptschema nicht erweitern oder dessen exakten Fingerprint
+relativieren. Sie benötigt eine eigene feste Schemaidentität, dieselbe stabile
+Installations-/Database-Context-Bindung und eine explizite Neuanlageautorität.
+Verschlüsselte Dokumentgenerationen werden vor jedem Pointerwrite vollständig
+verifiziert; alte aktive Generationen bleiben bei Fehlern nutzbar und werden
+nicht automatisch physisch gelöscht. Es gibt keinen Klartextfallback.
+
 `school_year_transitions` dokumentiert nur echte spätere
 Schuljahreswechsel. Ausgangs- und Zielschuljahr existieren dabei fachlich und
 technisch; `from_school_year_id` ist niemals leer. Eine Initialanlage ist

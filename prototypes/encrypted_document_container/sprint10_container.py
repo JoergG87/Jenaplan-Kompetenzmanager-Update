@@ -72,11 +72,11 @@ EXPORTS_DIRECTORY = "exports"
 _UINT32 = struct.Struct(">I")
 _FILENAME_PATTERN = re.compile(
     r"\A([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-"
-    r"[89ab][0-9a-f]{3}-[0-9a-f]{12})\.w([1-9][0-9]*)\.jkmedoc\Z"
+    r"[89ab][0-9a-f]{3}-[0-9a-f]{12})(?:\.w([1-9][0-9]*))?\.jkmedoc\Z"
 )
 _RETAINED_PATTERN = re.compile(
     r"\A\.([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-"
-    r"[89ab][0-9a-f]{3}-[0-9a-f]{12})\.w([1-9][0-9]*)\.jkmedoc\."
+    r"[89ab][0-9a-f]{3}-[0-9a-f]{12})(?:\.w([1-9][0-9]*))?\.jkmedoc\."
     r"([0-9a-f-]{36})\.retained\Z"
 )
 _SECRETSTREAM_OVERHEAD = nacl.bindings.crypto_secretstream_xchacha20poly1305_ABYTES
@@ -233,6 +233,11 @@ class SyntheticEncryptedDocumentServiceV1:
         required_source_prefix: bytes | None = (
             SYNTHETIC_DOCUMENT_SOURCE_PREFIX
         ),
+        plain_storage_names: bool = False,
+        retain_published_hardlink_evidence: bool = True,
+        source_root_override: Path | None = None,
+        direct_visible_write: bool = False,
+        require_export_layout: bool = True,
     ) -> None:
         self._random = random_source
         self._clock = clock
@@ -247,6 +252,15 @@ class SyntheticEncryptedDocumentServiceV1:
                 "document_source_prefix_invalid"
             )
         self._required_source_prefix = required_source_prefix
+        self._plain_storage_names = bool(plain_storage_names)
+        self._retain_published_hardlink_evidence = bool(
+            retain_published_hardlink_evidence
+        )
+        self._source_root_override = (
+            None if source_root_override is None else Path(source_root_override)
+        )
+        self._direct_visible_write = bool(direct_visible_write)
+        self._require_export_layout = bool(require_export_layout)
 
     def create(
         self,
@@ -258,14 +272,21 @@ class SyntheticEncryptedDocumentServiceV1:
         context: DocumentContainerContextV1,
         document_key_generation: int = 1,
     ) -> EncryptedDocumentVerificationResult:
-        root, source_root, storage_root, _export_root = _validated_layout(test_root)
-        layout_identity = _capture_layout_identity(
-            root, source_root, storage_root, _export_root
+        root, source_root, storage_root, _export_root = self._layout(
+            test_root, require_source=True
         )
+        identity_paths = [root, source_root, storage_root]
+        if self._require_export_layout:
+            identity_paths.append(_export_root)
+        layout_identity = _capture_layout_identity(*identity_paths)
         _validate_uuid(storage_id, "document_storage_id_invalid")
         _positive(document_key_generation, "document_key_generation_invalid")
         source_name = _safe_leaf(source.source_name, "document_source_name_invalid")
-        storage_name = _container_filename(storage_id, 1)
+        storage_name = _container_filename(
+            storage_id,
+            1,
+            include_rewrap_revision=not self._plain_storage_names,
+        )
         _require_absent(storage_root / storage_name, "document_target_exists")
         bound = _bind_source(
             source_root,
@@ -349,9 +370,12 @@ class SyntheticEncryptedDocumentServiceV1:
                 # Validate every source-derived metadata value before creating
                 # even the hidden retained container.
                 manifest.to_bytes()
-                retained_name = (
-                    f".{storage_name}.{self._uuid('document_run_id_invalid')}.retained"
-                )
+                retained_name = storage_name
+                if not self._direct_visible_write:
+                    retained_name = (
+                        f".{storage_name}."
+                        f"{self._uuid('document_run_id_invalid')}.retained"
+                    )
                 retained_path = storage_root / retained_name
                 self._write_container(
                     storage_root=storage_root,
@@ -378,9 +402,10 @@ class SyntheticEncryptedDocumentServiceV1:
                 raise EncryptedDocumentError("document_self_verification_failed")
             self._fault("writer_after_preverify")
             _require_layout_identity(layout_identity)
-            _publish_hardlink(storage_root, retained_name, storage_name)
-            _fsync_directory(storage_root, "document_directory_fsync_failed")
-            self._fault("writer_after_publish")
+            if not self._direct_visible_write:
+                _publish_hardlink(storage_root, retained_name, storage_name)
+                _fsync_directory(storage_root, "document_directory_fsync_failed")
+                self._fault("writer_after_publish")
             result = self.verify(
                 test_root=root,
                 container=storage_root / storage_name,
@@ -391,9 +416,25 @@ class SyntheticEncryptedDocumentServiceV1:
             if result.manifest != manifest:
                 raise EncryptedDocumentError("document_self_verification_failed")
             self._fault("writer_after_published_verify")
+            if (
+                not self._direct_visible_write
+                and not self._retain_published_hardlink_evidence
+            ):
+                try:
+                    os.unlink(retained_path)
+                except OSError:
+                    raise EncryptedDocumentError(
+                        "document_retained_cleanup_failed"
+                    ) from None
+                _fsync_directory(
+                    storage_root, "document_directory_fsync_failed"
+                )
+                retained_path = None
             return EncryptedDocumentVerificationResult(
                 container_path=result.container_path,
-                retained_path=retained_path,
+                retained_path=(
+                    None if self._direct_visible_write else retained_path
+                ),
                 header=result.header,
                 manifest=result.manifest,
                 container_size=result.container_size,
@@ -412,7 +453,7 @@ class SyntheticEncryptedDocumentServiceV1:
     def inspect_header(
         self, *, test_root: Path, container: Path
     ) -> DocumentContainerHeaderV1:
-        _root, _source_root, storage_root, _export_root = _validated_layout(test_root)
+        _root, _source_root, storage_root, _export_root = self._layout(test_root)
         storage_identity = _directory_identity(storage_root)
         name = _validated_storage_child(storage_root, container, allow_hidden=True)
         fd, _identity = _open_regular_at(storage_root, name)
@@ -447,7 +488,7 @@ class SyntheticEncryptedDocumentServiceV1:
         context: DocumentContainerContextV1,
         expected_storage_id: str,
     ) -> EncryptedDocumentVerificationResult:
-        root, _source_root, storage_root, _export_root = _validated_layout(test_root)
+        root, _source_root, storage_root, _export_root = self._layout(test_root)
         name = _validated_storage_child(storage_root, container, allow_hidden=True)
         return self._consume(
             root=root,
@@ -476,7 +517,7 @@ class SyntheticEncryptedDocumentServiceV1:
             context=context,
             expected_storage_id=expected_storage_id,
         )
-        root, _source_root, storage_root, _export_root = _validated_layout(test_root)
+        root, _source_root, storage_root, _export_root = self._layout(test_root)
         name = _validated_storage_child(storage_root, container, allow_hidden=True)
         try:
             consumer.start(first.manifest)
@@ -510,7 +551,9 @@ class SyntheticEncryptedDocumentServiceV1:
         context: DocumentContainerContextV1,
         expected_storage_id: str,
     ) -> EncryptedDocumentExportResult:
-        root, _source_root, _storage_root, export_root = _validated_layout(test_root)
+        if not self._require_export_layout:
+            raise EncryptedDocumentError("document_export_disabled")
+        root, _source_root, _storage_root, export_root = self._layout(test_root)
         layout_identity = _capture_layout_identity(
             root, _source_root, _storage_root, export_root
         )
@@ -596,7 +639,7 @@ class SyntheticEncryptedDocumentServiceV1:
         context: DocumentContainerContextV1,
         expected_storage_id: str,
     ) -> EncryptedDocumentVerificationResult:
-        root, _source_root, storage_root, _export_root = _validated_layout(test_root)
+        root, _source_root, storage_root, _export_root = self._layout(test_root)
         layout_identity = _capture_layout_identity(
             root, _source_root, storage_root, _export_root
         )
@@ -773,7 +816,7 @@ class SyntheticEncryptedDocumentServiceV1:
         verifications: tuple[EncryptedDocumentVerificationResult, ...] = (),
         gc_candidates: frozenset[str] = frozenset(),
     ) -> tuple[DocumentStorageInventoryItem, ...]:
-        _root, _source_root, storage_root, _export_root = _validated_layout(test_root)
+        _root, _source_root, storage_root, _export_root = self._layout(test_root)
         evidence: dict[str, EncryptedDocumentVerificationResult] = {}
         for verification in verifications:
             evidence[verification.container_path.name] = verification
@@ -1136,8 +1179,26 @@ class SyntheticEncryptedDocumentServiceV1:
         _validate_uuid(text, code)
         return text
 
+    def _layout(
+        self, test_root: Path, *, require_source: bool = False
+    ) -> tuple[Path, Path, Path, Path]:
+        root, source_root, storage_root, export_root = _validated_layout(
+            test_root,
+            require_export_layout=self._require_export_layout,
+        )
+        if require_source and self._source_root_override is not None:
+            source_root = self._source_root_override
+            if not source_root.is_absolute():
+                raise EncryptedDocumentError("document_source_root_invalid")
+            _validate_private_directory(
+                source_root, "document_source_root_invalid"
+            )
+        return root, source_root, storage_root, export_root
 
-def _validated_layout(test_root: Path) -> tuple[Path, Path, Path, Path]:
+
+def _validated_layout(
+    test_root: Path, *, require_export_layout: bool = True
+) -> tuple[Path, Path, Path, Path]:
     root = Path(test_root)
     if not root.is_absolute():
         raise EncryptedDocumentError("document_test_root_invalid")
@@ -1150,18 +1211,22 @@ def _validated_layout(test_root: Path) -> tuple[Path, Path, Path, Path]:
     source_root = root / SOURCES_DIRECTORY
     storage_root = root / STORAGE_DIRECTORY
     export_root = root / EXPORTS_DIRECTORY
-    for path in (source_root, storage_root, export_root):
+    required_directories = [source_root, storage_root]
+    if require_export_layout:
+        required_directories.append(export_root)
+    for path in required_directories:
         _validate_private_directory(path, "document_test_layout_invalid")
     _validate_marker(
         storage_root / SYNTHETIC_DOCUMENT_STORAGE_MARKER,
         SYNTHETIC_DOCUMENT_STORAGE_MARKER_BYTES,
         "document_storage_marker_invalid",
     )
-    _validate_marker(
-        export_root / SYNTHETIC_DOCUMENT_EXPORT_MARKER,
-        SYNTHETIC_DOCUMENT_EXPORT_MARKER_BYTES,
-        "document_export_marker_invalid",
-    )
+    if require_export_layout:
+        _validate_marker(
+            export_root / SYNTHETIC_DOCUMENT_EXPORT_MARKER,
+            SYNTHETIC_DOCUMENT_EXPORT_MARKER_BYTES,
+            "document_export_marker_invalid",
+        )
     return root, source_root, storage_root, export_root
 
 
@@ -1189,14 +1254,11 @@ def _directory_identity(path: Path) -> tuple[Path, int, int]:
 
 
 def _capture_layout_identity(
-    root: Path,
-    source_root: Path,
-    storage_root: Path,
-    export_root: Path,
+    *paths: Path,
 ) -> tuple[tuple[Path, int, int], ...]:
     return tuple(
         _directory_identity(path)
-        for path in (root, source_root, storage_root, export_root)
+        for path in paths
     )
 
 
@@ -1355,10 +1417,17 @@ def _safe_leaf(value: object, code: str) -> str:
     return value
 
 
-def _container_filename(storage_id: str, rewrap_revision: int) -> str:
+def _container_filename(
+    storage_id: str,
+    rewrap_revision: int,
+    *,
+    include_rewrap_revision: bool = True,
+) -> str:
     _validate_uuid(storage_id, "document_storage_id_invalid")
     _positive(rewrap_revision, "document_rewrap_revision_invalid")
-    return f"{storage_id}.w{rewrap_revision}{DOCUMENT_CONTAINER_EXTENSION}"
+    if include_rewrap_revision:
+        return f"{storage_id}.w{rewrap_revision}{DOCUMENT_CONTAINER_EXTENSION}"
+    return f"{storage_id}{DOCUMENT_CONTAINER_EXTENSION}"
 
 
 def _find_retained_hardlink(

@@ -285,6 +285,15 @@ Recoveryaktionen. Die vorhandenen Desktop-Adapter und ViewModels werden nur
 im markergebundenen Anwendungssmoke mit der verifizierten `SQLiteDatabase`
 komponiert; ihre sichtbaren Fachverträge bleiben unverändert.
 
+## Final-V3-Dokumentcontainer-Runtime - keine UI-Projektion
+
+Document-/Storage-/Key-IDs, Generationen, Envelope-Revision, Containerformat,
+Größen, Hashes, MIME, Lifecycle, Gate-, Schema-, Context-, Pointer- und
+Crashzustände werden nicht in PySide projiziert. Es entstehen keine Felder,
+Dialoge, Aktionen, Anhänge, PDF-Verknüpfungen, Exporte, Vorschauen,
+QDesktopServices-Aufrufe oder Recoveryanzeigen. Der injizierte Consumer ist
+eine rein technische Testgrenze und kein ViewModel oder Produktviewer.
+
 ## Security Sprint 11 - keine sichtbare Produktprojektion
 
 Das interne Gate, die Integrationsphasen, Schema-/Key-/Storage-IDs,

@@ -1,8 +1,8 @@
-"""Strict cryptographic values for the isolated encrypted document prototype.
+"""Strict cryptographic values for encrypted document containers.
 
-This module defines a document-specific format and key hierarchy only. It is
-not imported by product document, backup, restore, startup, login, UI, or
-runtime-path code.
+This module defines the document-specific format and key hierarchy used by the
+isolated prototype and the internally gated Final-V3 document runtime. It is
+not imported by product document, backup, restore, startup, login, or UI code.
 """
 
 from __future__ import annotations

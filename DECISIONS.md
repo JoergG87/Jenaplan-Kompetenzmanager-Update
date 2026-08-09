@@ -1,5 +1,47 @@
 # Architekturentscheidungen
 
+## ADR-099 - Dokumentgenerationen nutzen eine kontextgebundene SQLCipher-Companion-DB
+
+**Status:** Angenommen und ausschließlich im bestehenden internen
+Final-V3-SQLCipher-Gate lokal implementiert. Produktaktivierung, UI,
+fachliche Anhänge, PDF-Artefakte, Export, Backup/Restore, Migration, Build und
+Release bleiben ausgeschlossen.
+
+### Entscheidung
+
+Die Dokumentcontainer-Runtime verändert weder das Final-V3-Hauptschema noch
+dessen exakten Fingerprint. Sie verwendet im selben doppelt markergebundenen
+privaten Runtime-Root eine eigene SQLCipher-Companion-Datenbank mit
+`application_id`, `user_version=1`, fest registriertem Schemafingerprint und
+Bindung an `installation_id` sowie `database_context_id`. Derselbe vorhandene
+zufällige Database-Key öffnet beide Datenbanken über getrennte strikt
+pfadgebundene Factories; Standard-SQLite und Klartextfallback bleiben
+ausgeschlossen.
+
+Jede unveränderliche Dokumentgeneration besitzt eine technische Document-ID,
+opaque Storage-ID, eigene zufällige Document-Key-ID/-Generation, Envelope-
+Revision, Containerformat, Größen-/Hashnachweise, MIME-Typ und genau einen
+Lifecycle `PREPARED`, `ACTIVE`, `RETAINED` oder `QUARANTINED`. Ein Pointer und
+ein partieller Unique-Index erzwingen genau eine aktive Generation je bereits
+aktiviertem Dokument. Der Dateiname besteht ausschließlich aus Storage-ID und
+`.jkmedoc`; Originalname und Fachinhalt liegen nur im verschlüsselten Manifest.
+
+`prepare` veröffentlicht no-clobber einen vollständig verifizierten Container
+vor dem `PREPARED`-Write. `activate` verifiziert erneut und schaltet Pointer,
+neue aktive sowie alte retained Generation in einer `BEGIN IMMEDIATE`-
+Transaktion um. `read` besitzt keinen Exportpfad und streamt nur an einen
+injizierten Consumer. Unbekannte Container, Teilbestände, Symlinks,
+Kontextabweichungen und Manipulation blockieren; keine Generation wird still
+neu erzeugt, überschrieben oder physisch gelöscht.
+
+### Folgen
+
+Der bestehende Final-V3-SQLCipher-Restart und Hauptschemafingerprint bleiben
+unverändert. Die Companion-Datenbank darf nur in einem ausdrücklich zum
+Neuanlegen autorisierten internen Aufruf entstehen; Restart erzeugt fehlende
+Bestände nicht nach. Prozessabbrüche vor Persistenz blockieren bei Orphans,
+während `PREPARED` und nicht committete Pointerwechsel exakt fortsetzbar sind.
+
 ## ADR-098 - Final-V3-SQLCipher nutzt eine einzige keyed Providerkomposition
 
 **Status:** Angenommen und ausschließlich im internen markergebundenen Gate
