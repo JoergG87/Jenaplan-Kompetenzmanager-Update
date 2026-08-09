@@ -1851,6 +1851,9 @@ class AppShell(QMainWindow):
                 self._selected_report_draft_ids[student_id] = (
                     initial_draft.report_draft_id
                 )
+                if not subject_id and not workspace_key:
+                    self.show_student_profile(student_id)
+                    return
         if initial_draft is None:
             self._selected_report_draft_ids.pop(student_id, None)
             accepted, initial_period = LearningReportPeriodSelectionDialog.choose(

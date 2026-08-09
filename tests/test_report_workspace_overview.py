@@ -1636,6 +1636,42 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         self.assertNotIn("STU-1", report_shell._selected_report_draft_ids)
         report_shell.show_student_profile.assert_called_once_with("STU-1")
 
+    def test_report_selection_refreshes_overview_without_opening_workspace(
+        self,
+    ) -> None:
+        first = self._report_draft("RPD-1")
+        second = self._report_draft("RPD-2")
+        report_shell = Mock()
+        report_shell.adapter.list_learning_report_drafts_for_student.return_value = (
+            first,
+            second,
+        )
+        report_shell._selected_report_draft_ids = {}
+
+        with (
+            patch.object(
+                shell.LearningReportDraftSelectionDialog,
+                "choose",
+                return_value=(True, second),
+            ) as choose_draft,
+            patch.object(
+                shell.LearningReportPeriodSelectionDialog,
+                "choose",
+            ) as choose_period,
+            patch.object(shell, "LearningReportDialog") as create_dialog,
+        ):
+            shell.AppShell.open_learning_report_dialog(report_shell, "STU-1")
+
+        choose_draft.assert_called_once()
+        choose_period.assert_not_called()
+        create_dialog.assert_not_called()
+        report_shell.adapter.learning_report_preparation_for_student.assert_not_called()
+        self.assertEqual(
+            report_shell._selected_report_draft_ids["STU-1"],
+            "RPD-2",
+        )
+        report_shell.show_student_profile.assert_called_once_with("STU-1")
+
     def test_new_report_period_cancel_stops_before_preparation(self) -> None:
         report_shell = Mock()
         report_shell.adapter.list_learning_report_drafts_for_student.return_value = ()
