@@ -1028,6 +1028,7 @@ class StudentDesktopAdapter:
                     learning_stage=competency.learning_stage,
                     catalog_status=competency.catalog_status,
                     is_active=competency.is_active,
+                    sort_order=competency.sort_order,
                 )
                 learning_area_groups.setdefault(
                     competency.learning_area,
@@ -1043,12 +1044,31 @@ class StudentDesktopAdapter:
                             tuple(
                                 ObservationCompetencyGroupViewModel(
                                     competency_group,
-                                    tuple(competencies),
+                                    tuple(sorted(
+                                        competencies,
+                                        key=lambda item: (
+                                            item.sort_order,
+                                            item.competency_id,
+                                        ),
+                                    )),
                                 )
-                                for competency_group, competencies in competency_groups.items()
+                                for competency_group, competencies in sorted(
+                                    competency_groups.items(),
+                                    key=lambda item: min(
+                                        competency.sort_order
+                                        for competency in item[1]
+                                    ),
+                                )
                             ),
                         )
-                        for learning_area, competency_groups in learning_area_groups.items()
+                        for learning_area, competency_groups in sorted(
+                            learning_area_groups.items(),
+                            key=lambda item: min(
+                                competency.sort_order
+                                for competencies in item[1].values()
+                                for competency in competencies
+                            ),
+                        )
                     ),
                 )
             )

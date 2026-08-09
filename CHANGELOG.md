@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Die Berichtsübersicht bleibt bei mehreren Entwürfen ohne automatische
+  Auswahl. Eine bewusst gewählte `draft_id` aktualisiert Zeitraum, Timeline und
+  Fachkarten jetzt unmittelbar, ohne den Bericht zu öffnen.
+
+- Die bestätigten Pilot-P2-UI-Befunde sind korrigiert: Die individuelle
+  Fachauswahl im Schülerprofil startet kompakt eingeklappt, Statusmeldungen und
+  Interaktionszustände bleiben kontrastreich lesbar, der Beobachtungsdialog
+  erhält die kanonische Katalogreihenfolge, und Bericht-Metadaten sowie
+  Revisionsaktion überlagern beziehungsweise verlieren sich nicht mehr.
+
 - Die Berichtswerkstatt behält ihren Lazy-Build, schaltet beim Wechsel zwischen
   Schreiben, Kompetenzen und Belegen, Vorschau und Revisionen aber nur noch
   genau eine effektfreie Seite sichtbar und interaktiv.

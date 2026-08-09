@@ -119,6 +119,60 @@ class ReportRevisionProductTest(unittest.TestCase):
         self._revision_dialogs.append(dialog)
         return dialog
 
+    def test_report_teacher_and_period_fields_use_separate_grid_rows(self) -> None:
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            period_end=self.saved.period_end,
+            retained_competency_ids=self.saved.competency_ids,
+        )
+        dialog = LearningReportDialog(preparation, initial_draft=self.saved)
+        self._revision_dialogs.append(dialog)
+        teacher_field = dialog.teacher_input.parentWidget()
+        period_start_field = dialog.period_start.parentWidget()
+        period_end_field = dialog.period_end.parentWidget()
+        context_layout = teacher_field.parentWidget().layout()
+
+        self.assertEqual(
+            context_layout.getItemPosition(context_layout.indexOf(teacher_field)),
+            (3, 0, 1, 2),
+        )
+        self.assertEqual(
+            context_layout.getItemPosition(context_layout.indexOf(period_start_field)),
+            (4, 0, 1, 1),
+        )
+        self.assertEqual(
+            context_layout.getItemPosition(context_layout.indexOf(period_end_field)),
+            (4, 1, 1, 1),
+        )
+
+    def test_current_revision_action_uses_central_secondary_button_contract(
+        self,
+    ) -> None:
+        status = self.adapter.finalize_learning_report(
+            self.saved.report_draft_id,
+            "Laura Lernbegleiterin",
+        )
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            period_end=self.saved.period_end,
+            retained_competency_ids=self.saved.competency_ids,
+        )
+        dialog = LearningReportDialog(
+            preparation,
+            initial_draft=self.saved,
+            revision_status=status,
+        )
+        self._revision_dialogs.append(dialog)
+        dialog.show_workspace("revisions")
+        button = dialog.findChild(
+            QPushButton,
+            "LearningReportOpenCurrentRevisionButton",
+        )
+
+        self.assertIsNotNone(button)
+        self.assertEqual(button.text(), "Finale Fassung öffnen")
+        self.assertEqual(button.property("buttonRole"), "secondary")
+
     def test_status_without_and_with_current_revision(self) -> None:
         empty = self.adapter.learning_report_revision_status(
             self.saved.report_draft_id

@@ -75,6 +75,9 @@ lokal implementiert.
 | `StudentDocumentationSubjectProjectionViewModel` | schuljahresgebundene Profilprojektion mit Modus, aktivem Katalog, effektiver Auswahl und Read-only-Zustand | Desktop Student ViewModel |
 | `StudentDesktopAdapter.save_student_documentation_subjects` | bewusste vollständige `inherit`-/`custom`-Speichergrenze zum bestehenden Application-Service | Desktop Student Adapter |
 | `StudentProfileScreen.documentation_subjects_save_requested` | UI-Signal mit stabiler Schüler-/Schuljahridentität, Modus und vollständigem Fach-ID-Draft | Desktop Student Profile |
+| `StudentProfileScreen.documentation_subject_summary` | kompakte rein lesende Zusammenfassung aus Modus und Anzahl effektiver Fächer | Desktop Student Profile |
+| `StudentProfileScreen.documentation_subject_toggle_button` | lokaler Disclosure-Schalter ohne Persistenzwirkung | Desktop Student Profile |
+| `StudentProfileScreen.documentation_subjects_body` | standardmäßig eingeklappter bestehender `inherit`-/`custom`-Editor | Desktop Student Profile |
 
 Nicht mehr registrierte Produktnamen sind
 `SchoolYearV2ToV3MigrationEngine`, `VerifiedBackupEvidence`,
@@ -2016,6 +2019,7 @@ Registrierte Python-Klassen und Funktionen:
 - `CATALOG_REQUIRED_FIELDS`
 - `CURRICULUM_CATALOG_V1_PATH`
 - `CurriculumCatalogEntry.competency_id`
+- `CurriculumCatalogEntry.sort_order`
 - `CurriculumCatalogEntry.subject_id`
 - `CurriculumCatalogEntry.competency_display_name`
 - `CurriculumCatalogEntry.competency_detail_label`
@@ -2091,6 +2095,7 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationCompetencyOptionViewModel.learning_stage`
 - `ObservationCompetencyOptionViewModel.catalog_status`
 - `ObservationCompetencyOptionViewModel.is_active`
+- `ObservationCompetencyOptionViewModel.sort_order`
 - `StudentDesktopAdapter.list_recent_observation_competencies(student_id, initial_draft)`
 - `NewObservationDialog.recent_competencies`
 - `NewObservationDialog.recent_competency_chips`

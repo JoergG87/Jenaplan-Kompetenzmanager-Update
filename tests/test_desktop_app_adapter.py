@@ -121,6 +121,8 @@ from src.desktop_app.view_models.student_view_model import (
     PROFILE_SECTION_PLACEHOLDERS,
     REPORT_NO_OBSERVATIONS_MESSAGE,
     StudentDetailViewModel,
+    StudentDocumentationSubjectOptionViewModel,
+    StudentDocumentationSubjectProjectionViewModel,
     StudentDocumentViewModel,
     StudentProfileDashboardViewModel,
     StudentProfileOrientationChangeViewModel,
@@ -800,6 +802,34 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 "Uhrzeiten minutengenau ablesen.",
             )
             self.assertEqual(competency.competency_label, "Minutengenau ablesen")
+
+    def test_observation_competency_hierarchy_preserves_catalog_sort_order(
+        self,
+    ) -> None:
+        groups = self.adapter.list_observation_competency_subject_groups()
+
+        for subject in groups:
+            area_orders = [
+                min(
+                    competency.sort_order
+                    for topic in area.competency_groups
+                    for competency in topic.competencies
+                )
+                for area in subject.learning_area_groups
+            ]
+            self.assertEqual(area_orders, sorted(area_orders))
+            for area in subject.learning_area_groups:
+                topic_orders = [
+                    min(competency.sort_order for competency in topic.competencies)
+                    for topic in area.competency_groups
+                ]
+                self.assertEqual(topic_orders, sorted(topic_orders))
+                for topic in area.competency_groups:
+                    competency_order = [
+                        (competency.sort_order, competency.competency_id)
+                        for competency in topic.competencies
+                    ]
+                    self.assertEqual(competency_order, sorted(competency_order))
 
     def test_observation_competency_hierarchy_keeps_replaced_math_time_snapshot(
         self,
@@ -3160,6 +3190,43 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn('self.navigation.setObjectName("AppNavigation")', shell_source)
         self.assertIn('PageHeader("Schüler"', screen_source)
 
+    def test_pilot_interaction_styles_keep_text_contrast_in_all_states(self) -> None:
+        stylesheet = theme.APP_STYLESHEET
+
+        def rule(selector: str) -> str:
+            return stylesheet.split(f"{selector} {{", 1)[1].split("}", 1)[0]
+
+        for selector in (
+            "QPushButton#ObservationHierarchyToggle:hover",
+            "QPushButton#ObservationHierarchyToggle:focus",
+            "QPushButton#ObservationHierarchyToggle:pressed",
+            "QPushButton#RatingBadgeButton:hover",
+            "QPushButton#RatingBadgeButton:focus",
+            "QPushButton#RatingBadgeButton:checked",
+            'QPushButton[buttonRole="secondary"]:hover',
+            'QPushButton[buttonRole="secondary"]:focus',
+            'QPushButton[buttonRole="secondary"]:pressed',
+        ):
+            self.assertIn("color:", rule(selector), selector)
+
+        self.assertIn(
+            "QFrame#ObservationCatalogCompetencyTile:hover QLabel",
+            stylesheet,
+        )
+        self.assertIn(
+            "QFrame#ObservationCatalogCompetencyTile:focus QLabel",
+            stylesheet,
+        )
+        self.assertIn(
+            'QFrame#ObservationCatalogCompetencyTile[selected="true"] QLabel',
+            stylesheet,
+        )
+        self.assertIn("color: #FFFFFF", rule("QFrame#Toast QLabel"))
+        self.assertNotEqual(
+            rule('QFrame#Toast[toastTone="success"]'),
+            rule('QFrame#Toast[toastTone="error"]'),
+        )
+
     def test_app_icon_asset_and_helpers_are_available(self) -> None:
         source = inspect.getsource(assets)
 
@@ -3566,6 +3633,38 @@ class DesktopAppAdapterTest(unittest.TestCase):
             screen.course_badge.accessibleName(),
             f"Kurszugehörigkeit: {profile.course_name}",
         )
+
+    def test_student_documentation_subjects_start_collapsed_with_summary(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        projection = StudentDocumentationSubjectProjectionViewModel(
+            school_year_id="SY-2026-27",
+            school_year_label="2026/27",
+            mode="custom",
+            available_subjects=(
+                StudentDocumentationSubjectOptionViewModel("deutsch", "Deutsch"),
+                StudentDocumentationSubjectOptionViewModel(
+                    "mathematik",
+                    "Mathematik",
+                ),
+            ),
+            selected_subject_ids=("deutsch", "mathematik"),
+            is_read_only=False,
+        )
+
+        screen.set_documentation_subjects(projection)
+
+        self.assertTrue(screen.documentation_subjects_body.isHidden())
+        self.assertEqual(
+            screen.documentation_subject_summary.text(),
+            "Individuelle Auswahl · 2 Fächer",
+        )
+        screen.documentation_subject_toggle_button.click()
+        self.assertFalse(screen.documentation_subjects_body.isHidden())
+        screen._set_documentation_subjects_expanded(False)
+        screen.show_documentation_subjects_error("Speichern fehlgeschlagen")
+        self.assertFalse(screen.documentation_subjects_body.isHidden())
+        self.assertIsNotNone(app)
 
     def test_profile_placeholder_messages_are_registered(self) -> None:
         self.assertEqual(

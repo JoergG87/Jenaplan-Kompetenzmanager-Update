@@ -499,19 +499,23 @@ QPushButton#RatingBadgeButton[ratingToken="++"] {{
     border-color: #B8D5C5;
 }}
 QPushButton#RatingBadgeButton:hover {{
+    color: {COLOR_NAVY};
     border: 2px solid #7897B0;
     padding: 2px 7px;
 }}
 QPushButton#RatingBadgeButton:pressed {{
+    color: {COLOR_NAVY};
     border: 2px solid #38546B;
     padding: 2px 7px;
 }}
 QPushButton#RatingBadgeButton:checked {{
+    color: {COLOR_NAVY};
     border: 2px solid {COLOR_NAVY};
     padding: 2px 7px;
     font-weight: 750;
 }}
 QPushButton#RatingBadgeButton:focus {{
+    color: {COLOR_NAVY};
     border: 2px solid {COLOR_FOCUS};
     padding: 2px 7px;
 }}
@@ -860,8 +864,11 @@ QPushButton[buttonRole="secondary"] {{
 }}
 QPushButton[buttonRole="secondary"]:hover {{
     background-color: {LIGHT_TEAL};
+    color: {COLOR_NAVY};
     border-color: #8FC7C5;
 }}
+QPushButton[buttonRole="secondary"]:focus {{ color: {COLOR_NAVY}; }}
+QPushButton[buttonRole="secondary"]:pressed {{ color: {COLOR_NAVY}; }}
 QPushButton[buttonRole="quiet"] {{
     background-color: transparent;
     color: {COLOR_TEXT_MUTED};
@@ -1061,6 +1068,17 @@ QFrame#ObservationRecentCompetencyChip[selected="false"]:hover {{
     background-color: {LIGHT_TEAL};
     border-color: #9BCFCC;
 }}
+QFrame#ObservationCatalogCompetencyTile QLabel,
+QFrame#ObservationRecentCompetencyChip QLabel,
+QFrame#ObservationCatalogCompetencyTile:hover QLabel,
+QFrame#ObservationRecentCompetencyChip:hover QLabel,
+QFrame#ObservationCatalogCompetencyTile:focus QLabel,
+QFrame#ObservationRecentCompetencyChip:focus QLabel,
+QFrame#ObservationCatalogCompetencyTile[selected="true"] QLabel,
+QFrame#ObservationRecentCompetencyChip[selected="true"] QLabel {{
+    color: {COLOR_TEXT};
+    background-color: transparent;
+}}
 QFrame#ObservationCatalogCompetencyTile[selected="false"]:focus,
 QFrame#ObservationRecentCompetencyChip[selected="false"]:focus {{
     border: 2px solid {COLOR_FOCUS};
@@ -1108,8 +1126,15 @@ QPushButton#ObservationHierarchyToggle {{
     text-align: left;
     font-weight: 600;
 }}
-QPushButton#ObservationHierarchyToggle:hover {{ background-color: #EEF6FB; }}
-QPushButton#ObservationHierarchyToggle:focus {{ border: 2px solid {COLOR_FOCUS}; }}
+QPushButton#ObservationHierarchyToggle:hover {{
+    background-color: #EEF6FB;
+    color: {COLOR_NAVY};
+}}
+QPushButton#ObservationHierarchyToggle:focus {{
+    color: {COLOR_NAVY};
+    border: 2px solid {COLOR_FOCUS};
+}}
+QPushButton#ObservationHierarchyToggle:pressed {{ color: {COLOR_NAVY}; }}
 QPushButton#ObservationRemoveCompetencyButton {{
     min-width: 30px;
     max-width: 30px;
@@ -1261,14 +1286,21 @@ QFrame#Toast {{
     border: 1px solid #38566E;
     border-radius: 9px;
 }}
-QFrame#Toast QLabel {{ color: #FFFFFF; }}
+QFrame#Toast QLabel {{
+    color: #FFFFFF;
+    font-weight: 600;
+}}
 QFrame#Toast[toastTone="success"] {{
-    background-color: {COLOR_SUCCESS};
-    border-color: #3C806D;
+    background-color: #155E4A;
+    border-color: #0F4C3D;
 }}
 QFrame#Toast[toastTone="warning"] {{
     background-color: #755719;
     border-color: #947333;
+}}
+QFrame#Toast[toastTone="error"] {{
+    background-color: #8F1D2C;
+    border-color: #6F1622;
 }}
 QFrame#NavigationSelectionIndicator {{
     background-color: #85D8D6;

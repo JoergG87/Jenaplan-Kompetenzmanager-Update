@@ -506,14 +506,36 @@ class StudentProfileScreen(QWidget):
         layout.setContentsMargins(15, 12, 15, 12)
         layout.setSpacing(8)
         title_row = QHBoxLayout()
+        heading = QVBoxLayout()
+        heading.setSpacing(2)
         title = QLabel("Fächer für die Dokumentation")
         set_label_style(title, "card_title")
+        self.documentation_subject_summary = QLabel("Keine Auswahl verfügbar")
+        self.documentation_subject_summary.setWordWrap(True)
+        set_label_style(self.documentation_subject_summary, "subtle")
         self.documentation_subject_school_year = QLabel("")
         set_label_style(self.documentation_subject_school_year, "subtle")
-        title_row.addWidget(title)
-        title_row.addStretch(1)
+        heading.addWidget(title)
+        heading.addWidget(self.documentation_subject_summary)
+        title_row.addLayout(heading, 1)
         title_row.addWidget(self.documentation_subject_school_year)
+        self.documentation_subject_toggle_button = QPushButton("Aufklappen")
+        self.documentation_subject_toggle_button.setCheckable(True)
+        configure_button(
+            self.documentation_subject_toggle_button,
+            "quiet",
+            "Fächer für die Dokumentation aufklappen",
+        )
+        self.documentation_subject_toggle_button.toggled.connect(
+            self._set_documentation_subjects_expanded
+        )
+        title_row.addWidget(self.documentation_subject_toggle_button)
         layout.addLayout(title_row)
+
+        self.documentation_subjects_body = QWidget(card)
+        body_layout = QVBoxLayout(self.documentation_subjects_body)
+        body_layout.setContentsMargins(0, 4, 0, 0)
+        body_layout.setSpacing(8)
 
         self.documentation_subject_inherit = QRadioButton(
             "Globale Fachauswahl verwenden",
@@ -529,14 +551,14 @@ class StudentProfileScreen(QWidget):
         self.documentation_subject_custom.toggled.connect(
             self._update_documentation_subject_editability
         )
-        layout.addWidget(self.documentation_subject_inherit)
-        layout.addWidget(self.documentation_subject_custom)
+        body_layout.addWidget(self.documentation_subject_inherit)
+        body_layout.addWidget(self.documentation_subject_custom)
 
         self.documentation_subject_options_layout = QVBoxLayout()
         self.documentation_subject_options_layout.setContentsMargins(20, 0, 0, 0)
         self.documentation_subject_options_layout.setSpacing(5)
         self.documentation_subject_checkboxes: dict[str, QCheckBox] = {}
-        layout.addLayout(self.documentation_subject_options_layout)
+        body_layout.addLayout(self.documentation_subject_options_layout)
 
         help_label = QLabel(
             "Diese Auswahl legt fest, welche Fächer bei diesem Kind für die "
@@ -545,7 +567,7 @@ class StudentProfileScreen(QWidget):
         )
         help_label.setWordWrap(True)
         set_label_style(help_label, "small")
-        layout.addWidget(help_label)
+        body_layout.addWidget(help_label)
 
         actions = QHBoxLayout()
         self.documentation_subject_save_button = QPushButton("Speichern")
@@ -569,12 +591,25 @@ class StudentProfileScreen(QWidget):
         actions.addWidget(self.documentation_subject_save_button)
         actions.addWidget(self.documentation_subject_cancel_button)
         actions.addStretch(1)
-        layout.addLayout(actions)
+        body_layout.addLayout(actions)
         self.documentation_subject_feedback = QLabel("")
         self.documentation_subject_feedback.setWordWrap(True)
         set_label_style(self.documentation_subject_feedback, "subtle")
-        layout.addWidget(self.documentation_subject_feedback)
+        body_layout.addWidget(self.documentation_subject_feedback)
+        layout.addWidget(self.documentation_subjects_body)
+        self._set_documentation_subjects_expanded(False)
         return card
+
+    def _set_documentation_subjects_expanded(self, expanded: bool) -> None:
+        self.documentation_subjects_body.setVisible(expanded)
+        self.documentation_subject_toggle_button.setChecked(expanded)
+        self.documentation_subject_toggle_button.setText(
+            "Einklappen" if expanded else "Aufklappen"
+        )
+        self.documentation_subject_toggle_button.setAccessibleName(
+            "Fächer für die Dokumentation "
+            + ("einklappen" if expanded else "aufklappen")
+        )
 
     def set_documentation_subjects(
         self,
@@ -589,6 +624,7 @@ class StudentProfileScreen(QWidget):
         self.documentation_subject_checkboxes = {}
         if projection is None:
             self.documentation_subject_school_year.setText("")
+            self.documentation_subject_summary.setText("Keine Auswahl verfügbar")
             self.documentation_subject_inherit.setChecked(True)
             self.documentation_subject_inherit.setEnabled(False)
             self.documentation_subject_custom.setEnabled(False)
@@ -598,6 +634,16 @@ class StudentProfileScreen(QWidget):
             return
         self.documentation_subject_school_year.setText(
             projection.school_year_label
+        )
+        subject_count = len(projection.selected_subject_ids)
+        mode_label = (
+            "Globale Auswahl"
+            if projection.mode == "inherit"
+            else "Individuelle Auswahl"
+        )
+        self.documentation_subject_summary.setText(
+            f"{mode_label} · {subject_count} "
+            f"{'Fach' if subject_count == 1 else 'Fächer'}"
         )
         selected = set(projection.selected_subject_ids)
         for subject in projection.available_subjects:
@@ -677,6 +723,7 @@ class StudentProfileScreen(QWidget):
         )
 
     def show_documentation_subjects_error(self, message: str) -> None:
+        self._set_documentation_subjects_expanded(True)
         self.documentation_subject_feedback.setText(message)
 
     def _orientation_card(self) -> QFrame:
@@ -1647,6 +1694,7 @@ class StudentProfileScreen(QWidget):
             self._competency_expanded_keys.clear()
             self._report_subjects_expanded = False
             self._report_timeline_initialized = False
+            self._set_documentation_subjects_expanded(False)
             self.reset_competency_cockpit_filters()
 
         if student is None:

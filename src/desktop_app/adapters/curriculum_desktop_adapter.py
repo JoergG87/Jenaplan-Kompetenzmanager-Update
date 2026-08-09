@@ -65,6 +65,7 @@ class CurriculumCatalogEntry:
     activation_group_key: str
     is_core_subject: bool
     is_active: bool
+    sort_order: int
 
     @property
     def subject_id(self) -> str:
@@ -129,8 +130,10 @@ class CurriculumDesktopAdapter:
             )
         with self.catalog_path.open(newline="", encoding="utf-8") as csv_file:
             entries = tuple(
-                self._entry_from_row(row)
-                for row in csv.DictReader(csv_file, delimiter=";")
+                self._entry_from_row(row, sort_order)
+                for sort_order, row in enumerate(
+                    csv.DictReader(csv_file, delimiter=";")
+                )
             )
         self._validate_unique_competency_ids(entries)
         return entries
@@ -186,6 +189,7 @@ class CurriculumDesktopAdapter:
     def _entry_from_row(
         self,
         row: dict[str, str],
+        sort_order: int,
     ) -> CurriculumCatalogEntry:
         self._validate_required_fields(row)
         catalog_default_active = self._parse_optional_bool(
@@ -224,6 +228,7 @@ class CurriculumDesktopAdapter:
             activation_group_key=row.get("activation_group_key", "").strip(),
             is_core_subject=self._parse_bool(row["is_core_subject"]),
             is_active=catalog_default_active,
+            sort_order=sort_order,
         )
 
     def _entry_from_competency_record(
@@ -249,6 +254,7 @@ class CurriculumDesktopAdapter:
             activation_group_key=competency.activation_group_key,
             is_core_subject=competency.is_core_subject,
             is_active=competency.active,
+            sort_order=competency.sort_order,
         )
 
     def _validate_required_fields(self, row: dict[str, str]) -> None:

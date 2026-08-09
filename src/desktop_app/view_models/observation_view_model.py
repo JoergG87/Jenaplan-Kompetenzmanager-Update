@@ -80,6 +80,7 @@ class ObservationCompetencyOptionViewModel:
     learning_stage: str = "cross_stage"
     catalog_status: str = "current"
     is_active: bool = True
+    sort_order: int = 0
 
 
 @dataclass(frozen=True)

@@ -766,8 +766,8 @@ class LearningReportDialog(MotionDialog):
         for editor in (self.period_start, self.period_end):
             editor.setCalendarPopup(True)
             editor.setDisplayFormat("dd.MM.yyyy")
-        layout.addWidget(self._field("Zeitraum von", self.period_start), 3, 0)
-        layout.addWidget(self._field("Zeitraum bis", self.period_end), 3, 1)
+        layout.addWidget(self._field("Zeitraum von", self.period_start), 4, 0)
+        layout.addWidget(self._field("Zeitraum bis", self.period_end), 4, 1)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)
         return card
