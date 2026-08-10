@@ -436,6 +436,69 @@ def install_button_motion(button: QPushButton) -> QObject:
     return controller
 
 
+class _PointerCursorController(QObject):
+    """Keep a pointing cursor local to the currently hovered interactive widget."""
+
+    def __init__(self, widget: QWidget) -> None:
+        super().__init__(widget)
+        self._widget_ref = weakref.ref(widget)
+        self._inside = False
+        widget.installEventFilter(self)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        widget = self._widget_ref()
+        if widget is None or watched is not widget:
+            return False
+        event_type = event.type()
+        if event_type == QEvent.Type.Enter and widget.isEnabled():
+            self._inside = True
+            widget.setCursor(Qt.CursorShape.PointingHandCursor)
+        elif event_type in {
+            QEvent.Type.Leave,
+            QEvent.Type.Hide,
+            QEvent.Type.Close,
+        }:
+            self._inside = False
+            widget.unsetCursor()
+        elif event_type == QEvent.Type.EnabledChange:
+            if widget.isEnabled() and self._inside:
+                widget.setCursor(Qt.CursorShape.PointingHandCursor)
+            else:
+                widget.unsetCursor()
+        elif event_type == QEvent.Type.MouseButtonRelease:
+            widget_ref = self._widget_ref
+            controller_ref = weakref.ref(self)
+
+            def reconcile_after_click() -> None:
+                current = widget_ref()
+                controller = controller_ref()
+                if current is None or controller is None:
+                    return
+                try:
+                    if (
+                        current.isVisible()
+                        and current.isEnabled()
+                        and controller._inside
+                    ):
+                        current.setCursor(Qt.CursorShape.PointingHandCursor)
+                    else:
+                        current.unsetCursor()
+                except RuntimeError:
+                    return
+
+            QTimer.singleShot(0, reconcile_after_click)
+        return False
+
+
+def install_pointer_cursor(widget: QWidget) -> QObject:
+    """Derive an interactive widget's cursor from its current hover state."""
+    controller = getattr(widget, "_pointer_cursor_controller", None)
+    if controller is None:
+        controller = _PointerCursorController(widget)
+        setattr(widget, "_pointer_cursor_controller", controller)
+    return controller
+
+
 class _CardMotionController(QObject):
     """Translate pointer presence into layout-neutral card elevation."""
 

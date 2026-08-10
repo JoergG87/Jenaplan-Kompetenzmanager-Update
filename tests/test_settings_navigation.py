@@ -100,9 +100,18 @@ class SettingsNavigationTest(unittest.TestCase):
             if label.text() == "Schuljahre"
         )
         self.assertEqual(title.cursor().shape(), Qt.CursorShape.ArrowCursor)
+        transition_button = screen.school_year_transition_button
+        self.assertFalse(transition_button.isEnabled())
         self.assertEqual(
-            screen.school_year_transition_button.cursor().shape(),
-            Qt.CursorShape.PointingHandCursor,
+            transition_button.cursor().shape(), Qt.CursorShape.ArrowCursor
+        )
+        QApplication.sendEvent(transition_button, QEvent(QEvent.Type.Enter))
+        self.assertEqual(
+            transition_button.cursor().shape(), Qt.CursorShape.ArrowCursor
+        )
+        QApplication.sendEvent(transition_button, QEvent(QEvent.Type.Leave))
+        self.assertEqual(
+            transition_button.cursor().shape(), Qt.CursorShape.ArrowCursor
         )
         self.assertIsNone(QApplication.overrideCursor())
         screen.close()
@@ -123,9 +132,18 @@ class SettingsNavigationTest(unittest.TestCase):
                 detail_scroll.widget().cursor().shape(),
                 Qt.CursorShape.ArrowCursor,
             )
+            back_button = screen.detail_back_buttons[key]
             self.assertEqual(
-                screen.detail_back_buttons[key].cursor().shape(),
+                back_button.cursor().shape(), Qt.CursorShape.ArrowCursor
+            )
+            QApplication.sendEvent(back_button, QEvent(QEvent.Type.Enter))
+            self.assertEqual(
+                back_button.cursor().shape(),
                 Qt.CursorShape.PointingHandCursor,
+            )
+            QApplication.sendEvent(back_button, QEvent(QEvent.Type.Leave))
+            self.assertEqual(
+                back_button.cursor().shape(), Qt.CursorShape.ArrowCursor
             )
 
         QApplication.sendEvent(
@@ -148,10 +166,16 @@ class SettingsNavigationTest(unittest.TestCase):
             overview_scroll.widget().cursor().shape(),
             Qt.CursorShape.ArrowCursor,
         )
+        school_year_card = screen.settings_cards["school_years"]
         self.assertEqual(
-            screen.settings_cards["school_years"].cursor().shape(),
+            school_year_card.cursor().shape(), Qt.CursorShape.ArrowCursor
+        )
+        QApplication.sendEvent(school_year_card, QEvent(QEvent.Type.Enter))
+        self.assertEqual(
+            school_year_card.cursor().shape(),
             Qt.CursorShape.PointingHandCursor,
         )
+        QApplication.sendEvent(school_year_card, QEvent(QEvent.Type.Leave))
         self.assertEqual(
             accessible_names,
             {

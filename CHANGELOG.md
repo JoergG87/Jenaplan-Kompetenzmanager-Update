@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Toast- und Cursorfeedback im Qt-Pilot verwenden stabile native Renderpfade:
+  Erfolgstoasts bleiben ohne GraphicsEffect eindeutig kontrastiert, und der
+  Handcursor gilt nur, solange ein aktivierbares Widget tatsächlich getroffen
+  wird. Widgetwechsel und schnelle Klickfolgen hinterlassen keinen
+  Override-Cursor.
+
 - Entwicklungsübersicht: Timeline und Fachkarten verwenden das aktuelle
   Schuljahr und die effektiven Schülerfächer unabhängig von vorhandenen
   Berichtsentwürfen; die Berichtswerkstatt bleibt an ihren RPD-Zeitraum

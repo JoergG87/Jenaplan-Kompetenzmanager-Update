@@ -9,6 +9,7 @@ import unittest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QEvent, QObject, Qt
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -31,6 +32,7 @@ from src.desktop_app.motion import (
     animate_save_confirmation,
     animate_value,
     install_item_selection_motion,
+    install_pointer_cursor,
     motion_duration,
     reduced_motion_enabled,
     set_reduced_motion,
@@ -40,7 +42,7 @@ from src.desktop_app.theme import (
     MOTION_FAST_MS,
     MOTION_SELECTION_MS,
     MOTION_STANDARD_MS,
-    MOTION_TOAST_MS,
+    apply_app_theme,
 )
 
 
@@ -202,7 +204,7 @@ class MotionSystemTest(unittest.TestCase):
         toast.show_message("Zweite Meldung", duration_ms=70)
 
         self.assertEqual(toast.text(), "Zweite Meldung")
-        self.assertLessEqual(len(toast._motion_animations), 1)
+        self.assertEqual(getattr(toast, "_motion_animations", {}), {})
         QApplication.sendEvent(toast, QEvent(QEvent.Type.Enter))
         QTest.qWait(100)
         self.assertFalse(toast.isHidden())
@@ -210,16 +212,13 @@ class MotionSystemTest(unittest.TestCase):
         QApplication.sendEvent(toast, QEvent(QEvent.Type.Leave))
         self.assertTrue(toast.timer.isActive())
         toast._dismiss()
-        fade_out = toast._motion_animations.get("opacity")
-        self.assertIsNotNone(fade_out)
-        fade_out.setCurrentTime(MOTION_TOAST_MS)
         self.assertTrue(toast.isHidden())
-        self.assertEqual(toast._motion_animations, {})
+        self.assertEqual(getattr(toast, "_motion_animations", {}), {})
         toast.show_message("Letzte Meldung", duration_ms=10_000)
         toast.clear()
         self.assertTrue(toast.isHidden())
         self.assertEqual(toast.text(), "")
-        self.assertEqual(toast._motion_animations, {})
+        self.assertEqual(getattr(toast, "_motion_animations", {}), {})
 
     def test_button_badge_and_save_feedback_share_reduced_motion_policy(self) -> None:
         button = QPushButton("Speichern")
@@ -325,8 +324,56 @@ class MotionSystemTest(unittest.TestCase):
             self.assertTrue(toast.label.wordWrap())
             self.assertEqual(toast.minimumWidth(), 280)
             self.assertEqual(toast.maximumWidth(), 520)
+            self.assertIsNone(toast.graphicsEffect())
 
         toast.clear()
+
+    def test_success_toast_uses_native_readable_colors_without_compositing(self) -> None:
+        previous_stylesheet = self.app.styleSheet()
+        try:
+            apply_app_theme(self.app)
+            toast = Toast()
+            toast.show_message(
+                "Fächer für die Dokumentation wurden gespeichert.",
+                tone="success",
+                duration_ms=10_000,
+            )
+            toast.ensurePolished()
+            toast.label.ensurePolished()
+            background = toast.palette().color(QPalette.ColorRole.Window)
+            foreground = toast.label.palette().color(QPalette.ColorRole.WindowText)
+
+            def luminance(color: QColor) -> float:
+                channels = []
+                for channel in (color.redF(), color.greenF(), color.blueF()):
+                    channels.append(
+                        channel / 12.92
+                        if channel <= 0.04045
+                        else ((channel + 0.055) / 1.055) ** 2.4
+                    )
+                return (
+                    0.2126 * channels[0]
+                    + 0.7152 * channels[1]
+                    + 0.0722 * channels[2]
+                )
+
+            lighter, darker = sorted(
+                (luminance(background), luminance(foreground)), reverse=True
+            )
+            contrast = (lighter + 0.05) / (darker + 0.05)
+            self.assertGreaterEqual(contrast, 4.5)
+            self.assertEqual(background.name(), "#155e4a")
+            self.assertEqual(foreground.name(), "#ffffff")
+            self.assertIsNone(toast.graphicsEffect())
+            self.assertEqual(toast.windowOpacity(), 1.0)
+            self.assertTrue(toast.isEnabled())
+            self.assertTrue(toast.label.isEnabled())
+            self.assertGreaterEqual(
+                toast.sizeHint().height(),
+                toast.label.sizeHint().height() + 16,
+            )
+        finally:
+            self.app.setStyleSheet(previous_stylesheet)
 
     def test_reduced_motion_toast_uses_timer_but_no_transition(self) -> None:
         set_reduced_motion(True)
@@ -340,6 +387,32 @@ class MotionSystemTest(unittest.TestCase):
 
         self.assertTrue(toast.isHidden())
         self.assertEqual(getattr(toast, "_motion_animations", {}), {})
+
+    def test_pointer_cursor_tracks_enter_leave_hide_and_repeated_clicks(self) -> None:
+        button = QPushButton("Disclosure")
+        install_pointer_cursor(button)
+        button.show()
+        self.app.processEvents()
+
+        QApplication.sendEvent(button, QEvent(QEvent.Type.Enter))
+        self.assertEqual(button.cursor().shape(), Qt.CursorShape.PointingHandCursor)
+
+        QApplication.sendEvent(button, QEvent(QEvent.Type.Leave))
+        self.assertEqual(button.cursor().shape(), Qt.CursorShape.ArrowCursor)
+
+        QApplication.sendEvent(button, QEvent(QEvent.Type.Enter))
+        button.hide()
+        self.assertEqual(button.cursor().shape(), Qt.CursorShape.ArrowCursor)
+
+        button.show()
+        for _ in range(5):
+            QApplication.sendEvent(button, QEvent(QEvent.Type.Enter))
+            QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+            QApplication.sendEvent(button, QEvent(QEvent.Type.Leave))
+        self.app.processEvents()
+        QApplication.sendEvent(button, QEvent(QEvent.Type.Leave))
+        self.assertEqual(button.cursor().shape(), Qt.CursorShape.ArrowCursor)
+        self.assertIsNone(QApplication.overrideCursor())
 
     def test_stop_and_widget_deletion_leave_no_running_transition(self) -> None:
         widget = QWidget()

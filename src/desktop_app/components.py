@@ -28,12 +28,12 @@ from src.desktop_app.motion import (
     animate_value,
     install_button_motion,
     install_card_motion,
+    install_pointer_cursor,
     stop_motion,
 )
 from src.desktop_app.theme import (
     MOTION_FAST_MS,
     MOTION_SELECTION_MS,
-    MOTION_TOAST_MS,
 )
 from src.desktop_app.theme import set_button_role, set_label_style
 
@@ -52,7 +52,7 @@ class AppCard(QFrame):
         self.setFrameShape(QFrame.Shape.StyledPanel)
         if interactive or variant == "interactive":
             self.setProperty("interactive", True)
-            self.setCursor(Qt.CursorShape.PointingHandCursor)
+            install_pointer_cursor(self)
             self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
             install_card_motion(self)
 
@@ -309,7 +309,7 @@ class SegmentedControl(QFrame):
             button = QPushButton(label)
             button.setObjectName("SegmentedControlButton")
             button.setCheckable(True)
-            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            install_pointer_cursor(button)
             button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
             accessible_label = label.replace("&&", "\0").replace("&", "").replace("\0", "&")
             button.setAccessibleName(accessible_label)
@@ -494,7 +494,7 @@ class RatingBadgeButton(QPushButton):
         self.setObjectName("RatingBadgeButton")
         self.setProperty("compact", False)
         self.setCheckable(True)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        install_pointer_cursor(self)
         apply_rating_badge_variant(self, rating_token)
         install_button_motion(self)
         self.toggled.connect(self._sync_selection_state)
@@ -725,16 +725,9 @@ class Toast(QFrame):
         self.setAccessibleDescription(text)
         self.style().unpolish(self)
         self.style().polish(self)
-        was_hidden = self.isHidden()
         stop_motion(self)
-        if was_hidden:
-            animate_opacity(self, visible=True, duration_ms=MOTION_TOAST_MS)
-        else:
-            animate_feedback(
-                self,
-                key="toast_feedback",
-                duration_ms=MOTION_TOAST_MS,
-            )
+        self.setGraphicsEffect(None)
+        self.show()
         self._duration_ms = max(0, duration_ms)
         self._remaining_ms = self._duration_ms
         self.timer.start(self._duration_ms)
@@ -755,7 +748,8 @@ class Toast(QFrame):
     def _dismiss(self) -> None:
         self._remaining_ms = 0
         stop_motion(self)
-        animate_opacity(self, visible=False, duration_ms=MOTION_TOAST_MS)
+        self.setGraphicsEffect(None)
+        self.hide()
 
     def setText(self, text: str) -> None:  # noqa: N802
         """Keep the former shell status-label call site compatible."""
@@ -804,7 +798,7 @@ class Toast(QFrame):
 def configure_button(button: QPushButton, role: str, accessible_name: str = "") -> None:
     """Apply role, pointer cursor, and optional accessible naming."""
     set_button_role(button, role)
-    button.setCursor(Qt.CursorShape.PointingHandCursor)
+    install_pointer_cursor(button)
     install_button_motion(button)
     if accessible_name:
         button.setAccessibleName(accessible_name)

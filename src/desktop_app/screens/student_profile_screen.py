@@ -50,7 +50,11 @@ from src.desktop_app.components import (
     configure_button,
 )
 from src.desktop_app.icons import load_icon
-from src.desktop_app.motion import animate_feedback, install_card_motion
+from src.desktop_app.motion import (
+    animate_feedback,
+    install_card_motion,
+    install_pointer_cursor,
+)
 
 from src.desktop_app.view_models.student_view_model import (
     PROFILE_ACTION_MESSAGES,
@@ -1336,7 +1340,7 @@ class StudentProfileScreen(QWidget):
         tooltip: str,
     ) -> None:
         card.setProperty("interactive", True)
-        card.setCursor(Qt.CursorShape.PointingHandCursor)
+        install_pointer_cursor(card)
         card.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         card.setAccessibleName(tooltip)
         card.setToolTip(tooltip)
