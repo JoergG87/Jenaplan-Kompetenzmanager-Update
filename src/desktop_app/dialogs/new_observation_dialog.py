@@ -44,7 +44,6 @@ from src.desktop_app.dialogs.dialog_buttons import (
     DialogActionBar,
     configure_save_cancel_buttons,
 )
-from src.desktop_app.motion import MotionDialog, animate_feedback
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.observation_view_model import (
     DOCUMENT_TYPE_OPTIONS,
@@ -136,7 +135,6 @@ class ObservationCatalogCompetencyTile(AppCard):
         self.set_selected(selected)
 
     def set_selected(self, selected: bool) -> None:
-        changed = self.is_selected() != selected
         self.setProperty("selected", "true" if selected else "false")
         if self.objectName() == "ObservationRecentCompetencyChip":
             self.setEnabled(not selected)
@@ -152,8 +150,6 @@ class ObservationCatalogCompetencyTile(AppCard):
         )
         self.style().unpolish(self)
         self.style().polish(self)
-        if changed and self.isVisible():
-            animate_feedback(self, key="observation_competency_selection")
 
     def is_selected(self) -> bool:
         return self.property("selected") == "true"
@@ -174,7 +170,7 @@ class ObservationCatalogCompetencyTile(AppCard):
         super().keyPressEvent(event)
 
 
-class NewObservationDialog(MotionDialog):
+class NewObservationDialog(QDialog):
     """Collect and persist an observation draft through the desktop adapter."""
 
     def __init__(
@@ -889,10 +885,6 @@ class NewObservationDialog(MotionDialog):
         is_open = container.isHidden()
         container.setVisible(is_open)
         self._set_area_button_text(area_key, is_open)
-        animate_feedback(
-            self.competency_area_buttons[area_key],
-            key="observation_area_disclosure",
-        )
 
     def _toggle_competency_topic(self, topic_key: str) -> None:
         if self._catalog_search_text:
@@ -903,10 +895,6 @@ class NewObservationDialog(MotionDialog):
         is_open = container.isHidden()
         container.setVisible(is_open)
         self._set_topic_button_text(topic_key, is_open)
-        animate_feedback(
-            self.competency_topic_buttons[topic_key],
-            key="observation_topic_disclosure",
-        )
 
     def _restored_area_state(self, area_key: str, default: bool) -> bool:
         if self._catalog_expansion_snapshot is None:

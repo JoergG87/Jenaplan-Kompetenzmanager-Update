@@ -157,7 +157,7 @@ class _CollapsibleSection(QWidget):
             self._on_expand()
         self.content.setVisible(expanded)
         if expanded and self._feedback_on_expand:
-            animate_feedback(self.content, key="learning_conference_disclosure")
+            animate_feedback(self.button, key="learning_conference_disclosure")
 
     def eventFilter(self, watched: object, event: QEvent) -> bool:  # noqa: N802
         if (
@@ -612,7 +612,7 @@ class LearningConferenceRevisionDialog(MotionDialog):
         return card
 
 
-class LearningConferenceDialog(MotionDialog):
+class LearningConferenceDialog(QDialog):
     """Edit one LEG draft in a safe, phase-oriented workspace."""
 
     save_requested = Signal(object)
@@ -1475,6 +1475,7 @@ class LearningConferenceDialog(MotionDialog):
         self.phase_stack.setCurrentWidget(active_page)
         for page in self.phase_pages.values():
             is_active = page is active_page
+            page.setGraphicsEffect(None)
             page.setEnabled(is_active)
             page.setVisible(is_active)
         active_page.raise_()

@@ -167,6 +167,41 @@ def test_workspace_switch_keeps_exactly_one_page_visible_and_interactive(
         fixture.tearDown()
 
 
+def test_report_content_stacks_use_static_single_page_activation(tmp_path) -> None:
+    app = QApplication.instance() or QApplication([])
+    fixture = _product_fixture()
+    shell = None
+    workspace = None
+    try:
+        app, shell, workspace = _workspace(fixture, tmp_path)
+        workspace.show_workspace("writing")
+        for index in range(workspace.editor_stack.count()):
+            workspace._set_editor_section(index)
+            active_page = workspace.editor_stack.currentWidget()
+            for page_index in range(workspace.editor_stack.count()):
+                page = workspace.editor_stack.widget(page_index)
+                assert page.isVisibleTo(workspace) is (page is active_page)
+                assert page.isEnabled() is (page is active_page)
+                assert page.graphicsEffect() is None
+
+        workspace.show_workspace("evidence")
+        for index in range(workspace.evidence_stack.count()):
+            workspace._set_evidence_section(index)
+            active_page = workspace.evidence_stack.currentWidget()
+            for page_index in range(workspace.evidence_stack.count()):
+                page = workspace.evidence_stack.widget(page_index)
+                assert page.isVisibleTo(workspace) is (page is active_page)
+                assert page.isEnabled() is (page is active_page)
+                assert page.graphicsEffect() is None
+    finally:
+        if workspace is not None:
+            workspace.accept()
+        if shell is not None:
+            shell.close()
+        app.processEvents()
+        fixture.tearDown()
+
+
 def _close(
     app: QApplication,
     shell: AppShell,

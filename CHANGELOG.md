@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Pilot-UI: Bericht, Qt-LEG und Beobachtungsdialog verwenden für ihre großen
+  Arbeitsbereiche statische Qt-Renderpfade. Workspace-, Fachseiten- und
+  Phasenwechsel setzen genau eine sichtbare, aktive Seite ohne Opacity- oder
+  GraphicsEffect-Compositing; LEG- und Beobachtungs-Disclosures bleiben ohne
+  Einfluss auf Dialog-Lifecycle, Fachlogik, HTML-Spike oder PDF-Vertrag.
+
 - Das LEG kann intern gegatet neben dem vollständig erhaltenen Qt-Fallback in
   einem lokalen `QWebEngineView` geöffnet werden. Die LEG-only-
   `QWebChannel`-Bridge verwendet den vorhandenen Python-Draft sowie bestehende

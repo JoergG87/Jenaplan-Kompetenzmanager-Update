@@ -48,7 +48,6 @@ from src.desktop_app.components import (
 from src.desktop_app.motion import (
     MotionDialog,
     animate_save_confirmation,
-    animate_stack_transition,
 )
 from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportChartSelectionViewModel,
@@ -255,7 +254,7 @@ class LearningReportPeriodSelectionDialog(MotionDialog):
         return accepted, dialog.selected_period
 
 
-class LearningReportDialog(MotionDialog):
+class LearningReportDialog(QDialog):
     """Edit, persist, preview and export one report draft through explicit signals."""
 
     save_requested = Signal(object)
@@ -572,19 +571,26 @@ class LearningReportDialog(MotionDialog):
     def _set_editor_section(self, index: int) -> None:
         if index > 0:
             self._ensure_editor_subject_built(index)
-        animate_stack_transition(
-            self.editor_stack,
-            index,
-            key="report_editor_section",
-        )
+        self._activate_content_stack_page(self.editor_stack, index)
 
     def _set_evidence_section(self, index: int) -> None:
         self._ensure_evidence_subject_built(index)
-        animate_stack_transition(
-            self.evidence_stack,
-            index,
-            key="report_evidence_section",
-        )
+        self._activate_content_stack_page(self.evidence_stack, index)
+
+    @staticmethod
+    def _activate_content_stack_page(stack: QStackedWidget, index: int) -> None:
+        """Make a report content section visible without compositing effects."""
+        stack.setCurrentIndex(index)
+        active_page = stack.currentWidget()
+        for page_index in range(stack.count()):
+            page = stack.widget(page_index)
+            is_active = page is active_page
+            page.setGraphicsEffect(None)
+            page.setEnabled(is_active)
+            page.setVisible(is_active)
+        if active_page is not None:
+            active_page.raise_()
+        stack.update()
 
     def _ensure_editor_subject_built(self, index: int) -> None:
         if index <= 0 or index > len(self.preparation.subjects):

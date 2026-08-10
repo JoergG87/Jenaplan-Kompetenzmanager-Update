@@ -3044,7 +3044,6 @@ Registrierte Motion-Namen:
 - `animate_feedback(widget, key, duration_ms)`
 - `animate_selection(widget, key)`
 - `animate_save_confirmation(button)`
-- `animate_stack_transition(stack, target, key)`
 - `MotionDialog`
 - `install_button_motion(button)`
 - `install_card_motion(card)`

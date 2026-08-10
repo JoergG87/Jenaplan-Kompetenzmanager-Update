@@ -623,12 +623,11 @@ Komponenten mit Motion:
 - Bewertungsbadges: Auswahl und sichtbarer Haken werden mit einer kurzen Fade-Bestaetigung quittiert
 - `FilterChip`: Einblenden eines neu sichtbaren Filterzustands; Reset und Filterausfuehrung bleiben unmittelbar
 - `InlineMessage`: ruhiges Einblenden neuer Information oder Erfolgsmeldung; Warnungen und Fehler erscheinen sofort
-- `MotionDialog`: 200-ms-Einblendung mit maximal fuenf Pixel vertikaler Beruhigung sowie Ausblendung; maximierte Arbeitsdialoge bewegen sich nicht
-- Bericht und LEG: nur der neu aktive lokale Abschnitt beziehungsweise die neu aktive Phase wird mit 160 ms eingeblendet; Editorzustand, Auswahl und Fokus bleiben stabil
+- `MotionDialog`: steht für kleine, nicht arbeitskritische Dialoge zur Verfügung; die drei Pilot-Arbeitsdialoge Bericht, LEG und Beobachtung verwenden den statischen `QDialog`-Pfad
 - persistente Primaer-Speicheraktionen: kurzer bestaetigender Zustand nach fachlich bestaetigtem Erfolg
 - `Toast`: 220-ms-Ein-/Ausblenden, Hover-Pause und sichere Ersetzung einer laufenden Meldung
 
-Bewusst statisch bleiben `EmptyState`, Tabellen und Tabellenzeilen, grosse Listen, Scrollen, Baumstrukturen, Suchergebnisse, nicht interaktive Karten, Dokument- und PDF-Vorschauen, die komplette Product Shell sowie Dashboard-Flaechen ohne bewussten Kontextwechsel. Kompetenz-Disclosures setzen die Sichtbarkeit weiterhin sofort und verwenden nur kurze zentrale Opacity-Bestaetigung. Es gibt keine vollflaechigen Screen-Uebergaenge, Hoehenanimationen, verschachtelten Listenanimationen oder blockierenden Animationen. Geometrie wird ausschliesslich fuer die kleinen Segment- und Sidebar-Indikatoren animiert; Layout und Inhaltsflaechen bleiben unberuehrt.
+Bewusst statisch bleiben `EmptyState`, Tabellen und Tabellenzeilen, grosse Listen, Scrollen, Baumstrukturen, Suchergebnisse, nicht interaktive Karten, Dokument- und PDF-Vorschauen, die komplette Product Shell sowie Dashboard-Flaechen ohne bewussten Kontextwechsel. Für den Pilot bleiben Bericht-Workspace, LEG-Phasen und Beobachtungs-Kompetenzbereich einschließlich ihrer Arbeitsdialoge frei von Opacity-/GraphicsEffect-Animationen; Disclosure setzt dort ausschließlich den Sichtbarkeitszustand. Es gibt keine vollflaechigen Screen-Uebergaenge, Hoehenanimationen, verschachtelten Listenanimationen oder blockierenden Animationen. Geometrie wird ausschliesslich fuer die kleinen Segment- und Sidebar-Indikatoren animiert; Layout und Inhaltsflaechen bleiben unberuehrt.
 
 ## Component Library V2 - UI Sprint 2
 

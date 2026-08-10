@@ -26,7 +26,6 @@ from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QListWidget,
     QPushButton,
-    QStackedWidget,
     QWidget,
 )
 
@@ -277,35 +276,6 @@ def animate_save_confirmation(button: QPushButton) -> QVariantAnimation | None:
         setattr(button, "_motion_save_confirmation_timer", reset_timer)
     reset_timer.start(520)
     return animation
-
-
-def animate_stack_transition(
-    stack: QStackedWidget,
-    target: int | QWidget,
-    *,
-    key: str = "stack_selection",
-) -> QVariantAnimation | None:
-    """Switch immediately, then softly settle only the newly active page."""
-    if isinstance(target, QWidget):
-        stack.setCurrentWidget(target)
-    else:
-        stack.setCurrentIndex(target)
-    page = stack.currentWidget()
-    if page is None or not stack.isVisible():
-        return None
-    effect = _opacity_effect(page)
-    if effect is None:
-        return None
-    effect.setOpacity(0.92)
-    return animate_value(
-        page,
-        key,
-        effect.opacity(),
-        1.0,
-        effect.setOpacity,
-        MOTION_SELECTION_MS,
-        QEasingCurve.Type.OutCubic,
-    )
 
 
 class MotionDialog(QDialog):

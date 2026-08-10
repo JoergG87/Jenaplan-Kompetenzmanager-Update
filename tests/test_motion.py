@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
-    QStackedWidget,
     QWidget,
 )
 
@@ -30,7 +29,6 @@ from src.desktop_app.motion import (
     MotionDialog,
     animate_opacity,
     animate_save_confirmation,
-    animate_stack_transition,
     animate_value,
     install_item_selection_motion,
     motion_duration,
@@ -297,25 +295,12 @@ class MotionSystemTest(unittest.TestCase):
         animation.setCurrentTime(MOTION_SELECTION_MS)
         self.assertGreater(controller.indicator.geometry().y(), first_geometry.y())
 
-    def test_dialog_and_stack_transitions_keep_semantic_state_immediate(self) -> None:
+    def test_dialog_transition_keeps_semantic_state_immediate(self) -> None:
         dialog = MotionDialog()
         dialog.show()
         self.app.processEvents()
         self.assertEqual(getattr(dialog, "_motion_animations", {}), {})
         self.assertAlmostEqual(dialog.windowOpacity(), 1.0)
-
-        stack = QStackedWidget()
-        first = QWidget()
-        second = QWidget()
-        stack.addWidget(first)
-        stack.addWidget(second)
-        stack.show()
-        self.app.processEvents()
-        transition = animate_stack_transition(stack, 1)
-        self.assertIs(stack.currentWidget(), second)
-        self.assertIsNotNone(transition)
-        transition.setCurrentTime(MOTION_SELECTION_MS)
-        self.assertAlmostEqual(second.graphicsEffect().opacity(), 1.0)
 
         dialog.reject()
         self.assertFalse(dialog.isVisible())
