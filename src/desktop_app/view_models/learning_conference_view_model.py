@@ -45,6 +45,7 @@ class LearningConferenceCompetencyViewModel:
     selectable: bool
     observation_dates: tuple[str, ...] = ()
     has_current_confirmation: bool = False
+    sort_order: int = 0
 
     def is_documented_in_period(
         self,
@@ -237,6 +238,7 @@ def build_learning_conference_preparation(
                         or str(getattr(status, "confirmed_at", "")).strip()
                     )
                 ),
+                sort_order=int(getattr(status, "sort_order", 0)),
             )
         )
 

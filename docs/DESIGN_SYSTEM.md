@@ -176,6 +176,19 @@ Kontrast, Screenreader-/VoiceOver-Ausgabe, Fehlerfokus und reale Bedienung des
 vollständigen Assistenten separat abzunehmen. Automatisierte Qt-Tests ersetzen
 diese reale Accessibility- und UX-Prüfung nicht.
 
+## Intern gegateter LEG-HTML-Host und Bericht-HTML-Spike - visuelle Grenze
+
+Der intern gegatete LEG-HTML-Host übernimmt bestehende Grün-Kontextrollen,
+Typografie, Karten, Radien, Abstände, Fokusrahmen und Buttonhierarchie des
+freigegebenen Spikes. Zu jedem Zeitpunkt ist genau eine der sechs Phasen
+sichtbar; Phasenwechsel verwenden ausschließlich DOM-State und keine Opacity-/
+GraphicsEffect-Animation. Der Kompetenz-/Belegbereich wird beim ersten Öffnen
+lazy aufgebaut und behält danach seinen DOM-Zustand. Verständliche Fehler
+werden ohne technische IDs, Pfade, Hashes oder Exceptions am Host angezeigt.
+Der Bericht bleibt ein isolierter blau markierter Spike. Diese Konkretisierung
+begründet kein Redesign und keine allgemeine Freigabe der CSS-Werte als neues
+Produkt-Designsystem.
+
 ## Phase 2 Berichte-Übersicht - neutrale Belegdarstellung
 
 **Status:** lokal implementiert und automatisiert im Qt-Offscreen-Modus

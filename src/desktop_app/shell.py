@@ -124,8 +124,12 @@ from src.desktop_app.view_models.student_view_model import StudentDetailViewMode
 from src.desktop_app.view_models.observation_view_model import ObservationDraftViewModel
 from src.desktop_app.view_models.master_data_view_model import CourseGroupViewModel
 from src.desktop_app.view_models.learning_conference_view_model import (
+    LearningConferenceDraftViewModel,
+    LearningConferencePreparationViewModel,
+    LearningConferenceRevisionStatusViewModel,
     build_learning_conference_completion_error,
 )
+from src.desktop_app.leg_ui import leg_ui_mode
 from src.desktop_app.window_policy import (
     exec_maximized_workspace,
     open_maximized_workspace,
@@ -348,6 +352,7 @@ class AppShell(QMainWindow):
         self.pending_observation_target_label = ""
         self._selected_report_draft_ids: dict[str, str] = {}
         self._selected_learning_conference_draft_ids: dict[str, str] = {}
+        self._active_learning_conference_student_ids: set[str] = set()
         self._active_learning_report_dialog: LearningReportDialog | None = None
         self._active_learning_report_revision_id = ""
         self._active_learning_report_revision_student_id = ""
@@ -2171,7 +2176,46 @@ class AppShell(QMainWindow):
         if preparation is None:
             self.status_label.setText("Schülerprofil wurde nicht gefunden.")
             return
+        draft_lock_key = (
+            initial_draft.learning_conference_draft_id
+            if initial_draft is not None
+            else f"new:{student_id}"
+        )
+        active_student_ids = getattr(
+            self,
+            "_active_learning_conference_student_ids",
+            set(),
+        )
+        if student_id in active_student_ids:
+            self.status_label.setText(
+                "Dieser LEG-Arbeitsstand ist bereits geöffnet."
+            )
+            return
+        try:
+            selected_ui = leg_ui_mode()
+        except ValueError:
+            QMessageBox.warning(
+                self,
+                "LEG-Oberfläche nicht verfügbar",
+                "Das interne LEG-Oberflächengate ist ungültig. "
+                "Der sichere Qt-Fallback bleibt aktiv.",
+            )
+            selected_ui = "qt"
+        if selected_ui == "html":
+            active_student_ids.add(student_id)
+            try:
+                self._open_learning_conference_html_dialog(
+                    student_id,
+                    preparation,
+                    initial_draft,
+                    draft_lock_key,
+                )
+            finally:
+                active_student_ids.discard(student_id)
+            self.show_student_profile(student_id)
+            return
         dialog = LearningConferenceDialog(preparation, self, initial_draft)
+        dialog.setProperty("learningConferenceDraftKey", draft_lock_key)
 
         def refresh_revision_status() -> None:
             draft = dialog.draft_view_model()
@@ -2224,8 +2268,92 @@ class AppShell(QMainWindow):
         dialog.completion_requested.connect(complete_conference)
         dialog.revision_open_requested.connect(open_revision)
         refresh_revision_status()
-        exec_maximized_workspace(dialog, self)
+        active_student_ids.add(student_id)
+        try:
+            exec_maximized_workspace(dialog, self)
+        finally:
+            active_student_ids.discard(student_id)
         self.show_student_profile(student_id)
+
+    def _open_learning_conference_html_dialog(
+        self,
+        student_id: str,
+        preparation: LearningConferencePreparationViewModel,
+        initial_draft: LearningConferenceDraftViewModel | None,
+        draft_lock_key: str,
+    ) -> None:
+        """Compose the gated LEG-only WebEngine host without importing it on Qt."""
+        from src.desktop_app.leg_html.bridge import (
+            LearningConferenceHtmlBridge,
+            LearningConferenceHtmlSession,
+        )
+        from src.desktop_app.leg_html.host import LearningConferenceHtmlDialog
+
+        draft = initial_draft or LearningConferenceDraftViewModel(
+            student_id=student_id,
+            conference_date=date.today(),
+        )
+        revision_status = None
+        artifacts = {}
+        if draft.learning_conference_draft_id:
+            try:
+                revision_status = self.adapter.learning_conference_revision_status(
+                    draft.learning_conference_draft_id
+                )
+            except Exception:
+                revision_status = None
+        if revision_status is not None:
+            for revision in revision_status.revisions:
+                try:
+                    artifact = self.adapter.load_learning_conference_pdf_artifact(
+                        revision.learning_conference_revision_id
+                    )
+                except Exception:
+                    artifact = None
+                if artifact is not None:
+                    artifacts[revision.learning_conference_revision_id] = artifact
+
+        def save_draft(
+            value: LearningConferenceDraftViewModel,
+        ) -> LearningConferenceDraftViewModel:
+            saved = self.adapter.save_learning_conference_draft(value)
+            self._selected_learning_conference_draft_ids[student_id] = (
+                saved.learning_conference_draft_id
+            )
+            self.status_label.setText(
+                "Lernentwicklungsgespräch-Entwurf gespeichert."
+            )
+            return saved
+
+        def complete_conference(
+            learning_conference_draft_id: str,
+        ) -> LearningConferenceRevisionStatusViewModel:
+            status = self.adapter.complete_learning_conference(
+                learning_conference_draft_id
+            )
+            self.status_label.setText("Lernentwicklungsgespräch abgeschlossen.")
+            return status
+
+        session = LearningConferenceHtmlSession(
+            preparation=preparation,
+            draft=draft,
+            revision_status=revision_status,
+            artifacts_by_revision_id=artifacts,
+            save_draft=save_draft,
+            complete_conference=complete_conference,
+            refresh_revision_status=self.adapter.learning_conference_revision_status,
+            load_final_artifact=self.adapter.load_learning_conference_pdf_artifact,
+            open_revision=None,
+            show_final_pdf=None,
+        )
+        bridge = LearningConferenceHtmlBridge(session)
+        dialog = LearningConferenceHtmlDialog(bridge, self)
+        session.open_revision = lambda revision_id: self.open_learning_conference_revision(
+            revision_id,
+            dialog,
+        )
+        dialog.setProperty("learningConferenceDraftKey", draft_lock_key)
+        exec_maximized_workspace(dialog, self)
 
     def open_learning_conference_revision(
         self,

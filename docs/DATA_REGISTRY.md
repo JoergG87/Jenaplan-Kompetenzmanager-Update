@@ -211,6 +211,17 @@ SJ-3C.6 verdrahtet Runtime-/Shell-/UI-Aufruf und Authentifizierung mit dem
 bestehenden Executor. Persistierte Datenquellen, Backupformat und
 Transitionbeleg bleiben unverändert.
 
+## LEG-HTML-Produktpfad - keine neue fachliche Datenquelle
+
+Der intern gegatete LEG-HTML-Host registriert keine Tabelle, fachliche Datei,
+Persistenz, Remotequelle oder Cache. Seine einzigen fachlichen Eingaben sind
+die vorhandenen `LearningConference*ViewModel`-Projektionen. HTML, CSS und
+JavaScript sind unveränderliche lokale `qrc:`-Anwendungsressourcen und keine
+fachliche Datenquelle. Finale LCA-Metadaten enthalten im DOM weder Speicherpfad,
+Hash noch PDF-Bytes; ausschließlich die Artifact-ID darf an einen
+Python-seitigen verifizierenden Consumer zurückgegeben werden. Der Bericht-
+HTML-Pfad bleibt ein isolierter Spike ohne Produktnavigation.
+
 ## Phase 2 Berichte-Übersicht - ausschließlich vorhandene Lesequellen
 
 **Status:** lokal implementierter Lesepfad. Es entstand keine neue

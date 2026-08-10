@@ -147,6 +147,32 @@ Bericht und Lernentwicklungsgespräch bleiben getrennte fachliche Aggregate.
 Eine gemeinsame Darstellung ist ausschließlich eine Displaykomposition und
 begründet weder gemeinsame Persistenz noch einen gemeinsamen Lifecycle.
 
+## Intern gegatete LEG-HTML-Oberfläche
+
+Das Lernentwicklungsgespräch darf zusätzlich zum vollständig erhaltenen
+Qt-Dialog über eine intern gegatete lokale HTML-Oberfläche dargestellt werden.
+`qt` bleibt der Standard und jederzeit ohne Datenmigration erreichbar; `html`
+aktiviert ausschließlich den LEG-Host. Beide Oberflächen öffnen dasselbe
+Python-Draft-ViewModel und verwenden dieselben Application-/Adapterverträge für
+vollständiges Speichern, Completion, Revisionen und finale LCA-Artefakte. Ein
+Draft darf nicht gleichzeitig in beiden Hosts geöffnet sein.
+
+Der HTML-DOM besitzt ausschließlich Darstellungs-, Fokus-, Disclosure- und
+Eingabespiegelzustand. Persistenz, Validierung, Completion-Fachlogik,
+Revisionserzeugung, PDF-Erzeugung, Datenbankzugriff, Managed-Document-Lesen und
+Security-/DMK-Logik bleiben Python-owned. Ungeöffnete DOM-Phasen schreiben
+keine Defaults zurück. Interne Phasenwechsel erzeugen weder Dialogresultat noch
+Shell-Navigation. Der Python-Host bindet den bestehenden Save-/Discard-/Cancel-
+Schutz an jeden Close-Pfad; Browser-`beforeunload` ist keine Sicherheitsgrenze.
+
+Der Host lädt ausschließlich eingebettete `qrc:`-Ressourcen mit restriktiver
+CSP und einer expliziten `QWebChannel`-Allowlist. Netzwerk, externe Navigation,
+Popups, Downloads, Cookies, persistente Browserdaten, Remote-Debugging sowie technische
+IDs, Pfade, Hashes, PDF-Bytes oder Exceptions im DOM sind unzulässig. Ein
+finales LCA darf nur über seine fachliche Artifact-ID an einen kontrollierten
+Python-Consumer übergeben werden. Diese technische Produktvorbereitung ist
+keine Pilot-, Packaging-, Accessibility- oder Releasefreigabe.
+
 ## Pilot-Releaseautomation
 
 Die lokale Pilot-Releaseautomation ist ein rein technischer, terminalbasierter

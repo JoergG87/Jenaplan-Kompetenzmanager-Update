@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' qrc:; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Lernentwicklungsgespräch</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="loading" class="loading" role="status">Lernentwicklungsgespräch wird vorbereitet …</div>
+  <div id="app" class="app-shell" hidden></div>
+  <div id="live-status" class="sr-only" aria-live="polite"></div>
+  <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

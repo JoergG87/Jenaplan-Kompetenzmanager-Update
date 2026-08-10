@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Das LEG kann intern gegatet neben dem vollständig erhaltenen Qt-Fallback in
+  einem lokalen `QWebEngineView` geöffnet werden. Die LEG-only-
+  `QWebChannel`-Bridge verwendet den vorhandenen Python-Draft sowie bestehende
+  Save-, Completion- und Revisionsverträge; DOM-Navigation, lazy Kompetenz-/
+  Belegdarstellung und der Python-seitige Dirty-/Close-Schutz erzeugen keine
+  zweite Persistenz. Bericht-HTML, Final V4, Schema, Migration und Release
+  bleiben unverändert; WebEngine-Packaging und der sichere finale LCA-Viewer
+  benötigen vor dem Pilot weiterhin gesonderte Freigaben.
+
 - Pilot-UI: Shell-Feedback reserviert seine Layout-Höhe auch im ausgeblendeten
   Zustand und bleibt dadurch bei kleinen unterstützten Fensterhöhen vollständig
   sichtbar. Der Beobachtungsdialog rendert seine Kompetenzzone ohne einen

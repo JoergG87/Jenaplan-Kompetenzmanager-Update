@@ -109,6 +109,18 @@ Application-/Repositorygrenzen. `courses.year_level` ist Stammdatenquelle und
 wird im Kursdialog bewusst gewählt; sie wird nicht durch Widgetreihenfolge
 oder Kursname abgeleitet.
 
+## Intern gegateter LEG-HTML-Host - View Ownership
+
+`LearningConferenceHtmlDialog` besitzt ausschließlich WebEngine-Lifecycle,
+Ressourcen-, Navigations- und Python-seitigen Close-Schutz. Der DOM besitzt
+sichtbare Phase, Disclosure, Fokus und Eingabespiegel.
+`LearningConferenceHtmlBridge` besitzt die Allowlist, den geöffneten Python-
+Draft und dessen gespeicherte Baseline. Vorhandene Adapter, Application
+Services und Domain Services bleiben alleinige Eigentümer von Reads,
+vollständigem Draft-Write, Validierung, Completion, Revision und finalem LCA.
+Die AppShell besitzt Gate-Auswahl und verhindert parallele LEG-Hosts desselben
+Drafts. Der Bericht-HTML-Spike bleibt außerhalb der Shell-Navigation.
+
 ## Phase 2 Berichte-Übersicht - implementiert
 
 `StudentDesktopAdapter.report_overview_for_student` bleibt die einzige

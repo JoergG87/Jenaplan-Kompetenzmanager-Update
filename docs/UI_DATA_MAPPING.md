@@ -177,6 +177,24 @@ aufgelöst. Dieses Mapping führt keine neue Tabelle, Migration oder Persistenz
 ein. Die getrennte `V4_SCHEMA_READY`-Disposition verändert die fachlichen
 Reader- und Sperrverträge nicht.
 
+## LEG-HTML-Produktpfad und isolierter Bericht-HTML-Spike
+
+| Spike-Oberfläche | Sichtbare Eingabe/Anzeige | Vorhandene Python-Quelle | Schreibend |
+|---|---|---|---|
+| Bericht | Lehrkraft, Gesamttext, Fachtexte | `LearningReportDraftViewModel` / `LearningReportSubjectDraftViewModel` | nur über vollständigen `save_learning_report_draft`-Callback |
+| Bericht | Kompetenzen und Belege | `LearningReportPreparationViewModel` plus Draft-ID-Auswahlmengen | nur Draftauswahl, keine Status- oder Belegfachlogik |
+| Bericht | Revisionen und finales PDF | `LearningReportRevisionStatusViewModel` plus pfadlose Artifact-Metadaten | Nein; Anzeigeaktion über Python-Artifact-ID |
+| LEG HTML | vorhandene sechs Phasentexte und Datumsfelder | `LearningConferenceDraftViewModel` | nur über vollständigen `save_learning_conference_draft`-Callback |
+| LEG HTML | Fächer, Kompetenzbereich, Thema, Kompetenz, Belege und Querthemen | `LearningConferencePreparationViewModel` plus Draft-ID-Auswahlmengen in kanonischer `sort_order` | nur Draftauswahl, keine Completion-Logik |
+| LEG HTML | Abschlussrevisionen | `LearningConferenceRevisionStatusViewModel` | Nein |
+| LEG HTML | `Finales PDF anzeigen` | pfadlose `LearningConferencePdfArtifactViewModel`-Identität | Nein; nur Artifact-ID an kontrollierten Python-Consumer |
+
+DOM-Navigation und Disclosure sind reine Darstellung und besitzen keine
+Python- oder Dialogresultataktion. Die Bericht-Zeilen dokumentieren weiterhin
+nur den isolierten Spike und begründen keine Bericht-Produktnavigation.
+Kompetenzen und Belege werden erst beim ersten Öffnen von Phase 5 vollständig
+über die explizite read-only Bridge-Methode projiziert.
+
 ## Phase 2 Berichte-Übersicht - implementiert
 
 | Sichtbares UI-Feld / Aktion | Quelle | Persistenz | Verbindliche Regel |

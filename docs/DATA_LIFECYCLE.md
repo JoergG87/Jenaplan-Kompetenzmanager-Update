@@ -471,6 +471,26 @@ Dieser Vertrag ist mit SJ-2E lokal umgesetzt. Die gesonderte
 `V3_SCHEMA_READY`-Disposition lässt das exakt verifizierte Schema starten,
 ohne diesen Readervertrag oder fachliche Sperrzustände zu verändern.
 
+## Intern gegateter LEG-HTML-Host - delegierter Draftablauf
+
+Der produktnahe LEG-HTML-Host hält den bearbeitbaren Zustand als vorhandenes
+Python-Draft-ViewModel. DOM-Eingaben aktualisieren ausschließlich explizit
+erlaubte Felder dieser geöffneten Session. `saveConferenceDraft()` delegiert
+anschließend denselben vollständigen Aggregat-Write wie der Qt-LEG-Dialog an
+die vorhandene Application-/Adaptergrenze; es entsteht kein feldweiser Web-
+Persistenzpfad und kein zweites Draftaggregat.
+
+Completion, Revisionen, PDF-Verifikation und Managed-Document-Lesen bleiben
+vollständig Python-owned. Phasen- und Disclosure-Navigation schreiben nichts.
+Die große Kompetenz-/Belegprojektion wird erst beim ersten bewussten Öffnen
+von Phase 5 über einen eigenen read-only Bridge-Slot geladen; `initialState()`
+und feldweise Draftänderungen übertragen diesen Bestand nicht erneut.
+Beim Schließen vergleicht die Python-Bridge den aktuellen Draft mit ihrer
+gespeicherten Baseline und verwendet denselben Save-/Discard-/Cancel-Vertrag
+wie Qt. Speichern ersetzt die Baseline erst nach erfolgreichem vollständigem
+Write. Ein abgebrochener oder fehlgeschlagener Save hält den Host offen. Der
+Bericht-HTML-Spike bleibt ohne Produktaktivierung.
+
 ## Phase 2 Berichte-Übersicht - rein lesender Projektionsablauf
 
 **Status:** lokal implementiert. Der Ablauf schreibt nichts und ergänzt weder
