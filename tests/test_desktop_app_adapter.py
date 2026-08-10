@@ -4799,7 +4799,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertEqual(dialog.validation_message.property("messageTone"), "warning")
         self.assertTrue(dialog.note_input.hasFocus())
-        self.assertEqual(dialog.competency_zone_opacity.opacity(), 0.48)
+        self.assertFalse(dialog.competency_zone.isEnabled())
+        self.assertIsNone(dialog.competency_zone.graphicsEffect())
 
     def test_observation_dialog_inserts_new_selection_at_top(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()

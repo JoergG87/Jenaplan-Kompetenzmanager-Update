@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Pilot-UI: Shell-Feedback reserviert seine Layout-Höhe auch im ausgeblendeten
+  Zustand und bleibt dadurch bei kleinen unterstützten Fensterhöhen vollständig
+  sichtbar. Der Beobachtungsdialog rendert seine Kompetenzzone ohne einen
+  dauerhaft über allen Kind-Controls liegenden Grafikeffekt; der deaktivierte
+  Schnellbeobachtungszustand bleibt über den nativen Enabled-Vertrag sichtbar.
+
 - Die Berichtsübersicht bleibt bei mehreren Entwürfen ohne automatische
   Auswahl. Eine bewusst gewählte `draft_id` aktualisiert Zeitraum, Timeline und
   Fachkarten jetzt unmittelbar, ohne den Bericht zu öffnen.

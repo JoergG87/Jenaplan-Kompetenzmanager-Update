@@ -17,7 +17,6 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFileDialog,
     QFrame,
-    QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -279,9 +278,6 @@ class NewObservationDialog(MotionDialog):
         splitter.setHandleWidth(10)
         splitter.addWidget(self._build_context_zone())
         self.competency_zone = self._build_competency_zone()
-        self.competency_zone_opacity = QGraphicsOpacityEffect(self.competency_zone)
-        self.competency_zone_opacity.setOpacity(1.0)
-        self.competency_zone.setGraphicsEffect(self.competency_zone_opacity)
         splitter.addWidget(self.competency_zone)
         splitter.addWidget(self._build_observation_zone())
         splitter.setStretchFactor(0, 0)
@@ -1209,7 +1205,6 @@ class NewObservationDialog(MotionDialog):
             return
         self.quick_observation_feedback.setText("")
         self.competency_zone.setEnabled(not checked)
-        self.competency_zone_opacity.setOpacity(0.48 if checked else 1.0)
         if checked:
             self.note_input.setFocus(Qt.FocusReason.OtherFocusReason)
 

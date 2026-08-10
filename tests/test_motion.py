@@ -199,6 +199,7 @@ class MotionSystemTest(unittest.TestCase):
 
     def test_toast_replacement_hover_pause_and_lifecycle_are_stable(self) -> None:
         toast = Toast()
+        self.assertTrue(toast.sizePolicy().retainSizeWhenHidden())
         toast.show_message("Erste Meldung", duration_ms=70)
         toast.show_message("Zweite Meldung", duration_ms=70)
 
