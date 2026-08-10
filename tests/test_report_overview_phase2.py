@@ -21,6 +21,7 @@ PERIOD_END = date(2026, 7, 31)
 def _overview(
     *,
     selected_report_draft_id: str = "RPD-SELECTED",
+    report_draft_ids: tuple[str, ...] = ("RPD-SELECTED",),
     phase2_period_start: object = PERIOD_START,
     phase2_period_end: object = PERIOD_END,
     observations: tuple[dict[str, object], ...] = (),
@@ -30,15 +31,18 @@ def _overview(
     subjects: tuple[dict[str, object], ...] = (),
     source_errors: tuple[str, ...] = (),
 ):
-    draft = LearningReportDraftViewModel(
-        student_id="STU-1",
-        period_start=PERIOD_START,
-        period_end=PERIOD_END,
-        report_draft_id="RPD-SELECTED",
-        updated_at="2026-07-01T08:00:00+00:00",
+    drafts = tuple(
+        LearningReportDraftViewModel(
+            student_id="STU-1",
+            period_start=PERIOD_START,
+            period_end=PERIOD_END,
+            report_draft_id=draft_id,
+            updated_at="2026-07-01T08:00:00+00:00",
+        )
+        for draft_id in report_draft_ids
     )
     return build_report_overview(
-        (draft,),
+        drafts,
         {},
         (),
         {},
@@ -138,6 +142,7 @@ def _confirmation(
     confirmed_at: object,
     *,
     student_id: str = "STU-1",
+    subject_id: str = "math",
     documentation_state: str = "confirmed",
     active: bool = True,
     catalog_status: str = "regular",
@@ -145,6 +150,7 @@ def _confirmation(
     return {
         "student_id": student_id,
         "competency_id": competency_id,
+        "subject_id": subject_id,
         "competency_text": f"Kompetenz {competency_id}",
         "confirmed_at": confirmed_at,
         "documentation_state": documentation_state,
@@ -205,7 +211,7 @@ def test_invalid_period_blocks_projection_neutrally(
     }
 
 
-def test_no_explicit_or_stale_rpd_selection_has_no_phase2_projection() -> None:
+def test_no_explicit_or_stale_rpd_selection_keeps_development_projection() -> None:
     event = _observation("OBS-1", PERIOD_START)
 
     no_selection = _overview(
@@ -217,10 +223,52 @@ def test_no_explicit_or_stale_rpd_selection_has_no_phase2_projection() -> None:
         observations=(event,),
     )
 
-    assert no_selection.timeline_events == ()
+    assert [event.source_identity for event in no_selection.timeline_events] == [
+        ("observation", "OBS-1")
+    ]
     assert no_selection.projection_warnings == ()
-    assert stale_selection.timeline_events == ()
+    assert [event.source_identity for event in stale_selection.timeline_events] == [
+        ("observation", "OBS-1")
+    ]
     assert stale_selection.projection_warnings == ()
+
+
+@pytest.mark.parametrize(
+    ("draft_ids", "selected_id"),
+    (
+        ((), ""),
+        (("RPD-SELECTED",), ""),
+        (("RPD-A", "RPD-B"), ""),
+    ),
+)
+def test_development_projection_is_identical_for_zero_one_or_many_drafts(
+    draft_ids: tuple[str, ...],
+    selected_id: str,
+) -> None:
+    overview = _overview(
+        report_draft_ids=draft_ids,
+        selected_report_draft_id=selected_id,
+        phase2_period_start=date(2026, 8, 1),
+        phase2_period_end=date(2027, 7, 31),
+        observations=(
+            _observation("OBS-IN", date(2026, 8, 1)),
+            _observation("OBS-BEFORE", date(2026, 7, 31)),
+            _observation("OBS-END", date(2027, 7, 31)),
+            _observation("OBS-AFTER", date(2027, 8, 1)),
+        ),
+        subjects=SUBJECTS,
+    )
+
+    assert [event.source_identity for event in overview.timeline_events] == [
+        ("observation", "OBS-IN"),
+        ("observation", "OBS-END"),
+    ]
+    assert overview.selected_report_draft_id == ""
+    assert [subject.subject_id for subject in overview.subject_documentation] == [
+        "math",
+        "german",
+        "science",
+    ]
 
 
 def test_unparseable_observation_date_warns_without_removing_valid_events() -> None:
@@ -481,7 +529,23 @@ def test_quick_observation_counts_without_creating_a_competency_segment() -> Non
     math = overview.subject_documentation[0]
     assert math.competency_ids == ()
     assert math.observation_ids == ("OBS-QUICK",)
-    assert math.observation_count_text == "1 Beobachtung im Berichtszeitraum"
+    assert math.observation_count_text == "1 Beobachtung im aktuellen Schuljahr"
+
+
+def test_subject_card_shows_only_existing_neutral_confirmation_information() -> None:
+    overview = _overview(
+        confirmations=(
+            _confirmation("CMP-MATH", "2026-03-01", subject_id="math"),
+        ),
+        subjects=SUBJECTS,
+    )
+
+    math, german, science = overview.subject_documentation
+    assert math.confirmation_count_text == (
+        "Aktuell bestätigter Stand für 1 Kompetenz vorhanden"
+    )
+    assert german.confirmation_count_text == ""
+    assert science.confirmation_count_text == ""
 
 
 def test_multi_subject_observation_counts_once_per_actual_subject_and_once_globally() -> None:

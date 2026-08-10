@@ -285,19 +285,21 @@ Datenquellen in `docs/DATA_REGISTRY.md`, Projektionsablauf in
 `docs/VIEW_DATA_OWNERSHIP.md`, sichtbare Felder in
 `docs/UI_DATA_MAPPING.md` und UX in `docs/DESIGN_SYSTEM.md`.
 
-Der Berichtsbereich beantwortet ausschließlich, welche vorhandenen
-Beobachtungen und Belege Laura für den Bericht verwenden kann. Er ist
-Berichtsvorbereitung und Dokumentationsübersicht im gewählten
-Berichtszeitraum, keine zusätzliche Entwicklungsanalyse. Der Profilbereich
-`Überblick` bleibt Eigentümer der kompakten Lernentwicklungsdarstellung;
+Die Entwicklungsübersicht im Schülerprofil zeigt Timeline und Fachkarten
+ausschließlich für das aktuelle Schuljahr. Sie verwendet die effektiven
+Schülerfächer und ist von Berichtsentwürfen unabhängig. Die konkrete
+Berichtswerkstatt beantwortet weiterhin ausschließlich, welche vorhandenen
+Beobachtungen und Belege Laura im bewusst gewählten RPD-Zeitraum für den
+Bericht verwenden kann. `Überblick` bleibt Eigentümer der kompakten
+Lernentwicklungsdarstellung;
 `Kompetenzen` bleibt Eigentümer der detaillierten Kompetenz- und Belegansicht.
 Phase 2 führt deshalb weder einen neuen Themenverlauf noch einen
 Kompetenzentwicklungs-Drill-down, eine dritte Lernentwicklungsdarstellung,
 eine automatische Entwicklungszusammenfassung oder eine automatische
 Berichtsformulierung ein.
 
-Die Phase-2-Berichte-Übersicht verwendet ausschließlich den inklusiven
-Zeitraum des eindeutig gewählten RPD. Sie zeigt pro aktivem
+Die Entwicklungsübersicht verwendet ausschließlich den inklusiven Zeitraum
+des eindeutigen `current`-Schuljahres. Sie zeigt pro aktivem
 `observation_id`, abgeschlossenem `report_draft_id`, abgeschlossenem
 `learning_conference_draft_id` und aktuellem sicheren
 `(student_id, competency_id)`-Bestätigungsstand höchstens ein neutrales

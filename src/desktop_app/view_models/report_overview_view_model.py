@@ -127,6 +127,7 @@ class ReportOverviewSubjectDocumentationViewModel:
     accessible_name: str
     evidence_action: ReportOverviewActionViewModel
     prepare_action: ReportOverviewActionViewModel
+    confirmation_count_text: str = ""
 
 
 @dataclass(frozen=True)
@@ -257,11 +258,6 @@ def build_report_overview(
         selected_learning_conference_draft_id,
         "learning_conference_draft_id",
     )
-    phase2_selected_report = _strict_selected_draft(
-        report_drafts,
-        selected_report_draft_id,
-        "report_draft_id",
-    )
     report_status = (
         _unreadable_report_status()
         if report_list_error is not None
@@ -339,16 +335,12 @@ def build_report_overview(
         ...,
     ] = ()
     phase2_warnings: tuple[ReportOverviewProjectionWarningViewModel, ...] = ()
-    if phase2_selected_report is not None:
+    if phase2_period_start is not _UNSET or phase2_period_end is not _UNSET:
         resolved_phase2_start = (
-            phase2_selected_report.period_start
-            if phase2_period_start is _UNSET
-            else phase2_period_start
+            None if phase2_period_start is _UNSET else phase2_period_start
         )
         resolved_phase2_end = (
-            phase2_selected_report.period_end
-            if phase2_period_end is _UNSET
-            else phase2_period_end
+            None if phase2_period_end is _UNSET else phase2_period_end
         )
         (
             phase2_timeline,
@@ -366,7 +358,7 @@ def build_report_overview(
             subjects=phase2_subjects,
             source_errors=phase2_source_errors,
             selected_report_draft_id=(
-                phase2_selected_report.report_draft_id
+                selected_report.report_draft_id if selected_report else ""
             ),
         )
     return ReportOverviewViewModel(
@@ -965,6 +957,10 @@ def _phase2_evidence_projection(
         subject_id: set()
         for subject_id, _subject_name in canonical_subjects
     }
+    confirmed_competency_ids_by_subject: dict[str, set[str]] = {
+        subject_id: set()
+        for subject_id, _subject_name in canonical_subjects
+    }
     observation_events: list[ReportOverviewTimelineEventViewModel] = []
 
     for observation in observations:
@@ -1072,6 +1068,19 @@ def _phase2_evidence_projection(
         period_end,
         warning_keys,
     )
+    for confirmation in confirmations:
+        subject_id = _phase2_text(confirmation.get("subject_id"))
+        competency_id = _phase2_text(confirmation.get("competency_id"))
+        confirmed_on = _phase2_local_date(confirmation.get("confirmed_at"))
+        if (
+            subject_id in confirmed_competency_ids_by_subject
+            and competency_id
+            and _phase2_is_current_competency(confirmation)
+            and _phase2_is_safe_confirmation(confirmation)
+            and confirmed_on is not None
+            and _phase2_in_period(confirmed_on, period_start, period_end)
+        ):
+            confirmed_competency_ids_by_subject[subject_id].add(competency_id)
 
     document_events = _phase2_deduplicate_events(
         (*report_events, *learning_conference_events)
@@ -1109,6 +1118,7 @@ def _phase2_evidence_projection(
             subject_name,
             competency_ids_by_subject[subject_id],
             observation_ids_by_subject[subject_id],
+            confirmed_competency_ids_by_subject[subject_id],
             selected_report_draft_id,
         )
         for subject_id, subject_name in canonical_subjects
@@ -1297,12 +1307,14 @@ def _phase2_subject_documentation(
     subject_name: str,
     competency_ids: set[str],
     observation_ids: set[str],
+    confirmed_competency_ids: set[str],
     selected_report_draft_id: str,
 ) -> ReportOverviewSubjectDocumentationViewModel:
     sorted_competency_ids = tuple(sorted(competency_ids))
     sorted_observation_ids = tuple(sorted(observation_ids))
     competency_count = len(sorted_competency_ids)
     observation_count = len(sorted_observation_ids)
+    confirmation_count = len(confirmed_competency_ids)
     return ReportOverviewSubjectDocumentationViewModel(
         subject_id=subject_id,
         subject_name=subject_name,
@@ -1316,7 +1328,7 @@ def _phase2_subject_documentation(
         observation_count_text=(
             f"{observation_count} "
             f"{'Beobachtung' if observation_count == 1 else 'Beobachtungen'} "
-            "im Berichtszeitraum"
+            "im aktuellen Schuljahr"
         ),
         accessible_name=(
             f"{subject_name}: {competency_count} "
@@ -1334,6 +1346,14 @@ def _phase2_subject_documentation(
             "Bericht vorbereiten",
             selected_report_draft_id,
             subject_id,
+        ),
+        confirmation_count_text=(
+            "Aktuell bestätigter Stand für "
+            f"{confirmation_count} "
+            f"{'Kompetenz' if confirmation_count == 1 else 'Kompetenzen'} "
+            "vorhanden"
+            if confirmation_count
+            else ""
         ),
     )
 

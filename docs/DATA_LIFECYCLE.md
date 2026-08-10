@@ -496,14 +496,17 @@ Bericht-HTML-Spike bleibt ohne Produktaktivierung.
 **Status:** lokal implementiert. Der Ablauf schreibt nichts und ergänzt weder
 Persistenz noch Migration oder Recovery.
 
-1. Die Projektion setzt genau einen bewusst gewählten RPD voraus und verwendet
-   dessen `period_start` und `period_end` inklusiv. Ohne eindeutigen RPD
-   entsteht keine inhaltliche Phase-2-Projektion. Schuljahr, Halbjahr,
-   Kalenderjahr, Tagesdatum, LEG-Zeitraum und andere RPD sind keine Fallbacks.
-   Auch ein einzelner vorhandener RPD wird nicht automatisch gewählt; eine
-   fehlende oder veraltete bewusste Auswahl bleibt neutral.
-2. Der Desktop-Adapter friert `period_start` und `period_end` des ausgewählten
-   RPD einmal ein. Er liest aktive Beobachtungen, Zuordnungen sowie den
+1. Die Entwicklungsübersicht setzt genau ein eindeutiges `current`-Schuljahr
+   voraus und verwendet dessen `start_date` und `end_date` inklusiv. Ein RPD,
+   Halbjahr, Kalenderjahr, Tagesdatum oder LEG-Zeitraum ist keine Ersatzquelle.
+   Null, ein oder mehrere Berichtsentwürfe verändern die Projektion nicht und
+   kein RPD wird automatisch gewählt. Die konkrete Berichtswerkstatt bleibt
+   separat an `period_start` und `period_end` ihres bewusst gewählten RPD
+   gebunden.
+2. Der Desktop-Adapter friert `school_year_id`, `start_date` und `end_date` des
+   aktuellen Schuljahres einmal ein und liest die Fachrelevanz ausschließlich
+   über `effective_documentation_subjects(student_id, school_year_id)`. Er
+   liest aktive Beobachtungen, Zuordnungen sowie den
    kanonischen Kompetenzstatus über
    `SQLiteStudentDocumentationProjectionRepository.read_batch` in einem
    SQLite-Read-Snapshot. Bericht- und LEG-Aggregate liest er über getrennte
@@ -533,8 +536,8 @@ Persistenz noch Migration oder Recovery.
    Eine Schnellbeobachtung ohne Zuordnung bleibt eine Beobachtung.
    `Kompetenz bestätigt` entsteht höchstens einmal je Paar
    `(student_id, competency_id)` aus dem aktuellen sicheren Stand.
-6. Die verpflichtende Dokumentereignismenge enthält innerhalb des eindeutig
-   gewählten RPD-Zeitraums je fachlich abgeschlossenem Berichtaggregat
+6. Die verpflichtende Dokumentereignismenge enthält innerhalb des aktuellen
+   Schuljahres je fachlich abgeschlossenem Berichtaggregat
    höchstens ein Ereignis mit Identität `("report", report_draft_id)` und je
    tatsächlich durchgeführtem und fachlich abgeschlossenem LEG-Aggregat
    höchstens ein Ereignis mit Identität
@@ -553,7 +556,7 @@ Persistenz noch Migration oder Recovery.
    Beobachtungs- und Bestätigungsereignisse, wie zum Erreichen von 15 noch
    fehlen. Zulässig sind ausschließlich aktive Beobachtungen und der aktuell
    vorhandene sichere Bestätigungsstand mit fachlichem Datum im
-   RPD-Zeitraum. Reichen die
+   aktuellen Schuljahr. Reichen die
    zulässigen ergänzenden Ereignisse nicht aus, bleibt die Timeline kürzer; es
    entstehen keine künstlichen Ereignisse. Bei mindestens 15 verpflichtenden
    Dokumentereignissen wird nichts zu deren Begrenzung entfernt.
@@ -571,10 +574,12 @@ Persistenz noch Migration oder Recovery.
    Ereignistyp außerhalb der verpflichtenden Bericht-/LEG-Aufnahmeregel,
    Wichtigkeit, Stärke, Defizit, Förderbedarf, pädagogischer Relevanz oder
    automatischer Priorität.
-8. Je Fach werden zwei unabhängige Identitätsmengen gebildet: aktuelle
-   dokumentierte `competency_id` und vorhandene `observation_id` im
-   RPD-Zeitraum. Eine aktive, aktuelle Kompetenz gehört zur ersten Menge,
-   wenn mindestens eine aktive Beobachtungszuordnung im RPD-Zeitraum
+8. Ausschließlich für die kanonisch geordnete Fachmenge aus
+   `effective_documentation_subjects(student_id, school_year_id)` werden je
+   Fach zwei unabhängige Identitätsmengen gebildet: aktuelle dokumentierte
+   `competency_id` und vorhandene `observation_id` im aktuellen Schuljahr.
+   Eine aktive, aktuelle Kompetenz gehört zur ersten Menge, wenn mindestens
+   eine aktive Beobachtungszuordnung im aktuellen Schuljahr
    vorhanden ist. Mehrfachbeobachtungen derselben Kompetenz erhöhen den
    Kompetenzzähler nicht mehrfach. Eine Bestätigung derselben Kompetenz
    erzeugt weder ein zusätzliches Segment noch ohne Beobachtungszuordnung eine
@@ -605,7 +610,7 @@ Persistenz noch Migration oder Recovery.
    ihre realen Beobachtungen aber nicht unsichtbar.
 9. Eine Bestätigung zählt nur aus dem aktuellen kanonisch sicheren Stand
    einer aktiven, nicht historischen Kompetenz mit gültigem `confirmed_at` im
-   RPD-Zeitraum. `confirmation_unknown` zählt nicht.
+   aktuellen Schuljahr. `confirmation_unknown` zählt nicht.
    `newer_observations` rekonstruiert keine Bestätigungskette und hebt den
    vorhandenen aktuellen Stand nicht auf.
 10. Nach Navigation oder Refresh wird die gesamte flüchtige Projektion aus den

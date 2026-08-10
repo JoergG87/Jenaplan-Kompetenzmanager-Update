@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Entwicklungsübersicht: Timeline und Fachkarten verwenden das aktuelle
+  Schuljahr und die effektiven Schülerfächer unabhängig von vorhandenen
+  Berichtsentwürfen; die Berichtswerkstatt bleibt an ihren RPD-Zeitraum
+  gebunden.
+
 - Pilot-UI: Bericht, Qt-LEG und Beobachtungsdialog verwenden für ihre großen
   Arbeitsbereiche statische Qt-Renderpfade. Workspace-, Fachseiten- und
   Phasenwechsel setzen genau eine sichtbare, aktive Seite ohne Opacity- oder

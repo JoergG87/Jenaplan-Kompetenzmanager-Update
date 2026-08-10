@@ -195,7 +195,7 @@ Produkt-Designsystem.
 geprüft. Reale macOS-Trackpad- und VoiceOver-Abnahme bleiben offen.
 
 Die Timeline zeigt ausschließlich vorhandene Dokumentationsereignisse im
-gewählten RPD-Berichtszeitraum. Sie wird als horizontal scrollbare Liste
+aktuellen Schuljahr. Sie wird als horizontal scrollbare Liste
 gerendert und startet beim Öffnen am neuesten Ende. Abhängig von der
 verfügbaren Breite sind ungefähr zwei, vier oder fünf Ereigniskarten
 gleichzeitig sichtbar. Diese Werte beschreiben ausschließlich den Viewport und
@@ -237,7 +237,9 @@ automatisches Nachscrollen.
 
 Fachkarten zeigen absolute Dokumentationsmengen. Der Phase-2-Balken besteht
 aus genau einem gleich breiten neutralen Segment je dokumentierter aktueller
-Kompetenz im RPD-Zeitraum. Es gibt keine ungefüllte Restspur, keinen
+Kompetenz im aktuellen Schuljahr und erscheint ausschließlich für ein über
+`effective_documentation_subjects(student_id, school_year_id)` relevantes
+Fach. Es gibt keine ungefüllte Restspur, keinen
 fachbezogenen oder gemeinsamen Nenner, keine Normalisierung, Schwelle,
 Ampelstufe, Qualitätsfarbe, Prozentangabe oder Animation. Viele Segmente dürfen
 ruhig umbrechen; sie werden nicht abgeschnitten oder zu einer Qualitätsstufe
@@ -260,7 +262,8 @@ Position einer Fachkarte noch ihre visuelle Gewichtung.
 Die erlaubte Sprache beschreibt ausschließlich Vorhandenes, beispielsweise
 `Beobachtung dokumentiert`, `Kompetenz dokumentiert`,
 `Kompetenz bestätigt`, `<n> Kompetenzen dokumentiert`,
-`<n> Beobachtungen im Berichtszeitraum`, `Belege ansehen` und
+`<n> Beobachtungen im aktuellen Schuljahr`, eine nur bei vorhandenem Stand
+sichtbare neutrale Bestätigungsinformation, `Belege ansehen` und
 `aktuell bestätigter Stand vorhanden`. Der zugängliche Text nennt dieselben
 absoluten Mengen und beschreibt Länge oder Fläche nie als Status, Niveau oder
 Bewertung.

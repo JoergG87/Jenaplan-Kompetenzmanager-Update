@@ -125,12 +125,15 @@ Relevanz, Priorität, Stärke, Schwäche, Defizit, Förderbedarf, Trend,
 Entwicklungsrichtung noch Zielerreichung ableiten. Fehlende Dokumentation ist
 kein negativer Status.
 
-Im Schülerprofil besitzt `Überblick` die kompakte
-Lernentwicklungsdarstellung. `Kompetenzen` besitzt die detaillierte Kompetenz-
-und Belegansicht. `Berichte` besitzt ausschließlich die Berichtsvorbereitung
-und neutrale Übersicht vorhandener Beobachtungen und Belege im bewusst
-gewählten Berichtszeitraum. Der Berichtsbereich ist keine zusätzliche
-Entwicklungsanalyse und erzeugt weder Themenverlauf,
+Im Schülerprofil besitzt die Entwicklungsübersicht die kompakte
+schuljahresbezogene Lernentwicklungsdarstellung aus Timeline und Fachkarten.
+Ihre Zeitquelle ist ausschließlich das eindeutige `current`-Schuljahr; ihre
+Fachmenge stammt ausschließlich aus
+`effective_documentation_subjects(student_id, school_year_id)`. Sie ist von
+Berichtsentwürfen unabhängig. `Kompetenzen` besitzt die detaillierte
+Kompetenz- und Belegansicht. Die Berichtswerkstatt besitzt ausschließlich die
+Berichtsvorbereitung und neutrale Belegauswahl im bewusst gewählten
+RPD-Zeitraum. Sie erzeugt weder Themenverlauf,
 Kompetenzentwicklungs-Drill-down, dritte Lernentwicklungsdarstellung,
 automatische Entwicklungszusammenfassung noch automatische
 Berichtsformulierung.

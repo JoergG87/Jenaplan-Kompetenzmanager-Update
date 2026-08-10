@@ -1990,12 +1990,29 @@ class StudentDesktopAdapter:
         phase2_subjects: tuple[Mapping[str, object], ...] = ()
         phase2_preparation: LearningReportPreparationViewModel | None = None
         phase2_source_errors: list[str] = []
+        current_school_year = self.current_school_year()
         if selected_report is not None:
             try:
+                phase2_preparation = self.learning_report_preparation_for_student(
+                    student_id,
+                    period_end=selected_report.period_end,
+                    retained_competency_ids=selected_report.competency_ids,
+                )
+            except Exception:
+                phase2_preparation = None
+        if current_school_year is not None:
+            try:
+                effective_subject_ids = (
+                    self._student_documentation_subject_service()
+                    .effective_documentation_subjects(
+                        student_id,
+                        current_school_year.school_year_id,
+                    )
+                )
                 batch = SQLiteStudentDocumentationProjectionRepository(
                     self.database
                 ).read_batch(
-                    as_of=selected_report.period_end,
+                    as_of=current_school_year.end_date,
                     student_id=student_id,
                     historical_membership=True,
                 )
@@ -2003,24 +2020,11 @@ class StudentDesktopAdapter:
                     phase2_observations,
                     phase2_confirmations,
                     phase2_subjects,
-                ) = self._phase2_live_evidence_sources(batch, student_id)
-                student = self._student_profile_from_batch(
+                ) = self._phase2_live_evidence_sources(
                     batch,
                     student_id,
-                    historical=True,
+                    effective_subject_ids,
                 )
-                if student is not None:
-                    phase2_preparation = build_learning_report_preparation(
-                        student,
-                        self._competency_status_projection_from_batch(
-                            batch,
-                            student_id,
-                        ),
-                        self._observation_list_items_from_batch(
-                            batch,
-                            student_id,
-                        ),
-                    )
             except Exception:
                 phase2_source_errors.append("live_documentation")
             try:
@@ -2126,10 +2130,14 @@ class StudentDesktopAdapter:
                 selected_learning_conference_draft_id
             ),
             phase2_period_start=(
-                selected_report.period_start if selected_report else None
+                current_school_year.start_date
+                if current_school_year is not None
+                else None
             ),
             phase2_period_end=(
-                selected_report.period_end if selected_report else None
+                current_school_year.end_date
+                if current_school_year is not None
+                else None
             ),
             phase2_observations=phase2_observations,
             phase2_report_revisions=phase2_report_revisions,
@@ -2145,6 +2153,7 @@ class StudentDesktopAdapter:
         self,
         batch: StudentDocumentationProjectionBatch,
         student_id: str,
+        effective_subject_ids: tuple[str, ...],
     ) -> tuple[
         tuple[Mapping[str, object], ...],
         tuple[Mapping[str, object], ...],
@@ -2214,6 +2223,7 @@ class StudentDesktopAdapter:
             {
                 "student_id": student_id,
                 "competency_id": status.competency_id,
+                "subject_id": status.subject_id,
                 "competency_text": status.competency_text,
                 "confirmed_at": status.confirmed_at,
                 "documentation_state": status.documentation_state,
@@ -2228,15 +2238,10 @@ class StudentDesktopAdapter:
             for status in statuses
             if status.confirmed_at
         )
-        active_subject_ids = set(
-            batch.active_documentation_subject_ids
-        )
         subjects_by_id: dict[str, str] = {}
         for competency in batch.competencies:
             if (
-                competency.subject_id in active_subject_ids
-                and competency.active
-                and competency.catalog_status == "current"
+                competency.subject_id in effective_subject_ids
             ):
                 subjects_by_id.setdefault(
                     competency.subject_id,
@@ -2248,7 +2253,7 @@ class StudentDesktopAdapter:
                 "subject_name": subjects_by_id[subject_id],
                 "active": True,
             }
-            for subject_id in batch.active_documentation_subject_ids
+            for subject_id in effective_subject_ids
             if subject_id in subjects_by_id
         )
         return observations, confirmations, subjects

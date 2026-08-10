@@ -505,20 +505,24 @@ pädagogische Relevanz und automatische Priorität werden weder abgeleitet noch
 sichtbar behauptet.
 
 Die Projektion verwendet ausschließlich vorhandene kanonische Lesequellen:
-den eindeutig gewählten RPD als alleinige Zeitraumquelle, die getrennten
+das eindeutige `current`-Schuljahr als alleinige Zeitraumquelle,
+`effective_documentation_subjects(student_id, school_year_id)` als alleinige
+Fachrelevanzquelle, die getrennten
 Bericht- und LEG-Pfade des Schülers, aktive Beobachtungen mit vorhandenen
 Kompetenzzuordnungen sowie die kanonische Projektion des aktuellen Kompetenz-
 und Bestätigungsstands. Sie führt keine Tabelle, Migration, gespeicherte
 Timeline, neue fachliche Datenquelle oder neue Statuslogik ein.
 
-`period_start` und `period_end` des eindeutig gewählten RPD bilden den einzigen
-inklusiven Zeitraumvertrag. Schuljahr, Halbjahr, Kalenderjahr, Tagesdatum,
-LEG-Zeitraum oder andere RPD sind keine Fallbacks. Fehlende oder ungültige
+`start_date` und `end_date` des eindeutigen aktuellen Schuljahres bilden den
+inklusiven Zeitraumvertrag der Entwicklungsübersicht. Fehlende oder ungültige
 Datumswerte werden nicht ersetzt; betroffene Inhalte bleiben aus der
 Zeitraumprojektion ausgeschlossen und führen zu einem neutralen
-Unvollständigkeitszustand. Ohne eine bewusst getroffene, weiterhin gültige
-Auswahl entsteht keine Phase-2-Projektion; weder ein einzelner vorhandener RPD
-noch eine veraltete Auswahl wird automatisch ersetzt oder aktiviert.
+Unvollständigkeitszustand. Berichtsentwürfe sind davon unabhängig: null, ein
+oder mehrere RPD verändern oder blockieren die Entwicklungsübersicht nicht und
+kein RPD wird automatisch aktiviert. Innerhalb einer konkret geöffneten
+Berichtswerkstatt bleiben `period_start` und `period_end` des bewusst gewählten
+RPD die verbindliche Zeitquelle für Berichtstexte, Belegauswahl, Vorbereitung,
+Revisionen und Finalisierung.
 
 Die flüchtige Ereignisprojektion verwendet ausschließlich folgende stabile
 Identitäten:
@@ -578,8 +582,10 @@ keine pädagogische Timeline-Quelle. Rating, Ratingwechsel,
 Bestätigungsfrische, Trend und Entwicklungsrichtung sind keine
 Ereignisinhalte.
 
-Fachbezogene Dokumentationsmengen werden als Mengen stabiler Kompetenz- und
-Beobachtungsidentitäten im RPD-Zeitraum gebildet. Sie besitzen keinen
+Fachbezogene Dokumentationsmengen werden ausschließlich für
+`effective_documentation_subjects(student_id, school_year_id)` als Mengen
+stabiler Kompetenz- und Beobachtungsidentitäten im aktuellen Schuljahr
+gebildet. Sie besitzen keinen
 curricularen Nenner, keine Restspur, Prozent- oder x/y-Semantik,
 Normalisierung, Schwelle oder Bewertungsbedeutung. Mit vorhandenen
 Kompetenzzuordnungen entsteht die Fachmenge ausschließlich aus deren

@@ -1098,8 +1098,8 @@ class StudentProfileScreen(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(16)
         layout.addWidget(SectionHeader(
-            "Berichtsvorbereitung im Berichtszeitraum",
-            "Vorhandene Dokumentation, Status und getrennte Arbeitsräume auf einen Blick.",
+            "Entwicklungsübersicht und Berichtsvorbereitung",
+            "Timeline und Fachkarten im aktuellen Schuljahr; Berichtstände im gewählten Berichtszeitraum.",
         ))
         self.report_period_summary = QLabel("Kein Berichtszeitraum gewählt")
         self.report_period_summary.setObjectName("ReportOverviewPeriod")
@@ -1137,12 +1137,12 @@ class StudentProfileScreen(QWidget):
         )
         self.timeline_card, self.report_timeline_layout = self._report_overview_card(
             "Dokumentations-Timeline",
-            "Reale Dokumentations- und Dokumentereignisse",
+            "Aktuelles Schuljahr · reale Dokumentations- und Dokumentereignisse",
             "ReportOverviewTimelineCard",
         )
         self.subjects_card, self.report_subjects_layout = self._report_overview_card(
             "Fachübersicht",
-            "",
+            "Aktuelles Schuljahr · effektive Schülerfächer",
             "ReportOverviewSubjectsCard",
         )
         self.timeline_card.setMinimumHeight(235)
@@ -2965,18 +2965,8 @@ class StudentProfileScreen(QWidget):
             self.report_subjects_layout.addWidget(warning_label)
         if not overview.subject_documentation:
             self.report_subjects_layout.addWidget(self._report_compact_empty_state(
-                (
-                    "Wähle zuerst bewusst einen Berichtsentwurf mit eindeutigem "
-                    "Berichtszeitraum aus."
-                    if not overview.report_content_available
-                    else "Im gewählten Berichtszeitraum sind keine vorhandenen "
-                    "Fachbelege dokumentiert."
-                ),
-                title=(
-                    "Kein Berichtszeitraum ausgewählt"
-                    if not overview.report_content_available
-                    else "Keine Berichtgrundlagen im Zeitraum"
-                ),
+                "Im aktuellen Schuljahr sind keine relevanten Fächer verfügbar.",
+                title="Keine Fachkarten im aktuellen Schuljahr",
             ))
             return
         subjects = (
@@ -3026,6 +3016,12 @@ class StudentProfileScreen(QWidget):
             observations = QLabel(subject.observation_count_text)
             observations.setObjectName("ReportOverviewObservationCount")
             set_label_style(observations, "subtle")
+            confirmation = None
+            if subject.confirmation_count_text:
+                confirmation = QLabel(subject.confirmation_count_text)
+                confirmation.setObjectName("ReportOverviewConfirmationCount")
+                confirmation.setWordWrap(True)
+                set_label_style(confirmation, "subtle")
             segment_grid = self._report_competency_segments(subject)
             actions = QHBoxLayout()
             actions.setContentsMargins(0, 0, 0, 0)
@@ -3054,6 +3050,8 @@ class StudentProfileScreen(QWidget):
             row_layout.addWidget(segment_grid)
             row_layout.addWidget(competency_count)
             row_layout.addWidget(observations)
+            if confirmation is not None:
+                row_layout.addWidget(confirmation)
             row_layout.addStretch(1)
             actions.addWidget(evidence_button)
             actions.addWidget(prepare_button)
@@ -3144,9 +3142,9 @@ class StudentProfileScreen(QWidget):
             self.report_timeline_layout.addWidget(
                 self._report_compact_empty_state(
                     "Vorhandene Beobachtungen, abgeschlossene Dokumente und "
-                    "sichere Bestätigungsstände erscheinen hier im gewählten "
-                    "Berichtszeitraum.",
-                    title="Keine Dokumentationsereignisse im Zeitraum",
+                    "sichere Bestätigungsstände erscheinen hier im aktuellen "
+                    "Schuljahr.",
+                    title="Keine Dokumentationsereignisse im aktuellen Schuljahr",
                 )
             )
             return

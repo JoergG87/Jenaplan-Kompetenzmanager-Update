@@ -59,7 +59,7 @@ class _TracingConnectionProvider:
 class _FixedDateTime(datetime):
     @classmethod
     def now(cls, tz=None):  # type: ignore[no-untyped-def]
-        fixed = cls(2026, 7, 31, 10, 0, tzinfo=UTC)
+        fixed = cls(2026, 8, 11, 10, 0, tzinfo=UTC)
         return fixed if tz is not None else fixed.replace(tzinfo=None)
 
 
@@ -78,9 +78,9 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
         create_sqlite_seed_database(self.database_path)
         self.adapter = StudentDesktopAdapter(
             self.database_path,
-            today_provider=lambda: date(2026, 8, 1),
+            today_provider=lambda: date(2026, 8, 11),
             now_provider=lambda: _FixedDateTime(
-                2026, 7, 31, 10, 0, tzinfo=UTC
+                2026, 8, 11, 10, 0, tzinfo=UTC
             ),
         )
         self.student = self.adapter.list_students()[0]
@@ -93,17 +93,17 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
         )
         self.observation = self._observation(
             "OBS-PHASE2-START",
-            "2026-01-01",
+            "2026-08-01",
         )
         observation_repository = SQLiteObservationRepository(
             self.adapter.database
         )
         observation_repository.create_observation(self.observation)
-        deleted = self._observation("OBS-PHASE2-DELETED", "2026-07-31")
+        deleted = self._observation("OBS-PHASE2-DELETED", "2027-07-31")
         observation_repository.create_observation(deleted)
         observation_repository.deactivate_observation(
             deleted.observation_id,
-            "2026-07-31T12:00:00+00:00",
+            "2027-07-31T12:00:00+00:00",
         )
         self.report_draft = self.adapter.save_learning_report_draft(
             self._report_draft()
@@ -112,7 +112,12 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
 
-    def test_phase2_requires_one_explicit_current_rpd_selection(self) -> None:
+    def test_development_overview_is_immediate_for_one_or_many_rpds(self) -> None:
+        current = self.adapter.current_school_year()
+        self.assertIsNotNone(current)
+        self.assertEqual(current.label, "2026/27")
+        self.assertEqual(current.start_date, date(2026, 8, 1))
+        self.assertEqual(current.end_date, date(2027, 7, 31))
         without_selection = self.adapter.report_overview_for_student(
             self.student.student_id
         )
@@ -137,10 +142,23 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
         )
 
         self.assertEqual(without_selection.selected_report_draft_id, "")
-        self.assertEqual(without_selection.timeline_events, ())
-        self.assertEqual(without_selection.subject_documentation, ())
+        baseline_timeline = tuple(
+            event.source_identity for event in without_selection.timeline_events
+        )
+        baseline_subjects = tuple(
+            subject.subject_id
+            for subject in without_selection.subject_documentation
+        )
+        self.assertEqual(
+            baseline_timeline,
+            (("observation", self.observation.observation_id),),
+        )
+        self.assertTrue(baseline_subjects)
         self.assertEqual(stale_selection.selected_report_draft_id, "")
-        self.assertEqual(stale_selection.timeline_events, ())
+        self.assertEqual(
+            tuple(event.source_identity for event in stale_selection.timeline_events),
+            baseline_timeline,
+        )
         self.assertEqual(
             selected.selected_report_draft_id,
             self.report_draft.report_draft_id,
@@ -153,7 +171,64 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
             second_draft.report_draft_id,
             self.report_draft.report_draft_id,
         )
-        self.assertEqual(multiple_without_selection.timeline_events, ())
+        self.assertEqual(multiple_without_selection.selected_report_draft_id, "")
+        self.assertEqual(
+            tuple(
+                event.source_identity
+                for event in multiple_without_selection.timeline_events
+            ),
+            baseline_timeline,
+        )
+        self.assertEqual(
+            tuple(
+                subject.subject_id
+                for subject in multiple_without_selection.subject_documentation
+            ),
+            baseline_subjects,
+        )
+
+    def test_individual_effective_subjects_are_the_only_subject_cards(self) -> None:
+        current = self.adapter.current_school_year()
+        self.assertIsNotNone(current)
+        self.adapter.save_student_documentation_subjects(
+            self.student.student_id,
+            current.school_year_id,
+            "custom",
+            (self.competency.subject_id,),
+        )
+
+        overview = self.adapter.report_overview_for_student(
+            self.student.student_id
+        )
+
+        self.assertEqual(
+            tuple(
+                subject.subject_id
+                for subject in overview.subject_documentation
+            ),
+            (self.competency.subject_id,),
+        )
+
+    def test_report_preparation_keeps_selected_rpd_period_end(self) -> None:
+        with patch.object(
+            self.adapter,
+            "learning_report_preparation_for_student",
+            wraps=self.adapter.learning_report_preparation_for_student,
+        ) as preparation:
+            overview = self.adapter.report_overview_for_student(
+                self.student.student_id,
+                selected_report_draft_id=self.report_draft.report_draft_id,
+            )
+
+        preparation.assert_called_once_with(
+            self.student.student_id,
+            period_end=self.report_draft.period_end,
+            retained_competency_ids=self.report_draft.competency_ids,
+        )
+        self.assertEqual(
+            overview.report_period_end_label,
+            self.report_draft.period_end.strftime("%d.%m.%Y"),
+        )
 
     def test_live_snapshot_filters_soft_deleted_rows_and_keeps_stable_ids(self) -> None:
         self.adapter.save_competency_confirmation(
@@ -259,7 +334,7 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
                 if item.status == "completed"
             ),
         )
-        self.assertEqual(leg_events[0].occurred_on, date(2026, 7, 10))
+        self.assertEqual(leg_events[0].occurred_on, date(2026, 9, 10))
 
     def test_live_read_failure_retains_valid_document_events(self) -> None:
         self.adapter.finalize_learning_report(
@@ -479,8 +554,8 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
         )
         return LearningReportDraftViewModel(
             student_id=self.student.student_id,
-            period_start=date(2026, 1, 1),
-            period_end=date(2026, 7, 31),
+            period_start=date(2026, 9, 1),
+            period_end=date(2026, 12, 31),
             teacher_name="Laura Lernbegleiterin",
             overall_text="Manuell verfasster Gesamtblick.",
             subjects=(subject,),
@@ -494,9 +569,9 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
     ) -> LearningConferenceDraftViewModel:
         return LearningConferenceDraftViewModel(
             student_id=self.student.student_id,
-            period_start=date(2026, 1, 1),
-            period_end=date(2026, 7, 31),
-            conference_date=date(2026, 7, 10),
+            period_start=date(2026, 8, 1),
+            period_end=date(2026, 12, 31),
+            conference_date=date(2026, 9, 10),
             responsible_teacher="Laura Lernbegleiterin",
             conversation_entry_text="Interner Gesprächseinstieg",
             child_retrospective_text="Rückblick des Kindes",

@@ -124,20 +124,22 @@ Drafts. Der Bericht-HTML-Spike bleibt außerhalb der Shell-Navigation.
 ## Phase 2 Berichte-Übersicht - implementiert
 
 `StudentDesktopAdapter.report_overview_for_student` bleibt die einzige
-Desktop-Kompositionsgrenze. Er bestimmt den eindeutig gewählten RPD, hält
-Bericht und LEG beim Lesen getrennt und übergibt ausschließlich vorhandene
-RPD-, Bericht-, LEG-, Beobachtungs- und kanonische Kompetenzstatuswerte an die
-reine Phase-2-ViewModel-Projektion. Repositories und Application Services
-behalten ihre bestehenden fachlichen Zuständigkeiten.
+Desktop-Kompositionsgrenze. Er bestimmt das eindeutige aktuelle Schuljahr und
+die effektiven Schülerfächer, hält Bericht und LEG beim Lesen getrennt und
+übergibt ausschließlich vorhandene Schuljahr-, Bericht-, LEG-, Beobachtungs-
+und kanonische Kompetenzstatuswerte an die reine Phase-2-ViewModel-Projektion.
+Die RPD-Auswahl bleibt ausschließlich Navigationszustand der Berichtswerkstatt
+und ist kein Gate der Entwicklungsübersicht. Repositories und Application
+Services behalten ihre bestehenden fachlichen Zuständigkeiten.
 
-Der Adapter friert den ausgewählten RPD-Zeitraum einmal ein, verifiziert die
+Der Adapter friert den aktuellen Schuljahreszeitraum einmal ein, verifiziert die
 neueste gültige Bericht- beziehungsweise LEG-Revision je Aggregat, reicht
 stabile IDs unverändert weiter und klassifiziert Quellenfehler neutral.
 Live-Dokumentation wird möglichst in einem SQLite-Read-Snapshot gelesen. Ein
 Fehler einer Quelle darf weiterhin gültige getrennte Dokumentereignisse nicht
 entfernen.
 
-Die ViewModel-Projektion besitzt RPD-Zeitraumfilter, Datumsnormalisierung,
+Die ViewModel-Projektion besitzt Schuljahreszeitraumfilter, Datumsnormalisierung,
 Ereignisidentitäten, je Aggregat höchstens ein gültiges Bericht- und
 LEG-Abschlussereignis, die rein zeitliche Ergänzung mit Beobachtungen und
 aktuellen sicheren Bestätigungen bis zum Zielumfang 15,
