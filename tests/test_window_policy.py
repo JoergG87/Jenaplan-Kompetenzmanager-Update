@@ -106,6 +106,9 @@ def test_shell_routes_observation_report_and_leg_through_central_policy() -> Non
 
     assert "open_maximized_workspace(dialog, self)" in report_source
     assert "exec_maximized_workspace(dialog, self)" not in report_source
-    assert "exec_maximized_workspace(dialog, self)" in leg_source
+    assert "open_maximized_workspace(dialog, self)" in leg_source
+    assert "exec_maximized_workspace(dialog, self)" not in leg_source
+    assert "dialog.finished.connect(finish_learning_conference_workspace)" in leg_source
+    assert "dialog.destroyed.connect(clear_active_learning_conference)" in leg_source
     assert observation_sources.count("exec_maximized_workspace(dialog, self)") == 3
     assert observation_sources.count("parent=self") == 3

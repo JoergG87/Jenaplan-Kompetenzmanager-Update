@@ -1462,6 +1462,8 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         )
         leg_shell.adapter.learning_conference_revision_status.return_value = Mock()
         leg_shell._selected_learning_conference_draft_ids = {}
+        leg_shell._active_learning_conference_student_ids = set()
+        leg_shell._active_learning_conference_dialog = None
         leg_dialog = self._fake_workspace_dialog()
         leg_dialog.draft_view_model.return_value = leg
         with (
@@ -1470,14 +1472,20 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 "LearningConferenceDialog",
                 return_value=leg_dialog,
             ),
-            patch.object(shell, "exec_maximized_workspace"),
+            patch.object(shell, "open_maximized_workspace"),
         ):
             shell.AppShell.open_learning_conference_dialog(
                 leg_shell,
                 "STU-1",
                 "LCD-1",
             )
+        leg_shell.show_student_profile.assert_not_called()
+        self.assertIs(leg_shell._active_learning_conference_dialog, leg_dialog)
+        self.assertEqual(leg_shell._active_learning_conference_student_ids, {"STU-1"})
+        leg_dialog.finished.connect.call_args.args[0](0)
         leg_shell.show_student_profile.assert_called_once_with("STU-1")
+        self.assertIsNone(leg_shell._active_learning_conference_dialog)
+        self.assertEqual(leg_shell._active_learning_conference_student_ids, set())
 
     def test_async_report_shell_releases_and_reopens_five_workspaces(self) -> None:
         report = self._report_draft("RPD-1")

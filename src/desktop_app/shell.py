@@ -353,6 +353,7 @@ class AppShell(QMainWindow):
         self._selected_report_draft_ids: dict[str, str] = {}
         self._selected_learning_conference_draft_ids: dict[str, str] = {}
         self._active_learning_conference_student_ids: set[str] = set()
+        self._active_learning_conference_dialog: LearningConferenceDialog | None = None
         self._active_learning_report_dialog: LearningReportDialog | None = None
         self._active_learning_report_revision_id = ""
         self._active_learning_report_revision_student_id = ""
@@ -2268,12 +2269,22 @@ class AppShell(QMainWindow):
         dialog.completion_requested.connect(complete_conference)
         dialog.revision_open_requested.connect(open_revision)
         refresh_revision_status()
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        self._active_learning_conference_dialog = dialog
         active_student_ids.add(student_id)
-        try:
-            exec_maximized_workspace(dialog, self)
-        finally:
+
+        def clear_active_learning_conference(*_args: object) -> None:
+            if self._active_learning_conference_dialog is dialog:
+                self._active_learning_conference_dialog = None
             active_student_ids.discard(student_id)
-        self.show_student_profile(student_id)
+
+        def finish_learning_conference_workspace(*_args: object) -> None:
+            clear_active_learning_conference()
+            self.show_student_profile(student_id)
+
+        dialog.finished.connect(finish_learning_conference_workspace)
+        dialog.destroyed.connect(clear_active_learning_conference)
+        open_maximized_workspace(dialog, self)
 
     def _open_learning_conference_html_dialog(
         self,

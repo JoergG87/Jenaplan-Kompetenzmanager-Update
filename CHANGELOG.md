@@ -48,8 +48,11 @@
   weder ZIP-v1-Fallback noch Klartextmigration oder eine Änderung der
   Recoveryarchitektur.
 
-- Manuell gemeldetes Schließen des LEG beim Phasenwechsel aktuell technisch
-  nicht reproduzierbar; erneute Prüfung im nächsten Pilotbuild erforderlich.
+- Das native Qt-LEG bleibt bei Phasen-, Bereichs- und Lazy-Build-Navigation als
+  window-modaler, von der Shell gehaltener Workspace aktiv. Der bisherige
+  verschachtelte Dialoglauf kann die Cocoa-Fensterreihenfolge nicht mehr an
+  die Hauptanwendung verlieren; normaler Close-, Draft-, Save- und
+  Completion-Vertrag bleiben unverändert.
 
 - Der vorhandene synthetische Testdatengenerator kann jetzt einen vollständig
   neuen, systemtemporären Final-V4-Cipher-Testroot über die produktiven

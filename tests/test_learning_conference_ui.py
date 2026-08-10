@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
     QLabel,
+    QMainWindow,
     QPushButton,
     QTextEdit,
     QWidget,
@@ -35,6 +36,7 @@ from src.desktop_app.dialogs.learning_conference_dialog import (
 )
 from src.desktop_app.motion import set_reduced_motion
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
+from src.desktop_app.window_policy import open_maximized_workspace
 from src.desktop_app.view_models.learning_conference_view_model import (
     LEARNING_CONFERENCE_CROSS_TOPICS,
     LearningConferenceCompetencyViewModel,
@@ -453,6 +455,68 @@ class LearningConferenceUiTest(unittest.TestCase):
 
         dialog._close_choice_provider = lambda _parent: "discard"
         dialog.close()
+
+    def test_window_modal_workspace_stays_visible_across_all_navigation_and_closes_normally(self) -> None:
+        owner = QMainWindow()
+        owner.setObjectName("LearningConferenceTestOwner")
+        owner.show()
+        dialog = LearningConferenceDialog(self.preparation, owner)
+        dialog.text_inputs["conversation_entry_text"].setPlainText(
+            "Bleibt während der gesamten Navigation erhalten"
+        )
+        accepted = QSignalSpy(dialog.accepted)
+        rejected = QSignalSpy(dialog.rejected)
+        finished = QSignalSpy(dialog.finished)
+
+        open_maximized_workspace(dialog, owner)
+        self.app.processEvents()
+
+        self.assertTrue(dialog.isVisible())
+        self.assertTrue(dialog.isModal())
+        self.assertEqual(dialog.windowModality(), Qt.WindowModality.WindowModal)
+        for key in (
+            "strengths",
+            "development",
+            "goals",
+            "evidence",
+            "agreements",
+            "goal",
+        ):
+            QTest.mouseClick(
+                dialog.phase_navigation.button_for(key),
+                Qt.MouseButton.LeftButton,
+            )
+            self.app.processEvents()
+            self.assertTrue(dialog.isVisible(), key)
+            self.assertEqual(accepted.count(), 0, key)
+            self.assertEqual(rejected.count(), 0, key)
+            self.assertEqual(finished.count(), 0, key)
+
+        dialog.set_active_phase("evidence", focus=False)
+        area = dialog.competency_area_sections[0][2]
+        QTest.mouseClick(area.button, Qt.MouseButton.LeftButton)
+        self.app.processEvents()
+
+        self.assertTrue(dialog.phase_built["evidence"])
+        self.assertTrue(dialog._built_competency_sections)
+        self.assertTrue(dialog.isVisible())
+        self.assertEqual(accepted.count(), 0)
+        self.assertEqual(rejected.count(), 0)
+        self.assertEqual(finished.count(), 0)
+        self.assertEqual(
+            dialog.text_inputs["conversation_entry_text"].toPlainText(),
+            "Bleibt während der gesamten Navigation erhalten",
+        )
+
+        dialog._close_choice_provider = lambda _parent: "discard"
+        QTest.mouseClick(dialog.close_button, Qt.MouseButton.LeftButton)
+        self.app.processEvents()
+
+        self.assertFalse(dialog.isVisible())
+        self.assertEqual(accepted.count(), 0)
+        self.assertEqual(rejected.count(), 1)
+        self.assertEqual(finished.count(), 1)
+        owner.close()
 
     def test_only_initial_phase_is_built_until_navigation_requests_another(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
