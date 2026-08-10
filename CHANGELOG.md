@@ -7,6 +7,16 @@
   Berichtsentwürfen; die Berichtswerkstatt bleibt an ihren RPD-Zeitraum
   gebunden.
 
+- Die Berichtswerkstatt besitzt neben dem vollständig erhaltenen Qt-Standard
+  eine intern mit `JKM_REPORT_UI=html` gegatete lokale HTML-Oberfläche. Sie
+  verwendet die gehärtete gemeinsame qrc-/WebEngine-Basis, denselben
+  vollständigen Python-RPD-Draft sowie bestehende Save-, Finalisierungs-,
+  Snapshot- und Managed-Document-Leseverträge. Revisionen bleiben read-only;
+  die finale PDF-Aktion übergibt nur die RPA-ID und bleibt ohne separat
+  freigegebenen sicheren Viewer sichtbar blockiert. Schema, Final V4,
+  Migration, Security, Backup/Restore, Qt-Fallback und Release bleiben
+  unverändert.
+
 - Pilot-UI: Bericht, Qt-LEG und Beobachtungsdialog verwenden für ihre großen
   Arbeitsbereiche statische Qt-Renderpfade. Workspace-, Fachseiten- und
   Phasenwechsel setzen genau eine sichtbare, aktive Seite ohne Opacity- oder

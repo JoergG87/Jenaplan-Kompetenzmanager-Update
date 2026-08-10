@@ -1301,6 +1301,18 @@ Sprint 7F.1 ergaenzt einen persistenten, weiter bearbeitbaren Berichtsentwurf. D
 
 Sprint 7F.2 portiert die freigegebene UX aus `prototypes/learning_report_ux/` auf diese bestehende Ownership. Die PySide-Berichtswerkstatt besitzt ausschliesslich lokalen Widgetzustand fuer die laufende Bearbeitung und delegiert Speichern ueber `LearningReportDraftViewModel` an den Desktop-Adapter. Bei mindestens einem vorhandenen Entwurf lässt die Shell bewusst einen gespeicherten RPD nach Zeitraum und Status öffnen, einen neuen noch ungespeicherten Arbeitsstand beginnen oder abbrechen; nur der gewählte RPD liefert seine gespeicherten Kompetenzreferenzen als Lesekontext. Die separate Vorschau baut ihr `ReportOutputModel` aus dem aktuellen Entwurf und den vorhandenen Leseprojektionen; sie ist keine Datenquelle. Fachseiten duerfen nur Kompetenzen des jeweiligen Fachs und nur dazu passende Beobachtungsbelege neu anbieten. Nicht verfuegbare gespeicherte Belege werden in Qt-Vorschau und Ausgabemodell getrennt von regulaeren Belegen neutral ausgewiesen. Diagramme werden nur als gespeicherte Auswahlreferenzen gehalten; ihre Daten werden bei Vorschau und PDF aus den vorhandenen Projektionen erzeugt.
 
+Die intern gegatete `LearningReportHtmlDialog` ist ein alternativer Host
+desselben Editors und wird nie parallel für denselben Draft geöffnet. Sie
+besitzt dieselben Lese- und Schreibquellen wie `LearningReportDialog`:
+`LearningReportPreparationViewModel`, den bewusst gewählten vollständigen
+`LearningReportDraftViewModel`, den bestehenden Report-Save-Service,
+`LearningReportRevisionStatusViewModel`, ausschließlich snapshotbasierte
+`LearningReportRevisionViewModel`-Lesen und opaque RPA-Referenzen. Der DOM ist
+keine Datenquelle. Der HTML-Host verlangt eine zuvor bewusst gewählte konkrete
+`report_draft_id`; er erzeugt weder Timeline noch Fachkarten der
+schuljahresbezogenen Entwicklungsübersicht. Qt bleibt Standard und
+unveränderter Fallback.
+
 Aktueller produktiver Stand: Die PDF-Ausgabe liest ausschliesslich ein neutrales `ReportOutputModel`, das fuer die Vorschau aus dem Berichtsentwurf und den freigegebenen Leseprojektionen aufgebaut wird. Sie greift weder direkt auf SQLite zu noch berechnet oder interpretiert sie fachliche Inhalte. Dieses Modell ist im Draft-Prozess noch kein eingefrorener oder freigegebener Berichtstand.
 
 Sprint 5B.2 ergaenzt ohne neue Ansicht einen reinen Backend-Schreib- und Lesepfad fuer finale Berichtrevisionen. `ReportFinalizationService` darf den vorhandenen `RPD`, dessen normalisierte Auswahlrelationen sowie die registrierten Schueler-, Kompetenz-, Beobachtungs- und bestaetigten Statusquellen lesen. `SQLiteLearningReportRepository` ist alleiniger Schreiber von `learning_reports` und `learning_report_revisions`. Der persistierte fachliche Snapshot ist historische Source of Truth; weder Berichtswerkstatt noch aktuelle Draft-Vorschau noch `ReportOutputModel` besitzen oder veraendern bestehende Revisionen. Es gibt in diesem Sprint keine UI-Aktion, keine neue UI-Projektion und keine PDF-Artefaktansicht.

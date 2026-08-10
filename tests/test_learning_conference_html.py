@@ -360,7 +360,12 @@ def test_resources_csp_dom_navigation_and_request_policy_are_local_only() -> Non
     assert 'phase.hidden = phase !== target' in javascript
     assert "savePending" in javascript
     host_source = Path("src/desktop_app/leg_html/host.py").read_text(encoding="utf-8")
-    assert "setCookieFilter(lambda _request: False)" in host_source
+    security_source = Path("src/desktop_app/web_ui/security.py").read_text(
+        encoding="utf-8"
+    )
+    assert "configure_ephemeral_profile" in host_source
+    assert "configure_restricted_page" in host_source
+    assert "setCookieFilter(lambda _request: False)" in security_source
     for name in ("index.html", "app.js", "app.css"):
         assert _qrc_text(f":/jkm-leg/{name}") == Path(
             f"src/desktop_app/leg_html/static/{name}"

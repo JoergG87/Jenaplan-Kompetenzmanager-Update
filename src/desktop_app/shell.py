@@ -130,6 +130,7 @@ from src.desktop_app.view_models.learning_conference_view_model import (
     build_learning_conference_completion_error,
 )
 from src.desktop_app.leg_ui import leg_ui_mode
+from src.desktop_app.report_ui import report_ui_mode
 from src.desktop_app.window_policy import (
     exec_maximized_workspace,
     open_maximized_workspace,
@@ -1826,6 +1827,16 @@ class AppShell(QMainWindow):
                 "Es wurde kein Entwurf geöffnet oder verändert.",
             )
             return
+        try:
+            selected_ui = report_ui_mode()
+        except ValueError:
+            QMessageBox.warning(
+                self,
+                "Bericht-Oberfläche nicht verfügbar",
+                "Das interne Bericht-Oberflächengate ist ungültig. "
+                "Der sichere Qt-Fallback bleibt aktiv.",
+            )
+            selected_ui = "qt"
         initial_draft = None
         initial_period = None
         if report_draft_id:
@@ -1843,7 +1854,7 @@ class AppShell(QMainWindow):
                 )
                 return
             self._selected_report_draft_ids[student_id] = report_draft_id
-        elif len(drafts) == 1:
+        elif len(drafts) == 1 and selected_ui == "qt":
             initial_draft = next(iter(drafts))
             self._selected_report_draft_ids[student_id] = initial_draft.report_draft_id
         elif drafts:
@@ -1857,10 +1868,19 @@ class AppShell(QMainWindow):
                 self._selected_report_draft_ids[student_id] = (
                     initial_draft.report_draft_id
                 )
-                if not subject_id and not workspace_key:
+                if selected_ui == "qt" and not subject_id and not workspace_key:
                     self.show_student_profile(student_id)
                     return
         if initial_draft is None:
+            if selected_ui == "html":
+                QMessageBox.information(
+                    self,
+                    "Qt-Bericht für neuen Entwurf",
+                    "Die HTML-Berichtswerkstatt öffnet ausschließlich einen bewusst "
+                    "gewählten gespeicherten Entwurf. Ein neuer Entwurf wird im "
+                    "unveränderten Qt-Bericht angelegt.",
+                )
+                selected_ui = "qt"
             self._selected_report_draft_ids.pop(student_id, None)
             accepted, initial_period = LearningReportPeriodSelectionDialog.choose(
                 self,
@@ -1888,6 +1908,16 @@ class AppShell(QMainWindow):
             if initial_draft is not None
             else None
         )
+        if selected_ui == "html" and initial_draft is not None:
+            self._open_learning_report_html_dialog(
+                student_id,
+                preparation,
+                initial_draft,
+                revision_status,
+                subject_id=subject_id,
+                workspace_key=workspace_key,
+            )
+            return
         dialog = LearningReportDialog(
             preparation,
             self,
@@ -2005,6 +2035,99 @@ class AppShell(QMainWindow):
 
         dialog.finished.connect(finish_report_workspace)
         dialog.destroyed.connect(clear_active_report)
+        open_maximized_workspace(dialog, self)
+
+    def _open_learning_report_html_dialog(
+        self,
+        student_id: str,
+        preparation: object,
+        initial_draft: object,
+        revision_status: object,
+        *,
+        subject_id: str = "",
+        workspace_key: str = "",
+    ) -> None:
+        """Compose one persisted RPD with the gated report-only HTML host."""
+        from src.desktop_app.report_html.bridge import (
+            LearningReportHtmlBridge,
+            LearningReportHtmlSession,
+        )
+        from src.desktop_app.report_html.host import LearningReportHtmlDialog
+
+        artifacts = {}
+        if revision_status is not None:
+            for revision in revision_status.history:
+                try:
+                    artifact = self.adapter.load_learning_report_pdf_artifact(
+                        revision.learning_report_revision_id
+                    )
+                except Exception:
+                    artifact = None
+                if artifact is not None:
+                    artifacts[revision.learning_report_revision_id] = artifact
+
+        def save_draft(value: object):
+            saved = self.adapter.save_learning_report_draft(value)
+            self._selected_report_draft_ids[student_id] = saved.report_draft_id
+            self.status_label.setText("Lernentwicklungsbericht-Entwurf gespeichert.")
+            return saved
+
+        def finalize_report(report_draft_id: str, display_name: str):
+            status = self.adapter.finalize_learning_report(report_draft_id, display_name)
+            self.status_label.setText(
+                f"Berichtrevision {status.current_revision_number} finalisiert."
+            )
+            return status
+
+        session = LearningReportHtmlSession(
+            preparation=preparation,
+            draft=initial_draft,
+            revision_status=revision_status,
+            artifacts_by_revision_id=artifacts,
+            save_draft=save_draft,
+            prepare_finalization=self.adapter.prepare_learning_report_finalization,
+            finalize_report=finalize_report,
+            finalization_error_message=self.adapter.learning_report_finalization_error_message,
+            refresh_revision_status=self.adapter.learning_report_revision_status,
+            load_revision=self.adapter.load_learning_report_revision,
+            load_final_artifact=self.adapter.load_learning_report_pdf_artifact,
+            show_final_pdf=None,
+        )
+        bridge = LearningReportHtmlBridge(session)
+        dialog = LearningReportHtmlDialog(bridge, self)
+        target_workspace = (
+            "evidence"
+            if subject_id
+            else {
+                "writing": "writing",
+                "evidence": "evidence",
+                "preview": "preview",
+                "revisions": "revisions",
+            }.get(workspace_key, "writing")
+        )
+        dialog.loaded.connect(
+            lambda ok: dialog.page.runJavaScript(f"show('{target_workspace}')")
+            if ok
+            else None
+        )
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        self._active_learning_report_dialog = dialog
+        finished = False
+
+        def clear_active(*_args: object) -> None:
+            if self._active_learning_report_dialog is dialog:
+                self._active_learning_report_dialog = None
+
+        def finish(*_args: object) -> None:
+            nonlocal finished
+            if finished:
+                return
+            finished = True
+            clear_active()
+            self.show_student_profile(student_id)
+
+        dialog.finished.connect(finish)
+        dialog.destroyed.connect(clear_active)
         open_maximized_workspace(dialog, self)
 
     def open_learning_report_revision(

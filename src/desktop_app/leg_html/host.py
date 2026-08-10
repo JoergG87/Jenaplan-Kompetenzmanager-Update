@@ -3,23 +3,27 @@
 from __future__ import annotations
 
 import json
-import os
-
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import (
     QWebEnginePage,
     QWebEngineProfile,
-    QWebEngineSettings,
-    QWebEngineUrlRequestInfo,
-    QWebEngineUrlRequestInterceptor,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QMessageBox, QVBoxLayout, QWidget
 from shiboken6 import delete
 
 from src.desktop_app.motion import MotionDialog
+from src.desktop_app.web_ui.security import (
+    QWEBCHANNEL_URL,
+    LocalQrcWebEnginePage,
+    LocalQrcWebEnginePolicy,
+    configure_ephemeral_profile,
+    configure_restricted_page,
+    deny_feature_permissions,
+    reject_unsafe_debug_environment,
+)
 from src.desktop_app.dialogs.learning_conference_dialog import (
     LearningConferenceCloseDialog,
 )
@@ -30,22 +34,14 @@ from . import resources_rc  # noqa: F401 - registers immutable qrc resources
 
 INDEX_URL = "qrc:/jkm-leg/index.html"
 RESOURCE_PREFIX = "qrc:/jkm-leg/"
-QWEBCHANNEL_URL = "qrc:///qtwebchannel/qwebchannel.js"
 MAX_CLOSE_PROBE_ATTEMPTS = 500
 
 
-class LegLocalOnlyRequestInterceptor(QWebEngineUrlRequestInterceptor):
+class LegLocalOnlyRequestInterceptor(LocalQrcWebEnginePolicy):
     """Allow only the embedded LEG assets and Qt's WebChannel script."""
 
     def __init__(self, parent: object | None = None) -> None:
-        super().__init__(parent)
-        self.blocked_urls: list[str] = []
-
-    def interceptRequest(self, info: QWebEngineUrlRequestInfo) -> None:  # noqa: N802
-        if self.is_allowed(info.requestUrl()):
-            return
-        self.blocked_urls.append(_safe_url_label(info.requestUrl()))
-        info.block(True)
+        super().__init__(RESOURCE_PREFIX, parent)
 
     @staticmethod
     def is_allowed(url: QUrl) -> bool:
@@ -55,35 +51,11 @@ class LegLocalOnlyRequestInterceptor(QWebEngineUrlRequestInterceptor):
         return normalized == QWEBCHANNEL_URL or normalized.startswith(RESOURCE_PREFIX)
 
 
-class LegLocalOnlyPage(QWebEnginePage):
+class LegLocalOnlyPage(LocalQrcWebEnginePage):
     """Block every external navigation, popup and JavaScript console payload."""
 
-    externalNavigationBlocked = Signal(str)
-
-    def acceptNavigationRequest(  # noqa: N802
-        self,
-        url: QUrl,
-        navigation_type: QWebEnginePage.NavigationType,
-        is_main_frame: bool,
-    ) -> bool:
-        del navigation_type
-        allowed = is_main_frame and url.toString() == INDEX_URL
-        if not allowed:
-            self.externalNavigationBlocked.emit(_safe_url_label(url))
-        return allowed
-
-    def createWindow(self, window_type: QWebEnginePage.WebWindowType) -> None:  # noqa: N802
-        del window_type
-        return None
-
-    def javaScriptConsoleMessage(  # noqa: N802
-        self,
-        level: QWebEnginePage.JavaScriptConsoleMessageLevel,
-        message: str,
-        line_number: int,
-        source_id: str,
-    ) -> None:
-        del level, message, line_number, source_id
+    def __init__(self, profile: QWebEngineProfile, parent: object) -> None:
+        super().__init__(profile, parent, index_url=INDEX_URL)
 
 
 class LearningConferenceHtmlDialog(MotionDialog):
@@ -99,7 +71,7 @@ class LearningConferenceHtmlDialog(MotionDialog):
         devtools_enabled: bool = False,
     ) -> None:
         super().__init__(parent)
-        _reject_unsafe_debug_environment(devtools_enabled)
+        reject_unsafe_debug_environment(devtools_enabled)
         self.bridge = bridge
         self._close_choice_provider = LearningConferenceCloseDialog.ask
         self._close_authorized = False
@@ -115,34 +87,12 @@ class LearningConferenceHtmlDialog(MotionDialog):
         self.setMinimumSize(1080, 700)
 
         self.profile = QWebEngineProfile(self)
-        self.profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.NoCache)
-        self.profile.setPersistentCookiesPolicy(
-            QWebEngineProfile.PersistentCookiesPolicy.NoPersistentCookies
-        )
-        self.cookie_store = self.profile.cookieStore()
-        self.cookie_store.setCookieFilter(lambda _request: False)
-        self.cookie_store.deleteAllCookies()
-        permission_policy = getattr(
-            QWebEngineProfile,
-            "PersistentPermissionsPolicy",
-            None,
-        )
-        if permission_policy is not None:
-            self.profile.setPersistentPermissionsPolicy(permission_policy.AskEveryTime)
-        if hasattr(self.profile, "setPushServiceEnabled"):
-            self.profile.setPushServiceEnabled(False)
         self.interceptor = LegLocalOnlyRequestInterceptor(self.profile)
-        self.profile.setUrlRequestInterceptor(self.interceptor)
-        self.profile.downloadRequested.connect(lambda item: item.cancel())
+        configure_ephemeral_profile(self.profile, self.interceptor)
+        self.cookie_store = self.profile.cookieStore()
 
         self.page = LegLocalOnlyPage(self.profile, self)
-        self.page.featurePermissionRequested.connect(
-            lambda origin, feature: self.page.setFeaturePermission(
-                origin,
-                feature,
-                QWebEnginePage.PermissionPolicy.PermissionDeniedByUser,
-            )
-        )
+        deny_feature_permissions(self.page)
         self.channel = QWebChannel(self.page)
         self.channel.registerObject("legBridge", bridge)
         self.page.setWebChannel(self.channel)
@@ -161,42 +111,7 @@ class LearningConferenceHtmlDialog(MotionDialog):
         self.finished.connect(self._dispose_webengine)
 
     def _configure_settings(self, devtools_enabled: bool) -> None:
-        settings = self.page.settings()
-        attributes = QWebEngineSettings.WebAttribute
-        disabled = (
-            "LocalStorageEnabled",
-            "DnsPrefetchEnabled",
-            "HyperlinkAuditingEnabled",
-            "ScreenCaptureEnabled",
-            "NavigateOnDropEnabled",
-            "AutoLoadIconsForPage",
-            "TouchIconsEnabled",
-            "ReadingFromCanvasEnabled",
-        )
-        settings.setAttribute(attributes.LocalContentCanAccessRemoteUrls, False)
-        settings.setAttribute(attributes.LocalContentCanAccessFileUrls, False)
-        settings.setAttribute(attributes.JavascriptCanOpenWindows, False)
-        settings.setAttribute(attributes.JavascriptCanAccessClipboard, False)
-        settings.setAttribute(attributes.PluginsEnabled, False)
-        settings.setAttribute(attributes.FullScreenSupportEnabled, False)
-        settings.setAttribute(attributes.PdfViewerEnabled, False)
-        settings.setAttribute(attributes.WebGLEnabled, False)
-        settings.setAttribute(attributes.Accelerated2dCanvasEnabled, False)
-        for name in disabled:
-            attribute = getattr(attributes, name, None)
-            if attribute is not None:
-                settings.setAttribute(attribute, False)
-        javascript_paste = getattr(attributes, "JavascriptCanPaste", None)
-        if javascript_paste is not None:
-            settings.setAttribute(javascript_paste, False)
-        settings.setUnknownUrlSchemePolicy(
-            QWebEngineSettings.UnknownUrlSchemePolicy.DisallowUnknownUrlSchemes
-        )
-        developer_extras = getattr(attributes, "DeveloperExtrasEnabled", None)
-        if developer_extras is not None:
-            settings.setAttribute(developer_extras, devtools_enabled)
-        if not devtools_enabled:
-            self.page.setDevToolsPage(None)
+        configure_restricted_page(self.page, devtools_enabled=devtools_enabled)
 
     def reject(self) -> None:
         self.close()
@@ -267,21 +182,3 @@ class LearningConferenceHtmlDialog(MotionDialog):
         delete(self.view)
         delete(self.page)
         delete(self.profile)
-
-
-def _safe_url_label(url: QUrl) -> str:
-    if url.scheme() == "file":
-        return "file://blocked-local-resource"
-    host = url.host()
-    return f"{url.scheme()}://{host}" if host else url.scheme()
-
-
-def _reject_unsafe_debug_environment(devtools_enabled: bool) -> None:
-    if devtools_enabled:
-        return
-    if os.environ.get("QTWEBENGINE_REMOTE_DEBUGGING"):
-        raise RuntimeError("qtwebengine_remote_debugging_not_allowed")
-    flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
-    unsafe = ("--remote-debugging", "--no-sandbox", "--single-process")
-    if any(flag in flags for flag in unsafe):
-        raise RuntimeError("unsafe_qtwebengine_chromium_flags")

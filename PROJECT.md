@@ -1,5 +1,17 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Intern gegatete HTML-Berichtswerkstatt
+
+Die produktive Berichtswerkstatt kann intern mit `JKM_REPORT_UI=html` über
+eine lokale qrc-/QWebEngine-Oberfläche geöffnet werden; `qt` bleibt bis zur
+manuellen Abnahme der Standard. Der HTML-Host verwendet dieselben vollständigen
+RPD-Drafts, Save-/Finalisierungsservices, unveränderlichen RPV-Snapshots und
+opaque RPA-Referenzen wie der Qt-Host. Python bleibt Source of Truth, und die
+gehärtete WebEngine-Basis wird mit dem unabhängigen LEG-HTML-Pfad geteilt.
+Ohne separat freigegebenen sicheren Viewer bleibt `Finales PDF anzeigen`
+kontrolliert blockiert. Daraus folgt keine Packaging-, Pilot- oder
+Releasefreigabe.
+
 ## Cipher-Produktkomposition für Lauras Pilot
 
 **Status:** Der normale Produktstart ist für eine frische Installation auf die

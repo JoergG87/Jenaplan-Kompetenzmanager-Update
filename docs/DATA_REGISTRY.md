@@ -2054,6 +2054,13 @@ data/
 
 ## report_drafts und Berichtsentwurf-Relationen
 
+Die optional gegatete HTML-Berichtswerkstatt führt keine neue Datenquelle und
+keine Web-Persistenz ein. Sie liest und schreibt denselben vollständigen
+`LearningReportDraftViewModel` ausschließlich über die hier registrierten
+`report_drafts`- und `report_draft_*`-Quellen. DOM-Zustand ist eine flüchtige
+Eingabespiegelung und keine Registry-Quelle. RPV-Snapshots und RPA-Referenzen
+bleiben die bestehenden registrierten unveränderlichen Lesequellen.
+
 Zweck: Persistenter, weiter bearbeitbarer Arbeitsentwurf fuer Lernentwicklungsberichte.
 
 Entity: ReportDraft. Keine finale Berichtsentitaet.

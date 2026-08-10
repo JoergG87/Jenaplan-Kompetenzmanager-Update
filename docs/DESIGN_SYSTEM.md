@@ -176,7 +176,7 @@ Kontrast, Screenreader-/VoiceOver-Ausgabe, Fehlerfokus und reale Bedienung des
 vollständigen Assistenten separat abzunehmen. Automatisierte Qt-Tests ersetzen
 diese reale Accessibility- und UX-Prüfung nicht.
 
-## Intern gegateter LEG-HTML-Host und Bericht-HTML-Spike - visuelle Grenze
+## Intern gegatete LEG- und Bericht-HTML-Hosts - visuelle Grenze
 
 Der intern gegatete LEG-HTML-Host übernimmt bestehende Grün-Kontextrollen,
 Typografie, Karten, Radien, Abstände, Fokusrahmen und Buttonhierarchie des
@@ -185,8 +185,16 @@ sichtbar; Phasenwechsel verwenden ausschließlich DOM-State und keine Opacity-/
 GraphicsEffect-Animation. Der Kompetenz-/Belegbereich wird beim ersten Öffnen
 lazy aufgebaut und behält danach seinen DOM-Zustand. Verständliche Fehler
 werden ohne technische IDs, Pfade, Hashes oder Exceptions am Host angezeigt.
-Der Bericht bleibt ein isolierter blau markierter Spike. Diese Konkretisierung
-begründet kein Redesign und keine allgemeine Freigabe der CSS-Werte als neues
+Die intern gegatete HTML-Berichtswerkstatt übernimmt die vorhandenen ruhigen
+Bericht-Kontextrollen, Typografie, Karten, Radien, Abstände, Fokusrahmen und
+Buttonhierarchie. Genau eine der fünf Hauptseiten `Schreiben`, `Fachbereiche`,
+`Kompetenzen & Belege`, `Vorschau` und `Revisionen` ist sichtbar; Navigation
+bleibt DOM-lokal und ohne Opacity-/GraphicsEffect-Animation. Der responsive
+Berichtskopf ordnet Kind, Stammgruppe, Berichtstyp, Zeitraum, verantwortliche
+Lehrkraft und Draft-/Finalisierungsstatus ohne Überlagerung. Kompetenzen und
+Belege werden lazy aufgebaut. Die Vorschau nennt ihre Draftquelle sichtbar;
+Revisionen bleiben ruhige read-only Karten. Diese Konkretisierung begründet
+kein Redesign und keine allgemeine Freigabe der CSS-Werte als neues
 Produkt-Designsystem.
 
 ## Phase 2 Berichte-Übersicht - neutrale Belegdarstellung

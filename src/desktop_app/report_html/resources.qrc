@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="/jkm-report">
+    <file alias="index.html">static/index.html</file>
+    <file alias="app.css">static/app.css</file>
+    <file alias="app.js">static/app.js</file>
+  </qresource>
+</RCC>

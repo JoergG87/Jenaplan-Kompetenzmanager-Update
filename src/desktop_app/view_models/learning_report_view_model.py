@@ -62,6 +62,7 @@ class LearningReportCompetencyViewModel:
     historical: bool
     selectable: bool
     evidence_points: tuple[tuple[date, str], ...]
+    sort_order: int = 0
 
 
 @dataclass(frozen=True)
@@ -863,6 +864,7 @@ def build_learning_report_preparation(
                 historical=historical,
                 selectable=selectable,
                 evidence_points=tuple(sorted(evidence_points)),
+                sort_order=int(getattr(status, "sort_order", 0)),
             )
         )
 
@@ -915,9 +917,8 @@ def build_learning_report_preparation(
                     competencies,
                     key=lambda item: (
                         item.historical,
-                        item.learning_area.casefold(),
-                        item.competency_group.casefold(),
-                        item.competency_text.casefold(),
+                        item.sort_order,
+                        item.competency_id,
                     ),
                 )
             ),
@@ -929,10 +930,7 @@ def build_learning_report_preparation(
                 )
             ),
         )
-        for subject_id, competencies in sorted(
-            competencies_by_subject.items(),
-            key=lambda item: subject_names[item[0]].casefold(),
-        )
+        for subject_id, competencies in competencies_by_subject.items()
     )
     return LearningReportPreparationViewModel(
         student_id=str(getattr(student, "student_id", "")),

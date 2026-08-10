@@ -839,6 +839,18 @@ Datenquelle, berechnet keine Membership und besitzt keinen Schreibprozess.
 | Finales Berichts-PDF | `RPV-ID` -> `StudentDesktopAdapter.generate_learning_report_pdf` -> `GenerateLearningReportPdfCommand` -> `LearningReportPdfService` -> snapshotbasiertes `ReportOutputModel` -> `PdfRenderer` | Ausgabe / Artefaktaktion | Ja, nur Artefaktreferenz | `learning_report_revisions` + `learning_report_pdf_artifacts` + verwaltete PDF-Datei | nur Status `finalized`; keine Draft- oder Live-Daten; zeigt danach Dateiname, Erzeugungszeitpunkt und PDF-SHA-256 |
 | Medienhinweise | SQLite `documents` | Anzeige | Nie | SQLite `documents` | optionale Anlagen; Berichte nutzen Medien in diesem Sprint nicht produktiv weiter |
 
+Die intern gegatete HTML-Berichtswerkstatt verwendet für Schüler,
+Stammgruppe, Berichtstyp, Zeitraum, Lehrkraft, Gesamttext, die vier bestehenden
+Fachtexte, bewusste Fach-/Kompetenz-/Beleg-/Diagrammauswahl,
+Finalisierungsstatus und Historie exakt dieselben oben registrierten
+Python-Projektionen. Die Vorschau zeigt den aktuellen vollständigen
+Python-Draft und kennzeichnet gespeichert beziehungsweise ungespeichert.
+Revisionsinhalt stammt ausschließlich aus
+`load_learning_report_revision(RPV-ID)` und ist read-only. `Finales PDF
+anzeigen` erhält im DOM nur die opaque RPA-ID; ohne freigegebenen Python-Viewer
+bleibt die Aktion sichtbar blockiert. Es gibt keine Pfad-, PDF-Byte-, Hash-,
+Secret- oder Exception-Projektion in JavaScript.
+
 UX-Regel Sprint 7F.2: `prototypes/learning_report_ux/` ist die verbindliche Spezifikation fuer Layout, Navigation, Arbeitsweise, Kartenstruktur, Informationshierarchie, Abstaende, Auswahlmechanismen und Vorschaukonzept. Die produktive Ansicht wechselt oben zwischen `Bericht bearbeiten` und `Berichtsvorschau`; die Bearbeitung navigiert links zwischen Dokumentkontext, den fachbezogenen Arbeitsbereichen und Abschluss. Kompetenzstaende sind anders als im isolierten Demo-Prototyp nicht editierbar, weil der Entwurf ausschliesslich `competency_id`-Referenzen speichert und die kanonische Kompetenzstatusprojektion nicht veraendert. Globale Abschluss- und interne Notizfelder werden nicht angezeigt, weil sie im unveraenderten Entwurfsmodell keine verantwortliche Datenquelle besitzen.
 
 ## Lernentwicklungsgespraech

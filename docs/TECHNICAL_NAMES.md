@@ -204,13 +204,19 @@ keine Datenbankschemaversion.
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
 | `JKM_LEG_UI` | Internes Prozess-Gate mit ausschließlich `qt` oder `html`; fehlt der Wert, bleibt `qt` aktiv | Desktop Composition Root |
+| `JKM_REPORT_UI` | Internes Prozess-Gate mit ausschließlich `qt` oder `html`; fehlt der Wert, bleibt `qt` aktiv | Desktop Composition Root |
+| `LocalQrcWebEnginePolicy` / `LocalQrcWebEnginePage` | Neutrale interne Security-Basis für lokale `qrc:`-Web-UIs mit blockiertem Netzwerk, externen Navigationen, Popups, Downloads und persistenten Browserdaten | Desktop UI |
+| `LearningReportHtmlSession` | Prozesslokale Bindung genau eines bewusst gewählten vollständigen RPD-Drafts an bestehende Report-Adapter- und Application-Service-Callbacks | Desktop UI |
+| `LearningReportHtmlBridge` | Explizite Bericht-only-`QWebChannel`-Fassade für vollständigen Python-Draft, Lazy-Evidenz, Save, Finalisierung, read-only RPV-Snapshots und opaque RPA-Aktion; keine generische Invoke-Fläche | Desktop UI |
+| `LearningReportHtmlDialog` | Optionaler lokaler QWebEngine-Host der Berichtswerkstatt mit fünf DOM-lokalen Hauptseiten und Python-owned Dirty-/Close-Vertrag | Desktop UI |
 | `LearningConferenceHtmlBridge` | Explizite LEG-only-`QWebChannel`-Fassade vor einem vorhandenen Python-Draft und freigegebenen Save-/Completion-/Revisions-/Artifact-Callbacks; kein Adapter-, Repository-, Datei-, Security- oder generischer Command-Zugriff | Desktop UI |
 | `LearningConferenceHtmlDialog` | Produktnaher Python-Host mit `QWebEngineView`, eingebetteten `qrc:`-Ressourcen, nicht persistentem Profil, blockierter externer Navigation und Python-owned Dirty-/Close-Vertrag | Desktop UI |
 | `LearningConferenceHtmlSession` | Prozesslokale Bindung genau eines vorhandenen Preparation-, Draft-, Revisions- und optionalen LCA-Kontexts an die explizite LEG-Bridge; keine Persistenz und keine neue fachliche Identität | Desktop UI |
 | `ReportLegHtmlBridge` / `ReportLegHtmlSpikeHost` / `ReportSpikeSession` / `ConferenceSpikeSession` | Weiterhin ausschließlich isolierte Spike-Namen unter `prototypes/report_leg_html`; keine Produktnavigation | Prototype Desktop UI |
 
-Das Gate autorisiert ausschließlich die LEG-Oberflächenwahl. Bericht-HTML,
-Packaging, Pilot und Release bleiben dadurch unverändert und nicht freigegeben.
+Die beiden Gates autorisieren ausschließlich die jeweilige Oberflächenwahl und
+bleiben voneinander unabhängig. Packaging, Pilot und Release werden dadurch
+nicht freigegeben.
 
 ## Phase 2 Berichte-Übersicht - implementiert
 

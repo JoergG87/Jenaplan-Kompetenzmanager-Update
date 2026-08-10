@@ -132,7 +132,7 @@ class LearningReportTest(unittest.TestCase):
     def test_shell_always_offers_existing_or_new_report_selection(self) -> None:
         source = inspect.getsource(shell.AppShell.open_learning_report_dialog)
 
-        self.assertIn("elif len(drafts) == 1:", source)
+        self.assertIn('elif len(drafts) == 1 and selected_ui == "qt":', source)
         self.assertIn("elif drafts:", source)
         self.assertIn("LearningReportDraftSelectionDialog.choose", source)
         self.assertIn("LearningReportPeriodSelectionDialog.choose", source)

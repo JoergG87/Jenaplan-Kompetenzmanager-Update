@@ -3127,6 +3127,25 @@ PySide Berichtswerkstatt
 -> SQLite report_drafts + Relationstabellen
 ```
 
+Die intern gegatete HTML-Berichtswerkstatt ersetzt in diesem Ablauf
+ausschließlich den Qt-Host. Ihre explizite QWebChannel-Bridge hält genau einen
+vollständigen Python-Draft und ruft denselben Save-Service auf; es gibt keinen
+feldweisen Web-Persistenzpfad. Nicht gerenderte DOM-Bereiche verändern den
+Draft nicht. Vor jedem Close wird der DOM-Eingabespiegel mit Python
+synchronisiert; eine laufende Bridge-Operation oder nicht beweisbare
+Synchronisation blockiert das Schließen. Speichern, Verwerfen und
+Weiterbearbeiten bleiben der bestehende bewusste Schutzvertrag.
+
+Für die Finalisierung gilt auch im HTML-Host unverändert: vollständigen Draft
+über den bestehenden Service speichern, über Python validieren und die
+Finalisierungsvorschau erzeugen, ausdrücklich mit verantwortlicher Lehrkraft
+bestätigen und erst dann über den bestehenden Finalisierungsservice eine
+unveränderliche RPV-Revision anlegen. JavaScript enthält keine
+Finalisierungsregel. Historische Revisionen werden ausschließlich über den
+vorhandenen Snapshot-Lesevertrag projiziert. Die optionale Aktion für ein
+vorhandenes finales PDF übergibt nur die RPA-ID an einen Python-Consumer; ohne
+freigegebenen Viewer bleibt sie ohne Dateizugriff sichtbar blockiert.
+
 Betroffene Datenquellen:
 
 - `report_drafts`

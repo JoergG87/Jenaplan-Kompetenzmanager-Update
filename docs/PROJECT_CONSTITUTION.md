@@ -176,6 +176,44 @@ finales LCA darf nur über seine fachliche Artifact-ID an einen kontrollierten
 Python-Consumer übergeben werden. Diese technische Produktvorbereitung ist
 keine Pilot-, Packaging-, Accessibility- oder Releasefreigabe.
 
+## Intern gegatete Bericht-HTML-Oberfläche
+
+Die Berichtswerkstatt darf zusätzlich zum vollständig erhaltenen Qt-Dialog
+über eine intern gegatete lokale HTML-Oberfläche dargestellt werden.
+`JKM_REPORT_UI=qt` bleibt der Standard; `html` aktiviert ausschließlich den
+Bericht-Host. Ein ungültiger Wert wird sichtbar gemeldet und fällt auf Qt
+zurück. Das unabhängige `JKM_LEG_UI` wird dadurch nicht verändert. Beide
+Berichtoberflächen verwenden denselben bewusst gewählten vollständigen
+`RPD`-Draft sowie dieselben Save-, Finalisierungs-, Revisions- und
+Managed-Document-Leseverträge. Ein Berichtsdraft darf nicht gleichzeitig in
+beiden Hosts geöffnet sein; der Wechsel zurück zu Qt benötigt keine Migration.
+Der HTML-Host wird ausschließlich nach bewusster Auswahl einer konkreten
+persistierten `draft_id` konstruiert. Er wählt weder bei einem noch bei
+mehreren vorhandenen Entwürfen automatisch und ist keine Datenquelle für die
+schuljahresbezogene Entwicklungsübersicht im Schülerprofil.
+
+Der Bericht-DOM besitzt ausschließlich Darstellungs-, Fokus-, Disclosure- und
+Eingabespiegelzustand. Python bleibt Source of Truth. Persistenz, Validierung,
+Finalisierung, Snapshotbildung, PDF-Erzeugung, Datenbankzugriff,
+Managed-Document-Lesen und Security bleiben Python-owned. Nicht aufgebaute
+DOM-Bereiche schreiben keine Defaults zurück. Die Vorschau kennzeichnet
+gespeicherten und ungespeicherten Draftzustand eindeutig. Historische
+Revisionen werden ausschließlich aus dem unveränderlichen `RPV`-Snapshot
+gelesen und bleiben read-only.
+
+LEG und Bericht verwenden dieselbe neutrale gehärtete lokale WebEngine-Basis:
+eingebettete `qrc:`-Ressourcen, nicht persistentes Profil, restriktive CSP,
+blockiertes Netzwerk, externe Navigation, Popups, Downloads, Cookies und
+Local Storage sowie eine explizite surface-spezifische QWebChannel-Allowlist.
+Technische IDs werden nur als nicht sichtbare Interaktionsschlüssel geführt;
+Pfade, PDF-Bytes, Hashes, Secrets und Exceptions gelangen nicht in den DOM.
+Eine Aktion `Finales PDF anzeigen` übergibt ausschließlich die bekannte
+`RPA`-ID an Python und bleibt sichtbar blockiert, solange kein separat
+freigegebener sicherer Viewer existiert. Der Python-Host bindet jeden
+Close-Pfad an DOM-Synchronisation und Save/Discard/Cancel; `beforeunload` ist
+keine Sicherheitsgrenze. Diese Produktisierung ist keine Pilot-, Packaging-,
+Accessibility- oder Releasefreigabe.
+
 ## Pilot-Releaseautomation
 
 Die lokale Pilot-Releaseautomation ist ein rein technischer, terminalbasierter
