@@ -1,88 +1,110 @@
-# macOS-Installation und Buildvorbereitung 0.3.0 / Build 303
+# macOS-Installation und technische Pilotvorbereitung 0.4.0 / Build 400
 
 ## Status
 
-Diese Unterlage beschreibt den macOS-arm64-Vorbereitungsstand vor einem
-kontrollierten GitHub-Pre-Release/Pilot. Clean-Build, DMG,
-Prüfsummenmanifest und Signaturnachweis werden vor einer Übergabe als
-Releaseartefakte nachgewiesen. Builds 300 bis 302 sind nicht verteilte
-historische Vorstände; Build 303 ist noch kein Release Candidate.
+Diese Unterlage beschreibt den geplanten macOS-arm64-Pilotstand. Version 0.4.0
+/ Build 400 ist vorbereitet, aber noch nicht als Release, Verteilung,
+Notarisierung oder Pilot-GO freigegeben. Ein konkretes App-/DMG-Artefakt,
+Prüfsummenmanifest und exakter Buildcommit müssen vor der Übergabe separat aus
+einem sauberen Build nachgewiesen werden.
 
-| Punkt | Vorgabe |
+| Punkt | Vorbereiteter Stand |
 |---|---|
-| Produkt | Jenaplan-Kompetenzmanager 0.3.0 / Build 303 |
+| Produkt | Jenaplan-Kompetenzmanager 0.4.0 / Build 400 |
 | Architektur | Apple Silicon (arm64) |
 | Mindestplattform | macOS 13 |
-| Übergabeform | GitHub-Pre-Release/Pilot mit Drag-and-drop-DMG |
-| Signatur | ad-hoc signiert, nicht notarisiert |
-| Datenmodus für eine Übergabe | `release`, ohne Schüler-, Pilot- oder Runtime-Daten |
-| Freigabe | kein Windows, kein Stable-Release, kein Stable-Appcast |
+| Übergabeform | kontrolliertes Drag-and-drop-DMG nach gesondertem Freigabegate |
+| Signatur | Developer ID und Notarisierung nicht nachgewiesen |
+| Datenmodus | frische leere Pilotinstallation; keine Schüler-, Pilot- oder Testdaten im Bundle |
+| Freigabe | kein Pilot-GO, kein Windows, kein Stable-Release, kein Stable-Appcast |
 
 ## Erwarteter Installationsweg
 
 Nach einer freigegebenen Übergabe wird das DMG im Finder geöffnet,
 `Jenaplan-Kompetenzmanager.app` nach `Programme` gezogen, das DMG ausgeworfen
-und die App regulär aus `Programme` gestartet. Bei Gatekeeper-Hinweis gilt nur
-der kontrollierte Weg über Control-Klick `Öffnen` beziehungsweise
-`Datenschutz & Sicherheit > Dennoch öffnen`. Gatekeeper wird niemals global
-deaktiviert.
+und die App regulär aus `Programme` gestartet. Bei einem internen, nicht
+notarisierten Artefakt gilt nur der kontrollierte Weg über Control-Klick
+`Öffnen` beziehungsweise `Datenschutz & Sicherheit > Dennoch öffnen`.
+Gatekeeper wird niemals global deaktiviert.
 
 Die App benötigt auf dem Ziel-Mac weder Python, Terminal, Repository noch
 Entwicklungsumgebung. Version und Build werden über `Über die App` geprüft.
 
-## Lokale Daten und Sicherheit
+## Final-V4-Produktdatenhaltung
 
-Veränderliche Daten liegen getrennt vom App-Bundle in einem lokalen,
-verwalteten App-Bereich. Dieser enthält die fachliche SQLCipher-Datenbank,
-verwaltete Dokumente, erzeugte Ausgaben, lokale Backups, Einstellungen und
-Security-Store. Absolute Entwicklerpfade gehören nicht in Übergabeunterlagen.
+Der normale Pilotstart öffnet nach erfolgreicher Authentifizierung eine frisch
+angelegte Final-V4-Fachdatenbank und den Dokument-Companion keyed mit exakt
+SQLCipher 4.17/CommonCrypto. Standard-SQLite ist kein produktiver Fallback.
 
-Der neue Pilot-Produktpfad verwendet nach erfolgreicher Authentifizierung eine
-frisch angelegte Final-V4-Datenbank und einen Dokument-Companion mit exakt
-SQLCipher 4.17/CommonCrypto. Verwaltete Anhänge, allgemeine Dokumente und
-finale Bericht-/LEG-PDFs werden als verschlüsselte `.jkmedoc`-Container
-gespeichert. DMK-Material bleibt im macOS-Keychain; der Database-Key liegt nur
-in seinem authentisierten Envelope.
+Das App-Passwort authentifiziert die Lehrkraft und ist nicht der
+Datenbankschlüssel. Der Data Master Key (DMK) liegt geschützt im macOS-
+Keychain-Kontext. Ein eigener Database-Key wird getrennt in einem
+authentisierten Envelope verwaltet und öffnet Haupt- und Companion-Datenbank.
+Fehlende oder widersprüchliche Schlüssel-, Schema- oder Runtimezustände
+blockieren den Start fail-closed.
 
-Klartextbestände werden nicht migriert oder geöffnet. Backup und Restore
-verwenden ausschließlich installationsgebundene `.jkmebackup`, vollständiges
-keyed Staging, Sicherheitsbackup, Worker-Handoff, Rollback und Restart. ZIP-v1
-bleibt im Cipher-Produktmodus gesperrt. Diese
-Unterlage dokumentiert noch keinen neuen Buildnachweis; ein künftiges Bundle
-muss die exakte Cipher-Abhängigkeit und den realen Keychain-/UI-Start separat
-belegen. Die Details stehen in `SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
+Der First Run legt ausschließlich das aktuelle Schuljahr `2026/27` vom
+01.08.2026 bis 31.07.2027 an. Schüler, Gruppen, Kurse, Assignments,
+Beobachtungen und Testdaten bleiben leer. Vorhandene Klartext-, V3- und alte
+Testbestände werden weder automatisch geöffnet noch migriert, überschrieben
+oder gelöscht. Für den kommenden Pilot existieren keine produktiven Altdaten,
+die migriert werden müssten.
 
-## Reproduzierbarer späterer Build
+## Verschlüsselte verwaltete Dokumente
 
-Ein späterer Build läuft ausschließlich auf Apple Silicon und liest Version und
-Build zentral aus `src/version.py`:
+Beobachtungsanhänge, allgemeine Schülerdokumente und finale Bericht-/LEG-
+Artefakte verwenden zentral den `ManagedDocumentStore`. Fachliche Dokument-ID
+und physische Storage-Generation bleiben getrennt; der keyed Companion hält
+die registrierten Generationen und ihre aktiven Pointer.
 
-```bash
-scripts/build_macos_pilot.sh --data-mode empty
-scripts/build_macos_pilot.sh --data-mode release
-```
+Eine finale verschlüsselte PDF-Generation kann vorhanden sein. Daraus folgt
+nicht, dass sie überall über die UI angezeigt oder exportiert werden kann. Der
+gemeinsame sichere Produktviewer ist noch nicht final freigegeben;
+`Finales PDF anzeigen` kann deshalb kontrolliert blockiert bleiben.
 
-`empty` ist nur ein technischer Smoke-Test ohne Fachdaten. `release` darf
-keine SQLite-Datei, Dokumente, Backups, Schlüssel oder reale Nutzerdaten in das
-Bundle übernehmen. Synthetische Testdaten entstehen getrennt in einem frischen
-Test-Installationsroot und werden niemals in App oder DMG aufgenommen.
+## Verschlüsseltes Backup und Restore
 
-Der Build muss ein isoliertes Venv nutzen, Paketabhängigkeiten prüfen und
-Bundle, Architektur, sichtbare Version/Build, Datenfreiheit, Lizenzhinweise,
-Signatur, DMG-Inhalt sowie die vorgesehenen Paket-Smokes belegen. Der
-Dokumentgenerator erhält Version und Build; der Artefakt-Commit darf erst nach
-dem Clean-Build in erzeugten Unterlagen erscheinen.
+Der Produktpfad veröffentlicht ausschließlich `.jkmebackup`. Der
+authentisierte Container umfasst:
 
-## Nicht Teil dieses Dokuments
+- die keyed Final-V4-Hauptdatenbank;
+- den keyed Dokument-Companion;
+- notwendige Keyset- und Database-Key-Envelope-Metadaten;
+- alle registrierten verschlüsselten Dokumentgenerationen.
 
-- keine Appcast-Aktualisierung oder automatische Updatefreigabe;
-- keine Developer ID, Notarisierung oder Stapling;
-- keine Produktmigration, Gerätewechsel-/DMK-Recovery oder Buildfreigabe;
-- keine Windows-/DPAPI-Abnahme;
-- keine reale Touch-ID-, Sleep/Wake- oder Power-Loss-Abnahme;
-- keine Testdaten, Pilotdatenbanken oder persönlichen Daten im Bundle.
+Das Backup enthält keinen DMK, kein App-Passwort, keine Recovery-Codes und
+keine Touch-ID- oder Gerätecredentials. Es ist installationsgebunden: Restore
+benötigt den passenden vorhandenen DMK derselben Installation. Ein
+Gerätewechsel- oder DMK-Recoverypfad wird nicht behauptet.
 
-Die Lehrkraftanleitung, der Schnellstart, das Benutzerhandbuch und die
-Backup-Anleitung werden aus ihren wartbaren Quellen erzeugt. Erst nach allen
-Build- und Realweltgates darf ein Artefakt, eine Prüfsumme oder ein
-Produkt-Commit als Nachweis ergänzt werden.
+Restore prüft Container, Manifest, Datenbanken, Metadaten, Dokumentinventar,
+Hashes und Bindungen vollständig in einem neuen Staging-Bereich. Erst
+`RESTORE_READY` erlaubt die bewusste Übernahme. Danach folgen verschlüsseltes
+Sicherheitsbackup, separater Restore-Worker, kontrollierter Austausch,
+Reopen/Neustart und Rollback bei Fehlern. ZIP-v1 und ein Klartextfallback sind
+im Cipher-Produktmodus gesperrt.
+
+## Support Reset und optionale Oberflächen
+
+Support Reset bleibt im Final-V4-Cipher-Produktpfad kontrolliert blockiert,
+solange für seine Pre-Auth-Grenze keine gesondert freigegebene sichere
+Pflichtbackup-Komposition existiert. Ein alter ZIP-v1- oder Klartextpfad ist
+keine aktive Ausweichlösung.
+
+Bericht und LEG verwenden standardmäßig die Qt-Oberfläche. Die Variablen
+`JKM_REPORT_UI=qt|html` und `JKM_LEG_UI=qt|html` schalten ausschließlich
+interne Erprobungspfade. Die HTML-Hosts rendern lokal aus `qrc:` in
+`QWebEngineView`/`QWebChannel`; Python bleibt Source of Truth. Netzwerk,
+externe Navigation und Downloads sind blockiert, Qt bleibt Fallback. Daraus
+folgt keine Pilotstandard-, Packaging-, Accessibility- oder Releasefreigabe.
+
+## Offene Freigaben
+
+- sauberer exakter Build von 0.4.0 / Build 400 und Artefaktprüfung;
+- reale macOS-, Keychain-, Touch-ID-, Restore- und UX-Abnahme;
+- gemeinsamer sicherer Produktviewer für finale verschlüsselte PDFs;
+- Developer ID und Apple-Notarisierung;
+- Gerätewechsel und DMK-Recovery;
+- Windows, Stable-Release, Stable-Appcast und Pilot-GO.
+
+Details stehen in `SICHERHEIT_UND_VERSCHLUESSELUNG.md`.

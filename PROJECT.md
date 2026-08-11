@@ -1,5 +1,46 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Aktueller vorbereiteter Pilotstand 0.4.0 / Build 400
+
+**Status:** Final V4 ist der aktuelle Pilot-/Produktschemavertrag. Der normale
+frische Produktstart verwendet keyed SQLCipher 4.17, den getrennt über DMK im
+macOS-Keychain-Kontext und Database-Key-Envelope komponierten Datenbankzugriff,
+den keyed Dokument-Companion und den zentralen `ManagedDocumentStore`. Es gibt
+keinen produktiven Standard-SQLite-, Klartextdokument- oder ZIP-v1-Fallback.
+Vorhandene Klartext-, V3- und alte Testbestände werden nicht automatisch
+migriert; für den kommenden Pilot existieren keine produktiven Altdaten.
+
+Beobachtungsanhänge, allgemeine Schülerdokumente sowie finale Bericht- und
+LEG-Artefakte werden verschlüsselt verwaltet. Fachliche Dokument-ID und
+physische Storage-Generation bleiben getrennt. Der produktive Backup-/Restore-
+Pfad verwendet ausschließlich installationsgebundene `.jkmebackup` mit
+Hauptdatenbank, Companion, notwendigen Keyset-/Envelope-Metadaten und
+registrierten verschlüsselten Dokumentgenerationen, jedoch ohne DMK,
+Passwörter, Recovery-Codes oder Gerätecredentials. Restore verlangt
+Vollverifikation, Staging, `RESTORE_READY`, Sicherheitsbackup, separaten Worker,
+kontrollierten Austausch, Reopen/Neustart und Rollback.
+
+Der frische Pilot beginnt mit dem aktuellen Schuljahr `2026/27` vom 01.08.2026
+bis 31.07.2027. Individuelle Dokumentationsfachprofile gelten pro Schüler und
+Schuljahr als `inherit` oder exakte `custom`-Auswahl einschließlich bewusst
+leer. Die Entwicklungsübersicht zeigt Timeline, Fachkarten und
+Dokumentationsumfang für dieses aktuelle Schuljahr unabhängig von einem
+Berichtsentwurf und ohne Stärke-, Schwäche-, Score-, Trend- oder
+Prioritätsdeutung. Ein Bericht bleibt ein getrenntes Arbeitsprodukt mit dem
+RPD-Zeitraum seines bewusst gewählten Entwurfs.
+
+Qt bleibt Produktdefault für Bericht und LEG. Die lokalen gehärteten HTML-
+Hosts hinter `JKM_REPORT_UI=html` beziehungsweise `JKM_LEG_UI=html` sind nur
+interne Erprobungspfade und kein Pilotstandard. Der gemeinsame sichere Viewer
+für finale verschlüsselte PDF-Artefakte ist noch nicht final freigegeben;
+`Finales PDF anzeigen` kann kontrolliert blockiert sein. Support Reset bleibt
+im Cipher-Produktpfad kontrolliert blockiert.
+
+0.4.0 / Build 400 bezeichnet einen geplanten beziehungsweise vorbereiteten
+Stand. Ein Clean-Build, manuelle macOS-/Keychain-/Restore-/UX-Abnahme,
+Developer ID, Notarisierung, Pilot-GO, Verteilung und Release sind nicht durch
+diese Dokumentation freigegeben.
+
 ## Intern gegatete HTML-Berichtswerkstatt
 
 Die produktive Berichtswerkstatt kann intern mit `JKM_REPORT_UI=html` über
@@ -1001,10 +1042,11 @@ duerfen beim ersten Start dieser Produktversion einmal die Orientierung sehen;
 `Einstellungen` kann `Erste Schritte erneut öffnen` bewusst aufgerufen werden.
 
 Die Architektur besitzt einen fachlich getrennten Security Core unter
-`<runtime-root>/security/`. Die App-Sperre ist keine Verschluesselung der
-Datenbank, Dokumente oder Backups. Der Security Store wird nicht gesichert,
-restored, exportiert oder diagnostiziert und ist nicht mit fachlichen IDs oder
-Inhalten verbunden.
+`<runtime-root>/security/`. Historisch war die App-Sperre zunächst nur die
+Authentisierungsschicht; der heutige Final-V4-Produktpfad verschlüsselt
+Datenbank, verwaltete Dokumente und Backups zusätzlich. Der Security Store
+wird nicht als fachlicher Bestand gesichert, restored, exportiert oder
+diagnostiziert und ist nicht mit fachlichen IDs oder Inhalten verbunden.
 
 Historisch lieferten Sprint 0.2B.2 zunächst nur den testbaren Core und Sprint
 0.2B.3 den offline signierten Ed25519-Support-Reset. Die damals noch offenen
@@ -1012,7 +1054,7 @@ Start-, Sitzungs-, Login-, Recovery- und Reset-Oberflaechen wurden durch Sprint
 0.2B.4 und 0.2B.5 umgesetzt. Version `0.2.2` schließt die betriebliche
 Freischaltung mit einem freigegebenen öffentlichen Produktivschlüssel ab.
 
-## Aktueller Produktstand
+## Historischer Produktstand vor Final V4
 
 Der Jenaplan-Kompetenzmanager ist eine lokale Python-/PySide6-Desktop-Anwendung fuer Lehrkraefte. PySide ist die aktive Produktoberflaeche, SQLite die produktive lokale Datenhaltung.
 
@@ -1029,7 +1071,7 @@ nicht.
 
 Excel/VBA ist eine historische Vorstufe. Die damalige Workbook-Linie wird unter `legacy/excel/` als Referenz erhalten, ist aber weder Zielplattform noch aktiver Produktpfad. Historische Workbook-Versionen wie `v0.4` und fruehere Ausgabedateien sind keine aktuellen Hauptartefakte.
 
-## Nächste Phase nach Version 0.3.0
+## Historische Planung nach Version 0.3.0
 
 Die unmittelbar nächste Phase ist der beaufsichtigte Pilottest des
 Release-Kandidaten 0.3.0 und die Behebung ausschließlich tatsächlich beobachteter
@@ -1131,18 +1173,20 @@ verifizierter fachlicher Snapshot
 Fuer den lokalen macOS-Pilotbetrieb gilt:
 
 ```text
-signiertes oder ad-hoc signiertes App-Bundle
+spaeter separat geprueftes App-Bundle
 -> unveraenderliche eingebettete Laufzeit und Ressourcen
 -> getrennter Benutzerpfad unter ~/Library/Application Support/
--> SQLite, Dokumente, Exporte, Backups und Logs ausserhalb der App
+-> keyed Final-V4-SQLCipher und keyed Dokument-Companion
+-> verschluesselte Managed Documents und .jkmebackup ausserhalb der App
 ```
 
 Ein späterer Apple-Silicon-Build wird reproduzierbar mit PyInstaller erzeugt
 und setzt macOS 13 voraus. Die Übergabevariante enthält keine Schülerdaten.
-Version 0.3.0 / Build 303 ist ein Release-Vorbereitungsstand; der finale
-Clean-Build vor einer kontrollierten GitHub-Pre-Release-/Pilot-Übergabe steht
-noch aus. Stable bleibt deaktiviert; eine Update-/Appcast-Aktivierung ist kein
-Bestandteil dieser Übergabe.
+Version 0.4.0 / Build 400 ist der geplante Dokumentationsstand; der finale
+Clean-Build vor einer kontrollierten Pilotprüfung steht noch aus. Developer
+ID, Notarisierung, Pilot-GO, Verteilung und Release werden damit nicht
+behauptet. Stable bleibt deaktiviert; eine Update-/Appcast-Aktivierung ist kein
+Bestandteil dieses Stands.
 
 ### Architekturprinzipien
 
@@ -1159,14 +1203,24 @@ Bestandteil dieser Übergabe.
 
 ## Datenhaltung und Dateien
 
-- Produktive lokale Datenbank: `data/kompetenzmanager.sqlite`
+- Produktive lokale Datenbank: keyed Final V4 auf SQLCipher 4.17 im
+  verwalteten Final-V4-Runtimebereich
+- Produktiver Dokument-Companion: keyed SQLCipher-Companion derselben
+  Database-Key-Runtime
 - Lehrplanbasierter Kompetenzkatalog: `data/curriculum_catalog_v1.csv`
 - Konfiguration und Farbreferenzen: strukturierte Dateien unter `data/`
-- Verwaltete Schuelerdokumente: `data/documents/<student_id>/`
-- Finale Berichtartefakte: `data/documents/<student_id>/reports/<RPT>/<RPV>/`
-- Finale LEG-Artefakte: `data/documents/<student_id>/learning_conferences/<LCF>/<LCV>/`
+- Verwaltete Schuelerdokumente: verschlüsselte Generationen im zentralen
+  `ManagedDocumentStore`
+- Finale Bericht- und LEG-Artefakte: verschlüsselte verwaltete Generationen;
+  fachliche Artifact-ID und physische Storage-Generation bleiben getrennt
+- Backups: ausschließlich installationsgebundene `.jkmebackup` im
+  Cipher-Produktpfad
 
-SQLite speichert fuer Dokumente und PDF-Ausgaben Metadaten und Referenzen. Dateien werden nicht als BLOB in der Datenbank gespeichert. Produktive Beziehungen verwenden stabile IDs und nicht sichtbare Namen oder UI-Positionen.
+Der keyed Companion speichert fuer Dokumente und PDF-Ausgaben Metadaten,
+Generationen und aktive Referenzen. Dokumentcontainer bleiben getrennte
+verschlüsselte Dateien. Produktive Beziehungen verwenden stabile IDs und nicht
+sichtbare Namen oder UI-Positionen. Standard-SQLite, Klartextdokumentablage und
+ZIP-v1 sind keine produktiven Fallbacks.
 
 ## Produkt- und Ausgabemodell
 

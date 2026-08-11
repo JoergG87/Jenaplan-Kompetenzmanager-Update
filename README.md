@@ -2,28 +2,31 @@
 
 Der Jenaplan-Kompetenzmanager ist eine PySide-Desktop-App zur strukturierten Verwaltung, Auswertung und zukuenftigen Ausgabe von Kompetenzdaten im Jenaplan-Kontext.
 
-SQLite ist die lokale produktive Datenbasis. Excel-/VBA-Artefakte aus der fruehen Projektphase liegen nur noch im Legacy-Archiv `legacy/excel/`.
+Die lokale produktive Datenbasis ist Final V4 auf SQLCipher 4.17; sie wird
+keyed geöffnet und besitzt keinen Standard-SQLite-Fallback. Excel-/VBA-
+Artefakte aus der fruehen Projektphase liegen nur noch im Legacy-Archiv
+`legacy/excel/`.
 
 Die vollständige Projektdokumentation befindet sich in `PROJECT.md`. Dauerhafte Architekturentscheidungen befinden sich in `DECISIONS.md`.
 
 ## Aktueller Dokumentstand
 
-Der dokumentierte Release-Vorbereitungsstand ist Version `0.3.0` / Build `303`
-für macOS auf Apple Silicon. Der Restore-Neustartfix ist committed; ein finaler
-Clean-Build 303 steht noch aus. Ein DMG, Prüfsummenmanifest, Push, Tag, Appcast,
-Pilotübergabe und öffentlicher Release sind damit **nicht** behauptet oder
-ausgelöst. Der normale Produktpfad ist lokal, ohne Cloud und ohne KI-Funktion;
-der committed Produktpfad ist eine frische verschlüsselte Final-V4-Installation
-mit SQLCipher 4.17, verschlüsselten Managed Documents und `.jkmebackup`.
-Ein neuer Paket- und Realwelt-Nachweis steht weiterhin aus. Ein späterer
-macOS-Build ist ohne Developer-ID-Nachweis höchstens ad-hoc signiert und nicht
-notarisiert; Windows ist nicht freigegeben.
+Der geplante Dokumentationsstand ist Version `0.4.0` / Build `400` für macOS
+auf Apple Silicon. Er ist vorbereitet, aber weder gebaut, verteilt,
+notarisiert noch als Pilot-GO oder Release freigegeben. Der normale
+Produktpfad ist lokal, ohne Cloud und ohne KI-Funktion: eine frische
+verschlüsselte Final-V4-Installation mit SQLCipher 4.17, verschlüsselten
+Managed Documents und installationsgebundenem `.jkmebackup`. Support Reset
+und der gemeinsame sichere Viewer für finale verschlüsselte PDF-Artefakte
+bleiben kontrollierte Pilotgrenzen. Ein neuer Clean-Build-, Paket-, Keychain-,
+Restore- und Realweltnachweis steht aus; Windows ist nicht freigegeben.
 
 Für die Bedienung gelten das
 `docs/user_manual/USER_MANUAL_SOURCE.md` und das daraus erzeugte
-`docs/user_manual/Jenaplan-Kompetenzmanager-0.3.0-Build-302-Benutzerhandbuch.pdf`.
-Dieses vorhandene Build-302-PDF bleibt ein historisches Artefakt und wird nicht
-als Build 303 umbenannt. Die Schutzgrenzen beschreibt
+`docs/user_manual/Jenaplan-Kompetenzmanager-0.3.0-Build-302-Benutzerhandbuch.pdf`
+ist nur ein historisches Artefakt und kein aktuelles Pilot-Handbuch. Eine
+0.4.0-/Build-400-Ausgabe wird erst nach Screenshot- und Dokumentreview
+erzeugt. Die Schutzgrenzen beschreibt
 `docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
 
 ## Projektziel

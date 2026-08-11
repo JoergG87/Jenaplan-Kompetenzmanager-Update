@@ -1,8 +1,9 @@
 # Sicherheit und Verschlüsselung
 
-Stand: 9. August 2026
-Geltung: neuer Cipher-Pilot-Quellstand; noch kein neu gebautes Produktartefakt
-Status: Technische Produktkomposition aktiviert, manuelle und paketierte Abnahme offen
+Stand: 11. August 2026
+Geltung: vorbereiteter Pilotstand 0.4.0 / Build 400
+Status: Technische Produktkomposition aktiv; Build-, manuelle Pilot- und
+Releasefreigabe offen
 
 Dieses Dokument beschreibt den tatsächlich aktiven committed Schutzstand und
 die noch offene Build-/Realweltabnahme. Es ist keine
@@ -17,11 +18,12 @@ keine KI-Dienste ein. Schülerdaten, Beobachtungen, Anhänge, Berichte,
 Lernentwicklungsgespräche und PDF-Ausgaben haben deshalb einen hohen
 Schutzbedarf.
 
-Ein späterer GitHub-Pre-Release/Pilot für 0.3.0 / Build 303 auf macOS wird
-ad-hoc signiert und nicht notarisiert sein. Es gibt keine Windows-Freigabe,
-keinen Stable-Release und keinen Stable-Appcast. Ein konkretes DMG, seine
-Prüfsumme und der zugehörige Buildcommit werden ausschließlich aus dem Clean-Build als
-Releaseartefakte nachgewiesen.
+0.4.0 / Build 400 bezeichnet den geplanten Pilotstand, nicht einen bereits
+verteilten oder freigegebenen Release. Es gibt noch keinen Nachweis für
+Developer ID oder Notarisierung, keine Windows-Freigabe, keinen Stable-Release
+und keinen Stable-Appcast. Ein konkretes DMG, seine Prüfsumme und der
+zugehörige Buildcommit werden ausschließlich aus einem späteren sauberen Build
+als Artefakte nachgewiesen.
 
 ## 2. Heute aktiv geschützt
 
@@ -51,13 +53,16 @@ laufenden Alltag. Sie ersetzt nicht die separate Datenverschlüsselung. Backup
 und Restore verwenden im Cipher-Produktmodus ausschließlich `.jkmebackup` und
 bleiben auf dieselbe Installation gebunden.
 
+Der blockierte Support-Reset fällt weder auf ZIP-v1 noch auf eine
+Klartext-Sicherung zurück. Recovery-Codes bleiben der vorgesehene erste
+Wiederherstellungsweg für das lokale Konto.
+
 ### Signierung und Updates
 
-Der GitHub-Pre-Release/Pilot für macOS wird ad-hoc signiert. Das hilft bei der
-Integritätszuordnung des erzeugten Artefakts, ersetzt aber weder Developer ID
-noch Apple-Notarisierung. Es ist kein öffentlicher Updatekanal aktiv. Signierte
-Updateartefakte werden deshalb nicht als aktive Schutzfunktion für den
-normalen Produktbetrieb behauptet.
+Für 0.4.0 / Build 400 ist noch kein Signatur- oder Notarisierungsnachweis
+freigegeben. Frühere lokale Testartefakte waren höchstens ad-hoc signiert; das
+ersetzt weder Developer ID noch Apple-Notarisierung. Es ist kein öffentlicher
+Updatekanal aktiv.
 
 ## 3. Aktuelle Datenhaltung
 
@@ -66,12 +71,21 @@ Die App hält ihre Daten lokal und getrennt vom App-Bundle:
 - Die fachliche Final-V4-SQLCipher-Datenbank enthält den fachlichen Bestand.
 - Ein keyed SQLCipher-Companion registriert verschlüsselte
   Managed-Document-Container im lokalen App-Datenbereich.
+- Der `ManagedDocumentStore` ist der zentrale Produktpfad für
+  Beobachtungsanhänge, allgemeine Schülerdokumente sowie finale Bericht- und
+  LEG-Artefakte. Fachliche Dokument-ID und physische Storage-Generation sind
+  getrennt.
 - Ein separater Security Store enthält Anmelde- und Security-Metadaten.
 - Der lokale Backupbereich enthält ausschließlich `.jkmebackup`; Restore nutzt
-  keyed Staging, Sicherheitsbackup, Worker-Handoff, Rollback und Restart.
+  vollständige keyed Prüfung, neues Staging, Sicherheitsbackup,
+  Worker-Handoff, kontrollierten Austausch, Rollback und Restart.
 - Frei exportierte Entwurfs-PDFs und andere bewusst abgelegte Ausgaben liegen
   außerhalb der App und müssen wie vertrauliche Schulunterlagen behandelt
   werden.
+
+Ein finales verschlüsseltes PDF-Artefakt kann bereits vorhanden sein. Der
+gemeinsame sichere Produktviewer ist noch nicht final freigegeben; die
+UI-Aktion `Finales PDF anzeigen` kann deshalb kontrolliert blockiert bleiben.
 
 Dieses Dokument nennt absichtlich keine Entwicklerpfade, Secrets, Keychain-
 Einträge oder konkrete lokale Kennungen. Technische Betreuung soll nur die
@@ -80,18 +94,19 @@ Installationsanleitung verwalten.
 
 ## 4. Verschlüsselungsstatus
 
-Die Security- und Verschlüsselungsfoundations sind implementiert. Der normale
-neue Pilotstart aktiviert davon nach erfolgreicher Authentifizierung die
-frische Final-V4-SQLCipher-Runtime, den keyed Companion und verschlüsselte
-Dokumentcontainer:
+Die früheren Security- und Verschlüsselungsfoundations sind heute in den
+normalen neuen Pilotstart integriert. Nach erfolgreicher Authentifizierung
+werden die frische Final-V4-SQLCipher-Runtime, der keyed Companion und die
+verschlüsselten Dokumentcontainer aktiv geöffnet:
 
 > [!HINWEIS]
 > - Verbindlich sind Binding `0.6.2+jkm.sqlcipher4170.1`, SQLCipher
 >   `4.17.0 community`, SQLite `3.53.3` und CommonCrypto.
 > - Eine andere oder fehlende Engine sowie Standard-SQLite blockieren den
 >   Start fail-closed.
-> - Bestehende Pilot- und Produktdaten werden nicht automatisch zu SQLCipher
->   migriert.
+> - Bestehende Klartext-, V3- und alte Testbestände werden nicht automatisch
+>   migriert. Für den kommenden Pilot gibt es keine produktiven Altdaten, die
+>   übernommen werden müssten.
 > - Bestehende Klartextdokumente werden nicht still in verschlüsselte
 >   Container überführt.
 > - Cipher-Backup/-Restore verwenden `.jkmebackup`; der alte ZIP-v1-Pfad bleibt
@@ -102,8 +117,8 @@ Paket- und Restore-Abnahme bleiben gesonderte Freigabegates.
 
 ## 5. Schlüsselarchitektur in verständlicher Form
 
-Die aktive Anmeldung und die vorbereitete Verschlüsselungsarchitektur haben
-unterschiedliche Aufgaben.
+Die aktive Anmeldung und die Datenverschlüsselung haben unterschiedliche
+Aufgaben.
 
 - Das lokale Passwort authentifiziert die Lehrkraft; es ist nicht der
   Datenbankschlüssel.
@@ -127,12 +142,21 @@ dupliziert diese Details nicht.
 ## 6. Backup und Restore
 
 Backup und Restore sind im Cipher-Produktmodus auf `.jkmebackup` aktiviert.
-Vor einem Handoff werden Container, Final V4, Companion und Dokumentgenerationen
-keyed geprüft; `RESTORE_READY`, Sicherheitsbackup, Worker-Handoff, Rollback und
-Restart bleiben zwingend. ZIP-v1 darf den Cipherbestand nie öffnen.
+Das Backup umfasst die keyed Final-V4-Datenbank, den keyed Companion,
+notwendige Keyset-/Envelope-Metadaten und alle registrierten verschlüsselten
+Dokumentgenerationen. Es enthält weder DMK noch App-Passwort, Recovery-Codes,
+Touch-ID- oder Gerätecredentials.
 
-Der Restore ist same-installation. Es gibt keinen fachlichen Austausch, keine
-Klartextkonvertierung und keinen Gerätewechselpfad.
+Vor der Übernahme werden Container, Manifest, Final V4, Companion,
+Schlüsselmetadaten, Bindungen und Dokumentgenerationen vollständig in einem
+neuen Restore-Staging geprüft. Erst `RESTORE_READY` erlaubt die bewusste
+Bestätigung. Danach folgen verschlüsseltes Sicherheitsbackup, separater
+Restore-Worker, kontrollierter Austausch, Reopen/Neustart und Rollback bei
+Fehlern. ZIP-v1 darf den Cipherbestand nie öffnen.
+
+Der Restore ist installationsgebunden und benötigt den passenden bestehenden
+DMK der Installation. Es gibt keinen Geräteübertragungs-, DMK-Recovery- oder
+Klartextkonvertierungspfad.
 
 ### Grenzen
 
@@ -169,9 +193,8 @@ vollständig gegen:
 - hochprivilegierte lokale Angreifer;
 - eine garantierte physische Löschung von SSD-Daten.
 
-Ein verlorenes Gerät bleibt ein meldepflichtiger Sicherheitsvorfall. Die
-vorbereitete Verschlüsselung reduziert dieses Risiko erst nach einer
-kontrollierten, nachweisbaren Produktaktivierung.
+Ein verlorenes Gerät bleibt trotz aktiver lokaler Verschlüsselung ein
+meldepflichtiger Sicherheitsvorfall.
 
 ## 8. Verantwortlichkeiten der Schule
 
@@ -193,10 +216,11 @@ erhält durch einen Support-Reset keinen Zugang zu den fachlichen Daten.
 
 ## 9. Plattform- und Releasegrenzen
 
-Für 0.3.0 / Build 303 gilt:
+Für den geplanten Stand 0.4.0 / Build 400 gilt:
 
-- ad-hoc signiert;
-- nicht notarisiert;
+- noch kein freigegebenes oder verteiltes Buildartefakt;
+- Developer-ID-Signierung nicht nachgewiesen;
+- nicht als notarisiert freigegeben;
 - Apple Developer ID und Notarisierung offen;
 - macOS arm64 als Zielplattform;
 - Windows ungeprüft, kein DPAPI-Produktpfad;
@@ -210,8 +234,8 @@ Für 0.3.0 / Build 303 gilt:
 
 ## 10. Offene Schritte
 
-Folgende Arbeiten sind bewusst nicht Teil dieses Dokumentations- und
-Build-303-Vorbereitungsstands:
+Folgende Arbeiten sind bewusst nicht mit diesem Dokumentationsstand
+abgeschlossen:
 
 - reale Pilot-, Bundle-, Keychain- und Restore-Abnahme der Verschlüsselung;
 - Gerätewechsel- und DMK-Recovery;
@@ -222,12 +246,13 @@ Build-303-Vorbereitungsstands:
 - reale Power-Loss-Abnahme auf Zielhardware;
 - Freigabe eines öffentlichen Stable-Release.
 
-Bis zu diesen Nachweisen ist der committed Produktpfad nicht als gebautes,
-vollständig sicheres oder datenschutzrechtlich freigegebenes Artefakt zu verstehen.
+Bis zu diesen Nachweisen ist der technische Produktpfad nicht als gebautes,
+vollständig sicheres, für den Pilot freigegebenes oder datenschutzrechtlich
+freigegebenes Artefakt zu verstehen.
 
 ### Bei Verdacht oder Datenverlust
 
 1. Verlust eines Geräts, unerwartete Passwort- oder Reset-Ereignisse und
    Verdacht auf Manipulation unverzüglich melden.
 2. Datenbereiche nicht manuell verschieben, löschen oder mit Fremdwerkzeugen
-   bearbeiten, solange ein Backup, Restore oder Support-Reset läuft.
+   bearbeiten, solange ein Backup oder Restore läuft.

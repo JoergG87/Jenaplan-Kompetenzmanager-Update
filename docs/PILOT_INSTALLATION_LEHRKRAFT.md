@@ -1,8 +1,9 @@
 # Installation des Jenaplan-Kompetenzmanagers
 
-Diese Anleitung gilt für den internen macOS-arm64-Stand Version
-{{PILOT_VERSION}} / Build {{PILOT_BUILD}}. Sie wird zusammen mit einem späteren
-DMG übergeben; dieses Dokument belegt selbst kein bereits erzeugtes DMG.
+Diese Anleitung gilt für den vorbereiteten macOS-arm64-Pilotstand Version
+{{PILOT_VERSION}} / Build {{PILOT_BUILD}}. Sie wird zusammen mit einem später
+freigegebenen DMG übergeben; dieses Dokument belegt weder ein bereits erzeugtes
+DMG noch Pilot-GO, Verteilung oder Release.
 
 ## 1. Voraussetzungen
 
@@ -12,7 +13,8 @@ DMG übergeben; dieses Dokument belegt selbst kein bereits erzeugtes DMG.
 > - die vereinbarte DMG-Datei des Jenaplan-Kompetenzmanagers.
 
 Die App arbeitet lokal. Sie überträgt keine Fachdaten in eine Cloud und nutzt
-keine KI-Funktion.
+keine KI-Funktion. Fachdaten und verwaltete Dokumente werden lokal
+verschlüsselt gespeichert.
 
 ## 2. App aus dem DMG installieren
 
@@ -29,8 +31,9 @@ Installationsweg.
 
 ## 3. Gatekeeper-Hinweis kontrolliert freigeben
 
-Der interne Build ist ad-hoc signiert und nicht notarisiert. macOS kann beim
-ersten Start warnen.
+Für 0.4.0 / Build 400 sind Developer-ID-Signierung und Notarisierung noch nicht
+nachgewiesen. Ein internes Artefakt kann beim ersten Start von macOS blockiert
+werden.
 
 1. Den Hinweis schließen.
 2. Im Ordner `Programme` mit gedrückter Control-Taste auf die App klicken.
@@ -46,9 +49,10 @@ ersten Start warnen.
 
 Beim ersten Start erscheint `Lokales Konto einrichten`. Ein Passwort mit
 mindestens 15 Zeichen festlegen, bestätigen und die einmalig angezeigten
-Recovery-Codes getrennt vom Mac aufbewahren. Die App richtet ihren lokalen
-Datenbereich ein; vorhandene Fachdaten werden nicht durch Beispiel- oder
-Pilotdaten ersetzt.
+Recovery- und Sicherheitsinformationen getrennt vom Mac aufbewahren. Die App
+richtet einen frischen verschlüsselten Datenbereich ein. Sie erzeugt nur das
+aktuelle Schuljahr `2026/27`; Schüler, Gruppen, Kurse, Beobachtungen und
+Testdaten werden nicht automatisch angelegt.
 
 Nach dem Anmelden können unter `Einstellungen > Sicherheit` die gespeicherte
 Geräteanmeldung und bei erfüllten Voraussetzungen Touch ID eingerichtet werden.
@@ -58,21 +62,22 @@ automatisch.
 
 ## 5. Backup, Restore und Unterstützung
 
-Vor einem Update ein geprüftes lokales `.jkmebackup` erstellen. Der aktuelle
-Produktpfad verwendet ausschließlich den verschlüsselten Final-V4-Container.
-Die Restore-Vorschau lesen und
-`Wiederherstellung starten` nur bewusst wählen: die App erstellt vorher ein
-Sicherheitsbackup, übergibt an einen separaten Restore-Worker, beendet sich
-vollständig und startet kontrolliert neu. Danach erneut anmelden und
-Fachdaten prüfen.
+Vor einem Update ein geprüftes lokales `.jkmebackup` erstellen. Die
+Restore-Vorschau lesen und `Wiederherstellung starten` nur bewusst wählen. Die
+App prüft das Backup vollständig in einem getrennten Vorbereitungsbereich,
+erstellt vor dem Austausch ein Sicherheitsbackup, übergibt an einen separaten
+Restore-Worker, beendet sich vollständig und startet kontrolliert neu. Danach
+erneut anmelden und Fachdaten prüfen. Bei einem Fehler wird der bisherige
+Bestand beibehalten beziehungsweise kontrolliert zurückgesetzt.
 
-Startet der Worker nicht, bleibt der bisherige aktive Bestand unverändert. Ein
-Das Backup ist verschlüsselt, aber an dieselbe Installation und deren DMK
-gebunden. Zusätzliches externes, schulisch geregeltes Backup bleibt sinnvoll;
-ein Gerätewechsel oder DMK-Verlust ist damit nicht gelöst.
+Startet der Worker nicht, bleibt der bisherige aktive Bestand unverändert. Das
+Backup ist verschlüsselt, aber an dieselbe Installation und deren vorhandenen
+Installationsschlüssel gebunden. Zusätzliches externes, schulisch geregeltes
+Backup bleibt sinnvoll; ein Gerätewechsel oder Schlüsselverlust ist damit
+nicht gelöst.
 
-Support-Reset bleibt im Cipher-Modus kontrolliert blockiert, solange seine vor
-Authentifizierung nötige sichere Backup-Komposition nicht freigegeben ist.
+Support-Reset bleibt im verschlüsselten Produktpfad kontrolliert blockiert,
+solange der dafür notwendige sichere Backup-Ablauf nicht freigegeben ist.
 
 ## 6. Bekannte Grenzen
 
@@ -80,8 +85,11 @@ Authentifizierung nötige sichere Backup-Komposition nicht freigegeben ist.
 > - keine Windows-Freigabe und kein öffentlicher Stable-Release;
 > - keine Notarisierung und kein Developer-ID-Nachweis;
 > - keine Cloud-Synchronisation oder KI-Funktion;
-> - keine Migration bestehender Klartext- oder Altbestände; ausschließlich ein
->   frischer verschlüsselter Final-V4-Bestand;
+> - keine automatische Migration bestehender alter lokaler Datenbestände;
+>   für den kommenden Pilot werden keine produktiven Altdaten vorausgesetzt;
+> - Support-Reset ist im verschlüsselten Produktpfad kontrolliert blockiert;
+> - ein finales Bericht- oder LEG-PDF kann verschlüsselt vorhanden sein, die
+>   gemeinsame sichere Anzeige ist aber noch nicht final freigegeben;
 > - keine automatische Update-, Download- oder Installationsaktion.
 
 Das ausführliche Benutzerhandbuch und

@@ -6,8 +6,8 @@ Die Roadmap ordnet Produktphasen nach Version 0.2. Sie ist keine
 Sprintfreigabe. Konkrete Aufgaben, Status und Abhängigkeiten stehen in
 `BACKLOG.md`; operative, bereits freigegebene Arbeit steht in `SPRINTS.md`.
 
-PySide6 ist die aktive Produktoberfläche, SQLite die produktive lokale
-Datenbasis. Python verantwortet Datenmodell, Application- und Domain-Schicht,
+PySide6 ist die aktive Produktoberfläche, Final V4 auf SQLCipher 4.17 die
+produktive lokale Datenbasis. Python verantwortet Datenmodell, Application- und Domain-Schicht,
 Persistenz, ViewModels, Adapter, UI-Projektionen, Berichte, Exporte und
 Fachlogik. Excel/VBA ist ausschließlich historische Legacy-/Referenzlinie unter
 `legacy/excel/` und kein Zielpfad für neue Funktionen.
@@ -34,7 +34,7 @@ macOS-Keychain/Touch ID, gespeicherter Geräteanmeldung, Support-Reset-Workflow,
 Diese Funktionen werden nicht mehr als Zukunftsarbeit geführt. Reale
 Hardware-, Alltags- und Ergonomieprüfung bleibt Teil der nächsten Phase.
 
-## Phase 1 - interner Pilotstand 0.3.0 und Stabilisierung
+## Phase 1 - geplanter Pilotstand 0.4.0 / Build 400 und Stabilisierung
 
 Zuerst wird der implementierte Stand unter realen Pilotbedingungen validiert.
 Priorität P0 haben ausschließlich Datenverlust, fehlerhafte Speicherung,
@@ -44,12 +44,18 @@ abgeschnittene Kernaktionen.
 Pilottestwünsche und Komfortideen werden getrennt erfasst. Sie werden nicht
 allein durch ihre Nennung zu beschlossenen Produktänderungen.
 
-Build 303 ist ein ad-hoc-signierter, nicht notarisiert erwarteter macOS-arm64-
-Vorbereitungsstand; der finale Clean-Build steht noch aus. Es gibt keine
-Windows-Freigabe, keinen GitHub-Pre-Release, keinen Stable-Release, keinen
-aktiven Stable-Appcast und keinen automatischen Pilotrollout. Die historischen
-0.2.x-Pilot- und Updatebelege bleiben in den Archivabschnitten erhalten und
-sind keine Freigabe für 0.3.0.
+Der geplante Stand 0.4.0 / Build 400 verwendet Final V4, aktive lokale
+Verschlüsselung, verschlüsselte Managed Documents und
+installationsgebundenes `.jkmebackup`. Individuelle Fachprofile und die
+schuljahresbasierte Entwicklungsübersicht gehören zum vorbereiteten
+Pilotumfang. Support Reset, der gemeinsame sichere Viewer für finale
+verschlüsselte PDFs, Gerätewechsel und DMK-Recovery bleiben offen.
+
+Ein finaler Clean-Build steht noch aus. Es gibt keine behauptete
+Developer-ID-Signierung oder Notarisierung, keine Windows-Freigabe, keinen
+Stable-Release, keinen aktiven Stable-Appcast und kein Pilot-GO. Die
+historischen 0.2.x-/0.3.0-Pilot- und Updatebelege bleiben in den
+Archivabschnitten erhalten und sind keine Freigabe für 0.4.0 / Build 400.
 
 ## Phase 2 - Alltagsdaten effizient einrichten
 

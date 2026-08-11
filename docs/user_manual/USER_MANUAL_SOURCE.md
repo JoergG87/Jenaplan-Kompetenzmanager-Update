@@ -3,15 +3,16 @@
 ## 1. Titel und Versionsstand
 
 - Produktversion: {{PILOT_VERSION}}
-- Vorgesehener Releasekandidat: Build {{PILOT_BUILD}}
-- Dokumentstand: 27. Juli 2026
+- Vorbereiteter Pilotbuild: {{PILOT_BUILD}}
+- Dokumentstand: 11. August 2026
 - Plattform: macOS auf Apple Silicon (arm64), ab macOS 13
-- Status: interner, nicht öffentlicher Pilotstand
+- Status: geplanter interner Pilotstand; noch kein Pilot-GO oder Release
 
-Dieses Handbuch beschreibt die lokale Desktop-App. Die Screenshots wurden mit
-einer synthetischen lokalen Datenbank und ausschließlich fiktiven Namen erstellt.
-Der genaue Produkt-Commit wird erst mit dem späteren Clean-Build als
-Artefaktnachweis festgehalten; er ist nicht Teil dieses Dokumentstands.
+Dieses Handbuch beschreibt die lokale Desktop-App. Vorhandene Screenshots
+stammen aus einem älteren synthetischen Referenzstand und sind kein Nachweis für
+die Oberfläche von 0.4.0 / Build 400. Die zu erneuernden Motive sind am Ende
+dieses Handbuchs aufgeführt. Der genaue Produkt-Commit wird erst mit dem
+späteren sauberen Build als Artefaktnachweis festgehalten.
 
 ## 2. Wofür die App da ist
 
@@ -55,8 +56,9 @@ Freigabeverwaltung.
 3. Das Kopieren abwarten und das DMG im Finder auswerfen.
 4. Die App im Ordner Programme regulär öffnen.
 
-Der vorgesehene interne Build wird ad-hoc signiert und nicht notarisiert. macOS kann beim
-ersten Start deshalb warnen. Schließen Sie dann den Hinweis, klicken Sie im
+Für 0.4.0 / Build 400 ist noch kein Developer-ID- oder
+Notarisierungsnachweis freigegeben. Ein internes Artefakt kann beim ersten
+Start deshalb von macOS blockiert werden. Schließen Sie dann den Hinweis, klicken Sie im
 Finder bei gedrückter Control-Taste auf die App und wählen Sie Öffnen. Falls
 macOS weiterhin blockiert, wählen Sie in Systemeinstellungen > Datenschutz &
 Sicherheit nur für diese App Dennoch öffnen.
@@ -71,19 +73,21 @@ dürfen dabei nicht unterbrochen werden.
 ### Version und Build prüfen
 
 Öffnen Sie unten in der Seitenleiste Über die App. Dort stehen Produktversion
-und Build. Für diesen Dokumentstand müssen Version {{PILOT_VERSION}} und Build {{PILOT_BUILD}} angezeigt
-werden. Ein DMG, eine Prüfsumme oder ein Commit werden erst durch den späteren
-Clean-Build belegt; dieses Handbuch behauptet kein bereits erzeugtes
-Build-Artefakt.
+und Build. Ein später zur Pilotprüfung übergebenes Artefakt muss Version
+{{PILOT_VERSION}} und Build {{PILOT_BUILD}} anzeigen. Ein DMG, eine Prüfsumme
+oder ein Commit werden erst durch den späteren sauberen Build belegt; dieses
+Handbuch behauptet kein bereits erzeugtes Build-Artefakt.
 
-![Über die App mit Version und Build](screenshots/23_about_build_302.png)
+Der bisherige Screenshot zeigt noch Build 302 und wird für 0.4.0 / Build 400
+nicht als aktuelle Abbildung verwendet.
 
 ### Lokale Datenablage
 
-Die fachlichen Daten, verwalteten Dokumente, Ausgaben und Sicherungen liegen im
-persönlichen lokalen App-Bereich und getrennt vom App-Bundle. Beim Start werden
-vorhandene Fachdaten nicht durch Beispiel- oder Pilotdaten ersetzt. Der genaue
-Speicherort muss im Schulalltag nicht manuell verändert werden.
+Die fachlichen Daten und verwalteten Dokumente werden verschlüsselt im
+persönlichen lokalen App-Bereich und getrennt vom App-Bundle gespeichert. Beim
+Start werden vorhandene Fachdaten nicht durch Beispiel- oder Pilotdaten
+ersetzt. Der genaue Speicherort muss im Schulalltag nicht manuell verändert
+werden.
 
 ## 5. Anmeldung, Sperre und Unterstützung
 
@@ -91,8 +95,8 @@ Speicherort muss im Schulalltag nicht manuell verändert werden.
 
 Beim ersten Start erscheint Lokales Konto einrichten. Legen Sie ein Passwort mit
 mindestens 15 Zeichen fest, bestätigen Sie es und wählen Sie Recovery-Codes
-erzeugen. Bewahren Sie die angezeigten Recovery-Codes getrennt vom Mac auf. Der
-optionale Anzeigename dient nur der lokalen Begrüßung.
+erzeugen. Bewahren Sie die angezeigten Recovery- und Sicherheitsinformationen
+getrennt vom Mac auf. Der optionale Anzeigename dient nur der lokalen Begrüßung.
 
 ![Passwortanlage](screenshots/16_passwortanlage.png)
 
@@ -134,14 +138,15 @@ nach der Bestätigung des bisherigen Passworts ein neues lokales Passwort.
 
 ### Support-Reset
 
-Support-Reset ist im Final-V4-Cipher-Modus kontrolliert blockiert. Seine vor
-Authentifizierung erforderliche sichere `.jkmebackup`-Komposition ist noch
-nicht freigegeben. Ein Reset-Code, Passwort oder Recovery-Code ersetzt den DMK
-nicht und darf keinen Zugriff auf den verschlüsselten Fachbestand vortäuschen.
+Support-Reset ist im verschlüsselten Produktpfad kontrolliert blockiert. Der
+dazu vor der Anmeldung notwendige sichere Backup-Ablauf ist noch nicht
+freigegeben. Ein Reset-Code, Passwort oder Recovery-Code ersetzt den
+geschützten Installationsschlüssel nicht und darf keinen Zugriff auf den
+verschlüsselten Fachbestand vortäuschen.
 
 <!-- pagebreak -->
 
-## 6. Erste Orientierung
+## 6. Erste Orientierung und Pilotstart
 
 Nach der Anmeldung führt die Seitenleiste zu vier Bereichen:
 
@@ -154,6 +159,18 @@ Nach der Anmeldung führt die Seitenleiste zu vier Bereichen:
 Erste Schritte erklärt die Einrichtung und kann übersprungen oder später in den
 Einstellungen erneut geöffnet werden. Sie legt keine Kinder, Beobachtungen oder
 Sicherungen automatisch an.
+
+Für den frischen Pilotbestand gehen Sie in dieser Reihenfolge vor:
+
+1. Unter Einstellungen > Schuljahre das aktuelle Schuljahr `2026/27` vom
+   01.08.2026 bis 31.07.2027 prüfen.
+2. Stammgruppen und Kurse anlegen.
+3. Schüler selbst anlegen.
+4. Bei Bedarf je Schüler die Dokumentationsfächer anpassen.
+5. Eine erste Beobachtung erfassen.
+6. Die Entwicklungsübersicht öffnen.
+7. Bericht oder LEG nur bei Bedarf beginnen.
+8. Ein verschlüsseltes Backup erstellen.
 
 Primäraktionen sind klar beschriftet. Beobachtungen, Berichte und LEG verwenden
 zusätzlich ruhige Kontextfarben; die Beschriftung bleibt immer maßgeblich.
@@ -237,7 +254,35 @@ Noch nicht dokumentiert bedeutet lediglich, dass kein aktiver Beleg oder
 Bestätigungsstand vorliegt. Es sagt nichts darüber aus, was ein Kind kann oder
 nicht kann.
 
+### Dokumentationsfächer je Schüler
+
+Für das aktuelle Schuljahr kann jedes Kind ein eigenes Fachprofil erhalten:
+
+- Globale Auswahl verwenden übernimmt die allgemein eingestellten
+  Dokumentationsfächer.
+- Eigene Auswahl verwendet genau die für dieses Kind gewählten Fächer.
+- Auch eine bewusst leere eigene Auswahl ist möglich.
+
+Eine spätere Änderung der globalen Auswahl verändert eine eigene Auswahl
+nicht. Historische Schuljahre sind nicht für normale nachträgliche Änderungen
+dieses Fachprofils gedacht.
+
+### Entwicklungsübersicht
+
+Beim Öffnen erscheinen unmittelbar Timeline, Fachkarten und
+Dokumentationsumfang für das aktuelle Schuljahr. Die individuellen
+Dokumentationsfächer des Kindes werden berücksichtigt. Dafür muss kein
+Berichtsentwurf vorhanden oder ausgewählt sein.
+
+Die Übersicht zeigt dokumentierte Ereignisse und Mengen neutral. Sie berechnet
+keine Stärke, Schwäche, Punktzahl, Entwicklungstendenz oder pädagogische
+Priorität. Die Lehrkraft deutet die Beobachtungen fachlich selbst.
+
 ## 10. Lernentwicklungsberichte
+
+Ein Bericht ist ein eigenes Arbeitsprodukt. Seine Beobachtungs- und Belegbasis
+verwendet den Zeitraum des konkreten Berichtsentwurfs, nicht automatisch das
+gesamte aktuelle Schuljahr der Entwicklungsübersicht.
 
 ### Entwurf auswählen oder neu beginnen
 
@@ -246,8 +291,9 @@ Lernentwicklungsbericht auswählen.
 
 - Ohne Entwurf beginnt die Werkstatt mit einem neuen, noch ungespeicherten
   Entwurf.
-- Bei genau einem oder mehreren Entwürfen können Sie einen vorhandenen, auch
-  älteren Entwurf mit Öffnen wählen.
+- Bei vorhandenen Entwürfen können Sie einen konkreten, auch älteren Entwurf
+  mit Öffnen wählen. Bei mehreren Entwürfen trifft die App keine unbemerkte
+  automatische Auswahl.
 - Neuer Entwurf beginnt bewusst einen eigenen Entwurf.
 - Abbrechen erzeugt keine Daten.
 
@@ -279,9 +325,12 @@ schreibgeschützt.
 
 ![Berichtrevision](screenshots/10_report_read_only_revision.png)
 
-Finales PDF erstellen erzeugt eine verwaltete Ausgabe aus der aktuellen
-Revision. Die Finalisierung selbst erzeugt kein PDF automatisch. Ein
-Entwurfs-PDF ist dagegen eine frei gewählte Arbeitsausgabe und keine Revision.
+Finales PDF erstellen kann eine verschlüsselt verwaltete Ausgabe aus der
+aktuellen Revision erzeugen. Die Finalisierung selbst erzeugt kein PDF
+automatisch. Ein finales Artefakt kann deshalb verschlüsselt vorhanden sein,
+obwohl die gemeinsame sichere Anzeige noch nicht final freigegeben ist. Die
+Aktion `Finales PDF anzeigen` kann kontrolliert blockiert sein. Ein
+Entwurfs-PDF ist eine bewusst erzeugte Arbeitsausgabe und keine Revision.
 
 ## 11. Lernentwicklungsgespräche (LEG)
 
@@ -302,6 +351,8 @@ Entwurf speichern erhält den Arbeitsstand. Gespräch abschließen erzeugt nach
 Prüfung und Bestätigung eine schreibgeschützte Abschlussrevision. Eine spätere
 Änderung im Entwurf erzeugt erst beim erneuten Abschluss eine neue Revision.
 Nur die aktuelle Abschlussrevision kann ein finales LEG-PDF erzeugen.
+Auch dieses finale Artefakt wird verschlüsselt verwaltet; für seine Anzeige
+gilt dieselbe noch offene gemeinsame Viewerfreigabe wie beim Bericht.
 
 ## 12. Backup und Wiederherstellung
 
@@ -318,7 +369,12 @@ Sicherung vor einer Wiederherstellung oder einem Update nochmals geprüft werden
 > Der aktuelle Produktpfad verwendet ausschließlich das verschlüsselte,
 > authentisierte und installationsgebundene `.jkmebackup`. Bewahren Sie
 > zusätzlich eine externe, schulisch geregelte Sicherung vor Updates auf.
-> Gerätewechsel und DMK-Verlust sind damit nicht gelöst.
+> Gerätewechsel und Verlust des Installationsschlüssels sind damit nicht gelöst.
+
+Das Backup umfasst die verschlüsselte Fachdatenbank und alle für die
+Wiederherstellung nötigen registrierten verwalteten Dokumente und Metadaten.
+Es enthält weder das lokale Passwort noch Recovery-Codes, Touch-ID- oder
+Geräteanmeldedaten und auch nicht den geschützten Installationsschlüssel.
 
 ### Restore-Vorschau und ausdrückliche Bestätigung
 
@@ -329,11 +385,13 @@ Sicherung vor einer Wiederherstellung oder einem Update nochmals geprüft werden
 
 ![Restore-Vorschau](screenshots/21_restore_vorschau.png)
 
-Die Wiederherstellung ersetzt den aktiven fachlichen Bestand erst nach
-erfolgreicher Prüfung. Zuvor erstellt die App ein Sicherheitsbackup. Dann
-übergibt sie die Arbeit an einen separaten Restore-Worker, beendet sich
-vollständig und startet kontrolliert neu. Es bleibt kein kleines Restfenster der
-alten App offen.
+Die App prüft das Backup vor der Übernahme vollständig in einem getrennten
+Vorbereitungsbereich. Die Wiederherstellung ersetzt den aktiven fachlichen
+Bestand erst nach dieser Prüfung und Ihrer Bestätigung. Zuvor erstellt die App
+ein Sicherheitsbackup. Dann übergibt sie die Arbeit an einen separaten
+Restore-Worker, beendet sich vollständig und startet kontrolliert neu. Bei
+einem Fehler wird der Austausch abgebrochen oder auf den sicheren Ausgangsstand
+zurückgesetzt. Es bleibt kein kleines Restfenster der alten App offen.
 
 ![Neustarthinweis vor der Wiederherstellung](screenshots/22_restore_neustart.png)
 
@@ -344,9 +402,11 @@ alten App offen.
 > unverändert. Brechen Sie niemals durch Ausschalten oder gewaltsames Beenden ab,
 > wenn ein Restore läuft.
 
-Der same-installation Restore übernimmt keine Zugangsdaten, Recovery-Codes,
-gespeicherte Anmeldung oder Touch-ID-Einstellung. Diese Sicherheitsdaten bleiben
-getrennt; auf einem anderen Gerät ist der Container nicht freigegeben.
+Der installationsgebundene Restore übernimmt keine Zugangsdaten,
+Recovery-Codes, gespeicherte Anmeldung oder Touch-ID-Einstellung. Diese
+Sicherheitsdaten bleiben getrennt. Die Wiederherstellung benötigt den
+passenden bestehenden Installationsschlüssel; auf einem anderen Gerät ist der
+Container nicht freigegeben.
 
 ## 13. Stammdaten
 
@@ -360,17 +420,29 @@ Pflegen Sie Stammdaten bewusst vor dem Anlegen vieler Schüler. Historische
 fachliche Bezüge bleiben in vorhandenen Beobachtungen und Revisionen lesbar,
 auch wenn ein aktueller Katalogbezug später nicht mehr auswählbar ist.
 
+### Schuljahr 2026/27
+
+Der frische Pilot startet mit dem aktuellen Schuljahr `2026/27` vom 01.08.2026
+bis 31.07.2027. Schüler, Gruppen, Kurse und Beobachtungen legt die Lehrkraft
+selbst an. Vorhandene ältere lokale Daten- oder Testbestände werden nicht
+automatisch übernommen. Für den kommenden Pilot gibt es keine produktiven
+Altdaten, die migriert werden müssten.
+
+Fachprofile werden pro Schüler und Schuljahr geführt. Änderungen für ein
+historisches Schuljahr sind nicht Teil der normalen nachträglichen Pflege.
+
 ## 14. Typische Arbeitsabläufe
 
 ### Eine leere Anwendung einrichten
 
 1. Lokales Passwort anlegen und Recovery-Codes getrennt sichern.
-2. Unter Stammdaten mindestens eine Stammgruppe und einen Kurs anlegen.
-3. Optional Kursverbünde anlegen.
-4. Schüler anlegen.
-5. Dokumentationsfächer und Stundenplan prüfen.
+2. Schuljahr `2026/27` und seinen Zeitraum prüfen.
+3. Unter Stammdaten mindestens eine Stammgruppe und einen Kurs anlegen.
+4. Optional Kursverbünde anlegen.
+5. Schüler anlegen und bei Bedarf ihre Dokumentationsfächer anpassen.
 6. Eine erste Beobachtung erfassen.
-7. Ein geprüftes lokales Backup erstellen.
+7. Die Entwicklungsübersicht mit Timeline und Fachkarten öffnen.
+8. Ein geprüftes verschlüsseltes Backup erstellen.
 
 ### Während einer Stunde dokumentieren
 
@@ -398,22 +470,21 @@ auch wenn ein aktueller Katalogbezug später nicht mehr auswählbar ist.
 ## 15. Sicherheit, Datenschutz und lokale Datenhaltung
 
 > [!SICHERHEIT]
-> Die App überträgt keine Fachdaten in eine Cloud und nutzt keine KI. Aktuell aktiv
-> sind lokales Passwort, Keychain-gestützte Komfortanmeldung, optionales Touch ID,
-> automatische Sperre, Passwort-Fallback sowie verschlüsseltes lokales
-> `.jkmebackup` und same-installation Restore. Support-Reset bleibt blockiert.
+> Die App überträgt keine Fachdaten in eine Cloud und nutzt keine KI. Die
+> Fachdaten und verwalteten Dokumente werden lokal verschlüsselt gespeichert.
+> Lokales Passwort, optionale Geräteanmeldung und Touch ID, automatische Sperre
+> sowie der Passwort-Fallback schützen zusätzlich den Zugang. Support-Reset
+> bleibt kontrolliert blockiert.
 
 > [!HINWEIS]
-> App-Sperre und Verschlüsselung sind getrennte Schutzschichten. Der committed
-> Produktpfad verwendet für einen frischen Final-V4-Bestand SQLCipher 4.17,
-> verschlüsselte Managed Documents und `.jkmebackup`. Bestehende Klartext-, V3-
-> und Alt-Testdaten werden nicht migriert. Build-, Keychain- und Realweltabnahme
-> bleiben gesonderte Gates.
+> Backup und Restore verwenden das verschlüsselte, installationsgebundene
+> `.jkmebackup`. Bestehende ältere lokale Daten- und Testbestände werden nicht
+> migriert. Build-, Geräte- und Realweltabnahme bleiben gesonderte Gates.
 
-Finale verwaltete Bericht-/LEG-Artefakte liegen als verschlüsselte `.jkmedoc`
-im Managed Document Store. Bewusst frei exportierte PDFs liegen außerhalb der
-App im Klartext. Behandeln Sie sie wie andere vertrauliche Schulunterlagen. Das
-ausführliche Dokument docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md erläutert
+Finale verwaltete Bericht-/LEG-Artefakte liegen verschlüsselt in der App. Eine
+bewusst frei exportierte Datei liegt außerhalb dieses verwalteten Schutzes und
+muss wie jede vertrauliche Schulunterlage sicher behandelt werden. Das
+ausführliche Dokument `docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md` erläutert
 Schutzstand, Grenzen und Verantwortlichkeiten der Schule.
 
 Für Lehrkräfte gilt im Alltag:
@@ -430,9 +501,11 @@ Für Lehrkräfte gilt im Alltag:
 
 Nicht produktiv aktiviert oder freigegeben sind:
 
-- automatische SQLCipher-Migration bestehender Fachdaten;
-- Gerätewechsel- und DMK-Recovery;
-- Support-Reset im Cipher-Modus;
+- automatische Migration bestehender älterer Fachdaten;
+- Gerätewechsel und Wiederherstellung des Installationsschlüssels;
+- Support-Reset im verschlüsselten Produktpfad;
+- gemeinsamer sicherer Produktviewer für finale verschlüsselte Bericht- und
+  LEG-PDFs;
 - automatische Produktmigration und physisches Löschen alter Daten;
 - Windows oder ein DPAPI-Pfad;
 - Developer-ID-Signierung und Apple-Notarisierung;
@@ -462,3 +535,17 @@ Gesprächsabschluss.
 
 **Schnellbeobachtung:** Kurze Beobachtung mit Notiz und zunächst ohne
 Kompetenzzuordnung.
+
+## 18. Screenshots für 0.4.0 / Build 400 nachholen
+
+Vor einer Ausgabe als aktuelles Pilot-Handbuch müssen mindestens folgende
+synthetische Screenshots neu aufgenommen und fachlich geprüft werden:
+
+- `Über die App` mit vorbereitetem Versions-/Buildstand;
+- Schülerprofil mit individueller Dokumentationsfachauswahl;
+- Entwicklungsübersicht mit Timeline, Fachkarten und Dokumentationsumfang;
+- Backupansicht und Restore-Vorschau für `.jkmebackup`;
+- Berichtsentwurfsauswahl und aktueller Qt-Berichtsarbeitsbereich;
+- aktueller Qt-LEG-Arbeitsbereich;
+- kontrolliert blockierte Anzeige eines vorhandenen finalen PDF-Artefakts,
+  sofern dieser Zustand im Handbuch gezeigt werden soll.

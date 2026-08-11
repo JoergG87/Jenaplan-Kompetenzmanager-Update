@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Pilot-Dokumentation 0.4: Benutzerhandbuch, Lehrkraft-Schnellstart,
+  Installations-, Backup-, Sicherheits-, Support-, Projekt- und Releaseunterlagen
+  beschreiben den vorbereiteten Stand 0.4.0 / Build 400 mit Final V4,
+  SQLCipher 4.17, verschlüsselten Managed Documents,
+  installationsgebundenem `.jkmebackup`, Schuljahr 2026/27, individuellen
+  Dokumentationsfachprofilen und entwurfsunabhängiger Entwicklungsübersicht.
+  Qt bleibt Default für Bericht und LEG; HTML-Hosts bleiben interne
+  Erprobungspfade. Support Reset, sicherer finaler PDF-Viewer, Gerätewechsel,
+  Notarisierung, Pilot-GO und Release bleiben ausdrücklich offen.
+
 - Toast- und Cursorfeedback im Qt-Pilot verwenden stabile native Renderpfade:
   Erfolgstoasts bleiben ohne GraphicsEffect eindeutig kontrastiert, und der
   Handcursor gilt nur, solange ein aktivierbares Widget tatsächlich getroffen

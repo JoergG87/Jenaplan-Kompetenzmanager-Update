@@ -1,5 +1,18 @@
 # Jenaplan Support-Assistent – Betriebsanleitung
 
+## Produktstatus 0.4.0 / Build 400
+
+Der Support-Assistent beschreibt die getrennte signierte Reset-Code-
+Foundation. Im aktuellen Final-V4-Cipher-Produktpfad ist Support Reset jedoch
+kontrolliert blockiert: Die App stellt die vor Authentifizierung erforderliche
+sichere `.jkmebackup`-Pflichtbackup-Komposition nicht bereit. Der Assistent
+darf deshalb für den kommenden Pilot nicht als aktiver Recoveryweg angeboten
+werden. Es gibt keinen ZIP-v1- oder Klartextfallback.
+
+Recovery-Codes bleiben der erste vorgesehene Kontowiederherstellungsweg. Ein
+Reset-Code würde weder den geschützten DMK noch Datenbank- oder
+Dokumentschlüssel ersetzen.
+
 ## Zweck und Grenze
 
 `Jenaplan Support-Assistent.app` ist eine eigenständige Offline-Anwendung für
@@ -58,7 +71,7 @@ die Support-App, diese Anleitung, Versionsangaben und Prüfsummen. Es enthält
 keine Produkt-App, Datenbank, Dokumente, Backups, Runtime-Daten, Requests,
 Tokens, privaten Schlüssel oder Passphrase.
 
-Vor der Übergabe ZIP erneut verifizieren, Prüfsummen prüfen und die gebaute App
-mit einer synthetischen Anfrage testen. Developer-ID-Signierung und
-Notarisierung sind eigene Release-Gates und werden durch den lokalen arm64-
-Build nicht behauptet.
+Eine erneute Aktivierung benötigt eine eigene Security-, Backup-, Produkt- und
+Releaseentscheidung samt vollständiger Abnahme. Erst dann wären Paket,
+Prüfsummen, synthetische Anfrage, Developer-ID-Signierung und Notarisierung
+erneut zu prüfen.
