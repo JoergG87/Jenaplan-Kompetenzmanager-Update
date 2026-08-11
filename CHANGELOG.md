@@ -26,11 +26,12 @@
   individueller `custom`-Auswahl. Schema, Katalog und bestehende Beobachtungen
   werden nicht verändert.
 
-- Read-only-Katalogbefund: Alle 331 Kompetenzen des Entwicklungsbuch-Katalogs
-  tragen derzeit `learning_stage = cross_stage`; deshalb liefern `Passende
-  Kompetenzen`, `Klassenstufe 4` und `Alle Kompetenzen` aktuell identische
-  Mengen. Die Stage-UI bleibt bis zu einer Product-Owner-Entscheidung
-  unverändert.
+- Der Beobachtungsdialog zeigt für den Entwicklungsbuch-Katalog nach der
+  Fachauswahl direkt die ungefilterte Hierarchie aus Kompetenzbereich, Thema
+  und Kompetenz. Die drei bisher bedeutungsgleichen Stage-Schalter entfallen;
+  Suche, Fachwechsel, Disclosure, `Zuletzt verwendet` sowie historische
+  Edit-Kompetenzen bleiben erhalten. `learning_stage`, Katalog, Schema und das
+  getrennte Kompetenz-Cockpit bleiben unverändert.
 
 - Qt-Stabilität: Das Kompetenz-Cockpit schaltet seine Hierarchie ohne
   GraphicsEffect-Compositing, ausgewählte Beobachtungskompetenzen reservieren

@@ -4512,47 +4512,33 @@ class DesktopAppAdapterTest(unittest.TestCase):
         dialog.close()
         self.assertIsNotNone(app)
 
-    def test_observation_dialog_learning_stage_filter_matches_fresh_catalog(self) -> None:
-        dialog = self._observation_dialog_with_hierarchy()
-        self._select_observation_subject(
-            dialog,
-            "mathematik",
-            learning_stage_filter=None,
-        )
-
-        self.assertEqual(dialog.catalog_stage_filter.current_key(), "matching")
-        self.assertIn(self.math_first_competency_id, dialog.competency_catalog_tiles)
-        self.assertIn(self.math_last_competency_id, dialog.competency_catalog_tiles)
-        self.assertIn(self.math_time_competency_id, dialog.competency_catalog_tiles)
-
-        dialog.catalog_stage_filter.set_current_key("stage_4", emit=True)
-        self.assertIn(self.math_last_competency_id, dialog.competency_catalog_tiles)
-        self.assertIn(self.math_first_competency_id, dialog.competency_catalog_tiles)
-        self.assertIn(self.math_time_competency_id, dialog.competency_catalog_tiles)
-
-        dialog.catalog_stage_filter.set_current_key("all", emit=True)
-        self.assertIn(self.math_first_competency_id, dialog.competency_catalog_tiles)
-        self.assertIn(self.math_time_competency_id, dialog.competency_catalog_tiles)
-
-    def test_observation_dialog_stage_filter_keeps_selection_and_rating(self) -> None:
+    def test_observation_dialog_shows_fresh_catalog_without_stage_switches(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(dialog, "mathematik")
-        dialog.competency_catalog_tiles[self.math_time_competency_id]._activate()
-        dialog.competency_rating_widgets[self.math_time_competency_id].buttons["++"].click()
 
-        dialog.catalog_stage_filter.set_current_key("matching", emit=True)
-
-        self.assertIn(self.math_time_competency_id, dialog.competency_catalog_tiles)
-        self.assertIn(self.math_time_competency_id, dialog.competency_rating_entries)
+        subject_group = dialog._current_subject_group()
+        self.assertIsNotNone(subject_group)
+        assert subject_group is not None
+        expected_competency_ids = {
+            competency.competency_id
+            for area_group in subject_group.learning_area_groups
+            for topic_group in area_group.competency_groups
+            for competency in topic_group.competencies
+            if competency.catalog_status == "current" and competency.is_active
+        }
         self.assertEqual(
-            dialog.competency_rating_widgets[self.math_time_competency_id].currentData(),
-            "++",
+            set(dialog.competency_catalog_tiles),
+            expected_competency_ids,
         )
-        selected_button = dialog.competency_rating_widgets[self.math_time_competency_id].buttons["++"]
-        self.assertTrue(selected_button.isChecked())
-        self.assertTrue(selected_button.property("selected"))
-        self.assertTrue(selected_button.text().startswith("✓ "))
-        self.assertIn("ausgewählt", selected_button.accessibleName())
+        self.assertIsNone(
+            dialog.findChild(QWidget, "ObservationLearningStageFilter")
+        )
+        visible_texts = {
+            label.text() for label in dialog.findChildren(QLabel)
+        }
+        self.assertNotIn("Passende Kompetenzen", visible_texts)
+        self.assertNotIn("Klassenstufe 4", visible_texts)
+        self.assertNotIn("Alle Kompetenzen", visible_texts)
 
     def test_observation_dialog_ui_sprint_four_accessibility_contract(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
@@ -4560,10 +4546,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
         save_button = actions.button(QDialogButtonBox.StandardButton.Save)
 
         self.assertEqual(dialog.catalog_search_input.accessibleName(), "Kompetenzkatalog durchsuchen")
-        self.assertEqual(dialog.catalog_stage_filter.accessibleName(), "Klassenstufenfilter im Kompetenzkatalog")
+        self.assertEqual(dialog.subject_select.accessibleName(), "Fach für den Kompetenzkatalog")
         self.assertEqual(dialog.note_input.accessibleName(), "Beobachtungsnotiz")
         self.assertEqual(save_button.accessibleName(), "Beobachtung speichern")
-        self.assertTrue(dialog.catalog_stage_filter.toolTip())
+        self.assertIsNone(
+            dialog.findChild(QWidget, "ObservationLearningStageFilter")
+        )
 
     def test_observation_dialog_validation_is_inline_and_near_persistent_actions(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
@@ -5332,8 +5320,27 @@ class DesktopAppAdapterTest(unittest.TestCase):
             self.assertEqual(preserved.rating, "++")
             self.assertFalse(preserved.is_active)
             self.assertEqual(preserved.catalog_status, "legacy")
+        dialog = self._observation_dialog_with_hierarchy(draft)
+        historical_card = dialog.competency_rating_rows[
+            sport_competency.competency_id
+        ]
+        self.assertEqual(historical_card.property("historical"), "true")
+        self.assertIsNotNone(
+            historical_card.findChild(QLabel, "ObservationHistoricalBadge")
+        )
+        self.assertEqual(
+            dialog.competency_rating_widgets[
+                sport_competency.competency_id
+            ].currentData(),
+            "++",
+        )
+        self._select_observation_subject(dialog, "sport")
+        self.assertIn(
+            sport_competency.competency_id,
+            dialog.competency_catalog_tiles,
+        )
         result = self.adapter.update_observation(
-            replace(draft, note="Legitime spätere Bearbeitung.")
+            replace(dialog.create_draft(), note="Legitime spätere Bearbeitung.")
         )
         stored = SQLiteObservationRepository(self.database).get_observation(
             "OBS-000001"
@@ -8950,18 +8957,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self,
         dialog: new_observation_dialog.NewObservationDialog,
         subject_key: str,
-        *,
-        learning_stage_filter: str | None = "all",
     ) -> None:
         subject_index = dialog.subject_select.findData(subject_key)
         self.assertGreaterEqual(subject_index, 0)
         dialog.subject_select.setCurrentIndex(subject_index)
         dialog._refresh_competencies()
-        if learning_stage_filter is not None:
-            dialog.catalog_stage_filter.set_current_key(
-                learning_stage_filter,
-                emit=True,
-            )
 
     def _observation_topic_button(
         self,

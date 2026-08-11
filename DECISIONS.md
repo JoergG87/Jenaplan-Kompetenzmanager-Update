@@ -1,5 +1,41 @@
 # Architekturentscheidungen
 
+## ADR-104 - Entwicklungsbuch-Katalog im Beobachtungsdialog ohne Stage-Filter
+
+**Status:** Angenommen. Präzisiert ADR-048 und ADR-049 ausschließlich für die
+aktuelle Kompetenzauswahl im Beobachtungsdialog des Entwicklungsbuch-Katalogs.
+
+### Kontext
+
+Alle 331 aktiven `current`-Kompetenzen des Entwicklungsbuch-Katalogs tragen
+`learning_stage = cross_stage`. Das Entwicklungsbuch und sein Quelleninventar
+enthalten keine fachliche Stage-Information; der Wert ist ein konservativer
+Kompatibilitätswert. Dadurch zeigen `Passende Kompetenzen`, `Klassenstufe 4`
+und `Alle Kompetenzen` im Beobachtungsdialog dieselbe Menge und suggerieren
+eine nicht vorhandene Differenzierung.
+
+### Entscheidung
+
+Der Beobachtungsdialog zeigt nach der Fachauswahl genau eine ungefilterte
+Hierarchie `Kompetenzbereich -> Thema -> Kompetenz`. Suche, Disclosure,
+`Zuletzt verwendet`, individuelle Fachhierarchie und die bewusste Auswahl
+bleiben erhalten. Bestehende Edit- und historische Kompetenzen bleiben nach
+den vorhandenen Verträgen sichtbar.
+
+`learning_stage` bleibt unverändert in CSV, SQLite, ViewModels und
+Rückwärtskompatibilitätsverträgen. Diese Entscheidung entfernt weder das Feld
+noch die Stage-Filter des getrennten Kompetenz-Cockpits. Ein späterer Katalog
+mit fachlich beschlossenen Stage-Daten benötigt eine neue Produktentscheidung,
+bevor der Beobachtungsdialog erneut differenzierende Schalter erhält.
+
+### Konsequenzen
+
+- Keine Schema-, Migrations-, Katalog- oder Persistenzänderung.
+- Keine Kompetenz wird gesperrt, umsortiert oder automatisch ausgewählt.
+- Fachwechsel und Suche filtern nur die vorhandene Adapterprojektion.
+- ADR-048/049 bleiben als Daten- und Rückwärtskompatibilitätsvertrag sowie für
+  andere ausdrücklich dokumentierte Ansichten gültig.
+
 ## ADR-103 - Final V4 ist der frische Pilotvertrag für individuelle Fachrelevanz
 
 **Status:** Angenommen. Ersetzt die Final-V3-Schemaidentität aus ADR-101 und

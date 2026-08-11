@@ -1140,6 +1140,9 @@ UI-Projektionen:
 - Schülerbezogene primäre und weitere Fachoptionen aus `StudentDesktopAdapter.list_observation_subject_options(student_id, initial_draft)`; `is_primary` ist ausschließlich Darstellungsmetadatum
 - Hierarchische Kompetenzprojektion aus `StudentDesktopAdapter.list_observation_competency_subject_groups(student_id, initial_draft)` fuer die Dialogdarstellung
 - `catalog_status` und `is_active` aus derselben Adapterprojektion fuer Angebot und dezente historische Kennzeichnung
+- Ungefilterte aktuelle Kompetenzansicht je bewusst gewähltem Fach; das
+  weiterhin projizierte `learning_stage` erzeugt im Beobachtungsdialog keine
+  zusätzliche Stage-Steuerung
 - Lokaler Suchtext und Trefferanzeige über Kurzlabel, Kompetenztext, Thema und Kompetenzbereich aus derselben Adapterprojektion; nur aktive `current`-Kompetenzen sind neue Suchtreffer
 - Fachbezogene Schnellauswahl aus `StudentDesktopAdapter.list_recent_observation_competencies(student_id, initial_draft)`: maximal vier eindeutige aktive `current`-Kompetenzen aus den neuesten aktiven Beobachtungen des Schuelers; bei Suchtext vollstaendig ausgeblendet und nach erfolgreichem Speichern erneut aus SQLite projiziert
 - Beobachtungsnotiz
@@ -1163,7 +1166,10 @@ Domänen und die über `effective_documentation_subjects(student_id,
 school_year_id)` aufgelösten Unterrichtsfächer bilden die primäre
 Fachauswahl. Andere aktive Unterrichtsfächer bleiben bewusst unter `Weitere
 Fächer` erreichbar; der Katalog bietet in allen Fällen nur aktive
-`current`-Kompetenzen neu an. `Zuletzt verwendet` stammt aus derselben
+`current`-Kompetenzen neu an. Der aktuelle Entwicklungsbuch-Katalog wird nach
+dem Fach direkt als Kompetenzbereich -> Thema -> Kompetenz gerendert; die
+einheitlichen `cross_stage`-Kompatibilitätswerte werden nicht als drei
+bedeutungsgleiche UI-Filter projiziert. `Zuletzt verwendet` stammt aus derselben
 schülerbezogenen Hierarchie und wird erst für das bewusst gewählte Fach
 sichtbar. Bei Bearbeitung wird eine bestehende
 `observation_id` geladen; ein inzwischen nicht dokumentationsrelevantes

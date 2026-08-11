@@ -3145,16 +3145,18 @@ Registrierte Profilnamen:
 
 Registrierte Dialognamen:
 
-- `OBSERVATION_STAGE_FILTERS`
 - `ObservationDialogPageHeader`
-- `ObservationLearningStageFilter`
 - `ObservationValidationMessage`
 - `ObservationFileRow`
-- `NewObservationDialog._catalog_stage_filter_key`
-- `NewObservationDialog._change_catalog_stage_filter(filter_key)`
-- `NewObservationDialog._matches_catalog_learning_stage(competency)`
 
-Regel: Beide Klassenstufenfilter lesen ausschliesslich das bestehende Katalogfeld `learning_stage`. `matching` zeigt `stage_1_3` und `cross_stage`, `stage_4` zeigt `stage_4` und `cross_stage`, `all` zeigt alle aktiven aktuellen Katalogzeilen. Filterung bleibt lokaler UI-State und erzeugt keine neue Datenquelle, Berechnung oder Persistenz. Initial ausgewaehlte Edit-Kompetenzen bleiben unabhaengig vom Filter sichtbar und geoeffnet; historische beziehungsweise inaktive Kompetenzen werden nie als neue Auswahl reaktiviert.
+Regel: Der Klassenstufenfilter des Kompetenz-Cockpits liest weiterhin
+ausschliesslich das bestehende Katalogfeld `learning_stage`. Der
+Beobachtungsdialog besitzt für den einheitlich als `cross_stage` registrierten
+Entwicklungsbuch-Katalog keine Stage-Steuerung und zeigt nach dem Fach direkt
+die vorhandene Adapterhierarchie. Das Feld, die Adapterprojektion und
+Rückwärtskompatibilität bleiben unverändert. Initial ausgewaehlte
+Edit-Kompetenzen bleiben sichtbar und geoeffnet; historische beziehungsweise
+inaktive Kompetenzen werden nie als neue Auswahl reaktiviert.
 
 ## LEG-Abschluss und Revision
 

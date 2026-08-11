@@ -808,7 +808,7 @@ Datenquelle, berechnet keine Membership und besitzt keinen Schreibprozess.
 | --- | --- | --- | --- | --- | --- |
 | ausgewaehlter Schueler | neue Beobachtung: `student_id` aus dem aktuellen `CurrentMembershipReadSnapshot`; Bearbeitung: gespeicherte `observations.student_id` -> V3-`students` | Anzeige | Nein | V3-`students` / `student_school_year_assignments` / `observations` | Namen werden nicht als technische Identitaet verwendet; beim Edit bleibt der bestehende Schülerbezug erhalten |
 | Fachauswahl | SQLite `competencies.subject_id` / `subject_name` + `StudentDocumentationSubjectService.effective_documentation_subjects(student_id, school_year_id)` | Eingabe | Nein | Kompetenzverwaltung / Entwicklungsbuchkatalog + `documentation_subject_settings` / `student_documentation_subject_profiles` / `student_documentation_subject_selections` | `Überfachliche Entwicklung` bleibt immer direkt verfügbar. Die effektiven Unterrichtsfächer des Kindes bilden `Fächer`; andere aktive Unterrichtsfächer bleiben bewusst unter `Weitere Fächer` erreichbar. `ObservationSubjectOptionViewModel.is_primary` ist nur Darstellungsmetadatum und keine zweite Fachquelle. App-Anzeigename `EPU`, kein App-Fach `Sachunterricht`; bei Bearbeitung bleiben gespeicherte Fach- und Kompetenzreferenzen sichtbar |
-| Kompetenzauswahl | SQLite `competencies`, befuellt aus `data/curriculum_catalog_v1.csv` | Eingabe | Ja | `data_observation_competencies` | Drei-Zonen-Dialog mit separat scrollbarer Auswahl und separat scrollbarem Katalog; Fach, Kompetenzbereich, Thema und Kompetenz folgen deterministisch der kanonischen `sort_order`, ohne alphabetische Ersatzsortierung. Die Adapterprojektion traegt das vorhandene `learning_stage` fuer die lokalen Ansichten `Passende Kompetenzen`, `Klassenstufe 4` und `Alle Kompetenzen`. Neue Beobachtungen bieten nur `catalog_status = current` und `active = 1` an; jede Kompetenz hat `competency_id`, Fach, Kompetenzbereich, Thema, konkrete Kompetenz und lesbares Kurzlabel; ausgewaehlte Kompetenzbewertungen koennen aus mehreren Faechern stammen; beim Bearbeiten bleiben bereits bewertete `legacy`- oder inaktive Kompetenzen mit historischem Text sichtbar, bewertbar und entfernbar. Suche, Filter und Collapse veraendern weder Reihenfolge noch Auswahl oder Einzelbewertung |
+| Kompetenzauswahl | SQLite `competencies`, befuellt aus `data/curriculum_catalog_v1.csv` | Eingabe | Ja | `data_observation_competencies` | Drei-Zonen-Dialog mit separat scrollbarer Auswahl und separat scrollbarem Katalog; nach der Fachauswahl folgen Kompetenzbereich, Thema und Kompetenz direkt und deterministisch der kanonischen `sort_order`, ohne alphabetische Ersatzsortierung oder Stage-Filter. Die Adapterprojektion traegt `learning_stage` unverändert für Rückwärtskompatibilität und andere dokumentierte Ansichten. Neue Beobachtungen bieten nur `catalog_status = current` und `active = 1` an; jede Kompetenz hat `competency_id`, Fach, Kompetenzbereich, Thema, konkrete Kompetenz und lesbares Kurzlabel; ausgewaehlte Kompetenzbewertungen koennen aus mehreren Faechern stammen; beim Bearbeiten bleiben bereits bewertete `legacy`- oder inaktive Kompetenzen mit historischem Text sichtbar, bewertbar und entfernbar. Suche, Fachwechsel und Collapse veraendern weder Reihenfolge noch Auswahl oder Einzelbewertung |
 | Schnellauswahl | aktive SQLite `observations` + `observation_competency_ratings` -> dieselbe schülerbezogene Fach-/Kompetenzprojektion wie der Katalog | Anzeige / Eingabe | Nein | `observations` / `observation_competency_ratings` / `competencies` | Adapterprojektion je Schueler und bewusst gewähltem Fach: hoechstens vier eindeutige Kompetenzen, neueste zuerst; ein weiteres Fach schleust nichts in ein primäres Fach ein, bleibt nach seiner bewussten Auswahl aber erreichbar; Legacy- und inaktive Kompetenzen ausgeschlossen; ohne Eintraege oder bei aktivem Suchtext ausgeblendet; Klick fuegt nur zur bestehenden Auswahl hinzu und speichert nichts eigenstaendig |
 | Beobachtungsdatum | SQLite `observations.date` | Eingabe | Ja | `observations` | Datum gehoert zur Beobachtung |
 | Beobachtungsnotiz | SQLite `observations.note` | Eingabe | Ja | `observations` | Schreiben ueber Adapter, Command, Service und Repository |
@@ -846,17 +846,17 @@ nicht aus dem Entwicklungsbuch übernommen und nicht fachlich je Kompetenz
 neu differenziert; sie verwenden den konservativen Kompatibilitätswert des
 älteren Katalogmodells.
 
-Die aktuelle Filterlogik nimmt `cross_stage` sowohl in `Passende Kompetenzen`
-als auch in `Klassenstufe 4` auf. Deshalb sind die sichtbaren Mengen bei allen
+Die frühere Filterlogik nahm `cross_stage` sowohl in `Passende Kompetenzen`
+als auch in `Klassenstufe 4` auf. Deshalb waren die sichtbaren Mengen bei allen
 drei Filtern identisch, zum Beispiel EPU 6/6/6, Deutsch 41/41/41,
 Mathematik 67/67/67 und Sport 64/64/64 (Reihenfolge: passend / Stufe 4 /
 alle). Das gilt entsprechend für jede Domäne in der Tabelle.
 
-Empfehlung für eine spätere Product-Owner-Entscheidung: Variante 3,
-Stage-UI für den Entwicklungsbuch-Katalog entfernen oder auf einen einzigen
-ungefilterten Zustand vereinfachen. Die gegenwärtigen drei Texte suggerieren
-eine nicht vorhandene fachliche Differenzierung. In diesem Auftrag werden
-weder Texte noch Filterlogik geändert.
+Product-Owner-Entscheidung nach ADR-104: Der Beobachtungsdialog zeigt den
+aktuellen Entwicklungsbuch-Katalog ohne Stage-Schalter als genau eine
+ungefilterte Kompetenzansicht. `learning_stage` bleibt in Katalog, SQLite und
+Adapterprojektion unverändert; das getrennte Kompetenz-Cockpit behält seinen
+bestehenden Filtervertrag.
 
 ## Berichte und Dashboard
 

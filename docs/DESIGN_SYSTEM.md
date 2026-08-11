@@ -629,7 +629,13 @@ digitalen Designsystems.
 
 Disclosure setzt Sichtbarkeit und Datenzustand sofort und verwendet nur eine zentrale Opacity-Bestaetigung von maximal `MOTION_FAST_MS`. Keine Hoehenanimation langer Listen, keine verschachtelten Animationen und kein Layoutflackern. Reduced Motion zeigt den Endzustand unmittelbar. Die Arbeitsbereiche werden fuer 1400 x 900, 1280 x 800 und 1180 x 760 geprueft; Pflichtaktionen bleiben sichtbar, der Dialog besitzt getrennte vertikale Scrollbereiche und keinen horizontalen Katalog- oder Gesamtscroll.
 
-Accessibility-Regel: lokale Navigation und Klassenstufenfilter sind per Pfeiltasten bedienbar; Disclosure, Kompetenzwahl und Bewertung reagieren auf Fokus sowie Enter/Space; Datum, Fach, Kontext, Notiz, Suche, Bewertung, Entfernen und Speichern besitzen Accessible Names. Keine Information wird ausschliesslich durch Farbe vermittelt.
+Accessibility-Regel: Die verbleibende lokale Fachnavigation ist per
+Pfeiltasten bedienbar; Disclosure, Kompetenzwahl und Bewertung reagieren auf
+Fokus sowie Enter/Space. Datum, Fach, Kontext, Notiz, Suche, Bewertung,
+Entfernen und Speichern besitzen Accessible Names. Der Beobachtungsdialog
+erzeugt für den einheitlichen Entwicklungsbuch-Katalog keine bedeutungslose
+Stage-Steuerung. Keine Information wird ausschliesslich durch Farbe
+vermittelt.
 
 QPainter-Regel: UI Sprint 4 verwendet keinen QPainter. Timeline-Marker, Spezial-Focus-Ringe oder Evidenzgrafiken erzeugen gegenueber den vorhandenen Standardwidgets keinen ausreichenden Mehrwert; zentrale Qt-Widgets und QSS bleiben High-DPI-, Fokus- und Reduced-Motion-sicherer.
 

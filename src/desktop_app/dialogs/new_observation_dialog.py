@@ -36,7 +36,6 @@ from src.desktop_app.components import (
     RatingBadgeButton,
     SearchField,
     SectionHeader,
-    SegmentedControl,
     StatusBadge,
     configure_button,
 )
@@ -64,14 +63,6 @@ from src.desktop_app.view_models.observation_view_model import (
     competency_presentation_group,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
-
-
-OBSERVATION_STAGE_FILTERS = (
-    ("matching", "Passende Kompetenzen"),
-    ("stage_4", "Klassenstufe 4"),
-    ("all", "Alle Kompetenzen"),
-)
-
 
 class ObservationRatingSelector(QWidget):
     """Exclusive four-chip selector with the former combo-box data contract."""
@@ -224,7 +215,6 @@ class NewObservationDialog(QDialog):
         self.competency_topic_containers: dict[str, QWidget] = {}
         self._catalog_expansion_snapshot: tuple[dict[str, bool], dict[str, bool]] | None = None
         self._catalog_search_text = ""
-        self._catalog_stage_filter_key = "matching"
         self.attachment_drafts: list[ObservationAttachmentDraft] = []
         self._initial_selected_competency_ids = {
             rating.competency_id
@@ -390,7 +380,7 @@ class NewObservationDialog(QDialog):
             "Kompetenzkatalog",
             "Auswählen, anschließend oben je Kompetenz bewerten.",
             (
-                "Passende Kompetenzen blendet Klassenstufe 4 aus, sperrt sie aber nicht. "
+                "Der Katalog zeigt alle aktuellen Kompetenzen des gewählten Fachs. "
                 "Historische Kompetenzen bleiben nur beim Bearbeiten sichtbar."
             ),
         )
@@ -405,16 +395,6 @@ class NewObservationDialog(QDialog):
         self.catalog_search_input.setObjectName("ObservationCatalogSearch")
         self.catalog_search_input.textChanged.connect(self._search_catalog)
         zone_layout.addWidget(self.catalog_search_input)
-        self.catalog_stage_filter = SegmentedControl(OBSERVATION_STAGE_FILTERS)
-        self.catalog_stage_filter.setObjectName("ObservationLearningStageFilter")
-        self.catalog_stage_filter.setAccessibleName("Klassenstufenfilter im Kompetenzkatalog")
-        self.catalog_stage_filter.setToolTip(
-            "Klassenstufe 4 ist jederzeit über den Filter erreichbar."
-        )
-        self.catalog_stage_filter.selection_changed.connect(
-            self._change_catalog_stage_filter
-        )
-        zone_layout.addWidget(self.catalog_stage_filter)
         self.recent_competencies_container = QWidget()
         self.recent_competencies_container.setObjectName("ObservationRecentCompetencies")
         recent_layout = QVBoxLayout(self.recent_competencies_container)
@@ -610,15 +590,6 @@ class NewObservationDialog(QDialog):
         if not normalized_search_text:
             self._catalog_expansion_snapshot = None
 
-    def _change_catalog_stage_filter(self, filter_key: str) -> None:
-        """Apply the existing learning-stage metadata as a local catalog filter."""
-        if filter_key == self._catalog_stage_filter_key:
-            return
-        self._catalog_expansion_snapshot = self._catalog_expansion_state()
-        self._catalog_stage_filter_key = filter_key
-        self._refresh_competencies()
-        self._catalog_expansion_snapshot = None
-
     def _refresh_recent_competencies(self) -> None:
         """Render the adapter-provided quick selection for the visible subject."""
         if not hasattr(self, "recent_competencies_layout"):
@@ -630,7 +601,6 @@ class NewObservationDialog(QDialog):
             competency
             for competency in self.recent_competencies
             if competency.subject_key == subject_key
-            and self._matches_catalog_learning_stage(competency)
         )
         self.recent_competencies_container.setVisible(
             bool(visible_competencies) and not bool(self._catalog_search_text)
@@ -691,7 +661,6 @@ class NewObservationDialog(QDialog):
                     and competency.is_active
                 )
             )
-            and self._matches_catalog_learning_stage(competency)
             and (
                 not query
                 or query in " ".join((
@@ -702,19 +671,6 @@ class NewObservationDialog(QDialog):
                 )).casefold()
             )
         )
-
-    def _matches_catalog_learning_stage(
-        self,
-        competency: ObservationCompetencyOptionViewModel,
-    ) -> bool:
-        if competency.competency_id in self._initial_selected_competency_ids:
-            return True
-        learning_stage = competency.learning_stage or "cross_stage"
-        if self._catalog_stage_filter_key == "all":
-            return True
-        if self._catalog_stage_filter_key == "stage_4":
-            return learning_stage in {"stage_4", "cross_stage"}
-        return learning_stage in {"stage_1_3", "cross_stage"}
 
     def _set_catalog_search_feedback(self, competency_count: int) -> None:
         if not self._catalog_search_text:
