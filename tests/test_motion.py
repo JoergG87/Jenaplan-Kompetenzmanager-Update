@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -23,7 +25,9 @@ from src.desktop_app.components import (
     AppCard,
     FilterChip,
     InlineMessage,
+    SectionHeader,
     SegmentedControl,
+    StatusBadge,
     Toast,
 )
 from src.desktop_app.motion import (
@@ -387,6 +391,77 @@ class MotionSystemTest(unittest.TestCase):
 
         self.assertTrue(toast.isHidden())
         self.assertEqual(getattr(toast, "_motion_animations", {}), {})
+
+    def test_toast_fits_unmanaged_dialog_overlay_and_layout_managed_host(self) -> None:
+        host = QWidget()
+        host.resize(420, 220)
+        overlay = Toast(host)
+        overlay.show_message(
+            "Entwurf gespeichert – du kannst ihn später fortsetzen.",
+            tone="success",
+            duration_ms=10_000,
+        )
+        host.show()
+        self.app.processEvents()
+
+        self.assertGreaterEqual(overlay.geometry().left(), host.contentsRect().left())
+        self.assertLessEqual(overlay.geometry().right(), host.contentsRect().right())
+        self.assertLessEqual(overlay.geometry().bottom(), host.contentsRect().bottom())
+        self.assertGreaterEqual(
+            overlay.height(),
+            overlay.label.heightForWidth(overlay.width() - 24) + 16,
+        )
+        self.assertIsNone(overlay.graphicsEffect())
+
+        host.resize(360, 180)
+        self.app.processEvents()
+        self.assertLessEqual(overlay.geometry().right(), host.contentsRect().right())
+        self.assertLessEqual(overlay.geometry().bottom(), host.contentsRect().bottom())
+
+        layout_host = QWidget()
+        layout = QVBoxLayout(layout_host)
+        managed = Toast()
+        layout.addWidget(managed)
+        managed.show_message(
+            "Fächer für die Dokumentation wurden gespeichert.",
+            tone="success",
+            duration_ms=10_000,
+        )
+        layout_host.show()
+        self.app.processEvents()
+        self.assertFalse(managed._is_parent_overlay())
+        self.assertGreaterEqual(
+            managed.height(),
+            managed.label.sizeHint().height() + 16,
+        )
+        host.close()
+        layout_host.close()
+
+    def test_shared_headers_and_status_badges_keep_normal_text_readable(self) -> None:
+        host = QWidget()
+        layout = QVBoxLayout(host)
+        header = SectionHeader("Berichte & LEG (Übersicht)")
+        badge = StatusBadge("Bestätigungsstand unklar", tone="warning")
+        layout.addWidget(header)
+        layout.addWidget(badge)
+        host.resize(190, 140)
+        host.show()
+        self.app.processEvents()
+
+        self.assertTrue(header.title_label.wordWrap())
+        self.assertGreaterEqual(
+            header.title_label.height(),
+            2 * header.title_label.fontMetrics().height(),
+        )
+        self.assertEqual(
+            badge.sizePolicy().horizontalPolicy(),
+            QSizePolicy.Policy.Minimum,
+        )
+        self.assertGreaterEqual(
+            badge.sizeHint().width(),
+            badge.fontMetrics().horizontalAdvance(badge.text()),
+        )
+        host.close()
 
     def test_pointer_cursor_tracks_enter_leave_hide_and_repeated_clicks(self) -> None:
         button = QPushButton("Disclosure")

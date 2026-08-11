@@ -812,6 +812,9 @@ class LearningConferenceUiTest(unittest.TestCase):
 
     def test_successful_save_resets_dirty_state(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
+        dialog.resize(1180, 760)
+        dialog.show()
+        self.app.processEvents()
         dialog.set_active_phase("strengths", focus=False)
         dialog.text_inputs["strengths_text"].setPlainText("Stärke")
         dialog.save_requested.connect(
@@ -829,6 +832,24 @@ class LearningConferenceUiTest(unittest.TestCase):
         self.assertFalse(dialog.is_dirty)
         self.assertEqual(dialog.save_button.text(), "Entwurf speichern")
         self.assertIn("Zuletzt gespeichert", dialog.status_label.text())
+        self.assertFalse(dialog.toast.isHidden())
+        self.assertGreaterEqual(
+            dialog.toast.geometry().left(),
+            dialog.contentsRect().left(),
+        )
+        self.assertLessEqual(
+            dialog.toast.geometry().right(),
+            dialog.contentsRect().right(),
+        )
+        self.assertLessEqual(
+            dialog.toast.geometry().bottom(),
+            dialog.contentsRect().bottom(),
+        )
+        self.assertGreaterEqual(
+            dialog.toast.height(),
+            dialog.toast.label.heightForWidth(dialog.toast.width() - 24) + 16,
+        )
+        dialog.close()
 
     def test_dirty_close_can_continue_discard_or_save(self) -> None:
         continue_dialog = LearningConferenceDialog(self.preparation)

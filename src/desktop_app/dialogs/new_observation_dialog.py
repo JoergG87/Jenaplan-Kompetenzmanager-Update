@@ -369,7 +369,7 @@ class NewObservationDialog(QDialog):
         self.selected_scroll.setObjectName("ObservationSelectedScroll")
         self.selected_scroll.setWidgetResizable(True)
         self.selected_scroll.setMinimumHeight(120)
-        self.selected_scroll.setMaximumHeight(230)
+        self.selected_scroll.setMaximumHeight(280)
         selected_content = QWidget()
         self.competency_ratings_layout = QVBoxLayout(selected_content)
         self.competency_ratings_layout.setContentsMargins(0, 0, 4, 0)
@@ -420,7 +420,7 @@ class NewObservationDialog(QDialog):
         recent_layout = QVBoxLayout(self.recent_competencies_container)
         recent_layout.setContentsMargins(0, 2, 0, 2)
         recent_layout.setSpacing(5)
-        recent_title = QLabel("Schnellauswahl")
+        recent_title = QLabel("Zuletzt verwendet")
         set_label_style(recent_title, "field_label")
         recent_layout.addWidget(recent_title)
         self.recent_competencies_layout = QHBoxLayout()
@@ -632,7 +632,11 @@ class NewObservationDialog(QDialog):
             chip_layout.setContentsMargins(8, 5, 8, 5)
             chip_layout.setSpacing(5)
             text = QLabel(self._competency_display_text(competency))
-            text.setWordWrap(True)
+            text.setWordWrap(False)
+            text.setSizePolicy(
+                QSizePolicy.Policy.Minimum,
+                QSizePolicy.Policy.Preferred,
+            )
             text.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             chip_layout.addWidget(text, 1)
             signal = QLabel("✓" if is_selected else "+")
@@ -1222,6 +1226,23 @@ class NewObservationDialog(QDialog):
         count = len(self.competency_rating_entries)
         self.selection_count_label.setText(f"{count} ausgewählt")
         self.competency_ratings_empty_state.setVisible(count == 0)
+        visible_rows = tuple(self.competency_rating_rows.values())
+        minimum_height = 120
+        if len(visible_rows) >= 2:
+            for row in visible_rows:
+                row.ensurePolished()
+                row.layout().activate()
+            two_tallest_rows = sorted(
+                (row.sizeHint().height() for row in visible_rows),
+                reverse=True,
+            )[:2]
+            minimum_height = min(
+                self.selected_scroll.maximumHeight(),
+                sum(two_tallest_rows)
+                + self.competency_ratings_layout.spacing()
+                + (2 * self.selected_scroll.frameWidth()),
+            )
+        self.selected_scroll.setMinimumHeight(minimum_height)
 
     def _toggle_quick_observation(self, checked: bool) -> None:
         if checked and self.competency_rating_entries:
@@ -1259,17 +1280,19 @@ class NewObservationDialog(QDialog):
 
     def _competency_display_text(self, entry: object) -> str:
         return (
-            str(getattr(entry, "competency_text", "") or "").strip()
-            or str(getattr(entry, "competency_label", "") or "").strip()
+            str(getattr(entry, "competency_label", "") or "").strip()
+            or str(getattr(entry, "competency_text", "") or "").strip()
             or self._learning_area_text(entry)
         )
 
     def _competency_detail_text(self, entry: object) -> str:
-        return "\n".join((
-            f"Kompetenzbereich: {self._learning_area_text(entry)}",
-            f"Thema: {self._competency_group_text(entry)}",
-            f"Kompetenz: {self._competency_display_text(entry)}",
-        ))
+        description = str(getattr(entry, "competency_text", "") or "").strip()
+        visible_text = self._competency_display_text(entry)
+        return (
+            description
+            if description and description.casefold() != visible_text.casefold()
+            else ""
+        )
 
     def _apply_initial_draft(self) -> None:
         if self.initial_draft is None:

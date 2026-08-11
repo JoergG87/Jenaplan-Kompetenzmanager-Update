@@ -4347,6 +4347,49 @@ class DesktopAppAdapterTest(unittest.TestCase):
             dialog.catalog_search_input.placeholderText(), "Kompetenzen durchsuchen …"
         )
 
+    def test_observation_dialog_keeps_two_selected_rows_visible_and_more_scrollable(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+        visible_options = tuple(
+            competency
+            for subject in dialog.competency_subject_groups
+            if subject.subject_key == "mathematik"
+            for area in subject.learning_area_groups
+            for topic in area.competency_groups
+            for competency in topic.competencies
+            if competency.competency_id in dialog.competency_catalog_tiles
+        )
+        competency_ids = tuple(
+            competency.competency_id
+            for competency in sorted(
+                visible_options,
+                key=lambda item: len(dialog._competency_display_text(item)),
+                reverse=True,
+            )[:3]
+        )
+        for competency_id in competency_ids:
+            dialog.competency_catalog_tiles[competency_id]._activate()
+        dialog.resize(1180, 760)
+        dialog.show()
+        app.processEvents()
+
+        rows = tuple(dialog.competency_rating_rows.values())
+        required_height = (
+            sum(row.sizeHint().height() for row in rows[:2])
+            + dialog.competency_ratings_layout.spacing()
+        )
+        self.assertGreaterEqual(
+            dialog.selected_scroll.viewport().height(),
+            required_height,
+        )
+        self.assertGreater(dialog.selected_scroll.verticalScrollBar().maximum(), 0)
+        self.assertGreaterEqual(dialog.catalog_scroll.viewport().height(), 100)
+        dialog.close()
+        self.assertIsNotNone(app)
+
     def test_observation_dialog_learning_stage_filter_matches_fresh_catalog(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
         self._select_observation_subject(
@@ -4543,6 +4586,20 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self._select_observation_subject(dialog, "mathematik")
         self.assertFalse(dialog.recent_competencies_container.isHidden())
         self.assertEqual(tuple(dialog.recent_competency_chips), (self.math_time_competency_id,))
+        recent_title = next(
+            label
+            for label in dialog.recent_competencies_container.findChildren(QLabel)
+            if label.text() == "Zuletzt verwendet"
+        )
+        recent_text = next(
+            label
+            for label in dialog.recent_competency_chips[
+                self.math_time_competency_id
+            ].findChildren(QLabel)
+            if label.text() not in {"+", "✓"}
+        )
+        self.assertEqual(recent_title.text(), "Zuletzt verwendet")
+        self.assertFalse(recent_text.wordWrap())
 
         dialog.catalog_search_input.setText("Uhrzeit")
         self.assertTrue(dialog.recent_competencies_container.isHidden())
@@ -4551,6 +4608,36 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self._select_observation_subject(dialog, "deutsch")
         self.assertEqual(tuple(dialog.recent_competency_chips), (self.german_listening_competency_id,))
+
+    def test_observation_competency_tooltip_only_uses_additional_description(
+        self,
+    ) -> None:
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+        entry = dialog.competency_catalog_tiles[self.math_time_competency_id]
+        option = next(
+            competency
+            for subject in dialog.competency_subject_groups
+            for area in subject.learning_area_groups
+            for topic in area.competency_groups
+            for competency in topic.competencies
+            if competency.competency_id == self.math_time_competency_id
+        )
+
+        self.assertEqual(entry.toolTip(), "")
+        described = replace(
+            option,
+            competency_label="Uhrzeit ablesen",
+            competency_text="Uhrzeiten auf analogen und digitalen Uhren ablesen.",
+        )
+        self.assertEqual(
+            dialog._competency_display_text(described),
+            "Uhrzeit ablesen",
+        )
+        self.assertEqual(
+            dialog._competency_detail_text(described),
+            "Uhrzeiten auf analogen und digitalen Uhren ablesen.",
+        )
 
     def test_observation_dialog_recent_chip_selects_once_and_disables_afterward(self) -> None:
         self.adapter.save_observation(self._sample_observation_draft(
@@ -6454,6 +6541,68 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertTrue(competency_button.text().startswith("☐ "))
         topic_button.click()
         self.assertFalse(topic_details.isHidden())
+        self.assertIsNotNone(app)
+
+    def test_competency_cockpit_disclosures_return_to_stable_height_without_effects(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        statuses = tuple(
+            self._cockpit_status(
+                f"CMP-LAYOUT-{index}",
+                f"Kompetenz {index}",
+                subject_id="deutsch",
+                subject_name="Deutsch",
+                topic=f"Thema {index // 2}",
+            )
+            for index in range(8)
+        )
+        screen.set_student(
+            self._sample_student_detail(),
+            competency_cockpit=build_student_competency_cockpit(statuses),
+        )
+        screen.profile_tabs.setCurrentIndex(2)
+        screen.resize(1180, 760)
+        screen.show()
+        app.processEvents()
+        initial_height = screen.competency_cockpit_container.sizeHint().height()
+        buttons = (
+            *screen.findChildren(QPushButton, "CompetencyCockpitSubjectButton"),
+            *screen.findChildren(QPushButton, "CompetencyCockpitLearningAreaButton"),
+            *screen.findChildren(QPushButton, "CompetencyCockpitTopicButton"),
+        )
+        cockpit_cards = (
+            *screen.findChildren(QFrame, "CompetencyCockpitSubjectCard"),
+            *screen.findChildren(QFrame, "CompetencyCockpitLearningAreaCard"),
+            *screen.findChildren(QFrame, "CompetencyCockpitTopicCard"),
+            *screen.findChildren(QFrame, "CompetencyCockpitCompetencyRow"),
+        )
+        self.assertTrue(cockpit_cards)
+        self.assertTrue(
+            all(card.graphicsEffect() is None for card in cockpit_cards)
+        )
+        self.assertTrue(
+            all(card.focusPolicy() == Qt.FocusPolicy.StrongFocus for card in cockpit_cards)
+        )
+        opened_heights: list[int] = []
+        for button in buttons:
+            button.click()
+            app.processEvents()
+            opened_heights.append(
+                screen.competency_cockpit_container.sizeHint().height()
+            )
+            self.assertIsNone(button.graphicsEffect())
+        self.assertEqual(opened_heights, sorted(opened_heights))
+
+        for button in reversed(buttons):
+            button.click()
+            app.processEvents()
+        self.assertEqual(
+            screen.competency_cockpit_container.sizeHint().height(),
+            initial_height,
+        )
+        screen.close()
         self.assertIsNotNone(app)
 
     def test_student_profile_renders_student_documents(self) -> None:

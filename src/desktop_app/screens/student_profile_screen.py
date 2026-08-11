@@ -1341,13 +1341,16 @@ class StudentProfileScreen(QWidget):
         card: QFrame,
         action: Callable[[], None],
         tooltip: str,
+        *,
+        with_hover_effect: bool = True,
     ) -> None:
         card.setProperty("interactive", True)
         install_pointer_cursor(card)
         card.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         card.setAccessibleName(tooltip)
         card.setToolTip(tooltip)
-        install_card_motion(card)
+        if with_hover_effect:
+            install_card_motion(card)
         original_key_press_event = card.keyPressEvent
 
         def handle_mouse_release(event: object) -> None:
@@ -2495,6 +2498,7 @@ class StudentProfileScreen(QWidget):
                 key, details, button, "Öffnen ▾", "Schließen ▴"
             ),
             "Fach öffnen",
+            with_hover_effect=False,
         )
         return card
 
@@ -2552,6 +2556,7 @@ class StudentProfileScreen(QWidget):
                 key, details, button, "Öffnen ▾", "Schließen ▴"
             ),
             f"Kompetenzbereich {area.learning_area} öffnen oder schließen",
+            with_hover_effect=False,
         )
         return card
 
@@ -2600,6 +2605,7 @@ class StudentProfileScreen(QWidget):
                 key, details, button, "Öffnen ▾", "Schließen ▴"
             ),
             f"Thema {topic.competency_group} öffnen oder schließen",
+            with_hover_effect=False,
         )
         return card
 
@@ -2630,6 +2636,7 @@ class StudentProfileScreen(QWidget):
                 key, details, button, button.text(), button.text()
             ),
             f"Kompetenz {getattr(competency, 'competency_label')} öffnen oder schließen",
+            with_hover_effect=False,
         )
         return row
 
@@ -2844,7 +2851,6 @@ class StudentProfileScreen(QWidget):
         button.setAccessibleDescription(
             "Bereich ist geöffnet" if expanded else "Bereich ist geschlossen"
         )
-        animate_feedback(button, key="competency_cockpit_disclosure")
 
     def _show_observations_tab(self, observation_id: str = "") -> None:
         """Show the existing observation tab and mark a requested observation."""

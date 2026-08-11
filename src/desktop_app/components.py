@@ -4,7 +4,16 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from PySide6.QtCore import QEasingCurve, QEvent, QRect, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import (
+    QEasingCurve,
+    QEvent,
+    QObject,
+    QRect,
+    QSize,
+    Qt,
+    QTimer,
+    Signal,
+)
 from PySide6.QtGui import QColor, QKeyEvent, QKeySequence, QMouseEvent, QShortcut
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -116,6 +125,11 @@ class SectionHeader(QWidget):
         labels.setSpacing(2)
         self.title_label = QLabel(title)
         self.title_label.setObjectName("SectionHeaderTitle")
+        self.title_label.setWordWrap(True)
+        self.title_label.setSizePolicy(
+            QSizePolicy.Policy.Ignored,
+            QSizePolicy.Policy.Preferred,
+        )
         set_label_style(self.title_label, "section_title")
         self.description_label = QLabel(description)
         self.description_label.setWordWrap(True)
@@ -462,6 +476,10 @@ class StatusBadge(QLabel):
     ) -> None:
         super().__init__(text)
         self.setObjectName("StatusBadge")
+        self.setSizePolicy(
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Fixed,
+        )
         self.setProperty("badgeTone", tone)
         if rating_token:
             apply_rating_badge_variant(self, rating_token)
@@ -713,7 +731,42 @@ class Toast(QFrame):
         self.timer.timeout.connect(self._dismiss)
         self._duration_ms = 4200
         self._remaining_ms = self._duration_ms
+        if parent is not None:
+            parent.installEventFilter(self)
         self.hide()
+
+    def _is_parent_overlay(self) -> bool:
+        parent = self.parentWidget()
+        if parent is None:
+            return False
+        parent_layout = parent.layout()
+        return parent_layout is None or parent_layout.indexOf(self) < 0
+
+    def _place_inside_parent(self) -> None:
+        """Size and anchor an unmanaged toast inside its visible parent."""
+        parent = self.parentWidget()
+        if parent is None or not self._is_parent_overlay():
+            return
+        margin = 16
+        parent_rect = parent.contentsRect()
+        available_width = max(0, parent_rect.width() - (2 * margin))
+        natural_width = (
+            self.label.fontMetrics().horizontalAdvance(self.label.text()) + 24
+        )
+        width = min(
+            self.maximumWidth(),
+            available_width,
+            max(self.minimumWidth(), natural_width),
+        )
+        label_width = max(1, width - 24)
+        height = max(
+            self.minimumSizeHint().height(),
+            self.label.heightForWidth(label_width) + 16,
+        )
+        x = parent_rect.x() + max(0, (parent_rect.width() - width) // 2)
+        y = parent_rect.y() + margin
+        self.setGeometry(x, y, width, height)
+        self.raise_()
 
     def show_message(
         self,
@@ -734,6 +787,7 @@ class Toast(QFrame):
         stop_motion(self)
         self.setGraphicsEffect(None)
         self.show()
+        self._place_inside_parent()
         self._duration_ms = max(0, duration_ms)
         self._remaining_ms = self._duration_ms
         self.timer.start(self._duration_ms)
@@ -750,6 +804,15 @@ class Toast(QFrame):
         ):
             self.timer.start(self._remaining_ms)
         return super().event(event)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        if (
+            watched is self.parentWidget()
+            and event.type() in (QEvent.Type.Resize, QEvent.Type.Show)
+            and self.isVisible()
+        ):
+            self._place_inside_parent()
+        return super().eventFilter(watched, event)
 
     def _dismiss(self) -> None:
         self._remaining_ms = 0

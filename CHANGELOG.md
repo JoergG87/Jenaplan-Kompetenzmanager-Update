@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Qt-Stabilität: Das Kompetenz-Cockpit schaltet seine Hierarchie ohne
+  GraphicsEffect-Compositing, ausgewählte Beobachtungskompetenzen reservieren
+  Platz für zwei vollständige Zeilen, die Schnellauswahl heißt sichtbar
+  `Zuletzt verwendet`, und redundante Kompetenz-Tooltips entfallen. Der
+  zentrale Toast dimensioniert und positioniert auch frei über Dialogen
+  liegende Meldungen vollständig innerhalb des sichtbaren Bereichs; gemeinsame
+  Überschriften und Statusbadges dürfen normalen Text nicht abschneiden.
+
 - Der ausschließlich explizit aufrufbare Final-V4-Testdatenseeder erzeugt
   einen neuen synthetischen Vergleichsbestand mit 24 Schülern, mehreren
   Organisations- und individuellen Fachprofilen, schuljahresweiten fachlichen
