@@ -27,9 +27,8 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 > - Backup und Restore verwenden ausschließlich installationsgebundene
 >   `.jkmebackup`; Restore beginnt erst nach vollständiger Prüfung und
 >   ausdrücklicher Bestätigung.
-> - Ein finales Bericht- oder LEG-PDF kann verschlüsselt gespeichert sein. Die
->   gemeinsame sichere Anzeige ist noch nicht final freigegeben; die Aktion
->   `Finales PDF anzeigen` kann deshalb kontrolliert blockiert sein.
+> - Finale Bericht- und LEG-PDFs lassen sich im gemeinsamen sicheren In-App-
+>   Viewer lesen. Export, Drucken und Teilen sind nicht verfügbar.
 > - Die Entwicklungsübersicht zeigt Dokumentation, aber keine automatische
 >   Stärke, Schwäche, Bewertung, Trend oder Priorität.
 > - Für 0.4.0 / Build 400 sind Developer-ID-Signierung, Notarisierung,

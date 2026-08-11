@@ -57,10 +57,13 @@ Artefakte verwenden zentral den `ManagedDocumentStore`. Fachliche Dokument-ID
 und physische Storage-Generation bleiben getrennt; der keyed Companion hält
 die registrierten Generationen und ihre aktiven Pointer.
 
-Eine finale verschlüsselte PDF-Generation kann vorhanden sein. Daraus folgt
-nicht, dass sie überall über die UI angezeigt oder exportiert werden kann. Der
-gemeinsame sichere Produktviewer ist noch nicht final freigegeben;
-`Finales PDF anzeigen` kann deshalb kontrolliert blockiert bleiben.
+Finale verschlüsselte Bericht- und LEG-PDFs lassen sich über denselben sicheren
+In-App-Viewer lesen. Die Anzeige erfolgt nach Python-seitiger Auflösung und
+Vollverifikation ausschließlich im Speicher; sie erzeugt keine Klartextdatei
+und verwendet weder Finder/Preview noch Download, Export, Drucken oder Teilen.
+PDF-Export bleibt offen. Die technische Source-Prüfung und ein Cocoa-Smoke sind
+erfolgt; reale PO-Abnahme im Qt-/HTML-Vergleichsbuild sowie Bundle-/Packaging-
+Nachweis bleiben offen und sind kein Pilot- oder Release-GO.
 
 ## Verschlüsseltes Backup und Restore
 

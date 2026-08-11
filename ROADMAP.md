@@ -48,8 +48,11 @@ Der geplante Stand 0.4.0 / Build 400 verwendet Final V4, aktive lokale
 Verschlüsselung, verschlüsselte Managed Documents und
 installationsgebundenes `.jkmebackup`. Individuelle Fachprofile und die
 schuljahresbasierte Entwicklungsübersicht gehören zum vorbereiteten
-Pilotumfang. Support Reset, der gemeinsame sichere Viewer für finale
-verschlüsselte PDFs, Gerätewechsel und DMK-Recovery bleiben offen.
+Pilotumfang. Der gemeinsame sichere Viewer für finale verschlüsselte RPA-/LCA-
+PDFs ist implementiert und technisch per Source-Prüfung sowie Cocoa-Smoke
+geprüft. Reale PO-Abnahme im Qt-/HTML-Vergleichsbuild und Bundle-/Packaging-
+Nachweis bleiben offen; daraus folgt kein Pilot- oder Release-GO. Support
+Reset, Gerätewechsel und DMK-Recovery bleiben offen.
 
 Ein finaler Clean-Build steht noch aus. Es gibt keine behauptete
 Developer-ID-Signierung oder Notarisierung, keine Windows-Freigabe, keinen

@@ -88,8 +88,8 @@ solange der dafür notwendige sichere Backup-Ablauf nicht freigegeben ist.
 > - keine automatische Migration bestehender alter lokaler Datenbestände;
 >   für den kommenden Pilot werden keine produktiven Altdaten vorausgesetzt;
 > - Support-Reset ist im verschlüsselten Produktpfad kontrolliert blockiert;
-> - ein finales Bericht- oder LEG-PDF kann verschlüsselt vorhanden sein, die
->   gemeinsame sichere Anzeige ist aber noch nicht final freigegeben;
+> - finale Bericht- und LEG-PDFs können im gemeinsamen sicheren In-App-Viewer
+>   gelesen werden; Export, Drucken und Teilen sind nicht verfügbar;
 > - keine automatische Update-, Download- oder Installationsaktion.
 
 Das ausführliche Benutzerhandbuch und

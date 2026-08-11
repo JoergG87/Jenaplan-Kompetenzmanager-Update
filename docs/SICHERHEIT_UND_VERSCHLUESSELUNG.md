@@ -83,9 +83,14 @@ Die App hält ihre Daten lokal und getrennt vom App-Bundle:
   außerhalb der App und müssen wie vertrauliche Schulunterlagen behandelt
   werden.
 
-Ein finales verschlüsseltes PDF-Artefakt kann bereits vorhanden sein. Der
-gemeinsame sichere Produktviewer ist noch nicht final freigegeben; die
-UI-Aktion `Finales PDF anzeigen` kann deshalb kontrolliert blockiert bleiben.
+Finale verschlüsselte Bericht- und LEG-PDF-Artefakte öffnen über denselben
+sicheren In-App-Viewer. UI und HTML übergeben ausschließlich die Artifact-ID;
+Python verifiziert und liefert die PDF-Bytes nur für die flüchtige
+QtPdf-Anzeige im Speicher. Es gibt keine Klartextdatei, OS-Öffnung,
+WebEngine-PDF-Ansicht, Download, Export, Drucken oder Teilen. PDF-Export bleibt
+offen. Die technische Source-Prüfung und ein Cocoa-Smoke sind erfolgt; reale
+PO-Abnahme im kommenden Qt-/HTML-Vergleichsbuild und Bundle-/Packaging-Nachweis
+bleiben offen. Daraus folgt kein Pilot- oder Release-GO.
 
 Dieses Dokument nennt absichtlich keine Entwicklerpfade, Secrets, Keychain-
 Einträge oder konkrete lokale Kennungen. Technische Betreuung soll nur die

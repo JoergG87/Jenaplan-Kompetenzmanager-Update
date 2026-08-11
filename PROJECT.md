@@ -31,10 +31,15 @@ RPD-Zeitraum seines bewusst gewählten Entwurfs.
 
 Qt bleibt Produktdefault für Bericht und LEG. Die lokalen gehärteten HTML-
 Hosts hinter `JKM_REPORT_UI=html` beziehungsweise `JKM_LEG_UI=html` sind nur
-interne Erprobungspfade und kein Pilotstandard. Der gemeinsame sichere Viewer
-für finale verschlüsselte PDF-Artefakte ist noch nicht final freigegeben;
-`Finales PDF anzeigen` kann kontrolliert blockiert sein. Support Reset bleibt
-im Cipher-Produktpfad kontrolliert blockiert.
+interne Erprobungspfade und kein Pilotstandard. Finale RPA- und LCA-PDF-
+Artefakte öffnen über denselben sicheren In-App-Viewer: UI und HTML übergeben
+nur die Artifact-ID, Python löst sie über den bestehenden Managed-Document-
+Lesepfad auf, und QtPdf zeigt die verifizierten Bytes nur im Speicher. Es gibt
+keine Klartextdatei, OS-Öffnung, Download, Export, Drucken oder Teilen. Die
+Source-Prüfung und ein Cocoa-Smoke sind erfolgt; reale PO-Abnahme im kommenden
+Qt-/HTML-Vergleichsbuild sowie Bundle-/Packaging-Nachweis bleiben offen. Das
+begründet kein Pilot- oder Release-GO. Support Reset bleibt im Cipher-
+Produktpfad kontrolliert blockiert.
 
 0.4.0 / Build 400 bezeichnet einen geplanten beziehungsweise vorbereiteten
 Stand. Ein Clean-Build, manuelle macOS-/Keychain-/Restore-/UX-Abnahme,
@@ -49,9 +54,10 @@ manuellen Abnahme der Standard. Der HTML-Host verwendet dieselben vollständigen
 RPD-Drafts, Save-/Finalisierungsservices, unveränderlichen RPV-Snapshots und
 opaque RPA-Referenzen wie der Qt-Host. Python bleibt Source of Truth, und die
 gehärtete WebEngine-Basis wird mit dem unabhängigen LEG-HTML-Pfad geteilt.
-Ohne separat freigegebenen sicheren Viewer bleibt `Finales PDF anzeigen`
-kontrolliert blockiert. Daraus folgt keine Packaging-, Pilot- oder
-Releasefreigabe.
+`Finales PDF anzeigen` übergibt ausschließlich die Artifact-ID an denselben
+sicheren Python- und In-Memory-Viewer-Vertrag. Die noch offene reale PO-Abnahme
+im Qt-/HTML-Vergleichsbuild sowie der Bundle-/Packaging-Nachweis begründen
+keine Pilot- oder Releasefreigabe.
 
 ## Cipher-Produktkomposition für Lauras Pilot
 

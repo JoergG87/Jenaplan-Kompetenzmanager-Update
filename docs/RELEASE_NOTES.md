@@ -73,9 +73,10 @@ Buildcommit, DMG, Prüfsummen und manuelle Pilotabnahme bleiben getrennte Gates.
 
 ## Bekannte Pilotgrenzen und offene Gates
 
-- Ein finales Bericht- oder LEG-Artefakt kann verschlüsselt vorhanden sein.
-  Der gemeinsame sichere Produktviewer ist noch nicht final freigegeben;
-  `Finales PDF anzeigen` kann kontrolliert blockiert bleiben.
+- Finale Bericht- und LEG-PDF-Artefakte lassen sich im gemeinsamen sicheren
+  In-App-Viewer lesen; Export, Drucken und Teilen sind nicht verfügbar.
+  Source-Prüfung und Cocoa-Smoke sind erfolgt. Reale PO-Abnahme im kommenden
+  Qt-/HTML-Vergleichsbuild sowie Bundle-/Packaging-Nachweis bleiben offen.
 - Support Reset bleibt im Final-V4-Cipher-Produktpfad kontrolliert blockiert.
 - Keine automatische Migration älterer Datenbestände.
 - Keine Geräteübertragbarkeit und kein DMK-Recoverypfad für `.jkmebackup`.
