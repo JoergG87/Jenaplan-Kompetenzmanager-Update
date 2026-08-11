@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -72,16 +73,19 @@ DASHBOARD_SUBJECT_VIGNETTE_COMPACT_WIDTH = 1000
 DASHBOARD_SUBJECT_VIGNETTE_SIZE = (164, 140)
 DASHBOARD_SUBJECT_VIGNETTE_COMPACT_SIZE = (124, 106)
 DASHBOARD_SUBJECT_VIGNETTE_OVERLAP = 22
+DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET = "epu.png"
 DASHBOARD_SUBJECT_VIGNETTE_ASSETS = {
+    "selbst_sozialkompetenz": DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET,
+    "arbeits_lernkompetenz": DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET,
     "deutsch": "deutsch.png",
     "mathematik": "mathematik.png",
     "epu": "epu.png",
     "musik": "musik.png",
-    "kunst": "kunst.png",
+    "kreatives_gestalten": "kunst.png",
     "sport": "sport.png",
     "ethik": "ethik.png",
     "religion": "religion.png",
-    "werken": "werken.png",
+    "englisch": "deutsch.png",
     "schulgarten": "schulgarten.png",
 }
 
@@ -268,6 +272,10 @@ class OverviewScreen(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         content = QWidget()
+        content.setSizePolicy(
+            QSizePolicy.Policy.Ignored,
+            QSizePolicy.Policy.Preferred,
+        )
         layout = QVBoxLayout(content)
         layout.setContentsMargins(0, 8, 8, 16)
         layout.setSpacing(16)

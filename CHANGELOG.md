@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Das Dashboard ordnet seine vorhandenen Fachvignetten wieder ausschließlich
+  den aktuellen kanonischen Entwicklungsbuch-Schlüsseln zu. Kreatives
+  Gestalten und Englisch verwenden geeignete bestehende Motive; die beiden
+  überfachlichen Domänen verwenden vorerst den vorhandenen neutralen
+  EPU-Fallback. Die veralteten Dashboard-Identitäten `kunst` und `werken`
+  entfallen, ohne Illustrationen oder Fachdaten zu ändern.
+
+- Der vertikal scrollbare Dashboard-Inhalt darf unter dem produktiven Theme
+  nach Einblenden der vertikalen Scrollbar auch horizontal auf die verbleibende
+  Viewportbreite schrumpfen. Dadurch entsteht bei langen Namen und Hinweisen
+  kein 16 Pixel breiter äußerer Horizontalbereich; Texte umbrechen weiterhin
+  innerhalb ihrer Karten.
+
 - Der Beobachtungsdialog löst die primäre Fachauswahl jetzt je Kind und
   aktuellem Schuljahr über den bestehenden kanonischen
   `effective_documentation_subjects`-Vertrag auf. Die beiden überfachlichen

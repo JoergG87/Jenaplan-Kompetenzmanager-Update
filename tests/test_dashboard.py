@@ -39,6 +39,7 @@ from src.desktop_app.screens.overview_screen import (
     DASHBOARD_DOCUMENTATION_HELP_TITLE,
     DASHBOARD_SUBJECT_VIGNETTE_COMPACT_SIZE,
     DASHBOARD_SUBJECT_VIGNETTE_COMPACT_WIDTH,
+    DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET,
     DASHBOARD_SUBJECT_VIGNETTE_MIN_WIDTH,
     DASHBOARD_SUBJECT_VIGNETTE_ASSETS,
     DASHBOARD_SUBJECT_VIGNETTE_SIZE,
@@ -256,8 +257,26 @@ class DashboardTest(unittest.TestCase):
     def test_subject_hero_vignettes_cover_catalog_and_are_decorative(self) -> None:
         expected_subject_ids = {
             subject.item_id for subject in self.adapter.week_view_model().subjects
-        } - {"sozialkompetenz"}
+        }
         self.assertEqual(set(DASHBOARD_SUBJECT_VIGNETTE_ASSETS), expected_subject_ids)
+        self.assertNotIn("kunst", DASHBOARD_SUBJECT_VIGNETTE_ASSETS)
+        self.assertNotIn("werken", DASHBOARD_SUBJECT_VIGNETTE_ASSETS)
+        self.assertEqual(
+            DASHBOARD_SUBJECT_VIGNETTE_ASSETS["kreatives_gestalten"],
+            "kunst.png",
+        )
+        self.assertEqual(
+            DASHBOARD_SUBJECT_VIGNETTE_ASSETS["englisch"],
+            "deutsch.png",
+        )
+        self.assertEqual(
+            DASHBOARD_SUBJECT_VIGNETTE_ASSETS["selbst_sozialkompetenz"],
+            DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET,
+        )
+        self.assertEqual(
+            DASHBOARD_SUBJECT_VIGNETTE_ASSETS["arbeits_lernkompetenz"],
+            DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET,
+        )
         bottom_gaps: list[float] = []
         for subject_id in expected_subject_ids:
             with self.subTest(subject_id=subject_id):
@@ -307,7 +326,6 @@ class DashboardTest(unittest.TestCase):
                     )
                 )
         self.assertLessEqual(max(bottom_gaps) - min(bottom_gaps), 1.5)
-        self.assertIsNone(OverviewScreen._subject_vignette("sozialkompetenz"))
         self.assertIsNone(OverviewScreen._subject_vignette("unbekannt"))
         with patch.object(
             overview_screen,
@@ -809,6 +827,9 @@ class DashboardTest(unittest.TestCase):
     def test_matching_child_profile_action_is_id_based_keyboard_accessible_and_separate(
         self,
     ) -> None:
+        previous_stylesheet = self.app.styleSheet()
+        theme.apply_app_theme(self.app)
+        self.addCleanup(self.app.setStyleSheet, previous_stylesheet)
         self._save(1, "08:00", "08:45")
         at = datetime(2026, 8, 3, 8, 15)
         projection = self.adapter.read_projection(at)

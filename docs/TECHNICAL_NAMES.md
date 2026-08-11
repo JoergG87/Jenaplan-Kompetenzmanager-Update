@@ -2911,6 +2911,7 @@ Registrierte UI-Komponenten und Navigation:
 - `DASHBOARD_SUBJECT_VIGNETTE_SIZE`
 - `DASHBOARD_SUBJECT_VIGNETTE_COMPACT_SIZE`
 - `DASHBOARD_SUBJECT_VIGNETTE_OVERLAP`
+- `DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET`
 - `OverviewScreen._subject_vignette(subject_id)`
 - `OverviewScreen._update_hero_vignette_visibility()`
 - `DashboardHeroSubjectVignette`
@@ -2933,7 +2934,16 @@ Registrierte produktive Fachmotive:
 - `assets/subject_vignettes/werken.png`
 - `assets/subject_vignettes/schulgarten.png`
 
-Regel: `dashboard` ist ein eigener Hauptnavigationspunkt. Der bestehende technische Navigationsschluessel `overview` und seine Stammgruppen-/Kursverbunduebersicht bleiben getrennt erhalten. Sprint 8B.1 veraendert ausschliesslich Screen-Komposition, Groessenverhaeltnisse, Weissraum und Theme-Stile; Stundenplan-, Dokumentations-, Ziel- und Beobachtungsprojektionen bleiben unveraendert. Die `DashboardHeroSubject*`-Namen und `DASHBOARD_SUBJECT_VIGNETTE_ASSETS` bezeichnen ausschliesslich dekorative, nicht interaktive Fachmotive fuer die zehn tatsaechlichen Unterrichtsfaecher innerhalb der vorhandenen Stundenansicht. Die Zuordnung erfolgt nur ueber stabile kanonische Fach-IDs; `Sozialkompetenz`, unbekannte Fach-IDs und fehlende Dateien blenden das Motiv ohne Ersatztext oder Layoutluecke aus. Die Motive bleiben ohne Fokus und eigene Accessibility-Ausgabe, verwenden die vorhandene mindestens zweifache Quellaufloesung fuer HiDPI, werden im kompakten Dashboardbereich proportional verkleinert und darunter ausgeblendet. Sie begruenden keine allgemeine Asset-Architektur oder neue Fachlogik.
+Regel: `DASHBOARD_SUBJECT_VIGNETTE_ASSETS` verwendet ausschließlich die
+aktuellen kanonischen Katalogschlüssel. `kreatives_gestalten` verwendet das
+vorhandene Kunstmotiv, `englisch` das vorhandene Sprachmotiv. Die beiden
+überfachlichen Domänen `selbst_sozialkompetenz` und
+`arbeits_lernkompetenz` verwenden bis zu einem späteren redaktionellen
+Illustrationspaket das vorhandene EPU-Motiv als neutralen Pilot-Fallback.
+Die historischen Schlüssel `kunst` und `werken` sind keine aktuellen
+Dashboard-Fachidentitäten.
+
+Regel: `dashboard` ist ein eigener Hauptnavigationspunkt. Der bestehende technische Navigationsschluessel `overview` und seine Stammgruppen-/Kursverbunduebersicht bleiben getrennt erhalten. Sprint 8B.1 veraendert ausschliesslich Screen-Komposition, Groessenverhaeltnisse, Weissraum und Theme-Stile; Stundenplan-, Dokumentations-, Ziel- und Beobachtungsprojektionen bleiben unveraendert. Die `DashboardHeroSubject*`-Namen und `DASHBOARD_SUBJECT_VIGNETTE_ASSETS` bezeichnen ausschliesslich dekorative, nicht interaktive Motive fuer die aktuellen kanonischen Katalogfaecher und ueberfachlichen Domaenen innerhalb der vorhandenen Stundenansicht. Die Zuordnung erfolgt nur ueber stabile kanonische Fach-IDs; unbekannte Fach-IDs und fehlende Dateien blenden das Motiv ohne Ersatztext oder Layoutluecke aus. Die Motive bleiben ohne Fokus und eigene Accessibility-Ausgabe, verwenden die vorhandene mindestens zweifache Quellaufloesung fuer HiDPI, werden im kompakten Dashboardbereich proportional verkleinert und darunter ausgeblendet. Sie begruenden keine allgemeine Asset-Architektur oder neue Fachlogik.
 
 ## Sprint 8B.2 - Dashboard ohne allgemeine Uebersichtsbereiche
 
