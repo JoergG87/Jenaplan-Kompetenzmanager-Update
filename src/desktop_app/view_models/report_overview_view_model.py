@@ -22,6 +22,10 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportDraftViewModel,
     LearningReportPreparationViewModel,
 )
+from src.desktop_app.view_models.observation_view_model import (
+    COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR,
+    competency_presentation_group,
+)
 
 DraftViewModel = TypeVar("DraftViewModel")
 _UNSET = object()
@@ -128,6 +132,14 @@ class ReportOverviewSubjectDocumentationViewModel:
     evidence_action: ReportOverviewActionViewModel
     prepare_action: ReportOverviewActionViewModel
     confirmation_count_text: str = ""
+
+    @property
+    def is_cross_curricular(self) -> bool:
+        """Keep the section decision at the presentation boundary."""
+        return (
+            competency_presentation_group(self.subject_id)
+            == COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR
+        )
 
 
 @dataclass(frozen=True)

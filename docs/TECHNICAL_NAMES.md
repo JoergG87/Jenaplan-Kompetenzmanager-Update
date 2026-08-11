@@ -1468,6 +1468,22 @@ Sprint 3B ergaenzt im CSV-Katalog die optionale Spalte `competency_label`. Sie i
 
 Bewertungen bleiben technisch in `observation_competency_ratings.rating` gespeichert. `observations` erhaelt keine globale Bewertung. Ein nicht bewerteter oder offener Kompetenzaspekt wird nicht als Ratingwert gespeichert, sondern erzeugt keine Zuordnungszeile in `observation_competency_ratings`.
 
+Der frische Entwicklungsbuch-Katalog verwendet die neuen kanonischen
+Fachschlüssel `selbst_sozialkompetenz`, `arbeits_lernkompetenz` und
+`kreatives_gestalten` sowie die vorhandenen beziehungsweise eindeutigen
+Schlüssel `epu`, `deutsch`, `mathematik`, `sport`, `ethik`, `religion`,
+`musik`, `englisch` und `schulgarten`. Es gibt keine Alias- oder
+Alt-ID-Auflösung.
+
+Die zentrale Darstellungsauflösung besitzt die technischen Namen
+`RATING_PROFILE_STANDARD`, `RATING_PROFILE_SOCIAL`, `RATING_PROFILE_SPORT`,
+`RATING_LABELS_BY_PROFILE`, `rating_profile_for_competency(competency)` und
+`rating_chip_options_for_competency(competency)`. Sie liest ausschließlich
+den kanonischen `subject_key`/`subject_id`; die gespeicherten Tokens `--`,
+`-`, `+`, `++` und deren bestehende QSS-Farbvarianten bleiben unverändert.
+`data/entwicklungsbuch_catalog_inventory_v1.csv` ist das maschinenlesbare
+Quellen- und Ausschlussinventar, keine Runtime-Datenquelle.
+
 `is_quick_observation` ist ausschliesslich ein fluechtiger Command-/ViewModel-Name fuer die bewusste Eingabe und Anzeige einer Schnellbeobachtung. Er ist kein SQLite-Feld. Persistiert und rekonstruiert wird der Zustand als aktive Beobachtung mit nichtleerer Notiz und ohne Zeilen in `observation_competency_ratings`.
 
 ## Sprint-4A Kompetenzkatalogmodell
@@ -2167,6 +2183,13 @@ Registrierte Python-Klassen und Funktionen:
 - `OBSERVATION_CONTEXT_OPTIONS`
 - `OBSERVATION_CROSS_SUBJECT_LABEL`
 - `OBSERVATION_RATING_OPTIONS`
+- `OBSERVATION_RATING_TOKENS`
+- `RATING_PROFILE_STANDARD`
+- `RATING_PROFILE_SOCIAL`
+- `RATING_PROFILE_SPORT`
+- `RATING_LABELS_BY_PROFILE`
+- `rating_profile_for_competency(competency)`
+- `rating_chip_options_for_competency(competency)`
 - `OBSERVATION_SAVE_SUCCESS_MESSAGE`
 - `OBSERVATION_UPDATE_SUCCESS_MESSAGE`
 - `OBSERVATION_SAVE_VALIDATION_MESSAGE`
@@ -3254,3 +3277,18 @@ Diese Namen ändern weder Datenmodell noch Statusregeln. Der Batch lebt nur für
 einen Adapteraufruf. Schülerprofil, Schülerliste und Dashboard dürfen ihn
 jeweils request-lokal als gemeinsame Projektionsbasis verwenden; Bericht und
 LEG behalten ihre getrennten zeitraumbezogenen Reads.
+
+## UI-Gruppierung überfachlicher Kompetenzdomänen
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR` | Rein sichtbare Überschrift `Überfachliche Entwicklung` | Desktop ViewModel |
+| `COMPETENCY_PRESENTATION_GROUP_SUBJECTS` | Rein sichtbare Überschrift `Fächer` | Desktop ViewModel |
+| `COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS` | UI-only Zuordnung der unveränderten kanonischen Schlüssel `selbst_sozialkompetenz` und `arbeits_lernkompetenz` | Desktop ViewModel |
+| `competency_presentation_group` | Ordnet einen vorhandenen kanonischen Domänenschlüssel genau einer Darstellungsgruppe zu | Desktop ViewModel |
+| `ReportOverviewSubjectDocumentationViewModel.is_cross_curricular` | UI-only Abschnittszuordnung einer bestehenden neutralen Dokumentationskarte | Report Overview ViewModel |
+| `StudentProfileScreen._report_subject_tile_grid` | Gemeinsames Rendering derselben neutralen Kartenform in beiden sichtbaren Abschnitten | Desktop UI |
+
+Die Namen erzeugen keine Kategorie, Fach-ID oder Persistenz. Auswahl- und
+Schreibpfade verwenden weiterhin ausschließlich die vorhandenen `subject_key`-,
+`competency_id`- und Ratingwerte.

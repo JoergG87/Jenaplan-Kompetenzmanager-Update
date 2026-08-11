@@ -46,10 +46,11 @@ from src.desktop_app.dialogs.dialog_buttons import (
 )
 from src.desktop_app.theme import set_label_style
 from src.desktop_app.view_models.observation_view_model import (
+    COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR,
+    COMPETENCY_PRESENTATION_GROUP_SUBJECTS,
     DOCUMENT_TYPE_OPTIONS,
     OBSERVATION_ATTACHMENT_EMPTY_STATE,
     OBSERVATION_CONTEXT_OPTIONS,
-    OBSERVATION_RATING_OPTIONS,
     OBSERVATION_SAVE_VALIDATION_MESSAGE,
     ObservationAttachmentDraft,
     ObservationCompetencyGroupViewModel,
@@ -59,6 +60,8 @@ from src.desktop_app.view_models.observation_view_model import (
     ObservationDraftViewModel,
     ObservationLearningAreaGroupViewModel,
     ObservationSubjectOptionViewModel,
+    rating_chip_options_for_competency,
+    competency_presentation_group,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
 
@@ -75,7 +78,11 @@ class ObservationRatingSelector(QWidget):
 
     FULL_LABEL_MINIMUM_WIDTH = 520
 
-    def __init__(self, initial_rating: str = "") -> None:
+    def __init__(
+        self,
+        initial_rating: str = "",
+        competency: object | None = None,
+    ) -> None:
         super().__init__()
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -87,9 +94,8 @@ class ObservationRatingSelector(QWidget):
         self.button_group = QButtonGroup(self)
         self.button_group.setExclusive(True)
         self.buttons: dict[str, QPushButton] = {}
-        for rating_option in OBSERVATION_RATING_OPTIONS:
-            rating = rating_option.split(" ", 1)[0]
-            button = RatingBadgeButton(rating_option, rating)
+        for rating, rating_label in rating_chip_options_for_competency(competency):
+            button = RatingBadgeButton(rating_label, rating)
             button.setProperty("rating", rating)
             button.setSizePolicy(
                 QSizePolicy.Policy.Ignored,
@@ -99,6 +105,11 @@ class ObservationRatingSelector(QWidget):
             self.buttons[rating] = button
             layout.addWidget(button, 1)
         self.set_current_data(initial_rating)
+
+    def set_competency(self, competency: object | None) -> None:
+        """Refresh all labels without changing the selected persisted value."""
+        for rating, label in rating_chip_options_for_competency(competency):
+            self.buttons[rating].set_rating_text(label)
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
         super().resizeEvent(event)
@@ -488,8 +499,39 @@ class NewObservationDialog(QDialog):
             )
             for group in self.competency_subject_groups
         )
-        for subject in subject_options:
-            self.subject_select.addItem(subject.display_name, subject.subject_key)
+        for presentation_group in (
+            COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR,
+            COMPETENCY_PRESENTATION_GROUP_SUBJECTS,
+        ):
+            grouped_subjects = tuple(
+                subject
+                for subject in subject_options
+                if competency_presentation_group(subject.subject_key)
+                == presentation_group
+            )
+            if not grouped_subjects:
+                continue
+            self.subject_select.addItem(presentation_group)
+            header_item = self.subject_select.model().item(
+                self.subject_select.count() - 1
+            )
+            if header_item is not None:
+                header_item.setEnabled(False)
+            for subject in grouped_subjects:
+                self.subject_select.addItem(
+                    subject.display_name,
+                    subject.subject_key,
+                )
+        first_subject_index = next(
+            (
+                index
+                for index in range(self.subject_select.count())
+                if self.subject_select.itemData(index)
+            ),
+            -1,
+        )
+        if first_subject_index >= 0:
+            self.subject_select.setCurrentIndex(first_subject_index)
 
     def _refresh_competencies(self, _index: int | None = None) -> None:
         if not hasattr(self, "competency_tree_layout"):
@@ -1139,7 +1181,7 @@ class NewObservationDialog(QDialog):
         card_layout.addWidget(text)
         action_row = QHBoxLayout()
         action_row.setSpacing(8)
-        rating_selector = ObservationRatingSelector(initial_rating)
+        rating_selector = ObservationRatingSelector(initial_rating, catalog_entry)
         rating_selector.setAccessibleName(
             f"Bewertung für {self._competency_display_text(catalog_entry)}"
         )

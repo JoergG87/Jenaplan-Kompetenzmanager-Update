@@ -148,6 +148,7 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import (
 )
 from src.desktop_app.view_models.master_data_view_model import course_color_from_key
 from src.desktop_app.view_models.observation_view_model import (
+    COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS,
     OBSERVATION_CROSS_SUBJECT_LABEL,
     OBSERVATION_RATING_SCORES,
     DOCUMENT_TYPE_OPTIONS,
@@ -882,6 +883,7 @@ class StudentDesktopAdapter:
                 subject_labels[subject_id],
             )
             for subject_id in ordered_subject_ids
+            if subject_id not in COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS
         )
         configuration = batch.student_documentation_subject_configurations.get(
             student_id
@@ -899,10 +901,14 @@ class StudentDesktopAdapter:
                 (),
                 True,
             )
-        selected = effective_documentation_subjects(
+        selected = tuple(
+            subject_id
+            for subject_id in effective_documentation_subjects(
             configuration,
             batch.active_documentation_subject_ids,
             known_subject_ids=known_subject_ids,
+            )
+            if subject_id not in COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS
         )
         retained_inactive = tuple(
             StudentDocumentationSubjectOptionViewModel(
@@ -911,6 +917,7 @@ class StudentDesktopAdapter:
             )
             for subject_id in selected
             if subject_id not in subject_labels
+            and subject_id not in COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS
         )
         return StudentDocumentationSubjectProjectionViewModel(
             batch.current_school_year_id,
@@ -1572,6 +1579,7 @@ class StudentDesktopAdapter:
                         rating.competency_group,
                         rating.competency_text,
                         rating.rating,
+                        subject_id=rating.subject_id,
                     )
                     for rating in observation.competency_ratings
                 ),
@@ -2009,6 +2017,15 @@ class StudentDesktopAdapter:
                         current_school_year.school_year_id,
                     )
                 )
+                phase2_subject_ids = tuple(dict.fromkeys((
+                    *COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS,
+                    *(
+                        subject_id
+                        for subject_id in effective_subject_ids
+                        if subject_id
+                        not in COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS
+                    ),
+                )))
                 batch = SQLiteStudentDocumentationProjectionRepository(
                     self.database
                 ).read_batch(
@@ -2023,7 +2040,7 @@ class StudentDesktopAdapter:
                 ) = self._phase2_live_evidence_sources(
                     batch,
                     student_id,
-                    effective_subject_ids,
+                    phase2_subject_ids,
                 )
             except Exception:
                 phase2_source_errors.append("live_documentation")
@@ -3418,7 +3435,7 @@ class StudentDesktopAdapter:
             subject_id,
             subject_display_name,
             current_rating,
-            observation_rating_label(current_rating),
+            observation_rating_label(current_rating, competency or newest_rating),
             newest_date,
             sort_order,
             rating_history,
@@ -3612,6 +3629,7 @@ class StudentDesktopAdapter:
                         rating.competency_group,
                         rating.competency_text,
                         rating.rating,
+                        subject_id=rating.subject_id,
                     )
                     for rating in observation.competency_ratings
                 ),
@@ -3824,7 +3842,7 @@ class StudentDesktopAdapter:
             competency.competency_label,
             rating,
             source,
-            observation_rating_label(rating),
+            observation_rating_label(rating, competency),
         )
 
     def _report_development_line(

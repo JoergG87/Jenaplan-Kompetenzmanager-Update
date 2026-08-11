@@ -509,6 +509,12 @@ class RatingBadgeButton(QPushButton):
         self.setToolTip(self._rating_text if compact else "")
         self._sync_selection_state(self.isChecked())
 
+    def set_rating_text(self, text: str) -> None:
+        """Update only the presentation label while retaining the stable token."""
+        self._rating_text = text
+        self.setToolTip(self._rating_text if self._compact else "")
+        self._sync_selection_state(self.isChecked())
+
     def _sync_selection_state(self, selected: bool) -> None:
         visible_text = self._rating_token if self._compact else self._rating_text
         self.setText(f"✓ {visible_text}" if selected else visible_text)

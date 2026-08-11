@@ -574,7 +574,9 @@ Persistenz noch Migration oder Recovery.
    Ereignistyp außerhalb der verpflichtenden Bericht-/LEG-Aufnahmeregel,
    Wichtigkeit, Stärke, Defizit, Förderbedarf, pädagogischer Relevanz oder
    automatischer Priorität.
-8. Ausschließlich für die kanonisch geordnete Fachmenge aus
+8. Für die kanonisch geordnete Kartenmenge aus genau
+   `selbst_sozialkompetenz`, `arbeits_lernkompetenz` und anschließend den
+   übrigen Domänen aus
    `effective_documentation_subjects(student_id, school_year_id)` werden je
    Fach zwei unabhängige Identitätsmengen gebildet: aktuelle dokumentierte
    `competency_id` und vorhandene `observation_id` im aktuellen Schuljahr.
@@ -584,6 +586,11 @@ Persistenz noch Migration oder Recovery.
    Kompetenzzähler nicht mehrfach. Eine Bestätigung derselben Kompetenz
    erzeugt weder ein zusätzliches Segment noch ohne Beobachtungszuordnung eine
    dokumentierte Kompetenz.
+
+   Die beiden überfachlichen Domänen gehören unabhängig von einer leeren oder
+   individuellen Fachauswahl immer zur Kartenmenge. Sie verwenden exakt
+   dieselbe neutrale Zählung; dies erzeugt weder einen neuen Write noch eine
+   eigene Aggregations- oder Persistenzsemantik.
 
    Für die Fachmenge einer aktiven Beobachtung gilt:
 
@@ -3043,7 +3050,14 @@ Automatisch profitierende Ansichten:
 - Dokumentationsstand
 - Berichte und Dashboard, sobald sie die neuen Katalogmetadaten nutzen
 
-Regel: Der Import ist ab Sprint 3B ein idempotenter Upsert. Bei leerer Tabelle wird der vollstaendige CSV-Katalog importiert. Bei bestehenden lokalen Datenbanken werden neue CSV-IDs eingefuegt und vorhandene CSV-IDs aktualisiert, ohne lokale Nicht-CSV-Kompetenzen zu loeschen. Sprint 4A aktualisiert dabei auch `grade_band`, `learning_stage`, `catalog_status`, `catalog_default_active` und `activation_group_key`. `competencies.active` vorhandener IDs wird nicht aus dem CSV ueberschrieben, damit alte grobe oder lokal deaktivierte Kompetenzen nicht ungefragt reaktiviert oder deaktiviert werden. `catalog_default_active` speichert nur den Katalogstandard. Kompetenzstaende werden weiterhin aus Beobachtungen abgeleitet und nicht manuell doppelt gespeichert. Alte grobe Kompetenzen bleiben historisch lesbar und bestehende `observation_competency_ratings` werden nicht automatisch auf spaetere konkrete Kompetenzen migriert. Fehlen Sprint-4A-Spalten in alten CSV-Dateien, setzt der Parser sichere Defaults: `learning_stage = cross_stage`, `catalog_status = current`, `activation_group_key = ''` und `catalog_default_active` aus dem alten `is_active`. Die Sprint-4-Lehrplanuebernahmen fuer Deutsch, Mathematik, EPU, Musik, Kunst, Sport, Werken, Schulgarten, Ethik und Sozialkompetenz sind abgeschlossen; Religion blieb ausserhalb dieses Katalogabgleichs.
+Regel: Der kommende Pilot verwendet nur einen frischen Final-V4-Bestand. Bei
+leerer Tabelle wird der vollständige Entwicklungsbuch-Katalog idempotent
+importiert; ein Restart dupliziert keine Zeilen. Dieser Auftrag baut keinen
+Pfad für bestehende Kompetenzbestände: keine Alt-ID-, Alias-, Lehrplan-,
+V3-/V4- oder Ratingmigration und keine Rettung synthetischer Bewertungen.
+Die vorhandenen CSV-/SQLite-Felder bleiben unverändert. Kompetenzstände
+werden weiterhin aus Beobachtungen abgeleitet und nicht doppelt gespeichert.
+Das Quelleninventar wird nur in der Entwicklung und in Tests gelesen.
 
 ## Kompetenzkatalog qualitaetssichern
 

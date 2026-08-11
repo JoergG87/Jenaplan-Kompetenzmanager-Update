@@ -1256,7 +1256,16 @@ Die fachbezogene Schnellauswahl `Zuletzt verwendet` ist keine eigene Datenquelle
 
 Datei: `data/curriculum_catalog_v1.csv`
 
-Status: v1-Kataloggrundlage mit abgeschlossenem Sprint-4-Lehrplanabgleich fuer Deutsch, Mathematik, EPU, Musik, Kunst, Sport, Werken, Schulgarten, Ethik und Sozialkompetenz. Die konkreten Kompetenzen folgen den freigegebenen Lehrplan-Mappings, der Katalog-Konsolidierung und den Product-Owner-Entscheidungen. Religion bleibt ausserhalb dieses Sprint-4-Katalogabgleichs.
+Status: kanonischer Fresh-Start-Katalog ausschließlich aus dem
+`Entwicklungsbuch Jenaplanschule Erfurt`. Er umfasst Selbst- und
+Sozialkompetenz, Arbeits-/Lernkompetenz, EPU, Deutsch, Mathematik, Kreatives
+Gestalten, Sport, Ethik, Religion, Musik, Englisch und Schulgarten in
+Quellenreihenfolge. Frühere Lehrplan-, Test- und Pilotkompetenzen sind nicht
+enthalten.
+
+Nachweisdatei: `data/entwicklungsbuch_catalog_inventory_v1.csv` mit Seite,
+Bereich, Thema, übernommener Kompetenz, Ratingprofil sowie bewusst
+ausgeschlossenen Dokumentationsfeldern und Begründung.
 
 Owner: Kompetenzverwaltung / Lehrplanpflege.
 
@@ -1285,20 +1294,19 @@ Regeln:
 
 - Der Katalog wird nur lesend verwendet.
 - `competency_id` ist eine stabile Katalog-ID im Format `CMP-######`.
-- Neue konkrete Kompetenzen werden mit neuen global fortlaufenden IDs ergaenzt; bestehende IDs werden nicht fachlich umgedeutet oder wiederverwendet.
+- Der frische Katalog verwendet ausschließlich neue IDs ab `CMP-100001`; alte IDs werden weder umgedeutet noch durch Alias- oder Migrationslogik aufgelöst.
 - `competency_label` befuellt beim Import das bestehende SQLite-Feld `competencies.label`; es ist keine neue SQLite-Spalte.
 - Der SQLite-Katalogimport ist idempotent: neue CSV-IDs werden in bestehende lokale Datenbanken eingefuegt, vorhandene lokale Nicht-CSV-Kompetenzen bleiben erhalten und `competencies.active` vorhandener IDs wird nicht ungefragt aus dem CSV ueberschrieben.
 - Vor fachlichen CSV-Aenderungen pruefen die internen Werkzeuge `scripts/validate_curriculum_catalog.py`, `scripts/compare_curriculum_catalog.py` und `scripts/next_competency_ids.py` Header, Pflichtfelder, Wertebereiche, ID-Stabilitaet, stille Text-/Hierarchieveraenderungen und die naechsten freien globalen IDs.
 - `catalog_status = current` ist Standard. `catalog_status = legacy` dient ausschliesslich historischen Kompetenzen und macht diese nicht automatisch zu neuen Dokumentationszielen.
 - `catalog_default_active = false` bedeutet, dass neue optionale Kompetenzen beim Erstimport standardmaessig deaktiviert werden.
-- Alte grobe Kompetenzen bleiben historisch lesbar. Sie duerfen spaeter deaktiviert oder archiviert, aber nicht geloescht werden.
-- Bestehende `observation_competency_ratings` bleiben gueltig und werden nicht automatisch auf neue konkrete Kompetenzen migriert.
+- Für diesen frischen Pilotbestand gibt es keinen erhaltenswerten alten Kompetenz- oder Ratingbestand und keine Katalogmigration.
 - Er erzeugt selbst keine Beobachtung; der PySide-Adapter uebergibt die Katalog-IDs an `observation_competency_ratings`.
 - `EPU` ist der App-Anzeigename fuer `Epochaler Projektunterricht`.
 - Die offizielle Lehrplanquelle fuer `EPU` ist `Heimat- und Sachkunde`.
 - `Sachunterricht` wird nicht als App-Fach gefuehrt.
-- `Kunst` wird als App-Fach angezeigt; offizielle Quelle ist `Kunsterziehung`.
-- `Ethik`, `Religion`, `Werken` und `Schulgarten` sind als erweiterte Faecher enthalten.
+- `Kreatives Gestalten` ist der kanonische Fachbegriff; `Kunst` und `Werken` werden nicht als Kompatibilitätsfächer fortgeführt.
+- Künstler-/Zeitraum-/SBJ-Zeilen, Musikwerke und Englisch-Themencheckboxen sind im Inventar dokumentiert, aber keine Ratingkompetenzen.
 
 ## documentation_subject_settings
 

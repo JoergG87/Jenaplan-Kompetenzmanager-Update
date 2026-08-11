@@ -1169,6 +1169,13 @@ Kompetenzbereich -> Thema -> Kompetenz und nutzt bestehende Felder:
 `subject_id` / `subject_name`, `learning_area`, `competency_group`,
 `description` / `competency_text`.
 
+Die zentrale ViewModel-Auflösung bestimmt aus dem kanonischen Fachschlüssel
+genau `standard`, `social` oder `sport` und liefert die vier sichtbaren
+Chiptexte. Dialog, Schüler-/Kompetenzprojektionen und sichtbare LEG-/Bericht-
+Ratingtexte konsumieren dieselbe Auflösung. Widgets besitzen weder
+Fachspezialfälle noch neue Ratingwerte; Auswahl und Farben bleiben an die
+stabilen Tokens `--`, `-`, `+`, `++` gebunden.
+
 Sprint 3C stellt diese Struktur als additive ViewModel-/Adapterprojektion bereit. Sprint 3D rendert die Kompetenzauswahl hierarchisch. Sprint 5C uebernimmt die freigegebene Drei-Zonen-UX produktiv: Neu-Erfassung startet vollstaendig geschlossen, Bearbeitung oeffnet ausschliesslich Zweige mit bereits bewerteten Kompetenzen, und Auswahl sowie Einzelbewertungen bleiben bei Fachwechsel oder Einklappen erhalten. Sprint 5D filtert diese bestehende Projektion ausschließlich lokal im Dialog; Suche und Treffer-Öffnung verändern weder Auswahl noch Bewertung oder Persistenz und das Löschen der Suche stellt den Aufklappzustand vor der Suche wieder her. Sprint 5E ergänzt darunter eine reine Adapterprojektion der zuletzt verwendeten Kompetenzen; die Dialogauswahl ändert deren Reihenfolge oder Inhalt nicht.
 
 Dokumente und Medien sind nur Anhaenge zur Beobachtung und ersetzen keine Beobachtungsdaten. Sie gehoeren immer zum Schueler und tragen optional die `observation_id`.
@@ -1369,3 +1376,17 @@ Sprint 10A ergaenzt neben diesem Draftpfad eine eigene Abschlussownership. `Lear
 Die Revisionshistorie ist eine Lesesicht auf `learning_conference_revisions`. `LearningConferenceRevisionDialog` besitzt ausschliesslich `LearningConferenceRevisionViewModel`, das zuvor durch `LearningConferenceRevisionReadService` aus einem hashverifizierten Snapshot gebildet wurde. Die Ansicht darf weder aktuelle Stammdaten noch Kompetenz-/Beobachtungsprojektionen nachladen. Der LCD bleibt unabhaengig von vorhandenen LCVs bearbeitbar; seine Live-Projektionen und die historische Snapshotansicht sind bewusst getrennte Sources of Truth.
 
 Sprint 10B erlaubt in dieser Ansicht fuer die aktuelle `completed`-Revision ausschliesslich die Artefaktaktion `Finales PDF erstellen`. Das Widget uebergibt nur die LCV-ID. Adapter, Application Service, LEG-PDF-Domain und Artefakt-Repository validieren Revision und Snapshot, bauen die Ausgabe ausschliesslich aus dem LCV-Snapshot und speichern die unveraenderliche `LCA`. Die UI kennt weder Renderer, Pfadpolicy, Hashberechnung noch SQLite. `superseded`-Revisionen bleiben lesbar, bieten aber keine neue PDF-Erzeugung.
+
+## UI-only Kompetenz-Darstellungsgruppen
+
+Das Observation-ViewModel besitzt die alleinige Zuordnung vorhandener
+kanonischer Domänenschlüssel zu `Überfachliche Entwicklung` oder `Fächer`.
+Dialog und Schülerprofil komponieren daraus ruhige Überschriften und reichen
+bei Auswahl weiterhin unverändert `subject_key`, `competency_id` und
+Ratingtoken weiter. Widgets dürfen die Gruppe weder speichern noch als Fach,
+Filterquelle oder Status interpretieren. Die individuelle Fachauswahlprojektion
+entfernt die beiden Schlüssel ausschließlich aus ihren sichtbaren Optionen.
+Die Entwicklungsübersicht ergänzt dieselben Schlüssel fest vor der weiterhin
+über `effective_documentation_subjects` bestimmten Unterrichtsfachmenge und
+verwendet für beide Abschnitte unverändert die bestehende neutrale
+Dokumentationskartenprojektion.

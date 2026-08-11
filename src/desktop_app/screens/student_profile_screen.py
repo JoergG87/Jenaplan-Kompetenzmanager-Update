@@ -81,6 +81,8 @@ from src.desktop_app.view_models.report_overview_view_model import (
     empty_report_overview,
 )
 from src.desktop_app.view_models.observation_view_model import (
+    COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR,
+    COMPETENCY_PRESENTATION_GROUP_SUBJECTS,
     ObservationListItem,
     StudentCompetencyCockpitLearningAreaViewModel,
     StudentCompetencyCockpitSubjectViewModel,
@@ -88,6 +90,7 @@ from src.desktop_app.view_models.observation_view_model import (
     StudentCompetencyCockpitViewModel,
     StudentDocumentationSubjectStatus,
     StudentCompetencySubjectGroup,
+    observation_rating_label,
 )
 from src.desktop_app.theme import COLOR_NAVY, COLOR_TURQUOISE, set_label_style
 
@@ -2111,7 +2114,7 @@ class StudentProfileScreen(QWidget):
 
     def _rating_row(self, rating: object) -> QLabel:
         rating_label = QLabel(
-            f"{getattr(rating, 'rating', '')}  "
+            f"{observation_rating_label(getattr(rating, 'rating', ''), rating)}  "
             f"{getattr(rating, 'learning_area', '')}"
         )
         rating_label.setWordWrap(True)
@@ -2185,12 +2188,29 @@ class StudentProfileScreen(QWidget):
         selected_subject_id = self.competency_subject_filter.currentData()
         self.competency_subject_filter.blockSignals(True)
         self.competency_subject_filter.clear()
-        self.competency_subject_filter.addItem("Alle Fächer", "")
+        self.competency_subject_filter.addItem("Alle Kompetenzen", "")
         if cockpit is not None:
-            for subject in cockpit.subjects:
-                self.competency_subject_filter.addItem(
-                    subject.subject_display_name, subject.subject_id
+            for presentation_group in (
+                COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR,
+                COMPETENCY_PRESENTATION_GROUP_SUBJECTS,
+            ):
+                grouped_subjects = tuple(
+                    subject
+                    for subject in cockpit.subjects
+                    if subject.presentation_group == presentation_group
                 )
+                if not grouped_subjects:
+                    continue
+                self.competency_subject_filter.addItem(presentation_group)
+                header_item = self.competency_subject_filter.model().item(
+                    self.competency_subject_filter.count() - 1
+                )
+                if header_item is not None:
+                    header_item.setEnabled(False)
+                for subject in grouped_subjects:
+                    self.competency_subject_filter.addItem(
+                        subject.subject_display_name, subject.subject_id
+                    )
         selected_index = self.competency_subject_filter.findData(selected_subject_id)
         self.competency_subject_filter.setCurrentIndex(max(selected_index, 0))
         self.competency_subject_filter.blockSignals(False)
@@ -2250,7 +2270,14 @@ class StudentProfileScreen(QWidget):
             self.competency_cockpit_layout.addWidget(
                 self._empty_filtered_competency_cockpit_card(subject_id)
             )
+        previous_presentation_group = ""
         for source_subject, filtered_subject in visible_subjects:
+            if source_subject.presentation_group != previous_presentation_group:
+                group_heading = QLabel(source_subject.presentation_group)
+                group_heading.setObjectName("CompetencyPresentationGroupHeading")
+                set_label_style(group_heading, "section_title")
+                self.competency_cockpit_layout.addWidget(group_heading)
+                previous_presentation_group = source_subject.presentation_group
             self.competency_cockpit_layout.addWidget(
                 self._cockpit_subject_card(
                     filtered_subject,
@@ -2967,17 +2994,75 @@ class StudentProfileScreen(QWidget):
             warning_label.setAccessibleName(warning.accessible_name)
             set_label_style(warning_label, "subtle")
             self.report_subjects_layout.addWidget(warning_label)
-        if not overview.subject_documentation:
+        cross_curricular_subjects = tuple(
+            subject
+            for subject in overview.subject_documentation
+            if subject.is_cross_curricular
+        )
+        teaching_subjects = tuple(
+            subject
+            for subject in overview.subject_documentation
+            if not subject.is_cross_curricular
+        )
+        if not cross_curricular_subjects and not teaching_subjects:
             self.report_subjects_layout.addWidget(self._report_compact_empty_state(
                 "Im aktuellen Schuljahr sind keine relevanten Fächer verfügbar.",
                 title="Keine Fachkarten im aktuellen Schuljahr",
             ))
             return
+        if cross_curricular_subjects:
+            cross_curricular_heading = QLabel("Überfachliche Entwicklung")
+            cross_curricular_heading.setObjectName(
+                "ReportOverviewCrossCurricularHeading"
+            )
+            set_label_style(cross_curricular_heading, "section_title")
+            self.report_subjects_layout.addWidget(cross_curricular_heading)
+            self.report_subjects_layout.addWidget(
+                self._report_subject_tile_grid(cross_curricular_subjects)
+            )
+        if teaching_subjects:
+            subjects_heading = QLabel("Fächer")
+            subjects_heading.setObjectName("ReportOverviewTeachingSubjectsHeading")
+            set_label_style(subjects_heading, "section_title")
+            self.report_subjects_layout.addWidget(subjects_heading)
         subjects = (
-            overview.subject_documentation
+            teaching_subjects
             if self._report_subjects_expanded
-            else overview.subject_documentation[:4]
+            else teaching_subjects[:4]
         )
+        if subjects:
+            self.report_subjects_layout.addWidget(
+                self._report_subject_tile_grid(subjects)
+            )
+        if len(teaching_subjects) > 4:
+            toggle_container = QWidget()
+            toggle_row = QHBoxLayout(toggle_container)
+            toggle_row.setContentsMargins(0, 0, 0, 0)
+            toggle_row.addStretch(1)
+            toggle = QPushButton(
+                "Weniger anzeigen"
+                if self._report_subjects_expanded
+                else f"Alle anzeigen ({len(teaching_subjects)})"
+            )
+            toggle.setObjectName("ReportOverviewSubjectsToggle")
+            configure_button(
+                toggle,
+                "link",
+                (
+                    "Fachübersicht auf vier Fächer reduzieren"
+                    if self._report_subjects_expanded
+                    else "Alle Fächer in der Fachübersicht anzeigen"
+                ),
+            )
+            toggle.clicked.connect(self._toggle_report_subjects)
+            toggle_row.addWidget(toggle)
+            self.report_subjects_layout.addWidget(toggle_container)
+
+    def _report_subject_tile_grid(
+        self,
+        subjects: tuple[ReportOverviewSubjectDocumentationViewModel, ...],
+    ) -> QWidget:
+        """Render one neutral card grid for an already classified section."""
         tile_container = QWidget()
         tile_container.setObjectName("ReportOverviewSubjectGrid")
         tile_layout = QGridLayout(tile_container)
@@ -3069,30 +3154,7 @@ class StudentProfileScreen(QWidget):
             )
         for column in range(tile_columns):
             tile_layout.setColumnStretch(column, 1)
-        self.report_subjects_layout.addWidget(tile_container)
-        if len(overview.subject_documentation) > 4:
-            toggle_container = QWidget()
-            toggle_row = QHBoxLayout(toggle_container)
-            toggle_row.setContentsMargins(0, 0, 0, 0)
-            toggle_row.addStretch(1)
-            toggle = QPushButton(
-                "Weniger anzeigen"
-                if self._report_subjects_expanded
-                else f"Alle anzeigen ({len(overview.subject_documentation)})"
-            )
-            toggle.setObjectName("ReportOverviewSubjectsToggle")
-            configure_button(
-                toggle,
-                "link",
-                (
-                    "Fachübersicht auf vier Fächer reduzieren"
-                    if self._report_subjects_expanded
-                    else "Alle Fächer in der Fachübersicht anzeigen"
-                ),
-            )
-            toggle.clicked.connect(self._toggle_report_subjects)
-            toggle_row.addWidget(toggle)
-            self.report_subjects_layout.addWidget(toggle_container)
+        return tile_container
 
     def _report_competency_segments(
         self,

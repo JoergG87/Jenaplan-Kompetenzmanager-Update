@@ -1,0 +1,355 @@
+source_page;subject;learning_area;competency_group;source_entry;entry_type;competency_id;rating_profile;decision_reason
+3;Selbst- und Sozialkompetenz;Selbst- und Sozialkompetenz;Selbstwahrnehmung;Wahrnehmung eigener Gefühle;competency;CMP-100001;social;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Selbst- und Sozialkompetenz;Selbst- und Sozialkompetenz;Fremdwahrnehmung;Wahrnehmung der Gefühle anderer;competency;CMP-100002;social;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Selbst- und Sozialkompetenz;Selbst- und Sozialkompetenz;Allgemein;Erkennen eigener Stärken und Schwächen;competency;CMP-100003;social;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Selbst- und Sozialkompetenz;Selbst- und Sozialkompetenz;Allgemein;Angemessenes Verhalten gegenüber Erwachsenen;competency;CMP-100004;social;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Selbst- und Sozialkompetenz;Selbst- und Sozialkompetenz;Allgemein;Positiver Umgang mit Mitschüler*innen;competency;CMP-100005;social;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Selbst- und Sozialkompetenz;Selbst- und Sozialkompetenz;Allgemein;Regeleinhaltung;competency;CMP-100006;social;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Selbst- und Sozialkompetenz;Selbst- und Sozialkompetenz;Allgemein;Kritikfähigkeit;competency;CMP-100007;social;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Selbst- und Sozialkompetenz;Selbst- und Sozialkompetenz;Allgemein;Anwenden von Konfliktlösungsstrategien;competency;CMP-100008;social;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Nutzen der Lernzeit;competency;CMP-100009;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Leistungsbereitschaft;competency;CMP-100010;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Organisation am Arbeitsplatz;competency;CMP-100011;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Umgang mit Arbeitsmaterialien;competency;CMP-100012;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Zeitmanagement;competency;CMP-100013;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Konzentrationsfähigkeit;competency;CMP-100014;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Zuhören;competency;CMP-100015;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Mündliche Mitarbeit;competency;CMP-100016;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Schriftliche Mitarbeit;competency;CMP-100017;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Beachten von Gesprächsregeln;competency;CMP-100018;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Selbstständiges Arbeiten;competency;CMP-100019;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Arbeitsprozess;competency;CMP-100020;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+3;Arbeits-/Lernkompetenz;Arbeits-/Lernkompetenz;Allgemein;Reflektieren von Lernerfahrungen;competency;CMP-100021;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+4;EPU;Arbeitstechniken und Methoden;Allgemein;Selbstständige Arbeitsweise;competency;CMP-100022;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+4;EPU;Arbeitstechniken und Methoden;Allgemein;Informationsbeschaffung und Informationsaustausch (planen, durchführen, dokumentieren, präsentieren);competency;CMP-100023;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+4;EPU;Arbeitstechniken und Methoden;Allgemein;Auswählen und Nutzen wichtiger Informationen;competency;CMP-100024;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+4;EPU;Arbeitstechniken und Methoden;Allgemein;Kennen und Anwenden von Präsentationsmethoden;competency;CMP-100025;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+4;EPU;Arbeitstechniken und Methoden;Allgemein;Gezieltes Arbeiten in verschiedenen Sozialformen (PA, GA);competency;CMP-100026;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+4;EPU;Arbeitstechniken und Methoden;Allgemein;Reflektieren der eigenen Arbeitsweise;competency;CMP-100027;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Hör-/Hör-Sehverstehen;Allgemein;Wahrnehmen und Unterscheiden von Lauten;competency;CMP-100028;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Hör-/Hör-Sehverstehen;Allgemein;Wahrnehmen und Darstellen von Silben;competency;CMP-100029;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Hör-/Hör-Sehverstehen;Allgemein;Unterscheiden von Lauten und Buchstaben;competency;CMP-100030;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Lesen/Leseverstehen;Allgemein;Erfassen der Wörter als Ganzheit;competency;CMP-100031;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Lesen/Leseverstehen;Sinnverstehendes Lesen von;Wörtern;competency;CMP-100032;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Lesen/Leseverstehen;Sinnverstehendes Lesen von;Sätzen;competency;CMP-100033;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Lesen/Leseverstehen;Sinnverstehendes Lesen von;altersgemäßen Texten;competency;CMP-100034;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Lesen/Leseverstehen;Allgemein;Erkennen von wesentlichen Aussagen;competency;CMP-100035;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Lesen/Leseverstehen;Allgemein;Anwenden von Methoden der Texterschließung (z.B. Schlüsselwörter, Markieren, Illustrieren);competency;CMP-100036;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Lesen/Leseverstehen;Allgemein;Lesen und Verstehen verschiedener Textformen (Brief, Gratulation, Gedicht, Märchen, …);competency;CMP-100037;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Lesen/Leseverstehen;Allgemein;Ausdrucksvolles Vorlesen;competency;CMP-100038;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Mündlicher Sprachgebrauch;Allgemein;Deutliches und ausdrucksvolles Sprechen;competency;CMP-100039;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Mündlicher Sprachgebrauch;Allgemein;Themenbezogenes, zusammenhängendes Erzählen;competency;CMP-100040;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Mündlicher Sprachgebrauch;Allgemein;Beschreiben von Gegenständen und Personen;competency;CMP-100041;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+5;Deutsch;Mündlicher Sprachgebrauch;Allgemein;Auswendiges Vortragen (Verse, Reime, Gedichte);competency;CMP-100042;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Schriftlicher Sprachgebrauch;Allgemein;Auge-Hand-Koordination;competency;CMP-100043;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Schriftlicher Sprachgebrauch;Allgemein;Druckschrift: formgetreues Schreiben der Buchstaben;competency;CMP-100044;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Schriftlicher Sprachgebrauch;Allgemein;Einhalten der Lineatur;competency;CMP-100045;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Schriftlicher Sprachgebrauch;Allgemein;Angemessenes Schreibtempo;competency;CMP-100046;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Schriftlicher Sprachgebrauch;Allgemein;Unterscheiden von Selbstlaut, Mitlaut, Zwielaut, Umlaut;competency;CMP-100047;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Schriftlicher Sprachgebrauch;Allgemein;Lautgetreues Schreiben von Wörtern;competency;CMP-100048;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Schriftlicher Sprachgebrauch;Allgemein;Schreiben eigener Sätze;competency;CMP-100049;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Schriftlicher Sprachgebrauch;Allgemein;Planen und Verfassen freier Texte;competency;CMP-100050;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Schriftlicher Sprachgebrauch;Allgemein;Schreiben von Texten und Gebrauchsformen (Brief, Glückwunsch, Einladung, Rezept, Anleitung);competency;CMP-100051;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Schriftlicher Sprachgebrauch;Allgemein;Verfassen von Texten zu Bildfolgen;competency;CMP-100052;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Rechtschreibung;Allgemein;Fehlerfreies Abschreiben;competency;CMP-100053;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Rechtschreibung;Allgemein;Richtiges Schreiben von Wörtern des Grundwortschatzes;competency;CMP-100054;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Rechtschreibung;Allgemein;Beachten von Besonderheiten der Rechtschreibung (Wortgrenzen, Groß- und Kleinschreibung, doppelter Mitlaut, Dehnungs-h, Auslautverhärtung);competency;CMP-100055;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Rechtschreibung;Allgemein;Anwendung von Rechtschreibstrategien;competency;CMP-100056;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Rechtschreibung;Allgemein;Berichtigen von Fehlern;competency;CMP-100057;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Erkennen und Anwenden der Wortarten;Substantiv, Artikel, Verb, Adjektiv;competency;CMP-100058;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Erkennen und Anwenden der Wortarten;Personalpronomen;competency;CMP-100059;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Erkennen und Anwenden der Wortarten;Präposition;competency;CMP-100060;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Erkennen und Anwenden der Formmerkmale;Einzahl, Mehrzahl;competency;CMP-100061;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+6;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Erkennen und Anwenden der Formmerkmale;Grundform, gebeugte Form;competency;CMP-100062;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+7;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Allgemein;Richtiger Gebrauch der Satzarten (Aussagesatz, Fragesatz, Ausrufesatz);competency;CMP-100063;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+7;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Allgemein;Bestimmen der Satzglieder (Subjekt, Prädikat);competency;CMP-100064;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+7;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Allgemein;Bilden von Wortfamilien;competency;CMP-100065;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+7;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Allgemein;Kennen des Alphabets;competency;CMP-100066;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+7;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Allgemein;Nutzen des Alphabets als Ordnungsprinzip;competency;CMP-100067;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+7;Deutsch;Reflektion über Sprache, Sprachverwendung und Sprachenlernen;Allgemein;Nutzen von Hilfsmitteln als Rechtschreibhilfe;competency;CMP-100068;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Mengen und Zahlenverständnis;Allgemein;Bilden, Erfassen und Darstellen;competency;CMP-100069;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Mengen und Zahlenverständnis;Allgemein;Vergleichen und Ordnen;competency;CMP-100070;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Mengen und Zahlenverständnis;Allgemein;Zusammenfassen und Zerlegen;competency;CMP-100071;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Mengen und Zahlenverständnis;Allgemein;Erfassen der Beziehung zwischen Menge und Zahl;competency;CMP-100072;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Mengen und Zahlenverständnis;Allgemein;Anwenden der Relationszeichen (<, >, =);competency;CMP-100073;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Mengen und Zahlenverständnis;Allgemein;Bestimmen von Vorgänger und Nachfolger;competency;CMP-100074;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Mengen und Zahlenverständnis;Allgemein;Umgehen mit Ordnungszahlen;competency;CMP-100075;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Mengen und Zahlenverständnis;Allgemein;Verdoppeln und Halbieren;competency;CMP-100076;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Mengen und Zahlenverständnis;Allgemein;Bestimmen gerader und ungerader Zahlen;competency;CMP-100077;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Zahlenraum;Zählen;Zählen bis 10;competency;CMP-100078;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Zahlenraum;Zählen;Zählen bis 20;competency;CMP-100079;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Zahlenraum;Zählen;Zählen bis 100;competency;CMP-100080;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+8;Mathematik;Zahlenraum;Zählen;Zählen bis 1000;competency;CMP-100081;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Zahlenraum;Allgemein;Lesen und Schreiben von Ziffern, Zahlen und Zeichen;competency;CMP-100082;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Zahlenraum;Allgemein;Erfassen und Darstellen von Zahlen (Hundertertafel, Stellenwerttafel, Tausenderbuch, …);competency;CMP-100083;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Addition;Kopfrechnen;competency;CMP-100084;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Addition · Addieren einstelliger Zahlen;ohne Zehnerüberschreitung;competency;CMP-100085;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Addition · Addieren einstelliger Zahlen;mit Zehnerüberschreitung;competency;CMP-100086;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Addition · Addieren zweistelliger Zahlen;ohne Zehnerüberschreitung;competency;CMP-100087;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Addition · Addieren zweistelliger Zahlen;mit Zehnerüberschreitung;competency;CMP-100088;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Addition · Halbschriftliche Addition;ohne Zehnerübergang;competency;CMP-100089;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Addition · Halbschriftliche Addition;mit Zehnerübergang;competency;CMP-100090;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Addition;Schriftliche Addition;competency;CMP-100091;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Subtraktion;Kopfrechnen;competency;CMP-100092;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Subtraktion · Subtrahieren einstelliger Zahlen;ohne Zehnerüberschreitung;competency;CMP-100093;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Subtraktion · Subtrahieren einstelliger Zahlen;mit Zehnerüberschreitung;competency;CMP-100094;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Subtraktion · Subtrahieren zweistelliger Zahlen;ohne Zehnerüberschreitung;competency;CMP-100095;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Subtraktion · Subtrahieren zweistelliger Zahlen;mit Zehnerüberschreitung;competency;CMP-100096;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Subtraktion · Halbschriftliche Subtraktion;ohne Zehnerübergang;competency;CMP-100097;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Subtraktion · Halbschriftliche Subtraktion;mit Zehnerübergang;competency;CMP-100098;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Subtraktion;Schriftliche Subtraktion;competency;CMP-100099;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+9;Mathematik;Rechenoperationen;Multiplikation;Kopfrechnen;competency;CMP-100100;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Rechenoperationen;Multiplikation;Kernaufgaben des Einmaleins (1, 2, 5, 10);competency;CMP-100101;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Rechenoperationen;Multiplikation;Einmaleinsreihen (3, 4, 6, 7, 8, 9);competency;CMP-100102;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Rechenoperationen;Multiplikation · Halbschriftliche Multiplikation;mit einstelligen Faktoren (5*6);competency;CMP-100103;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Rechenoperationen;Multiplikation · Halbschriftliche Multiplikation;mit einstelligem und zweistelligem Faktor (5*13);competency;CMP-100104;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Rechenoperationen;Division;Kopfrechnen;competency;CMP-100105;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Rechenoperationen;Division;Kennen der Teilbarkeitsregeln;competency;CMP-100106;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Rechenoperationen;Division;Division mit Rest im Zahlenraum bis 100;competency;CMP-100107;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Rechenoperationen;Division;Halbschriftliches Dividieren;competency;CMP-100108;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Vorstellung von Operationen;Allgemein;Erkennen mathematischer Gesetzmäßigkeiten;competency;CMP-100109;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Vorstellung von Operationen;Beziehungen zwischen den Rechenoperationen;Bilden von Nachbaraufgaben;competency;CMP-100110;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Vorstellung von Operationen;Beziehungen zwischen den Rechenoperationen;Bilden von Tauschaufgaben;competency;CMP-100111;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Vorstellung von Operationen;Beziehungen zwischen den Rechenoperationen;Bilden von Umkehraufgaben;competency;CMP-100112;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Vorstellung von Operationen;Allgemein;Lösen von Aufgaben unterschiedlicher Aufgabenformate (Rechenräder, Rechentabellen, Rechenzüge, Zahlenmauern, …);competency;CMP-100113;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;Vorstellung von Operationen;Allgemein;Verwenden mathematischer Termini;competency;CMP-100114;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;In Kontexten rechnen;Allgemein;Umgang mit Sachsituationen (z.B. Darstellen, Rechengeschichten);competency;CMP-100115;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;In Kontexten rechnen;Allgemein;Lösen von Sach- und Problemaufgaben;competency;CMP-100116;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;In Kontexten rechnen;Allgemein;Lösen von einfachen kombinatorischen Aufgaben;competency;CMP-100117;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;In Kontexten rechnen;Umgang mit;Tabellen und Diagrammen;competency;CMP-100118;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;In Kontexten rechnen;Umgang mit;Schätzen und Messen;competency;CMP-100119;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+10;Mathematik;In Kontexten rechnen;Umgang mit;Runden und Überschlagen;competency;CMP-100120;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Größenvorstellungen nutzen und mit Größen umgehen;Allgemein;Umgang mit der Währung Euro (Münzen, Banknoten);competency;CMP-100121;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Größenvorstellungen nutzen und mit Größen umgehen;Allgemein;Kennen der Gewichte (g, kg, t);competency;CMP-100122;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Größenvorstellungen nutzen und mit Größen umgehen;Allgemein;Kennen der Rauminhalte (ml, l);competency;CMP-100123;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Größenvorstellungen nutzen und mit Größen umgehen;Allgemein;Kennen der Längenmaße (mm, cm, dm, m, km);competency;CMP-100124;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Größenvorstellungen nutzen und mit Größen umgehen;Zeit;Kennen der Zeiteinheiten (s, min., h);competency;CMP-100125;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Größenvorstellungen nutzen und mit Größen umgehen;Zeit;Ablesen, Einstellen und Aufschreiben der Uhrzeit;competency;CMP-100126;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Größenvorstellungen nutzen und mit Größen umgehen;Zeit;Errechnen der Zeitspanne;competency;CMP-100127;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Geometrie;Allgemein;Umgang mit Raum- und Lagebeziehungen;competency;CMP-100128;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Geometrie;Allgemein;Erkennen und Benennen der Körper (Würfel, Quader, Kugel, Kegel, Zylinder, Pyramide);competency;CMP-100129;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Geometrie;Allgemein;Bauen nach und ohne Vorgaben;competency;CMP-100130;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Geometrie;Allgemein;Erkennen und Benennen der Flächen (Viereck, Rechteck, Quadrat, Dreieck, Kreis);competency;CMP-100131;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Geometrie;Allgemein;Geometrische Muster (legen, fortsetzen, entwickeln, verändern);competency;CMP-100132;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Geometrie;Allgemein;Symmetrie und Symmetrieachse (bestimmen, legen, zeichnen);competency;CMP-100133;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Geometrie;Allgemein;Zeichnen von Linien und geometrischen Figuren;competency;CMP-100134;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+11;Mathematik;Geometrie;Allgemein;Verwenden von Zeichen- und Messgeräten;competency;CMP-100135;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Farbenlehre;Allgemein;Umgang mit der Lehre des Farbkreises;competency;CMP-100136;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Farbenlehre;Allgemein;Unterscheidung von Farben in Grund- und Mischfarben;competency;CMP-100137;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Farbenlehre;Allgemein;Einsatz unterschiedlicher Farbmaterialien, Geräte und Malgründe;competency;CMP-100138;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Lernbereiche;Allgemein;Kenntnis verschiedener Drucktechniken;competency;CMP-100139;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Lernbereiche;Allgemein;Erstellen von Collagen;competency;CMP-100140;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Lernbereiche;Allgemein;Einsatz von grafischen Mitteln (Linien, Strukturen);competency;CMP-100141;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Lernbereiche;Allgemein;Gestalten einer Plastik;competency;CMP-100142;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Lernbereiche;Allgemein;Gestalten von Bildfolgen mit Handlungszusammenhang;competency;CMP-100143;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Lernbereiche;Allgemein;Gestalten der menschlichen Figur;competency;CMP-100144;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Lernbereiche;Allgemein;Künstlerischer Einsatz von Schriftarten;competency;CMP-100145;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Kunstbetrachtung;Künstlerdokumentation;Kennenlernen verschiedener Künstler und deren Werke;excluded_documentation;;;Separater Dokumentationsbereich mit Zeitraum und SBJ, keine Vier-Stufen-Bewertung.
+12;Kreatives Gestalten;Kunstbetrachtung;Künstlerdokumentation;Vier leere Künstlerzeilen;excluded_documentation;;;Freie Dokumentationszeilen ohne Kompetenztext und ohne Vier-Stufen-Bewertung.
+12;Kreatives Gestalten;Künstlerische Fähigkeiten und Fertigkeiten;Allgemein;Sachgerechter Umgang mit verschiedenen Materialien;competency;CMP-100146;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Künstlerische Fähigkeiten und Fertigkeiten;Allgemein;Selbstständigkeit;competency;CMP-100147;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Künstlerische Fähigkeiten und Fertigkeiten;Allgemein;Organisation der Arbeit;competency;CMP-100148;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Künstlerische Fähigkeiten und Fertigkeiten;Allgemein;Zielstrebigkeit;competency;CMP-100149;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+12;Kreatives Gestalten;Künstlerische Fähigkeiten und Fertigkeiten;Allgemein;Einfallsreichtum, Fantasie, Originalität;competency;CMP-100150;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Textile Werkstoffe;Allgemein;Untersuchen von Stoffen und Fäden;competency;CMP-100151;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Textile Werkstoffe;Kennenlernen verschiedener Arbeitstechniken;Fäden legen/ kleben;competency;CMP-100152;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Textile Werkstoffe;Kennenlernen verschiedener Arbeitstechniken;Kordeln;competency;CMP-100153;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Textile Werkstoffe;Kennenlernen verschiedener Arbeitstechniken;Flechten;competency;CMP-100154;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Textile Werkstoffe;Kennenlernen verschiedener Arbeitstechniken;Weben;competency;CMP-100155;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Arbeit mit Papier;Arbeitstechniken;Schneiden;competency;CMP-100156;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Arbeit mit Papier;Arbeitstechniken;Falten;competency;CMP-100157;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Arbeit mit Papier;Arbeitstechniken;Kleben;competency;CMP-100158;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Arbeit mit Papier;Arbeitstechniken;Reißen;competency;CMP-100159;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Arbeit mit Papier;Allgemein;Anreißen mittels Schablone;competency;CMP-100160;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Technische Konstruktionen (Baukästen);Allgemein;Erstellen von funktionsfähigen technischen Konstruktionen und festen Verbindungen;competency;CMP-100161;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Technische Konstruktionen (Baukästen);Allgemein;Planen von Konstruktionen und Aufstellen von Materiallisten;competency;CMP-100162;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Technische Konstruktionen (Baukästen);Allgemein;Konstruieren nach Bauplan;competency;CMP-100163;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Holz / Ton;Allgemein;Materialerkundung;competency;CMP-100164;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Holz / Ton;Allgemein;Planung von Arbeitsvorhaben;competency;CMP-100165;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Allgemeine Fähigkeiten des Werkens;Allgemein;Sachgerechter Umgang mit Material und Werkzeug;competency;CMP-100166;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Allgemeine Fähigkeiten des Werkens;Allgemein;Selbstständigkeit;competency;CMP-100167;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Allgemeine Fähigkeiten des Werkens;Allgemein;Organisation der Arbeit;competency;CMP-100168;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+13;Kreatives Gestalten;Allgemeine Fähigkeiten des Werkens;Allgemein;Zielstrebigkeit;competency;CMP-100169;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Selbst- und Sozialkompetenzen;Eigenes Leistungsvermögen realistisch einschätzen;competency;CMP-100170;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Selbst- und Sozialkompetenzen;Ängste überwinden;competency;CMP-100171;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Selbst- und Sozialkompetenzen;Hilfe annehmen;competency;CMP-100172;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Selbst- und Sozialkompetenzen;Sachlich mit Sieg und Niederlage umgehen;competency;CMP-100173;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Selbst- und Sozialkompetenzen;Notwendige Sicherheitsregeln einhalten;competency;CMP-100174;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Selbst- und Sozialkompetenzen;Grundlegende Verhaltensnormen, Fair-Play-Regeln einhalten und kameradschaftlich handeln;competency;CMP-100175;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Selbst- und Sozialkompetenzen;Gemeinsam mit einem Partner und in der Gruppe an Bewegungsabläufen üben;competency;CMP-100176;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Methodenkompetenzen;Grundlegende Ordnungsformen anwenden;competency;CMP-100177;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Methodenkompetenzen;Einfache Formen des Sicherns und Helfens einsetzen;competency;CMP-100178;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Methodenkompetenzen;Erlernte Fähigkeiten im Spiel anwenden;competency;CMP-100179;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Methodenkompetenzen;Erlernte Techniken ausführen;competency;CMP-100180;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+14;Sport;Fachspezifische Kompetenzen;Methodenkompetenzen;An der Gestaltung der Erwärmung (Kleine Spiele, Lauf-ABC, Dehnungskreis) aktiv teilnehmen;competency;CMP-100181;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;„Kleine Spiele“ und verschiedene Staffelspiele ausführen;competency;CMP-100182;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Verschiedene Formen des Gehens und Laufens ausführen (ausdauernd, rhythmisch);competency;CMP-100183;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;30m sprinten;competency;CMP-100184;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Lebensalter-Minutenlauf durchhalten;competency;CMP-100185;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen · Springen;ein- und beidbeinig;competency;CMP-100186;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen · Springen;in die Höhe, in die Weite und von einem Gerät;competency;CMP-100187;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen · Springen;mit dem Seil;competency;CMP-100188;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Mit unterschiedlichen Wurfgeräten und in verschiedenen Wurfarten in die Höhe sowie Weite auf feste und bewegliche Ziele werfen;competency;CMP-100189;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Verschiedene Bälle werfen und fangen (PA, GA);competency;CMP-100190;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Einen Ball mit der Hand bzw. dem Fuß führen;competency;CMP-100191;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Eine Rolle vorwärts und rückwärts ausführen;competency;CMP-100192;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Eine Übungsverbindung turnen;competency;CMP-100193;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Verschiedene Grundformen der Bewegung in Gerätelandschaften ausführen;competency;CMP-100194;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Aufgaben zum Stützen, Schwingen, Klettern und Hangeln an unterschiedlichen Geräten ausführen;competency;CMP-100195;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;In einer Höhe bis zu 50 cm auf festen und beweglichen Untergründen balancieren;competency;CMP-100196;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Einen Einbeinstand mindestens 8 Sekunden halten;competency;CMP-100197;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Sich nach vorgegebenen Rhythmen frei bewegen;competency;CMP-100198;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+15;Sport;Schuleingangsphase;Sachkompetenzen;Spielspezifische Regeln nennen und erklären;competency;CMP-100199;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Schuleingangsphase;Sachkompetenzen;Geräte bestimmen (Bälle, Gymnastikgeräte, Stoppuhr, Startklappe, Turnbank, Reck, Bock, Kasten, Federsprungbrett);competency;CMP-100200;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Spielen;Verschiedene Bälle mit dem Fuß führen;competency;CMP-100201;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Spielen;„Kleine Spiele“ entsprechend der Vorgaben ausführen;competency;CMP-100202;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Spielen;Spielregeln einhalten;competency;CMP-100203;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Laufen;Unterschied zwischen Gehen – Laufen- Rennen kennen;competency;CMP-100204;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Laufen;Hindernisse um-/überlaufen;competency;CMP-100205;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Laufen;Staffelspiele entsprechend der Vorgaben ausführen;competency;CMP-100206;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Laufen;Sprinten – kurze Strecke (30m, 50m) in hohem Tempo laufen;competency;CMP-100207;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Laufen;Ausdauer – über einen längeren Zeitraum durchgängig laufen (Lebensalterlauf, mind. 10 min);competency;CMP-100208;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Springen;Einbeinig fortbewegen;competency;CMP-100209;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Springen;beidbeinig fortbewegen;competency;CMP-100210;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Springen;in die Höhe (ein-/beidbeinig);competency;CMP-100211;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Springen;nach kurzem Anlauf einbeiniger Absprung in die Weite;competency;CMP-100212;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+16;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Springen;Seilspringen;competency;CMP-100213;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Werfen;mit unterschiedlichen Wurfgeräten/Bällen auf bewegliche/unbewegliche Ziele werfen;competency;CMP-100214;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Werfen;in unterschiedlichen Wurfarten zielgenau und weit werfen (Schlag-, Schock-, Druck-, Überkopf-, Schleuderwurf);competency;CMP-100215;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Werfen · Verschiedene Bälle;werfen;competency;CMP-100216;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Werfen · Verschiedene Bälle;fangen;competency;CMP-100217;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Werfen · Verschiedene Bälle;prellen;competency;CMP-100218;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Werfen · Verschiedene Bälle;über das Netz spielen (EA, PA, GA);competency;CMP-100219;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Laufen – Springen – Werfen · Werfen;den Schlagball aus dem Stand weit werfen;competency;CMP-100220;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Turnen · Rolle;vorwärts;competency;CMP-100221;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Turnen · Rolle;rückwärts sauber ausführen;competency;CMP-100222;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Turnen · Verschiedene Elemente turnen;Knie- und Standwaage am Boden;competency;CMP-100223;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Turnen · Verschiedene Elemente turnen;Eine Übungsverbindung turnen (gymn. Stände, Schritte und Sprünge);competency;CMP-100224;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Turnen · Verschiedene Elemente turnen;Kopfstand;competency;CMP-100225;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Turnen · Verschiedene Elemente turnen;Handstützüberschlag seitwärts (Rad schlagen);competency;CMP-100226;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Turnen;Niedersprung von einem Gerät/Kasten (Streck-, Hock-, Grätschsprung);competency;CMP-100227;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Turnen;Sprunggrätsche über den Bock;competency;CMP-100228;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Turnen;Hüftaufschwung mit Gerät-/Partnerhilfe;competency;CMP-100229;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+17;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Turnen;Pyramidenbau (GA);competency;CMP-100230;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+18;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Tanzen;Sich nach einem vorgegebenen Rhythmus bewegen (EA, PA, GA);competency;CMP-100231;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+18;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Tanzen;Aus erlernten Grundschritten eine Choreografie erarbeiten (EA, PA);competency;CMP-100232;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+18;Sport;Klassenstufe 3;Sachkompetenzen · Lernbereich Tanzen;Eine geeignete Aufstellungsform für die Präsentation wählen;competency;CMP-100233;sport;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in seiner Individualität und Persönlichkeitsentwicklung;Lerninhalte;Stärken und Schwächen benennen;competency;CMP-100234;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in seiner Individualität und Persönlichkeitsentwicklung;Lerninhalte;Gefühle benennen, beschreiben und nonverbal vorspielen;competency;CMP-100235;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in seiner Individualität und Persönlichkeitsentwicklung;Lerninhalte;Materielle und ideelle Wünsche unterscheiden;competency;CMP-100236;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in seiner Individualität und Persönlichkeitsentwicklung;Lerninhalte;Erfüllbare und unerfüllbare Wünsche unterscheiden;competency;CMP-100237;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in seiner Individualität und Persönlichkeitsentwicklung;Lerninhalte;Zeiterfahrungen benennen und bewerten;competency;CMP-100238;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in seiner Individualität und Persönlichkeitsentwicklung;Lerninhalte;Zwischen Arbeitszeit und Freizeit unterscheiden;competency;CMP-100239;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in seiner Individualität und Persönlichkeitsentwicklung;Lerninhalte;Möglichkeiten sinnvoller Freizeitgestaltung nennen;competency;CMP-100240;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in seiner Individualität und Persönlichkeitsentwicklung;Lerninhalte;Unterschiedliche Medien kennen;competency;CMP-100241;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in seiner Individualität und Persönlichkeitsentwicklung;Lerninhalte;Risiken und Chancen der Medien kennen;competency;CMP-100242;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in seiner Individualität und Persönlichkeitsentwicklung;Lerninhalte;Lebensphasen kennen (Werden, Wachsen und Vergehen);competency;CMP-100243;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Familienstrukturen unterscheiden;competency;CMP-100244;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Bedeutung von Familie erklären;competency;CMP-100245;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Erfahrung mit Freunden und Freundschaftsarten nennen;competency;CMP-100246;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Verschiedene Positionen und Rollen innerhalb verschiedener Gemeinschaften beschreiben;competency;CMP-100247;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Sich mit Regeln auseinandersetzen;competency;CMP-100248;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Zusammenhänge zwischen Aufgaben, Rechten und Pflichten nennen;competency;CMP-100249;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Die Bedeutung von Umgangsformen, Rücksichtnahme und Verantwortung für ein respektvolles Miteinander erklären;competency;CMP-100250;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Folgen von Unwahrheiten an Beispielen beschreiben;competency;CMP-100251;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Strategien zur Streitbewältigung und Konfliktlösung kennen und anwenden;competency;CMP-100252;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Über Erfolg und Misserfolg im Lernen berichten;competency;CMP-100253;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+19;Ethik;Das Kind in sozialen Beziehungen;Lerninhalte;Kinderrechte der UN-Charta nennen;competency;CMP-100254;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+20;Ethik;Das Kind im Verhältnis zur eigenen und zu fremden Kulturen;Lerninhalte;Feste den Jahreszeiten und dem Jahreskreis zuordnen sowie dessen Ursprung und Symbole kennen;competency;CMP-100255;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+20;Ethik;Das Kind im Verhältnis zur eigenen und zu fremden Kulturen;Lerninhalte;Über religiöse Persönlichkeiten in Bezug zu den Festen berichten;competency;CMP-100256;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+20;Ethik;Das Kind im Verhältnis zur eigenen und zu fremden Kulturen;Lerninhalte;Besondere Rituale, Traditionen, Bräuche der eigenen und fremder Kulturen kennen, erklären und zuordnen;competency;CMP-100257;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+20;Ethik;Das Kind im Verhältnis zur eigenen und zu fremden Kulturen;Lerninhalte;Fremde Lebenssituationen und Lebensweisen mit den eignen vergleichen;competency;CMP-100258;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+20;Ethik;Das Kind im Verhältnis zur eigenen und zu fremden Kulturen;Lerninhalte;Andere Religionen kennen und benennen;competency;CMP-100259;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+20;Ethik;Das Kind im Verhältnis zur eigenen und zu fremden Kulturen;Lerninhalte;Die Goldene Regel charakterisieren;competency;CMP-100260;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+20;Ethik;Das Kind in seinem Verhältnis zur natürlichen Umwelt:;Lerninhalte;Lebende und nicht lebende Natur unterscheiden;competency;CMP-100261;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+20;Ethik;Das Kind in seinem Verhältnis zur natürlichen Umwelt:;Lerninhalte;Wunder der Natur entdecken, benennen und beschreiben;competency;CMP-100262;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+20;Ethik;Das Kind in seinem Verhältnis zur natürlichen Umwelt:;Lerninhalte;Eigenen Beitrag zum Schutz der Natur begründen;competency;CMP-100263;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach dem Ich und Wir;Lerninhalte;Das bin Ich.;competency;CMP-100264;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach dem Ich und Wir;Lerninhalte;Ich und die anderen. Wir sind verschieden.;competency;CMP-100265;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach dem Ich und Wir;Lerninhalte;Einander annehmen und Freundschaften schließen;competency;CMP-100266;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach dem Ich und Wir;Lerninhalte;Mein Platz in der Gemeinschaft, Regeln für das Miteinander und Nächstenliebe;competency;CMP-100267;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach dem Ich und Wir;Lerninhalte;Jesus Umgang mit Menschen seiner Umgebung (Zuwendung zu Ausgegrenzten);competency;CMP-100268;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach der Kirche;Lerninhalte;Kirchenfeste im Jahr und deren Beziehung zur biblischen Überlieferung;competency;CMP-100269;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach der Kirche;Lerninhalte;Äußere und innere Merkmale eines Kirchengebäudes;competency;CMP-100270;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach der Kirche;Lerninhalte;Christliche Symbole (z.B. Licht, Weg, Wasser);competency;CMP-100271;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach der Kirche;Lerninhalte;Vorbilder im Glauben (z.B. Nikolaus von Myra, Martin von Tours);competency;CMP-100272;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach der Kirche;Lerninhalte;Biblische Aussagen zur Nächstenliebe und Möglichkeiten solidarischen Tuns;competency;CMP-100273;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach Gott und den Menschen;Lerninhalte;Einfache Merkmale von Zeit, Ort und Lebensweisen im AT sowie Geschichten aus dem AT;competency;CMP-100274;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach Gott und den Menschen;Lerninhalte;Menschliche Grunderfahrungen in Geschichten des AT (Nähe und Vertrauen, Schuld und Angst, Vergebung und Versöhnung);competency;CMP-100275;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach Gott und den Menschen;Lerninhalte;Gottesbilder (z.B. Hirte, König);competency;CMP-100276;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach Gott und den Menschen;Lerninhalte;Biblische Symbole als Zusagen (z.B. Der Bund des Regenbogens);competency;CMP-100277;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach Gott und den Menschen;Lerninhalte;Gebet als Reden mit Gott;competency;CMP-100278;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+21;Religion;Die Frage der Kinder nach Jesus;Lerninhalte;Jesus und seine Umwelt (Leben in der Familie, Berufe, Pflanzen und Tiere);competency;CMP-100279;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+22;Religion;Die Frage der Kinder nach Jesus;Lerninhalte;Jesusgeschichten: Jesus wendet sich den Menschen zu (Zachäus/Bartimäus).;competency;CMP-100280;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+22;Religion;Die Frage der Kinder nach der Vielfalt der Religion:;Lerninhalte;Merkmale des Religions- und Ethikunterrichts;competency;CMP-100281;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+22;Religion;Die Frage der Kinder nach der Vielfalt der Religion:;Lerninhalte;Lebensweisen von Kindern unterschiedlicher Kulturen;competency;CMP-100282;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+22;Religion;Die Frage der Kinder nach der Vielfalt der Religion:;Lerninhalte;Unsere Welt als Lebensraum für alle Menschen;competency;CMP-100283;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Stimme und Lied;Stimme handlungs- und situationsgerecht einsetzen;competency;CMP-100284;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Stimme und Lied;Altersgerechte Lieder textsicher vortragen;competency;CMP-100285;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Stimme und Lied;Melodieverläufe und Rhythmik einhalten;competency;CMP-100286;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Stimme und Lied;Eine Singhaltung einnehmen;competency;CMP-100287;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Stimme und Lied;Formen des mehrstimmigen Singens kennen und Grunderfahrungen sammeln;competency;CMP-100288;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Stimme und Lied;Allein und in der Gruppe ausdrucksvoll singen;competency;CMP-100289;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Instrumentales Musizieren;Orff-Instrumente erkennen, benennen und spielen (z.B. Klanghölzer, Triangel, …);competency;CMP-100290;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Instrumentales Musizieren;Orchesterinstrumente erkennen und den Instrumentengruppen (Streicher, Bläser, …) zuordnen;competency;CMP-100291;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Instrumentales Musizieren;Verschiedene Rhythmusmuster imitieren, variieren und erfinden;competency;CMP-100292;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Instrumentales Musizieren;Im vorgegebenen Metrum spielen;competency;CMP-100293;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Instrumentales Musizieren;Dreistufigkeit in Dynamik (leise, mittel, laut) und Tempo (langsam, mittel, schnell) anwenden;competency;CMP-100294;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Instrumentales Musizieren;Einfache instrumentale Begleitformen bis hin zu mehrstimmigen Instrumentalsätzen spielen;competency;CMP-100295;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musik gestalten und erleben;Instrumentales Musizieren;Klänge mit Körperinstrumenten, Naturmaterialien und Gebrauchsgegenständen erzeugen;competency;CMP-100296;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musikkultur, Musikalisches Umfeld und Medien;Allgemein;Bedeutsame Komponisten kennen;competency;CMP-100297;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musikkultur, Musikalisches Umfeld und Medien;Allgemein;Verschiedene Musikrichtungen kennen;competency;CMP-100298;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+23;Musik;Musikkultur, Musikalisches Umfeld und Medien;Allgemein;Toleranz zeigen gegenüber der Musik anderer Kulturen, Epochen, Stilrichtungen;competency;CMP-100299;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musikkultur, Musikalisches Umfeld und Medien;Allgemein;Musikmedien im täglichen Umfeld bewusst wahrnehmen;competency;CMP-100300;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik hören und verstehen;Allgemein;Gefühle und Stimmungen in der Musik erkennen und beschreiben;competency;CMP-100301;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik hören und verstehen;Allgemein;Eigene Gedanken zu Musikstücken formulieren;competency;CMP-100302;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik hören und verstehen;Allgemein;Musik grafisch und in Bildern wiedergeben;competency;CMP-100303;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik hören und verstehen;Allgemein;Besonderheiten von Musikstücken erkennen (Thema, Variationen);competency;CMP-100304;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik sichtbar machen;Musik und Bewegung;Musik spüren, zählen, erleben und dabei vereinbarte Grundregeln einhalten;competency;CMP-100305;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik sichtbar machen;Musik und Bewegung;Frei zur Musik bewegen;competency;CMP-100306;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik sichtbar machen;Musik und Bewegung;Vorgegebene Bewegungsabläufe erfassen und ausführen;competency;CMP-100307;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik sichtbar machen;Musik und Bewegung;Einfache Tänze verschiedener Stilrichtungen bzw. Kulturkreise ausführen;competency;CMP-100308;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik sichtbar machen;Musik und Zeichen;Einfache grafische Zeichen zur Notation von Musik erfinden und anwenden;competency;CMP-100309;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik sichtbar machen;Musik und Zeichen;Grundlegende Noten- und Pausenwerte kennen;competency;CMP-100310;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik sichtbar machen;Musik und Zeichen;Einfache Melodie- und Rhythmusverläufe erkennen;competency;CMP-100311;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Musik sichtbar machen;Musik und Zeichen;Grundtonleiter kennen;competency;CMP-100312;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+24;Musik;Behandelte Musikstücke/ musikalische Werke;Freie Dokumentation;Behandelte Musikstücke/ musikalische Werke;excluded_documentation;;;Freier Dokumentationsbereich ohne Vier-Stufen-Bewertung.
+24;Musik;Behandelte Musikstücke/ musikalische Werke;Freie Dokumentation;Leere Musikwerke-Zeilen;excluded_documentation;;;Freie Dokumentationszeilen ohne Kompetenztext und ohne Vier-Stufen-Bewertung.
+25;Englisch;Allgemein;Allgemein;Interesse am Sprachenlernen;competency;CMP-100313;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Allgemein;Allgemein;Aktive Beteiligung an Unterrichtsaktivitäten;competency;CMP-100314;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Hören;Allgemein;Verschiedene Sprecher verstehen;competency;CMP-100315;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Hören;Allgemein;Aufforderungen verstehen und entsprechend handeln;competency;CMP-100316;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Sprechen;Allgemein;Die Aussprache des Sprachvorbildes übernehmen;competency;CMP-100317;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Sprechen;Allgemein;Im Chor sprechen;competency;CMP-100318;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Sprechen;Allgemein;Dialoge führen;competency;CMP-100319;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Sprechen;Allgemein;Vorgegebene Wörter und Redemittel als Hilfe beim Sprechen nutzen;competency;CMP-100320;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Lesen;Allgemein;Wortbilder wiedererkennen;competency;CMP-100321;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Lesen;Allgemein;Bilder den Wörtern zuordnen;competency;CMP-100322;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Schreiben;Allgemein;Einzelne Wörter abschreiben;competency;CMP-100323;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+25;Englisch;Behandelte Themen im Englischunterricht;Ich selbst;Name, Alter, Wohnort;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+25;Englisch;Behandelte Themen im Englischunterricht;Ich selbst;Mein Körper;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+25;Englisch;Behandelte Themen im Englischunterricht;Ich selbst;Wie ich mich fühle;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+25;Englisch;Behandelte Themen im Englischunterricht;Ich selbst;Kleidung;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+25;Englisch;Behandelte Themen im Englischunterricht;Ich selbst;Was ich gern esse und trinke;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+25;Englisch;Behandelte Themen im Englischunterricht;Ich selbst;Tagesablauf;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+25;Englisch;Behandelte Themen im Englischunterricht;Familie;Familienmitglieder;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+25;Englisch;Behandelte Themen im Englischunterricht;Familie;Mein Zuhause;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+25;Englisch;Behandelte Themen im Englischunterricht;Familie;Feste;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+26;Englisch;Behandelte Themen im Englischunterricht;Schule;Meine Klasse;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+26;Englisch;Behandelte Themen im Englischunterricht;Schule;Schulutensilien;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+26;Englisch;Behandelte Themen im Englischunterricht;Lieblingsbeschäftigungen;Hobbies;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+26;Englisch;Behandelte Themen im Englischunterricht;Lieblingsbeschäftigungen;Freunde;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+26;Englisch;Behandelte Themen im Englischunterricht;Lieblingsbeschäftigungen;Haustiere;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+26;Englisch;Behandelte Themen im Englischunterricht;Natur;Tiere;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+26;Englisch;Behandelte Themen im Englischunterricht;Natur;Pflanzen;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+26;Englisch;Behandelte Themen im Englischunterricht;Natur;Wetter;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+26;Englisch;Behandelte Themen im Englischunterricht;Natur;Jahreszeiten;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+26;Englisch;Behandelte Themen im Englischunterricht;Landeskunde;Sehenswürdigkeiten besonderer Städte;excluded_documentation;;;Checkbox-Dokumentation ohne Vier-Stufen-Bewertung.
+27;Schulgarten;Anbauen und Pflegen einheimischer Kulturpflanzen;Allgemein;Nennen und Ordnen einheimischer Pflanzen (Gemüse, Obst, Zier-, Heil-, Gewürz-, Feld-, Wildpflanzen);competency;CMP-100324;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+27;Schulgarten;Anbauen und Pflegen einheimischer Kulturpflanzen;Allgemein;Beschreiben und Ausführen einfacher gärtnerischer Tätigkeiten (Planung, Vorbereitung, Bestellung, Pflege, Ernte, Aufbereitung);competency;CMP-100325;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+27;Schulgarten;Anbauen und Pflegen einheimischer Kulturpflanzen;Allgemein;Benennen und fachgerechtes Verwenden von Gartengeräten und Werkzeugen;competency;CMP-100326;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+27;Schulgarten;Anbauen und Pflegen einheimischer Kulturpflanzen;Allgemein;Nennen von Maßnahmen des Arbeitsschutzes und der Unfallverhütung;competency;CMP-100327;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+27;Schulgarten;Erleben und Schützen der Natur;Allgemein;Nennen schützenswerter Gartenpflanzen und im Garten lebender Tiere;competency;CMP-100328;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+27;Schulgarten;Erleben und Schützen der Natur;Allgemein;Schaffen einfacher Lebensräume für im Garten lebende Pflanzen und Tiere;competency;CMP-100329;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+27;Schulgarten;Erleben und Schützen der Natur;Allgemein;Maßnahmen zur Verbesserung der Bodenfruchtbarkeit beschreiben;competency;CMP-100330;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.
+27;Schulgarten;Gärtnerisches Gestalten;Allgemein;einfache Gestaltungsvarianten aus gärtnerischer und ästhetischer Sicht auswählen und umsetzen;competency;CMP-100331;standard;Eigene Vier-Stufen-Bewertungsfelder in der Quelle.

@@ -18,6 +18,7 @@ from src.core.learning_conference import (
     LearningConferenceVerifiedRevision,
 )
 from src.core.learning_conference_pdf import LearningConferencePdfArtifactRecord
+from src.desktop_app.view_models.observation_view_model import observation_rating_label
 
 
 LEARNING_CONFERENCE_CROSS_TOPICS = (
@@ -213,11 +214,11 @@ def build_learning_conference_preparation(
                 documentation_state=_documentation_state_label(
                     str(getattr(status, "documentation_state", ""))
                 ),
-                observed_proposal=_rating_label(
-                    str(getattr(status, "observed_proposal", ""))
+                observed_proposal=observation_rating_label(
+                    str(getattr(status, "observed_proposal", "")), status
                 ),
-                confirmed_rating=_rating_label(
-                    str(getattr(status, "confirmed_rating", ""))
+                confirmed_rating=observation_rating_label(
+                    str(getattr(status, "confirmed_rating", "")), status
                 ),
                 historical=historical,
                 selectable=(
@@ -323,15 +324,6 @@ def _documentation_state_label(value: str) -> str:
         "confirmed": "Bestätigter Stand vorhanden",
         "newer_observations": "Neue Beobachtungen seit der Bestätigung",
         "confirmation_unknown": "Bestätigungsstand unklar – bitte erneut bestätigen",
-    }.get(value, value)
-
-
-def _rating_label(value: str) -> str:
-    return {
-        "++": "sicher erreicht",
-        "+": "erreicht",
-        "-": "in Entwicklung",
-        "--": "Unterstützungsbedarf",
     }.get(value, value)
 
 

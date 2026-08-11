@@ -19,6 +19,14 @@ Legacy-Enrollment. Vorhandene Klartext-Fachdaten bleiben unangetastet und
 werden strukturiert abgewiesen. Dokumente werden im Cipher-Pfad ausschließlich
 über den verschlüsselten Managed Document Store gespeichert.
 
+Der Katalog dieses frischen Piloten stammt ausschließlich aus dem
+`Entwicklungsbuch Jenaplanschule Erfurt`. Frühere Lehrplan-, V3-/V4-, Test-
+oder Pilotkompetenzen werden weder übernommen noch migriert; neue Installationen
+erhalten unmittelbar nur den neuen Katalog. Seine Papier-Pflanzen und
+Schulbesuchsjahr-Farbsemantik werden nicht digitalisiert. Die vier stabilen
+Ratingwerte und App-Farben bleiben erhalten; nur ihre sichtbaren Texte werden
+zentral als `standard`, `social` oder `sport` aufgelöst.
+
 Backup und Restore verwenden im Cipher-Produktmodus ausschließlich den
 vorhandenen verschlüsselten Final-V4-Vertrag mit `.jkmebackup`, vollständiger
 keyed Verifikation, `RESTORE_READY`, Sicherheitsbackup, Worker-Handoff,
@@ -127,9 +135,12 @@ kein negativer Status.
 
 Im Schülerprofil besitzt die Entwicklungsübersicht die kompakte
 schuljahresbezogene Lernentwicklungsdarstellung aus Timeline und Fachkarten.
-Ihre Zeitquelle ist ausschließlich das eindeutige `current`-Schuljahr; ihre
-Fachmenge stammt ausschließlich aus
-`effective_documentation_subjects(student_id, school_year_id)`. Sie ist von
+Ihre Zeitquelle ist ausschließlich das eindeutige `current`-Schuljahr. Der
+Abschnitt `Überfachliche Entwicklung` enthält unabhängig von der individuellen
+Fachauswahl genau `selbst_sozialkompetenz` und `arbeits_lernkompetenz`; der
+nachfolgende Abschnitt `Fächer` stammt ausschließlich aus
+`effective_documentation_subjects(student_id, school_year_id)` und schließt
+diese beiden überfachlichen Domänen aus. Sie ist von
 Berichtsentwürfen unabhängig. `Kompetenzen` besitzt die detaillierte
 Kompetenz- und Belegansicht. Die Berichtswerkstatt besitzt ausschließlich die
 Berichtsvorbereitung und neutrale Belegauswahl im bewusst gewählten

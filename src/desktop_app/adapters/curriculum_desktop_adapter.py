@@ -29,16 +29,17 @@ LEARNING_STAGE_VALUES = {"stage_1_3", "stage_4", "cross_stage"}
 CATALOG_STATUS_VALUES = {"current", "legacy"}
 
 DOCUMENTATION_SUBJECT_PREFERRED_ORDER = (
+    "selbst_sozialkompetenz",
+    "arbeits_lernkompetenz",
+    "epu",
     "deutsch",
     "mathematik",
-    "epu",
-    "musik",
-    "kunst",
+    "kreatives_gestalten",
     "sport",
-    "sozialkompetenz",
     "ethik",
     "religion",
-    "werken",
+    "musik",
+    "englisch",
     "schulgarten",
 )
 

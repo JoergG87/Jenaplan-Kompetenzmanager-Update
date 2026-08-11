@@ -791,6 +791,65 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         self.assertEqual(expanded_toggle.text(), "Weniger anzeigen")
         screen.close()
 
+    def test_subject_overview_separates_cross_curricular_cards_from_subjects(
+        self,
+    ) -> None:
+        overview = replace(
+            self._overview(),
+            subject_documentation=(
+                self._subject_documentation(
+                    "selbst_sozialkompetenz",
+                    "Selbst- und Sozialkompetenz",
+                    ("CMP-SOCIAL",),
+                    ("OBS-SOCIAL",),
+                ),
+                self._subject_documentation(
+                    "arbeits_lernkompetenz",
+                    "Arbeits-/Lernkompetenz",
+                    (),
+                    (),
+                ),
+                self._subject_documentation(
+                    "mathematik",
+                    "Mathematik",
+                    ("CMP-MATH",),
+                    (),
+                ),
+            ),
+        )
+        screen = self._screen(overview)
+
+        headings = {
+            label.objectName(): label.text()
+            for label in screen.findChildren(QLabel)
+            if label.objectName() in {
+                "ReportOverviewCrossCurricularHeading",
+                "ReportOverviewTeachingSubjectsHeading",
+            }
+        }
+        prepare_buttons = tuple(
+            button.objectName()
+            for button in screen.findChildren(QPushButton)
+            if button.objectName().startswith("ReportOverviewPrepareSubject_")
+        )
+
+        self.assertEqual(
+            headings,
+            {
+                "ReportOverviewCrossCurricularHeading": "Überfachliche Entwicklung",
+                "ReportOverviewTeachingSubjectsHeading": "Fächer",
+            },
+        )
+        self.assertEqual(
+            prepare_buttons,
+            (
+                "ReportOverviewPrepareSubject_selbst_sozialkompetenz",
+                "ReportOverviewPrepareSubject_arbeits_lernkompetenz",
+                "ReportOverviewPrepareSubject_mathematik",
+            ),
+        )
+        screen.close()
+
     def test_subject_cards_render_zero_one_and_many_absolute_segments(self) -> None:
         overview = replace(
             self._overview(
@@ -1053,7 +1112,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                         for label in screen.timeline_card.findChildren(QLabel)
                     )
                     self.assertIn(
-                        "Keine Dokumentationsereignisse im Zeitraum",
+                        "Keine Dokumentationsereignisse im aktuellen Schuljahr",
                         labels,
                     )
                 else:
@@ -1835,6 +1894,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         adapter.learning_report_preparation_for_student = Mock(
             return_value=self.preparation
         )
+        adapter.current_school_year = Mock(return_value=None)
 
         overview = adapter.report_overview_for_student(
             "STU-1",
@@ -1889,6 +1949,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         adapter.learning_report_preparation_for_student = Mock(
             return_value=self.preparation
         )
+        adapter.current_school_year = Mock(return_value=None)
 
         overview = adapter.report_overview_for_student(
             "STU-1",

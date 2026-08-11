@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Kompetenzlisten trennen die kanonischen Domänen `Selbst- und
+  Sozialkompetenz` und `Arbeits-/Lernkompetenz` rein in der UI unter
+  `Überfachliche Entwicklung` von den anschließenden `Fächern`. Beobachtungen,
+  Kompetenz-IDs, Ratingwerte, Katalogreihenfolge und Persistenz bleiben
+  unverändert. Die individuelle Schüler-Fachauswahl enthält nur die zehn
+  Unterrichtsfächer. Die Entwicklungsübersicht zeigt die beiden überfachlichen
+  Domänen unabhängig davon in einem festen eigenen Abschnitt vor den weiterhin
+  individuell effektiven Fachkarten, ohne neue Persistenzsemantik.
+
+- Frische Pilotinstallationen verwenden ausschließlich den quelltreuen
+  Kompetenzkatalog aus dem Entwicklungsbuch der Jenaplanschule Erfurt. Die
+  bestehenden vier Ratingwerte und Farben bleiben unverändert; die sichtbaren
+  Chiptexte werden zentral als Standard-, Selbst-/Sozial- oder Sportprofil
+  aufgelöst. Es gibt keine Alt-ID-, Katalog- oder Ratingmigration und keine
+  Pflanzen-/Schulbesuchsjahr-Farbsemantik.
+
 - Pilot-Dokumentation 0.4: Benutzerhandbuch, Lehrkraft-Schnellstart,
   Installations-, Backup-, Sicherheits-, Support-, Projekt- und Releaseunterlagen
   beschreiben den vorbereiteten Stand 0.4.0 / Build 400 mit Final V4,

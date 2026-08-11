@@ -330,36 +330,22 @@ class LearningConferenceDraftPersistenceTest(unittest.TestCase):
             competency.is_documented_in_period(date(1900, 1, 1), date(1900, 1, 2))
         )
 
-    def test_retained_draft_competency_is_resolved_without_changing_default_projection(self) -> None:
-        historical = next(
-            competency
-            for competency in SQLiteCompetencyRepository(
-                self.adapter.database
-            ).list_competencies()
-            if not competency.active or competency.catalog_status != "current"
-        )
-        before = self.adapter.list_competency_status_projection_for_student(
+    def test_fresh_catalog_contains_no_historical_competency_fixture(self) -> None:
+        catalog = SQLiteCompetencyRepository(
+            self.adapter.database
+        ).list_competencies()
+        preparation = self.adapter.learning_conference_preparation_for_student(
             self.student.student_id
         )
 
-        preparation = self.adapter.learning_conference_preparation_for_student(
-            self.student.student_id,
-            retained_competency_ids=(historical.competency_id,),
-        )
-        after = self.adapter.list_competency_status_projection_for_student(
-            self.student.student_id
-        )
-        retained = next(
-            competency
+        self.assertTrue(catalog)
+        self.assertTrue(all(item.active for item in catalog))
+        self.assertTrue(all(item.catalog_status == "current" for item in catalog))
+        self.assertTrue(all(
+            competency.selectable and not competency.historical
             for subject in preparation.subjects
             for competency in subject.competencies
-            if competency.competency_id == historical.competency_id
-        )
-
-        self.assertEqual(after, before)
-        self.assertTrue(retained.historical)
-        self.assertFalse(retained.selectable)
-        self.assertEqual(retained.observation_dates, ())
+        ))
 
     def test_leg_persistence_does_not_change_canonical_projection(self) -> None:
         statuses_before = self.adapter.list_competency_status_projection_for_student(

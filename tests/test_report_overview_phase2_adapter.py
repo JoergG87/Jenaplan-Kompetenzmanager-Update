@@ -187,14 +187,14 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
             baseline_subjects,
         )
 
-    def test_individual_effective_subjects_are_the_only_subject_cards(self) -> None:
+    def test_cross_curricular_cards_precede_individual_effective_subjects(self) -> None:
         current = self.adapter.current_school_year()
         self.assertIsNotNone(current)
         self.adapter.save_student_documentation_subjects(
             self.student.student_id,
             current.school_year_id,
             "custom",
-            (self.competency.subject_id,),
+            ("mathematik",),
         )
 
         overview = self.adapter.report_overview_for_student(
@@ -206,8 +206,35 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
                 subject.subject_id
                 for subject in overview.subject_documentation
             ),
-            (self.competency.subject_id,),
+            (
+                "selbst_sozialkompetenz",
+                "arbeits_lernkompetenz",
+                "mathematik",
+            ),
         )
+
+    def test_cross_curricular_cards_remain_with_empty_individual_selection(self) -> None:
+        current = self.adapter.current_school_year()
+        self.assertIsNotNone(current)
+        self.adapter.save_student_documentation_subjects(
+            self.student.student_id,
+            current.school_year_id,
+            "custom",
+            (),
+        )
+
+        overview = self.adapter.report_overview_for_student(
+            self.student.student_id
+        )
+
+        self.assertEqual(
+            tuple(subject.subject_id for subject in overview.subject_documentation),
+            ("selbst_sozialkompetenz", "arbeits_lernkompetenz"),
+        )
+        self.assertTrue(all(
+            subject.is_cross_curricular
+            for subject in overview.subject_documentation
+        ))
 
     def test_report_preparation_keeps_selected_rpd_period_end(self) -> None:
         with patch.object(

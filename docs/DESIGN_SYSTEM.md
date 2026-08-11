@@ -243,11 +243,17 @@ Position möglichst erhalten und ein zuvor erreichtes neuestes Ende bleibt am
 Ende. Bei Refresh dient eine stabile Ereignisidentität als Anker. Es gibt kein
 automatisches Nachscrollen.
 
-Fachkarten zeigen absolute Dokumentationsmengen. Der Phase-2-Balken besteht
+Der feste Abschnitt `Überfachliche Entwicklung` zeigt zuerst genau zwei Karten:
+`Selbst- und Sozialkompetenz` und `Arbeits-/Lernkompetenz`. Diese Karten sind
+unabhängig von der individuellen Fachauswahl sichtbar. Darunter zeigt der
+Abschnitt `Fächer` ausschließlich die individuell effektiven
+Unterrichtsfächer. Alle Karten zeigen absolute Dokumentationsmengen. Der
+Phase-2-Balken besteht
 aus genau einem gleich breiten neutralen Segment je dokumentierter aktueller
 Kompetenz im aktuellen Schuljahr und erscheint ausschließlich für ein über
 `effective_documentation_subjects(student_id, school_year_id)` relevantes
-Fach. Es gibt keine ungefüllte Restspur, keinen
+Unterrichtsfach oder für eine der beiden festen überfachlichen Domänen. Es gibt
+keine ungefüllte Restspur, keinen
 fachbezogenen oder gemeinsamen Nenner, keine Normalisierung, Schwelle,
 Ampelstufe, Qualitätsfarbe, Prozentangabe oder Animation. Viele Segmente dürfen
 ruhig umbrechen; sie werden nicht abgeschnitten oder zu einer Qualitätsstufe
@@ -612,6 +618,14 @@ Lernentwicklungskarten sind keine Beobachtungslisten und keine Leistungsvisualis
 Im Kompetenz-Cockpit wird Hierarchie auch ohne Farbe ueber Einrueckung, Typografie, Abstand und Surface unterschieden. Fach nutzt eine ruhige Akzentflaeche, Kompetenzbereich eine weiche Flaeche, Thema eine normale Flaeche und die Kompetenz eine linksbuendige Disclosure-Zeile. Lange Kompetenztexte umbrechen in Details und Auswahllisten. Neutrale Fortschrittsbalken und Zaehler beschreiben ausschliesslich Dokumentationsabdeckung; historische Zeilen tragen eine eindeutige ruhige Kennzeichnung.
 
 Der Beobachtungsdialog behaelt drei Zonen: `Kind und Kontext`, `Ausgewaehlte Kompetenzen / Kompetenzkatalog` sowie `Beobachtung / Dokumente / Aktionen`. Der Katalog nutzt dieselbe Segment-, Such-, Card- und Badge-Sprache. Ausgewaehlte Kompetenzen zeigen Bewertung immer sichtbar als vier beschriftete Chips. Dateizeilen zeigen Dateiname, Typ und eine klar benannte Entfernen-Aktion. `InlineMessage` steht unmittelbar vor der persistenten Speicherleiste.
+
+Die vier Chips behalten Palette, Auswahlhaken und gespeicherte Tokens. Das
+Standardprofil verwendet unverändert `++ sicher erreicht`, `+ erreicht`,
+`- in Entwicklung`, `-- Unterstützungsbedarf`. Ausschließlich Selbst- und
+Sozialkompetenz zeigt `Kaum vorhanden`, `Teilweise`, `Gut`, `Ausgeprägt`;
+ausschließlich Sport zeigt `Erste Übungen`, `Übt noch`, `Meist`, `Sicher`.
+Pflanzenbilder, Pflanzenstufen und Schulbesuchsjahr-Farben sind kein Teil des
+digitalen Designsystems.
 
 Disclosure setzt Sichtbarkeit und Datenzustand sofort und verwendet nur eine zentrale Opacity-Bestaetigung von maximal `MOTION_FAST_MS`. Keine Hoehenanimation langer Listen, keine verschachtelten Animationen und kein Layoutflackern. Reduced Motion zeigt den Endzustand unmittelbar. Die Arbeitsbereiche werden fuer 1400 x 900, 1280 x 800 und 1180 x 760 geprueft; Pflichtaktionen bleiben sichtbar, der Dialog besitzt getrennte vertikale Scrollbereiche und keinen horizontalen Katalog- oder Gesamtscroll.
 
@@ -1073,3 +1087,14 @@ Revisionszeilen sind ruhige nicht-interaktive Karten mit Statusbadge und genau e
 Der LEG-Workspace behaelt `Entwurf speichern` als einzige primaere Arbeitsaktion. `Gespräch abschließen` steht getrennt als serioese sekundaere Aktion im Abschlussbereich und ist bei ungespeicherten Widgetaenderungen deaktiviert. Eine kurze Bestaetigung macht deutlich, dass ein unveraenderlicher Abschlussstand entsteht, der Draft aber fuer spaetere Korrekturen bearbeitbar bleibt.
 
 Der Status unterscheidet ruhig zwischen `Noch nicht abgeschlossen`, `Abgeschlossen · Revision X` und `Entwurf seit Abschluss geändert`. Revisionszeilen zeigen Nummer, Abschlussdatum, verantwortliche Lehrkraft und Status mit genau einer Aktion `Öffnen`. Die historische Ansicht verwendet Lesekarten ohne Eingabefelder sowie ohne Bearbeiten-, Loeschen-, Entsperr- oder Archivaktion. Technische IDs und Hashes bleiben sekundaere Integritaetsinformationen. Sprint 10B ergaenzt ausschliesslich fuer die aktuelle `completed`-Revision die serioese sekundaere Aktion `Finales PDF erstellen`. Ein vorhandenes Artefakt wird ruhig mit Dateiname, Erzeugungszeitpunkt und gekuerztem SHA-256 bestaetigt; `superseded`-Revisionen bieten keine neue PDF-Erzeugung.
+
+## Überfachliche Kompetenzdarstellung
+
+Gemeinsame Kompetenzlisten beginnen mit der ruhigen Abschnittsüberschrift
+`Überfachliche Entwicklung` und den direkt bedienbaren Domänen `Selbst- und
+Sozialkompetenz` sowie `Arbeits-/Lernkompetenz`. Danach folgt mit sichtbarem,
+aber zurückhaltendem Abstand `Fächer` in kanonischer Quellenreihenfolge. Die
+Überschriften sind keine Auswahlziele und erzeugen keine zusätzliche
+Disclosure- oder Klickebene. Domänenkarten behalten dieselbe neutrale Form;
+Farbe, Größe oder Position dürfen keine Leistungs- oder Prioritätsaussage
+transportieren.

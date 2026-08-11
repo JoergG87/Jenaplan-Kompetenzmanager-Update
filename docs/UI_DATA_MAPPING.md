@@ -211,7 +211,7 @@ Kompetenzen und Belege werden erst beim ersten Öffnen von Phase 5 vollständig
 | Leere Timeline | keine geeigneten Ereignisse im aktuellen Schuljahr | Nein | Titel `Keine Dokumentationsereignisse im aktuellen Schuljahr` mit neutralem Hinweis auf die zulässigen vorhandenen Quellen |
 | Unvollständig lesbare Dokumentation | `ReportOverviewProjectionWarningViewModel` | Nein | `Dokumentationsdaten konnten nicht vollständig gelesen werden.`; keine Ersatzannahme |
 | Kleines Fachsymbol | vorhandene stabile `subject_id` über `REPORT_SUBJECT_SYMBOLS` | Nein | neutrale UI-Hilfe anstelle eines Diagramms; unbekannte Fächer erhalten `•`; keine Fachableitung, Menge, Bewertung oder Statusaussage |
-| Dokumentierte Kompetenzen je Fach | `ReportOverviewSubjectDocumentationViewModel` aus `effective_documentation_subjects(student_id, school_year_id)` | Nein | `<n> Kompetenzen dokumentiert`; eindeutige aktuelle `competency_id` im aktuellen Schuljahr; nicht relevante Fächer sind keine Dokumentationslücke |
+| Dokumentierte Kompetenzen je Karte | `ReportOverviewSubjectDocumentationViewModel`: zwei feste überfachliche Domänen plus übrige `effective_documentation_subjects(student_id, school_year_id)` | Nein | `<n> Kompetenzen dokumentiert`; eindeutige aktuelle `competency_id` im aktuellen Schuljahr; nicht relevante Unterrichtsfächer sind keine Dokumentationslücke |
 | Beobachtungen je Fach | `ReportOverviewSubjectDocumentationViewModel` | Nein | `<n> Beobachtungen im aktuellen Schuljahr`; je Fach deduplizierte `observation_id`; Schnellbeobachtung zählt ohne Kompetenzzuordnung nur hier |
 | Neutrale Bestätigungsinformation je Fach | aktueller sicherer Bestätigungsstand der im Schuljahr bestätigten Kompetenzen | Nein | nur bei vorhandenem Stand; keine Bewertung, Historienrekonstruktion oder pädagogische Interpretation |
 | Fachkartenreihenfolge | bestehende neutrale kanonische Fachreihenfolge | Nein | niemals anhand der Dokumentationsmenge umsortieren; keine Sortierung nach Beobachtungsanzahl, Kompetenzanzahl, Bestätigungsstand, Aktualität, Rating oder vermeintlicher Wichtigkeit |
@@ -814,7 +814,7 @@ Datenquelle, berechnet keine Membership und besitzt keinen Schreibprozess.
 | Beobachtungsnotiz | SQLite `observations.note` | Eingabe | Ja | `observations` | Schreiben ueber Adapter, Command, Service und Repository |
 | Schnellbeobachtung | bewusste Dialogeingabe; beim Bearbeiten aktive SQLite-`observations`-Zeile mit nichtleerer `note` und ohne `observation_competency_ratings` | Eingabe / Anzeige | Ja (ueber bestehenden Beobachtungsprozess) | `observations` / `observation_competency_ratings` | erlaubt Speichern ohne Kompetenz nur bei aktivierter Checkbox und nichtleerer Notiz; deaktiviert den Kompetenzbereich ohne Auswahl zu loeschen; im Verlauf dezent gekennzeichnet |
 | Beobachtungskontext | SQLite `observations.context` | Eingabe | Ja | `observations` | Kontext gehoert zur Beobachtung |
-| Kompetenzzuordnung | SQLite `observation_competency_ratings` | Eingabe | Ja | `observation_competency_ratings` | n:m-Zuordnung; vier direkt anklickbare Bewertungs-Chips schreiben weiterhin genau einen `rating`-Wert je konkreter `competency_id`; `offen` wird nicht gespeichert, sondern bedeutet keine Zuordnungszeile |
+| Kompetenzzuordnung | SQLite `observation_competency_ratings` + zentral aus `competencies.subject_id` aufgelöstes Ratingprofil | Eingabe | Ja | `observation_competency_ratings` | n:m-Zuordnung; vier direkt anklickbare Bewertungs-Chips schreiben weiterhin genau einen unveränderten Wert `--`, `-`, `+` oder `++` je konkreter `competency_id`. Standard zeigt die bisherigen Texte, Selbst-/Sozialkompetenz `Kaum vorhanden` bis `Ausgeprägt`, Sport `Erste Übungen` bis `Sicher`; dieselben Token binden in allen Profilen dieselben App-Farben. Keine Pflanzen- oder SBJ-Farbsemantik; `offen` erzeugt keine Zuordnungszeile |
 | Dokumente und Medien | Dateiauswahl -> `StudentDesktopAdapter` -> SQLite `documents` nach `student_id` und optional `observation_id` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `documents` + Dateisystem `data/documents/<student_id>/` | Datei wird in den App-Datenordner kopiert; Beobachtungsanhaenge tragen zusaetzlich `observation_id`; die ruhige Dateizeile zeigt Dateiname, Typ und Entfernen-Aktion. Entfernen setzt `documents.active = 0`; keine Datei-BLOBs |
 
 ## Berichte und Dashboard
@@ -886,3 +886,20 @@ UX-Regel UI Sprint 6B: `docs/LEG_UX_AUDIT_AND_TARGET.md` ersetzt fuer die produk
 | Historische Revisionsansicht | `LearningConferenceRevisionViewModel` | schreibgeschuetzte Anzeige | Nein | verifiziertes `snapshot_json` der LCV | keine Live-Aufloesung fachlicher Werte; Integritaetspruefung vor Anzeige |
 
 Der Abschlussbereich ist vom primaeren Draftspeichern getrennt. Solange der aktuelle Widgetstand ungespeichert ist, ist der Abschluss deaktiviert. Nach einer Korrektur bleibt der LCD bearbeitbar; erst ein erneuter expliziter Abschluss kann eine neue LCV erzeugen.
+
+## UI-Gruppierung überfachlicher Kompetenzen
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| `Überfachliche Entwicklung` | vorhandene `subject_key` `selbst_sozialkompetenz`, `arbeits_lernkompetenz` | Anzeigegruppe | Nein | keine neue Datenquelle | steht vor `Fächer`; beide Domänen bleiben getrennt und direkt auswählbar |
+| `Fächer` | übrige aktive kanonische Domänen in Katalogreihenfolge | Anzeigegruppe | Nein | Kompetenzkatalog | beginnt mit EPU; keine Sortierung nach Anzeigehäufigkeit oder Status |
+| Beobachtungsauswahl | vorhandene `subject_key`, `competency_id` und Ratingtokens | Auswahl | unveränderter Beobachtungswrite | bestehender Beobachtungspfad | Gruppenüberschriften sind nicht auswählbar und erzeugen keine zusätzliche Klickebene |
+| Kompetenz-Cockpit | kanonische Kompetenzstatusprojektion je `subject_id` | Anzeige | Nein | bestehende Kompetenzstatusprojektion | dieselben zwei Gruppen, ohne Umdeutung zu Unterrichtsfächern |
+
+Die individuelle Schüler-Fachauswahl zeigt ausschließlich die zehn
+Unterrichtsfächer von EPU bis Schulgarten. Die beiden überfachlichen Domänen
+werden nur aus dieser UI-/ViewModel-Auswahl entfernt und bleiben kanonisch,
+beobachtbar sowie bewertbar. In der Entwicklungsübersicht erscheinen sie im
+aktuellen Schuljahr immer als zwei eigene neutrale Karten vor dem Abschnitt
+`Fächer`; dessen Kartenmenge folgt weiterhin der individuellen effektiven
+Fachauswahl.

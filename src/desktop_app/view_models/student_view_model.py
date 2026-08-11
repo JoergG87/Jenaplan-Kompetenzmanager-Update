@@ -603,7 +603,7 @@ def _orientation_events(
         context = str(getattr(evidence, "context", "")).strip()
         evidence_label = (
             f"{source_label} vom {_format_profile_date(event_date)}: "
-            f"{observation_rating_label(rating)}"
+            f"{observation_rating_label(rating, status)}"
         )
         if context:
             evidence_label += f" · {context}"
@@ -611,7 +611,7 @@ def _orientation_events(
             StudentProfileOrientationEventViewModel(
                 event_date,
                 rating,
-                observation_rating_label(rating),
+                observation_rating_label(rating, status),
                 "observation",
                 source_label,
                 str(getattr(evidence, "observation_id", "")),
@@ -627,13 +627,13 @@ def _orientation_events(
             StudentProfileOrientationEventViewModel(
                 confirmed_at,
                 confirmed_rating,
-                observation_rating_label(confirmed_rating),
+                observation_rating_label(confirmed_rating, status),
                 "confirmation",
                 source_label,
                 "",
                 (
                     f"{source_label} am {_format_profile_date(confirmed_at)}: "
-                    f"{observation_rating_label(confirmed_rating)}"
+                    f"{observation_rating_label(confirmed_rating, status)}"
                 ),
             ),
             1,

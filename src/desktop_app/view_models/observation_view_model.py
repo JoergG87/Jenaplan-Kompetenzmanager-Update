@@ -22,6 +22,40 @@ OBSERVATION_RATING_OPTIONS = (
     "-- Unterstützungsbedarf",
 )
 
+OBSERVATION_RATING_TOKENS = ("++", "+", "-", "--")
+
+RATING_PROFILE_STANDARD = "standard"
+RATING_PROFILE_SOCIAL = "social"
+RATING_PROFILE_SPORT = "sport"
+
+COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR = "Überfachliche Entwicklung"
+COMPETENCY_PRESENTATION_GROUP_SUBJECTS = "Fächer"
+COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS = (
+    "selbst_sozialkompetenz",
+    "arbeits_lernkompetenz",
+)
+
+RATING_LABELS_BY_PROFILE = {
+    RATING_PROFILE_STANDARD: {
+        "++": "++ sicher erreicht",
+        "+": "+ erreicht",
+        "-": "- in Entwicklung",
+        "--": "-- Unterstützungsbedarf",
+    },
+    RATING_PROFILE_SOCIAL: {
+        "++": "Ausgeprägt",
+        "+": "Gut",
+        "-": "Teilweise",
+        "--": "Kaum vorhanden",
+    },
+    RATING_PROFILE_SPORT: {
+        "++": "Sicher",
+        "+": "Meist",
+        "-": "Übt noch",
+        "--": "Erste Übungen",
+    },
+}
+
 OBSERVATION_RATING_SCORES = {
     "--": 0,
     "-": 1,
@@ -107,6 +141,11 @@ class ObservationCompetencySubjectGroupViewModel:
     subject_display_name: str
     learning_area_groups: tuple[ObservationLearningAreaGroupViewModel, ...]
 
+    @property
+    def presentation_group(self) -> str:
+        """Return the UI-only group without changing the canonical subject."""
+        return competency_presentation_group(self.subject_key)
+
 
 @dataclass(frozen=True)
 class ObservationAttachmentDraft:
@@ -191,11 +230,15 @@ class ObservationRatingViewModel:
     competency_group: str
     competency_text: str
     rating: str
+    subject_id: str = ""
 
     @property
     def display_label(self) -> str:
         """Return the compact display label for the profile list."""
-        return f"{self.rating} {self.subject_display_name} · {self.learning_area}"
+        return (
+            f"{observation_rating_label(self.rating, self)} "
+            f"{self.subject_display_name} · {self.learning_area}"
+        )
 
 
 @dataclass(frozen=True)
@@ -447,6 +490,11 @@ class StudentCompetencyCockpitSubjectViewModel:
     learning_areas: tuple[StudentCompetencyCockpitLearningAreaViewModel, ...]
 
     @property
+    def presentation_group(self) -> str:
+        """Return the UI-only group without changing the canonical subject."""
+        return competency_presentation_group(self.subject_id)
+
+    @property
     def documented_count(self) -> int:
         return sum(area.documented_count for area in self.learning_areas)
 
@@ -568,12 +616,41 @@ def _competency_progress_percent(documented_count: int, total_count: int) -> int
     return round(documented_count / total_count * 100)
 
 
-def observation_rating_label(rating: str) -> str:
-    """Return the visible rating label for a persisted rating token."""
-    for option in OBSERVATION_RATING_OPTIONS:
-        if option.split(" ", 1)[0] == rating:
-            return option
-    return rating
+def rating_profile_for_competency(competency: object | None) -> str:
+    """Resolve the presentation profile from canonical competency metadata."""
+    subject_key = str(
+        getattr(competency, "subject_key", "")
+        or getattr(competency, "subject_id", "")
+    ).strip()
+    if subject_key == "selbst_sozialkompetenz":
+        return RATING_PROFILE_SOCIAL
+    if subject_key == "sport":
+        return RATING_PROFILE_SPORT
+    return RATING_PROFILE_STANDARD
+
+
+def competency_presentation_group(subject_key: str) -> str:
+    """Group canonical domains for display only, never for persistence."""
+    if subject_key in COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS:
+        return COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR
+    return COMPETENCY_PRESENTATION_GROUP_SUBJECTS
+
+
+def rating_chip_options_for_competency(
+    competency: object | None,
+) -> tuple[tuple[str, str], ...]:
+    """Return token/label pairs in the established visual chip order."""
+    labels = RATING_LABELS_BY_PROFILE[rating_profile_for_competency(competency)]
+    return tuple((token, labels[token]) for token in OBSERVATION_RATING_TOKENS)
+
+
+def observation_rating_label(
+    rating: str,
+    competency: object | None = None,
+) -> str:
+    """Return the context-dependent visible label for a persisted token."""
+    profile = rating_profile_for_competency(competency)
+    return RATING_LABELS_BY_PROFILE[profile].get(rating, rating)
 
 
 def calculated_rating_from_history(
@@ -605,4 +682,4 @@ def rating_from_weighted_score(score: float) -> str:
 
 def observation_rating_keys() -> tuple[str, ...]:
     """Return the stable rating tokens shown in the prototype labels."""
-    return tuple(option.split(" ", 1)[0] for option in OBSERVATION_RATING_OPTIONS)
+    return OBSERVATION_RATING_TOKENS
