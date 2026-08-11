@@ -114,8 +114,13 @@ class ReportRevisionProductTest(unittest.TestCase):
         finally:
             self.temp_dir.cleanup()
 
-    def _revision_dialog(self, revision: object) -> LearningReportRevisionDialog:
-        dialog = LearningReportRevisionDialog(revision)
+    def _revision_dialog(
+        self,
+        revision: object,
+        *,
+        artifact: object | None = None,
+    ) -> LearningReportRevisionDialog:
+        dialog = LearningReportRevisionDialog(revision, artifact=artifact)
         self._revision_dialogs.append(dialog)
         return dialog
 
@@ -434,6 +439,40 @@ class ReportRevisionProductTest(unittest.TestCase):
             Qt.MouseButton.LeftButton,
         )
         self.assertEqual(requested, [status.current_revision_id])
+
+    def test_existing_report_pdf_action_emits_only_opaque_artifact_id(self) -> None:
+        status = self.adapter.finalize_learning_report(
+            self.saved.report_draft_id,
+            "Laura Lernbegleiterin",
+        )
+        revision = self.adapter.load_learning_report_revision(
+            status.current_revision_id
+        )
+        artifact = self.adapter.generate_learning_report_pdf(
+            status.current_revision_id
+        )
+        dialog = self._revision_dialog(revision, artifact=artifact)
+        opened: list[str] = []
+        generated: list[str] = []
+        dialog.pdf_open_requested.connect(opened.append)
+        dialog.pdf_requested.connect(generated.append)
+
+        button = dialog.findChild(
+            QPushButton,
+            "LearningReportGenerateFinalPdfButton",
+        )
+        self.assertEqual(button.text(), "Finales PDF anzeigen")
+        QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+
+        self.assertEqual(
+            opened,
+            [artifact.learning_report_pdf_artifact_id],
+        )
+        self.assertEqual(generated, [])
+        self.assertNotIn(
+            artifact.pdf_sha256[:12],
+            " ".join(label.text() for label in dialog.findChildren(QLabel)),
+        )
 
     def test_superseded_revision_has_no_final_pdf_action(self) -> None:
         first = self.adapter.finalize_learning_report(

@@ -396,6 +396,8 @@ bis zum realen Test des gebauten Bundles offen.
 | `ManagedPdfArtifactLifecycle` | Gemeinsamer Qt-freier journalisierter Lifecycle für ausschließlich finale RPA-/LCA-PDF-Artefakte zwischen Memory-Renderer, fachlicher Artefaktreferenz und demselben `ManagedDocumentStore` | Application / Documents |
 | `managed-document:<UUID>` | Strikt typisierte interne Referenz im vorhandenen RPA-/LCA-Referenzfeld auf eine getrennte opaque Managed-Document-ID; niemals physischer Pfad oder Storage-ID | Document Persistence |
 | `StudentDesktopAdapter.read_learning_report_pdf_artifact` / `read_learning_conference_pdf_artifact` | Technische read-only Auflösung der bestehenden fachlichen Artefakt-ID in vollständig verifizierte PDF-Bytes für einen injizierten Consumer | Desktop Adapter / Documents |
+| `StudentDesktopAdapter.read_final_pdf_artifact` | Gemeinsamer sicherer RPA-/LCA-Einstieg der Desktop-UI; erhält ausschließlich die opaque Artifact-ID und delegiert an den vorhandenen fachlichen Managed-Document-Lesepfad | Desktop Adapter / Documents |
+| `PdfArtifactBufferConsumer` / `PdfArtifactViewerDialog` | Flüchtiger Memory-Consumer und gemeinsame schreibgeschützte QtPdf-Lesesicht ohne Dateipfad, OS-Öffnung, Download oder Export | Desktop UI |
 | `FinalV3DocumentRuntime.apply_journaled_changes` | Idempotente atomare Companion-Transaktion für journalgebundene Aktivierungen und Deaktivierungen von Beobachtungsanhängen oder allgemeinen Schülerdokumenten; keine partiellen Pointerzielstände | Application / Documents |
 | `FinalV3DocumentRuntime.deactivate` | Idempotente fachliche Pointerdeaktivierung; aktive Generation wird `RETAINED`, physischer Container bleibt bestehen | Application / Documents |
 | `StudentDesktopAdapter.read_encrypted_observation_attachment` | Qt-freie Adapterlesenaht MED-ID → aktive fachliche Beobachtungsreferenz → verifizierter Runtime-Consumer | Desktop Adapter / Documents |
@@ -2587,6 +2589,12 @@ Registrierte Qt-Objektnamen:
 
 - `LearningReportGenerateFinalPdfButton`
 - `LearningReportFinalPdfStatus`
+- `PdfArtifactViewerDialog`
+- `PdfArtifactViewer`
+- `PdfArtifactZoomOutButton`
+- `PdfArtifactZoomInButton`
+- `PdfArtifactFitWidthButton`
+- `PdfArtifactCloseButton`
 
 Regel: `RPA` identifiziert genau eine unveraenderliche PDF-Artefaktreferenz fuer eine `RPV`. Pro `learning_report_revision_id` existiert hoechstens eine `RPA`. `relative_file_path` ist relativ zum Verzeichnis der produktiven SQLite-Datei und bleibt innerhalb `documents/<student_id>/reports/<RPT>/<RPV>/`. `pdf_sha256` ist der kleingeschriebene SHA-256-Hexdigest der unveraenderten PDF-Bytes. `snapshot_sha256` kopiert den bei der Erzeugung erfolgreich bestaetigten Hash der Quellrevision. Es werden keine Renderer- oder Template-Versionsfelder eingefuehrt.
 

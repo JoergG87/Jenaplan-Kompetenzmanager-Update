@@ -79,7 +79,10 @@ from src.core.observation_uow import (
     ObservationPersistenceUnitOfWork,
     ObservationWriterLock,
 )
-from src.core.managed_document_store import ManagedDocumentStore
+from src.core.managed_document_store import (
+    ManagedDocumentStore,
+    ManagedPdfArtifactError,
+)
 from src.core.maintenance_gate import product_writer
 from src.core.sqlite_store import (
     SQLITE_SPIKE_PATH,
@@ -2443,6 +2446,35 @@ class StudentDesktopAdapter:
         ).verify_existing(artifact)
         self._deliver_pdf_bytes(consumer, artifact, pdf_bytes)
 
+    def read_final_pdf_artifact(
+        self,
+        *,
+        artifact_id: str,
+        consumer: object,
+    ) -> None:
+        """Resolve one opaque RPA/LCA identity through the shared safe reader."""
+        if artifact_id.startswith("RPA-"):
+            self.read_learning_report_pdf_artifact(
+                artifact_id=artifact_id,
+                consumer=consumer,
+            )
+            return
+        if artifact_id.startswith("LCA-"):
+            self.read_learning_conference_pdf_artifact(
+                artifact_id=artifact_id,
+                consumer=consumer,
+            )
+            return
+        raise ManagedPdfArtifactError("managed_pdf_artifact_id_unknown")
+
+    @staticmethod
+    def final_pdf_artifact_error_message(_error: Exception) -> str:
+        """Return one non-technical message for every viewer read failure."""
+        return (
+            "Das finale PDF konnte nicht sicher gelesen werden. "
+            "Bitte schließe die Ansicht und versuche es erneut."
+        )
+
     def learning_report_pdf_error_message(self, error: Exception) -> str:
         """Translate expected final-PDF failures into calm UI language."""
         message = str(error)
@@ -2567,6 +2599,7 @@ class StudentDesktopAdapter:
                 value.created_at,
             ),
             artifact_reference=lambda value: value.relative_file_path,
+            artifact_mime_type=lambda value: value.mime_type,
             artifact_size=lambda value: value.file_size_bytes,
             artifact_pdf_sha256=lambda value: value.pdf_sha256,
             fault_hook=self._managed_pdf_fault_hook,
@@ -2910,6 +2943,7 @@ class StudentDesktopAdapter:
                 value.created_at,
             ),
             artifact_reference=lambda value: value.relative_file_path,
+            artifact_mime_type=lambda value: value.mime_type,
             artifact_size=lambda value: value.file_size_bytes,
             artifact_pdf_sha256=lambda value: value.pdf_sha256,
             fault_hook=self._managed_pdf_fault_hook,

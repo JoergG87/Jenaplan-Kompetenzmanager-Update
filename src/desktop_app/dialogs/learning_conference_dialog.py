@@ -484,6 +484,7 @@ class LearningConferenceRevisionDialog(MotionDialog):
     """Read-only view whose only fachliche source is one verified LCV snapshot."""
 
     pdf_requested = Signal(str)
+    pdf_open_requested = Signal(str)
 
     def __init__(
         self,
@@ -517,11 +518,7 @@ class LearningConferenceRevisionDialog(MotionDialog):
                 "secondary",
                 "Finales PDF ausschließlich aus dieser unveränderlichen LEG-Revision erstellen",
             )
-            self.pdf_button.clicked.connect(
-                lambda: self.pdf_requested.emit(
-                    revision.learning_conference_revision_id
-                )
-            )
+            self.pdf_button.clicked.connect(self._request_pdf_action)
             header.add_action(self.pdf_button)
         root.addWidget(header)
         self.pdf_status = InlineMessage()
@@ -593,12 +590,25 @@ class LearningConferenceRevisionDialog(MotionDialog):
         self.artifact = artifact
         self.pdf_status.set_message(
             f"Finales PDF vorhanden: {artifact.file_name} · "
-            f"erstellt {artifact.created_at} · SHA-256 {artifact.pdf_sha256[:12]}…",
+            f"erstellt {artifact.created_at}",
             tone="success",
         )
         if hasattr(self, "pdf_button"):
-            self.pdf_button.setText("Finales PDF vorhanden")
-            self.pdf_button.setEnabled(False)
+            self.pdf_button.setText("Finales PDF anzeigen")
+            self.pdf_button.setEnabled(True)
+            self.pdf_button.setAccessibleName(
+                "Verifiziertes finales PDF dieser LEG-Revision anzeigen"
+            )
+
+    def _request_pdf_action(self) -> None:
+        if self.artifact is None:
+            self.pdf_requested.emit(
+                self.revision.learning_conference_revision_id
+            )
+            return
+        self.pdf_open_requested.emit(
+            self.artifact.learning_conference_pdf_artifact_id
+        )
 
     def show_pdf_error(self, message: str) -> None:
         self.pdf_status.set_message(message, tone="error")

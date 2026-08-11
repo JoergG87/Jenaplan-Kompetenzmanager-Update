@@ -87,6 +87,10 @@ from src.desktop_app.dialogs.learning_conference_dialog import (
     LearningConferenceDraftSelectionDialog,
     LearningConferenceRevisionDialog,
 )
+from src.desktop_app.dialogs.pdf_artifact_viewer_dialog import (
+    PdfArtifactBufferConsumer,
+    PdfArtifactViewerDialog,
+)
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.dialogs.new_student_dialog import NewStudentDialog
 from src.desktop_app.dialogs.school_year_transition_preview_dialog import (
@@ -361,6 +365,7 @@ class AppShell(QMainWindow):
         self._active_learning_report_revision_dialog: (
             LearningReportRevisionDialog | None
         ) = None
+        self._active_pdf_viewer_dialog: PdfArtifactViewerDialog | None = None
         self.setWindowTitle("Jenaplan Kompetenzmanager")
         self.setMinimumSize(1100, 720)
         self.resize(1400, 900)
@@ -2095,6 +2100,10 @@ class AppShell(QMainWindow):
         )
         bridge = LearningReportHtmlBridge(session)
         dialog = LearningReportHtmlDialog(bridge, self)
+        session.show_final_pdf = lambda artifact_id: self._open_final_pdf_artifact(
+            artifact_id,
+            parent=dialog,
+        )
         target_workspace = (
             "evidence"
             if subject_id
@@ -2208,6 +2217,12 @@ class AppShell(QMainWindow):
             )
 
         revision_dialog.pdf_requested.connect(generate_final_pdf)
+        revision_dialog.pdf_open_requested.connect(
+            lambda artifact_id: self._open_final_pdf_artifact(
+                artifact_id,
+                parent=revision_dialog,
+            )
+        )
         self._active_learning_report_revision_id = (
             revision.learning_report_revision_id
         )
@@ -2486,6 +2501,10 @@ class AppShell(QMainWindow):
             revision_id,
             dialog,
         )
+        session.show_final_pdf = lambda artifact_id: self._open_final_pdf_artifact(
+            artifact_id,
+            parent=dialog,
+        )
         dialog.setProperty("learningConferenceDraftKey", draft_lock_key)
         exec_maximized_workspace(dialog, self)
 
@@ -2555,7 +2574,59 @@ class AppShell(QMainWindow):
             )
 
         revision_dialog.pdf_requested.connect(generate_final_pdf)
+        revision_dialog.pdf_open_requested.connect(
+            lambda artifact_id: self._open_final_pdf_artifact(
+                artifact_id,
+                parent=revision_dialog,
+            )
+        )
         revision_dialog.exec()
+
+    def _open_final_pdf_artifact(
+        self,
+        artifact_id: str,
+        *,
+        parent: QWidget,
+    ) -> None:
+        """Read one opaque RPA/LCA identity into the shared in-memory viewer."""
+        active = self._active_pdf_viewer_dialog
+        if active is not None and isValid(active):
+            active.close()
+
+        consumer = PdfArtifactBufferConsumer()
+        try:
+            self.adapter.read_final_pdf_artifact(
+                artifact_id=artifact_id,
+                consumer=consumer,
+            )
+            pdf_bytes = consumer.take()
+            viewer = PdfArtifactViewerDialog(
+                pdf_bytes=pdf_bytes,
+                parent=parent,
+            )
+            del pdf_bytes
+        except Exception as error:
+            consumer.clear()
+            QMessageBox.warning(
+                parent,
+                "PDF konnte nicht geöffnet werden",
+                self.adapter.final_pdf_artifact_error_message(error),
+            )
+            return
+
+        viewer.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        self._active_pdf_viewer_dialog = viewer
+
+        def clear_pdf_viewer(*_args: object) -> None:
+            if self._active_pdf_viewer_dialog is viewer:
+                self._active_pdf_viewer_dialog = None
+
+        viewer.finished.connect(clear_pdf_viewer)
+        viewer.destroyed.connect(clear_pdf_viewer)
+        app = QApplication.instance()
+        if app is not None:
+            app.aboutToQuit.connect(viewer.close)
+        viewer.open()
 
     def export_learning_report_pdf(
         self,

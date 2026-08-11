@@ -2214,6 +2214,7 @@ class LearningReportRevisionDialog(MotionDialog):
     """Fully read-only final report view backed only by one snapshot projection."""
 
     pdf_requested = Signal(str)
+    pdf_open_requested = Signal(str)
 
     def __init__(
         self,
@@ -2259,11 +2260,7 @@ class LearningReportRevisionDialog(MotionDialog):
                 "secondary",
                 "Finales PDF ausschließlich aus dieser unveränderlichen Revision erstellen",
             )
-            self.pdf_button.clicked.connect(
-                lambda: self.pdf_requested.emit(
-                    self.revision.learning_report_revision_id
-                )
-            )
+            self.pdf_button.clicked.connect(self._request_pdf_action)
             header.add_action(self.pdf_button)
         header.add_action(close)
         header_layout.addWidget(header)
@@ -2354,12 +2351,23 @@ class LearningReportRevisionDialog(MotionDialog):
         self.artifact = artifact
         self.pdf_status.set_message(
             f"Finales PDF vorhanden: {artifact.file_name} · "
-            f"erstellt {artifact.created_at} · SHA-256 {artifact.pdf_sha256[:12]}…",
+            f"erstellt {artifact.created_at}",
             tone="success",
         )
         if hasattr(self, "pdf_button"):
-            self.pdf_button.setText("Finales PDF vorhanden")
-            self.pdf_button.setEnabled(False)
+            self.pdf_button.setText("Finales PDF anzeigen")
+            self.pdf_button.setEnabled(True)
+            self.pdf_button.setAccessibleName(
+                "Verifiziertes finales PDF dieser Berichtrevision anzeigen"
+            )
+
+    def _request_pdf_action(self) -> None:
+        if self.artifact is None:
+            self.pdf_requested.emit(self.revision.learning_report_revision_id)
+            return
+        self.pdf_open_requested.emit(
+            self.artifact.learning_report_pdf_artifact_id
+        )
 
     def show_pdf_error(self, message: str) -> None:
         self.pdf_status.set_message(message, tone="error")

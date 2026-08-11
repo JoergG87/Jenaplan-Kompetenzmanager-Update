@@ -1332,6 +1332,15 @@ Die `LearningReportRevisionDialog` besitzt ausschliesslich die bereits snapshotb
 
 Sprint 9A erlaubt in dieser Ansicht fuer die aktuelle `finalized`-Revision ausschliesslich die Aktion `Finales PDF erstellen`. Das Widget uebergibt nur die `RPV`-ID. `StudentDesktopAdapter`, `LearningReportPdfApplicationService`, `LearningReportPdfService` und `SQLiteLearningReportPdfArtifactRepository` pruefen Status und Snapshot, erzeugen das PDF aus dem snapshotbasierten `ReportOutputModel` und speichern die unveraenderliche `RPA`-Referenz. Die UI kennt weder Pfadpolicy, Hashberechnung, Renderer noch SQLite. Supersedierte Revisionen koennen vorhandene historische Inhalte weiterhin anzeigen, aber kein neues finales Artefakt erzeugen.
 
+Ein vorhandenes RPA wird für `Finales PDF anzeigen` ausschließlich als opaque
+Artifact-ID an `StudentDesktopAdapter.read_final_pdf_artifact` übergeben. Der
+Adapter verifiziert die fachliche Referenz und den vorhandenen
+Managed-Document-Lesepfad vollständig. `PdfArtifactBufferConsumer` und
+`PdfArtifactViewerDialog` besitzen nur die flüchtigen PDF-Bytes beziehungsweise
+deren QtPdf-Darstellung; Shell, Qt-Dialog und HTML-DOM besitzen weder Pfad-,
+Container-, Hash- noch Entschlüsselungsownership. Schließen verwirft den
+Anzeigezustand deterministisch.
+
 ## Lernentwicklungsgespraech
 
 Liest in der spaeteren Zielarchitektur:
@@ -1376,6 +1385,12 @@ Sprint 10A ergaenzt neben diesem Draftpfad eine eigene Abschlussownership. `Lear
 Die Revisionshistorie ist eine Lesesicht auf `learning_conference_revisions`. `LearningConferenceRevisionDialog` besitzt ausschliesslich `LearningConferenceRevisionViewModel`, das zuvor durch `LearningConferenceRevisionReadService` aus einem hashverifizierten Snapshot gebildet wurde. Die Ansicht darf weder aktuelle Stammdaten noch Kompetenz-/Beobachtungsprojektionen nachladen. Der LCD bleibt unabhaengig von vorhandenen LCVs bearbeitbar; seine Live-Projektionen und die historische Snapshotansicht sind bewusst getrennte Sources of Truth.
 
 Sprint 10B erlaubt in dieser Ansicht fuer die aktuelle `completed`-Revision ausschliesslich die Artefaktaktion `Finales PDF erstellen`. Das Widget uebergibt nur die LCV-ID. Adapter, Application Service, LEG-PDF-Domain und Artefakt-Repository validieren Revision und Snapshot, bauen die Ausgabe ausschliesslich aus dem LCV-Snapshot und speichern die unveraenderliche `LCA`. Die UI kennt weder Renderer, Pfadpolicy, Hashberechnung noch SQLite. `superseded`-Revisionen bleiben lesbar, bieten aber keine neue PDF-Erzeugung.
+
+Ein vorhandenes LCA nutzt für die Anzeige denselben
+`StudentDesktopAdapter.read_final_pdf_artifact`-, Memory-Consumer- und
+`PdfArtifactViewerDialog`-Vertrag wie ein RPA. Nur die fachliche Auflösung der
+opaque LCA-ID bleibt im bestehenden LEG-Repository; es gibt keinen eigenen
+LEG-Viewer und keinen zweiten Entschlüsselungspfad.
 
 ## UI-only Kompetenz-Darstellungsgruppen
 

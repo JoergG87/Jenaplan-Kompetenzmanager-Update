@@ -300,7 +300,7 @@ def test_close_probe_has_bounded_fail_closed_timeout() -> None:
     assert "retry=True" in host_source
 
 
-def test_final_pdf_projection_is_pathless_and_blocked_without_safe_viewer() -> None:
+def test_final_pdf_projection_is_pathless_and_calls_python_viewer() -> None:
     session = _session()
     status = session.revision_status
     assert status is not None and status.revisions
@@ -316,6 +316,8 @@ def test_final_pdf_projection_is_pathless_and_blocked_without_safe_viewer() -> N
         "10.08.2026, 12:00",
     )
     session.artifacts_by_revision_id = {revision_id: artifact}
+    opened: list[str] = []
+    session.show_final_pdf = opened.append
     bridge = LearningConferenceHtmlBridge(session)
 
     state_text = bridge.initialState()
@@ -329,7 +331,10 @@ def test_final_pdf_projection_is_pathless_and_blocked_without_safe_viewer() -> N
     assert "/private/secret" not in state_text
     assert "pdf-hash-secret" not in state_text
     result = json.loads(bridge.showFinalPdf("LCA-TEST-001"))
-    assert result["code"] == "final_pdf_viewer_blocked"
+    assert result["code"] == "final_pdf_open_requested"
+    assert opened == ["LCA-TEST-001"]
+    assert json.loads(bridge.showFinalPdf("LCA-UNKNOWN"))["code"] == "final_pdf_unavailable"
+    assert opened == ["LCA-TEST-001"]
 
 
 def test_resources_csp_dom_navigation_and_request_policy_are_local_only() -> None:

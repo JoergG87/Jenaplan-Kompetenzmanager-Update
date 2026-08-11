@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Vorhandene verschlüsselte finale Bericht- und LEG-PDFs lassen sich über
+  denselben schreibgeschützten In-App-Viewer lesen. Qt und die intern gegateten
+  HTML-Hosts übergeben ausschließlich die opaque RPA-/LCA-ID an Python; der
+  Managed Document Store verifiziert Generation, MIME, Integrität und Inhalt,
+  bevor QtPdf die Bytes flüchtig im Speicher mit Mehrseitenansicht und Zoom
+  darstellt. Es entsteht keine Klartextdatei, OS-Öffnung oder Exportaktion.
+
 - Kompetenzlisten trennen die kanonischen Domänen `Selbst- und
   Sozialkompetenz` und `Arbeits-/Lernkompetenz` rein in der UI unter
   `Überfachliche Entwicklung` von den anschließenden `Fächern`. Beobachtungen,

@@ -219,8 +219,10 @@ Local Storage sowie eine explizite surface-spezifische QWebChannel-Allowlist.
 Technische IDs werden nur als nicht sichtbare Interaktionsschlüssel geführt;
 Pfade, PDF-Bytes, Hashes, Secrets und Exceptions gelangen nicht in den DOM.
 Eine Aktion `Finales PDF anzeigen` übergibt ausschließlich die bekannte
-`RPA`-ID an Python und bleibt sichtbar blockiert, solange kein separat
-freigegebener sicherer Viewer existiert. Der Python-Host bindet jeden
+`RPA`-ID an den gemeinsamen sicheren Python-Lesevertrag. Der verifizierte
+Memory-Stream wird ausschließlich in der schreibgeschützten QtPdf-Ansicht
+geöffnet; DOM, WebEngine und Betriebssystem erhalten weder PDF-Bytes noch
+Pfade. Der Python-Host bindet jeden
 Close-Pfad an DOM-Synchronisation und Save/Discard/Cancel; `beforeunload` ist
 keine Sicherheitsgrenze. Diese Produktisierung ist keine Pilot-, Packaging-,
 Accessibility- oder Releasefreigabe.

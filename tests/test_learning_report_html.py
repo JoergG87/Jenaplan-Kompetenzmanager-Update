@@ -222,17 +222,22 @@ def test_lazy_evidence_preserves_python_sort_order_and_stable_ids() -> None:
     assert [item["sort_order"] for item in evidence["subjects"][0]["competencies"]] == [20, 10]
 
 
-def test_pdf_projection_contains_only_opaque_artifact_id_and_blocked_action() -> None:
+def test_pdf_projection_contains_only_opaque_artifact_id_and_calls_python_viewer() -> None:
     session = _session()
     history = LearningReportRevisionHistoryItemViewModel("RPV-1", 1, "finalized", "Aktuell", "10.08.2026", "Laura", "01.08.2026 bis 31.01.2027", "Lernentwicklungsbericht", "SECRET-HASH")
     session.revision_status = LearningReportRevisionStatusViewModel("finalized", "Finalisiert · Revision 1", "Final", "RPV-1", 1, history=(history,))
     session.artifacts_by_revision_id = {"RPV-1": LearningReportPdfArtifactViewModel("RPA-1", "RPV-1", "/private/secret.pdf", "secret.pdf", 12, "SNAPSHOT", "PDFHASH", "heute")}
+    opened: list[str] = []
+    session.show_final_pdf = opened.append
     bridge = LearningReportHtmlBridge(session)
     raw = bridge.initialState()
     assert "RPA-1" in raw
     for forbidden in ("/private", "secret.pdf", "SNAPSHOT", "PDFHASH"):
         assert forbidden not in raw
-    assert json.loads(bridge.showFinalPdf("RPA-1"))["code"] == "final_pdf_viewer_blocked"
+    assert json.loads(bridge.showFinalPdf("RPA-1"))["code"] == "final_pdf_open_requested"
+    assert opened == ["RPA-1"]
+    assert json.loads(bridge.showFinalPdf("RPA-UNKNOWN"))["code"] == "final_pdf_unavailable"
+    assert opened == ["RPA-1"]
 
 
 def test_qrc_csp_five_pages_and_local_request_policy() -> None:
@@ -358,7 +363,8 @@ def test_shell_keeps_qt_default_and_html_selection_deliberate() -> None:
     assert 'selected_ui == "html" and initial_draft is not None' in source
     assert "LearningReportDialog(" in source
     assert "LearningReportHtmlSession(" in helper
-    assert "show_final_pdf=None" in helper
+    assert "session.show_final_pdf" in helper
+    assert "_open_final_pdf_artifact" in helper
 
 
 def test_packaging_declares_report_lazy_imports() -> None:

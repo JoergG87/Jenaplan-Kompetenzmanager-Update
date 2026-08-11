@@ -65,6 +65,7 @@ class ManagedPdfArtifactLifecycle(Generic[ArtifactT]):
         save_artifact: Callable[[ArtifactT], ArtifactT],
         build_artifact: Callable[[ManagedPdfArtifactEvidence], ArtifactT],
         artifact_reference: Callable[[ArtifactT], str],
+        artifact_mime_type: Callable[[ArtifactT], str],
         artifact_size: Callable[[ArtifactT], int],
         artifact_pdf_sha256: Callable[[ArtifactT], str],
         fault_hook: Callable[[str], None] | None = None,
@@ -78,6 +79,7 @@ class ManagedPdfArtifactLifecycle(Generic[ArtifactT]):
         self._save_artifact = save_artifact
         self._build_artifact = build_artifact
         self._artifact_reference = artifact_reference
+        self._artifact_mime_type = artifact_mime_type
         self._artifact_size = artifact_size
         self._artifact_pdf_sha256 = artifact_pdf_sha256
         self._fault_hook = fault_hook or (lambda _phase: None)
@@ -193,6 +195,8 @@ class ManagedPdfArtifactLifecycle(Generic[ArtifactT]):
             return artifact
 
     def verify_existing(self, artifact: ArtifactT) -> bytes:
+        if self._artifact_mime_type(artifact) != "application/pdf":
+            raise ManagedPdfArtifactError("managed_pdf_mime_type_invalid")
         document_id = managed_document_id(
             self._artifact_reference(artifact)
         )
@@ -332,9 +336,14 @@ class _BytesConsumer:
         self._chunks: list[bytes] = []
         self._finished = False
 
-    def start(self, _manifest: object) -> None:
+    def start(self, manifest: object) -> None:
         self._chunks.clear()
         self._finished = False
+        if (
+            getattr(manifest, "mime_type", None) != "application/pdf"
+            or getattr(manifest, "original_filename", None) != "final.pdf"
+        ):
+            raise ManagedPdfArtifactError("managed_pdf_manifest_type_invalid")
 
     def write(self, chunk: bytes) -> None:
         self._chunks.append(bytes(chunk))

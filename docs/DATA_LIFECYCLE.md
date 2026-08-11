@@ -1084,15 +1084,19 @@ ausschließlich mit demselben gebundenen Plan fort.
    Fachaktion erneut. Widerspruch, fehlender oder manipulierter Container,
    falscher DMK/Context und unbekannter Journalzustand blockieren fail-closed.
 6. Lesen löst die bestehende RPA-/LCA-ID in die aktive Managed-Document-
-   Generation auf, verifiziert Container, Größe und SHA-256 vollständig und
-   liefert PDF-Bytes ausschließlich an einen injizierten Consumer. Es gibt in
-   diesem Paket kein permanentes Klartextziel, Preview, OS-Öffnen oder Export.
+   Generation auf, verifiziert Container, Generation, Manifest-MIME, Größe,
+   SHA-256 und PDF-Struktur vollständig und liefert PDF-Bytes ausschließlich
+   an einen injizierten Consumer. Der gemeinsame Viewer hält sie nur in
+   `QByteArray`/`QBuffer`/`QPdfDocument` bis zum Schließen. Es gibt kein
+   permanentes oder temporäres Klartextziel, keine OS-Öffnung und keinen Export.
 
 Der freigegebene Pilotweg beginnt ausschließlich mit einer frischen
 verschlüsselten Final-V4-Installation. Bestehende Klartextdokumente und PDFs
 werden nicht migriert oder konvertiert; alte synthetische Testdaten werden
-verworfen und nach Aktivierung neu erzeugt. Vorschau, OS-Öffnung, Export,
-Produkt-Default-Aktivierung und die Backup-/Restore-UI bleiben außerhalb.
+verworfen und nach Aktivierung neu erzeugt. OS-Öffnung, Export,
+Produkt-Default-Aktivierung und die Backup-/Restore-UI bleiben außerhalb; die
+schreibgeschützte In-Memory-Anzeige ist ausschließlich ein verifizierter
+Lesepfad.
 
 Crash vor Erzeugung hinterlässt keinen Intent. Crash während Write, nach Write
 vor Verifikation oder nach Verifikation vor `PREPARED` erzeugt einen
@@ -3157,8 +3161,9 @@ bestätigen und erst dann über den bestehenden Finalisierungsservice eine
 unveränderliche RPV-Revision anlegen. JavaScript enthält keine
 Finalisierungsregel. Historische Revisionen werden ausschließlich über den
 vorhandenen Snapshot-Lesevertrag projiziert. Die optionale Aktion für ein
-vorhandenes finales PDF übergibt nur die RPA-ID an einen Python-Consumer; ohne
-freigegebenen Viewer bleibt sie ohne Dateizugriff sichtbar blockiert.
+vorhandenes finales PDF übergibt nur die RPA-ID an den gemeinsamen sicheren
+Python-Consumer. Dieser öffnet dieselbe QtPdf-Lesesicht wie der LEG-Pfad;
+JavaScript erhält weder PDF-Bytes noch Pfad-, Hash- oder Containerdaten.
 
 Betroffene Datenquellen:
 

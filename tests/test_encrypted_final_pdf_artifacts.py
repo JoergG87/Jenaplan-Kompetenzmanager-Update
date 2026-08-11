@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import sqlite3
 from pathlib import Path
 from datetime import date
@@ -14,8 +15,12 @@ import pytest
 
 from src.core.learning_conference_pdf import LearningConferencePdfError
 from src.core.learning_report_pdf import LearningReportPdfError
+from src.core.managed_document_store import ManagedPdfArtifactError
 from src.core.records import seed_reference_data
-from src.core.sqlite_store import SQLiteObservationRepository
+from src.core.sqlite_store import (
+    SQLiteLearningReportPdfArtifactRepository,
+    SQLiteObservationRepository,
+)
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.security.final_v3_document_runtime import FinalV3DocumentRuntimeError
 from src.security.final_v3_document_runtime import (
@@ -126,6 +131,16 @@ def _read_conference(adapter: StudentDesktopAdapter, artifact_id: str) -> bytes:
     return bytes(consumer.payload)
 
 
+def _read_final(adapter: StudentDesktopAdapter, artifact_id: str) -> bytes:
+    consumer = _Consumer()
+    adapter.read_final_pdf_artifact(
+        artifact_id=artifact_id,
+        consumer=consumer,
+    )
+    assert consumer.started and consumer.finished and consumer.aborted is None
+    return bytes(consumer.payload)
+
+
 def test_report_and_conference_use_same_store_without_plaintext_pdf(
     tmp_path: Path,
 ) -> None:
@@ -151,6 +166,14 @@ def test_report_and_conference_use_same_store_without_plaintext_pdf(
             conference_adapter,
             conference.learning_conference_pdf_artifact_id,
         ).startswith(b"%PDF-")
+        assert _read_final(
+            report_adapter,
+            report.learning_report_pdf_artifact_id,
+        ).startswith(b"%PDF-")
+        assert _read_final(
+            conference_adapter,
+            conference.learning_conference_pdf_artifact_id,
+        ).startswith(b"%PDF-")
         assert report_adapter._managed_document_store is runtime
         assert conference_adapter._managed_document_store is runtime
 
@@ -167,6 +190,40 @@ def test_report_and_conference_use_same_store_without_plaintext_pdf(
     finally:
         report_case.tearDown()
         conference_case.tearDown()
+
+
+def test_shared_reader_fails_closed_for_unknown_corrupt_and_wrong_type(
+    tmp_path: Path,
+) -> None:
+    case = _report_case()
+    try:
+        runtime = _new_runtime(tmp_path / "cipher")
+        adapter = _adapter(case, runtime)
+        with pytest.raises(ManagedPdfArtifactError, match="artifact_id_unknown"):
+            _read_final(adapter, "UNKNOWN-1")
+        with pytest.raises(LearningReportPdfError, match="nicht gefunden"):
+            _read_final(adapter, "RPA-999999")
+
+        revision_id = case._finalize()
+        artifact = adapter.generate_learning_report_pdf(revision_id)
+        repository = SQLiteLearningReportPdfArtifactRepository(case.adapter.database)
+        record = repository.get_by_artifact_id(
+            artifact.learning_report_pdf_artifact_id
+        )
+        assert record is not None
+        with pytest.raises(ManagedPdfArtifactError, match="mime_type_invalid"):
+            adapter._learning_report_managed_pdf_lifecycle(repository).verify_existing(
+                replace(record, mime_type="text/plain")
+            )
+
+        container = next(runtime.paths.storage_root.glob("*.jkmedoc"))
+        changed = bytearray(container.read_bytes())
+        changed[-1] ^= 1
+        container.write_bytes(changed)
+        with pytest.raises(FinalV3DocumentRuntimeError):
+            _read_final(adapter, artifact.learning_report_pdf_artifact_id)
+    finally:
+        case.tearDown()
 
 
 def test_report_retry_restart_and_revision_binding(tmp_path: Path) -> None:
