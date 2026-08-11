@@ -71,6 +71,7 @@ from src.desktop_app.view_models.learning_report_view_model import (  # noqa: E4
     LearningReportSubjectDraftViewModel,
 )
 from src.desktop_app.view_models.observation_view_model import (  # noqa: E402
+    COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS,
     ObservationAttachmentDraft,
     ObservationCompetencyRatingDraft,
     ObservationDraftViewModel,
@@ -139,6 +140,14 @@ STUDENTS = (
 SEED_TIMESTAMP = datetime(2025, 7, 1, 8, 0, tzinfo=UTC)
 CIPHER_PILOT_TEST_ROOT_PREFIX = "jkm-final-v4-pilot-testdata-"
 CIPHER_PILOT_REFERENCE_DAY = date(2026, 8, 9)
+_CIPHER_REQUIRED_TEACHING_SUBJECTS = (
+    "deutsch",
+    "mathematik",
+    "sport",
+    "kreatives_gestalten",
+    "englisch",
+)
+_CIPHER_RATING_TOKENS = ("--", "-", "+", "++")
 
 
 def seed_test_data(
@@ -181,7 +190,7 @@ def seed_test_data(
 
 
 def seed_cipher_pilot_test_data(opened_runtime, *, source_root: Path) -> SeedResult:
-    """Extend the existing seed workflow through the Final-V4 product adapters."""
+    """Build the explicit comparison fixture through Final-V4 product boundaries."""
     from src.desktop_app.adapters.master_data_desktop_adapter import (
         MasterDataDesktopAdapter,
     )
@@ -194,13 +203,16 @@ def seed_cipher_pilot_test_data(opened_runtime, *, source_root: Path) -> SeedRes
     adapter._today_provider = lambda: CIPHER_PILOT_REFERENCE_DAY
     adapter._now_provider = lambda: datetime(2026, 8, 9, 10, 0, tzinfo=UTC)
     master = MasterDataDesktopAdapter(adapter)
-    groups = tuple(master.add_group(name) for name in ("Pilotgruppe A", "Pilotgruppe B"))
+    groups = tuple(
+        master.add_group(name)
+        for name in ("Sternengruppe", "Regenbogengruppe", "Wiesengruppe")
+    )
     courses = tuple(
         master.add_course(name, color, year_level=level)
         for name, color, level in (
-            ("Pilotkurs 1", "#2563EB", 1),
-            ("Pilotkurs 2", "#16A34A", 2),
-            ("Pilotkurs 3", "#F97316", 3),
+            ("Basiskurs", "#2563EB", 1),
+            ("Aufbaukurs", "#16A34A", 2),
+            ("Vertiefungskurs", "#F97316", 3),
         )
     )
     master.add_course_group(
@@ -222,102 +234,204 @@ def seed_cipher_pilot_test_data(opened_runtime, *, source_root: Path) -> SeedRes
             raise SeedDataError(f"Synthetischer Schüler {index} wurde nicht angelegt.")
         students.append(created.value)
 
-    subject_options = tuple(
-        option for option in adapter.list_documentation_subject_options() if option.selected
+    subject_options = {
+        option.subject_id: option
+        for option in adapter.list_documentation_subject_options()
+        if option.selected
+        and option.subject_id not in COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS
+    }
+    missing_subjects = tuple(
+        subject_id
+        for subject_id in _CIPHER_REQUIRED_TEACHING_SUBJECTS
+        if subject_id not in subject_options
     )
-    if len(subject_options) < 3:
-        raise SeedDataError("Für die Fachauswahl werden mindestens drei Fächer benötigt.")
+    if missing_subjects:
+        raise SeedDataError(
+            "Der Vergleichstestbestand benötigt alle freigegebenen Pflichtfächer."
+        )
     current_year = adapter.current_school_year()
     if current_year is None or current_year.label != "2026/27":
         raise SeedDataError("Der Cipher-Produktpfad hat nicht das Schuljahr 2026/27 erzeugt.")
-    adapter.save_student_documentation_subjects(
-        students[0].student_id, current_year.school_year_id, "inherit", ()
-    )
-    adapter.save_student_documentation_subjects(
-        students[1].student_id,
-        current_year.school_year_id,
-        "custom",
-        tuple(option.subject_id for option in subject_options[:3]),
-    )
-    adapter.save_student_documentation_subjects(
-        students[2].student_id,
-        current_year.school_year_id,
-        "custom",
-        (subject_options[0].subject_id,),
-    )
+    custom_subject_profiles = {
+        0: (),
+        1: _CIPHER_REQUIRED_TEACHING_SUBJECTS,
+        2: ("deutsch", "mathematik"),
+        3: ("sport", "kreatives_gestalten", "englisch"),
+        4: ("deutsch", "sport"),
+        5: ("mathematik", "englisch"),
+    }
+    for index, subject_ids in custom_subject_profiles.items():
+        adapter.save_student_documentation_subjects(
+            students[index].student_id,
+            current_year.school_year_id,
+            "custom",
+            subject_ids,
+        )
 
     competencies = tuple(
         item
         for item in SQLiteCompetencyRepository(opened_runtime.database).list_competencies()
         if item.active and item.catalog_status == "current"
     )
-    if not competencies:
-        raise SeedDataError("Der Final-V4-Kompetenzkatalog ist leer.")
+    _require_cipher_comparison_catalog(competencies)
+    competencies_by_subject = {
+        subject_id: tuple(
+            item for item in competencies if item.subject_id == subject_id
+        )
+        for subject_id in tuple(COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS)
+        + _CIPHER_REQUIRED_TEACHING_SUBJECTS
+    }
     observations = []
-    contexts = ("Partnerarbeit", "Gruppenarbeit", "Lernzielkontrolle", "Präsentation")
     with tempfile.TemporaryDirectory(prefix="jkm-pilot-seed-sources-") as source_name:
         sources = Path(source_name)
-        attachment = sources / "synthetischer-beobachtungsanhang.txt"
-        attachment.write_text("Synthetischer verschlüsselter Beobachtungsanhang.\n", encoding="utf-8")
-        general = sources / "synthetisches-schuelerdokument.txt"
-        general.write_text("Synthetisches verschlüsseltes Schülerdokument.\n", encoding="utf-8")
+        social_note = sources / "synthetische-gespraechsnotiz.txt"
+        social_note.write_text(
+            "Synthetische Gesprächsnotiz zur sozialen Entwicklung.\n",
+            encoding="utf-8",
+        )
+        work_sample = sources / "synthetische-arbeitsprobe.txt"
+        work_sample.write_text(
+            "Synthetische Arbeitsprobe zur Lernorganisation.\n",
+            encoding="utf-8",
+        )
+        subject_evidence = sources / "synthetische-lernzielkontrolle.txt"
+        subject_evidence.write_text(
+            "Synthetischer Beleg aus einem Unterrichtsfach.\n",
+            encoding="utf-8",
+        )
+        general_report = sources / "synthetischer-foerderhinweis.txt"
+        general_report.write_text(
+            "Synthetischer Förderhinweis für den manuellen Vergleichstest.\n",
+            encoding="utf-8",
+        )
+        general_note = sources / "synthetische-schuelernotiz.txt"
+        general_note.write_text(
+            "Synthetische allgemeine Schülernotiz.\n",
+            encoding="utf-8",
+        )
         for index, student in enumerate(students):
-            competency = competencies[index % len(competencies)]
-            rating = ObservationCompetencyRatingDraft(
-                competency_id=competency.competency_id,
-                subject_key=competency.subject_id,
-                subject_display_name=competency.subject_name,
-                learning_area=competency.learning_area,
-                competency_group=competency.competency_group,
-                competency_text=competency.description,
-                rating=("+", "++", "-")[index % 3],
-            )
-            attachments = (
+            social_competency = competencies_by_subject[
+                "selbst_sozialkompetenz"
+            ][index % len(competencies_by_subject["selbst_sozialkompetenz"])]
+            work_competency = competencies_by_subject[
+                "arbeits_lernkompetenz"
+            ][index % len(competencies_by_subject["arbeits_lernkompetenz"])]
+            social_attachments = (
                 (
                     ObservationAttachmentDraft(
-                        str(attachment),
-                        "Synthetischer Beobachtungsanhang",
-                        "Arbeitsprobe",
-                        "Nur für den Pilot-Testbestand.",
+                        str(social_note),
+                        "Gesprächsnotiz zur sozialen Entwicklung",
+                        "Gesprächsnotiz",
+                        "Nur für den synthetischen Vergleichstestbestand.",
                     ),
                 )
                 if index == 0
                 else ()
             )
-            saved = adapter.save_observation(
-                ObservationDraftViewModel(
-                    student_id=student.student_id,
-                    student_name=f"{student.first_name} {student.last_name}",
-                    date_text=f"2026-08-{2 + index % 7:02d}",
-                    subject_id=competency.subject_id,
-                    subject_display_name=competency.subject_name,
-                    competency_ratings=(rating,),
-                    context=contexts[index % len(contexts)],
-                    note="Synthetische Beobachtung für Dashboard und passende Kinder.",
-                    attachments=attachments,
+            work_attachments = (
+                (
+                    ObservationAttachmentDraft(
+                        str(work_sample),
+                        "Arbeitsprobe zur Lernorganisation",
+                        "Arbeitsprobe",
+                        "Nur für den synthetischen Vergleichstestbestand.",
+                    ),
+                )
+                if index == 1
+                else ()
+            )
+            observations.append(
+                _save_cipher_observation(
+                    adapter,
+                    student,
+                    social_competency,
+                    rating=_CIPHER_RATING_TOKENS[index % 4],
+                    observation_date=date(2026, 9, index + 1),
+                    context=("Partnerarbeit", "Gruppenarbeit")[index % 2],
+                    note=(
+                        "Synthetische Beobachtung zur Selbst- und Sozialkompetenz "
+                        "für Entwicklungsübersicht, Bericht und LEG."
+                    ),
+                    attachments=social_attachments,
                 )
             )
-            if not getattr(saved, "success", False):
-                raise SeedDataError(f"Synthetische Beobachtung {index + 1} fehlgeschlagen.")
-            observations.append(saved.value)
+            observations.append(
+                _save_cipher_observation(
+                    adapter,
+                    student,
+                    work_competency,
+                    rating=_CIPHER_RATING_TOKENS[(index + 1) % 4],
+                    observation_date=date(2027, 1, index + 2),
+                    context=("Einzelgespräch", "Präsentation")[index % 2],
+                    note=(
+                        "Synthetische Beobachtung zur Arbeits-/Lernkompetenz "
+                        "für den schuljahresweiten Entwicklungsvergleich."
+                    ),
+                    attachments=work_attachments,
+                )
+            )
+            if index == 0:
+                continue
+            allowed_subject_ids = custom_subject_profiles.get(
+                index, _CIPHER_REQUIRED_TEACHING_SUBJECTS
+            )
+            subject_id = allowed_subject_ids[(index - 1) % len(allowed_subject_ids)]
+            subject_competencies = competencies_by_subject[subject_id]
+            subject_competency = subject_competencies[index % len(subject_competencies)]
+            teaching_attachments = (
+                (
+                    ObservationAttachmentDraft(
+                        str(subject_evidence),
+                        "Synthetische Lernzielkontrolle",
+                        "Lernzielkontrolle",
+                        "Nur für den synthetischen Vergleichstestbestand.",
+                    ),
+                )
+                if index == 2
+                else ()
+            )
+            observations.append(
+                _save_cipher_observation(
+                    adapter,
+                    student,
+                    subject_competency,
+                    rating=_CIPHER_RATING_TOKENS[(index + 2) % 4],
+                    observation_date=date(2027, 5, index + 1),
+                    context=("Lernzielkontrolle", "Leseübung", "Präsentation")[
+                        index % 3
+                    ],
+                    note=(
+                        f"Synthetische Fachbeobachtung in {subject_competency.subject_name} "
+                        "für Dashboard-, Profil-, Berichts- und LEG-Tests."
+                    ),
+                    attachments=teaching_attachments,
+                )
+            )
         adapter.add_student_document(
             student_id=students[0].student_id,
-            source_path=general,
-            document_type="Sonstiges",
-            title="Synthetisches Schülerdokument",
-            note="Nur für den Pilot-Testbestand.",
+            source_path=general_report,
+            document_type="Bericht",
+            title="Synthetischer Förderhinweis",
+            note="Nur für den synthetischen Vergleichstestbestand.",
+        )
+        adapter.add_student_document(
+            student_id=students[1].student_id,
+            source_path=general_note,
+            document_type="Gesprächsnotiz",
+            title="Synthetische Schülernotiz",
+            note="Nur für den synthetischen Vergleichstestbestand.",
         )
 
     for index in range(4):
         adapter.save_competency_confirmation(
             student_id=students[index].student_id,
             competency_id=competencies[index].competency_id,
-            confirmed_rating=("+", "++", "-", "+")[index],
-            note="Synthetische Bestätigung für den Pilotcheck.",
+            confirmed_rating=_CIPHER_RATING_TOKENS[index],
+            note="Synthetische Bestätigung für den Vergleichstest.",
         )
     _seed_cipher_timetable(opened_runtime.database, groups, courses, competencies)
     workflow_counts = _seed_cipher_workflows(
-        adapter, tuple(students), tuple(observations), competencies
+        adapter, tuple(students), tuple(observations)
     )
     return SeedResult(
         database_path=opened_runtime.database.path,
@@ -327,12 +441,85 @@ def seed_cipher_pilot_test_data(opened_runtime, *, source_root: Path) -> SeedRes
             len(adapter.list_documents_for_student(student.student_id))
             for student in students
         ),
-        timetable_count=len(SQLiteTimetableRepository(opened_runtime.database).list_entries()),
+        timetable_count=len(
+            SQLiteTimetableRepository(opened_runtime.database).list_entries()
+        ),
         report_draft_count=workflow_counts[0],
         report_revision_count=workflow_counts[1],
         conference_draft_count=workflow_counts[2],
         conference_revision_count=workflow_counts[3],
     )
+
+
+def _require_cipher_comparison_catalog(competencies: tuple[object, ...]) -> None:
+    expected_ids = tuple(f"CMP-{100000 + index:06d}" for index in range(1, 332))
+    actual_ids = tuple(getattr(item, "competency_id") for item in competencies)
+    domains = {getattr(item, "subject_id") for item in competencies}
+    areas = {
+        (getattr(item, "subject_id"), getattr(item, "learning_area"))
+        for item in competencies
+    }
+    topics = {
+        (
+            getattr(item, "subject_id"),
+            getattr(item, "learning_area"),
+            getattr(item, "competency_group"),
+        )
+        for item in competencies
+    }
+    if (
+        actual_ids != expected_ids
+        or len(domains) != 12
+        or len(areas) != 48
+        or len(topics) != 81
+        or any(getattr(item, "catalog_status") != "current" for item in competencies)
+        or any(not getattr(item, "active") for item in competencies)
+        or not set(COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS).issubset(domains)
+    ):
+        raise SeedDataError(
+            "Der aktive Kompetenzkatalog entspricht nicht dem 331er-Entwicklungsbuchvertrag."
+        )
+
+
+def _save_cipher_observation(
+    adapter,
+    student,
+    competency,
+    *,
+    rating: str,
+    observation_date: date,
+    context: str,
+    note: str,
+    attachments: tuple[ObservationAttachmentDraft, ...] = (),
+):
+    saved = adapter.save_observation(
+        ObservationDraftViewModel(
+            student_id=student.student_id,
+            student_name=f"{student.first_name} {student.last_name}",
+            date_text=observation_date.isoformat(),
+            subject_id=competency.subject_id,
+            subject_display_name=competency.subject_name,
+            competency_ratings=(
+                ObservationCompetencyRatingDraft(
+                    competency_id=competency.competency_id,
+                    subject_key=competency.subject_id,
+                    subject_display_name=competency.subject_name,
+                    learning_area=competency.learning_area,
+                    competency_group=competency.competency_group,
+                    competency_text=competency.description,
+                    rating=rating,
+                ),
+            ),
+            context=context,
+            note=note,
+            attachments=attachments,
+        )
+    )
+    if not getattr(saved, "success", False):
+        raise SeedDataError(
+            f"Synthetische Beobachtung für {student.student_id} wurde nicht angelegt."
+        )
+    return saved.value
 
 
 def _database_has_seed_data(database: SQLiteDatabase) -> bool:
@@ -368,63 +555,162 @@ def _seed_cipher_timetable(database, groups, courses, competencies) -> None:
             )
 
 
-def _seed_cipher_workflows(adapter, students, observations, competencies) -> tuple[int, int, int, int]:
-    focus = students[0]
-    second = students[1]
-    focus_observations = tuple(item for item in observations if item.student_id == focus.student_id)
-    second_observations = tuple(item for item in observations if item.student_id == second.student_id)
-    focus_competency = competencies[0]
-    second_competency = competencies[1]
+def _seed_cipher_workflows(
+    adapter,
+    students,
+    observations,
+) -> tuple[int, int, int, int]:
+    focus = students[1]
+    second = students[2]
+    focus_observations = tuple(
+        item for item in observations if item.student_id == focus.student_id
+    )
+    second_observations = tuple(
+        item
+        for item in observations
+        if item.student_id == second.student_id and item.date >= "2027-01-01"
+    )
+    focus_competency_ids = tuple(
+        dict.fromkeys(
+            rating.competency_id
+            for item in focus_observations
+            for rating in item.competency_ratings
+        )
+    )
+    second_competency_ids = tuple(
+        dict.fromkeys(
+            rating.competency_id
+            for item in second_observations
+            for rating in item.competency_ratings
+        )
+    )
+    focus_subject_ids = tuple(
+        dict.fromkeys(
+            rating.subject_id
+            for item in focus_observations
+            for rating in item.competency_ratings
+        )
+    )
+    second_subject_ids = tuple(
+        dict.fromkeys(
+            rating.subject_id
+            for item in second_observations
+            for rating in item.competency_ratings
+        )
+    )
+    if not (
+        focus_observations
+        and second_observations
+        and focus_competency_ids
+        and second_competency_ids
+        and focus_subject_ids
+        and second_subject_ids
+    ):
+        raise SeedDataError("Bericht und LEG benötigen synthetische Fachbelege.")
     final_report = adapter.save_learning_report_draft(
         LearningReportDraftViewModel(
             student_id=focus.student_id,
             period_start=date(2026, 8, 1),
-            period_end=date(2026, 8, 9),
+            period_end=date(2027, 6, 30),
             teacher_name="Pilot-Lernbegleitung",
-            overall_text="Synthetischer finalisierter Berichtstext.",
-            subjects=(LearningReportSubjectDraftViewModel(focus_competency.subject_id, "Synthetischer Fachtext.", "", "", ""),),
-            competency_ids=(focus_competency.competency_id,),
-            observation_ids=tuple(item.observation_id for item in focus_observations),
+            overall_text=(
+                "Der synthetische Verlauf zeigt nachvollziehbare Entwicklung "
+                "in überfachlichen und fachlichen Bereichen."
+            ),
+            subjects=tuple(
+                LearningReportSubjectDraftViewModel(
+                    subject_id,
+                    "Synthetische Stärke mit konkretem Beobachtungsbeleg.",
+                    "Die Entwicklung ist über mehrere Monate sichtbar.",
+                    "Kleine strukturierte Zwischenschritte geben Sicherheit.",
+                    "Den nächsten Lernschritt zunehmend selbst benennen.",
+                )
+                for subject_id in focus_subject_ids
+            ),
+            competency_ids=focus_competency_ids,
+            observation_ids=tuple(
+                item.observation_id for item in focus_observations
+            ),
         )
     )
-    report_status = adapter.finalize_learning_report(final_report.report_draft_id, "Pilot-Lernbegleitung")
+    report_status = adapter.finalize_learning_report(
+        final_report.report_draft_id,
+        "Pilot-Lernbegleitung",
+    )
     adapter.generate_learning_report_pdf(report_status.current_revision_id)
     adapter.save_learning_report_draft(
         LearningReportDraftViewModel(
             student_id=second.student_id,
-            period_start=date(2026, 8, 1),
-            period_end=date(2026, 8, 9),
+            period_start=date(2027, 1, 1),
+            period_end=date(2027, 7, 15),
             teacher_name="Pilot-Lernbegleitung",
-            overall_text="Synthetischer bearbeitbarer Berichtsentwurf.",
-            subjects=(LearningReportSubjectDraftViewModel(second_competency.subject_id, "Synthetischer Entwurf.", "", "", ""),),
-            competency_ids=(second_competency.competency_id,),
-            observation_ids=tuple(item.observation_id for item in second_observations),
+            overall_text=(
+                "Synthetischer bearbeitbarer Berichtsentwurf für das zweite Halbjahr."
+            ),
+            subjects=tuple(
+                LearningReportSubjectDraftViewModel(
+                    subject_id,
+                    "Erste synthetische Stärken sind belegt.",
+                    "Der Entwurf wird im manuellen Test weiterbearbeitet.",
+                    "Unterstützung wird im nächsten Schritt konkretisiert.",
+                    "Ein nächstes Ziel ist bereits vorbereitet.",
+                )
+                for subject_id in second_subject_ids
+            ),
+            competency_ids=second_competency_ids,
+            observation_ids=tuple(
+                item.observation_id for item in second_observations
+            ),
         )
     )
     final_leg = adapter.save_learning_conference_draft(
         LearningConferenceDraftViewModel(
             student_id=focus.student_id,
-            period_start=date(2026, 8, 1), period_end=date(2026, 8, 9),
-            conference_date=date(2026, 8, 9), responsible_teacher="Pilot-Lernbegleitung",
+            period_start=date(2026, 8, 1),
+            period_end=date(2027, 6, 30),
+            conference_date=date(2027, 6, 30),
+            responsible_teacher="Pilot-Lernbegleitung",
             conversation_entry_text="Synthetischer Gesprächseinstieg.",
-            child_retrospective_text="Synthetische Rückschau.", strengths_text="Synthetische Stärke.",
+            child_retrospective_text="Synthetische Rückschau auf das Schuljahr.",
+            teacher_perspective_text="Synthetische Vorbereitung der Lernbegleitung.",
+            strengths_text="Synthetische Stärke mit Beobachtungsbeleg.",
             development_fields_text="Synthetisches Entwicklungsfeld.",
-            agreed_goals_text="Synthetisches Ziel.", responsibilities_text="Synthetische Zuständigkeit.",
-            subject_ids=(focus_competency.subject_id,), competency_ids=(focus_competency.competency_id,),
-            observation_ids=tuple(item.observation_id for item in focus_observations),
+            prepared_goals_text="Synthetisches vorbereitetes Ziel.",
+            agreed_goals_text="Synthetisches vereinbartes Ziel.",
+            responsibilities_text="Synthetische Zuständigkeit.",
+            next_review_date=date(2027, 7, 15),
+            subject_ids=focus_subject_ids,
+            cross_topic_keys=("social_behavior", "work_habits", "independence"),
+            competency_ids=focus_competency_ids,
+            observation_ids=tuple(
+                item.observation_id for item in focus_observations
+            ),
         )
     )
-    leg_status = adapter.complete_learning_conference(final_leg.learning_conference_draft_id)
-    completed = next(item for item in leg_status.revisions if item.status == "completed")
+    leg_status = adapter.complete_learning_conference(
+        final_leg.learning_conference_draft_id
+    )
+    completed = next(
+        item for item in leg_status.revisions if item.status == "completed"
+    )
     adapter.generate_learning_conference_pdf(completed.learning_conference_revision_id)
     adapter.save_learning_conference_draft(
         LearningConferenceDraftViewModel(
             student_id=second.student_id,
-            period_start=date(2026, 8, 1), period_end=date(2026, 8, 9), conference_date=date(2026, 8, 9),
-            responsible_teacher="Pilot-Lernbegleitung", conversation_entry_text="Synthetischer LEG-Entwurf.",
-            child_retrospective_text="Synthetische Rückschau.", strengths_text="Synthetische Stärke.",
-            development_fields_text="Synthetisches Entwicklungsfeld.", subject_ids=(second_competency.subject_id,),
-            competency_ids=(second_competency.competency_id,), observation_ids=tuple(item.observation_id for item in second_observations),
+            period_start=date(2027, 1, 1),
+            period_end=date(2027, 7, 15),
+            conference_date=date(2027, 7, 15),
+            responsible_teacher="Pilot-Lernbegleitung",
+            conversation_entry_text="Synthetischer LEG-Entwurf.",
+            child_retrospective_text="Die Rückschau wird im manuellen Test ergänzt.",
+            strengths_text="Erste synthetische Stärke ist vorbereitet.",
+            development_fields_text="Entwicklungsfelder sind noch in Bearbeitung.",
+            subject_ids=second_subject_ids,
+            cross_topic_keys=("work_habits",),
+            competency_ids=second_competency_ids,
+            observation_ids=tuple(
+                item.observation_id for item in second_observations
+            ),
         )
     )
     return (2, len(report_status.history), 2, len(leg_status.revisions))
@@ -1245,7 +1531,7 @@ def build_cipher_pilot_test_root(root: Path) -> dict[str, object]:
         first_run_allowed=True,
         sqlcipher_provider=provider,
     )
-    seed = seed_cipher_pilot_test_data(opened, source_root=target)
+    seed_cipher_pilot_test_data(opened, source_root=target)
     restarted = open_cipher_product_runtime(
         paths=security_paths,
         account_loader=lambda: account,
@@ -1274,6 +1560,17 @@ def build_cipher_pilot_test_root(root: Path) -> dict[str, object]:
         restore.staging_root,
         expected_container_sha256=verified.container_sha256,
     )
+    preview = backup_service.restore_preview_counts(
+        ready.staging_root,
+        expected_container_sha256=verified.container_sha256,
+    )
+    inventory = _cipher_database_inventory(restarted.database)
+    storage = _cipher_storage_inventory(paths)
+    _require_complete_cipher_comparison_inventory(
+        inventory,
+        managed_documents=preview.managed_documents,
+        storage=storage,
+    )
     compatibility = restarted.runtime.final_v4.compatibility
     return {
         "backup": str(backup.path),
@@ -1284,14 +1581,9 @@ def build_cipher_pilot_test_root(root: Path) -> dict[str, object]:
         "restore_state": restore.state if ready.ready_path.is_file() else "INVALID",
         "root": str(target),
         "sqlite_version": compatibility.sqlite_version,
-        "students": seed.student_count,
-        "observations": seed.observation_count,
-        "documents": seed.document_count,
-        "timetable_entries": seed.timetable_count,
-        "report_drafts": seed.report_draft_count,
-        "report_revisions": seed.report_revision_count,
-        "conference_drafts": seed.conference_draft_count,
-        "conference_revisions": seed.conference_revision_count,
+        "managed_documents": preview.managed_documents,
+        **inventory,
+        **storage,
     }
 
 
@@ -1354,31 +1646,15 @@ def verify_cipher_pilot_test_root(root: Path) -> dict[str, object]:
         ready.staging_root,
         expected_container_sha256=verified.container_sha256,
     )
-    with opened.database.connect() as connection:
-        counts = {
-            name: int(connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
-            for name, table in {
-                "conference_drafts": "learning_conference_drafts",
-                "conference_revisions": "learning_conference_revisions",
-                "observations": "observations",
-                "report_drafts": "report_drafts",
-                "report_revisions": "learning_report_revisions",
-                "students": "students",
-                "timetable_entries": "timetable_entries",
-            }.items()
-        }
-    if (
-        counts["students"] != 24
-        or counts["observations"] < 24
-        or counts["timetable_entries"] < 1
-        or counts["report_drafts"] < 1
-        or counts["report_revisions"] < 1
-        or counts["conference_drafts"] < 1
-        or counts["conference_revisions"] < 1
-        or preview.students != 24
-        or preview.managed_documents < 2
-    ):
-        raise SeedDataError("Der synthetische Final-V4-Testbestand ist unvollständig.")
+    inventory = _cipher_database_inventory(opened.database)
+    storage = _cipher_storage_inventory(paths)
+    _require_complete_cipher_comparison_inventory(
+        inventory,
+        managed_documents=preview.managed_documents,
+        storage=storage,
+    )
+    if preview.students != 24 or preview.observations != 71:
+        raise SeedDataError("Die Backup-Vorschau stimmt nicht mit dem Testbestand überein.")
     compatibility = opened.runtime.final_v4.compatibility
     return {
         "backup": str(backup_path),
@@ -1392,8 +1668,219 @@ def verify_cipher_pilot_test_root(root: Path) -> dict[str, object]:
         "restore_state": "RESTORE_READY",
         "root": str(target),
         "sqlite_version": compatibility.sqlite_version,
-        **counts,
+        **inventory,
+        **storage,
     }
+
+
+def _cipher_database_inventory(database: SQLiteDatabase) -> dict[str, object]:
+    with database.connect() as connection:
+        catalog = connection.execute(
+            """
+            SELECT competency_id, subject_id, learning_area, competency_group,
+                   catalog_status, active
+            FROM competencies
+            ORDER BY sort_order, competency_id
+            """
+        ).fetchall()
+        rating_tokens = tuple(
+            row[0]
+            for row in connection.execute(
+                "SELECT DISTINCT rating FROM observation_competency_ratings"
+            ).fetchall()
+        )
+
+        def tokens_for_subject(subject_id: str) -> list[str]:
+            present = {
+                row[0]
+                for row in connection.execute(
+                    """
+                    SELECT DISTINCT rating
+                    FROM observation_competency_ratings
+                    WHERE subject_id = ?
+                    """,
+                    (subject_id,),
+                ).fetchall()
+            }
+            return [token for token in _CIPHER_RATING_TOKENS if token in present]
+
+        observation_range = tuple(
+            connection.execute(
+                "SELECT MIN(date), MAX(date) FROM observations"
+            ).fetchone()
+        )
+        profile_sizes = sorted(
+            int(row[0])
+            for row in connection.execute(
+                """
+                SELECT COUNT(selection.subject_id)
+                FROM student_documentation_subject_profiles AS profile
+                LEFT JOIN student_documentation_subject_selections AS selection
+                  ON selection.student_id = profile.student_id
+                 AND selection.school_year_id = profile.school_year_id
+                GROUP BY profile.student_id
+                """
+            ).fetchall()
+        )
+        return {
+            "assignments": int(connection.execute(
+                "SELECT COUNT(*) FROM student_school_year_assignments"
+            ).fetchone()[0]),
+            "catalog_active_assessable": len(catalog),
+            "catalog_areas": len({(row[1], row[2]) for row in catalog}),
+            "catalog_cmp000_rows": sum(
+                str(row[0]).startswith("CMP-000") for row in catalog
+            ),
+            "catalog_domains": len({row[1] for row in catalog}),
+            "catalog_first_id": str(catalog[0][0]) if catalog else "",
+            "catalog_last_id": str(catalog[-1][0]) if catalog else "",
+            "catalog_legacy_rows": sum(row[4] != "current" for row in catalog),
+            "catalog_topics": len({(row[1], row[2], row[3]) for row in catalog}),
+            "conference_drafts": int(connection.execute(
+                "SELECT COUNT(*) FROM learning_conference_drafts"
+            ).fetchone()[0]),
+            "conference_pdf_artifacts": int(connection.execute(
+                "SELECT COUNT(*) FROM learning_conference_pdf_artifacts"
+            ).fetchone()[0]),
+            "conference_revisions": int(connection.execute(
+                "SELECT COUNT(*) FROM learning_conference_revisions"
+            ).fetchone()[0]),
+            "courses": int(connection.execute(
+                "SELECT COUNT(*) FROM courses"
+            ).fetchone()[0]),
+            "document_types": sorted(
+                row[0]
+                for row in connection.execute(
+                    "SELECT DISTINCT document_type FROM documents"
+                ).fetchall()
+            ),
+            "documents": int(connection.execute(
+                "SELECT COUNT(*) FROM documents"
+            ).fetchone()[0]),
+            "empty_custom_subject_profiles": profile_sizes.count(0),
+            "foreign_key_violations": len(
+                connection.execute("PRAGMA foreign_key_check").fetchall()
+            ),
+            "groups": int(connection.execute(
+                "SELECT COUNT(*) FROM groups"
+            ).fetchone()[0]),
+            "observation_date_end": observation_range[1],
+            "observation_date_start": observation_range[0],
+            "observations": int(connection.execute(
+                "SELECT COUNT(*) FROM observations"
+            ).fetchone()[0]),
+            "overfachlich_observations": {
+                subject_id: int(connection.execute(
+                    "SELECT COUNT(*) FROM observations WHERE subject_id = ?",
+                    (subject_id,),
+                ).fetchone()[0])
+                for subject_id in COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS
+            },
+            "rating_tokens": [
+                token for token in _CIPHER_RATING_TOKENS if token in rating_tokens
+            ],
+            "rating_tokens_social": tokens_for_subject(
+                "selbst_sozialkompetenz"
+            ),
+            "rating_tokens_sport": tokens_for_subject("sport"),
+            "rating_tokens_standard": tokens_for_subject(
+                "arbeits_lernkompetenz"
+            ),
+            "report_drafts": int(connection.execute(
+                "SELECT COUNT(*) FROM report_drafts"
+            ).fetchone()[0]),
+            "report_pdf_artifacts": int(connection.execute(
+                "SELECT COUNT(*) FROM learning_report_pdf_artifacts"
+            ).fetchone()[0]),
+            "report_revisions": int(connection.execute(
+                "SELECT COUNT(*) FROM learning_report_revisions"
+            ).fetchone()[0]),
+            "student_subject_profile_sizes": profile_sizes,
+            "students": int(connection.execute(
+                "SELECT COUNT(*) FROM students"
+            ).fetchone()[0]),
+            "teaching_subjects_observed": sorted(
+                row[0]
+                for row in connection.execute(
+                    """
+                    SELECT DISTINCT subject_id FROM observations
+                    WHERE subject_id NOT IN (?, ?)
+                    """,
+                    tuple(COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS),
+                ).fetchall()
+            ),
+            "timetable_entries": int(connection.execute(
+                "SELECT COUNT(*) FROM timetable_entries"
+            ).fetchone()[0]),
+            "user_version": int(connection.execute(
+                "PRAGMA user_version"
+            ).fetchone()[0]),
+        }
+
+
+def _cipher_storage_inventory(paths) -> dict[str, object]:
+    managed_files = tuple(paths.encrypted_document_storage.rglob("*.jkmedoc"))
+    plaintext_payloads = 0
+    for path in managed_files:
+        payload = path.read_bytes()
+        if (
+            payload.startswith(b"%PDF")
+            or b"Synthetisch" in payload
+            or b"synthetisch" in payload
+        ):
+            plaintext_payloads += 1
+    return {
+        "managed_document_files": len(managed_files),
+        "managed_plaintext_payloads": plaintext_payloads,
+        "plaintext_pdf_files": len(tuple(paths.root.rglob("*.pdf"))),
+        "plaintext_text_files": len(tuple(paths.root.rglob("*.txt"))),
+    }
+
+
+def _require_complete_cipher_comparison_inventory(
+    inventory: dict[str, object],
+    *,
+    managed_documents: int,
+    storage: dict[str, object],
+) -> None:
+    required_tokens = list(_CIPHER_RATING_TOKENS)
+    if (
+        inventory["user_version"] != 4
+        or inventory["students"] != 24
+        or inventory["groups"] != 3
+        or inventory["courses"] != 3
+        or inventory["assignments"] != 24
+        or inventory["observations"] != 71
+        or inventory["catalog_active_assessable"] != 331
+        or inventory["catalog_first_id"] != "CMP-100001"
+        or inventory["catalog_last_id"] != "CMP-100331"
+        or inventory["catalog_domains"] != 12
+        or inventory["catalog_areas"] != 48
+        or inventory["catalog_topics"] != 81
+        or inventory["catalog_cmp000_rows"] != 0
+        or inventory["catalog_legacy_rows"] != 0
+        or inventory["empty_custom_subject_profiles"] < 1
+        or inventory["rating_tokens"] != required_tokens
+        or inventory["rating_tokens_standard"] != required_tokens
+        or inventory["rating_tokens_social"] != required_tokens
+        or inventory["rating_tokens_sport"] != required_tokens
+        or not set(_CIPHER_REQUIRED_TEACHING_SUBJECTS).issubset(
+            set(inventory["teaching_subjects_observed"])
+        )
+        or inventory["report_drafts"] != 2
+        or inventory["report_revisions"] != 1
+        or inventory["report_pdf_artifacts"] != 1
+        or inventory["conference_drafts"] != 2
+        or inventory["conference_revisions"] != 1
+        or inventory["conference_pdf_artifacts"] != 1
+        or managed_documents != 7
+        or storage["managed_document_files"] != managed_documents
+        or storage["managed_plaintext_payloads"] != 0
+        or storage["plaintext_pdf_files"] != 0
+        or storage["plaintext_text_files"] != 0
+        or inventory["foreign_key_violations"] != 0
+    ):
+        raise SeedDataError("Der synthetische Final-V4-Vergleichstestbestand ist unvollständig.")
 
 
 def _cipher_pilot_password(root: Path) -> str:

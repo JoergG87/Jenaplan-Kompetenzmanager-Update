@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Der ausschließlich explizit aufrufbare Final-V4-Testdatenseeder erzeugt
+  einen neuen synthetischen Vergleichsbestand mit 24 Schülern, mehreren
+  Organisations- und individuellen Fachprofilen, schuljahresweiten fachlichen
+  sowie überfachlichen Beobachtungen, allen vier bestehenden Ratingtokens,
+  Bericht-/LEG-Entwürfen, finalen verschlüsselten PDF-Artefakten, weiteren
+  Managed Documents und einem produktiv verifizierten `.jkmebackup`. Der
+  normale frische Produktstart bleibt frei von Schüler- und Testdaten.
+
 - Vorhandene verschlüsselte finale Bericht- und LEG-PDFs lassen sich über
   denselben schreibgeschützten In-App-Viewer lesen. Qt und die intern gegateten
   HTML-Hosts übergeben ausschließlich die opaque RPA-/LCA-ID an Python; der
