@@ -692,7 +692,7 @@ UX-Status UI Sprint 1: sichtbarer Hauptnavigationspunkt `Heute`; der technische 
 | Dokumentationsstatus in Schuelerlisten | Dokumentationsprojektion für die Mitglieder des `CurrentMembershipReadSnapshot` aus SQLite `competencies`, aktiven `data_observations`, `student_competency_confirmations`, `persistence_events` und `documentation_subject_settings` | Auswertung | Nein | `student_school_year_assignments` / V3-`students` / `data_competencies` / `data_observation_competencies` / `student_competency_confirmations` / `persistence_events` / `documentation_subject_settings` | kompakte Summary je aktuellem `ENROLLED`-Schueler; Assignment- und Dokumentationsdaten auf derselben Connection und im selben transaktionskonsistenten Snapshot, keine Abfrage je Kind oder Beobachtung; konkrete aktive Kompetenzen zaehlen, nicht dokumentationsrelevante Faecher zaehlen nicht als offen |
 | Schnellbeobachtung in Schuelerlisten | `StudentListItem.student_id` -> `NewObservationDialog` | Navigation / Eingabe | Ja (ueber freigegebenen Prozess) | `data_observations` | kompakte Zeilenaktion `Beobachten`; oeffnet bestehenden Beobachtungsdialog fuer genau diesen Schueler; Speichern laeuft ueber Adapter/Service/Repository |
 | Dokumentationsstand im Schuelerprofil | SQLite `competencies` + aktive `data_observations` + `student_competency_confirmations` + effektive Schüler-/Schuljahrfachmenge | Auswertung | Nein | `data_competencies` / `data_observation_competencies` / `student_competency_confirmations` / `documentation_subject_settings` / `student_documentation_subject_profiles` / `student_documentation_subject_selections` | konkrete aktive Kompetenzen zählen nur in den effektiven Fächern; nicht ausgewählte Fächer erscheinen nicht als Lücke; Soft Deletes ausgeschlossen; Bestätigungen zählen als dokumentiert |
-| Kompetenz-Cockpit | kanonische `StudentCompetencyStatusViewModel`-Zeilen aus `StudentDesktopAdapter.list_competency_status_projection_for_student(student_id)` plus effektive Schüler-/Schuljahrfachmenge | Anzeige / Navigation | Nein | `data_competencies` / `data_observation_competencies` / `student_competency_confirmations` / `documentation_subject_settings` / `student_documentation_subject_profiles` / `student_documentation_subject_selections` | rein lesende Hierarchie Fach -> Kompetenzbereich -> Thema -> Kompetenz; die normale aktuelle Sicht enthält nur effektive Fächer. Dokumentierte Evidenz außerhalb der aktuellen Relevanz bleibt separat lesbar. Lokale Suche sowie Fach-, Dokumentations- und Klassenstufenfilter schränken nur sichtbare aktuelle Karten und Zeilen ein. `Passende Kompetenzen` zeigt `stage_1_3` und `cross_stage`, `Klassenstufe 4` zeigt `stage_4` und `cross_stage`, `Alle Kompetenzen` alle Lernstufen innerhalb der effektiven Fächer. Ratings, Bestätigungen und fachliche Hierarchie bleiben unverändert |
+| Kompetenz-Cockpit | kanonische `StudentCompetencyStatusViewModel`-Zeilen aus `StudentDesktopAdapter.list_competency_status_projection_for_student(student_id)` plus effektive Schüler-/Schuljahrfachmenge | Anzeige / Navigation | Nein | `data_competencies` / `data_observation_competencies` / `student_competency_confirmations` / `documentation_subject_settings` / `student_documentation_subject_profiles` / `student_documentation_subject_selections` | rein lesende Hierarchie Fach -> Kompetenzbereich -> Thema -> Kompetenz; die normale aktuelle Sicht enthält immer die beiden überfachlichen Domänen und sonst nur effektive Unterrichtsfächer. Dokumentierte Evidenz außerhalb der aktuellen Relevanz bleibt separat lesbar. Lokale Suche sowie Fach-, Dokumentations- und Klassenstufenfilter schränken nur sichtbare aktuelle Karten und Zeilen ein. `Passende Kompetenzen` zeigt `stage_1_3` und `cross_stage`, `Klassenstufe 4` zeigt `stage_4` und `cross_stage`, `Alle Kompetenzen` alle Lernstufen innerhalb der effektiven Fächer. Ratings, Bestätigungen und fachliche Hierarchie bleiben unverändert |
 | Undokumentierte Kompetenzen im Cockpit | kanonische Sprint-6B-Zeilen mit `documentation_state = undocumented` | Anzeige | Nein | `data_competencies` | nicht als globale Liste; nur innerhalb eines manuell geöffneten Themas sichtbar; historisch referenzierte Kompetenzen werden nicht vermischt |
 | Bestaetigter Kompetenzstand | `student_competency_confirmations.confirmed_rating` nach `student_id` + `competency_id` | Anzeige / Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `student_competency_confirmations` | paedagogische Entscheidung der Lehrkraft; ueberschreibt keine Beobachtungen und aendert den Vorschlag nicht automatisch |
 | Berichtsvorschau | bestaetigter Kompetenzstand oder berechneter Vorschlag + aktive `data_observations` | Auswertung | Nein | `data_observation_competencies` / `student_competency_confirmations` / `data_observations` | strukturierte Berichtsvorbereitung nach Fach; zeigt den aktuellen Kompetenzstand je relevanter Kompetenz mit Quelle, bevorzugt bestaetigte Staende vor berechneten Vorschlaegen; Entwicklung wird getrennt aus chronologischen aktiven Beobachtungen abgeleitet und formuliert Einzelbeobachtung, stabile Verlaeufe, positive Entwicklung, Rueckschritt oder wechselnde Beobachtungslage; Soft Deletes ausgeschlossen; echte Beobachtungen und bestaetigte Kompetenzstaende bleiben sichtbar, auch wenn ein Fach nicht dokumentationsrelevant ist; kann als Text kopiert oder als einfache Textdatei exportiert werden; keine KI-Textgenerierung, keine finalen Zeugnisformulierungen, keine gespeicherte Berichtsdatenhaltung |
@@ -807,15 +807,56 @@ Datenquelle, berechnet keine Membership und besitzt keinen Schreibprozess.
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | ausgewaehlter Schueler | neue Beobachtung: `student_id` aus dem aktuellen `CurrentMembershipReadSnapshot`; Bearbeitung: gespeicherte `observations.student_id` -> V3-`students` | Anzeige | Nein | V3-`students` / `student_school_year_assignments` / `observations` | Namen werden nicht als technische Identitaet verwendet; beim Edit bleibt der bestehende Schülerbezug erhalten |
-| Fachauswahl | SQLite `competencies.subject_id` / `subject_name` + `documentation_subject_settings` | Eingabe | Nein | Kompetenzverwaltung / Lehrplanpflege + `documentation_subject_settings` | neue Beobachtungen bieten nur dokumentationsrelevante aktive Faecher an; App-Anzeigename `EPU`, kein App-Fach `Sachunterricht`; bei Bearbeitung bleibt das gespeicherte Fach sichtbar, auch wenn es inzwischen nicht dokumentationsrelevant ist |
+| Fachauswahl | SQLite `competencies.subject_id` / `subject_name` + `StudentDocumentationSubjectService.effective_documentation_subjects(student_id, school_year_id)` | Eingabe | Nein | Kompetenzverwaltung / Entwicklungsbuchkatalog + `documentation_subject_settings` / `student_documentation_subject_profiles` / `student_documentation_subject_selections` | `Überfachliche Entwicklung` bleibt immer direkt verfügbar. Die effektiven Unterrichtsfächer des Kindes bilden `Fächer`; andere aktive Unterrichtsfächer bleiben bewusst unter `Weitere Fächer` erreichbar. `ObservationSubjectOptionViewModel.is_primary` ist nur Darstellungsmetadatum und keine zweite Fachquelle. App-Anzeigename `EPU`, kein App-Fach `Sachunterricht`; bei Bearbeitung bleiben gespeicherte Fach- und Kompetenzreferenzen sichtbar |
 | Kompetenzauswahl | SQLite `competencies`, befuellt aus `data/curriculum_catalog_v1.csv` | Eingabe | Ja | `data_observation_competencies` | Drei-Zonen-Dialog mit separat scrollbarer Auswahl und separat scrollbarem Katalog; Fach, Kompetenzbereich, Thema und Kompetenz folgen deterministisch der kanonischen `sort_order`, ohne alphabetische Ersatzsortierung. Die Adapterprojektion traegt das vorhandene `learning_stage` fuer die lokalen Ansichten `Passende Kompetenzen`, `Klassenstufe 4` und `Alle Kompetenzen`. Neue Beobachtungen bieten nur `catalog_status = current` und `active = 1` an; jede Kompetenz hat `competency_id`, Fach, Kompetenzbereich, Thema, konkrete Kompetenz und lesbares Kurzlabel; ausgewaehlte Kompetenzbewertungen koennen aus mehreren Faechern stammen; beim Bearbeiten bleiben bereits bewertete `legacy`- oder inaktive Kompetenzen mit historischem Text sichtbar, bewertbar und entfernbar. Suche, Filter und Collapse veraendern weder Reihenfolge noch Auswahl oder Einzelbewertung |
-| Schnellauswahl | aktive SQLite `observations` + `observation_competency_ratings` -> aktive `current`-Zeilen aus `competencies` | Anzeige / Eingabe | Nein | `observations` / `observation_competency_ratings` / `competencies` | Adapterprojektion je Schueler und aktuell gewaehltem Fach: hoechstens vier eindeutige Kompetenzen, neueste zuerst; Legacy- und inaktive Kompetenzen ausgeschlossen; ohne Eintraege oder bei aktivem Suchtext ausgeblendet; Klick fuegt nur zur bestehenden Auswahl hinzu und speichert nichts eigenstaendig |
+| Schnellauswahl | aktive SQLite `observations` + `observation_competency_ratings` -> dieselbe schülerbezogene Fach-/Kompetenzprojektion wie der Katalog | Anzeige / Eingabe | Nein | `observations` / `observation_competency_ratings` / `competencies` | Adapterprojektion je Schueler und bewusst gewähltem Fach: hoechstens vier eindeutige Kompetenzen, neueste zuerst; ein weiteres Fach schleust nichts in ein primäres Fach ein, bleibt nach seiner bewussten Auswahl aber erreichbar; Legacy- und inaktive Kompetenzen ausgeschlossen; ohne Eintraege oder bei aktivem Suchtext ausgeblendet; Klick fuegt nur zur bestehenden Auswahl hinzu und speichert nichts eigenstaendig |
 | Beobachtungsdatum | SQLite `observations.date` | Eingabe | Ja | `observations` | Datum gehoert zur Beobachtung |
 | Beobachtungsnotiz | SQLite `observations.note` | Eingabe | Ja | `observations` | Schreiben ueber Adapter, Command, Service und Repository |
 | Schnellbeobachtung | bewusste Dialogeingabe; beim Bearbeiten aktive SQLite-`observations`-Zeile mit nichtleerer `note` und ohne `observation_competency_ratings` | Eingabe / Anzeige | Ja (ueber bestehenden Beobachtungsprozess) | `observations` / `observation_competency_ratings` | erlaubt Speichern ohne Kompetenz nur bei aktivierter Checkbox und nichtleerer Notiz; deaktiviert den Kompetenzbereich ohne Auswahl zu loeschen; im Verlauf dezent gekennzeichnet |
 | Beobachtungskontext | SQLite `observations.context` | Eingabe | Ja | `observations` | Kontext gehoert zur Beobachtung |
 | Kompetenzzuordnung | SQLite `observation_competency_ratings` + zentral aus `competencies.subject_id` aufgelöstes Ratingprofil | Eingabe | Ja | `observation_competency_ratings` | n:m-Zuordnung; vier direkt anklickbare Bewertungs-Chips schreiben weiterhin genau einen unveränderten Wert `--`, `-`, `+` oder `++` je konkreter `competency_id`. Standard zeigt die bisherigen Texte, Selbst-/Sozialkompetenz `Kaum vorhanden` bis `Ausgeprägt`, Sport `Erste Übungen` bis `Sicher`; dieselben Token binden in allen Profilen dieselben App-Farben. Keine Pflanzen- oder SBJ-Farbsemantik; `offen` erzeugt keine Zuordnungszeile |
 | Dokumente und Medien | Dateiauswahl -> `StudentDesktopAdapter` -> SQLite `documents` nach `student_id` und optional `observation_id` | Eingabe | Ja (ueber freigegebenen Prozess) | SQLite `documents` + Dateisystem `data/documents/<student_id>/` | Datei wird in den App-Datenordner kopiert; Beobachtungsanhaenge tragen zusaetzlich `observation_id`; die ruhige Dateizeile zeigt Dateiname, Typ und Entfernen-Aktion. Entfernen setzt `documents.active = 0`; keine Datei-BLOBs |
+
+### Read-only-Befund `learning_stage` im Entwicklungsbuch-Katalog
+
+Stand der Analyse: 2026-08-12. Der unveränderte aktuelle Katalog enthält 331
+aktive `current`-Kompetenzen. Insgesamt entfallen 0 auf `stage_1_3`, 0 auf
+`stage_4`, 331 auf `cross_stage` und 0 auf unbekannte oder fehlende Werte.
+
+| Domäne | `stage_1_3` | `stage_4` | `cross_stage` | unbekannt/fehlend |
+| --- | ---: | ---: | ---: | ---: |
+| Selbst- und Sozialkompetenz | 0 | 0 | 8 | 0 |
+| Arbeits-/Lernkompetenz | 0 | 0 | 13 | 0 |
+| EPU | 0 | 0 | 6 | 0 |
+| Deutsch | 0 | 0 | 41 | 0 |
+| Mathematik | 0 | 0 | 67 | 0 |
+| Kreatives Gestalten | 0 | 0 | 34 | 0 |
+| Sport | 0 | 0 | 64 | 0 |
+| Ethik | 0 | 0 | 30 | 0 |
+| Religion | 0 | 0 | 20 | 0 |
+| Musik | 0 | 0 | 29 | 0 |
+| Englisch | 0 | 0 | 11 | 0 |
+| Schulgarten | 0 | 0 | 8 | 0 |
+
+Die `source_reference`-Werte verweisen auf das Entwicklungsbuch, dessen
+begleitendes Inventar besitzt jedoch kein Feld für `learning_stage`. Beim
+Katalogwechsel wurden alle neuen Zeilen einheitlich mit `grade_band = 1-4`
+und `learning_stage = cross_stage` angelegt. Die Stage-Werte wurden damit
+nicht aus dem Entwicklungsbuch übernommen und nicht fachlich je Kompetenz
+neu differenziert; sie verwenden den konservativen Kompatibilitätswert des
+älteren Katalogmodells.
+
+Die aktuelle Filterlogik nimmt `cross_stage` sowohl in `Passende Kompetenzen`
+als auch in `Klassenstufe 4` auf. Deshalb sind die sichtbaren Mengen bei allen
+drei Filtern identisch, zum Beispiel EPU 6/6/6, Deutsch 41/41/41,
+Mathematik 67/67/67 und Sport 64/64/64 (Reihenfolge: passend / Stufe 4 /
+alle). Das gilt entsprechend für jede Domäne in der Tabelle.
+
+Empfehlung für eine spätere Product-Owner-Entscheidung: Variante 3,
+Stage-UI für den Entwicklungsbuch-Katalog entfernen oder auf einen einzigen
+ungefilterten Zustand vereinfachen. Die gegenwärtigen drei Texte suggerieren
+eine nicht vorhandene fachliche Differenzierung. In diesem Auftrag werden
+weder Texte noch Filterlogik geändert.
 
 ## Berichte und Dashboard
 

@@ -502,12 +502,29 @@ class NewObservationDialog(QDialog):
         for presentation_group in (
             COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR,
             COMPETENCY_PRESENTATION_GROUP_SUBJECTS,
+            "Weitere Fächer",
         ):
             grouped_subjects = tuple(
                 subject
                 for subject in subject_options
-                if competency_presentation_group(subject.subject_key)
-                == presentation_group
+                if (
+                    presentation_group
+                    == COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR
+                    and competency_presentation_group(subject.subject_key)
+                    == COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR
+                )
+                or (
+                    presentation_group == COMPETENCY_PRESENTATION_GROUP_SUBJECTS
+                    and competency_presentation_group(subject.subject_key)
+                    == COMPETENCY_PRESENTATION_GROUP_SUBJECTS
+                    and subject.is_primary
+                )
+                or (
+                    presentation_group == "Weitere Fächer"
+                    and competency_presentation_group(subject.subject_key)
+                    == COMPETENCY_PRESENTATION_GROUP_SUBJECTS
+                    and not subject.is_primary
+                )
             )
             if not grouped_subjects:
                 continue

@@ -96,6 +96,7 @@ class ObservationSubjectOptionViewModel:
 
     subject_key: str
     display_name: str
+    is_primary: bool = True
 
 
 @dataclass(frozen=True)
@@ -524,6 +525,7 @@ def build_student_competency_cockpit(
         None
         if documentation_subject_ids is None
         else set(documentation_subject_ids)
+        | set(COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS)
     )
     current_statuses = tuple(
         status

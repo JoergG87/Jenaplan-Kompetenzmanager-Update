@@ -2898,7 +2898,10 @@ Betroffene Datenquellen:
 
 - SQLite `observations`
 - SQLite `observation_competency_ratings`
-- SQLite `documentation_subject_settings` nur lesend fuer die Fachauswahl
+- SQLite `documentation_subject_settings`,
+  `student_documentation_subject_profiles` und
+  `student_documentation_subject_selections` nur lesend ueber
+  `StudentDocumentationSubjectService` fuer die primaere Fachauswahl
 - Export-/Legacy-Projektionen `data_observations` und `data_observation_competencies`
 - spaeter optional `data_media`
 
@@ -2916,7 +2919,7 @@ Automatisch profitierende Ansichten:
 - Dashboards
 
 Regel: Beobachtung ist Source of Truth. Auswertungen leiten sich daraus ab. Die Schnellauswahl im Beobachtungsdialog ist eine nicht schreibende Adapterprojektion aus bereits aktiven Beobachtungen und ihren Kompetenzbewertungen: nur aktive `current`-Kompetenzen, je Schueler und Fach maximal vier eindeutige Eintraege, neueste zuerst. Sie erzeugt keine Tabelle, keine Historie und keine zusaetzliche Persistenz und wird nach erfolgreichem Speichern neu abgeleitet.
-Neue Beobachtungen koennen nur mit dokumentationsrelevanten aktiven Faechern aus der aktuellen Settings-Auswahl angelegt werden; ohne Settings-Zeilen gilt der aktive Katalog. Die Kompetenzauswahl bietet dabei ausschliesslich aktive `current`-Kompetenzen an. Beobachtung und Kompetenzbewertungen werden atomar gespeichert; eine Bewertung gehoert zur konkreten Kompetenz, nicht global zur Beobachtung. Die sichtbare Struktur lautet Fach -> Kompetenzbereich -> Thema -> Kompetenz und wird ueber vorhandene Felder abgebildet: `subject_id` / `subject_name`, `learning_area`, `competency_group`, `description` / `competency_text`. `offen` ist kein gespeicherter Ratingwert; eine nicht bewertete Kompetenz erzeugt keine Zeile in `observation_competency_ratings`. Eine bewusst aktivierte Schnellbeobachtung darf ohne Kompetenzbewertungen gespeichert werden, wenn `note` nach dem Trimmen nicht leer ist. Sie erzeugt keine Zeile in `observation_competency_ratings` und wirkt deshalb nicht auf kompetenzbezogene Projektionen. Medien/Anhaenge und Berichte bleiben im bestehenden separaten Prozess.
+Neue Beobachtungen zeigen die beiden ueberfachlichen Domaenen und die ueber den bestehenden schueler-/schuljahresbezogenen Resolver effektiven Unterrichtsfaecher primaer. Andere aktive Unterrichtsfaecher bleiben bewusst unter `Weitere Faecher` erreichbar; eine leere `custom`-Auswahl laesst damit primaer nur die beiden ueberfachlichen Domaenen stehen. Die Kompetenzauswahl bietet dabei ausschliesslich aktive `current`-Kompetenzen an. `Zuletzt verwendet` verwendet dieselbe Fach- und Kompetenzprojektion und erscheint nur fuer das bewusst gewaehlte Fach. Beobachtung und Kompetenzbewertungen werden atomar gespeichert; eine Bewertung gehoert zur konkreten Kompetenz, nicht global zur Beobachtung. Die sichtbare Struktur lautet Fach -> Kompetenzbereich -> Thema -> Kompetenz und wird ueber vorhandene Felder abgebildet: `subject_id` / `subject_name`, `learning_area`, `competency_group`, `description` / `competency_text`. `offen` ist kein gespeicherter Ratingwert; eine nicht bewertete Kompetenz erzeugt keine Zeile in `observation_competency_ratings`. Eine bewusst aktivierte Schnellbeobachtung darf ohne Kompetenzbewertungen gespeichert werden, wenn `note` nach dem Trimmen nicht leer ist. Sie erzeugt keine Zeile in `observation_competency_ratings` und wirkt deshalb nicht auf kompetenzbezogene Projektionen. Medien/Anhaenge und Berichte bleiben im bestehenden separaten Prozess.
 
 ## Beobachtung aendern
 
@@ -2928,7 +2931,10 @@ Betroffene Datenquellen:
 
 - SQLite `observations`
 - SQLite `observation_competency_ratings`
-- SQLite `documentation_subject_settings` nur lesend fuer die Fachauswahl
+- SQLite `documentation_subject_settings`,
+  `student_documentation_subject_profiles` und
+  `student_documentation_subject_selections` nur lesend ueber
+  `StudentDocumentationSubjectService` fuer die primaere Fachauswahl
 - Export-/Legacy-Projektionen `data_observations` und `data_observation_competencies`
 
 Erforderliche IDs:

@@ -963,13 +963,22 @@ class StudentDesktopAdapter:
 
     def list_observation_subject_options(
         self,
+        student_id: str,
         initial_draft: ObservationDraftViewModel | None = None,
     ) -> tuple[ObservationSubjectOptionViewModel, ...]:
-        """Return subject options for the observation dialog."""
+        """Return primary and additional subject options for one student."""
+        effective_subject_ids = self._effective_documentation_subject_ids(student_id)
+        primary_subject_ids = (
+            effective_subject_ids
+            | set(COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS)
+        )
         options = [
-            ObservationSubjectOptionViewModel(option.subject_id, option.label)
+            ObservationSubjectOptionViewModel(
+                option.subject_id,
+                option.label,
+                option.subject_id in primary_subject_ids,
+            )
             for option in self.list_documentation_subject_options()
-            if option.selected
         ]
         existing_subject_keys = {option.subject_key for option in options}
         initial_subjects = (
@@ -993,6 +1002,7 @@ class StudentDesktopAdapter:
                 ObservationSubjectOptionViewModel(
                     subject_key,
                     f"{subject_label or subject_key} (nicht dokumentationsrelevant)",
+                    False,
                 )
             )
             existing_subject_keys.add(subject_key)
@@ -1000,6 +1010,7 @@ class StudentDesktopAdapter:
 
     def list_observation_competency_subject_groups(
         self,
+        student_id: str,
         initial_draft: ObservationDraftViewModel | None = None,
     ) -> tuple[ObservationCompetencySubjectGroupViewModel, ...]:
         """Return active and persisted observation competencies for dialog rendering."""
@@ -1011,7 +1022,10 @@ class StudentDesktopAdapter:
         curriculum_adapter = CurriculumDesktopAdapter(database=self.database)
         catalog_entries = curriculum_adapter.list_entries()
         subject_groups: list[ObservationCompetencySubjectGroupViewModel] = []
-        for subject_option in self.list_observation_subject_options(initial_draft):
+        for subject_option in self.list_observation_subject_options(
+            student_id,
+            initial_draft,
+        ):
             learning_area_groups: dict[
                 str,
                 dict[str, list[ObservationCompetencyOptionViewModel]],
@@ -1093,6 +1107,7 @@ class StudentDesktopAdapter:
         current_competencies = {
             competency.competency_id: competency
             for subject_group in self.list_observation_competency_subject_groups(
+                student_id,
                 initial_draft
             )
             for learning_area_group in subject_group.learning_area_groups

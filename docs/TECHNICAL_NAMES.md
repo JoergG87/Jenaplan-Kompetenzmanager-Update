@@ -1933,8 +1933,8 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentDesktopAdapter.get_report_preview_for_student(student_id)`
 - `StudentDesktopAdapter.settings_view_model()`
 - `StudentDesktopAdapter.list_documentation_subject_options()`
-- `StudentDesktopAdapter.list_observation_subject_options(initial_draft)`
-- `StudentDesktopAdapter.list_observation_competency_subject_groups(initial_draft)`
+- `StudentDesktopAdapter.list_observation_subject_options(student_id, initial_draft)`
+- `StudentDesktopAdapter.list_observation_competency_subject_groups(student_id, initial_draft)`
 - `StudentDesktopAdapter.save_active_documentation_subjects(subject_ids)`
 - `StudentDesktopAdapter._active_documentation_subject_ids()`
 - `StudentDesktopAdapter._initial_observation_subject_key(initial_draft)`
@@ -2109,6 +2109,7 @@ Registrierte Python-Klassen und Funktionen:
 - `ObservationCompetencyRatingDraft.competency_id`
 - `ObservationCompetencyRatingDraft.subject_display_name`
 - `ObservationSubjectOptionViewModel`
+- `ObservationSubjectOptionViewModel.is_primary`
 - `ObservationCompetencySubjectGroupViewModel`
 - `ObservationCompetencySubjectGroupViewModel.subject_key`
 - `ObservationCompetencySubjectGroupViewModel.subject_display_name`

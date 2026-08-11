@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Der Beobachtungsdialog löst die primäre Fachauswahl jetzt je Kind und
+  aktuellem Schuljahr über den bestehenden kanonischen
+  `effective_documentation_subjects`-Vertrag auf. Die beiden überfachlichen
+  Domänen bleiben immer direkt verfügbar; nicht primäre aktive
+  Unterrichtsfächer bleiben bewusst unter `Weitere Fächer` erreichbar.
+  Bearbeitete Bestandsbeobachtungen behalten ihre Kompetenz-IDs und Ratings,
+  und `Zuletzt verwendet` nutzt dieselbe Adapterprojektion. Das
+  Kompetenz-Cockpit ergänzt die beiden überfachlichen Domänen auch bei leerer
+  individueller `custom`-Auswahl. Schema, Katalog und bestehende Beobachtungen
+  werden nicht verändert.
+
+- Read-only-Katalogbefund: Alle 331 Kompetenzen des Entwicklungsbuch-Katalogs
+  tragen derzeit `learning_stage = cross_stage`; deshalb liefern `Passende
+  Kompetenzen`, `Klassenstufe 4` und `Alle Kompetenzen` aktuell identische
+  Mengen. Die Stage-UI bleibt bis zu einer Product-Owner-Entscheidung
+  unverändert.
+
 - Qt-Stabilität: Das Kompetenz-Cockpit schaltet seine Hierarchie ohne
   GraphicsEffect-Compositing, ausgewählte Beobachtungskompetenzen reservieren
   Platz für zwei vollständige Zeilen, die Schnellauswahl heißt sichtbar

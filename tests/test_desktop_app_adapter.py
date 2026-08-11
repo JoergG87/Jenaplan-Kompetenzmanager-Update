@@ -780,20 +780,75 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_observation_subject_options_use_documentation_subject_selection(
         self,
     ) -> None:
-        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
-
-        options = self.adapter.list_observation_subject_options()
-
-        self.assertEqual(
-            tuple(option.subject_key for option in options),
+        student_id = f"{STUDENT_ID_PREFIX}-000001"
+        self._save_custom_documentation_subjects(
+            student_id,
             ("deutsch", "mathematik"),
         )
-        self.assertNotIn("epu", {option.subject_key for option in options})
+
+        options = self.adapter.list_observation_subject_options(student_id)
+
+        self.assertEqual(
+            tuple(option.subject_key for option in options if option.is_primary),
+            (
+                "selbst_sozialkompetenz",
+                "arbeits_lernkompetenz",
+                "deutsch",
+                "mathematik",
+            ),
+        )
+        self.assertEqual(
+            tuple(
+                option.subject_key
+                for option in options
+                if not option.is_primary
+            ),
+            (
+                "epu",
+                "kreatives_gestalten",
+                "sport",
+                "ethik",
+                "religion",
+                "musik",
+                "englisch",
+                "schulgarten",
+            ),
+        )
+
+    def test_observation_subject_options_keep_cross_curricular_primary_for_empty_custom(
+        self,
+    ) -> None:
+        student_id = f"{STUDENT_ID_PREFIX}-000001"
+        self._save_custom_documentation_subjects(student_id, ())
+
+        options = self.adapter.list_observation_subject_options(student_id)
+
+        self.assertEqual(
+            tuple(option.subject_key for option in options if option.is_primary),
+            ("selbst_sozialkompetenz", "arbeits_lernkompetenz"),
+        )
+        self.assertEqual(
+            tuple(option.subject_key for option in options if not option.is_primary),
+            (
+                "epu",
+                "deutsch",
+                "mathematik",
+                "kreatives_gestalten",
+                "sport",
+                "ethik",
+                "religion",
+                "musik",
+                "englisch",
+                "schulgarten",
+            ),
+        )
 
     def test_observation_subject_options_default_to_active_catalog_subjects(
         self,
     ) -> None:
-        options = self.adapter.list_observation_subject_options()
+        options = self.adapter.list_observation_subject_options(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
         expected_subject_ids = tuple(
             option.subject_id
             for option in self.adapter.list_documentation_subject_options()
@@ -807,11 +862,51 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "selbst_sozialkompetenz",
             {option.subject_key for option in options},
         )
+        self.assertTrue(all(option.is_primary for option in options))
 
-    def test_observation_subject_options_keep_initial_non_documentation_subject(
+    def test_competency_cockpit_keeps_cross_curricular_for_empty_custom(
         self,
     ) -> None:
-        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+        student_id = f"{STUDENT_ID_PREFIX}-000001"
+        self._save_custom_documentation_subjects(student_id, ())
+
+        cockpit = self.adapter.competency_cockpit_for_student(student_id)
+
+        self.assertEqual(
+            tuple(subject.subject_id for subject in cockpit.subjects),
+            ("selbst_sozialkompetenz", "arbeits_lernkompetenz"),
+        )
+
+    def test_competency_cockpit_combines_cross_curricular_and_effective_subjects(
+        self,
+    ) -> None:
+        student_id = f"{STUDENT_ID_PREFIX}-000001"
+        self._save_custom_documentation_subjects(
+            student_id,
+            ("deutsch", "sport", "englisch"),
+        )
+
+        cockpit = self.adapter.competency_cockpit_for_student(student_id)
+
+        self.assertEqual(
+            tuple(subject.subject_id for subject in cockpit.subjects),
+            (
+                "selbst_sozialkompetenz",
+                "arbeits_lernkompetenz",
+                "deutsch",
+                "sport",
+                "englisch",
+            ),
+        )
+
+    def test_observation_subject_options_keep_initial_additional_subject(
+        self,
+    ) -> None:
+        student_id = f"{STUDENT_ID_PREFIX}-000001"
+        self._save_custom_documentation_subjects(
+            student_id,
+            ("deutsch", "mathematik"),
+        )
         initial_draft = self._sample_observation_draft(
             subject_id="musik",
             subject_display_name="Musik",
@@ -828,18 +923,24 @@ class DesktopAppAdapterTest(unittest.TestCase):
             ),
         )
 
-        options = self.adapter.list_observation_subject_options(initial_draft)
-
-        self.assertEqual(options[-1].subject_key, "musik")
-        self.assertEqual(
-            options[-1].display_name,
-            "Musik (nicht dokumentationsrelevant)",
+        options = self.adapter.list_observation_subject_options(
+            student_id,
+            initial_draft,
         )
+        music_options = tuple(
+            option for option in options if option.subject_key == "musik"
+        )
+
+        self.assertEqual(len(music_options), 1)
+        self.assertEqual(music_options[0].display_name, "Musik")
+        self.assertFalse(music_options[0].is_primary)
 
     def obsolete_observation_competency_hierarchy_defaults_to_active_catalog_subjects(
         self,
     ) -> None:
-        groups = self.adapter.list_observation_competency_subject_groups()
+        groups = self.adapter.list_observation_competency_subject_groups(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
         expected_subject_ids = tuple(
             option.subject_id
             for option in self.adapter.list_documentation_subject_options()
@@ -858,23 +959,33 @@ class DesktopAppAdapterTest(unittest.TestCase):
             self._find_observation_competency_option(groups, self.music_listening_competency_id)
         )
 
-    def test_observation_competency_hierarchy_uses_documentation_subjects(
+    def test_observation_competency_hierarchy_covers_primary_and_additional_subjects(
         self,
     ) -> None:
-        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+        student_id = f"{STUDENT_ID_PREFIX}-000001"
+        self._save_custom_documentation_subjects(
+            student_id,
+            ("deutsch", "mathematik"),
+        )
 
-        groups = self.adapter.list_observation_competency_subject_groups()
+        groups = self.adapter.list_observation_competency_subject_groups(
+            student_id
+        )
+        options = self.adapter.list_observation_subject_options(student_id)
 
         self.assertEqual(
             tuple(group.subject_key for group in groups),
-            ("deutsch", "mathematik"),
+            tuple(option.subject_key for option in options),
         )
-        self.assertNotIn("epu", {group.subject_key for group in groups})
+        self.assertIn("epu", {group.subject_key for group in groups})
+        self.assertIn("deutsch", {group.subject_key for group in groups})
 
     def obsolete_observation_competency_hierarchy_contains_concrete_math_time_competency(
         self,
     ) -> None:
-        groups = self.adapter.list_observation_competency_subject_groups()
+        groups = self.adapter.list_observation_competency_subject_groups(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
         competency = self._find_observation_competency_option(groups, self.math_time_competency_id)
         subject_group = self._observation_subject_group(groups, "mathematik")
 
@@ -897,7 +1008,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_observation_competency_hierarchy_preserves_catalog_sort_order(
         self,
     ) -> None:
-        groups = self.adapter.list_observation_competency_subject_groups()
+        groups = self.adapter.list_observation_competency_subject_groups(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
 
         for subject in groups:
             area_orders = [
@@ -941,7 +1054,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
             ),
         )
 
-        groups = self.adapter.list_observation_competency_subject_groups(initial_draft)
+        groups = self.adapter.list_observation_competency_subject_groups(
+            f"{STUDENT_ID_PREFIX}-000001",
+            initial_draft,
+        )
         competency = self._find_observation_competency_option(groups, "CMP-000318")
 
         self.assertIsNotNone(competency)
@@ -958,7 +1074,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def obsolete_observation_competency_hierarchy_keeps_current_deutsch_competency(
         self,
     ) -> None:
-        groups = self.adapter.list_observation_competency_subject_groups()
+        groups = self.adapter.list_observation_competency_subject_groups(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
         competency = self._find_observation_competency_option(groups, self.german_listening_competency_id)
 
         self.assertIsNotNone(competency)
@@ -993,6 +1111,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
         groups = self.adapter.list_observation_competency_subject_groups(
+            f"{STUDENT_ID_PREFIX}-000001",
             initial_draft
         )
         selected = self._find_observation_competency_option(groups, self.math_time_competency_id)
@@ -1038,6 +1157,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
         groups = self.adapter.list_observation_competency_subject_groups(
+            f"{STUDENT_ID_PREFIX}-000001",
             initial_draft
         )
         music_group = self._observation_subject_group(groups, "musik")
@@ -4164,7 +4284,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
     def test_observation_dialog_projection_uses_fresh_catalog_stage_metadata(self) -> None:
         competencies = {
             competency.competency_id: competency
-            for subject in self.adapter.list_observation_competency_subject_groups()
+            for subject in self.adapter.list_observation_competency_subject_groups(
+                f"{STUDENT_ID_PREFIX}-000001"
+            )
             for area in subject.learning_area_groups
             for topic in area.competency_groups
             for competency in topic.competencies
@@ -4195,8 +4317,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertNotIn("EPU", subject_labels)
         self.assertIsNotNone(app)
 
-    def test_observation_dialog_keeps_initial_non_documentation_subject(self) -> None:
-        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+    def test_observation_dialog_keeps_initial_additional_subject(self) -> None:
+        self._save_custom_documentation_subjects(
+            f"{STUDENT_ID_PREFIX}-000001",
+            ("deutsch", "mathematik"),
+        )
         initial_draft = self._sample_observation_draft(
             subject_id="musik",
             subject_display_name="Musik",
@@ -4218,10 +4343,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         draft = dialog.create_draft()
 
         self.assertEqual(dialog.subject_select.currentData(), "musik")
-        self.assertEqual(
-            dialog.subject_select.currentText(),
-            "Musik (nicht dokumentationsrelevant)",
-        )
+        self.assertEqual(dialog.subject_select.currentText(), "Musik")
         self.assertEqual(draft.subject_id, "musik")
         self.assertEqual(draft.competency_ratings[0].subject_key, "musik")
         self.assertEqual(draft.competency_ratings[0].subject_display_name, "Musik")
@@ -5056,7 +5178,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
 
     def test_observation_dialog_honors_documentation_subject_hierarchy(self) -> None:
-        self.adapter.save_active_documentation_subjects(("deutsch", "mathematik"))
+        self._save_custom_documentation_subjects(
+            f"{STUDENT_ID_PREFIX}-000001",
+            ("deutsch", "mathematik"),
+        )
         dialog = self._observation_dialog_with_hierarchy()
         subject_labels = tuple(
             dialog.subject_select.itemText(index)
@@ -5070,8 +5195,159 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 for tile in dialog.competency_catalog_tiles.values()
             )
 
-        self.assertEqual(subject_labels, ("Fächer", "Deutsch", "Mathematik"))
-        self.assertEqual(visible_subject_keys, {"deutsch", "mathematik"})
+        self.assertEqual(
+            subject_labels[:6],
+            (
+                "Überfachliche Entwicklung",
+                "Selbst- und Sozialkompetenz",
+                "Arbeits-/Lernkompetenz",
+                "Fächer",
+                "Deutsch",
+                "Mathematik",
+            ),
+        )
+        self.assertIn("Weitere Fächer", subject_labels)
+        self.assertEqual(
+            visible_subject_keys,
+            {
+                "selbst_sozialkompetenz",
+                "arbeits_lernkompetenz",
+                "epu",
+                "deutsch",
+                "mathematik",
+                "kreatives_gestalten",
+                "sport",
+                "ethik",
+                "religion",
+                "musik",
+                "englisch",
+                "schulgarten",
+            },
+        )
+
+    def test_additional_subject_recent_competency_requires_explicit_subject_choice(
+        self,
+    ) -> None:
+        student_id = f"{STUDENT_ID_PREFIX}-000001"
+        sport_competency = next(
+            competency
+            for subject in self.adapter.list_observation_competency_subject_groups(
+                student_id
+            )
+            for area in subject.learning_area_groups
+            for topic in area.competency_groups
+            for competency in topic.competencies
+            if competency.subject_key == "sport"
+        )
+        saved = self.adapter.save_observation(
+            self._sample_observation_draft(
+                subject_id="sport",
+                subject_display_name="Sport",
+                competency_ratings=(
+                    self._sample_observation_rating(
+                        sport_competency.competency_id,
+                        sport_competency.subject_key,
+                        sport_competency.subject_display_name,
+                        sport_competency.learning_area,
+                        sport_competency.competency_group,
+                        sport_competency.competency_text,
+                        "+",
+                    ),
+                ),
+            )
+        )
+        self.assertIsInstance(saved, SuccessResult)
+        self._save_custom_documentation_subjects(student_id, ("deutsch",))
+
+        dialog = self._observation_dialog_with_hierarchy()
+
+        self.assertNotIn(
+            sport_competency.competency_id,
+            dialog.recent_competency_chips,
+        )
+        self._select_observation_subject(dialog, "sport")
+        self.assertIn(
+            sport_competency.competency_id,
+            dialog.recent_competency_chips,
+        )
+
+    def test_edit_preserves_rating_after_subject_becomes_additional(self) -> None:
+        student_id = f"{STUDENT_ID_PREFIX}-000001"
+        sport_competency = next(
+            competency
+            for subject in self.adapter.list_observation_competency_subject_groups(
+                student_id
+            )
+            for area in subject.learning_area_groups
+            for topic in area.competency_groups
+            for competency in topic.competencies
+            if competency.subject_key == "sport"
+        )
+        saved = self.adapter.save_observation(
+            self._sample_observation_draft(
+                subject_id="sport",
+                subject_display_name="Sport",
+                competency_ratings=(
+                    self._sample_observation_rating(
+                        sport_competency.competency_id,
+                        sport_competency.subject_key,
+                        sport_competency.subject_display_name,
+                        sport_competency.learning_area,
+                        sport_competency.competency_group,
+                        sport_competency.competency_text,
+                        "++",
+                    ),
+                ),
+            )
+        )
+        self.assertIsInstance(saved, SuccessResult)
+        with self.database.connect() as connection:
+            connection.execute(
+                """
+                UPDATE competencies
+                SET active = 0, catalog_status = 'legacy'
+                WHERE competency_id = ?
+                """,
+                (sport_competency.competency_id,),
+            )
+            connection.commit()
+        self._save_custom_documentation_subjects(student_id, ("deutsch",))
+        draft = self.adapter.observation_draft_for_edit("OBS-000001")
+        self.assertIsNotNone(draft)
+        if draft is None:
+            raise AssertionError("Expected persisted observation draft")
+
+        groups = self.adapter.list_observation_competency_subject_groups(
+            student_id,
+            draft,
+        )
+        preserved = self._find_observation_competency_option(
+            groups,
+            sport_competency.competency_id,
+        )
+
+        self.assertIsNotNone(preserved)
+        if preserved is not None:
+            self.assertTrue(preserved.selected)
+            self.assertEqual(preserved.rating, "++")
+            self.assertFalse(preserved.is_active)
+            self.assertEqual(preserved.catalog_status, "legacy")
+        result = self.adapter.update_observation(
+            replace(draft, note="Legitime spätere Bearbeitung.")
+        )
+        stored = SQLiteObservationRepository(self.database).get_observation(
+            "OBS-000001"
+        )
+        self.assertIsInstance(result, SuccessResult)
+        self.assertIsNotNone(stored)
+        if stored is not None:
+            self.assertEqual(
+                tuple(
+                    (rating.competency_id, rating.rating)
+                    for rating in stored.competency_ratings
+                ),
+                ((sport_competency.competency_id, "++"),),
+            )
 
     def test_observation_dialog_uses_four_rating_chips_per_competency(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
@@ -5353,10 +5629,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
         profile_source = inspect.getsource(shell.AppShell.show_student_profile)
 
         self.assertIn("NewObservationDialog(", source)
-        self.assertIn("list_observation_subject_options(prefill)", source)
-        self.assertIn("list_observation_subject_options()", source)
-        self.assertIn("list_observation_competency_subject_groups(prefill)", source)
-        self.assertIn("list_observation_competency_subject_groups()", source)
+        self.assertIn("list_observation_subject_options(", source)
+        self.assertIn("list_observation_competency_subject_groups(", source)
+        self.assertIn("student.student_id", source)
         self.assertIn("self.show_student_profile(student.student_id)", source)
         self.assertIn('self.status_label.setText("Beobachtung wurde gespeichert.")', source)
         self.assertIn("student_profile_projection_bundle(", profile_source)
@@ -5375,10 +5650,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("self.open_quick_observation_dialog", shell_source)
         self.assertIn("self.adapter.get_student_profile(student_id)", quick_source)
         self.assertIn("NewObservationDialog(", quick_source)
-        self.assertIn("list_observation_subject_options(prefill)", quick_source)
-        self.assertIn("list_observation_subject_options()", quick_source)
-        self.assertIn("list_observation_competency_subject_groups(prefill)", quick_source)
-        self.assertIn("list_observation_competency_subject_groups()", quick_source)
+        self.assertIn("list_observation_subject_options(", quick_source)
+        self.assertIn("list_observation_competency_subject_groups(", quick_source)
+        self.assertIn("student.student_id", quick_source)
         self.assertIn("self.refresh_overview()", quick_source)
         self.assertIn("self.refresh_students()", quick_source)
         self.assertIn('self.status_label.setText("Beobachtung wurde gespeichert.")', quick_source)
@@ -5403,14 +5677,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIn("observation_draft_for_edit(observation_id)", source)
         self.assertIn("initial_draft=draft", source)
-        self.assertIn(
-            "subject_options=self.adapter.list_observation_subject_options(draft)",
-            source,
-        )
-        self.assertIn(
-            "self.adapter.list_observation_competency_subject_groups(draft)",
-            source,
-        )
+        self.assertIn("list_observation_subject_options(", source)
+        self.assertIn("list_observation_competency_subject_groups(", source)
+        self.assertIn("student.student_id", source)
         self.assertIn("self.show_student_profile(student.student_id)", source)
         self.assertIn('self.status_label.setText("Beobachtung wurde aktualisiert.")', source)
 
@@ -7288,9 +7557,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
             self.assertFalse(details.isHidden())
             self.assertEqual(button.text(), "Schließen ▴")
-            effect = getattr(button, "_motion_opacity_effect", None)
-            self.assertIsNotNone(effect)
-            self.assertEqual(effect.opacity(), 1.0)
+            self.assertIsNone(button.graphicsEffect())
 
             dialog = self._observation_dialog_with_hierarchy()
             self._select_observation_subject(dialog, "mathematik")
@@ -8618,7 +8885,9 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def _recent_rating(self, competency_id: str) -> ObservationCompetencyRatingDraft:
         competency = self._find_observation_competency_option(
-            self.adapter.list_observation_competency_subject_groups(),
+            self.adapter.list_observation_competency_subject_groups(
+                f"{STUDENT_ID_PREFIX}-000001"
+            ),
             competency_id,
         )
         self.assertIsNotNone(competency)
@@ -8646,10 +8915,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
             self.adapter,
             initial_draft=initial_draft,
             subject_options=self.adapter.list_observation_subject_options(
+                self._sample_student_detail().student_id,
                 initial_draft
             ),
             competency_subject_groups=(
                 self.adapter.list_observation_competency_subject_groups(
+                    self._sample_student_detail().student_id,
                     initial_draft
                 )
             ),
@@ -8657,6 +8928,22 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 self._sample_student_detail().student_id,
                 initial_draft,
             ),
+        )
+
+    def _save_custom_documentation_subjects(
+        self,
+        student_id: str,
+        subject_ids: tuple[str, ...],
+    ) -> None:
+        school_year = self.adapter.current_school_year()
+        self.assertIsNotNone(school_year)
+        if school_year is None:
+            raise AssertionError("Expected current school year")
+        self.adapter.save_student_documentation_subjects(
+            student_id,
+            school_year.school_year_id,
+            "custom",
+            subject_ids,
         )
 
     def _select_observation_subject(

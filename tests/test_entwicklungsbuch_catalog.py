@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from contextlib import closing
 import csv
 from pathlib import Path
@@ -97,6 +98,32 @@ def test_catalog_has_no_duplicates_empty_competencies_or_documentation_rows() ->
     assert "Name, Alter, Wohnort" not in texts
     assert "Mein Körper" not in texts
     assert "Hobbies" not in texts
+
+
+def test_catalog_learning_stage_report_is_uniform_cross_stage() -> None:
+    rows = _read(CATALOG_PATH)
+    expected_by_subject = {
+        "Selbst- und Sozialkompetenz": 8,
+        "Arbeits-/Lernkompetenz": 13,
+        "EPU": 6,
+        "Deutsch": 41,
+        "Mathematik": 67,
+        "Kreatives Gestalten": 34,
+        "Sport": 64,
+        "Ethik": 30,
+        "Religion": 20,
+        "Musik": 29,
+        "Englisch": 11,
+        "Schulgarten": 8,
+    }
+
+    assert Counter(row["learning_stage"] for row in rows) == {
+        "cross_stage": 331
+    }
+    assert Counter(row["subject_display_name"] for row in rows) == (
+        expected_by_subject
+    )
+    assert all(row["grade_band"] == "1-4" for row in rows)
 
 
 def test_inventory_accounts_for_every_catalog_row_and_exclusion() -> None:

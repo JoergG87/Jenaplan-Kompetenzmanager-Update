@@ -220,8 +220,10 @@ def capture(output: Path) -> tuple[Path, ...]:
             student,
             curriculum,
             adapter,
-            subject_options=adapter.list_observation_subject_options(),
-            competency_subject_groups=adapter.list_observation_competency_subject_groups(),
+            subject_options=adapter.list_observation_subject_options(STUDENT_ID),
+            competency_subject_groups=(
+                adapter.list_observation_competency_subject_groups(STUDENT_ID)
+            ),
             recent_competencies=adapter.list_recent_observation_competencies(STUDENT_ID),
         )
         captured.append(_capture(observation, output, "02_observation_dialog.png"))

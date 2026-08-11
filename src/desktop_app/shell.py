@@ -2692,14 +2692,24 @@ class AppShell(QMainWindow):
             self.curriculum_adapter,
             self.adapter,
             subject_options=(
-                self.adapter.list_observation_subject_options(prefill)
+                self.adapter.list_observation_subject_options(
+                    student.student_id,
+                    prefill,
+                )
                 if prefill is not None
-                else self.adapter.list_observation_subject_options()
+                else self.adapter.list_observation_subject_options(
+                    student.student_id
+                )
             ),
             competency_subject_groups=(
-                self.adapter.list_observation_competency_subject_groups(prefill)
+                self.adapter.list_observation_competency_subject_groups(
+                    student.student_id,
+                    prefill,
+                )
                 if prefill is not None
-                else self.adapter.list_observation_competency_subject_groups()
+                else self.adapter.list_observation_competency_subject_groups(
+                    student.student_id
+                )
             ),
             recent_competencies=self.adapter.list_recent_observation_competencies(
                 student.student_id,
@@ -2732,14 +2742,24 @@ class AppShell(QMainWindow):
             self.curriculum_adapter,
             self.adapter,
             subject_options=(
-                self.adapter.list_observation_subject_options(prefill)
+                self.adapter.list_observation_subject_options(
+                    student.student_id,
+                    prefill,
+                )
                 if prefill is not None
-                else self.adapter.list_observation_subject_options()
+                else self.adapter.list_observation_subject_options(
+                    student.student_id
+                )
             ),
             competency_subject_groups=(
-                self.adapter.list_observation_competency_subject_groups(prefill)
+                self.adapter.list_observation_competency_subject_groups(
+                    student.student_id,
+                    prefill,
+                )
                 if prefill is not None
-                else self.adapter.list_observation_competency_subject_groups()
+                else self.adapter.list_observation_competency_subject_groups(
+                    student.student_id
+                )
             ),
             recent_competencies=self.adapter.list_recent_observation_competencies(
                 student.student_id,
@@ -2781,9 +2801,15 @@ class AppShell(QMainWindow):
             self.curriculum_adapter,
             self.adapter,
             initial_draft=draft,
-            subject_options=self.adapter.list_observation_subject_options(draft),
+            subject_options=self.adapter.list_observation_subject_options(
+                student.student_id,
+                draft,
+            ),
             competency_subject_groups=(
-                self.adapter.list_observation_competency_subject_groups(draft)
+                self.adapter.list_observation_competency_subject_groups(
+                    student.student_id,
+                    draft,
+                )
             ),
             recent_competencies=self.adapter.list_recent_observation_competencies(
                 student.student_id,

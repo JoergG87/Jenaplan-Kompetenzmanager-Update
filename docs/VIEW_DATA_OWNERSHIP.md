@@ -1137,7 +1137,8 @@ UI-Projektionen:
 - Fachauswahl
 - Kompetenzauswahl mit Fach, Kompetenzbereich, Thema und Kompetenz
 - Kurzlabel aus `competencies.label` fuer kompakte Kompetenzauswahl
-- Hierarchische Kompetenzprojektion aus `StudentDesktopAdapter.list_observation_competency_subject_groups(initial_draft)` fuer die Dialogdarstellung
+- Schülerbezogene primäre und weitere Fachoptionen aus `StudentDesktopAdapter.list_observation_subject_options(student_id, initial_draft)`; `is_primary` ist ausschließlich Darstellungsmetadatum
+- Hierarchische Kompetenzprojektion aus `StudentDesktopAdapter.list_observation_competency_subject_groups(student_id, initial_draft)` fuer die Dialogdarstellung
 - `catalog_status` und `is_active` aus derselben Adapterprojektion fuer Angebot und dezente historische Kennzeichnung
 - Lokaler Suchtext und Trefferanzeige über Kurzlabel, Kompetenztext, Thema und Kompetenzbereich aus derselben Adapterprojektion; nur aktive `current`-Kompetenzen sind neue Suchtreffer
 - Fachbezogene Schnellauswahl aus `StudentDesktopAdapter.list_recent_observation_competencies(student_id, initial_draft)`: maximal vier eindeutige aktive `current`-Kompetenzen aus den neuesten aktiven Beobachtungen des Schuelers; bei Suchtext vollstaendig ausgeblendet und nach erfolgreichem Speichern erneut aus SQLite projiziert
@@ -1157,9 +1158,14 @@ aktuelle `ENROLLED`-Kinder aus dem einmalig gesetzten
 `CurrentMembershipReadSnapshot` an. Bei Bearbeitung bleiben die gespeicherte
 `student_id` und `observations.date` fachlicher Kontext; die historische
 Zuordnung wird ausschließlich an diesem Datum aufgelöst und niemals durch
-current, Last-known oder V2-Schülerfelder ersetzt. Neue Beobachtungen bieten
-in der Fachauswahl nur dokumentationsrelevante aktive Faecher und im Katalog
-nur aktive `current`-Kompetenzen an. Bei Bearbeitung wird eine bestehende
+current, Last-known oder V2-Schülerfelder ersetzt. Die beiden überfachlichen
+Domänen und die über `effective_documentation_subjects(student_id,
+school_year_id)` aufgelösten Unterrichtsfächer bilden die primäre
+Fachauswahl. Andere aktive Unterrichtsfächer bleiben bewusst unter `Weitere
+Fächer` erreichbar; der Katalog bietet in allen Fällen nur aktive
+`current`-Kompetenzen neu an. `Zuletzt verwendet` stammt aus derselben
+schülerbezogenen Hierarchie und wird erst für das bewusst gewählte Fach
+sichtbar. Bei Bearbeitung wird eine bestehende
 `observation_id` geladen; ein inzwischen nicht dokumentationsrelevantes
 Bestandsfach sowie bereits bewertete `legacy`- oder inaktive Kompetenzen
 bleiben sichtbar und werden nicht automatisch ersetzt. Speichern ersetzt die
