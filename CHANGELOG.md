@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- `Kompetenzen & Belege` ordnet aktuelle auswählbare Kompetenzen mit
+  zugeordneten aktiven Beobachtungsbelegen innerhalb des inklusiven
+  RPD-Zeitraums zuerst ein. Weitere auswählbare Kompetenzen und historische
+  Referenzen bleiben getrennt erreichbar. Mehrere Belege werden dedupliziert,
+  Schnellbeobachtungen ohne Kompetenzzuordnung erzeugen keine Priorität und
+  keine Kompetenz wird automatisch ausgewählt. Eine Änderung des
+  Berichtszeitraums aktualisiert nur die sichtbare Gruppierung und erhält den
+  Draftzustand.
+
 - Ein neuer Qt-Lernentwicklungsbericht startet bei der bewussten Auswahl von
   Fächern, Kompetenzen und Belegen. Die individuell effektiven
   Unterrichtsfächer stehen zuerst; weitere aktive Unterrichtsfächer bleiben

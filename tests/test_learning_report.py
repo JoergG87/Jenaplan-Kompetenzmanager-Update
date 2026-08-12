@@ -27,8 +27,10 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QTextEdit,
     QTreeWidget,
+    QTreeWidgetItemIterator,
     QWidget,
 )
+from shiboken6 import isValid
 
 from prototypes.pdf_engine.output_models import ChartBlock, ReportOutputModel, TableBlock
 from prototypes.pdf_engine.renderer import PdfRenderer
@@ -116,6 +118,16 @@ class LearningReportTest(unittest.TestCase):
                 ),
             ),
         )
+
+    @staticmethod
+    def _competency_item(tree: QTreeWidget, competency_id: str):
+        iterator = QTreeWidgetItemIterator(tree)
+        while iterator.value() is not None:
+            item = iterator.value()
+            if item.data(0, Qt.ItemDataRole.UserRole) == competency_id:
+                return item
+            iterator += 1
+        raise AssertionError(f"Competency item not found: {competency_id}")
 
     def test_report_starts_from_student_profile(self) -> None:
         screen = StudentProfileScreen()
@@ -566,18 +578,12 @@ class LearningReportTest(unittest.TestCase):
         tree = widgets["tree"]
         self.assertIsInstance(include, QCheckBox)
         include.setChecked(True)
-        root = tree.topLevelItem(0)
-        area = root.child(0)
-        topic = area.child(0)
-        current_item = topic.child(0)
+        current_item = self._competency_item(tree, "CMP-000001")
 
         current_item.setCheckState(0, Qt.CheckState.Checked)
         dialog.editor_stack.setCurrentIndex(1)
         dialog.editor_stack.setCurrentIndex(2)
-        root = tree.topLevelItem(0)
-        area = root.child(0)
-        topic = area.child(0)
-        historical_item = topic.child(1)
+        historical_item = self._competency_item(tree, "CMP-OLD")
 
         self.assertIn("math", dialog.selected_subject_ids)
         self.assertIn("CMP-000001", dialog.selected_competency_ids)
@@ -590,8 +596,10 @@ class LearningReportTest(unittest.TestCase):
         dialog._set_evidence_section(1)
         widgets = dialog.subject_widgets["math"]
         widgets["include"].setChecked(True)
-        root = widgets["tree"].topLevelItem(0)
-        current_item = root.child(0).child(0).child(0)
+        current_item = self._competency_item(
+            widgets["tree"],
+            "CMP-000001",
+        )
         current_item.setCheckState(0, Qt.CheckState.Checked)
         check = next(
             widget
@@ -603,6 +611,167 @@ class LearningReportTest(unittest.TestCase):
         check.setChecked(True)
 
         self.assertIn("OBS-000001", dialog.selected_observation_ids)
+
+    def test_period_evidence_sections_prioritize_without_auto_selection(self) -> None:
+        math = self.preparation.subjects[1]
+        evidenced = math.competencies[0]
+        available = replace(
+            math.competencies[0],
+            competency_id="CMP-CURRENT-NO-EVIDENCE",
+            competency_text="Aktuelle Kompetenz ohne Zeitraumbeleg",
+            evidence_points=(),
+            documentation_state="undocumented",
+            sort_order=2,
+        )
+        preparation = replace(
+            self.preparation,
+            subjects=(
+                self.preparation.subjects[0],
+                replace(
+                    math,
+                    competencies=(available, evidenced, math.competencies[1]),
+                    evidence=(
+                        math.evidence[0],
+                        replace(
+                            math.evidence[0],
+                            observation_id="OBS-SECOND-EVIDENCE",
+                            observed_on=date(2026, 5, 20),
+                        ),
+                        replace(
+                            math.evidence[0],
+                            observation_id="OBS-QUICK-WITHOUT-COMPETENCY",
+                            observed_on=date(2026, 4, 10),
+                            competency_ids=(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        dialog = LearningReportDialog(
+            preparation,
+            initial_period=(date(2026, 3, 12), date(2026, 5, 20)),
+        )
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
+        tree = dialog.subject_widgets["math"]["tree"]
+        subject_root = tree.topLevelItem(0)
+
+        self.assertEqual(
+            [
+                subject_root.child(index).text(0)
+                for index in range(subject_root.childCount())
+            ],
+            [
+                "Mit Belegen im Berichtszeitraum",
+                "Weitere auswählbare Kompetenzen",
+                "Weitere historische Einträge",
+            ],
+        )
+        self.assertIn(
+            "Beleg im Berichtszeitraum",
+            self._competency_item(tree, evidenced.competency_id).text(0),
+        )
+        self.assertEqual(
+            preparation.subjects[1].competency_ids_with_evidence_in_period(
+                date(2026, 3, 12),
+                date(2026, 5, 20),
+            ),
+            (evidenced.competency_id,),
+        )
+        self.assertEqual(dialog.selected_competency_ids, set())
+
+    def test_subject_without_observation_evidence_has_only_available_group(self) -> None:
+        math = self.preparation.subjects[1]
+        preparation = replace(
+            self.preparation,
+            subjects=(
+                self.preparation.subjects[0],
+                replace(
+                    math,
+                    competencies=(math.competencies[0],),
+                    evidence=(),
+                ),
+            ),
+        )
+        dialog = LearningReportDialog(
+            preparation,
+            initial_period=(date(2026, 1, 1), date(2026, 7, 31)),
+        )
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
+        root = dialog.subject_widgets["math"]["tree"].topLevelItem(0)
+
+        self.assertEqual(root.childCount(), 1)
+        self.assertEqual(root.child(0).text(0), "Weitere auswählbare Kompetenzen")
+        self.assertEqual(dialog.selected_competency_ids, set())
+
+    def test_period_boundaries_reorder_tree_and_keep_selection(self) -> None:
+        competency = self.preparation.subjects[1].competencies[0]
+        math = self.preparation.subjects[1]
+        self.assertEqual(
+            math.competency_ids_with_evidence_in_period(
+                date(2026, 3, 12),
+                date(2026, 3, 12),
+            ),
+            (competency.competency_id,),
+        )
+        self.assertEqual(
+            math.competency_ids_with_evidence_in_period(
+                date(2026, 3, 13),
+                date(2026, 4, 1),
+            ),
+            (),
+        )
+        dialog = LearningReportDialog(
+            self.preparation,
+            initial_period=(date(2026, 3, 12), date(2026, 3, 12)),
+        )
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
+        widgets = dialog.subject_widgets["math"]
+        widgets["include"].setChecked(True)
+        self._competency_item(widgets["tree"], competency.competency_id).setCheckState(
+            0,
+            Qt.CheckState.Checked,
+        )
+
+        dialog.period_start.setDate(QDate(2026, 3, 13))
+        dialog.period_end.setDate(QDate(2026, 4, 1))
+
+        root = widgets["tree"].topLevelItem(0)
+        self.assertEqual(root.child(0).text(0), "Weitere auswählbare Kompetenzen")
+        self.assertIn(competency.competency_id, dialog.selected_competency_ids)
+        self.assertEqual(
+            widgets["evidence_header"].description_label.text(),
+            "0 von 1 aktuellen Kompetenzen mit Beleg im Berichtszeitraum. "
+            "Die Übersicht ist Arbeitsgrundlage und keine automatische Auswertung.",
+        )
+
+    def test_selected_historical_reference_has_own_visible_section(self) -> None:
+        initial = LearningReportDraftViewModel(
+            student_id=self.preparation.student_id,
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            subjects=(LearningReportSubjectDraftViewModel("math"),),
+            competency_ids=("CMP-OLD",),
+            report_draft_id="RPD-HISTORICAL-COMPETENCY",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
+        tree = dialog.subject_widgets["math"]["tree"]
+        root = tree.topLevelItem(0)
+
+        self.assertEqual(
+            [root.child(index).text(0) for index in range(root.childCount())],
+            [
+                "Mit Belegen im Berichtszeitraum",
+                "Gespeicherte historische Auswahl",
+            ],
+        )
+        historical = self._competency_item(tree, "CMP-OLD")
+        self.assertEqual(historical.checkState(0), Qt.CheckState.Checked)
+        self.assertIn("historisch ausgewählt", historical.text(0))
 
     def test_output_model_contains_only_deliberate_choices(self) -> None:
         draft = self._draft()
@@ -809,9 +978,57 @@ class LearningReportTest(unittest.TestCase):
         self.assertEqual(retained_item.checkState(0), Qt.CheckState.Checked)
         self.assertIn("nicht mehr regulär verfügbar", retained_item.text(0))
         retained_item.setCheckState(0, Qt.CheckState.Unchecked)
+        self.app.processEvents()
 
         self.assertNotIn("CMP-OLD", dialog.selected_competency_ids)
+        retained_item = next(
+            item
+            for item in self._competency_items(tree)
+            if item.data(0, Qt.ItemDataRole.UserRole) == "CMP-OLD"
+        )
         self.assertFalse(bool(retained_item.flags() & Qt.ItemFlag.ItemIsEnabled))
+        self.assertEqual(
+            retained_item.parent().parent().parent().text(0),
+            "Weitere historische Einträge",
+        )
+
+        dialog.selected_competency_ids.add("CMP-OLD")
+        dialog._populate_competency_tree(self.preparation.subjects[1], tree)
+        dialog.subject_widgets["math"]["include"].setChecked(False)
+        retained_item = next(
+            item
+            for item in self._competency_items(tree)
+            if item.data(0, Qt.ItemDataRole.UserRole) == "CMP-OLD"
+        )
+        self.assertEqual(
+            retained_item.parent().parent().parent().text(0),
+            "Weitere historische Einträge",
+        )
+
+    def test_deferred_historical_reprojection_is_cancelled_with_deleted_dialog(
+        self,
+    ) -> None:
+        initial = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            subjects=(LearningReportSubjectDraftViewModel("math"),),
+            competency_ids=("CMP-OLD",),
+            report_draft_id="RPD-DEFERRED-DELETE",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
+        tree = dialog.subject_widgets["math"]["tree"]
+        retained_item = self._competency_item(tree, "CMP-OLD")
+
+        retained_item.setCheckState(0, Qt.CheckState.Unchecked)
+        dialog.deleteLater()
+        self.app.sendPostedEvents(dialog, QEvent.Type.DeferredDelete)
+        self.app.processEvents()
+
+        self.assertFalse(isValid(dialog))
 
     def test_unavailable_evidence_survives_view_and_period_changes_until_unchecked(self) -> None:
         initial = LearningReportDraftViewModel(

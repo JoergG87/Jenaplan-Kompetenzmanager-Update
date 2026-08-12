@@ -64,7 +64,6 @@ class LearningReportCompetencyViewModel:
     evidence_points: tuple[tuple[date, str], ...]
     sort_order: int = 0
 
-
 @dataclass(frozen=True)
 class LearningReportEvidenceViewModel:
     """One observation that can be deliberately included as report evidence."""
@@ -109,6 +108,34 @@ class LearningReportSubjectViewModel:
     @property
     def current_count(self) -> int:
         return sum(competency.selectable for competency in self.competencies)
+
+    def evidenced_count(self, period_start: date, period_end: date) -> int:
+        """Count current competencies linked to active observations in the period."""
+        evidenced_ids = set(
+            self.competency_ids_with_evidence_in_period(period_start, period_end)
+        )
+        return sum(
+            competency.selectable and competency.competency_id in evidenced_ids
+            for competency in self.competencies
+        )
+
+    def competency_ids_with_evidence_in_period(
+        self,
+        period_start: date,
+        period_end: date,
+    ) -> tuple[str, ...]:
+        """Project competency IDs from active observation evidence in the RPD period."""
+        evidence_ids = {
+            competency_id
+            for evidence in self.evidence
+            if period_start <= evidence.observed_on <= period_end
+            for competency_id in evidence.competency_ids
+        }
+        return tuple(
+            competency.competency_id
+            for competency in self.competencies
+            if competency.competency_id in evidence_ids
+        )
 
 
 @dataclass(frozen=True)

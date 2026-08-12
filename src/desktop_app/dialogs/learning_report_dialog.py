@@ -986,8 +986,7 @@ class LearningReportDialog(QDialog):
         internal_layout.setSpacing(12)
         header = SectionHeader(
             "Kompetenzen und Beobachtungsbelege",
-            f"{subject.documented_count} von {subject.current_count} aktuellen Kompetenzen dokumentiert. "
-            "Die Übersicht ist Arbeitsgrundlage und keine automatische Auswertung.",
+            self._evidence_header_text(subject),
         )
         header.add_action(StatusBadge("Bewusste Auswahl", tone="info"))
         internal_layout.addWidget(header)
@@ -1003,6 +1002,7 @@ class LearningReportDialog(QDialog):
         tree.setAllColumnsShowFocus(True)
         tree.setAccessibleName(f"Kompetenzauswahl für {subject.subject_name}")
         tree.setAccessibleDescription(
+            "Kompetenzen mit Belegen im Berichtszeitraum stehen zuerst. "
             "Historische Einträge sind textlich gekennzeichnet und nicht neu auswählbar."
         )
         self._populate_competency_tree(subject, tree)
@@ -1055,6 +1055,7 @@ class LearningReportDialog(QDialog):
             "evidence_container": evidence_container,
             "evidence_layout": evidence_layout,
             "charts": chart_checks,
+            "evidence_header": header,
         })
         include.toggled.connect(
             lambda checked, subject_id=subject.subject_id: self._toggle_subject(
@@ -1294,18 +1295,78 @@ class LearningReportDialog(QDialog):
         self, subject: LearningReportSubjectViewModel, tree: QTreeWidget
     ) -> None:
         tree.blockSignals(True)
+        tree.clear()
         subject_item = QTreeWidgetItem([subject.subject_name])
         subject_item.setFlags(subject_item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
         tree.addTopLevelItem(subject_item)
-        areas: dict[str, QTreeWidgetItem] = {}
-        topics: dict[tuple[str, str], QTreeWidgetItem] = {}
-        for competency in subject.competencies:
-            area = areas.get(competency.learning_area)
+        period_start = self.period_start.date().toPython()
+        period_end = self.period_end.date().toPython()
+        evidenced_competency_ids = set(
+            subject.competency_ids_with_evidence_in_period(
+                period_start,
+                period_end,
+            )
+        )
+        section_specs = (
+            (
+                "evidenced",
+                "Mit Belegen im Berichtszeitraum",
+                lambda competency: competency.selectable
+                and competency.competency_id in evidenced_competency_ids,
+            ),
+            (
+                "retained",
+                "Gespeicherte historische Auswahl",
+                lambda competency: not competency.selectable
+                and competency.competency_id in self.selected_competency_ids,
+            ),
+            (
+                "available",
+                "Weitere auswählbare Kompetenzen",
+                lambda competency: competency.selectable
+                and competency.competency_id not in evidenced_competency_ids,
+            ),
+            (
+                "historical",
+                "Weitere historische Einträge",
+                lambda competency: not competency.selectable
+                and competency.competency_id not in self.selected_competency_ids,
+            ),
+        )
+        sections: dict[str, QTreeWidgetItem] = {}
+        areas: dict[tuple[str, str], QTreeWidgetItem] = {}
+        topics: dict[tuple[str, str, str], QTreeWidgetItem] = {}
+        ordered_competencies = tuple(
+            competency
+            for _section_key, _section_title, predicate in section_specs
+            for competency in subject.competencies
+            if predicate(competency)
+        )
+        for competency in ordered_competencies:
+            section_key, section_title = next(
+                (key, title)
+                for key, title, predicate in section_specs
+                if predicate(competency)
+            )
+            section = sections.get(section_key)
+            if section is None:
+                section = QTreeWidgetItem([section_title])
+                section.setFlags(
+                    section.flags() & ~Qt.ItemFlag.ItemIsSelectable
+                )
+                subject_item.addChild(section)
+                sections[section_key] = section
+            area_key = (section_key, competency.learning_area)
+            area = areas.get(area_key)
             if area is None:
                 area = QTreeWidgetItem([competency.learning_area])
-                subject_item.addChild(area)
-                areas[competency.learning_area] = area
-            topic_key = (competency.learning_area, competency.competency_group)
+                section.addChild(area)
+                areas[area_key] = area
+            topic_key = (
+                section_key,
+                competency.learning_area,
+                competency.competency_group,
+            )
             topic = topics.get(topic_key)
             if topic is None:
                 topic = QTreeWidgetItem([competency.competency_group])
@@ -1316,6 +1377,8 @@ class LearningReportDialog(QDialog):
                 suffix = " · historisch ausgewählt · nicht mehr regulär verfügbar"
             elif not competency.selectable:
                 suffix = " · historisch · nicht regulär verfügbar"
+            elif competency.competency_id in evidenced_competency_ids:
+                suffix = " · Beleg im Berichtszeitraum"
             else:
                 suffix = ""
             item = QTreeWidgetItem([f"{competency.competency_text}{suffix}"])
@@ -1332,8 +1395,24 @@ class LearningReportDialog(QDialog):
             else:
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
             topic.addChild(item)
+        for section in sections.values():
+            section.setExpanded(True)
         subject_item.setExpanded(True)
         tree.blockSignals(False)
+
+    def _evidence_header_text(
+        self,
+        subject: LearningReportSubjectViewModel,
+    ) -> str:
+        evidenced_count = subject.evidenced_count(
+            self.period_start.date().toPython(),
+            self.period_end.date().toPython(),
+        )
+        return (
+            f"{evidenced_count} von {subject.current_count} aktuellen Kompetenzen "
+            "mit Beleg im Berichtszeitraum. Die Übersicht ist Arbeitsgrundlage "
+            "und keine automatische Auswertung."
+        )
 
     def _toggle_subject(self, subject_id: str, checked: bool) -> None:
         subject = self._subject(subject_id)
@@ -1351,7 +1430,7 @@ class LearningReportDialog(QDialog):
             )
             tree = self.subject_widgets[subject_id]["tree"]
             if isinstance(tree, QTreeWidget):
-                self._reset_tree_checks(tree)
+                self._populate_competency_tree(subject, tree)
         badge = self.subject_widgets.get(subject_id, {}).get("selection_badge")
         if isinstance(badge, StatusBadge):
             badge.setText("Für Bericht ausgewählt" if checked else "Noch nicht ausgewählt")
@@ -1387,10 +1466,27 @@ class LearningReportDialog(QDialog):
             ) if subject else None
             if competency is not None and not competency.selectable:
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
+                tree = self.subject_widgets.get(subject_id, {}).get("tree")
+                if isinstance(tree, QTreeWidget):
+                    QTimer.singleShot(
+                        0,
+                        tree,
+                        lambda current_subject=subject: self._refresh_competency_tree(
+                            current_subject
+                        ),
+                    )
         subject = self._subject(subject_id)
         if subject:
             self._render_evidence(subject)
         self._schedule_preview()
+
+    def _refresh_competency_tree(
+        self,
+        subject: LearningReportSubjectViewModel,
+    ) -> None:
+        tree = self.subject_widgets.get(subject.subject_id, {}).get("tree")
+        if isinstance(tree, QTreeWidget):
+            self._populate_competency_tree(subject, tree)
 
     def _visible_evidence_for_subject(
         self, subject: LearningReportSubjectViewModel
@@ -1460,6 +1556,17 @@ class LearningReportDialog(QDialog):
 
     def _period_changed(self) -> None:
         for subject in self.preparation.subjects:
+            tree = self.subject_widgets.get(subject.subject_id, {}).get("tree")
+            if isinstance(tree, QTreeWidget):
+                self._populate_competency_tree(subject, tree)
+            evidence_header = self.subject_widgets.get(
+                subject.subject_id,
+                {},
+            ).get("evidence_header")
+            if isinstance(evidence_header, SectionHeader):
+                evidence_header.description_label.setText(
+                    self._evidence_header_text(subject)
+                )
             self._render_evidence(subject)
         self._refresh_workspace_context()
         self._schedule_preview()

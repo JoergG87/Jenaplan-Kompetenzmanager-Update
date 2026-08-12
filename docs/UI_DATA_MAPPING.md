@@ -272,6 +272,10 @@ vorstehende Phase-2-Mapping ersetzt.
 | dauerhaft sichtbarer Auswahlstatus | lokale Auswahl-IDs gegen `LearningReportPreparationViewModel.subjects` | Nein | nennt die ausgewählten Fachnamen in allen vier Bereichen; `Weiter zum Schreibbereich` ist erst ab einer Auswahl aktiv |
 | Vorschau und Dokumentseiten | `LearningReportDraftViewModel.selected_subject_ids` | Nein | ausschließlich bewusst ausgewählte Fachabschnitte; ungewählte Fächer erzeugen weder Überblickszeile noch leere Fachseite |
 | vorhandener Entwurf | gespeicherter vollständiger `LearningReportDraftViewModel` | bestehender RPD-Pfad | öffnet weiter im Schreibbereich und setzt Fach-, Kompetenz-, Beleg- und Textauswahl nicht zurück |
+| `Mit Belegen im Berichtszeitraum` | aktive Beobachtungsbelege aus `LearningReportSubjectViewModel.evidence` mit nicht leerer `competency_ids`-Zuordnung innerhalb `period_start <= observed_on <= period_end` | Nein | deduplizierte Kompetenz-IDs zuerst; keine Bewertung, Empfehlung, automatische Auswahl oder Ableitung aus Schnellbeobachtungen ohne Kompetenz |
+| `Weitere auswählbare Kompetenzen` | übrige aktive `current`-Kompetenzen desselben Fachs | Nein | nachrangig vollständig erreichbar und weiter bewusst auswählbar |
+| historische Kompetenzgruppen | gespeicherte Draft-Kompetenzreferenzen sowie vorhandene historische Leseprojektion | Nein | gespeicherte Auswahl sichtbar und abwählbar; keine historische Referenz wird neu aktivierbar oder durch Zeitraumwechsel entfernt |
+| Änderung des RPD-Zeitraums | lokale `period_start`-/`period_end`-Eingabe gegen dieselbe Evidence-Projektion | Nein | reprojiziert ausschließlich die sichtbare Prioritätsgruppe; Fach-, Kompetenz- und Beobachtungsauswahl bleiben unverändert |
 
 ## Pilot-Releaseautomation - keine Produktprojektion
 

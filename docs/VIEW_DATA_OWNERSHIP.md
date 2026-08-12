@@ -1332,6 +1332,15 @@ keine aktuelle Kompetenzzeile mehr existiert. Vorschau und OutputBuilder
 filtern ausschließlich nach der laufenden Draftauswahl. RPV-Snapshots werden
 nicht neu projiziert oder verändert.
 
+Die Priorisierung in `Kompetenzen & Belege` bleibt eine reine
+ViewModel-/Widgetprojektion: `LearningReportSubjectViewModel` ermittelt aus
+seinen bereits gelieferten aktiven Beobachtungsbelegen die deduplizierten
+Kompetenz-IDs im inklusiven RPD-Zeitraum; das Dialog-Widget komponiert daraus
+die sichtbaren Gruppen. `documentation_state`, Bestätigungen, Ratingwerte und
+Schnellbeobachtungen ohne Kompetenzzuordnung sind keine Prioritätsquelle.
+Zeitraumwechsel schreiben und selektieren nichts. Adapter, Draftpersistenz,
+OutputModel und unveränderliche RPV-Snapshots bleiben unverändert.
+
 Die intern gegatete `LearningReportHtmlDialog` ist ein alternativer Host
 desselben Editors und wird nie parallel für denselben Draft geöffnet. Sie
 besitzt dieselben Lese- und Schreibquellen wie `LearningReportDialog`:

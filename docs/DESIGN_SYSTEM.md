@@ -1086,6 +1086,14 @@ aktuell ausgewählten Fachnamen. Der Übergang `Weiter zum Schreibbereich`
 bleibt bis zur ersten bewussten Auswahl deaktiviert. Überfachliche Domänen
 werden nicht als reguläre weitere Berichtsfächer gestaltet.
 
+Innerhalb eines Berichtfachs gliedert der Kompetenzbaum ruhig in `Mit Belegen
+im Berichtszeitraum`, `Weitere auswählbare Kompetenzen` und historische
+Referenzen. Die Beleggruppe steht zuerst und kennzeichnet ihre Kompetenzzeilen
+zusätzlich textlich. Größe, Farbe und Position erzeugen keine Stärke-,
+Schwäche- oder Empfehlungsaussage. Leere Gruppen entfallen; kanonische
+Kompetenzbereich-/Thema-/Kompetenzreihenfolge und bewusste Checkboxauswahl
+bleiben innerhalb jeder sichtbaren Gruppe erhalten.
+
 Genau ein Bereich verwendet die zentrale helle Blue-Auswahlflaeche, kraeftigere
 Typografie, Rahmen und den vorhandenen Auswahlindikator des `SegmentedControl`.
 Inaktive Bereiche bleiben neutral; Hover, Fokus und Disabled-State stammen aus

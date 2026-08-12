@@ -2380,6 +2380,8 @@ Registrierte technische Namen:
 - `LearningReportPreparationViewModel.primary_subject_ids`
 - `LearningReportPreparationViewModel.retained_subject_ids`
 - `LearningReportSubjectViewModel`
+- `LearningReportSubjectViewModel.competency_ids_with_evidence_in_period(period_start, period_end)`
+- `LearningReportSubjectViewModel.evidenced_count(period_start, period_end)`
 - `LearningReportCompetencyViewModel`
 - `LearningReportEvidenceViewModel`
 - `LearningReportDraft`
