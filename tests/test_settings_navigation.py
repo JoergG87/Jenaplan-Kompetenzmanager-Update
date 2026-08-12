@@ -53,12 +53,17 @@ class SettingsNavigationTest(unittest.TestCase):
         self.addCleanup(screen.close)
         screen.resize(900, 700)
         screen.show()
+        screen.raise_()
+        screen.activateWindow()
         self.app.processEvents()
         card = screen.settings_cards["school_years"]
         card_position = card.rect().center()
         global_position = card.mapToGlobal(card_position)
 
+        QTest.mouseMove(screen, screen.rect().topLeft())
+        self.app.processEvents()
         QTest.mouseMove(card, card_position)
+        self.app.processEvents()
         self.assertEqual(
             card.cursor().shape(),
             Qt.CursorShape.PointingHandCursor,

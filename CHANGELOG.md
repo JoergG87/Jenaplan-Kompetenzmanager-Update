@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Der suiteweite Offscreen-Cursortest stellt vor seiner Hover-Prüfung das
+  eigene Settings-Fenster aktiv in den Vordergrund und erzeugt eine eindeutige
+  Bewegung von außerhalb in die Zielkarte. Dadurch hängt der Test nicht mehr
+  von der globalen Mausposition oder der Stapelreihenfolge früherer Qt-Tests
+  ab; der Produktvertrag für Hand- und Pfeilcursor bleibt unverändert.
+
 - Runtime- und Startup-Regressionen unterscheiden die reguläre lokale
   SQLCipher-4.12-Testumgebung vom isolierten, weiterhin strikt geprüften
   SQLCipher-4.17-Build-Gate. Die Startup-Verträge prüfen die aktivierte
