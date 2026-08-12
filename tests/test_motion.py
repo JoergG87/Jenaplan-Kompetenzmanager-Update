@@ -326,8 +326,13 @@ class MotionSystemTest(unittest.TestCase):
             self.assertEqual(toast.text(), long_text)
             self.assertEqual(toast.accessibleDescription(), long_text)
             self.assertTrue(toast.label.wordWrap())
-            self.assertEqual(toast.minimumWidth(), 280)
+            self.assertLess(toast.minimumWidth(), 280)
+            self.assertGreaterEqual(toast.sizeHint().width(), 280)
             self.assertEqual(toast.maximumWidth(), 520)
+            self.assertEqual(
+                toast.sizeHint().height(),
+                toast.heightForWidth(toast.sizeHint().width()),
+            )
             self.assertIsNone(toast.graphicsEffect())
 
         toast.clear()
@@ -372,9 +377,9 @@ class MotionSystemTest(unittest.TestCase):
             self.assertEqual(toast.windowOpacity(), 1.0)
             self.assertTrue(toast.isEnabled())
             self.assertTrue(toast.label.isEnabled())
-            self.assertGreaterEqual(
+            self.assertEqual(
                 toast.sizeHint().height(),
-                toast.label.sizeHint().height() + 16,
+                toast.heightForWidth(toast.sizeHint().width()),
             )
         finally:
             self.app.setStyleSheet(previous_stylesheet)
@@ -392,47 +397,89 @@ class MotionSystemTest(unittest.TestCase):
         self.assertTrue(toast.isHidden())
         self.assertEqual(getattr(toast, "_motion_animations", {}), {})
 
-    def test_toast_fits_unmanaged_dialog_overlay_and_layout_managed_host(self) -> None:
+    def test_toast_sizes_short_long_and_multiline_text_from_actual_width(self) -> None:
+        toast = Toast()
+
+        toast.show_message("Gespeichert.", duration_ms=10_000)
+        short_size = toast.sizeHint()
+        toast.show_message(
+            "Diese lange einzeilige Meldung beschreibt einen vollständig "
+            "gespeicherten Arbeitsstand und benötigt bei begrenzter Breite "
+            "einen kontrollierten Umbruch.",
+            duration_ms=10_000,
+        )
+        long_size = toast.sizeHint()
+        toast.show_message(
+            "Erste ausdrücklich gesetzte Zeile.\n"
+            "Zweite Zeile mit zusätzlicher Information.",
+            duration_ms=10_000,
+        )
+        multiline_size = toast.sizeHint()
+
+        self.assertEqual(short_size.width(), 280)
+        self.assertLess(short_size.height(), long_size.height())
+        self.assertGreater(multiline_size.height(), short_size.height())
+        self.assertLessEqual(long_size.width(), 520)
+        self.assertTrue(toast.hasHeightForWidth())
+        toast.clear()
+
+    def test_toast_fits_dialog_top_and_shell_bottom_after_parent_resize(self) -> None:
         host = QWidget()
-        host.resize(420, 220)
+        host.resize(420, 260)
         overlay = Toast(host)
         overlay.show_message(
-            "Entwurf gespeichert – du kannst ihn später fortsetzen.",
+            "Entwurf gespeichert – du kannst ihn später fortsetzen. "
+            "Die Meldung bleibt auch mit einer zweiten Zeile vollständig lesbar.",
             tone="success",
             duration_ms=10_000,
         )
         host.show()
         self.app.processEvents()
 
-        self.assertGreaterEqual(overlay.geometry().left(), host.contentsRect().left())
-        self.assertLessEqual(overlay.geometry().right(), host.contentsRect().right())
-        self.assertLessEqual(overlay.geometry().bottom(), host.contentsRect().bottom())
-        self.assertGreaterEqual(
-            overlay.height(),
-            overlay.label.heightForWidth(overlay.width() - 24) + 16,
-        )
+        safe_rect = host.contentsRect().adjusted(16, 16, -16, -16)
+        self.assertTrue(safe_rect.contains(overlay.geometry()))
+        self.assertEqual(overlay.geometry().top(), safe_rect.top())
+        self.assertEqual(overlay.height(), overlay.heightForWidth(overlay.width()))
         self.assertIsNone(overlay.graphicsEffect())
 
-        host.resize(360, 180)
+        host.resize(340, 300)
         self.app.processEvents()
-        self.assertLessEqual(overlay.geometry().right(), host.contentsRect().right())
-        self.assertLessEqual(overlay.geometry().bottom(), host.contentsRect().bottom())
+        resized_safe_rect = host.contentsRect().adjusted(16, 16, -16, -16)
+        self.assertTrue(resized_safe_rect.contains(overlay.geometry()))
+        self.assertEqual(overlay.height(), overlay.heightForWidth(overlay.width()))
 
         layout_host = QWidget()
         layout = QVBoxLayout(layout_host)
+        layout.addStretch(1)
         managed = Toast()
-        layout.addWidget(managed)
+        layout.addWidget(
+            managed,
+            0,
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom,
+        )
         managed.show_message(
-            "Fächer für die Dokumentation wurden gespeichert.",
+            "Fächer für die Dokumentation wurden gespeichert. "
+            "Die gewählte Fachmenge ist nun aktiv.",
             tone="success",
             duration_ms=10_000,
         )
+        layout_host.resize(620, 260)
         layout_host.show()
         self.app.processEvents()
         self.assertFalse(managed._is_parent_overlay())
         self.assertGreaterEqual(
-            managed.height(),
-            managed.label.sizeHint().height() + 16,
+            managed.height(), managed.heightForWidth(managed.width())
+        )
+        self.assertEqual(
+            managed.geometry().bottom(),
+            layout_host.contentsRect().bottom() - layout.contentsMargins().bottom(),
+        )
+
+        layout_host.resize(380, 300)
+        self.app.processEvents()
+        self.assertLessEqual(managed.geometry().right(), layout_host.contentsRect().right())
+        self.assertGreaterEqual(
+            managed.height(), managed.heightForWidth(managed.width())
         )
         host.close()
         layout_host.close()

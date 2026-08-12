@@ -641,9 +641,9 @@ Accessibility-Regel: Die verbleibende lokale Fachnavigation ist per
 Pfeiltasten bedienbar; Disclosure, Kompetenzwahl und Bewertung reagieren auf
 Fokus sowie Enter/Space. Datum, Fach, Kontext, Notiz, Suche, Bewertung,
 Entfernen und Speichern besitzen Accessible Names. Der Beobachtungsdialog
-erzeugt für den einheitlichen Entwicklungsbuch-Katalog keine bedeutungslose
-Stage-Steuerung. Keine Information wird ausschliesslich durch Farbe
-vermittelt.
+und das Kompetenz-Cockpit erzeugen für den einheitlichen
+Entwicklungsbuch-Katalog keine bedeutungslose Stage-Steuerung. Keine
+Information wird ausschliesslich durch Farbe vermittelt.
 
 QPainter-Regel: UI Sprint 4 verwendet keinen QPainter. Timeline-Marker, Spezial-Focus-Ringe oder Evidenzgrafiken erzeugen gegenueber den vorhandenen Standardwidgets keinen ausreichenden Mehrwert; zentrale Qt-Widgets und QSS bleiben High-DPI-, Fokus- und Reduced-Motion-sicherer.
 
@@ -664,7 +664,7 @@ Komponenten mit Motion:
 - `InlineMessage`: ruhiges Einblenden neuer Information oder Erfolgsmeldung; Warnungen und Fehler erscheinen sofort
 - `MotionDialog`: steht für kleine, nicht arbeitskritische Dialoge zur Verfügung; die drei Pilot-Arbeitsdialoge Bericht, LEG und Beobachtung verwenden den statischen `QDialog`-Pfad
 - persistente Primaer-Speicheraktionen: kurzer bestaetigender Zustand nach fachlich bestaetigtem Erfolg
-- `Toast`: 220-ms-Ein-/Ausblenden, Hover-Pause und sichere Ersetzung einer laufenden Meldung
+- `Toast`: statische, compositingfreie Anzeige, Hover-Pause und sichere Ersetzung einer laufenden Meldung; Text, FontMetrics, Umbruch, Padding und vorhandene Icons bestimmen zentral Breite und Höhe innerhalb sicherer Parent-Abstände
 
 Bewusst statisch bleiben `EmptyState`, Tabellen und Tabellenzeilen, grosse Listen, Scrollen, Baumstrukturen, Suchergebnisse, nicht interaktive Karten, Dokument- und PDF-Vorschauen, die komplette Product Shell sowie Dashboard-Flaechen ohne bewussten Kontextwechsel. Für den Pilot bleiben Bericht-Workspace, LEG-Phasen und Beobachtungs-Kompetenzbereich einschließlich ihrer Arbeitsdialoge frei von Opacity-/GraphicsEffect-Animationen; Disclosure setzt dort ausschließlich den Sichtbarkeitszustand. Es gibt keine vollflaechigen Screen-Uebergaenge, Hoehenanimationen, verschachtelten Listenanimationen oder blockierenden Animationen. Geometrie wird ausschliesslich fuer die kleinen Segment- und Sidebar-Indikatoren animiert; Layout und Inhaltsflaechen bleiben unberuehrt.
 

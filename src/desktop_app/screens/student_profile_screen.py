@@ -1029,16 +1029,6 @@ class StudentProfileScreen(QWidget):
             self.competency_documentation_filter.addItem(label, state)
         self.competency_reset_button = QPushButton("Filter zurücksetzen")
         self.competency_reset_button.setObjectName("CompetencyCockpitFilterResetButton")
-        self.competency_stage_filter = SegmentedControl((
-            ("matching", "Passende Kompetenzen"),
-            ("stage_4", "Klassenstufe 4"),
-            ("all", "Alle Kompetenzen"),
-        ))
-        self.competency_stage_filter.setObjectName("CompetencyCockpitStageFilter")
-        self.competency_stage_filter.setAccessibleName("Klassenstufenfilter")
-        self.competency_stage_filter.setToolTip(
-            "Klassenstufe 4 ist nicht gesperrt, sondern in der passenden Ansicht ausgeblendet."
-        )
         self.competency_subject_filter.currentIndexChanged.connect(
             self.apply_competency_cockpit_filters
         )
@@ -1047,9 +1037,6 @@ class StudentProfileScreen(QWidget):
         )
         self.competency_search_input.textChanged.connect(
             lambda _text: self.apply_competency_cockpit_filters()
-        )
-        self.competency_stage_filter.selection_changed.connect(
-            lambda _key: self.apply_competency_cockpit_filters()
         )
         self.competency_reset_button.clicked.connect(self.reset_competency_cockpit_filters)
         filters = FilterBar(self.competency_search_input)
@@ -1072,7 +1059,6 @@ class StudentProfileScreen(QWidget):
         self.competency_cockpit_layout.setSpacing(8)
         layout.addWidget(title)
         layout.addWidget(filters)
-        layout.addWidget(self.competency_stage_filter)
         layout.addWidget(self.competency_cockpit_container)
         return section
 
@@ -2230,7 +2216,6 @@ class StudentProfileScreen(QWidget):
             return
         subject_id = self.competency_subject_filter.currentData() or ""
         documentation_filter = self.competency_documentation_filter.currentData() or ""
-        learning_stage_filter = self.competency_stage_filter.current_key()
         search_text = self.competency_search_input.text().strip().casefold()
         active_labels = tuple(
             label
@@ -2260,7 +2245,6 @@ class StudentProfileScreen(QWidget):
                 self._filtered_cockpit_subject(
                     subject,
                     documentation_filter,
-                    learning_stage_filter,
                     search_text,
                 ),
             )
@@ -2298,14 +2282,12 @@ class StudentProfileScreen(QWidget):
         self.competency_subject_filter.setCurrentIndex(0)
         self.competency_documentation_filter.setCurrentIndex(0)
         self.competency_search_input.clear()
-        self.competency_stage_filter.set_current_key("matching")
         self.apply_competency_cockpit_filters()
 
     def _filtered_cockpit_subject(
         self,
         subject: StudentCompetencyCockpitSubjectViewModel,
         documentation_filter: str,
-        learning_stage_filter: str,
         search_text: str,
     ) -> StudentCompetencyCockpitSubjectViewModel | None:
         areas = tuple(
@@ -2315,7 +2297,6 @@ class StudentProfileScreen(QWidget):
                 self._filtered_cockpit_learning_area(
                     area,
                     documentation_filter,
-                    learning_stage_filter,
                     search_text,
                 ),
             )
@@ -2331,7 +2312,6 @@ class StudentProfileScreen(QWidget):
         self,
         area: StudentCompetencyCockpitLearningAreaViewModel,
         documentation_filter: str,
-        learning_stage_filter: str,
         search_text: str,
     ) -> StudentCompetencyCockpitLearningAreaViewModel | None:
         topics = tuple(
@@ -2342,10 +2322,6 @@ class StudentProfileScreen(QWidget):
                     for competency in topic.competencies
                     if self._matches_competency_documentation_filter(
                         competency, documentation_filter
-                    )
-                    and self._matches_competency_learning_stage(
-                        competency,
-                        learning_stage_filter,
                     )
                     and self._matches_competency_search(
                         competency,
@@ -2377,18 +2353,6 @@ class StudentProfileScreen(QWidget):
         if documentation_filter == "confirmed":
             return state in {"confirmed", "newer_observations"}
         return state == documentation_filter
-
-    @staticmethod
-    def _matches_competency_learning_stage(
-        competency: object,
-        learning_stage_filter: str,
-    ) -> bool:
-        learning_stage = str(getattr(competency, "learning_stage", "") or "cross_stage")
-        if learning_stage_filter == "all":
-            return True
-        if learning_stage_filter == "stage_4":
-            return learning_stage in {"stage_4", "cross_stage"}
-        return learning_stage in {"stage_1_3", "cross_stage"}
 
     @staticmethod
     def _matches_competency_search(
@@ -2624,7 +2588,7 @@ class StudentProfileScreen(QWidget):
         button.setAccessibleName(
             f"Kompetenz {getattr(competency, 'competency_label')} öffnen"
         )
-        configure_button(button, "quiet")
+        configure_button(button, "quiet", with_motion=False)
         details = self._cockpit_competency_details(competency)
         details.setObjectName("CompetencyCockpitCompetencyDetails")
         key = f"competency:{getattr(competency, 'competency_id')}"

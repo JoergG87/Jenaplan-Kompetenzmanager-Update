@@ -722,11 +722,15 @@ class EmptyState(QFrame):
 class Toast(QFrame):
     """Non-blocking, automatically disappearing shell feedback."""
 
+    _SAFE_PARENT_MARGIN = 16
+    _PREFERRED_MINIMUM_WIDTH = 280
+    _MAXIMUM_WIDTH = 520
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("Toast")
-        self.setMinimumWidth(280)
-        self.setMaximumWidth(520)
+        self.setMinimumWidth(0)
+        self.setMaximumWidth(self._MAXIMUM_WIDTH)
         size_policy = self.sizePolicy()
         size_policy.setRetainSizeWhenHidden(True)
         self.setSizePolicy(size_policy)
@@ -746,6 +750,77 @@ class Toast(QFrame):
             parent.installEventFilter(self)
         self.hide()
 
+    def hasHeightForWidth(self) -> bool:  # noqa: N802 - Qt API
+        """Expose the wrapped-text height to both shell and dialog layouts."""
+        return True
+
+    def heightForWidth(self, width: int) -> int:  # noqa: N802 - Qt API
+        """Return the complete toast height for one available outer width."""
+        layout = self.layout()
+        margins = layout.contentsMargins()
+        visible_widgets = tuple(
+            widget
+            for index in range(layout.count())
+            if (widget := layout.itemAt(index).widget()) is not None
+            and not widget.isHidden()
+        )
+        non_label_widgets = tuple(
+            widget for widget in visible_widgets if widget is not self.label
+        )
+        spacing_count = max(0, len(visible_widgets) - 1)
+        fixed_width = (
+            margins.left()
+            + margins.right()
+            + (layout.spacing() * spacing_count)
+            + sum(widget.sizeHint().width() for widget in non_label_widgets)
+        )
+        label_width = max(1, width - fixed_width)
+        content_height = max(
+            (
+                self.label.heightForWidth(label_width),
+                *(widget.sizeHint().height() for widget in non_label_widgets),
+            ),
+            default=0,
+        )
+        return margins.top() + content_height + margins.bottom()
+
+    def sizeHint(self) -> QSize:  # noqa: N802 - Qt API
+        """Prefer compact short feedback and grow only up to the shared cap."""
+        layout = self.layout()
+        margins = layout.contentsMargins()
+        text_width = max(
+            (
+                self.label.fontMetrics().horizontalAdvance(line)
+                for line in self.label.text().splitlines()
+            ),
+            default=0,
+        )
+        other_width = sum(
+            widget.sizeHint().width()
+            for index in range(layout.count())
+            if (widget := layout.itemAt(index).widget()) is not None
+            and widget is not self.label
+            and not widget.isHidden()
+        )
+        visible_count = sum(
+            1
+            for index in range(layout.count())
+            if (widget := layout.itemAt(index).widget()) is not None
+            and not widget.isHidden()
+        )
+        natural_width = (
+            margins.left()
+            + margins.right()
+            + text_width
+            + other_width
+            + (layout.spacing() * max(0, visible_count - 1))
+        )
+        width = min(
+            self.maximumWidth(),
+            max(self._PREFERRED_MINIMUM_WIDTH, natural_width),
+        )
+        return QSize(width, self.heightForWidth(width))
+
     def _is_parent_overlay(self) -> bool:
         parent = self.parentWidget()
         if parent is None:
@@ -753,27 +828,30 @@ class Toast(QFrame):
         parent_layout = parent.layout()
         return parent_layout is None or parent_layout.indexOf(self) < 0
 
+    def _sync_managed_height(self) -> None:
+        """Reserve wrapped height where QBoxLayout ignores height-for-width."""
+        if self.parentWidget() is None or self._is_parent_overlay():
+            return
+        required_height = self.heightForWidth(max(1, self.width()))
+        if self.minimumHeight() != required_height:
+            self.setMinimumHeight(required_height)
+            self.updateGeometry()
+
+    def resizeEvent(self, event: object) -> None:  # noqa: N802 - Qt API
+        super().resizeEvent(event)
+        self._sync_managed_height()
+
     def _place_inside_parent(self) -> None:
         """Size and anchor an unmanaged toast inside its visible parent."""
         parent = self.parentWidget()
         if parent is None or not self._is_parent_overlay():
             return
-        margin = 16
+        margin = self._SAFE_PARENT_MARGIN
         parent_rect = parent.contentsRect()
         available_width = max(0, parent_rect.width() - (2 * margin))
-        natural_width = (
-            self.label.fontMetrics().horizontalAdvance(self.label.text()) + 24
-        )
-        width = min(
-            self.maximumWidth(),
-            available_width,
-            max(self.minimumWidth(), natural_width),
-        )
-        label_width = max(1, width - 24)
-        height = max(
-            self.minimumSizeHint().height(),
-            self.label.heightForWidth(label_width) + 16,
-        )
+        available_height = max(0, parent_rect.height() - (2 * margin))
+        width = min(available_width, self.sizeHint().width())
+        height = min(available_height, self.heightForWidth(width))
         x = parent_rect.x() + max(0, (parent_rect.width() - width) // 2)
         y = parent_rect.y() + margin
         self.setGeometry(x, y, width, height)
@@ -795,10 +873,16 @@ class Toast(QFrame):
         self.setAccessibleDescription(text)
         self.style().unpolish(self)
         self.style().polish(self)
+        self.layout().invalidate()
+        self.updateGeometry()
+        parent = self.parentWidget()
+        if parent is not None and parent.layout() is not None:
+            parent.layout().invalidate()
         stop_motion(self)
         self.setGraphicsEffect(None)
         self.show()
         self._place_inside_parent()
+        self._sync_managed_height()
         self._duration_ms = max(0, duration_ms)
         self._remaining_ms = self._duration_ms
         self.timer.start(self._duration_ms)
@@ -875,11 +959,18 @@ class Toast(QFrame):
         self.hide()
 
 
-def configure_button(button: QPushButton, role: str, accessible_name: str = "") -> None:
+def configure_button(
+    button: QPushButton,
+    role: str,
+    accessible_name: str = "",
+    *,
+    with_motion: bool = True,
+) -> None:
     """Apply role, pointer cursor, and optional accessible naming."""
     set_button_role(button, role)
     install_pointer_cursor(button)
-    install_button_motion(button)
+    if with_motion:
+        install_button_motion(button)
     if accessible_name:
         button.setAccessibleName(accessible_name)
 

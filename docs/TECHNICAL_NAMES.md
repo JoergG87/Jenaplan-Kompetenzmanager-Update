@@ -1993,8 +1993,8 @@ Registrierte Python-Klassen und Funktionen:
 - `StudentProfileScreen.apply_competency_cockpit_filters()`
 - `StudentProfileScreen.reset_competency_cockpit_filters()`
 - `StudentProfileScreen._populate_competency_subject_filter(cockpit)`
-- `StudentProfileScreen._filtered_cockpit_subject(subject, documentation_filter, learning_stage_filter, search_text)`
-- `StudentProfileScreen._filtered_cockpit_learning_area(area, documentation_filter, learning_stage_filter, search_text)`
+- `StudentProfileScreen._filtered_cockpit_subject(subject, documentation_filter, search_text)`
+- `StudentProfileScreen._filtered_cockpit_learning_area(area, documentation_filter, search_text)`
 - `StudentProfileScreen._matches_competency_documentation_filter(competency, documentation_filter)`
 - `StudentProfileScreen._cockpit_subject_card(subject, historical)`
 - `StudentProfileScreen._cockpit_learning_area_card(subject_id, area, historical)`
@@ -3015,7 +3015,7 @@ Registrierte Komponenten und Helfer (Component Library V1 und V2):
 - `EmptyState._update_accessibility()`
 - `Toast`
 - `Toast.show_message(text, tone, duration_ms)`
-- `configure_button(button, role, accessible_name)`
+- `configure_button(button, role, accessible_name, with_motion=True)`
 - `set_button_role(button, role)`
 - `StudentsWorkspace`
 - `StudentsWorkspace.courses_screen`
@@ -3138,7 +3138,6 @@ Registrierte Profilnamen:
 - `StudentProfileOpenCompetencyCockpit`
 - `StudentProfileOpenUndocumented`
 - `CompetencyCockpitSearch`
-- `CompetencyCockpitStageFilter`
 - `StudentProfileScreen._select_profile_section(key)`
 - `StudentProfileScreen._sync_profile_navigation(index)`
 - `StudentProfileScreen._update_profile_header_context()`
@@ -3147,7 +3146,6 @@ Registrierte Profilnamen:
 - `StudentProfileScreen._orientation_status_row(label, rating, status_label)`
 - `StudentProfileScreen._orientation_evidence_excerpt(event)`
 - `StudentProfileScreen._open_undocumented_competencies()`
-- `StudentProfileScreen._matches_competency_learning_stage(competency, learning_stage_filter)`
 - `StudentProfileScreen._matches_competency_search(competency, learning_area, topic, search_text)`
 
 Registrierte Dialognamen:
@@ -3156,11 +3154,10 @@ Registrierte Dialognamen:
 - `ObservationValidationMessage`
 - `ObservationFileRow`
 
-Regel: Der Klassenstufenfilter des Kompetenz-Cockpits liest weiterhin
-ausschliesslich das bestehende Katalogfeld `learning_stage`. Der
-Beobachtungsdialog besitzt für den einheitlich als `cross_stage` registrierten
-Entwicklungsbuch-Katalog keine Stage-Steuerung und zeigt nach dem Fach direkt
-die vorhandene Adapterhierarchie. Das Feld, die Adapterprojektion und
+Regel: Beobachtungsdialog und Kompetenz-Cockpit besitzen für den einheitlich
+als `cross_stage` registrierten Entwicklungsbuch-Katalog keine
+Stage-Steuerung und zeigen nach dem Fach direkt die vorhandene
+Adapterhierarchie. Das Feld `learning_stage`, die Adapterprojektion und
 Rückwärtskompatibilität bleiben unverändert. Initial ausgewaehlte
 Edit-Kompetenzen bleiben sichtbar und geoeffnet; historische beziehungsweise
 inaktive Kompetenzen werden nie als neue Auswahl reaktiviert.

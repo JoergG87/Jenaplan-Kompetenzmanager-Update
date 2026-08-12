@@ -14,7 +14,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QEvent, QPoint, Qt
 from PySide6.QtGui import QKeySequence
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
@@ -7350,7 +7350,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertIsNotNone(app)
 
-    def test_student_profile_cockpit_combines_search_and_learning_stage_filters(self) -> None:
+    def test_student_profile_cockpit_search_has_no_meaningless_stage_segments(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
         cockpit = build_student_competency_cockpit((
@@ -7379,19 +7379,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 "CompetencyCockpitCompetencyButton",
             )
         }
-        self.assertEqual(default_labels, {"Volle Stunden ablesen", "Uhrzeiten notieren"})
-
-        screen.competency_stage_filter.set_current_key("stage_4", emit=True)
-        stage_four_labels = {
-            button.text()[2:]
-            for button in screen.findChildren(
-                QPushButton,
-                "CompetencyCockpitCompetencyButton",
-            )
-        }
         self.assertEqual(
-            stage_four_labels,
-            {"Uhrzeiten minutengenau ablesen", "Uhrzeiten notieren"},
+            default_labels,
+            {
+                "Volle Stunden ablesen",
+                "Uhrzeiten minutengenau ablesen",
+                "Uhrzeiten notieren",
+            },
         )
 
         screen.competency_search_input.setText("minutengenau")
@@ -7405,7 +7399,87 @@ class DesktopAppAdapterTest(unittest.TestCase):
             ],
             ["Uhrzeiten minutengenau ablesen"],
         )
-        self.assertEqual(screen.competency_stage_filter.accessibleName(), "Klassenstufenfilter")
+        self.assertIsNone(
+            screen.findChild(QWidget, "CompetencyCockpitStageFilter")
+        )
+        visible_texts = {
+            widget.text()
+            for widget in (
+                *screen.findChildren(QLabel),
+                *screen.findChildren(QPushButton),
+            )
+            if widget.isVisible()
+        }
+        self.assertNotIn("Passende Kompetenzen", visible_texts)
+        self.assertNotIn("Klassenstufe 4", visible_texts)
+        self.assertEqual(
+            screen.competency_subject_filter.itemText(0),
+            "Alle Kompetenzen",
+        )
+        self.assertIsNotNone(app)
+
+    def test_work_learning_cockpit_renders_all_13_named_rows_without_effects(
+        self,
+    ) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = self.adapter.competency_cockpit_for_student(
+            f"{STUDENT_ID_PREFIX}-000001"
+        )
+        expected_labels = tuple(
+            entry.competency_label
+            for entry in self.curriculum_adapter.list_entries()
+            if entry.subject_key == "arbeits_lernkompetenz"
+        )
+        screen.set_student(
+            self._sample_student_detail(),
+            competency_cockpit=cockpit,
+        )
+        screen.profile_tabs.setCurrentIndex(2)
+        screen.competency_subject_filter.setCurrentIndex(
+            screen.competency_subject_filter.findData("arbeits_lernkompetenz")
+        )
+        screen.resize(1180, 760)
+        screen.show()
+        app.processEvents()
+
+        for object_name in (
+            "CompetencyCockpitSubjectButton",
+            "CompetencyCockpitLearningAreaButton",
+            "CompetencyCockpitTopicButton",
+        ):
+            screen.findChild(QPushButton, object_name).click()
+        app.processEvents()
+        buttons = screen.findChildren(
+            QPushButton,
+            "CompetencyCockpitCompetencyButton",
+        )
+
+        self.assertEqual(len(expected_labels), 13)
+        self.assertEqual(
+            tuple(button.text()[2:] for button in buttons),
+            expected_labels,
+        )
+        self.assertTrue(all(button.isVisible() for button in buttons))
+        self.assertTrue(all(button.width() > 0 and button.height() > 0 for button in buttons))
+        for button in buttons:
+            QApplication.sendEvent(button, QEvent(QEvent.Type.Enter))
+            self.assertIsNone(button.graphicsEffect())
+            self.assertFalse(hasattr(button, "_motion_button_controller"))
+
+        screen.competency_search_input.setText("nicht vorhanden")
+        screen.competency_search_input.clear()
+        app.processEvents()
+        self.assertEqual(
+            len(
+                screen.findChildren(
+                    QFrame,
+                    "CompetencyCockpitCompetencyRow",
+                )
+            ),
+            13,
+        )
+        screen.close()
         self.assertIsNotNone(app)
 
     def test_student_profile_cockpit_combines_subject_filter_and_keeps_progress(self) -> None:

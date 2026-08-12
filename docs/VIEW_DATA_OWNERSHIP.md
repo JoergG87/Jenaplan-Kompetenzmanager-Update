@@ -998,7 +998,7 @@ UI-Projektionen:
   individueller `custom`-Auswahl aus der
   `StudentDocumentationSubjectProjectionViewModel`
 - Variante-A-Arbeitsprofil als reine `StudentProfileDashboardViewModel`-Komposition aus der kanonischen Kompetenzstatus- und Dokumentationsstatusprojektion: Profilkopf mit Dokumentationsring, Orientierungskarte, Kompetenzkarte und neutraler Karte `Noch nicht dokumentiert`
-- Kompetenz-Cockpit aus der kanonischen Sprint-6B-Statusprojektion mit lokalen Fach- und Dokumentationsfiltern fuer aktive Zeilen sowie separat historischen Kompetenzen
+- Kompetenz-Cockpit aus der kanonischen Sprint-6B-Statusprojektion mit lokaler Suche sowie Fach- und Dokumentationsfiltern fuer aktive Zeilen und separat historischen Kompetenzen; keine Stage-Segmentierung des einheitlichen Entwicklungsbuch-Katalogs
 - Berichtsvorschau aus Kompetenzstaenden und Beobachtungsbelegen
 - Dokumente und Medien aus aktiven Dokumentmetadaten
 - Aktionen zum Bearbeiten und Loeschen einzelner Beobachtungen
@@ -1046,8 +1046,9 @@ dokumentiert/gesamt, ohne einen zweiten Kompetenzstatus zu berechnen. Die
 lokalen Cockpit-Filter beschraenken nur sichtbare aktive Zeilen; sie
 kombinieren Fach mit dem kanonischen Dokumentationszustand, mutieren keine
 Daten und behalten die Fortschrittswerte aus dem vollstaendigen aktiven
-Zielbestand innerhalb der effektiven Fachmenge. `Alle Kompetenzen` erweitert
-nur die Klassenstufen, nicht die Fachmenge. Alle Cockpit-Ebenen starten geschlossen; der Aufklappzustand
+Zielbestand innerhalb der effektiven Fachmenge. Der fachbezogene Eintrag
+`Alle Kompetenzen` erweitert ausschließlich die sichtbare Fachmenge; eine
+Stage-Segmentierung wird nicht angeboten. Alle Cockpit-Ebenen starten geschlossen; der Aufklappzustand
 bleibt lokal je geoeffnetem Schueler und wird beim Filtern fuer weiterhin
 sichtbare Ebenen erhalten. Historische Zeilen werden separat unter
 `Historisch dokumentiert` dargestellt und nicht mit aktiven Zielen gefiltert.

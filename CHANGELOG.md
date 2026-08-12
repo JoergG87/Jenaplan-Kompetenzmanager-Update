@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Zentrale Qt-Statusmeldungen berechnen ihre Breite und umbruchabhängige Höhe
+  jetzt aus dem tatsächlichen Inhalt und bleiben bei Parent-Resizes innerhalb
+  sicherer Außenabstände. Das Kompetenz-Cockpit zeigt alle 13
+  Arbeits-/Lernkompetenzen ohne Compositing auf dem texttragenden
+  Disclosure-Button und entfernt die für den einheitlichen
+  Entwicklungsbuch-Katalog bedeutungslose Stage-Segmentierung. Suche, Fach-
+  und Dokumentationsfilter, Tastaturbedienung, `learning_stage`-Persistenz und
+  historische Kompetenzreferenzen bleiben unverändert.
+
 - Finale LEG-PDFs reservieren in der Kompetenztabelle ausreichend Platz für
   vollständige Fachnamen wie `Kreatives Gestalten` und die überfachlichen
   Bezeichnungen. Lange Fachnamen umbrechen innerhalb der Zelle; Tabellenkopf
