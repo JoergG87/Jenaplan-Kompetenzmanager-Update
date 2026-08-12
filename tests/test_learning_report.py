@@ -14,7 +14,7 @@ from unittest import mock
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from pypdf import PdfReader
-from PySide6.QtCore import QDate, QEvent, Qt
+from PySide6.QtCore import QDate, QEvent, QTimer, Qt
 from PySide6.QtGui import QAccessible
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
@@ -152,14 +152,17 @@ class LearningReportTest(unittest.TestCase):
         self.assertNotIn("drafts[0] if drafts else None", source)
 
     def test_new_report_period_selection_requires_explicit_valid_dates(self) -> None:
-        dialog = LearningReportPeriodSelectionDialog()
+        dialog = LearningReportPeriodSelectionDialog(
+            initial_period=(date(2026, 8, 1), date(2027, 7, 31))
+        )
 
-        self.assertEqual(dialog.start_input.specialValueText(), "Bitte wählen")
-        self.assertEqual(dialog.end_input.specialValueText(), "Bitte wählen")
-        dialog._accept_selected_period()
         self.assertEqual(
-            dialog.validation_message.text(),
-            "Bitte wähle Beginn und Ende des Berichtszeitraums aus.",
+            dialog.start_input.date().toPython(),
+            date(2026, 8, 1),
+        )
+        self.assertEqual(
+            dialog.end_input.date().toPython(),
+            date(2027, 7, 31),
         )
         dialog.start_input.setDate(QDate(2026, 2, 1))
         dialog.end_input.setDate(QDate(2026, 2, 1))
@@ -235,7 +238,7 @@ class LearningReportTest(unittest.TestCase):
         self.assertFalse(dialog.continue_to_writing_button.isEnabled())
         self.assertEqual(
             [button.text() for button in dialog.navigation_group.buttons()],
-            ["Gesamttext", "Deutsch", "Mathematik"],
+            ["Gesamttext"],
         )
         navigation_buttons = dialog.workspace_navigation.findChildren(
             type(dialog.save_button)
@@ -306,6 +309,10 @@ class LearningReportTest(unittest.TestCase):
             "Ausgewählte Berichtsfächer: Mathematik",
         )
         self.assertTrue(dialog.continue_to_writing_button.isEnabled())
+        self.assertEqual(
+            [button.text() for button in dialog.navigation_group.buttons()],
+            ["Gesamttext", "Mathematik"],
+        )
         dialog.continue_to_writing_button.click()
         self.assertEqual(dialog.workspace_navigation.current_key(), "writing")
         self.assertTrue(dialog.selected_subject_context.isVisibleTo(dialog))
@@ -321,6 +328,116 @@ class LearningReportTest(unittest.TestCase):
 
         self.assertIn("Mathematik", labels)
         self.assertNotIn("Deutsch", labels)
+
+    def test_empty_subject_can_be_unselected_without_confirmation(self) -> None:
+        initial = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            subjects=(LearningReportSubjectDraftViewModel("math"),),
+            report_draft_id="RPD-EMPTY",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
+        include = dialog.subject_widgets["math"]["include"]
+        self.assertIsInstance(include, QCheckBox)
+
+        include.setChecked(False)
+
+        self.assertFalse(include.isChecked())
+        self.assertEqual(dialog.report_draft_view_model().selected_subject_ids, ())
+
+    def test_subject_removal_requires_confirmation_for_each_saved_content_kind(self) -> None:
+        cases = (
+            ("Text", {"subjects": (LearningReportSubjectDraftViewModel("math", "Gespeicherter Text."),)}),
+            ("Kompetenz", {"subjects": (LearningReportSubjectDraftViewModel("math"),), "competency_ids": ("CMP-000001",)}),
+            ("Beobachtungsbeleg", {"subjects": (LearningReportSubjectDraftViewModel("math"),), "competency_ids": ("CMP-000001",), "observation_ids": ("OBS-000001",)}),
+            ("Diagramm", {"subjects": (LearningReportSubjectDraftViewModel("math"),), "chart_selections": (LearningReportChartSelectionViewModel("math", "documentation_coverage"),)}),
+        )
+        for label, values in cases:
+            with self.subTest(content=label):
+                initial = LearningReportDraftViewModel(
+                    student_id="STU-000001",
+                    period_start=date(2026, 1, 1),
+                    period_end=date(2026, 7, 31),
+                    subjects=(
+                        *values.get("subjects", ()),
+                        LearningReportSubjectDraftViewModel("german", "Deutsch bleibt."),
+                    ),
+                    competency_ids=values.get("competency_ids", ()),
+                    observation_ids=values.get("observation_ids", ()),
+                    chart_selections=values.get("chart_selections", ()),
+                    report_draft_id="RPD-REMOVE",
+                )
+                dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+                dialog.show_workspace("evidence")
+                dialog._set_evidence_section(1)
+                include = dialog.subject_widgets["math"]["include"]
+                self.assertIsInstance(include, QCheckBox)
+                before = dialog.report_draft_view_model()
+                QTimer.singleShot(0, lambda current=dialog: self._click_message_button(current, "Abbrechen"))
+                include.setChecked(False)
+
+                self.assertTrue(include.isChecked())
+                self.assertEqual(dialog.report_draft_view_model(), before)
+                self.assertIn("german", dialog.selected_subject_ids)
+
+    def test_confirmed_subject_removal_changes_only_its_draft_context(self) -> None:
+        initial = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            overall_text="Gesamttext bleibt.",
+            subjects=(
+                LearningReportSubjectDraftViewModel("math", "Mathetext."),
+                LearningReportSubjectDraftViewModel("german", "Deutschtext."),
+            ),
+            competency_ids=("CMP-000001", "CMP-000002"),
+            observation_ids=("OBS-000001",),
+            chart_selections=(
+                LearningReportChartSelectionViewModel("math", "documentation_coverage"),
+            ),
+            report_draft_id="RPD-REMOVE",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
+        include = dialog.subject_widgets["math"]["include"]
+        self.assertIsInstance(include, QCheckBox)
+        QTimer.singleShot(
+            0,
+            lambda current=dialog: self._click_message_button(
+                current, "Fach aus Entwurf entfernen"
+            ),
+        )
+        include.setChecked(False)
+
+        removed = dialog.report_draft_view_model()
+        self.assertEqual(removed.selected_subject_ids, ("german",))
+        self.assertEqual(removed.subjects[0].strengths_text, "Deutschtext.")
+        self.assertEqual(removed.overall_text, "Gesamttext bleibt.")
+        self.assertEqual(removed.competency_ids, ("CMP-000002",))
+        self.assertEqual(removed.observation_ids, ())
+        self.assertEqual(removed.chart_selections, ())
+
+        include.setChecked(True)
+        added_again = dialog.report_draft_view_model()
+        math = next(subject for subject in added_again.subjects if subject.subject_id == "math")
+        self.assertEqual(
+            (math.strengths_text, math.development_text, math.support_needs_text, math.next_goals_text),
+            ("", "", "", ""),
+        )
+
+    @staticmethod
+    def _click_message_button(dialog: LearningReportDialog, label: str) -> None:
+        message = next(
+            item
+            for item in dialog.findChildren(QMessageBox)
+            if item.isVisible() or item.windowTitle() == "Fach aus Entwurf entfernen"
+        )
+        button = next(item for item in message.buttons() if item.text() == label)
+        button.click()
 
     def test_retained_subject_without_competencies_round_trips_as_saved_section(
         self,
@@ -994,6 +1111,12 @@ class LearningReportTest(unittest.TestCase):
 
         dialog.selected_competency_ids.add("CMP-OLD")
         dialog._populate_competency_tree(self.preparation.subjects[1], tree)
+        QTimer.singleShot(
+            0,
+            lambda current=dialog: self._click_message_button(
+                current, "Fach aus Entwurf entfernen"
+            ),
+        )
         dialog.subject_widgets["math"]["include"].setChecked(False)
         retained_item = next(
             item

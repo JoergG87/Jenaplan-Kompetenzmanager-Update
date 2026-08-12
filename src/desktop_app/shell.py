@@ -1887,8 +1887,14 @@ class AppShell(QMainWindow):
                 )
                 selected_ui = "qt"
             self._selected_report_draft_ids.pop(student_id, None)
+            current_school_year = self.adapter.current_school_year()
             accepted, initial_period = LearningReportPeriodSelectionDialog.choose(
                 self,
+                (
+                    (current_school_year.start_date, current_school_year.end_date)
+                    if current_school_year is not None
+                    else None
+                ),
             )
             if not accepted or initial_period is None:
                 return

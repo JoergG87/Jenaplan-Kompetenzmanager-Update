@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import date
 
-from PySide6.QtCore import QDate, Qt, QTimer, Signal
+from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, Signal
 from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -172,9 +172,11 @@ class LearningReportDraftSelectionDialog(MotionDialog):
 class LearningReportPeriodSelectionDialog(MotionDialog):
     """Collect an explicit reporting period before opening a new draft."""
 
-    _UNSELECTED_DATE = QDate(1900, 1, 1)
-
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        initial_period: tuple[date, date] | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setObjectName("LearningReportPeriodSelectionDialog")
         self.setWindowTitle("Berichtszeitraum auswählen")
@@ -193,8 +195,11 @@ class LearningReportPeriodSelectionDialog(MotionDialog):
                 context_role="report",
             )
         )
-        self.start_input = self._date_input("Beginn des Berichtszeitraums")
-        self.end_input = self._date_input("Ende des Berichtszeitraums")
+        initial_start, initial_end = initial_period or (date(2026, 8, 1), date(2027, 7, 31))
+        self.start_input = self._date_input(
+            "Beginn des Berichtszeitraums", initial_start
+        )
+        self.end_input = self._date_input("Ende des Berichtszeitraums", initial_end)
         fields = QGridLayout()
         fields.setHorizontalSpacing(18)
         fields.setVerticalSpacing(8)
@@ -218,10 +223,8 @@ class LearningReportPeriodSelectionDialog(MotionDialog):
         actions.addWidget(continue_button)
         layout.addLayout(actions)
 
-    def _date_input(self, accessible_name: str) -> QDateEdit:
-        editor = QDateEdit(self._UNSELECTED_DATE)
-        editor.setMinimumDate(self._UNSELECTED_DATE)
-        editor.setSpecialValueText("Bitte wählen")
+    def _date_input(self, accessible_name: str, value: date) -> QDateEdit:
+        editor = QDateEdit(QDate(value.year, value.month, value.day))
         editor.setCalendarPopup(True)
         editor.setDisplayFormat("dd.MM.yyyy")
         editor.setAccessibleName(accessible_name)
@@ -230,11 +233,6 @@ class LearningReportPeriodSelectionDialog(MotionDialog):
     def _accept_selected_period(self) -> None:
         start = self._selected_date(self.start_input)
         end = self._selected_date(self.end_input)
-        if start is None or end is None:
-            self.validation_message.setText(
-                "Bitte wähle Beginn und Ende des Berichtszeitraums aus."
-            )
-            return
         if end <= start:
             self.validation_message.setText(
                 "Das Ende des Berichtszeitraums muss nach dem Beginn liegen."
@@ -243,13 +241,16 @@ class LearningReportPeriodSelectionDialog(MotionDialog):
         self.selected_period = (start, end)
         self.accept()
 
-    def _selected_date(self, editor: QDateEdit) -> date | None:
-        value = editor.date()
-        return None if value == self._UNSELECTED_DATE else value.toPython()
+    def _selected_date(self, editor: QDateEdit) -> date:
+        return editor.date().toPython()
 
     @classmethod
-    def choose(cls, parent: QWidget) -> tuple[bool, tuple[date, date] | None]:
-        dialog = cls(parent)
+    def choose(
+        cls,
+        parent: QWidget,
+        initial_period: tuple[date, date] | None = None,
+    ) -> tuple[bool, tuple[date, date] | None]:
+        dialog = cls(parent, initial_period)
         accepted = dialog.exec() == QDialog.DialogCode.Accepted
         return accepted, dialog.selected_period
 
@@ -506,12 +507,34 @@ class LearningReportDialog(QDialog):
         layout.setContentsMargins(18, 24, 18, 18)
         layout.setSpacing(5)
         layout.addWidget(self._eyebrow("SCHREIBBEREICHE"))
+        self._editor_subject_navigation_layout = QVBoxLayout()
+        self._editor_subject_navigation_layout.setContentsMargins(0, 0, 0, 0)
+        self._editor_subject_navigation_layout.setSpacing(5)
+        layout.addLayout(self._editor_subject_navigation_layout)
+        self._refresh_editor_subject_navigation()
+        layout.addStretch(1)
+        note = QLabel(
+            "Gesamttext und Fachtexte werden bewusst formuliert und gemeinsam als Entwurf gespeichert."
+        )
+        note.setWordWrap(True)
+        set_label_style(note, "subtle")
+        layout.addWidget(note)
+        return sidebar
+
+    def _refresh_editor_subject_navigation(self) -> None:
+        if not hasattr(self, "_editor_subject_navigation_layout"):
+            return
+        if hasattr(self, "navigation_group"):
+            for button in self.navigation_group.buttons():
+                self.navigation_group.removeButton(button)
+                button.deleteLater()
         self.navigation_group = QButtonGroup(self)
         self.navigation_group.setExclusive(True)
         entries = [("Gesamttext", 0)]
         entries.extend(
             (subject.subject_name, index + 1)
             for index, subject in enumerate(self.preparation.subjects)
+            if subject.subject_id in self.selected_subject_ids
         )
         for title, index in entries:
             button = QPushButton(title)
@@ -522,15 +545,11 @@ class LearningReportDialog(QDialog):
                 lambda _checked=False, target=index: self._set_editor_section(target)
             )
             self.navigation_group.addButton(button)
-            layout.addWidget(button)
-        layout.addStretch(1)
-        note = QLabel(
-            "Gesamttext und Fachtexte werden bewusst formuliert und gemeinsam als Entwurf gespeichert."
-        )
-        note.setWordWrap(True)
-        set_label_style(note, "subtle")
-        layout.addWidget(note)
-        return sidebar
+            self._editor_subject_navigation_layout.addWidget(button)
+        if hasattr(self, "editor_stack") and self.editor_stack.currentIndex() != 0:
+            current_subject = self.preparation.subjects[self.editor_stack.currentIndex() - 1]
+            if current_subject.subject_id not in self.selected_subject_ids:
+                self._set_editor_section(0)
 
     def _evidence_screen(self) -> QWidget:
         screen = QWidget()
@@ -1421,16 +1440,11 @@ class LearningReportDialog(QDialog):
         if checked:
             self.selected_subject_ids.add(subject_id)
         else:
-            self.selected_subject_ids.discard(subject_id)
-            self.selected_competency_ids.difference_update(
-                competency.competency_id for competency in subject.competencies
-            )
-            self.selected_observation_ids.difference_update(
-                evidence.observation_id for evidence in subject.evidence
-            )
-            tree = self.subject_widgets[subject_id]["tree"]
-            if isinstance(tree, QTreeWidget):
-                self._populate_competency_tree(subject, tree)
+            if self._subject_has_draft_content(subject):
+                if not self._confirm_subject_removal(subject):
+                    self._set_subject_checkbox(subject_id, True)
+                    return
+            self._remove_subject_context(subject)
         badge = self.subject_widgets.get(subject_id, {}).get("selection_badge")
         if isinstance(badge, StatusBadge):
             badge.setText("Für Bericht ausgewählt" if checked else "Noch nicht ausgewählt")
@@ -1439,8 +1453,106 @@ class LearningReportDialog(QDialog):
             badge.style().unpolish(badge)
             badge.style().polish(badge)
         self._render_evidence(subject)
+        self._refresh_editor_subject_navigation()
         self._refresh_subject_selection_summary()
         self._schedule_preview()
+
+    def _subject_has_draft_content(
+        self,
+        subject: LearningReportSubjectViewModel,
+    ) -> bool:
+        texts = self._subject_draft_state(subject.subject_id)
+        if any(
+            value.strip()
+            for value in (
+                texts.strengths_text,
+                texts.development_text,
+                texts.support_needs_text,
+                texts.next_goals_text,
+            )
+        ):
+            return True
+        competency_ids = {item.competency_id for item in subject.competencies}
+        observation_ids = {item.observation_id for item in subject.evidence}
+        return bool(
+            competency_ids & self.selected_competency_ids
+            or observation_ids & self.selected_observation_ids
+            or any(
+                selected_subject_id == subject.subject_id
+                for selected_subject_id, _chart_type in self._selected_charts
+            )
+        )
+
+    def _confirm_subject_removal(
+        self,
+        subject: LearningReportSubjectViewModel,
+    ) -> bool:
+        confirmation = QMessageBox(self)
+        confirmation.setIcon(QMessageBox.Icon.Warning)
+        confirmation.setWindowTitle("Fach aus Entwurf entfernen")
+        confirmation.setText(
+            "Für dieses Fach sind bereits Inhalte im Entwurf gespeichert."
+        )
+        confirmation.setInformativeText(
+            "Wenn du das Fach aus dem Bericht entfernst, werden die Fachtexte und "
+            "ausgewählten Bezüge dieses Fachabschnitts aus diesem Entwurf entfernt. "
+            "Bereits finalisierte Revisionen bleiben unverändert."
+        )
+        cancel_button = confirmation.addButton("Abbrechen", QMessageBox.ButtonRole.RejectRole)
+        remove_button = confirmation.addButton(
+            "Fach aus Entwurf entfernen", QMessageBox.ButtonRole.DestructiveRole
+        )
+        configure_button(cancel_button, "primary", "Fach im Entwurf behalten")
+        configure_button(
+            remove_button,
+            "destructive",
+            f"{subject.subject_name} samt Inhalten aus diesem Entwurf entfernen",
+        )
+        confirmation.setDefaultButton(cancel_button)
+        confirmation.setEscapeButton(cancel_button)
+        stabilize_message_box_buttons(confirmation, (remove_button, cancel_button))
+        confirmation.exec()
+        return confirmation.clickedButton() is remove_button
+
+    def _set_subject_checkbox(self, subject_id: str, checked: bool) -> None:
+        checkbox = self.subject_widgets.get(subject_id, {}).get("include")
+        if isinstance(checkbox, QCheckBox):
+            blocker = QSignalBlocker(checkbox)
+            checkbox.setChecked(checked)
+            del blocker
+
+    def _remove_subject_context(self, subject: LearningReportSubjectViewModel) -> None:
+        self.selected_subject_ids.discard(subject.subject_id)
+        self._subject_texts.pop(subject.subject_id, None)
+        text_edits = self.subject_widgets.get(subject.subject_id, {}).get("texts")
+        if isinstance(text_edits, dict):
+            for editor in text_edits.values():
+                if isinstance(editor, QTextEdit):
+                    blocker = QSignalBlocker(editor)
+                    editor.clear()
+                    del blocker
+        self.selected_competency_ids.difference_update(
+            competency.competency_id for competency in subject.competencies
+        )
+        remaining_observation_ids = {
+            evidence.observation_id
+            for other_subject in self.preparation.subjects
+            if other_subject.subject_id in self.selected_subject_ids
+            for evidence in other_subject.evidence
+        }
+        self.selected_observation_ids.difference_update(
+            evidence.observation_id
+            for evidence in subject.evidence
+            if evidence.observation_id not in remaining_observation_ids
+        )
+        self._selected_charts = {
+            selection
+            for selection in self._selected_charts
+            if selection[0] != subject.subject_id
+        }
+        tree = self.subject_widgets.get(subject.subject_id, {}).get("tree")
+        if isinstance(tree, QTreeWidget):
+            self._populate_competency_tree(subject, tree)
 
     def _toggle_competency(
         self, subject_id: str, item: QTreeWidgetItem, column: int

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- In der Berichtswerkstatt lassen sich leere Berichtsfächer direkt abwählen.
+  Enthält ein Fach bereits Text, ausgewählte Kompetenzen, Beobachtungsbelege
+  oder Diagramme, erklärt eine sichere Bestätigung den Entwurfsverlust;
+  `Abbrechen` bleibt Standard- und Escape-Aktion. Erst die bewusst bestätigte
+  Entfernung löscht diesen Fachabschnitt mit seinen Bezügen aus dem aktuellen
+  Entwurf. Andere Fächer und bereits finalisierte Revisionen bleiben
+  unverändert; erneutes Hinzufügen beginnt mit einem leeren Fachabschnitt.
+  Neue Entwürfe starten mit dem aktiven Schuljahr als bearbeitbarem Zeitraum
+  statt mit einem Platzhalterdatum. Schema, `user_version`, Backup/Restore und
+  Final V4 bleiben unverändert.
+
 - Zentrale Qt-Statusmeldungen berechnen ihre Breite und umbruchabhängige Höhe
   jetzt aus dem tatsächlichen Inhalt und bleiben bei Parent-Resizes innerhalb
   sicherer Außenabstände. Das Kompetenz-Cockpit zeigt alle 13

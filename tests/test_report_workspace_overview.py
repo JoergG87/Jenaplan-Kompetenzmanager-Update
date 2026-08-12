@@ -1730,6 +1730,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         report_shell.adapter.learning_report_preparation_for_student.return_value = (
             self.preparation
         )
+        report_shell.adapter.current_school_year.return_value = SimpleNamespace(
+            start_date=date(2026, 8, 1),
+            end_date=date(2027, 7, 31),
+        )
         report_shell._selected_report_draft_ids = {"STU-1": "RPD-STALE"}
         dialog = self._fake_workspace_dialog()
         selected_period = (date(2026, 2, 1), date(2026, 7, 31))
@@ -1754,7 +1758,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             )
         dialog.finished.connect.call_args.args[0](0)
 
-        choose_period.assert_called_once_with(report_shell)
+        choose_period.assert_called_once_with(
+            report_shell,
+            (date(2026, 8, 1), date(2027, 7, 31)),
+        )
         create_dialog.assert_called_once_with(
             self.preparation,
             report_shell,
@@ -1776,6 +1783,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         )
         report_shell.adapter.learning_report_preparation_for_student.return_value = (
             self.preparation
+        )
+        report_shell.adapter.current_school_year.return_value = SimpleNamespace(
+            start_date=date(2026, 8, 1),
+            end_date=date(2027, 7, 31),
         )
         report_shell._selected_report_draft_ids = {"STU-1": "RPD-1"}
         dialog = self._fake_workspace_dialog()
@@ -1803,7 +1814,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         dialog.finished.connect.call_args.args[0](0)
 
         choose_draft.assert_called_once()
-        choose_period.assert_called_once_with(report_shell)
+        choose_period.assert_called_once_with(
+            report_shell,
+            (date(2026, 8, 1), date(2027, 7, 31)),
+        )
         create_dialog.assert_called_once_with(
             self.preparation,
             report_shell,
@@ -1853,6 +1867,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
     def test_new_report_period_cancel_stops_before_preparation(self) -> None:
         report_shell = Mock()
         report_shell.adapter.list_learning_report_drafts_for_student.return_value = ()
+        report_shell.adapter.current_school_year.return_value = SimpleNamespace(
+            start_date=date(2026, 8, 1),
+            end_date=date(2027, 7, 31),
+        )
         report_shell._selected_report_draft_ids = {}
 
         with (
@@ -1865,7 +1883,10 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         ):
             shell.AppShell.open_learning_report_dialog(report_shell, "STU-1")
 
-        choose_period.assert_called_once_with(report_shell)
+        choose_period.assert_called_once_with(
+            report_shell,
+            (date(2026, 8, 1), date(2027, 7, 31)),
+        )
         report_shell.adapter.learning_report_preparation_for_student.assert_not_called()
         create_dialog.assert_not_called()
         report_shell.show_student_profile.assert_not_called()

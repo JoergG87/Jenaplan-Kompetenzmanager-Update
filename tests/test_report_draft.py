@@ -42,6 +42,17 @@ class ReportDraftPersistenceTest(unittest.TestCase):
             ).list_competencies()
             if competency.active and competency.catalog_status == "current"
         )
+        self.other_competency = next(
+            competency
+            for competency in SQLiteCompetencyRepository(
+                self.adapter.database
+            ).list_competencies()
+            if (
+                competency.active
+                and competency.catalog_status == "current"
+                and competency.subject_id != self.competency.subject_id
+            )
+        )
         self.observation = ObservationRecord(
             "OBS-REPORT-DRAFT",
             self.student.student_id,
@@ -56,6 +67,21 @@ class ReportDraftPersistenceTest(unittest.TestCase):
         )
         SQLiteObservationRepository(self.adapter.database).create_observation(
             self.observation
+        )
+        self.other_observation = ObservationRecord(
+            "OBS-REPORT-DRAFT-OTHER",
+            self.student.student_id,
+            "2026-03-13",
+            self.other_competency.subject_id,
+            "Werkstatt",
+            "Bewusst auswählbarer Beleg eines anderen Fachs.",
+            True,
+            "2026-03-13T10:00:00+00:00",
+            "2026-03-13T10:00:00+00:00",
+            (),
+        )
+        SQLiteObservationRepository(self.adapter.database).create_observation(
+            self.other_observation
         )
 
     def tearDown(self) -> None:
@@ -271,6 +297,72 @@ class ReportDraftPersistenceTest(unittest.TestCase):
         self.assertEqual(len(reloaded.chart_selections), 1)
         self.assertEqual(reloaded.created_at, created.created_at)
         self.assertEqual(saved.report_draft_id, created.report_draft_id)
+
+    def test_confirmed_subject_removal_persists_only_the_affected_context(self) -> None:
+        created = self.adapter.save_learning_report_draft(
+            replace(
+                self._draft(),
+                subjects=(
+                    LearningReportSubjectDraftViewModel(
+                        self.competency.subject_id, "Mathetext"
+                    ),
+                    LearningReportSubjectDraftViewModel(
+                        self.other_competency.subject_id, "Anderer Fachtext"
+                    ),
+                ),
+                competency_ids=(
+                    self.competency.competency_id,
+                    self.other_competency.competency_id,
+                ),
+                observation_ids=(
+                    self.observation.observation_id,
+                    self.other_observation.observation_id,
+                ),
+                chart_selections=(
+                    LearningReportChartSelectionViewModel(
+                        self.competency.subject_id, "documentation_coverage"
+                    ),
+                    LearningReportChartSelectionViewModel(
+                        self.other_competency.subject_id, "competency_timeline"
+                    ),
+                ),
+            )
+        )
+
+        saved = self.adapter.save_learning_report_draft(
+            replace(
+                created,
+                subjects=(
+                    LearningReportSubjectDraftViewModel(
+                        self.other_competency.subject_id, "Anderer Fachtext"
+                    ),
+                ),
+                competency_ids=(self.other_competency.competency_id,),
+                observation_ids=(self.other_observation.observation_id,),
+                chart_selections=(
+                    LearningReportChartSelectionViewModel(
+                        self.other_competency.subject_id, "competency_timeline"
+                    ),
+                ),
+            )
+        )
+        reloaded = self.adapter.load_learning_report_draft(created.report_draft_id)
+
+        self.assertEqual(saved.report_draft_id, created.report_draft_id)
+        self.assertIsNotNone(reloaded)
+        if reloaded is None:
+            raise AssertionError("Expected saved report draft")
+        self.assertEqual(reloaded.selected_subject_ids, (self.other_competency.subject_id,))
+        self.assertEqual(reloaded.competency_ids, (self.other_competency.competency_id,))
+        self.assertEqual(reloaded.observation_ids, (self.other_observation.observation_id,))
+        self.assertEqual(
+            reloaded.chart_selections,
+            (
+                LearningReportChartSelectionViewModel(
+                    self.other_competency.subject_id, "competency_timeline"
+                ),
+            ),
+        )
 
     def test_list_drafts_for_student(self) -> None:
         first = self.adapter.save_learning_report_draft(self._draft())
