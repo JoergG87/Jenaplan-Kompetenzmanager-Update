@@ -33,7 +33,11 @@ diesem Lifecycle:
 10. Nach bewusster Bestätigung erzeugt der vorhandene Live-Restore ein neues
     verschlüsseltes Sicherheitsbackup, veröffentlicht den authentisierten
     Handoff, beendet die App kontrolliert und lässt den Cipher-Worker Swap,
-    keyed Reopen, Rollbackstatus und normalen Restart übernehmen.
+    keyed Reopen, Rollbackstatus und normalen Restart übernehmen. Die Desktop-
+    Composition injiziert dafür die kanonischen Produktpfade, den bestätigten
+    Worker-Launcher und den Restart-Launcher; Security kennt keine Desktop-,
+    Qt-, Bundle- oder Prozessstartdetails. Ein fehlender oder fehlerhafter Port
+    stoppt vor Übergabe beziehungsweise erzwingt den vorhandenen Rollback.
 
 ZIP-v1, V3, Klartextmigration, V2-Import und Alt-Testdatenübernahme bleiben in
 diesem Lifecycle unerreichbar. Schuljahreswechsel verwenden für ihr

@@ -360,16 +360,19 @@ def main() -> int:
                 runtime_root=data_root,
                 restore_id=str(restore_confirm_id),
                 token=str(restore_confirm_token),
+                product_paths=runtime_paths(data_root),
             )
         else:
             recovery = recover_interrupted_final_v4_restore(
                 runtime_root=data_root,
+                product_paths=runtime_paths(data_root),
             )
             if recovery.status == "resume_required":
                 confirm_final_v4_restore_startup(
                     runtime_root=data_root,
                     restore_id=str(recovery.restore_id),
                     token=str(recovery.resume_token),
+                    product_paths=runtime_paths(data_root),
                 )
         new_database_initialization_candidate = (
             _new_database_initialization_candidate(
@@ -544,6 +547,9 @@ def main() -> int:
             BackupRestoreDesktopAdapter,
         )
         from src.desktop_app.security_controller import SecurityUiCoordinator
+        from src.desktop_app.final_v4_runtime_adapters import (
+            DesktopFinalV4RestoreWorkerLauncher,
+        )
         from src.security.final_v4_backup_runtime import (
             build_final_v4_encrypted_backup_service,
         )
@@ -553,7 +559,7 @@ def main() -> int:
             opened_runtime=product_runtime.runtime,
             account_loader=lambda: account,
             environ=os.environ,
-            product_root=data_root,
+            product_paths=security_paths,
         )
         encrypted_backup_application = FinalV4EncryptedBackupApplicationService(
             encrypted_backup_service
@@ -561,6 +567,7 @@ def main() -> int:
         encrypted_restore_application = FinalV4EncryptedRestoreApplicationService(
             encrypted_backup_service,
             lock=lock,
+            worker_launcher=DesktopFinalV4RestoreWorkerLauncher(),
         )
         build_info = load_build_info()
         backup_restore_adapter = BackupRestoreDesktopAdapter(
@@ -817,7 +824,10 @@ def _run_packaged_smoke(
                 started.process.terminate()
             started.process.wait(timeout=5)
             os.close(started.parent_lifetime_fd)
-        recovery = recover_interrupted_final_v4_restore(runtime_root=paths.root)
+        recovery = recover_interrupted_final_v4_restore(
+            runtime_root=paths.root,
+            product_paths=paths,
+        )
         payload["restore"]["recovery"] = recovery.status
     elif mode == "cleanup":
         from src.security.data_keys import DataMasterKeyService

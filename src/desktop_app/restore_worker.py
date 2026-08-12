@@ -397,6 +397,10 @@ def run(
         try:
             if args.restore_mode == RESTORE_MODE_FINAL_V4_ENCRYPTED:
                 if encrypted_service_factory is None:
+                    from src.desktop_app.final_v4_runtime_adapters import (
+                        DesktopFinalV4RestartLauncher,
+                    )
+                    from src.desktop_app.runtime import runtime_paths
                     from src.security.final_v4_live_restore import (
                         build_final_v4_live_restore_worker_service,
                     )
@@ -404,6 +408,8 @@ def run(
                     service = build_final_v4_live_restore_worker_service(
                         runtime_root,
                         restore_id=handoff.stem,
+                        product_paths=runtime_paths(runtime_root),
+                        restart_launcher=DesktopFinalV4RestartLauncher(),
                     )
                 else:
                     service = encrypted_service_factory(runtime_root)

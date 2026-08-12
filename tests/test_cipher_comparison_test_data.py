@@ -312,7 +312,7 @@ def test_comparison_seed_covers_catalog_profiles_workflows_and_encrypted_storage
         environ={},
         key_store=store,
         sqlcipher_provider=provider,
-        product_root=paths.root,
+        product_paths=paths,
     )
     paths.backups.mkdir(mode=0o700)
     backup = service.create(paths.backups / "comparison-test.jkmebackup")

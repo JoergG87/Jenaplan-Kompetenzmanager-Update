@@ -19,7 +19,10 @@ from pathlib import Path
 import shutil
 import stat
 import tempfile
-from typing import Any, Callable, Mapping
+from typing import TYPE_CHECKING, Any, Callable, Mapping
+
+if TYPE_CHECKING:
+    from src.security.cipher_product_runtime import CipherProductPaths
 
 from prototypes.encrypted_backup_container.sprint9_container import (
     ENCRYPTED_BACKUP_EXTENSION,
@@ -402,6 +405,30 @@ class _MaterializedStaging:
     manifest: FinalV4EncryptedBackupManifestV1
     paths: FinalV3DocumentRuntimePaths
     loaded_keys: LoadedDatabaseKeyRuntime = field(repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class _BoundFinalV4RuntimeScope:
+    """Revalidate one already-derived Security-owned Final-V4 path set."""
+
+    paths: FinalV4SQLCipherRuntimePaths
+
+    def require_paths(self) -> FinalV4SQLCipherRuntimePaths:
+        try:
+            root = self.paths.key_runtime.root
+            if root.is_symlink() or not root.is_dir():
+                raise OSError("runtime root invalid")
+            resolved = root.resolve(strict=True)
+        except OSError:
+            raise FinalV4EncryptedBackupError(
+                "final_v4_backup_scope_invalid"
+            ) from None
+        expected = FinalV4SQLCipherRuntimePaths.for_key_runtime(
+            DatabaseKeyRuntimePaths.for_root(resolved)
+        )
+        if expected != self.paths:
+            raise FinalV4EncryptedBackupError("final_v4_backup_scope_invalid")
+        return expected
 
 
 class _StagedDocumentFactory:
@@ -1540,14 +1567,17 @@ def build_final_v4_encrypted_backup_service(
     random_source=None,
     clock=None,
     sqlcipher_provider: SQLCipherConnectionProvider | None = None,
+    product_paths: CipherProductPaths | None = None,
     product_root: Path | None = None,
     fault_hook=None,
 ) -> FinalV4EncryptedBackupService:
-    """Compose backup services from the gate or the ADR-101 product root."""
+    """Compose backup services from the gate or an injected product path port."""
 
     environment = dict(environ)
     runtime_scope = None
-    if product_root is None:
+    if product_paths is not None and product_root is not None:
+        raise FinalV4EncryptedBackupError("final_v4_backup_scope_ambiguous")
+    if product_paths is None and product_root is None:
         gate = FinalV4SQLCipherRuntimeGate()
         decision = gate.resolve(environment)
         if decision.state.value != "ACTIVE":
@@ -1555,13 +1585,17 @@ def build_final_v4_encrypted_backup_service(
         final_paths = gate.require_paths(
             environment.get("JKM_DMK_DATABASE_KEY_RUNTIME_ROOT", "")
         )
-    else:
-        root = Path(product_root).expanduser().resolve(strict=True)
-        from src.desktop_app.runtime import runtime_paths
+    elif product_paths is not None:
         from src.security.cipher_product_runtime import CipherProductRuntimeScope
 
-        runtime_scope = CipherProductRuntimeScope(runtime_paths(root))
+        runtime_scope = CipherProductRuntimeScope(product_paths)
         final_paths = runtime_scope.require_paths()
+    else:
+        root = Path(product_root).expanduser().resolve(strict=True)
+        final_paths = FinalV4SQLCipherRuntimePaths.for_key_runtime(
+            DatabaseKeyRuntimePaths.for_root(root)
+        )
+        runtime_scope = _BoundFinalV4RuntimeScope(final_paths)
     paths = FinalV3DocumentRuntimePaths.for_final_v4(final_paths)
     if opened_runtime.documents.paths != paths:
         raise FinalV4EncryptedBackupError("final_v4_backup_scope_invalid")
@@ -1627,6 +1661,7 @@ def build_final_v4_restore_verifier(
     runtime_root: Path,
     loaded_keys: LoadedDatabaseKeyRuntime,
     installation_id: str,
+    product_paths: CipherProductPaths,
     sqlcipher_provider: SQLCipherConnectionProvider | None = None,
     random_source=None,
     clock=None,
@@ -1634,10 +1669,9 @@ def build_final_v4_restore_verifier(
     """Build a read-only keyed verifier without opening a product runtime."""
 
     root = Path(runtime_root).expanduser().resolve(strict=True)
-    from src.desktop_app.runtime import runtime_paths
     from src.security.cipher_product_runtime import CipherProductRuntimeScope
 
-    scope = CipherProductRuntimeScope(runtime_paths(root))
+    scope = CipherProductRuntimeScope(product_paths)
     key_paths = DatabaseKeyRuntimePaths.for_root(root)
     final_paths = FinalV4SQLCipherRuntimePaths.for_key_runtime(key_paths)
     paths = FinalV3DocumentRuntimePaths.for_final_v4(final_paths)

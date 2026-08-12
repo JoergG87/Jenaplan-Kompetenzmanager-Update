@@ -36,6 +36,14 @@ Foundation-Verträge bleiben historisch und testseitig gültig. Support-Reset
 bleibt im Cipher-Modus kontrolliert blockiert, solange seine vor Authentifizierung
 benötigte Backup-Komposition keine gesonderte Sicherheitsentscheidung besitzt.
 
+Die Qt-freie Security-/Final-V4-Runtime kennt dabei weder `src.desktop_app`
+noch Desktop-, Bundle-, PyInstaller- oder Prozessstartdetails. Die Desktop-
+Composition-Root injiziert die bereits kanonischen Produktpfade sowie je einen
+kleinen typisierten Port für bestätigten Restore-Worker-Start und Restart-
+Handshake. Fehlende oder fehlerhafte Ports blockieren fail-closed; Service-
+Locator, globale Launcher, späte Importumgehungen und UI-Lifecycle-Steuerung
+in Security sind unzulässig.
+
 ## Final-V4-Verfassungsgrenzen für Schuljahre, Mitgliedschaften und Fachrelevanz
 
 Final V4 ist der erste fachliche Pilotvertrag mit individueller

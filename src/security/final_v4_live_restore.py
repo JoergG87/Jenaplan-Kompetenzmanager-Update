@@ -17,10 +17,10 @@ import os
 from pathlib import Path
 import secrets
 import shutil
-import sqlite3
-import subprocess
-import sys
-from typing import Callable, Mapping
+from typing import TYPE_CHECKING, Callable, Mapping
+
+if TYPE_CHECKING:
+    from src.security.cipher_product_runtime import CipherProductPaths
 
 from src.core.observation_uow import ObservationWriterLock
 from src.core.restore_runtime import (
@@ -57,7 +57,6 @@ from src.core.restore_runtime import (
 from src.security.backup_container import canonical_json
 from src.security.database_keys import derive_domain_separated_key
 from src.security.data_keys import (
-    DataKeyset,
     DataKeysetRuntimePhase,
     DataKeysetStatus,
     DataMasterKeyStoreStatus,
@@ -70,7 +69,7 @@ from src.security.database_key_runtime import (
 )
 from src.security.database_keys import DatabaseKeyEnvelopeService
 from src.security.infrastructure.data_keyset_repository import (
-    DATA_KEYSET_STORE_SCHEMA_VERSION,
+    SQLiteDataKeysetRepository,
 )
 from src.security.infrastructure.data_master_key_store import (
     build_platform_data_master_key_store,
@@ -82,6 +81,11 @@ from src.security.infrastructure.system import (
     PlatformFilePermissionManager,
     SystemClock,
     SystemRandomSource,
+)
+from src.security.ports import (
+    FinalV4RestartLauncher,
+    FinalV4RestoreWorkerLauncher,
+    RestoreProcessPort,
 )
 from src.security.final_v4_backup_runtime import (
     FINAL_V4_BACKUP_MANIFEST_FILENAME,
@@ -342,6 +346,7 @@ class FinalV4EncryptedLiveRestoreService(ProductiveRestoreService):
         handoff_service: FinalV4EncryptedRestoreHandoffService | None = None,
         backup_service_factory: Callable[[], FinalV4EncryptedBackupService]
         | None = None,
+        restart_launcher: FinalV4RestartLauncher | None = None,
         fault_hook: Callable[[str], None] | None = None,
     ) -> None:
         if backup_service is None and (
@@ -350,6 +355,7 @@ class FinalV4EncryptedLiveRestoreService(ProductiveRestoreService):
             raise ValueError("Cipher-Restore-Komposition fehlt.")
         self.backup_service = backup_service
         self._backup_service_factory = backup_service_factory
+        self._restart_launcher = restart_launcher
         self.cipher_handoff = handoff_service or FinalV4EncryptedRestoreHandoffService(
             backup_service
         )
@@ -619,10 +625,6 @@ class FinalV4EncryptedLiveRestoreService(ProductiveRestoreService):
                 create=False,
             ),
             lambda: self.backup_service._document_factory.connect(create=False),
-            lambda: sqlite3.connect(
-                self.backup_service.paths.final_v4.key_runtime.keyset_metadata,
-                timeout=5.0,
-            ),
         )
         try:
             for connect in connections:
@@ -637,6 +639,10 @@ class FinalV4EncryptedLiveRestoreService(ProductiveRestoreService):
                         )
                 finally:
                     connection.close()
+            SQLiteDataKeysetRepository(
+                self.backup_service.paths.final_v4.key_runtime.keyset_metadata,
+                PlatformFilePermissionManager(),
+            ).checkpoint_truncate()
             for path in (
                 self.backup_service.paths.final_v4.database,
                 self.backup_service.paths.database,
@@ -658,54 +664,15 @@ class FinalV4EncryptedLiveRestoreService(ProductiveRestoreService):
         if self._fault_hook is not None:
             self._fault_hook(boundary)
 
-    @staticmethod
     def _launch_restart(
+        self,
         paths: RestoreTransactionPaths,
         token: str,
         lock: RuntimeInstanceLock,
-    ) -> subprocess.Popen[bytes] | None:
-        try:
-            executable = Path(sys.executable).expanduser().resolve(strict=True)
-        except OSError:
+    ) -> RestoreProcessPort | None:
+        if self._restart_launcher is None:
             return None
-        arguments = [
-            "--final-v4-restore-confirm",
-            "--runtime-root",
-            str(paths.runtime_root),
-            "--restore-id",
-            paths.transaction.name,
-            "--restore-token",
-            token,
-            "--restore-lock-fd",
-            str(lock.fileno),
-        ]
-        environment = dict(os.environ)
-        if getattr(sys, "frozen", False):
-            command = [str(executable), *arguments]
-            environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
-            working_directory = paths.runtime_root
-        else:
-            command = [
-                str(executable),
-                "-m",
-                "src.desktop_app.main",
-                *arguments,
-            ]
-            working_directory = Path(__file__).resolve().parents[2]
-        try:
-            return subprocess.Popen(
-                command,
-                pass_fds=(lock.fileno,),
-                close_fds=True,
-                cwd=working_directory,
-                start_new_session=os.name == "posix",
-                env=environment,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-        except (OSError, subprocess.SubprocessError):
-            return None
+        return self._restart_launcher.launch(paths=paths, token=token, lock=lock)
 
 
 def prepare_final_v4_live_restore(
@@ -748,22 +715,15 @@ def launch_prepared_final_v4_restore(
     *,
     preparation: FinalV4LiveRestorePreparation,
     lock: RuntimeInstanceLock,
-    launch_plan=None,
+    launcher: FinalV4RestoreWorkerLauncher,
 ):
     """Use the established worker takeover and release the freeze fail-closed."""
 
-    from src.desktop_app.restore_worker import (
-        RESTORE_MODE_FINAL_V4_ENCRYPTED,
-        launch_restore_worker,
-    )
-
     try:
-        process = launch_restore_worker(
+        process = launcher.launch(
             handoff=preparation.handoff.path,
             nonce=preparation.handoff.nonce,
             lock=lock,
-            launch_plan=launch_plan,
-            restore_mode=RESTORE_MODE_FINAL_V4_ENCRYPTED,
         )
     except Exception:
         try:
@@ -792,6 +752,7 @@ def confirm_final_v4_restore_startup(
     runtime_root: Path,
     restore_id: str,
     token: str,
+    product_paths: CipherProductPaths | None = None,
     account_loader=None,
     key_store=None,
 ) -> RestoreRecoveryResult:
@@ -826,6 +787,8 @@ def confirm_final_v4_restore_startup(
     staging_root = _resolve_relative(root, str(handoff["staging_root_relative"]))
     manifest = _read_manifest(staging_root)
     if backup_service is None:
+        if product_paths is None:
+            raise RestorePreflightError("Die Cipher-Runtime-Pfade fehlen.")
         loader = account_loader or _security_account_loader(root)
         handoff, loaded = _bootstrap_handoff_context(
             paths,
@@ -837,6 +800,7 @@ def confirm_final_v4_restore_startup(
             root,
             loaded=loaded,
             installation_id=str(handoff["installation_id"]),
+            product_paths=product_paths,
         )
     else:
         verifier = backup_service
@@ -856,6 +820,7 @@ def recover_interrupted_final_v4_restore(
     *,
     runtime_root: Path,
     backup_service: FinalV4EncryptedBackupService | None = None,
+    product_paths: CipherProductPaths | None = None,
     account_loader=None,
     key_store=None,
 ) -> RestoreRecoveryResult:
@@ -906,6 +871,8 @@ def recover_interrupted_final_v4_restore(
             )
         repository_loader = account_loader or _security_account_loader(root)
         if backup_service is None:
+            if product_paths is None:
+                raise RestorePreflightError("Die Cipher-Runtime-Pfade fehlen.")
             handoff, loaded = _bootstrap_handoff_context(
                 paths,
                 state,
@@ -916,6 +883,7 @@ def recover_interrupted_final_v4_restore(
                 root,
                 loaded=loaded,
                 installation_id=str(handoff["installation_id"]),
+                product_paths=product_paths,
             )
         else:
             handoff = _read_canonical_json(
@@ -959,6 +927,7 @@ def recover_interrupted_final_v4_restore(
                 handoff=handoff,
                 account_loader=repository_loader,
                 key_store=key_store,
+                product_paths=product_paths,
             )
         else:
             FinalV4EncryptedLiveRestoreService(backup_service)._rollback(
@@ -994,6 +963,8 @@ def build_final_v4_live_restore_worker_service(
     runtime_root: Path,
     *,
     restore_id: str | None = None,
+    product_paths: CipherProductPaths,
+    restart_launcher: FinalV4RestartLauncher,
     account_loader=None,
     key_store=None,
     sqlcipher_provider=None,
@@ -1007,12 +978,10 @@ def build_final_v4_live_restore_worker_service(
             SQLCIPHER_4_17_ENGINE_VERSION,
             SQLCipherConnectionProvider,
         )
-        from src.desktop_app.runtime import runtime_paths
         from src.security.cipher_product_runtime import open_cipher_product_runtime
         from src.security.final_v4_backup_runtime import (
             build_final_v4_encrypted_backup_service,
         )
-        from src.security.domain import SECURITY_SCHEMA_VERSION
         from src.security.infrastructure.sqlite_repository import (
             SQLiteSecurityRepository,
         )
@@ -1023,23 +992,16 @@ def build_final_v4_live_restore_worker_service(
         security_database = root / "security" / "security.sqlite"
         if security_database.is_symlink() or not security_database.is_file():
             raise RestorePreflightError("Der bestehende Security Store fehlt.")
-        security_uri = f"{security_database.resolve(strict=True).as_uri()}?mode=ro"
-        with sqlite3.connect(security_uri, uri=True) as security_probe:
-            security_probe.execute("PRAGMA query_only = ON")
-            if int(security_probe.execute("PRAGMA user_version").fetchone()[0]) != SECURITY_SCHEMA_VERSION:
-                raise RestorePreflightError(
-                    "Der Security Store ist fuer Cipher-Restore nicht exakt aktuell."
-                )
         repository = SQLiteSecurityRepository(
             security_database,
             PlatformFilePermissionManager(),
         )
+        repository.require_current_read_only()
         stable_account_loader = account_loader or repository.load_account
         provider = sqlcipher_provider or SQLCipherConnectionProvider(
             expected_binding_version=SQLCIPHER_4_17_BINDING_VERSION,
             expected_engine_version=SQLCIPHER_4_17_ENGINE_VERSION,
         )
-        product_paths = runtime_paths(root)
         loaded = _load_existing_key_runtime(
             root,
             account_loader=stable_account_loader,
@@ -1068,7 +1030,7 @@ def build_final_v4_live_restore_worker_service(
                 environ=os.environ,
                 key_store=key_store,
                 sqlcipher_provider=provider,
-                product_root=root,
+                product_paths=product_paths,
             )
             if service.paths.final_v4.key_runtime.root != root:
                 raise RestorePreflightError("Der Cipher-Worker-Root ist ungueltig.")
@@ -1078,6 +1040,7 @@ def build_final_v4_live_restore_worker_service(
             None,
             handoff_service=handoff_service,
             backup_service_factory=open_after_parent_eof,
+            restart_launcher=restart_launcher,
         )
     except RestoreRuntimeError:
         raise
@@ -1433,6 +1396,7 @@ def _build_bootstrap_verifier(
     *,
     loaded: LoadedDatabaseKeyRuntime,
     installation_id: str,
+    product_paths: CipherProductPaths,
 ) -> FinalV4EncryptedBackupService:
     from src.security.final_v4_backup_runtime import build_final_v4_restore_verifier
 
@@ -1440,6 +1404,7 @@ def _build_bootstrap_verifier(
         runtime_root=root,
         loaded_keys=loaded,
         installation_id=installation_id,
+        product_paths=product_paths,
     )
 
 
@@ -1450,6 +1415,7 @@ def _bootstrap_restore_old_runtime(
     handoff: Mapping[str, object],
     account_loader,
     key_store=None,
+    product_paths: CipherProductPaths,
 ) -> None:
     state = journal.read()
     components_state = state.get("components")
@@ -1514,6 +1480,7 @@ def _bootstrap_restore_old_runtime(
         paths.runtime_root,
         loaded=loaded,
         installation_id=str(handoff_verified["installation_id"]),
+        product_paths=product_paths,
     )
     safety_path = _resolve_relative(
         paths.runtime_root,
@@ -1625,7 +1592,10 @@ def _load_existing_key_runtime(
                 envelope_registry=metadata / canonical.envelope_registry.name,
             )
         permissions = PlatformFilePermissionManager()
-        active = _read_active_keyset_wal_aware_readonly(paths.keyset_metadata)
+        active = SQLiteDataKeysetRepository(
+            paths.keyset_metadata,
+            permissions,
+        ).active_data_keyset()
         if (
             active is None
             or active.status is not DataKeysetStatus.ACTIVE
@@ -1681,39 +1651,6 @@ def _load_existing_key_runtime(
         raise RestorePreflightError(
             "Die vorhandenen Cipher-Schluessel konnten nicht read-only geladen werden."
         ) from None
-
-
-def _read_active_keyset_wal_aware_readonly(path: Path) -> DataKeyset | None:
-    """Read the committed active keyset, including an existing SQLite WAL."""
-
-    database = Path(path).expanduser().resolve(strict=True)
-    uri = f"{database.as_uri()}?mode=ro"
-    with sqlite3.connect(uri, uri=True, isolation_level=None) as connection:
-        connection.execute("PRAGMA query_only = ON")
-        if (
-            int(connection.execute("PRAGMA application_id").fetchone()[0])
-            != 0x4A4B4D4B
-            or int(connection.execute("PRAGMA user_version").fetchone()[0])
-            != DATA_KEYSET_STORE_SCHEMA_VERSION
-        ):
-            raise RestorePreflightError("Die Cipher-Keymetadaten sind inkompatibel.")
-        rows = connection.execute(
-            "SELECT key_id, generation, status, fingerprint_sha256, "
-            "runtime_phase, database_context_id FROM data_keysets"
-        ).fetchall()
-    if not rows:
-        return None
-    if len(rows) != 1:
-        raise RestorePreflightError("Die Cipher-Keymetadaten sind nicht eindeutig.")
-    row = rows[0]
-    return DataKeyset(
-        key_id=str(row[0]),
-        generation=int(row[1]),
-        status=DataKeysetStatus(str(row[2])),
-        fingerprint_sha256=str(row[3]),
-        runtime_phase=DataKeysetRuntimePhase(str(row[4])),
-        database_context_id=None if row[5] is None else str(row[5]),
-    )
 
 
 def _excluded_evidence(root: Path) -> dict[str, object]:

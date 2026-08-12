@@ -7,6 +7,7 @@ from pathlib import Path
 import secrets
 import sqlite3
 import sys
+from types import SimpleNamespace
 import uuid
 import inspect
 
@@ -27,7 +28,12 @@ from src.desktop_app.restore_worker import (
     RestoreWorkerLaunchPlan,
 )
 from src.desktop_app import restore_worker
+from src.desktop_app import final_v4_runtime_adapters
 from src.desktop_app import main as desktop_main
+from src.desktop_app.final_v4_runtime_adapters import (
+    DesktopFinalV4RestoreWorkerLauncher,
+    DesktopFinalV4RestartLauncher,
+)
 from src.desktop_app.runtime import runtime_paths
 from src.security.final_v4_backup_runtime import (
     FINAL_V4_RESTORE_READY_FILENAME,
@@ -40,10 +46,10 @@ from src.security.final_v4_live_restore import (
     FinalV4EncryptedLiveRestoreService,
     FinalV4EncryptedRestoreHandoffService,
     confirm_final_v4_restore_startup,
+    launch_prepared_final_v4_restore,
     prepare_final_v4_live_restore,
     recover_interrupted_final_v4_restore,
 )
-from src.security import final_v4_live_restore
 from src.security.cipher_product_runtime import open_cipher_product_runtime
 from src.security.infrastructure.data_keyset_repository import (
     SQLiteDataKeysetRepository,
@@ -86,11 +92,10 @@ def test_worker_keyset_read_sees_committed_uncheckpointed_wal(
                 "SELECT COUNT(*) FROM data_keysets WHERE status = 'active'"
             ).fetchone()[0] == 0
 
-        active = (
-            final_v4_live_restore._read_active_keyset_wal_aware_readonly(
-                database
-            )
-        )
+        active = SQLiteDataKeysetRepository(
+            database,
+            PlatformFilePermissionManager(),
+        ).active_data_keyset()
 
     assert active is not None
     assert active.key_id == key_id
@@ -452,6 +457,9 @@ def test_bootstrap_recovery_classifies_every_cipher_swap_crash_boundary(
 
     recovery = recover_interrupted_final_v4_restore(
         runtime_root=backup_service.paths.final_v4.key_runtime.root,
+        product_paths=runtime_paths(
+            backup_service.paths.final_v4.key_runtime.root
+        ),
         account_loader=account_loader,
         key_store=key_store,
     )
@@ -564,6 +572,7 @@ def test_bootstrap_recovery_marks_ambiguous_crash_state_for_manual_recovery(
     with pytest.raises(RestoreManualRecoveryRequired):
         recover_interrupted_final_v4_restore(
             runtime_root=paths.runtime_root,
+            product_paths=runtime_paths(paths.runtime_root),
             account_loader=account_loader,
             key_store=key_store,
         )
@@ -971,11 +980,15 @@ def test_source_restart_command_reenters_normal_desktop_main(
         observed["kwargs"] = kwargs
         return sentinel
 
-    monkeypatch.setattr(final_v4_live_restore.subprocess, "Popen", fake_popen)
-    result = FinalV4EncryptedLiveRestoreService._launch_restart(
-        paths,
-        "resume-token",
-        lock,
+    monkeypatch.setattr(
+        final_v4_runtime_adapters.subprocess,
+        "Popen",
+        fake_popen,
+    )
+    result = DesktopFinalV4RestartLauncher().launch(
+        paths=paths,
+        token="resume-token",
+        lock=lock,
     )
     assert result is sentinel
     command = observed["command"]
@@ -991,6 +1004,144 @@ def test_source_restart_command_reenters_normal_desktop_main(
     assert command[command.index("--restore-lock-fd") + 1] == str(lock.fileno)
     assert observed["kwargs"]["pass_fds"] == (lock.fileno,)
     lock.release()
+
+
+def test_restart_port_is_fail_closed_when_not_injected(tmp_path: Path) -> None:
+    root = tmp_path / "runtime"
+    root.mkdir()
+    paths = restore_transaction_paths(root, str(uuid.uuid4()))
+    lock = RuntimeInstanceLock(root).acquire()
+    service = object.__new__(FinalV4EncryptedLiveRestoreService)
+    service._restart_launcher = None
+
+    assert service._launch_restart(paths, "resume-token", lock) is None
+    lock.release()
+
+
+def test_desktop_restart_adapter_returns_none_on_process_start_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "runtime"
+    root.mkdir()
+    paths = restore_transaction_paths(root, str(uuid.uuid4()))
+    lock = RuntimeInstanceLock(root).acquire()
+
+    def fail_popen(*_args, **_kwargs):
+        raise OSError("start failed")
+
+    monkeypatch.setattr(
+        final_v4_runtime_adapters.subprocess,
+        "Popen",
+        fail_popen,
+    )
+    assert (
+        DesktopFinalV4RestartLauncher().launch(
+            paths=paths,
+            token="resume-token",
+            lock=lock,
+        )
+        is None
+    )
+    lock.release()
+
+
+def test_worker_launcher_port_transfers_only_after_confirmed_start(
+    tmp_path: Path,
+) -> None:
+    events: list[str] = []
+    expected = object()
+
+    class SafetyBackup:
+        def transfer_to_worker(self) -> None:
+            events.append("transferred")
+
+        def abort(self) -> None:
+            events.append("aborted")
+
+    class Launcher:
+        def launch(self, **kwargs):
+            assert kwargs["handoff"] == tmp_path / "handoff.json"
+            assert kwargs["nonce"] == "nonce"
+            events.append("worker_started")
+            return expected
+
+    preparation = SimpleNamespace(
+        handoff=SimpleNamespace(
+            path=tmp_path / "handoff.json",
+            nonce="nonce",
+            restore_id="restore-1",
+        ),
+        safety_backup=SafetyBackup(),
+    )
+    result = launch_prepared_final_v4_restore(
+        preparation=preparation,
+        lock=SimpleNamespace(runtime_root=tmp_path),
+        launcher=Launcher(),
+    )
+
+    assert result is expected
+    assert events == ["worker_started", "transferred"]
+
+
+def test_worker_launcher_port_aborts_safety_backup_on_start_failure(
+    tmp_path: Path,
+) -> None:
+    events: list[str] = []
+
+    class SafetyBackup:
+        def transfer_to_worker(self) -> None:
+            events.append("transferred")
+
+        def abort(self) -> None:
+            events.append("aborted")
+
+    class Launcher:
+        def launch(self, **_kwargs):
+            raise RuntimeError("start failed")
+
+    preparation = SimpleNamespace(
+        handoff=SimpleNamespace(
+            path=tmp_path / "handoff.json",
+            nonce="nonce",
+            restore_id="restore-1",
+        ),
+        safety_backup=SafetyBackup(),
+    )
+    with pytest.raises(RuntimeError, match="start failed"):
+        launch_prepared_final_v4_restore(
+            preparation=preparation,
+            lock=SimpleNamespace(runtime_root=tmp_path),
+            launcher=Launcher(),
+        )
+
+    assert events == ["aborted"]
+
+
+def test_desktop_worker_adapter_selects_final_v4_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: dict[str, object] = {}
+    expected = object()
+
+    def launch_restore_worker(**kwargs):
+        observed.update(kwargs)
+        return expected
+
+    monkeypatch.setattr(
+        final_v4_runtime_adapters,
+        "launch_restore_worker",
+        launch_restore_worker,
+    )
+    result = DesktopFinalV4RestoreWorkerLauncher().launch(
+        handoff=tmp_path / "handoff.json",
+        nonce="nonce",
+        lock=SimpleNamespace(),
+    )
+
+    assert result is expected
+    assert observed["restore_mode"] == RESTORE_MODE_FINAL_V4_ENCRYPTED
 
 
 def test_restore_confirm_continues_into_regular_auth_and_product_startup() -> None:

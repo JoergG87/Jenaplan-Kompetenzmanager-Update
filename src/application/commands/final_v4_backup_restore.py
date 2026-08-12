@@ -31,6 +31,7 @@ from src.security.final_v4_live_restore import (
     launch_prepared_final_v4_restore,
     prepare_final_v4_live_restore,
 )
+from src.security.ports import FinalV4RestoreWorkerLauncher
 
 
 FINAL_V4_ENCRYPTED_BACKUP_EXTENSION = ".jkmebackup"
@@ -114,10 +115,12 @@ class FinalV4EncryptedRestoreApplicationService:
         service: FinalV4EncryptedBackupService,
         *,
         lock: RuntimeInstanceLock,
+        worker_launcher: FinalV4RestoreWorkerLauncher,
         restore_id_provider: Callable[[], str] | None = None,
     ) -> None:
         self.service = service
         self.lock = lock
+        self.worker_launcher = worker_launcher
         self._restore_id = restore_id_provider or (lambda: str(uuid.uuid4()))
         self._sessions: dict[str, FinalV4RestoreApplicationResult] = {}
         self._preparations: dict[str, FinalV4LiveRestorePreparation] = {}
@@ -257,6 +260,7 @@ class FinalV4EncryptedRestoreApplicationService:
             return launch_prepared_final_v4_restore(
                 preparation=preparation,
                 lock=self.lock,
+                launcher=self.worker_launcher,
             )
         except Exception:
             raise FinalV4BackupRestoreApplicationError(

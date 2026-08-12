@@ -251,6 +251,31 @@ class SQLiteSecurityRepository:
     def exists(self) -> bool:
         return self._database_path.exists()
 
+    def require_current_read_only(self) -> None:
+        """Reject a non-current Security Store without running a migration."""
+
+        if self._database_path.is_symlink() or not self._database_path.is_file():
+            raise SecurityStoreError("security_store_missing")
+        try:
+            with sqlite3.connect(
+                f"file:{self._database_path.resolve()}?mode=ro",
+                uri=True,
+                isolation_level=None,
+            ) as connection:
+                connection.execute("PRAGMA query_only = ON")
+                application_id = int(
+                    connection.execute("PRAGMA application_id").fetchone()[0]
+                )
+                user_version = int(
+                    connection.execute("PRAGMA user_version").fetchone()[0]
+                )
+        except sqlite3.Error as error:
+            raise SecurityStoreError("security_store_invalid") from error
+        if application_id != _SQLITE_APPLICATION_ID:
+            raise SecurityStoreError("security_store_identity_invalid")
+        if user_version != SECURITY_SCHEMA_VERSION:
+            raise SecurityStoreError("security_store_version_invalid")
+
     def inspect(self) -> tuple[int, int, str, AccountRecord]:
         if self._database_path.is_symlink():
             raise SecurityStoreError("security_store_symlink_rejected")

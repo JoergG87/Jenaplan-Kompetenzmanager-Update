@@ -167,6 +167,20 @@ class SQLiteDataKeysetRepository:
             if descriptor is not None:
                 os.close(descriptor)
 
+    def checkpoint_truncate(self) -> None:
+        """Checkpoint committed WAL state without changing the keyset schema."""
+
+        self._validate_store()
+        try:
+            with sqlite3.connect(self._database_path, timeout=5.0) as connection:
+                result = connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+                if result is not None and int(result[0]) != 0:
+                    raise SecurityStoreError("data_keyset_checkpoint_busy")
+        except SecurityStoreError:
+            raise
+        except (OSError, sqlite3.Error, ValueError, TypeError):
+            raise SecurityStoreError("data_keyset_checkpoint_failed") from None
+
     def active_data_keyset(self) -> DataKeyset | None:
         with self._read_connection() as connection:
             rows = connection.execute(

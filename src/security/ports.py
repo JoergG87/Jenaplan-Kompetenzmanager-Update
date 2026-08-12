@@ -41,6 +41,46 @@ class MonotonicClock(Protocol):
     def monotonic(self) -> float: ...
 
 
+class RestoreProcessPort(Protocol):
+    """Small process surface required by restore takeover and restart checks."""
+
+    def poll(self) -> int | None: ...
+    def wait(self, timeout: float | None = None) -> int: ...
+    def terminate(self) -> None: ...
+    def kill(self) -> None: ...
+
+
+class FinalV4RestoreWorkerHandle(Protocol):
+    """Confirmed worker handle retained until the main process exits."""
+
+    process: RestoreProcessPort
+    parent_lifetime_fd: int
+
+
+class FinalV4RestoreWorkerLauncher(Protocol):
+    """Desktop-owned launcher for the confirmed Final-V4 worker takeover."""
+
+    def launch(
+        self,
+        *,
+        handoff: Path,
+        nonce: str,
+        lock: "RuntimeInstanceLock",
+    ) -> FinalV4RestoreWorkerHandle: ...
+
+
+class FinalV4RestartLauncher(Protocol):
+    """Desktop-owned launcher for the post-swap startup handshake."""
+
+    def launch(
+        self,
+        *,
+        paths: "RestoreTransactionPaths",
+        token: str,
+        lock: "RuntimeInstanceLock",
+    ) -> RestoreProcessPort | None: ...
+
+
 class PasswordHasher(Protocol):
     def hash(self, password: str, salt: bytes) -> str: ...
     def verify(self, password_hash: str, password: str) -> bool: ...

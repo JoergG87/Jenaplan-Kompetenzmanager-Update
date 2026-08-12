@@ -20,6 +20,11 @@ keine Datenquelle. Vorhandene Inhalte werden nicht geöffnet oder verändert.
 DMK-Material liegt ausschließlich im macOS-Keychain und erscheint in keiner
 `RuntimePaths`-Rolle.
 
+Die injizierten Final-V4-Pfad-, Worker- und Restart-Ports sind flüchtige
+Steuerverträge und keine neue Datenquelle oder Persistenz. Sie ändern weder
+die obigen Rollen noch Backupinventar, Restore-Staging, Journal oder
+Restart-Evidenz.
+
 ## Final-V4-Produktdatenquellen
 
 **Status:** Direkte Final-V4-Schemaquelle, synthetischer temporärer

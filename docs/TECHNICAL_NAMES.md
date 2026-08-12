@@ -5,6 +5,7 @@
 | Technischer Name | Bedeutung | Eigentümer |
 |---|---|---|
 | `CipherProductRuntimeCoordinator` | authentifizierte Composition Root für frischen Cipher-First-Run und vollständigen Restart ohne Migration oder Reparatur | Security Application Composition |
+| `CipherProductPaths` | Qt-freier struktureller Pfadport, über den die Desktop-Composition ihre kanonischen `RuntimePaths` in die Cipher-Komposition injiziert | Security Application Composition |
 | `CipherProductRuntimeScope` | bindet die bestehenden Security-Foundation-Pfade exakt an die produktiven `RuntimePaths`-Rollen | Security Application Composition |
 | `OpenedCipherProductRuntime` | geprüfte gemeinsame keyed Haupt-, Dokument- und Schlüsselruntime zur Injektion in Adapter und Shell | Security Application Composition |
 | `CipherProductRuntimeError` | strukturierter sanitisierter Startupfehler mit `CipherProductRuntimeOperation` | Security Application Composition |
@@ -16,6 +17,14 @@
 | `CipherBackupRestoreUnavailableError` | blockiert sämtliche ZIP-v1-Backup-/Restore-Einstiege im Cipher-Produktmodus | Desktop Backup/Restore Adapter |
 | `FinalV4EncryptedBackupApplicationService` | übersetzt die vorhandene Desktop-Backupaktion ohne Fallback in genau ein `.jkmebackup` | Backup/Restore Application Layer |
 | `FinalV4EncryptedRestoreApplicationService` | bindet Vollverifikation, `RESTORE_READY`, Preview, Cipher-Handoff und vorhandenen Live-Worker | Backup/Restore Application Layer |
+| `RestoreProcessPort` | kleinste Qt-freie Prozessoberfläche für Poll, Wait, Terminate und Kill während Worker-/Restart-Überwachung | Security Ports |
+| `FinalV4RestoreWorkerHandle` | strukturierter bestätigter Workerhandle mit Prozessport und bis zum Haupt-App-Ende gehaltenem Parent-Lifetime-Descriptor | Security Ports |
+| `FinalV4RestoreWorkerLauncher` | injizierter Qt-freier Vertrag für Start und bestätigte Übernahme des Final-V4-Restore-Workers | Security Ports |
+| `FinalV4RestartLauncher` | injizierter Qt-freier Vertrag für den Post-Swap-Appstart und dessen beobachtbaren Restart-Handshake | Security Ports |
+| `DesktopFinalV4RestoreWorkerLauncher` | Desktop-Adapter auf den vorhandenen Parent-EOF-/`worker_started`-Workerstart im Modus `final_v4_encrypted` | Desktop Runtime Composition |
+| `DesktopFinalV4RestartLauncher` | Desktop-Adapter für unveränderte Source-/PyInstaller-Restartargumente, FD-Übergabe und Prozessisolation | Desktop Runtime Composition |
+| `SQLiteSecurityRepository.require_current_read_only` | read-only Prüfung des exakt aktuellen Security-Store-Schemas ohne Migration | Security Infrastructure |
+| `SQLiteDataKeysetRepository.checkpoint_truncate` | WAL-Checkpoint des bestehenden Keyset-Metadatenstores hinter der zugelassenen SQLite-Infrastructure-Grenze | Security Infrastructure |
 | `VerifiedCipherSchoolYearTransitionBackupAdapter` | erzeugt das verschlüsselte Pflichtbackup innerhalb der bereits aktiven Schuljahreswechsel-Sperre | School-Year Transition Application Layer |
 | `FinalV4BackupRestoreApplicationError` | sanitisierter endnutzergeeigneter Fehlervertrag ohne Pfade, Hashes oder Exceptions | Backup/Restore Application Layer |
 

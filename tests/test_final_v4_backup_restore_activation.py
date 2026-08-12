@@ -129,6 +129,7 @@ def test_product_restore_creates_and_reverifies_restore_ready_before_handoff(
     application = FinalV4EncryptedRestoreApplicationService(
         service,
         lock=object(),
+        worker_launcher=object(),
         restore_id_provider=lambda: "restore-1",
     )
     source = tmp_path / "pilot.jkmebackup"
@@ -177,6 +178,7 @@ def test_product_restore_creates_and_reverifies_restore_ready_before_handoff(
     assert prepared[0]["staging_root"] == result.staging_root
     assert application.launch_prepared_restore(handoff) == "worker"
     assert launched[0]["preparation"] is preparation
+    assert launched[0]["launcher"] is application.worker_launcher
 
 
 def test_historical_zip_v1_is_not_a_cipher_restore_candidate(tmp_path: Path) -> None:
@@ -184,6 +186,7 @@ def test_historical_zip_v1_is_not_a_cipher_restore_candidate(tmp_path: Path) -> 
     application = FinalV4EncryptedRestoreApplicationService(
         service,
         lock=object(),
+        worker_launcher=object(),
     )
     with pytest.raises(FinalV4BackupRestoreApplicationError) as caught:
         application.verify(

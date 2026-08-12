@@ -1545,7 +1545,7 @@ def build_cipher_pilot_test_root(root: Path) -> dict[str, object]:
         account_loader=lambda: account,
         environ=os.environ,
         sqlcipher_provider=provider,
-        product_root=target,
+        product_paths=paths,
     )
     backup_path = paths.backups / "Pilot-Testbestand-2026-27.jkmebackup"
     backup = backup_service.create(backup_path)
@@ -1634,7 +1634,7 @@ def verify_cipher_pilot_test_root(root: Path) -> dict[str, object]:
         account_loader=lambda: account,
         environ=os.environ,
         sqlcipher_provider=provider,
-        product_root=target,
+        product_paths=paths,
     )
     backup_path = paths.backups / "Pilot-Testbestand-2026-27.jkmebackup"
     verified = service.verify(backup_path)

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Die Final-V4-Backup-/Restore-Runtime importiert keine Desktop-Schicht mehr.
+  Produktpfade, bestätigter Restore-Worker-Start und der Restart-Handshake
+  werden über kleine typisierte Ports aus der Desktop-Composition-Root
+  injiziert; Prozess-, PyInstaller- und Source-Startdetails liegen im
+  Desktop-Adapter. Der bestehende `.jkmebackup`-, `RESTORE_READY`-,
+  Safety-Backup-, Parent-EOF-, Rollback- und Restart-Vertrag sowie Final V4,
+  SQLCipher-Versionen, Schema und Persistenz bleiben unverändert.
+
 - Der suiteweite Offscreen-Cursortest stellt den vorhandenen Qt-Enter-Vertrag
   der Settings-Karte direkt zu. Dadurch hängt der Test nicht mehr von der unter
   Offscreen nicht steuerbaren globalen Mausposition oder Fensterstapelung ab;
