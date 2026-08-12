@@ -248,7 +248,7 @@ def _insert_profile_observations(
                     competency_text,
                     rating
                 )
-                VALUES (?, 'CMP-000241', 'deutsch', 'Deutsch',
+                VALUES (?, 'CMP-100028', 'deutsch', 'Deutsch',
                         'Leseverstehen', 'Lesen', 'Texte verstehen', '+')
                 """,
                 ((f"{prefix}-{index:04d}",) for index in range(count)),
@@ -363,7 +363,7 @@ def _canonical_heatmap_per_student(
 def test_batch_matches_canonical_status_and_student_summary(tmp_path: Path) -> None:
     database = _database_with_catalog(tmp_path / "equivalence.sqlite")
     student_id = seed_reference_data().students[0].student_id
-    competency_id = "CMP-000241"
+    competency_id = "CMP-100028"
     _insert_historical_unknown_state(
         database,
         student_id=student_id,
@@ -688,7 +688,7 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
                     competency_text,
                     rating
                 )
-                VALUES (?, 'CMP-000241', 'deutsch', 'Deutsch',
+                VALUES (?, 'CMP-100028', 'deutsch', 'Deutsch',
                         'Leseverstehen', 'Lesen', 'Texte verstehen', '+')
                 """,
                 ((f"OBS-BUDGET-{index:04d}",) for index in range(280)),

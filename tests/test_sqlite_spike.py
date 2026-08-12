@@ -1120,97 +1120,49 @@ class SQLiteSpikeTest(unittest.TestCase):
         by_subject: dict[str, list[object]] = {}
         for competency in competencies:
             by_subject.setdefault(competency.subject_id, []).append(competency)
-        self.assertEqual(by_id["CMP-000671"].subject_id, "mathematik")
-        self.assertEqual(
-            by_id["CMP-000671"].learning_area,
-            "Groessen - Groessenvorstellungen nutzen und mit Groessen umgehen",
+        self.assertEqual(len(competencies), 331)
+        self.assertEqual(min(by_id), "CMP-100001")
+        self.assertEqual(max(by_id), "CMP-100331")
+        self.assertFalse(
+            any(identifier.startswith("CMP-000") for identifier in by_id)
         )
-        self.assertEqual(by_id["CMP-000671"].competency_group, "Zeit")
         self.assertEqual(
-            by_id["CMP-000671"].description,
-            "Uhrzeiten minutengenau ablesen.",
-        )
-        self.assertEqual(by_id["CMP-000671"].grade_band, "1-4")
-        self.assertEqual(by_id["CMP-000671"].learning_stage, "stage_4")
-        self.assertEqual(by_id["CMP-000671"].catalog_status, "current")
-        self.assertTrue(by_id["CMP-000671"].catalog_default_active)
-        self.assertEqual(by_id["CMP-000671"].activation_group_key, "")
-        replaced_math_ids = {
-            "CMP-000295", "CMP-000301", "CMP-000306", "CMP-000307",
-            "CMP-000309", "CMP-000316", "CMP-000317", "CMP-000318",
-            "CMP-000321", "CMP-000330", "CMP-000332", "CMP-000336",
-            "CMP-000338",
-        }
-        self.assertEqual(
-            len([
-                competency
-                for competency in by_subject["mathematik"]
-                if competency.catalog_status == "current" and competency.active
-            ]),
-            81,
+            {subject_id: len(items) for subject_id, items in by_subject.items()},
+            {
+                "selbst_sozialkompetenz": 8,
+                "arbeits_lernkompetenz": 13,
+                "epu": 6,
+                "deutsch": 41,
+                "mathematik": 67,
+                "kreatives_gestalten": 34,
+                "sport": 64,
+                "ethik": 30,
+                "religion": 20,
+                "musik": 29,
+                "englisch": 11,
+                "schulgarten": 8,
+            },
         )
         self.assertTrue(all(
-            by_id[competency_id].catalog_status == "legacy"
-            and not by_id[competency_id].catalog_default_active
-            and not by_id[competency_id].active
-            for competency_id in replaced_math_ids
+            competency.catalog_status == "current"
+            and competency.catalog_default_active
+            and competency.active
+            and competency.learning_stage == "cross_stage"
+            for competency in competencies
         ))
+        self.assertEqual(by_id["CMP-100126"].subject_id, "mathematik")
         self.assertEqual(
-            {
-                competency_id: by_id[competency_id].learning_stage
-                for competency_id in (
-                    "CMP-000668", "CMP-000669", "CMP-000670", "CMP-000671",
-                    "CMP-000672", "CMP-000673", "CMP-000674",
-                )
-            },
-            {
-                "CMP-000668": "stage_1_3",
-                "CMP-000669": "stage_1_3",
-                "CMP-000670": "stage_1_3",
-                "CMP-000671": "stage_4",
-                "CMP-000672": "cross_stage",
-                "CMP-000673": "cross_stage",
-                "CMP-000674": "cross_stage",
-            },
+            by_id["CMP-100126"].learning_area,
+            "Größenvorstellungen nutzen und mit Größen umgehen",
         )
-        self.assertEqual(by_id["CMP-000083"].catalog_status, "legacy")
-        self.assertFalse(by_id["CMP-000083"].catalog_default_active)
-        self.assertEqual(by_id["CMP-000059"].subject_id, "deutsch")
-        self.assertEqual(by_id["CMP-000099"].subject_id, "epu")
-        self.assertIn("sozialkompetenz", by_subject)
-        current_social_competencies = [
-            competency
-            for competency in by_subject["sozialkompetenz"]
-            if competency.catalog_status == "current"
-        ]
-        legacy_social_competencies = [
-            competency
-            for competency in by_subject["sozialkompetenz"]
-            if competency.catalog_status == "legacy"
-        ]
-        current_ethics_competencies = [
-            competency
-            for competency in by_subject["ethik"]
-            if competency.catalog_status == "current"
-        ]
-        legacy_ethics_competencies = [
-            competency
-            for competency in by_subject["ethik"]
-            if competency.catalog_status == "legacy"
-        ]
-        self.assertEqual(len(current_social_competencies), 12)
-        self.assertEqual(len(legacy_social_competencies), 24)
-        self.assertEqual(len(current_ethics_competencies), 58)
-        self.assertEqual(len(legacy_ethics_competencies), 15)
-        self.assertTrue(any(
-            competency.competency_group == "Rollen und Absprachen"
-            and competency.description
-            == (
-                "Eine übernommene Rolle ausführen und Änderungen einer Absprache "
-                "mit der Gruppe klären."
-            )
-            for competency in current_social_competencies
-        ))
+        self.assertEqual(by_id["CMP-100126"].competency_group, "Zeit")
+        self.assertEqual(
+            by_id["CMP-100126"].description,
+            "Ablesen, Einstellen und Aufschreiben der Uhrzeit",
+        )
+        self.assertEqual(by_id["CMP-100126"].grade_band, "1-4")
+        self.assertEqual(by_id["CMP-100126"].learning_stage, "cross_stage")
+        self.assertEqual(by_id["CMP-100126"].activation_group_key, "")
 
     def test_competency_catalog_upsert_keeps_existing_ratings_readable(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1234,7 +1186,7 @@ class SQLiteSpikeTest(unittest.TestCase):
                 f"{OBSERVATION_ID_PREFIX}-000001"
             )
             old_competency = competency_repository.get_competency("CMP-000318")
-            new_competency = competency_repository.get_competency("CMP-000671")
+            new_competency = competency_repository.get_competency("CMP-100126")
 
         self.assertIsNotNone(stored_observation)
         if stored_observation is not None:
@@ -1246,11 +1198,10 @@ class SQLiteSpikeTest(unittest.TestCase):
                 ("CMP-000318",),
             )
             self.assertEqual(stored_observation.competency_ratings[0].rating, "+")
-        self.assertIsNotNone(old_competency)
+        self.assertIsNone(old_competency)
         self.assertIsNotNone(new_competency)
-        if old_competency is not None:
-            self.assertEqual(old_competency.catalog_status, "legacy")
-            self.assertFalse(old_competency.catalog_default_active)
+        if new_competency is not None:
+            self.assertEqual(new_competency.catalog_status, "current")
 
     def test_documentation_subject_settings_default_to_active_catalog_subjects(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

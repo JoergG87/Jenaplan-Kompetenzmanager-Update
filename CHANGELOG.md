@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Die SQLite- und Projektionsregressionen prüfen den aktuellen
+  Entwicklungsbuch-Katalog mit 331 aktiven, stufenübergreifenden Kompetenzen
+  und den IDs `CMP-100001` bis `CMP-100331`. Historische
+  `CMP-000...`-Beobachtungsreferenzen bleiben als eingebettete Bestandsbelege
+  lesbar, werden aber nicht mehr als Bestandteil des aktuellen Katalogs
+  vorausgesetzt.
+
 - In der Berichtswerkstatt lassen sich leere Berichtsfächer direkt abwählen.
   Enthält ein Fach bereits Text, ausgewählte Kompetenzen, Beobachtungsbelege
   oder Diagramme, erklärt eine sichere Bestätigung den Entwurfsverlust;
