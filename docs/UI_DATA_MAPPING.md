@@ -249,11 +249,11 @@ vorstehende Phase-2-Mapping ersetzt.
 
 | UI-Feld/Aktion | Quelle | Persistenz | Regel |
 |---|---|---|---|
-| Berichtstatus | RPD-Liste + getrennte RPT-/RPV-Revisionsprojektion | Nein | kein, eindeutig, mehrdeutig, geändert, finalisiert oder Integritätsfehler; niemals im Widget berechnet |
+| Berichtstatus | RPD-Liste + getrennte RPT-/RPV-Revisionsprojektion | Nein | kein, eindeutig, mehrdeutig, geändert, finalisiert oder Integritätsfehler; niemals im Widget berechnet; sichtbarer Statuschip bleibt bei 1180 x 760, 1280 x 800 und 1400 x 900 vollständig lesbar |
 | Berichtszeitraum | `report_drafts.period_start` / `period_end` des eindeutig gewählten RPD | Nein | einzige Zeitgrundlage; keine Schuljahresbehauptung und keine inhaltliche Projektion ohne eindeutigen RPD |
 | Berichtaktion | Anzahl eindeutiger RPD + bestehende Shell-Aktionen | Nein | `Bericht erstellen`, `Bericht öffnen` oder `Bericht auswählen`; mehrere Drafts werden nie still aktiviert |
-| LEG-Status | LCD-Liste + getrennte LCF-/LCV-Revisionsprojektion | Nein | ohne Draft `LEG beginnen`, mit eindeutigem Draft `LEG öffnen`, bei Mehrdeutigkeit `LEG auswählen`; keine Berichtsdaten |
-| Nächste Schritte | bestehende Draft-/Revisionszustände und vorhandene Navigation | Nein | ausschließlich konkrete Aktionen; keine Empfehlung, Priorisierung oder automatische Auswahl |
+| LEG-Status | LCD-Liste + getrennte LCF-/LCV-Revisionsprojektion | Nein | ohne Draft `LEG beginnen`, mit eindeutigem Draft `LEG öffnen`, bei Mehrdeutigkeit `LEG auswählen`; keine Berichtsdaten; sichtbarer Statuschip bleibt bei den unterstützten Fenstergrößen vollständig lesbar |
+| Nächste Schritte | bestehende Draft-/Revisionszustände und vorhandene Navigation | Nein | ausschließlich konkrete Aktionen; keine Empfehlung, Priorisierung oder automatische Auswahl; Titel und Aktionswortlaut bleiben vollständig sichtbar und erzeugen keinen horizontalen Gesamtscroll |
 | Bericht-/LEG-Historie | getrennte RPD-/RPV- und LCD-/LCV-Leseprojektionen | Nein | gemeinsames Display mit sichtbarem Dokumenttyp; technische IDs verborgen |
 | Fachübersicht | vorhandene `LearningReportPreparationViewModel.subjects` mit `documented_count`, `current_count` und fachbezogenen Evidence-Zeilen | Nein | zunächst höchstens vier Fächer in vorhandener Reihenfolge, alle weiteren nur nach lokaler bewusster Erweiterung; neutrales Kreisdiagramm wie im Schülerprofil, Kompetenz- und Beobachtungsanzahl sowie Sprunganker; keine qualitative Bewertung, Empfehlung oder Auswahl |
 | `Bericht vorbereiten` | `subject_id` + eindeutiger RPD-Zustand | Nein | jeder neue Draft verlangt unabhängig von vorhandenen Drafts zuerst eine bewusste, nicht persistente Zeitraumauswahl; bei einem Draft direkt, bei mehreren nach Wahl eines vorhandenen Drafts oder zusätzlicher Zeitraumwahl für `Neuer Entwurf` in den vorhandenen Editor auf `Kompetenzen & Belege`/Fach fokussieren; keine Kompetenzübernahme |

@@ -564,6 +564,14 @@ Kompetenzdarstellungen behalten verbindlich `Fach → Kompetenzbereich → Thema
 
 Statusbadges verwenden ausschließlich die Tones `neutral`, `info`, `success` und `warning`. Der sichtbare Text ist die primäre Bedeutung und wird gleichzeitig als Accessible Name geführt; Farbe darf Bedeutung nur unterstützen. Dasselbe gilt für Dokumentationsabdeckung: Matrixzellen zeigen einen sichtbaren Zahlenwert und nennen im Tooltip beziehungsweise Accessible Name ausdrücklich den Dokumentationsbezug ohne Leistungsbewertung.
 
+Statusbadges reservieren ihre vollständige Textbreite einschließlich zentraler
+Innenabstände und dürfen von horizontalen Kartenzeilen nicht unter ihre
+lesbare Mindestgröße gedrückt werden. In der Bericht-/LEG-Übersicht gilt das
+gleichermaßen für die konkreten Aktionsbeschriftungen unter `Nächste Schritte`;
+umbruchfähige Begleittexte nutzen den verbleibenden Raum. Bei 1180 x 760,
+1280 x 800 und 1400 x 900 bleiben Chip, Titel und Aktion innerhalb ihrer Karte
+sichtbar, ohne einen horizontalen Gesamtscroll zu erzeugen.
+
 `CourseBadge` ist davon bewusst getrennt: Es zeigt ausschließlich organisatorische Kurszugehörigkeit mit immer sichtbarem Kursnamen, kleinem Farbindikator und heller, aus `courses.color_hex` abgeleiteter Kontextfläche. Fehlt eine gültige Kursfarbe, bleibt derselbe Text auf einem neutralen grauen Chip sichtbar. Kursfarben dürfen weder Status, Leistung, Entwicklung noch Dokumentationsgrad ausdrücken und färben keine ganzen Zeilen oder Karten.
 
 Jeder leere Zustand beantwortet in ruhiger Sprache, warum kein Inhalt sichtbar ist und welcher bestehende Schritt weiterführt. Eine leere technische Tabelle, `Keine Daten vorhanden` ohne Kontext oder eine neue fachliche Aktion ausschließlich für den Empty State sind unzulässig. Schreibgeschützte Revisionen erklären statt einer Aktion, dass der eingefrorene Stand unverändert bleibt.

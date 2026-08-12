@@ -484,11 +484,22 @@ class StatusBadge(QLabel):
         if rating_token:
             apply_rating_badge_variant(self, rating_token)
         self.setAccessibleName(text)
+        self._sync_minimum_size()
 
     def setText(self, text: str) -> None:  # noqa: N802
         """Keep the spoken status synchronized with its visible wording."""
         super().setText(text)
         self.setAccessibleName(text)
+        self._sync_minimum_size()
+
+    def _sync_minimum_size(self) -> None:
+        """Keep stylesheet padding and the complete status text in layout hints."""
+        hint = self.sizeHint()
+        metrics = self.fontMetrics()
+        self.setMinimumSize(
+            max(hint.width(), metrics.horizontalAdvance(self.text()) + 18),
+            max(hint.height(), metrics.height() + 8),
+        )
 
 
 def apply_rating_badge_variant(widget: QWidget, rating_token: str) -> None:

@@ -1435,6 +1435,117 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         )
         screen.close()
 
+    def test_report_and_leg_status_texts_fit_supported_window_sizes(self) -> None:
+        report = self._report_draft("RPD-1")
+        other_report = self._report_draft("RPD-2")
+        conference = self._leg_draft("LCD-1")
+        other_conference = self._leg_draft("LCD-2")
+        overview = build_report_overview(
+            (report, other_report),
+            {
+                "RPD-1": self._report_state(
+                    current=self._report_revision(1, FINALIZED_REVISION_STATUS),
+                    hash_valid=False,
+                ),
+                "RPD-2": self._report_state(),
+            },
+            (conference, other_conference),
+            {
+                "LCD-1": self._leg_state(
+                    current=self._leg_revision(1, COMPLETED_REVISION_STATUS),
+                    changed=True,
+                ),
+                "LCD-2": self._leg_state(),
+            },
+            self.preparation,
+            selected_report_draft_id="RPD-1",
+            selected_learning_conference_draft_id="LCD-1",
+        )
+        self.assertEqual(
+            overview.report_status.status_label,
+            "Integritätsprüfung fehlgeschlagen · bewusst gewählt",
+        )
+        self.assertEqual(
+            overview.learning_conference_status.status_label,
+            "Entwurf seit Abschluss geändert · bewusst gewählt",
+        )
+        screen = self._screen(overview)
+        screen.show()
+
+        for width, height in ((1180, 760), (1280, 800), (1400, 900)):
+            screen.resize(width, height)
+            self.app.processEvents()
+            status_cards = (
+                screen.report_status_card,
+                screen.learning_conference_status_card,
+            )
+            badges = tuple(
+                badge
+                for card in status_cards
+                for badge in card.findChildren(QLabel, "StatusBadge")
+            )
+            self.assertEqual(len(badges), 2)
+            for badge in badges:
+                self.assertGreaterEqual(
+                    badge.width(),
+                    badge.fontMetrics().horizontalAdvance(badge.text()) + 18,
+                )
+                self.assertGreaterEqual(
+                    badge.height(),
+                    badge.fontMetrics().height() + 8,
+                )
+                card = next(
+                    candidate
+                    for candidate in status_cards
+                    if candidate.isAncestorOf(badge)
+                )
+                badge_origin = badge.mapTo(card, QPoint(0, 0))
+                self.assertLessEqual(
+                    badge_origin.x() + badge.width(),
+                    card.contentsRect().right() + 1,
+                )
+            next_step_titles = tuple(
+                label
+                for row in screen.next_steps_card.findChildren(
+                    QWidget,
+                    "ReportOverviewNextStepRow",
+                )
+                for label in row.findChildren(QLabel)
+                if label.text().startswith("•")
+            )
+            self.assertTrue(next_step_titles)
+            for label in next_step_titles:
+                self.assertGreaterEqual(
+                    label.height(),
+                    label.heightForWidth(label.width()),
+                )
+            next_steps_heading = next(
+                label
+                for label in screen.next_steps_card.findChildren(QLabel)
+                if label.text() == "Nächste Schritte"
+            )
+            self.assertGreaterEqual(
+                next_steps_heading.height(),
+                next_steps_heading.heightForWidth(next_steps_heading.width()),
+            )
+            for button in screen.next_steps_card.findChildren(QPushButton):
+                self.assertGreaterEqual(
+                    button.width(),
+                    button.fontMetrics().horizontalAdvance(button.text()) + 24,
+                )
+                button_origin = button.mapTo(
+                    screen.next_steps_card,
+                    QPoint(0, 0),
+                )
+                self.assertLessEqual(
+                    button_origin.x() + button.width(),
+                    screen.next_steps_card.contentsRect().right() + 1,
+                )
+            report_scroll = screen.profile_tabs.widget(3)
+            self.assertIsInstance(report_scroll, QScrollArea)
+            self.assertEqual(report_scroll.horizontalScrollBar().maximum(), 0)
+        screen.close()
+
     def test_ui_exposes_text_status_accessible_actions_and_no_technical_ids(
         self,
     ) -> None:

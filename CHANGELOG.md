@@ -59,7 +59,10 @@
   `Zuletzt verwendet`, und redundante Kompetenz-Tooltips entfallen. Der
   zentrale Toast dimensioniert und positioniert auch frei über Dialogen
   liegende Meldungen vollständig innerhalb des sichtbaren Bereichs; gemeinsame
-  Überschriften und Statusbadges dürfen normalen Text nicht abschneiden.
+  Überschriften und Statusbadges dürfen normalen Text nicht abschneiden. Die
+  Bericht-/LEG-Übersicht reserviert auch für Status und konkrete Aktionen unter
+  `Nächste Schritte` ihre vollständige Textbreite bei allen unterstützten
+  Fenstergrößen, ohne einen horizontalen Gesamtscroll einzuführen.
 
 - Der ausschließlich explizit aufrufbare Final-V4-Testdatenseeder erzeugt
   einen neuen synthetischen Vergleichsbestand mit 24 Schülern, mehreren

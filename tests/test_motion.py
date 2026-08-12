@@ -461,6 +461,15 @@ class MotionSystemTest(unittest.TestCase):
             badge.sizeHint().width(),
             badge.fontMetrics().horizontalAdvance(badge.text()),
         )
+        self.assertGreaterEqual(
+            badge.minimumWidth(),
+            badge.fontMetrics().horizontalAdvance(badge.text()) + 18,
+        )
+        badge.setText("Bestätigungsstand weiterhin unklar")
+        self.assertGreaterEqual(
+            badge.minimumWidth(),
+            badge.fontMetrics().horizontalAdvance(badge.text()) + 18,
+        )
         host.close()
 
     def test_pointer_cursor_tracks_enter_leave_hide_and_repeated_clicks(self) -> None:

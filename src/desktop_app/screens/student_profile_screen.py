@@ -48,6 +48,7 @@ from src.desktop_app.components import (
     SegmentedControl,
     StatusBadge,
     configure_button,
+    ensure_button_text_width,
 )
 from src.desktop_app.icons import load_icon
 from src.desktop_app.motion import (
@@ -2918,14 +2919,15 @@ class StudentProfileScreen(QWidget):
         badge = StatusBadge(status.status_label, tone=tone)
         badge.setAccessibleName(f"Status: {status.status_label}")
         heading = QWidget()
-        heading_layout = QHBoxLayout(heading)
+        heading_layout = QVBoxLayout(heading)
         heading_layout.setContentsMargins(0, 0, 0, 0)
         heading_layout.setSpacing(8)
         heading_layout.addWidget(badge, 0, Qt.AlignmentFlag.AlignLeft)
-        heading_layout.addStretch(1)
         if status.primary_action is not None:
             heading_layout.addWidget(
-                self._report_action_button(status.primary_action, role="secondary")
+                self._report_action_button(status.primary_action, role="secondary"),
+                0,
+                Qt.AlignmentFlag.AlignRight,
             )
         layout.addWidget(heading)
         metadata = QLabel(
@@ -2975,14 +2977,14 @@ class StudentProfileScreen(QWidget):
                 f"{step.title}. {step.detail}. Aktion: {step.action.label}."
             )
             row.setToolTip(step.detail)
-            row_layout = QHBoxLayout(row)
+            row_layout = QVBoxLayout(row)
             row_layout.setContentsMargins(0, 2, 0, 2)
-            row_layout.setSpacing(10)
+            row_layout.setSpacing(6)
             title = QLabel(f"•  {step.title}")
             title.setWordWrap(True)
             set_label_style(title, "card_title")
             title.setToolTip(step.detail)
-            row_layout.addWidget(title, 1)
+            row_layout.addWidget(title)
             row_layout.addWidget(
                 self._report_action_button(step.action, role="quiet"),
                 0,
@@ -3519,6 +3521,7 @@ class StudentProfileScreen(QWidget):
     ) -> QPushButton:
         button = QPushButton(action.label)
         configure_button(button, role, action.label)
+        ensure_button_text_width(button, horizontal_chrome=32)
         button.clicked.connect(
             lambda _checked=False, selected=action: (
                 self._dispatch_report_overview_action(selected)
