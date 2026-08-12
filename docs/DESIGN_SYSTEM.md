@@ -1112,6 +1112,13 @@ sichtbar, ist aber kein Navigations- oder Statuszustand.
 
 Revisionszeilen sind ruhige nicht-interaktive Karten mit Statusbadge und genau einer Aktion `Öffnen`. Technische `RPV`-ID und Snapshot-Hash erscheinen nur im Tooltip. Die finale Revisionsansicht verwendet eine zentrierte Papierflaeche mit Labels und Lesekarten; keine Eingabefelder, Bearbeiten-, Loeschen-, Entsperr- oder Wiederherstellungsaktion. Sprint 9A ergaenzt ausschliesslich fuer die aktuelle `finalized`-Revision die serioese sekundaere Aktion `Finales PDF erstellen`. Ein vorhandenes Artefakt wechselt dieselbe Aktion zu `Finales PDF anzeigen` und öffnet die gemeinsame schreibgeschützte In-Memory-Ansicht mit Mehrseiten-Scrollen, Zoom und Schließen. Render-, Lese- oder Integritaetsfehler erscheinen verständlich ohne technische Details. Ersetzte Revisionen bieten keine neue PDF-Erzeugung. Bestehende zentrale Motion-Regeln gelten unveraendert; Reduced Motion setzt Segment-, Toast- und Inline-Endzustaende unmittelbar.
 
+Finale Bericht-/LEG-Tabellen verwenden umbruchfähige Zellen, variable
+Zeilenhöhen und auf Folgeseiten wiederholte Tabellenköpfe. Die
+LEG-Kompetenztabelle reserviert für `Fach` 24 Prozent der verfügbaren
+Tabellenbreite; typische, lange und überfachliche Bezeichnungen bleiben mit
+Innenabstand vollständig sichtbar. Diese Ausgaberegel verändert weder den
+sicheren Viewer noch den RPA-/LCA-Artefaktvertrag.
+
 ## LEG-Abschluss und historische Revisionen
 
 Der LEG-Workspace behaelt `Entwurf speichern` als einzige primaere Arbeitsaktion. `Gespräch abschließen` steht getrennt als serioese sekundaere Aktion im Abschlussbereich und ist bei ungespeicherten Widgetaenderungen deaktiviert. Eine kurze Bestaetigung macht deutlich, dass ein unveraenderlicher Abschlussstand entsteht, der Draft aber fuer spaetere Korrekturen bearbeitbar bleibt.

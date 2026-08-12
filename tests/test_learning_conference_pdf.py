@@ -22,6 +22,7 @@ from src.core.learning_conference import (
 from src.core.learning_conference_pdf import (
     LearningConferencePdfError,
     LearningConferencePdfOutputModelBuilder,
+    LearningConferencePdfSnapshotValidator,
 )
 from src.core.observation import (
     ObservationCompetencyRatingRecord,
@@ -187,6 +188,78 @@ class LearningConferencePdfTest(unittest.TestCase):
                 "SELECT COUNT(*) FROM learning_conference_pdf_artifacts"
             ).fetchone()[0]
         self.assertEqual(count, 1)
+
+    def test_subject_column_preserves_long_names_across_multiple_pages(self) -> None:
+        revision_id = self._complete()
+        verified = LearningConferenceRevisionReadService(
+            self.repository
+        ).load_verified_revision(revision_id)
+        payload = json.loads(json.dumps(verified.snapshot, ensure_ascii=False))
+        subject_names = (
+            "Mathematik",
+            "Kreatives Gestalten",
+            "Arbeits-/Lernkompetenz",
+            "Selbst- und Sozialkompetenz",
+            "Naturwissenschaftliche Bildung und gesellschaftliche Orientierung",
+        )
+        payload["subjects"] = [
+            {
+                "subject_id": f"SUB-LAYOUT-{index:03d}",
+                "subject_name": subject_name,
+            }
+            for index, subject_name in enumerate(subject_names)
+        ]
+        base_competency = dict(payload["competencies"][0])
+        payload["competencies"] = [
+            {
+                **base_competency,
+                "competency_id": f"CMP-LAYOUT-{index:03d}",
+                "subject_id": (
+                    f"SUB-LAYOUT-{index % len(subject_names):03d}"
+                ),
+                "subject_name": subject_names[index % len(subject_names)],
+                "competency_text": (
+                    "Eine längere Kompetenzbeschreibung für die stabile "
+                    "Mehrseiten-Tabelle."
+                ),
+            }
+            for index in range(50)
+        ]
+        LearningConferencePdfSnapshotValidator().validate(
+            verified.revision,
+            payload,
+        )
+        model = LearningConferencePdfOutputModelBuilder().build(
+            verified.revision,
+            payload,
+        )
+        competency_table = next(
+            block
+            for page in model.pages
+            for block in page.blocks
+            if getattr(block, "headers", ())
+            == ("Fach", "Bereich · Thema", "Kompetenz")
+        )
+        self.assertEqual(competency_table.column_weights, (0.24, 0.28, 0.48))
+
+        target = Path(self.temp_dir.name) / "long-subjects.pdf"
+        PdfRenderer().render(model, target)
+        reader = PdfReader(target)
+        page_texts = tuple(page.extract_text() or "" for page in reader.pages)
+        normalized_text = " ".join(
+            "\n".join(page_texts).split()
+        )
+        competency_pages = tuple(
+            page_text
+            for page_text in page_texts
+            if "Eine längere Kompetenzbeschreibung" in page_text
+        )
+
+        self.assertGreater(len(reader.pages), len(model.pages))
+        self.assertGreater(len(competency_pages), 1)
+        self.assertTrue(all("Fach" in page_text for page_text in competency_pages))
+        for subject_name in subject_names:
+            self.assertIn(subject_name, normalized_text)
 
     def test_superseded_revision_cannot_generate_pdf(self) -> None:
         first_revision_id = self._complete()

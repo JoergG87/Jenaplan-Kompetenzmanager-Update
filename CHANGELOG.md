@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Finale LEG-PDFs reservieren in der Kompetenztabelle ausreichend Platz für
+  vollständige Fachnamen wie `Kreatives Gestalten` und die überfachlichen
+  Bezeichnungen. Lange Fachnamen umbrechen innerhalb der Zelle; Tabellenkopf
+  und Fachspalte bleiben auch über mehrere PDF-Seiten vollständig sichtbar.
+  Bericht-PDF, sicherer Viewer, Artefaktmodell und Persistenz bleiben
+  unverändert.
+
 - `Kompetenzen & Belege` ordnet aktuelle auswählbare Kompetenzen mit
   zugeordneten aktiven Beobachtungsbelegen innerhalb des inklusiven
   RPD-Zeitraums zuerst ein. Weitere auswählbare Kompetenzen und historische

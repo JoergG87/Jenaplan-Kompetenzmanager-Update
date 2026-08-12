@@ -373,7 +373,7 @@ class LearningConferencePdfOutputModelBuilder:
                                 )
                                 for item in competencies
                             ),
-                            column_weights=(0.2, 0.3, 0.5),
+                            column_weights=(0.24, 0.28, 0.48),
                         ),
                     ),
                 ),
