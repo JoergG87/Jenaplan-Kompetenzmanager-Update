@@ -407,10 +407,14 @@ class StudentDesktopAdapter:
         active_documentation_subject_ids = set(
             documentation_subjects.selected_subject_ids
         )
+        profile_documentation_subject_ids = (
+            active_documentation_subject_ids
+            | set(COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS)
+        )
         documentation_competencies = tuple(
             competency
             for competency in active_current_competencies
-            if competency.subject_id in active_documentation_subject_ids
+            if competency.subject_id in profile_documentation_subject_ids
         )
         documentation_statuses = self._documentation_statuses(
             documentation_competencies,
@@ -424,7 +428,7 @@ class StudentDesktopAdapter:
             ),
             active_current_competencies,
             documented_ids,
-            active_documentation_subject_ids,
+            profile_documentation_subject_ids,
         )
         return StudentProfileProjectionBundle(
             student=student,
@@ -434,7 +438,7 @@ class StudentDesktopAdapter:
             documents=documents,
             competency_cockpit=build_student_competency_cockpit(
                 statuses,
-                tuple(active_documentation_subject_ids),
+                tuple(profile_documentation_subject_ids),
             ),
             profile_dashboard=build_student_profile_dashboard(
                 statuses,

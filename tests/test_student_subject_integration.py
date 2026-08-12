@@ -11,6 +11,9 @@ from src.application.student_documentation_subjects import (
     StudentDocumentationSubjectApplicationError,
 )
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+from src.desktop_app.view_models.observation_view_model import (
+    COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS,
+)
 from tests.helpers.synthetic_v4 import (
     SYNTHETIC_SCHOOL_YEAR_ID,
     SYNTHETIC_STUDENT_IDS,
@@ -117,7 +120,7 @@ def test_inherit_projection_binds_current_school_year_and_global_catalog(
     assert projection.is_read_only is False
 
 
-def test_custom_filters_current_cockpit_status_ring_and_open_hints_but_keeps_evidence(
+def test_custom_filters_instructional_subjects_but_keeps_cross_curricular_and_evidence(
     adapter: StudentDesktopAdapter,
 ) -> None:
     student_id = SYNTHETIC_STUDENT_IDS[0]
@@ -135,16 +138,20 @@ def test_custom_filters_current_cockpit_status_ring_and_open_hints_but_keeps_evi
 
     assert bundle.documentation_subjects.mode == "custom"
     assert bundle.documentation_subjects.selected_subject_ids == (SUBJECT_LANGUAGE,)
-    assert tuple(item.subject_id for item in bundle.documentation_statuses) == (
+    expected_current_subject_ids = {
+        *COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS,
         SUBJECT_LANGUAGE,
-    )
-    assert tuple(item.subject_id for item in bundle.competency_cockpit.subjects) == (
-        SUBJECT_LANGUAGE,
-    )
+    }
+    assert {
+        item.subject_id for item in bundle.documentation_statuses
+    } == expected_current_subject_ids
+    assert {
+        item.subject_id for item in bundle.competency_cockpit.subjects
+    } == expected_current_subject_ids
     assert tuple(
         item.subject_id for item in bundle.competency_cockpit.historical_subjects
     ) == (SUBJECT_MATH,)
-    assert bundle.profile_dashboard.documentation_summary.total_learning_area_count == 1
+    assert bundle.profile_dashboard.documentation_summary.total_learning_area_count == 3
     assert all(
         item.subject_display_name != "Testmathematik"
         for item in bundle.profile_dashboard.undocumented_subjects
@@ -197,7 +204,7 @@ def test_two_students_and_global_changes_keep_custom_separate_from_inherit(
     assert inherited.selected_subject_ids == (SUBJECT_MATH,)
 
 
-def test_empty_custom_and_switch_back_to_inherit_reload_effective_selection(
+def test_empty_instructional_custom_keeps_cross_curricular_and_inherit_reloads(
     adapter: StudentDesktopAdapter,
 ) -> None:
     student_id = SYNTHETIC_STUDENT_IDS[0]
@@ -210,8 +217,10 @@ def test_empty_custom_and_switch_back_to_inherit_reload_effective_selection(
     )
     empty = adapter.student_profile_projection_bundle(student_id)
     assert empty.documentation_subjects.selected_subject_ids == ()
-    assert empty.documentation_statuses == ()
-    assert empty.profile_dashboard.documentation_summary.total_learning_area_count == 0
+    assert {
+        item.subject_id for item in empty.documentation_statuses
+    } == set(COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS)
+    assert empty.profile_dashboard.documentation_summary.total_learning_area_count == 2
 
     adapter.save_student_documentation_subjects(
         student_id,

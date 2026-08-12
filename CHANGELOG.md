@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Die gebündelte Schülerprofilprojektion behandelt Selbst-/Sozialkompetenz und
+  Arbeits-/Lernkompetenz wieder genauso wie ihre kanonischen Einzelleser: Beide
+  überfachlichen Domänen bleiben unabhängig von der individuell gewählten
+  Unterrichtsfachmenge in Dokumentationsstand, Kompetenz-Cockpit und
+  Profilübersicht enthalten. Die bearbeitbare Unterrichtsfachauswahl selbst
+  bleibt davon getrennt.
+
 - Die SQLite- und Projektionsregressionen prüfen den aktuellen
   Entwicklungsbuch-Katalog mit 331 aktiven, stufenübergreifenden Kompetenzen
   und den IDs `CMP-100001` bis `CMP-100331`. Historische
