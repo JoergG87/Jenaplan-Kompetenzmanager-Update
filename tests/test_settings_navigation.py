@@ -50,6 +50,7 @@ class SettingsNavigationTest(unittest.TestCase):
         self,
     ) -> None:
         screen = SettingsScreen()
+        self.addCleanup(screen.close)
         screen.resize(900, 700)
         screen.show()
         self.app.processEvents()
@@ -114,7 +115,6 @@ class SettingsNavigationTest(unittest.TestCase):
             transition_button.cursor().shape(), Qt.CursorShape.ArrowCursor
         )
         self.assertIsNone(QApplication.overrideCursor())
-        screen.close()
 
     def test_cursor_contract_survives_back_other_detail_and_app_activation(
         self,

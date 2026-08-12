@@ -30,7 +30,12 @@ class BrandThemeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
+        cls.previous_stylesheet = cls.app.styleSheet()
         theme.apply_app_theme(cls.app)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.app.setStyleSheet(cls.previous_stylesheet)
 
     def test_brand_palette_has_named_roles_and_accessible_action_contrast(self) -> None:
         self.assertGreaterEqual(_contrast(theme.BRAND_NAVY, "#FFFFFF"), 7.0)

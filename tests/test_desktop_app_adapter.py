@@ -4473,7 +4473,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self,
     ) -> None:
         app = QApplication.instance() or QApplication([])
+        previous_stylesheet = app.styleSheet()
+        self.addCleanup(app.setStyleSheet, previous_stylesheet)
+        theme.apply_app_theme(app)
         dialog = self._observation_dialog_with_hierarchy()
+        self.addCleanup(dialog.close)
         self._select_observation_subject(dialog, "mathematik")
         visible_options = tuple(
             competency
@@ -4498,18 +4502,18 @@ class DesktopAppAdapterTest(unittest.TestCase):
         dialog.show()
         app.processEvents()
 
-        rows = tuple(dialog.competency_rating_rows.values())
-        required_height = (
-            sum(row.sizeHint().height() for row in rows[:2])
-            + dialog.competency_ratings_layout.spacing()
+        rows = tuple(
+            sorted(
+                dialog.competency_rating_rows.values(),
+                key=lambda row: row.geometry().top(),
+            )
         )
-        self.assertGreaterEqual(
+        self.assertLess(
+            rows[1].geometry().bottom(),
             dialog.selected_scroll.viewport().height(),
-            required_height,
         )
         self.assertGreater(dialog.selected_scroll.verticalScrollBar().maximum(), 0)
         self.assertGreaterEqual(dialog.catalog_scroll.viewport().height(), 100)
-        dialog.close()
         self.assertIsNotNone(app)
 
     def test_observation_dialog_shows_fresh_catalog_without_stage_switches(self) -> None:

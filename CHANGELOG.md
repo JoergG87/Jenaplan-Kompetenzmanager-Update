@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Die Qt-Regressionsprüfungen kapseln den globalen App-Themezustand und
+  schließen sichtbare Testfenster auch nach fehlgeschlagenen Assertions. Der
+  Beobachtungsdialog wird unter dem produktiven Theme anhand seiner tatsächlich
+  gerenderten Zeilen geprüft: Zwei ausgewählte Kompetenzen bleiben vollständig
+  sichtbar, weitere sind scrollbar. Produktlayout und Cursorlogik bleiben
+  unverändert.
+
 - Die gebündelte Schülerprofilprojektion behandelt Selbst-/Sozialkompetenz und
   Arbeits-/Lernkompetenz wieder genauso wie ihre kanonischen Einzelleser: Beide
   überfachlichen Domänen bleiben unabhängig von der individuell gewählten
