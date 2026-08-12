@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Die Qt-Berichtswerkstatt führt für den Pilot durch `Auswählen`, `Schreiben`
+  und `Prüfen & finalisieren`. Vorschau und Finalisierung bilden den dritten
+  Schritt; unveränderliche Revisionen bleiben als sekundäre `Frühere
+  Fassungen` erreichbar. Die internen Routen und alle RPD-/RPV-/RPA-Verträge
+  bleiben erhalten. Ungespeicherte Änderungen verwenden bei sichtbarem
+  Schließen, Escape und Fensterschließen denselben sicheren Drei-Wege-Dialog;
+  nach `Entwurf speichern` schließt der Workspace erst nach bestätigtem
+  Speichererfolg. Schema, Persistenz, PDF, LEG, HTML, Final V4 und
+  Backup/Restore bleiben unverändert.
+
 - Die Final-V4-Backup-/Restore-Runtime importiert keine Desktop-Schicht mehr.
   Produktpfade, bestätigter Restore-Worker-Start und der Restart-Handshake
   werden über kleine typisierte Ports aus der Desktop-Composition-Root

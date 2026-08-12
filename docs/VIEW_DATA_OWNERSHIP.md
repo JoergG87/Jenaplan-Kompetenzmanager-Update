@@ -1321,6 +1321,17 @@ Sprint 7F.1 ergaenzt einen persistenten, weiter bearbeitbaren Berichtsentwurf. D
 
 Sprint 7F.2 portiert die freigegebene UX aus `prototypes/learning_report_ux/` auf diese bestehende Ownership. Die PySide-Berichtswerkstatt besitzt ausschliesslich lokalen Widgetzustand fuer die laufende Bearbeitung und delegiert Speichern ueber `LearningReportDraftViewModel` an den Desktop-Adapter. Bei mindestens einem vorhandenen Entwurf lässt die Shell bewusst einen gespeicherten RPD nach Zeitraum und Status öffnen, einen neuen noch ungespeicherten Arbeitsstand beginnen oder abbrechen; nur der gewählte RPD liefert seine gespeicherten Kompetenzreferenzen als Lesekontext. Die separate Vorschau baut ihr `ReportOutputModel` aus dem aktuellen Entwurf und den vorhandenen Leseprojektionen; sie ist keine Datenquelle. Fachseiten duerfen nur Kompetenzen des jeweiligen Fachs und nur dazu passende Beobachtungsbelege neu anbieten. Nicht verfuegbare gespeicherte Belege werden in Qt-Vorschau und Ausgabemodell getrennt von regulaeren Belegen neutral ausgewiesen. Diagramme werden nur als gespeicherte Auswahlreferenzen gehalten; ihre Daten werden bei Vorschau und PDF aus den vorhandenen Projektionen erzeugt.
 
+Der Qt-Pilot-Grundworkflow komponiert denselben Widgetzustand sichtbar als
+`Auswählen`, `Schreiben` und `Prüfen & finalisieren`. Der Dialog besitzt nur
+die Zuordnung dieser sichtbaren Rollen zu den vorhandenen internen Seiten und
+den flüchtigen Fokus-/Scrollzustand. `Frühere Fassungen` ist eine sekundäre
+Navigation zur bestehenden snapshotbasierten Revisionslesesicht. Der Dialog
+besitzt weder Prüfreife-, Snapshot-, Hash-, Persistenz- noch
+Finalisierungslogik. Beim Dirty-Close fordert er über das vorhandene
+`save_requested`-Signal das vollständige Draftspeichern an und beendet sich
+erst, wenn `apply_saved_draft` den Erfolg bestätigt und den lokalen Dirty-State
+zurückgesetzt hat.
+
 Für neue Qt-Entwürfe klassifiziert ausschließlich der Desktop-Adapter die
 aktiven Unterrichtsfächer anhand der bestehenden individuellen
 Fachprojektion in primäre und weitere Angebote. Beobachtungen sind keine

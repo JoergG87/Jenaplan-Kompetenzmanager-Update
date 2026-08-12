@@ -3164,6 +3164,17 @@ synchronisiert; eine laufende Bridge-Operation oder nicht beweisbare
 Synchronisation blockiert das Schließen. Speichern, Verwerfen und
 Weiterbearbeiten bleiben der bestehende bewusste Schutzvertrag.
 
+Der Qt-Host verwendet denselben bewussten Schutzvertrag. Sichtbares Schließen,
+Escape und Fensterschließen prüfen denselben flüchtigen Dirty-State. Ohne
+Änderung wird direkt geschlossen. Bei Änderungen kann Laura den vollständigen
+aktuellen `LearningReportDraftViewModel` über den bestehenden Signal-, Adapter-,
+Application-, Domain- und Repositorypfad speichern, die Widgetänderungen
+verwerfen oder weiterarbeiten. Nur ein durch `apply_saved_draft` bestätigter
+Speichererfolg setzt Dirty zurück und erlaubt das anschließende Schließen. Ein
+Validierungs- oder Speicherfehler lässt den Workspace mit unverändertem
+Widgetzustand geöffnet. Es entsteht kein Autosave, Close-Journal oder neuer
+Persistenzzustand.
+
 Für die Finalisierung gilt auch im HTML-Host unverändert: vollständigen Draft
 über den bestehenden Service speichern, über Python validieren und die
 Finalisierungsvorschau erzeugen, ausdrücklich mit verantwortlicher Lehrkraft

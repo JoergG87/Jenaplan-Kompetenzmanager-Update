@@ -305,9 +305,18 @@ bewusst neuen Entwurf.
 
 ### Berichtswerkstatt
 
-In der Werkstatt verfassen Sie den pädagogischen Gesamtblick und die Fachtexte,
-wählen Kompetenzen und Belege und prüfen die Vorschau. Texte werden von der
-Lehrkraft geschrieben; es gibt keine automatische Textgenerierung.
+Die Werkstatt führt durch drei frei wechselbare Aufgaben:
+
+1. `Auswählen`: Fächer, Kompetenzen, Beobachtungsbelege und optionale Diagramme
+   bewusst auswählen.
+2. `Schreiben`: pädagogischen Gesamtblick und Fachtexte verfassen.
+3. `Prüfen & finalisieren`: die vollständige Entwurfsvorschau lesen und den
+   gespeicherten Stand bewusst finalisieren.
+
+Dies ist kein starrer Assistent. Sie können jederzeit zwischen Auswählen und
+Schreiben wechseln. Texte werden von der Lehrkraft geschrieben; es gibt keine
+automatische Textgenerierung. Frühere unveränderliche Revisionen sind im
+dritten Schritt sekundär über `Frühere Fassungen` erreichbar.
 
 ![Berichtswerkstatt](screenshots/06_learning_report_workspace.png)
 

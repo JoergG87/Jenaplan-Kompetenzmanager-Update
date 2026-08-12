@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QMessageBox,
-    QPushButton,
     QScrollArea,
 )
 
@@ -478,25 +477,17 @@ def test_export_does_not_bypass_later_unsaved_close_confirmation(
             workspace.pdf_button.click()
             app.processEvents()
 
-        close_actions: list[set[str]] = []
+        close_requests: list[object] = []
 
-        def keep_editing(message: QMessageBox) -> int:
-            close_actions.append(
-                {
-                    button.text()
-                    for button in message.buttons()
-                    if isinstance(button, QPushButton)
-                }
-            )
-            return int(QMessageBox.DialogCode.Rejected)
+        def keep_editing(parent: object) -> str:
+            close_requests.append(parent)
+            return "continue"
 
-        with patch.object(QMessageBox, "exec", new=keep_editing):
-            workspace.reject()
+        workspace._close_choice_provider = keep_editing
+        workspace.reject()
         app.processEvents()
 
-        assert close_actions == [
-            {"Weiter bearbeiten", "Änderungen verwerfen"}
-        ]
+        assert close_requests == [workspace]
         assert workspace.isVisible()
         assert lifecycle == []
         assert workspace._dirty

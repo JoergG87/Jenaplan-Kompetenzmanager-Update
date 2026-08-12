@@ -1956,11 +1956,7 @@ class AppShell(QMainWindow):
                         "gespeichert werden. Bitte die markierten Eingaben prüfen."
                     )
                     return None
-                QMessageBox.warning(
-                    dialog,
-                    "Entwurf konnte nicht gespeichert werden",
-                    str(error),
-                )
+                dialog.show_save_error(str(error))
                 return None
             dialog.apply_saved_draft(saved)
             self._selected_report_draft_ids[student_id] = saved.report_draft_id

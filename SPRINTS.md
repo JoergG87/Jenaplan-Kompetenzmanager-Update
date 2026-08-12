@@ -1,5 +1,27 @@
 # Sprintplanung
 
+## Bericht-Grundworkflow – Pilot-Minimalschnitt
+
+- [x] Product-/UX-Discovery und Architekturprüfung für den sichtbaren Ablauf
+  `Auswählen -> Schreiben -> Prüfen & finalisieren` abgeschlossen.
+- [x] Drei menschliche Hauptschritte im Qt-Bericht komponieren und die
+  internen Routen `writing`, `evidence`, `preview` und `revisions` erhalten.
+- [x] Vorschau und Finalisierung im dritten Schritt zusammenführen und die
+  RPV-Historie als sekundäre Aktion `Frühere Fassungen` einordnen.
+- [x] Bericht-Dirty-Close für sichtbares Schließen, Escape und Fensterschließen
+  auf Speichern, Verwerfen und Weiterbearbeiten vereinheitlichen.
+- [x] Speichern beim Schließen ausschließlich über den bestehenden
+  RPD-Speicherpfad führen und bei Fehler Dirty-State und Workspace erhalten.
+- [x] Betroffene Qt-Seitenleiste auf normale Überschriften, Hilfetexte und
+  echte Aktionen reduzieren; keine neue Status- oder Fachlogik ergänzen.
+- [x] Fokussierte Bericht-/Shell-/Revision-/PDF-Regressionen sowie vollständige
+  Standardsuite, Compile-, Paket- und Diff-Gates grün nachweisen.
+- [ ] Manuelle sichtbare macOS-/PO-Abnahme bleibt außerhalb dieses Pakets.
+
+Nicht Bestandteil sind Evidenzpanel oder Drawer, Berichtstextänderungen, LEG,
+HTML, Diagramme, Renderer/Viewer, Datenmodell, Schema, Migration, Final V4,
+Backup/Restore, Build oder Release.
+
 ## Final-V4-Fachrelevanz
 
 **Status:** Datenmodell, Resolver, frischer V4-First-Run sowie V4-exklusive

@@ -1084,10 +1084,17 @@ Die Kartenfarbe wird aus der Kurszuordnung abgeleitet. Die konkrete Farbwelt ble
 
 Die Berichtswerkstatt verwendet `PageHeader`, `SegmentedControl`, `SectionHeader`, `AppCard`, `StatusBadge`, `InlineMessage`, `EmptyState`, `Toast` und zentrale Buttonrollen. Der Kopf verbindet Kind- und Berichtskontext mit einem kompakten Statusbadge. `Entwurf` verwendet einen ruhigen Info-Ton, `Entwurf geändert` einen zurueckhaltenden Warnhinweis und `Finalisiert · Revision X` den positiven Statuston ohne Erfolgsinszenierung.
 
-Die lokale Vier-Bereich-Navigation ordnet `Schreiben`, `Kompetenzen & Belege`, `Vorschau` und `Revisionen` gleichwertig als Arbeitsschritte unterhalb des Berichtskontexts. Fachlisten sind jeweils nur lokale Untergliederungen des Schreib- beziehungsweise Auswahlbereichs. Die dauerhaft sichtbare untere Aktionsleiste enthaelt genau eine primaere Draftaktion. Die mehrseitige Vorschau liegt auf einer neutralen Dokumentflaeche und nennt immer ihre Draftquelle.
+Die lokale Pilotnavigation ordnet `Auswählen`, `Schreiben` und
+`Prüfen & finalisieren` als drei menschliche Aufgaben unterhalb des
+Berichtskontexts. Fachlisten sind jeweils nur lokale Untergliederungen des
+Schreib- beziehungsweise Auswahlbereichs. Auswahl und Schreiben bleiben frei
+wechselbar. Die dauerhaft sichtbare untere Aktionsleiste enthaelt genau eine
+primaere Draftaktion. Die mehrseitige Vorschau liegt als zentrale Prüffläche
+des dritten Schritts auf einer neutralen Dokumentflaeche und nennt immer ihre
+Draftquelle. Die read-only Revisionshistorie ist dort ausschließlich als
+sekundäre Aktion `Frühere Fassungen` erreichbar.
 
-Ein neuer Bericht aktiviert zunächst `Kompetenzen & Belege`, ohne die
-Vier-Bereich-Navigation umzuordnen. Die lokale Fachliste trennt ruhig
+Ein neuer Bericht aktiviert zunächst `Auswählen`. Die lokale Fachliste trennt ruhig
 `Fächer des Kindes`, `Weitere Fächer` und – nur bei geöffnetem Bestand –
 `Gespeicherte Fachabschnitte`. Eine dauerhaft sichtbare Textzeile nennt die
 aktuell ausgewählten Fachnamen. Der Übergang `Weiter zum Schreibbereich`
@@ -1107,6 +1114,13 @@ Typografie, Rahmen und den vorhandenen Auswahlindikator des `SegmentedControl`.
 Inaktive Bereiche bleiben neutral; Hover, Fokus und Disabled-State stammen aus
 der zentralen Komponentenbibliothek. Der orange Berichtskontext bleibt im Kopf
 sichtbar, ist aber kein Navigations- oder Statuszustand.
+
+Die direkt zugehörigen Seitenleisten verwenden normale Abschnittsüberschriften
+und umbrechende Hilfetexte als Text. Nur auswählbare Fächer und Navigation sind
+Buttons; nur echte Zustände dürfen `StatusBadge` verwenden. Statische Hinweise
+werden nicht als Chip oder verschachtelte Meldungskarte dargestellt. Es gibt
+keine Drop-Shadows, `QGraphicsOpacityEffect`, Höhenanimation oder andere
+layoutverändernde Motion.
 
 `Entwurf speichern` bleibt die primaere Draftaktion. `Bericht finalisieren` beziehungsweise `Neue Revision finalisieren` steht raeumlich getrennt im Finalisierungsstatus und verwendet eine serioese sekundaere Aktion. Erst der Bestaetigungsdialog verwendet fuer die explizite irreversible Bestaetigung die primaere Buttonrolle. Irreversibilitaet wird durch Text und erforderliche Checkbox vermittelt, nicht durch aggressive rote Gestaltung.
 

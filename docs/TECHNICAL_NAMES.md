@@ -2620,6 +2620,9 @@ Regel: `RPA` identifiziert genau eine unveraenderliche PDF-Artefaktreferenz fuer
 Registrierte Dialogmethoden und UI-State-Namen:
 
 - `LearningReportDialog._set_workspace(key)`
+- `LearningReportDialog._confirm_close()`
+- `LearningReportDialog._focus_workspace(key)`
+- `LearningReportDialog._show_revision_history()`
 - `LearningReportDialog._evidence_screen()`
 - `LearningReportDialog._subject_evidence_editor(subject)`
 - `LearningReportDialog._action_bar()`
@@ -2627,6 +2630,7 @@ Registrierte Dialogmethoden und UI-State-Namen:
 - `LearningReportDialog.workspace_navigation`
 - `LearningReportDialog.evidence_navigation_group`
 - `LearningReportDialog.evidence_stack`
+- `LearningReportCloseDialog`
 
 Registrierte Qt-Objektnamen:
 
@@ -2634,12 +2638,26 @@ Registrierte Qt-Objektnamen:
 - `LearningReportWorkspaceStack`
 - `LearningReportActionBar`
 - `LearningReportSaveButton`
+- `LearningReportCloseButton`
+- `LearningReportCheckFinalizationButton`
+- `LearningReportHistoryButton`
 - `LearningReportIncludeSubject_<subject_id>`
 - `LearningReportSubjectText_<subject_id>_<text_key>`
 - `LearningReportRevisionCanvas`
 - `LearningReportRevisionPaper`
 
-Regel: Diese Namen strukturieren ausschliesslich lokalen UI-State, Fokus, Bereichswechsel, zentrale Aktionshierarchie und Dokumentdarstellung. Sie fuehren keine Datenquelle, fachliche Filterung, Persistenz, Validierung, Snapshotauswertung oder Revisionslogik ein. `Schreiben` und `Kompetenzen & Belege` verwenden getrennte Widget-Stapel, lesen und schreiben jedoch weiterhin denselben bestehenden `LearningReportDraftViewModel` ueber die vorhandenen Dialogsignale.
+Regel: Diese Namen strukturieren ausschliesslich lokalen UI-State, Fokus,
+Bereichswechsel, zentrale Aktionshierarchie, sicheren Dirty-Close und
+Dokumentdarstellung. Sie fuehren keine Datenquelle, fachliche Filterung,
+Persistenz, Validierung, Snapshotauswertung oder Revisionslogik ein. Die
+sichtbaren Schritte `Auswählen`, `Schreiben` und `Prüfen & finalisieren` bilden
+die vorhandenen internen Seiten ab; `revisions` bleibt als interne Route und
+erscheint nur sekundär als `Frühere Fassungen`. Schreiben und Auswahl verwenden
+getrennte Widget-Stapel, lesen und schreiben jedoch weiterhin denselben
+bestehenden `LearningReportDraftViewModel` ueber die vorhandenen
+Dialogsignale. `LearningReportCloseDialog` besitzt nur die lokale Wahl
+Speichern, Verwerfen oder Weiterbearbeiten; ein bestätigter Speichererfolg
+bleibt Eigentum des bestehenden Save-Pfads.
 
 ## Sprint 7G.1 - Persistenter LEG-Arbeitsentwurf
 

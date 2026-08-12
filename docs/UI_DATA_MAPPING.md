@@ -896,6 +896,15 @@ tatsächlichen Fach- und Dokumentationsfilter des Cockpits bleiben erhalten.
 | Finales Berichts-PDF | `RPV-ID` -> bestehender Erzeugungspfad; vorhandene `RPA-ID` -> `StudentDesktopAdapter.read_final_pdf_artifact` -> verifizierter Managed-Document-Memory-Stream -> `PdfArtifactViewerDialog` | Ausgabe / Artefaktaktion / schreibgeschützte Anzeige | Ja, nur bei Erzeugung | `learning_report_revisions` + `learning_report_pdf_artifacts` + verschlüsseltes Managed Document | vorhandenes Artefakt zeigt `Finales PDF anzeigen`; UI erhält nur die RPA-ID, erzeugt keine Datei und besitzt keine Pfad-, Container-, Hash- oder Entschlüsselungslogik |
 | Medienhinweise | SQLite `documents` | Anzeige | Nie | SQLite `documents` | optionale Anlagen; Berichte nutzen Medien in diesem Sprint nicht produktiv weiter |
 
+Qt-Pilotregel: `Auswählen`, `Schreiben` und `Prüfen & finalisieren` sind
+ausschließlich sichtbare lokale Navigationsrollen. `Frühere Fassungen` öffnet
+die vorhandene read-only RPV-Historie innerhalb des dritten Schritts. Die
+internen Schlüssel `evidence`, `writing`, `preview` und `revisions` bleiben
+flüchtige Routen und werden weder gespeichert noch als fachlicher Status
+interpretiert. Der Drei-Wege-Close verwendet für `Entwurf speichern` exakt den
+oben registrierten vollständigen RPD-Schreibpfad; ein fehlgeschlagener Write
+erhält Widgetzustand und Dirty-State.
+
 Die intern gegatete HTML-Berichtswerkstatt verwendet für Schüler,
 Stammgruppe, Berichtstyp, Zeitraum, Lehrkraft, Gesamttext, die vier bestehenden
 Fachtexte, bewusste Fach-/Kompetenz-/Beleg-/Diagrammauswahl,

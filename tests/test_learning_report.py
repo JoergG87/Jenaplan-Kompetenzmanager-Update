@@ -36,6 +36,7 @@ from prototypes.pdf_engine.output_models import ChartBlock, ReportOutputModel, T
 from prototypes.pdf_engine.renderer import PdfRenderer
 from src.desktop_app import shell
 from src.desktop_app.dialogs.learning_report_dialog import (
+    LearningReportCloseDialog,
     LearningReportDialog,
     LearningReportDraftSelectionDialog,
     LearningReportPeriodSelectionDialog,
@@ -218,7 +219,7 @@ class LearningReportTest(unittest.TestCase):
         self.assertIsNone(cancelled.selected_draft)
         self.assertEqual(cancelled.result(), cancelled.DialogCode.Rejected)
 
-    def test_workspace_uses_four_calm_sections_and_subject_navigation(self) -> None:
+    def test_workspace_uses_three_human_tasks_and_keeps_internal_routes(self) -> None:
         dialog = LearningReportDialog(self.preparation)
 
         self.assertEqual(len(dialog.findChildren(QStackedWidget)), 3)
@@ -245,21 +246,23 @@ class LearningReportTest(unittest.TestCase):
         )
         self.assertEqual(
             [button.accessibleName() for button in navigation_buttons],
-            ["Schreiben", "Kompetenzen & Belege", "Vorschau", "Revisionen"],
+            ["Auswählen", "Schreiben", "Prüfen & finalisieren"],
         )
         self.assertEqual(sum(button.isChecked() for button in navigation_buttons), 1)
-        evidence_button = navigation_buttons[1]
+        evidence_button = navigation_buttons[0]
         evidence_accessible = QAccessible.queryAccessibleInterface(evidence_button)
         self.assertEqual(evidence_accessible.role(), QAccessible.Role.CheckBox)
         self.assertTrue(evidence_accessible.state().checked)
         self.assertEqual(evidence_button.focusPolicy(), Qt.FocusPolicy.StrongFocus)
 
         QTest.keyClick(evidence_button, Qt.Key.Key_Right)
-        self.assertEqual(dialog.workspace_navigation.current_key(), "preview")
+        self.assertEqual(dialog.workspace_navigation.current_key(), "writing")
 
         initial_draft = dialog.report_draft_view_model()
-        for expected_index, key in enumerate(
-            ("writing", "evidence", "preview", "revisions")
+        for key, expected_index, expected_label in (
+            ("evidence", 1, "Auswählen"),
+            ("writing", 0, "Schreiben"),
+            ("preview", 2, "Prüfen & finalisieren"),
         ):
             dialog.workspace_navigation.set_current_key(key, emit=True)
             self.assertEqual(dialog.mode_stack.currentIndex(), expected_index)
@@ -270,13 +273,14 @@ class LearningReportTest(unittest.TestCase):
             active = next(button for button in navigation_buttons if button.isChecked())
             self.assertEqual(
                 active.accessibleName(),
-                ("Schreiben", "Kompetenzen & Belege", "Vorschau", "Revisionen")[
-                    expected_index
-                ],
+                expected_label,
             )
             self.assertTrue(
                 QAccessible.queryAccessibleInterface(active).state().checked
             )
+        dialog.show_workspace("revisions")
+        self.assertEqual(dialog.workspace_navigation.current_key(), "preview")
+        self.assertEqual(dialog.mode_stack.currentIndex(), 3)
         self.assertEqual(dialog.report_draft_view_model(), initial_draft)
 
     def test_new_report_groups_subjects_and_requires_a_deliberate_choice(self) -> None:
@@ -654,37 +658,126 @@ class LearningReportTest(unittest.TestCase):
         self.assertIn("noch nicht gespeicherte Änderungen", dialog.preview_status.text())
         self.assertEqual(dialog.draft_status.text(), "Ungespeicherte Änderungen")
 
-    def test_unsaved_close_actions_keep_complete_macos_button_text(self) -> None:
+    def test_preview_owns_finalization_and_secondary_revision_history(self) -> None:
         dialog = LearningReportDialog(self.preparation)
+        dialog.show_workspace("preview")
+
+        self.assertEqual(dialog.workspace_navigation.current_key(), "preview")
+        self.assertEqual(dialog.mode_stack.currentIndex(), 2)
+        self.assertEqual(dialog.history_button.text(), "Frühere Fassungen")
+        self.assertEqual(
+            dialog.check_finalization_button.text(),
+            "Finalisierung prüfen",
+        )
+
+        dialog.history_button.click()
+        self.app.processEvents()
+
+        self.assertEqual(dialog.workspace_navigation.current_key(), "preview")
+        self.assertEqual(dialog.mode_stack.currentIndex(), 3)
+        self.assertEqual(dialog.history_header.title_label.text(), "Frühere Fassungen")
+        self.assertTrue(dialog.history_header.accessibleName())
+
+    def test_report_close_dialog_has_safe_three_way_actions(self) -> None:
+        confirmation = LearningReportCloseDialog()
+        buttons = {
+            button.text(): button
+            for button in confirmation.findChildren(QPushButton)
+        }
+
+        self.assertEqual(
+            set(buttons),
+            {"Entwurf speichern", "Änderungen verwerfen", "Weiter bearbeiten"},
+        )
+        self.assertTrue(buttons["Weiter bearbeiten"].isDefault())
+        self.assertFalse(buttons["Änderungen verwerfen"].isDefault())
+        self.assertFalse(buttons["Entwurf speichern"].isDefault())
+        self.assertEqual(
+            buttons["Änderungen verwerfen"].property("buttonRole"),
+            "destructive",
+        )
+
+    def test_dirty_close_saves_discards_continues_and_preserves_failed_save(
+        self,
+    ) -> None:
+        continue_dialog = LearningReportDialog(self.preparation)
+        continue_dialog.show()
+        continue_dialog.overall_input.setPlainText("Weiter bearbeiten")
+        continue_dialog._close_choice_provider = lambda _parent: "continue"
+        continue_dialog.close_button.click()
+        self.app.processEvents()
+        self.assertTrue(continue_dialog.isVisible())
+        self.assertTrue(continue_dialog._dirty)
+
+        discard_dialog = LearningReportDialog(self.preparation)
+        discard_dialog.show()
+        discard_dialog.overall_input.setPlainText("Verwerfen")
+        discard_dialog._close_choice_provider = lambda _parent: "discard"
+        discard_dialog.close_button.click()
+        self.app.processEvents()
+        self.assertFalse(discard_dialog.isVisible())
+
+        save_dialog = LearningReportDialog(self.preparation)
+        save_dialog.show()
+        save_dialog.overall_input.setPlainText("Speichern")
+        save_dialog.save_requested.connect(
+            lambda draft: save_dialog.apply_saved_draft(
+                replace(
+                    draft,
+                    report_draft_id="RPD-CLOSE",
+                    updated_at="2026-08-12T10:00:00+00:00",
+                )
+            )
+        )
+        save_dialog._close_choice_provider = lambda _parent: "save"
+        save_dialog.close_button.click()
+        self.app.processEvents()
+        self.assertFalse(save_dialog.isVisible())
+        self.assertFalse(save_dialog._dirty)
+
+        failed_dialog = LearningReportDialog(self.preparation)
+        failed_dialog.show()
+        failed_dialog.overall_input.setPlainText("Fehler erhalten")
+        failed_dialog.save_requested.connect(
+            lambda _draft: failed_dialog.show_save_error("Testfehler")
+        )
+        failed_dialog._close_choice_provider = lambda _parent: "save"
+        failed_dialog.close_button.click()
+        self.app.processEvents()
+        self.assertTrue(failed_dialog.isVisible())
+        self.assertTrue(failed_dialog._dirty)
+        self.assertIn("Testfehler", failed_dialog.workspace_message.label.text())
+        failed_dialog._close_choice_provider = lambda _parent: "discard"
+        failed_dialog.close()
+
+    def test_escape_and_window_close_use_the_same_report_dirty_guard(self) -> None:
+        dialog = LearningReportDialog(self.preparation)
+        dialog.show()
         dialog.overall_input.setPlainText("Ungespeicherter Teststand")
-        captured: dict[str, object] = {}
+        dialog._close_choice_provider = lambda _parent: "continue"
 
-        def inspect_confirmation(message: QMessageBox) -> int:
-            buttons = {
-                button.text(): button
-                for button in message.buttons()
-                if isinstance(button, QPushButton)
-            }
-            discard = buttons["Änderungen verwerfen"]
-            keep = buttons["Weiter bearbeiten"]
-            captured.update(discard=discard, keep=keep)
-            self.assertGreaterEqual(
-                discard.minimumWidth(),
-                discard.fontMetrics().horizontalAdvance(discard.text()) + 40,
-            )
-            self.assertGreaterEqual(
-                keep.minimumWidth(),
-                keep.fontMetrics().horizontalAdvance(keep.text()) + 40,
-            )
-            self.assertEqual(keep.property("buttonRole"), "primary")
-            self.assertTrue(keep.isDefault())
-            self.assertIs(message.escapeButton(), keep)
-            return int(QMessageBox.DialogCode.Rejected)
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        self.app.processEvents()
+        self.assertTrue(dialog.isVisible())
+        self.assertTrue(dialog._dirty)
 
-        with mock.patch.object(QMessageBox, "exec", new=inspect_confirmation):
-            dialog.reject()
+        dialog._close_choice_provider = lambda _parent: "discard"
+        dialog.close()
+        self.app.processEvents()
+        self.assertFalse(dialog.isVisible())
 
-        self.assertEqual(set(captured), {"discard", "keep"})
+    def test_clean_report_closes_without_asking_for_a_decision(self) -> None:
+        dialog = LearningReportDialog(self.preparation)
+        dialog.show()
+        dialog._close_choice_provider = mock.Mock(
+            side_effect=AssertionError("clean close must not ask")
+        )
+
+        dialog.close_button.click()
+        self.app.processEvents()
+
+        self.assertFalse(dialog.isVisible())
+        dialog._close_choice_provider.assert_not_called()
 
     def test_subject_filter_preserves_selection_and_historical_visibility(self) -> None:
         dialog = LearningReportDialog(self.preparation)

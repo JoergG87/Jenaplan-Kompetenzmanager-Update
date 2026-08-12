@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import weakref
 from collections.abc import Sequence
 from datetime import date
 
 from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, Signal
-from PySide6.QtGui import QKeySequence
+from PySide6.QtGui import QCloseEvent, QKeySequence
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -31,6 +32,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from shiboken6 import isValid
 
 from src.desktop_app.theme import create_card, set_label_style
 from src.desktop_app.components import (
@@ -78,6 +80,78 @@ def _selection_label(text: str, role: str) -> QLabel:
     label.setWordWrap(True)
     set_label_style(label, role)
     return label
+
+
+class LearningReportCloseDialog(MotionDialog):
+    """Three-way decision for closing a dirty report workspace."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.choice = "continue"
+        self.setObjectName("LearningReportCloseDialog")
+        self.setWindowTitle("Ungespeicherte Änderungen")
+        self.setModal(True)
+        self.setMinimumWidth(520)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(16)
+        layout.addWidget(
+            DialogHeader(
+                "Ungespeicherte Änderungen",
+                "Lernentwicklungsbericht",
+                "Möchtest du den bearbeitbaren Entwurf vor dem Schließen speichern?",
+                icon_name="report",
+                context_role="report",
+            )
+        )
+        layout.addWidget(
+            InlineMessage(
+                "Änderungen verwerfen entfernt nur Eingaben seit dem letzten "
+                "Speichern. Der gespeicherte Entwurf bleibt erhalten.",
+                tone="warning",
+            )
+        )
+        actions = QHBoxLayout()
+        actions.addStretch(1)
+        continue_button = QPushButton("Weiter bearbeiten")
+        discard_button = QPushButton("Änderungen verwerfen")
+        save_button = QPushButton("Entwurf speichern")
+        configure_button(continue_button, "primary", "Bericht weiter bearbeiten")
+        configure_button(
+            discard_button,
+            "destructive",
+            "Ungespeicherte Änderungen verwerfen",
+        )
+        configure_button(
+            save_button,
+            "secondary",
+            "Berichtsentwurf speichern und schließen",
+        )
+        continue_button.setDefault(True)
+        continue_button.setAutoDefault(True)
+        discard_button.setAutoDefault(False)
+        save_button.setAutoDefault(False)
+        continue_button.clicked.connect(self.reject)
+        discard_button.clicked.connect(lambda: self._finish("discard"))
+        save_button.clicked.connect(lambda: self._finish("save"))
+        actions.addWidget(continue_button)
+        actions.addWidget(discard_button)
+        actions.addWidget(save_button)
+        layout.addLayout(actions)
+        continue_button.setFocus()
+
+    def _finish(self, choice: str) -> None:
+        self.choice = choice
+        self.accept()
+
+    @classmethod
+    def ask(cls, parent: QWidget) -> str:
+        dialog = cls(parent)
+        return (
+            dialog.choice
+            if dialog.exec() == QDialog.DialogCode.Accepted
+            else "continue"
+        )
 
 
 class LearningReportDraftSelectionDialog(MotionDialog):
@@ -333,6 +407,8 @@ class LearningReportDialog(QDialog):
         self._preview_timer.timeout.connect(self.update_preview)
         self._ui_ready = False
         self._dirty = False
+        self._suppress_workspace_focus = False
+        self._close_choice_provider = LearningReportCloseDialog.ask
 
         self.setWindowTitle(f"Lernentwicklungsbericht · {preparation.student_name}")
         self.setProperty("dialogContext", "report")
@@ -356,13 +432,14 @@ class LearningReportDialog(QDialog):
         navigation_layout.setContentsMargins(24, 10, 24, 10)
         self.workspace_navigation = SegmentedControl(
             (
+                ("evidence", "Auswählen"),
                 ("writing", "Schreiben"),
-                ("evidence", "Kompetenzen && Belege"),
-                ("preview", "Vorschau"),
-                ("revisions", "Revisionen"),
+                ("preview", "Prüfen && finalisieren"),
             )
         )
-        self.workspace_navigation.setAccessibleName("Bereiche der Berichtswerkstatt")
+        self.workspace_navigation.setAccessibleName(
+            "Arbeitsschritte der Berichtswerkstatt"
+        )
         self.workspace_navigation.selection_changed.connect(self._set_workspace)
         navigation_layout.addWidget(self.workspace_navigation)
         navigation_layout.addStretch(1)
@@ -391,9 +468,9 @@ class LearningReportDialog(QDialog):
             page.setAccessibleName(
                 {
                     "writing": "Schreiben",
-                    "evidence": "Kompetenzen und Belege",
-                    "preview": "Vorschau",
-                    "revisions": "Revisionen",
+                    "evidence": "Auswählen",
+                    "preview": "Prüfen und finalisieren",
+                    "revisions": "Frühere Fassungen",
                 }[key]
             )
             page_layout = QVBoxLayout(page)
@@ -419,7 +496,7 @@ class LearningReportDialog(QDialog):
         self.page_header = DialogHeader(
             f"Lernentwicklungsbericht · {self.preparation.student_name}",
             "Berichtswerkstatt · bearbeitbarer Entwurf",
-            "Schreiben, Belege prüfen, Vorschau lesen und Revisionen nachvollziehen.",
+            "Auswählen, schreiben und den Bericht bewusst prüfen und finalisieren.",
             icon_name="report",
             context_role="report",
         )
@@ -444,7 +521,9 @@ class LearningReportDialog(QDialog):
 
     def _set_mode(self, index: int) -> None:
         key = ("writing", "evidence", "preview", "revisions")[index]
-        self.workspace_navigation.set_current_key(key)
+        self.workspace_navigation.set_current_key(
+            self._visible_step_for_workspace(key)
+        )
         self._set_workspace(key)
 
     def _set_workspace(self, key: str) -> None:
@@ -457,6 +536,33 @@ class LearningReportDialog(QDialog):
             self.update_preview()
         if index == 3 and self._revision_stale:
             self._render_revision_context()
+        if not self._suppress_workspace_focus:
+            self._focus_workspace(key)
+
+    @staticmethod
+    def _visible_step_for_workspace(key: str) -> str:
+        return "preview" if key == "revisions" else key
+
+    def _focus_workspace(self, key: str) -> None:
+        """Move focus into the selected task without changing draft state."""
+        target: QWidget | None = None
+        if key == "writing" and hasattr(self, "navigation_group"):
+            target = self.navigation_group.checkedButton()
+        elif key == "evidence" and hasattr(self, "evidence_navigation_group"):
+            target = self.evidence_navigation_group.checkedButton()
+        elif key == "preview" and hasattr(self, "preview_heading"):
+            target = self.preview_heading
+        elif key == "revisions":
+            target = getattr(self, "history_header", None) or self.finalize_button
+        if target is not None:
+            target_ref = weakref.ref(target)
+
+            def focus_if_valid() -> None:
+                focus_target = target_ref()
+                if focus_target is not None and isValid(focus_target):
+                    focus_target.setFocus()
+
+            QTimer.singleShot(0, focus_if_valid)
 
     def _activate_workspace_page(self, key: str) -> None:
         active_page = self.workspace_pages[key]
@@ -562,7 +668,7 @@ class LearningReportDialog(QDialog):
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(18, 24, 18, 18)
         sidebar_layout.setSpacing(5)
-        sidebar_layout.addWidget(self._eyebrow("FÄCHER"))
+        sidebar_layout.addWidget(self._eyebrow("FÄCHERAUSWAHL"))
         self.evidence_navigation_group = QButtonGroup(self)
         self.evidence_navigation_group.setExclusive(True)
         self.evidence_stack = QStackedWidget()
@@ -631,12 +737,13 @@ class LearningReportDialog(QDialog):
             lambda: self.show_workspace("writing")
         )
         sidebar_layout.addWidget(self.continue_to_writing_button)
-        sidebar_layout.addWidget(
-            InlineMessage(
-                "Auswahl ist immer bewusst. Historische Bezüge bleiben lesbar, werden aber nicht neu aktiviert.",
-                tone="info",
-            )
+        selection_note = QLabel(
+            "Die Auswahl bleibt bewusst. Historische Bezüge sind lesbar, "
+            "werden aber nicht neu aktiviert."
         )
+        selection_note.setWordWrap(True)
+        set_label_style(selection_note, "subtle")
+        sidebar_layout.addWidget(selection_note)
         layout.addWidget(sidebar)
         layout.addWidget(self.evidence_stack, 1)
         if self.preparation.subjects:
@@ -723,10 +830,14 @@ class LearningReportDialog(QDialog):
         """Open one existing workspace section without changing draft state."""
         if key not in {"writing", "evidence", "preview", "revisions"}:
             return
-        self.workspace_navigation.set_current_key(key)
+        self.workspace_navigation.set_current_key(
+            self._visible_step_for_workspace(key)
+        )
         self._set_workspace(key)
-        if key == "revisions" and self.finalize_button is not None:
-            QTimer.singleShot(0, self.finalize_button.setFocus)
+
+    def _show_revision_history(self) -> None:
+        """Open the existing read-only RPV history as a secondary task."""
+        self.show_workspace("revisions")
 
     def focus_evidence_subject(self, subject_id: str) -> bool:
         """Focus the existing competency area without selecting a competency."""
@@ -737,10 +848,12 @@ class LearningReportDialog(QDialog):
             return False
         index = subject_ids.index(subject_id)
         self._pending_evidence_subject_index = index
+        self._suppress_workspace_focus = True
         try:
             self.show_workspace("evidence")
         finally:
             self._pending_evidence_subject_index = None
+            self._suppress_workspace_focus = False
         button = self._evidence_subject_buttons[subject_id]
         button.setChecked(True)
         self._set_evidence_section(index)
@@ -770,13 +883,22 @@ class LearningReportDialog(QDialog):
             self.draft_status.setToolTip(self._saved_draft.report_draft_id)
         set_label_style(self.draft_status, "muted")
         layout.addWidget(self.draft_status, 1)
-        close = QPushButton("Schließen")
-        configure_button(close, "quiet", "Berichtswerkstatt schließen")
-        close.clicked.connect(self.reject)
-        layout.addWidget(close)
-        preview = QPushButton("Vorschau")
-        configure_button(preview, "secondary", "Vorschau des aktuellen Entwurfs öffnen")
-        preview.clicked.connect(lambda: self._set_mode(2))
+        self.close_button = QPushButton("Schließen")
+        self.close_button.setObjectName("LearningReportCloseButton")
+        configure_button(
+            self.close_button,
+            "quiet",
+            "Berichtswerkstatt sicher schließen",
+        )
+        self.close_button.clicked.connect(self.reject)
+        layout.addWidget(self.close_button)
+        preview = QPushButton("Prüfen & finalisieren")
+        configure_button(
+            preview,
+            "secondary",
+            "Vorschau öffnen und Berichtfinalisierung prüfen",
+        )
+        preview.clicked.connect(lambda: self.show_workspace("preview"))
         layout.addWidget(preview)
         self.save_button = QPushButton("Entwurf speichern")
         self.save_button.setObjectName("LearningReportSaveButton")
@@ -1099,13 +1221,25 @@ class LearningReportDialog(QDialog):
 
     def _closing_editor(self) -> QScrollArea:
         content, layout = self._page_canvas()
-        layout.addLayout(
+        heading_row = QHBoxLayout()
+        heading_row.addLayout(
             self._page_heading(
-                "FINALISIERUNG UND HISTORIE",
-                "Revisionen prüfen und bewusst finalisieren",
-                "Der Entwurf bleibt bearbeitbar. Finale Revisionen sind unveränderliche historische Fassungen.",
-            )
+                "PRÜFEN UND FINALISIEREN",
+                "Finalisierung und frühere Fassungen",
+                "Der Entwurf bleibt bearbeitbar. Finale Revisionen sind "
+                "unveränderliche historische Fassungen.",
+            ),
+            1,
         )
+        back_to_preview = QPushButton("← Zur Vorschau")
+        configure_button(
+            back_to_preview,
+            "quiet",
+            "Zur Vorschau des aktuellen Berichtsentwurfs zurückkehren",
+        )
+        back_to_preview.clicked.connect(lambda: self.show_workspace("preview"))
+        heading_row.addWidget(back_to_preview, 0, Qt.AlignmentFlag.AlignTop)
+        layout.addLayout(heading_row)
         self.finalization_message = InlineMessage()
         layout.addWidget(self.finalization_message)
         self.revision_context = QWidget()
@@ -1205,11 +1339,15 @@ class LearningReportDialog(QDialog):
         card_layout.addLayout(actions)
         self.revision_context_layout.addWidget(card)
 
-        history_header = SectionHeader(
-            "Revisionsprotokoll",
+        self.history_header = SectionHeader(
+            "Frühere Fassungen",
             "Historische Revisionen sind schreibgeschützt und bleiben unverändert.",
         )
-        self.revision_context_layout.addWidget(history_header)
+        self.history_header.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.history_header.setAccessibleName(
+            "Frühere Fassungen des Lernentwicklungsberichts"
+        )
+        self.revision_context_layout.addWidget(self.history_header)
         if not status.history:
             self.revision_context_layout.addWidget(
                 EmptyState(
@@ -1262,24 +1400,55 @@ class LearningReportDialog(QDialog):
         layout.setSpacing(0)
         tools = QFrame()
         tools.setObjectName("LearningReportSidebar")
-        tools.setFixedHeight(68)
-        tools_layout = QHBoxLayout(tools)
+        tools_layout = QVBoxLayout(tools)
         tools_layout.setContentsMargins(28, 12, 28, 12)
+        tools_layout.setSpacing(8)
+        context_row = QHBoxLayout()
         title = QVBoxLayout()
         title.setSpacing(1)
-        title.addWidget(self._eyebrow("DRAFT-VORSCHAU"))
-        heading = QLabel("Vorschau des aktuellen Entwurfs")
-        set_label_style(heading, "card_title")
-        title.addWidget(heading)
-        tools_layout.addLayout(title)
-        tools_layout.addStretch(1)
+        title.addWidget(self._eyebrow("PRÜFEN UND FINALISIEREN"))
+        self.preview_heading = QLabel("Vorschau des aktuellen Entwurfs")
+        self.preview_heading.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.preview_heading.setAccessibleName(
+            "Prüfen und finalisieren, Vorschau des aktuellen Entwurfs"
+        )
+        set_label_style(self.preview_heading, "card_title")
+        title.addWidget(self.preview_heading)
+        context_row.addLayout(title)
+        context_row.addStretch(1)
         self.preview_status = self._small_label("Vorschau des aktuellen Entwurfs")
         self.preview_status.setAccessibleName("Status der Entwurfsvorschau")
-        tools_layout.addWidget(self.preview_status)
-        back = QPushButton("←  Weiter bearbeiten")
+        self.preview_status.setWordWrap(True)
+        context_row.addWidget(self.preview_status)
+        tools_layout.addLayout(context_row)
+        actions = QHBoxLayout()
+        actions.addStretch(1)
+        back = QPushButton("← Weiter schreiben")
         configure_button(back, "quiet", "Zum Schreibbereich zurückkehren")
-        back.clicked.connect(lambda: self._set_mode(0))
-        tools_layout.addWidget(back)
+        back.clicked.connect(lambda: self.show_workspace("writing"))
+        actions.addWidget(back)
+        self.check_finalization_button = QPushButton("Finalisierung prüfen")
+        self.check_finalization_button.setObjectName(
+            "LearningReportCheckFinalizationButton"
+        )
+        configure_button(
+            self.check_finalization_button,
+            "secondary",
+            "Gespeicherten Entwurf prüfen und Finalisierung vorbereiten",
+        )
+        self.check_finalization_button.clicked.connect(
+            lambda: self.show_workspace("revisions")
+        )
+        actions.addWidget(self.check_finalization_button)
+        self.history_button = QPushButton("Frühere Fassungen")
+        self.history_button.setObjectName("LearningReportHistoryButton")
+        configure_button(
+            self.history_button,
+            "quiet",
+            "Unveränderliche frühere Berichtfassungen öffnen",
+        )
+        self.history_button.clicked.connect(self._show_revision_history)
+        actions.addWidget(self.history_button)
         self.pdf_button = QPushButton("Entwurfs-PDF exportieren")
         configure_button(
             self.pdf_button,
@@ -1287,7 +1456,8 @@ class LearningReportDialog(QDialog):
             "PDF aus der Vorschau des aktuellen Entwurfs exportieren",
         )
         self.pdf_button.clicked.connect(self._request_pdf)
-        tools_layout.addWidget(self.pdf_button)
+        actions.addWidget(self.pdf_button)
+        tools_layout.addLayout(actions)
         layout.addWidget(tools)
         scroll = QScrollArea()
         scroll.setObjectName("LearningReportPreviewScroll")
@@ -1909,37 +2079,34 @@ class LearningReportDialog(QDialog):
             return
         self.save_requested.emit(self.report_draft_view_model())
 
+    def show_save_error(self, message: str) -> None:
+        """Keep the dirty workspace open after a failed existing save path."""
+        self.workspace_message.set_message(
+            f"Der Berichtsentwurf konnte nicht gespeichert werden: {message}",
+            tone="error",
+        )
+        self.workspace_message.setFocus()
+
     def reject(self) -> None:
+        if self._confirm_close():
+            super().reject()
+
+    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
+        if self._confirm_close():
+            event.accept()
+        else:
+            event.ignore()
+
+    def _confirm_close(self) -> bool:
         if not self._dirty:
-            super().reject()
-            return
-        confirmation = QMessageBox(self)
-        confirmation.setIcon(QMessageBox.Icon.Warning)
-        confirmation.setWindowTitle("Ungespeicherte Änderungen")
-        confirmation.setText("In der Berichtswerkstatt gibt es ungespeicherte Änderungen.")
-        confirmation.setInformativeText(
-            "Weiter bearbeiten behält den aktuellen Arbeitsstand geöffnet. "
-            "Änderungen verwerfen schließt die Berichtswerkstatt ohne Speichern."
-        )
-        continue_button = confirmation.addButton(
-            "Weiter bearbeiten",
-            QMessageBox.ButtonRole.RejectRole,
-        )
-        discard_button = confirmation.addButton(
-            "Änderungen verwerfen",
-            QMessageBox.ButtonRole.DestructiveRole,
-        )
-        configure_button(continue_button, "primary", "Bericht weiter bearbeiten")
-        configure_button(discard_button, "destructive", "Änderungen verwerfen")
-        confirmation.setDefaultButton(continue_button)
-        confirmation.setEscapeButton(continue_button)
-        stabilize_message_box_buttons(
-            confirmation,
-            (discard_button, continue_button),
-        )
-        confirmation.exec()
-        if confirmation.clickedButton() is discard_button:
-            super().reject()
+            return True
+        choice = self._close_choice_provider(self)
+        if choice == "discard":
+            return True
+        if choice == "save":
+            self._request_save()
+            return not self._dirty
+        return False
 
     def _request_pdf(self) -> None:
         if not self.selected_subject_ids:

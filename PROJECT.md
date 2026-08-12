@@ -46,6 +46,29 @@ Stand. Ein Clean-Build, manuelle macOS-/Keychain-/Restore-/UX-Abnahme,
 Developer ID, Notarisierung, Pilot-GO, Verteilung und Release sind nicht durch
 diese Dokumentation freigegeben.
 
+## Qt-Bericht-Grundworkflow für den Pilot
+
+Die Qt-Berichtswerkstatt ordnet den vorhandenen RPD-Arbeitsstand sichtbar in
+die drei menschlichen Aufgaben `Auswählen`, `Schreiben` und
+`Prüfen & finalisieren`. Ein neuer Entwurf beginnt weiterhin bei der bewussten
+Fach-, Kompetenz- und Belegauswahl; ein vorhandener Entwurf öffnet ohne neue
+persistierte Positionsinformation im Schreibbereich. Auswahl und Schreiben
+bleiben jederzeit direkt wechselbar und bilden keinen gesperrten Assistenten.
+
+Die vollständige Draftvorschau und die bestehende Finalisierung gehören zum
+dritten Schritt. Unveränderliche RPV-Revisionen bleiben als `Frühere
+Fassungen` sekundäre read-only Historie erreichbar. Die internen Qt-Routen
+`writing`, `evidence`, `preview` und `revisions` bleiben für vorhandene
+Deep-Links erhalten. Der sichtbare Umbau führt weder Datenquelle, Persistenz,
+Schemaänderung noch neue Berichtsemantik ein.
+
+Ungespeicherte Qt-Berichtsänderungen verwenden bei sichtbarem Schließen,
+Escape und Fensterschließen denselben Drei-Wege-Vertrag: `Entwurf speichern`,
+`Änderungen verwerfen` oder `Weiter bearbeiten`. Geschlossen wird nach der
+Speicherwahl erst, wenn der vorhandene RPD-Speicherpfad den vollständigen Draft
+erfolgreich bestätigt hat. Ein Speicherfehler lässt Workspace und Dirty-State
+unverändert geöffnet.
+
 ## Intern gegatete HTML-Berichtswerkstatt
 
 Die produktive Berichtswerkstatt kann intern mit `JKM_REPORT_UI=html` über

@@ -535,12 +535,21 @@ class ReportRevisionProductTest(unittest.TestCase):
             for width, height in ((1400, 900), (1280, 800), (1180, 760)):
                 workspace.resize(width, height)
                 workspace.show()
+                workspace.show_workspace("preview")
                 final_view.resize(width, height)
                 final_view.show()
                 self.app.processEvents()
                 self.assertTrue(workspace.isVisible())
                 self.assertTrue(final_view.isVisible())
-                self.assertGreater(workspace.width(), 0)
+                self.assertEqual(workspace.width(), width)
+                self.assertLessEqual(
+                    workspace.workspace_navigation.geometry().right(),
+                    workspace.width(),
+                )
+                self.assertLessEqual(
+                    workspace.history_button.geometry().right(),
+                    workspace.history_button.parentWidget().width(),
+                )
                 self.assertGreater(final_view.height(), 0)
         finally:
             workspace.close()
@@ -618,11 +627,12 @@ class ReportRevisionProductTest(unittest.TestCase):
         dialog.show_workspace("revisions")
         buttons = dialog.findChildren(QPushButton)
         finalization_buttons = [
-            button for button in buttons if "finalisieren" in button.text().lower()
+            button for button in buttons if button.text() == "Bericht finalisieren"
         ]
 
         self.assertEqual(dialog.save_button.accessibleName(), "Berichtsentwurf speichern")
         self.assertEqual(len(finalization_buttons), 1)
+        self.assertIs(finalization_buttons[0], dialog.finalize_button)
         self.assertTrue(dialog.workspace_navigation.accessibleName())
 
     def test_qt_report_dialog_does_not_reference_sqlite_or_repositories(self) -> None:

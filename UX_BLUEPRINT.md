@@ -276,15 +276,41 @@ Produktregel Sprint 0.2C.1:
 
 ## 13. Berichtswerkstatt - Finalisierung und Revisionen
 
-Die Berichtswerkstatt verwendet eine lokale Segmentnavigation mit `Schreiben`, `Kompetenzen & Belege`, `Vorschau` und `Revisionen`. Sie ist dem Kindkontext untergeordnet, per Pfeiltasten bedienbar und keine zweite globale Navigation. Gesamttext und Fachtexte bleiben im Schreibworkspace; bewusste Kompetenz-, Beobachtungs- und Diagrammauswahl liegt getrennt im Belegworkspace. Die Zustands- und Scrollhaltung der internen Stacks bleibt bei Bereichswechseln erhalten.
+Die Berichtswerkstatt verwendet für den Pilot eine lokale Segmentnavigation mit
+`Auswählen`, `Schreiben` und `Prüfen & finalisieren`. Sie ist dem Kindkontext
+untergeordnet, per Pfeiltasten bedienbar und keine zweite globale Navigation.
+Ein neuer Entwurf beginnt bei `Auswählen`, ein vorhandener Entwurf bei
+`Schreiben`; beide Bereiche bleiben jederzeit direkt erreichbar und bilden
+keinen starren Assistenten. Gesamttext und Fachtexte bleiben im
+Schreibworkspace, die bewusste Kompetenz-, Beobachtungs- und Diagrammauswahl im
+Auswahlworkspace. Die internen Routen und die Zustands- und Scrollhaltung der
+vorhandenen Stacks bleiben bei Bereichswechseln erhalten.
 
 Der kompakte Kopf zeigt Kind, Stammgruppe, Berichtstyp, Zeitraum, verantwortliche Lehrkraft, `Entwurf`, `Finalisiert · Revision X` oder `Entwurf geändert` sowie den letzten Finalisierungskontext. Technische `RPD`-/`RPV`-IDs und Snapshot-Hashes dominieren nicht. Eine persistente Aktionsleiste fuehrt `Entwurf speichern` als einzige primaere Draftaktion; Vorschau und Schliessen bleiben sekundaer. Finalisieren steht ausschliesslich im fachlich getrennten Revisionsbereich.
 
-Die Vorschau ist eine dokumentartige `Vorschau des aktuellen Entwurfs`. Sie benennt, ob die dargestellten Widgetinhalte dem gespeicherten Draft entsprechen oder noch ungespeicherte Aenderungen enthalten. Der vorhandene PDF-Weg wird ausschliesslich als Entwurfs-PDF bezeichnet und nicht mit einer finalen Revision verwechselt.
+Die Vorschau ist die zentrale dokumentartige Prüffläche innerhalb von
+`Prüfen & finalisieren`. Sie benennt, ob die dargestellten Widgetinhalte dem
+gespeicherten Draft entsprechen oder noch ungespeicherte Aenderungen enthalten.
+Von dort bleiben die vorhandene Finalisierung und `Frühere Fassungen`
+erreichbar. Der vorhandene PDF-Weg wird ausschliesslich als Entwurfs-PDF
+bezeichnet und nicht mit einer finalen Revision verwechselt.
 
 Vor jeder Finalisierung wird der aktuelle Draft gespeichert und zentral validiert. Die Bestaetigung zeigt Kind, Berichtstyp, Zeitraum, ausgewaehlte Faecher sowie Kompetenz- und Beobachtungsanzahl. Der Anzeigename der verantwortlichen Lehrkraft ist verpflichtend. Eine ruhige Warnung erklaert die Unveraenderlichkeit und die Korrektur als Folgerevision; eine ausdrueckliche Bestaetigung ist erforderlich.
 
-Das Revisionsprotokoll ist kompakt, neueste zuerst und vollstaendig lesend. Es bietet je Revision ausschliesslich `Öffnen`; Bearbeiten, Loeschen, Entsperren, Wiederherstellen und Ueberschreiben existieren nicht. Die finale Ansicht zeigt als schreibgeschuetztes historisches Dokument Kontext, Texte, Kompetenzen, Beobachtungsbelege und gespeicherte Diagrammdaten ohne editierbar wirkende Felder. Sie laedt keine aktuellen Stammdaten oder operativen Fachinhalte nach und bietet ohne revisionsgebundenes PDF-Artefakt keine PDF-Aktion.
+Das sekundär als `Frühere Fassungen` erreichbare Revisionsprotokoll ist
+kompakt, neueste zuerst und vollstaendig lesend. Es bietet je Revision
+ausschliesslich `Öffnen`; Bearbeiten, Loeschen, Entsperren, Wiederherstellen und
+Ueberschreiben existieren nicht. Die finale Ansicht zeigt als
+schreibgeschuetztes historisches Dokument Kontext, Texte, Kompetenzen,
+Beobachtungsbelege und gespeicherte Diagrammdaten ohne editierbar wirkende
+Felder. Sie laedt keine aktuellen Stammdaten oder operativen Fachinhalte nach
+und bietet ohne revisionsgebundenes PDF-Artefakt keine PDF-Aktion.
+
+Ungespeicherte Änderungen verwenden über sichtbares Schließen, Escape und
+Fensterschließen denselben Drei-Wege-Dialog `Entwurf speichern`, `Änderungen
+verwerfen`, `Weiter bearbeiten`. Weiterbearbeiten ist Standard- und
+Escape-Aktion; Verwerfen ist niemals Default. Nach der Speicherwahl schließt
+die Werkstatt erst nach bestätigt erfolgreichem RPD-Speichern.
 
 ## 14. Lernentwicklungsgespraech - Sechs-Phasen-Workspace
 
