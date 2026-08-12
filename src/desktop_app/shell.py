@@ -1902,6 +1902,11 @@ class AppShell(QMainWindow):
             retained_competency_ids=(
                 initial_draft.competency_ids if initial_draft is not None else ()
             ),
+            retained_subject_ids=(
+                initial_draft.selected_subject_ids
+                if initial_draft is not None
+                else ()
+            ),
         )
         if preparation is None:
             self.status_label.setText("Schülerprofil wurde nicht gefunden.")

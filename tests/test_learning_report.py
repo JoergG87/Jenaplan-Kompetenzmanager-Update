@@ -6,6 +6,7 @@ import os
 import tempfile
 import unittest
 import inspect
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 from unittest import mock
@@ -205,14 +206,21 @@ class LearningReportTest(unittest.TestCase):
     def test_workspace_uses_four_calm_sections_and_subject_navigation(self) -> None:
         dialog = LearningReportDialog(self.preparation)
 
-        self.assertEqual(len(dialog.findChildren(QStackedWidget)), 2)
+        self.assertEqual(len(dialog.findChildren(QStackedWidget)), 3)
         self.assertEqual(
             {key for key, built in dialog.workspace_built.items() if built},
-            {"writing"},
+            {"writing", "evidence"},
         )
+        self.assertTrue(dialog.evidence_subject_built["german"])
+        self.assertFalse(dialog.evidence_subject_built["math"])
         self.assertFalse(any(dialog.editor_subject_built.values()))
         self.assertIsInstance(dialog.workspace_navigation, SegmentedControl)
-        self.assertEqual(dialog.workspace_navigation.current_key(), "writing")
+        self.assertEqual(dialog.workspace_navigation.current_key(), "evidence")
+        self.assertEqual(
+            dialog.evidence_selection_summary.text(),
+            "Noch kein Fach ausgewählt",
+        )
+        self.assertFalse(dialog.continue_to_writing_button.isEnabled())
         self.assertEqual(
             [button.text() for button in dialog.navigation_group.buttons()],
             ["Gesamttext", "Deutsch", "Mathematik"],
@@ -225,14 +233,14 @@ class LearningReportTest(unittest.TestCase):
             ["Schreiben", "Kompetenzen & Belege", "Vorschau", "Revisionen"],
         )
         self.assertEqual(sum(button.isChecked() for button in navigation_buttons), 1)
-        writing_button = navigation_buttons[0]
-        writing_accessible = QAccessible.queryAccessibleInterface(writing_button)
-        self.assertEqual(writing_accessible.role(), QAccessible.Role.CheckBox)
-        self.assertTrue(writing_accessible.state().checked)
-        self.assertEqual(writing_button.focusPolicy(), Qt.FocusPolicy.StrongFocus)
+        evidence_button = navigation_buttons[1]
+        evidence_accessible = QAccessible.queryAccessibleInterface(evidence_button)
+        self.assertEqual(evidence_accessible.role(), QAccessible.Role.CheckBox)
+        self.assertTrue(evidence_accessible.state().checked)
+        self.assertEqual(evidence_button.focusPolicy(), Qt.FocusPolicy.StrongFocus)
 
-        QTest.keyClick(writing_button, Qt.Key.Key_Right)
-        self.assertEqual(dialog.workspace_navigation.current_key(), "evidence")
+        QTest.keyClick(evidence_button, Qt.Key.Key_Right)
+        self.assertEqual(dialog.workspace_navigation.current_key(), "preview")
 
         initial_draft = dialog.report_draft_view_model()
         for expected_index, key in enumerate(
@@ -256,8 +264,107 @@ class LearningReportTest(unittest.TestCase):
             )
         self.assertEqual(dialog.report_draft_view_model(), initial_draft)
 
-    def test_lazy_workspaces_and_subjects_build_once_and_reuse_widgets(self) -> None:
+    def test_new_report_groups_subjects_and_requires_a_deliberate_choice(self) -> None:
+        preparation = replace(
+            self.preparation,
+            subjects=(self.preparation.subjects[1], self.preparation.subjects[0]),
+            primary_subject_ids=("math",),
+        )
+        dialog = LearningReportDialog(preparation)
+
+        group_labels = [
+            label.text()
+            for label in dialog.findChildren(
+                QLabel,
+                "LearningReportSubjectGroupLabel",
+            )
+        ]
+        self.assertEqual(group_labels, ["FÄCHER DES KINDES", "WEITERE FÄCHER"])
+        self.assertEqual(dialog.workspace_navigation.current_key(), "evidence")
+        self.assertFalse(dialog.continue_to_writing_button.isEnabled())
+
+        dialog.subject_widgets["math"]["include"].setChecked(True)
+
+        self.assertEqual(
+            dialog.evidence_selection_summary.text(),
+            "Ausgewählt: Mathematik",
+        )
+        self.assertEqual(
+            dialog.selected_subject_context.text(),
+            "Ausgewählte Berichtsfächer: Mathematik",
+        )
+        self.assertTrue(dialog.continue_to_writing_button.isEnabled())
+        dialog.continue_to_writing_button.click()
+        self.assertEqual(dialog.workspace_navigation.current_key(), "writing")
+        self.assertTrue(dialog.selected_subject_context.isVisibleTo(dialog))
+
+    def test_preview_overview_contains_only_selected_subjects(self) -> None:
         dialog = LearningReportDialog(self.preparation)
+        dialog.show_workspace("evidence")
+        dialog._set_evidence_section(1)
+        dialog.subject_widgets["math"]["include"].setChecked(True)
+
+        overview = dialog._overview_preview_page()
+        labels = [label.text() for label in overview.findChildren(QLabel)]
+
+        self.assertIn("Mathematik", labels)
+        self.assertNotIn("Deutsch", labels)
+
+    def test_retained_subject_without_competencies_round_trips_as_saved_section(
+        self,
+    ) -> None:
+        retained_subject = LearningReportSubjectViewModel(
+            "selbst_sozialkompetenz",
+            "Selbst- und Sozialkompetenz",
+            (),
+            (),
+        )
+        preparation = LearningReportPreparationViewModel(
+            self.preparation.student_id,
+            self.preparation.student_name,
+            self.preparation.group_name,
+            (retained_subject,),
+            retained_subject_ids=(retained_subject.subject_id,),
+        )
+        initial = LearningReportDraftViewModel(
+            student_id=self.preparation.student_id,
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            subjects=(
+                LearningReportSubjectDraftViewModel(
+                    retained_subject.subject_id,
+                    "Gespeicherte Stärke.",
+                    "Gespeicherte Entwicklung.",
+                    "",
+                    "Gespeichertes Ziel.",
+                ),
+            ),
+            report_draft_id="RPD-RETAINED",
+        )
+
+        dialog = LearningReportDialog(preparation, initial_draft=initial)
+        dialog.show_workspace("evidence")
+        group_labels = [
+            label.text()
+            for label in dialog.findChildren(
+                QLabel,
+                "LearningReportSubjectGroupLabel",
+            )
+        ]
+
+        self.assertEqual(group_labels, ["GESPEICHERTE FACHABSCHNITTE"])
+        self.assertEqual(dialog.report_draft_view_model(), initial)
+
+    def test_lazy_workspaces_and_subjects_build_once_and_reuse_widgets(self) -> None:
+        initial = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            report_draft_id="RPD-LAZY",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+
+        self.assertEqual(dialog.workspace_navigation.current_key(), "writing")
 
         for key in ("evidence", "preview", "revisions"):
             self.assertEqual(
@@ -331,7 +438,13 @@ class LearningReportTest(unittest.TestCase):
         self.assertFalse(dialog.workspace_built["preview"])
 
     def test_period_change_does_not_build_evidence_before_first_activation(self) -> None:
-        dialog = LearningReportDialog(self.preparation)
+        initial = LearningReportDraftViewModel(
+            student_id="STU-000001",
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            report_draft_id="RPD-PERIOD",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
 
         dialog.period_start.setDate(QDate(2026, 2, 1))
         self.app.processEvents()

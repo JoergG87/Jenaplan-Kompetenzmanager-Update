@@ -1901,6 +1901,7 @@ class StudentDesktopAdapter:
         *,
         period_end: date,
         retained_competency_ids: tuple[str, ...] = (),
+        retained_subject_ids: tuple[str, ...] = (),
     ) -> LearningReportPreparationViewModel | None:
         """Prepare a transient report selection from the canonical status projection."""
         batch = SQLiteStudentDocumentationProjectionRepository(
@@ -1924,6 +1925,36 @@ class StudentDesktopAdapter:
             batch,
             student_id,
         )
+        subject_projection = (
+            self._student_documentation_subject_projection_from_batch(
+                batch,
+                student_id,
+                student_is_read_only=True,
+            )
+        )
+        catalog_subject_names: dict[str, str] = {}
+        for competency in batch.competencies:
+            catalog_subject_names.setdefault(
+                competency.subject_id,
+                competency.subject_name,
+            )
+        retained_competency_id_set = set(retained_competency_ids)
+        retained_competency_subject_ids = tuple(
+            dict.fromkeys(
+                str(getattr(status, "subject_id", ""))
+                for status in statuses
+                if str(getattr(status, "competency_id", ""))
+                in retained_competency_id_set
+            )
+        )
+        retained_report_subject_ids = tuple(
+            dict.fromkeys(
+                (
+                    *retained_subject_ids,
+                    *retained_competency_subject_ids,
+                )
+            )
+        )
         source = LearningReportApplicationService(
             lambda _student_id, _reference_date: student,
             lambda _student_id: statuses,
@@ -1935,6 +1966,28 @@ class StudentDesktopAdapter:
             source.student,
             source.competency_statuses,
             source.observations,
+            primary_subject_ids=tuple(
+                subject.subject_id
+                for subject in subject_projection.available_subjects
+                if subject.subject_id
+                in subject_projection.selected_subject_ids
+            ),
+            available_subjects=tuple(
+                (subject.subject_id, subject.label)
+                for subject in subject_projection.available_subjects
+            ),
+            retained_subjects=tuple(
+                (
+                    subject_id,
+                    catalog_subject_names.get(subject_id, subject_id),
+                )
+                for subject_id in retained_report_subject_ids
+                if subject_id
+                not in {
+                    subject.subject_id
+                    for subject in subject_projection.available_subjects
+                }
+            ),
         )
 
     def report_overview_for_student(
@@ -2023,6 +2076,7 @@ class StudentDesktopAdapter:
                     student_id,
                     period_end=selected_report.period_end,
                     retained_competency_ids=selected_report.competency_ids,
+                    retained_subject_ids=selected_report.selected_subject_ids,
                 )
             except Exception:
                 phase2_preparation = None

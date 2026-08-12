@@ -2099,6 +2099,16 @@ Wichtige Regeln:
 - Beobachtungsdatum, Kontext und Notiz werden nicht kopiert.
 - Fachtexte stammen ausschliesslich aus manueller Eingabe durch Laura.
 - Eine Zeile in `report_draft_subjects` repraesentiert ein bewusst ausgewaehltes Fach, auch wenn alle vier Texte noch leer sind.
+- Die aktive individuelle Unterrichtsfachprojektion ordnet nur das Angebot
+  eines neuen Qt-Entwurfs. Sie schreibt keine Draftauswahl. Überfachliche
+  Domänen gehören nicht zum regulären Berichtsfächerangebot.
+- Für Berichtsvorbereitungen liefert derselbe historische Read-Snapshot die
+  über `period_end` aufgelöste `school_year_id` und `school_year_label` an die
+  bestehende individuelle Fachkonfiguration. Es gibt keinen separaten
+  Current-Year- oder Systemdatums-Fallback.
+- Beim Laden bleibt jede explizite `report_draft_subjects`-Zeile als
+  Bestandsabschnitt auflösbar, auch wenn das Fach nicht mehr aktiv ist oder
+  keine Kompetenzreferenz enthält. Das ist Retention, keine neue Fachauswahl.
 - Der Berichtsentwurf liest Kompetenzstatus weiterhin ausschliesslich aus der kanonischen Sprint-6-Projektion.
 - Neue Kompetenzreferenzen muessen aktiv und `current` sein sowie zu einem ausgewaehlten Fach gehoeren. Bereits gespeicherte, spaeter deaktivierte oder historische Kompetenz-IDs bleiben als nicht mehr regulaer verfuegbare Auswahl erhalten und werden nicht erneut zur Auswahl angeboten.
 - Neue Beobachtungsreferenzen muessen aktiv sein, zum Kind gehoeren und mindestens einem ausgewaehlten Fach ueber Beobachtungsfach oder Kompetenzbewertung zugeordnet sein. Bereits gespeicherte, spaeter soft-geloeschte `OBS`-IDs bleiben als nicht verfuegbare Referenzen erhalten; Beobachtungsinhalte werden nicht rekonstruiert.

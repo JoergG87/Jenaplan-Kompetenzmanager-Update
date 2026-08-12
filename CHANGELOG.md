@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Ein neuer Qt-Lernentwicklungsbericht startet bei der bewussten Auswahl von
+  Fächern, Kompetenzen und Belegen. Die individuell effektiven
+  Unterrichtsfächer stehen zuerst; weitere aktive Unterrichtsfächer bleiben
+  erreichbar, überfachliche Domänen werden nicht als neue Berichtsfächer
+  angeboten. Eine dauerhaft sichtbare Auswahlzeile und die Aktion `Weiter zum
+  Schreibbereich` führen in die Texterfassung. Vorschau und Ausgabemodell
+  enthalten nur ausgewählte Fachabschnitte. Bestehende Entwürfe öffnen in
+  ihrem gespeicherten Zustand; ausdrücklich gespeicherte Bestandsfächer
+  bleiben auch ohne aktuelle Kompetenzreferenz erhalten. Schema,
+  Berichtrevisionen und Persistenzverträge bleiben unverändert.
+
 - Das Dashboard ordnet seine vorhandenen Fachvignetten wieder ausschließlich
   den aktuellen kanonischen Entwicklungsbuch-Schlüsseln zu. Kreatives
   Gestalten und Englisch verwenden geeignete bestehende Motive; die beiden

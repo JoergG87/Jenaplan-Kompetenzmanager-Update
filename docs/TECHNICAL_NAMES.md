@@ -2377,6 +2377,8 @@ Registrierte technische Namen:
 - `LearningReportSourceData`
 - `LearningReportApplicationService`
 - `LearningReportPreparationViewModel`
+- `LearningReportPreparationViewModel.primary_subject_ids`
+- `LearningReportPreparationViewModel.retained_subject_ids`
 - `LearningReportSubjectViewModel`
 - `LearningReportCompetencyViewModel`
 - `LearningReportEvidenceViewModel`
@@ -2384,8 +2386,8 @@ Registrierte technische Namen:
 - `LearningReportDialog`
 - `LearningReportDraftSelectionDialog`
 - `LearningReportDraftChoice_<report_draft_id>`
-- `StudentDesktopAdapter.learning_report_preparation_for_student(student_id, retained_competency_ids=())`
-- `build_learning_report_preparation(student, statuses, observations)`
+- `StudentDesktopAdapter.learning_report_preparation_for_student(student_id, retained_competency_ids=(), retained_subject_ids=())`
+- `build_learning_report_preparation(student, statuses, observations, primary_subject_ids=(), available_subjects=None, retained_subjects=None)`
 - `build_report_output_model(preparation, draft)`
 - `AppShell.open_learning_report_dialog(student_id)`
 - `AppShell.export_learning_report_pdf(output_model)`
@@ -2407,6 +2409,9 @@ Registrierte Qt-Objektnamen fuer das Sprint-7F.1-UX-Alignment:
 - `LearningReportPreviewCanvas`
 - `LearningReportPaperPage`
 - `LearningReportDocumentBlock`
+- `LearningReportSelectedSubjectContext`
+- `LearningReportEvidenceSelectionSummary`
+- `LearningReportSubjectGroupLabel`
 
 ## Sprint 7F.1 - Persistenter Berichtsentwurf
 

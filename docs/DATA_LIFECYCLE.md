@@ -3189,6 +3189,13 @@ Erforderliche IDs:
 
 Regel: Anlegen erzeugt genau einen Entwurf mit Status `draft` und unveraenderlichem `created_at`. Aktualisieren ersetzt Fachauswahl, Fachtexte, Kompetenz-, Beobachtungs- und Diagrammreferenzen atomar und setzt `updated_at`. Neue Kompetenzreferenzen muessen aktiv und `current` sein; neue Beobachtungsreferenzen muessen aktiv sein. Beide Referenzarten muessen zum ausgewaehlten Fachkontext gehoeren, Beobachtungen zusaetzlich zum Kind. Bereits im Draft gespeicherte, spaeter deaktivierte Kompetenz- oder soft-geloeschte Beobachtungsreferenzen bleiben beim Speichern erhalten, solange sie nicht ausdruecklich abgewaehlt werden. Kompetenz- und Beobachtungsinhalte werden nicht kopiert. Der Prozess erzeugt keine Bewertung, Bestaetigung, Version, Freigabe, Archivierung oder finale Ausgabe. Das neutrale `ReportOutputModel` wird weiterhin erst fuer die Vorschau beziehungsweise PDF-Ausgabe aus dem geladenen Entwurf und den aktuellen freigegebenen Leseprojektionen gebaut.
 
+Vor dem ersten Speichern zeigt Qt die effektiven Unterrichtsfächer des Kindes
+zuerst und weitere aktive Unterrichtsfächer getrennt erreichbar. Keine
+Beobachtung nimmt automatisch ein Fach in den Draft auf. Erst die bewusste
+Auswahl erzeugt beim vollständigen Speichern die entsprechende
+`report_draft_subjects`-Zeile. Ein ungewähltes Fach wird weder als leerer
+Abschnitt gespeichert noch in Vorschau oder Ausgabemodell aufgenommen.
+
 ## Lernentwicklungsbericht-Entwurf laden
 
 Start: Laura oeffnet einen vorhandenen Entwurf zur Weiterbearbeitung.
@@ -3204,6 +3211,12 @@ SQLite report_drafts + Relationstabellen
 ```
 
 Regel: Laden rekonstruiert ausschliesslich gespeicherte manuelle Texte und Referenzen. Kompetenzstatus und Kompetenztexte werden mit den gespeicherten `competency_id`-Werten als `retained_competency_ids` aus der kanonischen Projektion gelesen. Nicht mehr regulaer verfuegbare Kompetenzen bleiben gekennzeichnet ausgewaehlt, koennen nach Abwahl aber nicht neu ausgewaehlt werden. Aktive Beobachtungsinhalte werden aus der bestehenden Beobachtungsprojektion gelesen; gespeicherte, dort nicht mehr aktive `observation_id`-Werte bleiben ohne erfundene Inhalte als nicht verfuegbar sichtbar. Vorschau und `ReportOutputModel` weisen solche Ausfaelle neutral aus.
+
+Zusätzlich werden die gespeicherten Fach-IDs als `retained_subject_ids`
+übergeben. Dadurch bleibt ein vorhandener Fachtext auch ohne aktuelle
+Kompetenzreferenz im geladenen Draft erhalten und erscheint getrennt als
+gespeicherter Fachabschnitt. Diese Retention verändert weder aktuelle
+Fachprofile noch finalisierte RPV-Revisionen.
 
 Beim Öffnen aus dem Schülerprofil zeigt die Shell bei mindestens einem vorhandenen RPD eine bewusste Auswahl: vorhandenen Entwurf nach Zeitraum und Status öffnen, neuen noch ungespeicherten Entwurf beginnen oder abbrechen. Die Auswahl schreibt keine Daten. Ein neuer Zeitraum wird erst über den bestehenden Create-Command als neuer RPD persistiert; er ändert keinen vorhandenen RPD, RPT oder RPV.
 

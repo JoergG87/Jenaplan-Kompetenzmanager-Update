@@ -251,6 +251,7 @@ class ReportOverviewPhase2AdapterTest(unittest.TestCase):
             self.student.student_id,
             period_end=self.report_draft.period_end,
             retained_competency_ids=self.report_draft.competency_ids,
+            retained_subject_ids=self.report_draft.selected_subject_ids,
         )
         self.assertEqual(
             overview.report_period_end_label,

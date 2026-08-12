@@ -23,6 +23,9 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportDraftViewModel,
     LearningReportSubjectDraftViewModel,
 )
+from src.desktop_app.view_models.observation_view_model import (
+    COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS,
+)
 
 
 class ReportDraftPersistenceTest(unittest.TestCase):
@@ -79,6 +82,136 @@ class ReportDraftPersistenceTest(unittest.TestCase):
                 "observation_timeline",
             },
         )
+
+    def test_report_subjects_follow_individual_profile_without_cross_curricular_domains(
+        self,
+    ) -> None:
+        school_year = self.adapter.current_school_year()
+        self.assertIsNotNone(school_year)
+        if school_year is None:
+            raise AssertionError("Expected current school year")
+        baseline = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            period_end=school_year.end_date,
+        )
+        self.assertIsNotNone(baseline)
+        if baseline is None:
+            raise AssertionError("Expected baseline report preparation")
+        teaching_subject_ids = tuple(
+            subject.subject_id for subject in baseline.subjects
+        )
+        primary_subject_id = teaching_subject_ids[-1]
+        self.adapter.save_student_documentation_subjects(
+            self.student.student_id,
+            school_year.school_year_id,
+            "custom",
+            (primary_subject_id,),
+        )
+
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            period_end=school_year.end_date,
+        )
+
+        self.assertIsNotNone(preparation)
+        if preparation is None:
+            raise AssertionError("Expected report preparation")
+        offered_subject_ids = tuple(
+            subject.subject_id for subject in preparation.subjects
+        )
+        self.assertEqual(preparation.primary_subject_ids, (primary_subject_id,))
+        self.assertEqual(offered_subject_ids[0], primary_subject_id)
+        self.assertEqual(set(offered_subject_ids), set(teaching_subject_ids))
+        self.assertTrue(
+            set(COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS).isdisjoint(
+                offered_subject_ids
+            )
+        )
+
+    def test_empty_custom_profile_keeps_teaching_subjects_reachable_but_none_primary(
+        self,
+    ) -> None:
+        school_year = self.adapter.current_school_year()
+        self.assertIsNotNone(school_year)
+        if school_year is None:
+            raise AssertionError("Expected current school year")
+        baseline = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            period_end=school_year.end_date,
+        )
+        self.assertIsNotNone(baseline)
+        if baseline is None:
+            raise AssertionError("Expected baseline report preparation")
+        expected_subject_ids = {
+            subject.subject_id for subject in baseline.subjects
+        }
+        self.adapter.save_student_documentation_subjects(
+            self.student.student_id,
+            school_year.school_year_id,
+            "custom",
+            (),
+        )
+
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            period_end=school_year.end_date,
+        )
+
+        self.assertIsNotNone(preparation)
+        if preparation is None:
+            raise AssertionError("Expected report preparation")
+        self.assertEqual(preparation.primary_subject_ids, ())
+        self.assertEqual(
+            {subject.subject_id for subject in preparation.subjects},
+            expected_subject_ids,
+        )
+        self.assertTrue(
+            set(COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS).isdisjoint(
+                expected_subject_ids
+            )
+        )
+
+    def test_saved_subject_without_competency_remains_in_preparation(self) -> None:
+        retained_subject_id = COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS[0]
+        retained_subject = LearningReportSubjectDraftViewModel(
+            retained_subject_id,
+            "Gespeicherte Stärke.",
+            "Gespeicherte Entwicklung.",
+            "",
+            "Gespeichertes Ziel.",
+        )
+        saved = self.adapter.save_learning_report_draft(
+            replace(
+                self._draft(),
+                subjects=(retained_subject,),
+                competency_ids=(),
+                observation_ids=(),
+                chart_selections=(),
+            )
+        )
+        with self.adapter.database.connect() as connection:
+            connection.execute(
+                "UPDATE competencies SET active = 0 WHERE subject_id = ?",
+                (retained_subject_id,),
+            )
+            connection.commit()
+
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            period_end=saved.period_end,
+            retained_subject_ids=saved.selected_subject_ids,
+        )
+
+        self.assertIsNotNone(preparation)
+        if preparation is None:
+            raise AssertionError("Expected report preparation")
+        self.assertEqual(preparation.retained_subject_ids, (retained_subject_id,))
+        retained = next(
+            subject
+            for subject in preparation.subjects
+            if subject.subject_id == retained_subject_id
+        )
+        self.assertEqual(retained.competencies, ())
 
     def test_new_period_creates_a_separate_draft_without_changing_existing_one(self) -> None:
         first = self.adapter.save_learning_report_draft(self._draft())
@@ -258,6 +391,7 @@ class ReportDraftPersistenceTest(unittest.TestCase):
             self.student.student_id,
             period_end=loaded.period_end,
             retained_competency_ids=loaded.competency_ids,
+            retained_subject_ids=loaded.selected_subject_ids,
         )
         retained = next(
             competency

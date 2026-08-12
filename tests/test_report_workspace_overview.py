@@ -1848,6 +1848,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             "STU-1",
             period_end=second.period_end,
             retained_competency_ids=second.competency_ids,
+            retained_subject_ids=second.selected_subject_ids,
         )
         dialog.focus_evidence_subject.assert_called_once_with("math")
         report_shell.show_student_profile.assert_called_once_with("STU-1")

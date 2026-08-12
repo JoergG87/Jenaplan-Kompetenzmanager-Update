@@ -582,5 +582,5 @@ def test_composed_product_query_budgets_are_constant_for_1_10_100_students(
         "course_members": 14,
         "course_group": 14,
         "dashboard": 15,
-        "report_preparation": 13,
+        "report_preparation": 14,
     }

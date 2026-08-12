@@ -366,6 +366,18 @@ class LearningReportDialog(QDialog):
         navigation_layout.addWidget(self.workspace_navigation)
         navigation_layout.addStretch(1)
         root.addWidget(navigation_shell)
+        self.selected_subject_context = QLabel()
+        self.selected_subject_context.setObjectName(
+            "LearningReportSelectedSubjectContext"
+        )
+        self.selected_subject_context.setAccessibleName(
+            "Aktuell ausgewählte Berichtsfächer"
+        )
+        self.selected_subject_context.setWordWrap(True)
+        self.selected_subject_context.setContentsMargins(24, 8, 24, 8)
+        set_label_style(self.selected_subject_context, "muted")
+        root.addWidget(self.selected_subject_context)
+        self._refresh_subject_selection_summary()
         self.workspace_message = InlineMessage()
         root.addWidget(self.workspace_message)
 
@@ -390,7 +402,12 @@ class LearningReportDialog(QDialog):
         root.addWidget(self.mode_stack, 1)
         root.addWidget(self._action_bar())
         self._ensure_workspace_built("writing")
-        self._activate_workspace_page("writing")
+        initial_workspace = "writing"
+        if self._saved_draft is None:
+            initial_workspace = "evidence"
+            self._ensure_workspace_built(initial_workspace)
+        self.workspace_navigation.set_current_key(initial_workspace)
+        self._activate_workspace_page(initial_workspace)
 
     def _top_bar(self) -> QFrame:
         bar = QFrame()
@@ -530,7 +547,28 @@ class LearningReportDialog(QDialog):
         self.evidence_navigation_group = QButtonGroup(self)
         self.evidence_navigation_group.setExclusive(True)
         self.evidence_stack = QStackedWidget()
+        primary_ids = set(self.preparation.primary_subject_ids)
+        retained_ids = set(self.preparation.retained_subject_ids)
+        previous_group = ""
         for index, subject in enumerate(self.preparation.subjects):
+            group = (
+                "primary"
+                if subject.subject_id in primary_ids
+                else "retained"
+                if subject.subject_id in retained_ids
+                else "additional"
+            )
+            if group != previous_group:
+                group_label = self._eyebrow(
+                    "FÄCHER DES KINDES"
+                    if group == "primary"
+                    else "GESPEICHERTE FACHABSCHNITTE"
+                    if group == "retained"
+                    else "WEITERE FÄCHER"
+                )
+                group_label.setObjectName("LearningReportSubjectGroupLabel")
+                sidebar_layout.addWidget(group_label)
+                previous_group = group
             button = QPushButton(subject.subject_name)
             button.setObjectName("LearningReportSubjectButton")
             button.setCheckable(True)
@@ -554,6 +592,26 @@ class LearningReportDialog(QDialog):
             self.evidence_subject_pages[subject.subject_id] = page
             self.evidence_stack.addWidget(page)
         sidebar_layout.addStretch(1)
+        self.evidence_selection_summary = QLabel()
+        self.evidence_selection_summary.setObjectName(
+            "LearningReportEvidenceSelectionSummary"
+        )
+        self.evidence_selection_summary.setAccessibleName(
+            "Ausgewählte Berichtsfächer"
+        )
+        self.evidence_selection_summary.setWordWrap(True)
+        set_label_style(self.evidence_selection_summary, "muted")
+        sidebar_layout.addWidget(self.evidence_selection_summary)
+        self.continue_to_writing_button = QPushButton("Weiter zum Schreibbereich")
+        configure_button(
+            self.continue_to_writing_button,
+            "primary",
+            "Mit den ausgewählten Fächern zum Schreibbereich wechseln",
+        )
+        self.continue_to_writing_button.clicked.connect(
+            lambda: self.show_workspace("writing")
+        )
+        sidebar_layout.addWidget(self.continue_to_writing_button)
         sidebar_layout.addWidget(
             InlineMessage(
                 "Auswahl ist immer bewusst. Historische Bezüge bleiben lesbar, werden aber nicht neu aktiviert.",
@@ -566,7 +624,29 @@ class LearningReportDialog(QDialog):
             initial_index = self._pending_evidence_subject_index or 0
             self._ensure_evidence_subject_built(initial_index)
             self.evidence_stack.setCurrentIndex(initial_index)
+        self._refresh_subject_selection_summary()
         return screen
+
+    def _refresh_subject_selection_summary(self) -> None:
+        selected_names = tuple(
+            subject.subject_name
+            for subject in self.preparation.subjects
+            if subject.subject_id in self.selected_subject_ids
+        )
+        if hasattr(self, "selected_subject_context"):
+            self.selected_subject_context.setText(
+                f"Ausgewählte Berichtsfächer: {', '.join(selected_names)}"
+                if selected_names
+                else "Ausgewählte Berichtsfächer: noch keine"
+            )
+        if not hasattr(self, "evidence_selection_summary"):
+            return
+        self.evidence_selection_summary.setText(
+            f"Ausgewählt: {', '.join(selected_names)}"
+            if selected_names
+            else "Noch kein Fach ausgewählt"
+        )
+        self.continue_to_writing_button.setEnabled(bool(selected_names))
 
     def _set_editor_section(self, index: int) -> None:
         if index > 0:
@@ -1280,6 +1360,7 @@ class LearningReportDialog(QDialog):
             badge.style().unpolish(badge)
             badge.style().polish(badge)
         self._render_evidence(subject)
+        self._refresh_subject_selection_summary()
         self._schedule_preview()
 
     def _toggle_competency(
@@ -1744,6 +1825,8 @@ class LearningReportDialog(QDialog):
             )
         )
         for subject in self.preparation.subjects:
+            if subject.subject_id not in self.selected_subject_ids:
+                continue
             row = QHBoxLayout()
             row.setContentsMargins(16, 12, 16, 12)
             text = QVBoxLayout()
@@ -1756,12 +1839,7 @@ class LearningReportDialog(QDialog):
                 )
             )
             row.addLayout(text, 1)
-            state = (
-                "Fachabschnitt ausgewählt"
-                if subject.subject_id in self.selected_subject_ids
-                else "nicht für Ausgabe ausgewählt"
-            )
-            row.addWidget(self._small_label(state))
+            row.addWidget(self._small_label("Fachabschnitt ausgewählt"))
             layout.addWidget(self._layout_card(row))
         return page
 

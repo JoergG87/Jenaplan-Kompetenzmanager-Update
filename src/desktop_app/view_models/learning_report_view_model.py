@@ -122,6 +122,8 @@ class LearningReportPreparationViewModel:
     course_name: str = ""
     membership_status_label: str = ""
     membership_blocking: bool = False
+    primary_subject_ids: tuple[str, ...] = ()
+    retained_subject_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -811,6 +813,10 @@ def build_learning_report_preparation(
     student: object,
     statuses: tuple[object, ...],
     observations: tuple[object, ...],
+    *,
+    primary_subject_ids: tuple[str, ...] = (),
+    available_subjects: tuple[tuple[str, str], ...] | None = None,
+    retained_subjects: tuple[tuple[str, str], ...] | None = None,
 ) -> LearningReportPreparationViewModel:
     """Group the canonical status projection without recalculating status."""
     observations_by_id = {
@@ -822,6 +828,13 @@ def build_learning_report_preparation(
     subject_names: dict[str, str] = {}
     evidence_subjects: dict[str, set[str]] = {}
     evidence_competencies: dict[str, set[str]] = {}
+
+    for subject_id, subject_name in (
+        *(available_subjects or ()),
+        *(retained_subjects or ()),
+    ):
+        subject_names.setdefault(subject_id, subject_name)
+        competencies_by_subject.setdefault(subject_id, [])
 
     for status in statuses:
         subject_id = str(getattr(status, "subject_id", "")).strip()
@@ -908,8 +921,8 @@ def build_learning_report_preparation(
         for subject_id in subject_ids:
             report_evidence_by_subject.setdefault(subject_id, []).append(evidence)
 
-    subjects = tuple(
-        LearningReportSubjectViewModel(
+    subjects_by_id = {
+        subject_id: LearningReportSubjectViewModel(
             subject_id=subject_id,
             subject_name=subject_names[subject_id],
             competencies=tuple(
@@ -931,7 +944,37 @@ def build_learning_report_preparation(
             ),
         )
         for subject_id, competencies in competencies_by_subject.items()
+    }
+    deliberate_subject_scope = (
+        available_subjects is not None or retained_subjects is not None
     )
+    if deliberate_subject_scope:
+        available_subject_ids = tuple(
+            subject_id for subject_id, _subject_name in (available_subjects or ())
+        )
+        retained_subject_ids = tuple(
+            subject_id for subject_id, _subject_name in (retained_subjects or ())
+        )
+        ordered_subject_ids = tuple(
+            dict.fromkeys(
+                (
+                    *primary_subject_ids,
+                    *(
+                        subject_id
+                        for subject_id in available_subject_ids
+                        if subject_id not in primary_subject_ids
+                    ),
+                    *retained_subject_ids,
+                )
+            )
+        )
+        subjects = tuple(
+            subjects_by_id[subject_id]
+            for subject_id in ordered_subject_ids
+            if subject_id in subjects_by_id
+        )
+    else:
+        subjects = tuple(subjects_by_id.values())
     return LearningReportPreparationViewModel(
         student_id=str(getattr(student, "student_id", "")),
         student_name=str(getattr(student, "display_name", "")),
@@ -943,6 +986,16 @@ def build_learning_report_preparation(
         ),
         membership_blocking=bool(
             getattr(student, "membership_blocking", False)
+        ),
+        primary_subject_ids=tuple(
+            subject_id
+            for subject_id in primary_subject_ids
+            if subject_id in {subject.subject_id for subject in subjects}
+        ),
+        retained_subject_ids=tuple(
+            subject_id
+            for subject_id, _subject_name in (retained_subjects or ())
+            if subject_id in {subject.subject_id for subject in subjects}
         ),
     )
 

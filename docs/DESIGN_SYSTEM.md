@@ -1078,6 +1078,14 @@ Die Berichtswerkstatt verwendet `PageHeader`, `SegmentedControl`, `SectionHeader
 
 Die lokale Vier-Bereich-Navigation ordnet `Schreiben`, `Kompetenzen & Belege`, `Vorschau` und `Revisionen` gleichwertig als Arbeitsschritte unterhalb des Berichtskontexts. Fachlisten sind jeweils nur lokale Untergliederungen des Schreib- beziehungsweise Auswahlbereichs. Die dauerhaft sichtbare untere Aktionsleiste enthaelt genau eine primaere Draftaktion. Die mehrseitige Vorschau liegt auf einer neutralen Dokumentflaeche und nennt immer ihre Draftquelle.
 
+Ein neuer Bericht aktiviert zunächst `Kompetenzen & Belege`, ohne die
+Vier-Bereich-Navigation umzuordnen. Die lokale Fachliste trennt ruhig
+`Fächer des Kindes`, `Weitere Fächer` und – nur bei geöffnetem Bestand –
+`Gespeicherte Fachabschnitte`. Eine dauerhaft sichtbare Textzeile nennt die
+aktuell ausgewählten Fachnamen. Der Übergang `Weiter zum Schreibbereich`
+bleibt bis zur ersten bewussten Auswahl deaktiviert. Überfachliche Domänen
+werden nicht als reguläre weitere Berichtsfächer gestaltet.
+
 Genau ein Bereich verwendet die zentrale helle Blue-Auswahlflaeche, kraeftigere
 Typografie, Rahmen und den vorhandenen Auswahlindikator des `SegmentedControl`.
 Inaktive Bereiche bleiben neutral; Hover, Fokus und Disabled-State stammen aus

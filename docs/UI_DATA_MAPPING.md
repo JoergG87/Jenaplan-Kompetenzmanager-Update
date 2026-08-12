@@ -261,6 +261,18 @@ vorstehende Phase-2-Mapping ersetzt.
 | Stärken / Im Blick behalten | keine Paket-1-Datenquelle | Nein | klarer neutraler Leerzustand; keine Schwellen, Scores, Kandidaten oder Pädagogiklogik |
 | Berichtarbeitsraum-Grenze | vorhandener `LearningReportDialog` | bestehender Draftpfad erst nach bewusster Aktion | kein zweiter Editor; keine eigene untere Übersichtskarte mehr |
 
+### Qt-Bericht – bewusste Fachauswahl
+
+| UI-Feld/Aktion | Quelle | Persistenz | Regel |
+|---|---|---|---|
+| Initialer Bereich eines neuen Entwurfs | fehlende gespeicherte RPD-Fachauswahl | Nein | startet in `Kompetenzen & Belege`; die Reihenfolge der vier Hauptbereiche bleibt unverändert |
+| `Fächer des Kindes` | `effective_documentation_subjects` des Kindes im am RPD-`period_end` aufgelösten Schuljahr-Snapshot, begrenzt auf aktive Unterrichtsfächer der Berichtsvorbereitung | Nein | primäre neutrale Angebotsgruppe; niemals aus Beobachtungsmenge, Rating oder Text abgeleitet |
+| `Weitere Fächer` | übrige aktive Unterrichtsfächer derselben Katalogprojektion | Nein | bewusst erreichbar, aber nicht automatisch ausgewählt |
+| `Gespeicherte Fachabschnitte` | `report_draft_subjects` des geöffneten RPD, soweit nicht mehr regulär angeboten | Nein | reine Bestandskompatibilität; kein neues Angebot und keine Umdeutung überfachlicher Domänen |
+| dauerhaft sichtbarer Auswahlstatus | lokale Auswahl-IDs gegen `LearningReportPreparationViewModel.subjects` | Nein | nennt die ausgewählten Fachnamen in allen vier Bereichen; `Weiter zum Schreibbereich` ist erst ab einer Auswahl aktiv |
+| Vorschau und Dokumentseiten | `LearningReportDraftViewModel.selected_subject_ids` | Nein | ausschließlich bewusst ausgewählte Fachabschnitte; ungewählte Fächer erzeugen weder Überblickszeile noch leere Fachseite |
+| vorhandener Entwurf | gespeicherter vollständiger `LearningReportDraftViewModel` | bestehender RPD-Pfad | öffnet weiter im Schreibbereich und setzt Fach-, Kompetenz-, Beleg- und Textauswahl nicht zurück |
+
 ## Pilot-Releaseautomation - keine Produktprojektion
 
 Releasekonfiguration, Manifest, Phasen, Assethashes, GitHub-/Appcast-Zustände,

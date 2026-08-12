@@ -1975,11 +1975,13 @@ class SQLiteStudentDocumentationProjectionRepository:
                 )
                 current_school_year_id = (
                     getattr(memberships[0], "current_school_year_id", None)
+                    or getattr(memberships[0], "school_year_id", None)
                     if memberships
                     else None
                 )
                 current_school_year_label = (
                     getattr(memberships[0], "current_school_year_label", None)
+                    or getattr(memberships[0], "school_year_label", None)
                     if memberships
                     else None
                 )

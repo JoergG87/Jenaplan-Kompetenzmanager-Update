@@ -1320,6 +1320,18 @@ Sprint 7F.1 ergaenzt einen persistenten, weiter bearbeitbaren Berichtsentwurf. D
 
 Sprint 7F.2 portiert die freigegebene UX aus `prototypes/learning_report_ux/` auf diese bestehende Ownership. Die PySide-Berichtswerkstatt besitzt ausschliesslich lokalen Widgetzustand fuer die laufende Bearbeitung und delegiert Speichern ueber `LearningReportDraftViewModel` an den Desktop-Adapter. Bei mindestens einem vorhandenen Entwurf lässt die Shell bewusst einen gespeicherten RPD nach Zeitraum und Status öffnen, einen neuen noch ungespeicherten Arbeitsstand beginnen oder abbrechen; nur der gewählte RPD liefert seine gespeicherten Kompetenzreferenzen als Lesekontext. Die separate Vorschau baut ihr `ReportOutputModel` aus dem aktuellen Entwurf und den vorhandenen Leseprojektionen; sie ist keine Datenquelle. Fachseiten duerfen nur Kompetenzen des jeweiligen Fachs und nur dazu passende Beobachtungsbelege neu anbieten. Nicht verfuegbare gespeicherte Belege werden in Qt-Vorschau und Ausgabemodell getrennt von regulaeren Belegen neutral ausgewiesen. Diagramme werden nur als gespeicherte Auswahlreferenzen gehalten; ihre Daten werden bei Vorschau und PDF aus den vorhandenen Projektionen erzeugt.
 
+Für neue Qt-Entwürfe klassifiziert ausschließlich der Desktop-Adapter die
+aktiven Unterrichtsfächer anhand der bestehenden individuellen
+Fachprojektion in primäre und weitere Angebote. Beobachtungen sind keine
+Quelle dieser Klassifikation. `LearningReportDialog` gruppiert und navigiert
+nur diese Projektion, hält die bewusste Auswahl lokal und startet ohne
+gespeicherte Fächer in `Kompetenzen & Belege`. Die gespeicherten
+`report_draft_subjects` bleiben Source of Truth; explizite Bestandsfächer
+werden beim Öffnen auch dann als eigener Bestandsabschnitt projiziert, wenn
+keine aktuelle Kompetenzzeile mehr existiert. Vorschau und OutputBuilder
+filtern ausschließlich nach der laufenden Draftauswahl. RPV-Snapshots werden
+nicht neu projiziert oder verändert.
+
 Die intern gegatete `LearningReportHtmlDialog` ist ein alternativer Host
 desselben Editors und wird nie parallel für denselben Draft geöffnet. Sie
 besitzt dieselben Lese- und Schreibquellen wie `LearningReportDialog`:
