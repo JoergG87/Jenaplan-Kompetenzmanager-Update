@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Runtime- und Startup-Regressionen unterscheiden die reguläre lokale
+  SQLCipher-4.12-Testumgebung vom isolierten, weiterhin strikt geprüften
+  SQLCipher-4.17-Build-Gate. Die Startup-Verträge prüfen die aktivierte
+  verschlüsselte `.jkmebackup`-Sicherung und sperren das historische
+  Testdaten-Onboarding weiterhin auf den alten `.jkmbackup`-Pfad. Pins,
+  Produktkonfiguration und Releaseversion bleiben unverändert.
+
 - Die Qt-Regressionsprüfungen kapseln den globalen App-Themezustand und
   schließen sichtbare Testfenster auch nach fehlgeschlagenen Assertions. Der
   Beobachtungsdialog wird unter dem produktiven Theme anhand seiner tatsächlich

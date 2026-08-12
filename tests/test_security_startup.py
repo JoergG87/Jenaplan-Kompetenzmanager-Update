@@ -188,7 +188,8 @@ def test_productive_start_order_keeps_product_runtime_and_shell_after_auth() -> 
     assert "cipher_backup_restore_not_available" in source
     assert "DISABLE_AUTH" not in source
     assert "database_create_allowed=False" in source
-    assert "backup_restore_available=False" in source
+    assert 'backup_extension=".jkmebackup"' in source
+    assert "backup_restore_available=True" in source
 
 
 @pytest.mark.parametrize(
@@ -239,10 +240,11 @@ def test_cipher_shell_source_blocks_legacy_transition_and_testdata_onboarding() 
     )
     legacy_backup = shell_source.index("VerifiedSchoolYearTransitionBackupAdapter(", transition)
     assert transition < transition_guard < legacy_backup
-    assert (
-        "self.pilot_testdata_onboarding = self.backup_restore_available and ("
-        in shell_source
-    )
+    onboarding = shell_source.index("self.pilot_testdata_onboarding = (")
+    onboarding_end = shell_source.index("self.update_service =", onboarding)
+    onboarding_source = shell_source[onboarding:onboarding_end]
+    assert "self.backup_restore_available" in onboarding_source
+    assert 'selected_backup_extension == ".jkmbackup"' in onboarding_source
 
 
 def test_startup_device_authentication_does_not_bypass_touch_id_preference() -> None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from importlib import metadata
 from pathlib import Path
 import sys
 import uuid
@@ -39,6 +40,13 @@ def _snapshot(root: Path) -> dict[str, str]:
         for path in root.rglob("*")
         if path.is_file()
     }
+
+
+def _has_security_build_runtime() -> bool:
+    try:
+        return metadata.version("sqlcipher3") == EXPECTED_VERSIONS["sqlcipher3"]
+    except metadata.PackageNotFoundError:
+        return False
 
 
 def test_030_release_versions_and_security_dependencies_are_pinned() -> None:
@@ -83,8 +91,8 @@ def test_030_release_versions_and_security_dependencies_are_pinned() -> None:
 
 
 @pytest.mark.skipif(
-    sys.platform != "darwin",
-    reason="macOS arm64 build runtime audit",
+    sys.platform != "darwin" or not _has_security_build_runtime(),
+    reason="exact macOS arm64 SQLCipher 4.17 build runtime is required",
 )
 def test_current_environment_matches_security_build_runtime() -> None:
     result = audit_environment()
