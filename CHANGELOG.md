@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Bereits ausgewählte Berichtbelege bleiben in der Qt-Berichtswerkstatt auch
+  nach einem Soft-Delete fachlich lesbar: Die Preparation-Projektion verwendet
+  für genau die gespeicherten RPD-Referenzen den vorhandenen Observation-Read
+  und dessen Kompetenz-Snapshotfelder. Im Schreibbereich zeigt jedes gewählte
+  Fach unter `Belege für diesen Bericht` die bewusst ausgewählten Kompetenzen,
+  eindeutig zugeordneten Beobachtungsbelege und deren Anzahl; `Auswahl
+  bearbeiten` führt ohne Draftänderung zum aktuellen Fach zurück. Tatsächlich
+  nicht mehr auflösbare Referenzen bleiben neutral sichtbar und werden keinem
+  Fach zugerechnet. Aktive Live-Projektionen, Schema, Persistenz,
+  Finalisierung, Revisionen, PDF, LEG, HTML und Final V4 bleiben unverändert.
+
 - Die Qt-Berichtswerkstatt führt für den Pilot durch `Auswählen`, `Schreiben`
   und `Prüfen & finalisieren`. Vorschau und Finalisierung bilden den dritten
   Schritt; unveränderliche Revisionen bleiben als sekundäre `Frühere

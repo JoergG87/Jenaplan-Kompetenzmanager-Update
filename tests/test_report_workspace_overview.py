@@ -1980,6 +1980,7 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             "STU-1",
             period_end=second.period_end,
             retained_competency_ids=second.competency_ids,
+            retained_observation_ids=second.observation_ids,
             retained_subject_ids=second.selected_subject_ids,
         )
         dialog.focus_evidence_subject.assert_called_once_with("math")

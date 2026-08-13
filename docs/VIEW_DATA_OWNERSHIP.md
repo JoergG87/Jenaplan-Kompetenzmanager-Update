@@ -1317,7 +1317,7 @@ Freie Dokumente ohne fachliches Referenzdatum bleiben neutral. Current,
 keine Fallbacks; finalisierte Revisionen und PDFs werden nicht live neu
 aufgelöst.
 
-Sprint 7F.1 ergaenzt einen persistenten, weiter bearbeitbaren Berichtsentwurf. Die Berichtswerkstatt liest und schreibt ihn ausschliesslich ueber ViewModel, Application Layer und `SQLiteReportDraftRepository`. Gespeichert werden Dokumentkontext, manuelle Gesamt- und Fachtexte sowie bewusste Fach-, Kompetenz-, Beobachtungs- und Diagrammreferenzen. Kompetenzzustaende stammen weiterhin ausschliesslich aus der kanonischen Sprint-6-Projektion; Kompetenz- und Beobachtungsinhalte werden nicht in den Entwurf kopiert. Aktive `current`-Kompetenzen sind fuer neue Auswahl vorgesehen. Beim Wiedereroeffnen werden gespeicherte Kompetenz-IDs als `retained_competency_ids` an dieselbe Projektion uebergeben, sodass spaeter deaktivierte oder historische Referenzen gekennzeichnet ausgewaehlt bleiben, ohne erneut angeboten zu werden. Gespeicherte, spaeter soft-geloeschte Beobachtungs-IDs bleiben als nicht verfuegbare Referenzen sichtbar und werden nur durch ausdrueckliche Abwahl entfernt; Inhalte werden nicht rekonstruiert. Der Entwurf ist keine finale Berichtsdomain und besitzt weder Freigabe, Versionierung, Archivierung noch eingefrorene Ausgabe.
+Sprint 7F.1 ergaenzt einen persistenten, weiter bearbeitbaren Berichtsentwurf. Die Berichtswerkstatt liest und schreibt ihn ausschliesslich ueber ViewModel, Application Layer und `SQLiteReportDraftRepository`. Gespeichert werden Dokumentkontext, manuelle Gesamt- und Fachtexte sowie bewusste Fach-, Kompetenz-, Beobachtungs- und Diagrammreferenzen. Kompetenzzustaende stammen weiterhin ausschliesslich aus der kanonischen Sprint-6-Projektion; Kompetenz- und Beobachtungsinhalte werden nicht in den Entwurf kopiert. Aktive `current`-Kompetenzen sind fuer neue Auswahl vorgesehen. Beim Wiedereroeffnen werden gespeicherte Kompetenz-IDs als `retained_competency_ids` an dieselbe Projektion uebergeben, sodass spaeter deaktivierte oder historische Referenzen gekennzeichnet ausgewaehlt bleiben, ohne erneut angeboten zu werden. Gespeicherte Beobachtungs-IDs werden zusätzlich als `retained_observation_ids` ausschließlich read-only aufgelöst. Eine vorhandene soft-gelöschte Beobachtung bleibt mit ihrem gespeicherten Fachbezug und ihren `observation_competency_ratings`-Snapshotfeldern fachlich lesbar; tatsächlich fehlende oder fremde Referenzen bleiben ohne erfundene Zuordnung neutral. Die bestehende Draftklassifikation `unavailable_observation_ids` und die strengere Finalisierungsvalidierung bleiben unverändert. Der Entwurf ist keine finale Berichtsdomain und besitzt weder Freigabe, Versionierung, Archivierung noch eingefrorene Ausgabe.
 
 Sprint 7F.2 portiert die freigegebene UX aus `prototypes/learning_report_ux/` auf diese bestehende Ownership. Die PySide-Berichtswerkstatt besitzt ausschliesslich lokalen Widgetzustand fuer die laufende Bearbeitung und delegiert Speichern ueber `LearningReportDraftViewModel` an den Desktop-Adapter. Bei mindestens einem vorhandenen Entwurf lässt die Shell bewusst einen gespeicherten RPD nach Zeitraum und Status öffnen, einen neuen noch ungespeicherten Arbeitsstand beginnen oder abbrechen; nur der gewählte RPD liefert seine gespeicherten Kompetenzreferenzen als Lesekontext. Die separate Vorschau baut ihr `ReportOutputModel` aus dem aktuellen Entwurf und den vorhandenen Leseprojektionen; sie ist keine Datenquelle. Fachseiten duerfen nur Kompetenzen des jeweiligen Fachs und nur dazu passende Beobachtungsbelege neu anbieten. Nicht verfuegbare gespeicherte Belege werden in Qt-Vorschau und Ausgabemodell getrennt von regulaeren Belegen neutral ausgewiesen. Diagramme werden nur als gespeicherte Auswahlreferenzen gehalten; ihre Daten werden bei Vorschau und PDF aus den vorhandenen Projektionen erzeugt.
 
@@ -1352,6 +1352,15 @@ die sichtbaren Gruppen. `documentation_state`, Bestätigungen, Ratingwerte und
 Schnellbeobachtungen ohne Kompetenzzuordnung sind keine Prioritätsquelle.
 Zeitraumwechsel schreiben und selektieren nichts. Adapter, Draftpersistenz,
 OutputModel und unveränderliche RPV-Snapshots bleiben unverändert.
+
+Der Qt-Schreibbereich komponiert pro ausgewähltem Fach ausschließlich
+`LearningReportWritingEvidenceViewModel` aus Preparation und laufender lokaler
+Draftauswahl. Die Projektion ordnet eine ausgewählte Beobachtung nach dem
+bestehenden Berichtvertrag höchstens einmal einem Fach zu und zählt je
+ausgewählter Kompetenz nur ihre gespeicherten Bezüge. Nicht aufgelöste IDs
+bleiben außerhalb aller Fachzähler. Widget, Navigation und Anzeige besitzen
+keine Repository-, Katalogrekonstruktions-, Speicher- oder
+Finalisierungslogik.
 
 Die intern gegatete `LearningReportHtmlDialog` ist ein alternativer Host
 desselben Editors und wird nie parallel für denselben Draft geöffnet. Sie

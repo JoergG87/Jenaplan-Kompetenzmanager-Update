@@ -9,7 +9,10 @@ from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
-from src.core.observation import ObservationRecord
+from src.core.observation import (
+    ObservationCompetencyRatingRecord,
+    ObservationRecord,
+)
 from src.core.report_draft import ReportDraftError
 from src.core.sqlite_store import (
     SQLiteCompetencyRepository,
@@ -524,6 +527,155 @@ class ReportDraftPersistenceTest(unittest.TestCase):
         self.assertEqual(
             reloaded.unavailable_observation_ids,
             (self.observation.observation_id,),
+        )
+
+    def test_active_selected_observation_is_projected_without_writing(self) -> None:
+        repository = SQLiteObservationRepository(self.adapter.database)
+        repository.update_observation(
+            replace(
+                self.observation,
+                competency_ratings=(
+                    ObservationCompetencyRatingRecord(
+                        self.competency.competency_id,
+                        self.competency.subject_id,
+                        self.competency.subject_name,
+                        self.competency.learning_area,
+                        self.competency.competency_group,
+                        self.competency.description,
+                        "+",
+                    ),
+                ),
+            )
+        )
+        before = repository.get_observation(
+            self.observation.observation_id
+        )
+
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            period_end=date(2026, 7, 31),
+            retained_observation_ids=(self.observation.observation_id,),
+            retained_subject_ids=(self.competency.subject_id,),
+        )
+
+        self.assertIsNotNone(preparation)
+        if preparation is None:
+            raise AssertionError("Expected report preparation")
+        projected = next(
+            evidence
+            for subject in preparation.subjects
+            for evidence in subject.evidence
+            if evidence.observation_id == self.observation.observation_id
+        )
+        after = repository.get_observation(
+            self.observation.observation_id
+        )
+        self.assertEqual(projected.subject_id, self.competency.subject_id)
+        self.assertEqual(projected.availability_state, "active")
+        self.assertEqual(after, before)
+
+    def test_soft_deleted_selected_observation_uses_stored_rating_snapshot(self) -> None:
+        snapshot_text = "Historisch gespeicherter Kompetenztext"
+        snapshot_subject_label = "Historisch gespeichertes Fach"
+        rating = ObservationCompetencyRatingRecord(
+            self.competency.competency_id,
+            self.competency.subject_id,
+            snapshot_subject_label,
+            "Historischer Kompetenzbereich",
+            "Historisches Thema",
+            snapshot_text,
+            "+",
+        )
+        repository = SQLiteObservationRepository(self.adapter.database)
+        repository.update_observation(
+            replace(self.observation, competency_ratings=(rating,))
+        )
+        saved = self.adapter.save_learning_report_draft(self._draft())
+        repository.deactivate_observation(
+            self.observation.observation_id,
+            "2026-03-13T10:00:00+00:00",
+        )
+        with self.adapter.database.connect() as connection:
+            connection.execute(
+                "UPDATE competencies SET active = 0, description = ? "
+                "WHERE competency_id = ?",
+                (
+                    "Heutiger Katalogtext darf den Snapshot nicht ersetzen",
+                    self.competency.competency_id,
+                ),
+            )
+            connection.commit()
+        loaded = self.adapter.load_learning_report_draft(saved.report_draft_id)
+        self.assertIsNotNone(loaded)
+        if loaded is None:
+            raise AssertionError("Expected persisted draft")
+
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            period_end=loaded.period_end,
+            retained_competency_ids=loaded.competency_ids,
+            retained_observation_ids=loaded.observation_ids,
+            retained_subject_ids=loaded.selected_subject_ids,
+        )
+
+        self.assertIsNotNone(preparation)
+        if preparation is None:
+            raise AssertionError("Expected report preparation")
+        subject = next(
+            item
+            for item in preparation.subjects
+            if item.subject_id == self.competency.subject_id
+        )
+        competency = next(
+            item
+            for item in subject.competencies
+            if item.competency_id == self.competency.competency_id
+        )
+        evidence = next(
+            item
+            for item in subject.evidence
+            if item.observation_id == self.observation.observation_id
+        )
+        self.assertEqual(loaded.unavailable_observation_ids, loaded.observation_ids)
+        self.assertEqual(competency.competency_text, snapshot_text)
+        self.assertEqual(competency.subject_name, snapshot_subject_label)
+        self.assertTrue(competency.historical)
+        self.assertEqual(competency.documentation_state, "undocumented")
+        self.assertEqual(evidence.availability_state, "historical")
+        self.assertEqual(evidence.subject_name, snapshot_subject_label)
+        self.assertEqual(
+            evidence.competency_ids,
+            (self.competency.competency_id,),
+        )
+
+    def test_missing_and_foreign_retained_observations_are_not_projected(self) -> None:
+        foreign_student = self.adapter.list_students()[1]
+        foreign_observation = replace(
+            self.observation,
+            observation_id="OBS-FOREIGN-PROJECTION",
+            student_id=foreign_student.student_id,
+        )
+        SQLiteObservationRepository(self.adapter.database).create_observation(
+            foreign_observation
+        )
+
+        preparation = self.adapter.learning_report_preparation_for_student(
+            self.student.student_id,
+            period_end=date(2026, 7, 31),
+            retained_observation_ids=(
+                "OBS-MISSING",
+                foreign_observation.observation_id,
+            ),
+            retained_subject_ids=(self.competency.subject_id,),
+        )
+
+        self.assertIsNotNone(preparation)
+        if preparation is None:
+            raise AssertionError("Expected report preparation")
+        self.assertNotIn("OBS-MISSING", preparation.projected_observation_ids)
+        self.assertNotIn(
+            foreign_observation.observation_id,
+            preparation.projected_observation_ids,
         )
 
     def test_soft_deleted_observation_cannot_be_newly_selected(self) -> None:

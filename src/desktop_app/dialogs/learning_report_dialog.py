@@ -63,6 +63,7 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportPdfArtifactViewModel,
     LearningReportSubjectDraftViewModel,
     LearningReportSubjectViewModel,
+    build_learning_report_writing_evidence,
     build_selected_report_evidence,
     build_report_output_model,
 )
@@ -366,7 +367,7 @@ class LearningReportDialog(QDialog):
         )
         self._unavailable_observation_ids = set(
             initial_draft.unavailable_observation_ids if initial_draft else ()
-        )
+        ) - set(preparation.projected_observation_ids)
         self._selected_charts = {
             (chart.subject_id, chart.chart_type)
             for chart in (initial_draft.chart_selections if initial_draft else ())
@@ -379,6 +380,7 @@ class LearningReportDialog(QDialog):
         self._evidence_checks: dict[str, dict[str, QCheckBox]] = {}
         self._evidence_scrolls: dict[str, QScrollArea] = {}
         self._evidence_subject_buttons: dict[str, QPushButton] = {}
+        self._writing_evidence_layouts: dict[str, QVBoxLayout] = {}
         self.workspace_pages: dict[str, QWidget] = {}
         self.workspace_built = {
             key: False for key in ("writing", "evidence", "preview", "revisions")
@@ -1051,6 +1053,7 @@ class LearningReportDialog(QDialog):
                 tone="info",
             )
         )
+        layout.addWidget(self._writing_evidence_card(subject))
         report_card = AppCard()
         report_card.setObjectName("LearningReportReportCard")
         report_layout = QVBoxLayout(report_card)
@@ -1096,6 +1099,91 @@ class LearningReportDialog(QDialog):
         for edit in text_edits.values():
             edit.textChanged.connect(self._schedule_preview)
         return self._scroll_page(content)
+
+    def _writing_evidence_card(
+        self,
+        subject: LearningReportSubjectViewModel,
+    ) -> QFrame:
+        card = AppCard("soft")
+        card.setObjectName(
+            f"LearningReportWritingEvidence_{subject.subject_id}"
+        )
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(20, 18, 20, 20)
+        layout.setSpacing(10)
+        header = SectionHeader(
+            "Belege für diesen Bericht",
+            "Bewusst ausgewählte Kompetenzen und eindeutig zuordenbare Beobachtungsbelege.",
+        )
+        edit_selection = QPushButton("Auswahl bearbeiten")
+        edit_selection.setObjectName(
+            f"LearningReportEditEvidence_{subject.subject_id}"
+        )
+        configure_button(
+            edit_selection,
+            "quiet",
+            f"Auswahl für {subject.subject_name} bearbeiten",
+        )
+        edit_selection.clicked.connect(
+            lambda _checked=False, subject_id=subject.subject_id: (
+                self.focus_evidence_subject(subject_id)
+            )
+        )
+        header.add_action(edit_selection)
+        layout.addWidget(header)
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(6)
+        layout.addWidget(content)
+        self._writing_evidence_layouts[subject.subject_id] = content_layout
+        self._refresh_writing_evidence_context(subject.subject_id)
+        return card
+
+    def _refresh_writing_evidence_context(self, subject_id: str) -> None:
+        layout = self._writing_evidence_layouts.get(subject_id)
+        if layout is None:
+            return
+        self._clear_layout(layout)
+        context = build_learning_report_writing_evidence(
+            self.preparation,
+            self.report_draft(),
+            subject_id,
+        )
+        summary = QLabel(
+            f"{context.competency_count} "
+            f"Kompetenz{'en' if context.competency_count != 1 else ''} · "
+            f"{context.observation_count} Beobachtungsbeleg"
+            f"{'e' if context.observation_count != 1 else ''}"
+        )
+        summary.setObjectName("LearningReportWritingEvidenceSummary")
+        summary.setWordWrap(True)
+        set_label_style(summary, "card_title")
+        layout.addWidget(summary)
+        for competency in context.competencies:
+            row = QLabel(
+                f"{competency.competency_text} · "
+                f"{competency.observation_count} Beobachtung"
+                f"{'en' if competency.observation_count != 1 else ''}"
+            )
+            row.setObjectName("LearningReportWritingEvidenceCompetency")
+            row.setWordWrap(True)
+            set_label_style(row, "body")
+            layout.addWidget(row)
+        if context.unresolved_observation_count:
+            count = context.unresolved_observation_count
+            layout.addWidget(
+                InlineMessage(
+                    f"{count} ausgewählte{'r' if count == 1 else ''} "
+                    f"Beobachtungsbeleg{'e' if count != 1 else ''} "
+                    f"{'ist' if count == 1 else 'sind'} nicht mehr vollständig verfügbar.",
+                    tone="info",
+                )
+            )
+
+    def _refresh_writing_evidence_contexts(self) -> None:
+        for subject_id in tuple(self._writing_evidence_layouts):
+            self._refresh_writing_evidence_context(subject_id)
 
     def _subject_evidence_editor(
         self, subject: LearningReportSubjectViewModel
@@ -1807,7 +1895,13 @@ class LearningReportDialog(QDialog):
                 <= evidence.observed_on
                 <= self.period_end.date().toPython()
             )
-            suffix = "" if in_period else " · außerhalb des Berichtszeitraums"
+            suffix = (
+                " · historisch ausgewählt"
+                if evidence.availability_state == "historical"
+                else ""
+            )
+            if not in_period:
+                suffix += " · außerhalb des Berichtszeitraums"
             checkbox = QCheckBox(f"{evidence.display_label}{suffix}")
             checkbox.setChecked(evidence.observation_id in self.selected_observation_ids)
             checkbox.setEnabled(subject.subject_id in self.selected_subject_ids and in_period)
@@ -2384,18 +2478,18 @@ class LearningReportDialog(QDialog):
             )
         )
         if selected_unavailable:
-            title = QLabel("Nicht mehr verfügbare Beobachtungsbelege")
+            title = QLabel("Nicht vollständig verfügbare Beobachtungsbelege")
             set_label_style(title, "section_title")
             layout.addWidget(title)
             layout.addWidget(
                 self._responsibility_note(
-                    "Die gespeicherten Referenzen bleiben erhalten; Inhalte werden nicht rekonstruiert."
+                    "Die gespeicherten Referenzen bleiben erhalten und werden keinem Fach zugerechnet."
                 )
             )
             for index, _observation_id in enumerate(selected_unavailable, 1):
                 layout.addWidget(
                     self._small_label(
-                        f"Gespeicherter Beobachtungsbeleg {index} · nicht mehr verfügbar"
+                        f"Gespeicherter Beobachtungsbeleg {index} · nicht vollständig verfügbar"
                     )
                 )
             layout.addSpacing(12)
@@ -2413,12 +2507,12 @@ class LearningReportDialog(QDialog):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(22, 20, 22, 22)
         layout.setSpacing(8)
-        title = QLabel("Nicht mehr verfügbare Beobachtungsbelege")
+        title = QLabel("Nicht vollständig verfügbare Beobachtungsbelege")
         set_label_style(title, "section_title")
         layout.addWidget(title)
         layout.addWidget(
             self._small_label(
-                "Die gespeicherten Bezüge bleiben erhalten. Es werden keine Inhalte rekonstruiert."
+                "Die gespeicherten Referenzen bleiben erhalten und werden keinem Fach zugerechnet."
             )
         )
         for index, observation_id in enumerate(
@@ -2426,7 +2520,7 @@ class LearningReportDialog(QDialog):
             1,
         ):
             check = QCheckBox(
-                f"Nicht verfügbaren Beobachtungsbeleg {index} beibehalten"
+                f"Nicht vollständig verfügbaren Beobachtungsbeleg {index} beibehalten"
             )
             check.setObjectName(
                 f"LearningReportUnavailableEvidence_{observation_id}"
@@ -2579,6 +2673,7 @@ class LearningReportDialog(QDialog):
             self.draft_status.setText(self._draft_status_text())
             self._refresh_workspace_context()
         self._preview_stale = True
+        self._refresh_writing_evidence_contexts()
         self._refresh_closing_summary()
         if (
             self.workspace_built["preview"]

@@ -1908,6 +1908,9 @@ class AppShell(QMainWindow):
             retained_competency_ids=(
                 initial_draft.competency_ids if initial_draft is not None else ()
             ),
+            retained_observation_ids=(
+                initial_draft.observation_ids if initial_draft is not None else ()
+            ),
             retained_subject_ids=(
                 initial_draft.selected_subject_ids
                 if initial_draft is not None

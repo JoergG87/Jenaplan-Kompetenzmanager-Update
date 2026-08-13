@@ -2388,17 +2388,23 @@ Registrierte technische Namen:
 - `LearningReportPreparationViewModel`
 - `LearningReportPreparationViewModel.primary_subject_ids`
 - `LearningReportPreparationViewModel.retained_subject_ids`
+- `LearningReportPreparationViewModel.projected_observation_ids`
 - `LearningReportSubjectViewModel`
 - `LearningReportSubjectViewModel.competency_ids_with_evidence_in_period(period_start, period_end)`
 - `LearningReportSubjectViewModel.evidenced_count(period_start, period_end)`
 - `LearningReportCompetencyViewModel`
 - `LearningReportEvidenceViewModel`
+- `LearningReportEvidenceViewModel.subject_id`
+- `LearningReportEvidenceViewModel.availability_state`
+- `LearningReportWritingEvidenceViewModel`
+- `LearningReportWritingEvidenceCompetencyViewModel`
 - `LearningReportDraft`
 - `LearningReportDialog`
 - `LearningReportDraftSelectionDialog`
 - `LearningReportDraftChoice_<report_draft_id>`
-- `StudentDesktopAdapter.learning_report_preparation_for_student(student_id, retained_competency_ids=(), retained_subject_ids=())`
-- `build_learning_report_preparation(student, statuses, observations, primary_subject_ids=(), available_subjects=None, retained_subjects=None)`
+- `StudentDesktopAdapter.learning_report_preparation_for_student(student_id, retained_competency_ids=(), retained_observation_ids=(), retained_subject_ids=())`
+- `build_learning_report_preparation(student, statuses, observations, historical_observations=(), primary_subject_ids=(), available_subjects=None, retained_subjects=None)`
+- `build_learning_report_writing_evidence(preparation, draft, subject_id)`
 - `build_report_output_model(preparation, draft)`
 - `AppShell.open_learning_report_dialog(student_id)`
 - `AppShell.export_learning_report_pdf(output_model)`
@@ -2423,6 +2429,10 @@ Registrierte Qt-Objektnamen fuer das Sprint-7F.1-UX-Alignment:
 - `LearningReportSelectedSubjectContext`
 - `LearningReportEvidenceSelectionSummary`
 - `LearningReportSubjectGroupLabel`
+- `LearningReportWritingEvidence_<subject_id>`
+- `LearningReportWritingEvidenceSummary`
+- `LearningReportWritingEvidenceCompetency`
+- `LearningReportEditEvidence_<subject_id>`
 
 ## Sprint 7F.1 - Persistenter Berichtsentwurf
 

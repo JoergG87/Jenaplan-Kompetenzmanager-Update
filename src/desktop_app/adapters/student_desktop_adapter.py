@@ -1905,6 +1905,7 @@ class StudentDesktopAdapter:
         *,
         period_end: date,
         retained_competency_ids: tuple[str, ...] = (),
+        retained_observation_ids: tuple[str, ...] = (),
         retained_subject_ids: tuple[str, ...] = (),
     ) -> LearningReportPreparationViewModel | None:
         """Prepare a transient report selection from the canonical status projection."""
@@ -1928,6 +1929,19 @@ class StudentDesktopAdapter:
         observations = self._observation_list_items_from_batch(
             batch,
             student_id,
+        )
+        active_observation_ids = {
+            observation.observation_id for observation in observations
+        }
+        observation_repository = SQLiteObservationRepository(self.database)
+        historical_observations = tuple(
+            observation
+            for observation_id in dict.fromkeys(retained_observation_ids)
+            if observation_id not in active_observation_ids
+            for observation in (observation_repository.get_observation(observation_id),)
+            if observation is not None
+            and observation.student_id == student_id
+            and not observation.active
         )
         subject_projection = (
             self._student_documentation_subject_projection_from_batch(
@@ -1970,6 +1984,7 @@ class StudentDesktopAdapter:
             source.student,
             source.competency_statuses,
             source.observations,
+            historical_observations=historical_observations,
             primary_subject_ids=tuple(
                 subject.subject_id
                 for subject in subject_projection.available_subjects

@@ -74,6 +74,8 @@ class LearningReportEvidenceViewModel:
     context: str
     note: str
     competency_ids: tuple[str, ...]
+    subject_id: str = ""
+    availability_state: str = "active"
 
     @property
     def display_label(self) -> str:
@@ -151,6 +153,17 @@ class LearningReportPreparationViewModel:
     membership_blocking: bool = False
     primary_subject_ids: tuple[str, ...] = ()
     retained_subject_ids: tuple[str, ...] = ()
+
+    @property
+    def projected_observation_ids(self) -> tuple[str, ...]:
+        """Return every active or historical observation resolved by the projection."""
+        return tuple(
+            dict.fromkeys(
+                evidence.observation_id
+                for subject in self.subjects
+                for evidence in subject.evidence
+            )
+        )
 
 
 @dataclass(frozen=True)
@@ -275,6 +288,26 @@ class LearningReportSelectedEvidenceViewModel:
 
     subject_id: str
     evidence: LearningReportEvidenceViewModel
+
+
+@dataclass(frozen=True)
+class LearningReportWritingEvidenceCompetencyViewModel:
+    """One selected competency and its assigned selected observation count."""
+
+    competency_id: str
+    competency_text: str
+    observation_count: int
+
+
+@dataclass(frozen=True)
+class LearningReportWritingEvidenceViewModel:
+    """Read-only evidence context for one subject in the writing workspace."""
+
+    subject_id: str
+    competency_count: int
+    observation_count: int
+    competencies: tuple[LearningReportWritingEvidenceCompetencyViewModel, ...]
+    unresolved_observation_count: int
 
 
 @dataclass(frozen=True)
@@ -841,20 +874,34 @@ def build_learning_report_preparation(
     statuses: tuple[object, ...],
     observations: tuple[object, ...],
     *,
+    historical_observations: tuple[object, ...] = (),
     primary_subject_ids: tuple[str, ...] = (),
     available_subjects: tuple[tuple[str, str], ...] | None = None,
     retained_subjects: tuple[tuple[str, str], ...] | None = None,
 ) -> LearningReportPreparationViewModel:
     """Group the canonical status projection without recalculating status."""
+    all_observations = (*observations, *historical_observations)
     observations_by_id = {
         str(getattr(observation, "observation_id")): observation
-        for observation in observations
+        for observation in all_observations
     }
     competencies_by_subject: dict[str, list[LearningReportCompetencyViewModel]] = {}
     competency_subjects: dict[str, str] = {}
     subject_names: dict[str, str] = {}
     evidence_subjects: dict[str, set[str]] = {}
-    evidence_competencies: dict[str, set[str]] = {}
+    evidence_competencies: dict[tuple[str, str], set[str]] = {}
+    evidence_subject_labels: dict[tuple[str, str], str] = {}
+    historical_rating_snapshots: dict[str, list[tuple[str, str, object]]] = {}
+
+    for observation in historical_observations:
+        observation_id = str(getattr(observation, "observation_id", ""))
+        observed_on = str(getattr(observation, "date", ""))
+        for rating in getattr(observation, "competency_ratings", ()):
+            competency_id = str(getattr(rating, "competency_id", "")).strip()
+            if competency_id:
+                historical_rating_snapshots.setdefault(competency_id, []).append(
+                    (observed_on, observation_id, rating)
+                )
 
     for subject_id, subject_name in (
         *(available_subjects or ()),
@@ -868,23 +915,31 @@ def build_learning_report_preparation(
         subject_name = str(
             getattr(status, "subject_display_name", subject_id)
         ).strip() or subject_id
+        historical = bool(getattr(status, "historical", False))
+        snapshot_entries = historical_rating_snapshots.get(
+            str(getattr(status, "competency_id", "")),
+            (),
+        )
+        snapshot = (
+            max(snapshot_entries, key=lambda item: (item[0], item[1]))[2]
+            if historical and snapshot_entries
+            else None
+        )
+        if snapshot is not None:
+            subject_id = str(getattr(snapshot, "subject_id", subject_id)).strip()
+            subject_name = str(
+                getattr(snapshot, "subject_display_name", subject_name)
+            ).strip() or subject_id
         if not subject_id:
             continue
         subject_names.setdefault(subject_id, subject_name)
         competency_subjects[str(getattr(status, "competency_id", ""))] = subject_id
-        historical = bool(getattr(status, "historical", False))
         selectable = bool(getattr(status, "is_active", False)) and not historical
         evidence_points: list[tuple[date, str]] = []
         for evidence in getattr(status, "evidence", ()):
             observed_on = _parse_date(getattr(evidence, "observation_date", ""))
             if observed_on is not None:
                 evidence_points.append((observed_on, str(getattr(evidence, "rating", ""))))
-            observation_id = str(getattr(evidence, "observation_id", ""))
-            if observation_id:
-                evidence_subjects.setdefault(observation_id, set()).add(subject_id)
-                evidence_competencies.setdefault(observation_id, set()).add(
-                    str(getattr(status, "competency_id", ""))
-                )
         confirmed_on = _parse_date(str(getattr(status, "confirmed_at", ""))[:10])
         confirmed_rating = str(getattr(status, "confirmed_rating", ""))
         if confirmed_on is not None and confirmed_rating:
@@ -894,10 +949,22 @@ def build_learning_report_preparation(
                 competency_id=str(getattr(status, "competency_id", "")),
                 subject_id=subject_id,
                 subject_name=subject_name,
-                learning_area=str(getattr(status, "learning_area", "")) or "Ohne Kompetenzbereich",
-                competency_group=str(getattr(status, "competency_group", "")) or "Ohne Thema",
+                learning_area=str(
+                    getattr(snapshot, "learning_area", "")
+                    if snapshot is not None
+                    else getattr(status, "learning_area", "")
+                ) or "Ohne Kompetenzbereich",
+                competency_group=str(
+                    getattr(snapshot, "competency_group", "")
+                    if snapshot is not None
+                    else getattr(status, "competency_group", "")
+                ) or "Ohne Thema",
                 competency_text=(
-                    str(getattr(status, "competency_text", ""))
+                    (
+                        str(getattr(snapshot, "competency_text", ""))
+                        if snapshot is not None
+                        else str(getattr(status, "competency_text", ""))
+                    )
                     or str(getattr(status, "competency_label", ""))
                 ),
                 documentation_state=str(getattr(status, "documentation_state", "")),
@@ -909,44 +976,75 @@ def build_learning_report_preparation(
         )
 
     for observation_id, observation in observations_by_id.items():
+        base_subject_id = str(getattr(observation, "subject_id", "")).strip()
         for rating in getattr(observation, "competency_ratings", ()):
             competency_id = str(getattr(rating, "competency_id", ""))
-            subject_id = competency_subjects.get(competency_id)
+            subject_id = str(getattr(rating, "subject_id", "")).strip()
+            subject_id = subject_id or competency_subjects.get(competency_id, "")
             if subject_id:
                 evidence_subjects.setdefault(observation_id, set()).add(subject_id)
-                evidence_competencies.setdefault(observation_id, set()).add(competency_id)
-        if observation_id in evidence_subjects:
-            continue
-        visible_subject = str(getattr(observation, "subject_display_name", "")).strip()
-        subject_id = next(
-            (
-                key
-                for key, name in subject_names.items()
-                if name.casefold() == visible_subject.casefold()
-            ),
-            "",
-        )
-        if subject_id:
-            evidence_subjects.setdefault(observation_id, set()).add(subject_id)
+                evidence_competencies.setdefault((observation_id, subject_id), set()).add(
+                    competency_id
+                )
+                evidence_subject_labels[(observation_id, subject_id)] = str(
+                    getattr(rating, "subject_display_name", "")
+                ).strip()
+        if base_subject_id:
+            evidence_subjects.setdefault(observation_id, set()).add(base_subject_id)
+        elif observation_id not in evidence_subjects:
+            visible_subject = str(
+                getattr(observation, "subject_display_name", "")
+            ).strip()
+            subject_id = next(
+                (
+                    key
+                    for key, name in subject_names.items()
+                    if name.casefold() == visible_subject.casefold()
+                ),
+                "",
+            )
+            if subject_id:
+                evidence_subjects.setdefault(observation_id, set()).add(subject_id)
+                evidence_subject_labels[(observation_id, subject_id)] = visible_subject
 
     report_evidence_by_subject: dict[str, list[LearningReportEvidenceViewModel]] = {}
     for observation_id, subject_ids in evidence_subjects.items():
         observation = observations_by_id.get(observation_id)
         if observation is None:
             continue
-        observed_on = _parse_date(getattr(observation, "date_text", ""))
+        observed_on = _parse_date(
+            getattr(observation, "date_text", "")
+            or getattr(observation, "date", "")
+        )
         if observed_on is None:
             continue
-        evidence = LearningReportEvidenceViewModel(
-            observation_id=observation_id,
-            observed_on=observed_on,
-            subject_name=str(getattr(observation, "subject_display_name", "")),
-            context=str(getattr(observation, "context", "")),
-            note=str(getattr(observation, "note", "")),
-            competency_ids=tuple(sorted(evidence_competencies.get(observation_id, ()))),
-        )
         for subject_id in subject_ids:
-            report_evidence_by_subject.setdefault(subject_id, []).append(evidence)
+            report_evidence_by_subject.setdefault(subject_id, []).append(
+                LearningReportEvidenceViewModel(
+                    observation_id=observation_id,
+                    observed_on=observed_on,
+                    subject_name=(
+                        evidence_subject_labels.get((observation_id, subject_id), "")
+                        or subject_names.get(subject_id, subject_id)
+                    ),
+                    context=str(getattr(observation, "context", "")),
+                    note=str(getattr(observation, "note", "")),
+                    competency_ids=tuple(
+                        sorted(
+                            evidence_competencies.get(
+                                (observation_id, subject_id),
+                                (),
+                            )
+                        )
+                    ),
+                    subject_id=subject_id,
+                    availability_state=(
+                        "active"
+                        if bool(getattr(observation, "active", True))
+                        else "historical"
+                    ),
+                )
+            )
 
     subjects_by_id = {
         subject_id: LearningReportSubjectViewModel(
@@ -1329,9 +1427,68 @@ def build_selected_report_evidence(
     draft: LearningReportDraft,
 ) -> tuple[LearningReportSelectedEvidenceViewModel, ...]:
     """Resolve every deliberate selection once in the same order as the preview."""
+    selections, unresolved = _selected_report_evidence_resolution(
+        preparation,
+        draft,
+    )
+    unexpected_unresolved = unresolved - set(draft.unavailable_observation_ids)
+    if unexpected_unresolved:
+        raise ValueError(
+            "Ausgewählte Beobachtungsbelege konnten nicht vollständig für die "
+            "Vorschau und PDF-Ausgabe aufgelöst werden."
+        )
+    return selections
+
+
+def build_learning_report_writing_evidence(
+    preparation: LearningReportPreparationViewModel,
+    draft: LearningReportDraft,
+    subject_id: str,
+) -> LearningReportWritingEvidenceViewModel:
+    """Summarize deliberate evidence for one writing subject without mutation."""
+    selections, unresolved = _selected_report_evidence_resolution(
+        preparation,
+        draft,
+    )
+    subject = next(
+        (item for item in preparation.subjects if item.subject_id == subject_id),
+        None,
+    )
+    selected_competency_ids = set(draft.selected_competency_ids)
+    competencies = tuple(
+        competency
+        for competency in (subject.competencies if subject is not None else ())
+        if competency.competency_id in selected_competency_ids
+    )
+    subject_selections = tuple(
+        selection for selection in selections if selection.subject_id == subject_id
+    )
+    return LearningReportWritingEvidenceViewModel(
+        subject_id=subject_id,
+        competency_count=len(competencies),
+        observation_count=len(subject_selections),
+        competencies=tuple(
+            LearningReportWritingEvidenceCompetencyViewModel(
+                competency.competency_id,
+                competency.competency_text,
+                sum(
+                    competency.competency_id in selection.evidence.competency_ids
+                    for selection in subject_selections
+                ),
+            )
+            for competency in competencies
+        ),
+        unresolved_observation_count=len(unresolved),
+    )
+
+
+def _selected_report_evidence_resolution(
+    preparation: LearningReportPreparationViewModel,
+    draft: LearningReportDraft,
+) -> tuple[tuple[LearningReportSelectedEvidenceViewModel, ...], set[str]]:
+    """Resolve selected evidence once and retain every unassigned reference."""
     selected_subject_ids = set(draft.selected_subject_ids)
     selected_observation_ids = set(draft.selected_observation_ids)
-    unavailable_observation_ids = set(draft.unavailable_observation_ids)
     assigned_observation_ids: set[str] = set()
     selections: list[LearningReportSelectedEvidenceViewModel] = []
     for subject in preparation.subjects:
@@ -1350,14 +1507,4 @@ def build_selected_report_evidence(
                 )
             )
             assigned_observation_ids.add(evidence.observation_id)
-    unresolved = (
-        selected_observation_ids
-        - unavailable_observation_ids
-        - assigned_observation_ids
-    )
-    if unresolved:
-        raise ValueError(
-            "Ausgewählte Beobachtungsbelege konnten nicht vollständig für die "
-            "Vorschau und PDF-Ausgabe aufgelöst werden."
-        )
-    return tuple(selections)
+    return tuple(selections), selected_observation_ids - assigned_observation_ids

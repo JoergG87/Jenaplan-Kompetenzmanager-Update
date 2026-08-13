@@ -52,6 +52,7 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportPreparationViewModel,
     LearningReportSubjectDraftViewModel,
     LearningReportSubjectViewModel,
+    build_learning_report_writing_evidence,
     build_selected_report_evidence,
     build_report_output_model,
 )
@@ -150,6 +151,7 @@ class LearningReportTest(unittest.TestCase):
         self.assertIn("elif drafts:", source)
         self.assertIn("LearningReportDraftSelectionDialog.choose", source)
         self.assertIn("LearningReportPeriodSelectionDialog.choose", source)
+        self.assertIn("retained_observation_ids=", source)
         self.assertNotIn("drafts[0] if drafts else None", source)
 
     def test_new_report_period_selection_requires_explicit_valid_dates(self) -> None:
@@ -282,6 +284,193 @@ class LearningReportTest(unittest.TestCase):
         self.assertEqual(dialog.workspace_navigation.current_key(), "preview")
         self.assertEqual(dialog.mode_stack.currentIndex(), 3)
         self.assertEqual(dialog.report_draft_view_model(), initial_draft)
+
+    def test_writing_evidence_context_is_visible_and_navigation_stays_read_only(
+        self,
+    ) -> None:
+        initial = LearningReportDraftViewModel(
+            student_id=self.preparation.student_id,
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            subjects=(LearningReportSubjectDraftViewModel("math"),),
+            competency_ids=("CMP-000001",),
+            observation_ids=("OBS-000001",),
+            report_draft_id="RPD-WRITING-EVIDENCE",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+
+        dialog._set_editor_section(2)
+        card = dialog.findChild(QWidget, "LearningReportWritingEvidence_math")
+        self.assertIsNotNone(card)
+        if card is None:
+            raise AssertionError("Expected writing evidence card")
+        labels = [label.text() for label in card.findChildren(QLabel)]
+        self.assertIn("Belege für diesen Bericht", labels)
+        self.assertIn("1 Kompetenz · 1 Beobachtungsbeleg", labels)
+        self.assertIn("Volle Stunden ablesen · 1 Beobachtung", labels)
+        self.assertFalse(dialog._dirty)
+
+        edit = card.findChild(QPushButton, "LearningReportEditEvidence_math")
+        self.assertIsNotNone(edit)
+        if edit is None:
+            raise AssertionError("Expected edit-selection action")
+        edit.click()
+
+        self.assertEqual(dialog.workspace_navigation.current_key(), "evidence")
+        self.assertTrue(dialog._evidence_subject_buttons["math"].isChecked())
+        self.assertFalse(dialog._dirty)
+
+    def test_writing_evidence_context_switches_subject_and_marks_unresolved_neutrally(
+        self,
+    ) -> None:
+        initial = LearningReportDraftViewModel(
+            student_id=self.preparation.student_id,
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            subjects=(
+                LearningReportSubjectDraftViewModel("german"),
+                LearningReportSubjectDraftViewModel("math"),
+            ),
+            competency_ids=("CMP-000001",),
+            observation_ids=("OBS-MISSING",),
+            unavailable_observation_ids=("OBS-MISSING",),
+            report_draft_id="RPD-WRITING-UNRESOLVED",
+        )
+        dialog = LearningReportDialog(self.preparation, initial_draft=initial)
+
+        dialog._set_editor_section(1)
+        german = dialog.findChild(QWidget, "LearningReportWritingEvidence_german")
+        self.assertIsNotNone(german)
+        if german is None:
+            raise AssertionError("Expected German writing evidence card")
+        german_text = " ".join(
+            label.text() for label in german.findChildren(QLabel)
+        )
+        self.assertIn("0 Kompetenzen · 0 Beobachtungsbelege", german_text)
+        self.assertIn(
+            "1 ausgewählter Beobachtungsbeleg ist nicht mehr vollständig verfügbar.",
+            german_text,
+        )
+        self.assertNotIn("OBS-MISSING", german_text)
+
+        dialog._set_editor_section(2)
+        math = dialog.findChild(QWidget, "LearningReportWritingEvidence_math")
+        self.assertIsNotNone(math)
+        if math is None:
+            raise AssertionError("Expected math writing evidence card")
+        math_text = " ".join(label.text() for label in math.findChildren(QLabel))
+        self.assertIn("1 Kompetenz · 0 Beobachtungsbelege", math_text)
+        self.assertIn("Volle Stunden ablesen · 0 Beobachtungen", math_text)
+        self.assertFalse(dialog._dirty)
+
+    def test_historical_projected_evidence_counts_without_unresolved_warning(
+        self,
+    ) -> None:
+        active_evidence = self.preparation.subjects[1].evidence[0]
+        historical_evidence = replace(
+            active_evidence,
+            subject_id="math",
+            availability_state="historical",
+        )
+        preparation = replace(
+            self.preparation,
+            subjects=(
+                self.preparation.subjects[0],
+                replace(
+                    self.preparation.subjects[1],
+                    evidence=(historical_evidence,),
+                ),
+            ),
+        )
+        initial = LearningReportDraftViewModel(
+            student_id=preparation.student_id,
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            subjects=(LearningReportSubjectDraftViewModel("math"),),
+            competency_ids=("CMP-000001",),
+            observation_ids=("OBS-000001",),
+            unavailable_observation_ids=("OBS-000001",),
+            report_draft_id="RPD-HISTORICAL-WRITING",
+        )
+
+        dialog = LearningReportDialog(preparation, initial_draft=initial)
+        dialog._set_editor_section(2)
+        card = dialog.findChild(QWidget, "LearningReportWritingEvidence_math")
+        self.assertIsNotNone(card)
+        if card is None:
+            raise AssertionError("Expected math writing evidence card")
+        text = " ".join(label.text() for label in card.findChildren(QLabel))
+
+        self.assertIn("1 Kompetenz · 1 Beobachtungsbeleg", text)
+        self.assertNotIn("nicht mehr vollständig verfügbar", text)
+        self.assertEqual(dialog._unavailable_observation_ids, set())
+        self.assertFalse(dialog._dirty)
+
+    def test_writing_evidence_counts_multiple_items_without_other_subjects(self) -> None:
+        german = self.preparation.subjects[0].competencies[0]
+        math = self.preparation.subjects[1].competencies[0]
+        second_math = replace(
+            math,
+            competency_id="CMP-MATH-SECOND",
+            competency_text="Langer zweiter Kompetenztext für die Berichtsevidenz",
+        )
+        german_evidence = LearningReportEvidenceViewModel(
+            "OBS-GERMAN",
+            date(2026, 3, 10),
+            "Deutsch",
+            "Lesezeit",
+            "Anderes Fach",
+            (german.competency_id,),
+            subject_id="german",
+        )
+        second_math_evidence = LearningReportEvidenceViewModel(
+            "OBS-MATH-SECOND",
+            date(2026, 3, 13),
+            "Mathematik",
+            "Lernzeit",
+            "Zweiter Beleg",
+            (math.competency_id, second_math.competency_id),
+            subject_id="math",
+        )
+        preparation = replace(
+            self.preparation,
+            subjects=(
+                replace(self.preparation.subjects[0], evidence=(german_evidence,)),
+                replace(
+                    self.preparation.subjects[1],
+                    competencies=(math, second_math),
+                    evidence=(
+                        *self.preparation.subjects[1].evidence,
+                        second_math_evidence,
+                    ),
+                ),
+            ),
+        )
+        draft = LearningReportDraft(
+            date(2026, 1, 1),
+            date(2026, 7, 31),
+            "Laura Lernbegleiterin",
+            "",
+            "",
+            "",
+            ("german", "math"),
+            (german.competency_id, math.competency_id, second_math.competency_id),
+            ("OBS-GERMAN", "OBS-000001", "OBS-MATH-SECOND"),
+        )
+
+        context = build_learning_report_writing_evidence(
+            preparation,
+            draft,
+            "math",
+        )
+
+        self.assertEqual(context.competency_count, 2)
+        self.assertEqual(context.observation_count, 2)
+        self.assertEqual(
+            tuple(item.observation_count for item in context.competencies),
+            (2, 1),
+        )
+        self.assertEqual(context.unresolved_observation_count, 0)
 
     def test_new_report_groups_subjects_and_requires_a_deliberate_choice(self) -> None:
         preparation = replace(
@@ -1318,7 +1507,7 @@ class LearningReportTest(unittest.TestCase):
         self.assertIn("1 bewusst ausgewählte Beobachtungsbeleg", output_text)
         self.assertNotIn("OBS-MISSING", output_text)
         self.assertIn(
-            "Gespeicherter Beobachtungsbeleg 1 · nicht mehr verfügbar",
+            "Gespeicherter Beobachtungsbeleg 1 · nicht vollständig verfügbar",
             preview_text,
         )
         self.assertNotIn("OBS-MISSING", preview_text)

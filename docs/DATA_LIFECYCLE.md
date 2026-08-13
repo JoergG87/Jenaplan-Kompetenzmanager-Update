@@ -3225,13 +3225,25 @@ SQLite report_drafts + Relationstabellen
 -> PySide Berichtswerkstatt
 ```
 
-Regel: Laden rekonstruiert ausschliesslich gespeicherte manuelle Texte und Referenzen. Kompetenzstatus und Kompetenztexte werden mit den gespeicherten `competency_id`-Werten als `retained_competency_ids` aus der kanonischen Projektion gelesen. Nicht mehr regulaer verfuegbare Kompetenzen bleiben gekennzeichnet ausgewaehlt, koennen nach Abwahl aber nicht neu ausgewaehlt werden. Aktive Beobachtungsinhalte werden aus der bestehenden Beobachtungsprojektion gelesen; gespeicherte, dort nicht mehr aktive `observation_id`-Werte bleiben ohne erfundene Inhalte als nicht verfuegbar sichtbar. Vorschau und `ReportOutputModel` weisen solche Ausfaelle neutral aus.
+Regel: Laden rekonstruiert ausschliesslich gespeicherte manuelle Texte und Referenzen. Kompetenzstatus und Kompetenztexte werden mit den gespeicherten `competency_id`-Werten als `retained_competency_ids` aus der kanonischen Projektion gelesen. Nicht mehr regulaer verfuegbare Kompetenzen bleiben gekennzeichnet ausgewaehlt, koennen nach Abwahl aber nicht neu ausgewaehlt werden. Aktive Beobachtungsinhalte werden aus der bestehenden Beobachtungsprojektion gelesen. Zusätzlich übergibt die Shell nur die im geöffneten RPD gespeicherten `observation_id`-Werte als `retained_observation_ids`; der Adapter liest eine dort nicht mehr aktive Zeile über `SQLiteObservationRepository.get_observation` einschließlich ihrer unveränderten Rating-Snapshotfelder. Eine zum Kind gehörende, fachlich eindeutig auflösbare Soft-Delete-Referenz wird transient historisch projiziert. Fehlende, fremde oder fachlich nicht auflösbare Referenzen bleiben ohne erfundene Inhalte und ohne Fachzähler neutral. Der Read ändert weder `active`, Draftrelationen noch Kompetenz- oder Bestätigungsstände. Vorschau und `ReportOutputModel` behalten ihre bestehenden Verträge.
 
 Zusätzlich werden die gespeicherten Fach-IDs als `retained_subject_ids`
 übergeben. Dadurch bleibt ein vorhandener Fachtext auch ohne aktuelle
 Kompetenzreferenz im geladenen Draft erhalten und erscheint getrennt als
 gespeicherter Fachabschnitt. Diese Retention verändert weder aktuelle
 Fachprofile noch finalisierte RPV-Revisionen.
+
+Der Writing-Evidenzkontext ist eine nachgelagerte reine Displaykomposition:
+
+```text
+LearningReportPreparationViewModel + lokaler LearningReportDraft
+-> build_learning_report_writing_evidence
+-> Belege für diesen Bericht
+```
+
+Er schreibt nichts. `Auswahl bearbeiten` wechselt ausschließlich über den
+vorhandenen Fachfokus nach `Auswählen`. Unaufgelöste ausgewählte IDs bleiben
+sichtbar, werden aber keinem Fach und keiner Kompetenz zugerechnet.
 
 Beim Öffnen aus dem Schülerprofil zeigt die Shell bei mindestens einem vorhandenen RPD eine bewusste Auswahl: vorhandenen Entwurf nach Zeitraum und Status öffnen, neuen noch ungespeicherten Entwurf beginnen oder abbrechen. Die Auswahl schreibt keine Daten. Ein neuer Zeitraum wird erst über den bestehenden Create-Command als neuer RPD persistiert; er ändert keinen vorhandenen RPD, RPT oder RPV.
 
