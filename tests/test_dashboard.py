@@ -32,7 +32,7 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDeskto
 from src.desktop_app.adapters.master_data_desktop_adapter import MasterDataDesktopAdapter
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
-from src.desktop_app.components import CourseBadge
+from src.desktop_app.components import CourseBadge, SubjectAccentMarker
 from src.desktop_app.screens import overview_screen
 from src.desktop_app.screens.overview_screen import (
     DASHBOARD_DOCUMENTATION_HELP_TEXT,
@@ -227,6 +227,33 @@ class DashboardTest(unittest.TestCase):
         labels = tuple(label.text() for label in screen.findChildren(QLabel))
         self.assertNotIn("09:00–09:45", labels)
 
+    def test_dashboard_subject_names_keep_small_central_markers(self) -> None:
+        self._save(1, "08:00", "08:45", subject_id=self.subject.item_id)
+        self._save(1, "10:00", "10:45", subject_id=self.math_subject.item_id)
+        screen = OverviewScreen()
+        at = datetime(2026, 8, 3, 9, 0)
+        screen.set_dashboard(self.adapter.read_projection(at), self.heatmap, at, True)
+
+        card_markers = tuple(
+            marker.property("subjectId")
+            for card in screen.findChildren(DashboardLessonCard)
+            for marker in card.findChildren(SubjectAccentMarker)
+        )
+        all_markers = tuple(
+            marker.property("subjectId")
+            for marker in screen.findChildren(SubjectAccentMarker)
+        )
+        labels = tuple(label.text() for label in screen.findChildren(QLabel))
+
+        self.assertEqual(
+            set(card_markers),
+            {self.subject.item_id, self.math_subject.item_id},
+        )
+        self.assertTrue(set(card_markers).issubset(set(all_markers)))
+        self.assertIn(self.subject.label, labels)
+        self.assertIn(self.math_subject.label, labels)
+        self.assertTrue(all(marker.focusPolicy() == Qt.FocusPolicy.NoFocus for marker in screen.findChildren(SubjectAccentMarker)))
+
     def test_hero_timeline_highlights_only_the_current_timetable_lesson(self) -> None:
         self._save(1, "08:00", "08:45")
         self._save(1, "10:00", "10:45")
@@ -269,14 +296,8 @@ class DashboardTest(unittest.TestCase):
             DASHBOARD_SUBJECT_VIGNETTE_ASSETS["englisch"],
             "deutsch.png",
         )
-        self.assertEqual(
-            DASHBOARD_SUBJECT_VIGNETTE_ASSETS["selbst_sozialkompetenz"],
-            DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET,
-        )
-        self.assertEqual(
-            DASHBOARD_SUBJECT_VIGNETTE_ASSETS["arbeits_lernkompetenz"],
-            DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET,
-        )
+        self.assertNotIn("selbst_sozialkompetenz", DASHBOARD_SUBJECT_VIGNETTE_ASSETS)
+        self.assertNotIn("arbeits_lernkompetenz", DASHBOARD_SUBJECT_VIGNETTE_ASSETS)
         bottom_gaps: list[float] = []
         for subject_id in expected_subject_ids:
             with self.subTest(subject_id=subject_id):

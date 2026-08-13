@@ -850,6 +850,91 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         )
         screen.close()
 
+    def test_expanded_subject_overview_keeps_complete_rows_inside_content(self) -> None:
+        subjects = (
+            self._subject_documentation(
+                "selbst_sozialkompetenz",
+                "Selbst- und Sozialkompetenz",
+                ("CMP-SOCIAL",),
+                (),
+            ),
+            self._subject_documentation(
+                "arbeits_lernkompetenz",
+                "Arbeits-/Lernkompetenz",
+                ("CMP-WORK",),
+                (),
+            ),
+            *tuple(
+                self._subject_documentation(
+                    subject_id,
+                    subject_name,
+                    (f"CMP-{index}",),
+                    (),
+                )
+                for index, (subject_id, subject_name) in enumerate((
+                    ("deutsch", "Deutsch"),
+                    ("mathematik", "Mathematik"),
+                    ("englisch", "Englisch"),
+                    ("musik", "Musik"),
+                    ("ethik", "Ethik"),
+                    ("religion", "Religion"),
+                    ("schulgarten", "Schulgarten"),
+                    ("epu", "EPU"),
+                ))
+            ),
+        )
+        overview = replace(
+            self._overview(),
+            subject_documentation=subjects,
+        )
+        for width, height in (
+            (1150, 768),
+            (1180, 760),
+            (1280, 800),
+            (1400, 900),
+        ):
+            screen = self._screen(overview)
+            screen.resize(width, height)
+            screen.show()
+            self.app.processEvents()
+            screen.findChild(
+                QPushButton,
+                "ReportOverviewSubjectsToggle",
+            ).click()
+            self.app.processEvents()
+
+            tiles = screen.findChildren(QWidget, "ReportOverviewSubjectTile")
+            toggle = screen.findChild(
+                QPushButton,
+                "ReportOverviewSubjectsToggle",
+            )
+            card = screen.subjects_card
+            tile_rects = tuple(
+                tile.rect().translated(tile.mapTo(card, QPoint(0, 0)))
+                for tile in tiles
+            )
+
+            self.assertEqual(len(tiles), len(subjects), (width, height))
+            self.assertTrue(all(tile.height() >= tile.minimumHeight() for tile in tiles))
+            self.assertTrue(all(card.rect().contains(rect) for rect in tile_rects))
+            for first in tile_rects:
+                for second in tile_rects:
+                    if first is second or first.x() != second.x():
+                        continue
+                    if first.y() < second.y():
+                        self.assertLess(first.bottom(), second.top())
+            self.assertGreater(
+                toggle.mapTo(card, QPoint(0, 0)).y(),
+                max(rect.bottom() for rect in tile_rects),
+            )
+            self.assertEqual(
+                screen.profile_tabs.currentWidget().horizontalScrollBarPolicy(),
+                Qt.ScrollBarPolicy.ScrollBarAlwaysOff,
+            )
+            markers = screen.findChildren(QWidget, "SubjectAccentMarker")
+            self.assertGreaterEqual(len(markers), len(subjects))
+            screen.close()
+
     def test_subject_cards_render_zero_one_and_many_absolute_segments(self) -> None:
         overview = replace(
             self._overview(

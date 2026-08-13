@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
 
 from PySide6.QtWidgets import QApplication, QPushButton
 
 from src.desktop_app import theme
 from src.desktop_app.components import CourseBadge, DialogHeader, StatusBadge, configure_button
+from src.desktop_app.view_models.observation_view_model import (
+    OBSERVATION_RATING_TOKENS,
+    rating_chip_options_for_competency,
+)
 
 
 def _relative_luminance(color: str) -> float:
@@ -46,6 +51,61 @@ class BrandThemeTests(unittest.TestCase):
         self.assertEqual(theme.COLOR_FOCUS, theme.BRAND_TEAL)
         self.assertEqual(theme.COLOR_BLUE, theme.BRAND_BLUE)
         self.assertEqual(theme.COLOR_TURQUOISE, theme.BRAND_TEAL)
+
+    def test_subject_accent_matrix_uses_only_approved_design_tokens(self) -> None:
+        self.assertEqual(
+            {
+                subject_id: theme.subject_accent_color(subject_id)
+                for subject_id in (
+                    "deutsch",
+                    "mathematik",
+                    "englisch",
+                    "musik",
+                    "ethik",
+                    "religion",
+                    "schulgarten",
+                )
+            },
+            {
+                "deutsch": theme.SUBJECT_ACCENT_RED,
+                "mathematik": theme.SUBJECT_ACCENT_BLUE,
+                "englisch": theme.SUBJECT_ACCENT_BLACK,
+                "musik": theme.SUBJECT_ACCENT_YELLOW,
+                "ethik": theme.SUBJECT_ACCENT_ORANGE,
+                "religion": theme.SUBJECT_ACCENT_ORANGE,
+                "schulgarten": theme.SUBJECT_ACCENT_BROWN,
+            },
+        )
+        for subject_id in (
+            "epu",
+            "sachkunde",
+            "kreatives_gestalten",
+            "selbst_sozialkompetenz",
+            "arbeits_lernkompetenz",
+            "unknown_historical_subject",
+        ):
+            self.assertEqual(
+                theme.subject_accent_color(subject_id),
+                theme.SUBJECT_ACCENT_NEUTRAL,
+            )
+        self.assertNotIn("werken", theme.SUBJECT_ACCENT_COLORS)
+        self.assertNotIn("projektplan", theme.SUBJECT_ACCENT_COLORS)
+
+    def test_subject_accents_do_not_change_course_or_rating_contracts(self) -> None:
+        course = CourseBadge("Kurs 2", "#2563EB")
+        before_course_color = course.property("courseColorHex")
+        before_ratings = rating_chip_options_for_competency(
+            SimpleNamespace(subject_id="deutsch")
+        )
+
+        marker = theme.subject_accent_icon("deutsch").pixmap(12, 12)
+
+        self.assertFalse(marker.isNull())
+        self.assertEqual(course.property("courseColorHex"), before_course_color)
+        self.assertEqual(
+            tuple(token for token, _label in before_ratings),
+            OBSERVATION_RATING_TOKENS,
+        )
 
     def test_dialog_header_context_roles_are_explicit_and_keep_text_identity(self) -> None:
         for context_role in (

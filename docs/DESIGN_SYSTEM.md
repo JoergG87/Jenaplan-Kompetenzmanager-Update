@@ -552,6 +552,64 @@ Dashboard-Hero, Schuelerprofilkopf, Berichtskontext und LEG-Kontext bleiben die 
 
 QPainter wird nicht eingesetzt. Standardwidgets, zentrale QSS-Zustaende und das bestehende Motion-System liefern den benoetigten High-DPI-, Tastatur-, Fokus- und Reduced-Motion-Schutz. Die Release-Pruefung umfasst `1180 x 760`, `1280 x 800`, `1400 x 900` sowie Device Pixel Ratio 2.
 
+## Fachfarben als read-only Orientierungsakzent
+
+Fachfarben sind eine zentrale Design-System-Entscheidung und keine fachliche
+Datenquelle. Die einzige produktive Matrix liegt als unveränderliche
+`SUBJECT_ACCENT_COLORS`-Projektion in `src/desktop_app/theme.py`. Widgets
+übergeben eine stabile kanonische `subject_id` an `subject_accent_icon` oder
+`SubjectAccentMarker`; sie besitzen keine lokalen Hexwerte und leiten keine
+Farbe aus sichtbarem Text ab.
+
+| Fachkontext | Farbfamilie | Qt-Token / Wert |
+|---|---|---|
+| Deutsch | Rot | `SUBJECT_ACCENT_RED` / `#B3261E` |
+| Mathematik | Blau | `SUBJECT_ACCENT_BLUE` / `BRAND_BLUE` (`#176BC1`) |
+| Englisch | Schwarz | `SUBJECT_ACCENT_BLACK` / `COLOR_TEXT` (`#1F2937`) |
+| Musik | Gelb | `SUBJECT_ACCENT_YELLOW` / `#D4A500`, dunkle Kontur `#6B5700` |
+| Ethik | Orange | `SUBJECT_ACCENT_ORANGE` / `BRAND_ORANGE` (`#B2530A`) |
+| Religion | Orange | `SUBJECT_ACCENT_ORANGE` / `BRAND_ORANGE` (`#B2530A`) |
+| Schulgarten | Braun | `SUBJECT_ACCENT_BROWN` / `#795548` |
+
+EPU beziehungsweise Sachkunde, Kreatives Gestalten sowie unbekannte oder nicht
+eindeutig auflösbare historische Fächer verwenden sichtbar
+`SUBJECT_ACCENT_NEUTRAL` (`#82909D`) mit dunkler Kontur. Es gibt keine
+Hash-/ID-Zufallsfarbe. `Werken` wird nicht mit Kreativem Gestalten
+gleichgesetzt. Die historisch diskutierten Namen `Werken` und `Projektplan`
+werden nicht in die produktive Fachmatrix aufgenommen und erzeugen keine
+Fachentität oder Aliasbeziehung. Der reservierte sehr helle Token
+`SUBJECT_ACCENT_WHITE` darf bei einer späteren ausdrücklichen Freigabe nur mit
+der vorhandenen dunklen Kontur erscheinen.
+
+Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz sind überfachliche
+Entwicklungs- und Beobachtungsbereiche, keine Unterrichtsfächer. In
+Beobachtung, Cockpit, Bericht und LEG bleiben sie unter `Überfachliche
+Entwicklung` mit neutralem Marker erreichbar; in Fachauswahl, Stundenplan und
+Dashboard-Unterrichtskarten werden sie nicht angeboten oder dargestellt.
+
+Der Fachname bleibt immer sichtbar und ist die semantische Hauptinformation.
+Der Marker ist dekorativ, besitzt keinen Tabstop und keinen eigenen
+Screenreader-Farbnamen. Fachfarbe erscheint ausschließlich als kleiner Punkt,
+kleines Icon oder schmale Akzentfläche; Karten, Berichtstext und PDFs werden
+nicht großflächig eingefärbt. Gelb und sehr helle Marker erhalten eine dunkle
+Kontur, Schwarz bleibt ein kleiner Akzent.
+
+Fachfarbe, Kursfarbe und Bewertung sind drei getrennte Rollen:
+
+- `courses.color_hex`, `color_key` und `CourseBadge` bleiben ausschließlich
+  organisatorischer Kurskontext.
+- Die Ratingtokens `--`, `-`, `+`, `++` und ihre vorhandenen Standard-, Sozial-
+  und Sportfarben bleiben ausschließlich dokumentierter Entwicklungsstand.
+- Status- und Feedbacktones bleiben ausschließlich Bedien- und
+  Produktzustände.
+
+Fachmarker werden dort eingesetzt, wo ein sichtbarer Fachname Orientierung
+trägt: Dashboard und Stundenplan, Dokumentationsfachauswahl, Beobachtungsdialog
+und Beobachtungskarten, Schülerprofil und Fachübersicht, Kompetenz-Cockpit,
+Berichtsnavigation/-arbeitsbereich sowie LEG-Auswahl, Kompetenz- und
+Evidenzkontext. Untergeordnete Kompetenzzeilen werden nicht mit wiederholten
+Markern überladen, wenn der Fachkontext bereits eindeutig ist.
+
 ## Informationsdichte und Accessibility - Premium UI Sprint 3
 
 Informationsdichte bedeutet schnellere Erfassbarkeit, nicht mehr sichtbare Information. Produktive Listen und Tabellen priorisieren deshalb je Zeile Identität, fachlichen Kontext, textlich benannten Status und vorhandene Aktion. Sekundäre Metadaten bleiben typografisch ruhig; technische IDs bleiben verborgen oder im Tooltip. Standarddichte sind 44 bis 46 Pixel hohe Tabellenzeilen, kompakte Card-Zeilen und mindestens 28 Pixel hohe Listeneinträge. Lange Texte umbrechen in Inhaltsflächen oder werden in Tabellen mit vollständigem Tooltip angeboten.

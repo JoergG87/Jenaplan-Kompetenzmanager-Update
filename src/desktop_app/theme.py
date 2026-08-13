@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from types import MappingProxyType
+
+from PySide6.QtGui import QColor, QIcon, QImage, QPixmap
 from PySide6.QtWidgets import QApplication, QFrame, QLabel
 
 from src.desktop_app.icons import icon_path
@@ -46,6 +49,50 @@ COLOR_SUCCESS = "#24705A"
 COLOR_WARNING = "#8A6418"
 COLOR_INFO = "#315F83"
 COLOR_FOCUS = BRAND_TEAL
+
+# Read-only UI orientation. Subject accents are deliberately separate from
+# persisted course colors and from the four competency-rating colors.
+SUBJECT_ACCENT_RED = "#B3261E"
+SUBJECT_ACCENT_BLUE = BRAND_BLUE
+SUBJECT_ACCENT_BLACK = COLOR_TEXT
+SUBJECT_ACCENT_YELLOW = "#D4A500"
+SUBJECT_ACCENT_ORANGE = BRAND_ORANGE
+SUBJECT_ACCENT_BROWN = "#795548"
+SUBJECT_ACCENT_WHITE = "#FFFFFF"
+SUBJECT_ACCENT_NEUTRAL = "#82909D"
+SUBJECT_ACCENT_BORDER = "#52616D"
+SUBJECT_ACCENT_YELLOW_BORDER = "#6B5700"
+SUBJECT_ACCENT_COLORS = MappingProxyType({
+    "deutsch": SUBJECT_ACCENT_RED,
+    "mathematik": SUBJECT_ACCENT_BLUE,
+    "englisch": SUBJECT_ACCENT_BLACK,
+    "musik": SUBJECT_ACCENT_YELLOW,
+    "ethik": SUBJECT_ACCENT_ORANGE,
+    "religion": SUBJECT_ACCENT_ORANGE,
+    "schulgarten": SUBJECT_ACCENT_BROWN,
+})
+
+
+def subject_accent_color(subject_id: str) -> str:
+    """Return one approved subject accent or the neutral UI fallback."""
+    return SUBJECT_ACCENT_COLORS.get(subject_id.strip(), SUBJECT_ACCENT_NEUTRAL)
+
+
+def subject_accent_icon(subject_id: str, size: int = 12) -> QIcon:
+    """Create a small decorative subject marker without changing semantics."""
+    edge = max(8, size)
+    fill = QColor(subject_accent_color(subject_id))
+    border = QColor(
+        SUBJECT_ACCENT_YELLOW_BORDER
+        if fill.name().upper() == SUBJECT_ACCENT_YELLOW
+        else SUBJECT_ACCENT_BORDER
+    )
+    image = QImage(edge, edge, QImage.Format.Format_ARGB32)
+    image.fill(border)
+    for x in range(1, edge - 1):
+        for y in range(1, edge - 1):
+            image.setPixelColor(x, y, fill)
+    return QIcon(QPixmap.fromImage(image))
 
 # UI Sprint 1 tokens. Qt keeps the native platform font; no family is forced.
 SPACING_4 = 4
@@ -183,6 +230,10 @@ QFrame[cardVariant="soft"] {{
     background-color: {COLOR_SURFACE_SOFT};
     border-color: #DEE7ED;
     border-bottom-width: 1px;
+}}
+QFrame#ProfileObservationCard[interactive="true"]:hover {{
+    background-color: #F3F8FB;
+    border-color: #B9CDD9;
 }}
 QFrame[cardVariant="accent"] {{
     background-color: {LIGHT_BLUE};

@@ -516,6 +516,12 @@ class SQLiteSpikeTest(unittest.TestCase):
                         "SELECT DISTINCT target_type FROM timetable_entries WHERE active = 1"
                     ).fetchall()
                 }
+                timetable_subject_ids = {
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT DISTINCT subject_id FROM timetable_entries WHERE active = 1"
+                    ).fetchall()
+                }
                 active_observation_count = connection.execute(
                     "SELECT COUNT(*) FROM observations WHERE active = 1"
                 ).fetchone()[0]
@@ -646,6 +652,11 @@ class SQLiteSpikeTest(unittest.TestCase):
         self.assertEqual(result.timetable_count, 25)
         self.assertEqual(timetable_count, 25)
         self.assertEqual(timetable_target_types, {"group", "course", "course_group"})
+        self.assertTrue(
+            timetable_subject_ids.isdisjoint(
+                {"selbst_sozialkompetenz", "arbeits_lernkompetenz"}
+            )
+        )
         self.assertGreaterEqual(active_observation_count, 200)
         self.assertEqual(inactive_observation_count, 1)
         self.assertGreaterEqual(confirmation_count, 4)

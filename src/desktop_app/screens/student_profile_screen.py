@@ -46,11 +46,13 @@ from src.desktop_app.components import (
     SearchField,
     SectionHeader,
     SegmentedControl,
+    SubjectAccentMarker,
     StatusBadge,
     configure_button,
     ensure_button_text_width,
 )
 from src.desktop_app.icons import load_icon
+from src.desktop_app.theme import subject_accent_icon
 from src.desktop_app.motion import (
     animate_feedback,
     install_card_motion,
@@ -656,11 +658,13 @@ class StudentProfileScreen(QWidget):
         selected = set(projection.selected_subject_ids)
         for subject in projection.available_subjects:
             checkbox = QCheckBox(subject.label)
+            checkbox.setIcon(subject_accent_icon(subject.subject_id))
             checkbox.setChecked(subject.subject_id in selected)
             self.documentation_subject_checkboxes[subject.subject_id] = checkbox
             self.documentation_subject_options_layout.addWidget(checkbox)
         for subject in projection.retained_inactive_subjects:
             checkbox = QCheckBox(f"{subject.label} (nicht mehr verfügbar)")
+            checkbox.setIcon(subject_accent_icon(subject.subject_id))
             checkbox.setChecked(True)
             checkbox.setEnabled(False)
             checkbox.setAccessibleDescription(
@@ -1972,7 +1976,12 @@ class StudentProfileScreen(QWidget):
             self._toggle_observation_details(details_widget, details_button)
 
         details_button.clicked.connect(lambda _checked=False: toggle_details())
-        self._make_clickable_card(card, toggle_details, "Details anzeigen")
+        self._make_clickable_card(
+            card,
+            toggle_details,
+            "Details anzeigen",
+            with_hover_effect=False,
+        )
         layout.addLayout(self._observation_header(observation, details_button))
         layout.addWidget(self._observation_summary(observation))
         if observation.observation_id == self._focused_observation_id:
@@ -2014,8 +2023,10 @@ class StudentProfileScreen(QWidget):
         header.setSpacing(8)
         date_label = QLabel(observation.date_text)
         set_label_style(date_label, "card_title")
-        subject_label = StatusBadge(observation.subject_display_name or "-", tone="info")
+        subject_label = QLabel(observation.subject_display_name or "-")
+        set_label_style(subject_label, "card_title")
         header.addWidget(date_label, 0)
+        header.addWidget(SubjectAccentMarker(observation.subject_id))
         header.addWidget(subject_label, 1)
         if observation.is_quick_observation:
             quick_label = StatusBadge("Schnellbeobachtung", tone="neutral")
@@ -2419,6 +2430,7 @@ class StudentProfileScreen(QWidget):
         layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(7)
         header = QHBoxLayout()
+        header.addWidget(SubjectAccentMarker(subject.subject_id))
         title = QLabel(subject.subject_display_name)
         set_label_style(title, "card_title")
         count = QLabel(
@@ -3029,6 +3041,20 @@ class StudentProfileScreen(QWidget):
             toggle.clicked.connect(self._toggle_report_subjects)
             toggle_row.addWidget(toggle)
             self.report_subjects_layout.addWidget(toggle_container)
+        self._sync_report_subjects_content_height()
+        QTimer.singleShot(0, self._sync_report_subjects_content_height)
+
+    def _sync_report_subjects_content_height(self) -> None:
+        """Prevent the outer responsive grid from compressing dynamic card rows."""
+        if not hasattr(self, "subjects_card"):
+            return
+        card_layout = self.subjects_card.layout()
+        self.report_subjects_layout.activate()
+        card_layout.activate()
+        self.subjects_card.setMinimumHeight(
+            max(235, card_layout.sizeHint().height())
+        )
+        self.subjects_card.updateGeometry()
 
     def _report_subject_tile_grid(
         self,
@@ -3056,6 +3082,7 @@ class StudentProfileScreen(QWidget):
             subject_header = QHBoxLayout()
             subject_header.setContentsMargins(0, 0, 0, 0)
             subject_header.setSpacing(7)
+            subject_header.addWidget(SubjectAccentMarker(subject.subject_id))
             subject_symbol = QLabel(
                 REPORT_SUBJECT_SYMBOLS.get(subject.subject_id, "•")
             )
@@ -3709,9 +3736,15 @@ class StudentProfileScreen(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(6)
+        title_row = QHBoxLayout()
+        title_row.addWidget(SubjectAccentMarker(
+            str(getattr(section, "subject_id", ""))
+        ))
         title = QLabel(getattr(section, "subject_display_name"))
         set_label_style(title, "card_title")
-        layout.addWidget(title)
+        title_row.addWidget(title)
+        title_row.addStretch(1)
+        layout.addLayout(title_row)
         layout.addWidget(self._report_bucket(
             "Aktueller Stand",
             getattr(section, "current_statuses"),

@@ -1612,6 +1612,7 @@ class StudentDesktopAdapter:
                     )
                 ),
                 not observation.competency_ratings and bool(observation.note.strip()),
+                self._subject_id_for_observation(observation),
             )
             for observation in observations
         )
@@ -3391,6 +3392,17 @@ class StudentDesktopAdapter:
             return next(iter(subjects.values()))
         return getattr(observation, "subject_id", "")
 
+    def _subject_id_for_observation(self, observation: object) -> str:
+        """Return one stable subject id or a neutral cross-subject context."""
+        subjects = self._subjects_from_ratings(
+            getattr(observation, "competency_ratings", ())
+        )
+        if len(subjects) > 1:
+            return "cross_subject"
+        if len(subjects) == 1:
+            return next(iter(subjects))
+        return str(getattr(observation, "subject_id", "")).strip()
+
     def _subject_id_for_draft(self, draft: ObservationDraftViewModel) -> str:
         subjects = self._subjects_from_draft(draft.competency_ratings)
         if len(subjects) > 1:
@@ -3766,6 +3778,7 @@ class StudentDesktopAdapter:
                     not observation.competency_ratings
                     and bool(observation.note.strip())
                 ),
+                self._subject_id_for_observation(observation),
             )
             for observation in batch.observations_by_student.get(
                 student_id,

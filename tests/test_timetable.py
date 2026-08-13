@@ -26,7 +26,11 @@ from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDeskto
 from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
 from src.desktop_app.screens.settings_screen import SettingsScreen
 from src.desktop_app.screens.overview_screen import OverviewScreen, dashboard_greeting
+from src.desktop_app.components import SubjectAccentMarker
 from src.desktop_app.view_models.student_view_model import DashboardDocumentationHeatmapViewModel
+from src.desktop_app.view_models.observation_view_model import (
+    COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS,
+)
 
 
 class TimetableTest(unittest.TestCase):
@@ -139,6 +143,30 @@ class TimetableTest(unittest.TestCase):
                 (updated.timetable_entry_id,),
             ).fetchone()[0]
         self.assertTrue(deleted_at)
+
+    def test_subject_options_and_validation_exclude_cross_curricular_domains(self) -> None:
+        week = self.adapter.week_view_model()
+        subject_ids = {option.item_id for option in week.subjects}
+
+        self.assertTrue(
+            subject_ids.isdisjoint(COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS)
+        )
+        self.assertEqual(
+            len(subject_ids),
+            10,
+        )
+        for subject_id in COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS:
+            with self.subTest(subject_id=subject_id):
+                with self.assertRaisesRegex(
+                    TimetableValidationError,
+                    "Das ausgewählte Fach ist nicht mehr vorhanden",
+                ):
+                    self._save(
+                        weekday=1,
+                        start="08:00",
+                        end="08:45",
+                        subject_id=subject_id,
+                    )
 
     def test_references_time_and_overlap_are_validated(self) -> None:
         self._save(weekday=1, start="08:00", end="09:00")
@@ -268,6 +296,12 @@ class TimetableTest(unittest.TestCase):
             screen.findChild(QFrame, "TimetableEntry_TTE-000003")
         )
         self.assertFalse(screen.timetable_tabs.usesScrollButtons())
+        markers = screen.findChildren(SubjectAccentMarker)
+        self.assertEqual(len(markers), 2)
+        self.assertTrue(all(
+            marker.property("subjectId") == self.subject_id
+            for marker in markers
+        ))
 
     def test_dashboard_greeting_boundaries_with_and_without_display_name(self) -> None:
         self.assertEqual(dashboard_greeting(datetime(2026, 7, 17, 10, 59)), "Guten Morgen")

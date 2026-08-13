@@ -25,6 +25,9 @@ from src.desktop_app.view_models.timetable_view_model import (
     TimetableReadProjectionViewModel,
     TimetableWeekViewModel,
 )
+from src.desktop_app.view_models.observation_view_model import (
+    COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS,
+)
 
 
 class TimetableDesktopAdapter:
@@ -145,6 +148,8 @@ class TimetableDesktopAdapter:
         labels: dict[str, str] = {}
         sort_order: dict[str, int] = {}
         for competency in self.competency_repository.list_competencies():
+            if competency.subject_id in COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS:
+                continue
             labels.setdefault(competency.subject_id, competency.subject_name)
             sort_order[competency.subject_id] = min(
                 sort_order.get(competency.subject_id, competency.sort_order),
@@ -180,12 +185,7 @@ class TimetableDesktopAdapter:
         }
 
     def _valid_subject_ids(self) -> tuple[str, ...]:
-        return tuple(
-            dict.fromkeys(
-                item.subject_id
-                for item in self.competency_repository.list_competencies()
-            )
-        )
+        return tuple(option.item_id for option in self._subject_options())
 
     def _valid_target_ids(self) -> dict[str, tuple[str, ...]]:
         return {

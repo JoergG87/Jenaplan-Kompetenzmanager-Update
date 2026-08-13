@@ -68,6 +68,22 @@ lokal implementiert.
 | `MaintenancePurpose` | trennt `SCHOOL_YEAR_TRANSITION` ausdrücklich von `BACKUP_RESTORE` | Core Runtime |
 | `MaintenanceGuardedConnection` | gemeinsame produktive Connection-Grenze, die jede schreibende SQLite-Transaktion genau einmal am Gate anmeldet | Core SQLite Runtime |
 
+## Qt-Fachfarben- und Pilotlayoutnamen
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `SUBJECT_ACCENT_RED`, `SUBJECT_ACCENT_BLUE`, `SUBJECT_ACCENT_BLACK`, `SUBJECT_ACCENT_YELLOW`, `SUBJECT_ACCENT_ORANGE`, `SUBJECT_ACCENT_BROWN`, `SUBJECT_ACCENT_WHITE`, `SUBJECT_ACCENT_NEUTRAL` | zentrale rein visuelle Fachakzenttokens; Weiß ist nur reserviert und keinem produktiven Fach zugeordnet | Desktop Design System |
+| `SUBJECT_ACCENT_COLORS` | unveränderliche freigegebene `subject_id`-Matrix für Deutsch, Mathematik, Englisch, Musik, Ethik, Religion und Schulgarten | Desktop Design System |
+| `subject_accent_color` | read-only Auflösung einer stabilen Fach-ID mit neutralem Fallback | Desktop Design System |
+| `subject_accent_icon` | zentral erzeugter kleiner konturierter Qt-Fachmarker ohne fachliche Semantik oder Persistenz | Desktop Design System |
+| `SubjectAccentMarker` | dekoratives, nicht fokussierbares Marker-Widget neben einem weiterhin sichtbaren Fachnamen | Desktop Components |
+| `ObservationListItem.subject_id` | stabile rein lesende Fach-ID für den vorhandenen Beobachtungskartenkontext | Desktop Student ViewModel |
+| `StudentDesktopAdapter._subject_id_for_observation` | projiziert genau einen vorhandenen Rating-/Quick-Fachkontext oder den neutralen fachübergreifenden Schlüssel | Desktop Student Adapter |
+| `LearningConferenceCompetencyViewModel.documented_status_label` | vorhandene kanonische Bestätigung, sonst vorhandener Beobachtungsvorschlag; keine Berechnung und kein Write | Desktop LEG ViewModel |
+| `LearningReportSubjectNavigationScroll` | vertikale Scrollfläche ausschließlich für die Fachliste der Berichtsauswahl | Desktop Report Dialog |
+| `LearningReportSidebarFooter` | nicht mitscrollende Auswahlzusammenfassung, Hilfe und Weiter-Aktion der Berichtsauswahl | Desktop Report Dialog |
+| `StudentProfileScreen._sync_report_subjects_content_height` | layoutseitige Mindesthöhe aus dem tatsächlichen Fachkarten-`sizeHint` | Desktop Student Profile |
+
 ## Schülerbezogene Dokumentationsfachnamen
 
 | Technischer Name | Bedeutung | Eigentümer |

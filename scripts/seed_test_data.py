@@ -429,7 +429,7 @@ def seed_cipher_pilot_test_data(opened_runtime, *, source_root: Path) -> SeedRes
             confirmed_rating=_CIPHER_RATING_TOKENS[index],
             note="Synthetische Bestätigung für den Vergleichstest.",
         )
-    _seed_cipher_timetable(opened_runtime.database, groups, courses, competencies)
+        _seed_cipher_timetable(opened_runtime.database, groups, courses)
     workflow_counts = _seed_cipher_workflows(
         adapter, tuple(students), tuple(observations)
     )
@@ -530,9 +530,9 @@ def _database_has_seed_data(database: SQLiteDatabase) -> bool:
         )
 
 
-def _seed_cipher_timetable(database, groups, courses, competencies) -> None:
+def _seed_cipher_timetable(database, groups, courses) -> None:
     adapter = TimetableDesktopAdapter(database)
-    subject_ids = tuple(dict.fromkeys(item.subject_id for item in competencies))
+    subject_ids = tuple(option.item_id for option in adapter.week_view_model().subjects)
     for weekday in range(1, 6):
         for slot in range(2):
             target_type, target_id = (

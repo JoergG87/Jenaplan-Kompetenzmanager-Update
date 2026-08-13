@@ -423,6 +423,37 @@ class MotionSystemTest(unittest.TestCase):
         self.assertTrue(toast.hasHeightForWidth())
         toast.clear()
 
+    def test_toast_frame_never_clips_long_product_messages(self) -> None:
+        toast = Toast()
+        messages = (
+            "Entwurf gespeichert – du kannst ihn später fortsetzen.",
+            "Fächer für die Dokumentation wurden gespeichert. "
+            "Die ausgewählten und weiteren Fächer bleiben für dieses Kind erhalten.",
+            "Beobachtung gespeichert.\n"
+            "Mehrere Kompetenzbewertungen und Dokumente wurden vollständig übernommen.",
+        )
+
+        for tone in ("success", "info", "warning", "error"):
+            for width in (300, 340, 380, 520):
+                for message in messages:
+                    toast.show_message(message, tone=tone, duration_ms=10_000)
+                    toast.resize(width, toast.heightForWidth(width))
+                    self.app.processEvents()
+                    frame_extent = toast.frameWidth() * 2
+                    content_width = width - frame_extent - (
+                        toast.layout().contentsMargins().left()
+                        + toast.layout().contentsMargins().right()
+                    )
+                    required_label_height = toast.label.heightForWidth(content_width)
+
+                    self.assertGreaterEqual(toast.label.height(), required_label_height)
+                    self.assertTrue(toast.contentsRect().contains(toast.label.geometry()))
+                    self.assertGreaterEqual(toast.height(), toast.heightForWidth(width))
+                    self.assertEqual(toast.text(), message)
+                    self.assertEqual(toast.property("toastTone"), tone)
+
+        toast.clear()
+
     def test_toast_fits_dialog_top_and_shell_bottom_after_parent_resize(self) -> None:
         host = QWidget()
         host.resize(420, 260)

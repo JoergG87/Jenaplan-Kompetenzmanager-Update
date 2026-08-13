@@ -48,6 +48,11 @@ class LearningConferenceCompetencyViewModel:
     has_current_confirmation: bool = False
     sort_order: int = 0
 
+    @property
+    def documented_status_label(self) -> str:
+        """Prefer the canonical confirmation, otherwise the canonical proposal."""
+        return self.confirmed_rating or self.observed_proposal
+
     def is_documented_in_period(
         self,
         period_start: date | None,

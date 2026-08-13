@@ -11,6 +11,7 @@ from datetime import date, datetime, timedelta
 from unittest import mock
 from dataclasses import fields, replace
 from pathlib import Path
+from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -3858,9 +3859,16 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     "mathematik",
                     "Mathematik",
                 ),
+                StudentDocumentationSubjectOptionViewModel("epu", "EPU"),
             ),
             selected_subject_ids=("deutsch", "mathematik"),
             is_read_only=False,
+            retained_inactive_subjects=(
+                StudentDocumentationSubjectOptionViewModel(
+                    "kreatives_gestalten",
+                    "Kreatives Gestalten",
+                ),
+            ),
         )
 
         screen.set_documentation_subjects(projection)
@@ -3872,6 +3880,18 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         screen.documentation_subject_toggle_button.click()
         self.assertFalse(screen.documentation_subjects_body.isHidden())
+        subject_checks = tuple(
+            check
+            for check in screen.findChildren(QCheckBox)
+            if check.text() in {
+                "Deutsch",
+                "Mathematik",
+                "EPU",
+                "Kreatives Gestalten (nicht mehr verfügbar)",
+            }
+        )
+        self.assertEqual(len(subject_checks), 4)
+        self.assertTrue(all(not check.icon().isNull() for check in subject_checks))
         screen._set_documentation_subjects_expanded(False)
         screen.show_documentation_subjects_error("Speichern fehlgeschlagen")
         self.assertFalse(screen.documentation_subjects_body.isHidden())
@@ -4315,6 +4335,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
         self.assertEqual(subject_labels, ("Fächer", "Deutsch", "Mathematik"))
         self.assertNotIn("EPU", subject_labels)
+        self.assertTrue(dialog.subject_select.itemIcon(0).isNull())
+        self.assertTrue(all(
+            not dialog.subject_select.itemIcon(index).isNull()
+            for index in range(1, dialog.subject_select.count())
+        ))
+        dialog.subject_select.setCurrentIndex(1)
+        app.processEvents()
         self.assertIsNotNone(app)
 
     def test_observation_dialog_keeps_initial_additional_subject(self) -> None:
@@ -4349,6 +4376,12 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(draft.competency_ratings[0].subject_display_name, "Musik")
         self.assertIn(self.music_listening_competency_id, dialog.competency_rating_entries)
         self.assertTrue(dialog.competency_catalog_tiles[self.music_listening_competency_id].is_selected())
+        markers = dialog.findChildren(components.SubjectAccentMarker)
+        self.assertTrue(markers)
+        self.assertTrue(all(
+            marker.property("subjectId") == "musik"
+            for marker in markers
+        ))
 
     def test_observation_dialog_keeps_current_context_selected(self) -> None:
         dialog = self._observation_dialog_with_hierarchy(
@@ -5875,6 +5908,135 @@ class DesktopAppAdapterTest(unittest.TestCase):
         ))
         self.assertIsNotNone(app)
 
+    def test_expanded_observation_cards_keep_geometry_during_hover(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        subjects = (
+            ("deutsch", "Deutsch", "+"),
+            ("mathematik", "Mathematik", "++"),
+            ("schulgarten", "Schulgarten", "-"),
+            ("epu", "EPU", "--"),
+            ("musik", "Musik", "+"),
+        )
+        observations = tuple(
+            ObservationListItem(
+                f"OBS-HOVER-{index}",
+                f"{STUDENT_ID_PREFIX}-000001",
+                f"2026-07-{10 + index:02d}",
+                display_name,
+                "Langer fachlicher Kontext mit mehreren Arbeitsphasen",
+                (
+                    "Mehrzeilige Beobachtungsnotiz mit ausreichend Text, damit die "
+                    "Detailkarte deutlich wächst und Scrollpositionen belastbar geprüft "
+                    "werden können. "
+                ) * (index + 1),
+                tuple(
+                    ObservationRatingViewModel(
+                        f"{subject_id}-kompetenz-{rating_index}",
+                        display_name,
+                        "Lernbereich mit langem Namen",
+                        "Kompetenzgruppe",
+                        "Ausführlich beschriebene Kompetenz",
+                        token,
+                        subject_id=subject_id,
+                    )
+                    for rating_index in range(1 + index % 3)
+                ),
+                (
+                    SimpleNamespace(
+                        document_type="Bild",
+                        display_title=f"Dokument {index}.jpg",
+                        file_path=Path(f"/tmp/Dokument-{index}.jpg"),
+                    ),
+                ) if index % 2 == 0 else (),
+                False,
+                subject_id,
+            )
+            for index, (subject_id, display_name, token) in enumerate(subjects)
+        )
+        screen.set_student(self._sample_student_detail(), observations)
+        screen.profile_tabs.setCurrentIndex(1)
+        screen.show()
+
+        show_all_button = next(
+            button
+            for button in screen.findChildren(QPushButton)
+            if button.text() == "Alle Beobachtungen anzeigen (5)"
+        )
+        show_all_button.click()
+        for button in tuple(screen.findChildren(QPushButton)):
+            if button.text() == "Details anzeigen":
+                button.click()
+
+        cards = tuple(
+            card
+            for card in screen.findChildren(QFrame, "ProfileObservationCard")
+            if card.property("observation_id")
+        )
+        self.assertEqual(len(cards), 5)
+        self.assertTrue(all(card.graphicsEffect() is None for card in cards))
+
+        scroll_area = screen.profile_tabs.widget(1)
+        self.assertIsInstance(scroll_area, QScrollArea)
+        for width, height in ((1150, 768), (1180, 760), (1280, 800), (1400, 900)):
+            screen.resize(width, height)
+            app.processEvents()
+            bar = scroll_area.verticalScrollBar()
+            bar.setValue(bar.maximum() // 2)
+            app.processEvents()
+            scroll_before = bar.value()
+            geometry_before = tuple(card.geometry() for card in cards)
+            action_geometry_before = tuple(
+                tuple(
+                    button.geometry()
+                    for button in card.findChildren(QPushButton)
+                    if button.text() in {
+                        "Details ausblenden",
+                        "Bearbeiten",
+                        "Löschen",
+                        "Öffnen",
+                    }
+                )
+                for card in cards
+            )
+
+            for card in cards:
+                QApplication.sendEvent(card, QEvent(QEvent.Type.Enter))
+                for child in card.findChildren(QPushButton):
+                    QApplication.sendEvent(child, QEvent(QEvent.Type.Enter))
+                    QApplication.sendEvent(child, QEvent(QEvent.Type.Leave))
+                QApplication.sendEvent(card, QEvent(QEvent.Type.Leave))
+            app.processEvents()
+
+            self.assertEqual(tuple(card.geometry() for card in cards), geometry_before)
+            self.assertEqual(
+                tuple(
+                    tuple(
+                        button.geometry()
+                        for button in card.findChildren(QPushButton)
+                        if button.text() in {
+                            "Details ausblenden",
+                            "Bearbeiten",
+                            "Löschen",
+                            "Öffnen",
+                        }
+                    )
+                    for card in cards
+                ),
+                action_geometry_before,
+            )
+            self.assertEqual(bar.value(), scroll_before)
+            self.assertTrue(all(
+                any(
+                    label.text().startswith("Notiz:") and label.isVisible()
+                    for label in card.findChildren(QLabel)
+                )
+                for card in cards
+            ))
+
+        screen.close()
+        self.assertIsNotNone(app)
+
     def test_student_profile_subject_filter_limits_observation_cards(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
@@ -7077,6 +7239,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIsNotNone(details_container)
         self.assertEqual(details_button.text(), "Öffnen ▾")
         self.assertTrue(details_container.isHidden())
+        markers = screen.findChildren(components.SubjectAccentMarker)
+        self.assertEqual(
+            tuple(marker.property("subjectId") for marker in markers),
+            ("mathematik",),
+        )
 
         details_button.click()
 

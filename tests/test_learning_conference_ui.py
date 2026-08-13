@@ -7,6 +7,7 @@ import os
 import unittest
 from dataclasses import replace
 from datetime import date
+from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -47,6 +48,7 @@ from src.desktop_app.view_models.learning_conference_view_model import (
     LearningConferenceEvidenceViewModel,
     LearningConferencePreparationViewModel,
     LearningConferenceSubjectViewModel,
+    build_learning_conference_preparation,
 )
 from src.desktop_app.view_models.student_view_model import StudentDetailViewModel
 
@@ -168,6 +170,164 @@ class LearningConferenceUiTest(unittest.TestCase):
         self.assertEqual(len(status_labels), 1)
         self.assertIn("Bestätigter Stand", status_labels[0].text())
         self.assertFalse(any("rating" in edit.objectName().casefold() for edit in dialog.findChildren(QTextEdit)))
+
+    def test_canonical_status_projection_preserves_all_rating_profiles(self) -> None:
+        expected_by_subject = {
+            "deutsch": (
+                "-- Unterstützungsbedarf",
+                "- in Entwicklung",
+                "+ erreicht",
+                "++ sicher erreicht",
+            ),
+            "selbst_sozialkompetenz": (
+                "Kaum vorhanden",
+                "Teilweise",
+                "Gut",
+                "Ausgeprägt",
+            ),
+            "sport": (
+                "Erste Übungen",
+                "Übt noch",
+                "Meist",
+                "Sicher",
+            ),
+        }
+        tokens = ("--", "-", "+", "++")
+        statuses = tuple(
+            SimpleNamespace(
+                competency_id=f"{subject_id}-{index}",
+                subject_id=subject_id,
+                subject_display_name=subject_id,
+                learning_area="Bereich",
+                competency_group="Thema",
+                competency_text=f"Kompetenz {subject_id} {token}",
+                documentation_state="confirmed",
+                observed_proposal="-",
+                confirmed_rating=token,
+                confirmed_at="2026-07-01T08:00:00+00:00",
+                historical=False,
+                is_active=True,
+                catalog_status="current",
+                evidence=(),
+                sort_order=index,
+            )
+            for subject_id in expected_by_subject
+            for index, token in enumerate(tokens)
+        )
+
+        preparation = build_learning_conference_preparation(
+            SimpleNamespace(
+                student_id="STU-RATING-PROFILES",
+                display_name="Mara Beispiel",
+                group_name="Sonnenbogen",
+                course_name="",
+            ),
+            statuses,
+            (),
+        )
+        projected = {
+            competency.competency_id: competency.documented_status_label
+            for subject in preparation.subjects
+            for competency in subject.competencies
+        }
+        expected = {
+            f"{subject_id}-{index}": label
+            for subject_id, labels in expected_by_subject.items()
+            for index, label in enumerate(labels)
+        }
+
+        self.assertEqual(projected, expected)
+
+    def test_canonical_status_is_visible_in_selection_and_phase_summaries(self) -> None:
+        competencies = (
+            LearningConferenceCompetencyViewModel(
+                "CMP-CONFIRMED", "deutsch", "Deutsch", "Lesen", "Texte",
+                "Texte sicher erschließen", "Bestätigter Stand vorhanden",
+                "+ erreicht", "++ sicher erreicht", False, True,
+                ("2026-07-01",), True,
+            ),
+            LearningConferenceCompetencyViewModel(
+                "CMP-OBSERVED", "deutsch", "Deutsch", "Schreiben", "Planen",
+                "Texte strukturiert planen", "Durch Beobachtungen dokumentiert",
+                "- in Entwicklung", "", False, True, ("2026-07-02",), False,
+            ),
+            LearningConferenceCompetencyViewModel(
+                "CMP-HISTORICAL", "deutsch", "Deutsch", "Sprache", "Wörter",
+                "Historische Sammelkompetenz", "Bestätigter Stand vorhanden",
+                "", "+ erreicht", True, False, (), True,
+            ),
+            LearningConferenceCompetencyViewModel(
+                "CMP-NONE", "deutsch", "Deutsch", "Sprache", "Sätze",
+                "Noch nicht dokumentierte Kompetenz", "Nicht dokumentiert",
+                "", "", False, True, (), False,
+            ),
+        )
+        preparation = LearningConferencePreparationViewModel(
+            "STU-STATUS",
+            "Mara Beispiel",
+            "Sonnenbogen",
+            (LearningConferenceSubjectViewModel("deutsch", "Deutsch", competencies),),
+            tuple(
+                LearningConferenceCrossTopicViewModel(*topic)
+                for topic in LEARNING_CONFERENCE_CROSS_TOPICS
+            ),
+            (),
+        )
+        initial = LearningConferenceDraftViewModel(
+            student_id=preparation.student_id,
+            conference_date=date(2026, 7, 13),
+            subject_ids=("deutsch",),
+            competency_ids=tuple(item.competency_id for item in competencies),
+        )
+        dialog = LearningConferenceDialog(preparation, initial_draft=initial)
+        original_draft = dialog.draft_view_model()
+        dialog.set_active_phase("evidence", focus=False)
+        self._open_competency_sections(dialog)
+
+        status_texts = {
+            label.text()
+            for label in dialog.findChildren(
+                QLabel,
+                "LearningConferenceCanonicalStatus",
+            )
+        }
+        self.assertIn(
+            "Aktueller dokumentierter Stand: ++ sicher erreicht",
+            status_texts,
+        )
+        self.assertIn(
+            "Aktueller dokumentierter Stand: - in Entwicklung",
+            status_texts,
+        )
+        self.assertIn(
+            "Aktueller dokumentierter Stand: + erreicht",
+            status_texts,
+        )
+        self.assertIn(
+            "Aktueller dokumentierter Stand: Noch kein dokumentierter Stand",
+            status_texts,
+        )
+        self.assertTrue(dialog.competency_checks["CMP-HISTORICAL"].isChecked())
+        self.assertFalse(dialog.subject_checks["deutsch"].icon().isNull())
+        self.assertFalse(dialog.competency_sections["deutsch"].button.icon().isNull())
+        self.assertFalse(any(
+            "rating" in edit.objectName().casefold()
+            for edit in dialog.findChildren(QTextEdit)
+        ))
+
+        for phase_key in ("strengths", "development", "goals", "agreements"):
+            dialog.set_active_phase(phase_key, focus=False)
+        summaries = "\n".join(label.text() for label in dialog.evidence_summary_labels)
+        for competency in competencies:
+            self.assertIn(competency.competency_text, summaries)
+        self.assertIn("Aktueller dokumentierter Stand: ++ sicher erreicht", summaries)
+        self.assertIn("Aktueller dokumentierter Stand: - in Entwicklung", summaries)
+        self.assertIn("Aktueller dokumentierter Stand: + erreicht", summaries)
+        self.assertIn(
+            "Aktueller dokumentierter Stand: Noch kein dokumentierter Stand",
+            summaries,
+        )
+        self.assertEqual(dialog.draft_view_model(), original_draft)
 
     def test_only_documented_or_confirmed_competencies_are_visible(self) -> None:
         dialog = LearningConferenceDialog(self._filter_preparation())

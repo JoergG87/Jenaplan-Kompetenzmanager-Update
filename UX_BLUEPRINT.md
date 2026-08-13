@@ -74,6 +74,30 @@ Zielplattform ist Microsoft Excel für macOS.
 - Motion bestaetigt nur bereits ausgefuehrte Interaktionen: kurze zentrale Uebergaenge duerfen Navigation, Filter, Fokus, Speichern oder fachliche Signale nie verzoegern.
 - Reduced Motion setzt alle Endzustaende sofort; Tabellen, Leerzustaende, globale Navigation und Dialoge bleiben bewusst statisch beziehungsweise nativ.
 
+## 2.1 Fachorientierung im Qt-Pilot
+
+Fachnamen bleiben in jedem Fachkontext sichtbar. Ein kleiner zentraler Marker
+unterstützt lediglich das schnelle Wiedererkennen: Deutsch Rot, Mathematik
+Blau, Englisch Schwarz, Musik Gelb, Ethik und Religion Orange sowie
+Schulgarten Braun. EPU/Sachkunde, Kreatives Gestalten, Selbst- und
+Sozialkompetenz, Arbeits- und Lernkompetenz und unbekannte Fächer bleiben
+neutral. Kreatives Gestalten wird nicht mit Werken gleichgesetzt.
+
+Dashboard, Stundenplan, Beobachtungsdialog, Schülerprofil, Fachübersicht,
+Kompetenz-Cockpit, Bericht und LEG verwenden dieselbe zentrale Auflösung aus
+der stabilen Fach-ID. Weitere beziehungsweise individuell gewählte Fächer
+ändern ihre Farbe nicht durch die Position in der Auswahl. Kursfarbe,
+Bewertungsfarbe und Statusfarbe bleiben getrennte visuelle Rollen. Marker
+werden nicht auf jede untergeordnete Kompetenzzeile wiederholt, färben keine
+ganzen Karten oder Dokumentflächen und besitzen keinen eigenen Tabstop.
+
+Ein- und ausklappbare Fach- und Beobachtungskarten setzen ihren Zustand sofort
+und ohne geometrieverändernden Hovereffekt. Dynamische Fachübersichten
+reservieren die Höhe ihrer vollständigen Zeilen. Lange Bericht-Fachlisten
+scrollen unabhängig von der dauerhaft erreichbaren Weiter-Aktion. Mehrzeilige
+Statusmeldungen wachsen anhand ihrer tatsächlichen Rahmen- und Inhaltsbreite,
+damit keine Textzeile abgeschnitten wird.
+
 ## 3. Primäre User Journeys
 
 - Erste Ausführung -> Konto/Legacy-Aufnahme -> fachliche Shell ->

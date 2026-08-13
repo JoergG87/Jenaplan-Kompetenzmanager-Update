@@ -615,6 +615,23 @@ Spalten:
 | Shell-Feedback | bestehende Shell-Ergebnisse und UI-Zustaende | Anzeige | Nein | keine fachliche Datenquelle | nicht blockierender `Toast` fuer kurze Rueckmeldung; `InlineMessage` fuer kontextgebundene Hinweise; keine Persistenz |
 | Zurück zu Erste Schritte | fluechtiger Shell-Zustand nach Onboarding-Navigation | Navigation | Nein | keine fachliche Datenquelle | nur sichtbar, wenn aus dem Onboarding zu einer bestehenden Seite navigiert wurde; normales Weiterarbeiten bleibt moeglich |
 
+## Zentrale Qt-Fachorientierung und Pilotlayoutprojektionen
+
+| UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
+| --- | --- | --- | --- | --- | --- |
+| Kleiner Fachmarker | vorhandene stabile kanonische `subject_id` -> read-only `SUBJECT_ACCENT_COLORS` / neutraler Fallback | Anzeige | Nein | keine fachliche Datenquelle; Qt-Design-System | Fachname bleibt sichtbar; keine Ableitung aus Widgettext, keine lokale Farbmatrix, keine neue Persistenz |
+| Fachmarker in Dashboard/Stundenplan | `TimetableEntryViewModel.subject_id` | Anzeige | Nein | `timetable_entries` und vorhandene Fachauflösung | ausschließlich Unterrichtsfächer; `selbst_sozialkompetenz` und `arbeits_lernkompetenz` sind überfachliche Beobachtungsbereiche und weder Stundenplanoption noch gültiger Stundenplaneintrag. `JETZT`, vergangene Stunde, Auswahlstatus und Kurskontext bleiben getrennt und textlich erkennbar; keine farbige Stundenkarte |
+| Fachmarker in Beobachtung | `ObservationSubjectOptionViewModel.subject_key`, Kompetenz-`subject_key` beziehungsweise `ObservationListItem.subject_id` | Anzeige | Nein | vorhandene Beobachtungs-/Curriculumprojektion | stabiler Einzelfachkontext; fachübergreifend oder nicht eindeutig bleibt neutral; Bewertungschips und Ratingfarben unverändert |
+| Fachmarker in individueller Dokumentationsfachauswahl | `StudentDocumentationSubjectOptionViewModel.subject_id` | Anzeige | Nein | vorhandene schuljahresgebundene Fachprojektion | primär, weiteres oder historisch erhaltenes Fach löst dieselbe zentrale Farbe auf; Auswahlzustand bleibt Checkboxtext/-zustand |
+| Fachmarker in Schülerprofil, Cockpit und Berichte-Übersicht | jeweilige vorhandene `subject_id` des Fach-ViewModels | Anzeige | Nein | vorhandene read-only Profil-/Cockpit-/Berichtsprojektionen | Marker nur auf Fachebene; Hierarchie, Fachname, Mengen und Aktionen bleiben ohne Farbe vollständig verständlich |
+| Fachmarker in Bericht und LEG | `LearningReportSubjectViewModel.subject_id`, `LearningConferenceSubjectViewModel.subject_id` beziehungsweise eindeutige Kompetenz-`subject_id` eines Belegs | Anzeige | Nein | vorhandene Report-/LEG-Preparation | nur Arbeits-UI; keine PDF- oder Dokumentgestaltung, keine Berichts-/LEG-Draftänderung |
+| Kanonischer LEG-Kompetenzstand | vorhandene `confirmed_rating`, sonst vorhandener `observed_proposal`, jeweils über bestehendes Bewertungsprofil beschriftet | Anzeige | Nein | `StudentDesktopAdapter.list_competency_status_projection_for_student` | `Aktueller dokumentierter Stand: …`; keine Neuberechnung, kein LEG-Ratingfeld, keine Änderung an LCD/LCF/LCV/LCA oder PDF |
+| LEG-Belegzusammenfassung | bewusst ausgewählte `competency_id` -> vorhandener Kompetenztext plus vorstehender kanonischer Stand | Anzeige | Nein | `LearningConferencePreparationViewModel` und flüchtige Draftauswahl | read-only Wiederholung in Gesprächsphasen; Auswahl und Draft bleiben unverändert |
+| Fachübersicht-Kartenhöhe | tatsächlicher Qt-`sizeHint` der bereits gelieferten Fachkarten | Anzeige/Layout | Nein | keine Datenquelle | dynamische Mindesthöhe verhindert Überlappung; kein zusätzliches Fach, keine Ausblendung und kein horizontaler Gesamtscroll |
+| Bericht-Fachnavigation | vorhandene Berichtsfächer in einer vertikalen Qt-Scrollfläche; Auswahlzusammenfassung und Weiter-Aktion im festen Footer | Navigation/Layout | Nein | `LearningReportPreparationViewModel` | lange Listen werden nicht komprimiert; Fachinhalt und Entwurfsauswahl unverändert |
+| Beobachtungskarten-Hover | flüchtiger Qt-Enter-/Leave-Zustand | Anzeige/Layout | Nein | keine Datenquelle | nur farblicher QSS-Zustand ohne Schatten-/Geometrieeffekt; Detailinhalt, Aktionszeilen und Scrollposition bleiben stabil |
+| Mehrzeiliger Toast | vorhandener Feedbacktext, tatsächliche Inhaltsbreite und `QFrame.frameWidth()` | Anzeige/Layout | Nein | vorhandenes Ergebnis / keine Fachquelle | vollständiger Umbruch innerhalb der sicheren Fläche; Tone und Textsemantik unverändert |
+
 ## PySide6 Erste Schritte
 
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |

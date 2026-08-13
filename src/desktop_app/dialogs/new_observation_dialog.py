@@ -37,13 +37,14 @@ from src.desktop_app.components import (
     SearchField,
     SectionHeader,
     StatusBadge,
+    SubjectAccentMarker,
     configure_button,
 )
 from src.desktop_app.dialogs.dialog_buttons import (
     DialogActionBar,
     configure_save_cancel_buttons,
 )
-from src.desktop_app.theme import set_label_style
+from src.desktop_app.theme import set_label_style, subject_accent_icon
 from src.desktop_app.view_models.observation_view_model import (
     COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR,
     COMPETENCY_PRESENTATION_GROUP_SUBJECTS,
@@ -516,6 +517,7 @@ class NewObservationDialog(QDialog):
                 header_item.setEnabled(False)
             for subject in grouped_subjects:
                 self.subject_select.addItem(
+                    subject_accent_icon(subject.subject_key),
                     subject.display_name,
                     subject.subject_key,
                 )
@@ -618,6 +620,7 @@ class NewObservationDialog(QDialog):
             chip_layout = QHBoxLayout(chip)
             chip_layout.setContentsMargins(8, 5, 8, 5)
             chip_layout.setSpacing(5)
+            chip_layout.addWidget(SubjectAccentMarker(competency.subject_key))
             text = QLabel(self._competency_display_text(competency))
             text.setWordWrap(False)
             text.setSizePolicy(
@@ -812,6 +815,7 @@ class NewObservationDialog(QDialog):
         tile_layout = QHBoxLayout(tile)
         tile_layout.setContentsMargins(9, 7, 7, 7)
         tile_layout.setSpacing(8)
+        tile_layout.addWidget(SubjectAccentMarker(competency.subject_key))
         text = QLabel(self._competency_display_text(competency))
         text.setWordWrap(True)
         text.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
@@ -1134,6 +1138,9 @@ class NewObservationDialog(QDialog):
         card_layout.setContentsMargins(9, 6, 8, 6)
         card_layout.setSpacing(4)
         meta_row = QHBoxLayout()
+        meta_row.addWidget(SubjectAccentMarker(
+            str(getattr(catalog_entry, "subject_key", ""))
+        ))
         meta = QLabel(
             f"{getattr(catalog_entry, 'subject_display_name', '')} · "
             f"{self._learning_area_text(catalog_entry)} · "

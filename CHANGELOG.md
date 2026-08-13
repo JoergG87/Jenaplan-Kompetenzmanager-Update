@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+- Fachkontexte verwenden jetzt eine einzige read-only Qt-Farbmatrix im
+  Design-System: Deutsch Rot, Mathematik Blau, Englisch Schwarz, Musik Gelb,
+  Ethik und Religion Orange sowie Schulgarten Braun. Kleine Marker ergänzen
+  den weiterhin sichtbaren Fachnamen in Dashboard, Stundenplan,
+  Beobachtungsdialog, Schülerprofil, Kompetenz-Cockpit, Bericht und LEG.
+  EPU/Sachkunde, Kreatives Gestalten, beide überfachlichen Domänen und
+  unbekannte Fächer bleiben neutral. Kurs-, Rating- und Statusfarben sowie
+  Schema, Persistenz und Fachauswahl bleiben unverändert.
+  Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz bleiben als
+  überfachliche Beobachtungsbereiche getrennt und werden weder im Stundenplan
+  angeboten noch als Unterrichtsstunde ins Dashboard projiziert.
+
+- Die Fachübersicht im Schülerprofil reserviert nach dem Ein- und Ausklappen
+  die tatsächlich benötigte Kartenhöhe; vollständige Fachzeilen und Aktionen
+  überlappen auch bei 1150 x 768 nicht mehr. Die Fachnavigation der
+  Berichtswerkstatt scrollt unabhängig von ihrer dauerhaft lesbaren
+  Auswahlzusammenfassung und Primäraktion, sodass auch lange Fachlisten nicht
+  vertikal zusammengedrückt werden.
+
+- Der LEG-Workspace zeigt den kanonischen aktuellen dokumentierten Stand je
+  Kompetenz jetzt ausdrücklich als read-only Text und wiederholt Kompetenz
+  plus Stand in den Belegzusammenfassungen der Gesprächsphasen. Bestätigte
+  Stände haben Vorrang vor dem vorhandenen Beobachtungsvorschlag; Standard-,
+  Sozial- und Sportprofile behalten ihre bisherigen Tokens und Bezeichnungen.
+  LEG-Entwurf, Abschluss, Revision und PDF bleiben unverändert.
+
+- Mehrzeilige Qt-Statusmeldungen berücksichtigen ihre tatsächliche
+  Rahmenbreite bei Umbruch und Höhenberechnung. Beobachtungskarten im
+  Schülerprofil verwenden für Hover nur noch farbliche, geometrieneutrale
+  Zustände; mehrere geöffnete Detailkarten behalten Position, Aktionszeilen,
+  Scrollstand und sichtbaren Inhalt stabil.
+
 - Der Qt-LEG-Workspace ordnet seine sechs unveränderten Inhaltsanker jetzt
   sichtbar in `Vorbereitung`, `Im Gespräch` und `Vereinbarungen & Abschluss`.
   Alle Anker sind direkt wählbar; nummerierte Fortschrittswirkung sowie die

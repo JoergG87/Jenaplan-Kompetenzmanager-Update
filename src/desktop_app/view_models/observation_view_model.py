@@ -255,6 +255,7 @@ class ObservationListItem:
     competency_ratings: tuple[ObservationRatingViewModel, ...]
     attachments: tuple[object, ...] = ()
     is_quick_observation: bool = False
+    subject_id: str = ""
 
     @property
     def summary(self) -> str:

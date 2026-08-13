@@ -13,8 +13,8 @@ from PySide6.QtWidgets import (
 )
 
 from src.core.app_preferences import DISPLAY_NAME_MAX_LENGTH
-from src.desktop_app.components import AppCard, InlineMessage, PageHeader, configure_button
-from src.desktop_app.theme import create_card, set_label_style
+from src.desktop_app.components import AppCard, InlineMessage, PageHeader, SubjectAccentMarker, configure_button
+from src.desktop_app.theme import create_card, set_label_style, subject_accent_icon
 from src.desktop_app.view_models.backup_restore_view_model import (
     BackupSummaryViewModel, RestorePreviewViewModel,
 )
@@ -498,6 +498,7 @@ class SettingsScreen(QWidget):
             checkbox = QCheckBox(subject.label)
             checkbox.setObjectName(f"DocumentationSubjectCheckbox_{subject.subject_id}")
             checkbox.setChecked(subject.selected)
+            checkbox.setIcon(subject_accent_icon(subject.subject_id))
             checkbox.setAccessibleName(f"{subject.label} als dokumentationsrelevantes Fach verwenden")
             self.documentation_subject_checkboxes[subject.subject_id] = checkbox
             self.documentation_subjects_layout.addWidget(checkbox)
@@ -831,7 +832,14 @@ class SettingsScreen(QWidget):
     def _timetable_entry_card(self, entry: TimetableEntryViewModel) -> QFrame:
         card = create_card(); card.setObjectName(f"TimetableEntry_{entry.timetable_entry_id}"); layout = QHBoxLayout(card)
         time = QLabel(entry.time_label); time.setMinimumWidth(105); set_label_style(time, "card_title"); layout.addWidget(time)
-        details = QVBoxLayout(); subject = QLabel(entry.subject_label); set_label_style(subject, "card_title"); details.addWidget(subject)
+        details = QVBoxLayout(); subject = QLabel(entry.subject_label); set_label_style(subject, "card_title")
+        subject_row = QHBoxLayout()
+        subject_row.setContentsMargins(0, 0, 0, 0)
+        subject_row.setSpacing(6)
+        subject_row.addWidget(SubjectAccentMarker(entry.subject_id))
+        subject_row.addWidget(subject)
+        subject_row.addStretch(1)
+        details.addLayout(subject_row)
         target = QLabel(" · ".join(part for part in [entry.target_type_label, entry.target_label, entry.room] if part)); target.setWordWrap(True); set_label_style(target, "muted"); details.addWidget(target); layout.addLayout(details, 1)
         active = QCheckBox("Aktiv"); active.setChecked(entry.active); active.setObjectName(f"TimetableActive_{entry.timetable_entry_id}"); active.toggled.connect(lambda checked, entry_id=entry.timetable_entry_id: self.timetable_active_requested.emit(entry_id, checked)); layout.addWidget(active)
         edit = QPushButton("Bearbeiten"); configure_button(edit, "secondary", "Stunde bearbeiten"); edit.clicked.connect(lambda checked=False, entry_id=entry.timetable_entry_id: self.timetable_edit_requested.emit(entry_id)); layout.addWidget(edit)

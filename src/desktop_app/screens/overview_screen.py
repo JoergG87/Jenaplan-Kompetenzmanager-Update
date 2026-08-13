@@ -26,6 +26,7 @@ from src.desktop_app.components import (
     DialogHeader,
     PageHeader,
     SectionHeader,
+    SubjectAccentMarker,
     configure_button,
 )
 from src.desktop_app.motion import MotionDialog
@@ -59,7 +60,7 @@ DASHBOARD_DOCUMENTATION_HELP_TITLE = "Hilfe zu Dokumentation im Überblick"
 DASHBOARD_DOCUMENTATION_HELP_TEXT = (
     "Die Übersicht zeigt für die am aktuellen Dashboard-Tag im aktuellen "
     "Schuljahr aktiv zugeordneten Kinder je Stammgruppe und "
-    "dokumentationsrelevantem Fach, bei wie vielen mindestens eine Kompetenz "
+    "Dokumentationsbereich, bei wie vielen mindestens eine Kompetenz "
     "dokumentiert ist. Berücksichtigt werden alle vorhandenen aktiven "
     "Beobachtungen mit Kompetenzzuordnung sowie Kompetenzbestätigungen; diese "
     "Dokumentationen sind nicht auf das aktuelle Schuljahr oder einen eigenen "
@@ -75,8 +76,6 @@ DASHBOARD_SUBJECT_VIGNETTE_COMPACT_SIZE = (124, 106)
 DASHBOARD_SUBJECT_VIGNETTE_OVERLAP = 22
 DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET = "epu.png"
 DASHBOARD_SUBJECT_VIGNETTE_ASSETS = {
-    "selbst_sozialkompetenz": DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET,
-    "arbeits_lernkompetenz": DASHBOARD_SUBJECT_VIGNETTE_FALLBACK_ASSET,
     "deutsch": "deutsch.png",
     "mathematik": "mathematik.png",
     "epu": "epu.png",
@@ -139,7 +138,13 @@ class DashboardLessonCard(AppCard):
         meta.setWordWrap(True)
         set_label_style(meta, "muted")
         layout.addLayout(header)
-        layout.addWidget(subject)
+        subject_row = QHBoxLayout()
+        subject_row.setContentsMargins(0, 0, 0, 0)
+        subject_row.setSpacing(6)
+        subject_row.addWidget(SubjectAccentMarker(occurrence.entry.subject_id))
+        subject_row.addWidget(subject)
+        subject_row.addStretch(1)
+        layout.addLayout(subject_row)
         layout.addWidget(meta)
         layout.addStretch(1)
 
@@ -401,7 +406,13 @@ class OverviewScreen(QWidget):
         left_layout.addWidget(title)
         left_layout.addWidget(status)
         left_layout.addWidget(time)
-        left_layout.addWidget(subject)
+        subject_row = QHBoxLayout()
+        subject_row.setContentsMargins(0, 0, 0, 0)
+        subject_row.setSpacing(6)
+        subject_row.addWidget(SubjectAccentMarker(entry.subject_id))
+        subject_row.addWidget(subject)
+        subject_row.addStretch(1)
+        left_layout.addLayout(subject_row)
         left_layout.addWidget(target)
         if entry.room:
             room = QLabel(f"Raum · {entry.room}")
@@ -626,14 +637,14 @@ class OverviewScreen(QWidget):
         if heatmap.is_empty:
             empty = QLabel(
                 "Noch keine Dokumentationsübersicht verfügbar. "
-                "Sie erscheint, sobald Stammgruppen und dokumentationsrelevante Fächer vorliegen."
+                "Sie erscheint, sobald Stammgruppen und Dokumentationsbereiche vorliegen."
             )
             empty.setWordWrap(True)
             set_label_style(empty, "muted")
             self.heatmap_layout.addWidget(empty)
             return
         hint = QLabel(
-            "Stammgruppen × dokumentationsrelevante Fächer · keine Leistung"
+            "Stammgruppen × Dokumentationsbereiche · keine Leistung"
         )
         set_label_style(hint, "muted")
         self.heatmap_layout.addWidget(hint)
@@ -649,11 +660,19 @@ class OverviewScreen(QWidget):
         grid.setContentsMargins(0, 4, 0, 2)
         grid.setHorizontalSpacing(8)
         grid.setVerticalSpacing(6)
-        for column, (_subject_id, subject_name) in enumerate(subjects, start=1):
+        for column, (subject_id, subject_name) in enumerate(subjects, start=1):
+            header_cell = QWidget()
+            header_layout = QHBoxLayout(header_cell)
+            header_layout.setContentsMargins(0, 0, 0, 0)
+            header_layout.setSpacing(4)
+            header_layout.addStretch(1)
+            header_layout.addWidget(SubjectAccentMarker(subject_id, size=10))
             header = QLabel(subject_name)
             header.setAlignment(Qt.AlignmentFlag.AlignCenter)
             set_label_style(header, "small")
-            grid.addWidget(header, 0, column)
+            header_layout.addWidget(header)
+            header_layout.addStretch(1)
+            grid.addWidget(header_cell, 0, column)
         for row, group in enumerate(heatmap.groups, start=1):
             group_label = QLabel(group.group_name)
             set_label_style(group_label, "card_title")

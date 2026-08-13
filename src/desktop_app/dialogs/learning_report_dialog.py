@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from datetime import date
 
 from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, Signal
-from PySide6.QtGui import QCloseEvent, QKeySequence
+from PySide6.QtGui import QCloseEvent, QKeySequence, QResizeEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -34,7 +34,7 @@ from PySide6.QtWidgets import (
 )
 from shiboken6 import isValid
 
-from src.desktop_app.theme import create_card, set_label_style
+from src.desktop_app.theme import create_card, set_label_style, subject_accent_icon
 from src.desktop_app.components import (
     AppCard,
     DialogHeader,
@@ -43,6 +43,7 @@ from src.desktop_app.components import (
     SegmentedControl,
     SectionHeader,
     StatusBadge,
+    SubjectAccentMarker,
     Toast,
     configure_button,
     stabilize_message_box_buttons,
@@ -648,6 +649,10 @@ class LearningReportDialog(QDialog):
             button = QPushButton(title)
             button.setObjectName("LearningReportSubjectButton")
             button.setCheckable(True)
+            if index > 0:
+                button.setIcon(subject_accent_icon(
+                    self.preparation.subjects[index - 1].subject_id
+                ))
             button.setChecked(index == 0)
             button.clicked.connect(
                 lambda _checked=False, target=index: self._set_editor_section(target)
@@ -671,6 +676,19 @@ class LearningReportDialog(QDialog):
         sidebar_layout.setContentsMargins(18, 24, 18, 18)
         sidebar_layout.setSpacing(5)
         sidebar_layout.addWidget(self._eyebrow("FÄCHERAUSWAHL"))
+        self.evidence_subject_scroll = QScrollArea()
+        self.evidence_subject_scroll.setObjectName(
+            "LearningReportSubjectNavigationScroll"
+        )
+        self.evidence_subject_scroll.setWidgetResizable(True)
+        self.evidence_subject_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.evidence_subject_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        subject_navigation = QWidget()
+        subject_navigation_layout = QVBoxLayout(subject_navigation)
+        subject_navigation_layout.setContentsMargins(0, 0, 4, 0)
+        subject_navigation_layout.setSpacing(5)
         self.evidence_navigation_group = QButtonGroup(self)
         self.evidence_navigation_group.setExclusive(True)
         self.evidence_stack = QStackedWidget()
@@ -694,11 +712,12 @@ class LearningReportDialog(QDialog):
                     else "WEITERE FÄCHER"
                 )
                 group_label.setObjectName("LearningReportSubjectGroupLabel")
-                sidebar_layout.addWidget(group_label)
+                subject_navigation_layout.addWidget(group_label)
                 previous_group = group
             button = QPushButton(subject.subject_name)
             button.setObjectName("LearningReportSubjectButton")
             button.setCheckable(True)
+            button.setIcon(subject_accent_icon(subject.subject_id))
             button.setChecked(index == 0)
             button.setAccessibleName(f"Kompetenzen und Belege für {subject.subject_name}")
             button.clicked.connect(
@@ -706,7 +725,7 @@ class LearningReportDialog(QDialog):
             )
             self.evidence_navigation_group.addButton(button)
             self._evidence_subject_buttons[subject.subject_id] = button
-            sidebar_layout.addWidget(button)
+            subject_navigation_layout.addWidget(button)
             page = QWidget()
             page.setObjectName(
                 f"LearningReportEvidenceSubjectContainer_{subject.subject_id}"
@@ -718,7 +737,19 @@ class LearningReportDialog(QDialog):
             page_layout.setContentsMargins(0, 0, 0, 0)
             self.evidence_subject_pages[subject.subject_id] = page
             self.evidence_stack.addWidget(page)
-        sidebar_layout.addStretch(1)
+        subject_navigation_layout.addStretch(1)
+        self.evidence_subject_scroll.setWidget(subject_navigation)
+        sidebar_layout.addWidget(self.evidence_subject_scroll, 1)
+        footer = QFrame()
+        footer.setObjectName("LearningReportSidebarFooter")
+        footer.setSizePolicy(
+            QSizePolicy.Policy.Preferred,
+            QSizePolicy.Policy.Minimum,
+        )
+        self.evidence_sidebar_footer = footer
+        footer_layout = QVBoxLayout(footer)
+        footer_layout.setContentsMargins(0, 5, 0, 0)
+        footer_layout.setSpacing(5)
         self.evidence_selection_summary = QLabel()
         self.evidence_selection_summary.setObjectName(
             "LearningReportEvidenceSelectionSummary"
@@ -728,7 +759,7 @@ class LearningReportDialog(QDialog):
         )
         self.evidence_selection_summary.setWordWrap(True)
         set_label_style(self.evidence_selection_summary, "muted")
-        sidebar_layout.addWidget(self.evidence_selection_summary)
+        footer_layout.addWidget(self.evidence_selection_summary)
         self.continue_to_writing_button = QPushButton("Weiter zum Schreibbereich")
         configure_button(
             self.continue_to_writing_button,
@@ -738,14 +769,16 @@ class LearningReportDialog(QDialog):
         self.continue_to_writing_button.clicked.connect(
             lambda: self.show_workspace("writing")
         )
-        sidebar_layout.addWidget(self.continue_to_writing_button)
+        footer_layout.addWidget(self.continue_to_writing_button)
         selection_note = QLabel(
             "Die Auswahl bleibt bewusst. Historische Bezüge sind lesbar, "
             "werden aber nicht neu aktiviert."
         )
         selection_note.setWordWrap(True)
         set_label_style(selection_note, "subtle")
-        sidebar_layout.addWidget(selection_note)
+        self.evidence_selection_note = selection_note
+        footer_layout.addWidget(selection_note)
+        sidebar_layout.addWidget(footer)
         layout.addWidget(sidebar)
         layout.addWidget(self.evidence_stack, 1)
         if self.preparation.subjects:
@@ -775,6 +808,36 @@ class LearningReportDialog(QDialog):
             else "Noch kein Fach ausgewählt"
         )
         self.continue_to_writing_button.setEnabled(bool(selected_names))
+        QTimer.singleShot(0, self._sync_evidence_sidebar_footer_height)
+
+    def _sync_evidence_sidebar_footer_height(self) -> None:
+        """Keep wrapped footer copy readable while only the subject list shrinks."""
+        if not hasattr(self, "evidence_sidebar_footer"):
+            return
+        footer = self.evidence_sidebar_footer
+        if not isValid(self) or not isValid(footer):
+            return
+        layout = footer.layout()
+        margins = layout.contentsMargins()
+        content_width = max(
+            1,
+            footer.width() - margins.left() - margins.right(),
+        )
+        for label in (
+            self.evidence_selection_summary,
+            self.evidence_selection_note,
+        ):
+            label.setMinimumHeight(
+                max(label.sizeHint().height(), label.heightForWidth(content_width))
+            )
+            label.updateGeometry()
+        layout.activate()
+        footer.setMinimumHeight(layout.sizeHint().height())
+        footer.updateGeometry()
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        QTimer.singleShot(0, self._sync_evidence_sidebar_footer_height)
 
     def _set_editor_section(self, index: int) -> None:
         if index > 0:
@@ -1028,6 +1091,11 @@ class LearningReportDialog(QDialog):
     def _subject_editor(self, subject: LearningReportSubjectViewModel) -> QScrollArea:
         content, layout = self._page_canvas()
         title_row = QHBoxLayout()
+        title_row.addWidget(
+            SubjectAccentMarker(subject.subject_id),
+            0,
+            Qt.AlignmentFlag.AlignTop,
+        )
         title = QVBoxLayout()
         title.addWidget(self._eyebrow("FACHTEXT"))
         heading = QLabel(subject.subject_name)
@@ -1190,6 +1258,11 @@ class LearningReportDialog(QDialog):
     ) -> QScrollArea:
         content, layout = self._page_canvas()
         title_row = QHBoxLayout()
+        title_row.addWidget(
+            SubjectAccentMarker(subject.subject_id),
+            0,
+            Qt.AlignmentFlag.AlignTop,
+        )
         title = QVBoxLayout()
         title.addWidget(self._eyebrow("BEWUSSTE AUSWAHL"))
         heading = QLabel(subject.subject_name)

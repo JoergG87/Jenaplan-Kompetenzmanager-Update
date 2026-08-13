@@ -39,6 +39,7 @@ from src.desktop_app.components import (
     SearchField,
     SectionHeader,
     StatusBadge,
+    SubjectAccentMarker,
     Toast,
     configure_button,
     create_confirmation_message,
@@ -48,7 +49,7 @@ from src.desktop_app.motion import (
     animate_feedback,
     animate_save_confirmation,
 )
-from src.desktop_app.theme import set_label_style
+from src.desktop_app.theme import set_label_style, subject_accent_icon
 from src.desktop_app.view_models.learning_conference_view_model import (
     LearningConferenceCompletionErrorViewModel,
     LearningConferenceCompetencyViewModel,
@@ -896,6 +897,7 @@ class LearningConferenceDialog(QDialog):
             check = QCheckBox(subject.subject_name)
             check.setObjectName(f"LearningConferenceSubject_{subject.subject_id}")
             check.setChecked(subject.subject_id in self._selected_subject_ids)
+            check.setIcon(subject_accent_icon(subject.subject_id))
             check.setAccessibleName(f"Vorbereitung, Gesprächsziel, Fachbereich {subject.subject_name}")
             self.subject_checks[subject.subject_id] = check
             subject_grid.addWidget(check, index // 3, index % 3)
@@ -1126,6 +1128,7 @@ class LearningConferenceDialog(QDialog):
                 expanded=subject.subject_id in self._selected_subject_ids,
                 feedback_on_expand=False,
             )
+            section.button.setIcon(subject_accent_icon(subject.subject_id))
             self.competency_sections[subject.subject_id] = section
             layout.addWidget(section)
             empty = _label(
@@ -1187,11 +1190,22 @@ class LearningConferenceDialog(QDialog):
         self.competency_checks[competency.competency_id] = check
         self.competency_models[competency.competency_id] = competency
         layout.addWidget(check)
-        status_parts = [part for part in (competency.documentation_state, competency.observed_proposal, competency.confirmed_rating) if part]
-        status_text = " · ".join(status_parts) or "Noch kein dokumentierter Stand"
-        status = _label(f"Dokumentationsstand: {status_text}", "small")
+        status_text = (
+            competency.documented_status_label
+            or "Noch kein dokumentierter Stand"
+        )
+        status = _label(
+            f"Aktueller dokumentierter Stand: {status_text}",
+            "small",
+        )
         status.setObjectName("LearningConferenceCanonicalStatus")
+        status.setAccessibleName(
+            f"{competency.competency_text}. Aktueller dokumentierter Stand: "
+            f"{status_text}"
+        )
         layout.addWidget(status)
+        if competency.documentation_state:
+            layout.addWidget(_label(competency.documentation_state, "subtle"))
         filter_note = _label("Bereits im Entwurf ausgewählt – außerhalb des aktuellen Filters.", "subtle")
         filter_note.setObjectName("LearningConferenceCompetencyFilterNote")
         filter_note.setVisible(False)
@@ -1284,6 +1298,16 @@ class LearningConferenceDialog(QDialog):
             block = QVBoxLayout(widget)
             block.setContentsMargins(12, 9, 12, 10)
             heading = QHBoxLayout()
+            subject_id = next(
+                (
+                    competency.subject_id
+                    for subject in self.preparation.subjects
+                    for competency in subject.competencies
+                    if competency.competency_id in evidence.competency_ids
+                ),
+                "",
+            )
+            heading.addWidget(SubjectAccentMarker(subject_id))
             heading.addWidget(_label(evidence.subject_name or "Übergreifend", "card_title"))
             heading.addWidget(_label(f"{evidence.date_text} · {evidence.context}", "small"), 1)
             block.addLayout(heading)
@@ -1644,7 +1668,8 @@ class LearningConferenceDialog(QDialog):
         self._refresh_ui_state()
 
     def _update_evidence_summaries(self) -> None:
-        competencies = len(self._competency_ids())
+        selected_competency_ids = self._competency_ids()
+        competencies = len(selected_competency_ids)
         evidence = len(self._observation_ids())
         charts = len(self._chart_types())
         subjects = ", ".join(self._selected_area_labels()) or "Keine Gesprächsbereiche ausgewählt"
@@ -1655,6 +1680,18 @@ class LearningConferenceDialog(QDialog):
             f"{subjects}\n{competencies} Kompetenzen · {evidence} Beobachtungsbelege · "
             f"{charts} Gesprächsbilder{unavailable_text}"
         )
+        selected_competencies = tuple(
+            competency
+            for subject in self.preparation.subjects
+            for competency in subject.competencies
+            if competency.competency_id in selected_competency_ids
+        )
+        if selected_competencies:
+            text += "\n" + "\n".join(
+                f"• {competency.competency_text} – Aktueller dokumentierter "
+                f"Stand: {competency.documented_status_label or 'Noch kein dokumentierter Stand'}"
+                for competency in selected_competencies
+            )
         if goals_text:
             text += f"\nVereinbarte Ziele: {goals_text}"
         for label in self.evidence_summary_labels:

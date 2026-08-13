@@ -43,6 +43,7 @@ from src.desktop_app.motion import (
 from src.desktop_app.theme import (
     MOTION_FAST_MS,
     MOTION_SELECTION_MS,
+    subject_accent_icon,
 )
 from src.desktop_app.theme import set_button_role, set_label_style
 
@@ -86,6 +87,21 @@ class AppCard(QFrame):
         if self.property("interactive"):
             self.set_pressed(False)
         super().mouseReleaseEvent(event)
+
+
+class SubjectAccentMarker(QLabel):
+    """Small decorative subject-color marker; the adjacent text stays primary."""
+
+    def __init__(self, subject_id: str, *, size: int = 12) -> None:
+        super().__init__()
+        self.setObjectName("SubjectAccentMarker")
+        self.setProperty("subjectId", subject_id)
+        self.setFixedSize(size, size)
+        self.setPixmap(subject_accent_icon(subject_id, size).pixmap(size, size))
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAccessibleName("")
+        self.setAccessibleDescription("")
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
 
 class IconButton(QPushButton):
@@ -758,6 +774,7 @@ class Toast(QFrame):
         """Return the complete toast height for one available outer width."""
         layout = self.layout()
         margins = layout.contentsMargins()
+        frame_extent = self.frameWidth() * 2
         visible_widgets = tuple(
             widget
             for index in range(layout.count())
@@ -769,7 +786,8 @@ class Toast(QFrame):
         )
         spacing_count = max(0, len(visible_widgets) - 1)
         fixed_width = (
-            margins.left()
+            frame_extent
+            + margins.left()
             + margins.right()
             + (layout.spacing() * spacing_count)
             + sum(widget.sizeHint().width() for widget in non_label_widgets)
@@ -782,7 +800,7 @@ class Toast(QFrame):
             ),
             default=0,
         )
-        return margins.top() + content_height + margins.bottom()
+        return frame_extent + margins.top() + content_height + margins.bottom()
 
     def sizeHint(self) -> QSize:  # noqa: N802 - Qt API
         """Prefer compact short feedback and grow only up to the shared cap."""
@@ -809,7 +827,8 @@ class Toast(QFrame):
             and not widget.isHidden()
         )
         natural_width = (
-            margins.left()
+            (self.frameWidth() * 2)
+            + margins.left()
             + margins.right()
             + text_width
             + other_width

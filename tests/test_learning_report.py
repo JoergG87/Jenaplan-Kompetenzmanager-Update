@@ -24,6 +24,8 @@ from PySide6.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
+    QFrame,
+    QScrollArea,
     QStackedWidget,
     QTextEdit,
     QTreeWidget,
@@ -521,6 +523,92 @@ class LearningReportTest(unittest.TestCase):
 
         self.assertIn("Mathematik", labels)
         self.assertNotIn("Deutsch", labels)
+
+    def test_subject_sidebar_scrolls_without_compressing_footer_or_buttons(self) -> None:
+        subject_data = (
+            ("deutsch", "Deutsch"),
+            ("mathematik", "Mathematik"),
+            ("englisch", "Englisch"),
+            ("musik", "Musik"),
+            ("ethik", "Ethik"),
+            ("religion", "Religion"),
+            ("schulgarten", "Schulgarten"),
+            ("epu", "EPU / Sachkunde"),
+            ("kreatives_gestalten", "Kreatives Gestalten"),
+            ("sport", "Sport"),
+            ("self_social", "Selbst- und Sozialkompetenz"),
+            ("work_learning", "Arbeits- und Lernkompetenz"),
+        )
+        subjects = tuple(
+            LearningReportSubjectViewModel(subject_id, name, (), ())
+            for subject_id, name in subject_data
+        )
+        preparation = LearningReportPreparationViewModel(
+            "STU-SIDEBAR",
+            "Mara Beispielkind",
+            "Sonnenbogen",
+            subjects,
+            primary_subject_ids=tuple(subject_id for subject_id, _name in subject_data[:8]),
+            retained_subject_ids=tuple(subject_id for subject_id, _name in subject_data[8:]),
+        )
+        initial = LearningReportDraftViewModel(
+            student_id=preparation.student_id,
+            period_start=date(2026, 1, 1),
+            period_end=date(2026, 7, 31),
+            subjects=tuple(
+                LearningReportSubjectDraftViewModel(subject_id)
+                for subject_id, _name in subject_data
+            ),
+            report_draft_id="RPD-SIDEBAR",
+        )
+        dialog = LearningReportDialog(preparation, initial_draft=initial)
+        dialog.show_workspace("evidence")
+        dialog.show()
+
+        footer = dialog.findChild(QFrame, "LearningReportSidebarFooter")
+        self.assertIsNotNone(footer)
+        if footer is None:
+            raise AssertionError("Expected fixed report sidebar footer")
+        buttons = tuple(dialog._evidence_subject_buttons.values())
+        self.assertEqual(len(buttons), len(subject_data))
+        self.assertTrue(all(not button.icon().isNull() for button in buttons))
+
+        for width, height in ((1150, 768), (1180, 760), (1280, 800), (1400, 900)):
+            dialog.resize(width, height)
+            self.app.processEvents()
+            self.assertEqual(
+                dialog.evidence_subject_scroll.horizontalScrollBarPolicy(),
+                Qt.ScrollBarPolicy.ScrollBarAlwaysOff,
+            )
+            self.assertGreater(dialog.evidence_subject_scroll.height(), 0)
+            self.assertTrue(all(
+                button.height() >= button.sizeHint().height()
+                for button in buttons
+            ))
+            self.assertTrue(all(
+                footer.rect().contains(child.geometry())
+                for child in (
+                    dialog.evidence_selection_summary,
+                    dialog.continue_to_writing_button,
+                )
+            ))
+            self.assertGreaterEqual(
+                dialog.evidence_selection_summary.height(),
+                dialog.evidence_selection_summary.heightForWidth(
+                    dialog.evidence_selection_summary.width()
+                ),
+            )
+            self.assertGreaterEqual(
+                dialog.continue_to_writing_button.height(),
+                dialog.continue_to_writing_button.sizeHint().height(),
+            )
+
+        self.assertGreater(
+            dialog.evidence_subject_scroll.verticalScrollBar().maximum(),
+            0,
+        )
+        self.assertTrue(dialog.findChildren(QWidget, "SubjectAccentMarker"))
+        dialog.close()
 
     def test_empty_subject_can_be_unselected_without_confirmation(self) -> None:
         initial = LearningReportDraftViewModel(
