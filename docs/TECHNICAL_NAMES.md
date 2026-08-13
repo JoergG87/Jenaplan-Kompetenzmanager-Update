@@ -2815,7 +2815,9 @@ Regel: `observation_dates` enthaelt ausschliesslich Datumsreferenzen bereits kan
 
 Registrierte lokale UI-Kompositionen:
 
+- `PHASE_GROUPS`
 - `LearningConferencePhaseNavigation`
+- `LearningConferenceNavigationGroupLabel`
 - `LearningConferencePhaseButton_<phase_key>`
 - `LearningConferencePhaseWorkspace`
 - `LearningConferencePhaseScroll`
@@ -2840,7 +2842,7 @@ Registrierte fluechtige UI-Schluessel:
 - `evidence`
 - `agreements`
 
-Regel: Die sechs Schluessel strukturieren ausschliesslich den lokalen aktiven Phasen-, Fokus-, Scroll- und Dirty-State des bestehenden `LearningConferenceDialog`. `LearningConferencePhaseNavigation` und `LearningConferenceDraftSelectionDialog` sind lokale Qt-Kompositionen aus registrierten Basiskomponenten. Bei mindestens einem vorhandenen LEG wählt die Auswahl bewusst einen gespeicherten LCD oder ein neues, noch ungespeichertes eigenständiges Gespräch. Sie fuehren keine Datenquelle, fachliche Phase, Abschlusslogik, Persistenz, Repository-Verantwortung oder neue Feldbedeutung ein. `LearningConferencePreparationViewModel.course_name` reicht nur den bereits vorhandenen Kursnamen aus der Schuelerprojektion in den Kontextkopf weiter. `agreed_goals_text` bleibt unveraendert persistiert und wird nur sichtbar der Phase `goals` zugeordnet.
+Regel: Die sechs Schluessel strukturieren ausschliesslich den lokalen aktiven Anker-, Fokus-, Scroll- und Dirty-State des bestehenden `LearningConferenceDialog`. `PHASE_GROUPS` gruppiert diese unveraenderten Schluessel rein sichtbar als `Vorbereitung` (`goal`, `evidence`), `Im Gespräch` (`strengths`, `development`) und `Vereinbarungen & Abschluss` (`goals`, `agreements`). Die Gruppen sind keine Seiten, fachlichen Stati oder Persistenzwerte. `LearningConferencePhaseNavigation` und `LearningConferenceDraftSelectionDialog` sind lokale Qt-Kompositionen aus registrierten Basiskomponenten. Bei mindestens einem vorhandenen LEG wählt die Auswahl bewusst einen gespeicherten LCD oder ein neues, noch ungespeichertes eigenständiges Gespräch. Sie fuehren keine Datenquelle, fachliche Phase, Abschlusslogik, Persistenz, Repository-Verantwortung oder neue Feldbedeutung ein. `LearningConferencePreparationViewModel.course_name` reicht nur den bereits vorhandenen Kursnamen aus der Schuelerprojektion in den Kontextkopf weiter. `agreed_goals_text` bleibt unveraendert persistiert und wird nur sichtbar dem Anker `goals` zugeordnet.
 
 ## Sprint 8A - Produktiver Stundenplan
 

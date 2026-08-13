@@ -1,8 +1,8 @@
 # LEG UX Audit und Zielbild
 
-Status: verbindliches UX-Zielbild fuer UI-Sprint 6B, keine produktive UI-Implementierung
+Status: verbindliches UX-Zielbild fuer UI-Sprint 6B, fortgeschrieben fuer den Qt-Pilotabschluss
 
-Stand: 2026-07-14
+Stand: 2026-08-12
 
 ## 1. Executive Summary
 
@@ -13,16 +13,16 @@ Das Hauptproblem ist die heutige Interaktionsarchitektur. Die sechs Gespraechsph
 UI-Sprint 6B soll deshalb keinen weiteren Vorschau- oder Dokumentworkflow bauen, sondern den vorhandenen Draft als phasenorientierten Arbeitsraum neu komponieren:
 
 - stabiler Kind- und Gespraechskontext im Kopf,
-- kompakte linke Phasenleiste mit allen sechs bestehenden Phasen,
-- genau eine aktive Phase mit grosszuegigem Schreibraum,
+- kompakte linke Ankerleiste mit allen sechs bestehenden Inhalten in den drei sichtbaren Arbeitskontexten `Vorbereitung`, `Im Gespräch` und `Vereinbarungen & Abschluss`,
+- genau ein aktiver, direkt waehlbarer Inhaltsanker mit grosszuegigem Schreibraum,
 - in jeder Phase klar markierte Bereiche `Vorbereitung der Lehrkraft`, `Im Gespraech bearbeiten` und – nur wo fachlich vorhanden – `Als Vereinbarung festgehalten`,
-- Kompetenz- und Belegauswahl konzentriert in Phase 5,
+- Kompetenz- und Belegauswahl konzentriert im Vorbereitungsanker `evidence`, sichtbar `Vorbereiten · im Gespräch bei Bedarf`,
 - kontextuelle, read-only Zusammenfassung ausgewaehlter Belege in den anderen Phasen,
 - persistente untere Aktionsleiste mit `Entwurf speichern` als einziger persistierender Primaeraktion,
 - lokaler, nicht persistierter Hinweis auf ungespeicherte Aenderungen,
 - keine Abschluss-, Revisions-, Snapshot-, PDF- oder Exportdarstellung.
 
-Empfohlen wird eine kompakte linke Phasennavigation als Kombination aus Uebersicht und aktuellem Schritt. Ein horizontales SegmentedControl ist fuer sechs lange Titel bei 1180 x 760 ungeeignet. Die Leiste zeigt `Aktuell`, `Inhalt vorhanden` oder `Noch leer`, niemals `abgeschlossen`, Prozentwerte oder Haken.
+Verbindlich ist eine kompakte linke Ankernavigation als Kombination aus Uebersicht und direkter Wahl. Ein horizontales SegmentedControl ist fuer sechs lange Titel bei 1180 x 760 ungeeignet. Die Leiste zeigt `Aktuell`, `Inhalt vorhanden` oder `Noch leer`, niemals Nummern, `abgeschlossen`, Prozentwerte oder Haken. Die sichtbaren Gruppen sind reine Orientierung und keine zusaetzlichen Seiten.
 
 ## 2. Aktueller Arbeitsablauf
 
@@ -133,64 +133,65 @@ Die Zuordnung der nicht mit `prepared_` oder `agreed_` praefigierten Felder ist 
 ```text
 Stabiler Kopf
   Kind | Stammgruppe / Kurs | Gespraechsdatum | Lehrkraft
-  aktueller Phasenname | Bearbeitbarer Entwurf | Speicherstatus
+  aktueller Arbeitskontext und Anker | Bearbeitbarer Entwurf | Speicherstatus
 
 Arbeitsflaeche
-  kompakte linke Phasenleiste
-  aktive Phase mit Schreib- und Auswahlbereich
+  kompakte linke Ankerleiste mit drei sichtbaren Gruppen
+  aktiver Inhaltsanker mit Schreib- und Auswahlbereich
   kontextuelle Auswahlzusammenfassung ab 1280 px
 
 Persistente Aktionsleiste
-  Schliessen/Abbrechen | Zurueck | Weiter zu ... | Entwurf speichern
+  Schliessen/Abbrechen | Belege ansehen bei Bedarf | Entwurf speichern
 ```
 
-Der Kopf bleibt ausserhalb aller Scrollbereiche. Er zeigt Kind, Stammgruppe und – nach kleiner Erweiterung der bestehenden Live-Projektion – Kurs, ausserdem Gespraechsdatum, verantwortliche Lehrkraft, aktuellen Phasennamen und Speicherstatus. Datum und Lehrkraft werden in Phase 1 bearbeitet und im Kopf nur gespiegelt.
+Der Kopf bleibt ausserhalb aller Scrollbereiche. Er zeigt Kind, Stammgruppe und – nach kleiner Erweiterung der bestehenden Live-Projektion – Kurs, ausserdem Gespraechsdatum, verantwortliche Lehrkraft, aktuellen Arbeitskontext mit Ankertitel und Speicherstatus. Datum und Lehrkraft werden unter `Gesprächsziel` bearbeitet und im Kopf nur gespiegelt.
 
-Die Mitte zeigt immer genau eine Phase. Vorbereitung und gemeinsam bearbeitete Inhalte stehen innerhalb derselben Phase nebeneinander oder untereinander und tragen eindeutige Rollenlabels. Der bisherige permanente zweite Vorschau-Scrollbereich entfaellt. Eine kompakte Zusammenfassung ausgewaehlter Bereiche und Belege bleibt als Kontext verfuegbar, ist ausserhalb von Phase 5 jedoch read-only.
+Die Mitte zeigt immer genau einen der sechs Inhaltsanker. Vorbereitung und gemeinsam bearbeitete Inhalte stehen innerhalb desselben Ankers nebeneinander oder untereinander und tragen eindeutige Rollenlabels. Der bisherige permanente zweite Vorschau-Scrollbereich entfaellt. Eine kompakte Zusammenfassung ausgewaehlter Bereiche und Belege bleibt als Kontext verfuegbar, ist ausserhalb von `evidence` jedoch read-only.
 
 Die untere Aktionsleiste bleibt immer sichtbar. `Entwurf speichern` ist rechts die einzige blaue und einzige persistierende Hauptaktion. Phasenwechsel veraendert nur lokalen UI-State und speichert nicht automatisch.
 
-### 7.2 Fortschritt ohne Abschlussbehauptung
+### 7.2 Inhaltsstatus ohne Fortschrittsbehauptung
 
-Jede Phasenzeile zeigt genau einen der folgenden textlichen Zustaende:
+Jede Ankerzeile zeigt genau einen der folgenden textlichen Zustaende:
 
 - `Aktuell`,
 - `Inhalt vorhanden`,
 - `Noch leer`.
 
-Die Kennzeichnung wird nur aus dem aktuellen Widget-/Draftinhalt abgeleitet und nicht gespeichert. Es gibt keine Haken, Prozentanzeige, Pflichtquote, Sperre, Erfolgsfarbe oder Bezeichnung `fertig`/`abgeschlossen`. Alle Phasen bleiben jederzeit direkt erreichbar.
+Die Kennzeichnung wird nur aus dem aktuellen Widget-/Draftinhalt abgeleitet und nicht gespeichert. Es gibt keine Nummerierung, Haken, Prozentanzeige, Pflichtquote, Sperre, Erfolgsfarbe oder Bezeichnung `fertig`/`abgeschlossen`. Alle Anker bleiben jederzeit direkt erreichbar.
 
 ### 7.3 Wiederaufnahme
 
-Beim Wiedereroeffnen werden alle gespeicherten Draftfelder und Auswahlreferenzen rekonstruiert. UI-Sprint 6B verspricht bewusst nicht die Wiederherstellung der zuletzt aktiven Phase, weil dafuer kein persistiertes Feld existiert und keine neue Datenquelle eingefuehrt werden soll. Ein wiedereroeffneter Draft startet deterministisch in Phase 1; die Phasenleiste zeigt sofort, wo bereits Inhalt vorhanden ist, und erlaubt direkten Wechsel.
+Beim Wiedereroeffnen werden alle gespeicherten Draftfelder und Auswahlreferenzen rekonstruiert. UI-Sprint 6B verspricht bewusst nicht die Wiederherstellung des zuletzt aktiven Ankers, weil dafuer kein persistiertes Feld existiert und keine neue Datenquelle eingefuehrt werden soll. Ein wiedereroeffneter Draft startet deterministisch bei `Gesprächsziel`; die Ankerleiste zeigt sofort, wo bereits Inhalt vorhanden ist, und erlaubt direkten Wechsel.
 
 Der Kopf zeigt `Zuletzt gespeichert: TT.MM.JJJJ, HH:MM`. Nach einer Aenderung wechselt die lokale Anzeige unmittelbar zu `Ungespeicherte Aenderungen`. Dieser Dirty-State ist fluechtig und kein Domainstatus.
 
-## 8. Empfohlene Phasennavigation
+## 8. Verbindliche gruppierte Ankernavigation
 
-Empfohlen wird eine **kompakte linke Phasennavigation als Kombination aus Uebersicht und aktuellem Schritt**.
+Verwendet wird eine **kompakte linke Ankernavigation mit drei sichtbaren Arbeitskontexten und sechs direkten Zielen**.
 
 | Variante | Bewertung | Entscheidung |
 | --- | --- | --- |
 | Horizontales SegmentedControl | Die sechs langen Titel benoetigen bei 1180 px zu viel Breite, brechen unruhig oder werden unverstaendlich gekuerzt. Pfeiltasten waeren gut, die Lesbarkeit nicht. | nicht verwenden |
 | Vertikale Schrittleiste | Gute Lesbarkeit und direkter Wechsel, kann mit Haken/Verbindungslinie aber ungewollt Abschluss suggerieren. | nur ohne Stepper-/Completion-Semantik |
-| Kompakte linke Phasennavigation | Alle Titel koennen zweizeilig umbrechen; aktiver Schritt, vorhandener Inhalt und leere Phasen sind gleichzeitig sichtbar; schnelle Maus- und Tastaturnavigation. | verwenden |
+| Kompakte linke Ankernavigation | Alle Titel koennen zweizeilig umbrechen; aktueller Anker, vorhandener Inhalt und leere Anker sind gleichzeitig sichtbar; schnelle Maus- und Tastaturnavigation. | verwenden |
 | Separate Uebersicht plus aktueller Schritt | Zusaetzlicher Modus erhoeht Navigation und nimmt Schreibraum. | nicht als eigene Seite; die linke Leiste ist bereits die Uebersicht |
 
 Verbindliche Eigenschaften:
 
 - Breite 220 bis 236 px; bei 1180 px maximal 210 bis 220 px.
 - Vollstaendige Phasentitel mit Zeilenumbruch; keine abgeschnittenen Titel.
-- Aktuelle Phase durch Form, Schriftgewicht, linken Marker und Text `Aktuell`, nicht nur durch Farbe.
+- Aktueller Anker durch Form, Schriftgewicht, linken Marker und Text `Aktuell`, nicht nur durch Farbe.
 - `Inhalt vorhanden` und `Noch leer` als kleine textliche Unterzeile.
-- Direktwahl per Klick sowie Enter/Space.
-- Pfeil hoch/runter wechselt die fokussierte Phase, Home/End springt zu Phase 1/6.
-- Phasenwechsel ist sofort, ohne Speichern und ohne Finalitaet.
-- Fokus wechselt nach Aktivierung auf die Phasenueberschrift beziehungsweise erste sinnvolle Eingabe.
+- Drei sichtbare Gruppen ohne eigene Seite: `Vorbereitung` (`goal`, `evidence`), `Im Gespräch` (`strengths`, `development`) und `Vereinbarungen & Abschluss` (`goals`, `agreements`).
+- Direktwahl jedes Ankers per Klick sowie Enter/Space.
+- Pfeil hoch/runter wechselt den fokussierten Anker in sichtbarer Gruppenreihenfolge, Home/End springt zum ersten/letzten Anker.
+- Ankerwechsel ist sofort, ohne Speichern und ohne Finalitaet; lineare Aktionen `Zurück` und `Weiter` entfallen.
+- Fokus wechselt nach Aktivierung auf die Ankerueberschrift beziehungsweise erste sinnvolle Eingabe.
 
-## 9. Zielstruktur je Phase
+## 9. Zielstruktur der sechs Inhaltsanker
 
-### Phase 1 – Gespraechsziel
+### Anker `goal` – Gespraechsziel
 
 - **Zweck:** Gespraechsrahmen und bewusste Schwerpunkte festlegen.
 - **Sichtbarer Kontext:** Kind, Stammgruppe/Kurs, Draftstatus, Zeitraum, Gespraechsdatum, Lehrkraft.
@@ -199,11 +200,11 @@ Verbindliche Eigenschaften:
 - **Gemeinsam bearbeitete Inhalte:** keine neue fachliche Eingabe; ausgewaehlte Bereiche werden als Gespraechsfokus gezeigt.
 - **Gespeicherte Ergebnisse:** `period_start`, `period_end`, `conference_date`, `responsible_teacher`, `subject_ids`, `cross_topic_keys`, `conversation_entry_text`.
 - **Primaere Aktion:** `Entwurf speichern` in der globalen Leiste.
-- **Sekundaere Aktionen:** `Weiter zu Was gelingt dem Kind?`, Schwerpunkte aendern, Schliessen/Abbrechen.
+- **Sekundaere Aktionen:** direkte Ankerwahl, Schwerpunkte aendern, Schliessen/Abbrechen.
 - **Hilfetext:** `Der Zeitraum grenzt sichtbare Kompetenzbelege ein; das Gespraechsdatum bezeichnet den Termin.`
 - **Leerzustand:** `Noch keine Gespraechsschwerpunkte ausgewaehlt. Du kannst den Entwurf trotzdem speichern.`
 
-### Phase 2 – Was gelingt dem Kind?
+### Anker `strengths` – Was gelingt dem Kind?
 
 - **Zweck:** Staerken vorbereiten und die Perspektive des Kindes im Gespraech festhalten.
 - **Sichtbarer Kontext:** ausgewaehlte Bereiche und kompakte read-only Belegzusammenfassung.
@@ -212,11 +213,11 @@ Verbindliche Eigenschaften:
 - **Gemeinsam bearbeitete Inhalte:** Rueckblick des Kindes.
 - **Gespeicherte Ergebnisse:** `strengths_text`, `child_retrospective_text`.
 - **Primaere Aktion:** `Entwurf speichern`.
-- **Sekundaere Aktionen:** Zurueck, Weiter, `Belege ansehen`.
+- **Sekundaere Aktionen:** direkte Ankerwahl, `Belege ansehen`.
 - **Hilfetext:** `Belege dienen als Erinnerung. Die paedagogische Formulierung entsteht durch die Lehrkraft und im Gespraech.`
 - **Leerzustand:** getrennt `Noch keine vorbereiteten Staerken notiert` und `Rueckblick wird im Gespraech ergaenzt`.
 
-### Phase 3 – Welche Entwicklung sehen wir?
+### Anker `development` – Welche Entwicklung sehen wir?
 
 - **Zweck:** Lehrkraftperspektive und gemeinsam betrachtete Entwicklungsfelder unterscheiden.
 - **Sichtbarer Kontext:** relevante Kompetenzstaende und datierte Belege read-only, historische Kennzeichnung eingeschlossen.
@@ -225,11 +226,11 @@ Verbindliche Eigenschaften:
 - **Gemeinsam bearbeitete Inhalte:** Entwicklungsfelder als manuelle Gespraechsnotiz.
 - **Gespeicherte Ergebnisse:** `teacher_perspective_text`, `development_fields_text`.
 - **Primaere Aktion:** `Entwurf speichern`.
-- **Sekundaere Aktionen:** Zurueck, Weiter, Kontext ein-/ausblenden.
+- **Sekundaere Aktionen:** direkte Ankerwahl, Kontext ein-/ausblenden.
 - **Hilfetext:** `Der angezeigte Stand ist Dokumentationskontext, keine automatische paedagogische Einschaetzung.`
 - **Leerzustand:** `Noch keine Lehrkraftperspektive vorbereitet` beziehungsweise `Noch keine Entwicklungsfelder notiert`.
 
-### Phase 4 – Woran moechten wir gemeinsam arbeiten?
+### Anker `goals` – Woran moechten wir gemeinsam arbeiten?
 
 - **Zweck:** vorbereitete Zielideen von im Gespraech vereinbarten Zielen trennen.
 - **Sichtbarer Kontext:** Staerken, Entwicklungsfelder und ausgewaehlte Belege als kurze Zusammenfassung.
@@ -238,13 +239,13 @@ Verbindliche Eigenschaften:
 - **Gemeinsam bearbeitete Inhalte:** gemeinsame Zielformulierung.
 - **Gespeicherte Ergebnisse:** `prepared_goals_text`, `agreed_goals_text`.
 - **Primaere Aktion:** `Entwurf speichern`.
-- **Sekundaere Aktionen:** Zurueck, Weiter, Belege ansehen.
+- **Sekundaere Aktionen:** direkte Ankerwahl, Belege ansehen.
 - **Hilfetext:** `Vorbereitete Ideen werden nicht automatisch zu Vereinbarungen.`
 - **Leerzustand:** je Rolle ein eigener neutraler Leerzustand.
 
 Die sichtbare Verschiebung von `agreed_goals_text` aus der heutigen Phase 6 in Phase 4 ist die einzige empfohlene Neuzuordnung eines bereits vorhandenen Feldes. Sie aendert keine Persistenz, muss aber in UI-Tests, Mapping und Hilfetexten nachvollzogen werden.
 
-### Phase 5 – Welche Beispiele stuetzen unsere Einschaetzung?
+### Anker `evidence` – Welche Beispiele stuetzen unsere Einschaetzung?
 
 - **Zweck:** Fachbereiche, konkrete Kompetenzen, Beobachtungen und optionale Darstellungen bewusst fuer das Gespraech auswaehlen.
 - **Sichtbarer Kontext:** Zeitraum, ausgewaehlte Bereiche, Auswahlzaehler und historische/nicht verfuegbare Referenzen.
@@ -253,11 +254,11 @@ Die sichtbare Verschiebung von `agreed_goals_text` aus der heutigen Phase 6 in P
 - **Gemeinsam bearbeitete Inhalte:** keine automatisch erzeugte Aussage; Belege koennen im Gespraech betrachtet werden.
 - **Gespeicherte Ergebnisse:** ausschliesslich Auswahlreferenzen und Diagrammtypen.
 - **Primaere Aktion:** `Entwurf speichern`.
-- **Sekundaere Aktionen:** Suche leeren, Auswahl anzeigen, Zurueck, Weiter.
+- **Sekundaere Aktionen:** Suche leeren, Auswahl anzeigen, direkte Ankerwahl.
 - **Hilfetext:** `Die Auswahl legt Gespraechsbelege fest. Sie bewertet oder interpretiert sie nicht.`
 - **Leerzustand:** pro Fach `In diesem Zeitraum sind noch keine kompetenzbezogenen Beobachtungen dokumentiert`; fuer Belege `Noch keine Beispiele ausgewaehlt`.
 
-### Phase 6 – Welche Unterstuetzung und Vereinbarungen treffen wir?
+### Anker `agreements` – Welche Unterstuetzung und Vereinbarungen treffen wir?
 
 - **Zweck:** vorbereitete Unterstuetzungsideen und Vereinbarungsentwuerfe klar von gemeinsam festgehaltenen Ergebnissen trennen.
 - **Sichtbarer Kontext:** Kind, Ziele aus Phase 4, ausgewaehlte Belege, Draftstatus.
@@ -267,15 +268,15 @@ Die sichtbare Verschiebung von `agreed_goals_text` aus der heutigen Phase 6 in P
 - **Gemeinsam bearbeitete Inhalte:** Unterstuetzung, Vereinbarung und Zustaendigkeiten.
 - **Gespeicherte Ergebnisse:** alle genannten Felder; der gemeinsam vereinbarte Zieltext bleibt sichtbar aus Phase 4.
 - **Primaere Aktion:** `Entwurf speichern` – nicht `Abschliessen`.
-- **Sekundaere Aktionen:** Zurueck, `Zu Phase 1`, Schliessen.
+- **Sekundaere Aktionen:** direkte Ankerwahl, Schliessen.
 - **Hilfetext:** `Diese Angaben bleiben Teil eines bearbeitbaren Entwurfs. Sie sind nicht finalisiert oder festgeschrieben.`
 - **Leerzustand:** getrennte Leerzustaende fuer Vorbereitung und Vereinbarung; der Ueberpruefungstermin startet leer.
 
 ## 10. Kompetenzen und Belege
 
-Die Auswahl wird **innerhalb von Phase 5** bearbeitet. Damit bleibt sie ein bewusster Vorbereitungsschritt und wird nicht ueber alle Phasen als dauerhafte Bearbeitungsflaeche dupliziert. In Phasen 2, 3, 4 und 6 erscheint nur eine kompakte, read-only Kontextzusammenfassung mit Aktion `Belege ansehen`, die zu Phase 5 wechselt.
+Die Auswahl wird **innerhalb des Ankers `evidence`** bearbeitet. Damit bleibt sie ein bewusster Vorbereitungsschritt, sichtbar `Vorbereiten · im Gespräch bei Bedarf`, und wird nicht ueber alle Anker als dauerhafte Bearbeitungsflaeche dupliziert. In den anderen Schreibankern erscheint nur eine kompakte, read-only Kontextzusammenfassung mit Aktion `Belege ansehen`, die direkt zu `evidence` wechselt.
 
-Verbindliche Zielstruktur in Phase 5:
+Verbindliche Zielstruktur im Anker `evidence`:
 
 1. lokale Suche mit bestehendem `SearchField`;
 2. Fachfilter aus Phase 1 als sichtbare Chips;
@@ -333,15 +334,14 @@ Die persistente untere Leiste ist verbindlich:
 | Aktion | Rolle | Verhalten |
 | --- | --- | --- |
 | Entwurf speichern | einzige primaere Aktion | speichert den vollstaendigen aktuellen Draft ueber den bestehenden Pfad |
-| Weiter zu `<Phasenname>` | sekundaer | wechselt nur den lokalen Schritt, speichert nicht |
-| Zurueck | quiet/sekundaer | wechselt nur den lokalen Schritt |
-| Schliessen | quiet | schliesst einen bestehenden Draft; bei Dirty-State mit Drei-Wege-Entscheidung `Speichern und schliessen`, `Ohne Speichern schliessen`, `Zurueck` |
+| Direkte Ankerwahl | lokale Navigation | wechselt nur den sichtbaren Inhalt, speichert nicht und besitzt keine Fortschrittssemantik |
+| Schliessen | quiet | schliesst einen bestehenden Draft; bei Dirty-State mit Drei-Wege-Entscheidung `Entwurf speichern`, `Änderungen verwerfen`, `Weiter bearbeiten` |
 | Abbrechen | quiet, nur neuer ungespeicherter Draft | verwirft den noch nicht gespeicherten lokalen Zustand nach Bestaetigung, falls Eingaben vorliegen |
-| Belege auswaehlen / Belege ansehen | lokale sekundaere Aktion | wechselt zu Phase 5, keine Persistenz |
+| Belege auswaehlen / Belege ansehen | lokale sekundaere Aktion | wechselt zum Anker `evidence`, keine Persistenz |
 | Spaeter fortsetzen | kein eigener Button | wird nach erfolgreichem Speichern als Hinweis `Gespeichert – du kannst den Entwurf spaeter fortsetzen` vermittelt |
 | Druck / Export | nicht anzeigen | fuer LEG aktuell nicht vorhanden |
 
-`Entwurf speichern` bleibt auch in Phase 6 unveraendert. Es gibt keinen Button `Abschliessen`, `Finalisieren`, `Festschreiben`, `Freigeben`, `PDF`, `Drucken` oder `Exportieren`.
+`Entwurf speichern` bleibt auch unter `Vereinbarungen & Abschluss` unveraendert. Der Arbeitskontext selbst behauptet keine Finalitaet; Abschluss und Revisionen bleiben getrennte vorhandene Aktionen mit ihren unveraenderten Schutzbedingungen.
 
 Speicherfeedback:
 
@@ -378,7 +378,7 @@ Reduced Motion setzt alle Endzustaende unmittelbar. Timer duerfen die Lesedauer 
 - Phasenleiste etwa 220 px.
 - Kontextflaeche etwa 280 px und standardmaessig kompakt.
 - Schreibkarten duerfen untereinander statt nebeneinander stehen, wenn ein Textfeld sonst unter 420 px Breite faellt.
-- Aktionslabels bleiben vollstaendig sichtbar.
+- Aktionslabels bleiben vollstaendig sichtbar; `Zurück`/`Weiter` werden nicht angezeigt.
 
 ### 1180 x 760
 
@@ -387,24 +387,24 @@ Reduced Motion setzt alle Endzustaende unmittelbar. Timer duerfen die Lesedauer 
 - keine dauerhafte dritte Spalte; Kontext & Belege erscheinen als statische Inline-Disclosure oberhalb des Schreibbereichs.
 - Kopfmetadaten duerfen in zwei Zeilen umbrechen.
 - Textfelder stehen einspaltig.
-- Aktionsleiste bleibt sichtbar; `Weiter zu ...` darf zweizeilig werden, aber nicht abgeschnitten sein.
+- Aktionsleiste bleibt sichtbar; die direkte Ankerwahl verbleibt in der linken Leiste.
 
 Scrollregel:
 
 - Kopf, Phasenleiste und Aktionsleiste scrollen nicht.
 - Normale Phasen besitzen genau einen vertikalen Hauptscrollbereich.
-- Phase 5 nutzt statt eines zusaetzlichen aeusseren Scrollbereichs einen eigenen Listenviewport fuer Kompetenzen/Belege.
+- Der Anker `evidence` nutzt statt eines zusaetzlichen aeusseren Scrollbereichs einen eigenen Listenviewport fuer Kompetenzen/Belege.
 - Kein horizontaler Gesamtscroll und kein horizontaler Kompetenzscroll.
 - Keine zwei ineinander verschachtelten vertikalen Scrollbereiche unter demselben Mauszeiger.
 
 ## 15. Accessibility
 
-- Phasennavigation ist eine eindeutig benannte lokale Navigation `Phasen des Lernentwicklungsgespraechs`.
-- Jeder Phasenbutton besitzt vollstaendigen Namen, Position `Phase n von 6` und textlichen Inhaltszustand.
-- Tab-Reihenfolge: Phasennavigation, aktive Phasenfelder in Lesereihenfolge, Kontext/Belege, lokale Nebenaktionen, Zurueck/Weiter, Speichern, Schliessen.
-- Nach Phasenwechsel liegt der Fokus auf der Phasenueberschrift oder der ersten Eingabe; nach Fehler auf Meldung/Fehlerfeld; nach Speichern bleibt er an der ausloesenden Aktion.
+- Ankernavigation ist eine eindeutig benannte lokale Navigation `Arbeitsbereiche des Lernentwicklungsgespraechs`.
+- Jeder Ankerbutton besitzt vollstaendigen Titel, Arbeitskontext und textlichen Inhaltszustand, aber keine Nummer oder Fortschrittsposition.
+- Tab-Reihenfolge: Ankernavigation, aktive Ankerfelder in Lesereihenfolge, Kontext/Belege, lokale Nebenaktionen, Speichern, Schliessen.
+- Nach Ankerwechsel liegt der Fokus auf der Ankerueberschrift oder der ersten Eingabe; nach Fehler auf Meldung/Fehlerfeld; nach Speichern bleibt er an der ausloesenden Aktion.
 - Enter/Space aktiviert Phase, Disclosure und Auswahl. Pfeile navigieren Phasen und hierarchische Listen gemaess Qt-Konvention.
-- Alle Textfelder erhalten Accessible Names mit Rollenbezug, zum Beispiel `Phase 4, gemeinsam vereinbarte Ziele`.
+- Alle Textfelder erhalten Accessible Names mit Arbeitskontext, Ankertitel und Rollenbezug, zum Beispiel `Vereinbarungen & Abschluss, Woran möchten wir gemeinsam arbeiten?, im Entwurf als Vereinbarung festgehalten, Gemeinsam formulierte Ziele`.
 - Die vorhandene Domainpflicht bleibt unveraendert: vollstaendiger Zeitraum oder Gespraechsdatum. Der Ueberpruefungstermin ist optional. Lehrkraft wird nicht ohne Fachentscheidung als Pflichtfeld markiert.
 - Pflicht und Fehler werden durch Text, Symbol und Fokus vermittelt, nie nur durch Farbe.
 - Historisch, nicht verfuegbar, ausgewaehlt und read-only werden jeweils textlich benannt.
@@ -471,8 +471,8 @@ UI-Sprint 6B aendert nicht:
 1. Bestehenden `LearningConferenceDialog` auf stabilen Kopf, linke Phasenleiste, einen aktiven Phasenworkspace und persistente untere Aktionsleiste umbauen.
 2. Die sechs bestehenden Titel und alle bestehenden Draftfelder erhalten.
 3. Vorbereitungs-, Gespraechs- und Vereinbarungsrollen gemaess Abschnitt 6 sichtbar trennen.
-4. `agreed_goals_text` sichtbar Phase 4 zuordnen; Persistenz unveraendert lassen.
-5. Kompetenz-/Belegauswahl in Phase 5 konzentrieren; read-only Zusammenfassung in anderen Phasen.
+4. `agreed_goals_text` sichtbar dem Anker `goals` zuordnen; Persistenz unveraendert lassen.
+5. Kompetenz-/Belegauswahl im Anker `evidence` konzentrieren; read-only Zusammenfassung in anderen Ankern.
 6. Bestehende Design-System-Komponenten und zentrale Motion-Policy verwenden.
 7. Kursname aus der bereits vorhandenen Schuelerprojektion in den reinen LEG-Vorbereitungskontext aufnehmen; keine neue Datenquelle und kein Schemafeld.
 8. Dirty-State, lokal lesbaren Speicherzeitpunkt, Inline-Validierung und sicheren Dirty-Close-Dialog einfuehren; kein Autosave.

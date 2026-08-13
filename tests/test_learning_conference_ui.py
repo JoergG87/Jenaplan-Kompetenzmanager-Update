@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 
 from src.desktop_app import shell
 from src.desktop_app.dialogs.learning_conference_dialog import (
+    PHASE_GROUPS,
     PHASES,
     ROLE_AGREEMENT,
     ROLE_CONVERSATION,
@@ -36,6 +37,7 @@ from src.desktop_app.dialogs.learning_conference_dialog import (
 )
 from src.desktop_app.motion import set_reduced_motion
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
+from src.desktop_app.theme import apply_app_theme
 from src.desktop_app.window_policy import open_maximized_workspace
 from src.desktop_app.view_models.learning_conference_view_model import (
     LEARNING_CONFERENCE_CROSS_TOPICS,
@@ -342,6 +344,14 @@ class LearningConferenceUiTest(unittest.TestCase):
             tuple(key for key, _title, _description in PHASES),
             ("goal", "strengths", "development", "goals", "evidence", "agreements"),
         )
+        self.assertEqual(
+            PHASE_GROUPS,
+            (
+                ("Vorbereitung", ("goal", "evidence")),
+                ("Im Gespräch", ("strengths", "development")),
+                ("Vereinbarungen & Abschluss", ("goals", "agreements")),
+            ),
+        )
         self.assertIn("Aktuell", dialog.phase_navigation.button_for("goal").text())
         phase_buttons = [
             dialog.phase_navigation.button_for(key)
@@ -377,6 +387,39 @@ class LearningConferenceUiTest(unittest.TestCase):
             "Inhalt vorhanden",
             dialog.phase_navigation.button_for("strengths").text(),
         )
+
+    def test_three_work_contexts_group_six_direct_anchors_without_wizard_controls(self) -> None:
+        dialog = LearningConferenceDialog(self.preparation)
+        group_labels = [
+            label.text()
+            for label in dialog.findChildren(QLabel, "LearningConferenceNavigationGroupLabel")
+        ]
+        button_texts = [
+            dialog.phase_navigation.button_for(key).text()
+            for _group_title, keys in PHASE_GROUPS
+            for key in keys
+        ]
+        action_texts = [button.text() for button in dialog.findChildren(QPushButton)]
+
+        self.assertEqual(
+            group_labels,
+            ["VORBEREITUNG", "IM GESPRÄCH", "VEREINBARUNGEN & ABSCHLUSS"],
+        )
+        self.assertEqual(len(button_texts), 6)
+        self.assertTrue(all(not text.lstrip().startswith(tuple("123456")) for text in button_texts))
+        self.assertIn("Belege vorbereiten", dialog.phase_navigation.button_for("evidence").text())
+        self.assertIn("Im Gespräch bei Bedarf", dialog.phase_navigation.button_for("evidence").text())
+        self.assertNotIn("Zurück", action_texts)
+        self.assertNotIn("Weiter", action_texts)
+        self.assertFalse(hasattr(dialog, "previous_button"))
+        self.assertFalse(hasattr(dialog, "next_button"))
+
+        for key in ("goal", "evidence", "strengths", "development", "goals", "agreements"):
+            dialog.phase_navigation.button_for(key).click()
+            self.assertEqual(dialog.active_phase_key, key)
+
+        evidence_texts = [label.text() for label in dialog.phase_pages["evidence"].findChildren(QLabel)]
+        self.assertTrue(any("Vorbereiten · im Gespräch bei Bedarf" in text for text in evidence_texts))
 
     def test_exactly_one_phase_stays_visible_and_interactive_across_navigation(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)
@@ -943,13 +986,20 @@ class LearningConferenceUiTest(unittest.TestCase):
         first.setFocus()
 
         QTest.keyClick(first, Qt.Key.Key_Down)
+        self.assertEqual(dialog.active_phase_key, "evidence")
+        QTest.keyClick(dialog.phase_navigation.button_for("evidence"), Qt.Key.Key_Down)
         self.assertEqual(dialog.active_phase_key, "strengths")
         QTest.keyClick(dialog.phase_navigation.button_for("strengths"), Qt.Key.Key_End)
         self.assertEqual(dialog.active_phase_key, "agreements")
         QTest.keyClick(dialog.phase_navigation.button_for("agreements"), Qt.Key.Key_Home)
         self.assertEqual(dialog.active_phase_key, "goal")
         for key, _title, _description in PHASES:
-            self.assertIn("Phase", dialog.phase_navigation.button_for(key).accessibleName())
+            accessible_name = dialog.phase_navigation.button_for(key).accessibleName()
+            self.assertNotIn("Phase", accessible_name)
+            self.assertIn(
+                next(group for group, keys in PHASE_GROUPS if key in keys),
+                accessible_name,
+            )
         self.assertTrue(all(edit.accessibleName() for edit in dialog.text_inputs.values()))
         dialog.close()
 
@@ -1036,6 +1086,46 @@ class LearningConferenceUiTest(unittest.TestCase):
             for scroll in dialog.phase_scroll_areas.values():
                 self.assertEqual(scroll.horizontalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             dialog.close()
+
+    def test_grouped_anchor_navigation_does_not_overlap_at_target_widths(self) -> None:
+        original_stylesheet = self.app.styleSheet()
+        apply_app_theme(self.app)
+        try:
+            for width, height in ((1400, 760), (1280, 760), (1180, 760)):
+                dialog = LearningConferenceDialog(self.preparation)
+                dialog.resize(width, height)
+                dialog.show()
+                self.app.processEvents()
+                ordered_widgets: list[QWidget] = []
+                group_labels = dialog.findChildren(
+                    QLabel,
+                    "LearningConferenceNavigationGroupLabel",
+                )
+                self.assertEqual(len(group_labels), 3)
+                for group_index, (_group_title, keys) in enumerate(PHASE_GROUPS):
+                    ordered_widgets.append(group_labels[group_index])
+                    ordered_widgets.extend(
+                        dialog.phase_navigation.button_for(key) for key in keys
+                    )
+                for first, second in zip(ordered_widgets, ordered_widgets[1:]):
+                    self.assertLess(
+                        first.geometry().bottom(),
+                        second.geometry().top(),
+                        (width, first.objectName(), second.objectName()),
+                    )
+                navigation_rect = dialog.phase_navigation.contentsRect()
+                for widget in ordered_widgets:
+                    self.assertTrue(
+                        navigation_rect.contains(widget.geometry()),
+                        (width, widget.objectName(), widget.geometry()),
+                    )
+                self.assertGreaterEqual(
+                    dialog.phase_navigation.button_for("evidence").height(),
+                    44,
+                )
+                dialog.close()
+        finally:
+            self.app.setStyleSheet(original_stylesheet)
 
     def test_workspace_exposes_no_completion_or_export_actions(self) -> None:
         dialog = LearningConferenceDialog(self.preparation)

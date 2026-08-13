@@ -658,8 +658,8 @@ QFrame#LearningConferencePhaseNavigation {{
     border: 1px solid #D8E4EC;
     border-radius: 14px;
 }}
-QPushButton[phaseCurrent="false"] {{
-    min-height: 72px;
+QFrame#LearningConferencePhaseNavigation QPushButton[phaseCurrent="false"] {{
+    min-height: 44px;
     background-color: transparent;
     color: {COLOR_TEXT};
     border: 1px solid transparent;
@@ -668,12 +668,12 @@ QPushButton[phaseCurrent="false"] {{
     text-align: left;
     font-size: 11px;
 }}
-QPushButton[phaseCurrent="false"]:hover {{
+QFrame#LearningConferencePhaseNavigation QPushButton[phaseCurrent="false"]:hover {{
     background-color: #EDF3F7;
     border-color: #D4E1E9;
 }}
-QPushButton[phaseCurrent="true"] {{
-    min-height: 72px;
+QFrame#LearningConferencePhaseNavigation QPushButton[phaseCurrent="true"] {{
+    min-height: 44px;
     background-color: {LIGHT_BLUE};
     color: {COLOR_NAVY};
     border: 1px solid #9FB9CE;
@@ -684,8 +684,8 @@ QPushButton[phaseCurrent="true"] {{
     font-weight: 700;
     font-size: 11px;
 }}
-QPushButton[phaseCurrent="false"]:focus,
-QPushButton[phaseCurrent="true"]:focus {{
+QFrame#LearningConferencePhaseNavigation QPushButton[phaseCurrent="false"]:focus,
+QFrame#LearningConferencePhaseNavigation QPushButton[phaseCurrent="true"]:focus {{
     border: 2px solid {COLOR_FOCUS};
 }}
 QFrame#LearningConferenceActionBar {{

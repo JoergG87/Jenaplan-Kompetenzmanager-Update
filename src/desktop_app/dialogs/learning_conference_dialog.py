@@ -1,4 +1,4 @@
-"""Phase-oriented workspace for persistent learning-conference drafts."""
+"""Conversation-oriented workspace for persistent learning-conference drafts."""
 
 from __future__ import annotations
 
@@ -76,9 +76,23 @@ PHASES = (
     ("agreements", "Welche Unterstützung und Vereinbarungen treffen wir?", "Unterstützung und Vereinbarungen im bearbeitbaren Entwurf festhalten."),
 )
 
+PHASE_GROUPS = (
+    ("Vorbereitung", ("goal", "evidence")),
+    ("Im Gespräch", ("strengths", "development")),
+    ("Vereinbarungen & Abschluss", ("goals", "agreements")),
+)
+
 ROLE_PREPARATION = "Nur für die Vorbereitung"
 ROLE_CONVERSATION = "Im Gespräch bearbeiten"
 ROLE_AGREEMENT = "Im Entwurf als Vereinbarung festgehalten"
+
+
+def _phase_title(key: str) -> str:
+    return next(title for phase_key, title, _description in PHASES if phase_key == key)
+
+
+def _phase_group_title(key: str) -> str:
+    return next(title for title, keys in PHASE_GROUPS if key in keys)
 
 
 def _clear_layout(layout: QLayout) -> None:
@@ -173,16 +187,16 @@ class _CollapsibleSection(QWidget):
 
 
 class LearningConferencePhaseNavigation(QFrame):
-    """Local six-phase navigation without completion semantics."""
+    """Six direct conversation anchors grouped without completion semantics."""
 
     phase_requested = Signal(str)
 
     def __init__(self) -> None:
         super().__init__()
         self.setObjectName("LearningConferencePhaseNavigation")
-        self.setAccessibleName("Phasen des Lernentwicklungsgesprächs")
+        self.setAccessibleName("Arbeitsbereiche des Lernentwicklungsgesprächs")
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self._keys = [key for key, _title, _description in PHASES]
+        self._keys = [key for _group_title, keys in PHASE_GROUPS for key in keys]
         self._buttons: dict[str, QPushButton] = {}
         self._states = {key: "Noch leer" for key in self._keys}
         self._group = QButtonGroup(self)
@@ -190,20 +204,26 @@ class LearningConferencePhaseNavigation(QFrame):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 12, 10, 12)
         layout.setSpacing(7)
-        heading = _label("GESPRÄCHSPHASEN", "field_label")
+        heading = _label("ARBEITSBEREICHE", "field_label")
         layout.addWidget(heading)
-        for index, (key, title, _description) in enumerate(PHASES, start=1):
-            button = QPushButton()
-            button.setObjectName(f"LearningConferencePhaseButton_{key}")
-            button.setCheckable(True)
-            button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-            button.setCursor(Qt.CursorShape.PointingHandCursor)
-            button.setProperty("phaseCurrent", False)
-            button.installEventFilter(self)
-            self._group.addButton(button, index - 1)
-            self._buttons[key] = button
-            button.clicked.connect(lambda _checked=False, phase_key=key: self.phase_requested.emit(phase_key))
-            layout.addWidget(button)
+        button_index = 0
+        for group_title, keys in PHASE_GROUPS:
+            group_label = _label(group_title.upper(), "small")
+            group_label.setObjectName("LearningConferenceNavigationGroupLabel")
+            layout.addWidget(group_label)
+            for key in keys:
+                button = QPushButton()
+                button.setObjectName(f"LearningConferencePhaseButton_{key}")
+                button.setCheckable(True)
+                button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+                button.setCursor(Qt.CursorShape.PointingHandCursor)
+                button.setProperty("phaseCurrent", False)
+                button.installEventFilter(self)
+                self._group.addButton(button, button_index)
+                button_index += 1
+                self._buttons[key] = button
+                button.clicked.connect(lambda _checked=False, phase_key=key: self.phase_requested.emit(phase_key))
+                layout.addWidget(button)
         layout.addStretch(1)
         self.set_current("goal")
 
@@ -251,14 +271,20 @@ class LearningConferencePhaseNavigation(QFrame):
 
     def _refresh_labels(self) -> None:
         current = self.current_key()
-        for index, (key, title, _description) in enumerate(PHASES, start=1):
+        for key in self._keys:
+            title = _phase_title(key)
             state = "Aktuell" if key == current else self._states[key]
             button = self._buttons[key]
-            wrapped_title = "\n".join(textwrap.wrap(title, width=22))
-            button.setText(f"{index}. {wrapped_title}\n{state}")
-            button.setAccessibleName(f"Phase {index} von 6, {title}, {state}")
+            navigation_title = {
+                "evidence": "Belege vorbereiten",
+                "agreements": "Unterstützung & Vereinbarungen",
+            }.get(key, title)
+            wrapped_title = "\n".join(textwrap.wrap(navigation_title, width=22))
+            context_hint = "\nIm Gespräch bei Bedarf" if key == "evidence" else ""
+            button.setText(f"{wrapped_title}{context_hint}\n{state}")
+            button.setAccessibleName(f"{_phase_group_title(key)}, {title}, {state}")
             button.setAccessibleDescription(
-                "Öffnet diese Gesprächsphase. Pfeil hoch und runter wechseln zwischen den Phasen."
+                "Öffnet diesen Gesprächsanker direkt. Pfeil hoch und runter wechseln zwischen den Ankern."
             )
             button.setProperty("phaseCurrent", key == current)
             button.style().unpolish(button)
@@ -753,7 +779,7 @@ class LearningConferenceDialog(QDialog):
         self.page_header = DialogHeader(
             "Lernentwicklungsgespräch",
             f"{self.preparation.student_name} · {group_course}",
-            "Bearbeitbarer Entwurf in sechs klaren Gesprächsphasen.",
+            "Bearbeitbarer Entwurf mit sechs direkt wählbaren Gesprächsankern.",
             icon_name="conference",
             context_role="learning_conference",
         )
@@ -770,7 +796,7 @@ class LearningConferenceDialog(QDialog):
         self.group_course_label = _label(group_course, "small")
         self.date_context_label = _label("Gesprächsdatum offen", "small")
         self.teacher_context_label = _label("Lehrkraft offen", "small")
-        self.phase_context_label = _label("Phase 1 · Gesprächsziel", "small")
+        self.phase_context_label = _label("Vorbereitung · Gesprächsziel", "small")
         self.status_label = _label(_format_saved_at(self._saved_draft.updated_at if self._saved_draft else ""), "small")
         for widget in (
             self.group_course_label,
@@ -800,7 +826,7 @@ class LearningConferenceDialog(QDialog):
         is_evidence_phase = key == "evidence"
         if is_evidence_phase:
             self.validation_message.set_message(
-                "Kompetenzen und Belege werden für diese Gesprächsphase vorbereitet …",
+                "Kompetenzen und Belege werden für diesen Arbeitsanker vorbereitet …",
                 tone="info",
             )
             QApplication.processEvents(
@@ -827,10 +853,12 @@ class LearningConferenceDialog(QDialog):
         layout = QVBoxLayout(content)
         layout.setContentsMargins(20, 18, 24, 32)
         layout.setSpacing(14)
-        number = next(index for index, phase in enumerate(PHASES, start=1) if phase[0] == key)
-        heading = SectionHeader(f"Phase {number} · {title}", description)
+        group_title = _phase_group_title(key)
+        if key == "evidence":
+            description = f"Vorbereiten · im Gespräch bei Bedarf. {description}"
+        heading = SectionHeader(f"{group_title} · {title}", description)
         heading.title_label.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        heading.title_label.setAccessibleName(f"Phase {number} von 6, {title}")
+        heading.title_label.setAccessibleName(f"{group_title}, {title}")
         self.phase_first_focus.setdefault(key, heading.title_label)
         layout.addWidget(heading)
         return content, layout
@@ -839,12 +867,12 @@ class LearningConferenceDialog(QDialog):
         content, layout = self._phase_shell("goal")
         draft = self._saved_draft
         today = date.today()
-        self.period_start = self._optional_date_edit(draft.period_start if draft else None, "Phase 1, Zeitraum von")
-        self.period_end = self._optional_date_edit(draft.period_end if draft else None, "Phase 1, Zeitraum bis")
+        self.period_start = self._optional_date_edit(draft.period_start if draft else None, "Vorbereitung, Gesprächsrahmen, Zeitraum von")
+        self.period_end = self._optional_date_edit(draft.period_end if draft else None, "Vorbereitung, Gesprächsrahmen, Zeitraum bis")
         conference_value = draft.conference_date if draft and draft.conference_date else today
-        self.conference_date = self._date_edit(conference_value, "Phase 1, Gesprächsdatum")
+        self.conference_date = self._date_edit(conference_value, "Vorbereitung, Gesprächsrahmen, Gesprächsdatum")
         self.teacher_input = QLineEdit(draft.responsible_teacher if draft else "")
-        self.teacher_input.setAccessibleName("Phase 1, verantwortliche Lehrkraft")
+        self.teacher_input.setAccessibleName("Vorbereitung, Gesprächsrahmen, verantwortliche Lehrkraft")
         self.phase_first_focus["goal"] = self.period_start
         frame_grid = QGridLayout()
         frame_grid.setSpacing(10)
@@ -868,7 +896,7 @@ class LearningConferenceDialog(QDialog):
             check = QCheckBox(subject.subject_name)
             check.setObjectName(f"LearningConferenceSubject_{subject.subject_id}")
             check.setChecked(subject.subject_id in self._selected_subject_ids)
-            check.setAccessibleName(f"Phase 1, Fachbereich {subject.subject_name}")
+            check.setAccessibleName(f"Vorbereitung, Gesprächsziel, Fachbereich {subject.subject_name}")
             self.subject_checks[subject.subject_id] = check
             subject_grid.addWidget(check, index // 3, index % 3)
         focus_layout.addLayout(subject_grid)
@@ -878,7 +906,7 @@ class LearningConferenceDialog(QDialog):
             check = QCheckBox(topic.label)
             check.setObjectName(f"LearningConferenceCrossTopic_{topic.cross_topic_key}")
             check.setChecked(topic.cross_topic_key in self._selected_cross_topics)
-            check.setAccessibleName(f"Phase 1, Gesprächsthema {topic.label}")
+            check.setAccessibleName(f"Vorbereitung, Gesprächsziel, Gesprächsthema {topic.label}")
             self.cross_topic_checks[topic.cross_topic_key] = check
             cross_grid.addWidget(check, index // 2, index % 2)
         focus_layout.addLayout(cross_grid)
@@ -950,7 +978,7 @@ class LearningConferenceDialog(QDialog):
         content, layout = self._phase_shell("evidence")
         self.evidence_search = SearchField(
             "Kompetenzen und Belege durchsuchen",
-            accessible_name="Phase 5, Kompetenzen und Belege durchsuchen",
+            accessible_name="Vorbereitung, Belege, Kompetenzen und Belege durchsuchen",
             accessible_description="Filtert nur die sichtbare Auswahl und verändert keine gespeicherten Referenzen.",
         )
         self.evidence_filter_bar = FilterBar(self.evidence_search)
@@ -983,7 +1011,7 @@ class LearningConferenceDialog(QDialog):
         review_value = self._saved_draft.next_review_date if self._saved_draft else None
         self.next_review_date = self._optional_date_edit(
             review_value,
-            "Phase 6, optionaler Überprüfungstermin",
+            "Vereinbarungen und Abschluss, optionaler Überprüfungstermin",
         )
         agreement_widgets.append(self._field("Optionaler Überprüfungstermin", self.next_review_date))
         layout.addWidget(self._role_card(
@@ -1020,7 +1048,9 @@ class LearningConferenceDialog(QDialog):
         value = getattr(self._saved_draft, field_key, "") if self._saved_draft else ""
         edit = QTextEdit(value)
         edit.setObjectName(f"LearningConferenceInput_{field_key}")
-        edit.setAccessibleName(f"Phase {self._phase_number(phase_key)}, {role.casefold()}, {title}")
+        edit.setAccessibleName(
+            f"{_phase_group_title(phase_key)}, {_phase_title(phase_key)}, {role.casefold()}, {title}"
+        )
         edit.setMinimumHeight(130)
         self.text_inputs[field_key] = edit
         return edit
@@ -1058,7 +1088,7 @@ class LearningConferenceDialog(QDialog):
             "Fach → Kompetenzbereich → Thema → Kompetenz. Der angezeigte Stand ist kanonisch und nicht editierbar.",
         ))
         self.competency_empty = _label(
-            "Noch kein fachlicher Bereich gewählt. Wähle zuerst in Phase 1 mindestens einen Gesprächsbereich aus.",
+            "Noch kein fachlicher Bereich gewählt. Wähle zuerst unter Gesprächsziel mindestens einen Gesprächsbereich aus.",
             "subtle",
         )
         self.competency_empty.setObjectName("LearningConferenceCompetencyEmpty")
@@ -1139,7 +1169,7 @@ class LearningConferenceDialog(QDialog):
         layout.setContentsMargins(12, 9, 12, 10)
         check = QCheckBox(competency.competency_text)
         check.setObjectName(f"LearningConferenceCompetency_{competency.competency_id}")
-        check.setAccessibleName(f"Phase 5, Kompetenz auswählen, {competency.competency_text}")
+        check.setAccessibleName(f"Vorbereitung, Belege, Kompetenz auswählen, {competency.competency_text}")
         check.setAccessibleDescription(f"Technische Kompetenz-ID {competency.competency_id}")
         selected = competency.competency_id in self._selected_competency_ids
         check.setChecked(selected)
@@ -1260,7 +1290,7 @@ class LearningConferenceDialog(QDialog):
             block.addWidget(_label(evidence.note or "Ohne Notiz", "body"))
             check = QCheckBox("Für das Gespräch auswählen")
             check.setObjectName(f"LearningConferenceEvidence_{evidence.observation_id}")
-            check.setAccessibleName(f"Phase 5, Beobachtungsbeleg vom {evidence.date_text} auswählen")
+            check.setAccessibleName(f"Vorbereitung, Belege, Beobachtungsbeleg vom {evidence.date_text} auswählen")
             check.setAccessibleDescription(f"Technische Beobachtungs-ID {evidence.observation_id}")
             check.setChecked(evidence.observation_id in self._selected_observation_ids)
             check.toggled.connect(
@@ -1296,7 +1326,7 @@ class LearningConferenceDialog(QDialog):
             block.addWidget(_label(observation_id, "subtle"))
             check = QCheckBox("Gespeicherten Bezug beibehalten")
             check.setChecked(True)
-            check.setAccessibleName(f"Phase 5, nicht verfügbaren Beleg {observation_id} beibehalten")
+            check.setAccessibleName(f"Vorbereitung, Belege, nicht verfügbaren Beleg {observation_id} beibehalten")
             check.toggled.connect(
                 lambda checked, observation_id=observation_id: self._set_observation_selected(
                     observation_id,
@@ -1330,7 +1360,7 @@ class LearningConferenceDialog(QDialog):
         for key, title in CHART_OPTIONS:
             check = QCheckBox(title)
             check.setObjectName(f"LearningConferenceChart_{key}")
-            check.setAccessibleName(f"Phase 5, Gesprächsbild {title}")
+            check.setAccessibleName(f"Vorbereitung, Belege, Gesprächsbild {title}")
             check.setChecked(key in self._selected_chart_types)
             self.chart_checks[key] = check
             layout.addWidget(check)
@@ -1346,14 +1376,14 @@ class LearningConferenceDialog(QDialog):
         title = "Ausgewählte Belege und Ziele" if include_goals else "Ausgewählte Belege"
         layout.addWidget(SectionHeader(
             title,
-            "Read-only Zusammenfassung. Die Auswahl wird ausschließlich in Phase 5 geändert.",
+            "Read-only Zusammenfassung. Die Auswahl wird ausschließlich unter Belege vorbereiten geändert.",
         ))
         summary = _label("Noch keine Belege ausgewählt.", "body")
         summary.setAccessibleName("Zusammenfassung ausgewählter Kompetenzen, Beobachtungsbelege und Gesprächsbilder")
         layout.addWidget(summary)
         self.evidence_summary_labels.append(summary)
         button = QPushButton("Belege ansehen")
-        configure_button(button, "secondary", "Zu Phase 5, Belege ansehen")
+        configure_button(button, "secondary", "Zum Anker Belege vorbereiten")
         button.clicked.connect(lambda: self.set_active_phase("evidence"))
         layout.addWidget(button, 0, Qt.AlignmentFlag.AlignLeft)
         return card
@@ -1365,8 +1395,6 @@ class LearningConferenceDialog(QDialog):
         layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(8)
         self.close_button = QPushButton("Schließen")
-        self.previous_button = QPushButton("Zurück")
-        self.next_button = QPushButton("Weiter")
         self.evidence_button = QPushButton("Belege ansehen")
         self.save_button = QPushButton("Entwurf speichern")
         self.save_button.setShortcut(QKeySequence.StandardKey.Save)
@@ -1376,15 +1404,11 @@ class LearningConferenceDialog(QDialog):
         self.revisions_button.setObjectName("LearningConferenceRevisionsButton")
         self.save_button.setObjectName("LearningConferenceSaveButton")
         configure_button(self.close_button, "quiet", "LEG-Workspace schließen")
-        configure_button(self.previous_button, "secondary", "Zur vorherigen Gesprächsphase")
-        configure_button(self.next_button, "secondary", "Zur nächsten Gesprächsphase")
-        configure_button(self.evidence_button, "secondary", "Zu Phase 5, Belege ansehen")
+        configure_button(self.evidence_button, "secondary", "Zum Anker Belege vorbereiten")
         configure_button(self.save_button, "primary", "LEG-Entwurf speichern")
         configure_button(self.complete_button, "secondary", "Gespeicherten LEG-Entwurf abschließen")
         configure_button(self.revisions_button, "quiet", "Abschlussrevisionen öffnen")
         self.close_button.clicked.connect(self.reject)
-        self.previous_button.clicked.connect(lambda: self._move_phase(-1))
-        self.next_button.clicked.connect(lambda: self._move_phase(1))
         self.evidence_button.clicked.connect(lambda: self.set_active_phase("evidence"))
         self.save_button.clicked.connect(self._request_save)
         self.complete_button.clicked.connect(self._request_completion)
@@ -1392,8 +1416,6 @@ class LearningConferenceDialog(QDialog):
         layout.addWidget(self.close_button)
         layout.addWidget(self.evidence_button)
         layout.addStretch(1)
-        layout.addWidget(self.previous_button)
-        layout.addWidget(self.next_button)
         layout.addWidget(self.revisions_button)
         layout.addWidget(self.complete_button)
         layout.addWidget(self.save_button)
@@ -1490,24 +1512,14 @@ class LearningConferenceDialog(QDialog):
             page.setVisible(is_active)
         active_page.raise_()
         self.phase_stack.update()
-        index = keys.index(key)
-        title = PHASES[index][1]
-        self.phase_context_label.setText(f"Phase {index + 1} · {title}")
-        self.previous_button.setEnabled(index > 0)
-        self.next_button.setEnabled(index < len(keys) - 1)
-        self.next_button.setText("Weiter" if index < len(keys) - 1 else "Weiter")
+        title = _phase_title(key)
+        self.phase_context_label.setText(f"{_phase_group_title(key)} · {title}")
         self.evidence_button.setVisible(key in {"strengths", "development", "goals", "agreements"})
         self._refresh_ui_state()
         if focus:
             target = self.phase_first_focus.get(key)
             if target is not None:
                 QTimer.singleShot(0, target.setFocus)
-
-    def _move_phase(self, direction: int) -> None:
-        keys = [key for key, _title, _description in PHASES]
-        index = keys.index(self.active_phase_key)
-        target = max(0, min(len(keys) - 1, index + direction))
-        self.set_active_phase(keys[target])
 
     def _update_filters(self, *_args: object) -> None:
         if not self.phase_built["evidence"]:
@@ -1885,6 +1897,3 @@ class LearningConferenceDialog(QDialog):
         if edit.date() == edit.minimumDate():
             return None
         return edit.date().toPython()
-
-    def _phase_number(self, key: str) -> int:
-        return next(index for index, phase in enumerate(PHASES, start=1) if phase[0] == key)

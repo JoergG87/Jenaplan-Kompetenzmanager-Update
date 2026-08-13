@@ -417,7 +417,7 @@ Innenabstand und sichtbaren Fokusrahmen bestimmt. Zwischen Aktionen bleiben
 mindestens zwölf Pixel. Der sichere Fortsetzungsweg ist die blaue Primäraktion;
 Escape und Enter lösen keine verwerfende oder überspringende Sekundäraktion aus.
 
-Im LEG ist genau eine Arbeitsphase sichtbar und interaktiv. Nicht aktive Seiten
+Im LEG ist genau ein Inhaltsanker sichtbar und interaktiv. Nicht aktive Seiten
 bleiben für den Erhalt ungespeicherter Eingaben im Seitencontainer, werden aber
 aus Darstellung, Maus- und Tastaturinteraktion genommen. Animationen dürfen
 keinen Effekt auf dem gesamten Seitenstack hinterlassen.
@@ -576,7 +576,7 @@ sichtbar, ohne einen horizontalen Gesamtscroll zu erzeugen.
 
 Jeder leere Zustand beantwortet in ruhiger Sprache, warum kein Inhalt sichtbar ist und welcher bestehende Schritt weiterführt. Eine leere technische Tabelle, `Keine Daten vorhanden` ohne Kontext oder eine neue fachliche Aktion ausschließlich für den Empty State sind unzulässig. Schreibgeschützte Revisionen erklären statt einer Aktion, dass der eingefrorene Stand unverändert bleibt.
 
-Tastaturgrundlage ist: `Ctrl/Cmd+F` fokussiert die lokale Suche, Escape leert eine befüllte Suche oder schließt gemäß sicherem Dialogvertrag, `Ctrl/Cmd+S` löst die vorhandene Speicheraktion aus, Enter öffnet beziehungsweise aktiviert, Leertaste schaltet Auswahl und Disclosure, Pfeiltasten steuern Segmente, Tabs und LEG-Phasen. Fokus folgt der sichtbaren Arbeitsreihenfolge. Alle Eingabefelder, Iconaktionen, Tabellen, komplexen Auswahlen und Primäraktionen besitzen Accessible Names; ergänzende Beschreibungen erklären nur nicht sichtbare Bedienhinweise.
+Tastaturgrundlage ist: `Ctrl/Cmd+F` fokussiert die lokale Suche, Escape leert eine befüllte Suche oder schließt gemäß sicherem Dialogvertrag, `Ctrl/Cmd+S` löst die vorhandene Speicheraktion aus, Enter öffnet beziehungsweise aktiviert, Leertaste schaltet Auswahl und Disclosure, Pfeiltasten steuern Segmente, Tabs und LEG-Anker. Fokus folgt der sichtbaren Arbeitsreihenfolge. Alle Eingabefelder, Iconaktionen, Tabellen, komplexen Auswahlen und Primäraktionen besitzen Accessible Names; ergänzende Beschreibungen erklären nur nicht sichtbare Bedienhinweise.
 
 Die produktiven Arbeitsflächen werden bei 1180 x 760, 1280 x 800 und 1400 x 900 sowie mit Device Pixel Ratio 2 geprüft. Primäraktionen und lokale Navigation bleiben sichtbar, horizontale Scrollbereiche entstehen nur bei inhaltlich unvermeidbaren Matrizen, und es gibt keinen horizontalen Gesamtscroll. QPainter wird nicht eingesetzt; Standardwidgets und zentrale QSS-Zustände liefern den erforderlichen High-DPI-, Fokus- und Screenreader-Nutzen.
 
@@ -590,15 +590,15 @@ Die Aktionszone bleibt am unteren Rand beziehungsweise bei grossen Workspaces au
 
 Validierungs- und Speicherfehler erscheinen als `InlineMessage` am betroffenen Kontext. Erfolgreiches Speichern darf weiterhin ueber den vorhandenen `Toast` bestaetigt werden. Native `QMessageBox`-Fehler und -Bestaetigungen erhalten die zentrale Typografie, Mindestbreite und Buttonflaeche; irreversible Spezialbestaetigungen behalten ihre bereits freigegebenen Texte und Schutzmechanismen.
 
-Der Beobachtungsdialog unterscheidet die vorhandenen drei Zonen sichtbar als ruhigen Kontext, dominante Kompetenzarbeit und Eingabe-/Aktionsbereich, ohne Auswahl oder Speicherpfad zu veraendern. Berichtswerkstatt und finale Revision verwenden denselben Dialogkopf, unterscheiden bearbeitbaren Draft, Vorschau und schreibgeschuetzte Revision aber weiterhin ueber vorhandene Status- und Dokumentflaechen. Der LEG-Workspace verbindet Kindkontext, sechs Phasen, Dirty-State und feste Aktionsleiste in derselben Kopfsprache.
+Der Beobachtungsdialog unterscheidet die vorhandenen drei Zonen sichtbar als ruhigen Kontext, dominante Kompetenzarbeit und Eingabe-/Aktionsbereich, ohne Auswahl oder Speicherpfad zu veraendern. Berichtswerkstatt und finale Revision verwenden denselben Dialogkopf, unterscheiden bearbeitbaren Draft, Vorschau und schreibgeschuetzte Revision aber weiterhin ueber vorhandene Status- und Dokumentflaechen. Der LEG-Workspace verbindet Kindkontext, sechs gruppierte Inhaltsanker, Dirty-State und feste Aktionsleiste in derselben Kopfsprache.
 
 Premium UI Sprint 2 fuehrt keine neue Motion ein. Vorhandene `InlineMessage`-, `Toast`-, Segment- und Disclosure-Motion bleibt zentral, kurz und Reduced-Motion-sicher. Dialog-Fades, Hoehenanimationen, verschachtelte Animationen und QPainter-Spezialelemente sind fuer diesen Sprint nicht gerechtfertigt.
 
 ## LEG-Workspace-Sprache - UI Sprint 6B
 
-Der Lernentwicklungsgespraech-Draft verwendet `PageHeader`, `StatusBadge`, `SectionHeader`, `AppCard`, `SearchField`, `FilterBar`, `InlineMessage`, `Toast` und zentrale Buttonrollen als einen zusammenhaengenden kindbezogenen Workspace. Kopf, lokale Phasenleiste und Aktionsleiste bleiben ausserhalb des dominanten Phasen-Scrollbereichs. Die linke Leiste zeigt alle sechs vollstaendigen Phasentitel und genau einen textlich markierten aktuellen Schritt.
+Der Lernentwicklungsgespraech-Draft verwendet `PageHeader`, `StatusBadge`, `SectionHeader`, `AppCard`, `SearchField`, `FilterBar`, `InlineMessage`, `Toast` und zentrale Buttonrollen als einen zusammenhaengenden kindbezogenen Workspace. Kopf, lokale Ankerleiste und Aktionsleiste bleiben ausserhalb des dominanten Anker-Scrollbereichs. Die linke Leiste zeigt alle sechs vollstaendigen Inhaltstitel in den drei sichtbaren Arbeitskontexten `Vorbereitung`, `Im Gespräch` und `Vereinbarungen & Abschluss` sowie genau einen textlich markierten aktuellen Anker. Die Gruppen besitzen keine eigene Seite und keine zusaetzliche Klickebene.
 
-Phasenstatus ist neutraler lokaler UI-State: `Aktuell`, `Inhalt vorhanden` und `Noch leer`. Haken, Prozentwerte, Ampelfarben, Leistungsdarstellung und Abschlussbegriffe sind unzulaessig. Der aktive Eintrag wird durch Flaeche, Schriftgewicht, linken Marker und Statustext vermittelt, nie allein durch Farbe. Pfeil hoch/runter sowie Home/End navigieren die Leiste nach Qt-Konvention.
+Ankerstatus ist neutraler lokaler UI-State: `Aktuell`, `Inhalt vorhanden` und `Noch leer`. Nummern, Haken, Prozentwerte, Ampelfarben, Leistungsdarstellung und Fortschrittsbegriffe sind unzulaessig. Der aktive Eintrag wird durch Flaeche, Schriftgewicht, linken Marker und Statustext vermittelt, nie allein durch Farbe. Klick, Enter und Space waehlen jeden Anker direkt; Pfeil hoch/runter sowie Home/End navigieren die sichtbare Gruppenreihenfolge nach Qt-Konvention.
 
 Die aktive Phase verwendet dieselbe zentrale helle Blue-Auswahlflaeche und
 Brand-Blue-Markierung wie die Berichtswerkstatt sowie dasselbe strukturelle
@@ -609,9 +609,9 @@ begrenzt und erhaelt keine Abschluss- oder Erfolgsbedeutung.
 
 Die drei Inhaltsrollen bleiben auch ohne Farbe eindeutig. `Nur für die Vorbereitung` nutzt eine ruhige `AppCard[soft]`, `Im Gespräch bearbeiten` eine normale Schreibflaeche und `Im Entwurf als Vereinbarung festgehalten` sparsam `AppCard[accent]`. Rollenlabel, SectionHeader, Hilfetext, Einrueckung und Typografie verhindern, dass interne Vorbereitung wie eine gemeinsame Vereinbarung wirkt. Alle mehrzeiligen LEG-Editoren besitzen rollen- und phasenbezogene Accessible Names.
 
-Kompetenz-, Beobachtungs- und Diagrammauswahl liegt ausschliesslich in Phase 5. Andere Phasen verwenden eine read-only `AppCard[soft]`-Zusammenfassung mit der sekundaeren Aktion `Belege ansehen`. Historisch und nicht verfuegbar werden textlich benannt. Auswahl, Suche und Disclosure verwenden die bestehenden sofortigen Zustandswechsel und hoechstens eine zentrale Opacity-Bestaetigung; Reduced Motion zeigt Endzustaende unmittelbar.
+Kompetenz-, Beobachtungs- und Diagrammauswahl liegt ausschliesslich im Anker `evidence` unter `Vorbereitung` und traegt sichtbar den Hinweis `Vorbereiten · im Gespräch bei Bedarf`. Andere Anker verwenden eine read-only `AppCard[soft]`-Zusammenfassung mit der sekundaeren Aktion `Belege ansehen`. Historisch und nicht verfuegbar werden textlich benannt. Optionale Gespraechsbilder bleiben standardmaessig geschlossen. Auswahl, Suche und Disclosure verwenden die bestehenden sofortigen Zustandswechsel und hoechstens eine zentrale Opacity-Bestaetigung; Reduced Motion zeigt Endzustaende unmittelbar.
 
-Die untere LEG-Aktionsleiste besitzt mit `Entwurf speichern` genau eine primaere Aktion. `Zurück`, `Weiter`, `Belege ansehen` und `Schließen` bleiben sekundaer oder quiet. Eine `InlineMessage` steht unmittelbar oberhalb der Leiste; erfolgreicher Speicherstatus darf zusaetzlich als Toast erscheinen. Bei Dirty-Close ist der ruhige Drei-Wege-Dialog mit `Entwurf speichern`, `Änderungen verwerfen` und `Weiter bearbeiten` verbindlich.
+Die untere LEG-Aktionsleiste besitzt mit `Entwurf speichern` genau eine primaere Aktion. `Belege ansehen` und `Schließen` bleiben sekundaer oder quiet; lineare Aktionen `Zurück` und `Weiter` erscheinen nicht. Eine `InlineMessage` steht unmittelbar oberhalb der Leiste; erfolgreicher Speicherstatus darf zusaetzlich als Toast erscheinen. Bei Dirty-Close ist der ruhige Drei-Wege-Dialog mit `Entwurf speichern`, `Änderungen verwerfen` und `Weiter bearbeiten` verbindlich.
 
 Responsive Regel: bei 1400 x 900 ist die Phasenleiste 232 px, bei 1280 x 800 etwa 220 px und bei 1180 x 760 214 px breit. Es gibt keine Mindestbreite von 1200 px, keinen horizontalen Gesamtscroll und pro aktiver Phase hoechstens einen dominanten vertikalen Scrollbereich. Kopfmetadaten duerfen ruhig umbrechen; Pflichtaktionen bleiben sichtbar.
 
@@ -666,7 +666,7 @@ Komponenten mit Motion:
 - persistente Primaer-Speicheraktionen: kurzer bestaetigender Zustand nach fachlich bestaetigtem Erfolg
 - `Toast`: statische, compositingfreie Anzeige, Hover-Pause und sichere Ersetzung einer laufenden Meldung; Text, FontMetrics, Umbruch, Padding und vorhandene Icons bestimmen zentral Breite und Höhe innerhalb sicherer Parent-Abstände
 
-Bewusst statisch bleiben `EmptyState`, Tabellen und Tabellenzeilen, grosse Listen, Scrollen, Baumstrukturen, Suchergebnisse, nicht interaktive Karten, Dokument- und PDF-Vorschauen, die komplette Product Shell sowie Dashboard-Flaechen ohne bewussten Kontextwechsel. Für den Pilot bleiben Bericht-Workspace, LEG-Phasen und Beobachtungs-Kompetenzbereich einschließlich ihrer Arbeitsdialoge frei von Opacity-/GraphicsEffect-Animationen; Disclosure setzt dort ausschließlich den Sichtbarkeitszustand. Es gibt keine vollflaechigen Screen-Uebergaenge, Hoehenanimationen, verschachtelten Listenanimationen oder blockierenden Animationen. Geometrie wird ausschliesslich fuer die kleinen Segment- und Sidebar-Indikatoren animiert; Layout und Inhaltsflaechen bleiben unberuehrt.
+Bewusst statisch bleiben `EmptyState`, Tabellen und Tabellenzeilen, grosse Listen, Scrollen, Baumstrukturen, Suchergebnisse, nicht interaktive Karten, Dokument- und PDF-Vorschauen, die komplette Product Shell sowie Dashboard-Flaechen ohne bewussten Kontextwechsel. Für den Pilot bleiben Bericht-Workspace, LEG-Anker und Beobachtungs-Kompetenzbereich einschließlich ihrer Arbeitsdialoge frei von Opacity-/GraphicsEffect-Animationen; Disclosure setzt dort ausschließlich den Sichtbarkeitszustand. Es gibt keine vollflaechigen Screen-Uebergaenge, Hoehenanimationen, verschachtelten Listenanimationen oder blockierenden Animationen. Geometrie wird ausschliesslich fuer die kleinen Segment- und Sidebar-Indikatoren animiert; Layout und Inhaltsflaechen bleiben unberuehrt.
 
 ## Component Library V2 - UI Sprint 2
 

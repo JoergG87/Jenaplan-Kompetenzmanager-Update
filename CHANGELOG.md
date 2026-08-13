@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Der Qt-LEG-Workspace ordnet seine sechs unveränderten Inhaltsanker jetzt
+  sichtbar in `Vorbereitung`, `Im Gespräch` und `Vereinbarungen & Abschluss`.
+  Alle Anker sind direkt wählbar; nummerierte Fortschrittswirkung sowie die
+  linearen Aktionen `Zurück` und `Weiter` entfallen. Die Belegauswahl bleibt
+  ein Vorbereitungsschritt und ist als `im Gespräch bei Bedarf` erreichbar;
+  optionale Gesprächsbilder bleiben standardmäßig geschlossen. Feldzuordnung,
+  Lazy Build, Dirty-Close, Speichern, Abschluss, Revisionen sowie
+  LCD-/LCF-/LCV-/LCA-Persistenz bleiben unverändert.
+
 - Bereits ausgewählte Berichtbelege bleiben in der Qt-Berichtswerkstatt auch
   nach einem Soft-Delete fachlich lesbar: Die Preparation-Projektion verwendet
   für genau die gespeicherten RPD-Referenzen den vorhandenen Observation-Read
