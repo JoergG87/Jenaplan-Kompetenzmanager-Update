@@ -179,8 +179,8 @@ def run_packaged_keychain_smoke(
 
 
 def _new_environment(root: Path):
-    if root.exists() or root.is_symlink():
-        raise RuntimeError("keychain_smoke_root_exists")
+    if root.is_symlink() or not root.is_dir():
+        raise RuntimeError("keychain_smoke_root_invalid")
     paths = _prepare_paths(root)
     runtime = build_security_runtime(paths)
     repository = SQLiteDataKeysetRepository(

@@ -43,10 +43,12 @@ from src.desktop_app.runtime import (
     prepare_security_runtime_storage,
     runtime_paths,
 )
+import src.security.packaged_keychain_smoke as packaged_keychain_smoke
 from src.security.packaged_keychain_smoke import (
     APP_DATA_DIR_ENV as KEYCHAIN_APP_DATA_DIR_ENV,
     PACKAGED_SMOKE_MARKER_ENV as KEYCHAIN_SMOKE_MARKER_ENV,
     PACKAGED_SMOKE_MARKER_VALUE as KEYCHAIN_SMOKE_MARKER_VALUE,
+    _new_environment as new_keychain_smoke_environment,
     _validated_root as validated_keychain_smoke_root,
 )
 from tests.helpers.final_v3_document_runtime_worker import setup as setup_final_v3_worker
@@ -342,6 +344,44 @@ def test_synthetic_helpers_block_protected_root_and_descendants(
     assert run_sprint9_worker(["write", "writer_after_header", str(root)]) == 2
 
     assert tuple(root.rglob("*")) == before
+
+
+def test_keychain_smoke_accepts_prepared_synthetic_root(tmp_path: Path) -> None:
+    root = (tmp_path / "jenaplan-keychain-smoke-synthetic").resolve()
+    prepare_synthetic_test_root(root)
+
+    validated = validated_keychain_smoke_root(
+        {
+            KEYCHAIN_APP_DATA_DIR_ENV: str(root),
+            KEYCHAIN_SMOKE_MARKER_ENV: KEYCHAIN_SMOKE_MARKER_VALUE,
+        }
+    )
+
+    assert validated == root
+    protection = inspect_runtime_root(root)
+    assert protection is not None
+    assert protection.kind is RuntimeRootKind.SYNTHETIC_TEST
+
+
+def test_keychain_smoke_new_environment_accepts_prepared_synthetic_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = (tmp_path / "jenaplan-keychain-smoke-environment").resolve()
+    prepare_synthetic_test_root(root)
+
+    def reached_prepare_paths(candidate: Path):
+        assert candidate == root
+        raise RuntimeError("reached_prepare_paths")
+
+    monkeypatch.setattr(
+        packaged_keychain_smoke,
+        "_prepare_paths",
+        reached_prepare_paths,
+    )
+
+    with pytest.raises(RuntimeError, match="reached_prepare_paths"):
+        new_keychain_smoke_environment(root)
 
 
 def test_keychain_smoke_cleanup_cannot_accept_product_root(tmp_path: Path) -> None:
