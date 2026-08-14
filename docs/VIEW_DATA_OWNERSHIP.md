@@ -603,13 +603,15 @@ den jeweiligen Refresh hinaus gehalten.
 
 `OnboardingScreen` besitzt nur sichtbaren Schritt-, Text-, Button- und lokalen
 Fokuszustand. Persistenz gehoert `OnboardingController` und
-`AppPreferencesFile`; Navigation gehoert `AppShell`. Kleine Statuszeilen werden
-aus bestehenden Adapter-/ViewModel-Projektionen als aggregierte Ja/Nein-Werte
-uebergeben. Der Kinderstatus verwendet den `CurrentMembershipReadSnapshot`;
-aktuelle `ENROLLED`-Mitglieder ergeben eingerichtet, ein fachlich leerer
-aktueller Bestand offen und `CURRENT_SCHOOL_YEAR_MISSING` beziehungsweise
-`AMBIGUOUS` nicht geprüft. Die View liest keine SQLite-Daten direkt, zeigt
-keine Schuelernamen und schreibt keine fachlichen Daten.
+`AppPreferencesFile`; Navigation gehoert `AppShell`. Kleine Statuszeilen für
+Stammgruppe, Kurs, Stundenplan und Schüler werden aus bestehenden
+Adapter-/ViewModel-Projektionen als aggregierte Ja/Nein-Werte übergeben. Der
+Backuphinweis verwendet ausschließlich das Vorhandensein einer Datei mit der
+vom aktiven Backupadapter vorgegebenen Endung im bestehenden Runtime-
+Backupbereich und behauptet keine Verifikation. Die View liest keine SQLite-
+Daten direkt, zeigt keine Schülernamen, Prozentwerte oder Bewertungen,
+blockiert keinen Schritt und schreibt keine fachlichen Daten. Die globale
+Dokumentationsfachauswahl ist kein Onboardingstatus.
 
 `SecurityUiCoordinator` besitzt den rein technischen sichtbaren Lock-State. Er
 versteckt bei Sperre alle fachlichen Top-Level-Fenster und zeigt eine vollstaendig

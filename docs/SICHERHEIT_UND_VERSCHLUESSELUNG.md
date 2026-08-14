@@ -1,9 +1,9 @@
 # Sicherheit und Verschlüsselung
 
-Stand: 11. August 2026
-Geltung: vorbereiteter Pilotstand 0.4.0 / Build 400
-Status: Technische Produktkomposition aktiv; Build-, manuelle Pilot- und
-Releasefreigabe offen
+Stand: 14. August 2026
+Geltung: Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
+Status: Inhaltlich finaler Final-V4-Reviewstand vor der Versionsanhebung;
+noch kein finales Pilot-, Build- oder Releaseartefakt
 
 Dieses Dokument beschreibt den tatsächlich aktiven committed Schutzstand und
 die noch offene Build-/Realweltabnahme. Es ist keine
@@ -18,8 +18,9 @@ keine KI-Dienste ein. Schülerdaten, Beobachtungen, Anhänge, Berichte,
 Lernentwicklungsgespräche und PDF-Ausgaben haben deshalb einen hohen
 Schutzbedarf.
 
-0.4.0 / Build 400 bezeichnet den geplanten Pilotstand, nicht einen bereits
-verteilten oder freigegebenen Release. Es gibt noch keinen Nachweis für
+Die angezeigte Version und der Build folgen der zentralen Produktversion. Diese
+Reviewausgabe ist kein bereits verteiltes oder freigegebenes Release. Es gibt
+noch keinen Nachweis für
 Developer ID oder Notarisierung, keine Windows-Freigabe, keinen Stable-Release
 und keinen Stable-Appcast. Ein konkretes DMG, seine Prüfsumme und der
 zugehörige Buildcommit werden ausschließlich aus einem späteren sauberen Build
@@ -66,10 +67,9 @@ vollständig prüfbar, wird kein Reset durchgeführt.
 
 ### Signierung und Updates
 
-Für 0.4.0 / Build 400 ist noch kein Signatur- oder Notarisierungsnachweis
-freigegeben. Frühere lokale Testartefakte waren höchstens ad-hoc signiert; das
-ersetzt weder Developer ID noch Apple-Notarisierung. Es ist kein öffentlicher
-Updatekanal aktiv.
+Der aktuelle interne Pilotvertrag verwendet ad-hoc signierte, nicht
+notarisierte Artefakte. Das ersetzt weder Developer ID noch Apple-
+Notarisierung. Es ist kein öffentlicher Updatekanal aktiv.
 
 ## 3. Aktuelle Datenhaltung
 
@@ -86,18 +86,12 @@ Die App hält ihre Daten lokal und getrennt vom App-Bundle:
 - Der lokale Backupbereich enthält ausschließlich `.jkmebackup`; Restore nutzt
   vollständige keyed Prüfung, neues Staging, Sicherheitsbackup,
   Worker-Handoff, kontrollierten Austausch, Rollback und Restart.
-- Frei exportierte Entwurfs-PDFs und andere bewusst abgelegte Ausgaben liegen
-  außerhalb der App und müssen wie vertrauliche Schulunterlagen behandelt
-  werden.
-
 Finale verschlüsselte Bericht- und LEG-PDF-Artefakte öffnen über denselben
-sicheren In-App-Viewer. UI und HTML übergeben ausschließlich die Artifact-ID;
-Python verifiziert und liefert die PDF-Bytes nur für die flüchtige
-QtPdf-Anzeige im Speicher. Es gibt keine Klartextdatei, OS-Öffnung,
-WebEngine-PDF-Ansicht, Download, Export, Drucken oder Teilen. PDF-Export bleibt
-offen. Die technische Source-Prüfung und ein Cocoa-Smoke sind erfolgt; reale
-PO-Abnahme im kommenden Qt-/HTML-Vergleichsbuild und Bundle-/Packaging-Nachweis
-bleiben offen. Daraus folgt kein Pilot- oder Release-GO.
+sicheren read-only In-App-Viewer. Python verifiziert und liefert die PDF-Bytes
+nur für die flüchtige QtPdf-Anzeige im Speicher. Der Viewer unterstützt
+mehrseitige Anzeige, Scrollen, Zoom, Schließen und erneutes Öffnen. Es gibt im
+aktuellen finalen Artefaktpfad keine Klartextdatei, OS-Öffnung, Download,
+Export-, Druck- oder Teilenfunktion.
 
 Dieses Dokument nennt absichtlich keine Entwicklerpfade, Secrets, Keychain-
 Einträge oder konkrete lokale Kennungen. Technische Betreuung soll nur die
@@ -220,7 +214,9 @@ den sicheren Betrieb:
   aufbewahren.
 - Keine Schülerdaten in Screenshots, Testdaten, Tickets oder frei zugängliche
   Ablagen übernehmen.
-- Exportierte und finale PDFs nur über sichere schulische Wege weitergeben.
+- Finale PDFs ausschließlich über den vorgesehenen sicheren In-App-Viewer
+  öffnen; es gibt in diesem Produktvertrag keine Export-, Druck- oder
+  Teilenfunktion.
 
 Technische Betreuung unterstützt bei Installationsfreigabe, Recovery und
 Sicherungsstrategie. Sie kennt nicht automatisch das Lehrkraftpasswort und
@@ -228,7 +224,7 @@ erhält durch einen Support-Reset keinen Zugang zu den fachlichen Daten.
 
 ## 9. Plattform- und Releasegrenzen
 
-Für den geplanten Stand 0.4.0 / Build 400 gilt:
+Für Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}} gilt:
 
 - noch kein freigegebenes oder verteiltes Buildartefakt;
 - Developer-ID-Signierung nicht nachgewiesen;
@@ -251,7 +247,6 @@ abgeschlossen:
 
 - reale Pilot-, Bundle-, Keychain- und Restore-Abnahme der Verschlüsselung;
 - Gerätewechsel- und DMK-Recovery;
-- verständliche Recovery-Nutzerführung für verschlüsselte Bestände;
 - Windows- und DPAPI-Implementierung samt echter E2E-Abnahme;
 - Apple Developer ID, Notarisierung und die zugehörigen
   Gatekeeper-Nachweise;

@@ -55,9 +55,15 @@ def build_package(
         package = Path(temporary) / package_name
         package.mkdir(mode=0o755)
         shutil.copytree(app_bundle, package / APP_NAME, symlinks=True)
-        shutil.copyfile(
-            ROOT / "docs" / "SUPPORT_ASSISTANT_OPERATIONS.md",
-            package / "SUPPORT_ANLEITUNG.md",
+        operations = (
+            (ROOT / "docs" / "SUPPORT_ASSISTANT_OPERATIONS.md")
+            .read_text(encoding="utf-8")
+            .replace("{{PILOT_VERSION}}", version)
+            .replace("{{PILOT_BUILD}}", build_version)
+        )
+        (package / "SUPPORT_ANLEITUNG.md").write_text(
+            operations,
+            encoding="utf-8",
         )
         version_text = (
             "Jenaplan Support-Assistent\n"

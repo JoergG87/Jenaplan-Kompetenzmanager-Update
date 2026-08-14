@@ -11,22 +11,24 @@ Die vollständige Projektdokumentation befindet sich in `PROJECT.md`. Dauerhafte
 
 ## Aktueller Dokumentstand
 
-Der geplante Dokumentationsstand ist Version `0.4.0` / Build `400` für macOS
-auf Apple Silicon. Er ist vorbereitet, aber weder gebaut, verteilt,
-notarisiert noch als Pilot-GO oder Release freigegeben. Der normale
+Die zentrale Produktversion steht in `src/version.py`; die aktuellen
+Dokumentquellen verwenden dieselbe Version über Platzhalter. Der inhaltliche
+Final-V4-Reviewstand für macOS auf Apple Silicon ist weder als finales
+Pilotartefakt gebaut noch verteilt, notarisiert oder freigegeben. Der normale
 Produktpfad ist lokal, ohne Cloud und ohne KI-Funktion: eine frische
 verschlüsselte Final-V4-Installation mit SQLCipher 4.17, verschlüsselten
 Managed Documents und installationsgebundenem `.jkmebackup`. Support Reset
 und der gemeinsame sichere Viewer für finale verschlüsselte PDF-Artefakte
-bleiben kontrollierte Pilotgrenzen. Ein neuer Clean-Build-, Paket-, Keychain-,
+sind im Final-V4-Produktpfad aktiv. Ein neuer Clean-Build-, Paket-, Keychain-,
 Restore- und Realweltnachweis steht aus; Windows ist nicht freigegeben.
 
 Für die Bedienung gelten das
 `docs/user_manual/USER_MANUAL_SOURCE.md` und das daraus erzeugte
 `docs/user_manual/Jenaplan-Kompetenzmanager-0.3.0-Build-302-Benutzerhandbuch.pdf`
-ist nur ein historisches Artefakt und kein aktuelles Pilot-Handbuch. Eine
-0.4.0-/Build-400-Ausgabe wird erst nach Screenshot- und Dokumentreview
-erzeugt. Die Schutzgrenzen beschreibt
+ist nur ein historisches Artefakt und kein aktuelles Pilot-Handbuch. Aktuelle
+buildqualifizierte PDFs werden aus den Quellen als Reviewset erzeugt; die
+endgültige Pilotfassung folgt erst nach der separaten Versionsanhebung. Die
+Schutzgrenzen beschreibt
 `docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
 
 ## Projektziel

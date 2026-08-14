@@ -242,10 +242,9 @@ Die Ansicht dient dazu, die Entwicklung einer einzelnen Kompetenz nachzuvollzieh
 ```text
 ERSTE AUSFÜHRUNG
   -> Erste Schritte
-       -> Einstellungen / Fächer für die Dokumentation
-       -> Einstellungen / Stundenplan
        -> Stammdaten
        -> Schüler
+       -> Einstellungen / Stundenplan
        -> Einstellungen / Datensicherung
 
 ARBEIT
@@ -280,6 +279,11 @@ Produktregel Sprint 0.2C.1:
   geoeffnet werden.
 - Der Flow legt keine fachlichen Daten an, startet keinen Import und kein
   Backup und nutzt nur vorhandene Navigationsziele.
+- Der Final-V4-Pilotflow führt in fünf nicht blockierenden Schritten von
+  lokalem Schutz und Recovery-Codes über die vorbereitete Arbeitsgrundlage zu
+  Stammdaten, kindbezogener Unterrichtsfachauswahl, erster Beobachtung und
+  `.jkmebackup`. Die globale Dokumentationsfachauswahl ist keine
+  Startvoraussetzung.
 
 ## 11. UX-Hypothesen
 
@@ -336,14 +340,40 @@ verwerfen`, `Weiter bearbeiten`. Weiterbearbeiten ist Standard- und
 Escape-Aktion; Verwerfen ist niemals Default. Nach der Speicherwahl schließt
 die Werkstatt erst nach bestätigt erfolgreichem RPD-Speichern.
 
-## 14. Lernentwicklungsgespraech - Sechs-Phasen-Workspace
+## 14. Lernentwicklungsgespraech - drei Arbeitskontexte
 
-Der produktive LEG-Arbeitsentwurf wird als klar gefuehrter Workspace mit dauerhaftem Kind- und Gespraechskontext, kompakter linker Phasenleiste, genau einer aktiven Phase und einer persistenten unteren Aktionsleiste bearbeitet. Die Phasenleiste zeigt ausschliesslich `Aktuell`, `Inhalt vorhanden` oder `Noch leer`; sie behauptet weder Vollstaendigkeit noch Abschluss.
+Der produktive LEG-Arbeitsentwurf ordnet sechs fachliche Anker in drei
+verstaendliche Arbeitskontexte: `Vorbereitung`, `Im Gespräch` sowie
+`Vereinbarungen & Abschluss`. Die Navigation zeigt den aktuellen Kontext und
+vorhandenen Inhalt, behauptet aber weder Vollstaendigkeit noch Abschluss.
 
-Die Inhaltsrollen sind verbindlich und auch ohne Farbe lesbar: `Nur für die Vorbereitung` kennzeichnet interne Lehrkrafttexte, `Im Gespräch bearbeiten` Kindrueckblick und Entwicklungsfelder, `Im Entwurf als Vereinbarung festgehalten` die weiterhin bearbeitbaren gemeinsamen Ziele, Unterstuetzungen, Vereinbarungen, Zustaendigkeiten und den optionalen Ueberpruefungstermin. `agreed_goals_text` wird sichtbar in Phase 4 bearbeitet, ohne seine bestehende Persistenzbedeutung zu aendern.
+Die sechs Anker sind `Gesprächsziel`, `Was gelingt dem Kind?`, `Welche
+Entwicklung sehen wir?`, `Woran möchten wir gemeinsam arbeiten?`, `Welche
+Beispiele stützen unsere Einschätzung?` sowie `Welche Unterstützung und
+Vereinbarungen treffen wir?`. Ihre Rollen bleiben auch ohne Farbe lesbar:
+interne Vorbereitungstexte, im Gespraech bearbeitete Rueckblicke und
+Entwicklungsfelder sowie weiterhin bearbeitbare gemeinsame Ziele,
+Unterstuetzungen, Vereinbarungen, Zustaendigkeiten und der optionale
+Ueberpruefungstermin.
 
-Kompetenzen, Beobachtungsbelege und optionale Gespraechsbilder werden ausschliesslich in Phase 5 ausgewaehlt. Andere Phasen zeigen dieselbe aktuelle Auswahl read-only und navigieren mit `Belege ansehen` zu Phase 5. Historische Kompetenzreferenzen und nicht mehr verfuegbare Beobachtungsreferenzen bleiben neutral sichtbar und koennen nur ausdruecklich abgewaehlt werden.
+Kompetenzen, Beobachtungsbelege und optionale Gespraechsbilder werden primaer
+in der Vorbereitung ausgewaehlt und koennen im Gespraech bei Bedarf erreicht
+werden. Der kanonische Kompetenzstand bleibt read-only; ausserhalb des
+Belegankers erscheint die aktuelle Auswahl als read-only Zusammenfassung.
+Historische Kompetenzreferenzen und nicht mehr verfuegbare
+Beobachtungsreferenzen bleiben neutral sichtbar. Es entsteht keine eigene
+LEG-Bewertung.
 
-`Entwurf speichern` bleibt die einzige persistierende Hauptaktion. Zurueck, Weiter, Phasendirektwahl, Suche und Disclosure veraendern nur lokalen UI-State. Ungespeicherte Aenderungen werden zentral aus dem aktuellen Widgetstand gegen den zuletzt geladenen beziehungsweise erfolgreich gespeicherten Draft ermittelt. Escape, Fenster-Schliessen und die sichtbare Aktion `Schließen` verwenden denselben Drei-Wege-Ablauf `Entwurf speichern`, `Änderungen verwerfen`, `Weiter bearbeiten`.
+`Entwurf speichern` bleibt die einzige persistierende Hauptaktion. Kontextwahl,
+Suche und Disclosure veraendern nur lokalen UI-State. Ungespeicherte
+Aenderungen werden gegen den zuletzt geladenen beziehungsweise erfolgreich
+gespeicherten Draft ermittelt. Escape, Fenster-Schliessen und die sichtbare
+Aktion `Schließen` verwenden denselben Drei-Wege-Ablauf `Entwurf speichern`,
+`Änderungen verwerfen`, `Weiter bearbeiten`.
 
-Der Workspace ist fuer 1400 x 900, 1280 x 800 und 1180 x 760 ausgelegt. Kopf, Phasenleiste und Aktionsleiste bleiben erreichbar; jede aktive Phase besitzt hoechstens einen dominanten vertikalen Scrollbereich und keinen horizontalen Gesamtscroll. Phasen sind per Pfeil hoch/runter sowie Home/End bedienbar, alle Eingaben und Auswahlen besitzen Accessible Names, und Reduced Motion setzt Phasen-, Disclosure- und Feedback-Endzustaende sofort.
+Der Workspace ist fuer 1400 x 900, 1280 x 800 und 1180 x 760 ausgelegt. Kopf,
+Kontextnavigation und Aktionsleiste bleiben erreichbar; jeder Kontext besitzt
+hoechstens einen dominanten vertikalen Scrollbereich und keinen horizontalen
+Gesamtscroll. Alle Eingaben und Auswahlen besitzen Accessible Names, und
+Reduced Motion setzt Navigations-, Disclosure- und Feedback-Endzustaende
+sofort.

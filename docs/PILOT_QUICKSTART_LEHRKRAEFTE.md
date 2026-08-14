@@ -2,39 +2,40 @@
 
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
+> [!HINWEIS]
+> Inhaltlich finaler Reviewstand vor der Versionsanhebung; noch kein finales
+> Pilot- oder Releaseartefakt.
+
 1. DMG öffnen, die App nach `Programme` ziehen und von dort starten.
-2. Beim ersten Start Passwort festlegen und die angezeigten Recovery- und
-   Sicherheitsinformationen getrennt aufbewahren.
-3. Das aktuelle Schuljahr `2026/27` mit dem Zeitraum 01.08.2026 bis 31.07.2027
-   prüfen.
-4. Unter `Stammdaten` Stammgruppen, Kurse und bei Bedarf Kursverbünde anlegen.
-5. Schüler selbst anlegen; es werden keine Testdaten vorausgesetzt.
-6. Pro Schüler bei Bedarf die Dokumentationsfächer für `2026/27` anpassen.
-7. Beobachtung erfassen, Kontext und Kompetenzen prüfen und bewusst speichern.
-8. Die Entwicklungsübersicht öffnen: Timeline und Fachkarten erscheinen ohne
-   Berichtsentwurf und berücksichtigen die Dokumentationsfächer des Kindes.
-9. Bericht oder LEG bei Bedarf als eigenes Arbeitsprodukt öffnen oder neu
-   beginnen. Bei mehreren Entwürfen immer bewusst auswählen.
-10. Unter `Einstellungen > Datensicherung` ein geprüftes verschlüsseltes Backup
-    erstellen.
+2. App-Passwort festlegen und Recovery-Codes getrennt vom Mac sichern.
+3. Anmelden. Schuljahr `2026/27`, Entwicklungsbuch und 331 Kompetenzen sind
+   bereits vorhanden.
+4. Unter `Stammdaten` mindestens eine Stammgruppe und einen Kurs anlegen;
+   Kursverbünde sind optional.
+5. Schüler anlegen.
+6. Relevante Unterrichtsfächer direkt beim jeweiligen Kind festlegen. Die
+   überfachliche Entwicklung bleibt immer verfügbar.
+7. Den Stundenplan bei Bedarf ergänzen; er ist keine Startvoraussetzung.
+8. Eine Beobachtung erfassen und bewusst speichern.
+9. Kompetenz-Cockpit, Bericht oder LEG bei Bedarf öffnen. Bericht:
+   `Auswählen -> Schreiben -> Prüfen & finalisieren`; LEG: `Vorbereitung -> Im
+   Gespräch -> Vereinbarungen & Abschluss`.
+10. Unter `Einstellungen > Datensicherung` ein geprüftes verschlüsseltes
+    `.jkmebackup` erstellen.
 
 ## Wichtige Grenzen
 
-> [!HINWEIS]
-> - Die App arbeitet lokal, ohne Cloud und ohne KI.
-> - Die Fachdaten und verwalteten Dokumente werden lokal verschlüsselt
->   gespeichert.
-> - Backup und Restore verwenden ausschließlich installationsgebundene
->   `.jkmebackup`; Restore beginnt erst nach vollständiger Prüfung und
->   ausdrücklicher Bestätigung.
-> - Finale Bericht- und LEG-PDFs lassen sich im gemeinsamen sicheren In-App-
->   Viewer lesen. Export, Drucken und Teilen sind nicht verfügbar.
-> - Die Entwicklungsübersicht zeigt Dokumentation, aber keine automatische
->   Stärke, Schwäche, Bewertung, Trend oder Priorität.
-> - Für 0.4.0 / Build 400 sind Developer-ID-Signierung, Notarisierung,
->   Verteilung und Pilot-GO noch nicht nachgewiesen. Es gibt keine
->   Windows-Freigabe, keinen Stable-Appcast und keine automatische
->   Updateinstallation.
+> [!SICHERHEIT]
+> - Die App arbeitet lokal, ohne Cloud und ohne KI-Verarbeitung von Fachdaten.
+> - Finale Bericht- und LEG-PDFs liegen verschlüsselt im verwalteten
+>   Produktbereich und öffnen read-only im sicheren In-App-Viewer.
+> - Der Viewer unterstützt mehrseitiges Scrollen, Zoom sowie Schließen und
+>   erneutes Öffnen; Export, Drucken oder Teilen werden nicht versprochen.
+> - `.jkmebackup` ist installationsgebunden und kein allgemeiner
+>   Gerätewechselweg.
+> - Recovery-Codes sind der normale erste Wiederherstellungsweg. Support Reset
+>   ist nur auf der intakten ursprünglichen Installation ein betreuter
+>   Ausnahmeweg und ersetzt keinen verlorenen lokalen Schlüssel.
 
-Weitere Hinweise stehen im Benutzerhandbuch und in
-`SICHERHEIT_UND_VERSCHLUESSELUNG.md`.
+Weitere Einzelheiten stehen im Benutzerhandbuch und in der Unterlage
+„Sicherheit und Verschlüsselung“.

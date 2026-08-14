@@ -12,6 +12,8 @@ import stat
 import tempfile
 import zipfile
 
+from src.version import APP_BUILD_VERSION
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PRIVATE_PEM_PATTERN = re.compile(
@@ -36,6 +38,7 @@ def build_package(
     keypair_executable: Path,
     output_root: Path,
     version: str,
+    build_version: str = APP_BUILD_VERSION,
     build_commit: str,
     source_tree_state: str,
 ) -> Path:
@@ -68,11 +71,6 @@ def build_package(
                 0o755,
             ),
             (
-                ROOT / "docs" / "SUPPORT_RESET_OPERATIONS.md",
-                package / "SUPPORT_ANLEITUNG.md",
-                0o644,
-            ),
-            (
                 ROOT / "support_tools" / "PUBLIC_KEY_REGISTRY_EXAMPLE.json",
                 package / "PUBLIC_KEY_REGISTRY_EXAMPLE.json",
                 0o644,
@@ -81,6 +79,15 @@ def build_package(
         for source, target, mode in copies:
             shutil.copyfile(source, target)
             os.chmod(target, mode)
+        operations = (
+            (ROOT / "docs" / "SUPPORT_RESET_OPERATIONS.md")
+            .read_text(encoding="utf-8")
+            .replace("{{PILOT_VERSION}}", version)
+            .replace("{{PILOT_BUILD}}", build_version)
+        )
+        operations_path = package / "SUPPORT_ANLEITUNG.md"
+        operations_path.write_text(operations, encoding="utf-8")
+        os.chmod(operations_path, 0o644)
         version_text = (
             "Jenaplan-Kompetenzmanager Support-Reset\n"
             f"Produktversion: {version}\n"
@@ -195,6 +202,7 @@ def main() -> int:
     parser.add_argument("--keypair-executable", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
     parser.add_argument("--version", required=True)
+    parser.add_argument("--build-version", default=APP_BUILD_VERSION)
     parser.add_argument("--build-commit", required=True)
     parser.add_argument("--source-tree-state", choices=("clean", "dirty"), required=True)
     args = parser.parse_args()
@@ -203,6 +211,7 @@ def main() -> int:
         keypair_executable=args.keypair_executable,
         output_root=args.output_root,
         version=args.version,
+        build_version=args.build_version,
         build_commit=args.build_commit,
         source_tree_state=args.source_tree_state,
     )

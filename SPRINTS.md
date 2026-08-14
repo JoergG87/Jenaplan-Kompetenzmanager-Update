@@ -2,6 +2,16 @@
 
 ## Pilot-Produktionsschutz im Feature Freeze
 
+- [x] Integrierte `Erste Schritte` auf einen exakt fünfstufigen, nicht
+  blockierenden Final-V4-Pilotflow ohne Beispielrestore und globale
+  Fachauswahl als Pflicht ausrichten.
+- [x] Aktuelle Pilot-, Lehrkraft-, Installations-, Sicherheits-, Backup- und
+  Supportquellen auf Final V4, `.jkmebackup`, sichere Managed PDFs und die
+  installationsgebundene Recoverygrenze ausrichten.
+- [x] Acht PDF-Profile als buildqualifiziertes Reviewset aus wartbaren Quellen
+  regenerierbar machen; endgültige Ausgabe nach der späteren Versionsanhebung
+  bleibt getrennt.
+
 - [x] Atomare versionierte Rootautorität vor Security-/Dateninitialisierung.
 - [x] Leerer, frischer Pilotroot bereits als `pilot_product/initializing`
   schützen und erst nach Final V4, Companion, Dokumentinventar, `2026/27` und

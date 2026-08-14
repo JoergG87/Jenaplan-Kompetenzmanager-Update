@@ -1,6 +1,10 @@
 # Jenaplan Support-Reset – aktuelle interne Betriebsgrenze
 
-## Status für den geplanten Pilotstand 0.4.0 / Build 400
+Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
+
+> [!HINWEIS]
+> Inhaltlich finaler Reviewstand vor der Versionsanhebung; noch kein finales
+> Pilot- oder Releaseartefakt.
 
 Support Reset ist im Final-V4-Cipher-Produktpfad ausschließlich als
 installationsgebundene Auth-Recovery aktiv. Die App prüft zuerst den

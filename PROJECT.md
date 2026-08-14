@@ -2,6 +2,12 @@
 
 ## Pilot-Produktionsschutz im Feature Freeze
 
+Die aktuellen Pilot-/Lehrkraftquellen und der integrierte Fünf-Schritt-
+Onboardingflow beschreiben denselben Final-V4-Produktvertrag. Sie verwenden
+die zentrale Versionsprojektion; Build-303-PDFs aus diesem Auftrag sind nur
+inhaltliche Reviewartefakte vor der späteren Versionsanhebung. Historische
+Build-302-PDFs bleiben getrennte Belege und keine aktuelle Pilotunterlage.
+
 Der reale Pilotroot ist ab dem ersten technischen Initialisierungsschritt über
 den atomaren, nicht geheimen Marker `.jkm-runtime-root-v1` als
 `pilot_product` geschützt. Seeder, Vergleichsdaten, Reset, Force, Recreate und

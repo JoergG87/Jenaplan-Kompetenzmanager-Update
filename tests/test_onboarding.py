@@ -32,6 +32,9 @@ from src.core.onboarding import OnboardingController
 from src.core.sqlite_store import SQLiteCompetencyRepository, SQLiteDatabase
 from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
+from src.desktop_app.adapters.backup_restore_desktop_adapter import (
+    BackupRestoreDesktopAdapter,
+)
 from src.desktop_app.runtime import (
     prepare_runtime_storage,
     prepare_security_runtime_storage,
@@ -153,16 +156,25 @@ def test_onboarding_screen_steps_keyboard_skip_and_sizes() -> None:
         step=0,
         display_name="Laura",
         status_projection=OnboardingStatusProjection(
-            documentation_subjects_configured=True,
+            group_configured=True,
+            course_configured=True,
             timetable_configured=False,
-            organization_configured=None,
             children_configured=True,
+            backup_configured=False,
         ),
     )
     texts = " ".join(label.text() for label in screen.findChildren(QLabel))
     assert "Willkommen, Laura" in texts
-    assert "Die App-Sperre ist keine Verschlüsselung" in texts
+    assert "verschlüsselt gespeichert" in texts
+    assert "Recovery-Codes getrennt vom Mac" in texts
     assert len(ONBOARDING_STEPS) == ONBOARDING_BASE_STEP_COUNT
+    assert tuple(step.title for step in ONBOARDING_STEPS) == (
+        "Willkommen & sicher starten",
+        "Deine Arbeitsgrundlage ist vorbereitet",
+        "Unterricht organisieren",
+        "Kinder einrichten und dokumentieren",
+        "Daten sichern und loslegen",
+    )
 
     emitted: list[str] = []
     screen.next_requested.connect(lambda: emitted.append("next"))
@@ -222,22 +234,24 @@ def test_onboarding_screen_steps_keyboard_skip_and_sizes() -> None:
     screen.close()
 
 
-def test_pilot_onboarding_adds_only_deliberate_restore_and_guide_actions() -> None:
+def test_pilot_onboarding_uses_the_same_five_product_steps() -> None:
     _app()
     screen = OnboardingScreen()
     screen.set_context(
-        step=ONBOARDING_PILOT_STEP_COUNT - 1,
+        step=ONBOARDING_BASE_STEP_COUNT - 1,
         display_name="Laura",
         status_projection=OnboardingStatusProjection(),
         pilot_mode=True,
     )
     texts = " ".join(label.text() for label in screen.findChildren(QLabel))
-    assert "Pilottest mit Beispieldaten fortsetzen" in texts
-    assert "synthetischen Datenbestand" in texts
-    assert screen.next_button.text() == "Später über Einstellungen"
+    assert screen.step_count == ONBOARDING_BASE_STEP_COUNT
+    assert ONBOARDING_PILOT_STEP_COUNT == ONBOARDING_BASE_STEP_COUNT
+    assert "Daten sichern und loslegen" in texts
+    assert ".jkmebackup" in texts
+    assert "Beispieldaten" not in texts
+    assert screen.next_button.text() == "Erste Schritte abschließen"
     labels = {button.text() for button in screen.findChildren(QPushButton)}
-    assert "Testdaten jetzt einspielen" in labels
-    assert "Anleitung öffnen" in labels
+    assert "Datensicherung öffnen" in labels
 
     screen.set_context(
         step=ONBOARDING_BASE_STEP_COUNT - 1,
@@ -246,7 +260,38 @@ def test_pilot_onboarding_adds_only_deliberate_restore_and_guide_actions() -> No
         pilot_mode=False,
     )
     assert screen.step_count == ONBOARDING_BASE_STEP_COUNT
-    assert screen.next_button.text() == "Abschließen"
+    assert screen.next_button.text() == "Erste Schritte abschließen"
+
+
+def test_onboarding_statuses_are_neutral_and_never_block_navigation() -> None:
+    _app()
+    screen = OnboardingScreen()
+    screen.set_context(
+        step=2,
+        display_name=None,
+        status_projection=OnboardingStatusProjection(
+            group_configured=True,
+            course_configured=False,
+            timetable_configured=None,
+            children_configured=True,
+            backup_configured=False,
+        ),
+    )
+    texts = " ".join(label.text() for label in screen.findChildren(QLabel))
+    assert "Stammgruppe" in texts and "Bereits eingerichtet" in texts
+    assert "Kurs" in texts and "Noch offen" in texts
+    assert "Stundenplan" in texts and "Nicht geprüft" in texts
+    assert screen.next_button.isEnabled()
+
+    screen.set_context(
+        step=4,
+        display_name=None,
+        status_projection=OnboardingStatusProjection(backup_configured=True),
+    )
+    texts = " ".join(label.text() for label in screen.findChildren(QLabel))
+    assert "Backup" in texts
+    assert "Sicherungsdatei gefunden – bitte prüfen" in texts
+    assert screen.next_button.isEnabled()
 
 
 def test_shell_opens_onboarding_after_auth_and_navigates_existing_targets(
@@ -275,10 +320,23 @@ def test_shell_opens_onboarding_after_auth_and_navigates_existing_targets(
 
         shell._return_to_onboarding()
         assert shell.stack.currentWidget() is shell.onboarding_screen
-        shell._onboarding_next()
+        shell.onboarding_controller.set_step(2)
         shell._navigate_from_onboarding("master_data")
         assert shell.stack.currentWidget() is shell.master_data_screen
-        assert runtime.preferences.load().onboarding_current_step == 1
+        assert runtime.preferences.load().onboarding_current_step == 2
+
+        shell._return_to_onboarding()
+        shell.onboarding_controller.set_step(3)
+        shell._navigate_from_onboarding("students")
+        assert shell.stack.currentWidget() is shell.students_workspace
+        assert runtime.preferences.load().onboarding_current_step == 3
+
+        shell._return_to_onboarding()
+        shell.onboarding_controller.set_step(4)
+        shell._navigate_from_onboarding("settings_backup_restore")
+        assert shell.stack.currentWidget() is shell.settings_screen
+        assert shell.settings_screen.current_page == "backup_restore"
+        assert runtime.preferences.load().onboarding_current_step == 4
 
         shell._return_to_onboarding()
         shell._onboarding_complete()
@@ -376,7 +434,15 @@ def _shell_with_onboarding(tmp_path: Path, preferences: AppPreferences):
     security_paths = prepare_security_runtime_storage(data_root=root)
     runtime = build_security_runtime(security_paths)
     runtime.preferences.save(preferences)
-    shell = AppShell(paths.database, paths=paths)
+    shell = AppShell(
+        paths.database,
+        paths=paths,
+        backup_restore_adapter=BackupRestoreDesktopAdapter(
+            paths,
+            app_version="0.3.0",
+            backup_extension=".jkmebackup",
+        ),
+    )
     shell.set_display_name(preferences.display_name)
     shell.show()
     _app().processEvents()

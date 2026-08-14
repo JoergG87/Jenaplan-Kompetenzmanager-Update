@@ -1,93 +1,93 @@
-# Jenaplan-Kompetenzmanager 0.4.0 / Build 400 – geplanter Pilotstand
+# Jenaplan-Kompetenzmanager - Final-V4-Pilotstand
+
+Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 ## Status dieser Release Notes
 
-Diese Release Notes bereiten Version 0.4.0 / Build 400 fachlich vor. Sie
-belegen weder ein erzeugtes oder verteiltes Artefakt noch Release, Pilot-GO,
-Developer-ID-Signierung oder Apple-Notarisierung. Clean-Build, exakter
-Buildcommit, DMG, Prüfsummen und manuelle Pilotabnahme bleiben getrennte Gates.
+Diese Release Notes dokumentieren den inhaltlich finalen Final-V4-Reviewstand
+vor der späteren Versionsanhebung. Sie belegen weder finales Pilotartefakt noch
+Release, Pilot-GO, Developer-ID-Signierung oder Apple-Notarisierung.
 
-## Wesentliche Änderungen gegenüber 0.3.0 / Build 303
+## Final V4 und lokale Verschlüsselung
 
-### Final V4 und aktive lokale Verschlüsselung
+- Final V4 (`PRAGMA user_version = 4`) ist das aktuelle Produktschema.
+- Produktdatenbank und Dokument-Companion werden mit SQLCipher 4.17.0,
+  SQLite 3.53.3 und CommonCrypto geöffnet. Standard-SQLite ist kein Fallback.
+- Das App-Passwort schützt den Zugang. Der davon getrennte DMK wird über den
+  macOS-Schlüsselbund geschützt; ein separater Database-Key öffnet die
+  Datenbanken.
+- Der Pilot-Produktionsroot ist geschützt. Seed-, Reset-, Recreate- und
+  Klartextfallbacks sind im Produktpfad gesperrt.
 
-- Final V4 ist das aktuelle Pilot-/Produktschema.
-- Die Produktdatenbank und der Dokument-Companion werden keyed mit SQLCipher
-  4.17 geöffnet. Standard-SQLite ist kein produktiver Fallback.
-- Das App-Passwort ist nicht der Datenbankschlüssel. Der DMK bleibt geschützt
-  im macOS-Keychain-Kontext; der getrennte Database-Key wird über ein
-  authentisiertes Envelope verwaltet.
-- Vorhandene Klartext-, V3- und alte Testbestände werden nicht automatisch
-  migriert. Für den kommenden Pilot gibt es keine produktiven Altdaten, die
-  übernommen werden müssten.
+## Fresh First Run
 
-### Verschlüsselte verwaltete Dokumente
+- Eine frische Installation enthält den technischen Final-V4-Systembestand,
+  Schuljahr `2026/27` vom 01.08.2026 bis 31.07.2027 sowie den offiziellen
+  Entwicklungsbuchkatalog mit 331 Kompetenzen.
+- Schüler, Stammgruppen, Kurse, Kursverbünde, Beobachtungen, Bestätigungen,
+  Berichtsentwürfe, LEG-Entwürfe, Testdokumente, Beispielbestände und
+  Testbackups werden nicht angelegt.
+- Ein Beispielbestand oder Katalogimport ist für den Pilotstart nicht nötig.
 
-- Beobachtungsanhänge, allgemeine Schülerdokumente sowie finale Bericht- und
-  LEG-Artefakte verwenden zentral den `ManagedDocumentStore`.
-- Dokumente werden als verschlüsselte Generationen verwaltet. Fachliche
-  Dokument-ID und physische Storage-Generation bleiben getrennt.
+## Fachliche Struktur
 
-### Verschlüsseltes Backup und Restore
+- Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz sind als überfachliche
+  Entwicklung immer verfügbar. Sie sind keine Unterrichtsfächer und erscheinen
+  nicht im Stundenplan oder allgemeinen Fachsetup.
+- Zehn Unterrichtsfächer stehen zur Verfügung: EPU, Deutsch, Mathematik,
+  Kreatives Gestalten, Sport, Ethik, Religion, Musik, Englisch und Schulgarten.
+- Relevante Unterrichtsfächer werden pro Schüler und Schuljahr gepflegt; die
+  überfachliche Entwicklung bleibt davon unabhängig.
+- Kleine Fachmarker dienen nur der Orientierung. Fachnamen bleiben sichtbar;
+  Kurs-, Rating- und Statusfarben bleiben getrennt. Für EPU und Kreatives
+  Gestalten ist keine neue Farbe festgelegt.
 
-- Der Produktpfad verwendet ausschließlich das verschlüsselte `.jkmebackup`.
-- Es enthält Final-V4-Datenbank, keyed Companion, notwendige Keyset-/Envelope-
-  Metadaten und registrierte verschlüsselte Dokumentgenerationen.
-- Es enthält keinen DMK, keine Passwörter, Recovery-Codes, Touch-ID- oder
-  Gerätecredentials.
-- Restore prüft vollständig in einem neuen Staging-Bereich und verlangt
-  `RESTORE_READY`, bewusste Bestätigung, verschlüsseltes Sicherheitsbackup,
-  separaten Restore-Worker, kontrollierten Austausch, Reopen/Neustart und
-  Rollback bei Fehlern.
-- Restore ist installationsgebunden und benötigt den passenden bestehenden DMK.
-  Geräteübertragbarkeit und DMK-Recovery werden nicht behauptet.
+## Managed Documents, Bericht und LEG
 
-### Schuljahr und individuelle Fachprofile
+- Beobachtungsanhänge, Schülerdokumente sowie finale Bericht- und LEG-PDFs
+  werden verschlüsselt als Managed Documents gespeichert.
+- Finale PDFs öffnen read-only im sicheren In-App-Viewer mit mehrseitiger
+  Anzeige, Scrollen, Zoom, Schließen und erneutem Öffnen. Export, Drucken und
+  Teilen werden nicht versprochen.
+- Der Qt-Bericht führt durch `Auswählen -> Schreiben -> Prüfen & finalisieren`.
+  Texte bleiben manuell verantwortet, ausgewählte Belege sind beim Schreiben
+  read-only sichtbar, mehrere Entwürfe sind möglich und Finalisierung erzeugt
+  eine unveränderliche Revision.
+- Der Qt-LEG-Arbeitsbereich ordnet sechs fachliche Anker in `Vorbereitung`,
+  `Im Gespräch` und `Vereinbarungen & Abschluss`. Der kanonische Kompetenzstand
+  bleibt read-only; Kompetenzen und Belege werden primär in der Vorbereitung
+  gewählt und außerhalb dieses Ankers read-only zusammengefasst. Es gibt keine
+  eigene LEG-Bewertung.
+- Qt ist Pilotstandard. Historische oder interne HTML-Erprobungspfade sind
+  keine Lehrkraftfunktion.
 
-- Der frische Pilot startet mit dem Schuljahr `2026/27` vom 01.08.2026 bis
-  31.07.2027 und ohne automatisch angelegte Schüler- oder Testdaten.
-- Schüler können pro Schuljahr die globalen Dokumentationsfächer übernehmen
-  oder eine genaue individuelle Auswahl verwenden. Eine bewusst leere Auswahl
-  ist zulässig.
-- Historische Schuljahre sind nicht für normale nachträgliche Änderungen der
-  Fachauswahl vorgesehen.
+## Backup, Restore und Support Reset
 
-### Entwicklungsübersicht
+- Das aktuelle Produktbackup ist ausschließlich das verschlüsselte
+  `.jkmebackup`.
+- Restore verlangt Prüfung, Vorschau und Bestätigung, verifiziertes Staging,
+  Safety-Backup, separaten Worker, vollständige App-Beendigung, kontrollierten
+  Neustart und erneute Anmeldung.
+- Backup und Restore sind an die ursprüngliche geschützte Installation und
+  deren vorhandenen lokalen Schlüsselkontext gebunden. Allgemeine
+  Geräteportabilität und DMK-Recovery werden nicht behauptet.
+- Recovery-Codes bleiben der erste Wiederherstellungsweg.
+- Support Reset ist als betreute Auth-Recovery verfügbar, aber nur bei intakter
+  ursprünglicher Installation, zugreifbarem DMK, vollständig prüfbarem Final V4
+  und erfolgreich erzeugtem und verifiziertem Safety-`.jkmebackup`. Er ändert
+  keine Fachdaten oder Datenschlüssel und gibt Support keinen Datenzugriff.
 
-- Timeline, Fachkarten und Dokumentationsumfang erscheinen unmittelbar für das
-  aktuelle Schuljahr und berücksichtigen die individuellen Schülerfächer.
-- Die Übersicht arbeitet unabhängig von einem Berichtsentwurf.
-- Sie berechnet keine Stärke, Schwäche, Punktzahl, Tendenz oder Priorität.
+## Offene Gates
 
-### Bericht und LEG
+- spätere Versionsanhebung und finale Regeneration derselben Quellen;
+- finaler Pilotbuild und Fresh-First-Run-Abnahme;
+- reales Keychain-/Codesign-/Restore-Bundlegate;
+- portable Backup-Recovery beziehungsweise DMK-Recovery;
+- Developer ID und Apple-Notarisierung;
+- ausdrückliches Pilot-GO.
 
-- Bericht bleibt ein getrenntes Arbeitsprodukt mit dem RPD-Zeitraum des
-  konkreten Entwurfs. Mehrere Entwürfe werden nicht unbemerkt automatisch
-  ausgewählt.
-- Der Qt-Bericht bleibt Pilot-Fallback und aktueller Produktdefault.
-- Der Qt-LEG-Pfad bleibt verfügbar; sein nativer Window-/Fokus-Lifecycle ist
-  als shell-owned, window-modaler Ablauf stabilisiert.
-- Die optionalen lokalen HTML-Oberflächen hinter `JKM_REPORT_UI=html` und
-  `JKM_LEG_UI=html` sind ausschließlich interne Erprobungspfade. Qt bleibt
-  Default; HTML ist nicht als Pilotstandard freigegeben.
+## Historische Dokumentation
 
-## Bekannte Pilotgrenzen und offene Gates
-
-- Finale Bericht- und LEG-PDF-Artefakte lassen sich im gemeinsamen sicheren
-  In-App-Viewer lesen; Export, Drucken und Teilen sind nicht verfügbar.
-  Source-Prüfung und Cocoa-Smoke sind erfolgt. Reale PO-Abnahme im kommenden
-  Qt-/HTML-Vergleichsbuild sowie Bundle-/Packaging-Nachweis bleiben offen.
-- Support Reset ist als reine Authentifizierungs-Recovery für eine weiterhin
-  intakte ursprüngliche Final-V4-Installation angebunden; vollständiger
-  Pre-Auth-Verify und verifiziertes Safety-`.jkmebackup` sind Pflicht.
-- Keine automatische Migration älterer Datenbestände.
-- Keine Geräteübertragbarkeit und kein DMK-Recoverypfad für `.jkmebackup`.
-- Kein Developer-ID-/Notarisierungsnachweis, kein Stable Release, kein Windows
-  und kein Pilot-GO.
-
-## Einordnung historischer Dokumentation
-
-Historische Sprint-, Foundation- und Build-303-Abschnitte bleiben als Historie
-erhalten. Aussagen zu Klartext-SQLite, Klartextdokumenten, ZIP-v1 oder nur
-deaktivierter Verschlüsselungsfoundation beschreiben nicht den heutigen
-Final-V4-Produktpfad.
+Explizit ältere Release-, Sprint-, Foundation- und Builddokumente bleiben als
+Historie erhalten. Ihre Aussagen beschreiben nicht den aktuellen
+Final-V4-Produktpfad und werden nicht als aktuelle Pilotunterlagen erzeugt.

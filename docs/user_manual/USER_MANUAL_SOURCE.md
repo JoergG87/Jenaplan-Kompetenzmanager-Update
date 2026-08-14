@@ -4,15 +4,16 @@
 
 - Produktversion: {{PILOT_VERSION}}
 - Vorbereiteter Pilotbuild: {{PILOT_BUILD}}
-- Dokumentstand: 11. August 2026
+- Dokumentstand: 14. August 2026
 - Plattform: macOS auf Apple Silicon (arm64), ab macOS 13
-- Status: geplanter interner Pilotstand; noch kein Pilot-GO oder Release
+- Status: inhaltlich finaler Final-V4-Reviewstand vor der Versionsanhebung;
+  noch kein finales Pilot- oder Releaseartefakt
 
-Dieses Handbuch beschreibt die lokale Desktop-App. Vorhandene Screenshots
-stammen aus einem älteren synthetischen Referenzstand und sind kein Nachweis für
-die Oberfläche von 0.4.0 / Build 400. Die zu erneuernden Motive sind am Ende
-dieses Handbuchs aufgeführt. Der genaue Produkt-Commit wird erst mit dem
-späteren sauberen Build als Artefaktnachweis festgehalten.
+Dieses Handbuch beschreibt die lokale Qt-Desktop-App. Alle eingebundenen
+Screenshots werden aus einem datenschutzneutralen synthetischen Bestand mit der
+aktuellen Qt-Oberfläche erzeugt. Die Ausgabe bleibt ein Reviewdokument; der
+genaue Produkt-Commit wird erst mit dem späteren sauberen Build als
+Artefaktnachweis festgehalten.
 
 ## 2. Wofür die App da ist
 
@@ -56,10 +57,10 @@ Freigabeverwaltung.
 3. Das Kopieren abwarten und das DMG im Finder auswerfen.
 4. Die App im Ordner Programme regulär öffnen.
 
-Für 0.4.0 / Build 400 ist noch kein Developer-ID- oder
-Notarisierungsnachweis freigegeben. Ein internes Artefakt kann beim ersten
-Start deshalb von macOS blockiert werden. Schließen Sie dann den Hinweis, klicken Sie im
-Finder bei gedrückter Control-Taste auf die App und wählen Sie Öffnen. Falls
+Der aktuelle interne Pilotvertrag ist ad-hoc signiert und nicht notarisiert.
+Ein internes Artefakt kann beim ersten Start deshalb von macOS blockiert
+werden. Schließen Sie dann den Hinweis, klicken Sie im Finder bei gedrückter
+Control-Taste auf die App und wählen Sie Öffnen. Falls
 macOS weiterhin blockiert, wählen Sie in Systemeinstellungen > Datenschutz &
 Sicherheit nur für diese App Dennoch öffnen.
 
@@ -78,8 +79,7 @@ und Build. Ein später zur Pilotprüfung übergebenes Artefakt muss Version
 oder ein Commit werden erst durch den späteren sauberen Build belegt; dieses
 Handbuch behauptet kein bereits erzeugtes Build-Artefakt.
 
-Der bisherige Screenshot zeigt noch Build 302 und wird für 0.4.0 / Build 400
-nicht als aktuelle Abbildung verwendet.
+![Version und Build](screenshots/23_about_version.png)
 
 ### Lokale Datenablage
 
@@ -161,21 +161,26 @@ Nach der Anmeldung führt die Seitenleiste zu vier Bereichen:
 - Einstellungen: Stundenplan, Datensicherung, Sicherheit und weitere lokale
   Einstellungen.
 
-Erste Schritte erklärt die Einrichtung und kann übersprungen oder später in den
-Einstellungen erneut geöffnet werden. Sie legt keine Kinder, Beobachtungen oder
-Sicherungen automatisch an.
+Erste Schritte erklärt in fünf kurzen, nicht blockierenden Schritten den
+sicheren Start und kann übersprungen oder später in den Einstellungen erneut
+geöffnet werden. Die Ansicht legt keine Kinder, Beobachtungen oder Sicherungen
+automatisch an.
 
 Für den frischen Pilotbestand gehen Sie in dieser Reihenfolge vor:
 
-1. Unter Einstellungen > Schuljahre das aktuelle Schuljahr `2026/27` vom
-   01.08.2026 bis 31.07.2027 prüfen.
-2. Stammgruppen und Kurse anlegen.
-3. Schüler selbst anlegen.
-4. Bei Bedarf je Schüler die Dokumentationsfächer anpassen.
-5. Eine erste Beobachtung erfassen.
-6. Die Entwicklungsübersicht öffnen.
-7. Bericht oder LEG nur bei Bedarf beginnen.
-8. Ein verschlüsseltes Backup erstellen.
+1. Passwort anlegen und Recovery-Codes getrennt vom Mac sichern.
+2. Die vorbereitete Arbeitsgrundlage nutzen: Schuljahr `2026/27`, offizielles
+   Entwicklungsbuch und 331 Kompetenzen sind bereits vorhanden.
+3. Stammgruppen und Kurse anlegen; Kursverbünde und Stundenplan sind optional.
+4. Schüler selbst anlegen und ihre relevanten Unterrichtsfächer festlegen.
+5. Eine erste Beobachtung erfassen und ein verschlüsseltes `.jkmebackup`
+   erstellen.
+
+Automatisch angelegt werden keine Schüler, Stammgruppen, Kurse, Kursverbünde,
+Beobachtungen, Bestätigungen, Berichtsentwürfe, LEG-Entwürfe, Testdokumente,
+Beispielbestände oder Testbackups.
+
+![Erste Schritte](screenshots/24_first_steps.png)
 
 Primäraktionen sind klar beschriftet. Beobachtungen, Berichte und LEG verwenden
 zusätzlich ruhige Kontextfarben; die Beschriftung bleibt immer maßgeblich.
@@ -249,9 +254,9 @@ Dokumentationsbereiche, aber keine Note oder Rangfolge.
 ![Schülerprofil](screenshots/04_student_profile_overview.png)
 
 Im Kompetenz-Cockpit führen Fachkarten über Kompetenzbereich und Thema zur
-einzelnen Kompetenz. Filter für Fach, Klassenstufe und Dokumentationszustand
-helfen bei der Orientierung. Historische Katalogbezüge bleiben lesbar, können
-aber nicht unbemerkt neu ausgewählt werden.
+einzelnen Kompetenz. Filter für Fach und Dokumentationszustand helfen bei der
+Orientierung. Historische Katalogbezüge bleiben lesbar, können aber nicht
+unbemerkt neu ausgewählt werden.
 
 ![Kompetenz-Cockpit](screenshots/05_student_profile_competency_development.png)
 
@@ -259,18 +264,27 @@ Noch nicht dokumentiert bedeutet lediglich, dass kein aktiver Beleg oder
 Bestätigungsstand vorliegt. Es sagt nichts darüber aus, was ein Kind kann oder
 nicht kann.
 
-### Dokumentationsfächer je Schüler
+### Überfachliche Entwicklung und Unterrichtsfächer
 
-Für das aktuelle Schuljahr kann jedes Kind ein eigenes Fachprofil erhalten:
+Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz bilden die überfachliche
+Entwicklung. Sie sind immer verfügbar, aber keine Unterrichtsfächer. Deshalb
+erscheinen sie weder im Stundenplan noch im allgemeinen Fachsetup. Beobachtung,
+Kompetenz-Cockpit, Bericht und LEG zeigen sie in ihren tatsächlichen
+Dokumentationskontexten.
 
-- Globale Auswahl verwenden übernimmt die allgemein eingestellten
-  Dokumentationsfächer.
-- Eigene Auswahl verwendet genau die für dieses Kind gewählten Fächer.
-- Auch eine bewusst leere eigene Auswahl ist möglich.
+Die zehn Unterrichtsfächer sind EPU, Deutsch, Mathematik, Kreatives Gestalten,
+Sport, Ethik, Religion, Musik, Englisch und Schulgarten. Für das aktuelle
+Schuljahr werden die relevanten Unterrichtsfächer direkt beim jeweiligen Kind
+gepflegt. Überfachliche Entwicklung bleibt unabhängig von dieser Auswahl
+vorhanden. Im Schülerprofil kann die globale Unterrichtsfachauswahl als
+Voreinstellung übernommen oder für dieses Kind eine individuelle Auswahl
+festgelegt werden. Die globale Auswahl ist damit ein Default, nicht die alleinige
+Produktlogik. Historische Schuljahre sind nicht für normale nachträgliche
+Änderungen des Fachprofils gedacht.
 
-Eine spätere Änderung der globalen Auswahl verändert eine eigene Auswahl
-nicht. Historische Schuljahre sind nicht für normale nachträgliche Änderungen
-dieses Fachprofils gedacht.
+Kleine Farbmarker helfen bei der Orientierung, aber der Fachname bleibt immer
+sichtbar. Kurs-, Rating- und Statusfarben haben getrennte Bedeutungen. Für EPU
+und Kreatives Gestalten ist noch keine eigene Fachfarbe festgelegt.
 
 ### Entwicklungsübersicht
 
@@ -320,8 +334,11 @@ Die Werkstatt führt durch drei frei wechselbare Aufgaben:
 
 Dies ist kein starrer Assistent. Sie können jederzeit zwischen Auswählen und
 Schreiben wechseln. Texte werden von der Lehrkraft geschrieben; es gibt keine
-automatische Textgenerierung. Frühere unveränderliche Revisionen sind im
-dritten Schritt sekundär über `Frühere Fassungen` erreichbar.
+automatische Textgenerierung und keinen automatisch gesetzten Fertigstatus.
+Die bewusst ausgewählten Belege bleiben beim Schreiben zur Orientierung
+read-only sichtbar; Änderungen an der Auswahl erfolgen unter `Auswählen`.
+Frühere unveränderliche Revisionen sind im dritten Schritt sekundär über
+`Frühere Fassungen` erreichbar.
 
 ![Berichtswerkstatt](screenshots/06_learning_report_workspace.png)
 
@@ -339,12 +356,12 @@ schreibgeschützt.
 
 ![Berichtrevision](screenshots/10_report_read_only_revision.png)
 
-Finales PDF erstellen kann eine verschlüsselt verwaltete Ausgabe aus der
-aktuellen Revision erzeugen. Die Finalisierung selbst erzeugt kein PDF
-automatisch. Ein finales Artefakt kann deshalb verschlüsselt vorhanden sein,
-obwohl die gemeinsame sichere Anzeige noch nicht final freigegeben ist. Die
-Aktion `Finales PDF anzeigen` kann kontrolliert blockiert sein. Ein
-Entwurfs-PDF ist eine bewusst erzeugte Arbeitsausgabe und keine Revision.
+Finales PDF erstellen erzeugt aus der aktuellen Revision ein verschlüsselt
+verwaltetes Artefakt. Die Finalisierung selbst erzeugt kein PDF automatisch.
+`Finales PDF anzeigen` öffnet das Artefakt read-only im sicheren In-App-Viewer.
+Der Viewer zeigt mehrere Seiten, unterstützt Scrollen und Zoom und kann
+geschlossen und erneut geöffnet werden. Export, Drucken und Teilen sind nicht
+Teil dieses Produktvertrags.
 
 ## 11. Lernentwicklungsgespräche (LEG)
 
@@ -355,18 +372,28 @@ eines früheren Gesprächs fortgeführt.
 
 ![LEG-Entwurf auswählen](screenshots/19_leg_entwurf_auswahl.png)
 
-Im LEG-Arbeitsbereich führen sechs Phasen durch Vorbereitung, Gespräch,
-Kompetenzen, Belege sowie gemeinsame Vereinbarungen. Interne Vorbereitung und
-gemeinsam festgehaltene Ergebnisse bleiben getrennt.
+Der LEG-Arbeitsbereich ordnet sechs fachliche Anker in drei verständliche
+Arbeitskontexte:
+
+- `Vorbereitung`
+- `Im Gespräch`
+- `Vereinbarungen & Abschluss`
+
+Die sechs Anker sind Gesprächsziel, Was gelingt dem Kind?, Welche Entwicklung
+sehen wir?, Woran möchten wir gemeinsam arbeiten?, Welche Beispiele stützen
+unsere Einschätzung? sowie Welche Unterstützung und Vereinbarungen treffen wir?
+Kompetenzen und Belege werden primär in der Vorbereitung ausgewählt und bleiben
+im Gespräch bei Bedarf read-only sichtbar. Der kanonische Kompetenzstand ist
+read-only; das LEG führt keine eigene Bewertung ein.
 
 ![LEG-Arbeitsbereich](screenshots/11_learning_conference_preparation.png)
 
 Entwurf speichern erhält den Arbeitsstand. Gespräch abschließen erzeugt nach
 Prüfung und Bestätigung eine schreibgeschützte Abschlussrevision. Eine spätere
 Änderung im Entwurf erzeugt erst beim erneuten Abschluss eine neue Revision.
-Nur die aktuelle Abschlussrevision kann ein finales LEG-PDF erzeugen.
-Auch dieses finale Artefakt wird verschlüsselt verwaltet; für seine Anzeige
-gilt dieselbe noch offene gemeinsame Viewerfreigabe wie beim Bericht.
+Nur die aktuelle Abschlussrevision kann ein finales LEG-PDF erzeugen. Das
+Artefakt wird verschlüsselt verwaltet und über denselben sicheren read-only
+In-App-Viewer wie ein finaler Bericht geöffnet.
 
 ## 12. Backup und Wiederherstellung
 
@@ -453,7 +480,7 @@ historisches Schuljahr sind nicht Teil der normalen nachträglichen Pflege.
 2. Schuljahr `2026/27` und seinen Zeitraum prüfen.
 3. Unter Stammdaten mindestens eine Stammgruppe und einen Kurs anlegen.
 4. Optional Kursverbünde anlegen.
-5. Schüler anlegen und bei Bedarf ihre Dokumentationsfächer anpassen.
+5. Schüler anlegen und ihre relevanten Unterrichtsfächer festlegen.
 6. Eine erste Beobachtung erfassen.
 7. Die Entwicklungsübersicht mit Timeline und Fachkarten öffnen.
 8. Ein geprüftes verschlüsseltes Backup erstellen.
@@ -487,19 +514,20 @@ historisches Schuljahr sind nicht Teil der normalen nachträglichen Pflege.
 > Die App überträgt keine Fachdaten in eine Cloud und nutzt keine KI. Die
 > Fachdaten und verwalteten Dokumente werden lokal verschlüsselt gespeichert.
 > Lokales Passwort, optionale Geräteanmeldung und Touch ID, automatische Sperre
-> sowie der Passwort-Fallback schützen zusätzlich den Zugang. Support-Reset
-> bleibt kontrolliert blockiert.
+> sowie der Passwort-Fallback schützen zusätzlich den Zugang. Recovery-Codes
+> bleiben der erste Wiederherstellungsweg. Support Reset ist nur unter den
+> dokumentierten Voraussetzungen ein betreuter Ausnahmeweg.
 
 > [!HINWEIS]
 > Backup und Restore verwenden das verschlüsselte, installationsgebundene
 > `.jkmebackup`. Bestehende ältere lokale Daten- und Testbestände werden nicht
 > migriert. Build-, Geräte- und Realweltabnahme bleiben gesonderte Gates.
 
-Finale verwaltete Bericht-/LEG-Artefakte liegen verschlüsselt in der App. Eine
-bewusst frei exportierte Datei liegt außerhalb dieses verwalteten Schutzes und
-muss wie jede vertrauliche Schulunterlage sicher behandelt werden. Das
-ausführliche Dokument `docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md` erläutert
-Schutzstand, Grenzen und Verantwortlichkeiten der Schule.
+Finale verwaltete Bericht-/LEG-Artefakte liegen verschlüsselt in der App und
+öffnen ausschließlich über den sicheren In-App-Viewer. Export, Drucken und
+Teilen sind nicht Teil dieses Produktvertrags. Die ausführliche Unterlage
+„Sicherheit und Verschlüsselung“ erläutert Schutzstand, Grenzen und
+Verantwortlichkeiten der Schule.
 
 Für Lehrkräfte gilt im Alltag:
 
@@ -507,7 +535,7 @@ Für Lehrkräfte gilt im Alltag:
 - Gerätesperre und FileVault nach Schulvorgabe aktiv halten.
 - Keine echten Schülerdaten in Testdaten, Screenshots oder Fehlermeldungen
   weitergeben.
-- Exporte und PDFs nur über sichere schulische Wege weitergeben.
+- Finale PDFs ausschließlich im vorgesehenen sicheren In-App-Viewer öffnen.
 - Regelmäßig geprüfte, externe Sicherungen vorhalten.
 - Verlust eines Geräts oder einen Sicherheitsverdacht sofort melden.
 
@@ -517,9 +545,6 @@ Nicht produktiv aktiviert oder freigegeben sind:
 
 - automatische Migration bestehender älterer Fachdaten;
 - Gerätewechsel und Wiederherstellung des Installationsschlüssels;
-- Support-Reset im verschlüsselten Produktpfad;
-- gemeinsamer sicherer Produktviewer für finale verschlüsselte Bericht- und
-  LEG-PDFs;
 - automatische Produktmigration und physisches Löschen alter Daten;
 - Windows oder ein DPAPI-Pfad;
 - Developer-ID-Signierung und Apple-Notarisierung;
@@ -550,16 +575,10 @@ Gesprächsabschluss.
 **Schnellbeobachtung:** Kurze Beobachtung mit Notiz und zunächst ohne
 Kompetenzzuordnung.
 
-## 18. Screenshots für 0.4.0 / Build 400 nachholen
+## 18. Abbildungen und Datenschutz
 
-Vor einer Ausgabe als aktuelles Pilot-Handbuch müssen mindestens folgende
-synthetische Screenshots neu aufgenommen und fachlich geprüft werden:
-
-- `Über die App` mit vorbereitetem Versions-/Buildstand;
-- Schülerprofil mit individueller Dokumentationsfachauswahl;
-- Entwicklungsübersicht mit Timeline, Fachkarten und Dokumentationsumfang;
-- Backupansicht und Restore-Vorschau für `.jkmebackup`;
-- Berichtsentwurfsauswahl und aktueller Qt-Berichtsarbeitsbereich;
-- aktueller Qt-LEG-Arbeitsbereich;
-- kontrolliert blockierte Anzeige eines vorhandenen finalen PDF-Artefakts,
-  sofern dieser Zustand im Handbuch gezeigt werden soll.
+Alle in diesem Handbuch verwendeten Abbildungen zeigen die aktuelle
+Qt-Oberfläche mit synthetischen, datenschutzneutralen Daten. Sie enthalten
+keine echten Schülerdaten, Entwicklerpfade, Testroots, Secrets oder
+historische HTML-Oberflächen. Screenshots sind Bedienhilfen; maßgeblich bleiben
+die beschriebenen Produktverträge.

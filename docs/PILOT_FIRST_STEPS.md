@@ -1,48 +1,58 @@
 # Erste Schritte - Jenaplan-Kompetenzmanager
 
-## Ruhig in der lokalen App ankommen
+Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
-Diese Orientierung ergänzt das Benutzerhandbuch für Version
-{{PILOT_VERSION}} / Build {{PILOT_BUILD}}. Sie legt keine Kinder,
-Beobachtungen, Testdaten oder Backups automatisch an.
+> [!HINWEIS]
+> Inhaltlich finaler Reviewstand vor der Versionsanhebung. Diese Ausgabe ist
+> noch kein finales Pilot- oder Releaseartefakt.
 
-1. Die App installieren und aus dem Ordner `Programme` starten.
-2. Beim ersten Start das lokale Passwort anlegen und die angezeigten
-   Recovery- und Sicherheitsinformationen getrennt und sicher aufbewahren.
-3. Unter `Einstellungen > Schuljahre` prüfen, dass `2026/27` vom 01.08.2026
-   bis 31.07.2027 als aktuelles Schuljahr geführt wird.
-4. Unter `Stammdaten` mindestens eine Stammgruppe und einen Kurs anlegen.
-5. Schüler anlegen. Die App legt keine Testkinder automatisch an.
-6. Im Schülerprofil bei Bedarf die Dokumentationsfächer für das aktuelle
-   Schuljahr anpassen. Möglich sind die globale Auswahl, eine eigene genaue
-   Auswahl oder bewusst keine Fächer.
-7. Eine erste Beobachtung erfassen und die Rückmeldung zum Speichern abwarten.
-8. Im Schülerprofil die Entwicklungsübersicht öffnen. Timeline, Fachkarten und
-   Dokumentationsumfang erscheinen sofort; ein Berichtsentwurf ist dafür nicht
-   erforderlich.
-9. Einen Bericht oder ein Lernentwicklungsgespräch nur bei Bedarf als eigenes
-   Arbeitsprodukt beginnen.
-10. Unter `Einstellungen > Datensicherung` ein verschlüsseltes Backup erstellen
-    und prüfen.
+## 1. Willkommen und sicher starten
 
-## Sicherheit im Alltag
+Der Jenaplan-Kompetenzmanager arbeitet lokal auf diesem Mac. Es gibt keine
+Cloud und keine KI-Verarbeitung von Fachdaten. Das App-Passwort schützt den
+Zugang; Fachdaten und verwaltete Dokumente werden im lokalen Produktbereich
+verschlüsselt gespeichert. Recovery-Codes getrennt vom Mac sicher aufbewahren.
 
-> [!SICHERHEIT]
-> - Die App sperrt nach der gewählten Inaktivitätszeit und nach dem Ruhezustand.
-> - Touch ID ist optional; das Passwort bleibt der Fallback.
-> - Die Fachdaten und verwalteten Dokumente werden lokal verschlüsselt
->   gespeichert. Ein geschütztes macOS-Benutzerkonto und FileVault bleiben
->   erforderlich.
-> - Support-Reset ist nur auf der ursprünglichen, technisch vollständig
->   verfügbaren Installation möglich. Vor dem Authentifizierungsreset werden
->   der lokale Final-V4-Bestand und ein neues verschlüsseltes Safety-Backup
->   vollständig geprüft.
-> - `.jkmebackup` ist an die vorhandene Installation gebunden. Ein Gerätewechsel
->   oder der Verlust des Installationsschlüssels ist damit nicht gelöst.
-> - Für 0.4.0 / Build 400 sind Developer-ID-Signierung, Notarisierung,
->   Verteilung und Pilot-GO noch nicht nachgewiesen; es gibt keine automatische
->   Update- oder Appcast-Aktion.
+## 2. Vorbereitete Arbeitsgrundlage
 
-Die Entwicklungsübersicht ordnet nichts automatisch als Stärke, Schwäche,
-Trend oder Priorität ein. Für den vollständigen Ablauf zu Bericht, LEG,
-Restore und Sicherheit das Benutzerhandbuch verwenden.
+Beim frischen Start sind das Schuljahr `2026/27` vom 01.08.2026 bis
+31.07.2027, das offizielle Entwicklungsbuch und 331 Kompetenzen bereits
+vorhanden. Ein Katalogimport oder ein Beispielbestand ist nicht nötig.
+
+Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz bilden die immer verfügbare
+überfachliche Entwicklung. Sie sind keine Unterrichtsfächer und erscheinen
+nicht im Stundenplan oder allgemeinen Fachsetup.
+
+## 3. Unterricht organisieren
+
+Unter `Stammdaten` Stammgruppen und Kurse anlegen; Kursverbünde sind optional.
+Unter `Einstellungen > Stundenplan` können Unterrichtsblöcke ergänzt werden.
+Ein vollständig eingerichteter Stundenplan ist keine Voraussetzung zum
+Weiterarbeiten.
+
+## 4. Kinder einrichten und dokumentieren
+
+Schüler selbst anlegen und die relevanten Unterrichtsfächer direkt beim Kind
+festlegen. Die überfachliche Entwicklung bleibt unabhängig davon verfügbar.
+Danach eine erste Beobachtung erfassen. Das Kompetenz-Cockpit hilft später,
+dokumentierte Entwicklung einzuordnen; fehlende Dokumentation ist kein
+negativer Status und keine automatische Bewertung.
+
+## 5. Daten sichern und loslegen
+
+Unter `Einstellungen > Datensicherung` ein verschlüsseltes `.jkmebackup`
+erstellen und prüfen. Das Backup ist an die ursprüngliche geschützte
+Installation und deren vorhandenen lokalen Schlüsselkontext gebunden; es ist
+kein allgemeiner Gerätewechselweg.
+
+Recovery-Codes bleiben der erste Wiederherstellungsweg. Sind Passwort und
+Recovery-Codes verloren, kann technischer Support unter bestimmten
+Voraussetzungen einen betreuten Reset ermöglichen. Dafür müssen die
+ursprüngliche geschützte Installation, der lokale Schlüssel und der
+Final-V4-Bestand vollständig intakt und prüfbar sein. Support erhält dabei
+keinen Zugriff auf Schülerdaten. Ein verlorener Schlüssel kann nicht durch
+Support wiederhergestellt werden.
+
+`Erste Schritte abschließen` führt zum Dashboard. Die Orientierung kann später
+in den Einstellungen erneut geöffnet werden und legt selbst keine Fachdaten
+oder Sicherungen an.

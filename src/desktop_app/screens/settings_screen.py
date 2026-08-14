@@ -756,7 +756,8 @@ class SettingsScreen(QWidget):
         lock.clicked.connect(self.lock_requested)
         layout.addWidget(lock, 0, Qt.AlignmentFlag.AlignLeft)
         notice = QLabel(
-            "Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups."
+            "Das App-Passwort schützt den Zugang. Fachdaten, verwaltete Dokumente und "
+            "Backups werden zusätzlich verschlüsselt gespeichert."
         )
         self.storage_security_notice = notice
         notice.setWordWrap(True)

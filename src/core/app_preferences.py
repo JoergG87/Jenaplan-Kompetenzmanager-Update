@@ -15,8 +15,11 @@ DISPLAY_NAME_MAX_LENGTH = 80
 ALLOWED_INACTIVITY_MINUTES = (5, 10, 15, 30, 60)
 ONBOARDING_FORMAT_VERSION = 1
 ONBOARDING_BASE_STEP_COUNT = 5
-ONBOARDING_PILOT_STEP_COUNT = 6
-ONBOARDING_STEP_COUNT = ONBOARDING_PILOT_STEP_COUNT
+# The pilot flow now uses the same five-step product contract.  Keep the
+# persisted maximum at six so an older local preview position can still be
+# loaded and bounded without inventing a new preference migration.
+ONBOARDING_PILOT_STEP_COUNT = ONBOARDING_BASE_STEP_COUNT
+ONBOARDING_STEP_COUNT = 6
 
 
 class OnboardingStatus(StrEnum):

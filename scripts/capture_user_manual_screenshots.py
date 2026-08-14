@@ -1,4 +1,4 @@
-"""Create current, privacy-neutral screenshots for the 0.3.0 user manual.
+"""Create current, privacy-neutral screenshots for the pilot user manual.
 
 The generator never opens an application, pilot, or product data root.  It builds
 one deterministic synthetic SQLite fixture in a temporary directory, renders
@@ -41,6 +41,10 @@ from src.desktop_app.dialogs.learning_report_dialog import (
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 from src.desktop_app.runtime import runtime_paths
 from src.desktop_app.screens.master_data_screen import MasterDataScreen
+from src.desktop_app.screens.onboarding_screen import (
+    OnboardingScreen,
+    OnboardingStatusProjection,
+)
 from src.desktop_app.screens.overview_screen import OverviewScreen
 from src.desktop_app.screens.settings_screen import SettingsScreen
 from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
@@ -54,7 +58,7 @@ from src.security.startup import SecurityStartState, SecurityStartupDecision
 from src.version import APP_BUILD_VERSION, APP_VERSION
 
 
-CAPTURE_TIME = datetime(2026, 7, 27, 10, 30, tzinfo=UTC)
+CAPTURE_TIME = datetime(2026, 8, 14, 10, 30, tzinfo=UTC)
 STUDENT_ID = "STU-000001"
 
 
@@ -102,7 +106,7 @@ def _profile_screen(adapter: StudentDesktopAdapter) -> StudentProfileScreen:
 
 def _restore_preview() -> RestorePreviewViewModel:
     return RestorePreviewViewModel(
-        created_at="27.07.2026, 10:15",
+        created_at="14.08.2026, 10:15",
         app_version=APP_VERSION,
         compatibility_status="Kompatibel",
         students_count=24,
@@ -112,7 +116,7 @@ def _restore_preview() -> RestorePreviewViewModel:
         managed_files_count=8,
         external_references_count=0,
         external_missing_count=0,
-        archive_path=Path("/synthetisch/Jenaplan-0.3.0.jkmbackup"),
+        archive_path=Path("/synthetisch/Jenaplan-Review.jkmebackup"),
         restore_id="synthetische-dokumentation",
     )
 
@@ -190,6 +194,14 @@ def capture(output: Path) -> tuple[Path, ...]:
         security.show_page("security")
         captured.append(_capture(security, output, "17_sicherheit_touch_id.png"))
 
+        onboarding = OnboardingScreen()
+        onboarding.set_context(
+            step=1,
+            display_name="Mara",
+            status_projection=OnboardingStatusProjection(),
+        )
+        captured.append(_capture(onboarding, output, "24_first_steps.png", width=1180, height=760))
+
         dashboard = OverviewScreen()
         projection = timetable.read_projection(CAPTURE_TIME)
         occurrence = projection.current or projection.next
@@ -242,6 +254,7 @@ def capture(output: Path) -> tuple[Path, ...]:
         report_initial = report_drafts[0]
         report_preparation = adapter.learning_report_preparation_for_student(
             STUDENT_ID,
+            period_end=report_initial.period_end,
             retained_competency_ids=report_initial.competency_ids,
         )
         if report_preparation is None:
@@ -259,7 +272,7 @@ def capture(output: Path) -> tuple[Path, ...]:
             initial_draft=report_initial,
             revision_status=report_status,
         )
-        report_revision.workspace_navigation.set_current_key("revisions", emit=True)
+        report_revision.show_workspace("revisions")
         captured.append(_capture(report_revision, output, "10_report_read_only_revision.png"))
 
         conference_drafts = _selection_drafts(
@@ -271,6 +284,7 @@ def capture(output: Path) -> tuple[Path, ...]:
         conference_initial = conference_drafts[0]
         conference_preparation = adapter.learning_conference_preparation_for_student(
             STUDENT_ID,
+            conference_date=conference_initial.conference_date,
             retained_competency_ids=conference_initial.competency_ids,
         )
         if conference_preparation is None:
@@ -285,8 +299,8 @@ def capture(output: Path) -> tuple[Path, ...]:
         backup = SettingsScreen()
         backup.set_backup_status(
             BackupSummaryViewModel(
-                created_at="27.07.2026, 10:15",
-                file_name="Jenaplan-0.3.0-Beispiel.jkmbackup",
+                created_at="14.08.2026, 10:15",
+                file_name="Jenaplan-Review.jkmebackup",
                 size_bytes=4_500_000,
                 verified=True,
             )
@@ -297,8 +311,8 @@ def capture(output: Path) -> tuple[Path, ...]:
         restore = SettingsScreen()
         restore.set_backup_status(
             BackupSummaryViewModel(
-                created_at="27.07.2026, 10:15",
-                file_name="Jenaplan-0.3.0-Beispiel.jkmbackup",
+                created_at="14.08.2026, 10:15",
+                file_name="Jenaplan-Review.jkmebackup",
                 size_bytes=4_500_000,
                 verified=True,
             )
@@ -330,7 +344,7 @@ def capture(output: Path) -> tuple[Path, ...]:
         captured.append(_capture(master, output, "14_master_data.png"))
 
         about = AppInfoDialog()
-        captured.append(_capture(about, output, "23_about_build_302.png", width=760, height=520))
+        captured.append(_capture(about, output, "23_about_version.png", width=760, height=520))
 
     expected = {
         "01_dashboard.png",
@@ -350,7 +364,8 @@ def capture(output: Path) -> tuple[Path, ...]:
         "20_backup.png",
         "21_restore_vorschau.png",
         "22_restore_neustart.png",
-        "23_about_build_302.png",
+        "23_about_version.png",
+        "24_first_steps.png",
     }
     actual = {path.name for path in captured}
     if actual != expected:

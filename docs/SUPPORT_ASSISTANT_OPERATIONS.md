@@ -1,9 +1,13 @@
 # Jenaplan Support-Assistent – Betriebsanleitung
 
-## Produktstatus 0.4.0 / Build 400
+Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
+
+Status: inhaltlich finaler Reviewstand vor der Versionsanhebung. Der separate
+Support-Assistent bleibt technisch unverändert und ist kein Bestandteil eines
+Lehrkraft- oder Pilotpakets.
 
 Der Support-Assistent beschreibt die getrennte signierte Reset-Code-
-Foundation. Im aktuellen Final-V4-Cipher-Produktpfad kann ein gültiger
+Foundation. Im aktuellen Final-V4-Produktpfad kann ein gültiger
 Support-Reset ausschließlich auf der ursprünglichen intakten lokalen
 Installation ausgeführt werden: aktiver Produktroot, aktueller Security Store,
 vorhandener zugänglicher installationsgebundener DMK, vollständiges Final V4,
@@ -17,6 +21,11 @@ Reset-Code würde weder den geschützten DMK noch Datenbank- oder
 Dokumentschlüssel ersetzen. Fehlt der ursprüngliche DMK oder das ursprüngliche
 Gerät, ist dieser Recoveryweg blockiert; er ist keine portable
 Backup-Wiederherstellung.
+
+Der Assistent erzeugt ausschließlich den technischen Reset-Code. Er erhält
+niemals Passwort, DMK, Database-Key, Schülerdaten, Dokumente oder
+Backupinhalt. Final-V4-Preflight, Safety-Backup und Auth-Reset laufen
+ausschließlich lokal in der Produkt-App; der Assistent entschlüsselt nichts.
 
 ## Zweck und Grenze
 

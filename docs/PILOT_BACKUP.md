@@ -1,65 +1,69 @@
-# Datensicherung für den geplanten Pilotstand 0.4.0 / Build 400
+# Backup und Wiederherstellung
 
-Version 0.4.0 / Build 400 ist vorbereitet, aber noch nicht als Pilot-GO,
-Verteilung oder Release freigegeben.
+Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
+
+> [!HINWEIS]
+> Inhaltlich finaler Reviewstand vor der Versionsanhebung; noch kein finales
+> Pilot- oder Releaseartefakt.
 
 Die App erstellt unter `Einstellungen > Datensicherung` ausschließlich ein
-verschlüsseltes `.jkmebackup`. Es umfasst die verschlüsselte Fachdatenbank,
-die registrierten verwalteten Dokumente und die notwendigen Metadaten für eine
-Wiederherstellung in derselben Installation. Es enthält weder den geschützten
-Installationsschlüssel noch lokales Passwort, Recovery-Codes, Touch-ID- oder
-gespeicherte Geräteanmeldedaten.
+verschlüsseltes `.jkmebackup`. Es umfasst die verschlüsselte Final-V4-
+Fachdatenbank, die registrierten verschlüsselten Managed Documents und die
+notwendigen Metadaten für eine Wiederherstellung in der ursprünglichen
+geschützten Installation. App-Passwort, Recovery-Codes, Touch-ID- und
+Geräteanmeldedaten sowie der lokale Datenschlüssel sind nicht enthalten.
 
 ## Backup erstellen und prüfen
 
 1. `Einstellungen > Datensicherung` öffnen.
-2. `Backup erstellen` wählen und einen Zielort festlegen.
+2. `Backup erstellen` wählen und einen schulisch freigegebenen Zielort
+   festlegen.
 3. Warten, bis die App das Backup vollständig erstellt und geprüft hat.
-4. Die Bestätigung und den Speicherort kontrollieren.
+4. Bestätigung und Speicherort kontrollieren.
+
+Mit `Backup prüfen ...` lässt sich eine vorhandene `.jkmebackup`-Datei ohne
+Änderung der laufenden Daten prüfen.
 
 > [!SICHERHEIT]
 > `.jkmebackup` ist verschlüsselt und authentisiert. Bewahren Sie es trotzdem
-> an einem schulisch freigegebenen, geschützten Ort auf.
-
-## Backup prüfen
-
-Über `Backup prüfen …` kann eine vorhandene `.jkmebackup`-Datei ohne Änderung
-der laufenden Daten vollständig geprüft werden. Eine positive Prüfung bestätigt
-Format, Integrität und Installationskontext, ersetzt aber keine organisatorische
-Kontrolle des Speicherorts.
+> an einem schulisch freigegebenen, geschützten Ort auf. Recovery-Codes werden
+> getrennt und außerhalb des Macs aufbewahrt.
 
 ## Wiederherstellung
 
-1. Unter `Wiederherstellen …` die gewünschte `.jkmebackup`-Datei auswählen.
-2. Die datensparsame Vorschau mit Version, Kompatibilität und zusammengefassten
-   Anzahlen lesen.
-3. Den Restore nur nach bewusster Prüfung bestätigen.
-4. `Wiederherstellung starten` ausdrücklich bestätigen und den Vorgang
-   vollständig ausführen lassen.
+1. `Wiederherstellen ...` wählen und die gewünschte `.jkmebackup`-Datei
+   auswählen.
+2. Die Vorschau mit Version, Kompatibilität und zusammengefassten Anzahlen
+   prüfen.
+3. Den Restore bewusst bestätigen.
+4. Den Vorgang bis zur vollständigen App-Beendigung und zum kontrollierten
+   Neustart laufen lassen.
 
 ![Restore-Vorschau](user_manual/screenshots/21_restore_vorschau.png)
 
-Die Abbildung stammt aus dem bisherigen synthetischen Referenzstand und muss
-vor einer 0.4.0-Pilotübergabe aktualisiert werden.
+Die App prüft das Backup vollständig in einem getrennten Staging-Bereich und
+erstellt vor dem Austausch ein verschlüsseltes Safety-Backup. Ein separater
+Worker übernimmt den kontrollierten Austausch. Danach die App erneut öffnen
+beziehungsweise den kontrollierten Neustart abwarten, neu anmelden und Schüler,
+Beobachtungen, Dokumente sowie Berichts- und LEG-Daten prüfen. Kann der Worker
+nicht sicher starten, bleibt der aktive Bestand unverändert.
 
-> [!KONTROLLE]
-> Die App erstellt vor dem Wechsel ein Sicherheitsbackup, übergibt den Vorgang
-> an einen separaten Restore-Worker, beendet sich vollständig und startet
-> kontrolliert neu. Danach erneut anmelden und Schüler, Beobachtungen, Dokumente
-> sowie Berichts- und LEG-Daten prüfen. Startet der Worker nicht, bleibt der
-> bisherige aktive Bestand unverändert.
+## Bindung und Recoverygrenze
 
-Der installationsgebundene Restore übernimmt keine Anmeldedaten. Security
-Store, Geräteanmeldung, Anzeigename und Stand der geführten `Ersten Schritte`
-bleiben zur Zielinstallation gehörig. Ein kompletter Umzug des Datenordners auf
-ein anderes Gerät wird nicht unterstützt. Der Verlust des
-Installationsschlüssels und ein Gerätewechsel sind nicht durch Passwort,
-Recovery-Code oder Backup gelöst.
+Der Restore ist an die ursprüngliche geschützte Installation und deren
+vorhandenen lokalen Schlüsselkontext gebunden. Das Backup ist nicht beliebig
+auf jedem Mac wiederherstellbar, kein Cloud-Backup und kein allgemeiner
+Gerätewechselweg.
+
+Recovery-Codes sind der normale erste Weg bei verlorenem Passwort. Ein
+betreuter Support-Reset kann nur auf der intakten ursprünglichen Installation
+erfolgen, wenn der lokale Schlüssel verfügbar, Final V4 vollständig prüfbar
+und ein neues Safety-`.jkmebackup` erfolgreich erstellt und verifiziert werden
+kann. Er setzt ausschließlich Authentifizierungs- und Recoveryzustände zurück,
+nicht Fachdaten oder Datenschlüssel. Bei verlorenem lokalem Schlüssel kann
+Support die Daten nicht wiederherstellen.
 
 > [!WARNUNG]
-> Während Backup oder Restore darf die App nicht gewaltsam beendet werden. Beim
-> Sperren wird eine offene Restore-Vorschau geschlossen; ein bereits gestarteter
-> kritischer Vorgang wird sicher zu Ende geführt. Alte ZIP-Backups sind im
-> verschlüsselten Produktpfad gesperrt. Vor Updates bleibt ein geprüftes
-> zusätzliches Backup sinnvoll; für einen Gerätewechsel ist damit noch kein
-> Recoverypfad freigegeben.
+> Backup oder Restore nicht gewaltsam unterbrechen. Produktive Final-V4-
+> Bestände niemals mit alten Klartext- oder historischen Backupwerkzeugen
+> öffnen.

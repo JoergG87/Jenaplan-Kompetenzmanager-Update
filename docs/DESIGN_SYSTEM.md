@@ -500,16 +500,24 @@ bleiben opak, bei 1180 x 760 und 1400 x 900 ohne verdeckte Passwortaktion.
 Tour mit Overlays und keine Popup-Kette. Sie nutzt `PageHeader`, eine
 grosszuegige Hauptflaeche, kurze Plain-Text-Abschnitte, wenige Stichpunkte und
 zentrale Buttonrollen. Der Primaerbutton bleibt blau und heisst je nach Schritt
-`Weiter` oder `Abschließen`; `Zurück` und Zielnavigation bleiben sekundaer,
+`Weiter` oder im letzten Schritt `Erste Schritte abschließen`; `Zurück` und Zielnavigation bleiben sekundaer,
 `Erste Schritte überspringen` bleibt ruhig.
 
 Die Ansicht ist bei 1180 x 760 und 1400 x 900 bedienbar, verwendet keinen
 horizontalen Gesamtscroll und legt keinen fachlichen Inhalt unter transparente
 Overlays. Statuszeilen sind textlich eindeutig (`Bereits eingerichtet`,
-`Noch offen`, `Nicht geprüft`) und nie reine Farbkommunikation. Enter aktiviert
+`Noch offen`, `Nicht geprüft`) und nie reine Farbkommunikation. Beim Backup
+bedeutet `Sicherungsdatei gefunden – bitte prüfen` ausdrücklich nur einen
+Dateifund, keine Integritäts- oder Wiederherstellungsprüfung. Enter aktiviert
 die Primaeraktion; Escape ueberspringt nicht unbemerkt, sondern bewirkt keinen
 Abschluss. Die Rueckkehrzeile `Zurück zu Erste Schritte` erscheint nur nach
 einem bewussten Navigationssprung aus dem Onboarding.
+
+Der Final-V4-Pilotflow besitzt exakt fünf kurze Schritte. Statuszeilen nennen
+Stammgruppe, Kurs, Schüler, Stundenplan oder Backup nur neutral und blockieren
+niemals. Die globale Dokumentationsfachauswahl ist kein Schritt und kein
+Status. Sicherheitscopy erklärt lokale Verschlüsselung und Recovery-Codes
+verständlich; Support Reset bleibt ein unauffälliger betreuter Ausnahmehinweis.
 
 ## Authentifizierung und Sperre - Sprint 0.2B.4
 
@@ -530,10 +538,10 @@ fail-closed Fehlern.
 Die Einstellungsuebersicht bleibt das bestehende Muster aus einer aktiven
 Unterseite; `Sicherheit` wird als vierte Navigationskarte aufgenommen. Die
 Unterseite zeigt Passwortschutz, feste Sperrzeitwahl 5/10/15/30/60,
-Passwortwechsel, Recovery-Code-Erneuerung und `Jetzt sperren`. Der verbindliche
-Hinweis lautet: „Die App-Sperre ist keine Verschlüsselung der Datenbank,
-Dokumente oder Backups.“ Ein kurzer FileVault-Hinweis ergaenzt ihn. Touch ID,
-Keychain, Windows Hello, `angemeldet bleiben` und Support-Reset werden nicht
+Passwortwechsel, Recovery-Code-Erneuerung und `Jetzt sperren`. Im aktuellen
+Final-V4-Produktstand trennt der Hinweis den Zugangsschutz von der zusätzlichen
+Verschlüsselung der Fachdaten, verwalteten Dokumente und Backups. Ein kurzer
+FileVault-Hinweis ergaenzt ihn. Interne Schlüsselbegriffe werden nicht
 angezeigt.
 
 Die Sperransicht ist niemals transparent. Beim Sperren verschwinden Shell,

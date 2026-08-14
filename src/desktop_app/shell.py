@@ -7,8 +7,8 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 import weakref
 
-from PySide6.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Signal, QUrl
-from PySide6.QtGui import QCloseEvent, QDesktopServices, QGuiApplication
+from PySide6.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QCloseEvent, QGuiApplication
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -30,7 +30,6 @@ from src.core.app_preferences import (
     AppPreferences,
     AppPreferencesFile,
     ONBOARDING_BASE_STEP_COUNT,
-    ONBOARDING_PILOT_STEP_COUNT,
 )
 from src.core.onboarding import OnboardingController, OnboardingSession
 from src.core.sqlite_store import SQLITE_SPIKE_PATH
@@ -110,7 +109,7 @@ from src.desktop_app.screens.onboarding_screen import (
     OnboardingStatusProjection,
 )
 from src.desktop_app.screens.settings_screen import SettingsScreen
-from src.desktop_app.runtime import RuntimePaths, runtime_paths, load_build_info, resource_path
+from src.desktop_app.runtime import RuntimePaths, runtime_paths, load_build_info
 from src.desktop_app.view_models.backup_restore_view_model import RestorePreviewViewModel
 from src.version import APP_VERSION
 from src.version import APP_BUILD_VERSION
@@ -296,19 +295,7 @@ class AppShell(QMainWindow):
         self.curriculum_adapter = CurriculumDesktopAdapter(database=self.adapter.database)
         self.timetable_adapter = TimetableDesktopAdapter(self.adapter.database)
         build_info = load_build_info()
-        selected_backup_extension = (
-            backup_restore_adapter.backup_extension
-            if backup_restore_adapter is not None
-            else ".jkmbackup"
-        )
-        self.pilot_testdata_onboarding = (
-            self.backup_restore_available
-            and selected_backup_extension == ".jkmbackup"
-            and (
-            build_info.get("release_channel") == "pilot"
-            and "guided_testdata_restore" in build_info.get("pilot_features", [])
-            )
-        )
+        self.pilot_testdata_onboarding = False
         self.update_service = update_service or UpdateApplicationService(
             build_native_update_adapter(),
             current_version=APP_VERSION,
@@ -828,15 +815,9 @@ class AppShell(QMainWindow):
         self.onboarding_controller = OnboardingController(
             preferences_file,
             preferences=preferences,
-            step_count=(
-                ONBOARDING_PILOT_STEP_COUNT
-                if (self.pilot_testdata_onboarding if pilot_mode is None else pilot_mode)
-                else ONBOARDING_BASE_STEP_COUNT
-            ),
+            step_count=ONBOARDING_BASE_STEP_COUNT,
         )
-        self.onboarding_screen.pilot_mode = (
-            self.pilot_testdata_onboarding if pilot_mode is None else bool(pilot_mode)
-        )
+        self.onboarding_screen.pilot_mode = False
         if (
             automatic_open
             and self.onboarding_controller.should_open_automatically(
@@ -1073,35 +1054,39 @@ class AppShell(QMainWindow):
 
     def _onboarding_status_projection(self) -> OnboardingStatusProjection:
         try:
-            settings = self.adapter.settings_view_model()
-            documentation_subjects = any(
-                item.selected for item in settings.documentation_subjects
-            )
-        except Exception:
-            documentation_subjects = None
-        try:
             week = self.timetable_adapter.week_view_model()
             timetable = any(day.entries for day in week.days)
         except Exception:
             timetable = None
         try:
             master_data = self.master_data_adapter.view_model()
-            organization = bool(
-                master_data.groups
-                or master_data.courses
-                or master_data.course_groups
-            )
+            group = bool(master_data.groups)
+            course = bool(master_data.courses)
         except Exception:
-            organization = None
+            group = None
+            course = None
         try:
             children = bool(self.adapter.list_students())
         except Exception:
             children = None
+        try:
+            backup = (
+                None
+                if not self.backup_restore_available
+                else any(
+                    self.runtime_paths.backups.glob(
+                        f"*{self.backup_restore_adapter.backup_extension}"
+                    )
+                )
+            )
+        except Exception:
+            backup = None
         return OnboardingStatusProjection(
-            documentation_subjects_configured=documentation_subjects,
+            group_configured=group,
+            course_configured=course,
             timetable_configured=timetable,
-            organization_configured=organization,
             children_configured=children,
+            backup_configured=backup,
         )
 
     def _onboarding_next(self) -> None:
@@ -1158,27 +1143,10 @@ class AppShell(QMainWindow):
                 )
                 return
         self.onboarding_return_button.setVisible(True)
-        if target == "settings_documentation_subjects":
-            self._show_settings_page("documentation_subjects")
-        elif target == "settings_timetable":
+        if target == "settings_timetable":
             self._show_settings_page("timetable")
         elif target == "settings_backup_restore":
             self._show_settings_page("backup_restore")
-        elif target == "pilot_testdata_restore" and self.onboarding_screen.pilot_mode:
-            self._show_settings_page("backup_restore")
-            QTimer.singleShot(0, self.prepare_restore)
-        elif target == "pilot_first_steps_guide" and self.onboarding_screen.pilot_mode:
-            guide = resource_path(
-                "pilot_guides",
-                f"Jenaplan-Kompetenzmanager-Pilot-{APP_VERSION}-Erste-Schritte.pdf",
-            )
-            if not guide.is_file():
-                candidates = tuple(resource_path("pilot_guides").glob("*.pdf"))
-                guide = candidates[0] if len(candidates) == 1 else guide
-            if not guide.is_file() or not QDesktopServices.openUrl(
-                QUrl.fromLocalFile(str(guide))
-            ):
-                self.status_label.setText("Die Anleitung konnte nicht geöffnet werden.")
         elif target == "master_data":
             self._show_screen("master_data")
             self._select_navigation("master_data")

@@ -251,7 +251,8 @@ def test_security_settings_offer_fixed_intervals_and_device_comfort_is_platform_
     combo = screen.findChild(QComboBox)
     assert [combo.itemData(index) for index in range(combo.count())] == [5, 10, 15, 30, 60]
     text = " ".join(label.text() for label in screen.findChildren(QLabel))
-    assert "Die App-Sperre ist keine Verschlüsselung" in text
+    assert "Das App-Passwort schützt den Zugang" in text
+    assert "werden zusätzlich verschlüsselt gespeichert" in text
     for excluded in ("Keychain", "Windows Hello"):
         assert excluded not in text
     assert any(

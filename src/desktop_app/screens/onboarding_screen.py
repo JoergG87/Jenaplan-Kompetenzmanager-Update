@@ -18,10 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.core.app_preferences import (
-    ONBOARDING_BASE_STEP_COUNT,
-    ONBOARDING_PILOT_STEP_COUNT,
-)
+from src.core.app_preferences import ONBOARDING_BASE_STEP_COUNT
 from src.desktop_app.components import (
     PageHeader,
     configure_button,
@@ -43,17 +40,19 @@ class OnboardingStatusItem:
 class OnboardingStatusProjection:
     """Small aggregate setup projection for first-steps orientation."""
 
-    documentation_subjects_configured: bool | None = None
+    group_configured: bool | None = None
+    course_configured: bool | None = None
     timetable_configured: bool | None = None
-    organization_configured: bool | None = None
     children_configured: bool | None = None
+    backup_configured: bool | None = None
 
     def item(self, key: str, label: str) -> OnboardingStatusItem:
         value = {
-            "documentation_subjects": self.documentation_subjects_configured,
+            "group": self.group_configured,
+            "course": self.course_configured,
             "timetable": self.timetable_configured,
-            "organization": self.organization_configured,
             "children": self.children_configured,
+            "backup": self.backup_configured,
         }.get(key)
         return OnboardingStatusItem(key, label, value)
 
@@ -80,95 +79,78 @@ class OnboardingStep:
 
 ONBOARDING_STEPS: tuple[OnboardingStep, ...] = (
     OnboardingStep(
-        "Willkommen",
+        "Willkommen & sicher starten",
         (
-            "Die App hilft dir, Beobachtungen zu dokumentieren, Lernstände zu "
-            "überblicken und Gespräche oder Berichte vorzubereiten."
+            "Willkommen im Jenaplan-Kompetenzmanager. Deine pädagogischen Daten "
+            "bleiben lokal auf diesem Mac."
         ),
         (
-            "Deine Arbeitsdaten bleiben lokal auf diesem Gerät.",
-            "Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups.",
+            "Das App-Passwort schützt den Zugang.",
+            "Fachdaten und verwaltete Dokumente werden verschlüsselt gespeichert.",
+            "Bewahre deine Recovery-Codes getrennt vom Mac auf.",
         ),
     ),
     OnboardingStep(
-        "Arbeitsgrundlage prüfen",
-        "Diese Bereiche legen fest, wie du später dokumentierst und sortierst.",
+        "Deine Arbeitsgrundlage ist vorbereitet",
         (
-            "Fächer für die Dokumentation auswählen.",
-            "Stundenplan prüfen.",
-            "Vorhandene Stammgruppen, Kurse und Organisationsdaten ansehen.",
+            "Schuljahr 2026/27 und das Entwicklungsbuch mit 331 Kompetenzen "
+            "sind bereits eingerichtet."
         ),
         (
-            OnboardingAction("Fächer öffnen", "settings_documentation_subjects"),
+            "Du musst keinen Katalog importieren oder konfigurieren.",
+            "Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz sind immer verfügbar.",
+            "Diese überfachliche Entwicklung ist von Unterrichtsfächern getrennt.",
+        ),
+    ),
+    OnboardingStep(
+        "Unterricht organisieren",
+        (
+            "Lege in den vorhandenen Bereichen deine Stammgruppen und Kurse an. "
+            "Kursverbünde und Stundenplan kannst du bei Bedarf ergänzen."
+        ),
+        (
+            "Ein vollständiger Stundenplan ist keine Voraussetzung zum Weiterarbeiten.",
+            "Die Statushinweise sind nur eine Orientierung und blockieren keinen Schritt.",
+        ),
+        (
+            OnboardingAction("Stammdaten öffnen", "master_data"),
             OnboardingAction("Stundenplan öffnen", "settings_timetable"),
-            OnboardingAction("Stammdaten öffnen", "master_data"),
         ),
         (
-            ("documentation_subjects", "Fächer"),
+            ("group", "Stammgruppe"),
+            ("course", "Kurs"),
             ("timetable", "Stundenplan"),
-            ("organization", "Stammgruppen/Kurse"),
         ),
     ),
     OnboardingStep(
-        "Kinder und Zuordnungen",
+        "Kinder einrichten und dokumentieren",
         (
-            "Kinder und ihre Zuordnungen sind die Grundlage, damit Beobachtungen "
-            "später an der richtigen Stelle erscheinen."
+            "Lege Kinder an und pflege die relevanten Unterrichtsfächer direkt "
+            "beim jeweiligen Kind."
         ),
         (
-            "Nutze die vorhandene Schüler- und Organisationsverwaltung.",
-            "Ein Schülerlisten-Import gehört nicht zu diesem Sprint.",
+            "Überfachliche Entwicklung bleibt unabhängig von der Fachauswahl verfügbar.",
+            "Erfasse eine erste Beobachtung; fehlende Dokumentation ist kein negativer Status.",
+            "Das Kompetenz-Cockpit hilft später bei der Einordnung dokumentierter Entwicklung.",
         ),
-        (
-            OnboardingAction("Schüler öffnen", "students"),
-            OnboardingAction("Stammdaten öffnen", "master_data"),
-        ),
-        (("children", "Kinder"), ("organization", "Zuordnungen")),
+        (OnboardingAction("Schüler öffnen", "students"),),
+        (("children", "Schüler"),),
     ),
     OnboardingStep(
-        "Erste Beobachtung",
+        "Daten sichern und loslegen",
         (
-            "Wenn ein Kind ausgewählt ist, öffnest du über die vorhandene "
-            "Navigation den Beobachtungsdialog."
+            "Erstelle auf der Datensicherungsseite ein verschlüsseltes "
+            "`.jkmebackup` und bewahre deine Recovery-Codes getrennt auf."
         ),
         (
-            "Es wird nichts automatisch angelegt.",
-            "Fachliche Inhalte bleiben vollständig bei dir.",
-        ),
-        (OnboardingAction("Zu den Schülern", "students"),),
-        (("children", "Kinder vorhanden"),),
-    ),
-    OnboardingStep(
-        "Datensicherung und Abschluss",
-        (
-            "Auf der Datensicherungsseite kannst du lokale Sicherungen bewusst "
-            "erstellen und prüfen."
-        ),
-        (
-            "Es startet kein automatisches Backup.",
+            "Recovery-Codes sind der normale erste Wiederherstellungsweg.",
+            "Ein betreuter Support-Reset ist nur möglich, solange die geschützte lokale Installation vollständig verfügbar ist.",
             "Erste Schritte kannst du später in den Einstellungen erneut öffnen.",
         ),
         (OnboardingAction("Datensicherung öffnen", "settings_backup_restore"),),
+        (("backup", "Backup"),),
+        primary_label="Erste Schritte abschließen",
     ),
-)
-
-PILOT_TESTDATA_STEP = OnboardingStep(
-    "Pilottest mit Beispieldaten fortsetzen",
-    (
-        "Prüfe zuerst Konto, Recovery-Codes, Sperre und die leere Anwendung. "
-        "Danach kannst du den vollständig synthetischen Datenbestand bewusst "
-        "über die vorhandene Wiederherstellung einspielen."
-    ),
-    (
-        "Die Wiederherstellung ersetzt den fachlichen Datenbestand nach dem normalen Restore-Vertrag.",
-        "Konto, Passwort, Recovery-Codes und Security Store werden nicht aus dem Backup übernommen.",
-        "Sichere eigene Testeingaben, bevor du die Wiederherstellung bestätigst.",
-    ),
-    (
-        OnboardingAction("Testdaten jetzt einspielen", "pilot_testdata_restore"),
-        OnboardingAction("Anleitung öffnen", "pilot_first_steps_guide"),
-    ),
-    primary_label="Später über Einstellungen",
 )
 
 
@@ -311,7 +293,7 @@ class OnboardingScreen(QWidget):
             name.setTextFormat(Qt.TextFormat.PlainText)
             name.setWordWrap(True)
             set_label_style(name, "body")
-            state = QLabel(self._status_label(item.configured))
+            state = QLabel(self._status_label(item.key, item.configured))
             state.setTextFormat(Qt.TextFormat.PlainText)
             state.setWordWrap(True)
             set_label_style(state, "muted")
@@ -339,11 +321,11 @@ class OnboardingScreen(QWidget):
 
     @property
     def steps(self) -> tuple[OnboardingStep, ...]:
-        return ONBOARDING_STEPS + ((PILOT_TESTDATA_STEP,) if self.pilot_mode else ())
+        return ONBOARDING_STEPS
 
     @property
     def step_count(self) -> int:
-        return ONBOARDING_PILOT_STEP_COUNT if self.pilot_mode else ONBOARDING_BASE_STEP_COUNT
+        return ONBOARDING_BASE_STEP_COUNT
 
     def _confirm_skip(self) -> None:
         if self._skip_confirmation_accepted():
@@ -382,8 +364,10 @@ class OnboardingScreen(QWidget):
         super().keyPressEvent(event)
 
     @staticmethod
-    def _status_label(value: bool | None) -> str:
+    def _status_label(key: str, value: bool | None) -> str:
         if value is True:
+            if key == "backup":
+                return "Sicherungsdatei gefunden – bitte prüfen"
             return "Bereits eingerichtet"
         if value is False:
             return "Noch offen"

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- `Erste Schritte` führt jetzt in exakt fünf kurzen, nicht blockierenden
+  Schritten durch lokalen verschlüsselten Start, vorbereiteten Katalog mit 331
+  Kompetenzen, Unterrichtsorganisation, kindbezogene Unterrichtsfachauswahl,
+  erste Beobachtung und `.jkmebackup`. Der historische Beispielrestore und die
+  globale Dokumentationsfachauswahl als Pflichtstatus entfallen.
+- Pilot-, Lehrkraft-, Installations-, Sicherheits-, Backup-, Support- und
+  Handbuchquellen beschreiben konsistent Final V4, verschlüsselte Managed
+  Documents, den sicheren read-only In-App-PDF-Viewer, installationsgebundenes
+  Restore und den aktivierten betreuten Support Reset. Build-302-PDFs bleiben
+  historische Belege; das neue Build-303-Set ist nur der inhaltliche
+  Reviewstand vor der späteren Versionsanhebung. Sichtbare Login- und
+  Sicherheitshinweise trennen jetzt den Zugangsschutz korrekt von der
+  zusätzlichen Verschlüsselung der Fachdaten, Managed Documents und Backups.
+
 - Pilot-Produktionsschutz: Ein atomarer, versionierter und nicht geheimer
   Rootmarker trennt geschützte `pilot_product`-Roots von kontrollierten
   `synthetic_test`-Roots. Seed-, Vergleichs-, Reset-, Force- und Recreate-Pfade

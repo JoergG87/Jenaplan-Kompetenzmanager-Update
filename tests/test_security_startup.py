@@ -246,11 +246,11 @@ def test_cipher_shell_source_blocks_legacy_transition_and_testdata_onboarding() 
     )
     legacy_backup = shell_source.index("VerifiedSchoolYearTransitionBackupAdapter(", transition)
     assert transition < transition_guard < legacy_backup
-    onboarding = shell_source.index("self.pilot_testdata_onboarding = (")
+    onboarding = shell_source.index("self.pilot_testdata_onboarding = False")
     onboarding_end = shell_source.index("self.update_service =", onboarding)
     onboarding_source = shell_source[onboarding:onboarding_end]
-    assert "self.backup_restore_available" in onboarding_source
-    assert 'selected_backup_extension == ".jkmbackup"' in onboarding_source
+    assert "pilot_testdata_onboarding = False" in onboarding_source
+    assert ".jkmbackup" not in onboarding_source
 
 
 def test_startup_device_authentication_does_not_bypass_touch_id_preference() -> None:

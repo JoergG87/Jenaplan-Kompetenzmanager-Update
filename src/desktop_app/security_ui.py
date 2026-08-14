@@ -42,7 +42,8 @@ from src.core.app_preferences import DISPLAY_NAME_MAX_LENGTH, normalize_display_
 
 _SECURITY_LOG = logging.getLogger("jenaplan.security")
 APP_LOCK_NOTICE = (
-    "Die App-Sperre ist keine Verschlüsselung der Datenbank, Dokumente oder Backups."
+    "Das App-Passwort schützt den Zugang. Fachdaten, verwaltete Dokumente und "
+    "Backups werden zusätzlich verschlüsselt gespeichert."
 )
 
 
