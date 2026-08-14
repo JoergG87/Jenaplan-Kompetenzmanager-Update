@@ -32,12 +32,24 @@ Release, Pilot-GO, Developer-ID-Signierung oder Apple-Notarisierung.
 ## Fachliche Struktur
 
 - Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz sind als überfachliche
-  Entwicklung immer verfügbar. Sie sind keine Unterrichtsfächer und erscheinen
-  nicht im Stundenplan oder allgemeinen Fachsetup.
+  Entwicklung immer verfügbar. Sie sind keine Unterrichtsfächer, erscheinen
+  nicht im Stundenplan und müssen für ein Kind auch dann nicht ausgewählt
+  werden, wenn die vorhandene allgemeine Voreinstellung `Fächer für die
+  Dokumentation` diese Dokumentationsbereiche aufführt.
 - Zehn Unterrichtsfächer stehen zur Verfügung: EPU, Deutsch, Mathematik,
   Kreatives Gestalten, Sport, Ethik, Religion, Musik, Englisch und Schulgarten.
-- Relevante Unterrichtsfächer werden pro Schüler und Schuljahr gepflegt; die
-  überfachliche Entwicklung bleibt davon unabhängig.
+- Relevante Unterrichtsfächer werden pro Schüler und Schuljahr gepflegt. Dazu
+  `Schüler` öffnen, das Kind über `Profil öffnen` auswählen und unter
+  `Überblick` die Karte `Fächer für die Dokumentation` mit `Aufklappen`
+  öffnen. `Für dieses Kind individuell festlegen` erlaubt die bewusste Auswahl;
+  `Globale Fachauswahl verwenden` übernimmt die vorhandene Voreinstellung.
+- Die Auswahl priorisiert Unterrichtsfächer im normalen Dokumentationsworkflow;
+  sie löscht nichts und ist keine harte Berechtigungsgrenze. Im
+  Beobachtungsdialog stehen die wirksamen Fächer primär unter `Fächer`, andere
+  aktive Unterrichtsfächer unter `Weitere Fächer`. Eine bewusst leere
+  individuelle Auswahl bleibt leer.
+- Die überfachliche Entwicklung bleibt davon unabhängig immer verfügbar und
+  wird nicht als Unterrichtsfach ausgewählt.
 - Kleine Fachmarker dienen nur der Orientierung. Fachnamen bleiben sichtbar;
   Kurs-, Rating- und Statusfarben bleiben getrennt. Für EPU und Kreatives
   Gestalten ist keine neue Farbe festgelegt.

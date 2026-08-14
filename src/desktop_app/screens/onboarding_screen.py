@@ -125,11 +125,14 @@ ONBOARDING_STEPS: tuple[OnboardingStep, ...] = (
     OnboardingStep(
         "Kinder einrichten und dokumentieren",
         (
-            "Lege Kinder an und pflege die relevanten Unterrichtsfächer direkt "
-            "beim jeweiligen Kind."
+            "Öffne Schüler, wähle das Kind über Profil öffnen und gehe im Profil "
+            "zu Überblick. Dort findest du die Karte Fächer für die Dokumentation."
         ),
         (
-            "Überfachliche Entwicklung bleibt unabhängig von der Fachauswahl verfügbar.",
+            "Wähle Aufklappen und Für dieses Kind individuell festlegen.",
+            "Auswählbar sind ausschließlich die zehn Unterrichtsfächer von EPU bis Schulgarten.",
+            "Überfachliche Entwicklung bleibt immer verfügbar; die Auswahl löscht keine Fächer.",
+            "Im Beobachtungsdialog bleiben andere aktive Unterrichtsfächer unter Weitere Fächer erreichbar.",
             "Erfasse eine erste Beobachtung; fehlende Dokumentation ist kein negativer Status.",
             "Das Kompetenz-Cockpit hilft später bei der Einordnung dokumentierter Entwicklung.",
         ),

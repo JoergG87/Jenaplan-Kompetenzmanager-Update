@@ -284,6 +284,12 @@ Produktregel Sprint 0.2C.1:
   Stammdaten, kindbezogener Unterrichtsfachauswahl, erster Beobachtung und
   `.jkmebackup`. Die globale Dokumentationsfachauswahl ist keine
   Startvoraussetzung.
+- Die kindbezogene Bedienung läuft über `Schüler` -> `Profil öffnen` ->
+  `Überblick` -> `Fächer für die Dokumentation` -> `Aufklappen`. Die Auswahl
+  umfasst nur Unterrichtsfächer und priorisiert den normalen
+  Dokumentationsworkflow; überfachliche Entwicklung bleibt unabhängig davon
+  verfügbar, weitere aktive Unterrichtsfächer bleiben in Beobachtung unter
+  `Weitere Fächer` erreichbar.
 
 ## 11. UX-Hypothesen
 

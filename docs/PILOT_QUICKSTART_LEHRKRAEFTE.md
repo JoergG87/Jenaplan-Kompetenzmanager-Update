@@ -13,8 +13,10 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 4. Unter `Stammdaten` mindestens eine Stammgruppe und einen Kurs anlegen;
    Kursverbünde sind optional.
 5. Schüler anlegen.
-6. Relevante Unterrichtsfächer direkt beim jeweiligen Kind festlegen. Die
-   überfachliche Entwicklung bleibt immer verfügbar.
+6. `Schüler` öffnen, das Kind über `Profil öffnen` auswählen und unter
+   `Überblick` die Karte `Fächer für die Dokumentation` mit `Aufklappen` öffnen.
+   `Für dieses Kind individuell festlegen` wählen, Unterrichtsfächer markieren
+   und `Speichern` wählen.
 7. Den Stundenplan bei Bedarf ergänzen; er ist keine Startvoraussetzung.
 8. Eine Beobachtung erfassen und bewusst speichern.
 9. Kompetenz-Cockpit, Bericht oder LEG bei Bedarf öffnen. Bericht:
@@ -22,6 +24,19 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
    Gespräch -> Vereinbarungen & Abschluss`.
 10. Unter `Einstellungen > Datensicherung` ein geprüftes verschlüsseltes
     `.jkmebackup` erstellen.
+
+## Fachauswahl beim Kind
+
+Auswählbar sind EPU, Deutsch, Mathematik, Kreatives Gestalten, Sport, Ethik,
+Religion, Musik, Englisch und Schulgarten. Selbst- und Sozialkompetenz sowie
+Arbeits- und Lernkompetenz gehören zur immer verfügbaren `Überfachlichen
+Entwicklung` und werden nicht als Unterrichtsfächer ausgewählt.
+
+Die Auswahl priorisiert den normalen Dokumentationsworkflow; sie löscht keine
+Fächer, Kompetenzen oder Beobachtungen und ist keine Berechtigungsgrenze. Im
+Beobachtungsdialog stehen die ausgewählten Unterrichtsfächer unter `Fächer`,
+andere aktive Unterrichtsfächer unter `Weitere Fächer`. Eine leere individuelle
+Auswahl bleibt leer und erzeugt keine automatische neue Auswahl.
 
 ## Wichtige Grenzen
 

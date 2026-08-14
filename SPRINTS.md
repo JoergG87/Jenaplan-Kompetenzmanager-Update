@@ -4,7 +4,10 @@
 
 - [x] Integrierte `Erste Schritte` auf einen exakt fünfstufigen, nicht
   blockierenden Final-V4-Pilotflow ohne Beispielrestore und globale
-  Fachauswahl als Pflicht ausrichten.
+  Fachauswahl als Pflicht ausrichten; den tatsächlichen Qt-Weg der individuellen
+  Unterrichtsfachauswahl, ihre zehn Optionen, die immer verfügbare
+  überfachliche Entwicklung und die Beobachtungsgruppen `Fächer` / `Weitere
+  Fächer` ausdrücklich dokumentieren.
 - [x] Aktuelle Pilot-, Lehrkraft-, Installations-, Sicherheits-, Backup- und
   Supportquellen auf Final V4, `.jkmebackup`, sichere Managed PDFs und die
   installationsgebundene Recoverygrenze ausrichten.

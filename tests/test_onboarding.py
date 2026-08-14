@@ -175,6 +175,15 @@ def test_onboarding_screen_steps_keyboard_skip_and_sizes() -> None:
         "Kinder einrichten und dokumentieren",
         "Daten sichern und loslegen",
     )
+    subject_step = " ".join(
+        (ONBOARDING_STEPS[3].body, *ONBOARDING_STEPS[3].bullets)
+    )
+    assert "Profil öffnen" in subject_step
+    assert "Fächer für die Dokumentation" in subject_step
+    assert "Für dieses Kind individuell festlegen" in subject_step
+    assert "zehn Unterrichtsfächer" in subject_step
+    assert "Weitere Fächer" in subject_step
+    assert "löscht keine Fächer" in subject_step
 
     emitted: list[str] = []
     screen.next_requested.connect(lambda: emitted.append("next"))

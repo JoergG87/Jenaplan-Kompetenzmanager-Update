@@ -1100,6 +1100,14 @@ duerfen beim ersten Start dieser Produktversion einmal die Orientierung sehen;
 `completed` und `dismissed` oeffnen nicht erneut automatisch. Unter
 `Einstellungen` kann `Erste Schritte erneut öffnen` bewusst aufgerufen werden.
 
+Der kindbezogene Fachschritt verweist auf den bestehenden Qt-Weg `Schüler` ->
+`Profil öffnen` -> `Überblick` -> `Fächer für die Dokumentation` ->
+`Aufklappen` -> `Für dieses Kind individuell festlegen`. Er erklärt die zehn
+Unterrichtsfächer als priorisierten Dokumentationskontext, nicht als Löschung
+oder Berechtigungsgrenze. Die beiden überfachlichen Entwicklungsbereiche
+bleiben immer verfügbar; weitere aktive Unterrichtsfächer bleiben im
+Beobachtungsdialog unter `Weitere Fächer` erreichbar.
+
 Die Architektur besitzt einen fachlich getrennten Security Core unter
 `<runtime-root>/security/`. Historisch war die App-Sperre zunächst nur die
 Authentisierungsschicht; der heutige Final-V4-Produktpfad verschlüsselt

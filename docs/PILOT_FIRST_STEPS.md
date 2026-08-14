@@ -20,8 +20,10 @@ Beim frischen Start sind das Schuljahr `2026/27` vom 01.08.2026 bis
 vorhanden. Ein Katalogimport oder ein Beispielbestand ist nicht nötig.
 
 Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz bilden die immer verfügbare
-überfachliche Entwicklung. Sie sind keine Unterrichtsfächer und erscheinen
-nicht im Stundenplan oder allgemeinen Fachsetup.
+überfachliche Entwicklung. Sie sind keine Unterrichtsfächer, erscheinen nicht
+im Stundenplan und werden auch in der vorhandenen allgemeinen Voreinstellung
+`Fächer für die Dokumentation` nicht zu Unterrichtsfächern. Für das Kind
+müssen sie nicht ausgewählt werden.
 
 ## 3. Unterricht organisieren
 
@@ -32,8 +34,26 @@ Weiterarbeiten.
 
 ## 4. Kinder einrichten und dokumentieren
 
-Schüler selbst anlegen und die relevanten Unterrichtsfächer direkt beim Kind
-festlegen. Die überfachliche Entwicklung bleibt unabhängig davon verfügbar.
+Schüler selbst anlegen. Danach `Schüler` öffnen, das Kind über `Profil öffnen`
+auswählen und im Profilbereich `Überblick` die Karte `Fächer für die
+Dokumentation` mit `Aufklappen` öffnen. `Für dieses Kind individuell festlegen`
+wählen, die passenden Unterrichtsfächer markieren und `Speichern` wählen.
+
+Individuell auswählbar sind ausschließlich EPU, Deutsch, Mathematik, Kreatives
+Gestalten, Sport, Ethik, Religion, Musik, Englisch und Schulgarten. Selbst- und
+Sozialkompetenz sowie Arbeits- und Lernkompetenz sind keine Unterrichtsfächer;
+sie bleiben als `Überfachliche Entwicklung` immer verfügbar und werden hier
+nicht ausgewählt.
+
+Die Auswahl beschreibt die für dieses Kind im normalen Dokumentationsworkflow
+primär relevanten Unterrichtsfächer. Sie löscht kein Fach, keine Kompetenz und
+keine vorhandene Beobachtung und ist keine harte fachliche Berechtigungsgrenze.
+Im Beobachtungsdialog erscheinen die ausgewählten Unterrichtsfächer unter
+`Fächer`, die überfachliche Entwicklung bleibt direkt verfügbar und andere
+aktive Unterrichtsfächer bleiben unter `Weitere Fächer` erreichbar. Eine
+bewusst leere individuelle Auswahl bleibt leer und wird nicht automatisch neu
+befüllt.
+
 Danach eine erste Beobachtung erfassen. Das Kompetenz-Cockpit hilft später,
 dokumentierte Entwicklung einzuordnen; fehlende Dokumentation ist kein
 negativer Status und keine automatische Bewertung.

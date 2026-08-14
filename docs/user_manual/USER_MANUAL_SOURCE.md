@@ -172,7 +172,8 @@ Für den frischen Pilotbestand gehen Sie in dieser Reihenfolge vor:
 2. Die vorbereitete Arbeitsgrundlage nutzen: Schuljahr `2026/27`, offizielles
    Entwicklungsbuch und 331 Kompetenzen sind bereits vorhanden.
 3. Stammgruppen und Kurse anlegen; Kursverbünde und Stundenplan sind optional.
-4. Schüler selbst anlegen und ihre relevanten Unterrichtsfächer festlegen.
+4. Schüler selbst anlegen und im Schülerprofil unter `Überblick > Fächer für
+   die Dokumentation` ihre relevanten Unterrichtsfächer festlegen.
 5. Eine erste Beobachtung erfassen und ein verschlüsseltes `.jkmebackup`
    erstellen.
 
@@ -224,6 +225,21 @@ Notiz und speichern Sie bewusst.
 
 ![Beobachtungsdialog](screenshots/02_observation_dialog.png)
 
+Das Feld `Fach · Katalogfilter` gliedert die Auswahl in drei sichtbare Gruppen:
+
+- `Überfachliche Entwicklung`: Selbst- und Sozialkompetenz sowie Arbeits- und
+  Lernkompetenz; beide bleiben unabhängig vom Fachprofil immer verfügbar.
+- `Fächer`: die für dieses Kind aktuell wirksamen Unterrichtsfächer.
+- `Weitere Fächer`: andere aktive Unterrichtsfächer, die weiterhin bewusst
+  erreichbar sind.
+
+Ein Fachwechsel filtert nur den Katalog. Er ändert weder die im Schülerprofil
+gespeicherte Fachauswahl noch bereits ausgewählte Kompetenzen und Bewertungen.
+Bei einer bewusst leeren individuellen Fachauswahl entsteht keine neue
+automatische Auswahl: `Fächer` bleibt leer, die überfachliche Entwicklung
+bleibt verfügbar und alle aktiven Unterrichtsfächer sind unter `Weitere
+Fächer` erreichbar.
+
 Eine Schnellbeobachtung erfasst zunächst eine Notiz ohne Kompetenzzuordnung. Sie
 kann später bearbeitet und fachlich ergänzt werden.
 
@@ -264,23 +280,45 @@ Noch nicht dokumentiert bedeutet lediglich, dass kein aktiver Beleg oder
 Bestätigungsstand vorliegt. Es sagt nichts darüber aus, was ein Kind kann oder
 nicht kann.
 
+### Unterrichtsfächer für ein Kind festlegen
+
+1. `Schüler` öffnen und das gewünschte Kind über `Profil öffnen` auswählen.
+2. Im Profil den Bereich `Überblick` öffnen.
+3. Die Karte `Fächer für die Dokumentation` mit `Aufklappen` öffnen.
+4. `Für dieses Kind individuell festlegen` wählen.
+5. Unterrichtsfächer markieren und `Speichern` wählen.
+
+Die Alternative `Globale Fachauswahl verwenden` übernimmt die vorhandene
+Voreinstellung. Sie ist ein Defaultmodus, nicht die alleinige Produktlogik.
+Die individuelle Auswahl enthält ausschließlich EPU, Deutsch, Mathematik,
+Kreatives Gestalten, Sport, Ethik, Religion, Musik, Englisch und Schulgarten.
+
+![Individuelle Fachauswahl im Schülerprofil](screenshots/25_student_subject_selection.png)
+
+Die Fachauswahl beschreibt, welche Unterrichtsfächer für dieses Kind im
+normalen Dokumentationsworkflow primär relevant sind. Sie löscht keine Fächer,
+Kompetenzen, Beobachtungen oder historischen Nachweise und ist keine harte
+fachliche Berechtigungsgrenze. Auch eine bewusst leere individuelle Auswahl
+kann gespeichert werden und wird nicht automatisch mit der globalen Auswahl
+oder aus Beobachtungen neu befüllt.
+
 ### Überfachliche Entwicklung und Unterrichtsfächer
 
 Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz bilden die überfachliche
 Entwicklung. Sie sind immer verfügbar, aber keine Unterrichtsfächer. Deshalb
-erscheinen sie weder im Stundenplan noch im allgemeinen Fachsetup. Beobachtung,
-Kompetenz-Cockpit, Bericht und LEG zeigen sie in ihren tatsächlichen
-Dokumentationskontexten.
+erscheinen sie nicht im Stundenplan und müssen beim Kind nicht ausgewählt
+werden. Die vorhandene allgemeine Voreinstellung `Fächer für die Dokumentation`
+kann sie als Dokumentationsbereiche aufführen; dadurch werden sie nicht zu
+Unterrichtsfächern. Beobachtung, Kompetenz-Cockpit, Bericht und LEG zeigen sie
+in ihren tatsächlichen Dokumentationskontexten.
 
 Die zehn Unterrichtsfächer sind EPU, Deutsch, Mathematik, Kreatives Gestalten,
 Sport, Ethik, Religion, Musik, Englisch und Schulgarten. Für das aktuelle
 Schuljahr werden die relevanten Unterrichtsfächer direkt beim jeweiligen Kind
 gepflegt. Überfachliche Entwicklung bleibt unabhängig von dieser Auswahl
-vorhanden. Im Schülerprofil kann die globale Unterrichtsfachauswahl als
-Voreinstellung übernommen oder für dieses Kind eine individuelle Auswahl
-festgelegt werden. Die globale Auswahl ist damit ein Default, nicht die alleinige
-Produktlogik. Historische Schuljahre sind nicht für normale nachträgliche
-Änderungen des Fachprofils gedacht.
+vorhanden und erscheint nicht als Checkbox der individuellen
+Unterrichtsfachauswahl. Historische Schuljahre sind nicht für normale
+nachträgliche Änderungen des Fachprofils gedacht.
 
 Kleine Farbmarker helfen bei der Orientierung, aber der Fachname bleibt immer
 sichtbar. Kurs-, Rating- und Statusfarben haben getrennte Bedeutungen. Für EPU
@@ -292,6 +330,12 @@ Beim Öffnen erscheinen unmittelbar Timeline, Fachkarten und
 Dokumentationsumfang für das aktuelle Schuljahr. Die individuellen
 Dokumentationsfächer des Kindes werden berücksichtigt. Dafür muss kein
 Berichtsentwurf vorhanden oder ausgewählt sein.
+
+Das Kompetenz-Cockpit zeigt die beiden überfachlichen Bereiche immer und sonst
+die für dieses Kind wirksamen Unterrichtsfächer. Vorhandene dokumentierte
+Evidenz aus einem aktuell nicht primären Fach wird dadurch nicht gelöscht und
+bleibt in den dafür vorgesehenen historischen beziehungsweise ergänzenden
+Kontexten lesbar.
 
 Die Übersicht zeigt dokumentierte Ereignisse und Mengen neutral. Sie berechnet
 keine Stärke, Schwäche, Punktzahl, Entwicklungstendenz oder pädagogische
@@ -340,6 +384,15 @@ read-only sichtbar; Änderungen an der Auswahl erfolgen unter `Auswählen`.
 Frühere unveränderliche Revisionen sind im dritten Schritt sekundär über
 `Frühere Fassungen` erreichbar.
 
+Die Fachauswahl des Kindes bestimmt, welche Unterrichtsfächer in der
+Berichtsvorbereitung zuerst unter `Fächer des Kindes` angeboten werden. Andere
+aktive Unterrichtsfächer bleiben unter `Weitere Fächer` bewusst erreichbar;
+erst die Auswahl im Bericht nimmt ein Fach in den Entwurf auf.
+
+Die überfachliche Entwicklung bleibt im Bericht-Überblick sichtbar. Sie ist
+keine Unterrichtsfach-Checkbox der Vorbereitung und wird nicht durch die
+individuelle Unterrichtsfachauswahl des Kindes ein- oder ausgeschaltet.
+
 ![Berichtswerkstatt](screenshots/06_learning_report_workspace.png)
 
 Entwurf speichern sichert den aktuellen Stand. Schließen mit ungespeicherten
@@ -385,6 +438,12 @@ unsere Einschätzung? sowie Welche Unterstützung und Vereinbarungen treffen wir
 Kompetenzen und Belege werden primär in der Vorbereitung ausgewählt und bleiben
 im Gespräch bei Bedarf read-only sichtbar. Der kanonische Kompetenzstand ist
 read-only; das LEG führt keine eigene Bewertung ein.
+
+Das LEG verwendet den kanonischen Kompetenzstand des Kindes und wird nicht auf
+die individuell ausgewählten Unterrichtsfächer gefiltert oder danach
+umsortiert. Das Fachprofil entfernt keine vorhandenen LEG-Inhalte,
+Kompetenzreferenzen oder Belege. Die überfachliche Entwicklung bleibt
+unabhängig von der Unterrichtsfachauswahl verfügbar.
 
 ![LEG-Arbeitsbereich](screenshots/11_learning_conference_preparation.png)
 
@@ -480,7 +539,8 @@ historisches Schuljahr sind nicht Teil der normalen nachträglichen Pflege.
 2. Schuljahr `2026/27` und seinen Zeitraum prüfen.
 3. Unter Stammdaten mindestens eine Stammgruppe und einen Kurs anlegen.
 4. Optional Kursverbünde anlegen.
-5. Schüler anlegen und ihre relevanten Unterrichtsfächer festlegen.
+5. Schüler anlegen und unter `Überblick > Fächer für die Dokumentation` ihre
+   relevanten Unterrichtsfächer individuell festlegen.
 6. Eine erste Beobachtung erfassen.
 7. Die Entwicklungsübersicht mit Timeline und Fachkarten öffnen.
 8. Ein geprüftes verschlüsseltes Backup erstellen.

@@ -20,7 +20,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QWidget
+from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QScrollArea, QWidget
 
 from scripts.seed_test_data import seed_test_data
 from src.core.sqlite_store import SQLiteDatabase
@@ -90,6 +90,7 @@ def _profile_screen(adapter: StudentDesktopAdapter) -> StudentProfileScreen:
     profile = adapter.get_student_profile(STUDENT_ID)
     if profile is None:
         raise RuntimeError("Synthetisches Schülerprofil fehlt.")
+    bundle = adapter.student_profile_projection_bundle(STUDENT_ID)
     screen = StudentProfileScreen()
     screen.set_student(
         profile,
@@ -100,6 +101,7 @@ def _profile_screen(adapter: StudentDesktopAdapter) -> StudentProfileScreen:
         adapter.list_documents_for_student(STUDENT_ID),
         adapter.competency_cockpit_for_student(STUDENT_ID),
         adapter.student_profile_dashboard_for_student(STUDENT_ID),
+        documentation_subjects=bundle.documentation_subjects,
     )
     return screen
 
@@ -346,6 +348,40 @@ def capture(output: Path) -> tuple[Path, ...]:
         about = AppInfoDialog()
         captured.append(_capture(about, output, "23_about_version.png", width=760, height=520))
 
+        current_year = adapter.current_school_year()
+        if current_year is None:
+            raise RuntimeError("Synthetisches aktuelles Schuljahr fehlt.")
+        adapter.save_student_documentation_subjects(
+            STUDENT_ID,
+            current_year.school_year_id,
+            "custom",
+            ("deutsch", "mathematik", "englisch"),
+        )
+        subject_selection = _profile_screen(adapter)
+        subject_selection.resize(1400, 900)
+        subject_selection.show()
+        QApplication.processEvents()
+        subject_selection._set_documentation_subjects_expanded(True)
+        QApplication.processEvents()
+        overview_scroll = subject_selection.profile_tabs.widget(0)
+        if not isinstance(overview_scroll, QScrollArea):
+            raise RuntimeError("Synthetischer Profilbereich ist nicht scrollbar.")
+        subject_card = subject_selection.findChild(
+            QWidget,
+            "StudentProfileDocumentationSubjectsCard",
+        )
+        if subject_card is None:
+            raise RuntimeError("Karte für Dokumentationsfächer fehlt.")
+        overview_scroll.ensureWidgetVisible(subject_card, 24, 24)
+        QApplication.processEvents()
+        captured.append(
+            _capture(
+                subject_selection,
+                output,
+                "25_student_subject_selection.png",
+            )
+        )
+
     expected = {
         "01_dashboard.png",
         "02_observation_dialog.png",
@@ -366,6 +402,7 @@ def capture(output: Path) -> tuple[Path, ...]:
         "22_restore_neustart.png",
         "23_about_version.png",
         "24_first_steps.png",
+        "25_student_subject_selection.png",
     }
     actual = {path.name for path in captured}
     if actual != expected:

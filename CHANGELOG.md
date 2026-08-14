@@ -7,6 +7,12 @@
   Kompetenzen, Unterrichtsorganisation, kindbezogene Unterrichtsfachauswahl,
   erste Beobachtung und `.jkmebackup`. Der historische Beispielrestore und die
   globale Dokumentationsfachauswahl als Pflichtstatus entfallen.
+- Onboarding, Erste Schritte, Schnellstart und Benutzerhandbuch führen nun über
+  die tatsächlichen Qt-Bezeichnungen zur individuellen Unterrichtsfachauswahl
+  im Schülerprofil. Sie benennen alle zehn auswählbaren Unterrichtsfächer,
+  grenzen die immer verfügbare überfachliche Entwicklung ab und erklären die
+  Wirkung auf `Fächer`, `Weitere Fächer`, bewusst leere Auswahlen und bestehende
+  Dokumentation ohne Lösch- oder Berechtigungsversprechen.
 - Pilot-, Lehrkraft-, Installations-, Sicherheits-, Backup-, Support- und
   Handbuchquellen beschreiben konsistent Final V4, verschlüsselte Managed
   Documents, den sicheren read-only In-App-PDF-Viewer, installationsgebundenes

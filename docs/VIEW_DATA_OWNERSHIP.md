@@ -1120,6 +1120,9 @@ Liest:
 - `data_subjects`
 - `data_competencies`
 - `documentation_subject_settings` fuer die Fachauswahl neuer Beobachtungen
+- `student_documentation_subject_profiles` und
+  `student_documentation_subject_selections` über den bestehenden
+  `StudentDocumentationSubjectService`
 - `data/curriculum_catalog_v1.csv` ueber den SQLite-Katalogimport als read-only Kataloggrundlage mit `competency_label`, Fach, Kompetenzbereich, Thema und konkreter Kompetenz
 - `data_observations` bei Bearbeitung bestehender Beobachtungen
 - `data_observation_competencies` bei Bearbeitung bestehender Zuordnungen
@@ -1183,8 +1186,12 @@ sichtbar. Bei Bearbeitung wird eine bestehende
 `observation_id` geladen; ein inzwischen nicht dokumentationsrelevantes
 Bestandsfach sowie bereits bewertete `legacy`- oder inaktive Kompetenzen
 bleiben sichtbar und werden nicht automatisch ersetzt. Speichern ersetzt die
-Kompetenzbewertungen atomar. Kompetenzen muessen im Beobachtungsdialog
-zwingend mitgedacht werden. Die sichtbare Kompetenzstruktur lautet Fach ->
+Kompetenzbewertungen atomar. Eine bewusst leere `custom`-Auswahl bleibt leer;
+der Dialog erzeugt weder daraus noch aus vorhandenen Beobachtungen eine neue
+individuelle Auswahl. Die Fachprojektion priorisiert die normale Dokumentation,
+löscht aber keine fachlichen Bestände und bildet keine Berechtigungsgrenze.
+Kompetenzen muessen im Beobachtungsdialog zwingend mitgedacht werden. Die
+sichtbare Kompetenzstruktur lautet Fach ->
 Kompetenzbereich -> Thema -> Kompetenz und nutzt bestehende Felder:
 `subject_id` / `subject_name`, `learning_area`, `competency_group`,
 `description` / `competency_text`.

@@ -607,8 +607,10 @@ der vorhandenen dunklen Kontur erscheinen.
 Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz sind überfachliche
 Entwicklungs- und Beobachtungsbereiche, keine Unterrichtsfächer. In
 Beobachtung, Cockpit, Bericht und LEG bleiben sie unter `Überfachliche
-Entwicklung` mit neutralem Marker erreichbar; in Fachauswahl, Stundenplan und
-Dashboard-Unterrichtskarten werden sie nicht angeboten oder dargestellt.
+Entwicklung` mit neutralem Marker erreichbar; in der individuellen
+Unterrichtsfachauswahl des Schülerprofils, im Stundenplan und in
+Dashboard-Unterrichtskarten werden sie nicht als Unterrichtsfächer angeboten
+oder dargestellt.
 
 Der Fachname bleibt immer sichtbar und ist die semantische Hauptinformation.
 Der Marker ist dekorativ, besitzt keinen Tabstop und keinen eigenen

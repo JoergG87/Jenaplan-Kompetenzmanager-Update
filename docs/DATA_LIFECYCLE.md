@@ -137,8 +137,9 @@ keine UI-, Bestätigungs- oder Shell-Ausführungsaktion.
 3. Unter ACTIVE liest er den kanonischen Transition-Quellenhash. Eine offene
    Observation-Recovery blockiert den Lauf, weil sie vor dem Pflichtbackup
    Datei- oder Datenbankwrites nachholen könnte. Ohne offenen Recoveryzustand
-   erstellt der vorhandene Backup-Service ein normales `.jkmbackup` ohne
-   Recovery-Writes und verifiziert die veröffentlichten Bytes nochmals.
+   erstellt der vorhandene Final-V4-Backup-Service ein verschlüsseltes
+   `.jkmebackup` ohne Recovery-Writes und verifiziert den veröffentlichten
+   Container nochmals.
 4. Der Nachweis enthält eine kryptografisch zufällige technische Backup-ID,
    echten Archiv-SHA-256, Quellen-SHA-256, exakten Final-V4-Fingerprint und
    zeitzonenbewussten Verifikationszeitpunkt. Der Null-Hash ist unzulässig.
