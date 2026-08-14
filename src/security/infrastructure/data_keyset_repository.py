@@ -68,9 +68,16 @@ _ALLOWED_PENDING_PHASE_TRANSITIONS = {
 class SQLiteDataKeysetRepository:
     """New-store-only repository; it never opens or migrates security.sqlite."""
 
-    def __init__(self, database_path: Path, permissions: FilePermissionManager) -> None:
+    def __init__(
+        self,
+        database_path: Path,
+        permissions: FilePermissionManager,
+        *,
+        checkpointed_immutable_reads: bool = False,
+    ) -> None:
         self._database_path = Path(database_path)
         self._permissions = permissions
+        self._checkpointed_immutable_reads = bool(checkpointed_immutable_reads)
 
     @property
     def database_path(self) -> Path:
@@ -346,7 +353,7 @@ class SQLiteDataKeysetRepository:
             raise SecurityStoreError("data_keyset_store_missing")
         try:
             with sqlite3.connect(
-                f"file:{self._database_path.resolve()}?mode=ro", uri=True
+                self._read_only_uri(), uri=True
             ) as connection:
                 connection.row_factory = sqlite3.Row
                 if int(connection.execute("PRAGMA application_id").fetchone()[0]) != _SQLITE_APPLICATION_ID:
@@ -385,15 +392,19 @@ class SQLiteDataKeysetRepository:
     @contextmanager
     def _read_connection(self):
         self._validate_store()
-        connection = sqlite3.connect(
-            f"file:{self._database_path.resolve()}?mode=ro", uri=True
-        )
+        connection = sqlite3.connect(self._read_only_uri(), uri=True)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA query_only = ON")
         try:
             yield connection
         finally:
             connection.close()
+
+    def _read_only_uri(self) -> str:
+        parameters = "mode=ro"
+        if self._checkpointed_immutable_reads:
+            parameters += "&immutable=1"
+        return f"file:{self._database_path.resolve()}?{parameters}"
 
     @contextmanager
     def _write_connection(self):

@@ -1354,6 +1354,7 @@ def _bootstrap_handoff_context(
                 account_loader=lambda: account,
                 key_store=key_store,
                 metadata_root=metadata_root,
+                immutable_metadata_read=True,
             )
             service = FinalV4EncryptedRestoreHandoffService(
                 runtime_root=paths.runtime_root,
@@ -1575,6 +1576,7 @@ def _load_existing_key_runtime(
     account_loader,
     key_store=None,
     metadata_root: Path | None = None,
+    immutable_metadata_read: bool = False,
 ) -> LoadedDatabaseKeyRuntime:
     """Load an already-active DMK/envelope set without creating or repairing it."""
 
@@ -1595,6 +1597,7 @@ def _load_existing_key_runtime(
         active = SQLiteDataKeysetRepository(
             paths.keyset_metadata,
             permissions,
+            checkpointed_immutable_reads=immutable_metadata_read,
         ).active_data_keyset()
         if (
             active is None
