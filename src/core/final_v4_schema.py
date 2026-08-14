@@ -137,6 +137,21 @@ class FinalV4SchemaInitializer:
             raise FinalV4SchemaError("final_v4_target_must_not_exist")
         if not path.parent.is_dir():
             raise FinalV4SchemaError("final_v4_parent_missing")
+        from src.core.runtime_root_protection import (
+            RuntimeRootProtectionError,
+            require_database_mutation_authority,
+            require_or_prepare_synthetic_test_root,
+        )
+
+        try:
+            require_database_mutation_authority(path)
+        except RuntimeRootProtectionError as error:
+            if error.code != "synthetic_test_root_authority_required":
+                raise FinalV4SchemaError(error.code) from None
+            try:
+                require_or_prepare_synthetic_test_root(path.parent)
+            except RuntimeRootProtectionError as prepare_error:
+                raise FinalV4SchemaError(prepare_error.code) from None
 
         created = False
         try:

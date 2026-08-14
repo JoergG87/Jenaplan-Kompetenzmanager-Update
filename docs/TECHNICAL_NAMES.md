@@ -1,5 +1,29 @@
 # Technical Naming Registry
 
+## Pilot-Produktionsroot-Schutz
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `RuntimeRootProtection` | versionierte nicht geheime Rootautorität mit Roottyp und Lifecycle; keine fachliche Source of Truth | Core Runtime |
+| `RuntimeRootKind` | ausschließlich `pilot_product` oder `synthetic_test` | Core Runtime |
+| `RuntimeRootLifecycle` | `initializing` oder `active`; synthetische Roots sind nur `active` | Core Runtime |
+| `RuntimeRootProtectionError` | sanitiserter technischer Fehlercode einer vor Mutation abgelehnten Rootoperation | Core Runtime |
+| `.jkm-runtime-root-v1` | atomar publizierter technischer Schutzmarker ohne Schüler-, Schlüssel- oder Secretinhalt | Core Runtime |
+| `.jkm-runtime-root-v1.pending` | konservativ blockierende Publikationsspur; niemals freier Testroot | Core Runtime |
+| `publish_pilot_product_root` | publiziert den Produktschutz auf einem nachweislich frischen Root vor der ersten Produktmutation | Desktop Runtime Composition |
+| `activate_pilot_product_root` | aktiviert den Root erst nach vollständigem Fresh-First-Run einschließlich offiziellem Katalog | Desktop Runtime Composition |
+| `prepare_synthetic_test_root` | erzeugt/markiert ausschließlich einen frischen kontrollierten System-Temporärroot | Test Support |
+| `publish_synthetic_test_root` | niedrigste atomare Markerpublikation; nur leer, systemtemporär und ohne geschützten Produktancestor | Test Support |
+| `inspect_runtime_root` | descriptor-gebundene read-only Markerprüfung mit Owner-, Modus-, Link-, Versions- und Rootbindung | Core Runtime |
+| `require_product_runtime_root` | verlangt den zum Open-Modus passenden Produkt-Lifecycle beziehungsweise einen explizit zugelassenen Testroot | Core Runtime |
+| `DEFAULT_SYNTHETIC_DATABASE_PATH` | markergebundener Standardpfad des Entwickler-Seeders unter dem benutzerspezifischen System-Temporärroot | Test Support |
+| `require_mutable_test_root` | gemeinsamer mutationsfreier Preflight gegen Produktmarker und Produktevidenz | Test/Build Tooling |
+| `require_or_prepare_synthetic_test_root` | verwendet vorhandene synthetische Autorität oder markiert ausschließlich einen vollständig frischen Testroot | Test Support |
+| `require_database_mutation_authority` | bindet Schema-, Default- und Seedmutatoren an einen synthetischen Root beziehungsweise ausschließlich den kontrollierten initialisierenden Produkt-First-Run | Core Runtime |
+| `require_disposable_tree` | prüft einen rekursiv zu entfernenden Testbaum einschließlich geschützter Nachfahren vor der Löschung | Test/Build Tooling |
+| `require_unprotected_output_path` | sperrt Build-/Testausgaben im oder unterhalb eines geschützten Produktroots | Test/Build Tooling |
+| `SQLiteCompetencyRepository.require_catalog_defaults` | read-only Prüfung des vollständigen offiziellen Katalogs ohne Startup-Upsert | Core SQLite Persistence |
+
 ## Cipher-Produktkomposition
 
 | Technischer Name | Bedeutung | Eigentümer |

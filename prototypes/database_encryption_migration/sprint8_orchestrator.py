@@ -18,6 +18,13 @@ import stat
 from typing import Callable
 
 from src.core.database_engine import SQLCipherConnectionProvider
+from src.core.runtime_root_protection import (
+    RUNTIME_ROOT_PROTECTION_MARKER,
+    RuntimeRootKind,
+    RuntimeRootLifecycle,
+    RuntimeRootProtectionError,
+    inspect_runtime_root,
+)
 from src.security.data_keys import LoadedDataMasterKey
 from src.security.database_keys import (
     DatabaseKey,
@@ -1041,6 +1048,16 @@ class SyntheticMigrationOrchestratorV2:
         allowed = self.allowed_private_root.resolve(strict=True)
         if self.paths.root.is_symlink() or root != allowed or not root.is_dir():
             raise SimplifiedMigrationError("migration_root_not_approved")
+        try:
+            protection = inspect_runtime_root(root)
+        except RuntimeRootProtectionError:
+            raise SimplifiedMigrationError("migration_root_not_synthetic") from None
+        if (
+            protection is None
+            or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST
+            or protection.lifecycle is not RuntimeRootLifecycle.ACTIVE
+        ):
+            raise SimplifiedMigrationError("migration_root_not_synthetic")
         expected = Sprint8MigrationPaths.in_test_root(root)
         if any(getattr(self.paths, field).resolve(strict=False) != getattr(expected, field).resolve(strict=False) for field in (
             "source", "backup", "target", "journal", "exchange_journal", "exchange_directory"
@@ -1049,6 +1066,7 @@ class SyntheticMigrationOrchestratorV2:
 
     def _unexpected_artifacts(self) -> tuple[str, ...]:
         allowed = {
+            RUNTIME_ROOT_PROTECTION_MARKER,
             self.paths.source.name,
             self.paths.backup.name,
             self.paths.target.name,

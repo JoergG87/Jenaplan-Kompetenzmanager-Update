@@ -1,5 +1,31 @@
 # Project Constitution
 
+## Pilot-Produktionsroot ist ab Initialisierung geschützt
+
+Jeder neue Pilot-/Produktdatenroot erhält vor Security Store, DMK, Envelope,
+Final-V4-Datenbank, Companion oder Managed Documents eine atomar publizierte,
+versionierte, kanonisch rootgebundene und nicht geheime Rootautorität.
+`pilot_product` ist bereits im
+Zustand `initializing` geschützt und wird erst nach vollständig verifiziertem
+Final V4, Companion, Dokumentinventar, Schuljahr `2026/27` und exakt 331
+offiziellen Kompetenzen `active`. Ein fehlender, beschädigter, unbekannter oder
+halb publizierter Marker bei vorhandener Produktevidenz blockiert fail-closed.
+
+Seed-, Fixture-, Vergleichs-, Reset-, Force- und Recreate-Tools sowie
+Runtime-/Datenroot übernehmende Smoke- und Buildtools dürfen einen
+`pilot_product`-Root weder verändern noch als Testroot markieren.
+Nur kontrolliert neu erzeugte systemtemporäre Roots mit der getrennten
+Autorität `synthetic_test` sind wegwerfbar. Pfadname, Benutzer, App-Version,
+Git-Branch, Schülerzahl und `--force` sind keine Schutzautorität.
+
+Ein produktiver Restart öffnet Security Store, Schlüsselartefakte,
+Hauptdatenbank, Companion und Dokumentinventar ausschließlich vollständig und
+read-only klassifiziert; Fehler führen nie zu First Run, Keyrotation,
+Katalog-Upsert oder leerer Neuerzeugung. Künftige Daten-/Securitymigrationen
+dürfen erst nach erfolgreich erzeugtem und verifiziertem verschlüsseltem
+`.jkmebackup` sowie mit Staging, Rollback und Recovery beginnen. Ein reiner
+App-Bundle-Austausch ohne Datenmutation bleibt davon getrennt.
+
 ## Cipher-Produktpfad des Pilotstands
 
 Für Lauras Pilot ist eine frische verschlüsselte Final-V4-Installation der

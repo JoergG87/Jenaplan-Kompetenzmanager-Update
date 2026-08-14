@@ -4,6 +4,7 @@
 
 | Rolle / Quelle | Produktiver Pfad relativ zur Runtime-Root | Owner | Regel |
 |---|---|---|---|
+| Pilot-Produktionsroot-Autorität | `.jkm-runtime-root-v1` | Core Runtime | versionierter nicht geheimer Schutzmarker `pilot_product`/`synthetic_test`; keine Schülerdaten, Secrets, Schlüssel oder fachliche Wahrheit |
 | Keyset-Metadaten | `security-key-runtime-v1/data-keysets.sqlite` | Database-Key Runtime | keine DMK und kein Database-Key-Material |
 | Database-Key-Envelope-Registry | `security-key-runtime-v1/database-key-envelopes-v1.json` | Database-Key Runtime | authentisierte Envelope-Metadaten; kein Klartextschlüssel |
 | Final-V4-Fachdatenbank | `final-v4-sqlcipher-runtime-v1/final-v4.sqlcipher` | Final-V4 SQLCipher Runtime | ausschließlich exakt SQLCipher 4.17 keyed |

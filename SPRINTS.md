@@ -1,5 +1,24 @@
 # Sprintplanung
 
+## Pilot-Produktionsschutz im Feature Freeze
+
+- [x] Atomare versionierte Rootautorität vor Security-/Dateninitialisierung.
+- [x] Leerer, frischer Pilotroot bereits als `pilot_product/initializing`
+  schützen und erst nach Final V4, Companion, Dokumentinventar, `2026/27` und
+  331 Kompetenzen aktivieren.
+- [x] Seed-, Vergleichs-, Reset- und datenroot-mutierende Developer-/Testpfade
+  sowie Runtime-/Datenroot übernehmende Smoke-/Buildpfade vor jeder Mutation
+  gegen Produktroot und widersprüchliche Produktevidenz sperren.
+- [x] Kontrolliert frische systemtemporäre `synthetic_test`-Roots weiter
+  reproduzierbar seed- und resetbar halten; kein `force`-Bypass.
+- [x] Security Store und Kompetenzkatalog beim Restart read-only prüfen; keine
+  automatische Securitymigration oder Katalogaktualisierung.
+- [x] Fehlende, beschädigte, unbekannte oder partielle Schlüssel-, Datenbank-,
+  Companion-, Pointer-, Dokument- und Rootzustände ohne Neuerzeugung ablehnen.
+- [x] Build-/Payload-/Testbackup-Ausgaben auf No-Clobber begrenzen.
+- [ ] 0.4.0 / Build 400, finaler Pilotbuild, Codesign-/Keychain-Bundlegate,
+  Developer ID, Notarisierung und Fresh-First-Run-Abnahme bleiben separat.
+
 ## Bericht-Grundworkflow – Pilot-Minimalschnitt
 
 - [x] Product-/UX-Discovery und Architekturprüfung für den sichtbaren Ablauf

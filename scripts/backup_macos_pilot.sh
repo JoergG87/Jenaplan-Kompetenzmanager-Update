@@ -5,6 +5,13 @@ APP_NAME="Jenaplan-Kompetenzmanager"
 DATA_ROOT="${JENAPLAN_APP_DATA_DIR:-$HOME/Library/Application Support/$APP_NAME}"
 DATABASE="$DATA_ROOT/kompetenzmanager.sqlite"
 BACKUPS="$DATA_ROOT/backups"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPOSITORY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if ! PYTHONPATH="$REPOSITORY_ROOT" python3 -c 'import sys; from pathlib import Path; from src.core.runtime_root_protection import require_unprotected_output_path; require_unprotected_output_path(Path(sys.argv[1]))' "$DATA_ROOT"; then
+    echo "Produktroot-Schutz: Legacy-Plaintext-Backup ist für diesen Root blockiert." >&2
+    exit 2
+fi
 
 if pgrep -f '/Jenaplan-Kompetenzmanager.app/Contents/MacOS/Jenaplan-Kompetenzmanager' >/dev/null 2>&1; then
     echo "Bitte den Jenaplan-Kompetenzmanager vollständig schließen und das Backup erneut starten." >&2

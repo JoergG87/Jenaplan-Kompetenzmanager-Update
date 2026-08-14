@@ -20,6 +20,7 @@ import pytest
 from src.application.commands.backup import BackupApplicationService, CreateBackupCommand
 from src.application.commands.security_backup import VerifiedSecurityBackupAdapter
 from src.core.final_v4_schema import FinalV4SchemaInitializer
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.runtime import runtime_paths
 from src.security.application import SecurityApplicationService
@@ -28,6 +29,7 @@ from src.security.domain import (
     DeviceCredential,
     DeviceCredentialStatus,
     SecurityBackupProof,
+    SecurityStoreError,
     SecurityStoreState,
     SupportPublicKey,
     SupportPublicKeyStatus,
@@ -590,6 +592,7 @@ def test_successful_reset_requires_backup_and_changes_only_security_state(tmp_pa
 
 def test_real_jkmbackup_is_created_verified_and_excludes_security_store(tmp_path: Path) -> None:
     root = tmp_path / "runtime"
+    prepare_synthetic_test_root(root)
     paths = runtime_paths(root)
     for directory in (paths.root, paths.documents, paths.backups, paths.exports, paths.logs):
         directory.mkdir(parents=True, exist_ok=True)
@@ -721,6 +724,26 @@ def test_v1_migrates_transactionally_and_preserves_existing_auth_data(tmp_path: 
         assert connection.execute("SELECT COUNT(*), hex(min(code_hash)) FROM recovery_codes").fetchone() == before_codes
     assert security.authenticate_password(PASSWORD).status == AuthenticationStatus.AUTHENTICATED
     assert clock.now == NOW
+
+
+def test_product_start_read_only_gate_rejects_v1_without_migration(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "runtime-read-only"
+    _security, _reset, repository, _clock, _private = make_environment(root)
+    downgrade_store_to_v1(repository.database_path)
+    before = repository.database_path.read_bytes()
+    reopened = SQLiteSecurityRepository(
+        repository.database_path,
+        PlatformFilePermissionManager(),
+    )
+
+    with pytest.raises(SecurityStoreError, match="security_store_version_invalid"):
+        reopened.require_current_read_only()
+
+    assert repository.database_path.read_bytes() == before
+    with sqlite3.connect(repository.database_path) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
 
 
 def test_v2_migrates_to_v3_without_changing_account_recovery_or_epoch(tmp_path: Path) -> None:

@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 import uuid
 
+from src.core.runtime_root_protection import prepare_synthetic_test_root
+
 
 APP_NAME = "Jenaplan-Kompetenzmanager"
 
@@ -25,6 +27,7 @@ def smoke_test(app_path: Path) -> dict[str, object]:
     ) as temporary:
         parent = Path(temporary)
         lifecycle_root = parent / "lifecycle"
+        prepare_synthetic_test_root(lifecycle_root)
         initialized = _run(executable, lifecycle_root, "initialize")
         try:
             copied_app = parent / "copied" / app_path.name
@@ -54,16 +57,12 @@ def smoke_test(app_path: Path) -> dict[str, object]:
         finally:
             cleanup = _run(executable, lifecycle_root, "cleanup")
 
-        missing = _run(
-            executable,
-            parent / f"missing-{uuid.uuid4()}",
-            "missing",
-        )
-        corrupt = _run(
-            executable,
-            parent / f"corrupt-{uuid.uuid4()}",
-            "corrupt",
-        )
+        missing_root = parent / f"missing-{uuid.uuid4()}"
+        corrupt_root = parent / f"corrupt-{uuid.uuid4()}"
+        prepare_synthetic_test_root(missing_root)
+        prepare_synthetic_test_root(corrupt_root)
+        missing = _run(executable, missing_root, "missing")
+        corrupt = _run(executable, corrupt_root, "corrupt")
     return {
         "bundle_copy_reload": reloaded["status"],
         "cleanup": cleanup["status"],

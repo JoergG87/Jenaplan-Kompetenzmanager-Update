@@ -33,6 +33,7 @@ from src.application.school_year_transition_step_up import (
     SchoolYearTransitionStepUpService,
 )
 from src.core.database_compatibility import FINAL_SCHEMA_FINGERPRINT
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.core.sqlite_school_year_transition import (
     SchoolYearTransitionExecutionRepository,
     SchoolYearTransitionRepositoryError,
@@ -282,6 +283,7 @@ def test_real_verified_backup_allows_transition_and_binds_receipt(
     tmp_path: Path,
 ) -> None:
     paths = runtime_paths(tmp_path / "runtime")
+    prepare_synthetic_test_root(paths.root)
     for directory in (paths.root, paths.documents, paths.backups):
         directory.mkdir(parents=True, exist_ok=True)
     create_synthetic_v4_database(paths.database)
@@ -338,6 +340,7 @@ def test_backup_of_different_database_cannot_authorize_transition(
     source_paths = runtime_paths(tmp_path / "source-runtime")
     other_paths = runtime_paths(tmp_path / "other-runtime")
     for paths in (source_paths, other_paths):
+        prepare_synthetic_test_root(paths.root)
         for directory in (paths.root, paths.documents, paths.backups):
             directory.mkdir(parents=True, exist_ok=True)
         create_synthetic_v4_database(paths.database)
@@ -377,6 +380,7 @@ def test_pending_observation_recovery_blocks_transition_backup(
     tmp_path: Path,
 ) -> None:
     paths = runtime_paths(tmp_path / "runtime")
+    prepare_synthetic_test_root(paths.root)
     for directory in (paths.root, paths.documents, paths.backups):
         directory.mkdir(parents=True, exist_ok=True)
     create_synthetic_v4_database(paths.database)

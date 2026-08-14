@@ -126,6 +126,10 @@ validate_output_root() {
 }
 validate_output_root "$BUILD_ROOT" "Build-Ziel"
 validate_output_root "$DIST_ROOT" "Distributions-Ziel"
+if ! python3 -c 'import sys; from pathlib import Path; from src.core.runtime_root_protection import require_unprotected_output_path; [require_unprotected_output_path(Path(value)) for value in sys.argv[1:]]' "$BUILD_ROOT" "$DIST_ROOT"; then
+    echo "Abbruch: Build- oder Distributionsziel liegt in einem geschützten Produktroot." >&2
+    exit 2
+fi
 if [ "$BUILD_ROOT" = "$DIST_ROOT" ]; then
     echo "Abbruch: Build- und Distributions-Ziel müssen getrennt sein." >&2
     exit 2
@@ -138,7 +142,11 @@ cleanup_mount() {
 }
 trap cleanup_mount EXIT
 
-rm -rf "$BUILD_ROOT" "$DIST_ROOT"
+if [ -e "$BUILD_ROOT" ] || [ -L "$BUILD_ROOT" ] \
+    || [ -e "$DIST_ROOT" ] || [ -L "$DIST_ROOT" ]; then
+    echo "Abbruch: Build- und Distributionsziele müssen vollständig neu sein." >&2
+    exit 2
+fi
 mkdir -p "$BUILD_ROOT" "$DIST_ROOT"
 
 python3 -m venv "$VENV"

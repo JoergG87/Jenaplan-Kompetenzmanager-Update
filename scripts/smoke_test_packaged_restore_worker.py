@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.smoke_test_macos_app import _run
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 
 
 APP_NAME = "Jenaplan-Kompetenzmanager"
@@ -29,6 +30,8 @@ def smoke_test(app_path: Path) -> dict[str, object]:
         prefix="jenaplan-packaged-smoke-restore-worker-"
     ) as temporary:
         data_root = Path(temporary) / "Application Support" / APP_NAME
+        data_root.parent.mkdir(parents=True)
+        prepare_synthetic_test_root(data_root)
         initialized = _run(executable, data_root, "initialize")
         try:
             worker = _run(executable, data_root, "restore-worker")

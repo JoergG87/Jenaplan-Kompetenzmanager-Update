@@ -10,6 +10,7 @@ from prototypes.encrypted_document_container import (
     SyntheticEncryptedDocumentServiceV1,
 )
 import prototypes.encrypted_document_container.sprint10_container as module
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.security.data_keys import LoadedDataMasterKey
 from src.security.document_container import DocumentContainerContextV1
 from src.security.infrastructure.system import SystemClock, SystemRandomSource
@@ -36,8 +37,7 @@ POINTER_NAME = "synthetic-current-storage-id"
 
 
 def _setup(root: Path) -> tuple[Path, Path, Path]:
-    root.mkdir(mode=0o700)
-    os.chmod(root, 0o700)
+    prepare_synthetic_test_root(root)
     sources = root / module.SOURCES_DIRECTORY
     storage = root / module.STORAGE_DIRECTORY
     exports = root / module.EXPORTS_DIRECTORY

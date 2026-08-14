@@ -175,7 +175,11 @@ befüllt werden:
 python3 scripts/seed_test_data.py
 ```
 
-Das Script schreibt standardmaessig nach `data/kompetenzmanager.sqlite`. Wenn dort bereits Schueler, Beobachtungen, Dokumente oder Stundenplaneintraege liegen, bricht es ohne Aenderung ab.
+Das Script erzeugt dafür ausschließlich den markergebundenen synthetischen Root
+`<System-Temp>/jenaplan-seed-test-<uid>/` und meldet den tatsächlichen
+Datenbankpfad. Der normale Entwicklerroot `data/` und Produktroots werden nicht
+als Seedziel verwendet. Wenn im Testroot bereits Schüler, Beobachtungen,
+Dokumente oder Stundenplaneinträge liegen, bricht es ohne Änderung ab.
 
 Ein bewusst frisches Testsystem wird so erzeugt:
 
@@ -183,7 +187,9 @@ Ein bewusst frisches Testsystem wird so erzeugt:
 python3 scripts/seed_test_data.py --reset
 ```
 
-`--reset` loescht die lokale Testdatenbank und die Demo-Dateien unter `data/documents/` kontrolliert neu. Es werden nur kuenstliche Namen und harmlose Platzhalterdateien erzeugt.
+`--reset` löscht ausschließlich die markergebundene synthetische Testdatenbank
+und ihre Demo-Dateien kontrolliert neu. Es werden nur künstliche Namen und
+harmlose Platzhalterdateien erzeugt.
 
 Die Testdaten bilden einen rund achtmonatigen Nutzungsstand von September bis
 Juli ab. Sie enthalten 24 künstliche Kinder in vier Stammgruppen, drei Kurse,

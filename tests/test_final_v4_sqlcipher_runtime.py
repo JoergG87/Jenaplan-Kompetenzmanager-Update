@@ -38,6 +38,8 @@ from src.core.database_engine import (
 from src.core.sqlite_school_year_transition import (
     SchoolYearTransitionExecutionRepository,
 )
+from src.core.runtime_root_protection import publish_synthetic_test_root
+from src.core.runtime_root_protection import RUNTIME_ROOT_PROTECTION_MARKER
 from src.core.sqlite_store import SQLiteObservationRepository
 from src.desktop_app.adapters.master_data_desktop_adapter import (
     MasterDataDesktopAdapter,
@@ -103,6 +105,7 @@ class MemoryDataMasterKeyStore:
 def _root(tmp_path: Path) -> Path:
     root = tmp_path / f"jkm-dmk-database-key-runtime-{uuid.uuid4()}"
     root.mkdir(mode=0o700)
+    publish_synthetic_test_root(root.resolve(strict=True))
     for name, content in (
         (DMK_DATABASE_KEY_RUNTIME_MARKER, DMK_DATABASE_KEY_RUNTIME_MARKER_BYTES),
         (
@@ -329,10 +332,11 @@ def test_auth_and_explicit_first_run_confirmation_precede_key_creation(
     assert unauthenticated.error_code == "authentication_confirmation_required"
     assert unconfirmed.error_code == "technical_first_run_confirmation_required"
     assert store.create_calls == 0
-    assert tuple(root.iterdir()) == (
+    assert set(root.iterdir()) == {
         root / DMK_DATABASE_KEY_RUNTIME_MARKER,
         root / FINAL_V4_SQLCIPHER_RUNTIME_MARKER,
-    )
+        root / RUNTIME_ROOT_PROTECTION_MARKER,
+    }
 
 
 def test_database_without_keys_and_keys_without_database_block_before_provider(

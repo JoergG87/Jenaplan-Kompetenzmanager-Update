@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sqlite3
 from pathlib import Path
 
@@ -18,6 +17,7 @@ from src.desktop_app.runtime import (
     INITIAL_DATA_DIRECTORY,
     INITIAL_PATH_TOKEN,
 )
+from src.core.runtime_root_protection import require_unprotected_output_path
 
 
 def prepare_payload(
@@ -31,8 +31,9 @@ def prepare_payload(
 ) -> Path:
     """Create build metadata and optional explicitly fictional initial data."""
     output_dir = Path(output_dir)
-    if output_dir.exists():
-        shutil.rmtree(output_dir)
+    require_unprotected_output_path(output_dir)
+    if output_dir.exists() or output_dir.is_symlink():
+        raise ValueError("Das Payload-Ziel muss vollständig neu sein.")
     output_dir.mkdir(parents=True)
     build_info = {
         "app_version": version,

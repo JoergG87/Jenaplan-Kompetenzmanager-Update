@@ -2,6 +2,19 @@
 
 ## Normaler Cipher-Produktstart
 
+Vor Schritt 1 wird die atomare Rootautorität geprüft. Ein neuer Root erhält
+vor Runtime-Lock-Folgemutationen, Security Store und Cipher-Artefakten
+`pilot_product/initializing`. Vorhandene unmarkierte Produktevidenz,
+beschädigte beziehungsweise halbfertige Marker und ein liegengebliebenes
+`initializing` blockieren ohne Reparatur. Nur explizite `synthetic_test`-Roots
+sind Testziele. Bei `pilot_product/active` werden Security Store und
+Enrollment-Evidenz vor jeder Vorbereitung verlangt; das Securityschema wird
+read-only geprüft und im normalen Pilotstart nicht automatisch migriert.
+Pfadbasierte Schemaerzeugung, Seed-Ersatz, Stammdata-Defaults und Katalog-Upsert
+prüfen dieselbe Rootautorität an ihrer jeweils niedrigsten Mutationsgrenze. Nur
+der Katalogschritt des kontrollierten `pilot_product/initializing`-First-Runs
+darf dabei eine Produktdatenbank schreiben.
+
 Der Produktstart folgt nach erfolgreicher lokaler Authentifizierung genau
 diesem Lifecycle:
 
@@ -18,13 +31,18 @@ diesem Lifecycle:
 5. Hauptdatenbank und Companion werden mit demselben geladenen Database-Key,
    Provider sowie Installation-/Database-Context geöffnet und vollständig
    keyed verifiziert; danach wird der Managed Document Store geprüft.
-6. Nur beim echten leeren fachlichen First Run wird `2026/27` als aktuelles
-   Schuljahr angelegt. Schüler, Gruppen, Kurse, Assignments, Beobachtungen und
-   Testdaten bleiben leer.
+6. Nur beim echten leeren fachlichen First Run werden `2026/27` als aktuelles
+   Schuljahr und exakt 331 offizielle Kompetenzen angelegt. Schüler, Gruppen,
+   Kurse, Kursverbünde, Assignments, Beobachtungen, Bestätigungen,
+   Bericht-/LEG-Drafts, synthetische Managed Documents, finale Testartefakte
+   und Testbackups bleiben leer. Erst danach wird der Root atomar
+   `pilot_product/active`.
 7. Beim Restart müssen Schlüsselartefakte, Hauptdatenbank, Companion,
    Dokumentstore und ein widerspruchsfreier abgeschlossener fachlicher First
    Run vorhanden sein. Fehlendes wird nicht neu erzeugt oder repariert.
-8. Erst danach erhalten Repositorys, Desktop Adapter und Shell dieselbe keyed
+8. Der offizielle Katalog wird beim Restart ausschließlich vollständig
+   read-only geprüft; es gibt keinen stillen Upsert. Erst danach erhalten
+   Repositorys, Desktop Adapter und Shell dieselbe keyed
    Runtime. Die Settings-Aktionen erhalten zusätzlich den vorhandenen
    `FinalV4EncryptedBackupService`; kein Widget öffnet selbst eine Datenquelle.
 9. Backup veröffentlicht ausschließlich `.jkmebackup`. Restore verifiziert den
@@ -3115,9 +3133,15 @@ python3 scripts/seed_test_data.py --reset
 
 Betroffene Datenquellen:
 
-- SQLite `data/kompetenzmanager.sqlite`
-- Dateisystem `data/documents/<student_id>/`
+- Rootmarker `<System-Temp>/jenaplan-seed-test-<uid>/.jkm-runtime-root-v1`
+- SQLite `<System-Temp>/jenaplan-seed-test-<uid>/kompetenzmanager.sqlite`
+- Dateisystem `<System-Temp>/jenaplan-seed-test-<uid>/documents/<student_id>/`
 - SQLite `timetable_entries`
+
+Der frühere Default `data/` ist kein Seedziel mehr. Ein frei gewählter Pfad ist
+nur zulässig, wenn er als frischer kontrollierter System-Temporärroot
+`synthetic_test` autorisiert werden kann. Produktroots und ihre Nachfahren
+blockieren vor der ersten Mutation; `--reset` hebt den Schutz nicht auf.
 
 Erforderliche IDs:
 

@@ -44,6 +44,10 @@ from src.core.restore_runtime import (
     restore_transaction_paths,
 )
 from src.core.final_v4_schema import FinalV4SchemaInitializer
+from src.core.runtime_root_protection import (
+    prepare_synthetic_test_root,
+    require_unprotected_output_path,
+)
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app import main as desktop_main
 from src.desktop_app import restore_worker
@@ -112,6 +116,10 @@ class _FakeRestartProcess:
 
 
 def _runtime(root: Path) -> RuntimePaths:
+    if not root.parent.exists():
+        require_unprotected_output_path(root.parent)
+        root.parent.mkdir(parents=True)
+    prepare_synthetic_test_root(root)
     paths = runtime_paths(root)
     for directory in (paths.root, paths.documents, paths.exports, paths.backups, paths.logs):
         directory.mkdir(parents=True, exist_ok=True)

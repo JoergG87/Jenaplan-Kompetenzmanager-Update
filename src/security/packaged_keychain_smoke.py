@@ -11,6 +11,11 @@ import sys
 import tempfile
 from typing import Mapping
 
+from src.core.runtime_root_protection import (
+    RuntimeRootKind,
+    inspect_runtime_root,
+)
+
 from src.security.data_keys import (
     DATA_MASTER_KEY_BYTES,
     DataKeyset,
@@ -250,6 +255,9 @@ def _validated_root(environment: Mapping[str, str]) -> Path:
         for part in relative.parts
     ):
         raise RuntimeError("keychain_smoke_root_outside_test_container")
+    protection = inspect_runtime_root(resolved)
+    if protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST:
+        raise RuntimeError("keychain_smoke_test_root_unmarked")
     return resolved
 
 

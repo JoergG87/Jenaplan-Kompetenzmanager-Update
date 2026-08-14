@@ -20,6 +20,10 @@ from src.core.database_engine import (
     DatabaseEngineError,
     SQLCipherConnectionProvider,
 )
+from src.core.runtime_root_protection import (
+    RuntimeRootProtectionError,
+    require_product_runtime_root,
+)
 
 from .database_key_runtime import (
     DatabaseKeyRuntimeError,
@@ -234,6 +238,16 @@ class CipherProductRuntimeCoordinator:
             )
         final_paths = self.scope.require_paths()
         document_paths = FinalV3DocumentRuntimePaths.for_final_v4(final_paths)
+        try:
+            require_product_runtime_root(
+                self.paths.root,
+                first_run=self.first_run_allowed,
+            )
+        except RuntimeRootProtectionError as error:
+            raise CipherProductRuntimeError(
+                error.code,
+                operation=CipherProductRuntimeOperation.CLASSIFY,
+            ) from None
         first_run = _classify_product_state(
             self.paths,
             final_paths=final_paths,

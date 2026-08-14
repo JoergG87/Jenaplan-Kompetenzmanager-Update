@@ -34,8 +34,18 @@ from src.desktop_app.adapters.master_data_desktop_adapter import (
     MasterDataDesktopAdapter,
 )
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
-from src.desktop_app.main import _build_cipher_product_student_adapter
+from src.desktop_app.main import (
+    _build_cipher_product_student_adapter,
+    _preflight_desktop_runtime_root,
+)
 from src.desktop_app.runtime import runtime_paths
+from src.core.runtime_root_protection import (
+    RuntimeRootLifecycle,
+    activate_pilot_product_root,
+    inspect_runtime_root,
+    prepare_synthetic_test_root,
+    publish_pilot_product_root,
+)
 from src.desktop_app.view_models.observation_view_model import (
     ObservationDraftViewModel,
 )
@@ -109,9 +119,13 @@ requires_exact_417 = pytest.mark.skipif(
 )
 
 
-def _case(tmp_path: Path):
+def _case(tmp_path: Path, *, protected: bool = False):
     root = (tmp_path / "product-runtime").resolve()
-    root.mkdir(mode=0o700)
+    if protected:
+        root.mkdir(mode=0o700)
+        publish_pilot_product_root(root)
+    else:
+        prepare_synthetic_test_root(root)
     paths = runtime_paths(root)
     installation_id = str(uuid.uuid4())
     account = SimpleNamespace(
@@ -134,11 +148,45 @@ def _open(paths, account, store, *, first_run_allowed: bool, provider=None):
     )
 
 
+def _assert_fresh_first_run_domain_contract(opened, paths) -> None:
+    with closing(opened.database.connect()) as connection:
+        assert [
+            tuple(row)
+            for row in connection.execute(
+                "SELECT label, start_date, end_date, status FROM school_years"
+            ).fetchall()
+        ] == [("2026/27", "2026-08-01", "2027-07-31", "current")]
+        assert connection.execute(
+            "SELECT COUNT(*) FROM competencies"
+        ).fetchone()[0] == 331
+        for table in (
+            "students",
+            "groups",
+            "courses",
+            "course_groups",
+            "observations",
+            "student_competency_confirmations",
+            "report_drafts",
+            "learning_reports",
+            "learning_report_pdf_artifacts",
+            "learning_conference_drafts",
+            "learning_conferences",
+            "learning_conference_pdf_artifacts",
+            "documents",
+        ):
+            assert connection.execute(
+                f"SELECT COUNT(*) FROM {table}"
+            ).fetchone()[0] == 0
+    assert not tuple(paths.encrypted_document_storage.rglob("*.jkmedoc"))
+    assert not tuple(paths.backups.glob("*.jkmebackup"))
+
+
 @requires_exact_417
 def test_exact_417_product_first_run_is_empty_and_keyed(tmp_path: Path) -> None:
     paths, account, store = _case(tmp_path)
 
     opened = _open(paths, account, store, first_run_allowed=True)
+    _build_cipher_product_student_adapter(opened)
 
     assert opened.first_run is True
     assert opened.installation_id == account.installation_id
@@ -169,12 +217,44 @@ def test_exact_417_product_first_run_is_empty_and_keyed(tmp_path: Path) -> None:
                 "current",
             )
         ]
+        assert connection.execute(
+            "SELECT COUNT(*) FROM competencies"
+        ).fetchone()[0] == 331
         for table in (
             "students",
             "groups",
             "courses",
+            "course_groups",
+            "course_group_student_groups",
+            "course_group_courses",
             "student_school_year_assignments",
+            "school_year_transitions",
+            "timetable_entries",
             "observations",
+            "observation_competency_ratings",
+            "student_competency_confirmations",
+            "documentation_subject_settings",
+            "student_documentation_subject_profiles",
+            "student_documentation_subject_selections",
+            "report_drafts",
+            "report_draft_subjects",
+            "report_draft_competencies",
+            "report_draft_observations",
+            "report_draft_charts",
+            "learning_reports",
+            "learning_report_revisions",
+            "learning_report_pdf_artifacts",
+            "learning_conference_drafts",
+            "learning_conference_draft_subjects",
+            "learning_conference_draft_cross_topics",
+            "learning_conference_draft_competencies",
+            "learning_conference_draft_observations",
+            "learning_conference_draft_charts",
+            "learning_conferences",
+            "learning_conference_revisions",
+            "learning_conference_pdf_artifacts",
+            "documents",
+            "persistence_events",
         ):
             assert connection.execute(
                 f"SELECT COUNT(*) FROM {table}"
@@ -186,15 +266,72 @@ def test_exact_417_product_first_run_is_empty_and_keyed(tmp_path: Path) -> None:
     assert b"2026/27" not in paths.final_v4_database.read_bytes()
     assert not paths.database.exists()
     assert not paths.documents.exists()
+    assert not tuple(paths.encrypted_document_storage.rglob("*.jkmedoc"))
+    assert not tuple(paths.backups.glob("*.jkmebackup"))
     assert store.create_calls == 1
+
+
+@requires_exact_417
+def test_real_product_root_first_run_activates_only_after_catalog_verification(
+    tmp_path: Path,
+) -> None:
+    root = (tmp_path / "real-product-root").resolve()
+    protection, fresh = _preflight_desktop_runtime_root(root, packaged_smoke=False)
+    assert protection is None and fresh is True
+    root.mkdir(mode=0o700)
+    lock_path = root / "instance.lock"
+    lock_path.write_bytes(b"held-by-test")
+    publish_pilot_product_root(root, allowed_existing=(lock_path,))
+    paths = runtime_paths(root)
+    account = SimpleNamespace(
+        status=AccountStatus.ACTIVE,
+        installation_id=str(uuid.uuid4()),
+    )
+    store = MemoryDataMasterKeyStore()
+
+    opened = _open(paths, account, store, first_run_allowed=True)
+    assert inspect_runtime_root(root).lifecycle is RuntimeRootLifecycle.INITIALIZING
+    _build_cipher_product_student_adapter(opened)
+    _assert_fresh_first_run_domain_contract(opened, paths)
+    activate_pilot_product_root(root)
+    before = {
+        path: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in (
+            paths.final_v4_database,
+            paths.document_companion_database,
+            paths.keyset_metadata,
+            paths.database_key_envelope_registry,
+        )
+    }
+
+    restarted = _open(paths, account, store, first_run_allowed=False)
+    _build_cipher_product_student_adapter(restarted)
+
+    assert restarted.first_run is False
+    assert inspect_runtime_root(root).lifecycle is RuntimeRootLifecycle.ACTIVE
+    assert {
+        path: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in before
+    } == before
 
 
 @requires_exact_417
 def test_product_restart_reuses_contexts_key_and_school_year(tmp_path: Path) -> None:
     paths, account, store = _case(tmp_path)
     first = _open(paths, account, store, first_run_allowed=True)
+    _build_cipher_product_student_adapter(first)
+    before = {
+        path: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in (
+            paths.final_v4_database,
+            paths.document_companion_database,
+            paths.keyset_metadata,
+            paths.database_key_envelope_registry,
+        )
+    }
 
     restarted = _open(paths, account, store, first_run_allowed=False)
+    _build_cipher_product_student_adapter(restarted)
 
     assert restarted.first_run is False
     assert restarted.installation_id == first.installation_id
@@ -214,6 +351,10 @@ def test_product_restart_reuses_contexts_key_and_school_year(tmp_path: Path) -> 
         assert connection.execute(
             "SELECT COUNT(*) FROM school_years WHERE label = '2026/27'"
         ).fetchone()[0] == 1
+    assert {
+        path: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in before
+    } == before
 
 
 @requires_exact_417
@@ -370,13 +511,17 @@ def test_plaintext_document_directory_is_rejected_unchanged_before_keys(
 
 
 @requires_exact_417
-@pytest.mark.parametrize("damage", ["wrong_dmk", "missing_dmk", "envelope"])
+@pytest.mark.parametrize(
+    "damage",
+    ["wrong_dmk", "missing_dmk", "access_denied", "envelope"],
+)
 def test_product_restart_rejects_key_damage_without_regeneration(
     tmp_path: Path,
     damage: str,
 ) -> None:
-    paths, account, store = _case(tmp_path)
+    paths, account, store = _case(tmp_path, protected=True)
     _open(paths, account, store, first_run_allowed=True)
+    activate_pilot_product_root(paths.root)
     main_hash = hashlib.sha256(paths.final_v4_database.read_bytes()).hexdigest()
     companion_hash = hashlib.sha256(
         paths.document_companion_database.read_bytes()
@@ -386,12 +531,17 @@ def test_product_restart_rejects_key_damage_without_regeneration(
         store.values[identity] = os.urandom(32)
     elif damage == "missing_dmk":
         store.values.clear()
+    elif damage == "access_denied":
+        store.read = lambda **_kwargs: DataMasterKeyReadResult(
+            DataMasterKeyStoreStatus.ACCESS_DENIED
+        )
     else:
         paths.database_key_envelope_registry.write_bytes(b"damaged-envelope")
 
     expected_codes = {
         "wrong_dmk": "data_master_key_corrupt",
         "missing_dmk": "data_master_key_not_found",
+        "access_denied": "data_master_key_access_denied",
         "envelope": "database_key_envelope_registry_invalid",
     }
     with pytest.raises(CipherProductRuntimeError) as caught:
@@ -408,13 +558,44 @@ def test_product_restart_rejects_key_damage_without_regeneration(
 
 
 @requires_exact_417
+def test_product_restart_rejects_unknown_newer_schema_without_recreation(
+    tmp_path: Path,
+) -> None:
+    paths, account, store = _case(tmp_path, protected=True)
+    opened = _open(paths, account, store, first_run_allowed=True)
+    activate_pilot_product_root(paths.root)
+    with closing(opened.database.connect()) as connection:
+        connection.execute("PRAGMA user_version = 99")
+        connection.commit()
+    before = {
+        path: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in (
+            paths.final_v4_database,
+            paths.document_companion_database,
+            paths.keyset_metadata,
+            paths.database_key_envelope_registry,
+        )
+    }
+
+    with pytest.raises(CipherProductRuntimeError) as caught:
+        _open(paths, account, store, first_run_allowed=False)
+
+    assert caught.value.code == "final_v4_sqlcipher_schema_incompatible"
+    assert {
+        path: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in before
+    } == before
+
+
+@requires_exact_417
 @pytest.mark.parametrize("missing", ["main", "companion"])
 def test_completed_runtime_rejects_missing_database_without_recreation(
     tmp_path: Path,
     missing: str,
 ) -> None:
-    paths, account, store = _case(tmp_path)
+    paths, account, store = _case(tmp_path, protected=True)
     _open(paths, account, store, first_run_allowed=True)
+    activate_pilot_product_root(paths.root)
     target = (
         paths.final_v4_database
         if missing == "main"

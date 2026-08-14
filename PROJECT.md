@@ -1,5 +1,24 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Pilot-Produktionsschutz im Feature Freeze
+
+Der reale Pilotroot ist ab dem ersten technischen Initialisierungsschritt über
+den atomaren, nicht geheimen Marker `.jkm-runtime-root-v1` als
+`pilot_product` geschützt. Seeder, Vergleichsdaten, Reset, Force, Recreate und
+datenroot-mutierende Developer-/Testwerkzeuge sowie Runtime-/Datenroot
+übernehmende Smoke-/Buildwerkzeuge können diesen Schutz nicht aufheben.
+Kontrollierte synthetische Tests verwenden getrennte, frisch erzeugte
+`synthetic_test`-Roots.
+
+First Run erzeugt ausschließlich die Final-V4-Systemdaten, Schuljahr
+`2026/27` (01.08.2026–31.07.2027) und 331 offizielle Kompetenzen. Der Root wird
+erst danach aktiv. Restart prüft Katalog, Security Store, DMK/Envelope,
+Hauptdatenbank, Companion und Managed Documents fail-closed und ohne stillen
+Katalog-Upsert, Migration, Keyrotation oder Datenbankneuerzeugung. Für eine
+spätere Datenmigration bleibt ein erfolgreich erzeugtes und verifiziertes
+verschlüsseltes `.jkmebackup` vor der ersten Datenmutation verpflichtend; ein
+solcher allgemeiner Produktmigrationspfad wird hier nicht neu eingeführt.
+
 ## Aktueller vorbereiteter Pilotstand 0.4.0 / Build 400
 
 **Status:** Final V4 ist der aktuelle Pilot-/Produktschemavertrag. Der normale

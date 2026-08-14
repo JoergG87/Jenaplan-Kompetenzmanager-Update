@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Pilot-Produktionsschutz: Ein atomarer, versionierter und nicht geheimer
+  Rootmarker trennt geschützte `pilot_product`-Roots von kontrollierten
+  `synthetic_test`-Roots. Seed-, Vergleichs-, Reset-, Force- und Recreate-Pfade
+  sowie Runtime-/Datenroot übernehmende Smoke- und Buildpfade blockieren vor der
+  ersten Mutation; Pilot-Payload- und Testbackupziele ersetzen keine bestehenden
+  Ausgaben mehr.
+- Der echte Final-V4-First-Run aktiviert den Produktroot erst nach Schuljahr
+  `2026/27`, exakt 331 offiziellen Kompetenzen sowie verifiziertem Companion-
+  und Dokumentzustand. Restart prüft Securityschema und Katalog read-only;
+  fehlende, beschädigte, unbekannte oder partielle Bestände führen weder zu
+  Migration, Keyrotation, Katalog-Upsert noch stiller DB-Neuerzeugung.
+
 - Fachkontexte verwenden jetzt eine einzige read-only Qt-Farbmatrix im
   Design-System: Deutsch Rot, Mathematik Blau, Englisch Schwarz, Musik Gelb,
   Ethik und Religion Orange sowie Schulgarten Braun. Kleine Marker ergänzen

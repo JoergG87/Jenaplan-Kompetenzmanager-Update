@@ -27,12 +27,18 @@ aktualisiert; bestehende Ergebnisse werden dabei nicht überschrieben.
 
 ## Testablauf
 
-1. Künstliche Testdaten erzeugen und die App starten:
+1. Künstliche Plain-SQLite-Testdaten ausschließlich für Repository-/Adaptertests
+   erzeugen:
 
    ```bash
-   python3 scripts/seed_test_data.py --reset
-   python3 -m src.desktop_app.main
+   python3 scripts/seed_test_data.py --database /private/tmp/jenaplan-laura-test/kompetenzmanager.sqlite --reset
    ```
+
+   Dieser Ablauf ist kein startbarer Final-V4-Produktbestand. Die aktuelle App
+   darf nicht auf diesen Plain-SQLite-Root gerichtet werden. Ein verschlüsselter
+   Vergleichsroot wird ausschließlich über den separaten Final-V4-Cipher-Builder
+   in einem vollständig neuen System-Temporärroot erzeugt. Der reale Pilotroot
+   darf niemals mit einem dieser Seeder gestartet oder zurückgesetzt werden.
 
 2. Die Arbeitsmappe öffnen und die Fälle im Blatt `Testplan` in der vorgeschlagenen Reihenfolge bearbeiten. Detail-Schritte, erwartete Ergebnisse und Hinweise stehen im Blatt `Testhinweise` unter derselben Testnummer.
 

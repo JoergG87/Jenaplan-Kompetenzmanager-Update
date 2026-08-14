@@ -41,6 +41,7 @@ from src.core.database_compatibility import (
     UnsupportedDatabaseVersionError,
 )
 from src.core.final_v4_schema import FinalV4SchemaInitializer
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.desktop_app.runtime import RuntimePaths, runtime_paths
 
 
@@ -48,7 +49,9 @@ FIXED_NOW = datetime(2026, 7, 16, 12, 34, 56, tzinfo=UTC)
 
 
 def _runtime(tmp_path: Path) -> RuntimePaths:
-    paths = runtime_paths(tmp_path / "runtime")
+    root = tmp_path / "runtime"
+    prepare_synthetic_test_root(root)
+    paths = runtime_paths(root)
     for directory in (
         paths.root,
         paths.documents,

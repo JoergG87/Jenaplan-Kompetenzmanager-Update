@@ -22,6 +22,10 @@ from prototypes.database_encryption_migration.synthetic_data import (
     create_synthetic_source,
 )
 from src.core.database_engine import SQLCipherConnectionProvider
+from src.core.runtime_root_protection import (
+    activate_pilot_product_root,
+    publish_pilot_product_root,
+)
 from src.security.data_keys import LoadedDataMasterKey
 from src.security.database_keys import (
     DatabaseKeyEnvelopeService,
@@ -51,6 +55,23 @@ pytestmark = pytest.mark.skipif(
     find_spec("sqlcipher3") is None,
     reason="real SQLCipher is required for the Sprint 8 synthetic path",
 )
+
+
+def test_product_root_never_authorizes_synthetic_migration(tmp_path: Path) -> None:
+    root = (tmp_path / "product-root").resolve()
+    root.mkdir(mode=0o700)
+    publish_pilot_product_root(root)
+    activate_pilot_product_root(root)
+    before = tuple((path.relative_to(root), path.read_bytes()) for path in root.iterdir())
+    orchestrator = object.__new__(SyntheticMigrationOrchestratorV2)
+    orchestrator.paths = Sprint8MigrationPaths.in_test_root(root)
+    orchestrator.allowed_private_root = root
+
+    with pytest.raises(SimplifiedMigrationError, match="migration_root_not_synthetic"):
+        orchestrator._require_root_and_fixed_paths()
+
+    after = tuple((path.relative_to(root), path.read_bytes()) for path in root.iterdir())
+    assert after == before
 
 
 class _Fixture:

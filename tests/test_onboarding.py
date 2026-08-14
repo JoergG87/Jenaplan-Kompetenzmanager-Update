@@ -30,6 +30,7 @@ from src.core.app_preferences import (
 )
 from src.core.onboarding import OnboardingController
 from src.core.sqlite_store import SQLiteCompetencyRepository, SQLiteDatabase
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
 from src.desktop_app.runtime import (
     prepare_runtime_storage,
@@ -348,7 +349,8 @@ def test_shell_respects_completed_dismissed_in_progress_and_missing_targets(
 
 def _shell_with_onboarding(tmp_path: Path, preferences: AppPreferences):
     root = tmp_path / "runtime"
-    root.mkdir(parents=True, exist_ok=True)
+    root.parent.mkdir(parents=True, exist_ok=True)
+    prepare_synthetic_test_root(root.resolve(strict=False))
     paths = runtime_paths(root)
     database = SQLiteDatabase(paths.database)
     database.initialize_schema()

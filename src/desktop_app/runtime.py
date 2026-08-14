@@ -191,6 +191,12 @@ def prepare_runtime_storage(
     paths = runtime_paths(data_root)
     del resource_root_path
     try:
+        from src.core.runtime_root_protection import (
+            RuntimeRootProtectionError,
+            require_or_prepare_synthetic_test_root,
+        )
+
+        require_or_prepare_synthetic_test_root(paths.root)
         paths.root.mkdir(parents=True, exist_ok=True)
         _assert_directory(paths.root)
         for directory in (
@@ -204,6 +210,8 @@ def prepare_runtime_storage(
         _verify_writable(paths.root)
     except RuntimeStorageError:
         raise
+    except RuntimeRootProtectionError as error:
+        raise RuntimeStorageError(error.code) from None
     except OSError as error:
         raise RuntimeStorageError(
             f"Der lokale Datenordner konnte nicht vorbereitet werden: {paths.root}"
@@ -234,6 +242,22 @@ def prepare_security_runtime_storage(*, data_root: Path | None = None) -> Runtim
     """Prepare only the technical root and isolated security directory."""
     paths = runtime_paths(data_root)
     try:
+        from src.core.runtime_root_protection import (
+            RuntimeRootKind,
+            RuntimeRootLifecycle,
+            RuntimeRootProtectionError,
+            inspect_runtime_root,
+            require_or_prepare_synthetic_test_root,
+        )
+
+        protection = inspect_runtime_root(paths.root)
+        if protection is None:
+            protection = require_or_prepare_synthetic_test_root(paths.root)
+        if (
+            protection.kind is RuntimeRootKind.PILOT_PRODUCT
+            and protection.lifecycle is not RuntimeRootLifecycle.INITIALIZING
+        ):
+            raise RuntimeRootProtectionError("pilot_product_root_protected")
         paths.root.mkdir(parents=True, exist_ok=True)
         _assert_directory(paths.root)
         if paths.security.is_symlink():
@@ -245,6 +269,8 @@ def prepare_security_runtime_storage(*, data_root: Path | None = None) -> Runtim
         _verify_writable(paths.root)
     except RuntimeStorageError:
         raise
+    except RuntimeRootProtectionError as error:
+        raise RuntimeStorageError(error.code) from None
     except OSError as error:
         raise RuntimeStorageError(
             "Die technische Sicherheitsablage konnte nicht vorbereitet werden."

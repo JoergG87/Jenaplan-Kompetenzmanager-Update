@@ -43,6 +43,16 @@ from src.desktop_app.runtime import (
     runtime_paths,
 )
 from src.version import APP_VERSION
+from src.core.runtime_root_protection import (
+    RUNTIME_ROOT_PROTECTION_MARKER,
+    RuntimeRootKind,
+    RuntimeRootLifecycle,
+    RuntimeRootProtection,
+    RuntimeRootProtectionError,
+    activate_pilot_product_root,
+    inspect_runtime_root,
+    publish_pilot_product_root,
+)
 
 
 PACKAGED_SMOKE_MARKER_ENV = "JENAPLAN_PACKAGED_SMOKE_MARKER"
@@ -97,6 +107,12 @@ def _validated_packaged_smoke_data_root(
         raise RuntimeStorageError(
             "Das temporaere Smoke-Verzeichnis ist nicht sicher vorhanden."
         )
+    try:
+        protection = inspect_runtime_root(resolved_root)
+    except RuntimeRootProtectionError as error:
+        raise RuntimeStorageError(error.code) from None
+    if protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST:
+        raise RuntimeStorageError("packaged_smoke_test_root_unmarked")
     return resolved_root
 
 
@@ -163,15 +179,69 @@ def _new_database_initialization_candidate(
     try:
         root = Path(data_root).resolve(strict=True)
         lock_path = Path(runtime_lock_path).resolve(strict=False)
-        entries = tuple(root.iterdir())
+        entries = set(root.iterdir())
+        allowed = {
+            lock_path,
+            root / RUNTIME_ROOT_PROTECTION_MARKER,
+        }
+        protection = inspect_runtime_root(root)
         return (
-            len(entries) == 1
-            and entries[0] == lock_path
-            and entries[0].is_file()
-            and not entries[0].is_symlink()
+            entries == allowed
+            and lock_path.is_file()
+            and not lock_path.is_symlink()
+            and protection is not None
+            and (
+                protection.kind is RuntimeRootKind.SYNTHETIC_TEST
+                or protection.lifecycle is RuntimeRootLifecycle.INITIALIZING
+            )
         )
-    except OSError:
+    except (OSError, RuntimeRootProtectionError):
         return False
+
+
+def _preflight_desktop_runtime_root(
+    data_root: Path,
+    *,
+    packaged_smoke: bool,
+) -> tuple[RuntimeRootProtection | None, bool]:
+    """Classify before the instance lock or Security Store can be written."""
+
+    root = Path(data_root)
+    if not root.exists() and not root.is_symlink():
+        if packaged_smoke:
+            raise RuntimeRootProtectionError("packaged_smoke_test_root_missing")
+        return None, True
+    if root.is_symlink() or not root.is_dir():
+        raise RuntimeRootProtectionError("runtime_root_invalid")
+    protection = inspect_runtime_root(root)
+    entries = tuple(root.iterdir())
+    if protection is None:
+        if entries:
+            raise RuntimeRootProtectionError("runtime_root_protection_missing")
+        if packaged_smoke:
+            raise RuntimeRootProtectionError("packaged_smoke_test_root_unmarked")
+        return None, True
+    if packaged_smoke and protection.kind is not RuntimeRootKind.SYNTHETIC_TEST:
+        raise RuntimeRootProtectionError("packaged_smoke_test_root_invalid")
+    if (
+        not packaged_smoke
+        and protection.kind is RuntimeRootKind.PILOT_PRODUCT
+        and protection.lifecycle is RuntimeRootLifecycle.INITIALIZING
+    ):
+        raise RuntimeRootProtectionError("pilot_product_root_initialization_incomplete")
+    return protection, False
+
+
+def _require_existing_product_security(paths: RuntimePaths) -> None:
+    """Reject missing/unsafe Security evidence without creating or repairing it."""
+
+    required = (paths.security, paths.security_database, paths.enrollment_marker)
+    if (
+        not paths.security.is_dir()
+        or paths.security.is_symlink()
+        or any(not path.is_file() or path.is_symlink() for path in required[1:])
+    ):
+        raise RuntimeRootProtectionError("pilot_product_security_incomplete")
 
 
 def _build_cipher_product_student_adapter(product_runtime):
@@ -184,9 +254,11 @@ def _build_cipher_product_student_adapter(product_runtime):
         CurriculumDesktopAdapter,
     )
 
-    SQLiteCompetencyRepository(product_runtime.database).ensure_catalog_defaults(
-        CurriculumDesktopAdapter().list_entries()
-    )
+    entries = CurriculumDesktopAdapter().list_entries()
+    repository = SQLiteCompetencyRepository(product_runtime.database)
+    if product_runtime.first_run:
+        repository.ensure_catalog_defaults(entries)
+    repository.require_catalog_defaults(entries)
 
     return StudentDesktopAdapter(
         database=product_runtime.database,
@@ -342,6 +414,14 @@ def main() -> int:
         if restore_runtime_root is not None
         else (smoke_data_root or application_data_root())
     ).expanduser().resolve(strict=False)
+    try:
+        root_protection, fresh_unmarked_root = _preflight_desktop_runtime_root(
+            data_root,
+            packaged_smoke=packaged_smoke,
+        )
+    except RuntimeRootProtectionError as error:
+        print(f"App-Start blockiert: {error.code}", file=sys.stderr)
+        return 3
     from src.core.restore_runtime import (
         RuntimeInstanceLock,
     )
@@ -350,6 +430,11 @@ def main() -> int:
     new_database_initialization_candidate = False
     try:
         lock.acquire()
+        if fresh_unmarked_root:
+            root_protection = publish_pilot_product_root(
+                data_root.resolve(strict=True),
+                allowed_existing=(lock.path,),
+            )
         from src.security.final_v4_live_restore import (
             confirm_final_v4_restore_startup,
             recover_interrupted_final_v4_restore,
@@ -421,8 +506,22 @@ def main() -> int:
     security_event_buffer = begin_pre_auth_security_logging()
 
     try:
-        security_paths = prepare_security_runtime_storage(data_root=data_root)
+        if (
+            root_protection is not None
+            and root_protection.kind is RuntimeRootKind.PILOT_PRODUCT
+            and root_protection.lifecycle is RuntimeRootLifecycle.ACTIVE
+        ):
+            security_paths = runtime_paths(data_root)
+            _require_existing_product_security(security_paths)
+        else:
+            security_paths = prepare_security_runtime_storage(data_root=data_root)
         security_runtime = build_security_runtime(security_paths)
+        if (
+            root_protection is not None
+            and root_protection.kind is RuntimeRootKind.PILOT_PRODUCT
+            and root_protection.lifecycle is RuntimeRootLifecycle.ACTIVE
+        ):
+            security_runtime.repository.require_current_read_only()
         support_reset_backup_factory = None
         security_state = security_runtime.service.security_store_state()
         security_decision = SecurityStartupResolver().resolve(
@@ -485,7 +584,11 @@ def main() -> int:
             discard_pre_auth_security_logging(security_event_buffer)
             lock.release()
             return 0
-    except (RuntimeStorageError, SecurityStoreError) as error:
+    except (
+        RuntimeStorageError,
+        RuntimeRootProtectionError,
+        SecurityStoreError,
+    ) as error:
         logging.getLogger("jenaplan.security").error(
             "fatal_security_error error_class=%s", type(error).__name__
         )
@@ -555,6 +658,12 @@ def main() -> int:
         )
 
         student_adapter = _build_cipher_product_student_adapter(product_runtime)
+        if (
+            product_runtime.first_run
+            and root_protection is not None
+            and root_protection.kind is RuntimeRootKind.PILOT_PRODUCT
+        ):
+            root_protection = activate_pilot_product_root(data_root)
         encrypted_backup_service = build_final_v4_encrypted_backup_service(
             opened_runtime=product_runtime.runtime,
             account_loader=lambda: account,

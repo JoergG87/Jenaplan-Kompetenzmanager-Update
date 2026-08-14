@@ -27,6 +27,13 @@ from src.core.constants import (  # noqa: E402
     GROUP_ID_PREFIX,
     STUDENT_ID_PREFIX,
 )
+from src.core.runtime_root_protection import (  # noqa: E402
+    RuntimeRootKind,
+    RuntimeRootProtectionError,
+    inspect_runtime_root,
+    prepare_synthetic_test_root,
+    require_or_prepare_synthetic_test_root,
+)
 from src.core.observation import (  # noqa: E402
     ObservationCompetencyRatingRecord,
     ObservationService,
@@ -34,7 +41,6 @@ from src.core.observation import (  # noqa: E402
 )
 from src.application.commands.timetable import SaveTimetableEntryCommand  # noqa: E402
 from src.core.sqlite_store import (  # noqa: E402
-    SQLITE_SPIKE_PATH,
     DocumentRecord,
     MasterDataCourseGroupRecord,
     SQLiteCompetencyRepository,
@@ -139,6 +145,11 @@ STUDENTS = (
 
 SEED_TIMESTAMP = datetime(2025, 7, 1, 8, 0, tzinfo=UTC)
 CIPHER_PILOT_TEST_ROOT_PREFIX = "jkm-final-v4-pilot-testdata-"
+DEFAULT_SYNTHETIC_DATABASE_PATH = (
+    Path(tempfile.gettempdir())
+    / f"jenaplan-seed-test-{os.getuid()}"
+    / "kompetenzmanager.sqlite"
+)
 CIPHER_PILOT_REFERENCE_DAY = date(2026, 8, 9)
 _CIPHER_REQUIRED_TEACHING_SUBJECTS = (
     "deutsch",
@@ -151,7 +162,7 @@ _CIPHER_RATING_TOKENS = ("--", "-", "+", "++")
 
 
 def seed_test_data(
-    database_path: Path = SQLITE_SPIKE_PATH,
+    database_path: Path = DEFAULT_SYNTHETIC_DATABASE_PATH,
     *,
     reset: bool = False,
     teacher_name: str = "Laura Lernbegleiterin",
@@ -159,6 +170,10 @@ def seed_test_data(
     """Seed the requested database with deterministic, explicitly synthetic data."""
     database_path = Path(database_path)
     documents_root = database_path.parent / "documents"
+    try:
+        require_or_prepare_synthetic_test_root(database_path.parent)
+    except RuntimeRootProtectionError as error:
+        raise SeedDataError(error.code) from None
     if reset:
         _reset_runtime_data(database_path, documents_root)
     database_path.parent.mkdir(parents=True, exist_ok=True)
@@ -197,6 +212,17 @@ def seed_cipher_pilot_test_data(opened_runtime, *, source_root: Path) -> SeedRes
     from src.desktop_app.main import _build_cipher_product_student_adapter
 
     source_root = Path(source_root).resolve(strict=True)
+    try:
+        protection = inspect_runtime_root(source_root)
+    except RuntimeRootProtectionError as error:
+        raise SeedDataError(error.code) from None
+    if (
+        protection is None
+        or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST
+        or Path(opened_runtime.database.path).resolve(strict=True).parents[1]
+        != source_root
+    ):
+        raise SeedDataError("cipher_seed_test_root_authority_required")
     if _database_has_seed_data(opened_runtime.database):
         raise SeedDataError("Der Final-V4-Testbestand ist nicht fachlich leer.")
     adapter = _build_cipher_product_student_adapter(opened_runtime)
@@ -429,7 +455,7 @@ def seed_cipher_pilot_test_data(opened_runtime, *, source_root: Path) -> SeedRes
             confirmed_rating=_CIPHER_RATING_TOKENS[index],
             note="Synthetische Bestätigung für den Vergleichstest.",
         )
-        _seed_cipher_timetable(opened_runtime.database, groups, courses)
+    _seed_cipher_timetable(opened_runtime.database, groups, courses)
     workflow_counts = _seed_cipher_workflows(
         adapter, tuple(students), tuple(observations)
     )
@@ -717,6 +743,12 @@ def _seed_cipher_workflows(
 
 
 def _reset_runtime_data(database_path: Path, documents_root: Path) -> None:
+    try:
+        protection = inspect_runtime_root(database_path.parent)
+    except RuntimeRootProtectionError as error:
+        raise SeedDataError(error.code) from None
+    if protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST:
+        raise SeedDataError("synthetic_test_root_authority_required")
     database_path.unlink(missing_ok=True)
     if documents_root.exists():
         shutil.rmtree(documents_root)
@@ -1476,8 +1508,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--database",
         type=Path,
-        default=SQLITE_SPIKE_PATH,
-        help="Ziel-Datenbankpfad, Standard: data/kompetenzmanager.sqlite",
+        default=DEFAULT_SYNTHETIC_DATABASE_PATH,
+        help=(
+            "Ziel-Datenbankpfad, Standard: kontrollierter synthetischer "
+            "System-Temporärroot"
+        ),
     )
     parser.add_argument(
         "--reset",
@@ -1511,6 +1546,7 @@ def build_cipher_pilot_test_root(root: Path) -> dict[str, object]:
 
     target = _require_fresh_cipher_test_root(root)
     target.mkdir(mode=0o700)
+    prepare_synthetic_test_root(target)
     security_paths = prepare_security_runtime_storage(data_root=target)
     security = build_security_runtime(security_paths)
     password = _cipher_pilot_password(target)
@@ -1917,7 +1953,7 @@ def _require_fresh_cipher_test_root(root: Path) -> Path:
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv or sys.argv[1:])
     if args.cipher_root is not None:
-        if args.reset or args.database != SQLITE_SPIKE_PATH:
+        if args.reset or args.database != DEFAULT_SYNTHETIC_DATABASE_PATH:
             print("Cipher-Testdaten nicht geschrieben: --reset/--database sind unzulässig.")
             return 2
         try:

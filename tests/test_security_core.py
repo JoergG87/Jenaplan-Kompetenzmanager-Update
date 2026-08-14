@@ -20,6 +20,7 @@ import pytest
 
 from src.application.commands.backup import BackupApplicationService, CreateBackupCommand
 from src.core.final_v4_schema import FinalV4SchemaInitializer
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.core.sqlite_store import SQLiteDatabase
 from src.desktop_app.runtime import prepare_runtime_storage, runtime_paths
 from src.security.application import SecurityApplicationService
@@ -574,7 +575,9 @@ def test_security_write_uses_wal_and_secures_all_existing_sidecars(tmp_path: Pat
 def test_backup_archive_explicitly_excludes_security_directory_and_sidecars(
     tmp_path: Path,
 ) -> None:
-    paths = runtime_paths(tmp_path / "runtime")
+    root = tmp_path / "runtime"
+    prepare_synthetic_test_root(root)
+    paths = runtime_paths(root)
     for directory in (paths.root, paths.documents, paths.exports, paths.backups, paths.logs):
         directory.mkdir(parents=True, exist_ok=True)
     FinalV4SchemaInitializer().initialize(paths.database)

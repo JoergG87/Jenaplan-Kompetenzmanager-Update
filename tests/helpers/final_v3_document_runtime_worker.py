@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3
 import sys
 
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.security.data_keys import LoadedDataMasterKey
 from src.security.database_key_runtime import (
     DMK_DATABASE_KEY_RUNTIME_GATE_ENV,
@@ -139,6 +140,7 @@ def open_exact_runtime(base: Path, fault_hook=None) -> FinalV3DocumentRuntime:
 
 
 def setup(base: Path) -> None:
+    prepare_synthetic_test_root(base)
     root = base / f"{DMK_DATABASE_KEY_RUNTIME_ROOT_PREFIX}document-crash"
     root.mkdir(mode=0o700)
     paths = paths_for(base)
@@ -164,6 +166,7 @@ def setup(base: Path) -> None:
 
 
 def setup_exact(base: Path) -> None:
+    prepare_synthetic_test_root(base)
     root = base / f"{DMK_DATABASE_KEY_RUNTIME_ROOT_PREFIX}document-crash"
     root.mkdir(mode=0o700)
     for name, payload in (

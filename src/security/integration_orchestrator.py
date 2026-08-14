@@ -34,6 +34,7 @@ from src.core.database_engine import (
     SQLITE_RUNTIME_VERSION,
 )
 from src.core.database_compatibility import FINAL_SCHEMA_VERSION
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.core.sqlite_store import SQLiteDatabase
 from src.security.backup_container import BackupContainerContextV1
 from src.security.data_keys import LoadedDataMasterKey
@@ -1294,8 +1295,7 @@ def prepare_security_integration_test_layout(
             "security_integration_layout_exists"
         )
     try:
-        base.mkdir(mode=0o700)
-        os.chmod(base, 0o700)
+        prepare_synthetic_test_root(base)
         sources = base / "sources"
         storage = base / "storage"
         exports = base / "exports"

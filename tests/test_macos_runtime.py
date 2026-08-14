@@ -36,9 +36,24 @@ from src.desktop_app.runtime import (
     application_data_root,
     prepare_runtime_storage,
 )
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 
 
 class MacosRuntimeTest(unittest.TestCase):
+    def test_macos_build_never_recursively_replaces_caller_output_roots(self) -> None:
+        source = Path("scripts/build_macos_pilot.sh").read_text(encoding="utf-8")
+        self.assertNotIn('rm -rf "$BUILD_ROOT" "$DIST_ROOT"', source)
+        self.assertIn("require_unprotected_output_path", source)
+        self.assertIn("Build- und Distributionsziele müssen vollständig neu sein", source)
+
+    def test_data_root_aware_build_and_smoke_tools_use_product_guard(self) -> None:
+        backup = Path("scripts/backup_macos_pilot.sh").read_text(encoding="utf-8")
+        self.assertIn("require_unprotected_output_path", backup)
+        restore_smoke = Path("scripts/smoke_test_packaged_restore_worker.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("prepare_synthetic_test_root(data_root)", restore_smoke)
+
     def test_developer_and_packaged_data_roots_are_separate(self) -> None:
         self.assertEqual(
             application_data_root(packaged=False, environ={}),
@@ -132,6 +147,8 @@ class MacosRuntimeTest(unittest.TestCase):
             prefix="jenaplan-packaged-smoke-"
         ) as temp:
             data_root = Path(temp) / "Application Support" / "Jenaplan-Kompetenzmanager"
+            data_root.parent.mkdir(parents=True)
+            prepare_synthetic_test_root(data_root)
             validated = desktop_main._validated_packaged_smoke_data_root(
                 {
                     APP_DATA_DIR_ENV: str(data_root),

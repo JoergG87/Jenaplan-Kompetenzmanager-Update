@@ -21,6 +21,7 @@ from src.application.commands.backup import (
     VerifyBackupQuery,
 )
 from src.desktop_app.runtime import runtime_paths
+from src.core.runtime_root_protection import require_unprotected_output_path
 
 
 BACKUP_CREATED_AT = datetime(2026, 7, 13, 12, 0, tzinfo=UTC)
@@ -40,9 +41,11 @@ def build_laura_testdata_backup(
 ) -> tuple[Path, SeedResult]:
     """Create one official backup from an isolated synthetic runtime."""
     output_directory = Path(output_directory)
+    require_unprotected_output_path(output_directory)
     output_directory.mkdir(parents=True, exist_ok=True)
     final_path = output_directory / f"Laura-Testdaten-{version}.jkmbackup"
-    final_path.unlink(missing_ok=True)
+    if final_path.exists() or final_path.is_symlink():
+        raise FileExistsError("Das Testdaten-Backupziel existiert bereits.")
 
     with tempfile.TemporaryDirectory(prefix="jenaplan-laura-testdata-") as temp_name:
         work_root = Path(temp_name)

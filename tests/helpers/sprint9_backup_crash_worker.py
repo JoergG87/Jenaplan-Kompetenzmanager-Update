@@ -14,6 +14,11 @@ from prototypes.encrypted_backup_container import (
     SyntheticEncryptedBackupServiceV1,
 )
 from src.core.database_engine import SQLCipherConnectionProvider
+from src.core.runtime_root_protection import (
+    RuntimeRootKind,
+    inspect_runtime_root,
+    prepare_synthetic_test_root,
+)
 from src.security.backup_container import (
     BackupContainerContextV1,
     BackupEntryRole,
@@ -143,12 +148,24 @@ def run(argv: list[str]) -> int:
     if len(argv) != 3:
         return 2
     mode, phase, root_value = argv
-    root = Path(root_value).resolve()
-    root.mkdir(parents=True, exist_ok=True)
-    os.chmod(root, 0o700)
-    (root / container_module.SYNTHETIC_BACKUP_TEST_ROOT_MARKER).write_bytes(
-        container_module.SYNTHETIC_BACKUP_TEST_ROOT_MARKER_BYTES
-    )
+    root = Path(root_value).resolve(strict=False)
+    if not root.exists():
+        prepare_synthetic_test_root(root)
+        (root / container_module.SYNTHETIC_BACKUP_TEST_ROOT_MARKER).write_bytes(
+            container_module.SYNTHETIC_BACKUP_TEST_ROOT_MARKER_BYTES
+        )
+    else:
+        protection = inspect_runtime_root(root)
+        if protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST:
+            return 2
+        marker = root / container_module.SYNTHETIC_BACKUP_TEST_ROOT_MARKER
+        if (
+            not marker.is_file()
+            or marker.is_symlink()
+            or marker.read_bytes()
+            != container_module.SYNTHETIC_BACKUP_TEST_ROOT_MARKER_BYTES
+        ):
+            return 2
     if mode == "write":
         values = _values(root, create_sources=True)
         _create(root, values, _service(values, phase))

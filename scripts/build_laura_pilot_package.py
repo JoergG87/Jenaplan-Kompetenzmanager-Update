@@ -21,6 +21,7 @@ from src.application.commands.restore import (
     RestoreApplicationService,
     VerifyRestoreBackupQuery,
 )
+from src.core.runtime_root_protection import require_unprotected_output_path
 
 
 EMPTY_README_TEXT = """Jenaplan-Kompetenzmanager - Leere Pilotvariante
@@ -180,9 +181,11 @@ def build_package(
     )
     package_root = output_root / package_name
     zip_path = output_root / f"{package_name}.zip"
-    if package_root.exists():
-        shutil.rmtree(package_root)
-    zip_path.unlink(missing_ok=True)
+    require_unprotected_output_path(output_root)
+    if package_root.exists() or package_root.is_symlink():
+        raise FileExistsError("Das Pilotpaket-Ziel existiert bereits.")
+    if zip_path.exists() or zip_path.is_symlink():
+        raise FileExistsError("Das Pilotpaket-Archiv existiert bereits.")
     package_root.mkdir(parents=True)
 
     (package_root / "README.txt").write_text(

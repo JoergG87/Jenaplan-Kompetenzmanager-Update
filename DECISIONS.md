@@ -1,5 +1,43 @@
 # Architekturentscheidungen
 
+## ADR-105 - Pilot-Produktionsroot ist eine atomare technische Autorität
+
+**Status:** Angenommen. Präzisiert ADR-101/103 ohne Schema-, Backupformat-,
+Security-Key- oder UI-Änderung.
+
+### Entscheidung
+
+Ein neuer realer Pilotroot wird vor seiner ersten Security- oder Datenmutation
+durch `.jkm-runtime-root-v1` als `pilot_product/initializing` klassifiziert.
+Der Marker ist versioniert, an den kanonischen Root gebunden, atomar mit Datei-
+und Verzeichnis-fsync publiziert, nicht geheim und enthält keine fachlichen
+Daten oder Schlüssel. Erst nach
+vollständig verifiziertem Final V4, Companion, Managed-Document-Inventar,
+Schuljahr `2026/27` und 331 offiziellen Kompetenzen wird er `active`.
+
+Kontrolliert neu erzeugte systemtemporäre Tests verwenden getrennt
+`synthetic_test/active`. Seed-, Reset-, Force-, Recreate- und
+Vergleichswerkzeuge sowie Runtime-/Datenroot übernehmende Smoke- und
+Buildwerkzeuge dürfen einen Produktmarker nie erzeugen, ersetzen oder umgehen.
+Fehlende, unbekannte, beschädigte oder halbfertige Marker bei
+Produktevidenz werden konservativ als geschützt behandelt.
+
+Der normale Restart migriert den Security Store nicht und aktualisiert den
+Kompetenzkatalog nicht still, sondern prüft beide read-only. Eine künftige
+Datenmigration benötigt vor ihrer ersten Mutation ein erfolgreich erzeugtes
+und verifiziertes verschlüsseltes `.jkmebackup`, Staging, Rollback und
+Recovery. Reiner Bundle-Austausch ohne Datenmutation bleibt getrennt.
+
+### Folgen
+
+- Keine neue SQLite-Tabelle, kein fachliches `has_real_data` und keine UI.
+- Schutz gilt bereits vor dem ersten Schüler und kann nicht durch `--force`,
+  Pfadnamen, App-Version, Branch oder Schülerzahl aufgehoben werden.
+- Crashzustände bleiben `initializing` beziehungsweise `pending` und blockieren
+  statt als First Run oder Testroot fortzufahren.
+- Bestehendes `.jkmebackup`-Format und installationsgebundener Restorevertrag
+  bleiben unverändert; Support Reset bleibt im Final-V4-Pfad blockiert.
+
 ## ADR-104 - Entwicklungsbuch-Katalog im Beobachtungsdialog ohne Stage-Filter
 
 **Status:** Angenommen. Präzisiert ADR-048 und ADR-049 ausschließlich für die

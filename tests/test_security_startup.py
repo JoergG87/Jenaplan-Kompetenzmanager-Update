@@ -168,7 +168,10 @@ def test_app_preferences_store_optional_unicode_name_and_validate_contract(
 def test_productive_start_order_keeps_product_runtime_and_shell_after_auth() -> None:
     source = inspect.getsource(desktop_main.main)
     restore_block = source.index('if "--restore-worker" in arguments:')
+    root_preflight = source.index("_preflight_desktop_runtime_root(")
     security_paths = source.index("prepare_security_runtime_storage(data_root=data_root)")
+    security_read_only = source.index("repository.require_current_read_only()")
+    security_state = source.index("security_runtime.service.security_store_state()")
     auth = source.index("run_startup_authentication(")
     authenticated_context = source.index("_require_authenticated_cipher_context(")
     product_runtime = source.index("open_cipher_product_runtime(")
@@ -176,7 +179,10 @@ def test_productive_start_order_keeps_product_runtime_and_shell_after_auth() -> 
     shell = source.index("window = JenaplanDesktopApp(")
     assert (
         restore_block
+        < root_preflight
         < security_paths
+        < security_read_only
+        < security_state
         < auth
         < authenticated_context
         < product_runtime

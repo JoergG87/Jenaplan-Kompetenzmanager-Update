@@ -7,6 +7,8 @@ import hashlib
 from pathlib import Path
 import sqlite3
 
+from src.core.runtime_root_protection import prepare_synthetic_test_root
+
 
 SYNTHETIC_GUARD_TABLE = "__jkm_security_sprint_4_synthetic_guard"
 SYNTHETIC_GUARD_VALUE = "jkm-security-sprint-4-synthetic-only-v1"
@@ -58,7 +60,7 @@ def create_synthetic_source(path: Path, scale: SyntheticScale | None = None) -> 
     database = Path(path)
     if database.exists() or database.is_symlink():
         raise FileExistsError("synthetic_source_target_exists")
-    database.parent.mkdir(parents=True, exist_ok=True)
+    prepare_synthetic_test_root(database.parent.resolve(strict=False))
     connection = sqlite3.connect(database)
     try:
         connection.execute("PRAGMA page_size = 4096")

@@ -26,6 +26,7 @@ from src.application.commands.restore import (
 from src.core.backup import SQLiteBackupEngine
 from src.core.database_compatibility import DatabaseCompatibilityStatus
 from src.core.final_v4_schema import FinalV4SchemaInitializer
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.core.restore import (
     RestoreCompatibilityError,
     RestoreError,
@@ -44,7 +45,9 @@ FIXED_NOW = datetime(2026, 7, 16, 15, 0, 0, tzinfo=UTC)
 
 
 def _runtime(tmp_path: Path) -> RuntimePaths:
-    paths = runtime_paths(tmp_path / "live")
+    root = tmp_path / "live"
+    prepare_synthetic_test_root(root)
+    paths = runtime_paths(root)
     for directory in (
         paths.root,
         paths.documents,

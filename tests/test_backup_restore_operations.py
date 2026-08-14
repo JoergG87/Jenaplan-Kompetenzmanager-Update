@@ -29,6 +29,7 @@ from src.desktop_app.backup_restore_operations import (
     BackupRestoreProgressPhase,
 )
 from src.core.sqlite_store import SQLiteDatabase
+from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.desktop_app.runtime import runtime_paths
 from src.desktop_app.screens.settings_screen import SettingsScreen
 from src.desktop_app.shell import AppShell
@@ -321,6 +322,7 @@ class TestBackupRestoreShellLifecycle:
         cls.app = QApplication.instance() or QApplication([])
 
     def _window(self, root: Path) -> AppShell:
+        prepare_synthetic_test_root(root)
         paths = runtime_paths(root)
         for directory in (
             paths.root,

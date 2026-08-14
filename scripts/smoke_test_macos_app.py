@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from src.core.runtime_root_protection import prepare_synthetic_test_root
+
 
 APP_NAME = "Jenaplan-Kompetenzmanager"
 PACKAGED_SMOKE_MARKER_ENV = "JENAPLAN_PACKAGED_SMOKE_MARKER"
@@ -34,6 +36,8 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
 
     with tempfile.TemporaryDirectory(prefix="jenaplan-packaged-smoke-") as temp:
         data_root = Path(temp) / "Application Support" / APP_NAME
+        data_root.parent.mkdir(parents=True)
+        prepare_synthetic_test_root(data_root)
         initialized = _run(executable, data_root, "initialize")
         try:
             restarted = _run(executable, data_root, "restart")

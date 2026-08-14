@@ -344,6 +344,21 @@ class SQLiteDatabase:
 
     def ensure_master_data_defaults(self) -> None:
         """Create default master data only for empty master-data scopes."""
+        from src.core.runtime_root_protection import (
+            RuntimeRootProtectionError,
+            require_database_mutation_authority,
+            require_or_prepare_synthetic_test_root,
+        )
+
+        try:
+            require_database_mutation_authority(self.path)
+        except RuntimeRootProtectionError as error:
+            if error.code != "synthetic_test_root_authority_required":
+                raise RuntimeError(error.code) from None
+            try:
+                require_or_prepare_synthetic_test_root(self.path.parent)
+            except RuntimeRootProtectionError as prepare_error:
+                raise RuntimeError(prepare_error.code) from None
         self.initialize_schema()
         seed_data = seed_reference_data()
         with closing(self.connect()) as connection:
@@ -390,6 +405,21 @@ class SQLiteDatabase:
 
     def replace_seed_data(self, data: ReferenceData) -> None:
         """Populate one empty exact Final-V4 database with deterministic data."""
+        from src.core.runtime_root_protection import (
+            RuntimeRootProtectionError,
+            require_database_mutation_authority,
+            require_or_prepare_synthetic_test_root,
+        )
+
+        try:
+            require_database_mutation_authority(self.path)
+        except RuntimeRootProtectionError as error:
+            if error.code != "synthetic_test_root_authority_required":
+                raise RuntimeError(error.code) from None
+            try:
+                require_or_prepare_synthetic_test_root(self.path.parent)
+            except RuntimeRootProtectionError as prepare_error:
+                raise RuntimeError(prepare_error.code) from None
         self.initialize_schema()
         with closing(self.connect()) as connection:
             table_names = tuple(
@@ -1473,6 +1503,24 @@ class SQLiteCompetencyRepository:
 
     def ensure_catalog_defaults(self, entries: tuple[object, ...]) -> None:
         """Import catalog entries idempotently without deleting local records."""
+        from src.core.runtime_root_protection import (
+            RuntimeRootProtectionError,
+            require_database_mutation_authority,
+            require_or_prepare_synthetic_test_root,
+        )
+
+        try:
+            require_database_mutation_authority(
+                self.database.path,
+                allow_initializing_product=True,
+            )
+        except RuntimeRootProtectionError as error:
+            if error.code != "synthetic_test_root_authority_required":
+                raise RuntimeError(error.code) from None
+            try:
+                require_or_prepare_synthetic_test_root(self.database.path.parent)
+            except RuntimeRootProtectionError as prepare_error:
+                raise RuntimeError(prepare_error.code) from None
         self.database.initialize_schema()
         with closing(self.database.connect()) as connection:
             with connection:
@@ -1525,6 +1573,48 @@ class SQLiteCompetencyRepository:
                         for index, entry in enumerate(entries)
                     ),
                 )
+
+    def require_catalog_defaults(self, entries: tuple[object, ...]) -> None:
+        """Verify the complete official catalog without initialization or writes."""
+
+        expected = tuple(
+            row[:16] + row[17:]
+            for row in (
+                _competency_catalog_row(entry, index)
+                for index, entry in enumerate(entries)
+            )
+        )
+        with closing(self.database.connect()) as connection:
+            observed = tuple(
+                tuple(row)
+                for row in connection.execute(
+                    """
+                    SELECT
+                        competency_id,
+                        subject_id,
+                        subject_name,
+                        subject_full_name,
+                        official_subject_name,
+                        school_context_name,
+                        grade_band,
+                        label,
+                        description,
+                        learning_stage,
+                        learning_area,
+                        competency_group,
+                        source_reference,
+                        catalog_status,
+                        activation_group_key,
+                        sort_order,
+                        catalog_default_active,
+                        is_core_subject
+                    FROM competencies
+                    ORDER BY sort_order, competency_id
+                    """
+                ).fetchall()
+            )
+        if observed != expected:
+            raise RuntimeError("competency_catalog_incompatible")
 
     def list_competencies(self) -> tuple[CompetencyRecord, ...]:
         with closing(self.database.connect()) as connection:
@@ -5363,6 +5453,15 @@ class SQLiteLearningConferencePdfArtifactRepository:
 
 def create_sqlite_seed_database(path: Path = SQLITE_SPIKE_PATH) -> SQLiteDatabase:
     """Create a SQLite test database from deterministic reference data."""
+    from src.core.runtime_root_protection import (
+        RuntimeRootProtectionError,
+        require_or_prepare_synthetic_test_root,
+    )
+
+    try:
+        require_or_prepare_synthetic_test_root(Path(path).parent)
+    except RuntimeRootProtectionError as error:
+        raise RuntimeError(error.code) from None
     database = SQLiteDatabase(path)
     database.replace_seed_data(seed_reference_data())
     return database
