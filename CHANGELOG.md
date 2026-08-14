@@ -4947,3 +4947,24 @@
 - Keine Fachlogik, Datenmodelle, SQLite-, Repository-, Service-, Adapter-,
   ViewModel-, Navigations-, Workflow-, Kursfarben-, Bewertungs-,
   Dokumentations- oder Statuslogik geaendert.
+
+
+## 0.4.0 / Build 400 - Final V4 Pilotbasis
+
+### Security / Datenbasis
+- Final V4 als verschlüsselter Pilotpfad vorbereitet.
+- Fresh First Run ohne Beispielkinder, Testdaten oder Testbestände.
+- Produktdaten und Managed Documents verwenden den geschützten Final-V4-Datenpfad.
+- SQLCipher-basierte Speicherung und lokale Schlüsselverwaltung sind Bestandteil des Pilotpfads.
+
+### Produkt / Workflow
+- Berichtswerkstatt und LEG-Arbeitsbereich als Qt-Pilotfunktionen integriert.
+- Schülerprofil, Kompetenz-Cockpit und Beobachtungsworkflow bilden den aktuellen Lehrkraft-Arbeitsstand.
+- Entwicklungsbuch-Katalog mit 331 Kompetenzen als fachliche Grundlage.
+
+### Bewusste Grenzen
+- Kein automatischer Datenimport oder Migrationspfad für den Pilotstart.
+- Keine automatische Bewertung oder Berichtsgenerierung.
+- Kein allgemeiner Export-, Druck- oder Teilen-Workflow für finale Dokumente.
+- Build 400 ist Pilotbasis und kein bestätigtes Stable-Release.
+
