@@ -6,8 +6,8 @@
 - Vorbereiteter Pilotbuild: {{PILOT_BUILD}}
 - Dokumentstand: 14. August 2026
 - Plattform: macOS auf Apple Silicon (arm64), ab macOS 13
-- Status: inhaltlich finaler Final-V4-Reviewstand vor der Versionsanhebung;
-  noch kein finales Pilot- oder Releaseartefakt
+- Status: vorbereiteter Final-V4-Pilotstand; noch kein finales App-Bundle oder
+  Releaseartefakt
 
 Dieses Handbuch beschreibt die lokale Qt-Desktop-App. Alle eingebundenen
 Screenshots werden aus einem datenschutzneutralen synthetischen Bestand mit der
@@ -227,8 +227,8 @@ Notiz und speichern Sie bewusst.
 
 Das Feld `Fach · Katalogfilter` gliedert die Auswahl in drei sichtbare Gruppen:
 
-- `Überfachliche Entwicklung`: Selbst- und Sozialkompetenz sowie Arbeits- und
-  Lernkompetenz; beide bleiben unabhängig vom Fachprofil immer verfügbar.
+- `Überfachliche Entwicklung`: Selbst- und Sozialkompetenz sowie
+  Arbeits-/Lernkompetenz; beide bleiben unabhängig vom Fachprofil immer verfügbar.
 - `Fächer`: die für dieses Kind aktuell wirksamen Unterrichtsfächer.
 - `Weitere Fächer`: andere aktive Unterrichtsfächer, die weiterhin bewusst
   erreichbar sind.
@@ -304,7 +304,7 @@ oder aus Beobachtungen neu befüllt.
 
 ### Überfachliche Entwicklung und Unterrichtsfächer
 
-Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz bilden die überfachliche
+Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz bilden die überfachliche
 Entwicklung. Sie sind immer verfügbar, aber keine Unterrichtsfächer. Deshalb
 erscheinen sie nicht im Stundenplan und müssen beim Kind nicht ausgewählt
 werden. Die vorhandene allgemeine Voreinstellung `Fächer für die Dokumentation`

@@ -16,7 +16,11 @@ import zipfile
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 import pytest
 
-from scripts.build_support_assistant_package import build_package, verify_package
+from scripts.build_support_assistant_package import (
+    build_package,
+    scan_package_tree,
+    verify_package,
+)
 from src.security.domain import SupportResetRequest
 from src.security.infrastructure.product_support_keys import PRODUCT_SUPPORT_KEY_REGISTRY
 from src.security.support_reset import SupportResetTokenCodec
@@ -87,6 +91,30 @@ def _service(tmp_path: Path) -> tuple[SupportAssistantApplicationService, Path, 
         manifest, audit_path=audit, now_fn=lambda: NOW
     )
     return service, private_path, audit
+
+
+def _support_assistant_package_tree(tmp_path: Path) -> Path:
+    package = tmp_path / "Jenaplan-Support-Assistent-0.2.2-macOS-arm64"
+    app = package / "Jenaplan Support-Assistent.app"
+    contents = app / "Contents"
+    executable = contents / "MacOS" / "Jenaplan Support-Assistent"
+    executable.parent.mkdir(parents=True)
+    executable.write_bytes(b"synthetic arm64 executable")
+    executable.chmod(0o755)
+    (contents / "Info.plist").write_bytes(
+        plistlib.dumps(
+            {
+                "CFBundleIdentifier": "de.jenaplan.support-assistent",
+                "CFBundleDisplayName": "Jenaplan Support-Assistent",
+                "CFBundleShortVersionString": "0.2.2",
+                "CFBundleVersion": "202",
+                "LSMinimumSystemVersion": "13.0",
+            }
+        )
+    )
+    for name in ("SHA256SUMS.txt", "SUPPORT_ANLEITUNG.md", "VERSION.txt"):
+        (package / name).write_text("synthetischer Testinhalt\n", encoding="utf-8")
+    return package
 
 
 def test_packaged_public_key_matches_the_approved_product_registry() -> None:
@@ -238,6 +266,73 @@ def test_support_assistant_sources_have_no_product_runtime_or_network_access() -
     assert "requests" not in sources
 
 
+@pytest.mark.parametrize("suffix", (".jkmebackup", ".jkmbackup"))
+def test_support_assistant_package_scan_rejects_backups_before_content_access(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    suffix: str,
+) -> None:
+    package = _support_assistant_package_tree(tmp_path)
+    candidate = package / "Jenaplan Support-Assistent.app" / "Contents" / "Resources" / f"candidate{suffix}"
+    candidate.parent.mkdir(parents=True)
+    payload = b"opaque encrypted backup bytes"
+    candidate.write_bytes(payload)
+    before = candidate.stat()
+    original_read_bytes = Path.read_bytes
+
+    def guarded_read_bytes(path: Path) -> bytes:
+        if path == candidate:
+            raise AssertionError("backup_content_was_read")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", guarded_read_bytes)
+    with pytest.raises(
+        RuntimeError,
+        match="^support_assistant_runtime_artifact_forbidden$",
+    ):
+        scan_package_tree(
+            package,
+            expected_version="0.2.2",
+            expected_build_version="202",
+            expected_minimum_macos="13.0",
+        )
+
+    after = candidate.stat()
+    assert original_read_bytes(candidate) == payload
+    assert (after.st_mode, after.st_size, after.st_mtime_ns) == (
+        before.st_mode,
+        before.st_size,
+        before.st_mtime_ns,
+    )
+
+
+def test_support_assistant_package_scan_allows_unknown_files_without_writing(
+    tmp_path: Path,
+) -> None:
+    package = _support_assistant_package_tree(tmp_path)
+    resources = package / "Jenaplan Support-Assistent.app" / "Contents" / "Resources"
+    resources.mkdir(parents=True)
+    candidates = (resources / "unknown.zip", resources / "unknown.bin")
+    for candidate in candidates:
+        candidate.write_bytes(b"ordinary opaque package resource")
+    before = {
+        candidate: (candidate.read_bytes(), candidate.stat().st_mode, candidate.stat().st_mtime_ns)
+        for candidate in candidates
+    }
+
+    scan_package_tree(
+        package,
+        expected_version="0.2.2",
+        expected_build_version="202",
+        expected_minimum_macos="13.0",
+    )
+
+    assert {
+        candidate: (candidate.read_bytes(), candidate.stat().st_mode, candidate.stat().st_mtime_ns)
+        for candidate in candidates
+    } == before
+
+
 def test_support_assistant_package_is_separate_and_contains_no_runtime_data(
     tmp_path: Path,
 ) -> None:
@@ -277,7 +372,7 @@ def test_support_assistant_package_is_separate_and_contains_no_runtime_data(
         names = archive.namelist()
         assert any("Jenaplan Support-Assistent.app/Contents/MacOS" in name for name in names)
         assert not any(Path(name).suffix.lower() in {
-            ".sqlite", ".db", ".jkmbackup", ".jkmresetrequest", ".jkmresettoken", ".pem"
+            ".sqlite", ".db", ".jkmbackup", ".jkmebackup", ".jkmresetrequest", ".jkmresettoken", ".pem"
         } for name in names)
         assert not any("Jenaplan-Kompetenzmanager.app" in name for name in names)
     assert "build_macos_support_assistant" not in Path(

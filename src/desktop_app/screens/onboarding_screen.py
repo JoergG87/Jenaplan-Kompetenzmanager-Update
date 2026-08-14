@@ -98,7 +98,7 @@ ONBOARDING_STEPS: tuple[OnboardingStep, ...] = (
         ),
         (
             "Du musst keinen Katalog importieren oder konfigurieren.",
-            "Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz sind immer verfügbar.",
+            "Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz sind immer verfügbar.",
             "Diese überfachliche Entwicklung ist von Unterrichtsfächern getrennt.",
         ),
     ),

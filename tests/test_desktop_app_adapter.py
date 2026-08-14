@@ -4488,11 +4488,11 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIsNotNone(splitter)
         if splitter is not None:
             self.assertEqual(splitter.count(), 3)
-            self.assertEqual(splitter.widget(0).maximumWidth(), 276)
+            self.assertEqual(splitter.widget(0).maximumWidth(), 306)
             self.assertEqual(splitter.widget(2).maximumWidth(), 338)
         self.assertEqual(dialog.size().width(), 1400)
         self.assertEqual(dialog.size().height(), 900)
-        self.assertGreaterEqual(dialog.minimumWidth(), 1040)
+        self.assertGreaterEqual(dialog.minimumWidth(), 1180)
         self.assertGreaterEqual(dialog.minimumHeight(), 680)
         self.assertIsInstance(dialog.selected_scroll, QScrollArea)
         self.assertIsInstance(dialog.catalog_scroll, QScrollArea)
@@ -4621,7 +4621,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             dialog.show()
             app.processEvents()
             with self.subTest(width=width, height=height):
-                self.assertGreaterEqual(dialog.width(), 1040)
+                self.assertGreaterEqual(dialog.width(), 1180)
                 self.assertGreaterEqual(dialog.height(), 680)
                 self.assertFalse(actions.isHidden())
                 self.assertEqual(

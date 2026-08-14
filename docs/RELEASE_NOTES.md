@@ -4,9 +4,17 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 ## Status dieser Release Notes
 
-Diese Release Notes dokumentieren den inhaltlich finalen Final-V4-Reviewstand
-vor der späteren Versionsanhebung. Sie belegen weder finales Pilotartefakt noch
-Release, Pilot-GO, Developer-ID-Signierung oder Apple-Notarisierung.
+Diese Release Notes dokumentieren den vorbereiteten Final-V4-Pilotstand
+{{PILOT_VERSION}} / Build {{PILOT_BUILD}}. Sie belegen weder ein finales App-Bundle noch Release,
+Pilot-GO, Developer-ID-Signierung oder Apple-Notarisierung.
+
+## Fachliche Grundlage und Dokumentation
+
+- Fachliche Grundlage ist das offizielle Jenaplan-Entwicklungsbuch mit 331
+  Kompetenzen in zehn Unterrichtsfächern. Überfachliche Entwicklung bleibt
+  davon getrennt; Unterrichtsfächer werden je Kind individuell priorisiert.
+- Beobachtungen, Kompetenz-Cockpit, Bericht und LEG bilden den aktuellen
+  Lehrkraftworkflow. Es werden keine Beispielkinder oder Testdaten angelegt.
 
 ## Final V4 und lokale Verschlüsselung
 
@@ -29,9 +37,11 @@ Release, Pilot-GO, Developer-ID-Signierung oder Apple-Notarisierung.
   Testbackups werden nicht angelegt.
 - Ein Beispielbestand oder Katalogimport ist für den Pilotstart nicht nötig.
 
+<!-- pagebreak -->
+
 ## Fachliche Struktur
 
-- Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz sind als überfachliche
+- Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz sind als überfachliche
   Entwicklung immer verfügbar. Sie sind keine Unterrichtsfächer, erscheinen
   nicht im Stundenplan und müssen für ein Kind auch dann nicht ausgewählt
   werden, wenn die vorhandene allgemeine Voreinstellung `Fächer für die
@@ -91,9 +101,10 @@ Release, Pilot-GO, Developer-ID-Signierung oder Apple-Notarisierung.
 
 ## Offene Gates
 
-- spätere Versionsanhebung und finale Regeneration derselben Quellen;
-- finaler Pilotbuild und Fresh-First-Run-Abnahme;
+- finaler Pilotbuild nach bestandenem Source-/Dokument-/Fresh-First-Run-Gate;
 - reales Keychain-/Codesign-/Restore-Bundlegate;
+- Support Reset und Backup/Restore im real gebauten Bundle;
+- finaler DMG-Smoke;
 - portable Backup-Recovery beziehungsweise DMK-Recovery;
 - Developer ID und Apple-Notarisierung;
 - ausdrückliches Pilot-GO.

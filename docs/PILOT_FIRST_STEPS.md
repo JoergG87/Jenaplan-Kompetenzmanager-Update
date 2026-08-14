@@ -3,8 +3,8 @@
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 > [!HINWEIS]
-> Inhaltlich finaler Reviewstand vor der Versionsanhebung. Diese Ausgabe ist
-> noch kein finales Pilot- oder Releaseartefakt.
+> Vorbereiteter Final-V4-Pilotstand. Diese Ausgabe ist noch kein finales
+> App-Bundle oder Releaseartefakt.
 
 ## 1. Willkommen und sicher starten
 
@@ -19,7 +19,7 @@ Beim frischen Start sind das Schuljahr `2026/27` vom 01.08.2026 bis
 31.07.2027, das offizielle Entwicklungsbuch und 331 Kompetenzen bereits
 vorhanden. Ein Katalogimport oder ein Beispielbestand ist nicht nötig.
 
-Selbst- und Sozialkompetenz sowie Arbeits- und Lernkompetenz bilden die immer verfügbare
+Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz bilden die immer verfügbare
 überfachliche Entwicklung. Sie sind keine Unterrichtsfächer, erscheinen nicht
 im Stundenplan und werden auch in der vorhandenen allgemeinen Voreinstellung
 `Fächer für die Dokumentation` nicht zu Unterrichtsfächern. Für das Kind
@@ -41,7 +41,7 @@ wählen, die passenden Unterrichtsfächer markieren und `Speichern` wählen.
 
 Individuell auswählbar sind ausschließlich EPU, Deutsch, Mathematik, Kreatives
 Gestalten, Sport, Ethik, Religion, Musik, Englisch und Schulgarten. Selbst- und
-Sozialkompetenz sowie Arbeits- und Lernkompetenz sind keine Unterrichtsfächer;
+Sozialkompetenz sowie Arbeits-/Lernkompetenz sind keine Unterrichtsfächer;
 sie bleiben als `Überfachliche Entwicklung` immer verfügbar und werden hier
 nicht ausgewählt.
 

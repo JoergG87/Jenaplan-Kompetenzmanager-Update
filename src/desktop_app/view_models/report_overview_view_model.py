@@ -130,7 +130,7 @@ class ReportOverviewSubjectDocumentationViewModel:
     observation_count_text: str
     accessible_name: str
     evidence_action: ReportOverviewActionViewModel
-    prepare_action: ReportOverviewActionViewModel
+    prepare_action: ReportOverviewActionViewModel | None
     confirmation_count_text: str = ""
 
     @property
@@ -1353,11 +1353,16 @@ def _phase2_subject_documentation(
             subject_id,
             subject_id,
         ),
-        prepare_action=ReportOverviewActionViewModel(
-            "prepare_subject",
-            "Bericht vorbereiten",
-            selected_report_draft_id,
-            subject_id,
+        prepare_action=(
+            None
+            if competency_presentation_group(subject_id)
+            == COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR
+            else ReportOverviewActionViewModel(
+                "prepare_subject",
+                "Bericht vorbereiten",
+                selected_report_draft_id,
+                subject_id,
+            )
         ),
         confirmation_count_text=(
             "Aktuell bestätigter Stand für "

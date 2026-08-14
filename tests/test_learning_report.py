@@ -537,7 +537,7 @@ class LearningReportTest(unittest.TestCase):
             ("kreatives_gestalten", "Kreatives Gestalten"),
             ("sport", "Sport"),
             ("self_social", "Selbst- und Sozialkompetenz"),
-            ("work_learning", "Arbeits- und Lernkompetenz"),
+            ("work_learning", "Arbeits-/Lernkompetenz"),
         )
         subjects = tuple(
             LearningReportSubjectViewModel(subject_id, name, (), ())

@@ -3,8 +3,8 @@
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 > [!HINWEIS]
-> Inhaltlich finaler Reviewstand vor der Versionsanhebung; noch kein finales
-> Pilot- oder Releaseartefakt.
+> Vorbereiteter Final-V4-Pilotstand; noch kein finales App-Bundle oder
+> Releaseartefakt.
 
 1. DMG öffnen, die App nach `Programme` ziehen und von dort starten.
 2. App-Passwort festlegen und Recovery-Codes getrennt vom Mac sichern.
@@ -29,7 +29,7 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 Auswählbar sind EPU, Deutsch, Mathematik, Kreatives Gestalten, Sport, Ethik,
 Religion, Musik, Englisch und Schulgarten. Selbst- und Sozialkompetenz sowie
-Arbeits- und Lernkompetenz gehören zur immer verfügbaren `Überfachlichen
+Arbeits-/Lernkompetenz gehören zur immer verfügbaren `Überfachlichen
 Entwicklung` und werden nicht als Unterrichtsfächer ausgewählt.
 
 Die Auswahl priorisiert den normalen Dokumentationsworkflow; sie löscht keine

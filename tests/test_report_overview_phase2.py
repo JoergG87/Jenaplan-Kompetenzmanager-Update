@@ -183,6 +183,30 @@ def test_period_boundaries_are_inclusive_and_outside_events_are_excluded() -> No
     ]
 
 
+def test_cross_curricular_cards_have_evidence_but_no_subject_report_action() -> None:
+    overview = _overview(
+        subjects=(
+            {
+                "subject_id": "selbst_sozialkompetenz",
+                "subject_name": "Selbst- und Sozialkompetenz",
+            },
+            {
+                "subject_id": "arbeits_lernkompetenz",
+                "subject_name": "Arbeits-/Lernkompetenz",
+            },
+            {"subject_id": "mathematik", "subject_name": "Mathematik"},
+        ),
+    )
+
+    by_id = {subject.subject_id: subject for subject in overview.subject_documentation}
+    assert by_id["selbst_sozialkompetenz"].evidence_action.label == "Belege ansehen"
+    assert by_id["arbeits_lernkompetenz"].evidence_action.label == "Belege ansehen"
+    assert by_id["selbst_sozialkompetenz"].prepare_action is None
+    assert by_id["arbeits_lernkompetenz"].prepare_action is None
+    assert by_id["mathematik"].prepare_action is not None
+    assert by_id["mathematik"].prepare_action.label == "Bericht vorbereiten"
+
+
 @pytest.mark.parametrize(
     ("period_start", "period_end", "warning_key"),
     (

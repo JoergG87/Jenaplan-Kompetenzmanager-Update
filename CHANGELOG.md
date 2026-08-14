@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Der Qt-Beobachtungsdialog reserviert genug Breite, um die kanonischen
+  Fachbezeichnungen einschließlich `Selbst- und Sozialkompetenz` und
+  `Arbeits-/Lernkompetenz` vollständig neben dem Fachmarker anzuzeigen.
+  Überfachliche Karten im Schülerprofil behalten ihren belegorientierten
+  Zugang, zeigen aber keine fachlich unpassende Aktion `Bericht vorbereiten`
+  mehr. Der Support-Assistent-Paketscan sperrt aktuelle `.jkmebackup`-Dateien
+  wie historische `.jkmbackup`-Dateien bereits anhand des Dateityps vor dem
+  Rohbyte-Scan. Katalog, Fach-IDs, Persistenz, Backupformat und Berichtworkflow
+  bleiben unverändert. Die aktuellen Lehrkraftquellen verwenden einheitlich
+  die katalogkanonische Bezeichnung `Arbeits-/Lernkompetenz`; die Release Notes
+  halten `Fachliche Struktur` beim PDF-Satz mit seinem Inhalt zusammen.
+
 - `Erste Schritte` führt jetzt in exakt fünf kurzen, nicht blockierenden
   Schritten durch lokalen verschlüsselten Start, vorbereiteten Katalog mit 331
   Kompetenzen, Unterrichtsorganisation, kindbezogene Unterrichtsfachauswahl,

@@ -184,6 +184,11 @@ def test_onboarding_screen_steps_keyboard_skip_and_sizes() -> None:
     assert "zehn Unterrichtsfächer" in subject_step
     assert "Weitere Fächer" in subject_step
     assert "löscht keine Fächer" in subject_step
+    foundation_step = " ".join(
+        (ONBOARDING_STEPS[1].body, *ONBOARDING_STEPS[1].bullets)
+    )
+    assert "Arbeits-/Lernkompetenz" in foundation_step
+    assert "Arbeits- und Lernkompetenz" not in foundation_step
 
     emitted: list[str] = []
     screen.next_requested.connect(lambda: emitted.append("next"))

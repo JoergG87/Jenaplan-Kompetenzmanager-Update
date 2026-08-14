@@ -140,7 +140,7 @@ def test_teacher_guides_explain_individual_student_subject_workflow() -> None:
         assert subject in normalized_manual
 
     assert "Selbst- und Sozialkompetenz" in combined
-    assert "Arbeits- und Lernkompetenz" in combined
+    assert "Arbeits-/Lernkompetenz" in combined
     assert "immer verfügbar" in combined
     assert "keine harte fachliche Berechtigungsgrenze" in normalized_first_steps
     assert "keine Berechtigungsgrenze" in normalized_quickstart
@@ -230,6 +230,16 @@ def test_all_current_pilot_document_profiles_render_parse_and_scan_cleanly(
     installation = next(
         text for name, text in extracted.items() if "Installationsanleitung" in name
     )
+    release_notes_path = next(
+        path for path in expected if "Release-Notes" in path.name
+    )
+    release_note_pages = tuple(
+        page.extract_text() or "" for page in PdfReader(release_notes_path).pages
+    )
+    subject_structure_page = next(
+        page for page in release_note_pages if "Fachliche Struktur" in page
+    )
+    assert "Selbst- und Sozialkompetenz" in subject_structure_page
     assert ".jkmebackup" in manual
     assert "Final V4" in security
     assert "SQLCipher 4.17" in security
@@ -246,7 +256,7 @@ def test_all_current_pilot_document_profiles_render_parse_and_scan_cleanly(
             "EPU",
             "Kreatives Gestalten",
             "Selbst- und Sozialkompetenz",
-            "Arbeits- und Lernkompetenz",
+            "Arbeits-/Lernkompetenz",
             "immer verfügbar",
             "Weitere Fächer",
             "leere individuelle Auswahl",

@@ -3124,16 +3124,18 @@ class StudentProfileScreen(QWidget):
             evidence_button.setAccessibleName(
                 f"Belege für {subject.subject_name} ansehen"
             )
-            prepare_button = self._report_action_button(
-                subject.prepare_action,
-                role="link",
-            )
-            prepare_button.setObjectName(
-                f"ReportOverviewPrepareSubject_{subject.subject_id}"
-            )
-            prepare_button.setAccessibleName(
-                f"Bericht für {subject.subject_name} vorbereiten"
-            )
+            prepare_button = None
+            if subject.prepare_action is not None:
+                prepare_button = self._report_action_button(
+                    subject.prepare_action,
+                    role="link",
+                )
+                prepare_button.setObjectName(
+                    f"ReportOverviewPrepareSubject_{subject.subject_id}"
+                )
+                prepare_button.setAccessibleName(
+                    f"Bericht für {subject.subject_name} vorbereiten"
+                )
             row_layout.addLayout(subject_header)
             row_layout.addWidget(segment_grid)
             row_layout.addWidget(competency_count)
@@ -3142,7 +3144,8 @@ class StudentProfileScreen(QWidget):
                 row_layout.addWidget(confirmation)
             row_layout.addStretch(1)
             actions.addWidget(evidence_button)
-            actions.addWidget(prepare_button)
+            if prepare_button is not None:
+                actions.addWidget(prepare_button)
             actions.addStretch(1)
             row_layout.addLayout(actions)
             tile.setAccessibleName(subject.accessible_name)

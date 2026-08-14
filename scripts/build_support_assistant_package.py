@@ -22,6 +22,7 @@ FORBIDDEN_SUFFIXES = {
     ".sqlite3",
     ".db",
     ".jkmbackup",
+    ".jkmebackup",
     ".jkmresetrequest",
     ".jkmresettoken",
     ".pem",

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QStyle, QStyleOptionComboBox
 
+from src.desktop_app import theme
 from src.desktop_app.adapters.curriculum_desktop_adapter import (
     CurriculumDesktopAdapter,
     DOCUMENTATION_SUBJECT_PREFERRED_ORDER,
@@ -132,6 +134,70 @@ def test_observation_dialog_groups_subjects_without_an_extra_click_level() -> No
     assert dialog.subject_select.currentData() == "selbst_sozialkompetenz"
     assert dialog.subject_select.currentText() == "Selbst- und Sozialkompetenz"
     dialog.close()
+
+
+def test_observation_subject_names_fit_beside_marker_without_elision() -> None:
+    app = QApplication.instance() or QApplication([])
+    previous_stylesheet = app.styleSheet()
+    theme.apply_app_theme(app)
+    subject_labels = {
+        subject.subject_key: subject.display_name
+        for subject in CurriculumDesktopAdapter().list_active_subjects()
+    }
+    dialog = NewObservationDialog(
+        StudentDetailViewModel("student-1", "Ada Beispiel", "A", "1", "", True),
+        subject_options=tuple(
+            ObservationSubjectOptionViewModel(subject_key, subject_labels[subject_key])
+            for subject_key in DOCUMENTATION_SUBJECT_PREFERRED_ORDER
+        ),
+    )
+    checked_subjects = (
+        "selbst_sozialkompetenz",
+        "arbeits_lernkompetenz",
+        "deutsch",
+        "mathematik",
+        "kreatives_gestalten",
+        "schulgarten",
+    )
+    try:
+        for width, height in ((1400, 900), (1280, 800), (1180, 760)):
+            dialog.resize(width, height)
+            dialog.show()
+            app.processEvents()
+            for subject_key in checked_subjects:
+                index = dialog.subject_select.findData(subject_key)
+                assert index >= 0
+                dialog.subject_select.setCurrentIndex(index)
+                app.processEvents()
+
+                combo = dialog.subject_select
+                full_name = subject_labels[subject_key]
+                assert combo.currentText() == full_name
+                assert not combo.currentText().endswith("komp.")
+                assert not combo.itemIcon(index).isNull()
+
+                option = QStyleOptionComboBox()
+                option.initFrom(combo)
+                option.currentText = full_name
+                option.currentIcon = combo.itemIcon(index)
+                edit_rect = combo.style().subControlRect(
+                    QStyle.ComplexControl.CC_ComboBox,
+                    option,
+                    QStyle.SubControl.SC_ComboBoxEditField,
+                    combo,
+                )
+                available_text_width = (
+                    edit_rect.width() - combo.iconSize().width() - 12
+                )
+                assert available_text_width > 0
+                assert combo.fontMetrics().elidedText(
+                    full_name,
+                    Qt.TextElideMode.ElideRight,
+                    available_text_width,
+                ) == full_name
+    finally:
+        dialog.close()
+        app.setStyleSheet(previous_stylesheet)
 
 
 def test_student_profile_uses_the_same_two_presentation_groups() -> None:

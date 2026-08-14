@@ -80,7 +80,7 @@ Fachnamen bleiben in jedem Fachkontext sichtbar. Ein kleiner zentraler Marker
 unterstützt lediglich das schnelle Wiedererkennen: Deutsch Rot, Mathematik
 Blau, Englisch Schwarz, Musik Gelb, Ethik und Religion Orange sowie
 Schulgarten Braun. EPU/Sachkunde, Kreatives Gestalten, Selbst- und
-Sozialkompetenz, Arbeits- und Lernkompetenz und unbekannte Fächer bleiben
+Sozialkompetenz, Arbeits-/Lernkompetenz und unbekannte Fächer bleiben
 neutral. Kreatives Gestalten wird nicht mit Werken gleichgesetzt.
 
 Dashboard, Stundenplan, Beobachtungsdialog, Schülerprofil, Fachübersicht,

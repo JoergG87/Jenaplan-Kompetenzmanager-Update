@@ -52,6 +52,10 @@ from src.desktop_app.view_models.learning_report_view_model import (
     LearningReportRevisionStatusViewModel,
     LearningReportSubjectViewModel,
 )
+from src.desktop_app.view_models.observation_view_model import (
+    COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR,
+    competency_presentation_group,
+)
 from src.desktop_app.view_models.report_overview_view_model import (
     ReportOverviewActionViewModel,
     ReportOverviewSubjectDocumentationViewModel,
@@ -832,6 +836,11 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             for button in screen.findChildren(QPushButton)
             if button.objectName().startswith("ReportOverviewPrepareSubject_")
         )
+        evidence_buttons = tuple(
+            button.objectName()
+            for button in screen.findChildren(QPushButton)
+            if button.objectName().startswith("ReportOverviewEvidenceSubject_")
+        )
 
         self.assertEqual(
             headings,
@@ -842,10 +851,14 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         )
         self.assertEqual(
             prepare_buttons,
+            ("ReportOverviewPrepareSubject_mathematik",),
+        )
+        self.assertEqual(
+            evidence_buttons,
             (
-                "ReportOverviewPrepareSubject_selbst_sozialkompetenz",
-                "ReportOverviewPrepareSubject_arbeits_lernkompetenz",
-                "ReportOverviewPrepareSubject_mathematik",
+                "ReportOverviewEvidenceSubject_selbst_sozialkompetenz",
+                "ReportOverviewEvidenceSubject_arbeits_lernkompetenz",
+                "ReportOverviewEvidenceSubject_mathematik",
             ),
         )
         screen.close()
@@ -2279,11 +2292,16 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
                 subject_id,
                 subject_id,
             ),
-            prepare_action=ReportOverviewActionViewModel(
-                "prepare_subject",
-                "Bericht vorbereiten",
-                "RPD-1",
-                subject_id,
+            prepare_action=(
+                None
+                if competency_presentation_group(subject_id)
+                == COMPETENCY_PRESENTATION_GROUP_CROSS_CURRICULAR
+                else ReportOverviewActionViewModel(
+                    "prepare_subject",
+                    "Bericht vorbereiten",
+                    "RPD-1",
+                    subject_id,
+                )
             ),
         )
 
