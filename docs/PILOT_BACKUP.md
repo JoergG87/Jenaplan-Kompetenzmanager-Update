@@ -3,8 +3,8 @@
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 > [!HINWEIS]
-> Inhaltlich finaler Reviewstand vor der Versionsanhebung; noch kein finales
-> Pilot- oder Releaseartefakt.
+> Vorbereiteter Final-V4-Pilotstand; noch kein finales App-Bundle oder
+> Releaseartefakt.
 
 Die App erstellt unter `Einstellungen > Datensicherung` ausschließlich ein
 verschlüsseltes `.jkmebackup`. Es umfasst die verschlüsselte Final-V4-

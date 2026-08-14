@@ -2,8 +2,8 @@
 
 Stand: 14. August 2026
 Geltung: Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
-Status: Inhaltlich finaler Final-V4-Reviewstand vor der Versionsanhebung;
-noch kein finales Pilot-, Build- oder Releaseartefakt
+Status: Vorbereiteter Final-V4-Pilotstand; noch kein finales App-Bundle oder
+Releaseartefakt
 
 Dieses Dokument beschreibt den tatsächlich aktiven committed Schutzstand und
 die noch offene Build-/Realweltabnahme. Es ist keine

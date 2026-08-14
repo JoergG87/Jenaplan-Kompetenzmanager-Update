@@ -28,11 +28,11 @@
 - Pilot-, Lehrkraft-, Installations-, Sicherheits-, Backup-, Support- und
   Handbuchquellen beschreiben konsistent Final V4, verschlüsselte Managed
   Documents, den sicheren read-only In-App-PDF-Viewer, installationsgebundenes
-  Restore und den aktivierten betreuten Support Reset. Build-302-PDFs bleiben
-  historische Belege; das neue Build-303-Set ist nur der inhaltliche
-  Reviewstand vor der späteren Versionsanhebung. Sichtbare Login- und
-  Sicherheitshinweise trennen jetzt den Zugangsschutz korrekt von der
-  zusätzlichen Verschlüsselung der Fachdaten, Managed Documents und Backups.
+  Restore und den aktivierten betreuten Support Reset. Build-302- und
+  Build-303-PDFs bleiben historische Belege; der aktuelle Pilotstand verwendet
+  zentral Version `0.4.0` / Build `400`. Sichtbare Login- und
+  Sicherheitshinweise trennen den Zugangsschutz korrekt von der zusätzlichen
+  Verschlüsselung der Fachdaten, Managed Documents und Backups.
 
 - Pilot-Produktionsschutz: Ein atomarer, versionierter und nicht geheimer
   Rootmarker trennt geschützte `pilot_product`-Roots von kontrollierten

@@ -3,8 +3,8 @@
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 > [!HINWEIS]
-> Inhaltlich finaler Reviewstand vor der Versionsanhebung; noch kein finales
-> Pilot- oder Releaseartefakt.
+> Vorbereiteter Final-V4-Pilotstand; noch kein finales App-Bundle oder
+> Releaseartefakt.
 
 Support Reset ist im Final-V4-Cipher-Produktpfad ausschließlich als
 installationsgebundene Auth-Recovery aktiv. Die App prüft zuerst den

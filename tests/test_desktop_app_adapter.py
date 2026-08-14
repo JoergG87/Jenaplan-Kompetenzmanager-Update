@@ -3480,7 +3480,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
             label.text() for label in info_dialog.findChildren(QLabel)
         )
         self.assertIn("Jenaplan-Kompetenzmanager", visible_text)
-        self.assertIn("Version 0.3.0 · Build 303", visible_text)
+        self.assertIn("Version 0.4.0 · Build 400", visible_text)
         self.assertIn("Entwickelt von", visible_text)
         self.assertIn("Jörg Gehrke", visible_text)
         self.assertIn("© 2026 Jörg Gehrke", visible_text)

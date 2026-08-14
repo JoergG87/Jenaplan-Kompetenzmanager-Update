@@ -49,9 +49,9 @@ def _has_security_build_runtime() -> bool:
         return False
 
 
-def test_030_release_versions_and_security_dependencies_are_pinned() -> None:
-    assert APP_VERSION == "0.3.0"
-    assert APP_BUILD_VERSION == "303"
+def test_040_release_versions_and_security_dependencies_are_pinned() -> None:
+    assert APP_VERSION == "0.4.0"
+    assert APP_BUILD_VERSION == "400"
     requirements = Path("requirements-macos-build.txt").read_text(
         encoding="utf-8"
     )
