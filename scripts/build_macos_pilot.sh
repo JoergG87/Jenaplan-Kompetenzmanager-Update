@@ -287,12 +287,12 @@ if [ "$DEFER_PACKAGE_TESTS" = "0" ]; then
         "$APP_PATH" \
         --expected-version "$VERSION" \
         --expected-build "$BUILD_VERSION"
-    "$VENV/bin/python" scripts/smoke_test_macos_app.py \
+    PYTHONPATH="$ROOT" "$VENV/bin/python" scripts/smoke_test_macos_app.py \
         "$APP_PATH" \
         --expected-data-mode "$DATA_MODE"
-    "$VENV/bin/python" scripts/smoke_test_packaged_restore_worker.py \
+    PYTHONPATH="$ROOT" "$VENV/bin/python" scripts/smoke_test_packaged_restore_worker.py \
         "$APP_PATH"
-    "$VENV/bin/python" scripts/smoke_test_macos_keychain.py \
+    PYTHONPATH="$ROOT" "$VENV/bin/python" scripts/smoke_test_macos_keychain.py \
         "$APP_PATH"
 fi
 
